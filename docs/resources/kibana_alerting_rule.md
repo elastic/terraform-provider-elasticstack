@@ -64,6 +64,7 @@ resource "elasticstack_kibana_alerting_rule" "example" {
 
 - `actions` (Block List) An action that runs under defined conditions. (see [below for nested schema](#nestedblock--actions))
 - `alert_delay` (Number) A number that indicates how many consecutive runs need to meet the rule conditions for an alert to occur.
+- `artifacts` (Block, Optional) Optional links to related assets (dashboards and investigation guides) for the alerting rule. (see [below for nested schema](#nestedblock--artifacts))
 - `enabled` (Boolean) Indicates if you want to run the rule on an interval basis.
 - `flapping` (Attributes) Rule-level [flapping detection](https://www.elastic.co/guide/en/kibana/master/alerting-settings.html) (Kibana **8.16** or higher). When this object is set in configuration, `look_back_window` and `status_change_threshold` are required. The optional `enabled` attribute is supported only from **Elastic Stack 9.3** onward; configuring it against an older stack returns an error. When `flapping` is omitted from configuration on update, Terraform retains the previous value, so existing server-side flapping settings are not cleared by that omission. (see [below for nested schema](#nestedatt--flapping))
 - `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
@@ -122,6 +123,36 @@ Optional:
 - `notify_when` (String) Defines how often alerts generate actions. Valid values include: `onActionGroupChange`: Actions run when the alert status changes; `onActiveAlert`: Actions run when the alert becomes active and at each check interval while the rule conditions are met; `onThrottleInterval`: Actions run when the alert becomes active and at the interval specified in the throttle property while the rule conditions are met.
 - `summary` (Boolean) Indicates whether the action is a summary.
 - `throttle` (String) Defines how often an alert generates repeated actions. This custom action interval must be specified in seconds, minutes, hours, or days. For example, 10m or 1h. This property is applicable only if `notify_when` is `onThrottleInterval`.
+
+
+
+<a id="nestedblock--artifacts"></a>
+### Nested Schema for `artifacts`
+
+Optional:
+
+- `dashboards` (Block List) List of dashboard references to attach to the rule. Each entry references a Kibana dashboard by its saved object id. (see [below for nested schema](#nestedblock--artifacts--dashboards))
+- `investigation_guide` (Block, Optional) An investigation guide attached to the rule. Exactly one of `content` or `content_path` must be provided. (see [below for nested schema](#nestedblock--artifacts--investigation_guide))
+
+<a id="nestedblock--artifacts--dashboards"></a>
+### Nested Schema for `artifacts.dashboards`
+
+Required:
+
+- `id` (String) The Kibana dashboard saved object id.
+
+
+<a id="nestedblock--artifacts--investigation_guide"></a>
+### Nested Schema for `artifacts.investigation_guide`
+
+Optional:
+
+- `content` (String) Inline Markdown content for the investigation guide. Mutually exclusive with `content_path`.
+- `content_path` (String) Path to a local file containing the investigation guide Markdown. The provider computes a SHA-256 checksum of this file for drift detection. Mutually exclusive with `content`.
+
+Read-Only:
+
+- `checksum` (String) SHA-256 hex digest of the file at `content_path`. Computed by the provider for drift detection.
 
 
 

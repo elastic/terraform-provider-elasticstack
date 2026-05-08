@@ -916,6 +916,51 @@ func testCheckAlertingRuleAPIArtifactsInvestigationGuideBlob(expected string) re
 	}
 }
 
+// testCheckAlertingRuleStateMatchesAPIArtifactsInvestigationGuideBlob returns a TestCheckFunc
+// that verifies Terraform state matches the API-returned investigation guide blob.
+func testCheckAlertingRuleStateMatchesAPIArtifactsInvestigationGuideBlob(resourceName string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("resource %q not found in state", resourceName)
+		}
+
+		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
+
+		client, err := clients.NewAcceptanceTestingKibanaScopedClient()
+		if err != nil {
+			return err
+		}
+
+		oapiClient, err := client.GetKibanaOapiClient()
+		if err != nil {
+			return err
+		}
+
+		rule, diags := kibanaoapi.GetAlertingRule(context.Background(), oapiClient, compID.ClusterID, compID.ResourceID)
+		if diags.HasError() {
+			return fmt.Errorf("failed to get alerting rule: %v", diags)
+		}
+		if rule == nil {
+			return fmt.Errorf("alerting rule (%s) not found", compID.ResourceID)
+		}
+
+		var blob string
+		if rule.Artifacts != nil && rule.Artifacts.InvestigationGuide != nil {
+			blob = rule.Artifacts.InvestigationGuide.Blob
+		}
+
+		stateValue, ok := rs.Primary.Attributes["artifacts.investigation_guide.content"]
+		if !ok {
+			return fmt.Errorf("expected state to contain artifacts.investigation_guide.content")
+		}
+		if stateValue != blob {
+			return fmt.Errorf("expected state investigation guide content %q to match API blob %q", stateValue, blob)
+		}
+		return nil
+	}
+}
+
 func TestAccResourceAlertingRuleArtifactsDashboards(t *testing.T) {
 	ruleName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	ruleID := uuid.New().String()
@@ -977,7 +1022,7 @@ func TestAccResourceAlertingRuleArtifactsInlineGuide(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "name", ruleName),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_alerting_rule.test_rule", "artifacts.investigation_guide.content"),
-					testCheckAlertingRuleAPIArtifactsInvestigationGuideBlob("# Investigation Guide\n\nCheck the logs."),
+					testCheckAlertingRuleStateMatchesAPIArtifactsInvestigationGuideBlob("elasticstack_kibana_alerting_rule.test_rule"),
 				),
 			},
 			{
@@ -990,7 +1035,7 @@ func TestAccResourceAlertingRuleArtifactsInlineGuide(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_alerting_rule.test_rule", "artifacts.investigation_guide.content"),
-					testCheckAlertingRuleAPIArtifactsInvestigationGuideBlob("# Updated Guide\n\nCheck the metrics."),
+					testCheckAlertingRuleStateMatchesAPIArtifactsInvestigationGuideBlob("elasticstack_kibana_alerting_rule.test_rule"),
 				),
 			},
 		},
@@ -1123,7 +1168,20 @@ func TestAccResourceAlertingRuleArtifactsPreserveAndClear(t *testing.T) {
 					testCheckAlertingRuleAPIArtifactsDashboardsCount(2),
 				),
 			},
-			// Step 3: Add back artifacts with explicit empty dashboards list.
+			// Step 3: Refresh-only plan should show the expected drift because Kibana
+			// still stores artifacts while Terraform state/config omit the block.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 checkIfArtifactsUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("omit_artifacts"),
+				ConfigVariables: config.Variables{
+					"name":    config.StringVariable(ruleName),
+					"rule_id": config.StringVariable(ruleID),
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			// Step 4: Add back artifacts with explicit empty dashboards list.
 			// Provider sends empty dashboards array, which clears dashboards in Kibana.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,

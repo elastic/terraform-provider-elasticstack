@@ -247,7 +247,7 @@ func (m *alertingRuleModel) populateArtifactsFromAPI(ctx context.Context, rule *
 
 	// Dashboards
 	var dashboardsList types.List
-	if len(rule.Artifacts.Dashboards) > 0 {
+	if rule.Artifacts.Dashboards != nil {
 		dashboards := make([]dashboardModel, len(rule.Artifacts.Dashboards))
 		for i, d := range rule.Artifacts.Dashboards {
 			dashboards[i] = dashboardModel{ID: types.StringValue(d.ID)}
@@ -678,7 +678,7 @@ func convertArtifactsToAPI(ctx context.Context, artifactsObj types.Object) (*mod
 			return nil, diags
 		}
 
-		if !igm.Content.IsNull() && igm.Content.ValueString() != "" {
+		if !igm.Content.IsNull() {
 			artifacts.InvestigationGuide = &models.AlertingRuleArtifactInvestigationGuide{
 				Blob: igm.Content.ValueString(),
 			}

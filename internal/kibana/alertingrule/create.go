@@ -89,5 +89,10 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 		return
 	}
 
+	resp.Diagnostics.Append(persistArtifactsChecksum(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }

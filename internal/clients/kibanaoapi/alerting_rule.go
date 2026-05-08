@@ -364,7 +364,7 @@ func ConvertResponseToModel(spaceID string, resp any) (*models.AlertingRule, dia
 	var artifacts *models.AlertingRuleArtifacts
 	if intermediate.Artifacts != nil {
 		artifacts = &models.AlertingRuleArtifacts{}
-		if len(intermediate.Artifacts.Dashboards) > 0 {
+		if intermediate.Artifacts.Dashboards != nil {
 			artifacts.Dashboards = make([]models.AlertingRuleArtifactDashboard, len(intermediate.Artifacts.Dashboards))
 			for i, d := range intermediate.Artifacts.Dashboards {
 				artifacts.Dashboards[i] = models.AlertingRuleArtifactDashboard{ID: d.ID}

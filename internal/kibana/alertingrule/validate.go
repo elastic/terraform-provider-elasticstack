@@ -438,8 +438,10 @@ func validateArtifactsInvestigationGuideExclusivity(ctx context.Context, data *a
 		return
 	}
 
-	contentSet := typeutils.IsKnown(igm.Content) && igm.Content.ValueString() != ""
-	contentPathSet := typeutils.IsKnown(igm.ContentPath) && igm.ContentPath.ValueString() != ""
+	contentKnown := typeutils.IsKnown(igm.Content)
+	contentPathKnown := typeutils.IsKnown(igm.ContentPath)
+	contentSet := contentKnown && !igm.Content.IsNull()
+	contentPathSet := contentPathKnown && !igm.ContentPath.IsNull()
 
 	if contentSet && contentPathSet {
 		diags.AddAttributeError(
@@ -447,6 +449,13 @@ func validateArtifactsInvestigationGuideExclusivity(ctx context.Context, data *a
 			"Invalid investigation_guide configuration",
 			"Exactly one of content or content_path must be set. Both are present.",
 		)
+		return
+	}
+
+	// Defer validation when either side is still unknown. Schema-level validation
+	// handles the known-value cases, and ModifyPlan explicitly supports unknown
+	// content_path by leaving checksum unknown without reading a file.
+	if !contentKnown || !contentPathKnown {
 		return
 	}
 

@@ -29,9 +29,9 @@ import (
 )
 
 var (
-	_ resource.Resource                = newResource()
-	_ resource.ResourceWithConfigure   = newResource()
-	_ resource.ResourceWithImportState = newResource()
+	_ resource.Resource                   = newResource()
+	_ resource.ResourceWithConfigure      = newResource()
+	_ resource.ResourceWithImportState    = newResource()
 	_ resource.ResourceWithValidateConfig = newResource()
 	_ resource.ResourceWithUpgradeState   = newResource()
 	_ resource.ResourceWithModifyPlan     = newResource()

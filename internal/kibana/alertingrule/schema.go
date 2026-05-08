@@ -43,15 +43,15 @@ import (
 )
 
 var (
-	attrTypesOnce                  sync.Once
-	cachedActionsTypes             map[string]attr.Type
-	cachedFrequencyTypes           map[string]attr.Type
-	cachedFilterTypes              map[string]attr.Type
-	cachedTimeframeTypes           map[string]attr.Type
-	cachedFlappingTypes            map[string]attr.Type
-	cachedArtifactsTypes           map[string]attr.Type
-	cachedDashboardsTypes          map[string]attr.Type
-	cachedInvestigationGuideTypes  map[string]attr.Type
+	attrTypesOnce                 sync.Once
+	cachedActionsTypes            map[string]attr.Type
+	cachedFrequencyTypes          map[string]attr.Type
+	cachedFilterTypes             map[string]attr.Type
+	cachedTimeframeTypes          map[string]attr.Type
+	cachedFlappingTypes           map[string]attr.Type
+	cachedArtifactsTypes          map[string]attr.Type
+	cachedDashboardsTypes         map[string]attr.Type
+	cachedInvestigationGuideTypes map[string]attr.Type
 )
 
 func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
@@ -343,6 +343,9 @@ func getSchema() schema.Schema {
 							"checksum": schema.StringAttribute{
 								Description: artifactsInvestigationGuideChecksumDescription,
 								Computed:    true,
+								PlanModifiers: []planmodifier.String{
+									stringplanmodifier.UseStateForUnknown(),
+								},
 							},
 						},
 					},

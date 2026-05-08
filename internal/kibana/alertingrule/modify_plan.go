@@ -66,7 +66,27 @@ func (r *Resource) ModifyPlan(ctx context.Context, req resource.ModifyPlanReques
 		return
 	}
 
-	if igm.ContentPath.IsUnknown() || igm.ContentPath.IsNull() || igm.ContentPath.ValueString() == "" {
+	if igm.ContentPath.IsUnknown() {
+		igm.Checksum = types.StringUnknown()
+		newIGObj, d := types.ObjectValueFrom(ctx, getInvestigationGuideAttrTypes(), igm)
+		resp.Diagnostics.Append(d...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
+		am.InvestigationGuide = newIGObj
+		newArtifactsObj, d := types.ObjectValueFrom(ctx, getArtifactsAttrTypes(), am)
+		resp.Diagnostics.Append(d...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
+		plan.Artifacts = newArtifactsObj
+		resp.Diagnostics.Append(resp.Plan.Set(ctx, &plan)...)
+		return
+	}
+
+	if igm.ContentPath.IsNull() || igm.ContentPath.ValueString() == "" {
 		return
 	}
 

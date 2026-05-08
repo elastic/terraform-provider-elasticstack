@@ -109,6 +109,7 @@ func Test_alertingRuleModel_toAPIModel_artifactsVersionGate8x(t *testing.T) {
 
 	_, convDiags := m.toAPIModel(ctx, version.Must(version.NewVersion("8.18.0")))
 	require.True(t, convDiags.HasError(), "expected error for artifacts on 8.18.0")
+	require.Contains(t, convDiags.Errors()[0].Summary(), "artifacts is only supported for Kibana 8.19 or higher, or Elastic Stack 9.1 or higher")
 }
 
 func Test_alertingRuleModel_toAPIModel_artifactsVersionGate9x(t *testing.T) {
@@ -122,6 +123,7 @@ func Test_alertingRuleModel_toAPIModel_artifactsVersionGate9x(t *testing.T) {
 
 	_, convDiags := m.toAPIModel(ctx, version.Must(version.NewVersion("9.0.0")))
 	require.True(t, convDiags.HasError(), "expected error for artifacts on 9.0.0")
+	require.Contains(t, convDiags.Errors()[0].Summary(), "artifacts is only supported for Kibana 8.19 or higher, or Elastic Stack 9.1 or higher")
 }
 
 func Test_alertingRuleModel_toAPIModel_artifactsAllowedAt819(t *testing.T) {

@@ -2,7 +2,7 @@
 
 - [x] 1.1 Keep delta spec aligned with `proposal.md` / `design.md`; run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate kibana-alerting-rule-artifacts --type change` (or `make check-openspec` after sync).
 - [x] 1.2 Resolve the open question on minimum Kibana version for `artifacts` support (see `design.md`); update delta spec with a version compatibility requirement if confirmed.
-- [ ] 1.3 On completion of implementation, **sync** delta into `openspec/specs/kibana-alerting-rule/spec.md` (do not archive).
+- [x] 1.3 On completion of implementation, **sync** delta into `openspec/specs/kibana-alerting-rule/spec.md` (do not archive).
 
 ## 2. Implementation
 
