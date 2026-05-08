@@ -159,10 +159,9 @@ Orchestrate an implementation loop around a single OpenSpec change.
    - Run the step 6 local validation work in its dedicated subagent
    - Return the validation summary described in step 6
 
-   b. **Critical code review (adversarial)**
-   - Run the `adversarial-review` skill (`.agents/skills/adversarial-review/SKILL.md`) against the diff for the current top-level task and the change artifacts
-   - Cover all four axes (style/idiom, testing, UX, risk) and honour the skill's out-of-scope rules (do not duplicate CI findings; testing-axis overlap with `openspec-verify-change` is acceptable since the orchestrator dedupes)
-   - Return prioritized findings only, in the structured shape defined by the skill
+   b. **Critical code review**
+   - Review for coding standards, idiomatic Go/Terraform provider patterns, obvious logic issues, error handling gaps, and risky regressions
+   - Return prioritized findings only
 
    c. **Proposal compliance review**
    - Run the `openspec-verify-change` skill/process for the same change

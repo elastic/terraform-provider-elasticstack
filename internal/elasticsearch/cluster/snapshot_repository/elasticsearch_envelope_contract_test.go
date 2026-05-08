@@ -15,9 +15,15 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package cluster
+package snapshot_repository
 
-import _ "embed"
+import (
+	"testing"
 
-//go:embed descriptions/snapshot_repository_location_mode.md
-var snapshotRepositoryLocationModeDescription string
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+)
+
+func TestData_satisfiesElasticsearchResourceModelContract(t *testing.T) {
+	t.Parallel()
+	var _ entitycore.ElasticsearchResourceModel = Data{}
+}

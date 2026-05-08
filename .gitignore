@@ -33,7 +33,6 @@ website/node_modules
 *.vscode
 __debug_*
 __pycache__
-
 website/vendor
 
 # Test exclusions

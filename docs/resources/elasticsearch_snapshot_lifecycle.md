@@ -57,13 +57,13 @@ resource "elasticstack_elasticsearch_snapshot_lifecycle" "slm_policy" {
 
 ### Optional
 
-- `elasticsearch_connection` (Block List, Max: 1) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `elasticsearch_connection` (Block List) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - `expand_wildcards` (String) Determines how wildcard patterns in the `indices` parameter match data streams and indices. Supports comma-separated values, such as `closed,hidden`.
 - `expire_after` (String) Time period after which a snapshot is considered expired and eligible for deletion.
 - `feature_states` (Set of String) Feature states to include in the snapshot.
 - `ignore_unavailable` (Boolean) If `false`, the snapshot fails if any data stream or index in indices is missing or closed. If `true`, the snapshot ignores missing or closed data streams and indices.
 - `include_global_state` (Boolean) If `true`, include the cluster state in the snapshot.
-- `indices` (List of String) Comma-separated list of data streams and indices to include in the snapshot.
+- `indices` (List of String) List of data streams and indices to include in the snapshot.
 - `max_count` (Number) Maximum number of snapshots to retain, even if the snapshots have not yet expired.
 - `metadata` (String) Attaches arbitrary metadata to the snapshot.
 - `min_count` (Number) Minimum number of snapshots to retain, even if the snapshots have expired.
