@@ -304,15 +304,15 @@ The implementation-research block is delimited by stable HTML-comment markers:
 - Opening marker: `<!-- implementation-research:start -->`
 - Closing marker: `<!-- implementation-research:end -->`
 
-Between the markers, the block MUST contain the following mandatory subsections in order (each a
-`### ` H3 heading):
+Between the markers, the block MUST begin with an H2 heading, followed by these mandatory
+subsections in order (each a `### ` H3 heading):
 
 1. `## Implementation research` — H2 heading followed by a provenance header recording the run
 timestamp, the run link (`${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`), and
 this social-contract notice:
 
    > Edits inside this block are read as input on the next run but are not preserved verbatim. For
-durable feedback, post a comment or edit content outside the block.
+   > durable feedback, post a comment or edit content outside the block.
 
 2. `### Problem framing` — Restate the requested change in concrete terms.
 3. `### Approaches considered` — Two or more `#### ` H4 child headings, each describing a distinct
