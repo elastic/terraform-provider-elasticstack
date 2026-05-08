@@ -452,6 +452,28 @@ test('serializeIssueComments truncates body of single oversized comment', () => 
   assert.ok(result.includes('alice'));
 });
 
+test('serializeIssueComments breaks when remaining budget cannot fit comment frame', () => {
+  // Construct a first comment that fills budget to leave less than a frame for the next
+  const headerLen = '**@a** (2024-01-01T12:00:00Z):\n\n'.length; // 32
+  const footerLen = '\n\n---\n'.length; // 7
+  const frameLen = headerLen + footerLen; // 39
+  const bodyBudget = COMMENT_CONTEXT_BUDGET - 200; // 49800
+
+  const firstBody = 'x'.repeat(bodyBudget - frameLen - 1);
+  const result = serializeIssueComments({
+    comments: [
+      { author: 'a', createdAt: '2024-01-01T12:00:00Z', body: firstBody },
+      { author: 'b', createdAt: '2024-01-02T12:00:00Z', body: 'should not appear' },
+    ],
+    truncated: false,
+  });
+
+  assert.ok(result.length <= COMMENT_CONTEXT_BUDGET, `Expected output <= ${COMMENT_CONTEXT_BUDGET} chars, got ${result.length}`);
+  assert.ok(result.includes('a'));
+  assert.ok(!result.includes('should not appear'));
+  assert.ok(result.includes('[... 1 more comments truncated for context budget]'));
+});
+
 test('serializeIssueComments appends both markers when budget and fetch-cap both apply', () => {
   const longBody = 'z'.repeat(30_000);
   const result = serializeIssueComments({

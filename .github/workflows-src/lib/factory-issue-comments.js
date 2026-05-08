@@ -69,12 +69,16 @@ function serializeIssueComments({ comments, truncated }) {
       break;
     }
 
+    const frameLength = header.length + footer.length;
+    if (frameLength > available) {
+      break;
+    }
     const fullBlock = header + body + footer;
     if (fullBlock.length <= available) {
       result += fullBlock;
     } else {
       // Truncate this comment's body so the output stays within budget
-      const truncatedBody = body.slice(0, Math.max(0, available - header.length - footer.length));
+      const truncatedBody = body.slice(0, available - frameLength);
       result += header + truncatedBody + footer;
     }
     includedCount++;
