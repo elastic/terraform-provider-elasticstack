@@ -46,15 +46,15 @@ func NewDataSource() datasource.DataSource {
 // matching the tfsdk tags in versionModel.
 func versionAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"build_date":                           types.StringType,
-		"build_flavor":                         types.StringType,
-		"build_hash":                           types.StringType,
-		"build_snapshot":                       types.BoolType,
-		"build_type":                           types.StringType,
-		"lucene_version":                       types.StringType,
-		"minimum_index_compatibility_version":  types.StringType,
-		"minimum_wire_compatibility_version":   types.StringType,
-		"number":                               types.StringType,
+		"build_date":                          types.StringType,
+		"build_flavor":                        types.StringType,
+		"build_hash":                          types.StringType,
+		"build_snapshot":                      types.BoolType,
+		"build_type":                          types.StringType,
+		"lucene_version":                      types.StringType,
+		"minimum_index_compatibility_version": types.StringType,
+		"minimum_wire_compatibility_version":  types.StringType,
+		"number":                              types.StringType,
 	}
 }
 
