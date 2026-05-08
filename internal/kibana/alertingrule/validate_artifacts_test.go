@@ -86,3 +86,27 @@ func TestValidateArtifactsInvestigationGuideExclusivity_AllowsAbsentInvestigatio
 	validateArtifactsInvestigationGuideExclusivity(ctx, &data, &validationDiags)
 	require.False(t, validationDiags.HasError(), "unexpected diagnostics: %v", validationDiags)
 }
+
+func TestValidateArtifactsInvestigationGuideExclusivity_RejectsNeitherSet(t *testing.T) {
+	ctx := context.Background()
+
+	igObj, diags := types.ObjectValueFrom(ctx, getInvestigationGuideAttrTypes(), investigationGuideModel{
+		Content:     types.StringNull(),
+		ContentPath: types.StringNull(),
+		Checksum:    types.StringNull(),
+	})
+	require.False(t, diags.HasError())
+
+	artifactsObj, diags := types.ObjectValueFrom(ctx, getArtifactsAttrTypes(), artifactsModel{
+		Dashboards:         types.ListNull(types.ObjectType{AttrTypes: getDashboardsAttrTypes()}),
+		InvestigationGuide: igObj,
+	})
+	require.False(t, diags.HasError())
+
+	data := alertingRuleModel{Artifacts: artifactsObj}
+	var validationDiags diag.Diagnostics
+	validateArtifactsInvestigationGuideExclusivity(ctx, &data, &validationDiags)
+	require.True(t, validationDiags.HasError())
+	require.Contains(t, validationDiags.Errors()[0].Summary(), "Invalid investigation_guide configuration")
+	require.Contains(t, validationDiags.Errors()[0].Detail(), "Neither is present")
+}

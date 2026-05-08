@@ -452,10 +452,11 @@ func validateArtifactsInvestigationGuideExclusivity(ctx context.Context, data *a
 		return
 	}
 
-	// Defer validation when either side is still unknown. Schema-level validation
-	// handles the known-value cases, and ModifyPlan explicitly supports unknown
-	// content_path by leaving checksum unknown without reading a file.
-	if !contentKnown || !contentPathKnown {
+	// Defer validation only when either side is still unknown. Schema-level
+	// validation handles the known-value cases, and ModifyPlan explicitly
+	// supports unknown content_path by leaving checksum unknown without
+	// reading a file.
+	if igm.Content.IsUnknown() || igm.ContentPath.IsUnknown() {
 		return
 	}
 

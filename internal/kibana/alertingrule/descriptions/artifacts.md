@@ -1,1 +1,1 @@
-Optional links to related assets (dashboards and investigation guides) for the alerting rule.
+Optional links to related assets (dashboards and investigation guides) for the alerting rule. Supported from Kibana **8.19** / Elastic Stack **9.1** onward; configuring it against an older stack returns an error. When `artifacts` is omitted from configuration on update, Terraform retains the previous value, so existing server-side artifacts are not cleared by that omission. To explicitly clear dashboards, set `dashboards = []`.
