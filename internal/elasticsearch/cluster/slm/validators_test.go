@@ -21,7 +21,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
@@ -29,31 +28,31 @@ import (
 
 func TestExpandWildcardsValidator(t *testing.T) {
 	t.Parallel()
+	ctx := context.Background()
+	v := expandWildcardsValidator{}
 
 	cases := []struct {
-		name      string
-		value     string
-		wantError bool
+		name    string
+		value   string
+		wantErr bool
 	}{
 		{"single valid", "open", false},
 		{"multiple valid", "open,hidden", false},
-		{"all valid values", "all,open,closed,hidden,none", false},
 		{"with spaces", "open, hidden", false},
-		{"invalid value", "foo", true},
-		{"mixed valid and invalid", "open,foo", true},
+		{"invalid value", "invalid", true},
+		{"mixed valid and invalid", "open,invalid", true},
 		{"empty string", "", true},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			v := expandWildcardsValidator{}
-			resp := &validator.StringResponse{}
-			v.ValidateString(context.Background(), validator.StringRequest{
-				Path:        path.Root("expand_wildcards"),
+			req := validator.StringRequest{
 				ConfigValue: types.StringValue(tc.value),
-			}, resp)
-			if tc.wantError {
+			}
+			var resp validator.StringResponse
+			v.ValidateString(ctx, req, &resp)
+			if tc.wantErr {
 				require.True(t, resp.Diagnostics.HasError(), "expected error for value %q", tc.value)
 			} else {
 				require.False(t, resp.Diagnostics.HasError(), "unexpected error: %s", resp.Diagnostics)
@@ -62,16 +61,28 @@ func TestExpandWildcardsValidator(t *testing.T) {
 	}
 }
 
-func TestExpandWildcardsValidatorNullOrUnknown(t *testing.T) {
+func TestExpandWildcardsValidator_NullAndUnknown(t *testing.T) {
 	t.Parallel()
-
+	ctx := context.Background()
 	v := expandWildcardsValidator{}
-	for _, val := range []types.String{types.StringNull(), types.StringUnknown()} {
-		resp := &validator.StringResponse{}
-		v.ValidateString(context.Background(), validator.StringRequest{
-			Path:        path.Root("expand_wildcards"),
-			ConfigValue: val,
-		}, resp)
-		require.False(t, resp.Diagnostics.HasError(), "unexpected error for null/unknown")
-	}
+
+	t.Run("null", func(t *testing.T) {
+		t.Parallel()
+		req := validator.StringRequest{
+			ConfigValue: types.StringNull(),
+		}
+		var resp validator.StringResponse
+		v.ValidateString(ctx, req, &resp)
+		require.False(t, resp.Diagnostics.HasError())
+	})
+
+	t.Run("unknown", func(t *testing.T) {
+		t.Parallel()
+		req := validator.StringRequest{
+			ConfigValue: types.StringUnknown(),
+		}
+		var resp validator.StringResponse
+		v.ValidateString(ctx, req, &resp)
+		require.False(t, resp.Diagnostics.HasError())
+	})
 }

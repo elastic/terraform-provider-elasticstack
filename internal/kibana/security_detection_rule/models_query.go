@@ -28,7 +28,20 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-type QueryRuleProcessor struct{}
+type QueryRuleProcessor struct {
+	baseRuleProcessor[kbapi.SecurityDetectionsAPIQueryRule]
+}
+
+func newQueryRuleProcessor() QueryRuleProcessor {
+	return QueryRuleProcessor{
+		baseRuleProcessor: baseRuleProcessor[kbapi.SecurityDetectionsAPIQueryRule]{
+			updateFn: updateFromQueryRule,
+			idFn: func(v kbapi.SecurityDetectionsAPIQueryRule) string {
+				return v.Id.String()
+			},
+		},
+	}
+}
 
 func (q QueryRuleProcessor) HandlesRuleType(t string) bool {
 	return t == "query"
@@ -40,22 +53,6 @@ func (q QueryRuleProcessor) ToCreateProps(ctx context.Context, client clients.Mi
 
 func (q QueryRuleProcessor) ToUpdateProps(ctx context.Context, client clients.MinVersionEnforceable, d Data) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
 	return toQueryRuleUpdateProps(ctx, client, d)
-}
-
-func (q QueryRuleProcessor) HandlesAPIRuleResponse(rule any) bool {
-	return handlesAPIRuleResponse[kbapi.SecurityDetectionsAPIQueryRule](rule)
-}
-
-func (q QueryRuleProcessor) UpdateFromResponse(ctx context.Context, rule any, d *Data) diag.Diagnostics {
-	return updateFromRuleResponse[kbapi.SecurityDetectionsAPIQueryRule](rule, func(v *kbapi.SecurityDetectionsAPIQueryRule) diag.Diagnostics {
-		return updateFromQueryRule(ctx, v, d)
-	})
-}
-
-func (q QueryRuleProcessor) ExtractID(response any) (string, diag.Diagnostics) {
-	return extractRuleID[kbapi.SecurityDetectionsAPIQueryRule](response, func(v kbapi.SecurityDetectionsAPIQueryRule) string {
-		return v.Id.String()
-	})
 }
 
 func toQueryRuleCreateProps(ctx context.Context, client clients.MinVersionEnforceable, d Data) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {

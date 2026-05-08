@@ -54,7 +54,8 @@ func readSlm(ctx context.Context, client *esclients.ElasticsearchScopedClient, r
 
 func mapSlmToData(ctx context.Context, slm *elasticsearch.SlmPolicy, resourceID string, state Data) (Data, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	data := state
+	var data Data
+
 	data.Name = types.StringValue(resourceID)
 	data.Repository = types.StringValue(slm.Repository)
 	data.Schedule = types.StringValue(slm.Schedule)
@@ -108,8 +109,6 @@ func mapSlmToData(ctx context.Context, slm *elasticsearch.SlmPolicy, resourceID 
 		}
 
 		// Indices: when the API omits indices, derive the value from the passed state to avoid plan diffs.
-		// In the read-after-write path state is the planned model; in refresh it is the prior state.
-		// null/unknown state → null; empty list state → empty list; non-empty state → empty list.
 		switch {
 		case len(c.Indices) > 0:
 			indicesList, listDiags := types.ListValueFrom(ctx, types.StringType, c.Indices)
@@ -121,15 +120,12 @@ func mapSlmToData(ctx context.Context, slm *elasticsearch.SlmPolicy, resourceID 
 		case state.Indices.IsNull() || state.Indices.IsUnknown():
 			data.Indices = types.ListNull(types.StringType)
 		case len(state.Indices.Elements()) == 0:
-			data.Indices = state.Indices // preserve empty list
+			data.Indices, _ = types.ListValueFrom(ctx, types.StringType, []string{})
 		default:
-			// state had elements but API now returns empty — return empty list
 			data.Indices, _ = types.ListValueFrom(ctx, types.StringType, []string{})
 		}
 
 		// FeatureStates: when the API omits feature states, derive the value from the passed state to avoid plan diffs.
-		// In the read-after-write path state is the planned model; in refresh it is the prior state.
-		// null/unknown state → null; empty set state → empty set; non-empty state → empty set.
 		switch {
 		case len(c.FeatureStates) > 0:
 			featureStatesSet, setDiags := types.SetValueFrom(ctx, types.StringType, c.FeatureStates)
@@ -141,9 +137,8 @@ func mapSlmToData(ctx context.Context, slm *elasticsearch.SlmPolicy, resourceID 
 		case state.FeatureStates.IsNull() || state.FeatureStates.IsUnknown():
 			data.FeatureStates = types.SetNull(types.StringType)
 		case len(state.FeatureStates.Elements()) == 0:
-			data.FeatureStates = state.FeatureStates // preserve empty set
+			data.FeatureStates, _ = types.SetValueFrom(ctx, types.StringType, []string{})
 		default:
-			// state had elements but API now returns empty — return empty set
 			data.FeatureStates, _ = types.SetValueFrom(ctx, types.StringType, []string{})
 		}
 
@@ -165,7 +160,6 @@ func mapSlmToData(ctx context.Context, slm *elasticsearch.SlmPolicy, resourceID 
 			}
 			data.Metadata = jsontypes.NewNormalizedValue(string(metaBytes))
 		} else {
-			// No metadata from API: always return null to avoid leaving unknown values
 			data.Metadata = jsontypes.NewNormalizedNull()
 		}
 	} else {
@@ -177,6 +171,10 @@ func mapSlmToData(ctx context.Context, slm *elasticsearch.SlmPolicy, resourceID 
 		data.FeatureStates = types.SetNull(types.StringType)
 		data.Metadata = jsontypes.NewNormalizedNull()
 	}
+
+	// Preserve envelope-managed fields from state.
+	data.ID = state.ID
+	data.ElasticsearchConnection = state.ElasticsearchConnection
 
 	return data, diags
 }

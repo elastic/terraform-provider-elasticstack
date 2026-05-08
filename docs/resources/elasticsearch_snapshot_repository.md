@@ -20,7 +20,7 @@ provider "elasticstack" {
 resource "elasticstack_elasticsearch_snapshot_repository" "my_url_repo" {
   name = "my_url_repo"
 
-  url = {
+  url {
     url = "https://example.com/repo"
   }
 }
@@ -28,7 +28,7 @@ resource "elasticstack_elasticsearch_snapshot_repository" "my_url_repo" {
 resource "elasticstack_elasticsearch_snapshot_repository" "my_fs_repo" {
   name = "my_fs_repo"
 
-  fs = {
+  fs {
     location                  = "/tmp"
     compress                  = true
     max_restore_bytes_per_sec = "10mb"
@@ -45,20 +45,20 @@ resource "elasticstack_elasticsearch_snapshot_repository" "my_fs_repo" {
 
 ### Optional
 
-- `azure` (Attributes) Azure repository. Stores snapshots in Microsoft Azure Blob Storage. (see [below for nested schema](#nestedatt--azure))
+- `azure` (Block List) Azure repository. Stores snapshots in Microsoft Azure Blob Storage. (see [below for nested schema](#nestedblock--azure))
 - `elasticsearch_connection` (Block List) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
-- `fs` (Attributes) Shared filesystem repository. Repositories of this type use a shared filesystem to store snapshots. This filesystem must be accessible to all master and data nodes in the cluster. (see [below for nested schema](#nestedatt--fs))
-- `gcs` (Attributes) Google Cloud Storage repository. Stores snapshots in a Google Cloud Storage bucket. (see [below for nested schema](#nestedatt--gcs))
-- `hdfs` (Attributes) HDFS repository. Stores snapshots in Hadoop Distributed File System. (see [below for nested schema](#nestedatt--hdfs))
-- `s3` (Attributes) S3 repository. Stores snapshots in an Amazon S3 bucket. (see [below for nested schema](#nestedatt--s3))
-- `url` (Attributes) URL repository. Provides read-only access to a shared filesystem repository. (see [below for nested schema](#nestedatt--url))
+- `fs` (Block List) Shared filesystem repository. Repositories of this type use a shared filesystem to store snapshots. This filesystem must be accessible to all master and data nodes in the cluster. (see [below for nested schema](#nestedblock--fs))
+- `gcs` (Block List) Google Cloud Storage repository. Stores snapshots in a Google Cloud Storage bucket. (see [below for nested schema](#nestedblock--gcs))
+- `hdfs` (Block List) HDFS repository. Stores snapshots in Hadoop Distributed File System. (see [below for nested schema](#nestedblock--hdfs))
+- `s3` (Block List) S3 repository. Stores snapshots in an Amazon S3 bucket. (see [below for nested schema](#nestedblock--s3))
+- `url` (Block List) URL repository. Provides read-only access to a shared filesystem repository. (see [below for nested schema](#nestedblock--url))
 - `verify` (Boolean) If true, the request verifies the repository is functional on all master and data nodes in the cluster.
 
 ### Read-Only
 
 - `id` (String) Internal identifier of the resource
 
-<a id="nestedatt--azure"></a>
+<a id="nestedblock--azure"></a>
 ### Nested Schema for `azure`
 
 Required:
@@ -98,7 +98,7 @@ Optional:
 - `username` (String) Username to use for API authentication to Elasticsearch.
 
 
-<a id="nestedatt--fs"></a>
+<a id="nestedblock--fs"></a>
 ### Nested Schema for `fs`
 
 Required:
@@ -115,7 +115,7 @@ Optional:
 - `readonly` (Boolean) If true, the repository is read-only.
 
 
-<a id="nestedatt--gcs"></a>
+<a id="nestedblock--gcs"></a>
 ### Nested Schema for `gcs`
 
 Required:
@@ -133,7 +133,7 @@ Optional:
 - `readonly` (Boolean) If true, the repository is read-only.
 
 
-<a id="nestedatt--hdfs"></a>
+<a id="nestedblock--hdfs"></a>
 ### Nested Schema for `hdfs`
 
 Required:
@@ -151,7 +151,7 @@ Optional:
 - `readonly` (Boolean) If true, the repository is read-only.
 
 
-<a id="nestedatt--s3"></a>
+<a id="nestedblock--s3"></a>
 ### Nested Schema for `s3`
 
 Required:
@@ -175,7 +175,7 @@ Optional:
 - `storage_class` (String) Sets the S3 storage class for objects stored in the snapshot repository.
 
 
-<a id="nestedatt--url"></a>
+<a id="nestedblock--url"></a>
 ### Nested Schema for `url`
 
 Required:

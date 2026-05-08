@@ -144,3 +144,19 @@ func TestLtoi(t *testing.T) {
 		require.Equal(t, 99, *result)
 	})
 }
+
+func TestNonEmptyStringPtr(t *testing.T) {
+	t.Parallel()
+
+	t.Run("empty string returns nil", func(t *testing.T) {
+		t.Parallel()
+		require.Nil(t, typeutils.NonEmptyStringPtr(""))
+	})
+
+	t.Run("non-empty string returns pointer", func(t *testing.T) {
+		t.Parallel()
+		p := typeutils.NonEmptyStringPtr("hello")
+		require.NotNil(t, p)
+		require.Equal(t, "hello", *p)
+	})
+}

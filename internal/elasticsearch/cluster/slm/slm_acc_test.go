@@ -19,6 +19,7 @@ package slm_test
 
 import (
 	"context"
+	_ "embed"
 	"fmt"
 	"strings"
 	"testing"
@@ -30,6 +31,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
+
+//go:embed testdata/TestAccResourceSLMMigration/main.tf
+var slmMigrationConfig string
 
 func TestAccResourceSLM(t *testing.T) {
 	// generate a random policy name
@@ -237,21 +241,6 @@ func TestAccResourceSLMMigration(t *testing.T) {
 	name := "slm-migration-" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	resourceName := "elasticstack_elasticsearch_snapshot_lifecycle.test_migration"
 
-	config := fmt.Sprintf(`
-resource "elasticstack_elasticsearch_snapshot_repository" "repo" {
-  name = "%s-repo"
-  fs {
-    location = "/tmp"
-  }
-}
-
-resource "elasticstack_elasticsearch_snapshot_lifecycle" "test_migration" {
-  name     = "%s"
-  schedule = "0 30 1 * * ?"
-  repository = elasticstack_elasticsearch_snapshot_repository.repo.name
-}
-`, name, name)
-
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
@@ -262,7 +251,10 @@ resource "elasticstack_elasticsearch_snapshot_lifecycle" "test_migration" {
 						VersionConstraint: "0.14.5",
 					},
 				},
-				Config: config,
+				Config: slmMigrationConfig,
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(name),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "schedule", "0 30 1 * * ?"),
@@ -270,7 +262,10 @@ resource "elasticstack_elasticsearch_snapshot_lifecycle" "test_migration" {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				Config:                   config,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("upgrade"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(name),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "schedule", "0 30 1 * * ?"),

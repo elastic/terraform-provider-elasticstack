@@ -48,7 +48,7 @@ func TestReadSlmIndicesRoundtrip(t *testing.T) {
 		{
 			name:         "api returns indices, state has values",
 			apiIndices:   []string{"idx1", "idx2"},
-			stateIndices: mustList(t, ctx, []string{"a", "b"}),
+			stateIndices: mustList(ctx, t, []string{"a", "b"}),
 			wantElements: []string{"idx1", "idx2"},
 		},
 		{
@@ -60,13 +60,13 @@ func TestReadSlmIndicesRoundtrip(t *testing.T) {
 		{
 			name:         "api omits indices, state is empty → empty",
 			apiIndices:   nil,
-			stateIndices: mustList(t, ctx, []string{}),
+			stateIndices: mustList(ctx, t, []string{}),
 			wantEmpty:    true,
 		},
 		{
 			name:         "api omits indices, state has elements → empty",
 			apiIndices:   nil,
-			stateIndices: mustList(t, ctx, []string{"a"}),
+			stateIndices: mustList(ctx, t, []string{"a"}),
 			wantEmpty:    true,
 		},
 	}
@@ -93,7 +93,7 @@ func TestReadSlmIndicesRoundtrip(t *testing.T) {
 			}
 			if tc.wantEmpty {
 				require.False(t, data.Indices.IsNull(), "expected non-null indices")
-				require.Equal(t, 0, len(data.Indices.Elements()), "expected empty list")
+				require.Empty(t, data.Indices.Elements(), "expected empty list")
 				return
 			}
 			var got []string
@@ -130,13 +130,13 @@ func TestReadSlmFeatureStatesRoundtrip(t *testing.T) {
 		{
 			name:               "api omits feature states, state is empty → empty",
 			apiFeatureStates:   nil,
-			stateFeatureStates: mustSet(t, ctx, []string{}),
+			stateFeatureStates: mustSet(ctx, t, []string{}),
 			wantEmpty:          true,
 		},
 		{
 			name:               "api omits feature states, state has elements → empty",
 			apiFeatureStates:   nil,
-			stateFeatureStates: mustSet(t, ctx, []string{"kibana"}),
+			stateFeatureStates: mustSet(ctx, t, []string{"kibana"}),
 			wantEmpty:          true,
 		},
 	}
@@ -163,7 +163,7 @@ func TestReadSlmFeatureStatesRoundtrip(t *testing.T) {
 			}
 			if tc.wantEmpty {
 				require.False(t, data.FeatureStates.IsNull())
-				require.Equal(t, 0, len(data.FeatureStates.Elements()))
+				require.Empty(t, data.FeatureStates.Elements())
 				return
 			}
 			var got []string
@@ -254,13 +254,13 @@ func TestReadSlmDefaultsWhenConfigNil(t *testing.T) {
 	require.True(t, data.Metadata.IsNull())
 }
 
-func mustList(t *testing.T, ctx context.Context, elems []string) types.List {
+func mustList(ctx context.Context, t *testing.T, elems []string) types.List {
 	l, diags := types.ListValueFrom(ctx, types.StringType, elems)
 	require.False(t, diags.HasError())
 	return l
 }
 
-func mustSet(t *testing.T, ctx context.Context, elems []string) types.Set {
+func mustSet(ctx context.Context, t *testing.T, elems []string) types.Set {
 	s, diags := types.SetValueFrom(ctx, types.StringType, elems)
 	require.False(t, diags.HasError())
 	return s

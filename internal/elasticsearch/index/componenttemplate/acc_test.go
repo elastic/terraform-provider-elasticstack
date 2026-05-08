@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package index_test
+package componenttemplate_test
 
 import (
 	"context"
@@ -24,6 +24,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -31,7 +32,6 @@ import (
 )
 
 func TestAccResourceComponentTemplate(t *testing.T) {
-	// generate a random username
 	templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
@@ -44,8 +44,8 @@ func TestAccResourceComponentTemplate(t *testing.T) {
 				ConfigVariables:          config.Variables{"name": config.StringVariable(templateName)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "name", templateName),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "template.0.alias.0.name", "my_template_test"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "template.0.settings", `{"index":{"number_of_shards":"3"}}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "template.alias.0.name", "my_template_test"),
+					testAccCheckResourceAttrIndexSettingsSemantic("elasticstack_elasticsearch_component_template.test", `{"index":{"number_of_shards":"3"}}`),
 				),
 			},
 		},
@@ -65,10 +65,10 @@ func TestAccResourceComponentTemplateAliasDetails(t *testing.T) {
 				ConfigVariables:          config.Variables{"name": config.StringVariable(templateName)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "name", templateName),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "template.0.alias.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "template.alias.#", "1"),
 					resource.TestCheckTypeSetElemNestedAttrs(
 						"elasticstack_elasticsearch_component_template.test",
-						"template.0.alias.*",
+						"template.alias.*",
 						map[string]string{
 							"name":           "detailed_alias",
 							"is_hidden":      "true",
@@ -111,4 +111,32 @@ func checkResourceComponentTemplateDestroy(s *terraform.State) error {
 		return fmt.Errorf("Component template (%s) still exists", compID.ResourceID)
 	}
 	return nil
+}
+
+// testAccCheckResourceAttrIndexSettingsSemantic asserts template.settings matches the expected
+// effective index settings JSON using the same rules as DiffIndexSettingSuppress /
+// IndexSettingsValue.SemanticallyEqual.
+func testAccCheckResourceAttrIndexSettingsSemantic(addr, want string) resource.TestCheckFunc {
+	const attr = "template.settings"
+	return func(s *terraform.State) error {
+		ctx := context.Background()
+		rs, ok := s.RootModule().Resources[addr]
+		if !ok {
+			return fmt.Errorf("resource not found: %s", addr)
+		}
+		got, ok := rs.Primary.Attributes[attr]
+		if !ok {
+			return fmt.Errorf("%s: attribute %q not found in state", addr, attr)
+		}
+		a := customtypes.NewIndexSettingsValue(want)
+		b := customtypes.NewIndexSettingsValue(got)
+		eq, diags := a.SemanticallyEqual(ctx, b)
+		if diags.HasError() {
+			return fmt.Errorf("%s: %v", addr, diags)
+		}
+		if !eq {
+			return fmt.Errorf("%s: %s = %q, expected semantically equivalent to %q", addr, attr, got, want)
+		}
+		return nil
+	}
 }

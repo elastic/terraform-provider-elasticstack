@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -124,10 +125,15 @@ func fsBlock() schema.Block {
 			},
 		},
 	})
-	return schema.SingleNestedBlock{
+	return schema.ListNestedBlock{
 		MarkdownDescription: "Shared filesystem repository. Repositories of this type use a shared filesystem to store snapshots. " +
 			"This filesystem must be accessible to all master and data nodes in the cluster.",
-		Attributes: attrs,
+		Validators: []validator.List{
+			listvalidator.SizeAtMost(1),
+		},
+		NestedObject: schema.NestedBlockObject{
+			Attributes: attrs,
+		},
 	}
 }
 
@@ -159,9 +165,14 @@ func urlBlock() schema.Block {
 			Default:             stringdefault.StaticString("50s"),
 		},
 	})
-	return schema.SingleNestedBlock{
+	return schema.ListNestedBlock{
 		MarkdownDescription: "URL repository. Provides read-only access to a shared filesystem repository.",
-		Attributes:          attrs,
+		Validators: []validator.List{
+			listvalidator.SizeAtMost(1),
+		},
+		NestedObject: schema.NestedBlockObject{
+			Attributes: attrs,
+		},
 	}
 }
 
@@ -186,9 +197,14 @@ func gcsBlock() schema.Block {
 			Computed:            true,
 		},
 	})
-	return schema.SingleNestedBlock{
+	return schema.ListNestedBlock{
 		MarkdownDescription: "Google Cloud Storage repository. Stores snapshots in a Google Cloud Storage bucket.",
-		Attributes:          attrs,
+		Validators: []validator.List{
+			listvalidator.SizeAtMost(1),
+		},
+		NestedObject: schema.NestedBlockObject{
+			Attributes: attrs,
+		},
 	}
 }
 
@@ -222,9 +238,14 @@ func azureBlock() schema.Block {
 			},
 		},
 	})
-	return schema.SingleNestedBlock{
+	return schema.ListNestedBlock{
 		MarkdownDescription: "Azure repository. Stores snapshots in Microsoft Azure Blob Storage.",
-		Attributes:          attrs,
+		Validators: []validator.List{
+			listvalidator.SizeAtMost(1),
+		},
+		NestedObject: schema.NestedBlockObject{
+			Attributes: attrs,
+		},
 	}
 }
 
@@ -292,9 +313,14 @@ func s3Block() schema.Block {
 			Default:             booldefault.StaticBool(false),
 		},
 	})
-	return schema.SingleNestedBlock{
+	return schema.ListNestedBlock{
 		MarkdownDescription: "S3 repository. Stores snapshots in an Amazon S3 bucket.",
-		Attributes:          attrs,
+		Validators: []validator.List{
+			listvalidator.SizeAtMost(1),
+		},
+		NestedObject: schema.NestedBlockObject{
+			Attributes: attrs,
+		},
 	}
 }
 
@@ -321,9 +347,14 @@ func hdfsBlock() schema.Block {
 			Default:             booldefault.StaticBool(true),
 		},
 	})
-	return schema.SingleNestedBlock{
+	return schema.ListNestedBlock{
 		MarkdownDescription: "HDFS repository. Stores snapshots in Hadoop Distributed File System.",
-		Attributes:          attrs,
+		Validators: []validator.List{
+			listvalidator.SizeAtMost(1),
+		},
+		NestedObject: schema.NestedBlockObject{
+			Attributes: attrs,
+		},
 	}
 }
 

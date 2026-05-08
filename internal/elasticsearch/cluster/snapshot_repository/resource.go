@@ -31,7 +31,6 @@ var (
 	_ resource.ResourceWithConfigure      = newSnapshotRepositoryResource()
 	_ resource.ResourceWithImportState    = newSnapshotRepositoryResource()
 	_ resource.ResourceWithValidateConfig = newSnapshotRepositoryResource()
-	_ resource.ResourceWithUpgradeState   = newSnapshotRepositoryResource()
 )
 
 type snapshotRepositoryResource struct {
@@ -62,12 +61,4 @@ func (r *snapshotRepositoryResource) ImportState(ctx context.Context, req resour
 
 func (r *snapshotRepositoryResource) ValidateConfig(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
 	validateConfigExactlyOneType{}.ValidateResource(ctx, req, resp)
-}
-
-func (r *snapshotRepositoryResource) UpgradeState(context.Context) map[int64]resource.StateUpgrader {
-	return map[int64]resource.StateUpgrader{
-		0: {
-			StateUpgrader: migrateSnapshotRepositoryStateV0ToV1,
-		},
-	}
 }

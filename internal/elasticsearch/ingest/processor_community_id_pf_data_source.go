@@ -45,11 +45,6 @@ type processorCommunityIDModel struct {
 
 func (m *processorCommunityIDModel) TypeName() string { return "community_id" }
 
-func intPtr(v int64) *int {
-	i := int(v)
-	return &i
-}
-
 func (m *processorCommunityIDModel) MarshalBody() (any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	body := processorCommunityIDBody{}
@@ -63,22 +58,22 @@ func (m *processorCommunityIDModel) MarshalBody() (any, diag.Diagnostics) {
 		body.SourceIP = m.SourceIP.ValueString()
 	}
 	if IsKnown(m.SourcePort) {
-		body.SourcePort = intPtr(m.SourcePort.ValueInt64())
+		body.SourcePort = new(int(m.SourcePort.ValueInt64()))
 	}
 	if IsKnown(m.DestinationIP) {
 		body.DestinationIP = m.DestinationIP.ValueString()
 	}
 	if IsKnown(m.DestinationPort) {
-		body.DestinationPort = intPtr(m.DestinationPort.ValueInt64())
+		body.DestinationPort = new(int(m.DestinationPort.ValueInt64()))
 	}
 	if IsKnown(m.IanaNumber) {
-		body.IanaNumber = intPtr(m.IanaNumber.ValueInt64())
+		body.IanaNumber = new(int(m.IanaNumber.ValueInt64()))
 	}
 	if IsKnown(m.IcmpType) {
-		body.IcmpType = intPtr(m.IcmpType.ValueInt64())
+		body.IcmpType = new(int(m.IcmpType.ValueInt64()))
 	}
 	if IsKnown(m.IcmpCode) {
-		body.IcmpCode = intPtr(m.IcmpCode.ValueInt64())
+		body.IcmpCode = new(int(m.IcmpCode.ValueInt64()))
 	}
 	if IsKnown(m.Transport) {
 		body.Transport = m.Transport.ValueString()
@@ -88,9 +83,9 @@ func (m *processorCommunityIDModel) MarshalBody() (any, diag.Diagnostics) {
 	}
 	if m.Seed.IsNull() || m.Seed.IsUnknown() {
 		m.Seed = types.Int64Value(0)
-		body.Seed = intPtr(0)
+		body.Seed = new(0)
 	} else {
-		body.Seed = intPtr(m.Seed.ValueInt64())
+		body.Seed = new(int(m.Seed.ValueInt64()))
 	}
 	if m.IgnoreMissing.IsNull() || m.IgnoreMissing.IsUnknown() {
 		m.IgnoreMissing = types.BoolValue(false)

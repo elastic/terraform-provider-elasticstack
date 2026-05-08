@@ -554,11 +554,14 @@ def derive_verify_openspec(
     event_data: list[dict[str, Any]],
     head_sha: str,
 ) -> dict[str, Any]:
-    """Compute verify-openspec workflow state for the current head SHA.
+    """Compute verify-openspec workflow state.
 
     The verify-openspec workflow removes its own label as soon as it starts
     processing, so label absence is NOT a signal to re-request. We derive
     runState from the labeled/unlabeled timeline plus the bot's reviews.
+
+    Approvals are permanent — once a verify-openspec APPROVED review exists,
+    it never goes stale. The only way to re-trigger is to re-apply the label.
     """
 
     def is_verify_review(review: dict[str, Any]) -> bool:
@@ -587,7 +590,9 @@ def derive_verify_openspec(
         [r for r in review_data if is_verify_review(r)],
         key=lambda r: parse_iso(r.get("submitted_at")) or datetime.min.replace(tzinfo=timezone.utc),
     )
-    reviews_for_head = [r for r in verify_reviews if r.get("commit_id") == head_sha]
+
+    last_verify_review = verify_reviews[-1] if verify_reviews else None
+    last_verify_review_at = parse_iso(last_verify_review.get("submitted_at")) if last_verify_review else None
 
     last_approval = None
     for r in reversed(verify_reviews):
@@ -610,44 +615,34 @@ def derive_verify_openspec(
         and label_removed_dt >= label_applied_dt
     )
 
-    run_state = "none"
-
-    if reviews_for_head:
-        last_for_head = reviews_for_head[-1]
-        last_for_head_at = parse_iso(last_for_head.get("submitted_at"))
-        # Was a label applied AFTER this review? Then the workflow has been
-        # re-requested for the same head SHA and the prior review is stale.
-        if (
-            label_applied_dt is not None
-            and last_for_head_at is not None
-            and label_applied_dt > last_for_head_at
-        ):
-            run_state = "pending-pickup" if label_active else "in-progress"
+    # If a label was applied after the most recent verify review, the
+    # workflow has been re-requested.
+    if (
+        label_applied_dt is not None
+        and last_verify_review_at is not None
+        and label_applied_dt > last_verify_review_at
+    ):
+        run_state = "pending-pickup" if label_active else "in-progress"
+    elif verify_reviews:
+        last_state = (last_verify_review.get("state") or "").upper()
+        if last_state == "APPROVED":
+            run_state = "approved"
+        elif last_state == "CHANGES_REQUESTED":
+            run_state = "changes-requested"
         else:
-            state_upper = (last_for_head.get("state") or "").upper()
-            if state_upper == "APPROVED":
-                run_state = "approved-current"
-            elif state_upper == "CHANGES_REQUESTED":
-                run_state = "changes-requested"
-            else:
-                run_state = "none"
+            run_state = "none"
     elif label_active:
         run_state = "pending-pickup"
     elif label_consumed:
         run_state = "in-progress"
-    elif verify_reviews:
-        last_old = verify_reviews[-1]
-        if (last_old.get("state") or "").upper() == "APPROVED":
-            run_state = "approved-stale"
-        else:
-            run_state = "none"
+    else:
+        run_state = "none"
 
     return {
         "lastLabelAppliedAt": label_applied_at,
         "lastLabelRemovedAt": label_removed_at,
         "lastApprovalAt": last_approval_at,
         "lastApprovalHeadSha": last_approval_head,
-        "approvalIsCurrent": run_state == "approved-current",
         "runState": run_state,
     }
 
@@ -850,6 +845,7 @@ def compute_payload(
         "UNKNOWN",
         "UNSTABLE",
     }
+    last_merge_state = state.get("lastMergeStateStatus")
 
     # --- actionable list (rebased on new* / effectiveDecision) -----------
     actionable: list[str] = []
@@ -865,7 +861,9 @@ def compute_payload(
         actionable.append("changes_requested")
     if has_merge_conflicts:
         actionable.append("merge_conflicts")
-    elif merge_blocked:
+    elif merge_state in {"BEHIND", "UNKNOWN", "UNSTABLE"}:
+        actionable.append("merge_or_branch_state")
+    elif merge_state == "BLOCKED" and last_merge_state is not None and last_merge_state != "BLOCKED":
         actionable.append("merge_or_branch_state")
 
     summary = {
@@ -874,6 +872,7 @@ def compute_payload(
         "pr": {
             "number": pr.get("number"),
             "url": pr.get("url"),
+            "title": pr.get("title"),
             "state": pr.get("state"),
             "isDraft": pr.get("isDraft"),
             "headRefName": pr.get("headRefName"),
@@ -896,6 +895,10 @@ def compute_payload(
             "failed": len(failed_checks),
             "pending": len(pending_checks),
             "passed": len(passed_checks),
+            "failedChecks": [
+                {"name": c.get("name"), "url": c.get("html_url") or c.get("detailsUrl") or ""}
+                for c in failed_checks
+            ],
             "failedNames": [c.get("name") for c in failed_checks],
             "pendingNames": [c.get("name") for c in pending_checks],
         },
@@ -913,6 +916,7 @@ def compute_payload(
             "unresolvedUpdatedSinceHead": len(unresolved_updated_since_head),
             "unresolvedThreadIds": [t.get("id") for t in unresolved_threads],
             "unresolvedNewThreadIds": [t.get("id") for t in unresolved_new],
+            "unresolvedUpdatedSinceHeadThreadIds": [t.get("id") for t in unresolved_updated_since_head],
         },
         "reviews": {
             "total": len(review_data),
@@ -949,6 +953,15 @@ def compute_payload(
         },
         "headPushedRecently": head_pushed_recently,
     }
+
+    # Compute the single boolean agents read for verify-openspec label eligibility
+    summary["reviews"]["verifyOpenspec"]["requiresOpenspecVerification"] = (
+        verify_openspec["runState"] == "none"
+        and summary["checks"]["failed"] == 0
+        and summary["checks"]["pending"] == 0
+        and not actionable
+        and effective_decision != "CHANGES_REQUESTED"
+    )
 
     payload = {
         "repository": repo,
@@ -993,9 +1006,182 @@ def compute_payload(
         ),
         "lastVerifyOpenspecLabelAppliedAt": verify_openspec.get("lastLabelAppliedAt"),
         "lastVerifyOpenspecLabelRemovedAt": verify_openspec.get("lastLabelRemovedAt"),
+        "lastMergeStateStatus": merge_state,
     }
 
     return payload, new_state
+
+
+# ---------------------------------------------------------------------------
+# Focused output formatter
+# ---------------------------------------------------------------------------
+
+
+def format_focused(payload: dict[str, Any]) -> dict[str, Any]:
+    """Return a focused subset of the payload for agent consumption.
+
+    The focused output omits raw data arrays (reviews, issue_comments,
+    review_comments, review_threads, issue_events, merge_conflicts details,
+    raw check arrays) and surfaces only actionable decision data.
+    """
+    summary = payload.get("summary", {})
+
+    # PR metadata
+    pr_summary = summary.get("pr", {})
+    focused_pr = {
+        "number": pr_summary.get("number"),
+        "url": pr_summary.get("url"),
+        "title": pr_summary.get("title"),
+        "headRefName": pr_summary.get("headRefName"),
+        "headRefOid": pr_summary.get("headRefOid"),
+        "mergeable": pr_summary.get("mergeable"),
+        "mergeStateStatus": pr_summary.get("mergeStateStatus"),
+        "labels": pr_summary.get("labels"),
+    }
+
+    # Checks
+    checks_summary = summary.get("checks", {})
+    focused_checks = {
+        "source": checks_summary.get("source"),
+        "headSha": checks_summary.get("headSha"),
+        "total": checks_summary.get("total"),
+        "failed": checks_summary.get("failed"),
+        "pending": checks_summary.get("pending"),
+        "passed": checks_summary.get("passed"),
+        "failedChecks": checks_summary.get("failedChecks", []),
+        "failedNames": checks_summary.get("failedNames", []),
+        "pendingNames": checks_summary.get("pendingNames", []),
+    }
+
+    # Comments: build arrays with author + body for new items
+    comments_summary = summary.get("comments", {})
+    new_issue_comment_ids = set(comments_summary.get("newIssueCommentIds", []))
+    new_review_comment_ids = set(comments_summary.get("newReviewCommentIds", []))
+
+    new_issue_comments = []
+    for c in payload.get("issue_comments", []):
+        if c.get("id") in new_issue_comment_ids:
+            new_issue_comments.append({
+                "id": c.get("id"),
+                "author": (c.get("user") or {}).get("login"),
+                "body": c.get("body"),
+            })
+
+    # Collect comment IDs that already appear in threadDetails so we don't
+    # duplicate them in the standalone newReviewComments list.
+    thread_detail_comment_ids: set[Any] = set()
+    for thread in payload.get("review_threads", []):
+        for comment in (thread.get("comments") or {}).get("nodes") or []:
+            thread_detail_comment_ids.add(comment.get("databaseId"))
+
+    new_review_comments = []
+    for c in payload.get("review_comments", []):
+        if c.get("id") in new_review_comment_ids and c.get("id") not in thread_detail_comment_ids:
+            new_review_comments.append({
+                "id": c.get("id"),
+                "author": (c.get("user") or {}).get("login"),
+                "body": c.get("body"),
+            })
+
+    focused_comments = {
+        "totalIssueComments": comments_summary.get("issueComments"),
+        "totalReviewComments": comments_summary.get("reviewComments"),
+        "newIssueCommentIds": comments_summary.get("newIssueCommentIds", []),
+        "newReviewCommentIds": comments_summary.get("newReviewCommentIds", []),
+        "newIssueComments": new_issue_comments,
+        "newReviewComments": new_review_comments,
+    }
+
+    # Threads
+    threads_summary = summary.get("threads", {})
+    focused_threads = {
+        "unresolved": threads_summary.get("unresolved"),
+        "unresolvedNew": threads_summary.get("unresolvedNew"),
+        "unresolvedUpdatedSinceHead": threads_summary.get("unresolvedUpdatedSinceHead"),
+        "unresolvedThreadIds": threads_summary.get("unresolvedThreadIds", []),
+        "unresolvedNewThreadIds": threads_summary.get("unresolvedNewThreadIds", []),
+    }
+
+    # Thread details: only new / updated unresolved threads
+    thread_ids_to_include = set(
+        threads_summary.get("unresolvedNewThreadIds", [])
+        + threads_summary.get("unresolvedUpdatedSinceHeadThreadIds", [])
+    )
+    thread_details: dict[str, Any] = {}
+    for thread in payload.get("review_threads", []):
+        tid = thread.get("id")
+        if tid not in thread_ids_to_include:
+            continue
+        comments = []
+        for c in (thread.get("comments") or {}).get("nodes") or []:
+            comments.append({
+                "author": (c.get("author") or {}).get("login"),
+                "body": c.get("body"),
+                "databaseId": c.get("databaseId"),
+            })
+        thread_details[tid] = {
+            "path": thread.get("path"),
+            "line": thread.get("line"),
+            "resolved": thread.get("isResolved"),
+            "outdated": thread.get("isOutdated"),
+            "comments": comments,
+        }
+
+    # Reviews
+    reviews_summary = summary.get("reviews", {})
+    new_review_ids = set(reviews_summary.get("newReviewIds", []))
+    new_reviews = []
+    for r in payload.get("reviews", []):
+        if r.get("id") in new_review_ids:
+            entry = {
+                "author": (r.get("user") or {}).get("login"),
+                "state": r.get("state"),
+                "submittedAt": r.get("submitted_at"),
+                "id": r.get("id"),
+            }
+            if (r.get("state") or "").upper() == "CHANGES_REQUESTED":
+                entry["body"] = r.get("body") or ""
+            new_reviews.append(entry)
+
+    focused_reviews = {
+        "total": reviews_summary.get("total"),
+        "newReviewIds": reviews_summary.get("newReviewIds", []),
+        "effectiveDecision": reviews_summary.get("effectiveDecision"),
+        "latestByReviewer": reviews_summary.get("latestByReviewer", {}),
+        "newReviews": new_reviews,
+    }
+
+    # Verify-openspec
+    verify_summary = reviews_summary.get("verifyOpenspec", {})
+    focused_verify = {
+        "runState": verify_summary.get("runState"),
+        "requiresOpenspecVerification": verify_summary.get("requiresOpenspecVerification", False),
+    }
+
+    # Merge
+    merge_summary = summary.get("merge", {})
+    focused_merge = {
+        "blocked": merge_summary.get("blocked"),
+        "hasConflicts": merge_summary.get("hasConflicts"),
+        "conflictFiles": merge_summary.get("conflictFiles", []),
+        "conflictAnalysisAvailable": merge_summary.get("conflictAnalysisAvailable"),
+        "mergeable": merge_summary.get("mergeable"),
+        "mergeStateStatus": merge_summary.get("mergeStateStatus"),
+    }
+
+    return {
+        "pr": focused_pr,
+        "checks": focused_checks,
+        "comments": focused_comments,
+        "threads": focused_threads,
+        "threadDetails": thread_details,
+        "reviews": focused_reviews,
+        "verifyOpenspec": focused_verify,
+        "merge": focused_merge,
+        "actionable": summary.get("actionable", []),
+        "hasActionable": summary.get("hasActionable", False),
+        "headPushedRecently": summary.get("headPushedRecently", False),
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -1081,6 +1267,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Override the SHA used to pin checks (defaults to pr.headRefOid).",
     )
     parser.add_argument(
+        "--full-payload",
+        action="store_true",
+        help="Emit the full raw payload instead of the default focused output.",
+    )
+    parser.add_argument(
         "--watch",
         action="store_true",
         help="Poll until actionable state appears or --max-duration elapses.",
@@ -1152,7 +1343,8 @@ def _run_single(args: argparse.Namespace, state_path: Optional[str]) -> int:
         since_override=args.since,
     )
     save_state(state_path, new_state)
-    print(json.dumps(payload, indent=2, sort_keys=True))
+    out = payload if args.full_payload else format_focused(payload)
+    print(json.dumps(out, indent=2, sort_keys=True))
     return EXIT_OK
 
 
@@ -1174,11 +1366,12 @@ def _run_watch(args: argparse.Namespace, state_path: Optional[str]) -> int:
             )
             save_state(state_path_resolved, new_state)
             last_payload = payload
+            focused = format_focused(payload) if not args.full_payload else payload
             tick_line = json.dumps(
                 {
                     "tick": tick,
                     "ts": now_iso(),
-                    "summary": payload["summary"],
+                    "payload": focused,
                 },
                 sort_keys=True,
             )
@@ -1186,7 +1379,7 @@ def _run_watch(args: argparse.Namespace, state_path: Optional[str]) -> int:
             if payload["summary"]["hasActionable"]:
                 print(
                     json.dumps(
-                        {"final": True, "outcome": "actionable", "payload": payload},
+                        {"final": True, "outcome": "actionable", "payload": focused},
                         sort_keys=True,
                     ),
                     flush=True,
@@ -1207,13 +1400,14 @@ def _run_watch(args: argparse.Namespace, state_path: Optional[str]) -> int:
             # On transient errors, sleep and try again until max-duration.
         elapsed = time.monotonic() - started
         if elapsed >= args.max_duration:
+            last_summary = format_focused(last_payload) if last_payload and not args.full_payload else last_payload
             print(
                 json.dumps(
                     {
                         "final": True,
                         "outcome": "timeout",
                         "elapsedSeconds": int(elapsed),
-                        "lastPayload": last_payload,
+                        "lastSummary": last_summary,
                     },
                     sort_keys=True,
                 ),

@@ -36,6 +36,7 @@ func TestExtractSettings(t *testing.T) {
 		CommonStdSettings: CommonStdSettings{MaxNumberOfSnapshots: types.Int64Value(500)},
 		Location:          types.StringValue("/tmp"),
 	})
+	fsList, _ := types.ListValueFrom(ctx, types.ObjectType{AttrTypes: fsAttrTypes()}, []types.Object{fsObj})
 
 	urlObj, _ := types.ObjectValueFrom(ctx, urlAttrTypes(), URLSettings{
 		CommonSettings: CommonSettings{
@@ -44,23 +45,24 @@ func TestExtractSettings(t *testing.T) {
 		CommonStdSettings: CommonStdSettings{MaxNumberOfSnapshots: types.Int64Value(500)},
 		URL:               types.StringValue("file:///tmp"),
 	})
+	urlList, _ := types.ListValueFrom(ctx, types.ObjectType{AttrTypes: urlAttrTypes()}, []types.Object{urlObj})
 
 	cases := []struct {
-		name       string
-		data       Data
-		wantType   string
+		name        string
+		data        Data
+		wantType    string
 		wantSetting string
-		wantErr    bool
+		wantErr     bool
 	}{
 		{
-			name: "fs",
-			data: Data{Fs: fsObj},
+			name:        "fs",
+			data:        Data{Fs: fsList},
 			wantType:    "fs",
 			wantSetting: "location",
 		},
 		{
-			name: "url",
-			data: Data{URL: urlObj},
+			name:        "url",
+			data:        Data{URL: urlList},
 			wantType:    "url",
 			wantSetting: "url",
 		},
@@ -93,7 +95,7 @@ func TestStrSettingNull(t *testing.T) {
 
 	require.True(t, strSettingNull(settings, "missing").IsNull())
 	require.Equal(t, "value", strSettingNull(settings, "present").ValueString())
-	require.Equal(t, "", strSettingNull(settings, "empty").ValueString())
+	require.Empty(t, strSettingNull(settings, "empty").ValueString())
 }
 
 func TestFsToSettingsDefaults(t *testing.T) {

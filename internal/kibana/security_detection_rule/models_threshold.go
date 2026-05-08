@@ -28,7 +28,22 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-type ThresholdRuleProcessor struct{}
+type ThresholdRuleProcessor struct {
+	baseRuleProcessor[kbapi.SecurityDetectionsAPIThresholdRule]
+}
+
+func newThresholdRuleProcessor() ThresholdRuleProcessor {
+	return ThresholdRuleProcessor{
+		baseRuleProcessor: baseRuleProcessor[kbapi.SecurityDetectionsAPIThresholdRule]{
+			updateFn: func(ctx context.Context, v *kbapi.SecurityDetectionsAPIThresholdRule, d *Data) diag.Diagnostics {
+				return d.updateFromThresholdRule(ctx, v)
+			},
+			idFn: func(v kbapi.SecurityDetectionsAPIThresholdRule) string {
+				return v.Id.String()
+			},
+		},
+	}
+}
 
 func (th ThresholdRuleProcessor) HandlesRuleType(t string) bool {
 	return t == "threshold"
@@ -40,22 +55,6 @@ func (th ThresholdRuleProcessor) ToCreateProps(ctx context.Context, client clien
 
 func (th ThresholdRuleProcessor) ToUpdateProps(ctx context.Context, client clients.MinVersionEnforceable, d Data) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
 	return d.toThresholdRuleUpdateProps(ctx, client)
-}
-
-func (th ThresholdRuleProcessor) HandlesAPIRuleResponse(rule any) bool {
-	return handlesAPIRuleResponse[kbapi.SecurityDetectionsAPIThresholdRule](rule)
-}
-
-func (th ThresholdRuleProcessor) UpdateFromResponse(ctx context.Context, rule any, d *Data) diag.Diagnostics {
-	return updateFromRuleResponse[kbapi.SecurityDetectionsAPIThresholdRule](rule, func(v *kbapi.SecurityDetectionsAPIThresholdRule) diag.Diagnostics {
-		return d.updateFromThresholdRule(ctx, v)
-	})
-}
-
-func (th ThresholdRuleProcessor) ExtractID(response any) (string, diag.Diagnostics) {
-	return extractRuleID[kbapi.SecurityDetectionsAPIThresholdRule](response, func(v kbapi.SecurityDetectionsAPIThresholdRule) string {
-		return v.Id.String()
-	})
 }
 
 func (d Data) toThresholdRuleCreateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
