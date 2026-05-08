@@ -1,5 +1,6 @@
 //include: ../intake-constants.js
 //include: ../../lib/factory-issue-shared.js
+//include: ../../lib/factory-issue-comments.js
 //include: ../../lib/factory-issue-module.gh.js
 
 const { owner, repo } = context.repo;

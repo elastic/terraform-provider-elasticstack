@@ -66,9 +66,9 @@
 
 ## 8. Generation and lock files
 
-- [ ] 8.1 Run `make workflow-generate` (or the repository-equivalent command) to produce `.github/workflows/research-factory-issue.md` and `.github/workflows/research-factory-issue.lock.yml`.
-- [ ] 8.2 Re-run generation for change-factory to refresh `.github/workflows/change-factory-issue.md` and `.github/workflows/change-factory-issue.lock.yml` with the prompt changes from task 7.
-- [ ] 8.3 Verify generated files compile cleanly with `gh aw compile` (or whatever the repository tooling wraps) and contain the configuration sections asserted by the new spec scenarios.
+- [x] 8.1 Run `make workflow-generate` (or the repository-equivalent command) to produce `.github/workflows/research-factory-issue.md` and `.github/workflows/research-factory-issue.lock.yml`.
+- [x] 8.2 Re-run generation for change-factory to refresh `.github/workflows/change-factory-issue.md` and `.github/workflows/change-factory-issue.lock.yml` with the prompt changes from task 7.
+- [x] 8.3 Verify generated files compile cleanly with `gh aw compile` (or whatever the repository tooling wraps) and contain the configuration sections asserted by the new spec scenarios.
 
 ## 9. Build and test
 

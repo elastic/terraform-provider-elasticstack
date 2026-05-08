@@ -10,14 +10,17 @@ const {
   factoryParseOptionalTriStateFromEnv,
   factoryParseFinalizeGateEnv,
   factoryActorTrustWhenSenderMissing,
-  factoryFetchIssueComments,
-  serializeIssueComments,
-  COMMENT_CONTEXT_BUDGET,
   factoryCheckDuplicatePR,
   factoryComputeGateReason,
   createFactoryIssueIntake,
   createFactoryIssueModule,
 } = require('./factory-issue-shared.js');
+
+const {
+  factoryFetchIssueComments,
+  serializeIssueComments,
+  COMMENT_CONTEXT_BUDGET,
+} = require('./factory-issue-comments.js');
 
 test('factoryParseOptionalTriStateFromEnv treats missing and empty as null', () => {
   assert.equal(factoryParseOptionalTriStateFromEnv(undefined), null);
