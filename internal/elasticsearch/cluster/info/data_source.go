@@ -73,8 +73,9 @@ func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedCl
 	config.Name = types.StringValue(res.Name)
 	config.Tagline = types.StringValue(res.Tagline)
 
-	// Build-date: the API type is DateTime (any) — preserve the existing
-	// type-switch logic from the SDK implementation.
+	// Build-date: the API type is DateTime (any) — Go's encoding/json decodes
+	// JSON numbers into float64 when the target is any (not int64 as the old
+	// SDK implementation incorrectly did), so we handle float64 here.
 	var buildDate string
 	switch v := res.Version.BuildDate.(type) {
 	case string:

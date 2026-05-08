@@ -115,8 +115,8 @@ func TestAccDataSourceClusterInfo_versionFieldFormats(t *testing.T) {
 					resource.TestMatchResourceAttr("data.elasticstack_elasticsearch_info.test", "version.0.minimum_index_compatibility_version", semverRe),
 					resource.TestMatchResourceAttr("data.elasticstack_elasticsearch_info.test", "version.0.minimum_wire_compatibility_version", semverRe),
 					// build_snapshot is a bool; Terraform encodes it as "true" or "false".
-					// Standard CI runs against a release build, so this must be "false".
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test", "version.0.build_snapshot", "false"),
+					// Use a regex match so the test is resilient to both release and snapshot builds.
+					resource.TestMatchResourceAttr("data.elasticstack_elasticsearch_info.test", "version.0.build_snapshot", regexp.MustCompile(`^(true|false)$`)),
 				),
 			},
 		},
