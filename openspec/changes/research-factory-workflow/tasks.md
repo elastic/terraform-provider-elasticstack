@@ -79,5 +79,5 @@
 
 ## 10. Documentation and labels
 
-- [ ] 10.1 Coordinate the creation of the `research-factory` GitHub label in the repository (color and description aligned with `change-factory` and `code-factory`). Document the label in the workflow's authored description.
-- [ ] 10.2 Add a brief operator-facing note in `dev-docs/` (or wherever the existing change-factory / code-factory operator notes live) describing how to trigger research-factory, what the gated section looks like, and the social contract for editing the block / posting comments.
+- [x] 10.1 Coordinate the creation of the `research-factory` GitHub label in the repository (color and description aligned with `change-factory` and `code-factory`). Document the label in the workflow's authored description.
+- [x] 10.2 Add a brief operator-facing note in `dev-docs/` (or wherever the existing change-factory / code-factory operator notes live) describing how to trigger research-factory, what the gated section looks like, and the social contract for editing the block / posting comments.
