@@ -272,7 +272,7 @@ test('factoryFetchIssueComments preserves human comments and excludes bots', asy
   assert.equal(result.truncated, false);
 });
 
-test('factoryFetchIssueComments handles pagination across pages', async () => {
+test('factoryFetchIssueComments preserves ordering for multi-item results', async () => {
   const github = {
     rest: { issues: { listComments: async () => [] } },
     paginate: async () => [
@@ -315,6 +315,53 @@ test('factoryFetchIssueComments truncates at 200 comments', async () => {
   assert.equal(result.truncated, true);
   assert.equal(result.comments[0].author, 'user0');
   assert.equal(result.comments[199].author, 'user199');
+});
+
+test('factoryFetchIssueComments truncates at 200 with interspersed bots', async () => {
+  // 198 humans, then 5 bots, then 55 more humans → should get 200 humans, truncated
+  const comments = [];
+  for (let i = 0; i < 198; i++) {
+    comments.push({ user: { login: `user${i}` }, created_at: '2024-01-01T00:00:00Z', body: `h${i}` });
+  }
+  for (let i = 0; i < 5; i++) {
+    comments.push({ user: { login: 'github-actions[bot]' }, created_at: '2024-01-02T00:00:00Z', body: 'bot' });
+  }
+  for (let i = 0; i < 55; i++) {
+    comments.push({ user: { login: `late${i}` }, created_at: '2024-01-03T00:00:00Z', body: `l${i}` });
+  }
+  const github = {
+    rest: { issues: { listComments: async () => [] } },
+    paginate: async () => comments,
+  };
+  const result = await factoryFetchIssueComments({
+    github,
+    owner: 'elastic',
+    repo: 'terraform-provider-elasticstack',
+    issueNumber: 1,
+  });
+  assert.equal(result.comments.length, 200);
+  assert.equal(result.truncated, true);
+  assert.equal(result.comments[197].author, 'user197');
+  assert.equal(result.comments[198].author, 'late0');
+});
+
+test('factoryFetchIssueComments handles nullish/ghost comment fields', async () => {
+  const github = {
+    rest: { issues: { listComments: async () => [] } },
+    paginate: async () => [
+      { user: null, created_at: undefined, body: null },
+    ],
+  };
+  const result = await factoryFetchIssueComments({
+    github,
+    owner: 'elastic',
+    repo: 'terraform-provider-elasticstack',
+    issueNumber: 1,
+  });
+  // null user → not a bot (login undefined, doesn't end with '[bot]') → included
+  assert.equal(result.comments.length, 1);
+  assert.deepEqual(result.comments[0], { author: '', createdAt: '', body: '' });
+  assert.equal(result.truncated, false);
 });
 
 test('createFactoryIssueModule binds shared exports and branch aliases', () => {

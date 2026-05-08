@@ -13,4 +13,3 @@ const computeGateReason = factoryIssueModule.computeGateReason;
 const issueBranchName = factoryIssueModule.issueBranchName;
 const actorTrustWhenSenderMissing = factoryIssueModule.actorTrustWhenSenderMissing;
 const parseFinalizeGateEnv = factoryIssueModule.parseFinalizeGateEnv;
-const factoryFetchIssueComments = factoryIssueModule.factoryFetchIssueComments;

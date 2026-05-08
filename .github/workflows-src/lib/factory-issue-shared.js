@@ -101,41 +101,6 @@ function factoryCheckActorTrust({ sender, permission }) {
 /**
  * @returns {{ actor_trusted: boolean, actor_trusted_reason: string }}
  */
-/**
- * @param {{ github: object, owner: string, repo: string, issueNumber: number }} params
- * @returns {Promise<{ comments: Array<{author: string, createdAt: string, body: string}>, truncated: boolean }>}
- */
-async function factoryFetchIssueComments({ github, owner, repo, issueNumber }) {
-  const MAX_COMMENTS = 200;
-  const allComments = await github.paginate(github.rest.issues.listComments, {
-    owner,
-    repo,
-    issue_number: issueNumber,
-  });
-
-  const humanComments = [];
-  let truncated = false;
-  for (const comment of allComments) {
-    if (comment.user?.login?.endsWith('[bot]')) {
-      continue;
-    }
-    if (humanComments.length >= MAX_COMMENTS) {
-      truncated = true;
-      break;
-    }
-    humanComments.push({
-      author: comment.user?.login ?? '',
-      createdAt: comment.created_at ?? '',
-      body: comment.body ?? '',
-    });
-  }
-
-  return {
-    comments: humanComments,
-    truncated,
-  };
-}
-
 function factoryActorTrustWhenSenderMissing() {
   return {
     actor_trusted: false,
@@ -337,6 +302,44 @@ function createFactoryIssueModule(config) {
   }
 
   return factoryIssueModule;
+}
+
+/**
+ * Fetches human-authored comments for an issue, paginated, with bot filtering and a hard cap.
+ *
+ * @param {{ github: object, owner: string, repo: string, issueNumber: number }} params
+ * @returns {Promise<{ comments: Array<{author: string, createdAt: string, body: string}>, truncated: boolean }>}
+ */
+async function factoryFetchIssueComments({ github, owner, repo, issueNumber }) {
+  const MAX_COMMENTS = 200;
+  const allComments = await github.paginate(github.rest.issues.listComments, {
+    owner,
+    repo,
+    issue_number: issueNumber,
+    per_page: 100,
+  });
+
+  const humanComments = [];
+  let truncated = false;
+  for (const comment of allComments) {
+    if (comment.user?.login?.endsWith('[bot]')) {
+      continue;
+    }
+    if (humanComments.length >= MAX_COMMENTS) {
+      truncated = true;
+      break;
+    }
+    humanComments.push({
+      author: comment.user?.login ?? '',
+      createdAt: comment.created_at ?? '',
+      body: comment.body ?? '',
+    });
+  }
+
+  return {
+    comments: humanComments,
+    truncated,
+  };
 }
 
 if (typeof module !== 'undefined') {
