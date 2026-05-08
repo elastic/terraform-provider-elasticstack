@@ -101,6 +101,41 @@ function factoryCheckActorTrust({ sender, permission }) {
 /**
  * @returns {{ actor_trusted: boolean, actor_trusted_reason: string }}
  */
+/**
+ * @param {{ github: object, owner: string, repo: string, issueNumber: number }} params
+ * @returns {Promise<{ comments: Array<{author: string, createdAt: string, body: string}>, truncated: boolean }>}
+ */
+async function factoryFetchIssueComments({ github, owner, repo, issueNumber }) {
+  const MAX_COMMENTS = 200;
+  const allComments = await github.paginate(github.rest.issues.listComments, {
+    owner,
+    repo,
+    issue_number: issueNumber,
+  });
+
+  const humanComments = [];
+  let truncated = false;
+  for (const comment of allComments) {
+    if (comment.user?.login?.endsWith('[bot]')) {
+      continue;
+    }
+    if (humanComments.length >= MAX_COMMENTS) {
+      truncated = true;
+      break;
+    }
+    humanComments.push({
+      author: comment.user?.login ?? '',
+      createdAt: comment.created_at ?? '',
+      body: comment.body ?? '',
+    });
+  }
+
+  return {
+    comments: humanComments,
+    truncated,
+  };
+}
+
 function factoryActorTrustWhenSenderMissing() {
   return {
     actor_trusted: false,
@@ -294,6 +329,7 @@ function createFactoryIssueModule(config) {
     actorTrustWhenSenderMissing: factoryActorTrustWhenSenderMissing,
     parseOptionalTriStateFromEnv: factoryParseOptionalTriStateFromEnv,
     parseFinalizeGateEnv: factoryParseFinalizeGateEnv,
+    factoryFetchIssueComments,
   };
 
   for (const alias of issueBranchNameAliases) {
@@ -309,6 +345,7 @@ if (typeof module !== 'undefined') {
     factoryQualifyTriggerEvent,
     factoryCheckActorTrust,
     factoryActorTrustWhenSenderMissing,
+    factoryFetchIssueComments,
     factoryCheckDuplicatePR,
     factoryComputeGateReason,
     factoryParseOptionalTriStateFromEnv,

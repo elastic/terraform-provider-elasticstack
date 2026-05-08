@@ -1,8 +1,8 @@
 ## 1. Shared library: comment-history capture
 
-- [ ] 1.1 Add a `factoryFetchIssueComments` (or similarly named) helper to `.github/workflows-src/lib/factory-issue-shared.js` that paginates `github.rest.issues.listComments`, returns chronological human-authored comments only (excluding `github-actions[bot]`, `dependabot[bot]`, and any sender whose login ends with `[bot]`), and caps results at a sensible upper bound (e.g. 200 comments) with a truncation flag in the output.
-- [ ] 1.2 Add unit tests for the helper in `.github/workflows-src/lib/factory-issue-shared.test.mjs` (or a new test file) covering: empty comment list, only-bot comments, mixed bot+human comments, pagination across pages, truncation behavior at the cap.
-- [ ] 1.3 Export the helper from `.github/workflows-src/lib/factory-issue-module.gh.js` so it is available to inline scripts via the same module shape used by the other shared helpers.
+- [x] 1.1 Add a `factoryFetchIssueComments` (or similarly named) helper to `.github/workflows-src/lib/factory-issue-shared.js` that paginates `github.rest.issues.listComments`, returns chronological human-authored comments only (excluding `github-actions[bot]`, `dependabot[bot]`, and any sender whose login ends with `[bot]`), and caps results at a sensible upper bound (e.g. 200 comments) with a truncation flag in the output.
+- [x] 1.2 Add unit tests for the helper in `.github/workflows-src/lib/factory-issue-shared.test.mjs` (or a new test file) covering: empty comment list, only-bot comments, mixed bot+human comments, pagination across pages, truncation behavior at the cap.
+- [x] 1.3 Export the helper from `.github/workflows-src/lib/factory-issue-module.gh.js` so it is available to inline scripts via the same module shape used by the other shared helpers.
 
 ## 2. Shared library: comment serialization for prompt context
 

@@ -10,6 +10,7 @@ const {
   factoryParseOptionalTriStateFromEnv,
   factoryParseFinalizeGateEnv,
   factoryActorTrustWhenSenderMissing,
+  factoryFetchIssueComments,
   factoryCheckDuplicatePR,
   factoryComputeGateReason,
   createFactoryIssueIntake,
@@ -214,6 +215,106 @@ test('createFactoryIssueIntake: duplicateLinkageMode selects duplicate PR URL ha
   };
   const ch = change.checkDuplicatePR({ issueNumber: 9, pullRequests: [p] });
   assert.equal(ch.duplicate_pr_url, null);
+});
+
+test('factoryFetchIssueComments returns empty array for no comments', async () => {
+  const github = {
+    rest: { issues: { listComments: async () => [] } },
+    paginate: async () => [],
+  };
+  const result = await factoryFetchIssueComments({
+    github,
+    owner: 'elastic',
+    repo: 'terraform-provider-elasticstack',
+    issueNumber: 1,
+  });
+  assert.deepEqual(result.comments, []);
+  assert.equal(result.truncated, false);
+});
+
+test('factoryFetchIssueComments filters out all bots', async () => {
+  const github = {
+    rest: { issues: { listComments: async () => [] } },
+    paginate: async () => [
+      { user: { login: 'github-actions[bot]' }, created_at: '2024-01-01T00:00:00Z', body: 'bot1' },
+      { user: { login: 'dependabot[bot]' }, created_at: '2024-01-02T00:00:00Z', body: 'bot2' },
+    ],
+  };
+  const result = await factoryFetchIssueComments({
+    github,
+    owner: 'elastic',
+    repo: 'terraform-provider-elasticstack',
+    issueNumber: 1,
+  });
+  assert.deepEqual(result.comments, []);
+  assert.equal(result.truncated, false);
+});
+
+test('factoryFetchIssueComments preserves human comments and excludes bots', async () => {
+  const github = {
+    rest: { issues: { listComments: async () => [] } },
+    paginate: async () => [
+      { user: { login: 'alice' }, created_at: '2024-01-01T00:00:00Z', body: 'hello' },
+      { user: { login: 'github-actions[bot]' }, created_at: '2024-01-02T00:00:00Z', body: 'bot' },
+      { user: { login: 'bob' }, created_at: '2024-01-03T00:00:00Z', body: 'world' },
+      { user: { login: 'dependabot[bot]' }, created_at: '2024-01-04T00:00:00Z', body: 'bot2' },
+    ],
+  };
+  const result = await factoryFetchIssueComments({
+    github,
+    owner: 'elastic',
+    repo: 'terraform-provider-elasticstack',
+    issueNumber: 1,
+  });
+  assert.equal(result.comments.length, 2);
+  assert.deepEqual(result.comments[0], { author: 'alice', createdAt: '2024-01-01T00:00:00Z', body: 'hello' });
+  assert.deepEqual(result.comments[1], { author: 'bob', createdAt: '2024-01-03T00:00:00Z', body: 'world' });
+  assert.equal(result.truncated, false);
+});
+
+test('factoryFetchIssueComments handles pagination across pages', async () => {
+  const github = {
+    rest: { issues: { listComments: async () => [] } },
+    paginate: async () => [
+      { user: { login: 'alice' }, created_at: '2024-01-01T00:00:00Z', body: 'page1' },
+      { user: { login: 'bob' }, created_at: '2024-01-02T00:00:00Z', body: 'page2' },
+      { user: { login: 'carol' }, created_at: '2024-01-03T00:00:00Z', body: 'page3' },
+    ],
+  };
+  const result = await factoryFetchIssueComments({
+    github,
+    owner: 'elastic',
+    repo: 'terraform-provider-elasticstack',
+    issueNumber: 1,
+  });
+  assert.equal(result.comments.length, 3);
+  assert.deepEqual(result.comments[2], { author: 'carol', createdAt: '2024-01-03T00:00:00Z', body: 'page3' });
+  assert.equal(result.truncated, false);
+});
+
+test('factoryFetchIssueComments truncates at 200 comments', async () => {
+  const manyComments = [];
+  for (let i = 0; i < 250; i++) {
+    manyComments.push({
+      user: { login: `user${i}` },
+      created_at: `2024-01-01T00:00:${String(i % 60).padStart(2, '0')}Z`,
+      body: `comment ${i}`,
+    });
+  }
+  const github = {
+    rest: { issues: { listComments: async () => [] } },
+    paginate: async () => manyComments,
+  };
+  const result = await factoryFetchIssueComments({
+    github,
+    owner: 'elastic',
+    repo: 'terraform-provider-elasticstack',
+    issueNumber: 1,
+  });
+  assert.equal(result.comments.length, 200);
+  assert.equal(result.truncated, true);
+  assert.equal(result.comments[0].author, 'user0');
+  assert.equal(result.comments[199].author, 'user199');
 });
 
 test('createFactoryIssueModule binds shared exports and branch aliases', () => {
