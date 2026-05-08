@@ -99,12 +99,9 @@ func (r *mlJobStateResource) update(ctx context.Context, plan tfsdk.Plan, state 
 		return diags
 	}
 
-	// Generate composite ID
 	compID, sdkDiags := client.ID(ctx, jobID)
-	if len(sdkDiags) > 0 {
-		for _, d := range sdkDiags {
-			diags.AddError(d.Summary, d.Detail)
-		}
+	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	if diags.HasError() {
 		return diags
 	}
 

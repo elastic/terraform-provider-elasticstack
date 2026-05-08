@@ -75,3 +75,11 @@ func Ltoi(value *int64) *int {
 	}
 	return new(int(*value))
 }
+
+// NonEmptyStringPtr returns a pointer to s, or nil if s is empty.
+func NonEmptyStringPtr(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
+}

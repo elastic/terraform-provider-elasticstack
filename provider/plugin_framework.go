@@ -21,7 +21,7 @@ import (
 	"context"
 	"os"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/apm/agent_configuration"
+	agentconfiguration "github.com/elastic/terraform-provider-elasticstack/internal/apm/agent_configuration"
 	sourcemap "github.com/elastic/terraform-provider-elasticstack/internal/apm/source_map"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
@@ -29,6 +29,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/script"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/enrich"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/alias"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/componenttemplate"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastream"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamlifecycle"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/ilm"
@@ -38,15 +39,16 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/templateilmattachment"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/inference/inferenceendpoint"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ingest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/logstash"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/anomalydetectionjob"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed"
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed_state"
+	datafeedstate "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed_state"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/jobstate"
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/api_key"
+	apikey "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/api_key"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/role"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/rolemapping"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/systemuser"
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/user"
+	securityuser "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/user"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/transform"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/watcher/watch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/agentdownloadsource"
@@ -55,7 +57,7 @@ import (
 	elasticdefendintegrationpolicy "github.com/elastic/terraform-provider-elasticstack/internal/fleet/elastic_defend_integration_policy"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/enrollmenttokens"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/integration"
-	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/integration_policy"
+	integrationpolicy "github.com/elastic/terraform-provider-elasticstack/internal/fleet/integration_policy"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/integrationds"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/output"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/outputds"
@@ -70,13 +72,13 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dataview"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/defaultdataview"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/exportsavedobjects"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/import_saved_objects"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/maintenance_window"
+	importsavedobjects "github.com/elastic/terraform-provider-elasticstack/internal/kibana/import_saved_objects"
+	maintenancewindow "github.com/elastic/terraform-provider-elasticstack/internal/kibana/maintenance_window"
 	prebuilt_rules "github.com/elastic/terraform-provider-elasticstack/internal/kibana/prebuilt_rules"
 	security_detection_rule "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_detection_rule"
 	securityenablerule "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_enable_rule"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_exception_item"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_list_data_streams"
+	securityexceptionitem "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_exception_item"
+	securitylistdatastreams "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_list_data_streams"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/securityexceptionlist"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/securitylist"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/securitylistitem"
@@ -179,6 +181,7 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		parameter.NewResource,
 		privatelocation.NewResource,
 		index.NewResource,
+		componenttemplate.NewResource,
 		monitor.NewResource,
 		apikey.NewResource,
 		datastream.NewDataStreamResource,
@@ -204,6 +207,7 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		inferenceendpoint.NewInferenceEndpointResource,
 		watch.NewWatchResource,
 		script.NewScriptResource,
+		logstash.NewLogstashPipelineResource,
 		maintenancewindow.NewResource,
 		enrich.NewEnrichPolicyResource,
 		ingest.NewIngestPipelineResource,

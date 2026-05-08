@@ -28,7 +28,20 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-type EqlRuleProcessor struct{}
+type EqlRuleProcessor struct {
+	baseRuleProcessor[kbapi.SecurityDetectionsAPIEqlRule]
+}
+
+func newEqlRuleProcessor() EqlRuleProcessor {
+	return EqlRuleProcessor{
+		baseRuleProcessor: baseRuleProcessor[kbapi.SecurityDetectionsAPIEqlRule]{
+			updateFn: updateFromEqlRule,
+			idFn: func(v kbapi.SecurityDetectionsAPIEqlRule) string {
+				return v.Id.String()
+			},
+		},
+	}
+}
 
 func (e EqlRuleProcessor) HandlesRuleType(t string) bool {
 	return t == "eql"
@@ -40,22 +53,6 @@ func (e EqlRuleProcessor) ToCreateProps(ctx context.Context, client clients.MinV
 
 func (e EqlRuleProcessor) ToUpdateProps(ctx context.Context, client clients.MinVersionEnforceable, d Data) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
 	return toEqlRuleUpdateProps(ctx, client, d)
-}
-
-func (e EqlRuleProcessor) HandlesAPIRuleResponse(rule any) bool {
-	return handlesAPIRuleResponse[kbapi.SecurityDetectionsAPIEqlRule](rule)
-}
-
-func (e EqlRuleProcessor) UpdateFromResponse(ctx context.Context, rule any, d *Data) diag.Diagnostics {
-	return updateFromRuleResponse[kbapi.SecurityDetectionsAPIEqlRule](rule, func(v *kbapi.SecurityDetectionsAPIEqlRule) diag.Diagnostics {
-		return updateFromEqlRule(ctx, v, d)
-	})
-}
-
-func (e EqlRuleProcessor) ExtractID(response any) (string, diag.Diagnostics) {
-	return extractRuleID[kbapi.SecurityDetectionsAPIEqlRule](response, func(v kbapi.SecurityDetectionsAPIEqlRule) string {
-		return v.Id.String()
-	})
 }
 
 func toEqlRuleCreateProps(ctx context.Context, client clients.MinVersionEnforceable, d Data) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {

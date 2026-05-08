@@ -42,6 +42,12 @@ type MLDatafeedStateData struct {
 	Timeouts                timeouts.Value       `tfsdk:"timeouts"`
 }
 
+func (d MLDatafeedStateData) GetID() types.String         { return d.ID }
+func (d MLDatafeedStateData) GetResourceID() types.String { return d.DatafeedID }
+func (d MLDatafeedStateData) GetElasticsearchConnection() types.List {
+	return d.ElasticsearchConnection
+}
+
 func timeInSameLocation(ms int64, source timetypes.RFC3339) (time.Time, diag.Diagnostics) {
 	t := time.UnixMilli(ms)
 	if !typeutils.IsKnown(source) {

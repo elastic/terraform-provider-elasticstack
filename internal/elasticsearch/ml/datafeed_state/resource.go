@@ -32,12 +32,21 @@ var (
 )
 
 type mlDatafeedStateResource struct {
-	*entitycore.ResourceBase
+	*entitycore.ElasticsearchResource[MLDatafeedStateData]
 }
 
 func newMLDatafeedStateResource() *mlDatafeedStateResource {
+	createFunc, updateFunc := entitycore.PlaceholderElasticsearchWriteCallbacks[MLDatafeedStateData]()
 	return &mlDatafeedStateResource{
-		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentElasticsearch, "ml_datafeed_state"),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[MLDatafeedStateData](
+			entitycore.ComponentElasticsearch,
+			"ml_datafeed_state",
+			GetSchema,
+			readMLDatafeedState,
+			deleteMLDatafeedState,
+			createFunc,
+			updateFunc,
+		),
 	}
 }
 
@@ -46,6 +55,5 @@ func NewMLDatafeedStateResource() resource.Resource {
 }
 
 func (r *mlDatafeedStateResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	// Retrieve import ID and save to datafeed_id attribute
-	resource.ImportStatePassthroughID(ctx, path.Root("datafeed_id"), req, resp)
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }

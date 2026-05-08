@@ -18,17 +18,17 @@ The state file is optional. If you do not pass `--state-file`, the script auto-c
 
 ## High-Level Flow
 
-1. The main agent starts one worker subagent for the PR. The worker simply invokes the script; the script auto-creates and reuses `.agents/skills/pr-monitoring-loop/scripts/state/.pr-monitor-<pr>.json` (gitignored) by default. Pass `--state-file <path>` only if you need isolation. Do NOT put state under `.git/` — this repo uses git worktrees, where `.git` is a file pointing at a worktree-specific git dir, which would fragment state across worktrees watching the same PR.
-2. The worker polls the PR with `scripts/check-pr-state.py --state-file <path>`. The state file persists "seen" IDs and `lastPolledAt` so a fresh subagent can still tell new feedback from old.
-3. The worker continues until something is actionable:
+1. The main agent starts one delegate subagent for the PR. The delegate simply invokes the script; the script auto-creates and reuses `.agents/skills/pr-monitoring-loop/scripts/state/.pr-monitor-<pr>.json` (gitignored) by default. Pass `--state-file <path>` only if you need isolation. Do NOT put state under `.git/` — this repo uses git worktrees, where `.git` is a file pointing at a worktree-specific git dir, which would fragment state across worktrees watching the same PR.
+2. The delegate polls the PR with `scripts/check-pr-state.py --state-file <path>`. The state file persists "seen" IDs and `lastPolledAt` so a fresh subagent can still tell new feedback from old.
+3. The delegate continues until something is actionable:
    - CI check failure (commit-pinned)
    - new PR review comment, new conversation comment, or new unresolved review thread (judged by `summary.new*` fields, not totals)
    - blocking review state — `summary.reviews.effectiveDecision == "CHANGES_REQUESTED"` (a later APPROVED supersedes an earlier CHANGES_REQUESTED)
    - merge conflict or out-of-date branch
-4. If the worker judges the resolution simple, it may implement the fix, commit it, push it, perform the thread-resolution protocol below for any addressed threads, and continue watching.
-5. If the worker judges the resolution non-simple, ambiguous, risky, or needing product judgment, it reports the actionable item to the main agent.
-6. The main agent launches a fresh worker subagent scoped only to that fix, **passing the same `--state-file` path** so seen IDs persist.
-7. After the worker commits, pushes, replies, and resolves addressed threads, the main agent starts a fresh watch cycle for the new PR head.
+4. If the delegate judges the resolution simple, it may implement the fix, commit it, push it, perform the thread-resolution protocol below for any addressed threads, and continue watching.
+5. If the delegate judges the resolution non-simple, ambiguous, risky, or needing product judgment, it reports the actionable item to the main agent.
+6. The main agent launches a fresh delegate subagent scoped only to that fix, **passing the same `--state-file` path** so seen IDs persist.
+7. After the delegate commits, pushes, replies, and resolves addressed threads, the main agent starts a fresh watch cycle for the new PR head.
 8. Repeat until the PR reaches the caller's success criteria or the loop is blocked.
 
 ## Main Agent Instructions
@@ -37,14 +37,14 @@ When entering PR monitoring:
 
 1. Create the PR first if needed and record its PR number or URL.
 2. State persistence works out of the box — the script auto-uses `.agents/skills/pr-monitoring-loop/scripts/state/.pr-monitor-<pr>.json`, so a fresh subagent invoking the script with only a PR number still sees previously seen IDs. Pass `--state-file <path>` explicitly to every subagent only when you need an isolated state file (e.g., parallel watchers, tests). Do NOT put state under `.git/` — see the worktree note above.
-3. Launch a write-capable worker subagent with this skill's watcher prompt.
-4. Do not poll GitHub directly in the main agent except to recover from a worker failure.
-5. If the worker returns an actionable item for delegation:
-   - launch a fresh write-capable worker subagent
+3. Launch a write-capable delegate subagent with this skill's watcher prompt.
+4. Do not poll GitHub directly in the main agent except to recover from a delegate failure.
+5. If the delegate returns an actionable item for delegation:
+   - launch a fresh write-capable delegate subagent
    - scope it only to the reported CI failure, review feedback, comment, conflict, or branch freshness issue
    - require minimal commits, a push to the PR branch, and the thread-resolution protocol for any addressed threads
-   - restart the watch after the worker finishes, again passing the same `--state-file`
-6. Stop and ask the user when the watcher or worker reports that the next decision needs user input.
+   - restart the watch after the delegate finishes, again passing the same `--state-file`
+6. Stop and ask the user when the watcher or delegate reports that the next decision needs user input.
 
 ## Watcher Prompt
 
@@ -60,15 +60,15 @@ Monitor PR <pr> using:
 detection survives across fresh subagents. Only pass `--state-file <path>` if the main agent
 explicitly asked you to use a non-default state file.)
 
-Drive every decision off the script's `summary` block. In particular:
-- New work appears as `summary.comments.newIssueComments`, `summary.comments.newReviewComments`,
-  `summary.threads.unresolvedNew`, `summary.threads.unresolvedUpdatedSinceHead`, and
-  `summary.reviews.newReviewIds`. Old totals stay under `summary.totals` for reference but MUST NOT
+Drive every decision off the script's focused output. In particular:
+- New work appears as `comments.newIssueComments`, `comments.newReviewComments`,
+  `threads.unresolvedNew`, `threads.unresolvedUpdatedSinceHead`, and
+  `reviews.newReviewIds`. Old totals stay under `comments.totalIssueComments` / `comments.totalReviewComments` for reference but MUST NOT
   drive the actionable decision.
-- Review state is `summary.reviews.effectiveDecision` (latest review per reviewer; a later APPROVED
+- Review state is `reviews.effectiveDecision` (latest review per reviewer; a later APPROVED
   supersedes an earlier CHANGES_REQUESTED).
-- verify-openspec state is `summary.reviews.verifyOpenspec.runState` plus `approvalIsCurrent`.
-- CI is `summary.checks` (which prefers commit-pinned data over `gh pr checks` rollup).
+- verify-openspec state is `verifyOpenspec.requiresOpenspecVerification`. When `true`, apply the `verify-openspec` label. When `false`, do not touch the label.
+- CI is `checks` (which prefers commit-pinned data over `gh pr checks` rollup).
 
 Poll until one of these happens:
 - the PR satisfies the provided success criteria
@@ -87,15 +87,14 @@ resolution" below) for every thread your fix addresses, then continue watching t
 Return work to the main agent when the fix is non-simple, ambiguous, risky, spans multiple
 concerns, requires product/API judgment, repeats after an attempted fix, or needs user input.
 
-Print the script's `summary` JSON verbatim before deciding. In your final result include:
+Print the entire script output JSON before deciding. In your final result include:
 - status: `ready`, `fixed-and-continued`, `delegate`, `blocked`, or `timeout`
 - PR URL and head SHA
 - actionable item summary
-- evidence from `check-pr-state.py` (paste the relevant `summary.*` excerpt)
-- counts of seen vs new IDs you observed (`summary.totals.*` and `summary.comments.new*` /
-  `summary.threads.unresolvedNew`)
+- evidence from `check-pr-state.py` (paste the relevant excerpt, e.g. `actionable`, `checks.failedChecks`, `threadDetails`)
+- counts of seen vs new IDs you observed
 - fixes you committed and pushed, threads you replied to and resolved (with thread ids)
-- recommended worker scope when status is `delegate`
+- recommended delegate scope when status is `delegate`
 ```
 
 ## Cadence enforcement
@@ -120,29 +119,32 @@ Use:
 
 The script auto-creates a state file at the default path on first run; pass `--state-file <path>` only when you need an isolated state file, or `--no-state` to disable persistence entirely.
 
-The script returns one JSON payload with:
+When invoked without `--full-payload` (the default) the script returns a focused JSON payload containing only actionable decision data. The raw data arrays (`prChecks`, `commitCheckRuns`, `commitStatuses`, `reviews`, `issue_comments`, `review_comments`, `review_threads`, `issue_events`, `merge_conflicts`) are not included in the default output; use `--full-payload` when you need them.
 
-- `repository`: owner/name
-- `pr`: PR metadata, head SHA, mergeability, review decision, labels
-- `checks`: `prChecks` (gh pr checks rollup, raw), `commitCheckRuns` and `commitStatuses` (REST APIs pinned to `pr.headRefOid`), and `statusCheckRollup`
-- `reviews`: every submitted review (raw)
-- `issue_comments`: PR conversation comments (raw)
-- `review_comments`: inline PR review comments (raw)
-- `review_threads`: review threads with `id`, `isResolved`, `isOutdated`, plus per-comment `id` (GraphQL node id) and `databaseId` (REST id) — see "Thread resolution"
-- `issue_events`: paginated issue events (used to compute verify-openspec label timestamps)
-- `merge_conflicts`: structured conflict analysis from `git merge-tree`
-- `summary`: actionable decision data; this is what the watcher reads
+The focused output contains:
+- `pr`: number, url, title, headRefName, headRefOid, mergeable, mergeStateStatus, labels
+- `checks`: source, headSha, total, failed, pending, passed, `failedChecks[]` with `{name, url}`, pendingNames
+- `comments`: totalIssueComments, totalReviewComments, newIssueCommentIds, newReviewCommentIds, newIssueComments[] with `{id, author, body}`, newReviewComments[] with `{id, author, body}`
+- `threads`: unresolved, unresolvedNew, unresolvedUpdatedSinceHead, unresolvedThreadIds, unresolvedNewThreadIds
+- `threadDetails`: keyed by thread id, includes path, line, resolved, outdated, comments[] with `{author, body, databaseId}`
+- `reviews`: total, newReviewIds, effectiveDecision, latestByReviewer, newReviews[] with `{author, state, id}`
+- `verifyOpenspec`: runState, requiresOpenspecVerification
+- `merge`: blocked, hasConflicts, conflictFiles, conflictAnalysisAvailable, mergeable, mergeStateStatus
+- `actionable`: list of string signals
+- `hasActionable`: bool
+- `headPushedRecently`: bool
 
-`summary` fields the watcher actually consumes:
+Top-level fields the watcher consumes (there is no separate `summary` dict; the root object is the summary):
 
-- `summary.actionable` (list of strings) and `summary.hasActionable` (bool)
-- `summary.checks.{source, total, failed, pending, passed, failedNames, pendingNames}` — `source` is `commit-pinned` when canonical, `pr-checks` when falling back
-- `summary.comments.{newIssueComments, newReviewComments, newIssueCommentIds, newReviewCommentIds}`
-- `summary.threads.{unresolved, unresolvedNew, unresolvedUpdatedSinceHead, unresolvedThreadIds, unresolvedNewThreadIds}`
-- `summary.reviews.{total, newReviewIds, latestByReviewer, effectiveDecision, verifyOpenspec}`
-- `summary.merge.{blocked, hasConflicts, conflictFiles, ...}`
-- `summary.totals.*` for raw counts (debugging only — do not base actionable decisions here)
-- `summary.headPushedRecently` is `true` when the head SHA changed since the last poll recorded in the state file
+- `actionable` (list of strings) and `hasActionable` (bool)
+- `checks.{source, total, failed, pending, passed, failedChecks[], pendingNames}` — `failedChecks[]` has `{name, url}` for log lookup; `source` is `commit-pinned` when canonical, `pr-checks` when falling back
+- `comments.{totalIssueComments, totalReviewComments, newIssueComments, newReviewComments, newIssueCommentIds, newReviewCommentIds}` — `newIssueComments[]` and `newReviewComments[]` include `{id, author, body}` when there is new content
+- `threads.{unresolved, unresolvedNew, unresolvedUpdatedSinceHead, unresolvedThreadIds, unresolvedNewThreadIds}`
+- `threadDetails.{<threadId>}.comments[].databaseId` — the REST id needed for `in_reply_to` in the thread-resolution protocol
+- `reviews.{total, newReviewIds, latestByReviewer, effectiveDecision, verifyOpenspec}`
+- `verifyOpenspec.{runState, requiresOpenspecVerification}` — use `requiresOpenspecVerification` as the single trigger for applying the label
+- `merge.{blocked, hasConflicts, conflictFiles, ...}`
+- `headPushedRecently` is `true` when the head SHA changed since the last poll recorded in the state file
 
 Run the test suite with:
 
@@ -157,11 +159,11 @@ GitHub does not auto-resolve a review thread when you push a fix. The script the
 - `summary.threads.unresolvedNew` — threads not yet recorded in the state file (genuinely new feedback).
 - `summary.threads.unresolvedUpdatedSinceHead` — threads where a comment was posted after the recorded `lastPolledAt` (typically a follow-up reply on a thread you already saw).
 
-`summary.actionable` lists `unresolved_review_threads` only when one of these is non-zero. A thread the worker addressed and resolved (see "Thread resolution") drops out of `unresolved` entirely; a thread the worker addressed but did NOT resolve will keep firing, which is the bug we are explicitly avoiding.
+`summary.actionable` lists `unresolved_review_threads` only when one of these is non-zero. A thread the delegate addressed and resolved (see "Thread resolution") drops out of `unresolved` entirely; a thread the delegate addressed but did NOT resolve will keep firing, which is the bug we are explicitly avoiding.
 
 ## Thread resolution
 
-When a worker pushes a fix that addresses a review thread, it MUST do BOTH of the following, in order:
+When a delegate pushes a fix that addresses a review thread, it MUST do BOTH of the following, in order:
 
 1. Post a reply on the thread citing the addressing commit SHA and a one-line summary of what changed. Use the REST `databaseId` of the FIRST comment in the thread as `in_reply_to`:
 
@@ -171,7 +173,9 @@ When a worker pushes a fix that addresses a review thread, it MUST do BOTH of th
      -F in_reply_to=<root_comment.databaseId>
    ```
 
-   `check-pr-state.py` exposes both ids on every thread comment: `review_threads[].comments.nodes[].id` is the GraphQL node id and `review_threads[].comments.nodes[].databaseId` is the REST id you need here.
+   In the focused output, thread data is at `threadDetails.<thread-id>.comments[]`. Each comment has:
+   - `databaseId` — the REST id you need for `in_reply_to`
+   - The GraphQL thread id is the key of the `threadDetails` dict (e.g. `threadDetails["MIDAC..."]`) which you need for the resolve mutation.
 
 2. Resolve the thread via GraphQL, using the thread's GraphQL node id (`review_threads[].id`):
 
@@ -183,29 +187,24 @@ When a worker pushes a fix that addresses a review thread, it MUST do BOTH of th
 
 A bare resolve without the reply is forbidden — the reply is what makes the resolution auditable for the human reviewer and distinguishable from "silently closed". Without resolution, `unresolvedNew` drift makes the loop indistinguishable from a fresh request and the watcher will keep delegating the same item.
 
-Do NOT resolve threads the worker did not address — for example, a thread the human is actively discussing or a thread whose feedback was deliberately not applied. When in doubt, leave unresolved and delegate to the main agent.
+Do NOT resolve threads the delegate did not address — for example, a thread the human is actively discussing or a thread whose feedback was deliberately not applied. When in doubt, leave unresolved and delegate to the main agent.
 
 ## Opt-In Verify-OpenSpec Criteria
 
 Only when the caller explicitly requires `verify-openspec` approval:
 
-1. Drive every decision off `summary.reviews.verifyOpenspec`. The runState values are:
-   - `none` — no label and no review for any head SHA
+1. Read `verifyOpenspec.runState` and `verifyOpenspec.requiresOpenspecVerification`. The runState values are:
+   - `none` — no label and no review for this PR
    - `pending-pickup` — `verify-openspec` label is currently applied but the workflow has not started
-   - `in-progress` — workflow has picked up the label and removed it, but no review for the current head has arrived yet
-   - `approved-current` — the verify-openspec workflow submitted APPROVED for the current head SHA and the label has not been re-applied since
-   - `approved-stale` — an APPROVED review exists but for a previous head SHA (head moved on without re-trigger)
-   - `changes-requested` — the verify-openspec workflow submitted CHANGES_REQUESTED for the current head
+   - `in-progress` — workflow has picked up the label and removed it, but no review has arrived yet
+   - `approved` — the verify-openspec workflow submitted APPROVED. Approvals are permanent; they do not go stale.
+   - `changes-requested` — the verify-openspec workflow submitted CHANGES_REQUESTED; fix needed first.
 
    The verify-openspec workflow runs as `github-actions[bot]` (the standard GITHUB_TOKEN identity), not as a dedicated `verify-openspec[bot]` user. The script identifies its reviews by the body containing `OpenSpec verify` or `Verification Report` so other workflows that also post as `github-actions[bot]` are not confused with it.
-2. **Label state clarification** — the `verify-openspec` workflow REMOVES its own label as soon as it picks up the PR. Therefore label absence on `pr.labels` is NOT a signal that verify "was never requested". Always read `summary.reviews.verifyOpenspec.runState`, never `pr.labels`, when deciding whether to re-trigger.
-3. **Anti-relabel guardrail** — NEVER (re-)apply the `verify-openspec` label when `summary.reviews.verifyOpenspec.approvalIsCurrent == true` (equivalently, `runState == "approved-current"`). Re-applying after a current-head approval triggers a redundant verify run, churns CI, and can invalidate the existing approval. Treat current-head approval as terminal for the verify gate.
-4. The label is applied (or re-applied) only when ALL of:
-   - `runState == "none"` (or `"approved-stale"`, after a new head was pushed),
-   - `summary.checks.failed == 0` and `summary.checks.pending == 0` for the current head,
-   - and there are no known unaddressed actionable items (`summary.comments.new*`, `summary.threads.unresolvedNew`, `effectiveDecision != "CHANGES_REQUESTED"`).
-5. End successfully only when `summary.reviews.verifyOpenspec.approvalIsCurrent == true` AND `summary.checks.failed == 0`. Do not treat `pr.reviewDecision == "APPROVED"` or a green verify workflow check as equivalent.
-6. Stop with `timeout` if `runState` does not transition to `approved-current` within the caller's `--max-duration`.
+2. **Label state clarification** — the `verify-openspec` workflow REMOVES its own label as soon as it picks up the PR. Therefore label absence on `pr.labels` is NOT a signal that verify "was never requested". Always read `verifyOpenspec.runState`, never `pr.labels`, when deciding whether to re-trigger.
+3. **Apply the label** when `requiresOpenspecVerification` is `true`. This boolean is computed by the script and encodes every guardrail: no label if already approved, already pending, checks failing/pending, or any actionable item exists.
+4. **End successfully** only when `verifyOpenspec.runState == "approved"` AND `checks.failed == 0`. Do not treat `pr.reviewDecision == "APPROVED"` or a green verify workflow check as equivalent.
+5. **Stop with `timeout`** if `runState` does not transition to `"approved"` within the caller's `--max-duration`.
 
 ## Resilience
 
@@ -214,8 +213,8 @@ The script retries transient `gh` failures once with backoff, then exits with co
 ## Guardrails
 
 - Keep watcher context self-contained; return concise summaries to the main agent.
-- Prefer fresh worker subagents for delegated fixes; always pass the same `--state-file`.
+- Prefer fresh delegate subagents for delegated fixes; always pass the same `--state-file`.
 - Never force-push unless the user explicitly requested it.
 - Do not resolve review threads unless the current PR state actually addresses them (and follow the two-step thread-resolution protocol above when you do).
-- Never re-apply the `verify-openspec` label when `approvalIsCurrent == true`.
+- Never re-apply the `verify-openspec` label when `requiresOpenspecVerification` is `false`.
 - If a simple watcher fix fails or repeats, delegate it to the main agent.

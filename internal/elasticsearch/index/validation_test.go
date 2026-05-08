@@ -58,9 +58,7 @@ func Test_stringIsJSONObject(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			warnings, errors := stringIsJSONObject(tt.fieldVal, "field-name")
-			require.Empty(t, warnings)
-
+			errors := stringIsJSONObject(tt.fieldVal, "field-name")
 			require.Len(t, errors, len(tt.expectedErrsToContain))
 			for i, err := range errors {
 				require.ErrorContains(t, err, tt.expectedErrsToContain[i])

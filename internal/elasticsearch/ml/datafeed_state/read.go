@@ -20,66 +20,51 @@ package datafeedstate
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *mlDatafeedStateResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var data MLDatafeedStateData
-	diags := req.State.Get(ctx, &data)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+func readMLDatafeedState(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state MLDatafeedStateData) (MLDatafeedStateData, bool, diag.Diagnostics) {
+	var diags diag.Diagnostics
 
-	readData, diags := r.read(ctx, data)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if readData == nil {
-		resp.State.RemoveResource(ctx)
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, readData)...)
-}
-
-func (r *mlDatafeedStateResource) read(ctx context.Context, data MLDatafeedStateData) (*MLDatafeedStateData, diag.Diagnostics) {
-	client, diags := r.Client().GetElasticsearchClient(ctx, data.ElasticsearchConnection)
-	if diags.HasError() {
-		return nil, diags
-	}
-
-	datafeedID := data.DatafeedID.ValueString()
-	// Check if the datafeed exists by getting its stats
-	datafeedStats, getDiags := elasticsearch.GetDatafeedStats(ctx, client, datafeedID)
+	datafeedStats, getDiags := elasticsearch.GetDatafeedStats(ctx, client, resourceID)
 	diags.Append(getDiags...)
 	if diags.HasError() {
-		return nil, diags
+		return state, false, diags
 	}
 
 	if datafeedStats == nil {
-		return nil, diags
+		return state, false, diags
 	}
 
-	// Update the data with current information
-	data.State = types.StringValue(datafeedStats.State.String())
+	state.DatafeedID = types.StringValue(resourceID)
+	state.State = types.StringValue(datafeedStats.State.String())
 
 	// Regenerate composite ID to ensure it's current
-	compID, sdkDiags := client.ID(ctx, datafeedID)
+	compID, sdkDiags := client.ID(ctx, resourceID)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
-		return nil, diags
+		return state, false, diags
 	}
 
-	data.ID = types.StringValue(compID.String())
+	state.ID = types.StringValue(compID.String())
 
-	diags.Append(data.SetStartAndEndFromAPI(datafeedStats)...)
+	diags.Append(state.SetStartAndEndFromAPI(datafeedStats)...)
+	if diags.HasError() {
+		return state, false, diags
+	}
 
-	return &data, diags
+	// Defaults are import-only guards; they are already present in managed state.
+	if state.Force.IsNull() {
+		state.Force = types.BoolValue(false)
+	}
+	if state.Timeout.IsNull() {
+		state.Timeout = customtypes.NewDurationValue("30s")
+	}
+
+	return state, true, diags
 }

@@ -29,6 +29,8 @@ import (
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/ruleaction"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 )
 
 // APIModel represents the API model for ML anomaly detection jobs
@@ -277,7 +279,7 @@ func (a *APIModel) toPutJobRequest() putjob.Request {
 		req.ModelPlotConfig = &types.ModelPlotConfig{
 			AnnotationsEnabled: a.ModelPlotConfig.AnnotationsEnabled,
 			Enabled:            &a.ModelPlotConfig.Enabled,
-			Terms:              nonEmptyStrPtr(a.ModelPlotConfig.Terms),
+			Terms:              typeutils.NonEmptyStringPtr(a.ModelPlotConfig.Terms),
 		}
 	}
 	req.AllowLazyOpen = a.AllowLazyOpen
@@ -619,12 +621,4 @@ func bytesSizeToString(b types.ByteSize) string {
 		}
 		return s
 	}
-}
-
-// nonEmptyStrPtr returns a pointer to s if non-empty, otherwise nil.
-func nonEmptyStrPtr(s string) *string {
-	if s == "" {
-		return nil
-	}
-	return &s
 }
