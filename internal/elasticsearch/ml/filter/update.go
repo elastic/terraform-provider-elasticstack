@@ -25,6 +25,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
@@ -51,7 +52,16 @@ func (r *filterResource) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
-	filterID := state.FilterID.ValueString()
+	compID, compDiags := clients.CompositeIDFromStrFw(state.ID.ValueString())
+	resp.Diagnostics.Append(compDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	filterID := compID.ResourceID
+	if filterID == "" {
+		resp.Diagnostics.AddError("Invalid resource ID", "Could not determine filter id from composite id")
+		return
+	}
 
 	tflog.Debug(ctx, fmt.Sprintf("Updating ML filter: %s", filterID))
 
