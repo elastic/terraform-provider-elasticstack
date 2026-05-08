@@ -87,23 +87,28 @@ func (v validateConfigExactlyOneType) ValidateResource(ctx context.Context, req 
 		return
 	}
 
+	// Skip validation when any type block is unknown (e.g. derived from a variable).
+	if data.Fs.IsUnknown() || data.URL.IsUnknown() || data.Gcs.IsUnknown() || data.Azure.IsUnknown() || data.S3.IsUnknown() || data.Hdfs.IsUnknown() {
+		return
+	}
+
 	set := 0
-	if !data.Fs.IsNull() && !data.Fs.IsUnknown() {
+	if !data.Fs.IsNull() {
 		set++
 	}
-	if !data.URL.IsNull() && !data.URL.IsUnknown() {
+	if !data.URL.IsNull() {
 		set++
 	}
-	if !data.Gcs.IsNull() && !data.Gcs.IsUnknown() {
+	if !data.Gcs.IsNull() {
 		set++
 	}
-	if !data.Azure.IsNull() && !data.Azure.IsUnknown() {
+	if !data.Azure.IsNull() {
 		set++
 	}
-	if !data.S3.IsNull() && !data.S3.IsUnknown() {
+	if !data.S3.IsNull() {
 		set++
 	}
-	if !data.Hdfs.IsNull() && !data.Hdfs.IsUnknown() {
+	if !data.Hdfs.IsNull() {
 		set++
 	}
 

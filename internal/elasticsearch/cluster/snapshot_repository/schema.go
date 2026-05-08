@@ -20,11 +20,13 @@ package snapshot_repository
 import (
 	"context"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"maps"
@@ -51,18 +53,20 @@ func GetSchema(_ context.Context) schema.Schema {
 				Computed:            true,
 				Default:             booldefault.StaticBool(true),
 			},
-			"fs":    fsAttribute(),
-			"url":   urlAttribute(),
-			"gcs":   gcsAttribute(),
-			"azure": azureAttribute(),
-			"s3":    s3Attribute(),
-			"hdfs":  hdfsAttribute(),
+		},
+		Blocks: map[string]schema.Block{
+			"fs":    fsBlock(),
+			"url":   urlBlock(),
+			"gcs":   gcsBlock(),
+			"azure": azureBlock(),
+			"s3":    s3Block(),
+			"hdfs":  hdfsBlock(),
 		},
 	}
 }
 
-// commonAttributes returns the common settings shared across most repository types.
-func commonAttributes() map[string]schema.Attribute {
+// commonBlockAttributes returns the common settings shared across most repository types.
+func commonBlockAttributes() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"chunk_size": schema.StringAttribute{
 			MarkdownDescription: "Maximum size of files in snapshots.",
@@ -79,6 +83,7 @@ func commonAttributes() map[string]schema.Attribute {
 			MarkdownDescription: "Maximum snapshot creation rate per node.",
 			Optional:            true,
 			Computed:            true,
+			Default:             stringdefault.StaticString("40mb"),
 		},
 		"max_restore_bytes_per_sec": schema.StringAttribute{
 			MarkdownDescription: "Maximum snapshot restore rate per node.",
@@ -94,38 +99,46 @@ func commonAttributes() map[string]schema.Attribute {
 	}
 }
 
-// commonStdAttributes returns attributes for standard (non-URL) repositories.
-func commonStdAttributes() map[string]schema.Attribute {
+// commonStdBlockAttributes returns attributes for standard (non-URL) repositories.
+func commonStdBlockAttributes() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"max_number_of_snapshots": schema.Int64Attribute{
 			MarkdownDescription: "Maximum number of snapshots the repository can contain.",
 			Optional:            true,
 			Computed:            true,
 			Default:             int64default.StaticInt64(500),
+			Validators: []validator.Int64{
+				int64validator.AtLeast(1),
+			},
 		},
 	}
 }
 
-func fsAttribute() schema.Attribute {
-	attrs := mergeAttributes(commonAttributes(), commonStdAttributes(), map[string]schema.Attribute{
+func fsBlock() schema.Block {
+	attrs := mergeAttributes(commonBlockAttributes(), commonStdBlockAttributes(), map[string]schema.Attribute{
 		"location": schema.StringAttribute{
 			MarkdownDescription: "Location of the shared filesystem used to store and retrieve snapshots.",
 			Required:            true,
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.RequiresReplace(),
+			},
 		},
 	})
-	return schema.SingleNestedAttribute{
+	return schema.SingleNestedBlock{
 		MarkdownDescription: "Shared filesystem repository. Repositories of this type use a shared filesystem to store snapshots. " +
 			"This filesystem must be accessible to all master and data nodes in the cluster.",
-		Optional:   true,
 		Attributes: attrs,
 	}
 }
 
-func urlAttribute() schema.Attribute {
-	attrs := mergeAttributes(commonAttributes(), commonStdAttributes(), map[string]schema.Attribute{
+func urlBlock() schema.Block {
+	attrs := mergeAttributes(commonBlockAttributes(), commonStdBlockAttributes(), map[string]schema.Attribute{
 		"url": schema.StringAttribute{
 			MarkdownDescription: "URL location of the root of the shared filesystem repository.",
 			Required:            true,
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.RequiresReplace(),
+			},
 			Validators: []validator.String{
 				stringvalidator.RegexMatches(urlProtocolRegex, "Url following protocols supported: file, ftp, http, https, jar"),
 			},
@@ -135,30 +148,37 @@ func urlAttribute() schema.Attribute {
 			Optional:            true,
 			Computed:            true,
 			Default:             int64default.StaticInt64(5),
+			Validators: []validator.Int64{
+				int64validator.AtLeast(0),
+			},
 		},
 		"http_socket_timeout": schema.StringAttribute{
 			MarkdownDescription: "Maximum wait time for data transfers over a connection.",
 			Optional:            true,
 			Computed:            true,
+			Default:             stringdefault.StaticString("50s"),
 		},
 	})
-	return schema.SingleNestedAttribute{
+	return schema.SingleNestedBlock{
 		MarkdownDescription: "URL repository. Provides read-only access to a shared filesystem repository.",
-		Optional:            true,
 		Attributes:          attrs,
 	}
 }
 
-func gcsAttribute() schema.Attribute {
-	attrs := mergeAttributes(commonAttributes(), map[string]schema.Attribute{
+func gcsBlock() schema.Block {
+	attrs := mergeAttributes(commonBlockAttributes(), map[string]schema.Attribute{
 		"bucket": schema.StringAttribute{
 			MarkdownDescription: "The name of the bucket to be used for snapshots.",
 			Required:            true,
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.RequiresReplace(),
+			},
 		},
 		"client": schema.StringAttribute{
 			MarkdownDescription: "The name of the client to use to connect to Google Cloud Storage.",
 			Optional:            true,
 			Computed:            true,
+			Default:             stringdefault.StaticString("default"),
 		},
 		"base_path": schema.StringAttribute{
 			MarkdownDescription: "Specifies the path within the bucket to the repository data. Defaults to the root of the bucket.",
@@ -166,23 +186,26 @@ func gcsAttribute() schema.Attribute {
 			Computed:            true,
 		},
 	})
-	return schema.SingleNestedAttribute{
+	return schema.SingleNestedBlock{
 		MarkdownDescription: "Google Cloud Storage repository. Stores snapshots in a Google Cloud Storage bucket.",
-		Optional:            true,
 		Attributes:          attrs,
 	}
 }
 
-func azureAttribute() schema.Attribute {
-	attrs := mergeAttributes(commonAttributes(), map[string]schema.Attribute{
+func azureBlock() schema.Block {
+	attrs := mergeAttributes(commonBlockAttributes(), map[string]schema.Attribute{
 		"container": schema.StringAttribute{
 			MarkdownDescription: "Container name. You must create the Azure container before creating the repository.",
 			Required:            true,
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.RequiresReplace(),
+			},
 		},
 		"client": schema.StringAttribute{
 			MarkdownDescription: "Azure named client to use.",
 			Optional:            true,
 			Computed:            true,
+			Default:             stringdefault.StaticString("default"),
 		},
 		"base_path": schema.StringAttribute{
 			MarkdownDescription: "Specifies the path within the container to the repository data.",
@@ -193,23 +216,26 @@ func azureAttribute() schema.Attribute {
 			MarkdownDescription: "Location mode for the Azure repository. Primary_only or secondary_only.",
 			Optional:            true,
 			Computed:            true,
+			Default:             stringdefault.StaticString("primary_only"),
 			Validators: []validator.String{
 				stringvalidator.OneOf("primary_only", "secondary_only"),
 			},
 		},
 	})
-	return schema.SingleNestedAttribute{
+	return schema.SingleNestedBlock{
 		MarkdownDescription: "Azure repository. Stores snapshots in Microsoft Azure Blob Storage.",
-		Optional:            true,
 		Attributes:          attrs,
 	}
 }
 
-func s3Attribute() schema.Attribute {
-	attrs := mergeAttributes(commonAttributes(), map[string]schema.Attribute{
+func s3Block() schema.Block {
+	attrs := mergeAttributes(commonBlockAttributes(), map[string]schema.Attribute{
 		"bucket": schema.StringAttribute{
 			MarkdownDescription: "Name of the S3 bucket to use for snapshots.",
 			Required:            true,
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.RequiresReplace(),
+			},
 		},
 		"endpoint": schema.StringAttribute{
 			MarkdownDescription: "Custom S3 service endpoint, useful when using VPC endpoints or non-default S3 URLs.",
@@ -223,6 +249,7 @@ func s3Attribute() schema.Attribute {
 			MarkdownDescription: "The name of the S3 client to use to connect to S3.",
 			Optional:            true,
 			Computed:            true,
+			Default:             stringdefault.StaticString("default"),
 		},
 		"base_path": schema.StringAttribute{
 			MarkdownDescription: "Specifies the path to the repository data within its bucket.",
@@ -244,6 +271,7 @@ func s3Attribute() schema.Attribute {
 			MarkdownDescription: "The S3 repository supports all S3 canned ACLs.",
 			Optional:            true,
 			Computed:            true,
+			Default:             stringdefault.StaticString("private"),
 			Validators: []validator.String{
 				stringvalidator.OneOf("private", "public-read", "public-read-write", "authenticated-read", "log-delivery-write", "bucket-owner-read", "bucket-owner-full-control"),
 			},
@@ -252,6 +280,7 @@ func s3Attribute() schema.Attribute {
 			MarkdownDescription: "Sets the S3 storage class for objects stored in the snapshot repository.",
 			Optional:            true,
 			Computed:            true,
+			Default:             stringdefault.StaticString("standard"),
 			Validators: []validator.String{
 				stringvalidator.OneOf("standard", "reduced_redundancy", "standard_ia", "onezone_ia", "intelligent_tiering"),
 			},
@@ -263,22 +292,27 @@ func s3Attribute() schema.Attribute {
 			Default:             booldefault.StaticBool(false),
 		},
 	})
-	return schema.SingleNestedAttribute{
+	return schema.SingleNestedBlock{
 		MarkdownDescription: "S3 repository. Stores snapshots in an Amazon S3 bucket.",
-		Optional:            true,
 		Attributes:          attrs,
 	}
 }
 
-func hdfsAttribute() schema.Attribute {
-	attrs := mergeAttributes(commonAttributes(), map[string]schema.Attribute{
+func hdfsBlock() schema.Block {
+	attrs := mergeAttributes(commonBlockAttributes(), map[string]schema.Attribute{
 		"uri": schema.StringAttribute{
 			MarkdownDescription: `The uri address for hdfs. ex: "hdfs://<host>:<port>/".`,
 			Required:            true,
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.RequiresReplace(),
+			},
 		},
 		"path": schema.StringAttribute{
 			MarkdownDescription: "The file path within the filesystem where data is stored/loaded.",
 			Required:            true,
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.RequiresReplace(),
+			},
 		},
 		"load_defaults": schema.BoolAttribute{
 			MarkdownDescription: "Whether to load the default Hadoop configuration or not.",
@@ -287,9 +321,8 @@ func hdfsAttribute() schema.Attribute {
 			Default:             booldefault.StaticBool(true),
 		},
 	})
-	return schema.SingleNestedAttribute{
+	return schema.SingleNestedBlock{
 		MarkdownDescription: "HDFS repository. Stores snapshots in Hadoop Distributed File System.",
-		Optional:            true,
 		Attributes:          attrs,
 	}
 }

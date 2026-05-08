@@ -124,6 +124,20 @@ func strSetting(settings map[string]any, key string) string {
 	}
 }
 
+// strSettingNull extracts a string setting, returning null when the key is absent.
+func strSettingNull(settings map[string]any, key string) types.String {
+	v, ok := settings[key]
+	if !ok {
+		return types.StringNull()
+	}
+	switch val := v.(type) {
+	case string:
+		return types.StringValue(val)
+	default:
+		return types.StringValue(fmt.Sprintf("%v", v))
+	}
+}
+
 // boolSetting extracts a bool setting with a fallback.
 func boolSetting(settings map[string]any, key string, fallback bool) bool {
 	v, ok := settings[key]
@@ -185,13 +199,17 @@ func settingsToFs(ctx context.Context, repo *elasticsearch.SnapshotRepositoryInf
 	}
 
 	fs := FsSettings{
-		Location:               types.StringValue(strSetting(s, "location")),
-		ChunkSize:              types.StringValue(strSetting(s, "chunk_size")),
-		Compress:               types.BoolValue(boolSetting(s, "compress", compressFallback)),
-		MaxSnapshotBytesPerSec: types.StringValue(strSetting(s, "max_snapshot_bytes_per_sec")),
-		MaxRestoreBytesPerSec:  types.StringValue(strSetting(s, "max_restore_bytes_per_sec")),
-		Readonly:               types.BoolValue(boolSetting(s, "readonly", false)),
-		MaxNumberOfSnapshots:   types.Int64Value(int64Setting(s, "max_number_of_snapshots", 500)),
+		CommonSettings: CommonSettings{
+			ChunkSize:              strSettingNull(s, "chunk_size"),
+			Compress:               types.BoolValue(boolSetting(s, "compress", compressFallback)),
+			MaxSnapshotBytesPerSec: strSettingNull(s, "max_snapshot_bytes_per_sec"),
+			MaxRestoreBytesPerSec:  strSettingNull(s, "max_restore_bytes_per_sec"),
+			Readonly:               types.BoolValue(boolSetting(s, "readonly", false)),
+		},
+		CommonStdSettings: CommonStdSettings{
+			MaxNumberOfSnapshots: types.Int64Value(int64Setting(s, "max_number_of_snapshots", 500)),
+		},
+		Location: types.StringValue(strSetting(s, "location")),
 	}
 	return types.ObjectValueFrom(ctx, fsAttrTypes(), fs)
 }
@@ -208,15 +226,19 @@ func settingsToURL(ctx context.Context, repo *elasticsearch.SnapshotRepositoryIn
 	}
 
 	u := URLSettings{
-		URL:                    types.StringValue(strSetting(s, "url")),
-		HTTPMaxRetries:         types.Int64Value(int64Setting(s, "http_max_retries", 5)),
-		HTTPSocketTimeout:      types.StringValue(strSetting(s, "http_socket_timeout")),
-		ChunkSize:              types.StringValue(strSetting(s, "chunk_size")),
-		Compress:               types.BoolValue(boolSetting(s, "compress", compressFallback)),
-		MaxSnapshotBytesPerSec: types.StringValue(strSetting(s, "max_snapshot_bytes_per_sec")),
-		MaxRestoreBytesPerSec:  types.StringValue(strSetting(s, "max_restore_bytes_per_sec")),
-		Readonly:               types.BoolValue(boolSetting(s, "readonly", false)),
-		MaxNumberOfSnapshots:   types.Int64Value(int64Setting(s, "max_number_of_snapshots", 500)),
+		CommonSettings: CommonSettings{
+			ChunkSize:              strSettingNull(s, "chunk_size"),
+			Compress:               types.BoolValue(boolSetting(s, "compress", compressFallback)),
+			MaxSnapshotBytesPerSec: strSettingNull(s, "max_snapshot_bytes_per_sec"),
+			MaxRestoreBytesPerSec:  strSettingNull(s, "max_restore_bytes_per_sec"),
+			Readonly:               types.BoolValue(boolSetting(s, "readonly", false)),
+		},
+		CommonStdSettings: CommonStdSettings{
+			MaxNumberOfSnapshots: types.Int64Value(int64Setting(s, "max_number_of_snapshots", 500)),
+		},
+		URL:               types.StringValue(strSetting(s, "url")),
+		HTTPMaxRetries:    types.Int64Value(int64Setting(s, "http_max_retries", 5)),
+		HTTPSocketTimeout: strSettingNull(s, "http_socket_timeout"),
 	}
 	return types.ObjectValueFrom(ctx, urlAttrTypes(), u)
 }
@@ -224,14 +246,16 @@ func settingsToURL(ctx context.Context, repo *elasticsearch.SnapshotRepositoryIn
 func settingsToGcs(ctx context.Context, repo *elasticsearch.SnapshotRepositoryInfo) (types.Object, diag.Diagnostics) {
 	s := repo.Settings
 	gcs := GcsSettings{
-		Bucket:                 types.StringValue(strSetting(s, "bucket")),
-		Client:                 types.StringValue(strSetting(s, "client")),
-		BasePath:               types.StringValue(strSetting(s, "base_path")),
-		ChunkSize:              types.StringValue(strSetting(s, "chunk_size")),
-		Compress:               types.BoolValue(boolSetting(s, "compress", true)),
-		MaxSnapshotBytesPerSec: types.StringValue(strSetting(s, "max_snapshot_bytes_per_sec")),
-		MaxRestoreBytesPerSec:  types.StringValue(strSetting(s, "max_restore_bytes_per_sec")),
-		Readonly:               types.BoolValue(boolSetting(s, "readonly", false)),
+		CommonSettings: CommonSettings{
+			ChunkSize:              strSettingNull(s, "chunk_size"),
+			Compress:               types.BoolValue(boolSetting(s, "compress", true)),
+			MaxSnapshotBytesPerSec: strSettingNull(s, "max_snapshot_bytes_per_sec"),
+			MaxRestoreBytesPerSec:  strSettingNull(s, "max_restore_bytes_per_sec"),
+			Readonly:               types.BoolValue(boolSetting(s, "readonly", false)),
+		},
+		Bucket:   types.StringValue(strSetting(s, "bucket")),
+		Client:   strSettingNull(s, "client"),
+		BasePath: strSettingNull(s, "base_path"),
 	}
 	return types.ObjectValueFrom(ctx, gcsAttrTypes(), gcs)
 }
@@ -239,15 +263,17 @@ func settingsToGcs(ctx context.Context, repo *elasticsearch.SnapshotRepositoryIn
 func settingsToAzure(ctx context.Context, repo *elasticsearch.SnapshotRepositoryInfo) (types.Object, diag.Diagnostics) {
 	s := repo.Settings
 	azure := AzureSettings{
-		Container:              types.StringValue(strSetting(s, "container")),
-		Client:                 types.StringValue(strSetting(s, "client")),
-		BasePath:               types.StringValue(strSetting(s, "base_path")),
-		LocationMode:           types.StringValue(strSetting(s, "location_mode")),
-		ChunkSize:              types.StringValue(strSetting(s, "chunk_size")),
-		Compress:               types.BoolValue(boolSetting(s, "compress", true)),
-		MaxSnapshotBytesPerSec: types.StringValue(strSetting(s, "max_snapshot_bytes_per_sec")),
-		MaxRestoreBytesPerSec:  types.StringValue(strSetting(s, "max_restore_bytes_per_sec")),
-		Readonly:               types.BoolValue(boolSetting(s, "readonly", false)),
+		CommonSettings: CommonSettings{
+			ChunkSize:              strSettingNull(s, "chunk_size"),
+			Compress:               types.BoolValue(boolSetting(s, "compress", true)),
+			MaxSnapshotBytesPerSec: strSettingNull(s, "max_snapshot_bytes_per_sec"),
+			MaxRestoreBytesPerSec:  strSettingNull(s, "max_restore_bytes_per_sec"),
+			Readonly:               types.BoolValue(boolSetting(s, "readonly", false)),
+		},
+		Container:    types.StringValue(strSetting(s, "container")),
+		Client:       strSettingNull(s, "client"),
+		BasePath:     strSettingNull(s, "base_path"),
+		LocationMode: strSettingNull(s, "location_mode"),
 	}
 	return types.ObjectValueFrom(ctx, azureAttrTypes(), azure)
 }
@@ -255,20 +281,22 @@ func settingsToAzure(ctx context.Context, repo *elasticsearch.SnapshotRepository
 func settingsToS3(ctx context.Context, repo *elasticsearch.SnapshotRepositoryInfo) (types.Object, diag.Diagnostics) {
 	s := repo.Settings
 	s3 := S3Settings{
-		Bucket:                 types.StringValue(strSetting(s, "bucket")),
-		Endpoint:               types.StringValue(strSetting(s, "endpoint")),
-		Client:                 types.StringValue(strSetting(s, "client")),
-		BasePath:               types.StringValue(strSetting(s, "base_path")),
-		ServerSideEncryption:   types.BoolValue(boolSetting(s, "server_side_encryption", false)),
-		BufferSize:             types.StringValue(strSetting(s, "buffer_size")),
-		CannedACL:              types.StringValue(strSetting(s, "canned_acl")),
-		StorageClass:           types.StringValue(strSetting(s, "storage_class")),
-		PathStyleAccess:        types.BoolValue(boolSetting(s, "path_style_access", false)),
-		ChunkSize:              types.StringValue(strSetting(s, "chunk_size")),
-		Compress:               types.BoolValue(boolSetting(s, "compress", true)),
-		MaxSnapshotBytesPerSec: types.StringValue(strSetting(s, "max_snapshot_bytes_per_sec")),
-		MaxRestoreBytesPerSec:  types.StringValue(strSetting(s, "max_restore_bytes_per_sec")),
-		Readonly:               types.BoolValue(boolSetting(s, "readonly", false)),
+		CommonSettings: CommonSettings{
+			ChunkSize:              strSettingNull(s, "chunk_size"),
+			Compress:               types.BoolValue(boolSetting(s, "compress", true)),
+			MaxSnapshotBytesPerSec: strSettingNull(s, "max_snapshot_bytes_per_sec"),
+			MaxRestoreBytesPerSec:  strSettingNull(s, "max_restore_bytes_per_sec"),
+			Readonly:               types.BoolValue(boolSetting(s, "readonly", false)),
+		},
+		Bucket:               types.StringValue(strSetting(s, "bucket")),
+		Endpoint:             strSettingNull(s, "endpoint"),
+		Client:               strSettingNull(s, "client"),
+		BasePath:             strSettingNull(s, "base_path"),
+		ServerSideEncryption: types.BoolValue(boolSetting(s, "server_side_encryption", false)),
+		BufferSize:           strSettingNull(s, "buffer_size"),
+		CannedACL:            strSettingNull(s, "canned_acl"),
+		StorageClass:         strSettingNull(s, "storage_class"),
+		PathStyleAccess:      types.BoolValue(boolSetting(s, "path_style_access", false)),
 	}
 	return types.ObjectValueFrom(ctx, s3AttrTypes(), s3)
 }
@@ -276,14 +304,16 @@ func settingsToS3(ctx context.Context, repo *elasticsearch.SnapshotRepositoryInf
 func settingsToHdfs(ctx context.Context, repo *elasticsearch.SnapshotRepositoryInfo) (types.Object, diag.Diagnostics) {
 	s := repo.Settings
 	hdfs := HdfsSettings{
-		URI:                    types.StringValue(strSetting(s, "uri")),
-		Path:                   types.StringValue(strSetting(s, "path")),
-		LoadDefaults:           types.BoolValue(boolSetting(s, "load_defaults", true)),
-		ChunkSize:              types.StringValue(strSetting(s, "chunk_size")),
-		Compress:               types.BoolValue(boolSetting(s, "compress", true)),
-		MaxSnapshotBytesPerSec: types.StringValue(strSetting(s, "max_snapshot_bytes_per_sec")),
-		MaxRestoreBytesPerSec:  types.StringValue(strSetting(s, "max_restore_bytes_per_sec")),
-		Readonly:               types.BoolValue(boolSetting(s, "readonly", false)),
+		CommonSettings: CommonSettings{
+			ChunkSize:              strSettingNull(s, "chunk_size"),
+			Compress:               types.BoolValue(boolSetting(s, "compress", true)),
+			MaxSnapshotBytesPerSec: strSettingNull(s, "max_snapshot_bytes_per_sec"),
+			MaxRestoreBytesPerSec:  strSettingNull(s, "max_restore_bytes_per_sec"),
+			Readonly:               types.BoolValue(boolSetting(s, "readonly", false)),
+		},
+		URI:          types.StringValue(strSetting(s, "uri")),
+		Path:         types.StringValue(strSetting(s, "path")),
+		LoadDefaults: types.BoolValue(boolSetting(s, "load_defaults", true)),
 	}
 	return types.ObjectValueFrom(ctx, hdfsAttrTypes(), hdfs)
 }
