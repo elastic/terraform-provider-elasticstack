@@ -192,7 +192,7 @@ func GetMLJobStats(ctx context.Context, apiClient *clients.ElasticsearchScopedCl
 
 	res, err := typedClient.Ml.GetJobStats().JobId(jobID).AllowNoMatch(true).Do(ctx)
 	if err != nil {
-		if isNotFoundElasticsearchError(err) {
+		if IsNotFoundElasticsearchError(err) {
 			return nil, diags
 		}
 		diags.AddError("Failed to get ML job stats", fmt.Sprintf("Unable to get ML job stats: %s — %s", jobID, err.Error()))
@@ -336,7 +336,7 @@ func DeleteDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedC
 
 	_, err = typedClient.Ml.DeleteDatafeed(datafeedID).Force(force).Do(ctx)
 	if err != nil {
-		if isNotFoundElasticsearchError(err) {
+		if IsNotFoundElasticsearchError(err) {
 			return diags
 		}
 		diags.AddError("Failed to delete ML datafeed", fmt.Sprintf("Unable to delete ML datafeed: %s — %s", datafeedID, err.Error()))
@@ -418,7 +418,7 @@ func GetDatafeedStats(ctx context.Context, apiClient *clients.ElasticsearchScope
 
 	res, err := typedClient.Ml.GetDatafeedStats().DatafeedId(datafeedID).AllowNoMatch(true).Do(ctx)
 	if err != nil {
-		if isNotFoundElasticsearchError(err) {
+		if IsNotFoundElasticsearchError(err) {
 			return nil, diags
 		}
 		diags.AddError("Failed to get ML datafeed stats", fmt.Sprintf("Unable to get ML datafeed stats: %s — %s", datafeedID, err.Error()))

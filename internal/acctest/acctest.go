@@ -21,7 +21,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -30,9 +29,9 @@ import (
 	"path"
 	"testing"
 
-	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	clientconfig "github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
+	elasticsearch "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/provider"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
@@ -41,8 +40,7 @@ import (
 
 // IsNotFoundElasticsearchError reports whether err is an Elasticsearch 404 response.
 func IsNotFoundElasticsearchError(err error) bool {
-	var esErr *estypes.ElasticsearchError
-	return errors.As(err, &esErr) && esErr.Status == 404
+	return elasticsearch.IsNotFoundElasticsearchError(err)
 }
 
 var Providers map[string]func() (tfprotov6.ProviderServer, error)

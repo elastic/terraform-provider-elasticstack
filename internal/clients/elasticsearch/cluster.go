@@ -307,7 +307,7 @@ func DeleteSnapshotRepository(ctx context.Context, apiClient *clients.Elasticsea
 	}
 	_, err = typedClient.Snapshot.DeleteRepository(name).Do(ctx)
 	if err != nil {
-		if isNotFoundElasticsearchError(err) {
+		if IsNotFoundElasticsearchError(err) {
 			return diags
 		}
 		return sdkdiag.FromErr(err)
@@ -439,7 +439,7 @@ func DeleteSlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient
 	}
 	_, err = typedClient.Slm.DeleteLifecycle(slmName).Do(ctx)
 	if err != nil {
-		if isNotFoundElasticsearchError(err) {
+		if IsNotFoundElasticsearchError(err) {
 			return diags
 		}
 		return sdkdiag.FromErr(err)
@@ -538,7 +538,7 @@ func GetScript(ctx context.Context, apiClient *clients.ElasticsearchScopedClient
 	}
 	resp, err := typedClient.Core.GetScript(id).Do(ctx)
 	if err != nil {
-		if isNotFoundElasticsearchError(err) {
+		if IsNotFoundElasticsearchError(err) {
 			return nil, nil
 		}
 		var diags fwdiag.Diagnostics
@@ -598,7 +598,7 @@ func DeleteScript(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 	}
 	_, err = typedClient.Core.DeleteScript(id).Do(ctx)
 	if err != nil {
-		if isNotFoundElasticsearchError(err) {
+		if IsNotFoundElasticsearchError(err) {
 			return diags
 		}
 		diags.AddError("Failed to delete script", err.Error())

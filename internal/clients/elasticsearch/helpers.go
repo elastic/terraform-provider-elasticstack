@@ -25,11 +25,11 @@ import (
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 )
 
-// isNotFoundElasticsearchError reports whether err is an Elasticsearch API
+// IsNotFoundElasticsearchError reports whether err is an Elasticsearch API
 // error with HTTP status 404. Use this to treat a missing resource as a
 // successful no-op (e.g. idempotent deletes) or as a "not found" signal on
 // read operations.
-func isNotFoundElasticsearchError(err error) bool {
+func IsNotFoundElasticsearchError(err error) bool {
 	var esErr *types.ElasticsearchError
 	return errors.As(err, &esErr) && esErr.Status == 404
 }
