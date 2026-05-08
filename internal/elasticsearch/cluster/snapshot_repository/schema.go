@@ -32,6 +32,9 @@ import (
 	"maps"
 )
 
+// ensure the interface is satisfied at compile time
+var _ validator.Object = blockRequiredAttrValidator{}
+
 const schemaVersion int64 = 1
 
 func GetSchema(_ context.Context) schema.Schema {
@@ -121,7 +124,8 @@ func fsBlock() schema.Block {
 	attrs := mergeAttributes(commonBlockAttributes(), commonStdBlockAttributes(), map[string]schema.Attribute{
 		"location": schema.StringAttribute{
 			MarkdownDescription: "Location of the shared filesystem used to store and retrieve snapshots.",
-			Required:            true,
+			Optional:            true,
+			Computed:            true,
 			PlanModifiers: []planmodifier.String{
 				stringplanmodifier.RequiresReplace(),
 			},
@@ -131,6 +135,9 @@ func fsBlock() schema.Block {
 		MarkdownDescription: "Shared filesystem repository. Repositories of this type use a shared filesystem to store snapshots. " +
 			"This filesystem must be accessible to all master and data nodes in the cluster.",
 		Attributes: attrs,
+		Validators: []validator.Object{
+			requireBlockAttrs("location"),
+		},
 	}
 }
 
@@ -138,7 +145,8 @@ func urlBlock() schema.Block {
 	attrs := mergeAttributes(commonBlockAttributes(), commonStdBlockAttributes(), map[string]schema.Attribute{
 		"url": schema.StringAttribute{
 			MarkdownDescription: "URL location of the root of the shared filesystem repository.",
-			Required:            true,
+			Optional:            true,
+			Computed:            true,
 			PlanModifiers: []planmodifier.String{
 				stringplanmodifier.RequiresReplace(),
 			},
@@ -165,6 +173,9 @@ func urlBlock() schema.Block {
 	return schema.SingleNestedBlock{
 		MarkdownDescription: "URL repository. Provides read-only access to a shared filesystem repository.",
 		Attributes:          attrs,
+		Validators: []validator.Object{
+			requireBlockAttrs("url"),
+		},
 	}
 }
 
@@ -172,7 +183,8 @@ func gcsBlock() schema.Block {
 	attrs := mergeAttributes(commonBlockAttributes(), map[string]schema.Attribute{
 		"bucket": schema.StringAttribute{
 			MarkdownDescription: "The name of the bucket to be used for snapshots.",
-			Required:            true,
+			Optional:            true,
+			Computed:            true,
 			PlanModifiers: []planmodifier.String{
 				stringplanmodifier.RequiresReplace(),
 			},
@@ -192,6 +204,9 @@ func gcsBlock() schema.Block {
 	return schema.SingleNestedBlock{
 		MarkdownDescription: "Google Cloud Storage repository. Stores snapshots in a Google Cloud Storage bucket.",
 		Attributes:          attrs,
+		Validators: []validator.Object{
+			requireBlockAttrs("bucket"),
+		},
 	}
 }
 
@@ -199,7 +214,8 @@ func azureBlock() schema.Block {
 	attrs := mergeAttributes(commonBlockAttributes(), map[string]schema.Attribute{
 		"container": schema.StringAttribute{
 			MarkdownDescription: "Container name. You must create the Azure container before creating the repository.",
-			Required:            true,
+			Optional:            true,
+			Computed:            true,
 			PlanModifiers: []planmodifier.String{
 				stringplanmodifier.RequiresReplace(),
 			},
@@ -229,6 +245,9 @@ func azureBlock() schema.Block {
 	return schema.SingleNestedBlock{
 		MarkdownDescription: "Azure repository. Stores snapshots in Microsoft Azure Blob Storage.",
 		Attributes:          attrs,
+		Validators: []validator.Object{
+			requireBlockAttrs("container"),
+		},
 	}
 }
 
@@ -236,7 +255,8 @@ func s3Block() schema.Block {
 	attrs := mergeAttributes(commonBlockAttributes(), map[string]schema.Attribute{
 		"bucket": schema.StringAttribute{
 			MarkdownDescription: "Name of the S3 bucket to use for snapshots.",
-			Required:            true,
+			Optional:            true,
+			Computed:            true,
 			PlanModifiers: []planmodifier.String{
 				stringplanmodifier.RequiresReplace(),
 			},
@@ -299,6 +319,9 @@ func s3Block() schema.Block {
 	return schema.SingleNestedBlock{
 		MarkdownDescription: "S3 repository. Stores snapshots in an Amazon S3 bucket.",
 		Attributes:          attrs,
+		Validators: []validator.Object{
+			requireBlockAttrs("bucket"),
+		},
 	}
 }
 
@@ -306,14 +329,16 @@ func hdfsBlock() schema.Block {
 	attrs := mergeAttributes(commonBlockAttributes(), map[string]schema.Attribute{
 		"uri": schema.StringAttribute{
 			MarkdownDescription: `The uri address for hdfs. ex: "hdfs://<host>:<port>/".`,
-			Required:            true,
+			Optional:            true,
+			Computed:            true,
 			PlanModifiers: []planmodifier.String{
 				stringplanmodifier.RequiresReplace(),
 			},
 		},
 		"path": schema.StringAttribute{
 			MarkdownDescription: "The file path within the filesystem where data is stored/loaded.",
-			Required:            true,
+			Optional:            true,
+			Computed:            true,
 			PlanModifiers: []planmodifier.String{
 				stringplanmodifier.RequiresReplace(),
 			},
@@ -328,6 +353,9 @@ func hdfsBlock() schema.Block {
 	return schema.SingleNestedBlock{
 		MarkdownDescription: "HDFS repository. Stores snapshots in Hadoop Distributed File System.",
 		Attributes:          attrs,
+		Validators: []validator.Object{
+			requireBlockAttrs("uri", "path"),
+		},
 	}
 }
 

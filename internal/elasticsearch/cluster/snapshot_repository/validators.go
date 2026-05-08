@@ -28,6 +28,51 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
+// blockRequiredAttrValidator is a validator.Object placed on a SingleNestedBlock
+// to enforce that specific attributes within the block are non-null when the
+// block is present in the configuration.  Because the enclosing block is
+// optional, the framework does not allow marking its child attributes as
+// Required (that would demand them unconditionally).  This validator bridges
+// that gap: when the block IS configured the named attributes are mandatory.
+type blockRequiredAttrValidator struct {
+	attrNames []string
+}
+
+func requireBlockAttrs(attrNames ...string) validator.Object {
+	return blockRequiredAttrValidator{attrNames: attrNames}
+}
+
+func (v blockRequiredAttrValidator) Description(_ context.Context) string {
+	return fmt.Sprintf("when block is configured, the following attributes are required: %s", strings.Join(v.attrNames, ", "))
+}
+
+func (v blockRequiredAttrValidator) MarkdownDescription(ctx context.Context) string {
+	return v.Description(ctx)
+}
+
+func (v blockRequiredAttrValidator) ValidateObject(_ context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
+	// Block not present in config – nothing to validate.
+	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+		return
+	}
+
+	attrs := req.ConfigValue.Attributes()
+	for _, name := range v.attrNames {
+		val, ok := attrs[name]
+		if !ok || val.IsUnknown() {
+			// Unknown means it will be resolved later; skip.
+			continue
+		}
+		if val.IsNull() {
+			resp.Diagnostics.AddAttributeError(
+				req.Path.AtName(name),
+				"Missing required attribute",
+				fmt.Sprintf("The %q attribute is required when the block is configured.", name),
+			)
+		}
+	}
+}
+
 var urlProtocolRegex = regexp.MustCompile("^(file:|ftp:|http:|https:|jar:)")
 
 // s3EndpointValidator validates that an S3 endpoint is a valid HTTP/HTTPS URL.

@@ -61,16 +61,13 @@ resource "elasticstack_elasticsearch_snapshot_repository" "my_fs_repo" {
 <a id="nestedblock--azure"></a>
 ### Nested Schema for `azure`
 
-Required:
-
-- `container` (String) Container name. You must create the Azure container before creating the repository.
-
 Optional:
 
 - `base_path` (String) Specifies the path within the container to the repository data.
 - `chunk_size` (String) Maximum size of files in snapshots.
 - `client` (String) Azure named client to use.
 - `compress` (Boolean) If true, metadata files, such as index mappings and settings, are compressed in snapshots.
+- `container` (String) Container name. You must create the Azure container before creating the repository.
 - `location_mode` (String) Location mode for the Azure repository. `primary_only` or `secondary_only`. See the [Azure storage redundancy documentation](https://docs.microsoft.com/en-us/azure/storage/common/storage-redundancy) for more details.
 - `max_restore_bytes_per_sec` (String) Maximum snapshot restore rate per node.
 - `max_snapshot_bytes_per_sec` (String) Maximum snapshot creation rate per node.
@@ -101,14 +98,11 @@ Optional:
 <a id="nestedblock--fs"></a>
 ### Nested Schema for `fs`
 
-Required:
-
-- `location` (String) Location of the shared filesystem used to store and retrieve snapshots.
-
 Optional:
 
 - `chunk_size` (String) Maximum size of files in snapshots.
 - `compress` (Boolean) If true, metadata files, such as index mappings and settings, are compressed in snapshots.
+- `location` (String) Location of the shared filesystem used to store and retrieve snapshots.
 - `max_number_of_snapshots` (Number) Maximum number of snapshots the repository can contain.
 - `max_restore_bytes_per_sec` (String) Maximum snapshot restore rate per node.
 - `max_snapshot_bytes_per_sec` (String) Maximum snapshot creation rate per node.
@@ -118,13 +112,10 @@ Optional:
 <a id="nestedblock--gcs"></a>
 ### Nested Schema for `gcs`
 
-Required:
-
-- `bucket` (String) The name of the bucket to be used for snapshots.
-
 Optional:
 
 - `base_path` (String) Specifies the path within the bucket to the repository data. Defaults to the root of the bucket.
+- `bucket` (String) The name of the bucket to be used for snapshots.
 - `chunk_size` (String) Maximum size of files in snapshots.
 - `client` (String) The name of the client to use to connect to Google Cloud Storage.
 - `compress` (Boolean) If true, metadata files, such as index mappings and settings, are compressed in snapshots.
@@ -136,11 +127,6 @@ Optional:
 <a id="nestedblock--hdfs"></a>
 ### Nested Schema for `hdfs`
 
-Required:
-
-- `path` (String) The file path within the filesystem where data is stored/loaded.
-- `uri` (String) The uri address for hdfs. ex: "hdfs://<host>:<port>/".
-
 Optional:
 
 - `chunk_size` (String) Maximum size of files in snapshots.
@@ -148,19 +134,18 @@ Optional:
 - `load_defaults` (Boolean) Whether to load the default Hadoop configuration or not.
 - `max_restore_bytes_per_sec` (String) Maximum snapshot restore rate per node.
 - `max_snapshot_bytes_per_sec` (String) Maximum snapshot creation rate per node.
+- `path` (String) The file path within the filesystem where data is stored/loaded.
 - `readonly` (Boolean) If true, the repository is read-only.
+- `uri` (String) The uri address for hdfs. ex: "hdfs://<host>:<port>/".
 
 
 <a id="nestedblock--s3"></a>
 ### Nested Schema for `s3`
 
-Required:
-
-- `bucket` (String) Name of the S3 bucket to use for snapshots.
-
 Optional:
 
 - `base_path` (String) Specifies the path to the repository data within its bucket.
+- `bucket` (String) Name of the S3 bucket to use for snapshots.
 - `buffer_size` (String) Minimum threshold below which the chunk is uploaded using a single request.
 - `canned_acl` (String) The S3 repository supports all S3 canned ACLs.
 - `chunk_size` (String) Maximum size of files in snapshots.
@@ -178,10 +163,6 @@ Optional:
 <a id="nestedblock--url"></a>
 ### Nested Schema for `url`
 
-Required:
-
-- `url` (String) URL location of the root of the shared filesystem repository.
-
 Optional:
 
 - `chunk_size` (String) Maximum size of files in snapshots.
@@ -192,6 +173,7 @@ Optional:
 - `max_restore_bytes_per_sec` (String) Maximum snapshot restore rate per node.
 - `max_snapshot_bytes_per_sec` (String) Maximum snapshot creation rate per node.
 - `readonly` (Boolean) If true, the repository is read-only.
+- `url` (String) URL location of the root of the shared filesystem repository.
 
 ## Import
 
