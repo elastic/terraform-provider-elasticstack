@@ -18,6 +18,7 @@
 package info_test
 
 import (
+	"fmt"
 	"os"
 	"regexp"
 	"strings"
@@ -26,6 +27,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func TestAccDataSourceClusterInfo(t *testing.T) {
@@ -228,16 +230,16 @@ func TestAccDataSourceClusterInfo_withBasicAuthHeadersAndMultiEndpoints(t *testi
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.#", "1"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.username", os.Getenv("ELASTICSEARCH_USERNAME")),
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.password"),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.api_key", ""),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.bearer_token", ""),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.es_client_authentication", ""),
+					checkAttrAbsent("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.api_key"),
+					checkAttrAbsent("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.bearer_token"),
+					checkAttrAbsent("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.es_client_authentication"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.endpoints.#", "2"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.endpoints.0", endpoints[0]),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.endpoints.1", endpoints[1]),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.headers.%", "2"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.headers.XTerraformTest", "basic-auth"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.headers.XTrace", "cluster-info"),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.insecure", "false"),
+					checkAttrAbsent("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.insecure"),
 				),
 			},
 		},
@@ -258,9 +260,9 @@ func TestAccDataSourceClusterInfo_withAPIKey(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.#", "1"),
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.api_key"),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.username", ""),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.password", ""),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.bearer_token", ""),
+					checkAttrAbsent("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.username"),
+					checkAttrAbsent("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.password"),
+					checkAttrAbsent("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.bearer_token"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.endpoints.#", "1"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.endpoints.0", endpoint),
 				),
@@ -288,9 +290,9 @@ func TestAccDataSourceClusterInfo_withBearerToken(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.#", "1"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.bearer_token", bearerToken),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.es_client_authentication", "Authorization"),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.username", ""),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.password", ""),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.api_key", ""),
+					checkAttrAbsent("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.username"),
+					checkAttrAbsent("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.password"),
+					checkAttrAbsent("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.api_key"),
 				),
 			},
 		},
@@ -317,9 +319,9 @@ func TestAccDataSourceClusterInfo_withTLSInputs(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.ca_data", tlsMaterial.CAPEM),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.cert_data", tlsMaterial.CertPEM),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.key_data", tlsMaterial.KeyPEM),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.ca_file", ""),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.cert_file", ""),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.key_file", ""),
+					checkAttrAbsent("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.ca_file"),
+					checkAttrAbsent("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.cert_file"),
+					checkAttrAbsent("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.key_file"),
 				),
 			},
 			{
@@ -336,9 +338,9 @@ func TestAccDataSourceClusterInfo_withTLSInputs(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.ca_file", tlsMaterial.CAFile),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.cert_file", tlsMaterial.CertFile),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.key_file", tlsMaterial.KeyFile),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.ca_data", ""),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.cert_data", ""),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.key_data", ""),
+					checkAttrAbsent("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.ca_data"),
+					checkAttrAbsent("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.cert_data"),
+					checkAttrAbsent("data.elasticstack_elasticsearch_info.test_conn", "elasticsearch_connection.0.key_data"),
 				),
 			},
 		},
@@ -408,6 +410,23 @@ func TestAccDataSourceClusterInfo_versionBuildFormats(t *testing.T) {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+// checkAttrAbsent asserts that the given attribute is either absent from state
+// or present with an empty string value. PF blocks only write attributes that
+// were explicitly configured, so unset optional fields will not appear in state.
+func checkAttrAbsent(resourceName, attrName string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("resource not found in state: %s", resourceName)
+		}
+		value, ok := rs.Primary.Attributes[attrName]
+		if ok && value != "" {
+			return fmt.Errorf("expected %s to be absent or empty, got %q", attrName, value)
+		}
+		return nil
+	}
+}
 
 func primaryESEndpoint() string {
 	for ep := range strings.SplitSeq(os.Getenv("ELASTICSEARCH_ENDPOINTS"), ",") {

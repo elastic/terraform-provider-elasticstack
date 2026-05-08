@@ -30,5 +30,5 @@
 ## 5. Testing
 
 - [x] 5.1 Review existing `cluster_info_data_source_test.go` and update to PF testing patterns if needed (check if SDK-based tests still work via mux)
-- [ ] 5.2 Run `make build` and verify no compile errors
-- [ ] 5.3 Run targeted acceptance test for cluster info data source (`go test ./internal/elasticsearch/cluster/ -run TestAcc.*ClusterInfo -v`) and verify pass
+- [x] 5.2 Run `make build` and verify no compile errors
+- [x] 5.3 Run targeted acceptance test for cluster info data source (`go test ./internal/elasticsearch/cluster/ -run TestAcc.*ClusterInfo -v`) and verify pass
