@@ -56,14 +56,15 @@ func createTransform(ctx context.Context, client *clients.ElasticsearchScopedCli
 	deferValidation := model.DeferValidation.ValueBool()
 	enabled := model.Enabled.ValueBool()
 
-	sdkDiags = elasticsearch.PutTransform(ctx, client, apiTransform, deferValidation, timeout, enabled)
+	// Resolve composite ID BEFORE creating the remote transform so a failure
+	// here cannot leave an orphaned remote resource.
+	id, sdkDiags := client.ID(ctx, resourceID)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
 		return model, diags
 	}
 
-	// Build composite ID from cluster UUID + transform name.
-	id, sdkDiags := client.ID(ctx, resourceID)
+	sdkDiags = elasticsearch.PutTransform(ctx, client, apiTransform, deferValidation, timeout, enabled)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
 		return model, diags

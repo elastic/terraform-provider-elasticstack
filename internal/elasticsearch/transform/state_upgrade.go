@@ -58,12 +58,42 @@ func migrateStateV0ToV1(_ context.Context, req resource.UpgradeStateRequest, res
 		return
 	}
 
+	// The SDK provider stored unset JSON string attributes as "" rather than
+	// null. The Plugin Framework jsontypes.NormalizedType rejects empty strings,
+	// so normalise them to nil before marshalling the upgraded state.
+	normaliseEmptyJSONStrings(stateMap)
+
 	stateJSON, err := json.Marshal(stateMap)
 	if err != nil {
 		resp.Diagnostics.AddError("State upgrade error", "Could not marshal new state: "+err.Error())
 		return
 	}
 	resp.DynamicValue = &tfprotov6.DynamicValue{JSON: stateJSON}
+}
+
+// normaliseEmptyJSONStrings converts empty-string values stored by the SDK
+// provider for optional JSON attributes into nil so the Plugin Framework
+// jsontypes.NormalizedType can accept them.
+func normaliseEmptyJSONStrings(state map[string]any) {
+	for _, key := range []string{"metadata", "pivot", "latest"} {
+		if v, ok := state[key].(string); ok && v == "" {
+			state[key] = nil
+		}
+	}
+
+	if src, ok := state["source"].(map[string]any); ok {
+		for _, key := range []string{"query", "runtime_mappings"} {
+			if v, ok := src[key].(string); ok && v == "" {
+				src[key] = nil
+			}
+		}
+	}
+
+	if dst, ok := state["destination"].(map[string]any); ok {
+		if v, ok := dst["pipeline"].(string); ok && v == "" {
+			dst["pipeline"] = nil
+		}
+	}
 }
 
 // collapseSingletonList unwraps m[key] from a singleton list (the SDK shape for

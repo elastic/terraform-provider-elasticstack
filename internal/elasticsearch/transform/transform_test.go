@@ -22,6 +22,7 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
@@ -308,8 +309,81 @@ func TestAccResourceTransformFromSDK(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test", "retention_policy.time.max_age", "30d"),
 				),
 			},
+			{
+				// Import verification after the v0→v1 migration.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("sdk"),
+				ConfigVariables: config.Variables{
+					"transform_name": config.StringVariable(transformName),
+				},
+				ResourceName:            "elasticstack_elasticsearch_transform.test",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"defer_validation", "elasticsearch_connection", "timeout"},
+			},
 		},
 	})
+}
+
+// TestAccResourceTransformValidation verifies schema-level validation errors
+// for pivot/latest mutual exclusion and nested required fields in sync.time
+// and retention_policy.time.
+func TestAccResourceTransformValidation(t *testing.T) {
+	cases := []struct {
+		name        string
+		dir         string
+		expectError *regexp.Regexp
+	}{
+		{
+			name:        "both pivot and latest set",
+			dir:         "both_pivot_latest",
+			expectError: regexp.MustCompile(`(?i)one \(and only one\) of \[pivot,latest\]`),
+		},
+		{
+			name:        "neither pivot nor latest set",
+			dir:         "neither_pivot_latest",
+			expectError: regexp.MustCompile(`(?i)one \(and only one\) of \[pivot,latest\]`),
+		},
+		{
+			name:        "sync block without time",
+			dir:         "sync_no_time",
+			expectError: regexp.MustCompile(`(?is)must be specified when[\s\S]*is specified`),
+		},
+		{
+			name:        "sync.time block without field",
+			dir:         "sync_time_no_field",
+			expectError: regexp.MustCompile(`(?is)must be specified when[\s\S]*is specified`),
+		},
+		{
+			name:        "retention_policy block without time",
+			dir:         "retention_no_time",
+			expectError: regexp.MustCompile(`(?is)must be specified when[\s\S]*is specified`),
+		},
+		{
+			name:        "retention_policy.time block without field",
+			dir:         "retention_time_missing",
+			expectError: regexp.MustCompile(`(?is)must be specified when[\s\S]*is specified`),
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			transformName := sdkacctest.RandStringFromCharSet(18, sdkacctest.CharSetAlphaNum)
+			resource.Test(t, resource.TestCase{
+				PreCheck: func() { acctest.PreCheck(t) },
+				Steps: []resource.TestStep{
+					{
+						ProtoV6ProviderFactories: acctest.Providers,
+						ConfigDirectory:          acctest.NamedTestCaseDirectory(tc.dir),
+						ConfigVariables: config.Variables{
+							"transform_name": config.StringVariable(transformName),
+						},
+						ExpectError: tc.expectError,
+					},
+				},
+			})
+		})
+	}
 }
 
 func checkResourceTransformDestroy(s *terraform.State) error {
