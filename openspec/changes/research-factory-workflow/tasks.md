@@ -72,10 +72,10 @@
 
 ## 9. Build and test
 
-- [ ] 9.1 Run `make build` and confirm it succeeds with the new and modified workflow source files in place.
-- [ ] 9.2 Run `make check-openspec` (or `./node_modules/.bin/openspec validate research-factory-workflow --type change`) and resolve any reported problems.
-- [ ] 9.3 Run the workflow-source unit tests (e.g. `npm test` against the `.github/workflows-src/lib/` test files) and confirm all green.
-- [ ] 9.4 Confirm the linter (e.g. `make check-lint`) is clean.
+- [x] 9.1 Run `make build` and confirm it succeeds with the new and modified workflow source files in place.
+- [x] 9.2 Run `make check-openspec` (or `./node_modules/.bin/openspec validate research-factory-workflow --type change`) and resolve any reported problems.
+- [x] 9.3 Run the workflow-source unit tests (e.g. `npm test` against the `.github/workflows-src/lib/` test files) and confirm all green.
+- [x] 9.4 Confirm the linter (e.g. `make check-lint`) is clean.
 
 ## 10. Documentation and labels
 
