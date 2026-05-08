@@ -295,6 +295,7 @@ function createFactoryIssueModule(config) {
     parseOptionalTriStateFromEnv: factoryParseOptionalTriStateFromEnv,
     parseFinalizeGateEnv: factoryParseFinalizeGateEnv,
     factoryFetchIssueComments,
+    serializeIssueComments,
   };
 
   for (const alias of issueBranchNameAliases) {
@@ -342,6 +343,45 @@ async function factoryFetchIssueComments({ github, owner, repo, issueNumber }) {
   };
 }
 
+const COMMENT_CONTEXT_BUDGET = 50_000;
+
+/**
+ * Serializes captured issue comments into a deterministic markdown string for agent prompts.
+ *
+ * @param {{ comments: Array<{author: string, createdAt: string, body: string}>, truncated: boolean }} params
+ * @returns {string}
+ */
+function serializeIssueComments({ comments, truncated }) {
+  if (!Array.isArray(comments) || comments.length === 0) {
+    return '';
+  }
+
+  let result = '';
+  let includedCount = 0;
+
+  for (const comment of comments) {
+    const block = `**@${comment.author || ''}** (${comment.createdAt || ''}):\n\n${comment.body || ''}\n\n---\n`;
+
+    if (result.length + block.length > COMMENT_CONTEXT_BUDGET && includedCount > 0) {
+      break;
+    }
+
+    result += block;
+    includedCount++;
+  }
+
+  const remaining = comments.length - includedCount;
+  if (remaining > 0) {
+    result += `[... ${remaining} more comments truncated for context budget]\n`;
+  }
+
+  if (truncated) {
+    result += '[... comment history truncated at 200 comments]\n';
+  }
+
+  return result;
+}
+
 if (typeof module !== 'undefined') {
   module.exports = {
     issueClosingReferencePattern,
@@ -349,6 +389,7 @@ if (typeof module !== 'undefined') {
     factoryCheckActorTrust,
     factoryActorTrustWhenSenderMissing,
     factoryFetchIssueComments,
+    serializeIssueComments,
     factoryCheckDuplicatePR,
     factoryComputeGateReason,
     factoryParseOptionalTriStateFromEnv,

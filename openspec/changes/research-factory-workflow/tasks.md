@@ -6,8 +6,8 @@
 
 ## 2. Shared library: comment serialization for prompt context
 
-- [ ] 2.1 Add a `serializeIssueComments` helper that takes the captured comment array and returns a deterministic markdown rendering suitable for embedding in an agent prompt (each comment prefixed with author + UTC timestamp, newlines escaped consistently, total length truncated and marked if it would exceed an agent-context budget).
-- [ ] 2.2 Add unit tests covering ordering, single-comment rendering, multi-comment rendering, length truncation with marker, and stable formatting for empty input.
+- [x] 2.1 Add a `serializeIssueComments` helper that takes the captured comment array and returns a deterministic markdown rendering suitable for embedding in an agent prompt (each comment prefixed with author + UTC timestamp, newlines escaped consistently, total length truncated and marked if it would exceed an agent-context budget).
+- [x] 2.2 Add unit tests covering ordering, single-comment rendering, multi-comment rendering, length truncation with marker, and stable formatting for empty input.
 
 ## 3. Workflow source skeleton
 

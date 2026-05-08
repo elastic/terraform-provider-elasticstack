@@ -11,6 +11,7 @@ const {
   factoryParseFinalizeGateEnv,
   factoryActorTrustWhenSenderMissing,
   factoryFetchIssueComments,
+  serializeIssueComments,
   factoryCheckDuplicatePR,
   factoryComputeGateReason,
   createFactoryIssueIntake,
@@ -386,4 +387,72 @@ test('createFactoryIssueModule binds shared exports and branch aliases', () => {
     issueLabels: [],
   });
   assert.equal(event.event_eligible, true);
+});
+
+test('serializeIssueComments returns empty string for empty input', () => {
+  assert.equal(serializeIssueComments({ comments: [], truncated: false }), '');
+  assert.equal(serializeIssueComments({ comments: [], truncated: true }), '');
+});
+
+test('serializeIssueComments renders a single comment correctly', () => {
+  const result = serializeIssueComments({
+    comments: [{ author: 'alice', createdAt: '2024-01-01T12:00:00Z', body: 'Hello world.' }],
+    truncated: false,
+  });
+  assert.match(result, /\*\*@alice\*\* \(2024-01-01T12:00:00Z\):/);
+  assert.match(result, /Hello world\./);
+  assert.match(result, /---/);
+});
+
+test('serializeIssueComments renders multiple comments in order', () => {
+  const result = serializeIssueComments({
+    comments: [
+      { author: 'alice', createdAt: '2024-01-01T12:00:00Z', body: 'First.' },
+      { author: 'bob', createdAt: '2024-01-02T12:00:00Z', body: 'Second.' },
+      { author: 'carol', createdAt: '2024-01-03T12:00:00Z', body: 'Third.' },
+    ],
+    truncated: false,
+  });
+  const firstIndex = result.indexOf('First.');
+  const secondIndex = result.indexOf('Second.');
+  const thirdIndex = result.indexOf('Third.');
+  assert.ok(firstIndex < secondIndex);
+  assert.ok(secondIndex < thirdIndex);
+  assert.equal(result.includes('[... comment history truncated at 200 comments]'), false);
+});
+
+test('serializeIssueComments truncates at budget and appends marker', () => {
+  const longBody = 'x'.repeat(30_000);
+  const result = serializeIssueComments({
+    comments: [
+      { author: 'alice', createdAt: '2024-01-01T12:00:00Z', body: longBody },
+      { author: 'bob', createdAt: '2024-01-02T12:00:00Z', body: longBody },
+      { author: 'carol', createdAt: '2024-01-03T12:00:00Z', body: longBody },
+    ],
+    truncated: false,
+  });
+  assert.ok(result.includes('alice'));
+  assert.ok(result.length <= 60_000); // budget + truncation marker overhead
+  assert.ok(result.includes('[... 1 more comments truncated for context budget]') || result.includes('[... 2 more comments truncated for context budget]'));
+});
+
+test('serializeIssueComments appends fetch-cap note when truncated is true', () => {
+  const result = serializeIssueComments({
+    comments: [{ author: 'alice', createdAt: '2024-01-01T12:00:00Z', body: 'Hello.' }],
+    truncated: true,
+  });
+  assert.ok(result.includes('[... comment history truncated at 200 comments]'));
+});
+
+test('serializeIssueComments produces stable output for identical input', () => {
+  const input = {
+    comments: [
+      { author: 'alice', createdAt: '2024-01-01T12:00:00Z', body: 'Hello world.' },
+      { author: 'bob', createdAt: '2024-01-02T12:00:00Z', body: 'Second comment.' },
+    ],
+    truncated: false,
+  };
+  const run1 = serializeIssueComments(input);
+  const run2 = serializeIssueComments(input);
+  assert.equal(run1, run2);
 });
