@@ -24,6 +24,7 @@ The Kibana alerting rule API accepts an `artifacts` object in the create (`POST 
 | Investigation guide — file-based | `content_path` (optional string): provider reads the file at plan time, computes SHA-256, and at apply time sends file content as `blob`. `checksum` (computed string) is written to state after create/update. On the next plan the provider re-reads the file and compares the new checksum to state; if different, computed fields are marked unknown (same pattern as `elasticstack_fleet_custom_integration`). |
 | Mutual exclusion | When `investigation_guide` is present, exactly one of `content` or `content_path` MUST be set. Enforced via `objectvalidator.ExactlyOneOf` or equivalent plan-time validation. |
 | `checksum` in state | Only meaningful when `content_path` is used. Written to state at apply time (create or update). On read, `checksum` is not overwritten from the API (the API returns `blob`, not a checksum); the plan modifier manages drift. |
+| Minimum Kibana version | `artifacts` is supported from Kibana **8.19.0** (8.x series) and **9.1.0** (9.x series). The provider SHALL enforce a version gate mirroring the `alert_delay`/`flapping` pattern (REQ-051). |
 | Update when absent | When `artifacts` is not in the Terraform config, the provider SHALL omit `artifacts` from the PUT body so Kibana leaves existing rule artifacts unchanged. |
 | Read path — content vs content_path | If prior state has `content` set (and `content_path` null): populate `content` from API `blob` after read. If prior state has `content_path` set (and `content` null): do not update `content` or `content_path` from the API; the plan modifier handles drift detection via `checksum`. |
 | Plan modifier | A `ModifyPlan` hook on the resource (mirroring `elasticstack_fleet_custom_integration`) reads `content_path` during plan, computes SHA-256, and if it differs from the stored `checksum`, marks `checksum` (and potentially `id`) as unknown so Terraform shows a non-empty plan. |
@@ -40,8 +41,7 @@ The Kibana alerting rule API accepts an `artifacts` object in the create (`POST 
 
 ## Open Questions
 
-1. ~~**Minimum Kibana version for `artifacts` on alerting rules**:~~ **Resolved**: The minimum Kibana version is **8.19.0** (8.x series) and **9.1.0** (9.x series). Confirmed from [elastic/kibana#216292](https://github.com/elastic/kibana/pull/216292) (dashboards) and [elastic/kibana#216377](https://github.com/elastic/kibana/pull/216377) (investigation guide), which were backported to `8.19` and labelled for `9.1.0`. The provider SHALL enforce a version gate mirroring the `alert_delay`/`flapping` pattern (REQ-051).
-2. **Blob normalisation**: Does Kibana modify the investigation guide blob (e.g. trim whitespace, normalise line endings) before storing? If so, read-path comparison for `content` may produce spurious drift. Investigate during acceptance testing.
+1. **Blob normalisation**: Does Kibana modify the investigation guide blob (e.g. trim whitespace, normalise line endings) before storing? If so, read-path comparison for `content` may produce spurious drift. Investigate during acceptance testing.
 
 ## Migration / State
 
