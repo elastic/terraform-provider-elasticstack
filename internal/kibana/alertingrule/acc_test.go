@@ -23,6 +23,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
 	"testing"
 
@@ -811,6 +812,331 @@ func TestAccResourceAlertingRuleFrequencyExclusivity(t *testing.T) {
 					"rule_id": config.StringVariable(ruleID),
 				},
 				ExpectError: regexp.MustCompile(`Cannot combine rule-level throttle with actions\.frequency`),
+			},
+		},
+	})
+}
+
+func checkIfArtifactsUnsupported() func() (bool, error) {
+	return func() (b bool, err error) {
+		client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+		if err != nil {
+			return false, err
+		}
+		serverVersion, diags := client.ServerVersion(context.Background())
+		if diags.HasError() {
+			return false, fmt.Errorf("failed to parse the elasticsearch version %v", diags)
+		}
+		major := serverVersion.Segments()[0]
+		minVersion := version.Must(version.NewVersion("8.19.0"))
+		if major >= 9 {
+			minVersion = version.Must(version.NewVersion("9.1.0"))
+		}
+		return serverVersion.LessThan(minVersion), nil
+	}
+}
+
+// testCheckAlertingRuleAPIArtifactsDashboardsCount returns a TestCheckFunc that
+// verifies the number of dashboard references stored in Kibana for the rule.
+func testCheckAlertingRuleAPIArtifactsDashboardsCount(expected int) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources["elasticstack_kibana_alerting_rule.test_rule"]
+		if !ok {
+			return fmt.Errorf("resource not found in state")
+		}
+
+		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
+
+		client, err := clients.NewAcceptanceTestingKibanaScopedClient()
+		if err != nil {
+			return err
+		}
+
+		oapiClient, err := client.GetKibanaOapiClient()
+		if err != nil {
+			return err
+		}
+
+		rule, diags := kibanaoapi.GetAlertingRule(context.Background(), oapiClient, compID.ClusterID, compID.ResourceID)
+		if diags.HasError() {
+			return fmt.Errorf("failed to get alerting rule: %v", diags)
+		}
+		if rule == nil {
+			return fmt.Errorf("alerting rule (%s) not found", compID.ResourceID)
+		}
+
+		count := 0
+		if rule.Artifacts != nil && rule.Artifacts.Dashboards != nil {
+			count = len(rule.Artifacts.Dashboards)
+		}
+		if count != expected {
+			return fmt.Errorf("expected %d dashboards in API, got %d", expected, count)
+		}
+		return nil
+	}
+}
+
+// testCheckAlertingRuleAPIArtifactsInvestigationGuideBlob returns a TestCheckFunc
+// that verifies the investigation guide blob stored in Kibana.
+func testCheckAlertingRuleAPIArtifactsInvestigationGuideBlob(expected string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources["elasticstack_kibana_alerting_rule.test_rule"]
+		if !ok {
+			return fmt.Errorf("resource not found in state")
+		}
+
+		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
+
+		client, err := clients.NewAcceptanceTestingKibanaScopedClient()
+		if err != nil {
+			return err
+		}
+
+		oapiClient, err := client.GetKibanaOapiClient()
+		if err != nil {
+			return err
+		}
+
+		rule, diags := kibanaoapi.GetAlertingRule(context.Background(), oapiClient, compID.ClusterID, compID.ResourceID)
+		if diags.HasError() {
+			return fmt.Errorf("failed to get alerting rule: %v", diags)
+		}
+		if rule == nil {
+			return fmt.Errorf("alerting rule (%s) not found", compID.ResourceID)
+		}
+
+		var blob string
+		if rule.Artifacts != nil && rule.Artifacts.InvestigationGuide != nil {
+			blob = rule.Artifacts.InvestigationGuide.Blob
+		}
+		if blob != expected {
+			return fmt.Errorf("expected investigation guide blob %q, got %q", expected, blob)
+		}
+		return nil
+	}
+}
+
+func TestAccResourceAlertingRuleArtifactsDashboards(t *testing.T) {
+	ruleName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	ruleID := uuid.New().String()
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAlertingRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 checkIfArtifactsUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_dashboards"),
+				ConfigVariables: config.Variables{
+					"name":    config.StringVariable(ruleName),
+					"rule_id": config.StringVariable(ruleID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "name", ruleName),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "artifacts.dashboards.#", "2"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "artifacts.dashboards.0.id", "dashboard-1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "artifacts.dashboards.1.id", "dashboard-2"),
+					testCheckAlertingRuleAPIArtifactsDashboardsCount(2),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 checkIfArtifactsUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_dashboards"),
+				ConfigVariables: config.Variables{
+					"name":    config.StringVariable(ruleName),
+					"rule_id": config.StringVariable(ruleID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "artifacts.dashboards.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "artifacts.dashboards.0.id", "dashboard-3"),
+					testCheckAlertingRuleAPIArtifactsDashboardsCount(1),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceAlertingRuleArtifactsInlineGuide(t *testing.T) {
+	ruleName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	ruleID := uuid.New().String()
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAlertingRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 checkIfArtifactsUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_inline_guide"),
+				ConfigVariables: config.Variables{
+					"name":    config.StringVariable(ruleName),
+					"rule_id": config.StringVariable(ruleID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "name", ruleName),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_alerting_rule.test_rule", "artifacts.investigation_guide.content"),
+					testCheckAlertingRuleAPIArtifactsInvestigationGuideBlob("# Investigation Guide\n\nCheck the logs."),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 checkIfArtifactsUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_inline_guide"),
+				ConfigVariables: config.Variables{
+					"name":    config.StringVariable(ruleName),
+					"rule_id": config.StringVariable(ruleID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_alerting_rule.test_rule", "artifacts.investigation_guide.content"),
+					testCheckAlertingRuleAPIArtifactsInvestigationGuideBlob("# Updated Guide\n\nCheck the metrics."),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceAlertingRuleArtifactsContentPath(t *testing.T) {
+	ruleName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	ruleID := uuid.New().String()
+
+	tempDir := t.TempDir()
+	guidePath := filepath.Join(tempDir, "guide.md")
+	if err := os.WriteFile(guidePath, []byte("initial guide content\n"), 0o600); err != nil {
+		t.Fatalf("failed to write guide file: %v", err)
+	}
+
+	var step1Checksum string
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAlertingRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 checkIfArtifactsUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_content_path"),
+				ConfigVariables: config.Variables{
+					"name":       config.StringVariable(ruleName),
+					"rule_id":    config.StringVariable(ruleID),
+					"guide_path": config.StringVariable(guidePath),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "name", ruleName),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_alerting_rule.test_rule", "artifacts.investigation_guide.checksum"),
+					func(s *terraform.State) error {
+						rs := s.RootModule().Resources["elasticstack_kibana_alerting_rule.test_rule"]
+						if rs == nil {
+							return fmt.Errorf("resource not found in state")
+						}
+						step1Checksum = rs.Primary.Attributes["artifacts.investigation_guide.checksum"]
+						return nil
+					},
+				),
+			},
+			// Modify the file between steps; the next plan should detect drift.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 checkIfArtifactsUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_content_path"),
+				ConfigVariables: config.Variables{
+					"name":       config.StringVariable(ruleName),
+					"rule_id":    config.StringVariable(ruleID),
+					"guide_path": config.StringVariable(guidePath),
+				},
+				PreConfig: func() {
+					if err := os.WriteFile(guidePath, []byte("updated guide content\n"), 0o600); err != nil {
+						t.Fatalf("failed to update guide file: %v", err)
+					}
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			// Apply the update and assert checksum changed.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 checkIfArtifactsUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_content_path"),
+				ConfigVariables: config.Variables{
+					"name":       config.StringVariable(ruleName),
+					"rule_id":    config.StringVariable(ruleID),
+					"guide_path": config.StringVariable(guidePath),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_alerting_rule.test_rule", "artifacts.investigation_guide.checksum"),
+					func(s *terraform.State) error {
+						rs := s.RootModule().Resources["elasticstack_kibana_alerting_rule.test_rule"]
+						if rs == nil {
+							return fmt.Errorf("resource not found in state")
+						}
+						step3Checksum := rs.Primary.Attributes["artifacts.investigation_guide.checksum"]
+						if step3Checksum == step1Checksum {
+							return fmt.Errorf("expected checksum to change after file update, got same value: %s", step3Checksum)
+						}
+						return nil
+					},
+					testCheckAlertingRuleAPIArtifactsInvestigationGuideBlob("updated guide content\n"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceAlertingRuleArtifactsPreserveAndClear(t *testing.T) {
+	ruleName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	ruleID := uuid.New().String()
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAlertingRuleDestroy,
+		Steps: []resource.TestStep{
+			// Step 1: Create rule with artifacts (dashboards + inline guide).
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 checkIfArtifactsUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_dashboards"),
+				ConfigVariables: config.Variables{
+					"name":    config.StringVariable(ruleName),
+					"rule_id": config.StringVariable(ruleID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "artifacts.dashboards.#", "2"),
+					testCheckAlertingRuleAPIArtifactsDashboardsCount(2),
+				),
+			},
+			// Step 2: Omit artifacts block. Provider omits key from PUT,
+			// Kibana preserves existing dashboards.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 checkIfArtifactsUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("omit_artifacts"),
+				ConfigVariables: config.Variables{
+					"name":    config.StringVariable(ruleName),
+					"rule_id": config.StringVariable(ruleID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					// State after update preserves null because the planned value was null,
+					// avoiding inconsistent result after apply.
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "artifacts"),
+					// Verify Kibana still has the dashboards.
+					testCheckAlertingRuleAPIArtifactsDashboardsCount(2),
+				),
+			},
+			// Step 3: Add back artifacts with explicit empty dashboards list.
+			// Provider sends empty dashboards array, which clears dashboards in Kibana.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 checkIfArtifactsUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty_dashboards"),
+				ConfigVariables: config.Variables{
+					"name":    config.StringVariable(ruleName),
+					"rule_id": config.StringVariable(ruleID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "artifacts.dashboards.#", "0"),
+					testCheckAlertingRuleAPIArtifactsDashboardsCount(0),
+				),
 			},
 		},
 	})
