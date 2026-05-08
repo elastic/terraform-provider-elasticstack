@@ -24,6 +24,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -197,7 +198,7 @@ func checkRepoDestroy(name string) func(s *terraform.State) error {
 			}
 			res, err := typedClient.Snapshot.GetRepository().Repository(compID.ResourceID).Do(context.Background())
 			if err != nil {
-				if acctest.IsNotFoundElasticsearchError(err) {
+				if esclient.IsNotFoundElasticsearchError(err) {
 					continue
 				}
 				return err

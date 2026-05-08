@@ -27,6 +27,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamlifecycle"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
@@ -277,7 +278,7 @@ func checkResourceIndexTemplateDestroy(s *terraform.State) error {
 		}
 		_, err = typedClient.Indices.GetIndexTemplate().Name(compID.ResourceID).Do(context.Background())
 		if err != nil {
-			if acctest.IsNotFoundElasticsearchError(err) {
+			if esclient.IsNotFoundElasticsearchError(err) {
 				continue
 			}
 			return err
