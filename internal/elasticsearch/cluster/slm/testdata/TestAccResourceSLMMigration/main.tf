@@ -2,6 +2,10 @@ variable "name" {
   type = string
 }
 
+provider "elasticstack" {
+  elasticsearch {}
+}
+
 resource "elasticstack_elasticsearch_snapshot_repository" "repo" {
   name = "${var.name}-repo"
   fs {

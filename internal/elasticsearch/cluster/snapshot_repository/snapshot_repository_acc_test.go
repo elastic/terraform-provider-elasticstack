@@ -235,7 +235,7 @@ func TestAccResourceSnapRepoMigration(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
-					resource.TestCheckResourceAttr(resourceName, "fs.0.0.location", "/tmp"),
+					resource.TestCheckResourceAttr(resourceName, "fs.0.location", "/tmp"),
 				),
 			},
 			{
@@ -246,7 +246,7 @@ func TestAccResourceSnapRepoMigration(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
-					resource.TestCheckResourceAttr(resourceName, "fs.0.0.location", "/tmp"),
+					resource.TestCheckResourceAttr(resourceName, "fs.0.location", "/tmp"),
 				),
 			},
 		},
