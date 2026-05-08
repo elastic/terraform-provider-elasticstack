@@ -214,6 +214,27 @@ test('finalize_gate: event not eligible returns event reason', async () => {
   assert.equal(core.failures.length, 0);
 });
 
+test('fetch_issue_comments: empty comment list emits empty heredoc and count 0', async () => {
+  const tmpDir = mkdtempSync(join(tmpdir(), 'gh-output-'));
+  const ghOutputFile = join(tmpDir, 'github_output');
+  writeFileSync(ghOutputFile, '');
+
+  const { core } = await runInlineScript('fetch_issue_comments.inline.js', {
+    context: { repo: { owner: 'elastic', repo: 'terraform-provider-elasticstack' } },
+    github: createMockGithubWithComments([]),
+    core: createMockCore(),
+    env: { INPUT_ISSUE_NUMBER: '42', GITHUB_OUTPUT: ghOutputFile },
+  });
+
+  const outputContent = readFileSync(ghOutputFile, 'utf8');
+  // Heredoc structure must still be present even for empty content
+  assert.ok(outputContent.includes('issue_comments<<EOF_'), 'heredoc opener missing');
+  assert.equal(core.outputs.comment_count, '0');
+  assert.equal(core.failures.length, 0);
+
+  unlinkSync(ghOutputFile);
+});
+
 test('finalize_gate: actor not trusted returns actor reason', async () => {
   const { core } = await runInlineScript('finalize_gate.inline.js', {
     context: {},
@@ -231,5 +252,21 @@ test('finalize_gate: actor not trusted returns actor reason', async () => {
     core.outputs.gate_reason,
     "Trigger actor 'outsider' is not trusted; repository permission 'read' does not meet the required write/maintain/admin policy.",
   );
+  assert.equal(core.failures.length, 0);
+});
+
+test('finalize_gate: actor_trusted null (missing) returns cannot-determine reason', async () => {
+  const { core } = await runInlineScript('finalize_gate.inline.js', {
+    context: {},
+    github: {},
+    core: createMockCore(),
+    env: {
+      EVENT_ELIGIBLE: 'true',
+      EVENT_ELIGIBLE_REASON: 'Issue labeled event qualifies.',
+      // ACTOR_TRUSTED intentionally omitted → null
+    },
+  });
+
+  assert.match(core.outputs.gate_reason, /Actor trust could not be determined/);
   assert.equal(core.failures.length, 0);
 });

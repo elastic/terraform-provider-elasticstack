@@ -3,6 +3,8 @@
 //include: ../../lib/factory-issue-module.gh.js
 
 const params = parseFinalizeGateEnv(process.env);
+// research-factory does not create branches or PRs, so the duplicate-PR gate is intentionally
+// disabled by passing duplicatePrFound: false. This deviates from sibling factories by design.
 const result = computeGateReason({
   ...params,
   duplicatePrFound: false,
