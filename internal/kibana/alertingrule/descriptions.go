@@ -48,3 +48,24 @@ var timeframeDaysDescription string
 
 //go:embed descriptions/flapping.md
 var flappingDescription string
+
+//go:embed descriptions/artifacts.md
+var artifactsDescription string
+
+//go:embed descriptions/artifacts_dashboards.md
+var artifactsDashboardsDescription string
+
+//go:embed descriptions/artifacts_dashboard_id.md
+var artifactsDashboardIDDescription string
+
+//go:embed descriptions/artifacts_investigation_guide.md
+var artifactsInvestigationGuideDescription string
+
+//go:embed descriptions/artifacts_investigation_guide_content.md
+var artifactsInvestigationGuideContentDescription string
+
+//go:embed descriptions/artifacts_investigation_guide_content_path.md
+var artifactsInvestigationGuideContentPathDescription string
+
+//go:embed descriptions/artifacts_investigation_guide_checksum.md
+var artifactsInvestigationGuideChecksumDescription string

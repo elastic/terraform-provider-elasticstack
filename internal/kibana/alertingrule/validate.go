@@ -31,6 +31,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 // paramsSchemaSpec contains precomputed key metadata and decode factory for
@@ -118,6 +119,7 @@ func (r *Resource) ValidateConfig(ctx context.Context, req resource.ValidateConf
 
 	validateNotifyWhenThrottleFrequencyExclusivity(ctx, &data, &resp.Diagnostics)
 	validateDuplicateActionGroups(ctx, &data, &resp.Diagnostics)
+	validateArtifactsInvestigationGuideExclusivity(ctx, &data, &resp.Diagnostics)
 
 	if !typeutils.IsKnown(data.Params) || !typeutils.IsKnown(data.RuleTypeID) {
 		return
@@ -405,5 +407,54 @@ func validateDuplicateActionGroups(ctx context.Context, data *alertingRuleModel,
 			return
 		}
 		seen[group] = i
+	}
+}
+
+// validateArtifactsInvestigationGuideExclusivity enforces that when an
+// investigation_guide block is present, exactly one of content or content_path
+// is set (REQ-046).
+func validateArtifactsInvestigationGuideExclusivity(ctx context.Context, data *alertingRuleModel, diags *diag.Diagnostics) {
+	if !typeutils.IsKnown(data.Artifacts) || data.Artifacts.IsNull() {
+		return
+	}
+
+	var am artifactsModel
+	localDiags := diag.Diagnostics{}
+	localDiags.Append(data.Artifacts.As(ctx, &am, basetypes.ObjectAsOptions{})...)
+	diags.Append(localDiags...)
+	if localDiags.HasError() {
+		return
+	}
+
+	if !typeutils.IsKnown(am.InvestigationGuide) || am.InvestigationGuide.IsNull() {
+		return
+	}
+
+	var igm investigationGuideModel
+	localDiags = diag.Diagnostics{}
+	localDiags.Append(am.InvestigationGuide.As(ctx, &igm, basetypes.ObjectAsOptions{})...)
+	diags.Append(localDiags...)
+	if localDiags.HasError() {
+		return
+	}
+
+	contentSet := typeutils.IsKnown(igm.Content) && igm.Content.ValueString() != ""
+	contentPathSet := typeutils.IsKnown(igm.ContentPath) && igm.ContentPath.ValueString() != ""
+
+	if contentSet && contentPathSet {
+		diags.AddAttributeError(
+			path.Root("artifacts").AtName("investigation_guide"),
+			"Invalid investigation_guide configuration",
+			"Exactly one of content or content_path must be set. Both are present.",
+		)
+		return
+	}
+
+	if !contentSet && !contentPathSet {
+		diags.AddAttributeError(
+			path.Root("artifacts").AtName("investigation_guide"),
+			"Invalid investigation_guide configuration",
+			"Exactly one of content or content_path must be set. Neither is present.",
+		)
 	}
 }

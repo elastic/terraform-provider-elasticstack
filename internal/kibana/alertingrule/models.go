@@ -20,6 +20,7 @@ package alertingrule
 import (
 	"context"
 	"encoding/json"
+	"os"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
@@ -53,6 +54,7 @@ type alertingRuleModel struct {
 	AlertDelay          types.Int64          `tfsdk:"alert_delay"`
 	Flapping            types.Object         `tfsdk:"flapping"`
 	Actions             types.List           `tfsdk:"actions"`
+	Artifacts           types.Object         `tfsdk:"artifacts"`
 }
 
 // actionModel is the Terraform model for a rule action.
@@ -90,6 +92,24 @@ type flappingModel struct {
 	Enabled               types.Bool  `tfsdk:"enabled"`
 	LookBackWindow        types.Int64 `tfsdk:"look_back_window"`
 	StatusChangeThreshold types.Int64 `tfsdk:"status_change_threshold"`
+}
+
+// artifactsModel is the Terraform model for rule artifacts.
+type artifactsModel struct {
+	Dashboards         types.List   `tfsdk:"dashboards"`
+	InvestigationGuide types.Object `tfsdk:"investigation_guide"`
+}
+
+// dashboardModel is the Terraform model for a dashboard reference.
+type dashboardModel struct {
+	ID types.String `tfsdk:"id"`
+}
+
+// investigationGuideModel is the Terraform model for an investigation guide.
+type investigationGuideModel struct {
+	Content     types.String `tfsdk:"content"`
+	ContentPath types.String `tfsdk:"content_path"`
+	Checksum    types.String `tfsdk:"checksum"`
 }
 
 // populateFromAPI populates the model from the API response.
@@ -206,6 +226,89 @@ func (m *alertingRuleModel) populateFromAPI(ctx context.Context, rule *models.Al
 	} else {
 		m.Actions = types.ListNull(types.ObjectType{AttrTypes: getActionsAttrTypes()})
 	}
+
+	// Artifacts
+	diags.Append(m.populateArtifactsFromAPI(ctx, rule)...)
+
+	return diags
+}
+
+// populateArtifactsFromAPI populates the artifacts block from the API response.
+func (m *alertingRuleModel) populateArtifactsFromAPI(ctx context.Context, rule *models.AlertingRule) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	if rule.Artifacts == nil {
+		// Partial-response pattern: preserve prior known value when API omits the field.
+		if m.Artifacts.IsNull() || m.Artifacts.IsUnknown() {
+			m.Artifacts = types.ObjectNull(getArtifactsAttrTypes())
+		}
+		return diags
+	}
+
+	// Dashboards
+	var dashboardsList types.List
+	if len(rule.Artifacts.Dashboards) > 0 {
+		dashboards := make([]dashboardModel, len(rule.Artifacts.Dashboards))
+		for i, d := range rule.Artifacts.Dashboards {
+			dashboards[i] = dashboardModel{ID: types.StringValue(d.ID)}
+		}
+		dl, d := types.ListValueFrom(ctx, types.ObjectType{AttrTypes: getDashboardsAttrTypes()}, dashboards)
+		diags.Append(d...)
+		dashboardsList = dl
+	} else {
+		dashboardsList = types.ListNull(types.ObjectType{AttrTypes: getDashboardsAttrTypes()})
+	}
+
+	// Investigation guide — determine read-path behaviour from current model.
+	var priorIGM investigationGuideModel
+	priorIGExists := false
+	if !m.Artifacts.IsNull() && !m.Artifacts.IsUnknown() {
+		var am artifactsModel
+		// Allow unknown nested fields (e.g. computed checksum in plan) to be treated
+		// as empty so As() does not error.
+		d := m.Artifacts.As(ctx, &am, basetypes.ObjectAsOptions{UnhandledUnknownAsEmpty: true})
+		diags.Append(d...)
+		if !am.InvestigationGuide.IsNull() && !am.InvestigationGuide.IsUnknown() {
+			d := am.InvestigationGuide.As(ctx, &priorIGM, basetypes.ObjectAsOptions{UnhandledUnknownAsEmpty: true})
+			diags.Append(d...)
+			priorIGExists = true
+		}
+	}
+
+	var igObj types.Object
+	if rule.Artifacts.InvestigationGuide != nil {
+		if priorIGExists && !priorIGM.ContentPath.IsNull() && priorIGM.ContentPath.ValueString() != "" {
+			// Prior state/plan used content_path: preserve content_path and checksum.
+			newIGM := investigationGuideModel{
+				Content:     types.StringNull(),
+				ContentPath: priorIGM.ContentPath,
+				Checksum:    priorIGM.Checksum,
+			}
+			obj, d := types.ObjectValueFrom(ctx, getInvestigationGuideAttrTypes(), newIGM)
+			diags.Append(d...)
+			igObj = obj
+		} else {
+			// Prior state/plan used inline content (or no prior state): map API blob to content.
+			newIGM := investigationGuideModel{
+				Content:     types.StringValue(rule.Artifacts.InvestigationGuide.Blob),
+				ContentPath: types.StringNull(),
+				Checksum:    types.StringNull(),
+			}
+			obj, d := types.ObjectValueFrom(ctx, getInvestigationGuideAttrTypes(), newIGM)
+			diags.Append(d...)
+			igObj = obj
+		}
+	} else {
+		igObj = types.ObjectNull(getInvestigationGuideAttrTypes())
+	}
+
+	am := artifactsModel{
+		Dashboards:         dashboardsList,
+		InvestigationGuide: igObj,
+	}
+	artifactsObj, d := types.ObjectValueFrom(ctx, getArtifactsAttrTypes(), am)
+	diags.Append(d...)
+	m.Artifacts = artifactsObj
 
 	return diags
 }
@@ -327,6 +430,8 @@ var (
 	alertDelayMinSupportedVersion      = version.Must(version.NewVersion("8.13.0"))
 	flappingMinSupportedVersion        = version.Must(version.NewVersion("8.16.0"))
 	flappingEnabledMinSupportedVersion = version.Must(version.NewVersion("9.3.0"))
+	artifactsMinSupportedVersion8x     = version.Must(version.NewVersion("8.19.0"))
+	artifactsMinSupportedVersion9x     = version.Must(version.NewVersion("9.1.0"))
 )
 
 // toAPIModel converts the Terraform model to the API model.
@@ -382,6 +487,22 @@ func (m alertingRuleModel) toAPIModel(ctx context.Context, serverVersion *versio
 					)
 					return models.AlertingRule{}, diags
 				}
+			}
+		}
+
+		// artifacts is only supported from Kibana 8.19+ or Elastic Stack 9.1+
+		if typeutils.IsKnown(m.Artifacts) && !m.Artifacts.IsNull() {
+			major := serverVersion.Segments()[0]
+			minVersion := artifactsMinSupportedVersion8x
+			if major >= 9 {
+				minVersion = artifactsMinSupportedVersion9x
+			}
+			if serverVersion.LessThan(minVersion) {
+				diags.AddError(
+					"artifacts is only supported for Kibana 8.19 or higher, or Elastic Stack 9.1 or higher",
+					"artifacts is only supported for Kibana 8.19 or higher, or Elastic Stack 9.1 or higher",
+				)
+				return models.AlertingRule{}, diags
 			}
 		}
 
@@ -513,7 +634,71 @@ func (m alertingRuleModel) toAPIModel(ctx context.Context, serverVersion *versio
 		rule.Actions = actions
 	}
 
+	// Artifacts
+	if typeutils.IsKnown(m.Artifacts) && !m.Artifacts.IsNull() {
+		artifacts, d := convertArtifactsToAPI(ctx, m.Artifacts)
+		diags.Append(d...)
+		rule.Artifacts = artifacts
+	}
+
 	return rule, diags
+}
+
+// convertArtifactsToAPI converts Terraform artifacts object to API model.
+func convertArtifactsToAPI(ctx context.Context, artifactsObj types.Object) (*models.AlertingRuleArtifacts, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	var am artifactsModel
+	diags.Append(artifactsObj.As(ctx, &am, basetypes.ObjectAsOptions{})...)
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	artifacts := &models.AlertingRuleArtifacts{}
+
+	// Dashboards
+	if typeutils.IsKnown(am.Dashboards) && !am.Dashboards.IsNull() {
+		var dashboards []dashboardModel
+		diags.Append(am.Dashboards.ElementsAs(ctx, &dashboards, false)...)
+		if diags.HasError() {
+			return nil, diags
+		}
+		apiDashboards := make([]models.AlertingRuleArtifactDashboard, len(dashboards))
+		for i, d := range dashboards {
+			apiDashboards[i] = models.AlertingRuleArtifactDashboard{ID: d.ID.ValueString()}
+		}
+		artifacts.Dashboards = apiDashboards
+	}
+
+	// Investigation guide
+	if typeutils.IsKnown(am.InvestigationGuide) && !am.InvestigationGuide.IsNull() {
+		var igm investigationGuideModel
+		diags.Append(am.InvestigationGuide.As(ctx, &igm, basetypes.ObjectAsOptions{})...)
+		if diags.HasError() {
+			return nil, diags
+		}
+
+		if !igm.Content.IsNull() && igm.Content.ValueString() != "" {
+			artifacts.InvestigationGuide = &models.AlertingRuleArtifactInvestigationGuide{
+				Blob: igm.Content.ValueString(),
+			}
+		} else if !igm.ContentPath.IsNull() && igm.ContentPath.ValueString() != "" {
+			content, err := os.ReadFile(igm.ContentPath.ValueString())
+			if err != nil {
+				diags.AddAttributeError(
+					path.Root("artifacts").AtName("investigation_guide").AtName("content_path"),
+					"Failed to read investigation guide file",
+					err.Error(),
+				)
+				return nil, diags
+			}
+			artifacts.InvestigationGuide = &models.AlertingRuleArtifactInvestigationGuide{
+				Blob: string(content),
+			}
+		}
+	}
+
+	return artifacts, diags
 }
 
 // getRuleIDAndSpaceID extracts rule ID and space ID from the composite ID.

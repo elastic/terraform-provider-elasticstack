@@ -43,12 +43,15 @@ import (
 )
 
 var (
-	attrTypesOnce        sync.Once
-	cachedActionsTypes   map[string]attr.Type
-	cachedFrequencyTypes map[string]attr.Type
-	cachedFilterTypes    map[string]attr.Type
-	cachedTimeframeTypes map[string]attr.Type
-	cachedFlappingTypes  map[string]attr.Type
+	attrTypesOnce                  sync.Once
+	cachedActionsTypes             map[string]attr.Type
+	cachedFrequencyTypes           map[string]attr.Type
+	cachedFilterTypes              map[string]attr.Type
+	cachedTimeframeTypes           map[string]attr.Type
+	cachedFlappingTypes            map[string]attr.Type
+	cachedArtifactsTypes           map[string]attr.Type
+	cachedDashboardsTypes          map[string]attr.Type
+	cachedInvestigationGuideTypes  map[string]attr.Type
 )
 
 func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
@@ -312,6 +315,39 @@ func getSchema() schema.Schema {
 					},
 				},
 			},
+			"artifacts": schema.SingleNestedBlock{
+				Description: artifactsDescription,
+				Blocks: map[string]schema.Block{
+					"dashboards": schema.ListNestedBlock{
+						Description: artifactsDashboardsDescription,
+						NestedObject: schema.NestedBlockObject{
+							Attributes: map[string]schema.Attribute{
+								"id": schema.StringAttribute{
+									Description: artifactsDashboardIDDescription,
+									Required:    true,
+								},
+							},
+						},
+					},
+					"investigation_guide": schema.SingleNestedBlock{
+						Description: artifactsInvestigationGuideDescription,
+						Attributes: map[string]schema.Attribute{
+							"content": schema.StringAttribute{
+								Description: artifactsInvestigationGuideContentDescription,
+								Optional:    true,
+							},
+							"content_path": schema.StringAttribute{
+								Description: artifactsInvestigationGuideContentPathDescription,
+								Optional:    true,
+							},
+							"checksum": schema.StringAttribute{
+								Description: artifactsInvestigationGuideChecksumDescription,
+								Computed:    true,
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -335,6 +371,15 @@ func initAttrTypes() {
 
 	flapAttr := s.Attributes["flapping"].(schema.SingleNestedAttribute)
 	cachedFlappingTypes = flapAttr.GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+
+	artifactsBlock := s.Blocks["artifacts"].(schema.SingleNestedBlock)
+	cachedArtifactsTypes = artifactsBlock.Type().(attr.TypeWithAttributeTypes).AttributeTypes()
+
+	dashboardsBlock := artifactsBlock.Blocks["dashboards"].(schema.ListNestedBlock)
+	cachedDashboardsTypes = dashboardsBlock.NestedObject.Type().(attr.TypeWithAttributeTypes).AttributeTypes()
+
+	igBlock := artifactsBlock.Blocks["investigation_guide"].(schema.SingleNestedBlock)
+	cachedInvestigationGuideTypes = igBlock.Type().(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
 // getActionsAttrTypes returns the attribute types for actions list elements.
@@ -365,4 +410,22 @@ func getTimeframeAttrTypes() map[string]attr.Type {
 func getFlappingAttrTypes() map[string]attr.Type {
 	attrTypesOnce.Do(initAttrTypes)
 	return cachedFlappingTypes
+}
+
+// getArtifactsAttrTypes returns the attribute types for the artifacts object.
+func getArtifactsAttrTypes() map[string]attr.Type {
+	attrTypesOnce.Do(initAttrTypes)
+	return cachedArtifactsTypes
+}
+
+// getDashboardsAttrTypes returns the attribute types for individual dashboard elements.
+func getDashboardsAttrTypes() map[string]attr.Type {
+	attrTypesOnce.Do(initAttrTypes)
+	return cachedDashboardsTypes
+}
+
+// getInvestigationGuideAttrTypes returns the attribute types for the investigation_guide object.
+func getInvestigationGuideAttrTypes() map[string]attr.Type {
+	attrTypesOnce.Do(initAttrTypes)
+	return cachedInvestigationGuideTypes
 }
