@@ -283,8 +283,9 @@ type ThreatSubtechniqueModel struct {
 	Reference types.String `tfsdk:"reference"`
 }
 
-// CommonCreateProps holds all the field pointers for setting common create properties
-type CommonCreateProps struct {
+// CommonRuleProps holds all the field pointers for setting common rule properties.
+// Type aliases CommonCreateProps and CommonUpdateProps are provided for call-site compatibility.
+type CommonRuleProps struct {
 	Actions                           **[]kbapi.SecurityDetectionsAPIRuleAction
 	ResponseActions                   **[]kbapi.SecurityDetectionsAPIResponseAction
 	RuleID                            **kbapi.SecurityDetectionsAPIRuleSignatureId
@@ -321,538 +322,251 @@ type CommonCreateProps struct {
 	TimelineTitle                     **kbapi.SecurityDetectionsAPITimelineTemplateTitle
 }
 
-// CommonUpdateProps holds all the field pointers for setting common update properties
-type CommonUpdateProps struct {
-	Actions                           **[]kbapi.SecurityDetectionsAPIRuleAction
-	ResponseActions                   **[]kbapi.SecurityDetectionsAPIResponseAction
-	RuleID                            **kbapi.SecurityDetectionsAPIRuleSignatureId
-	Enabled                           **kbapi.SecurityDetectionsAPIIsRuleEnabled
-	From                              **kbapi.SecurityDetectionsAPIRuleIntervalFrom
-	To                                **kbapi.SecurityDetectionsAPIRuleIntervalTo
-	Interval                          **kbapi.SecurityDetectionsAPIRuleInterval
-	Index                             **[]string
-	Author                            **[]string
-	Tags                              **[]string
-	FalsePositives                    **[]string
-	References                        **[]string
-	License                           **kbapi.SecurityDetectionsAPIRuleLicense
-	Note                              **kbapi.SecurityDetectionsAPIInvestigationGuide
-	Setup                             **kbapi.SecurityDetectionsAPISetupGuide
-	MaxSignals                        **kbapi.SecurityDetectionsAPIMaxSignals
-	Version                           **kbapi.SecurityDetectionsAPIRuleVersion
-	ExceptionsList                    **[]kbapi.SecurityDetectionsAPIRuleExceptionList
-	AlertSuppression                  **kbapi.SecurityDetectionsAPIAlertSuppression
-	RiskScoreMapping                  **kbapi.SecurityDetectionsAPIRiskScoreMapping
-	SeverityMapping                   **kbapi.SecurityDetectionsAPISeverityMapping
-	RelatedIntegrations               **kbapi.SecurityDetectionsAPIRelatedIntegrationArray
-	RequiredFields                    **[]kbapi.SecurityDetectionsAPIRequiredFieldInput
-	BuildingBlockType                 **kbapi.SecurityDetectionsAPIBuildingBlockType
-	DataViewID                        **kbapi.SecurityDetectionsAPIDataViewId
-	Namespace                         **kbapi.SecurityDetectionsAPIAlertsIndexNamespace
-	RuleNameOverride                  **kbapi.SecurityDetectionsAPIRuleNameOverride
-	TimestampOverride                 **kbapi.SecurityDetectionsAPITimestampOverride
-	TimestampOverrideFallbackDisabled **kbapi.SecurityDetectionsAPITimestampOverrideFallbackDisabled
-	InvestigationFields               **kbapi.SecurityDetectionsAPIInvestigationFields
-	Filters                           **kbapi.SecurityDetectionsAPIRuleFilterArray
-	Threat                            **kbapi.SecurityDetectionsAPIThreatArray
-	TimelineID                        **kbapi.SecurityDetectionsAPITimelineTemplateId
-	TimelineTitle                     **kbapi.SecurityDetectionsAPITimelineTemplateTitle
+// CommonCreateProps is an alias for CommonRuleProps, kept for call-site compatibility.
+type CommonCreateProps = CommonRuleProps
+
+// CommonUpdateProps is an alias for CommonRuleProps, kept for call-site compatibility.
+type CommonUpdateProps = CommonRuleProps
+
+// applyCommonRuleProps populates props from d. When forCreate is true, rule_id is
+// assigned and empty list fields are omitted (matching create semantics); when false,
+// empty lists are assigned unconditionally (matching update semantics).
+func (d Data) applyCommonRuleProps(
+	ctx context.Context,
+	props *CommonRuleProps,
+	diags *diag.Diagnostics,
+	client clients.MinVersionEnforceable,
+	forCreate bool,
+) {
+	if forCreate && props.RuleID != nil && typeutils.IsKnown(d.RuleID) {
+		id := d.RuleID.ValueString()
+		*props.RuleID = &id
+	}
+
+	if props.Enabled != nil && typeutils.IsKnown(d.Enabled) {
+		isEnabled := d.Enabled.ValueBool()
+		*props.Enabled = &isEnabled
+	}
+
+	if props.From != nil && typeutils.IsKnown(d.From) {
+		fromTime := d.From.ValueString()
+		*props.From = &fromTime
+	}
+
+	if props.To != nil && typeutils.IsKnown(d.To) {
+		toTime := d.To.ValueString()
+		*props.To = &toTime
+	}
+
+	if props.Interval != nil && typeutils.IsKnown(d.Interval) {
+		intervalTime := d.Interval.ValueString()
+		*props.Interval = &intervalTime
+	}
+
+	if props.Index != nil && typeutils.IsKnown(d.Index) {
+		indexList := typeutils.ListTypeAs[string](ctx, d.Index, path.Root("index"), diags)
+		if !diags.HasError() && (!forCreate || len(indexList) > 0) {
+			*props.Index = &indexList
+		}
+	}
+
+	if props.Author != nil && typeutils.IsKnown(d.Author) {
+		authorList := typeutils.ListTypeAs[string](ctx, d.Author, path.Root("author"), diags)
+		if !diags.HasError() && (!forCreate || len(authorList) > 0) {
+			*props.Author = &authorList
+		}
+	}
+
+	if props.Tags != nil && typeutils.IsKnown(d.Tags) {
+		tagsList := typeutils.ListTypeAs[string](ctx, d.Tags, path.Root("tags"), diags)
+		if !diags.HasError() && (!forCreate || len(tagsList) > 0) {
+			*props.Tags = &tagsList
+		}
+	}
+
+	if props.FalsePositives != nil && typeutils.IsKnown(d.FalsePositives) {
+		fpList := typeutils.ListTypeAs[string](ctx, d.FalsePositives, path.Root("false_positives"), diags)
+		if !diags.HasError() && (!forCreate || len(fpList) > 0) {
+			*props.FalsePositives = &fpList
+		}
+	}
+
+	if props.References != nil && typeutils.IsKnown(d.References) {
+		refList := typeutils.ListTypeAs[string](ctx, d.References, path.Root("references"), diags)
+		if !diags.HasError() && (!forCreate || len(refList) > 0) {
+			*props.References = &refList
+		}
+	}
+
+	if props.License != nil && typeutils.IsKnown(d.License) {
+		ruleLicense := d.License.ValueString()
+		*props.License = &ruleLicense
+	}
+
+	if props.Note != nil && typeutils.IsKnown(d.Note) {
+		ruleNote := d.Note.ValueString()
+		*props.Note = &ruleNote
+	}
+
+	if props.Setup != nil && typeutils.IsKnown(d.Setup) {
+		ruleSetup := d.Setup.ValueString()
+		*props.Setup = &ruleSetup
+	}
+
+	if props.MaxSignals != nil && typeutils.IsKnown(d.MaxSignals) {
+		maxSig := kbapi.SecurityDetectionsAPIMaxSignals(d.MaxSignals.ValueInt64())
+		*props.MaxSignals = &maxSig
+	}
+
+	if props.Version != nil && typeutils.IsKnown(d.Version) {
+		ruleVersion := kbapi.SecurityDetectionsAPIRuleVersion(d.Version.ValueInt64())
+		*props.Version = &ruleVersion
+	}
+
+	if props.Actions != nil && typeutils.IsKnown(d.Actions) {
+		actions, actionDiags := d.actionsToAPI(ctx)
+		diags.Append(actionDiags...)
+		if !actionDiags.HasError() && len(actions) > 0 {
+			*props.Actions = &actions
+		}
+	}
+
+	if props.ExceptionsList != nil && typeutils.IsKnown(d.ExceptionsList) {
+		exceptionsList, exceptionsListDiags := d.exceptionsListToAPI(ctx)
+		diags.Append(exceptionsListDiags...)
+		if !exceptionsListDiags.HasError() && len(exceptionsList) > 0 {
+			*props.ExceptionsList = &exceptionsList
+		}
+	}
+
+	if props.RiskScoreMapping != nil && typeutils.IsKnown(d.RiskScoreMapping) {
+		riskScoreMapping, riskScoreMappingDiags := d.riskScoreMappingToAPI(ctx)
+		diags.Append(riskScoreMappingDiags...)
+		if !riskScoreMappingDiags.HasError() && len(riskScoreMapping) > 0 {
+			*props.RiskScoreMapping = &riskScoreMapping
+		}
+	}
+
+	if props.BuildingBlockType != nil && typeutils.IsKnown(d.BuildingBlockType) {
+		buildingBlockType := d.BuildingBlockType.ValueString()
+		*props.BuildingBlockType = &buildingBlockType
+	}
+
+	if props.DataViewID != nil && typeutils.IsKnown(d.DataViewID) {
+		dataViewID := d.DataViewID.ValueString()
+		*props.DataViewID = &dataViewID
+	}
+
+	if props.Namespace != nil && typeutils.IsKnown(d.Namespace) {
+		namespace := d.Namespace.ValueString()
+		*props.Namespace = &namespace
+	}
+
+	if props.RuleNameOverride != nil && typeutils.IsKnown(d.RuleNameOverride) {
+		ruleNameOverride := d.RuleNameOverride.ValueString()
+		*props.RuleNameOverride = &ruleNameOverride
+	}
+
+	if props.TimestampOverride != nil && typeutils.IsKnown(d.TimestampOverride) {
+		timestampOverride := d.TimestampOverride.ValueString()
+		*props.TimestampOverride = &timestampOverride
+	}
+
+	if props.TimestampOverrideFallbackDisabled != nil && typeutils.IsKnown(d.TimestampOverrideFallbackDisabled) {
+		timestampOverrideFallbackDisabled := d.TimestampOverrideFallbackDisabled.ValueBool()
+		*props.TimestampOverrideFallbackDisabled = &timestampOverrideFallbackDisabled
+	}
+
+	if props.SeverityMapping != nil && typeutils.IsKnown(d.SeverityMapping) {
+		severityMapping, severityMappingDiags := d.severityMappingToAPI(ctx)
+		diags.Append(severityMappingDiags...)
+		if !severityMappingDiags.HasError() && severityMapping != nil && len(*severityMapping) > 0 {
+			*props.SeverityMapping = severityMapping
+		}
+	}
+
+	if props.RelatedIntegrations != nil && typeutils.IsKnown(d.RelatedIntegrations) {
+		relatedIntegrations, relatedIntegrationsDiags := d.relatedIntegrationsToAPI(ctx)
+		diags.Append(relatedIntegrationsDiags...)
+		if !relatedIntegrationsDiags.HasError() && relatedIntegrations != nil && len(*relatedIntegrations) > 0 {
+			*props.RelatedIntegrations = relatedIntegrations
+		}
+	}
+
+	if props.RequiredFields != nil && typeutils.IsKnown(d.RequiredFields) {
+		requiredFields, requiredFieldsDiags := d.requiredFieldsToAPI(ctx)
+		diags.Append(requiredFieldsDiags...)
+		if !requiredFieldsDiags.HasError() && requiredFields != nil && len(*requiredFields) > 0 {
+			*props.RequiredFields = requiredFields
+		}
+	}
+
+	if props.InvestigationFields != nil {
+		investigationFields, investigationFieldsDiags := d.investigationFieldsToAPI(ctx)
+		if !investigationFieldsDiags.HasError() && investigationFields != nil {
+			*props.InvestigationFields = investigationFields
+		}
+		diags.Append(investigationFieldsDiags...)
+	}
+
+	if props.ResponseActions != nil && typeutils.IsKnown(d.ResponseActions) {
+		responseActions, responseActionsDiags := d.responseActionsToAPI(ctx, client)
+		diags.Append(responseActionsDiags...)
+		if !responseActionsDiags.HasError() && len(responseActions) > 0 {
+			*props.ResponseActions = &responseActions
+		}
+	}
+
+	if props.Filters != nil && typeutils.IsKnown(d.Filters) {
+		filters, filtersDiags := d.filtersToAPI(ctx)
+		diags.Append(filtersDiags...)
+		if !filtersDiags.HasError() && filters != nil {
+			*props.Filters = filters
+		}
+	}
+
+	if props.AlertSuppression != nil {
+		alertSuppression := d.alertSuppressionToAPI(ctx, diags)
+		if alertSuppression != nil {
+			*props.AlertSuppression = alertSuppression
+		}
+	}
+
+	if props.Threat != nil && typeutils.IsKnown(d.Threat) {
+		threat, threatDiags := d.threatToAPI(ctx)
+		diags.Append(threatDiags...)
+		if !threatDiags.HasError() && len(threat) > 0 {
+			*props.Threat = &threat
+		}
+	}
+
+	if props.TimelineID != nil && typeutils.IsKnown(d.TimelineID) {
+		timelineID := d.TimelineID.ValueString()
+		*props.TimelineID = &timelineID
+	}
+
+	if props.TimelineTitle != nil && typeutils.IsKnown(d.TimelineTitle) {
+		timelineTitle := d.TimelineTitle.ValueString()
+		*props.TimelineTitle = &timelineTitle
+	}
 }
 
-// Helper function to set common properties across all rule types
 func (d Data) setCommonCreateProps(
 	ctx context.Context,
 	props *CommonCreateProps,
 	diags *diag.Diagnostics,
 	client clients.MinVersionEnforceable,
 ) {
-	// Set optional rule_id if provided
-	if props.RuleID != nil && typeutils.IsKnown(d.RuleID) {
-		id := d.RuleID.ValueString()
-		*props.RuleID = &id
-	}
-
-	// Set enabled status
-	if props.Enabled != nil && typeutils.IsKnown(d.Enabled) {
-		isEnabled := d.Enabled.ValueBool()
-		*props.Enabled = &isEnabled
-	}
-
-	// Set time range
-	if props.From != nil && typeutils.IsKnown(d.From) {
-		fromTime := d.From.ValueString()
-		*props.From = &fromTime
-	}
-
-	if props.To != nil && typeutils.IsKnown(d.To) {
-		toTime := d.To.ValueString()
-		*props.To = &toTime
-	}
-
-	// Set interval
-	if props.Interval != nil && typeutils.IsKnown(d.Interval) {
-		intervalTime := d.Interval.ValueString()
-		*props.Interval = &intervalTime
-	}
-
-	// Set index patterns (if index pointer is provided)
-	if props.Index != nil && typeutils.IsKnown(d.Index) {
-		indexList := typeutils.ListTypeAs[string](ctx, d.Index, path.Root("index"), diags)
-		if !diags.HasError() && len(indexList) > 0 {
-			*props.Index = &indexList
-		}
-	}
-
-	// Set author
-	if props.Author != nil && typeutils.IsKnown(d.Author) {
-		authorList := typeutils.ListTypeAs[string](ctx, d.Author, path.Root("author"), diags)
-		if !diags.HasError() && len(authorList) > 0 {
-			*props.Author = &authorList
-		}
-	}
-
-	// Set tags
-	if props.Tags != nil && typeutils.IsKnown(d.Tags) {
-		tagsList := typeutils.ListTypeAs[string](ctx, d.Tags, path.Root("tags"), diags)
-		if !diags.HasError() && len(tagsList) > 0 {
-			*props.Tags = &tagsList
-		}
-	}
-
-	// Set false positives
-	if props.FalsePositives != nil && typeutils.IsKnown(d.FalsePositives) {
-		fpList := typeutils.ListTypeAs[string](ctx, d.FalsePositives, path.Root("false_positives"), diags)
-		if !diags.HasError() && len(fpList) > 0 {
-			*props.FalsePositives = &fpList
-		}
-	}
-
-	// Set references
-	if props.References != nil && typeutils.IsKnown(d.References) {
-		refList := typeutils.ListTypeAs[string](ctx, d.References, path.Root("references"), diags)
-		if !diags.HasError() && len(refList) > 0 {
-			*props.References = &refList
-		}
-	}
-
-	// Set optional string fields
-	if props.License != nil && typeutils.IsKnown(d.License) {
-		ruleLicense := d.License.ValueString()
-		*props.License = &ruleLicense
-	}
-
-	if props.Note != nil && typeutils.IsKnown(d.Note) {
-		ruleNote := d.Note.ValueString()
-		*props.Note = &ruleNote
-	}
-
-	if props.Setup != nil && typeutils.IsKnown(d.Setup) {
-		ruleSetup := d.Setup.ValueString()
-		*props.Setup = &ruleSetup
-	}
-
-	// Set max signals
-	if props.MaxSignals != nil && typeutils.IsKnown(d.MaxSignals) {
-		maxSig := kbapi.SecurityDetectionsAPIMaxSignals(d.MaxSignals.ValueInt64())
-		*props.MaxSignals = &maxSig
-	}
-
-	// Set version
-	if props.Version != nil && typeutils.IsKnown(d.Version) {
-		ruleVersion := kbapi.SecurityDetectionsAPIRuleVersion(d.Version.ValueInt64())
-		*props.Version = &ruleVersion
-	}
-
-	// Set actions
-	if props.Actions != nil && typeutils.IsKnown(d.Actions) {
-		actions, actionDiags := d.actionsToAPI(ctx)
-		diags.Append(actionDiags...)
-		if !actionDiags.HasError() && len(actions) > 0 {
-			*props.Actions = &actions
-		}
-	}
-
-	// Set exceptions list
-	if props.ExceptionsList != nil && typeutils.IsKnown(d.ExceptionsList) {
-		exceptionsList, exceptionsListDiags := d.exceptionsListToAPI(ctx)
-		diags.Append(exceptionsListDiags...)
-		if !exceptionsListDiags.HasError() && len(exceptionsList) > 0 {
-			*props.ExceptionsList = &exceptionsList
-		}
-	}
-
-	// Set risk score mapping
-	if props.RiskScoreMapping != nil && typeutils.IsKnown(d.RiskScoreMapping) {
-		riskScoreMapping, riskScoreMappingDiags := d.riskScoreMappingToAPI(ctx)
-		diags.Append(riskScoreMappingDiags...)
-		if !riskScoreMappingDiags.HasError() && len(riskScoreMapping) > 0 {
-			*props.RiskScoreMapping = &riskScoreMapping
-		}
-	}
-
-	// Set building block type
-	if props.BuildingBlockType != nil && typeutils.IsKnown(d.BuildingBlockType) {
-		buildingBlockType := d.BuildingBlockType.ValueString()
-		*props.BuildingBlockType = &buildingBlockType
-	}
-
-	// Set data view ID
-	if props.DataViewID != nil && typeutils.IsKnown(d.DataViewID) {
-		dataViewID := d.DataViewID.ValueString()
-		*props.DataViewID = &dataViewID
-	}
-
-	// Set namespace
-	if props.Namespace != nil && typeutils.IsKnown(d.Namespace) {
-		namespace := d.Namespace.ValueString()
-		*props.Namespace = &namespace
-	}
-
-	// Set rule name override
-	if props.RuleNameOverride != nil && typeutils.IsKnown(d.RuleNameOverride) {
-		ruleNameOverride := d.RuleNameOverride.ValueString()
-		*props.RuleNameOverride = &ruleNameOverride
-	}
-
-	// Set timestamp override
-	if props.TimestampOverride != nil && typeutils.IsKnown(d.TimestampOverride) {
-		timestampOverride := d.TimestampOverride.ValueString()
-		*props.TimestampOverride = &timestampOverride
-	}
-
-	// Set timestamp override fallback disabled
-	if props.TimestampOverrideFallbackDisabled != nil && typeutils.IsKnown(d.TimestampOverrideFallbackDisabled) {
-		timestampOverrideFallbackDisabled := d.TimestampOverrideFallbackDisabled.ValueBool()
-		*props.TimestampOverrideFallbackDisabled = &timestampOverrideFallbackDisabled
-	}
-
-	// Set severity mapping
-	if props.SeverityMapping != nil && typeutils.IsKnown(d.SeverityMapping) {
-		severityMapping, severityMappingDiags := d.severityMappingToAPI(ctx)
-		diags.Append(severityMappingDiags...)
-		if !severityMappingDiags.HasError() && severityMapping != nil && len(*severityMapping) > 0 {
-			*props.SeverityMapping = severityMapping
-		}
-	}
-
-	// Set related integrations
-	if props.RelatedIntegrations != nil && typeutils.IsKnown(d.RelatedIntegrations) {
-		relatedIntegrations, relatedIntegrationsDiags := d.relatedIntegrationsToAPI(ctx)
-		diags.Append(relatedIntegrationsDiags...)
-		if !relatedIntegrationsDiags.HasError() && relatedIntegrations != nil && len(*relatedIntegrations) > 0 {
-			*props.RelatedIntegrations = relatedIntegrations
-		}
-	}
-
-	// Set required fields
-	if props.RequiredFields != nil && typeutils.IsKnown(d.RequiredFields) {
-		requiredFields, requiredFieldsDiags := d.requiredFieldsToAPI(ctx)
-		diags.Append(requiredFieldsDiags...)
-		if !requiredFieldsDiags.HasError() && requiredFields != nil && len(*requiredFields) > 0 {
-			*props.RequiredFields = requiredFields
-		}
-	}
-
-	// Set investigation fields
-	if props.InvestigationFields != nil {
-		investigationFields, investigationFieldsDiags := d.investigationFieldsToAPI(ctx)
-		if !investigationFieldsDiags.HasError() && investigationFields != nil {
-			*props.InvestigationFields = investigationFields
-		}
-		diags.Append(investigationFieldsDiags...)
-	}
-
-	// Set response actions
-	if props.ResponseActions != nil && typeutils.IsKnown(d.ResponseActions) {
-		responseActions, responseActionsDiags := d.responseActionsToAPI(ctx, client)
-		diags.Append(responseActionsDiags...)
-		if !responseActionsDiags.HasError() && len(responseActions) > 0 {
-			*props.ResponseActions = &responseActions
-		}
-	}
-
-	// Set filters
-	if props.Filters != nil && typeutils.IsKnown(d.Filters) {
-		filters, filtersDiags := d.filtersToAPI(ctx)
-		diags.Append(filtersDiags...)
-		if !filtersDiags.HasError() && filters != nil {
-			*props.Filters = filters
-		}
-	}
-
-	// Set alert suppression
-	if props.AlertSuppression != nil {
-		alertSuppression := d.alertSuppressionToAPI(ctx, diags)
-		if alertSuppression != nil {
-			*props.AlertSuppression = alertSuppression
-		}
-	}
-
-	// Set threat (MITRE ATT&CK framework)
-	if props.Threat != nil && typeutils.IsKnown(d.Threat) {
-		threat, threatDiags := d.threatToAPI(ctx)
-		diags.Append(threatDiags...)
-		if !threatDiags.HasError() && len(threat) > 0 {
-			*props.Threat = &threat
-		}
-	}
-
-	// Set timeline ID
-	if props.TimelineID != nil && typeutils.IsKnown(d.TimelineID) {
-		timelineID := d.TimelineID.ValueString()
-		*props.TimelineID = &timelineID
-	}
-
-	// Set timeline title
-	if props.TimelineTitle != nil && typeutils.IsKnown(d.TimelineTitle) {
-		timelineTitle := d.TimelineTitle.ValueString()
-		*props.TimelineTitle = &timelineTitle
-	}
+	d.applyCommonRuleProps(ctx, props, diags, client, true)
 }
 
-// Helper function to set common update properties across all rule types
 func (d Data) setCommonUpdateProps(
 	ctx context.Context,
 	props *CommonUpdateProps,
 	diags *diag.Diagnostics,
 	client clients.MinVersionEnforceable,
 ) {
-	// Set enabled status
-	if props.Enabled != nil && typeutils.IsKnown(d.Enabled) {
-		isEnabled := d.Enabled.ValueBool()
-		*props.Enabled = &isEnabled
-	}
-
-	// Set time range
-	if props.From != nil && typeutils.IsKnown(d.From) {
-		fromTime := d.From.ValueString()
-		*props.From = &fromTime
-	}
-
-	if props.To != nil && typeutils.IsKnown(d.To) {
-		toTime := d.To.ValueString()
-		*props.To = &toTime
-	}
-
-	// Set interval
-	if props.Interval != nil && typeutils.IsKnown(d.Interval) {
-		intervalTime := d.Interval.ValueString()
-		*props.Interval = &intervalTime
-	}
-
-	// Set index patterns (if index pointer is provided)
-	if props.Index != nil && typeutils.IsKnown(d.Index) {
-		indexList := typeutils.ListTypeAs[string](ctx, d.Index, path.Root("index"), diags)
-		if !diags.HasError() {
-			*props.Index = &indexList
-		}
-	}
-
-	// Set author
-	if props.Author != nil && typeutils.IsKnown(d.Author) {
-		authorList := typeutils.ListTypeAs[string](ctx, d.Author, path.Root("author"), diags)
-		if !diags.HasError() {
-			*props.Author = &authorList
-		}
-	}
-
-	// Set tags
-	if props.Tags != nil && typeutils.IsKnown(d.Tags) {
-		tagsList := typeutils.ListTypeAs[string](ctx, d.Tags, path.Root("tags"), diags)
-		if !diags.HasError() {
-			*props.Tags = &tagsList
-		}
-	}
-
-	// Set false positives
-	if props.FalsePositives != nil && typeutils.IsKnown(d.FalsePositives) {
-		fpList := typeutils.ListTypeAs[string](ctx, d.FalsePositives, path.Root("false_positives"), diags)
-		if !diags.HasError() {
-			*props.FalsePositives = &fpList
-		}
-	}
-
-	// Set references
-	if props.References != nil && typeutils.IsKnown(d.References) {
-		refList := typeutils.ListTypeAs[string](ctx, d.References, path.Root("references"), diags)
-		if !diags.HasError() {
-			*props.References = &refList
-		}
-	}
-
-	// Set optional string fields
-	if props.License != nil && typeutils.IsKnown(d.License) {
-		ruleLicense := d.License.ValueString()
-		*props.License = &ruleLicense
-	}
-
-	if props.Note != nil && typeutils.IsKnown(d.Note) {
-		ruleNote := d.Note.ValueString()
-		*props.Note = &ruleNote
-	}
-
-	if props.Setup != nil && typeutils.IsKnown(d.Setup) {
-		ruleSetup := d.Setup.ValueString()
-		*props.Setup = &ruleSetup
-	}
-
-	// Set max signals
-	if props.MaxSignals != nil && typeutils.IsKnown(d.MaxSignals) {
-		maxSig := kbapi.SecurityDetectionsAPIMaxSignals(d.MaxSignals.ValueInt64())
-		*props.MaxSignals = &maxSig
-	}
-
-	// Set version
-	if props.Version != nil && typeutils.IsKnown(d.Version) {
-		ruleVersion := kbapi.SecurityDetectionsAPIRuleVersion(d.Version.ValueInt64())
-		*props.Version = &ruleVersion
-	}
-
-	// Set actions
-	if props.Actions != nil && typeutils.IsKnown(d.Actions) {
-		actions, actionDiags := d.actionsToAPI(ctx)
-		diags.Append(actionDiags...)
-		if !actionDiags.HasError() && len(actions) > 0 {
-			*props.Actions = &actions
-		}
-	}
-
-	// Set exceptions list
-	if props.ExceptionsList != nil && typeutils.IsKnown(d.ExceptionsList) {
-		exceptionsList, exceptionsListDiags := d.exceptionsListToAPI(ctx)
-		diags.Append(exceptionsListDiags...)
-		if !exceptionsListDiags.HasError() && len(exceptionsList) > 0 {
-			*props.ExceptionsList = &exceptionsList
-		}
-	}
-
-	// Set risk score mapping
-	if props.RiskScoreMapping != nil && typeutils.IsKnown(d.RiskScoreMapping) {
-		riskScoreMapping, riskScoreMappingDiags := d.riskScoreMappingToAPI(ctx)
-		diags.Append(riskScoreMappingDiags...)
-		if !riskScoreMappingDiags.HasError() && len(riskScoreMapping) > 0 {
-			*props.RiskScoreMapping = &riskScoreMapping
-		}
-	}
-
-	// Set building block type
-	if props.BuildingBlockType != nil && typeutils.IsKnown(d.BuildingBlockType) {
-		buildingBlockType := d.BuildingBlockType.ValueString()
-		*props.BuildingBlockType = &buildingBlockType
-	}
-
-	// Set data view ID
-	if props.DataViewID != nil && typeutils.IsKnown(d.DataViewID) {
-		dataViewID := d.DataViewID.ValueString()
-		*props.DataViewID = &dataViewID
-	}
-
-	// Set namespace
-	if props.Namespace != nil && typeutils.IsKnown(d.Namespace) {
-		namespace := d.Namespace.ValueString()
-		*props.Namespace = &namespace
-	}
-
-	// Set rule name override
-	if props.RuleNameOverride != nil && typeutils.IsKnown(d.RuleNameOverride) {
-		ruleNameOverride := d.RuleNameOverride.ValueString()
-		*props.RuleNameOverride = &ruleNameOverride
-	}
-
-	// Set timestamp override
-	if props.TimestampOverride != nil && typeutils.IsKnown(d.TimestampOverride) {
-		timestampOverride := d.TimestampOverride.ValueString()
-		*props.TimestampOverride = &timestampOverride
-	}
-
-	// Set timestamp override fallback disabled
-	if props.TimestampOverrideFallbackDisabled != nil && typeutils.IsKnown(d.TimestampOverrideFallbackDisabled) {
-		timestampOverrideFallbackDisabled := d.TimestampOverrideFallbackDisabled.ValueBool()
-		*props.TimestampOverrideFallbackDisabled = &timestampOverrideFallbackDisabled
-	}
-
-	// Set severity mapping
-	if props.SeverityMapping != nil && typeutils.IsKnown(d.SeverityMapping) {
-		severityMapping, severityMappingDiags := d.severityMappingToAPI(ctx)
-		diags.Append(severityMappingDiags...)
-		if !severityMappingDiags.HasError() && severityMapping != nil && len(*severityMapping) > 0 {
-			*props.SeverityMapping = severityMapping
-		}
-	}
-
-	// Set related integrations
-	if props.RelatedIntegrations != nil && typeutils.IsKnown(d.RelatedIntegrations) {
-		relatedIntegrations, relatedIntegrationsDiags := d.relatedIntegrationsToAPI(ctx)
-		diags.Append(relatedIntegrationsDiags...)
-		if !relatedIntegrationsDiags.HasError() && relatedIntegrations != nil && len(*relatedIntegrations) > 0 {
-			*props.RelatedIntegrations = relatedIntegrations
-		}
-	}
-
-	// Set required fields
-	if props.RequiredFields != nil && typeutils.IsKnown(d.RequiredFields) {
-		requiredFields, requiredFieldsDiags := d.requiredFieldsToAPI(ctx)
-		diags.Append(requiredFieldsDiags...)
-		if !requiredFieldsDiags.HasError() && requiredFields != nil && len(*requiredFields) > 0 {
-			*props.RequiredFields = requiredFields
-		}
-	}
-
-	// Set investigation fields
-	if props.InvestigationFields != nil {
-		investigationFields, investigationFieldsDiags := d.investigationFieldsToAPI(ctx)
-		if !investigationFieldsDiags.HasError() && investigationFields != nil {
-			*props.InvestigationFields = investigationFields
-		}
-		diags.Append(investigationFieldsDiags...)
-	}
-
-	// Set response actions
-	if props.ResponseActions != nil && typeutils.IsKnown(d.ResponseActions) {
-		responseActions, responseActionsDiags := d.responseActionsToAPI(ctx, client)
-		diags.Append(responseActionsDiags...)
-		if !responseActionsDiags.HasError() && len(responseActions) > 0 {
-			*props.ResponseActions = &responseActions
-		}
-	}
-
-	// Set filters
-	if props.Filters != nil && typeutils.IsKnown(d.Filters) {
-		filters, filtersDiags := d.filtersToAPI(ctx)
-		diags.Append(filtersDiags...)
-		if !filtersDiags.HasError() && filters != nil {
-			*props.Filters = filters
-		}
-	}
-
-	// Set alert suppression
-	if props.AlertSuppression != nil {
-		alertSuppression := d.alertSuppressionToAPI(ctx, diags)
-		if alertSuppression != nil {
-			*props.AlertSuppression = alertSuppression
-		}
-	}
-
-	// Set threat (MITRE ATT&CK framework)
-	if props.Threat != nil && typeutils.IsKnown(d.Threat) {
-		threat, threatDiags := d.threatToAPI(ctx)
-		diags.Append(threatDiags...)
-		if !threatDiags.HasError() && len(threat) > 0 {
-			*props.Threat = &threat
-		}
-	}
-
-	// Set timeline ID
-	if props.TimelineID != nil && typeutils.IsKnown(d.TimelineID) {
-		timelineID := d.TimelineID.ValueString()
-		*props.TimelineID = &timelineID
-	}
-
-	// Set timeline title
-	if props.TimelineTitle != nil && typeutils.IsKnown(d.TimelineTitle) {
-		timelineTitle := d.TimelineTitle.ValueString()
-		*props.TimelineTitle = &timelineTitle
-	}
+	d.applyCommonRuleProps(ctx, props, diags, client, false)
 }
 
 // Helper function to initialize fields that should be set to default values for all rule types

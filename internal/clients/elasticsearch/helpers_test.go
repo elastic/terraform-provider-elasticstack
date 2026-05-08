@@ -66,7 +66,7 @@ func TestIsNotFoundElasticsearchError(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.expected, isNotFoundElasticsearchError(tc.err))
+			assert.Equal(t, tc.expected, IsNotFoundElasticsearchError(tc.err))
 		})
 	}
 }

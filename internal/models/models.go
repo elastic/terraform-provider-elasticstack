@@ -120,7 +120,7 @@ type ComponentTemplate struct {
 	Name     string         `json:"-"`
 	Meta     map[string]any `json:"_meta,omitempty"`
 	Template *Template      `json:"template,omitempty"`
-	Version  *int           `json:"version,omitempty"`
+	Version  *int64         `json:"version,omitempty"`
 }
 
 type ComponentTemplateResponse struct {

@@ -258,7 +258,7 @@ func checkResourceILMDestroy(s *terraform.State) error {
 		}
 		_, err = typedClient.Ilm.GetLifecycle().Policy(compID.ResourceID).Do(context.Background())
 		if err != nil {
-			if acctest.IsNotFoundElasticsearchError(err) {
+			if esclient.IsNotFoundElasticsearchError(err) {
 				continue
 			}
 			return err
