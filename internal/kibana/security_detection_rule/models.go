@@ -24,6 +24,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/google/uuid"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -614,6 +615,22 @@ func (d *Data) initializeAllFieldsToDefaults() {
 
 	// Initialize all type-specific fields to null/empty by default
 	d.initializeTypeSpecificFieldsToDefaults()
+}
+
+// parseResourceUUID extracts the UUID from the composite resource ID stored in d.ID.
+// Returns the parsed UUID and true on success, or the zero UUID and false on failure (with diags populated).
+func (d Data) parseResourceUUID(diags *diag.Diagnostics) (uuid.UUID, bool) {
+	compID, idDiags := clients.CompositeIDFromStrFw(d.ID.ValueString())
+	diags.Append(idDiags...)
+	if diags.HasError() {
+		return uuid.UUID{}, false
+	}
+	uid, err := uuid.Parse(compID.ResourceID)
+	if err != nil {
+		diags.AddError("ID was not a valid UUID", err.Error())
+		return uuid.UUID{}, false
+	}
+	return uid, true
 }
 
 // Helper function to initialize type-specific fields to default/null values

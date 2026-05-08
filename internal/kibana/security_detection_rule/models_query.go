@@ -23,7 +23,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -132,13 +131,8 @@ func toQueryRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforc
 
 	queryRuleQuery := d.Query.ValueString()
 
-	// Parse ID to get space_id and rule_id
-	compID, resourceIDDiags := clients.CompositeIDFromStrFw(d.ID.ValueString())
-	diags.Append(resourceIDDiags...)
-
-	uid, err := uuid.Parse(compID.ResourceID)
-	if err != nil {
-		diags.AddError("ID was not a valid UUID", err.Error())
+	uid, ok := d.parseResourceUUID(&diags)
+	if !ok {
 		return updateProps, diags
 	}
 
@@ -205,7 +199,7 @@ func toQueryRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforc
 	}
 
 	// Convert to union type
-	err = updateProps.FromSecurityDetectionsAPIQueryRuleUpdateProps(queryRule)
+	err := updateProps.FromSecurityDetectionsAPIQueryRuleUpdateProps(queryRule)
 	if err != nil {
 		diags.AddError(
 			"Error building update properties",
