@@ -79,26 +79,8 @@ func GetSpace(ctx context.Context, client *Client, id string) (*kbapi.SpaceRespo
 // GetSpaceSDK returns a single Kibana space by ID using SDK diagnostics.
 // Returns (nil, nil) when the space is not found (HTTP 404).
 func GetSpaceSDK(ctx context.Context, client *Client, id string) (*kbapi.SpaceResponse, sdkdiag.Diagnostics) {
-	resp, err := client.API.GetSpacesSpaceIdWithResponse(ctx, id)
-	if err != nil {
-		return nil, sdkdiag.FromErr(err)
-	}
-
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		if resp.JSON200 == nil {
-			return nil, sdkdiag.Diagnostics{{
-				Severity: sdkdiag.Error,
-				Summary:  "Unexpected empty response from Kibana Spaces API",
-				Detail:   "Got HTTP 200 but response body was empty or not JSON. This is likely a bug.",
-			}}
-		}
-		return resp.JSON200, nil
-	case http.StatusNotFound:
-		return nil, nil
-	default:
-		return nil, diagutil.SDKDiagsFromFramework(diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body))
-	}
+	space, fwDiags := GetSpace(ctx, client, id)
+	return space, diagutil.SDKDiagsFromFramework(fwDiags)
 }
 
 // CreateSpace creates a new Kibana space.
