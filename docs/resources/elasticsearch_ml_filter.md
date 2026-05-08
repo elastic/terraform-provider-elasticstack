@@ -22,7 +22,7 @@ Manages Machine Learning filters. A filter contains a list of strings that can b
 ### Optional
 
 - `description` (String) A description of the filter.
-- `elasticsearch_connection` (Block List, Deprecated) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `elasticsearch_connection` (Block List) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - `items` (Set of String) The items of the filter. A wildcard `*` can be used at the beginning or the end of an item. Up to 10000 items are allowed in each filter.
 
 ### Read-Only
