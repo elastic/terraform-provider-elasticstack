@@ -29,7 +29,7 @@ type dataSourceModel struct {
 
 	ID          types.String `tfsdk:"id"`
 	ClusterName types.String `tfsdk:"cluster_name"`
-	ClusterUuid types.String `tfsdk:"cluster_uuid"`
+	ClusterUUID types.String `tfsdk:"cluster_uuid"`
 	Name        types.String `tfsdk:"name"`
 	Tagline     types.String `tfsdk:"tagline"`
 	Version     types.List   `tfsdk:"version"`

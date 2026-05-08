@@ -417,7 +417,7 @@ func TestAccDataSourceClusterInfo_versionBuildFormats(t *testing.T) {
 // checkAttrAbsent asserts that the given attribute is either absent from state
 // or present with an empty string value. PF blocks only write attributes that
 // were explicitly configured, so unset optional fields will not appear in state.
-func checkAttrAbsent(resourceName, attrName string) resource.TestCheckFunc {
+func checkAttrAbsent(resourceName, attrName string) resource.TestCheckFunc { //nolint:unparam // resourceName is a parameter for API flexibility; all callers currently use the same resource
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[resourceName]
 		if !ok {

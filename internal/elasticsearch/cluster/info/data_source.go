@@ -68,7 +68,7 @@ func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedCl
 	}
 
 	config.ID = types.StringValue(res.ClusterUuid)
-	config.ClusterUuid = types.StringValue(res.ClusterUuid)
+	config.ClusterUUID = types.StringValue(res.ClusterUuid)
 	config.ClusterName = types.StringValue(res.ClusterName)
 	config.Name = types.StringValue(res.Name)
 	config.Tagline = types.StringValue(res.Tagline)
