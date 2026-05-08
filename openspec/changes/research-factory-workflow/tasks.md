@@ -60,9 +60,9 @@
 
 ## 7. change-factory awareness of the research block
 
-- [ ] 7.1 Edit `.github/workflows-src/change-factory-issue/workflow.md.tmpl` agent prompt to add a new section explaining the `<!-- implementation-research:start --> ... <!-- implementation-research:end -->` markers, the location of `### Recommendation` / `### Open questions`, the rule that a present block is the exclusive scope source, and the rule that an absent block falls back to today's title-and-body behavior.
-- [ ] 7.2 Edit the change-factory prompt to add explicit instructions that, when a block is present: adopt `### Recommendation` as the proposal spine, copy `### Open questions` into `design.md` as `## Open questions`, and treat `### Approaches considered` as already-evaluated context.
-- [ ] 7.3 Add explicit instruction to change-factory: SHALL NOT modify the implementation-research block (no `update-issue` against it; no rewriting of the markers).
+- [x] 7.1 Edit `.github/workflows-src/change-factory-issue/workflow.md.tmpl` agent prompt to add a new section explaining the `<!-- implementation-research:start --> ... <!-- implementation-research:end -->` markers, the location of `### Recommendation` / `### Open questions`, the rule that a present block is the exclusive scope source, and the rule that an absent block falls back to today's title-and-body behavior.
+- [x] 7.2 Edit the change-factory prompt to add explicit instructions that, when a block is present: adopt `### Recommendation` as the proposal spine, copy `### Open questions` into `design.md` as `## Open questions`, and treat `### Approaches considered` as already-evaluated context.
+- [x] 7.3 Add explicit instruction to change-factory: SHALL NOT modify the implementation-research block (no `update-issue` against it; no rewriting of the markers).
 
 ## 8. Generation and lock files
 

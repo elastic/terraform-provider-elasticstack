@@ -161,6 +161,24 @@ this issue.
 - **Triggered by**: `@${{ github.actor }}`
 - **Required branch**: `change-factory/issue-${{ github.event.issue.number }}`
 
+## Implementation research block
+
+The issue body may contain an implementation-research block delimited by HTML comment markers:
+
+- Opening marker: `<!-- implementation-research:start -->`
+- Closing marker: `<!-- implementation-research:end -->`
+
+When these markers are present in the issue body, the block is the **exclusive authoritative scope** for the proposal. When no such block is present, retain today's behavior: treat the issue title and body as the authoritative source unchanged.
+
+When a block is present:
+
+- Adopt the block's `### Recommendation` as the spine of `proposal.md`.
+- Copy the block's `### Open questions` verbatim into `design.md` under a `## Open questions` section.
+- Treat the block's `### Approaches considered` as already-evaluated context. Do **not** re-explore alternative approaches the block has already evaluated.
+- If the issue body content outside the block contradicts the block's recommendation, prefer the contradicting signal and note the disagreement in the proposal artifacts (for example, in `design.md` under a section explaining the deviation).
+
+You **must not** modify the implementation-research block. Do **not** emit `update-issue` operations that rewrite the block, add or remove the markers, or edit the text between them. This applies even if the block's content appears outdated or incomplete.
+
 ## OpenSpec tooling
 
 Node.js is configured and `npm ci` has run, so the repository-pinned OpenSpec CLI is available (for
