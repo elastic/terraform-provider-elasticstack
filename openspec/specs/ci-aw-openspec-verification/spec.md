@@ -158,12 +158,25 @@ When exactly one active change id is present and every relevant file status is `
 - **THEN** the workflow SHALL select that `<id>`, continue to verification, and mark the run comment-only
 
 ### Requirement: Verification using active OpenSpec tooling (REQ-007)
-For the selected change id and deterministic execution outputs published by the pre-activation steps, the agent SHALL follow `.agents/skills/openspec-verify-change/SKILL.md`. The agent SHALL use standard OpenSpec commands, including where applicable `npx openspec status --change "<id>" --json` and `npx openspec instructions apply --change "<id>" --json`, and SHALL perform verification with context rooted at `openspec/changes/<id>/`. The prompt SHALL consume the selected change id, review disposition, archive/push eligibility, and their reasons from workflow outputs rather than requiring the agent to rediscover pull request trust or archive/push policy before verification.
+For the selected change id and deterministic execution outputs published by the pre-activation steps, the agent SHALL run two review passes: an OpenSpec verification pass that follows `.agents/skills/openspec-verify-change/SKILL.md`, and an adversarial review pass that follows `.agents/skills/adversarial-review/SKILL.md`. The agent SHALL use standard OpenSpec commands, including where applicable `npx openspec status --change "<id>" --json` and `npx openspec instructions apply --change "<id>" --json`, and SHALL perform verification with context rooted at `openspec/changes/<id>/`. The prompt SHALL consume the selected change id, review disposition, archive/push eligibility, and their reasons from workflow outputs rather than requiring the agent to rediscover pull request trust or archive/push policy before verification.
+
+The OpenSpec verification pass SHALL own task completion, requirement coverage, scenario coverage, design adherence, structural allowlist, and relevance classification. The adversarial review pass SHALL own additional style/idiom, test-depth, UX, and risk review that is explicitly out of scope for the OpenSpec verification pass and CI. The workflow SHALL aggregate both reviewers into one pull request review.
 
 #### Scenario: Verification uses the selected change context
 - **GIVEN** deterministic setup selected a single active change
 - **WHEN** verification runs
 - **THEN** the workflow SHALL permit the agent to use local OpenSpec tooling rooted at `openspec/changes/<id>/`
+
+#### Scenario: Adversarial review runs alongside verification
+- **GIVEN** deterministic setup selected a single active change
+- **WHEN** review runs
+- **THEN** the workflow SHALL require both an OpenSpec verification pass and an adversarial review pass before computing the normal approval decision
+
+#### Scenario: Reviewer transport failure blocks approval
+- **GIVEN** either reviewer fails to complete because of a transport-level or tool-level failure
+- **WHEN** the workflow submits its pull request review
+- **THEN** it SHALL use `COMMENT`
+- **AND** it SHALL NOT archive or push archive results for that run
 
 ### Requirement: Structural allowlist for in-scope paths (REQ-008)
 
@@ -189,21 +202,26 @@ For every PR-changed file not covered by the structural allowlist, the agent SHA
 - THEN the file SHALL be `relevant` or `uncertain`, not `unassociated`
 
 ### Requirement: Pull request review body (REQ-010)
-The review body SHALL summarize verification (Issues by priority) and SHALL include Out-of-scope / unassociated changes with the same expectations as the prior design (list `unassociated`, summarize `uncertain`, note accepted `relevant`). When deterministic pre-activation outputs mark the run comment-only because the selected active change includes added files, the review body SHALL explicitly explain that limitation and SHALL state that the pull request is limited to a `COMMENT` review because it implements a net-new spec change, even if the normal approval criteria are otherwise satisfied.
+The review body SHALL summarize both the OpenSpec verification findings and adversarial review findings, preserving each finding's provenance. It SHALL include Out-of-scope / unassociated changes with the same expectations as the prior design (list `unassociated`, summarize `uncertain`, note accepted `relevant`). When deterministic pre-activation outputs mark the run comment-only because the selected active change includes added files, the review body SHALL explicitly explain that limitation and SHALL state that the pull request is limited to a `COMMENT` review because it implements a net-new spec change, even if the normal approval criteria are otherwise satisfied.
 
 #### Scenario: Body states unassociated outcome
 - **GIVEN** relevance review completes
 - **WHEN** the review is submitted
 - **THEN** the body SHALL state whether any `unassociated` files were found
 
+#### Scenario: Body separates reviewer findings
+- **GIVEN** both reviewers complete
+- **WHEN** the review body is generated
+- **THEN** it SHALL include distinct OpenSpec verification and adversarial review sections
+
 #### Scenario: Body explains net-new comment-only limitation
-- **GIVEN** the selected active change includes added files and verification finds zero CRITICAL issues and zero `unassociated` files
+- **GIVEN** the selected active change includes added files and both reviewers completed with zero combined CRITICAL issues and zero `unassociated` files
 - **WHEN** the review body is generated
 - **THEN** it SHALL explain that the PR met the normal approval criteria but is limited to `COMMENT` because it introduces a net-new spec change
 
 ### Requirement: Line-level review comments (REQ-011)
 
-The agent SHALL add line-level comments for mappable Issues by priority entries and for `unassociated` hunks, and SHALL avoid spam on large `relevant` sets.
+The agent SHALL add line-level comments for mappable Issues by priority entries from either reviewer and for `unassociated` hunks, and SHALL avoid spam on large `relevant` sets. The shared inline comment budget SHALL prioritize CRITICAL findings before WARNING and SUGGESTION findings, and SHALL preserve whether each finding came from OpenSpec verification or adversarial review.
 
 #### Scenario: Inline comment on critical finding
 
@@ -212,21 +230,27 @@ The agent SHALL add line-level comments for mappable Issues by priority entries 
 - THEN an inline review comment SHOULD be placed on that hunk when the API allows
 
 ### Requirement: Review event APPROVE vs COMMENT (REQ-012)
-The agent SHALL submit a pull request review with `APPROVE` if and only if the deterministic review disposition is approval-eligible and there are zero CRITICAL issues and zero `unassociated` files; otherwise `COMMENT`. The agent SHALL submit `COMMENT` whenever the deterministic review disposition is comment-only, including cases where verification finds zero CRITICAL issues and zero `unassociated` files. It SHALL not use `REQUEST_CHANGES`. WARNING and SUGGESTION alone SHALL NOT block `APPROVE` for approval-eligible runs. Deterministic archive/push eligibility SHALL NOT by itself force the review event to `COMMENT`.
+The agent SHALL submit a pull request review with `APPROVE` if and only if both reviewers completed successfully, the deterministic review disposition is approval-eligible, the combined reviewer output contains zero CRITICAL issues, and there are zero `unassociated` files; otherwise `COMMENT`. The agent SHALL submit `COMMENT` whenever the deterministic review disposition is comment-only, including cases where both reviewers find zero CRITICAL issues and zero `unassociated` files. It SHALL submit `COMMENT` if either reviewer fails to complete. It SHALL not use `REQUEST_CHANGES`. WARNING and SUGGESTION alone SHALL NOT block `APPROVE` for approval-eligible runs. Deterministic archive/push eligibility SHALL NOT by itself force the review event to `COMMENT`.
 
 #### Scenario: Approve when gates pass for a modified change
-- **GIVEN** deterministic gating marked the selected active change approval-eligible and verification found zero CRITICAL issues and zero `unassociated`
+- **GIVEN** deterministic gating marked the selected active change approval-eligible and both reviewers completed with zero combined CRITICAL issues and zero `unassociated`
 - **WHEN** the review is submitted
 - **THEN** `event` SHALL be `APPROVE`
 
 #### Scenario: Fork pull request may still receive APPROVE
-- **GIVEN** deterministic gating marked the selected active change approval-eligible, verification found zero CRITICAL issues and zero `unassociated`, and archive/push eligibility is disallowed because the pull request comes from a fork
+- **GIVEN** deterministic gating marked the selected active change approval-eligible, both reviewers completed with zero combined CRITICAL issues and zero `unassociated`, and archive/push eligibility is disallowed because the pull request comes from a fork
 - **WHEN** the review is submitted
 - **THEN** `event` SHALL be `APPROVE`
 
 #### Scenario: Net-new change proposal remains comment-only
 - **GIVEN** deterministic gating marked the selected active change comment-only because it includes added files
-- **AND** verification found zero CRITICAL issues and zero `unassociated`
+- **AND** both reviewers completed with zero combined CRITICAL issues and zero `unassociated`
+- **WHEN** the review is submitted
+- **THEN** `event` SHALL be `COMMENT`
+
+#### Scenario: Reviewer failure remains comment-only
+- **GIVEN** deterministic gating marked the selected active change approval-eligible
+- **AND** one reviewer failed to complete
 - **WHEN** the review is submitted
 - **THEN** `event` SHALL be `COMMENT`
 

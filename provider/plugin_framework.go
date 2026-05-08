@@ -49,6 +49,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/rolemapping"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/systemuser"
 	securityuser "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/user"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/transform"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/watcher/watch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/agentdownloadsource"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/agentpolicy"
@@ -226,6 +227,7 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		securitylistdatastreams.NewResource,
 		securityexceptionlist.NewResource,
 		securityexceptionitem.NewResource,
+		transform.NewTransformResource,
 	}
 }
 

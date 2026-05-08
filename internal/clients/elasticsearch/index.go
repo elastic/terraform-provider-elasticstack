@@ -88,7 +88,7 @@ func GetIlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, p
 	}
 	res, err := typedClient.Ilm.GetLifecycle().Policy(policyName).Do(ctx)
 	if err != nil {
-		if isNotFoundElasticsearchError(err) {
+		if IsNotFoundElasticsearchError(err) {
 			return nil, nil
 		}
 		return nil, diagutil.FrameworkDiagFromError(err)
@@ -190,7 +190,7 @@ func DeleteIlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient
 	}
 	_, err = typedClient.Ilm.DeleteLifecycle(policyName).Do(ctx)
 	if err != nil {
-		if isNotFoundElasticsearchError(err) {
+		if IsNotFoundElasticsearchError(err) {
 			return nil
 		}
 		return diagutil.FrameworkDiagFromError(err)
@@ -224,7 +224,7 @@ func GetComponentTemplate(ctx context.Context, apiClient *clients.ElasticsearchS
 	}
 	res, err := typedClient.Cluster.GetComponentTemplate().Name(templateName).Do(ctx)
 	if err != nil {
-		if isNotFoundElasticsearchError(err) {
+		if IsNotFoundElasticsearchError(err) {
 			return nil, nil
 		}
 		return nil, sdkdiag.FromErr(err)
@@ -249,7 +249,7 @@ func DeleteComponentTemplate(ctx context.Context, apiClient *clients.Elasticsear
 	}
 	_, err = typedClient.Cluster.DeleteComponentTemplate(templateName).Do(ctx)
 	if err != nil {
-		if isNotFoundElasticsearchError(err) {
+		if IsNotFoundElasticsearchError(err) {
 			return nil
 		}
 		return sdkdiag.FromErr(err)
@@ -282,7 +282,7 @@ func GetIndexTemplate(ctx context.Context, apiClient *clients.ElasticsearchScope
 	}
 	res, err := typedClient.Indices.GetIndexTemplate().Name(templateName).Do(ctx)
 	if err != nil {
-		if isNotFoundElasticsearchError(err) {
+		if IsNotFoundElasticsearchError(err) {
 			return nil, nil
 		}
 		return nil, diagutil.FrameworkDiagFromError(err)
@@ -306,7 +306,7 @@ func DeleteIndexTemplate(ctx context.Context, apiClient *clients.ElasticsearchSc
 	}
 	_, err = typedClient.Indices.DeleteIndexTemplate(templateName).Do(ctx)
 	if err != nil {
-		if isNotFoundElasticsearchError(err) {
+		if IsNotFoundElasticsearchError(err) {
 			return nil
 		}
 		return diagutil.FrameworkDiagFromError(err)
@@ -396,7 +396,7 @@ func DeleteIndex(ctx context.Context, apiClient *clients.ElasticsearchScopedClie
 	}
 	_, err = typedClient.Indices.Delete(name).Do(ctx)
 	if err != nil {
-		if isNotFoundElasticsearchError(err) {
+		if IsNotFoundElasticsearchError(err) {
 			return nil
 		}
 		return diagutil.FrameworkDiagFromError(err)
@@ -428,7 +428,7 @@ func GetIndices(ctx context.Context, apiClient *clients.ElasticsearchScopedClien
 	}
 	res, err := typedClient.Indices.Get(name).FlatSettings(true).Do(ctx)
 	if err != nil {
-		if isNotFoundElasticsearchError(err) {
+		if IsNotFoundElasticsearchError(err) {
 			return nil, nil
 		}
 		return nil, diagutil.FrameworkDiagFromError(err)
@@ -443,7 +443,7 @@ func DeleteIndexAlias(ctx context.Context, apiClient *clients.ElasticsearchScope
 	}
 	_, err = typedClient.Indices.DeleteAlias(index, strings.Join(aliases, ",")).Do(ctx)
 	if err != nil {
-		if isNotFoundElasticsearchError(err) {
+		if IsNotFoundElasticsearchError(err) {
 			return nil
 		}
 		return diagutil.FrameworkDiagFromError(err)
@@ -514,7 +514,7 @@ func GetDataStream(ctx context.Context, apiClient *clients.ElasticsearchScopedCl
 	}
 	res, err := typedClient.Indices.GetDataStream().Name(dataStreamName).Do(ctx)
 	if err != nil {
-		if isNotFoundElasticsearchError(err) {
+		if IsNotFoundElasticsearchError(err) {
 			return nil, nil
 		}
 		return nil, sdkdiag.FromErr(err)
@@ -533,7 +533,7 @@ func DeleteDataStream(ctx context.Context, apiClient *clients.ElasticsearchScope
 	}
 	_, err = typedClient.Indices.DeleteDataStream(dataStreamName).Do(ctx)
 	if err != nil {
-		if isNotFoundElasticsearchError(err) {
+		if IsNotFoundElasticsearchError(err) {
 			return nil
 		}
 		return sdkdiag.FromErr(err)
@@ -635,7 +635,7 @@ func DeleteDataStreamLifecycle(ctx context.Context, apiClient *clients.Elasticse
 	}
 	_, err = builder.Do(ctx)
 	if err != nil {
-		if isNotFoundElasticsearchError(err) {
+		if IsNotFoundElasticsearchError(err) {
 			return nil
 		}
 		return diagutil.FrameworkDiagFromError(err)
@@ -650,7 +650,7 @@ func GetAlias(ctx context.Context, apiClient *clients.ElasticsearchScopedClient,
 	}
 	res, err := typedClient.Indices.GetAlias().Name(aliasName).Do(ctx)
 	if err != nil {
-		if isNotFoundElasticsearchError(err) {
+		if IsNotFoundElasticsearchError(err) {
 			return nil, nil
 		}
 		return nil, diagutil.FrameworkDiagFromError(err)
@@ -758,7 +758,7 @@ func GetIngestPipeline(ctx context.Context, apiClient *clients.ElasticsearchScop
 	}
 	res, err := typedClient.Ingest.GetPipeline().Id(name).Do(ctx)
 	if err != nil {
-		if isNotFoundElasticsearchError(err) {
+		if IsNotFoundElasticsearchError(err) {
 			return nil, nil
 		}
 		return nil, sdkdiag.FromErr(err)
@@ -782,7 +782,7 @@ func DeleteIngestPipeline(ctx context.Context, apiClient *clients.ElasticsearchS
 	}
 	_, err = typedClient.Ingest.DeletePipeline(name).Do(ctx)
 	if err != nil {
-		if isNotFoundElasticsearchError(err) {
+		if IsNotFoundElasticsearchError(err) {
 			return nil
 		}
 		return sdkdiag.FromErr(err)

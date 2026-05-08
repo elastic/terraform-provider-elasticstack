@@ -61,7 +61,7 @@ func GetInferenceEndpoint(ctx context.Context, apiClient *clients.ElasticsearchS
 
 	res, err := typedClient.Inference.Get().InferenceId(inferenceID).Do(ctx)
 	if err != nil {
-		if isNotFoundElasticsearchError(err) {
+		if IsNotFoundElasticsearchError(err) {
 			return nil, nil
 		}
 		diags.AddError("Unable to get inference endpoint", err.Error())
@@ -149,7 +149,7 @@ func DeleteInferenceEndpoint(ctx context.Context, apiClient *clients.Elasticsear
 
 	_, err = typedClient.Inference.Delete(inferenceID).Do(ctx)
 	if err != nil {
-		if isNotFoundElasticsearchError(err) {
+		if IsNotFoundElasticsearchError(err) {
 			return diags
 		}
 		diags.AddError("Unable to delete inference endpoint", err.Error())

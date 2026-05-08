@@ -31,6 +31,7 @@ import (
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/config"
@@ -617,7 +618,7 @@ func deleteElasticsearchIndexOOB(t *testing.T, name string) {
 		return
 	}
 	if _, err := typedClient.Indices.Delete(name).Do(ctx); err != nil {
-		if acctest.IsNotFoundElasticsearchError(err) {
+		if esclient.IsNotFoundElasticsearchError(err) {
 			return
 		}
 		t.Logf("cleanup: Indices.Delete(%q): %v", name, err)
@@ -637,7 +638,7 @@ func getElasticsearchIndexState(t *testing.T, indexName string) types.IndexState
 	}
 	resp, err := typedClient.Indices.Get(indexName).Do(ctx)
 	if err != nil {
-		if acctest.IsNotFoundElasticsearchError(err) {
+		if esclient.IsNotFoundElasticsearchError(err) {
 			t.Fatalf("index %q not found", indexName)
 		}
 		t.Fatalf("Indices.Get(%q): %v", indexName, err)
@@ -1013,7 +1014,7 @@ func checkResourceIndexDestroy(s *terraform.State) error {
 		}
 		_, err = typedClient.Indices.Get(compID.ResourceID).Do(context.Background())
 		if err != nil {
-			if acctest.IsNotFoundElasticsearchError(err) {
+			if esclient.IsNotFoundElasticsearchError(err) {
 				continue
 			}
 			return err

@@ -135,11 +135,11 @@ test('verify-label agent prompt interpolates needs.pre_activation review outputs
   const dr = '${{ needs.pre_activation.outputs.disposition_reason }}';
   assert.ok(source.includes(rd), 'expected review_disposition interpolation in generated workflow');
   assert.ok(source.includes(dr), 'expected disposition_reason interpolation in generated workflow');
-  const pre = source.split('## Pre-activation context')[1].split('## Verification (active change)')[0];
+  const pre = source.split('## Pre-activation context')[1].split('## Phase 1')[0];
   assert.ok(pre.includes(rd), 'expected review_disposition in Pre-activation context');
   assert.ok(pre.includes(dr), 'expected disposition_reason in Pre-activation context');
-  const step5 = source.split('## Review body, inline comments, and decision')[1].split('## Archive and push')[0];
-  assert.ok(step5.includes(rd), 'expected review_disposition in review-submission instructions');
+  const decisionPhase = source.split('## Phase 3')[1].split('## Phase 4')[0];
+  assert.ok(decisionPhase.includes(rd), 'expected review_disposition in review-submission instructions');
 });
 
 test('verify-label agent prompt interpolates archive/push outputs where the agent reads them', () => {
@@ -148,9 +148,28 @@ test('verify-label agent prompt interpolates archive/push outputs where the agen
   const archiveAllowedReason = '${{ needs.pre_activation.outputs.archive_push_allowed_reason }}';
   assert.ok(source.includes(archiveAllowed), 'expected archive_push_allowed interpolation in generated workflow');
   assert.ok(source.includes(archiveAllowedReason), 'expected archive_push_allowed_reason interpolation in generated workflow');
-  const pre = source.split('## Pre-activation context')[1].split('## Verification (active change)')[0];
+  const pre = source.split('## Pre-activation context')[1].split('## Phase 1')[0];
   assert.ok(pre.includes(archiveAllowed), 'expected archive_push_allowed in Pre-activation context');
   assert.ok(pre.includes(archiveAllowedReason), 'expected archive_push_allowed_reason in Pre-activation context');
+});
+
+test('verify-label workflow prompt requires verification and adversarial reviewers', () => {
+  const source = workflowSource();
+  assert.match(source, /## Phase 1 .* Parallel reviews/);
+  assert.match(source, /Subagent A .* OpenSpec verification/);
+  assert.match(source, /Subagent B .* Adversarial review/);
+  assert.match(source, /\.agents\/skills\/adversarial-review\/SKILL\.md/);
+  assert.match(source, /combined CRITICAL count/);
+});
+
+test('verify-label workflow blocks approve when the adversarial reviewer fails', () => {
+  const source = workflowSource();
+  assert.match(source, /If \*\*Subagent B \(adversarial\)\*\* fails, abort Phase 2/);
+  assert.match(source, /Any subagent transport-level failure blocks `APPROVE`/);
+  assert.match(source, /Use \*\*`APPROVE`\*\*.*both subagents completed successfully/s);
+  assert.match(source, /Otherwise \(subagent failure \/ blocking issues from either reviewer \/ unassociated files\) use \*\*`COMMENT`\*\*/);
+  assert.doesNotMatch(source, /proceed with Phase 2 using only verify findings/);
+  assert.doesNotMatch(source, /Do \*\*not\*\* block APPROVE solely on adversarial transport-level failures/);
 });
 
 test('verify-label workflow ties APPROVE and archive to approval-eligible disposition', () => {
@@ -164,7 +183,7 @@ test('verify-label workflow gates archive/push on archive_push_allowed being tru
   const source = workflowSource();
   assert.match(source, /archive_push_allowed.*true/s);
   // Archive section should mention archive_push_allowed
-  const archiveSection = source.split('## Archive and push')[1];
+  const archiveSection = source.split('## Phase 4')[1];
   assert.ok(
     archiveSection.includes('archive_push_allowed'),
     'expected archive_push_allowed check in archive/push section'
