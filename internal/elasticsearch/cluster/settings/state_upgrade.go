@@ -20,6 +20,7 @@ package settings
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
@@ -31,7 +32,7 @@ import (
 //
 //  1. The persistent and transient blocks were stored as a list-of-one
 //     (TypeList with MaxItems=1); they are now SingleNestedBlock objects.
-//     Unwrap [obj] -> obj and [] -> null.
+//     Unwrap [obj] -> obj and remove empty lists.
 //  2. Each setting object had value="" / value_list=[] for the unused
 //     alternative; the framework's null representation is required for
 //     set-element identity to match the new flatten output.
@@ -48,7 +49,10 @@ func migrateClusterSettingsStateV0ToV1(_ context.Context, req resource.UpgradeSt
 	}
 
 	for _, category := range []string{"persistent", "transient"} {
-		unwrapAndNormaliseCategoryBlock(stateMap, category)
+		if err := unwrapAndNormaliseCategoryBlock(stateMap, category); err != nil {
+			resp.Diagnostics.AddError("State upgrade error", err.Error())
+			return
+		}
 	}
 
 	stateJSON, err := json.Marshal(stateMap)
@@ -62,24 +66,27 @@ func migrateClusterSettingsStateV0ToV1(_ context.Context, req resource.UpgradeSt
 // unwrapAndNormaliseCategoryBlock unwraps a persistent/transient list-of-one
 // into a single object (or removes the key entirely when the list is empty
 // or absent), and normalises every nested setting's value/value_list.
-func unwrapAndNormaliseCategoryBlock(stateMap map[string]any, category string) {
+func unwrapAndNormaliseCategoryBlock(stateMap map[string]any, category string) error {
 	raw, ok := stateMap[category]
 	if !ok || raw == nil {
 		delete(stateMap, category)
-		return
+		return nil
 	}
 	blocks, ok := raw.([]any)
 	if !ok {
-		return
+		return fmt.Errorf("expected %q to be a list from prior SDK state, got %T", category, raw)
 	}
 	if len(blocks) == 0 {
 		delete(stateMap, category)
-		return
+		return nil
+	}
+	if len(blocks) > 1 {
+		return fmt.Errorf("expected %q to contain at most one block from prior SDK state, got %d", category, len(blocks))
 	}
 	blockObj, ok := blocks[0].(map[string]any)
 	if !ok {
 		delete(stateMap, category)
-		return
+		return nil
 	}
 	if settings, ok := blockObj["setting"].([]any); ok {
 		for _, s := range settings {
@@ -91,6 +98,7 @@ func unwrapAndNormaliseCategoryBlock(stateMap map[string]any, category string) {
 		}
 	}
 	stateMap[category] = blockObj
+	return nil
 }
 
 // normaliseSettingValues converts SDK zero-value representations to nulls.

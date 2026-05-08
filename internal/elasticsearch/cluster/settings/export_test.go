@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-// Package settings_test helpers: export_test.go lives in package settings
+// Package settings helpers: export_test.go lives in package settings
 // so it can access unexported identifiers, but is only compiled during tests.
 
 package settings
@@ -124,7 +124,7 @@ func MakeSettingsBlockWithValueList(name string, vals []string) types.Object {
 }
 
 // EmptySettingsBlock returns a non-null block object with zero settings.
-func EmptySettingsBlock() types.Object {
+func EmptySettingsBlock() (types.Object, diag.Diagnostics) {
 	return emptySettingsBlock()
 }
 

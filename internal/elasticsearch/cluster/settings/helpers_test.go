@@ -22,12 +22,13 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/settings"
 	"github.com/google/go-cmp/cmp"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func TestValidateConfigModel_BothEmpty_Error(t *testing.T) {
 	diags := settings.ExportedValidateConfigModel(
-		settings.EmptySettingsBlock(),
-		settings.EmptySettingsBlock(),
+		mustEmptySettingsBlock(t),
+		mustEmptySettingsBlock(t),
 	)
 	if !diags.HasError() {
 		t.Error("expected error when both persistent and transient are empty")
@@ -114,13 +115,23 @@ func TestExpandSettings_NullBlock(t *testing.T) {
 
 func TestExpandSettings_EmptyBlock(t *testing.T) {
 	ctx := t.Context()
-	result, diags := settings.ExportedExpandSettings(ctx, settings.EmptySettingsBlock())
+	result, diags := settings.ExportedExpandSettings(ctx, mustEmptySettingsBlock(t))
 	if diags.HasError() {
 		t.Fatalf("unexpected diagnostics: %v", diags)
 	}
 	if result != nil {
 		t.Errorf("expected nil for empty block, got %v", result)
 	}
+}
+
+func mustEmptySettingsBlock(t *testing.T) types.Object {
+	t.Helper()
+
+	block, diags := settings.EmptySettingsBlock()
+	if diags.HasError() {
+		t.Fatalf("unexpected diagnostics creating empty settings block: %v", diags)
+	}
+	return block
 }
 
 func TestUpdateRemovedSettings_RemovesDeletedKeys(t *testing.T) {

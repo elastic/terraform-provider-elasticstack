@@ -47,12 +47,23 @@ func settingsBlockAttrTypes() map[string]attr.Type {
 
 // emptySettingsBlock returns a non-null Object with an empty setting set,
 // used when the API has no values for a category we are tracking.
-func emptySettingsBlock() types.Object {
-	emptySet := types.SetValueMust(types.ObjectType{AttrTypes: settingModelAttrTypes()}, []attr.Value{})
-	obj, _ := types.ObjectValue(settingsBlockAttrTypes(), map[string]attr.Value{
+func emptySettingsBlock() (types.Object, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	emptySet, ds := types.SetValue(types.ObjectType{AttrTypes: settingModelAttrTypes()}, []attr.Value{})
+	diags.Append(ds...)
+	if diags.HasError() {
+		return nullSettingsBlock(), diags
+	}
+
+	obj, ds := types.ObjectValue(settingsBlockAttrTypes(), map[string]attr.Value{
 		"setting": emptySet,
 	})
-	return obj
+	diags.Append(ds...)
+	if diags.HasError() {
+		return nullSettingsBlock(), diags
+	}
+	return obj, diags
 }
 
 // nullSettingsBlock returns a typed null Object, used to represent the
@@ -168,7 +179,7 @@ func flattenSettings(ctx context.Context, category string, configuredSettings, a
 	apiCategory, _ := apiResponse[category].(map[string]any)
 
 	settingModelAttr := settingModelAttrTypes()
-	var settingValues []attr.Value
+	settingValues := make([]attr.Value, 0, len(configured))
 
 	for k := range configured {
 		v, ok := apiCategory[k]
@@ -208,7 +219,12 @@ func flattenSettings(ctx context.Context, category string, configuredSettings, a
 	}
 
 	if len(settingValues) == 0 {
-		return emptySettingsBlock(), diags
+		block, ds := emptySettingsBlock()
+		diags.Append(ds...)
+		if diags.HasError() {
+			return nullSettingsBlock(), diags
+		}
+		return block, diags
 	}
 
 	settingSet, ds := types.SetValue(types.ObjectType{AttrTypes: settingModelAttr}, settingValues)

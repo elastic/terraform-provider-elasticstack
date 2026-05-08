@@ -182,3 +182,38 @@ func TestMigrateClusterSettingsStateV0ToV1_EmptyCategoryListDropped(t *testing.T
 		t.Errorf("expected transient to be unwrapped to a map, got %T", got["transient"])
 	}
 }
+
+func TestMigrateClusterSettingsStateV0ToV1_RejectsMultipleCategoryBlocks(t *testing.T) {
+	priorState := map[string]any{
+		"id": "cluster/cluster-settings",
+		"persistent": []any{
+			map[string]any{"setting": []any{}},
+			map[string]any{"setting": []any{}},
+		},
+	}
+	priorJSON, _ := json.Marshal(priorState)
+
+	resp := &resource.UpgradeStateResponse{}
+	migrateClusterSettingsStateV0ToV1(context.Background(), resource.UpgradeStateRequest{
+		RawState: &tfprotov6.RawState{JSON: priorJSON},
+	}, resp)
+	if !resp.Diagnostics.HasError() {
+		t.Fatal("expected diagnostics for multiple persistent blocks")
+	}
+}
+
+func TestMigrateClusterSettingsStateV0ToV1_RejectsUnexpectedCategoryShape(t *testing.T) {
+	priorState := map[string]any{
+		"id":         "cluster/cluster-settings",
+		"persistent": map[string]any{"setting": []any{}},
+	}
+	priorJSON, _ := json.Marshal(priorState)
+
+	resp := &resource.UpgradeStateResponse{}
+	migrateClusterSettingsStateV0ToV1(context.Background(), resource.UpgradeStateRequest{
+		RawState: &tfprotov6.RawState{JSON: priorJSON},
+	}, resp)
+	if !resp.Diagnostics.HasError() {
+		t.Fatal("expected diagnostics for non-list persistent block")
+	}
+}

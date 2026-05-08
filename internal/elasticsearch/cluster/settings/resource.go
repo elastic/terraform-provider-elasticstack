@@ -49,6 +49,8 @@ type clusterSettingsResource struct {
 }
 
 func newClusterSettingsResource() *clusterSettingsResource {
+	_, updatePlaceholder := entitycore.PlaceholderElasticsearchWriteCallbacks[tfModel]()
+
 	return &clusterSettingsResource{
 		ElasticsearchResource: entitycore.NewElasticsearchResource[tfModel](
 			entitycore.ComponentElasticsearch,
@@ -57,7 +59,7 @@ func newClusterSettingsResource() *clusterSettingsResource {
 			readClusterSettings,
 			deleteClusterSettings,
 			createClusterSettings,
-			placeholderUpdateCallback,
+			updatePlaceholder,
 		),
 	}
 }
@@ -92,19 +94,6 @@ func createClusterSettings(ctx context.Context, client *clients.ElasticsearchSco
 
 	plan.ID = types.StringValue(id.String())
 	return plan, diags
-}
-
-// placeholderUpdateCallback exists only to satisfy NewElasticsearchResource's
-// non-nil contract; the real update logic lives in clusterSettingsResource.Update
-// because it needs both plan and state.
-func placeholderUpdateCallback(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, _ tfModel) (tfModel, fwdiag.Diagnostics) {
-	var diags fwdiag.Diagnostics
-	diags.AddError(
-		"Internal error",
-		"cluster_settings update callback was invoked, but Update should be handled by the resource override.",
-	)
-	var zero tfModel
-	return zero, diags
 }
 
 // Update overrides the envelope's Update to compare old and new settings,
