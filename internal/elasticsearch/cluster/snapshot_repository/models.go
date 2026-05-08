@@ -27,12 +27,12 @@ type Data struct {
 	ElasticsearchConnection types.List   `tfsdk:"elasticsearch_connection"`
 	Name                    types.String `tfsdk:"name"`
 	Verify                  types.Bool   `tfsdk:"verify"`
-	Fs                      types.List   `tfsdk:"fs"`
-	URL                     types.List   `tfsdk:"url"`
-	Azure                   types.List   `tfsdk:"azure"`
-	Gcs                     types.List   `tfsdk:"gcs"`
-	S3                      types.List   `tfsdk:"s3"`
-	Hdfs                    types.List   `tfsdk:"hdfs"`
+	Fs                      types.Object `tfsdk:"fs"`
+	URL                     types.Object `tfsdk:"url"`
+	Azure                   types.Object `tfsdk:"azure"`
+	Gcs                     types.Object `tfsdk:"gcs"`
+	S3                      types.Object `tfsdk:"s3"`
+	Hdfs                    types.Object `tfsdk:"hdfs"`
 }
 
 func (d Data) GetID() types.String                    { return d.ID }

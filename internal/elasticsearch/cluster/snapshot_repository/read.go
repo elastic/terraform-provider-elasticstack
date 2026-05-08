@@ -27,6 +27,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
@@ -48,12 +49,12 @@ func readSnapshotRepository(ctx context.Context, client *esclients.Elasticsearch
 	data.Name = types.StringValue(resourceID)
 
 	// Clear all type blocks then populate the correct one
-	data.Fs = types.ListNull(types.ObjectType{AttrTypes: fsAttrTypes()})
-	data.URL = types.ListNull(types.ObjectType{AttrTypes: urlAttrTypes()})
-	data.Gcs = types.ListNull(types.ObjectType{AttrTypes: gcsAttrTypes()})
-	data.Azure = types.ListNull(types.ObjectType{AttrTypes: azureAttrTypes()})
-	data.S3 = types.ListNull(types.ObjectType{AttrTypes: s3AttrTypes()})
-	data.Hdfs = types.ListNull(types.ObjectType{AttrTypes: hdfsAttrTypes()})
+	data.Fs = types.ObjectNull(fsAttrTypes())
+	data.URL = types.ObjectNull(urlAttrTypes())
+	data.Gcs = types.ObjectNull(gcsAttrTypes())
+	data.Azure = types.ObjectNull(azureAttrTypes())
+	data.S3 = types.ObjectNull(s3AttrTypes())
+	data.Hdfs = types.ObjectNull(hdfsAttrTypes())
 
 	switch repo.Type {
 	case "fs":
@@ -185,15 +186,15 @@ func int64Setting(settings map[string]any, key string, fallback int64) int64 {
 	}
 }
 
-func settingsToFs(ctx context.Context, repo *elasticsearch.SnapshotRepositoryInfo, state Data) (types.List, diag.Diagnostics) {
+func settingsToFs(ctx context.Context, repo *elasticsearch.SnapshotRepositoryInfo, state Data) (types.Object, diag.Diagnostics) {
 	s := repo.Settings
 
 	// Try to inherit compress from state if API does not return it
 	compressFallback := true
-	if !state.Fs.IsNull() && !state.Fs.IsUnknown() && len(state.Fs.Elements()) > 0 {
-		var stateFsList []FsSettings
-		if diags := state.Fs.ElementsAs(ctx, &stateFsList, false); !diags.HasError() {
-			compressFallback = stateFsList[0].Compress.ValueBool()
+	if !state.Fs.IsNull() && !state.Fs.IsUnknown() {
+		var stateFs FsSettings
+		if diags := state.Fs.As(ctx, &stateFs, basetypes.ObjectAsOptions{}); !diags.HasError() {
+			compressFallback = stateFs.Compress.ValueBool()
 		}
 	}
 
@@ -210,17 +211,17 @@ func settingsToFs(ctx context.Context, repo *elasticsearch.SnapshotRepositoryInf
 		},
 		Location: types.StringValue(strSetting(s, "location")),
 	}
-	return types.ListValueFrom(ctx, types.ObjectType{AttrTypes: fsAttrTypes()}, []FsSettings{fs})
+	return types.ObjectValueFrom(ctx, fsAttrTypes(), fs)
 }
 
-func settingsToURL(ctx context.Context, repo *elasticsearch.SnapshotRepositoryInfo, state Data) (types.List, diag.Diagnostics) {
+func settingsToURL(ctx context.Context, repo *elasticsearch.SnapshotRepositoryInfo, state Data) (types.Object, diag.Diagnostics) {
 	s := repo.Settings
 
 	compressFallback := true
-	if !state.URL.IsNull() && !state.URL.IsUnknown() && len(state.URL.Elements()) > 0 {
-		var stateURLList []URLSettings
-		if diags := state.URL.ElementsAs(ctx, &stateURLList, false); !diags.HasError() {
-			compressFallback = stateURLList[0].Compress.ValueBool()
+	if !state.URL.IsNull() && !state.URL.IsUnknown() {
+		var stateURL URLSettings
+		if diags := state.URL.As(ctx, &stateURL, basetypes.ObjectAsOptions{}); !diags.HasError() {
+			compressFallback = stateURL.Compress.ValueBool()
 		}
 	}
 
@@ -239,10 +240,10 @@ func settingsToURL(ctx context.Context, repo *elasticsearch.SnapshotRepositoryIn
 		HTTPMaxRetries:    types.Int64Value(int64Setting(s, "http_max_retries", 5)),
 		HTTPSocketTimeout: strSettingNull(s, "http_socket_timeout"),
 	}
-	return types.ListValueFrom(ctx, types.ObjectType{AttrTypes: urlAttrTypes()}, []URLSettings{u})
+	return types.ObjectValueFrom(ctx, urlAttrTypes(), u)
 }
 
-func settingsToGcs(ctx context.Context, repo *elasticsearch.SnapshotRepositoryInfo) (types.List, diag.Diagnostics) {
+func settingsToGcs(ctx context.Context, repo *elasticsearch.SnapshotRepositoryInfo) (types.Object, diag.Diagnostics) {
 	s := repo.Settings
 	gcs := GcsSettings{
 		CommonSettings: CommonSettings{
@@ -256,10 +257,10 @@ func settingsToGcs(ctx context.Context, repo *elasticsearch.SnapshotRepositoryIn
 		Client:   strSettingNull(s, "client"),
 		BasePath: strSettingNull(s, "base_path"),
 	}
-	return types.ListValueFrom(ctx, types.ObjectType{AttrTypes: gcsAttrTypes()}, []GcsSettings{gcs})
+	return types.ObjectValueFrom(ctx, gcsAttrTypes(), gcs)
 }
 
-func settingsToAzure(ctx context.Context, repo *elasticsearch.SnapshotRepositoryInfo) (types.List, diag.Diagnostics) {
+func settingsToAzure(ctx context.Context, repo *elasticsearch.SnapshotRepositoryInfo) (types.Object, diag.Diagnostics) {
 	s := repo.Settings
 	azure := AzureSettings{
 		CommonSettings: CommonSettings{
@@ -274,10 +275,10 @@ func settingsToAzure(ctx context.Context, repo *elasticsearch.SnapshotRepository
 		BasePath:     strSettingNull(s, "base_path"),
 		LocationMode: strSettingNull(s, "location_mode"),
 	}
-	return types.ListValueFrom(ctx, types.ObjectType{AttrTypes: azureAttrTypes()}, []AzureSettings{azure})
+	return types.ObjectValueFrom(ctx, azureAttrTypes(), azure)
 }
 
-func settingsToS3(ctx context.Context, repo *elasticsearch.SnapshotRepositoryInfo) (types.List, diag.Diagnostics) {
+func settingsToS3(ctx context.Context, repo *elasticsearch.SnapshotRepositoryInfo) (types.Object, diag.Diagnostics) {
 	s := repo.Settings
 	s3 := S3Settings{
 		CommonSettings: CommonSettings{
@@ -297,10 +298,10 @@ func settingsToS3(ctx context.Context, repo *elasticsearch.SnapshotRepositoryInf
 		StorageClass:         strSettingNull(s, "storage_class"),
 		PathStyleAccess:      types.BoolValue(boolSetting(s, "path_style_access", false)),
 	}
-	return types.ListValueFrom(ctx, types.ObjectType{AttrTypes: s3AttrTypes()}, []S3Settings{s3})
+	return types.ObjectValueFrom(ctx, s3AttrTypes(), s3)
 }
 
-func settingsToHdfs(ctx context.Context, repo *elasticsearch.SnapshotRepositoryInfo) (types.List, diag.Diagnostics) {
+func settingsToHdfs(ctx context.Context, repo *elasticsearch.SnapshotRepositoryInfo) (types.Object, diag.Diagnostics) {
 	s := repo.Settings
 	hdfs := HdfsSettings{
 		CommonSettings: CommonSettings{
@@ -314,5 +315,5 @@ func settingsToHdfs(ctx context.Context, repo *elasticsearch.SnapshotRepositoryI
 		Path:         types.StringValue(strSetting(s, "path")),
 		LoadDefaults: types.BoolValue(boolSetting(s, "load_defaults", true)),
 	}
-	return types.ListValueFrom(ctx, types.ObjectType{AttrTypes: hdfsAttrTypes()}, []HdfsSettings{hdfs})
+	return types.ObjectValueFrom(ctx, hdfsAttrTypes(), hdfs)
 }

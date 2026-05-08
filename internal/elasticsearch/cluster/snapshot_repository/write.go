@@ -25,6 +25,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 func writeSnapshotRepository(ctx context.Context, client *esclients.ElasticsearchScopedClient, resourceID string, data Data) (Data, diag.Diagnostics) {
@@ -63,53 +64,53 @@ func writeSnapshotRepository(ctx context.Context, client *esclients.Elasticsearc
 func extractSettings(ctx context.Context, data Data) (string, map[string]any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	if !data.Fs.IsNull() && !data.Fs.IsUnknown() && len(data.Fs.Elements()) > 0 {
-		var fsList []FsSettings
-		diags.Append(data.Fs.ElementsAs(ctx, &fsList, false)...)
+	if !data.Fs.IsNull() && !data.Fs.IsUnknown() {
+		var fs FsSettings
+		diags.Append(data.Fs.As(ctx, &fs, basetypes.ObjectAsOptions{})...)
 		if diags.HasError() {
 			return "", nil, diags
 		}
-		return "fs", fsToSettings(fsList[0]), diags
+		return "fs", fsToSettings(fs), diags
 	}
-	if !data.URL.IsNull() && !data.URL.IsUnknown() && len(data.URL.Elements()) > 0 {
-		var urlList []URLSettings
-		diags.Append(data.URL.ElementsAs(ctx, &urlList, false)...)
+	if !data.URL.IsNull() && !data.URL.IsUnknown() {
+		var u URLSettings
+		diags.Append(data.URL.As(ctx, &u, basetypes.ObjectAsOptions{})...)
 		if diags.HasError() {
 			return "", nil, diags
 		}
-		return "url", urlToSettings(urlList[0]), diags
+		return "url", urlToSettings(u), diags
 	}
-	if !data.Gcs.IsNull() && !data.Gcs.IsUnknown() && len(data.Gcs.Elements()) > 0 {
-		var gcsList []GcsSettings
-		diags.Append(data.Gcs.ElementsAs(ctx, &gcsList, false)...)
+	if !data.Gcs.IsNull() && !data.Gcs.IsUnknown() {
+		var gcs GcsSettings
+		diags.Append(data.Gcs.As(ctx, &gcs, basetypes.ObjectAsOptions{})...)
 		if diags.HasError() {
 			return "", nil, diags
 		}
-		return "gcs", gcsToSettings(gcsList[0]), diags
+		return "gcs", gcsToSettings(gcs), diags
 	}
-	if !data.Azure.IsNull() && !data.Azure.IsUnknown() && len(data.Azure.Elements()) > 0 {
-		var azureList []AzureSettings
-		diags.Append(data.Azure.ElementsAs(ctx, &azureList, false)...)
+	if !data.Azure.IsNull() && !data.Azure.IsUnknown() {
+		var azure AzureSettings
+		diags.Append(data.Azure.As(ctx, &azure, basetypes.ObjectAsOptions{})...)
 		if diags.HasError() {
 			return "", nil, diags
 		}
-		return "azure", azureToSettings(azureList[0]), diags
+		return "azure", azureToSettings(azure), diags
 	}
-	if !data.S3.IsNull() && !data.S3.IsUnknown() && len(data.S3.Elements()) > 0 {
-		var s3List []S3Settings
-		diags.Append(data.S3.ElementsAs(ctx, &s3List, false)...)
+	if !data.S3.IsNull() && !data.S3.IsUnknown() {
+		var s3 S3Settings
+		diags.Append(data.S3.As(ctx, &s3, basetypes.ObjectAsOptions{})...)
 		if diags.HasError() {
 			return "", nil, diags
 		}
-		return "s3", s3ToSettings(s3List[0]), diags
+		return "s3", s3ToSettings(s3), diags
 	}
-	if !data.Hdfs.IsNull() && !data.Hdfs.IsUnknown() && len(data.Hdfs.Elements()) > 0 {
-		var hdfsList []HdfsSettings
-		diags.Append(data.Hdfs.ElementsAs(ctx, &hdfsList, false)...)
+	if !data.Hdfs.IsNull() && !data.Hdfs.IsUnknown() {
+		var hdfs HdfsSettings
+		diags.Append(data.Hdfs.As(ctx, &hdfs, basetypes.ObjectAsOptions{})...)
 		if diags.HasError() {
 			return "", nil, diags
 		}
-		return "hdfs", hdfsToSettings(hdfsList[0]), diags
+		return "hdfs", hdfsToSettings(hdfs), diags
 	}
 
 	diags.AddError("No repository type set", "Exactly one repository type block must be set")

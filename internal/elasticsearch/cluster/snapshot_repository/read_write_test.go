@@ -36,7 +36,6 @@ func TestExtractSettings(t *testing.T) {
 		CommonStdSettings: CommonStdSettings{MaxNumberOfSnapshots: types.Int64Value(500)},
 		Location:          types.StringValue("/tmp"),
 	})
-	fsList, _ := types.ListValueFrom(ctx, types.ObjectType{AttrTypes: fsAttrTypes()}, []types.Object{fsObj})
 
 	urlObj, _ := types.ObjectValueFrom(ctx, urlAttrTypes(), URLSettings{
 		CommonSettings: CommonSettings{
@@ -45,7 +44,6 @@ func TestExtractSettings(t *testing.T) {
 		CommonStdSettings: CommonStdSettings{MaxNumberOfSnapshots: types.Int64Value(500)},
 		URL:               types.StringValue("file:///tmp"),
 	})
-	urlList, _ := types.ListValueFrom(ctx, types.ObjectType{AttrTypes: urlAttrTypes()}, []types.Object{urlObj})
 
 	cases := []struct {
 		name        string
@@ -56,13 +54,13 @@ func TestExtractSettings(t *testing.T) {
 	}{
 		{
 			name:        "fs",
-			data:        Data{Fs: fsList},
+			data:        Data{Fs: fsObj},
 			wantType:    "fs",
 			wantSetting: "location",
 		},
 		{
 			name:        "url",
-			data:        Data{URL: urlList},
+			data:        Data{URL: urlObj},
 			wantType:    "url",
 			wantSetting: "url",
 		},

@@ -89,7 +89,7 @@ func TestValidateConfigExactlyOneType(t *testing.T) {
 			}
 			objType := tftypes.Object{AttributeTypes: tfAttrTypes}
 			if !set {
-				return tftypes.NewValue(tftypes.List{ElementType: objType}, nil)
+				return tftypes.NewValue(objType, nil)
 			}
 			vals := make(map[string]tftypes.Value)
 			for k, ty := range tfAttrTypes {
@@ -104,8 +104,7 @@ func TestValidateConfigExactlyOneType(t *testing.T) {
 					vals[k] = tftypes.NewValue(ty, nil)
 				}
 			}
-			obj := tftypes.NewValue(objType, vals)
-			return tftypes.NewValue(tftypes.List{ElementType: objType}, []tftypes.Value{obj})
+			return tftypes.NewValue(objType, vals)
 		}
 
 		schemaType := schemaResp.Schema.Type().TerraformType(ctx)
@@ -177,12 +176,12 @@ func TestValidateConfigExactlyOneType_UnknownSkips(t *testing.T) {
 	allNull["verify"] = tftypes.NewValue(tftypes.Bool, true)
 
 	fsTfTypes := attrTypesToTfTypes(fsAttrTypes())
-	allNull["fs"] = tftypes.NewValue(tftypes.List{ElementType: tftypes.Object{AttributeTypes: fsTfTypes}}, tftypes.UnknownValue)
-	allNull["url"] = tftypes.NewValue(tftypes.List{ElementType: tftypes.Object{AttributeTypes: attrTypesToTfTypes(urlAttrTypes())}}, nil)
-	allNull["gcs"] = tftypes.NewValue(tftypes.List{ElementType: tftypes.Object{AttributeTypes: attrTypesToTfTypes(gcsAttrTypes())}}, nil)
-	allNull["azure"] = tftypes.NewValue(tftypes.List{ElementType: tftypes.Object{AttributeTypes: attrTypesToTfTypes(azureAttrTypes())}}, nil)
-	allNull["s3"] = tftypes.NewValue(tftypes.List{ElementType: tftypes.Object{AttributeTypes: attrTypesToTfTypes(s3AttrTypes())}}, nil)
-	allNull["hdfs"] = tftypes.NewValue(tftypes.List{ElementType: tftypes.Object{AttributeTypes: attrTypesToTfTypes(hdfsAttrTypes())}}, nil)
+	allNull["fs"] = tftypes.NewValue(tftypes.Object{AttributeTypes: fsTfTypes}, tftypes.UnknownValue)
+	allNull["url"] = tftypes.NewValue(tftypes.Object{AttributeTypes: attrTypesToTfTypes(urlAttrTypes())}, nil)
+	allNull["gcs"] = tftypes.NewValue(tftypes.Object{AttributeTypes: attrTypesToTfTypes(gcsAttrTypes())}, nil)
+	allNull["azure"] = tftypes.NewValue(tftypes.Object{AttributeTypes: attrTypesToTfTypes(azureAttrTypes())}, nil)
+	allNull["s3"] = tftypes.NewValue(tftypes.Object{AttributeTypes: attrTypesToTfTypes(s3AttrTypes())}, nil)
+	allNull["hdfs"] = tftypes.NewValue(tftypes.Object{AttributeTypes: attrTypesToTfTypes(hdfsAttrTypes())}, nil)
 
 	raw := tftypes.NewValue(schemaType, allNull)
 	req := resource.ValidateConfigRequest{Config: tfsdk.Config{Schema: schemaResp.Schema, Raw: raw}}

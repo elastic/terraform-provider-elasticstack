@@ -45,13 +45,13 @@ resource "elasticstack_elasticsearch_snapshot_repository" "my_fs_repo" {
 
 ### Optional
 
-- `azure` (Block List) Azure repository. Stores snapshots in Microsoft Azure Blob Storage. (see [below for nested schema](#nestedblock--azure))
+- `azure` (Block, Optional) Azure repository. Stores snapshots in Microsoft Azure Blob Storage. (see [below for nested schema](#nestedblock--azure))
 - `elasticsearch_connection` (Block List) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
-- `fs` (Block List) Shared filesystem repository. Repositories of this type use a shared filesystem to store snapshots. This filesystem must be accessible to all master and data nodes in the cluster. (see [below for nested schema](#nestedblock--fs))
-- `gcs` (Block List) Google Cloud Storage repository. Stores snapshots in a Google Cloud Storage bucket. (see [below for nested schema](#nestedblock--gcs))
-- `hdfs` (Block List) HDFS repository. Stores snapshots in Hadoop Distributed File System. (see [below for nested schema](#nestedblock--hdfs))
-- `s3` (Block List) S3 repository. Stores snapshots in an Amazon S3 bucket. (see [below for nested schema](#nestedblock--s3))
-- `url` (Block List) URL repository. Provides read-only access to a shared filesystem repository. (see [below for nested schema](#nestedblock--url))
+- `fs` (Block, Optional) Shared filesystem repository. Repositories of this type use a shared filesystem to store snapshots. This filesystem must be accessible to all master and data nodes in the cluster. (see [below for nested schema](#nestedblock--fs))
+- `gcs` (Block, Optional) Google Cloud Storage repository. Stores snapshots in a Google Cloud Storage bucket. (see [below for nested schema](#nestedblock--gcs))
+- `hdfs` (Block, Optional) HDFS repository. Stores snapshots in Hadoop Distributed File System. (see [below for nested schema](#nestedblock--hdfs))
+- `s3` (Block, Optional) S3 repository. Stores snapshots in an Amazon S3 bucket. (see [below for nested schema](#nestedblock--s3))
+- `url` (Block, Optional) URL repository. Provides read-only access to a shared filesystem repository. (see [below for nested schema](#nestedblock--url))
 - `verify` (Boolean) If true, the request verifies the repository is functional on all master and data nodes in the cluster.
 
 ### Read-Only
