@@ -22,7 +22,9 @@ import (
 
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -90,6 +92,11 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 	plan.RuleID = state.RuleID
 	plan.SpaceID = state.SpaceID
 
+	// Capture whether the practitioner omitted the artifacts block from config.
+	// After readRuleFromAPI the plan variable is overwritten with API values,
+	// so we must snapshot this before the re-read.
+	planArtifactsWasNull := !typeutils.IsKnown(plan.Artifacts) || plan.Artifacts.IsNull()
+
 	// Re-read rule from API to get the authoritative state
 	// (sometimes update response differs from what's actually stored)
 	exists, readDiags := r.readRuleFromAPI(ctx, client, &plan)
@@ -100,6 +107,21 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 
 	if !exists {
 		resp.Diagnostics.AddError("Rule not found after update", "The alerting rule was updated but could not be read back from the API")
+		return
+	}
+
+	// When config omits the artifacts block we intentionally omit the key from
+	// the PUT body so Kibana preserves existing artifacts. If readRuleFromAPI
+	// repopulates artifacts from the API response here, Terraform reports
+	// "inconsistent result after apply" because the planned value was null.
+	// Preserve null in state after update; the next refresh will repopulate
+	// artifacts from the API and surface the expected drift plan.
+	if planArtifactsWasNull {
+		plan.Artifacts = types.ObjectNull(getArtifactsAttrTypes())
+	}
+
+	resp.Diagnostics.Append(persistArtifactsChecksum(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
