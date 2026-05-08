@@ -32,7 +32,7 @@ func getDataSourceSchema(_ context.Context) schema.Schema {
 				Computed:            true,
 			},
 			"cluster_name": schema.StringAttribute{
-				MarkdownDescription: "Name of the cluster, based on the Cluster name setting setting.",
+				MarkdownDescription: "Name of the cluster, based on the `cluster.name` setting.",
 				Computed:            true,
 			},
 			"cluster_uuid": schema.StringAttribute{

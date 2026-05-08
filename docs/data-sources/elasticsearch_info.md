@@ -30,7 +30,7 @@ data "elasticstack_elasticsearch_info" "cluster_info" {
 
 ### Read-Only
 
-- `cluster_name` (String) Name of the cluster, based on the Cluster name setting setting.
+- `cluster_name` (String) Name of the cluster, based on the `cluster.name` setting.
 - `cluster_uuid` (String) Unique identifier for the cluster.
 - `id` (String) Internal identifier of the resource.
 - `name` (String) Name of the node.
