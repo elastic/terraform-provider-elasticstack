@@ -12,6 +12,7 @@ const {
   factoryActorTrustWhenSenderMissing,
   factoryFetchIssueComments,
   serializeIssueComments,
+  COMMENT_CONTEXT_BUDGET,
   factoryCheckDuplicatePR,
   factoryComputeGateReason,
   createFactoryIssueIntake,
@@ -432,8 +433,41 @@ test('serializeIssueComments truncates at budget and appends marker', () => {
     truncated: false,
   });
   assert.ok(result.includes('alice'));
-  assert.ok(result.length <= 60_000); // budget + truncation marker overhead
+  // Output must stay within budget (with overhead for markers)
+  assert.ok(result.length <= COMMENT_CONTEXT_BUDGET, `Expected output <= ${COMMENT_CONTEXT_BUDGET} chars, got ${result.length}`);
   assert.ok(result.includes('[... 1 more comments truncated for context budget]') || result.includes('[... 2 more comments truncated for context budget]'));
+});
+
+test('serializeIssueComments truncates body of single oversized comment', () => {
+  // Single comment whose body alone exceeds COMMENT_CONTEXT_BUDGET
+  const oversizedBody = 'y'.repeat(COMMENT_CONTEXT_BUDGET + 1_000);
+  const result = serializeIssueComments({
+    comments: [{ author: 'alice', createdAt: '2024-01-01T12:00:00Z', body: oversizedBody }],
+    truncated: false,
+  });
+  assert.ok(result.length <= COMMENT_CONTEXT_BUDGET, `Expected output <= ${COMMENT_CONTEXT_BUDGET} chars, got ${result.length}`);
+  assert.ok(result.includes('alice'));
+});
+
+test('serializeIssueComments appends both markers when budget and fetch-cap both apply', () => {
+  const longBody = 'z'.repeat(30_000);
+  const result = serializeIssueComments({
+    comments: [
+      { author: 'alice', createdAt: '2024-01-01T12:00:00Z', body: longBody },
+      { author: 'bob', createdAt: '2024-01-02T12:00:00Z', body: longBody },
+      { author: 'carol', createdAt: '2024-01-03T12:00:00Z', body: longBody },
+    ],
+    truncated: true, // fetch-cap was hit
+  });
+  assert.ok(result.includes('[... comment history truncated at 200 comments]'), 'fetch-cap marker missing');
+  assert.ok(
+    result.includes('[... 1 more comments truncated for context budget]') ||
+    result.includes('[... 2 more comments truncated for context budget]'),
+    'budget marker missing',
+  );
+  const budgetIdx = result.indexOf('[... ');
+  const capIdx = result.lastIndexOf('[... comment history truncated at 200 comments]');
+  assert.ok(budgetIdx <= capIdx, 'budget marker should appear before fetch-cap marker');
 });
 
 test('serializeIssueComments appends fetch-cap note when truncated is true', () => {

@@ -344,6 +344,8 @@ async function factoryFetchIssueComments({ github, owner, repo, issueNumber }) {
 }
 
 const COMMENT_CONTEXT_BUDGET = 50_000;
+/** Overhead reserved for truncation markers appended after the loop. */
+const COMMENT_CONTEXT_MARKER_OVERHEAD = 200;
 
 /**
  * Serializes captured issue comments into a deterministic markdown string for agent prompts.
@@ -356,17 +358,28 @@ function serializeIssueComments({ comments, truncated }) {
     return '';
   }
 
+  const bodyBudget = COMMENT_CONTEXT_BUDGET - COMMENT_CONTEXT_MARKER_OVERHEAD;
   let result = '';
   let includedCount = 0;
 
   for (const comment of comments) {
-    const block = `**@${comment.author || ''}** (${comment.createdAt || ''}):\n\n${comment.body || ''}\n\n---\n`;
+    const header = `**@${comment.author || ''}** (${comment.createdAt || ''}):\n\n`;
+    const body = comment.body || '';
+    const footer = '\n\n---\n';
+    const available = bodyBudget - result.length;
 
-    if (result.length + block.length > COMMENT_CONTEXT_BUDGET && includedCount > 0) {
+    if (available <= 0) {
       break;
     }
 
-    result += block;
+    const fullBlock = header + body + footer;
+    if (fullBlock.length <= available) {
+      result += fullBlock;
+    } else {
+      // Truncate this comment's body so the output stays within budget
+      const truncatedBody = body.slice(0, Math.max(0, available - header.length - footer.length));
+      result += header + truncatedBody + footer;
+    }
     includedCount++;
   }
 
@@ -390,6 +403,7 @@ if (typeof module !== 'undefined') {
     factoryActorTrustWhenSenderMissing,
     factoryFetchIssueComments,
     serializeIssueComments,
+    COMMENT_CONTEXT_BUDGET,
     factoryCheckDuplicatePR,
     factoryComputeGateReason,
     factoryParseOptionalTriStateFromEnv,
