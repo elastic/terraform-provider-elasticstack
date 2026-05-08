@@ -27,11 +27,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 // ExportedExpandSettings exposes expandSettings for white-box testing.
-func ExportedExpandSettings(ctx context.Context, list types.List) (map[string]any, diag.Diagnostics) {
-	return expandSettings(ctx, list)
+func ExportedExpandSettings(ctx context.Context, block types.Object) (map[string]any, diag.Diagnostics) {
+	return expandSettings(ctx, block)
 }
 
 // ExportedUpdateRemovedSettings exposes updateRemovedSettings for white-box testing.
@@ -40,8 +41,14 @@ func ExportedUpdateRemovedSettings(name string, oldSettings, newSettings, target
 }
 
 // ExportedFlattenSettings exposes flattenSettings for white-box testing.
-func ExportedFlattenSettings(ctx context.Context, category string, configured, api map[string]any) (types.List, diag.Diagnostics) {
+func ExportedFlattenSettings(ctx context.Context, category string, configured, api map[string]any) (types.Object, diag.Diagnostics) {
 	return flattenSettings(ctx, category, configured, api)
+}
+
+// ExportedValidateConfigModel exposes validateConfigModel for white-box testing
+// of the ValidateConfig rule without needing to construct a tfsdk.Config.
+func ExportedValidateConfigModel(persistent, transient types.Object) diag.Diagnostics {
+	return validateConfigModel(tfModel{Persistent: persistent, Transient: transient})
 }
 
 // SettingItem is a simplified view of a settingModel for assertions in tests.
@@ -51,28 +58,29 @@ type SettingItem struct {
 	ValueList []string
 }
 
-// ExtractSettingsFromList decodes the block list returned by flattenSettings
-// into a simple []SettingItem for easy assertions in tests.
-func ExtractSettingsFromList(ctx context.Context, t testing.TB, list types.List) []SettingItem {
+// ExtractSettingsFromBlock decodes a SingleNestedBlock object returned by
+// flattenSettings into a simple []SettingItem for easy assertions in tests.
+func ExtractSettingsFromBlock(ctx context.Context, t testing.TB, block types.Object) []SettingItem {
 	t.Helper()
 
-	if list.IsNull() || list.IsUnknown() || len(list.Elements()) == 0 {
+	if block.IsNull() || block.IsUnknown() {
 		return nil
 	}
 
-	var blocks []settingsBlockModel
-	diags := list.ElementsAs(ctx, &blocks, false)
+	var blockModel settingsBlockModel
+	diags := block.As(ctx, &blockModel, basetypes.ObjectAsOptions{})
 	if diags.HasError() {
-		t.Fatalf("ExtractSettingsFromList: failed to decode block list: %v", diags)
+		t.Fatalf("ExtractSettingsFromBlock: failed to decode block object: %v", diags)
 	}
-	if len(blocks) == 0 {
+
+	if blockModel.Setting.IsNull() || blockModel.Setting.IsUnknown() {
 		return nil
 	}
 
 	var models []settingModel
-	diags = blocks[0].Setting.ElementsAs(ctx, &models, false)
+	diags = blockModel.Setting.ElementsAs(ctx, &models, false)
 	if diags.HasError() {
-		t.Fatalf("ExtractSettingsFromList: failed to decode setting set: %v", diags)
+		t.Fatalf("ExtractSettingsFromBlock: failed to decode setting set: %v", diags)
 	}
 
 	items := make([]SettingItem, 0, len(models))
@@ -82,7 +90,7 @@ func ExtractSettingsFromList(ctx context.Context, t testing.TB, list types.List)
 			var vals []string
 			diags = m.ValueList.ElementsAs(ctx, &vals, false)
 			if diags.HasError() {
-				t.Fatalf("ExtractSettingsFromList: failed to decode value_list: %v", diags)
+				t.Fatalf("ExtractSettingsFromBlock: failed to decode value_list: %v", diags)
 			}
 			item.ValueList = vals
 		}
@@ -91,102 +99,59 @@ func ExtractSettingsFromList(ctx context.Context, t testing.TB, list types.List)
 	return items
 }
 
-// MakeSettingsListWithValue builds a types.List containing one settingsBlockModel
-// with a single setting using a scalar value.
-func MakeSettingsListWithValue(name, value string) types.List {
-	sm := settingModel{
+// MakeSettingsBlockWithValue builds a non-null block object with a single
+// setting using a scalar value.
+func MakeSettingsBlockWithValue(name, value string) types.Object {
+	return makeBlock([]settingModel{{
 		Name:      types.StringValue(name),
 		Value:     types.StringValue(value),
 		ValueList: types.ListNull(types.StringType),
-	}
-	return makeSettingsListFromModels([]settingModel{sm})
+	}})
 }
 
-// MakeSettingsListWithValueList builds a types.List with a single setting using a list value.
-func MakeSettingsListWithValueList(name string, vals []string) types.List {
+// MakeSettingsBlockWithValueList builds a non-null block object with a single
+// setting using a list value.
+func MakeSettingsBlockWithValueList(name string, vals []string) types.Object {
 	attrVals := make([]attr.Value, len(vals))
 	for i, v := range vals {
 		attrVals[i] = types.StringValue(v)
 	}
-	sm := settingModel{
+	return makeBlock([]settingModel{{
 		Name:      types.StringValue(name),
 		Value:     types.StringNull(),
 		ValueList: types.ListValueMust(types.StringType, attrVals),
-	}
-	return makeSettingsListFromModels([]settingModel{sm})
+	}})
 }
 
-// MakeSettingsListWithDuplicateName builds a list with two settings sharing the same name.
-func MakeSettingsListWithDuplicateName(name, v1, v2 string) types.List {
-	s1 := settingModel{
-		Name:      types.StringValue(name),
-		Value:     types.StringValue(v1),
-		ValueList: types.ListNull(types.StringType),
-	}
-	s2 := settingModel{
-		Name:      types.StringValue(name),
-		Value:     types.StringValue(v2),
-		ValueList: types.ListNull(types.StringType),
-	}
-	return makeSettingsListFromModels([]settingModel{s1, s2})
+// EmptySettingsBlock returns a non-null block object with zero settings.
+func EmptySettingsBlock() types.Object {
+	return emptySettingsBlock()
 }
 
-// MakeSettingsListBothValues builds a list where both value and value_list are set.
-func MakeSettingsListBothValues(name, value string, listVals []string) types.List {
-	attrVals := make([]attr.Value, len(listVals))
-	for i, v := range listVals {
-		attrVals[i] = types.StringValue(v)
-	}
-	sm := settingModel{
-		Name:      types.StringValue(name),
-		Value:     types.StringValue(value),
-		ValueList: types.ListValueMust(types.StringType, attrVals),
-	}
-	return makeSettingsListFromModels([]settingModel{sm})
+// NullSettingsBlock returns a typed null block object.
+func NullSettingsBlock() types.Object {
+	return nullSettingsBlock()
 }
 
-// MakeSettingsListNeitherValue builds a list where neither value nor value_list is set.
-func MakeSettingsListNeitherValue(name string) types.List {
-	sm := settingModel{
-		Name:      types.StringValue(name),
-		Value:     types.StringNull(),
-		ValueList: types.ListNull(types.StringType),
-	}
-	return makeSettingsListFromModels([]settingModel{sm})
-}
-
-// EmptySettingsList returns a types.List with zero elements.
-func EmptySettingsList() types.List {
-	return types.ListValueMust(settingsListElemType(), []attr.Value{})
-}
-
-func makeSettingsListFromModels(models []settingModel) types.List {
+func makeBlock(models []settingModel) types.Object {
 	ctx := context.Background()
 	settingAttr := settingModelAttrTypes()
 	settingVals := make([]attr.Value, len(models))
 	for i, m := range models {
 		obj, diags := types.ObjectValueFrom(ctx, settingAttr, m)
 		if diags.HasError() {
-			panic("makeSettingsListFromModels: failed to create object")
+			panic("makeBlock: failed to create object")
 		}
 		settingVals[i] = obj
 	}
-
 	settingSet, diags := types.SetValue(types.ObjectType{AttrTypes: settingAttr}, settingVals)
 	if diags.HasError() {
-		panic("makeSettingsListFromModels: failed to create set")
+		panic("makeBlock: failed to create set")
 	}
-
 	block := settingsBlockModel{Setting: settingSet}
-	blockAttr := settingsBlockAttrTypes()
-	blockObj, diags := types.ObjectValueFrom(ctx, blockAttr, block)
+	blockObj, diags := types.ObjectValueFrom(ctx, settingsBlockAttrTypes(), block)
 	if diags.HasError() {
-		panic("makeSettingsListFromModels: failed to create block object")
+		panic("makeBlock: failed to create block object")
 	}
-
-	list, diags := types.ListValue(settingsListElemType(), []attr.Value{blockObj})
-	if diags.HasError() {
-		panic("makeSettingsListFromModels: failed to create list")
-	}
-	return list
+	return blockObj
 }

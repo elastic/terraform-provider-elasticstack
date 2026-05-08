@@ -24,15 +24,51 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-// helpers_test.go provides white-box access via the exported test helpers.
-// The non-exported functions are exercised through the exported wrappers
-// (ExportedExpandSettings, etc.) defined in export_test.go.
+func TestValidateConfigModel_BothEmpty_Error(t *testing.T) {
+	diags := settings.ExportedValidateConfigModel(
+		settings.EmptySettingsBlock(),
+		settings.EmptySettingsBlock(),
+	)
+	if !diags.HasError() {
+		t.Error("expected error when both persistent and transient are empty")
+	}
+}
+
+func TestValidateConfigModel_BothNull_Error(t *testing.T) {
+	diags := settings.ExportedValidateConfigModel(
+		settings.NullSettingsBlock(),
+		settings.NullSettingsBlock(),
+	)
+	if !diags.HasError() {
+		t.Error("expected error when both persistent and transient are null")
+	}
+}
+
+func TestValidateConfigModel_PersistentSet_OK(t *testing.T) {
+	diags := settings.ExportedValidateConfigModel(
+		settings.MakeSettingsBlockWithValue("k", "v"),
+		settings.NullSettingsBlock(),
+	)
+	if diags.HasError() {
+		t.Errorf("unexpected error: %v", diags)
+	}
+}
+
+func TestValidateConfigModel_TransientSet_OK(t *testing.T) {
+	diags := settings.ExportedValidateConfigModel(
+		settings.NullSettingsBlock(),
+		settings.MakeSettingsBlockWithValue("k", "v"),
+	)
+	if diags.HasError() {
+		t.Errorf("unexpected error: %v", diags)
+	}
+}
 
 func TestExpandSettings_StringValue(t *testing.T) {
 	ctx := t.Context()
-	settingsList := settings.MakeSettingsListWithValue("mykey", "myval")
+	block := settings.MakeSettingsBlockWithValue("mykey", "myval")
 
-	result, diags := settings.ExportedExpandSettings(ctx, settingsList)
+	result, diags := settings.ExportedExpandSettings(ctx, block)
 	if diags.HasError() {
 		t.Fatalf("unexpected diagnostics: %v", diags)
 	}
@@ -46,9 +82,9 @@ func TestExpandSettings_StringValue(t *testing.T) {
 
 func TestExpandSettings_ListValue(t *testing.T) {
 	ctx := t.Context()
-	settingsList := settings.MakeSettingsListWithValueList("listkey", []string{"a", "b"})
+	block := settings.MakeSettingsBlockWithValueList("listkey", []string{"a", "b"})
 
-	result, diags := settings.ExportedExpandSettings(ctx, settingsList)
+	result, diags := settings.ExportedExpandSettings(ctx, block)
 	if diags.HasError() {
 		t.Fatalf("unexpected diagnostics: %v", diags)
 	}
@@ -65,46 +101,25 @@ func TestExpandSettings_ListValue(t *testing.T) {
 	}
 }
 
-func TestExpandSettings_EmptyList(t *testing.T) {
+func TestExpandSettings_NullBlock(t *testing.T) {
 	ctx := t.Context()
-	settingsList := settings.EmptySettingsList()
-
-	result, diags := settings.ExportedExpandSettings(ctx, settingsList)
+	result, diags := settings.ExportedExpandSettings(ctx, settings.NullSettingsBlock())
 	if diags.HasError() {
 		t.Fatalf("unexpected diagnostics: %v", diags)
 	}
 	if result != nil {
-		t.Errorf("expected nil for empty list, got %v", result)
+		t.Errorf("expected nil for null block, got %v", result)
 	}
 }
 
-func TestExpandSettings_DuplicateNameError(t *testing.T) {
+func TestExpandSettings_EmptyBlock(t *testing.T) {
 	ctx := t.Context()
-	settingsList := settings.MakeSettingsListWithDuplicateName("dupkey", "v1", "v2")
-
-	_, diags := settings.ExportedExpandSettings(ctx, settingsList)
-	if !diags.HasError() {
-		t.Error("expected error for duplicate setting name")
+	result, diags := settings.ExportedExpandSettings(ctx, settings.EmptySettingsBlock())
+	if diags.HasError() {
+		t.Fatalf("unexpected diagnostics: %v", diags)
 	}
-}
-
-func TestExpandSettings_BothValueAndValueList_Error(t *testing.T) {
-	ctx := t.Context()
-	settingsList := settings.MakeSettingsListBothValues("key", "v", []string{"a"})
-
-	_, diags := settings.ExportedExpandSettings(ctx, settingsList)
-	if !diags.HasError() {
-		t.Error("expected error when both value and value_list are set")
-	}
-}
-
-func TestExpandSettings_NeitherValueNorValueList_Error(t *testing.T) {
-	ctx := t.Context()
-	settingsList := settings.MakeSettingsListNeitherValue("key")
-
-	_, diags := settings.ExportedExpandSettings(ctx, settingsList)
-	if !diags.HasError() {
-		t.Error("expected error when neither value nor value_list is set")
+	if result != nil {
+		t.Errorf("expected nil for empty block, got %v", result)
 	}
 }
 
@@ -148,7 +163,7 @@ func TestFlattenSettings_ScalarValue(t *testing.T) {
 		t.Fatalf("unexpected diagnostics: %v", diags)
 	}
 
-	items := settings.ExtractSettingsFromList(ctx, t, result)
+	items := settings.ExtractSettingsFromBlock(ctx, t, result)
 	if len(items) != 1 {
 		t.Fatalf("expected 1 setting, got %d", len(items))
 	}
@@ -173,7 +188,7 @@ func TestFlattenSettings_ListValue(t *testing.T) {
 		t.Fatalf("unexpected diagnostics: %v", diags)
 	}
 
-	items := settings.ExtractSettingsFromList(ctx, t, result)
+	items := settings.ExtractSettingsFromBlock(ctx, t, result)
 	if len(items) != 1 {
 		t.Fatalf("expected 1 setting, got %d", len(items))
 	}
@@ -188,23 +203,64 @@ func TestFlattenSettings_ListValue(t *testing.T) {
 	}
 }
 
-func TestFlattenSettings_AbsentFromAPIIsOmitted(t *testing.T) {
+// TestFlattenSettings_NonStringScalar covers the default branch of the type
+// switch in flattenSettings: any scalar value the API returns that is neither
+// a string nor a []any (for example a JSON number or boolean) must be
+// surfaced through "value" via fmt.Sprintf.
+func TestFlattenSettings_NonStringScalar(t *testing.T) {
 	ctx := t.Context()
-	configured := map[string]any{"persistent": map[string]any{"gone": "v"}}
-	api := map[string]any{"persistent": map[string]any{}} // key not in API response
+	configured := map[string]any{"persistent": map[string]any{
+		"numeric": "anything",
+		"boolish": "anything",
+	}}
+	api := map[string]any{"persistent": map[string]any{
+		"numeric": float64(42),
+		"boolish": true,
+	}}
 
 	result, diags := settings.ExportedFlattenSettings(ctx, "persistent", configured, api)
 	if diags.HasError() {
 		t.Fatalf("unexpected diagnostics: %v", diags)
 	}
 
-	// Result should be an empty list block
-	if len(result.Elements()) != 0 {
-		t.Errorf("expected empty list when key absent from API, got %d elements", len(result.Elements()))
+	items := settings.ExtractSettingsFromBlock(ctx, t, result)
+	if len(items) != 2 {
+		t.Fatalf("expected 2 settings, got %d", len(items))
+	}
+
+	got := map[string]string{}
+	for _, it := range items {
+		got[it.Name] = it.Value
+		if len(it.ValueList) != 0 {
+			t.Errorf("expected empty value_list for %s, got %v", it.Name, it.ValueList)
+		}
+	}
+	if got["numeric"] != "42" {
+		t.Errorf("expected numeric=42, got %q", got["numeric"])
+	}
+	if got["boolish"] != "true" {
+		t.Errorf("expected boolish=true, got %q", got["boolish"])
 	}
 }
 
-func TestFlattenSettings_EmptyConfigured(t *testing.T) {
+func TestFlattenSettings_AbsentFromAPIIsOmitted(t *testing.T) {
+	ctx := t.Context()
+	configured := map[string]any{"persistent": map[string]any{"gone": "v"}}
+	api := map[string]any{"persistent": map[string]any{}}
+
+	result, diags := settings.ExportedFlattenSettings(ctx, "persistent", configured, api)
+	if diags.HasError() {
+		t.Fatalf("unexpected diagnostics: %v", diags)
+	}
+
+	// Result should be a non-null block with an empty setting set.
+	items := settings.ExtractSettingsFromBlock(ctx, t, result)
+	if len(items) != 0 {
+		t.Errorf("expected 0 settings when key absent from API, got %d", len(items))
+	}
+}
+
+func TestFlattenSettings_EmptyConfiguredReturnsNull(t *testing.T) {
 	ctx := t.Context()
 	configured := map[string]any{}
 	api := map[string]any{"persistent": map[string]any{"somekey": "v"}}
@@ -213,7 +269,7 @@ func TestFlattenSettings_EmptyConfigured(t *testing.T) {
 	if diags.HasError() {
 		t.Fatalf("unexpected diagnostics: %v", diags)
 	}
-	if len(result.Elements()) != 0 {
-		t.Errorf("expected empty list for unconfigured category, got %d elements", len(result.Elements()))
+	if !result.IsNull() {
+		t.Errorf("expected null block for unconfigured category, got %v", result)
 	}
 }

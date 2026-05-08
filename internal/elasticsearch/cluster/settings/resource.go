@@ -21,9 +21,11 @@ import (
 	"context"
 	"maps"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -34,18 +36,19 @@ var (
 	_ resource.Resource                   = newClusterSettingsResource()
 	_ resource.ResourceWithConfigure      = newClusterSettingsResource()
 	_ resource.ResourceWithImportState    = newClusterSettingsResource()
+	_ resource.ResourceWithUpgradeState   = newClusterSettingsResource()
 	_ resource.ResourceWithValidateConfig = newClusterSettingsResource()
 )
 
-// clusterSettingsResource wraps the entitycore envelope, overriding Create,
-// Update, and Delete because they require access to both plan and state
-// (Update) or need special PUT-to-null semantics (Delete).
+// clusterSettingsResource wraps the entitycore envelope. Create and Delete are
+// supplied as callbacks. Update is overridden because it requires both plan
+// and prior state to compute the null entries for removed settings, which the
+// envelope's update callback contract does not expose.
 type clusterSettingsResource struct {
 	*entitycore.ElasticsearchResource[tfModel]
 }
 
 func newClusterSettingsResource() *clusterSettingsResource {
-	createFn, updateFn := entitycore.PlaceholderElasticsearchWriteCallbacks[tfModel]()
 	return &clusterSettingsResource{
 		ElasticsearchResource: entitycore.NewElasticsearchResource[tfModel](
 			entitycore.ComponentElasticsearch,
@@ -53,8 +56,8 @@ func newClusterSettingsResource() *clusterSettingsResource {
 			getSchema,
 			readClusterSettings,
 			deleteClusterSettings,
-			createFn,
-			updateFn,
+			createClusterSettings,
+			placeholderUpdateCallback,
 		),
 	}
 }
@@ -64,53 +67,44 @@ func NewClusterSettingsResource() resource.Resource {
 	return newClusterSettingsResource()
 }
 
-// Create overrides the envelope's Create to expand settings and PUT them.
-func (r *clusterSettingsResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var plan tfModel
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
-	if resp.Diagnostics.HasError() {
-		return
+// createClusterSettings implements the envelope's create callback: PUT the
+// configured settings and stamp the composite ID onto the returned model. The
+// envelope handles plan decoding, client resolution, and the read-after-write.
+func createClusterSettings(ctx context.Context, client *clients.ElasticsearchScopedClient, _ string, plan tfModel) (tfModel, fwdiag.Diagnostics) {
+	var diags fwdiag.Diagnostics
+
+	id, sdkDiags := client.ID(ctx, resourceID)
+	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	if diags.HasError() {
+		return plan, diags
 	}
 
-	client, diags := r.Client().GetElasticsearchClient(ctx, plan.ElasticsearchConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	apiSettings, ds := getConfiguredSettings(ctx, plan)
+	diags.Append(ds...)
+	if diags.HasError() {
+		return plan, diags
 	}
 
-	id, sdkDiags := client.ID(ctx, "cluster-settings")
-	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	apiSettings, diags := getConfiguredSettings(ctx, plan)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(elasticsearch.PutSettings(ctx, client, apiSettings))...)
-	if resp.Diagnostics.HasError() {
-		return
+	diags.Append(diagutil.FrameworkDiagsFromSDK(elasticsearch.PutSettings(ctx, client, apiSettings))...)
+	if diags.HasError() {
+		return plan, diags
 	}
 
 	plan.ID = types.StringValue(id.String())
+	return plan, diags
+}
 
-	result, found, diags := readClusterSettings(ctx, client, "cluster-settings", plan)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	if !found {
-		resp.Diagnostics.AddError(
-			"Resource not found after create",
-			"elasticstack_elasticsearch_cluster_settings was not found after create.",
-		)
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &result)...)
+// placeholderUpdateCallback exists only to satisfy NewElasticsearchResource's
+// non-nil contract; the real update logic lives in clusterSettingsResource.Update
+// because it needs both plan and state.
+func placeholderUpdateCallback(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, _ tfModel) (tfModel, fwdiag.Diagnostics) {
+	var diags fwdiag.Diagnostics
+	diags.AddError(
+		"Internal error",
+		"cluster_settings update callback was invoked, but Update should be handled by the resource override.",
+	)
+	var zero tfModel
+	return zero, diags
 }
 
 // Update overrides the envelope's Update to compare old and new settings,
@@ -161,10 +155,9 @@ func (r *clusterSettingsResource) Update(ctx context.Context, req resource.Updat
 		return
 	}
 
-	// Preserve ID from state.
 	plan.ID = state.ID
 
-	result, found, diags := readClusterSettings(ctx, client, "cluster-settings", plan)
+	result, found, diags := readClusterSettings(ctx, client, resourceID, plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -178,23 +171,6 @@ func (r *clusterSettingsResource) Update(ctx context.Context, req resource.Updat
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &result)...)
-}
-
-// Delete overrides the envelope's Delete to null out all tracked settings.
-func (r *clusterSettingsResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var state tfModel
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, diags := r.Client().GetElasticsearchClient(ctx, state.ElasticsearchConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	resp.Diagnostics.Append(deleteClusterSettings(ctx, client, "cluster-settings", state)...)
 }
 
 // ImportState implements resource.ResourceWithImportState as a passthrough on id.
@@ -211,13 +187,49 @@ func (r *clusterSettingsResource) ValidateConfig(ctx context.Context, req resour
 		return
 	}
 
-	persistentEmpty := config.Persistent.IsNull() || config.Persistent.IsUnknown() || len(config.Persistent.Elements()) == 0
-	transientEmpty := config.Transient.IsNull() || config.Transient.IsUnknown() || len(config.Transient.Elements()) == 0
+	resp.Diagnostics.Append(validateConfigModel(config)...)
+}
 
-	if persistentEmpty && transientEmpty {
-		resp.Diagnostics.AddError(
+// validateConfigModel implements the rule that at least one of persistent or
+// transient must be a non-empty block. Extracted so it can be unit-tested
+// without constructing a tfsdk.Config.
+func validateConfigModel(config tfModel) fwdiag.Diagnostics {
+	var diags fwdiag.Diagnostics
+
+	if categoryBlockEmpty(config.Persistent) && categoryBlockEmpty(config.Transient) {
+		diags.AddError(
 			"No cluster settings configured",
 			`At least one of "persistent" or "transient" must contain at least one "setting" block.`,
 		)
+	}
+	return diags
+}
+
+// categoryBlockEmpty reports whether the given persistent/transient block is
+// effectively empty: null, unknown, or contains a setting set with no
+// elements.
+func categoryBlockEmpty(block types.Object) bool {
+	if block.IsNull() || block.IsUnknown() {
+		return true
+	}
+	settingAttr, ok := block.Attributes()["setting"]
+	if !ok {
+		return true
+	}
+	settingSet, ok := settingAttr.(types.Set)
+	if !ok {
+		return true
+	}
+	return settingSet.IsNull() || settingSet.IsUnknown() || len(settingSet.Elements()) == 0
+}
+
+// UpgradeState migrates state written by the SDKv2-based implementation
+// (schema version 0) where Optional list/string attributes were serialised as
+// empty lists / empty strings rather than nulls. This caused set-element
+// identity churn after upgrading to the Plugin Framework implementation
+// (schema version 1) where the same logical absence is represented as null.
+func (r *clusterSettingsResource) UpgradeState(_ context.Context) map[int64]resource.StateUpgrader {
+	return map[int64]resource.StateUpgrader{
+		0: {StateUpgrader: migrateClusterSettingsStateV0ToV1},
 	}
 }

@@ -21,16 +21,21 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+// resourceID is the constant write identity used for the singleton
+// cluster-settings resource. It is also the ResourceID portion of the
+// composite ID returned by client.ID.
+const resourceID = "cluster-settings"
+
 // tfModel is the top-level Terraform model for elasticstack_elasticsearch_cluster_settings.
 type tfModel struct {
 	ID                      types.String `tfsdk:"id"`
 	ElasticsearchConnection types.List   `tfsdk:"elasticsearch_connection"`
-	Persistent              types.List   `tfsdk:"persistent"`
-	Transient               types.List   `tfsdk:"transient"`
+	Persistent              types.Object `tfsdk:"persistent"`
+	Transient               types.Object `tfsdk:"transient"`
 }
 
 func (m tfModel) GetID() types.String                    { return m.ID }
-func (m tfModel) GetResourceID() types.String            { return types.StringValue("cluster-settings") }
+func (m tfModel) GetResourceID() types.String            { return types.StringValue(resourceID) }
 func (m tfModel) GetElasticsearchConnection() types.List { return m.ElasticsearchConnection }
 
 // settingsBlockModel represents the persistent/transient block, which contains a set of settings.

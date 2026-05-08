@@ -25,62 +25,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-var (
-	_ validator.Object = settingObjectValidator{}
-	_ validator.Set    = settingNameUniqueValidator{}
-)
-
-// settingObjectValidator ensures that exactly one of value or value_list is
-// configured for each setting block.
-type settingObjectValidator struct{}
-
-func (v settingObjectValidator) Description(_ context.Context) string {
-	return "Ensures that exactly one of value or value_list is set."
-}
-
-func (v settingObjectValidator) MarkdownDescription(ctx context.Context) string {
-	return v.Description(ctx)
-}
-
-func (v settingObjectValidator) ValidateObject(_ context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
-	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
-		return
-	}
-
-	attrs := req.ConfigValue.Attributes()
-
-	name, ok := attrs["name"].(types.String)
-	if !ok {
-		return
-	}
-	value, ok := attrs["value"].(types.String)
-	if !ok {
-		return
-	}
-	valueList, ok := attrs["value_list"].(types.List)
-	if !ok {
-		return
-	}
-
-	hasValue := !value.IsNull() && !value.IsUnknown() && value.ValueString() != ""
-	hasValueList := !valueList.IsNull() && !valueList.IsUnknown() && len(valueList.Elements()) > 0
-
-	if hasValue && hasValueList {
-		resp.Diagnostics.AddAttributeError(
-			req.Path,
-			`Only one of "value" or "value_list" can be set.`,
-			fmt.Sprintf(`Setting "%s" has both "value" and "value_list" configured. Only one may be set.`, name.ValueString()),
-		)
-		return
-	}
-	if !hasValue && !hasValueList {
-		resp.Diagnostics.AddAttributeError(
-			req.Path,
-			`At least one of "value" or "value_list" must be set.`,
-			fmt.Sprintf(`Setting "%s" must have either "value" or "value_list" configured with a non-empty value.`, name.ValueString()),
-		)
-	}
-}
+var _ validator.Set = settingNameUniqueValidator{}
 
 // settingNameUniqueValidator ensures that setting names are unique within a
 // single persistent or transient block.

@@ -20,8 +20,9 @@ package settings
 import (
 	"context"
 
-	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -39,9 +40,6 @@ func getSchema(_ context.Context) schema.Schema {
 			settingNameUniqueValidator{},
 		},
 		NestedObject: schema.NestedBlockObject{
-			Validators: []validator.Object{
-				settingObjectValidator{},
-			},
 			Attributes: map[string]schema.Attribute{
 				"name": schema.StringAttribute{
 					MarkdownDescription: "The name of the setting to set and track.",
@@ -50,12 +48,17 @@ func getSchema(_ context.Context) schema.Schema {
 				"value": schema.StringAttribute{
 					MarkdownDescription: "The value of the setting to set and track.",
 					Optional:            true,
-					Computed:            true,
+					Validators: []validator.String{
+						// Exactly one of value / value_list must be set.
+						// Attaching the validator to value implicitly includes
+						// value in the check, so value_list is the only sibling
+						// path we need to name.
+						stringvalidator.ExactlyOneOf(path.MatchRelative().AtParent().AtName("value_list")),
+					},
 				},
 				"value_list": schema.ListAttribute{
 					MarkdownDescription: "The list of values to be set for the key, where the list is required.",
 					Optional:            true,
-					Computed:            true,
 					ElementType:         types.StringType,
 				},
 			},
@@ -63,6 +66,7 @@ func getSchema(_ context.Context) schema.Schema {
 	}
 
 	return schema.Schema{
+		Version:             1,
 		MarkdownDescription: settingsResourceDescription,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -74,26 +78,16 @@ func getSchema(_ context.Context) schema.Schema {
 			},
 		},
 		Blocks: map[string]schema.Block{
-			"persistent": schema.ListNestedBlock{
+			"persistent": schema.SingleNestedBlock{
 				MarkdownDescription: "Persistent settings that survive a full cluster restart.",
-				Validators: []validator.List{
-					listvalidator.SizeAtMost(1),
-				},
-				NestedObject: schema.NestedBlockObject{
-					Blocks: map[string]schema.Block{
-						"setting": settingBlock,
-					},
+				Blocks: map[string]schema.Block{
+					"setting": settingBlock,
 				},
 			},
-			"transient": schema.ListNestedBlock{
+			"transient": schema.SingleNestedBlock{
 				MarkdownDescription: "Transient settings that are reset on cluster restart.",
-				Validators: []validator.List{
-					listvalidator.SizeAtMost(1),
-				},
-				NestedObject: schema.NestedBlockObject{
-					Blocks: map[string]schema.Block{
-						"setting": settingBlock,
-					},
+				Blocks: map[string]schema.Block{
+					"setting": settingBlock,
 				},
 			},
 		},

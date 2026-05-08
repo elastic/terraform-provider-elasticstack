@@ -20,11 +20,11 @@ package settings
 import (
 	"context"
 	"fmt"
-	"reflect"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 // settingModelAttrTypes returns the attr.Type map for settingModel. Used when
@@ -37,47 +37,53 @@ func settingModelAttrTypes() map[string]attr.Type {
 	}
 }
 
-// settingsBlockAttrTypes returns the attr.Type map for settingsBlockModel.
+// settingsBlockAttrTypes returns the attr.Type map for the persistent /
+// transient single nested block.
 func settingsBlockAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
 		"setting": types.SetType{ElemType: types.ObjectType{AttrTypes: settingModelAttrTypes()}},
 	}
 }
 
-// settingsListElemType returns the attr.Type for elements of the persistent/transient list.
-func settingsListElemType() attr.Type {
-	return types.ObjectType{AttrTypes: settingsBlockAttrTypes()}
+// emptySettingsBlock returns a non-null Object with an empty setting set,
+// used when the API has no values for a category we are tracking.
+func emptySettingsBlock() types.Object {
+	emptySet := types.SetValueMust(types.ObjectType{AttrTypes: settingModelAttrTypes()}, []attr.Value{})
+	obj, _ := types.ObjectValue(settingsBlockAttrTypes(), map[string]attr.Value{
+		"setting": emptySet,
+	})
+	return obj
 }
 
-// emptySettingsBlockList returns an empty types.List with the correct element type
-// for persistent/transient attributes.
-func emptySettingsBlockList() types.List {
-	return types.ListValueMust(settingsListElemType(), []attr.Value{})
+// nullSettingsBlock returns a typed null Object, used to represent the
+// "category not configured" case in state.
+func nullSettingsBlock() types.Object {
+	return types.ObjectNull(settingsBlockAttrTypes())
 }
 
-// expandSettings converts a types.List of settingsBlockModel into the flat settings
-// map used by the Elasticsearch API helpers (map[name]any). Returns nil when
-// the list is null, unknown, or empty.
-func expandSettings(ctx context.Context, settingsList types.List) (map[string]any, diag.Diagnostics) {
+// expandSettings converts a SingleNestedBlock object representing a category
+// (persistent/transient) into the flat settings map used by the Elasticsearch
+// API helpers (map[name]any). Returns nil when the object is null, unknown,
+// or has no setting elements.
+func expandSettings(ctx context.Context, block types.Object) (map[string]any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	if settingsList.IsNull() || settingsList.IsUnknown() || len(settingsList.Elements()) == 0 {
+	if block.IsNull() || block.IsUnknown() {
 		return nil, diags
 	}
 
-	var blocks []settingsBlockModel
-	diags.Append(settingsList.ElementsAs(ctx, &blocks, false)...)
+	var blockModel settingsBlockModel
+	diags.Append(block.As(ctx, &blockModel, basetypes.ObjectAsOptions{})...)
 	if diags.HasError() {
 		return nil, diags
 	}
 
-	if len(blocks) == 0 {
+	if blockModel.Setting.IsNull() || blockModel.Setting.IsUnknown() || len(blockModel.Setting.Elements()) == 0 {
 		return nil, diags
 	}
 
-	block := blocks[0]
 	var settingModels []settingModel
-	diags.Append(block.Setting.ElementsAs(ctx, &settingModels, false)...)
+	diags.Append(blockModel.Setting.ElementsAs(ctx, &settingModels, false)...)
 	if diags.HasError() {
 		return nil, diags
 	}
@@ -85,35 +91,14 @@ func expandSettings(ctx context.Context, settingsList types.List) (map[string]an
 	result := make(map[string]any, len(settingModels))
 	for _, s := range settingModels {
 		name := s.Name.ValueString()
-		if _, exists := result[name]; exists {
-			diags.AddError(
-				fmt.Sprintf(`Unable to set "%s"`, name),
-				fmt.Sprintf(`Setting "%s" has already been configured.`, name),
-			)
-			return nil, diags
-		}
-
 		hasValue := !s.Value.IsNull() && !s.Value.IsUnknown() && s.Value.ValueString() != ""
 		hasValueList := !s.ValueList.IsNull() && !s.ValueList.IsUnknown() && len(s.ValueList.Elements()) > 0
 
-		if hasValue && hasValueList {
-			diags.AddError(
-				`Only one of "value" or "value_list" can be set.`,
-				`Only one of "value" or "value_list" can be set.`,
-			)
-			return nil, diags
-		}
-		if !hasValue && !hasValueList {
-			diags.AddError(
-				`At least one of "value" or "value_list" must be set to not empty value.`,
-				`At least one of "value" or "value_list" must be set to not empty value.`,
-			)
-			return nil, diags
-		}
-
 		if hasValue {
 			result[name] = s.Value.ValueString()
-		} else {
+			continue
+		}
+		if hasValueList {
 			var vals []string
 			diags.Append(s.ValueList.ElementsAs(ctx, &vals, false)...)
 			if diags.HasError() {
@@ -156,9 +141,6 @@ func getConfiguredSettings(ctx context.Context, state tfModel) (map[string]any, 
 // updateRemovedSettings adds null entries to targetMap for any settings present in
 // oldSettings that are absent from newSettings, so Elasticsearch removes them.
 func updateRemovedSettings(name string, oldSettings, newSettings map[string]any, targetMap map[string]any) {
-	if reflect.DeepEqual(oldSettings, newSettings) {
-		return
-	}
 	for k := range oldSettings {
 		if _, ok := newSettings[k]; !ok {
 			if targetMap[name] == nil {
@@ -170,14 +152,17 @@ func updateRemovedSettings(name string, oldSettings, newSettings map[string]any,
 }
 
 // flattenSettings converts the flat API response for a single category
-// (persistent/transient) into a types.List of settingsBlockModel, containing
-// only settings that are tracked in configuredSettings.
-func flattenSettings(ctx context.Context, category string, configuredSettings, apiResponse map[string]any) (types.List, diag.Diagnostics) {
+// (persistent/transient) into a SingleNestedBlock object containing only
+// settings that are tracked in configuredSettings.
+//
+// Returns a typed null Object when the category is not configured, and an
+// empty-set Object when configured-but-no-tracked-keys-present-in-API.
+func flattenSettings(ctx context.Context, category string, configuredSettings, apiResponse map[string]any) (types.Object, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	configured, _ := configuredSettings[category].(map[string]any)
 	if len(configured) == 0 {
-		return emptySettingsBlockList(), diags
+		return nullSettingsBlock(), diags
 	}
 
 	apiCategory, _ := apiResponse[category].(map[string]any)
@@ -206,7 +191,7 @@ func flattenSettings(ctx context.Context, category string, configuredSettings, a
 			listVal, ds := types.ListValue(types.StringType, vals)
 			diags.Append(ds...)
 			if diags.HasError() {
-				return types.ListNull(settingsListElemType()), diags
+				return nullSettingsBlock(), diags
 			}
 			sm.ValueList = listVal
 		default:
@@ -217,30 +202,26 @@ func flattenSettings(ctx context.Context, category string, configuredSettings, a
 		obj, ds := types.ObjectValueFrom(ctx, settingModelAttr, sm)
 		diags.Append(ds...)
 		if diags.HasError() {
-			return types.ListNull(settingsListElemType()), diags
+			return nullSettingsBlock(), diags
 		}
 		settingValues = append(settingValues, obj)
 	}
 
 	if len(settingValues) == 0 {
-		return emptySettingsBlockList(), diags
+		return emptySettingsBlock(), diags
 	}
 
 	settingSet, ds := types.SetValue(types.ObjectType{AttrTypes: settingModelAttr}, settingValues)
 	diags.Append(ds...)
 	if diags.HasError() {
-		return types.ListNull(settingsListElemType()), diags
+		return nullSettingsBlock(), diags
 	}
 
 	block := settingsBlockModel{Setting: settingSet}
-	blockAttr := settingsBlockAttrTypes()
-	blockObj, ds := types.ObjectValueFrom(ctx, blockAttr, block)
+	blockObj, ds := types.ObjectValueFrom(ctx, settingsBlockAttrTypes(), block)
 	diags.Append(ds...)
 	if diags.HasError() {
-		return types.ListNull(settingsListElemType()), diags
+		return nullSettingsBlock(), diags
 	}
-
-	result, ds := types.ListValue(settingsListElemType(), []attr.Value{blockObj})
-	diags.Append(ds...)
-	return result, diags
+	return blockObj, diags
 }
