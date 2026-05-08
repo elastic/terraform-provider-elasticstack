@@ -36,6 +36,17 @@ type CalendarEventTFModel struct {
 	EventID                 types.String      `tfsdk:"event_id"`
 }
 
+// GetID implements entitycore.ElasticsearchResourceModel.
+func (m CalendarEventTFModel) GetID() types.String { return m.ID }
+
+// GetResourceID implements entitycore.ElasticsearchResourceModel.
+func (m CalendarEventTFModel) GetResourceID() types.String { return m.CalendarID }
+
+// GetElasticsearchConnection implements entitycore.ElasticsearchResourceModel.
+func (m CalendarEventTFModel) GetElasticsearchConnection() types.List {
+	return m.ElasticsearchConnection
+}
+
 type CalendarEventAPIModel struct {
 	Description string `json:"description"`
 	StartTime   any    `json:"start_time"`

@@ -23,77 +23,52 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func (r *calendarResource) create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	if !r.resourceReady(&resp.Diagnostics) {
-		return
-	}
+func createCalendar(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, plan TFModel) (TFModel, fwdiags.Diagnostics) {
+	var diags fwdiags.Diagnostics
 
-	var plan TFModel
-	diags := req.Plan.Get(ctx, &plan)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	calendarID := resourceID
 
-	calendarID := plan.CalendarID.ValueString()
-
-	apiModel, diags := plan.toAPICreateModel(ctx)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	apiModel, convDiags := plan.toAPICreateModel(ctx)
+	diags.Append(convDiags...)
+	if diags.HasError() {
+		return plan, diags
 	}
 
 	tflog.Debug(ctx, fmt.Sprintf("Creating ML calendar: %s", calendarID))
 
-	esClient, err := r.client.GetESClient()
+	typedClient, err := client.GetESClient()
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to get Elasticsearch client", err.Error())
-		return
+		diags.AddError("Failed to get Elasticsearch client", err.Error())
+		return plan, diags
 	}
 
 	body, err := json.Marshal(apiModel)
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to marshal calendar configuration", err.Error())
-		return
+		diags.AddError("Failed to marshal calendar configuration", err.Error())
+		return plan, diags
 	}
 
-	res, err := esClient.ML.PutCalendar(calendarID, esClient.ML.PutCalendar.WithBody(bytes.NewReader(body)), esClient.ML.PutCalendar.WithContext(ctx))
+	_, err = typedClient.Ml.PutCalendar(calendarID).Raw(bytes.NewReader(body)).Do(ctx)
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to create ML calendar", err.Error())
-		return
-	}
-	defer res.Body.Close()
-
-	diags = diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to create ML calendar: %s", calendarID))
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+		diags.AddError("Failed to create ML calendar", fmt.Sprintf("Unable to create ML calendar: %s — %s", calendarID, err.Error()))
+		return plan, diags
 	}
 
-	compID, sdkDiags := r.client.ID(ctx, calendarID)
-	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-	if resp.Diagnostics.HasError() {
-		return
+	compID, sdkDiags := client.ID(ctx, calendarID)
+	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	if diags.HasError() {
+		return plan, diags
 	}
 
 	plan.ID = types.StringValue(compID.String())
-	found, diags := r.read(ctx, &plan)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	if !found {
-		resp.Diagnostics.AddError("Failed to read created calendar", fmt.Sprintf("Calendar with ID %s not found after creation", calendarID))
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 
 	tflog.Debug(ctx, fmt.Sprintf("Successfully created ML calendar: %s", calendarID))
+	return plan, diags
 }

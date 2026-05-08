@@ -179,7 +179,7 @@ func (r *ElasticsearchResource[T]) Read(ctx context.Context, req resource.ReadRe
 		return
 	}
 
-	compID, diags := clients.CompositeIDFromStrFw(model.GetID().ValueString())
+	compID, diags := clients.CompositeIDFromStrForElasticsearchFw(model.GetID().ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -286,7 +286,7 @@ func (r *ElasticsearchResource[T]) Delete(ctx context.Context, req resource.Dele
 		return
 	}
 
-	compID, diags := clients.CompositeIDFromStrFw(model.GetID().ValueString())
+	compID, diags := clients.CompositeIDFromStrForElasticsearchFw(model.GetID().ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

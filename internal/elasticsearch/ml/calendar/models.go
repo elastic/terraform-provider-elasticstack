@@ -32,6 +32,15 @@ type TFModel struct {
 	JobIDs                  types.Set    `tfsdk:"job_ids"`
 }
 
+// GetID implements entitycore.ElasticsearchResourceModel.
+func (m TFModel) GetID() types.String { return m.ID }
+
+// GetResourceID implements entitycore.ElasticsearchResourceModel.
+func (m TFModel) GetResourceID() types.String { return m.CalendarID }
+
+// GetElasticsearchConnection implements entitycore.ElasticsearchResourceModel.
+func (m TFModel) GetElasticsearchConnection() types.List { return m.ElasticsearchConnection }
+
 type CreateAPIModel struct {
 	JobIDs      []string `json:"job_ids,omitempty"`
 	Description string   `json:"description,omitempty"`

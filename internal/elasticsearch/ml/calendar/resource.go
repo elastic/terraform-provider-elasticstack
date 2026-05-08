@@ -21,75 +21,47 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
-var _ resource.Resource = &calendarResource{}
-var _ resource.ResourceWithConfigure = &calendarResource{}
-var _ resource.ResourceWithImportState = &calendarResource{}
-
-func NewCalendarResource() resource.Resource {
-	return &calendarResource{}
-}
+var (
+	_ resource.Resource                = (*calendarResource)(nil)
+	_ resource.ResourceWithConfigure   = (*calendarResource)(nil)
+	_ resource.ResourceWithImportState = (*calendarResource)(nil)
+)
 
 type calendarResource struct {
-	client *clients.ApiClient
+	*entitycore.ElasticsearchResource[TFModel]
 }
 
-func (r *calendarResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_elasticsearch_ml_calendar"
-}
-
-func (r *calendarResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	client, diags := clients.ConvertProviderData(req.ProviderData)
-	resp.Diagnostics.Append(diags...)
-	r.client = client
-}
-
-func (r *calendarResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	r.create(ctx, req, resp)
-}
-
-func (r *calendarResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var state TFModel
-	diags := req.State.Get(ctx, &state)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+func newCalendarResource() *calendarResource {
+	_, updateFn := entitycore.PlaceholderElasticsearchWriteCallbacks[TFModel]()
+	return &calendarResource{
+		ElasticsearchResource: entitycore.NewElasticsearchResource(
+			entitycore.ComponentElasticsearch,
+			"ml_calendar",
+			getSchema,
+			readCalendar,
+			deleteCalendar,
+			createCalendar,
+			updateFn,
+		),
 	}
-
-	found, diags := r.read(ctx, &state)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if !found {
-		resp.State.RemoveResource(ctx)
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
-func (r *calendarResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	r.update(ctx, req, resp)
-}
-
-func (r *calendarResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	r.delete(ctx, req, resp)
-}
-
-func (r *calendarResource) resourceReady(diags *fwdiags.Diagnostics) bool {
-	if r.client == nil {
-		diags.AddError("Client not configured", "Provider client is not configured")
-		return false
-	}
-	return true
+func NewCalendarResource() resource.Resource {
+	return newCalendarResource()
 }
 
 func (r *calendarResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	compID, diags := clients.CompositeIDFromStrFw(req.ID)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("calendar_id"), compID.ResourceID)...)
 }

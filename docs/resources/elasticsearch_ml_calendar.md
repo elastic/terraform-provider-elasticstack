@@ -22,7 +22,7 @@ Manages Machine Learning calendars. See the [ML Calendar API documentation](http
 ### Optional
 
 - `description` (String) A description of the calendar.
-- `elasticsearch_connection` (Block List, Deprecated) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `elasticsearch_connection` (Block List) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - `job_ids` (Set of String) A list of anomaly detection job identifiers.
 
 ### Read-Only

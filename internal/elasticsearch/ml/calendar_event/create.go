@@ -18,140 +18,94 @@
 package calendar_event
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/ml/postcalendarevents"
+	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func (r *calendarEventResource) create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	if !r.resourceReady(&resp.Diagnostics) {
-		return
-	}
-
-	var plan CalendarEventTFModel
-	diags := req.Plan.Get(ctx, &plan)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+func createCalendarEvent(ctx context.Context, client *clients.ElasticsearchScopedClient, plan CalendarEventTFModel) (CalendarEventTFModel, fwdiags.Diagnostics) {
+	var diags fwdiags.Diagnostics
 
 	calendarID := plan.CalendarID.ValueString()
 
-	apiModel, diags := plan.toAPIModel(ctx)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	apiModel, convDiags := plan.toAPIModel(ctx)
+	diags.Append(convDiags...)
+	if diags.HasError() {
+		return plan, diags
 	}
 
 	tflog.Debug(ctx, fmt.Sprintf("Creating ML calendar event for calendar: %s", calendarID))
 
-	esClient, err := r.client.GetESClient()
+	typedClient, err := client.GetESClient()
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to get Elasticsearch client", err.Error())
-		return
+		diags.AddError("Failed to get Elasticsearch client", err.Error())
+		return plan, diags
 	}
 
-	// Snapshot existing event IDs so we can identify the new one after creation.
 	existingIDs := make(map[string]struct{})
-	preRes, err := esClient.ML.GetCalendarEvents(
-		calendarID,
-		esClient.ML.GetCalendarEvents.WithContext(ctx),
-		esClient.ML.GetCalendarEvents.WithSize(10000),
-	)
-	if err == nil {
-		defer preRes.Body.Close()
-		var preResp GetCalendarEventsResponse
-		if json.NewDecoder(preRes.Body).Decode(&preResp) == nil {
-			for _, e := range preResp.Events {
-				existingIDs[e.EventID] = struct{}{}
+	preRes, err := typedClient.Ml.GetCalendarEvents(calendarID).Size(10000).Do(ctx)
+	if err == nil && preRes != nil {
+		for _, e := range preRes.Events {
+			if e.EventId != nil {
+				existingIDs[*e.EventId] = struct{}{}
 			}
 		}
 	}
 
-	reqBody := PostCalendarEventsRequest{Events: []CalendarEventAPIModel{*apiModel}}
-	body, err := json.Marshal(reqBody)
+	eventPayload := estypes.CalendarEvent{
+		Description: apiModel.Description,
+		StartTime:   apiModel.StartTime,
+		EndTime:     apiModel.EndTime,
+	}
+
+	postReq := postcalendarevents.NewRequest()
+	postReq.Events = []estypes.CalendarEvent{eventPayload}
+
+	_, err = typedClient.Ml.PostCalendarEvents(calendarID).Request(postReq).Do(ctx)
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to marshal calendar event", err.Error())
-		return
+		diags.AddError("Failed to create ML calendar event", fmt.Sprintf("Unable to create ML calendar event for calendar %s — %s", calendarID, err.Error()))
+		return plan, diags
 	}
 
-	res, err := esClient.ML.PostCalendarEvents(calendarID, bytes.NewReader(body), esClient.ML.PostCalendarEvents.WithContext(ctx))
+	getRes, err := typedClient.Ml.GetCalendarEvents(calendarID).Size(10000).Do(ctx)
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to create ML calendar event", err.Error())
-		return
-	}
-	defer res.Body.Close()
-
-	diags = diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to create ML calendar event for calendar: %s", calendarID))
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// The POST response does not include event_id. GET events to find the newly created one.
-	getRes, err := esClient.ML.GetCalendarEvents(
-		calendarID,
-		esClient.ML.GetCalendarEvents.WithContext(ctx),
-		esClient.ML.GetCalendarEvents.WithSize(10000),
-	)
-	if err != nil {
-		resp.Diagnostics.AddError("Failed to get calendar events after creation", err.Error())
-		return
-	}
-	defer getRes.Body.Close()
-
-	diags = diagutil.CheckErrorFromFW(getRes, fmt.Sprintf("Unable to get ML calendar events for calendar: %s", calendarID))
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	var getResp GetCalendarEventsResponse
-	if err := json.NewDecoder(getRes.Body).Decode(&getResp); err != nil {
-		resp.Diagnostics.AddError("Failed to decode calendar events response", err.Error())
-		return
+		diags.AddError("Failed to get calendar events after creation", err.Error())
+		return plan, diags
 	}
 
 	var eventID string
-	for _, event := range getResp.Events {
-		if _, existed := existingIDs[event.EventID]; !existed {
-			eventID = event.EventID
+	for _, event := range getRes.Events {
+		if event.EventId == nil {
+			continue
+		}
+		if _, existed := existingIDs[*event.EventId]; !existed {
+			eventID = *event.EventId
 			break
 		}
 	}
 
 	if eventID == "" {
-		resp.Diagnostics.AddError("Failed to identify created event", "Could not find the newly created event in the calendar events list")
-		return
+		diags.AddError("Failed to identify created event", "Could not find the newly created event in the calendar events list")
+		return plan, diags
 	}
 
-	compID, sdkDiags := r.client.ID(ctx, calendarID+"/"+eventID)
-	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-	if resp.Diagnostics.HasError() {
-		return
+	compID, sdkDiags := client.ID(ctx, calendarID+"/"+eventID)
+	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	if diags.HasError() {
+		return plan, diags
 	}
 
 	plan.ID = types.StringValue(compID.String())
 	plan.EventID = types.StringValue(eventID)
 	plan.CalendarID = types.StringValue(calendarID)
 
-	found, diags := r.read(ctx, &plan)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	if !found {
-		resp.Diagnostics.AddError("Failed to read created event", fmt.Sprintf("Calendar event with ID %s not found after creation", eventID))
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
-
 	tflog.Debug(ctx, fmt.Sprintf("Successfully created ML calendar event %s for calendar: %s", eventID, calendarID))
+	return plan, diags
 }

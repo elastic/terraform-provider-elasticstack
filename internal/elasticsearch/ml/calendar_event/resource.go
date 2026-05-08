@@ -21,57 +21,80 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
-var _ resource.Resource = &calendarEventResource{}
-var _ resource.ResourceWithConfigure = &calendarEventResource{}
-var _ resource.ResourceWithImportState = &calendarEventResource{}
-
-func NewCalendarEventResource() resource.Resource {
-	return &calendarEventResource{}
-}
+var (
+	_ resource.Resource                = (*calendarEventResource)(nil)
+	_ resource.ResourceWithConfigure   = (*calendarEventResource)(nil)
+	_ resource.ResourceWithImportState = (*calendarEventResource)(nil)
+)
 
 type calendarEventResource struct {
-	client *clients.ApiClient
+	*entitycore.ElasticsearchResource[CalendarEventTFModel]
 }
 
-func (r *calendarEventResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_elasticsearch_ml_calendar_event"
+func newCalendarEventResource() *calendarEventResource {
+	phCreate, phUpdate := entitycore.PlaceholderElasticsearchWriteCallbacks[CalendarEventTFModel]()
+	return &calendarEventResource{
+		ElasticsearchResource: entitycore.NewElasticsearchResource(
+			entitycore.ComponentElasticsearch,
+			"ml_calendar_event",
+			getSchema,
+			readCalendarEvent,
+			deleteCalendarEvent,
+			phCreate,
+			phUpdate,
+		),
+	}
 }
 
-func (r *calendarEventResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	client, diags := clients.ConvertProviderData(req.ProviderData)
-	resp.Diagnostics.Append(diags...)
-	r.client = client
+func NewCalendarEventResource() resource.Resource {
+	return newCalendarEventResource()
 }
 
 func (r *calendarEventResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	r.create(ctx, req, resp)
-}
+	if r.Client() == nil {
+		resp.Diagnostics.AddError("Client not configured", "Provider client is not configured")
+		return
+	}
 
-func (r *calendarEventResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var state CalendarEventTFModel
-	diags := req.State.Get(ctx, &state)
+	var plan CalendarEventTFModel
+	diags := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	found, diags := r.read(ctx, &state)
-	resp.Diagnostics.Append(diags...)
+	client, connDiags := r.Client().GetElasticsearchClient(ctx, plan.GetElasticsearchConnection())
+	resp.Diagnostics.Append(connDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
+	written, callDiags := createCalendarEvent(ctx, client, plan)
+	resp.Diagnostics.Append(callDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resourcePath := written.CalendarID.ValueString() + "/" + written.EventID.ValueString()
+	readModel, found, readDiags := readCalendarEvent(ctx, client, resourcePath, written)
+	resp.Diagnostics.Append(readDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	if !found {
-		resp.State.RemoveResource(ctx)
+		resp.Diagnostics.AddError(
+			"Failed to read created event",
+			"Calendar event was not found after creation",
+		)
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &readModel)...)
 }
 
 func (r *calendarEventResource) Update(_ context.Context, _ resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -81,18 +104,20 @@ func (r *calendarEventResource) Update(_ context.Context, _ resource.UpdateReque
 	)
 }
 
-func (r *calendarEventResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	r.delete(ctx, req, resp)
-}
-
-func (r *calendarEventResource) resourceReady(diags *fwdiags.Diagnostics) bool {
-	if r.client == nil {
-		diags.AddError("Client not configured", "Provider client is not configured")
-		return false
-	}
-	return true
-}
-
 func (r *calendarEventResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	compID, diags := clients.CompositeIDFromStrForElasticsearchFw(req.ID)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	calendarID, eventID, splitDiags := splitCalendarEventResourcePath(compID.ResourceID)
+	resp.Diagnostics.Append(splitDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("calendar_id"), calendarID)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("event_id"), eventID)...)
 }

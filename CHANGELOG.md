@@ -45,6 +45,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 
 ### Changes
 
+- Add `elasticstack_elasticsearch_ml_calendar` and `elasticstack_elasticsearch_ml_calendar_event` resources for ML calendars and scheduled calendar events ([#1969](https://github.com/elastic/terraform-provider-elasticstack/pull/1969))
 - Fix ILM policy delete failures when the policy is still referenced by indices (e.g. Fleet-managed data stream backing indices) ([#2714](https://github.com/elastic/terraform-provider-elasticstack/pull/2714))
 - Migrated `elasticstack_elasticsearch_data_stream` resource from Plugin SDK to Plugin Framework ([#2744](https://github.com/elastic/terraform-provider-elasticstack/pull/2744))
 - Add elasticstack_apm_source_map resource for managing APM source maps via Kibana API ([#2712](https://github.com/elastic/terraform-provider-elasticstack/pull/2712))

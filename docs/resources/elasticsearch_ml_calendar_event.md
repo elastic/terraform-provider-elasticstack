@@ -24,7 +24,7 @@ Manages scheduled events for a Machine Learning calendar. See the [ML Calendar E
 
 ### Optional
 
-- `elasticsearch_connection` (Block List, Deprecated) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `elasticsearch_connection` (Block List) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 
 ### Read-Only
 

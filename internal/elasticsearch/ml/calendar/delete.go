@@ -19,49 +19,39 @@ package calendar
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/hashicorp/terraform-plugin-framework/path"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func (r *calendarResource) delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	if !r.resourceReady(&resp.Diagnostics) {
-		return
-	}
+func deleteCalendar(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, _ TFModel) fwdiags.Diagnostics {
+	var diags fwdiags.Diagnostics
 
-	var calendarIDValue basetypes.StringValue
-	diags := req.State.GetAttribute(ctx, path.Root("calendar_id"), &calendarIDValue)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	calendarID := calendarIDValue.ValueString()
+	calendarID := resourceID
 
 	tflog.Debug(ctx, fmt.Sprintf("Deleting ML calendar: %s", calendarID))
 
-	esClient, err := r.client.GetESClient()
+	typedClient, err := client.GetESClient()
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to get Elasticsearch client", err.Error())
-		return
+		diags.AddError("Failed to get Elasticsearch client", err.Error())
+		return diags
 	}
 
-	res, err := esClient.ML.DeleteCalendar(calendarID, esClient.ML.DeleteCalendar.WithContext(ctx))
+	_, err = typedClient.Ml.DeleteCalendar(calendarID).Do(ctx)
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to delete ML calendar", err.Error())
-		return
-	}
-	defer res.Body.Close()
-
-	diags = diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to delete ML calendar: %s", calendarID))
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+		var esErr *types.ElasticsearchError
+		if errors.As(err, &esErr) && esErr.Status == 404 {
+			tflog.Debug(ctx, fmt.Sprintf("ML calendar %s already deleted", calendarID))
+			return diags
+		}
+		diags.AddError("Failed to delete ML calendar", fmt.Sprintf("Unable to delete ML calendar: %s — %s", calendarID, err.Error()))
+		return diags
 	}
 
 	tflog.Debug(ctx, fmt.Sprintf("Successfully deleted ML calendar: %s", calendarID))
+	return diags
 }

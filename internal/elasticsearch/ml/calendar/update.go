@@ -19,18 +19,18 @@ package calendar
 
 import (
 	"context"
-	"encoding/json"
+	"errors"
 	"fmt"
-	"net/http"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func (r *calendarResource) update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	if !r.resourceReady(&resp.Diagnostics) {
+// Update overrides the envelope callback because diffing job_ids requires comparing plan with state.
+func (r *calendarResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	if r.Client() == nil {
+		resp.Diagnostics.AddError("Client not configured", "Provider client is not configured")
 		return
 	}
 
@@ -52,51 +52,35 @@ func (r *calendarResource) update(ctx context.Context, req resource.UpdateReques
 
 	tflog.Debug(ctx, fmt.Sprintf("Updating ML calendar: %s", calendarID))
 
-	esClient, err := r.client.GetESClient()
+	client, connDiags := r.Client().GetElasticsearchClient(ctx, plan.GetElasticsearchConnection())
+	resp.Diagnostics.Append(connDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	typedClient, err := client.GetESClient()
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get Elasticsearch client", err.Error())
 		return
 	}
 
-	compID, sdkDiags := clients.CompositeIdFromStr(state.ID.ValueString())
-	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	res, err := esClient.ML.GetCalendars(esClient.ML.GetCalendars.WithCalendarID(compID.ResourceId), esClient.ML.GetCalendars.WithContext(ctx))
+	res, err := typedClient.Ml.GetCalendars().CalendarId(calendarID).Do(ctx)
 	if err != nil {
+		var esErr *types.ElasticsearchError
+		if errors.As(err, &esErr) && esErr.Status == 404 {
+			resp.Diagnostics.AddError("Calendar not found", fmt.Sprintf("Calendar %s not found during update", calendarID))
+			return
+		}
 		resp.Diagnostics.AddError("Failed to get current ML calendar", err.Error())
 		return
 	}
-	defer res.Body.Close()
 
-	if res.StatusCode == http.StatusNotFound {
+	if len(res.Calendars) == 0 {
 		resp.Diagnostics.AddError("Calendar not found", fmt.Sprintf("Calendar %s not found during update", calendarID))
 		return
 	}
 
-	getDiags := diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to get ML calendar for update: %s", calendarID))
-	resp.Diagnostics.Append(getDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	var currentResponse struct {
-		Calendars []APIModel `json:"calendars"`
-		Count     int        `json:"count"`
-	}
-	if err := json.NewDecoder(res.Body).Decode(&currentResponse); err != nil {
-		resp.Diagnostics.AddError("Failed to decode calendar response", err.Error())
-		return
-	}
-
-	if len(currentResponse.Calendars) == 0 {
-		resp.Diagnostics.AddError("Calendar not found", fmt.Sprintf("Calendar %s not found during update", calendarID))
-		return
-	}
-
-	currentCalendar := currentResponse.Calendars[0]
+	currentCalendar := calendarTypedToAPIModel(&res.Calendars[0])
 
 	currentJobIDSet := make(map[string]struct{})
 	for _, id := range currentCalendar.JobIDs {
@@ -119,16 +103,9 @@ func (r *calendarResource) update(ctx context.Context, req resource.UpdateReques
 
 	for _, jobID := range planJobIDs {
 		if _, exists := currentJobIDSet[jobID]; !exists {
-			addRes, err := esClient.ML.PutCalendarJob(calendarID, jobID, esClient.ML.PutCalendarJob.WithContext(ctx))
+			_, err := typedClient.Ml.PutCalendarJob(calendarID, jobID).Do(ctx)
 			if err != nil {
 				resp.Diagnostics.AddError("Failed to add job to calendar", fmt.Sprintf("Failed to add job %s to calendar %s: %s", jobID, calendarID, err.Error()))
-				return
-			}
-
-			diags = diagutil.CheckErrorFromFW(addRes, fmt.Sprintf("Unable to add job %s to calendar %s", jobID, calendarID))
-			addRes.Body.Close()
-			resp.Diagnostics.Append(diags...)
-			if resp.Diagnostics.HasError() {
 				return
 			}
 		}
@@ -136,23 +113,16 @@ func (r *calendarResource) update(ctx context.Context, req resource.UpdateReques
 
 	for _, jobID := range currentCalendar.JobIDs {
 		if _, exists := planJobIDSet[jobID]; !exists {
-			removeRes, err := esClient.ML.DeleteCalendarJob(calendarID, jobID, esClient.ML.DeleteCalendarJob.WithContext(ctx))
+			_, err := typedClient.Ml.DeleteCalendarJob(calendarID, jobID).Do(ctx)
 			if err != nil {
 				resp.Diagnostics.AddError("Failed to remove job from calendar", fmt.Sprintf("Failed to remove job %s from calendar %s: %s", jobID, calendarID, err.Error()))
-				return
-			}
-
-			diags = diagutil.CheckErrorFromFW(removeRes, fmt.Sprintf("Unable to remove job %s from calendar %s", jobID, calendarID))
-			removeRes.Body.Close()
-			resp.Diagnostics.Append(diags...)
-			if resp.Diagnostics.HasError() {
 				return
 			}
 		}
 	}
 
-	found, diags := r.read(ctx, &plan)
-	resp.Diagnostics.Append(diags...)
+	readModel, found, readDiags := readCalendar(ctx, client, calendarID, plan)
+	resp.Diagnostics.Append(readDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -161,7 +131,7 @@ func (r *calendarResource) update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &readModel)...)
 
 	tflog.Debug(ctx, fmt.Sprintf("Successfully updated ML calendar: %s", calendarID))
 }

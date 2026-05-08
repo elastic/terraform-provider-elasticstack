@@ -19,92 +19,87 @@ package calendar_event
 
 import (
 	"context"
-	"encoding/json"
+	"errors"
 	"fmt"
-	"net/http"
 	"strings"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-// parseCompositeID extracts calendarID and eventID from the composite ID
-// format: <cluster_uuid>/<calendar_id>/<event_id>
-func parseCompositeID(id string) (calendarID, eventID string, diags fwdiags.Diagnostics) {
+func splitCalendarEventResourcePath(resourcePath string) (calendarID, eventID string, diags fwdiags.Diagnostics) {
+	parts := strings.SplitN(resourcePath, "/", 2)
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		diags.AddError("Invalid ID format", "Expected resource segment format: <calendar_id>/<event_id>")
+		return "", "", diags
+	}
+	return parts[0], parts[1], diags
+}
+
+func parseCalendarEventFullCompositeID(id string) (calendarID, eventID string, diags fwdiags.Diagnostics) {
 	parts := strings.SplitN(id, "/", 2)
 	if len(parts) != 2 {
 		diags.AddError("Invalid ID format", "Expected format: <cluster_uuid>/<calendar_id>/<event_id>")
-		return
+		return "", "", diags
 	}
-
-	resourceParts := strings.SplitN(parts[1], "/", 2)
-	if len(resourceParts) != 2 {
-		diags.AddError("Invalid ID format", "Expected format: <cluster_uuid>/<calendar_id>/<event_id>")
-		return
-	}
-
-	return resourceParts[0], resourceParts[1], diags
+	return splitCalendarEventResourcePath(parts[1])
 }
 
-func (r *calendarEventResource) read(ctx context.Context, model *CalendarEventTFModel) (bool, fwdiags.Diagnostics) {
+func calendarEventTypedToAPI(e *types.CalendarEvent) *CalendarEventAPIModel {
+	m := &CalendarEventAPIModel{
+		Description: e.Description,
+		StartTime:   e.StartTime,
+		EndTime:     e.EndTime,
+	}
+	if e.CalendarId != nil {
+		m.CalendarID = *e.CalendarId
+	}
+	if e.EventId != nil {
+		m.EventID = *e.EventId
+	}
+	return m
+}
+
+func readCalendarEvent(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state CalendarEventTFModel) (CalendarEventTFModel, bool, fwdiags.Diagnostics) {
 	var diags fwdiags.Diagnostics
 
-	if !r.resourceReady(&diags) {
-		return false, diags
-	}
-
-	calendarID, eventID, parseDiags := parseCompositeID(model.ID.ValueString())
-	diags.Append(parseDiags...)
+	calendarID, eventID, splitDiags := splitCalendarEventResourcePath(resourceID)
+	diags.Append(splitDiags...)
 	if diags.HasError() {
-		return false, diags
+		return state, false, diags
 	}
 
 	tflog.Debug(ctx, fmt.Sprintf("Reading ML calendar event %s from calendar: %s", eventID, calendarID))
 
-	esClient, err := r.client.GetESClient()
+	typedClient, err := client.GetESClient()
 	if err != nil {
 		diags.AddError("Failed to get Elasticsearch client", err.Error())
-		return false, diags
+		return state, false, diags
 	}
 
-	res, err := esClient.ML.GetCalendarEvents(
-		calendarID,
-		esClient.ML.GetCalendarEvents.WithContext(ctx),
-		esClient.ML.GetCalendarEvents.WithSize(10000),
-	)
+	res, err := typedClient.Ml.GetCalendarEvents(calendarID).Size(10000).Do(ctx)
 	if err != nil {
-		diags.AddError("Failed to get ML calendar events", err.Error())
-		return false, diags
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode == http.StatusNotFound {
-		return false, nil
-	}
-
-	getDiags := diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to get ML calendar events for calendar: %s", calendarID))
-	diags.Append(getDiags...)
-	if diags.HasError() {
-		return false, diags
-	}
-
-	var response GetCalendarEventsResponse
-	if err := json.NewDecoder(res.Body).Decode(&response); err != nil {
-		diags.AddError("Failed to decode calendar events response", err.Error())
-		return false, diags
-	}
-
-	for _, event := range response.Events {
-		if event.EventID == eventID {
-			diags.Append(model.fromAPIModel(ctx, &event)...)
-			if diags.HasError() {
-				return false, diags
-			}
-			tflog.Debug(ctx, fmt.Sprintf("Successfully read ML calendar event %s from calendar: %s", eventID, calendarID))
-			return true, diags
+		var esErr *types.ElasticsearchError
+		if errors.As(err, &esErr) && esErr.Status == 404 {
+			return state, false, nil
 		}
+		diags.AddError("Failed to get ML calendar events", fmt.Sprintf("Unable to get ML calendar events for calendar %s — %s", calendarID, err.Error()))
+		return state, false, diags
 	}
 
-	return false, nil
+	for _, event := range res.Events {
+		if event.EventId == nil || *event.EventId != eventID {
+			continue
+		}
+		diags.Append(state.fromAPIModel(ctx, calendarEventTypedToAPI(&event))...)
+		if diags.HasError() {
+			return state, false, diags
+		}
+		tflog.Debug(ctx, fmt.Sprintf("Successfully read ML calendar event %s from calendar: %s", eventID, calendarID))
+		return state, true, diags
+	}
+
+	return state, false, nil
 }

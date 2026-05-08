@@ -22,27 +22,17 @@ import (
 	"regexp"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-
-	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 )
 
-func (r *calendarResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = GetSchema()
-}
-
-func GetSchema() schema.Schema {
+func getSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: "Manages Machine Learning calendars. " +
 			"See the [ML Calendar API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/ml-put-calendar.html) for more details.",
-		Blocks: map[string]schema.Block{
-			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock("elasticsearch_connection", false),
-		},
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Internal identifier of the resource.",
