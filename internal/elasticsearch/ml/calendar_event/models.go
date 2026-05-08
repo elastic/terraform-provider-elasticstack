@@ -55,19 +55,6 @@ type CalendarEventAPIModel struct {
 	EventID     string `json:"event_id,omitempty"`
 }
 
-type PostCalendarEventsRequest struct {
-	Events []CalendarEventAPIModel `json:"events"`
-}
-
-type PostCalendarEventsResponse struct {
-	Events []CalendarEventAPIModel `json:"events"`
-}
-
-type GetCalendarEventsResponse struct {
-	Count  int                     `json:"count"`
-	Events []CalendarEventAPIModel `json:"events"`
-}
-
 func (m *CalendarEventTFModel) toAPIModel(_ context.Context) (*CalendarEventAPIModel, fwdiags.Diagnostics) {
 	var diags fwdiags.Diagnostics
 
