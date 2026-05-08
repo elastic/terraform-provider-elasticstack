@@ -80,14 +80,7 @@ func DeleteListIndex(ctx context.Context, client *Client, spaceID string) diag.D
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return nil
-	case http.StatusNotFound:
-		return nil
-	default:
-		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNotFound)
 }
 
 // GetList reads a security list from the API by ID
@@ -159,14 +152,7 @@ func DeleteList(ctx context.Context, client *Client, spaceID string, params *kba
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return nil
-	case http.StatusNotFound:
-		return nil
-	default:
-		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNotFound)
 }
 
 // GetListItem reads a security list item from the API by ID or list_id and value
@@ -242,12 +228,5 @@ func DeleteListItem(ctx context.Context, client *Client, spaceID string, params 
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return nil
-	case http.StatusNotFound:
-		return nil
-	default:
-		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNotFound)
 }

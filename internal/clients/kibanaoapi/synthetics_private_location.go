@@ -89,13 +89,5 @@ func DeletePrivateLocation(ctx context.Context, client *Client, spaceID string, 
 		)}
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return nil
-	case http.StatusNotFound:
-		// Already gone — treat as success.
-		return nil
-	default:
-		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNotFound)
 }

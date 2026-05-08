@@ -80,14 +80,7 @@ func DeleteExceptionList(ctx context.Context, client *Client, spaceID string, pa
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return nil
-	case http.StatusNotFound:
-		return nil
-	default:
-		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNotFound)
 }
 
 // GetExceptionListItem reads an exception list item from the API by ID or item_id
@@ -144,12 +137,5 @@ func DeleteExceptionListItem(ctx context.Context, client *Client, spaceID string
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return nil
-	case http.StatusNotFound:
-		return nil
-	default:
-		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNotFound)
 }
