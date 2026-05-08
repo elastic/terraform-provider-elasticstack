@@ -45,6 +45,15 @@ func readSlm(ctx context.Context, client *esclients.ElasticsearchScopedClient, r
 		return state, false, diags
 	}
 
+	data, diags := mapSlmToData(ctx, slm, resourceID, state)
+	if diags.HasError() {
+		return state, false, diags
+	}
+	return data, true, diags
+}
+
+func mapSlmToData(ctx context.Context, slm *elasticsearch.SlmPolicy, resourceID string, state Data) (Data, diag.Diagnostics) {
+	var diags diag.Diagnostics
 	data := state
 	data.Name = types.StringValue(resourceID)
 	data.Repository = types.StringValue(slm.Repository)
@@ -98,14 +107,15 @@ func readSlm(ctx context.Context, client *esclients.ElasticsearchScopedClient, r
 			data.Partial = types.BoolValue(false)
 		}
 
-		// Indices: if API returned no indices, preserve the state value to avoid plan mismatch.
+		// Indices: when the API omits indices, derive the value from the passed state to avoid plan diffs.
+		// In the read-after-write path state is the planned model; in refresh it is the prior state.
 		// null/unknown state → null; empty list state → empty list; non-empty state → empty list.
 		switch {
 		case len(c.Indices) > 0:
 			indicesList, listDiags := types.ListValueFrom(ctx, types.StringType, c.Indices)
 			diags.Append(listDiags...)
 			if diags.HasError() {
-				return state, false, diags
+				return state, diags
 			}
 			data.Indices = indicesList
 		case state.Indices.IsNull() || state.Indices.IsUnknown():
@@ -117,14 +127,15 @@ func readSlm(ctx context.Context, client *esclients.ElasticsearchScopedClient, r
 			data.Indices, _ = types.ListValueFrom(ctx, types.StringType, []string{})
 		}
 
-		// FeatureStates: if API returned none, preserve the state value to avoid plan mismatch.
+		// FeatureStates: when the API omits feature states, derive the value from the passed state to avoid plan diffs.
+		// In the read-after-write path state is the planned model; in refresh it is the prior state.
 		// null/unknown state → null; empty set state → empty set; non-empty state → empty set.
 		switch {
 		case len(c.FeatureStates) > 0:
 			featureStatesSet, setDiags := types.SetValueFrom(ctx, types.StringType, c.FeatureStates)
 			diags.Append(setDiags...)
 			if diags.HasError() {
-				return state, false, diags
+				return state, diags
 			}
 			data.FeatureStates = featureStatesSet
 		case state.FeatureStates.IsNull() || state.FeatureStates.IsUnknown():
@@ -143,14 +154,14 @@ func readSlm(ctx context.Context, client *esclients.ElasticsearchScopedClient, r
 				var val any
 				if err := json.Unmarshal(v, &val); err != nil {
 					diags.AddError("Failed to unmarshal metadata", fmt.Sprintf("failed to unmarshal metadata key %q: %s", k, err))
-					return state, false, diags
+					return state, diags
 				}
 				meta[k] = val
 			}
 			metaBytes, err := json.Marshal(meta)
 			if err != nil {
 				diags.AddError("Failed to marshal metadata", err.Error())
-				return state, false, diags
+				return state, diags
 			}
 			data.Metadata = jsontypes.NewNormalizedValue(string(metaBytes))
 		} else {
@@ -167,5 +178,5 @@ func readSlm(ctx context.Context, client *esclients.ElasticsearchScopedClient, r
 		data.Metadata = jsontypes.NewNormalizedNull()
 	}
 
-	return data, true, diags
+	return data, diags
 }

@@ -84,7 +84,7 @@ func GetSchema(_ context.Context) schema.Schema {
 				Default:             booldefault.StaticBool(true),
 			},
 			"indices": schema.ListAttribute{
-				MarkdownDescription: "Comma-separated list of data streams and indices to include in the snapshot.",
+				MarkdownDescription: "List of data streams and indices to include in the snapshot.",
 				Optional:            true,
 				Computed:            true,
 				ElementType:         types.StringType,
