@@ -251,6 +251,14 @@ func ConvertResponseToModel(spaceID string, resp any) (*models.AlertingRule, dia
 			LookBackWindow        float64 `json:"look_back_window"`
 			StatusChangeThreshold float64 `json:"status_change_threshold"`
 		} `json:"flapping"`
+		Artifacts *struct {
+			Dashboards []struct {
+				ID string `json:"id"`
+			} `json:"dashboards,omitempty"`
+			InvestigationGuide *struct {
+				Blob string `json:"blob"`
+			} `json:"investigation_guide,omitempty"`
+		} `json:"artifacts,omitempty"`
 		Actions []struct {
 			Group     *string        `json:"group"`
 			ID        string         `json:"id"`
@@ -353,6 +361,22 @@ func ConvertResponseToModel(spaceID string, resp any) (*models.AlertingRule, dia
 		status = &intermediate.ExecutionStatus.Status
 	}
 
+	var artifacts *models.AlertingRuleArtifacts
+	if intermediate.Artifacts != nil {
+		artifacts = &models.AlertingRuleArtifacts{}
+		if len(intermediate.Artifacts.Dashboards) > 0 {
+			artifacts.Dashboards = make([]models.AlertingRuleArtifactDashboard, len(intermediate.Artifacts.Dashboards))
+			for i, d := range intermediate.Artifacts.Dashboards {
+				artifacts.Dashboards[i] = models.AlertingRuleArtifactDashboard{ID: d.ID}
+			}
+		}
+		if intermediate.Artifacts.InvestigationGuide != nil {
+			artifacts.InvestigationGuide = &models.AlertingRuleArtifactInvestigationGuide{
+				Blob: intermediate.Artifacts.InvestigationGuide.Blob,
+			}
+		}
+	}
+
 	return &models.AlertingRule{
 		RuleID:     intermediate.ID,
 		SpaceID:    spaceID,
@@ -375,6 +399,7 @@ func ConvertResponseToModel(spaceID string, resp any) (*models.AlertingRule, dia
 		Actions:    actions,
 		AlertDelay: alertDelay,
 		Flapping:   flapping,
+		Artifacts:  artifacts,
 	}, nil
 }
 
@@ -562,6 +587,10 @@ func buildCreateRequestBody(rule models.AlertingRule) kbapi.AlertingRuleAPIBodyG
 		body.Actions = &actions
 	}
 
+	if rule.Artifacts != nil {
+		body.Artifacts = artifactsWireFromModel(rule.Artifacts)
+	}
+
 	return body
 }
 
@@ -738,7 +767,45 @@ func buildUpdateRequestBody(rule models.AlertingRule) kbapi.PutAlertingRuleIdJSO
 		body.Actions = &actions
 	}
 
+	if rule.Artifacts != nil {
+		body.Artifacts = artifactsWireFromModel(rule.Artifacts)
+	}
+
 	return body
+}
+
+// artifactsWire is a type alias for the artifacts JSON object on create/update alerting rule requests.
+type artifactsWire = struct {
+	Dashboards *[]struct {
+		Id string `json:"id"` //nolint:revive // var-naming: API struct field
+	} `json:"dashboards,omitempty"`
+	InvestigationGuide *struct {
+		Blob string `json:"blob"`
+	} `json:"investigation_guide,omitempty"`
+}
+
+func artifactsWireFromModel(a *models.AlertingRuleArtifacts) *artifactsWire {
+	if a == nil {
+		return nil
+	}
+	w := &artifactsWire{}
+	if a.Dashboards != nil {
+		dashboards := make([]struct {
+			Id string `json:"id"` //nolint:revive // var-naming: API struct field
+		}, len(a.Dashboards))
+		for i, d := range a.Dashboards {
+			dashboards[i].Id = d.ID
+		}
+		w.Dashboards = &dashboards
+	}
+	if a.InvestigationGuide != nil {
+		w.InvestigationGuide = &struct {
+			Blob string `json:"blob"`
+		}{
+			Blob: a.InvestigationGuide.Blob,
+		}
+	}
+	return w
 }
 
 // flappingWire is a type alias for the flapping JSON object on create/update alerting rule requests.
