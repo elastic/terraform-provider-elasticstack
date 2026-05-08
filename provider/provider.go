@@ -46,8 +46,6 @@ func New(version string) *schema.Provider {
 		DataSourcesMap: map[string]*schema.Resource{
 			"elasticstack_elasticsearch_security_role": security.DataSourceRole(),
 			"elasticstack_elasticsearch_security_user": security.DataSourceUser(),
-			"elasticstack_elasticsearch_info":          cluster.DataSourceClusterInfo(),
-
 			"elasticstack_kibana_action_connector": kibana.DataSourceConnector(),
 			"elasticstack_kibana_security_role":    kibana.DataSourceRole(),
 		},
