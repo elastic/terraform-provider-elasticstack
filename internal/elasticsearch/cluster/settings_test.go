@@ -168,7 +168,32 @@ func TestAccResourceClusterSettings(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_cluster_settings.test", "transient.#", "0"),
 				),
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("import"),
+				ResourceName:             "elasticstack_elasticsearch_cluster_settings.test",
+				ImportState:              true,
+				ImportStateCheck: func(is []*terraform.InstanceState) error {
+					if len(is) != 1 {
+						return fmt.Errorf("expected 1 imported instance state, got %d", len(is))
+					}
 
+					importedID := is[0].ID
+					if importedID == "" {
+						return fmt.Errorf("expected imported resource ID to be set")
+					}
+
+					if !strings.HasSuffix(importedID, "/cluster-settings") {
+						return fmt.Errorf("expected imported resource ID [%s] to end with /cluster-settings", importedID)
+					}
+
+					if is[0].Attributes["id"] != importedID {
+						return fmt.Errorf("expected imported id attribute [%s] to equal resource ID [%s]", is[0].Attributes["id"], importedID)
+					}
+
+					return nil
+				},
+			},
 		},
 	})
 }
@@ -225,7 +250,10 @@ func checkResourceClusterSettingsDestroy(s *terraform.State) error {
 
 		for _, setting := range listOfSettings {
 			if v, ok := res.Persistent[setting]; ok {
-				return fmt.Errorf(`Setting "%s=%s" still in the cluster, but it should be removed`, setting, string(v))
+				return fmt.Errorf(`Setting "%s=%s" still in the persistent cluster settings, but it should be removed`, setting, string(v))
+			}
+			if v, ok := res.Transient[setting]; ok {
+				return fmt.Errorf(`Setting "%s=%s" still in the transient cluster settings, but it should be removed`, setting, string(v))
 			}
 		}
 	}

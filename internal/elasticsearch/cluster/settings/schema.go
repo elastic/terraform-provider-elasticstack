@@ -36,8 +36,12 @@ func getSchema(_ context.Context) schema.Schema {
 		MarkdownDescription: "Defines the settings in the cluster.",
 		Validators: []validator.Set{
 			setvalidator.SizeAtLeast(1),
+			settingNameUniqueValidator{},
 		},
 		NestedObject: schema.NestedBlockObject{
+			Validators: []validator.Object{
+				settingObjectValidator{},
+			},
 			Attributes: map[string]schema.Attribute{
 				"name": schema.StringAttribute{
 					MarkdownDescription: "The name of the setting to set and track.",
@@ -58,20 +62,6 @@ func getSchema(_ context.Context) schema.Schema {
 		},
 	}
 
-	// settingsBlock wraps settingBlock inside persistent/transient with a max of
-	// one block occurrence to preserve the original MaxItems:1 SDK constraint.
-	settingsBlock := schema.ListNestedBlock{
-		MarkdownDescription: "Settings block containing individual setting entries.",
-		Validators: []validator.List{
-			listvalidator.SizeAtMost(1),
-		},
-		NestedObject: schema.NestedBlockObject{
-			Blocks: map[string]schema.Block{
-				"setting": settingBlock,
-			},
-		},
-	}
-
 	return schema.Schema{
 		MarkdownDescription: settingsResourceDescription,
 		Attributes: map[string]schema.Attribute{
@@ -84,8 +74,28 @@ func getSchema(_ context.Context) schema.Schema {
 			},
 		},
 		Blocks: map[string]schema.Block{
-			"persistent": settingsBlock,
-			"transient":  settingsBlock,
+			"persistent": schema.ListNestedBlock{
+				MarkdownDescription: "Persistent settings that survive a full cluster restart.",
+				Validators: []validator.List{
+					listvalidator.SizeAtMost(1),
+				},
+				NestedObject: schema.NestedBlockObject{
+					Blocks: map[string]schema.Block{
+						"setting": settingBlock,
+					},
+				},
+			},
+			"transient": schema.ListNestedBlock{
+				MarkdownDescription: "Transient settings that are reset on cluster restart.",
+				Validators: []validator.List{
+					listvalidator.SizeAtMost(1),
+				},
+				NestedObject: schema.NestedBlockObject{
+					Blocks: map[string]schema.Block{
+						"setting": settingBlock,
+					},
+				},
+			},
 		},
 	}
 }

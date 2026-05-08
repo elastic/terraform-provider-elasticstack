@@ -31,9 +31,10 @@ import (
 
 // Ensure clusterSettingsResource satisfies the expected interfaces.
 var (
-	_ resource.Resource                = newClusterSettingsResource()
-	_ resource.ResourceWithConfigure   = newClusterSettingsResource()
-	_ resource.ResourceWithImportState = newClusterSettingsResource()
+	_ resource.Resource                   = newClusterSettingsResource()
+	_ resource.ResourceWithConfigure      = newClusterSettingsResource()
+	_ resource.ResourceWithImportState    = newClusterSettingsResource()
+	_ resource.ResourceWithValidateConfig = newClusterSettingsResource()
 )
 
 // clusterSettingsResource wraps the entitycore envelope, overriding Create,
@@ -199,4 +200,24 @@ func (r *clusterSettingsResource) Delete(ctx context.Context, req resource.Delet
 // ImportState implements resource.ResourceWithImportState as a passthrough on id.
 func (r *clusterSettingsResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+
+// ValidateConfig ensures that at least one of persistent or transient is
+// configured so the resource does not represent an empty no-op configuration.
+func (r *clusterSettingsResource) ValidateConfig(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
+	var config tfModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	persistentEmpty := config.Persistent.IsNull() || config.Persistent.IsUnknown() || len(config.Persistent.Elements()) == 0
+	transientEmpty := config.Transient.IsNull() || config.Transient.IsUnknown() || len(config.Transient.Elements()) == 0
+
+	if persistentEmpty && transientEmpty {
+		resp.Diagnostics.AddError(
+			"No cluster settings configured",
+			`At least one of "persistent" or "transient" must contain at least one "setting" block.`,
+		)
+	}
 }

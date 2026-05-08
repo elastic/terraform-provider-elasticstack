@@ -52,8 +52,8 @@ resource "elasticstack_elasticsearch_cluster_settings" "my_cluster_settings" {
 ### Optional
 
 - `elasticsearch_connection` (Block List) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
-- `persistent` (Block List) Settings block containing individual setting entries. (see [below for nested schema](#nestedblock--persistent))
-- `transient` (Block List) Settings block containing individual setting entries. (see [below for nested schema](#nestedblock--transient))
+- `persistent` (Block List) Persistent settings that survive a full cluster restart. (see [below for nested schema](#nestedblock--persistent))
+- `transient` (Block List) Transient settings that are reset on cluster restart. (see [below for nested schema](#nestedblock--transient))
 
 ### Read-Only
 
