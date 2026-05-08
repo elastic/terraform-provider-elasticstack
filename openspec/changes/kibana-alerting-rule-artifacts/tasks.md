@@ -2,7 +2,7 @@
 
 - [x] 1.1 Keep delta spec aligned with `proposal.md` / `design.md`; run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate kibana-alerting-rule-artifacts --type change` (or `make check-openspec` after sync).
 - [x] 1.2 Resolve the open question on minimum Kibana version for `artifacts` support (see `design.md`); update delta spec with a version compatibility requirement if confirmed.
-- [ ] 1.3 On completion of spec tasks, **sync** delta into `openspec/specs/kibana-alerting-rule/spec.md` (do not archive).
+- [ ] 1.3 On completion of implementation, **sync** delta into `openspec/specs/kibana-alerting-rule/spec.md` (do not archive).
 
 ## 2. Implementation
 
@@ -20,6 +20,6 @@
 - [ ] 3.1 Add acceptance test(s) for `artifacts.dashboards`: create a rule with one or more dashboard IDs; assert state matches; update the list; assert round-trip.
 - [ ] 3.2 Add acceptance test for `artifacts.investigation_guide` with inline `content`: create rule with guide text; assert state stores the text; update text; assert change is applied.
 - [ ] 3.3 Add acceptance test for `artifacts.investigation_guide` with `content_path`: write a temp file; create rule; assert `checksum` is set; modify file; run `terraform plan`; assert a non-empty plan is produced; apply; assert `checksum` reflects the new file content.
-- [ ] 3.4 Add acceptance test for clearing `artifacts`: create rule with artifacts; remove the `artifacts` block; assert Kibana's stored artifacts remain (provider omits key from PUT, API leaves value unchanged); then add `artifacts` back with empty `dashboards` list to clear dashboards explicitly; assert state is consistent.
+- [ ] 3.4 Add acceptance test for preserving artifacts on omit and clearing dashboards explicitly: create rule with artifacts; remove the `artifacts` block; assert Kibana's stored artifacts remain (provider omits key from PUT, API leaves value unchanged); then add `artifacts` back with an explicit empty `dashboards` list to clear dashboards; assert state is consistent. Clearing `investigation_guide` is out of scope.
 - [ ] 3.5 Add unit tests for version gating (if a minimum version is confirmed) and for `content` vs `content_path` request body construction, mirroring existing unit test patterns in `models_flapping_test.go`.
 - [ ] 3.6 Add unit tests for the read-path mapping: blob → `content` when prior state used `content`; no overwrite of `content_path` when prior state used `content_path`.

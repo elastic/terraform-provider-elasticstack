@@ -25,7 +25,7 @@ The Kibana alerting rule API accepts an `artifacts` object in the create (`POST 
 | Mutual exclusion | When `investigation_guide` is present, exactly one of `content` or `content_path` MUST be set. Enforced via `objectvalidator.ExactlyOneOf` or equivalent plan-time validation. |
 | `checksum` in state | Only meaningful when `content_path` is used. Written to state at apply time (create or update). On read, `checksum` is not overwritten from the API (the API returns `blob`, not a checksum); the plan modifier manages drift. |
 | Minimum Kibana version | `artifacts` is supported from Kibana **8.19.0** (8.x series) and **9.1.0** (9.x series). The provider SHALL enforce a version gate mirroring the `alert_delay`/`flapping` pattern (REQ-051). |
-| Update when absent | When `artifacts` is not in the Terraform config, the provider SHALL omit `artifacts` from the PUT body so Kibana leaves existing rule artifacts unchanged. |
+| Update when absent | When `artifacts` is not in the Terraform config, the provider SHALL omit `artifacts` from the PUT body so Kibana leaves existing rule artifacts unchanged. When `artifacts` is present with an explicit empty `dashboards` list, the provider sends `artifacts.dashboards: []`, which clears dashboards. Clearing `investigation_guide` is out of scope. |
 | Read path — content vs content_path | If prior state has `content` set (and `content_path` null): populate `content` from API `blob` after read. If prior state has `content_path` set (and `content` null): do not update `content` or `content_path` from the API; the plan modifier handles drift detection via `checksum`. |
 | Plan modifier | A `ModifyPlan` hook on the resource (mirroring `elasticstack_fleet_custom_integration`) reads `content_path` during plan, computes SHA-256, and if it differs from the stored `checksum`, marks `checksum` (and potentially `id`) as unknown so Terraform shows a non-empty plan. |
 
@@ -35,9 +35,9 @@ The Kibana alerting rule API accepts an `artifacts` object in the create (`POST 
 
 ## Risks / Trade-offs
 
-- **Removing `artifacts` from Terraform config** still results in an update that omits `artifacts`; Kibana keeps any previously stored artifacts. After refresh, state may again show `artifacts` from the API while configuration omits the block, producing a **plan diff** until the practitioner aligns config with the API or clears rule artifacts outside Terraform. Document in resource docs.
+- **Removing `artifacts` from Terraform config** still results in an update that omits `artifacts`; Kibana keeps any previously stored artifacts. After refresh, state may again show `artifacts` from the API while configuration omits the block, producing a **plan diff** until the practitioner aligns config with the API, explicitly clears dashboards with an empty `dashboards` list, or clears rule artifacts outside Terraform. Document in resource docs.
 - **External file changes**: When `content_path` is used, an external change to the file (without running `terraform plan`) will not be detected until the next `terraform plan` (at which point the plan modifier detects the checksum mismatch). This is consistent with the custom integration behavior and acceptable.
-- **Content drift from Kibana**: Kibana may normalise the blob (e.g. trim whitespace). If so, `content`-based state may show perpetual drift. If this is observed during testing, consider trimming both sides before comparison or treating blob as opaque (read-only after first write). This should be investigated at implementation time.
+- **Content drift from Kibana**: Kibana may normalise the blob (e.g. trim whitespace). The read-path contract stores the API-returned `blob` in state (see REQ-048); acceptance requirements do not guarantee exact byte-for-byte round-trip equality. If perpetual drift is observed during testing, consider trimming both sides before comparison or treating blob as opaque (read-only after first write). This should be investigated at implementation time.
 
 ## Open Questions
 

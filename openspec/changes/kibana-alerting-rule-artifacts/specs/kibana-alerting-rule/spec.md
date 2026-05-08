@@ -72,6 +72,12 @@ When the practitioner does **not** configure `artifacts`, the provider SHALL **o
 - WHEN update runs
 - THEN the update request body SHALL NOT include an `artifacts` key
 
+#### Scenario: Empty dashboards list clears dashboards
+
+- GIVEN a configured `artifacts` block with an explicit empty `dashboards` list
+- WHEN update runs
+- THEN the update request body SHALL include `artifacts.dashboards` as an empty array
+
 #### Scenario: Create with content_path sends file content as blob
 
 - GIVEN a configured `investigation_guide` with `content_path` pointing to a readable file
@@ -136,9 +142,9 @@ After a successful create or update, the provider SHALL write the SHA-256 digest
 The acceptance test suite for `elasticstack_kibana_alerting_rule` SHALL include:
 
 1. At least one test case that configures **`artifacts.dashboards`** with one or more dashboard IDs and asserts that create and update succeed and state reflects the configured IDs.
-2. At least one test case that configures **`artifacts.investigation_guide`** with inline **`content`**, asserts create and update succeed, and asserts state stores the text.
+2. At least one test case that configures **`artifacts.investigation_guide`** with inline **`content`**, asserts create and update succeed, and asserts state stores the API-returned `blob` (exact byte-for-byte equality with the configured string is not guaranteed if Kibana normalises the blob).
 3. At least one test case that configures **`artifacts.investigation_guide`** with **`content_path`**, asserts that `checksum` is set in state after create, modifies the file, runs plan, and asserts a non-empty plan is produced.
-4. At least one test case or step that removes the `artifacts` block from configuration and verifies that a subsequent plan shows the expected behaviour (artifacts persisted by Kibana, drift visible in plan if Kibana returns them).
+4. At least one test case or step that removes the `artifacts` block from configuration and verifies that a subsequent plan shows the expected behaviour (artifacts persisted by Kibana because the provider omits the key, drift visible in plan if Kibana returns them). Configuring an explicit empty `dashboards` list may be used to clear dashboards; clearing `investigation_guide` is out of scope.
 
 If the minimum Kibana version for `artifacts` is confirmed to be above the CI default, test cases SHALL be gated with an appropriate `SkipFunc` aligned with that minimum version.
 
@@ -152,7 +158,7 @@ If the minimum Kibana version for `artifacts` is confirmed to be above the CI de
 
 - GIVEN a rule created with `artifacts.investigation_guide.content` set to a known string
 - WHEN state is read after apply
-- THEN `artifacts.investigation_guide.content` SHALL equal the configured string
+- THEN `artifacts.investigation_guide.content` SHALL be set from the API-returned `blob` value
 
 #### Scenario: File-based content triggers re-apply on change
 

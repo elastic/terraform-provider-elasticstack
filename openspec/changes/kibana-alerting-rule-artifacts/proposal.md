@@ -33,6 +33,12 @@ Add an optional single nested block at rule level:
   - **`checksum`** (computed string): SHA-256 hex digest of the file at `content_path`. Not user-settable; used for drift detection. Irrelevant when `content` is used.
   - Exactly one of `content` or `content_path` MUST be set when `investigation_guide` is present.
 
+### Behavior notes
+
+- When `artifacts` is absent from the Terraform configuration, the provider omits the `artifacts` key from update requests, preserving any existing rule artifacts stored in Kibana.
+- Configuring `artifacts` with an explicit empty `dashboards` list sends an empty array to the API and clears any linked dashboards.
+- Clearing `investigation_guide` is not supported by this design and is out of scope.
+
 ### Version rules
 
 The minimum Kibana version for `artifacts` on alerting rules is **8.19.0** (8.x series) and **9.1.0** (9.x series). This was confirmed from the Kibana source: the `artifacts` schema was introduced in [elastic/kibana#216292](https://github.com/elastic/kibana/pull/216292) (dashboards) and [elastic/kibana#216377](https://github.com/elastic/kibana/pull/216377) (investigation guide), both backported to the `8.19` branch and labelled for `9.1.0`. The provider SHALL enforce a version gate so that `artifacts` is rejected on older stacks, mirroring the pattern used for `alert_delay` and `flapping`.
