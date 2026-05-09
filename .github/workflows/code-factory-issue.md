@@ -1717,6 +1717,22 @@ on:
           const output2 = `sanitized_issue_comments<<${eofDelim2}\n${sanitizedComments}\n${eofDelim2}\n`;
           fs.appendFileSync(process.env.GITHUB_OUTPUT, output2);
           
+          const dir = '/tmp/code-factory-context';
+          fs.mkdirSync(dir, { recursive: true });
+          fs.writeFileSync(`${dir}/issue_body.md`, sanitizedBody);
+          fs.writeFileSync(`${dir}/issue_comments.md`, sanitizedComments);
+          core.info('Wrote sanitized issue context files to /tmp/code-factory-context/');
+          
+    - name: Upload issue context artifact
+      if: >-
+        steps.normalize_context.outputs.event_eligible == 'true' &&
+        steps.normalize_context.outputs.actor_trusted == 'true' &&
+        steps.check_duplicate_pr.outputs.duplicate_pr_found != 'true'
+      uses: actions/upload-artifact@v4
+      with:
+        name: code-factory-issue-context
+        path: /tmp/code-factory-context/
+        if-no-files-found: error
     - name: Finalize gate reason
       id: finalize_gate
       if: always()
@@ -2110,6 +2126,11 @@ steps:
       echo "GOROOT=$(go env GOROOT)" >> "$GITHUB_ENV"
       echo "GOPATH=$(go env GOPATH)" >> "$GITHUB_ENV"
       echo "GOMODCACHE=$(go env GOMODCACHE)" >> "$GITHUB_ENV"
+  - name: Download issue context artifact
+    uses: actions/download-artifact@v4
+    with:
+      name: code-factory-issue-context
+      path: /tmp/code-factory-context/
   - name: Setup Node.js
     uses: actions/setup-node@v6
     with:
@@ -2201,17 +2222,9 @@ Deterministic pre-activation has already decided that this intake is eligible, t
 - **Intake mode**: `${{ needs.pre_activation.outputs.intake_mode }}`
 - **Issue number**: `${{ needs.pre_activation.outputs.issue_number }}`
 - **Issue title**: `${{ needs.pre_activation.outputs.issue_title }}`
-- **Issue body** (sanitised):
+- **Issue body** (sanitised): see `/tmp/code-factory-context/issue_body.md`
 
-  ```markdown
-  ${{ needs.pre_activation.outputs.sanitized_issue_body }}
-  ```
-
-- **Comment history** (sanitised, human-authored):
-
-  ```markdown
-  ${{ needs.pre_activation.outputs.sanitized_issue_comments }}
-  ```
+- **Comment history** (sanitised, human-authored): see `/tmp/code-factory-context/issue_comments.md`
 
 - **Repository**: `${{ github.repository }}`
 - **Triggered by**: `@${{ github.actor }}`

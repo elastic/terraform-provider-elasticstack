@@ -1,5 +1,5 @@
-# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"0efbe6e9621e1705e68af29cc1880c3a199066613f11b4442c0b779e90f4ddfc","compiler_version":"v0.71.5","strict":true,"agent_id":"claude","agent_model":"llm-gateway/claude-sonnet-4-6"}
-# gh-aw-manifest: {"version":1,"secrets":["CLAUDE_LITELLM_PROXY_API_KEY","GH_AW_CI_TRIGGER_TOKEN","GH_AW_GITHUB_MCP_SERVER_TOKEN","GH_AW_GITHUB_TOKEN","GITHUB_TOKEN"],"actions":[{"repo":"actions/checkout","sha":"de0fac2e4500dabe0009e67214ff5f5447ce83dd","version":"v6.0.2"},{"repo":"actions/download-artifact","sha":"3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c","version":"v8.0.1"},{"repo":"actions/github-script","sha":"3a2844b7e9c422d3c10d287c895573f7108da1b3","version":"v9"},{"repo":"actions/setup-node","sha":"48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e","version":"v6.4.0"},{"repo":"actions/upload-artifact","sha":"043fb46d1a93c77aae656e7c1c64a875d1fc6a0a","version":"v7.0.1"},{"repo":"github/gh-aw-actions/setup","sha":"b8068426813005612b960b5ab0b8bd2c27142323","version":"v0.71.5"}],"containers":[{"image":"ghcr.io/github/gh-aw-firewall/agent:0.25.40","digest":"sha256:14ff567e8d9d4c2fbc5e55c973488381c71d7e0fdbe72d30ee7b8a738fd86504","pinned_image":"ghcr.io/github/gh-aw-firewall/agent:0.25.40@sha256:14ff567e8d9d4c2fbc5e55c973488381c71d7e0fdbe72d30ee7b8a738fd86504"},{"image":"ghcr.io/github/gh-aw-firewall/api-proxy:0.25.40","digest":"sha256:2883ca3e5ae9f330cafdd9345bfd4ae17fc8da36c96d4c9a1f76e922b4c45280","pinned_image":"ghcr.io/github/gh-aw-firewall/api-proxy:0.25.40@sha256:2883ca3e5ae9f330cafdd9345bfd4ae17fc8da36c96d4c9a1f76e922b4c45280"},{"image":"ghcr.io/github/gh-aw-firewall/squid:0.25.40","digest":"sha256:b084f4a2c771f584ee68084ced52fa6b3245197a1889645d817462d307d3ac51","pinned_image":"ghcr.io/github/gh-aw-firewall/squid:0.25.40@sha256:b084f4a2c771f584ee68084ced52fa6b3245197a1889645d817462d307d3ac51"},{"image":"ghcr.io/github/gh-aw-mcpg:v0.3.6","digest":"sha256:2bb8eef86006a4c5963c55616a9c51c32f27bfdecb023b8aa6f91f6718d9171c","pinned_image":"ghcr.io/github/gh-aw-mcpg:v0.3.6@sha256:2bb8eef86006a4c5963c55616a9c51c32f27bfdecb023b8aa6f91f6718d9171c"},{"image":"ghcr.io/github/github-mcp-server:v1.0.3","digest":"sha256:2ac27ef03461ef2b877031b838a7d1fd7f12b12d4ace7796d8cad91446d55959","pinned_image":"ghcr.io/github/github-mcp-server:v1.0.3@sha256:2ac27ef03461ef2b877031b838a7d1fd7f12b12d4ace7796d8cad91446d55959"},{"image":"node:lts-alpine","digest":"sha256:d1b3b4da11eefd5941e7f0b9cf17783fc99d9c6fc34884a665f40a06dbdfc94f","pinned_image":"node:lts-alpine@sha256:d1b3b4da11eefd5941e7f0b9cf17783fc99d9c6fc34884a665f40a06dbdfc94f"}]}
+# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"1bed7aa2c3c1fe85814791462a811b3c66a3af91b552de479177bb45db8e9d9c","compiler_version":"v0.71.5","strict":true,"agent_id":"claude","agent_model":"llm-gateway/claude-sonnet-4-6"}
+# gh-aw-manifest: {"version":1,"secrets":["CLAUDE_LITELLM_PROXY_API_KEY","GH_AW_CI_TRIGGER_TOKEN","GH_AW_GITHUB_MCP_SERVER_TOKEN","GH_AW_GITHUB_TOKEN","GITHUB_TOKEN"],"actions":[{"repo":"actions/checkout","sha":"de0fac2e4500dabe0009e67214ff5f5447ce83dd","version":"v6.0.2"},{"repo":"actions/download-artifact","sha":"3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c","version":"v8.0.1"},{"repo":"actions/download-artifact","sha":"d3f86a106a0bac45b974a628896c90dbdf5c8093","version":"v4"},{"repo":"actions/github-script","sha":"3a2844b7e9c422d3c10d287c895573f7108da1b3","version":"v9"},{"repo":"actions/setup-node","sha":"48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e","version":"v6.4.0"},{"repo":"actions/upload-artifact","sha":"043fb46d1a93c77aae656e7c1c64a875d1fc6a0a","version":"v7.0.1"},{"repo":"actions/upload-artifact","sha":"ea165f8d65b6e75b540449e92b4886f43607fa02","version":"v4"},{"repo":"github/gh-aw-actions/setup","sha":"b8068426813005612b960b5ab0b8bd2c27142323","version":"v0.71.5"}],"containers":[{"image":"ghcr.io/github/gh-aw-firewall/agent:0.25.40","digest":"sha256:14ff567e8d9d4c2fbc5e55c973488381c71d7e0fdbe72d30ee7b8a738fd86504","pinned_image":"ghcr.io/github/gh-aw-firewall/agent:0.25.40@sha256:14ff567e8d9d4c2fbc5e55c973488381c71d7e0fdbe72d30ee7b8a738fd86504"},{"image":"ghcr.io/github/gh-aw-firewall/api-proxy:0.25.40","digest":"sha256:2883ca3e5ae9f330cafdd9345bfd4ae17fc8da36c96d4c9a1f76e922b4c45280","pinned_image":"ghcr.io/github/gh-aw-firewall/api-proxy:0.25.40@sha256:2883ca3e5ae9f330cafdd9345bfd4ae17fc8da36c96d4c9a1f76e922b4c45280"},{"image":"ghcr.io/github/gh-aw-firewall/squid:0.25.40","digest":"sha256:b084f4a2c771f584ee68084ced52fa6b3245197a1889645d817462d307d3ac51","pinned_image":"ghcr.io/github/gh-aw-firewall/squid:0.25.40@sha256:b084f4a2c771f584ee68084ced52fa6b3245197a1889645d817462d307d3ac51"},{"image":"ghcr.io/github/gh-aw-mcpg:v0.3.6","digest":"sha256:2bb8eef86006a4c5963c55616a9c51c32f27bfdecb023b8aa6f91f6718d9171c","pinned_image":"ghcr.io/github/gh-aw-mcpg:v0.3.6@sha256:2bb8eef86006a4c5963c55616a9c51c32f27bfdecb023b8aa6f91f6718d9171c"},{"image":"ghcr.io/github/github-mcp-server:v1.0.3","digest":"sha256:2ac27ef03461ef2b877031b838a7d1fd7f12b12d4ace7796d8cad91446d55959","pinned_image":"ghcr.io/github/github-mcp-server:v1.0.3@sha256:2ac27ef03461ef2b877031b838a7d1fd7f12b12d4ace7796d8cad91446d55959"},{"image":"node:lts-alpine","digest":"sha256:d1b3b4da11eefd5941e7f0b9cf17783fc99d9c6fc34884a665f40a06dbdfc94f","pinned_image":"node:lts-alpine@sha256:d1b3b4da11eefd5941e7f0b9cf17783fc99d9c6fc34884a665f40a06dbdfc94f"}]}
 #    ___                   _   _      
 #   / _ \                 | | (_)     
 #  | |_| | __ _  ___ _ __ | |_ _  ___ 
@@ -34,10 +34,12 @@
 # Custom actions used:
 #   - actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 #   - actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+#   - actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
 #   - actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
 #   - actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
 #   - actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
 #   - actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+#   - actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
 #   - github/gh-aw-actions/setup@b8068426813005612b960b5ab0b8bd2c27142323 # v0.71.5
 #
 # Container images used:
@@ -95,7 +97,7 @@ name: "Change Factory Issue Intake"
     # uses: actions/github-script@v9
     # with:
       # github-token: ${{ secrets.GITHUB_TOKEN }}
-      # script: "/**\n * HTML comment sanitisation and research-comment lookup helpers.\n */\n\n/**\n * Removes all HTML comment sequences (<code>&lt;!--</code> through the next <code>--&gt;</code>).\n * If an opening sequence has no closing counterpart, everything from the opener to the end of\n * the string is removed.\n *\n * @param {string} text\n * @returns {string}\n */\nfunction stripHtmlComments(text) {\n  if (typeof text !== 'string') return '';\n  return text.replace(/<!--[\\s\\S]*?(?:-->|$)/g, '');\n}\n\n/**\n * Finds the most recently created matching research comment written by\n * <code>github-actions[bot]</code> whose body starts with <code>marker</code>.\n *\n * @param {Array<{author: string, body: string}>} comments Ordered oldest-first.\n * @param {string} marker\n * @returns {{author: string, body: string} | null}\n */\nfunction findResearchComment(comments, marker) {\n  if (!Array.isArray(comments)) {\n    return null;\n  }\n  const matches = comments.filter(\n    (c) =>\n      c != null &&\n      typeof c.body === 'string' &&\n      (c.author ?? c.user?.login) === 'github-actions[bot]' &&\n      c.body.trimStart().startsWith(marker),\n  );\n  return matches.length > 0 ? matches[matches.length - 1] : null;\n}\n\nif (typeof module !== 'undefined') {\n  module.exports = {\n    stripHtmlComments,\n    findResearchComment,\n  };\n}\n\nconst marker = '<!-- gha-research-factory -->';\nconst commentsJson = process.env.INPUT_COMMENTS_JSON || '[]';\n\nlet comments;\ntry {\n  comments = JSON.parse(commentsJson);\n} catch {\n  comments = [];\n}\n\nconst fs = require('fs');\nconst crypto = require('crypto');\n\nconst researchComment = findResearchComment(comments, marker);\nif (researchComment) {\n  const eofDelim = `EOF_${crypto.randomUUID().replace(/-/g, '')}`;\n  const output = `research_comment_body<<${eofDelim}\\n${researchComment.body}\\n${eofDelim}\\n`;\n  fs.appendFileSync(process.env.GITHUB_OUTPUT, output);\n  core.info(`Found research comment for issue`);\n} else {\n  core.setOutput('research_comment_body', '');\n  core.info('No research comment found.');\n}\n\n// Serialize human comments for agent context\nconst humanComments = (comments || []).filter(\n  (c) => !c.author.endsWith('[bot]'),\n);\n\n/**\n * Shared comment helpers for research-factory issue intake workflows.\n */\n\n/**\n * Fetches human-authored comments for an issue, paginated, with bot filtering and a hard cap.\n *\n * @param {{ github: object, owner: string, repo: string, issueNumber: number }} params\n * @returns {Promise<{ comments: Array<{author: string, createdAt: string, body: string}>, truncated: boolean }>}\n */\nasync function factoryFetchIssueComments({ github, owner, repo, issueNumber }) {\n  const MAX_COMMENTS = 200;\n  const allComments = await github.paginate(github.rest.issues.listComments, {\n    owner,\n    repo,\n    issue_number: issueNumber,\n    per_page: 100,\n  });\n\n  const humanComments = [];\n  let truncated = false;\n  for (const comment of allComments) {\n    if (comment.user?.login?.endsWith('[bot]')) {\n      continue;\n    }\n    if (humanComments.length >= MAX_COMMENTS) {\n      truncated = true;\n      break;\n    }\n    humanComments.push({\n      author: comment.user?.login ?? '',\n      createdAt: comment.created_at ?? '',\n      body: comment.body ?? '',\n    });\n  }\n\n  return {\n    comments: humanComments,\n    truncated,\n  };\n}\n\nconst COMMENT_CONTEXT_BUDGET = 50_000;\n/** Overhead reserved for truncation markers appended after the loop. */\nconst COMMENT_CONTEXT_MARKER_OVERHEAD = 200;\n\n/**\n * Serializes captured issue comments into a deterministic markdown string for agent prompts.\n *\n * @param {{ comments: Array<{author: string, createdAt: string, body: string}>, truncated: boolean }} params\n * @returns {string}\n */\nfunction serializeIssueComments({ comments, truncated }) {\n  if (!Array.isArray(comments) || comments.length === 0) {\n    return '';\n  }\n\n  const bodyBudget = COMMENT_CONTEXT_BUDGET - COMMENT_CONTEXT_MARKER_OVERHEAD;\n  let result = '';\n  let includedCount = 0;\n\n  for (const comment of comments) {\n    const header = `**@${comment.author || ''}** (${comment.createdAt || ''}):\\n\\n`;\n    const body = comment.body || '';\n    const footer = '\\n\\n---\\n';\n    const available = bodyBudget - result.length;\n\n    if (available <= 0) {\n      break;\n    }\n\n    const frameLength = header.length + footer.length;\n    if (frameLength > available) {\n      break;\n    }\n    const fullBlock = header + body + footer;\n    if (fullBlock.length <= available) {\n      result += fullBlock;\n    } else {\n      // Truncate this comment's body so the output stays within budget\n      const truncatedBody = body.slice(0, available - frameLength);\n      result += header + truncatedBody + footer;\n    }\n    includedCount++;\n  }\n\n  const remaining = comments.length - includedCount;\n  if (remaining > 0) {\n    result += `[... ${remaining} more comments truncated for context budget]\\n`;\n  }\n\n  if (truncated) {\n    result += '[... comment history truncated at 200 comments]\\n';\n  }\n\n  return result;\n}\n\nif (typeof module !== 'undefined') {\n  module.exports = {\n    factoryFetchIssueComments,\n    serializeIssueComments,\n    COMMENT_CONTEXT_BUDGET,\n  };\n}\n\nconst serialized = serializeIssueComments({ comments: humanComments, truncated: false });\nconst eofDelim2 = `EOF_${crypto.randomUUID().replace(/-/g, '')}`;\nconst output2 = `human_comments<<${eofDelim2}\\n${serialized}\\n${eofDelim2}\\n`;\nfs.appendFileSync(process.env.GITHUB_OUTPUT, output2);\n"
+      # script: "/**\n * HTML comment sanitisation and research-comment lookup helpers.\n */\n\n/**\n * Removes all HTML comment sequences (<code>&lt;!--</code> through the next <code>--&gt;</code>).\n * If an opening sequence has no closing counterpart, everything from the opener to the end of\n * the string is removed.\n *\n * @param {string} text\n * @returns {string}\n */\nfunction stripHtmlComments(text) {\n  if (typeof text !== 'string') return '';\n  return text.replace(/<!--[\\s\\S]*?(?:-->|$)/g, '');\n}\n\n/**\n * Finds the most recently created matching research comment written by\n * <code>github-actions[bot]</code> whose body starts with <code>marker</code>.\n *\n * @param {Array<{author: string, body: string}>} comments Ordered oldest-first.\n * @param {string} marker\n * @returns {{author: string, body: string} | null}\n */\nfunction findResearchComment(comments, marker) {\n  if (!Array.isArray(comments)) {\n    return null;\n  }\n  const matches = comments.filter(\n    (c) =>\n      c != null &&\n      typeof c.body === 'string' &&\n      (c.author ?? c.user?.login) === 'github-actions[bot]' &&\n      c.body.trimStart().startsWith(marker),\n  );\n  return matches.length > 0 ? matches[matches.length - 1] : null;\n}\n\nif (typeof module !== 'undefined') {\n  module.exports = {\n    stripHtmlComments,\n    findResearchComment,\n  };\n}\n\nconst marker = '<!-- gha-research-factory -->';\nconst commentsJson = process.env.INPUT_COMMENTS_JSON || '[]';\n\nlet comments;\ntry {\n  comments = JSON.parse(commentsJson);\n} catch {\n  comments = [];\n}\n\nconst fs = require('fs');\nconst crypto = require('crypto');\n\nconst researchComment = findResearchComment(comments, marker);\nif (researchComment) {\n  const eofDelim = `EOF_${crypto.randomUUID().replace(/-/g, '')}`;\n  const output = `research_comment_body<<${eofDelim}\\n${researchComment.body}\\n${eofDelim}\\n`;\n  fs.appendFileSync(process.env.GITHUB_OUTPUT, output);\n  core.info(`Found research comment for issue`);\n} else {\n  core.setOutput('research_comment_body', '');\n  core.info('No research comment found.');\n}\n\n// Serialize human comments for agent context\nconst humanComments = (comments || []).filter(\n  (c) => !c.author.endsWith('[bot]'),\n);\n\n/**\n * Shared comment helpers for research-factory issue intake workflows.\n */\n\n/**\n * Fetches human-authored comments for an issue, paginated, with bot filtering and a hard cap.\n *\n * @param {{ github: object, owner: string, repo: string, issueNumber: number }} params\n * @returns {Promise<{ comments: Array<{author: string, createdAt: string, body: string}>, truncated: boolean }>}\n */\nasync function factoryFetchIssueComments({ github, owner, repo, issueNumber }) {\n  const MAX_COMMENTS = 200;\n  const allComments = await github.paginate(github.rest.issues.listComments, {\n    owner,\n    repo,\n    issue_number: issueNumber,\n    per_page: 100,\n  });\n\n  const humanComments = [];\n  let truncated = false;\n  for (const comment of allComments) {\n    if (comment.user?.login?.endsWith('[bot]')) {\n      continue;\n    }\n    if (humanComments.length >= MAX_COMMENTS) {\n      truncated = true;\n      break;\n    }\n    humanComments.push({\n      author: comment.user?.login ?? '',\n      createdAt: comment.created_at ?? '',\n      body: comment.body ?? '',\n    });\n  }\n\n  return {\n    comments: humanComments,\n    truncated,\n  };\n}\n\nconst COMMENT_CONTEXT_BUDGET = 50_000;\n/** Overhead reserved for truncation markers appended after the loop. */\nconst COMMENT_CONTEXT_MARKER_OVERHEAD = 200;\n\n/**\n * Serializes captured issue comments into a deterministic markdown string for agent prompts.\n *\n * @param {{ comments: Array<{author: string, createdAt: string, body: string}>, truncated: boolean }} params\n * @returns {string}\n */\nfunction serializeIssueComments({ comments, truncated }) {\n  if (!Array.isArray(comments) || comments.length === 0) {\n    return '';\n  }\n\n  const bodyBudget = COMMENT_CONTEXT_BUDGET - COMMENT_CONTEXT_MARKER_OVERHEAD;\n  let result = '';\n  let includedCount = 0;\n\n  for (const comment of comments) {\n    const header = `**@${comment.author || ''}** (${comment.createdAt || ''}):\\n\\n`;\n    const body = comment.body || '';\n    const footer = '\\n\\n---\\n';\n    const available = bodyBudget - result.length;\n\n    if (available <= 0) {\n      break;\n    }\n\n    const frameLength = header.length + footer.length;\n    if (frameLength > available) {\n      break;\n    }\n    const fullBlock = header + body + footer;\n    if (fullBlock.length <= available) {\n      result += fullBlock;\n    } else {\n      // Truncate this comment's body so the output stays within budget\n      const truncatedBody = body.slice(0, available - frameLength);\n      result += header + truncatedBody + footer;\n    }\n    includedCount++;\n  }\n\n  const remaining = comments.length - includedCount;\n  if (remaining > 0) {\n    result += `[... ${remaining} more comments truncated for context budget]\\n`;\n  }\n\n  if (truncated) {\n    result += '[... comment history truncated at 200 comments]\\n';\n  }\n\n  return result;\n}\n\nif (typeof module !== 'undefined') {\n  module.exports = {\n    factoryFetchIssueComments,\n    serializeIssueComments,\n    COMMENT_CONTEXT_BUDGET,\n  };\n}\n\nconst serialized = serializeIssueComments({ comments: humanComments, truncated: false });\nconst eofDelim2 = `EOF_${crypto.randomUUID().replace(/-/g, '')}`;\nconst output2 = `human_comments<<${eofDelim2}\\n${serialized}\\n${eofDelim2}\\n`;\nfs.appendFileSync(process.env.GITHUB_OUTPUT, output2);\n\nconst dir = '/tmp/change-factory-context';\nfs.mkdirSync(dir, { recursive: true });\nfs.writeFileSync(`${dir}/research_comment.md`, researchComment ? researchComment.body : '');\ncore.info('Wrote research comment to /tmp/change-factory-context/research_comment.md');\n"
   # - id: check_duplicate_pr
     # if: steps.qualify_trigger.outputs.event_eligible == 'true' && steps.check_actor_trust.outputs.actor_trusted == 'true'
     # name: Check duplicate PR
@@ -112,7 +114,14 @@ name: "Change Factory Issue Intake"
     # uses: actions/github-script@v9
     # with:
       # github-token: ${{ secrets.GITHUB_TOKEN }}
-      # script: "/**\n * HTML comment sanitisation and research-comment lookup helpers.\n */\n\n/**\n * Removes all HTML comment sequences (<code>&lt;!--</code> through the next <code>--&gt;</code>).\n * If an opening sequence has no closing counterpart, everything from the opener to the end of\n * the string is removed.\n *\n * @param {string} text\n * @returns {string}\n */\nfunction stripHtmlComments(text) {\n  if (typeof text !== 'string') return '';\n  return text.replace(/<!--[\\s\\S]*?(?:-->|$)/g, '');\n}\n\n/**\n * Finds the most recently created matching research comment written by\n * <code>github-actions[bot]</code> whose body starts with <code>marker</code>.\n *\n * @param {Array<{author: string, body: string}>} comments Ordered oldest-first.\n * @param {string} marker\n * @returns {{author: string, body: string} | null}\n */\nfunction findResearchComment(comments, marker) {\n  if (!Array.isArray(comments)) {\n    return null;\n  }\n  const matches = comments.filter(\n    (c) =>\n      c != null &&\n      typeof c.body === 'string' &&\n      (c.author ?? c.user?.login) === 'github-actions[bot]' &&\n      c.body.trimStart().startsWith(marker),\n  );\n  return matches.length > 0 ? matches[matches.length - 1] : null;\n}\n\nif (typeof module !== 'undefined') {\n  module.exports = {\n    stripHtmlComments,\n    findResearchComment,\n  };\n}\n\nconst fs = require('fs');\nconst crypto = require('crypto');\n\nconst body = process.env.ISSUE_BODY || '';\nconst comments = process.env.HUMAN_COMMENTS || '';\n\nconst sanitizedBody = stripHtmlComments(body);\nconst sanitizedComments = stripHtmlComments(comments);\n\nconst eofDelim1 = `EOF_${crypto.randomUUID().replace(/-/g, '')}`;\nconst output1 = `sanitized_issue_body<<${eofDelim1}\\n${sanitizedBody}\\n${eofDelim1}\\n`;\nfs.appendFileSync(process.env.GITHUB_OUTPUT, output1);\n\nconst eofDelim2 = `EOF_${crypto.randomUUID().replace(/-/g, '')}`;\nconst output2 = `sanitized_issue_comments<<${eofDelim2}\\n${sanitizedComments}\\n${eofDelim2}\\n`;\nfs.appendFileSync(process.env.GITHUB_OUTPUT, output2);\n"
+      # script: "/**\n * HTML comment sanitisation and research-comment lookup helpers.\n */\n\n/**\n * Removes all HTML comment sequences (<code>&lt;!--</code> through the next <code>--&gt;</code>).\n * If an opening sequence has no closing counterpart, everything from the opener to the end of\n * the string is removed.\n *\n * @param {string} text\n * @returns {string}\n */\nfunction stripHtmlComments(text) {\n  if (typeof text !== 'string') return '';\n  return text.replace(/<!--[\\s\\S]*?(?:-->|$)/g, '');\n}\n\n/**\n * Finds the most recently created matching research comment written by\n * <code>github-actions[bot]</code> whose body starts with <code>marker</code>.\n *\n * @param {Array<{author: string, body: string}>} comments Ordered oldest-first.\n * @param {string} marker\n * @returns {{author: string, body: string} | null}\n */\nfunction findResearchComment(comments, marker) {\n  if (!Array.isArray(comments)) {\n    return null;\n  }\n  const matches = comments.filter(\n    (c) =>\n      c != null &&\n      typeof c.body === 'string' &&\n      (c.author ?? c.user?.login) === 'github-actions[bot]' &&\n      c.body.trimStart().startsWith(marker),\n  );\n  return matches.length > 0 ? matches[matches.length - 1] : null;\n}\n\nif (typeof module !== 'undefined') {\n  module.exports = {\n    stripHtmlComments,\n    findResearchComment,\n  };\n}\n\nconst fs = require('fs');\nconst crypto = require('crypto');\n\nconst body = process.env.ISSUE_BODY || '';\nconst comments = process.env.HUMAN_COMMENTS || '';\n\nconst sanitizedBody = stripHtmlComments(body);\nconst sanitizedComments = stripHtmlComments(comments);\n\nconst eofDelim1 = `EOF_${crypto.randomUUID().replace(/-/g, '')}`;\nconst output1 = `sanitized_issue_body<<${eofDelim1}\\n${sanitizedBody}\\n${eofDelim1}\\n`;\nfs.appendFileSync(process.env.GITHUB_OUTPUT, output1);\n\nconst eofDelim2 = `EOF_${crypto.randomUUID().replace(/-/g, '')}`;\nconst output2 = `sanitized_issue_comments<<${eofDelim2}\\n${sanitizedComments}\\n${eofDelim2}\\n`;\nfs.appendFileSync(process.env.GITHUB_OUTPUT, output2);\n\nconst dir = '/tmp/change-factory-context';\nfs.mkdirSync(dir, { recursive: true });\nfs.writeFileSync(`${dir}/issue_body.md`, sanitizedBody);\nfs.writeFileSync(`${dir}/issue_comments.md`, sanitizedComments);\ncore.info('Wrote sanitized issue context files to /tmp/change-factory-context/');\n"
+  # - if: steps.qualify_trigger.outputs.event_eligible == 'true' && steps.check_actor_trust.outputs.actor_trusted == 'true' && steps.check_duplicate_pr.outputs.duplicate_pr_found != 'true'
+    # name: Upload issue context artifact
+    # uses: actions/upload-artifact@v4
+    # with:
+      # if-no-files-found: error
+      # name: change-factory-issue-context
+      # path: /tmp/change-factory-context/
   # - id: remove_trigger_label
     # if: steps.qualify_trigger.outputs.event_eligible == 'true' && steps.check_actor_trust.outputs.actor_trusted == 'true' && steps.check_duplicate_pr.outputs.duplicate_pr_found != 'true'
     # name: Remove trigger label
@@ -294,30 +303,27 @@ jobs:
           GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_DUPLICATE_PR_URL: ${{ needs.pre_activation.outputs.duplicate_pr_url }}
           GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_GATE_REASON: ${{ needs.pre_activation.outputs.gate_reason }}
           GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ISSUE_TITLE: ${{ needs.pre_activation.outputs.issue_title }}
-          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_RESEARCH_COMMENT_BODY: ${{ needs.pre_activation.outputs.research_comment_body }}
-          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_SANITIZED_ISSUE_BODY: ${{ needs.pre_activation.outputs.sanitized_issue_body }}
-          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_SANITIZED_ISSUE_COMMENTS: ${{ needs.pre_activation.outputs.sanitized_issue_comments }}
         # poutine:ignore untrusted_checkout_exec
         run: |
           bash "${RUNNER_TEMP}/gh-aw/actions/create_prompt_first.sh"
           {
-          cat << 'GH_AW_PROMPT_c2ff383bb8b52eac_EOF'
+          cat << 'GH_AW_PROMPT_844aef365d0bfa76_EOF'
           <system>
-          GH_AW_PROMPT_c2ff383bb8b52eac_EOF
+          GH_AW_PROMPT_844aef365d0bfa76_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/xpia.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/temp_folder_prompt.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/markdown.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/safe_outputs_prompt.md"
-          cat << 'GH_AW_PROMPT_c2ff383bb8b52eac_EOF'
+          cat << 'GH_AW_PROMPT_844aef365d0bfa76_EOF'
           <safe-output-tools>
           Tools: add_comment, create_pull_request, missing_tool, missing_data, noop
-          GH_AW_PROMPT_c2ff383bb8b52eac_EOF
+          GH_AW_PROMPT_844aef365d0bfa76_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/safe_outputs_create_pull_request.md"
-          cat << 'GH_AW_PROMPT_c2ff383bb8b52eac_EOF'
+          cat << 'GH_AW_PROMPT_844aef365d0bfa76_EOF'
           </safe-output-tools>
-          GH_AW_PROMPT_c2ff383bb8b52eac_EOF
+          GH_AW_PROMPT_844aef365d0bfa76_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/mcp_cli_tools_prompt.md"
-          cat << 'GH_AW_PROMPT_c2ff383bb8b52eac_EOF'
+          cat << 'GH_AW_PROMPT_844aef365d0bfa76_EOF'
           <github-context>
           The following GitHub context information is available for this workflow:
           {{#if __GH_AW_GITHUB_ACTOR__ }}
@@ -349,15 +355,15 @@ jobs:
             - **Note**: If a branch you need is not in the list above and is not listed as an additional fetched ref, it has NOT been checked out. For private repositories you cannot fetch it without proper authentication. If the branch is required and not available, exit with an error and ask the user to add it to the `fetch:` option of the `checkout:` configuration (e.g., `fetch: ["refs/pulls/open/*"]` for all open PR refs, or `fetch: ["main", "feature/my-branch"]` for specific branches).
           </github-context>
           
-          GH_AW_PROMPT_c2ff383bb8b52eac_EOF
+          GH_AW_PROMPT_844aef365d0bfa76_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/github_mcp_tools_with_safeoutputs_prompt.md"
           if [ "$GITHUB_EVENT_NAME" = "issue_comment" ] && [ -n "$GH_AW_IS_PR_COMMENT" ] || [ "$GITHUB_EVENT_NAME" = "pull_request_review_comment" ] || [ "$GITHUB_EVENT_NAME" = "pull_request_review" ]; then
             cat "${RUNNER_TEMP}/gh-aw/prompts/pr_context_prompt.md"
           fi
-          cat << 'GH_AW_PROMPT_c2ff383bb8b52eac_EOF'
+          cat << 'GH_AW_PROMPT_844aef365d0bfa76_EOF'
           </system>
           {{#runtime-import .github/workflows/change-factory-issue.md}}
-          GH_AW_PROMPT_c2ff383bb8b52eac_EOF
+          GH_AW_PROMPT_844aef365d0bfa76_EOF
           } > "$GH_AW_PROMPT"
       - name: Interpolate variables and render templates
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
@@ -372,9 +378,6 @@ jobs:
           GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_DUPLICATE_PR_URL: ${{ needs.pre_activation.outputs.duplicate_pr_url }}
           GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_GATE_REASON: ${{ needs.pre_activation.outputs.gate_reason }}
           GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ISSUE_TITLE: ${{ needs.pre_activation.outputs.issue_title }}
-          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_RESEARCH_COMMENT_BODY: ${{ needs.pre_activation.outputs.research_comment_body }}
-          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_SANITIZED_ISSUE_BODY: ${{ needs.pre_activation.outputs.sanitized_issue_body }}
-          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_SANITIZED_ISSUE_COMMENTS: ${{ needs.pre_activation.outputs.sanitized_issue_comments }}
         with:
           script: |
             const { setupGlobals } = require('${{ runner.temp }}/gh-aw/actions/setup_globals.cjs');
@@ -401,9 +404,6 @@ jobs:
           GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_DUPLICATE_PR_URL: ${{ needs.pre_activation.outputs.duplicate_pr_url }}
           GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_GATE_REASON: ${{ needs.pre_activation.outputs.gate_reason }}
           GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ISSUE_TITLE: ${{ needs.pre_activation.outputs.issue_title }}
-          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_RESEARCH_COMMENT_BODY: ${{ needs.pre_activation.outputs.research_comment_body }}
-          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_SANITIZED_ISSUE_BODY: ${{ needs.pre_activation.outputs.sanitized_issue_body }}
-          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_SANITIZED_ISSUE_COMMENTS: ${{ needs.pre_activation.outputs.sanitized_issue_comments }}
         with:
           script: |
             const { setupGlobals } = require('${{ runner.temp }}/gh-aw/actions/setup_globals.cjs');
@@ -430,10 +430,7 @@ jobs:
                 GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_DUPLICATE_PR_FOUND: process.env.GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_DUPLICATE_PR_FOUND,
                 GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_DUPLICATE_PR_URL: process.env.GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_DUPLICATE_PR_URL,
                 GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_GATE_REASON: process.env.GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_GATE_REASON,
-                GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ISSUE_TITLE: process.env.GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ISSUE_TITLE,
-                GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_RESEARCH_COMMENT_BODY: process.env.GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_RESEARCH_COMMENT_BODY,
-                GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_SANITIZED_ISSUE_BODY: process.env.GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_SANITIZED_ISSUE_BODY,
-                GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_SANITIZED_ISSUE_COMMENTS: process.env.GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_SANITIZED_ISSUE_COMMENTS
+                GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ISSUE_TITLE: process.env.GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ISSUE_TITLE
               }
             });
       - name: Validate prompt placeholders
@@ -519,6 +516,11 @@ jobs:
         run: bash "${RUNNER_TEMP}/gh-aw/actions/configure_gh_for_ghe.sh"
         env:
           GH_TOKEN: ${{ github.token }}
+      - name: Download issue context artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: change-factory-issue-context
+          path: /tmp/change-factory-context/
       - name: Install npm dependencies
         run: npm ci
 
@@ -586,9 +588,9 @@ jobs:
           mkdir -p "${RUNNER_TEMP}/gh-aw/safeoutputs"
           mkdir -p /tmp/gh-aw/safeoutputs
           mkdir -p /tmp/gh-aw/mcp-logs/safeoutputs
-          cat > "${RUNNER_TEMP}/gh-aw/safeoutputs/config.json" << 'GH_AW_SAFE_OUTPUTS_CONFIG_52989951e76761ee_EOF'
+          cat > "${RUNNER_TEMP}/gh-aw/safeoutputs/config.json" << 'GH_AW_SAFE_OUTPUTS_CONFIG_7b586a7ab5cb5e9f_EOF'
           {"add_comment":{"max":1,"target":"triggering"},"create_pull_request":{"labels":["change-factory","no-changelog"],"max":1,"max_patch_files":100,"max_patch_size":1024,"protect_top_level_dot_folders":true,"protected_files":["package.json","bun.lockb","bunfig.toml","deno.json","deno.jsonc","deno.lock","global.json","NuGet.Config","Directory.Packages.props","mix.exs","mix.lock","go.mod","go.sum","stack.yaml","stack.yaml.lock","pom.xml","build.gradle","build.gradle.kts","settings.gradle","settings.gradle.kts","gradle.properties","package-lock.json","yarn.lock","pnpm-lock.yaml","npm-shrinkwrap.json","requirements.txt","Pipfile","Pipfile.lock","pyproject.toml","setup.py","setup.cfg","Gemfile","Gemfile.lock","uv.lock","CODEOWNERS","DESIGN.md","README.md","CONTRIBUTING.md","CHANGELOG.md","SECURITY.md","CODE_OF_CONDUCT.md","CLAUDE.md","AGENTS.md"]},"create_report_incomplete_issue":{},"missing_data":{},"missing_tool":{},"noop":{"max":1,"report-as-issue":"false"},"report_incomplete":{}}
-          GH_AW_SAFE_OUTPUTS_CONFIG_52989951e76761ee_EOF
+          GH_AW_SAFE_OUTPUTS_CONFIG_7b586a7ab5cb5e9f_EOF
       - name: Generate Safe Outputs Tools
         env:
           GH_AW_TOOLS_META_JSON: |
@@ -818,7 +820,7 @@ jobs:
           export MCP_GATEWAY_DOCKER_COMMAND='docker run -i --rm --network host --add-host host.docker.internal:127.0.0.1 --user '"${MCP_GATEWAY_UID}"':'"${MCP_GATEWAY_GID}"' --group-add '"${DOCKER_SOCK_GID}"' -v /var/run/docker.sock:/var/run/docker.sock -e MCP_GATEWAY_PORT -e MCP_GATEWAY_DOMAIN -e MCP_GATEWAY_API_KEY -e MCP_GATEWAY_PAYLOAD_DIR -e MCP_GATEWAY_PAYLOAD_SIZE_THRESHOLD -e DEBUG -e MCP_GATEWAY_LOG_DIR -e GH_AW_MCP_LOG_DIR -e GH_AW_SAFE_OUTPUTS -e GH_AW_SAFE_OUTPUTS_CONFIG_PATH -e GH_AW_SAFE_OUTPUTS_TOOLS_PATH -e GH_AW_ASSETS_BRANCH -e GH_AW_ASSETS_MAX_SIZE_KB -e GH_AW_ASSETS_ALLOWED_EXTS -e DEFAULT_BRANCH -e GITHUB_MCP_SERVER_TOKEN -e GITHUB_MCP_GUARD_MIN_INTEGRITY -e GITHUB_MCP_GUARD_REPOS -e GITHUB_REPOSITORY -e GITHUB_SERVER_URL -e GITHUB_SHA -e GITHUB_WORKSPACE -e GITHUB_TOKEN -e GITHUB_RUN_ID -e GITHUB_RUN_NUMBER -e GITHUB_RUN_ATTEMPT -e GITHUB_JOB -e GITHUB_ACTION -e GITHUB_EVENT_NAME -e GITHUB_EVENT_PATH -e GITHUB_ACTOR -e GITHUB_ACTOR_ID -e GITHUB_TRIGGERING_ACTOR -e GITHUB_WORKFLOW -e GITHUB_WORKFLOW_REF -e GITHUB_WORKFLOW_SHA -e GITHUB_REF -e GITHUB_REF_NAME -e GITHUB_REF_TYPE -e GITHUB_HEAD_REF -e GITHUB_BASE_REF -e GH_AW_SAFE_OUTPUTS_PORT -e GH_AW_SAFE_OUTPUTS_API_KEY -v /tmp/gh-aw/mcp-payloads:/tmp/gh-aw/mcp-payloads:rw -v /opt:/opt:ro -v /tmp:/tmp:rw -v '"${GITHUB_WORKSPACE}"':'"${GITHUB_WORKSPACE}"':rw ghcr.io/github/gh-aw-mcpg:v0.3.6'
           
           GH_AW_NODE=$(which node 2>/dev/null || command -v node 2>/dev/null || echo node)
-          cat << GH_AW_MCP_CONFIG_e2c6f27dd5d3bb4d_EOF | "$GH_AW_NODE" "${RUNNER_TEMP}/gh-aw/actions/start_mcp_gateway.cjs"
+          cat << GH_AW_MCP_CONFIG_1bf6b3e759453e6a_EOF | "$GH_AW_NODE" "${RUNNER_TEMP}/gh-aw/actions/start_mcp_gateway.cjs"
           {
             "mcpServers": {
               "elastic-docs": {
@@ -872,7 +874,7 @@ jobs:
               "payloadDir": "${MCP_GATEWAY_PAYLOAD_DIR}"
             }
           }
-          GH_AW_MCP_CONFIG_e2c6f27dd5d3bb4d_EOF
+          GH_AW_MCP_CONFIG_1bf6b3e759453e6a_EOF
       - name: Mount MCP servers as CLIs
         id: mount-mcp-clis
         continue-on-error: true
@@ -2572,6 +2574,11 @@ jobs:
             const eofDelim2 = `EOF_${crypto.randomUUID().replace(/-/g, '')}`;
             const output2 = `human_comments<<${eofDelim2}\n${serialized}\n${eofDelim2}\n`;
             fs.appendFileSync(process.env.GITHUB_OUTPUT, output2);
+
+            const dir = '/tmp/change-factory-context';
+            fs.mkdirSync(dir, { recursive: true });
+            fs.writeFileSync(`${dir}/research_comment.md`, researchComment ? researchComment.body : '');
+            core.info('Wrote research comment to /tmp/change-factory-context/research_comment.md');
       - name: Check duplicate PR
         id: check_duplicate_pr
         if: steps.qualify_trigger.outputs.event_eligible == 'true' && steps.check_actor_trust.outputs.actor_trusted == 'true'
@@ -3040,6 +3047,19 @@ jobs:
             const eofDelim2 = `EOF_${crypto.randomUUID().replace(/-/g, '')}`;
             const output2 = `sanitized_issue_comments<<${eofDelim2}\n${sanitizedComments}\n${eofDelim2}\n`;
             fs.appendFileSync(process.env.GITHUB_OUTPUT, output2);
+
+            const dir = '/tmp/change-factory-context';
+            fs.mkdirSync(dir, { recursive: true });
+            fs.writeFileSync(`${dir}/issue_body.md`, sanitizedBody);
+            fs.writeFileSync(`${dir}/issue_comments.md`, sanitizedComments);
+            core.info('Wrote sanitized issue context files to /tmp/change-factory-context/');
+      - name: Upload issue context artifact
+        if: steps.qualify_trigger.outputs.event_eligible == 'true' && steps.check_actor_trust.outputs.actor_trusted == 'true' && steps.check_duplicate_pr.outputs.duplicate_pr_found != 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          if-no-files-found: error
+          name: change-factory-issue-context
+          path: /tmp/change-factory-context/
       - name: Remove trigger label
         id: remove_trigger_label
         if: steps.qualify_trigger.outputs.event_eligible == 'true' && steps.check_actor_trust.outputs.actor_trusted == 'true' && steps.check_duplicate_pr.outputs.duplicate_pr_found != 'true'
