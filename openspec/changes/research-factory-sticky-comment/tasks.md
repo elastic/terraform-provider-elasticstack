@@ -8,19 +8,19 @@
 
 ## 2. Research-factory workflow
 
-- [ ] 2.1 Update `.github/workflows-src/research-factory-issue/workflow.md.tmpl` to define `safe-outputs.scripts.update-research-comment`
-- [ ] 2.2 Remove `update-issue` from `safe-outputs` in the research-factory workflow template
-- [ ] 2.3 Add deterministic pre-activation step to strip HTML comments from issue body before writing `issue_body.md`
-- [ ] 2.4 Add deterministic pre-activation step to strip HTML comments from each human comment before writing `issue_comments.md`
-- [ ] 2.5 Update agent prompt to instruct `update_research_comment` instead of `update_issue`
-- [ ] 2.6 Update agent prompt to remove "preserve body byte-for-byte" and "marker delimiters" instructions
-- [ ] 2.7 Update agent prompt to reference `ci-research-factory-comment-format` instead of `ci-implementation-research-block-format`
-- [ ] 2.8 Update agent prompt time-budget wording: "issue-body update" → "research comment"
-- [ ] 2.9 Update agent prompt to include JSON metadata schema instructions and `<details>` element formatting
-- [ ] 2.10 Update agent prompt to instruct the agent to ensure JSON metadata is internally consistent with human-readable subsections
-- [ ] 2.11 Regenerate compiled workflow with `make workflow-generate`
-- [ ] 2.12 Verify compiled `.github/workflows/research-factory-issue.md` contains `safe-outputs.scripts.update-research-comment`
-- [ ] 2.13 Verify compiled workflow no longer contains `update-issue` in safe-outputs
+- [x] 2.1 Update `.github/workflows-src/research-factory-issue/workflow.md.tmpl` to define `safe-outputs.scripts.update-research-comment`
+- [x] 2.2 Remove `update-issue` from `safe-outputs` in the research-factory workflow template
+- [x] 2.3 Add deterministic pre-activation step to strip HTML comments from issue body before writing `issue_body.md`
+- [x] 2.4 Add deterministic pre-activation step to strip HTML comments from each human comment before writing `issue_comments.md`
+- [x] 2.5 Update agent prompt to instruct `update_research_comment` instead of `update_issue`
+- [x] 2.6 Update agent prompt to remove "preserve body byte-for-byte" and "marker delimiters" instructions
+- [x] 2.7 Update agent prompt to reference `ci-research-factory-comment-format` instead of `ci-implementation-research-block-format`
+- [x] 2.8 Update agent prompt time-budget wording: "issue-body update" → "research comment"
+- [x] 2.9 Update agent prompt to include JSON metadata schema instructions and `<details>` element formatting
+- [x] 2.10 Update agent prompt to instruct the agent to ensure JSON metadata is internally consistent with human-readable subsections
+- [x] 2.11 Regenerate compiled workflow with `make workflow-generate`
+- [x] 2.12 Verify compiled `.github/workflows/research-factory-issue.md` contains `safe-outputs.scripts.update-research-comment`
+- [x] 2.13 Verify compiled workflow no longer contains `update-issue` in safe-outputs
 
 ## 3. Change-factory workflow
 
@@ -37,15 +37,15 @@
 
 ## 4. Code-factory workflow
 
-- [ ] 4.1 Update `.github/workflows-src/code-factory-issue/workflow.md.tmpl` to strip HTML comments from issue body and human comments
-- [ ] 4.2 Regenerate compiled workflow with `make workflow-generate`
-- [ ] 4.3 Verify compiled `.github/workflows/code-factory-issue.md` applies sanitisation
+- [x] 4.1 Update `.github/workflows-src/code-factory-issue/workflow.md.tmpl` to strip HTML comments from issue body and human comments
+- [x] 4.2 Regenerate compiled workflow with `make workflow-generate`
+- [x] 4.3 Verify compiled `.github/workflows/code-factory-issue.md` applies sanitisation
 
 ## 5. Testing and validation
 
 - [ ] 5.1 Validate all compiled workflows with `make check-lint` (or equivalent CI lint job)
-- [ ] 5.2 Test `stripHtmlComments` edge cases: nested comments, no comments, empty string, markdown code fences
-- [ ] 5.3 Test `findResearchComment` with: no matching comment, matching comment, multiple bot comments
+- [x] 5.2 Test `stripHtmlComments` edge cases: nested comments, no comments, empty string, markdown code fences
+- [x] 5.3 Test `findResearchComment` with: no matching comment, matching comment, multiple bot comments
 - [ ] 5.4 End-to-end test on a staging issue: apply `research-factory` label, verify sticky comment is created
 - [ ] 5.5 End-to-end test: re-apply `research-factory` label, verify comment is updated in place (not duplicated)
 - [ ] 5.6 End-to-end test: apply `change-factory` label, verify it reads the research comment correctly
