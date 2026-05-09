@@ -163,7 +163,7 @@ func Test_buildCreateAndUpdateActionsJSON(t *testing.T) {
 	require.NoError(t, json.Unmarshal(createActionsJSON, &createActions))
 	require.NoError(t, json.Unmarshal(updateActionsJSON, &updateActions))
 
-	require.Equal(t, len(createActions), len(updateActions))
+	require.Len(t, updateActions, len(createActions))
 	for i := range createActions {
 		require.Equal(t, createActions[i], updateActions[i], "action[%d] differs between create and update", i)
 	}
