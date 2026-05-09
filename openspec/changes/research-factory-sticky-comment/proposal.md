@@ -12,6 +12,7 @@ Moving the research output to a dedicated sticky comment authored by `github-act
 - **Update `research-factory` workflow** to use the custom safe-output script, strip HTML comments from issue body and human comments, and no longer rewrite the issue body.
 - **Update `change-factory` workflow** to extract prior research from a bot-authored comment (with `findResearchComment` helper) instead of regexing markers from the issue body.
 - **Update `code-factory` workflow** to use the shared sanitisation library for its own agent context.
+- **Add structured machine-readable JSON metadata** to the research comment, nested inside a collapsible `<details>` element after the References section. The JSON captures typed fields (recommendation spine, confidence, open questions with IDs, affected capabilities, estimated scope, references) that downstream consumers can extract without regex-parsing headings. The human-readable H2/H3/H4 narrative remains unchanged — the JSON is purely accretive.
 - **Update `ci-research-factory-issue-intake`** spec to reflect the new output mechanism and input sanitisation requirement.
 - **Update `ci-change-factory-issue-intake`** spec to reflect the new research-comment extraction behaviour.
 
@@ -23,7 +24,7 @@ Moving the research output to a dedicated sticky comment authored by `github-act
 ### Modified Capabilities
 - `ci-research-factory-issue-intake`: Output mechanism changes from `update-issue` to custom `update-research-comment` safe-output script; input sanitisation requirement added.
 - `ci-change-factory-issue-intake`: Research extraction changes from regex-based body parsing to comment-based lookup; shared sanitisation applied to issue body and human comments.
-- `ci-implementation-research-block-format` **→** `ci-research-factory-comment-format`: Redefined as a bot-authored comment format rather than a body-block format; markers removed; provenance and required subsections retained.
+- `ci-implementation-research-block-format` **→** `ci-research-factory-comment-format`: Redefined as a bot-authored comment format rather than a body-block format; markers removed; provenance and required subsections retained. **ADDED**: structured JSON metadata block inside a collapsible `<details>` element for machine consumption.
 
 ## Impact
 

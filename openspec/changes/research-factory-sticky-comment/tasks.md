@@ -16,9 +16,11 @@
 - [ ] 2.6 Update agent prompt to remove "preserve body byte-for-byte" and "marker delimiters" instructions
 - [ ] 2.7 Update agent prompt to reference `ci-research-factory-comment-format` instead of `ci-implementation-research-block-format`
 - [ ] 2.8 Update agent prompt time-budget wording: "issue-body update" → "research comment"
-- [ ] 2.9 Regenerate compiled workflow with `make workflow-generate`
-- [ ] 2.10 Verify compiled `.github/workflows/research-factory-issue.md` contains `safe-outputs.scripts.update-research-comment`
-- [ ] 2.11 Verify compiled workflow no longer contains `update-issue` in safe-outputs
+- [ ] 2.9 Update agent prompt to include JSON metadata schema instructions and `<details>` element formatting
+- [ ] 2.10 Update agent prompt to instruct the agent to ensure JSON metadata is internally consistent with human-readable subsections
+- [ ] 2.11 Regenerate compiled workflow with `make workflow-generate`
+- [ ] 2.12 Verify compiled `.github/workflows/research-factory-issue.md` contains `safe-outputs.scripts.update-research-comment`
+- [ ] 2.13 Verify compiled workflow no longer contains `update-issue` in safe-outputs
 
 ## 3. Change-factory workflow
 
@@ -28,8 +30,10 @@
 - [ ] 3.4 Update agent prompt: replace body-block extraction instructions with comment-based extraction
 - [ ] 3.5 Update agent prompt: describe `<!-- gha-research-factory -->` marker + `## Implementation research` heading
 - [ ] 3.6 Update agent prompt: remove references to `<!-- implementation-research:start/end -->` markers
-- [ ] 3.7 Regenerate compiled workflow with `make workflow-generate`
-- [ ] 3.8 Verify compiled `.github/workflows/change-factory-issue.md` reflects comment-based extraction
+- [ ] 3.7 Update agent prompt: add instructions for extracting the JSON metadata block from the `<details>` element when present
+- [ ] 3.8 Update agent prompt: note that JSON metadata is a future enhancement area and the agent should not depend on it today
+- [ ] 3.9 Regenerate compiled workflow with `make workflow-generate`
+- [ ] 3.10 Verify compiled `.github/workflows/change-factory-issue.md` reflects comment-based extraction
 
 ## 4. Code-factory workflow
 
@@ -46,6 +50,9 @@
 - [ ] 5.5 End-to-end test: re-apply `research-factory` label, verify comment is updated in place (not duplicated)
 - [ ] 5.6 End-to-end test: apply `change-factory` label, verify it reads the research comment correctly
 - [ ] 5.7 Verify issue body is untouched after both research-factory runs
+- [ ] 5.8 Verify research comment contains a collapsed `<details>` element with valid JSON after the References section
+- [ ] 5.9 Verify JSON `recommendation.spine` matches the human-readable Recommendation section
+- [ ] 5.10 Verify JSON `open_questions` IDs are stable across re-runs (where questions are unchanged)
 
 ## 6. Documentation and spec sync
 

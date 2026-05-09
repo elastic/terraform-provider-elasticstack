@@ -23,6 +23,7 @@ This change moves research output to a dedicated sticky comment authored by `git
 - Changing the trigger, trust, or concurrency logic of any factory workflow
 - Enabling `add-comment` or other new safe outputs for `research-factory`
 - Addressing prompt injection via non-HTML-comment vectors (e.g., markdown tricks, unicode homoglyphs)
+- Replacing the human-readable narrative with JSON (both coexist; the JSON is accretive)
 
 ## Decisions
 
@@ -59,6 +60,18 @@ This change moves research output to a dedicated sticky comment authored by `git
 - **Framework `gh-aw-workflow-id` marker**: Rejected — framework markers are internal implementation details and may not reliably distinguish our research comment from the framework's own status comment.
 - **Comment metadata or reaction**: Rejected — GitHub comments have no custom metadata fields; reactions are not queryable in a practical way for this use case.
 
+### Embed structured JSON metadata inside a collapsible `<details>` block
+
+**Decision**: After the `### References` section, the research comment includes an HTML `<details>` element containing a fenced JSON code block with a typed machine-readable representation of the research: `recommendation` (spine, confidence, approach index), `open_questions` (with IDs and `blocking` flags), `affected_capabilities`, `estimated_scope`, and `references`.
+
+**Rationale**: The comment becomes a **dual-interface artifact**: humans read the H2/H3/H4 narrative; machines read the JSON. Downstream consumers (`change-factory` today, a classifier workflow tomorrow) can extract fields without regex-parsing headings, enabling typed validation, auto-promotion gates, and cross-run reference by `open_question.id`. The `<details>` element hides the JSON from human readers by default, so the UX is unchanged. Because the entire comment is regenerated each run, injected or stale JSON is impossible — the JSON is always consistent with the narrative above it.
+
+**Alternatives considered:**
+- **Separate JSON artifact uploaded via `upload-artifact`**: Rejected — fragments the research output across two locations; downstream consumers would need to download and correlate an artifact with a comment.
+- **Schema-enforced YAML frontmatter at the top of the comment**: Rejected — raw YAML frontmatter is ugly for humans and interferes with the provenance narrative at the top of the comment.
+- **GitHub comment reactions as metadata signaling**: Rejected — reactions are limited to a fixed emoji set, cannot carry structured data, and are not discoverable in a practical way.
+- **Store JSON in a hidden HTML comment**: Rejected — we just went to great lengths to strip HTML comments from human input; embedding machine data in them would be inconsistent.
+
 ### Apply sanitisation to all three factory workflows
 
 **Decision**: `research-factory`, `change-factory`, and `code-factory` all apply `stripHtmlComments` to human-authored input.
@@ -74,6 +87,7 @@ This change moves research output to a dedicated sticky comment authored by `git
 | Concurrent research-factory runs for the same issue race on comment update | Low | Medium | Concurrency is already enforced per issue (`concurrency: group: research-factory-issue-${{ ... }}`). The custom script updates the existing comment by ID, which is atomic. |
 | Downstream consumers break if they still expect body-block markers | Medium | High | Change-factory spec is updated in this same change to read from comments. We'll validate the compiled workflow before deploying. |
 | Research comment hits the 65,536-character limit | Low | Medium | Same limit as issue body. Research blocks are currently well under this. If growth becomes a concern, we can split or truncate. |
+| JSON schema drift between narrative and metadata | Low | High | The agent generates both from the same reasoning context in a single pass, making inconsistency unlikely. We can add a deterministic validation step later. |
 
 ## Migration Plan
 

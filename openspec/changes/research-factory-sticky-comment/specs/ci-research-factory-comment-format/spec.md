@@ -55,18 +55,56 @@ The comment SHALL contain the following subsections in order, each introduced by
 - **THEN** it SHALL identify exactly one of the approaches enumerated under `### Approaches considered` as the chosen approach
 - **AND** it SHALL include a brief rationale for that choice
 
+### Requirement: Comment contains a structured machine-readable JSON metadata block
+After the `### References` section, the comment SHALL contain an HTML `<details>` element with a `<summary>` of "🤖 Pipeline metadata" (or equivalent). Inside the `<details>` element, the comment SHALL contain exactly one fenced JSON code block (language `json`) containing a machine-readable representation of the research. The JSON object SHALL conform to the following schema:
+
+- `schema_version` (string, required): the version of this metadata schema.
+- `recommendation` (object, required):
+  - `spine` (string, required): a kebab-case identifier for the recommended approach.
+  - `confidence` (string, enum `["high","medium","low"]`): the agent's confidence in the recommendation.
+  - `approach_index` (number, required): zero-based index of the chosen approach in the `Approaches considered` section.
+- `open_questions` (array, optional): each item with:
+  - `id` (string, required): a stable question identifier (e.g., `oq-1`, `oq-2`).
+  - `text` (string, required): the question text.
+  - `blocking` (boolean, required): whether resolving this question is a prerequisite for implementation.
+- `affected_capabilities` (array of strings, optional): kebab-case capability identifiers impacted by the recommendation.
+- `estimated_scope` (string, enum `["small","medium","large","unknown"]`): rough size of the implementation effort.
+- `references` (array, optional): each item with:
+  - `type` (string, enum `["elastic-docs","repo-path","issue","pr","external"]`).
+  - `url` or `path` (string, required): the reference location.
+
+The agent SHALL ensure that the JSON content is internally consistent with the human-readable subsections above it. The `<details>` element SHALL be closed by default so that human readers do not see the JSON unless they expand it.
+
+#### Scenario: Comment contains valid JSON metadata
+- **WHEN** a maintainer or downstream consumer inspects a research comment produced by the workflow
+- **THEN** the comment SHALL contain a `<details>` element after `### References`
+- **AND** inside that element there SHALL be a fenced JSON block conforming to the schema above
+- **AND** the JSON `recommendation.spine` SHALL match the human-readable `### Recommendation` content
+
+#### Scenario: JSON metadata is hidden from human readers by default
+- **WHEN** a maintainer reads a research comment on GitHub
+- **THEN** the JSON metadata SHALL be collapsed inside a `<details>` element
+- **AND** it SHALL NOT be visible without clicking the disclosure triangle
+
+#### Scenario: Downstream consumer parses JSON metadata
+- **WHEN** a downstream workflow (e.g., a future classifier or change-factory enhancement) reads a research comment
+- **THEN** it SHALL be able to extract the JSON block from the `<details>` element by parsing the comment body
+- **AND** it SHALL be able to read `open_questions[].blocking` without regex-parsing headings
+
 ### Requirement: Comment is regenerated each run
-Each successful research run SHALL replace the entire contents of the existing research comment with a freshly synthesized comment. When no prior comment exists, a new comment SHALL be created. The comment SHALL NOT contain hidden state intended for machine consumption beyond the `<!-- gha-research-factory -->` marker and the human-readable subsections defined above.
+Each successful research run SHALL replace the entire contents of the existing research comment with a freshly synthesized comment. When no prior comment exists, a new comment SHALL be created. The comment SHALL NOT contain hidden state intended for machine consumption beyond the `<!-- gha-research-factory -->` marker, the human-readable subsections defined above, and the structured JSON metadata block inside the `<details>` element.
 
 #### Scenario: Comment is regenerated on re-run
 - **WHEN** the workflow re-runs for an issue whose body already has a prior research comment
 - **THEN** the prior comment SHALL be updated with new content
 - **AND** the comment SHALL contain only the current run's research
 
-#### Scenario: No hidden machine state
+#### Scenario: No hidden machine state outside declared blocks
 - **WHEN** a maintainer inspects the raw markdown of a research comment
-- **THEN** the only machine-readable marker SHALL be `<!-- gha-research-factory -->`
-- **AND** the remainder SHALL be human-readable markdown
+- **THEN** the only machine-readable content SHALL be:
+  - the `<!-- gha-research-factory -->` marker
+  - the structured JSON metadata block inside the `<details>` element
+- **AND** the rest SHALL be human-readable markdown
 
 ### Requirement: Prior comment contents and human-authored comments are read as input on the next run
 On any run where a prior research comment exists, the producer SHALL read the prior comment contents and the human-authored comment history as additional inputs alongside the original issue content. The producer SHALL NOT treat the prior comment as authoritative output to preserve verbatim; rather it SHALL integrate the evidence the prior comment carries (recommendation, open questions, references, and any human edits made inside the comment) into the synthesis of the new comment. The issue body and human comments fed to the agent SHALL be sanitised (HTML comments stripped) per the `ci-html-comment-sanitisation` capability.
