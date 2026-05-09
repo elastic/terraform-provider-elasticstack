@@ -1,4 +1,4 @@
-# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"b5323799eb55274aec398e01a66eaa0aac8373191f785ecc3723e825364cbd3f","compiler_version":"v0.71.5","strict":true,"agent_id":"claude","agent_model":"llm-gateway/claude-sonnet-4-6"}
+# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"57d55cd1012945ab0fab90835f4b7d0b8d758845cead4e78dbf5c9adac93ffc0","compiler_version":"v0.71.5","strict":true,"agent_id":"claude","agent_model":"llm-gateway/claude-sonnet-4-6"}
 # gh-aw-manifest: {"version":1,"secrets":["CLAUDE_LITELLM_PROXY_API_KEY","GH_AW_GITHUB_MCP_SERVER_TOKEN","GH_AW_GITHUB_TOKEN","GITHUB_TOKEN"],"actions":[{"repo":"actions/checkout","sha":"de0fac2e4500dabe0009e67214ff5f5447ce83dd","version":"v6.0.2"},{"repo":"actions/download-artifact","sha":"3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c","version":"v8.0.1"},{"repo":"actions/download-artifact","sha":"d3f86a106a0bac45b974a628896c90dbdf5c8093","version":"v4"},{"repo":"actions/github-script","sha":"3a2844b7e9c422d3c10d287c895573f7108da1b3","version":"v9"},{"repo":"actions/setup-node","sha":"48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e","version":"v6.4.0"},{"repo":"actions/upload-artifact","sha":"043fb46d1a93c77aae656e7c1c64a875d1fc6a0a","version":"v7.0.1"},{"repo":"actions/upload-artifact","sha":"ea165f8d65b6e75b540449e92b4886f43607fa02","version":"v4"},{"repo":"github/gh-aw-actions/setup","sha":"b8068426813005612b960b5ab0b8bd2c27142323","version":"v0.71.5"}],"containers":[{"image":"ghcr.io/github/gh-aw-firewall/agent:0.25.40","digest":"sha256:14ff567e8d9d4c2fbc5e55c973488381c71d7e0fdbe72d30ee7b8a738fd86504","pinned_image":"ghcr.io/github/gh-aw-firewall/agent:0.25.40@sha256:14ff567e8d9d4c2fbc5e55c973488381c71d7e0fdbe72d30ee7b8a738fd86504"},{"image":"ghcr.io/github/gh-aw-firewall/api-proxy:0.25.40","digest":"sha256:2883ca3e5ae9f330cafdd9345bfd4ae17fc8da36c96d4c9a1f76e922b4c45280","pinned_image":"ghcr.io/github/gh-aw-firewall/api-proxy:0.25.40@sha256:2883ca3e5ae9f330cafdd9345bfd4ae17fc8da36c96d4c9a1f76e922b4c45280"},{"image":"ghcr.io/github/gh-aw-firewall/squid:0.25.40","digest":"sha256:b084f4a2c771f584ee68084ced52fa6b3245197a1889645d817462d307d3ac51","pinned_image":"ghcr.io/github/gh-aw-firewall/squid:0.25.40@sha256:b084f4a2c771f584ee68084ced52fa6b3245197a1889645d817462d307d3ac51"},{"image":"ghcr.io/github/gh-aw-mcpg:v0.3.6","digest":"sha256:2bb8eef86006a4c5963c55616a9c51c32f27bfdecb023b8aa6f91f6718d9171c","pinned_image":"ghcr.io/github/gh-aw-mcpg:v0.3.6@sha256:2bb8eef86006a4c5963c55616a9c51c32f27bfdecb023b8aa6f91f6718d9171c"},{"image":"ghcr.io/github/github-mcp-server:v1.0.3","digest":"sha256:2ac27ef03461ef2b877031b838a7d1fd7f12b12d4ace7796d8cad91446d55959","pinned_image":"ghcr.io/github/github-mcp-server:v1.0.3@sha256:2ac27ef03461ef2b877031b838a7d1fd7f12b12d4ace7796d8cad91446d55959"},{"image":"node:lts-alpine","digest":"sha256:d1b3b4da11eefd5941e7f0b9cf17783fc99d9c6fc34884a665f40a06dbdfc94f","pinned_image":"node:lts-alpine@sha256:d1b3b4da11eefd5941e7f0b9cf17783fc99d9c6fc34884a665f40a06dbdfc94f"}]}
 #    ___                   _   _      
 #   / _ \                 | | (_)     
@@ -22,7 +22,7 @@
 #
 # For more information: https://github.github.com/gh-aw/introduction/overview/
 #
-# Reacts to trusted qualifying `research-factory` issue events or internal workflow dispatch requests and delegates deep-research authoring to an agent that writes a single implementation-research block into the triggering issue body.
+# Reacts to trusted qualifying `research-factory` issue events or internal workflow dispatch requests and delegates deep-research authoring to an agent that creates or updates a single implementation-research sticky comment on the triggering issue.
 #
 # Frontmatter env variables:
 #   - RESEARCH_FACTORY_ISSUE_NUMBER: (main workflow)
@@ -148,7 +148,7 @@ name: "Research Factory Issue Intake"
     # uses: actions/github-script@v9
     # with:
       # github-token: ${{ secrets.GITHUB_TOKEN }}
-      # script: "const { owner, repo } = context.repo;\nconst issueNumber = parseInt(process.env.INPUT_ISSUE_NUMBER, 10);\nconst marker = '<!-- gha-research-factory -->';\n\nif (!issueNumber || issueNumber <= 0) {\n  core.setOutput('prior_research_comment', '');\n  return;\n}\n\ntry {\n  const allComments = await github.paginate(github.rest.issues.listComments, {\n    owner,\n    repo,\n    issue_number: issueNumber,\n    per_page: 100,\n  });\n\n  const matches = allComments.filter(\n    (c) => c.user?.login === 'github-actions[bot]' && c.body?.includes(marker),\n  );\n\n  if (matches.length > 0) {\n    const latest = matches[matches.length - 1];\n    core.setOutput('prior_research_comment', latest.body);\n    core.info(`Found prior research comment ${latest.id} for issue #${issueNumber}`);\n  } else {\n    core.setOutput('prior_research_comment', '');\n    core.info(`No prior research comment found for issue #${issueNumber}`);\n  }\n} catch (err) {\n  core.setOutput('prior_research_comment', '');\n  core.info(`Could not fetch prior research comment for issue #${issueNumber}: ${err.message}`);\n}\n"
+      # script: "const { owner, repo } = context.repo;\nconst issueNumber = parseInt(process.env.INPUT_ISSUE_NUMBER, 10);\nconst marker = '<!-- gha-research-factory -->';\n\nif (!issueNumber || issueNumber <= 0) {\n  core.setOutput('prior_research_comment', '');\n  return;\n}\n\ntry {\n  const allComments = await github.paginate(github.rest.issues.listComments, {\n    owner,\n    repo,\n    issue_number: issueNumber,\n    per_page: 100,\n  });\n\n  const matches = allComments.filter(\n    (c) => c.user?.login === 'github-actions[bot]' && c.body?.includes(marker),\n  );\n\n  if (matches.length > 0) {\n    const latest = matches[matches.length - 1];\n    core.setOutput('prior_research_comment', latest.body);\n    core.info(`Found prior research comment ${latest.id} for issue #${issueNumber}`);\n  } else {\n    core.setOutput('prior_research_comment', '');\n    core.info(`No prior research comment found for issue #${issueNumber}`);\n  }\n} catch (err) {\n  core.setOutput('prior_research_comment', '');\n  core.warning(`Could not fetch prior research comment for issue #${issueNumber}: ${err.message}`);\n}\n"
   # - id: remove_trigger_label
     # if: steps.determine_intake_mode.outputs.intake_mode == 'issue-event' && steps.qualify_trigger.outputs.event_eligible == 'true' && steps.check_actor_trust.outputs.actor_trusted == 'true'
     # name: Remove trigger label
@@ -392,20 +392,20 @@ jobs:
         run: |
           bash "${RUNNER_TEMP}/gh-aw/actions/create_prompt_first.sh"
           {
-          cat << 'GH_AW_PROMPT_e13b87993813fe6e_EOF'
+          cat << 'GH_AW_PROMPT_212c98fe9e67db36_EOF'
           <system>
-          GH_AW_PROMPT_e13b87993813fe6e_EOF
+          GH_AW_PROMPT_212c98fe9e67db36_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/xpia.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/temp_folder_prompt.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/markdown.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/safe_outputs_prompt.md"
-          cat << 'GH_AW_PROMPT_e13b87993813fe6e_EOF'
+          cat << 'GH_AW_PROMPT_212c98fe9e67db36_EOF'
           <safe-output-tools>
           Tools: missing_tool, missing_data, noop, update_research_comment
           </safe-output-tools>
-          GH_AW_PROMPT_e13b87993813fe6e_EOF
+          GH_AW_PROMPT_212c98fe9e67db36_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/mcp_cli_tools_prompt.md"
-          cat << 'GH_AW_PROMPT_e13b87993813fe6e_EOF'
+          cat << 'GH_AW_PROMPT_212c98fe9e67db36_EOF'
           <github-context>
           The following GitHub context information is available for this workflow:
           {{#if __GH_AW_GITHUB_ACTOR__ }}
@@ -437,15 +437,15 @@ jobs:
             - **Note**: If a branch you need is not in the list above and is not listed as an additional fetched ref, it has NOT been checked out. For private repositories you cannot fetch it without proper authentication. If the branch is required and not available, exit with an error and ask the user to add it to the `fetch:` option of the `checkout:` configuration (e.g., `fetch: ["refs/pulls/open/*"]` for all open PR refs, or `fetch: ["main", "feature/my-branch"]` for specific branches).
           </github-context>
           
-          GH_AW_PROMPT_e13b87993813fe6e_EOF
+          GH_AW_PROMPT_212c98fe9e67db36_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/github_mcp_tools_with_safeoutputs_prompt.md"
           if [ "$GITHUB_EVENT_NAME" = "issue_comment" ] && [ -n "$GH_AW_IS_PR_COMMENT" ] || [ "$GITHUB_EVENT_NAME" = "pull_request_review_comment" ] || [ "$GITHUB_EVENT_NAME" = "pull_request_review" ]; then
             cat "${RUNNER_TEMP}/gh-aw/prompts/pr_context_prompt.md"
           fi
-          cat << 'GH_AW_PROMPT_e13b87993813fe6e_EOF'
+          cat << 'GH_AW_PROMPT_212c98fe9e67db36_EOF'
           </system>
           {{#runtime-import .github/workflows/research-factory-issue.md}}
-          GH_AW_PROMPT_e13b87993813fe6e_EOF
+          GH_AW_PROMPT_212c98fe9e67db36_EOF
           } > "$GH_AW_PROMPT"
       - name: Interpolate variables and render templates
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
@@ -670,9 +670,9 @@ jobs:
           mkdir -p "${RUNNER_TEMP}/gh-aw/safeoutputs"
           mkdir -p /tmp/gh-aw/safeoutputs
           mkdir -p /tmp/gh-aw/mcp-logs/safeoutputs
-          cat > "${RUNNER_TEMP}/gh-aw/safeoutputs/config.json" << 'GH_AW_SAFE_OUTPUTS_CONFIG_d7aa2dcfd5c7e724_EOF'
+          cat > "${RUNNER_TEMP}/gh-aw/safeoutputs/config.json" << 'GH_AW_SAFE_OUTPUTS_CONFIG_98f9e28f898798b7_EOF'
           {"create_report_incomplete_issue":{},"missing_data":{},"missing_tool":{},"noop":{"max":1,"report-as-issue":"false"},"report_incomplete":{},"update_research_comment":{}}
-          GH_AW_SAFE_OUTPUTS_CONFIG_d7aa2dcfd5c7e724_EOF
+          GH_AW_SAFE_OUTPUTS_CONFIG_98f9e28f898798b7_EOF
       - name: Generate Safe Outputs Tools
         env:
           GH_AW_TOOLS_META_JSON: |
@@ -846,7 +846,7 @@ jobs:
           export MCP_GATEWAY_DOCKER_COMMAND='docker run -i --rm --network host --add-host host.docker.internal:127.0.0.1 --user '"${MCP_GATEWAY_UID}"':'"${MCP_GATEWAY_GID}"' --group-add '"${DOCKER_SOCK_GID}"' -v /var/run/docker.sock:/var/run/docker.sock -e MCP_GATEWAY_PORT -e MCP_GATEWAY_DOMAIN -e MCP_GATEWAY_API_KEY -e MCP_GATEWAY_PAYLOAD_DIR -e MCP_GATEWAY_PAYLOAD_SIZE_THRESHOLD -e DEBUG -e MCP_GATEWAY_LOG_DIR -e GH_AW_MCP_LOG_DIR -e GH_AW_SAFE_OUTPUTS -e GH_AW_SAFE_OUTPUTS_CONFIG_PATH -e GH_AW_SAFE_OUTPUTS_TOOLS_PATH -e GH_AW_ASSETS_BRANCH -e GH_AW_ASSETS_MAX_SIZE_KB -e GH_AW_ASSETS_ALLOWED_EXTS -e DEFAULT_BRANCH -e GITHUB_MCP_SERVER_TOKEN -e GITHUB_MCP_GUARD_MIN_INTEGRITY -e GITHUB_MCP_GUARD_REPOS -e GITHUB_REPOSITORY -e GITHUB_SERVER_URL -e GITHUB_SHA -e GITHUB_WORKSPACE -e GITHUB_TOKEN -e GITHUB_RUN_ID -e GITHUB_RUN_NUMBER -e GITHUB_RUN_ATTEMPT -e GITHUB_JOB -e GITHUB_ACTION -e GITHUB_EVENT_NAME -e GITHUB_EVENT_PATH -e GITHUB_ACTOR -e GITHUB_ACTOR_ID -e GITHUB_TRIGGERING_ACTOR -e GITHUB_WORKFLOW -e GITHUB_WORKFLOW_REF -e GITHUB_WORKFLOW_SHA -e GITHUB_REF -e GITHUB_REF_NAME -e GITHUB_REF_TYPE -e GITHUB_HEAD_REF -e GITHUB_BASE_REF -e GH_AW_SAFE_OUTPUTS_PORT -e GH_AW_SAFE_OUTPUTS_API_KEY -v /tmp/gh-aw/mcp-payloads:/tmp/gh-aw/mcp-payloads:rw -v /opt:/opt:ro -v /tmp:/tmp:rw -v '"${GITHUB_WORKSPACE}"':'"${GITHUB_WORKSPACE}"':rw ghcr.io/github/gh-aw-mcpg:v0.3.6'
           
           GH_AW_NODE=$(which node 2>/dev/null || command -v node 2>/dev/null || echo node)
-          cat << GH_AW_MCP_CONFIG_1ec234147ffe3127_EOF | "$GH_AW_NODE" "${RUNNER_TEMP}/gh-aw/actions/start_mcp_gateway.cjs"
+          cat << GH_AW_MCP_CONFIG_51ca262696fc62c6_EOF | "$GH_AW_NODE" "${RUNNER_TEMP}/gh-aw/actions/start_mcp_gateway.cjs"
           {
             "mcpServers": {
               "elastic-docs": {
@@ -900,7 +900,7 @@ jobs:
               "payloadDir": "${MCP_GATEWAY_PAYLOAD_DIR}"
             }
           }
-          GH_AW_MCP_CONFIG_1ec234147ffe3127_EOF
+          GH_AW_MCP_CONFIG_51ca262696fc62c6_EOF
       - name: Mount MCP servers as CLIs
         id: mount-mcp-clis
         continue-on-error: true
@@ -1420,7 +1420,7 @@ jobs:
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           WORKFLOW_NAME: "Research Factory Issue Intake"
-          WORKFLOW_DESCRIPTION: "Reacts to trusted qualifying `research-factory` issue events or internal workflow dispatch requests and delegates deep-research authoring to an agent that writes a single implementation-research block into the triggering issue body."
+          WORKFLOW_DESCRIPTION: "Reacts to trusted qualifying `research-factory` issue events or internal workflow dispatch requests and delegates deep-research authoring to an agent that creates or updates a single implementation-research sticky comment on the triggering issue."
           HAS_PATCH: ${{ needs.agent.outputs.has_patch }}
         with:
           script: |
@@ -3051,7 +3051,7 @@ jobs:
               }
             } catch (err) {
               core.setOutput('prior_research_comment', '');
-              core.info(`Could not fetch prior research comment for issue #${issueNumber}: ${err.message}`);
+              core.warning(`Could not fetch prior research comment for issue #${issueNumber}: ${err.message}`);
             }
       - name: Remove trigger label
         id: remove_trigger_label
@@ -3670,7 +3670,7 @@ jobs:
           echo "GH_HOST=${GH_HOST}" >> "$GITHUB_ENV"
       - name: Configure Safe Outputs Custom Scripts
         run: |
-          cat > "${RUNNER_TEMP}/gh-aw/actions/safe_output_script_update_research_comment.cjs" << 'GH_AW_SAFE_OUTPUT_SCRIPT_UPDATE_RESEARCH_COMMENT_0d59a016b7784b3c_EOF'
+          cat > "${RUNNER_TEMP}/gh-aw/actions/safe_output_script_update_research_comment.cjs" << 'GH_AW_SAFE_OUTPUT_SCRIPT_UPDATE_RESEARCH_COMMENT_77897b48a84399e9_EOF'
           // @ts-check
           /// <reference types="./safe-output-script" />
           // Auto-generated safe-output script handler: update-research-comment
@@ -3683,15 +3683,34 @@ jobs:
               const { owner, repo } = context.repo;
               const issueNumber = parseInt(process.env.RESEARCH_FACTORY_ISSUE_NUMBER, 10);
               const marker = '<!-- gha-research-factory -->';
-              const body = item.body || '';
+              
+              if (!item) {
+                core.setFailed('update-research-comment: no item provided');
+                return;
+              }
+              
+              let body = item.body || '';
+              if (!body && process.env.GH_AW_AGENT_OUTPUT) {
+                try {
+                  const fs = require('fs');
+                  const raw = fs.readFileSync(process.env.GH_AW_AGENT_OUTPUT, 'utf-8');
+                  const ops = JSON.parse(raw);
+                  const op = Array.isArray(ops) ? ops.find(o => o.tool === 'update_research_comment' || o.tool === 'update-research-comment') : null;
+                  if (op && op.body) {
+                    body = op.body;
+                  }
+                } catch (e) {
+                  // fallback failed, body remains empty
+                }
+              }
               
               if (!issueNumber || issueNumber <= 0) {
                 core.setFailed('update-research-comment: invalid issue number.');
                 return;
               }
               
-              if (!body.includes(marker)) {
-                core.setFailed(`update-research-comment: body must contain the marker ${marker}`);
+              if (!(body.startsWith(marker + '\n') || body.startsWith(marker + '\r\n'))) {
+                core.setFailed(`update-research-comment: body must start with the marker ${marker} on its own line`);
                 return;
               }
               
@@ -3712,7 +3731,8 @@ jobs:
                   }
                 }
               } catch (err) {
-                core.warning(`Could not list comments while searching for existing research comment: ${err.message}`);
+                core.setFailed(`Could not list comments while searching for existing research comment: ${err.message}`);
+                return;
               }
               
               if (existingComment) {
@@ -3745,7 +3765,7 @@ jobs:
           }
           module.exports = { main };
           
-          GH_AW_SAFE_OUTPUT_SCRIPT_UPDATE_RESEARCH_COMMENT_0d59a016b7784b3c_EOF
+          GH_AW_SAFE_OUTPUT_SCRIPT_UPDATE_RESEARCH_COMMENT_77897b48a84399e9_EOF
       - name: Process Safe Outputs
         id: process_safe_outputs
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0

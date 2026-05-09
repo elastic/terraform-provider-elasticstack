@@ -4,8 +4,8 @@ name: Research Factory Issue Intake
 timeout-minutes: 35
 description: >-
   Reacts to trusted qualifying `research-factory` issue events or internal workflow dispatch
-  requests and delegates deep-research authoring to an agent that writes a single
-  implementation-research block into the triggering issue body.
+  requests and delegates deep-research authoring to an agent that creates or updates a single
+  implementation-research sticky comment on the triggering issue.
 on:
   issues:
     types: [opened, labeled]
@@ -1502,7 +1502,7 @@ on:
             }
           } catch (err) {
             core.setOutput('prior_research_comment', '');
-            core.info(`Could not fetch prior research comment for issue #${issueNumber}: ${err.message}`);
+            core.warning(`Could not fetch prior research comment for issue #${issueNumber}: ${err.message}`);
           }
           
     - name: Remove trigger label
@@ -2134,15 +2134,34 @@ safe-outputs:
         const { owner, repo } = context.repo;
         const issueNumber = parseInt(process.env.RESEARCH_FACTORY_ISSUE_NUMBER, 10);
         const marker = '<!-- gha-research-factory -->';
-        const body = item.body || '';
+        
+        if (!item) {
+          core.setFailed('update-research-comment: no item provided');
+          return;
+        }
+        
+        let body = item.body || '';
+        if (!body && process.env.GH_AW_AGENT_OUTPUT) {
+          try {
+            const fs = require('fs');
+            const raw = fs.readFileSync(process.env.GH_AW_AGENT_OUTPUT, 'utf-8');
+            const ops = JSON.parse(raw);
+            const op = Array.isArray(ops) ? ops.find(o => o.tool === 'update_research_comment' || o.tool === 'update-research-comment') : null;
+            if (op && op.body) {
+              body = op.body;
+            }
+          } catch (e) {
+            // fallback failed, body remains empty
+          }
+        }
         
         if (!issueNumber || issueNumber <= 0) {
           core.setFailed('update-research-comment: invalid issue number.');
           return;
         }
         
-        if (!body.includes(marker)) {
-          core.setFailed(`update-research-comment: body must contain the marker ${marker}`);
+        if (!(body.startsWith(marker + '\n') || body.startsWith(marker + '\r\n'))) {
+          core.setFailed(`update-research-comment: body must start with the marker ${marker} on its own line`);
           return;
         }
         
@@ -2163,7 +2182,8 @@ safe-outputs:
             }
           }
         } catch (err) {
-          core.warning(`Could not list comments while searching for existing research comment: ${err.message}`);
+          core.setFailed(`Could not list comments while searching for existing research comment: ${err.message}`);
+          return;
         }
         
         if (existingComment) {
@@ -2249,7 +2269,7 @@ approach needs its own `#### ` H4 heading. Do not emit a comment with only one a
 
 Your research output MUST conform to the `ci-research-factory-comment-format` capability. The
 comment body SHALL begin with exactly the marker `<!-- gha-research-factory -->` on its own line,
-followed by these mandatory subsections in order (each a `### ` H3 heading):
+followed by these mandatory sections in order:
 
 1. `## Implementation research` — H2 heading followed by a provenance header recording the run
 timestamp, the run link (`${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`), and
