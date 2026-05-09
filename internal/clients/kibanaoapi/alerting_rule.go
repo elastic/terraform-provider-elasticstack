@@ -432,43 +432,9 @@ func buildCreateRequestBody(rule models.AlertingRule) (kbapi.AlertingRuleAPIBody
 	}
 
 	if len(rule.Actions) > 0 {
-		var actions []struct {
-			AlertsFilter *struct {
-				Query *struct {
-					Dsl     *string `json:"dsl,omitempty"`
-					Filters []struct {
-						State *struct {
-							Store kbapi.AlertingRuleAPIBodyGenericActionsAlertsFilterQueryFiltersStateStore `json:"store"`
-						} `json:"$state,omitempty"`
-						Meta  map[string]*any  `json:"meta"`
-						Query *map[string]*any `json:"query,omitempty"`
-					} `json:"filters"`
-					Kql string `json:"kql"`
-				} `json:"query,omitempty"`
-				Timeframe *struct {
-					Days  []kbapi.AlertingRuleAPIBodyGenericActionsAlertsFilterTimeframeDays `json:"days"`
-					Hours struct {
-						End   string `json:"end"`
-						Start string `json:"start"`
-					} `json:"hours"`
-					Timezone string `json:"timezone"`
-				} `json:"timeframe,omitempty"`
-			} `json:"alerts_filter,omitempty"`
-			Frequency *struct {
-				NotifyWhen kbapi.AlertingRuleAPIBodyGenericActionsFrequencyNotifyWhen `json:"notify_when"`
-				Summary    bool                                                       `json:"summary"`
-				Throttle   *string                                                    `json:"throttle,omitempty"`
-			} `json:"frequency,omitempty"`
-			Group                   *string          `json:"group,omitempty"`
-			Id                      string           `json:"id"` //nolint:revive // var-naming: API struct field
-			Params                  *map[string]*any `json:"params,omitempty"`
-			UseAlertDataForTemplate *bool            `json:"use_alert_data_for_template,omitempty"`
-			Uuid                    *string          `json:"uuid,omitempty"` //nolint:revive // var-naming: API struct field
-		}
-		if err := convertActionsSlice(rule.Actions, &actions); err != nil {
+		if err := convertActionsSlice(rule.Actions, &body.Actions); err != nil {
 			return body, fmt.Errorf("convert actions: %w", err)
 		}
-		body.Actions = &actions
 	}
 
 	return body, nil
@@ -516,43 +482,9 @@ func buildUpdateRequestBody(rule models.AlertingRule) (kbapi.PutAlertingRuleIdJS
 	}
 
 	if len(rule.Actions) > 0 {
-		var actions []struct {
-			AlertsFilter *struct {
-				Query *struct {
-					Dsl     *string `json:"dsl,omitempty"`
-					Filters []struct {
-						State *struct {
-							Store kbapi.PutAlertingRuleIdJSONBodyActionsAlertsFilterQueryFiltersStateStore `json:"store"`
-						} `json:"$state,omitempty"`
-						Meta  map[string]*any  `json:"meta"`
-						Query *map[string]*any `json:"query,omitempty"`
-					} `json:"filters"`
-					Kql string `json:"kql"`
-				} `json:"query,omitempty"`
-				Timeframe *struct {
-					Days  []kbapi.PutAlertingRuleIdJSONBodyActionsAlertsFilterTimeframeDays `json:"days"`
-					Hours struct {
-						End   string `json:"end"`
-						Start string `json:"start"`
-					} `json:"hours"`
-					Timezone string `json:"timezone"`
-				} `json:"timeframe,omitempty"`
-			} `json:"alerts_filter,omitempty"`
-			Frequency *struct {
-				NotifyWhen kbapi.PutAlertingRuleIdJSONBodyActionsFrequencyNotifyWhen `json:"notify_when"`
-				Summary    bool                                                      `json:"summary"`
-				Throttle   *string                                                   `json:"throttle,omitempty"`
-			} `json:"frequency,omitempty"`
-			Group                   *string          `json:"group,omitempty"`
-			Id                      string           `json:"id"` //nolint:revive // var-naming: API struct field
-			Params                  *map[string]*any `json:"params,omitempty"`
-			UseAlertDataForTemplate *bool            `json:"use_alert_data_for_template,omitempty"`
-			Uuid                    *string          `json:"uuid,omitempty"` //nolint:revive // var-naming: API struct field
-		}
-		if err := convertActionsSlice(rule.Actions, &actions); err != nil {
+		if err := convertActionsSlice(rule.Actions, &body.Actions); err != nil {
 			return body, fmt.Errorf("convert actions: %w", err)
 		}
-		body.Actions = &actions
 	}
 
 	return body, nil
