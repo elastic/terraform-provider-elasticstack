@@ -33,10 +33,13 @@ import (
 )
 
 func CreateAlertingRule(ctx context.Context, client *Client, spaceID string, rule models.AlertingRule) (*models.AlertingRule, diag.Diagnostics) {
-	body := buildCreateRequestBody(rule)
+	body, err := buildCreateRequestBody(rule)
+	if err != nil {
+		return nil, diag.Diagnostics{diag.NewErrorDiagnostic("Unable to build alerting rule create request", err.Error())}
+	}
 
 	var req kbapi.PostAlertingRuleIdJSONRequestBody
-	err := req.FromAlertingRuleAPIBodyGeneric(body)
+	err = req.FromAlertingRuleAPIBodyGeneric(body)
 	if err != nil {
 		return nil, diag.Diagnostics{diag.NewErrorDiagnostic("Unable to build alerting rule create request", err.Error())}
 	}
@@ -97,7 +100,10 @@ func GetAlertingRule(ctx context.Context, client *Client, spaceID string, ruleID
 }
 
 func UpdateAlertingRule(ctx context.Context, client *Client, spaceID string, rule models.AlertingRule) (*models.AlertingRule, diag.Diagnostics) {
-	body := buildUpdateRequestBody(rule)
+	body, err := buildUpdateRequestBody(rule)
+	if err != nil {
+		return nil, diag.Diagnostics{diag.NewErrorDiagnostic("Unable to build alerting rule update request", err.Error())}
+	}
 
 	resp, err := client.API.PutAlertingRuleIdWithResponse(
 		ctx,
@@ -378,7 +384,7 @@ func ConvertResponseToModel(spaceID string, resp any) (*models.AlertingRule, dia
 	}, nil
 }
 
-func buildCreateRequestBody(rule models.AlertingRule) kbapi.AlertingRuleAPIBodyGeneric {
+func buildCreateRequestBody(rule models.AlertingRule) (kbapi.AlertingRuleAPIBodyGeneric, error) {
 	body := kbapi.AlertingRuleAPIBodyGeneric{
 		Consumer:   rule.Consumer,
 		Name:       rule.Name,
@@ -426,8 +432,6 @@ func buildCreateRequestBody(rule models.AlertingRule) kbapi.AlertingRuleAPIBodyG
 	}
 
 	if len(rule.Actions) > 0 {
-		rawActions := buildActionsSlice(rule.Actions)
-		data, _ := json.Marshal(rawActions)
 		var actions []struct {
 			AlertsFilter *struct {
 				Query *struct {
@@ -461,14 +465,16 @@ func buildCreateRequestBody(rule models.AlertingRule) kbapi.AlertingRuleAPIBodyG
 			UseAlertDataForTemplate *bool            `json:"use_alert_data_for_template,omitempty"`
 			Uuid                    *string          `json:"uuid,omitempty"` //nolint:revive // var-naming: API struct field
 		}
-		_ = json.Unmarshal(data, &actions)
+		if err := convertActionsSlice(rule.Actions, &actions); err != nil {
+			return body, fmt.Errorf("convert actions: %w", err)
+		}
 		body.Actions = &actions
 	}
 
-	return body
+	return body, nil
 }
 
-func buildUpdateRequestBody(rule models.AlertingRule) kbapi.PutAlertingRuleIdJSONRequestBody {
+func buildUpdateRequestBody(rule models.AlertingRule) (kbapi.PutAlertingRuleIdJSONRequestBody, error) {
 	body := kbapi.PutAlertingRuleIdJSONRequestBody{
 		Name: rule.Name,
 		Schedule: struct {
@@ -510,8 +516,6 @@ func buildUpdateRequestBody(rule models.AlertingRule) kbapi.PutAlertingRuleIdJSO
 	}
 
 	if len(rule.Actions) > 0 {
-		rawActions := buildActionsSlice(rule.Actions)
-		data, _ := json.Marshal(rawActions)
 		var actions []struct {
 			AlertsFilter *struct {
 				Query *struct {
@@ -545,11 +549,13 @@ func buildUpdateRequestBody(rule models.AlertingRule) kbapi.PutAlertingRuleIdJSO
 			UseAlertDataForTemplate *bool            `json:"use_alert_data_for_template,omitempty"`
 			Uuid                    *string          `json:"uuid,omitempty"` //nolint:revive // var-naming: API struct field
 		}
-		_ = json.Unmarshal(data, &actions)
+		if err := convertActionsSlice(rule.Actions, &actions); err != nil {
+			return body, fmt.Errorf("convert actions: %w", err)
+		}
 		body.Actions = &actions
 	}
 
-	return body
+	return body, nil
 }
 
 // alertingRuleAction is a shared intermediate type for action slices used by both
@@ -558,12 +564,12 @@ func buildUpdateRequestBody(rule models.AlertingRule) kbapi.PutAlertingRuleIdJSO
 // (AlertingRuleAPIBodyGeneric* and PutAlertingRuleIdJSONBody*).
 type alertingRuleAction struct {
 	AlertsFilter            *alertingRuleActionAlertsFilter `json:"alerts_filter,omitempty"`
-	Frequency               *alertingRuleActionFrequency   `json:"frequency,omitempty"`
-	Group                   *string                        `json:"group,omitempty"`
-	Id                      string                         `json:"id"` //nolint:revive // var-naming: API struct field
-	Params                  *map[string]*any               `json:"params,omitempty"`
-	UseAlertDataForTemplate *bool                          `json:"use_alert_data_for_template,omitempty"`
-	Uuid                    *string                        `json:"uuid,omitempty"` //nolint:revive // var-naming: API struct field
+	Frequency               *alertingRuleActionFrequency    `json:"frequency,omitempty"`
+	Group                   *string                         `json:"group,omitempty"`
+	Id                      string                          `json:"id"` //nolint:revive // var-naming: API struct field
+	Params                  *map[string]*any                `json:"params,omitempty"`
+	UseAlertDataForTemplate *bool                           `json:"use_alert_data_for_template,omitempty"`
+	Uuid                    *string                         `json:"uuid,omitempty"` //nolint:revive // var-naming: API struct field
 }
 
 type alertingRuleActionFrequency struct {
@@ -651,6 +657,17 @@ func buildActionsSlice(modelActions []models.AlertingRuleAction) []alertingRuleA
 		}
 	}
 	return actions
+}
+
+func convertActionsSlice(modelActions []models.AlertingRuleAction, target any) error {
+	data, err := json.Marshal(buildActionsSlice(modelActions))
+	if err != nil {
+		return fmt.Errorf("marshal actions: %w", err)
+	}
+	if err := json.Unmarshal(data, target); err != nil {
+		return fmt.Errorf("unmarshal actions: %w", err)
+	}
+	return nil
 }
 
 // flappingWire is a type alias for the flapping JSON object on create/update alerting rule requests.

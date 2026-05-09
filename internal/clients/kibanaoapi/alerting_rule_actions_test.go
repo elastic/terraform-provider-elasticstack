@@ -149,8 +149,11 @@ func Test_buildCreateAndUpdateActionsJSON(t *testing.T) {
 		},
 	}
 
-	createBody := buildCreateRequestBody(rule)
-	updateBody := buildUpdateRequestBody(rule)
+	createBody, err := buildCreateRequestBody(rule)
+	require.NoError(t, err)
+
+	updateBody, err := buildUpdateRequestBody(rule)
+	require.NoError(t, err)
 
 	createActionsJSON, err := json.Marshal(createBody.Actions)
 	require.NoError(t, err)
@@ -166,5 +169,52 @@ func Test_buildCreateAndUpdateActionsJSON(t *testing.T) {
 	require.Len(t, updateActions, len(createActions))
 	for i := range createActions {
 		require.Equal(t, createActions[i], updateActions[i], "action[%d] differs between create and update", i)
+	}
+}
+
+func Test_buildRequestBody_returnsErrorOnInvalidActionParams(t *testing.T) {
+	tests := []struct {
+		name  string
+		build func(models.AlertingRule) error
+	}{
+		{
+			name: "create",
+			build: func(rule models.AlertingRule) error {
+				_, err := buildCreateRequestBody(rule)
+				return err
+			},
+		},
+		{
+			name: "update",
+			build: func(rule models.AlertingRule) error {
+				_, err := buildUpdateRequestBody(rule)
+				return err
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rule := models.AlertingRule{
+				Name:       "test-rule",
+				Consumer:   "alerts",
+				RuleTypeID: ".index-threshold",
+				Schedule:   models.AlertingRuleSchedule{Interval: "5m"},
+				Params:     map[string]any{},
+				Actions: []models.AlertingRuleAction{
+					{
+						ID:     "connector-id-1",
+						Group:  "threshold met",
+						Params: map[string]any{"invalid": make(chan int)},
+					},
+				},
+			}
+
+			err := tt.build(rule)
+			require.Error(t, err)
+			require.ErrorContains(t, err, "convert actions")
+			require.ErrorContains(t, err, "marshal actions")
+			require.ErrorContains(t, err, "unsupported type: chan int")
+		})
 	}
 }
