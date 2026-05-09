@@ -32,7 +32,7 @@ function findResearchComment(comments, marker) {
       c != null &&
       typeof c.body === 'string' &&
       (c.author ?? c.user?.login) === 'github-actions[bot]' &&
-      c.body.includes(marker),
+      c.body.trimStart().startsWith(marker),
   );
   return matches.length > 0 ? matches[matches.length - 1] : null;
 }

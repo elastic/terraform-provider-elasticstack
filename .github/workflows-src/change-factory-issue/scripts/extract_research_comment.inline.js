@@ -1,3 +1,5 @@
+//include: ../../lib/sanitize-context.js
+
 const marker = '<!-- gha-research-factory -->';
 const commentsJson = process.env.INPUT_COMMENTS_JSON || '[]';
 
@@ -8,18 +10,13 @@ try {
   comments = [];
 }
 
-// Find research comment (most recent match by github-actions[bot])
-const matches = (comments || []).filter(
-  (c) => c.author === 'github-actions[bot]' && c.body.includes(marker),
-);
-
 const fs = require('fs');
 const crypto = require('crypto');
 
-if (matches.length > 0) {
-  const latest = matches[matches.length - 1];
+const researchComment = findResearchComment(comments, marker);
+if (researchComment) {
   const eofDelim = `EOF_${crypto.randomUUID().replace(/-/g, '')}`;
-  const output = `research_comment_body<<${eofDelim}\n${latest.body}\n${eofDelim}\n`;
+  const output = `research_comment_body<<${eofDelim}\n${researchComment.body}\n${eofDelim}\n`;
   fs.appendFileSync(process.env.GITHUB_OUTPUT, output);
   core.info(`Found research comment for issue`);
 } else {

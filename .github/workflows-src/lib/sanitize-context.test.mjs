@@ -142,21 +142,21 @@ test('findResearchComment returns null when no comments match', () => {
 test('findResearchComment returns single match', () => {
   const comments = [
     { author: 'alice', body: 'hello' },
-    { author: 'github-actions[bot]', body: 'contains MARKER-123 here' },
+    { author: 'github-actions[bot]', body: 'MARKER-123 here' },
   ];
   const result = findResearchComment(comments, 'MARKER-123');
   assert.equal(result.author, 'github-actions[bot]');
-  assert.equal(result.body, 'contains MARKER-123 here');
+  assert.equal(result.body, 'MARKER-123 here');
 });
 
 test('findResearchComment returns most recent match when multiple bot comments match', () => {
   const comments = [
-    { author: 'github-actions[bot]', body: 'older MARKER-456' },
+    { author: 'github-actions[bot]', body: 'MARKER-456 older' },
     { author: 'alice', body: 'interruption' },
-    { author: 'github-actions[bot]', body: 'newer MARKER-456' },
+    { author: 'github-actions[bot]', body: 'MARKER-456 newer' },
   ];
   const result = findResearchComment(comments, 'MARKER-456');
-  assert.equal(result.body, 'newer MARKER-456');
+  assert.equal(result.body, 'MARKER-456 newer');
 });
 
 test('findResearchComment ignores comments with wrong author', () => {
@@ -175,6 +175,13 @@ test('findResearchComment ignores comments missing the marker', () => {
   assert.equal(findResearchComment(comments, 'SEARCH-FOR-THIS'), null);
 });
 
+test('findResearchComment ignores marker not at start', () => {
+  const comments = [
+    { author: 'github-actions[bot]', body: 'marker is NOT-AT-START here' },
+  ];
+  assert.equal(findResearchComment(comments, 'NOT-AT-START'), null);
+});
+
 test('findResearchComment handles null or undefined input', () => {
   assert.equal(findResearchComment(null, 'm'), null);
   assert.equal(findResearchComment(undefined, 'm'), null);
@@ -184,39 +191,39 @@ test('findResearchComment skips comments with null or undefined body', () => {
   const comments = [
     { author: 'github-actions[bot]', body: null },
     { author: 'github-actions[bot]', body: undefined },
-    { author: 'github-actions[bot]', body: 'valid marker-Y body' },
+    { author: 'github-actions[bot]', body: 'marker-Y body' },
   ];
   const result = findResearchComment(comments, 'marker-Y');
-  assert.equal(result.body, 'valid marker-Y body');
+  assert.equal(result.body, 'marker-Y body');
 });
 
-test('findResearchComment treats marker as substring', () => {
+test('findResearchComment matches marker at start', () => {
   const comments = [
-    { author: 'github-actions[bot]', body: 'abc SUB-789 def' },
+    { author: 'github-actions[bot]', body: 'SUB-789 def' },
   ];
   const result = findResearchComment(comments, 'SUB-789');
   assert.ok(result);
-  assert.equal(result.body, 'abc SUB-789 def');
+  assert.equal(result.body, 'SUB-789 def');
 });
 
 test('findResearchComment returns last match even when earlier ones have same marker', () => {
   const comments = [
-    { author: 'github-actions[bot]', body: 'first REPEAT' },
-    { author: 'github-actions[bot]', body: 'second REPEAT' },
-    { author: 'github-actions[bot]', body: 'third REPEAT' },
+    { author: 'github-actions[bot]', body: 'REPEAT first' },
+    { author: 'github-actions[bot]', body: 'REPEAT second' },
+    { author: 'github-actions[bot]', body: 'REPEAT third' },
   ];
   const result = findResearchComment(comments, 'REPEAT');
-  assert.equal(result.body, 'third REPEAT');
+  assert.equal(result.body, 'REPEAT third');
 });
 
 test('findResearchComment accepts raw GitHub API comment objects', () => {
   const comments = [
     { user: { login: 'alice' }, body: 'hello' },
-    { user: { login: 'github-actions[bot]' }, body: 'contains RAW-MARKER here' },
+    { user: { login: 'github-actions[bot]' }, body: 'RAW-MARKER here' },
   ];
   const result = findResearchComment(comments, 'RAW-MARKER');
   assert.ok(result);
-  assert.equal(result.body, 'contains RAW-MARKER here');
+  assert.equal(result.body, 'RAW-MARKER here');
 });
 
 test('findResearchComment returns null for non-array object input', () => {
@@ -227,20 +234,20 @@ test('findResearchComment skips null and undefined entries', () => {
   const comments = [
     null,
     undefined,
-    { author: 'github-actions[bot]', body: 'valid marker-Z body' },
+    { author: 'github-actions[bot]', body: 'marker-Z body' },
   ];
   const result = findResearchComment(comments, 'marker-Z');
   assert.ok(result);
-  assert.equal(result.body, 'valid marker-Z body');
+  assert.equal(result.body, 'marker-Z body');
 });
 
 test('findResearchComment skips entries with non-string body', () => {
   const comments = [
     { author: 'github-actions[bot]', body: 123 },
     { author: 'github-actions[bot]', body: {} },
-    { author: 'github-actions[bot]', body: 'valid marker-W body' },
+    { author: 'github-actions[bot]', body: 'marker-W body' },
   ];
   const result = findResearchComment(comments, 'marker-W');
   assert.ok(result);
-  assert.equal(result.body, 'valid marker-W body');
+  assert.equal(result.body, 'marker-W body');
 });
