@@ -49,6 +49,17 @@ func (r *Resource) readRuleFromAPI(ctx context.Context, apiClient *clients.Kiban
 		return false, diags
 	}
 
+	internalRule, internalReadDiags := kibanaoapi.GetInternalAlertingRule(ctx, oapiClient, spaceID, ruleID)
+	diags.Append(internalReadDiags...)
+	if diags.HasError() {
+		return false, diags
+	}
+	if internalRule != nil && internalRule.Artifacts != nil {
+		// Public GET often omits artifacts even when writes succeed; prefer the
+		// internal rule representation when it carries artifacts.
+		rule.Artifacts = internalRule.Artifacts
+	}
+
 	diags.Append(model.populateFromAPI(ctx, rule)...)
 	return true, diags
 }

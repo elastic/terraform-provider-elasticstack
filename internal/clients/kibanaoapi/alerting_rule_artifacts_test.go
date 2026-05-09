@@ -90,3 +90,36 @@ func TestConvertResponseToModel_PreservesEmptyArtifactsDashboards(t *testing.T) 
 	require.NotNil(t, model.Artifacts.Dashboards)
 	require.Empty(t, model.Artifacts.Dashboards)
 }
+
+func TestConvertResponseToModel_PopulatesArtifactsDashboardsAndGuide(t *testing.T) {
+	resp := map[string]any{
+		"id":           "id",
+		"name":         "name",
+		"consumer":     "consumer",
+		"params":       map[string]any{},
+		"rule_type_id": "rule-type-id",
+		"enabled":      true,
+		"schedule": map[string]any{
+			"interval": "1m",
+		},
+		"artifacts": map[string]any{
+			"dashboards": []any{
+				map[string]any{"id": "dashboard-1"},
+				map[string]any{"id": "dashboard-2"},
+			},
+			"investigation_guide": map[string]any{
+				"blob": "guide",
+			},
+		},
+	}
+
+	model, diags := ConvertResponseToModel("default", resp)
+	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags)
+	require.NotNil(t, model)
+	require.NotNil(t, model.Artifacts)
+	require.Len(t, model.Artifacts.Dashboards, 2)
+	require.Equal(t, "dashboard-1", model.Artifacts.Dashboards[0].ID)
+	require.Equal(t, "dashboard-2", model.Artifacts.Dashboards[1].ID)
+	require.NotNil(t, model.Artifacts.InvestigationGuide)
+	require.Equal(t, "guide", model.Artifacts.InvestigationGuide.Blob)
+}

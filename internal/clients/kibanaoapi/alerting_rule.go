@@ -21,6 +21,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 
@@ -93,6 +94,40 @@ func GetAlertingRule(ctx context.Context, client *Client, spaceID string, ruleID
 		return nil, nil
 	default:
 		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
+	}
+}
+
+func GetInternalAlertingRule(ctx context.Context, client *Client, spaceID string, ruleID string) (*models.AlertingRule, diag.Diagnostics) {
+	path := kibanautil.BuildSpaceAwarePath(spaceID, fmt.Sprintf("/internal/alerting/rule/%s", ruleID))
+	url := client.URL + path
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, diag.Diagnostics{diag.NewErrorDiagnostic("Unable to build internal alerting rule request", err.Error())}
+	}
+
+	resp, err := client.HTTP.Do(req)
+	if err != nil {
+		return nil, diag.Diagnostics{diag.NewErrorDiagnostic("Unable to get internal alerting rule", err.Error())}
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, diag.Diagnostics{diag.NewErrorDiagnostic("Unable to read internal alerting rule response", err.Error())}
+	}
+
+	switch resp.StatusCode {
+	case http.StatusOK:
+		var decoded map[string]any
+		if err := json.Unmarshal(body, &decoded); err != nil {
+			return nil, diag.Diagnostics{diag.NewErrorDiagnostic("Failed to parse internal alerting rule response", err.Error())}
+		}
+		return ConvertResponseToModel(spaceID, decoded)
+	case http.StatusNotFound:
+		return nil, nil
+	default:
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode, body)
 	}
 }
 
@@ -252,7 +287,7 @@ func ConvertResponseToModel(spaceID string, resp any) (*models.AlertingRule, dia
 			StatusChangeThreshold float64 `json:"status_change_threshold"`
 		} `json:"flapping"`
 		Artifacts *struct {
-			Dashboards []struct {
+			Dashboards *[]struct {
 				ID string `json:"id"`
 			} `json:"dashboards,omitempty"`
 			InvestigationGuide *struct {
@@ -365,8 +400,8 @@ func ConvertResponseToModel(spaceID string, resp any) (*models.AlertingRule, dia
 	if intermediate.Artifacts != nil {
 		artifacts = &models.AlertingRuleArtifacts{}
 		if intermediate.Artifacts.Dashboards != nil {
-			artifacts.Dashboards = make([]models.AlertingRuleArtifactDashboard, len(intermediate.Artifacts.Dashboards))
-			for i, d := range intermediate.Artifacts.Dashboards {
+			artifacts.Dashboards = make([]models.AlertingRuleArtifactDashboard, len(*intermediate.Artifacts.Dashboards))
+			for i, d := range *intermediate.Artifacts.Dashboards {
 				artifacts.Dashboards[i] = models.AlertingRuleArtifactDashboard{ID: d.ID}
 			}
 		}

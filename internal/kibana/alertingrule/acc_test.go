@@ -819,13 +819,13 @@ func TestAccResourceAlertingRuleFrequencyExclusivity(t *testing.T) {
 
 func checkIfArtifactsUnsupported() func() (bool, error) {
 	return func() (b bool, err error) {
-		client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+		client, err := clients.NewAcceptanceTestingKibanaScopedClient()
 		if err != nil {
 			return false, err
 		}
 		serverVersion, diags := client.ServerVersion(context.Background())
 		if diags.HasError() {
-			return false, fmt.Errorf("failed to parse the elasticsearch version %v", diags)
+			return false, fmt.Errorf("failed to parse the kibana version %v", diags)
 		}
 		major := serverVersion.Segments()[0]
 		minVersion := version.Must(version.NewVersion("8.19.0"))
@@ -857,9 +857,9 @@ func testCheckAlertingRuleAPIArtifactsDashboardsCount(expected int) resource.Tes
 			return err
 		}
 
-		rule, diags := kibanaoapi.GetAlertingRule(context.Background(), oapiClient, compID.ClusterID, compID.ResourceID)
+		rule, diags := kibanaoapi.GetInternalAlertingRule(context.Background(), oapiClient, compID.ClusterID, compID.ResourceID)
 		if diags.HasError() {
-			return fmt.Errorf("failed to get alerting rule: %v", diags)
+			return fmt.Errorf("failed to get internal alerting rule: %v", diags)
 		}
 		if rule == nil {
 			return fmt.Errorf("alerting rule (%s) not found", compID.ResourceID)
@@ -897,9 +897,9 @@ func testCheckAlertingRuleAPIArtifactsInvestigationGuideBlob(expected string) re
 			return err
 		}
 
-		rule, diags := kibanaoapi.GetAlertingRule(context.Background(), oapiClient, compID.ClusterID, compID.ResourceID)
+		rule, diags := kibanaoapi.GetInternalAlertingRule(context.Background(), oapiClient, compID.ClusterID, compID.ResourceID)
 		if diags.HasError() {
-			return fmt.Errorf("failed to get alerting rule: %v", diags)
+			return fmt.Errorf("failed to get internal alerting rule: %v", diags)
 		}
 		if rule == nil {
 			return fmt.Errorf("alerting rule (%s) not found", compID.ResourceID)
@@ -937,9 +937,9 @@ func testCheckAlertingRuleStateMatchesAPIArtifactsInvestigationGuideBlob(resourc
 			return err
 		}
 
-		rule, diags := kibanaoapi.GetAlertingRule(context.Background(), oapiClient, compID.ClusterID, compID.ResourceID)
+		rule, diags := kibanaoapi.GetInternalAlertingRule(context.Background(), oapiClient, compID.ClusterID, compID.ResourceID)
 		if diags.HasError() {
-			return fmt.Errorf("failed to get alerting rule: %v", diags)
+			return fmt.Errorf("failed to get internal alerting rule: %v", diags)
 		}
 		if rule == nil {
 			return fmt.Errorf("alerting rule (%s) not found", compID.ResourceID)

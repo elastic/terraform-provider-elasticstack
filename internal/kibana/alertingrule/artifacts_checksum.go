@@ -53,7 +53,30 @@ func persistArtifactsChecksum(ctx context.Context, model *alertingRuleModel) dia
 		return diags
 	}
 
-	if igm.ContentPath.IsUnknown() || igm.ContentPath.IsNull() || igm.ContentPath.ValueString() == "" {
+	if igm.ContentPath.IsUnknown() {
+		return diags
+	}
+
+	if igm.ContentPath.IsNull() || igm.ContentPath.ValueString() == "" {
+		if !igm.Checksum.IsUnknown() {
+			return diags
+		}
+
+		igm.Checksum = types.StringNull()
+		igObj, d := types.ObjectValueFrom(ctx, getInvestigationGuideAttrTypes(), igm)
+		diags.Append(d...)
+		if diags.HasError() {
+			return diags
+		}
+
+		am.InvestigationGuide = igObj
+		artifactsObj, d := types.ObjectValueFrom(ctx, getArtifactsAttrTypes(), am)
+		diags.Append(d...)
+		if diags.HasError() {
+			return diags
+		}
+
+		model.Artifacts = artifactsObj
 		return diags
 	}
 

@@ -65,3 +65,33 @@ func TestPersistArtifactsChecksum(t *testing.T) {
 	sum := sha256.Sum256(content)
 	require.Equal(t, hex.EncodeToString(sum[:]), igm.Checksum.ValueString())
 }
+
+func TestPersistArtifactsChecksum_ClearsUnknownChecksumWhenContentPathAbsent(t *testing.T) {
+	ctx := context.Background()
+
+	igObj, diags := types.ObjectValueFrom(ctx, getInvestigationGuideAttrTypes(), investigationGuideModel{
+		Content:     types.StringValue("inline guide"),
+		ContentPath: types.StringNull(),
+		Checksum:    types.StringUnknown(),
+	})
+	require.False(t, diags.HasError())
+
+	artifactsObj, diags := types.ObjectValueFrom(ctx, getArtifactsAttrTypes(), artifactsModel{
+		Dashboards:         types.ListNull(types.ObjectType{AttrTypes: getDashboardsAttrTypes()}),
+		InvestigationGuide: igObj,
+	})
+	require.False(t, diags.HasError())
+
+	model := alertingRuleModel{Artifacts: artifactsObj}
+	diags = persistArtifactsChecksum(ctx, &model)
+	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags)
+
+	var am artifactsModel
+	diags = model.Artifacts.As(ctx, &am, basetypes.ObjectAsOptions{})
+	require.False(t, diags.HasError())
+
+	var igm investigationGuideModel
+	diags = am.InvestigationGuide.As(ctx, &igm, basetypes.ObjectAsOptions{})
+	require.False(t, diags.HasError())
+	require.True(t, igm.Checksum.IsNull())
+}
