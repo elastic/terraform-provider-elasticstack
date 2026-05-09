@@ -405,30 +405,8 @@ func buildCreateRequestBody(rule models.AlertingRule) (kbapi.AlertingRuleAPIBody
 		body.Enabled = rule.Enabled
 	}
 
-	if rule.NotifyWhen != nil && *rule.NotifyWhen != "" {
-		notifyWhen := kbapi.AlertingRuleAPIBodyGenericNotifyWhen(*rule.NotifyWhen)
-		body.NotifyWhen = &notifyWhen
-	}
-
-	if rule.Throttle != nil {
-		body.Throttle = rule.Throttle
-	}
-
-	if rule.Tags != nil {
-		tags := rule.Tags
-		body.Tags = &tags
-	}
-
-	if rule.AlertDelay != nil {
-		body.AlertDelay = &struct {
-			Active float32 `json:"active"`
-		}{
-			Active: *rule.AlertDelay,
-		}
-	}
-
-	if w := flappingWireFromModel(rule.Flapping); w != nil {
-		body.Flapping = w
+	if err := applyOptionalRuleFields(buildOptionalRuleFields(rule), &body); err != nil {
+		return body, fmt.Errorf("apply optional fields: %w", err)
 	}
 
 	if len(rule.Actions) > 0 {
@@ -489,30 +467,8 @@ func buildUpdateRequestBody(rule models.AlertingRule) (kbapi.PutAlertingRuleIdJS
 		body.Params = &params
 	}
 
-	if rule.NotifyWhen != nil && *rule.NotifyWhen != "" {
-		notifyWhen := kbapi.PutAlertingRuleIdJSONBodyNotifyWhen(*rule.NotifyWhen)
-		body.NotifyWhen = &notifyWhen
-	}
-
-	if rule.Throttle != nil {
-		body.Throttle = rule.Throttle
-	}
-
-	if rule.Tags != nil {
-		tags := rule.Tags
-		body.Tags = &tags
-	}
-
-	if rule.AlertDelay != nil {
-		body.AlertDelay = &struct {
-			Active float32 `json:"active"`
-		}{
-			Active: *rule.AlertDelay,
-		}
-	}
-
-	if w := flappingWireFromModel(rule.Flapping); w != nil {
-		body.Flapping = w
+	if err := applyOptionalRuleFields(buildOptionalRuleFields(rule), &body); err != nil {
+		return body, fmt.Errorf("apply optional fields: %w", err)
 	}
 
 	if len(rule.Actions) > 0 {
@@ -687,6 +643,65 @@ func flappingWireFromModel(f *models.AlertingRuleFlapping) *flappingWire {
 		LookBackWindow:        float32(f.LookBackWindow),
 		StatusChangeThreshold: float32(f.StatusChangeThreshold),
 	}
+}
+
+// ruleBodyOptionalFields holds optional fields shared by create and update alerting rule request
+// bodies. JSON field names are identical between AlertingRuleAPIBodyGeneric and
+// PutAlertingRuleIdJSONBody, so a single intermediate struct can be marshaled into either via
+// applyOptionalRuleFields.
+type ruleBodyOptionalFields struct {
+	NotifyWhen *string   `json:"notify_when,omitempty"`
+	Throttle   *string   `json:"throttle,omitempty"`
+	Tags       *[]string `json:"tags,omitempty"`
+	AlertDelay *struct {
+		Active float32 `json:"active"`
+	} `json:"alert_delay,omitempty"`
+	Flapping *flappingWire `json:"flapping,omitempty"`
+}
+
+func buildOptionalRuleFields(rule models.AlertingRule) ruleBodyOptionalFields {
+	fields := ruleBodyOptionalFields{}
+
+	if rule.NotifyWhen != nil && *rule.NotifyWhen != "" {
+		fields.NotifyWhen = rule.NotifyWhen
+	}
+
+	if rule.Throttle != nil {
+		fields.Throttle = rule.Throttle
+	}
+
+	if rule.Tags != nil {
+		tags := rule.Tags
+		fields.Tags = &tags
+	}
+
+	if rule.AlertDelay != nil {
+		fields.AlertDelay = &struct {
+			Active float32 `json:"active"`
+		}{
+			Active: *rule.AlertDelay,
+		}
+	}
+
+	if w := flappingWireFromModel(rule.Flapping); w != nil {
+		fields.Flapping = w
+	}
+
+	return fields
+}
+
+// applyOptionalRuleFields merges the shared optional fields into target via JSON round-trip.
+// This is lossless because the JSON field names and underlying types match between
+// AlertingRuleAPIBodyGeneric and PutAlertingRuleIdJSONBody for these fields.
+func applyOptionalRuleFields(fields ruleBodyOptionalFields, target any) error {
+	data, err := json.Marshal(fields)
+	if err != nil {
+		return fmt.Errorf("marshal optional fields: %w", err)
+	}
+	if err := json.Unmarshal(data, target); err != nil {
+		return fmt.Errorf("unmarshal optional fields: %w", err)
+	}
+	return nil
 }
 
 func valueOrDefault(val *string, def string) string {
