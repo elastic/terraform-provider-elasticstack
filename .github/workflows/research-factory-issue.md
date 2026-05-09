@@ -2045,19 +2045,65 @@ on:
         ISSUE_BODY: ${{ steps.normalize_context.outputs.issue_body }}
         ISSUE_COMMENTS: ${{ steps.normalize_context.outputs.issue_comments }}
         PRIOR_RESEARCH_COMMENT: ${{ steps.normalize_context.outputs.prior_research_comment }}
-      run: |
-        mkdir -p /tmp/research-factory-context
-        node <<'NODE_SCRIPT'
-        const fs = require('fs');
-        function stripHtmlComments(text) {
-          if (typeof text !== 'string') return '';
-          return text.replace(/<!--[\s\S]*?(?:-->|$)/g, '');
-        }
-        fs.writeFileSync('/tmp/research-factory-context/issue_body.md', stripHtmlComments(process.env.ISSUE_BODY));
-        fs.writeFileSync('/tmp/research-factory-context/issue_comments.md', stripHtmlComments(process.env.ISSUE_COMMENTS));
-        fs.writeFileSync('/tmp/research-factory-context/prior_research_comment.md', process.env.PRIOR_RESEARCH_COMMENT || '');
-        NODE_SCRIPT
-      shell: bash
+      uses: actions/github-script@v9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          /**
+           * HTML comment sanitisation and research-comment lookup helpers.
+           */
+          
+          /**
+           * Removes all HTML comment sequences (<code>&lt;!--</code> through the next <code>--&gt;</code>).
+           * If an opening sequence has no closing counterpart, everything from the opener to the end of
+           * the string is removed.
+           *
+           * @param {string} text
+           * @returns {string}
+           */
+          function stripHtmlComments(text) {
+            if (typeof text !== 'string') return '';
+            return text.replace(/<!--[\s\S]*?(?:-->|$)/g, '');
+          }
+          
+          /**
+           * Finds the most recently created matching research comment written by
+           * <code>github-actions[bot]</code> whose body starts with <code>marker</code>.
+           *
+           * @param {Array<{author: string, body: string}>} comments Ordered oldest-first.
+           * @param {string} marker
+           * @returns {{author: string, body: string} | null}
+           */
+          function findResearchComment(comments, marker) {
+            if (!Array.isArray(comments)) {
+              return null;
+            }
+            const matches = comments.filter(
+              (c) =>
+                c != null &&
+                typeof c.body === 'string' &&
+                (c.author ?? c.user?.login) === 'github-actions[bot]' &&
+                c.body.trimStart().startsWith(marker),
+            );
+            return matches.length > 0 ? matches[matches.length - 1] : null;
+          }
+          
+          if (typeof module !== 'undefined') {
+            module.exports = {
+              stripHtmlComments,
+              findResearchComment,
+            };
+          }
+          
+          const fs = require('fs');
+          const dir = '/tmp/research-factory-context';
+          
+          fs.mkdirSync(dir, { recursive: true });
+          fs.writeFileSync(`${dir}/issue_body.md`, stripHtmlComments(process.env.ISSUE_BODY));
+          fs.writeFileSync(`${dir}/issue_comments.md`, stripHtmlComments(process.env.ISSUE_COMMENTS));
+          fs.writeFileSync(`${dir}/prior_research_comment.md`, process.env.PRIOR_RESEARCH_COMMENT || '');
+          core.info('Wrote sanitized issue context files to /tmp/research-factory-context/');
+          
     - name: Upload issue context artifact
       if: >
         steps.normalize_context.outputs.event_eligible == 'true' &&
@@ -2140,20 +2186,7 @@ safe-outputs:
           return;
         }
         
-        let body = item.body || '';
-        if (!body && process.env.GH_AW_AGENT_OUTPUT) {
-          try {
-            const fs = require('fs');
-            const raw = fs.readFileSync(process.env.GH_AW_AGENT_OUTPUT, 'utf-8');
-            const ops = JSON.parse(raw);
-            const op = Array.isArray(ops) ? ops.find(o => o.tool === 'update_research_comment' || o.tool === 'update-research-comment') : null;
-            if (op && op.body) {
-              body = op.body;
-            }
-          } catch (e) {
-            // fallback failed, body remains empty
-          }
-        }
+        const body = item.body || '';
         
         if (!issueNumber || issueNumber <= 0) {
           core.setFailed('update-research-comment: invalid issue number.');

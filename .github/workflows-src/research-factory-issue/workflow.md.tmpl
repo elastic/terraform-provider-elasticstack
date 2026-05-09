@@ -218,19 +218,10 @@ on:
         ISSUE_BODY: ${{ steps.normalize_context.outputs.issue_body }}
         ISSUE_COMMENTS: ${{ steps.normalize_context.outputs.issue_comments }}
         PRIOR_RESEARCH_COMMENT: ${{ steps.normalize_context.outputs.prior_research_comment }}
-      run: |
-        mkdir -p /tmp/research-factory-context
-        node <<'NODE_SCRIPT'
-        const fs = require('fs');
-        function stripHtmlComments(text) {
-          if (typeof text !== 'string') return '';
-          return text.replace(/<!--[\s\S]*?(?:-->|$)/g, '');
-        }
-        fs.writeFileSync('/tmp/research-factory-context/issue_body.md', stripHtmlComments(process.env.ISSUE_BODY));
-        fs.writeFileSync('/tmp/research-factory-context/issue_comments.md', stripHtmlComments(process.env.ISSUE_COMMENTS));
-        fs.writeFileSync('/tmp/research-factory-context/prior_research_comment.md', process.env.PRIOR_RESEARCH_COMMENT || '');
-        NODE_SCRIPT
-      shell: bash
+      uses: actions/github-script@v9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        x-script-include: scripts/write_context_files.inline.js
     - name: Upload issue context artifact
       if: >
         steps.normalize_context.outputs.event_eligible == 'true' &&

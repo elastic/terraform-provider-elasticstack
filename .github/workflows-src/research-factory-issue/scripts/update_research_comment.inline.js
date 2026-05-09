@@ -7,20 +7,7 @@ if (!item) {
   return;
 }
 
-let body = item.body || '';
-if (!body && process.env.GH_AW_AGENT_OUTPUT) {
-  try {
-    const fs = require('fs');
-    const raw = fs.readFileSync(process.env.GH_AW_AGENT_OUTPUT, 'utf-8');
-    const ops = JSON.parse(raw);
-    const op = Array.isArray(ops) ? ops.find(o => o.tool === 'update_research_comment' || o.tool === 'update-research-comment') : null;
-    if (op && op.body) {
-      body = op.body;
-    }
-  } catch (e) {
-    // fallback failed, body remains empty
-  }
-}
+const body = item.body || '';
 
 if (!issueNumber || issueNumber <= 0) {
   core.setFailed('update-research-comment: invalid issue number.');
