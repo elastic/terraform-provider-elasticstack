@@ -29,5 +29,5 @@ try {
   }
 } catch (err) {
   core.setOutput('prior_research_comment', '');
-  core.info(`Could not fetch prior research comment for issue #${issueNumber}: ${err.message}`);
+  core.warning(`Could not fetch prior research comment for issue #${issueNumber}: ${err.message}`);
 }
