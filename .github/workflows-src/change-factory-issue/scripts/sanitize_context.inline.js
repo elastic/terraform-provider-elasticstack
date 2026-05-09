@@ -16,3 +16,9 @@ fs.appendFileSync(process.env.GITHUB_OUTPUT, output1);
 const eofDelim2 = `EOF_${crypto.randomUUID().replace(/-/g, '')}`;
 const output2 = `sanitized_issue_comments<<${eofDelim2}\n${sanitizedComments}\n${eofDelim2}\n`;
 fs.appendFileSync(process.env.GITHUB_OUTPUT, output2);
+
+const dir = '/tmp/change-factory-context';
+fs.mkdirSync(dir, { recursive: true });
+fs.writeFileSync(`${dir}/issue_body.md`, sanitizedBody);
+fs.writeFileSync(`${dir}/issue_comments.md`, sanitizedComments);
+core.info('Wrote sanitized issue context files to /tmp/change-factory-context/');

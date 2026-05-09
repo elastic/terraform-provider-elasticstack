@@ -77,6 +77,16 @@ on:
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         x-script-include: scripts/sanitize_context.inline.js
+    - name: Upload issue context artifact
+      if: >-
+        steps.qualify_trigger.outputs.event_eligible == 'true' &&
+        steps.check_actor_trust.outputs.actor_trusted == 'true' &&
+        steps.check_duplicate_pr.outputs.duplicate_pr_found != 'true'
+      uses: actions/upload-artifact@v4
+      with:
+        name: change-factory-issue-context
+        path: /tmp/change-factory-context/
+        if-no-files-found: error
     - name: Remove trigger label
       id: remove_trigger_label
       if: >-
@@ -107,6 +117,11 @@ if: >-
   needs.pre_activation.outputs.actor_trusted == 'true' &&
   needs.pre_activation.outputs.duplicate_pr_found != 'true'
 steps:
+  - name: Download issue context artifact
+    uses: actions/download-artifact@v4
+    with:
+      name: change-factory-issue-context
+      path: /tmp/change-factory-context/
   - name: Setup Node.js
     uses: actions/setup-node@v6
     with:
@@ -187,23 +202,11 @@ this issue.
 - **Duplicate PR URL**: `${{ needs.pre_activation.outputs.duplicate_pr_url }}`
 - **Issue number**: `${{ github.event.issue.number }}`
 - **Issue title** (authoritative): `${{ needs.pre_activation.outputs.issue_title }}`
-- **Issue body** (authoritative, sanitised):
+- **Issue body** (authoritative, sanitised): see `/tmp/change-factory-context/issue_body.md`
 
-  ```markdown
-  ${{ needs.pre_activation.outputs.sanitized_issue_body }}
-  ```
+- **Comment history** (sanitised, human-authored): see `/tmp/change-factory-context/issue_comments.md`
 
-- **Comment history** (sanitised, human-authored):
-
-  ```markdown
-  ${{ needs.pre_activation.outputs.sanitized_issue_comments }}
-  ```
-
-- **Research comment** (if present):
-
-  ```markdown
-  ${{ needs.pre_activation.outputs.research_comment_body }}
-  ```
+- **Research comment** (if present): see `/tmp/change-factory-context/research_comment.md`
 
 - **Repository**: `${{ github.repository }}`
 - **Triggered by**: `@${{ github.actor }}`

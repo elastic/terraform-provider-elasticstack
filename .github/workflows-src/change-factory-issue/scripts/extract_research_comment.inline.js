@@ -35,3 +35,8 @@ const serialized = serializeIssueComments({ comments: humanComments, truncated: 
 const eofDelim2 = `EOF_${crypto.randomUUID().replace(/-/g, '')}`;
 const output2 = `human_comments<<${eofDelim2}\n${serialized}\n${eofDelim2}\n`;
 fs.appendFileSync(process.env.GITHUB_OUTPUT, output2);
+
+const dir = '/tmp/change-factory-context';
+fs.mkdirSync(dir, { recursive: true });
+fs.writeFileSync(`${dir}/research_comment.md`, researchComment ? researchComment.body : '');
+core.info('Wrote research comment to /tmp/change-factory-context/research_comment.md');
