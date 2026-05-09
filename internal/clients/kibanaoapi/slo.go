@@ -197,14 +197,34 @@ func SloResponseToModel(spaceID string, res *kbapi.SLOsSloWithSummaryResponse) *
 	}
 }
 
-// ResponseIndicatorToCreateIndicator converts the response indicator union type to the
-// create request indicator union type using ValueByDiscriminator and a type switch.
-func ResponseIndicatorToCreateIndicator(s kbapi.SLOsSloWithSummaryResponse_Indicator) (kbapi.SLOsCreateSloRequest_Indicator, error) {
+// extractSLOIndicator resolves the discriminated-union indicator to its concrete type.
+// It is the single place that maps ValueByDiscriminator output to a known indicator type;
+// adding a 7th indicator type requires only one change here.
+func extractSLOIndicator(s kbapi.SLOsSloWithSummaryResponse_Indicator) (any, error) {
 	v, err := s.ValueByDiscriminator()
 	if err != nil {
-		return kbapi.SLOsCreateSloRequest_Indicator{}, fmt.Errorf("unknown indicator type: %w", err)
+		return nil, fmt.Errorf("unknown indicator type: %w", err)
 	}
+	switch v.(type) {
+	case kbapi.SLOsIndicatorPropertiesApmAvailability,
+		kbapi.SLOsIndicatorPropertiesApmLatency,
+		kbapi.SLOsIndicatorPropertiesCustomKql,
+		kbapi.SLOsIndicatorPropertiesCustomMetric,
+		kbapi.SLOsIndicatorPropertiesHistogram,
+		kbapi.SLOsIndicatorPropertiesTimesliceMetric:
+		return v, nil
+	default:
+		return nil, fmt.Errorf("unhandled indicator type: %T", v)
+	}
+}
 
+// ResponseIndicatorToCreateIndicator converts the response indicator union type to the
+// create request indicator union type.
+func ResponseIndicatorToCreateIndicator(s kbapi.SLOsSloWithSummaryResponse_Indicator) (kbapi.SLOsCreateSloRequest_Indicator, error) {
+	v, err := extractSLOIndicator(s)
+	if err != nil {
+		return kbapi.SLOsCreateSloRequest_Indicator{}, err
+	}
 	var ret kbapi.SLOsCreateSloRequest_Indicator
 	switch ind := v.(type) {
 	case kbapi.SLOsIndicatorPropertiesApmAvailability:
@@ -219,20 +239,17 @@ func ResponseIndicatorToCreateIndicator(s kbapi.SLOsSloWithSummaryResponse_Indic
 		err = ret.FromSLOsIndicatorPropertiesHistogram(ind)
 	case kbapi.SLOsIndicatorPropertiesTimesliceMetric:
 		err = ret.FromSLOsIndicatorPropertiesTimesliceMetric(ind)
-	default:
-		return ret, fmt.Errorf("unhandled indicator type: %T", v)
 	}
 	return ret, err
 }
 
 // ResponseIndicatorToUpdateIndicator converts the response indicator union type to the
-// update request indicator union type using ValueByDiscriminator and a type switch.
+// update request indicator union type.
 func ResponseIndicatorToUpdateIndicator(s kbapi.SLOsSloWithSummaryResponse_Indicator) (kbapi.SLOsUpdateSloRequest_Indicator, error) {
-	v, err := s.ValueByDiscriminator()
+	v, err := extractSLOIndicator(s)
 	if err != nil {
-		return kbapi.SLOsUpdateSloRequest_Indicator{}, fmt.Errorf("unknown indicator type: %w", err)
+		return kbapi.SLOsUpdateSloRequest_Indicator{}, err
 	}
-
 	var ret kbapi.SLOsUpdateSloRequest_Indicator
 	switch ind := v.(type) {
 	case kbapi.SLOsIndicatorPropertiesApmAvailability:
@@ -247,8 +264,6 @@ func ResponseIndicatorToUpdateIndicator(s kbapi.SLOsSloWithSummaryResponse_Indic
 		err = ret.FromSLOsIndicatorPropertiesHistogram(ind)
 	case kbapi.SLOsIndicatorPropertiesTimesliceMetric:
 		err = ret.FromSLOsIndicatorPropertiesTimesliceMetric(ind)
-	default:
-		return ret, fmt.Errorf("unhandled indicator type: %T", v)
 	}
 	return ret, err
 }

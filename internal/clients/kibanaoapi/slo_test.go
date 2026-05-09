@@ -18,6 +18,7 @@
 package kibanaoapi
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -56,6 +57,155 @@ func makeApmAvailabilityIndicator(t *testing.T) kbapi.SLOsSloWithSummaryResponse
 	var result kbapi.SLOsSloWithSummaryResponse_Indicator
 	require.NoError(t, result.FromSLOsIndicatorPropertiesApmAvailability(ind))
 	return result
+}
+
+func makeApmLatencyIndicator(t *testing.T) kbapi.SLOsSloWithSummaryResponse_Indicator {
+	t.Helper()
+	ind := kbapi.SLOsIndicatorPropertiesApmLatency{
+		Type: "sli.apm.transactionDuration",
+		Params: struct {
+			Environment     string  `json:"environment"`
+			Filter          *string `json:"filter,omitempty"`
+			Index           string  `json:"index"`
+			Service         string  `json:"service"`
+			Threshold       float64 `json:"threshold"`
+			TransactionName string  `json:"transactionName"`
+			TransactionType string  `json:"transactionType"`
+		}{
+			Service:         "svc",
+			Environment:     "prod",
+			TransactionType: "request",
+			TransactionName: "GET /",
+			Index:           "metrics-*",
+			Threshold:       200,
+		},
+	}
+	var result kbapi.SLOsSloWithSummaryResponse_Indicator
+	require.NoError(t, result.FromSLOsIndicatorPropertiesApmLatency(ind))
+	return result
+}
+
+func makeCustomKqlIndicator(t *testing.T) kbapi.SLOsSloWithSummaryResponse_Indicator {
+	t.Helper()
+	var ind kbapi.SLOsIndicatorPropertiesCustomKql
+	require.NoError(t, json.Unmarshal([]byte(`{
+		"type": "sli.kql.custom",
+		"params": {"index":"logs-*","timestampField":"@timestamp","good":"status:200","total":"*"}
+	}`), &ind))
+	var result kbapi.SLOsSloWithSummaryResponse_Indicator
+	require.NoError(t, result.FromSLOsIndicatorPropertiesCustomKql(ind))
+	return result
+}
+
+func makeCustomMetricIndicator(t *testing.T) kbapi.SLOsSloWithSummaryResponse_Indicator {
+	t.Helper()
+	var ind kbapi.SLOsIndicatorPropertiesCustomMetric
+	require.NoError(t, json.Unmarshal([]byte(`{
+		"type": "sli.metric.custom",
+		"params": {
+			"index": "metrics-*",
+			"timestampField": "@timestamp",
+			"good":  {"equation":"A","metrics":[{"aggregation":"sum","field":"good_field","name":"A"}]},
+			"total": {"equation":"A","metrics":[{"aggregation":"sum","field":"total_field","name":"A"}]}
+		}
+	}`), &ind))
+	var result kbapi.SLOsSloWithSummaryResponse_Indicator
+	require.NoError(t, result.FromSLOsIndicatorPropertiesCustomMetric(ind))
+	return result
+}
+
+func makeHistogramIndicator(t *testing.T) kbapi.SLOsSloWithSummaryResponse_Indicator {
+	t.Helper()
+	var ind kbapi.SLOsIndicatorPropertiesHistogram
+	require.NoError(t, json.Unmarshal([]byte(`{
+		"type": "sli.histogram.custom",
+		"params": {
+			"index": "metrics-*",
+			"timestampField": "@timestamp",
+			"good":  {"aggregation":"value_count","field":"latency"},
+			"total": {"aggregation":"value_count","field":"latency"}
+		}
+	}`), &ind))
+	var result kbapi.SLOsSloWithSummaryResponse_Indicator
+	require.NoError(t, result.FromSLOsIndicatorPropertiesHistogram(ind))
+	return result
+}
+
+func makeTimesliceMetricIndicator(t *testing.T) kbapi.SLOsSloWithSummaryResponse_Indicator {
+	t.Helper()
+	var ind kbapi.SLOsIndicatorPropertiesTimesliceMetric
+	require.NoError(t, json.Unmarshal([]byte(`{
+		"type": "sli.metric.timeslice",
+		"params": {
+			"index": "metrics-*",
+			"timestampField": "@timestamp",
+			"metric": {
+				"comparator": "GT",
+				"equation": "A",
+				"metrics": [{"aggregation":"avg","field":"latency","name":"A"}],
+				"threshold": 100
+			}
+		}
+	}`), &ind))
+	var result kbapi.SLOsSloWithSummaryResponse_Indicator
+	require.NoError(t, result.FromSLOsIndicatorPropertiesTimesliceMetric(ind))
+	return result
+}
+
+func Test_ResponseIndicatorToCreateIndicator(t *testing.T) {
+	tests := []struct {
+		name      string
+		indicator kbapi.SLOsSloWithSummaryResponse_Indicator
+		wantErr   bool
+	}{
+		{name: "apm availability", indicator: makeApmAvailabilityIndicator(t)},
+		{name: "apm latency", indicator: makeApmLatencyIndicator(t)},
+		{name: "custom kql", indicator: makeCustomKqlIndicator(t)},
+		{name: "custom metric", indicator: makeCustomMetricIndicator(t)},
+		{name: "histogram", indicator: makeHistogramIndicator(t)},
+		{name: "timeslice metric", indicator: makeTimesliceMetricIndicator(t)},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ResponseIndicatorToCreateIndicator(tt.indicator)
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				b, jsonErr := got.MarshalJSON()
+				require.NoError(t, jsonErr)
+				require.NotEmpty(t, b)
+			}
+		})
+	}
+}
+
+func Test_ResponseIndicatorToUpdateIndicator(t *testing.T) {
+	tests := []struct {
+		name      string
+		indicator kbapi.SLOsSloWithSummaryResponse_Indicator
+		wantErr   bool
+	}{
+		{name: "apm availability", indicator: makeApmAvailabilityIndicator(t)},
+		{name: "apm latency", indicator: makeApmLatencyIndicator(t)},
+		{name: "custom kql", indicator: makeCustomKqlIndicator(t)},
+		{name: "custom metric", indicator: makeCustomMetricIndicator(t)},
+		{name: "histogram", indicator: makeHistogramIndicator(t)},
+		{name: "timeslice metric", indicator: makeTimesliceMetricIndicator(t)},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ResponseIndicatorToUpdateIndicator(tt.indicator)
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				b, jsonErr := got.MarshalJSON()
+				require.NoError(t, jsonErr)
+				require.NotEmpty(t, b)
+			}
+		})
+	}
 }
 
 func Test_SloResponseToModel(t *testing.T) {
