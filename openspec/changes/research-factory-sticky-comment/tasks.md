@@ -24,16 +24,16 @@
 
 ## 3. Change-factory workflow
 
-- [ ] 3.1 Update `.github/workflows-src/change-factory-issue/workflow.md.tmpl` pre-activation to fetch issue comments
-- [ ] 3.2 Add deterministic step to extract research comment using `findResearchComment` from shared library
-- [ ] 3.3 Add deterministic step to strip HTML comments from issue body and human comments
-- [ ] 3.4 Update agent prompt: replace body-block extraction instructions with comment-based extraction
-- [ ] 3.5 Update agent prompt: describe `<!-- gha-research-factory -->` marker + `## Implementation research` heading
-- [ ] 3.6 Update agent prompt: remove references to `<!-- implementation-research:start/end -->` markers
-- [ ] 3.7 Update agent prompt: add instructions for extracting the JSON metadata block from the `<details>` element when present
-- [ ] 3.8 Update agent prompt: note that JSON metadata is a future enhancement area and the agent should not depend on it today
-- [ ] 3.9 Regenerate compiled workflow with `make workflow-generate`
-- [ ] 3.10 Verify compiled `.github/workflows/change-factory-issue.md` reflects comment-based extraction
+- [x] 3.1 Update `.github/workflows-src/change-factory-issue/workflow.md.tmpl` pre-activation to fetch issue comments
+- [x] 3.2 Add deterministic step to extract research comment using `findResearchComment` from shared library
+- [x] 3.3 Add deterministic step to strip HTML comments from issue body and human comments
+- [x] 3.4 Update agent prompt: replace body-block extraction instructions with comment-based extraction
+- [x] 3.5 Update agent prompt: describe `<!-- gha-research-factory -->` marker + `## Implementation research` heading
+- [x] 3.6 Update agent prompt: remove references to `<!-- implementation-research:start/end -->` markers
+- [x] 3.7 Update agent prompt: add instructions for extracting the JSON metadata block from the `<details>` element when present
+- [x] 3.8 Update agent prompt: note that JSON metadata is a future enhancement area and the agent should not depend on it today
+- [x] 3.9 Regenerate compiled workflow with `make workflow-generate`
+- [x] 3.10 Verify compiled `.github/workflows/change-factory-issue.md` reflects comment-based extraction
 
 ## 4. Code-factory workflow
 
