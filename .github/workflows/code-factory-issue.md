@@ -941,6 +941,145 @@ on:
             }
           }
           
+    - name: Fetch issue comments
+      id: fetch_issue_comments
+      if: >-
+        (
+          steps.determine_intake_mode.outputs.intake_mode == 'issue-event' &&
+          steps.qualify_trigger.outputs.event_eligible == 'true' &&
+          steps.check_actor_trust.outputs.actor_trusted == 'true'
+        ) || (
+          steps.determine_intake_mode.outputs.intake_mode == 'dispatch' &&
+          steps.validate_dispatch_inputs.outputs.event_eligible == 'true'
+        )
+      env:
+        INPUT_ISSUE_NUMBER: >-
+          ${{ steps.determine_intake_mode.outputs.intake_mode == 'issue-event'
+            && steps.capture_issue_context.outputs.issue_number
+            || steps.validate_dispatch_inputs.outputs.issue_number }}
+      uses: actions/github-script@v9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          /**
+           * Shared comment helpers for research-factory issue intake workflows.
+           */
+          
+          /**
+           * Fetches human-authored comments for an issue, paginated, with bot filtering and a hard cap.
+           *
+           * @param {{ github: object, owner: string, repo: string, issueNumber: number }} params
+           * @returns {Promise<{ comments: Array<{author: string, createdAt: string, body: string}>, truncated: boolean }>}
+           */
+          async function factoryFetchIssueComments({ github, owner, repo, issueNumber }) {
+            const MAX_COMMENTS = 200;
+            const allComments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number: issueNumber,
+              per_page: 100,
+            });
+          
+            const humanComments = [];
+            let truncated = false;
+            for (const comment of allComments) {
+              if (comment.user?.login?.endsWith('[bot]')) {
+                continue;
+              }
+              if (humanComments.length >= MAX_COMMENTS) {
+                truncated = true;
+                break;
+              }
+              humanComments.push({
+                author: comment.user?.login ?? '',
+                createdAt: comment.created_at ?? '',
+                body: comment.body ?? '',
+              });
+            }
+          
+            return {
+              comments: humanComments,
+              truncated,
+            };
+          }
+          
+          const COMMENT_CONTEXT_BUDGET = 50_000;
+          /** Overhead reserved for truncation markers appended after the loop. */
+          const COMMENT_CONTEXT_MARKER_OVERHEAD = 200;
+          
+          /**
+           * Serializes captured issue comments into a deterministic markdown string for agent prompts.
+           *
+           * @param {{ comments: Array<{author: string, createdAt: string, body: string}>, truncated: boolean }} params
+           * @returns {string}
+           */
+          function serializeIssueComments({ comments, truncated }) {
+            if (!Array.isArray(comments) || comments.length === 0) {
+              return '';
+            }
+          
+            const bodyBudget = COMMENT_CONTEXT_BUDGET - COMMENT_CONTEXT_MARKER_OVERHEAD;
+            let result = '';
+            let includedCount = 0;
+          
+            for (const comment of comments) {
+              const header = `**@${comment.author || ''}** (${comment.createdAt || ''}):\n\n`;
+              const body = comment.body || '';
+              const footer = '\n\n---\n';
+              const available = bodyBudget - result.length;
+          
+              if (available <= 0) {
+                break;
+              }
+          
+              const frameLength = header.length + footer.length;
+              if (frameLength > available) {
+                break;
+              }
+              const fullBlock = header + body + footer;
+              if (fullBlock.length <= available) {
+                result += fullBlock;
+              } else {
+                // Truncate this comment's body so the output stays within budget
+                const truncatedBody = body.slice(0, available - frameLength);
+                result += header + truncatedBody + footer;
+              }
+              includedCount++;
+            }
+          
+            const remaining = comments.length - includedCount;
+            if (remaining > 0) {
+              result += `[... ${remaining} more comments truncated for context budget]\n`;
+            }
+          
+            if (truncated) {
+              result += '[... comment history truncated at 200 comments]\n';
+            }
+          
+            return result;
+          }
+          
+          if (typeof module !== 'undefined') {
+            module.exports = {
+              factoryFetchIssueComments,
+              serializeIssueComments,
+              COMMENT_CONTEXT_BUDGET,
+            };
+          }
+          
+          const { owner, repo } = context.repo;
+          const issueNumber = parseInt(process.env.INPUT_ISSUE_NUMBER, 10);
+          
+          if (!issueNumber || issueNumber <= 0) {
+            core.setOutput('human_comments', '');
+            core.info('No issue number provided; skipping comment fetch.');
+          } else {
+            const { comments, truncated } = await factoryFetchIssueComments({ github, owner, repo, issueNumber });
+            const serialized = serializeIssueComments({ comments, truncated });
+            core.setOutput('human_comments', serialized);
+            core.info(`Fetched and serialized ${comments.length} human comments for issue #${issueNumber}`);
+          }
+          
     - name: Check duplicate PR
       id: check_duplicate_pr
       if: >-
@@ -1502,6 +1641,82 @@ on:
         echo "duplicate_pr_found=${DUPLICATE_PR_FOUND}" >> "$GITHUB_OUTPUT"
         echo "duplicate_pr_url=${DUPLICATE_PR_URL}" >> "$GITHUB_OUTPUT"
       shell: bash
+    - name: Sanitize context
+      id: sanitize_context
+      if: >-
+        steps.normalize_context.outputs.event_eligible == 'true' &&
+        steps.normalize_context.outputs.actor_trusted == 'true' &&
+        steps.check_duplicate_pr.outputs.duplicate_pr_found != 'true'
+      env:
+        ISSUE_BODY: ${{ steps.normalize_context.outputs.issue_body }}
+        HUMAN_COMMENTS: ${{ steps.fetch_issue_comments.outputs.human_comments }}
+      uses: actions/github-script@v9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          /**
+           * HTML comment sanitisation and research-comment lookup helpers.
+           */
+          
+          /**
+           * Removes all HTML comment sequences (<code>&lt;!--</code> through the next <code>--&gt;</code>).
+           * If an opening sequence has no closing counterpart, everything from the opener to the end of
+           * the string is removed.
+           *
+           * @param {string} text
+           * @returns {string}
+           */
+          function stripHtmlComments(text) {
+            if (typeof text !== 'string') return '';
+            return text.replace(/<!--[\s\S]*?(?:-->|$)/g, '');
+          }
+          
+          /**
+           * Finds the most recently created matching research comment written by
+           * <code>github-actions[bot]</code> whose body contains <code>marker</code>.
+           *
+           * @param {Array<{author: string, body: string}>} comments Ordered oldest-first.
+           * @param {string} marker
+           * @returns {{author: string, body: string} | null}
+           */
+          function findResearchComment(comments, marker) {
+            if (!Array.isArray(comments)) {
+              return null;
+            }
+            const matches = comments.filter(
+              (c) =>
+                c != null &&
+                typeof c.body === 'string' &&
+                (c.author ?? c.user?.login) === 'github-actions[bot]' &&
+                c.body.trimStart().startsWith(marker),
+            );
+            return matches.length > 0 ? matches[matches.length - 1] : null;
+          }
+          
+          if (typeof module !== 'undefined') {
+            module.exports = {
+              stripHtmlComments,
+              findResearchComment,
+            };
+          }
+          
+          const fs = require('fs');
+          const crypto = require('crypto');
+          
+          const body = process.env.ISSUE_BODY || '';
+          const comments = process.env.HUMAN_COMMENTS || '';
+          
+          const sanitizedBody = stripHtmlComments(body);
+          const sanitizedComments = stripHtmlComments(comments);
+          
+          const eofDelim1 = `EOF_${crypto.randomUUID().replace(/-/g, '')}`;
+          const output1 = `sanitized_issue_body<<${eofDelim1}\n${sanitizedBody}\n${eofDelim1}\n`;
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, output1);
+          
+          const eofDelim2 = `EOF_${crypto.randomUUID().replace(/-/g, '')}`;
+          const output2 = `sanitized_issue_comments<<${eofDelim2}\n${sanitizedComments}\n${eofDelim2}\n`;
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, output2);
+          
     - name: Finalize gate reason
       id: finalize_gate
       if: always()
@@ -1942,6 +2157,8 @@ jobs:
       issue_number: ${{ steps.normalize_context.outputs.issue_number }}
       issue_title: ${{ steps.normalize_context.outputs.issue_title }}
       issue_body: ${{ steps.normalize_context.outputs.issue_body }}
+      sanitized_issue_body: ${{ steps.sanitize_context.outputs.sanitized_issue_body }}
+      sanitized_issue_comments: ${{ steps.sanitize_context.outputs.sanitized_issue_comments }}
       event_eligible: ${{ steps.normalize_context.outputs.event_eligible }}
       event_eligible_reason: ${{ steps.normalize_context.outputs.event_eligible_reason }}
       actor_trusted: ${{ steps.normalize_context.outputs.actor_trusted }}
@@ -1984,10 +2201,16 @@ Deterministic pre-activation has already decided that this intake is eligible, t
 - **Intake mode**: `${{ needs.pre_activation.outputs.intake_mode }}`
 - **Issue number**: `${{ needs.pre_activation.outputs.issue_number }}`
 - **Issue title**: `${{ needs.pre_activation.outputs.issue_title }}`
-- **Issue body**:
+- **Issue body** (sanitised):
 
   ```markdown
-  ${{ needs.pre_activation.outputs.issue_body }}
+  ${{ needs.pre_activation.outputs.sanitized_issue_body }}
+  ```
+
+- **Comment history** (sanitised, human-authored):
+
+  ```markdown
+  ${{ needs.pre_activation.outputs.sanitized_issue_comments }}
   ```
 
 - **Repository**: `${{ github.repository }}`
