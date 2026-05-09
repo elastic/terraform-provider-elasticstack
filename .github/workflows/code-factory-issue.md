@@ -1673,7 +1673,7 @@ on:
           
           /**
            * Finds the most recently created matching research comment written by
-           * <code>github-actions[bot]</code> whose body contains <code>marker</code>.
+           * <code>github-actions[bot]</code> whose body starts with <code>marker</code>.
            *
            * @param {Array<{author: string, body: string}>} comments Ordered oldest-first.
            * @param {string} marker

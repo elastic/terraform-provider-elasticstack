@@ -1489,7 +1489,7 @@ on:
             });
           
             const matches = allComments.filter(
-              (c) => c.user?.login === 'github-actions[bot]' && c.body?.includes(marker),
+              (c) => c.user?.login === 'github-actions[bot]' && c.body?.trimStart().startsWith(marker),
             );
           
             if (matches.length > 0) {
@@ -2176,7 +2176,7 @@ safe-outputs:
           });
           for (let i = comments.length - 1; i >= 0; i--) {
             const c = comments[i];
-            if (c.user?.login === 'github-actions[bot]' && c.body?.includes(marker)) {
+            if (c.user?.login === 'github-actions[bot]' && c.body?.trimStart().startsWith(marker)) {
               existingComment = c;
               break;
             }

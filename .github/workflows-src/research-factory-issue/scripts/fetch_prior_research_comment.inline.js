@@ -16,7 +16,7 @@ try {
   });
 
   const matches = allComments.filter(
-    (c) => c.user?.login === 'github-actions[bot]' && c.body?.includes(marker),
+    (c) => c.user?.login === 'github-actions[bot]' && c.body?.trimStart().startsWith(marker),
   );
 
   if (matches.length > 0) {
