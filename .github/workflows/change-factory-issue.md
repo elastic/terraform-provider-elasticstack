@@ -402,196 +402,6 @@ on:
         script: |
           core.setOutput('issue_title', context.payload.issue?.title ?? '');
           core.setOutput('issue_body', context.payload.issue?.body ?? '');
-    - name: Fetch issue comments
-      id: fetch_issue_comments
-      if: steps.qualify_trigger.outputs.event_eligible == 'true'
-      uses: actions/github-script@v9
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        script: |
-          const { owner, repo } = context.repo;
-          const issueNumber = context.payload.issue?.number;
-          
-          if (!issueNumber) {
-            core.setOutput('issue_comments_json', '[]');
-            core.info('No issue number in payload; skipping comment fetch.');
-          } else {
-            try {
-              const allComments = await github.paginate(github.rest.issues.listComments, {
-                owner,
-                repo,
-                issue_number: issueNumber,
-                per_page: 100,
-              });
-          
-              const comments = allComments.map(c => ({
-                author: c.user?.login ?? '',
-                createdAt: c.created_at ?? '',
-                body: c.body ?? '',
-              }));
-          
-              core.setOutput('issue_comments_json', JSON.stringify(comments));
-              core.info(`Fetched ${comments.length} comments for issue #${issueNumber}`);
-            } catch (err) {
-              core.setOutput('issue_comments_json', '[]');
-              core.warning(`Failed to fetch comments: ${err.message}`);
-            }
-          }
-          
-    - name: Extract research comment
-      id: extract_research_comment
-      if: steps.qualify_trigger.outputs.event_eligible == 'true'
-      env:
-        INPUT_COMMENTS_JSON: ${{ steps.fetch_issue_comments.outputs.issue_comments_json }}
-      uses: actions/github-script@v9
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        script: |
-          const marker = '<!-- gha-research-factory -->';
-          const commentsJson = process.env.INPUT_COMMENTS_JSON || '[]';
-          
-          let comments;
-          try {
-            comments = JSON.parse(commentsJson);
-          } catch {
-            comments = [];
-          }
-          
-          // Find research comment (most recent match by github-actions[bot])
-          const matches = (comments || []).filter(
-            (c) => c.author === 'github-actions[bot]' && c.body.includes(marker),
-          );
-          
-          const fs = require('fs');
-          const crypto = require('crypto');
-          
-          if (matches.length > 0) {
-            const latest = matches[matches.length - 1];
-            const eofDelim = `EOF_${crypto.randomUUID().replace(/-/g, '')}`;
-            const output = `research_comment_body<<${eofDelim}\n${latest.body}\n${eofDelim}\n`;
-            fs.appendFileSync(process.env.GITHUB_OUTPUT, output);
-            core.info(`Found research comment for issue`);
-          } else {
-            core.setOutput('research_comment_body', '');
-            core.info('No research comment found.');
-          }
-          
-          // Serialize human comments for agent context
-          const humanComments = (comments || []).filter(
-            (c) => !c.author.endsWith('[bot]'),
-          );
-          
-          /**
-           * Shared comment helpers for research-factory issue intake workflows.
-           */
-          
-          /**
-           * Fetches human-authored comments for an issue, paginated, with bot filtering and a hard cap.
-           *
-           * @param {{ github: object, owner: string, repo: string, issueNumber: number }} params
-           * @returns {Promise<{ comments: Array<{author: string, createdAt: string, body: string}>, truncated: boolean }>}
-           */
-          async function factoryFetchIssueComments({ github, owner, repo, issueNumber }) {
-            const MAX_COMMENTS = 200;
-            const allComments = await github.paginate(github.rest.issues.listComments, {
-              owner,
-              repo,
-              issue_number: issueNumber,
-              per_page: 100,
-            });
-          
-            const humanComments = [];
-            let truncated = false;
-            for (const comment of allComments) {
-              if (comment.user?.login?.endsWith('[bot]')) {
-                continue;
-              }
-              if (humanComments.length >= MAX_COMMENTS) {
-                truncated = true;
-                break;
-              }
-              humanComments.push({
-                author: comment.user?.login ?? '',
-                createdAt: comment.created_at ?? '',
-                body: comment.body ?? '',
-              });
-            }
-          
-            return {
-              comments: humanComments,
-              truncated,
-            };
-          }
-          
-          const COMMENT_CONTEXT_BUDGET = 50_000;
-          /** Overhead reserved for truncation markers appended after the loop. */
-          const COMMENT_CONTEXT_MARKER_OVERHEAD = 200;
-          
-          /**
-           * Serializes captured issue comments into a deterministic markdown string for agent prompts.
-           *
-           * @param {{ comments: Array<{author: string, createdAt: string, body: string}>, truncated: boolean }} params
-           * @returns {string}
-           */
-          function serializeIssueComments({ comments, truncated }) {
-            if (!Array.isArray(comments) || comments.length === 0) {
-              return '';
-            }
-          
-            const bodyBudget = COMMENT_CONTEXT_BUDGET - COMMENT_CONTEXT_MARKER_OVERHEAD;
-            let result = '';
-            let includedCount = 0;
-          
-            for (const comment of comments) {
-              const header = `**@${comment.author || ''}** (${comment.createdAt || ''}):\n\n`;
-              const body = comment.body || '';
-              const footer = '\n\n---\n';
-              const available = bodyBudget - result.length;
-          
-              if (available <= 0) {
-                break;
-              }
-          
-              const frameLength = header.length + footer.length;
-              if (frameLength > available) {
-                break;
-              }
-              const fullBlock = header + body + footer;
-              if (fullBlock.length <= available) {
-                result += fullBlock;
-              } else {
-                // Truncate this comment's body so the output stays within budget
-                const truncatedBody = body.slice(0, available - frameLength);
-                result += header + truncatedBody + footer;
-              }
-              includedCount++;
-            }
-          
-            const remaining = comments.length - includedCount;
-            if (remaining > 0) {
-              result += `[... ${remaining} more comments truncated for context budget]\n`;
-            }
-          
-            if (truncated) {
-              result += '[... comment history truncated at 200 comments]\n';
-            }
-          
-            return result;
-          }
-          
-          if (typeof module !== 'undefined') {
-            module.exports = {
-              factoryFetchIssueComments,
-              serializeIssueComments,
-              COMMENT_CONTEXT_BUDGET,
-            };
-          }
-          
-          const serialized = serializeIssueComments({ comments: humanComments, truncated: false });
-          const eofDelim2 = `EOF_${crypto.randomUUID().replace(/-/g, '')}`;
-          const output2 = `human_comments<<${eofDelim2}\n${serialized}\n${eofDelim2}\n`;
-          fs.appendFileSync(process.env.GITHUB_OUTPUT, output2);
-          
     - name: Check actor trust
       id: check_actor_trust
       if: steps.qualify_trigger.outputs.event_eligible == 'true'
@@ -986,6 +796,243 @@ on:
               core.info(`Actor not trusted: ${result.actor_trusted_reason}`);
             }
           }
+          
+    - name: Fetch issue comments
+      id: fetch_issue_comments
+      if: >-
+        steps.qualify_trigger.outputs.event_eligible == 'true' &&
+        steps.check_actor_trust.outputs.actor_trusted == 'true'
+      uses: actions/github-script@v9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const MAX_COMMENTS = 200;
+          const { owner, repo } = context.repo;
+          const issueNumber = context.payload.issue?.number;
+          
+          if (!issueNumber) {
+            core.setOutput('issue_comments_json', '[]');
+            core.info('No issue number in payload; skipping comment fetch.');
+          } else {
+            const allComments = [];
+            for await (const { data: page } of github.paginate.iterator(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number: issueNumber,
+              per_page: 100,
+            })) {
+              allComments.push(...page);
+              if (allComments.length >= MAX_COMMENTS) {
+                break;
+              }
+            }
+          
+            const comments = allComments.slice(0, MAX_COMMENTS).map(c => ({
+              author: c.user?.login ?? '',
+              createdAt: c.created_at ?? '',
+              body: c.body ?? '',
+            }));
+          
+            core.setOutput('issue_comments_json', JSON.stringify(comments));
+            core.info(`Fetched ${comments.length} comments for issue #${issueNumber}${allComments.length > MAX_COMMENTS ? ' (capped at ' + MAX_COMMENTS + ')' : ''}`);
+          }
+          
+    - name: Extract research comment
+      id: extract_research_comment
+      if: >-
+        steps.qualify_trigger.outputs.event_eligible == 'true' &&
+        steps.check_actor_trust.outputs.actor_trusted == 'true'
+      env:
+        INPUT_COMMENTS_JSON: ${{ steps.fetch_issue_comments.outputs.issue_comments_json }}
+      uses: actions/github-script@v9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          /**
+           * HTML comment sanitisation and research-comment lookup helpers.
+           */
+          
+          /**
+           * Removes all HTML comment sequences (<code>&lt;!--</code> through the next <code>--&gt;</code>).
+           * If an opening sequence has no closing counterpart, everything from the opener to the end of
+           * the string is removed.
+           *
+           * @param {string} text
+           * @returns {string}
+           */
+          function stripHtmlComments(text) {
+            if (typeof text !== 'string') return '';
+            return text.replace(/<!--[\s\S]*?(?:-->|$)/g, '');
+          }
+          
+          /**
+           * Finds the most recently created matching research comment written by
+           * <code>github-actions[bot]</code> whose body contains <code>marker</code>.
+           *
+           * @param {Array<{author: string, body: string}>} comments Ordered oldest-first.
+           * @param {string} marker
+           * @returns {{author: string, body: string} | null}
+           */
+          function findResearchComment(comments, marker) {
+            if (!Array.isArray(comments)) {
+              return null;
+            }
+            const matches = comments.filter(
+              (c) =>
+                c != null &&
+                typeof c.body === 'string' &&
+                (c.author ?? c.user?.login) === 'github-actions[bot]' &&
+                c.body.trimStart().startsWith(marker),
+            );
+            return matches.length > 0 ? matches[matches.length - 1] : null;
+          }
+          
+          if (typeof module !== 'undefined') {
+            module.exports = {
+              stripHtmlComments,
+              findResearchComment,
+            };
+          }
+          
+          const marker = '<!-- gha-research-factory -->';
+          const commentsJson = process.env.INPUT_COMMENTS_JSON || '[]';
+          
+          let comments;
+          try {
+            comments = JSON.parse(commentsJson);
+          } catch {
+            comments = [];
+          }
+          
+          const fs = require('fs');
+          const crypto = require('crypto');
+          
+          const researchComment = findResearchComment(comments, marker);
+          if (researchComment) {
+            const eofDelim = `EOF_${crypto.randomUUID().replace(/-/g, '')}`;
+            const output = `research_comment_body<<${eofDelim}\n${researchComment.body}\n${eofDelim}\n`;
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, output);
+            core.info(`Found research comment for issue`);
+          } else {
+            core.setOutput('research_comment_body', '');
+            core.info('No research comment found.');
+          }
+          
+          // Serialize human comments for agent context
+          const humanComments = (comments || []).filter(
+            (c) => !c.author.endsWith('[bot]'),
+          );
+          
+          /**
+           * Shared comment helpers for research-factory issue intake workflows.
+           */
+          
+          /**
+           * Fetches human-authored comments for an issue, paginated, with bot filtering and a hard cap.
+           *
+           * @param {{ github: object, owner: string, repo: string, issueNumber: number }} params
+           * @returns {Promise<{ comments: Array<{author: string, createdAt: string, body: string}>, truncated: boolean }>}
+           */
+          async function factoryFetchIssueComments({ github, owner, repo, issueNumber }) {
+            const MAX_COMMENTS = 200;
+            const allComments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number: issueNumber,
+              per_page: 100,
+            });
+          
+            const humanComments = [];
+            let truncated = false;
+            for (const comment of allComments) {
+              if (comment.user?.login?.endsWith('[bot]')) {
+                continue;
+              }
+              if (humanComments.length >= MAX_COMMENTS) {
+                truncated = true;
+                break;
+              }
+              humanComments.push({
+                author: comment.user?.login ?? '',
+                createdAt: comment.created_at ?? '',
+                body: comment.body ?? '',
+              });
+            }
+          
+            return {
+              comments: humanComments,
+              truncated,
+            };
+          }
+          
+          const COMMENT_CONTEXT_BUDGET = 50_000;
+          /** Overhead reserved for truncation markers appended after the loop. */
+          const COMMENT_CONTEXT_MARKER_OVERHEAD = 200;
+          
+          /**
+           * Serializes captured issue comments into a deterministic markdown string for agent prompts.
+           *
+           * @param {{ comments: Array<{author: string, createdAt: string, body: string}>, truncated: boolean }} params
+           * @returns {string}
+           */
+          function serializeIssueComments({ comments, truncated }) {
+            if (!Array.isArray(comments) || comments.length === 0) {
+              return '';
+            }
+          
+            const bodyBudget = COMMENT_CONTEXT_BUDGET - COMMENT_CONTEXT_MARKER_OVERHEAD;
+            let result = '';
+            let includedCount = 0;
+          
+            for (const comment of comments) {
+              const header = `**@${comment.author || ''}** (${comment.createdAt || ''}):\n\n`;
+              const body = comment.body || '';
+              const footer = '\n\n---\n';
+              const available = bodyBudget - result.length;
+          
+              if (available <= 0) {
+                break;
+              }
+          
+              const frameLength = header.length + footer.length;
+              if (frameLength > available) {
+                break;
+              }
+              const fullBlock = header + body + footer;
+              if (fullBlock.length <= available) {
+                result += fullBlock;
+              } else {
+                // Truncate this comment's body so the output stays within budget
+                const truncatedBody = body.slice(0, available - frameLength);
+                result += header + truncatedBody + footer;
+              }
+              includedCount++;
+            }
+          
+            const remaining = comments.length - includedCount;
+            if (remaining > 0) {
+              result += `[... ${remaining} more comments truncated for context budget]\n`;
+            }
+          
+            if (truncated) {
+              result += '[... comment history truncated at 200 comments]\n';
+            }
+          
+            return result;
+          }
+          
+          if (typeof module !== 'undefined') {
+            module.exports = {
+              factoryFetchIssueComments,
+              serializeIssueComments,
+              COMMENT_CONTEXT_BUDGET,
+            };
+          }
+          
+          const serialized = serializeIssueComments({ comments: humanComments, truncated: false });
+          const eofDelim2 = `EOF_${crypto.randomUUID().replace(/-/g, '')}`;
+          const output2 = `human_comments<<${eofDelim2}\n${serialized}\n${eofDelim2}\n`;
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, output2);
           
     - name: Check duplicate PR
       id: check_duplicate_pr
@@ -1433,7 +1480,7 @@ on:
                 c != null &&
                 typeof c.body === 'string' &&
                 (c.author ?? c.user?.login) === 'github-actions[bot]' &&
-                c.body.includes(marker),
+                c.body.trimStart().startsWith(marker),
             );
             return matches.length > 0 ? matches[matches.length - 1] : null;
           }
