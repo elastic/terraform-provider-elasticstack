@@ -1,15 +1,34 @@
 const { owner, repo } = context.repo;
 const issueNumber = parseInt(process.env.RESEARCH_FACTORY_ISSUE_NUMBER, 10);
 const marker = '<!-- gha-research-factory -->';
-const body = item.body || '';
+
+if (!item) {
+  core.setFailed('update-research-comment: no item provided');
+  return;
+}
+
+let body = item.body || '';
+if (!body && process.env.GH_AW_AGENT_OUTPUT) {
+  try {
+    const fs = require('fs');
+    const raw = fs.readFileSync(process.env.GH_AW_AGENT_OUTPUT, 'utf-8');
+    const ops = JSON.parse(raw);
+    const op = Array.isArray(ops) ? ops.find(o => o.tool === 'update_research_comment' || o.tool === 'update-research-comment') : null;
+    if (op && op.body) {
+      body = op.body;
+    }
+  } catch (e) {
+    // fallback failed, body remains empty
+  }
+}
 
 if (!issueNumber || issueNumber <= 0) {
   core.setFailed('update-research-comment: invalid issue number.');
   return;
 }
 
-if (!body.includes(marker)) {
-  core.setFailed(`update-research-comment: body must contain the marker ${marker}`);
+if (!(body.startsWith(marker + '\n') || body.startsWith(marker + '\r\n'))) {
+  core.setFailed(`update-research-comment: body must start with the marker ${marker} on its own line`);
   return;
 }
 
@@ -30,7 +49,8 @@ try {
     }
   }
 } catch (err) {
-  core.warning(`Could not list comments while searching for existing research comment: ${err.message}`);
+  core.setFailed(`Could not list comments while searching for existing research comment: ${err.message}`);
+  return;
 }
 
 if (existingComment) {

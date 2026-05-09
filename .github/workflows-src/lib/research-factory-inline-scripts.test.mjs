@@ -37,10 +37,12 @@ function expandIncludes(scriptPath) {
 function createMockCore() {
   const outputs = {};
   const logs = [];
+  const warnings = [];
   const failures = [];
   return {
     outputs,
     logs,
+    warnings,
     failures,
     setOutput(key, value) {
       outputs[key] = value;
@@ -48,13 +50,16 @@ function createMockCore() {
     info(msg) {
       logs.push(msg);
     },
+    warning(msg) {
+      warnings.push(msg);
+    },
     setFailed(msg) {
       failures.push(msg);
     },
   };
 }
 
-async function runInlineScript(scriptName, { context = {}, github = {}, core = createMockCore(), env = {} } = {}) {
+async function runInlineScript(scriptName, { context = {}, github = {}, core = createMockCore(), env = {}, item = undefined } = {}) {
   const scriptPath = path.join(scriptsDir, scriptName);
   const code = expandIncludes(scriptPath);
   const previousEnv = {};
@@ -63,8 +68,8 @@ async function runInlineScript(scriptName, { context = {}, github = {}, core = c
     process.env[key] = env[key];
   }
   try {
-    const fn = new AsyncFunction('context', 'github', 'core', 'require', code);
-    await fn(context, github, core, nodeRequire);
+    const fn = new AsyncFunction('context', 'github', 'core', 'require', 'item', code);
+    await fn(context, github, core, nodeRequire, item);
   } finally {
     for (const key of Object.keys(env)) {
       if (previousEnv[key] === undefined) {
@@ -269,4 +274,154 @@ test('finalize_gate: actor_trusted null (missing) returns cannot-determine reaso
 
   assert.match(core.outputs.gate_reason, /Actor trust could not be determined/);
   assert.equal(core.failures.length, 0);
+});
+
+// --- fetch_prior_research_comment tests ---
+
+test('fetch_prior_research_comment: happy path finds latest matching comment', async () => {
+  const marker = '<!-- gha-research-factory -->';
+  const mockComments = [
+    { user: { login: 'alice' }, body: 'human comment', id: 1 },
+    { user: { login: 'github-actions[bot]' }, body: `${marker}\nold research`, id: 2 },
+    { user: { login: 'github-actions[bot]' }, body: `${marker}\nlatest research`, id: 3 },
+  ];
+
+  const { core } = await runInlineScript('fetch_prior_research_comment.inline.js', {
+    context: { repo: { owner: 'elastic', repo: 'terraform-provider-elasticstack' } },
+    github: createMockGithubWithComments(mockComments),
+    core: createMockCore(),
+    env: { INPUT_ISSUE_NUMBER: '42' },
+  });
+
+  assert.equal(core.outputs.prior_research_comment, `${marker}\nlatest research`);
+  assert.ok(core.logs.some((l) => l.includes('Found prior research comment 3')));
+  assert.equal(core.failures.length, 0);
+});
+
+test('fetch_prior_research_comment: no match returns empty output', async () => {
+  const mockComments = [
+    { user: { login: 'alice' }, body: 'human comment', id: 1 },
+  ];
+
+  const { core } = await runInlineScript('fetch_prior_research_comment.inline.js', {
+    context: { repo: { owner: 'elastic', repo: 'terraform-provider-elasticstack' } },
+    github: createMockGithubWithComments(mockComments),
+    core: createMockCore(),
+    env: { INPUT_ISSUE_NUMBER: '42' },
+  });
+
+  assert.equal(core.outputs.prior_research_comment, '');
+  assert.ok(core.logs.some((l) => l.includes('No prior research comment found')));
+  assert.equal(core.failures.length, 0);
+});
+
+test('fetch_prior_research_comment: API failure sets empty output and logs warning', async () => {
+  const mockGithub = {
+    paginate: async () => {
+      throw new Error('API rate limit exceeded');
+    },
+    rest: { issues: { listComments: () => {} } },
+  };
+
+  const { core } = await runInlineScript('fetch_prior_research_comment.inline.js', {
+    context: { repo: { owner: 'elastic', repo: 'terraform-provider-elasticstack' } },
+    github: mockGithub,
+    core: createMockCore(),
+    env: { INPUT_ISSUE_NUMBER: '42' },
+  });
+
+  assert.equal(core.outputs.prior_research_comment, '');
+  assert.ok(core.warnings.some((w) => w.includes('API rate limit exceeded')));
+  assert.equal(core.failures.length, 0);
+});
+
+// --- update_research_comment tests ---
+
+function createMockGithubForUpdate({ existingComments = [], createdComment = null } = {}) {
+  return {
+    paginate: async () => existingComments,
+    rest: {
+      issues: {
+        listComments: () => {},
+        createComment: async () => ({ data: createdComment || { id: 99 } }),
+        updateComment: async () => {},
+      },
+    },
+  };
+}
+
+test('update_research_comment: happy path creates comment when none exists', async () => {
+  const marker = '<!-- gha-research-factory -->';
+  const body = `${marker}\nImplementation research content`;
+
+  const { core } = await runInlineScript('update_research_comment.inline.js', {
+    context: { repo: { owner: 'elastic', repo: 'terraform-provider-elasticstack' } },
+    github: createMockGithubForUpdate({ existingComments: [] }),
+    core: createMockCore(),
+    env: { RESEARCH_FACTORY_ISSUE_NUMBER: '42' },
+    item: { body },
+  });
+
+  assert.equal(core.failures.length, 0);
+  assert.ok(core.logs.some((l) => l.includes('Created research comment')));
+});
+
+test('update_research_comment: happy path updates existing comment', async () => {
+  const marker = '<!-- gha-research-factory -->';
+  const body = `${marker}\nUpdated research content`;
+  const existingComments = [
+    { user: { login: 'github-actions[bot]' }, body: `${marker}\nold`, id: 10 },
+  ];
+
+  const { core } = await runInlineScript('update_research_comment.inline.js', {
+    context: { repo: { owner: 'elastic', repo: 'terraform-provider-elasticstack' } },
+    github: createMockGithubForUpdate({ existingComments }),
+    core: createMockCore(),
+    env: { RESEARCH_FACTORY_ISSUE_NUMBER: '42' },
+    item: { body },
+  });
+
+  assert.equal(core.failures.length, 0);
+  assert.ok(core.logs.some((l) => l.includes('Updated research comment 10')));
+});
+
+test('update_research_comment: missing marker fails', async () => {
+  const body = 'Missing marker content';
+
+  const { core } = await runInlineScript('update_research_comment.inline.js', {
+    context: { repo: { owner: 'elastic', repo: 'terraform-provider-elasticstack' } },
+    github: createMockGithubForUpdate(),
+    core: createMockCore(),
+    env: { RESEARCH_FACTORY_ISSUE_NUMBER: '42' },
+    item: { body },
+  });
+
+  assert.ok(core.failures.some((f) => f.includes('body must start with the marker')));
+});
+
+test('update_research_comment: invalid issue number fails', async () => {
+  const marker = '<!-- gha-research-factory -->';
+  const body = `${marker}\nContent`;
+
+  const { core } = await runInlineScript('update_research_comment.inline.js', {
+    context: { repo: { owner: 'elastic', repo: 'terraform-provider-elasticstack' } },
+    github: createMockGithubForUpdate(),
+    core: createMockCore(),
+    env: {},
+    item: { body },
+  });
+
+  assert.ok(core.failures.some((f) => f.includes('invalid issue number')));
+});
+
+test('update_research_comment: null item fails', async () => {
+  const { core } = await runInlineScript('update_research_comment.inline.js', {
+    context: { repo: { owner: 'elastic', repo: 'terraform-provider-elasticstack' } },
+    github: createMockGithubForUpdate(),
+    core: createMockCore(),
+    env: { RESEARCH_FACTORY_ISSUE_NUMBER: '42' },
+    item: null,
+  });
+
+  assert.ok(core.failures.some((f) => f.includes('no item provided')));
 });
