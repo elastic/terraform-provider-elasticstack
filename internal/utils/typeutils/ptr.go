@@ -83,3 +83,12 @@ func NonEmptyStringPtr(s string) *string {
 	}
 	return &s
 }
+
+// DerefOrElse returns the value pointed to by val if it is non-nil and non-empty,
+// otherwise it returns def. It is the inverse of NonEmptyStringPtr.
+func DerefOrElse(val *string, def string) string {
+	if val != nil && *val != "" {
+		return *val
+	}
+	return def
+}

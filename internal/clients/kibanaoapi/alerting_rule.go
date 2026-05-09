@@ -296,7 +296,7 @@ func ConvertResponseToModel(spaceID string, resp any) (*models.AlertingRule, dia
 	actions := []models.AlertingRuleAction{}
 	for _, action := range intermediate.Actions {
 		a := models.AlertingRuleAction{
-			Group:  valueOrDefault(action.Group, "default"),
+			Group:  typeutils.DerefOrElse(action.Group, "default"),
 			ID:     action.ID,
 			Params: action.Params,
 		}
@@ -619,11 +619,4 @@ func flappingWireFromModel(f *models.AlertingRuleFlapping) *flappingWire {
 		LookBackWindow:        float32(f.LookBackWindow),
 		StatusChangeThreshold: float32(f.StatusChangeThreshold),
 	}
-}
-
-func valueOrDefault(val *string, def string) string {
-	if val != nil && *val != "" {
-		return *val
-	}
-	return def
 }

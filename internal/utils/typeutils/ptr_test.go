@@ -160,3 +160,24 @@ func TestNonEmptyStringPtr(t *testing.T) {
 		require.Equal(t, "hello", *p)
 	})
 }
+
+func TestDerefOrElse(t *testing.T) {
+	t.Parallel()
+
+	t.Run("nil returns default", func(t *testing.T) {
+		t.Parallel()
+		require.Equal(t, "default", typeutils.DerefOrElse(nil, "default"))
+	})
+
+	t.Run("empty string returns default", func(t *testing.T) {
+		t.Parallel()
+		s := ""
+		require.Equal(t, "default", typeutils.DerefOrElse(&s, "default"))
+	})
+
+	t.Run("non-empty string returns value", func(t *testing.T) {
+		t.Parallel()
+		s := "hello"
+		require.Equal(t, "hello", typeutils.DerefOrElse(&s, "default"))
+	})
+}
