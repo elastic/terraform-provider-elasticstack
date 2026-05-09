@@ -28,22 +28,6 @@ on:
         script: |
           core.setOutput('issue_title', context.payload.issue?.title ?? '');
           core.setOutput('issue_body', context.payload.issue?.body ?? '');
-    - name: Fetch issue comments
-      id: fetch_issue_comments
-      if: steps.qualify_trigger.outputs.event_eligible == 'true'
-      uses: actions/github-script@v9
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        x-script-include: scripts/fetch_issue_comments.inline.js
-    - name: Extract research comment
-      id: extract_research_comment
-      if: steps.qualify_trigger.outputs.event_eligible == 'true'
-      env:
-        INPUT_COMMENTS_JSON: ${{ steps.fetch_issue_comments.outputs.issue_comments_json }}
-      uses: actions/github-script@v9
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        x-script-include: scripts/extract_research_comment.inline.js
     - name: Check actor trust
       id: check_actor_trust
       if: steps.qualify_trigger.outputs.event_eligible == 'true'
@@ -51,6 +35,26 @@ on:
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         x-script-include: scripts/check_actor_trust.inline.js
+    - name: Fetch issue comments
+      id: fetch_issue_comments
+      if: >-
+        steps.qualify_trigger.outputs.event_eligible == 'true' &&
+        steps.check_actor_trust.outputs.actor_trusted == 'true'
+      uses: actions/github-script@v9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        x-script-include: scripts/fetch_issue_comments.inline.js
+    - name: Extract research comment
+      id: extract_research_comment
+      if: >-
+        steps.qualify_trigger.outputs.event_eligible == 'true' &&
+        steps.check_actor_trust.outputs.actor_trusted == 'true'
+      env:
+        INPUT_COMMENTS_JSON: ${{ steps.fetch_issue_comments.outputs.issue_comments_json }}
+      uses: actions/github-script@v9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        x-script-include: scripts/extract_research_comment.inline.js
     - name: Check duplicate PR
       id: check_duplicate_pr
       if: >-
