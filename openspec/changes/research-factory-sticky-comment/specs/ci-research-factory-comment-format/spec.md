@@ -6,7 +6,7 @@ Define the format of the implementation-research output produced by the `researc
 ## ADDED Requirements
 
 ### Requirement: Comment is authored by github-actions[bot] and identified by a marker
-The implementation-research output SHALL be a single issue comment authored by `github-actions[bot]`. The comment body SHALL begin with exactly the marker `<!-- gha-research-factory -->` on its own line. The marker serves as a filter key for downstream consumers (e.g., `change-factory`) to locate the research comment among other bot comments on the issue. There SHALL be at most one such research comment per issue.
+The implementation-research output SHALL be a single issue comment authored by `github-actions[bot]`. The comment body SHALL begin with exactly the marker `<!-- gha-research-factory -->` on its own line. The marker serves as a filter key for downstream consumers (e.g., `change-factory`) to locate the research comment among other bot comments on the issue. There SHALL be at most one such research comment per issue. If multiple comments matching both the `github-actions[bot]` author and the `<!-- gha-research-factory -->` marker are found, the producer SHALL update the most recently created matching comment and SHALL NOT create an additional one.
 
 #### Scenario: Research comment is created on a fresh issue
 - **WHEN** the `research-factory` workflow runs for an issue with no prior research comment
@@ -17,6 +17,11 @@ The implementation-research output SHALL be a single issue comment authored by `
 #### Scenario: Research comment is updated on re-run
 - **WHEN** the `research-factory` workflow re-runs for an issue that already has a research comment
 - **THEN** the existing comment SHALL be updated in place
+- **AND** the issue SHALL NOT gain an additional research comment
+
+#### Scenario: Multiple matching research comments exist
+- **WHEN** the workflow finds more than one comment by `github-actions[bot]` containing the `<!-- gha-research-factory -->` marker
+- **THEN** the producer SHALL update the most recently created matching comment
 - **AND** the issue SHALL NOT gain an additional research comment
 
 #### Scenario: Downstream consumer locates the research comment
@@ -56,12 +61,12 @@ The comment SHALL contain the following subsections in order, each introduced by
 - **AND** it SHALL include a brief rationale for that choice
 
 ### Requirement: Comment contains a structured machine-readable JSON metadata block
-After the `### References` section, the comment SHALL contain an HTML `<details>` element with a `<summary>` of "🤖 Pipeline metadata" (or equivalent). Inside the `<details>` element, the comment SHALL contain exactly one fenced JSON code block (language `json`) containing a machine-readable representation of the research. The JSON object SHALL conform to the following schema:
+After the `### References` section, the comment SHALL contain an HTML `<details>` element with a `<summary>` of exactly "🤖 Pipeline metadata". Inside the `<details>` element, the comment SHALL contain exactly one fenced JSON code block (language `json`) containing a machine-readable representation of the research. The JSON object SHALL conform to the following schema:
 
 - `schema_version` (string, required): the version of this metadata schema.
 - `recommendation` (object, required):
   - `spine` (string, required): a kebab-case identifier for the recommended approach.
-  - `confidence` (string, enum `["high","medium","low"]`): the agent's confidence in the recommendation.
+  - `confidence` (string, optional, enum `["high","medium","low"]`): the agent's confidence in the recommendation.
   - `approach_index` (number, required): zero-based index of the chosen approach in the `Approaches considered` section.
 - `open_questions` (array, optional): each item with:
   - `id` (string, required): a stable question identifier (e.g., `oq-1`, `oq-2`).
@@ -109,13 +114,13 @@ Each successful research run SHALL replace the entire contents of the existing r
 ### Requirement: Prior comment contents and human-authored comments are read as input on the next run
 On any run where a prior research comment exists, the producer SHALL read the prior comment contents and the human-authored comment history as additional inputs alongside the original issue content. The producer SHALL NOT treat the prior comment as authoritative output to preserve verbatim; rather it SHALL integrate the evidence the prior comment carries (recommendation, open questions, references, and any human edits made inside the comment) into the synthesis of the new comment. The issue body and human comments fed to the agent SHALL be sanitised (HTML comments stripped) per the `ci-html-comment-sanitisation` capability.
 
-#### Scenario: User edits a recommendation inside the comment between runs
-- **WHEN** a user edits the `### Recommendation` section of a prior research comment (for example, replacing the chosen approach with their own reasoning) and re-applies the `research-factory` label
-- **THEN** the next run SHALL read the user's edit as evidence
-- **AND** the next run SHALL produce a freshly synthesized comment that integrates that evidence rather than preserving the user's edit verbatim
+#### Scenario: Maintainer edits a recommendation inside the comment between runs
+- **WHEN** a maintainer (or other actor with comment-edit permission) edits the `### Recommendation` section of a prior research comment (for example, replacing the chosen approach with their own reasoning) and re-applies the `research-factory` label
+- **THEN** the next run SHALL read the edit as evidence
+- **AND** the next run SHALL produce a freshly synthesized comment that integrates that evidence rather than preserving the edit verbatim
 
-#### Scenario: User answers an open question via a comment
-- **WHEN** a user posts an issue comment that resolves one of the prior comment's open questions and re-applies the `research-factory` label
+#### Scenario: Maintainer answers an open question via a comment
+- **WHEN** a maintainer posts an issue comment that resolves one of the prior comment's open questions and re-applies the `research-factory` label
 - **THEN** the next run SHALL read the comment
 - **AND** the next run's `### Open questions` section SHALL reflect the resolution (the question is removed or restated based on the new information)
 

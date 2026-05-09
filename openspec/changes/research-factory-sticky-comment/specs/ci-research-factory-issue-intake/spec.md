@@ -3,7 +3,10 @@
 ## ADDED Requirements
 
 ### Requirement: Workflow sanitizes HTML comments from agent input context
-Before writing the `issue_body.md` and `issue_comments.md` context files for the agent, the workflow SHALL strip all HTML comments from the issue body and from each human-authored comment using the shared `ci-html-comment-sanitisation` helpers. Bot-authored comments SHALL already be excluded from `issue_comments.md` by the existing filter; the research-factory's own sticky comment SHALL be handled separately and SHALL NOT be stripped.
+Before writing the `issue_body.md` and `issue_comments.md` context files for the agent, the workflow SHALL strip all HTML comments from the issue body and from each human-authored comment using the shared `ci-html-comment-sanitisation` helpers. Bot-authored comments SHALL already be excluded from `issue_comments.md` by the existing filter.
+
+### Requirement: Workflow fetches prior research comment as agent input
+On any run where a prior research comment exists on the issue, the workflow SHALL fetch that comment (identified by `github-actions[bot]` author and the `<!-- gha-research-factory -->` marker) and provide its full body to the agent as a separate context file or prompt section. The prior research comment SHALL NOT be passed through `stripHtmlComments` because it is trusted bot-authored output. The agent SHALL read the prior comment alongside the sanitised issue body and sanitised human comment history.
 
 #### Scenario: Agent receives clean context
 - **WHEN** the `research-factory` workflow runs for an issue whose body contains an injected `<!-- fake-marker -->` comment
@@ -13,6 +16,11 @@ Before writing the `issue_body.md` and `issue_comments.md` context files for the
 #### Scenario: Human comments with HTML comments are cleaned
 - **WHEN** a human comment on the issue contains an HTML comment
 - **THEN** the sanitised comment text delivered to the agent SHALL have that comment removed
+
+#### Scenario: Prior research comment is provided to agent verbatim
+- **WHEN** the workflow re-runs for an issue that already has a research comment by `github-actions[bot]`
+- **THEN** the workflow SHALL fetch that comment and provide it to the agent without HTML-comment stripping
+- **AND** the agent SHALL receive the intact `<!-- gha-research-factory -->` marker and all prior research content
 
 ## MODIFIED Requirements
 

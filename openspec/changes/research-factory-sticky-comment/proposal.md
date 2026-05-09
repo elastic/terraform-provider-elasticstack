@@ -1,6 +1,6 @@
 ## Why
 
-The `research-factory` workflow currently writes implementation-research output into a gated block inside the issue body, delimited by `<!-- implementation-research:start -->` and `<!-- implementation-research:end -->` markers. This creates a prompt-injection surface: malicious users can embed fake markers in the issue body or human comments, and regex-based extraction by downstream workflows (change-factory, code-factory) is fragile.
+The `research-factory` workflow currently writes implementation-research output into a gated block inside the issue body, delimited by `<!-- implementation-research:start -->` and `<!-- implementation-research:end -->` markers. This creates a prompt-injection surface: malicious users can embed fake markers in the issue body or human comments, and regex-based extraction by downstream consumers (e.g., `change-factory`) is fragile.
 
 Moving the research output to a dedicated sticky comment authored by `github-actions[bot]` and sanitising HTML comments from all agent input produces a clean security boundary: the only HTML comments the agent ever sees are those it wrote itself.
 
@@ -8,7 +8,7 @@ Moving the research output to a dedicated sticky comment authored by `github-act
 
 - **Move `research-factory` output from issue body block to a sticky comment**: the agent emits research via a custom `safe-outputs` script that creates or updates a comment authored by `github-actions[bot]`, identified by a `<!-- gha-research-factory -->` marker.
 - **Add a shared HTML-comment sanitisation library** (`.github/workflows-src/lib/`) used by `research-factory`, `change-factory`, and `code-factory` to strip HTML comments from human-authored input before it reaches the agent.
-- **Rename `ci-implementation-research-block-format` to `ci-research-factory-comment-format`** and redefine "block" as a bot-authored comment (not a region inside the issue body).
+- **Replace `ci-implementation-research-block-format` with `ci-research-factory-comment-format`**: the old body-block capability is deprecated/removed and a new comment-format capability is introduced with the bot-authored comment structure and optional JSON metadata.
 - **Update `research-factory` workflow** to use the custom safe-output script, strip HTML comments from issue body and human comments, and no longer rewrite the issue body.
 - **Update `change-factory` workflow** to extract prior research from a bot-authored comment (with `findResearchComment` helper) instead of regexing markers from the issue body.
 - **Update `code-factory` workflow** to use the shared sanitisation library for its own agent context.

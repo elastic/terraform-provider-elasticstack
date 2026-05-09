@@ -6,7 +6,7 @@ Shared deterministic helpers for stripping HTML comments from untrusted human-au
 ## ADDED Requirements
 
 ### Requirement: Shared library provides HTML-comment stripping
-The repository SHALL provide a shared helper under `.github/workflows-src/lib/` that exposes a `stripHtmlComments(text)` function. The function SHALL remove all HTML comment sequences — that is, text matching the pattern `<!--` through the next `-->` — from an input string and SHALL return the remaining text. The helper SHALL be unit-testable independently of any workflow wrapper.
+The repository SHALL provide a shared helper under `.github/workflows-src/lib/` that exposes a `stripHtmlComments(text)` function. The function SHALL remove all HTML comment sequences — that is, text matching the pattern `<!--` through the next `-->` — from an input string and SHALL return the remaining text. When an opening `<!--` is present without a matching closing `-->`, the function SHALL remove from that `<!--` to the end of the string. The helper SHALL be unit-testable independently of any workflow wrapper.
 
 #### Scenario: Input contains embedded HTML comment
 - **WHEN** `stripHtmlComments` is called with text containing `<!-- hidden -->`
@@ -19,6 +19,11 @@ The repository SHALL provide a shared helper under `.github/workflows-src/lib/` 
 #### Scenario: Input contains no HTML comments
 - **WHEN** `stripHtmlComments` is called with plain text lacking any `<!--` sequence
 - **THEN** the returned string SHALL be identical to the input
+
+#### Scenario: Input contains an unterminated HTML comment
+- **WHEN** `stripHtmlComments` is called with text containing `<!-- hidden` with no closing `-->`
+- **THEN** the returned string SHALL remove from the `<!--` through the end of the string
+- **AND** the injection surface SHALL be eliminated
 
 #### Scenario: Maintainer inspects shared library
 - **WHEN** maintainers inspect `.github/workflows-src/lib/` for sanitisation helpers

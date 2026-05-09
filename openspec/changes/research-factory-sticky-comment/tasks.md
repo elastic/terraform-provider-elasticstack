@@ -4,7 +4,7 @@
 - [ ] 1.2 Create `.github/workflows-src/lib/sanitize-context.test.mjs` with unit tests for `stripHtmlComments`
 - [ ] 1.3 Export `findResearchComment(comments, marker)` helper from `sanitize-context.js`
 - [ ] 1.4 Add tests for `findResearchComment` (filters by author + marker)
-- [ ] 1.5 Run `npm test` in `workflows-src/lib/` to verify new tests pass alongside existing tests
+- [ ] 1.5 Run `make workflow-test` (or `node --test .github/workflows-src/lib/*.test.mjs`) to verify new tests pass alongside existing tests
 
 ## 2. Research-factory workflow
 

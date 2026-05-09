@@ -4,7 +4,7 @@
 
 ### Requirement: Block is delimited by stable HTML-comment markers
 **Reason**: Replaced by the `ci-research-factory-comment-format` capability. Research output now lives in a dedicated bot-authored comment rather than a gated block inside the issue body, eliminating the marker-parsing surface entirely.
-**Migration**: Refer to `openspec/specs/ci-research-factory-comment-format/spec.md` for the new comment-based format.
+**Migration**: Refer to `openspec/changes/research-factory-sticky-comment/specs/ci-research-factory-comment-format/spec.md` for the new comment-based format. The canonical path `openspec/specs/ci-research-factory-comment-format/spec.md` will be created when this change is synced.
 
 #### Scenario: Body markers are no longer produced
 - **WHEN** a maintainer inspects research output authored after this change
@@ -13,7 +13,7 @@
 
 ### Requirement: Block opens with a provenance header
 **Reason**: Provenance header is migrated to the new comment-format spec.
-**Migration**: See `openspec/specs/ci-research-factory-comment-format/spec.md`.
+**Migration**: See `openspec/changes/research-factory-sticky-comment/specs/ci-research-factory-comment-format/spec.md`. The canonical path will be created when this change is synced.
 
 #### Scenario: Provenance lives in the research comment
 - **WHEN** a maintainer reads research output after this change
@@ -21,7 +21,7 @@
 
 ### Requirement: Block contains the mandatory research subsections
 **Reason**: Subsection requirements are migrated to the new comment-format spec.
-**Migration**: See `openspec/specs/ci-research-factory-comment-format/spec.md`.
+**Migration**: See `openspec/changes/research-factory-sticky-comment/specs/ci-research-factory-comment-format/spec.md`. The canonical path will be created when this change is synced.
 
 #### Scenario: Subsections are in the research comment
 - **WHEN** a maintainer inspects research output after this change
@@ -29,7 +29,7 @@
 
 ### Requirement: Block is regenerated each run; outside content is preserved
 **Reason**: With research output in a separate comment, there is no "outside content" to preserve. The issue body is left untouched by `research-factory`.
-**Migration**: The `research-factory` workflow no longer modifies the issue body at all. See `openspec/specs/ci-research-factory-comment-format/spec.md` for the regeneration contract.
+**Migration**: The `research-factory` workflow no longer modifies the issue body at all. See `openspec/changes/research-factory-sticky-comment/specs/ci-research-factory-comment-format/spec.md` for the regeneration contract. The canonical path will be created when this change is synced.
 
 #### Scenario: Issue body is untouched across re-runs
 - **WHEN** the workflow re-runs for an issue
@@ -38,7 +38,7 @@
 
 ### Requirement: Prior block contents and human-authored comments are read as input on the next run
 **Reason**: Input reading is migrated to the new comment-format spec.
-**Migration**: See `openspec/specs/ci-research-factory-comment-format/spec.md`.
+**Migration**: See `openspec/changes/research-factory-sticky-comment/specs/ci-research-factory-comment-format/spec.md`. The canonical path will be created when this change is synced.
 
 #### Scenario: Prior research comment is read as input
 - **WHEN** the workflow re-runs for an issue that already has a research comment
