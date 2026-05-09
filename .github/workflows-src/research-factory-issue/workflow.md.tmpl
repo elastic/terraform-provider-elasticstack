@@ -3,8 +3,8 @@ name: Research Factory Issue Intake
 timeout-minutes: 35
 description: >-
   Reacts to trusted qualifying `research-factory` issue events or internal workflow dispatch
-  requests and delegates deep-research authoring to an agent that writes a single
-  implementation-research block into the triggering issue body.
+  requests and delegates deep-research authoring to an agent that creates or updates a single
+  implementation-research sticky comment on the triggering issue.
 on:
   issues:
     types: [opened, labeled]
@@ -362,7 +362,7 @@ approach needs its own `#### ` H4 heading. Do not emit a comment with only one a
 
 Your research output MUST conform to the `ci-research-factory-comment-format` capability. The
 comment body SHALL begin with exactly the marker `<!-- gha-research-factory -->` on its own line,
-followed by these mandatory subsections in order (each a `### ` H3 heading):
+followed by these mandatory sections in order:
 
 1. `## Implementation research` — H2 heading followed by a provenance header recording the run
 timestamp, the run link (`${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`), and
