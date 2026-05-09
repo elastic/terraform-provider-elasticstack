@@ -23,6 +23,7 @@ import (
 	"net/http"
 
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -42,15 +43,13 @@ func (r *Resource) readState(ctx context.Context, kibanaClient *kibanaoapi.Clien
 		return
 	}
 
-	if getResult.JSON200 == nil {
-		diagnostics.AddError(
-			fmt.Sprintf("Failed to get parameter `%s`", resourceID),
-			fmt.Sprintf("API returned unexpected status %d: %s", getResult.StatusCode(), string(getResult.Body)),
-		)
+	unwrapped, unwrapDiags := diagutil.UnwrapJSON200(getResult.JSON200, "synthetics parameter")
+	diagnostics.Append(unwrapDiags...)
+	if diagnostics.HasError() {
 		return
 	}
 
-	model := modelV0FromOAPI(*getResult.JSON200)
+	model := modelV0FromOAPI(*unwrapped)
 	model.KibanaConnection = kibanaConnection
 
 	// Set refreshed state

@@ -56,13 +56,11 @@ func CreateAlertingRule(ctx context.Context, client *Client, spaceID string, rul
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		if resp.JSON200 == nil {
-			return nil, diag.Diagnostics{diag.NewErrorDiagnostic(
-				"Create rule returned an empty response",
-				fmt.Sprintf("Create rule returned an empty response with HTTP status code [%d].", resp.StatusCode()),
-			)}
+		unwrapped, diags := diagutil.UnwrapJSON200(resp.JSON200, "alerting rule")
+		if diags.HasError() {
+			return nil, diags
 		}
-		return ConvertResponseToModel(spaceID, resp.JSON200)
+		return ConvertResponseToModel(spaceID, unwrapped)
 	case http.StatusConflict:
 		return nil, diag.Diagnostics{diag.NewErrorDiagnostic(
 			"Rule ID conflict",
@@ -85,13 +83,11 @@ func GetAlertingRule(ctx context.Context, client *Client, spaceID string, ruleID
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		if resp.JSON200 == nil {
-			return nil, diag.Diagnostics{diag.NewErrorDiagnostic(
-				"Get rule returned an empty response",
-				fmt.Sprintf("Get rule returned an empty response with HTTP status code [%d].", resp.StatusCode()),
-			)}
+		unwrapped, diags := diagutil.UnwrapJSON200(resp.JSON200, "alerting rule")
+		if diags.HasError() {
+			return nil, diags
 		}
-		return ConvertResponseToModel(spaceID, resp.JSON200)
+		return ConvertResponseToModel(spaceID, unwrapped)
 	case http.StatusNotFound:
 		return nil, nil
 	default:
@@ -117,15 +113,13 @@ func UpdateAlertingRule(ctx context.Context, client *Client, spaceID string, rul
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		if resp.JSON200 == nil {
-			return nil, diag.Diagnostics{diag.NewErrorDiagnostic(
-				"Update rule returned an empty response",
-				fmt.Sprintf("Update rule returned an empty response with HTTP status code [%d].", resp.StatusCode()),
-			)}
+		unwrapped, diags := diagutil.UnwrapJSON200(resp.JSON200, "alerting rule")
+		if diags.HasError() {
+			return nil, diags
 		}
 
 		var wasEnabled bool
-		if data, err := json.Marshal(resp.JSON200); err == nil {
+		if data, err := json.Marshal(unwrapped); err == nil {
 			var temp struct {
 				Enabled bool `json:"enabled"`
 			}
@@ -148,7 +142,7 @@ func UpdateAlertingRule(ctx context.Context, client *Client, spaceID string, rul
 			}
 		}
 
-		returnedRule, convDiags := ConvertResponseToModel(spaceID, resp.JSON200)
+		returnedRule, convDiags := ConvertResponseToModel(spaceID, unwrapped)
 		if convDiags.HasError() {
 			return nil, convDiags
 		}

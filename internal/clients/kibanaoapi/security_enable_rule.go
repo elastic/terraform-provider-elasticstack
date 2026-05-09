@@ -121,11 +121,12 @@ func CheckRulesEnabledByTag(ctx context.Context, client *Client, spaceID, key, v
 		return false, diagutil.CheckHTTPErrorFromFW(resp.HTTPResponse, "failed to query rules by tag")
 	}
 
-	if resp.JSON200 == nil {
-		return false, diag.Diagnostics{diag.NewErrorDiagnostic("Empty response", "FindRules returned empty response")}
+	unwrapped, unwrapDiags := diagutil.UnwrapJSON200(resp.JSON200, "find rules")
+	if unwrapDiags.HasError() {
+		return false, unwrapDiags
 	}
 
-	allEnabled := resp.JSON200.Total == 0
+	allEnabled := unwrapped.Total == 0
 
 	return allEnabled, nil
 }

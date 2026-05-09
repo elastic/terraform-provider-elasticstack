@@ -36,15 +36,11 @@ func ListSpaces(ctx context.Context, client *Client) ([]kbapi.SpaceResponse, fwd
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		if resp.JSON200 == nil {
-			return nil, fwdiag.Diagnostics{
-				fwdiag.NewErrorDiagnostic(
-					"Unexpected empty response from Kibana Spaces API",
-					"Got HTTP 200 but response body was empty or not JSON. This is likely a bug.",
-				),
-			}
+		spaces, diags := diagutil.UnwrapJSON200(resp.JSON200, "spaces")
+		if diags.HasError() {
+			return nil, diags
 		}
-		return *resp.JSON200, nil
+		return *spaces, nil
 	default:
 		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
@@ -60,15 +56,7 @@ func GetSpace(ctx context.Context, client *Client, id string) (*kbapi.SpaceRespo
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		if resp.JSON200 == nil {
-			return nil, fwdiag.Diagnostics{
-				fwdiag.NewErrorDiagnostic(
-					"Unexpected empty response from Kibana Spaces API",
-					"Got HTTP 200 but response body was empty or not JSON. This is likely a bug.",
-				),
-			}
-		}
-		return resp.JSON200, nil
+		return diagutil.UnwrapJSON200(resp.JSON200, "space")
 	case http.StatusNotFound:
 		return nil, nil
 	default:
@@ -92,14 +80,8 @@ func CreateSpace(ctx context.Context, client *Client, body kbapi.PostSpacesSpace
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		if resp.JSON200 == nil {
-			return nil, sdkdiag.Diagnostics{{
-				Severity: sdkdiag.Error,
-				Summary:  "Unexpected empty response from Kibana Spaces API",
-				Detail:   "Got HTTP 200 but response body was empty or not JSON. This is likely a bug.",
-			}}
-		}
-		return resp.JSON200, nil
+		val, fwDiags := diagutil.UnwrapJSON200(resp.JSON200, "space")
+		return val, diagutil.SDKDiagsFromFramework(fwDiags)
 	default:
 		return nil, diagutil.SDKDiagsFromFramework(diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body))
 	}
@@ -114,14 +96,8 @@ func UpdateSpace(ctx context.Context, client *Client, id string, body kbapi.PutS
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		if resp.JSON200 == nil {
-			return nil, sdkdiag.Diagnostics{{
-				Severity: sdkdiag.Error,
-				Summary:  "Unexpected empty response from Kibana Spaces API",
-				Detail:   "Got HTTP 200 but response body was empty or not JSON. This is likely a bug.",
-			}}
-		}
-		return resp.JSON200, nil
+		val, fwDiags := diagutil.UnwrapJSON200(resp.JSON200, "space")
+		return val, diagutil.SDKDiagsFromFramework(fwDiags)
 	default:
 		return nil, diagutil.SDKDiagsFromFramework(diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body))
 	}
