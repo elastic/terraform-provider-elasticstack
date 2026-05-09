@@ -118,8 +118,10 @@ func TestAccResourceFleetServerHost(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "name", fmt.Sprintf("Updated FleetServerHost %s", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "id", "fleet-server-host-id"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "default", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "default", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "hosts.#", "2"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "hosts.0", "https://fleet-server:8220"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "hosts.1", "https://fleet-server-2:8220"),
 				),
 			},
 			{
@@ -132,6 +134,29 @@ func TestAccResourceFleetServerHost(t *testing.T) {
 				ResourceName:      "elasticstack_fleet_server_host.test_host",
 				ImportState:       true,
 				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccResourceFleetServerHost_computedID(t *testing.T) {
+	hostName := sdkacctest.RandString(22)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceFleetServerHostDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionFleetServerHost),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(fmt.Sprintf("FleetServerHost %s", hostName)),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_computed_id", "name", fmt.Sprintf("FleetServerHost %s", hostName)),
+					resource.TestCheckResourceAttrSet("elasticstack_fleet_server_host.test_computed_id", "host_id"),
+				),
 			},
 		},
 	})

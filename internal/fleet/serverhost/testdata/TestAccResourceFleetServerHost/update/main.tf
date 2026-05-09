@@ -10,8 +10,9 @@ provider "elasticstack" {
 resource "elasticstack_fleet_server_host" "test_host" {
   name    = var.name
   host_id = "fleet-server-host-id"
-  default = false
+  default = true
   hosts = [
-    "https://fleet-server:8220"
+    "https://fleet-server:8220",
+    "https://fleet-server-2:8220"
   ]
 }
