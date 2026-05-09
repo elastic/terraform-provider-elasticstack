@@ -77,6 +77,26 @@ on:
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         x-script-include: scripts/check_actor_trust.inline.js
+    - name: Fetch issue comments
+      id: fetch_issue_comments
+      if: >-
+        (
+          steps.determine_intake_mode.outputs.intake_mode == 'issue-event' &&
+          steps.qualify_trigger.outputs.event_eligible == 'true' &&
+          steps.check_actor_trust.outputs.actor_trusted == 'true'
+        ) || (
+          steps.determine_intake_mode.outputs.intake_mode == 'dispatch' &&
+          steps.validate_dispatch_inputs.outputs.event_eligible == 'true'
+        )
+      env:
+        INPUT_ISSUE_NUMBER: >-
+          ${{ steps.determine_intake_mode.outputs.intake_mode == 'issue-event'
+            && steps.capture_issue_context.outputs.issue_number
+            || steps.validate_dispatch_inputs.outputs.issue_number }}
+      uses: actions/github-script@v9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        x-script-include: scripts/fetch_issue_comments.inline.js
     - name: Check duplicate PR
       id: check_duplicate_pr
       if: >-
@@ -163,6 +183,19 @@ on:
         echo "duplicate_pr_found=${DUPLICATE_PR_FOUND}" >> "$GITHUB_OUTPUT"
         echo "duplicate_pr_url=${DUPLICATE_PR_URL}" >> "$GITHUB_OUTPUT"
       shell: bash
+    - name: Sanitize context
+      id: sanitize_context
+      if: >-
+        steps.normalize_context.outputs.event_eligible == 'true' &&
+        steps.normalize_context.outputs.actor_trusted == 'true' &&
+        steps.check_duplicate_pr.outputs.duplicate_pr_found != 'true'
+      env:
+        ISSUE_BODY: ${{ steps.normalize_context.outputs.issue_body }}
+        HUMAN_COMMENTS: ${{ steps.fetch_issue_comments.outputs.human_comments }}
+      uses: actions/github-script@v9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        x-script-include: scripts/sanitize_context.inline.js
     - name: Finalize gate reason
       id: finalize_gate
       if: always()
@@ -241,6 +274,8 @@ jobs:
       issue_number: ${{ steps.normalize_context.outputs.issue_number }}
       issue_title: ${{ steps.normalize_context.outputs.issue_title }}
       issue_body: ${{ steps.normalize_context.outputs.issue_body }}
+      sanitized_issue_body: ${{ steps.sanitize_context.outputs.sanitized_issue_body }}
+      sanitized_issue_comments: ${{ steps.sanitize_context.outputs.sanitized_issue_comments }}
       event_eligible: ${{ steps.normalize_context.outputs.event_eligible }}
       event_eligible_reason: ${{ steps.normalize_context.outputs.event_eligible_reason }}
       actor_trusted: ${{ steps.normalize_context.outputs.actor_trusted }}
@@ -283,10 +318,16 @@ Deterministic pre-activation has already decided that this intake is eligible, t
 - **Intake mode**: `${{ needs.pre_activation.outputs.intake_mode }}`
 - **Issue number**: `${{ needs.pre_activation.outputs.issue_number }}`
 - **Issue title**: `${{ needs.pre_activation.outputs.issue_title }}`
-- **Issue body**:
+- **Issue body** (sanitised):
 
   ```markdown
-  ${{ needs.pre_activation.outputs.issue_body }}
+  ${{ needs.pre_activation.outputs.sanitized_issue_body }}
+  ```
+
+- **Comment history** (sanitised, human-authored):
+
+  ```markdown
+  ${{ needs.pre_activation.outputs.sanitized_issue_comments }}
   ```
 
 - **Repository**: `${{ github.repository }}`
