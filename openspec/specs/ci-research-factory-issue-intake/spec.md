@@ -1,8 +1,10 @@
 # ci-research-factory-issue-intake Specification
 
 ## Purpose
-TBD - created by archiving change research-factory-workflow. Update Purpose after archive.
+Define requirements for a GitHub Agentic Workflow that reacts to trusted GitHub issues labeled `research-factory` and produces implementation research as a sticky comment authored by `github-actions[bot]`, without modifying the issue body or writing code.
+
 ## Requirements
+
 ### Requirement: Workflow source is repository-authored and generated
 The repository SHALL define the `research-factory` issue-intake automation as a repository-authored GitHub Agentic Workflow source under `.github/workflows-src/research-factory-issue/` that generates checked-in workflow artifacts under `.github/workflows/`: the compiled markdown `.github/workflows/research-factory-issue.md` and the compiled `.github/workflows/research-factory-issue.lock.yml` from `gh aw compile`. Contributors SHALL NOT hand-edit those generated files; they SHALL be regenerated with repository workflow tooling (`make workflow-generate`). Deterministic GitHub-script logic used for trigger qualification, dispatch input validation, comment-history capture, or context normalization SHALL be factored into repository-local helper code under `.github/workflows-src/lib/` that can be tested independently of the compiled workflow.
 
@@ -68,11 +70,31 @@ The workflow SHALL normalize issue intake into downstream-consumable outputs tha
 - **WHEN** the workflow is triggered from `workflow_dispatch`
 - **THEN** the workflow SHALL fetch the live issue from GitHub and publish the same normalized outputs for the resolved issue number, title, body, intake mode, gate reason, and comment history
 
+### Requirement: Workflow sanitizes HTML comments from agent input context
+Before writing the `issue_body.md` and `issue_comments.md` context files for the agent, the workflow SHALL strip all HTML comments from the issue body and from each human-authored comment using the shared `ci-html-comment-sanitisation` helpers. Bot-authored comments SHALL already be excluded from `issue_comments.md` by the existing filter.
+
+#### Scenario: Agent receives clean context
+- **WHEN** the `research-factory` workflow runs for an issue whose body contains an injected `<!-- fake-marker -->` comment
+- **THEN** the `issue_body.md` file written for the agent SHALL NOT contain that comment
+- **AND** the agent SHALL therefore be unable to read or act on the injected marker
+
+#### Scenario: Human comments with HTML comments are cleaned
+- **WHEN** a human comment on the issue contains an HTML comment
+- **THEN** the sanitised comment text delivered to the agent SHALL have that comment removed
+
+### Requirement: Workflow fetches prior research comment as agent input
+On any run where a prior research comment exists on the issue, the workflow SHALL fetch that comment (identified by `github-actions[bot]` author and the `<!-- gha-research-factory -->` marker) and provide its full body to the agent as a separate context file or prompt section. The prior research comment SHALL NOT be passed through `stripHtmlComments` because it is trusted bot-authored output. The agent SHALL read the prior comment alongside the sanitised issue body and sanitised human comment history.
+
+#### Scenario: Prior research comment is provided to agent verbatim
+- **WHEN** the workflow re-runs for an issue that already has a research comment by `github-actions[bot]`
+- **THEN** the workflow SHALL fetch that comment and provide it to the agent without HTML-comment stripping
+- **AND** the agent SHALL receive the intact `<!-- gha-research-factory -->` marker and all prior research content
+
 ### Requirement: Workflow captures human-authored comment history for the agent
 Before agent activation, the workflow SHALL capture all comments on the triggering issue, in chronological order, filtered to human-authored comments only. Comments authored by `github-actions[bot]`, by the workflow's own status-comment author, and by other automation bots known to the repository SHALL be excluded. The captured history SHALL be exposed to the agent prompt alongside the issue body so the agent can read the prior conversation, including any prior research output and any human replies to it. The capture step SHALL be implemented as a shared helper under `.github/workflows-src/lib/` reusable across factory workflows.
 
 #### Scenario: Issue has prior research and human follow-up comments
-- **WHEN** an eligible `research-factory` event fires on an issue that already contains a research block in its body and one or more human comments
+- **WHEN** an eligible `research-factory` event fires on an issue that already contains a research comment and one or more human comments
 - **THEN** the workflow SHALL include the chronological human comment history in the normalized intake context delivered to the agent
 
 #### Scenario: Bot comments are excluded
@@ -97,7 +119,7 @@ The workflow SHALL declare GitHub Actions concurrency keyed by the resolved issu
 - **THEN** the two runs MAY execute concurrently because they belong to different concurrency groups
 
 ### Requirement: Workflow time-boxes the research session and survives partial completion
-The workflow SHALL set a job-level `timeout-minutes` of 35 minutes. The agent prompt SHALL communicate a 25-minute self-budget to the agent and SHALL instruct it to reserve the final minutes of the budget for emitting its issue-body update. The prompt SHALL further instruct the agent that, if research time runs short, it SHALL prefer emitting a partial-but-valid research block (with explicit unanswered open questions) over emitting `noop`.
+The workflow SHALL set a job-level `timeout-minutes` of 35 minutes. The agent prompt SHALL communicate a 25-minute self-budget to the agent and SHALL instruct it to reserve the final minutes of the budget for emitting its research comment. The prompt SHALL further instruct the agent that, if research time runs short, it SHALL prefer emitting a partial-but-valid research comment (with explicit unanswered open questions) over emitting `noop`.
 
 #### Scenario: Maintainer inspects compiled workflow timeout
 - **WHEN** maintainers inspect the compiled `research-factory-issue.md` workflow
@@ -106,24 +128,24 @@ The workflow SHALL set a job-level `timeout-minutes` of 35 minutes. The agent pr
 #### Scenario: Agent prompt communicates the self-budget
 - **WHEN** maintainers inspect the agent prompt body
 - **THEN** the prompt SHALL state the 25-minute research self-budget
-- **AND** the prompt SHALL state that the agent SHALL prefer a partial-but-valid research block over `noop` when running short on time
+- **AND** the prompt SHALL state that the agent SHALL prefer a partial-but-valid research comment over `noop` when running short on time
 
 ### Requirement: Workflow remains research-only and does not write code
-The `research-factory` workflow SHALL NOT implement provider, CI, or documentation behavior, SHALL NOT open pull requests, and SHALL NOT modify repository files. Its only durable output SHALL be a single `update-issue` operation against the triggering issue's body in the format defined by the `ci-implementation-research-block-format` capability. The workflow SHALL NOT enable safe outputs that would permit creating pull requests, creating issues, or posting free-form comments beyond the framework's own `status-comment`.
+The `research-factory` workflow SHALL NOT implement provider, CI, or documentation behavior, SHALL NOT open pull requests, and SHALL NOT modify repository files. Its only durable output SHALL be a single `update_research_comment` safe-output operation executed by the custom `update-research-comment` script, producing a comment conforming to the `ci-research-factory-comment-format` capability. The workflow SHALL NOT enable safe outputs that would permit creating pull requests, creating issues, or posting free-form comments beyond the framework's own `status-comment`.
 
 #### Scenario: Maintainer inspects compiled workflow safe outputs
 - **WHEN** maintainers inspect the compiled `research-factory-issue.md` workflow `safe-outputs:` block
-- **THEN** it SHALL include `update-issue` with `body:` enabled
-- **AND** it SHALL NOT include `create-pull-request`, `push-to-pull-request-branch`, `update-pull-request`, or `create-issue`
+- **THEN** it SHALL include a `scripts` entry named `update-research-comment`
+- **AND** it SHALL NOT include `update-issue`, `create-pull-request`, `push-to-pull-request-branch`, `update-pull-request`, or `create-issue`
 - **AND** it SHALL NOT include `add-comment`
 
 #### Scenario: Issue requests provider implementation
 - **WHEN** a qualifying issue describes a Terraform resource, data source, or other provider implementation
-- **THEN** the agent SHALL produce a research block describing approaches and open questions
+- **THEN** the agent SHALL produce a research comment describing approaches and open questions
 - **AND** the agent SHALL NOT modify provider source, generated clients, or documentation
 
 ### Requirement: Workflow bootstraps only research-authoring tooling
-Before the research agent runs, the workflow SHALL provision tooling needed to author the research block and read the repository: a Git checkout of the default branch with `fetch-depth: 0` for full history, and Node.js via `actions/setup-node` with `node-version-file: package.json` plus `npm ci` so the agent can run repository tooling if needed. The workflow SHALL NOT start the Elastic Stack, create Elasticsearch API keys, set up Fleet, or run Terraform acceptance tests.
+Before the research agent runs, the workflow SHALL provision tooling needed to author the research comment and read the repository: a Git checkout of the default branch with `fetch-depth: 0` for full history, and Node.js via `actions/setup-node` with `node-version-file: package.json` plus `npm ci` so the agent can run repository tooling if needed. The workflow SHALL NOT start the Elastic Stack, create Elasticsearch API keys, set up Fleet, or run Terraform acceptance tests.
 
 #### Scenario: Agent has full repository checkout
 - **WHEN** the research agent starts for a qualifying run
@@ -138,8 +160,8 @@ The `research-factory` workflow SHALL configure the Elastic docs MCP server as a
 
 #### Scenario: Agent investigates an unfamiliar Elastic API feature
 - **WHEN** a `research-factory` issue references an Elastic API endpoint or feature the agent has not encountered before
-- **THEN** the agent SHALL use the elastic-docs MCP `search_docs` tool to locate relevant Elastic documentation before authoring the research block
-- **AND** it SHALL cite the consulted documentation URLs in the block's References section
+- **THEN** the agent SHALL use the elastic-docs MCP `search_docs` tool to locate relevant Elastic documentation before authoring the research comment
+- **AND** it SHALL cite the consulted documentation URLs in the comment's References section
 
 #### Scenario: Elastic docs MCP server is unavailable
 - **WHEN** the elastic-docs MCP tools return an error or are unreachable during a `research-factory` run
@@ -178,6 +200,26 @@ The workflow SHALL include a deterministic pre-activation step that removes the 
 - **WHEN** the workflow is triggered by `workflow_dispatch` for an issue that does not carry the `research-factory` label
 - **THEN** the workflow SHALL continue normally and SHALL NOT require trigger-label removal for that run
 
+### Requirement: Agent emits a single research comment via custom safe-output script
+When the deterministic gate passes and the agent completes its research, the agent SHALL emit a single `update_research_comment` safe-output operation whose `body` payload contains the research content conforming to the `ci-research-factory-comment-format` capability. The workflow SHALL define a custom `safe-outputs.scripts` entry named `update-research-comment` that creates or updates an issue comment authored by `github-actions[bot]`. If an existing comment by `github-actions[bot]` containing the marker `<!-- gha-research-factory -->` is found on the issue, the script SHALL update that comment; otherwise it SHALL create a new comment. The agent SHALL NOT emit `update_issue`, `add-comment`, or any other safe-output operation as part of its research output.
+
+#### Scenario: Agent produces research on a fresh issue
+- **WHEN** the workflow runs for an eligible issue with no prior research comment
+- **THEN** the agent SHALL emit one `update_research_comment` operation
+- **AND** the custom script SHALL create a new comment on the issue
+- **AND** that comment SHALL contain `<!-- gha-research-factory -->` as its first line
+
+#### Scenario: Agent regenerates an existing research comment
+- **WHEN** the workflow runs for an eligible issue that already has a research comment by `github-actions[bot]`
+- **THEN** the agent SHALL emit one `update_research_comment` operation
+- **AND** the custom script SHALL update the existing comment in place
+- **AND** the issue SHALL NOT gain an additional research comment
+
+#### Scenario: Agent times out before reaching a confident recommendation
+- **WHEN** the agent's self-budget expires before research is complete
+- **THEN** the agent SHALL emit a partial-but-valid research comment with explicit unanswered open questions
+- **AND** the agent SHALL NOT emit `noop` solely because research is partial
+
 ### Requirement: Workflow frontmatter allows required agent ecosystems
 The `research-factory` workflow SHALL declare an authored AWF network policy that allows the default allowlist plus the Node ecosystem, allows `elastic.litellm-prod.ai` for the Claude engine's Anthropic-compatible proxy access, and allows `www.elastic.co` for the Elastic docs MCP server.
 
@@ -187,26 +229,6 @@ The `research-factory` workflow SHALL declare an authored AWF network policy tha
 - **AND** `network.allowed` SHALL include `node`
 - **AND** `network.allowed` SHALL include `elastic.litellm-prod.ai`
 - **AND** `network.allowed` SHALL include `www.elastic.co`
-
-### Requirement: Agent updates the issue body with a single research block per run
-When the deterministic gate passes and the agent completes its research, the agent SHALL emit a single `update_issue` safe-output operation with `operation: replace` whose `body` payload contains the original issue content (everything outside the implementation-research markers preserved byte-for-byte) followed by exactly one current `<!-- implementation-research:start --> ... <!-- implementation-research:end -->` block conforming to the `ci-implementation-research-block-format` capability. The agent SHALL NOT emit additional `update_issue` operations, SHALL NOT append a second block, and SHALL NOT emit `add-comment`. If the agent cannot make any meaningful research progress at all (for example because the issue body is empty and no comments exist), it MAY emit `noop` instead.
-
-#### Scenario: Agent produces a research block on a fresh issue
-- **WHEN** the workflow runs for an eligible issue with no prior research block in its body
-- **THEN** the agent SHALL emit one `update_issue` operation with `operation: replace`
-- **AND** the new body SHALL preserve the original issue content unchanged before the markers
-- **AND** the new body SHALL contain exactly one `<!-- implementation-research:start --> ... <!-- implementation-research:end -->` block
-
-#### Scenario: Agent regenerates an existing research block
-- **WHEN** the workflow runs for an eligible issue whose body already contains a research block
-- **THEN** the agent SHALL emit one `update_issue` operation with `operation: replace`
-- **AND** the new body SHALL contain exactly one research block (the prior block SHALL NOT remain alongside the new one)
-- **AND** the new body SHALL preserve all content outside the markers byte-for-byte relative to the pre-block original issue content
-
-#### Scenario: Agent times out before reaching a confident recommendation
-- **WHEN** the agent's self-budget expires before research is complete
-- **THEN** the agent SHALL emit a partial-but-valid research block with explicit unanswered open questions
-- **AND** the agent SHALL NOT emit `noop` solely because research is partial
 
 ### Requirement: Workflow does not promote the issue to a downstream factory
 The `research-factory` workflow SHALL NOT apply the `change-factory`, `code-factory`, or any other factory trigger label as part of its research run. Promotion of an issue from the research stage to a downstream stage SHALL be performed by a human maintainer or by a separate (future) classifier workflow, not by `research-factory` itself.
@@ -218,4 +240,3 @@ The `research-factory` workflow SHALL NOT apply the `change-factory`, `code-fact
 #### Scenario: Maintainer inspects compiled workflow safe outputs
 - **WHEN** maintainers inspect the compiled `research-factory-issue.md` workflow
 - **THEN** its `safe-outputs:` block SHALL NOT enable `add-labels`
-
