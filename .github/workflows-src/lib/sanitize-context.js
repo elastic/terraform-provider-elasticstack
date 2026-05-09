@@ -11,6 +11,7 @@
  * @returns {string}
  */
 function stripHtmlComments(text) {
+  if (typeof text !== 'string') return '';
   return text.replace(/<!--[\s\S]*?(?:-->|$)/g, '');
 }
 
@@ -28,8 +29,9 @@ function findResearchComment(comments, marker) {
   }
   const matches = comments.filter(
     (c) =>
-      c.author === 'github-actions[bot]' &&
-      c.body != null &&
+      c != null &&
+      typeof c.body === 'string' &&
+      (c.author ?? c.user?.login) === 'github-actions[bot]' &&
       c.body.includes(marker),
   );
   return matches.length > 0 ? matches[matches.length - 1] : null;

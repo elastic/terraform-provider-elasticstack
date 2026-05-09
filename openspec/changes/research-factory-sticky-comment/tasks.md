@@ -1,10 +1,10 @@
 ## 1. Shared sanitisation library
 
-- [ ] 1.1 Create `.github/workflows-src/lib/sanitize-context.js` with `stripHtmlComments(text)` function
-- [ ] 1.2 Create `.github/workflows-src/lib/sanitize-context.test.mjs` with unit tests for `stripHtmlComments`
-- [ ] 1.3 Export `findResearchComment(comments, marker)` helper from `sanitize-context.js`
-- [ ] 1.4 Add tests for `findResearchComment` (filters by author + marker)
-- [ ] 1.5 Run `make workflow-test` (or `node --test .github/workflows-src/lib/*.test.mjs`) to verify new tests pass alongside existing tests
+- [x] 1.1 Create `.github/workflows-src/lib/sanitize-context.js` with `stripHtmlComments(text)` function
+- [x] 1.2 Create `.github/workflows-src/lib/sanitize-context.test.mjs` with unit tests for `stripHtmlComments`
+- [x] 1.3 Export `findResearchComment(comments, marker)` helper from `sanitize-context.js`
+- [x] 1.4 Add tests for `findResearchComment` (filters by author + marker)
+- [x] 1.5 Run `make workflow-test` (or `node --test .github/workflows-src/lib/*.test.mjs`) to verify new tests pass alongside existing tests
 
 ## 2. Research-factory workflow
 

@@ -85,6 +85,44 @@ test('stripHtmlComments strips multiple consecutive unclosed comments', () => {
   );
 });
 
+test('stripHtmlComments handles empty comment', () => {
+  assert.equal(
+    stripHtmlComments('before<!---->after'),
+    'beforeafter',
+  );
+});
+
+test('stripHtmlComments over-strips comments inside markdown code fences', () => {
+  // The regex is not markdown-aware; it strips all HTML comments regardless
+  // of whether they appear inside a fenced code block.
+  const text = '```js\nconst x = <!-- value -->;\n```';
+  assert.equal(
+    stripHtmlComments(text),
+    '```js\nconst x = ;\n```',
+  );
+});
+
+test('stripHtmlComments is idempotent for multiline input', () => {
+  const text = 'start\n<!-- line1\nline2 -->\n<!-- another -->\nend';
+  const once = stripHtmlComments(text);
+  const twice = stripHtmlComments(once);
+  assert.equal(twice, once);
+});
+
+test('stripHtmlComments is idempotent for unclosed comment', () => {
+  const text = 'before<!-- never closed';
+  const once = stripHtmlComments(text);
+  const twice = stripHtmlComments(once);
+  assert.equal(twice, once);
+});
+
+test('stripHtmlComments is idempotent for multiple comments', () => {
+  const text = 'a<!-- 1 -->b<!-- 2 -->c<!-- 3 -->d';
+  const once = stripHtmlComments(text);
+  const twice = stripHtmlComments(once);
+  assert.equal(twice, once);
+});
+
 // ─────────────────────────────────────────────────────────────
 // findResearchComment
 // ─────────────────────────────────────────────────────────────
@@ -169,4 +207,40 @@ test('findResearchComment returns last match even when earlier ones have same ma
   ];
   const result = findResearchComment(comments, 'REPEAT');
   assert.equal(result.body, 'third REPEAT');
+});
+
+test('findResearchComment accepts raw GitHub API comment objects', () => {
+  const comments = [
+    { user: { login: 'alice' }, body: 'hello' },
+    { user: { login: 'github-actions[bot]' }, body: 'contains RAW-MARKER here' },
+  ];
+  const result = findResearchComment(comments, 'RAW-MARKER');
+  assert.ok(result);
+  assert.equal(result.body, 'contains RAW-MARKER here');
+});
+
+test('findResearchComment returns null for non-array object input', () => {
+  assert.equal(findResearchComment({}, 'marker'), null);
+});
+
+test('findResearchComment skips null and undefined entries', () => {
+  const comments = [
+    null,
+    undefined,
+    { author: 'github-actions[bot]', body: 'valid marker-Z body' },
+  ];
+  const result = findResearchComment(comments, 'marker-Z');
+  assert.ok(result);
+  assert.equal(result.body, 'valid marker-Z body');
+});
+
+test('findResearchComment skips entries with non-string body', () => {
+  const comments = [
+    { author: 'github-actions[bot]', body: 123 },
+    { author: 'github-actions[bot]', body: {} },
+    { author: 'github-actions[bot]', body: 'valid marker-W body' },
+  ];
+  const result = findResearchComment(comments, 'marker-W');
+  assert.ok(result);
+  assert.equal(result.body, 'valid marker-W body');
 });
