@@ -30,7 +30,7 @@ func TestIsManifestYAML(t *testing.T) {
 		{"bare filename", "manifest.yml", true},
 		{"top-level dir prefix", "mypackage-1.0.0/manifest.yml", true},
 		{"nested", "mypackage/subdir/manifest.yml", true},
-		{"non-manifest yml", "mypackage-1.0.0/data_stream/logs/manifest.yml", true},
+		{"nested manifest under data_stream", "mypackage-1.0.0/data_stream/logs/manifest.yml", true},
 		{"different file", "mypackage-1.0.0/README.md", false},
 		{"different yaml extension", "mypackage-1.0.0/manifest.yaml", false},
 		{"empty string", "", false},
