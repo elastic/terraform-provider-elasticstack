@@ -56,13 +56,11 @@ func CreateAlertingRule(ctx context.Context, client *Client, spaceID string, rul
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		if resp.JSON200 == nil {
-			return nil, diag.Diagnostics{diag.NewErrorDiagnostic(
-				"Create rule returned an empty response",
-				fmt.Sprintf("Create rule returned an empty response with HTTP status code [%d].", resp.StatusCode()),
-			)}
+		unwrapped, diags := diagutil.UnwrapJSON200(resp.JSON200, "alerting rule")
+		if diags.HasError() {
+			return nil, diags
 		}
-		return ConvertResponseToModel(spaceID, resp.JSON200)
+		return ConvertResponseToModel(spaceID, unwrapped)
 	case http.StatusConflict:
 		return nil, diag.Diagnostics{diag.NewErrorDiagnostic(
 			"Rule ID conflict",
@@ -85,13 +83,11 @@ func GetAlertingRule(ctx context.Context, client *Client, spaceID string, ruleID
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		if resp.JSON200 == nil {
-			return nil, diag.Diagnostics{diag.NewErrorDiagnostic(
-				"Get rule returned an empty response",
-				fmt.Sprintf("Get rule returned an empty response with HTTP status code [%d].", resp.StatusCode()),
-			)}
+		unwrapped, diags := diagutil.UnwrapJSON200(resp.JSON200, "alerting rule")
+		if diags.HasError() {
+			return nil, diags
 		}
-		return ConvertResponseToModel(spaceID, resp.JSON200)
+		return ConvertResponseToModel(spaceID, unwrapped)
 	case http.StatusNotFound:
 		return nil, nil
 	default:
@@ -117,15 +113,13 @@ func UpdateAlertingRule(ctx context.Context, client *Client, spaceID string, rul
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		if resp.JSON200 == nil {
-			return nil, diag.Diagnostics{diag.NewErrorDiagnostic(
-				"Update rule returned an empty response",
-				fmt.Sprintf("Update rule returned an empty response with HTTP status code [%d].", resp.StatusCode()),
-			)}
+		unwrapped, diags := diagutil.UnwrapJSON200(resp.JSON200, "alerting rule")
+		if diags.HasError() {
+			return nil, diags
 		}
 
 		var wasEnabled bool
-		if data, err := json.Marshal(resp.JSON200); err == nil {
+		if data, err := json.Marshal(unwrapped); err == nil {
 			var temp struct {
 				Enabled bool `json:"enabled"`
 			}
@@ -148,7 +142,7 @@ func UpdateAlertingRule(ctx context.Context, client *Client, spaceID string, rul
 			}
 		}
 
-		returnedRule, convDiags := ConvertResponseToModel(spaceID, resp.JSON200)
+		returnedRule, convDiags := ConvertResponseToModel(spaceID, unwrapped)
 		if convDiags.HasError() {
 			return nil, convDiags
 		}
@@ -405,30 +399,8 @@ func buildCreateRequestBody(rule models.AlertingRule) (kbapi.AlertingRuleAPIBody
 		body.Enabled = rule.Enabled
 	}
 
-	if rule.NotifyWhen != nil && *rule.NotifyWhen != "" {
-		notifyWhen := kbapi.AlertingRuleAPIBodyGenericNotifyWhen(*rule.NotifyWhen)
-		body.NotifyWhen = &notifyWhen
-	}
-
-	if rule.Throttle != nil {
-		body.Throttle = rule.Throttle
-	}
-
-	if rule.Tags != nil {
-		tags := rule.Tags
-		body.Tags = &tags
-	}
-
-	if rule.AlertDelay != nil {
-		body.AlertDelay = &struct {
-			Active float32 `json:"active"`
-		}{
-			Active: *rule.AlertDelay,
-		}
-	}
-
-	if w := flappingWireFromModel(rule.Flapping); w != nil {
-		body.Flapping = w
+	if err := applyOptionalRuleFields(buildOptionalRuleFields(rule), &body); err != nil {
+		return body, fmt.Errorf("apply optional fields: %w", err)
 	}
 
 	if len(rule.Actions) > 0 {
@@ -455,30 +427,8 @@ func buildUpdateRequestBody(rule models.AlertingRule) (kbapi.PutAlertingRuleIdJS
 		body.Params = &params
 	}
 
-	if rule.NotifyWhen != nil && *rule.NotifyWhen != "" {
-		notifyWhen := kbapi.PutAlertingRuleIdJSONBodyNotifyWhen(*rule.NotifyWhen)
-		body.NotifyWhen = &notifyWhen
-	}
-
-	if rule.Throttle != nil {
-		body.Throttle = rule.Throttle
-	}
-
-	if rule.Tags != nil {
-		tags := rule.Tags
-		body.Tags = &tags
-	}
-
-	if rule.AlertDelay != nil {
-		body.AlertDelay = &struct {
-			Active float32 `json:"active"`
-		}{
-			Active: *rule.AlertDelay,
-		}
-	}
-
-	if w := flappingWireFromModel(rule.Flapping); w != nil {
-		body.Flapping = w
+	if err := applyOptionalRuleFields(buildOptionalRuleFields(rule), &body); err != nil {
+		return body, fmt.Errorf("apply optional fields: %w", err)
 	}
 
 	if len(rule.Actions) > 0 {
@@ -619,4 +569,63 @@ func flappingWireFromModel(f *models.AlertingRuleFlapping) *flappingWire {
 		LookBackWindow:        float32(f.LookBackWindow),
 		StatusChangeThreshold: float32(f.StatusChangeThreshold),
 	}
+}
+
+// ruleBodyOptionalFields holds optional fields shared by create and update alerting rule request
+// bodies. JSON field names are identical between AlertingRuleAPIBodyGeneric and
+// PutAlertingRuleIdJSONBody, so a single intermediate struct can be marshaled into either via
+// applyOptionalRuleFields.
+type ruleBodyOptionalFields struct {
+	NotifyWhen *string   `json:"notify_when,omitempty"`
+	Throttle   *string   `json:"throttle,omitempty"`
+	Tags       *[]string `json:"tags,omitempty"`
+	AlertDelay *struct {
+		Active float32 `json:"active"`
+	} `json:"alert_delay,omitempty"`
+	Flapping *flappingWire `json:"flapping,omitempty"`
+}
+
+func buildOptionalRuleFields(rule models.AlertingRule) ruleBodyOptionalFields {
+	fields := ruleBodyOptionalFields{}
+
+	if rule.NotifyWhen != nil && *rule.NotifyWhen != "" {
+		fields.NotifyWhen = rule.NotifyWhen
+	}
+
+	if rule.Throttle != nil {
+		fields.Throttle = rule.Throttle
+	}
+
+	if rule.Tags != nil {
+		tags := rule.Tags
+		fields.Tags = &tags
+	}
+
+	if rule.AlertDelay != nil {
+		fields.AlertDelay = &struct {
+			Active float32 `json:"active"`
+		}{
+			Active: *rule.AlertDelay,
+		}
+	}
+
+	if w := flappingWireFromModel(rule.Flapping); w != nil {
+		fields.Flapping = w
+	}
+
+	return fields
+}
+
+// applyOptionalRuleFields merges the shared optional fields into target via JSON round-trip.
+// This is lossless because the JSON field names and underlying types match between
+// AlertingRuleAPIBodyGeneric and PutAlertingRuleIdJSONBody for these fields.
+func applyOptionalRuleFields(fields ruleBodyOptionalFields, target any) error {
+	data, err := json.Marshal(fields)
+	if err != nil {
+		return fmt.Errorf("marshal optional fields: %w", err)
+	}
+	if err := json.Unmarshal(data, target); err != nil {
+		return fmt.Errorf("unmarshal optional fields: %w", err)
+	}
+	return nil
 }

@@ -38,13 +38,7 @@ func CreatePrivateLocation(ctx context.Context, client *Client, spaceID string, 
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		if resp.JSON200 == nil {
-			return nil, diag.Diagnostics{diag.NewErrorDiagnostic(
-				"Create private location returned an empty response",
-				fmt.Sprintf("Create private location returned an empty response with HTTP status code [%d].", resp.StatusCode()),
-			)}
-		}
-		return resp.JSON200, nil
+		return diagutil.UnwrapJSON200(resp.JSON200, "synthetics private location")
 	default:
 		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
@@ -64,13 +58,7 @@ func GetPrivateLocation(ctx context.Context, client *Client, spaceID string, loc
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		if resp.JSON200 == nil {
-			return nil, diag.Diagnostics{diag.NewErrorDiagnostic(
-				"Get private location returned an empty response",
-				fmt.Sprintf("Get private location returned an empty response with HTTP status code [%d].", resp.StatusCode()),
-			)}
-		}
-		return resp.JSON200, nil
+		return diagutil.UnwrapJSON200(resp.JSON200, "synthetics private location")
 	case http.StatusNotFound:
 		// Sentinel: caller should remove from state.
 		return nil, nil

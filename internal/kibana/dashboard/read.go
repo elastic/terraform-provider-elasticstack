@@ -22,6 +22,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -88,8 +89,9 @@ func (r *Resource) read(ctx context.Context, apiClient *clients.KibanaScopedClie
 		return nil, diags
 	}
 
-	if getResp.JSON200 == nil {
-		diags.AddError("Empty response when getting dashboard", "GET dashboard was successful, however contained an empty response")
+	_, unwrapDiags := diagutil.UnwrapJSON200(getResp.JSON200, "dashboard")
+	diags.Append(unwrapDiags...)
+	if diags.HasError() {
 		return nil, diags
 	}
 
