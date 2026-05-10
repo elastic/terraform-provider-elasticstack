@@ -30,25 +30,18 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-// EnableRulesByTag enables security detection rules that match a specific tag key-value pair.
-func EnableRulesByTag(ctx context.Context, client *Client, spaceID, key, value string) diag.Diagnostics {
-	query := fmt.Sprintf("alert.attributes.tags:(\"%s: %s\")", key, value)
-
-	bulkAction := kbapi.SecurityDetectionsAPIBulkEnableRules{
-		Action: kbapi.Enable,
-		Query:  &query,
-	}
-
-	bodyBytes, err := json.Marshal(bulkAction)
+// performBulkRulesActionByTag marshals actionBody, calls the bulk-action API, and checks the response.
+// verb is used in error messages (e.g. "enable", "disable").
+func performBulkRulesActionByTag(ctx context.Context, client *Client, spaceID, key, value string, actionBody any, verb string) diag.Diagnostics {
+	bodyBytes, err := json.Marshal(actionBody)
 	if err != nil {
 		return diag.Diagnostics{diag.NewErrorDiagnostic("Failed to marshal bulk action request", err.Error())}
 	}
 
-	tflog.Debug(ctx, "Enabling rules by tag", map[string]any{
+	tflog.Debug(ctx, fmt.Sprintf("%sing rules by tag", verb), map[string]any{
 		"space_id":     spaceID,
 		"key":          key,
 		"value":        value,
-		"query":        query,
 		"request_body": string(bodyBytes),
 	})
 
@@ -56,7 +49,7 @@ func EnableRulesByTag(ctx context.Context, client *Client, spaceID, key, value s
 		ctx, &kbapi.PerformRulesBulkActionParams{}, "application/json",
 		bytes.NewReader(bodyBytes), kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
-		return diag.Diagnostics{diag.NewErrorDiagnostic("Failed to enable rules by tag", err.Error())}
+		return diag.Diagnostics{diag.NewErrorDiagnostic(fmt.Sprintf("Failed to %s rules by tag", verb), err.Error())}
 	}
 
 	tflog.Debug(ctx, "Bulk action response", map[string]any{
@@ -65,38 +58,26 @@ func EnableRulesByTag(ctx context.Context, client *Client, spaceID, key, value s
 	})
 
 	if resp.StatusCode() != 200 {
-		return diagutil.CheckHTTPErrorFromFW(resp.HTTPResponse, "failed to enable rules by tag")
+		return diagutil.CheckHTTPErrorFromFW(resp.HTTPResponse, fmt.Sprintf("failed to %s rules by tag", verb))
 	}
 
 	return nil
 }
 
+// EnableRulesByTag enables security detection rules that match a specific tag key-value pair.
+func EnableRulesByTag(ctx context.Context, client *Client, spaceID, key, value string) diag.Diagnostics {
+	query := fmt.Sprintf("alert.attributes.tags:(\"%s: %s\")", key, value)
+	return performBulkRulesActionByTag(ctx, client, spaceID, key, value,
+		kbapi.SecurityDetectionsAPIBulkEnableRules{Action: kbapi.Enable, Query: &query},
+		"enable")
+}
+
 // DisableRulesByTag disables security detection rules that match a specific tag key-value pair.
 func DisableRulesByTag(ctx context.Context, client *Client, spaceID, key, value string) diag.Diagnostics {
 	query := fmt.Sprintf("alert.attributes.tags:(\"%s: %s\")", key, value)
-
-	bulkAction := kbapi.SecurityDetectionsAPIBulkDisableRules{
-		Action: kbapi.Disable,
-		Query:  &query,
-	}
-
-	bodyBytes, err := json.Marshal(bulkAction)
-	if err != nil {
-		return diag.Diagnostics{diag.NewErrorDiagnostic("Failed to marshal bulk action request", err.Error())}
-	}
-
-	resp, err := client.API.PerformRulesBulkActionWithBodyWithResponse(
-		ctx, &kbapi.PerformRulesBulkActionParams{}, "application/json",
-		bytes.NewReader(bodyBytes), kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return diag.Diagnostics{diag.NewErrorDiagnostic("Failed to disable rules by tag", err.Error())}
-	}
-
-	if resp.StatusCode() != 200 {
-		return diagutil.CheckHTTPErrorFromFW(resp.HTTPResponse, "failed to disable rules by tag")
-	}
-
-	return nil
+	return performBulkRulesActionByTag(ctx, client, spaceID, key, value,
+		kbapi.SecurityDetectionsAPIBulkDisableRules{Action: kbapi.Disable, Query: &query},
+		"disable")
 }
 
 // CheckRulesEnabledByTag checks if all rules matching a tag are enabled.
