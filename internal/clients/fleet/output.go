@@ -51,14 +51,7 @@ func GetOutput(ctx context.Context, client *Client, id string, spaceID string) (
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return &resp.JSON200.Item, nil
-	case http.StatusNotFound:
-		return nil, nil
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return handleGetResult(resp.StatusCode(), resp.Body, &resp.JSON200.Item)
 }
 
 // CreateOutput creates a new output.
@@ -68,12 +61,7 @@ func CreateOutput(ctx context.Context, client *Client, spaceID string, req kbapi
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return &resp.JSON200.Item, nil
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return handleMutateResult(resp.StatusCode(), resp.Body, &resp.JSON200.Item)
 }
 
 // UpdateOutput updates an existing output.
@@ -83,12 +71,7 @@ func UpdateOutput(ctx context.Context, client *Client, id string, spaceID string
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return &resp.JSON200.Item, nil
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return handleMutateResult(resp.StatusCode(), resp.Body, &resp.JSON200.Item)
 }
 
 // DeleteOutput deletes an existing output.

@@ -30,3 +30,25 @@ import (
 func handleDeleteResponse(statusCode int, body []byte) diag.Diagnostics {
 	return diagutil.HandleStatusResponse(statusCode, body, http.StatusOK, http.StatusNotFound)
 }
+
+// handleGetResult returns result on 200, nil on 404, and an error on any other status.
+func handleGetResult[T any](statusCode int, body []byte, result *T) (*T, diag.Diagnostics) {
+	switch statusCode {
+	case http.StatusOK:
+		return result, nil
+	case http.StatusNotFound:
+		return nil, nil
+	default:
+		return nil, diagutil.ReportUnknownHTTPError(statusCode, body)
+	}
+}
+
+// handleMutateResult returns result on 200 and an error on any other status.
+func handleMutateResult[T any](statusCode int, body []byte, result *T) (*T, diag.Diagnostics) {
+	switch statusCode {
+	case http.StatusOK:
+		return result, nil
+	default:
+		return nil, diagutil.ReportUnknownHTTPError(statusCode, body)
+	}
+}
