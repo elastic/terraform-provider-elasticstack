@@ -26,6 +26,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -84,7 +85,7 @@ func (r Resource) Create(ctx context.Context, req resource.CreateRequest, resp *
 func (r Resource) validateRestrictionSupport(ctx context.Context, model tfModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	if model.RoleDescriptors.IsNull() || model.RoleDescriptors.IsUnknown() {
+	if !typeutils.IsKnown(model.RoleDescriptors) {
 		return diags
 	}
 
