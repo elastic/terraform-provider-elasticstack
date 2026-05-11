@@ -1,7 +1,9 @@
+# ci-change-factory-issue-intake — Delta
+
 ## MODIFIED Requirements
 
 ### Requirement: Workflow activates only for qualifying `change-factory` issue events
-The workflow MAY subscribe to GitHub `issues.opened`, `issues.labeled`, and `issue_comment` events, but it SHALL activate the proposal agent only for eligible `change-factory` triggers. Eligible triggers SHALL include `issues.labeled` when the newly applied label is exactly `change-factory`; `issues.opened` when the issue already includes the `change-factory` label at creation time; and `issue_comment` events when the comment is the activation payload of a `slash_command: change-factory` trigger. The shared `factoryQualifyTriggerEvent` helper SHALL treat `issue_comment` as an automatically eligible event name, returning `event_eligible: true` unconditionally for that event so that actor trust and duplicate checks remain the effective gates.
+The workflow MAY subscribe to GitHub `issues.opened`, `issues.labeled`, and `issue_comment` events, but it SHALL activate the proposal agent only for eligible `change-factory` triggers. Eligible triggers SHALL include `issues.labeled` when the newly applied label is exactly `change-factory`; `issues.opened` when the issue already includes the `change-factory` label at creation time; and `issue_comment` events when the comment is the activation payload of a `slash_command: change-factory` trigger. In gh-aw's event model, `issue_comment` and `pull_request_comment` are distinct event names; only `issue_comment` activations (i.e. comments on issues, not pull requests) are delivered to a workflow that declares `events: [issue_comment]`. The shared `factoryQualifyTriggerEvent` helper SHALL treat `issue_comment` as an automatically eligible event name — returning `event_eligible: true` unconditionally — because gh-aw's routing guarantees that only issue-comment activations reach this handler; actor trust and duplicate checks remain the effective substantive gates.
 
 #### Scenario: Label applied after issue creation
 - **WHEN** an `issues.labeled` event is received and `github.event.label.name` is `change-factory`
@@ -17,11 +19,11 @@ The workflow MAY subscribe to GitHub `issues.opened`, `issues.labeled`, and `iss
 
 #### Scenario: Slash command comment is treated as eligible
 - **WHEN** an `issue_comment` event is received as the activation payload of a `slash_command: change-factory` trigger
-- **THEN** `factoryQualifyTriggerEvent` SHALL return `event_eligible: true` for that event
+- **THEN** `factoryQualifyTriggerEvent` SHALL return `event_eligible: true` for that event, because gh-aw's `events: [issue_comment]` routing guarantees the payload originates from an issue comment (not a pull request conversation)
 
-#### Scenario: Non-factory issue_comment event does not bypass the gate
-- **WHEN** an `issue_comment` event is received that is not a `slash_command: change-factory` activation (i.e. not wired through the slash command trigger)
-- **THEN** the workflow SHALL NOT activate the proposal agent
+#### Scenario: Pull request comments cannot reach the slash command handler
+- **WHEN** a `/change-factory` comment is posted on a pull request conversation
+- **THEN** gh-aw routes it under `pull_request_comment`, which is not listed in the workflow's `events:`; the workflow SHALL NOT activate, and `factoryQualifyTriggerEvent` is never called for that payload
 
 ### Requirement: Workflow suppresses duplicate linked pull requests
 Before agent activation, the workflow SHALL detect whether an open linked `change-factory` pull request already exists for the triggering issue. A pull request SHALL be treated as linked only when it is open, carries the `change-factory` label, uses the deterministic branch name `change-factory/issue-<issue-number>`, and includes explicit issue linkage metadata such as `Closes #<issue-number>`. When a duplicate is found, the workflow SHALL post exactly one comment on the triggering issue explaining the skip and linking to the existing PR URL, then skip agent activation. The comment SHALL instruct the maintainer to close or convert the PR to a draft before retrying.

@@ -23,11 +23,13 @@ The shared `factoryQualifyTriggerEvent` helper currently hard-gates on `eventNam
 
 ### D1: Accept `issue_comment` in `factoryQualifyTriggerEvent` (shared lib, not per-workflow)
 
-**Decision**: Add a branch at the top of `factoryQualifyTriggerEvent` in `factory-issue-shared.js` that returns `event_eligible: true` when `eventName === 'issue_comment'`, before the existing `eventName !== 'issues'` guard.
+**Decision**: Add a branch at the top of `factoryQualifyTriggerEvent` in `factory-issue-shared.js` that returns `event_eligible: true` when `eventName === 'issue_comment'`, before the existing `eventName !== 'issues'` guard. No payload-level `issue.pull_request` guard is needed.
 
 **Rationale**: The qualification logic for slash-command triggers is event-level, not factory-specific — any factory workflow that adds a `slash_command:` trigger will want the same pass-through. Handling it once in the shared lib is correct and avoids drift. The existing `pull_request` rejection test remains valid.
 
-**Alternatives considered**: Handle in each workflow's `qualify_trigger.inline.js` before calling the shared function. Rejected — duplicates logic across factories and obscures where the contract is defined.
+Critically, gh-aw's `slash_command:` trigger uses `events: [issue_comment]` as a routing filter that corresponds to gh-aw's own `issue_comment` event name, which is **distinct** from `pull_request_comment`. Unlike the raw GitHub Actions `issue_comment` webhook (which fires for both issue and PR comments), gh-aw routes pull request conversation comments under its `pull_request_comment` event. A workflow declaring `events: [issue_comment]` therefore never receives PR-comment payloads at all — no `github.event.issue.pull_request` guard is required in application code. The `factoryQualifyTriggerEvent` unconditional pass-through for `issue_comment` is safe precisely because gh-aw's routing acts as the first filter.
+
+**Alternatives considered**: Handle in each workflow's `qualify_trigger.inline.js` before calling the shared function. Rejected — duplicates logic across factories and obscures where the contract is defined. Add a `github.event.issue.pull_request` guard in `factoryQualifyTriggerEvent`. Rejected — unnecessary given gh-aw's routing model, and would introduce coupling to GitHub's raw payload shape that bypasses the framework abstraction.
 
 ### D2: Capture command text in a dedicated pre-activation step
 

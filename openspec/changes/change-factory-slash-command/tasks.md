@@ -2,7 +2,7 @@
 
 - [ ] 1.1 In `factory-issue-shared.js`, add a branch at the top of `factoryQualifyTriggerEvent` that returns `event_eligible: true` when `eventName === 'issue_comment'`
 - [ ] 1.2 Add a test case to `factory-issue-shared.test.mjs` asserting that `factoryQualifyTriggerEvent` returns `event_eligible: true` for `eventName === 'issue_comment'`
-- [ ] 1.3 Confirm the existing `pull_request` ineligibility test still passes
+- [ ] 1.3 Confirm the existing `pull_request` ineligibility test still passes (gh-aw routes PR conversation comments under `pull_request_comment` rather than `issue_comment`, so no additional payload guard is required in the shared helper)
 
 ## 2. New pre-activation scripts
 

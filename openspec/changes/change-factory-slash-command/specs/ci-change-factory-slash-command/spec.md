@@ -7,15 +7,15 @@ Define requirements for the `/change-factory` slash command trigger that allows 
 ## ADDED Requirements
 
 ### Requirement: Workflow responds to `/change-factory` slash commands on issues
-The `change-factory-issue` workflow SHALL add a `slash_command:` trigger with `name: change-factory` and `events: [issue_comment]`. This trigger SHALL coexist with the existing `issues: [labeled]` trigger on the same workflow. The slash command SHALL fire only on issue comments (not pull request comments).
+The `change-factory-issue` workflow SHALL add a `slash_command:` trigger with `name: change-factory` and `events: [issue_comment]`. In gh-aw's event model, `issue_comment` and `pull_request_comment` are distinct event names; declaring `events: [issue_comment]` confines the slash command to issue comments and excludes pull request conversation comments without any additional payload guard. This trigger SHALL coexist with the existing `issues: [labeled]` trigger on the same workflow.
 
 #### Scenario: Maintainer posts slash command on an issue
 - **WHEN** a trusted maintainer posts a comment beginning with `/change-factory` on a GitHub issue
 - **THEN** the `change-factory-issue` workflow SHALL activate for that issue
 
 #### Scenario: Slash command on a pull request comment is ignored
-- **WHEN** a `/change-factory` comment is posted on a pull request (not an issue)
-- **THEN** the workflow SHALL NOT activate (filtered by `events: [issue_comment]`)
+- **WHEN** a `/change-factory` comment is posted on a pull request conversation
+- **THEN** the workflow SHALL NOT activate, because gh-aw routes pull request conversation comments under `pull_request_comment`, which is not listed in `events:`
 
 #### Scenario: Label trigger continues to work alongside slash command
 - **WHEN** a maintainer applies the `change-factory` label to an issue
