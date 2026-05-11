@@ -507,7 +507,7 @@ test('changeFactoryIssueBranchName stays aligned with workflow template prefix',
 test('change-factory-issue workflow.md.tmpl wiring matches intake contract', () => {
   const workflowTmpl = readFileSync(workflowTemplatePath, 'utf8');
 
-  assert.match(workflowTmpl, /\non:\n  issues:\n    types: \[opened, labeled\]/);
+  assert.match(workflowTmpl, /\non:\n  issues:\n    types: \[labeled\]/);
   assert.match(workflowTmpl, /status-comment:\s*true/);
   assert.match(workflowTmpl, /issues:\s*write/);
 

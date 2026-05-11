@@ -1,4 +1,4 @@
-# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"1bed7aa2c3c1fe85814791462a811b3c66a3af91b552de479177bb45db8e9d9c","compiler_version":"v0.71.5","strict":true,"agent_id":"claude","agent_model":"llm-gateway/claude-sonnet-4-6"}
+# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"ff8b423f8b14eb778095b3bc332ba929eb3f19746e8db44e3eb344c2ba1e0918","compiler_version":"v0.71.5","strict":true,"agent_id":"claude","agent_model":"llm-gateway/claude-sonnet-4-6"}
 # gh-aw-manifest: {"version":1,"secrets":["CLAUDE_LITELLM_PROXY_API_KEY","GH_AW_CI_TRIGGER_TOKEN","GH_AW_GITHUB_MCP_SERVER_TOKEN","GH_AW_GITHUB_TOKEN","GITHUB_TOKEN"],"actions":[{"repo":"actions/checkout","sha":"de0fac2e4500dabe0009e67214ff5f5447ce83dd","version":"v6.0.2"},{"repo":"actions/download-artifact","sha":"3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c","version":"v8.0.1"},{"repo":"actions/download-artifact","sha":"d3f86a106a0bac45b974a628896c90dbdf5c8093","version":"v4"},{"repo":"actions/github-script","sha":"3a2844b7e9c422d3c10d287c895573f7108da1b3","version":"v9"},{"repo":"actions/setup-node","sha":"48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e","version":"v6.4.0"},{"repo":"actions/upload-artifact","sha":"043fb46d1a93c77aae656e7c1c64a875d1fc6a0a","version":"v7.0.1"},{"repo":"actions/upload-artifact","sha":"ea165f8d65b6e75b540449e92b4886f43607fa02","version":"v4"},{"repo":"github/gh-aw-actions/setup","sha":"b8068426813005612b960b5ab0b8bd2c27142323","version":"v0.71.5"}],"containers":[{"image":"ghcr.io/github/gh-aw-firewall/agent:0.25.40","digest":"sha256:14ff567e8d9d4c2fbc5e55c973488381c71d7e0fdbe72d30ee7b8a738fd86504","pinned_image":"ghcr.io/github/gh-aw-firewall/agent:0.25.40@sha256:14ff567e8d9d4c2fbc5e55c973488381c71d7e0fdbe72d30ee7b8a738fd86504"},{"image":"ghcr.io/github/gh-aw-firewall/api-proxy:0.25.40","digest":"sha256:2883ca3e5ae9f330cafdd9345bfd4ae17fc8da36c96d4c9a1f76e922b4c45280","pinned_image":"ghcr.io/github/gh-aw-firewall/api-proxy:0.25.40@sha256:2883ca3e5ae9f330cafdd9345bfd4ae17fc8da36c96d4c9a1f76e922b4c45280"},{"image":"ghcr.io/github/gh-aw-firewall/squid:0.25.40","digest":"sha256:b084f4a2c771f584ee68084ced52fa6b3245197a1889645d817462d307d3ac51","pinned_image":"ghcr.io/github/gh-aw-firewall/squid:0.25.40@sha256:b084f4a2c771f584ee68084ced52fa6b3245197a1889645d817462d307d3ac51"},{"image":"ghcr.io/github/gh-aw-mcpg:v0.3.6","digest":"sha256:2bb8eef86006a4c5963c55616a9c51c32f27bfdecb023b8aa6f91f6718d9171c","pinned_image":"ghcr.io/github/gh-aw-mcpg:v0.3.6@sha256:2bb8eef86006a4c5963c55616a9c51c32f27bfdecb023b8aa6f91f6718d9171c"},{"image":"ghcr.io/github/github-mcp-server:v1.0.3","digest":"sha256:2ac27ef03461ef2b877031b838a7d1fd7f12b12d4ace7796d8cad91446d55959","pinned_image":"ghcr.io/github/github-mcp-server:v1.0.3@sha256:2ac27ef03461ef2b877031b838a7d1fd7f12b12d4ace7796d8cad91446d55959"},{"image":"node:lts-alpine","digest":"sha256:d1b3b4da11eefd5941e7f0b9cf17783fc99d9c6fc34884a665f40a06dbdfc94f","pinned_image":"node:lts-alpine@sha256:d1b3b4da11eefd5941e7f0b9cf17783fc99d9c6fc34884a665f40a06dbdfc94f"}]}
 #    ___                   _   _      
 #   / _ \                 | | (_)     
@@ -52,9 +52,12 @@
 
 name: "Change Factory Issue Intake"
 "on":
+  issue_comment:
+    types:
+    - created
+    - edited
   issues:
     types:
-    - opened
     - labeled
   # permissions: # Permissions applied to pre-activation job
     # contents: read
@@ -66,7 +69,14 @@ name: "Change Factory Issue Intake"
     # uses: actions/github-script@v9
     # with:
       # github-token: ${{ secrets.GITHUB_TOKEN }}
-      # script: "/**\n * Change-factory issue intake configuration. Keep `ISSUE_BRANCH_PREFIX` aligned with\n * `workflow.md.tmpl` (`change-factory/issue-${{ github.event.issue.number }}`).\n */\n'use strict';\n\nconst ISSUE_BRANCH_PREFIX = 'change-factory/issue-';\nconst FACTORY_LABEL = 'change-factory';\nconst DUPLICATE_LINKAGE_MODE = 'github-keywords';\nconst ISSUE_OPENED_NOT_ELIGIBLE_REASON =\n  'Issue opened event does not qualify because the issue was created without the change-factory label or issue labels were missing.';\n\nif (typeof module !== 'undefined') {\n  module.exports = {\n    ISSUE_BRANCH_PREFIX,\n    FACTORY_LABEL,\n    DUPLICATE_LINKAGE_MODE,\n    ISSUE_OPENED_NOT_ELIGIBLE_REASON,\n  };\n}\n\n/**\n * Shared deterministic helpers for code-factory and change-factory issue intake workflows.\n * Workflow-specific configuration is passed via {@link createFactoryIssueIntake}.\n */\n\n/** GitHub-recognized issue-closing keywords (case-insensitive). See https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/using-keywords-in-issues-and-pull-requests */\nconst GITHUB_ISSUE_CLOSING_KEYWORDS = '(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)';\n\n/**\n * GitHub closing-keyword reference: `#` is immediately followed by the issue digits (no whitespace),\n * per GitHub keyword syntax. Case-insensitive keywords; `(?![0-9])` avoids matching `#42` inside `#420`.\n *\n * @param {number} issueNumber\n * @returns {RegExp}\n */\nfunction issueClosingReferencePattern(issueNumber) {\n  return new RegExp(\n    `\\\\b${GITHUB_ISSUE_CLOSING_KEYWORDS}\\\\s*#${issueNumber}(?![0-9])`,\n    'i',\n  );\n}\n\n/**\n * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels: string[] | null | undefined, factoryLabel: string, issueOpenedNotEligibleReason: string }} params\n * @returns {{ event_eligible: boolean, event_eligible_reason: string }}\n */\nfunction factoryQualifyTriggerEvent({\n  eventName,\n  eventAction,\n  labelName,\n  issueLabels,\n  factoryLabel,\n  issueOpenedNotEligibleReason,\n}) {\n  if (eventName !== 'issues') {\n    return {\n      event_eligible: false,\n      event_eligible_reason: `Unsupported event '${eventName || '(empty)'}'; expected 'issues'.`,\n    };\n  }\n\n  if (eventAction === 'labeled') {\n    if (labelName === factoryLabel) {\n      return {\n        event_eligible: true,\n        event_eligible_reason: `Issue labeled event qualifies because the applied label is ${factoryLabel}.`,\n      };\n    }\n\n    return {\n      event_eligible: false,\n      event_eligible_reason: `Issue labeled event does not qualify because the applied label is '${labelName || '(empty)'}', not '${factoryLabel}'.`,\n    };\n  }\n\n  if (eventAction === 'opened') {\n    if (Array.isArray(issueLabels) && issueLabels.includes(factoryLabel)) {\n      return {\n        event_eligible: true,\n        event_eligible_reason: `Issue opened event qualifies because the issue already has the ${factoryLabel} label.`,\n      };\n    }\n\n    return {\n      event_eligible: false,\n      event_eligible_reason: issueOpenedNotEligibleReason,\n    };\n  }\n\n  return {\n    event_eligible: false,\n    event_eligible_reason: `Issue event action '${eventAction || '(empty)'}' is not eligible; expected 'opened' or 'labeled'.`,\n  };\n}\n\n/**\n * @param {{ sender: string, permission: string | null }} params\n * @returns {{ actor_trusted: boolean, actor_trusted_reason: string }}\n */\nfunction factoryCheckActorTrust({ sender, permission }) {\n  if (sender === 'github-actions[bot]') {\n    return {\n      actor_trusted: true,\n      actor_trusted_reason: 'Trigger actor github-actions[bot] is trusted without collaborator permission lookup.',\n    };\n  }\n\n  if (['write', 'maintain', 'admin'].includes(permission)) {\n    return {\n      actor_trusted: true,\n      actor_trusted_reason: `Trigger actor '${sender || '(empty)'}' is trusted with repository permission '${permission}'.`,\n    };\n  }\n\n  return {\n    actor_trusted: false,\n    actor_trusted_reason: `Trigger actor '${sender || '(empty)'}' is not trusted; repository permission '${permission || '(none)'}' does not meet the required write/maintain/admin policy.`,\n  };\n}\n\n/**\n * @returns {{ actor_trusted: boolean, actor_trusted_reason: string }}\n */\nfunction factoryActorTrustWhenSenderMissing() {\n  return {\n    actor_trusted: false,\n    actor_trusted_reason: 'Trigger actor could not be identified; sender login is missing from the event payload.',\n  };\n}\n\n/**\n * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'github-keywords' }} params\n * @returns {{ duplicate_pr_found: boolean, duplicate_pr_url: string | null, gate_reason: string }}\n */\nfunction factoryCheckDuplicatePR({\n  issueNumber,\n  pullRequests,\n  branchPrefix,\n  prLabel,\n  duplicateLinkageMode,\n}) {\n  const expectedBranch = `${branchPrefix}${issueNumber}`;\n  const expectedClosesExample = `Closes #${issueNumber}`;\n  const bodyPattern = duplicateLinkageMode === 'closes-literal'\n    ? new RegExp(`Closes #${issueNumber}(?![0-9])`)\n    : issueClosingReferencePattern(issueNumber);\n\n  const duplicate = (pullRequests || []).find(pr => (\n    pr.state === 'open' &&\n    Array.isArray(pr.labels) && pr.labels.includes(prLabel) &&\n    pr.head_branch === expectedBranch &&\n    bodyPattern.test(String(pr.body || ''))\n  ));\n\n  if (duplicate) {\n    const url = duplicate.html_url ?? null;\n    const linkagePhrase = duplicateLinkageMode === 'closes-literal'\n      ? `canonical linkage '${expectedClosesExample}'`\n      : `issue-closing reference such as '${expectedClosesExample}'`;\n\n    return {\n      duplicate_pr_found: true,\n      duplicate_pr_url: url,\n      gate_reason: `Found existing linked ${prLabel} PR #${duplicate.number} (${url ?? '(unknown URL)'}) for issue #${issueNumber} on branch '${expectedBranch}' with ${linkagePhrase}.`,\n    };\n  }\n\n  const linkageTail = duplicateLinkageMode === 'closes-literal'\n    ? `canonical linkage '${expectedClosesExample}'`\n    : `issue-closing reference such as '${expectedClosesExample}'`;\n\n  return {\n    duplicate_pr_found: false,\n    duplicate_pr_url: null,\n    gate_reason: `No open linked ${prLabel} PR found for issue #${issueNumber}; expected label '${prLabel}', branch '${expectedBranch}', and ${linkageTail}.`,\n  };\n}\n\n/**\n * @param {{ eventEligible: boolean, eventEligibleReason: string, actorTrusted: boolean | null, actorTrustedReason: string | null, duplicatePrFound: boolean | null, duplicatePrUrl: string | null, duplicateCheckGateReason: string | null }} params\n * @param {string} factoryLabel\n * @returns {{ gate_reason: string }}\n */\nfunction factoryComputeGateReason({\n  eventEligible,\n  eventEligibleReason,\n  actorTrusted,\n  actorTrustedReason,\n  duplicatePrFound,\n  duplicatePrUrl,\n  duplicateCheckGateReason,\n}, factoryLabel) {\n  if (!eventEligible) {\n    return { gate_reason: eventEligibleReason };\n  }\n\n  if (actorTrusted === false) {\n    return { gate_reason: actorTrustedReason || 'Trigger actor is not trusted.' };\n  }\n\n  if (actorTrusted == null) {\n    return { gate_reason: 'Actor trust could not be determined; the trust check step did not produce an output.' };\n  }\n\n  if (duplicatePrFound === true) {\n    return {\n      gate_reason: duplicateCheckGateReason || `Found existing linked ${factoryLabel} PR: ${duplicatePrUrl || '(unknown URL)'}.`,\n    };\n  }\n\n  if (duplicatePrFound == null) {\n    return { gate_reason: 'Duplicate PR check did not complete; the check step did not produce an output.' };\n  }\n\n  return {\n    gate_reason: duplicateCheckGateReason || `All deterministic gates passed: event eligible, actor trusted, and no linked ${factoryLabel} PR found.`,\n  };\n}\n\n/**\n * @param {string | undefined} raw\n * @returns {boolean | null}\n */\nfunction factoryParseOptionalTriStateFromEnv(raw) {\n  if (raw == null || raw === '') {\n    return null;\n  }\n  return raw === 'true';\n}\n\n/**\n * @param {Record<string, string | undefined>} env\n */\nfunction factoryParseFinalizeGateEnv(env) {\n  const e = env || {};\n  return {\n    eventEligible: e.EVENT_ELIGIBLE === 'true',\n    eventEligibleReason: e.EVENT_ELIGIBLE_REASON ?? '',\n    actorTrusted: factoryParseOptionalTriStateFromEnv(e.ACTOR_TRUSTED),\n    actorTrustedReason: e.ACTOR_TRUSTED_REASON ?? null,\n    duplicatePrFound: factoryParseOptionalTriStateFromEnv(e.DUPLICATE_PR_FOUND),\n    duplicatePrUrl: e.DUPLICATE_PR_URL && e.DUPLICATE_PR_URL !== '' ? e.DUPLICATE_PR_URL : null,\n    duplicateCheckGateReason: e.DUPLICATE_GATE_REASON ?? null,\n  };\n}\n\n/**\n * @param {{\n *   branchPrefix: string,\n *   factoryLabel: string,\n *   issueOpenedNotEligibleReason: string,\n *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',\n * }} config\n */\nfunction createFactoryIssueIntake(config) {\n  const {\n    branchPrefix,\n    factoryLabel,\n    issueOpenedNotEligibleReason,\n    duplicateLinkageMode,\n  } = config;\n\n  function issueBranchName(issueNumber) {\n    return `${branchPrefix}${issueNumber}`;\n  }\n\n  /**\n   * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels?: string[] | null | undefined }} params\n   */\n  function qualifyTriggerEvent(params) {\n    return factoryQualifyTriggerEvent({\n      ...params,\n      factoryLabel,\n      issueOpenedNotEligibleReason,\n    });\n  }\n\n  function checkDuplicatePR(params) {\n    return factoryCheckDuplicatePR({\n      ...params,\n      branchPrefix,\n      prLabel: factoryLabel,\n      duplicateLinkageMode,\n    });\n  }\n\n  function computeGateReason(params) {\n    return factoryComputeGateReason(params, factoryLabel);\n  }\n\n  return {\n    issueBranchName,\n    qualifyTriggerEvent,\n    checkActorTrust: factoryCheckActorTrust,\n    checkDuplicatePR,\n    computeGateReason,\n  };\n}\n\n/**\n * @param {{\n *   branchPrefix: string,\n *   factoryLabel: string,\n *   issueOpenedNotEligibleReason: string,\n *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',\n *   issueBranchNameAliases?: string[],\n * }} config\n */\nfunction createFactoryIssueModule(config) {\n  const intake = createFactoryIssueIntake(config);\n  const issueBranchNameAliases = config.issueBranchNameAliases || [];\n  const factoryIssueModule = {\n    ...intake,\n    actorTrustWhenSenderMissing: factoryActorTrustWhenSenderMissing,\n    parseOptionalTriStateFromEnv: factoryParseOptionalTriStateFromEnv,\n    parseFinalizeGateEnv: factoryParseFinalizeGateEnv,\n  };\n\n  for (const alias of issueBranchNameAliases) {\n    factoryIssueModule[alias] = intake.issueBranchName;\n  }\n\n  return factoryIssueModule;\n}\n\nif (typeof module !== 'undefined') {\n  module.exports = {\n    issueClosingReferencePattern,\n    factoryQualifyTriggerEvent,\n    factoryCheckActorTrust,\n    factoryActorTrustWhenSenderMissing,\n    factoryCheckDuplicatePR,\n    factoryComputeGateReason,\n    factoryParseOptionalTriStateFromEnv,\n    factoryParseFinalizeGateEnv,\n    createFactoryIssueIntake,\n    createFactoryIssueModule,\n  };\n}\n\n// Concatenated by the workflow compiler; not executable standalone.\nconst factoryIssueModule = createFactoryIssueModule({\n  branchPrefix: ISSUE_BRANCH_PREFIX,\n  factoryLabel: FACTORY_LABEL,\n  issueOpenedNotEligibleReason: ISSUE_OPENED_NOT_ELIGIBLE_REASON,\n  duplicateLinkageMode: DUPLICATE_LINKAGE_MODE,\n});\n\nconst qualifyTriggerEvent = factoryIssueModule.qualifyTriggerEvent;\nconst checkActorTrust = factoryIssueModule.checkActorTrust;\nconst checkDuplicatePR = factoryIssueModule.checkDuplicatePR;\nconst computeGateReason = factoryIssueModule.computeGateReason;\nconst issueBranchName = factoryIssueModule.issueBranchName;\nconst actorTrustWhenSenderMissing = factoryIssueModule.actorTrustWhenSenderMissing;\nconst parseFinalizeGateEnv = factoryIssueModule.parseFinalizeGateEnv;\n\nconst eventName = context.eventName;\nconst eventAction = context.payload.action;\nconst labelName = context.payload.label?.name ?? '';\nconst issueLabels = (context.payload.issue?.labels ?? []).map(l => l.name);\n\nconst result = qualifyTriggerEvent({ eventName, eventAction, labelName, issueLabels });\n\ncore.setOutput('event_eligible', result.event_eligible ? 'true' : 'false');\ncore.setOutput('event_eligible_reason', result.event_eligible_reason);\n\nif (result.event_eligible) {\n  core.info(`Event eligible: ${result.event_eligible_reason}`);\n} else {\n  core.info(`Event not eligible: ${result.event_eligible_reason}`);\n}\n"
+      # script: "/**\n * Change-factory issue intake configuration. Keep `ISSUE_BRANCH_PREFIX` aligned with\n * `workflow.md.tmpl` (`change-factory/issue-${{ github.event.issue.number }}`).\n */\n'use strict';\n\nconst ISSUE_BRANCH_PREFIX = 'change-factory/issue-';\nconst FACTORY_LABEL = 'change-factory';\nconst DUPLICATE_LINKAGE_MODE = 'github-keywords';\nconst ISSUE_OPENED_NOT_ELIGIBLE_REASON =\n  'Issue opened event does not qualify because the issue was created without the change-factory label or issue labels were missing.';\n\nif (typeof module !== 'undefined') {\n  module.exports = {\n    ISSUE_BRANCH_PREFIX,\n    FACTORY_LABEL,\n    DUPLICATE_LINKAGE_MODE,\n    ISSUE_OPENED_NOT_ELIGIBLE_REASON,\n  };\n}\n\n/**\n * Shared deterministic helpers for code-factory and change-factory issue intake workflows.\n * Workflow-specific configuration is passed via {@link createFactoryIssueIntake}.\n */\n\n/** GitHub-recognized issue-closing keywords (case-insensitive). See https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/using-keywords-in-issues-and-pull-requests */\nconst GITHUB_ISSUE_CLOSING_KEYWORDS = '(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)';\n\n/**\n * GitHub closing-keyword reference: `#` is immediately followed by the issue digits (no whitespace),\n * per GitHub keyword syntax. Case-insensitive keywords; `(?![0-9])` avoids matching `#42` inside `#420`.\n *\n * @param {number} issueNumber\n * @returns {RegExp}\n */\nfunction issueClosingReferencePattern(issueNumber) {\n  return new RegExp(\n    `\\\\b${GITHUB_ISSUE_CLOSING_KEYWORDS}\\\\s*#${issueNumber}(?![0-9])`,\n    'i',\n  );\n}\n\n/**\n * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels: string[] | null | undefined, factoryLabel: string, issueOpenedNotEligibleReason: string }} params\n * @returns {{ event_eligible: boolean, event_eligible_reason: string }}\n */\nfunction factoryQualifyTriggerEvent({\n  eventName,\n  eventAction,\n  labelName,\n  issueLabels,\n  factoryLabel,\n  issueOpenedNotEligibleReason,\n}) {\n  if (eventName === 'issue_comment') {\n    return {\n      event_eligible: true,\n      event_eligible_reason: `Issue comment event qualifies because the slash_command trigger routes to issue_comment.`,\n    };\n  }\n\n  if (eventName !== 'issues') {\n    return {\n      event_eligible: false,\n      event_eligible_reason: `Unsupported event '${eventName || '(empty)'}'; expected 'issues'.`,\n    };\n  }\n\n  if (eventAction === 'labeled') {\n    if (labelName === factoryLabel) {\n      return {\n        event_eligible: true,\n        event_eligible_reason: `Issue labeled event qualifies because the applied label is ${factoryLabel}.`,\n      };\n    }\n\n    return {\n      event_eligible: false,\n      event_eligible_reason: `Issue labeled event does not qualify because the applied label is '${labelName || '(empty)'}', not '${factoryLabel}'.`,\n    };\n  }\n\n  if (eventAction === 'opened') {\n    if (Array.isArray(issueLabels) && issueLabels.includes(factoryLabel)) {\n      return {\n        event_eligible: true,\n        event_eligible_reason: `Issue opened event qualifies because the issue already has the ${factoryLabel} label.`,\n      };\n    }\n\n    return {\n      event_eligible: false,\n      event_eligible_reason: issueOpenedNotEligibleReason,\n    };\n  }\n\n  return {\n    event_eligible: false,\n    event_eligible_reason: `Issue event action '${eventAction || '(empty)'}' is not eligible; expected 'opened' or 'labeled'.`,\n  };\n}\n\n/**\n * @param {{ sender: string, permission: string | null }} params\n * @returns {{ actor_trusted: boolean, actor_trusted_reason: string }}\n */\nfunction factoryCheckActorTrust({ sender, permission }) {\n  if (sender === 'github-actions[bot]') {\n    return {\n      actor_trusted: true,\n      actor_trusted_reason: 'Trigger actor github-actions[bot] is trusted without collaborator permission lookup.',\n    };\n  }\n\n  if (['write', 'maintain', 'admin'].includes(permission)) {\n    return {\n      actor_trusted: true,\n      actor_trusted_reason: `Trigger actor '${sender || '(empty)'}' is trusted with repository permission '${permission}'.`,\n    };\n  }\n\n  return {\n    actor_trusted: false,\n    actor_trusted_reason: `Trigger actor '${sender || '(empty)'}' is not trusted; repository permission '${permission || '(none)'}' does not meet the required write/maintain/admin policy.`,\n  };\n}\n\n/**\n * @returns {{ actor_trusted: boolean, actor_trusted_reason: string }}\n */\nfunction factoryActorTrustWhenSenderMissing() {\n  return {\n    actor_trusted: false,\n    actor_trusted_reason: 'Trigger actor could not be identified; sender login is missing from the event payload.',\n  };\n}\n\n/**\n * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'github-keywords' }} params\n * @returns {{ duplicate_pr_found: boolean, duplicate_pr_url: string | null, gate_reason: string }}\n */\nfunction factoryCheckDuplicatePR({\n  issueNumber,\n  pullRequests,\n  branchPrefix,\n  prLabel,\n  duplicateLinkageMode,\n}) {\n  const expectedBranch = `${branchPrefix}${issueNumber}`;\n  const expectedClosesExample = `Closes #${issueNumber}`;\n  const bodyPattern = duplicateLinkageMode === 'closes-literal'\n    ? new RegExp(`Closes #${issueNumber}(?![0-9])`)\n    : issueClosingReferencePattern(issueNumber);\n\n  const duplicate = (pullRequests || []).find(pr => (\n    pr.state === 'open' &&\n    Array.isArray(pr.labels) && pr.labels.includes(prLabel) &&\n    pr.head_branch === expectedBranch &&\n    bodyPattern.test(String(pr.body || ''))\n  ));\n\n  if (duplicate) {\n    const url = duplicate.html_url ?? null;\n    const linkagePhrase = duplicateLinkageMode === 'closes-literal'\n      ? `canonical linkage '${expectedClosesExample}'`\n      : `issue-closing reference such as '${expectedClosesExample}'`;\n\n    return {\n      duplicate_pr_found: true,\n      duplicate_pr_url: url,\n      gate_reason: `Found existing linked ${prLabel} PR #${duplicate.number} (${url ?? '(unknown URL)'}) for issue #${issueNumber} on branch '${expectedBranch}' with ${linkagePhrase}.`,\n    };\n  }\n\n  const linkageTail = duplicateLinkageMode === 'closes-literal'\n    ? `canonical linkage '${expectedClosesExample}'`\n    : `issue-closing reference such as '${expectedClosesExample}'`;\n\n  return {\n    duplicate_pr_found: false,\n    duplicate_pr_url: null,\n    gate_reason: `No open linked ${prLabel} PR found for issue #${issueNumber}; expected label '${prLabel}', branch '${expectedBranch}', and ${linkageTail}.`,\n  };\n}\n\n/**\n * @param {{ eventEligible: boolean, eventEligibleReason: string, actorTrusted: boolean | null, actorTrustedReason: string | null, duplicatePrFound: boolean | null, duplicatePrUrl: string | null, duplicateCheckGateReason: string | null }} params\n * @param {string} factoryLabel\n * @returns {{ gate_reason: string }}\n */\nfunction factoryComputeGateReason({\n  eventEligible,\n  eventEligibleReason,\n  actorTrusted,\n  actorTrustedReason,\n  duplicatePrFound,\n  duplicatePrUrl,\n  duplicateCheckGateReason,\n}, factoryLabel) {\n  if (!eventEligible) {\n    return { gate_reason: eventEligibleReason };\n  }\n\n  if (actorTrusted === false) {\n    return { gate_reason: actorTrustedReason || 'Trigger actor is not trusted.' };\n  }\n\n  if (actorTrusted == null) {\n    return { gate_reason: 'Actor trust could not be determined; the trust check step did not produce an output.' };\n  }\n\n  if (duplicatePrFound === true) {\n    return {\n      gate_reason: duplicateCheckGateReason || `Found existing linked ${factoryLabel} PR: ${duplicatePrUrl || '(unknown URL)'}.`,\n    };\n  }\n\n  if (duplicatePrFound == null) {\n    return { gate_reason: 'Duplicate PR check did not complete; the check step did not produce an output.' };\n  }\n\n  return {\n    gate_reason: duplicateCheckGateReason || `All deterministic gates passed: event eligible, actor trusted, and no linked ${factoryLabel} PR found.`,\n  };\n}\n\n/**\n * @param {string | undefined} raw\n * @returns {boolean | null}\n */\nfunction factoryParseOptionalTriStateFromEnv(raw) {\n  if (raw == null || raw === '') {\n    return null;\n  }\n  return raw === 'true';\n}\n\n/**\n * @param {Record<string, string | undefined>} env\n */\nfunction factoryParseFinalizeGateEnv(env) {\n  const e = env || {};\n  return {\n    eventEligible: e.EVENT_ELIGIBLE === 'true',\n    eventEligibleReason: e.EVENT_ELIGIBLE_REASON ?? '',\n    actorTrusted: factoryParseOptionalTriStateFromEnv(e.ACTOR_TRUSTED),\n    actorTrustedReason: e.ACTOR_TRUSTED_REASON ?? null,\n    duplicatePrFound: factoryParseOptionalTriStateFromEnv(e.DUPLICATE_PR_FOUND),\n    duplicatePrUrl: e.DUPLICATE_PR_URL && e.DUPLICATE_PR_URL !== '' ? e.DUPLICATE_PR_URL : null,\n    duplicateCheckGateReason: e.DUPLICATE_GATE_REASON ?? null,\n  };\n}\n\n/**\n * @param {{\n *   branchPrefix: string,\n *   factoryLabel: string,\n *   issueOpenedNotEligibleReason: string,\n *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',\n * }} config\n */\nfunction createFactoryIssueIntake(config) {\n  const {\n    branchPrefix,\n    factoryLabel,\n    issueOpenedNotEligibleReason,\n    duplicateLinkageMode,\n  } = config;\n\n  function issueBranchName(issueNumber) {\n    return `${branchPrefix}${issueNumber}`;\n  }\n\n  /**\n   * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels?: string[] | null | undefined }} params\n   */\n  function qualifyTriggerEvent(params) {\n    return factoryQualifyTriggerEvent({\n      ...params,\n      factoryLabel,\n      issueOpenedNotEligibleReason,\n    });\n  }\n\n  function checkDuplicatePR(params) {\n    return factoryCheckDuplicatePR({\n      ...params,\n      branchPrefix,\n      prLabel: factoryLabel,\n      duplicateLinkageMode,\n    });\n  }\n\n  function computeGateReason(params) {\n    return factoryComputeGateReason(params, factoryLabel);\n  }\n\n  return {\n    issueBranchName,\n    qualifyTriggerEvent,\n    checkActorTrust: factoryCheckActorTrust,\n    checkDuplicatePR,\n    computeGateReason,\n  };\n}\n\n/**\n * @param {{\n *   branchPrefix: string,\n *   factoryLabel: string,\n *   issueOpenedNotEligibleReason: string,\n *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',\n *   issueBranchNameAliases?: string[],\n * }} config\n */\nfunction createFactoryIssueModule(config) {\n  const intake = createFactoryIssueIntake(config);\n  const issueBranchNameAliases = config.issueBranchNameAliases || [];\n  const factoryIssueModule = {\n    ...intake,\n    actorTrustWhenSenderMissing: factoryActorTrustWhenSenderMissing,\n    parseOptionalTriStateFromEnv: factoryParseOptionalTriStateFromEnv,\n    parseFinalizeGateEnv: factoryParseFinalizeGateEnv,\n  };\n\n  for (const alias of issueBranchNameAliases) {\n    factoryIssueModule[alias] = intake.issueBranchName;\n  }\n\n  return factoryIssueModule;\n}\n\nif (typeof module !== 'undefined') {\n  module.exports = {\n    issueClosingReferencePattern,\n    factoryQualifyTriggerEvent,\n    factoryCheckActorTrust,\n    factoryActorTrustWhenSenderMissing,\n    factoryCheckDuplicatePR,\n    factoryComputeGateReason,\n    factoryParseOptionalTriStateFromEnv,\n    factoryParseFinalizeGateEnv,\n    createFactoryIssueIntake,\n    createFactoryIssueModule,\n  };\n}\n\n// Concatenated by the workflow compiler; not executable standalone.\nconst factoryIssueModule = createFactoryIssueModule({\n  branchPrefix: ISSUE_BRANCH_PREFIX,\n  factoryLabel: FACTORY_LABEL,\n  issueOpenedNotEligibleReason: ISSUE_OPENED_NOT_ELIGIBLE_REASON,\n  duplicateLinkageMode: DUPLICATE_LINKAGE_MODE,\n});\n\nconst qualifyTriggerEvent = factoryIssueModule.qualifyTriggerEvent;\nconst checkActorTrust = factoryIssueModule.checkActorTrust;\nconst checkDuplicatePR = factoryIssueModule.checkDuplicatePR;\nconst computeGateReason = factoryIssueModule.computeGateReason;\nconst issueBranchName = factoryIssueModule.issueBranchName;\nconst actorTrustWhenSenderMissing = factoryIssueModule.actorTrustWhenSenderMissing;\nconst parseFinalizeGateEnv = factoryIssueModule.parseFinalizeGateEnv;\n\nconst eventName = context.eventName;\nconst eventAction = context.payload.action;\nconst labelName = context.payload.label?.name ?? '';\nconst issueLabels = (context.payload.issue?.labels ?? []).map(l => l.name);\n\nconst result = qualifyTriggerEvent({ eventName, eventAction, labelName, issueLabels });\n\ncore.setOutput('event_eligible', result.event_eligible ? 'true' : 'false');\ncore.setOutput('event_eligible_reason', result.event_eligible_reason);\n\nif (result.event_eligible) {\n  core.info(`Event eligible: ${result.event_eligible_reason}`);\n} else {\n  core.info(`Event not eligible: ${result.event_eligible_reason}`);\n}\n"
+  # - id: capture_command_text
+    # if: steps.qualify_trigger.outputs.event_eligible == 'true'
+    # name: Capture command text
+    # uses: actions/github-script@v9
+    # with:
+      # github-token: ${{ secrets.GITHUB_TOKEN }}
+      # script: "/**\n * Change-factory issue intake configuration. Keep `ISSUE_BRANCH_PREFIX` aligned with\n * `workflow.md.tmpl` (`change-factory/issue-${{ github.event.issue.number }}`).\n */\n'use strict';\n\nconst ISSUE_BRANCH_PREFIX = 'change-factory/issue-';\nconst FACTORY_LABEL = 'change-factory';\nconst DUPLICATE_LINKAGE_MODE = 'github-keywords';\nconst ISSUE_OPENED_NOT_ELIGIBLE_REASON =\n  'Issue opened event does not qualify because the issue was created without the change-factory label or issue labels were missing.';\n\nif (typeof module !== 'undefined') {\n  module.exports = {\n    ISSUE_BRANCH_PREFIX,\n    FACTORY_LABEL,\n    DUPLICATE_LINKAGE_MODE,\n    ISSUE_OPENED_NOT_ELIGIBLE_REASON,\n  };\n}\n\n/**\n * Shared deterministic helpers for code-factory and change-factory issue intake workflows.\n * Workflow-specific configuration is passed via {@link createFactoryIssueIntake}.\n */\n\n/** GitHub-recognized issue-closing keywords (case-insensitive). See https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/using-keywords-in-issues-and-pull-requests */\nconst GITHUB_ISSUE_CLOSING_KEYWORDS = '(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)';\n\n/**\n * GitHub closing-keyword reference: `#` is immediately followed by the issue digits (no whitespace),\n * per GitHub keyword syntax. Case-insensitive keywords; `(?![0-9])` avoids matching `#42` inside `#420`.\n *\n * @param {number} issueNumber\n * @returns {RegExp}\n */\nfunction issueClosingReferencePattern(issueNumber) {\n  return new RegExp(\n    `\\\\b${GITHUB_ISSUE_CLOSING_KEYWORDS}\\\\s*#${issueNumber}(?![0-9])`,\n    'i',\n  );\n}\n\n/**\n * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels: string[] | null | undefined, factoryLabel: string, issueOpenedNotEligibleReason: string }} params\n * @returns {{ event_eligible: boolean, event_eligible_reason: string }}\n */\nfunction factoryQualifyTriggerEvent({\n  eventName,\n  eventAction,\n  labelName,\n  issueLabels,\n  factoryLabel,\n  issueOpenedNotEligibleReason,\n}) {\n  if (eventName === 'issue_comment') {\n    return {\n      event_eligible: true,\n      event_eligible_reason: `Issue comment event qualifies because the slash_command trigger routes to issue_comment.`,\n    };\n  }\n\n  if (eventName !== 'issues') {\n    return {\n      event_eligible: false,\n      event_eligible_reason: `Unsupported event '${eventName || '(empty)'}'; expected 'issues'.`,\n    };\n  }\n\n  if (eventAction === 'labeled') {\n    if (labelName === factoryLabel) {\n      return {\n        event_eligible: true,\n        event_eligible_reason: `Issue labeled event qualifies because the applied label is ${factoryLabel}.`,\n      };\n    }\n\n    return {\n      event_eligible: false,\n      event_eligible_reason: `Issue labeled event does not qualify because the applied label is '${labelName || '(empty)'}', not '${factoryLabel}'.`,\n    };\n  }\n\n  if (eventAction === 'opened') {\n    if (Array.isArray(issueLabels) && issueLabels.includes(factoryLabel)) {\n      return {\n        event_eligible: true,\n        event_eligible_reason: `Issue opened event qualifies because the issue already has the ${factoryLabel} label.`,\n      };\n    }\n\n    return {\n      event_eligible: false,\n      event_eligible_reason: issueOpenedNotEligibleReason,\n    };\n  }\n\n  return {\n    event_eligible: false,\n    event_eligible_reason: `Issue event action '${eventAction || '(empty)'}' is not eligible; expected 'opened' or 'labeled'.`,\n  };\n}\n\n/**\n * @param {{ sender: string, permission: string | null }} params\n * @returns {{ actor_trusted: boolean, actor_trusted_reason: string }}\n */\nfunction factoryCheckActorTrust({ sender, permission }) {\n  if (sender === 'github-actions[bot]') {\n    return {\n      actor_trusted: true,\n      actor_trusted_reason: 'Trigger actor github-actions[bot] is trusted without collaborator permission lookup.',\n    };\n  }\n\n  if (['write', 'maintain', 'admin'].includes(permission)) {\n    return {\n      actor_trusted: true,\n      actor_trusted_reason: `Trigger actor '${sender || '(empty)'}' is trusted with repository permission '${permission}'.`,\n    };\n  }\n\n  return {\n    actor_trusted: false,\n    actor_trusted_reason: `Trigger actor '${sender || '(empty)'}' is not trusted; repository permission '${permission || '(none)'}' does not meet the required write/maintain/admin policy.`,\n  };\n}\n\n/**\n * @returns {{ actor_trusted: boolean, actor_trusted_reason: string }}\n */\nfunction factoryActorTrustWhenSenderMissing() {\n  return {\n    actor_trusted: false,\n    actor_trusted_reason: 'Trigger actor could not be identified; sender login is missing from the event payload.',\n  };\n}\n\n/**\n * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'github-keywords' }} params\n * @returns {{ duplicate_pr_found: boolean, duplicate_pr_url: string | null, gate_reason: string }}\n */\nfunction factoryCheckDuplicatePR({\n  issueNumber,\n  pullRequests,\n  branchPrefix,\n  prLabel,\n  duplicateLinkageMode,\n}) {\n  const expectedBranch = `${branchPrefix}${issueNumber}`;\n  const expectedClosesExample = `Closes #${issueNumber}`;\n  const bodyPattern = duplicateLinkageMode === 'closes-literal'\n    ? new RegExp(`Closes #${issueNumber}(?![0-9])`)\n    : issueClosingReferencePattern(issueNumber);\n\n  const duplicate = (pullRequests || []).find(pr => (\n    pr.state === 'open' &&\n    Array.isArray(pr.labels) && pr.labels.includes(prLabel) &&\n    pr.head_branch === expectedBranch &&\n    bodyPattern.test(String(pr.body || ''))\n  ));\n\n  if (duplicate) {\n    const url = duplicate.html_url ?? null;\n    const linkagePhrase = duplicateLinkageMode === 'closes-literal'\n      ? `canonical linkage '${expectedClosesExample}'`\n      : `issue-closing reference such as '${expectedClosesExample}'`;\n\n    return {\n      duplicate_pr_found: true,\n      duplicate_pr_url: url,\n      gate_reason: `Found existing linked ${prLabel} PR #${duplicate.number} (${url ?? '(unknown URL)'}) for issue #${issueNumber} on branch '${expectedBranch}' with ${linkagePhrase}.`,\n    };\n  }\n\n  const linkageTail = duplicateLinkageMode === 'closes-literal'\n    ? `canonical linkage '${expectedClosesExample}'`\n    : `issue-closing reference such as '${expectedClosesExample}'`;\n\n  return {\n    duplicate_pr_found: false,\n    duplicate_pr_url: null,\n    gate_reason: `No open linked ${prLabel} PR found for issue #${issueNumber}; expected label '${prLabel}', branch '${expectedBranch}', and ${linkageTail}.`,\n  };\n}\n\n/**\n * @param {{ eventEligible: boolean, eventEligibleReason: string, actorTrusted: boolean | null, actorTrustedReason: string | null, duplicatePrFound: boolean | null, duplicatePrUrl: string | null, duplicateCheckGateReason: string | null }} params\n * @param {string} factoryLabel\n * @returns {{ gate_reason: string }}\n */\nfunction factoryComputeGateReason({\n  eventEligible,\n  eventEligibleReason,\n  actorTrusted,\n  actorTrustedReason,\n  duplicatePrFound,\n  duplicatePrUrl,\n  duplicateCheckGateReason,\n}, factoryLabel) {\n  if (!eventEligible) {\n    return { gate_reason: eventEligibleReason };\n  }\n\n  if (actorTrusted === false) {\n    return { gate_reason: actorTrustedReason || 'Trigger actor is not trusted.' };\n  }\n\n  if (actorTrusted == null) {\n    return { gate_reason: 'Actor trust could not be determined; the trust check step did not produce an output.' };\n  }\n\n  if (duplicatePrFound === true) {\n    return {\n      gate_reason: duplicateCheckGateReason || `Found existing linked ${factoryLabel} PR: ${duplicatePrUrl || '(unknown URL)'}.`,\n    };\n  }\n\n  if (duplicatePrFound == null) {\n    return { gate_reason: 'Duplicate PR check did not complete; the check step did not produce an output.' };\n  }\n\n  return {\n    gate_reason: duplicateCheckGateReason || `All deterministic gates passed: event eligible, actor trusted, and no linked ${factoryLabel} PR found.`,\n  };\n}\n\n/**\n * @param {string | undefined} raw\n * @returns {boolean | null}\n */\nfunction factoryParseOptionalTriStateFromEnv(raw) {\n  if (raw == null || raw === '') {\n    return null;\n  }\n  return raw === 'true';\n}\n\n/**\n * @param {Record<string, string | undefined>} env\n */\nfunction factoryParseFinalizeGateEnv(env) {\n  const e = env || {};\n  return {\n    eventEligible: e.EVENT_ELIGIBLE === 'true',\n    eventEligibleReason: e.EVENT_ELIGIBLE_REASON ?? '',\n    actorTrusted: factoryParseOptionalTriStateFromEnv(e.ACTOR_TRUSTED),\n    actorTrustedReason: e.ACTOR_TRUSTED_REASON ?? null,\n    duplicatePrFound: factoryParseOptionalTriStateFromEnv(e.DUPLICATE_PR_FOUND),\n    duplicatePrUrl: e.DUPLICATE_PR_URL && e.DUPLICATE_PR_URL !== '' ? e.DUPLICATE_PR_URL : null,\n    duplicateCheckGateReason: e.DUPLICATE_GATE_REASON ?? null,\n  };\n}\n\n/**\n * @param {{\n *   branchPrefix: string,\n *   factoryLabel: string,\n *   issueOpenedNotEligibleReason: string,\n *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',\n * }} config\n */\nfunction createFactoryIssueIntake(config) {\n  const {\n    branchPrefix,\n    factoryLabel,\n    issueOpenedNotEligibleReason,\n    duplicateLinkageMode,\n  } = config;\n\n  function issueBranchName(issueNumber) {\n    return `${branchPrefix}${issueNumber}`;\n  }\n\n  /**\n   * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels?: string[] | null | undefined }} params\n   */\n  function qualifyTriggerEvent(params) {\n    return factoryQualifyTriggerEvent({\n      ...params,\n      factoryLabel,\n      issueOpenedNotEligibleReason,\n    });\n  }\n\n  function checkDuplicatePR(params) {\n    return factoryCheckDuplicatePR({\n      ...params,\n      branchPrefix,\n      prLabel: factoryLabel,\n      duplicateLinkageMode,\n    });\n  }\n\n  function computeGateReason(params) {\n    return factoryComputeGateReason(params, factoryLabel);\n  }\n\n  return {\n    issueBranchName,\n    qualifyTriggerEvent,\n    checkActorTrust: factoryCheckActorTrust,\n    checkDuplicatePR,\n    computeGateReason,\n  };\n}\n\n/**\n * @param {{\n *   branchPrefix: string,\n *   factoryLabel: string,\n *   issueOpenedNotEligibleReason: string,\n *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',\n *   issueBranchNameAliases?: string[],\n * }} config\n */\nfunction createFactoryIssueModule(config) {\n  const intake = createFactoryIssueIntake(config);\n  const issueBranchNameAliases = config.issueBranchNameAliases || [];\n  const factoryIssueModule = {\n    ...intake,\n    actorTrustWhenSenderMissing: factoryActorTrustWhenSenderMissing,\n    parseOptionalTriStateFromEnv: factoryParseOptionalTriStateFromEnv,\n    parseFinalizeGateEnv: factoryParseFinalizeGateEnv,\n  };\n\n  for (const alias of issueBranchNameAliases) {\n    factoryIssueModule[alias] = intake.issueBranchName;\n  }\n\n  return factoryIssueModule;\n}\n\nif (typeof module !== 'undefined') {\n  module.exports = {\n    issueClosingReferencePattern,\n    factoryQualifyTriggerEvent,\n    factoryCheckActorTrust,\n    factoryActorTrustWhenSenderMissing,\n    factoryCheckDuplicatePR,\n    factoryComputeGateReason,\n    factoryParseOptionalTriStateFromEnv,\n    factoryParseFinalizeGateEnv,\n    createFactoryIssueIntake,\n    createFactoryIssueModule,\n  };\n}\n\n// Concatenated by the workflow compiler; not executable standalone.\nconst factoryIssueModule = createFactoryIssueModule({\n  branchPrefix: ISSUE_BRANCH_PREFIX,\n  factoryLabel: FACTORY_LABEL,\n  issueOpenedNotEligibleReason: ISSUE_OPENED_NOT_ELIGIBLE_REASON,\n  duplicateLinkageMode: DUPLICATE_LINKAGE_MODE,\n});\n\nconst qualifyTriggerEvent = factoryIssueModule.qualifyTriggerEvent;\nconst checkActorTrust = factoryIssueModule.checkActorTrust;\nconst checkDuplicatePR = factoryIssueModule.checkDuplicatePR;\nconst computeGateReason = factoryIssueModule.computeGateReason;\nconst issueBranchName = factoryIssueModule.issueBranchName;\nconst actorTrustWhenSenderMissing = factoryIssueModule.actorTrustWhenSenderMissing;\nconst parseFinalizeGateEnv = factoryIssueModule.parseFinalizeGateEnv;\n\nconst eventName = context.eventName;\n\nif (eventName === 'issue_comment') {\n  const body = context.payload.comment?.body ?? '';\n  // Strip the leading /change-factory token and surrounding whitespace\n  const humanDirection = body.replace(/^\\/change-factory\\s*/, '').trim();\n  core.setOutput('human_direction', humanDirection);\n  core.info(`Captured human direction from slash command: \"${humanDirection}\"`);\n} else {\n  core.setOutput('human_direction', '');\n  core.info('Not an issue_comment event; human_direction is empty.');\n}\n"
   # - id: capture_issue_context
     # name: Capture issue context
     # uses: actions/github-script@v9
@@ -81,7 +91,7 @@ name: "Change Factory Issue Intake"
     # uses: actions/github-script@v9
     # with:
       # github-token: ${{ secrets.GITHUB_TOKEN }}
-      # script: "/**\n * Change-factory issue intake configuration. Keep `ISSUE_BRANCH_PREFIX` aligned with\n * `workflow.md.tmpl` (`change-factory/issue-${{ github.event.issue.number }}`).\n */\n'use strict';\n\nconst ISSUE_BRANCH_PREFIX = 'change-factory/issue-';\nconst FACTORY_LABEL = 'change-factory';\nconst DUPLICATE_LINKAGE_MODE = 'github-keywords';\nconst ISSUE_OPENED_NOT_ELIGIBLE_REASON =\n  'Issue opened event does not qualify because the issue was created without the change-factory label or issue labels were missing.';\n\nif (typeof module !== 'undefined') {\n  module.exports = {\n    ISSUE_BRANCH_PREFIX,\n    FACTORY_LABEL,\n    DUPLICATE_LINKAGE_MODE,\n    ISSUE_OPENED_NOT_ELIGIBLE_REASON,\n  };\n}\n\n/**\n * Shared deterministic helpers for code-factory and change-factory issue intake workflows.\n * Workflow-specific configuration is passed via {@link createFactoryIssueIntake}.\n */\n\n/** GitHub-recognized issue-closing keywords (case-insensitive). See https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/using-keywords-in-issues-and-pull-requests */\nconst GITHUB_ISSUE_CLOSING_KEYWORDS = '(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)';\n\n/**\n * GitHub closing-keyword reference: `#` is immediately followed by the issue digits (no whitespace),\n * per GitHub keyword syntax. Case-insensitive keywords; `(?![0-9])` avoids matching `#42` inside `#420`.\n *\n * @param {number} issueNumber\n * @returns {RegExp}\n */\nfunction issueClosingReferencePattern(issueNumber) {\n  return new RegExp(\n    `\\\\b${GITHUB_ISSUE_CLOSING_KEYWORDS}\\\\s*#${issueNumber}(?![0-9])`,\n    'i',\n  );\n}\n\n/**\n * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels: string[] | null | undefined, factoryLabel: string, issueOpenedNotEligibleReason: string }} params\n * @returns {{ event_eligible: boolean, event_eligible_reason: string }}\n */\nfunction factoryQualifyTriggerEvent({\n  eventName,\n  eventAction,\n  labelName,\n  issueLabels,\n  factoryLabel,\n  issueOpenedNotEligibleReason,\n}) {\n  if (eventName !== 'issues') {\n    return {\n      event_eligible: false,\n      event_eligible_reason: `Unsupported event '${eventName || '(empty)'}'; expected 'issues'.`,\n    };\n  }\n\n  if (eventAction === 'labeled') {\n    if (labelName === factoryLabel) {\n      return {\n        event_eligible: true,\n        event_eligible_reason: `Issue labeled event qualifies because the applied label is ${factoryLabel}.`,\n      };\n    }\n\n    return {\n      event_eligible: false,\n      event_eligible_reason: `Issue labeled event does not qualify because the applied label is '${labelName || '(empty)'}', not '${factoryLabel}'.`,\n    };\n  }\n\n  if (eventAction === 'opened') {\n    if (Array.isArray(issueLabels) && issueLabels.includes(factoryLabel)) {\n      return {\n        event_eligible: true,\n        event_eligible_reason: `Issue opened event qualifies because the issue already has the ${factoryLabel} label.`,\n      };\n    }\n\n    return {\n      event_eligible: false,\n      event_eligible_reason: issueOpenedNotEligibleReason,\n    };\n  }\n\n  return {\n    event_eligible: false,\n    event_eligible_reason: `Issue event action '${eventAction || '(empty)'}' is not eligible; expected 'opened' or 'labeled'.`,\n  };\n}\n\n/**\n * @param {{ sender: string, permission: string | null }} params\n * @returns {{ actor_trusted: boolean, actor_trusted_reason: string }}\n */\nfunction factoryCheckActorTrust({ sender, permission }) {\n  if (sender === 'github-actions[bot]') {\n    return {\n      actor_trusted: true,\n      actor_trusted_reason: 'Trigger actor github-actions[bot] is trusted without collaborator permission lookup.',\n    };\n  }\n\n  if (['write', 'maintain', 'admin'].includes(permission)) {\n    return {\n      actor_trusted: true,\n      actor_trusted_reason: `Trigger actor '${sender || '(empty)'}' is trusted with repository permission '${permission}'.`,\n    };\n  }\n\n  return {\n    actor_trusted: false,\n    actor_trusted_reason: `Trigger actor '${sender || '(empty)'}' is not trusted; repository permission '${permission || '(none)'}' does not meet the required write/maintain/admin policy.`,\n  };\n}\n\n/**\n * @returns {{ actor_trusted: boolean, actor_trusted_reason: string }}\n */\nfunction factoryActorTrustWhenSenderMissing() {\n  return {\n    actor_trusted: false,\n    actor_trusted_reason: 'Trigger actor could not be identified; sender login is missing from the event payload.',\n  };\n}\n\n/**\n * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'github-keywords' }} params\n * @returns {{ duplicate_pr_found: boolean, duplicate_pr_url: string | null, gate_reason: string }}\n */\nfunction factoryCheckDuplicatePR({\n  issueNumber,\n  pullRequests,\n  branchPrefix,\n  prLabel,\n  duplicateLinkageMode,\n}) {\n  const expectedBranch = `${branchPrefix}${issueNumber}`;\n  const expectedClosesExample = `Closes #${issueNumber}`;\n  const bodyPattern = duplicateLinkageMode === 'closes-literal'\n    ? new RegExp(`Closes #${issueNumber}(?![0-9])`)\n    : issueClosingReferencePattern(issueNumber);\n\n  const duplicate = (pullRequests || []).find(pr => (\n    pr.state === 'open' &&\n    Array.isArray(pr.labels) && pr.labels.includes(prLabel) &&\n    pr.head_branch === expectedBranch &&\n    bodyPattern.test(String(pr.body || ''))\n  ));\n\n  if (duplicate) {\n    const url = duplicate.html_url ?? null;\n    const linkagePhrase = duplicateLinkageMode === 'closes-literal'\n      ? `canonical linkage '${expectedClosesExample}'`\n      : `issue-closing reference such as '${expectedClosesExample}'`;\n\n    return {\n      duplicate_pr_found: true,\n      duplicate_pr_url: url,\n      gate_reason: `Found existing linked ${prLabel} PR #${duplicate.number} (${url ?? '(unknown URL)'}) for issue #${issueNumber} on branch '${expectedBranch}' with ${linkagePhrase}.`,\n    };\n  }\n\n  const linkageTail = duplicateLinkageMode === 'closes-literal'\n    ? `canonical linkage '${expectedClosesExample}'`\n    : `issue-closing reference such as '${expectedClosesExample}'`;\n\n  return {\n    duplicate_pr_found: false,\n    duplicate_pr_url: null,\n    gate_reason: `No open linked ${prLabel} PR found for issue #${issueNumber}; expected label '${prLabel}', branch '${expectedBranch}', and ${linkageTail}.`,\n  };\n}\n\n/**\n * @param {{ eventEligible: boolean, eventEligibleReason: string, actorTrusted: boolean | null, actorTrustedReason: string | null, duplicatePrFound: boolean | null, duplicatePrUrl: string | null, duplicateCheckGateReason: string | null }} params\n * @param {string} factoryLabel\n * @returns {{ gate_reason: string }}\n */\nfunction factoryComputeGateReason({\n  eventEligible,\n  eventEligibleReason,\n  actorTrusted,\n  actorTrustedReason,\n  duplicatePrFound,\n  duplicatePrUrl,\n  duplicateCheckGateReason,\n}, factoryLabel) {\n  if (!eventEligible) {\n    return { gate_reason: eventEligibleReason };\n  }\n\n  if (actorTrusted === false) {\n    return { gate_reason: actorTrustedReason || 'Trigger actor is not trusted.' };\n  }\n\n  if (actorTrusted == null) {\n    return { gate_reason: 'Actor trust could not be determined; the trust check step did not produce an output.' };\n  }\n\n  if (duplicatePrFound === true) {\n    return {\n      gate_reason: duplicateCheckGateReason || `Found existing linked ${factoryLabel} PR: ${duplicatePrUrl || '(unknown URL)'}.`,\n    };\n  }\n\n  if (duplicatePrFound == null) {\n    return { gate_reason: 'Duplicate PR check did not complete; the check step did not produce an output.' };\n  }\n\n  return {\n    gate_reason: duplicateCheckGateReason || `All deterministic gates passed: event eligible, actor trusted, and no linked ${factoryLabel} PR found.`,\n  };\n}\n\n/**\n * @param {string | undefined} raw\n * @returns {boolean | null}\n */\nfunction factoryParseOptionalTriStateFromEnv(raw) {\n  if (raw == null || raw === '') {\n    return null;\n  }\n  return raw === 'true';\n}\n\n/**\n * @param {Record<string, string | undefined>} env\n */\nfunction factoryParseFinalizeGateEnv(env) {\n  const e = env || {};\n  return {\n    eventEligible: e.EVENT_ELIGIBLE === 'true',\n    eventEligibleReason: e.EVENT_ELIGIBLE_REASON ?? '',\n    actorTrusted: factoryParseOptionalTriStateFromEnv(e.ACTOR_TRUSTED),\n    actorTrustedReason: e.ACTOR_TRUSTED_REASON ?? null,\n    duplicatePrFound: factoryParseOptionalTriStateFromEnv(e.DUPLICATE_PR_FOUND),\n    duplicatePrUrl: e.DUPLICATE_PR_URL && e.DUPLICATE_PR_URL !== '' ? e.DUPLICATE_PR_URL : null,\n    duplicateCheckGateReason: e.DUPLICATE_GATE_REASON ?? null,\n  };\n}\n\n/**\n * @param {{\n *   branchPrefix: string,\n *   factoryLabel: string,\n *   issueOpenedNotEligibleReason: string,\n *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',\n * }} config\n */\nfunction createFactoryIssueIntake(config) {\n  const {\n    branchPrefix,\n    factoryLabel,\n    issueOpenedNotEligibleReason,\n    duplicateLinkageMode,\n  } = config;\n\n  function issueBranchName(issueNumber) {\n    return `${branchPrefix}${issueNumber}`;\n  }\n\n  /**\n   * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels?: string[] | null | undefined }} params\n   */\n  function qualifyTriggerEvent(params) {\n    return factoryQualifyTriggerEvent({\n      ...params,\n      factoryLabel,\n      issueOpenedNotEligibleReason,\n    });\n  }\n\n  function checkDuplicatePR(params) {\n    return factoryCheckDuplicatePR({\n      ...params,\n      branchPrefix,\n      prLabel: factoryLabel,\n      duplicateLinkageMode,\n    });\n  }\n\n  function computeGateReason(params) {\n    return factoryComputeGateReason(params, factoryLabel);\n  }\n\n  return {\n    issueBranchName,\n    qualifyTriggerEvent,\n    checkActorTrust: factoryCheckActorTrust,\n    checkDuplicatePR,\n    computeGateReason,\n  };\n}\n\n/**\n * @param {{\n *   branchPrefix: string,\n *   factoryLabel: string,\n *   issueOpenedNotEligibleReason: string,\n *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',\n *   issueBranchNameAliases?: string[],\n * }} config\n */\nfunction createFactoryIssueModule(config) {\n  const intake = createFactoryIssueIntake(config);\n  const issueBranchNameAliases = config.issueBranchNameAliases || [];\n  const factoryIssueModule = {\n    ...intake,\n    actorTrustWhenSenderMissing: factoryActorTrustWhenSenderMissing,\n    parseOptionalTriStateFromEnv: factoryParseOptionalTriStateFromEnv,\n    parseFinalizeGateEnv: factoryParseFinalizeGateEnv,\n  };\n\n  for (const alias of issueBranchNameAliases) {\n    factoryIssueModule[alias] = intake.issueBranchName;\n  }\n\n  return factoryIssueModule;\n}\n\nif (typeof module !== 'undefined') {\n  module.exports = {\n    issueClosingReferencePattern,\n    factoryQualifyTriggerEvent,\n    factoryCheckActorTrust,\n    factoryActorTrustWhenSenderMissing,\n    factoryCheckDuplicatePR,\n    factoryComputeGateReason,\n    factoryParseOptionalTriStateFromEnv,\n    factoryParseFinalizeGateEnv,\n    createFactoryIssueIntake,\n    createFactoryIssueModule,\n  };\n}\n\n// Concatenated by the workflow compiler; not executable standalone.\nconst factoryIssueModule = createFactoryIssueModule({\n  branchPrefix: ISSUE_BRANCH_PREFIX,\n  factoryLabel: FACTORY_LABEL,\n  issueOpenedNotEligibleReason: ISSUE_OPENED_NOT_ELIGIBLE_REASON,\n  duplicateLinkageMode: DUPLICATE_LINKAGE_MODE,\n});\n\nconst qualifyTriggerEvent = factoryIssueModule.qualifyTriggerEvent;\nconst checkActorTrust = factoryIssueModule.checkActorTrust;\nconst checkDuplicatePR = factoryIssueModule.checkDuplicatePR;\nconst computeGateReason = factoryIssueModule.computeGateReason;\nconst issueBranchName = factoryIssueModule.issueBranchName;\nconst actorTrustWhenSenderMissing = factoryIssueModule.actorTrustWhenSenderMissing;\nconst parseFinalizeGateEnv = factoryIssueModule.parseFinalizeGateEnv;\n\nconst { owner, repo } = context.repo;\nconst sender = context.payload.sender?.login ?? '';\n\nif (!sender) {\n  const missing = actorTrustWhenSenderMissing();\n  core.setOutput('actor_trusted', 'false');\n  core.setOutput('actor_trusted_reason', missing.actor_trusted_reason);\n  core.info('Actor not trusted: sender login is missing from the event payload.');\n} else {\n  let permission = null;\n  if (sender !== 'github-actions[bot]') {\n    const { data } = await github.rest.repos.getCollaboratorPermissionLevel({\n      owner,\n      repo,\n      username: sender,\n    });\n    permission = data.permission;\n  }\n\n  const result = checkActorTrust({ sender, permission });\n\n  core.setOutput('actor_trusted', result.actor_trusted ? 'true' : 'false');\n  core.setOutput('actor_trusted_reason', result.actor_trusted_reason);\n\n  if (result.actor_trusted) {\n    core.info(`Actor trusted: ${result.actor_trusted_reason}`);\n  } else {\n    core.info(`Actor not trusted: ${result.actor_trusted_reason}`);\n  }\n}\n"
+      # script: "/**\n * Change-factory issue intake configuration. Keep `ISSUE_BRANCH_PREFIX` aligned with\n * `workflow.md.tmpl` (`change-factory/issue-${{ github.event.issue.number }}`).\n */\n'use strict';\n\nconst ISSUE_BRANCH_PREFIX = 'change-factory/issue-';\nconst FACTORY_LABEL = 'change-factory';\nconst DUPLICATE_LINKAGE_MODE = 'github-keywords';\nconst ISSUE_OPENED_NOT_ELIGIBLE_REASON =\n  'Issue opened event does not qualify because the issue was created without the change-factory label or issue labels were missing.';\n\nif (typeof module !== 'undefined') {\n  module.exports = {\n    ISSUE_BRANCH_PREFIX,\n    FACTORY_LABEL,\n    DUPLICATE_LINKAGE_MODE,\n    ISSUE_OPENED_NOT_ELIGIBLE_REASON,\n  };\n}\n\n/**\n * Shared deterministic helpers for code-factory and change-factory issue intake workflows.\n * Workflow-specific configuration is passed via {@link createFactoryIssueIntake}.\n */\n\n/** GitHub-recognized issue-closing keywords (case-insensitive). See https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/using-keywords-in-issues-and-pull-requests */\nconst GITHUB_ISSUE_CLOSING_KEYWORDS = '(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)';\n\n/**\n * GitHub closing-keyword reference: `#` is immediately followed by the issue digits (no whitespace),\n * per GitHub keyword syntax. Case-insensitive keywords; `(?![0-9])` avoids matching `#42` inside `#420`.\n *\n * @param {number} issueNumber\n * @returns {RegExp}\n */\nfunction issueClosingReferencePattern(issueNumber) {\n  return new RegExp(\n    `\\\\b${GITHUB_ISSUE_CLOSING_KEYWORDS}\\\\s*#${issueNumber}(?![0-9])`,\n    'i',\n  );\n}\n\n/**\n * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels: string[] | null | undefined, factoryLabel: string, issueOpenedNotEligibleReason: string }} params\n * @returns {{ event_eligible: boolean, event_eligible_reason: string }}\n */\nfunction factoryQualifyTriggerEvent({\n  eventName,\n  eventAction,\n  labelName,\n  issueLabels,\n  factoryLabel,\n  issueOpenedNotEligibleReason,\n}) {\n  if (eventName === 'issue_comment') {\n    return {\n      event_eligible: true,\n      event_eligible_reason: `Issue comment event qualifies because the slash_command trigger routes to issue_comment.`,\n    };\n  }\n\n  if (eventName !== 'issues') {\n    return {\n      event_eligible: false,\n      event_eligible_reason: `Unsupported event '${eventName || '(empty)'}'; expected 'issues'.`,\n    };\n  }\n\n  if (eventAction === 'labeled') {\n    if (labelName === factoryLabel) {\n      return {\n        event_eligible: true,\n        event_eligible_reason: `Issue labeled event qualifies because the applied label is ${factoryLabel}.`,\n      };\n    }\n\n    return {\n      event_eligible: false,\n      event_eligible_reason: `Issue labeled event does not qualify because the applied label is '${labelName || '(empty)'}', not '${factoryLabel}'.`,\n    };\n  }\n\n  if (eventAction === 'opened') {\n    if (Array.isArray(issueLabels) && issueLabels.includes(factoryLabel)) {\n      return {\n        event_eligible: true,\n        event_eligible_reason: `Issue opened event qualifies because the issue already has the ${factoryLabel} label.`,\n      };\n    }\n\n    return {\n      event_eligible: false,\n      event_eligible_reason: issueOpenedNotEligibleReason,\n    };\n  }\n\n  return {\n    event_eligible: false,\n    event_eligible_reason: `Issue event action '${eventAction || '(empty)'}' is not eligible; expected 'opened' or 'labeled'.`,\n  };\n}\n\n/**\n * @param {{ sender: string, permission: string | null }} params\n * @returns {{ actor_trusted: boolean, actor_trusted_reason: string }}\n */\nfunction factoryCheckActorTrust({ sender, permission }) {\n  if (sender === 'github-actions[bot]') {\n    return {\n      actor_trusted: true,\n      actor_trusted_reason: 'Trigger actor github-actions[bot] is trusted without collaborator permission lookup.',\n    };\n  }\n\n  if (['write', 'maintain', 'admin'].includes(permission)) {\n    return {\n      actor_trusted: true,\n      actor_trusted_reason: `Trigger actor '${sender || '(empty)'}' is trusted with repository permission '${permission}'.`,\n    };\n  }\n\n  return {\n    actor_trusted: false,\n    actor_trusted_reason: `Trigger actor '${sender || '(empty)'}' is not trusted; repository permission '${permission || '(none)'}' does not meet the required write/maintain/admin policy.`,\n  };\n}\n\n/**\n * @returns {{ actor_trusted: boolean, actor_trusted_reason: string }}\n */\nfunction factoryActorTrustWhenSenderMissing() {\n  return {\n    actor_trusted: false,\n    actor_trusted_reason: 'Trigger actor could not be identified; sender login is missing from the event payload.',\n  };\n}\n\n/**\n * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'github-keywords' }} params\n * @returns {{ duplicate_pr_found: boolean, duplicate_pr_url: string | null, gate_reason: string }}\n */\nfunction factoryCheckDuplicatePR({\n  issueNumber,\n  pullRequests,\n  branchPrefix,\n  prLabel,\n  duplicateLinkageMode,\n}) {\n  const expectedBranch = `${branchPrefix}${issueNumber}`;\n  const expectedClosesExample = `Closes #${issueNumber}`;\n  const bodyPattern = duplicateLinkageMode === 'closes-literal'\n    ? new RegExp(`Closes #${issueNumber}(?![0-9])`)\n    : issueClosingReferencePattern(issueNumber);\n\n  const duplicate = (pullRequests || []).find(pr => (\n    pr.state === 'open' &&\n    Array.isArray(pr.labels) && pr.labels.includes(prLabel) &&\n    pr.head_branch === expectedBranch &&\n    bodyPattern.test(String(pr.body || ''))\n  ));\n\n  if (duplicate) {\n    const url = duplicate.html_url ?? null;\n    const linkagePhrase = duplicateLinkageMode === 'closes-literal'\n      ? `canonical linkage '${expectedClosesExample}'`\n      : `issue-closing reference such as '${expectedClosesExample}'`;\n\n    return {\n      duplicate_pr_found: true,\n      duplicate_pr_url: url,\n      gate_reason: `Found existing linked ${prLabel} PR #${duplicate.number} (${url ?? '(unknown URL)'}) for issue #${issueNumber} on branch '${expectedBranch}' with ${linkagePhrase}.`,\n    };\n  }\n\n  const linkageTail = duplicateLinkageMode === 'closes-literal'\n    ? `canonical linkage '${expectedClosesExample}'`\n    : `issue-closing reference such as '${expectedClosesExample}'`;\n\n  return {\n    duplicate_pr_found: false,\n    duplicate_pr_url: null,\n    gate_reason: `No open linked ${prLabel} PR found for issue #${issueNumber}; expected label '${prLabel}', branch '${expectedBranch}', and ${linkageTail}.`,\n  };\n}\n\n/**\n * @param {{ eventEligible: boolean, eventEligibleReason: string, actorTrusted: boolean | null, actorTrustedReason: string | null, duplicatePrFound: boolean | null, duplicatePrUrl: string | null, duplicateCheckGateReason: string | null }} params\n * @param {string} factoryLabel\n * @returns {{ gate_reason: string }}\n */\nfunction factoryComputeGateReason({\n  eventEligible,\n  eventEligibleReason,\n  actorTrusted,\n  actorTrustedReason,\n  duplicatePrFound,\n  duplicatePrUrl,\n  duplicateCheckGateReason,\n}, factoryLabel) {\n  if (!eventEligible) {\n    return { gate_reason: eventEligibleReason };\n  }\n\n  if (actorTrusted === false) {\n    return { gate_reason: actorTrustedReason || 'Trigger actor is not trusted.' };\n  }\n\n  if (actorTrusted == null) {\n    return { gate_reason: 'Actor trust could not be determined; the trust check step did not produce an output.' };\n  }\n\n  if (duplicatePrFound === true) {\n    return {\n      gate_reason: duplicateCheckGateReason || `Found existing linked ${factoryLabel} PR: ${duplicatePrUrl || '(unknown URL)'}.`,\n    };\n  }\n\n  if (duplicatePrFound == null) {\n    return { gate_reason: 'Duplicate PR check did not complete; the check step did not produce an output.' };\n  }\n\n  return {\n    gate_reason: duplicateCheckGateReason || `All deterministic gates passed: event eligible, actor trusted, and no linked ${factoryLabel} PR found.`,\n  };\n}\n\n/**\n * @param {string | undefined} raw\n * @returns {boolean | null}\n */\nfunction factoryParseOptionalTriStateFromEnv(raw) {\n  if (raw == null || raw === '') {\n    return null;\n  }\n  return raw === 'true';\n}\n\n/**\n * @param {Record<string, string | undefined>} env\n */\nfunction factoryParseFinalizeGateEnv(env) {\n  const e = env || {};\n  return {\n    eventEligible: e.EVENT_ELIGIBLE === 'true',\n    eventEligibleReason: e.EVENT_ELIGIBLE_REASON ?? '',\n    actorTrusted: factoryParseOptionalTriStateFromEnv(e.ACTOR_TRUSTED),\n    actorTrustedReason: e.ACTOR_TRUSTED_REASON ?? null,\n    duplicatePrFound: factoryParseOptionalTriStateFromEnv(e.DUPLICATE_PR_FOUND),\n    duplicatePrUrl: e.DUPLICATE_PR_URL && e.DUPLICATE_PR_URL !== '' ? e.DUPLICATE_PR_URL : null,\n    duplicateCheckGateReason: e.DUPLICATE_GATE_REASON ?? null,\n  };\n}\n\n/**\n * @param {{\n *   branchPrefix: string,\n *   factoryLabel: string,\n *   issueOpenedNotEligibleReason: string,\n *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',\n * }} config\n */\nfunction createFactoryIssueIntake(config) {\n  const {\n    branchPrefix,\n    factoryLabel,\n    issueOpenedNotEligibleReason,\n    duplicateLinkageMode,\n  } = config;\n\n  function issueBranchName(issueNumber) {\n    return `${branchPrefix}${issueNumber}`;\n  }\n\n  /**\n   * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels?: string[] | null | undefined }} params\n   */\n  function qualifyTriggerEvent(params) {\n    return factoryQualifyTriggerEvent({\n      ...params,\n      factoryLabel,\n      issueOpenedNotEligibleReason,\n    });\n  }\n\n  function checkDuplicatePR(params) {\n    return factoryCheckDuplicatePR({\n      ...params,\n      branchPrefix,\n      prLabel: factoryLabel,\n      duplicateLinkageMode,\n    });\n  }\n\n  function computeGateReason(params) {\n    return factoryComputeGateReason(params, factoryLabel);\n  }\n\n  return {\n    issueBranchName,\n    qualifyTriggerEvent,\n    checkActorTrust: factoryCheckActorTrust,\n    checkDuplicatePR,\n    computeGateReason,\n  };\n}\n\n/**\n * @param {{\n *   branchPrefix: string,\n *   factoryLabel: string,\n *   issueOpenedNotEligibleReason: string,\n *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',\n *   issueBranchNameAliases?: string[],\n * }} config\n */\nfunction createFactoryIssueModule(config) {\n  const intake = createFactoryIssueIntake(config);\n  const issueBranchNameAliases = config.issueBranchNameAliases || [];\n  const factoryIssueModule = {\n    ...intake,\n    actorTrustWhenSenderMissing: factoryActorTrustWhenSenderMissing,\n    parseOptionalTriStateFromEnv: factoryParseOptionalTriStateFromEnv,\n    parseFinalizeGateEnv: factoryParseFinalizeGateEnv,\n  };\n\n  for (const alias of issueBranchNameAliases) {\n    factoryIssueModule[alias] = intake.issueBranchName;\n  }\n\n  return factoryIssueModule;\n}\n\nif (typeof module !== 'undefined') {\n  module.exports = {\n    issueClosingReferencePattern,\n    factoryQualifyTriggerEvent,\n    factoryCheckActorTrust,\n    factoryActorTrustWhenSenderMissing,\n    factoryCheckDuplicatePR,\n    factoryComputeGateReason,\n    factoryParseOptionalTriStateFromEnv,\n    factoryParseFinalizeGateEnv,\n    createFactoryIssueIntake,\n    createFactoryIssueModule,\n  };\n}\n\n// Concatenated by the workflow compiler; not executable standalone.\nconst factoryIssueModule = createFactoryIssueModule({\n  branchPrefix: ISSUE_BRANCH_PREFIX,\n  factoryLabel: FACTORY_LABEL,\n  issueOpenedNotEligibleReason: ISSUE_OPENED_NOT_ELIGIBLE_REASON,\n  duplicateLinkageMode: DUPLICATE_LINKAGE_MODE,\n});\n\nconst qualifyTriggerEvent = factoryIssueModule.qualifyTriggerEvent;\nconst checkActorTrust = factoryIssueModule.checkActorTrust;\nconst checkDuplicatePR = factoryIssueModule.checkDuplicatePR;\nconst computeGateReason = factoryIssueModule.computeGateReason;\nconst issueBranchName = factoryIssueModule.issueBranchName;\nconst actorTrustWhenSenderMissing = factoryIssueModule.actorTrustWhenSenderMissing;\nconst parseFinalizeGateEnv = factoryIssueModule.parseFinalizeGateEnv;\n\nconst { owner, repo } = context.repo;\nconst sender = context.payload.sender?.login ?? '';\n\nif (!sender) {\n  const missing = actorTrustWhenSenderMissing();\n  core.setOutput('actor_trusted', 'false');\n  core.setOutput('actor_trusted_reason', missing.actor_trusted_reason);\n  core.info('Actor not trusted: sender login is missing from the event payload.');\n} else {\n  let permission = null;\n  if (sender !== 'github-actions[bot]') {\n    const { data } = await github.rest.repos.getCollaboratorPermissionLevel({\n      owner,\n      repo,\n      username: sender,\n    });\n    permission = data.permission;\n  }\n\n  const result = checkActorTrust({ sender, permission });\n\n  core.setOutput('actor_trusted', result.actor_trusted ? 'true' : 'false');\n  core.setOutput('actor_trusted_reason', result.actor_trusted_reason);\n\n  if (result.actor_trusted) {\n    core.info(`Actor trusted: ${result.actor_trusted_reason}`);\n  } else {\n    core.info(`Actor not trusted: ${result.actor_trusted_reason}`);\n  }\n}\n"
   # - id: fetch_issue_comments
     # if: steps.qualify_trigger.outputs.event_eligible == 'true' && steps.check_actor_trust.outputs.actor_trusted == 'true'
     # name: Fetch issue comments
@@ -104,7 +114,17 @@ name: "Change Factory Issue Intake"
     # uses: actions/github-script@v9
     # with:
       # github-token: ${{ secrets.GITHUB_TOKEN }}
-      # script: "/**\n * Change-factory issue intake configuration. Keep `ISSUE_BRANCH_PREFIX` aligned with\n * `workflow.md.tmpl` (`change-factory/issue-${{ github.event.issue.number }}`).\n */\n'use strict';\n\nconst ISSUE_BRANCH_PREFIX = 'change-factory/issue-';\nconst FACTORY_LABEL = 'change-factory';\nconst DUPLICATE_LINKAGE_MODE = 'github-keywords';\nconst ISSUE_OPENED_NOT_ELIGIBLE_REASON =\n  'Issue opened event does not qualify because the issue was created without the change-factory label or issue labels were missing.';\n\nif (typeof module !== 'undefined') {\n  module.exports = {\n    ISSUE_BRANCH_PREFIX,\n    FACTORY_LABEL,\n    DUPLICATE_LINKAGE_MODE,\n    ISSUE_OPENED_NOT_ELIGIBLE_REASON,\n  };\n}\n\n/**\n * Shared deterministic helpers for code-factory and change-factory issue intake workflows.\n * Workflow-specific configuration is passed via {@link createFactoryIssueIntake}.\n */\n\n/** GitHub-recognized issue-closing keywords (case-insensitive). See https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/using-keywords-in-issues-and-pull-requests */\nconst GITHUB_ISSUE_CLOSING_KEYWORDS = '(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)';\n\n/**\n * GitHub closing-keyword reference: `#` is immediately followed by the issue digits (no whitespace),\n * per GitHub keyword syntax. Case-insensitive keywords; `(?![0-9])` avoids matching `#42` inside `#420`.\n *\n * @param {number} issueNumber\n * @returns {RegExp}\n */\nfunction issueClosingReferencePattern(issueNumber) {\n  return new RegExp(\n    `\\\\b${GITHUB_ISSUE_CLOSING_KEYWORDS}\\\\s*#${issueNumber}(?![0-9])`,\n    'i',\n  );\n}\n\n/**\n * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels: string[] | null | undefined, factoryLabel: string, issueOpenedNotEligibleReason: string }} params\n * @returns {{ event_eligible: boolean, event_eligible_reason: string }}\n */\nfunction factoryQualifyTriggerEvent({\n  eventName,\n  eventAction,\n  labelName,\n  issueLabels,\n  factoryLabel,\n  issueOpenedNotEligibleReason,\n}) {\n  if (eventName !== 'issues') {\n    return {\n      event_eligible: false,\n      event_eligible_reason: `Unsupported event '${eventName || '(empty)'}'; expected 'issues'.`,\n    };\n  }\n\n  if (eventAction === 'labeled') {\n    if (labelName === factoryLabel) {\n      return {\n        event_eligible: true,\n        event_eligible_reason: `Issue labeled event qualifies because the applied label is ${factoryLabel}.`,\n      };\n    }\n\n    return {\n      event_eligible: false,\n      event_eligible_reason: `Issue labeled event does not qualify because the applied label is '${labelName || '(empty)'}', not '${factoryLabel}'.`,\n    };\n  }\n\n  if (eventAction === 'opened') {\n    if (Array.isArray(issueLabels) && issueLabels.includes(factoryLabel)) {\n      return {\n        event_eligible: true,\n        event_eligible_reason: `Issue opened event qualifies because the issue already has the ${factoryLabel} label.`,\n      };\n    }\n\n    return {\n      event_eligible: false,\n      event_eligible_reason: issueOpenedNotEligibleReason,\n    };\n  }\n\n  return {\n    event_eligible: false,\n    event_eligible_reason: `Issue event action '${eventAction || '(empty)'}' is not eligible; expected 'opened' or 'labeled'.`,\n  };\n}\n\n/**\n * @param {{ sender: string, permission: string | null }} params\n * @returns {{ actor_trusted: boolean, actor_trusted_reason: string }}\n */\nfunction factoryCheckActorTrust({ sender, permission }) {\n  if (sender === 'github-actions[bot]') {\n    return {\n      actor_trusted: true,\n      actor_trusted_reason: 'Trigger actor github-actions[bot] is trusted without collaborator permission lookup.',\n    };\n  }\n\n  if (['write', 'maintain', 'admin'].includes(permission)) {\n    return {\n      actor_trusted: true,\n      actor_trusted_reason: `Trigger actor '${sender || '(empty)'}' is trusted with repository permission '${permission}'.`,\n    };\n  }\n\n  return {\n    actor_trusted: false,\n    actor_trusted_reason: `Trigger actor '${sender || '(empty)'}' is not trusted; repository permission '${permission || '(none)'}' does not meet the required write/maintain/admin policy.`,\n  };\n}\n\n/**\n * @returns {{ actor_trusted: boolean, actor_trusted_reason: string }}\n */\nfunction factoryActorTrustWhenSenderMissing() {\n  return {\n    actor_trusted: false,\n    actor_trusted_reason: 'Trigger actor could not be identified; sender login is missing from the event payload.',\n  };\n}\n\n/**\n * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'github-keywords' }} params\n * @returns {{ duplicate_pr_found: boolean, duplicate_pr_url: string | null, gate_reason: string }}\n */\nfunction factoryCheckDuplicatePR({\n  issueNumber,\n  pullRequests,\n  branchPrefix,\n  prLabel,\n  duplicateLinkageMode,\n}) {\n  const expectedBranch = `${branchPrefix}${issueNumber}`;\n  const expectedClosesExample = `Closes #${issueNumber}`;\n  const bodyPattern = duplicateLinkageMode === 'closes-literal'\n    ? new RegExp(`Closes #${issueNumber}(?![0-9])`)\n    : issueClosingReferencePattern(issueNumber);\n\n  const duplicate = (pullRequests || []).find(pr => (\n    pr.state === 'open' &&\n    Array.isArray(pr.labels) && pr.labels.includes(prLabel) &&\n    pr.head_branch === expectedBranch &&\n    bodyPattern.test(String(pr.body || ''))\n  ));\n\n  if (duplicate) {\n    const url = duplicate.html_url ?? null;\n    const linkagePhrase = duplicateLinkageMode === 'closes-literal'\n      ? `canonical linkage '${expectedClosesExample}'`\n      : `issue-closing reference such as '${expectedClosesExample}'`;\n\n    return {\n      duplicate_pr_found: true,\n      duplicate_pr_url: url,\n      gate_reason: `Found existing linked ${prLabel} PR #${duplicate.number} (${url ?? '(unknown URL)'}) for issue #${issueNumber} on branch '${expectedBranch}' with ${linkagePhrase}.`,\n    };\n  }\n\n  const linkageTail = duplicateLinkageMode === 'closes-literal'\n    ? `canonical linkage '${expectedClosesExample}'`\n    : `issue-closing reference such as '${expectedClosesExample}'`;\n\n  return {\n    duplicate_pr_found: false,\n    duplicate_pr_url: null,\n    gate_reason: `No open linked ${prLabel} PR found for issue #${issueNumber}; expected label '${prLabel}', branch '${expectedBranch}', and ${linkageTail}.`,\n  };\n}\n\n/**\n * @param {{ eventEligible: boolean, eventEligibleReason: string, actorTrusted: boolean | null, actorTrustedReason: string | null, duplicatePrFound: boolean | null, duplicatePrUrl: string | null, duplicateCheckGateReason: string | null }} params\n * @param {string} factoryLabel\n * @returns {{ gate_reason: string }}\n */\nfunction factoryComputeGateReason({\n  eventEligible,\n  eventEligibleReason,\n  actorTrusted,\n  actorTrustedReason,\n  duplicatePrFound,\n  duplicatePrUrl,\n  duplicateCheckGateReason,\n}, factoryLabel) {\n  if (!eventEligible) {\n    return { gate_reason: eventEligibleReason };\n  }\n\n  if (actorTrusted === false) {\n    return { gate_reason: actorTrustedReason || 'Trigger actor is not trusted.' };\n  }\n\n  if (actorTrusted == null) {\n    return { gate_reason: 'Actor trust could not be determined; the trust check step did not produce an output.' };\n  }\n\n  if (duplicatePrFound === true) {\n    return {\n      gate_reason: duplicateCheckGateReason || `Found existing linked ${factoryLabel} PR: ${duplicatePrUrl || '(unknown URL)'}.`,\n    };\n  }\n\n  if (duplicatePrFound == null) {\n    return { gate_reason: 'Duplicate PR check did not complete; the check step did not produce an output.' };\n  }\n\n  return {\n    gate_reason: duplicateCheckGateReason || `All deterministic gates passed: event eligible, actor trusted, and no linked ${factoryLabel} PR found.`,\n  };\n}\n\n/**\n * @param {string | undefined} raw\n * @returns {boolean | null}\n */\nfunction factoryParseOptionalTriStateFromEnv(raw) {\n  if (raw == null || raw === '') {\n    return null;\n  }\n  return raw === 'true';\n}\n\n/**\n * @param {Record<string, string | undefined>} env\n */\nfunction factoryParseFinalizeGateEnv(env) {\n  const e = env || {};\n  return {\n    eventEligible: e.EVENT_ELIGIBLE === 'true',\n    eventEligibleReason: e.EVENT_ELIGIBLE_REASON ?? '',\n    actorTrusted: factoryParseOptionalTriStateFromEnv(e.ACTOR_TRUSTED),\n    actorTrustedReason: e.ACTOR_TRUSTED_REASON ?? null,\n    duplicatePrFound: factoryParseOptionalTriStateFromEnv(e.DUPLICATE_PR_FOUND),\n    duplicatePrUrl: e.DUPLICATE_PR_URL && e.DUPLICATE_PR_URL !== '' ? e.DUPLICATE_PR_URL : null,\n    duplicateCheckGateReason: e.DUPLICATE_GATE_REASON ?? null,\n  };\n}\n\n/**\n * @param {{\n *   branchPrefix: string,\n *   factoryLabel: string,\n *   issueOpenedNotEligibleReason: string,\n *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',\n * }} config\n */\nfunction createFactoryIssueIntake(config) {\n  const {\n    branchPrefix,\n    factoryLabel,\n    issueOpenedNotEligibleReason,\n    duplicateLinkageMode,\n  } = config;\n\n  function issueBranchName(issueNumber) {\n    return `${branchPrefix}${issueNumber}`;\n  }\n\n  /**\n   * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels?: string[] | null | undefined }} params\n   */\n  function qualifyTriggerEvent(params) {\n    return factoryQualifyTriggerEvent({\n      ...params,\n      factoryLabel,\n      issueOpenedNotEligibleReason,\n    });\n  }\n\n  function checkDuplicatePR(params) {\n    return factoryCheckDuplicatePR({\n      ...params,\n      branchPrefix,\n      prLabel: factoryLabel,\n      duplicateLinkageMode,\n    });\n  }\n\n  function computeGateReason(params) {\n    return factoryComputeGateReason(params, factoryLabel);\n  }\n\n  return {\n    issueBranchName,\n    qualifyTriggerEvent,\n    checkActorTrust: factoryCheckActorTrust,\n    checkDuplicatePR,\n    computeGateReason,\n  };\n}\n\n/**\n * @param {{\n *   branchPrefix: string,\n *   factoryLabel: string,\n *   issueOpenedNotEligibleReason: string,\n *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',\n *   issueBranchNameAliases?: string[],\n * }} config\n */\nfunction createFactoryIssueModule(config) {\n  const intake = createFactoryIssueIntake(config);\n  const issueBranchNameAliases = config.issueBranchNameAliases || [];\n  const factoryIssueModule = {\n    ...intake,\n    actorTrustWhenSenderMissing: factoryActorTrustWhenSenderMissing,\n    parseOptionalTriStateFromEnv: factoryParseOptionalTriStateFromEnv,\n    parseFinalizeGateEnv: factoryParseFinalizeGateEnv,\n  };\n\n  for (const alias of issueBranchNameAliases) {\n    factoryIssueModule[alias] = intake.issueBranchName;\n  }\n\n  return factoryIssueModule;\n}\n\nif (typeof module !== 'undefined') {\n  module.exports = {\n    issueClosingReferencePattern,\n    factoryQualifyTriggerEvent,\n    factoryCheckActorTrust,\n    factoryActorTrustWhenSenderMissing,\n    factoryCheckDuplicatePR,\n    factoryComputeGateReason,\n    factoryParseOptionalTriStateFromEnv,\n    factoryParseFinalizeGateEnv,\n    createFactoryIssueIntake,\n    createFactoryIssueModule,\n  };\n}\n\n// Concatenated by the workflow compiler; not executable standalone.\nconst factoryIssueModule = createFactoryIssueModule({\n  branchPrefix: ISSUE_BRANCH_PREFIX,\n  factoryLabel: FACTORY_LABEL,\n  issueOpenedNotEligibleReason: ISSUE_OPENED_NOT_ELIGIBLE_REASON,\n  duplicateLinkageMode: DUPLICATE_LINKAGE_MODE,\n});\n\nconst qualifyTriggerEvent = factoryIssueModule.qualifyTriggerEvent;\nconst checkActorTrust = factoryIssueModule.checkActorTrust;\nconst checkDuplicatePR = factoryIssueModule.checkDuplicatePR;\nconst computeGateReason = factoryIssueModule.computeGateReason;\nconst issueBranchName = factoryIssueModule.issueBranchName;\nconst actorTrustWhenSenderMissing = factoryIssueModule.actorTrustWhenSenderMissing;\nconst parseFinalizeGateEnv = factoryIssueModule.parseFinalizeGateEnv;\n\nconst { owner, repo } = context.repo;\nconst issueNumber = context.payload.issue?.number;\nconst expectedBranch = issueBranchName(issueNumber);\n\nconst pulls = await github.paginate(github.rest.pulls.list, {\n  owner,\n  repo,\n  state: 'open',\n  head: `${owner}:${expectedBranch}`,\n  per_page: 100,\n});\n\nconst pullRequests = pulls.map(pr => ({\n  number: pr.number,\n  state: pr.state,\n  head_branch: pr.head.ref,\n  labels: pr.labels.map(l => l.name),\n  body: pr.body ?? '',\n  html_url: pr.html_url,\n}));\n\nconst result = checkDuplicatePR({ issueNumber, pullRequests });\n\ncore.setOutput('duplicate_pr_found', result.duplicate_pr_found ? 'true' : 'false');\ncore.setOutput('duplicate_pr_url', result.duplicate_pr_url ?? '');\ncore.setOutput('gate_reason', result.gate_reason);\n\nif (result.duplicate_pr_found) {\n  core.info(`Duplicate PR found: ${result.gate_reason}`);\n} else {\n  core.info(`No duplicate PR: ${result.gate_reason}`);\n}\n"
+      # script: "/**\n * Change-factory issue intake configuration. Keep `ISSUE_BRANCH_PREFIX` aligned with\n * `workflow.md.tmpl` (`change-factory/issue-${{ github.event.issue.number }}`).\n */\n'use strict';\n\nconst ISSUE_BRANCH_PREFIX = 'change-factory/issue-';\nconst FACTORY_LABEL = 'change-factory';\nconst DUPLICATE_LINKAGE_MODE = 'github-keywords';\nconst ISSUE_OPENED_NOT_ELIGIBLE_REASON =\n  'Issue opened event does not qualify because the issue was created without the change-factory label or issue labels were missing.';\n\nif (typeof module !== 'undefined') {\n  module.exports = {\n    ISSUE_BRANCH_PREFIX,\n    FACTORY_LABEL,\n    DUPLICATE_LINKAGE_MODE,\n    ISSUE_OPENED_NOT_ELIGIBLE_REASON,\n  };\n}\n\n/**\n * Shared deterministic helpers for code-factory and change-factory issue intake workflows.\n * Workflow-specific configuration is passed via {@link createFactoryIssueIntake}.\n */\n\n/** GitHub-recognized issue-closing keywords (case-insensitive). See https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/using-keywords-in-issues-and-pull-requests */\nconst GITHUB_ISSUE_CLOSING_KEYWORDS = '(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)';\n\n/**\n * GitHub closing-keyword reference: `#` is immediately followed by the issue digits (no whitespace),\n * per GitHub keyword syntax. Case-insensitive keywords; `(?![0-9])` avoids matching `#42` inside `#420`.\n *\n * @param {number} issueNumber\n * @returns {RegExp}\n */\nfunction issueClosingReferencePattern(issueNumber) {\n  return new RegExp(\n    `\\\\b${GITHUB_ISSUE_CLOSING_KEYWORDS}\\\\s*#${issueNumber}(?![0-9])`,\n    'i',\n  );\n}\n\n/**\n * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels: string[] | null | undefined, factoryLabel: string, issueOpenedNotEligibleReason: string }} params\n * @returns {{ event_eligible: boolean, event_eligible_reason: string }}\n */\nfunction factoryQualifyTriggerEvent({\n  eventName,\n  eventAction,\n  labelName,\n  issueLabels,\n  factoryLabel,\n  issueOpenedNotEligibleReason,\n}) {\n  if (eventName === 'issue_comment') {\n    return {\n      event_eligible: true,\n      event_eligible_reason: `Issue comment event qualifies because the slash_command trigger routes to issue_comment.`,\n    };\n  }\n\n  if (eventName !== 'issues') {\n    return {\n      event_eligible: false,\n      event_eligible_reason: `Unsupported event '${eventName || '(empty)'}'; expected 'issues'.`,\n    };\n  }\n\n  if (eventAction === 'labeled') {\n    if (labelName === factoryLabel) {\n      return {\n        event_eligible: true,\n        event_eligible_reason: `Issue labeled event qualifies because the applied label is ${factoryLabel}.`,\n      };\n    }\n\n    return {\n      event_eligible: false,\n      event_eligible_reason: `Issue labeled event does not qualify because the applied label is '${labelName || '(empty)'}', not '${factoryLabel}'.`,\n    };\n  }\n\n  if (eventAction === 'opened') {\n    if (Array.isArray(issueLabels) && issueLabels.includes(factoryLabel)) {\n      return {\n        event_eligible: true,\n        event_eligible_reason: `Issue opened event qualifies because the issue already has the ${factoryLabel} label.`,\n      };\n    }\n\n    return {\n      event_eligible: false,\n      event_eligible_reason: issueOpenedNotEligibleReason,\n    };\n  }\n\n  return {\n    event_eligible: false,\n    event_eligible_reason: `Issue event action '${eventAction || '(empty)'}' is not eligible; expected 'opened' or 'labeled'.`,\n  };\n}\n\n/**\n * @param {{ sender: string, permission: string | null }} params\n * @returns {{ actor_trusted: boolean, actor_trusted_reason: string }}\n */\nfunction factoryCheckActorTrust({ sender, permission }) {\n  if (sender === 'github-actions[bot]') {\n    return {\n      actor_trusted: true,\n      actor_trusted_reason: 'Trigger actor github-actions[bot] is trusted without collaborator permission lookup.',\n    };\n  }\n\n  if (['write', 'maintain', 'admin'].includes(permission)) {\n    return {\n      actor_trusted: true,\n      actor_trusted_reason: `Trigger actor '${sender || '(empty)'}' is trusted with repository permission '${permission}'.`,\n    };\n  }\n\n  return {\n    actor_trusted: false,\n    actor_trusted_reason: `Trigger actor '${sender || '(empty)'}' is not trusted; repository permission '${permission || '(none)'}' does not meet the required write/maintain/admin policy.`,\n  };\n}\n\n/**\n * @returns {{ actor_trusted: boolean, actor_trusted_reason: string }}\n */\nfunction factoryActorTrustWhenSenderMissing() {\n  return {\n    actor_trusted: false,\n    actor_trusted_reason: 'Trigger actor could not be identified; sender login is missing from the event payload.',\n  };\n}\n\n/**\n * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'github-keywords' }} params\n * @returns {{ duplicate_pr_found: boolean, duplicate_pr_url: string | null, gate_reason: string }}\n */\nfunction factoryCheckDuplicatePR({\n  issueNumber,\n  pullRequests,\n  branchPrefix,\n  prLabel,\n  duplicateLinkageMode,\n}) {\n  const expectedBranch = `${branchPrefix}${issueNumber}`;\n  const expectedClosesExample = `Closes #${issueNumber}`;\n  const bodyPattern = duplicateLinkageMode === 'closes-literal'\n    ? new RegExp(`Closes #${issueNumber}(?![0-9])`)\n    : issueClosingReferencePattern(issueNumber);\n\n  const duplicate = (pullRequests || []).find(pr => (\n    pr.state === 'open' &&\n    Array.isArray(pr.labels) && pr.labels.includes(prLabel) &&\n    pr.head_branch === expectedBranch &&\n    bodyPattern.test(String(pr.body || ''))\n  ));\n\n  if (duplicate) {\n    const url = duplicate.html_url ?? null;\n    const linkagePhrase = duplicateLinkageMode === 'closes-literal'\n      ? `canonical linkage '${expectedClosesExample}'`\n      : `issue-closing reference such as '${expectedClosesExample}'`;\n\n    return {\n      duplicate_pr_found: true,\n      duplicate_pr_url: url,\n      gate_reason: `Found existing linked ${prLabel} PR #${duplicate.number} (${url ?? '(unknown URL)'}) for issue #${issueNumber} on branch '${expectedBranch}' with ${linkagePhrase}.`,\n    };\n  }\n\n  const linkageTail = duplicateLinkageMode === 'closes-literal'\n    ? `canonical linkage '${expectedClosesExample}'`\n    : `issue-closing reference such as '${expectedClosesExample}'`;\n\n  return {\n    duplicate_pr_found: false,\n    duplicate_pr_url: null,\n    gate_reason: `No open linked ${prLabel} PR found for issue #${issueNumber}; expected label '${prLabel}', branch '${expectedBranch}', and ${linkageTail}.`,\n  };\n}\n\n/**\n * @param {{ eventEligible: boolean, eventEligibleReason: string, actorTrusted: boolean | null, actorTrustedReason: string | null, duplicatePrFound: boolean | null, duplicatePrUrl: string | null, duplicateCheckGateReason: string | null }} params\n * @param {string} factoryLabel\n * @returns {{ gate_reason: string }}\n */\nfunction factoryComputeGateReason({\n  eventEligible,\n  eventEligibleReason,\n  actorTrusted,\n  actorTrustedReason,\n  duplicatePrFound,\n  duplicatePrUrl,\n  duplicateCheckGateReason,\n}, factoryLabel) {\n  if (!eventEligible) {\n    return { gate_reason: eventEligibleReason };\n  }\n\n  if (actorTrusted === false) {\n    return { gate_reason: actorTrustedReason || 'Trigger actor is not trusted.' };\n  }\n\n  if (actorTrusted == null) {\n    return { gate_reason: 'Actor trust could not be determined; the trust check step did not produce an output.' };\n  }\n\n  if (duplicatePrFound === true) {\n    return {\n      gate_reason: duplicateCheckGateReason || `Found existing linked ${factoryLabel} PR: ${duplicatePrUrl || '(unknown URL)'}.`,\n    };\n  }\n\n  if (duplicatePrFound == null) {\n    return { gate_reason: 'Duplicate PR check did not complete; the check step did not produce an output.' };\n  }\n\n  return {\n    gate_reason: duplicateCheckGateReason || `All deterministic gates passed: event eligible, actor trusted, and no linked ${factoryLabel} PR found.`,\n  };\n}\n\n/**\n * @param {string | undefined} raw\n * @returns {boolean | null}\n */\nfunction factoryParseOptionalTriStateFromEnv(raw) {\n  if (raw == null || raw === '') {\n    return null;\n  }\n  return raw === 'true';\n}\n\n/**\n * @param {Record<string, string | undefined>} env\n */\nfunction factoryParseFinalizeGateEnv(env) {\n  const e = env || {};\n  return {\n    eventEligible: e.EVENT_ELIGIBLE === 'true',\n    eventEligibleReason: e.EVENT_ELIGIBLE_REASON ?? '',\n    actorTrusted: factoryParseOptionalTriStateFromEnv(e.ACTOR_TRUSTED),\n    actorTrustedReason: e.ACTOR_TRUSTED_REASON ?? null,\n    duplicatePrFound: factoryParseOptionalTriStateFromEnv(e.DUPLICATE_PR_FOUND),\n    duplicatePrUrl: e.DUPLICATE_PR_URL && e.DUPLICATE_PR_URL !== '' ? e.DUPLICATE_PR_URL : null,\n    duplicateCheckGateReason: e.DUPLICATE_GATE_REASON ?? null,\n  };\n}\n\n/**\n * @param {{\n *   branchPrefix: string,\n *   factoryLabel: string,\n *   issueOpenedNotEligibleReason: string,\n *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',\n * }} config\n */\nfunction createFactoryIssueIntake(config) {\n  const {\n    branchPrefix,\n    factoryLabel,\n    issueOpenedNotEligibleReason,\n    duplicateLinkageMode,\n  } = config;\n\n  function issueBranchName(issueNumber) {\n    return `${branchPrefix}${issueNumber}`;\n  }\n\n  /**\n   * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels?: string[] | null | undefined }} params\n   */\n  function qualifyTriggerEvent(params) {\n    return factoryQualifyTriggerEvent({\n      ...params,\n      factoryLabel,\n      issueOpenedNotEligibleReason,\n    });\n  }\n\n  function checkDuplicatePR(params) {\n    return factoryCheckDuplicatePR({\n      ...params,\n      branchPrefix,\n      prLabel: factoryLabel,\n      duplicateLinkageMode,\n    });\n  }\n\n  function computeGateReason(params) {\n    return factoryComputeGateReason(params, factoryLabel);\n  }\n\n  return {\n    issueBranchName,\n    qualifyTriggerEvent,\n    checkActorTrust: factoryCheckActorTrust,\n    checkDuplicatePR,\n    computeGateReason,\n  };\n}\n\n/**\n * @param {{\n *   branchPrefix: string,\n *   factoryLabel: string,\n *   issueOpenedNotEligibleReason: string,\n *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',\n *   issueBranchNameAliases?: string[],\n * }} config\n */\nfunction createFactoryIssueModule(config) {\n  const intake = createFactoryIssueIntake(config);\n  const issueBranchNameAliases = config.issueBranchNameAliases || [];\n  const factoryIssueModule = {\n    ...intake,\n    actorTrustWhenSenderMissing: factoryActorTrustWhenSenderMissing,\n    parseOptionalTriStateFromEnv: factoryParseOptionalTriStateFromEnv,\n    parseFinalizeGateEnv: factoryParseFinalizeGateEnv,\n  };\n\n  for (const alias of issueBranchNameAliases) {\n    factoryIssueModule[alias] = intake.issueBranchName;\n  }\n\n  return factoryIssueModule;\n}\n\nif (typeof module !== 'undefined') {\n  module.exports = {\n    issueClosingReferencePattern,\n    factoryQualifyTriggerEvent,\n    factoryCheckActorTrust,\n    factoryActorTrustWhenSenderMissing,\n    factoryCheckDuplicatePR,\n    factoryComputeGateReason,\n    factoryParseOptionalTriStateFromEnv,\n    factoryParseFinalizeGateEnv,\n    createFactoryIssueIntake,\n    createFactoryIssueModule,\n  };\n}\n\n// Concatenated by the workflow compiler; not executable standalone.\nconst factoryIssueModule = createFactoryIssueModule({\n  branchPrefix: ISSUE_BRANCH_PREFIX,\n  factoryLabel: FACTORY_LABEL,\n  issueOpenedNotEligibleReason: ISSUE_OPENED_NOT_ELIGIBLE_REASON,\n  duplicateLinkageMode: DUPLICATE_LINKAGE_MODE,\n});\n\nconst qualifyTriggerEvent = factoryIssueModule.qualifyTriggerEvent;\nconst checkActorTrust = factoryIssueModule.checkActorTrust;\nconst checkDuplicatePR = factoryIssueModule.checkDuplicatePR;\nconst computeGateReason = factoryIssueModule.computeGateReason;\nconst issueBranchName = factoryIssueModule.issueBranchName;\nconst actorTrustWhenSenderMissing = factoryIssueModule.actorTrustWhenSenderMissing;\nconst parseFinalizeGateEnv = factoryIssueModule.parseFinalizeGateEnv;\n\nconst { owner, repo } = context.repo;\nconst issueNumber = context.payload.issue?.number;\nconst expectedBranch = issueBranchName(issueNumber);\n\nconst pulls = await github.paginate(github.rest.pulls.list, {\n  owner,\n  repo,\n  state: 'open',\n  head: `${owner}:${expectedBranch}`,\n  per_page: 100,\n});\n\nconst pullRequests = pulls.map(pr => ({\n  number: pr.number,\n  state: pr.state,\n  head_branch: pr.head.ref,\n  labels: pr.labels.map(l => l.name),\n  body: pr.body ?? '',\n  html_url: pr.html_url,\n}));\n\nconst result = checkDuplicatePR({ issueNumber, pullRequests });\n\ncore.setOutput('duplicate_pr_found', result.duplicate_pr_found ? 'true' : 'false');\ncore.setOutput('duplicate_pr_url', result.duplicate_pr_url ?? '');\ncore.setOutput('gate_reason', result.gate_reason);\n\nif (result.duplicate_pr_found) {\n  core.info(`Duplicate PR found: ${result.gate_reason}`);\n} else {\n  core.info(`No duplicate PR: ${result.gate_reason}`);\n}\n"
+  # - env:
+      # DUPLICATE_PR_URL: ${{ steps.check_duplicate_pr.outputs.duplicate_pr_url }}
+      # ISSUE_NUMBER: ${{ github.event.issue.number }}
+    # id: notify_duplicate_blocked
+    # if: steps.qualify_trigger.outputs.event_eligible == 'true' && steps.check_actor_trust.outputs.actor_trusted == 'true' && steps.check_duplicate_pr.outputs.duplicate_pr_found == 'true'
+    # name: Notify duplicate blocked
+    # uses: actions/github-script@v9
+    # with:
+      # github-token: ${{ secrets.GITHUB_TOKEN }}
+      # script: "/**\n * Change-factory issue intake configuration. Keep `ISSUE_BRANCH_PREFIX` aligned with\n * `workflow.md.tmpl` (`change-factory/issue-${{ github.event.issue.number }}`).\n */\n'use strict';\n\nconst ISSUE_BRANCH_PREFIX = 'change-factory/issue-';\nconst FACTORY_LABEL = 'change-factory';\nconst DUPLICATE_LINKAGE_MODE = 'github-keywords';\nconst ISSUE_OPENED_NOT_ELIGIBLE_REASON =\n  'Issue opened event does not qualify because the issue was created without the change-factory label or issue labels were missing.';\n\nif (typeof module !== 'undefined') {\n  module.exports = {\n    ISSUE_BRANCH_PREFIX,\n    FACTORY_LABEL,\n    DUPLICATE_LINKAGE_MODE,\n    ISSUE_OPENED_NOT_ELIGIBLE_REASON,\n  };\n}\n\n/**\n * Shared deterministic helpers for code-factory and change-factory issue intake workflows.\n * Workflow-specific configuration is passed via {@link createFactoryIssueIntake}.\n */\n\n/** GitHub-recognized issue-closing keywords (case-insensitive). See https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/using-keywords-in-issues-and-pull-requests */\nconst GITHUB_ISSUE_CLOSING_KEYWORDS = '(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)';\n\n/**\n * GitHub closing-keyword reference: `#` is immediately followed by the issue digits (no whitespace),\n * per GitHub keyword syntax. Case-insensitive keywords; `(?![0-9])` avoids matching `#42` inside `#420`.\n *\n * @param {number} issueNumber\n * @returns {RegExp}\n */\nfunction issueClosingReferencePattern(issueNumber) {\n  return new RegExp(\n    `\\\\b${GITHUB_ISSUE_CLOSING_KEYWORDS}\\\\s*#${issueNumber}(?![0-9])`,\n    'i',\n  );\n}\n\n/**\n * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels: string[] | null | undefined, factoryLabel: string, issueOpenedNotEligibleReason: string }} params\n * @returns {{ event_eligible: boolean, event_eligible_reason: string }}\n */\nfunction factoryQualifyTriggerEvent({\n  eventName,\n  eventAction,\n  labelName,\n  issueLabels,\n  factoryLabel,\n  issueOpenedNotEligibleReason,\n}) {\n  if (eventName === 'issue_comment') {\n    return {\n      event_eligible: true,\n      event_eligible_reason: `Issue comment event qualifies because the slash_command trigger routes to issue_comment.`,\n    };\n  }\n\n  if (eventName !== 'issues') {\n    return {\n      event_eligible: false,\n      event_eligible_reason: `Unsupported event '${eventName || '(empty)'}'; expected 'issues'.`,\n    };\n  }\n\n  if (eventAction === 'labeled') {\n    if (labelName === factoryLabel) {\n      return {\n        event_eligible: true,\n        event_eligible_reason: `Issue labeled event qualifies because the applied label is ${factoryLabel}.`,\n      };\n    }\n\n    return {\n      event_eligible: false,\n      event_eligible_reason: `Issue labeled event does not qualify because the applied label is '${labelName || '(empty)'}', not '${factoryLabel}'.`,\n    };\n  }\n\n  if (eventAction === 'opened') {\n    if (Array.isArray(issueLabels) && issueLabels.includes(factoryLabel)) {\n      return {\n        event_eligible: true,\n        event_eligible_reason: `Issue opened event qualifies because the issue already has the ${factoryLabel} label.`,\n      };\n    }\n\n    return {\n      event_eligible: false,\n      event_eligible_reason: issueOpenedNotEligibleReason,\n    };\n  }\n\n  return {\n    event_eligible: false,\n    event_eligible_reason: `Issue event action '${eventAction || '(empty)'}' is not eligible; expected 'opened' or 'labeled'.`,\n  };\n}\n\n/**\n * @param {{ sender: string, permission: string | null }} params\n * @returns {{ actor_trusted: boolean, actor_trusted_reason: string }}\n */\nfunction factoryCheckActorTrust({ sender, permission }) {\n  if (sender === 'github-actions[bot]') {\n    return {\n      actor_trusted: true,\n      actor_trusted_reason: 'Trigger actor github-actions[bot] is trusted without collaborator permission lookup.',\n    };\n  }\n\n  if (['write', 'maintain', 'admin'].includes(permission)) {\n    return {\n      actor_trusted: true,\n      actor_trusted_reason: `Trigger actor '${sender || '(empty)'}' is trusted with repository permission '${permission}'.`,\n    };\n  }\n\n  return {\n    actor_trusted: false,\n    actor_trusted_reason: `Trigger actor '${sender || '(empty)'}' is not trusted; repository permission '${permission || '(none)'}' does not meet the required write/maintain/admin policy.`,\n  };\n}\n\n/**\n * @returns {{ actor_trusted: boolean, actor_trusted_reason: string }}\n */\nfunction factoryActorTrustWhenSenderMissing() {\n  return {\n    actor_trusted: false,\n    actor_trusted_reason: 'Trigger actor could not be identified; sender login is missing from the event payload.',\n  };\n}\n\n/**\n * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'github-keywords' }} params\n * @returns {{ duplicate_pr_found: boolean, duplicate_pr_url: string | null, gate_reason: string }}\n */\nfunction factoryCheckDuplicatePR({\n  issueNumber,\n  pullRequests,\n  branchPrefix,\n  prLabel,\n  duplicateLinkageMode,\n}) {\n  const expectedBranch = `${branchPrefix}${issueNumber}`;\n  const expectedClosesExample = `Closes #${issueNumber}`;\n  const bodyPattern = duplicateLinkageMode === 'closes-literal'\n    ? new RegExp(`Closes #${issueNumber}(?![0-9])`)\n    : issueClosingReferencePattern(issueNumber);\n\n  const duplicate = (pullRequests || []).find(pr => (\n    pr.state === 'open' &&\n    Array.isArray(pr.labels) && pr.labels.includes(prLabel) &&\n    pr.head_branch === expectedBranch &&\n    bodyPattern.test(String(pr.body || ''))\n  ));\n\n  if (duplicate) {\n    const url = duplicate.html_url ?? null;\n    const linkagePhrase = duplicateLinkageMode === 'closes-literal'\n      ? `canonical linkage '${expectedClosesExample}'`\n      : `issue-closing reference such as '${expectedClosesExample}'`;\n\n    return {\n      duplicate_pr_found: true,\n      duplicate_pr_url: url,\n      gate_reason: `Found existing linked ${prLabel} PR #${duplicate.number} (${url ?? '(unknown URL)'}) for issue #${issueNumber} on branch '${expectedBranch}' with ${linkagePhrase}.`,\n    };\n  }\n\n  const linkageTail = duplicateLinkageMode === 'closes-literal'\n    ? `canonical linkage '${expectedClosesExample}'`\n    : `issue-closing reference such as '${expectedClosesExample}'`;\n\n  return {\n    duplicate_pr_found: false,\n    duplicate_pr_url: null,\n    gate_reason: `No open linked ${prLabel} PR found for issue #${issueNumber}; expected label '${prLabel}', branch '${expectedBranch}', and ${linkageTail}.`,\n  };\n}\n\n/**\n * @param {{ eventEligible: boolean, eventEligibleReason: string, actorTrusted: boolean | null, actorTrustedReason: string | null, duplicatePrFound: boolean | null, duplicatePrUrl: string | null, duplicateCheckGateReason: string | null }} params\n * @param {string} factoryLabel\n * @returns {{ gate_reason: string }}\n */\nfunction factoryComputeGateReason({\n  eventEligible,\n  eventEligibleReason,\n  actorTrusted,\n  actorTrustedReason,\n  duplicatePrFound,\n  duplicatePrUrl,\n  duplicateCheckGateReason,\n}, factoryLabel) {\n  if (!eventEligible) {\n    return { gate_reason: eventEligibleReason };\n  }\n\n  if (actorTrusted === false) {\n    return { gate_reason: actorTrustedReason || 'Trigger actor is not trusted.' };\n  }\n\n  if (actorTrusted == null) {\n    return { gate_reason: 'Actor trust could not be determined; the trust check step did not produce an output.' };\n  }\n\n  if (duplicatePrFound === true) {\n    return {\n      gate_reason: duplicateCheckGateReason || `Found existing linked ${factoryLabel} PR: ${duplicatePrUrl || '(unknown URL)'}.`,\n    };\n  }\n\n  if (duplicatePrFound == null) {\n    return { gate_reason: 'Duplicate PR check did not complete; the check step did not produce an output.' };\n  }\n\n  return {\n    gate_reason: duplicateCheckGateReason || `All deterministic gates passed: event eligible, actor trusted, and no linked ${factoryLabel} PR found.`,\n  };\n}\n\n/**\n * @param {string | undefined} raw\n * @returns {boolean | null}\n */\nfunction factoryParseOptionalTriStateFromEnv(raw) {\n  if (raw == null || raw === '') {\n    return null;\n  }\n  return raw === 'true';\n}\n\n/**\n * @param {Record<string, string | undefined>} env\n */\nfunction factoryParseFinalizeGateEnv(env) {\n  const e = env || {};\n  return {\n    eventEligible: e.EVENT_ELIGIBLE === 'true',\n    eventEligibleReason: e.EVENT_ELIGIBLE_REASON ?? '',\n    actorTrusted: factoryParseOptionalTriStateFromEnv(e.ACTOR_TRUSTED),\n    actorTrustedReason: e.ACTOR_TRUSTED_REASON ?? null,\n    duplicatePrFound: factoryParseOptionalTriStateFromEnv(e.DUPLICATE_PR_FOUND),\n    duplicatePrUrl: e.DUPLICATE_PR_URL && e.DUPLICATE_PR_URL !== '' ? e.DUPLICATE_PR_URL : null,\n    duplicateCheckGateReason: e.DUPLICATE_GATE_REASON ?? null,\n  };\n}\n\n/**\n * @param {{\n *   branchPrefix: string,\n *   factoryLabel: string,\n *   issueOpenedNotEligibleReason: string,\n *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',\n * }} config\n */\nfunction createFactoryIssueIntake(config) {\n  const {\n    branchPrefix,\n    factoryLabel,\n    issueOpenedNotEligibleReason,\n    duplicateLinkageMode,\n  } = config;\n\n  function issueBranchName(issueNumber) {\n    return `${branchPrefix}${issueNumber}`;\n  }\n\n  /**\n   * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels?: string[] | null | undefined }} params\n   */\n  function qualifyTriggerEvent(params) {\n    return factoryQualifyTriggerEvent({\n      ...params,\n      factoryLabel,\n      issueOpenedNotEligibleReason,\n    });\n  }\n\n  function checkDuplicatePR(params) {\n    return factoryCheckDuplicatePR({\n      ...params,\n      branchPrefix,\n      prLabel: factoryLabel,\n      duplicateLinkageMode,\n    });\n  }\n\n  function computeGateReason(params) {\n    return factoryComputeGateReason(params, factoryLabel);\n  }\n\n  return {\n    issueBranchName,\n    qualifyTriggerEvent,\n    checkActorTrust: factoryCheckActorTrust,\n    checkDuplicatePR,\n    computeGateReason,\n  };\n}\n\n/**\n * @param {{\n *   branchPrefix: string,\n *   factoryLabel: string,\n *   issueOpenedNotEligibleReason: string,\n *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',\n *   issueBranchNameAliases?: string[],\n * }} config\n */\nfunction createFactoryIssueModule(config) {\n  const intake = createFactoryIssueIntake(config);\n  const issueBranchNameAliases = config.issueBranchNameAliases || [];\n  const factoryIssueModule = {\n    ...intake,\n    actorTrustWhenSenderMissing: factoryActorTrustWhenSenderMissing,\n    parseOptionalTriStateFromEnv: factoryParseOptionalTriStateFromEnv,\n    parseFinalizeGateEnv: factoryParseFinalizeGateEnv,\n  };\n\n  for (const alias of issueBranchNameAliases) {\n    factoryIssueModule[alias] = intake.issueBranchName;\n  }\n\n  return factoryIssueModule;\n}\n\nif (typeof module !== 'undefined') {\n  module.exports = {\n    issueClosingReferencePattern,\n    factoryQualifyTriggerEvent,\n    factoryCheckActorTrust,\n    factoryActorTrustWhenSenderMissing,\n    factoryCheckDuplicatePR,\n    factoryComputeGateReason,\n    factoryParseOptionalTriStateFromEnv,\n    factoryParseFinalizeGateEnv,\n    createFactoryIssueIntake,\n    createFactoryIssueModule,\n  };\n}\n\n// Concatenated by the workflow compiler; not executable standalone.\nconst factoryIssueModule = createFactoryIssueModule({\n  branchPrefix: ISSUE_BRANCH_PREFIX,\n  factoryLabel: FACTORY_LABEL,\n  issueOpenedNotEligibleReason: ISSUE_OPENED_NOT_ELIGIBLE_REASON,\n  duplicateLinkageMode: DUPLICATE_LINKAGE_MODE,\n});\n\nconst qualifyTriggerEvent = factoryIssueModule.qualifyTriggerEvent;\nconst checkActorTrust = factoryIssueModule.checkActorTrust;\nconst checkDuplicatePR = factoryIssueModule.checkDuplicatePR;\nconst computeGateReason = factoryIssueModule.computeGateReason;\nconst issueBranchName = factoryIssueModule.issueBranchName;\nconst actorTrustWhenSenderMissing = factoryIssueModule.actorTrustWhenSenderMissing;\nconst parseFinalizeGateEnv = factoryIssueModule.parseFinalizeGateEnv;\n\nconst duplicatePrUrl = process.env.DUPLICATE_PR_URL;\nconst issueNumber = process.env.ISSUE_NUMBER;\nconst { owner, repo } = context.repo;\n\nif (duplicatePrUrl && issueNumber) {\n  const commentBody = `⚠️ **change-factory skipped** — [#PR](${duplicatePrUrl}) is already open for this issue.\\nClose or convert it to a draft, then retry.`;\n  \n  await github.rest.issues.createComment({\n    owner,\n    repo,\n    issue_number: parseInt(issueNumber, 10),\n    body: commentBody,\n  });\n  \n  core.info(`Posted duplicate-blocked comment on issue #${issueNumber} referencing ${duplicatePrUrl}`);\n} else {\n  core.info('DUPLICATE_PR_URL is empty; skipping duplicate-blocked notification.');\n}\n"
   # - env:
       # HUMAN_COMMENTS: ${{ steps.extract_research_comment.outputs.human_comments }}
       # ISSUE_BODY: ${{ steps.capture_issue_context.outputs.issue_body }}
@@ -143,12 +163,12 @@ name: "Change Factory Issue Intake"
     # uses: actions/github-script@v9
     # with:
       # github-token: ${{ secrets.GITHUB_TOKEN }}
-      # script: "/**\n * Change-factory issue intake configuration. Keep `ISSUE_BRANCH_PREFIX` aligned with\n * `workflow.md.tmpl` (`change-factory/issue-${{ github.event.issue.number }}`).\n */\n'use strict';\n\nconst ISSUE_BRANCH_PREFIX = 'change-factory/issue-';\nconst FACTORY_LABEL = 'change-factory';\nconst DUPLICATE_LINKAGE_MODE = 'github-keywords';\nconst ISSUE_OPENED_NOT_ELIGIBLE_REASON =\n  'Issue opened event does not qualify because the issue was created without the change-factory label or issue labels were missing.';\n\nif (typeof module !== 'undefined') {\n  module.exports = {\n    ISSUE_BRANCH_PREFIX,\n    FACTORY_LABEL,\n    DUPLICATE_LINKAGE_MODE,\n    ISSUE_OPENED_NOT_ELIGIBLE_REASON,\n  };\n}\n\n/**\n * Shared deterministic helpers for code-factory and change-factory issue intake workflows.\n * Workflow-specific configuration is passed via {@link createFactoryIssueIntake}.\n */\n\n/** GitHub-recognized issue-closing keywords (case-insensitive). See https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/using-keywords-in-issues-and-pull-requests */\nconst GITHUB_ISSUE_CLOSING_KEYWORDS = '(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)';\n\n/**\n * GitHub closing-keyword reference: `#` is immediately followed by the issue digits (no whitespace),\n * per GitHub keyword syntax. Case-insensitive keywords; `(?![0-9])` avoids matching `#42` inside `#420`.\n *\n * @param {number} issueNumber\n * @returns {RegExp}\n */\nfunction issueClosingReferencePattern(issueNumber) {\n  return new RegExp(\n    `\\\\b${GITHUB_ISSUE_CLOSING_KEYWORDS}\\\\s*#${issueNumber}(?![0-9])`,\n    'i',\n  );\n}\n\n/**\n * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels: string[] | null | undefined, factoryLabel: string, issueOpenedNotEligibleReason: string }} params\n * @returns {{ event_eligible: boolean, event_eligible_reason: string }}\n */\nfunction factoryQualifyTriggerEvent({\n  eventName,\n  eventAction,\n  labelName,\n  issueLabels,\n  factoryLabel,\n  issueOpenedNotEligibleReason,\n}) {\n  if (eventName !== 'issues') {\n    return {\n      event_eligible: false,\n      event_eligible_reason: `Unsupported event '${eventName || '(empty)'}'; expected 'issues'.`,\n    };\n  }\n\n  if (eventAction === 'labeled') {\n    if (labelName === factoryLabel) {\n      return {\n        event_eligible: true,\n        event_eligible_reason: `Issue labeled event qualifies because the applied label is ${factoryLabel}.`,\n      };\n    }\n\n    return {\n      event_eligible: false,\n      event_eligible_reason: `Issue labeled event does not qualify because the applied label is '${labelName || '(empty)'}', not '${factoryLabel}'.`,\n    };\n  }\n\n  if (eventAction === 'opened') {\n    if (Array.isArray(issueLabels) && issueLabels.includes(factoryLabel)) {\n      return {\n        event_eligible: true,\n        event_eligible_reason: `Issue opened event qualifies because the issue already has the ${factoryLabel} label.`,\n      };\n    }\n\n    return {\n      event_eligible: false,\n      event_eligible_reason: issueOpenedNotEligibleReason,\n    };\n  }\n\n  return {\n    event_eligible: false,\n    event_eligible_reason: `Issue event action '${eventAction || '(empty)'}' is not eligible; expected 'opened' or 'labeled'.`,\n  };\n}\n\n/**\n * @param {{ sender: string, permission: string | null }} params\n * @returns {{ actor_trusted: boolean, actor_trusted_reason: string }}\n */\nfunction factoryCheckActorTrust({ sender, permission }) {\n  if (sender === 'github-actions[bot]') {\n    return {\n      actor_trusted: true,\n      actor_trusted_reason: 'Trigger actor github-actions[bot] is trusted without collaborator permission lookup.',\n    };\n  }\n\n  if (['write', 'maintain', 'admin'].includes(permission)) {\n    return {\n      actor_trusted: true,\n      actor_trusted_reason: `Trigger actor '${sender || '(empty)'}' is trusted with repository permission '${permission}'.`,\n    };\n  }\n\n  return {\n    actor_trusted: false,\n    actor_trusted_reason: `Trigger actor '${sender || '(empty)'}' is not trusted; repository permission '${permission || '(none)'}' does not meet the required write/maintain/admin policy.`,\n  };\n}\n\n/**\n * @returns {{ actor_trusted: boolean, actor_trusted_reason: string }}\n */\nfunction factoryActorTrustWhenSenderMissing() {\n  return {\n    actor_trusted: false,\n    actor_trusted_reason: 'Trigger actor could not be identified; sender login is missing from the event payload.',\n  };\n}\n\n/**\n * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'github-keywords' }} params\n * @returns {{ duplicate_pr_found: boolean, duplicate_pr_url: string | null, gate_reason: string }}\n */\nfunction factoryCheckDuplicatePR({\n  issueNumber,\n  pullRequests,\n  branchPrefix,\n  prLabel,\n  duplicateLinkageMode,\n}) {\n  const expectedBranch = `${branchPrefix}${issueNumber}`;\n  const expectedClosesExample = `Closes #${issueNumber}`;\n  const bodyPattern = duplicateLinkageMode === 'closes-literal'\n    ? new RegExp(`Closes #${issueNumber}(?![0-9])`)\n    : issueClosingReferencePattern(issueNumber);\n\n  const duplicate = (pullRequests || []).find(pr => (\n    pr.state === 'open' &&\n    Array.isArray(pr.labels) && pr.labels.includes(prLabel) &&\n    pr.head_branch === expectedBranch &&\n    bodyPattern.test(String(pr.body || ''))\n  ));\n\n  if (duplicate) {\n    const url = duplicate.html_url ?? null;\n    const linkagePhrase = duplicateLinkageMode === 'closes-literal'\n      ? `canonical linkage '${expectedClosesExample}'`\n      : `issue-closing reference such as '${expectedClosesExample}'`;\n\n    return {\n      duplicate_pr_found: true,\n      duplicate_pr_url: url,\n      gate_reason: `Found existing linked ${prLabel} PR #${duplicate.number} (${url ?? '(unknown URL)'}) for issue #${issueNumber} on branch '${expectedBranch}' with ${linkagePhrase}.`,\n    };\n  }\n\n  const linkageTail = duplicateLinkageMode === 'closes-literal'\n    ? `canonical linkage '${expectedClosesExample}'`\n    : `issue-closing reference such as '${expectedClosesExample}'`;\n\n  return {\n    duplicate_pr_found: false,\n    duplicate_pr_url: null,\n    gate_reason: `No open linked ${prLabel} PR found for issue #${issueNumber}; expected label '${prLabel}', branch '${expectedBranch}', and ${linkageTail}.`,\n  };\n}\n\n/**\n * @param {{ eventEligible: boolean, eventEligibleReason: string, actorTrusted: boolean | null, actorTrustedReason: string | null, duplicatePrFound: boolean | null, duplicatePrUrl: string | null, duplicateCheckGateReason: string | null }} params\n * @param {string} factoryLabel\n * @returns {{ gate_reason: string }}\n */\nfunction factoryComputeGateReason({\n  eventEligible,\n  eventEligibleReason,\n  actorTrusted,\n  actorTrustedReason,\n  duplicatePrFound,\n  duplicatePrUrl,\n  duplicateCheckGateReason,\n}, factoryLabel) {\n  if (!eventEligible) {\n    return { gate_reason: eventEligibleReason };\n  }\n\n  if (actorTrusted === false) {\n    return { gate_reason: actorTrustedReason || 'Trigger actor is not trusted.' };\n  }\n\n  if (actorTrusted == null) {\n    return { gate_reason: 'Actor trust could not be determined; the trust check step did not produce an output.' };\n  }\n\n  if (duplicatePrFound === true) {\n    return {\n      gate_reason: duplicateCheckGateReason || `Found existing linked ${factoryLabel} PR: ${duplicatePrUrl || '(unknown URL)'}.`,\n    };\n  }\n\n  if (duplicatePrFound == null) {\n    return { gate_reason: 'Duplicate PR check did not complete; the check step did not produce an output.' };\n  }\n\n  return {\n    gate_reason: duplicateCheckGateReason || `All deterministic gates passed: event eligible, actor trusted, and no linked ${factoryLabel} PR found.`,\n  };\n}\n\n/**\n * @param {string | undefined} raw\n * @returns {boolean | null}\n */\nfunction factoryParseOptionalTriStateFromEnv(raw) {\n  if (raw == null || raw === '') {\n    return null;\n  }\n  return raw === 'true';\n}\n\n/**\n * @param {Record<string, string | undefined>} env\n */\nfunction factoryParseFinalizeGateEnv(env) {\n  const e = env || {};\n  return {\n    eventEligible: e.EVENT_ELIGIBLE === 'true',\n    eventEligibleReason: e.EVENT_ELIGIBLE_REASON ?? '',\n    actorTrusted: factoryParseOptionalTriStateFromEnv(e.ACTOR_TRUSTED),\n    actorTrustedReason: e.ACTOR_TRUSTED_REASON ?? null,\n    duplicatePrFound: factoryParseOptionalTriStateFromEnv(e.DUPLICATE_PR_FOUND),\n    duplicatePrUrl: e.DUPLICATE_PR_URL && e.DUPLICATE_PR_URL !== '' ? e.DUPLICATE_PR_URL : null,\n    duplicateCheckGateReason: e.DUPLICATE_GATE_REASON ?? null,\n  };\n}\n\n/**\n * @param {{\n *   branchPrefix: string,\n *   factoryLabel: string,\n *   issueOpenedNotEligibleReason: string,\n *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',\n * }} config\n */\nfunction createFactoryIssueIntake(config) {\n  const {\n    branchPrefix,\n    factoryLabel,\n    issueOpenedNotEligibleReason,\n    duplicateLinkageMode,\n  } = config;\n\n  function issueBranchName(issueNumber) {\n    return `${branchPrefix}${issueNumber}`;\n  }\n\n  /**\n   * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels?: string[] | null | undefined }} params\n   */\n  function qualifyTriggerEvent(params) {\n    return factoryQualifyTriggerEvent({\n      ...params,\n      factoryLabel,\n      issueOpenedNotEligibleReason,\n    });\n  }\n\n  function checkDuplicatePR(params) {\n    return factoryCheckDuplicatePR({\n      ...params,\n      branchPrefix,\n      prLabel: factoryLabel,\n      duplicateLinkageMode,\n    });\n  }\n\n  function computeGateReason(params) {\n    return factoryComputeGateReason(params, factoryLabel);\n  }\n\n  return {\n    issueBranchName,\n    qualifyTriggerEvent,\n    checkActorTrust: factoryCheckActorTrust,\n    checkDuplicatePR,\n    computeGateReason,\n  };\n}\n\n/**\n * @param {{\n *   branchPrefix: string,\n *   factoryLabel: string,\n *   issueOpenedNotEligibleReason: string,\n *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',\n *   issueBranchNameAliases?: string[],\n * }} config\n */\nfunction createFactoryIssueModule(config) {\n  const intake = createFactoryIssueIntake(config);\n  const issueBranchNameAliases = config.issueBranchNameAliases || [];\n  const factoryIssueModule = {\n    ...intake,\n    actorTrustWhenSenderMissing: factoryActorTrustWhenSenderMissing,\n    parseOptionalTriStateFromEnv: factoryParseOptionalTriStateFromEnv,\n    parseFinalizeGateEnv: factoryParseFinalizeGateEnv,\n  };\n\n  for (const alias of issueBranchNameAliases) {\n    factoryIssueModule[alias] = intake.issueBranchName;\n  }\n\n  return factoryIssueModule;\n}\n\nif (typeof module !== 'undefined') {\n  module.exports = {\n    issueClosingReferencePattern,\n    factoryQualifyTriggerEvent,\n    factoryCheckActorTrust,\n    factoryActorTrustWhenSenderMissing,\n    factoryCheckDuplicatePR,\n    factoryComputeGateReason,\n    factoryParseOptionalTriStateFromEnv,\n    factoryParseFinalizeGateEnv,\n    createFactoryIssueIntake,\n    createFactoryIssueModule,\n  };\n}\n\n// Concatenated by the workflow compiler; not executable standalone.\nconst factoryIssueModule = createFactoryIssueModule({\n  branchPrefix: ISSUE_BRANCH_PREFIX,\n  factoryLabel: FACTORY_LABEL,\n  issueOpenedNotEligibleReason: ISSUE_OPENED_NOT_ELIGIBLE_REASON,\n  duplicateLinkageMode: DUPLICATE_LINKAGE_MODE,\n});\n\nconst qualifyTriggerEvent = factoryIssueModule.qualifyTriggerEvent;\nconst checkActorTrust = factoryIssueModule.checkActorTrust;\nconst checkDuplicatePR = factoryIssueModule.checkDuplicatePR;\nconst computeGateReason = factoryIssueModule.computeGateReason;\nconst issueBranchName = factoryIssueModule.issueBranchName;\nconst actorTrustWhenSenderMissing = factoryIssueModule.actorTrustWhenSenderMissing;\nconst parseFinalizeGateEnv = factoryIssueModule.parseFinalizeGateEnv;\n\nconst result = computeGateReason(parseFinalizeGateEnv(process.env));\n\ncore.setOutput('gate_reason', result.gate_reason);\ncore.info(`Gate reason: ${result.gate_reason}`);\n"
+      # script: "/**\n * Change-factory issue intake configuration. Keep `ISSUE_BRANCH_PREFIX` aligned with\n * `workflow.md.tmpl` (`change-factory/issue-${{ github.event.issue.number }}`).\n */\n'use strict';\n\nconst ISSUE_BRANCH_PREFIX = 'change-factory/issue-';\nconst FACTORY_LABEL = 'change-factory';\nconst DUPLICATE_LINKAGE_MODE = 'github-keywords';\nconst ISSUE_OPENED_NOT_ELIGIBLE_REASON =\n  'Issue opened event does not qualify because the issue was created without the change-factory label or issue labels were missing.';\n\nif (typeof module !== 'undefined') {\n  module.exports = {\n    ISSUE_BRANCH_PREFIX,\n    FACTORY_LABEL,\n    DUPLICATE_LINKAGE_MODE,\n    ISSUE_OPENED_NOT_ELIGIBLE_REASON,\n  };\n}\n\n/**\n * Shared deterministic helpers for code-factory and change-factory issue intake workflows.\n * Workflow-specific configuration is passed via {@link createFactoryIssueIntake}.\n */\n\n/** GitHub-recognized issue-closing keywords (case-insensitive). See https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/using-keywords-in-issues-and-pull-requests */\nconst GITHUB_ISSUE_CLOSING_KEYWORDS = '(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)';\n\n/**\n * GitHub closing-keyword reference: `#` is immediately followed by the issue digits (no whitespace),\n * per GitHub keyword syntax. Case-insensitive keywords; `(?![0-9])` avoids matching `#42` inside `#420`.\n *\n * @param {number} issueNumber\n * @returns {RegExp}\n */\nfunction issueClosingReferencePattern(issueNumber) {\n  return new RegExp(\n    `\\\\b${GITHUB_ISSUE_CLOSING_KEYWORDS}\\\\s*#${issueNumber}(?![0-9])`,\n    'i',\n  );\n}\n\n/**\n * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels: string[] | null | undefined, factoryLabel: string, issueOpenedNotEligibleReason: string }} params\n * @returns {{ event_eligible: boolean, event_eligible_reason: string }}\n */\nfunction factoryQualifyTriggerEvent({\n  eventName,\n  eventAction,\n  labelName,\n  issueLabels,\n  factoryLabel,\n  issueOpenedNotEligibleReason,\n}) {\n  if (eventName === 'issue_comment') {\n    return {\n      event_eligible: true,\n      event_eligible_reason: `Issue comment event qualifies because the slash_command trigger routes to issue_comment.`,\n    };\n  }\n\n  if (eventName !== 'issues') {\n    return {\n      event_eligible: false,\n      event_eligible_reason: `Unsupported event '${eventName || '(empty)'}'; expected 'issues'.`,\n    };\n  }\n\n  if (eventAction === 'labeled') {\n    if (labelName === factoryLabel) {\n      return {\n        event_eligible: true,\n        event_eligible_reason: `Issue labeled event qualifies because the applied label is ${factoryLabel}.`,\n      };\n    }\n\n    return {\n      event_eligible: false,\n      event_eligible_reason: `Issue labeled event does not qualify because the applied label is '${labelName || '(empty)'}', not '${factoryLabel}'.`,\n    };\n  }\n\n  if (eventAction === 'opened') {\n    if (Array.isArray(issueLabels) && issueLabels.includes(factoryLabel)) {\n      return {\n        event_eligible: true,\n        event_eligible_reason: `Issue opened event qualifies because the issue already has the ${factoryLabel} label.`,\n      };\n    }\n\n    return {\n      event_eligible: false,\n      event_eligible_reason: issueOpenedNotEligibleReason,\n    };\n  }\n\n  return {\n    event_eligible: false,\n    event_eligible_reason: `Issue event action '${eventAction || '(empty)'}' is not eligible; expected 'opened' or 'labeled'.`,\n  };\n}\n\n/**\n * @param {{ sender: string, permission: string | null }} params\n * @returns {{ actor_trusted: boolean, actor_trusted_reason: string }}\n */\nfunction factoryCheckActorTrust({ sender, permission }) {\n  if (sender === 'github-actions[bot]') {\n    return {\n      actor_trusted: true,\n      actor_trusted_reason: 'Trigger actor github-actions[bot] is trusted without collaborator permission lookup.',\n    };\n  }\n\n  if (['write', 'maintain', 'admin'].includes(permission)) {\n    return {\n      actor_trusted: true,\n      actor_trusted_reason: `Trigger actor '${sender || '(empty)'}' is trusted with repository permission '${permission}'.`,\n    };\n  }\n\n  return {\n    actor_trusted: false,\n    actor_trusted_reason: `Trigger actor '${sender || '(empty)'}' is not trusted; repository permission '${permission || '(none)'}' does not meet the required write/maintain/admin policy.`,\n  };\n}\n\n/**\n * @returns {{ actor_trusted: boolean, actor_trusted_reason: string }}\n */\nfunction factoryActorTrustWhenSenderMissing() {\n  return {\n    actor_trusted: false,\n    actor_trusted_reason: 'Trigger actor could not be identified; sender login is missing from the event payload.',\n  };\n}\n\n/**\n * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'github-keywords' }} params\n * @returns {{ duplicate_pr_found: boolean, duplicate_pr_url: string | null, gate_reason: string }}\n */\nfunction factoryCheckDuplicatePR({\n  issueNumber,\n  pullRequests,\n  branchPrefix,\n  prLabel,\n  duplicateLinkageMode,\n}) {\n  const expectedBranch = `${branchPrefix}${issueNumber}`;\n  const expectedClosesExample = `Closes #${issueNumber}`;\n  const bodyPattern = duplicateLinkageMode === 'closes-literal'\n    ? new RegExp(`Closes #${issueNumber}(?![0-9])`)\n    : issueClosingReferencePattern(issueNumber);\n\n  const duplicate = (pullRequests || []).find(pr => (\n    pr.state === 'open' &&\n    Array.isArray(pr.labels) && pr.labels.includes(prLabel) &&\n    pr.head_branch === expectedBranch &&\n    bodyPattern.test(String(pr.body || ''))\n  ));\n\n  if (duplicate) {\n    const url = duplicate.html_url ?? null;\n    const linkagePhrase = duplicateLinkageMode === 'closes-literal'\n      ? `canonical linkage '${expectedClosesExample}'`\n      : `issue-closing reference such as '${expectedClosesExample}'`;\n\n    return {\n      duplicate_pr_found: true,\n      duplicate_pr_url: url,\n      gate_reason: `Found existing linked ${prLabel} PR #${duplicate.number} (${url ?? '(unknown URL)'}) for issue #${issueNumber} on branch '${expectedBranch}' with ${linkagePhrase}.`,\n    };\n  }\n\n  const linkageTail = duplicateLinkageMode === 'closes-literal'\n    ? `canonical linkage '${expectedClosesExample}'`\n    : `issue-closing reference such as '${expectedClosesExample}'`;\n\n  return {\n    duplicate_pr_found: false,\n    duplicate_pr_url: null,\n    gate_reason: `No open linked ${prLabel} PR found for issue #${issueNumber}; expected label '${prLabel}', branch '${expectedBranch}', and ${linkageTail}.`,\n  };\n}\n\n/**\n * @param {{ eventEligible: boolean, eventEligibleReason: string, actorTrusted: boolean | null, actorTrustedReason: string | null, duplicatePrFound: boolean | null, duplicatePrUrl: string | null, duplicateCheckGateReason: string | null }} params\n * @param {string} factoryLabel\n * @returns {{ gate_reason: string }}\n */\nfunction factoryComputeGateReason({\n  eventEligible,\n  eventEligibleReason,\n  actorTrusted,\n  actorTrustedReason,\n  duplicatePrFound,\n  duplicatePrUrl,\n  duplicateCheckGateReason,\n}, factoryLabel) {\n  if (!eventEligible) {\n    return { gate_reason: eventEligibleReason };\n  }\n\n  if (actorTrusted === false) {\n    return { gate_reason: actorTrustedReason || 'Trigger actor is not trusted.' };\n  }\n\n  if (actorTrusted == null) {\n    return { gate_reason: 'Actor trust could not be determined; the trust check step did not produce an output.' };\n  }\n\n  if (duplicatePrFound === true) {\n    return {\n      gate_reason: duplicateCheckGateReason || `Found existing linked ${factoryLabel} PR: ${duplicatePrUrl || '(unknown URL)'}.`,\n    };\n  }\n\n  if (duplicatePrFound == null) {\n    return { gate_reason: 'Duplicate PR check did not complete; the check step did not produce an output.' };\n  }\n\n  return {\n    gate_reason: duplicateCheckGateReason || `All deterministic gates passed: event eligible, actor trusted, and no linked ${factoryLabel} PR found.`,\n  };\n}\n\n/**\n * @param {string | undefined} raw\n * @returns {boolean | null}\n */\nfunction factoryParseOptionalTriStateFromEnv(raw) {\n  if (raw == null || raw === '') {\n    return null;\n  }\n  return raw === 'true';\n}\n\n/**\n * @param {Record<string, string | undefined>} env\n */\nfunction factoryParseFinalizeGateEnv(env) {\n  const e = env || {};\n  return {\n    eventEligible: e.EVENT_ELIGIBLE === 'true',\n    eventEligibleReason: e.EVENT_ELIGIBLE_REASON ?? '',\n    actorTrusted: factoryParseOptionalTriStateFromEnv(e.ACTOR_TRUSTED),\n    actorTrustedReason: e.ACTOR_TRUSTED_REASON ?? null,\n    duplicatePrFound: factoryParseOptionalTriStateFromEnv(e.DUPLICATE_PR_FOUND),\n    duplicatePrUrl: e.DUPLICATE_PR_URL && e.DUPLICATE_PR_URL !== '' ? e.DUPLICATE_PR_URL : null,\n    duplicateCheckGateReason: e.DUPLICATE_GATE_REASON ?? null,\n  };\n}\n\n/**\n * @param {{\n *   branchPrefix: string,\n *   factoryLabel: string,\n *   issueOpenedNotEligibleReason: string,\n *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',\n * }} config\n */\nfunction createFactoryIssueIntake(config) {\n  const {\n    branchPrefix,\n    factoryLabel,\n    issueOpenedNotEligibleReason,\n    duplicateLinkageMode,\n  } = config;\n\n  function issueBranchName(issueNumber) {\n    return `${branchPrefix}${issueNumber}`;\n  }\n\n  /**\n   * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels?: string[] | null | undefined }} params\n   */\n  function qualifyTriggerEvent(params) {\n    return factoryQualifyTriggerEvent({\n      ...params,\n      factoryLabel,\n      issueOpenedNotEligibleReason,\n    });\n  }\n\n  function checkDuplicatePR(params) {\n    return factoryCheckDuplicatePR({\n      ...params,\n      branchPrefix,\n      prLabel: factoryLabel,\n      duplicateLinkageMode,\n    });\n  }\n\n  function computeGateReason(params) {\n    return factoryComputeGateReason(params, factoryLabel);\n  }\n\n  return {\n    issueBranchName,\n    qualifyTriggerEvent,\n    checkActorTrust: factoryCheckActorTrust,\n    checkDuplicatePR,\n    computeGateReason,\n  };\n}\n\n/**\n * @param {{\n *   branchPrefix: string,\n *   factoryLabel: string,\n *   issueOpenedNotEligibleReason: string,\n *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',\n *   issueBranchNameAliases?: string[],\n * }} config\n */\nfunction createFactoryIssueModule(config) {\n  const intake = createFactoryIssueIntake(config);\n  const issueBranchNameAliases = config.issueBranchNameAliases || [];\n  const factoryIssueModule = {\n    ...intake,\n    actorTrustWhenSenderMissing: factoryActorTrustWhenSenderMissing,\n    parseOptionalTriStateFromEnv: factoryParseOptionalTriStateFromEnv,\n    parseFinalizeGateEnv: factoryParseFinalizeGateEnv,\n  };\n\n  for (const alias of issueBranchNameAliases) {\n    factoryIssueModule[alias] = intake.issueBranchName;\n  }\n\n  return factoryIssueModule;\n}\n\nif (typeof module !== 'undefined') {\n  module.exports = {\n    issueClosingReferencePattern,\n    factoryQualifyTriggerEvent,\n    factoryCheckActorTrust,\n    factoryActorTrustWhenSenderMissing,\n    factoryCheckDuplicatePR,\n    factoryComputeGateReason,\n    factoryParseOptionalTriStateFromEnv,\n    factoryParseFinalizeGateEnv,\n    createFactoryIssueIntake,\n    createFactoryIssueModule,\n  };\n}\n\n// Concatenated by the workflow compiler; not executable standalone.\nconst factoryIssueModule = createFactoryIssueModule({\n  branchPrefix: ISSUE_BRANCH_PREFIX,\n  factoryLabel: FACTORY_LABEL,\n  issueOpenedNotEligibleReason: ISSUE_OPENED_NOT_ELIGIBLE_REASON,\n  duplicateLinkageMode: DUPLICATE_LINKAGE_MODE,\n});\n\nconst qualifyTriggerEvent = factoryIssueModule.qualifyTriggerEvent;\nconst checkActorTrust = factoryIssueModule.checkActorTrust;\nconst checkDuplicatePR = factoryIssueModule.checkDuplicatePR;\nconst computeGateReason = factoryIssueModule.computeGateReason;\nconst issueBranchName = factoryIssueModule.issueBranchName;\nconst actorTrustWhenSenderMissing = factoryIssueModule.actorTrustWhenSenderMissing;\nconst parseFinalizeGateEnv = factoryIssueModule.parseFinalizeGateEnv;\n\nconst result = computeGateReason(parseFinalizeGateEnv(process.env));\n\ncore.setOutput('gate_reason', result.gate_reason);\ncore.info(`Gate reason: ${result.gate_reason}`);\n"
 
 permissions: {}
 
 concurrency:
-  group: "gh-aw-${{ github.workflow }}-${{ github.event.issue.number || github.run_id }}"
+  group: "gh-aw-${{ github.workflow }}-${{ github.event.issue.number || github.event.pull_request.number || github.run_id }}"
 
 run-name: "Change Factory Issue Intake"
 
@@ -163,6 +183,7 @@ jobs:
       actions: read
       contents: read
       issues: write
+      pull-requests: write
     outputs:
       body: ${{ steps.sanitized.outputs.body }}
       comment_id: ${{ steps.add-comment.outputs.comment-id }}
@@ -173,6 +194,7 @@ jobs:
       model: ${{ steps.generate_aw_info.outputs.model }}
       secret_verification_result: ${{ steps.validate-secret.outputs.verification_result }}
       setup-trace-id: ${{ steps.setup.outputs.trace-id }}
+      slash_command: ${{ needs.pre_activation.outputs.matched_command }}
       stale_lock_file_failed: ${{ steps.check-lock-file.outputs.stale_lock_file_failed == 'true' }}
       text: ${{ steps.sanitized.outputs.text }}
       title: ${{ steps.sanitized.outputs.title }}
@@ -214,6 +236,19 @@ jobs:
             setupGlobals(core, github, context, exec, io, getOctokit);
             const { main } = require('${{ runner.temp }}/gh-aw/actions/generate_aw_info.cjs');
             await main(core, context);
+      - name: Add eyes reaction for immediate feedback
+        id: react
+        if: github.event_name == 'issues' || github.event_name == 'issue_comment' || github.event_name == 'pull_request_review_comment' || github.event_name == 'discussion' || github.event_name == 'discussion_comment' || github.event_name == 'pull_request' && github.event.pull_request.head.repo.id == github.repository_id || github.event_name == 'pull_request_review' && github.event.pull_request.head.repo.id == github.repository_id
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          GH_AW_REACTION: "eyes"
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { setupGlobals } = require('${{ runner.temp }}/gh-aw/actions/setup_globals.cjs');
+            setupGlobals(core, github, context, exec, io, getOctokit);
+            const { main } = require('${{ runner.temp }}/gh-aw/actions/add_reaction.cjs');
+            await main();
       - name: Validate ANTHROPIC_API_KEY secret
         id: validate-secret
         run: bash "${RUNNER_TEMP}/gh-aw/actions/validate_multi_secret.sh" ANTHROPIC_API_KEY 'Claude Code' https://github.github.com/gh-aw/reference/engines/#anthropic-claude-code
@@ -302,28 +337,29 @@ jobs:
           GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_DUPLICATE_PR_FOUND: ${{ needs.pre_activation.outputs.duplicate_pr_found }}
           GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_DUPLICATE_PR_URL: ${{ needs.pre_activation.outputs.duplicate_pr_url }}
           GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_GATE_REASON: ${{ needs.pre_activation.outputs.gate_reason }}
+          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_HUMAN_DIRECTION: ${{ needs.pre_activation.outputs.human_direction }}
           GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ISSUE_TITLE: ${{ needs.pre_activation.outputs.issue_title }}
         # poutine:ignore untrusted_checkout_exec
         run: |
           bash "${RUNNER_TEMP}/gh-aw/actions/create_prompt_first.sh"
           {
-          cat << 'GH_AW_PROMPT_844aef365d0bfa76_EOF'
+          cat << 'GH_AW_PROMPT_637213a09d18591f_EOF'
           <system>
-          GH_AW_PROMPT_844aef365d0bfa76_EOF
+          GH_AW_PROMPT_637213a09d18591f_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/xpia.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/temp_folder_prompt.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/markdown.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/safe_outputs_prompt.md"
-          cat << 'GH_AW_PROMPT_844aef365d0bfa76_EOF'
+          cat << 'GH_AW_PROMPT_637213a09d18591f_EOF'
           <safe-output-tools>
           Tools: add_comment, create_pull_request, missing_tool, missing_data, noop
-          GH_AW_PROMPT_844aef365d0bfa76_EOF
+          GH_AW_PROMPT_637213a09d18591f_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/safe_outputs_create_pull_request.md"
-          cat << 'GH_AW_PROMPT_844aef365d0bfa76_EOF'
+          cat << 'GH_AW_PROMPT_637213a09d18591f_EOF'
           </safe-output-tools>
-          GH_AW_PROMPT_844aef365d0bfa76_EOF
+          GH_AW_PROMPT_637213a09d18591f_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/mcp_cli_tools_prompt.md"
-          cat << 'GH_AW_PROMPT_844aef365d0bfa76_EOF'
+          cat << 'GH_AW_PROMPT_637213a09d18591f_EOF'
           <github-context>
           The following GitHub context information is available for this workflow:
           {{#if __GH_AW_GITHUB_ACTOR__ }}
@@ -355,15 +391,15 @@ jobs:
             - **Note**: If a branch you need is not in the list above and is not listed as an additional fetched ref, it has NOT been checked out. For private repositories you cannot fetch it without proper authentication. If the branch is required and not available, exit with an error and ask the user to add it to the `fetch:` option of the `checkout:` configuration (e.g., `fetch: ["refs/pulls/open/*"]` for all open PR refs, or `fetch: ["main", "feature/my-branch"]` for specific branches).
           </github-context>
           
-          GH_AW_PROMPT_844aef365d0bfa76_EOF
+          GH_AW_PROMPT_637213a09d18591f_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/github_mcp_tools_with_safeoutputs_prompt.md"
           if [ "$GITHUB_EVENT_NAME" = "issue_comment" ] && [ -n "$GH_AW_IS_PR_COMMENT" ] || [ "$GITHUB_EVENT_NAME" = "pull_request_review_comment" ] || [ "$GITHUB_EVENT_NAME" = "pull_request_review" ]; then
             cat "${RUNNER_TEMP}/gh-aw/prompts/pr_context_prompt.md"
           fi
-          cat << 'GH_AW_PROMPT_844aef365d0bfa76_EOF'
+          cat << 'GH_AW_PROMPT_637213a09d18591f_EOF'
           </system>
           {{#runtime-import .github/workflows/change-factory-issue.md}}
-          GH_AW_PROMPT_844aef365d0bfa76_EOF
+          GH_AW_PROMPT_637213a09d18591f_EOF
           } > "$GH_AW_PROMPT"
       - name: Interpolate variables and render templates
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
@@ -377,6 +413,7 @@ jobs:
           GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_DUPLICATE_PR_FOUND: ${{ needs.pre_activation.outputs.duplicate_pr_found }}
           GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_DUPLICATE_PR_URL: ${{ needs.pre_activation.outputs.duplicate_pr_url }}
           GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_GATE_REASON: ${{ needs.pre_activation.outputs.gate_reason }}
+          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_HUMAN_DIRECTION: ${{ needs.pre_activation.outputs.human_direction }}
           GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ISSUE_TITLE: ${{ needs.pre_activation.outputs.issue_title }}
         with:
           script: |
@@ -403,7 +440,9 @@ jobs:
           GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_DUPLICATE_PR_FOUND: ${{ needs.pre_activation.outputs.duplicate_pr_found }}
           GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_DUPLICATE_PR_URL: ${{ needs.pre_activation.outputs.duplicate_pr_url }}
           GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_GATE_REASON: ${{ needs.pre_activation.outputs.gate_reason }}
+          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_HUMAN_DIRECTION: ${{ needs.pre_activation.outputs.human_direction }}
           GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ISSUE_TITLE: ${{ needs.pre_activation.outputs.issue_title }}
+          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_MATCHED_COMMAND: ${{ needs.pre_activation.outputs.matched_command }}
         with:
           script: |
             const { setupGlobals } = require('${{ runner.temp }}/gh-aw/actions/setup_globals.cjs');
@@ -430,7 +469,9 @@ jobs:
                 GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_DUPLICATE_PR_FOUND: process.env.GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_DUPLICATE_PR_FOUND,
                 GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_DUPLICATE_PR_URL: process.env.GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_DUPLICATE_PR_URL,
                 GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_GATE_REASON: process.env.GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_GATE_REASON,
-                GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ISSUE_TITLE: process.env.GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ISSUE_TITLE
+                GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_HUMAN_DIRECTION: process.env.GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_HUMAN_DIRECTION,
+                GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ISSUE_TITLE: process.env.GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ISSUE_TITLE,
+                GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_MATCHED_COMMAND: process.env.GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_MATCHED_COMMAND
               }
             });
       - name: Validate prompt placeholders
@@ -588,9 +629,9 @@ jobs:
           mkdir -p "${RUNNER_TEMP}/gh-aw/safeoutputs"
           mkdir -p /tmp/gh-aw/safeoutputs
           mkdir -p /tmp/gh-aw/mcp-logs/safeoutputs
-          cat > "${RUNNER_TEMP}/gh-aw/safeoutputs/config.json" << 'GH_AW_SAFE_OUTPUTS_CONFIG_7b586a7ab5cb5e9f_EOF'
+          cat > "${RUNNER_TEMP}/gh-aw/safeoutputs/config.json" << 'GH_AW_SAFE_OUTPUTS_CONFIG_d6851075e19b1f12_EOF'
           {"add_comment":{"max":1,"target":"triggering"},"create_pull_request":{"labels":["change-factory","no-changelog"],"max":1,"max_patch_files":100,"max_patch_size":1024,"protect_top_level_dot_folders":true,"protected_files":["package.json","bun.lockb","bunfig.toml","deno.json","deno.jsonc","deno.lock","global.json","NuGet.Config","Directory.Packages.props","mix.exs","mix.lock","go.mod","go.sum","stack.yaml","stack.yaml.lock","pom.xml","build.gradle","build.gradle.kts","settings.gradle","settings.gradle.kts","gradle.properties","package-lock.json","yarn.lock","pnpm-lock.yaml","npm-shrinkwrap.json","requirements.txt","Pipfile","Pipfile.lock","pyproject.toml","setup.py","setup.cfg","Gemfile","Gemfile.lock","uv.lock","CODEOWNERS","DESIGN.md","README.md","CONTRIBUTING.md","CHANGELOG.md","SECURITY.md","CODE_OF_CONDUCT.md","CLAUDE.md","AGENTS.md"]},"create_report_incomplete_issue":{},"missing_data":{},"missing_tool":{},"noop":{"max":1,"report-as-issue":"false"},"report_incomplete":{}}
-          GH_AW_SAFE_OUTPUTS_CONFIG_7b586a7ab5cb5e9f_EOF
+          GH_AW_SAFE_OUTPUTS_CONFIG_d6851075e19b1f12_EOF
       - name: Generate Safe Outputs Tools
         env:
           GH_AW_TOOLS_META_JSON: |
@@ -820,7 +861,7 @@ jobs:
           export MCP_GATEWAY_DOCKER_COMMAND='docker run -i --rm --network host --add-host host.docker.internal:127.0.0.1 --user '"${MCP_GATEWAY_UID}"':'"${MCP_GATEWAY_GID}"' --group-add '"${DOCKER_SOCK_GID}"' -v /var/run/docker.sock:/var/run/docker.sock -e MCP_GATEWAY_PORT -e MCP_GATEWAY_DOMAIN -e MCP_GATEWAY_API_KEY -e MCP_GATEWAY_PAYLOAD_DIR -e MCP_GATEWAY_PAYLOAD_SIZE_THRESHOLD -e DEBUG -e MCP_GATEWAY_LOG_DIR -e GH_AW_MCP_LOG_DIR -e GH_AW_SAFE_OUTPUTS -e GH_AW_SAFE_OUTPUTS_CONFIG_PATH -e GH_AW_SAFE_OUTPUTS_TOOLS_PATH -e GH_AW_ASSETS_BRANCH -e GH_AW_ASSETS_MAX_SIZE_KB -e GH_AW_ASSETS_ALLOWED_EXTS -e DEFAULT_BRANCH -e GITHUB_MCP_SERVER_TOKEN -e GITHUB_MCP_GUARD_MIN_INTEGRITY -e GITHUB_MCP_GUARD_REPOS -e GITHUB_REPOSITORY -e GITHUB_SERVER_URL -e GITHUB_SHA -e GITHUB_WORKSPACE -e GITHUB_TOKEN -e GITHUB_RUN_ID -e GITHUB_RUN_NUMBER -e GITHUB_RUN_ATTEMPT -e GITHUB_JOB -e GITHUB_ACTION -e GITHUB_EVENT_NAME -e GITHUB_EVENT_PATH -e GITHUB_ACTOR -e GITHUB_ACTOR_ID -e GITHUB_TRIGGERING_ACTOR -e GITHUB_WORKFLOW -e GITHUB_WORKFLOW_REF -e GITHUB_WORKFLOW_SHA -e GITHUB_REF -e GITHUB_REF_NAME -e GITHUB_REF_TYPE -e GITHUB_HEAD_REF -e GITHUB_BASE_REF -e GH_AW_SAFE_OUTPUTS_PORT -e GH_AW_SAFE_OUTPUTS_API_KEY -v /tmp/gh-aw/mcp-payloads:/tmp/gh-aw/mcp-payloads:rw -v /opt:/opt:ro -v /tmp:/tmp:rw -v '"${GITHUB_WORKSPACE}"':'"${GITHUB_WORKSPACE}"':rw ghcr.io/github/gh-aw-mcpg:v0.3.6'
           
           GH_AW_NODE=$(which node 2>/dev/null || command -v node 2>/dev/null || echo node)
-          cat << GH_AW_MCP_CONFIG_1bf6b3e759453e6a_EOF | "$GH_AW_NODE" "${RUNNER_TEMP}/gh-aw/actions/start_mcp_gateway.cjs"
+          cat << GH_AW_MCP_CONFIG_aacc19c01d8134a0_EOF | "$GH_AW_NODE" "${RUNNER_TEMP}/gh-aw/actions/start_mcp_gateway.cjs"
           {
             "mcpServers": {
               "elastic-docs": {
@@ -874,7 +915,7 @@ jobs:
               "payloadDir": "${MCP_GATEWAY_PAYLOAD_DIR}"
             }
           }
-          GH_AW_MCP_CONFIG_1bf6b3e759453e6a_EOF
+          GH_AW_MCP_CONFIG_aacc19c01d8134a0_EOF
       - name: Mount MCP servers as CLIs
         id: mount-mcp-clis
         continue-on-error: true
@@ -1057,6 +1098,7 @@ jobs:
           GH_AW_ALLOWED_DOMAINS: "*.githubusercontent.com,anthropic.com,api.anthropic.com,api.github.com,api.npms.io,api.snapcraft.io,archive.ubuntu.com,azure.archive.ubuntu.com,bun.sh,cdn.jsdelivr.net,cdn.playwright.dev,codeload.github.com,crl.geotrust.com,crl.globalsign.com,crl.identrust.com,crl.sectigo.com,crl.thawte.com,crl.usertrust.com,crl.verisign.com,crl3.digicert.com,crl4.digicert.com,crls.ssl.com,deb.nodesource.com,deno.land,elastic.litellm-prod.ai,esm.sh,files.pythonhosted.org,get.pnpm.io,ghcr.io,github-cloud.githubusercontent.com,github-cloud.s3.amazonaws.com,github.com,googleapis.deno.dev,googlechromelabs.github.io,host.docker.internal,json-schema.org,json.schemastore.org,jsr.io,keyserver.ubuntu.com,lfs.github.com,nodejs.org,npm.pkg.github.com,npmjs.com,npmjs.org,objects.githubusercontent.com,ocsp.digicert.com,ocsp.geotrust.com,ocsp.globalsign.com,ocsp.identrust.com,ocsp.sectigo.com,ocsp.ssl.com,ocsp.thawte.com,ocsp.usertrust.com,ocsp.verisign.com,packagecloud.io,packages.cloud.google.com,packages.microsoft.com,playwright.download.prss.microsoft.com,ppa.launchpad.net,pypi.org,raw.githubusercontent.com,registry.bower.io,registry.npmjs.com,registry.npmjs.org,registry.yarnpkg.com,repo.yarnpkg.com,s.symcb.com,s.symcd.com,security.ubuntu.com,sentry.io,skimdb.npmjs.com,statsig.anthropic.com,storage.googleapis.com,telemetry.vercel.com,ts-crl.ws.symantec.com,ts-ocsp.ws.symantec.com,www.elastic.co,www.googleapis.com,www.npmjs.com,www.npmjs.org,yarnpkg.com"
           GITHUB_SERVER_URL: ${{ github.server_url }}
           GITHUB_API_URL: ${{ github.api_url }}
+          GH_AW_COMMAND: change-factory
         with:
           script: |
             const { setupGlobals } = require('${{ runner.temp }}/gh-aw/actions/setup_globals.cjs');
@@ -1514,9 +1556,10 @@ jobs:
       issues: write
       pull-requests: read
     outputs:
-      activated: ${{ steps.check_membership.outputs.is_team_member == 'true' }}
+      activated: ${{ steps.check_membership.outputs.is_team_member == 'true' && steps.check_command_position.outputs.command_position_ok == 'true' }}
       actor_trusted: ${{ steps.check_actor_trust.outputs.actor_trusted }}
       actor_trusted_reason: ${{ steps.check_actor_trust.outputs.actor_trusted_reason }}
+      capture_command_text_result: ${{ steps.capture_command_text.outcome }}
       capture_issue_context_result: ${{ steps.capture_issue_context.outcome }}
       check_actor_trust_result: ${{ steps.check_actor_trust.outcome }}
       check_duplicate_pr_result: ${{ steps.check_duplicate_pr.outcome }}
@@ -1528,9 +1571,11 @@ jobs:
       fetch_issue_comments_result: ${{ steps.fetch_issue_comments.outcome }}
       finalize_gate_result: ${{ steps.finalize_gate.outcome }}
       gate_reason: ${{ steps.finalize_gate.outputs.gate_reason }}
+      human_direction: ${{ steps.capture_command_text.outputs.human_direction }}
       issue_body: ${{ steps.capture_issue_context.outputs.issue_body }}
       issue_title: ${{ steps.capture_issue_context.outputs.issue_title }}
-      matched_command: ''
+      matched_command: ${{ steps.check_command_position.outputs.matched_command }}
+      notify_duplicate_blocked_result: ${{ steps.notify_duplicate_blocked.outcome }}
       qualify_trigger_result: ${{ steps.qualify_trigger.outcome }}
       remove_trigger_label_result: ${{ steps.remove_trigger_label.outcome }}
       research_comment_body: ${{ steps.extract_research_comment.outputs.research_comment_body }}
@@ -1551,7 +1596,7 @@ jobs:
           GH_AW_SETUP_WORKFLOW_NAME: "Change Factory Issue Intake"
           GH_AW_CURRENT_WORKFLOW_REF: ${{ github.repository }}/.github/workflows/change-factory-issue.lock.yml@${{ github.ref }}
           GH_AW_INFO_VERSION: "2.1.126"
-      - name: Check team membership for workflow
+      - name: Check team membership for command workflow
         id: check_membership
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
@@ -1562,6 +1607,17 @@ jobs:
             const { setupGlobals } = require('${{ runner.temp }}/gh-aw/actions/setup_globals.cjs');
             setupGlobals(core, github, context, exec, io, getOctokit);
             const { main } = require('${{ runner.temp }}/gh-aw/actions/check_membership.cjs');
+            await main();
+      - name: Check command position
+        id: check_command_position
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          GH_AW_COMMANDS: "[\"change-factory\"]"
+        with:
+          script: |
+            const { setupGlobals } = require('${{ runner.temp }}/gh-aw/actions/setup_globals.cjs');
+            setupGlobals(core, github, context, exec, io, getOctokit);
+            const { main } = require('${{ runner.temp }}/gh-aw/actions/check_command_position.cjs');
             await main();
       - name: Qualify trigger event
         id: qualify_trigger
@@ -1624,6 +1680,13 @@ jobs:
               factoryLabel,
               issueOpenedNotEligibleReason,
             }) {
+              if (eventName === 'issue_comment') {
+                return {
+                  event_eligible: true,
+                  event_eligible_reason: `Issue comment event qualifies because the slash_command trigger routes to issue_comment.`,
+                };
+              }
+
               if (eventName !== 'issues') {
                 return {
                   event_eligible: false,
@@ -1941,6 +2004,389 @@ jobs:
             } else {
               core.info(`Event not eligible: ${result.event_eligible_reason}`);
             }
+      - name: Capture command text
+        id: capture_command_text
+        if: steps.qualify_trigger.outputs.event_eligible == 'true'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            /**
+             * Change-factory issue intake configuration. Keep `ISSUE_BRANCH_PREFIX` aligned with
+             * `workflow.md.tmpl` (`change-factory/issue-${{ github.event.issue.number }}`).
+             */
+            'use strict';
+
+            const ISSUE_BRANCH_PREFIX = 'change-factory/issue-';
+            const FACTORY_LABEL = 'change-factory';
+            const DUPLICATE_LINKAGE_MODE = 'github-keywords';
+            const ISSUE_OPENED_NOT_ELIGIBLE_REASON =
+              'Issue opened event does not qualify because the issue was created without the change-factory label or issue labels were missing.';
+
+            if (typeof module !== 'undefined') {
+              module.exports = {
+                ISSUE_BRANCH_PREFIX,
+                FACTORY_LABEL,
+                DUPLICATE_LINKAGE_MODE,
+                ISSUE_OPENED_NOT_ELIGIBLE_REASON,
+              };
+            }
+
+            /**
+             * Shared deterministic helpers for code-factory and change-factory issue intake workflows.
+             * Workflow-specific configuration is passed via {@link createFactoryIssueIntake}.
+             */
+
+            /** GitHub-recognized issue-closing keywords (case-insensitive). See https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/using-keywords-in-issues-and-pull-requests */
+            const GITHUB_ISSUE_CLOSING_KEYWORDS = '(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)';
+
+            /**
+             * GitHub closing-keyword reference: `#` is immediately followed by the issue digits (no whitespace),
+             * per GitHub keyword syntax. Case-insensitive keywords; `(?![0-9])` avoids matching `#42` inside `#420`.
+             *
+             * @param {number} issueNumber
+             * @returns {RegExp}
+             */
+            function issueClosingReferencePattern(issueNumber) {
+              return new RegExp(
+                `\\b${GITHUB_ISSUE_CLOSING_KEYWORDS}\\s*#${issueNumber}(?![0-9])`,
+                'i',
+              );
+            }
+
+            /**
+             * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels: string[] | null | undefined, factoryLabel: string, issueOpenedNotEligibleReason: string }} params
+             * @returns {{ event_eligible: boolean, event_eligible_reason: string }}
+             */
+            function factoryQualifyTriggerEvent({
+              eventName,
+              eventAction,
+              labelName,
+              issueLabels,
+              factoryLabel,
+              issueOpenedNotEligibleReason,
+            }) {
+              if (eventName === 'issue_comment') {
+                return {
+                  event_eligible: true,
+                  event_eligible_reason: `Issue comment event qualifies because the slash_command trigger routes to issue_comment.`,
+                };
+              }
+
+              if (eventName !== 'issues') {
+                return {
+                  event_eligible: false,
+                  event_eligible_reason: `Unsupported event '${eventName || '(empty)'}'; expected 'issues'.`,
+                };
+              }
+
+              if (eventAction === 'labeled') {
+                if (labelName === factoryLabel) {
+                  return {
+                    event_eligible: true,
+                    event_eligible_reason: `Issue labeled event qualifies because the applied label is ${factoryLabel}.`,
+                  };
+                }
+
+                return {
+                  event_eligible: false,
+                  event_eligible_reason: `Issue labeled event does not qualify because the applied label is '${labelName || '(empty)'}', not '${factoryLabel}'.`,
+                };
+              }
+
+              if (eventAction === 'opened') {
+                if (Array.isArray(issueLabels) && issueLabels.includes(factoryLabel)) {
+                  return {
+                    event_eligible: true,
+                    event_eligible_reason: `Issue opened event qualifies because the issue already has the ${factoryLabel} label.`,
+                  };
+                }
+
+                return {
+                  event_eligible: false,
+                  event_eligible_reason: issueOpenedNotEligibleReason,
+                };
+              }
+
+              return {
+                event_eligible: false,
+                event_eligible_reason: `Issue event action '${eventAction || '(empty)'}' is not eligible; expected 'opened' or 'labeled'.`,
+              };
+            }
+
+            /**
+             * @param {{ sender: string, permission: string | null }} params
+             * @returns {{ actor_trusted: boolean, actor_trusted_reason: string }}
+             */
+            function factoryCheckActorTrust({ sender, permission }) {
+              if (sender === 'github-actions[bot]') {
+                return {
+                  actor_trusted: true,
+                  actor_trusted_reason: 'Trigger actor github-actions[bot] is trusted without collaborator permission lookup.',
+                };
+              }
+
+              if (['write', 'maintain', 'admin'].includes(permission)) {
+                return {
+                  actor_trusted: true,
+                  actor_trusted_reason: `Trigger actor '${sender || '(empty)'}' is trusted with repository permission '${permission}'.`,
+                };
+              }
+
+              return {
+                actor_trusted: false,
+                actor_trusted_reason: `Trigger actor '${sender || '(empty)'}' is not trusted; repository permission '${permission || '(none)'}' does not meet the required write/maintain/admin policy.`,
+              };
+            }
+
+            /**
+             * @returns {{ actor_trusted: boolean, actor_trusted_reason: string }}
+             */
+            function factoryActorTrustWhenSenderMissing() {
+              return {
+                actor_trusted: false,
+                actor_trusted_reason: 'Trigger actor could not be identified; sender login is missing from the event payload.',
+              };
+            }
+
+            /**
+             * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'github-keywords' }} params
+             * @returns {{ duplicate_pr_found: boolean, duplicate_pr_url: string | null, gate_reason: string }}
+             */
+            function factoryCheckDuplicatePR({
+              issueNumber,
+              pullRequests,
+              branchPrefix,
+              prLabel,
+              duplicateLinkageMode,
+            }) {
+              const expectedBranch = `${branchPrefix}${issueNumber}`;
+              const expectedClosesExample = `Closes #${issueNumber}`;
+              const bodyPattern = duplicateLinkageMode === 'closes-literal'
+                ? new RegExp(`Closes #${issueNumber}(?![0-9])`)
+                : issueClosingReferencePattern(issueNumber);
+
+              const duplicate = (pullRequests || []).find(pr => (
+                pr.state === 'open' &&
+                Array.isArray(pr.labels) && pr.labels.includes(prLabel) &&
+                pr.head_branch === expectedBranch &&
+                bodyPattern.test(String(pr.body || ''))
+              ));
+
+              if (duplicate) {
+                const url = duplicate.html_url ?? null;
+                const linkagePhrase = duplicateLinkageMode === 'closes-literal'
+                  ? `canonical linkage '${expectedClosesExample}'`
+                  : `issue-closing reference such as '${expectedClosesExample}'`;
+
+                return {
+                  duplicate_pr_found: true,
+                  duplicate_pr_url: url,
+                  gate_reason: `Found existing linked ${prLabel} PR #${duplicate.number} (${url ?? '(unknown URL)'}) for issue #${issueNumber} on branch '${expectedBranch}' with ${linkagePhrase}.`,
+                };
+              }
+
+              const linkageTail = duplicateLinkageMode === 'closes-literal'
+                ? `canonical linkage '${expectedClosesExample}'`
+                : `issue-closing reference such as '${expectedClosesExample}'`;
+
+              return {
+                duplicate_pr_found: false,
+                duplicate_pr_url: null,
+                gate_reason: `No open linked ${prLabel} PR found for issue #${issueNumber}; expected label '${prLabel}', branch '${expectedBranch}', and ${linkageTail}.`,
+              };
+            }
+
+            /**
+             * @param {{ eventEligible: boolean, eventEligibleReason: string, actorTrusted: boolean | null, actorTrustedReason: string | null, duplicatePrFound: boolean | null, duplicatePrUrl: string | null, duplicateCheckGateReason: string | null }} params
+             * @param {string} factoryLabel
+             * @returns {{ gate_reason: string }}
+             */
+            function factoryComputeGateReason({
+              eventEligible,
+              eventEligibleReason,
+              actorTrusted,
+              actorTrustedReason,
+              duplicatePrFound,
+              duplicatePrUrl,
+              duplicateCheckGateReason,
+            }, factoryLabel) {
+              if (!eventEligible) {
+                return { gate_reason: eventEligibleReason };
+              }
+
+              if (actorTrusted === false) {
+                return { gate_reason: actorTrustedReason || 'Trigger actor is not trusted.' };
+              }
+
+              if (actorTrusted == null) {
+                return { gate_reason: 'Actor trust could not be determined; the trust check step did not produce an output.' };
+              }
+
+              if (duplicatePrFound === true) {
+                return {
+                  gate_reason: duplicateCheckGateReason || `Found existing linked ${factoryLabel} PR: ${duplicatePrUrl || '(unknown URL)'}.`,
+                };
+              }
+
+              if (duplicatePrFound == null) {
+                return { gate_reason: 'Duplicate PR check did not complete; the check step did not produce an output.' };
+              }
+
+              return {
+                gate_reason: duplicateCheckGateReason || `All deterministic gates passed: event eligible, actor trusted, and no linked ${factoryLabel} PR found.`,
+              };
+            }
+
+            /**
+             * @param {string | undefined} raw
+             * @returns {boolean | null}
+             */
+            function factoryParseOptionalTriStateFromEnv(raw) {
+              if (raw == null || raw === '') {
+                return null;
+              }
+              return raw === 'true';
+            }
+
+            /**
+             * @param {Record<string, string | undefined>} env
+             */
+            function factoryParseFinalizeGateEnv(env) {
+              const e = env || {};
+              return {
+                eventEligible: e.EVENT_ELIGIBLE === 'true',
+                eventEligibleReason: e.EVENT_ELIGIBLE_REASON ?? '',
+                actorTrusted: factoryParseOptionalTriStateFromEnv(e.ACTOR_TRUSTED),
+                actorTrustedReason: e.ACTOR_TRUSTED_REASON ?? null,
+                duplicatePrFound: factoryParseOptionalTriStateFromEnv(e.DUPLICATE_PR_FOUND),
+                duplicatePrUrl: e.DUPLICATE_PR_URL && e.DUPLICATE_PR_URL !== '' ? e.DUPLICATE_PR_URL : null,
+                duplicateCheckGateReason: e.DUPLICATE_GATE_REASON ?? null,
+              };
+            }
+
+            /**
+             * @param {{
+             *   branchPrefix: string,
+             *   factoryLabel: string,
+             *   issueOpenedNotEligibleReason: string,
+             *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',
+             * }} config
+             */
+            function createFactoryIssueIntake(config) {
+              const {
+                branchPrefix,
+                factoryLabel,
+                issueOpenedNotEligibleReason,
+                duplicateLinkageMode,
+              } = config;
+
+              function issueBranchName(issueNumber) {
+                return `${branchPrefix}${issueNumber}`;
+              }
+
+              /**
+               * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels?: string[] | null | undefined }} params
+               */
+              function qualifyTriggerEvent(params) {
+                return factoryQualifyTriggerEvent({
+                  ...params,
+                  factoryLabel,
+                  issueOpenedNotEligibleReason,
+                });
+              }
+
+              function checkDuplicatePR(params) {
+                return factoryCheckDuplicatePR({
+                  ...params,
+                  branchPrefix,
+                  prLabel: factoryLabel,
+                  duplicateLinkageMode,
+                });
+              }
+
+              function computeGateReason(params) {
+                return factoryComputeGateReason(params, factoryLabel);
+              }
+
+              return {
+                issueBranchName,
+                qualifyTriggerEvent,
+                checkActorTrust: factoryCheckActorTrust,
+                checkDuplicatePR,
+                computeGateReason,
+              };
+            }
+
+            /**
+             * @param {{
+             *   branchPrefix: string,
+             *   factoryLabel: string,
+             *   issueOpenedNotEligibleReason: string,
+             *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',
+             *   issueBranchNameAliases?: string[],
+             * }} config
+             */
+            function createFactoryIssueModule(config) {
+              const intake = createFactoryIssueIntake(config);
+              const issueBranchNameAliases = config.issueBranchNameAliases || [];
+              const factoryIssueModule = {
+                ...intake,
+                actorTrustWhenSenderMissing: factoryActorTrustWhenSenderMissing,
+                parseOptionalTriStateFromEnv: factoryParseOptionalTriStateFromEnv,
+                parseFinalizeGateEnv: factoryParseFinalizeGateEnv,
+              };
+
+              for (const alias of issueBranchNameAliases) {
+                factoryIssueModule[alias] = intake.issueBranchName;
+              }
+
+              return factoryIssueModule;
+            }
+
+            if (typeof module !== 'undefined') {
+              module.exports = {
+                issueClosingReferencePattern,
+                factoryQualifyTriggerEvent,
+                factoryCheckActorTrust,
+                factoryActorTrustWhenSenderMissing,
+                factoryCheckDuplicatePR,
+                factoryComputeGateReason,
+                factoryParseOptionalTriStateFromEnv,
+                factoryParseFinalizeGateEnv,
+                createFactoryIssueIntake,
+                createFactoryIssueModule,
+              };
+            }
+
+            // Concatenated by the workflow compiler; not executable standalone.
+            const factoryIssueModule = createFactoryIssueModule({
+              branchPrefix: ISSUE_BRANCH_PREFIX,
+              factoryLabel: FACTORY_LABEL,
+              issueOpenedNotEligibleReason: ISSUE_OPENED_NOT_ELIGIBLE_REASON,
+              duplicateLinkageMode: DUPLICATE_LINKAGE_MODE,
+            });
+
+            const qualifyTriggerEvent = factoryIssueModule.qualifyTriggerEvent;
+            const checkActorTrust = factoryIssueModule.checkActorTrust;
+            const checkDuplicatePR = factoryIssueModule.checkDuplicatePR;
+            const computeGateReason = factoryIssueModule.computeGateReason;
+            const issueBranchName = factoryIssueModule.issueBranchName;
+            const actorTrustWhenSenderMissing = factoryIssueModule.actorTrustWhenSenderMissing;
+            const parseFinalizeGateEnv = factoryIssueModule.parseFinalizeGateEnv;
+
+            const eventName = context.eventName;
+
+            if (eventName === 'issue_comment') {
+              const body = context.payload.comment?.body ?? '';
+              // Strip the leading /change-factory token and surrounding whitespace
+              const humanDirection = body.replace(/^\/change-factory\s*/, '').trim();
+              core.setOutput('human_direction', humanDirection);
+              core.info(`Captured human direction from slash command: "${humanDirection}"`);
+            } else {
+              core.setOutput('human_direction', '');
+              core.info('Not an issue_comment event; human_direction is empty.');
+            }
       - name: Capture issue context
         id: capture_issue_context
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
@@ -2011,6 +2457,13 @@ jobs:
               factoryLabel,
               issueOpenedNotEligibleReason,
             }) {
+              if (eventName === 'issue_comment') {
+                return {
+                  event_eligible: true,
+                  event_eligible_reason: `Issue comment event qualifies because the slash_command trigger routes to issue_comment.`,
+                };
+              }
+
               if (eventName !== 'issues') {
                 return {
                   event_eligible: false,
@@ -2641,6 +3094,13 @@ jobs:
               factoryLabel,
               issueOpenedNotEligibleReason,
             }) {
+              if (eventName === 'issue_comment') {
+                return {
+                  event_eligible: true,
+                  event_eligible_reason: `Issue comment event qualifies because the slash_command trigger routes to issue_comment.`,
+                };
+              }
+
               if (eventName !== 'issues') {
                 return {
                   event_eligible: false,
@@ -2975,6 +3435,398 @@ jobs:
             } else {
               core.info(`No duplicate PR: ${result.gate_reason}`);
             }
+      - name: Notify duplicate blocked
+        id: notify_duplicate_blocked
+        if: steps.qualify_trigger.outputs.event_eligible == 'true' && steps.check_actor_trust.outputs.actor_trusted == 'true' && steps.check_duplicate_pr.outputs.duplicate_pr_found == 'true'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
+        env:
+          DUPLICATE_PR_URL: ${{ steps.check_duplicate_pr.outputs.duplicate_pr_url }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            /**
+             * Change-factory issue intake configuration. Keep `ISSUE_BRANCH_PREFIX` aligned with
+             * `workflow.md.tmpl` (`change-factory/issue-${{ github.event.issue.number }}`).
+             */
+            'use strict';
+
+            const ISSUE_BRANCH_PREFIX = 'change-factory/issue-';
+            const FACTORY_LABEL = 'change-factory';
+            const DUPLICATE_LINKAGE_MODE = 'github-keywords';
+            const ISSUE_OPENED_NOT_ELIGIBLE_REASON =
+              'Issue opened event does not qualify because the issue was created without the change-factory label or issue labels were missing.';
+
+            if (typeof module !== 'undefined') {
+              module.exports = {
+                ISSUE_BRANCH_PREFIX,
+                FACTORY_LABEL,
+                DUPLICATE_LINKAGE_MODE,
+                ISSUE_OPENED_NOT_ELIGIBLE_REASON,
+              };
+            }
+
+            /**
+             * Shared deterministic helpers for code-factory and change-factory issue intake workflows.
+             * Workflow-specific configuration is passed via {@link createFactoryIssueIntake}.
+             */
+
+            /** GitHub-recognized issue-closing keywords (case-insensitive). See https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/using-keywords-in-issues-and-pull-requests */
+            const GITHUB_ISSUE_CLOSING_KEYWORDS = '(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)';
+
+            /**
+             * GitHub closing-keyword reference: `#` is immediately followed by the issue digits (no whitespace),
+             * per GitHub keyword syntax. Case-insensitive keywords; `(?![0-9])` avoids matching `#42` inside `#420`.
+             *
+             * @param {number} issueNumber
+             * @returns {RegExp}
+             */
+            function issueClosingReferencePattern(issueNumber) {
+              return new RegExp(
+                `\\b${GITHUB_ISSUE_CLOSING_KEYWORDS}\\s*#${issueNumber}(?![0-9])`,
+                'i',
+              );
+            }
+
+            /**
+             * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels: string[] | null | undefined, factoryLabel: string, issueOpenedNotEligibleReason: string }} params
+             * @returns {{ event_eligible: boolean, event_eligible_reason: string }}
+             */
+            function factoryQualifyTriggerEvent({
+              eventName,
+              eventAction,
+              labelName,
+              issueLabels,
+              factoryLabel,
+              issueOpenedNotEligibleReason,
+            }) {
+              if (eventName === 'issue_comment') {
+                return {
+                  event_eligible: true,
+                  event_eligible_reason: `Issue comment event qualifies because the slash_command trigger routes to issue_comment.`,
+                };
+              }
+
+              if (eventName !== 'issues') {
+                return {
+                  event_eligible: false,
+                  event_eligible_reason: `Unsupported event '${eventName || '(empty)'}'; expected 'issues'.`,
+                };
+              }
+
+              if (eventAction === 'labeled') {
+                if (labelName === factoryLabel) {
+                  return {
+                    event_eligible: true,
+                    event_eligible_reason: `Issue labeled event qualifies because the applied label is ${factoryLabel}.`,
+                  };
+                }
+
+                return {
+                  event_eligible: false,
+                  event_eligible_reason: `Issue labeled event does not qualify because the applied label is '${labelName || '(empty)'}', not '${factoryLabel}'.`,
+                };
+              }
+
+              if (eventAction === 'opened') {
+                if (Array.isArray(issueLabels) && issueLabels.includes(factoryLabel)) {
+                  return {
+                    event_eligible: true,
+                    event_eligible_reason: `Issue opened event qualifies because the issue already has the ${factoryLabel} label.`,
+                  };
+                }
+
+                return {
+                  event_eligible: false,
+                  event_eligible_reason: issueOpenedNotEligibleReason,
+                };
+              }
+
+              return {
+                event_eligible: false,
+                event_eligible_reason: `Issue event action '${eventAction || '(empty)'}' is not eligible; expected 'opened' or 'labeled'.`,
+              };
+            }
+
+            /**
+             * @param {{ sender: string, permission: string | null }} params
+             * @returns {{ actor_trusted: boolean, actor_trusted_reason: string }}
+             */
+            function factoryCheckActorTrust({ sender, permission }) {
+              if (sender === 'github-actions[bot]') {
+                return {
+                  actor_trusted: true,
+                  actor_trusted_reason: 'Trigger actor github-actions[bot] is trusted without collaborator permission lookup.',
+                };
+              }
+
+              if (['write', 'maintain', 'admin'].includes(permission)) {
+                return {
+                  actor_trusted: true,
+                  actor_trusted_reason: `Trigger actor '${sender || '(empty)'}' is trusted with repository permission '${permission}'.`,
+                };
+              }
+
+              return {
+                actor_trusted: false,
+                actor_trusted_reason: `Trigger actor '${sender || '(empty)'}' is not trusted; repository permission '${permission || '(none)'}' does not meet the required write/maintain/admin policy.`,
+              };
+            }
+
+            /**
+             * @returns {{ actor_trusted: boolean, actor_trusted_reason: string }}
+             */
+            function factoryActorTrustWhenSenderMissing() {
+              return {
+                actor_trusted: false,
+                actor_trusted_reason: 'Trigger actor could not be identified; sender login is missing from the event payload.',
+              };
+            }
+
+            /**
+             * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'github-keywords' }} params
+             * @returns {{ duplicate_pr_found: boolean, duplicate_pr_url: string | null, gate_reason: string }}
+             */
+            function factoryCheckDuplicatePR({
+              issueNumber,
+              pullRequests,
+              branchPrefix,
+              prLabel,
+              duplicateLinkageMode,
+            }) {
+              const expectedBranch = `${branchPrefix}${issueNumber}`;
+              const expectedClosesExample = `Closes #${issueNumber}`;
+              const bodyPattern = duplicateLinkageMode === 'closes-literal'
+                ? new RegExp(`Closes #${issueNumber}(?![0-9])`)
+                : issueClosingReferencePattern(issueNumber);
+
+              const duplicate = (pullRequests || []).find(pr => (
+                pr.state === 'open' &&
+                Array.isArray(pr.labels) && pr.labels.includes(prLabel) &&
+                pr.head_branch === expectedBranch &&
+                bodyPattern.test(String(pr.body || ''))
+              ));
+
+              if (duplicate) {
+                const url = duplicate.html_url ?? null;
+                const linkagePhrase = duplicateLinkageMode === 'closes-literal'
+                  ? `canonical linkage '${expectedClosesExample}'`
+                  : `issue-closing reference such as '${expectedClosesExample}'`;
+
+                return {
+                  duplicate_pr_found: true,
+                  duplicate_pr_url: url,
+                  gate_reason: `Found existing linked ${prLabel} PR #${duplicate.number} (${url ?? '(unknown URL)'}) for issue #${issueNumber} on branch '${expectedBranch}' with ${linkagePhrase}.`,
+                };
+              }
+
+              const linkageTail = duplicateLinkageMode === 'closes-literal'
+                ? `canonical linkage '${expectedClosesExample}'`
+                : `issue-closing reference such as '${expectedClosesExample}'`;
+
+              return {
+                duplicate_pr_found: false,
+                duplicate_pr_url: null,
+                gate_reason: `No open linked ${prLabel} PR found for issue #${issueNumber}; expected label '${prLabel}', branch '${expectedBranch}', and ${linkageTail}.`,
+              };
+            }
+
+            /**
+             * @param {{ eventEligible: boolean, eventEligibleReason: string, actorTrusted: boolean | null, actorTrustedReason: string | null, duplicatePrFound: boolean | null, duplicatePrUrl: string | null, duplicateCheckGateReason: string | null }} params
+             * @param {string} factoryLabel
+             * @returns {{ gate_reason: string }}
+             */
+            function factoryComputeGateReason({
+              eventEligible,
+              eventEligibleReason,
+              actorTrusted,
+              actorTrustedReason,
+              duplicatePrFound,
+              duplicatePrUrl,
+              duplicateCheckGateReason,
+            }, factoryLabel) {
+              if (!eventEligible) {
+                return { gate_reason: eventEligibleReason };
+              }
+
+              if (actorTrusted === false) {
+                return { gate_reason: actorTrustedReason || 'Trigger actor is not trusted.' };
+              }
+
+              if (actorTrusted == null) {
+                return { gate_reason: 'Actor trust could not be determined; the trust check step did not produce an output.' };
+              }
+
+              if (duplicatePrFound === true) {
+                return {
+                  gate_reason: duplicateCheckGateReason || `Found existing linked ${factoryLabel} PR: ${duplicatePrUrl || '(unknown URL)'}.`,
+                };
+              }
+
+              if (duplicatePrFound == null) {
+                return { gate_reason: 'Duplicate PR check did not complete; the check step did not produce an output.' };
+              }
+
+              return {
+                gate_reason: duplicateCheckGateReason || `All deterministic gates passed: event eligible, actor trusted, and no linked ${factoryLabel} PR found.`,
+              };
+            }
+
+            /**
+             * @param {string | undefined} raw
+             * @returns {boolean | null}
+             */
+            function factoryParseOptionalTriStateFromEnv(raw) {
+              if (raw == null || raw === '') {
+                return null;
+              }
+              return raw === 'true';
+            }
+
+            /**
+             * @param {Record<string, string | undefined>} env
+             */
+            function factoryParseFinalizeGateEnv(env) {
+              const e = env || {};
+              return {
+                eventEligible: e.EVENT_ELIGIBLE === 'true',
+                eventEligibleReason: e.EVENT_ELIGIBLE_REASON ?? '',
+                actorTrusted: factoryParseOptionalTriStateFromEnv(e.ACTOR_TRUSTED),
+                actorTrustedReason: e.ACTOR_TRUSTED_REASON ?? null,
+                duplicatePrFound: factoryParseOptionalTriStateFromEnv(e.DUPLICATE_PR_FOUND),
+                duplicatePrUrl: e.DUPLICATE_PR_URL && e.DUPLICATE_PR_URL !== '' ? e.DUPLICATE_PR_URL : null,
+                duplicateCheckGateReason: e.DUPLICATE_GATE_REASON ?? null,
+              };
+            }
+
+            /**
+             * @param {{
+             *   branchPrefix: string,
+             *   factoryLabel: string,
+             *   issueOpenedNotEligibleReason: string,
+             *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',
+             * }} config
+             */
+            function createFactoryIssueIntake(config) {
+              const {
+                branchPrefix,
+                factoryLabel,
+                issueOpenedNotEligibleReason,
+                duplicateLinkageMode,
+              } = config;
+
+              function issueBranchName(issueNumber) {
+                return `${branchPrefix}${issueNumber}`;
+              }
+
+              /**
+               * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels?: string[] | null | undefined }} params
+               */
+              function qualifyTriggerEvent(params) {
+                return factoryQualifyTriggerEvent({
+                  ...params,
+                  factoryLabel,
+                  issueOpenedNotEligibleReason,
+                });
+              }
+
+              function checkDuplicatePR(params) {
+                return factoryCheckDuplicatePR({
+                  ...params,
+                  branchPrefix,
+                  prLabel: factoryLabel,
+                  duplicateLinkageMode,
+                });
+              }
+
+              function computeGateReason(params) {
+                return factoryComputeGateReason(params, factoryLabel);
+              }
+
+              return {
+                issueBranchName,
+                qualifyTriggerEvent,
+                checkActorTrust: factoryCheckActorTrust,
+                checkDuplicatePR,
+                computeGateReason,
+              };
+            }
+
+            /**
+             * @param {{
+             *   branchPrefix: string,
+             *   factoryLabel: string,
+             *   issueOpenedNotEligibleReason: string,
+             *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',
+             *   issueBranchNameAliases?: string[],
+             * }} config
+             */
+            function createFactoryIssueModule(config) {
+              const intake = createFactoryIssueIntake(config);
+              const issueBranchNameAliases = config.issueBranchNameAliases || [];
+              const factoryIssueModule = {
+                ...intake,
+                actorTrustWhenSenderMissing: factoryActorTrustWhenSenderMissing,
+                parseOptionalTriStateFromEnv: factoryParseOptionalTriStateFromEnv,
+                parseFinalizeGateEnv: factoryParseFinalizeGateEnv,
+              };
+
+              for (const alias of issueBranchNameAliases) {
+                factoryIssueModule[alias] = intake.issueBranchName;
+              }
+
+              return factoryIssueModule;
+            }
+
+            if (typeof module !== 'undefined') {
+              module.exports = {
+                issueClosingReferencePattern,
+                factoryQualifyTriggerEvent,
+                factoryCheckActorTrust,
+                factoryActorTrustWhenSenderMissing,
+                factoryCheckDuplicatePR,
+                factoryComputeGateReason,
+                factoryParseOptionalTriStateFromEnv,
+                factoryParseFinalizeGateEnv,
+                createFactoryIssueIntake,
+                createFactoryIssueModule,
+              };
+            }
+
+            // Concatenated by the workflow compiler; not executable standalone.
+            const factoryIssueModule = createFactoryIssueModule({
+              branchPrefix: ISSUE_BRANCH_PREFIX,
+              factoryLabel: FACTORY_LABEL,
+              issueOpenedNotEligibleReason: ISSUE_OPENED_NOT_ELIGIBLE_REASON,
+              duplicateLinkageMode: DUPLICATE_LINKAGE_MODE,
+            });
+
+            const qualifyTriggerEvent = factoryIssueModule.qualifyTriggerEvent;
+            const checkActorTrust = factoryIssueModule.checkActorTrust;
+            const checkDuplicatePR = factoryIssueModule.checkDuplicatePR;
+            const computeGateReason = factoryIssueModule.computeGateReason;
+            const issueBranchName = factoryIssueModule.issueBranchName;
+            const actorTrustWhenSenderMissing = factoryIssueModule.actorTrustWhenSenderMissing;
+            const parseFinalizeGateEnv = factoryIssueModule.parseFinalizeGateEnv;
+
+            const duplicatePrUrl = process.env.DUPLICATE_PR_URL;
+            const issueNumber = process.env.ISSUE_NUMBER;
+            const { owner, repo } = context.repo;
+
+            if (duplicatePrUrl && issueNumber) {
+              const commentBody = `⚠️ **change-factory skipped** — [#PR](${duplicatePrUrl}) is already open for this issue.\nClose or convert it to a draft, then retry.`;
+
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: parseInt(issueNumber, 10),
+                body: commentBody,
+              });
+
+              core.info(`Posted duplicate-blocked comment on issue #${issueNumber} referencing ${duplicatePrUrl}`);
+            } else {
+              core.info('DUPLICATE_PR_URL is empty; skipping duplicate-blocked notification.');
+            }
       - name: Sanitize context
         id: sanitize_context
         if: steps.qualify_trigger.outputs.event_eligible == 'true' && steps.check_actor_trust.outputs.actor_trusted == 'true' && steps.check_duplicate_pr.outputs.duplicate_pr_found != 'true'
@@ -3205,6 +4057,13 @@ jobs:
               factoryLabel,
               issueOpenedNotEligibleReason,
             }) {
+              if (eventName === 'issue_comment') {
+                return {
+                  event_eligible: true,
+                  event_eligible_reason: `Issue comment event qualifies because the slash_command trigger routes to issue_comment.`,
+                };
+              }
+
               if (eventName !== 'issues') {
                 return {
                   event_eligible: false,
