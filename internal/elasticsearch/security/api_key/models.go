@@ -103,18 +103,20 @@ func (model tfModel) toAPICreateRequest() (*createapikey.Request, diag.Diagnosti
 		req.Metadata = typedMetadata
 	}
 
-	var roleDescriptors map[string]models.APIKeyRoleDescriptor
-	diags := model.RoleDescriptors.Unmarshal(&roleDescriptors)
-	if diags.HasError() {
-		return nil, diags
-	}
-
-	if len(roleDescriptors) > 0 {
-		typedDescriptors, err := toTypedRoleDescriptors(roleDescriptors)
-		if err != nil {
-			return nil, diagutil.FrameworkDiagFromError(err)
+	if typeutils.IsKnown(model.RoleDescriptors) {
+		var roleDescriptors map[string]models.APIKeyRoleDescriptor
+		diags := model.RoleDescriptors.Unmarshal(&roleDescriptors)
+		if diags.HasError() {
+			return nil, diags
 		}
-		req.RoleDescriptors = typedDescriptors
+
+		if len(roleDescriptors) > 0 {
+			typedDescriptors, err := toTypedRoleDescriptors(roleDescriptors)
+			if err != nil {
+				return nil, diagutil.FrameworkDiagFromError(err)
+			}
+			req.RoleDescriptors = typedDescriptors
+		}
 	}
 
 	return req, nil
@@ -139,18 +141,20 @@ func (model tfModel) toUpdateAPIRequest() (*updateapikey.Request, diag.Diagnosti
 		req.Metadata = typedMetadata
 	}
 
-	var roleDescriptors map[string]models.APIKeyRoleDescriptor
-	diags := model.RoleDescriptors.Unmarshal(&roleDescriptors)
-	if diags.HasError() {
-		return nil, diags
-	}
-
-	if len(roleDescriptors) > 0 {
-		typedDescriptors, err := toTypedRoleDescriptors(roleDescriptors)
-		if err != nil {
-			return nil, diagutil.FrameworkDiagFromError(err)
+	if typeutils.IsKnown(model.RoleDescriptors) {
+		var roleDescriptors map[string]models.APIKeyRoleDescriptor
+		diags := model.RoleDescriptors.Unmarshal(&roleDescriptors)
+		if diags.HasError() {
+			return nil, diags
 		}
-		req.RoleDescriptors = typedDescriptors
+
+		if len(roleDescriptors) > 0 {
+			typedDescriptors, err := toTypedRoleDescriptors(roleDescriptors)
+			if err != nil {
+				return nil, diagutil.FrameworkDiagFromError(err)
+			}
+			req.RoleDescriptors = typedDescriptors
+		}
 	}
 
 	return req, nil
