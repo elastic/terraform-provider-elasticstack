@@ -15,8 +15,8 @@
 
 ## Decisions
 
-- **Preservation key**: store the raw API payload internally, not as an exposed attribute. Implementation choice: extend the existing `panelModel` with an unexported `rawConfig` field captured during read, or attach a private `tftypes` value via a sentinel block. Prefer the simplest: stash the entire upstream `KbnDashboardPanelTypeXxx_Config` JSON encoding on the `panelModel` struct under an unexported field, and re-emit it on write when no typed block matches the panel type.
-  - *Rejected*: surface `unknown_panel_config = { config_json = "..." }`. Adds an attractive nuisance and a guaranteed migration path the moment we type the panel.
+- **Preservation key**: store the raw API payload in the existing `config_json` attribute (`Optional: true, Computed: true`). The implementation reuses `config_json` as the storage vehicle for unknown-panel payloads rather than introducing a new unexported field. This decision deliberately deviates from the earlier design preference for a private mechanism.
+  - **Rationale**: reusing `config_json` avoids adding a new attribute (exposed or private), eliminates the need for a separate semantic-equality normalization for a private payload, and naturally routes the payload through the same write-path codepath used for authored `config_json` panels. Since `config_json` is already `Computed: true`, practitioners can also inspect round-tripped values via `terraform show` without any new API surface.
 - **Write path**: in the panel write dispatcher, when the panel's `type` matches no typed config block but the panel has a preserved raw payload from a prior read, re-marshal that payload into the API request unchanged. If no preserved payload exists (i.e., user authored an unknown type from scratch), return an error diagnostic — the existing "unsupported panel type" message.
 - **Diff stability**: the preserved payload must normalize identically to its source representation. Reuse the existing `config_json` semantic-equality normalization for the catch-all branch.
 - **No version pinning**: behavior is independent of stack version; the resource simply mirrors whatever the API returned.
