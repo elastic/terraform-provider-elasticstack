@@ -18,7 +18,6 @@
 package dashboard_test
 
 import (
-	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -26,6 +25,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+)
+
+// Canonical filter_json strings match read-time normalization (lexicographic object keys at every depth).
+const (
+	accDashboardRootFilterHostCanonical    = `{"condition":{"field":"host.name","operator":"is","value":"web-01"},"type":"condition"}`
+	accDashboardRootFilterServiceCanonical = `{"condition":{"field":"service.name","operator":"is","value":"api"},"type":"condition"}`
+	accDashboardRootFilterPodCanonical     = `{"condition":{"field":"kubernetes.pod.name","operator":"is","value":"pod-1"},"type":"condition"}`
 )
 
 func TestAccResourceDashboardRootSavedFilters(t *testing.T) {
@@ -45,10 +51,8 @@ func TestAccResourceDashboardRootSavedFilters(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "title", dashboardTitle),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "filters.#", "2"),
-					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "filters.0.filter_json", regexp.MustCompile(`"field":"host\.name"`)),
-					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "filters.0.filter_json", regexp.MustCompile(`"value":"web-01"`)),
-					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "filters.1.filter_json", regexp.MustCompile(`"field":"service\.name"`)),
-					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "filters.1.filter_json", regexp.MustCompile(`"value":"api"`)),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "filters.0.filter_json", accDashboardRootFilterHostCanonical),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "filters.1.filter_json", accDashboardRootFilterServiceCanonical),
 				),
 			},
 			{
@@ -63,6 +67,18 @@ func TestAccResourceDashboardRootSavedFilters(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("initial"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				ResourceName:            "elasticstack_kibana_dashboard.test",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"time_range.mode"},
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("reordered"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
@@ -70,10 +86,8 @@ func TestAccResourceDashboardRootSavedFilters(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "filters.#", "2"),
-					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "filters.0.filter_json", regexp.MustCompile(`"field":"service\.name"`)),
-					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "filters.0.filter_json", regexp.MustCompile(`"value":"api"`)),
-					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "filters.1.filter_json", regexp.MustCompile(`"field":"host\.name"`)),
-					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "filters.1.filter_json", regexp.MustCompile(`"value":"web-01"`)),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "filters.0.filter_json", accDashboardRootFilterServiceCanonical),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "filters.1.filter_json", accDashboardRootFilterHostCanonical),
 				),
 			},
 			{
@@ -84,6 +98,86 @@ func TestAccResourceDashboardRootSavedFilters(t *testing.T) {
 					"dashboard_title": config.StringVariable(dashboardTitle),
 				},
 				PlanOnly: true,
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("three_filters"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "filters.#", "3"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "filters.0.filter_json", accDashboardRootFilterServiceCanonical),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "filters.1.filter_json", accDashboardRootFilterHostCanonical),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "filters.2.filter_json", accDashboardRootFilterPodCanonical),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("three_filters"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				PlanOnly: true,
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("three_filters"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				ResourceName:            "elasticstack_kibana_dashboard.test",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"time_range.mode"},
+			},
+		},
+	})
+}
+
+func TestAccResourceDashboardRootSavedFilters_unset(t *testing.T) {
+	dashboardTitle := "Test Dashboard root filters unset " + sdkacctest.RandStringFromCharSet(6, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("initial"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "title", dashboardTitle),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "filters"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("initial"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				PlanOnly: true,
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("initial"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				ResourceName:            "elasticstack_kibana_dashboard.test",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"time_range.mode"},
 			},
 		},
 	})
