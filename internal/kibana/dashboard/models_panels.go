@@ -20,6 +20,7 @@ package dashboard
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
@@ -182,9 +183,6 @@ func (m *dashboardModel) mapSectionFromAPI(ctx context.Context, tfSection *secti
 
 func float32Ptr(v float64) *float32 {
 	f := float32(v)
-	if f == 0 && v == 0 {
-		return nil
-	}
 	return &f
 }
 
@@ -838,6 +836,43 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 		}
 	}
 
-	diags.AddError("Unsupported panel configuration", "No panel configuration block was provided.")
+	// Distinguish between known panel types missing their config block vs
+	// truly unknown panel types that have no typed config support.
+	panelType := pm.Type.ValueString()
+	if !typeutils.IsKnown(pm.Type) {
+		// Type is unknown/null; no way to determine intent.
+		diags.AddError("Unsupported panel configuration", "No panel configuration block was provided.")
+		return kbapi.DashboardPanelItem{}, diags
+	}
+
+	isKnownType := false
+	for _, t := range []string{
+		panelTypeMarkdown,
+		panelTypeVis,
+		panelTypeTimeSlider,
+		panelTypeSloBurnRate,
+		panelTypeSloErrorBudget,
+		panelTypeEsqlControl,
+		panelTypeOptionsListControl,
+		panelTypeRangeSlider,
+		panelTypeSyntheticsStatsOverview,
+		panelTypeSyntheticsMonitors,
+		panelTypeLensDashboardApp,
+		panelTypeSloOverview,
+	} {
+		if panelType == t {
+			isKnownType = true
+			break
+		}
+	}
+
+	if isKnownType {
+		diags.AddError("Unsupported panel configuration", "No panel configuration block was provided.")
+	} else {
+		diags.AddError(
+			"Unsupported panel type",
+			fmt.Sprintf("Panel type %q is not yet supported. This panel type was preserved from the API during read but cannot be authored in configuration. To add support for this panel type, wait for a provider update that includes a typed configuration block.", panelType),
+		)
+	}
 	return kbapi.DashboardPanelItem{}, diags
 }
