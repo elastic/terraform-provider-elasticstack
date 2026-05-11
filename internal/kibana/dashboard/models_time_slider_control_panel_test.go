@@ -234,3 +234,100 @@ func Test_timeSliderPercentage_float32RoundTrip_writeThenRead(t *testing.T) {
 	assert.Equal(t, types.Float32Value(start), out.TimeSliderControlConfig.StartPercentageOfTimeRange)
 	assert.Equal(t, types.Float32Value(end), out.TimeSliderControlConfig.EndPercentageOfTimeRange)
 }
+
+func Test_buildTimeSliderControlConfig_widthGrow_setAndOmitted(t *testing.T) {
+	t.Run("known width and grow are written to the API panel", func(t *testing.T) {
+		pm := panelModel{
+			TimeSliderControlConfig: &timeSliderControlConfigModel{
+				StartPercentageOfTimeRange: types.Float32Value(0.1),
+				EndPercentageOfTimeRange:   types.Float32Value(0.9),
+				IsAnchored:                 types.BoolValue(false),
+				Width:                      types.StringValue("large"),
+				Grow:                       types.BoolValue(true),
+			},
+		}
+		tsPanel := kbapi.KbnDashboardPanelTypeTimeSliderControl{}
+		buildTimeSliderControlConfig(pm, &tsPanel)
+		require.NotNil(t, tsPanel.Width)
+		assert.Equal(t, kbapi.KbnControlsSchemasControlsGroupSchemaTimeSliderControlWidthLarge, *tsPanel.Width)
+		require.NotNil(t, tsPanel.Grow)
+		assert.True(t, *tsPanel.Grow)
+	})
+
+	t.Run("null width and grow are omitted from the API panel", func(t *testing.T) {
+		pm := panelModel{
+			TimeSliderControlConfig: &timeSliderControlConfigModel{
+				StartPercentageOfTimeRange: types.Float32Value(0.1),
+				EndPercentageOfTimeRange:   types.Float32Value(0.9),
+				Width:                      types.StringNull(),
+				Grow:                       types.BoolNull(),
+			},
+		}
+		tsPanel := kbapi.KbnDashboardPanelTypeTimeSliderControl{}
+		buildTimeSliderControlConfig(pm, &tsPanel)
+		assert.Nil(t, tsPanel.Width)
+		assert.Nil(t, tsPanel.Grow)
+	})
+}
+
+func Test_populateTimeSliderControlFromAPI_widthGrow_nullPreservedWithPriorState(t *testing.T) {
+	pm := &panelModel{
+		TimeSliderControlConfig: &timeSliderControlConfigModel{
+			StartPercentageOfTimeRange: types.Float32Value(0.1),
+			EndPercentageOfTimeRange:   types.Float32Value(0.9),
+			IsAnchored:                 types.BoolValue(false),
+			Width:                      types.StringNull(),
+			Grow:                       types.BoolNull(),
+		},
+	}
+	tfPanel := &panelModel{TimeSliderControlConfig: pm.TimeSliderControlConfig}
+
+	ts := apiTimeSliderPanel(new(float32(0.2)), new(float32(0.8)), new(true))
+	w := kbapi.KbnControlsSchemasControlsGroupSchemaTimeSliderControlWidthMedium
+	grow := false
+	ts.Width = &w
+	ts.Grow = &grow
+
+	populateTimeSliderControlFromAPI(pm, tfPanel, ts)
+	require.NotNil(t, pm.TimeSliderControlConfig)
+	assert.True(t, pm.TimeSliderControlConfig.Width.IsNull())
+	assert.True(t, pm.TimeSliderControlConfig.Grow.IsNull())
+}
+
+func Test_populateTimeSliderControlFromAPI_import_widthGrow_remainNull(t *testing.T) {
+	pm := &panelModel{}
+	ts := apiTimeSliderPanel(new(float32(0.1)), new(float32(0.9)), new(false))
+	w := kbapi.KbnControlsSchemasControlsGroupSchemaTimeSliderControlWidthMedium
+	grow := false
+	ts.Width = &w
+	ts.Grow = &grow
+
+	populateTimeSliderControlFromAPI(pm, nil, ts)
+	require.NotNil(t, pm.TimeSliderControlConfig)
+	assert.True(t, pm.TimeSliderControlConfig.Width.IsNull())
+	assert.True(t, pm.TimeSliderControlConfig.Grow.IsNull())
+}
+
+func Test_populateTimeSliderControlFromAPI_widthGrow_knownStateUpdatedFromAPI(t *testing.T) {
+	pm := &panelModel{
+		TimeSliderControlConfig: &timeSliderControlConfigModel{
+			StartPercentageOfTimeRange: types.Float32Value(0.1),
+			EndPercentageOfTimeRange:   types.Float32Value(0.9),
+			IsAnchored:                 types.BoolValue(false),
+			Width:                      types.StringValue("small"),
+			Grow:                       types.BoolValue(true),
+		},
+	}
+	tfPanel := &panelModel{TimeSliderControlConfig: pm.TimeSliderControlConfig}
+
+	ts := apiTimeSliderPanel(new(float32(0.2)), new(float32(0.8)), new(true))
+	w := kbapi.KbnControlsSchemasControlsGroupSchemaTimeSliderControlWidthLarge
+	grow := false
+	ts.Width = &w
+	ts.Grow = &grow
+
+	populateTimeSliderControlFromAPI(pm, tfPanel, ts)
+	require.NotNil(t, pm.TimeSliderControlConfig)
+	assert.Equal(t, types.StringValue("large"), pm.TimeSliderControlConfig.Width)
+	assert.Equal(t, types.BoolValue(false), pm.TimeSliderControlConfig.Grow)
+}

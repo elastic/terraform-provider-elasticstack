@@ -371,3 +371,97 @@ func Test_selectedOptionsToList_numericItems(t *testing.T) {
 	assert.Equal(t, types.StringValue("1000000"), elems[0])
 	assert.Equal(t, types.StringValue("3.14"), elems[1])
 }
+
+func Test_buildOptionsListControlConfig_widthGrow_setAndOmitted(t *testing.T) {
+	t.Run("known width and grow are written to the API panel", func(t *testing.T) {
+		pm := panelModel{
+			OptionsListControlConfig: &optionsListControlConfigModel{
+				DataViewID: types.StringValue(optionsListControlTestDataViewID),
+				FieldName:  types.StringValue("field1"),
+				Width:      types.StringValue("large"),
+				Grow:       types.BoolValue(true),
+			},
+		}
+		olPanel := kbapi.KbnDashboardPanelTypeOptionsListControl{}
+		buildOptionsListControlConfig(pm, &olPanel)
+		require.NotNil(t, olPanel.Width)
+		assert.Equal(t, kbapi.KbnControlsSchemasControlsGroupSchemaOptionsListControlWidthLarge, *olPanel.Width)
+		require.NotNil(t, olPanel.Grow)
+		assert.True(t, *olPanel.Grow)
+	})
+
+	t.Run("null width and grow are omitted from the API panel", func(t *testing.T) {
+		pm := panelModel{
+			OptionsListControlConfig: &optionsListControlConfigModel{
+				DataViewID: types.StringValue(optionsListControlTestDataViewID),
+				FieldName:  types.StringValue("field1"),
+				Width:      types.StringNull(),
+				Grow:       types.BoolNull(),
+			},
+		}
+		olPanel := kbapi.KbnDashboardPanelTypeOptionsListControl{}
+		buildOptionsListControlConfig(pm, &olPanel)
+		assert.Nil(t, olPanel.Width)
+		assert.Nil(t, olPanel.Grow)
+	})
+}
+
+func Test_populateOptionsListControlFromAPI_widthGrow_nullPreservedWithPriorState(t *testing.T) {
+	pm := &panelModel{
+		OptionsListControlConfig: &optionsListControlConfigModel{
+			DataViewID: types.StringValue(optionsListControlTestDataViewID),
+			FieldName:  types.StringValue("f1"),
+			Width:      types.StringNull(),
+			Grow:       types.BoolNull(),
+		},
+	}
+	tfPanel := &panelModel{OptionsListControlConfig: pm.OptionsListControlConfig}
+
+	w := kbapi.KbnControlsSchemasControlsGroupSchemaOptionsListControlWidthMedium
+	grow := false
+	api := *makeAPIConfig(optionsListControlTestDataViewID, "f1")
+	api.Width = &w
+	api.Grow = &grow
+
+	populateOptionsListControlFromAPI(pm, tfPanel, &api)
+	require.NotNil(t, pm.OptionsListControlConfig)
+	assert.True(t, pm.OptionsListControlConfig.Width.IsNull())
+	assert.True(t, pm.OptionsListControlConfig.Grow.IsNull())
+}
+
+func Test_populateOptionsListControlFromAPI_import_widthGrow_remainNull(t *testing.T) {
+	pm := &panelModel{}
+	w := kbapi.KbnControlsSchemasControlsGroupSchemaOptionsListControlWidthMedium
+	grow := false
+	api := *makeAPIConfig(optionsListControlTestDataViewID, "f1")
+	api.Width = &w
+	api.Grow = &grow
+
+	populateOptionsListControlFromAPI(pm, nil, &api)
+	require.NotNil(t, pm.OptionsListControlConfig)
+	assert.True(t, pm.OptionsListControlConfig.Width.IsNull())
+	assert.True(t, pm.OptionsListControlConfig.Grow.IsNull())
+}
+
+func Test_populateOptionsListControlFromAPI_widthGrow_knownStateUpdatedFromAPI(t *testing.T) {
+	pm := &panelModel{
+		OptionsListControlConfig: &optionsListControlConfigModel{
+			DataViewID: types.StringValue(optionsListControlTestDataViewID),
+			FieldName:  types.StringValue("f1"),
+			Width:      types.StringValue("small"),
+			Grow:       types.BoolValue(true),
+		},
+	}
+	tfPanel := &panelModel{OptionsListControlConfig: pm.OptionsListControlConfig}
+
+	w := kbapi.KbnControlsSchemasControlsGroupSchemaOptionsListControlWidthLarge
+	grow := false
+	api := *makeAPIConfig(optionsListControlTestDataViewID, "f1")
+	api.Width = &w
+	api.Grow = &grow
+
+	populateOptionsListControlFromAPI(pm, tfPanel, &api)
+	require.NotNil(t, pm.OptionsListControlConfig)
+	assert.Equal(t, types.StringValue("large"), pm.OptionsListControlConfig.Width)
+	assert.Equal(t, types.BoolValue(false), pm.OptionsListControlConfig.Grow)
+}

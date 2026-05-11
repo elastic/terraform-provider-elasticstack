@@ -278,3 +278,97 @@ func Test_rangeSliderControl_value_exactlyTwoElements(t *testing.T) {
 	assert.Equal(t, "0", (*rsPanel.Config.Value)[0])
 	assert.Equal(t, "1000", (*rsPanel.Config.Value)[1])
 }
+
+func Test_buildRangeSliderControlConfig_widthGrow_setAndOmitted(t *testing.T) {
+	t.Run("known width and grow are written to the API panel", func(t *testing.T) {
+		pm := panelModel{
+			RangeSliderControlConfig: &rangeSliderControlConfigModel{
+				DataViewID: types.StringValue("dv-1"),
+				FieldName:  types.StringValue("bytes"),
+				Width:      types.StringValue("large"),
+				Grow:       types.BoolValue(true),
+			},
+		}
+		rsPanel := kbapi.KbnDashboardPanelTypeRangeSliderControl{}
+		buildRangeSliderControlConfig(pm, &rsPanel)
+		require.NotNil(t, rsPanel.Width)
+		assert.Equal(t, kbapi.KbnControlsSchemasControlsGroupSchemaRangeSliderControlWidthLarge, *rsPanel.Width)
+		require.NotNil(t, rsPanel.Grow)
+		assert.True(t, *rsPanel.Grow)
+	})
+
+	t.Run("null width and grow are omitted from the API panel", func(t *testing.T) {
+		pm := panelModel{
+			RangeSliderControlConfig: &rangeSliderControlConfigModel{
+				DataViewID: types.StringValue("dv-1"),
+				FieldName:  types.StringValue("bytes"),
+				Width:      types.StringNull(),
+				Grow:       types.BoolNull(),
+			},
+		}
+		rsPanel := kbapi.KbnDashboardPanelTypeRangeSliderControl{}
+		buildRangeSliderControlConfig(pm, &rsPanel)
+		assert.Nil(t, rsPanel.Width)
+		assert.Nil(t, rsPanel.Grow)
+	})
+}
+
+func Test_populateRangeSliderControlFromAPI_widthGrow_nullPreservedWithPriorState(t *testing.T) {
+	pm := &panelModel{
+		RangeSliderControlConfig: &rangeSliderControlConfigModel{
+			DataViewID: types.StringValue("dv-1"),
+			FieldName:  types.StringValue("bytes"),
+			Width:      types.StringNull(),
+			Grow:       types.BoolNull(),
+		},
+	}
+	tfPanel := &panelModel{RangeSliderControlConfig: pm.RangeSliderControlConfig}
+
+	apiCfg := apiRangeSliderConfig()
+	w := kbapi.KbnControlsSchemasControlsGroupSchemaRangeSliderControlWidthMedium
+	grow := false
+	apiCfg.Width = &w
+	apiCfg.Grow = &grow
+
+	populateRangeSliderControlFromAPI(context.Background(), pm, tfPanel, apiCfg)
+	require.NotNil(t, pm.RangeSliderControlConfig)
+	assert.True(t, pm.RangeSliderControlConfig.Width.IsNull())
+	assert.True(t, pm.RangeSliderControlConfig.Grow.IsNull())
+}
+
+func Test_populateRangeSliderControlFromAPI_import_widthGrow_remainNull(t *testing.T) {
+	pm := &panelModel{}
+	apiCfg := apiRangeSliderConfig()
+	w := kbapi.KbnControlsSchemasControlsGroupSchemaRangeSliderControlWidthMedium
+	grow := false
+	apiCfg.Width = &w
+	apiCfg.Grow = &grow
+
+	populateRangeSliderControlFromAPI(context.Background(), pm, nil, apiCfg)
+	require.NotNil(t, pm.RangeSliderControlConfig)
+	assert.True(t, pm.RangeSliderControlConfig.Width.IsNull())
+	assert.True(t, pm.RangeSliderControlConfig.Grow.IsNull())
+}
+
+func Test_populateRangeSliderControlFromAPI_widthGrow_knownStateUpdatedFromAPI(t *testing.T) {
+	pm := &panelModel{
+		RangeSliderControlConfig: &rangeSliderControlConfigModel{
+			DataViewID: types.StringValue("dv-1"),
+			FieldName:  types.StringValue("bytes"),
+			Width:      types.StringValue("small"),
+			Grow:       types.BoolValue(true),
+		},
+	}
+	tfPanel := &panelModel{RangeSliderControlConfig: pm.RangeSliderControlConfig}
+
+	apiCfg := apiRangeSliderConfig()
+	w := kbapi.KbnControlsSchemasControlsGroupSchemaRangeSliderControlWidthLarge
+	grow := false
+	apiCfg.Width = &w
+	apiCfg.Grow = &grow
+
+	populateRangeSliderControlFromAPI(context.Background(), pm, tfPanel, apiCfg)
+	require.NotNil(t, pm.RangeSliderControlConfig)
+	assert.Equal(t, types.StringValue("large"), pm.RangeSliderControlConfig.Width)
+	assert.Equal(t, types.BoolValue(false), pm.RangeSliderControlConfig.Grow)
+}
