@@ -1,14 +1,14 @@
 ## 1. Schema additions across twelve Lens chart blocks
 
-- [ ] 1.1 Define a shared `lensChartPresentationAttributes()` helper in `internal/kibana/dashboard/schema.go` returning the five new attributes (`time_range`, `hide_title`, `hide_border`, `references_json`, `drilldowns`) so each chart-block schema can spread them in without duplication.
-- [ ] 1.2 Define the `drilldowns` schema: a list of nested objects with three mutually-exclusive optional variant sub-blocks (`dashboard_drilldown`, `discover_drilldown`, `url_drilldown`); apply per-variant attribute validators per REQ-039 (computed triggers for dashboard/discover; `stringvalidator.OneOf` for url).
-- [ ] 1.3 Apply the shared presentation attributes to `xy_chart_config` in `schema_xy_chart_panel.go`.
-- [ ] 1.4 Apply the shared presentation attributes to `datatable_config` in `schema_datatable_panel.go`.
-- [ ] 1.5 Apply the shared presentation attributes to `tagcloud_config` in `schema_tagcloud_panel.go`.
-- [ ] 1.6 Apply the shared presentation attributes to `metric_chart_config`, `legacy_metric_config`, `gauge_config`, `heatmap_config`, `region_map_config`, `pie_chart_config`, `mosaic_config`, `treemap_config`, and `waffle_config` in `schema.go`.
-- [ ] 1.7 Add inter-variant exclusivity validators on each drilldown variant sub-block using `validators.ForbiddenIfDependentPathExpressionOneOf` with relative sibling paths.
-- [ ] 1.8 Add a list-item-level validator ensuring exactly one variant sub-block is set per drilldown entry (zero variants is also an error).
-- [ ] 1.9 Verify schema documentation strings (`MarkdownDescription`) clearly indicate the computed nature of `dashboard_drilldown.trigger` and `discover_drilldown.trigger`, and the inheritance behavior of `time_range`.
+- [x] 1.1 Define a shared `lensChartPresentationAttributes()` helper in `internal/kibana/dashboard/schema.go` returning the five new attributes (`time_range`, `hide_title`, `hide_border`, `references_json`, `drilldowns`) so each chart-block schema can spread them in without duplication.
+- [x] 1.2 Define the `drilldowns` schema: a list of nested objects with three mutually-exclusive optional variant sub-blocks (`dashboard_drilldown`, `discover_drilldown`, `url_drilldown`); apply per-variant attribute validators per REQ-039 (computed triggers for dashboard/discover; `stringvalidator.OneOf` for url).
+- [x] 1.3 Apply the shared presentation attributes to `xy_chart_config` in `schema_xy_chart_panel.go`.
+- [x] 1.4 Apply the shared presentation attributes to `datatable_config` in `schema_datatable_panel.go`.
+- [x] 1.5 Apply the shared presentation attributes to `tagcloud_config` in `schema_tagcloud_panel.go`.
+- [x] 1.6 Apply the shared presentation attributes to `metric_chart_config`, `legacy_metric_config`, `gauge_config`, `heatmap_config`, `region_map_config`, `pie_chart_config`, `mosaic_config`, `treemap_config`, and `waffle_config` in `schema.go`.
+- [x] 1.7 Add inter-variant exclusivity validators on each drilldown variant sub-block using `validators.ForbiddenIfDependentPathExpressionSiblingNestedPresent` with relative sibling paths (same path-expression style as `ForbiddenIfDependentPathExpressionOneOf`; sibling variant blocks are object-valued, while `stringvalidator.OneOf` covers `url_drilldown.trigger`).
+- [x] 1.8 Add a list-item-level validator rejecting drilldown entries with zero variant sub-blocks — `drilldownListItemVariantsValidator` on each list item object (pairwise validators enforce at most one variant; PF `objectvalidator.ExactlyOneOf` / `AtLeastOneOf` on nested objects counts the parent object and is unsuitable here).
+- [x] 1.9 Verify schema documentation strings (`MarkdownDescription`) clearly indicate the computed nature of `dashboard_drilldown.trigger` and `discover_drilldown.trigger`, and the inheritance behavior of `time_range`.
 
 ## 2. Model wiring: write path
 

@@ -1765,12 +1765,12 @@ var (
 )
 
 // drilldownListItemVariantsValidator rejects drilldown list items where none of the three variant blocks are set.
-// Pairwise mutual exclusion when multiple variants are set is enforced via objectvalidator.ConflictsWith on each variant block
-// (REQ-039; ForbiddenIfDependentPathExpressionOneOf in conditional.go expects string-valued dependents).
+// Pairwise mutual exclusion when multiple variants are set is enforced via
+// validators.ForbiddenIfDependentPathExpressionSiblingNestedPresent on each variant block (REQ-039).
 type drilldownListItemVariantsValidator struct{}
 
 func (drilldownListItemVariantsValidator) Description(_ context.Context) string {
-	return "Ensures exactly one drilldown variant (`dashboard_drilldown`, `discover_drilldown`, or `url_drilldown`) is set."
+	return "Requires at least one drilldown variant (`dashboard_drilldown`, `discover_drilldown`, or `url_drilldown`); multiple variants are rejected by sibling object validators."
 }
 
 func (v drilldownListItemVariantsValidator) MarkdownDescription(ctx context.Context) string {
@@ -1904,7 +1904,8 @@ func lensChartDrilldownListItemAttributes() map[string]schema.Attribute {
 				},
 			},
 			Validators: []validator.Object{
-				objectvalidator.ConflictsWith(exprDrilldownDiscoverDrilldown, exprDrilldownURLDrilldown),
+				validators.ForbiddenIfDependentPathExpressionSiblingNestedPresent(exprDrilldownDiscoverDrilldown),
+				validators.ForbiddenIfDependentPathExpressionSiblingNestedPresent(exprDrilldownURLDrilldown),
 			},
 		},
 		"discover_drilldown": schema.SingleNestedAttribute{
@@ -1929,7 +1930,8 @@ func lensChartDrilldownListItemAttributes() map[string]schema.Attribute {
 				},
 			},
 			Validators: []validator.Object{
-				objectvalidator.ConflictsWith(exprDrilldownDashboardDrilldown, exprDrilldownURLDrilldown),
+				validators.ForbiddenIfDependentPathExpressionSiblingNestedPresent(exprDrilldownDashboardDrilldown),
+				validators.ForbiddenIfDependentPathExpressionSiblingNestedPresent(exprDrilldownURLDrilldown),
 			},
 		},
 		"url_drilldown": schema.SingleNestedAttribute{
@@ -1968,7 +1970,8 @@ func lensChartDrilldownListItemAttributes() map[string]schema.Attribute {
 				},
 			},
 			Validators: []validator.Object{
-				objectvalidator.ConflictsWith(exprDrilldownDashboardDrilldown, exprDrilldownDiscoverDrilldown),
+				validators.ForbiddenIfDependentPathExpressionSiblingNestedPresent(exprDrilldownDashboardDrilldown),
+				validators.ForbiddenIfDependentPathExpressionSiblingNestedPresent(exprDrilldownDiscoverDrilldown),
 			},
 		},
 	}
