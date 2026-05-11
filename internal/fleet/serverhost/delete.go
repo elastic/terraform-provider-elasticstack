@@ -20,6 +20,7 @@ package serverhost
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -55,6 +56,21 @@ func (r *serverHostResource) Delete(ctx context.Context, req resource.DeleteRequ
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
+	}
+
+	// Kibana refuses to delete a Fleet server host that is currently marked
+	// as default ("Default Fleet Server hosts <id> cannot be deleted"). When
+	// state has default=true, clear the flag via update before deleting so
+	// that `terraform destroy` succeeds without manual intervention.
+	if stateModel.Default.ValueBool() {
+		isDefault := false
+		_, updateDiags := fleet.UpdateFleetServerHost(ctx, fleetClient, hostID, spaceID, kbapi.PutFleetFleetServerHostsItemidJSONRequestBody{
+			IsDefault: &isDefault,
+		})
+		resp.Diagnostics.Append(updateDiags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 	}
 
 	diags = fleet.DeleteFleetServerHost(ctx, fleetClient, hostID, spaceID)
