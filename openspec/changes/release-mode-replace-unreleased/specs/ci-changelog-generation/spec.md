@@ -1,6 +1,6 @@
 ## MODIFIED Requirements
 
-### Requirement: Explicit release mode updates only the targeted release section
+### Requirement: Explicit release mode updates the targeted release section and removes Unreleased
 In explicit release mode, after deterministic validation succeeds, repository-authored helper logic SHALL update only the concrete `## [x.y.z] - <date>` section for the checked out release branch and SHALL push that change only to the targeted release branch. Manual release-mode execution MAY refresh release PR metadata when the corresponding pull request is known, but release-mode changelog generation SHALL NOT depend on `pull_request_target` event metadata or automatic pull-request triggers.
 
 In release mode, when the rewriter mutates `CHANGELOG.md` to emit the new `## [x.y.z] - <date>` section, it SHALL also remove any existing `## [Unreleased]` section (header and body) from the file. This SHALL hold both on the first run against a release-preparation branch (when no `## [x.y.z]` heading exists yet) and on any re-run (when the `## [x.y.z]` heading is already present alongside a stale `## [Unreleased]` section). Release-mode mutation SHALL NOT preserve, duplicate, or insert content alongside the Unreleased section; the resulting `CHANGELOG.md` SHALL contain exactly one block representing the work shipped in the release, headed by `## [x.y.z] - <date>`.
@@ -9,9 +9,9 @@ In release mode, when the rewriter mutates `CHANGELOG.md` to emit the new `## [x
 - **WHEN** the changelog generator runs in explicit release mode for a release-preparation branch
 - **THEN** it SHALL push changelog updates only to that targeted release branch
 
-#### Scenario: Release mode does not rewrite Unreleased on the release branch
+#### Scenario: Release mode does not regenerate Unreleased on the release branch
 - **WHEN** the changelog generator runs in explicit release mode
-- **THEN** it SHALL regenerate the concrete release section needed for that branch without treating the branch as the singleton `Unreleased` maintenance branch
+- **THEN** it SHALL regenerate the concrete release section needed for that branch and SHALL NOT preserve or regenerate any `## [Unreleased]` section, without treating the branch as the singleton `Unreleased` maintenance branch
 
 #### Scenario: Release mode replaces the Unreleased section with the new versioned section
 - **GIVEN** `CHANGELOG.md` on a `prep-release-x.y.z` branch contains a `## [Unreleased]` section with body content and no `## [x.y.z]` heading
