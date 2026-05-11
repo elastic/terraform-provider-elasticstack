@@ -40,6 +40,14 @@ import (
 )
 
 var (
+	// sortKeysExpandedFromNestedBlock are expanded by the Sort list-nested-attribute
+	// pre-processor in toIndexSettings() and are skipped in the reflection loop
+	// because they have no corresponding flat tfsdk struct field.
+	sortKeysExpandedFromNestedBlock = map[string]bool{
+		"sort.missing": true,
+		"sort.mode":    true,
+	}
+
 	staticSettingsKeys = []string{
 		"number_of_shards",
 		"number_of_routing_shards",
@@ -431,6 +439,12 @@ func (model tfModel) toIndexSettings(ctx context.Context) (map[string]any, diag.
 	}
 
 	for _, key := range allSettingsKeys {
+		// sort.missing and sort.mode are only populated by the pre-processor above.
+		// They have no flat tfsdk struct field to reflect on, so skip them here.
+		if sortKeysExpandedFromNestedBlock[key] {
+			continue
+		}
+
 		tfFieldKey := convertSettingsKeyToTFFieldKey(key)
 		value, ok := model.getFieldValueByTagValue(tfFieldKey, modelType)
 		if !ok {
