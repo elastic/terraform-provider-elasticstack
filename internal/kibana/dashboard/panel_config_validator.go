@@ -244,60 +244,49 @@ func (v pinnedPanelControlValidator) ValidateObject(_ context.Context, req valid
 
 	attrs := req.ConfigValue.Attributes()
 	typeAttr := attrs["type"]
-	if typeAttr == nil || typeAttr.IsNull() || typeAttr.IsUnknown() {
-		return
+
+	var panelType string
+	var typeKnown bool
+	if typeAttr != nil && !typeAttr.IsNull() && !typeAttr.IsUnknown() {
+		typeValue, ok := typeAttr.(interface{ ValueString() string })
+		if !ok {
+			resp.Diagnostics.AddAttributeError(req.Path.AtName("type"), "Invalid pinned panel entry type", "The `type` attribute must be a string value.")
+			return
+		}
+		panelType = typeValue.ValueString()
+		typeKnown = true
 	}
 
-	typeValue, ok := typeAttr.(interface{ ValueString() string })
-	if !ok {
-		resp.Diagnostics.AddAttributeError(req.Path.AtName("type"), "Invalid pinned panel entry type", "The `type` attribute must be a string value.")
-		return
-	}
-	panelType := typeValue.ValueString()
-
+	states := make(map[string]panelConfigValueState, len(pinnedPanelControlConfigNames))
+	setAttrs := make([]string, 0, len(pinnedPanelControlConfigNames))
+	anyUnknownSlot := false
 	for _, name := range pinnedPanelControlConfigNames {
-		blockAttr := attrs[name]
-		if blockAttr != nil && blockAttr.IsUnknown() {
+		st := panelConfigValueStateFromValue(attrs[name])
+		states[name] = st
+		if st.Unknown {
+			anyUnknownSlot = true
+		}
+		if st.Set {
+			setAttrs = append(setAttrs, name)
+		}
+	}
+	setCount := len(setAttrs)
+
+	if typeKnown {
+		if _, valid := pinnedPanelExpectedTypedControlAttr(panelType); !valid {
+			resp.Diagnostics.AddAttributeError(
+				req.Path.AtName("type"),
+				"Invalid pinned panel entry type",
+				fmt.Sprintf("Pinned panel entries only support dashboard controls in the control bar; `type` must be %s, got %q.",
+					pinnedPanelAllowedTypesDetail(),
+					panelType,
+				),
+			)
 			return
 		}
 	}
 
-	expectedAttr, typeAllowed := pinnedPanelExpectedTypedControlAttr(panelType)
-	if !typeAllowed {
-		resp.Diagnostics.AddAttributeError(
-			req.Path.AtName("type"),
-			"Invalid pinned panel entry type",
-			fmt.Sprintf("Pinned panel entries only support dashboard controls in the control bar; `type` must be %s, got %q.",
-				pinnedPanelAllowedTypesDetail(),
-				panelType,
-			),
-		)
-		return
-	}
-
-	setAttrs := make([]string, 0, 1)
-	for _, name := range pinnedPanelControlConfigNames {
-		if panelConfigValueStateFromValue(attrs[name]).Set {
-			setAttrs = append(setAttrs, name)
-		}
-	}
-
-	switch len(setAttrs) {
-	case 0:
-		resp.Diagnostics.AddAttributeError(
-			req.Path.AtName(expectedAttr),
-			"Missing pinned panel control configuration",
-			fmt.Sprintf("Pinned panel entry with `type = %q` must set `%s`.", panelType, expectedAttr),
-		)
-	case 1:
-		if setAttrs[0] != expectedAttr {
-			resp.Diagnostics.AddAttributeError(
-				req.Path.AtName(setAttrs[0]),
-				"Pinned panel control does not match type",
-				fmt.Sprintf("Pinned panel entry has `type = %q` but sets `%s`; use `%s` instead.", panelType, setAttrs[0], expectedAttr),
-			)
-		}
-	default:
+	if setCount >= 2 {
 		quoted := make([]string, len(setAttrs))
 		for i, name := range setAttrs {
 			quoted[i] = "`" + name + "`"
@@ -307,5 +296,44 @@ func (v pinnedPanelControlValidator) ValidateObject(_ context.Context, req valid
 			"Invalid pinned panel entry configuration",
 			fmt.Sprintf("Pinned panel entry must set exactly one typed control configuration block; found %s.", strings.Join(quoted, ", ")),
 		)
+		return
 	}
+
+	if setCount == 1 {
+		if !typeKnown {
+			return
+		}
+		expectedAttr, _ := pinnedPanelExpectedTypedControlAttr(panelType)
+		if setAttrs[0] != expectedAttr {
+			resp.Diagnostics.AddAttributeError(
+				req.Path.AtName(setAttrs[0]),
+				"Pinned panel control does not match type",
+				fmt.Sprintf("Pinned panel entry has `type = %q` but sets `%s`; use `%s` instead.", panelType, setAttrs[0], expectedAttr),
+			)
+			return
+		}
+		for _, name := range pinnedPanelControlConfigNames {
+			if name == expectedAttr {
+				continue
+			}
+			if states[name].Unknown {
+				return
+			}
+		}
+		return
+	}
+
+	if anyUnknownSlot {
+		return
+	}
+	if !typeKnown {
+		return
+	}
+
+	expectedAttr, _ := pinnedPanelExpectedTypedControlAttr(panelType)
+	resp.Diagnostics.AddAttributeError(
+		req.Path.AtName(expectedAttr),
+		"Missing pinned panel control configuration",
+		fmt.Sprintf("Pinned panel entry with `type = %q` must set `%s`.", panelType, expectedAttr),
+	)
 }
