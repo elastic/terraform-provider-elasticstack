@@ -9,4 +9,5 @@ They intentionally stay high-level and link to deeper, canonical docs elsewhere 
 - Generated clients: [`generated-clients.md`](./generated-clients.md)
 - Documentation: [`documentation.md`](./documentation.md)
 - Repo structure: [`repo-structure.md`](./repo-structure.md)
+- ML resource template: [`ml-resource-template.md`](./ml-resource-template.md)
 
