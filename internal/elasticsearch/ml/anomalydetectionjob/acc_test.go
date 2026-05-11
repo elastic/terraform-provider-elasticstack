@@ -22,7 +22,6 @@ import (
 	_ "embed"
 	"fmt"
 	"os"
-	"path"
 	"regexp"
 	"strings"
 	"testing"
@@ -42,14 +41,6 @@ const testResourceAddr = "elasticstack_elasticsearch_ml_anomaly_detection_job.te
 // job config is put or updated; OpenJob errors mentioning filters/resource_not_found indicate a bad id.
 var mlJobOpenFailsUnknownFilterRE = regexp.MustCompile(
 	`(?is)(filter|not found|resource_not_found|does not exist|could not find|illegal_argument|validation)`)
-
-// customRulesScopeTestdata points at configs under testdata/TestAccResourceAnomalyDetectionJobCustomRulesScope/{step}.
-// Use this when the test function name does not match that folder (e.g. negative variants).
-func customRulesScopeTestdata(step string) config.TestStepConfigFunc {
-	return func(_ config.TestStepConfigRequest) string {
-		return path.Join("testdata", "TestAccResourceAnomalyDetectionJobCustomRulesScope", step)
-	}
-}
 
 // testAccCheckOpenMLJobFailsWithUnknownFilter verifies OpenJob fails because scope references a missing
 // ML filter. PutJob/UpdateJob may still succeed in Elasticsearch; opening surfaces the problem.
@@ -378,14 +369,17 @@ func TestAccResourceAnomalyDetectionJobCustomRules(t *testing.T) {
 	})
 }
 
+// Scope-related acceptance tests run under the same conditions as other ML anomaly detection job tests
+// (TF_ACC=1 and a cluster with ML enabled). They are not gated on TF_ACC_ML_SCOPE_TEST: filters are
+// created via the Elasticsearch Put filter API in-process, so the elasticstack_elasticsearch_ml_filter
+// resource is not required.
+//
 // TestAccResourceAnomalyDetectionJobCustomRulesScope covers detector custom_rules.scope
 // (ML filter references per analysis field), including round-trip to Elasticsearch.
 //
 // The referenced ML filter is created out-of-band via the Elasticsearch ML APIs before apply,
 // so this test does not require the elasticstack_elasticsearch_ml_filter resource.
 func TestAccResourceAnomalyDetectionJobCustomRulesScope(t *testing.T) {
-	acctest.PreCheck(t)
-
 	jobID := fmt.Sprintf("test-ad-scope-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	filterID := fmt.Sprintf("test-ad-scope-flt-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	addr := testResourceAddr
@@ -441,7 +435,7 @@ func TestAccResourceAnomalyDetectionJobCustomRulesScope_missingFilterOnCreate(t 
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          customRulesScopeTestdata("create"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"job_id":    config.StringVariable(jobID),
 					"filter_id": config.StringVariable(filterID),
@@ -458,8 +452,6 @@ func TestAccResourceAnomalyDetectionJobCustomRulesScope_missingFilterOnCreate(t 
 // TestAccResourceAnomalyDetectionJobCustomRulesScope_missingFilterOnUpdate updates scope to a filter id
 // that does not exist. PutJob/UpdateJob may succeed; OpenJob must fail until the filter exists.
 func TestAccResourceAnomalyDetectionJobCustomRulesScope_missingFilterOnUpdate(t *testing.T) {
-	acctest.PreCheck(t)
-
 	jobID := fmt.Sprintf("test-ad-scope-miss-up-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	goodFilterID := fmt.Sprintf("test-ad-scope-flt-ok-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	badFilterID := fmt.Sprintf("nonexistent-flt-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
@@ -472,7 +464,7 @@ func TestAccResourceAnomalyDetectionJobCustomRulesScope_missingFilterOnUpdate(t 
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          customRulesScopeTestdata("create"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"job_id":    config.StringVariable(jobID),
 					"filter_id": config.StringVariable(goodFilterID),
@@ -487,7 +479,7 @@ func TestAccResourceAnomalyDetectionJobCustomRulesScope_missingFilterOnUpdate(t 
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          customRulesScopeTestdata("update"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"job_id":    config.StringVariable(jobID),
 					"filter_id": config.StringVariable(badFilterID),

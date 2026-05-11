@@ -252,6 +252,9 @@ func getSchema(ctx context.Context) schema.Schema {
 														"filter_id": schema.StringAttribute{
 															MarkdownDescription: "The ML filter identifier (`filter_id`) to apply.",
 															Required:            true,
+															Validators: []validator.String{
+																stringvalidator.LengthAtLeast(1),
+															},
 														},
 														"filter_type": schema.StringAttribute{
 															MarkdownDescription: "`include` applies the rule to values in the filter; `exclude` applies it to values not in the filter.",
