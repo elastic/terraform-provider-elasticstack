@@ -95,7 +95,7 @@ func Test_legacyMetricConfigModel_fromAPI_toAPI_NoESQL(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(apiJSON), &api))
 
 	model1 := &legacyMetricConfigModel{}
-	diags := model1.fromAPINoESQL(ctx, api)
+	diags := model1.fromAPINoESQL(ctx, nil, nil, api)
 	require.False(t, diags.HasError())
 
 	attrs2, diags := model1.toAPI(nil)
@@ -105,7 +105,7 @@ func Test_legacyMetricConfigModel_fromAPI_toAPI_NoESQL(t *testing.T) {
 	require.NoError(t, err)
 
 	model2 := &legacyMetricConfigModel{}
-	diags = model2.fromAPINoESQL(ctx, noESQL2)
+	diags = model2.fromAPINoESQL(ctx, nil, nil, noESQL2)
 	require.False(t, diags.HasError())
 
 	assertLegacyMetricConfigEqual(ctx, t, model1, model2)
@@ -132,7 +132,7 @@ func Test_legacyMetricPanelConfigConverter_populateFromAttributes_buildAttribute
 
 	converter := newLegacyMetricPanelConfigConverter()
 	pm := &panelModel{}
-	diags := converter.populateFromAttributes(ctx, pm, attrs)
+	diags := converter.populateFromAttributes(ctx, nil, pm, attrs)
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm.LegacyMetricConfig)
 
@@ -177,14 +177,14 @@ func Test_legacyMetricConfigModel_fromAPI_roundTrip(t *testing.T) {
 		"metric": {"operation": "count", "format": {"type": "number"}}
 	}`), &api))
 		model1 := &legacyMetricConfigModel{}
-		diags := model1.fromAPINoESQL(ctx, api)
+		diags := model1.fromAPINoESQL(ctx, nil, nil, api)
 		require.False(t, diags.HasError())
 		attrs2, diags := model1.toAPI(nil)
 		require.False(t, diags.HasError())
 		noESQL2, err := attrs2.AsLegacyMetricNoESQL()
 		require.NoError(t, err)
 		model2 := &legacyMetricConfigModel{}
-		diags = model2.fromAPINoESQL(ctx, noESQL2)
+		diags = model2.fromAPINoESQL(ctx, nil, nil, noESQL2)
 		require.False(t, diags.HasError())
 		assertLegacyMetricConfigEqual(ctx, t, model1, model2)
 	})

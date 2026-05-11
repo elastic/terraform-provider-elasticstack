@@ -109,10 +109,10 @@ func Test_regionMapConfigModel_fromAPI_toAPI(t *testing.T) {
 			model := &regionMapConfigModel{}
 
 			if tt.apiNoESQL != nil {
-				diags := model.fromAPINoESQL(context.Background(), *tt.apiNoESQL)
+				diags := model.fromAPINoESQL(context.Background(), nil, nil, *tt.apiNoESQL)
 				require.False(t, diags.HasError())
 			} else if tt.apiESQL != nil {
-				diags := model.fromAPIESQL(context.Background(), *tt.apiESQL)
+				diags := model.fromAPIESQL(context.Background(), nil, nil, *tt.apiESQL)
 				require.False(t, diags.HasError())
 			}
 
@@ -172,7 +172,7 @@ func Test_regionMapPanelConfigConverter_populateFromAttributes_buildAttributes_r
 
 	converter := newRegionMapPanelConfigConverter()
 	pm := &panelModel{}
-	diags := converter.populateFromAttributes(ctx, pm, attrs)
+	diags := converter.populateFromAttributes(ctx, nil, pm, attrs)
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm.RegionMapConfig)
 
@@ -204,7 +204,7 @@ func Test_regionMapPanelConfigConverter_populateFromAttributes_buildAttributes_r
 
 	converter := newRegionMapPanelConfigConverter()
 	pm := &panelModel{}
-	diags := converter.populateFromAttributes(ctx, pm, attrs)
+	diags := converter.populateFromAttributes(ctx, nil, pm, attrs)
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm.RegionMapConfig)
 

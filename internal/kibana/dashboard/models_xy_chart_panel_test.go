@@ -610,7 +610,7 @@ func Test_xyChartPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 
 	converter := newXYChartPanelConfigConverter()
 	pm := &panelModel{}
-	diags = converter.populateFromAttributes(ctx, pm, attrs)
+	diags = converter.populateFromAttributes(ctx, nil, pm, attrs)
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm.XYChartConfig)
 
@@ -715,7 +715,7 @@ func Test_xyChartConfigModel_toAPI_fromAPI(t *testing.T) {
 			}
 
 			model2 := &xyChartConfigModel{}
-			diags = model2.fromAPINoESQL(ctx, apiChart)
+			diags = model2.fromAPINoESQL(ctx, nil, nil, apiChart)
 			require.False(t, diags.HasError())
 
 			assert.Equal(t, tt.model.Title, model2.Title)

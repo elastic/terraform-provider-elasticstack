@@ -144,7 +144,7 @@ func TestPopulateLensDashboardAppFromAPI_byValuePreservesPractitionerEnriched(t 
 		},
 	}
 	pm := &panelModel{}
-	diags := populateLensDashboardAppFromAPI(ctx, pm, tfPanel, api)
+	diags := populateLensDashboardAppFromAPI(ctx, nil, pm, tfPanel, api)
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm.LensDashboardAppConfig)
 	require.NotNil(t, pm.LensDashboardAppConfig.ByValue)
@@ -234,7 +234,7 @@ func TestLensDashboardAppByValueToAPI_sendsConfigAsAPI(t *testing.T) {
 	// Read path: chart discriminator => by_value.config_json
 	pm := &panelModel{}
 	prior := &lensDashboardAppConfigModel{ByValue: &lensDashboardAppByValueModel{ConfigJSON: jsontypes.NewNormalizedValue(`{}`)}}
-	diags = populateLensDashboardAppFromAPI(ctx, pm, &panelModel{LensDashboardAppConfig: prior}, ld)
+	diags = populateLensDashboardAppFromAPI(ctx, nil, pm, &panelModel{LensDashboardAppConfig: prior}, ld)
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm.LensDashboardAppConfig.ByValue)
 	var readRoot map[string]any
@@ -351,7 +351,7 @@ func TestPopulateLensDashboardAppFromAPI_byReferencePath(t *testing.T) {
 	require.NoError(t, cfgUnion.FromKbnDashboardPanelTypeLensDashboardAppConfig1(cfg1))
 	api := kbapi.KbnDashboardPanelTypeLensDashboardApp{Config: cfgUnion}
 	pm := &panelModel{}
-	diags := populateLensDashboardAppFromAPI(ctx, pm, nil, api)
+	diags := populateLensDashboardAppFromAPI(ctx, nil, pm, nil, api)
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm.LensDashboardAppConfig.ByReference)
 	br := pm.LensDashboardAppConfig.ByReference
@@ -382,7 +382,7 @@ func TestPopulateLensDashboardAppFromAPI_byReferenceRead_drilldowns(t *testing.T
 	require.NoError(t, cfgUnion.UnmarshalJSON([]byte(wire)))
 	api := kbapi.KbnDashboardPanelTypeLensDashboardApp{Config: cfgUnion}
 	pm := &panelModel{}
-	diags := populateLensDashboardAppFromAPI(ctx, pm, nil, api)
+	diags := populateLensDashboardAppFromAPI(ctx, nil, pm, nil, api)
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm.LensDashboardAppConfig.ByReference)
 	dd := pm.LensDashboardAppConfig.ByReference.DrilldownsJSON
@@ -402,7 +402,7 @@ func TestPopulateLensDashboardAppFromAPI_byValueOnAmbiguousNoPrior(t *testing.T)
 	require.NoError(t, cfgUnion.UnmarshalJSON([]byte(`{"ref_id":"only"}`)))
 	api := kbapi.KbnDashboardPanelTypeLensDashboardApp{Config: cfgUnion}
 	pm := &panelModel{}
-	diags := populateLensDashboardAppFromAPI(ctx, pm, nil, api)
+	diags := populateLensDashboardAppFromAPI(ctx, nil, pm, nil, api)
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm.LensDashboardAppConfig.ByValue)
 	require.Contains(t, pm.LensDashboardAppConfig.ByValue.ConfigJSON.ValueString(), `"ref_id"`)
@@ -420,7 +420,7 @@ func TestPopulateLensDashboardAppFromAPI_ambiguousPreservesPriorByReference(t *t
 	tf := &panelModel{LensDashboardAppConfig: prior}
 	// Match `mapPanelFromAPI`: seed `pm` from the prior plan/state panel before converters run.
 	pm := *tf
-	diags := populateLensDashboardAppFromAPI(ctx, &pm, tf, api)
+	diags := populateLensDashboardAppFromAPI(ctx, nil, &pm, tf, api)
 	require.False(t, diags.HasError())
 	// Ambiguous API + prior by_reference: no rewrite from API; prior block stays in the seeded panel (REQ-009).
 	require.NotNil(t, pm.LensDashboardAppConfig)

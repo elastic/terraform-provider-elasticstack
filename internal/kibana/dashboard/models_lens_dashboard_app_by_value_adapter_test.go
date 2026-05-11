@@ -50,7 +50,7 @@ func testMetricByValueFromRoundTrip(t *testing.T) lensDashboardAppByValueModel {
 	require.NoError(t, attrs.FromMetricNoESQL(apiChart))
 	converter := newMetricChartPanelConfigConverter()
 	pm := &panelModel{}
-	require.False(t, converter.populateFromAttributes(ctx, pm, attrs).HasError())
+	require.False(t, converter.populateFromAttributes(ctx, nil, pm, attrs).HasError())
 	return lensDashboardAppByValueModel{MetricChartConfig: pm.MetricChartConfig}
 }
 
@@ -90,7 +90,7 @@ func testPieByValueConfigBytes(t *testing.T) []byte {
 	require.NoError(t, attrs.FromPieNoESQL(apiChart))
 	converter := newPieChartPanelConfigConverter()
 	pm := &panelModel{}
-	require.False(t, converter.populateFromAttributes(ctx, pm, attrs).HasError())
+	require.False(t, converter.populateFromAttributes(ctx, nil, pm, attrs).HasError())
 	vis0, d := converter.buildAttributes(*pm, nil)
 	require.False(t, d.HasError())
 	b, err := vis0.MarshalJSON()
@@ -132,7 +132,7 @@ func testXyByValueModel(t *testing.T) lensDashboardAppByValueModel {
 	require.NoError(t, attrs.FromXyChartNoESQL(xy))
 	conv := newXYChartPanelConfigConverter()
 	pm := &panelModel{}
-	require.False(t, conv.populateFromAttributes(ctx, pm, attrs).HasError())
+	require.False(t, conv.populateFromAttributes(ctx, nil, pm, attrs).HasError())
 	return lensDashboardAppByValueModel{XYChartConfig: pm.XYChartConfig}
 }
 
@@ -170,7 +170,7 @@ func testPieByValueModel(t *testing.T) lensDashboardAppByValueModel {
 	require.NoError(t, attrs.FromPieNoESQL(apiChart))
 	conv := newPieChartPanelConfigConverter()
 	pm := &panelModel{}
-	require.False(t, conv.populateFromAttributes(ctx, pm, attrs).HasError())
+	require.False(t, conv.populateFromAttributes(ctx, nil, pm, attrs).HasError())
 	return lensDashboardAppByValueModel{PieChartConfig: pm.PieChartConfig}
 }
 
@@ -254,7 +254,7 @@ func testMetricEsqlByValueModel(t *testing.T) lensDashboardAppByValueModel {
 	require.NoError(t, vis0.FromMetricESQL(metricEsql))
 	conv := newMetricChartPanelConfigConverter()
 	pm := &panelModel{}
-	require.False(t, conv.populateFromAttributes(ctx, pm, vis0).HasError())
+	require.False(t, conv.populateFromAttributes(ctx, nil, pm, vis0).HasError())
 	return lensDashboardAppByValueModel{MetricChartConfig: pm.MetricChartConfig}
 }
 
@@ -288,7 +288,7 @@ func testXyEsqlByValueModel(t *testing.T) lensDashboardAppByValueModel {
 	require.NoError(t, vis0.FromXyChartESQL(xyEsql))
 	conv := newXYChartPanelConfigConverter()
 	pm := &panelModel{}
-	require.False(t, conv.populateFromAttributes(ctx, pm, vis0).HasError())
+	require.False(t, conv.populateFromAttributes(ctx, nil, pm, vis0).HasError())
 	return lensDashboardAppByValueModel{XYChartConfig: pm.XYChartConfig}
 }
 
@@ -307,7 +307,7 @@ func testPieEsqlByValueModel(t *testing.T) lensDashboardAppByValueModel {
 	require.NoError(t, vis0.FromPieESQL(pieEsql))
 	conv := newPieChartPanelConfigConverter()
 	pm := &panelModel{}
-	require.False(t, conv.populateFromAttributes(ctx, pm, vis0).HasError())
+	require.False(t, conv.populateFromAttributes(ctx, nil, pm, vis0).HasError())
 	return lensDashboardAppByValueModel{PieChartConfig: pm.PieChartConfig}
 }
 
@@ -317,7 +317,7 @@ func testWaffleEsqlByValueModel(t *testing.T) lensDashboardAppByValueModel {
 	vis0 := mustWaffleESQLVis0(t)
 	conv := newWafflePanelConfigConverter()
 	pm := &panelModel{}
-	require.False(t, conv.populateFromAttributes(ctx, pm, vis0).HasError())
+	require.False(t, conv.populateFromAttributes(ctx, nil, pm, vis0).HasError())
 	return lensDashboardAppByValueModel{WaffleConfig: pm.WaffleConfig}
 }
 
@@ -460,7 +460,7 @@ func Test_populateLensDashboardAppByValueFromAPI_typedRead_repopulatesTypedBlock
 
 	prior := &lensDashboardAppConfigModel{ByValue: &by}
 	var pm panelModel
-	d := populateLensDashboardAppByValueFromAPI(ctx, prior, configBytes, &pm)
+	d := populateLensDashboardAppByValueFromAPI(ctx, nil, prior, configBytes, &pm)
 	require.False(t, d.HasError())
 	require.NotNil(t, pm.LensDashboardAppConfig)
 	require.NotNil(t, pm.LensDashboardAppConfig.ByValue)
@@ -481,7 +481,7 @@ func Test_populateLensDashboardAppByValueFromAPI_typedRead_mismatchedChartFallsB
 	pieBytes := testPieByValueConfigBytes(t)
 	prior := &lensDashboardAppConfigModel{ByValue: &by}
 	var pm panelModel
-	d := populateLensDashboardAppByValueFromAPI(ctx, prior, pieBytes, &pm)
+	d := populateLensDashboardAppByValueFromAPI(ctx, nil, prior, pieBytes, &pm)
 	require.False(t, d.HasError())
 	require.NotNil(t, pm.LensDashboardAppConfig)
 	require.NotNil(t, pm.LensDashboardAppConfig.ByValue)
@@ -502,10 +502,10 @@ func Test_typedByValueReadFallback_noErrorDiagnostics(t *testing.T) {
 	prior := &lensDashboardAppConfigModel{ByValue: &by}
 	var d diag.Diagnostics
 	var pm panelModel
-	ok := tryPopulateTypedLensByValueFromAPI(ctx, prior, pieBytes, &pm, &d)
+	ok := tryPopulateTypedLensByValueFromAPI(ctx, nil, prior, pieBytes, &pm, &d)
 	require.False(t, ok)
 	require.False(t, d.HasError(), "tryPopulate must not add errors when falling back to config_json read")
-	full := populateLensDashboardAppByValueFromAPI(ctx, prior, pieBytes, &pm)
+	full := populateLensDashboardAppByValueFromAPI(ctx, nil, prior, pieBytes, &pm)
 	require.False(t, full.HasError())
 }
 

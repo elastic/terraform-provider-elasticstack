@@ -68,7 +68,7 @@ func Test_pieChartPanelConfigConverter_populateFromAttributes_buildAttributes_ro
 
 	converter := newPieChartPanelConfigConverter()
 	pm := &panelModel{}
-	diags := converter.populateFromAttributes(ctx, pm, attrs)
+	diags := converter.populateFromAttributes(ctx, nil, pm, attrs)
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm.PieChartConfig)
 	require.NotNil(t, pm.PieChartConfig.Legend)
@@ -136,7 +136,7 @@ func Test_pieChartConfigModel_fromAPI_toAPI_PieNoESQL(t *testing.T) {
 	}
 
 	model := &pieChartConfigModel{}
-	diags := model.fromAPINoESQL(apiChart)
+	diags := model.fromAPINoESQL(context.Background(), nil, nil, apiChart)
 	require.False(t, diags.HasError(), "fromAPINoESQL should not have errors")
 
 	// Verify fields
@@ -185,7 +185,7 @@ func Test_pieChartConfigModel_fromAPI_toAPI_PieESQL(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(apiJSON), &apiESQL))
 
 	model := &pieChartConfigModel{}
-	diags := model.fromAPIESQL(apiESQL)
+	diags := model.fromAPIESQL(context.Background(), nil, nil, apiESQL)
 	require.False(t, diags.HasError())
 
 	assert.Equal(t, "ESQL Pie Chart", model.Title.ValueString())

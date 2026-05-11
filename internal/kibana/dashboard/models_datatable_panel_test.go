@@ -135,7 +135,7 @@ func Test_datatableNoESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 	api.Styling.Paging = &paging
 
 	model := &datatableNoESQLConfigModel{}
-	diags := model.fromAPI(context.Background(), api)
+	diags := model.fromAPI(context.Background(), nil, nil, api)
 	require.False(t, diags.HasError())
 
 	assert.Equal(t, types.StringValue("Datatable NoESQL"), model.Title)
@@ -235,7 +235,7 @@ func Test_datatableESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 	api.Styling.Paging = &paging
 
 	model := &datatableESQLConfigModel{}
-	diags := model.fromAPI(context.Background(), api)
+	diags := model.fromAPI(context.Background(), nil, nil, api)
 	require.False(t, diags.HasError())
 
 	assert.Equal(t, types.StringValue("Datatable ESQL"), model.Title)
@@ -290,7 +290,7 @@ func Test_datatablePanelConfigConverter_populateFromAttributes_buildAttributes_r
 
 	converter := newDatatablePanelConfigConverter()
 	pm := &panelModel{}
-	diags := converter.populateFromAttributes(ctx, pm, attrs)
+	diags := converter.populateFromAttributes(ctx, nil, pm, attrs)
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm.DatatableConfig)
 
@@ -325,7 +325,7 @@ func Test_datatablePanelConfigConverter_populateFromAttributes_buildAttributes_r
 
 	converter := newDatatablePanelConfigConverter()
 	pm := &panelModel{}
-	diags := converter.populateFromAttributes(ctx, pm, attrs)
+	diags := converter.populateFromAttributes(ctx, nil, pm, attrs)
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm.DatatableConfig)
 

@@ -50,7 +50,7 @@ func Test_metricChartPanelConfigConverter_populateFromAttributes_buildAttributes
 
 	converter := newMetricChartPanelConfigConverter()
 	pm := &panelModel{}
-	diags := converter.populateFromAttributes(ctx, pm, attrs)
+	diags := converter.populateFromAttributes(ctx, nil, pm, attrs)
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm.MetricChartConfig)
 

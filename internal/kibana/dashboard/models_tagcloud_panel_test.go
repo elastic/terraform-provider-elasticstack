@@ -48,7 +48,7 @@ func Test_tagcloudPanelConfigConverter_populateFromAttributes_buildAttributes_ro
 
 	converter := newTagcloudPanelConfigConverter()
 	pm := &panelModel{}
-	diags := converter.populateFromAttributes(ctx, pm, attrs)
+	diags := converter.populateFromAttributes(ctx, nil, pm, attrs)
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm.TagcloudConfig)
 
@@ -158,7 +158,7 @@ func Test_tagcloudConfigModel_fromAPI_toAPI(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test fromAPI
 			model := &tagcloudConfigModel{}
-			diags := model.fromAPI(context.Background(), tt.api)
+			diags := model.fromAPI(context.Background(), nil, nil, tt.api)
 			require.False(t, diags.HasError(), "fromAPI should not return errors")
 
 			// Validate expected fields
@@ -292,7 +292,7 @@ func Test_fontSizeModel_roundTrip(t *testing.T) {
 
 			// Convert to model
 			model := &tagcloudConfigModel{}
-			diags := model.fromAPI(context.Background(), api)
+			diags := model.fromAPI(context.Background(), nil, nil, api)
 			require.False(t, diags.HasError())
 
 			// Convert back to API

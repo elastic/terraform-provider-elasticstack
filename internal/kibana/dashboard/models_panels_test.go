@@ -54,7 +54,7 @@ func buildLensMosaicPanelForTest(t *testing.T) panelModel {
 
 	converter := newMosaicPanelConfigConverter()
 	pm := &panelModel{}
-	diags := converter.populateFromAttributes(context.Background(), pm, attrs)
+	diags := converter.populateFromAttributes(context.Background(), nil, pm, attrs)
 	require.False(t, diags.HasError())
 
 	return panelModel{
@@ -85,7 +85,7 @@ func buildLensTreemapPanelForTest(t *testing.T) panelModel {
 
 	converter := newTreemapPanelConfigConverter()
 	pm := &panelModel{}
-	diags := converter.populateFromAttributes(context.Background(), pm, attrs)
+	diags := converter.populateFromAttributes(context.Background(), nil, pm, attrs)
 	require.False(t, diags.HasError())
 
 	return panelModel{
@@ -115,7 +115,7 @@ func buildLensWafflePanelForTest(t *testing.T) panelModel {
 
 	converter := newWafflePanelConfigConverter()
 	pm := &panelModel{}
-	diags := converter.populateFromAttributes(context.Background(), pm, attrs)
+	diags := converter.populateFromAttributes(context.Background(), nil, pm, attrs)
 	require.False(t, diags.HasError())
 
 	return panelModel{

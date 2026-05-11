@@ -21,12 +21,12 @@
 
 ## 3. Model wiring: read path
 
-- [ ] 3.1 Implement `chartTimeRangeFromAPI` that returns the API-returned chart-level `time_range` plus a "preserve null" decision based on equality with the dashboard-level value and prior-state null status (REQ-038 null-preservation).
-- [ ] 3.2 Apply `chartTimeRangeFromAPI` in each of the twelve `models_*_panel.go` files' `fromAPI` / read paths, passing in the parent dashboard model and prior-state chart `time_range`.
-- [ ] 3.3 Implement null-preservation for `hide_title`, `hide_border`, and `references_json` consistent with REQ-009 (read-back omits → state stays null).
-- [ ] 3.4 Implement `drilldownsFromAPI` that converts the API discriminated union into the TF list of variant sub-blocks, dispatching on the API `type` discriminator.
-- [ ] 3.5 Implement `time_range.mode` null-preservation at the chart level (same recipe as REQ-009).
-- [ ] 3.6 Normalize `references_json` round-trip using the existing JSON normalization utilities (consistent with other `*_json` attributes elsewhere in the resource).
+- [x] 3.1 Implement `chartTimeRangeFromAPI` that returns the API-returned chart-level `time_range` plus a "preserve null" decision based on equality with the dashboard-level value and prior-state null status (REQ-038 null-preservation).
+- [x] 3.2 Apply `chartTimeRangeFromAPI` in each of the twelve `models_*_panel.go` files' `fromAPI` / read paths, passing in the parent dashboard model and prior-state chart `time_range`.
+- [x] 3.3 Implement null-preservation for `hide_title`, `hide_border`, and `references_json` consistent with REQ-009 (read-back omits → state stays null).
+- [x] 3.4 Implement `drilldownsFromAPI` that converts the API discriminated union into the TF list of variant sub-blocks, dispatching on the API `type` discriminator.
+- [x] 3.5 Implement `time_range.mode` null-preservation at the chart level (same recipe as REQ-009).
+- [x] 3.6 Normalize `references_json` round-trip using the existing JSON normalization utilities (consistent with other `*_json` attributes elsewhere in the resource).
 
 ## 4. Schema migration touchpoints
 

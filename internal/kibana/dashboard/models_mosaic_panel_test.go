@@ -61,7 +61,7 @@ func Test_mosaicPanelConfigConverter_populateFromAttributes_buildAttributes_roun
 
 	converter := newMosaicPanelConfigConverter()
 	pm := &panelModel{}
-	diags := converter.populateFromAttributes(ctx, pm, attrs)
+	diags := converter.populateFromAttributes(ctx, nil, pm, attrs)
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm.MosaicConfig)
 
@@ -101,7 +101,7 @@ func Test_mosaicPanelConfigConverter_populateFromAttributes_buildAttributes_roun
 
 	converter := newMosaicPanelConfigConverter()
 	pm := &panelModel{}
-	diags := converter.populateFromAttributes(ctx, pm, attrs)
+	diags := converter.populateFromAttributes(ctx, nil, pm, attrs)
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm.MosaicConfig)
 
@@ -183,7 +183,7 @@ func Test_mosaicConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 	api.Metric = metricUnion
 
 	model := &mosaicConfigModel{}
-	diags := model.fromAPINoESQL(api)
+	diags := model.fromAPINoESQL(context.Background(), nil, nil, api)
 	require.False(t, diags.HasError())
 
 	assert.Equal(t, types.StringValue("Test Mosaic"), model.Title)
@@ -283,7 +283,7 @@ func Test_mosaicConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(`{"type":"esql","query":"FROM metrics-* | LIMIT 10"}`), &api.DataSource))
 
 	model := &mosaicConfigModel{}
-	diags := model.fromAPIESQL(api)
+	diags := model.fromAPIESQL(context.Background(), nil, nil, api)
 	require.False(t, diags.HasError())
 
 	assert.Equal(t, types.StringValue("ESQL Mosaic"), model.Title)
@@ -324,7 +324,7 @@ func newTestMosaicNoESQLModel(t *testing.T) *mosaicConfigModel {
 	var api kbapi.MosaicNoESQL
 	require.NoError(t, json.Unmarshal([]byte(apiJSON), &api))
 	model := &mosaicConfigModel{}
-	require.False(t, model.fromAPINoESQL(api).HasError())
+	require.False(t, model.fromAPINoESQL(context.Background(), nil, nil, api).HasError())
 	return model
 }
 
@@ -347,7 +347,7 @@ func newTestMosaicESQLModel(t *testing.T) *mosaicConfigModel {
 	var api kbapi.MosaicESQL
 	require.NoError(t, json.Unmarshal([]byte(apiJSON), &api))
 	model := &mosaicConfigModel{}
-	require.False(t, model.fromAPIESQL(api).HasError())
+	require.False(t, model.fromAPIESQL(context.Background(), nil, nil, api).HasError())
 	return model
 }
 

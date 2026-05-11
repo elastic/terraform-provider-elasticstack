@@ -114,7 +114,7 @@ func Test_gaugeConfigModel_fromAPI_toAPI(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			model := &gaugeConfigModel{}
-			diags := model.fromAPI(context.Background(), tt.api)
+			diags := model.fromAPI(context.Background(), nil, nil, tt.api)
 			require.False(t, diags.HasError(), "fromAPI should not return errors")
 
 			assert.Equal(t, tt.expected.Title, model.Title, "Title should match")
@@ -182,7 +182,7 @@ func Test_gaugePanelConfigConverter_populateFromAttributes_buildAttributes_round
 
 	converter := newGaugePanelConfigConverter()
 	pm := &panelModel{}
-	diags := converter.populateFromAttributes(ctx, pm, attrs)
+	diags := converter.populateFromAttributes(ctx, nil, pm, attrs)
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm.GaugeConfig)
 

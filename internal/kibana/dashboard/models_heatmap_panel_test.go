@@ -112,7 +112,7 @@ func Test_heatmapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 	heatmap.Filters = filters
 
 	model := &heatmapConfigModel{}
-	diags := model.fromAPINoESQL(context.Background(), heatmap)
+	diags := model.fromAPINoESQL(context.Background(), nil, nil, heatmap)
 	require.False(t, diags.HasError())
 
 	assert.Equal(t, types.StringValue("Test Heatmap"), model.Title)
@@ -189,7 +189,7 @@ func Test_heatmapConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(esqlHeatmapJSON), &heatmap))
 
 	model := &heatmapConfigModel{}
-	diags := model.fromAPIESQL(context.Background(), heatmap)
+	diags := model.fromAPIESQL(context.Background(), nil, nil, heatmap)
 	require.False(t, diags.HasError())
 	assert.Nil(t, model.Query)
 	assert.Equal(t, types.StringValue("ESQL Heatmap"), model.Title)
@@ -237,7 +237,7 @@ func Test_heatmapPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 
 	converter := newHeatmapPanelConfigConverter()
 	pm := &panelModel{}
-	diags := converter.populateFromAttributes(ctx, pm, attrs)
+	diags := converter.populateFromAttributes(ctx, nil, pm, attrs)
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm.HeatmapConfig)
 
@@ -280,7 +280,7 @@ func Test_heatmapPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 
 	converter := newHeatmapPanelConfigConverter()
 	pm := &panelModel{}
-	diags := converter.populateFromAttributes(ctx, pm, attrs)
+	diags := converter.populateFromAttributes(ctx, nil, pm, attrs)
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm.HeatmapConfig)
 

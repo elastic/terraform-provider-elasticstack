@@ -54,7 +54,7 @@ func Test_treemapPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 
 	converter := newTreemapPanelConfigConverter()
 	pm := &panelModel{}
-	diags := converter.populateFromAttributes(ctx, pm, attrs)
+	diags := converter.populateFromAttributes(ctx, nil, pm, attrs)
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm.TreemapConfig)
 
@@ -89,7 +89,7 @@ func Test_treemapPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 
 	converter := newTreemapPanelConfigConverter()
 	pm := &panelModel{}
-	diags := converter.populateFromAttributes(ctx, pm, attrs)
+	diags := converter.populateFromAttributes(ctx, nil, pm, attrs)
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm.TreemapConfig)
 
@@ -160,7 +160,7 @@ func Test_treemapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 	api.Metrics = []kbapi.TreemapNoESQL_Metrics_Item{metricItem}
 
 	model := &treemapConfigModel{}
-	diags := model.fromAPINoESQL(api)
+	diags := model.fromAPINoESQL(context.Background(), nil, nil, api)
 	require.False(t, diags.HasError())
 
 	assert.Equal(t, types.StringValue("Test Treemap"), model.Title)
@@ -249,7 +249,7 @@ func Test_treemapConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(`{"type":"esql","query":"FROM metrics-* | LIMIT 10"}`), &api.DataSource))
 
 	model := &treemapConfigModel{}
-	diags := model.fromAPIESQL(api)
+	diags := model.fromAPIESQL(context.Background(), nil, nil, api)
 	require.False(t, diags.HasError())
 
 	assert.Equal(t, types.StringValue("ESQL Treemap"), model.Title)
@@ -305,7 +305,7 @@ func Test_treemapConfigModel_fromAPINoESQL_preservesKnownWhenAPIIsDefault(t *tes
 		IgnoreGlobalFilters: types.BoolValue(true),
 		Sampling:            types.Float64Value(0.5),
 	}
-	diags := model.fromAPINoESQL(api)
+	diags := model.fromAPINoESQL(context.Background(), nil, nil, api)
 	require.False(t, diags.HasError())
 
 	// Should preserve existing values when API has defaults
@@ -335,7 +335,7 @@ func Test_treemapConfigModel_toAPIESQLChartSchema(t *testing.T) {
 	converter := newTreemapPanelConfigConverter()
 	pm := &panelModel{}
 	ctx := context.Background()
-	diags := converter.populateFromAttributes(ctx, pm, attrs)
+	diags := converter.populateFromAttributes(ctx, nil, pm, attrs)
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm.TreemapConfig)
 

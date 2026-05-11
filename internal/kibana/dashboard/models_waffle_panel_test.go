@@ -62,7 +62,7 @@ func Test_wafflePanelConfigConverter_populateFromAttributes_NoESQL_emptyQueryNoL
 
 	converter := newWafflePanelConfigConverter()
 	pm := &panelModel{}
-	diags := converter.populateFromAttributes(ctx, pm, attrs)
+	diags := converter.populateFromAttributes(ctx, nil, pm, attrs)
 	require.False(t, diags.HasError(), "%s", diags)
 	require.NotNil(t, pm.WaffleConfig)
 	assert.False(t, pm.WaffleConfig.usesESQL())
@@ -91,7 +91,7 @@ func Test_wafflePanelConfigConverter_populateFromAttributes_buildAttributes_roun
 
 	converter := newWafflePanelConfigConverter()
 	pm := &panelModel{}
-	diags := converter.populateFromAttributes(ctx, pm, attrs)
+	diags := converter.populateFromAttributes(ctx, nil, pm, attrs)
 	require.False(t, diags.HasError(), "%s", diags)
 	require.NotNil(t, pm.WaffleConfig)
 
@@ -159,7 +159,7 @@ func Test_wafflePanelConfigConverter_populateFromAttributes_buildAttributes_roun
 
 	converter := newWafflePanelConfigConverter()
 	pm := &panelModel{}
-	diags := converter.populateFromAttributes(ctx, pm, attrs)
+	diags := converter.populateFromAttributes(ctx, nil, pm, attrs)
 	require.False(t, diags.HasError(), "%s", diags)
 	require.NotNil(t, pm.WaffleConfig)
 	assert.True(t, pm.WaffleConfig.usesESQL())
