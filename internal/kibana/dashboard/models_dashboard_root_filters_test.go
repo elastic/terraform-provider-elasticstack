@@ -95,7 +95,7 @@ func Test_mapDashboardFiltersFromAPI_nullPreserved_whenAPINilOrEmpty(t *testing.
 		require.False(t, diags.HasError())
 		require.False(t, m.Filters.IsNull())
 		require.False(t, m.Filters.IsUnknown())
-		require.Len(t, m.Filters.Elements(), 0)
+		require.Empty(t, m.Filters.Elements())
 	})
 
 	t.Run("known empty list stays empty when API empty slice", func(t *testing.T) {
@@ -105,7 +105,7 @@ func Test_mapDashboardFiltersFromAPI_nullPreserved_whenAPINilOrEmpty(t *testing.
 		m.mapDashboardFiltersFromAPI(ctx, &kbapi.KbnDashboardData{Filters: &empty}, &diags)
 		require.False(t, diags.HasError())
 		require.False(t, m.Filters.IsNull())
-		require.Len(t, m.Filters.Elements(), 0)
+		require.Empty(t, m.Filters.Elements())
 	})
 }
 
@@ -174,7 +174,7 @@ func Test_dashboardModel_dashboardFiltersToCreateAPI_writeSemantics(t *testing.T
 		m.dashboardFiltersToCreateAPI(ctx, &req, &diags)
 		require.False(t, diags.HasError())
 		require.NotNil(t, req.Filters)
-		require.Len(t, *req.Filters, 0)
+		require.Empty(t, *req.Filters)
 	})
 
 	t.Run("order preserved and round-trips JSON", func(t *testing.T) {
@@ -221,7 +221,7 @@ func Test_dashboardModel_dashboardFiltersToUpdateAPI_writeSemantics(t *testing.T
 		m.dashboardFiltersToUpdateAPI(ctx, &req, &diags)
 		require.False(t, diags.HasError())
 		require.NotNil(t, req.Filters)
-		require.Len(t, *req.Filters, 0)
+		require.Empty(t, *req.Filters)
 	})
 
 	t.Run("order preserved and round-trips JSON", func(t *testing.T) {
