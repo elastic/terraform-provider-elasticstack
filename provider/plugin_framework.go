@@ -262,6 +262,7 @@ func (p *Provider) dataSources(_ context.Context) []func() datasource.DataSource
 		enrich.NewEnrichPolicyDataSource,
 		rolemapping.NewRoleMappingDataSource,
 		security.NewRoleDataSource,
+		security.NewUserDataSource,
 		outputds.NewDataSource,
 		ingest.NewProcessorAppendDataSource,
 		ingest.NewProcessorBytesDataSource,

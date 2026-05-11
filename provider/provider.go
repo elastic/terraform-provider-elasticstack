@@ -19,7 +19,6 @@ package provider
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana"
 	providerSchema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -43,9 +42,8 @@ func New(version string) *schema.Provider {
 			fleetKeyName: providerSchema.GetFleetConnectionSchema(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
-			"elasticstack_elasticsearch_security_user": security.DataSourceUser(),
-			"elasticstack_kibana_action_connector":     kibana.DataSourceConnector(),
-			"elasticstack_kibana_security_role":        kibana.DataSourceRole(),
+			"elasticstack_kibana_action_connector": kibana.DataSourceConnector(),
+			"elasticstack_kibana_security_role":    kibana.DataSourceRole(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"elasticstack_kibana_space":         kibana.ResourceSpace(),
