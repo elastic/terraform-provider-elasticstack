@@ -481,7 +481,32 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 	return pm, diags
 }
 
-func lensPanelTimeRange() kbapi.KbnEsQueryServerTimeRangeSchema {
+func timeRangeModelToAPI(tr *timeRangeModel) kbapi.KbnEsQueryServerTimeRangeSchema {
+	if tr == nil {
+		return kbapi.KbnEsQueryServerTimeRangeSchema{}
+	}
+	out := kbapi.KbnEsQueryServerTimeRangeSchema{
+		From: tr.From.ValueString(),
+		To:   tr.To.ValueString(),
+	}
+	if typeutils.IsKnown(tr.Mode) {
+		mode := kbapi.KbnEsQueryServerTimeRangeSchemaMode(tr.Mode.ValueString())
+		out.Mode = &mode
+	}
+	return out
+}
+
+// resolveChartTimeRange returns the API time_range for a typed Lens chart root: chart-level when set,
+// otherwise copied from the dashboard-level time_range (both are required API inputs).
+func resolveChartTimeRange(dashboard *dashboardModel, chartLevel *timeRangeModel) kbapi.KbnEsQueryServerTimeRangeSchema {
+	if chartLevel != nil {
+		return timeRangeModelToAPI(chartLevel)
+	}
+	if dashboard != nil && dashboard.TimeRange != nil {
+		return timeRangeModelToAPI(dashboard.TimeRange)
+	}
+	// Lens-dashboard-app and other scratch conversions can build typed chart roots without a parent
+	// `dashboardModel`; keep a conservative default until task 4.1 threads the real dashboard time range.
 	return kbapi.KbnEsQueryServerTimeRangeSchema{
 		From: "now-15m",
 		To:   "now",
@@ -498,7 +523,7 @@ func (m *dashboardModel) panelsToAPI() (*kbapi.DashboardPanels, diag.Diagnostics
 
 	// Process panels
 	for _, pm := range m.Panels {
-		panelItem, d := pm.toAPI()
+		panelItem, d := pm.toAPI(m)
 		diags.Append(d...)
 		if diags.HasError() {
 			return nil, diags
@@ -535,7 +560,7 @@ func (m *dashboardModel) panelsToAPI() (*kbapi.DashboardPanels, diag.Diagnostics
 			innerPanels := make([]kbapi.DashboardPanelItem, 0, len(sm.Panels))
 
 			for _, pm := range sm.Panels {
-				item, d := pm.toAPI()
+				item, d := pm.toAPI(m)
 				diags.Append(d...)
 				if diags.HasError() {
 					return nil, diags
@@ -557,7 +582,7 @@ func (m *dashboardModel) panelsToAPI() (*kbapi.DashboardPanels, diag.Diagnostics
 	return &apiPanels, diags
 }
 
-func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
+func (pm panelModel) toAPI(dashboard *dashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	grid := struct {
@@ -755,7 +780,7 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 			continue
 		}
 
-		config0, d := converter.buildAttributes(pm)
+		config0, d := converter.buildAttributes(pm, dashboard)
 		diags.Append(d...)
 		if diags.HasError() {
 			return kbapi.DashboardPanelItem{}, diags

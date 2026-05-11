@@ -55,11 +55,11 @@ func (c heatmapPanelConfigConverter) populateFromAttributes(ctx context.Context,
 	return pm.HeatmapConfig.fromAPIESQL(ctx, heatmapESQL)
 }
 
-func (c heatmapPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func (c heatmapPanelConfigConverter) buildAttributes(pm panelModel, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	configModel := *pm.HeatmapConfig
 
-	attrs, heatmapDiags := configModel.toAPI()
+	attrs, heatmapDiags := configModel.toAPI(dashboard)
 	diags.Append(heatmapDiags...)
 	if diags.HasError() {
 		return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
@@ -235,7 +235,7 @@ func (m *heatmapConfigModel) fromAPIESQL(ctx context.Context, api kbapi.HeatmapE
 	return diags
 }
 
-func (m *heatmapConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func (m *heatmapConfigModel) toAPI(dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 
@@ -244,7 +244,7 @@ func (m *heatmapConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, dia
 	}
 
 	if m.usesESQL() {
-		esql, esqlDiags := m.toAPIESQL()
+		esql, esqlDiags := m.toAPIESQL(dashboard)
 		diags.Append(esqlDiags...)
 		if diags.HasError() {
 			return attrs, diags
@@ -255,7 +255,7 @@ func (m *heatmapConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, dia
 		return attrs, diags
 	}
 
-	noESQL, noESQLDiags := m.toAPINoESQL()
+	noESQL, noESQLDiags := m.toAPINoESQL(dashboard)
 	diags.Append(noESQLDiags...)
 	if diags.HasError() {
 		return attrs, diags
@@ -277,12 +277,11 @@ func (m *heatmapConfigModel) usesESQL() bool {
 	return m.Query.Expression.IsNull() && m.Query.Language.IsNull()
 }
 
-func (m *heatmapConfigModel) toAPINoESQL() (kbapi.HeatmapNoESQL, diag.Diagnostics) {
+func (m *heatmapConfigModel) toAPINoESQL(dashboard *dashboardModel) (kbapi.HeatmapNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	api := kbapi.HeatmapNoESQL{
 		Type: kbapi.HeatmapNoESQLTypeHeatmap,
 	}
-	api.TimeRange = lensPanelTimeRange()
 
 	if typeutils.IsKnown(m.Title) {
 		api.Title = new(m.Title.ValueString())
@@ -364,15 +363,44 @@ func (m *heatmapConfigModel) toAPINoESQL() (kbapi.HeatmapNoESQL, diag.Diagnostic
 
 	api.Filters = buildFiltersForAPI(m.Filters, &diags)
 
+	writes, presDiags := lensChartPresentationWritesFor(dashboard, lensChartPresentationInput{
+		TimeRange:      m.TimeRange,
+		HideTitle:      m.HideTitle,
+		HideBorder:     m.HideBorder,
+		ReferencesJSON: m.ReferencesJSON,
+		Drilldowns:     m.Drilldowns,
+	})
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return api, diags
+	}
+
+	api.TimeRange = writes.TimeRange
+	if writes.HideTitle != nil {
+		api.HideTitle = writes.HideTitle
+	}
+	if writes.HideBorder != nil {
+		api.HideBorder = writes.HideBorder
+	}
+	if writes.References != nil {
+		api.References = writes.References
+	}
+	if len(writes.DrilldownsRaw) > 0 {
+		items, ddDiags := decodeLensDrilldownSlice[kbapi.HeatmapNoESQL_Drilldowns_Item](writes.DrilldownsRaw)
+		diags.Append(ddDiags...)
+		if !ddDiags.HasError() {
+			api.Drilldowns = &items
+		}
+	}
+
 	return api, diags
 }
 
-func (m *heatmapConfigModel) toAPIESQL() (kbapi.HeatmapESQL, diag.Diagnostics) {
+func (m *heatmapConfigModel) toAPIESQL(dashboard *dashboardModel) (kbapi.HeatmapESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	api := kbapi.HeatmapESQL{
 		Type: kbapi.HeatmapESQLTypeHeatmap,
 	}
-	api.TimeRange = lensPanelTimeRange()
 
 	if typeutils.IsKnown(m.Title) {
 		api.Title = new(m.Title.ValueString())
@@ -461,6 +489,36 @@ func (m *heatmapConfigModel) toAPIESQL() (kbapi.HeatmapESQL, diag.Diagnostics) {
 	api.Legend = legend
 
 	api.Filters = buildFiltersForAPI(m.Filters, &diags)
+
+	writes, presDiags := lensChartPresentationWritesFor(dashboard, lensChartPresentationInput{
+		TimeRange:      m.TimeRange,
+		HideTitle:      m.HideTitle,
+		HideBorder:     m.HideBorder,
+		ReferencesJSON: m.ReferencesJSON,
+		Drilldowns:     m.Drilldowns,
+	})
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return api, diags
+	}
+
+	api.TimeRange = writes.TimeRange
+	if writes.HideTitle != nil {
+		api.HideTitle = writes.HideTitle
+	}
+	if writes.HideBorder != nil {
+		api.HideBorder = writes.HideBorder
+	}
+	if writes.References != nil {
+		api.References = writes.References
+	}
+	if len(writes.DrilldownsRaw) > 0 {
+		items, ddDiags := decodeLensDrilldownSlice[kbapi.HeatmapESQL_Drilldowns_Item](writes.DrilldownsRaw)
+		diags.Append(ddDiags...)
+		if !ddDiags.HasError() {
+			api.Drilldowns = &items
+		}
+	}
 
 	return api, diags
 }

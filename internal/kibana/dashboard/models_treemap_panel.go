@@ -60,11 +60,11 @@ func (c treemapPanelConfigConverter) populateFromAttributes(_ context.Context, p
 	return pm.TreemapConfig.fromAPIESQL(treemapESQL)
 }
 
-func (c treemapPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func (c treemapPanelConfigConverter) buildAttributes(pm panelModel, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	configModel := *pm.TreemapConfig
 
-	attrs, treemapDiags := configModel.toAPI()
+	attrs, treemapDiags := configModel.toAPI(dashboard)
 	diags.Append(treemapDiags...)
 	return attrs, diags
 }
@@ -207,7 +207,7 @@ func (m *treemapConfigModel) fromAPIESQL(api kbapi.TreemapESQL) diag.Diagnostics
 	return diags
 }
 
-func (m *treemapConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func (m *treemapConfigModel) toAPI(dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 	var diags diag.Diagnostics
 
@@ -216,7 +216,7 @@ func (m *treemapConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, dia
 	}
 
 	if m.usesESQL() {
-		esql, esqlDiags := m.toAPITreemapESQL()
+		esql, esqlDiags := m.toAPITreemapESQL(dashboard)
 		diags.Append(esqlDiags...)
 		if diags.HasError() {
 			return attrs, diags
@@ -227,7 +227,7 @@ func (m *treemapConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, dia
 		return attrs, diags
 	}
 
-	noESQL, noESQLDiags := m.toAPINoESQL()
+	noESQL, noESQLDiags := m.toAPINoESQL(dashboard)
 	diags.Append(noESQLDiags...)
 	if diags.HasError() {
 		return attrs, diags
@@ -239,7 +239,7 @@ func (m *treemapConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, dia
 	return attrs, diags
 }
 
-func (m *treemapConfigModel) toAPITreemapESQL() (kbapi.TreemapESQL, diag.Diagnostics) {
+func (m *treemapConfigModel) toAPITreemapESQL(dashboard *dashboardModel) (kbapi.TreemapESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var api kbapi.TreemapESQL
 
@@ -283,7 +283,6 @@ func (m *treemapConfigModel) toAPITreemapESQL() (kbapi.TreemapESQL, diag.Diagnos
 	}
 
 	api.Legend = m.Legend.toTreemapLegend()
-	api.TimeRange = lensPanelTimeRange()
 
 	if typeutils.IsKnown(m.Title) {
 		api.Title = new(m.Title.ValueString())
@@ -307,6 +306,36 @@ func (m *treemapConfigModel) toAPITreemapESQL() (kbapi.TreemapESQL, diag.Diagnos
 		api.Styling.Values = kbapi.ValueDisplay{Mode: &defaultMode}
 	}
 
+	writes, presDiags := lensChartPresentationWritesFor(dashboard, lensChartPresentationInput{
+		TimeRange:      m.TimeRange,
+		HideTitle:      m.HideTitle,
+		HideBorder:     m.HideBorder,
+		ReferencesJSON: m.ReferencesJSON,
+		Drilldowns:     m.Drilldowns,
+	})
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return api, diags
+	}
+
+	api.TimeRange = writes.TimeRange
+	if writes.HideTitle != nil {
+		api.HideTitle = writes.HideTitle
+	}
+	if writes.HideBorder != nil {
+		api.HideBorder = writes.HideBorder
+	}
+	if writes.References != nil {
+		api.References = writes.References
+	}
+	if len(writes.DrilldownsRaw) > 0 {
+		items, ddDiags := decodeLensDrilldownSlice[kbapi.TreemapESQL_Drilldowns_Item](writes.DrilldownsRaw)
+		diags.Append(ddDiags...)
+		if !ddDiags.HasError() {
+			api.Drilldowns = &items
+		}
+	}
+
 	return api, diags
 }
 
@@ -320,11 +349,10 @@ func (m *treemapConfigModel) usesESQL() bool {
 	return m.Query.Expression.IsNull() && m.Query.Language.IsNull()
 }
 
-func (m *treemapConfigModel) toAPINoESQL() (kbapi.TreemapNoESQL, diag.Diagnostics) {
+func (m *treemapConfigModel) toAPINoESQL(dashboard *dashboardModel) (kbapi.TreemapNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	api := kbapi.TreemapNoESQL{
-		Type:      kbapi.TreemapNoESQLTypeTreemap,
-		TimeRange: lensPanelTimeRange(),
+		Type: kbapi.TreemapNoESQLTypeTreemap,
 	}
 
 	if typeutils.IsKnown(m.Title) {
@@ -395,6 +423,36 @@ func (m *treemapConfigModel) toAPINoESQL() (kbapi.TreemapNoESQL, diag.Diagnostic
 
 	if m.ValueDisplay != nil {
 		api.Styling.Values = m.ValueDisplay.toValueDisplay()
+	}
+
+	writes, presDiags := lensChartPresentationWritesFor(dashboard, lensChartPresentationInput{
+		TimeRange:      m.TimeRange,
+		HideTitle:      m.HideTitle,
+		HideBorder:     m.HideBorder,
+		ReferencesJSON: m.ReferencesJSON,
+		Drilldowns:     m.Drilldowns,
+	})
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return api, diags
+	}
+
+	api.TimeRange = writes.TimeRange
+	if writes.HideTitle != nil {
+		api.HideTitle = writes.HideTitle
+	}
+	if writes.HideBorder != nil {
+		api.HideBorder = writes.HideBorder
+	}
+	if writes.References != nil {
+		api.References = writes.References
+	}
+	if len(writes.DrilldownsRaw) > 0 {
+		items, ddDiags := decodeLensDrilldownSlice[kbapi.TreemapNoESQL_Drilldowns_Item](writes.DrilldownsRaw)
+		diags.Append(ddDiags...)
+		if !ddDiags.HasError() {
+			api.Drilldowns = &items
+		}
 	}
 
 	return api, diags

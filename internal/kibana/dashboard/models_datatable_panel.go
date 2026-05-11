@@ -58,7 +58,7 @@ func (c datatablePanelConfigConverter) populateFromAttributes(ctx context.Contex
 	return pm.DatatableConfig.ESQL.fromAPI(ctx, datatableESQL)
 }
 
-func (c datatablePanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func (c datatablePanelConfigConverter) buildAttributes(pm panelModel, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if pm.DatatableConfig == nil {
 		return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
@@ -68,7 +68,7 @@ func (c datatablePanelConfigConverter) buildAttributes(pm panelModel) (kbapi.Kbn
 
 	switch {
 	case pm.DatatableConfig.NoESQL != nil:
-		noESQL, noDiags := pm.DatatableConfig.NoESQL.toAPI()
+		noESQL, noDiags := pm.DatatableConfig.NoESQL.toAPI(dashboard)
 		diags.Append(noDiags...)
 		if diags.HasError() {
 			return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
@@ -79,7 +79,7 @@ func (c datatablePanelConfigConverter) buildAttributes(pm panelModel) (kbapi.Kbn
 			return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
 		}
 	case pm.DatatableConfig.ESQL != nil:
-		esql, esqlDiags := pm.DatatableConfig.ESQL.toAPI()
+		esql, esqlDiags := pm.DatatableConfig.ESQL.toAPI(dashboard)
 		diags.Append(esqlDiags...)
 		if diags.HasError() {
 			return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
@@ -254,10 +254,9 @@ func (m *datatableNoESQLConfigModel) fromAPI(ctx context.Context, api kbapi.Data
 	return diags
 }
 
-func (m *datatableNoESQLConfigModel) toAPI() (kbapi.DatatableNoESQL, diag.Diagnostics) {
+func (m *datatableNoESQLConfigModel) toAPI(dashboard *dashboardModel) (kbapi.DatatableNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	api := kbapi.DatatableNoESQL{Type: kbapi.DatatableNoESQLTypeDataTable}
-	api.TimeRange = lensPanelTimeRange()
 
 	if typeutils.IsKnown(m.Title) {
 		api.Title = m.Title.ValueStringPointer()
@@ -337,6 +336,36 @@ func (m *datatableNoESQLConfigModel) toAPI() (kbapi.DatatableNoESQL, diag.Diagno
 		api.SplitMetricsBy = &splits
 	}
 
+	writes, presDiags := lensChartPresentationWritesFor(dashboard, lensChartPresentationInput{
+		TimeRange:      m.TimeRange,
+		HideTitle:      m.HideTitle,
+		HideBorder:     m.HideBorder,
+		ReferencesJSON: m.ReferencesJSON,
+		Drilldowns:     m.Drilldowns,
+	})
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return api, diags
+	}
+
+	api.TimeRange = writes.TimeRange
+	if writes.HideTitle != nil {
+		api.HideTitle = writes.HideTitle
+	}
+	if writes.HideBorder != nil {
+		api.HideBorder = writes.HideBorder
+	}
+	if writes.References != nil {
+		api.References = writes.References
+	}
+	if len(writes.DrilldownsRaw) > 0 {
+		items, ddDiags := decodeLensDrilldownSlice[kbapi.DatatableNoESQL_Drilldowns_Item](writes.DrilldownsRaw)
+		diags.Append(ddDiags...)
+		if !ddDiags.HasError() {
+			api.Drilldowns = &items
+		}
+	}
+
 	return api, diags
 }
 
@@ -407,10 +436,9 @@ func (m *datatableESQLConfigModel) fromAPI(ctx context.Context, api kbapi.Datata
 	return diags
 }
 
-func (m *datatableESQLConfigModel) toAPI() (kbapi.DatatableESQL, diag.Diagnostics) {
+func (m *datatableESQLConfigModel) toAPI(dashboard *dashboardModel) (kbapi.DatatableESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	api := kbapi.DatatableESQL{Type: kbapi.DatatableESQLTypeDataTable}
-	api.TimeRange = lensPanelTimeRange()
 
 	if typeutils.IsKnown(m.Title) {
 		api.Title = m.Title.ValueStringPointer()
@@ -499,6 +527,36 @@ func (m *datatableESQLConfigModel) toAPI() (kbapi.DatatableESQL, diag.Diagnostic
 			}
 		}
 		api.SplitMetricsBy = &splits
+	}
+
+	writes, presDiags := lensChartPresentationWritesFor(dashboard, lensChartPresentationInput{
+		TimeRange:      m.TimeRange,
+		HideTitle:      m.HideTitle,
+		HideBorder:     m.HideBorder,
+		ReferencesJSON: m.ReferencesJSON,
+		Drilldowns:     m.Drilldowns,
+	})
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return api, diags
+	}
+
+	api.TimeRange = writes.TimeRange
+	if writes.HideTitle != nil {
+		api.HideTitle = writes.HideTitle
+	}
+	if writes.HideBorder != nil {
+		api.HideBorder = writes.HideBorder
+	}
+	if writes.References != nil {
+		api.References = writes.References
+	}
+	if len(writes.DrilldownsRaw) > 0 {
+		items, ddDiags := decodeLensDrilldownSlice[kbapi.DatatableESQL_Drilldowns_Item](writes.DrilldownsRaw)
+		diags.Append(ddDiags...)
+		if !ddDiags.HasError() {
+			api.Drilldowns = &items
+		}
 	}
 
 	return api, diags

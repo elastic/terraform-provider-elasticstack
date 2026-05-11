@@ -126,12 +126,12 @@ func (c metricChartPanelConfigConverter) populateFromAttributes(ctx context.Cont
 	return pm.MetricChartConfig.fromAPIVariant1(ctx, variant1)
 }
 
-func (c metricChartPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func (c metricChartPanelConfigConverter) buildAttributes(pm panelModel, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	configModel := *pm.MetricChartConfig
 
 	// Convert the structured model to API schema
-	attrs, metricDiags := configModel.toAPI()
+	attrs, metricDiags := configModel.toAPI(dashboard)
 	diags.Append(metricDiags...)
 	if diags.HasError() {
 		return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
@@ -317,17 +317,17 @@ func (m *metricChartConfigModel) fromAPIVariant1(ctx context.Context, apiChart k
 	return diags
 }
 
-func (m *metricChartConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func (m *metricChartConfigModel) toAPI(dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	// Determine which variant to use based on whether we have a query
 	// Variant 0 (non-ESQL) requires a query
 	// Variant 1 (ESQL) doesn't require a query
 	if m.Query != nil {
-		return m.toAPIVariant0()
+		return m.toAPIVariant0(dashboard)
 	}
-	return m.toAPIVariant1()
+	return m.toAPIVariant1(dashboard)
 }
 
-func (m *metricChartConfigModel) toAPIVariant0() (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func (m *metricChartConfigModel) toAPIVariant0(dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 
@@ -335,7 +335,6 @@ func (m *metricChartConfigModel) toAPIVariant0() (kbapi.KbnDashboardPanelTypeVis
 		Type: kbapi.MetricNoESQLTypeMetric,
 	}
 	variant0.Styling = kbapi.MetricStyling{}
-	variant0.TimeRange = lensPanelTimeRange()
 
 	// Set simple fields
 	if typeutils.IsKnown(m.Title) {
@@ -396,12 +395,42 @@ func (m *metricChartConfigModel) toAPIVariant0() (kbapi.KbnDashboardPanelTypeVis
 		}
 	}
 
+	writes, presDiags := lensChartPresentationWritesFor(dashboard, lensChartPresentationInput{
+		TimeRange:      m.TimeRange,
+		HideTitle:      m.HideTitle,
+		HideBorder:     m.HideBorder,
+		ReferencesJSON: m.ReferencesJSON,
+		Drilldowns:     m.Drilldowns,
+	})
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
+	}
+
+	variant0.TimeRange = writes.TimeRange
+	if writes.HideTitle != nil {
+		variant0.HideTitle = writes.HideTitle
+	}
+	if writes.HideBorder != nil {
+		variant0.HideBorder = writes.HideBorder
+	}
+	if writes.References != nil {
+		variant0.References = writes.References
+	}
+	if len(writes.DrilldownsRaw) > 0 {
+		items, ddDiags := decodeLensDrilldownSlice[kbapi.MetricNoESQL_Drilldowns_Item](writes.DrilldownsRaw)
+		diags.Append(ddDiags...)
+		if !ddDiags.HasError() {
+			variant0.Drilldowns = &items
+		}
+	}
+
 	attrs, attrsDiags := metricChartAttrsFromPayload(variant0)
 	diags.Append(attrsDiags...)
 	return attrs, diags
 }
 
-func (m *metricChartConfigModel) toAPIVariant1() (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func (m *metricChartConfigModel) toAPIVariant1(dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 
@@ -409,7 +438,6 @@ func (m *metricChartConfigModel) toAPIVariant1() (kbapi.KbnDashboardPanelTypeVis
 		Type: kbapi.MetricESQLTypeMetric,
 	}
 	variant1.Styling = kbapi.MetricStyling{}
-	variant1.TimeRange = lensPanelTimeRange()
 
 	// Set simple fields
 	if typeutils.IsKnown(m.Title) {
@@ -472,6 +500,36 @@ func (m *metricChartConfigModel) toAPIVariant1() (kbapi.KbnDashboardPanelTypeVis
 				_ = breakdownBy.Format.FromNumericFormat(kbapi.NumericFormat{Type: kbapi.Number})
 			}
 			variant1.BreakdownBy = &breakdownBy
+		}
+	}
+
+	writes, presDiags := lensChartPresentationWritesFor(dashboard, lensChartPresentationInput{
+		TimeRange:      m.TimeRange,
+		HideTitle:      m.HideTitle,
+		HideBorder:     m.HideBorder,
+		ReferencesJSON: m.ReferencesJSON,
+		Drilldowns:     m.Drilldowns,
+	})
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
+	}
+
+	variant1.TimeRange = writes.TimeRange
+	if writes.HideTitle != nil {
+		variant1.HideTitle = writes.HideTitle
+	}
+	if writes.HideBorder != nil {
+		variant1.HideBorder = writes.HideBorder
+	}
+	if writes.References != nil {
+		variant1.References = writes.References
+	}
+	if len(writes.DrilldownsRaw) > 0 {
+		items, ddDiags := decodeLensDrilldownSlice[kbapi.MetricESQL_Drilldowns_Item](writes.DrilldownsRaw)
+		diags.Append(ddDiags...)
+		if !ddDiags.HasError() {
+			variant1.Drilldowns = &items
 		}
 	}
 

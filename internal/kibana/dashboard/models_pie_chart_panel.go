@@ -58,12 +58,12 @@ func (c pieChartPanelConfigConverter) populateFromAttributes(_ context.Context, 
 	return pm.PieChartConfig.fromAPIESQL(esql)
 }
 
-func (c pieChartPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func (c pieChartPanelConfigConverter) buildAttributes(pm panelModel, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	configModel := *pm.PieChartConfig
 
 	// Convert the structured model to API schema
-	attrs, pieDiags := configModel.toAPI()
+	attrs, pieDiags := configModel.toAPI(dashboard)
 	diags.Append(pieDiags...)
 	if diags.HasError() {
 		return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
@@ -279,7 +279,7 @@ func (m *pieChartConfigModel) fromAPIESQL(apiChart kbapi.PieESQL) diag.Diagnosti
 	return diags
 }
 
-func (m *pieChartConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func (m *pieChartConfigModel) toAPI(dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 
@@ -293,7 +293,6 @@ func (m *pieChartConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, di
 		// Required by the Dashboard API (Lens pie schema); omitting mode yields HTTP 400.
 		defaultMode := kbapi.ValueDisplayModePercentage
 		chart.Styling.Values = kbapi.ValueDisplay{Mode: &defaultMode}
-		chart.TimeRange = lensPanelTimeRange()
 
 		chart.Title = m.Title.ValueStringPointer()
 		chart.Description = m.Description.ValueStringPointer()
@@ -363,6 +362,36 @@ func (m *pieChartConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, di
 		// Always set type to pie as it's required by the schema
 		chart.Type = kbapi.PieNoESQLTypePie
 
+		writes, presDiags := lensChartPresentationWritesFor(dashboard, lensChartPresentationInput{
+			TimeRange:      m.TimeRange,
+			HideTitle:      m.HideTitle,
+			HideBorder:     m.HideBorder,
+			ReferencesJSON: m.ReferencesJSON,
+			Drilldowns:     m.Drilldowns,
+		})
+		diags.Append(presDiags...)
+		if presDiags.HasError() {
+			return attrs, diags
+		}
+
+		chart.TimeRange = writes.TimeRange
+		if writes.HideTitle != nil {
+			chart.HideTitle = writes.HideTitle
+		}
+		if writes.HideBorder != nil {
+			chart.HideBorder = writes.HideBorder
+		}
+		if writes.References != nil {
+			chart.References = writes.References
+		}
+		if len(writes.DrilldownsRaw) > 0 {
+			items, ddDiags := decodeLensDrilldownSlice[kbapi.PieNoESQL_Drilldowns_Item](writes.DrilldownsRaw)
+			diags.Append(ddDiags...)
+			if !ddDiags.HasError() {
+				chart.Drilldowns = &items
+			}
+		}
+
 		if err := attrs.FromPieNoESQL(chart); err != nil {
 			diags.AddError("Failed to create PieNoESQL schema", err.Error())
 		}
@@ -371,7 +400,6 @@ func (m *pieChartConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, di
 
 		defaultMode := kbapi.ValueDisplayModePercentage
 		chart.Styling.Values = kbapi.ValueDisplay{Mode: &defaultMode}
-		chart.TimeRange = lensPanelTimeRange()
 
 		// Set basic properties
 		chart.Title = m.Title.ValueStringPointer()
@@ -453,6 +481,36 @@ func (m *pieChartConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, di
 
 		// Always set type to pie as it's required by the schema
 		chart.Type = kbapi.PieESQLTypePie
+
+		writes, presDiags := lensChartPresentationWritesFor(dashboard, lensChartPresentationInput{
+			TimeRange:      m.TimeRange,
+			HideTitle:      m.HideTitle,
+			HideBorder:     m.HideBorder,
+			ReferencesJSON: m.ReferencesJSON,
+			Drilldowns:     m.Drilldowns,
+		})
+		diags.Append(presDiags...)
+		if presDiags.HasError() {
+			return attrs, diags
+		}
+
+		chart.TimeRange = writes.TimeRange
+		if writes.HideTitle != nil {
+			chart.HideTitle = writes.HideTitle
+		}
+		if writes.HideBorder != nil {
+			chart.HideBorder = writes.HideBorder
+		}
+		if writes.References != nil {
+			chart.References = writes.References
+		}
+		if len(writes.DrilldownsRaw) > 0 {
+			items, ddDiags := decodeLensDrilldownSlice[kbapi.PieESQL_Drilldowns_Item](writes.DrilldownsRaw)
+			diags.Append(ddDiags...)
+			if !ddDiags.HasError() {
+				chart.Drilldowns = &items
+			}
+		}
 
 		if err := attrs.FromPieESQL(chart); err != nil {
 			diags.AddError("Failed to create PieESQL schema", err.Error())

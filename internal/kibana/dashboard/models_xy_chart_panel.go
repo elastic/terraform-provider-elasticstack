@@ -56,13 +56,13 @@ func (c xyChartPanelConfigConverter) populateFromAttributes(ctx context.Context,
 	return pm.XYChartConfig.fromAPIESQL(ctx, xyChart)
 }
 
-func (c xyChartPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func (c xyChartPanelConfigConverter) buildAttributes(pm panelModel, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 	configModel := *pm.XYChartConfig
 
 	if configModel.xyUsesESQL() {
-		chart, xyDiags := configModel.toAPIESQL()
+		chart, xyDiags := configModel.toAPIESQL(dashboard)
 		diags.Append(xyDiags...)
 		if diags.HasError() {
 			return attrs, diags
@@ -73,7 +73,7 @@ func (c xyChartPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDa
 		return attrs, diags
 	}
 
-	chart, xyDiags := configModel.toAPINoESQL()
+	chart, xyDiags := configModel.toAPINoESQL(dashboard)
 	diags.Append(xyDiags...)
 	if diags.HasError() {
 		return attrs, diags
@@ -1103,7 +1103,7 @@ func (m *xyChartConfigModel) stylingToAPI() kbapi.XyStyling {
 }
 
 // toAPINoESQL converts the XY chart config model to a non-ES|QL API payload.
-func (m *xyChartConfigModel) toAPINoESQL() (kbapi.XyChartNoESQL, diag.Diagnostics) {
+func (m *xyChartConfigModel) toAPINoESQL(dashboard *dashboardModel) (kbapi.XyChartNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	chart := kbapi.XyChartNoESQL{Type: kbapi.XyChartNoESQLTypeXy}
 
@@ -1121,7 +1121,6 @@ func (m *xyChartConfigModel) toAPINoESQL() (kbapi.XyChartNoESQL, diag.Diagnostic
 	}
 
 	chart.Styling = m.stylingToAPI()
-	chart.TimeRange = lensPanelTimeRange()
 
 	if len(m.Layers) > 0 {
 		layers := make([]kbapi.XyLayersNoESQL, 0, len(m.Layers))
@@ -1150,11 +1149,42 @@ func (m *xyChartConfigModel) toAPINoESQL() (kbapi.XyChartNoESQL, diag.Diagnostic
 	}
 
 	chart.Filters = buildFiltersForAPI(m.Filters, &diags)
+
+	writes, presDiags := lensChartPresentationWritesFor(dashboard, lensChartPresentationInput{
+		TimeRange:      m.TimeRange,
+		HideTitle:      m.HideTitle,
+		HideBorder:     m.HideBorder,
+		ReferencesJSON: m.ReferencesJSON,
+		Drilldowns:     m.Drilldowns,
+	})
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return chart, diags
+	}
+
+	chart.TimeRange = writes.TimeRange
+	if writes.HideTitle != nil {
+		chart.HideTitle = writes.HideTitle
+	}
+	if writes.HideBorder != nil {
+		chart.HideBorder = writes.HideBorder
+	}
+	if writes.References != nil {
+		chart.References = writes.References
+	}
+	if len(writes.DrilldownsRaw) > 0 {
+		items, ddDiags := decodeLensDrilldownSlice[kbapi.XyChartNoESQL_Drilldowns_Item](writes.DrilldownsRaw)
+		diags.Append(ddDiags...)
+		if !ddDiags.HasError() {
+			chart.Drilldowns = &items
+		}
+	}
+
 	return chart, diags
 }
 
 // toAPIESQL converts the XY chart config model to an ES|QL API payload.
-func (m *xyChartConfigModel) toAPIESQL() (kbapi.XyChartESQL, diag.Diagnostics) {
+func (m *xyChartConfigModel) toAPIESQL(dashboard *dashboardModel) (kbapi.XyChartESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	chart := kbapi.XyChartESQL{Type: kbapi.XyChartESQLTypeXy}
 
@@ -1172,7 +1202,6 @@ func (m *xyChartConfigModel) toAPIESQL() (kbapi.XyChartESQL, diag.Diagnostics) {
 	}
 
 	chart.Styling = m.stylingToAPI()
-	chart.TimeRange = lensPanelTimeRange()
 
 	if len(m.Layers) > 0 {
 		layers := make([]kbapi.XyLayerESQL, 0, len(m.Layers))
@@ -1197,6 +1226,37 @@ func (m *xyChartConfigModel) toAPIESQL() (kbapi.XyChartESQL, diag.Diagnostics) {
 	}
 
 	chart.Filters = buildFiltersForAPI(m.Filters, &diags)
+
+	writes, presDiags := lensChartPresentationWritesFor(dashboard, lensChartPresentationInput{
+		TimeRange:      m.TimeRange,
+		HideTitle:      m.HideTitle,
+		HideBorder:     m.HideBorder,
+		ReferencesJSON: m.ReferencesJSON,
+		Drilldowns:     m.Drilldowns,
+	})
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return chart, diags
+	}
+
+	chart.TimeRange = writes.TimeRange
+	if writes.HideTitle != nil {
+		chart.HideTitle = writes.HideTitle
+	}
+	if writes.HideBorder != nil {
+		chart.HideBorder = writes.HideBorder
+	}
+	if writes.References != nil {
+		chart.References = writes.References
+	}
+	if len(writes.DrilldownsRaw) > 0 {
+		items, ddDiags := decodeLensDrilldownSlice[kbapi.XyChartESQL_Drilldowns_Item](writes.DrilldownsRaw)
+		diags.Append(ddDiags...)
+		if !ddDiags.HasError() {
+			chart.Drilldowns = &items
+		}
+	}
+
 	return chart, diags
 }
 

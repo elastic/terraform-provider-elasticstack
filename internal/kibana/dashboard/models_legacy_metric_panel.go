@@ -60,11 +60,11 @@ func (c legacyMetricPanelConfigConverter) populateFromAttributes(ctx context.Con
 	return pm.LegacyMetricConfig.fromAPINoESQL(ctx, legacyMetric)
 }
 
-func (c legacyMetricPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func (c legacyMetricPanelConfigConverter) buildAttributes(pm panelModel, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	configModel := *pm.LegacyMetricConfig
 
-	attrs, legacyDiags := configModel.toAPI()
+	attrs, legacyDiags := configModel.toAPI(dashboard)
 	diags.Append(legacyDiags...)
 	if diags.HasError() {
 		return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
@@ -132,7 +132,7 @@ func (m *legacyMetricConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.L
 
 	return diags
 }
-func (m *legacyMetricConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func (m *legacyMetricConfigModel) toAPI(dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var result kbapi.KbnDashboardPanelTypeVisConfig0
 
@@ -152,7 +152,6 @@ func (m *legacyMetricConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0
 		api := kbapi.LegacyMetricNoESQL{
 			Type: kbapi.LegacyMetric,
 		}
-		api.TimeRange = lensPanelTimeRange()
 
 		if typeutils.IsKnown(m.Title) {
 			api.Title = new(m.Title.ValueString())
@@ -191,6 +190,36 @@ func (m *legacyMetricConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0
 		if err := json.Unmarshal([]byte(m.MetricJSON.ValueString()), &api.Metric); err != nil {
 			diags.AddError("Failed to unmarshal metric", err.Error())
 			return result, diags
+		}
+
+		writes, presDiags := lensChartPresentationWritesFor(dashboard, lensChartPresentationInput{
+			TimeRange:      m.TimeRange,
+			HideTitle:      m.HideTitle,
+			HideBorder:     m.HideBorder,
+			ReferencesJSON: m.ReferencesJSON,
+			Drilldowns:     m.Drilldowns,
+		})
+		diags.Append(presDiags...)
+		if presDiags.HasError() {
+			return result, diags
+		}
+
+		api.TimeRange = writes.TimeRange
+		if writes.HideTitle != nil {
+			api.HideTitle = writes.HideTitle
+		}
+		if writes.HideBorder != nil {
+			api.HideBorder = writes.HideBorder
+		}
+		if writes.References != nil {
+			api.References = writes.References
+		}
+		if len(writes.DrilldownsRaw) > 0 {
+			items, ddDiags := decodeLensDrilldownSlice[kbapi.LegacyMetricNoESQL_Drilldowns_Item](writes.DrilldownsRaw)
+			diags.Append(ddDiags...)
+			if !ddDiags.HasError() {
+				api.Drilldowns = &items
+			}
 		}
 
 		if err := result.FromLegacyMetricNoESQL(api); err != nil {

@@ -100,9 +100,9 @@ func waffleChartJSONUsesESQLDataset(waffleChartJSON []byte) (bool, error) {
 	}
 }
 
-func (c wafflePanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func (c wafflePanelConfigConverter) buildAttributes(pm panelModel, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	configModel := *pm.WaffleConfig
-	return configModel.toAPI()
+	return configModel.toAPI(dashboard)
 }
 
 // normalizeKibanaLensNumberFormatJSONString trims Lens number-format defaults Kibana adds on read
@@ -512,7 +512,7 @@ func (m *waffleLegendModel) toAPI() (kbapi.WaffleLegend, diag.Diagnostics) {
 	return leg, diags
 }
 
-func (m *waffleConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func (m *waffleConfigModel) toAPI(dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 	var diags diag.Diagnostics
 
@@ -532,7 +532,7 @@ func (m *waffleConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, diag
 	}
 
 	if m.usesESQL() {
-		esql, d := m.toAPIESQL()
+		esql, d := m.toAPIESQL(dashboard)
 		diags.Append(d...)
 		if diags.HasError() {
 			return attrs, diags
@@ -543,7 +543,7 @@ func (m *waffleConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, diag
 		return attrs, diags
 	}
 
-	noESQL, d := m.toAPINoESQL()
+	noESQL, d := m.toAPINoESQL(dashboard)
 	diags.Append(d...)
 	if diags.HasError() {
 		return attrs, diags
@@ -554,11 +554,10 @@ func (m *waffleConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, diag
 	return attrs, diags
 }
 
-func (m *waffleConfigModel) toAPINoESQL() (kbapi.WaffleNoESQL, diag.Diagnostics) {
+func (m *waffleConfigModel) toAPINoESQL(dashboard *dashboardModel) (kbapi.WaffleNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	api := kbapi.WaffleNoESQL{
-		Type:      kbapi.WaffleNoESQLTypeWaffle,
-		TimeRange: lensPanelTimeRange(),
+		Type: kbapi.WaffleNoESQLTypeWaffle,
 	}
 
 	if typeutils.IsKnown(m.Title) {
@@ -635,14 +634,43 @@ func (m *waffleConfigModel) toAPINoESQL() (kbapi.WaffleNoESQL, diag.Diagnostics)
 		api.GroupBy = &gb
 	}
 
+	writes, presDiags := lensChartPresentationWritesFor(dashboard, lensChartPresentationInput{
+		TimeRange:      m.TimeRange,
+		HideTitle:      m.HideTitle,
+		HideBorder:     m.HideBorder,
+		ReferencesJSON: m.ReferencesJSON,
+		Drilldowns:     m.Drilldowns,
+	})
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return api, diags
+	}
+
+	api.TimeRange = writes.TimeRange
+	if writes.HideTitle != nil {
+		api.HideTitle = writes.HideTitle
+	}
+	if writes.HideBorder != nil {
+		api.HideBorder = writes.HideBorder
+	}
+	if writes.References != nil {
+		api.References = writes.References
+	}
+	if len(writes.DrilldownsRaw) > 0 {
+		items, ddDiags := decodeLensDrilldownSlice[kbapi.WaffleNoESQL_Drilldowns_Item](writes.DrilldownsRaw)
+		diags.Append(ddDiags...)
+		if !ddDiags.HasError() {
+			api.Drilldowns = &items
+		}
+	}
+
 	return api, diags
 }
 
-func (m *waffleConfigModel) toAPIESQL() (kbapi.WaffleESQL, diag.Diagnostics) {
+func (m *waffleConfigModel) toAPIESQL(dashboard *dashboardModel) (kbapi.WaffleESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	api := kbapi.WaffleESQL{
-		Type:      kbapi.WaffleESQLTypeWaffle,
-		TimeRange: lensPanelTimeRange(),
+		Type: kbapi.WaffleESQLTypeWaffle,
 	}
 
 	if typeutils.IsKnown(m.Title) {
@@ -753,6 +781,36 @@ func (m *waffleConfigModel) toAPIESQL() (kbapi.WaffleESQL, diag.Diagnostics) {
 			}
 		}
 		api.GroupBy = &gb
+	}
+
+	writes, presDiags := lensChartPresentationWritesFor(dashboard, lensChartPresentationInput{
+		TimeRange:      m.TimeRange,
+		HideTitle:      m.HideTitle,
+		HideBorder:     m.HideBorder,
+		ReferencesJSON: m.ReferencesJSON,
+		Drilldowns:     m.Drilldowns,
+	})
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return api, diags
+	}
+
+	api.TimeRange = writes.TimeRange
+	if writes.HideTitle != nil {
+		api.HideTitle = writes.HideTitle
+	}
+	if writes.HideBorder != nil {
+		api.HideBorder = writes.HideBorder
+	}
+	if writes.References != nil {
+		api.References = writes.References
+	}
+	if len(writes.DrilldownsRaw) > 0 {
+		items, ddDiags := decodeLensDrilldownSlice[kbapi.WaffleESQL_Drilldowns_Item](writes.DrilldownsRaw)
+		diags.Append(ddDiags...)
+		if !ddDiags.HasError() {
+			api.Drilldowns = &items
+		}
 	}
 
 	return api, diags
