@@ -66,15 +66,13 @@ func TestAccResourceDashboardUnknownPanel(t *testing.T) {
 						if !ok {
 							return fmt.Errorf("resource not found in state")
 						}
-						// The composite ID is <space_id>/<dashboard_uuid>; extract the UUID.
-						compositeID := rs.Primary.ID
-						for i := len(compositeID) - 1; i >= 0; i-- {
-							if compositeID[i] == '/' {
-								dashboardID = compositeID[i+1:]
-								return nil
-							}
+						// The composite ID is <space_id>/<dashboard_uuid>; use the shared helper.
+						parsedID, diags := clients.CompositeIDFromStr(rs.Primary.ID)
+						if diags.HasError() {
+							return fmt.Errorf("could not parse dashboard composite ID %q", rs.Primary.ID)
 						}
-						return fmt.Errorf("could not parse dashboard ID from composite ID %q", compositeID)
+						dashboardID = parsedID.ResourceID
+						return nil
 					},
 				),
 			},

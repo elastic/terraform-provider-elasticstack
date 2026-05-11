@@ -21,6 +21,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"slices"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
@@ -416,6 +417,11 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 		// Unknown panel type: preserve id, grid, type and the raw API config.
 		// This ensures round-trip stability for panels that don't yet have a
 		// typed config block (e.g. discover_session, image, slo_alerts).
+			// Clear fields that may be seeded from prior state before populating
+		// from the API payload so stale values cannot survive a missing field.
+		pm.ID = types.StringNull()
+		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
+		pm.Grid = panelGridModel{}
 		rawBytes, err := panelItem.MarshalJSON()
 		if err == nil {
 			var rawObj map[string]any
@@ -423,9 +429,14 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 				if grid, ok := rawObj["grid"].(map[string]any); ok {
 					x, _ := grid["x"].(float64)
 					y, _ := grid["y"].(float64)
-					w, _ := grid["w"].(float64)
-					h, _ := grid["h"].(float64)
-					setPanelGridFromAPI(&pm, float32(x), float32(y), float32Ptr(w), float32Ptr(h))
+					var wPtr, hPtr *float32
+					if wVal, ok := grid["w"].(float64); ok {
+						wPtr = float32Ptr(wVal)
+					}
+					if hVal, ok := grid["h"].(float64); ok {
+						hPtr = float32Ptr(hVal)
+					}
+					setPanelGridFromAPI(&pm, float32(x), float32(y), wPtr, hPtr)
 				}
 				if id, ok := rawObj["id"].(string); ok && id != "" {
 					pm.ID = types.StringValue(id)
@@ -845,8 +856,7 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 		return kbapi.DashboardPanelItem{}, diags
 	}
 
-	isKnownType := false
-	for _, t := range []string{
+	isKnownType := slices.Contains([]string{
 		panelTypeMarkdown,
 		panelTypeVis,
 		panelTypeTimeSlider,
@@ -859,19 +869,19 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 		panelTypeSyntheticsMonitors,
 		panelTypeLensDashboardApp,
 		panelTypeSloOverview,
-	} {
-		if panelType == t {
-			isKnownType = true
-			break
-		}
-	}
+	}, panelType)
 
 	if isKnownType {
 		diags.AddError("Unsupported panel configuration", "No panel configuration block was provided.")
 	} else {
 		diags.AddError(
 			"Unsupported panel type",
-			fmt.Sprintf("Panel type %q is not yet supported. This panel type was preserved from the API during read but cannot be authored in configuration. To add support for this panel type, wait for a provider update that includes a typed configuration block.", panelType),
+			fmt.Sprintf(
+				"Panel type %q is not yet supported. This panel type was preserved from the API during read "+
+					"but cannot be authored in configuration. To add support for this panel type, "+
+					"wait for a provider update that includes a typed configuration block.",
+				panelType,
+			),
 		)
 	}
 	return kbapi.DashboardPanelItem{}, diags

@@ -790,7 +790,7 @@ func Test_unknownPanelRoundTrip(t *testing.T) {
 	model := &dashboardModel{}
 	panels, sections, diags := model.mapPanelsFromAPI(t.Context(), &apiPanels)
 	require.False(t, diags.HasError())
-	require.Len(t, sections, 0)
+	require.Empty(t, sections)
 	require.Len(t, panels, 2)
 
 	// Step 3: reconstruct model with just these panels and write back to API
