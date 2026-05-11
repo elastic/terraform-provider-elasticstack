@@ -396,12 +396,12 @@ func makeSortList(t *testing.T, entries []map[string]string) basetypes.ListValue
 
 func Test_tfModel_toIndexSettings_sort(t *testing.T) {
 	tests := []struct {
-		name             string
-		entries          []map[string]string
-		wantField        []string
-		wantOrder        []string
-		wantMissing      []string // nil means key absent
-		wantMode         []string // nil means key absent
+		name        string
+		entries     []map[string]string
+		wantField   []string
+		wantOrder   []string
+		wantMissing []string // nil means key absent
+		wantMode    []string // nil means key absent
 	}{
 		{
 			name: "single entry, all null optional",
@@ -446,9 +446,9 @@ func Test_tfModel_toIndexSettings_sort(t *testing.T) {
 				{"field": "price", "mode": "max"},
 				{"field": "date"},
 			},
-			wantField:  []string{"price", "date"},
-			wantOrder:  []string{"asc", "asc"},
-			wantMode:   []string{"max", ""},
+			wantField: []string{"price", "date"},
+			wantOrder: []string{"asc", "asc"},
+			wantMode:  []string{"max", ""},
 		},
 		{
 			name: "mode on second entry only — positional alignment",
@@ -456,9 +456,9 @@ func Test_tfModel_toIndexSettings_sort(t *testing.T) {
 				{"field": "price"},
 				{"field": "date", "mode": "min"},
 			},
-			wantField:  []string{"price", "date"},
-			wantOrder:  []string{"asc", "asc"},
-			wantMode:   []string{"", "min"},
+			wantField: []string{"price", "date"},
+			wantOrder: []string{"asc", "asc"},
+			wantMode:  []string{"", "min"},
 		},
 		{
 			name: "all optional fields present",
