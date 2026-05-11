@@ -1,0 +1,1 @@
+Dashboard-level saved filter pills (`kbn-dashboard-data.filters` in the Kibana Dashboard API). Each element is one filter in display order. The JSON shape for each `filter_json` matches the dashboard filters discriminated union (including DSL and spatial variants), consistent with per-panel `filter_json` on Lens chart blocks.

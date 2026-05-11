@@ -26,6 +26,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -45,6 +46,7 @@ type dashboardModel struct {
 	TimeRange        *timeRangeModel       `tfsdk:"time_range"`
 	RefreshInterval  *refreshIntervalModel `tfsdk:"refresh_interval"`
 	Query            *dashboardQueryModel  `tfsdk:"query"`
+	Filters          types.List            `tfsdk:"filters"`
 	Tags             types.List            `tfsdk:"tags"`
 	Options          *optionsModel         `tfsdk:"options"`
 	AccessControl    *AccessControlValue   `tfsdk:"access_control"`
@@ -109,6 +111,8 @@ func (m *dashboardModel) populateFromAPI(ctx context.Context, resp *kbapi.GetDas
 		q.JSON = jsontypes.NewNormalizedNull()
 	}
 	m.Query = q
+
+	m.mapDashboardFiltersFromAPI(ctx, &data.Data, &diags)
 
 	// Map tags
 	if data.Data.Tags != nil && len(*data.Data.Tags) > 0 {
@@ -188,6 +192,8 @@ func (m *dashboardModel) toAPICreateRequest(ctx context.Context, diags *diag.Dia
 	diags.Append(panelsDiags...)
 	req.Panels = panels
 
+	m.dashboardFiltersToCreateAPI(ctx, &req, diags)
+
 	return req
 }
 
@@ -241,6 +247,8 @@ func (m *dashboardModel) toAPIUpdateRequest(ctx context.Context, diags *diag.Dia
 		req.Panels = panels
 	}
 
+	m.dashboardFiltersToUpdateAPI(ctx, &req, diags)
+
 	return req
 }
 
@@ -270,4 +278,79 @@ func (m *dashboardModel) queryToAPI() (kbapi.KbnAsCodeQuery, diag.Diagnostics) {
 	}
 
 	return query, nil
+}
+
+func dashboardRootSavedFiltersElementType() types.ObjectType {
+	return types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"filter_json": jsontypes.NormalizedType{},
+		},
+	}
+}
+
+// mapDashboardFiltersFromAPI sets m.Filters from the API in response order.
+// REQ-037 / REQ-009: when filters were unset in state and the API returns no filters (nil or empty),
+// the attribute stays null rather than becoming an empty list.
+func (m *dashboardModel) mapDashboardFiltersFromAPI(ctx context.Context, api *kbapi.KbnDashboardData, diags *diag.Diagnostics) {
+	priorUnset := m.Filters.IsNull()
+	apiFilters := api.Filters
+	hasItems := apiFilters != nil && len(*apiFilters) > 0
+
+	if !hasItems {
+		if priorUnset {
+			return
+		}
+		m.Filters = typeutils.ListValueFrom(ctx, []chartFilterJSONModel{}, dashboardRootSavedFiltersElementType(), path.Root("filters"), diags)
+		return
+	}
+
+	elems := make([]chartFilterJSONModel, 0, len(*apiFilters))
+	for _, item := range *apiFilters {
+		fm := chartFilterJSONModel{}
+		fd := fm.populateFromAPIItem(item)
+		diags.Append(fd...)
+		if fd.HasError() {
+			return
+		}
+		elems = append(elems, fm)
+	}
+	m.Filters = typeutils.ListValueFrom(ctx, elems, dashboardRootSavedFiltersElementType(), path.Root("filters"), diags)
+}
+
+// buildDashboardFiltersForAPI converts m.Filters into the shared kbapi.DashboardFilters
+// payload used by both the create (POST) and update (PUT) dashboard request bodies.
+// Returns (nil, false) when the attribute is unknown/null so callers leave the request
+// field untouched; returns (&empty, true) when the list is known-empty so callers send
+// an explicit empty array.
+func (m *dashboardModel) buildDashboardFiltersForAPI(ctx context.Context, diags *diag.Diagnostics) (*kbapi.DashboardFilters, bool) {
+	if !typeutils.IsKnown(m.Filters) {
+		return nil, false
+	}
+	elems := typeutils.ListTypeAs[chartFilterJSONModel](ctx, m.Filters, path.Root("filters"), diags)
+	if diags.HasError() {
+		return nil, false
+	}
+	items := make(kbapi.DashboardFilters, 0, len(elems))
+	for _, el := range elems {
+		var item kbapi.DashboardFilters_Item
+		fd := decodeChartFilterJSON(el.FilterJSON, &item)
+		diags.Append(fd...)
+		if fd.HasError() {
+			return nil, false
+		}
+		items = append(items, item)
+	}
+	return &items, true
+}
+
+func (m *dashboardModel) dashboardFiltersToCreateAPI(ctx context.Context, req *kbapi.PostDashboardsJSONRequestBody, diags *diag.Diagnostics) {
+	if filters, ok := m.buildDashboardFiltersForAPI(ctx, diags); ok {
+		req.Filters = filters
+	}
+}
+
+func (m *dashboardModel) dashboardFiltersToUpdateAPI(ctx context.Context, req *kbapi.PutDashboardsIdJSONRequestBody, diags *diag.Diagnostics) {
+	if filters, ok := m.buildDashboardFiltersForAPI(ctx, diags); ok {
+		req.Filters = filters
+	}
 }

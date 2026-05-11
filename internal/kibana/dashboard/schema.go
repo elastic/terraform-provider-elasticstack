@@ -474,6 +474,11 @@ func getSchema() schema.Schema {
 					},
 				},
 			},
+			"filters": schema.ListNestedAttribute{
+				MarkdownDescription: dashboardFiltersDescription,
+				Optional:            true,
+				NestedObject:        getDashboardRootSavedFiltersNestedObject(),
+			},
 			"tags": schema.ListAttribute{
 				MarkdownDescription: "An array of tag IDs applied to this dashboard.",
 				ElementType:         types.StringType,
@@ -1698,6 +1703,20 @@ func getChartFilter() schema.NestedAttributeObject {
 					"one of the filter union members (condition, group, DSL, or spatial) described in the dashboards OpenAPI specification.",
 				CustomType: jsontypes.NormalizedType{},
 				Required:   true,
+			},
+		},
+	}
+}
+
+// getDashboardRootSavedFiltersNestedObject returns the nested object schema for one dashboard-level saved filter.
+// Shape matches getChartFilter (filter_json with jsontypes.NormalizedType) for consistency with chart blocks.
+func getDashboardRootSavedFiltersNestedObject() schema.NestedAttributeObject {
+	return schema.NestedAttributeObject{
+		Attributes: map[string]schema.Attribute{
+			"filter_json": schema.StringAttribute{
+				MarkdownDescription: dashboardFilterJSONDescription,
+				CustomType:          jsontypes.NormalizedType{},
+				Required:            true,
 			},
 		},
 	}
