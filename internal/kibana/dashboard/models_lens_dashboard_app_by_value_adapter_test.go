@@ -215,6 +215,7 @@ func Test_lensDashboardAppByValueToAPI_typedMetric_producesLensDashboardAppByVal
 		by,
 		lensDashboardAPIGrid{X: 0, Y: 0, W: float32ptr(24), H: float32ptr(12)},
 		&id,
+		nil,
 	)
 	require.False(t, diags.HasError())
 
@@ -378,7 +379,7 @@ func Test_lensDashboardAppByValueToAPI_typedESQL_adapter_metric_xy_pie_waffle(t 
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			by := tc.by(t)
-			item, diags := lensDashboardAppByValueToAPI(by, grid, nil)
+			item, diags := lensDashboardAppByValueToAPI(by, grid, nil, nil)
 			require.False(t, diags.HasError())
 			ld, err := item.AsKbnDashboardPanelTypeLensDashboardApp()
 			require.NoError(t, err)
@@ -436,7 +437,7 @@ func Test_lensDashboardAppByValueToAPI_typedNoESQL_adapter_xy_pie_waffle(t *test
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			by := tc.by(t)
-			item, diags := lensDashboardAppByValueToAPI(by, grid, nil)
+			item, diags := lensDashboardAppByValueToAPI(by, grid, nil, nil)
 			require.False(t, diags.HasError())
 			ld, err := item.AsKbnDashboardPanelTypeLensDashboardApp()
 			require.NoError(t, err)
@@ -451,7 +452,7 @@ func Test_populateLensDashboardAppByValueFromAPI_typedRead_repopulatesTypedBlock
 	t.Parallel()
 	ctx := context.Background()
 	by := testMetricByValueFromRoundTrip(t)
-	item, diags := lensDashboardAppByValueToAPI(by, lensDashboardAPIGrid{}, nil)
+	item, diags := lensDashboardAppByValueToAPI(by, lensDashboardAPIGrid{}, nil, nil)
 	require.False(t, diags.HasError())
 	ld, err := item.AsKbnDashboardPanelTypeLensDashboardApp()
 	require.NoError(t, err)

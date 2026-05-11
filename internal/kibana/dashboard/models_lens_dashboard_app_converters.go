@@ -144,20 +144,16 @@ func lensDashboardAppToAPI(pm panelModel, grid lensDashboardAPIGrid, panelID *st
 	}
 }
 
-// parentDashboardOptional uses a variadic trailing parameter so callers that build a by-value
-// chart in isolation (e.g. unit tests) can omit a parent dashboard; production writes from
-// panelModel.toAPI always pass the real enclosing dashboard model.
+// parentDashboard is the enclosing dashboard resource model when converting typed by_value charts.
+// Callers that build payloads in isolation (e.g. unit tests) pass nil; panelModel.toAPI passes
+// the real enclosing dashboard model.
 func lensDashboardAppByValueToAPI(
 	byValue lensDashboardAppByValueModel,
 	grid lensDashboardAPIGrid,
 	panelID *string,
-	parentDashboardOptional ...*dashboardModel,
+	parentDashboard *dashboardModel,
 ) (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var parentDashboard *dashboardModel
-	if len(parentDashboardOptional) > 0 {
-		parentDashboard = parentDashboardOptional[0]
-	}
 	if scratch, ok := lensByValueToScratchVisPanel(byValue); ok {
 		conv, okConv := firstLensVizConverterForPanel(scratch)
 		if !okConv {

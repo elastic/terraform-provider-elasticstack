@@ -502,11 +502,13 @@ func timeRangeModelToAPI(tr *timeRangeModel) kbapi.KbnEsQueryServerTimeRangeSche
 // Production dashboard writes (`panelsToAPI` / `panelModel.toAPI`) always pass the enclosing
 // `dashboardModel`, so null chart-level `time_range` inherits dashboard-level values (REQ-013).
 //
-// The `now-15m` / `now` fallback below remains only when no dashboard is in scope: isolated unit
-// tests call `buildAttributes(..., nil)`, and optional tooling may construct chart payloads without
-// a parent dashboard. The lens-dashboard-app typed `by_value` path threads the parent dashboard
-// via `lensDashboardAppToAPI` / `lensDashboardAppByValueToAPI` so it inherits like other typed
-// charts; it does not rely on this fallback during normal resource updates.
+// The `now-15m` / `now` fallback below applies when there is no chart-level override and either
+// no parent `dashboardModel` is in scope (e.g. isolated unit tests call `buildAttributes(..., nil)`),
+// or `dashboard != nil` but `dashboard.TimeRange == nil` (unusual in production: the dashboard
+// schema requires `time_range`). Optional tooling may also construct chart payloads without a parent
+// dashboard. The lens-dashboard-app typed `by_value` path threads the parent dashboard via
+// `lensDashboardAppToAPI` / `lensDashboardAppByValueToAPI` so it inherits like other typed charts;
+// it does not rely on this fallback during normal resource updates.
 func resolveChartTimeRange(dashboard *dashboardModel, chartLevel *timeRangeModel) kbapi.KbnEsQueryServerTimeRangeSchema {
 	if chartLevel != nil {
 		return timeRangeModelToAPI(chartLevel)

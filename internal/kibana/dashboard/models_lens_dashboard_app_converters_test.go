@@ -208,6 +208,7 @@ func TestLensDashboardAppByValueToAPI_UnknownConfigJSON(t *testing.T) {
 		lensDashboardAppByValueModel{},
 		lensDashboardAPIGrid{},
 		nil,
+		nil,
 	)
 	if !diags.HasError() {
 		t.Fatal("expected error for unknown by_value.config_json")
@@ -222,7 +223,7 @@ func TestLensDashboardAppByValueToAPI_sendsConfigAsAPI(t *testing.T) {
 		`"filters":[],"metrics":[],"query":{"language":"kql","expression":""},` +
 		`"styling":{"icon":{"name":"heart"}},"time_range":{"from":"now-15m","to":"now"}}`
 	byValue := lensDashboardAppByValueModel{ConfigJSON: jsontypes.NewNormalizedValue(raw)}
-	item, diags := lensDashboardAppByValueToAPI(byValue, lensDashboardAPIGrid{X: 1, Y: 2, W: float32ptr(8), H: float32ptr(9)}, new("pid"))
+	item, diags := lensDashboardAppByValueToAPI(byValue, lensDashboardAPIGrid{X: 1, Y: 2, W: float32ptr(8), H: float32ptr(9)}, new("pid"), nil)
 	require.False(t, diags.HasError())
 	ld, err := item.AsKbnDashboardPanelTypeLensDashboardApp()
 	require.NoError(t, err)
