@@ -32,9 +32,9 @@
 
 ## 4. Verification
 
-- [ ] 4.1 `make build` passes.
+- [x] 4.1 `make build` passes.
 - [ ] 4.2 `make check-lint` passes.
 - [ ] 4.3 `make check-openspec` passes.
-- [ ] 4.4 Unit tests for the `apikey` package pass (`go test ./internal/elasticsearch/security/api_key/...`).
-- [ ] 4.5 Acceptance test `TestAccResourceSecurityAPIKeyNoRoleDescriptors` passes against a
+- [x] 4.4 Unit tests for the `apikey` package pass (`go test ./internal/elasticsearch/security/api_key/...`).
+- [x] 4.5 Acceptance test `TestAccResourceSecurityAPIKeyNoRoleDescriptors` passes against a
   running Elasticsearch stack.
