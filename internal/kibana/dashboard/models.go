@@ -58,6 +58,7 @@ type dashboardModel struct {
 // populateFromAPI populates the Terraform model from the API response
 func (m *dashboardModel) populateFromAPI(ctx context.Context, resp *kbapi.GetDashboardsIdResponse, dashboardID string, spaceID string) diag.Diagnostics {
 	var diags diag.Diagnostics
+	priorPinnedPanels := m.PinnedPanels
 	data := resp.JSON200
 
 	// Set composite ID
@@ -139,6 +140,10 @@ func (m *dashboardModel) populateFromAPI(ctx context.Context, resp *kbapi.GetDas
 	m.Panels = panels
 	m.Sections = sections
 
+	pinnedPanels, pinnedDiags := m.mapPinnedPanelsFromAPI(ctx, priorPinnedPanels, data.Data.PinnedPanels)
+	diags.Append(pinnedDiags...)
+	m.PinnedPanels = pinnedPanels
+
 	return diags
 }
 
@@ -195,6 +200,10 @@ func (m *dashboardModel) toAPICreateRequest(ctx context.Context, diags *diag.Dia
 
 	m.dashboardFiltersToCreateAPI(ctx, &req, diags)
 
+	pinnedPanels, pinnedDiags := m.pinnedPanelsToAPICreateItems()
+	diags.Append(pinnedDiags...)
+	req.PinnedPanels = pinnedPanels
+
 	return req
 }
 
@@ -249,6 +258,12 @@ func (m *dashboardModel) toAPIUpdateRequest(ctx context.Context, diags *diag.Dia
 	}
 
 	m.dashboardFiltersToUpdateAPI(ctx, &req, diags)
+
+	pinnedPanels, pinnedDiags := m.pinnedPanelsToAPIPutItems()
+	diags.Append(pinnedDiags...)
+	if pinnedPanels != nil {
+		req.PinnedPanels = pinnedPanels
+	}
 
 	return req
 }

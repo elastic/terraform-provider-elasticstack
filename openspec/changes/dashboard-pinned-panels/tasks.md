@@ -11,9 +11,9 @@
 
 ## 3. Model and mapping
 
-- [ ] 3.1 Add `PinnedPanels` to `dashboardModel`
-- [ ] 3.2 Map `PinnedPanels` into the API request body on create and update; reuse the per-control write helpers
-- [ ] 3.3 Map API response `pinned_panels` back into state, preserving order and the unset-vs-empty distinction
+- [x] 3.1 Add `PinnedPanels` to `dashboardModel`
+- [x] 3.2 Map `PinnedPanels` into the API request body on create and update; reuse the per-control write helpers
+- [x] 3.3 Map API response `pinned_panels` back into state, preserving order and the unset-vs-empty distinction
 
 ## 4. Tests
 
