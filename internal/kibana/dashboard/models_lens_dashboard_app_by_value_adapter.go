@@ -191,6 +191,7 @@ func lensByValueModelFromVizPanelAfterRead(pm *panelModel) (lensDashboardAppByVa
 // if state was set; otherwise the caller should fall back to by_value.config_json.
 func tryPopulateTypedLensByValueFromAPI(
 	ctx context.Context,
+	dashboard *dashboardModel,
 	prior *lensDashboardAppConfigModel,
 	configBytes []byte,
 	pm *panelModel,
@@ -214,7 +215,7 @@ func tryPopulateTypedLensByValueFromAPI(
 	if conv.vizType() != detectLensVizType(vis0) {
 		return false
 	}
-	d := conv.populateFromAttributes(ctx, &scratchPM, vis0)
+	d := conv.populateFromAttributes(ctx, dashboard, &scratchPM, vis0)
 	if d.HasError() {
 		// Intentional: no error diagnostic here; caller falls back to by_value.config_json
 		// (REQ-035) without treating typed read as a user failure.

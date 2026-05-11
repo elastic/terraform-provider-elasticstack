@@ -43,18 +43,23 @@ type regionMapPanelConfigConverter struct {
 	lensVisualizationBase
 }
 
-func (c regionMapPanelConfigConverter) populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
+func (c regionMapPanelConfigConverter) populateFromAttributes(ctx context.Context, dashboard *dashboardModel, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
+	var prior *regionMapConfigModel
+	if pm.RegionMapConfig != nil {
+		cpy := *pm.RegionMapConfig
+		prior = &cpy
+	}
 	pm.RegionMapConfig = &regionMapConfigModel{}
 
 	if noESQL, err := attrs.AsRegionMapNoESQL(); err == nil && !isRegionMapNoESQLCandidateActuallyESQL(noESQL) {
-		return pm.RegionMapConfig.fromAPINoESQL(ctx, noESQL)
+		return pm.RegionMapConfig.fromAPINoESQL(ctx, dashboard, prior, noESQL)
 	}
 
 	regionMapESQL, err := attrs.AsRegionMapESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	return pm.RegionMapConfig.fromAPIESQL(ctx, regionMapESQL)
+	return pm.RegionMapConfig.fromAPIESQL(ctx, dashboard, prior, regionMapESQL)
 }
 
 func isRegionMapNoESQLCandidateActuallyESQL(api kbapi.RegionMapNoESQL) bool {
@@ -119,7 +124,7 @@ func (m *regionMapConfigModel) populateCommonFields(
 	return !diags.HasError()
 }
 
-func (m *regionMapConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.RegionMapNoESQL) diag.Diagnostics {
+func (m *regionMapConfigModel) fromAPINoESQL(ctx context.Context, dashboard *dashboardModel, prior *regionMapConfigModel, api kbapi.RegionMapNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 
@@ -145,10 +150,27 @@ func (m *regionMapConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.Regi
 	}
 	m.RegionJSON = rv
 
+	var priorLens *lensChartPresentationTFModel
+	if prior != nil {
+		p := prior.lensChartPresentationTFModel
+		priorLens = &p
+	}
+	ddWire, ddOmit, ddWireDiags := lensDrilldownsAPIToWire(api.Drilldowns)
+	diags.Append(ddWireDiags...)
+	if ddWireDiags.HasError() {
+		return diags
+	}
+	pres, presDiags := lensChartPresentationReadsFor(ctx, dashboard, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return diags
+	}
+	m.lensChartPresentationTFModel = pres
+
 	return diags
 }
 
-func (m *regionMapConfigModel) fromAPIESQL(ctx context.Context, api kbapi.RegionMapESQL) diag.Diagnostics {
+func (m *regionMapConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashboardModel, prior *regionMapConfigModel, api kbapi.RegionMapESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 
@@ -172,6 +194,23 @@ func (m *regionMapConfigModel) fromAPIESQL(ctx context.Context, api kbapi.Region
 		return diags
 	}
 	m.RegionJSON = rv
+
+	var priorLens *lensChartPresentationTFModel
+	if prior != nil {
+		p := prior.lensChartPresentationTFModel
+		priorLens = &p
+	}
+	ddWire, ddOmit, ddWireDiags := lensDrilldownsAPIToWire(api.Drilldowns)
+	diags.Append(ddWireDiags...)
+	if ddWireDiags.HasError() {
+		return diags
+	}
+	pres, presDiags := lensChartPresentationReadsFor(ctx, dashboard, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return diags
+	}
+	m.lensChartPresentationTFModel = pres
 
 	return diags
 }

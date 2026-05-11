@@ -100,7 +100,7 @@ type metricChartPanelConfigConverter struct {
 	lensVisualizationBase
 }
 
-func (c metricChartPanelConfigConverter) populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
+func (c metricChartPanelConfigConverter) populateFromAttributes(ctx context.Context, dashboard *dashboardModel, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
 	// Populate the model.
 	//
 	// Disambiguate variant 0 vs 1 using dataset type. The regenerated API can
@@ -117,13 +117,13 @@ func (c metricChartPanelConfigConverter) populateFromAttributes(ctx context.Cont
 		pm.MetricChartConfig.Metrics = priorConfig.Metrics
 	}
 	if variant0, err := attrs.AsMetricNoESQL(); err == nil && !isMetricNoESQLCandidateActuallyESQL(variant0) {
-		return pm.MetricChartConfig.fromAPIVariant0(ctx, variant0)
+		return pm.MetricChartConfig.fromAPIVariant0(ctx, dashboard, priorConfig, variant0)
 	}
 	variant1, err := attrs.AsMetricESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	return pm.MetricChartConfig.fromAPIVariant1(ctx, variant1)
+	return pm.MetricChartConfig.fromAPIVariant1(ctx, dashboard, priorConfig, variant1)
 }
 
 func (c metricChartPanelConfigConverter) buildAttributes(pm panelModel, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
@@ -185,15 +185,15 @@ func (m *metricChartConfigModel) fromAPI(ctx context.Context, attrs kbapi.KbnDas
 		if isMetricNoESQLCandidateActuallyESQL(variant0) {
 			variant1, err1 := attrs.AsMetricESQL()
 			if err1 == nil {
-				return m.fromAPIVariant1(ctx, variant1)
+				return m.fromAPIVariant1(ctx, nil, nil, variant1)
 			}
 		}
-		return m.fromAPIVariant0(ctx, variant0)
+		return m.fromAPIVariant0(ctx, nil, nil, variant0)
 	}
 
 	variant1, err := attrs.AsMetricESQL()
 	if err == nil {
-		return m.fromAPIVariant1(ctx, variant1)
+		return m.fromAPIVariant1(ctx, nil, nil, variant1)
 	}
 
 	diags.AddError("Failed to parse metric chart schema", "Could not parse as either variant 0 or 1")
@@ -226,7 +226,7 @@ func (m *metricChartConfigModel) populateCommonFields(
 	return !diags.HasError()
 }
 
-func (m *metricChartConfigModel) fromAPIVariant0(ctx context.Context, apiChart kbapi.MetricNoESQL) diag.Diagnostics {
+func (m *metricChartConfigModel) fromAPIVariant0(ctx context.Context, dashboard *dashboardModel, prior *metricChartConfigModel, apiChart kbapi.MetricNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 
@@ -269,10 +269,27 @@ func (m *metricChartConfigModel) fromAPIVariant0(ctx context.Context, apiChart k
 		m.BreakdownByJSON = jsontypes.NewNormalizedNull()
 	}
 
+	var priorLens *lensChartPresentationTFModel
+	if prior != nil {
+		p := prior.lensChartPresentationTFModel
+		priorLens = &p
+	}
+	ddWire, ddOmit, ddWireDiags := lensDrilldownsAPIToWire(apiChart.Drilldowns)
+	diags.Append(ddWireDiags...)
+	if ddWireDiags.HasError() {
+		return diags
+	}
+	pres, presDiags := lensChartPresentationReadsFor(ctx, dashboard, priorLens, apiChart.TimeRange, apiChart.HideTitle, apiChart.HideBorder, apiChart.References, ddWire, ddOmit)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return diags
+	}
+	m.lensChartPresentationTFModel = pres
+
 	return diags
 }
 
-func (m *metricChartConfigModel) fromAPIVariant1(ctx context.Context, apiChart kbapi.MetricESQL) diag.Diagnostics {
+func (m *metricChartConfigModel) fromAPIVariant1(ctx context.Context, dashboard *dashboardModel, prior *metricChartConfigModel, apiChart kbapi.MetricESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 
@@ -313,6 +330,23 @@ func (m *metricChartConfigModel) fromAPIVariant1(ctx context.Context, apiChart k
 	} else {
 		m.BreakdownByJSON = jsontypes.NewNormalizedNull()
 	}
+
+	var priorLens *lensChartPresentationTFModel
+	if prior != nil {
+		p := prior.lensChartPresentationTFModel
+		priorLens = &p
+	}
+	ddWire, ddOmit, ddWireDiags := lensDrilldownsAPIToWire(apiChart.Drilldowns)
+	diags.Append(ddWireDiags...)
+	if ddWireDiags.HasError() {
+		return diags
+	}
+	pres, presDiags := lensChartPresentationReadsFor(ctx, dashboard, priorLens, apiChart.TimeRange, apiChart.HideTitle, apiChart.HideBorder, apiChart.References, ddWire, ddOmit)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return diags
+	}
+	m.lensChartPresentationTFModel = pres
 
 	return diags
 }

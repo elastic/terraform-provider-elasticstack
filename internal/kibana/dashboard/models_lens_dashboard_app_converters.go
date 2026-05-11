@@ -326,6 +326,7 @@ func jsonBytesFromOptionalNormalizedArray(n jsontypes.Normalized, field string) 
 // the same index from the prior model (used for prior lens mode and optional seeding).
 func populateLensDashboardAppFromAPI(
 	ctx context.Context,
+	dashboard *dashboardModel,
 	pm *panelModel,
 	tfPanel *panelModel,
 	api kbapi.KbnDashboardPanelTypeLensDashboardApp,
@@ -356,7 +357,7 @@ func populateLensDashboardAppFromAPI(
 	// ambiguous case is for incomplete/odd payloads where we keep prior by_reference.
 	switch classifyLensDashboardAppConfigFromRoot(root) {
 	case lensConfigClassByValueChart:
-		return populateLensDashboardAppByValueFromAPI(ctx, prior, configBytes, pm)
+		return populateLensDashboardAppByValueFromAPI(ctx, dashboard, prior, configBytes, pm)
 	case lensConfigClassByReference:
 		cfg1, err1 := api.Config.AsKbnDashboardPanelTypeLensDashboardAppConfig1()
 		if err1 != nil {
@@ -370,7 +371,7 @@ func populateLensDashboardAppFromAPI(
 			// the response is not clearly a by-value chart and not a full by-reference shape.
 			return diags
 		}
-		return populateLensDashboardAppByValueFromAPI(ctx, prior, configBytes, pm)
+		return populateLensDashboardAppByValueFromAPI(ctx, dashboard, prior, configBytes, pm)
 	}
 }
 
@@ -619,6 +620,7 @@ func jsonValueSubsumedByCurrentAny(prior, current any) bool {
 // back to `by_value.config_json`.
 func populateLensDashboardAppByValueFromAPI(
 	ctx context.Context,
+	dashboard *dashboardModel,
 	prior *lensDashboardAppConfigModel,
 	configBytes []byte,
 	pm *panelModel,
@@ -638,7 +640,7 @@ func populateLensDashboardAppByValueFromAPI(
 		return diags
 	}
 
-	if tryPopulateTypedLensByValueFromAPI(ctx, prior, configBytes, pm, &diags) {
+	if tryPopulateTypedLensByValueFromAPI(ctx, dashboard, prior, configBytes, pm, &diags) {
 		return diags
 	}
 

@@ -42,20 +42,25 @@ type pieChartPanelConfigConverter struct {
 	lensVisualizationBase
 }
 
-func (c pieChartPanelConfigConverter) populateFromAttributes(_ context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
+func (c pieChartPanelConfigConverter) populateFromAttributes(ctx context.Context, dashboard *dashboardModel, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
 	// Populate the model.
 	//
 	// Disambiguate NoESQL vs ESQL using dataset type; regenerated clients can
 	// decode an empty no-ESQL query for ESQL payloads.
+	var prior *pieChartConfigModel
+	if pm.PieChartConfig != nil {
+		cpy := *pm.PieChartConfig
+		prior = &cpy
+	}
 	pm.PieChartConfig = &pieChartConfigModel{}
 	if noESQL, err := attrs.AsPieNoESQL(); err == nil && !isPieNoESQLCandidateActuallyESQL(noESQL) {
-		return pm.PieChartConfig.fromAPINoESQL(noESQL)
+		return pm.PieChartConfig.fromAPINoESQL(ctx, dashboard, prior, noESQL)
 	}
 	esql, err := attrs.AsPieESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	return pm.PieChartConfig.fromAPIESQL(esql)
+	return pm.PieChartConfig.fromAPIESQL(ctx, dashboard, prior, esql)
 }
 
 func (c pieChartPanelConfigConverter) buildAttributes(pm panelModel, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
@@ -156,7 +161,7 @@ func (m *pieChartConfigModel) populateCommonFields(
 	return !diags.HasError()
 }
 
-func (m *pieChartConfigModel) fromAPINoESQL(apiChart kbapi.PieNoESQL) diag.Diagnostics {
+func (m *pieChartConfigModel) fromAPINoESQL(ctx context.Context, dashboard *dashboardModel, prior *pieChartConfigModel, apiChart kbapi.PieNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	var donutHole *string
@@ -215,10 +220,27 @@ func (m *pieChartConfigModel) fromAPINoESQL(apiChart kbapi.PieNoESQL) diag.Diagn
 		}
 	}
 
+	var priorLens *lensChartPresentationTFModel
+	if prior != nil {
+		p := prior.lensChartPresentationTFModel
+		priorLens = &p
+	}
+	ddWire, ddOmit, ddWireDiags := lensDrilldownsAPIToWire(apiChart.Drilldowns)
+	diags.Append(ddWireDiags...)
+	if ddWireDiags.HasError() {
+		return diags
+	}
+	pres, presDiags := lensChartPresentationReadsFor(ctx, dashboard, priorLens, apiChart.TimeRange, apiChart.HideTitle, apiChart.HideBorder, apiChart.References, ddWire, ddOmit)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return diags
+	}
+	m.lensChartPresentationTFModel = pres
+
 	return diags
 }
 
-func (m *pieChartConfigModel) fromAPIESQL(apiChart kbapi.PieESQL) diag.Diagnostics {
+func (m *pieChartConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashboardModel, prior *pieChartConfigModel, apiChart kbapi.PieESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	var donutHole *string
@@ -275,6 +297,23 @@ func (m *pieChartConfigModel) fromAPIESQL(apiChart kbapi.PieESQL) diag.Diagnosti
 			)
 		}
 	}
+
+	var priorLens *lensChartPresentationTFModel
+	if prior != nil {
+		p := prior.lensChartPresentationTFModel
+		priorLens = &p
+	}
+	ddWire, ddOmit, ddWireDiags := lensDrilldownsAPIToWire(apiChart.Drilldowns)
+	diags.Append(ddWireDiags...)
+	if ddWireDiags.HasError() {
+		return diags
+	}
+	pres, presDiags := lensChartPresentationReadsFor(ctx, dashboard, priorLens, apiChart.TimeRange, apiChart.HideTitle, apiChart.HideBorder, apiChart.References, ddWire, ddOmit)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return diags
+	}
+	m.lensChartPresentationTFModel = pres
 
 	return diags
 }

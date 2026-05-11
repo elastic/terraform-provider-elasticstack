@@ -45,8 +45,14 @@ type wafflePanelConfigConverter struct {
 	lensVisualizationBase
 }
 
-func (c wafflePanelConfigConverter) populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
+func (c wafflePanelConfigConverter) populateFromAttributes(ctx context.Context, dashboard *dashboardModel, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
 	seed := pm.WaffleConfig
+
+	var prior *waffleConfigModel
+	if seed != nil {
+		cpy := *seed
+		prior = &cpy
+	}
 
 	raw, err := attrs.MarshalJSON()
 	if err != nil {
@@ -64,13 +70,13 @@ func (c wafflePanelConfigConverter) populateFromAttributes(ctx context.Context, 
 		if err != nil {
 			return diagutil.FrameworkDiagFromError(err)
 		}
-		diags = pm.WaffleConfig.fromAPIESQL(ctx, wESQL)
+		diags = pm.WaffleConfig.fromAPIESQL(ctx, dashboard, prior, wESQL)
 	} else {
 		wNoESQL, err := attrs.AsWaffleNoESQL()
 		if err != nil {
 			return diagutil.FrameworkDiagFromError(err)
 		}
-		diags = pm.WaffleConfig.fromAPINoESQL(ctx, wNoESQL)
+		diags = pm.WaffleConfig.fromAPINoESQL(ctx, dashboard, prior, wNoESQL)
 	}
 	mergeWaffleConfigFromPlanSeed(pm.WaffleConfig, seed)
 	return diags
@@ -249,7 +255,7 @@ func (m *waffleConfigModel) usesESQL() bool {
 	return m.Query.Expression.IsNull() && m.Query.Language.IsNull()
 }
 
-func (m *waffleConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.WaffleNoESQL) diag.Diagnostics {
+func (m *waffleConfigModel) fromAPINoESQL(ctx context.Context, dashboard *dashboardModel, prior *waffleConfigModel, api kbapi.WaffleNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 
@@ -331,10 +337,28 @@ func (m *waffleConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.WaffleN
 
 	m.EsqlMetrics = nil
 	m.EsqlGroupBy = nil
+
+	var priorLens *lensChartPresentationTFModel
+	if prior != nil {
+		p := prior.lensChartPresentationTFModel
+		priorLens = &p
+	}
+	ddWire, ddOmit, ddWireDiags := lensDrilldownsAPIToWire(api.Drilldowns)
+	diags.Append(ddWireDiags...)
+	if ddWireDiags.HasError() {
+		return diags
+	}
+	pres, presDiags := lensChartPresentationReadsFor(ctx, dashboard, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return diags
+	}
+	m.lensChartPresentationTFModel = pres
+
 	return diags
 }
 
-func (m *waffleConfigModel) fromAPIESQL(ctx context.Context, api kbapi.WaffleESQL) diag.Diagnostics {
+func (m *waffleConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashboardModel, prior *waffleConfigModel, api kbapi.WaffleESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 
@@ -444,6 +468,24 @@ func (m *waffleConfigModel) fromAPIESQL(ctx context.Context, api kbapi.WaffleESQ
 
 	m.Metrics = nil
 	m.GroupBy = nil
+
+	var priorLens *lensChartPresentationTFModel
+	if prior != nil {
+		p := prior.lensChartPresentationTFModel
+		priorLens = &p
+	}
+	ddWire, ddOmit, ddWireDiags := lensDrilldownsAPIToWire(api.Drilldowns)
+	diags.Append(ddWireDiags...)
+	if ddWireDiags.HasError() {
+		return diags
+	}
+	pres, presDiags := lensChartPresentationReadsFor(ctx, dashboard, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return diags
+	}
+	m.lensChartPresentationTFModel = pres
+
 	return diags
 }
 

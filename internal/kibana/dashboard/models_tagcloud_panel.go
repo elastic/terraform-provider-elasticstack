@@ -42,15 +42,19 @@ type tagcloudPanelConfigConverter struct {
 	lensVisualizationBase
 }
 
-func (c tagcloudPanelConfigConverter) populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
+func (c tagcloudPanelConfigConverter) populateFromAttributes(ctx context.Context, dashboard *dashboardModel, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
 	tagcloudNoESQL, err := attrs.AsTagcloudNoESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	// Populate the model
+	var prior *tagcloudConfigModel
+	if pm.TagcloudConfig != nil {
+		cpy := *pm.TagcloudConfig
+		prior = &cpy
+	}
 	pm.TagcloudConfig = &tagcloudConfigModel{}
-	return pm.TagcloudConfig.fromAPI(ctx, tagcloudNoESQL)
+	return pm.TagcloudConfig.fromAPI(ctx, dashboard, prior, tagcloudNoESQL)
 }
 
 func (c tagcloudPanelConfigConverter) buildAttributes(pm panelModel, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
@@ -93,7 +97,7 @@ type fontSizeModel struct {
 	Max types.Float64 `tfsdk:"max"`
 }
 
-func (m *tagcloudConfigModel) fromAPI(ctx context.Context, api kbapi.TagcloudNoESQL) diag.Diagnostics {
+func (m *tagcloudConfigModel) fromAPI(ctx context.Context, dashboard *dashboardModel, prior *tagcloudConfigModel, api kbapi.TagcloudNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 
@@ -159,6 +163,23 @@ func (m *tagcloudConfigModel) fromAPI(ctx context.Context, api kbapi.TagcloudNoE
 		return diags
 	}
 	m.TagByJSON = preservePriorJSONWithDefaultsIfEquivalent(ctx, m.TagByJSON, tv, &diags)
+
+	var priorLens *lensChartPresentationTFModel
+	if prior != nil {
+		p := prior.lensChartPresentationTFModel
+		priorLens = &p
+	}
+	ddWire, ddOmit, ddWireDiags := lensDrilldownsAPIToWire(api.Drilldowns)
+	diags.Append(ddWireDiags...)
+	if ddWireDiags.HasError() {
+		return diags
+	}
+	pres, presDiags := lensChartPresentationReadsFor(ctx, dashboard, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return diags
+	}
+	m.lensChartPresentationTFModel = pres
 
 	return diags
 }

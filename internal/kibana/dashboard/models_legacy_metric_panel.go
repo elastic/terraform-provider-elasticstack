@@ -50,14 +50,19 @@ type legacyMetricPanelConfigConverter struct {
 	lensVisualizationBase
 }
 
-func (c legacyMetricPanelConfigConverter) populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
+func (c legacyMetricPanelConfigConverter) populateFromAttributes(ctx context.Context, dashboard *dashboardModel, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
 	legacyMetric, err := attrs.AsLegacyMetricNoESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
+	var prior *legacyMetricConfigModel
+	if pm.LegacyMetricConfig != nil {
+		cpy := *pm.LegacyMetricConfig
+		prior = &cpy
+	}
 	pm.LegacyMetricConfig = &legacyMetricConfigModel{}
-	return pm.LegacyMetricConfig.fromAPINoESQL(ctx, legacyMetric)
+	return pm.LegacyMetricConfig.fromAPINoESQL(ctx, dashboard, prior, legacyMetric)
 }
 
 func (c legacyMetricPanelConfigConverter) buildAttributes(pm panelModel, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
@@ -111,7 +116,7 @@ func (m *legacyMetricConfigModel) populateCommonFields(
 	return !diags.HasError()
 }
 
-func (m *legacyMetricConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.LegacyMetricNoESQL) diag.Diagnostics {
+func (m *legacyMetricConfigModel) fromAPINoESQL(ctx context.Context, dashboard *dashboardModel, prior *legacyMetricConfigModel, api kbapi.LegacyMetricNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 
@@ -129,6 +134,23 @@ func (m *legacyMetricConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.L
 		return diags
 	}
 	m.MetricJSON = preservePriorJSONWithDefaultsIfEquivalent(ctx, m.MetricJSON, mv, &diags)
+
+	var priorLens *lensChartPresentationTFModel
+	if prior != nil {
+		p := prior.lensChartPresentationTFModel
+		priorLens = &p
+	}
+	ddWire, ddOmit, ddWireDiags := lensDrilldownsAPIToWire(api.Drilldowns)
+	diags.Append(ddWireDiags...)
+	if ddWireDiags.HasError() {
+		return diags
+	}
+	pres, presDiags := lensChartPresentationReadsFor(ctx, dashboard, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return diags
+	}
+	m.lensChartPresentationTFModel = pres
 
 	return diags
 }

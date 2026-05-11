@@ -18,6 +18,7 @@
 package dashboard
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -264,4 +265,286 @@ func optionalBoolForDrilldownJSON(b types.Bool, defaultIfUnknown bool) bool {
 		return defaultIfUnknown
 	}
 	return b.ValueBool()
+}
+
+func lensTimeRangeModeString(mode *kbapi.KbnEsQueryServerTimeRangeSchemaMode) string {
+	if mode == nil {
+		return ""
+	}
+	return string(*mode)
+}
+
+func lensTimeRangesAPILiteralEqual(a, b kbapi.KbnEsQueryServerTimeRangeSchema) bool {
+	if a.From != b.From || a.To != b.To {
+		return false
+	}
+	return lensTimeRangeModeString(a.Mode) == lensTimeRangeModeString(b.Mode)
+}
+
+func dashboardLensComparableTimeRange(dashboard *dashboardModel) (kbapi.KbnEsQueryServerTimeRangeSchema, bool) {
+	if dashboard == nil || dashboard.TimeRange == nil {
+		return kbapi.KbnEsQueryServerTimeRangeSchema{}, false
+	}
+	return timeRangeModelToAPI(dashboard.TimeRange), true
+}
+
+// chartTimeRangeFromAPI maps a chart-root API time range into Terraform state with REQ-038/REQ-009 null-preservation semantics.
+func chartTimeRangeFromAPI(dashboard *dashboardModel, apiTimeRange kbapi.KbnEsQueryServerTimeRangeSchema, priorState *timeRangeModel) *timeRangeModel {
+	// unmarshals can yield a zero-valued time_range when the wire JSON omits the object.
+	// Treat that as "no chart-level time_range" so TF state preserves null while the write path still inherits dashboard time.
+	if apiTimeRange.From == "" && apiTimeRange.To == "" && (apiTimeRange.Mode == nil || lensTimeRangeModeString(apiTimeRange.Mode) == "") {
+		return nil
+	}
+
+	priorWasNil := priorState == nil
+
+	dashTR, dashOK := dashboardLensComparableTimeRange(dashboard)
+	if priorWasNil && dashOK && lensTimeRangesAPILiteralEqual(apiTimeRange, dashTR) {
+		return nil
+	}
+
+	return timeRangeModelFromAPIWithModePreservation(apiTimeRange, priorState)
+}
+
+func timeRangeModelFromAPIWithModePreservation(api kbapi.KbnEsQueryServerTimeRangeSchema, prior *timeRangeModel) *timeRangeModel {
+	out := &timeRangeModel{
+		From: types.StringValue(api.From),
+		To:   types.StringValue(api.To),
+	}
+
+	hasAPIMode := api.Mode != nil && lensTimeRangeModeString(api.Mode) != ""
+	switch {
+	case hasAPIMode:
+		out.Mode = types.StringValue(lensTimeRangeModeString(api.Mode))
+	case prior != nil && prior.Mode.IsNull():
+		out.Mode = types.StringNull()
+	case prior != nil && typeutils.IsKnown(prior.Mode):
+		out.Mode = prior.Mode
+	default:
+		out.Mode = types.StringNull()
+	}
+
+	return out
+}
+
+func lensPresentationOptionalBoolRead(api *bool, prior types.Bool) types.Bool {
+	if api != nil {
+		return types.BoolValue(*api)
+	}
+	if prior.IsNull() {
+		return types.BoolNull()
+	}
+	return prior
+}
+
+func lensPresentationReferencesJSONRead(ctx context.Context, prior jsontypes.Normalized, refs *[]kbapi.KbnContentManagementUtilsReferenceSchema) (jsontypes.Normalized, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	if refs != nil {
+		b, err := json.Marshal(refs)
+		if err != nil {
+			diags.AddError("Failed to marshal references_json", err.Error())
+			return jsontypes.NewNormalizedNull(), diags
+		}
+
+		if norm, ok := marshalToNormalized(b, err, "references_json", &diags); ok {
+			norm = preservePriorNormalizedWithDefaultsIfEquivalent(ctx, prior, norm, defaultOpaqueRootJSON, &diags)
+			return norm, diags
+		}
+
+		return jsontypes.NewNormalizedNull(), diags
+	}
+
+	if prior.IsNull() {
+		return jsontypes.NewNormalizedNull(), diags
+	}
+
+	if typeutils.IsKnown(prior) {
+		return prior, diags
+	}
+
+	return jsontypes.NewNormalizedNull(), diags
+}
+
+func lensDrilldownsAPIToWire[Item any](items *[]Item) (wire [][]byte, omitted bool, diags diag.Diagnostics) {
+	if items == nil {
+		return nil, true, diags
+	}
+
+	out := make([][]byte, 0, len(*items))
+	for i, it := range *items {
+		b, err := json.Marshal(it)
+		if err != nil {
+			diags.AddError("Invalid drilldowns", fmt.Sprintf("drilldowns[%d]: %v", i, err))
+			return nil, false, diags
+		}
+		out = append(out, b)
+	}
+
+	return out, false, diags
+}
+
+// drilldownsFromAPI decodes API drilldown payloads (JSON-encoded union items) into Terraform list items.
+func drilldownsFromAPI(wire [][]byte) ([]lensDrilldownItemTFModel, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	if len(wire) == 0 {
+		return nil, diags
+	}
+
+	out := make([]lensDrilldownItemTFModel, 0, len(wire))
+	for i, b := range wire {
+		item, d := lensDrilldownItemFromAPIJSON(b, i)
+		diags.Append(d...)
+		if d.HasError() {
+			return nil, diags
+		}
+		out = append(out, item)
+	}
+
+	return out, diags
+}
+
+func lensDrilldownItemFromAPIJSON(raw []byte, index int) (lensDrilldownItemTFModel, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	path := fmt.Sprintf("drilldowns[%d]", index)
+
+	var head struct {
+		Type string `json:"type"`
+	}
+	if err := json.Unmarshal(raw, &head); err != nil {
+		diags.AddError("Invalid "+path, err.Error())
+		return lensDrilldownItemTFModel{}, diags
+	}
+
+	switch head.Type {
+	case "dashboard_drilldown":
+		var body struct {
+			DashboardID string `json:"dashboard_id"`
+			Label       string `json:"label"`
+			Trigger     string `json:"trigger"`
+
+			UseFilters   *bool `json:"use_filters"`
+			UseTimeRange *bool `json:"use_time_range"`
+			OpenInNewTab *bool `json:"open_in_new_tab"`
+		}
+		if err := json.Unmarshal(raw, &body); err != nil {
+			diags.AddError("Invalid "+path+".dashboard_drilldown", err.Error())
+			return lensDrilldownItemTFModel{}, diags
+		}
+
+		return lensDrilldownItemTFModel{
+			DashboardDrilldown: &lensDashboardDrilldownTFModel{
+				DashboardID:  types.StringValue(body.DashboardID),
+				Label:        types.StringValue(body.Label),
+				Trigger:      types.StringValue(body.Trigger),
+				UseFilters:   types.BoolPointerValue(body.UseFilters),
+				UseTimeRange: types.BoolPointerValue(body.UseTimeRange),
+				OpenInNewTab: types.BoolPointerValue(body.OpenInNewTab),
+			},
+		}, diags
+
+	case "discover_drilldown":
+		var body struct {
+			Label        string `json:"label"`
+			Trigger      string `json:"trigger"`
+			OpenInNewTab *bool  `json:"open_in_new_tab"`
+		}
+		if err := json.Unmarshal(raw, &body); err != nil {
+			diags.AddError("Invalid "+path+".discover_drilldown", err.Error())
+			return lensDrilldownItemTFModel{}, diags
+		}
+
+		return lensDrilldownItemTFModel{
+			DiscoverDrilldown: &lensDiscoverDrilldownTFModel{
+				Label:        types.StringValue(body.Label),
+				Trigger:      types.StringValue(body.Trigger),
+				OpenInNewTab: types.BoolPointerValue(body.OpenInNewTab),
+			},
+		}, diags
+
+	case "url_drilldown":
+		var body struct {
+			URL          string `json:"url"`
+			Label        string `json:"label"`
+			Trigger      string `json:"trigger"`
+			EncodeURL    *bool  `json:"encode_url"`
+			OpenInNewTab *bool  `json:"open_in_new_tab"`
+		}
+		if err := json.Unmarshal(raw, &body); err != nil {
+			diags.AddError("Invalid "+path+".url_drilldown", err.Error())
+			return lensDrilldownItemTFModel{}, diags
+		}
+
+		return lensDrilldownItemTFModel{
+			URLDrilldown: &lensURLDrilldownTFModel{
+				URL:          types.StringValue(body.URL),
+				Label:        types.StringValue(body.Label),
+				Trigger:      types.StringValue(body.Trigger),
+				EncodeURL:    types.BoolPointerValue(body.EncodeURL),
+				OpenInNewTab: types.BoolPointerValue(body.OpenInNewTab),
+			},
+		}, diags
+
+	default:
+		diags.AddError("Invalid "+path, fmt.Sprintf("Unknown drilldown type %q", head.Type))
+		return lensDrilldownItemTFModel{}, diags
+	}
+}
+
+// lensChartPresentationReadsFor maps optional chart-root presentation API fields into Terraform state with REQ-009-style null preservation.
+func lensChartPresentationReadsFor(
+	ctx context.Context,
+	dashboard *dashboardModel,
+	prior *lensChartPresentationTFModel,
+	apiTimeRange kbapi.KbnEsQueryServerTimeRangeSchema,
+	hideTitle *bool,
+	hideBorder *bool,
+	refs *[]kbapi.KbnContentManagementUtilsReferenceSchema,
+	drilldownWire [][]byte,
+	drilldownsOmitted bool,
+) (lensChartPresentationTFModel, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	var priorTime *timeRangeModel
+	var priorRefs jsontypes.Normalized
+	var priorHideTitle types.Bool
+	var priorHideBorder types.Bool
+	var priorDrills []lensDrilldownItemTFModel
+
+	if prior != nil {
+		priorTime = prior.TimeRange
+		priorRefs = prior.ReferencesJSON
+		priorHideTitle = prior.HideTitle
+		priorHideBorder = prior.HideBorder
+		priorDrills = prior.Drilldowns
+	} else {
+		priorHideTitle = types.BoolNull()
+		priorHideBorder = types.BoolNull()
+		priorRefs = jsontypes.NewNormalizedNull()
+	}
+
+	var out lensChartPresentationTFModel
+	out.TimeRange = chartTimeRangeFromAPI(dashboard, apiTimeRange, priorTime)
+	out.HideTitle = lensPresentationOptionalBoolRead(hideTitle, priorHideTitle)
+	out.HideBorder = lensPresentationOptionalBoolRead(hideBorder, priorHideBorder)
+
+	refNorm, refDiags := lensPresentationReferencesJSONRead(ctx, priorRefs, refs)
+	diags.Append(refDiags...)
+	if refDiags.HasError() {
+		return lensChartPresentationTFModel{}, diags
+	}
+	out.ReferencesJSON = refNorm
+
+	if !drilldownsOmitted {
+		items, ddDiags := drilldownsFromAPI(drilldownWire)
+		diags.Append(ddDiags...)
+		if ddDiags.HasError() {
+			return lensChartPresentationTFModel{}, diags
+		}
+		out.Drilldowns = items
+	} else {
+		out.Drilldowns = priorDrills
+	}
+
+	return out, diags
 }

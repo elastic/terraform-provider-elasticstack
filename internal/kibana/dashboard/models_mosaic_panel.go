@@ -43,20 +43,25 @@ type mosaicPanelConfigConverter struct {
 	lensVisualizationBase
 }
 
-func (c mosaicPanelConfigConverter) populateFromAttributes(_ context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
+func (c mosaicPanelConfigConverter) populateFromAttributes(ctx context.Context, dashboard *dashboardModel, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
+	var prior *mosaicConfigModel
+	if pm.MosaicConfig != nil {
+		cpy := *pm.MosaicConfig
+		prior = &cpy
+	}
 	if pm.MosaicConfig == nil {
 		pm.MosaicConfig = &mosaicConfigModel{}
 	}
 
 	if noESQL, err := attrs.AsMosaicNoESQL(); err == nil && !isMosaicNoESQLCandidateActuallyESQL(noESQL) {
-		return pm.MosaicConfig.fromAPINoESQL(noESQL)
+		return pm.MosaicConfig.fromAPINoESQL(ctx, dashboard, prior, noESQL)
 	}
 
 	mosaicESQL, err := attrs.AsMosaicESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	return pm.MosaicConfig.fromAPIESQL(mosaicESQL)
+	return pm.MosaicConfig.fromAPIESQL(ctx, dashboard, prior, mosaicESQL)
 }
 
 func (c mosaicPanelConfigConverter) buildAttributes(pm panelModel, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
@@ -98,7 +103,7 @@ type mosaicConfigModel struct {
 	ValueDisplay        *partitionValueDisplay                              `tfsdk:"value_display"`
 }
 
-func (m *mosaicConfigModel) fromAPINoESQL(api kbapi.MosaicNoESQL) diag.Diagnostics {
+func (m *mosaicConfigModel) fromAPINoESQL(ctx context.Context, dashboard *dashboardModel, prior *mosaicConfigModel, api kbapi.MosaicNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	m.Title = types.StringPointerValue(api.Title)
@@ -164,10 +169,27 @@ func (m *mosaicConfigModel) fromAPINoESQL(api kbapi.MosaicNoESQL) diag.Diagnosti
 		m.ValueDisplay = nil
 	}
 
+	var priorLens *lensChartPresentationTFModel
+	if prior != nil {
+		p := prior.lensChartPresentationTFModel
+		priorLens = &p
+	}
+	ddWire, ddOmit, ddWireDiags := lensDrilldownsAPIToWire(api.Drilldowns)
+	diags.Append(ddWireDiags...)
+	if ddWireDiags.HasError() {
+		return diags
+	}
+	pres, presDiags := lensChartPresentationReadsFor(ctx, dashboard, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return diags
+	}
+	m.lensChartPresentationTFModel = pres
+
 	return diags
 }
 
-func (m *mosaicConfigModel) fromAPIESQL(api kbapi.MosaicESQL) diag.Diagnostics {
+func (m *mosaicConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashboardModel, prior *mosaicConfigModel, api kbapi.MosaicESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	m.Query = nil
@@ -231,6 +253,23 @@ func (m *mosaicConfigModel) fromAPIESQL(api kbapi.MosaicESQL) diag.Diagnostics {
 	} else {
 		m.ValueDisplay = nil
 	}
+
+	var priorLens *lensChartPresentationTFModel
+	if prior != nil {
+		p := prior.lensChartPresentationTFModel
+		priorLens = &p
+	}
+	ddWire, ddOmit, ddWireDiags := lensDrilldownsAPIToWire(api.Drilldowns)
+	diags.Append(ddWireDiags...)
+	if ddWireDiags.HasError() {
+		return diags
+	}
+	pres, presDiags := lensChartPresentationReadsFor(ctx, dashboard, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return diags
+	}
+	m.lensChartPresentationTFModel = pres
 
 	return diags
 }

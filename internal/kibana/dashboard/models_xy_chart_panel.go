@@ -44,16 +44,21 @@ type xyChartPanelConfigConverter struct {
 	lensVisualizationBase
 }
 
-func (c xyChartPanelConfigConverter) populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
+func (c xyChartPanelConfigConverter) populateFromAttributes(ctx context.Context, dashboard *dashboardModel, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
+	var prior *xyChartConfigModel
+	if pm.XYChartConfig != nil {
+		cpy := *pm.XYChartConfig
+		prior = &cpy
+	}
 	pm.XYChartConfig = &xyChartConfigModel{}
 	if xyChart, err := attrs.AsXyChartNoESQL(); err == nil {
-		return pm.XYChartConfig.fromAPINoESQL(ctx, xyChart)
+		return pm.XYChartConfig.fromAPINoESQL(ctx, dashboard, prior, xyChart)
 	}
 	xyChart, err := attrs.AsXyChartESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	return pm.XYChartConfig.fromAPIESQL(ctx, xyChart)
+	return pm.XYChartConfig.fromAPIESQL(ctx, dashboard, prior, xyChart)
 }
 
 func (c xyChartPanelConfigConverter) buildAttributes(pm panelModel, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
@@ -1260,14 +1265,17 @@ func (m *xyChartConfigModel) toAPIESQL(dashboard *dashboardModel) (kbapi.XyChart
 	return chart, diags
 }
 
-func (m *xyChartConfigModel) fromAPINoESQL(ctx context.Context, apiChart kbapi.XyChartNoESQL) diag.Diagnostics {
+func (m *xyChartConfigModel) fromAPINoESQL(ctx context.Context, dashboard *dashboardModel, prior *xyChartConfigModel, apiChart kbapi.XyChartNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	m.Title = types.StringPointerValue(apiChart.Title)
 	m.Description = types.StringPointerValue(apiChart.Description)
 
 	if len(apiChart.Layers) > 0 {
-		priorLayers := m.Layers
+		priorLayers := []xyLayerModel(nil)
+		if prior != nil {
+			priorLayers = prior.Layers
+		}
 		m.Layers = make([]xyLayerModel, 0, len(apiChart.Layers))
 		for i, apiLayer := range apiChart.Layers {
 			layer := xyLayerModel{}
@@ -1300,17 +1308,38 @@ func (m *xyChartConfigModel) fromAPINoESQL(ctx context.Context, apiChart kbapi.X
 	m.Query.fromAPI(apiChart.Query)
 
 	m.Filters = populateFiltersFromAPI(apiChart.Filters, &diags)
+
+	var priorLens *lensChartPresentationTFModel
+	if prior != nil {
+		p := prior.lensChartPresentationTFModel
+		priorLens = &p
+	}
+	ddWire, ddOmit, ddWireDiags := lensDrilldownsAPIToWire(apiChart.Drilldowns)
+	diags.Append(ddWireDiags...)
+	if ddWireDiags.HasError() {
+		return diags
+	}
+	pres, presDiags := lensChartPresentationReadsFor(ctx, dashboard, priorLens, apiChart.TimeRange, apiChart.HideTitle, apiChart.HideBorder, apiChart.References, ddWire, ddOmit)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return diags
+	}
+	m.lensChartPresentationTFModel = pres
+
 	return diags
 }
 
-func (m *xyChartConfigModel) fromAPIESQL(ctx context.Context, apiChart kbapi.XyChartESQL) diag.Diagnostics {
+func (m *xyChartConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashboardModel, prior *xyChartConfigModel, apiChart kbapi.XyChartESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	m.Title = types.StringPointerValue(apiChart.Title)
 	m.Description = types.StringPointerValue(apiChart.Description)
 
 	if len(apiChart.Layers) > 0 {
-		priorLayers := m.Layers
+		priorLayers := []xyLayerModel(nil)
+		if prior != nil {
+			priorLayers = prior.Layers
+		}
 		m.Layers = make([]xyLayerModel, 0, len(apiChart.Layers))
 		for i, apiLayer := range apiChart.Layers {
 			layer := xyLayerModel{}
@@ -1342,6 +1371,24 @@ func (m *xyChartConfigModel) fromAPIESQL(ctx context.Context, apiChart kbapi.XyC
 	m.Query = nil
 
 	m.Filters = populateFiltersFromAPI(apiChart.Filters, &diags)
+
+	var priorLens *lensChartPresentationTFModel
+	if prior != nil {
+		p := prior.lensChartPresentationTFModel
+		priorLens = &p
+	}
+	ddWire, ddOmit, ddWireDiags := lensDrilldownsAPIToWire(apiChart.Drilldowns)
+	diags.Append(ddWireDiags...)
+	if ddWireDiags.HasError() {
+		return diags
+	}
+	pres, presDiags := lensChartPresentationReadsFor(ctx, dashboard, priorLens, apiChart.TimeRange, apiChart.HideTitle, apiChart.HideBorder, apiChart.References, ddWire, ddOmit)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return diags
+	}
+	m.lensChartPresentationTFModel = pres
+
 	return diags
 }
 

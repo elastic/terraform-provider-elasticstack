@@ -43,14 +43,19 @@ type gaugePanelConfigConverter struct {
 	lensVisualizationBase
 }
 
-func (c gaugePanelConfigConverter) populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
+func (c gaugePanelConfigConverter) populateFromAttributes(ctx context.Context, dashboard *dashboardModel, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
 	gaugeNoESQL, err := attrs.AsGaugeNoESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
+	var prior *gaugeConfigModel
+	if pm.GaugeConfig != nil {
+		cpy := *pm.GaugeConfig
+		prior = &cpy
+	}
 	pm.GaugeConfig = &gaugeConfigModel{}
-	return pm.GaugeConfig.fromAPI(ctx, gaugeNoESQL)
+	return pm.GaugeConfig.fromAPI(ctx, dashboard, prior, gaugeNoESQL)
 }
 
 func (c gaugePanelConfigConverter) buildAttributes(pm panelModel, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
@@ -89,7 +94,7 @@ type gaugeStylingModel struct {
 	ShapeJSON jsontypes.Normalized `tfsdk:"shape_json"`
 }
 
-func (m *gaugeConfigModel) fromAPI(ctx context.Context, api kbapi.GaugeNoESQL) diag.Diagnostics {
+func (m *gaugeConfigModel) fromAPI(ctx context.Context, dashboard *dashboardModel, prior *gaugeConfigModel, api kbapi.GaugeNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 
@@ -133,6 +138,23 @@ func (m *gaugeConfigModel) fromAPI(ctx context.Context, api kbapi.GaugeNoESQL) d
 	} else {
 		m.Styling.ShapeJSON = jsontypes.NewNormalizedNull()
 	}
+
+	var priorLens *lensChartPresentationTFModel
+	if prior != nil {
+		p := prior.lensChartPresentationTFModel
+		priorLens = &p
+	}
+	ddWire, ddOmit, ddWireDiags := lensDrilldownsAPIToWire(api.Drilldowns)
+	diags.Append(ddWireDiags...)
+	if ddWireDiags.HasError() {
+		return diags
+	}
+	pres, presDiags := lensChartPresentationReadsFor(ctx, dashboard, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return diags
+	}
+	m.lensChartPresentationTFModel = pres
 
 	return diags
 }

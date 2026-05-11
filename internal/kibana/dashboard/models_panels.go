@@ -371,7 +371,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 					continue
 				}
 
-				d := converter.populateFromAttributes(ctx, &pm, config0)
+				d := converter.populateFromAttributes(ctx, m, &pm, config0)
 				diags.Append(d...)
 				break
 			}
@@ -411,7 +411,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 		setPanelGridFromAPI(&pm, ldPanel.Grid.X, ldPanel.Grid.Y, ldPanel.Grid.W, ldPanel.Grid.H)
 		pm.ID = types.StringPointerValue(ldPanel.Id)
 		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
-		d := populateLensDashboardAppFromAPI(ctx, &pm, tfPanel, ldPanel)
+		d := populateLensDashboardAppFromAPI(ctx, m, &pm, tfPanel, ldPanel)
 		diags.Append(d...)
 	default:
 		// Unknown panel type: preserve id, grid, type and the raw API config.
