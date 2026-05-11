@@ -18,6 +18,8 @@
 package dashboard
 
 import (
+	"maps"
+
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -104,6 +106,7 @@ func getDatatableNoESQLSchema() map[string]schema.Attribute {
 		Required:            true,
 		Attributes:          getDatatableStylingSchema(),
 	}
+	maps.Copy(attrs, lensChartPresentationAttributes())
 	return attrs
 }
 
@@ -158,6 +161,7 @@ func getDatatableESQLSchema() map[string]schema.Attribute {
 		Required:            true,
 		Attributes:          getDatatableStylingSchema(),
 	}
+	maps.Copy(attrs, lensChartPresentationAttributes())
 	return attrs
 }
 

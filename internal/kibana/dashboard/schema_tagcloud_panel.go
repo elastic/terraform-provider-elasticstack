@@ -18,6 +18,8 @@
 package dashboard
 
 import (
+	"maps"
+
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -114,5 +116,6 @@ func getTagcloudSchema() map[string]schema.Attribute {
 		CustomType:          customtypes.NewJSONWithDefaultsType(populateTagcloudTagByDefaults),
 		Required:            true,
 	}
+	maps.Copy(attrs, lensChartPresentationAttributes())
 	return attrs
 }

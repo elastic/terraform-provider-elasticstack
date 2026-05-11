@@ -18,6 +18,8 @@
 package dashboard
 
 import (
+	"maps"
+
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
@@ -267,7 +269,7 @@ func getXYLegendSchema() map[string]schema.Attribute {
 
 // getXYChartConfigAttributes returns attributes for an `xy_chart_config` block (vis panels and lens-dashboard-app by_value).
 func getXYChartConfigAttributes() map[string]schema.Attribute {
-	return map[string]schema.Attribute{
+	attrs := map[string]schema.Attribute{
 		"title": schema.StringAttribute{
 			MarkdownDescription: "The title of the chart displayed in the panel.",
 			Optional:            true,
@@ -315,6 +317,8 @@ func getXYChartConfigAttributes() map[string]schema.Attribute {
 			NestedObject:        getChartFilter(),
 		},
 	}
+	maps.Copy(attrs, lensChartPresentationAttributes())
+	return attrs
 }
 
 // getXYLayerSchema returns the schema for XY chart layers
