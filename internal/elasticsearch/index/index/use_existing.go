@@ -79,7 +79,10 @@ func compareStaticSettings(ctx context.Context, plan *tfModel, existing models.I
 			continue
 		}
 
-		if mm := compareStaticPlanAndES(tfAttr, key, planVal, actualRaw); mm != nil {
+		// Determine if the plan uses the new sort ListNestedAttribute
+		sortIsListNested := !plan.Sort.IsNull() && !plan.Sort.IsUnknown()
+
+		if mm := compareStaticPlanAndES(tfAttr, key, planVal, actualRaw, sortIsListNested); mm != nil {
 			mismatches = append(mismatches, *mm)
 		}
 	}
@@ -131,12 +134,18 @@ func configuredDisplayFromPlanValue(key string, planVal any) string {
 	case "sort.order":
 		_, d := planStringSliceForSortOrder(planVal)
 		return d
+	case "sort.missing":
+		_, d := planStringSliceForSortOrder(planVal)
+		return d
+	case "sort.mode":
+		_, d := planStringSliceForSortOrder(planVal)
+		return d
 	default:
 		return fmt.Sprint(planVal)
 	}
 }
 
-func compareStaticPlanAndES(tfAttr, key string, planVal, actualRaw any) *staticSettingMismatch {
+func compareStaticPlanAndES(tfAttr, key string, planVal, actualRaw any, sortIsListNested bool) *staticSettingMismatch {
 	switch key {
 	case "number_of_shards", "number_of_routing_shards", "routing_partition_size":
 		planI, cfg, okP := int64FromAny(planVal)
@@ -179,12 +188,41 @@ func compareStaticPlanAndES(tfAttr, key string, planVal, actualRaw any) *staticS
 	case "sort.field":
 		planElems, cfg := planStringSliceForSortFieldSet(planVal)
 		actSlice := stringSliceFromSortFieldAny(actualRaw)
-		if !equalAsStringSets(planElems, actSlice) {
+
+		var match bool
+		if sortIsListNested {
+			// Order-sensitive comparison when plan uses the new sort ListNestedAttribute
+			match = slicesEqual(planElems, actSlice)
+		} else {
+			// Unordered set comparison for legacy sort_field
+			match = equalAsStringSets(planElems, actSlice)
+		}
+
+		if !match {
+			if sortIsListNested {
+				return mismatch(tfAttr, cfg, strings.Join(actSlice, ", "))
+			}
 			return mismatch(tfAttr, cfg, formatAsSortedUniqueSet(actSlice))
 		}
 		return nil
 
 	case "sort.order":
+		planElems, cfg := planStringSliceForSortOrder(planVal)
+		actSlice := stringSliceOrderedFromAny(actualRaw)
+		if !slicesEqual(planElems, actSlice) {
+			return mismatch(tfAttr, cfg, strings.Join(actSlice, ", "))
+		}
+		return nil
+
+	case "sort.missing":
+		planElems, cfg := planStringSliceForSortOrder(planVal)
+		actSlice := stringSliceOrderedFromAny(actualRaw)
+		if !slicesEqual(planElems, actSlice) {
+			return mismatch(tfAttr, cfg, strings.Join(actSlice, ", "))
+		}
+		return nil
+
+	case "sort.mode":
 		planElems, cfg := planStringSliceForSortOrder(planVal)
 		actSlice := stringSliceOrderedFromAny(actualRaw)
 		if !slicesEqual(planElems, actSlice) {
