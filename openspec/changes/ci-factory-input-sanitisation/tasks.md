@@ -6,8 +6,8 @@
 
 ## 2. Update tests
 
-- [ ] 2.1 Add test coverage for `stripControlChars` and `stripInvisibleUnicode` in `.github/workflows-src/lib/sanitize-context.test.mjs`
-- [ ] 2.2 Add test coverage for `sanitizeUserContent` composed behaviour (sequential filtering, idempotency, non-string inputs)
+- [x] 2.1 Add test coverage for `stripControlChars` and `stripInvisibleUnicode` in `.github/workflows-src/lib/sanitize-context.test.mjs`
+- [x] 2.2 Add test coverage for `sanitizeUserContent` composed behaviour (sequential filtering, idempotency, non-string inputs)
 
 ## 3. Update call sites
 
