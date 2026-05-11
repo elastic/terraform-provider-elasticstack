@@ -42,6 +42,67 @@ test('rewriteChangelogSection release replaces Unreleased section with new versi
   assert.ok(newIdx !== -1 && oldIdx !== -1 && newIdx < oldIdx);
 });
 
+// Release re-run collapses lingering Unreleased: dual-range splice is exercised
+// here directly (see design.md) rather than via the engine, so positioning and
+// removal order stay independent of rendered section bodies / PR harness data.
+test('rewriteChangelogSection release re-run drops Unreleased when target version already exists', () => {
+  const before = [
+    '# Changelog',
+    '',
+    '## [Unreleased]',
+    'stale unreleased',
+    '',
+    '## [1.0.0] - 2020-06-01',
+    '',
+    '### Changes',
+    '',
+    '- obsolete ([#10](https://example/10))',
+    '',
+    '## [0.9.0]',
+    'prior',
+  ].join('\n');
+
+  const newSection =
+    '## [1.0.0] - 2026-05-12\n\n### Changes\n\n- refreshed ([#999](https://example/999))';
+  const out = rewriteChangelogSection(before, newSection, 'release', '1.0.0');
+
+  assert.ok(!out.includes('## [Unreleased]'));
+  assert.equal([...out.matchAll(/^## \[1\.0\.0\]/gm)].length, 1);
+  assert.ok(out.includes('refreshed'));
+  assert.ok(!out.includes('stale unreleased'));
+  assert.ok(!out.includes('- obsolete'));
+  const newIdx = out.indexOf('## [1.0.0]');
+  const prevIdx = out.indexOf('## [0.9.0]');
+  assert.ok(newIdx !== -1 && prevIdx !== -1 && newIdx < prevIdx);
+});
+
+// Observed duplicate Unreleased vs release bullets in elastic/terraform-provider-elasticstack#2857 —
+// rewriter must collapse to one versioned section so each bullet appears once.
+test('rewriteChangelogSection release dedupes when Unreleased body mirrors rendered release (#2857)', () => {
+  const releaseBody =
+    '\n### Changes\n\n' +
+    '- First ship ([#2840](https://github.com/elastic/terraform-provider-elasticstack/pull/2840))\n' +
+    '- Second ship ([#2841](https://github.com/elastic/terraform-provider-elasticstack/pull/2841))\n';
+
+  const unreleasedFixture = `# Log
+
+## [Unreleased]
+${releaseBody}
+## [0.14.0] - older
+prior
+`;
+
+  const version = '0.15.0';
+  const header = `## [${version}] - 2026-05-11`;
+  const newSection = `${header}\n${releaseBody}`;
+  const out = rewriteChangelogSection(unreleasedFixture, newSection, 'release', version);
+
+  assert.ok(!out.includes('## [Unreleased]'));
+  assert.equal(out.match(/First ship/g)?.length ?? 0, 1);
+  assert.equal(out.match(/Second ship/g)?.length ?? 0, 1);
+  assert.equal(out.match(/^## \[0\.15\.0\]/gm)?.length ?? 0, 1);
+});
+
 test('rewriteChangelogSection prepends unreleased when no Unreleased heading', () => {
   const before = '# T\n\n## [1.0.0]\nx';
   const newSection = '## [Unreleased]\n\n### Changes\n\n- y ([#3](u))';
