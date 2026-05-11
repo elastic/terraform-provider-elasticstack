@@ -38,7 +38,7 @@ func TestAccResourceDashboardControlConfigInvalidWidth(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable("unused"),
 				},
-				ExpectError: regexp.MustCompile(`(?s)Invalid Attribute Value Match.*\bhuge\b`),
+				ExpectError: regexp.MustCompile(`(?s)Invalid Attribute Value Match.*(?:\bhuge\b.*(?:small|medium|large)|(?:small|medium|large).*\bhuge\b)`),
 			},
 		},
 	})
