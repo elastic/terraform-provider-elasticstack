@@ -11,10 +11,10 @@
 
 ## 3. Update call sites
 
-- [ ] 3.1 Update `.github/workflows-src/research-factory-issue/scripts/write_context_files.inline.js` — change `stripHtmlComments` calls to `sanitizeUserContent`
-- [ ] 3.2 Update `.github/workflows-src/change-factory-issue/scripts/extract_research_comment.inline.js` and the downstream handling of `prior_research_comment` — add explicit sanitisation for the prior research comment
-- [ ] 3.3 Update `.github/workflows-src/change-factory-issue/scripts/sanitize_context.inline.js` — change `stripHtmlComments` calls to `sanitizeUserContent`
-- [ ] 3.4 Update `.github/workflows-src/code-factory-issue/scripts/sanitize_context.inline.js` — change `stripHtmlComments` calls to `sanitizeUserContent`
+- [x] 3.1 Update `.github/workflows-src/research-factory-issue/scripts/write_context_files.inline.js` — change `stripHtmlComments` calls to `sanitizeUserContent`
+- [x] 3.2 Update `.github/workflows-src/change-factory-issue/scripts/extract_research_comment.inline.js` and the downstream handling of `prior_research_comment` — add explicit sanitisation for the prior research comment
+- [x] 3.3 Update `.github/workflows-src/change-factory-issue/scripts/sanitize_context.inline.js` — change `stripHtmlComments` calls to `sanitizeUserContent`
+- [x] 3.4 Update `.github/workflows-src/code-factory-issue/scripts/sanitize_context.inline.js` — change `stripHtmlComments` calls to `sanitizeUserContent`
 
 ## 4. Verify and rebuild locked workflows
 
