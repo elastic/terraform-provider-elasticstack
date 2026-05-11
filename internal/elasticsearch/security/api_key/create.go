@@ -84,6 +84,10 @@ func (r Resource) Create(ctx context.Context, req resource.CreateRequest, resp *
 func (r Resource) validateRestrictionSupport(ctx context.Context, model tfModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
+	if model.RoleDescriptors.IsNull() || model.RoleDescriptors.IsUnknown() {
+		return diags
+	}
+
 	var roleDescriptors map[string]models.APIKeyRoleDescriptor
 	unmarshalDiags := model.RoleDescriptors.Unmarshal(&roleDescriptors)
 	if unmarshalDiags.HasError() {
