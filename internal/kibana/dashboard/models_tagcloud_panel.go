@@ -42,23 +42,27 @@ type tagcloudPanelConfigConverter struct {
 	lensVisualizationBase
 }
 
-func (c tagcloudPanelConfigConverter) populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
+func (c tagcloudPanelConfigConverter) populateFromAttributes(ctx context.Context, dashboard *dashboardModel, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
 	tagcloudNoESQL, err := attrs.AsTagcloudNoESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	// Populate the model
+	var prior *tagcloudConfigModel
+	if pm.TagcloudConfig != nil {
+		cpy := *pm.TagcloudConfig
+		prior = &cpy
+	}
 	pm.TagcloudConfig = &tagcloudConfigModel{}
-	return pm.TagcloudConfig.fromAPI(ctx, tagcloudNoESQL)
+	return pm.TagcloudConfig.fromAPI(ctx, dashboard, prior, tagcloudNoESQL)
 }
 
-func (c tagcloudPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func (c tagcloudPanelConfigConverter) buildAttributes(pm panelModel, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	configModel := *pm.TagcloudConfig
 
 	// Convert the structured model to API schema
-	tagcloudNoESQL, tagcloudDiags := configModel.toAPI()
+	tagcloudNoESQL, tagcloudDiags := configModel.toAPI(dashboard)
 	diags.Append(tagcloudDiags...)
 	if diags.HasError() {
 		return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
@@ -74,6 +78,7 @@ func (c tagcloudPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnD
 }
 
 type tagcloudConfigModel struct {
+	lensChartPresentationTFModel
 	Title               types.String                                      `tfsdk:"title"`
 	Description         types.String                                      `tfsdk:"description"`
 	DataSourceJSON      jsontypes.Normalized                              `tfsdk:"data_source_json"`
@@ -92,7 +97,7 @@ type fontSizeModel struct {
 	Max types.Float64 `tfsdk:"max"`
 }
 
-func (m *tagcloudConfigModel) fromAPI(ctx context.Context, api kbapi.TagcloudNoESQL) diag.Diagnostics {
+func (m *tagcloudConfigModel) fromAPI(ctx context.Context, dashboard *dashboardModel, prior *tagcloudConfigModel, api kbapi.TagcloudNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 
@@ -159,16 +164,32 @@ func (m *tagcloudConfigModel) fromAPI(ctx context.Context, api kbapi.TagcloudNoE
 	}
 	m.TagByJSON = preservePriorJSONWithDefaultsIfEquivalent(ctx, m.TagByJSON, tv, &diags)
 
+	var priorLens *lensChartPresentationTFModel
+	if prior != nil {
+		p := prior.lensChartPresentationTFModel
+		priorLens = &p
+	}
+	ddWire, ddOmit, ddWireDiags := lensDrilldownsAPIToWire(api.Drilldowns)
+	diags.Append(ddWireDiags...)
+	if ddWireDiags.HasError() {
+		return diags
+	}
+	pres, presDiags := lensChartPresentationReadsFor(ctx, dashboard, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return diags
+	}
+	m.lensChartPresentationTFModel = pres
+
 	return diags
 }
 
-func (m *tagcloudConfigModel) toAPI() (kbapi.TagcloudNoESQL, diag.Diagnostics) {
+func (m *tagcloudConfigModel) toAPI(dashboard *dashboardModel) (kbapi.TagcloudNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var api kbapi.TagcloudNoESQL
 
 	// Set type to "tagcloud"
 	api.Type = kbapi.TagcloudNoESQLTypeTagCloud
-	api.TimeRange = lensPanelTimeRange()
 
 	if !m.Title.IsNull() {
 		api.Title = m.Title.ValueStringPointer()
@@ -238,6 +259,30 @@ func (m *tagcloudConfigModel) toAPI() (kbapi.TagcloudNoESQL, diag.Diagnostics) {
 		if err := json.Unmarshal([]byte(m.TagByJSON.ValueString()), &api.TagBy); err != nil {
 			diags.AddError("Failed to unmarshal tag_by", err.Error())
 			return api, diags
+		}
+	}
+
+	writes, presDiags := lensChartPresentationWritesFor(dashboard, m.lensChartPresentationTFModel)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return api, diags
+	}
+
+	api.TimeRange = writes.TimeRange
+	if writes.HideTitle != nil {
+		api.HideTitle = writes.HideTitle
+	}
+	if writes.HideBorder != nil {
+		api.HideBorder = writes.HideBorder
+	}
+	if writes.References != nil {
+		api.References = writes.References
+	}
+	if len(writes.DrilldownsRaw) > 0 {
+		items, ddDiags := decodeLensDrilldownSlice[kbapi.TagcloudNoESQL_Drilldowns_Item](writes.DrilldownsRaw)
+		diags.Append(ddDiags...)
+		if !ddDiags.HasError() {
+			api.Drilldowns = &items
 		}
 	}
 

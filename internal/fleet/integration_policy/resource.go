@@ -64,9 +64,11 @@ func NewResource() resource.Resource {
 }
 
 func (r *integrationPolicyResource) UpgradeState(context.Context) map[int64]resource.StateUpgrader {
+	v2 := getSchemaV2()
 	return map[int64]resource.StateUpgrader{
-		0: {PriorSchema: getSchemaV0(), StateUpgrader: upgradeV0ToV2},
-		1: {PriorSchema: getSchemaV1(), StateUpgrader: upgradeV1ToV2},
+		0: {PriorSchema: getSchemaV0(), StateUpgrader: upgradeV0ToV3},
+		1: {PriorSchema: getSchemaV1(), StateUpgrader: upgradeV1ToV3},
+		2: {PriorSchema: &v2, StateUpgrader: upgradeV2ToV3},
 	}
 }
 

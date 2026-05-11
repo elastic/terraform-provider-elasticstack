@@ -18,6 +18,8 @@
 package dashboard
 
 import (
+	"maps"
+
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -70,8 +72,9 @@ func populateTagcloudTagByDefaults(model map[string]any) map[string]any {
 	return model
 }
 
-// getTagcloudSchema returns the schema for tagcloud chart configuration
-func getTagcloudSchema() map[string]schema.Attribute {
+// getTagcloudSchema returns the schema for tagcloud chart configuration.
+// includePresentation merges REQ-037 fields for vis panels only.
+func getTagcloudSchema(includePresentation bool) map[string]schema.Attribute {
 	attrs := lensChartBaseAttributes()
 	attrs["data_source_json"] = schema.StringAttribute{
 		MarkdownDescription: "Dataset configuration as JSON. For standard layers, this specifies the data view and query.",
@@ -113,6 +116,9 @@ func getTagcloudSchema() map[string]schema.Attribute {
 		MarkdownDescription: "Tag grouping configuration as JSON. Can be a date histogram, terms, histogram, range, or filters operation. This determines how tags are grouped and displayed.",
 		CustomType:          customtypes.NewJSONWithDefaultsType(populateTagcloudTagByDefaults),
 		Required:            true,
+	}
+	if includePresentation {
+		maps.Copy(attrs, lensChartPresentationAttributes())
 	}
 	return attrs
 }

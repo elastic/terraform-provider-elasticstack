@@ -50,21 +50,26 @@ type legacyMetricPanelConfigConverter struct {
 	lensVisualizationBase
 }
 
-func (c legacyMetricPanelConfigConverter) populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
+func (c legacyMetricPanelConfigConverter) populateFromAttributes(ctx context.Context, dashboard *dashboardModel, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
 	legacyMetric, err := attrs.AsLegacyMetricNoESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
+	var prior *legacyMetricConfigModel
+	if pm.LegacyMetricConfig != nil {
+		cpy := *pm.LegacyMetricConfig
+		prior = &cpy
+	}
 	pm.LegacyMetricConfig = &legacyMetricConfigModel{}
-	return pm.LegacyMetricConfig.fromAPINoESQL(ctx, legacyMetric)
+	return pm.LegacyMetricConfig.fromAPINoESQL(ctx, dashboard, prior, legacyMetric)
 }
 
-func (c legacyMetricPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func (c legacyMetricPanelConfigConverter) buildAttributes(pm panelModel, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	configModel := *pm.LegacyMetricConfig
 
-	attrs, legacyDiags := configModel.toAPI()
+	attrs, legacyDiags := configModel.toAPI(dashboard)
 	diags.Append(legacyDiags...)
 	if diags.HasError() {
 		return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
@@ -74,6 +79,7 @@ func (c legacyMetricPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.
 }
 
 type legacyMetricConfigModel struct {
+	lensChartPresentationTFModel
 	Title               types.String                                      `tfsdk:"title"`
 	Description         types.String                                      `tfsdk:"description"`
 	DataSourceJSON      jsontypes.Normalized                              `tfsdk:"data_source_json"`
@@ -110,7 +116,7 @@ func (m *legacyMetricConfigModel) populateCommonFields(
 	return !diags.HasError()
 }
 
-func (m *legacyMetricConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.LegacyMetricNoESQL) diag.Diagnostics {
+func (m *legacyMetricConfigModel) fromAPINoESQL(ctx context.Context, dashboard *dashboardModel, prior *legacyMetricConfigModel, api kbapi.LegacyMetricNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 
@@ -129,9 +135,26 @@ func (m *legacyMetricConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.L
 	}
 	m.MetricJSON = preservePriorJSONWithDefaultsIfEquivalent(ctx, m.MetricJSON, mv, &diags)
 
+	var priorLens *lensChartPresentationTFModel
+	if prior != nil {
+		p := prior.lensChartPresentationTFModel
+		priorLens = &p
+	}
+	ddWire, ddOmit, ddWireDiags := lensDrilldownsAPIToWire(api.Drilldowns)
+	diags.Append(ddWireDiags...)
+	if ddWireDiags.HasError() {
+		return diags
+	}
+	pres, presDiags := lensChartPresentationReadsFor(ctx, dashboard, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return diags
+	}
+	m.lensChartPresentationTFModel = pres
+
 	return diags
 }
-func (m *legacyMetricConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func (m *legacyMetricConfigModel) toAPI(dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var result kbapi.KbnDashboardPanelTypeVisConfig0
 
@@ -151,7 +174,6 @@ func (m *legacyMetricConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0
 		api := kbapi.LegacyMetricNoESQL{
 			Type: kbapi.LegacyMetric,
 		}
-		api.TimeRange = lensPanelTimeRange()
 
 		if typeutils.IsKnown(m.Title) {
 			api.Title = new(m.Title.ValueString())
@@ -190,6 +212,30 @@ func (m *legacyMetricConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0
 		if err := json.Unmarshal([]byte(m.MetricJSON.ValueString()), &api.Metric); err != nil {
 			diags.AddError("Failed to unmarshal metric", err.Error())
 			return result, diags
+		}
+
+		writes, presDiags := lensChartPresentationWritesFor(dashboard, m.lensChartPresentationTFModel)
+		diags.Append(presDiags...)
+		if presDiags.HasError() {
+			return result, diags
+		}
+
+		api.TimeRange = writes.TimeRange
+		if writes.HideTitle != nil {
+			api.HideTitle = writes.HideTitle
+		}
+		if writes.HideBorder != nil {
+			api.HideBorder = writes.HideBorder
+		}
+		if writes.References != nil {
+			api.References = writes.References
+		}
+		if len(writes.DrilldownsRaw) > 0 {
+			items, ddDiags := decodeLensDrilldownSlice[kbapi.LegacyMetricNoESQL_Drilldowns_Item](writes.DrilldownsRaw)
+			diags.Append(ddDiags...)
+			if !ddDiags.HasError() {
+				api.Drilldowns = &items
+			}
 		}
 
 		if err := result.FromLegacyMetricNoESQL(api); err != nil {

@@ -36,13 +36,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-// TestAccResourceDashboardUnknownPanel tests that unknown panel types (e.g. `image`)
-// are preserved during refresh and produce a no-op plan.
-//
-// The dashboard is first created via Terraform with a markdown panel, then the
-// Kibana API is called outside Terraform to replace the panels with an image panel
-// (unknown type). A subsequent refresh verifies the unknown panel is preserved
-// and that the resulting plan is empty.
+// TestAccResourceDashboardUnknownPanel tests that unknown panel types (e.g. image)
+// are preserved during refresh. The dashboard is first created via Terraform with a
+// markdown panel, then the Kibana API is called outside Terraform to replace the
+// panels with an image panel (unknown type). A subsequent plan-only step verifies
+// the unknown panel is preserved in state and that Terraform detects the drift.
 func TestAccResourceDashboardUnknownPanel(t *testing.T) {
 	dashboardTitle := "Test Dashboard Unknown Panel " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
@@ -51,8 +49,6 @@ func TestAccResourceDashboardUnknownPanel(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
-			// Step 1: Create the dashboard via Terraform with a known (markdown) panel.
-			// Capture the dashboard ID for use in step 2.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
@@ -76,9 +72,6 @@ func TestAccResourceDashboardUnknownPanel(t *testing.T) {
 					},
 				),
 			},
-			// Step 2: Out-of-band replace the dashboard panels with an image panel
-			// (unknown type), then run plan-only to verify the unknown panel is
-			// preserved correctly in the refreshed state.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
@@ -94,10 +87,6 @@ func TestAccResourceDashboardUnknownPanel(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
 				},
-				// PlanOnly: run refresh + plan but not apply, so the state reflects
-				// what was read from Kibana (the image panel), not what config specifies.
-				// ExpectNonEmptyPlan: the config specifies a markdown panel while the
-				// refreshed state has an image panel, so an update diff is expected.
 				PlanOnly:           true,
 				ExpectNonEmptyPlan: true,
 				// Expect the image panel to be read back and preserved in state.
@@ -152,13 +141,14 @@ func replaceDashboardPanelWithImage(t *testing.T, dashboardID string) error {
 		return fmt.Errorf("GET dashboard returned status %d: %s", getResp.StatusCode, string(body))
 	}
 
-	var current map[string]any
-	if err := json.NewDecoder(getResp.Body).Decode(&current); err != nil {
+	var body struct {
+		Data map[string]any `json:"data"`
+	}
+	if err := json.NewDecoder(getResp.Body).Decode(&body); err != nil {
 		return fmt.Errorf("failed to decode GET response: %w", err)
 	}
 
-	// Extract the data section and override panels with the image panel.
-	data, _ := current["data"].(map[string]any)
+	data := body.Data
 	if data == nil {
 		data = map[string]any{}
 	}

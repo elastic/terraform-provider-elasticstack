@@ -21,7 +21,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"slices"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
@@ -213,32 +212,63 @@ func setPanelGridFromAPI(pm *panelModel, x, y float32, w, h *float32) {
 	}
 }
 
+func panelHasTypedConfig(pm *panelModel) bool {
+	return pm.MarkdownConfig != nil ||
+		pm.XYChartConfig != nil ||
+		pm.TreemapConfig != nil ||
+		pm.MosaicConfig != nil ||
+		pm.DatatableConfig != nil ||
+		pm.TagcloudConfig != nil ||
+		pm.MetricChartConfig != nil ||
+		pm.PieChartConfig != nil ||
+		pm.GaugeConfig != nil ||
+		pm.LegacyMetricConfig != nil ||
+		pm.RegionMapConfig != nil ||
+		pm.HeatmapConfig != nil ||
+		pm.WaffleConfig != nil ||
+		pm.TimeSliderControlConfig != nil ||
+		pm.SloBurnRateConfig != nil ||
+		pm.SloOverviewConfig != nil ||
+		pm.SloErrorBudgetConfig != nil ||
+		pm.EsqlControlConfig != nil ||
+		pm.OptionsListControlConfig != nil ||
+		pm.RangeSliderControlConfig != nil ||
+		pm.SyntheticsStatsOverviewConfig != nil ||
+		pm.SyntheticsMonitorsConfig != nil ||
+		pm.LensDashboardAppConfig != nil
+}
+
 func panelUsesConfigJSONOnly(pm *panelModel) bool {
 	if pm == nil || !typeutils.IsKnown(pm.ConfigJSON) {
 		return false
 	}
-	return pm.MarkdownConfig == nil &&
-		pm.XYChartConfig == nil &&
-		pm.TreemapConfig == nil &&
-		pm.DatatableConfig == nil &&
-		pm.TagcloudConfig == nil &&
-		pm.MetricChartConfig == nil &&
-		pm.PieChartConfig == nil &&
-		pm.GaugeConfig == nil &&
-		pm.LegacyMetricConfig == nil &&
-		pm.RegionMapConfig == nil &&
-		pm.HeatmapConfig == nil &&
-		pm.WaffleConfig == nil &&
-		pm.TimeSliderControlConfig == nil &&
-		pm.SloBurnRateConfig == nil &&
-		pm.SloOverviewConfig == nil &&
-		pm.SloErrorBudgetConfig == nil &&
-		pm.EsqlControlConfig == nil &&
-		pm.OptionsListControlConfig == nil &&
-		pm.RangeSliderControlConfig == nil &&
-		pm.SyntheticsStatsOverviewConfig == nil &&
-		pm.SyntheticsMonitorsConfig == nil &&
-		pm.LensDashboardAppConfig == nil
+	return !panelHasTypedConfig(pm)
+}
+
+func clearPanelConfigBlocks(pm *panelModel) {
+	pm.MarkdownConfig = nil
+	pm.XYChartConfig = nil
+	pm.TreemapConfig = nil
+	pm.MosaicConfig = nil
+	pm.DatatableConfig = nil
+	pm.TagcloudConfig = nil
+	pm.MetricChartConfig = nil
+	pm.PieChartConfig = nil
+	pm.GaugeConfig = nil
+	pm.LegacyMetricConfig = nil
+	pm.RegionMapConfig = nil
+	pm.HeatmapConfig = nil
+	pm.WaffleConfig = nil
+	pm.TimeSliderControlConfig = nil
+	pm.SloBurnRateConfig = nil
+	pm.SloOverviewConfig = nil
+	pm.SloErrorBudgetConfig = nil
+	pm.EsqlControlConfig = nil
+	pm.OptionsListControlConfig = nil
+	pm.RangeSliderControlConfig = nil
+	pm.SyntheticsStatsOverviewConfig = nil
+	pm.SyntheticsMonitorsConfig = nil
+	pm.LensDashboardAppConfig = nil
 }
 
 func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelModel, panelItem kbapi.DashboardPanelItem) (panelModel, diag.Diagnostics) {
@@ -380,7 +410,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 					continue
 				}
 
-				d := converter.populateFromAttributes(ctx, &pm, config0)
+				d := converter.populateFromAttributes(ctx, m, &pm, config0)
 				diags.Append(d...)
 				break
 			}
@@ -420,14 +450,10 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 		setPanelGridFromAPI(&pm, ldPanel.Grid.X, ldPanel.Grid.Y, ldPanel.Grid.W, ldPanel.Grid.H)
 		pm.ID = types.StringPointerValue(ldPanel.Id)
 		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
-		d := populateLensDashboardAppFromAPI(ctx, &pm, tfPanel, ldPanel)
+		d := populateLensDashboardAppFromAPI(ctx, m, &pm, tfPanel, ldPanel)
 		diags.Append(d...)
 	default:
-		// Unknown panel type: preserve id, grid, type and the raw API config.
-		// This ensures round-trip stability for panels that don't yet have a
-		// typed config block (e.g. discover_session, image, slo_alerts).
-		// Clear fields that may be seeded from prior state before populating
-		// from the API payload so stale values cannot survive a missing field.
+		// Round-trip stability for panel types without a typed config block.
 		pm.ID = types.StringNull()
 		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
 		pm.Grid = panelGridModel{}
@@ -458,31 +484,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 				}
 			}
 		}
-		// Clear any typed config blocks that may be seeded from prior state.
-		// Unknown panels store their config in config_json only.
-		pm.MarkdownConfig = nil
-		pm.XYChartConfig = nil
-		pm.TreemapConfig = nil
-		pm.MosaicConfig = nil
-		pm.DatatableConfig = nil
-		pm.TagcloudConfig = nil
-		pm.MetricChartConfig = nil
-		pm.PieChartConfig = nil
-		pm.GaugeConfig = nil
-		pm.LegacyMetricConfig = nil
-		pm.RegionMapConfig = nil
-		pm.HeatmapConfig = nil
-		pm.WaffleConfig = nil
-		pm.TimeSliderControlConfig = nil
-		pm.SloBurnRateConfig = nil
-		pm.SloOverviewConfig = nil
-		pm.SloErrorBudgetConfig = nil
-		pm.EsqlControlConfig = nil
-		pm.OptionsListControlConfig = nil
-		pm.RangeSliderControlConfig = nil
-		pm.SyntheticsStatsOverviewConfig = nil
-		pm.SyntheticsMonitorsConfig = nil
-		pm.LensDashboardAppConfig = nil
+		clearPanelConfigBlocks(&pm)
 	}
 
 	alignPanelStateFromPlan(ctx, tfPanel, &pm)
@@ -490,7 +492,41 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 	return pm, diags
 }
 
-func lensPanelTimeRange() kbapi.KbnEsQueryServerTimeRangeSchema {
+func timeRangeModelToAPI(tr *timeRangeModel) kbapi.KbnEsQueryServerTimeRangeSchema {
+	if tr == nil {
+		return kbapi.KbnEsQueryServerTimeRangeSchema{}
+	}
+	out := kbapi.KbnEsQueryServerTimeRangeSchema{
+		From: tr.From.ValueString(),
+		To:   tr.To.ValueString(),
+	}
+	if typeutils.IsKnown(tr.Mode) {
+		mode := kbapi.KbnEsQueryServerTimeRangeSchemaMode(tr.Mode.ValueString())
+		out.Mode = &mode
+	}
+	return out
+}
+
+// resolveChartTimeRange returns the API time_range for a typed Lens chart root: chart-level when set,
+// otherwise copied from the dashboard-level time_range (both are required API inputs).
+//
+// Production dashboard writes (`panelsToAPI` / `panelModel.toAPI`) always pass the enclosing
+// `dashboardModel`, so null chart-level `time_range` inherits dashboard-level values (REQ-013).
+//
+// The `now-15m` / `now` fallback below applies when there is no chart-level override and either
+// no parent `dashboardModel` is in scope (e.g. isolated unit tests call `buildAttributes(..., nil)`),
+// or `dashboard != nil` but `dashboard.TimeRange == nil` (unusual in production: the dashboard
+// schema requires `time_range`). Optional tooling may also construct chart payloads without a parent
+// dashboard. The lens-dashboard-app typed `by_value` path threads the parent dashboard via
+// `lensDashboardAppToAPI` / `lensDashboardAppByValueToAPI` so it inherits like other typed charts;
+// it does not rely on this fallback during normal resource updates.
+func resolveChartTimeRange(dashboard *dashboardModel, chartLevel *timeRangeModel) kbapi.KbnEsQueryServerTimeRangeSchema {
+	if chartLevel != nil {
+		return timeRangeModelToAPI(chartLevel)
+	}
+	if dashboard != nil && dashboard.TimeRange != nil {
+		return timeRangeModelToAPI(dashboard.TimeRange)
+	}
 	return kbapi.KbnEsQueryServerTimeRangeSchema{
 		From: "now-15m",
 		To:   "now",
@@ -507,7 +543,7 @@ func (m *dashboardModel) panelsToAPI() (*kbapi.DashboardPanels, diag.Diagnostics
 
 	// Process panels
 	for _, pm := range m.Panels {
-		panelItem, d := pm.toAPI()
+		panelItem, d := pm.toAPI(m)
 		diags.Append(d...)
 		if diags.HasError() {
 			return nil, diags
@@ -544,7 +580,7 @@ func (m *dashboardModel) panelsToAPI() (*kbapi.DashboardPanels, diag.Diagnostics
 			innerPanels := make([]kbapi.DashboardPanelItem, 0, len(sm.Panels))
 
 			for _, pm := range sm.Panels {
-				item, d := pm.toAPI()
+				item, d := pm.toAPI(m)
 				diags.Append(d...)
 				if diags.HasError() {
 					return nil, diags
@@ -566,7 +602,7 @@ func (m *dashboardModel) panelsToAPI() (*kbapi.DashboardPanels, diag.Diagnostics
 	return &apiPanels, diags
 }
 
-func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
+func (pm panelModel) toAPI(dashboard *dashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	grid := struct {
@@ -616,7 +652,7 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 
 	lensGrid := lensDashboardAPIGrid{H: grid.H, W: grid.W, X: grid.X, Y: grid.Y}
 	if pm.LensDashboardAppConfig != nil {
-		return lensDashboardAppToAPI(pm, lensGrid, panelID)
+		return lensDashboardAppToAPI(pm, lensGrid, panelID, dashboard)
 	}
 	if pm.Type.ValueString() == panelTypeLensDashboardApp {
 		if typeutils.IsKnown(pm.ConfigJSON) && !pm.ConfigJSON.IsNull() {
@@ -764,7 +800,7 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 			continue
 		}
 
-		config0, d := converter.buildAttributes(pm)
+		config0, d := converter.buildAttributes(pm, dashboard)
 		diags.Append(d...)
 		if diags.HasError() {
 			return kbapi.DashboardPanelItem{}, diags
@@ -865,24 +901,13 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 		return kbapi.DashboardPanelItem{}, diags
 	}
 
-	isKnownType := slices.Contains([]string{
-		panelTypeMarkdown,
-		panelTypeVis,
-		panelTypeTimeSlider,
-		panelTypeSloBurnRate,
-		panelTypeSloErrorBudget,
-		panelTypeEsqlControl,
-		panelTypeOptionsListControl,
-		panelTypeRangeSlider,
-		panelTypeSyntheticsStatsOverview,
-		panelTypeSyntheticsMonitors,
-		panelTypeLensDashboardApp,
-		panelTypeSloOverview,
-	}, panelType)
-
-	if isKnownType {
+	switch panelType {
+	case panelTypeMarkdown, panelTypeVis, panelTypeTimeSlider, panelTypeSloBurnRate,
+		panelTypeSloErrorBudget, panelTypeEsqlControl, panelTypeOptionsListControl,
+		panelTypeRangeSlider, panelTypeSyntheticsStatsOverview, panelTypeSyntheticsMonitors,
+		panelTypeLensDashboardApp, panelTypeSloOverview:
 		diags.AddError("Unsupported panel configuration", "No panel configuration block was provided.")
-	} else {
+	default:
 		diags.AddError(
 			"Unsupported panel type",
 			fmt.Sprintf(

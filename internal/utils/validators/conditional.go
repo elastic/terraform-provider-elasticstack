@@ -48,7 +48,7 @@ func attrValueIsUnsetForConditionalValidation(val attr.Value) bool {
 
 type valueValidator func(dependentFieldHasAllowedValue bool, dependentValueStr string, val attr.Value, p path.Path) diag.Diagnostics
 
-// condition represents a validation rule that enforces conditional requirements
+// Condition represents a validation rule that enforces conditional requirements
 // based on the value of a dependent field. It contains either a static path or
 // a path expression to the field that this condition depends on, and a list of
 // allowed values for that field.
@@ -56,11 +56,12 @@ type valueValidator func(dependentFieldHasAllowedValue bool, dependentValueStr s
 // validation logic can be applied to the current field.
 // Use dependentPath for absolute paths, or dependentPathExpression for relative paths.
 type Condition struct {
-	description             func() string
-	dependentPath           *path.Path
-	dependentPathExpression *path.Expression
-	allowedValues           []string
-	validateValue           valueValidator
+	description               func() string
+	dependentPath             *path.Path
+	dependentPathExpression   *path.Expression
+	allowedValues             []string
+	validateValue             valueValidator
+	matchNestedObjectPresence bool
 }
 
 // Description describes the validation in plain text formatting.
@@ -90,6 +91,21 @@ func (v Condition) checkPathExpression(ctx context.Context, config tfsdk.Config,
 	if len(matchedPaths) == 0 {
 		// No match found, condition not met
 		return false, "", nil
+	}
+
+	if v.matchNestedObjectPresence {
+		for _, matchedPath := range matchedPaths {
+			var obj types.Object
+			getDiags := config.GetAttribute(ctx, matchedPath, &obj)
+			diags.Append(getDiags...)
+			if getDiags.HasError() {
+				continue
+			}
+			if !obj.IsNull() && !obj.IsUnknown() {
+				return true, "", diags
+			}
+		}
+		return false, "", diags
 	}
 
 	// Iterate through all matched paths
@@ -618,6 +634,35 @@ func ForbiddenIfDependentPathExpressionOneOf(dependentPathExpression path.Expres
 					p,
 					"Invalid Configuration",
 					msg,
+				)
+			}
+			return diags
+		},
+	}
+}
+
+// ForbiddenIfDrilldownVariantSiblingNestedPresent forbids the current drilldown variant nested block when another
+// optional SingleNested sibling variant under the same list item is set (REQ-039: Kibana dashboard `drilldowns`
+// discriminated union). Prefer ForbiddenIfDependentPathExpressionOneOf when the dependent is a plain string enum.
+func ForbiddenIfDrilldownVariantSiblingNestedPresent(dependentPathExpression path.Expression) Condition {
+	const descStr = "another drilldown variant block"
+	return Condition{
+		dependentPathExpression:   &dependentPathExpression,
+		matchNestedObjectPresence: true,
+		description: func() string {
+			return fmt.Sprintf("value cannot be set when %s is also configured", descStr)
+		},
+		validateValue: func(dependentFieldHasAllowedValue bool, _ string, val attr.Value, p path.Path) diag.Diagnostics {
+			var diags diag.Diagnostics
+			if !dependentFieldHasAllowedValue {
+				return diags
+			}
+			isSet := !attrValueIsUnsetForConditionalValidation(val)
+			if isSet {
+				diags.AddAttributeError(
+					p,
+					"Invalid Configuration",
+					fmt.Sprintf("%s configures more than one variant — set only one of `dashboard_drilldown`, `discover_drilldown`, or `url_drilldown` per `drilldowns` entry.", p),
 				)
 			}
 			return diags

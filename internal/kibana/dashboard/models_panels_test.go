@@ -54,7 +54,7 @@ func buildLensMosaicPanelForTest(t *testing.T) panelModel {
 
 	converter := newMosaicPanelConfigConverter()
 	pm := &panelModel{}
-	diags := converter.populateFromAttributes(context.Background(), pm, attrs)
+	diags := converter.populateFromAttributes(context.Background(), nil, pm, attrs)
 	require.False(t, diags.HasError())
 
 	return panelModel{
@@ -85,7 +85,7 @@ func buildLensTreemapPanelForTest(t *testing.T) panelModel {
 
 	converter := newTreemapPanelConfigConverter()
 	pm := &panelModel{}
-	diags := converter.populateFromAttributes(context.Background(), pm, attrs)
+	diags := converter.populateFromAttributes(context.Background(), nil, pm, attrs)
 	require.False(t, diags.HasError())
 
 	return panelModel{
@@ -115,7 +115,7 @@ func buildLensWafflePanelForTest(t *testing.T) panelModel {
 
 	converter := newWafflePanelConfigConverter()
 	pm := &panelModel{}
-	diags := converter.populateFromAttributes(context.Background(), pm, attrs)
+	diags := converter.populateFromAttributes(context.Background(), nil, pm, attrs)
 	require.False(t, diags.HasError())
 
 	return panelModel{
@@ -126,10 +126,31 @@ func buildLensWafflePanelForTest(t *testing.T) panelModel {
 	}
 }
 
-func Test_lensPanelTimeRange(t *testing.T) {
-	tr := lensPanelTimeRange()
-	assert.Equal(t, "now-15m", tr.From)
-	assert.Equal(t, "now", tr.To)
+func Test_resolveChartTimeRange_defaultWhenNoDashboard(t *testing.T) {
+	dash := &dashboardModel{
+		TimeRange: &timeRangeModel{
+			From: types.StringValue("now-7d"),
+			To:   types.StringValue("now"),
+		},
+	}
+
+	chartTR := &timeRangeModel{
+		From: types.StringValue("now-30d"),
+		To:   types.StringValue("now-1d"),
+	}
+
+	got := resolveChartTimeRange(dash, chartTR)
+	assert.Equal(t, "now-30d", got.From)
+	assert.Equal(t, "now-1d", got.To)
+
+	gotInherit := resolveChartTimeRange(dash, nil)
+	assert.Equal(t, "now-7d", gotInherit.From)
+	assert.Equal(t, "now", gotInherit.To)
+
+	// Scratch paths (no dashboard model) fall back to the legacy window when chart time is unset.
+	gotScratch := resolveChartTimeRange(nil, nil)
+	assert.Equal(t, "now-15m", gotScratch.From)
+	assert.Equal(t, "now", gotScratch.To)
 }
 
 func Test_mapPanelsFromAPI(t *testing.T) {
@@ -525,6 +546,10 @@ func Test_panelsToAPI(t *testing.T) {
 		{
 			name: "lens panel with treemap config",
 			model: dashboardModel{
+				TimeRange: &timeRangeModel{
+					From: types.StringValue("now-15m"),
+					To:   types.StringValue("now"),
+				},
 				Panels: []panelModel{
 					buildLensTreemapPanelForTest(t),
 				},
@@ -552,6 +577,10 @@ func Test_panelsToAPI(t *testing.T) {
 		{
 			name: "lens panel with mosaic config",
 			model: dashboardModel{
+				TimeRange: &timeRangeModel{
+					From: types.StringValue("now-15m"),
+					To:   types.StringValue("now"),
+				},
 				Panels: []panelModel{
 					buildLensMosaicPanelForTest(t),
 				},
@@ -584,6 +613,10 @@ func Test_panelsToAPI(t *testing.T) {
 		{
 			name: "lens panel with waffle config",
 			model: dashboardModel{
+				TimeRange: &timeRangeModel{
+					From: types.StringValue("now-15m"),
+					To:   types.StringValue("now"),
+				},
 				Panels: []panelModel{
 					buildLensWafflePanelForTest(t),
 				},
@@ -751,7 +784,7 @@ func Test_panelModel_toAPI_configJSONErrors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, diags := tt.panel.toAPI()
+			_, diags := tt.panel.toAPI(nil)
 			require.True(t, diags.HasError())
 			require.Equal(t, tt.errorSummary, diags[0].Summary())
 			require.Contains(t, diags[0].Detail(), tt.errorContains)
@@ -818,7 +851,7 @@ func Test_unknownPanelToAPIErrorWithoutConfigJSON(t *testing.T) {
 		ID:         types.StringNull(),
 		ConfigJSON: customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults),
 	}
-	_, diags := panel.toAPI()
+	_, diags := panel.toAPI(nil)
 	require.True(t, diags.HasError())
 	require.Equal(t, "Unsupported panel type", diags[0].Summary())
 	require.Contains(t, diags[0].Detail(), "not yet supported")
