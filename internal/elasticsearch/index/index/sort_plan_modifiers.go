@@ -182,8 +182,10 @@ func (m sortMigrationPlanModifier) PlanModifyList(ctx context.Context, req planm
 		}
 	}
 
-	// All checks passed — suppress replace.
+	// All checks passed — suppress replace and suppress plan diff by returning
+	// the state value (null) so Terraform treats this as a no-op migration.
 	resp.RequiresReplace = false
+	resp.PlanValue = req.StateValue
 }
 
 // isSemanticallyEquivalentMissing returns true if the planned missing value
@@ -257,10 +259,12 @@ func (m legacySortFieldPlanModifier) PlanModifySet(ctx context.Context, req plan
 		return
 	}
 
-	// If sort is non-null in the plan, suppress replace for sort_field.
-	// The sortMigrationPlanModifier on the new attribute handles the replace decision.
+	// If sort is non-null in the plan, suppress replace and suppress plan diff for
+	// sort_field: keep the existing state value so the plan shows no change for this
+	// attribute during migration to the new sort block.
 	if !planSort.IsNull() && !planSort.IsUnknown() {
 		resp.RequiresReplace = false
+		resp.PlanValue = req.StateValue
 		return
 	}
 
@@ -290,9 +294,12 @@ func (m legacySortOrderPlanModifier) PlanModifyList(ctx context.Context, req pla
 		return
 	}
 
-	// If sort is non-null in the plan, suppress replace for sort_order.
+	// If sort is non-null in the plan, suppress replace and suppress plan diff for
+	// sort_order: keep the existing state value so the plan shows no change for this
+	// attribute during migration to the new sort block.
 	if !planSort.IsNull() && !planSort.IsUnknown() {
 		resp.RequiresReplace = false
+		resp.PlanValue = req.StateValue
 		return
 	}
 
