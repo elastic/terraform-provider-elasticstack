@@ -170,25 +170,20 @@ func (pp pinnedPanelModel) toPinnedAPIItem(itemPath path.Path) (kbapi.DashboardP
 	}
 }
 
-func syntheticTfPanelFromPinnedForPopulate(tf *pinnedPanelModel, apiDiscriminator string) *panelModel {
-	if tf == nil {
-		return nil
-	}
-	if !typeutils.IsKnown(tf.Type) || tf.Type.ValueString() != apiDiscriminator {
-		return nil
-	}
-	pm := tf.syntheticPanelModel()
-	return &pm
-}
-
+// seedPinnedPanelModelForRead seeds a pinned panel model with the discriminator
+// from the API response, carrying prior TF state forward only when its `type`
+// matches. populateTf is non-nil only when the prior TF state can be reused for
+// drift preservation in populate*FromAPI helpers.
 func seedPinnedPanelModelForRead(tf *pinnedPanelModel, discriminator string) (ppm pinnedPanelModel, populateTf *panelModel) {
 	if tf != nil {
 		ppm = *tf
 	}
 	ppm.Type = types.StringValue(discriminator)
 
-	populateTf = syntheticTfPanelFromPinnedForPopulate(tf, discriminator)
-	if populateTf == nil {
+	if tf != nil && typeutils.IsKnown(tf.Type) && tf.Type.ValueString() == discriminator {
+		pm := tf.syntheticPanelModel()
+		populateTf = &pm
+	} else {
 		ppm.OptionsListControlConfig = nil
 		ppm.RangeSliderControlConfig = nil
 		ppm.TimeSliderControlConfig = nil
@@ -196,6 +191,26 @@ func seedPinnedPanelModelForRead(tf *pinnedPanelModel, discriminator string) (pp
 	}
 
 	return ppm, populateTf
+}
+
+// applyPinnedControlConfig assigns the active control config from a synthetic
+// panelModel onto ppm and clears the other three sibling slots so each pinned
+// entry only carries the discriminator-matching block.
+func (ppm *pinnedPanelModel) applyPinnedControlConfig(active string, pm *panelModel) {
+	ppm.OptionsListControlConfig = nil
+	ppm.RangeSliderControlConfig = nil
+	ppm.TimeSliderControlConfig = nil
+	ppm.EsqlControlConfig = nil
+	switch active {
+	case panelTypeOptionsListControl:
+		ppm.OptionsListControlConfig = pm.OptionsListControlConfig
+	case panelTypeRangeSlider:
+		ppm.RangeSliderControlConfig = pm.RangeSliderControlConfig
+	case panelTypeTimeSlider:
+		ppm.TimeSliderControlConfig = pm.TimeSliderControlConfig
+	case panelTypeEsqlControl:
+		ppm.EsqlControlConfig = pm.EsqlControlConfig
+	}
 }
 
 func (m *dashboardModel) mapPinnedPanelsFromAPI(ctx context.Context, prior []pinnedPanelModel, api *[]kbapi.DashboardPinnedPanels_Item) ([]pinnedPanelModel, diag.Diagnostics) {
@@ -241,10 +256,7 @@ func (m *dashboardModel) mapPinnedPanelsFromAPI(ctx context.Context, prior []pin
 			pm := ppm.syntheticPanelModel()
 			populateOptionsListControlFromAPI(&pm, populateTf, &olPanel)
 
-			ppm.OptionsListControlConfig = pm.OptionsListControlConfig
-			ppm.RangeSliderControlConfig = nil
-			ppm.TimeSliderControlConfig = nil
-			ppm.EsqlControlConfig = nil
+			ppm.applyPinnedControlConfig(panelTypeOptionsListControl, &pm)
 			out = append(out, ppm)
 
 		case panelTypeRangeSlider:
@@ -264,10 +276,7 @@ func (m *dashboardModel) mapPinnedPanelsFromAPI(ctx context.Context, prior []pin
 			pm := ppm.syntheticPanelModel()
 			populateRangeSliderControlFromAPI(ctx, &pm, populateTf, &rsPanel)
 
-			ppm.RangeSliderControlConfig = pm.RangeSliderControlConfig
-			ppm.OptionsListControlConfig = nil
-			ppm.TimeSliderControlConfig = nil
-			ppm.EsqlControlConfig = nil
+			ppm.applyPinnedControlConfig(panelTypeRangeSlider, &pm)
 			out = append(out, ppm)
 
 		case panelTypeTimeSlider:
@@ -287,10 +296,7 @@ func (m *dashboardModel) mapPinnedPanelsFromAPI(ctx context.Context, prior []pin
 			pm := ppm.syntheticPanelModel()
 			populateTimeSliderControlFromAPI(&pm, populateTf, tsPanel.Config)
 
-			ppm.TimeSliderControlConfig = pm.TimeSliderControlConfig
-			ppm.OptionsListControlConfig = nil
-			ppm.RangeSliderControlConfig = nil
-			ppm.EsqlControlConfig = nil
+			ppm.applyPinnedControlConfig(panelTypeTimeSlider, &pm)
 			out = append(out, ppm)
 
 		case panelTypeEsqlControl:
@@ -310,10 +316,7 @@ func (m *dashboardModel) mapPinnedPanelsFromAPI(ctx context.Context, prior []pin
 			pm := ppm.syntheticPanelModel()
 			populateEsqlControlFromAPI(&pm, populateTf, esqlPanel.Config)
 
-			ppm.EsqlControlConfig = pm.EsqlControlConfig
-			ppm.OptionsListControlConfig = nil
-			ppm.RangeSliderControlConfig = nil
-			ppm.TimeSliderControlConfig = nil
+			ppm.applyPinnedControlConfig(panelTypeEsqlControl, &pm)
 			out = append(out, ppm)
 
 		default:

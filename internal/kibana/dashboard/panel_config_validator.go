@@ -233,9 +233,7 @@ func pinnedPanelExpectedTypedControlAttr(panelType string) (attrName string, ok 
 	}
 }
 
-func pinnedPanelAllowedTypesDetail() string {
-	return "`options_list_control`, `range_slider_control`, `time_slider_control`, or `esql_control`"
-}
+const pinnedPanelAllowedTypesDetail = "`options_list_control`, `range_slider_control`, `time_slider_control`, or `esql_control`"
 
 func (v pinnedPanelControlValidator) ValidateObject(_ context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
 	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
@@ -278,7 +276,7 @@ func (v pinnedPanelControlValidator) ValidateObject(_ context.Context, req valid
 				req.Path.AtName("type"),
 				"Invalid pinned panel entry type",
 				fmt.Sprintf("Pinned panel entries only support dashboard controls in the control bar; `type` must be %s, got %q.",
-					pinnedPanelAllowedTypesDetail(),
+					pinnedPanelAllowedTypesDetail,
 					panelType,
 				),
 			)
