@@ -51,6 +51,7 @@ type dashboardModel struct {
 	Options          *optionsModel         `tfsdk:"options"`
 	AccessControl    *AccessControlValue   `tfsdk:"access_control"`
 	Panels           []panelModel          `tfsdk:"panels"`
+	PinnedPanels     []pinnedPanelModel    `tfsdk:"pinned_panels"`
 	Sections         []sectionModel        `tfsdk:"sections"`
 }
 

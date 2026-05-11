@@ -1,8 +1,8 @@
 ## 1. Schema reuse
 
-- [ ] 1.1 Extract the four `*_control_config` nested attribute schemas into a shared builder if not already shared between `panels[]` and standalone usage
-- [ ] 1.2 Add `pinned_panels` block list to the dashboard root schema reusing those builders, omitting `grid`
-- [ ] 1.3 Add description text to `internal/kibana/dashboard/descriptions/`
+- [x] 1.1 Extract the four `*_control_config` nested attribute schemas into a shared builder if not already shared between `panels[]` and standalone usage
+- [x] 1.2 Add `pinned_panels` block list to the dashboard root schema reusing those builders, omitting `grid`
+- [x] 1.3 Add description text to `internal/kibana/dashboard/descriptions/`
 
 ## 2. Validators
 

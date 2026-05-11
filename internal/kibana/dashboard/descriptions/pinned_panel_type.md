@@ -1,0 +1,1 @@
+Panel type discriminator for this pinned control entry. Must match exactly one of the four typed `*_control_config` blocks on the same object (for example `options_list_control` with `options_list_control_config`).
