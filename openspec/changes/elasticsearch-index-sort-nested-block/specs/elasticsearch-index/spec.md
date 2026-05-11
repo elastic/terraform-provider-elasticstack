@@ -98,9 +98,26 @@ The deprecated `sort_field` and `sort_order` plan modifiers SHALL suppress repla
 
 ### Requirement: `sort.missing` and `sort.mode` in static settings and adoption (REQ-SORT-04)
 
-The `sort.missing` and `sort.mode` Elasticsearch settings keys SHALL be added to `staticSettingsKeys`. The `use_existing` index adoption flow SHALL compare these settings against the existing index's static settings when they are explicitly set in the plan, following the same logic as `sort.field` and `sort.order`.
+The `sort.missing` and `sort.mode` Elasticsearch settings keys SHALL be added to `staticSettingsKeys`. The `use_existing` index adoption flow SHALL compare these settings against the existing index's static settings when they are explicitly set in the plan.
 
-The `compareStaticPlanAndES` function in `use_existing.go` SHALL handle `"sort.missing"` and `"sort.mode"` as ordered string-slice comparisons (using `stringSliceOrderedFromAny`), mirroring the `"sort.order"` case.
+When the plan originates from the new `sort` `ListNestedAttribute`, the `compareStaticPlanAndES` function in `use_existing.go` SHALL compare `sort.field`, `sort.order`, `sort.missing`, and `sort.mode` as ordered string slices (using `stringSliceOrderedFromAny`). This preserves the order-significant semantics of the nested `sort` list defined in REQ-SORT-01.
+
+When the plan originates from the deprecated `sort_field`/`sort_order` attributes, the `compareStaticPlanAndES` function in `use_existing.go` SHALL preserve the existing legacy behavior for `sort.field`: compare `sort.field` as an unordered set, while continuing to compare ordered per-position settings only where the plan shape preserves positional meaning.
+
+#### Scenario: Adoption fails when nested `sort.field` order differs
+
+- **GIVEN** `use_existing = true` and an existing index with `index.sort.field = ["date", "id"]`
+- **AND** the plan specifies `sort = [{ field = "id" }, { field = "date" }]`
+- **WHEN** the resource is created
+- **THEN** the adoption flow SHALL return an error diagnostic naming the mismatched `sort.field` setting
+- **AND** SHALL NOT call any mutating API
+
+#### Scenario: Adoption preserves legacy unordered comparison for `sort_field`
+
+- **GIVEN** `use_existing = true` and an existing index with `index.sort.field = ["date", "id"]`
+- **AND** the plan specifies `sort_field = ["id", "date"]`
+- **WHEN** the resource is created
+- **THEN** the adoption flow SHALL allow adoption without a `sort.field` mismatch based only on element order
 
 #### Scenario: Adoption fails when `sort.missing` differs
 

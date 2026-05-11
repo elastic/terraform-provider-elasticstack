@@ -27,7 +27,8 @@
 
 - [ ] 5.1 Add `case "sort.missing"` in `compareStaticPlanAndES()` using `stringSliceOrderedFromAny` (mirroring the `"sort.order"` case).
 - [ ] 5.2 Add `case "sort.mode"` in `compareStaticPlanAndES()` using `stringSliceOrderedFromAny`.
-- [ ] 5.3 Add `case "sort.missing"` and `case "sort.mode"` in `configuredDisplayFromPlanValue()`.
+- [ ] 5.3 Update adoption comparison logic so `sort.field` is validated as order-sensitive when the plan is produced from the new `sort` `ListNestedAttribute`, while preserving the existing unordered comparison behavior for the legacy `sort_field` `SetAttribute`.
+- [ ] 5.4 Add `case "sort.missing"` and `case "sort.mode"` in `configuredDisplayFromPlanValue()`.
 
 ## 6. Tests
 
