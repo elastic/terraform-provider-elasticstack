@@ -117,7 +117,7 @@ docker-kibana: .env  ## Start Kibana node in docker container
 
 .PHONY: docker-fleet
 docker-fleet: .env ## Start Fleet node in docker container
-	@ export KIBANA_CONFIG_FILE=$$(if [ "$(STACK_VERSION)" = "9.4.0-SNAPSHOT" ]; then echo "kibana-9.4.snapshot.yml"; else echo "kibana.yml"; fi); \
+	@ export KIBANA_CONFIG_FILE=$$(if [ "$(STACK_VERSION)" = "9.4.0" ]; then echo "kibana-9.4.yml"; else echo "kibana.yml"; fi); \
 	docker compose -f $(COMPOSE_FILE) up --quiet-pull -d fleet
 
 .PHONY: set-kibana-password

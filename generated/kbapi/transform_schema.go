@@ -1105,14 +1105,20 @@ func fixSpaceResponseSchemas(schema *Schema) {
 
 func fixDashboardPanelItemRefs(schema *Schema) {
 	schema.Components.Move("schemas.kbn-dashboard-data.properties.panels.items.anyOf.0.anyOf", "schemas.kbn-dashboard-data.properties.panels.items.anyOf.0.oneOf")
-	schema.Components.Set("schemas.kbn-dashboard-data.properties.panels.items.anyOf.0.discriminator", Map{"propertyName": "type"})
+	schema.Components.Set(
+		"schemas.kbn-dashboard-data.properties.panels.items.anyOf.0.discriminator",
+		schema.Components.MustGetMap("schemas.kbn-dashboard-section.properties.panels.items.discriminator"),
+	)
 	schema.Components.CreateRef(schema, "dashboard_panel_item", "schemas.kbn-dashboard-section.properties.panels.items")
 	schema.Components.CreateRef(schema, "dashboard_panel_item", "schemas.kbn-dashboard-data.properties.panels.items.anyOf.0")
 	schema.Components.CreateRef(schema, "dashboard_panels", "schemas.kbn-dashboard-data.properties.panels")
 
 	dashboardIDPath := schema.MustGetPath("/api/dashboards/{id}")
 	dashboardIDPath.Put.Move("requestBody.content.application/json.schema.properties.panels.items.anyOf.0.anyOf", "requestBody.content.application/json.schema.properties.panels.items.anyOf.0.oneOf")
-	dashboardIDPath.Put.Set("requestBody.content.application/json.schema.properties.panels.items.anyOf.0.discriminator", Map{"propertyName": "type"})
+	dashboardIDPath.Put.Set(
+		"requestBody.content.application/json.schema.properties.panels.items.anyOf.0.discriminator",
+		schema.Components.MustGetMap("schemas.dashboard_panel_item.discriminator"),
+	)
 	dashboardIDPath.Put.CreateRef(schema, "dashboard_panel_item", "requestBody.content.application/json.schema.properties.panels.items.anyOf.0")
 	dashboardIDPath.Put.CreateRef(schema, "dashboard_panels", "requestBody.content.application/json.schema.properties.panels")
 
