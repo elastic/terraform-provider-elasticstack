@@ -1914,16 +1914,19 @@ func lensChartDrilldownListItemAttributes() map[string]schema.Attribute {
 				"use_filters": schema.BoolAttribute{
 					MarkdownDescription: "When true, forwards filter context.",
 					Optional:            true,
+					Computed:            true,
 					Default:             booldefault.StaticBool(true),
 				},
 				"use_time_range": schema.BoolAttribute{
 					MarkdownDescription: "When true, forwards the time range.",
 					Optional:            true,
+					Computed:            true,
 					Default:             booldefault.StaticBool(true),
 				},
 				"open_in_new_tab": schema.BoolAttribute{
 					MarkdownDescription: "When true, opens the target dashboard in a new browser tab.",
 					Optional:            true,
+					Computed:            true,
 					Default:             booldefault.StaticBool(false),
 				},
 			},
@@ -1950,6 +1953,7 @@ func lensChartDrilldownListItemAttributes() map[string]schema.Attribute {
 				"open_in_new_tab": schema.BoolAttribute{
 					MarkdownDescription: "When true, opens Discover in a new browser tab.",
 					Optional:            true,
+					Computed:            true,
 					Default:             booldefault.StaticBool(true),
 				},
 			},
@@ -1985,11 +1989,13 @@ func lensChartDrilldownListItemAttributes() map[string]schema.Attribute {
 				"encode_url": schema.BoolAttribute{
 					MarkdownDescription: "When true, encodes interpolated URL parameters.",
 					Optional:            true,
+					Computed:            true,
 					Default:             booldefault.StaticBool(true),
 				},
 				"open_in_new_tab": schema.BoolAttribute{
 					MarkdownDescription: "When true, opens the URL in a new browser tab.",
 					Optional:            true,
+					Computed:            true,
 					Default:             booldefault.StaticBool(true),
 				},
 			},
