@@ -156,7 +156,8 @@ In particular, this property is used for analyzing the splits with respect to th
 Optional:
 
 - `actions` (List of String) The set of actions to be triggered when the rule applies. If more than one action is specified the effects of all actions are combined.
-- `conditions` (Attributes List) An array of numeric conditions when the rule applies. (see [below for nested schema](#nestedatt--analysis_config--detectors--custom_rules--conditions))
+- `conditions` (Attributes List) An array of numeric conditions when the rule applies. A rule must have either a non-empty `scope` or at least one condition (per Elasticsearch). (see [below for nested schema](#nestedatt--analysis_config--detectors--custom_rules--conditions))
+- `scope` (Attributes Map) Maps an analysis field name (typically matching `by_field_name`, `over_field_name`, or `partition_field_name` on the detector) to an ML filter reference. Use with `elasticstack_elasticsearch_ml_filter`. A rule must have either a non-empty `scope` or at least one `conditions` entry. (see [below for nested schema](#nestedatt--analysis_config--detectors--custom_rules--scope))
 
 <a id="nestedatt--analysis_config--detectors--custom_rules--conditions"></a>
 ### Nested Schema for `analysis_config.detectors.custom_rules.conditions`
@@ -166,6 +167,18 @@ Required:
 - `applies_to` (String) Specifies the result property to which the condition applies.
 - `operator` (String) Specifies the condition operator.
 - `value` (Number) The value that is compared against the applies_to field using the operator.
+
+
+<a id="nestedatt--analysis_config--detectors--custom_rules--scope"></a>
+### Nested Schema for `analysis_config.detectors.custom_rules.scope`
+
+Required:
+
+- `filter_id` (String) The ML filter identifier (`filter_id`) to apply.
+
+Optional:
+
+- `filter_type` (String) `include` applies the rule to values in the filter; `exclude` applies it to values not in the filter.
 
 
 

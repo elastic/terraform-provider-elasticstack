@@ -215,7 +215,7 @@ func getSchema(ctx context.Context) schema.Schema {
 												},
 											},
 											"conditions": schema.ListNestedAttribute{
-												MarkdownDescription: "An array of numeric conditions when the rule applies.",
+												MarkdownDescription: "An array of numeric conditions when the rule applies. A rule must have either a non-empty `scope` or at least one condition (per Elasticsearch).",
 												Optional:            true,
 												NestedObject: schema.NestedAttributeObject{
 													Attributes: map[string]schema.Attribute{
@@ -236,6 +236,28 @@ func getSchema(ctx context.Context) schema.Schema {
 														"value": schema.Float64Attribute{
 															MarkdownDescription: "The value that is compared against the applies_to field using the operator.",
 															Required:            true,
+														},
+													},
+												},
+											},
+											"scope": schema.MapNestedAttribute{
+												MarkdownDescription: "Maps an analysis field name " +
+													"(typically matching `by_field_name`, `over_field_name`, or `partition_field_name` on the detector) " +
+													"to an ML filter reference. Use with `elasticstack_elasticsearch_ml_filter`. " +
+													"A rule must have either a non-empty `scope` or at least one `conditions` entry.",
+												Optional: true,
+												NestedObject: schema.NestedAttributeObject{
+													Attributes: map[string]schema.Attribute{
+														"filter_id": schema.StringAttribute{
+															MarkdownDescription: "The ML filter identifier (`filter_id`) to apply.",
+															Required:            true,
+														},
+														"filter_type": schema.StringAttribute{
+															MarkdownDescription: "`include` applies the rule to values in the filter; `exclude` applies it to values not in the filter.",
+															Optional:            true,
+															Validators: []validator.String{
+																stringvalidator.OneOf("include", "exclude"),
+															},
 														},
 													},
 												},
