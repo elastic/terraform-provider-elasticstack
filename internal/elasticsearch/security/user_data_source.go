@@ -27,7 +27,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -112,9 +111,9 @@ func readUserDataSource(ctx context.Context, esClient *clients.ElasticsearchScop
 
 	if user == nil {
 		config.ID = types.StringValue("")
-		config.FullName = types.StringValue("")
-		config.Email = types.StringValue("")
-		config.Roles = types.SetValueMust(types.StringType, []attr.Value{})
+		config.FullName = types.StringNull()
+		config.Email = types.StringNull()
+		config.Roles = types.SetNull(types.StringType)
 		config.Metadata = jsontypes.NewNormalizedNull()
 		config.Enabled = types.BoolNull()
 		config.Username = types.StringValue(username)
