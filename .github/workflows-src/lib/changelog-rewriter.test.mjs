@@ -32,15 +32,14 @@ test('rewriteChangelogSection unreleased replaces Unreleased section body', () =
   assert.ok(out.includes('## [1.0.0]'));
 });
 
-test('rewriteChangelogSection release inserts after Unreleased when section missing', () => {
+test('rewriteChangelogSection release replaces Unreleased section with new versioned section', () => {
   const before = ['# C', '', '## [Unreleased]', 'work', '', '## [0.9.0]', 'x'].join('\n');
   const newSection = '## [1.0.0] - 2025-01-01\n\n### Changes\n\n- x ([#2](u))';
   const out = rewriteChangelogSection(before, newSection, 'release', '1.0.0');
-  const unreleasedIdx = out.indexOf('## [Unreleased]');
+  assert.ok(!out.includes('## [Unreleased]'));
   const newIdx = out.indexOf('## [1.0.0]');
   const oldIdx = out.indexOf('## [0.9.0]');
-  assert.ok(unreleasedIdx !== -1 && newIdx !== -1 && oldIdx !== -1);
-  assert.ok(newIdx > unreleasedIdx && newIdx < oldIdx);
+  assert.ok(newIdx !== -1 && oldIdx !== -1 && newIdx < oldIdx);
 });
 
 test('rewriteChangelogSection prepends unreleased when no Unreleased heading', () => {
