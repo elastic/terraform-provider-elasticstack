@@ -79,7 +79,7 @@ func pinnedFixtureRangeSlider(minVal, maxVal string, step float32) pinnedPanelMo
 	}
 }
 
-func mustAPIPinnedItems(t *testing.T, dm *dashboardModel) *[]kbapi.KbnDashboardData_PinnedPanels_Item {
+func mustAPIPinnedItems(t *testing.T, dm *dashboardModel) *kbapi.DashboardPinnedPanels {
 	t.Helper()
 	items, diags := dm.pinnedPanelsToAPICreateItems()
 	require.False(t, diags.HasError(), "%s", diags)
@@ -101,7 +101,7 @@ func Test_dashboardModel_mapPinnedPanelsFromAPI_unsetVsEmptyAndDrift(t *testing.
 	t.Run("prior nil + API empty slice yields nil", func(t *testing.T) {
 		t.Parallel()
 		var d dashboardModel
-		api := []kbapi.KbnDashboardData_PinnedPanels_Item{}
+		api := []kbapi.DashboardPinnedPanels_Item{}
 		out, diags := d.mapPinnedPanelsFromAPI(ctx, nil, &api)
 		require.False(t, diags.HasError())
 		require.Nil(t, out)
@@ -110,7 +110,7 @@ func Test_dashboardModel_mapPinnedPanelsFromAPI_unsetVsEmptyAndDrift(t *testing.
 	t.Run("prior empty slice + API empty slice yields empty slice", func(t *testing.T) {
 		t.Parallel()
 		var d dashboardModel
-		api := []kbapi.KbnDashboardData_PinnedPanels_Item{}
+		api := []kbapi.DashboardPinnedPanels_Item{}
 		out, diags := d.mapPinnedPanelsFromAPI(ctx, []pinnedPanelModel{}, &api)
 		require.False(t, diags.HasError())
 		require.NotNil(t, out)
@@ -251,7 +251,7 @@ func Test_dashboardModel_toAPIRequests_pinnedPanelsJSONShape(t *testing.T) {
 		require.NotNil(t, req.PinnedPanels)
 		require.Len(t, *req.PinnedPanels, 1)
 
-		raw, err := json.Marshal(pinnedPanelCreateItemFromPutItem((*req.PinnedPanels)[0]))
+		raw, err := json.Marshal((*req.PinnedPanels)[0])
 		require.NoError(t, err)
 		require.NotContains(t, string(raw), `"grid"`)
 	})

@@ -259,7 +259,7 @@ func (m *dashboardModel) toAPIUpdateRequest(ctx context.Context, diags *diag.Dia
 
 	m.dashboardFiltersToUpdateAPI(ctx, &req, diags)
 
-	pinnedPanels, pinnedDiags := m.pinnedPanelsToAPIPutItems()
+	pinnedPanels, pinnedDiags := m.pinnedPanelsToAPICreateItems()
 	diags.Append(pinnedDiags...)
 	if pinnedPanels != nil {
 		req.PinnedPanels = pinnedPanels
