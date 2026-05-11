@@ -49,6 +49,8 @@ var (
 		"shard.check_on_startup",
 		"sort.field",
 		"sort.order",
+		"sort.missing",
+		"sort.mode",
 		"mapping.coerce",
 	}
 	dynamicSettingsKeys = []string{
@@ -361,6 +363,59 @@ func (model tfModel) getCompositeID() (*clients.CompositeID, diag.Diagnostics) {
 func (model tfModel) toIndexSettings(ctx context.Context) (map[string]any, diag.Diagnostics) {
 	settings := map[string]any{}
 	modelType := reflect.TypeFor[tfModel]()
+
+	// Pre-process sort ListNestedAttribute: expand to flat settings keys.
+	if typeutils.IsKnown(model.Sort) {
+		var sortEntries []sortEntryModel
+		if diags := model.Sort.ElementsAs(ctx, &sortEntries, false); diags.HasError() {
+			return map[string]any{}, diags
+		}
+
+		if len(sortEntries) > 0 {
+			sortFields := make([]string, len(sortEntries))
+			sortOrders := make([]string, len(sortEntries))
+			sortMissing := make([]string, 0, len(sortEntries))
+			sortModes := make([]string, 0, len(sortEntries))
+
+			allMissingNull := true
+			allModeNull := true
+
+			for i, entry := range sortEntries {
+				sortFields[i] = entry.Field.ValueString()
+
+				if entry.Order.IsNull() || entry.Order.IsUnknown() {
+					sortOrders[i] = "asc"
+				} else {
+					sortOrders[i] = entry.Order.ValueString()
+				}
+
+				if !entry.Missing.IsNull() && !entry.Missing.IsUnknown() {
+					sortMissing = append(sortMissing, entry.Missing.ValueString())
+					allMissingNull = false
+				} else if !allMissingNull {
+					// Once we've started collecting, fill with empty placeholder to maintain positional alignment
+					sortMissing = append(sortMissing, "")
+				}
+
+				if !entry.Mode.IsNull() && !entry.Mode.IsUnknown() {
+					sortModes = append(sortModes, entry.Mode.ValueString())
+					allModeNull = false
+				} else if !allModeNull {
+					sortModes = append(sortModes, "")
+				}
+			}
+
+			settings["sort.field"] = sortFields
+			settings["sort.order"] = sortOrders
+
+			if !allMissingNull {
+				settings["sort.missing"] = sortMissing
+			}
+			if !allModeNull {
+				settings["sort.mode"] = sortModes
+			}
+		}
+	}
 
 	for _, key := range allSettingsKeys {
 		tfFieldKey := convertSettingsKeyToTFFieldKey(key)
