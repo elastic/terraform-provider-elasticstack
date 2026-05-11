@@ -20,10 +20,12 @@ package dashboard
 import (
 	"context"
 	"encoding/json"
+	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -45,17 +47,29 @@ func remapPinnedPanelJSON[A any, B any](in A, out *B) error {
 	return json.Unmarshal(b, out)
 }
 
+func pinnedPanelsDiagnosticsErrorsDetail(d diag.Diagnostics) string {
+	var parts []string
+	for _, x := range d {
+		if x.Severity() != diag.SeverityError {
+			continue
+		}
+		parts = append(parts, strings.TrimSpace(x.Summary()+": "+x.Detail()))
+	}
+	return strings.Join(parts, "; ")
+}
+
 func pinnedPanelCreateItemsToPutItems(items []kbapi.KbnDashboardData_PinnedPanels_Item) ([]kbapi.PutDashboardsIdJSONBody_PinnedPanels_Item, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	out := make([]kbapi.PutDashboardsIdJSONBody_PinnedPanels_Item, len(items))
 	for i := range items {
+		itemPath := path.Root("pinned_panels").AtListIndex(i)
 		b, err := json.Marshal(items[i])
 		if err != nil {
-			diags.AddError("Failed to marshal pinned panel", err.Error())
+			diags.AddAttributeError(itemPath, "Failed to marshal pinned panel", err.Error())
 			return nil, diags
 		}
 		if err := json.Unmarshal(b, &out[i]); err != nil {
-			diags.AddError("Failed to convert pinned panel for update", err.Error())
+			diags.AddAttributeError(itemPath, "Failed to convert pinned panel for update", err.Error())
 			return nil, diags
 		}
 	}
@@ -69,8 +83,9 @@ func (m *dashboardModel) pinnedPanelsToAPICreateItems() (*[]kbapi.KbnDashboardDa
 	}
 
 	items := make([]kbapi.KbnDashboardData_PinnedPanels_Item, 0, len(m.PinnedPanels))
-	for _, pp := range m.PinnedPanels {
-		item, itemDiags := pp.toPinnedAPIItem()
+	for i := range m.PinnedPanels {
+		itemPath := path.Root("pinned_panels").AtListIndex(i)
+		item, itemDiags := m.PinnedPanels[i].toPinnedAPIItem(itemPath)
 		diags.Append(itemDiags...)
 		if diags.HasError() {
 			return nil, diags
@@ -94,7 +109,7 @@ func (m *dashboardModel) pinnedPanelsToAPIPutItems() (*[]kbapi.PutDashboardsIdJS
 	return &putItems, diags
 }
 
-func (pp pinnedPanelModel) toPinnedAPIItem() (kbapi.KbnDashboardData_PinnedPanels_Item, diag.Diagnostics) {
+func (pp pinnedPanelModel) toPinnedAPIItem(itemPath path.Path) (kbapi.KbnDashboardData_PinnedPanels_Item, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	pm := pp.syntheticPanelModel()
 
@@ -106,11 +121,13 @@ func (pp pinnedPanelModel) toPinnedAPIItem() (kbapi.KbnDashboardData_PinnedPanel
 		buildOptionsListControlConfig(pm, &olPanel)
 		var group kbapi.KbnControlsSchemasControlsGroupSchemaOptionsListControl
 		if err := remapPinnedPanelJSON(olPanel, &group); err != nil {
-			return kbapi.KbnDashboardData_PinnedPanels_Item{}, diagutil.FrameworkDiagFromError(err)
+			diags.AddAttributeError(itemPath, "Failed to remap pinned options list control", err.Error())
+			return kbapi.KbnDashboardData_PinnedPanels_Item{}, diags
 		}
 		var item kbapi.KbnDashboardData_PinnedPanels_Item
 		if err := item.FromKbnControlsSchemasControlsGroupSchemaOptionsListControl(group); err != nil {
-			return kbapi.KbnDashboardData_PinnedPanels_Item{}, diagutil.FrameworkDiagFromError(err)
+			diags.AddAttributeError(itemPath, "Failed to build pinned options list control payload", err.Error())
+			return kbapi.KbnDashboardData_PinnedPanels_Item{}, diags
 		}
 		return item, diags
 
@@ -121,11 +138,13 @@ func (pp pinnedPanelModel) toPinnedAPIItem() (kbapi.KbnDashboardData_PinnedPanel
 		buildRangeSliderControlConfig(pm, &rsPanel)
 		var group kbapi.KbnControlsSchemasControlsGroupSchemaRangeSliderControl
 		if err := remapPinnedPanelJSON(rsPanel, &group); err != nil {
-			return kbapi.KbnDashboardData_PinnedPanels_Item{}, diagutil.FrameworkDiagFromError(err)
+			diags.AddAttributeError(itemPath, "Failed to remap pinned range slider control", err.Error())
+			return kbapi.KbnDashboardData_PinnedPanels_Item{}, diags
 		}
 		var item kbapi.KbnDashboardData_PinnedPanels_Item
 		if err := item.FromKbnControlsSchemasControlsGroupSchemaRangeSliderControl(group); err != nil {
-			return kbapi.KbnDashboardData_PinnedPanels_Item{}, diagutil.FrameworkDiagFromError(err)
+			diags.AddAttributeError(itemPath, "Failed to build pinned range slider control payload", err.Error())
+			return kbapi.KbnDashboardData_PinnedPanels_Item{}, diags
 		}
 		return item, diags
 
@@ -141,11 +160,13 @@ func (pp pinnedPanelModel) toPinnedAPIItem() (kbapi.KbnDashboardData_PinnedPanel
 		buildTimeSliderControlConfig(pm, &tsPanel)
 		var group kbapi.KbnControlsSchemasControlsGroupSchemaTimeSliderControl
 		if err := remapPinnedPanelJSON(tsPanel, &group); err != nil {
-			return kbapi.KbnDashboardData_PinnedPanels_Item{}, diagutil.FrameworkDiagFromError(err)
+			diags.AddAttributeError(itemPath, "Failed to remap pinned time slider control", err.Error())
+			return kbapi.KbnDashboardData_PinnedPanels_Item{}, diags
 		}
 		var item kbapi.KbnDashboardData_PinnedPanels_Item
 		if err := item.FromKbnControlsSchemasControlsGroupSchemaTimeSliderControl(group); err != nil {
-			return kbapi.KbnDashboardData_PinnedPanels_Item{}, diagutil.FrameworkDiagFromError(err)
+			diags.AddAttributeError(itemPath, "Failed to build pinned time slider control payload", err.Error())
+			return kbapi.KbnDashboardData_PinnedPanels_Item{}, diags
 		}
 		return item, diags
 
@@ -153,22 +174,27 @@ func (pp pinnedPanelModel) toPinnedAPIItem() (kbapi.KbnDashboardData_PinnedPanel
 		esqlPanel := kbapi.KbnDashboardPanelTypeEsqlControl{
 			Grid: kbapi.KbnDashboardPanelGrid{X: 0, Y: 0},
 		}
-		diags.Append(buildEsqlControlConfig(pm, &esqlPanel)...)
-		if diags.HasError() {
+		esqlDiags := buildEsqlControlConfig(pm, &esqlPanel)
+		if esqlDiags.HasError() {
+			diags.AddAttributeError(itemPath, "Invalid pinned ES|QL control configuration", pinnedPanelsDiagnosticsErrorsDetail(esqlDiags))
 			return kbapi.KbnDashboardData_PinnedPanels_Item{}, diags
 		}
+		diags.Append(esqlDiags...)
 		var group kbapi.KbnControlsSchemasControlsGroupSchemaEsqlControl
 		if err := remapPinnedPanelJSON(esqlPanel, &group); err != nil {
-			return kbapi.KbnDashboardData_PinnedPanels_Item{}, diagutil.FrameworkDiagFromError(err)
+			diags.AddAttributeError(itemPath, "Failed to remap pinned ES|QL control", err.Error())
+			return kbapi.KbnDashboardData_PinnedPanels_Item{}, diags
 		}
 		var item kbapi.KbnDashboardData_PinnedPanels_Item
 		if err := item.FromKbnControlsSchemasControlsGroupSchemaEsqlControl(group); err != nil {
-			return kbapi.KbnDashboardData_PinnedPanels_Item{}, diagutil.FrameworkDiagFromError(err)
+			diags.AddAttributeError(itemPath, "Failed to build pinned ES|QL control payload", err.Error())
+			return kbapi.KbnDashboardData_PinnedPanels_Item{}, diags
 		}
 		return item, diags
 
 	default:
-		diags.AddError(
+		diags.AddAttributeError(
+			itemPath,
 			"Unsupported pinned panel type",
 			"pinned_panels entries must use one of the supported dashboard control types.",
 		)
@@ -176,12 +202,32 @@ func (pp pinnedPanelModel) toPinnedAPIItem() (kbapi.KbnDashboardData_PinnedPanel
 	}
 }
 
-func syntheticTfPanelFromPinned(tf *pinnedPanelModel) *panelModel {
+func syntheticTfPanelFromPinnedForPopulate(tf *pinnedPanelModel, apiDiscriminator string) *panelModel {
 	if tf == nil {
+		return nil
+	}
+	if !typeutils.IsKnown(tf.Type) || tf.Type.ValueString() != apiDiscriminator {
 		return nil
 	}
 	pm := tf.syntheticPanelModel()
 	return &pm
+}
+
+func seedPinnedPanelModelForRead(tf *pinnedPanelModel, discriminator string) (ppm pinnedPanelModel, populateTf *panelModel) {
+	if tf != nil {
+		ppm = *tf
+	}
+	ppm.Type = types.StringValue(discriminator)
+
+	populateTf = syntheticTfPanelFromPinnedForPopulate(tf, discriminator)
+	if populateTf == nil {
+		ppm.OptionsListControlConfig = nil
+		ppm.RangeSliderControlConfig = nil
+		ppm.TimeSliderControlConfig = nil
+		ppm.EsqlControlConfig = nil
+	}
+
+	return ppm, populateTf
 }
 
 func (m *dashboardModel) mapPinnedPanelsFromAPI(ctx context.Context, prior []pinnedPanelModel, api *[]kbapi.KbnDashboardData_PinnedPanels_Item) ([]pinnedPanelModel, diag.Diagnostics) {
@@ -196,6 +242,8 @@ func (m *dashboardModel) mapPinnedPanelsFromAPI(ctx context.Context, prior []pin
 
 	out := make([]pinnedPanelModel, 0, len(*api))
 	for i, raw := range *api {
+		itemPath := path.Root("pinned_panels").AtListIndex(i)
+
 		var tf *pinnedPanelModel
 		if i < len(prior) {
 			tf = &prior[i]
@@ -203,7 +251,7 @@ func (m *dashboardModel) mapPinnedPanelsFromAPI(ctx context.Context, prior []pin
 
 		discriminator, err := raw.Discriminator()
 		if err != nil {
-			diags.Append(diagutil.FrameworkDiagFromError(err)...)
+			diags.AddAttributeError(itemPath, "Failed to read pinned panel type", err.Error())
 			return nil, diags
 		}
 
@@ -211,23 +259,19 @@ func (m *dashboardModel) mapPinnedPanelsFromAPI(ctx context.Context, prior []pin
 		case panelTypeOptionsListControl:
 			group, err := raw.AsKbnControlsSchemasControlsGroupSchemaOptionsListControl()
 			if err != nil {
-				diags.Append(diagutil.FrameworkDiagFromError(err)...)
+				diags.AddAttributeError(itemPath, "Failed to parse pinned options list control", err.Error())
 				return nil, diags
 			}
 			var olPanel kbapi.KbnDashboardPanelTypeOptionsListControl
 			if err := remapPinnedPanelJSON(group, &olPanel); err != nil {
-				diags.Append(diagutil.FrameworkDiagFromError(err)...)
+				diags.AddAttributeError(itemPath, "Failed to remap pinned options list control from API", err.Error())
 				return nil, diags
 			}
 
-			var ppm pinnedPanelModel
-			if tf != nil {
-				ppm = *tf
-			}
-			ppm.Type = types.StringValue(panelTypeOptionsListControl)
+			ppm, populateTf := seedPinnedPanelModelForRead(tf, panelTypeOptionsListControl)
 
 			pm := ppm.syntheticPanelModel()
-			populateOptionsListControlFromAPI(&pm, syntheticTfPanelFromPinned(tf), &olPanel)
+			populateOptionsListControlFromAPI(&pm, populateTf, &olPanel)
 
 			ppm.OptionsListControlConfig = pm.OptionsListControlConfig
 			ppm.RangeSliderControlConfig = nil
@@ -238,23 +282,19 @@ func (m *dashboardModel) mapPinnedPanelsFromAPI(ctx context.Context, prior []pin
 		case panelTypeRangeSlider:
 			group, err := raw.AsKbnControlsSchemasControlsGroupSchemaRangeSliderControl()
 			if err != nil {
-				diags.Append(diagutil.FrameworkDiagFromError(err)...)
+				diags.AddAttributeError(itemPath, "Failed to parse pinned range slider control", err.Error())
 				return nil, diags
 			}
 			var rsPanel kbapi.KbnDashboardPanelTypeRangeSliderControl
 			if err := remapPinnedPanelJSON(group, &rsPanel); err != nil {
-				diags.Append(diagutil.FrameworkDiagFromError(err)...)
+				diags.AddAttributeError(itemPath, "Failed to remap pinned range slider control from API", err.Error())
 				return nil, diags
 			}
 
-			var ppm pinnedPanelModel
-			if tf != nil {
-				ppm = *tf
-			}
-			ppm.Type = types.StringValue(panelTypeRangeSlider)
+			ppm, populateTf := seedPinnedPanelModelForRead(tf, panelTypeRangeSlider)
 
 			pm := ppm.syntheticPanelModel()
-			populateRangeSliderControlFromAPI(ctx, &pm, syntheticTfPanelFromPinned(tf), &rsPanel)
+			populateRangeSliderControlFromAPI(ctx, &pm, populateTf, &rsPanel)
 
 			ppm.RangeSliderControlConfig = pm.RangeSliderControlConfig
 			ppm.OptionsListControlConfig = nil
@@ -265,23 +305,19 @@ func (m *dashboardModel) mapPinnedPanelsFromAPI(ctx context.Context, prior []pin
 		case panelTypeTimeSlider:
 			group, err := raw.AsKbnControlsSchemasControlsGroupSchemaTimeSliderControl()
 			if err != nil {
-				diags.Append(diagutil.FrameworkDiagFromError(err)...)
+				diags.AddAttributeError(itemPath, "Failed to parse pinned time slider control", err.Error())
 				return nil, diags
 			}
 			var tsPanel kbapi.KbnDashboardPanelTypeTimeSliderControl
 			if err := remapPinnedPanelJSON(group, &tsPanel); err != nil {
-				diags.Append(diagutil.FrameworkDiagFromError(err)...)
+				diags.AddAttributeError(itemPath, "Failed to remap pinned time slider control from API", err.Error())
 				return nil, diags
 			}
 
-			var ppm pinnedPanelModel
-			if tf != nil {
-				ppm = *tf
-			}
-			ppm.Type = types.StringValue(panelTypeTimeSlider)
+			ppm, populateTf := seedPinnedPanelModelForRead(tf, panelTypeTimeSlider)
 
 			pm := ppm.syntheticPanelModel()
-			populateTimeSliderControlFromAPI(&pm, syntheticTfPanelFromPinned(tf), tsPanel.Config)
+			populateTimeSliderControlFromAPI(&pm, populateTf, tsPanel.Config)
 
 			ppm.TimeSliderControlConfig = pm.TimeSliderControlConfig
 			ppm.OptionsListControlConfig = nil
@@ -292,23 +328,19 @@ func (m *dashboardModel) mapPinnedPanelsFromAPI(ctx context.Context, prior []pin
 		case panelTypeEsqlControl:
 			group, err := raw.AsKbnControlsSchemasControlsGroupSchemaEsqlControl()
 			if err != nil {
-				diags.Append(diagutil.FrameworkDiagFromError(err)...)
+				diags.AddAttributeError(itemPath, "Failed to parse pinned ES|QL control", err.Error())
 				return nil, diags
 			}
 			var esqlPanel kbapi.KbnDashboardPanelTypeEsqlControl
 			if err := remapPinnedPanelJSON(group, &esqlPanel); err != nil {
-				diags.Append(diagutil.FrameworkDiagFromError(err)...)
+				diags.AddAttributeError(itemPath, "Failed to remap pinned ES|QL control from API", err.Error())
 				return nil, diags
 			}
 
-			var ppm pinnedPanelModel
-			if tf != nil {
-				ppm = *tf
-			}
-			ppm.Type = types.StringValue(panelTypeEsqlControl)
+			ppm, populateTf := seedPinnedPanelModelForRead(tf, panelTypeEsqlControl)
 
 			pm := ppm.syntheticPanelModel()
-			populateEsqlControlFromAPI(&pm, syntheticTfPanelFromPinned(tf), esqlPanel.Config)
+			populateEsqlControlFromAPI(&pm, populateTf, esqlPanel.Config)
 
 			ppm.EsqlControlConfig = pm.EsqlControlConfig
 			ppm.OptionsListControlConfig = nil
@@ -317,7 +349,8 @@ func (m *dashboardModel) mapPinnedPanelsFromAPI(ctx context.Context, prior []pin
 			out = append(out, ppm)
 
 		default:
-			diags.AddError(
+			diags.AddAttributeError(
+				itemPath,
 				"Unsupported pinned panel type",
 				"The dashboard API returned a pinned control type that is not supported by this resource.",
 			)
