@@ -1,8 +1,8 @@
 ## 1. Rewriter behavior change
 
-- [ ] 1.1 In `.github/workflows-src/lib/changelog-rewriter.js`, update `rewriteChangelogSection` so that in release mode, any existing `## [Unreleased]` section is removed when the new versioned section is written, regardless of whether the target `## [x.y.z]` heading already exists.
-- [ ] 1.2 Preserve current behavior for unreleased mode (`mode === 'unreleased'`) and for the "no Unreleased and no target version" prepend path.
-- [ ] 1.3 Keep the rewriter line-based; do not introduce a markdown parser dependency.
+- [x] 1.1 In `.github/workflows-src/lib/changelog-rewriter.js`, update `rewriteChangelogSection` so that in release mode, any existing `## [Unreleased]` section is removed when the new versioned section is written, regardless of whether the target `## [x.y.z]` heading already exists.
+- [x] 1.2 Preserve current behavior for unreleased mode (`mode === 'unreleased'`) and for the "no Unreleased and no target version" prepend path.
+- [x] 1.3 Keep the rewriter line-based; do not introduce a markdown parser dependency.
 
 ## 2. Tests
 
