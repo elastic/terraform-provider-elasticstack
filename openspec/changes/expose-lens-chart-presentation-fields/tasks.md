@@ -50,9 +50,9 @@
 
 ## 7. Documentation and release prep
 
-- [ ] 7.1 Regenerate provider documentation: `make docs-generate`.
-- [ ] 7.2 Update the resource's example HCL under `examples/resources/elasticstack_kibana_dashboard/` to demonstrate `time_range` inheritance and at least one `drilldowns` variant.
-- [ ] 7.3 Add a CHANGELOG entry noting the breaking change for unreleased users (chart-level `time_range` now inherits dashboard-level instead of hardcoded `now-15m..now`; new attributes available).
+- [x] 7.1 Regenerate provider documentation: `make docs-generate`.
+- [x] 7.2 Update the resource's example HCL under `examples/resources/elasticstack_kibana_dashboard/` to demonstrate `time_range` inheritance and at least one `drilldowns` variant.
+- [x] 7.3 Add a CHANGELOG entry noting the breaking change for unreleased users (chart-level `time_range` now inherits dashboard-level instead of hardcoded `now-15m..now`; new attributes available).
 
 ## 8. Spec sync and verification
 

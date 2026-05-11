@@ -43,6 +43,12 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 }
 ```
 
+#### `elasticstack_kibana_dashboard` typed Lens chart panels
+
+**BREAKING CHANGE:** Chart-level `time_range` on typed Lens chart panels (`xy_chart_config`, `metric_chart_config`, etc.) no longer hardcodes `now-15m..now`. Omitting `time_range` or setting `time_range = null` now inherits the dashboard-level `time_range`. Refresh state and review the next plan for existing dashboards.
+
+Adds optional `time_range`, `hide_title`, `hide_border`, `references_json`, and `drilldowns` on typed Lens chart panels. `drilldowns` supports `dashboard_drilldown`, `discover_drilldown`, and `url_drilldown` variant blocks.
+
 ### Changes
 
 - Fix ILM policy delete failures when the policy is still referenced by indices (e.g. Fleet-managed data stream backing indices) ([#2714](https://github.com/elastic/terraform-provider-elasticstack/pull/2714))
