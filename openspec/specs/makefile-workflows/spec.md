@@ -200,17 +200,17 @@ The `docker-testacc` target SHALL ensure the Fleet-oriented stack is up, then ru
 
 ### Requirement: Docker stack services (REQ-027–REQ-029)
 
-The `docker-elasticsearch`, `docker-kibana`, and `docker-fleet` targets SHALL start the corresponding Compose services in the background. For **`STACK_VERSION=9.4.0-SNAPSHOT` only**, `docker-fleet` SHALL set the Kibana config file for Compose to **`kibana-9.4.snapshot.yml`**; for all other values of `STACK_VERSION`, it SHALL use **`kibana.yml`**.
+The `docker-elasticsearch`, `docker-kibana`, and `docker-fleet` targets SHALL start the corresponding Compose services in the background. For **`STACK_VERSION=9.4.0` only**, `docker-fleet` SHALL set the Kibana config file for Compose to **`kibana-9.4.yml`**; for all other values of `STACK_VERSION`, it SHALL use **`kibana.yml`**.
 
-#### Scenario: Fleet with 9.4.0-SNAPSHOT Kibana config
+#### Scenario: Fleet with 9.4.0 Kibana config
 
-- GIVEN `STACK_VERSION` is exactly `9.4.0-SNAPSHOT`
+- GIVEN `STACK_VERSION` is exactly `9.4.0`
 - WHEN `make docker-fleet` runs
-- THEN the environment passed to Compose SHALL select `kibana-9.4.snapshot.yml` for Kibana
+- THEN the environment passed to Compose SHALL select `kibana-9.4.yml` for Kibana
 
 #### Scenario: Fleet with default Kibana config
 
-- GIVEN `STACK_VERSION` is unset or not `9.4.0-SNAPSHOT`
+- GIVEN `STACK_VERSION` is unset or not `9.4.0`
 - WHEN `make docker-fleet` runs
 - THEN the environment passed to Compose SHALL select `kibana.yml` for Kibana
 

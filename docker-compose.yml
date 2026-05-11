@@ -19,7 +19,7 @@ services:
       xpack.watcher.enabled: true
       repositories.url.allowed_urls: https://example.com/*
       path.repo: /tmp
-      ES_JAVA_OPTS: ${ELASTICSEARCH_JAVA_OPTS:--Xms1g -Xmx1g}
+      ES_JAVA_OPTS: -Xms${ELASTICSEARCH_HEAP_MIN:-1g} -Xmx${ELASTICSEARCH_HEAP_MAX:-1g}
       thread_pool.write.queue_size: 20000
       thread_pool.search.queue_size: 10000
     mem_limit: 3g

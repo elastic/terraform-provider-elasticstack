@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -66,12 +67,13 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 		return
 	}
 
-	if createResp.JSON200 == nil {
-		resp.Diagnostics.AddError("Unexpected API response", "Create agent download source response missing JSON200 body")
+	unwrapped, unwrapDiags := diagutil.UnwrapJSON200(createResp.JSON200, "agent download source")
+	resp.Diagnostics.Append(unwrapDiags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	item := createResp.JSON200.Item
+	item := unwrapped.Item
 
 	// Ensure we keep the operational space information consistent with how Read/Update/Delete will resolve it.
 	if plan.SpaceIDs.IsUnknown() {

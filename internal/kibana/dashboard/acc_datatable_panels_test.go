@@ -105,3 +105,40 @@ func TestAccResourceDashboardDatatableChart(t *testing.T) {
 		},
 	})
 }
+
+func TestAccResourceDashboardDatatableChart_lensPresentationCrossCutting(t *testing.T) {
+	dashboardTitle := "Test Dashboard Datatable presentation " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("cross_cutting"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.datatable_config.no_esql.time_range.from", "now-30d"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.datatable_config.no_esql.time_range.to", "now-1d"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.datatable_config.no_esql.hide_title", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.datatable_config.no_esql.drilldowns.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.datatable_config.no_esql.drilldowns.0.url_drilldown.url", "https://example.com/{{event.field}}"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.datatable_config.no_esql.drilldowns.0.url_drilldown.label", "Open URL"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.datatable_config.no_esql.drilldowns.0.url_drilldown.trigger", "on_click_value"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("cross_cutting"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				PlanOnly: true,
+			},
+		},
+	})
+}

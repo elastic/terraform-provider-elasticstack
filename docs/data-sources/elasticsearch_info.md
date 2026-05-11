@@ -26,16 +26,16 @@ data "elasticstack_elasticsearch_info" "cluster_info" {
 
 ### Optional
 
-- `elasticsearch_connection` (Block List, Max: 1) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `elasticsearch_connection` (Block List) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 
 ### Read-Only
 
-- `cluster_name` (String) Name of the cluster, based on the Cluster name setting setting.
+- `cluster_name` (String) Name of the cluster, based on the `cluster.name` setting.
 - `cluster_uuid` (String) Unique identifier for the cluster.
-- `id` (String) The ID of this resource.
+- `id` (String) Internal identifier of the resource.
 - `name` (String) Name of the node.
-- `tagline` (String) Elasticsearh tag line.
-- `version` (List of Object) Contains statistics about the number of nodes selected by the request's node filters. (see [below for nested schema](#nestedatt--version))
+- `tagline` (String) Elasticsearch tag line.
+- `version` (Attributes List) Contains version information for the Elasticsearch cluster. (see [below for nested schema](#nestedatt--version))
 
 <a id="nestedblock--elasticsearch_connection"></a>
 ### Nested Schema for `elasticsearch_connection`
@@ -63,12 +63,12 @@ Optional:
 
 Read-Only:
 
-- `build_date` (String)
-- `build_flavor` (String)
-- `build_hash` (String)
-- `build_snapshot` (Boolean)
-- `build_type` (String)
-- `lucene_version` (String)
-- `minimum_index_compatibility_version` (String)
-- `minimum_wire_compatibility_version` (String)
-- `number` (String)
+- `build_date` (String) Build date.
+- `build_flavor` (String) Build Flavor.
+- `build_hash` (String) Short hash of the last git commit in this release.
+- `build_snapshot` (Boolean) Build Snapshot.
+- `build_type` (String) Build Type.
+- `lucene_version` (String) Lucene Version.
+- `minimum_index_compatibility_version` (String) Minimum index compatibility version.
+- `minimum_wire_compatibility_version` (String) Minimum wire compatibility version.
+- `number` (String) Elasticsearch version number.

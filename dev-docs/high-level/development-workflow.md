@@ -72,7 +72,7 @@ Each feature worktree becomes a subdirectory of the bare repo directory, keeping
 
 ### Environment in a feature worktree
 
-When a new worktree is created the `post-start` hook (`.config/wt.toml`) automatically generates a `.env` from `.env.template` with per-worktree port variables derived deterministically from the branch name, plus the acceptance-test connection variables (`ELASTICSEARCH_ENDPOINTS`, `ELASTICSEARCH_USERNAME`, `KIBANA_ENDPOINT`, `KIBANA_USERNAME`). `TF_ACC` is intentionally not written so acceptance mode remains opt-in.
+When a new worktree is created the blocking `pre-start` hook pipeline (`.config/wt.toml`) runs `make setup` and then generates a `.env` from `.env.template` with per-worktree port variables derived deterministically from the branch name, plus the acceptance-test connection variables (`ELASTICSEARCH_ENDPOINTS`, `ELASTICSEARCH_USERNAME`, `KIBANA_ENDPOINT`, `KIBANA_USERNAME`). `TF_ACC` is intentionally not written so acceptance mode remains opt-in.
 
 The main checkout's `.env` may not contain port variables if it predates the worktrunk setup; port variables are generated only in worktrees created via `wt switch --create`.
 

@@ -26,6 +26,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/role"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
@@ -397,7 +398,7 @@ func checkResourceSecurityRoleDestroy(s *terraform.State) error {
 		}
 		_, err = typedClient.Security.GetRole().Name(compID.ResourceID).Do(context.Background())
 		if err != nil {
-			if acctest.IsNotFoundElasticsearchError(err) {
+			if esclient.IsNotFoundElasticsearchError(err) {
 				continue
 			}
 			return err

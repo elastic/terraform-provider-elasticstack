@@ -38,7 +38,7 @@ output "user" {
 
 ### Optional
 
-- `elasticsearch_connection` (Block List, Max: 1) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `elasticsearch_connection` (Block List) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 
 ### Read-Only
 
@@ -47,7 +47,7 @@ output "user" {
 - `full_name` (String) The full name of the user.
 - `id` (String) Internal identifier of the resource
 - `metadata` (String) Arbitrary metadata that you want to associate with the user.
-- `roles` (Set of String) A set of roles the user has. The roles determine the user’s access permissions. Default is [].
+- `roles` (Set of String) A set of roles the user has. The roles determine the user's access permissions. Default is [].
 
 <a id="nestedblock--elasticsearch_connection"></a>
 ### Nested Schema for `elasticsearch_connection`

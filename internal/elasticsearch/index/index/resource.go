@@ -20,7 +20,9 @@ package index
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -34,6 +36,12 @@ var (
 
 type Resource struct {
 	*entitycore.ElasticsearchResource[tfModel]
+}
+
+// Equivalent to privatestate.ProviderData
+type privateData interface {
+	GetKey(ctx context.Context, key string) ([]byte, diag.Diagnostics)
+	SetKey(ctx context.Context, key string, value []byte) diag.Diagnostics
 }
 
 func newResource() *Resource {
@@ -54,6 +62,44 @@ func newResource() *Resource {
 // NewResource returns an index resource with shared bootstrap wiring.
 func NewResource() resource.Resource {
 	return newResource()
+}
+
+func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var stateModel tfModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &stateModel)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	compID, diags := clients.CompositeIDFromStrFw(stateModel.GetID().ValueString())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	client, connDiags := r.Client().GetElasticsearchClient(ctx, stateModel.GetElasticsearchConnection())
+	resp.Diagnostics.Append(connDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	finalModel, found, readDiags := readIndex(ctx, client, compID.ResourceID, stateModel)
+	resp.Diagnostics.Append(readDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if !found {
+		resp.State.RemoveResource(ctx)
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, finalModel)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(saveSortConfig(ctx, finalModel, resp.Private)...)
 }
 
 func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

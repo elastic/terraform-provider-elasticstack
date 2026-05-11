@@ -258,6 +258,7 @@ func (model agentModel) toAPIUpdateModel(ctx context.Context) (kbapi.PutAgentBui
 	}
 
 	body.Configuration = &struct {
+		ConnectorIds              *[]string `json:"connector_ids,omitempty"` //nolint:revive
 		EnableElasticCapabilities *bool     `json:"enable_elastic_capabilities,omitempty"`
 		Instructions              *string   `json:"instructions,omitempty"`
 		PluginIds                 *[]string `json:"plugin_ids,omitempty"` //nolint:revive

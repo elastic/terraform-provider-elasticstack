@@ -54,8 +54,9 @@ func TestAccResourceFleetProxy(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_proxy.test_proxy", "name", fmt.Sprintf("Proxy %s", proxyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_proxy.test_proxy", "url", "https://proxy.example.com:3128"),
-					resource.TestCheckResourceAttrSet("elasticstack_fleet_proxy.test_proxy", "proxy_id"),
-					resource.TestCheckResourceAttrSet("elasticstack_fleet_proxy.test_proxy", "id"),
+					resource.TestMatchResourceAttr("elasticstack_fleet_proxy.test_proxy", "proxy_id", regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)),
+					resource.TestMatchResourceAttr("elasticstack_fleet_proxy.test_proxy", "id", regexp.MustCompile(`^default/`)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_proxy.test_proxy", "space_id", "default"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_proxy.test_proxy", "is_preconfigured", "false"),
 					resource.TestCheckNoResourceAttr("elasticstack_fleet_proxy.test_proxy", "proxy_headers.%"),
 				),
@@ -72,6 +73,20 @@ func TestAccResourceFleetProxy(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_proxy.test_proxy", "url", "https://proxy-updated.example.com:3128"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_proxy.test_proxy", "proxy_headers.X-Custom-Header", "my-value"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_proxy.test_proxy", "proxy_headers.X-Another", "another-value"),
+				),
+			},
+			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minFleetProxyVersion),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("change_headers"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(fmt.Sprintf("Proxy Updated %s", proxyName)),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_proxy.test_proxy", "proxy_headers.X-Custom-Header"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_proxy.test_proxy", "proxy_headers.X-Another"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_proxy.test_proxy", "proxy_headers.X-New-Header", "new-value"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_proxy.test_proxy", "proxy_headers.X-Extra", "extra-value"),
 				),
 			},
 			{

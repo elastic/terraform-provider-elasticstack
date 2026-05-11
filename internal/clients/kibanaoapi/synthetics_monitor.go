@@ -44,10 +44,7 @@ func CreateMonitor(ctx context.Context, client *Client, spaceID string, req kbap
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		if resp.JSON200 == nil {
-			return nil, diagutil.FrameworkDiagFromError(fmt.Errorf("empty monitor response body"))
-		}
-		return resp.JSON200, nil
+		return diagutil.UnwrapJSON200(resp.JSON200, "synthetics monitor")
 	default:
 		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
@@ -66,10 +63,7 @@ func GetMonitor(ctx context.Context, client *Client, spaceID string, monitorID s
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		if resp.JSON200 == nil {
-			return nil, diagutil.FrameworkDiagFromError(fmt.Errorf("empty monitor response body"))
-		}
-		return resp.JSON200, nil
+		return diagutil.UnwrapJSON200(resp.JSON200, "synthetics monitor")
 	case http.StatusNotFound:
 		return nil, nil
 	default:

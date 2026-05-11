@@ -19,8 +19,10 @@ package transform_test
 
 import (
 	"context"
+	_ "embed"
 	"errors"
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
@@ -31,6 +33,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
@@ -54,14 +57,14 @@ func TestAccResourceTransformWithPivot(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "name", transformNamePivot),
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_transform.test_pivot", "id"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "description", "test description"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "source.0.indices.0", "source_index_for_transform"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "destination.0.index", "dest_index_for_transform"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "source.indices.0", "source_index_for_transform"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "destination.index", "dest_index_for_transform"),
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_transform.test_pivot", "pivot"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "frequency", "5m"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "max_page_search_size", "2000"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "enabled", "false"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "sync.0.time.0.field", "order_date"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "sync.0.time.0.delay", "20s"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "sync.time.field", "order_date"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "sync.time.delay", "20s"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "defer_validation", "true"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "timeout", "1m"),
 					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "latest"),
@@ -77,15 +80,15 @@ func TestAccResourceTransformWithPivot(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "name", transformNamePivot),
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_transform.test_pivot", "id"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "description", "yet another test description"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "source.0.indices.0", "source_index_for_transform"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "source.0.indices.1", "additional_index"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "destination.0.index", "dest_index_for_transform_v2"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "source.indices.0", "source_index_for_transform"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "source.indices.1", "additional_index"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "destination.index", "dest_index_for_transform_v2"),
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_transform.test_pivot", "pivot"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "frequency", "10m"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "max_page_search_size", "2000"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "enabled", "true"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "retention_policy.0.time.0.field", "order_date"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "retention_policy.0.time.0.max_age", "7d"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "retention_policy.time.field", "order_date"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "retention_policy.time.max_age", "7d"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "defer_validation", "true"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "timeout", "1m"),
 					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "latest"),
@@ -123,8 +126,8 @@ func TestAccResourceTransformWithLatest(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_latest", "name", transformNameLatest),
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_transform.test_latest", "id"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_latest", "description", "test description (latest)"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_latest", "source.0.indices.0", "source_index_for_transform"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_latest", "destination.0.index", "dest_index_for_transform"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_latest", "source.indices.0", "source_index_for_transform"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_latest", "destination.index", "dest_index_for_transform"),
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_transform.test_latest", "latest"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_latest", "frequency", "2m"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_latest", "defer_validation", "true"),
@@ -155,11 +158,11 @@ func TestAccResourceTransformWithAdvancedSettings(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_advanced", "name", transformName),
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_transform.test_advanced", "id"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_advanced", "source.0.indices.0", "source_index_for_transform"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_advanced", "source.0.query", `{"term":{"status":"active"}}`),
-					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_transform.test_advanced", "source.0.runtime_mappings"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_advanced", "destination.0.index", "dest_index_for_transform_advanced"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_advanced", "destination.0.pipeline", pipelineName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_advanced", "source.indices.0", "source_index_for_transform"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_advanced", "source.query", `{"term":{"status":"active"}}`),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_transform.test_advanced", "source.runtime_mappings"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_advanced", "destination.index", "dest_index_for_transform_advanced"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_advanced", "destination.pipeline", pipelineName),
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_transform.test_advanced", "metadata"),
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_transform.test_advanced", "pivot"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_advanced", "align_checkpoints", "true"),
@@ -193,8 +196,8 @@ func TestAccResourceTransformNoDefer(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "name", transformName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "description", "test description"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "source.0.indices.0", indexName),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "destination.0.index", "dest_index_for_transform"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "source.indices.0", indexName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "destination.index", "dest_index_for_transform"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "frequency", "5m"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "defer_validation", "false"),
 				),
@@ -218,11 +221,11 @@ func TestAccResourceTransformWithAliases(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_aliases", "name", transformName),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_aliases", "destination.0.aliases.#", "2"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_aliases", "destination.0.aliases.0.alias", "test_alias_1"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_aliases", "destination.0.aliases.0.move_on_creation", "true"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_aliases", "destination.0.aliases.1.alias", "test_alias_2"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_aliases", "destination.0.aliases.1.move_on_creation", "false"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_aliases", "destination.aliases.#", "2"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_aliases", "destination.aliases.0.alias", "test_alias_1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_aliases", "destination.aliases.0.move_on_creation", "true"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_aliases", "destination.aliases.1.alias", "test_alias_2"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_aliases", "destination.aliases.1.move_on_creation", "false"),
 				),
 			},
 			{
@@ -234,15 +237,153 @@ func TestAccResourceTransformWithAliases(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_aliases", "name", transformName),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_aliases", "destination.0.aliases.#", "3"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_aliases", "destination.0.aliases.0.alias", "test_alias_1"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_aliases", "destination.0.aliases.0.move_on_creation", "false"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_aliases", "destination.0.aliases.1.alias", "test_alias_2"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_aliases", "destination.0.aliases.1.move_on_creation", "true"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_aliases", "destination.aliases.#", "3"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_aliases", "destination.aliases.0.alias", "test_alias_1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_aliases", "destination.aliases.0.move_on_creation", "false"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_aliases", "destination.aliases.1.alias", "test_alias_2"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_aliases", "destination.aliases.1.move_on_creation", "true"),
 				),
 			},
 		},
 	})
+}
+
+//go:embed testdata/TestAccResourceTransformFromSDK/main.tf
+var transformFromSDKConfig string
+
+// TestAccResourceTransformFromSDK verifies that state created by the last
+// SDK-based provider release (v0.14.5 — where source/destination/sync/
+// retention_policy were ListNestedBlocks with singleton lists) can be read and
+// re-applied without changes by the current Plugin Framework implementation,
+// which uses SingleNestedBlock for the same blocks. This guards both the
+// schema-shape change and the v0→v1 state upgrader.
+func TestAccResourceTransformFromSDK(t *testing.T) {
+	transformName := sdkacctest.RandStringFromCharSet(18, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceTransformDestroy,
+		Steps: []resource.TestStep{
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"elasticstack": {
+						Source: "elastic/elasticstack",
+						// last SDK-backed release of the transform resource —
+						// do not bump without re-checking upgrade compatibility
+						VersionConstraint: "0.14.5",
+					},
+				},
+				Config: transformFromSDKConfig,
+				ConfigVariables: config.Variables{
+					"transform_name": config.StringVariable(transformName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test", "name", transformName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test", "source.0.indices.0", "source_index_for_transform"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test", "destination.0.index", "dest_index_for_transform_from_sdk"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test", "sync.0.time.0.field", "order_date"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test", "retention_policy.0.time.0.field", "order_date"),
+				),
+			},
+			{
+				// Re-apply with the in-tree PF provider — the v0→v1 state
+				// upgrader must convert singleton-list state into single
+				// objects, and the resulting plan must be a no-op.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("sdk"),
+				ConfigVariables: config.Variables{
+					"transform_name": config.StringVariable(transformName),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test", "name", transformName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test", "source.indices.0", "source_index_for_transform"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test", "destination.index", "dest_index_for_transform_from_sdk"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test", "sync.time.field", "order_date"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test", "sync.time.delay", "20s"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test", "retention_policy.time.field", "order_date"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test", "retention_policy.time.max_age", "30d"),
+				),
+			},
+			{
+				// Import verification after the v0→v1 migration.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("sdk"),
+				ConfigVariables: config.Variables{
+					"transform_name": config.StringVariable(transformName),
+				},
+				ResourceName:            "elasticstack_elasticsearch_transform.test",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"defer_validation", "elasticsearch_connection", "timeout"},
+			},
+		},
+	})
+}
+
+// TestAccResourceTransformValidation verifies schema-level validation errors
+// for pivot/latest mutual exclusion and nested required fields in sync.time
+// and retention_policy.time.
+func TestAccResourceTransformValidation(t *testing.T) {
+	cases := []struct {
+		name        string
+		dir         string
+		expectError *regexp.Regexp
+	}{
+		{
+			name:        "both pivot and latest set",
+			dir:         "both_pivot_latest",
+			expectError: regexp.MustCompile(`(?i)one \(and only one\) of \[pivot,latest\]`),
+		},
+		{
+			name:        "neither pivot nor latest set",
+			dir:         "neither_pivot_latest",
+			expectError: regexp.MustCompile(`(?i)one \(and only one\) of \[pivot,latest\]`),
+		},
+		{
+			name:        "sync block without time",
+			dir:         "sync_no_time",
+			expectError: regexp.MustCompile(`(?is)must be specified when[\s\S]*is specified`),
+		},
+		{
+			name:        "sync.time block without field",
+			dir:         "sync_time_no_field",
+			expectError: regexp.MustCompile(`(?is)must be specified when[\s\S]*is specified`),
+		},
+		{
+			name:        "retention_policy block without time",
+			dir:         "retention_no_time",
+			expectError: regexp.MustCompile(`(?is)must be specified when[\s\S]*is specified`),
+		},
+		{
+			name:        "retention_policy.time block without field",
+			dir:         "retention_time_missing",
+			expectError: regexp.MustCompile(`(?is)must be specified when[\s\S]*is specified`),
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			transformName := sdkacctest.RandStringFromCharSet(18, sdkacctest.CharSetAlphaNum)
+			resource.Test(t, resource.TestCase{
+				PreCheck: func() { acctest.PreCheck(t) },
+				Steps: []resource.TestStep{
+					{
+						ProtoV6ProviderFactories: acctest.Providers,
+						ConfigDirectory:          acctest.NamedTestCaseDirectory(tc.dir),
+						ConfigVariables: config.Variables{
+							"transform_name": config.StringVariable(transformName),
+						},
+						ExpectError: tc.expectError,
+					},
+				},
+			})
+		})
+	}
 }
 
 func checkResourceTransformDestroy(s *terraform.State) error {

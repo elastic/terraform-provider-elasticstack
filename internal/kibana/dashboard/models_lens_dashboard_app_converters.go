@@ -124,7 +124,9 @@ type lensDashboardAPIGrid struct {
 }
 
 // lensDashboardAppToAPI converts a lens-dashboard-app panel to the Kibana API model.
-func lensDashboardAppToAPI(pm panelModel, grid lensDashboardAPIGrid, panelID *string) (kbapi.DashboardPanelItem, diag.Diagnostics) {
+// parentDashboard is the enclosing dashboard resource model (required for typed by_value charts
+// so chart roots resolve time_range from dashboard-level defaults; by_reference does not use it).
+func lensDashboardAppToAPI(pm panelModel, grid lensDashboardAPIGrid, panelID *string, parentDashboard *dashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	cfg := pm.LensDashboardAppConfig
 	if cfg == nil {
@@ -133,7 +135,7 @@ func lensDashboardAppToAPI(pm panelModel, grid lensDashboardAPIGrid, panelID *st
 	}
 	switch {
 	case cfg.ByValue != nil:
-		return lensDashboardAppByValueToAPI(*cfg.ByValue, grid, panelID)
+		return lensDashboardAppByValueToAPI(*cfg.ByValue, grid, panelID, parentDashboard)
 	case cfg.ByReference != nil:
 		return lensDashboardAppByReferenceToAPI(*cfg.ByReference, grid, panelID)
 	default:
@@ -142,10 +144,14 @@ func lensDashboardAppToAPI(pm panelModel, grid lensDashboardAPIGrid, panelID *st
 	}
 }
 
+// parentDashboard is the enclosing dashboard resource model when converting typed by_value charts.
+// Callers that build payloads in isolation (e.g. unit tests) pass nil; panelModel.toAPI passes
+// the real enclosing dashboard model.
 func lensDashboardAppByValueToAPI(
 	byValue lensDashboardAppByValueModel,
 	grid lensDashboardAPIGrid,
 	panelID *string,
+	parentDashboard *dashboardModel,
 ) (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if scratch, ok := lensByValueToScratchVisPanel(byValue); ok {
@@ -154,7 +160,7 @@ func lensDashboardAppByValueToAPI(
 			diags.AddError("Invalid `by_value` for lens-dashboard-app", "The typed by-value chart block could not be resolved to a Lens visualization converter.")
 			return kbapi.DashboardPanelItem{}, diags
 		}
-		vis0, d := conv.buildAttributes(scratch)
+		vis0, d := conv.buildAttributes(scratch, parentDashboard)
 		diags.Append(d...)
 		if d.HasError() {
 			return kbapi.DashboardPanelItem{}, diags
@@ -326,6 +332,7 @@ func jsonBytesFromOptionalNormalizedArray(n jsontypes.Normalized, field string) 
 // the same index from the prior model (used for prior lens mode and optional seeding).
 func populateLensDashboardAppFromAPI(
 	ctx context.Context,
+	dashboard *dashboardModel,
 	pm *panelModel,
 	tfPanel *panelModel,
 	api kbapi.KbnDashboardPanelTypeLensDashboardApp,
@@ -356,7 +363,7 @@ func populateLensDashboardAppFromAPI(
 	// ambiguous case is for incomplete/odd payloads where we keep prior by_reference.
 	switch classifyLensDashboardAppConfigFromRoot(root) {
 	case lensConfigClassByValueChart:
-		return populateLensDashboardAppByValueFromAPI(ctx, prior, configBytes, pm)
+		return populateLensDashboardAppByValueFromAPI(ctx, dashboard, prior, configBytes, pm)
 	case lensConfigClassByReference:
 		cfg1, err1 := api.Config.AsKbnDashboardPanelTypeLensDashboardAppConfig1()
 		if err1 != nil {
@@ -370,7 +377,7 @@ func populateLensDashboardAppFromAPI(
 			// the response is not clearly a by-value chart and not a full by-reference shape.
 			return diags
 		}
-		return populateLensDashboardAppByValueFromAPI(ctx, prior, configBytes, pm)
+		return populateLensDashboardAppByValueFromAPI(ctx, dashboard, prior, configBytes, pm)
 	}
 }
 
@@ -619,6 +626,7 @@ func jsonValueSubsumedByCurrentAny(prior, current any) bool {
 // back to `by_value.config_json`.
 func populateLensDashboardAppByValueFromAPI(
 	ctx context.Context,
+	dashboard *dashboardModel,
 	prior *lensDashboardAppConfigModel,
 	configBytes []byte,
 	pm *panelModel,
@@ -638,7 +646,7 @@ func populateLensDashboardAppByValueFromAPI(
 		return diags
 	}
 
-	if tryPopulateTypedLensByValueFromAPI(ctx, prior, configBytes, pm, &diags) {
+	if tryPopulateTypedLensByValueFromAPI(ctx, dashboard, prior, configBytes, pm, &diags) {
 		return diags
 	}
 

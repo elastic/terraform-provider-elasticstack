@@ -48,11 +48,11 @@ func Test_tagcloudPanelConfigConverter_populateFromAttributes_buildAttributes_ro
 
 	converter := newTagcloudPanelConfigConverter()
 	pm := &panelModel{}
-	diags := converter.populateFromAttributes(ctx, pm, attrs)
+	diags := converter.populateFromAttributes(ctx, nil, pm, attrs)
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm.TagcloudConfig)
 
-	attrs2, diags := converter.buildAttributes(*pm)
+	attrs2, diags := converter.buildAttributes(*pm, nil)
 	require.False(t, diags.HasError())
 
 	tagcloudNoESQL2, err := attrs2.AsTagcloudNoESQL()
@@ -158,7 +158,7 @@ func Test_tagcloudConfigModel_fromAPI_toAPI(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test fromAPI
 			model := &tagcloudConfigModel{}
-			diags := model.fromAPI(context.Background(), tt.api)
+			diags := model.fromAPI(context.Background(), nil, nil, tt.api)
 			require.False(t, diags.HasError(), "fromAPI should not return errors")
 
 			// Validate expected fields
@@ -195,7 +195,7 @@ func Test_tagcloudConfigModel_fromAPI_toAPI(t *testing.T) {
 			}
 
 			// Test toAPI round-trip
-			apiResult, diags := model.toAPI()
+			apiResult, diags := model.toAPI(nil)
 			require.False(t, diags.HasError(), "toAPI should not return errors")
 
 			// Validate round-trip for basic fields
@@ -292,11 +292,11 @@ func Test_fontSizeModel_roundTrip(t *testing.T) {
 
 			// Convert to model
 			model := &tagcloudConfigModel{}
-			diags := model.fromAPI(context.Background(), api)
+			diags := model.fromAPI(context.Background(), nil, nil, api)
 			require.False(t, diags.HasError())
 
 			// Convert back to API
-			apiResult, diags := model.toAPI()
+			apiResult, diags := model.toAPI(nil)
 			require.False(t, diags.HasError())
 
 			// Verify font size round-trip
@@ -366,7 +366,7 @@ func Test_tagcloudConfig_JSONFields(t *testing.T) {
 				TagByJSON:  customtypes.NewJSONWithDefaultsValue[map[string]any](tt.tagByJSON, populateTagcloudTagByDefaults),
 			}
 
-			_, diags := model.toAPI()
+			_, diags := model.toAPI(nil)
 			if tt.wantError {
 				assert.True(t, diags.HasError(), "Expected error for invalid JSON")
 			} else {
@@ -374,4 +374,28 @@ func Test_tagcloudConfig_JSONFields(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_tagcloudConfig_lensChartPresentation_hideTitleRoundTrip(t *testing.T) {
+	ctx := context.Background()
+	dash := lensPresentationTestDashboard()
+
+	api := kbapi.TagcloudNoESQL{Type: "tagcloud"}
+	require.NoError(t, json.Unmarshal([]byte(`{"index":"test-index"}`), &api.DataSource))
+	require.NoError(t, json.Unmarshal([]byte(`{"expression":"*","language":"kql"}`), &api.Query))
+	require.NoError(t, json.Unmarshal([]byte(`{"operation":{"operation_type":"count"}}`), &api.Metric))
+	require.NoError(t, json.Unmarshal([]byte(`{"operation":{"operation_type":"terms"},"field":"tags.keyword"}`), &api.TagBy))
+
+	base := &tagcloudConfigModel{}
+	require.False(t, base.fromAPI(ctx, nil, nil, api).HasError())
+
+	m := *base
+	m.HideTitle = types.BoolValue(true)
+
+	out, diags := m.toAPI(dash)
+	require.False(t, diags.HasError())
+
+	got := &tagcloudConfigModel{}
+	require.False(t, got.fromAPI(ctx, dash, &m, out).HasError())
+	assert.Equal(t, types.BoolValue(true), got.HideTitle)
 }

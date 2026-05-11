@@ -239,7 +239,7 @@ func DeleteTransform(ctx context.Context, apiClient *clients.ElasticsearchScoped
 
 	_, err = typedClient.Transform.DeleteTransform(*name).Force(true).Do(ctx)
 	if err != nil {
-		if isNotFoundElasticsearchError(err) {
+		if IsNotFoundElasticsearchError(err) {
 			return diags
 		}
 		return diag.Diagnostics{

@@ -26,7 +26,11 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster"
+	clusterinfo "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/info"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/script"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/settings"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/slm"
+	snapshot_repository "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/snapshot_repository"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/enrich"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/alias"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/componenttemplate"
@@ -45,11 +49,13 @@ import (
 	datafeedstate "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed_state"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/filter"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/jobstate"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security"
 	apikey "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/api_key"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/role"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/rolemapping"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/systemuser"
 	securityuser "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/user"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/transform"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/watcher/watch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/agentdownloadsource"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/agentpolicy"
@@ -206,6 +212,7 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		role.NewRoleResource,
 		inferenceendpoint.NewInferenceEndpointResource,
 		watch.NewWatchResource,
+		settings.NewClusterSettingsResource,
 		script.NewScriptResource,
 		logstash.NewLogstashPipelineResource,
 		maintenancewindow.NewResource,
@@ -228,6 +235,9 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		securitylistdatastreams.NewResource,
 		securityexceptionlist.NewResource,
 		securityexceptionitem.NewResource,
+		slm.NewSlmResource,
+		snapshot_repository.NewSnapshotRepositoryResource,
+		transform.NewTransformResource,
 	}
 }
 
@@ -241,6 +251,7 @@ func (p *Provider) experimentalResources(_ context.Context) []func() resource.Re
 func (p *Provider) dataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
 		cluster.NewSnapshotRepositoryDataSource,
+		clusterinfo.NewDataSource,
 		indices.NewDataSource,
 		template.NewDataSource,
 		spaces.NewDataSource,
@@ -252,6 +263,8 @@ func (p *Provider) dataSources(_ context.Context) []func() datasource.DataSource
 		integrationds.NewDataSource,
 		enrich.NewEnrichPolicyDataSource,
 		rolemapping.NewRoleMappingDataSource,
+		security.NewRoleDataSource,
+		security.NewUserDataSource,
 		outputds.NewDataSource,
 		ingest.NewProcessorAppendDataSource,
 		ingest.NewProcessorBytesDataSource,

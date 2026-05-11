@@ -44,7 +44,6 @@ type integrationPolicyModel struct {
 	AgentPolicyID      types.String  `tfsdk:"agent_policy_id"`
 	AgentPolicyIDs     types.List    `tfsdk:"agent_policy_ids"`
 	Description        types.String  `tfsdk:"description"`
-	Enabled            types.Bool    `tfsdk:"enabled"`
 	Force              types.Bool    `tfsdk:"force"`
 	IntegrationName    types.String  `tfsdk:"integration_name"`
 	IntegrationVersion types.String  `tfsdk:"integration_version"`
@@ -111,7 +110,6 @@ func (model *integrationPolicyModel) populateFromAPI(ctx context.Context, pkg *k
 	}
 
 	model.Description = types.StringPointerValue(data.Description)
-	model.Enabled = types.BoolValue(data.Enabled)
 	model.IntegrationName = types.StringValue(data.Package.Name)
 	model.IntegrationVersion = types.StringValue(data.Package.Version)
 	model.OutputID = types.StringPointerValue(data.OutputId)

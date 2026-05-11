@@ -8,7 +8,10 @@ description: >-
   per issue.
 on:
   issues:
-    types: [opened, labeled]
+    types: [labeled]
+  slash_command:
+    name: change-factory
+    events: [issue_comment]
   status-comment: true
   permissions:
     contents: read
@@ -76,6 +79,13 @@ on:
             factoryLabel,
             issueOpenedNotEligibleReason,
           }) {
+            if (eventName === 'issue_comment') {
+              return {
+                event_eligible: true,
+                event_eligible_reason: `Issue comment event qualifies because the slash_command trigger routes to issue_comment.`,
+              };
+            }
+          
             if (eventName !== 'issues') {
               return {
                 event_eligible: false,
@@ -394,6 +404,389 @@ on:
             core.info(`Event not eligible: ${result.event_eligible_reason}`);
           }
           
+    - name: Capture command text
+      id: capture_command_text
+      if: steps.qualify_trigger.outputs.event_eligible == 'true'
+      uses: actions/github-script@v9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          /**
+           * Change-factory issue intake configuration. Keep `ISSUE_BRANCH_PREFIX` aligned with
+           * `workflow.md.tmpl` (`change-factory/issue-${{ github.event.issue.number }}`).
+           */
+          'use strict';
+          
+          const ISSUE_BRANCH_PREFIX = 'change-factory/issue-';
+          const FACTORY_LABEL = 'change-factory';
+          const DUPLICATE_LINKAGE_MODE = 'github-keywords';
+          const ISSUE_OPENED_NOT_ELIGIBLE_REASON =
+            'Issue opened event does not qualify because the issue was created without the change-factory label or issue labels were missing.';
+          
+          if (typeof module !== 'undefined') {
+            module.exports = {
+              ISSUE_BRANCH_PREFIX,
+              FACTORY_LABEL,
+              DUPLICATE_LINKAGE_MODE,
+              ISSUE_OPENED_NOT_ELIGIBLE_REASON,
+            };
+          }
+          
+          /**
+           * Shared deterministic helpers for code-factory and change-factory issue intake workflows.
+           * Workflow-specific configuration is passed via {@link createFactoryIssueIntake}.
+           */
+          
+          /** GitHub-recognized issue-closing keywords (case-insensitive). See https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/using-keywords-in-issues-and-pull-requests */
+          const GITHUB_ISSUE_CLOSING_KEYWORDS = '(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)';
+          
+          /**
+           * GitHub closing-keyword reference: `#` is immediately followed by the issue digits (no whitespace),
+           * per GitHub keyword syntax. Case-insensitive keywords; `(?![0-9])` avoids matching `#42` inside `#420`.
+           *
+           * @param {number} issueNumber
+           * @returns {RegExp}
+           */
+          function issueClosingReferencePattern(issueNumber) {
+            return new RegExp(
+              `\\b${GITHUB_ISSUE_CLOSING_KEYWORDS}\\s*#${issueNumber}(?![0-9])`,
+              'i',
+            );
+          }
+          
+          /**
+           * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels: string[] | null | undefined, factoryLabel: string, issueOpenedNotEligibleReason: string }} params
+           * @returns {{ event_eligible: boolean, event_eligible_reason: string }}
+           */
+          function factoryQualifyTriggerEvent({
+            eventName,
+            eventAction,
+            labelName,
+            issueLabels,
+            factoryLabel,
+            issueOpenedNotEligibleReason,
+          }) {
+            if (eventName === 'issue_comment') {
+              return {
+                event_eligible: true,
+                event_eligible_reason: `Issue comment event qualifies because the slash_command trigger routes to issue_comment.`,
+              };
+            }
+          
+            if (eventName !== 'issues') {
+              return {
+                event_eligible: false,
+                event_eligible_reason: `Unsupported event '${eventName || '(empty)'}'; expected 'issues'.`,
+              };
+            }
+          
+            if (eventAction === 'labeled') {
+              if (labelName === factoryLabel) {
+                return {
+                  event_eligible: true,
+                  event_eligible_reason: `Issue labeled event qualifies because the applied label is ${factoryLabel}.`,
+                };
+              }
+          
+              return {
+                event_eligible: false,
+                event_eligible_reason: `Issue labeled event does not qualify because the applied label is '${labelName || '(empty)'}', not '${factoryLabel}'.`,
+              };
+            }
+          
+            if (eventAction === 'opened') {
+              if (Array.isArray(issueLabels) && issueLabels.includes(factoryLabel)) {
+                return {
+                  event_eligible: true,
+                  event_eligible_reason: `Issue opened event qualifies because the issue already has the ${factoryLabel} label.`,
+                };
+              }
+          
+              return {
+                event_eligible: false,
+                event_eligible_reason: issueOpenedNotEligibleReason,
+              };
+            }
+          
+            return {
+              event_eligible: false,
+              event_eligible_reason: `Issue event action '${eventAction || '(empty)'}' is not eligible; expected 'opened' or 'labeled'.`,
+            };
+          }
+          
+          /**
+           * @param {{ sender: string, permission: string | null }} params
+           * @returns {{ actor_trusted: boolean, actor_trusted_reason: string }}
+           */
+          function factoryCheckActorTrust({ sender, permission }) {
+            if (sender === 'github-actions[bot]') {
+              return {
+                actor_trusted: true,
+                actor_trusted_reason: 'Trigger actor github-actions[bot] is trusted without collaborator permission lookup.',
+              };
+            }
+          
+            if (['write', 'maintain', 'admin'].includes(permission)) {
+              return {
+                actor_trusted: true,
+                actor_trusted_reason: `Trigger actor '${sender || '(empty)'}' is trusted with repository permission '${permission}'.`,
+              };
+            }
+          
+            return {
+              actor_trusted: false,
+              actor_trusted_reason: `Trigger actor '${sender || '(empty)'}' is not trusted; repository permission '${permission || '(none)'}' does not meet the required write/maintain/admin policy.`,
+            };
+          }
+          
+          /**
+           * @returns {{ actor_trusted: boolean, actor_trusted_reason: string }}
+           */
+          function factoryActorTrustWhenSenderMissing() {
+            return {
+              actor_trusted: false,
+              actor_trusted_reason: 'Trigger actor could not be identified; sender login is missing from the event payload.',
+            };
+          }
+          
+          /**
+           * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'github-keywords' }} params
+           * @returns {{ duplicate_pr_found: boolean, duplicate_pr_url: string | null, gate_reason: string }}
+           */
+          function factoryCheckDuplicatePR({
+            issueNumber,
+            pullRequests,
+            branchPrefix,
+            prLabel,
+            duplicateLinkageMode,
+          }) {
+            const expectedBranch = `${branchPrefix}${issueNumber}`;
+            const expectedClosesExample = `Closes #${issueNumber}`;
+            const bodyPattern = duplicateLinkageMode === 'closes-literal'
+              ? new RegExp(`Closes #${issueNumber}(?![0-9])`)
+              : issueClosingReferencePattern(issueNumber);
+          
+            const duplicate = (pullRequests || []).find(pr => (
+              pr.state === 'open' &&
+              Array.isArray(pr.labels) && pr.labels.includes(prLabel) &&
+              pr.head_branch === expectedBranch &&
+              bodyPattern.test(String(pr.body || ''))
+            ));
+          
+            if (duplicate) {
+              const url = duplicate.html_url ?? null;
+              const linkagePhrase = duplicateLinkageMode === 'closes-literal'
+                ? `canonical linkage '${expectedClosesExample}'`
+                : `issue-closing reference such as '${expectedClosesExample}'`;
+          
+              return {
+                duplicate_pr_found: true,
+                duplicate_pr_url: url,
+                gate_reason: `Found existing linked ${prLabel} PR #${duplicate.number} (${url ?? '(unknown URL)'}) for issue #${issueNumber} on branch '${expectedBranch}' with ${linkagePhrase}.`,
+              };
+            }
+          
+            const linkageTail = duplicateLinkageMode === 'closes-literal'
+              ? `canonical linkage '${expectedClosesExample}'`
+              : `issue-closing reference such as '${expectedClosesExample}'`;
+          
+            return {
+              duplicate_pr_found: false,
+              duplicate_pr_url: null,
+              gate_reason: `No open linked ${prLabel} PR found for issue #${issueNumber}; expected label '${prLabel}', branch '${expectedBranch}', and ${linkageTail}.`,
+            };
+          }
+          
+          /**
+           * @param {{ eventEligible: boolean, eventEligibleReason: string, actorTrusted: boolean | null, actorTrustedReason: string | null, duplicatePrFound: boolean | null, duplicatePrUrl: string | null, duplicateCheckGateReason: string | null }} params
+           * @param {string} factoryLabel
+           * @returns {{ gate_reason: string }}
+           */
+          function factoryComputeGateReason({
+            eventEligible,
+            eventEligibleReason,
+            actorTrusted,
+            actorTrustedReason,
+            duplicatePrFound,
+            duplicatePrUrl,
+            duplicateCheckGateReason,
+          }, factoryLabel) {
+            if (!eventEligible) {
+              return { gate_reason: eventEligibleReason };
+            }
+          
+            if (actorTrusted === false) {
+              return { gate_reason: actorTrustedReason || 'Trigger actor is not trusted.' };
+            }
+          
+            if (actorTrusted == null) {
+              return { gate_reason: 'Actor trust could not be determined; the trust check step did not produce an output.' };
+            }
+          
+            if (duplicatePrFound === true) {
+              return {
+                gate_reason: duplicateCheckGateReason || `Found existing linked ${factoryLabel} PR: ${duplicatePrUrl || '(unknown URL)'}.`,
+              };
+            }
+          
+            if (duplicatePrFound == null) {
+              return { gate_reason: 'Duplicate PR check did not complete; the check step did not produce an output.' };
+            }
+          
+            return {
+              gate_reason: duplicateCheckGateReason || `All deterministic gates passed: event eligible, actor trusted, and no linked ${factoryLabel} PR found.`,
+            };
+          }
+          
+          /**
+           * @param {string | undefined} raw
+           * @returns {boolean | null}
+           */
+          function factoryParseOptionalTriStateFromEnv(raw) {
+            if (raw == null || raw === '') {
+              return null;
+            }
+            return raw === 'true';
+          }
+          
+          /**
+           * @param {Record<string, string | undefined>} env
+           */
+          function factoryParseFinalizeGateEnv(env) {
+            const e = env || {};
+            return {
+              eventEligible: e.EVENT_ELIGIBLE === 'true',
+              eventEligibleReason: e.EVENT_ELIGIBLE_REASON ?? '',
+              actorTrusted: factoryParseOptionalTriStateFromEnv(e.ACTOR_TRUSTED),
+              actorTrustedReason: e.ACTOR_TRUSTED_REASON ?? null,
+              duplicatePrFound: factoryParseOptionalTriStateFromEnv(e.DUPLICATE_PR_FOUND),
+              duplicatePrUrl: e.DUPLICATE_PR_URL && e.DUPLICATE_PR_URL !== '' ? e.DUPLICATE_PR_URL : null,
+              duplicateCheckGateReason: e.DUPLICATE_GATE_REASON ?? null,
+            };
+          }
+          
+          /**
+           * @param {{
+           *   branchPrefix: string,
+           *   factoryLabel: string,
+           *   issueOpenedNotEligibleReason: string,
+           *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',
+           * }} config
+           */
+          function createFactoryIssueIntake(config) {
+            const {
+              branchPrefix,
+              factoryLabel,
+              issueOpenedNotEligibleReason,
+              duplicateLinkageMode,
+            } = config;
+          
+            function issueBranchName(issueNumber) {
+              return `${branchPrefix}${issueNumber}`;
+            }
+          
+            /**
+             * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels?: string[] | null | undefined }} params
+             */
+            function qualifyTriggerEvent(params) {
+              return factoryQualifyTriggerEvent({
+                ...params,
+                factoryLabel,
+                issueOpenedNotEligibleReason,
+              });
+            }
+          
+            function checkDuplicatePR(params) {
+              return factoryCheckDuplicatePR({
+                ...params,
+                branchPrefix,
+                prLabel: factoryLabel,
+                duplicateLinkageMode,
+              });
+            }
+          
+            function computeGateReason(params) {
+              return factoryComputeGateReason(params, factoryLabel);
+            }
+          
+            return {
+              issueBranchName,
+              qualifyTriggerEvent,
+              checkActorTrust: factoryCheckActorTrust,
+              checkDuplicatePR,
+              computeGateReason,
+            };
+          }
+          
+          /**
+           * @param {{
+           *   branchPrefix: string,
+           *   factoryLabel: string,
+           *   issueOpenedNotEligibleReason: string,
+           *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',
+           *   issueBranchNameAliases?: string[],
+           * }} config
+           */
+          function createFactoryIssueModule(config) {
+            const intake = createFactoryIssueIntake(config);
+            const issueBranchNameAliases = config.issueBranchNameAliases || [];
+            const factoryIssueModule = {
+              ...intake,
+              actorTrustWhenSenderMissing: factoryActorTrustWhenSenderMissing,
+              parseOptionalTriStateFromEnv: factoryParseOptionalTriStateFromEnv,
+              parseFinalizeGateEnv: factoryParseFinalizeGateEnv,
+            };
+          
+            for (const alias of issueBranchNameAliases) {
+              factoryIssueModule[alias] = intake.issueBranchName;
+            }
+          
+            return factoryIssueModule;
+          }
+          
+          if (typeof module !== 'undefined') {
+            module.exports = {
+              issueClosingReferencePattern,
+              factoryQualifyTriggerEvent,
+              factoryCheckActorTrust,
+              factoryActorTrustWhenSenderMissing,
+              factoryCheckDuplicatePR,
+              factoryComputeGateReason,
+              factoryParseOptionalTriStateFromEnv,
+              factoryParseFinalizeGateEnv,
+              createFactoryIssueIntake,
+              createFactoryIssueModule,
+            };
+          }
+          
+          // Concatenated by the workflow compiler; not executable standalone.
+          const factoryIssueModule = createFactoryIssueModule({
+            branchPrefix: ISSUE_BRANCH_PREFIX,
+            factoryLabel: FACTORY_LABEL,
+            issueOpenedNotEligibleReason: ISSUE_OPENED_NOT_ELIGIBLE_REASON,
+            duplicateLinkageMode: DUPLICATE_LINKAGE_MODE,
+          });
+          
+          const qualifyTriggerEvent = factoryIssueModule.qualifyTriggerEvent;
+          const checkActorTrust = factoryIssueModule.checkActorTrust;
+          const checkDuplicatePR = factoryIssueModule.checkDuplicatePR;
+          const computeGateReason = factoryIssueModule.computeGateReason;
+          const issueBranchName = factoryIssueModule.issueBranchName;
+          const actorTrustWhenSenderMissing = factoryIssueModule.actorTrustWhenSenderMissing;
+          const parseFinalizeGateEnv = factoryIssueModule.parseFinalizeGateEnv;
+          
+          const eventName = context.eventName;
+          
+          if (eventName === 'issue_comment') {
+            const body = context.payload.comment?.body ?? '';
+            // Strip the leading /change-factory token and surrounding whitespace
+            const humanDirection = body.replace(/^\s*\/change-factory\s*/, '').trim();
+            core.setOutput('human_direction', humanDirection);
+            core.info(`Captured human direction from slash command: "${humanDirection}"`);
+          } else {
+            core.setOutput('human_direction', '');
+            core.info('Not an issue_comment event; human_direction is empty.');
+          }
     - name: Capture issue context
       id: capture_issue_context
       uses: actions/github-script@v9
@@ -464,6 +857,13 @@ on:
             factoryLabel,
             issueOpenedNotEligibleReason,
           }) {
+            if (eventName === 'issue_comment') {
+              return {
+                event_eligible: true,
+                event_eligible_reason: `Issue comment event qualifies because the slash_command trigger routes to issue_comment.`,
+              };
+            }
+          
             if (eventName !== 'issues') {
               return {
                 event_eligible: false,
@@ -797,6 +1197,301 @@ on:
             }
           }
           
+    - name: Fetch issue comments
+      id: fetch_issue_comments
+      if: >-
+        steps.qualify_trigger.outputs.event_eligible == 'true' &&
+        steps.check_actor_trust.outputs.actor_trusted == 'true'
+      uses: actions/github-script@v9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const MAX_COMMENTS = 200;
+          const { owner, repo } = context.repo;
+          const issueNumber = context.payload.issue?.number;
+          
+          if (!issueNumber) {
+            core.setOutput('issue_comments_json', '[]');
+            core.info('No issue number in payload; skipping comment fetch.');
+          } else {
+            const allComments = [];
+            for await (const { data: page } of github.paginate.iterator(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number: issueNumber,
+              per_page: 100,
+            })) {
+              allComments.push(...page);
+              if (allComments.length >= MAX_COMMENTS) {
+                break;
+              }
+            }
+          
+            const comments = allComments.slice(0, MAX_COMMENTS).map(c => ({
+              author: c.user?.login ?? '',
+              createdAt: c.created_at ?? '',
+              body: c.body ?? '',
+            }));
+          
+            core.setOutput('issue_comments_json', JSON.stringify(comments));
+            core.info(`Fetched ${comments.length} comments for issue #${issueNumber}${allComments.length > MAX_COMMENTS ? ' (capped at ' + MAX_COMMENTS + ')' : ''}`);
+          }
+          
+    - name: Extract research comment
+      id: extract_research_comment
+      if: >-
+        steps.qualify_trigger.outputs.event_eligible == 'true' &&
+        steps.check_actor_trust.outputs.actor_trusted == 'true'
+      env:
+        INPUT_COMMENTS_JSON: ${{ steps.fetch_issue_comments.outputs.issue_comments_json }}
+      uses: actions/github-script@v9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          /**
+           * HTML comment sanitisation, control/invisible-char removal, and research-comment lookup helpers.
+           */
+          
+          /**
+           * Removes all HTML comment sequences (<code>&lt;!--</code> through the next <code>--&gt;</code>).
+           * If an opening sequence has no closing counterpart, everything from the opener to the end of
+           * the string is removed.
+           *
+           * @param {string} text
+           * @returns {string}
+           */
+          function stripHtmlComments(text) {
+            if (typeof text !== 'string') return '';
+            return text.replace(/<!--[\s\S]*?(?:-->|$)/g, '');
+          }
+          
+          /**
+           * Removes non-printable ASCII control characters while preserving tab, newline,
+           * and carriage return. Also strips Unicode line/paragraph separators.
+           *
+           * Stripped ASCII:  \x00-\x08, \x0B, \x0C, \x0E-\x1F, \x7F
+           * Preserved:       \x09 (tab), \x0A (LF), \x0D (CR)
+           * Unicode:         \u2028, \u2029
+           *
+           * @param {string} text
+           * @returns {string}
+           */
+          function stripControlChars(text) {
+            if (typeof text !== 'string') return '';
+            return text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F\u2028\u2029]/g, '');
+          }
+          
+          /**
+           * Removes invisible Unicode characters that have no legitimate use in issue content:
+           * zero-width spaces/joiners, bidirectional marks, word/function/invisible operators,
+           * and the BOM (byte order mark).
+           *
+           * Ranges stripped:
+           *   \u200B-\u200F  — zero-width space, non-joiner, joiner, LTR mark, RTL mark
+           *   \u2060-\u2064  — word joiner, function application, invisible times/separator/plus
+           *   \uFEFF           — BOM / zero-width no-break space
+           *
+           * @param {string} text
+           * @returns {string}
+           */
+          function stripInvisibleUnicode(text) {
+            if (typeof text !== 'string') return '';
+            return text.replace(/[\u200B-\u200F\u2060-\u2064\uFEFF]/g, '');
+          }
+          
+          /**
+           * Composed sanitisation pipeline. Runs all three filters in sequence:
+           *
+           *   input → stripHtmlComments → stripControlChars → stripInvisibleUnicode → output
+           *
+           * Idempotent: applying twice produces the same result as applying once.
+           *
+           * @param {string} text
+           * @returns {string}
+           */
+          function sanitizeUserContent(text) {
+            if (typeof text !== 'string') return '';
+            return stripInvisibleUnicode(stripControlChars(stripHtmlComments(text)));
+          }
+          
+          /**
+           * Finds the most recently created matching research comment written by
+           * <code>github-actions[bot]</code> whose body starts with <code>marker</code>.
+           *
+           * @param {Array<{author: string, body: string}>} comments Ordered oldest-first.
+           * @param {string} marker
+           * @returns {{author: string, body: string} | null}
+           */
+          function findResearchComment(comments, marker) {
+            if (!Array.isArray(comments)) {
+              return null;
+            }
+            const matches = comments.filter(
+              (c) =>
+                c != null &&
+                typeof c.body === 'string' &&
+                (c.author ?? c.user?.login) === 'github-actions[bot]' &&
+                c.body.trimStart().startsWith(marker),
+            );
+            return matches.length > 0 ? matches[matches.length - 1] : null;
+          }
+          
+          if (typeof module !== 'undefined') {
+            module.exports = {
+              stripHtmlComments,
+              stripControlChars,
+              stripInvisibleUnicode,
+              sanitizeUserContent,
+              findResearchComment,
+            };
+          }
+          
+          const marker = '<!-- gha-research-factory -->';
+          const commentsJson = process.env.INPUT_COMMENTS_JSON || '[]';
+          
+          let comments;
+          try {
+            comments = JSON.parse(commentsJson);
+          } catch {
+            comments = [];
+          }
+          
+          const fs = require('fs');
+          const crypto = require('crypto');
+          
+          const researchComment = findResearchComment(comments, marker);
+          const sanitizedBody = researchComment ? sanitizeUserContent(researchComment.body) : '';
+          if (researchComment) {
+            const eofDelim = `EOF_${crypto.randomUUID().replace(/-/g, '')}`;
+            const output = `research_comment_body<<${eofDelim}\n${sanitizedBody}\n${eofDelim}\n`;
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, output);
+            core.info(`Found research comment for issue`);
+          } else {
+            core.setOutput('research_comment_body', '');
+            core.info('No research comment found.');
+          }
+          
+          // Serialize human comments for agent context
+          const humanComments = (comments || []).filter(
+            (c) => !c.author.endsWith('[bot]'),
+          );
+          
+          /**
+           * Shared comment helpers for research-factory issue intake workflows.
+           */
+          
+          /**
+           * Fetches human-authored comments for an issue, paginated, with bot filtering and a hard cap.
+           *
+           * @param {{ github: object, owner: string, repo: string, issueNumber: number }} params
+           * @returns {Promise<{ comments: Array<{author: string, createdAt: string, body: string}>, truncated: boolean }>}
+           */
+          async function factoryFetchIssueComments({ github, owner, repo, issueNumber }) {
+            const MAX_COMMENTS = 200;
+            const allComments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number: issueNumber,
+              per_page: 100,
+            });
+          
+            const humanComments = [];
+            let truncated = false;
+            for (const comment of allComments) {
+              if (comment.user?.login?.endsWith('[bot]')) {
+                continue;
+              }
+              if (humanComments.length >= MAX_COMMENTS) {
+                truncated = true;
+                break;
+              }
+              humanComments.push({
+                author: comment.user?.login ?? '',
+                createdAt: comment.created_at ?? '',
+                body: comment.body ?? '',
+              });
+            }
+          
+            return {
+              comments: humanComments,
+              truncated,
+            };
+          }
+          
+          const COMMENT_CONTEXT_BUDGET = 50_000;
+          /** Overhead reserved for truncation markers appended after the loop. */
+          const COMMENT_CONTEXT_MARKER_OVERHEAD = 200;
+          
+          /**
+           * Serializes captured issue comments into a deterministic markdown string for agent prompts.
+           *
+           * @param {{ comments: Array<{author: string, createdAt: string, body: string}>, truncated: boolean }} params
+           * @returns {string}
+           */
+          function serializeIssueComments({ comments, truncated }) {
+            if (!Array.isArray(comments) || comments.length === 0) {
+              return '';
+            }
+          
+            const bodyBudget = COMMENT_CONTEXT_BUDGET - COMMENT_CONTEXT_MARKER_OVERHEAD;
+            let result = '';
+            let includedCount = 0;
+          
+            for (const comment of comments) {
+              const header = `**@${comment.author || ''}** (${comment.createdAt || ''}):\n\n`;
+              const body = comment.body || '';
+              const footer = '\n\n---\n';
+              const available = bodyBudget - result.length;
+          
+              if (available <= 0) {
+                break;
+              }
+          
+              const frameLength = header.length + footer.length;
+              if (frameLength > available) {
+                break;
+              }
+              const fullBlock = header + body + footer;
+              if (fullBlock.length <= available) {
+                result += fullBlock;
+              } else {
+                // Truncate this comment's body so the output stays within budget
+                const truncatedBody = body.slice(0, available - frameLength);
+                result += header + truncatedBody + footer;
+              }
+              includedCount++;
+            }
+          
+            const remaining = comments.length - includedCount;
+            if (remaining > 0) {
+              result += `[... ${remaining} more comments truncated for context budget]\n`;
+            }
+          
+            if (truncated) {
+              result += '[... comment history truncated at 200 comments]\n';
+            }
+          
+            return result;
+          }
+          
+          if (typeof module !== 'undefined') {
+            module.exports = {
+              factoryFetchIssueComments,
+              serializeIssueComments,
+              COMMENT_CONTEXT_BUDGET,
+            };
+          }
+          
+          const serialized = serializeIssueComments({ comments: humanComments, truncated: false });
+          const eofDelim2 = `EOF_${crypto.randomUUID().replace(/-/g, '')}`;
+          const output2 = `human_comments<<${eofDelim2}\n${serialized}\n${eofDelim2}\n`;
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, output2);
+          
+          const dir = '/tmp/change-factory-context';
+          fs.mkdirSync(dir, { recursive: true });
+          fs.writeFileSync(`${dir}/research_comment.md`, sanitizedBody);
+          core.info('Wrote research comment to /tmp/change-factory-context/research_comment.md');
+          
     - name: Check duplicate PR
       id: check_duplicate_pr
       if: >-
@@ -861,6 +1556,13 @@ on:
             factoryLabel,
             issueOpenedNotEligibleReason,
           }) {
+            if (eventName === 'issue_comment') {
+              return {
+                event_eligible: true,
+                event_eligible_reason: `Issue comment event qualifies because the slash_command trigger routes to issue_comment.`,
+              };
+            }
+          
             if (eventName !== 'issues') {
               return {
                 event_eligible: false,
@@ -1196,6 +1898,555 @@ on:
             core.info(`No duplicate PR: ${result.gate_reason}`);
           }
           
+    - name: Notify duplicate blocked
+      id: notify_duplicate_blocked
+      if: >-
+        steps.qualify_trigger.outputs.event_eligible == 'true' &&
+        steps.check_actor_trust.outputs.actor_trusted == 'true' &&
+        steps.check_duplicate_pr.outputs.duplicate_pr_found == 'true'
+      uses: actions/github-script@v9
+      env:
+        DUPLICATE_PR_URL: ${{ steps.check_duplicate_pr.outputs.duplicate_pr_url }}
+        ISSUE_NUMBER: ${{ github.event.issue.number }}
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          /**
+           * Change-factory issue intake configuration. Keep `ISSUE_BRANCH_PREFIX` aligned with
+           * `workflow.md.tmpl` (`change-factory/issue-${{ github.event.issue.number }}`).
+           */
+          'use strict';
+          
+          const ISSUE_BRANCH_PREFIX = 'change-factory/issue-';
+          const FACTORY_LABEL = 'change-factory';
+          const DUPLICATE_LINKAGE_MODE = 'github-keywords';
+          const ISSUE_OPENED_NOT_ELIGIBLE_REASON =
+            'Issue opened event does not qualify because the issue was created without the change-factory label or issue labels were missing.';
+          
+          if (typeof module !== 'undefined') {
+            module.exports = {
+              ISSUE_BRANCH_PREFIX,
+              FACTORY_LABEL,
+              DUPLICATE_LINKAGE_MODE,
+              ISSUE_OPENED_NOT_ELIGIBLE_REASON,
+            };
+          }
+          
+          /**
+           * Shared deterministic helpers for code-factory and change-factory issue intake workflows.
+           * Workflow-specific configuration is passed via {@link createFactoryIssueIntake}.
+           */
+          
+          /** GitHub-recognized issue-closing keywords (case-insensitive). See https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/using-keywords-in-issues-and-pull-requests */
+          const GITHUB_ISSUE_CLOSING_KEYWORDS = '(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)';
+          
+          /**
+           * GitHub closing-keyword reference: `#` is immediately followed by the issue digits (no whitespace),
+           * per GitHub keyword syntax. Case-insensitive keywords; `(?![0-9])` avoids matching `#42` inside `#420`.
+           *
+           * @param {number} issueNumber
+           * @returns {RegExp}
+           */
+          function issueClosingReferencePattern(issueNumber) {
+            return new RegExp(
+              `\\b${GITHUB_ISSUE_CLOSING_KEYWORDS}\\s*#${issueNumber}(?![0-9])`,
+              'i',
+            );
+          }
+          
+          /**
+           * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels: string[] | null | undefined, factoryLabel: string, issueOpenedNotEligibleReason: string }} params
+           * @returns {{ event_eligible: boolean, event_eligible_reason: string }}
+           */
+          function factoryQualifyTriggerEvent({
+            eventName,
+            eventAction,
+            labelName,
+            issueLabels,
+            factoryLabel,
+            issueOpenedNotEligibleReason,
+          }) {
+            if (eventName === 'issue_comment') {
+              return {
+                event_eligible: true,
+                event_eligible_reason: `Issue comment event qualifies because the slash_command trigger routes to issue_comment.`,
+              };
+            }
+          
+            if (eventName !== 'issues') {
+              return {
+                event_eligible: false,
+                event_eligible_reason: `Unsupported event '${eventName || '(empty)'}'; expected 'issues'.`,
+              };
+            }
+          
+            if (eventAction === 'labeled') {
+              if (labelName === factoryLabel) {
+                return {
+                  event_eligible: true,
+                  event_eligible_reason: `Issue labeled event qualifies because the applied label is ${factoryLabel}.`,
+                };
+              }
+          
+              return {
+                event_eligible: false,
+                event_eligible_reason: `Issue labeled event does not qualify because the applied label is '${labelName || '(empty)'}', not '${factoryLabel}'.`,
+              };
+            }
+          
+            if (eventAction === 'opened') {
+              if (Array.isArray(issueLabels) && issueLabels.includes(factoryLabel)) {
+                return {
+                  event_eligible: true,
+                  event_eligible_reason: `Issue opened event qualifies because the issue already has the ${factoryLabel} label.`,
+                };
+              }
+          
+              return {
+                event_eligible: false,
+                event_eligible_reason: issueOpenedNotEligibleReason,
+              };
+            }
+          
+            return {
+              event_eligible: false,
+              event_eligible_reason: `Issue event action '${eventAction || '(empty)'}' is not eligible; expected 'opened' or 'labeled'.`,
+            };
+          }
+          
+          /**
+           * @param {{ sender: string, permission: string | null }} params
+           * @returns {{ actor_trusted: boolean, actor_trusted_reason: string }}
+           */
+          function factoryCheckActorTrust({ sender, permission }) {
+            if (sender === 'github-actions[bot]') {
+              return {
+                actor_trusted: true,
+                actor_trusted_reason: 'Trigger actor github-actions[bot] is trusted without collaborator permission lookup.',
+              };
+            }
+          
+            if (['write', 'maintain', 'admin'].includes(permission)) {
+              return {
+                actor_trusted: true,
+                actor_trusted_reason: `Trigger actor '${sender || '(empty)'}' is trusted with repository permission '${permission}'.`,
+              };
+            }
+          
+            return {
+              actor_trusted: false,
+              actor_trusted_reason: `Trigger actor '${sender || '(empty)'}' is not trusted; repository permission '${permission || '(none)'}' does not meet the required write/maintain/admin policy.`,
+            };
+          }
+          
+          /**
+           * @returns {{ actor_trusted: boolean, actor_trusted_reason: string }}
+           */
+          function factoryActorTrustWhenSenderMissing() {
+            return {
+              actor_trusted: false,
+              actor_trusted_reason: 'Trigger actor could not be identified; sender login is missing from the event payload.',
+            };
+          }
+          
+          /**
+           * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'github-keywords' }} params
+           * @returns {{ duplicate_pr_found: boolean, duplicate_pr_url: string | null, gate_reason: string }}
+           */
+          function factoryCheckDuplicatePR({
+            issueNumber,
+            pullRequests,
+            branchPrefix,
+            prLabel,
+            duplicateLinkageMode,
+          }) {
+            const expectedBranch = `${branchPrefix}${issueNumber}`;
+            const expectedClosesExample = `Closes #${issueNumber}`;
+            const bodyPattern = duplicateLinkageMode === 'closes-literal'
+              ? new RegExp(`Closes #${issueNumber}(?![0-9])`)
+              : issueClosingReferencePattern(issueNumber);
+          
+            const duplicate = (pullRequests || []).find(pr => (
+              pr.state === 'open' &&
+              Array.isArray(pr.labels) && pr.labels.includes(prLabel) &&
+              pr.head_branch === expectedBranch &&
+              bodyPattern.test(String(pr.body || ''))
+            ));
+          
+            if (duplicate) {
+              const url = duplicate.html_url ?? null;
+              const linkagePhrase = duplicateLinkageMode === 'closes-literal'
+                ? `canonical linkage '${expectedClosesExample}'`
+                : `issue-closing reference such as '${expectedClosesExample}'`;
+          
+              return {
+                duplicate_pr_found: true,
+                duplicate_pr_url: url,
+                gate_reason: `Found existing linked ${prLabel} PR #${duplicate.number} (${url ?? '(unknown URL)'}) for issue #${issueNumber} on branch '${expectedBranch}' with ${linkagePhrase}.`,
+              };
+            }
+          
+            const linkageTail = duplicateLinkageMode === 'closes-literal'
+              ? `canonical linkage '${expectedClosesExample}'`
+              : `issue-closing reference such as '${expectedClosesExample}'`;
+          
+            return {
+              duplicate_pr_found: false,
+              duplicate_pr_url: null,
+              gate_reason: `No open linked ${prLabel} PR found for issue #${issueNumber}; expected label '${prLabel}', branch '${expectedBranch}', and ${linkageTail}.`,
+            };
+          }
+          
+          /**
+           * @param {{ eventEligible: boolean, eventEligibleReason: string, actorTrusted: boolean | null, actorTrustedReason: string | null, duplicatePrFound: boolean | null, duplicatePrUrl: string | null, duplicateCheckGateReason: string | null }} params
+           * @param {string} factoryLabel
+           * @returns {{ gate_reason: string }}
+           */
+          function factoryComputeGateReason({
+            eventEligible,
+            eventEligibleReason,
+            actorTrusted,
+            actorTrustedReason,
+            duplicatePrFound,
+            duplicatePrUrl,
+            duplicateCheckGateReason,
+          }, factoryLabel) {
+            if (!eventEligible) {
+              return { gate_reason: eventEligibleReason };
+            }
+          
+            if (actorTrusted === false) {
+              return { gate_reason: actorTrustedReason || 'Trigger actor is not trusted.' };
+            }
+          
+            if (actorTrusted == null) {
+              return { gate_reason: 'Actor trust could not be determined; the trust check step did not produce an output.' };
+            }
+          
+            if (duplicatePrFound === true) {
+              return {
+                gate_reason: duplicateCheckGateReason || `Found existing linked ${factoryLabel} PR: ${duplicatePrUrl || '(unknown URL)'}.`,
+              };
+            }
+          
+            if (duplicatePrFound == null) {
+              return { gate_reason: 'Duplicate PR check did not complete; the check step did not produce an output.' };
+            }
+          
+            return {
+              gate_reason: duplicateCheckGateReason || `All deterministic gates passed: event eligible, actor trusted, and no linked ${factoryLabel} PR found.`,
+            };
+          }
+          
+          /**
+           * @param {string | undefined} raw
+           * @returns {boolean | null}
+           */
+          function factoryParseOptionalTriStateFromEnv(raw) {
+            if (raw == null || raw === '') {
+              return null;
+            }
+            return raw === 'true';
+          }
+          
+          /**
+           * @param {Record<string, string | undefined>} env
+           */
+          function factoryParseFinalizeGateEnv(env) {
+            const e = env || {};
+            return {
+              eventEligible: e.EVENT_ELIGIBLE === 'true',
+              eventEligibleReason: e.EVENT_ELIGIBLE_REASON ?? '',
+              actorTrusted: factoryParseOptionalTriStateFromEnv(e.ACTOR_TRUSTED),
+              actorTrustedReason: e.ACTOR_TRUSTED_REASON ?? null,
+              duplicatePrFound: factoryParseOptionalTriStateFromEnv(e.DUPLICATE_PR_FOUND),
+              duplicatePrUrl: e.DUPLICATE_PR_URL && e.DUPLICATE_PR_URL !== '' ? e.DUPLICATE_PR_URL : null,
+              duplicateCheckGateReason: e.DUPLICATE_GATE_REASON ?? null,
+            };
+          }
+          
+          /**
+           * @param {{
+           *   branchPrefix: string,
+           *   factoryLabel: string,
+           *   issueOpenedNotEligibleReason: string,
+           *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',
+           * }} config
+           */
+          function createFactoryIssueIntake(config) {
+            const {
+              branchPrefix,
+              factoryLabel,
+              issueOpenedNotEligibleReason,
+              duplicateLinkageMode,
+            } = config;
+          
+            function issueBranchName(issueNumber) {
+              return `${branchPrefix}${issueNumber}`;
+            }
+          
+            /**
+             * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels?: string[] | null | undefined }} params
+             */
+            function qualifyTriggerEvent(params) {
+              return factoryQualifyTriggerEvent({
+                ...params,
+                factoryLabel,
+                issueOpenedNotEligibleReason,
+              });
+            }
+          
+            function checkDuplicatePR(params) {
+              return factoryCheckDuplicatePR({
+                ...params,
+                branchPrefix,
+                prLabel: factoryLabel,
+                duplicateLinkageMode,
+              });
+            }
+          
+            function computeGateReason(params) {
+              return factoryComputeGateReason(params, factoryLabel);
+            }
+          
+            return {
+              issueBranchName,
+              qualifyTriggerEvent,
+              checkActorTrust: factoryCheckActorTrust,
+              checkDuplicatePR,
+              computeGateReason,
+            };
+          }
+          
+          /**
+           * @param {{
+           *   branchPrefix: string,
+           *   factoryLabel: string,
+           *   issueOpenedNotEligibleReason: string,
+           *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',
+           *   issueBranchNameAliases?: string[],
+           * }} config
+           */
+          function createFactoryIssueModule(config) {
+            const intake = createFactoryIssueIntake(config);
+            const issueBranchNameAliases = config.issueBranchNameAliases || [];
+            const factoryIssueModule = {
+              ...intake,
+              actorTrustWhenSenderMissing: factoryActorTrustWhenSenderMissing,
+              parseOptionalTriStateFromEnv: factoryParseOptionalTriStateFromEnv,
+              parseFinalizeGateEnv: factoryParseFinalizeGateEnv,
+            };
+          
+            for (const alias of issueBranchNameAliases) {
+              factoryIssueModule[alias] = intake.issueBranchName;
+            }
+          
+            return factoryIssueModule;
+          }
+          
+          if (typeof module !== 'undefined') {
+            module.exports = {
+              issueClosingReferencePattern,
+              factoryQualifyTriggerEvent,
+              factoryCheckActorTrust,
+              factoryActorTrustWhenSenderMissing,
+              factoryCheckDuplicatePR,
+              factoryComputeGateReason,
+              factoryParseOptionalTriStateFromEnv,
+              factoryParseFinalizeGateEnv,
+              createFactoryIssueIntake,
+              createFactoryIssueModule,
+            };
+          }
+          
+          // Concatenated by the workflow compiler; not executable standalone.
+          const factoryIssueModule = createFactoryIssueModule({
+            branchPrefix: ISSUE_BRANCH_PREFIX,
+            factoryLabel: FACTORY_LABEL,
+            issueOpenedNotEligibleReason: ISSUE_OPENED_NOT_ELIGIBLE_REASON,
+            duplicateLinkageMode: DUPLICATE_LINKAGE_MODE,
+          });
+          
+          const qualifyTriggerEvent = factoryIssueModule.qualifyTriggerEvent;
+          const checkActorTrust = factoryIssueModule.checkActorTrust;
+          const checkDuplicatePR = factoryIssueModule.checkDuplicatePR;
+          const computeGateReason = factoryIssueModule.computeGateReason;
+          const issueBranchName = factoryIssueModule.issueBranchName;
+          const actorTrustWhenSenderMissing = factoryIssueModule.actorTrustWhenSenderMissing;
+          const parseFinalizeGateEnv = factoryIssueModule.parseFinalizeGateEnv;
+          
+          const duplicatePrUrl = process.env.DUPLICATE_PR_URL;
+          const issueNumber = process.env.ISSUE_NUMBER;
+          const { owner, repo } = context.repo;
+          
+          if (duplicatePrUrl && issueNumber) {
+            const commentBody = `⚠️ **change-factory skipped** — PR #${extractPrNumber(duplicatePrUrl)} is already open for this issue.\nClose the existing PR, then retry.`;
+            
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number: parseInt(issueNumber, 10),
+              body: commentBody,
+            });
+            
+            core.info(`Posted duplicate-blocked comment on issue #${issueNumber} referencing ${duplicatePrUrl}`);
+          } else {
+            core.info('DUPLICATE_PR_URL is empty; skipping duplicate-blocked notification.');
+          }
+          
+          /**
+           * Extract the PR number from a GitHub PR URL.
+           * @param {string} url
+           * @returns {string}
+           */
+          function extractPrNumber(url) {
+            const match = url.match(/\/(\d+)(?:\/|$)/);
+            return match ? match[1] : url;
+          }
+    - name: Sanitize context
+      id: sanitize_context
+      if: >-
+        steps.qualify_trigger.outputs.event_eligible == 'true' &&
+        steps.check_actor_trust.outputs.actor_trusted == 'true' &&
+        steps.check_duplicate_pr.outputs.duplicate_pr_found != 'true'
+      env:
+        ISSUE_BODY: ${{ steps.capture_issue_context.outputs.issue_body }}
+        HUMAN_COMMENTS: ${{ steps.extract_research_comment.outputs.human_comments }}
+      uses: actions/github-script@v9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          /**
+           * HTML comment sanitisation, control/invisible-char removal, and research-comment lookup helpers.
+           */
+          
+          /**
+           * Removes all HTML comment sequences (<code>&lt;!--</code> through the next <code>--&gt;</code>).
+           * If an opening sequence has no closing counterpart, everything from the opener to the end of
+           * the string is removed.
+           *
+           * @param {string} text
+           * @returns {string}
+           */
+          function stripHtmlComments(text) {
+            if (typeof text !== 'string') return '';
+            return text.replace(/<!--[\s\S]*?(?:-->|$)/g, '');
+          }
+          
+          /**
+           * Removes non-printable ASCII control characters while preserving tab, newline,
+           * and carriage return. Also strips Unicode line/paragraph separators.
+           *
+           * Stripped ASCII:  \x00-\x08, \x0B, \x0C, \x0E-\x1F, \x7F
+           * Preserved:       \x09 (tab), \x0A (LF), \x0D (CR)
+           * Unicode:         \u2028, \u2029
+           *
+           * @param {string} text
+           * @returns {string}
+           */
+          function stripControlChars(text) {
+            if (typeof text !== 'string') return '';
+            return text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F\u2028\u2029]/g, '');
+          }
+          
+          /**
+           * Removes invisible Unicode characters that have no legitimate use in issue content:
+           * zero-width spaces/joiners, bidirectional marks, word/function/invisible operators,
+           * and the BOM (byte order mark).
+           *
+           * Ranges stripped:
+           *   \u200B-\u200F  — zero-width space, non-joiner, joiner, LTR mark, RTL mark
+           *   \u2060-\u2064  — word joiner, function application, invisible times/separator/plus
+           *   \uFEFF           — BOM / zero-width no-break space
+           *
+           * @param {string} text
+           * @returns {string}
+           */
+          function stripInvisibleUnicode(text) {
+            if (typeof text !== 'string') return '';
+            return text.replace(/[\u200B-\u200F\u2060-\u2064\uFEFF]/g, '');
+          }
+          
+          /**
+           * Composed sanitisation pipeline. Runs all three filters in sequence:
+           *
+           *   input → stripHtmlComments → stripControlChars → stripInvisibleUnicode → output
+           *
+           * Idempotent: applying twice produces the same result as applying once.
+           *
+           * @param {string} text
+           * @returns {string}
+           */
+          function sanitizeUserContent(text) {
+            if (typeof text !== 'string') return '';
+            return stripInvisibleUnicode(stripControlChars(stripHtmlComments(text)));
+          }
+          
+          /**
+           * Finds the most recently created matching research comment written by
+           * <code>github-actions[bot]</code> whose body starts with <code>marker</code>.
+           *
+           * @param {Array<{author: string, body: string}>} comments Ordered oldest-first.
+           * @param {string} marker
+           * @returns {{author: string, body: string} | null}
+           */
+          function findResearchComment(comments, marker) {
+            if (!Array.isArray(comments)) {
+              return null;
+            }
+            const matches = comments.filter(
+              (c) =>
+                c != null &&
+                typeof c.body === 'string' &&
+                (c.author ?? c.user?.login) === 'github-actions[bot]' &&
+                c.body.trimStart().startsWith(marker),
+            );
+            return matches.length > 0 ? matches[matches.length - 1] : null;
+          }
+          
+          if (typeof module !== 'undefined') {
+            module.exports = {
+              stripHtmlComments,
+              stripControlChars,
+              stripInvisibleUnicode,
+              sanitizeUserContent,
+              findResearchComment,
+            };
+          }
+          
+          const fs = require('fs');
+          const crypto = require('crypto');
+          
+          const body = process.env.ISSUE_BODY || '';
+          const comments = process.env.HUMAN_COMMENTS || '';
+          
+          const sanitizedBody = sanitizeUserContent(body);
+          const sanitizedComments = sanitizeUserContent(comments);
+          
+          const eofDelim1 = `EOF_${crypto.randomUUID().replace(/-/g, '')}`;
+          const output1 = `sanitized_issue_body<<${eofDelim1}\n${sanitizedBody}\n${eofDelim1}\n`;
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, output1);
+          
+          const eofDelim2 = `EOF_${crypto.randomUUID().replace(/-/g, '')}`;
+          const output2 = `sanitized_issue_comments<<${eofDelim2}\n${sanitizedComments}\n${eofDelim2}\n`;
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, output2);
+          
+          const dir = '/tmp/change-factory-context';
+          fs.mkdirSync(dir, { recursive: true });
+          fs.writeFileSync(`${dir}/issue_body.md`, sanitizedBody);
+          fs.writeFileSync(`${dir}/issue_comments.md`, sanitizedComments);
+          core.info('Wrote sanitized issue context files to /tmp/change-factory-context/');
+          
+    - name: Upload issue context artifact
+      if: >-
+        steps.qualify_trigger.outputs.event_eligible == 'true' &&
+        steps.check_actor_trust.outputs.actor_trusted == 'true' &&
+        steps.check_duplicate_pr.outputs.duplicate_pr_found != 'true'
+      uses: actions/upload-artifact@v4
+      with:
+        name: change-factory-issue-context
+        path: /tmp/change-factory-context/
+        if-no-files-found: error
     - name: Remove trigger label
       id: remove_trigger_label
       if: >-
@@ -1345,6 +2596,13 @@ on:
             factoryLabel,
             issueOpenedNotEligibleReason,
           }) {
+            if (eventName === 'issue_comment') {
+              return {
+                event_eligible: true,
+                event_eligible_reason: `Issue comment event qualifies because the slash_command trigger routes to issue_comment.`,
+              };
+            }
+          
             if (eventName !== 'issues') {
               return {
                 event_eligible: false,
@@ -1657,6 +2915,11 @@ if: >-
   needs.pre_activation.outputs.actor_trusted == 'true' &&
   needs.pre_activation.outputs.duplicate_pr_found != 'true'
 steps:
+  - name: Download issue context artifact
+    uses: actions/download-artifact@v4
+    with:
+      name: change-factory-issue-context
+      path: /tmp/change-factory-context/
   - name: Setup Node.js
     uses: actions/setup-node@v6
     with:
@@ -1683,6 +2946,10 @@ jobs:
       event_eligible_reason: ${{ steps.qualify_trigger.outputs.event_eligible_reason }}
       issue_title: ${{ steps.capture_issue_context.outputs.issue_title }}
       issue_body: ${{ steps.capture_issue_context.outputs.issue_body }}
+      human_direction: ${{ steps.capture_command_text.outputs.human_direction }}
+      sanitized_issue_body: ${{ steps.sanitize_context.outputs.sanitized_issue_body }}
+      sanitized_issue_comments: ${{ steps.sanitize_context.outputs.sanitized_issue_comments }}
+      research_comment_body: ${{ steps.extract_research_comment.outputs.research_comment_body }}
       actor_trusted: ${{ steps.check_actor_trust.outputs.actor_trusted }}
       actor_trusted_reason: ${{ steps.check_actor_trust.outputs.actor_trusted_reason }}
       duplicate_pr_found: ${{ steps.check_duplicate_pr.outputs.duplicate_pr_found }}
@@ -1734,15 +3001,42 @@ this issue.
 - **Duplicate PR URL**: `${{ needs.pre_activation.outputs.duplicate_pr_url }}`
 - **Issue number**: `${{ github.event.issue.number }}`
 - **Issue title** (authoritative): `${{ needs.pre_activation.outputs.issue_title }}`
-- **Issue body** (authoritative):
+- **Issue body** (authoritative, sanitised): see `/tmp/change-factory-context/issue_body.md`
 
-  ```markdown
-  ${{ needs.pre_activation.outputs.issue_body }}
-  ```
+- **Comment history** (sanitised, human-authored): see `/tmp/change-factory-context/issue_comments.md`
+
+- **Research comment** (if present): see `/tmp/change-factory-context/research_comment.md`
 
 - **Repository**: `${{ github.repository }}`
 - **Triggered by**: `@${{ github.actor }}`
 - **Required branch**: `change-factory/issue-${{ github.event.issue.number }}`
+
+## Implementation research comment
+
+The issue may contain an implementation-research comment authored by `github-actions[bot]`.
+It is identified by the marker `<!-- gha-research-factory -->` on its own line at the start
+of the comment, and contains a `## Implementation research` heading.
+
+When such a comment is present, it is the **exclusive authoritative scope baseline** for the
+proposal. When no such comment exists, retain today's behavior: treat the issue title and body as
+the authoritative source unchanged.
+
+When a research comment is present:
+
+- Adopt the comment's `### Recommendation` as the spine of `proposal.md`.
+- Copy the comment's `### Open questions` verbatim into `design.md` under a `## Open questions` section.
+- Treat the comment's `### Approaches considered` as already-evaluated context. Do **not** re-explore alternative approaches the research has already evaluated.
+- **Edge case (explicit contradiction)**: If the sanitised issue body or sanitised human comments explicitly contradict the research comment's recommendation, note the contradiction in `design.md` under a section explaining the deviation and use your judgment on how to proceed. This is a narrow exception to the exclusive-scope rule and should only apply when there is a clear, direct contradiction - not merely because outside content discusses the topic.
+
+The research comment may also contain a `<details>` element with `<summary>🤖 Pipeline metadata</summary>` enclosing a fenced JSON block. When present, the agent should parse the fenced JSON inside the `<details>` element. JSON metadata is a future enhancement area; the agent should not depend on it today. The human-readable subsections (`### Recommendation`, `### Open questions`, `### Approaches considered`, etc.) remain the primary source of truth.
+
+You **must not** modify the implementation-research comment. Do **not** emit `update-issue` or comment-editing operations that rewrite the research comment, add or remove the `<!-- gha-research-factory -->` marker, or edit the text inside it. This applies even if the comment's content appears outdated or incomplete. Comment management belongs to the `research-factory` workflow.
+
+## Human direction
+
+${{ needs.pre_activation.outputs.human_direction }}
+
+When non-empty, the human direction text above is the **final say** on all design decisions for this proposal. It overrides the research comment's `### Recommendation` and any other design inferences. Apply it without second-guessing.
 
 ## OpenSpec tooling
 

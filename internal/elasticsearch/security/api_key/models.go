@@ -80,6 +80,45 @@ func (model tfModel) GetElasticsearchConnection() types.List {
 	return model.ElasticsearchConnection
 }
 
+func (model tfModel) buildTypedRoleDescriptors() (map[string]estypes.RoleDescriptor, diag.Diagnostics) {
+	if !typeutils.IsKnown(model.RoleDescriptors) {
+		return nil, nil
+	}
+
+	var roleDescriptors map[string]models.APIKeyRoleDescriptor
+	diags := model.RoleDescriptors.Unmarshal(&roleDescriptors)
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	if len(roleDescriptors) == 0 {
+		return nil, nil
+	}
+
+	typedDescriptors, err := toTypedRoleDescriptors(roleDescriptors)
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+
+	return typedDescriptors, nil
+}
+
+func (model tfModel) buildTypedMetadata() (estypes.Metadata, diag.Diagnostics) {
+	if !typeutils.IsKnown(model.Metadata) {
+		return nil, nil
+	}
+	var metadata map[string]any
+	diags := model.Metadata.Unmarshal(&metadata)
+	if diags.HasError() {
+		return nil, diags
+	}
+	typedMetadata, err := toTypedMetadata(metadata)
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+	return typedMetadata, nil
+}
+
 func (model tfModel) toAPICreateRequest() (*createapikey.Request, diag.Diagnostics) {
 	req := createapikey.NewRequest()
 
@@ -90,32 +129,17 @@ func (model tfModel) toAPICreateRequest() (*createapikey.Request, diag.Diagnosti
 		req.Expiration = model.Expiration.ValueString()
 	}
 
-	if typeutils.IsKnown(model.Metadata) {
-		var metadata map[string]any
-		diags := model.Metadata.Unmarshal(&metadata)
-		if diags.HasError() {
-			return nil, diags
-		}
-		typedMetadata, err := toTypedMetadata(metadata)
-		if err != nil {
-			return nil, diagutil.FrameworkDiagFromError(err)
-		}
-		req.Metadata = typedMetadata
-	}
-
-	var roleDescriptors map[string]models.APIKeyRoleDescriptor
-	diags := model.RoleDescriptors.Unmarshal(&roleDescriptors)
+	typedMetadata, diags := model.buildTypedMetadata()
 	if diags.HasError() {
 		return nil, diags
 	}
+	req.Metadata = typedMetadata
 
-	if len(roleDescriptors) > 0 {
-		typedDescriptors, err := toTypedRoleDescriptors(roleDescriptors)
-		if err != nil {
-			return nil, diagutil.FrameworkDiagFromError(err)
-		}
-		req.RoleDescriptors = typedDescriptors
+	typedDescriptors, diags := model.buildTypedRoleDescriptors()
+	if diags.HasError() {
+		return nil, diags
 	}
+	req.RoleDescriptors = typedDescriptors
 
 	return req, nil
 }
@@ -126,34 +150,108 @@ func (model tfModel) toUpdateAPIRequest() (*updateapikey.Request, diag.Diagnosti
 	// Note: the Update API Key endpoint does not accept expiration.
 	// The old code explicitly zeroed it out before sending.
 
-	if typeutils.IsKnown(model.Metadata) {
-		var metadata map[string]any
-		diags := model.Metadata.Unmarshal(&metadata)
-		if diags.HasError() {
-			return nil, diags
-		}
-		typedMetadata, err := toTypedMetadata(metadata)
-		if err != nil {
-			return nil, diagutil.FrameworkDiagFromError(err)
-		}
-		req.Metadata = typedMetadata
+	typedMetadata, diags := model.buildTypedMetadata()
+	if diags.HasError() {
+		return nil, diags
+	}
+	req.Metadata = typedMetadata
+
+	typedDescriptors, diags := model.buildTypedRoleDescriptors()
+	if diags.HasError() {
+		return nil, diags
+	}
+	req.RoleDescriptors = typedDescriptors
+
+	return req, nil
+}
+
+func (model tfModel) buildCrossClusterAccess(ctx context.Context) (*models.CrossClusterAPIKeyAccess, diag.Diagnostics) {
+	if !typeutils.IsKnown(model.Access) {
+		return nil, nil
 	}
 
-	var roleDescriptors map[string]models.APIKeyRoleDescriptor
-	diags := model.RoleDescriptors.Unmarshal(&roleDescriptors)
+	access := &models.CrossClusterAPIKeyAccess{}
+
+	var accessData accessModel
+	diags := model.Access.As(ctx, &accessData, basetypes.ObjectAsOptions{})
 	if diags.HasError() {
 		return nil, diags
 	}
 
-	if len(roleDescriptors) > 0 {
-		typedDescriptors, err := toTypedRoleDescriptors(roleDescriptors)
-		if err != nil {
-			return nil, diagutil.FrameworkDiagFromError(err)
+	if typeutils.IsKnown(accessData.Search) {
+		var searchObjects []searchModel
+		diags := accessData.Search.ElementsAs(ctx, &searchObjects, false)
+		if diags.HasError() {
+			return nil, diags
 		}
-		req.RoleDescriptors = typedDescriptors
+
+		var searchEntries []models.CrossClusterAPIKeyAccessEntry
+		for _, searchObj := range searchObjects {
+			entry := models.CrossClusterAPIKeyAccessEntry{}
+
+			if typeutils.IsKnown(searchObj.Names) {
+				var names []string
+				diags := searchObj.Names.ElementsAs(ctx, &names, false)
+				if diags.HasError() {
+					return nil, diags
+				}
+				entry.Names = names
+			}
+
+			if typeutils.IsKnown(searchObj.FieldSecurity) && !searchObj.FieldSecurity.IsNull() {
+				var fieldSecurity models.FieldSecurity
+				err := json.Unmarshal([]byte(searchObj.FieldSecurity.ValueString()), &fieldSecurity)
+				if err != nil {
+					return nil, diag.Diagnostics{diag.NewErrorDiagnostic("Failed to unmarshal field_security", err.Error())}
+				}
+				entry.FieldSecurity = &fieldSecurity
+			}
+
+			if typeutils.IsKnown(searchObj.Query) && !searchObj.Query.IsNull() {
+				query := searchObj.Query.ValueString()
+				entry.Query = &query
+			}
+
+			if typeutils.IsKnown(searchObj.AllowRestrictedIndices) {
+				allowRestricted := searchObj.AllowRestrictedIndices.ValueBool()
+				entry.AllowRestrictedIndices = &allowRestricted
+			}
+
+			searchEntries = append(searchEntries, entry)
+		}
+		if len(searchEntries) > 0 {
+			access.Search = searchEntries
+		}
 	}
 
-	return req, nil
+	if typeutils.IsKnown(accessData.Replication) {
+		var replicationObjects []replicationModel
+		diags := accessData.Replication.ElementsAs(ctx, &replicationObjects, false)
+		if diags.HasError() {
+			return nil, diags
+		}
+
+		var replicationEntries []models.CrossClusterAPIKeyAccessEntry
+		for _, replicationObj := range replicationObjects {
+			if typeutils.IsKnown(replicationObj.Names) {
+				var names []string
+				diags := replicationObj.Names.ElementsAs(ctx, &names, false)
+				if diags.HasError() {
+					return nil, diags
+				}
+				if len(names) > 0 {
+					replicationEntries = append(replicationEntries, models.CrossClusterAPIKeyAccessEntry{
+						Names: names,
+					})
+				}
+			}
+		}
+		if len(replicationEntries) > 0 {
+			access.Replication = replicationEntries
+		}
+	}
+
+	return access, nil
 }
 
 func (model tfModel) toCrossClusterAPICreateRequest(ctx context.Context) (*createcrossclusterapikey.Request, diag.Diagnostics) {
@@ -164,109 +262,22 @@ func (model tfModel) toCrossClusterAPICreateRequest(ctx context.Context) (*creat
 		req.Expiration = model.Expiration.ValueString()
 	}
 
-	if typeutils.IsKnown(model.Metadata) {
-		var metadata map[string]any
-		diags := model.Metadata.Unmarshal(&metadata)
-		if diags.HasError() {
-			return nil, diags
-		}
-		typedMetadata, err := toTypedMetadata(metadata)
+	typedMetadata, diags := model.buildTypedMetadata()
+	if diags.HasError() {
+		return nil, diags
+	}
+	req.Metadata = typedMetadata
+
+	access, diags := model.buildCrossClusterAccess(ctx)
+	if diags.HasError() {
+		return nil, diags
+	}
+	if access != nil && (access.Search != nil || access.Replication != nil) {
+		typedAccess, err := toTypedAccess(*access)
 		if err != nil {
 			return nil, diagutil.FrameworkDiagFromError(err)
 		}
-		req.Metadata = typedMetadata
-	}
-
-	// Build the access configuration
-	access := &models.CrossClusterAPIKeyAccess{}
-
-	if typeutils.IsKnown(model.Access) {
-		var accessData accessModel
-		diags := model.Access.As(ctx, &accessData, basetypes.ObjectAsOptions{})
-		if diags.HasError() {
-			return nil, diags
-		}
-
-		if typeutils.IsKnown(accessData.Search) {
-			var searchObjects []searchModel
-			diags := accessData.Search.ElementsAs(ctx, &searchObjects, false)
-			if diags.HasError() {
-				return nil, diags
-			}
-
-			var searchEntries []models.CrossClusterAPIKeyAccessEntry
-			for _, searchObj := range searchObjects {
-				entry := models.CrossClusterAPIKeyAccessEntry{}
-
-				if typeutils.IsKnown(searchObj.Names) {
-					var names []string
-					diags := searchObj.Names.ElementsAs(ctx, &names, false)
-					if diags.HasError() {
-						return nil, diags
-					}
-					entry.Names = names
-				}
-
-				if typeutils.IsKnown(searchObj.FieldSecurity) && !searchObj.FieldSecurity.IsNull() {
-					var fieldSecurity models.FieldSecurity
-					diags := json.Unmarshal([]byte(searchObj.FieldSecurity.ValueString()), &fieldSecurity)
-					if diags != nil {
-						return nil, diag.Diagnostics{diag.NewErrorDiagnostic("Failed to unmarshal field_security", diags.Error())}
-					}
-					entry.FieldSecurity = &fieldSecurity
-				}
-
-				if typeutils.IsKnown(searchObj.Query) && !searchObj.Query.IsNull() {
-					query := searchObj.Query.ValueString()
-					entry.Query = &query
-				}
-
-				if typeutils.IsKnown(searchObj.AllowRestrictedIndices) {
-					allowRestricted := searchObj.AllowRestrictedIndices.ValueBool()
-					entry.AllowRestrictedIndices = &allowRestricted
-				}
-
-				searchEntries = append(searchEntries, entry)
-			}
-			if len(searchEntries) > 0 {
-				access.Search = searchEntries
-			}
-		}
-
-		if typeutils.IsKnown(accessData.Replication) {
-			var replicationObjects []replicationModel
-			diags := accessData.Replication.ElementsAs(ctx, &replicationObjects, false)
-			if diags.HasError() {
-				return nil, diags
-			}
-
-			var replicationEntries []models.CrossClusterAPIKeyAccessEntry
-			for _, replicationObj := range replicationObjects {
-				if typeutils.IsKnown(replicationObj.Names) {
-					var names []string
-					diags := replicationObj.Names.ElementsAs(ctx, &names, false)
-					if diags.HasError() {
-						return nil, diags
-					}
-					if len(names) > 0 {
-						replicationEntries = append(replicationEntries, models.CrossClusterAPIKeyAccessEntry{
-							Names: names,
-						})
-					}
-				}
-			}
-			if len(replicationEntries) > 0 {
-				access.Replication = replicationEntries
-			}
-		}
-
-		if access.Search != nil || access.Replication != nil {
-			typedAccess, err := toTypedAccess(*access)
-			if err != nil {
-				return nil, diagutil.FrameworkDiagFromError(err)
-			}
-			req.Access = typedAccess
-		}
+		req.Access = typedAccess
 	}
 
 	return req, nil
@@ -278,109 +289,22 @@ func (model tfModel) toUpdateCrossClusterAPIRequest(ctx context.Context) (*updat
 	// Note: the Update Cross-Cluster API Key endpoint does not accept expiration.
 	// The old code explicitly zeroed it out before sending.
 
-	if typeutils.IsKnown(model.Metadata) {
-		var metadata map[string]any
-		diags := model.Metadata.Unmarshal(&metadata)
-		if diags.HasError() {
-			return nil, diags
-		}
-		typedMetadata, err := toTypedMetadata(metadata)
+	typedMetadata, diags := model.buildTypedMetadata()
+	if diags.HasError() {
+		return nil, diags
+	}
+	req.Metadata = typedMetadata
+
+	access, diags := model.buildCrossClusterAccess(ctx)
+	if diags.HasError() {
+		return nil, diags
+	}
+	if access != nil && (access.Search != nil || access.Replication != nil) {
+		typedAccess, err := toTypedAccess(*access)
 		if err != nil {
 			return nil, diagutil.FrameworkDiagFromError(err)
 		}
-		req.Metadata = typedMetadata
-	}
-
-	// Build the access configuration
-	access := &models.CrossClusterAPIKeyAccess{}
-
-	if typeutils.IsKnown(model.Access) {
-		var accessData accessModel
-		diags := model.Access.As(ctx, &accessData, basetypes.ObjectAsOptions{})
-		if diags.HasError() {
-			return nil, diags
-		}
-
-		if typeutils.IsKnown(accessData.Search) {
-			var searchObjects []searchModel
-			diags := accessData.Search.ElementsAs(ctx, &searchObjects, false)
-			if diags.HasError() {
-				return nil, diags
-			}
-
-			var searchEntries []models.CrossClusterAPIKeyAccessEntry
-			for _, searchObj := range searchObjects {
-				entry := models.CrossClusterAPIKeyAccessEntry{}
-
-				if typeutils.IsKnown(searchObj.Names) {
-					var names []string
-					diags := searchObj.Names.ElementsAs(ctx, &names, false)
-					if diags.HasError() {
-						return nil, diags
-					}
-					entry.Names = names
-				}
-
-				if typeutils.IsKnown(searchObj.FieldSecurity) && !searchObj.FieldSecurity.IsNull() {
-					var fieldSecurity models.FieldSecurity
-					diags := json.Unmarshal([]byte(searchObj.FieldSecurity.ValueString()), &fieldSecurity)
-					if diags != nil {
-						return nil, diag.Diagnostics{diag.NewErrorDiagnostic("Failed to unmarshal field_security", diags.Error())}
-					}
-					entry.FieldSecurity = &fieldSecurity
-				}
-
-				if typeutils.IsKnown(searchObj.Query) && !searchObj.Query.IsNull() {
-					query := searchObj.Query.ValueString()
-					entry.Query = &query
-				}
-
-				if typeutils.IsKnown(searchObj.AllowRestrictedIndices) {
-					allowRestricted := searchObj.AllowRestrictedIndices.ValueBool()
-					entry.AllowRestrictedIndices = &allowRestricted
-				}
-
-				searchEntries = append(searchEntries, entry)
-			}
-			if len(searchEntries) > 0 {
-				access.Search = searchEntries
-			}
-		}
-
-		if typeutils.IsKnown(accessData.Replication) {
-			var replicationObjects []replicationModel
-			diags := accessData.Replication.ElementsAs(ctx, &replicationObjects, false)
-			if diags.HasError() {
-				return nil, diags
-			}
-
-			var replicationEntries []models.CrossClusterAPIKeyAccessEntry
-			for _, replicationObj := range replicationObjects {
-				if typeutils.IsKnown(replicationObj.Names) {
-					var names []string
-					diags := replicationObj.Names.ElementsAs(ctx, &names, false)
-					if diags.HasError() {
-						return nil, diags
-					}
-					if len(names) > 0 {
-						replicationEntries = append(replicationEntries, models.CrossClusterAPIKeyAccessEntry{
-							Names: names,
-						})
-					}
-				}
-			}
-			if len(replicationEntries) > 0 {
-				access.Replication = replicationEntries
-			}
-		}
-
-		if access.Search != nil || access.Replication != nil {
-			typedAccess, err := toTypedAccess(*access)
-			if err != nil {
-				return nil, diagutil.FrameworkDiagFromError(err)
-			}
-			req.Access = typedAccess
-		}
+		req.Access = typedAccess
 	}
 
 	return req, nil
