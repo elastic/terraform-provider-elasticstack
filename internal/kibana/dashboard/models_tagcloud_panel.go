@@ -74,6 +74,7 @@ func (c tagcloudPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnD
 }
 
 type tagcloudConfigModel struct {
+	lensChartPresentationTFModel
 	Title               types.String                                      `tfsdk:"title"`
 	Description         types.String                                      `tfsdk:"description"`
 	DataSourceJSON      jsontypes.Normalized                              `tfsdk:"data_source_json"`

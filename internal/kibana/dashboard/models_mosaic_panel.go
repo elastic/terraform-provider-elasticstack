@@ -83,6 +83,7 @@ func isMosaicNoESQLCandidateActuallyESQL(api kbapi.MosaicNoESQL) bool {
 }
 
 type mosaicConfigModel struct {
+	lensChartPresentationTFModel
 	Title               types.String                                        `tfsdk:"title"`
 	Description         types.String                                        `tfsdk:"description"`
 	DataSourceJSON      jsontypes.Normalized                                `tfsdk:"data_source_json"`

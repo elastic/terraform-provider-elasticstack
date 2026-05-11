@@ -84,6 +84,7 @@ func isTreemapNoESQLCandidateActuallyESQL(api kbapi.TreemapNoESQL) bool {
 }
 
 type treemapConfigModel struct {
+	lensChartPresentationTFModel
 	Title               types.String                                        `tfsdk:"title"`
 	Description         types.String                                        `tfsdk:"description"`
 	DataSourceJSON      jsontypes.Normalized                                `tfsdk:"data_source_json"`

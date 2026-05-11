@@ -73,6 +73,7 @@ func (c gaugePanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDash
 }
 
 type gaugeConfigModel struct {
+	lensChartPresentationTFModel
 	Title               types.String                                      `tfsdk:"title"`
 	Description         types.String                                      `tfsdk:"description"`
 	DataSourceJSON      jsontypes.Normalized                              `tfsdk:"data_source_json"`

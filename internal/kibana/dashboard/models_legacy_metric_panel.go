@@ -74,6 +74,7 @@ func (c legacyMetricPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.
 }
 
 type legacyMetricConfigModel struct {
+	lensChartPresentationTFModel
 	Title               types.String                                      `tfsdk:"title"`
 	Description         types.String                                      `tfsdk:"description"`
 	DataSourceJSON      jsontypes.Normalized                              `tfsdk:"data_source_json"`

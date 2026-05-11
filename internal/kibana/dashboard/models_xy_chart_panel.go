@@ -85,6 +85,7 @@ func (c xyChartPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDa
 }
 
 type xyChartConfigModel struct {
+	lensChartPresentationTFModel
 	Title       types.String           `tfsdk:"title"`
 	Description types.String           `tfsdk:"description"`
 	Axis        *xyAxisModel           `tfsdk:"axis"`
