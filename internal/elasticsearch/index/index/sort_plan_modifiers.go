@@ -182,10 +182,11 @@ func (m sortMigrationPlanModifier) PlanModifyList(ctx context.Context, req planm
 		}
 	}
 
-	// All checks passed — suppress replace and suppress plan diff by returning
-	// the state value (null) so Terraform treats this as a no-op migration.
+	// All checks passed — suppress replace.
+	// The config change (legacy attrs → new sort block) will produce an update action,
+	// but no destroy+create cycle. Index sort settings are stored in ES private state
+	// and read back via the new sort block on the next Read.
 	resp.RequiresReplace = false
-	resp.PlanValue = req.StateValue
 }
 
 // isSemanticallyEquivalentMissing returns true if the planned missing value

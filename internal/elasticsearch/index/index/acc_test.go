@@ -1075,7 +1075,9 @@ func TestAccResourceIndexSortNestedMigration(t *testing.T) {
 				),
 			},
 			{
-				// Step 2: Migrate to new sort block with same settings — no replace expected
+				// Step 2: Migrate to new sort block with same settings — no replace expected.
+				// The plan may show an update action (Terraform sees config attribute changes),
+				// but must NOT require destroy+recreate (index sort is immutable in ES).
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("step2_migrate"),
 				ConfigVariables: config.Variables{
@@ -1083,7 +1085,9 @@ func TestAccResourceIndexSortNestedMigration(t *testing.T) {
 				},
 				ConfigPlanChecks: resource.ConfigPlanChecks{
 					PreApply: []plancheck.PlanCheck{
-						plancheck.ExpectEmptyPlan(),
+						// Migration should produce an in-place update (sort attr changes),
+						// NOT a destroy+recreate (index sort is immutable in ES).
+						plancheck.ExpectResourceAction("elasticstack_elasticsearch_index.test", plancheck.ResourceActionUpdate),
 					},
 				},
 				Check: resource.ComposeTestCheckFunc(
