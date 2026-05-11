@@ -1,22 +1,22 @@
 ## 1. Model and Schema
 
-- [ ] 1.1 Define `roleDataSourceModel` struct embedding `entitycore.ElasticsearchConnectionField` with `tfsdk`-tagged fields: `ID`, `Name`, `Description`, `Cluster`, `RunAs`, `Global`, `Metadata`, `Applications`, `Indices`, `RemoteIndices`
-- [ ] 1.2 Define nested model structs: `applicationDataSourceModel`, `indexDataSourceModel`, `remoteIndexDataSourceModel`, `fieldSecurityDataSourceModel`
-- [ ] 1.3 Map SDK `TypeSet` fields to `types.Set` with `ElementType: types.StringType` or nested object types as appropriate
-- [ ] 1.4 Map `Global` and `Metadata` to `jsontypes.NormalizedType{}`
-- [ ] 1.5 Create `getDataSourceSchema()` returning `schema.Schema` with Plugin Framework nested attributes matching the current SDK shape (`schema.SetNestedAttribute` for `applications`, `indices`, `remote_indices`; `schema.ListNestedAttribute` for `field_security`)
-- [ ] 1.6 Verify enum-like sets (`cluster` privileges) are stored as `types.Set` of `types.String`
+- [x] 1.1 Define `roleDataSourceModel` struct embedding `entitycore.ElasticsearchConnectionField` with `tfsdk`-tagged fields: `ID`, `Name`, `Description`, `Cluster`, `RunAs`, `Global`, `Metadata`, `Applications`, `Indices`, `RemoteIndices`
+- [x] 1.2 Define nested model structs: `applicationDataSourceModel`, `indexDataSourceModel`, `remoteIndexDataSourceModel`, `fieldSecurityDataSourceModel`
+- [x] 1.3 Map SDK `TypeSet` fields to `types.Set` with `ElementType: types.StringType` or nested object types as appropriate
+- [x] 1.4 Map `Global` and `Metadata` to `jsontypes.NormalizedType{}`
+- [x] 1.5 Create `getDataSourceSchema()` returning `schema.Schema` with Plugin Framework nested attributes matching the current SDK shape (`schema.SetNestedAttribute` for `applications`, `indices`, `remote_indices`; `schema.ListNestedAttribute` for `field_security`)
+- [x] 1.6 Verify enum-like sets (`cluster` privileges) are stored as `types.Set` of `types.String`
 
 ## 2. Read Callback
 
-- [ ] 2.1 Implement `readDataSource(ctx, esClient, config)` callback: `func(context.Context, *clients.ElasticsearchScopedClient, roleDataSourceModel) (roleDataSourceModel, diag.Diagnostics)`
-- [ ] 2.2 Resolve `id` via `esClient.ID(ctx, roleName)` and set on model
-- [ ] 2.3 Call `elasticsearch.GetRole(ctx, esClient, roleName)`; handle errors
-- [ ] 2.4 If role is nil with no error: set `id` to `types.StringValue("")`, return no diagnostics, and leave other computed values empty/default (matching SDK not-found behavior)
-- [ ] 2.5 Map scalar fields (`description`, `cluster`, `run_as`) to model
-- [ ] 2.6 Marshal `global` and `metadata` to JSON strings and set as normalized JSON types
-- [ ] 2.7 Convert `applications`, `indices`, `remote_indices` API responses to PF nested set values using adapted flatten helpers
-- [ ] 2.8 Handle `field_security` nested list inside `indices` and `remote_indices`
+- [x] 2.1 Implement `readDataSource(ctx, esClient, config)` callback: `func(context.Context, *clients.ElasticsearchScopedClient, roleDataSourceModel) (roleDataSourceModel, diag.Diagnostics)`
+- [x] 2.2 Resolve `id` via `esClient.ID(ctx, roleName)` and set on model
+- [x] 2.3 Call `elasticsearch.GetRole(ctx, esClient, roleName)`; handle errors
+- [x] 2.4 If role is nil with no error: set `id` to `types.StringValue("")`, return no diagnostics, and leave other computed values empty/default (matching SDK not-found behavior)
+- [x] 2.5 Map scalar fields (`description`, `cluster`, `run_as`) to model
+- [x] 2.6 Marshal `global` and `metadata` to JSON strings and set as normalized JSON types
+- [x] 2.7 Convert `applications`, `indices`, `remote_indices` API responses to PF nested set values using adapted flatten helpers
+- [x] 2.8 Handle `field_security` nested list inside `indices` and `remote_indices`
 
 ## 3. Envelope Wiring
 

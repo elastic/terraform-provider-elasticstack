@@ -20,11 +20,16 @@ package security
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	esTypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -236,102 +241,377 @@ func getDataSourceSchema(_ context.Context) schema.Schema {
 
 func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedClient, config roleDataSourceModel) (roleDataSourceModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
+
+	roleName := config.Name.ValueString()
+
+	// Resolve the composite ID
+	id, sdkDiags := esClient.ID(ctx, roleName)
+	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	if diags.HasError() {
+		return config, diags
+	}
+	config.ID = types.StringValue(id.String())
+
+	// Call GetRole (returns SDK v2 diagnostics)
+	role, sdkDiags := elasticsearch.GetRole(ctx, esClient, roleName)
+	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	if diags.HasError() {
+		return config, diags
+	}
+
+	// Not-found: return empty ID, keep name, no diagnostics
+	if role == nil {
+		config.ID = types.StringValue("")
+		return config, diags
+	}
+
+	// Map API response to model
+	diags.Append(config.fromAPIModel(ctx, role)...)
+	if diags.HasError() {
+		return config, diags
+	}
+
+	// Ensure name is set to the role name we looked up
+	config.Name = types.StringValue(roleName)
+
 	return config, diags
 }
 
-func flattenApplicationsData(apps []esTypes.ApplicationPrivileges) []any {
-	if len(apps) > 0 {
-		oapps := make([]any, len(apps))
-		for i, app := range apps {
-			oa := make(map[string]any)
-			oa["application"] = app.Application
-			oa["privileges"] = app.Privileges
-			oa["resources"] = app.Resources
-			oapps[i] = oa
-		}
-		return oapps
+func (config *roleDataSourceModel) fromAPIModel(ctx context.Context, role *esTypes.Role) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	// Description
+	if role.Description != nil {
+		config.Description = types.StringValue(*role.Description)
+	} else {
+		config.Description = types.StringNull()
 	}
-	return make([]any, 0)
+
+	// Cluster
+	clusterStrings := make([]string, len(role.Cluster))
+	for i, cp := range role.Cluster {
+		clusterStrings[i] = cp.String()
+	}
+	clusterSet, d := types.SetValueFrom(ctx, types.StringType, clusterStrings)
+	diags.Append(d...)
+	if diags.HasError() {
+		return diags
+	}
+	config.Cluster = clusterSet
+
+	// RunAs
+	runAsSet, d := types.SetValueFrom(ctx, types.StringType, role.RunAs)
+	diags.Append(d...)
+	if diags.HasError() {
+		return diags
+	}
+	config.RunAs = runAsSet
+
+	// Global
+	if role.Global != nil {
+		globalBytes, err := json.Marshal(role.Global)
+		if err != nil {
+			diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling global JSON: %s", err))
+			return diags
+		}
+		config.Global = jsontypes.NewNormalizedValue(string(globalBytes))
+	} else {
+		config.Global = jsontypes.NewNormalizedNull()
+	}
+
+	// Metadata
+	if role.Metadata != nil {
+		metadataBytes, err := json.Marshal(role.Metadata)
+		if err != nil {
+			diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling metadata JSON: %s", err))
+			return diags
+		}
+		config.Metadata = jsontypes.NewNormalizedValue(string(metadataBytes))
+	} else {
+		config.Metadata = jsontypes.NewNormalizedNull()
+	}
+
+	// Applications
+	if len(role.Applications) > 0 {
+		appElements := make([]attr.Value, len(role.Applications))
+		for i, app := range role.Applications {
+			privSet, d := types.SetValueFrom(ctx, types.StringType, app.Privileges)
+			diags.Append(d...)
+			if diags.HasError() {
+				return diags
+			}
+
+			resSet, d := types.SetValueFrom(ctx, types.StringType, app.Resources)
+			diags.Append(d...)
+			if diags.HasError() {
+				return diags
+			}
+
+			appObj, d := types.ObjectValue(getApplicationDSAttrTypes(), map[string]attr.Value{
+				"application": types.StringValue(app.Application),
+				"privileges":  privSet,
+				"resources":   resSet,
+			})
+			diags.Append(d...)
+			if diags.HasError() {
+				return diags
+			}
+
+			appElements[i] = appObj
+		}
+
+		appSet, d := types.SetValue(types.ObjectType{AttrTypes: getApplicationDSAttrTypes()}, appElements)
+		diags.Append(d...)
+		if diags.HasError() {
+			return diags
+		}
+		config.Applications = appSet
+	} else {
+		config.Applications = types.SetNull(types.ObjectType{AttrTypes: getApplicationDSAttrTypes()})
+	}
+
+	// Indices
+	if len(role.Indices) > 0 {
+		indicesElements := make([]attr.Value, len(role.Indices))
+		for i, index := range role.Indices {
+			namesSet, d := types.SetValueFrom(ctx, types.StringType, index.Names)
+			diags.Append(d...)
+			if diags.HasError() {
+				return diags
+			}
+
+			privileges := make([]string, len(index.Privileges))
+			for j, p := range index.Privileges {
+				privileges[j] = p.String()
+			}
+			privSet, d := types.SetValueFrom(ctx, types.StringType, privileges)
+			diags.Append(d...)
+			if diags.HasError() {
+				return diags
+			}
+
+			var queryVal jsontypes.Normalized
+			if index.Query != nil {
+				switch q := index.Query.(type) {
+				case string:
+					queryVal = jsontypes.NewNormalizedValue(q)
+				default:
+					b, err := json.Marshal(index.Query)
+					if err != nil {
+						diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling query: %s", err))
+						return diags
+					}
+					queryVal = jsontypes.NewNormalizedValue(string(b))
+				}
+			} else {
+				queryVal = jsontypes.NewNormalizedNull()
+			}
+
+			var allowRestrictedVal types.Bool
+			if index.AllowRestrictedIndices != nil {
+				allowRestrictedVal = types.BoolValue(*index.AllowRestrictedIndices)
+			} else {
+				allowRestrictedVal = types.BoolNull()
+			}
+
+			// Build field_security as a types.List with 0 or 1 elements (ListNestedAttribute)
+			var fieldSecList types.List
+			if index.FieldSecurity != nil {
+				grantSet, d := types.SetValueFrom(ctx, types.StringType, typeutils.NonNilSlice(index.FieldSecurity.Grant))
+				diags.Append(d...)
+				if diags.HasError() {
+					return diags
+				}
+
+				exceptSet, d := types.SetValueFrom(ctx, types.StringType, typeutils.NonNilSlice(index.FieldSecurity.Except))
+				diags.Append(d...)
+				if diags.HasError() {
+					return diags
+				}
+
+				fieldSecObj, d := types.ObjectValue(getFieldSecurityDSAttrTypes(), map[string]attr.Value{
+					"grant":  grantSet,
+					"except": exceptSet,
+				})
+				diags.Append(d...)
+				if diags.HasError() {
+					return diags
+				}
+
+				fieldSecList, d = types.ListValue(types.ObjectType{AttrTypes: getFieldSecurityDSAttrTypes()}, []attr.Value{fieldSecObj})
+				diags.Append(d...)
+				if diags.HasError() {
+					return diags
+				}
+			} else {
+				fieldSecList = types.ListValueMust(types.ObjectType{AttrTypes: getFieldSecurityDSAttrTypes()}, []attr.Value{})
+			}
+
+			indexObj, d := types.ObjectValue(getIndexPermsDSAttrTypes(), map[string]attr.Value{
+				"field_security":           fieldSecList,
+				"names":                    namesSet,
+				"privileges":               privSet,
+				"query":                    queryVal,
+				"allow_restricted_indices": allowRestrictedVal,
+			})
+			diags.Append(d...)
+			if diags.HasError() {
+				return diags
+			}
+
+			indicesElements[i] = indexObj
+		}
+
+		indicesSet, d := types.SetValue(types.ObjectType{AttrTypes: getIndexPermsDSAttrTypes()}, indicesElements)
+		diags.Append(d...)
+		if diags.HasError() {
+			return diags
+		}
+		config.Indices = indicesSet
+	} else {
+		config.Indices = types.SetNull(types.ObjectType{AttrTypes: getIndexPermsDSAttrTypes()})
+	}
+
+	// Remote Indices
+	if len(role.RemoteIndices) > 0 {
+		remoteIndicesElements := make([]attr.Value, len(role.RemoteIndices))
+		for i, remoteIndex := range role.RemoteIndices {
+			clustersSet, d := types.SetValueFrom(ctx, types.StringType, remoteIndex.Clusters)
+			diags.Append(d...)
+			if diags.HasError() {
+				return diags
+			}
+
+			namesSet, d := types.SetValueFrom(ctx, types.StringType, remoteIndex.Names)
+			diags.Append(d...)
+			if diags.HasError() {
+				return diags
+			}
+
+			privileges := make([]string, len(remoteIndex.Privileges))
+			for j, p := range remoteIndex.Privileges {
+				privileges[j] = p.String()
+			}
+			privSet, d := types.SetValueFrom(ctx, types.StringType, privileges)
+			diags.Append(d...)
+			if diags.HasError() {
+				return diags
+			}
+
+			var queryVal jsontypes.Normalized
+			if remoteIndex.Query != nil {
+				switch q := remoteIndex.Query.(type) {
+				case string:
+					queryVal = jsontypes.NewNormalizedValue(q)
+				default:
+					b, err := json.Marshal(remoteIndex.Query)
+					if err != nil {
+						diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling query: %s", err))
+						return diags
+					}
+					queryVal = jsontypes.NewNormalizedValue(string(b))
+				}
+			} else {
+				queryVal = jsontypes.NewNormalizedNull()
+			}
+
+			// Build field_security as a types.List with 0 or 1 elements (ListNestedAttribute)
+			var fieldSecList types.List
+			if remoteIndex.FieldSecurity != nil {
+				grantSet, d := types.SetValueFrom(ctx, types.StringType, typeutils.NonNilSlice(remoteIndex.FieldSecurity.Grant))
+				diags.Append(d...)
+				if diags.HasError() {
+					return diags
+				}
+
+				exceptSet, d := types.SetValueFrom(ctx, types.StringType, typeutils.NonNilSlice(remoteIndex.FieldSecurity.Except))
+				diags.Append(d...)
+				if diags.HasError() {
+					return diags
+				}
+
+				fieldSecObj, d := types.ObjectValue(getFieldSecurityDSAttrTypes(), map[string]attr.Value{
+					"grant":  grantSet,
+					"except": exceptSet,
+				})
+				diags.Append(d...)
+				if diags.HasError() {
+					return diags
+				}
+
+				fieldSecList, d = types.ListValue(types.ObjectType{AttrTypes: getFieldSecurityDSAttrTypes()}, []attr.Value{fieldSecObj})
+				diags.Append(d...)
+				if diags.HasError() {
+					return diags
+				}
+			} else {
+				fieldSecList = types.ListValueMust(types.ObjectType{AttrTypes: getFieldSecurityDSAttrTypes()}, []attr.Value{})
+			}
+
+			remoteIndexObj, d := types.ObjectValue(getRemoteIndexPermsDSAttrTypes(), map[string]attr.Value{
+				"clusters":       clustersSet,
+				"field_security": fieldSecList,
+				"names":          namesSet,
+				"privileges":     privSet,
+				"query":          queryVal,
+			})
+			diags.Append(d...)
+			if diags.HasError() {
+				return diags
+			}
+
+			remoteIndicesElements[i] = remoteIndexObj
+		}
+
+		remoteIndicesSet, d := types.SetValue(types.ObjectType{AttrTypes: getRemoteIndexPermsDSAttrTypes()}, remoteIndicesElements)
+		diags.Append(d...)
+		if diags.HasError() {
+			return diags
+		}
+		config.RemoteIndices = remoteIndicesSet
+	} else {
+		config.RemoteIndices = types.SetNull(types.ObjectType{AttrTypes: getRemoteIndexPermsDSAttrTypes()})
+	}
+
+	return diags
 }
 
-func flattenIndicesData(indices []esTypes.IndicesPrivileges) []any {
-	oindx := make([]any, len(indices))
-
-	for i, index := range indices {
-		oi := make(map[string]any)
-		oi["names"] = index.Names
-
-		privileges := make([]string, len(index.Privileges))
-		for j, p := range index.Privileges {
-			privileges[j] = p.String()
-		}
-		oi["privileges"] = privileges
-
-		var queryStr *string
-		if index.Query != nil {
-			switch q := index.Query.(type) {
-			case string:
-				queryStr = &q
-			default:
-				b, err := json.Marshal(index.Query)
-				if err != nil {
-					b = []byte("null")
-				}
-				s := string(b)
-				queryStr = &s
-			}
-		}
-		oi["query"] = queryStr
-		oi["allow_restricted_indices"] = index.AllowRestrictedIndices
-
-		if index.FieldSecurity != nil {
-			fsec := make(map[string]any)
-			fsec["grant"] = index.FieldSecurity.Grant
-			fsec["except"] = index.FieldSecurity.Except
-			oi["field_security"] = []any{fsec}
-		}
-		oindx[i] = oi
+// Data source attribute type helpers (mirror data source schema structure)
+func getApplicationDSAttrTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"application": types.StringType,
+		"privileges":  types.SetType{ElemType: types.StringType},
+		"resources":   types.SetType{ElemType: types.StringType},
 	}
-	return oindx
 }
 
-func flattenRemoteIndicesData(remoteIndices []esTypes.RemoteIndicesPrivileges) []any {
-	oRemoteIndx := make([]any, len(remoteIndices))
-
-	for i, remoteIndex := range remoteIndices {
-		oi := make(map[string]any)
-		oi["names"] = remoteIndex.Names
-		oi["clusters"] = remoteIndex.Clusters
-
-		privileges := make([]string, len(remoteIndex.Privileges))
-		for j, p := range remoteIndex.Privileges {
-			privileges[j] = p.String()
-		}
-		oi["privileges"] = privileges
-
-		var queryStr *string
-		if remoteIndex.Query != nil {
-			switch q := remoteIndex.Query.(type) {
-			case string:
-				queryStr = &q
-			default:
-				b, err := json.Marshal(remoteIndex.Query)
-				if err != nil {
-					b = []byte("null")
-				}
-				s := string(b)
-				queryStr = &s
-			}
-		}
-		oi["query"] = queryStr
-
-		if remoteIndex.FieldSecurity != nil {
-			fsec := make(map[string]any)
-			fsec["grant"] = remoteIndex.FieldSecurity.Grant
-			fsec["except"] = remoteIndex.FieldSecurity.Except
-			oi["field_security"] = []any{fsec}
-		}
-		oRemoteIndx[i] = oi
+func getFieldSecurityDSAttrTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"grant":  types.SetType{ElemType: types.StringType},
+		"except": types.SetType{ElemType: types.StringType},
 	}
-	return oRemoteIndx
+}
+
+func getIndexPermsDSAttrTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"field_security": types.ListType{
+			ElemType: types.ObjectType{AttrTypes: getFieldSecurityDSAttrTypes()},
+		},
+		"names":                    types.SetType{ElemType: types.StringType},
+		"privileges":               types.SetType{ElemType: types.StringType},
+		"query":                    jsontypes.NormalizedType{},
+		"allow_restricted_indices": types.BoolType,
+	}
+}
+
+func getRemoteIndexPermsDSAttrTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"clusters":       types.SetType{ElemType: types.StringType},
+		"field_security": types.ListType{
+			ElemType: types.ObjectType{AttrTypes: getFieldSecurityDSAttrTypes()},
+		},
+		"names":      types.SetType{ElemType: types.StringType},
+		"privileges": types.SetType{ElemType: types.StringType},
+		"query":      jsontypes.NormalizedType{},
+	}
 }
