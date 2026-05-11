@@ -59,16 +59,21 @@ The existing `sort_field` and `sort_order` attributes SHALL remain in the schema
 
 ### Requirement: Private-state-backed migration path from legacy to new `sort` attribute (REQ-SORT-03)
 
-The resource SHALL store the ordered sort configuration from Elasticsearch — field names and their sort orders — in private state during every `Read` operation. This ordered sort configuration SHALL be stored under a private state key `"sort_config"` as a JSON-marshalled object containing `fields` (ordered string array) and `orders` (ordered string array).
+The resource SHALL store the ordered sort configuration from Elasticsearch in private state during every `Read` operation. This ordered sort configuration SHALL be stored under a private state key `"sort_config"` as a JSON-marshalled object containing ordered arrays for `fields`, `orders`, and optional per-position `missing`/`mode` values (as reported by Elasticsearch static settings).
 
 When Terraform plans a configuration that:
 1. Has `sort` as null in state (the resource was created using the deprecated attributes),
 2. Has a non-null `sort` in the plan (the user is migrating to the new attribute),
 3. And private state contains the ordered sort config from Elasticsearch,
 
-the plan modifier on `sort` SHALL compare the plan's `sort[*].field` and `sort[*].order` (treating null `order` as `"asc"`) against the private state. When the field names (in order) and orders (accounting for the `asc` default) match exactly AND all `sort[*].missing` and `sort[*].mode` in the plan are null, the modifier SHALL suppress the replace, allowing the user to migrate representations without destroying the index.
+the plan modifier on `sort` SHALL compare the plan's `sort[*].field` and `sort[*].order` (treating null `order` as `"asc"`) against the private state. The modifier SHALL also compare `sort[*].missing` and `sort[*].mode` using semantic normalization against existing index settings:
 
-If `sort[*].missing` or `sort[*].mode` are non-null in the plan, replace SHALL be required (those settings were not configured on the existing index and cannot be changed without destroy+recreate).
+- Treat explicit defaults as equivalent to absent settings in both plan and Elasticsearch (`missing`: `"_last"`; `mode`: `"min"` when order is `asc`, `"max"` when order is `desc`).
+- Compare values per position after order normalization.
+
+When fields and orders match exactly (in order), and all planned `missing`/`mode` values are semantically equivalent to the existing index settings, the modifier SHALL suppress replace so users can migrate representations without destroying the index.
+
+If any planned `sort[*].missing` or `sort[*].mode` value is not semantically equivalent to the existing index setting at the same position, replace SHALL be required.
 
 If private state is absent (first `terraform apply` after provider upgrade before a `Read` has populated it), the modifier SHALL default to requiring replace. Users can avoid this by running `terraform refresh` before `terraform apply` after upgrading.
 
@@ -82,7 +87,14 @@ The deprecated `sort_field` and `sort_order` plan modifiers SHALL suppress repla
 - **THEN** Terraform SHALL NOT plan a destroy+recreate
 - **AND** Terraform SHALL plan an in-place update (or no-change if no other attributes differ)
 
-#### Scenario: Adding `missing` or `mode` during migration requires replace
+#### Scenario: Explicit default `missing`/`mode` values during migration do not require replace
+
+- **GIVEN** an existing index managed with `sort_field = ["date"]` and `sort_order = ["desc"]`
+- **AND** the existing index has no explicit `index.sort.missing` or `index.sort.mode` settings (Elasticsearch defaults apply)
+- **WHEN** the configuration is changed to `sort = [{ field = "date", order = "desc", missing = "_last", mode = "max" }]`
+- **THEN** Terraform SHALL NOT plan a destroy+recreate
+
+#### Scenario: Non-equivalent `missing` or `mode` during migration requires replace
 
 - **GIVEN** an existing index managed with `sort_field = ["date"]` and `sort_order = ["desc"]`
 - **WHEN** the configuration is changed to `sort = [{ field = "date", order = "desc", missing = "_first" }]`

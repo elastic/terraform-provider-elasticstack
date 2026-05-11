@@ -92,8 +92,10 @@ Private state structure (stored under key `"sort_config"`):
 
 ```go
 type sortPrivateState struct {
-    Fields  []string `json:"fields"`
-    Orders  []string `json:"orders"`
+    Fields   []string `json:"fields"`
+    Orders   []string `json:"orders"`
+    Missing  []string `json:"missing,omitempty"`
+    Mode     []string `json:"mode,omitempty"`
 }
 ```
 
@@ -108,7 +110,7 @@ Suppresses replace when ALL of the following are true:
 2. Private state has the ordered sort config from ES (key `"sort_config"`).
 3. The plan's `sort[*].field` list matches private state's `fields` in the same order.
 4. The plan's `sort[*].order` matches private state's `orders` (treating null as `"asc"` default).
-5. All `sort[*].missing` and `sort[*].mode` in the plan are null (new settings would require a replace since they couldn't have existed on the legacy index).
+5. Planned `sort[*].missing`/`sort[*].mode` are semantically equivalent to existing index settings at each position, treating explicit defaults as equivalent to absent settings (`missing="_last"`, `mode="min"` for `asc` and `"max"` for `desc`).
 
 If private state is absent (first apply after provider upgrade before Read populates it), the modifier defaults to `RequiresReplace = true`. This forces one replace, but is safe and correct.
 
@@ -157,7 +159,7 @@ Add `case "sort.missing"` and `case "sort.mode"` branches using `stringSliceOrde
 - **First apply after upgrade forces replace once**: When private state is absent, `sortMigrationPlanModifier` defaults to `RequiresReplace = true`. This is safe but should be documented in the release notes.
 - **Three plan modifiers with cross-attribute reads**: Modest complexity; existing codebase patterns make this manageable.
 - **Custom expand/flatten for nested sort**: Cannot reuse reflection; adds explicit expand code in `toIndexSettings()` and explicit flatten code in `Read`.
-- **Adding `missing`/`mode` to a migrated sort block requires replace**: Unavoidable — those settings couldn't have existed on the legacy index.
+- **Non-equivalent `missing`/`mode` on migration requires replace**: Unavoidable due to immutable static settings; however explicit default values are treated as equivalent to absent settings to avoid unnecessary replacement.
 
 ## Migration Guide (for documentation)
 
@@ -175,13 +177,12 @@ sort = [
 ]
 ```
 
-**Important**: If adding `missing` or `mode` values in the new `sort` block, Terraform will destroy and recreate the index (those settings cannot be changed on an existing index, and they couldn't have existed on the legacy-attribute index).
+**Important**: Non-equivalent `missing` or `mode` values in the new `sort` block will destroy and recreate the index. Explicit defaults (`missing="_last"`, `mode` based on `order`) are treated as equivalent to absent settings and do not trigger replacement by themselves.
 
 On the first `terraform apply` after upgrading to the provider version containing this change, if private state has not yet been populated by a `terraform refresh` or prior read, replace may be forced once. Running `terraform refresh` before `terraform apply` avoids this.
 
 ## Open Questions
 
 - **Post-upgrade forced replace on first apply**: Is the single forced replace (when private state is absent on first apply after provider upgrade) acceptable? Or should we implement a state upgrade path that pre-populates private state from the existing `sort_field`/`sort_order` Terraform state values?
-- **`missing`/`mode` default equivalence**: Should the `sortMigrationPlanModifier` treat `missing = "_last"` (the ES default) as equivalent to null in the plan, to allow users to explicitly write the default and still avoid replace? Likely yes — should be treated as no-op.
 - **Deprecation timeline**: How long before `sort_field` and `sort_order` are removed? Major version bump required?
 - **Cross-list length validator for deprecated path**: Should a cross-attribute length validator be added to enforce `len(sort_order) == len(sort_field)` to prevent silent ES 400s?

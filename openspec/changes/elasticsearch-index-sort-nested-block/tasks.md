@@ -6,7 +6,7 @@
 
 ## 2. Plan modifiers
 
-- [ ] 2.1 Create `internal/elasticsearch/index/index/sort_plan_modifiers.go` (or similar) implementing `sortMigrationPlanModifier` (planmodifier.List): suppresses replace when sort is null in state, private state has ordered sort config, plan fields+orders match private state (with `asc` default), and plan missing/mode are all null.
+- [ ] 2.1 Create `internal/elasticsearch/index/index/sort_plan_modifiers.go` (or similar) implementing `sortMigrationPlanModifier` (planmodifier.List): suppresses replace when sort is null in state, private state has ordered sort config, plan fields+orders match private state (with `asc` default), and plan `missing`/`mode` are semantically equivalent to existing settings (treat explicit defaults as equivalent to absent settings).
 - [ ] 2.2 Implement `legacySortFieldPlanModifier` (planmodifier.Set): reads `sort` from plan via `req.Plan.GetAttribute`; suppresses replace when `sort` is non-null in plan (new attribute handles the replace decision).
 - [ ] 2.3 Implement `legacySortOrderPlanModifier` (planmodifier.List): same logic as `legacySortFieldPlanModifier`.
 
@@ -32,7 +32,7 @@
 
 ## 6. Tests
 
-- [ ] 6.1 Add unit tests for `sortMigrationPlanModifier`: verify replace is suppressed when migrating with equivalent field+order, verify replace is required when missing/mode are set, verify replace defaults to required when private state is absent.
+- [ ] 6.1 Add unit tests for `sortMigrationPlanModifier`: verify replace is suppressed when migrating with equivalent field+order, verify explicit default `missing`/`mode` values are treated as equivalent to absent settings, verify replace is required for non-equivalent `missing`/`mode`, verify replace defaults to required when private state is absent.
 - [ ] 6.2 Add unit tests for `legacySortFieldPlanModifier` and `legacySortOrderPlanModifier`: verify replace is suppressed when `sort` is present in plan.
 - [ ] 6.3 Update `acc_test.go` to add acceptance test coverage for:
   - Creating an index with the new `sort` attribute (field, order, missing, mode).
@@ -43,5 +43,5 @@
 ## 7. Documentation and OpenSpec
 
 - [ ] 7.1 Regenerate `docs/resources/elasticsearch_index.md` after schema changes (run `make generate` or equivalent doc target).
-- [ ] 7.2 Add migration guide note to release notes / CHANGELOG: first apply after upgrade may force one replace if private state is absent; `terraform refresh` before apply avoids this; adding `missing`/`mode` always requires replace.
+- [ ] 7.2 Add migration guide note to release notes / CHANGELOG: first apply after upgrade may force one replace if private state is absent; `terraform refresh` before apply avoids this; explicit default `missing`/`mode` values are equivalent to absent settings; non-equivalent `missing`/`mode` values require replace.
 - [ ] 7.3 Sync delta spec from `openspec/changes/elasticsearch-index-sort-nested-block/specs/elasticsearch-index/spec.md` into `openspec/specs/elasticsearch-index/spec.md` and archive this change.

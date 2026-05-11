@@ -8,7 +8,7 @@ Additionally, the current design has structural problems: `sort_field` is modele
 
 - **New `sort` attribute**: A `ListNestedAttribute` that groups `field`, `order`, `missing`, and `mode` per sort entry. Fixes the structural coupling issue and delivers all four sort settings.
 - **Deprecate `sort_field` and `sort_order`**: Both attributes remain functional but receive `DeprecationMessage` and `ConflictsWith` validators. Users mixing old and new attributes get a plan-time error.
-- **`RequiresReplaceIf` with private state**: Store the ordered sort config from Elasticsearch in private state during `Read`. Use this to suppress replace when migrating from legacy attributes to the new `sort` block with semantically equivalent settings (field + order only; no missing/mode).
+- **`RequiresReplaceIf` with private state**: Store the ordered sort config from Elasticsearch in private state during `Read`. Use this to suppress replace when migrating from legacy attributes to the new `sort` block with semantically equivalent settings (including `missing`/`mode`, with explicit defaults treated the same as absent settings).
 - **Add `sort.missing` and `sort.mode` to `staticSettingsKeys`**: So the `use_existing` adoption flow correctly compares these settings against the existing index.
 - **Update `use_existing.go`**: Add `case "sort.missing"` and `case "sort.mode"` branches.
 
@@ -24,6 +24,6 @@ Additionally, the current design has structural problems: `sort_field` is modele
 
 ## Impact
 
-- **Users**: Existing configs using `sort_field`/`sort_order` continue to work and receive deprecation warnings. New configs can use the `sort` block for cleaner, complete sort configuration. Migrating from old to new attributes does not require destroying the index (when the settings are semantically equivalent). Adding `missing` or `mode` in the new block always requires destroy+recreate (those settings could not have existed on the legacy index).
+- **Users**: Existing configs using `sort_field`/`sort_order` continue to work and receive deprecation warnings. New configs can use the `sort` block for cleaner, complete sort configuration. Migrating from old to new attributes does not require destroying the index when settings are semantically equivalent, including when the plan explicitly sets Elasticsearch defaults for `missing`/`mode`. Non-equivalent `missing`/`mode` values still require destroy+recreate.
 - **Code**: `internal/elasticsearch/index/index/` — schema, models, resource (Read), use_existing, and new plan modifier file (~200–250 lines across 7–8 files).
 - **Docs**: `docs/resources/elasticsearch_index.md` must be regenerated after schema changes.
