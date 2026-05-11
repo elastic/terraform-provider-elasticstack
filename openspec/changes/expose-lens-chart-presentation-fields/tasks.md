@@ -43,10 +43,10 @@
 
 ## 6. Acceptance tests
 
-- [ ] 6.1 Extend `acc_xy_panels_test.go` with steps exercising chart-level `time_range` set explicitly, `time_range` null (inherits dashboard), updated to a new value, then reset to null again; assert API-side `time_range` matches expectation in each step.
-- [ ] 6.2 Extend `acc_xy_panels_test.go` to cover `hide_title`, `hide_border`, `references_json`, and a `drilldowns` list with one of each variant; assert round-trip parity and no spurious diffs on the second plan.
-- [ ] 6.3 Add equivalent steps to at least three other chart-type acceptance test files (`acc_metric_panels_test.go`, `acc_datatable_panels_test.go`, `acc_pie_chart_panels_test.go`) to cover the cross-cutting behavior across multiple chart roots.
-- [ ] 6.4 Verify the full dashboard acceptance suite (`go test ./internal/kibana/dashboard/...`) passes with `TF_ACC=1` against a running stack.
+- [x] 6.1 Extend `acc_xy_panels_test.go` with steps exercising chart-level `time_range` set explicitly, `time_range` null (inherits dashboard), updated to a new value, then reset to null again; assert API-side `time_range` matches expectation in each step.
+- [x] 6.2 Extend `acc_xy_panels_test.go` to cover `hide_title`, `hide_border`, `references_json`, and a `drilldowns` list with one of each variant; assert round-trip parity and no spurious diffs on the second plan.
+- [x] 6.3 Add equivalent steps to at least three other chart-type acceptance test files (`acc_metric_panels_test.go`, `acc_datatable_panels_test.go`, `acc_pie_chart_panels_test.go`) to cover the cross-cutting behavior across multiple chart roots.
+- [ ] 6.4 Verify the full dashboard acceptance suite (`go test ./internal/kibana/dashboard/...`) passes with `TF_ACC=1` against a running stack. **Skipped locally — no Elastic Stack listening on localhost; defer execution to CI.**
 
 ## 7. Documentation and release prep
 
