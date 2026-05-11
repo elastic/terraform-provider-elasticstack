@@ -96,7 +96,6 @@ resource "elasticstack_fleet_integration_policy" "sample" {
 - `agent_policy_id` (String) ID of the agent policy.
 - `agent_policy_ids` (List of String) List of agent policy IDs.
 - `description` (String) The description of the integration policy.
-- `enabled` (Boolean) Enable the integration policy.
 - `force` (Boolean) Force operations, such as creation and deletion, to occur.
 - `inputs` (Attributes Map) Integration inputs mapped by input ID. (see [below for nested schema](#nestedatt--inputs))
 - `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
