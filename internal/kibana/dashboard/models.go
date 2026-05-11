@@ -25,6 +25,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -45,6 +46,7 @@ type dashboardModel struct {
 	TimeRange        *timeRangeModel       `tfsdk:"time_range"`
 	RefreshInterval  *refreshIntervalModel `tfsdk:"refresh_interval"`
 	Query            *dashboardQueryModel  `tfsdk:"query"`
+	Filters          types.List            `tfsdk:"filters"`
 	Tags             types.List            `tfsdk:"tags"`
 	Options          *optionsModel         `tfsdk:"options"`
 	AccessControl    *AccessControlValue   `tfsdk:"access_control"`
@@ -188,6 +190,8 @@ func (m *dashboardModel) toAPICreateRequest(ctx context.Context, diags *diag.Dia
 	diags.Append(panelsDiags...)
 	req.Panels = panels
 
+	m.dashboardFiltersToCreateAPI(ctx, &req, diags)
+
 	return req
 }
 
@@ -241,6 +245,8 @@ func (m *dashboardModel) toAPIUpdateRequest(ctx context.Context, diags *diag.Dia
 		req.Panels = panels
 	}
 
+	m.dashboardFiltersToUpdateAPI(ctx, &req, diags)
+
 	return req
 }
 
@@ -270,4 +276,64 @@ func (m *dashboardModel) queryToAPI() (kbapi.KbnAsCodeQuery, diag.Diagnostics) {
 	}
 
 	return query, nil
+}
+
+func dashboardRootSavedFiltersElementType() types.ObjectType {
+	return types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"filter_json": jsontypes.NormalizedType{},
+		},
+	}
+}
+
+func (m *dashboardModel) dashboardFiltersToCreateAPI(ctx context.Context, req *kbapi.PostDashboardsJSONRequestBody, diags *diag.Diagnostics) {
+	if !typeutils.IsKnown(m.Filters) {
+		return
+	}
+	elems := typeutils.ListTypeAs[chartFilterJSONModel](ctx, m.Filters, path.Root("filters"), diags)
+	if diags.HasError() {
+		return
+	}
+	if len(elems) == 0 {
+		empty := []kbapi.KbnDashboardData_Filters_Item{}
+		req.Filters = &empty
+		return
+	}
+	items := make([]kbapi.KbnDashboardData_Filters_Item, 0, len(elems))
+	for _, el := range elems {
+		var item kbapi.KbnDashboardData_Filters_Item
+		fd := decodeChartFilterJSON(el.FilterJSON, &item)
+		diags.Append(fd...)
+		if fd.HasError() {
+			return
+		}
+		items = append(items, item)
+	}
+	req.Filters = &items
+}
+
+func (m *dashboardModel) dashboardFiltersToUpdateAPI(ctx context.Context, req *kbapi.PutDashboardsIdJSONRequestBody, diags *diag.Diagnostics) {
+	if !typeutils.IsKnown(m.Filters) {
+		return
+	}
+	elems := typeutils.ListTypeAs[chartFilterJSONModel](ctx, m.Filters, path.Root("filters"), diags)
+	if diags.HasError() {
+		return
+	}
+	if len(elems) == 0 {
+		empty := []kbapi.PutDashboardsIdJSONBody_Filters_Item{}
+		req.Filters = &empty
+		return
+	}
+	items := make([]kbapi.PutDashboardsIdJSONBody_Filters_Item, 0, len(elems))
+	for _, el := range elems {
+		var item kbapi.PutDashboardsIdJSONBody_Filters_Item
+		fd := decodeChartFilterJSON(el.FilterJSON, &item)
+		diags.Append(fd...)
+		if fd.HasError() {
+			return
+		}
+		items = append(items, item)
+	}
+	req.Filters = &items
 }
