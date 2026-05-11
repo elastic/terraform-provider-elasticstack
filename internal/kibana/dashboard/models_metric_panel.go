@@ -458,13 +458,7 @@ func (m *metricChartConfigModel) toAPIVariant0(dashboard *dashboardModel) (kbapi
 		}
 	}
 
-	writes, presDiags := lensChartPresentationWritesFor(dashboard, lensChartPresentationInput{
-		TimeRange:      m.TimeRange,
-		HideTitle:      m.HideTitle,
-		HideBorder:     m.HideBorder,
-		ReferencesJSON: m.ReferencesJSON,
-		Drilldowns:     m.Drilldowns,
-	})
+	writes, presDiags := lensChartPresentationWritesFor(dashboard, m.lensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
@@ -566,13 +560,7 @@ func (m *metricChartConfigModel) toAPIVariant1(dashboard *dashboardModel) (kbapi
 		}
 	}
 
-	writes, presDiags := lensChartPresentationWritesFor(dashboard, lensChartPresentationInput{
-		TimeRange:      m.TimeRange,
-		HideTitle:      m.HideTitle,
-		HideBorder:     m.HideBorder,
-		ReferencesJSON: m.ReferencesJSON,
-		Drilldowns:     m.Drilldowns,
-	})
+	writes, presDiags := lensChartPresentationWritesFor(dashboard, m.lensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags

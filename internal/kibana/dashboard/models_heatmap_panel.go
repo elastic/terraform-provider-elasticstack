@@ -402,13 +402,7 @@ func (m *heatmapConfigModel) toAPINoESQL(dashboard *dashboardModel) (kbapi.Heatm
 
 	api.Filters = buildFiltersForAPI(m.Filters, &diags)
 
-	writes, presDiags := lensChartPresentationWritesFor(dashboard, lensChartPresentationInput{
-		TimeRange:      m.TimeRange,
-		HideTitle:      m.HideTitle,
-		HideBorder:     m.HideBorder,
-		ReferencesJSON: m.ReferencesJSON,
-		Drilldowns:     m.Drilldowns,
-	})
+	writes, presDiags := lensChartPresentationWritesFor(dashboard, m.lensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return api, diags
@@ -529,13 +523,7 @@ func (m *heatmapConfigModel) toAPIESQL(dashboard *dashboardModel) (kbapi.Heatmap
 
 	api.Filters = buildFiltersForAPI(m.Filters, &diags)
 
-	writes, presDiags := lensChartPresentationWritesFor(dashboard, lensChartPresentationInput{
-		TimeRange:      m.TimeRange,
-		HideTitle:      m.HideTitle,
-		HideBorder:     m.HideBorder,
-		ReferencesJSON: m.ReferencesJSON,
-		Drilldowns:     m.Drilldowns,
-	})
+	writes, presDiags := lensChartPresentationWritesFor(dashboard, m.lensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return api, diags

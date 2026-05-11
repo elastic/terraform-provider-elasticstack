@@ -676,13 +676,7 @@ func (m *waffleConfigModel) toAPINoESQL(dashboard *dashboardModel) (kbapi.Waffle
 		api.GroupBy = &gb
 	}
 
-	writes, presDiags := lensChartPresentationWritesFor(dashboard, lensChartPresentationInput{
-		TimeRange:      m.TimeRange,
-		HideTitle:      m.HideTitle,
-		HideBorder:     m.HideBorder,
-		ReferencesJSON: m.ReferencesJSON,
-		Drilldowns:     m.Drilldowns,
-	})
+	writes, presDiags := lensChartPresentationWritesFor(dashboard, m.lensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return api, diags
@@ -825,13 +819,7 @@ func (m *waffleConfigModel) toAPIESQL(dashboard *dashboardModel) (kbapi.WaffleES
 		api.GroupBy = &gb
 	}
 
-	writes, presDiags := lensChartPresentationWritesFor(dashboard, lensChartPresentationInput{
-		TimeRange:      m.TimeRange,
-		HideTitle:      m.HideTitle,
-		HideBorder:     m.HideBorder,
-		ReferencesJSON: m.ReferencesJSON,
-		Drilldowns:     m.Drilldowns,
-	})
+	writes, presDiags := lensChartPresentationWritesFor(dashboard, m.lensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return api, diags

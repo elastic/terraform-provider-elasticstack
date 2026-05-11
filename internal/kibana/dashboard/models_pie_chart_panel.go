@@ -401,13 +401,7 @@ func (m *pieChartConfigModel) toAPI(dashboard *dashboardModel) (kbapi.KbnDashboa
 		// Always set type to pie as it's required by the schema
 		chart.Type = kbapi.PieNoESQLTypePie
 
-		writes, presDiags := lensChartPresentationWritesFor(dashboard, lensChartPresentationInput{
-			TimeRange:      m.TimeRange,
-			HideTitle:      m.HideTitle,
-			HideBorder:     m.HideBorder,
-			ReferencesJSON: m.ReferencesJSON,
-			Drilldowns:     m.Drilldowns,
-		})
+		writes, presDiags := lensChartPresentationWritesFor(dashboard, m.lensChartPresentationTFModel)
 		diags.Append(presDiags...)
 		if presDiags.HasError() {
 			return attrs, diags
@@ -521,13 +515,7 @@ func (m *pieChartConfigModel) toAPI(dashboard *dashboardModel) (kbapi.KbnDashboa
 		// Always set type to pie as it's required by the schema
 		chart.Type = kbapi.PieESQLTypePie
 
-		writes, presDiags := lensChartPresentationWritesFor(dashboard, lensChartPresentationInput{
-			TimeRange:      m.TimeRange,
-			HideTitle:      m.HideTitle,
-			HideBorder:     m.HideBorder,
-			ReferencesJSON: m.ReferencesJSON,
-			Drilldowns:     m.Drilldowns,
-		})
+		writes, presDiags := lensChartPresentationWritesFor(dashboard, m.lensChartPresentationTFModel)
 		diags.Append(presDiags...)
 		if presDiags.HasError() {
 			return attrs, diags

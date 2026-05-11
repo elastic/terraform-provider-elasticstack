@@ -397,13 +397,7 @@ func (m *mosaicConfigModel) toAPIMosaicESQL(dashboard *dashboardModel) (kbapi.Mo
 		api.Styling.Values = kbapi.ValueDisplay{Mode: &defaultMode}
 	}
 
-	writes, presDiags := lensChartPresentationWritesFor(dashboard, lensChartPresentationInput{
-		TimeRange:      m.TimeRange,
-		HideTitle:      m.HideTitle,
-		HideBorder:     m.HideBorder,
-		ReferencesJSON: m.ReferencesJSON,
-		Drilldowns:     m.Drilldowns,
-	})
+	writes, presDiags := lensChartPresentationWritesFor(dashboard, m.lensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return api, diags
@@ -524,13 +518,7 @@ func (m *mosaicConfigModel) toAPINoESQL(dashboard *dashboardModel) (kbapi.Mosaic
 		api.Styling.Values = m.ValueDisplay.toValueDisplay()
 	}
 
-	writes, presDiags := lensChartPresentationWritesFor(dashboard, lensChartPresentationInput{
-		TimeRange:      m.TimeRange,
-		HideTitle:      m.HideTitle,
-		HideBorder:     m.HideBorder,
-		ReferencesJSON: m.ReferencesJSON,
-		Drilldowns:     m.Drilldowns,
-	})
+	writes, presDiags := lensChartPresentationWritesFor(dashboard, m.lensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return api, diags

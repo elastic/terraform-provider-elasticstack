@@ -366,13 +366,7 @@ func (m *datatableNoESQLConfigModel) toAPI(dashboard *dashboardModel) (kbapi.Dat
 		api.SplitMetricsBy = &splits
 	}
 
-	writes, presDiags := lensChartPresentationWritesFor(dashboard, lensChartPresentationInput{
-		TimeRange:      m.TimeRange,
-		HideTitle:      m.HideTitle,
-		HideBorder:     m.HideBorder,
-		ReferencesJSON: m.ReferencesJSON,
-		Drilldowns:     m.Drilldowns,
-	})
+	writes, presDiags := lensChartPresentationWritesFor(dashboard, m.lensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return api, diags
@@ -576,13 +570,7 @@ func (m *datatableESQLConfigModel) toAPI(dashboard *dashboardModel) (kbapi.Datat
 		api.SplitMetricsBy = &splits
 	}
 
-	writes, presDiags := lensChartPresentationWritesFor(dashboard, lensChartPresentationInput{
-		TimeRange:      m.TimeRange,
-		HideTitle:      m.HideTitle,
-		HideBorder:     m.HideBorder,
-		ReferencesJSON: m.ReferencesJSON,
-		Drilldowns:     m.Drilldowns,
-	})
+	writes, presDiags := lensChartPresentationWritesFor(dashboard, m.lensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return api, diags

@@ -1155,13 +1155,7 @@ func (m *xyChartConfigModel) toAPINoESQL(dashboard *dashboardModel) (kbapi.XyCha
 
 	chart.Filters = buildFiltersForAPI(m.Filters, &diags)
 
-	writes, presDiags := lensChartPresentationWritesFor(dashboard, lensChartPresentationInput{
-		TimeRange:      m.TimeRange,
-		HideTitle:      m.HideTitle,
-		HideBorder:     m.HideBorder,
-		ReferencesJSON: m.ReferencesJSON,
-		Drilldowns:     m.Drilldowns,
-	})
+	writes, presDiags := lensChartPresentationWritesFor(dashboard, m.lensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return chart, diags
@@ -1232,13 +1226,7 @@ func (m *xyChartConfigModel) toAPIESQL(dashboard *dashboardModel) (kbapi.XyChart
 
 	chart.Filters = buildFiltersForAPI(m.Filters, &diags)
 
-	writes, presDiags := lensChartPresentationWritesFor(dashboard, lensChartPresentationInput{
-		TimeRange:      m.TimeRange,
-		HideTitle:      m.HideTitle,
-		HideBorder:     m.HideBorder,
-		ReferencesJSON: m.ReferencesJSON,
-		Drilldowns:     m.Drilldowns,
-	})
+	writes, presDiags := lensChartPresentationWritesFor(dashboard, m.lensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return chart, diags

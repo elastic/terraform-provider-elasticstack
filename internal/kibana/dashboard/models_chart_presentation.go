@@ -48,15 +48,6 @@ func newNullLensChartPresentationTFModel() lensChartPresentationTFModel {
 	}
 }
 
-// lensChartPresentationInput carries chart-root presentation TF fields for shared write-path helpers.
-type lensChartPresentationInput struct {
-	TimeRange      *timeRangeModel
-	HideTitle      types.Bool
-	HideBorder     types.Bool
-	ReferencesJSON jsontypes.Normalized
-	Drilldowns     []lensDrilldownItemTFModel
-}
-
 // lensChartPresentationWrites holds normalized API write material for chart roots.
 type lensChartPresentationWrites struct {
 	TimeRange     kbapi.KbnEsQueryServerTimeRangeSchema
@@ -66,7 +57,7 @@ type lensChartPresentationWrites struct {
 	DrilldownsRaw [][]byte
 }
 
-func lensChartPresentationWritesFor(dashboard *dashboardModel, in lensChartPresentationInput) (lensChartPresentationWrites, diag.Diagnostics) {
+func lensChartPresentationWritesFor(dashboard *dashboardModel, in lensChartPresentationTFModel) (lensChartPresentationWrites, diag.Diagnostics) {
 	var writes lensChartPresentationWrites
 	var diags diag.Diagnostics
 

@@ -214,13 +214,7 @@ func (m *legacyMetricConfigModel) toAPI(dashboard *dashboardModel) (kbapi.KbnDas
 			return result, diags
 		}
 
-		writes, presDiags := lensChartPresentationWritesFor(dashboard, lensChartPresentationInput{
-			TimeRange:      m.TimeRange,
-			HideTitle:      m.HideTitle,
-			HideBorder:     m.HideBorder,
-			ReferencesJSON: m.ReferencesJSON,
-			Drilldowns:     m.Drilldowns,
-		})
+		writes, presDiags := lensChartPresentationWritesFor(dashboard, m.lensChartPresentationTFModel)
 		diags.Append(presDiags...)
 		if presDiags.HasError() {
 			return result, diags
