@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
@@ -722,6 +723,223 @@ func Test_xyChartConfigModel_toAPI_fromAPI(t *testing.T) {
 			assert.Equal(t, tt.model.Description, model2.Description)
 		})
 	}
+}
+
+func minimalXYChartConfigForPresentationTests() *xyChartConfigModel {
+	return &xyChartConfigModel{
+		Title: types.StringValue("Presentation Wiring"),
+		Axis: &xyAxisModel{
+			X: &xyAxisConfigModel{},
+			Y: &yAxisConfigModel{},
+		},
+		Decorations: &xyDecorationsModel{},
+		Fitting:     &xyFittingModel{Type: types.StringValue("none")},
+		Legend: &xyLegendModel{
+			Inside:     types.BoolValue(false),
+			Visibility: types.StringValue("visible"),
+		},
+		Query: &filterSimpleModel{
+			Expression: types.StringValue("*"),
+			Language:   types.StringValue("kql"),
+		},
+	}
+}
+
+func Test_xyChartConfigModel_lensChartPresentation_timeRange_inheritanceAndMode(t *testing.T) {
+	ctx := context.Background()
+
+	dash := &dashboardModel{
+		TimeRange: &timeRangeModel{
+			From: types.StringValue("now-7d"),
+			To:   types.StringValue("now"),
+		},
+	}
+	dashTR := timeRangeModelToAPI(dash.TimeRange)
+
+	t.Run("null in plan and API echoes dashboard time range preserves null state", func(t *testing.T) {
+		m := minimalXYChartConfigForPresentationTests()
+		require.Nil(t, m.TimeRange)
+
+		apiChart, diags := m.toAPINoESQL(dash)
+		require.False(t, diags.HasError())
+		assert.True(t, lensTimeRangesAPILiteralEqual(apiChart.TimeRange, dashTR), "write path should inherit dashboard time_range when chart-level is null")
+
+		apiChart.TimeRange = dashTR
+		out := &xyChartConfigModel{}
+		diags = out.fromAPINoESQL(ctx, dash, m, apiChart)
+		require.False(t, diags.HasError())
+		assert.Nil(t, out.TimeRange)
+	})
+
+	t.Run("explicit chart time_range override round-trips", func(t *testing.T) {
+		m := minimalXYChartConfigForPresentationTests()
+		m.TimeRange = &timeRangeModel{
+			From: types.StringValue("now-30d"),
+			To:   types.StringValue("now-1d"),
+		}
+
+		apiChart, diags := m.toAPINoESQL(dash)
+		require.False(t, diags.HasError())
+		assert.Equal(t, "now-30d", apiChart.TimeRange.From)
+		assert.Equal(t, "now-1d", apiChart.TimeRange.To)
+
+		want := *m.TimeRange
+		out := &xyChartConfigModel{}
+		diags = out.fromAPINoESQL(ctx, dash, m, apiChart)
+		require.False(t, diags.HasError())
+		require.NotNil(t, out.TimeRange)
+		assert.Equal(t, want.From, out.TimeRange.From)
+		assert.Equal(t, want.To, out.TimeRange.To)
+	})
+
+	t.Run("time_range mode null preserved when API omits mode", func(t *testing.T) {
+		prior := minimalXYChartConfigForPresentationTests()
+		prior.TimeRange = &timeRangeModel{
+			From: types.StringValue("now-7d"),
+			To:   types.StringValue("now"),
+			Mode: types.StringNull(),
+		}
+
+		apiChart := func() kbapi.XyChartNoESQL {
+			m := minimalXYChartConfigForPresentationTests()
+			api, diags := m.toAPINoESQL(dash)
+			require.False(t, diags.HasError())
+			return api
+		}()
+		apiChart.TimeRange = kbapi.KbnEsQueryServerTimeRangeSchema{
+			From: "now-7d",
+			To:   "now",
+		}
+
+		out := &xyChartConfigModel{}
+		diags := out.fromAPINoESQL(ctx, dash, prior, apiChart)
+		require.False(t, diags.HasError())
+		require.NotNil(t, out.TimeRange)
+		assert.True(t, out.TimeRange.Mode.IsNull())
+		assert.Equal(t, "now-7d", out.TimeRange.From.ValueString())
+		assert.Equal(t, "now", out.TimeRange.To.ValueString())
+	})
+}
+
+func Test_xyChartConfigModel_lensChartPresentation_boolsReferences_andNullPreservation(t *testing.T) {
+	ctx := context.Background()
+	dash := &dashboardModel{
+		TimeRange: &timeRangeModel{
+			From: types.StringValue("now-7d"),
+			To:   types.StringValue("now"),
+		},
+	}
+
+	t.Run("hide_title round trip true and false", func(t *testing.T) {
+		for _, v := range []bool{true, false} {
+			m := minimalXYChartConfigForPresentationTests()
+			m.HideTitle = types.BoolValue(v)
+
+			apiChart, diags := m.toAPINoESQL(dash)
+			require.False(t, diags.HasError())
+			require.NotNil(t, apiChart.HideTitle)
+			assert.Equal(t, v, *apiChart.HideTitle)
+
+			out := &xyChartConfigModel{}
+			diags = out.fromAPINoESQL(ctx, dash, m, apiChart)
+			require.False(t, diags.HasError())
+			assert.Equal(t, types.BoolValue(v), out.HideTitle)
+		}
+	})
+
+	t.Run("hide_border round trip true and false", func(t *testing.T) {
+		for _, v := range []bool{true, false} {
+			m := minimalXYChartConfigForPresentationTests()
+			m.HideBorder = types.BoolValue(v)
+
+			apiChart, diags := m.toAPINoESQL(dash)
+			require.False(t, diags.HasError())
+			require.NotNil(t, apiChart.HideBorder)
+			assert.Equal(t, v, *apiChart.HideBorder)
+
+			out := &xyChartConfigModel{}
+			diags = out.fromAPINoESQL(ctx, dash, m, apiChart)
+			require.False(t, diags.HasError())
+			assert.Equal(t, types.BoolValue(v), out.HideBorder)
+		}
+	})
+
+	t.Run("hide_title null preserved when API omits", func(t *testing.T) {
+		prior := minimalXYChartConfigForPresentationTests()
+		prior.HideTitle = types.BoolNull()
+
+		m := minimalXYChartConfigForPresentationTests()
+		apiChart, diags := m.toAPINoESQL(dash)
+		require.False(t, diags.HasError())
+		apiChart.HideTitle = nil
+
+		out := &xyChartConfigModel{}
+		diags = out.fromAPINoESQL(ctx, dash, prior, apiChart)
+		require.False(t, diags.HasError())
+		assert.True(t, out.HideTitle.IsNull())
+	})
+
+	t.Run("hide_border null preserved when API omits", func(t *testing.T) {
+		prior := minimalXYChartConfigForPresentationTests()
+		prior.HideBorder = types.BoolNull()
+
+		m := minimalXYChartConfigForPresentationTests()
+		apiChart, diags := m.toAPINoESQL(dash)
+		require.False(t, diags.HasError())
+		apiChart.HideBorder = nil
+
+		out := &xyChartConfigModel{}
+		diags = out.fromAPINoESQL(ctx, dash, prior, apiChart)
+		require.False(t, diags.HasError())
+		assert.True(t, out.HideBorder.IsNull())
+	})
+
+	t.Run("references_json normalized round trip", func(t *testing.T) {
+		raw := `[{"id":"dash1","name":"Target","type":"dashboard"}]`
+		m := minimalXYChartConfigForPresentationTests()
+		m.ReferencesJSON = jsontypes.NewNormalizedValue(raw)
+
+		apiChart, diags := m.toAPINoESQL(dash)
+		require.False(t, diags.HasError())
+		require.NotNil(t, apiChart.References)
+
+		out := &xyChartConfigModel{}
+		diags = out.fromAPINoESQL(ctx, dash, m, apiChart)
+		require.False(t, diags.HasError())
+		require.True(t, typeutils.IsKnown(out.ReferencesJSON))
+		assert.JSONEq(t, raw, out.ReferencesJSON.ValueString())
+	})
+
+	t.Run("references_json null preserved when API omits references", func(t *testing.T) {
+		prior := minimalXYChartConfigForPresentationTests()
+		prior.ReferencesJSON = jsontypes.NewNormalizedNull()
+
+		m := minimalXYChartConfigForPresentationTests()
+		apiChart, diags := m.toAPINoESQL(dash)
+		require.False(t, diags.HasError())
+		apiChart.References = nil
+
+		out := &xyChartConfigModel{}
+		diags = out.fromAPINoESQL(ctx, dash, prior, apiChart)
+		require.False(t, diags.HasError())
+		assert.True(t, out.ReferencesJSON.IsNull())
+	})
+
+	t.Run("references_json null preserved when API returns empty slice", func(t *testing.T) {
+		prior := minimalXYChartConfigForPresentationTests()
+		prior.ReferencesJSON = jsontypes.NewNormalizedNull()
+
+		m := minimalXYChartConfigForPresentationTests()
+		apiChart, diags := m.toAPINoESQL(dash)
+		require.False(t, diags.HasError())
+		empty := []kbapi.KbnContentManagementUtilsReferenceSchema{}
+		apiChart.References = &empty
+
+		out := &xyChartConfigModel{}
+		diags = out.fromAPINoESQL(ctx, dash, prior, apiChart)
+		require.False(t, diags.HasError())
+		assert.True(t, out.ReferencesJSON.IsNull())
+	})
 }
 
 func Test_xyAxisConfigModel_toAPI_nil(t *testing.T) {
