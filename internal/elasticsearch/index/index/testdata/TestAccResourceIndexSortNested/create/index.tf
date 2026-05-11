@@ -12,6 +12,13 @@ resource "elasticstack_elasticsearch_index" "test" {
 
   deletion_protection = false
 
+  mappings = jsonencode({
+    properties = {
+      date     = { type = "date" }
+      username = { type = "keyword" }
+    }
+  })
+
   sort = [
     {
       field = "date"

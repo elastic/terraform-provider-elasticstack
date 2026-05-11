@@ -12,6 +12,12 @@ resource "elasticstack_elasticsearch_index" "test" {
 
   deletion_protection = false
 
+  mappings = jsonencode({
+    properties = {
+      date = { type = "date" }
+    }
+  })
+
   sort_field = toset(["date"])
   sort_order = ["desc"]
 

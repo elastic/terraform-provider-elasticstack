@@ -1092,7 +1092,7 @@ func TestAccResourceIndexSortNestedMigration(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "sort.0.field", "date"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "sort.0.order", "desc"),
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index.test", "id"),
-					func(s *terraform.State) error {
+					func(_ *terraform.State) error {
 						// Verify the ID hasn't changed (no destroy+recreate)
 						return nil
 					},
