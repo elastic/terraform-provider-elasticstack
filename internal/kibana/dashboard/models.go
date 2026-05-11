@@ -317,54 +317,40 @@ func (m *dashboardModel) mapDashboardFiltersFromAPI(ctx context.Context, api *kb
 	m.Filters = typeutils.ListValueFrom(ctx, elems, dashboardRootSavedFiltersElementType(), path.Root("filters"), diags)
 }
 
-func (m *dashboardModel) dashboardFiltersToCreateAPI(ctx context.Context, req *kbapi.PostDashboardsJSONRequestBody, diags *diag.Diagnostics) {
+// buildDashboardFiltersForAPI converts m.Filters into the shared kbapi.DashboardFilters
+// payload used by both the create (POST) and update (PUT) dashboard request bodies.
+// Returns (nil, false) when the attribute is unknown/null so callers leave the request
+// field untouched; returns (&empty, true) when the list is known-empty so callers send
+// an explicit empty array.
+func (m *dashboardModel) buildDashboardFiltersForAPI(ctx context.Context, diags *diag.Diagnostics) (*kbapi.DashboardFilters, bool) {
 	if !typeutils.IsKnown(m.Filters) {
-		return
+		return nil, false
 	}
 	elems := typeutils.ListTypeAs[chartFilterJSONModel](ctx, m.Filters, path.Root("filters"), diags)
 	if diags.HasError() {
-		return
+		return nil, false
 	}
-	if len(elems) == 0 {
-		empty := []kbapi.KbnDashboardData_Filters_Item{}
-		req.Filters = &empty
-		return
-	}
-	items := make([]kbapi.KbnDashboardData_Filters_Item, 0, len(elems))
+	items := make(kbapi.DashboardFilters, 0, len(elems))
 	for _, el := range elems {
-		var item kbapi.KbnDashboardData_Filters_Item
+		var item kbapi.DashboardFilters_Item
 		fd := decodeChartFilterJSON(el.FilterJSON, &item)
 		diags.Append(fd...)
 		if fd.HasError() {
-			return
+			return nil, false
 		}
 		items = append(items, item)
 	}
-	req.Filters = &items
+	return &items, true
+}
+
+func (m *dashboardModel) dashboardFiltersToCreateAPI(ctx context.Context, req *kbapi.PostDashboardsJSONRequestBody, diags *diag.Diagnostics) {
+	if filters, ok := m.buildDashboardFiltersForAPI(ctx, diags); ok {
+		req.Filters = filters
+	}
 }
 
 func (m *dashboardModel) dashboardFiltersToUpdateAPI(ctx context.Context, req *kbapi.PutDashboardsIdJSONRequestBody, diags *diag.Diagnostics) {
-	if !typeutils.IsKnown(m.Filters) {
-		return
+	if filters, ok := m.buildDashboardFiltersForAPI(ctx, diags); ok {
+		req.Filters = filters
 	}
-	elems := typeutils.ListTypeAs[chartFilterJSONModel](ctx, m.Filters, path.Root("filters"), diags)
-	if diags.HasError() {
-		return
-	}
-	if len(elems) == 0 {
-		empty := []kbapi.PutDashboardsIdJSONBody_Filters_Item{}
-		req.Filters = &empty
-		return
-	}
-	items := make([]kbapi.PutDashboardsIdJSONBody_Filters_Item, 0, len(elems))
-	for _, el := range elems {
-		var item kbapi.PutDashboardsIdJSONBody_Filters_Item
-		fd := decodeChartFilterJSON(el.FilterJSON, &item)
-		diags.Append(fd...)
-		if fd.HasError() {
-			return
-		}
-		items = append(items, item)
-	}
-	req.Filters = &items
 }

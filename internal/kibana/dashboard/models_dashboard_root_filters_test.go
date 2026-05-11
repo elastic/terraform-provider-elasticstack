@@ -43,9 +43,9 @@ func rootFiltersListEmpty(ctx context.Context, t *testing.T) types.List {
 	return l
 }
 
-func mustUnmarshalFilterItem(t *testing.T, rawJSON string) kbapi.KbnDashboardData_Filters_Item {
+func mustUnmarshalFilterItem(t *testing.T, rawJSON string) kbapi.DashboardFilters_Item {
 	t.Helper()
-	var item kbapi.KbnDashboardData_Filters_Item
+	var item kbapi.DashboardFilters_Item
 	require.NoError(t, json.Unmarshal([]byte(rawJSON), &item))
 	return item
 }
@@ -81,7 +81,7 @@ func Test_mapDashboardFiltersFromAPI_nullPreserved_whenAPINilOrEmpty(t *testing.
 
 	t.Run("API Filters pointer to empty slice", func(t *testing.T) {
 		m := &dashboardModel{Filters: rootFiltersListNull()}
-		empty := []kbapi.KbnDashboardData_Filters_Item{}
+		empty := []kbapi.DashboardFilters_Item{}
 		var diags diag.Diagnostics
 		m.mapDashboardFiltersFromAPI(ctx, &kbapi.KbnDashboardData{Filters: &empty}, &diags)
 		require.False(t, diags.HasError())
@@ -100,7 +100,7 @@ func Test_mapDashboardFiltersFromAPI_nullPreserved_whenAPINilOrEmpty(t *testing.
 
 	t.Run("known empty list stays empty when API empty slice", func(t *testing.T) {
 		m := &dashboardModel{Filters: rootFiltersListEmpty(ctx, t)}
-		empty := []kbapi.KbnDashboardData_Filters_Item{}
+		empty := []kbapi.DashboardFilters_Item{}
 		var diags diag.Diagnostics
 		m.mapDashboardFiltersFromAPI(ctx, &kbapi.KbnDashboardData{Filters: &empty}, &diags)
 		require.False(t, diags.HasError())
@@ -116,7 +116,7 @@ func Test_mapDashboardFiltersFromAPI_orderPreserved(t *testing.T) {
 		`{"type":"condition","condition":{"field":"service.name","operator":"is","value":"b"}}`,
 		`{"type":"condition","condition":{"field":"kubernetes.pod.name","operator":"is","value":"c"}}`,
 	}
-	items := make([]kbapi.KbnDashboardData_Filters_Item, len(raws))
+	items := make([]kbapi.DashboardFilters_Item, len(raws))
 	for i, r := range raws {
 		items[i] = mustUnmarshalFilterItem(t, r)
 	}
@@ -139,7 +139,7 @@ func Test_mapDashboardFiltersFromAPI_normalizesKeyOrder(t *testing.T) {
 	item := mustUnmarshalFilterItem(t, reordered)
 	m := &dashboardModel{Filters: rootFiltersListNull()}
 	var diags diag.Diagnostics
-	m.mapDashboardFiltersFromAPI(ctx, &kbapi.KbnDashboardData{Filters: &[]kbapi.KbnDashboardData_Filters_Item{item}}, &diags)
+	m.mapDashboardFiltersFromAPI(ctx, &kbapi.KbnDashboardData{Filters: &[]kbapi.DashboardFilters_Item{item}}, &diags)
 	require.False(t, diags.HasError())
 
 	elems := typeutils.ListTypeAs[chartFilterJSONModel](ctx, m.Filters, path.Root("filters"), &diags)
