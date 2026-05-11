@@ -340,27 +340,28 @@ func lensPresentationOptionalBoolRead(api *bool, prior types.Bool) types.Bool {
 func lensPresentationReferencesJSONRead(ctx context.Context, prior jsontypes.Normalized, refs *[]kbapi.KbnContentManagementUtilsReferenceSchema) (jsontypes.Normalized, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	if refs != nil {
-		b, err := json.Marshal(refs)
-		if err != nil {
-			diags.AddError("Failed to marshal references_json", err.Error())
+	refsOmitted := refs == nil || len(*refs) == 0
+	if refsOmitted {
+		if prior.IsNull() {
 			return jsontypes.NewNormalizedNull(), diags
 		}
 
-		if norm, ok := marshalToNormalized(b, err, "references_json", &diags); ok {
-			norm = preservePriorNormalizedWithDefaultsIfEquivalent(ctx, prior, norm, defaultOpaqueRootJSON, &diags)
-			return norm, diags
+		if typeutils.IsKnown(prior) {
+			return prior, diags
 		}
 
 		return jsontypes.NewNormalizedNull(), diags
 	}
 
-	if prior.IsNull() {
+	b, err := json.Marshal(refs)
+	if err != nil {
+		diags.AddError("Failed to marshal references_json", err.Error())
 		return jsontypes.NewNormalizedNull(), diags
 	}
 
-	if typeutils.IsKnown(prior) {
-		return prior, diags
+	if norm, ok := marshalToNormalized(b, err, "references_json", &diags); ok {
+		norm = preservePriorNormalizedWithDefaultsIfEquivalent(ctx, prior, norm, defaultOpaqueRootJSON, &diags)
+		return norm, diags
 	}
 
 	return jsontypes.NewNormalizedNull(), diags
@@ -432,11 +433,16 @@ func lensDrilldownItemFromAPIJSON(raw []byte, index int) (lensDrilldownItemTFMod
 			return lensDrilldownItemTFModel{}, diags
 		}
 
+		trigger := body.Trigger
+		if trigger == "" {
+			trigger = lensDrilldownTriggerOnApplyFilter
+		}
+
 		return lensDrilldownItemTFModel{
 			DashboardDrilldown: &lensDashboardDrilldownTFModel{
 				DashboardID:  types.StringValue(body.DashboardID),
 				Label:        types.StringValue(body.Label),
-				Trigger:      types.StringValue(body.Trigger),
+				Trigger:      types.StringValue(trigger),
 				UseFilters:   types.BoolPointerValue(body.UseFilters),
 				UseTimeRange: types.BoolPointerValue(body.UseTimeRange),
 				OpenInNewTab: types.BoolPointerValue(body.OpenInNewTab),
@@ -454,10 +460,15 @@ func lensDrilldownItemFromAPIJSON(raw []byte, index int) (lensDrilldownItemTFMod
 			return lensDrilldownItemTFModel{}, diags
 		}
 
+		trigger := body.Trigger
+		if trigger == "" {
+			trigger = lensDrilldownTriggerOnApplyFilter
+		}
+
 		return lensDrilldownItemTFModel{
 			DiscoverDrilldown: &lensDiscoverDrilldownTFModel{
 				Label:        types.StringValue(body.Label),
-				Trigger:      types.StringValue(body.Trigger),
+				Trigger:      types.StringValue(trigger),
 				OpenInNewTab: types.BoolPointerValue(body.OpenInNewTab),
 			},
 		}, diags
