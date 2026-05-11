@@ -22,6 +22,7 @@ import (
 	_ "embed"
 	"fmt"
 	"os"
+	"path"
 	"regexp"
 	"strings"
 	"testing"
@@ -44,6 +45,14 @@ var (
 	mlJobMissingFilterOnUpdateRE = regexp.MustCompile(
 		`(?s)Unable to update ML anomaly detection job:.*(?i)(filter|not found|resource_not_found|does not exist|could not find)`)
 )
+
+// customRulesScopeTestdata points at configs under testdata/TestAccResourceAnomalyDetectionJobCustomRulesScope/{step}.
+// Use this when the test function name does not match that folder (e.g. negative variants).
+func customRulesScopeTestdata(step string) config.TestStepConfigFunc {
+	return func(_ config.TestStepConfigRequest) string {
+		return path.Join("testdata", "TestAccResourceAnomalyDetectionJobCustomRulesScope", step)
+	}
+}
 
 func TestAccResourceAnomalyDetectionJobBasic(t *testing.T) {
 	jobID := fmt.Sprintf("test-anomaly-detector-basic-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
@@ -350,6 +359,8 @@ func TestAccResourceAnomalyDetectionJobCustomRules(t *testing.T) {
 // The referenced ML filter is created out-of-band via the Elasticsearch ML APIs before apply,
 // so this test does not require the elasticstack_elasticsearch_ml_filter resource.
 func TestAccResourceAnomalyDetectionJobCustomRulesScope(t *testing.T) {
+	acctest.PreCheck(t)
+
 	jobID := fmt.Sprintf("test-ad-scope-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	filterID := fmt.Sprintf("test-ad-scope-flt-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	addr := testResourceAddr
@@ -404,7 +415,7 @@ func TestAccResourceAnomalyDetectionJobCustomRulesScope_missingFilterOnCreate(t 
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigDirectory:          customRulesScopeTestdata("create"),
 				ConfigVariables: config.Variables{
 					"job_id":    config.StringVariable(jobID),
 					"filter_id": config.StringVariable(filterID),
@@ -420,6 +431,8 @@ func TestAccResourceAnomalyDetectionJobCustomRulesScope_missingFilterOnCreate(t 
 // replaced). Elasticsearch does not allow deleting a filter while a job still references it, so this
 // case covers the practical “bad or missing filter id” update path rather than physical deletion mid-reference.
 func TestAccResourceAnomalyDetectionJobCustomRulesScope_missingFilterOnUpdate(t *testing.T) {
+	acctest.PreCheck(t)
+
 	jobID := fmt.Sprintf("test-ad-scope-miss-up-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	goodFilterID := fmt.Sprintf("test-ad-scope-flt-ok-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	badFilterID := fmt.Sprintf("nonexistent-flt-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
@@ -432,7 +445,7 @@ func TestAccResourceAnomalyDetectionJobCustomRulesScope_missingFilterOnUpdate(t 
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigDirectory:          customRulesScopeTestdata("create"),
 				ConfigVariables: config.Variables{
 					"job_id":    config.StringVariable(jobID),
 					"filter_id": config.StringVariable(goodFilterID),
@@ -447,7 +460,7 @@ func TestAccResourceAnomalyDetectionJobCustomRulesScope_missingFilterOnUpdate(t 
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigDirectory:          customRulesScopeTestdata("update"),
 				ConfigVariables: config.Variables{
 					"job_id":    config.StringVariable(jobID),
 					"filter_id": config.StringVariable(badFilterID),
