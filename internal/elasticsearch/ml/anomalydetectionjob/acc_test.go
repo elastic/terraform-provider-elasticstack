@@ -22,6 +22,7 @@ import (
 	_ "embed"
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -34,6 +35,15 @@ import (
 )
 
 const testResourceAddr = "elasticstack_elasticsearch_ml_anomaly_detection_job.test"
+
+// Elasticsearch rejects custom_rules.scope references to unknown ML filters; exact wording varies by
+// version. These patterns match the stable provider diagnostic prefix plus common fragments from ES.
+var (
+	mlJobMissingFilterOnCreateRE = regexp.MustCompile(
+		`(?s)Unable to create ML anomaly detection job:.*(?i)(filter|not found|resource_not_found|does not exist|could not find)`)
+	mlJobMissingFilterOnUpdateRE = regexp.MustCompile(
+		`(?s)Unable to update ML anomaly detection job:.*(?i)(filter|not found|resource_not_found|does not exist|could not find)`)
+)
 
 func TestAccResourceAnomalyDetectionJobBasic(t *testing.T) {
 	jobID := fmt.Sprintf("test-anomaly-detector-basic-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
@@ -377,6 +387,72 @@ func TestAccResourceAnomalyDetectionJobCustomRulesScope(t *testing.T) {
 					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.0.scope.clientip.filter_type", "exclude"),
 					resource.TestCheckResourceAttrSet(addr, "id"),
 				),
+			},
+		},
+	})
+}
+
+// TestAccResourceAnomalyDetectionJobCustomRulesScope_missingFilterOnCreate expects apply to fail when
+// scope references an ML filter id that does not exist in the cluster (never created or deleted
+// before apply).
+func TestAccResourceAnomalyDetectionJobCustomRulesScope_missingFilterOnCreate(t *testing.T) {
+	jobID := fmt.Sprintf("test-ad-scope-miss-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	filterID := fmt.Sprintf("nonexistent-flt-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"job_id":    config.StringVariable(jobID),
+					"filter_id": config.StringVariable(filterID),
+				},
+				ExpectError: mlJobMissingFilterOnCreateRE,
+			},
+		},
+	})
+}
+
+// TestAccResourceAnomalyDetectionJobCustomRulesScope_missingFilterOnUpdate expects update to fail when
+// scope is changed to reference a filter id that does not exist (e.g. wrong id or filter removed and
+// replaced). Elasticsearch does not allow deleting a filter while a job still references it, so this
+// case covers the practical “bad or missing filter id” update path rather than physical deletion mid-reference.
+func TestAccResourceAnomalyDetectionJobCustomRulesScope_missingFilterOnUpdate(t *testing.T) {
+	jobID := fmt.Sprintf("test-ad-scope-miss-up-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	goodFilterID := fmt.Sprintf("test-ad-scope-flt-ok-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	badFilterID := fmt.Sprintf("nonexistent-flt-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	addr := testResourceAddr
+
+	setupAccMLFilterOutOfBand(t, goodFilterID)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"job_id":    config.StringVariable(jobID),
+					"filter_id": config.StringVariable(goodFilterID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "job_id", jobID),
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.#", "1"),
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.0.scope.clientip.filter_id", goodFilterID),
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.0.scope.clientip.filter_type", "include"),
+					resource.TestCheckResourceAttrSet(addr, "id"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"job_id":    config.StringVariable(jobID),
+					"filter_id": config.StringVariable(badFilterID),
+				},
+				ExpectError: mlJobMissingFilterOnUpdateRE,
 			},
 		},
 	})
