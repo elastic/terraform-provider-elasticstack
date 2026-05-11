@@ -7,7 +7,10 @@ description: >-
   per issue.
 on:
   issues:
-    types: [opened, labeled]
+    types: [labeled]
+  slash_command:
+    name: change-factory
+    events: [issue_comment]
   status-comment: true
   permissions:
     contents: read
@@ -20,6 +23,13 @@ on:
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         x-script-include: scripts/qualify_trigger.inline.js
+    - name: Capture command text
+      id: capture_command_text
+      if: steps.qualify_trigger.outputs.event_eligible == 'true'
+      uses: actions/github-script@v9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        x-script-include: scripts/capture_command_text.inline.js
     - name: Capture issue context
       id: capture_issue_context
       uses: actions/github-script@v9
@@ -64,6 +74,19 @@ on:
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         x-script-include: scripts/check_duplicate_pr.inline.js
+    - name: Notify duplicate blocked
+      id: notify_duplicate_blocked
+      if: >-
+        steps.qualify_trigger.outputs.event_eligible == 'true' &&
+        steps.check_actor_trust.outputs.actor_trusted == 'true' &&
+        steps.check_duplicate_pr.outputs.duplicate_pr_found == 'true'
+      uses: actions/github-script@v9
+      env:
+        DUPLICATE_PR_URL: ${{ steps.check_duplicate_pr.outputs.duplicate_pr_url }}
+        ISSUE_NUMBER: ${{ github.event.issue.number }}
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        x-script-include: scripts/notify_duplicate_blocked.inline.js
     - name: Sanitize context
       id: sanitize_context
       if: >-
@@ -148,6 +171,7 @@ jobs:
       event_eligible_reason: ${{ steps.qualify_trigger.outputs.event_eligible_reason }}
       issue_title: ${{ steps.capture_issue_context.outputs.issue_title }}
       issue_body: ${{ steps.capture_issue_context.outputs.issue_body }}
+      human_direction: ${{ steps.capture_command_text.outputs.human_direction }}
       sanitized_issue_body: ${{ steps.sanitize_context.outputs.sanitized_issue_body }}
       sanitized_issue_comments: ${{ steps.sanitize_context.outputs.sanitized_issue_comments }}
       research_comment_body: ${{ steps.extract_research_comment.outputs.research_comment_body }}
@@ -232,6 +256,12 @@ When a research comment is present:
 The research comment may also contain a `<details>` element with `<summary>🤖 Pipeline metadata</summary>` enclosing a fenced JSON block. When present, the agent should parse the fenced JSON inside the `<details>` element. JSON metadata is a future enhancement area; the agent should not depend on it today. The human-readable subsections (`### Recommendation`, `### Open questions`, `### Approaches considered`, etc.) remain the primary source of truth.
 
 You **must not** modify the implementation-research comment. Do **not** emit `update-issue` or comment-editing operations that rewrite the research comment, add or remove the `<!-- gha-research-factory -->` marker, or edit the text inside it. This applies even if the comment's content appears outdated or incomplete. Comment management belongs to the `research-factory` workflow.
+
+## Human direction
+
+${{ needs.pre_activation.outputs.human_direction }}
+
+When non-empty, the human direction text above is the **final say** on all design decisions for this proposal. It overrides the research comment's `### Recommendation` and any other design inferences. Apply it without second-guessing.
 
 ## OpenSpec tooling
 

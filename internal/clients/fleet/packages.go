@@ -40,6 +40,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
+var (
+	packageNameRe    = regexp.MustCompile(`(?m)^name:\s*(\S+)`)
+	packageVersionRe = regexp.MustCompile(`(?m)^version:\s*["']?([^\s"']+)["']?`)
+)
+
 // GetPackage reads a specific package from the API.
 func GetPackage(ctx context.Context, client *Client, name, version, spaceID string) (*kbapi.PackageInfo, diag.Diagnostics) {
 	params := kbapi.GetFleetEpmPackagesPkgnamePkgversionParams{}
@@ -437,6 +442,22 @@ func parsePackageInfo(path string) (name, version string, err error) {
 	return parsePackageInfoFromZip(path)
 }
 
+// isManifestYAML reports whether entryName is a top-level or direct-child manifest.yml.
+func isManifestYAML(entryName string) bool {
+	return strings.HasSuffix(entryName, "/manifest.yml") || entryName == "manifest.yml"
+}
+
+// extractPackageNameVersion parses the name and version fields from manifest YAML content.
+func extractPackageNameVersion(content []byte) (name, version string) {
+	if m := packageNameRe.FindSubmatch(content); len(m) >= 2 {
+		name = string(m[1])
+	}
+	if m := packageVersionRe.FindSubmatch(content); len(m) >= 2 {
+		version = string(m[1])
+	}
+	return name, version
+}
+
 // parsePackageInfoFromZip opens a zip archive at path, finds the top-level
 // manifest.yml, and extracts the package name and version fields. It is used as
 // a fallback when the Fleet upload API response does not include the package
@@ -448,10 +469,8 @@ func parsePackageInfoFromZip(path string) (name, version string, err error) {
 	}
 	defer r.Close()
 
-	nameRe := regexp.MustCompile(`(?m)^name:\s*(\S+)`)
-	versionRe := regexp.MustCompile(`(?m)^version:\s*["']?([^\s"']+)["']?`)
 	for _, f := range r.File {
-		if !strings.HasSuffix(f.Name, "/manifest.yml") && f.Name != "manifest.yml" {
+		if !isManifestYAML(f.Name) {
 			continue
 		}
 		rc, err := f.Open()
@@ -463,14 +482,7 @@ func parsePackageInfoFromZip(path string) (name, version string, err error) {
 		if readErr != nil {
 			return "", "", fmt.Errorf("reading manifest.yml: %w", readErr)
 		}
-		nameMatches := nameRe.FindSubmatch(content)
-		if len(nameMatches) >= 2 {
-			name = string(nameMatches[1])
-		}
-		versionMatches := versionRe.FindSubmatch(content)
-		if len(versionMatches) >= 2 {
-			version = string(versionMatches[1])
-		}
+		name, version = extractPackageNameVersion(content)
 		if name != "" {
 			return name, version, nil
 		}
@@ -496,9 +508,6 @@ func parsePackageInfoFromTarGz(path string) (name, version string, err error) {
 	defer gr.Close()
 
 	tr := tar.NewReader(gr)
-	nameRe := regexp.MustCompile(`(?m)^name:\s*(\S+)`)
-	versionRe := regexp.MustCompile(`(?m)^version:\s*["']?([^\s"']+)["']?`)
-
 	for {
 		hdr, err := tr.Next()
 		if err == io.EOF {
@@ -507,21 +516,14 @@ func parsePackageInfoFromTarGz(path string) (name, version string, err error) {
 		if err != nil {
 			return "", "", fmt.Errorf("reading tar.gz %q: %w", path, err)
 		}
-		if !strings.HasSuffix(hdr.Name, "/manifest.yml") && hdr.Name != "manifest.yml" {
+		if !isManifestYAML(hdr.Name) {
 			continue
 		}
 		content, readErr := io.ReadAll(tr)
 		if readErr != nil {
 			return "", "", fmt.Errorf("reading manifest.yml from tar.gz: %w", readErr)
 		}
-		nameMatches := nameRe.FindSubmatch(content)
-		if len(nameMatches) >= 2 {
-			name = string(nameMatches[1])
-		}
-		versionMatches := versionRe.FindSubmatch(content)
-		if len(versionMatches) >= 2 {
-			version = string(versionMatches[1])
-		}
+		name, version = extractPackageNameVersion(content)
 		if name != "" {
 			return name, version, nil
 		}

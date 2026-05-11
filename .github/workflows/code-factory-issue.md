@@ -96,6 +96,13 @@ on:
             factoryLabel,
             issueOpenedNotEligibleReason,
           }) {
+            if (eventName === 'issue_comment') {
+              return {
+                event_eligible: true,
+                event_eligible_reason: `Issue comment event qualifies because the slash_command trigger routes to issue_comment.`,
+              };
+            }
+          
             if (eventName !== 'issues') {
               return {
                 event_eligible: false,
@@ -608,6 +615,13 @@ on:
             factoryLabel,
             issueOpenedNotEligibleReason,
           }) {
+            if (eventName === 'issue_comment') {
+              return {
+                event_eligible: true,
+                event_eligible_reason: `Issue comment event qualifies because the slash_command trigger routes to issue_comment.`,
+              };
+            }
+          
             if (eventName !== 'issues') {
               return {
                 event_eligible: false,
@@ -1150,6 +1164,13 @@ on:
             factoryLabel,
             issueOpenedNotEligibleReason,
           }) {
+            if (eventName === 'issue_comment') {
+              return {
+                event_eligible: true,
+                event_eligible_reason: `Issue comment event qualifies because the slash_command trigger routes to issue_comment.`,
+              };
+            }
+          
             if (eventName !== 'issues') {
               return {
                 event_eligible: false,
@@ -1803,6 +1824,13 @@ on:
             factoryLabel,
             issueOpenedNotEligibleReason,
           }) {
+            if (eventName === 'issue_comment') {
+              return {
+                event_eligible: true,
+                event_eligible_reason: `Issue comment event qualifies because the slash_command trigger routes to issue_comment.`,
+              };
+            }
+          
             if (eventName !== 'issues') {
               return {
                 event_eligible: false,

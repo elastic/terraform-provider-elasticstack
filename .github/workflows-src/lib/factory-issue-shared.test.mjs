@@ -125,6 +125,19 @@ test('factoryQualifyTriggerEvent rejects non-issues events', () => {
   assert.match(result.event_eligible_reason, /expected 'issues'/);
 });
 
+test('factoryQualifyTriggerEvent accepts issue_comment event', () => {
+  const result = factoryQualifyTriggerEvent({
+    eventName: 'issue_comment',
+    eventAction: '',
+    labelName: '',
+    issueLabels: [],
+    factoryLabel: 'change-factory',
+    issueOpenedNotEligibleReason: 'n/a',
+  });
+  assert.equal(result.event_eligible, true);
+  assert.match(result.event_eligible_reason, /issue_comment/);
+});
+
 test('factoryCheckActorTrust trusts write permission', () => {
   const result = factoryCheckActorTrust({ sender: 'alice', permission: 'write' });
   assert.equal(result.actor_trusted, true);
