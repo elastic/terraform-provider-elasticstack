@@ -80,6 +80,22 @@ func (model tfModel) GetElasticsearchConnection() types.List {
 	return model.ElasticsearchConnection
 }
 
+func (model tfModel) buildTypedMetadata() (estypes.Metadata, diag.Diagnostics) {
+	if !typeutils.IsKnown(model.Metadata) {
+		return nil, nil
+	}
+	var metadata map[string]any
+	diags := model.Metadata.Unmarshal(&metadata)
+	if diags.HasError() {
+		return nil, diags
+	}
+	typedMetadata, err := toTypedMetadata(metadata)
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+	return typedMetadata, nil
+}
+
 func (model tfModel) toAPICreateRequest() (*createapikey.Request, diag.Diagnostics) {
 	req := createapikey.NewRequest()
 
@@ -90,18 +106,11 @@ func (model tfModel) toAPICreateRequest() (*createapikey.Request, diag.Diagnosti
 		req.Expiration = model.Expiration.ValueString()
 	}
 
-	if typeutils.IsKnown(model.Metadata) {
-		var metadata map[string]any
-		diags := model.Metadata.Unmarshal(&metadata)
-		if diags.HasError() {
-			return nil, diags
-		}
-		typedMetadata, err := toTypedMetadata(metadata)
-		if err != nil {
-			return nil, diagutil.FrameworkDiagFromError(err)
-		}
-		req.Metadata = typedMetadata
+	typedMetadata, diags := model.buildTypedMetadata()
+	if diags.HasError() {
+		return nil, diags
 	}
+	req.Metadata = typedMetadata
 
 	if typeutils.IsKnown(model.RoleDescriptors) {
 		var roleDescriptors map[string]models.APIKeyRoleDescriptor
@@ -128,18 +137,11 @@ func (model tfModel) toUpdateAPIRequest() (*updateapikey.Request, diag.Diagnosti
 	// Note: the Update API Key endpoint does not accept expiration.
 	// The old code explicitly zeroed it out before sending.
 
-	if typeutils.IsKnown(model.Metadata) {
-		var metadata map[string]any
-		diags := model.Metadata.Unmarshal(&metadata)
-		if diags.HasError() {
-			return nil, diags
-		}
-		typedMetadata, err := toTypedMetadata(metadata)
-		if err != nil {
-			return nil, diagutil.FrameworkDiagFromError(err)
-		}
-		req.Metadata = typedMetadata
+	typedMetadata, diags := model.buildTypedMetadata()
+	if diags.HasError() {
+		return nil, diags
 	}
+	req.Metadata = typedMetadata
 
 	if typeutils.IsKnown(model.RoleDescriptors) {
 		var roleDescriptors map[string]models.APIKeyRoleDescriptor
@@ -168,18 +170,11 @@ func (model tfModel) toCrossClusterAPICreateRequest(ctx context.Context) (*creat
 		req.Expiration = model.Expiration.ValueString()
 	}
 
-	if typeutils.IsKnown(model.Metadata) {
-		var metadata map[string]any
-		diags := model.Metadata.Unmarshal(&metadata)
-		if diags.HasError() {
-			return nil, diags
-		}
-		typedMetadata, err := toTypedMetadata(metadata)
-		if err != nil {
-			return nil, diagutil.FrameworkDiagFromError(err)
-		}
-		req.Metadata = typedMetadata
+	typedMetadata, diags := model.buildTypedMetadata()
+	if diags.HasError() {
+		return nil, diags
 	}
+	req.Metadata = typedMetadata
 
 	// Build the access configuration
 	access := &models.CrossClusterAPIKeyAccess{}
@@ -282,18 +277,11 @@ func (model tfModel) toUpdateCrossClusterAPIRequest(ctx context.Context) (*updat
 	// Note: the Update Cross-Cluster API Key endpoint does not accept expiration.
 	// The old code explicitly zeroed it out before sending.
 
-	if typeutils.IsKnown(model.Metadata) {
-		var metadata map[string]any
-		diags := model.Metadata.Unmarshal(&metadata)
-		if diags.HasError() {
-			return nil, diags
-		}
-		typedMetadata, err := toTypedMetadata(metadata)
-		if err != nil {
-			return nil, diagutil.FrameworkDiagFromError(err)
-		}
-		req.Metadata = typedMetadata
+	typedMetadata, diags := model.buildTypedMetadata()
+	if diags.HasError() {
+		return nil, diags
 	}
+	req.Metadata = typedMetadata
 
 	// Build the access configuration
 	access := &models.CrossClusterAPIKeyAccess{}

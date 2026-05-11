@@ -57,3 +57,9 @@ var controlConfigWidthDescription string
 
 //go:embed descriptions/control_config_grow.md
 var controlConfigGrowDescription string
+
+//go:embed descriptions/dashboard_filters.md
+var dashboardFiltersDescription string
+
+//go:embed descriptions/dashboard_filter_json.md
+var dashboardFilterJSONDescription string

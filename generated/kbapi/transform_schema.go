@@ -1112,6 +1112,7 @@ func fixDashboardPanelItemRefs(schema *Schema) {
 	schema.Components.CreateRef(schema, "dashboard_panel_item", "schemas.kbn-dashboard-section.properties.panels.items")
 	schema.Components.CreateRef(schema, "dashboard_panel_item", "schemas.kbn-dashboard-data.properties.panels.items.anyOf.0")
 	schema.Components.CreateRef(schema, "dashboard_panels", "schemas.kbn-dashboard-data.properties.panels")
+	schema.Components.CreateRef(schema, "dashboard_filters", "schemas.kbn-dashboard-data.properties.filters")
 
 	dashboardIDPath := schema.MustGetPath("/api/dashboards/{id}")
 	dashboardIDPath.Put.Move("requestBody.content.application/json.schema.properties.panels.items.anyOf.0.anyOf", "requestBody.content.application/json.schema.properties.panels.items.anyOf.0.oneOf")
@@ -1121,6 +1122,7 @@ func fixDashboardPanelItemRefs(schema *Schema) {
 	)
 	dashboardIDPath.Put.CreateRef(schema, "dashboard_panel_item", "requestBody.content.application/json.schema.properties.panels.items.anyOf.0")
 	dashboardIDPath.Put.CreateRef(schema, "dashboard_panels", "requestBody.content.application/json.schema.properties.panels")
+	dashboardIDPath.Put.CreateRef(schema, "dashboard_filters", "requestBody.content.application/json.schema.properties.filters")
 
 	const panelTypePrefix = "kbn-dashboard-panel-type-"
 	panelOneOf := schema.Components.MustGetSlice("schemas.dashboard_panel_item.oneOf")
