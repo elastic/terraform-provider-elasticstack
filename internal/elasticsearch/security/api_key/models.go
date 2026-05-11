@@ -80,6 +80,29 @@ func (model tfModel) GetElasticsearchConnection() types.List {
 	return model.ElasticsearchConnection
 }
 
+func (model tfModel) buildTypedRoleDescriptors() (map[string]estypes.RoleDescriptor, diag.Diagnostics) {
+	if !typeutils.IsKnown(model.RoleDescriptors) {
+		return nil, nil
+	}
+
+	var roleDescriptors map[string]models.APIKeyRoleDescriptor
+	diags := model.RoleDescriptors.Unmarshal(&roleDescriptors)
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	if len(roleDescriptors) == 0 {
+		return nil, nil
+	}
+
+	typedDescriptors, err := toTypedRoleDescriptors(roleDescriptors)
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+
+	return typedDescriptors, nil
+}
+
 func (model tfModel) toAPICreateRequest() (*createapikey.Request, diag.Diagnostics) {
 	req := createapikey.NewRequest()
 
@@ -103,21 +126,11 @@ func (model tfModel) toAPICreateRequest() (*createapikey.Request, diag.Diagnosti
 		req.Metadata = typedMetadata
 	}
 
-	if typeutils.IsKnown(model.RoleDescriptors) {
-		var roleDescriptors map[string]models.APIKeyRoleDescriptor
-		diags := model.RoleDescriptors.Unmarshal(&roleDescriptors)
-		if diags.HasError() {
-			return nil, diags
-		}
-
-		if len(roleDescriptors) > 0 {
-			typedDescriptors, err := toTypedRoleDescriptors(roleDescriptors)
-			if err != nil {
-				return nil, diagutil.FrameworkDiagFromError(err)
-			}
-			req.RoleDescriptors = typedDescriptors
-		}
+	typedDescriptors, diags := model.buildTypedRoleDescriptors()
+	if diags.HasError() {
+		return nil, diags
 	}
+	req.RoleDescriptors = typedDescriptors
 
 	return req, nil
 }
@@ -141,21 +154,11 @@ func (model tfModel) toUpdateAPIRequest() (*updateapikey.Request, diag.Diagnosti
 		req.Metadata = typedMetadata
 	}
 
-	if typeutils.IsKnown(model.RoleDescriptors) {
-		var roleDescriptors map[string]models.APIKeyRoleDescriptor
-		diags := model.RoleDescriptors.Unmarshal(&roleDescriptors)
-		if diags.HasError() {
-			return nil, diags
-		}
-
-		if len(roleDescriptors) > 0 {
-			typedDescriptors, err := toTypedRoleDescriptors(roleDescriptors)
-			if err != nil {
-				return nil, diagutil.FrameworkDiagFromError(err)
-			}
-			req.RoleDescriptors = typedDescriptors
-		}
+	typedDescriptors, diags := model.buildTypedRoleDescriptors()
+	if diags.HasError() {
+		return nil, diags
 	}
+	req.RoleDescriptors = typedDescriptors
 
 	return req, nil
 }
