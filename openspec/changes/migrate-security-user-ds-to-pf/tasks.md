@@ -28,6 +28,6 @@
 
 ## 5. Testing
 
-- [ ] 5.1 Review and update `user_data_source_test.go` to PF patterns if needed
-- [ ] 5.2 Run `make build` and verify no compile errors
-- [ ] 5.3 Run targeted acceptance tests for security user data source (`go test ./internal/elasticsearch/security/ -run '^TestAccDataSourceSecurityUser' -v`) and verify pass
+- [x] 5.1 Review and update `user_data_source_test.go` to PF patterns if needed
+- [x] 5.2 Run `make build` and verify no compile errors
+- [x] 5.3 Run targeted acceptance tests for security user data source (`go test ./internal/elasticsearch/security/ -run '^TestAccDataSourceSecurityUser' -v`) and verify pass
