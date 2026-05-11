@@ -30,8 +30,8 @@
 
 ## 4. Schema migration touchpoints
 
-- [ ] 4.1 Audit `models_lens_dashboard_app_by_value_adapter.go` and `models_lens_dashboard_app_converters.go` for any reuse of `lensPanelTimeRange()` and migrate to the new resolver helper (these are part of `lens-dashboard-app`, not `vis` panels; verify scoping carefully — the helper deletion in 2.2 must remain consistent).
-- [ ] 4.2 Audit `panel_config_defaults.go` and `panel_config_validator.go` for references to chart-level time_range defaults; update or remove as needed.
+- [x] 4.1 Audit `models_lens_dashboard_app_by_value_adapter.go` and `models_lens_dashboard_app_converters.go` for any reuse of `lensPanelTimeRange()` and migrate to the new resolver helper (these are part of `lens-dashboard-app`, not `vis` panels; verify scoping carefully — the helper deletion in 2.2 must remain consistent).
+- [x] 4.2 Audit `panel_config_defaults.go` and `panel_config_validator.go` for references to chart-level time_range defaults; update or remove as needed.
 
 ## 5. Unit tests
 
