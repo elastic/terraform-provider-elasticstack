@@ -37,7 +37,7 @@ Before agent activation, the workflow SHALL detect whether an open linked `chang
 - **WHEN** an open pull request mentions the issue or has a similar title but does not satisfy the full linked `change-factory` PR criteria
 - **THEN** the workflow SHALL NOT treat that pull request as the canonical linked PR for duplicate suppression
 
-### Requirement: Agent uses the implementation-research comment as the authoritative scope baseline when present, subject to human direction override
+### Requirement: Agent uses the implementation-research comment as the authoritative scope baseline when present
 When the triggering issue has a comment authored by `github-actions[bot]` that contains the marker `<!-- gha-research-factory -->` and a heading `## Implementation research`, the `change-factory` agent SHALL treat that entire comment as the authoritative baseline for proposal scope — unless a non-empty `human_direction` is present, in which case `human_direction` SHALL take precedence as the final say on all design decisions. When `human_direction` is empty, the agent SHALL adopt the comment's `### Recommendation` as the proposal spine, carry the comment's `### Open questions` into `design.md`, and treat `### Approaches considered` as already-evaluated context without re-exploring alternatives. If the sanitised issue body or sanitised human comments contain explicit signals that contradict the research recommendation (and no `human_direction` override is present), the agent SHALL prefer the contradicting signal and note the disagreement in the proposal artifacts. When no research comment exists, the agent SHALL use the issue title and body as the authoritative source regardless of `human_direction`.
 
 #### Scenario: Issue has a research comment and no human direction
@@ -59,6 +59,8 @@ When the triggering issue has a comment authored by `github-actions[bot]` that c
 #### Scenario: Issue has a research comment but later comments contradict the recommendation
 - **WHEN** a `change-factory` run starts for an issue that has a research comment and whose visible context contradicts the comment's recommendation, and `human_direction` is empty
 - **THEN** the agent SHALL prefer the contradicting signal and SHALL note the disagreement in the proposal artifacts
+
+## ADDED Requirements
 
 ### Requirement: Agent prompt documents human direction as a design override
 The `change-factory` workflow's authored prompt SHALL include a `## Human direction` section that is presented when `human_direction` is non-empty. The section SHALL state that the human direction is the final say on all design decisions for this proposal, that it overrides the research comment's `### Recommendation` and any other design inferences, and that the agent SHALL apply it without second-guessing.
