@@ -12,9 +12,9 @@
 
 ## 3. Models and mapping
 
-- [ ] 3.1 Extend each control panel model with `Width` and `Grow` (and any audit additions)
-- [ ] 3.2 Map to/from the API panel body in each control's read/write helpers
-- [ ] 3.3 Apply REQ-009 null-preservation semantics on read
+- [x] 3.1 Extend each control panel model with `Width` and `Grow` (and any audit additions)
+- [x] 3.2 Map to/from the API panel body in each control's read/write helpers
+- [x] 3.3 Apply REQ-009 null-preservation semantics on read
 
 ## 4. Tests
 
