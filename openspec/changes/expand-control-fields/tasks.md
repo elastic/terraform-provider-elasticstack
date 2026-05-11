@@ -1,8 +1,8 @@
 ## 1. Audit
 
-- [ ] 1.1 Compare each control schema in `generated/kbapi/dashboards.json` (`kbn-controls-schemas-controls-group-schema-{esql,options-list,range-slider,time-slider}-control`) against the corresponding `*_control_config` schema in `internal/kibana/dashboard/schema.go`
-- [ ] 1.2 Capture the audit as a short note in the change folder (or PR description) listing each missing attribute and its proposed TF representation
-- [ ] 1.3 If audit surfaces additional gaps beyond `width`/`grow`, extend `specs/kibana-dashboard/spec.md` accordingly before implementation
+- [x] 1.1 Compare each control schema in `generated/kbapi/dashboards.json` (`kbn-controls-schemas-controls-group-schema-{esql,options-list,range-slider,time-slider}-control`) against the corresponding `*_control_config` schema in `internal/kibana/dashboard/schema.go`
+- [x] 1.2 Capture the audit as a short note in the change folder (or PR description) listing each missing attribute and its proposed TF representation
+- [x] 1.3 If audit surfaces additional gaps beyond `width`/`grow`, extend `specs/kibana-dashboard/spec.md` accordingly before implementation
 
 ## 2. Schema additions
 
