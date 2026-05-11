@@ -122,11 +122,6 @@ func TestTFModel_fromMLFilter(t *testing.T) {
 	}
 }
 
-//go:fix inline
-func strPtr(s string) *string {
-	return new(s)
-}
-
 func mustStringSet(ctx context.Context, t *testing.T, vals []string) types.Set {
 	t.Helper()
 	s, diags := types.SetValueFrom(ctx, types.StringType, vals)
