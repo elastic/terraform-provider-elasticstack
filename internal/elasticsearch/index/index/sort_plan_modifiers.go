@@ -50,31 +50,24 @@ func (m sortMigrationPlanModifier) MarkdownDescription(ctx context.Context) stri
 }
 
 func (m sortMigrationPlanModifier) PlanModifyList(ctx context.Context, req planmodifier.ListRequest, resp *planmodifier.ListResponse) {
-	// If the attribute is being destroyed (plan is null), don't suppress.
+	// If the attribute is being destroyed (plan is null), nothing to do.
 	if req.PlanValue.IsNull() {
 		return
 	}
 
-	// If state is null, this is a create, not a migration — require replace.
-	if req.StateValue.IsNull() {
-		resp.RequiresReplace = true
-		return
-	}
-
-	// Migration suppression is only relevant when sort is null in state
-	// (resource was created using the deprecated attributes).
+	// If sort is non-null in state, this is a normal update of an existing
+	// sort attribute. Sort settings are immutable, so any change requires replace.
 	if !req.StateValue.IsNull() {
-		// sort was already set in state, this is a normal update of sort.
-		// sort settings are immutable, so any change requires replace.
 		resp.RequiresReplace = true
 		return
 	}
 
-	// Check if sort is non-null in the plan (user is migrating to new attribute).
-	// If sort is not set in plan, there's nothing to migrate.
-	if req.PlanValue.IsNull() {
-		return
-	}
+	// sort is null in state and non-null in plan. This could be either:
+	// 1. A create of a new index with sort settings.
+	// 2. A migration from legacy sort_field/sort_order to the new sort attribute.
+	//
+	// Distinguish by checking if private state has sort_config. If present,
+	// this is a migration and we can potentially suppress the replace.
 
 	// Read private state.
 	privateStateBytes, err := req.Private.GetKey(ctx, "sort_config")
