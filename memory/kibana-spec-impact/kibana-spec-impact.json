@@ -1,5 +1,14 @@
 {
   "version": 1,
-  "last_analyzed_target_sha": "68622b62f54a8caf49d42629b4bc6cc21dba7ba3",
-  "reported_fingerprints": {}
+  "last_analyzed_target_sha": "1fb2da0ebfc30e458fd168a73c7232be150686e1",
+  "reported_fingerprints": {
+    "sha256:ee9f43fe2c6aa21376d85868bf139b4031bfbea1f05e2a5547d26894b259e703": {
+      "entity_name": "elasticstack_kibana_dashboard",
+      "entity_type": "resource",
+      "baseline_sha": "68622b62f54a8caf49d42629b4bc6cc21dba7ba3",
+      "target_sha": "1fb2da0ebfc30e458fd168a73c7232be150686e1",
+      "recorded_at": "2026-05-11T22:01:30.998452402Z",
+      "fingerprint": "sha256:ee9f43fe2c6aa21376d85868bf139b4031bfbea1f05e2a5547d26894b259e703"
+    }
+  }
 }
