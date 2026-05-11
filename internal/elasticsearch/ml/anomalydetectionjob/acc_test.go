@@ -331,6 +331,57 @@ func TestAccResourceAnomalyDetectionJobCustomRules(t *testing.T) {
 	})
 }
 
+// TestAccResourceAnomalyDetectionJobCustomRulesScope covers detector custom_rules.scope
+// (ML filter references per analysis field), including round-trip to Elasticsearch.
+//
+// This case depends on elasticstack_elasticsearch_ml_filter (PR #1970). The scope-only PR
+// does not register that resource; default CI skips here. To run locally, use a branch or
+// provider build that includes the ML filter resource and set TF_ACC_ML_SCOPE_TEST=1.
+func TestAccResourceAnomalyDetectionJobCustomRulesScope(t *testing.T) {
+	if os.Getenv("TF_ACC_ML_SCOPE_TEST") == "" {
+		t.Skip("set TF_ACC_ML_SCOPE_TEST=1 when elasticstack_elasticsearch_ml_filter is available (e.g. stack with #1970)")
+	}
+
+	jobID := fmt.Sprintf("test-ad-scope-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	filterID := fmt.Sprintf("test-ad-scope-flt-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	addr := testResourceAddr
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"job_id":    config.StringVariable(jobID),
+					"filter_id": config.StringVariable(filterID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "job_id", jobID),
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.#", "1"),
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.0.actions.#", "1"),
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.0.actions.0", "skip_result"),
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.0.scope.clientip.filter_id", filterID),
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.0.scope.clientip.filter_type", "include"),
+					resource.TestCheckResourceAttrSet(addr, "id"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"job_id":    config.StringVariable(jobID),
+					"filter_id": config.StringVariable(filterID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.0.scope.clientip.filter_type", "exclude"),
+					resource.TestCheckResourceAttrSet(addr, "id"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccResourceAnomalyDetectionJobNullAndEmpty(t *testing.T) {
 	jobID := fmt.Sprintf("test-anomaly-detector-null-and-empty-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 
