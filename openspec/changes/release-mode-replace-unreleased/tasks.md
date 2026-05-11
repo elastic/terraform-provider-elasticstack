@@ -6,12 +6,12 @@
 
 ## 2. Tests
 
-- [ ] 2.1 Invert `rewriteChangelogSection release inserts after Unreleased when section missing` in `.github/workflows-src/lib/changelog-rewriter.test.mjs` to assert that the resulting changelog contains `## [x.y.z]` but no `## [Unreleased]` heading, and that the `## [x.y.z]` block sits where Unreleased used to sit (above the next versioned section).
-- [ ] 2.2 Invert `runChangelogRenderAndWrite release inserts section after Unreleased` in `.github/workflows-src/lib/changelog-engine.test.mjs` to assert the same outcome through the engine.
-- [ ] 2.3 Invert `runChangelogRenderAndWrite release with zero PRs writes header-only section` in `.github/workflows-src/lib/changelog-engine.test.mjs` so the Unreleased heading is removed even when there are zero PR records (header-only section still replaces Unreleased).
-- [ ] 2.4 Add a new test for the re-run case: initial file already contains both `## [Unreleased]` and `## [x.y.z]`; after release-mode rewrite, only `## [x.y.z]` remains.
-- [ ] 2.5 Add a regression test mirroring PR #2857: fixture that includes a populated `## [Unreleased]` section identical to the rendered release body, run release-mode rewrite, and assert exactly one occurrence of each release bullet in the output.
-- [ ] 2.6 Run `node --test .github/workflows-src/lib/*.test.mjs` and confirm the suite passes.
+- [x] 2.1 Invert `rewriteChangelogSection release inserts after Unreleased when section missing` in `.github/workflows-src/lib/changelog-rewriter.test.mjs` to assert that the resulting changelog contains `## [x.y.z]` but no `## [Unreleased]` heading, and that the `## [x.y.z]` block sits where Unreleased used to sit (above the next versioned section).
+- [x] 2.2 Invert `runChangelogRenderAndWrite release inserts section after Unreleased` in `.github/workflows-src/lib/changelog-engine.test.mjs` to assert the same outcome through the engine.
+- [x] 2.3 Invert `runChangelogRenderAndWrite release with zero PRs writes header-only section` in `.github/workflows-src/lib/changelog-engine.test.mjs` so the Unreleased heading is removed even when there are zero PR records (header-only section still replaces Unreleased).
+- [x] 2.4 Add a new test for the re-run case: initial file already contains both `## [Unreleased]` and `## [x.y.z]`; after release-mode rewrite, only `## [x.y.z]` remains.
+- [x] 2.5 Add a regression test mirroring PR #2857: fixture that includes a populated `## [Unreleased]` section identical to the rendered release body, run release-mode rewrite, and assert exactly one occurrence of each release bullet in the output.
+- [x] 2.6 Run `node --test .github/workflows-src/lib/*.test.mjs` and confirm the suite passes.
 
 ## 3. Compiled workflow + verification
 
