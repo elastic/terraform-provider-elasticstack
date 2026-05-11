@@ -201,7 +201,7 @@ func populateLegacySortFromSettings(ctx context.Context, model *tfModel) diag.Di
 }
 
 // sortElementType returns the object type for a single sort entry ListNestedAttribute element.
-func sortElementType(ctx context.Context) attr.Type {
+func sortElementType(_ context.Context) attr.Type {
 	return types.ObjectType{
 		AttrTypes: map[string]attr.Type{
 			"field":   types.StringType,

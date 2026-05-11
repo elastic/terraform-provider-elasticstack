@@ -41,7 +41,7 @@ type sortPrivateState struct {
 // semantically equivalent settings.
 type sortMigrationPlanModifier struct{}
 
-func (m sortMigrationPlanModifier) Description(ctx context.Context) string {
+func (m sortMigrationPlanModifier) Description(_ context.Context) string {
 	return "Suppresses replace when migrating from legacy sort attributes with equivalent settings."
 }
 
@@ -228,7 +228,7 @@ func isSemanticallyEquivalentMode(planned types.String, existing string, order t
 // present in the plan (the new sort attribute handles the replace decision).
 type legacySortFieldPlanModifier struct{}
 
-func (m legacySortFieldPlanModifier) Description(ctx context.Context) string {
+func (m legacySortFieldPlanModifier) Description(_ context.Context) string {
 	return "Suppresses replace when the new sort attribute is used in the plan."
 }
 
@@ -261,7 +261,7 @@ func (m legacySortFieldPlanModifier) PlanModifySet(ctx context.Context, req plan
 // present in the plan (the new sort attribute handles the replace decision).
 type legacySortOrderPlanModifier struct{}
 
-func (m legacySortOrderPlanModifier) Description(ctx context.Context) string {
+func (m legacySortOrderPlanModifier) Description(_ context.Context) string {
 	return "Suppresses replace when the new sort attribute is used in the plan."
 }
 
