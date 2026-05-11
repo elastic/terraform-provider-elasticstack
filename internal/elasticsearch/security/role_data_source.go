@@ -50,32 +50,7 @@ type roleDataSourceModel struct {
 	RemoteIndices types.Set            `tfsdk:"remote_indices"`
 }
 
-type applicationDataSourceModel struct {
-	Application types.String `tfsdk:"application"`
-	Privileges  types.Set    `tfsdk:"privileges"`
-	Resources   types.Set    `tfsdk:"resources"`
-}
 
-type fieldSecurityDataSourceModel struct {
-	Grant  types.Set `tfsdk:"grant"`
-	Except types.Set `tfsdk:"except"`
-}
-
-type indexDataSourceModel struct {
-	FieldSecurity          types.Object         `tfsdk:"field_security"`
-	Names                  types.Set            `tfsdk:"names"`
-	Privileges             types.Set            `tfsdk:"privileges"`
-	Query                  jsontypes.Normalized `tfsdk:"query"`
-	AllowRestrictedIndices types.Bool           `tfsdk:"allow_restricted_indices"`
-}
-
-type remoteIndexDataSourceModel struct {
-	Clusters      types.Set            `tfsdk:"clusters"`
-	FieldSecurity types.Object         `tfsdk:"field_security"`
-	Names         types.Set            `tfsdk:"names"`
-	Privileges    types.Set            `tfsdk:"privileges"`
-	Query         jsontypes.Normalized `tfsdk:"query"`
-}
 
 func NewRoleDataSource() datasource.DataSource {
 	return entitycore.NewElasticsearchDataSource[roleDataSourceModel](
@@ -262,6 +237,14 @@ func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedCl
 	// Not-found: return empty ID, keep name, no diagnostics
 	if role == nil {
 		config.ID = types.StringValue("")
+		config.Description = types.StringNull()
+		config.Cluster = types.SetNull(types.StringType)
+		config.RunAs = types.SetNull(types.StringType)
+		config.Global = jsontypes.NewNormalizedNull()
+		config.Metadata = jsontypes.NewNormalizedNull()
+		config.Applications = types.SetNull(types.ObjectType{AttrTypes: getApplicationDSAttrTypes()})
+		config.Indices = types.SetNull(types.ObjectType{AttrTypes: getIndexPermsDSAttrTypes()})
+		config.RemoteIndices = types.SetNull(types.ObjectType{AttrTypes: getRemoteIndexPermsDSAttrTypes()})
 		return config, diags
 	}
 
@@ -300,7 +283,7 @@ func (config *roleDataSourceModel) fromAPIModel(ctx context.Context, role *esTyp
 	config.Cluster = clusterSet
 
 	// RunAs
-	runAsSet, d := types.SetValueFrom(ctx, types.StringType, role.RunAs)
+	runAsSet, d := types.SetValueFrom(ctx, types.StringType, typeutils.NonNilSlice(role.RunAs))
 	diags.Append(d...)
 	if diags.HasError() {
 		return diags
@@ -335,13 +318,13 @@ func (config *roleDataSourceModel) fromAPIModel(ctx context.Context, role *esTyp
 	if len(role.Applications) > 0 {
 		appElements := make([]attr.Value, len(role.Applications))
 		for i, app := range role.Applications {
-			privSet, d := types.SetValueFrom(ctx, types.StringType, app.Privileges)
+			privSet, d := types.SetValueFrom(ctx, types.StringType, typeutils.NonNilSlice(app.Privileges))
 			diags.Append(d...)
 			if diags.HasError() {
 				return diags
 			}
 
-			resSet, d := types.SetValueFrom(ctx, types.StringType, app.Resources)
+			resSet, d := types.SetValueFrom(ctx, types.StringType, typeutils.NonNilSlice(app.Resources))
 			diags.Append(d...)
 			if diags.HasError() {
 				return diags
@@ -374,7 +357,7 @@ func (config *roleDataSourceModel) fromAPIModel(ctx context.Context, role *esTyp
 	if len(role.Indices) > 0 {
 		indicesElements := make([]attr.Value, len(role.Indices))
 		for i, index := range role.Indices {
-			namesSet, d := types.SetValueFrom(ctx, types.StringType, index.Names)
+			namesSet, d := types.SetValueFrom(ctx, types.StringType, typeutils.NonNilSlice(index.Names))
 			diags.Append(d...)
 			if diags.HasError() {
 				return diags
@@ -476,13 +459,13 @@ func (config *roleDataSourceModel) fromAPIModel(ctx context.Context, role *esTyp
 	if len(role.RemoteIndices) > 0 {
 		remoteIndicesElements := make([]attr.Value, len(role.RemoteIndices))
 		for i, remoteIndex := range role.RemoteIndices {
-			clustersSet, d := types.SetValueFrom(ctx, types.StringType, remoteIndex.Clusters)
+			clustersSet, d := types.SetValueFrom(ctx, types.StringType, typeutils.NonNilSlice(remoteIndex.Clusters))
 			diags.Append(d...)
 			if diags.HasError() {
 				return diags
 			}
 
-			namesSet, d := types.SetValueFrom(ctx, types.StringType, remoteIndex.Names)
+			namesSet, d := types.SetValueFrom(ctx, types.StringType, typeutils.NonNilSlice(remoteIndex.Names))
 			diags.Append(d...)
 			if diags.HasError() {
 				return diags
