@@ -433,6 +433,15 @@ func TestAccResourceDashboardXYChart_chartTimeRangeLifecycle(t *testing.T) {
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.time_range"),
 				),
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("step_inherit_null_again"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				PlanOnly: true,
+			},
 		},
 	})
 }

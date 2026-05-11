@@ -126,6 +126,7 @@ func TestAccResourceDashboardDatatableChart_lensPresentationCrossCutting(t *test
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.datatable_config.no_esql.hide_title", "true"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.datatable_config.no_esql.drilldowns.#", "1"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.datatable_config.no_esql.drilldowns.0.url_drilldown.url", "https://example.com/{{event.field}}"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.datatable_config.no_esql.drilldowns.0.url_drilldown.label", "Open URL"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.datatable_config.no_esql.drilldowns.0.url_drilldown.trigger", "on_click_value"),
 				),
 			},
