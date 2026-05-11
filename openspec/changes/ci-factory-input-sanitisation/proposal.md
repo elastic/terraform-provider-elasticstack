@@ -21,9 +21,10 @@ The change-factory, research-factory, and code-factory workflows ingest user-aut
 
 ## Impact
 
-- `lib/sanitize-context.js` — core sanitisation logic extended
-- `research-factory-issue/scripts/write_context_files.inline.js` — apply sanitisation to prior research comment
-- `change-factory-issue/scripts/sanitize_context.inline.js` — unchanged (already applies stripHtmlComments), but will use the new composed function
-- `code-factory-issue/scripts/sanitize_context.inline.js` — unchanged, same as above
-- `lib/sanitize-context.test.mjs` — new test coverage
-- `lib/factory-issue-comments.js` — the `serializeIssueComments` function handles prompt-budget truncation; no change needed but worth noting it already limits context size
+- `.github/workflows-src/lib/sanitize-context.js` — core sanitisation logic extended
+- `.github/workflows-src/research-factory-issue/scripts/write_context_files.inline.js` — apply sanitisation to prior research comment
+- `.github/workflows-src/change-factory-issue/scripts/sanitize_context.inline.js` — unchanged (already applies stripHtmlComments), but will use the new composed function
+- `.github/workflows-src/change-factory-issue/scripts/extract_research_comment.inline.js` — apply sanitisation to the prior research comment before writing it to disk
+- `.github/workflows-src/code-factory-issue/scripts/sanitize_context.inline.js` — unchanged, same as above
+- `.github/workflows-src/lib/sanitize-context.test.mjs` — new test coverage
+- `.github/workflows-src/lib/factory-issue-comments.js` — the `serializeIssueComments` function handles prompt-budget truncation; no change needed but worth noting it already limits context size

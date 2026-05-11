@@ -79,11 +79,11 @@ These characters are never legitimate in Terraform provider issue content (no na
 
 ### Decision 5: Sanitise prior_research_comment at the write step
 
-The `prior_research_comment` body is written to disk in two places:
-- `research-factory/scripts/write_context_files.inline.js` — writes to `/tmp/research-factory-context/prior_research_comment.md`
-- `change-factory/scripts/sanitize_context.inline.js` — writes to `/tmp/change-factory-context/research_comment.md`
+The research comment body is written to disk in two places:
+- `.github/workflows-src/research-factory-issue/scripts/write_context_files.inline.js` — writes `prior_research_comment` to `/tmp/research-factory-context/prior_research_comment.md`
+- `.github/workflows-src/change-factory-issue/scripts/extract_research_comment.inline.js` — writes `research_comment` to `/tmp/change-factory-context/research_comment.md`
 
-Both will be updated to pass `prior_research_comment` / `research_comment` through `sanitizeUserContent` before writing.
+Both write steps will be updated to pass the relevant content through `sanitizeUserContent` before writing.
 
 The GHA marker `<!-- gha-research-factory -->` will be stripped like any other HTML comment. This is fine — the agent receives it as a clearly-named file and the workflow template already tells the agent what it contains.
 

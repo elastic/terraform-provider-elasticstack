@@ -56,10 +56,12 @@ The `sanitizeUserContent` function SHALL apply three filters in order:
 - **WHEN** `sanitizeUserContent` is applied twice to the same input
 - **THEN** the second application SHALL produce the same output as the first
 
-#### Scenario: existing stripHtmlContracts call sites are updated to use sanitizeUserContent
-- **WHEN** `change-factory/scripts/sanitize_context.inline.js` runs
+#### Scenario: existing stripHtmlComments call sites are updated to use sanitizeUserContent
+- **WHEN** `.github/workflows-src/change-factory-issue/scripts/sanitize_context.inline.js` runs
 - **THEN** it SHALL pass the issue body and human comments through `sanitizeUserContent` instead of `stripHtmlComments` alone
-- **WHEN** `research-factory/scripts/write_context_files.inline.js` runs
+- **WHEN** `.github/workflows-src/change-factory-issue/scripts/extract_research_comment.inline.js` runs
+- **THEN** it SHALL pass the prior research comment body through `sanitizeUserContent` before writing `/tmp/change-factory-context/research_comment.md`
+- **WHEN** `.github/workflows-src/research-factory-issue/scripts/write_context_files.inline.js` runs
 - **THEN** it SHALL pass the issue body, issue comments, and prior research comment through `sanitizeUserContent` instead of `stripHtmlComments` alone
-- **WHEN** `code-factory/scripts/sanitize_context.inline.js` runs
+- **WHEN** `.github/workflows-src/code-factory-issue/scripts/sanitize_context.inline.js` runs
 - **THEN** it SHALL pass the issue body and human comments through `sanitizeUserContent` instead of `stripHtmlComments` alone
