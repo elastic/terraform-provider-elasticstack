@@ -20,6 +20,7 @@ The Kibana Dashboard API persists saved filter pills under `kbn-dashboard-data.f
   - *Rejected*: structured discriminated nested blocks (`is = {...}`, `is_one_of = {...}`, …). High maintenance cost, brittle against Kibana spec evolution, no immediate user-visible benefit over JSON.
 - **Normalization**: reuse the existing `config_json` semantic-equality plan modifier so key reorderings and Kibana-injected defaults do not appear as diffs.
 - **Null vs empty**: an unset `filters` attribute stays unset on read when the API returns either no `filters` field or an empty list (consistent with REQ-009 "State preservation for fields Kibana omits or defaults").
+- **Generated client gap (`PutDashboardsIdJSONBody_Filters_Item`)**: the OpenAPI-generated PUT-body filter union type ships without `MarshalJSON`/`UnmarshalJSON`, unlike `KbnDashboardData_Filters_Item`, so `encoding/json` cannot round-trip the union from other packages. The hand-maintained companion `generated/kbapi/put_dashboard_filters_item_json.go` adds those methods; **delete that file if a future `make generate` ever emits equivalent methods** (otherwise the build will fail with duplicate receivers).
 
 ## Risks / Trade-offs
 

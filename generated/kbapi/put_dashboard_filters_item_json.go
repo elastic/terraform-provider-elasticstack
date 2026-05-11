@@ -17,9 +17,14 @@
 
 package kbapi
 
-// PutDashboardsIdJSONBody_Filters_Item is generated with a json.RawMessage union but without JSON
-// marshal hooks (unlike KbnDashboardData_Filters_Item). Without these methods, encoding/json
-// cannot populate or serialize the union field from outside this package.
+// Hand-maintained companion for generated PutDashboardsIdJSONBody_Filters_Item.
+//
+// The kibana.gen.go type uses an unexported json.RawMessage union but omits the MarshalJSON/UnmarshalJSON
+// hooks that exist on KbnDashboardData_Filters_Item. Without these methods, decoding filter JSON into the
+// PUT request body leaves an empty union and updates cannot serialize filters.
+//
+// Removal: delete this file if codegen ever adds the same methods to PutDashboardsIdJSONBody_Filters_Item
+// (duplicate receiver definitions will not compile).
 
 func (t PutDashboardsIdJSONBody_Filters_Item) MarshalJSON() ([]byte, error) {
 	b, err := t.union.MarshalJSON()
