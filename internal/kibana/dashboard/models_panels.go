@@ -417,7 +417,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 		// Unknown panel type: preserve id, grid, type and the raw API config.
 		// This ensures round-trip stability for panels that don't yet have a
 		// typed config block (e.g. discover_session, image, slo_alerts).
-			// Clear fields that may be seeded from prior state before populating
+		// Clear fields that may be seeded from prior state before populating
 		// from the API payload so stale values cannot survive a missing field.
 		pm.ID = types.StringNull()
 		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)

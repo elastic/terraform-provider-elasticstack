@@ -98,7 +98,7 @@ func TestAccResourceDashboardUnknownPanel(t *testing.T) {
 				// what was read from Kibana (the image panel), not what config specifies.
 				// ExpectNonEmptyPlan: the config specifies a markdown panel while the
 				// refreshed state has an image panel, so an update diff is expected.
-				PlanOnly:            true,
+				PlanOnly:           true,
 				ExpectNonEmptyPlan: true,
 				// Expect the image panel to be read back and preserved in state.
 				Check: resource.ComposeTestCheckFunc(
@@ -113,7 +113,6 @@ func TestAccResourceDashboardUnknownPanel(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.config_json"),
 					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.config_json", regexp.MustCompile(`"image_config"\s*:`)),
 				),
-
 			},
 		},
 	})

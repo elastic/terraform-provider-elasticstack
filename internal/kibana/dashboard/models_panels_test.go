@@ -379,7 +379,7 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 						W: types.Int64Value(48),
 						H: types.Int64Value(15),
 					},
-					ID: types.StringValue("discover-1"),
+					ID:         types.StringValue("discover-1"),
 					ConfigJSON: customtypes.NewJSONWithDefaultsValue(`{"timeRange":{"from":"now-30d","to":"now"},"columns":["_source"],"sort":[{"@timestamp":"desc"}]}`, populatePanelConfigJSONDefaults),
 				},
 			},
@@ -652,7 +652,7 @@ func Test_panelsToAPI(t *testing.T) {
 							W: types.Int64Value(48),
 							H: types.Int64Value(15),
 						},
-						ID: types.StringValue("discover-1"),
+						ID:         types.StringValue("discover-1"),
 						ConfigJSON: customtypes.NewJSONWithDefaultsValue(`{"timeRange":{"from":"now-30d","to":"now"},"columns":["_source"],"sort":[{"@timestamp":"desc"}]}`, populatePanelConfigJSONDefaults),
 					},
 				},
@@ -823,4 +823,3 @@ func Test_unknownPanelToAPIErrorWithoutConfigJSON(t *testing.T) {
 	require.Equal(t, "Unsupported panel type", diags[0].Summary())
 	require.Contains(t, diags[0].Detail(), "not yet supported")
 }
-
