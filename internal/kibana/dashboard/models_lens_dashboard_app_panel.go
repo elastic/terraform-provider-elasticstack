@@ -39,7 +39,7 @@ type lensDashboardAppByValueModel struct {
 	WaffleConfig       *waffleConfigModel       `tfsdk:"waffle_config"`
 	RegionMapConfig    *regionMapConfigModel    `tfsdk:"region_map_config"`
 	GaugeConfig        *gaugeConfigModel        `tfsdk:"gauge_config"`
-	MetricChartConfig  *metricChartConfigModel  `tfsdk:"metric_chart_config"`
+	MetricChartConfig  *metricChartLensByValueTFModel `tfsdk:"metric_chart_config"`
 	PieChartConfig     *pieChartConfigModel     `tfsdk:"pie_chart_config"`
 	LegacyMetricConfig *legacyMetricConfigModel `tfsdk:"legacy_metric_config"`
 }

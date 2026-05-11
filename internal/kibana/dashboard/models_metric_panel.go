@@ -140,8 +140,9 @@ func (c metricChartPanelConfigConverter) buildAttributes(pm panelModel, dashboar
 	return attrs, diags
 }
 
-type metricChartConfigModel struct {
-	lensChartPresentationTFModel
+// metricChartCoreTFModel carries metric chart Terraform attributes that exist for both vis panels and
+// lens-dashboard-app typed by-value blocks (REQ-037 presentation siblings are modeled separately).
+type metricChartCoreTFModel struct {
 	Title               types.String           `tfsdk:"title"`
 	Description         types.String           `tfsdk:"description"`
 	DataSourceJSON      jsontypes.Normalized   `tfsdk:"data_source_json"`
@@ -151,6 +152,34 @@ type metricChartConfigModel struct {
 	Filters             []chartFilterJSONModel `tfsdk:"filters"`
 	Metrics             []metricItemModel      `tfsdk:"metrics"`
 	BreakdownByJSON     jsontypes.Normalized   `tfsdk:"breakdown_by_json"`
+}
+
+type metricChartConfigModel struct {
+	lensChartPresentationTFModel
+	metricChartCoreTFModel
+}
+
+// metricChartLensByValueTFModel is the Terraform model for lens_dashboard_app_config.by_value.metric_chart_config.
+// Schema uses getMetricChart(false), so REQ-037 presentation siblings are omitted from the Terraform object even though
+// the vis conversion path temporarily expands this into metricChartConfigModel (with null presentation defaults).
+type metricChartLensByValueTFModel struct {
+	metricChartCoreTFModel
+}
+
+func (s *metricChartLensByValueTFModel) expandToVisMetricChart() *metricChartConfigModel {
+	if s == nil {
+		return nil
+	}
+	out := &metricChartConfigModel{metricChartCoreTFModel: s.metricChartCoreTFModel}
+	out.lensChartPresentationTFModel = newNullLensChartPresentationTFModel()
+	return out
+}
+
+func metricLensByValueFromVisFull(m *metricChartConfigModel) *metricChartLensByValueTFModel {
+	if m == nil {
+		return nil
+	}
+	return &metricChartLensByValueTFModel{metricChartCoreTFModel: m.metricChartCoreTFModel}
 }
 
 type metricItemModel struct {

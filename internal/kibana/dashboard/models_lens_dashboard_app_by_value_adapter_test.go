@@ -31,8 +31,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// testMetricByValueFromRoundTrip is a real metricChartConfigModel produced via the same
-// path as the vis round-trip test (API union -> populateFromAttributes).
+// testMetricByValueFromRoundTrip builds a lens-dashboard-app by_value metric typed model from a vis
+// populate path (API union -> populateFromAttributes), stripped to metricChartLensByValueTFModel fields.
 func testMetricByValueFromRoundTrip(t *testing.T) lensDashboardAppByValueModel {
 	t.Helper()
 	ctx := context.Background()
@@ -51,7 +51,7 @@ func testMetricByValueFromRoundTrip(t *testing.T) lensDashboardAppByValueModel {
 	converter := newMetricChartPanelConfigConverter()
 	pm := &panelModel{}
 	require.False(t, converter.populateFromAttributes(ctx, nil, pm, attrs).HasError())
-	return lensDashboardAppByValueModel{MetricChartConfig: pm.MetricChartConfig}
+	return lensDashboardAppByValueModel{MetricChartConfig: metricLensByValueFromVisFull(pm.MetricChartConfig)}
 }
 
 // testPieByValueConfigBytes is wire JSON for a by-value pie chart (same shape the
@@ -199,7 +199,7 @@ func Test_visConfig0ToLensAppConfig0_jsonBridge_metric(t *testing.T) {
 
 func Test_lensByValueToScratchVisPanel_roundTripFields(t *testing.T) {
 	t.Parallel()
-	by := lensDashboardAppByValueModel{MetricChartConfig: &metricChartConfigModel{}}
+	by := lensDashboardAppByValueModel{MetricChartConfig: &metricChartLensByValueTFModel{}}
 	pm, ok := lensByValueToScratchVisPanel(by)
 	require.True(t, ok)
 	require.NotNil(t, pm.MetricChartConfig)
@@ -256,7 +256,7 @@ func testMetricEsqlByValueModel(t *testing.T) lensDashboardAppByValueModel {
 	conv := newMetricChartPanelConfigConverter()
 	pm := &panelModel{}
 	require.False(t, conv.populateFromAttributes(ctx, nil, pm, vis0).HasError())
-	return lensDashboardAppByValueModel{MetricChartConfig: pm.MetricChartConfig}
+	return lensDashboardAppByValueModel{MetricChartConfig: metricLensByValueFromVisFull(pm.MetricChartConfig)}
 }
 
 func testXyEsqlByValueModel(t *testing.T) lensDashboardAppByValueModel {
@@ -522,7 +522,7 @@ func Test_lensByValueAdapter_schemaTypedBlocksHaveScratchMapping(t *testing.T) {
 		{WaffleConfig: &waffleConfigModel{}},
 		{RegionMapConfig: &regionMapConfigModel{}},
 		{GaugeConfig: &gaugeConfigModel{}},
-		{MetricChartConfig: &metricChartConfigModel{}},
+		{MetricChartConfig: &metricChartLensByValueTFModel{}},
 		{PieChartConfig: &pieChartConfigModel{}},
 		{LegacyMetricConfig: &legacyMetricConfigModel{}},
 	}

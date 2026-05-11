@@ -70,7 +70,7 @@ func lensByValueToScratchVisPanel(byValue lensDashboardAppByValueModel) (panelMo
 	case byValue.GaugeConfig != nil:
 		pm.GaugeConfig = byValue.GaugeConfig
 	case byValue.MetricChartConfig != nil:
-		pm.MetricChartConfig = byValue.MetricChartConfig
+		pm.MetricChartConfig = byValue.MetricChartConfig.expandToVisMetricChart()
 	case byValue.PieChartConfig != nil:
 		pm.PieChartConfig = byValue.PieChartConfig
 	case byValue.LegacyMetricConfig != nil:
@@ -170,7 +170,7 @@ func lensByValueModelFromVizPanelAfterRead(pm *panelModel) (lensDashboardAppByVa
 	}
 	if pm.MetricChartConfig != nil {
 		set++
-		out.MetricChartConfig = pm.MetricChartConfig
+		out.MetricChartConfig = metricLensByValueFromVisFull(pm.MetricChartConfig)
 	}
 	if pm.PieChartConfig != nil {
 		set++

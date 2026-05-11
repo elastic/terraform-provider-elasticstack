@@ -38,6 +38,16 @@ type lensChartPresentationTFModel struct {
 	Drilldowns     []lensDrilldownItemTFModel `tfsdk:"drilldowns"`
 }
 
+func newNullLensChartPresentationTFModel() lensChartPresentationTFModel {
+	return lensChartPresentationTFModel{
+		TimeRange:      nil,
+		HideTitle:      types.BoolNull(),
+		HideBorder:     types.BoolNull(),
+		ReferencesJSON: jsontypes.NewNormalizedNull(),
+		Drilldowns:     nil,
+	}
+}
+
 // lensChartPresentationInput carries chart-root presentation TF fields for shared write-path helpers.
 type lensChartPresentationInput struct {
 	TimeRange      *timeRangeModel
