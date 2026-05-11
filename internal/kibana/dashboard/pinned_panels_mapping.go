@@ -21,6 +21,7 @@ import (
 	"context"
 	"encoding/json"
 	"strings"
+	"unsafe"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -58,22 +59,22 @@ func pinnedPanelsDiagnosticsErrorsDetail(d diag.Diagnostics) string {
 	return strings.Join(parts, "; ")
 }
 
+func pinnedPanelPutItemFromCreateItem(item kbapi.KbnDashboardData_PinnedPanels_Item) kbapi.PutDashboardsIdJSONBody_PinnedPanels_Item {
+	// KbnDashboardData_PinnedPanels_Item and PutDashboardsIdJSONBody_PinnedPanels_Item are distinct named types
+	// over the same generated openapi union layout (single json.RawMessage field).
+	return *(*kbapi.PutDashboardsIdJSONBody_PinnedPanels_Item)(unsafe.Pointer(&item))
+}
+
+func pinnedPanelCreateItemFromPutItem(item kbapi.PutDashboardsIdJSONBody_PinnedPanels_Item) kbapi.KbnDashboardData_PinnedPanels_Item {
+	return *(*kbapi.KbnDashboardData_PinnedPanels_Item)(unsafe.Pointer(&item))
+}
+
 func pinnedPanelCreateItemsToPutItems(items []kbapi.KbnDashboardData_PinnedPanels_Item) ([]kbapi.PutDashboardsIdJSONBody_PinnedPanels_Item, diag.Diagnostics) {
-	var diags diag.Diagnostics
 	out := make([]kbapi.PutDashboardsIdJSONBody_PinnedPanels_Item, len(items))
 	for i := range items {
-		itemPath := path.Root("pinned_panels").AtListIndex(i)
-		b, err := json.Marshal(items[i])
-		if err != nil {
-			diags.AddAttributeError(itemPath, "Failed to marshal pinned panel", err.Error())
-			return nil, diags
-		}
-		if err := json.Unmarshal(b, &out[i]); err != nil {
-			diags.AddAttributeError(itemPath, "Failed to convert pinned panel for update", err.Error())
-			return nil, diags
-		}
+		out[i] = pinnedPanelPutItemFromCreateItem(items[i])
 	}
-	return out, diags
+	return out, nil
 }
 
 func (m *dashboardModel) pinnedPanelsToAPICreateItems() (*[]kbapi.KbnDashboardData_PinnedPanels_Item, diag.Diagnostics) {

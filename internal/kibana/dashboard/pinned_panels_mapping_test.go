@@ -114,7 +114,7 @@ func Test_dashboardModel_mapPinnedPanelsFromAPI_unsetVsEmptyAndDrift(t *testing.
 		out, diags := d.mapPinnedPanelsFromAPI(ctx, []pinnedPanelModel{}, &api)
 		require.False(t, diags.HasError())
 		require.NotNil(t, out)
-		require.Len(t, out, 0)
+		require.Empty(t, out)
 	})
 
 	t.Run("prior nil + API one entry yields one populated entry", func(t *testing.T) {
@@ -218,7 +218,7 @@ func Test_dashboardModel_toAPIRequests_pinnedPanelsJSONShape(t *testing.T) {
 		req := m.toAPICreateRequest(ctx, diags)
 		require.False(t, diags.HasError())
 		require.NotNil(t, req.PinnedPanels)
-		require.Len(t, *req.PinnedPanels, 0)
+		require.Empty(t, *req.PinnedPanels)
 	})
 
 	t.Run("update omits pinned_panels field assignment when unset", func(t *testing.T) {
@@ -237,7 +237,7 @@ func Test_dashboardModel_toAPIRequests_pinnedPanelsJSONShape(t *testing.T) {
 		req := m.toAPIUpdateRequest(ctx, diags)
 		require.False(t, diags.HasError())
 		require.NotNil(t, req.PinnedPanels)
-		require.Len(t, *req.PinnedPanels, 0)
+		require.Empty(t, *req.PinnedPanels)
 	})
 
 	t.Run("update assigns non-empty pinned_panels", func(t *testing.T) {
@@ -251,7 +251,7 @@ func Test_dashboardModel_toAPIRequests_pinnedPanelsJSONShape(t *testing.T) {
 		require.NotNil(t, req.PinnedPanels)
 		require.Len(t, *req.PinnedPanels, 1)
 
-		raw, err := json.Marshal((*req.PinnedPanels)[0])
+		raw, err := json.Marshal(pinnedPanelCreateItemFromPutItem((*req.PinnedPanels)[0]))
 		require.NoError(t, err)
 		require.NotContains(t, string(raw), `"grid"`)
 	})
