@@ -26,11 +26,11 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/planmodifiers"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
@@ -277,9 +277,9 @@ func getSchema(_ context.Context) schema.Schema {
 				},
 			},
 			"sort_field": schema.SetAttribute{
-				ElementType: types.StringType,
-				Description: "The field to sort shards in this index by.",
-				Optional:    true,
+				ElementType:        types.StringType,
+				Description:        "The field to sort shards in this index by.",
+				Optional:           true,
 				DeprecationMessage: "Use the 'sort' attribute instead. 'sort_field' will be removed in a future major release.",
 				Validators: []validator.Set{
 					setvalidator.ConflictsWith(path.MatchRoot("sort")),
@@ -290,9 +290,9 @@ func getSchema(_ context.Context) schema.Schema {
 			},
 			// sort_order can't be set type since it can have dup strings like ["asc", "asc"]
 			"sort_order": schema.ListAttribute{
-				ElementType: types.StringType,
-				Description: "The direction to sort shards in. Accepts `asc`, `desc`.",
-				Optional:    true,
+				ElementType:        types.StringType,
+				Description:        "The direction to sort shards in. Accepts `asc`, `desc`.",
+				Optional:           true,
 				DeprecationMessage: "Use the 'sort' attribute instead. 'sort_order' will be removed in a future major release.",
 				Validators: []validator.List{
 					listvalidator.ConflictsWith(path.MatchRoot("sort")),
