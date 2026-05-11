@@ -11,9 +11,9 @@
 
 ## 3. Tests
 
-- [ ] 3.1 Unit tests in `models_test.go` for null-vs-empty preservation, normalization, and order
-- [ ] 3.2 Acceptance test creating a dashboard with multiple filters, verifying read-back diff is empty
-- [ ] 3.3 Run `make build`, `go vet ./...`, `go test ./internal/kibana/dashboard/...` (`TF_ACC=1` for acceptance)
+- [x] 3.1 Unit tests in `models_dashboard_root_filters_test.go` for null-vs-empty preservation, normalization, and order
+- [x] 3.2 Acceptance test creating a dashboard with multiple filters, verifying read-back diff is empty
+- [x] 3.3 Run `make build`, `go vet ./...`, `go test ./internal/kibana/dashboard/...` (`TF_ACC=1` for acceptance)
 
 ## 4. Spec sync
 
