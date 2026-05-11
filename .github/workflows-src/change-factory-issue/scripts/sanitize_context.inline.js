@@ -6,8 +6,8 @@ const crypto = require('crypto');
 const body = process.env.ISSUE_BODY || '';
 const comments = process.env.HUMAN_COMMENTS || '';
 
-const sanitizedBody = stripHtmlComments(body);
-const sanitizedComments = stripHtmlComments(comments);
+const sanitizedBody = sanitizeUserContent(body);
+const sanitizedComments = sanitizeUserContent(comments);
 
 const eofDelim1 = `EOF_${crypto.randomUUID().replace(/-/g, '')}`;
 const output1 = `sanitized_issue_body<<${eofDelim1}\n${sanitizedBody}\n${eofDelim1}\n`;
