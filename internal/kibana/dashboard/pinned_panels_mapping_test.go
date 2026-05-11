@@ -240,6 +240,22 @@ func Test_dashboardModel_toAPIRequests_pinnedPanelsJSONShape(t *testing.T) {
 		require.Len(t, *req.PinnedPanels, 0)
 	})
 
+	t.Run("update assigns non-empty pinned_panels", func(t *testing.T) {
+		t.Parallel()
+		diags := &diag.Diagnostics{}
+		m := newPinnedDashboardModelBase([]pinnedPanelModel{
+			pinnedFixtureOptionsList("status"),
+		})
+		req := m.toAPIUpdateRequest(ctx, diags)
+		require.False(t, diags.HasError())
+		require.NotNil(t, req.PinnedPanels)
+		require.Len(t, *req.PinnedPanels, 1)
+
+		raw, err := json.Marshal((*req.PinnedPanels)[0])
+		require.NoError(t, err)
+		require.NotContains(t, string(raw), `"grid"`)
+	})
+
 	t.Run("pinned panel payload JSON does not include grid", func(t *testing.T) {
 		t.Parallel()
 		diags := &diag.Diagnostics{}
