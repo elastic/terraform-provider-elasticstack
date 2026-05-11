@@ -35,11 +35,11 @@
 
 ## 5. Unit tests
 
-- [ ] 5.1 Extend `models_xy_chart_panel_test.go` to cover `time_range` inheritance (null in plan, equal to dashboard on read-back → null-preserved), explicit override, and `mode` null-preservation.
-- [ ] 5.2 Extend `models_xy_chart_panel_test.go` to cover `hide_title`, `hide_border`, `references_json` round-trip and null-preservation.
-- [ ] 5.3 Add `drilldownsToAPI`/`drilldownsFromAPI` unit tests covering all three variants, computed trigger defaulting, and error on multi-variant list items.
-- [ ] 5.4 Replicate the test coverage from 5.1–5.3 across the remaining eleven `models_*_panel_test.go` files for each chart type that gains the shared presentation attributes. Use a table-driven helper if the test bodies are sufficiently uniform.
-- [ ] 5.5 Add a validator unit test covering: `url_drilldown.trigger` with invalid enum rejected; `dashboard_drilldown.trigger` set in config rejected (computed-only); multi-variant list items rejected; zero-variant list items rejected.
+- [x] 5.1 Extend `models_xy_chart_panel_test.go` to cover `time_range` inheritance (null in plan, equal to dashboard on read-back → null-preserved), explicit override, and `mode` null-preservation.
+- [x] 5.2 Extend `models_xy_chart_panel_test.go` to cover `hide_title`, `hide_border`, `references_json` round-trip and null-preservation.
+- [x] 5.3 Add `drilldownsToAPI`/`drilldownsFromAPI` unit tests covering all three variants, computed trigger defaulting, and error on multi-variant list items.
+- [x] 5.4 Replicate the test coverage from 5.1–5.3 across the remaining eleven `models_*_panel_test.go` files for each chart type that gains the shared presentation attributes. Use a table-driven helper if the test bodies are sufficiently uniform. **Note:** full multi-scenario coverage is centralized in `models_chart_presentation_table_test.go` for datatable/metric/gauge/pie; the remaining chart types use a thin `hide_title` wiring round-trip per file.
+- [x] 5.5 Add a validator unit test covering: `url_drilldown.trigger` with invalid enum rejected; `dashboard_drilldown.trigger` set in config rejected (computed-only); multi-variant list items rejected; zero-variant list items rejected. **Note:** multi-variant list items are covered by the existing `ForbiddenIfDependentPathExpressionSiblingNestedPresent` tests in `internal/utils/validators/conditional_test.go` (same mechanism as the per-variant sibling validators); dashboard adds schema-level tests in `lens_chart_presentation_validators_test.go`.
 
 ## 6. Acceptance tests
 
