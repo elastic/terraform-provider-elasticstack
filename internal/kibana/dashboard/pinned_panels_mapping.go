@@ -196,20 +196,20 @@ func seedPinnedPanelModelForRead(tf *pinnedPanelModel, discriminator string) (pp
 // applyPinnedControlConfig assigns the active control config from a synthetic
 // panelModel onto ppm and clears the other three sibling slots so each pinned
 // entry only carries the discriminator-matching block.
-func (ppm *pinnedPanelModel) applyPinnedControlConfig(active string, pm *panelModel) {
-	ppm.OptionsListControlConfig = nil
-	ppm.RangeSliderControlConfig = nil
-	ppm.TimeSliderControlConfig = nil
-	ppm.EsqlControlConfig = nil
+func (pp *pinnedPanelModel) applyPinnedControlConfig(active string, pm *panelModel) {
+	pp.OptionsListControlConfig = nil
+	pp.RangeSliderControlConfig = nil
+	pp.TimeSliderControlConfig = nil
+	pp.EsqlControlConfig = nil
 	switch active {
 	case panelTypeOptionsListControl:
-		ppm.OptionsListControlConfig = pm.OptionsListControlConfig
+		pp.OptionsListControlConfig = pm.OptionsListControlConfig
 	case panelTypeRangeSlider:
-		ppm.RangeSliderControlConfig = pm.RangeSliderControlConfig
+		pp.RangeSliderControlConfig = pm.RangeSliderControlConfig
 	case panelTypeTimeSlider:
-		ppm.TimeSliderControlConfig = pm.TimeSliderControlConfig
+		pp.TimeSliderControlConfig = pm.TimeSliderControlConfig
 	case panelTypeEsqlControl:
-		ppm.EsqlControlConfig = pm.EsqlControlConfig
+		pp.EsqlControlConfig = pm.EsqlControlConfig
 	}
 }
 
