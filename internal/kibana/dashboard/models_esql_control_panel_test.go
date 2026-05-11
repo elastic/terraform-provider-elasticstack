@@ -66,7 +66,7 @@ func Test_populateEsqlControlFromAPI_import_populatesAllFields(t *testing.T) {
 	})
 
 	pm := &panelModel{}
-	populateEsqlControlFromAPI(pm, nil, cfg)
+	populateEsqlControlFromAPI(pm, nil, &kbapi.KbnDashboardPanelTypeEsqlControl{Config: cfg})
 
 	require.NotNil(t, pm.EsqlControlConfig)
 	assert.Equal(t, stringsToList([]string{"opt_a"}), pm.EsqlControlConfig.SelectedOptions)
@@ -86,7 +86,7 @@ func Test_populateEsqlControlFromAPI_import_populatesAllFields(t *testing.T) {
 func Test_populateEsqlControlFromAPI_nilBlock_preservesNil(t *testing.T) {
 	pm := &panelModel{}
 	tfPanel := &panelModel{}
-	populateEsqlControlFromAPI(pm, tfPanel, minimalEsqlAPIConfig(t))
+	populateEsqlControlFromAPI(pm, tfPanel, &kbapi.KbnDashboardPanelTypeEsqlControl{Config: minimalEsqlAPIConfig(t)})
 	assert.Nil(t, pm.EsqlControlConfig)
 }
 
@@ -103,7 +103,7 @@ func Test_populateEsqlControlFromAPI_existingBlock_requiredFieldsUpdated(t *test
 		},
 	}
 	tfPanel := &panelModel{EsqlControlConfig: pm.EsqlControlConfig}
-	populateEsqlControlFromAPI(pm, tfPanel, minimalEsqlAPIConfig(t))
+	populateEsqlControlFromAPI(pm, tfPanel, &kbapi.KbnDashboardPanelTypeEsqlControl{Config: minimalEsqlAPIConfig(t)})
 
 	require.NotNil(t, pm.EsqlControlConfig)
 	assert.Equal(t, stringsToList([]string{"opt_a"}), pm.EsqlControlConfig.SelectedOptions)
@@ -136,7 +136,7 @@ func Test_populateEsqlControlFromAPI_nullOptionalFields_preserved(t *testing.T) 
 		Title:           new("API Title"),
 		SingleSelect:    new(true),
 	})
-	populateEsqlControlFromAPI(pm, tfPanel, cfg)
+	populateEsqlControlFromAPI(pm, tfPanel, &kbapi.KbnDashboardPanelTypeEsqlControl{Config: cfg})
 
 	require.NotNil(t, pm.EsqlControlConfig)
 	assert.True(t, pm.EsqlControlConfig.Title.IsNull())
@@ -170,7 +170,7 @@ func Test_populateEsqlControlFromAPI_nilDisplaySettings_preserved(t *testing.T) 
 			Placeholder   *string `json:"placeholder,omitempty"`
 		}{Placeholder: new("hint")},
 	})
-	populateEsqlControlFromAPI(pm, tfPanel, cfg)
+	populateEsqlControlFromAPI(pm, tfPanel, &kbapi.KbnDashboardPanelTypeEsqlControl{Config: cfg})
 	assert.Nil(t, pm.EsqlControlConfig.DisplaySettings)
 }
 
@@ -207,7 +207,7 @@ func Test_populateEsqlControlFromAPI_displaySettings_nullFieldsPreserved(t *test
 			HideActionBar: new(false),
 		},
 	})
-	populateEsqlControlFromAPI(pm, tfPanel, cfg)
+	populateEsqlControlFromAPI(pm, tfPanel, &kbapi.KbnDashboardPanelTypeEsqlControl{Config: cfg})
 
 	require.NotNil(t, pm.EsqlControlConfig.DisplaySettings)
 	// null field stays null
@@ -340,7 +340,7 @@ func Test_esqlControl_roundTrip(t *testing.T) {
 		AvailableOptions: original.AvailableOptions,
 	}}
 	tfPanel := &panelModel{EsqlControlConfig: out.EsqlControlConfig}
-	populateEsqlControlFromAPI(out, tfPanel, esqlPanel.Config)
+	populateEsqlControlFromAPI(out, tfPanel, &esqlPanel)
 
 	require.NotNil(t, out.EsqlControlConfig)
 	assert.Equal(t, original.SelectedOptions, out.EsqlControlConfig.SelectedOptions)
@@ -350,4 +350,114 @@ func Test_esqlControl_roundTrip(t *testing.T) {
 	assert.Equal(t, original.ControlType, out.EsqlControlConfig.ControlType)
 	assert.Equal(t, original.Title, out.EsqlControlConfig.Title)
 	assert.Equal(t, original.SingleSelect, out.EsqlControlConfig.SingleSelect)
+}
+
+func Test_buildEsqlControlConfig_widthGrow_setAndOmitted(t *testing.T) {
+	t.Run("known width and grow are written to the API panel", func(t *testing.T) {
+		pm := panelModel{
+			EsqlControlConfig: &esqlControlConfigModel{
+				SelectedOptions: stringsToList([]string{"opt_a"}),
+				VariableName:    types.StringValue("my_var"),
+				VariableType:    types.StringValue("values"),
+				EsqlQuery:       types.StringValue("FROM logs-*"),
+				ControlType:     types.StringValue("STATIC_VALUES"),
+				Width:           types.StringValue("large"),
+				Grow:            types.BoolValue(true),
+			},
+		}
+		esqlPanel := kbapi.KbnDashboardPanelTypeEsqlControl{}
+		diags := buildEsqlControlConfig(pm, &esqlPanel)
+		require.False(t, diags.HasError())
+		require.NotNil(t, esqlPanel.Width)
+		assert.Equal(t, kbapi.KbnControlsSchemasControlsGroupSchemaEsqlControlWidthLarge, *esqlPanel.Width)
+		require.NotNil(t, esqlPanel.Grow)
+		assert.True(t, *esqlPanel.Grow)
+	})
+
+	t.Run("null width and grow are omitted from the API panel", func(t *testing.T) {
+		pm := panelModel{
+			EsqlControlConfig: &esqlControlConfigModel{
+				SelectedOptions: stringsToList([]string{"opt_a"}),
+				VariableName:    types.StringValue("my_var"),
+				VariableType:    types.StringValue("values"),
+				EsqlQuery:       types.StringValue("FROM logs-*"),
+				ControlType:     types.StringValue("STATIC_VALUES"),
+				Width:           types.StringNull(),
+				Grow:            types.BoolNull(),
+			},
+		}
+		esqlPanel := kbapi.KbnDashboardPanelTypeEsqlControl{}
+		diags := buildEsqlControlConfig(pm, &esqlPanel)
+		require.False(t, diags.HasError())
+		assert.Nil(t, esqlPanel.Width)
+		assert.Nil(t, esqlPanel.Grow)
+	})
+}
+
+func Test_populateEsqlControlFromAPI_widthGrow_nullPreservedWithPriorState(t *testing.T) {
+	pm := &panelModel{
+		EsqlControlConfig: &esqlControlConfigModel{
+			SelectedOptions:  stringsToList([]string{"opt_a"}),
+			VariableName:     types.StringValue("my_var"),
+			VariableType:     types.StringValue("values"),
+			EsqlQuery:        types.StringValue("FROM logs-*"),
+			ControlType:      types.StringValue("STATIC_VALUES"),
+			AvailableOptions: types.ListNull(types.StringType),
+			Width:            types.StringNull(),
+			Grow:             types.BoolNull(),
+		},
+	}
+	tfPanel := &panelModel{EsqlControlConfig: pm.EsqlControlConfig}
+
+	esql := kbapi.KbnDashboardPanelTypeEsqlControl{Config: minimalEsqlAPIConfig(t)}
+	w := kbapi.KbnControlsSchemasControlsGroupSchemaEsqlControlWidthMedium
+	grow := false
+	esql.Width = &w
+	esql.Grow = &grow
+
+	populateEsqlControlFromAPI(pm, tfPanel, &esql)
+	require.NotNil(t, pm.EsqlControlConfig)
+	assert.True(t, pm.EsqlControlConfig.Width.IsNull())
+	assert.True(t, pm.EsqlControlConfig.Grow.IsNull())
+}
+
+func Test_populateEsqlControlFromAPI_import_widthGrow_remainNull(t *testing.T) {
+	pm := &panelModel{}
+	esql := kbapi.KbnDashboardPanelTypeEsqlControl{Config: minimalEsqlAPIConfig(t)}
+	w := kbapi.KbnControlsSchemasControlsGroupSchemaEsqlControlWidthMedium
+	grow := false
+	esql.Width = &w
+	esql.Grow = &grow
+
+	populateEsqlControlFromAPI(pm, nil, &esql)
+	require.NotNil(t, pm.EsqlControlConfig)
+	assert.True(t, pm.EsqlControlConfig.Width.IsNull())
+	assert.True(t, pm.EsqlControlConfig.Grow.IsNull())
+}
+
+func Test_populateEsqlControlFromAPI_widthGrow_knownStateUpdatedFromAPI(t *testing.T) {
+	pm := &panelModel{
+		EsqlControlConfig: &esqlControlConfigModel{
+			SelectedOptions:  stringsToList([]string{"opt_a"}),
+			VariableName:     types.StringValue("my_var"),
+			VariableType:     types.StringValue("values"),
+			EsqlQuery:        types.StringValue("FROM logs-*"),
+			ControlType:      types.StringValue("STATIC_VALUES"),
+			AvailableOptions: types.ListNull(types.StringType),
+			Width:            types.StringValue("small"),
+			Grow:             types.BoolValue(true),
+		},
+	}
+	tfPanel := &panelModel{EsqlControlConfig: pm.EsqlControlConfig}
+
+	esql := kbapi.KbnDashboardPanelTypeEsqlControl{Config: minimalEsqlAPIConfig(t)}
+	w := kbapi.KbnControlsSchemasControlsGroupSchemaEsqlControlWidthLarge
+	grow := false
+	esql.Width = &w
+	esql.Grow = &grow
+
+	populateEsqlControlFromAPI(pm, tfPanel, &esql)
+	require.NotNil(t, pm.EsqlControlConfig)
+	assert.Equal(t, types.StringValue("large"), pm.EsqlControlConfig.Width)
+	assert.Equal(t, types.BoolValue(false), pm.EsqlControlConfig.Grow)
 }

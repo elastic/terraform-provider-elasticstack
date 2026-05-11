@@ -52,6 +52,12 @@ var metricChartMetricConfigDescription string
 //go:embed descriptions/metric_chart_breakdown_by.md
 var metricChartBreakdownByDescription string
 
+//go:embed descriptions/control_config_width.md
+var controlConfigWidthDescription string
+
+//go:embed descriptions/control_config_grow.md
+var controlConfigGrowDescription string
+
 //go:embed descriptions/dashboard_filters.md
 var dashboardFiltersDescription string
 

@@ -32,6 +32,21 @@ import (
 // Dashboard API is in technical preview and available from 9.4.x onwards
 var minDashboardAPISupport = version.Must(version.NewVersion("9.4.0-SNAPSHOT"))
 
+// Typed control panel layout fields (width/grow on options_list, range_slider, time_slider, esql controls)
+// are accepted by the generated OpenAPI client but may not be persisted by older Kibana builds. Skip
+// layout acceptance coverage when the stack is older than the first release known to accept these keys.
+var minControlPanelLayoutAPISupport = version.Must(version.NewVersion("9.5.0"))
+
+func skipIfDashboardOrControlLayoutUnsupported() func() (bool, error) {
+	return func() (bool, error) {
+		skip, err := versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport)()
+		if err != nil || skip {
+			return skip, err
+		}
+		return versionutils.CheckIfVersionIsUnsupported(minControlPanelLayoutAPISupport)()
+	}
+}
+
 func TestAccResourceEmptyDashboard(t *testing.T) {
 	dashboardTitle := "Test Dashboard " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 

@@ -27,6 +27,8 @@ type timeSliderControlConfigModel struct {
 	StartPercentageOfTimeRange types.Float32 `tfsdk:"start_percentage_of_time_range"`
 	EndPercentageOfTimeRange   types.Float32 `tfsdk:"end_percentage_of_time_range"`
 	IsAnchored                 types.Bool    `tfsdk:"is_anchored"`
+	Width                      types.String  `tfsdk:"width"`
+	Grow                       types.Bool    `tfsdk:"grow"`
 }
 
 // populateTimeSliderControlFromAPI reads back a time slider control config from the API
@@ -37,11 +39,11 @@ type timeSliderControlConfigModel struct {
 //
 // tfPanel is the prior TF state/plan panel, or nil on import. When nil, the function
 // populates all API-returned fields unconditionally (no prior intent to preserve).
-func populateTimeSliderControlFromAPI(pm *panelModel, tfPanel *panelModel, apiConfig struct {
-	EndPercentageOfTimeRange   *float32 `json:"end_percentage_of_time_range,omitempty"`
-	IsAnchored                 *bool    `json:"is_anchored,omitempty"`
-	StartPercentageOfTimeRange *float32 `json:"start_percentage_of_time_range,omitempty"`
-}) {
+func populateTimeSliderControlFromAPI(pm *panelModel, tfPanel *panelModel, ts *kbapi.KbnDashboardPanelTypeTimeSliderControl) {
+	if ts == nil {
+		return
+	}
+	apiConfig := ts.Config
 	existing := pm.TimeSliderControlConfig
 
 	// On import (tfPanel == nil) there is no prior intent. Populate from API if data exists.
@@ -87,6 +89,12 @@ func populateTimeSliderControlFromAPI(pm *panelModel, tfPanel *panelModel, apiCo
 	if typeutils.IsKnown(existing.IsAnchored) && apiConfig.IsAnchored != nil {
 		existing.IsAnchored = types.BoolValue(*apiConfig.IsAnchored)
 	}
+	if typeutils.IsKnown(existing.Width) && ts.Width != nil {
+		existing.Width = types.StringValue(string(*ts.Width))
+	}
+	if typeutils.IsKnown(existing.Grow) && ts.Grow != nil {
+		existing.Grow = types.BoolValue(*ts.Grow)
+	}
 }
 
 // buildTimeSliderControlConfig writes the TF model fields into the API panel struct.
@@ -105,5 +113,12 @@ func buildTimeSliderControlConfig(pm panelModel, tsPanel *kbapi.KbnDashboardPane
 	}
 	if typeutils.IsKnown(cfg.IsAnchored) {
 		tsPanel.Config.IsAnchored = cfg.IsAnchored.ValueBoolPointer()
+	}
+	if typeutils.IsKnown(cfg.Width) {
+		w := kbapi.KbnControlsSchemasControlsGroupSchemaTimeSliderControlWidth(cfg.Width.ValueString())
+		tsPanel.Width = &w
+	}
+	if typeutils.IsKnown(cfg.Grow) {
+		tsPanel.Grow = cfg.Grow.ValueBoolPointer()
 	}
 }

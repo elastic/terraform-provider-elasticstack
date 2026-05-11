@@ -27,19 +27,17 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func apiTimeSliderConfig(start, end *float32, anchored *bool) struct {
-	EndPercentageOfTimeRange   *float32 `json:"end_percentage_of_time_range,omitempty"`
-	IsAnchored                 *bool    `json:"is_anchored,omitempty"`
-	StartPercentageOfTimeRange *float32 `json:"start_percentage_of_time_range,omitempty"`
-} {
-	return struct {
-		EndPercentageOfTimeRange   *float32 `json:"end_percentage_of_time_range,omitempty"`
-		IsAnchored                 *bool    `json:"is_anchored,omitempty"`
-		StartPercentageOfTimeRange *float32 `json:"start_percentage_of_time_range,omitempty"`
-	}{
-		StartPercentageOfTimeRange: start,
-		EndPercentageOfTimeRange:   end,
-		IsAnchored:                 anchored,
+func apiTimeSliderPanel(start, end *float32, anchored *bool) *kbapi.KbnDashboardPanelTypeTimeSliderControl {
+	return &kbapi.KbnDashboardPanelTypeTimeSliderControl{
+		Config: struct {
+			EndPercentageOfTimeRange   *float32 `json:"end_percentage_of_time_range,omitempty"`
+			IsAnchored                 *bool    `json:"is_anchored,omitempty"`
+			StartPercentageOfTimeRange *float32 `json:"start_percentage_of_time_range,omitempty"`
+		}{
+			StartPercentageOfTimeRange: start,
+			EndPercentageOfTimeRange:   end,
+			IsAnchored:                 anchored,
+		},
 	}
 }
 
@@ -47,7 +45,7 @@ func apiTimeSliderConfig(start, end *float32, anchored *bool) struct {
 func Test_populateTimeSliderControlFromAPI_nilBlock_emptyAPIConfig(t *testing.T) {
 	pm := &panelModel{}
 	tfPanel := &panelModel{}
-	populateTimeSliderControlFromAPI(pm, tfPanel, apiTimeSliderConfig(nil, nil, nil))
+	populateTimeSliderControlFromAPI(pm, tfPanel, apiTimeSliderPanel(nil, nil, nil))
 	assert.Nil(t, pm.TimeSliderControlConfig)
 }
 
@@ -55,14 +53,14 @@ func Test_populateTimeSliderControlFromAPI_nilBlock_emptyAPIConfig(t *testing.T)
 func Test_populateTimeSliderControlFromAPI_nilBlock_withAPIData(t *testing.T) {
 	pm := &panelModel{}
 	tfPanel := &panelModel{}
-	populateTimeSliderControlFromAPI(pm, tfPanel, apiTimeSliderConfig(new(float32(0.1)), new(float32(0.9)), new(true)))
+	populateTimeSliderControlFromAPI(pm, tfPanel, apiTimeSliderPanel(new(float32(0.1)), new(float32(0.9)), new(true)))
 	assert.Nil(t, pm.TimeSliderControlConfig)
 }
 
 // Test: on import (tfPanel == nil) with API data, populate block from API.
 func Test_populateTimeSliderControlFromAPI_import_withAPIData(t *testing.T) {
 	pm := &panelModel{}
-	populateTimeSliderControlFromAPI(pm, nil, apiTimeSliderConfig(new(float32(0.1)), new(float32(0.9)), new(true)))
+	populateTimeSliderControlFromAPI(pm, nil, apiTimeSliderPanel(new(float32(0.1)), new(float32(0.9)), new(true)))
 	require.NotNil(t, pm.TimeSliderControlConfig)
 	assert.Equal(t, types.Float32Value(0.1), pm.TimeSliderControlConfig.StartPercentageOfTimeRange)
 	assert.Equal(t, types.Float32Value(0.9), pm.TimeSliderControlConfig.EndPercentageOfTimeRange)
@@ -72,7 +70,7 @@ func Test_populateTimeSliderControlFromAPI_import_withAPIData(t *testing.T) {
 // Test: on import (tfPanel == nil) with empty API config, leave nil.
 func Test_populateTimeSliderControlFromAPI_import_emptyAPIConfig(t *testing.T) {
 	pm := &panelModel{}
-	populateTimeSliderControlFromAPI(pm, nil, apiTimeSliderConfig(nil, nil, nil))
+	populateTimeSliderControlFromAPI(pm, nil, apiTimeSliderPanel(nil, nil, nil))
 	assert.Nil(t, pm.TimeSliderControlConfig)
 }
 
@@ -86,7 +84,7 @@ func Test_populateTimeSliderControlFromAPI_knownFields_populatedFromAPI(t *testi
 		},
 	}
 	tfPanel := &panelModel{TimeSliderControlConfig: pm.TimeSliderControlConfig}
-	populateTimeSliderControlFromAPI(pm, tfPanel, apiTimeSliderConfig(new(float32(0.2)), new(float32(0.8)), new(true)))
+	populateTimeSliderControlFromAPI(pm, tfPanel, apiTimeSliderPanel(new(float32(0.2)), new(float32(0.8)), new(true)))
 	require.NotNil(t, pm.TimeSliderControlConfig)
 	assert.Equal(t, types.Float32Value(0.2), pm.TimeSliderControlConfig.StartPercentageOfTimeRange)
 	assert.Equal(t, types.Float32Value(0.8), pm.TimeSliderControlConfig.EndPercentageOfTimeRange)
@@ -103,7 +101,7 @@ func Test_populateTimeSliderControlFromAPI_nullFields_preservedAsNull(t *testing
 		},
 	}
 	tfPanel := &panelModel{TimeSliderControlConfig: pm.TimeSliderControlConfig}
-	populateTimeSliderControlFromAPI(pm, tfPanel, apiTimeSliderConfig(new(float32(0.5)), new(float32(0.5)), new(true)))
+	populateTimeSliderControlFromAPI(pm, tfPanel, apiTimeSliderPanel(new(float32(0.5)), new(float32(0.5)), new(true)))
 	require.NotNil(t, pm.TimeSliderControlConfig)
 	assert.True(t, pm.TimeSliderControlConfig.StartPercentageOfTimeRange.IsNull())
 	assert.True(t, pm.TimeSliderControlConfig.EndPercentageOfTimeRange.IsNull())
@@ -120,7 +118,7 @@ func Test_populateTimeSliderControlFromAPI_mixedFields(t *testing.T) {
 		},
 	}
 	tfPanel := &panelModel{TimeSliderControlConfig: pm.TimeSliderControlConfig}
-	populateTimeSliderControlFromAPI(pm, tfPanel, apiTimeSliderConfig(new(float32(0.2)), new(float32(0.8)), new(true)))
+	populateTimeSliderControlFromAPI(pm, tfPanel, apiTimeSliderPanel(new(float32(0.2)), new(float32(0.8)), new(true)))
 	require.NotNil(t, pm.TimeSliderControlConfig)
 	// known field is updated
 	assert.Equal(t, types.Float32Value(0.2), pm.TimeSliderControlConfig.StartPercentageOfTimeRange)
@@ -230,9 +228,106 @@ func Test_timeSliderPercentage_float32RoundTrip_writeThenRead(t *testing.T) {
 		},
 	}
 	tfPanel := &panelModel{TimeSliderControlConfig: out.TimeSliderControlConfig}
-	populateTimeSliderControlFromAPI(out, tfPanel, tsPanel.Config)
+	populateTimeSliderControlFromAPI(out, tfPanel, &tsPanel)
 
 	require.NotNil(t, out.TimeSliderControlConfig)
 	assert.Equal(t, types.Float32Value(start), out.TimeSliderControlConfig.StartPercentageOfTimeRange)
 	assert.Equal(t, types.Float32Value(end), out.TimeSliderControlConfig.EndPercentageOfTimeRange)
+}
+
+func Test_buildTimeSliderControlConfig_widthGrow_setAndOmitted(t *testing.T) {
+	t.Run("known width and grow are written to the API panel", func(t *testing.T) {
+		pm := panelModel{
+			TimeSliderControlConfig: &timeSliderControlConfigModel{
+				StartPercentageOfTimeRange: types.Float32Value(0.1),
+				EndPercentageOfTimeRange:   types.Float32Value(0.9),
+				IsAnchored:                 types.BoolValue(false),
+				Width:                      types.StringValue("large"),
+				Grow:                       types.BoolValue(true),
+			},
+		}
+		tsPanel := kbapi.KbnDashboardPanelTypeTimeSliderControl{}
+		buildTimeSliderControlConfig(pm, &tsPanel)
+		require.NotNil(t, tsPanel.Width)
+		assert.Equal(t, kbapi.KbnControlsSchemasControlsGroupSchemaTimeSliderControlWidthLarge, *tsPanel.Width)
+		require.NotNil(t, tsPanel.Grow)
+		assert.True(t, *tsPanel.Grow)
+	})
+
+	t.Run("null width and grow are omitted from the API panel", func(t *testing.T) {
+		pm := panelModel{
+			TimeSliderControlConfig: &timeSliderControlConfigModel{
+				StartPercentageOfTimeRange: types.Float32Value(0.1),
+				EndPercentageOfTimeRange:   types.Float32Value(0.9),
+				Width:                      types.StringNull(),
+				Grow:                       types.BoolNull(),
+			},
+		}
+		tsPanel := kbapi.KbnDashboardPanelTypeTimeSliderControl{}
+		buildTimeSliderControlConfig(pm, &tsPanel)
+		assert.Nil(t, tsPanel.Width)
+		assert.Nil(t, tsPanel.Grow)
+	})
+}
+
+func Test_populateTimeSliderControlFromAPI_widthGrow_nullPreservedWithPriorState(t *testing.T) {
+	pm := &panelModel{
+		TimeSliderControlConfig: &timeSliderControlConfigModel{
+			StartPercentageOfTimeRange: types.Float32Value(0.1),
+			EndPercentageOfTimeRange:   types.Float32Value(0.9),
+			IsAnchored:                 types.BoolValue(false),
+			Width:                      types.StringNull(),
+			Grow:                       types.BoolNull(),
+		},
+	}
+	tfPanel := &panelModel{TimeSliderControlConfig: pm.TimeSliderControlConfig}
+
+	ts := apiTimeSliderPanel(new(float32(0.2)), new(float32(0.8)), new(true))
+	w := kbapi.KbnControlsSchemasControlsGroupSchemaTimeSliderControlWidthMedium
+	grow := false
+	ts.Width = &w
+	ts.Grow = &grow
+
+	populateTimeSliderControlFromAPI(pm, tfPanel, ts)
+	require.NotNil(t, pm.TimeSliderControlConfig)
+	assert.True(t, pm.TimeSliderControlConfig.Width.IsNull())
+	assert.True(t, pm.TimeSliderControlConfig.Grow.IsNull())
+}
+
+func Test_populateTimeSliderControlFromAPI_import_widthGrow_remainNull(t *testing.T) {
+	pm := &panelModel{}
+	ts := apiTimeSliderPanel(new(float32(0.1)), new(float32(0.9)), new(false))
+	w := kbapi.KbnControlsSchemasControlsGroupSchemaTimeSliderControlWidthMedium
+	grow := false
+	ts.Width = &w
+	ts.Grow = &grow
+
+	populateTimeSliderControlFromAPI(pm, nil, ts)
+	require.NotNil(t, pm.TimeSliderControlConfig)
+	assert.True(t, pm.TimeSliderControlConfig.Width.IsNull())
+	assert.True(t, pm.TimeSliderControlConfig.Grow.IsNull())
+}
+
+func Test_populateTimeSliderControlFromAPI_widthGrow_knownStateUpdatedFromAPI(t *testing.T) {
+	pm := &panelModel{
+		TimeSliderControlConfig: &timeSliderControlConfigModel{
+			StartPercentageOfTimeRange: types.Float32Value(0.1),
+			EndPercentageOfTimeRange:   types.Float32Value(0.9),
+			IsAnchored:                 types.BoolValue(false),
+			Width:                      types.StringValue("small"),
+			Grow:                       types.BoolValue(true),
+		},
+	}
+	tfPanel := &panelModel{TimeSliderControlConfig: pm.TimeSliderControlConfig}
+
+	ts := apiTimeSliderPanel(new(float32(0.2)), new(float32(0.8)), new(true))
+	w := kbapi.KbnControlsSchemasControlsGroupSchemaTimeSliderControlWidthLarge
+	grow := false
+	ts.Width = &w
+	ts.Grow = &grow
+
+	populateTimeSliderControlFromAPI(pm, tfPanel, ts)
+	require.NotNil(t, pm.TimeSliderControlConfig)
+	assert.Equal(t, types.StringValue("large"), pm.TimeSliderControlConfig.Width)
+	assert.Equal(t, types.BoolValue(false), pm.TimeSliderControlConfig.Grow)
 }

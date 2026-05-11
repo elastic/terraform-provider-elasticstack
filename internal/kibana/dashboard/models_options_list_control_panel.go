@@ -53,6 +53,8 @@ type optionsListControlConfigModel struct {
 	SelectedOptions   types.List                              `tfsdk:"selected_options"`
 	DisplaySettings   *optionsListControlDisplaySettingsModel `tfsdk:"display_settings"`
 	Sort              *optionsListControlSortModel            `tfsdk:"sort"`
+	Width             types.String                            `tfsdk:"width"`
+	Grow              types.Bool                              `tfsdk:"grow"`
 }
 
 // populateOptionsListControlFromAPI reads back an options list control config from the API
@@ -162,6 +164,13 @@ func populateOptionsListControlFromAPI(pm *panelModel, tfPanel *panelModel, ol *
 		existing.Sort.By = types.StringValue(string(apiConfig.Sort.By))
 		existing.Sort.Direction = types.StringValue(string(apiConfig.Sort.Direction))
 	}
+
+	if typeutils.IsKnown(existing.Width) && ol.Width != nil {
+		existing.Width = types.StringValue(string(*ol.Width))
+	}
+	if typeutils.IsKnown(existing.Grow) && ol.Grow != nil {
+		existing.Grow = types.BoolValue(*ol.Grow)
+	}
 }
 
 // buildOptionsListControlConfig writes the TF model fields into the API panel struct.
@@ -245,6 +254,13 @@ func buildOptionsListControlConfig(pm panelModel, olPanel *kbapi.KbnDashboardPan
 			By:        kbapi.KbnDashboardPanelTypeOptionsListControlConfigSortBy(cfg.Sort.By.ValueString()),
 			Direction: kbapi.KbnDashboardPanelTypeOptionsListControlConfigSortDirection(cfg.Sort.Direction.ValueString()),
 		}
+	}
+	if typeutils.IsKnown(cfg.Width) {
+		w := kbapi.KbnControlsSchemasControlsGroupSchemaOptionsListControlWidth(cfg.Width.ValueString())
+		olPanel.Width = &w
+	}
+	if typeutils.IsKnown(cfg.Grow) {
+		olPanel.Grow = cfg.Grow.ValueBoolPointer()
 	}
 }
 

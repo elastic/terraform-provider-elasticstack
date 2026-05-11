@@ -336,7 +336,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 		if configBytes, err := json.Marshal(tsPanel.Config); err == nil {
 			pm.ConfigJSON = customtypes.NewJSONWithDefaultsValue(string(configBytes), populatePanelConfigJSONDefaults)
 		}
-		populateTimeSliderControlFromAPI(&pm, tfPanel, tsPanel.Config)
+		populateTimeSliderControlFromAPI(&pm, tfPanel, &tsPanel)
 	case panelTypeSloBurnRate:
 		sbrPanel, err := panelItem.AsKbnDashboardPanelTypeSloBurnRate()
 		if err != nil {
@@ -355,7 +355,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 		pm.ID = types.StringPointerValue(esqlPanel.Id)
 		// ES|QL control panels are managed via esql_control_config; config_json remains unset.
 		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
-		populateEsqlControlFromAPI(&pm, tfPanel, esqlPanel.Config)
+		populateEsqlControlFromAPI(&pm, tfPanel, &esqlPanel)
 	case panelTypeOptionsListControl:
 		olPanel, err := panelItem.AsKbnDashboardPanelTypeOptionsListControl()
 		if err != nil {

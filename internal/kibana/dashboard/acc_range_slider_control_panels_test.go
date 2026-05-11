@@ -105,6 +105,39 @@ func TestAccResourceDashboardRangeSliderControl(t *testing.T) {
 	})
 }
 
+func TestAccResourceDashboardRangeSliderControl_widthGrow(t *testing.T) {
+	dashboardTitle := "Test Dashboard Range Slider width/grow " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipIfDashboardOrControlLayoutUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_width_grow"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.range_slider_control_config.width", "large"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.range_slider_control_config.grow", "true"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipIfDashboardOrControlLayoutUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_width_grow"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+		},
+	})
+}
+
 func TestAccResourceDashboardRangeSliderControlInvalidConfig(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
