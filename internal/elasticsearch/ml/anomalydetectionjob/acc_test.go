@@ -18,13 +18,16 @@
 package anomalydetectionjob_test
 
 import (
+	"context"
 	_ "embed"
 	"fmt"
 	"os"
 	"strings"
 	"testing"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/ml/putfilter"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -334,17 +337,14 @@ func TestAccResourceAnomalyDetectionJobCustomRules(t *testing.T) {
 // TestAccResourceAnomalyDetectionJobCustomRulesScope covers detector custom_rules.scope
 // (ML filter references per analysis field), including round-trip to Elasticsearch.
 //
-// This case depends on elasticstack_elasticsearch_ml_filter (PR #1970). The scope-only PR
-// does not register that resource; default CI skips here. To run locally, use a branch or
-// provider build that includes the ML filter resource and set TF_ACC_ML_SCOPE_TEST=1.
+// The referenced ML filter is created out-of-band via the Elasticsearch ML APIs before apply,
+// so this test does not require the elasticstack_elasticsearch_ml_filter resource.
 func TestAccResourceAnomalyDetectionJobCustomRulesScope(t *testing.T) {
-	if os.Getenv("TF_ACC_ML_SCOPE_TEST") == "" {
-		t.Skip("set TF_ACC_ML_SCOPE_TEST=1 when elasticstack_elasticsearch_ml_filter is available (e.g. stack with #1970)")
-	}
-
 	jobID := fmt.Sprintf("test-ad-scope-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	filterID := fmt.Sprintf("test-ad-scope-flt-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	addr := testResourceAddr
+
+	setupAccMLFilterOutOfBand(t, filterID)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -522,6 +522,47 @@ func TestAccResourceAnomalyDetectionJobExplicitConnection(t *testing.T) {
 				ImportStateVerifyIgnore: []string{"elasticsearch_connection"},
 			},
 		},
+	})
+}
+
+// setupAccMLFilterOutOfBand creates an ML filter via the Elasticsearch API so the acceptance
+// config can reference filter_id without using elasticstack_elasticsearch_ml_filter. The filter
+// is deleted after the test (Destroy runs before registered Cleanups).
+func setupAccMLFilterOutOfBand(t *testing.T, filterID string) {
+	t.Helper()
+	ctx := context.Background()
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+	if err != nil {
+		t.Fatalf("Elasticsearch client: %v", err)
+	}
+	es, err := client.GetESClient()
+	if err != nil {
+		t.Fatalf("GetESClient: %v", err)
+	}
+	desc := "Terraform acc test ML filter (created out-of-band via Elasticsearch Put Filter API)"
+	_, err = es.Ml.PutFilter(filterID).Request(&putfilter.Request{
+		Description: &desc,
+		Items:       []string{"10.0.0.1"},
+	}).Do(ctx)
+	if err != nil {
+		t.Fatalf("create ML filter %q out-of-band: %v", filterID, err)
+	}
+	t.Cleanup(func() {
+		ctx := context.Background()
+		client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+		if err != nil {
+			t.Logf("cleanup: Elasticsearch client: %v", err)
+			return
+		}
+		es, err := client.GetESClient()
+		if err != nil {
+			t.Logf("cleanup: GetESClient: %v", err)
+			return
+		}
+		_, err = es.Ml.DeleteFilter(filterID).Do(ctx)
+		if err != nil {
+			t.Logf("cleanup: delete ML filter %q: %v", filterID, err)
+		}
 	})
 }
 
