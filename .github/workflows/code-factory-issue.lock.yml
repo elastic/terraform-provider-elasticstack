@@ -1,4 +1,4 @@
-# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"5e2844ecb67b856c51eca16d6c791b43f1702061faf44b0617dc48f5c438cf98","compiler_version":"v0.71.5","strict":true,"agent_id":"claude","agent_model":"llm-gateway/claude-sonnet-4-6"}
+# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"9ad172cce61e5d4793b2c37037bdae2426da6afe69885eaf390c989882465a2f","compiler_version":"v0.71.5","strict":true,"agent_id":"claude","agent_model":"llm-gateway/claude-sonnet-4-6"}
 # gh-aw-manifest: {"version":1,"secrets":["CLAUDE_LITELLM_PROXY_API_KEY","GH_AW_CI_TRIGGER_TOKEN","GH_AW_GITHUB_MCP_SERVER_TOKEN","GH_AW_GITHUB_TOKEN","GITHUB_TOKEN"],"actions":[{"repo":"actions/checkout","sha":"de0fac2e4500dabe0009e67214ff5f5447ce83dd","version":"v6.0.2"},{"repo":"actions/download-artifact","sha":"3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c","version":"v8.0.1"},{"repo":"actions/download-artifact","sha":"d3f86a106a0bac45b974a628896c90dbdf5c8093","version":"v4"},{"repo":"actions/github-script","sha":"3a2844b7e9c422d3c10d287c895573f7108da1b3","version":"v9"},{"repo":"actions/setup-go","sha":"4a3601121dd01d1626a1e23e37211e3254c1c06c","version":"v6"},{"repo":"actions/setup-node","sha":"48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e","version":"v6"},{"repo":"actions/upload-artifact","sha":"043fb46d1a93c77aae656e7c1c64a875d1fc6a0a","version":"v7.0.1"},{"repo":"actions/upload-artifact","sha":"ea165f8d65b6e75b540449e92b4886f43607fa02","version":"v4"},{"repo":"github/gh-aw-actions/setup","sha":"b8068426813005612b960b5ab0b8bd2c27142323","version":"v0.71.5"},{"repo":"hashicorp/setup-terraform","sha":"5e8dbf3c6d9deaf4193ca7a8fb23f2ac83bb6c85","version":"v4"}],"containers":[{"image":"ghcr.io/github/gh-aw-firewall/agent:0.25.40","digest":"sha256:14ff567e8d9d4c2fbc5e55c973488381c71d7e0fdbe72d30ee7b8a738fd86504","pinned_image":"ghcr.io/github/gh-aw-firewall/agent:0.25.40@sha256:14ff567e8d9d4c2fbc5e55c973488381c71d7e0fdbe72d30ee7b8a738fd86504"},{"image":"ghcr.io/github/gh-aw-firewall/api-proxy:0.25.40","digest":"sha256:2883ca3e5ae9f330cafdd9345bfd4ae17fc8da36c96d4c9a1f76e922b4c45280","pinned_image":"ghcr.io/github/gh-aw-firewall/api-proxy:0.25.40@sha256:2883ca3e5ae9f330cafdd9345bfd4ae17fc8da36c96d4c9a1f76e922b4c45280"},{"image":"ghcr.io/github/gh-aw-firewall/squid:0.25.40","digest":"sha256:b084f4a2c771f584ee68084ced52fa6b3245197a1889645d817462d307d3ac51","pinned_image":"ghcr.io/github/gh-aw-firewall/squid:0.25.40@sha256:b084f4a2c771f584ee68084ced52fa6b3245197a1889645d817462d307d3ac51"},{"image":"ghcr.io/github/gh-aw-mcpg:v0.3.6","digest":"sha256:2bb8eef86006a4c5963c55616a9c51c32f27bfdecb023b8aa6f91f6718d9171c","pinned_image":"ghcr.io/github/gh-aw-mcpg:v0.3.6@sha256:2bb8eef86006a4c5963c55616a9c51c32f27bfdecb023b8aa6f91f6718d9171c"},{"image":"ghcr.io/github/github-mcp-server:v1.0.3","digest":"sha256:2ac27ef03461ef2b877031b838a7d1fd7f12b12d4ace7796d8cad91446d55959","pinned_image":"ghcr.io/github/github-mcp-server:v1.0.3@sha256:2ac27ef03461ef2b877031b838a7d1fd7f12b12d4ace7796d8cad91446d55959"},{"image":"node:lts-alpine","digest":"sha256:d1b3b4da11eefd5941e7f0b9cf17783fc99d9c6fc34884a665f40a06dbdfc94f","pinned_image":"node:lts-alpine@sha256:d1b3b4da11eefd5941e7f0b9cf17783fc99d9c6fc34884a665f40a06dbdfc94f"}]}
 #    ___                   _   _      
 #   / _ \                 | | (_)     
@@ -185,7 +185,7 @@ name: "Code Factory Issue Intake"
     # uses: actions/github-script@v9
     # with:
       # github-token: ${{ secrets.GITHUB_TOKEN }}
-      # script: "/**\n * HTML comment sanitisation and research-comment lookup helpers.\n */\n\n/**\n * Removes all HTML comment sequences (<code>&lt;!--</code> through the next <code>--&gt;</code>).\n * If an opening sequence has no closing counterpart, everything from the opener to the end of\n * the string is removed.\n *\n * @param {string} text\n * @returns {string}\n */\nfunction stripHtmlComments(text) {\n  if (typeof text !== 'string') return '';\n  return text.replace(/<!--[\\s\\S]*?(?:-->|$)/g, '');\n}\n\n/**\n * Finds the most recently created matching research comment written by\n * <code>github-actions[bot]</code> whose body starts with <code>marker</code>.\n *\n * @param {Array<{author: string, body: string}>} comments Ordered oldest-first.\n * @param {string} marker\n * @returns {{author: string, body: string} | null}\n */\nfunction findResearchComment(comments, marker) {\n  if (!Array.isArray(comments)) {\n    return null;\n  }\n  const matches = comments.filter(\n    (c) =>\n      c != null &&\n      typeof c.body === 'string' &&\n      (c.author ?? c.user?.login) === 'github-actions[bot]' &&\n      c.body.trimStart().startsWith(marker),\n  );\n  return matches.length > 0 ? matches[matches.length - 1] : null;\n}\n\nif (typeof module !== 'undefined') {\n  module.exports = {\n    stripHtmlComments,\n    findResearchComment,\n  };\n}\n\nconst fs = require('fs');\nconst crypto = require('crypto');\n\nconst body = process.env.ISSUE_BODY || '';\nconst comments = process.env.HUMAN_COMMENTS || '';\n\nconst sanitizedBody = stripHtmlComments(body);\nconst sanitizedComments = stripHtmlComments(comments);\n\nconst eofDelim1 = `EOF_${crypto.randomUUID().replace(/-/g, '')}`;\nconst output1 = `sanitized_issue_body<<${eofDelim1}\\n${sanitizedBody}\\n${eofDelim1}\\n`;\nfs.appendFileSync(process.env.GITHUB_OUTPUT, output1);\n\nconst eofDelim2 = `EOF_${crypto.randomUUID().replace(/-/g, '')}`;\nconst output2 = `sanitized_issue_comments<<${eofDelim2}\\n${sanitizedComments}\\n${eofDelim2}\\n`;\nfs.appendFileSync(process.env.GITHUB_OUTPUT, output2);\n\nconst dir = '/tmp/code-factory-context';\nfs.mkdirSync(dir, { recursive: true });\nfs.writeFileSync(`${dir}/issue_body.md`, sanitizedBody);\nfs.writeFileSync(`${dir}/issue_comments.md`, sanitizedComments);\ncore.info('Wrote sanitized issue context files to /tmp/code-factory-context/');\n"
+      # script: "/**\n * HTML comment sanitisation, control/invisible-char removal, and research-comment lookup helpers.\n */\n\n/**\n * Removes all HTML comment sequences (<code>&lt;!--</code> through the next <code>--&gt;</code>).\n * If an opening sequence has no closing counterpart, everything from the opener to the end of\n * the string is removed.\n *\n * @param {string} text\n * @returns {string}\n */\nfunction stripHtmlComments(text) {\n  if (typeof text !== 'string') return '';\n  return text.replace(/<!--[\\s\\S]*?(?:-->|$)/g, '');\n}\n\n/**\n * Removes non-printable ASCII control characters while preserving tab, newline,\n * and carriage return. Also strips Unicode line/paragraph separators.\n *\n * Stripped ASCII:  \\x00-\\x08, \\x0B, \\x0C, \\x0E-\\x1F, \\x7F\n * Preserved:       \\x09 (tab), \\x0A (LF), \\x0D (CR)\n * Unicode:         \\u2028, \\u2029\n *\n * @param {string} text\n * @returns {string}\n */\nfunction stripControlChars(text) {\n  if (typeof text !== 'string') return '';\n  return text.replace(/[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F\\x7F\\u2028\\u2029]/g, '');\n}\n\n/**\n * Removes invisible Unicode characters that have no legitimate use in issue content:\n * zero-width spaces/joiners, bidirectional marks, word/function/invisible operators,\n * and the BOM (byte order mark).\n *\n * Ranges stripped:\n *   \\u200B-\\u200F  — zero-width space, non-joiner, joiner, LTR mark, RTL mark\n *   \\u2060-\\u2064  — word joiner, function application, invisible times/separator/plus\n *   \\uFEFF           — BOM / zero-width no-break space\n *\n * @param {string} text\n * @returns {string}\n */\nfunction stripInvisibleUnicode(text) {\n  if (typeof text !== 'string') return '';\n  return text.replace(/[\\u200B-\\u200F\\u2060-\\u2064\\uFEFF]/g, '');\n}\n\n/**\n * Composed sanitisation pipeline. Runs all three filters in sequence:\n *\n *   input → stripHtmlComments → stripControlChars → stripInvisibleUnicode → output\n *\n * Idempotent: applying twice produces the same result as applying once.\n *\n * @param {string} text\n * @returns {string}\n */\nfunction sanitizeUserContent(text) {\n  if (typeof text !== 'string') return '';\n  return stripInvisibleUnicode(stripControlChars(stripHtmlComments(text)));\n}\n\n/**\n * Finds the most recently created matching research comment written by\n * <code>github-actions[bot]</code> whose body starts with <code>marker</code>.\n *\n * @param {Array<{author: string, body: string}>} comments Ordered oldest-first.\n * @param {string} marker\n * @returns {{author: string, body: string} | null}\n */\nfunction findResearchComment(comments, marker) {\n  if (!Array.isArray(comments)) {\n    return null;\n  }\n  const matches = comments.filter(\n    (c) =>\n      c != null &&\n      typeof c.body === 'string' &&\n      (c.author ?? c.user?.login) === 'github-actions[bot]' &&\n      c.body.trimStart().startsWith(marker),\n  );\n  return matches.length > 0 ? matches[matches.length - 1] : null;\n}\n\nif (typeof module !== 'undefined') {\n  module.exports = {\n    stripHtmlComments,\n    stripControlChars,\n    stripInvisibleUnicode,\n    sanitizeUserContent,\n    findResearchComment,\n  };\n}\n\nconst fs = require('fs');\nconst crypto = require('crypto');\n\nconst body = process.env.ISSUE_BODY || '';\nconst comments = process.env.HUMAN_COMMENTS || '';\n\nconst sanitizedBody = sanitizeUserContent(body);\nconst sanitizedComments = sanitizeUserContent(comments);\n\nconst eofDelim1 = `EOF_${crypto.randomUUID().replace(/-/g, '')}`;\nconst output1 = `sanitized_issue_body<<${eofDelim1}\\n${sanitizedBody}\\n${eofDelim1}\\n`;\nfs.appendFileSync(process.env.GITHUB_OUTPUT, output1);\n\nconst eofDelim2 = `EOF_${crypto.randomUUID().replace(/-/g, '')}`;\nconst output2 = `sanitized_issue_comments<<${eofDelim2}\\n${sanitizedComments}\\n${eofDelim2}\\n`;\nfs.appendFileSync(process.env.GITHUB_OUTPUT, output2);\n\nconst dir = '/tmp/code-factory-context';\nfs.mkdirSync(dir, { recursive: true });\nfs.writeFileSync(`${dir}/issue_body.md`, sanitizedBody);\nfs.writeFileSync(`${dir}/issue_comments.md`, sanitizedComments);\ncore.info('Wrote sanitized issue context files to /tmp/code-factory-context/');\n"
   # - if: steps.normalize_context.outputs.event_eligible == 'true' && steps.normalize_context.outputs.actor_trusted == 'true' && steps.check_duplicate_pr.outputs.duplicate_pr_found != 'true'
     # name: Upload issue context artifact
     # uses: actions/upload-artifact@v4
@@ -386,23 +386,23 @@ jobs:
         run: |
           bash "${RUNNER_TEMP}/gh-aw/actions/create_prompt_first.sh"
           {
-          cat << 'GH_AW_PROMPT_25af07ea7caa1e50_EOF'
+          cat << 'GH_AW_PROMPT_ab3f5230978dde03_EOF'
           <system>
-          GH_AW_PROMPT_25af07ea7caa1e50_EOF
+          GH_AW_PROMPT_ab3f5230978dde03_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/xpia.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/temp_folder_prompt.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/markdown.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/safe_outputs_prompt.md"
-          cat << 'GH_AW_PROMPT_25af07ea7caa1e50_EOF'
+          cat << 'GH_AW_PROMPT_ab3f5230978dde03_EOF'
           <safe-output-tools>
           Tools: create_pull_request, missing_tool, missing_data, noop
-          GH_AW_PROMPT_25af07ea7caa1e50_EOF
+          GH_AW_PROMPT_ab3f5230978dde03_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/safe_outputs_create_pull_request.md"
-          cat << 'GH_AW_PROMPT_25af07ea7caa1e50_EOF'
+          cat << 'GH_AW_PROMPT_ab3f5230978dde03_EOF'
           </safe-output-tools>
-          GH_AW_PROMPT_25af07ea7caa1e50_EOF
+          GH_AW_PROMPT_ab3f5230978dde03_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/mcp_cli_tools_prompt.md"
-          cat << 'GH_AW_PROMPT_25af07ea7caa1e50_EOF'
+          cat << 'GH_AW_PROMPT_ab3f5230978dde03_EOF'
           <github-context>
           The following GitHub context information is available for this workflow:
           {{#if __GH_AW_GITHUB_ACTOR__ }}
@@ -434,15 +434,15 @@ jobs:
             - **Note**: If a branch you need is not in the list above and is not listed as an additional fetched ref, it has NOT been checked out. For private repositories you cannot fetch it without proper authentication. If the branch is required and not available, exit with an error and ask the user to add it to the `fetch:` option of the `checkout:` configuration (e.g., `fetch: ["refs/pulls/open/*"]` for all open PR refs, or `fetch: ["main", "feature/my-branch"]` for specific branches).
           </github-context>
           
-          GH_AW_PROMPT_25af07ea7caa1e50_EOF
+          GH_AW_PROMPT_ab3f5230978dde03_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/github_mcp_tools_with_safeoutputs_prompt.md"
           if [ "$GITHUB_EVENT_NAME" = "issue_comment" ] && [ -n "$GH_AW_IS_PR_COMMENT" ] || [ "$GITHUB_EVENT_NAME" = "pull_request_review_comment" ] || [ "$GITHUB_EVENT_NAME" = "pull_request_review" ]; then
             cat "${RUNNER_TEMP}/gh-aw/prompts/pr_context_prompt.md"
           fi
-          cat << 'GH_AW_PROMPT_25af07ea7caa1e50_EOF'
+          cat << 'GH_AW_PROMPT_ab3f5230978dde03_EOF'
           </system>
           {{#runtime-import .github/workflows/code-factory-issue.md}}
-          GH_AW_PROMPT_25af07ea7caa1e50_EOF
+          GH_AW_PROMPT_ab3f5230978dde03_EOF
           } > "$GH_AW_PROMPT"
       - name: Interpolate variables and render templates
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
@@ -690,9 +690,9 @@ jobs:
           mkdir -p "${RUNNER_TEMP}/gh-aw/safeoutputs"
           mkdir -p /tmp/gh-aw/safeoutputs
           mkdir -p /tmp/gh-aw/mcp-logs/safeoutputs
-          cat > "${RUNNER_TEMP}/gh-aw/safeoutputs/config.json" << 'GH_AW_SAFE_OUTPUTS_CONFIG_2356b82c7636bc62_EOF'
+          cat > "${RUNNER_TEMP}/gh-aw/safeoutputs/config.json" << 'GH_AW_SAFE_OUTPUTS_CONFIG_f48705baed95a3c2_EOF'
           {"create_pull_request":{"labels":["code-factory"],"max":1,"max_patch_files":100,"max_patch_size":1024,"protect_top_level_dot_folders":true,"protected_files":["package.json","bun.lockb","bunfig.toml","deno.json","deno.jsonc","deno.lock","global.json","NuGet.Config","Directory.Packages.props","mix.exs","mix.lock","go.mod","go.sum","stack.yaml","stack.yaml.lock","pom.xml","build.gradle","build.gradle.kts","settings.gradle","settings.gradle.kts","gradle.properties","package-lock.json","yarn.lock","pnpm-lock.yaml","npm-shrinkwrap.json","requirements.txt","Pipfile","Pipfile.lock","pyproject.toml","setup.py","setup.cfg","Gemfile","Gemfile.lock","uv.lock","CODEOWNERS","DESIGN.md","README.md","CONTRIBUTING.md","CHANGELOG.md","SECURITY.md","CODE_OF_CONDUCT.md","CLAUDE.md","AGENTS.md"]},"create_report_incomplete_issue":{},"missing_data":{},"missing_tool":{},"noop":{"max":1,"report-as-issue":"false"},"report_incomplete":{}}
-          GH_AW_SAFE_OUTPUTS_CONFIG_2356b82c7636bc62_EOF
+          GH_AW_SAFE_OUTPUTS_CONFIG_f48705baed95a3c2_EOF
       - name: Generate Safe Outputs Tools
         env:
           GH_AW_TOOLS_META_JSON: |
@@ -899,7 +899,7 @@ jobs:
           export MCP_GATEWAY_DOCKER_COMMAND='docker run -i --rm --network host --add-host host.docker.internal:127.0.0.1 --user '"${MCP_GATEWAY_UID}"':'"${MCP_GATEWAY_GID}"' --group-add '"${DOCKER_SOCK_GID}"' -v /var/run/docker.sock:/var/run/docker.sock -e MCP_GATEWAY_PORT -e MCP_GATEWAY_DOMAIN -e MCP_GATEWAY_API_KEY -e MCP_GATEWAY_PAYLOAD_DIR -e MCP_GATEWAY_PAYLOAD_SIZE_THRESHOLD -e DEBUG -e MCP_GATEWAY_LOG_DIR -e GH_AW_MCP_LOG_DIR -e GH_AW_SAFE_OUTPUTS -e GH_AW_SAFE_OUTPUTS_CONFIG_PATH -e GH_AW_SAFE_OUTPUTS_TOOLS_PATH -e GH_AW_ASSETS_BRANCH -e GH_AW_ASSETS_MAX_SIZE_KB -e GH_AW_ASSETS_ALLOWED_EXTS -e DEFAULT_BRANCH -e GITHUB_MCP_SERVER_TOKEN -e GITHUB_MCP_GUARD_MIN_INTEGRITY -e GITHUB_MCP_GUARD_REPOS -e GITHUB_REPOSITORY -e GITHUB_SERVER_URL -e GITHUB_SHA -e GITHUB_WORKSPACE -e GITHUB_TOKEN -e GITHUB_RUN_ID -e GITHUB_RUN_NUMBER -e GITHUB_RUN_ATTEMPT -e GITHUB_JOB -e GITHUB_ACTION -e GITHUB_EVENT_NAME -e GITHUB_EVENT_PATH -e GITHUB_ACTOR -e GITHUB_ACTOR_ID -e GITHUB_TRIGGERING_ACTOR -e GITHUB_WORKFLOW -e GITHUB_WORKFLOW_REF -e GITHUB_WORKFLOW_SHA -e GITHUB_REF -e GITHUB_REF_NAME -e GITHUB_REF_TYPE -e GITHUB_HEAD_REF -e GITHUB_BASE_REF -e GH_AW_SAFE_OUTPUTS_PORT -e GH_AW_SAFE_OUTPUTS_API_KEY -v /tmp/gh-aw/mcp-payloads:/tmp/gh-aw/mcp-payloads:rw -v /opt:/opt:ro -v /tmp:/tmp:rw -v '"${GITHUB_WORKSPACE}"':'"${GITHUB_WORKSPACE}"':rw ghcr.io/github/gh-aw-mcpg:v0.3.6'
           
           GH_AW_NODE=$(which node 2>/dev/null || command -v node 2>/dev/null || echo node)
-          cat << GH_AW_MCP_CONFIG_f4251f1e45740881_EOF | "$GH_AW_NODE" "${RUNNER_TEMP}/gh-aw/actions/start_mcp_gateway.cjs"
+          cat << GH_AW_MCP_CONFIG_f3accbfab1e027e2_EOF | "$GH_AW_NODE" "${RUNNER_TEMP}/gh-aw/actions/start_mcp_gateway.cjs"
           {
             "mcpServers": {
               "elastic-docs": {
@@ -953,7 +953,7 @@ jobs:
               "payloadDir": "${MCP_GATEWAY_PAYLOAD_DIR}"
             }
           }
-          GH_AW_MCP_CONFIG_f4251f1e45740881_EOF
+          GH_AW_MCP_CONFIG_f3accbfab1e027e2_EOF
       - name: Mount MCP servers as CLIs
         id: mount-mcp-clis
         continue-on-error: true
@@ -3279,7 +3279,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             /**
-             * HTML comment sanitisation and research-comment lookup helpers.
+             * HTML comment sanitisation, control/invisible-char removal, and research-comment lookup helpers.
              */
 
             /**
@@ -3293,6 +3293,55 @@ jobs:
             function stripHtmlComments(text) {
               if (typeof text !== 'string') return '';
               return text.replace(/<!--[\s\S]*?(?:-->|$)/g, '');
+            }
+
+            /**
+             * Removes non-printable ASCII control characters while preserving tab, newline,
+             * and carriage return. Also strips Unicode line/paragraph separators.
+             *
+             * Stripped ASCII:  \x00-\x08, \x0B, \x0C, \x0E-\x1F, \x7F
+             * Preserved:       \x09 (tab), \x0A (LF), \x0D (CR)
+             * Unicode:         \u2028, \u2029
+             *
+             * @param {string} text
+             * @returns {string}
+             */
+            function stripControlChars(text) {
+              if (typeof text !== 'string') return '';
+              return text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F\u2028\u2029]/g, '');
+            }
+
+            /**
+             * Removes invisible Unicode characters that have no legitimate use in issue content:
+             * zero-width spaces/joiners, bidirectional marks, word/function/invisible operators,
+             * and the BOM (byte order mark).
+             *
+             * Ranges stripped:
+             *   \u200B-\u200F  — zero-width space, non-joiner, joiner, LTR mark, RTL mark
+             *   \u2060-\u2064  — word joiner, function application, invisible times/separator/plus
+             *   \uFEFF           — BOM / zero-width no-break space
+             *
+             * @param {string} text
+             * @returns {string}
+             */
+            function stripInvisibleUnicode(text) {
+              if (typeof text !== 'string') return '';
+              return text.replace(/[\u200B-\u200F\u2060-\u2064\uFEFF]/g, '');
+            }
+
+            /**
+             * Composed sanitisation pipeline. Runs all three filters in sequence:
+             *
+             *   input → stripHtmlComments → stripControlChars → stripInvisibleUnicode → output
+             *
+             * Idempotent: applying twice produces the same result as applying once.
+             *
+             * @param {string} text
+             * @returns {string}
+             */
+            function sanitizeUserContent(text) {
+              if (typeof text !== 'string') return '';
+              return stripInvisibleUnicode(stripControlChars(stripHtmlComments(text)));
             }
 
             /**
@@ -3320,6 +3369,9 @@ jobs:
             if (typeof module !== 'undefined') {
               module.exports = {
                 stripHtmlComments,
+                stripControlChars,
+                stripInvisibleUnicode,
+                sanitizeUserContent,
                 findResearchComment,
               };
             }
@@ -3330,8 +3382,8 @@ jobs:
             const body = process.env.ISSUE_BODY || '';
             const comments = process.env.HUMAN_COMMENTS || '';
 
-            const sanitizedBody = stripHtmlComments(body);
-            const sanitizedComments = stripHtmlComments(comments);
+            const sanitizedBody = sanitizeUserContent(body);
+            const sanitizedComments = sanitizeUserContent(comments);
 
             const eofDelim1 = `EOF_${crypto.randomUUID().replace(/-/g, '')}`;
             const output1 = `sanitized_issue_body<<${eofDelim1}\n${sanitizedBody}\n${eofDelim1}\n`;

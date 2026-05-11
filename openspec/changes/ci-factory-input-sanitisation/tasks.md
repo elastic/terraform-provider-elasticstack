@@ -18,5 +18,5 @@
 
 ## 4. Verify and rebuild locked workflows
 
-- [ ] 4.1 Run the project's workflow generation tooling to regenerate locked workflow YAML from source templates
-- [ ] 4.2 Verify the generated workflows reference the updated inline scripts correctly
+- [x] 4.1 Run the project's workflow generation tooling to regenerate locked workflow YAML from source templates
+- [x] 4.2 Verify the generated workflows reference the updated inline scripts correctly
