@@ -17,4 +17,4 @@
 
 ## 4. Spec sync
 
-- [ ] 4.1 Run `make check-openspec`
+- [x] 4.1 Run `make check-openspec`
