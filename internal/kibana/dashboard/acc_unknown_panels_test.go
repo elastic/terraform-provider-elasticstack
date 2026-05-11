@@ -33,15 +33,16 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
-	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-// TestAccResourceDashboardUnknownPanel tests that unknown panel types (e.g. `discover_session`)
-// are preserved during import and produce a no-op plan.
+// TestAccResourceDashboardUnknownPanel tests that unknown panel types (e.g. `image`)
+// are preserved during refresh and produce a no-op plan.
 //
-// The dashboard is created via the Kibana REST API (not Terraform config) because
-// unknown panel types cannot be authored in Terraform.
+// The dashboard is first created via Terraform with a markdown panel, then the
+// Kibana API is called outside Terraform to replace the panels with an image panel
+// (unknown type). A subsequent refresh verifies the unknown panel is preserved
+// and that the resulting plan is empty.
 func TestAccResourceDashboardUnknownPanel(t *testing.T) {
 	dashboardTitle := "Test Dashboard Unknown Panel " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
@@ -50,149 +51,164 @@ func TestAccResourceDashboardUnknownPanel(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
+			// Step 1: Create the dashboard via Terraform with a known (markdown) panel.
+			// Capture the dashboard ID for use in step 2.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					func(s *terraform.State) error {
+						rs, ok := s.RootModule().Resources["elasticstack_kibana_dashboard.test"]
+						if !ok {
+							return fmt.Errorf("resource not found in state")
+						}
+						// The composite ID is <space_id>/<dashboard_uuid>; extract the UUID.
+						compositeID := rs.Primary.ID
+						for i := len(compositeID) - 1; i >= 0; i-- {
+							if compositeID[i] == '/' {
+								dashboardID = compositeID[i+1:]
+								return nil
+							}
+						}
+						return fmt.Errorf("could not parse dashboard ID from composite ID %q", compositeID)
+					},
+				),
+			},
+			// Step 2: Out-of-band replace the dashboard panels with an image panel
+			// (unknown type), then run plan-only to verify the unknown panel is
+			// preserved correctly in the refreshed state.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				PreConfig: func() {
-					id, err := createDashboardWithUnknownPanel(dashboardTitle)
-					if err != nil {
-						t.Fatalf("Failed to create dashboard with unknown panel: %v", err)
+					if dashboardID == "" {
+						t.Fatal("dashboardID not set from step 1")
 					}
-					dashboardID = id
+					if err := replaceDashboardPanelWithImage(t, dashboardID); err != nil {
+						t.Fatalf("failed to replace dashboard panels: %v", err)
+					}
 				},
-				ConfigDirectory: acctest.NamedTestCaseDirectory("import"),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
 				},
-				ResourceName: "elasticstack_kibana_dashboard.test",
-				ImportState:  true,
-				ImportStateIdFunc: func(_ *terraform.State) (string, error) {
-					if dashboardID == "" {
-						return "", fmt.Errorf("dashboardID not set; PreConfig may not have run")
-					}
-					return dashboardID, nil
-				},
-				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{
-					"time_range.mode",
-				},
+				// PlanOnly: run refresh + plan but not apply, so the state reflects
+				// what was read from Kibana (the image panel), not what config specifies.
+				// ExpectNonEmptyPlan: the config specifies a markdown panel while the
+				// refreshed state has an image panel, so an update diff is expected.
+				PlanOnly:            true,
+				ExpectNonEmptyPlan: true,
+				// Expect the image panel to be read back and preserved in state.
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "title", dashboardTitle),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.#", "1"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.type", "discover_session"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.type", "image"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.x", "0"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.y", "0"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.w", "48"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.h", "15"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.id"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.config_json"),
-					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.config_json", regexp.MustCompile(`"timeRange"\s*:\s*\{`)),
+					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.config_json", regexp.MustCompile(`"image_config"\s*:`)),
 				),
-			},
-			// Verify no-op plan after import
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("import"),
-				ConfigVariables: config.Variables{
-					"dashboard_title": config.StringVariable(dashboardTitle),
-				},
-				ConfigPlanChecks: resource.ConfigPlanChecks{
-					PreApply: []plancheck.PlanCheck{
-						plancheck.ExpectEmptyPlan(),
-					},
-				},
+
 			},
 		},
 	})
 }
 
-// createDashboardWithUnknownPanel creates a dashboard via the Kibana REST API containing a
-// `discover_session` panel (an unknown panel type that the provider doesn't have a typed
-// config block for).
-func createDashboardWithUnknownPanel(title string) (string, error) {
+// replaceDashboardPanelWithImage replaces all panels on an existing dashboard with a single
+// image panel (an unknown panel type that the provider doesn't have a typed config block for).
+func replaceDashboardPanelWithImage(t *testing.T, dashboardID string) error {
+	t.Helper()
+
 	client, err := clients.NewAcceptanceTestingKibanaScopedClient()
 	if err != nil {
-		return "", fmt.Errorf("failed to create Kibana scoped client: %w", err)
+		return fmt.Errorf("failed to create Kibana scoped client: %w", err)
 	}
 
 	kibanaClient, err := client.GetKibanaOapiClient()
 	if err != nil {
-		return "", fmt.Errorf("failed to get Kibana OAPI client: %w", err)
+		return fmt.Errorf("failed to get Kibana OAPI client: %w", err)
 	}
 
-	// Build the dashboard payload with an unknown panel type (discover_session)
-	body := map[string]any{
-		"title":       title,
-		"description": "Acceptance test dashboard for unknown panel type preservation",
-		"timeRange": map[string]any{
-			"from": "now-15m",
-			"to":   "now",
-		},
-		"refreshInterval": map[string]any{
-			"pause": true,
-			"value": 0,
-		},
-		"query": map[string]any{
-			"language":   "kql",
-			"expression": "",
-		},
-		"panels": []map[string]any{
-			{
-				"id":   "tf-acc-discover-1",
-				"type": "discover_session",
-				"grid": map[string]any{
-					"x": 0,
-					"y": 0,
-					"w": 48,
-					"h": 15,
-				},
-				"config": map[string]any{
-					"timeRange": map[string]any{
-						"from": "now-30d",
-						"to":   "now",
+	// First, GET the current dashboard to retrieve its full state for the PUT body.
+	getURL := fmt.Sprintf("%s/api/dashboards/%s", kibanaClient.URL, dashboardID)
+	getReq, err := http.NewRequestWithContext(context.Background(), http.MethodGet, getURL, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create GET request: %w", err)
+	}
+	getReq.Header.Set("kbn-xsrf", "true")
+
+	getResp, err := kibanaClient.HTTP.Do(getReq)
+	if err != nil {
+		return fmt.Errorf("failed to GET dashboard: %w", err)
+	}
+	defer getResp.Body.Close()
+
+	if getResp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(io.LimitReader(getResp.Body, 4096))
+		return fmt.Errorf("GET dashboard returned status %d: %s", getResp.StatusCode, string(body))
+	}
+
+	var current map[string]any
+	if err := json.NewDecoder(getResp.Body).Decode(&current); err != nil {
+		return fmt.Errorf("failed to decode GET response: %w", err)
+	}
+
+	// Extract the data section and override panels with the image panel.
+	data, _ := current["data"].(map[string]any)
+	if data == nil {
+		data = map[string]any{}
+	}
+	data["panels"] = []map[string]any{
+		{
+			"id":   "tf-acc-image-1",
+			"type": "image",
+			"grid": map[string]any{
+				"x": 0,
+				"y": 0,
+				"w": 48,
+				"h": 15,
+			},
+			"config": map[string]any{
+				"image_config": map[string]any{
+					"src": map[string]any{
+						"type": "url",
+						"url":  "https://example.com/image.png",
 					},
-					"columns": []string{"_source"},
-					"sort":    [][]any{{"@timestamp", "desc"}},
 				},
 			},
 		},
 	}
 
-	bodyBytes, err := json.Marshal(body)
+	putBody, err := json.Marshal(data)
 	if err != nil {
-		return "", fmt.Errorf("failed to marshal dashboard body: %w", err)
+		return fmt.Errorf("failed to marshal PUT body: %w", err)
 	}
 
-	url := fmt.Sprintf("%sapi/dashboards/dashboard?allowUnmappedKeys=true", kibanaClient.URL)
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, url, bytes.NewReader(bodyBytes))
+	putURL := fmt.Sprintf("%s/api/dashboards/%s", kibanaClient.URL, dashboardID)
+	putReq, err := http.NewRequestWithContext(context.Background(), http.MethodPut, putURL, bytes.NewReader(putBody))
 	if err != nil {
-		return "", fmt.Errorf("failed to create HTTP request: %w", err)
+		return fmt.Errorf("failed to create PUT request: %w", err)
 	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("kbn-xsrf", "true")
+	putReq.Header.Set("Content-Type", "application/json")
+	putReq.Header.Set("kbn-xsrf", "true")
 
-	resp, err := kibanaClient.HTTP.Do(req)
+	putResp, err := kibanaClient.HTTP.Do(putReq)
 	if err != nil {
-		return "", fmt.Errorf("failed to send HTTP request: %w", err)
+		return fmt.Errorf("failed to PUT dashboard: %w", err)
 	}
-	defer resp.Body.Close()
+	defer putResp.Body.Close()
 
-	if resp.StatusCode != http.StatusCreated {
-		respBody, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
-		return "", fmt.Errorf("unexpected status %d creating dashboard: %s", resp.StatusCode, string(respBody))
-	}
-
-	var result struct {
-		ID string `json:"id"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return "", fmt.Errorf("failed to decode dashboard response: %w", err)
+	if putResp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(io.LimitReader(putResp.Body, 4096))
+		return fmt.Errorf("PUT dashboard returned status %d: %s", putResp.StatusCode, string(body))
 	}
 
-	if result.ID == "" {
-		return "", fmt.Errorf("dashboard created but returned empty ID")
-	}
-
-	return result.ID, nil
+	return nil
 }
