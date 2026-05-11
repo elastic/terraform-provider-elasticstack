@@ -14,9 +14,10 @@ const fs = require('fs');
 const crypto = require('crypto');
 
 const researchComment = findResearchComment(comments, marker);
+const sanitizedBody = researchComment ? sanitizeUserContent(researchComment.body) : '';
 if (researchComment) {
   const eofDelim = `EOF_${crypto.randomUUID().replace(/-/g, '')}`;
-  const output = `research_comment_body<<${eofDelim}\n${researchComment.body}\n${eofDelim}\n`;
+  const output = `research_comment_body<<${eofDelim}\n${sanitizedBody}\n${eofDelim}\n`;
   fs.appendFileSync(process.env.GITHUB_OUTPUT, output);
   core.info(`Found research comment for issue`);
 } else {
@@ -38,5 +39,5 @@ fs.appendFileSync(process.env.GITHUB_OUTPUT, output2);
 
 const dir = '/tmp/change-factory-context';
 fs.mkdirSync(dir, { recursive: true });
-fs.writeFileSync(`${dir}/research_comment.md`, researchComment ? researchComment.body : '');
+fs.writeFileSync(`${dir}/research_comment.md`, sanitizedBody);
 core.info('Wrote research comment to /tmp/change-factory-context/research_comment.md');
