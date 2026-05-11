@@ -294,6 +294,7 @@ func buildEsqlControlConfig(pm panelModel, esqlPanel *kbapi.KbnDashboardPanelTyp
 		vq.DisplaySettings = displayToAPI(cfg.DisplaySettings)
 		if err := esqlPanel.Config.FromKbnControlsSchemasOptionsListEsqlControlSchemaValuesFromQuery(vq); err != nil {
 			diags.AddError("Failed to build esql control values_from_query config", err.Error())
+			return diags
 		}
 		applyEsqlControlPanelLayout()
 		return diags
@@ -319,6 +320,7 @@ func buildEsqlControlConfig(pm panelModel, esqlPanel *kbapi.KbnDashboardPanelTyp
 	sv.DisplaySettings = displayToAPI(cfg.DisplaySettings)
 	if err := esqlPanel.Config.FromKbnControlsSchemasOptionsListEsqlControlSchemaStaticValues(sv); err != nil {
 		diags.AddError("Failed to build esql control static_values config", err.Error())
+		return diags
 	}
 	applyEsqlControlPanelLayout()
 	return diags
