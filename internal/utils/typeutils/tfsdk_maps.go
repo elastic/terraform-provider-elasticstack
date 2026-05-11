@@ -37,6 +37,7 @@ func MapToNormalizedType[T any](value map[string]T, p path.Path, diags *diag.Dia
 	bytes, err := json.Marshal(value)
 	if err != nil {
 		diags.AddAttributeError(p, "marshal failure", err.Error())
+		return jsontypes.NewNormalizedNull()
 	}
 
 	return jsontypes.NewNormalizedValue(string(bytes))
