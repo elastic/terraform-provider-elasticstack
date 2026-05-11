@@ -6,8 +6,8 @@
 
 ## 2. Validators
 
-- [ ] 2.1 Reuse the existing "exactly one `*_control_config` matching `type`" conditional validators from `panels[]`
-- [ ] 2.2 Ensure validators surface useful messages distinguishing pinned vs in-grid placement
+- [x] 2.1 Reuse the existing "exactly one `*_control_config` matching `type`" conditional validators from `panels[]`
+- [x] 2.2 Ensure validators surface useful messages distinguishing pinned vs in-grid placement
 
 ## 3. Model and mapping
 

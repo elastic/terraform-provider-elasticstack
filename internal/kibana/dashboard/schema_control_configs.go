@@ -405,6 +405,9 @@ func pinnedRangeSliderControlConfigSchema() schema.SingleNestedAttribute {
 
 func pinnedPanelsNestedObject() schema.NestedAttributeObject {
 	return schema.NestedAttributeObject{
+		Validators: []validator.Object{
+			pinnedPanelControlValidator{},
+		},
 		Attributes: map[string]schema.Attribute{
 			"type": schema.StringAttribute{
 				MarkdownDescription: strings.TrimSpace(pinnedPanelTypeDescription),
