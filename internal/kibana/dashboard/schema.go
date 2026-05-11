@@ -1752,7 +1752,226 @@ func getHeatmapSchema() map[string]schema.Attribute {
 			},
 		},
 	}
+	maps.Copy(attrs, lensChartPresentationAttributes())
 	return attrs
+}
+
+var (
+	_ validator.Object = drilldownListItemVariantsValidator{}
+
+	exprDrilldownDashboardDrilldown = path.MatchRelative().AtParent().AtName("dashboard_drilldown")
+	exprDrilldownDiscoverDrilldown  = path.MatchRelative().AtParent().AtName("discover_drilldown")
+	exprDrilldownURLDrilldown       = path.MatchRelative().AtParent().AtName("url_drilldown")
+)
+
+// drilldownListItemVariantsValidator rejects drilldown list items where none of the three variant blocks are set.
+// Pairwise mutual exclusion when multiple variants are set is enforced via objectvalidator.ConflictsWith on each variant block
+// (REQ-039; ForbiddenIfDependentPathExpressionOneOf in conditional.go expects string-valued dependents).
+type drilldownListItemVariantsValidator struct{}
+
+func (drilldownListItemVariantsValidator) Description(_ context.Context) string {
+	return "Ensures exactly one drilldown variant (`dashboard_drilldown`, `discover_drilldown`, or `url_drilldown`) is set."
+}
+
+func (v drilldownListItemVariantsValidator) MarkdownDescription(ctx context.Context) string {
+	return v.Description(ctx)
+}
+
+func (drilldownListItemVariantsValidator) ValidateObject(ctx context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
+	if req.ConfigValue.IsUnknown() {
+		return
+	}
+	if req.ConfigValue.IsNull() {
+		resp.Diagnostics.AddAttributeError(
+			req.Path,
+			"Invalid drilldown",
+			"Set exactly one of `dashboard_drilldown`, `discover_drilldown`, or `url_drilldown`.",
+		)
+		return
+	}
+	attrs := req.ConfigValue.Attributes()
+	count := 0
+	for _, key := range []string{"dashboard_drilldown", "discover_drilldown", "url_drilldown"} {
+		val, okAttr := attrs[key]
+		if !okAttr || val.IsNull() || val.IsUnknown() {
+			continue
+		}
+		count++
+	}
+	if count == 0 {
+		resp.Diagnostics.AddAttributeError(
+			req.Path,
+			"Invalid drilldown",
+			"Set exactly one of `dashboard_drilldown`, `discover_drilldown`, or `url_drilldown`.",
+		)
+	}
+}
+
+// lensChartPresentationAttributes returns optional chart-root presentation fields shared by all typed Lens chart blocks:
+// `time_range` (inherits dashboard-level when null — see REQ-038), `hide_title`, `hide_border`, `references_json`, and `drilldowns`.
+func lensChartPresentationAttributes() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"time_range": schema.SingleNestedAttribute{
+			MarkdownDescription: "Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. " +
+				"When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read.",
+			Optional:   true,
+			Attributes: lensChartPresentationTimeRangeAttributes(),
+		},
+		"hide_title": schema.BoolAttribute{
+			MarkdownDescription: "When true, suppresses the chart title.",
+			Optional:            true,
+		},
+		"hide_border": schema.BoolAttribute{
+			MarkdownDescription: "When true, suppresses the chart panel border.",
+			Optional:            true,
+		},
+		"references_json": schema.StringAttribute{
+			MarkdownDescription: "Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.",
+			Optional:            true,
+			CustomType:          jsontypes.NormalizedType{},
+		},
+		"drilldowns": schema.ListNestedAttribute{
+			MarkdownDescription: "Optional drilldowns for this chart (max 100 per Kibana API). Each entry sets exactly one of `dashboard_drilldown`, `discover_drilldown`, or `url_drilldown`.",
+			Optional:            true,
+			NestedObject: schema.NestedAttributeObject{
+				Attributes: lensChartDrilldownListItemAttributes(),
+				Validators: []validator.Object{
+					drilldownListItemVariantsValidator{},
+				},
+			},
+			Validators: []validator.List{
+				listvalidator.SizeAtMost(100),
+			},
+		},
+	}
+}
+
+func lensChartPresentationTimeRangeAttributes() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"from": schema.StringAttribute{
+			MarkdownDescription: "Start of the chart time range.",
+			Required:            true,
+		},
+		"to": schema.StringAttribute{
+			MarkdownDescription: "End of the chart time range.",
+			Required:            true,
+		},
+		"mode": schema.StringAttribute{
+			MarkdownDescription: "Optional time range mode. Valid values are `absolute` or `relative`. When the GET API omits `mode`, the provider preserves the prior chart `time_range.mode` from configuration or state (same pattern as REQ-009 on the dashboard `time_range`).",
+			Optional:            true,
+			Validators: []validator.String{
+				stringvalidator.OneOf("absolute", "relative"),
+			},
+		},
+	}
+}
+
+func lensChartDrilldownListItemAttributes() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"dashboard_drilldown": schema.SingleNestedAttribute{
+			MarkdownDescription: "Navigate to another dashboard using current filters/time range.",
+			Optional:            true,
+			Attributes: map[string]schema.Attribute{
+				"dashboard_id": schema.StringAttribute{
+					MarkdownDescription: "Target dashboard id.",
+					Required:            true,
+				},
+				"label": schema.StringAttribute{
+					MarkdownDescription: "Human-readable drilldown label.",
+					Required:            true,
+				},
+				"trigger": schema.StringAttribute{
+					MarkdownDescription: "**Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.",
+					Computed:            true,
+					PlanModifiers: []planmodifier.String{
+						stringplanmodifier.UseStateForUnknown(),
+					},
+				},
+				"use_filters": schema.BoolAttribute{
+					MarkdownDescription: "When true, forwards filter context.",
+					Optional:            true,
+					Default:             booldefault.StaticBool(true),
+				},
+				"use_time_range": schema.BoolAttribute{
+					MarkdownDescription: "When true, forwards the time range.",
+					Optional:            true,
+					Default:             booldefault.StaticBool(true),
+				},
+				"open_in_new_tab": schema.BoolAttribute{
+					MarkdownDescription: "When true, opens the target dashboard in a new browser tab.",
+					Optional:            true,
+					Default:             booldefault.StaticBool(false),
+				},
+			},
+			Validators: []validator.Object{
+				objectvalidator.ConflictsWith(exprDrilldownDiscoverDrilldown, exprDrilldownURLDrilldown),
+			},
+		},
+		"discover_drilldown": schema.SingleNestedAttribute{
+			MarkdownDescription: "Open Discover with contextual filters.",
+			Optional:            true,
+			Attributes: map[string]schema.Attribute{
+				"label": schema.StringAttribute{
+					MarkdownDescription: "Human-readable drilldown label.",
+					Required:            true,
+				},
+				"trigger": schema.StringAttribute{
+					MarkdownDescription: "**Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.",
+					Computed:            true,
+					PlanModifiers: []planmodifier.String{
+						stringplanmodifier.UseStateForUnknown(),
+					},
+				},
+				"open_in_new_tab": schema.BoolAttribute{
+					MarkdownDescription: "When true, opens Discover in a new browser tab.",
+					Optional:            true,
+					Default:             booldefault.StaticBool(true),
+				},
+			},
+			Validators: []validator.Object{
+				objectvalidator.ConflictsWith(exprDrilldownDashboardDrilldown, exprDrilldownURLDrilldown),
+			},
+		},
+		"url_drilldown": schema.SingleNestedAttribute{
+			MarkdownDescription: "Open a URL drilldown configured with explicit trigger semantics.",
+			Optional:            true,
+			Attributes: map[string]schema.Attribute{
+				"url": schema.StringAttribute{
+					MarkdownDescription: "Destination URL.",
+					Required:            true,
+				},
+				"label": schema.StringAttribute{
+					MarkdownDescription: "Human-readable drilldown label.",
+					Required:            true,
+				},
+				"trigger": schema.StringAttribute{
+					MarkdownDescription: "Trigger that fires this drilldown.",
+					Required:            true,
+					Validators: []validator.String{
+						stringvalidator.OneOf(
+							"on_click_row",
+							"on_click_value",
+							"on_open_panel_menu",
+							"on_select_range",
+						),
+					},
+				},
+				"encode_url": schema.BoolAttribute{
+					MarkdownDescription: "When true, encodes interpolated URL parameters.",
+					Optional:            true,
+					Default:             booldefault.StaticBool(true),
+				},
+				"open_in_new_tab": schema.BoolAttribute{
+					MarkdownDescription: "When true, opens the URL in a new browser tab.",
+					Optional:            true,
+					Default:             booldefault.StaticBool(true),
+				},
+			},
+			Validators: []validator.Object{
+				objectvalidator.ConflictsWith(exprDrilldownDashboardDrilldown, exprDrilldownDiscoverDrilldown),
+			},
+		},
+	}
 }
 
 // lensChartBaseAttributes returns attributes shared by most Lens chart panels:
@@ -1798,6 +2017,7 @@ func getPartitionChartBaseSchema() map[string]schema.Attribute {
 		Optional:            true,
 		Attributes:          getFilterSimple(),
 	}
+	maps.Copy(attrs, lensChartPresentationAttributes())
 	return attrs
 }
 
@@ -2219,6 +2439,7 @@ func getRegionMapSchema() map[string]schema.Attribute {
 		CustomType:          jsontypes.NormalizedType{},
 		Required:            true,
 	}
+	maps.Copy(attrs, lensChartPresentationAttributes())
 	return attrs
 }
 
@@ -2240,6 +2461,7 @@ func getLegacyMetricSchema() map[string]schema.Attribute {
 		Optional:            true,
 		Attributes:          getFilterSimple(),
 	}
+	maps.Copy(attrs, lensChartPresentationAttributes())
 	return attrs
 }
 
@@ -2272,6 +2494,7 @@ func getGaugeSchema() map[string]schema.Attribute {
 			},
 		},
 	}
+	maps.Copy(attrs, lensChartPresentationAttributes())
 	return attrs
 }
 
@@ -2309,6 +2532,7 @@ func getMetricChart() map[string]schema.Attribute {
 		CustomType:          jsontypes.NormalizedType{},
 		Optional:            true,
 	}
+	maps.Copy(attrs, lensChartPresentationAttributes())
 	return attrs
 }
 
@@ -2383,7 +2607,7 @@ func pieChartLegendDefaultObject() types.Object {
 
 // getPieChart returns the schema for pie chart configuration
 func getPieChart() map[string]schema.Attribute {
-	return map[string]schema.Attribute{
+	attrs := map[string]schema.Attribute{
 		"title": schema.StringAttribute{
 			MarkdownDescription: "The title of the chart displayed in the panel.",
 			Optional:            true,
@@ -2476,6 +2700,8 @@ func getPieChart() map[string]schema.Attribute {
 			},
 		},
 	}
+	maps.Copy(attrs, lensChartPresentationAttributes())
+	return attrs
 }
 
 // getSyntheticsMonitorsSchema returns the schema for the synthetics_monitors_config block.
