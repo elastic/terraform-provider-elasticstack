@@ -116,6 +116,7 @@ type tfModel struct {
 	RoutingPartitionSize               types.Int64          `tfsdk:"routing_partition_size"`
 	LoadFixedBitsetFiltersEagerly      types.Bool           `tfsdk:"load_fixed_bitset_filters_eagerly"`
 	ShardCheckOnStartup                types.String         `tfsdk:"shard_check_on_startup"`
+	Sort                               types.List           `tfsdk:"sort"`
 	SortField                          types.Set            `tfsdk:"sort_field"`
 	SortOrder                          types.List           `tfsdk:"sort_order"`
 	MappingCoerce                      types.Bool           `tfsdk:"mapping_coerce"`
@@ -196,6 +197,13 @@ type settingsTfSet struct {
 type settingTfModel struct {
 	Name  types.String `tfsdk:"name"`
 	Value types.String `tfsdk:"value"`
+}
+
+type sortEntryModel struct {
+	Field   types.String `tfsdk:"field"`
+	Order   types.String `tfsdk:"order"`
+	Missing types.String `tfsdk:"missing"`
+	Mode    types.String `tfsdk:"mode"`
 }
 
 func (model *tfModel) populateFromAPI(ctx context.Context, indexName string, apiModel estypes.IndexState) diag.Diagnostics {
