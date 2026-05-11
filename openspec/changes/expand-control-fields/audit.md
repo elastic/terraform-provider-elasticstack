@@ -104,3 +104,7 @@ Inner union config matches TF; **`width` / `grow`** on the outer control object 
 
 - **Must add (already in delta spec REQ-039):** `width`, `grow` for all four `*_control_config` shapes (plus null-preservation / import behaviour described there).
 - **Additional OpenAPI attributes beyond `width` / `grow`:** none identified for parity with these schemas. Optional follow-up (out of scope for this change unless product asks): stricter validation or docs for `range_slider` `step` API `minimum: 0`, and numeric `selected_options` on options list represented as strings in TF.
+
+## Stack version — control layout fields
+
+Empirical check against **Kibana 9.4.0**: creating or updating a dashboard with `grow` (or `width`) in the control panel JSON returns **HTTP 400** with a body indicating **`Additional properties are not allowed ('grow' was unexpected)`** (and similarly for `width`). The provider therefore omits unset `width` / `grow` on writes and gates acceptance coverage that sends or asserts these keys at **9.5.0** or newer.
