@@ -20,318 +20,226 @@ package security
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
-	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	esTypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
-	"github.com/hashicorp/go-version"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-var (
-	MinSupportedDescriptionVersion = version.Must(version.NewVersion("8.15.0"))
-)
+type roleDataSourceModel struct {
+	entitycore.ElasticsearchConnectionField
+	ID            types.String         `tfsdk:"id"`
+	Name          types.String         `tfsdk:"name"`
+	Description   types.String         `tfsdk:"description"`
+	Cluster       types.Set            `tfsdk:"cluster"`
+	RunAs         types.Set            `tfsdk:"run_as"`
+	Global        jsontypes.Normalized `tfsdk:"global"`
+	Metadata      jsontypes.Normalized `tfsdk:"metadata"`
+	Applications  types.Set            `tfsdk:"applications"`
+	Indices       types.Set            `tfsdk:"indices"`
+	RemoteIndices types.Set            `tfsdk:"remote_indices"`
+}
 
-func DataSourceRole() *schema.Resource {
-	roleSchema := map[string]*schema.Schema{
-		"id": {
-			Description: "Internal identifier of the resource",
-			Type:        schema.TypeString,
-			Computed:    true,
-		},
-		"name": {
-			Description: "The name of the role.",
-			Type:        schema.TypeString,
-			Required:    true,
-		},
-		"description": {
-			Description: "The description of the role.",
-			Type:        schema.TypeString,
-			Computed:    true,
-		},
-		"applications": {
-			Description: "A list of application privilege entries.",
-			Type:        schema.TypeSet,
-			Computed:    true,
-			Elem: &schema.Resource{
-				Schema: map[string]*schema.Schema{
-					"application": {
-						Description: "The name of the application to which this entry applies.",
-						Type:        schema.TypeString,
-						Computed:    true,
-					},
-					"privileges": {
-						Description: "A list of strings, where each element is the name of an application privilege or action.",
-						Type:        schema.TypeSet,
-						Elem: &schema.Schema{
-							Type: schema.TypeString,
+type applicationDataSourceModel struct {
+	Application types.String `tfsdk:"application"`
+	Privileges  types.Set    `tfsdk:"privileges"`
+	Resources   types.Set    `tfsdk:"resources"`
+}
+
+type fieldSecurityDataSourceModel struct {
+	Grant  types.Set `tfsdk:"grant"`
+	Except types.Set `tfsdk:"except"`
+}
+
+type indexDataSourceModel struct {
+	FieldSecurity          types.Object         `tfsdk:"field_security"`
+	Names                  types.Set            `tfsdk:"names"`
+	Privileges             types.Set            `tfsdk:"privileges"`
+	Query                  jsontypes.Normalized `tfsdk:"query"`
+	AllowRestrictedIndices types.Bool           `tfsdk:"allow_restricted_indices"`
+}
+
+type remoteIndexDataSourceModel struct {
+	Clusters      types.Set            `tfsdk:"clusters"`
+	FieldSecurity types.Object         `tfsdk:"field_security"`
+	Names         types.Set            `tfsdk:"names"`
+	Privileges    types.Set            `tfsdk:"privileges"`
+	Query         jsontypes.Normalized `tfsdk:"query"`
+}
+
+func NewRoleDataSource() datasource.DataSource {
+	return entitycore.NewElasticsearchDataSource[roleDataSourceModel](
+		entitycore.ComponentElasticsearch,
+		"security_role",
+		getDataSourceSchema,
+		readDataSource,
+	)
+}
+
+func getDataSourceSchema(_ context.Context) schema.Schema {
+	return schema.Schema{
+		MarkdownDescription: "Retrieves roles in the native realm. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-get-role.html",
+		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
+				MarkdownDescription: "Internal identifier of the resource",
+				Computed:            true,
+			},
+			"name": schema.StringAttribute{
+				MarkdownDescription: "The name of the role.",
+				Required:            true,
+			},
+			"description": schema.StringAttribute{
+				MarkdownDescription: "The description of the role.",
+				Computed:            true,
+			},
+			"cluster": schema.SetAttribute{
+				MarkdownDescription: "A list of cluster privileges. These privileges define the cluster level actions that users with this role are able to execute.",
+				ElementType:         types.StringType,
+				Computed:            true,
+			},
+			"run_as": schema.SetAttribute{
+				MarkdownDescription: "A list of users that the owners of this role can impersonate.",
+				ElementType:         types.StringType,
+				Computed:            true,
+			},
+			"global": schema.StringAttribute{
+				MarkdownDescription: "An object defining global privileges.",
+				Computed:            true,
+				CustomType:          jsontypes.NormalizedType{},
+			},
+			"metadata": schema.StringAttribute{
+				MarkdownDescription: "Optional meta-data.",
+				Computed:            true,
+				CustomType:          jsontypes.NormalizedType{},
+			},
+			"applications": schema.SetNestedAttribute{
+				MarkdownDescription: "A list of application privilege entries.",
+				Computed:            true,
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"application": schema.StringAttribute{
+							MarkdownDescription: "The name of the application to which this entry applies.",
+							Computed:            true,
 						},
-						Computed: true,
-					},
-					"resources": {
-						Description: "A list resources to which the privileges are applied.",
-						Type:        schema.TypeSet,
-						Elem: &schema.Schema{
-							Type: schema.TypeString,
+						"privileges": schema.SetAttribute{
+							MarkdownDescription: "A list of strings, where each element is the name of an application privilege or action.",
+							ElementType:         types.StringType,
+							Computed:            true,
 						},
-						Computed: true,
+						"resources": schema.SetAttribute{
+							MarkdownDescription: "A list resources to which the privileges are applied.",
+							ElementType:         types.StringType,
+							Computed:            true,
+						},
 					},
 				},
 			},
-		},
-		"global": {
-			Description: "An object defining global privileges.",
-			Type:        schema.TypeString,
-			Computed:    true,
-		},
-		"cluster": {
-			Description: "A list of cluster privileges. These privileges define the cluster level actions that users with this role are able to execute.",
-			Type:        schema.TypeSet,
-			Elem: &schema.Schema{
-				Type: schema.TypeString,
-			},
-			Computed: true,
-		},
-		"indices": {
-			Description: "A list of indices permissions entries.",
-			Type:        schema.TypeSet,
-			Computed:    true,
-			Elem: &schema.Resource{
-				Schema: map[string]*schema.Schema{
-					"field_security": {
-						Description: "The document fields that the owners of the role have read access to.",
-						Type:        schema.TypeList,
-						Computed:    true,
-						Elem: &schema.Resource{
-							Schema: map[string]*schema.Schema{
-								"grant": {
-									Description: "List of the fields to grant the access to.",
-									Type:        schema.TypeSet,
-									Computed:    true,
-									Elem: &schema.Schema{
-										Type: schema.TypeString,
+			"indices": schema.SetNestedAttribute{
+				MarkdownDescription: "A list of indices permissions entries.",
+				Computed:            true,
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"field_security": schema.ListNestedAttribute{
+							MarkdownDescription: "The document fields that the owners of the role have read access to.",
+							Computed:            true,
+							NestedObject: schema.NestedAttributeObject{
+								Attributes: map[string]schema.Attribute{
+									"grant": schema.SetAttribute{
+										MarkdownDescription: "List of the fields to grant the access to.",
+										ElementType:         types.StringType,
+										Computed:            true,
 									},
-								},
-								"except": {
-									Description: "List of the fields to which the grants will not be applied.",
-									Type:        schema.TypeSet,
-									Computed:    true,
-									Elem: &schema.Schema{
-										Type: schema.TypeString,
+									"except": schema.SetAttribute{
+										MarkdownDescription: "List of the fields to which the grants will not be applied.",
+										ElementType:         types.StringType,
+										Computed:            true,
 									},
 								},
 							},
 						},
-					},
-					"names": {
-						Description: "A list of indices (or index name patterns) to which the permissions in this entry apply.",
-						Type:        schema.TypeSet,
-						Computed:    true,
-						Elem: &schema.Schema{
-							Type: schema.TypeString,
+						"names": schema.SetAttribute{
+							MarkdownDescription: "A list of indices (or index name patterns) to which the permissions in this entry apply.",
+							ElementType:         types.StringType,
+							Computed:            true,
 						},
-					},
-					"privileges": {
-						Description: "The index level privileges that the owners of the role have on the specified indices.",
-						Type:        schema.TypeSet,
-						Computed:    true,
-						Elem: &schema.Schema{
-							Type: schema.TypeString,
+						"privileges": schema.SetAttribute{
+							MarkdownDescription: "The index level privileges that the owners of the role have on the specified indices.",
+							ElementType:         types.StringType,
+							Computed:            true,
 						},
-					},
-					"query": {
-						Description: "A search query that defines the documents the owners of the role have read access to.",
-						Type:        schema.TypeString,
-						Computed:    true,
-					},
-					"allow_restricted_indices": {
-						Description: roleAllowRestrictedIndicesDescription,
-						Type:        schema.TypeBool,
-						Computed:    true,
+						"query": schema.StringAttribute{
+							MarkdownDescription: "A search query that defines the documents the owners of the role have read access to.",
+							Computed:            true,
+							CustomType:          jsontypes.NormalizedType{},
+						},
+						"allow_restricted_indices": schema.BoolAttribute{
+							MarkdownDescription: roleAllowRestrictedIndicesDescription,
+							Computed:            true,
+						},
 					},
 				},
 			},
-		},
-		"remote_indices": {
-			Description: roleRemoteIndicesDescription,
-			Type:        schema.TypeSet,
-			Computed:    true,
-			Elem: &schema.Resource{
-				Schema: map[string]*schema.Schema{
-					"clusters": {
-						Description: "A list of cluster aliases to which the permissions in this entry apply.",
-						Type:        schema.TypeSet,
-						Computed:    true,
-						Elem: &schema.Schema{
-							Type: schema.TypeString,
+			"remote_indices": schema.SetNestedAttribute{
+				MarkdownDescription: roleRemoteIndicesDescription,
+				Computed:            true,
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"clusters": schema.SetAttribute{
+							MarkdownDescription: "A list of cluster aliases to which the permissions in this entry apply.",
+							ElementType:         types.StringType,
+							Computed:            true,
 						},
-					},
-					"field_security": {
-						Description: "The document fields that the owners of the role have read access to.",
-						Type:        schema.TypeList,
-						Computed:    true,
-						Elem: &schema.Resource{
-							Schema: map[string]*schema.Schema{
-								"grant": {
-									Description: "List of the fields to grant the access to.",
-									Type:        schema.TypeSet,
-									Computed:    true,
-									Elem: &schema.Schema{
-										Type: schema.TypeString,
+						"field_security": schema.ListNestedAttribute{
+							MarkdownDescription: "The document fields that the owners of the role have read access to.",
+							Computed:            true,
+							NestedObject: schema.NestedAttributeObject{
+								Attributes: map[string]schema.Attribute{
+									"grant": schema.SetAttribute{
+										MarkdownDescription: "List of the fields to grant the access to.",
+										ElementType:         types.StringType,
+										Computed:            true,
 									},
-								},
-								"except": {
-									Description: "List of the fields to which the grants will not be applied.",
-									Type:        schema.TypeSet,
-									Computed:    true,
-									Elem: &schema.Schema{
-										Type: schema.TypeString,
+									"except": schema.SetAttribute{
+										MarkdownDescription: "List of the fields to which the grants will not be applied.",
+										ElementType:         types.StringType,
+										Computed:            true,
 									},
 								},
 							},
 						},
-					},
-					"names": {
-						Description: "A list of indices (or index name patterns) to which the permissions in this entry apply.",
-						Type:        schema.TypeSet,
-						Computed:    true,
-						Elem: &schema.Schema{
-							Type: schema.TypeString,
+						"names": schema.SetAttribute{
+							MarkdownDescription: "A list of indices (or index name patterns) to which the permissions in this entry apply.",
+							ElementType:         types.StringType,
+							Computed:            true,
 						},
-					},
-					"privileges": {
-						Description: "The index level privileges that the owners of the role have on the specified indices.",
-						Type:        schema.TypeSet,
-						Computed:    true,
-						Elem: &schema.Schema{
-							Type: schema.TypeString,
+						"privileges": schema.SetAttribute{
+							MarkdownDescription: "The index level privileges that the owners of the role have on the specified indices.",
+							ElementType:         types.StringType,
+							Computed:            true,
 						},
-					},
-					"query": {
-						Description: "A search query that defines the documents the owners of the role have read access to.",
-						Type:        schema.TypeString,
-						Computed:    true,
+						"query": schema.StringAttribute{
+							MarkdownDescription: "A search query that defines the documents the owners of the role have read access to.",
+							Computed:            true,
+							CustomType:          jsontypes.NormalizedType{},
+						},
 					},
 				},
 			},
 		},
-		"metadata": {
-			Description: "Optional meta-data.",
-			Type:        schema.TypeString,
-			Computed:    true,
-		},
-		"run_as": {
-			Description: "A list of users that the owners of this role can impersonate.",
-			Type:        schema.TypeSet,
-			Optional:    true,
-			Elem: &schema.Schema{
-				Type: schema.TypeString,
-			},
-		},
-	}
-
-	schemautil.AddConnectionSchema(roleSchema)
-
-	return &schema.Resource{
-		Description: "Retrieves roles in the native realm. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-get-role.html",
-		ReadContext: dataSourceSecurityRoleRead,
-		Schema:      roleSchema,
 	}
 }
 
-func dataSourceSecurityRoleRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	factory, diags := clients.ConvertMetaToFactory(meta)
-	if diags.HasError() {
-		return diags
-	}
-	client, diags := factory.GetElasticsearchClientFromSDK(d)
-	if diags.HasError() {
-		return diags
-	}
-
-	roleID := d.Get("name").(string)
-	id, diags := client.ID(ctx, roleID)
-	if diags.HasError() {
-		return diags
-	}
-	d.SetId(id.String())
-
-	role, diags := elasticsearch.GetRole(ctx, client, roleID)
-	if role == nil && diags == nil {
-		tflog.Warn(ctx, fmt.Sprintf(`Role "%s" not found, removing from state`, roleID))
-		d.SetId("")
-		return diags
-	}
-	if diags.HasError() {
-		return diags
-	}
-
-	// set the fields
-	if err := d.Set("name", roleID); err != nil {
-		return diag.FromErr(err)
-	}
-
-	// Set the description if it exists
-	if role.Description != nil {
-		if err := d.Set("description", *role.Description); err != nil {
-			return diag.FromErr(err)
-		}
-	}
-
-	applications := flattenApplicationsData(role.Applications)
-	if err := d.Set("applications", applications); err != nil {
-		return diag.FromErr(err)
-	}
-
-	clusterStrings := make([]string, len(role.Cluster))
-	for i, cp := range role.Cluster {
-		clusterStrings[i] = cp.String()
-	}
-	if err := d.Set("cluster", clusterStrings); err != nil {
-		return diag.FromErr(err)
-	}
-
-	if role.Global != nil {
-		global, err := json.Marshal(role.Global)
-		if err != nil {
-			return diag.FromErr(err)
-		}
-		if err := d.Set("global", string(global)); err != nil {
-			return diag.FromErr(err)
-		}
-	}
-
-	indices := flattenIndicesData(role.Indices)
-	if err := d.Set("indices", indices); err != nil {
-		return diag.FromErr(err)
-	}
-	remoteIndices := flattenRemoteIndicesData(role.RemoteIndices)
-	if err := d.Set("remote_indices", remoteIndices); err != nil {
-		return diag.FromErr(err)
-	}
-
-	if role.Metadata != nil {
-		metadata, err := json.Marshal(role.Metadata)
-		if err != nil {
-			return diag.FromErr(err)
-		}
-		if err := d.Set("metadata", string(metadata)); err != nil {
-			return diag.FromErr(err)
-		}
-	}
-
-	if err := d.Set("run_as", role.RunAs); err != nil {
-		return diag.FromErr(err)
-	}
-
-	return diags
+func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedClient, config roleDataSourceModel) (roleDataSourceModel, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	return config, diags
 }
 
-func flattenApplicationsData(apps []types.ApplicationPrivileges) []any {
+func flattenApplicationsData(apps []esTypes.ApplicationPrivileges) []any {
 	if len(apps) > 0 {
 		oapps := make([]any, len(apps))
 		for i, app := range apps {
@@ -346,7 +254,7 @@ func flattenApplicationsData(apps []types.ApplicationPrivileges) []any {
 	return make([]any, 0)
 }
 
-func flattenIndicesData(indices []types.IndicesPrivileges) []any {
+func flattenIndicesData(indices []esTypes.IndicesPrivileges) []any {
 	oindx := make([]any, len(indices))
 
 	for i, index := range indices {
@@ -387,7 +295,7 @@ func flattenIndicesData(indices []types.IndicesPrivileges) []any {
 	return oindx
 }
 
-func flattenRemoteIndicesData(remoteIndices []types.RemoteIndicesPrivileges) []any {
+func flattenRemoteIndicesData(remoteIndices []esTypes.RemoteIndicesPrivileges) []any {
 	oRemoteIndx := make([]any, len(remoteIndices))
 
 	for i, remoteIndex := range remoteIndices {
