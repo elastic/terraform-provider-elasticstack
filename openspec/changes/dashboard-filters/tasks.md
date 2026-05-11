@@ -1,7 +1,7 @@
 ## 1. Schema
 
-- [ ] 1.1 Add `filters` block list to the dashboard root schema in `internal/kibana/dashboard/schema.go` with `filter_json` (required string) and the existing JSON normalization plan modifier
-- [ ] 1.2 Document the attribute (descriptions file under `internal/kibana/dashboard/descriptions/`)
+- [x] 1.1 Add `filters` block list to the dashboard root schema in `internal/kibana/dashboard/schema.go` with `filter_json` (required string) and the existing JSON normalization plan modifier
+- [x] 1.2 Document the attribute (descriptions file under `internal/kibana/dashboard/descriptions/`)
 
 ## 2. Model and mapping
 

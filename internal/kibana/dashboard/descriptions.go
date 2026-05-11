@@ -51,3 +51,9 @@ var metricChartMetricConfigDescription string
 
 //go:embed descriptions/metric_chart_breakdown_by.md
 var metricChartBreakdownByDescription string
+
+//go:embed descriptions/dashboard_filters.md
+var dashboardFiltersDescription string
+
+//go:embed descriptions/dashboard_filter_json.md
+var dashboardFilterJSONDescription string
