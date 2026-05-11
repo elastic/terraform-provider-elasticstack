@@ -1,9 +1,9 @@
 ## MODIFIED Requirements
 
-### Requirement: Unset role_descriptors SHALL be valid for create and update (REQ-027-REQ-029 amendment)
+### Requirement: JSON and access mapping (REQ-027-REQ-029)
 
 The resource SHALL omit `role_descriptors` from the Elasticsearch request when the attribute
-is null or unknown, rather than attempting JSON parsing that fails. This extends REQ-027: JSON
+is null or unknown, rather than attempting JSON parsing that fails. JSON
 parsing SHALL only be attempted when `role_descriptors` is a known, non-null value.
 
 #### Scenario: Create without role_descriptors
@@ -27,6 +27,8 @@ parsing SHALL only be attempted when `role_descriptors` is a known, non-null val
 - WHEN the provider validates whether any role descriptor contains a `restriction` block
 - THEN the validation SHALL return no error diagnostics
 - AND the provider SHALL NOT attempt to parse an Unknown or Null JSON value
+
+## NEW Requirements
 
 ### Requirement: Acceptance coverage SHALL include API key with no role_descriptors
 
