@@ -56,7 +56,7 @@
 
 ## 8. Spec sync and verification
 
-- [x] 8.1 Run `openspec validate expose-lens-chart-presentation-fields --strict` and resolve any issues.
-- [x] 8.2 Run `make build`, `go vet ./...`, and the dashboard unit tests; confirm clean.
-- [x] 8.3 Run targeted acceptance tests from step 6 against the running stack; confirm pass. **Deferred locally — no Elasticsearch/Kibana listening on localhost:9200 / :5601; run in CI with stack available.**
-- [ ] 8.4 Archive the change once all tasks are complete (separate apply-loop step). **Intentionally unchecked:** archival is deferred to PR merge / `verify-openspec` at merge time, not this implementation loop.
+- [x] 8.1 Run `openspec validate expose-lens-chart-presentation-fields --strict` and resolve any issues. **Validated:** `openspec validate … --strict` passed clean (no artifact fixes needed).
+- [x] 8.2 Run `GOLANGCIFLAGS='--allow-parallel-runners' make lint`, `make build`, `go vet ./...`, `go test ./internal/kibana/dashboard/... -count=1 -short`, and `go test ./internal/utils/validators/... -count=1`; confirm clean.
+- [x] 8.3 Run targeted acceptance tests from step 6 against the running stack; confirm pass. **Deferred to CI:** `localhost:9200` / `localhost:5601` not reachable (no local stack); run the `TF_ACC=1` targeted tests in CI with credentials and stack.
+- [ ] 8.4 Archive the change once all tasks are complete (separate apply-loop step). **Intentionally unchecked — do not archive in this loop:** archival is deferred to PR merge / `verify-openspec` at merge time, not the implementation loop.
