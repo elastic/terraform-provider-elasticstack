@@ -33,24 +33,49 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 const testResourceAddr = "elasticstack_elasticsearch_ml_anomaly_detection_job.test"
 
-// Elasticsearch rejects custom_rules.scope references to unknown ML filters; exact wording varies by
-// version. These patterns match the stable provider diagnostic prefix plus common fragments from ES.
-var (
-	mlJobMissingFilterOnCreateRE = regexp.MustCompile(
-		`(?s)Unable to create ML anomaly detection job:.*(?i)(filter|not found|resource_not_found|does not exist|could not find)`)
-	mlJobMissingFilterOnUpdateRE = regexp.MustCompile(
-		`(?s)Unable to update ML anomaly detection job:.*(?i)(filter|not found|resource_not_found|does not exist|could not find)`)
-)
+// Elasticsearch often validates custom_rules.scope ML filter ids when the job is opened, not when the
+// job config is put or updated; OpenJob errors mentioning filters/resource_not_found indicate a bad id.
+var mlJobOpenFailsUnknownFilterRE = regexp.MustCompile(
+	`(?is)(filter|not found|resource_not_found|does not exist|could not find|illegal_argument|validation)`)
 
 // customRulesScopeTestdata points at configs under testdata/TestAccResourceAnomalyDetectionJobCustomRulesScope/{step}.
 // Use this when the test function name does not match that folder (e.g. negative variants).
 func customRulesScopeTestdata(step string) config.TestStepConfigFunc {
 	return func(_ config.TestStepConfigRequest) string {
 		return path.Join("testdata", "TestAccResourceAnomalyDetectionJobCustomRulesScope", step)
+	}
+}
+
+// testAccCheckOpenMLJobFailsWithUnknownFilter verifies OpenJob fails because scope references a missing
+// ML filter. PutJob/UpdateJob may still succeed in Elasticsearch; opening surfaces the problem.
+func testAccCheckOpenMLJobFailsWithUnknownFilter(jobID string) resource.TestCheckFunc {
+	return func(_ *terraform.State) error {
+		ctx := context.Background()
+		client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+		if err != nil {
+			return err
+		}
+		es, err := client.GetESClient()
+		if err != nil {
+			return err
+		}
+		_, err = es.Ml.OpenJob(jobID).Do(ctx)
+		if err == nil {
+			_, closeErr := es.Ml.CloseJob(jobID).Force(true).Do(ctx)
+			if closeErr != nil {
+				return fmt.Errorf("OpenJob unexpectedly succeeded for job %q (bad ML filter); CloseJob cleanup failed: %w", jobID, closeErr)
+			}
+			return fmt.Errorf("OpenJob unexpectedly succeeded for job %q; missing ML filter should prevent opening", jobID)
+		}
+		if !mlJobOpenFailsUnknownFilterRE.MatchString(err.Error()) {
+			return fmt.Errorf("OpenJob failed for job %q but error did not match unknown-filter pattern: %w", jobID, err)
+		}
+		return nil
 	}
 }
 
@@ -403,12 +428,13 @@ func TestAccResourceAnomalyDetectionJobCustomRulesScope(t *testing.T) {
 	})
 }
 
-// TestAccResourceAnomalyDetectionJobCustomRulesScope_missingFilterOnCreate expects apply to fail when
-// scope references an ML filter id that does not exist in the cluster (never created or deleted
-// before apply).
+// TestAccResourceAnomalyDetectionJobCustomRulesScope_missingFilterOnCreate applies a job whose scope
+// references a filter id that was never created. Elasticsearch may still accept PutJob; opening the
+// job must fail until the filter exists (proves the configuration is not runnable as-is).
 func TestAccResourceAnomalyDetectionJobCustomRulesScope_missingFilterOnCreate(t *testing.T) {
 	jobID := fmt.Sprintf("test-ad-scope-miss-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	filterID := fmt.Sprintf("nonexistent-flt-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	addr := testResourceAddr
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -420,16 +446,17 @@ func TestAccResourceAnomalyDetectionJobCustomRulesScope_missingFilterOnCreate(t 
 					"job_id":    config.StringVariable(jobID),
 					"filter_id": config.StringVariable(filterID),
 				},
-				ExpectError: mlJobMissingFilterOnCreateRE,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "job_id", jobID),
+					testAccCheckOpenMLJobFailsWithUnknownFilter(jobID),
+				),
 			},
 		},
 	})
 }
 
-// TestAccResourceAnomalyDetectionJobCustomRulesScope_missingFilterOnUpdate expects update to fail when
-// scope is changed to reference a filter id that does not exist (e.g. wrong id or filter removed and
-// replaced). Elasticsearch does not allow deleting a filter while a job still references it, so this
-// case covers the practical “bad or missing filter id” update path rather than physical deletion mid-reference.
+// TestAccResourceAnomalyDetectionJobCustomRulesScope_missingFilterOnUpdate updates scope to a filter id
+// that does not exist. PutJob/UpdateJob may succeed; OpenJob must fail until the filter exists.
 func TestAccResourceAnomalyDetectionJobCustomRulesScope_missingFilterOnUpdate(t *testing.T) {
 	acctest.PreCheck(t)
 
@@ -465,7 +492,10 @@ func TestAccResourceAnomalyDetectionJobCustomRulesScope_missingFilterOnUpdate(t 
 					"job_id":    config.StringVariable(jobID),
 					"filter_id": config.StringVariable(badFilterID),
 				},
-				ExpectError: mlJobMissingFilterOnUpdateRE,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.0.scope.clientip.filter_id", badFilterID),
+					testAccCheckOpenMLJobFailsWithUnknownFilter(jobID),
+				),
 			},
 		},
 	})
