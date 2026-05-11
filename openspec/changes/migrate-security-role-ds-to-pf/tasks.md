@@ -27,11 +27,11 @@
 
 ## 4. Provider Registration
 
-- [ ] 4.1 Add `security.NewRoleDataSource` (or equivalent) to `provider/plugin_framework.go` `DataSources` slice
-- [ ] 4.2 Remove `"elasticstack_elasticsearch_security_role": security.DataSourceRole()` from `provider/provider.go` `DataSourcesMap`
+- [x] 4.1 Add `security.NewRoleDataSource` (or equivalent) to `provider/plugin_framework.go` `DataSources` slice
+- [x] 4.2 Remove `"elasticstack_elasticsearch_security_role": security.DataSourceRole()` from `provider/provider.go` `DataSourcesMap`
 
 ## 5. Testing
 
-- [ ] 5.1 Review and update `role_data_source_test.go` to PF patterns if needed
-- [ ] 5.2 Run `make build` and verify no compile errors
-- [ ] 5.3 Run targeted acceptance test for security role data source (`go test ./internal/elasticsearch/security/ -run '^TestAccDataSourceSecurityRole$' -v`) and verify pass
+- [x] 5.1 Review and update `role_data_source_test.go` to PF patterns if needed (existing ProtoV6ProviderFactories + resource.TestCheck* pattern is correct and compatible)
+- [x] 5.2 Run `make build` and verify no compile errors (passes cleanly)
+- [ ] 5.3 Run targeted acceptance test for security role data source (`go test ./internal/elasticsearch/security/ -run '^TestAccDataSourceSecurityRole$' -v`) and verify pass (blocked: no Elastic Stack running locally)
