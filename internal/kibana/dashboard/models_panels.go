@@ -21,7 +21,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"slices"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
@@ -204,32 +203,63 @@ func setPanelGridFromAPI(pm *panelModel, x, y float32, w, h *float32) {
 	}
 }
 
+func panelHasTypedConfig(pm *panelModel) bool {
+	return pm.MarkdownConfig != nil ||
+		pm.XYChartConfig != nil ||
+		pm.TreemapConfig != nil ||
+		pm.MosaicConfig != nil ||
+		pm.DatatableConfig != nil ||
+		pm.TagcloudConfig != nil ||
+		pm.MetricChartConfig != nil ||
+		pm.PieChartConfig != nil ||
+		pm.GaugeConfig != nil ||
+		pm.LegacyMetricConfig != nil ||
+		pm.RegionMapConfig != nil ||
+		pm.HeatmapConfig != nil ||
+		pm.WaffleConfig != nil ||
+		pm.TimeSliderControlConfig != nil ||
+		pm.SloBurnRateConfig != nil ||
+		pm.SloOverviewConfig != nil ||
+		pm.SloErrorBudgetConfig != nil ||
+		pm.EsqlControlConfig != nil ||
+		pm.OptionsListControlConfig != nil ||
+		pm.RangeSliderControlConfig != nil ||
+		pm.SyntheticsStatsOverviewConfig != nil ||
+		pm.SyntheticsMonitorsConfig != nil ||
+		pm.LensDashboardAppConfig != nil
+}
+
 func panelUsesConfigJSONOnly(pm *panelModel) bool {
 	if pm == nil || !typeutils.IsKnown(pm.ConfigJSON) {
 		return false
 	}
-	return pm.MarkdownConfig == nil &&
-		pm.XYChartConfig == nil &&
-		pm.TreemapConfig == nil &&
-		pm.DatatableConfig == nil &&
-		pm.TagcloudConfig == nil &&
-		pm.MetricChartConfig == nil &&
-		pm.PieChartConfig == nil &&
-		pm.GaugeConfig == nil &&
-		pm.LegacyMetricConfig == nil &&
-		pm.RegionMapConfig == nil &&
-		pm.HeatmapConfig == nil &&
-		pm.WaffleConfig == nil &&
-		pm.TimeSliderControlConfig == nil &&
-		pm.SloBurnRateConfig == nil &&
-		pm.SloOverviewConfig == nil &&
-		pm.SloErrorBudgetConfig == nil &&
-		pm.EsqlControlConfig == nil &&
-		pm.OptionsListControlConfig == nil &&
-		pm.RangeSliderControlConfig == nil &&
-		pm.SyntheticsStatsOverviewConfig == nil &&
-		pm.SyntheticsMonitorsConfig == nil &&
-		pm.LensDashboardAppConfig == nil
+	return !panelHasTypedConfig(pm)
+}
+
+func clearPanelConfigBlocks(pm *panelModel) {
+	pm.MarkdownConfig = nil
+	pm.XYChartConfig = nil
+	pm.TreemapConfig = nil
+	pm.MosaicConfig = nil
+	pm.DatatableConfig = nil
+	pm.TagcloudConfig = nil
+	pm.MetricChartConfig = nil
+	pm.PieChartConfig = nil
+	pm.GaugeConfig = nil
+	pm.LegacyMetricConfig = nil
+	pm.RegionMapConfig = nil
+	pm.HeatmapConfig = nil
+	pm.WaffleConfig = nil
+	pm.TimeSliderControlConfig = nil
+	pm.SloBurnRateConfig = nil
+	pm.SloOverviewConfig = nil
+	pm.SloErrorBudgetConfig = nil
+	pm.EsqlControlConfig = nil
+	pm.OptionsListControlConfig = nil
+	pm.RangeSliderControlConfig = nil
+	pm.SyntheticsStatsOverviewConfig = nil
+	pm.SyntheticsMonitorsConfig = nil
+	pm.LensDashboardAppConfig = nil
 }
 
 func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelModel, panelItem kbapi.DashboardPanelItem) (panelModel, diag.Diagnostics) {
@@ -414,11 +444,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 		d := populateLensDashboardAppFromAPI(ctx, &pm, tfPanel, ldPanel)
 		diags.Append(d...)
 	default:
-		// Unknown panel type: preserve id, grid, type and the raw API config.
-		// This ensures round-trip stability for panels that don't yet have a
-		// typed config block (e.g. discover_session, image, slo_alerts).
-		// Clear fields that may be seeded from prior state before populating
-		// from the API payload so stale values cannot survive a missing field.
+		// Round-trip stability for panel types without a typed config block.
 		pm.ID = types.StringNull()
 		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
 		pm.Grid = panelGridModel{}
@@ -449,31 +475,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 				}
 			}
 		}
-		// Clear any typed config blocks that may be seeded from prior state.
-		// Unknown panels store their config in config_json only.
-		pm.MarkdownConfig = nil
-		pm.XYChartConfig = nil
-		pm.TreemapConfig = nil
-		pm.MosaicConfig = nil
-		pm.DatatableConfig = nil
-		pm.TagcloudConfig = nil
-		pm.MetricChartConfig = nil
-		pm.PieChartConfig = nil
-		pm.GaugeConfig = nil
-		pm.LegacyMetricConfig = nil
-		pm.RegionMapConfig = nil
-		pm.HeatmapConfig = nil
-		pm.WaffleConfig = nil
-		pm.TimeSliderControlConfig = nil
-		pm.SloBurnRateConfig = nil
-		pm.SloOverviewConfig = nil
-		pm.SloErrorBudgetConfig = nil
-		pm.EsqlControlConfig = nil
-		pm.OptionsListControlConfig = nil
-		pm.RangeSliderControlConfig = nil
-		pm.SyntheticsStatsOverviewConfig = nil
-		pm.SyntheticsMonitorsConfig = nil
-		pm.LensDashboardAppConfig = nil
+		clearPanelConfigBlocks(&pm)
 	}
 
 	alignPanelStateFromPlan(ctx, tfPanel, &pm)
@@ -856,24 +858,13 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 		return kbapi.DashboardPanelItem{}, diags
 	}
 
-	isKnownType := slices.Contains([]string{
-		panelTypeMarkdown,
-		panelTypeVis,
-		panelTypeTimeSlider,
-		panelTypeSloBurnRate,
-		panelTypeSloErrorBudget,
-		panelTypeEsqlControl,
-		panelTypeOptionsListControl,
-		panelTypeRangeSlider,
-		panelTypeSyntheticsStatsOverview,
-		panelTypeSyntheticsMonitors,
-		panelTypeLensDashboardApp,
-		panelTypeSloOverview,
-	}, panelType)
-
-	if isKnownType {
+	switch panelType {
+	case panelTypeMarkdown, panelTypeVis, panelTypeTimeSlider, panelTypeSloBurnRate,
+		panelTypeSloErrorBudget, panelTypeEsqlControl, panelTypeOptionsListControl,
+		panelTypeRangeSlider, panelTypeSyntheticsStatsOverview, panelTypeSyntheticsMonitors,
+		panelTypeLensDashboardApp, panelTypeSloOverview:
 		diags.AddError("Unsupported panel configuration", "No panel configuration block was provided.")
-	} else {
+	default:
 		diags.AddError(
 			"Unsupported panel type",
 			fmt.Sprintf(

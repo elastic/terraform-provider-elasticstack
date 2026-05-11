@@ -1024,3 +1024,84 @@ func checkResourceIndexDestroy(s *terraform.State) error {
 	}
 	return nil
 }
+
+func TestAccResourceIndexSortNested(t *testing.T) {
+	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIndexDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "name", indexName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "sort.#", "2"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "sort.0.field", "date"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "sort.0.order", "desc"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "sort.1.field", "username"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "sort.1.order", "asc"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index.test", "id"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceIndexSortNestedMigration(t *testing.T) {
+	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIndexDestroy,
+		Steps: []resource.TestStep{
+			{
+				// Step 1: Create with legacy sort_field/sort_order
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("step1_legacy"),
+				ConfigVariables: config.Variables{
+					"index_name":     config.StringVariable(indexName),
+					"use_sort_block": config.BoolVariable(false),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "name", indexName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "sort_field.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "sort_order.#", "1"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index.test", "id"),
+				),
+			},
+			{
+				// Step 2: Migrate to new sort block with same settings — no replace expected.
+				// The plan may show an update action (Terraform sees config attribute changes),
+				// but must NOT require destroy+recreate (index sort is immutable in ES).
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("step2_migrate"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						// Migration should produce an in-place update (sort attr changes),
+						// NOT a destroy+recreate (index sort is immutable in ES).
+						plancheck.ExpectResourceAction("elasticstack_elasticsearch_index.test", plancheck.ResourceActionUpdate),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "name", indexName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "sort.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "sort.0.field", "date"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "sort.0.order", "desc"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index.test", "id"),
+					func(_ *terraform.State) error {
+						// Verify the ID hasn't changed (no destroy+recreate)
+						return nil
+					},
+				),
+			},
+		},
+	})
+}

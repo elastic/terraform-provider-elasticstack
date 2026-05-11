@@ -141,21 +141,7 @@ When the plan originates from the deprecated `sort_field`/`sort_order` attribute
 
 ---
 
-## MODIFIED Requirements
-
-### Requirement: Lifecycle — static settings require replacement (REQ-009, extended)
-
-In addition to the existing static settings listed in REQ-009, entries in the new `sort` `ListNestedAttribute` SHALL also trigger resource replacement when changed, subject to the migration suppression defined in REQ-SORT-03. Specifically, changing any of `sort[*].field`, `sort[*].order`, `sort[*].missing`, or `sort[*].mode` SHALL require replacement. The deprecated `sort_field` attribute SHALL continue to require replace when changed, except when `sort` is simultaneously being introduced in the plan (REQ-SORT-03 governs in that case).
-
-#### Scenario: Changing an existing `sort` entry's `order` requires replace
-
-- **GIVEN** an existing index managed with `sort = [{ field = "date", order = "asc" }]`
-- **WHEN** the configuration changes to `sort = [{ field = "date", order = "desc" }]`
-- **THEN** Terraform SHALL plan to destroy and recreate the resource
-
----
-
-### Requirement: Schema (extended)
+### Requirement: Schema — sort attribute and deprecated sort_field/sort_order (REQ-SORT-05)
 
 The `sort_field` and `sort_order` attributes SHALL remain in the schema as optional attributes but SHALL carry a `DeprecationMessage` directing users to the new `sort` attribute. The schema SHALL additionally expose the `sort` attribute as a `ListNestedAttribute` with nested `field` (required string), `order` (optional string), `missing` (optional string), and `mode` (optional string) attributes. The `sort` attribute and `sort_field`/`sort_order` SHALL be mutually exclusive; the schema SHALL enforce this with `ConflictsWith` validators.
 
@@ -183,7 +169,21 @@ resource "elasticstack_elasticsearch_index" "example" {
 
 ---
 
-### Requirement: Opt-in adoption of existing indices via `use_existing` (extended)
+## MODIFIED Requirements
+
+### Requirement: Lifecycle — static settings require replacement (REQ-009)
+
+In addition to the existing static settings listed in REQ-009, entries in the new `sort` `ListNestedAttribute` SHALL also trigger resource replacement when changed, subject to the migration suppression defined in REQ-SORT-03. Specifically, changing any of `sort[*].field`, `sort[*].order`, `sort[*].missing`, or `sort[*].mode` SHALL require replacement. The deprecated `sort_field` attribute SHALL continue to require replace when changed, except when `sort` is simultaneously being introduced in the plan (REQ-SORT-03 governs in that case).
+
+#### Scenario: Changing an existing `sort` entry's `order` requires replace
+
+- **GIVEN** an existing index managed with `sort = [{ field = "date", order = "asc" }]`
+- **WHEN** the configuration changes to `sort = [{ field = "date", order = "desc" }]`
+- **THEN** Terraform SHALL plan to destroy and recreate the resource
+
+---
+
+### Requirement: Opt-in adoption of existing indices via `use_existing`
 
 The set of static settings compared during `use_existing` adoption SHALL be extended to include `sort.missing` and `sort.mode`. When these settings are explicitly set in the plan, the adoption flow SHALL compare them against the existing index's static settings and SHALL return an error diagnostic when they differ, consistent with the behavior for `sort.field` and `sort.order`.
 
