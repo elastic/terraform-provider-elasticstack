@@ -32,6 +32,12 @@ var (
 	_ resource.ResourceWithImportState = newFilterResource()
 )
 
+// filterResource uses [entitycore.ElasticsearchResource], which wires the
+// provider factory, injects the elasticsearch_connection block into Schema,
+// resolves a scoped Elasticsearch client per resource, and passes the ML API
+// identifier (filter id segment) into read/delete after parsing the composite
+// state id. Create/update callbacks receive that same identifier from
+// [TFModel.GetResourceID] (filter_id).
 type filterResource struct {
 	*entitycore.ElasticsearchResource[TFModel]
 }
@@ -55,6 +61,9 @@ func NewFilterResource() resource.Resource {
 	return newFilterResource()
 }
 
+// ImportState accepts "<cluster_uuid>/<filter_id>" import ids and sets both id
+// and filter_id so Destroy and Read use the same composite id shape as for
+// normally managed resources.
 func (r *filterResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	compID, diags := clients.CompositeIDFromStrFw(req.ID)
 	resp.Diagnostics.Append(diags...)
