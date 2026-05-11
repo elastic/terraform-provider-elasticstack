@@ -6,9 +6,9 @@
 
 ## 2. Schema additions
 
-- [ ] 2.1 Add `width` (string, validator: `small`/`medium`/`large`) and `grow` (bool) to all four `*_control_config` schemas
-- [ ] 2.2 Apply any additional attributes identified by the audit
-- [ ] 2.3 Update descriptions under `internal/kibana/dashboard/descriptions/`
+- [x] 2.1 Add `width` (string, validator: `small`/`medium`/`large`) and `grow` (bool) to all four `*_control_config` schemas
+- [x] 2.2 Apply any additional attributes identified by the audit
+- [x] 2.3 Update descriptions under `internal/kibana/dashboard/descriptions/`
 
 ## 3. Models and mapping
 
