@@ -18,10 +18,10 @@
 
 ## 4. Tests
 
-- [ ] 4.1 Per-control unit tests for `width`/`grow` round-trip and null-preservation
-- [ ] 4.2 Validator unit test for invalid `width` enum value
-- [ ] 4.3 At least one acceptance test per control type exercising `width` and `grow`
-- [ ] 4.4 Run `make build`, `go vet ./...`, `go test ./internal/kibana/dashboard/...` (`TF_ACC=1` for acceptance)
+- [x] 4.1 Per-control unit tests for `width`/`grow` round-trip and null-preservation
+- [x] 4.2 Validator unit test for invalid `width` enum value
+- [x] 4.3 At least one acceptance test per control type exercising `width` and `grow`
+- [x] 4.4 Run `make build`, `go vet ./...`, `go test ./internal/kibana/dashboard/...` (`TF_ACC=1` for acceptance)
 
 ## 5. Spec sync
 
