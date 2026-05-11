@@ -241,6 +241,8 @@ func runMetricNoESQLLensChartPresentationComprehensive(t *testing.T) {
 		require.False(t, diags.HasError())
 		api, err := attrs.AsMetricNoESQL()
 		require.NoError(t, err)
+		require.NotNil(t, api.HideBorder)
+		assert.True(t, *api.HideBorder)
 
 		out := &metricChartConfigModel{}
 		diags = out.fromAPIVariant0(ctx, dash, &m, api)

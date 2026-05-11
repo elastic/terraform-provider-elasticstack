@@ -771,6 +771,27 @@ func Test_xyChartConfigModel_lensChartPresentation_timeRange_inheritanceAndMode(
 		assert.Nil(t, out.TimeRange)
 	})
 
+	t.Run("prior-null chart time_range and API differs from dashboard populates state", func(t *testing.T) {
+		m := minimalXYChartConfigForPresentationTests()
+		require.Nil(t, m.TimeRange)
+
+		base := minimalXYChartConfigForPresentationTests()
+		apiChart, diags := base.toAPINoESQL(dash)
+		require.False(t, diags.HasError())
+		apiChart.TimeRange = kbapi.KbnEsQueryServerTimeRangeSchema{
+			From: "now-30d",
+			To:   "now-1d",
+		}
+		require.False(t, lensTimeRangesAPILiteralEqual(apiChart.TimeRange, dashTR), "API chart time_range should differ from dashboard for this scenario")
+
+		out := &xyChartConfigModel{}
+		diags = out.fromAPINoESQL(ctx, dash, m, apiChart)
+		require.False(t, diags.HasError())
+		require.NotNil(t, out.TimeRange)
+		assert.Equal(t, "now-30d", out.TimeRange.From.ValueString())
+		assert.Equal(t, "now-1d", out.TimeRange.To.ValueString())
+	})
+
 	t.Run("explicit chart time_range override round-trips", func(t *testing.T) {
 		m := minimalXYChartConfigForPresentationTests()
 		m.TimeRange = &timeRangeModel{
@@ -940,6 +961,49 @@ func Test_xyChartConfigModel_lensChartPresentation_boolsReferences_andNullPreser
 		require.False(t, diags.HasError())
 		assert.True(t, out.ReferencesJSON.IsNull())
 	})
+}
+
+func Test_xyChartConfigModel_lensChartPresentation_dashboardDrilldown_roundTrip(t *testing.T) {
+	ctx := context.Background()
+	dash := &dashboardModel{
+		TimeRange: &timeRangeModel{
+			From: types.StringValue("now-7d"),
+			To:   types.StringValue("now"),
+		},
+	}
+
+	m := minimalXYChartConfigForPresentationTests()
+	m.Drilldowns = []lensDrilldownItemTFModel{
+		{
+			DashboardDrilldown: &lensDashboardDrilldownTFModel{
+				DashboardID:  types.StringValue("dash-abc"),
+				Label:        types.StringValue("Open related"),
+				UseFilters:   types.BoolValue(true),
+				UseTimeRange: types.BoolValue(true),
+				OpenInNewTab: types.BoolValue(false),
+			},
+		},
+	}
+
+	apiChart, diags := m.toAPINoESQL(dash)
+	require.False(t, diags.HasError())
+	require.NotNil(t, apiChart.Drilldowns)
+	require.GreaterOrEqual(t, len(*apiChart.Drilldowns), 1)
+
+	raw, err := json.Marshal((*apiChart.Drilldowns)[0])
+	require.NoError(t, err)
+	var wire map[string]any
+	require.NoError(t, json.Unmarshal(raw, &wire))
+	assert.Equal(t, "dashboard_drilldown", wire["type"])
+	assert.Equal(t, lensDrilldownTriggerOnApplyFilter, wire["trigger"])
+
+	out := &xyChartConfigModel{}
+	diags = out.fromAPINoESQL(ctx, dash, m, apiChart)
+	require.False(t, diags.HasError())
+	require.Len(t, out.Drilldowns, 1)
+	require.NotNil(t, out.Drilldowns[0].DashboardDrilldown)
+	assert.Equal(t, "dash-abc", out.Drilldowns[0].DashboardDrilldown.DashboardID.ValueString())
+	assert.Equal(t, lensDrilldownTriggerOnApplyFilter, out.Drilldowns[0].DashboardDrilldown.Trigger.ValueString())
 }
 
 func Test_xyAxisConfigModel_toAPI_nil(t *testing.T) {
