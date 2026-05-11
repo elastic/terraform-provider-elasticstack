@@ -1,0 +1,1 @@
+Optional. When `true`, the control may expand to use available space in the control bar. Omit to leave the value unset in Terraform state; the provider does not set a schema default (Kibana applies `false` when the field is absent from API requests).

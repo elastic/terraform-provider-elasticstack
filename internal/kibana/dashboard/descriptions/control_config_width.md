@@ -1,0 +1,1 @@
+Optional control-bar width for this panel. Allowed values: `small`, `medium`, `large`. Omit to leave the value unset in Terraform state; the provider does not set a schema default (Kibana applies `medium` when the field is absent from API requests).

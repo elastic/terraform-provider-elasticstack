@@ -816,6 +816,17 @@ func getPanelSchema() schema.NestedAttributeObject {
 						MarkdownDescription: "Whether the start of the time window is anchored (fixed), so only the end slides.",
 						Optional:            true,
 					},
+					"width": schema.StringAttribute{
+						MarkdownDescription: controlConfigWidthDescription,
+						Optional:            true,
+						Validators: []validator.String{
+							stringvalidator.OneOf("small", "medium", "large"),
+						},
+					},
+					"grow": schema.BoolAttribute{
+						MarkdownDescription: controlConfigGrowDescription,
+						Optional:            true,
+					},
 				},
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(
@@ -1003,6 +1014,17 @@ func getPanelSchema() schema.NestedAttributeObject {
 							},
 						},
 					},
+					"width": schema.StringAttribute{
+						MarkdownDescription: controlConfigWidthDescription,
+						Optional:            true,
+						Validators: []validator.String{
+							stringvalidator.OneOf("small", "medium", "large"),
+						},
+					},
+					"grow": schema.BoolAttribute{
+						MarkdownDescription: controlConfigGrowDescription,
+						Optional:            true,
+					},
 				},
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(
@@ -1114,6 +1136,17 @@ func getPanelSchema() schema.NestedAttributeObject {
 							},
 						},
 					},
+					"width": schema.StringAttribute{
+						MarkdownDescription: controlConfigWidthDescription,
+						Optional:            true,
+						Validators: []validator.String{
+							stringvalidator.OneOf("small", "medium", "large"),
+						},
+					},
+					"grow": schema.BoolAttribute{
+						MarkdownDescription: controlConfigGrowDescription,
+						Optional:            true,
+					},
 				},
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(
@@ -1162,6 +1195,17 @@ func getPanelSchema() schema.NestedAttributeObject {
 					},
 					"step": schema.Float32Attribute{
 						MarkdownDescription: "The step size for the range slider. Stored as float32 to match the Kibana API type and avoid refresh drift.",
+						Optional:            true,
+					},
+					"width": schema.StringAttribute{
+						MarkdownDescription: controlConfigWidthDescription,
+						Optional:            true,
+						Validators: []validator.String{
+							stringvalidator.OneOf("small", "medium", "large"),
+						},
+					},
+					"grow": schema.BoolAttribute{
+						MarkdownDescription: controlConfigGrowDescription,
 						Optional:            true,
 					},
 				},
