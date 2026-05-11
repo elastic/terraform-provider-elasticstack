@@ -26,8 +26,9 @@ This requirement applies equally to the four control config blocks when used ins
 - WHEN Terraform validates the configuration
 - THEN the resource SHALL return an error diagnostic indicating the value must be `small`, `medium`, or `large`
 
-#### Scenario: Width and grow apply to pinned controls
+#### Scenario: Width and grow apply to pinned controls (contingent on REQ-038)
 
+- **Precondition**: Dashboard-level `pinned_panels` is exposed on `elasticstack_kibana_dashboard` per REQ-038 (`dashboard-pinned-panels`). Until then, this scenario documents expected behavior only; it is not acceptance-testable in isolation on this PR.
 - GIVEN a `pinned_panels` entry with `range_slider_control_config = { ..., width = "small", grow = true }`
 - WHEN create runs and the post-apply read returns the same control
 - THEN state SHALL contain those attributes on the pinned control entry
