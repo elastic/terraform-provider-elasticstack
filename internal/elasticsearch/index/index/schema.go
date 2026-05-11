@@ -26,6 +26,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/planmodifiers"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -34,7 +35,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -237,12 +237,55 @@ func getSchema(_ context.Context) schema.Schema {
 					stringvalidator.OneOf("false", "true", "checksum"),
 				},
 			},
+			"sort": schema.ListNestedAttribute{
+				Description: "Sort configuration for documents within each shard segment. Replaces the deprecated sort_field and sort_order attributes.",
+				Optional:    true,
+				PlanModifiers: []planmodifier.List{
+					sortMigrationPlanModifier{},
+				},
+				Validators: []validator.List{
+					listvalidator.ConflictsWith(path.MatchRoot("sort_field"), path.MatchRoot("sort_order")),
+				},
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"field": schema.StringAttribute{
+							Description: "The index field to sort by.",
+							Required:    true,
+						},
+						"order": schema.StringAttribute{
+							Description: "The sort direction. Valid values: asc, desc.",
+							Optional:    true,
+							Validators: []validator.String{
+								stringvalidator.OneOf("asc", "desc"),
+							},
+						},
+						"missing": schema.StringAttribute{
+							Description: "How to treat documents missing the sort field. Valid values: _last, _first.",
+							Optional:    true,
+							Validators: []validator.String{
+								stringvalidator.OneOf("_last", "_first"),
+							},
+						},
+						"mode": schema.StringAttribute{
+							Description: "Which value to use when the sort field has multiple values. Valid values: min, max.",
+							Optional:    true,
+							Validators: []validator.String{
+								stringvalidator.OneOf("min", "max"),
+							},
+						},
+					},
+				},
+			},
 			"sort_field": schema.SetAttribute{
 				ElementType: types.StringType,
 				Description: "The field to sort shards in this index by.",
 				Optional:    true,
+				DeprecationMessage: "Use the 'sort' attribute instead. 'sort_field' will be removed in a future major release.",
+				Validators: []validator.Set{
+					setvalidator.ConflictsWith(path.MatchRoot("sort")),
+				},
 				PlanModifiers: []planmodifier.Set{
-					setplanmodifier.RequiresReplace(),
+					legacySortFieldPlanModifier{},
 				},
 			},
 			// sort_order can't be set type since it can have dup strings like ["asc", "asc"]
@@ -250,8 +293,12 @@ func getSchema(_ context.Context) schema.Schema {
 				ElementType: types.StringType,
 				Description: "The direction to sort shards in. Accepts `asc`, `desc`.",
 				Optional:    true,
+				DeprecationMessage: "Use the 'sort' attribute instead. 'sort_order' will be removed in a future major release.",
+				Validators: []validator.List{
+					listvalidator.ConflictsWith(path.MatchRoot("sort")),
+				},
 				PlanModifiers: []planmodifier.List{
-					listplanmodifier.RequiresReplace(),
+					legacySortOrderPlanModifier{},
 				},
 			},
 			"mapping_coerce": schema.BoolAttribute{
