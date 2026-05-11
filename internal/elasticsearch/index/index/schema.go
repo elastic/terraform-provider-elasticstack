@@ -278,7 +278,7 @@ func getSchema(_ context.Context) schema.Schema {
 			},
 			"sort_field": schema.SetAttribute{
 				ElementType:        types.StringType,
-				Description:        "The field to sort shards in this index by.",
+				Description:        "Deprecated: The field to sort documents within each shard segment by.",
 				Optional:           true,
 				DeprecationMessage: "Use the 'sort' attribute instead. 'sort_field' will be removed in a future major release.",
 				Validators: []validator.Set{
@@ -291,7 +291,7 @@ func getSchema(_ context.Context) schema.Schema {
 			// sort_order can't be set type since it can have dup strings like ["asc", "asc"]
 			"sort_order": schema.ListAttribute{
 				ElementType:        types.StringType,
-				Description:        "The direction to sort shards in. Accepts `asc`, `desc`.",
+				Description:        "Deprecated: The direction to sort documents within each shard segment. Accepts `asc`, `desc`.",
 				Optional:           true,
 				DeprecationMessage: "Use the 'sort' attribute instead. 'sort_order' will be removed in a future major release.",
 				Validators: []validator.List{
