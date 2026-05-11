@@ -318,3 +318,7 @@ func Test_pieChartConfigModel_toAPI_legendOmitted_PieESQL(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, kbapi.LegendSizeAuto, esql.Legend.Size)
 }
+
+func Test_pieChartConfig_lensChartPresentation_comprehensive(t *testing.T) {
+	runPieNoESQLLensChartPresentationComprehensive(t)
+}

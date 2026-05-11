@@ -217,3 +217,21 @@ func Test_waffleConfigModel_toAPI_ESQL_errors(t *testing.T) {
 	_, diags := m.toAPI(nil)
 	require.True(t, diags.HasError())
 }
+
+func Test_waffleConfig_lensChartPresentation_hideTitleRoundTrip(t *testing.T) {
+	ctx := context.Background()
+	dash := lensPresentationTestDashboard()
+	pm := buildLensWafflePanelForTest(t)
+
+	m := *pm.WaffleConfig
+	m.HideTitle = types.BoolValue(true)
+
+	attrs, diags := m.toAPI(dash)
+	require.False(t, diags.HasError())
+	api, err := attrs.AsWaffleNoESQL()
+	require.NoError(t, err)
+
+	got := &waffleConfigModel{}
+	require.False(t, got.fromAPINoESQL(ctx, dash, &m, api).HasError())
+	assert.Equal(t, types.BoolValue(true), got.HideTitle)
+}

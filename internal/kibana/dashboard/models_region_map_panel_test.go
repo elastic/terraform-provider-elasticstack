@@ -216,3 +216,38 @@ func Test_regionMapPanelConfigConverter_populateFromAttributes_buildAttributes_r
 	assert.Equal(t, "ESQL Region Map Round-Trip", *esql2.Title)
 	assert.Equal(t, kbapi.RegionMapESQLTypeRegionMap, esql2.Type)
 }
+
+func Test_regionMapConfig_lensChartPresentation_hideTitleRoundTrip(t *testing.T) {
+	ctx := context.Background()
+	dash := lensPresentationTestDashboard()
+
+	api := kbapi.RegionMapNoESQL{
+		Type:                kbapi.RegionMapNoESQLTypeRegionMap,
+		Title:               new("Thin Region Map"),
+		IgnoreGlobalFilters: new(false),
+		Sampling:            new(float32(1)),
+	}
+	lang := kbapi.FilterSimpleLanguage("kql")
+	api.Query = kbapi.FilterSimple{
+		Language:   &lang,
+		Expression: "*",
+	}
+	require.NoError(t, json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.DataSource))
+	require.NoError(t, json.Unmarshal([]byte(`{"operation":"count"}`), &api.Metric))
+	require.NoError(t, json.Unmarshal([]byte(`{"operation":"filters","filters":[{"filter":{"query":"*","language":"kql"},"label":"All"}]}`), &api.Region))
+
+	base := &regionMapConfigModel{}
+	require.False(t, base.fromAPINoESQL(ctx, nil, nil, api).HasError())
+
+	m := *base
+	m.HideTitle = types.BoolValue(true)
+
+	attrs, diags := m.toAPI(dash)
+	require.False(t, diags.HasError())
+	out, err := attrs.AsRegionMapNoESQL()
+	require.NoError(t, err)
+
+	got := &regionMapConfigModel{}
+	require.False(t, got.fromAPINoESQL(ctx, dash, &m, out).HasError())
+	assert.Equal(t, types.BoolValue(true), got.HideTitle)
+}

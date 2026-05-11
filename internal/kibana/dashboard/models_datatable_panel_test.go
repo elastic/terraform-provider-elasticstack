@@ -337,3 +337,7 @@ func Test_datatablePanelConfigConverter_populateFromAttributes_buildAttributes_r
 	assert.Equal(t, "Datatable ESQL Round-Trip", *esql2.Title)
 	assert.Equal(t, kbapi.DatatableESQLTypeDataTable, esql2.Type)
 }
+
+func Test_datatableNoESQLConfig_lensChartPresentation_comprehensive(t *testing.T) {
+	runDatatableNoESQLLensChartPresentationComprehensive(t)
+}

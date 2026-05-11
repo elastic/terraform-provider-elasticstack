@@ -196,3 +196,7 @@ func Test_gaugePanelConfigConverter_populateFromAttributes_buildAttributes_round
 	assert.True(t, *gaugeNoESQL2.IgnoreGlobalFilters)
 	assert.InDelta(t, 0.5, *gaugeNoESQL2.Sampling, 0.001)
 }
+
+func Test_gaugeConfig_lensChartPresentation_comprehensive(t *testing.T) {
+	runGaugeNoESQLLensChartPresentationComprehensive(t)
+}

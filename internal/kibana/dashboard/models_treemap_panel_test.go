@@ -349,3 +349,21 @@ func Test_treemapConfigModel_toAPIESQLChartSchema(t *testing.T) {
 	assert.Equal(t, "treemap", out["type"])
 	assert.Equal(t, "ESQL Treemap", out["title"])
 }
+
+func Test_treemapConfig_lensChartPresentation_hideTitleRoundTrip(t *testing.T) {
+	ctx := context.Background()
+	dash := lensPresentationTestDashboard()
+	pm := buildLensTreemapPanelForTest(t)
+
+	m := *pm.TreemapConfig
+	m.HideTitle = types.BoolValue(true)
+
+	attrs, diags := m.toAPI(dash)
+	require.False(t, diags.HasError())
+	api, err := attrs.AsTreemapNoESQL()
+	require.NoError(t, err)
+
+	got := &treemapConfigModel{}
+	require.False(t, got.fromAPINoESQL(ctx, dash, &m, api).HasError())
+	assert.Equal(t, types.BoolValue(true), got.HideTitle)
+}

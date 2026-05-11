@@ -264,3 +264,37 @@ func Test_legacyMetricConfigModel_datasetType_errors(t *testing.T) {
 		assert.Contains(t, diags.Errors()[0].Summary(), "Missing dataset type")
 	})
 }
+
+func Test_legacyMetricConfig_lensChartPresentation_hideTitleRoundTrip(t *testing.T) {
+	ctx := context.Background()
+	dash := lensPresentationTestDashboard()
+	apiJSON := `{
+		"type": "legacy_metric",
+		"title": "Legacy Metric",
+		"description": "Legacy metric description",
+		"data_source": {"type": "data_view_spec", "index_pattern": "metrics-*"},
+		"query": {"language": "kql", "query": ""},
+		"sampling": 0.5,
+		"ignore_global_filters": true,
+		"filters": [{"query": "status:200", "language": "kql"}],
+		"metric": {"operation": "count", "format": {"type": "number"}}
+	}`
+
+	var api kbapi.LegacyMetricNoESQL
+	require.NoError(t, json.Unmarshal([]byte(apiJSON), &api))
+
+	base := &legacyMetricConfigModel{}
+	require.False(t, base.fromAPINoESQL(ctx, nil, nil, api).HasError())
+
+	m := *base
+	m.HideTitle = types.BoolValue(true)
+
+	attrs, diags := m.toAPI(dash)
+	require.False(t, diags.HasError())
+	out, err := attrs.AsLegacyMetricNoESQL()
+	require.NoError(t, err)
+
+	got := &legacyMetricConfigModel{}
+	require.False(t, got.fromAPINoESQL(ctx, dash, &m, out).HasError())
+	assert.Equal(t, types.BoolValue(true), got.HideTitle)
+}

@@ -397,3 +397,21 @@ func Test_mosaicConfigModel_toAPI_metrics_json_exactly_one(t *testing.T) {
 		requireMosaicMetricsExactlyOneDiagnostic(t, diags)
 	})
 }
+
+func Test_mosaicConfig_lensChartPresentation_hideTitleRoundTrip(t *testing.T) {
+	ctx := context.Background()
+	dash := lensPresentationTestDashboard()
+	pm := buildLensMosaicPanelForTest(t)
+
+	m := *pm.MosaicConfig
+	m.HideTitle = types.BoolValue(true)
+
+	attrs, diags := m.toAPI(dash)
+	require.False(t, diags.HasError())
+	api, err := attrs.AsMosaicNoESQL()
+	require.NoError(t, err)
+
+	got := &mosaicConfigModel{}
+	require.False(t, got.fromAPINoESQL(ctx, dash, &m, api).HasError())
+	assert.Equal(t, types.BoolValue(true), got.HideTitle)
+}

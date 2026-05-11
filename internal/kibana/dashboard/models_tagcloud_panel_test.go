@@ -375,3 +375,27 @@ func Test_tagcloudConfig_JSONFields(t *testing.T) {
 		})
 	}
 }
+
+func Test_tagcloudConfig_lensChartPresentation_hideTitleRoundTrip(t *testing.T) {
+	ctx := context.Background()
+	dash := lensPresentationTestDashboard()
+
+	api := kbapi.TagcloudNoESQL{Type: "tagcloud"}
+	require.NoError(t, json.Unmarshal([]byte(`{"index":"test-index"}`), &api.DataSource))
+	require.NoError(t, json.Unmarshal([]byte(`{"expression":"*","language":"kql"}`), &api.Query))
+	require.NoError(t, json.Unmarshal([]byte(`{"operation":{"operation_type":"count"}}`), &api.Metric))
+	require.NoError(t, json.Unmarshal([]byte(`{"operation":{"operation_type":"terms"},"field":"tags.keyword"}`), &api.TagBy))
+
+	base := &tagcloudConfigModel{}
+	require.False(t, base.fromAPI(ctx, nil, nil, api).HasError())
+
+	m := *base
+	m.HideTitle = types.BoolValue(true)
+
+	out, diags := m.toAPI(dash)
+	require.False(t, diags.HasError())
+
+	got := &tagcloudConfigModel{}
+	require.False(t, got.fromAPI(ctx, dash, &m, out).HasError())
+	assert.Equal(t, types.BoolValue(true), got.HideTitle)
+}

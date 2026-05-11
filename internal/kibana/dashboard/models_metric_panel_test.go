@@ -482,3 +482,7 @@ func Test_metricChartMetricConfigsEquivalent_secondaryDefaults(t *testing.T) {
 	)
 	assert.True(t, metricChartMetricConfigsEquivalent(prior, current))
 }
+
+func Test_metricChartConfig_lensChartPresentation_comprehensive(t *testing.T) {
+	runMetricNoESQLLensChartPresentationComprehensive(t)
+}
