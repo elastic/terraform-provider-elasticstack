@@ -21,82 +21,19 @@ import (
 	"context"
 	"testing"
 
+	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestTFModel_toAPICreateModel(t *testing.T) {
-	ctx := context.Background()
-
-	tests := []struct {
-		name        string
-		model       TFModel
-		expectedAPI *CreateAPIModel
-	}{
-		{
-			name: "with description and items",
-			model: TFModel{
-				Description: types.StringValue("safe domains"),
-				Items:       mustStringSet(ctx, t, []string{"*.example.com", "trusted.org"}),
-			},
-			expectedAPI: &CreateAPIModel{
-				Description: "safe domains",
-				Items:       []string{"*.example.com", "trusted.org"},
-			},
-		},
-		{
-			name: "with description only",
-			model: TFModel{
-				Description: types.StringValue("empty filter"),
-				Items:       types.SetNull(types.StringType),
-			},
-			expectedAPI: &CreateAPIModel{
-				Description: "empty filter",
-				Items:       nil,
-			},
-		},
-		{
-			name: "null description and null items",
-			model: TFModel{
-				Description: types.StringNull(),
-				Items:       types.SetNull(types.StringType),
-			},
-			expectedAPI: &CreateAPIModel{
-				Description: "",
-				Items:       nil,
-			},
-		},
-		{
-			name: "empty items set",
-			model: TFModel{
-				Description: types.StringValue("no items"),
-				Items:       mustStringSet(ctx, t, []string{}),
-			},
-			expectedAPI: &CreateAPIModel{
-				Description: "no items",
-				Items:       []string{},
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result, diags := tt.model.toAPICreateModel(ctx)
-			require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags)
-			assert.Equal(t, tt.expectedAPI.Description, result.Description)
-			assert.Equal(t, tt.expectedAPI.Items, result.Items)
-		})
-	}
-}
-
-func TestTFModel_fromAPIModel(t *testing.T) {
+func TestTFModel_fromMLFilter(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
 		name             string
 		initialItems     types.Set
-		apiModel         *APIModel
+		apiFilter        *estypes.MLFilter
 		expectedFilterID string
 		expectedDesc     types.String
 		expectItemsNull  bool
@@ -105,9 +42,9 @@ func TestTFModel_fromAPIModel(t *testing.T) {
 		{
 			name:         "full API response",
 			initialItems: mustStringSet(ctx, t, []string{"old-item"}),
-			apiModel: &APIModel{
-				FilterID:    "my-filter",
-				Description: "A safe domains filter",
+			apiFilter: &estypes.MLFilter{
+				FilterId:    "my-filter",
+				Description: new("A safe domains filter"),
 				Items:       []string{"*.example.com", "trusted.org"},
 			},
 			expectedFilterID: "my-filter",
@@ -117,10 +54,21 @@ func TestTFModel_fromAPIModel(t *testing.T) {
 		{
 			name:         "empty description from API becomes null",
 			initialItems: types.SetNull(types.StringType),
-			apiModel: &APIModel{
-				FilterID:    "my-filter",
-				Description: "",
+			apiFilter: &estypes.MLFilter{
+				FilterId:    "my-filter",
+				Description: new(""),
 				Items:       []string{},
+			},
+			expectedFilterID: "my-filter",
+			expectedDesc:     types.StringNull(),
+			expectItemsNull:  true,
+		},
+		{
+			name:         "nil description and empty items",
+			initialItems: types.SetNull(types.StringType),
+			apiFilter: &estypes.MLFilter{
+				FilterId: "my-filter",
+				Items:    []string{},
 			},
 			expectedFilterID: "my-filter",
 			expectedDesc:     types.StringNull(),
@@ -129,8 +77,8 @@ func TestTFModel_fromAPIModel(t *testing.T) {
 		{
 			name:         "empty items with non-null TF state becomes empty set",
 			initialItems: mustStringSet(ctx, t, []string{}),
-			apiModel: &APIModel{
-				FilterID: "my-filter",
+			apiFilter: &estypes.MLFilter{
+				FilterId: "my-filter",
 				Items:    []string{},
 			},
 			expectedFilterID: "my-filter",
@@ -140,8 +88,8 @@ func TestTFModel_fromAPIModel(t *testing.T) {
 		{
 			name:         "empty items with null TF state stays null",
 			initialItems: types.SetNull(types.StringType),
-			apiModel: &APIModel{
-				FilterID: "my-filter",
+			apiFilter: &estypes.MLFilter{
+				FilterId: "my-filter",
 				Items:    []string{},
 			},
 			expectedFilterID: "my-filter",
@@ -156,7 +104,7 @@ func TestTFModel_fromAPIModel(t *testing.T) {
 				Items: tt.initialItems,
 			}
 
-			diags := model.fromAPIModel(ctx, tt.apiModel)
+			diags := model.fromMLFilter(ctx, tt.apiFilter)
 			require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags)
 
 			assert.Equal(t, tt.expectedFilterID, model.FilterID.ValueString())
@@ -172,6 +120,11 @@ func TestTFModel_fromAPIModel(t *testing.T) {
 			}
 		})
 	}
+}
+
+//go:fix inline
+func strPtr(s string) *string {
+	return new(s)
 }
 
 func mustStringSet(ctx context.Context, t *testing.T, vals []string) types.Set {

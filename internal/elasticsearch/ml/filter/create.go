@@ -18,13 +18,12 @@
 package filter
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -39,12 +38,6 @@ func createFilter(ctx context.Context, client *clients.ElasticsearchScopedClient
 		return plan, diags
 	}
 
-	apiModel, convDiags := plan.toAPICreateModel(ctx)
-	diags.Append(convDiags...)
-	if diags.HasError() {
-		return plan, diags
-	}
-
 	tflog.Debug(ctx, fmt.Sprintf("Creating ML filter: %s", filterID))
 
 	typedClient, err := client.GetESClient()
@@ -53,13 +46,22 @@ func createFilter(ctx context.Context, client *clients.ElasticsearchScopedClient
 		return plan, diags
 	}
 
-	body, err := json.Marshal(apiModel)
-	if err != nil {
-		diags.AddError("Failed to marshal filter configuration", err.Error())
-		return plan, diags
+	put := typedClient.Ml.PutFilter(filterID)
+	if typeutils.IsKnown(plan.Description) && plan.Description.ValueString() != "" {
+		put = put.Description(plan.Description.ValueString())
 	}
 
-	_, err = typedClient.Ml.PutFilter(filterID).Raw(bytes.NewReader(body)).Do(ctx)
+	if !plan.Items.IsNull() && !plan.Items.IsUnknown() {
+		var items []string
+		d := plan.Items.ElementsAs(ctx, &items, false)
+		diags.Append(d...)
+		if diags.HasError() {
+			return plan, diags
+		}
+		put = put.Items(items...)
+	}
+
+	_, err = put.Do(ctx)
 	if err != nil {
 		diags.AddError("Failed to create ML filter", fmt.Sprintf("Unable to create ML filter: %s — %s", filterID, err.Error()))
 		return plan, diags

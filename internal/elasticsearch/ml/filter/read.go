@@ -60,26 +60,11 @@ func readFilter(ctx context.Context, client *clients.ElasticsearchScopedClient, 
 	}
 
 	out := state
-	api := mlFilterToAPIModel(&res.Filters[0])
-	diags.Append((&out).fromAPIModel(ctx, api)...)
+	diags.Append((&out).fromMLFilter(ctx, &res.Filters[0])...)
 	if diags.HasError() {
 		return state, false, diags
 	}
 
 	tflog.Debug(ctx, fmt.Sprintf("Successfully read ML filter: %s", filterID))
 	return out, true, diags
-}
-
-func mlFilterToAPIModel(f *types.MLFilter) *APIModel {
-	if f == nil {
-		return &APIModel{}
-	}
-	m := &APIModel{
-		FilterID: f.FilterId,
-		Items:    f.Items,
-	}
-	if f.Description != nil {
-		m.Description = *f.Description
-	}
-	return m
 }

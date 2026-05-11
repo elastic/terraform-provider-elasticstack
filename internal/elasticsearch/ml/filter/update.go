@@ -18,9 +18,7 @@
 package filter
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -93,10 +91,10 @@ func (r *filterResource) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
-	currentFilter := mlFilterToAPIModel(&getRes.Filters[0])
+	current := getRes.Filters[0]
 
 	currentItemSet := make(map[string]struct{})
-	for _, item := range currentFilter.Items {
+	for _, item := range current.Items {
 		currentItemSet[item] = struct{}{}
 	}
 
@@ -122,29 +120,27 @@ func (r *filterResource) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	var removeItems []string
-	for _, item := range currentFilter.Items {
+	for _, item := range current.Items {
 		if _, exists := planItemSet[item]; !exists {
 			removeItems = append(removeItems, item)
 		}
 	}
 
-	updateBody := UpdateAPIModel{
-		AddItems:    addItems,
-		RemoveItems: removeItems,
-	}
+	updateReq := typedClient.Ml.UpdateFilter(filterID)
 
 	desc := plan.Description.ValueString()
 	if !plan.Description.Equal(state.Description) {
-		updateBody.Description = &desc
+		updateReq = updateReq.Description(desc)
 	}
 
-	body, err := json.Marshal(updateBody)
-	if err != nil {
-		resp.Diagnostics.AddError("Failed to marshal filter update", err.Error())
-		return
+	if len(addItems) > 0 {
+		updateReq = updateReq.AddItems(addItems...)
+	}
+	if len(removeItems) > 0 {
+		updateReq = updateReq.RemoveItems(removeItems...)
 	}
 
-	_, err = typedClient.Ml.UpdateFilter(filterID).Raw(bytes.NewReader(body)).Do(ctx)
+	_, err = updateReq.Do(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to update ML filter", fmt.Sprintf("Unable to update ML filter: %s — %s", filterID, err.Error()))
 		return

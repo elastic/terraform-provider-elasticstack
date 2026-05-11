@@ -19,8 +19,10 @@ package filter
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -45,6 +47,11 @@ func deleteFilter(ctx context.Context, client *clients.ElasticsearchScopedClient
 
 	_, err = typedClient.Ml.DeleteFilter(filterID).Do(ctx)
 	if err != nil {
+		var esErr *types.ElasticsearchError
+		if errors.As(err, &esErr) && esErr.Status == 404 {
+			tflog.Debug(ctx, fmt.Sprintf("ML filter already absent: %s", filterID))
+			return diags
+		}
 		diags.AddError("Failed to delete ML filter", fmt.Sprintf("Unable to delete ML filter: %s — %s", filterID, err.Error()))
 		return diags
 	}

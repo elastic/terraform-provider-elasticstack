@@ -20,6 +20,7 @@ package filter
 import (
 	"context"
 
+	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -38,61 +39,46 @@ func (m TFModel) GetResourceID() types.String { return m.FilterID }
 
 func (m TFModel) GetElasticsearchConnection() types.List { return m.ElasticsearchConnection }
 
-type CreateAPIModel struct {
-	Description string   `json:"description,omitempty"`
-	Items       []string `json:"items,omitempty"`
-}
-
-type APIModel struct {
-	FilterID    string   `json:"filter_id"`
-	Description string   `json:"description,omitempty"`
-	Items       []string `json:"items"`
-}
-
 type UpdateAPIModel struct {
 	Description *string  `json:"description,omitempty"`
 	AddItems    []string `json:"add_items,omitempty"`
 	RemoveItems []string `json:"remove_items,omitempty"`
 }
 
-func (m *TFModel) toAPICreateModel(ctx context.Context) (*CreateAPIModel, fwdiags.Diagnostics) {
-	var diags fwdiags.Diagnostics
-
-	apiModel := &CreateAPIModel{
-		Description: m.Description.ValueString(),
+func descriptionFromMLFilter(f *estypes.MLFilter) string {
+	if f == nil || f.Description == nil {
+		return ""
 	}
-
-	if !m.Items.IsNull() && !m.Items.IsUnknown() {
-		var items []string
-		d := m.Items.ElementsAs(ctx, &items, false)
-		diags.Append(d...)
-		apiModel.Items = items
-	}
-
-	return apiModel, diags
+	return *f.Description
 }
 
-func (m *TFModel) fromAPIModel(ctx context.Context, apiModel *APIModel) fwdiags.Diagnostics {
+// fromMLFilter maps an Elasticsearch MLFilter into Terraform state.
+func (m *TFModel) fromMLFilter(ctx context.Context, f *estypes.MLFilter) fwdiags.Diagnostics {
 	var diags fwdiags.Diagnostics
 
-	m.FilterID = types.StringValue(apiModel.FilterID)
+	if f == nil {
+		return diags
+	}
 
-	if apiModel.Description != "" {
-		m.Description = types.StringValue(apiModel.Description)
+	m.FilterID = types.StringValue(f.FilterId)
+
+	desc := descriptionFromMLFilter(f)
+	if desc != "" {
+		m.Description = types.StringValue(desc)
 	} else {
 		m.Description = types.StringNull()
 	}
 
-	if len(apiModel.Items) == 0 && m.Items.IsNull() {
+	if len(f.Items) == 0 && m.Items.IsNull() {
 		return diags
 	}
 
-	if len(apiModel.Items) == 0 {
+	if len(f.Items) == 0 {
 		emptySet, d := types.SetValueFrom(ctx, types.StringType, []string{})
 		diags.Append(d...)
 		m.Items = emptySet
 	} else {
-		itemsSet, d := types.SetValueFrom(ctx, types.StringType, apiModel.Items)
+		itemsSet, d := types.SetValueFrom(ctx, types.StringType, f.Items)
 		diags.Append(d...)
 		m.Items = itemsSet
 	}

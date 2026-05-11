@@ -21,6 +21,7 @@ import (
 	"context"
 	"regexp"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -60,11 +61,17 @@ func getSchema(_ context.Context) schema.Schema {
 			"description": schema.StringAttribute{
 				MarkdownDescription: "A description of the filter.",
 				Optional:            true,
+				Validators: []validator.String{
+					stringvalidator.LengthBetween(1, 4096),
+				},
 			},
 			"items": schema.SetAttribute{
 				MarkdownDescription: "The items of the filter. A wildcard `*` can be used at the beginning or the end of an item. Up to 10000 items are allowed in each filter.",
 				Optional:            true,
 				ElementType:         types.StringType,
+				Validators: []validator.Set{
+					setvalidator.SizeAtMost(10000),
+				},
 			},
 		},
 	}
