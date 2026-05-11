@@ -112,6 +112,8 @@ func (m *dashboardModel) populateFromAPI(ctx context.Context, resp *kbapi.GetDas
 	}
 	m.Query = q
 
+	m.mapDashboardFiltersFromAPI(ctx, &data.Data, &diags)
+
 	// Map tags
 	if data.Data.Tags != nil && len(*data.Data.Tags) > 0 {
 		m.Tags = typeutils.SliceToListTypeString(ctx, *data.Data.Tags, path.Root("tags"), &diags)
@@ -284,6 +286,35 @@ func dashboardRootSavedFiltersElementType() types.ObjectType {
 			"filter_json": jsontypes.NormalizedType{},
 		},
 	}
+}
+
+// mapDashboardFiltersFromAPI sets m.Filters from the API in response order.
+// REQ-037 / REQ-009: when filters were unset in state and the API returns no filters (nil or empty),
+// the attribute stays null rather than becoming an empty list.
+func (m *dashboardModel) mapDashboardFiltersFromAPI(ctx context.Context, api *kbapi.KbnDashboardData, diags *diag.Diagnostics) {
+	priorUnset := m.Filters.IsNull()
+	apiFilters := api.Filters
+	hasItems := apiFilters != nil && len(*apiFilters) > 0
+
+	if !hasItems {
+		if priorUnset {
+			return
+		}
+		m.Filters = typeutils.ListValueFrom(ctx, []chartFilterJSONModel{}, dashboardRootSavedFiltersElementType(), path.Root("filters"), diags)
+		return
+	}
+
+	elems := make([]chartFilterJSONModel, 0, len(*apiFilters))
+	for _, item := range *apiFilters {
+		fm := chartFilterJSONModel{}
+		fd := fm.populateFromAPIItem(item)
+		diags.Append(fd...)
+		if fd.HasError() {
+			return
+		}
+		elems = append(elems, fm)
+	}
+	m.Filters = typeutils.ListValueFrom(ctx, elems, dashboardRootSavedFiltersElementType(), path.Root("filters"), diags)
 }
 
 func (m *dashboardModel) dashboardFiltersToCreateAPI(ctx context.Context, req *kbapi.PostDashboardsJSONRequestBody, diags *diag.Diagnostics) {

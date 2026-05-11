@@ -5,9 +5,9 @@
 
 ## 2. Model and mapping
 
-- [ ] 2.1 Add `Filters` to `dashboardModel` in `models.go`
-- [ ] 2.2 Map `Filters` into the API request body on create and update
-- [ ] 2.3 Map API response `filters` back into state on read, preserving order and the unset-vs-empty distinction per REQ-009
+- [x] 2.1 Add `Filters` to `dashboardModel` in `models.go`
+- [x] 2.2 Map `Filters` into the API request body on create and update
+- [x] 2.3 Map API response `filters` back into state on read, preserving order and the unset-vs-empty distinction per REQ-009
 
 ## 3. Tests
 
