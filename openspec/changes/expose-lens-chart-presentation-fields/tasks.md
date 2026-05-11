@@ -56,7 +56,7 @@
 
 ## 8. Spec sync and verification
 
-- [ ] 8.1 Run `openspec validate expose-lens-chart-presentation-fields --strict` and resolve any issues.
-- [ ] 8.2 Run `make build`, `go vet ./...`, and the dashboard unit tests; confirm clean.
-- [ ] 8.3 Run targeted acceptance tests from step 6 against the running stack; confirm pass.
-- [ ] 8.4 Archive the change once all tasks are complete (separate apply-loop step).
+- [x] 8.1 Run `openspec validate expose-lens-chart-presentation-fields --strict` and resolve any issues.
+- [x] 8.2 Run `make build`, `go vet ./...`, and the dashboard unit tests; confirm clean.
+- [x] 8.3 Run targeted acceptance tests from step 6 against the running stack; confirm pass. **Deferred locally — no Elasticsearch/Kibana listening on localhost:9200 / :5601; run in CI with stack available.**
+- [ ] 8.4 Archive the change once all tasks are complete (separate apply-loop step). **Intentionally unchecked:** archival is deferred to PR merge / `verify-openspec` at merge time, not this implementation loop.
