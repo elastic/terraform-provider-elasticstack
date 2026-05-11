@@ -1,6 +1,6 @@
 ## 1. Read-path preservation
 
-- [x] 1.1 Add an unexported `rawConfig` (or equivalently scoped private value) to `panelModel` for storing the raw API panel payload
+- [x] 1.1 Store the raw API panel payload for unknown panel types in the existing `config_json` attribute on `panelModel` (the `rawConfig` private field was considered but rejected in favour of reusing `config_json`)
 - [x] 1.2 In `mapPanelFromAPI` (`internal/kibana/dashboard/models_panels.go`), replace the destructive `default` branch with logic that preserves `id`, `grid`, `type`, and the raw API config JSON for unrecognized panel types
 - [x] 1.3 Ensure the preserved payload normalizes through the existing `config_json` semantic-equality path so refreshes do not produce diffs from key reordering or whitespace
 
