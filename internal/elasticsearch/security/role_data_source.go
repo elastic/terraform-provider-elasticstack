@@ -606,7 +606,7 @@ func getIndexPermsDSAttrTypes() map[string]attr.Type {
 
 func getRemoteIndexPermsDSAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"clusters":       types.SetType{ElemType: types.StringType},
+		"clusters": types.SetType{ElemType: types.StringType},
 		"field_security": types.ListType{
 			ElemType: types.ObjectType{AttrTypes: getFieldSecurityDSAttrTypes()},
 		},

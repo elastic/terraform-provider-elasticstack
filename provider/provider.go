@@ -43,7 +43,6 @@ func New(version string) *schema.Provider {
 			fleetKeyName: providerSchema.GetFleetConnectionSchema(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
-			"elasticstack_elasticsearch_security_role": security.DataSourceRole(),
 			"elasticstack_elasticsearch_security_user": security.DataSourceUser(),
 			"elasticstack_kibana_action_connector":     kibana.DataSourceConnector(),
 			"elasticstack_kibana_security_role":        kibana.DataSourceRole(),

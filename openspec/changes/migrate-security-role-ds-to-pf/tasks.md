@@ -20,10 +20,10 @@
 
 ## 3. Envelope Wiring
 
-- [ ] 3.1 Replace `DataSourceRole() *schema.Resource` with `NewDataSource() datasource.DataSource` returning `entitycore.NewElasticsearchDataSource[roleDataSourceModel]`
-- [ ] 3.2 Remove SDK-based `dataSourceSecurityRoleRead` and SDK imports from the data source file
-- [ ] 3.3 Move or adapt `flattenApplicationsData`, `flattenIndicesData`, `flattenRemoteIndicesData` to return PF-compatible `types.Set` / `types.List` values (or create new PF variants in the data source package)
-- [ ] 3.4 Ensure the `MinSupportedDescriptionVersion` variable (if still needed by the resource) remains accessible; do not delete shared security package variables
+- [x] 3.1 Replace `DataSourceRole() *schema.Resource` with `NewDataSource() datasource.DataSource` returning `entitycore.NewElasticsearchDataSource[roleDataSourceModel]`
+- [x] 3.2 Remove SDK-based `dataSourceSecurityRoleRead` and SDK imports from the data source file
+- [x] 3.3 Replace SDK flatten helpers with PF-native `fromAPIModel` method on `roleDataSourceModel`
+- [x] 3.4 Ensure the `MinSupportedDescriptionVersion` variable (if still needed by the resource) remains accessible; do not delete shared security package variables
 
 ## 4. Provider Registration
 

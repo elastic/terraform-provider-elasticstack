@@ -50,6 +50,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/jobstate"
 	apikey "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/api_key"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/role"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/rolemapping"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/systemuser"
 	securityuser "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/user"
@@ -260,6 +261,7 @@ func (p *Provider) dataSources(_ context.Context) []func() datasource.DataSource
 		integrationds.NewDataSource,
 		enrich.NewEnrichPolicyDataSource,
 		rolemapping.NewRoleMappingDataSource,
+		security.NewRoleDataSource,
 		outputds.NewDataSource,
 		ingest.NewProcessorAppendDataSource,
 		ingest.NewProcessorBytesDataSource,
