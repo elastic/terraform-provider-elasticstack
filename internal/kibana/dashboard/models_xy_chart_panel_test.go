@@ -311,7 +311,7 @@ func Test_axisTitleModel_fromAPI_toAPI(t *testing.T) {
 
 func Test_xyDecorationsModel_readFromStyling_writeToStyling(t *testing.T) {
 	interp := kbapi.Linear
-	pts := kbapi.Visible
+	pts := kbapi.XyStylingPointsVisibilityVisible
 	styling := kbapi.XyStyling{
 		Areas: kbapi.XyStylingAreas{FillOpacity: new(float32(0.5))},
 		Bars: kbapi.XyStylingBars{
@@ -508,7 +508,7 @@ func Test_xyLegendModel_fromAPI_toAPI_Outside(t *testing.T) {
 			name: "outside legend with all fields",
 			apiLegend: func() kbapi.XyLegend {
 				visibility := kbapi.XyLegendOutsideVerticalVisibility("hidden")
-				position := kbapi.Right
+				position := kbapi.XyLegendOutsideVerticalPositionRight
 				placement := kbapi.XyLegendOutsideVerticalPlacementOutside
 				legend := kbapi.XyLegendOutsideVertical{
 					Visibility: &visibility,

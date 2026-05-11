@@ -655,9 +655,9 @@ func (m *xyDecorationsModel) readFromStyling(s kbapi.XyStyling) {
 	}
 	if s.Points.Visibility != nil {
 		switch *s.Points.Visibility {
-		case kbapi.Hidden:
+		case kbapi.XyStylingPointsVisibilityHidden:
 			m.PointVisibility = types.StringValue("never")
-		case kbapi.Visible:
+		case kbapi.XyStylingPointsVisibilityVisible:
 			m.PointVisibility = types.StringValue("always")
 		default:
 			m.PointVisibility = types.StringValue("auto")
@@ -707,13 +707,13 @@ func (m *xyDecorationsModel) writeToStyling(s *kbapi.XyStyling) {
 	if typeutils.IsKnown(m.PointVisibility) {
 		switch m.PointVisibility.ValueString() {
 		case "never":
-			v := kbapi.Hidden
+			v := kbapi.XyStylingPointsVisibilityHidden
 			s.Points.Visibility = &v
 		case "always":
-			v := kbapi.Visible
+			v := kbapi.XyStylingPointsVisibilityVisible
 			s.Points.Visibility = &v
 		default:
-			v := kbapi.Auto
+			v := kbapi.XyStylingPointsVisibilityAuto
 			s.Points.Visibility = &v
 		}
 	}
@@ -828,8 +828,8 @@ func (m *xyLegendModel) fromAPI(ctx context.Context, apiLegend kbapi.XyLegend) d
 		legendOutsideVertical.Placement != nil &&
 		*legendOutsideVertical.Placement == kbapi.XyLegendOutsideVerticalPlacementOutside &&
 		(legendOutsideVertical.Position == nil ||
-			*legendOutsideVertical.Position == kbapi.Left ||
-			*legendOutsideVertical.Position == kbapi.Right) &&
+			*legendOutsideVertical.Position == kbapi.XyLegendOutsideVerticalPositionLeft ||
+			*legendOutsideVertical.Position == kbapi.XyLegendOutsideVerticalPositionRight) &&
 		legendOutsideVertical.Size != "" {
 		m.Inside = types.BoolValue(false)
 		m.Visibility = typeutils.StringishPointerValue(legendOutsideVertical.Visibility)
