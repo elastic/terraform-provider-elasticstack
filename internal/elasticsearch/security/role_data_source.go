@@ -50,8 +50,6 @@ type roleDataSourceModel struct {
 	RemoteIndices types.Set            `tfsdk:"remote_indices"`
 }
 
-
-
 func NewRoleDataSource() datasource.DataSource {
 	return entitycore.NewElasticsearchDataSource[roleDataSourceModel](
 		entitycore.ComponentElasticsearch,
