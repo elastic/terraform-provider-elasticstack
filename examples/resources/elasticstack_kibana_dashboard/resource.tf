@@ -55,13 +55,12 @@ resource "elasticstack_kibana_dashboard" "my_dashboard_json" {
   tags = ["production", "monitoring"]
 }
 
-# Inline Lens (`lens-dashboard-app`) panels: typed by-value metric charts (not raw by_value.config_json).
-# Typed Lens chart blocks (`xy_chart_config`, `metric_chart_config`, etc.) support presentation fields:
-# `time_range` (omit or set `null` to inherit the dashboard-level `time_range`), `hide_title`,
-# `hide_border`, `references_json`, and `drilldowns` (`dashboard_drilldown`, `discover_drilldown`, `url_drilldown`).
+# Inline Lens (`lens-dashboard-app`) panels: typed by-value metric charts (`metric_chart_config`, etc.;
+# not `by_value.config_json`). These blocks intentionally omit REQ-037 presentation fields; use `type = "vis"`
+# panels with typed chart `*_config` blocks when you need `time_range`, `drilldowns`, etc.
 resource "elasticstack_kibana_dashboard" "lens_app_typed_by_value" {
   title            = "Dashboard with lens-dashboard-app (typed by-value)"
-  description      = "Example: metric panels with inherited vs explicit chart time_range and a URL drilldown"
+  description      = "Example: two metric panels sharing dashboard time_range (no chart-level presentation fields)"
   time_range       = { from = "now-15m", to = "now" }
   refresh_interval = { pause = true, value = 0 }
   query            = { language = "kql", text = "" }
@@ -73,15 +72,6 @@ resource "elasticstack_kibana_dashboard" "lens_app_typed_by_value" {
       lens_dashboard_app_config = {
         by_value = {
           metric_chart_config = {
-            # Inherits dashboard `time_range` (same as setting this block to `null`).
-            time_range = null
-            drilldowns = [{
-              url_drilldown = {
-                url     = "https://example.com/{{event.field}}"
-                label   = "Open URL"
-                trigger = "on_click_value"
-              }
-            }]
             data_source_json = jsonencode({
               type          = "data_view_spec"
               index_pattern = "metrics-*"
@@ -105,10 +95,6 @@ resource "elasticstack_kibana_dashboard" "lens_app_typed_by_value" {
       lens_dashboard_app_config = {
         by_value = {
           metric_chart_config = {
-            time_range = {
-              from = "now-30d"
-              to   = "now"
-            }
             data_source_json = jsonencode({
               type          = "data_view_spec"
               index_pattern = "metrics-*"

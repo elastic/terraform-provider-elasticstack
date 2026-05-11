@@ -1788,7 +1788,7 @@ var (
 
 // drilldownListItemVariantsValidator rejects drilldown list items where none of the three variant blocks are set.
 // Pairwise mutual exclusion when multiple variants are set is enforced via
-// validators.ForbiddenIfDependentPathExpressionSiblingNestedPresent on each variant block (REQ-039).
+// validators.ForbiddenIfDrilldownVariantSiblingNestedPresent on each variant block (REQ-039).
 type drilldownListItemVariantsValidator struct{}
 
 func (drilldownListItemVariantsValidator) Description(_ context.Context) string {
@@ -1928,8 +1928,8 @@ func lensChartDrilldownListItemAttributes() map[string]schema.Attribute {
 				},
 			},
 			Validators: []validator.Object{
-				validators.ForbiddenIfDependentPathExpressionSiblingNestedPresent(exprDrilldownDiscoverDrilldown),
-				validators.ForbiddenIfDependentPathExpressionSiblingNestedPresent(exprDrilldownURLDrilldown),
+				validators.ForbiddenIfDrilldownVariantSiblingNestedPresent(exprDrilldownDiscoverDrilldown),
+				validators.ForbiddenIfDrilldownVariantSiblingNestedPresent(exprDrilldownURLDrilldown),
 			},
 		},
 		"discover_drilldown": schema.SingleNestedAttribute{
@@ -1954,8 +1954,8 @@ func lensChartDrilldownListItemAttributes() map[string]schema.Attribute {
 				},
 			},
 			Validators: []validator.Object{
-				validators.ForbiddenIfDependentPathExpressionSiblingNestedPresent(exprDrilldownDashboardDrilldown),
-				validators.ForbiddenIfDependentPathExpressionSiblingNestedPresent(exprDrilldownURLDrilldown),
+				validators.ForbiddenIfDrilldownVariantSiblingNestedPresent(exprDrilldownDashboardDrilldown),
+				validators.ForbiddenIfDrilldownVariantSiblingNestedPresent(exprDrilldownURLDrilldown),
 			},
 		},
 		"url_drilldown": schema.SingleNestedAttribute{
@@ -1994,8 +1994,8 @@ func lensChartDrilldownListItemAttributes() map[string]schema.Attribute {
 				},
 			},
 			Validators: []validator.Object{
-				validators.ForbiddenIfDependentPathExpressionSiblingNestedPresent(exprDrilldownDashboardDrilldown),
-				validators.ForbiddenIfDependentPathExpressionSiblingNestedPresent(exprDrilldownDiscoverDrilldown),
+				validators.ForbiddenIfDrilldownVariantSiblingNestedPresent(exprDrilldownDashboardDrilldown),
+				validators.ForbiddenIfDrilldownVariantSiblingNestedPresent(exprDrilldownDiscoverDrilldown),
 			},
 		},
 	}

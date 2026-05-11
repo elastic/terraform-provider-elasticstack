@@ -641,12 +641,10 @@ func ForbiddenIfDependentPathExpressionOneOf(dependentPathExpression path.Expres
 	}
 }
 
-// ForbiddenIfDependentPathExpressionSiblingNestedPresent forbids the current attribute when dependentPathExpression
-// resolves to a non-null nested object (for example another optional SingleNested sibling under the same parent object).
-//
-// Prefer ForbiddenIfDependentPathExpressionOneOf when the dependent is a plain string enumeration.
-// REQ-039 (Kibana dashboard drilldown variant exclusivity) uses this for sibling drilldown nested objects.
-func ForbiddenIfDependentPathExpressionSiblingNestedPresent(dependentPathExpression path.Expression) Condition {
+// ForbiddenIfDrilldownVariantSiblingNestedPresent forbids the current drilldown variant nested block when another
+// optional SingleNested sibling variant under the same list item is set (REQ-039: Kibana dashboard `drilldowns`
+// discriminated union). Prefer ForbiddenIfDependentPathExpressionOneOf when the dependent is a plain string enum.
+func ForbiddenIfDrilldownVariantSiblingNestedPresent(dependentPathExpression path.Expression) Condition {
 	const descStr = "another drilldown variant block"
 	return Condition{
 		dependentPathExpression:   &dependentPathExpression,

@@ -1135,7 +1135,7 @@ func TestRequiredIfDependentPathExpressionOneOf_treatsEmptyStringAsUnset(t *test
 	require.True(t, response.Diagnostics.HasError(), "empty string should count as unset for required-if validation")
 }
 
-func TestForbiddenIfDependentPathExpressionSiblingNestedPresent(t *testing.T) {
+func TestForbiddenIfDrilldownVariantSiblingNestedPresent(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -1151,7 +1151,7 @@ func TestForbiddenIfDependentPathExpressionSiblingNestedPresent(t *testing.T) {
 			"dashboard_drilldown": schema.SingleNestedAttribute{
 				Optional: true,
 				Validators: []validator.Object{
-					ForbiddenIfDependentPathExpressionSiblingNestedPresent(
+					ForbiddenIfDrilldownVariantSiblingNestedPresent(
 						path.MatchRelative().AtParent().AtName("discover_drilldown"),
 					),
 				},
@@ -1160,7 +1160,7 @@ func TestForbiddenIfDependentPathExpressionSiblingNestedPresent(t *testing.T) {
 			"discover_drilldown": schema.SingleNestedAttribute{
 				Optional: true,
 				Validators: []validator.Object{
-					ForbiddenIfDependentPathExpressionSiblingNestedPresent(
+					ForbiddenIfDrilldownVariantSiblingNestedPresent(
 						path.MatchRelative().AtParent().AtName("dashboard_drilldown"),
 					),
 				},
@@ -1206,7 +1206,7 @@ func TestForbiddenIfDependentPathExpressionSiblingNestedPresent(t *testing.T) {
 		raw := makeRootRaw(true, false)
 		cfg := tfsdk.Config{Raw: raw, Schema: testSchema}
 
-		v := ForbiddenIfDependentPathExpressionSiblingNestedPresent(path.MatchRelative().AtParent().AtName("discover_drilldown"))
+		v := ForbiddenIfDrilldownVariantSiblingNestedPresent(path.MatchRelative().AtParent().AtName("discover_drilldown"))
 		resp := &validator.ObjectResponse{}
 		v.ValidateObject(ctx, validator.ObjectRequest{
 			Path:        path.Root("dashboard_drilldown"),
@@ -1221,7 +1221,7 @@ func TestForbiddenIfDependentPathExpressionSiblingNestedPresent(t *testing.T) {
 		raw := makeRootRaw(true, true)
 		cfg := tfsdk.Config{Raw: raw, Schema: testSchema}
 
-		v := ForbiddenIfDependentPathExpressionSiblingNestedPresent(path.MatchRelative().AtParent().AtName("discover_drilldown"))
+		v := ForbiddenIfDrilldownVariantSiblingNestedPresent(path.MatchRelative().AtParent().AtName("discover_drilldown"))
 		resp := &validator.ObjectResponse{}
 		v.ValidateObject(ctx, validator.ObjectRequest{
 			Path:        path.Root("dashboard_drilldown"),
@@ -1250,7 +1250,7 @@ func TestForbiddenIfDependentPathExpressionSiblingNestedPresent(t *testing.T) {
 		)
 		cfg := tfsdk.Config{Raw: raw, Schema: testSchema}
 
-		v := ForbiddenIfDependentPathExpressionSiblingNestedPresent(path.MatchRelative().AtParent().AtName("discover_drilldown"))
+		v := ForbiddenIfDrilldownVariantSiblingNestedPresent(path.MatchRelative().AtParent().AtName("discover_drilldown"))
 		resp := &validator.ObjectResponse{}
 		v.ValidateObject(ctx, validator.ObjectRequest{
 			Path:        path.Root("dashboard_drilldown"),
@@ -1262,7 +1262,7 @@ func TestForbiddenIfDependentPathExpressionSiblingNestedPresent(t *testing.T) {
 	})
 }
 
-func TestForbiddenIfDependentPathExpressionSiblingNestedPresent_urlDrilldownSibling(t *testing.T) {
+func TestForbiddenIfDrilldownVariantSiblingNestedPresent_urlDrilldownSibling(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
@@ -1274,7 +1274,7 @@ func TestForbiddenIfDependentPathExpressionSiblingNestedPresent_urlDrilldownSibl
 			"dashboard_drilldown": schema.SingleNestedAttribute{
 				Optional: true,
 				Validators: []validator.Object{
-					ForbiddenIfDependentPathExpressionSiblingNestedPresent(
+					ForbiddenIfDrilldownVariantSiblingNestedPresent(
 						path.MatchRelative().AtParent().AtName("url_drilldown"),
 					),
 				},
@@ -1307,7 +1307,7 @@ func TestForbiddenIfDependentPathExpressionSiblingNestedPresent_urlDrilldownSibl
 	)
 	cfg := tfsdk.Config{Raw: raw, Schema: testSchema}
 
-	v := ForbiddenIfDependentPathExpressionSiblingNestedPresent(path.MatchRelative().AtParent().AtName("url_drilldown"))
+	v := ForbiddenIfDrilldownVariantSiblingNestedPresent(path.MatchRelative().AtParent().AtName("url_drilldown"))
 	resp := &validator.ObjectResponse{}
 	v.ValidateObject(ctx, validator.ObjectRequest{
 		Path:        path.Root("dashboard_drilldown"),
