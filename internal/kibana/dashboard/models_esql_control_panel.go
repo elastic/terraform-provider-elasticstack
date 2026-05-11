@@ -43,6 +43,8 @@ type esqlControlConfigModel struct {
 	SingleSelect     types.Bool                       `tfsdk:"single_select"`
 	AvailableOptions types.List                       `tfsdk:"available_options"`
 	DisplaySettings  *esqlControlDisplaySettingsModel `tfsdk:"display_settings"`
+	Width            types.String                     `tfsdk:"width"`
+	Grow             types.Bool                       `tfsdk:"grow"`
 }
 
 type esqlControlDisplaySettingsAPI = struct {
@@ -127,7 +129,11 @@ func listToStrings(list types.List) []string {
 //
 // tfPanel is the prior TF state/plan panel, or nil on import. When nil, the function
 // populates all API-returned fields unconditionally (no prior intent to preserve).
-func populateEsqlControlFromAPI(pm *panelModel, tfPanel *panelModel, apiConfig kbapi.KbnDashboardPanelTypeEsqlControl_Config) {
+func populateEsqlControlFromAPI(pm *panelModel, tfPanel *panelModel, esql *kbapi.KbnDashboardPanelTypeEsqlControl) {
+	if esql == nil {
+		return
+	}
+	apiConfig := esql.Config
 	api := esqlControlAPIDataFromConfig(apiConfig)
 	if !api.ok {
 		return
@@ -219,6 +225,12 @@ func populateEsqlControlFromAPI(pm *panelModel, tfPanel *panelModel, apiConfig k
 			ds.HideSort = types.BoolValue(*apiDS.HideSort)
 		}
 	}
+	if typeutils.IsKnown(existing.Width) && esql.Width != nil {
+		existing.Width = types.StringValue(string(*esql.Width))
+	}
+	if typeutils.IsKnown(existing.Grow) && esql.Grow != nil {
+		existing.Grow = types.BoolValue(*esql.Grow)
+	}
 }
 
 // buildEsqlControlConfig writes the TF model fields into the API panel struct.
@@ -227,6 +239,16 @@ func buildEsqlControlConfig(pm panelModel, esqlPanel *kbapi.KbnDashboardPanelTyp
 	cfg := pm.EsqlControlConfig
 	if cfg == nil {
 		return diags
+	}
+
+	applyEsqlControlPanelLayout := func() {
+		if typeutils.IsKnown(cfg.Width) {
+			w := kbapi.KbnControlsSchemasControlsGroupSchemaEsqlControlWidth(cfg.Width.ValueString())
+			esqlPanel.Width = &w
+		}
+		if typeutils.IsKnown(cfg.Grow) {
+			esqlPanel.Grow = cfg.Grow.ValueBoolPointer()
+		}
 	}
 
 	displayToAPI := func(ds *esqlControlDisplaySettingsModel) *esqlControlDisplaySettingsAPI {
@@ -273,6 +295,7 @@ func buildEsqlControlConfig(pm panelModel, esqlPanel *kbapi.KbnDashboardPanelTyp
 		if err := esqlPanel.Config.FromKbnControlsSchemasOptionsListEsqlControlSchemaValuesFromQuery(vq); err != nil {
 			diags.AddError("Failed to build esql control values_from_query config", err.Error())
 		}
+		applyEsqlControlPanelLayout()
 		return diags
 	}
 
@@ -297,5 +320,6 @@ func buildEsqlControlConfig(pm panelModel, esqlPanel *kbapi.KbnDashboardPanelTyp
 	if err := esqlPanel.Config.FromKbnControlsSchemasOptionsListEsqlControlSchemaStaticValues(sv); err != nil {
 		diags.AddError("Failed to build esql control static_values config", err.Error())
 	}
+	applyEsqlControlPanelLayout()
 	return diags
 }

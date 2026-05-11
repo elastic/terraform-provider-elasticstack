@@ -33,6 +33,8 @@ type rangeSliderControlConfigModel struct {
 	IgnoreValidations types.Bool    `tfsdk:"ignore_validations"`
 	Value             types.List    `tfsdk:"value"`
 	Step              types.Float32 `tfsdk:"step"`
+	Width             types.String  `tfsdk:"width"`
+	Grow              types.Bool    `tfsdk:"grow"`
 }
 
 // populateRangeSliderControlFromAPI reads back a range slider control config from the API
@@ -101,6 +103,12 @@ func populateRangeSliderControlFromAPI(ctx context.Context, pm *panelModel, tfPa
 	if typeutils.IsKnown(existing.Step) && apiConfig.Step != nil {
 		existing.Step = types.Float32Value(*apiConfig.Step)
 	}
+	if typeutils.IsKnown(existing.Width) && rs.Width != nil {
+		existing.Width = types.StringValue(string(*rs.Width))
+	}
+	if typeutils.IsKnown(existing.Grow) && rs.Grow != nil {
+		existing.Grow = types.BoolValue(*rs.Grow)
+	}
 }
 
 // buildRangeSliderControlConfig writes the TF model fields into the API panel struct.
@@ -132,5 +140,12 @@ func buildRangeSliderControlConfig(pm panelModel, rsPanel *kbapi.KbnDashboardPan
 	if typeutils.IsKnown(cfg.Step) {
 		v := cfg.Step.ValueFloat32()
 		rsPanel.Config.Step = &v
+	}
+	if typeutils.IsKnown(cfg.Width) {
+		w := kbapi.KbnControlsSchemasControlsGroupSchemaRangeSliderControlWidth(cfg.Width.ValueString())
+		rsPanel.Width = &w
+	}
+	if typeutils.IsKnown(cfg.Grow) {
+		rsPanel.Grow = cfg.Grow.ValueBoolPointer()
 	}
 }

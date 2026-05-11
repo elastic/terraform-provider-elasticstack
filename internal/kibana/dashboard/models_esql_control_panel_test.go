@@ -66,7 +66,7 @@ func Test_populateEsqlControlFromAPI_import_populatesAllFields(t *testing.T) {
 	})
 
 	pm := &panelModel{}
-	populateEsqlControlFromAPI(pm, nil, cfg)
+	populateEsqlControlFromAPI(pm, nil, &kbapi.KbnDashboardPanelTypeEsqlControl{Config: cfg})
 
 	require.NotNil(t, pm.EsqlControlConfig)
 	assert.Equal(t, stringsToList([]string{"opt_a"}), pm.EsqlControlConfig.SelectedOptions)
@@ -86,7 +86,7 @@ func Test_populateEsqlControlFromAPI_import_populatesAllFields(t *testing.T) {
 func Test_populateEsqlControlFromAPI_nilBlock_preservesNil(t *testing.T) {
 	pm := &panelModel{}
 	tfPanel := &panelModel{}
-	populateEsqlControlFromAPI(pm, tfPanel, minimalEsqlAPIConfig(t))
+	populateEsqlControlFromAPI(pm, tfPanel, &kbapi.KbnDashboardPanelTypeEsqlControl{Config: minimalEsqlAPIConfig(t)})
 	assert.Nil(t, pm.EsqlControlConfig)
 }
 
@@ -103,7 +103,7 @@ func Test_populateEsqlControlFromAPI_existingBlock_requiredFieldsUpdated(t *test
 		},
 	}
 	tfPanel := &panelModel{EsqlControlConfig: pm.EsqlControlConfig}
-	populateEsqlControlFromAPI(pm, tfPanel, minimalEsqlAPIConfig(t))
+	populateEsqlControlFromAPI(pm, tfPanel, &kbapi.KbnDashboardPanelTypeEsqlControl{Config: minimalEsqlAPIConfig(t)})
 
 	require.NotNil(t, pm.EsqlControlConfig)
 	assert.Equal(t, stringsToList([]string{"opt_a"}), pm.EsqlControlConfig.SelectedOptions)
@@ -136,7 +136,7 @@ func Test_populateEsqlControlFromAPI_nullOptionalFields_preserved(t *testing.T) 
 		Title:           new("API Title"),
 		SingleSelect:    new(true),
 	})
-	populateEsqlControlFromAPI(pm, tfPanel, cfg)
+	populateEsqlControlFromAPI(pm, tfPanel, &kbapi.KbnDashboardPanelTypeEsqlControl{Config: cfg})
 
 	require.NotNil(t, pm.EsqlControlConfig)
 	assert.True(t, pm.EsqlControlConfig.Title.IsNull())
@@ -170,7 +170,7 @@ func Test_populateEsqlControlFromAPI_nilDisplaySettings_preserved(t *testing.T) 
 			Placeholder   *string `json:"placeholder,omitempty"`
 		}{Placeholder: new("hint")},
 	})
-	populateEsqlControlFromAPI(pm, tfPanel, cfg)
+	populateEsqlControlFromAPI(pm, tfPanel, &kbapi.KbnDashboardPanelTypeEsqlControl{Config: cfg})
 	assert.Nil(t, pm.EsqlControlConfig.DisplaySettings)
 }
 
@@ -207,7 +207,7 @@ func Test_populateEsqlControlFromAPI_displaySettings_nullFieldsPreserved(t *test
 			HideActionBar: new(false),
 		},
 	})
-	populateEsqlControlFromAPI(pm, tfPanel, cfg)
+	populateEsqlControlFromAPI(pm, tfPanel, &kbapi.KbnDashboardPanelTypeEsqlControl{Config: cfg})
 
 	require.NotNil(t, pm.EsqlControlConfig.DisplaySettings)
 	// null field stays null
@@ -340,7 +340,7 @@ func Test_esqlControl_roundTrip(t *testing.T) {
 		AvailableOptions: original.AvailableOptions,
 	}}
 	tfPanel := &panelModel{EsqlControlConfig: out.EsqlControlConfig}
-	populateEsqlControlFromAPI(out, tfPanel, esqlPanel.Config)
+	populateEsqlControlFromAPI(out, tfPanel, &esqlPanel)
 
 	require.NotNil(t, out.EsqlControlConfig)
 	assert.Equal(t, original.SelectedOptions, out.EsqlControlConfig.SelectedOptions)
