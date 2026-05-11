@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -175,7 +176,17 @@ func flattenAliasElement(name string, a estypes.AliasDefinition, preservedRoutin
 			diags.AddError("Failed to marshal alias filter", err.Error())
 			return nil, diags
 		}
-		attrs["filter"] = jsontypes.NewNormalizedValue(string(b))
+		var filterMap map[string]any
+		if err := json.Unmarshal(b, &filterMap); err != nil {
+			diags.AddError("Failed to unmarshal alias filter", err.Error())
+			return nil, diags
+		}
+		normalized := elasticsearch.NormalizeQueryFilter(filterMap)
+		if nm, ok := normalized.(map[string]any); ok {
+			filterMap = nm
+		}
+		normalizedBytes, _ := json.Marshal(filterMap)
+		attrs["filter"] = jsontypes.NewNormalizedValue(string(normalizedBytes))
 	} else {
 		attrs["filter"] = jsontypes.NewNormalizedNull()
 	}
