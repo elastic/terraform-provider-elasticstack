@@ -124,7 +124,9 @@ type lensDashboardAPIGrid struct {
 }
 
 // lensDashboardAppToAPI converts a lens-dashboard-app panel to the Kibana API model.
-func lensDashboardAppToAPI(pm panelModel, grid lensDashboardAPIGrid, panelID *string) (kbapi.DashboardPanelItem, diag.Diagnostics) {
+// parentDashboard is the enclosing dashboard resource model (required for typed by_value charts
+// so chart roots resolve time_range from dashboard-level defaults; by_reference does not use it).
+func lensDashboardAppToAPI(pm panelModel, grid lensDashboardAPIGrid, panelID *string, parentDashboard *dashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	cfg := pm.LensDashboardAppConfig
 	if cfg == nil {
@@ -133,7 +135,7 @@ func lensDashboardAppToAPI(pm panelModel, grid lensDashboardAPIGrid, panelID *st
 	}
 	switch {
 	case cfg.ByValue != nil:
-		return lensDashboardAppByValueToAPI(*cfg.ByValue, grid, panelID)
+		return lensDashboardAppByValueToAPI(*cfg.ByValue, grid, panelID, parentDashboard)
 	case cfg.ByReference != nil:
 		return lensDashboardAppByReferenceToAPI(*cfg.ByReference, grid, panelID)
 	default:
@@ -142,19 +144,27 @@ func lensDashboardAppToAPI(pm panelModel, grid lensDashboardAPIGrid, panelID *st
 	}
 }
 
+// parentDashboardOptional uses a variadic trailing parameter so callers that build a by-value
+// chart in isolation (e.g. unit tests) can omit a parent dashboard; production writes from
+// panelModel.toAPI always pass the real enclosing dashboard model.
 func lensDashboardAppByValueToAPI(
 	byValue lensDashboardAppByValueModel,
 	grid lensDashboardAPIGrid,
 	panelID *string,
+	parentDashboardOptional ...*dashboardModel,
 ) (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	var diags diag.Diagnostics
+	var parentDashboard *dashboardModel
+	if len(parentDashboardOptional) > 0 {
+		parentDashboard = parentDashboardOptional[0]
+	}
 	if scratch, ok := lensByValueToScratchVisPanel(byValue); ok {
 		conv, okConv := firstLensVizConverterForPanel(scratch)
 		if !okConv {
 			diags.AddError("Invalid `by_value` for lens-dashboard-app", "The typed by-value chart block could not be resolved to a Lens visualization converter.")
 			return kbapi.DashboardPanelItem{}, diags
 		}
-		vis0, d := conv.buildAttributes(scratch, nil)
+		vis0, d := conv.buildAttributes(scratch, parentDashboard)
 		diags.Append(d...)
 		if d.HasError() {
 			return kbapi.DashboardPanelItem{}, diags

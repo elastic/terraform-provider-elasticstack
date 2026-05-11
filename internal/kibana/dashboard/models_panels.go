@@ -498,6 +498,15 @@ func timeRangeModelToAPI(tr *timeRangeModel) kbapi.KbnEsQueryServerTimeRangeSche
 
 // resolveChartTimeRange returns the API time_range for a typed Lens chart root: chart-level when set,
 // otherwise copied from the dashboard-level time_range (both are required API inputs).
+//
+// Production dashboard writes (`panelsToAPI` / `panelModel.toAPI`) always pass the enclosing
+// `dashboardModel`, so null chart-level `time_range` inherits dashboard-level values (REQ-013).
+//
+// The `now-15m` / `now` fallback below remains only when no dashboard is in scope: isolated unit
+// tests call `buildAttributes(..., nil)`, and optional tooling may construct chart payloads without
+// a parent dashboard. The lens-dashboard-app typed `by_value` path threads the parent dashboard
+// via `lensDashboardAppToAPI` / `lensDashboardAppByValueToAPI` so it inherits like other typed
+// charts; it does not rely on this fallback during normal resource updates.
 func resolveChartTimeRange(dashboard *dashboardModel, chartLevel *timeRangeModel) kbapi.KbnEsQueryServerTimeRangeSchema {
 	if chartLevel != nil {
 		return timeRangeModelToAPI(chartLevel)
@@ -505,8 +514,6 @@ func resolveChartTimeRange(dashboard *dashboardModel, chartLevel *timeRangeModel
 	if dashboard != nil && dashboard.TimeRange != nil {
 		return timeRangeModelToAPI(dashboard.TimeRange)
 	}
-	// Lens-dashboard-app and other scratch conversions can build typed chart roots without a parent
-	// `dashboardModel`; keep a conservative default until task 4.1 threads the real dashboard time range.
 	return kbapi.KbnEsQueryServerTimeRangeSchema{
 		From: "now-15m",
 		To:   "now",
@@ -632,7 +639,7 @@ func (pm panelModel) toAPI(dashboard *dashboardModel) (kbapi.DashboardPanelItem,
 
 	lensGrid := lensDashboardAPIGrid{H: grid.H, W: grid.W, X: grid.X, Y: grid.Y}
 	if pm.LensDashboardAppConfig != nil {
-		return lensDashboardAppToAPI(pm, lensGrid, panelID)
+		return lensDashboardAppToAPI(pm, lensGrid, panelID, dashboard)
 	}
 	if pm.Type.ValueString() == panelTypeLensDashboardApp {
 		if typeutils.IsKnown(pm.ConfigJSON) && !pm.ConfigJSON.IsNull() {
