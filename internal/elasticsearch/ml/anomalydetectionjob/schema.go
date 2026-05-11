@@ -243,7 +243,8 @@ func getSchema(ctx context.Context) schema.Schema {
 											"scope": schema.MapNestedAttribute{
 												MarkdownDescription: "Maps an analysis field name " +
 													"(typically matching `by_field_name`, `over_field_name`, or `partition_field_name` on the detector) " +
-													"to an ML filter reference. Use with `elasticstack_elasticsearch_ml_filter`. " +
+													"to an ML filter reference. Each `filter_id` must identify an ML filter that already exists in the cluster " +
+													"(for example, created using the Elasticsearch ML filter APIs). " +
 													"A rule must have either a non-empty `scope` or at least one `conditions` entry.",
 												Optional: true,
 												NestedObject: schema.NestedAttributeObject{

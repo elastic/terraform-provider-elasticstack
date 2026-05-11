@@ -157,7 +157,7 @@ Optional:
 
 - `actions` (List of String) The set of actions to be triggered when the rule applies. If more than one action is specified the effects of all actions are combined.
 - `conditions` (Attributes List) An array of numeric conditions when the rule applies. A rule must have either a non-empty `scope` or at least one condition (per Elasticsearch). (see [below for nested schema](#nestedatt--analysis_config--detectors--custom_rules--conditions))
-- `scope` (Attributes Map) Maps an analysis field name (typically matching `by_field_name`, `over_field_name`, or `partition_field_name` on the detector) to an ML filter reference. Use with `elasticstack_elasticsearch_ml_filter`. A rule must have either a non-empty `scope` or at least one `conditions` entry. (see [below for nested schema](#nestedatt--analysis_config--detectors--custom_rules--scope))
+- `scope` (Attributes Map) Maps an analysis field name (typically matching `by_field_name`, `over_field_name`, or `partition_field_name` on the detector) to an ML filter reference. Each `filter_id` must identify an ML filter that already exists in the cluster (for example, created using the Elasticsearch ML filter APIs). A rule must have either a non-empty `scope` or at least one `conditions` entry. (see [below for nested schema](#nestedatt--analysis_config--detectors--custom_rules--scope))
 
 <a id="nestedatt--analysis_config--detectors--custom_rules--conditions"></a>
 ### Nested Schema for `analysis_config.detectors.custom_rules.conditions`
