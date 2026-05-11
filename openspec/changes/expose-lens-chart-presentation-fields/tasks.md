@@ -12,12 +12,12 @@
 
 ## 2. Model wiring: write path
 
-- [ ] 2.1 Add a new helper in `internal/kibana/dashboard/models_panels.go` named (e.g.) `resolveChartTimeRange(dashboard *dashboardModel, chartLevel *timeRangeModel)` returning the effective `kbapi.KbnEsQueryServerTimeRangeSchema` for a chart panel (chart-level if set, else dashboard-level).
-- [ ] 2.2 Delete the existing `lensPanelTimeRange()` helper in `models_panels.go` and update every call site in the twelve `models_*_panel.go` files to use `resolveChartTimeRange(...)` instead, threading the parent dashboard model into each panel's `toAPI` path.
-- [ ] 2.3 Add a shared `chartPresentationModel` Go struct with fields for `TimeRange`, `HideTitle`, `HideBorder`, `ReferencesJSON`, `Drilldowns`; embed in each `models_*_panel.go` chart-config Go struct.
-- [ ] 2.4 Wire `HideTitle`, `HideBorder`, `ReferencesJSON` into the API request struct for each of the twelve chart types in their respective `toAPI` paths.
-- [ ] 2.5 Implement `drilldownsToAPI` that converts the TF `drilldowns` list into the API discriminated union, branching on which variant sub-block is set per list item; emit appropriate `type` discriminator (`"dashboard_drilldown"`, `"discover_drilldown"`, `"url_drilldown"`).
-- [ ] 2.6 Default the computed `trigger` to `"on_apply_filter"` for `dashboard_drilldown` and `discover_drilldown` variants on the API write path.
+- [x] 2.1 Add a new helper in `internal/kibana/dashboard/models_panels.go` named (e.g.) `resolveChartTimeRange(dashboard *dashboardModel, chartLevel *timeRangeModel)` returning the effective `kbapi.KbnEsQueryServerTimeRangeSchema` for a chart panel (chart-level if set, else dashboard-level).
+- [x] 2.2 Delete the existing `lensPanelTimeRange()` helper in `models_panels.go` and update every call site in the twelve `models_*_panel.go` files to use `resolveChartTimeRange(...)` instead, threading the parent dashboard model into each panel's `toAPI` path.
+- [x] 2.3 Add a shared `chartPresentationModel` Go struct with fields for `TimeRange`, `HideTitle`, `HideBorder`, `ReferencesJSON`, `Drilldowns`; embed in each `models_*_panel.go` chart-config Go struct.
+- [x] 2.4 Wire `HideTitle`, `HideBorder`, `ReferencesJSON` into the API request struct for each of the twelve chart types in their respective `toAPI` paths.
+- [x] 2.5 Implement `drilldownsToAPI` that converts the TF `drilldowns` list into the API discriminated union, branching on which variant sub-block is set per list item; emit appropriate `type` discriminator (`"dashboard_drilldown"`, `"discover_drilldown"`, `"url_drilldown"`).
+- [x] 2.6 Default the computed `trigger` to `"on_apply_filter"` for `dashboard_drilldown` and `discover_drilldown` variants on the API write path.
 
 ## 3. Model wiring: read path
 
