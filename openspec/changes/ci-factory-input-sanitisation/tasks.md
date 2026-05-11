@@ -1,8 +1,8 @@
 ## 1. Extend sanitisation in shared library
 
-- [ ] 1.1 Add `stripControlChars` and `stripInvisibleUnicode` helper functions to `.github/workflows-src/lib/sanitize-context.js`
-- [ ] 1.2 Add `sanitizeUserContent` composed function that runs all three filters in order
-- [ ] 1.3 Export the new functions alongside existing `stripHtmlComments`
+- [x] 1.1 Add `stripControlChars` and `stripInvisibleUnicode` helper functions to `.github/workflows-src/lib/sanitize-context.js`
+- [x] 1.2 Add `sanitizeUserContent` composed function that runs all three filters in order
+- [x] 1.3 Export the new functions alongside existing `stripHtmlComments`
 
 ## 2. Update tests
 
