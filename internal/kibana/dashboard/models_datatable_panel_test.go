@@ -135,7 +135,7 @@ func Test_datatableNoESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 	api.Styling.Paging = &paging
 
 	model := &datatableNoESQLConfigModel{}
-	diags := model.fromAPI(context.Background(), api)
+	diags := model.fromAPI(context.Background(), nil, nil, api)
 	require.False(t, diags.HasError())
 
 	assert.Equal(t, types.StringValue("Datatable NoESQL"), model.Title)
@@ -151,7 +151,7 @@ func Test_datatableNoESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 	require.NotNil(t, model.Styling)
 	assert.Equal(t, types.Int64Value(10), model.Styling.Paging)
 
-	apiRoundTrip, diags := model.toAPI()
+	apiRoundTrip, diags := model.toAPI(nil)
 	require.False(t, diags.HasError())
 	assert.Equal(t, kbapi.DatatableNoESQLTypeDataTable, apiRoundTrip.Type)
 	assert.NotNil(t, apiRoundTrip.Styling.Paging)
@@ -235,7 +235,7 @@ func Test_datatableESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 	api.Styling.Paging = &paging
 
 	model := &datatableESQLConfigModel{}
-	diags := model.fromAPI(context.Background(), api)
+	diags := model.fromAPI(context.Background(), nil, nil, api)
 	require.False(t, diags.HasError())
 
 	assert.Equal(t, types.StringValue("Datatable ESQL"), model.Title)
@@ -249,7 +249,7 @@ func Test_datatableESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 	require.NotNil(t, model.Styling)
 	assert.Equal(t, types.Int64Value(20), model.Styling.Paging)
 
-	apiRoundTrip, diags := model.toAPI()
+	apiRoundTrip, diags := model.toAPI(nil)
 	require.False(t, diags.HasError())
 	assert.Equal(t, kbapi.DatatableESQLTypeDataTable, apiRoundTrip.Type)
 	assert.NotNil(t, apiRoundTrip.Styling.Paging)
@@ -290,11 +290,11 @@ func Test_datatablePanelConfigConverter_populateFromAttributes_buildAttributes_r
 
 	converter := newDatatablePanelConfigConverter()
 	pm := &panelModel{}
-	diags := converter.populateFromAttributes(ctx, pm, attrs)
+	diags := converter.populateFromAttributes(ctx, nil, pm, attrs)
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm.DatatableConfig)
 
-	attrs2, diags := converter.buildAttributes(*pm)
+	attrs2, diags := converter.buildAttributes(*pm, nil)
 	require.False(t, diags.HasError())
 
 	noESQL2, err := attrs2.AsDatatableNoESQL()
@@ -325,15 +325,19 @@ func Test_datatablePanelConfigConverter_populateFromAttributes_buildAttributes_r
 
 	converter := newDatatablePanelConfigConverter()
 	pm := &panelModel{}
-	diags := converter.populateFromAttributes(ctx, pm, attrs)
+	diags := converter.populateFromAttributes(ctx, nil, pm, attrs)
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm.DatatableConfig)
 
-	attrs2, diags := converter.buildAttributes(*pm)
+	attrs2, diags := converter.buildAttributes(*pm, nil)
 	require.False(t, diags.HasError())
 
 	esql2, err := attrs2.AsDatatableESQL()
 	require.NoError(t, err)
 	assert.Equal(t, "Datatable ESQL Round-Trip", *esql2.Title)
 	assert.Equal(t, kbapi.DatatableESQLTypeDataTable, esql2.Type)
+}
+
+func Test_datatableNoESQLConfig_lensChartPresentation_comprehensive(t *testing.T) {
+	runDatatableNoESQLLensChartPresentationComprehensive(t)
 }

@@ -29,19 +29,19 @@ type lensDashboardAppConfigModel struct {
 }
 
 type lensDashboardAppByValueModel struct {
-	ConfigJSON         jsontypes.Normalized     `tfsdk:"config_json"`
-	XYChartConfig      *xyChartConfigModel      `tfsdk:"xy_chart_config"`
-	TreemapConfig      *treemapConfigModel      `tfsdk:"treemap_config"`
-	MosaicConfig       *mosaicConfigModel       `tfsdk:"mosaic_config"`
-	DatatableConfig    *datatableConfigModel    `tfsdk:"datatable_config"`
-	TagcloudConfig     *tagcloudConfigModel     `tfsdk:"tagcloud_config"`
-	HeatmapConfig      *heatmapConfigModel      `tfsdk:"heatmap_config"`
-	WaffleConfig       *waffleConfigModel       `tfsdk:"waffle_config"`
-	RegionMapConfig    *regionMapConfigModel    `tfsdk:"region_map_config"`
-	GaugeConfig        *gaugeConfigModel        `tfsdk:"gauge_config"`
-	MetricChartConfig  *metricChartConfigModel  `tfsdk:"metric_chart_config"`
-	PieChartConfig     *pieChartConfigModel     `tfsdk:"pie_chart_config"`
-	LegacyMetricConfig *legacyMetricConfigModel `tfsdk:"legacy_metric_config"`
+	ConfigJSON         jsontypes.Normalized           `tfsdk:"config_json"`
+	XYChartConfig      *xyChartConfigModel            `tfsdk:"xy_chart_config"`
+	TreemapConfig      *treemapConfigModel            `tfsdk:"treemap_config"`
+	MosaicConfig       *mosaicConfigModel             `tfsdk:"mosaic_config"`
+	DatatableConfig    *datatableConfigModel          `tfsdk:"datatable_config"`
+	TagcloudConfig     *tagcloudConfigModel           `tfsdk:"tagcloud_config"`
+	HeatmapConfig      *heatmapConfigModel            `tfsdk:"heatmap_config"`
+	WaffleConfig       *waffleConfigModel             `tfsdk:"waffle_config"`
+	RegionMapConfig    *regionMapConfigModel          `tfsdk:"region_map_config"`
+	GaugeConfig        *gaugeConfigModel              `tfsdk:"gauge_config"`
+	MetricChartConfig  *metricChartLensByValueTFModel `tfsdk:"metric_chart_config"`
+	PieChartConfig     *pieChartConfigModel           `tfsdk:"pie_chart_config"`
+	LegacyMetricConfig *legacyMetricConfigModel       `tfsdk:"legacy_metric_config"`
 }
 
 type lensDashboardAppByReferenceModel struct {

@@ -401,7 +401,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 					continue
 				}
 
-				d := converter.populateFromAttributes(ctx, &pm, config0)
+				d := converter.populateFromAttributes(ctx, m, &pm, config0)
 				diags.Append(d...)
 				break
 			}
@@ -441,7 +441,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 		setPanelGridFromAPI(&pm, ldPanel.Grid.X, ldPanel.Grid.Y, ldPanel.Grid.W, ldPanel.Grid.H)
 		pm.ID = types.StringPointerValue(ldPanel.Id)
 		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
-		d := populateLensDashboardAppFromAPI(ctx, &pm, tfPanel, ldPanel)
+		d := populateLensDashboardAppFromAPI(ctx, m, &pm, tfPanel, ldPanel)
 		diags.Append(d...)
 	default:
 		// Round-trip stability for panel types without a typed config block.
@@ -483,7 +483,41 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 	return pm, diags
 }
 
-func lensPanelTimeRange() kbapi.KbnEsQueryServerTimeRangeSchema {
+func timeRangeModelToAPI(tr *timeRangeModel) kbapi.KbnEsQueryServerTimeRangeSchema {
+	if tr == nil {
+		return kbapi.KbnEsQueryServerTimeRangeSchema{}
+	}
+	out := kbapi.KbnEsQueryServerTimeRangeSchema{
+		From: tr.From.ValueString(),
+		To:   tr.To.ValueString(),
+	}
+	if typeutils.IsKnown(tr.Mode) {
+		mode := kbapi.KbnEsQueryServerTimeRangeSchemaMode(tr.Mode.ValueString())
+		out.Mode = &mode
+	}
+	return out
+}
+
+// resolveChartTimeRange returns the API time_range for a typed Lens chart root: chart-level when set,
+// otherwise copied from the dashboard-level time_range (both are required API inputs).
+//
+// Production dashboard writes (`panelsToAPI` / `panelModel.toAPI`) always pass the enclosing
+// `dashboardModel`, so null chart-level `time_range` inherits dashboard-level values (REQ-013).
+//
+// The `now-15m` / `now` fallback below applies when there is no chart-level override and either
+// no parent `dashboardModel` is in scope (e.g. isolated unit tests call `buildAttributes(..., nil)`),
+// or `dashboard != nil` but `dashboard.TimeRange == nil` (unusual in production: the dashboard
+// schema requires `time_range`). Optional tooling may also construct chart payloads without a parent
+// dashboard. The lens-dashboard-app typed `by_value` path threads the parent dashboard via
+// `lensDashboardAppToAPI` / `lensDashboardAppByValueToAPI` so it inherits like other typed charts;
+// it does not rely on this fallback during normal resource updates.
+func resolveChartTimeRange(dashboard *dashboardModel, chartLevel *timeRangeModel) kbapi.KbnEsQueryServerTimeRangeSchema {
+	if chartLevel != nil {
+		return timeRangeModelToAPI(chartLevel)
+	}
+	if dashboard != nil && dashboard.TimeRange != nil {
+		return timeRangeModelToAPI(dashboard.TimeRange)
+	}
 	return kbapi.KbnEsQueryServerTimeRangeSchema{
 		From: "now-15m",
 		To:   "now",
@@ -500,7 +534,7 @@ func (m *dashboardModel) panelsToAPI() (*kbapi.DashboardPanels, diag.Diagnostics
 
 	// Process panels
 	for _, pm := range m.Panels {
-		panelItem, d := pm.toAPI()
+		panelItem, d := pm.toAPI(m)
 		diags.Append(d...)
 		if diags.HasError() {
 			return nil, diags
@@ -537,7 +571,7 @@ func (m *dashboardModel) panelsToAPI() (*kbapi.DashboardPanels, diag.Diagnostics
 			innerPanels := make([]kbapi.DashboardPanelItem, 0, len(sm.Panels))
 
 			for _, pm := range sm.Panels {
-				item, d := pm.toAPI()
+				item, d := pm.toAPI(m)
 				diags.Append(d...)
 				if diags.HasError() {
 					return nil, diags
@@ -559,7 +593,7 @@ func (m *dashboardModel) panelsToAPI() (*kbapi.DashboardPanels, diag.Diagnostics
 	return &apiPanels, diags
 }
 
-func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
+func (pm panelModel) toAPI(dashboard *dashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	grid := struct {
@@ -609,7 +643,7 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 
 	lensGrid := lensDashboardAPIGrid{H: grid.H, W: grid.W, X: grid.X, Y: grid.Y}
 	if pm.LensDashboardAppConfig != nil {
-		return lensDashboardAppToAPI(pm, lensGrid, panelID)
+		return lensDashboardAppToAPI(pm, lensGrid, panelID, dashboard)
 	}
 	if pm.Type.ValueString() == panelTypeLensDashboardApp {
 		if typeutils.IsKnown(pm.ConfigJSON) && !pm.ConfigJSON.IsNull() {
@@ -757,7 +791,7 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 			continue
 		}
 
-		config0, d := converter.buildAttributes(pm)
+		config0, d := converter.buildAttributes(pm, dashboard)
 		diags.Append(d...)
 		if diags.HasError() {
 			return kbapi.DashboardPanelItem{}, diags
