@@ -59,7 +59,7 @@ The existing `sort_field` and `sort_order` attributes SHALL remain in the schema
 
 ### Requirement: Private-state-backed migration path from legacy to new `sort` attribute (REQ-SORT-03)
 
-The resource SHALL store the ordered sort configuration from Elasticsearch in private state during every `Read` operation. This ordered sort configuration SHALL be stored under a private state key `"sort_config"` as a JSON-marshalled object containing ordered arrays for `fields`, `orders`, and optional per-position `missing`/`mode` values (as reported by Elasticsearch static settings).
+The resource SHALL store the ordered sort configuration from Elasticsearch in private state during every `Read` operation. This ordered sort configuration SHALL be stored under a private state key `"sort_config"` as a JSON-marshaled object containing ordered arrays for `fields`, `orders`, and optional per-position `missing`/`mode` values (as reported by Elasticsearch static settings).
 
 When Terraform plans a configuration that:
 1. Has `sort` as null in state (the resource was created using the deprecated attributes),

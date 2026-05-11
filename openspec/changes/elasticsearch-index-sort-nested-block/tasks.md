@@ -19,7 +19,7 @@
 
 ## 4. Read / flatten
 
-- [ ] 4.1 Update `read.go` (or `resource.go`) to store ordered sort config in private state under key `"sort_config"` (JSON-marshalled `sortPrivateState{Fields, Orders}`) on every successful read.
+- [ ] 4.1 Update `read.go` (or `resource.go`) to store ordered sort config in private state under key `"sort_config"` (JSON-marshaled `sortPrivateState{Fields, Orders}`) on every successful read.
 - [ ] 4.2 When state has non-null `sort`: populate `Sort` from ES response `sort.field`/`sort.order`/`sort.missing`/`sort.mode` arrays (by index).
 - [ ] 4.3 When state has null `sort`: populate `SortField` and `SortOrder` from ES response arrays as before (legacy path).
 
