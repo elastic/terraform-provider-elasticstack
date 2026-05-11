@@ -95,7 +95,7 @@ func Test_wafflePanelConfigConverter_populateFromAttributes_buildAttributes_roun
 	require.False(t, diags.HasError(), "%s", diags)
 	require.NotNil(t, pm.WaffleConfig)
 
-	attrs2, diags := converter.buildAttributes(*pm)
+	attrs2, diags := converter.buildAttributes(*pm, nil)
 	require.False(t, diags.HasError(), "%s", diags)
 
 	noESQL2, err := attrs2.AsWaffleNoESQL()
@@ -164,7 +164,7 @@ func Test_wafflePanelConfigConverter_populateFromAttributes_buildAttributes_roun
 	require.NotNil(t, pm.WaffleConfig)
 	assert.True(t, pm.WaffleConfig.usesESQL())
 
-	attrs2, diags := converter.buildAttributes(*pm)
+	attrs2, diags := converter.buildAttributes(*pm, nil)
 	require.False(t, diags.HasError(), "%s", diags)
 
 	esql2, err := attrs2.AsWaffleESQL()
@@ -188,7 +188,7 @@ func Test_waffleConfigModel_toAPI_NoESQL_errors(t *testing.T) {
 			Expression: types.StringValue(""),
 		},
 	}
-	_, diags := m.toAPI()
+	_, diags := m.toAPI(nil)
 	require.True(t, diags.HasError())
 
 	m2 := &waffleConfigModel{
@@ -202,7 +202,7 @@ func Test_waffleConfigModel_toAPI_NoESQL_errors(t *testing.T) {
 		},
 		Metrics: nil,
 	}
-	_, diags2 := m2.toAPI()
+	_, diags2 := m2.toAPI(nil)
 	require.True(t, diags2.HasError())
 }
 
@@ -214,6 +214,6 @@ func Test_waffleConfigModel_toAPI_ESQL_errors(t *testing.T) {
 		},
 		Query: nil,
 	}
-	_, diags := m.toAPI()
+	_, diags := m.toAPI(nil)
 	require.True(t, diags.HasError())
 }

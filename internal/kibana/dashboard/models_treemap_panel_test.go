@@ -58,7 +58,7 @@ func Test_treemapPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm.TreemapConfig)
 
-	attrs2, diags := converter.buildAttributes(*pm)
+	attrs2, diags := converter.buildAttributes(*pm, nil)
 	require.False(t, diags.HasError())
 
 	noESQL2, err := attrs2.AsTreemapNoESQL()
@@ -93,7 +93,7 @@ func Test_treemapPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm.TreemapConfig)
 
-	attrs2, diags := converter.buildAttributes(*pm)
+	attrs2, diags := converter.buildAttributes(*pm, nil)
 	require.False(t, diags.HasError())
 
 	esql2, err := attrs2.AsTreemapESQL()
@@ -179,7 +179,7 @@ func Test_treemapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 	assert.Equal(t, types.StringValue("percentage"), model.ValueDisplay.Mode)
 	assert.Equal(t, types.Float64Value(2), model.ValueDisplay.PercentDecimals)
 
-	lensAttrs, diags := model.toAPI()
+	lensAttrs, diags := model.toAPI(nil)
 	require.False(t, diags.HasError())
 
 	roundTrip, err := lensAttrs.AsTreemapNoESQL()
@@ -258,7 +258,7 @@ func Test_treemapConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 	assert.False(t, model.Metrics.IsNull())
 	assert.Nil(t, model.Query)
 
-	lensAttrs, diags := model.toAPI()
+	lensAttrs, diags := model.toAPI(nil)
 	require.False(t, diags.HasError())
 
 	b, err := json.Marshal(lensAttrs)
@@ -339,7 +339,7 @@ func Test_treemapConfigModel_toAPIESQLChartSchema(t *testing.T) {
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm.TreemapConfig)
 
-	lensAttrs, diags := pm.TreemapConfig.toAPI()
+	lensAttrs, diags := pm.TreemapConfig.toAPI(nil)
 	require.False(t, diags.HasError())
 
 	b, err := json.Marshal(lensAttrs)

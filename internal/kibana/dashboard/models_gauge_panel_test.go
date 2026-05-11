@@ -137,7 +137,7 @@ func Test_gaugeConfigModel_fromAPI_toAPI(t *testing.T) {
 				assert.Len(t, model.Filters, 1, "Filters should be populated")
 			}
 
-			apiResult, diags := model.toAPI()
+			apiResult, diags := model.toAPI(nil)
 			require.False(t, diags.HasError(), "toAPI should not return errors")
 
 			if tt.api.Title != nil {
@@ -186,7 +186,7 @@ func Test_gaugePanelConfigConverter_populateFromAttributes_buildAttributes_round
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm.GaugeConfig)
 
-	attrs2, diags := converter.buildAttributes(*pm)
+	attrs2, diags := converter.buildAttributes(*pm, nil)
 	require.False(t, diags.HasError())
 
 	gaugeNoESQL2, err := attrs2.AsGaugeNoESQL()

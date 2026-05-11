@@ -52,7 +52,7 @@ func Test_tagcloudPanelConfigConverter_populateFromAttributes_buildAttributes_ro
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm.TagcloudConfig)
 
-	attrs2, diags := converter.buildAttributes(*pm)
+	attrs2, diags := converter.buildAttributes(*pm, nil)
 	require.False(t, diags.HasError())
 
 	tagcloudNoESQL2, err := attrs2.AsTagcloudNoESQL()
@@ -195,7 +195,7 @@ func Test_tagcloudConfigModel_fromAPI_toAPI(t *testing.T) {
 			}
 
 			// Test toAPI round-trip
-			apiResult, diags := model.toAPI()
+			apiResult, diags := model.toAPI(nil)
 			require.False(t, diags.HasError(), "toAPI should not return errors")
 
 			// Validate round-trip for basic fields
@@ -296,7 +296,7 @@ func Test_fontSizeModel_roundTrip(t *testing.T) {
 			require.False(t, diags.HasError())
 
 			// Convert back to API
-			apiResult, diags := model.toAPI()
+			apiResult, diags := model.toAPI(nil)
 			require.False(t, diags.HasError())
 
 			// Verify font size round-trip
@@ -366,7 +366,7 @@ func Test_tagcloudConfig_JSONFields(t *testing.T) {
 				TagByJSON:  customtypes.NewJSONWithDefaultsValue[map[string]any](tt.tagByJSON, populateTagcloudTagByDefaults),
 			}
 
-			_, diags := model.toAPI()
+			_, diags := model.toAPI(nil)
 			if tt.wantError {
 				assert.True(t, diags.HasError(), "Expected error for invalid JSON")
 			} else {

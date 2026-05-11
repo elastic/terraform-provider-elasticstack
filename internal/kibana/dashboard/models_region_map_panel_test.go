@@ -128,7 +128,7 @@ func Test_regionMapConfigModel_fromAPI_toAPI(t *testing.T) {
 				assert.Nil(t, model.Query)
 			}
 
-			apiSchema, diags := model.toAPI()
+			apiSchema, diags := model.toAPI(nil)
 			require.False(t, diags.HasError())
 
 			if tt.expectESQL {
@@ -176,7 +176,7 @@ func Test_regionMapPanelConfigConverter_populateFromAttributes_buildAttributes_r
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm.RegionMapConfig)
 
-	attrs2, diags := converter.buildAttributes(*pm)
+	attrs2, diags := converter.buildAttributes(*pm, nil)
 	require.False(t, diags.HasError())
 
 	noESQL2, err := attrs2.AsRegionMapNoESQL()
@@ -208,7 +208,7 @@ func Test_regionMapPanelConfigConverter_populateFromAttributes_buildAttributes_r
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm.RegionMapConfig)
 
-	attrs2, diags := converter.buildAttributes(*pm)
+	attrs2, diags := converter.buildAttributes(*pm, nil)
 	require.False(t, diags.HasError())
 
 	esql2, err := attrs2.AsRegionMapESQL()

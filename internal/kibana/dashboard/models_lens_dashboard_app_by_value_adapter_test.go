@@ -91,7 +91,7 @@ func testPieByValueConfigBytes(t *testing.T) []byte {
 	converter := newPieChartPanelConfigConverter()
 	pm := &panelModel{}
 	require.False(t, converter.populateFromAttributes(ctx, pm, attrs).HasError())
-	vis0, d := converter.buildAttributes(*pm)
+	vis0, d := converter.buildAttributes(*pm, nil)
 	require.False(t, d.HasError())
 	b, err := vis0.MarshalJSON()
 	require.NoError(t, err)
@@ -126,7 +126,7 @@ func testXyByValueModel(t *testing.T) lensDashboardAppByValueModel {
 		}},
 		Legend: &xyLegendModel{Visibility: types.StringValue("visible"), Inside: types.BoolValue(false)},
 		Query:  &filterSimpleModel{Expression: types.StringValue("*"), Language: types.StringValue("kql")},
-	}).toAPINoESQL()
+	}).toAPINoESQL(nil)
 	require.False(t, diags.HasError())
 	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 	require.NoError(t, attrs.FromXyChartNoESQL(xy))

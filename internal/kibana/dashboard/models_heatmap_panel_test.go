@@ -132,7 +132,7 @@ func Test_heatmapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 	require.NotNil(t, model.Legend)
 	assert.Equal(t, types.StringValue("visible"), model.Legend.Visibility)
 
-	chart, diags := model.toAPI()
+	chart, diags := model.toAPI(nil)
 	require.False(t, diags.HasError())
 
 	heatmapRoundTrip, err := chart.AsHeatmapNoESQL()
@@ -195,7 +195,7 @@ func Test_heatmapConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 	assert.Equal(t, types.StringValue("ESQL Heatmap"), model.Title)
 	assert.Equal(t, types.StringValue("ESQL heatmap description"), model.Description)
 
-	chart, diags := model.toAPI()
+	chart, diags := model.toAPI(nil)
 	require.False(t, diags.HasError())
 
 	heatmapRoundTrip, err := chart.AsHeatmapESQL()
@@ -241,7 +241,7 @@ func Test_heatmapPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm.HeatmapConfig)
 
-	attrs2, diags := converter.buildAttributes(*pm)
+	attrs2, diags := converter.buildAttributes(*pm, nil)
 	require.False(t, diags.HasError())
 
 	noESQL2, err := attrs2.AsHeatmapNoESQL()
@@ -284,7 +284,7 @@ func Test_heatmapPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm.HeatmapConfig)
 
-	attrs2, diags := converter.buildAttributes(*pm)
+	attrs2, diags := converter.buildAttributes(*pm, nil)
 	require.False(t, diags.HasError())
 
 	esql2, err := attrs2.AsHeatmapESQL()

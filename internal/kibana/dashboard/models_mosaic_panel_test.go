@@ -65,7 +65,7 @@ func Test_mosaicPanelConfigConverter_populateFromAttributes_buildAttributes_roun
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm.MosaicConfig)
 
-	attrs2, diags := converter.buildAttributes(*pm)
+	attrs2, diags := converter.buildAttributes(*pm, nil)
 	require.False(t, diags.HasError())
 
 	noESQL2, err := attrs2.AsMosaicNoESQL()
@@ -105,7 +105,7 @@ func Test_mosaicPanelConfigConverter_populateFromAttributes_buildAttributes_roun
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm.MosaicConfig)
 
-	attrs2, diags := converter.buildAttributes(*pm)
+	attrs2, diags := converter.buildAttributes(*pm, nil)
 	require.False(t, diags.HasError())
 
 	esql2, err := attrs2.AsMosaicESQL()
@@ -203,7 +203,7 @@ func Test_mosaicConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 	assert.Equal(t, types.StringValue("percentage"), model.ValueDisplay.Mode)
 	assert.Equal(t, types.Float64Value(2), model.ValueDisplay.PercentDecimals)
 
-	attrs, diags := model.toAPI()
+	attrs, diags := model.toAPI(nil)
 	require.False(t, diags.HasError())
 
 	roundTrip, err := attrs.AsMosaicNoESQL()
@@ -293,7 +293,7 @@ func Test_mosaicConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 	require.NotNil(t, model.ValueDisplay)
 	assert.Equal(t, types.StringValue("absolute"), model.ValueDisplay.Mode)
 
-	attrs, diags := model.toAPI()
+	attrs, diags := model.toAPI(nil)
 	require.False(t, diags.HasError())
 
 	roundTrip, err := attrs.AsMosaicESQL()
@@ -368,7 +368,7 @@ func Test_mosaicConfigModel_toAPI_metrics_json_exactly_one(t *testing.T) {
 	t.Run("noESQL_empty_array", func(t *testing.T) {
 		model := newTestMosaicNoESQLModel(t)
 		model.Metrics = customtypes.NewJSONWithDefaultsValue[[]map[string]any](`[]`, populatePartitionMetricsDefaults)
-		_, diags := model.toAPI()
+		_, diags := model.toAPI(nil)
 		requireMosaicMetricsExactlyOneDiagnostic(t, diags)
 	})
 	t.Run("noESQL_two_items", func(t *testing.T) {
@@ -377,13 +377,13 @@ func Test_mosaicConfigModel_toAPI_metrics_json_exactly_one(t *testing.T) {
 			`[{"operation":"count"},{"operation":"sum","field":"bytes"}]`,
 			populatePartitionMetricsDefaults,
 		)
-		_, diags := model.toAPI()
+		_, diags := model.toAPI(nil)
 		requireMosaicMetricsExactlyOneDiagnostic(t, diags)
 	})
 	t.Run("esql_empty_array", func(t *testing.T) {
 		model := newTestMosaicESQLModel(t)
 		model.Metrics = customtypes.NewJSONWithDefaultsValue[[]map[string]any](`[]`, populatePartitionMetricsDefaults)
-		_, diags := model.toAPI()
+		_, diags := model.toAPI(nil)
 		requireMosaicMetricsExactlyOneDiagnostic(t, diags)
 	})
 	t.Run("esql_two_items", func(t *testing.T) {
@@ -393,7 +393,7 @@ func Test_mosaicConfigModel_toAPI_metrics_json_exactly_one(t *testing.T) {
 				`{"column":"events","operation":"value","format":{"type":"number","decimals":2}}]`,
 			populatePartitionMetricsDefaults,
 		)
-		_, diags := model.toAPI()
+		_, diags := model.toAPI(nil)
 		requireMosaicMetricsExactlyOneDiagnostic(t, diags)
 	})
 }

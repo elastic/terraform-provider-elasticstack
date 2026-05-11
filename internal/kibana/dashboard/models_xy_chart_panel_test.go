@@ -602,7 +602,7 @@ func Test_xyChartPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 		},
 	}
 
-	xyChart, diags := model.toAPINoESQL()
+	xyChart, diags := model.toAPINoESQL(nil)
 	require.False(t, diags.HasError())
 
 	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
@@ -614,7 +614,7 @@ func Test_xyChartPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm.XYChartConfig)
 
-	attrs2, diags := converter.buildAttributes(*pm)
+	attrs2, diags := converter.buildAttributes(*pm, nil)
 	require.False(t, diags.HasError())
 
 	chart2, err := attrs2.AsXyChartNoESQL()
@@ -701,7 +701,7 @@ func Test_xyChartConfigModel_toAPI_fromAPI(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			apiChart, diags := tt.model.toAPINoESQL()
+			apiChart, diags := tt.model.toAPINoESQL(nil)
 			if tt.expectError {
 				assert.True(t, diags.HasError())
 				return
