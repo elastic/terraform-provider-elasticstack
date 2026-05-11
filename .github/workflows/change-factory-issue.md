@@ -780,7 +780,7 @@ on:
           if (eventName === 'issue_comment') {
             const body = context.payload.comment?.body ?? '';
             // Strip the leading /change-factory token and surrounding whitespace
-            const humanDirection = body.replace(/^\/change-factory\s*/, '').trim();
+            const humanDirection = body.replace(/^\s*\/change-factory\s*/, '').trim();
             core.setOutput('human_direction', humanDirection);
             core.info(`Captured human direction from slash command: "${humanDirection}"`);
           } else {
@@ -2227,7 +2227,7 @@ on:
           const { owner, repo } = context.repo;
           
           if (duplicatePrUrl && issueNumber) {
-            const commentBody = `⚠️ **change-factory skipped** — [#PR](${duplicatePrUrl}) is already open for this issue.\nClose or convert it to a draft, then retry.`;
+            const commentBody = `⚠️ **change-factory skipped** — PR #${extractPrNumber(duplicatePrUrl)} is already open for this issue.\nClose the existing PR, then retry.`;
             
             await github.rest.issues.createComment({
               owner,
@@ -2239,6 +2239,16 @@ on:
             core.info(`Posted duplicate-blocked comment on issue #${issueNumber} referencing ${duplicatePrUrl}`);
           } else {
             core.info('DUPLICATE_PR_URL is empty; skipping duplicate-blocked notification.');
+          }
+          
+          /**
+           * Extract the PR number from a GitHub PR URL.
+           * @param {string} url
+           * @returns {string}
+           */
+          function extractPrNumber(url) {
+            const match = url.match(/\/(\d+)(?:\/|$)/);
+            return match ? match[1] : url;
           }
     - name: Sanitize context
       id: sanitize_context
