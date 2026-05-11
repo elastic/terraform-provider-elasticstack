@@ -241,6 +241,19 @@ func (model *tfModel) populateFromAPI(ctx context.Context, indexName string, api
 		return diags
 	}
 
+	// Populate sort settings from the API response based on the current state shape.
+	if model.Sort.IsNull() || model.Sort.IsUnknown() {
+		// Legacy path: populate SortField and SortOrder from ES response.
+		if legDiags := populateLegacySortFromSettings(ctx, model); legDiags.HasError() {
+			return legDiags
+		}
+	} else {
+		// New path: populate Sort from ES response.
+		if sortDiags := populateSortFromSettings(ctx, model); sortDiags.HasError() {
+			return sortDiags
+		}
+	}
+
 	return nil
 }
 
