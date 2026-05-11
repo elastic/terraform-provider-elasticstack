@@ -651,7 +651,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 			"xy_chart_config": schema.SingleNestedAttribute{
 				MarkdownDescription: panelConfigDescription("Configuration for an XY chart panel. Use this for line, area, and bar charts.", "xy_chart_config", panelConfigNames),
 				Optional:            true,
-				Attributes:          getXYChartConfigAttributes(),
+				Attributes:          getXYChartConfigAttributes(true),
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(
 						siblingPanelConfigPathsExcept("xy_chart_config", panelConfigNames)...,
@@ -662,7 +662,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 			"treemap_config": schema.SingleNestedAttribute{
 				MarkdownDescription: panelConfigDescription("Configuration for a treemap chart panel.", "treemap_config", panelConfigNames),
 				Optional:            true,
-				Attributes:          getTreemapSchema(),
+				Attributes:          getTreemapSchema(true),
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(
 						siblingPanelConfigPathsExcept("treemap_config", panelConfigNames)...,
@@ -676,7 +676,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 						"(group_by and group_breakdown_by).",
 					"mosaic_config", panelConfigNames),
 				Optional:   true,
-				Attributes: getMosaicSchema(),
+				Attributes: getMosaicSchema(true),
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(
 						siblingPanelConfigPathsExcept("mosaic_config", panelConfigNames)...,
@@ -687,7 +687,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 			"datatable_config": schema.SingleNestedAttribute{
 				MarkdownDescription: panelConfigDescription("Configuration for a datatable chart panel.", "datatable_config", panelConfigNames),
 				Optional:            true,
-				Attributes:          getDatatableSchema(),
+				Attributes:          getDatatableSchema(true),
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(
 						siblingPanelConfigPathsExcept("datatable_config", panelConfigNames)...,
@@ -698,7 +698,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 			"tagcloud_config": schema.SingleNestedAttribute{
 				MarkdownDescription: panelConfigDescription("Configuration for a tagcloud chart panel. Tag clouds visualize word frequency.", "tagcloud_config", panelConfigNames),
 				Optional:            true,
-				Attributes:          getTagcloudSchema(),
+				Attributes:          getTagcloudSchema(true),
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(
 						siblingPanelConfigPathsExcept("tagcloud_config", panelConfigNames)...,
@@ -709,7 +709,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 			"heatmap_config": schema.SingleNestedAttribute{
 				MarkdownDescription: panelConfigDescription("Configuration for a heatmap chart panel.", "heatmap_config", panelConfigNames),
 				Optional:            true,
-				Attributes:          getHeatmapSchema(),
+				Attributes:          getHeatmapSchema(true),
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(
 						siblingPanelConfigPathsExcept("heatmap_config", panelConfigNames)...,
@@ -724,7 +724,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 					panelConfigNames,
 				),
 				Optional:   true,
-				Attributes: getWaffleSchema(),
+				Attributes: getWaffleSchema(true),
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(
 						siblingPanelConfigPathsExcept("waffle_config", panelConfigNames)...,
@@ -736,7 +736,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 			"region_map_config": schema.SingleNestedAttribute{
 				MarkdownDescription: panelConfigDescription("Configuration for a region map chart panel. Use this for geographic region maps.", "region_map_config", panelConfigNames),
 				Optional:            true,
-				Attributes:          getRegionMapSchema(),
+				Attributes:          getRegionMapSchema(true),
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(
 						siblingPanelConfigPathsExcept("region_map_config", panelConfigNames)...,
@@ -747,7 +747,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 			"gauge_config": schema.SingleNestedAttribute{
 				MarkdownDescription: panelConfigDescription("Configuration for a gauge chart panel.", "gauge_config", panelConfigNames),
 				Optional:            true,
-				Attributes:          getGaugeSchema(),
+				Attributes:          getGaugeSchema(true),
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(
 						siblingPanelConfigPathsExcept("gauge_config", panelConfigNames)...,
@@ -758,7 +758,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 			"metric_chart_config": schema.SingleNestedAttribute{
 				MarkdownDescription: panelConfigDescription("Configuration for a metric chart panel. Metric charts display key performance indicators.", "metric_chart_config", panelConfigNames),
 				Optional:            true,
-				Attributes:          getMetricChart(),
+				Attributes:          getMetricChart(true),
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(
 						siblingPanelConfigPathsExcept("metric_chart_config", panelConfigNames)...,
@@ -769,7 +769,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 			"pie_chart_config": schema.SingleNestedAttribute{
 				MarkdownDescription: panelConfigDescription("Configuration for a pie chart panel. Use this for pie and donut charts.", "pie_chart_config", panelConfigNames),
 				Optional:            true,
-				Attributes:          getPieChart(),
+				Attributes:          getPieChart(true),
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(
 						siblingPanelConfigPathsExcept("pie_chart_config", panelConfigNames)...,
@@ -780,7 +780,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 			"legacy_metric_config": schema.SingleNestedAttribute{
 				MarkdownDescription: panelConfigDescription("Configuration for a legacy metric chart panel. Use this for legacy single-value metric visualizations.", "legacy_metric_config", panelConfigNames),
 				Optional:            true,
-				Attributes:          getLegacyMetricSchema(),
+				Attributes:          getLegacyMetricSchema(true),
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(
 						siblingPanelConfigPathsExcept("legacy_metric_config", panelConfigNames)...,
@@ -1287,37 +1287,37 @@ func getLensDashboardAppByValueAttributes() map[string]schema.Attribute {
 		"xy_chart_config": schema.SingleNestedAttribute{
 			MarkdownDescription: lensByValueVisMirrorDescription("xy_chart_config"),
 			Optional:            true,
-			Attributes:          getXYChartConfigAttributes(),
+			Attributes:          getXYChartConfigAttributes(false),
 		},
 		"treemap_config": schema.SingleNestedAttribute{
 			MarkdownDescription: lensByValueVisMirrorDescription("treemap_config"),
 			Optional:            true,
-			Attributes:          getTreemapSchema(),
+			Attributes:          getTreemapSchema(false),
 		},
 		"mosaic_config": schema.SingleNestedAttribute{
 			MarkdownDescription: lensByValueVisMirrorDescription("mosaic_config"),
 			Optional:            true,
-			Attributes:          getMosaicSchema(),
+			Attributes:          getMosaicSchema(false),
 		},
 		"datatable_config": schema.SingleNestedAttribute{
 			MarkdownDescription: lensByValueVisMirrorDescription("datatable_config"),
 			Optional:            true,
-			Attributes:          getDatatableSchema(),
+			Attributes:          getDatatableSchema(false),
 		},
 		"tagcloud_config": schema.SingleNestedAttribute{
 			MarkdownDescription: lensByValueVisMirrorDescription("tagcloud_config"),
 			Optional:            true,
-			Attributes:          getTagcloudSchema(),
+			Attributes:          getTagcloudSchema(false),
 		},
 		"heatmap_config": schema.SingleNestedAttribute{
 			MarkdownDescription: lensByValueVisMirrorDescription("heatmap_config"),
 			Optional:            true,
-			Attributes:          getHeatmapSchema(),
+			Attributes:          getHeatmapSchema(false),
 		},
 		"waffle_config": schema.SingleNestedAttribute{
 			MarkdownDescription: lensByValueVisMirrorDescription("waffle_config"),
 			Optional:            true,
-			Attributes:          getWaffleSchema(),
+			Attributes:          getWaffleSchema(false),
 			Validators: []validator.Object{
 				waffleConfigModeValidator{},
 			},
@@ -1325,27 +1325,27 @@ func getLensDashboardAppByValueAttributes() map[string]schema.Attribute {
 		"region_map_config": schema.SingleNestedAttribute{
 			MarkdownDescription: lensByValueVisMirrorDescription("region_map_config"),
 			Optional:            true,
-			Attributes:          getRegionMapSchema(),
+			Attributes:          getRegionMapSchema(false),
 		},
 		"gauge_config": schema.SingleNestedAttribute{
 			MarkdownDescription: lensByValueVisMirrorDescription("gauge_config"),
 			Optional:            true,
-			Attributes:          getGaugeSchema(),
+			Attributes:          getGaugeSchema(false),
 		},
 		"metric_chart_config": schema.SingleNestedAttribute{
 			MarkdownDescription: lensByValueVisMirrorDescription("metric_chart_config"),
 			Optional:            true,
-			Attributes:          getMetricChart(),
+			Attributes:          getMetricChart(false),
 		},
 		"pie_chart_config": schema.SingleNestedAttribute{
 			MarkdownDescription: lensByValueVisMirrorDescription("pie_chart_config"),
 			Optional:            true,
-			Attributes:          getPieChart(),
+			Attributes:          getPieChart(false),
 		},
 		"legacy_metric_config": schema.SingleNestedAttribute{
 			MarkdownDescription: lensByValueVisMirrorDescription("legacy_metric_config"),
 			Optional:            true,
-			Attributes:          getLegacyMetricSchema(),
+			Attributes:          getLegacyMetricSchema(false),
 		},
 	}
 }
@@ -1703,8 +1703,9 @@ func getChartFilter() schema.NestedAttributeObject {
 	}
 }
 
-// getHeatmapSchema returns the schema for heatmap chart configuration
-func getHeatmapSchema() map[string]schema.Attribute {
+// getHeatmapSchema returns the schema for heatmap chart configuration.
+// includePresentation merges REQ-037 fields for vis panels only.
+func getHeatmapSchema(includePresentation bool) map[string]schema.Attribute {
 	attrs := lensChartBaseAttributes()
 	attrs["data_source_json"] = schema.StringAttribute{
 		MarkdownDescription: "Dataset configuration as JSON. For standard heatmaps, this specifies the data view or index; for ES|QL, this specifies the ES|QL query dataset.",
@@ -1752,7 +1753,9 @@ func getHeatmapSchema() map[string]schema.Attribute {
 			},
 		},
 	}
-	maps.Copy(attrs, lensChartPresentationAttributes())
+	if includePresentation {
+		maps.Copy(attrs, lensChartPresentationAttributes())
+	}
 	return attrs
 }
 
@@ -1777,7 +1780,7 @@ func (v drilldownListItemVariantsValidator) MarkdownDescription(ctx context.Cont
 	return v.Description(ctx)
 }
 
-func (drilldownListItemVariantsValidator) ValidateObject(ctx context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
+func (drilldownListItemVariantsValidator) ValidateObject(_ context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
 	if req.ConfigValue.IsUnknown() {
 		return
 	}
@@ -1857,8 +1860,10 @@ func lensChartPresentationTimeRangeAttributes() map[string]schema.Attribute {
 			Required:            true,
 		},
 		"mode": schema.StringAttribute{
-			MarkdownDescription: "Optional time range mode. Valid values are `absolute` or `relative`. When the GET API omits `mode`, the provider preserves the prior chart `time_range.mode` from configuration or state (same pattern as REQ-009 on the dashboard `time_range`).",
-			Optional:            true,
+			MarkdownDescription: "Optional time range mode. Valid values are `absolute` or `relative`. " +
+				"When the GET API omits `mode`, the provider preserves the prior chart `time_range.mode` from configuration or state " +
+				"(same pattern as REQ-009 on the dashboard `time_range`).",
+			Optional: true,
 			Validators: []validator.String{
 				stringvalidator.OneOf("absolute", "relative"),
 			},
@@ -2008,7 +2013,8 @@ func lensChartBaseAttributes() map[string]schema.Attribute {
 }
 
 // getPartitionChartBaseSchema returns base attributes shared by partition charts (treemap, mosaic).
-func getPartitionChartBaseSchema() map[string]schema.Attribute {
+// includePresentation merges REQ-037 chart-root attributes for typed `vis` panels only (`lens-dashboard-app` by_value passes false).
+func getPartitionChartBaseSchema(includePresentation bool) map[string]schema.Attribute {
 	attrs := lensChartBaseAttributes()
 	attrs["data_source_json"] = schema.StringAttribute{
 		MarkdownDescription: "Dataset configuration as JSON. For non-ES|QL, this specifies the data view or index; for ES|QL, this specifies the ES|QL query dataset.",
@@ -2020,13 +2026,15 @@ func getPartitionChartBaseSchema() map[string]schema.Attribute {
 		Optional:            true,
 		Attributes:          getFilterSimple(),
 	}
-	maps.Copy(attrs, lensChartPresentationAttributes())
+	if includePresentation {
+		maps.Copy(attrs, lensChartPresentationAttributes())
+	}
 	return attrs
 }
 
 // getWaffleSchema returns schema for waffle (grid) Lens chart configuration.
-func getWaffleSchema() map[string]schema.Attribute {
-	attrs := getPartitionChartBaseSchema()
+func getWaffleSchema(includePresentation bool) map[string]schema.Attribute {
+	attrs := getPartitionChartBaseSchema(includePresentation)
 	attrs["legend"] = schema.SingleNestedAttribute{
 		MarkdownDescription: "Legend configuration for the waffle chart.",
 		Required:            true,
@@ -2189,9 +2197,9 @@ func getWaffleESQLGroupBySchema() schema.NestedAttributeObject {
 	}
 }
 
-// getTreemapSchema returns the schema for treemap chart configuration
-func getTreemapSchema() map[string]schema.Attribute {
-	base := getPartitionChartBaseSchema()
+// getTreemapSchema returns the schema for treemap chart configuration.
+func getTreemapSchema(includePresentation bool) map[string]schema.Attribute {
+	base := getPartitionChartBaseSchema(includePresentation)
 	treemapSpecific := map[string]schema.Attribute{
 		"group_by_json": schema.StringAttribute{
 			MarkdownDescription: "Array of breakdown dimensions as JSON (minimum 1). " +
@@ -2222,9 +2230,9 @@ func getTreemapSchema() map[string]schema.Attribute {
 	return base
 }
 
-// getMosaicSchema returns the schema for mosaic chart configuration
-func getMosaicSchema() map[string]schema.Attribute {
-	base := getPartitionChartBaseSchema()
+// getMosaicSchema returns the schema for mosaic chart configuration.
+func getMosaicSchema(includePresentation bool) map[string]schema.Attribute {
+	base := getPartitionChartBaseSchema(includePresentation)
 	mosaicSpecific := map[string]schema.Attribute{
 		"group_by_json": schema.StringAttribute{
 			MarkdownDescription: "Array of primary breakdown dimensions as JSON (minimum 1). " +
@@ -2419,8 +2427,8 @@ func getHeatmapLegendSchema() map[string]schema.Attribute {
 	}
 }
 
-// getRegionMapSchema returns the schema for region map chart configuration
-func getRegionMapSchema() map[string]schema.Attribute {
+// getRegionMapSchema returns the schema for region map chart configuration.
+func getRegionMapSchema(includePresentation bool) map[string]schema.Attribute {
 	attrs := lensChartBaseAttributes()
 	attrs["data_source_json"] = schema.StringAttribute{
 		MarkdownDescription: "Dataset configuration as JSON. For ES|QL, this specifies the ES|QL query. For standard layers, this specifies the data view and query.",
@@ -2442,12 +2450,14 @@ func getRegionMapSchema() map[string]schema.Attribute {
 		CustomType:          jsontypes.NormalizedType{},
 		Required:            true,
 	}
-	maps.Copy(attrs, lensChartPresentationAttributes())
+	if includePresentation {
+		maps.Copy(attrs, lensChartPresentationAttributes())
+	}
 	return attrs
 }
 
-// getLegacyMetricSchema returns the schema for legacy metric chart configuration
-func getLegacyMetricSchema() map[string]schema.Attribute {
+// getLegacyMetricSchema returns the schema for legacy metric chart configuration.
+func getLegacyMetricSchema(includePresentation bool) map[string]schema.Attribute {
 	attrs := lensChartBaseAttributes()
 	attrs["data_source_json"] = schema.StringAttribute{
 		MarkdownDescription: "Dataset configuration as JSON. Use `dataView` or `index` for standard data sources, and `esql` or `table` for ES|QL sources.",
@@ -2464,12 +2474,14 @@ func getLegacyMetricSchema() map[string]schema.Attribute {
 		Optional:            true,
 		Attributes:          getFilterSimple(),
 	}
-	maps.Copy(attrs, lensChartPresentationAttributes())
+	if includePresentation {
+		maps.Copy(attrs, lensChartPresentationAttributes())
+	}
 	return attrs
 }
 
-// getGaugeSchema returns the schema for gauge chart configuration
-func getGaugeSchema() map[string]schema.Attribute {
+// getGaugeSchema returns the schema for gauge chart configuration.
+func getGaugeSchema(includePresentation bool) map[string]schema.Attribute {
 	attrs := lensChartBaseAttributes()
 	attrs["data_source_json"] = schema.StringAttribute{
 		MarkdownDescription: "Dataset configuration as JSON. For standard layers, this specifies the data view and query.",
@@ -2497,12 +2509,14 @@ func getGaugeSchema() map[string]schema.Attribute {
 			},
 		},
 	}
-	maps.Copy(attrs, lensChartPresentationAttributes())
+	if includePresentation {
+		maps.Copy(attrs, lensChartPresentationAttributes())
+	}
 	return attrs
 }
 
-// getMetricChart returns the schema for metric chart configuration
-func getMetricChart() map[string]schema.Attribute {
+// getMetricChart returns the schema for metric chart configuration.
+func getMetricChart(includePresentation bool) map[string]schema.Attribute {
 	attrs := lensChartBaseAttributes()
 	attrs["data_source_json"] = schema.StringAttribute{
 		MarkdownDescription: metricChartDatasetDescription,
@@ -2535,7 +2549,9 @@ func getMetricChart() map[string]schema.Attribute {
 		CustomType:          jsontypes.NormalizedType{},
 		Optional:            true,
 	}
-	maps.Copy(attrs, lensChartPresentationAttributes())
+	if includePresentation {
+		maps.Copy(attrs, lensChartPresentationAttributes())
+	}
 	return attrs
 }
 
@@ -2608,8 +2624,8 @@ func pieChartLegendDefaultObject() types.Object {
 	)
 }
 
-// getPieChart returns the schema for pie chart configuration
-func getPieChart() map[string]schema.Attribute {
+// getPieChart returns the schema for pie chart configuration.
+func getPieChart(includePresentation bool) map[string]schema.Attribute {
 	attrs := map[string]schema.Attribute{
 		"title": schema.StringAttribute{
 			MarkdownDescription: "The title of the chart displayed in the panel.",
@@ -2703,7 +2719,9 @@ func getPieChart() map[string]schema.Attribute {
 			},
 		},
 	}
-	maps.Copy(attrs, lensChartPresentationAttributes())
+	if includePresentation {
+		maps.Copy(attrs, lensChartPresentationAttributes())
+	}
 	return attrs
 }
 

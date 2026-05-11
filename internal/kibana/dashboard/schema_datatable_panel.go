@@ -28,13 +28,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
-// getDatatableSchema returns the schema for datatable chart configuration
-func getDatatableSchema() map[string]schema.Attribute {
+// getDatatableSchema returns the schema for datatable chart configuration.
+// includePresentation merges REQ-037 fields for vis panels only; lens-dashboard-app by_value passes false.
+func getDatatableSchema(includePresentation bool) map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"no_esql": schema.SingleNestedAttribute{
 			MarkdownDescription: "Datatable configuration for standard (non-ES|QL) queries.",
 			Optional:            true,
-			Attributes:          getDatatableNoESQLSchema(),
+			Attributes:          getDatatableNoESQLSchema(includePresentation),
 			Validators: []validator.Object{
 				objectvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("esql")),
 			},
@@ -42,7 +43,7 @@ func getDatatableSchema() map[string]schema.Attribute {
 		"esql": schema.SingleNestedAttribute{
 			MarkdownDescription: "Datatable configuration for ES|QL queries.",
 			Optional:            true,
-			Attributes:          getDatatableESQLSchema(),
+			Attributes:          getDatatableESQLSchema(includePresentation),
 			Validators: []validator.Object{
 				objectvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("no_esql")),
 			},
@@ -50,7 +51,7 @@ func getDatatableSchema() map[string]schema.Attribute {
 	}
 }
 
-func getDatatableNoESQLSchema() map[string]schema.Attribute {
+func getDatatableNoESQLSchema(includePresentation bool) map[string]schema.Attribute {
 	attrs := lensChartBaseAttributes()
 	attrs["data_source_json"] = schema.StringAttribute{
 		MarkdownDescription: "Dataset configuration as JSON. For standard datatables, this specifies the data view and query.",
@@ -106,11 +107,13 @@ func getDatatableNoESQLSchema() map[string]schema.Attribute {
 		Required:            true,
 		Attributes:          getDatatableStylingSchema(),
 	}
-	maps.Copy(attrs, lensChartPresentationAttributes())
+	if includePresentation {
+		maps.Copy(attrs, lensChartPresentationAttributes())
+	}
 	return attrs
 }
 
-func getDatatableESQLSchema() map[string]schema.Attribute {
+func getDatatableESQLSchema(includePresentation bool) map[string]schema.Attribute {
 	attrs := lensChartBaseAttributes()
 	attrs["data_source_json"] = schema.StringAttribute{
 		MarkdownDescription: "Dataset configuration as JSON. For ES|QL, this specifies the ES|QL query.",
@@ -161,7 +164,9 @@ func getDatatableESQLSchema() map[string]schema.Attribute {
 		Required:            true,
 		Attributes:          getDatatableStylingSchema(),
 	}
-	maps.Copy(attrs, lensChartPresentationAttributes())
+	if includePresentation {
+		maps.Copy(attrs, lensChartPresentationAttributes())
+	}
 	return attrs
 }
 
