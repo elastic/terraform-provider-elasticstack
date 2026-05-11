@@ -251,9 +251,15 @@ func (model *tfModel) populateFromAPI(ctx context.Context, indexName string, api
 
 	// Populate sort settings from the API response based on the current state shape.
 	if model.Sort.IsNull() || model.Sort.IsUnknown() {
-		// Legacy path: populate SortField and SortOrder from ES response.
-		if legDiags := populateLegacySortFromSettings(ctx, model); legDiags.HasError() {
-			return legDiags
+		// Legacy path: only populate SortField/SortOrder when they were already
+		// configured (known and non-null) in state. Populating them for resources
+		// that never set these attributes (e.g. index templates with sort settings)
+		// would introduce perpetual diffs.
+		if (!model.SortField.IsNull() && !model.SortField.IsUnknown()) ||
+			(!model.SortOrder.IsNull() && !model.SortOrder.IsUnknown()) {
+			if legDiags := populateLegacySortFromSettings(ctx, model); legDiags.HasError() {
+				return legDiags
+			}
 		}
 	} else {
 		// New path: populate Sort from ES response.
@@ -395,8 +401,8 @@ func (model tfModel) toIndexSettings(ctx context.Context) (map[string]any, diag.
 		if len(sortEntries) > 0 {
 			sortFields := make([]string, len(sortEntries))
 			sortOrders := make([]string, len(sortEntries))
-			sortMissing := make([]string, 0, len(sortEntries))
-			sortModes := make([]string, 0, len(sortEntries))
+			sortMissing := make([]string, len(sortEntries))
+			sortModes := make([]string, len(sortEntries))
 
 			allMissingNull := true
 			allModeNull := true
@@ -411,19 +417,16 @@ func (model tfModel) toIndexSettings(ctx context.Context) (map[string]any, diag.
 				}
 
 				if !entry.Missing.IsNull() && !entry.Missing.IsUnknown() {
-					sortMissing = append(sortMissing, entry.Missing.ValueString())
+					sortMissing[i] = entry.Missing.ValueString()
 					allMissingNull = false
-				} else if !allMissingNull {
-					// Once we've started collecting, fill with empty placeholder to maintain positional alignment
-					sortMissing = append(sortMissing, "")
 				}
+				// else: sortMissing[i] stays "" (empty placeholder for positional alignment)
 
 				if !entry.Mode.IsNull() && !entry.Mode.IsUnknown() {
-					sortModes = append(sortModes, entry.Mode.ValueString())
+					sortModes[i] = entry.Mode.ValueString()
 					allModeNull = false
-				} else if !allModeNull {
-					sortModes = append(sortModes, "")
 				}
+				// else: sortModes[i] stays "" (empty placeholder for positional alignment)
 			}
 
 			settings["sort.field"] = sortFields

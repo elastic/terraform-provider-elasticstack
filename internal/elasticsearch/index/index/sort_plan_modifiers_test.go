@@ -18,9 +18,12 @@
 package index
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
 )
@@ -123,6 +126,120 @@ func Test_extractSortSetting(t *testing.T) {
 			require.Equal(t, tt.want, got)
 		})
 	}
+}
+
+// makeSortListForModifier builds a types.List of sort entry objects for plan modifier tests.
+func makeSortListForModifier(t *testing.T, entries []map[string]string) types.List {
+	t.Helper()
+	attrTypes := map[string]attr.Type{
+		"field":   types.StringType,
+		"order":   types.StringType,
+		"missing": types.StringType,
+		"mode":    types.StringType,
+	}
+	objs := make([]attr.Value, 0, len(entries))
+	for _, e := range entries {
+		attrs := map[string]attr.Value{
+			"field":   types.StringNull(),
+			"order":   types.StringNull(),
+			"missing": types.StringNull(),
+			"mode":    types.StringNull(),
+		}
+		for k, v := range e {
+			attrs[k] = types.StringValue(v)
+		}
+		obj, diags := types.ObjectValue(attrTypes, attrs)
+		require.Empty(t, diags)
+		objs = append(objs, obj)
+	}
+	list, diags := types.ListValue(types.ObjectType{AttrTypes: attrTypes}, objs)
+	require.Empty(t, diags)
+	return list
+}
+
+// Test_sortMigrationPlanModifier_RemoveSortBlock verifies that removing the sort
+// block (plan null, state non-null) requires replacement because index sort is
+// immutable.
+func Test_sortMigrationPlanModifier_RemoveSortBlock(t *testing.T) {
+	ctx := context.Background()
+	mod := sortMigrationPlanModifier{}
+
+	stateVal := makeSortListForModifier(t, []map[string]string{{"field": "date"}})
+
+	req := planmodifier.ListRequest{
+		PlanValue:  types.ListNull(stateVal.ElementType(ctx)),
+		StateValue: stateVal,
+	}
+	resp := &planmodifier.ListResponse{
+		PlanValue: types.ListNull(stateVal.ElementType(ctx)),
+	}
+
+	mod.PlanModifyList(ctx, req, resp)
+
+	require.True(t, resp.RequiresReplace, "removing sort block should require replace")
+	require.Empty(t, resp.Diagnostics)
+}
+
+// Test_sortMigrationPlanModifier_RemoveSortBlockNoState verifies that when plan
+// is null and state is also null (destruction of resource that never had sort),
+// no replace is triggered.
+func Test_sortMigrationPlanModifier_RemoveSortBlockNoState(t *testing.T) {
+	ctx := context.Background()
+	mod := sortMigrationPlanModifier{}
+
+	attrTypes := map[string]attr.Type{
+		"field": types.StringType, "order": types.StringType,
+		"missing": types.StringType, "mode": types.StringType,
+	}
+	elemType := types.ObjectType{AttrTypes: attrTypes}
+
+	req := planmodifier.ListRequest{
+		PlanValue:  types.ListNull(elemType),
+		StateValue: types.ListNull(elemType),
+	}
+	resp := &planmodifier.ListResponse{
+		PlanValue: types.ListNull(elemType),
+	}
+
+	mod.PlanModifyList(ctx, req, resp)
+
+	require.False(t, resp.RequiresReplace, "null-to-null should not require replace")
+	require.Empty(t, resp.Diagnostics)
+}
+
+// Test_sortMigrationPlanModifier_ModifyExistingSortBlock verifies that changing
+// sort config when state already has a sort block requires replacement (sort is
+// immutable).
+func Test_sortMigrationPlanModifier_ModifyExistingSortBlock(t *testing.T) {
+	ctx := context.Background()
+	mod := sortMigrationPlanModifier{}
+
+	stateVal := makeSortListForModifier(t, []map[string]string{{"field": "date"}})
+	planVal := makeSortListForModifier(t, []map[string]string{{"field": "id"}})
+
+	req := planmodifier.ListRequest{
+		PlanValue:  planVal,
+		StateValue: stateVal,
+	}
+	resp := &planmodifier.ListResponse{PlanValue: planVal}
+
+	mod.PlanModifyList(ctx, req, resp)
+
+	require.True(t, resp.RequiresReplace, "changing sort block with existing state should require replace")
+}
+
+// Test_sortMigrationPlanModifier_MissingPrivateStateRequiresReplace verifies that
+// when sort is being added (plan non-null, state null) but private state is nil
+// (no prior sort config recorded), replace is required.
+// Test_sortMigrationPlanModifier_MissingPrivateStateRequiresReplace documents
+// that when sort is being added (plan non-null, state null) but private state is
+// absent, the plan modifier must require replace. This branch
+// (privateStateBytes == nil) is covered by integration tests because
+// privatestate.ProviderData is a framework-internal type that cannot be
+// instantiated directly in unit tests.
+func Test_sortMigrationPlanModifier_MissingPrivateStateRequiresReplace(t *testing.T) {
+	// See function docstring — nothing to assert here without framework internals.
+	t.Skip("private-state injection requires framework internals; covered by integration tests")
 }
 
 func Test_sortPrivateState_MarshalRoundTrip(t *testing.T) {

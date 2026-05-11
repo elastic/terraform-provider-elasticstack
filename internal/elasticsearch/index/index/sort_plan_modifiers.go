@@ -50,8 +50,13 @@ func (m sortMigrationPlanModifier) MarkdownDescription(ctx context.Context) stri
 }
 
 func (m sortMigrationPlanModifier) PlanModifyList(ctx context.Context, req planmodifier.ListRequest, resp *planmodifier.ListResponse) {
-	// If the attribute is being destroyed (plan is null), nothing to do.
+	// If the attribute is being removed (plan is null) but state has a sort
+	// block, require replace: index sorting is immutable and cannot be removed
+	// in-place without recreating the index.
 	if req.PlanValue.IsNull() {
+		if !req.StateValue.IsNull() && !req.StateValue.IsUnknown() {
+			resp.RequiresReplace = true
+		}
 		return
 	}
 
@@ -134,7 +139,13 @@ func (m sortMigrationPlanModifier) PlanModifyList(ctx context.Context, req planm
 		if order.IsNull() || order.IsUnknown() {
 			order = defaultOrder
 		}
-		expectedOrder := types.StringValue(ps.Orders[i])
+		// Guard against ps.Orders being shorter than ps.Fields (malformed private state).
+		// Treat absent order entries as the ES default "asc".
+		expectedOrderStr := "asc"
+		if i < len(ps.Orders) {
+			expectedOrderStr = ps.Orders[i]
+		}
+		expectedOrder := types.StringValue(expectedOrderStr)
 		if !order.Equal(expectedOrder) {
 			resp.RequiresReplace = true
 			return

@@ -186,23 +186,20 @@ func compareStaticPlanAndES(tfAttr, key string, planVal, actualRaw any, sortIsLi
 		return nil
 
 	case "sort.field":
-		planElems, cfg := planStringSliceForSortFieldSet(planVal)
+		planElems, setFmtCfg := planStringSliceForSortFieldSet(planVal)
 		actSlice := stringSliceFromSortFieldAny(actualRaw)
 
-		var match bool
 		if sortIsListNested {
-			// Order-sensitive comparison when plan uses the new sort ListNestedAttribute
-			match = slicesEqual(planElems, actSlice)
-		} else {
-			// Unordered set comparison for legacy sort_field
-			match = equalAsStringSets(planElems, actSlice)
-		}
-
-		if !match {
-			if sortIsListNested {
-				return mismatch(tfAttr, cfg, strings.Join(actSlice, ", "))
+			// Order-sensitive comparison and display when plan uses the new sort ListNestedAttribute.
+			if !slicesEqual(planElems, actSlice) {
+				// Use order-preserving display so mismatch messages reflect planned element order.
+				return mismatch(tfAttr, strings.Join(planElems, ", "), strings.Join(actSlice, ", "))
 			}
-			return mismatch(tfAttr, cfg, formatAsSortedUniqueSet(actSlice))
+			return nil
+		}
+		// Unordered set comparison for legacy sort_field.
+		if !equalAsStringSets(planElems, actSlice) {
+			return mismatch(tfAttr, setFmtCfg, formatAsSortedUniqueSet(actSlice))
 		}
 		return nil
 
