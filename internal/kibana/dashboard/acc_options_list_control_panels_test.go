@@ -135,6 +135,43 @@ func TestAccResourceDashboardOptionsListControl_widthGrow(t *testing.T) {
 	})
 }
 
+// TestAccResourceDashboardOptionsListControl_omittedWidthGrowNullPreserved covers REQ-039 when width and grow are omitted in
+// configuration: they stay unset in state and a follow-up plan shows no drift even though Kibana persists server defaults.
+// Gated at Kibana 9.5.0+ with skipIfDashboardOrControlLayoutUnsupported: on older stacks the API omits these keys on read, so
+// asserting null-preservation against returned defaults does not apply.
+func TestAccResourceDashboardOptionsListControl_omittedWidthGrowNullPreserved(t *testing.T) {
+	dashboardTitle := "Test Dashboard options list omit width/grow " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipIfDashboardOrControlLayoutUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_config"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.options_list_control_config.width"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.options_list_control_config.grow"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipIfDashboardOrControlLayoutUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_config"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+		},
+	})
+}
+
 func TestAccResourceDashboardOptionsListControlInvalidConfig(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
