@@ -58,7 +58,7 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 
 	alignDashboardStateFromPlanPanels(prevPanels, readModel.Panels)
 
-	alignDashboardStateFromPlanPinnedPanels(prevPinned, readModel.PinnedPanels)
+	alignDashboardStateFromPlanPinnedPanels(ctx, prevPinned, readModel.PinnedPanels)
 
 	// Set state
 	resp.Diagnostics.Append(resp.State.Set(ctx, *readModel)...)

@@ -85,7 +85,7 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 	alignDashboardStateFromPlanPanels(planPanels, readModel.Panels)
 
 	planPinned := planModel.PinnedPanels
-	alignDashboardStateFromPlanPinnedPanels(planPinned, readModel.PinnedPanels)
+	alignDashboardStateFromPlanPinnedPanels(ctx, planPinned, readModel.PinnedPanels)
 
 	// Set state
 	diags = resp.State.Set(ctx, *readModel)

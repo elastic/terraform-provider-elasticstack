@@ -35,8 +35,7 @@ func alignDashboardStateFromPlanPanels(planPanels, statePanels []panelModel) {
 	alignXYChartStateFromPlanPanels(planPanels, statePanels)
 }
 
-func alignDashboardStateFromPlanPinnedPanels(planPins, statePins []pinnedPanelModel) {
-	ctx := context.Background()
+func alignDashboardStateFromPlanPinnedPanels(ctx context.Context, planPins, statePins []pinnedPanelModel) {
 	n := min(len(planPins), len(statePins))
 	for i := range n {
 		plan := planPins[i].syntheticPanelModel()
