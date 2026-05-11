@@ -17,10 +17,10 @@
 
 ## 4. Tests
 
-- [ ] 4.1 Unit tests for discriminator validation (matching/mismatching type, multiple blocks, no blocks)
-- [ ] 4.2 Unit test for unset-vs-empty preservation
-- [ ] 4.3 Acceptance test creating a dashboard with at least one pinned options-list control and one pinned range-slider control
-- [ ] 4.4 Run `make build`, `go vet ./...`, `go test ./internal/kibana/dashboard/...` (`TF_ACC=1` for acceptance)
+- [x] 4.1 Unit tests for discriminator validation (matching/mismatching type, multiple blocks, no blocks)
+- [x] 4.2 Unit test for unset-vs-empty preservation
+- [x] 4.3 Acceptance test creating a dashboard with at least one pinned options-list control and one pinned range-slider control
+- [x] 4.4 Run `make build`, `go vet ./...`, `go test ./internal/kibana/dashboard/...` (`TF_ACC=1` for acceptance)
 
 ## 5. Spec sync
 
