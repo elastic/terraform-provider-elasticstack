@@ -27,6 +27,11 @@ jobs:
           fetch-tags: true
           fetch-depth: 0
 
+      - name: Configure git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
       - name: Resolve previous release tag
         id: prev-tag
         run: |
@@ -1262,11 +1267,6 @@ jobs:
             core.info(`Target branch: ${effectiveTargetBranch}`);
             
       - name: Commit release preparation
-        env:
-          GIT_AUTHOR_NAME: github-actions[bot]
-          GIT_AUTHOR_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
-          GIT_COMMITTER_NAME: github-actions[bot]
-          GIT_COMMITTER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
         run: |
           TARGET_VERSION="${{ steps.version.outputs.TARGET_VERSION }}"
           git add Makefile CHANGELOG.md

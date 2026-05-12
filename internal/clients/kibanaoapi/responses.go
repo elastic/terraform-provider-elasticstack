@@ -20,6 +20,7 @@ package kibanaoapi
 import (
 	"encoding/json"
 	"net/http"
+	"slices"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -51,4 +52,51 @@ func handleMutateResponse[T any](statusCode int, body []byte) (*T, diag.Diagnost
 	default:
 		return nil, diagutil.ReportUnknownHTTPError(statusCode, body)
 	}
+}
+
+// handleGetTypedResponse handles a read response for kbapi typed-struct responses.
+// The extract callback is called only on HTTP 200 and should return the pre-parsed
+// struct pointer from the response (e.g. resp.JSON200). Returns (nil, nil) on 404.
+func handleGetTypedResponse[T any](statusCode int, body []byte, extract func() *T) (*T, diag.Diagnostics) {
+	switch statusCode {
+	case http.StatusOK:
+		result := extract()
+		if result == nil {
+			return nil, diag.Diagnostics{
+				diag.NewErrorDiagnostic(
+					"Failed to parse response",
+					"API returned success status but response body was nil or not JSON",
+				),
+			}
+		}
+		return result, nil
+	case http.StatusNotFound:
+		return nil, nil
+	default:
+		return nil, diagutil.ReportUnknownHTTPError(statusCode, body)
+	}
+}
+
+// handleMutateTypedResponse handles a create/update response for kbapi typed-struct responses.
+// The extract callback is called only on success status and should return the pre-parsed struct pointer.
+// Defaults to HTTP 200 when successCodes is omitted.
+func handleMutateTypedResponse[T any](statusCode int, body []byte, extract func() *T, successCodes ...int) (*T, diag.Diagnostics) {
+	if len(successCodes) == 0 {
+		successCodes = []int{http.StatusOK}
+	}
+
+	if slices.Contains(successCodes, statusCode) {
+		result := extract()
+		if result == nil {
+			return nil, diag.Diagnostics{
+				diag.NewErrorDiagnostic(
+					"Failed to parse response",
+					"API returned success status but response body was nil or not JSON",
+				),
+			}
+		}
+		return result, nil
+	}
+
+	return nil, diagutil.ReportUnknownHTTPError(statusCode, body)
 }

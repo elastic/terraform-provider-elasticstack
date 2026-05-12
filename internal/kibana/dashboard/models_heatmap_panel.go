@@ -34,7 +34,9 @@ func newHeatmapPanelConfigConverter() heatmapPanelConfigConverter {
 	return heatmapPanelConfigConverter{
 		lensVisualizationBase: lensVisualizationBase{
 			visualizationType: string(kbapi.HeatmapNoESQLTypeHeatmap),
-			hasTFPanelConfig:  func(pm panelModel) bool { return pm.HeatmapConfig != nil },
+			hasTFChartBlock: func(blocks *lensByValueChartBlocks) bool {
+				return blocks != nil && blocks.HeatmapConfig != nil
+			},
 		},
 	}
 }
@@ -43,26 +45,32 @@ type heatmapPanelConfigConverter struct {
 	lensVisualizationBase
 }
 
-func (c heatmapPanelConfigConverter) populateFromAttributes(ctx context.Context, dashboard *dashboardModel, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
+func (c heatmapPanelConfigConverter) populateFromAttributes(
+	ctx context.Context,
+	dashboard *dashboardModel,
+	tfPanel *panelModel,
+	blocks *lensByValueChartBlocks,
+	attrs kbapi.KbnDashboardPanelTypeVisConfig0,
+) diag.Diagnostics {
 	var prior *heatmapConfigModel
-	if pm.HeatmapConfig != nil {
-		cpy := *pm.HeatmapConfig
+	if b := lensByValueChartBlocksFromPanel(tfPanel); b != nil && b.HeatmapConfig != nil {
+		cpy := *b.HeatmapConfig
 		prior = &cpy
 	}
-	pm.HeatmapConfig = &heatmapConfigModel{}
+	blocks.HeatmapConfig = &heatmapConfigModel{}
 	if heatmapNoESQL, err := attrs.AsHeatmapNoESQL(); err == nil && !isHeatmapNoESQLCandidateActuallyESQL(heatmapNoESQL) {
-		return pm.HeatmapConfig.fromAPINoESQL(ctx, dashboard, prior, heatmapNoESQL)
+		return blocks.HeatmapConfig.fromAPINoESQL(ctx, dashboard, prior, heatmapNoESQL)
 	}
 	heatmapESQL, err := attrs.AsHeatmapESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	return pm.HeatmapConfig.fromAPIESQL(ctx, dashboard, prior, heatmapESQL)
+	return blocks.HeatmapConfig.fromAPIESQL(ctx, dashboard, prior, heatmapESQL)
 }
 
-func (c heatmapPanelConfigConverter) buildAttributes(pm panelModel, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func (c heatmapPanelConfigConverter) buildAttributes(blocks *lensByValueChartBlocks, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	configModel := *pm.HeatmapConfig
+	configModel := *blocks.HeatmapConfig
 
 	attrs, heatmapDiags := configModel.toAPI(dashboard)
 	diags.Append(heatmapDiags...)

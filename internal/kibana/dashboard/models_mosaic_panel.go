@@ -34,7 +34,9 @@ func newMosaicPanelConfigConverter() mosaicPanelConfigConverter {
 	return mosaicPanelConfigConverter{
 		lensVisualizationBase: lensVisualizationBase{
 			visualizationType: string(kbapi.MosaicNoESQLTypeMosaic),
-			hasTFPanelConfig:  func(pm panelModel) bool { return pm.MosaicConfig != nil },
+			hasTFChartBlock: func(blocks *lensByValueChartBlocks) bool {
+				return blocks != nil && blocks.MosaicConfig != nil
+			},
 		},
 	}
 }
@@ -43,30 +45,34 @@ type mosaicPanelConfigConverter struct {
 	lensVisualizationBase
 }
 
-func (c mosaicPanelConfigConverter) populateFromAttributes(ctx context.Context, dashboard *dashboardModel, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
+func (c mosaicPanelConfigConverter) populateFromAttributes(
+	ctx context.Context,
+	dashboard *dashboardModel,
+	tfPanel *panelModel,
+	blocks *lensByValueChartBlocks,
+	attrs kbapi.KbnDashboardPanelTypeVisConfig0,
+) diag.Diagnostics {
 	var prior *mosaicConfigModel
-	if pm.MosaicConfig != nil {
-		cpy := *pm.MosaicConfig
+	if b := lensByValueChartBlocksFromPanel(tfPanel); b != nil && b.MosaicConfig != nil {
+		cpy := *b.MosaicConfig
 		prior = &cpy
 	}
-	if pm.MosaicConfig == nil {
-		pm.MosaicConfig = &mosaicConfigModel{}
-	}
+	blocks.MosaicConfig = &mosaicConfigModel{}
 
 	if noESQL, err := attrs.AsMosaicNoESQL(); err == nil && !isMosaicNoESQLCandidateActuallyESQL(noESQL) {
-		return pm.MosaicConfig.fromAPINoESQL(ctx, dashboard, prior, noESQL)
+		return blocks.MosaicConfig.fromAPINoESQL(ctx, dashboard, prior, noESQL)
 	}
 
 	mosaicESQL, err := attrs.AsMosaicESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	return pm.MosaicConfig.fromAPIESQL(ctx, dashboard, prior, mosaicESQL)
+	return blocks.MosaicConfig.fromAPIESQL(ctx, dashboard, prior, mosaicESQL)
 }
 
-func (c mosaicPanelConfigConverter) buildAttributes(pm panelModel, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func (c mosaicPanelConfigConverter) buildAttributes(blocks *lensByValueChartBlocks, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	configModel := *pm.MosaicConfig
+	configModel := *blocks.MosaicConfig
 
 	attrs, mosaicDiags := configModel.toAPI(dashboard)
 	diags.Append(mosaicDiags...)

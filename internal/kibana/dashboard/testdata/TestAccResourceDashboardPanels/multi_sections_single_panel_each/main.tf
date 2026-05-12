@@ -31,9 +31,14 @@ resource "elasticstack_kibana_dashboard" "test" {
         h = 10
       }
       markdown_config = {
-        content    = "Section one - panel one"
-        title      = "Section One Panel"
-        hide_title = false
+        by_value = {
+          content    = "Section one - panel one"
+          title      = "Section One Panel"
+          hide_title = false
+          settings = {
+            open_links_in_new_tab = true
+          }
+        }
       }
     }]
     }, {
@@ -50,9 +55,14 @@ resource "elasticstack_kibana_dashboard" "test" {
         h = 10
       }
       markdown_config = {
-        content    = "Section two - panel one"
-        title      = "Section Two Panel"
-        hide_title = false
+        by_value = {
+          content    = "Section two - panel one"
+          title      = "Section Two Panel"
+          hide_title = false
+          settings = {
+            open_links_in_new_tab = true
+          }
+        }
       }
     }]
   }]

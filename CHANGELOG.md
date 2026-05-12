@@ -2,7 +2,17 @@
 
 ### Breaking changes
 
+Removed top-level `enabled` from `elasticstack_fleet_integration_policy`. In practice this field was unusable, causing state consistency issues unless it was `true`. Kibana doesn't support enabling/disabling an integration policy directly.
+
 The documented minimum supported Elastic Stack version is now 8.0. 7.x is no longer included in the acceptance test matrix or officially supported. Compatibility branches and version gates for pre-8.0 Elasticsearch behavior have been removed from the transform and ILM resources.
+
+#### **`elasticstack_kibana_dashboard` (experimental)**
+
+This resource remains **experimental**. If you compile it into the provider (`TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL=true`, or downstream packaging that exposes experimental resources), your dashboard HCL may need updating on upgrade:
+
+- For `panel.type = "vis"`, the typed Lens chart blocks (`xy_chart_config`, `metric_chart_config`, etc.) moved from sibling attributes on the panel into `viz_config.by_value`; set exactly one chart block inside that nested object.
+- `lens_dashboard_app_config.by_reference.drilldowns_json` is removed from the schema; use structured `drilldowns` (`dashboard`, `discover`, and `url` blocks) instead.
+- Structured URL drilldowns require `trigger` (`on_click_row`, `on_click_value`, `on_open_panel_menu`, or `on_select_range`); the Kibana dashboard API rejects URL drilldowns without `trigger`, and the provider now enforces this at plan time.
 
 
 #### `elasticstack_kibana_security_detection_rule` action `params` format change
@@ -43,15 +53,27 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 }
 ```
 
-#### `elasticstack_kibana_dashboard` typed Lens chart panels
+### Added
 
-**BREAKING CHANGE:** Chart-level `time_range` on typed Lens chart panels (`xy_chart_config`, `metric_chart_config`, etc.) no longer hardcodes `now-15m..now`. Omitting `time_range` or setting `time_range = null` now inherits the dashboard-level `time_range`. Refresh state and review the next plan for existing dashboards.
-
-Adds optional `time_range`, `hide_title`, `hide_border`, `references_json`, and `drilldowns` on typed Lens chart panels. `drilldowns` supports `dashboard_drilldown`, `discover_drilldown`, and `url_drilldown` variant blocks.
+- **Experimental:** `elasticstack_kibana_dashboard` now exposes `viz_config.by_reference` for `vis` panels (saved Lens by reference): `ref_id`, optional `references_json`, optional structured `drilldowns`, required `time_range`, and the same presentation fields as `lens_dashboard_app_config.by_reference`, symmetric with `lens_dashboard_app_config`.
+- Add `elasticstack_elasticsearch_ml_calendar` and `elasticstack_elasticsearch_ml_calendar_event` resources for ML calendars and scheduled calendar events ([#1969](https://github.com/elastic/terraform-provider-elasticstack/pull/1969))
 
 ### Changes
 
-- Add `elasticstack_elasticsearch_ml_calendar` and `elasticstack_elasticsearch_ml_calendar_event` resources for ML calendars and scheduled calendar events ([#1969](https://github.com/elastic/terraform-provider-elasticstack/pull/1969))
+- Remove top-level `enabled` field from `elasticstack_fleet_integration_policy`. ([#2773](https://github.com/elastic/terraform-provider-elasticstack/pull/2773))
+- Adds sort nested block to elasticstack_elasticsearch_index resource with deprecation of sort_field/sort_order and seamless migration ([#2851](https://github.com/elastic/terraform-provider-elasticstack/pull/2851))
+- Fix crash when role_descriptors is not set in elasticstack_elasticsearch_security_api_key ([#2855](https://github.com/elastic/terraform-provider-elasticstack/pull/2855))
+- Migrate `elasticstack_elasticsearch_security_user` data source to Plugin Framework. ([#2854](https://github.com/elastic/terraform-provider-elasticstack/pull/2854))
+- Migrate `elasticsearch_security_role` data source from Plugin SDK to Plugin Framework. ([#2847](https://github.com/elastic/terraform-provider-elasticstack/pull/2847))
+- Migrate `elasticstack_elasticsearch_cluster_settings` to the Terraform plugin framework ([#2755](https://github.com/elastic/terraform-provider-elasticstack/pull/2755))
+- Migrate elasticstack_elasticsearch_info data source to Plugin Framework ([#2796](https://github.com/elastic/terraform-provider-elasticstack/pull/2796))
+- Migrate `elasticstack_elasticsearch_snapshot_lifecycle` and `elasticstack_elasticsearch_snapshot_repository` to the Plugin Framework. ([#2752](https://github.com/elastic/terraform-provider-elasticstack/pull/2752))
+- Migrated the `elasticstack_elasticsearch_transform` resource to the Plugin Framework. ([#2757](https://github.com/elastic/terraform-provider-elasticstack/pull/2757))
+- Migrate `elasticstack_elasticsearch_component_template` to the Terraform plugin framework ([#2749](https://github.com/elastic/terraform-provider-elasticstack/pull/2749))
+- Migrated `elasticstack_elasticsearch_logstash_pipeline` resource to the Terraform plugin framework. ([#2750](https://github.com/elastic/terraform-provider-elasticstack/pull/2750))
+- Migrate the `elasticstack_elasticsearch_snapshot_repository` data source to the Terraform plugin framework. ([#2761](https://github.com/elastic/terraform-provider-elasticstack/pull/2761))
+- Store nil watch metadata as JSON null instead of empty object ([#2759](https://github.com/elastic/terraform-provider-elasticstack/pull/2759))
+- Migrates `elasticstack_elasticsearch_ingest_pipeline` to the Terraform plugin framework ([#2745](https://github.com/elastic/terraform-provider-elasticstack/pull/2745))
 - Fix ILM policy delete failures when the policy is still referenced by indices (e.g. Fleet-managed data stream backing indices) ([#2714](https://github.com/elastic/terraform-provider-elasticstack/pull/2714))
 - Migrated `elasticstack_elasticsearch_data_stream` resource from Plugin SDK to Plugin Framework ([#2744](https://github.com/elastic/terraform-provider-elasticstack/pull/2744))
 - Add elasticstack_apm_source_map resource for managing APM source maps via Kibana API ([#2712](https://github.com/elastic/terraform-provider-elasticstack/pull/2712))

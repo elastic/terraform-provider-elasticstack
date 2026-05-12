@@ -53,12 +53,12 @@ func Test_treemapPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 	require.NoError(t, attrs.FromTreemapNoESQL(api))
 
 	converter := newTreemapPanelConfigConverter()
-	pm := &panelModel{}
-	diags := converter.populateFromAttributes(ctx, nil, pm, attrs)
+	vizBv := vizByValueModel{}
+	diags := converter.populateFromAttributes(ctx, nil, nil, &vizBv.lensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
-	require.NotNil(t, pm.TreemapConfig)
+	require.NotNil(t, vizBv.TreemapConfig)
 
-	attrs2, diags := converter.buildAttributes(*pm, nil)
+	attrs2, diags := converter.buildAttributes(&vizBv.lensByValueChartBlocks, nil)
 	require.False(t, diags.HasError())
 
 	noESQL2, err := attrs2.AsTreemapNoESQL()
@@ -88,12 +88,12 @@ func Test_treemapPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 	require.NoError(t, attrs.FromTreemapESQL(api))
 
 	converter := newTreemapPanelConfigConverter()
-	pm := &panelModel{}
-	diags := converter.populateFromAttributes(ctx, nil, pm, attrs)
+	vizBv := vizByValueModel{}
+	diags := converter.populateFromAttributes(ctx, nil, nil, &vizBv.lensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
-	require.NotNil(t, pm.TreemapConfig)
+	require.NotNil(t, vizBv.TreemapConfig)
 
-	attrs2, diags := converter.buildAttributes(*pm, nil)
+	attrs2, diags := converter.buildAttributes(&vizBv.lensByValueChartBlocks, nil)
 	require.False(t, diags.HasError())
 
 	esql2, err := attrs2.AsTreemapESQL()
@@ -333,14 +333,14 @@ func Test_treemapConfigModel_toAPIESQLChartSchema(t *testing.T) {
 	require.NoError(t, attrs.FromTreemapESQL(api))
 
 	converter := newTreemapPanelConfigConverter()
-	pm := &panelModel{}
+	vizBv := vizByValueModel{}
 	ctx := context.Background()
-	diags := converter.populateFromAttributes(ctx, nil, pm, attrs)
+	diags := converter.populateFromAttributes(ctx, nil, nil, &vizBv.lensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
-	require.NotNil(t, pm.TreemapConfig)
+	require.NotNil(t, vizBv.TreemapConfig)
 
-	lensAttrs, diags := pm.TreemapConfig.toAPI(nil)
-	require.False(t, diags.HasError())
+	lensAttrs, lensDiags := vizBv.TreemapConfig.toAPI(nil)
+	require.False(t, lensDiags.HasError())
 
 	b, err := json.Marshal(lensAttrs)
 	require.NoError(t, err)
@@ -355,7 +355,10 @@ func Test_treemapConfig_lensChartPresentation_hideTitleRoundTrip(t *testing.T) {
 	dash := lensPresentationTestDashboard()
 	pm := buildLensTreemapPanelForTest(t)
 
-	m := *pm.TreemapConfig
+	require.NotNil(t, pm.VizConfig)
+	require.NotNil(t, pm.VizConfig.ByValue)
+	require.NotNil(t, pm.VizConfig.ByValue.TreemapConfig)
+	m := *pm.VizConfig.ByValue.TreemapConfig
 	m.HideTitle = types.BoolValue(true)
 
 	attrs, diags := m.toAPI(dash)

@@ -34,7 +34,9 @@ func newRegionMapPanelConfigConverter() regionMapPanelConfigConverter {
 	return regionMapPanelConfigConverter{
 		lensVisualizationBase: lensVisualizationBase{
 			visualizationType: string(kbapi.RegionMapNoESQLTypeRegionMap),
-			hasTFPanelConfig:  func(pm panelModel) bool { return pm.RegionMapConfig != nil },
+			hasTFChartBlock: func(blocks *lensByValueChartBlocks) bool {
+				return blocks != nil && blocks.RegionMapConfig != nil
+			},
 		},
 	}
 }
@@ -43,23 +45,29 @@ type regionMapPanelConfigConverter struct {
 	lensVisualizationBase
 }
 
-func (c regionMapPanelConfigConverter) populateFromAttributes(ctx context.Context, dashboard *dashboardModel, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
+func (c regionMapPanelConfigConverter) populateFromAttributes(
+	ctx context.Context,
+	dashboard *dashboardModel,
+	tfPanel *panelModel,
+	blocks *lensByValueChartBlocks,
+	attrs kbapi.KbnDashboardPanelTypeVisConfig0,
+) diag.Diagnostics {
 	var prior *regionMapConfigModel
-	if pm.RegionMapConfig != nil {
-		cpy := *pm.RegionMapConfig
+	if b := lensByValueChartBlocksFromPanel(tfPanel); b != nil && b.RegionMapConfig != nil {
+		cpy := *b.RegionMapConfig
 		prior = &cpy
 	}
-	pm.RegionMapConfig = &regionMapConfigModel{}
+	blocks.RegionMapConfig = &regionMapConfigModel{}
 
 	if noESQL, err := attrs.AsRegionMapNoESQL(); err == nil && !isRegionMapNoESQLCandidateActuallyESQL(noESQL) {
-		return pm.RegionMapConfig.fromAPINoESQL(ctx, dashboard, prior, noESQL)
+		return blocks.RegionMapConfig.fromAPINoESQL(ctx, dashboard, prior, noESQL)
 	}
 
 	regionMapESQL, err := attrs.AsRegionMapESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	return pm.RegionMapConfig.fromAPIESQL(ctx, dashboard, prior, regionMapESQL)
+	return blocks.RegionMapConfig.fromAPIESQL(ctx, dashboard, prior, regionMapESQL)
 }
 
 func isRegionMapNoESQLCandidateActuallyESQL(api kbapi.RegionMapNoESQL) bool {
@@ -76,9 +84,9 @@ func isRegionMapNoESQLCandidateActuallyESQL(api kbapi.RegionMapNoESQL) bool {
 	return ds.Type == legacyMetricDatasetTypeESQL || ds.Type == legacyMetricDatasetTypeTable
 }
 
-func (c regionMapPanelConfigConverter) buildAttributes(pm panelModel, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func (c regionMapPanelConfigConverter) buildAttributes(blocks *lensByValueChartBlocks, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	configModel := *pm.RegionMapConfig
+	configModel := *blocks.RegionMapConfig
 
 	attrs, regionDiags := configModel.toAPI(dashboard)
 	diags.Append(regionDiags...)

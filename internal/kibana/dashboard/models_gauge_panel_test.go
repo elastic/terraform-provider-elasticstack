@@ -181,12 +181,12 @@ func Test_gaugePanelConfigConverter_populateFromAttributes_buildAttributes_round
 	require.NoError(t, attrs.FromGaugeNoESQL(api))
 
 	converter := newGaugePanelConfigConverter()
-	pm := &panelModel{}
-	diags := converter.populateFromAttributes(ctx, nil, pm, attrs)
+	vizBv := vizByValueModel{}
+	diags := converter.populateFromAttributes(ctx, nil, nil, &vizBv.lensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
-	require.NotNil(t, pm.GaugeConfig)
+	require.NotNil(t, vizBv.GaugeConfig)
 
-	attrs2, diags := converter.buildAttributes(*pm, nil)
+	attrs2, diags := converter.buildAttributes(&vizBv.lensByValueChartBlocks, nil)
 	require.False(t, diags.HasError())
 
 	gaugeNoESQL2, err := attrs2.AsGaugeNoESQL()

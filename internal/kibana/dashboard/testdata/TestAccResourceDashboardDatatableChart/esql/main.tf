@@ -25,34 +25,38 @@ resource "elasticstack_kibana_dashboard" "test" {
       w = 24
       h = 15
     }
-    datatable_config = {
-      esql = {
-        title = "count"
-        data_source_json = jsonencode({
-          type  = "esql"
-          query = "FROM metrics-* | STATS count = COUNT(*) BY TBUCKET(5m)"
-        })
-        styling = {
-          density = {
-            mode = "default"
+    viz_config = {
+      by_value = {
+        datatable_config = {
+          esql = {
+            title = "count"
+            data_source_json = jsonencode({
+              type  = "esql"
+              query = "FROM metrics-* | STATS count = COUNT(*) BY TBUCKET(5m)"
+            })
+            styling = {
+              density = {
+                mode = "default"
+              }
+            }
+            metrics = [
+              {
+                config_json = jsonencode({
+                  operation = "value"
+                  column    = "TBUCKET(5m)"
+                })
+              },
+              {
+                config_json = jsonencode({
+                  operation = "value"
+                  column    = "count"
+                })
+              }
+            ]
+            ignore_global_filters = false
+            sampling              = 1
           }
         }
-        metrics = [
-          {
-            config_json = jsonencode({
-              operation = "value"
-              column    = "TBUCKET(5m)"
-            })
-          },
-          {
-            config_json = jsonencode({
-              operation = "value"
-              column    = "count"
-            })
-          }
-        ]
-        ignore_global_filters = false
-        sampling              = 1
       }
     }
   }]

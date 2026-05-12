@@ -30,27 +30,12 @@ import (
 
 var _ validator.Object = panelConfigValidator{}
 
-var lensPanelConfigNames = []string{
-	"xy_chart_config",
-	"treemap_config",
-	"mosaic_config",
-	"datatable_config",
-	"tagcloud_config",
-	"heatmap_config",
-	"waffle_config",
-	"region_map_config",
-	"gauge_config",
-	"metric_chart_config",
-	"pie_chart_config",
-	"legacy_metric_config",
-}
-
 // panelConfigValidator enforces panel-type-specific config requirements.
 type panelConfigValidator struct{}
 
 func (panelConfigValidator) Description(_ context.Context) string {
 	return "Ensures markdown panels configure `markdown_config` or `config_json`, " +
-		"`vis` panels configure exactly one visualization config block or `config_json`, " +
+		"`vis` panels configure exactly one of `viz_config` or `config_json` (typed chart blocks belong under `viz_config.by_value`), " +
 		"`slo_burn_rate` panels configure `slo_burn_rate_config`, " +
 		"`time_slider_control` panels use `time_slider_control_config` or omit config, " +
 		"`slo_overview` panels configure `slo_overview_config`, " +
@@ -85,18 +70,13 @@ func panelConfigValueStateFromValue(value attr.Value) panelConfigValueState {
 }
 
 func panelConfigSelectionList() string {
-	options := make([]string, 0, len(lensPanelConfigNames)+1)
-	options = append(options, "`config_json`")
-	for _, name := range lensPanelConfigNames {
-		options = append(options, fmt.Sprintf("`%s`", name))
-	}
+	options := []string{"`viz_config`", "`config_json`"}
 	return strings.Join(options, ", ")
 }
 
 func panelConfigValidateDiags(
 	panelType string,
-	markdownConfig, configJSON, sloBurnRateConfig, sloErrorBudgetConfig panelConfigValueState,
-	lensConfigs map[string]panelConfigValueState,
+	markdownConfig, configJSON, vizConfig, sloBurnRateConfig, sloErrorBudgetConfig panelConfigValueState,
 	sloOverviewConfig panelConfigValueState,
 	attrPath *path.Path,
 ) diag.Diagnostics {
@@ -128,16 +108,12 @@ func panelConfigValidateDiags(
 		add("Missing markdown panel configuration", "Markdown panels require either `markdown_config` or `config_json`.")
 	case panelTypeVis:
 		setCount := 0
-		hasUnknown := configJSON.Unknown
+		hasUnknown := configJSON.Unknown || vizConfig.Unknown
 		if configJSON.Set {
 			setCount++
 		}
-		for _, name := range lensPanelConfigNames {
-			state := lensConfigs[name]
-			if state.Set {
-				setCount++
-			}
-			hasUnknown = hasUnknown || state.Unknown
+		if vizConfig.Set {
+			setCount++
 		}
 
 		if setCount == 1 {
@@ -188,18 +164,13 @@ func (v panelConfigValidator) ValidateObject(_ context.Context, req validator.Ob
 		return
 	}
 
-	lensConfigs := make(map[string]panelConfigValueState, len(lensPanelConfigNames))
-	for _, name := range lensPanelConfigNames {
-		lensConfigs[name] = panelConfigValueStateFromValue(attrs[name])
-	}
-
 	resp.Diagnostics.Append(panelConfigValidateDiags(
 		typeValue.ValueString(),
 		panelConfigValueStateFromValue(attrs["markdown_config"]),
 		panelConfigValueStateFromValue(attrs["config_json"]),
+		panelConfigValueStateFromValue(attrs["viz_config"]),
 		panelConfigValueStateFromValue(attrs["slo_burn_rate_config"]),
 		panelConfigValueStateFromValue(attrs["slo_error_budget_config"]),
-		lensConfigs,
 		panelConfigValueStateFromValue(attrs["slo_overview_config"]),
 		&req.Path,
 	)...)
