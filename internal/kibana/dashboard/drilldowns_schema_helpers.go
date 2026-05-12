@@ -33,8 +33,10 @@ var structuredDrilldownURLTriggerEnum = []string{
 
 func getStructuredDrilldownsAttribute() schema.Attribute {
 	return schema.ListNestedAttribute{
-		MarkdownDescription: "Structured dashboard, Discover, or URL drilldown entries for by-reference Lens visualizations and `viz` panels (`lens_dashboard_app_config.by_reference` and `viz_config.by_reference`). " +
-			"Each element must contain exactly one of `dashboard`, `discover`, or `url`; the provider sets API `type` and (for dashboard/discover) `trigger` automatically.",
+		MarkdownDescription: "Structured dashboard, Discover, or URL drilldown entries for by-reference Lens visualizations " +
+			"and `viz` panels (`lens_dashboard_app_config.by_reference` and `viz_config.by_reference`). " +
+			"Each element must contain exactly one of `dashboard`, `discover`, or `url`; " +
+			"the provider sets API `type` and (for dashboard/discover) `trigger` automatically.",
 		Optional: true,
 		NestedObject: schema.NestedAttributeObject{
 			Validators: []validator.Object{
@@ -42,8 +44,9 @@ func getStructuredDrilldownsAttribute() schema.Attribute {
 			},
 			Attributes: map[string]schema.Attribute{
 				"dashboard": schema.SingleNestedAttribute{
-					MarkdownDescription: "Open another dashboard (`dashboard_drilldown`). `dashboard_id` and `label` are required; remaining fields mirror optional API knobs.",
-					Optional:            true,
+					MarkdownDescription: "Open another dashboard (`dashboard_drilldown`). `dashboard_id` and `label` are required; " +
+						"remaining fields mirror optional API knobs.",
+					Optional: true,
 					Attributes: map[string]schema.Attribute{
 						"dashboard_id": schema.StringAttribute{
 							MarkdownDescription: "Target dashboard ID.",
@@ -82,12 +85,14 @@ func getStructuredDrilldownsAttribute() schema.Attribute {
 					},
 				},
 				"url": schema.SingleNestedAttribute{
-					MarkdownDescription: "Custom URL drilldown (`url_drilldown`). Requires `url` and `label`. Optional `trigger` restricts when the drilldown appears.",
-					Optional:            true,
+					MarkdownDescription: "Custom URL drilldown (`url_drilldown`). Requires `url` and `label`. " +
+						"Optional `trigger` restricts when the drilldown appears.",
+					Optional: true,
 					Attributes: map[string]schema.Attribute{
 						"url": schema.StringAttribute{
-							MarkdownDescription: "URL template with variables documented in Kibana URL drilldown documentation.",
-							Required:            true,
+							MarkdownDescription: "URL template with variables documented in Kibana URL drilldown " +
+								"documentation.",
+							Required: true,
 						},
 						"label": schema.StringAttribute{
 							MarkdownDescription: "Display label.",
