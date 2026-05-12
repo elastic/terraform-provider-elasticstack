@@ -51,7 +51,11 @@ func InstallPrebuiltRules(ctx context.Context, client *Client, spaceID string) d
 	}
 
 	if resp.StatusCode() != 200 {
-		return diagutil.CheckHTTPErrorFromFW(resp.HTTPResponse, "failed to install prebuilt rules")
+		// InstallPrebuiltRulesAndTimelinesWithResponse already reads and closes HTTPResponse.Body
+		// when parsing the response; use the captured bytes for diagnostics.
+		var diags diag.Diagnostics
+		diags.AddError("failed to install prebuilt rules", fmt.Sprintf("%s: %s", resp.Status(), string(resp.Body)))
+		return diags
 	}
 
 	return nil
