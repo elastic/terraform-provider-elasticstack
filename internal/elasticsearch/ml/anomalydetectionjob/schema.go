@@ -200,7 +200,9 @@ func getSchema(ctx context.Context) schema.Schema {
 									},
 								},
 								"custom_rules": schema.ListNestedAttribute{
-									MarkdownDescription: "Custom rules enable you to customize the way detectors operate.",
+									MarkdownDescription: "Custom rules enable you to customize the way detectors operate. " +
+										"Each rule must either have a non-empty `scope` or at least one `conditions` entry. " +
+										"Multiple conditions are combined together with a logical AND.",
 									Optional:            true,
 									NestedObject: schema.NestedAttributeObject{
 										Attributes: map[string]schema.Attribute{
@@ -215,7 +217,9 @@ func getSchema(ctx context.Context) schema.Schema {
 												},
 											},
 											"conditions": schema.ListNestedAttribute{
-												MarkdownDescription: "An array of numeric conditions when the rule applies. A rule must have either a non-empty `scope` or at least one condition (per Elasticsearch).",
+												MarkdownDescription: "An array of numeric conditions when the rule applies. " +
+													"If you specify more than one condition, Elasticsearch combines them together with a logical AND. " +
+													"A rule must either have a non-empty `scope` or at least one condition.",
 												Optional:            true,
 												NestedObject: schema.NestedAttributeObject{
 													Attributes: map[string]schema.Attribute{
@@ -245,7 +249,7 @@ func getSchema(ctx context.Context) schema.Schema {
 													"(typically matching `by_field_name`, `over_field_name`, or `partition_field_name` on the detector) " +
 													"to an ML filter reference. Each `filter_id` must identify an ML filter that already exists in the cluster " +
 													"(for example, created using the Elasticsearch ML filter APIs). " +
-													"A rule must have either a non-empty `scope` or at least one `conditions` entry.",
+													"A rule must either have a non-empty `scope` or at least one condition.",
 												Optional: true,
 												NestedObject: schema.NestedAttributeObject{
 													Attributes: map[string]schema.Attribute{

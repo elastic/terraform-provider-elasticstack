@@ -25,8 +25,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// validateConfigCustomRules ensures each configured custom rule has a non-empty scope map or at least
-// one condition when both attributes are known (Elasticsearch rejects rules with neither).
+// validateConfigCustomRules ensures each configured custom rule satisfies Elasticsearch rules: a rule
+// must either have a non-empty scope or at least one condition (when both are known at plan time).
 func validateConfigCustomRules(ctx context.Context, config *TFModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 	if config == nil || config.AnalysisConfig == nil {
@@ -53,7 +53,7 @@ func validateConfigCustomRules(ctx context.Context, config *TFModel) diag.Diagno
 			diags.AddAttributeError(
 				path.Root("analysis_config").AtName("detectors").AtListIndex(i).AtName("custom_rules").AtListIndex(j),
 				`Invalid detector "custom_rules" entry`,
-				`Each rule must set either a non-empty "scope" map or at least one "conditions" block (Elasticsearch requirement).`,
+				`A rule must either have a non-empty "scope" or at least one condition. Multiple conditions are combined together with a logical AND.`,
 			)
 		}
 	}
