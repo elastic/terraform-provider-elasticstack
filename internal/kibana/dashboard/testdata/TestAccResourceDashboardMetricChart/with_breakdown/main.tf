@@ -25,54 +25,58 @@ resource "elasticstack_kibana_dashboard" "test" {
       w = 24
       h = 15
     }
-    metric_chart_config = {
-      title       = "Sample Metric Chart with Filters"
-      description = "Test metric chart with filters visualization"
-      data_source_json = jsonencode({
-        type          = "data_view_spec"
-        index_pattern = "metrics-*"
+    viz_config = {
+      by_value = {
+        metric_chart_config = {
+          title       = "Sample Metric Chart with Filters"
+          description = "Test metric chart with filters visualization"
+          data_source_json = jsonencode({
+            type          = "data_view_spec"
+            index_pattern = "metrics-*"
 
-        time_field = "@timestamp"
-      })
-      query = {
-        language   = "kql"
-        expression = "status:active"
+            time_field = "@timestamp"
+          })
+          query = {
+            language   = "kql"
+            expression = "status:active"
+          }
+          metrics = [
+            {
+              config_json = jsonencode({
+                type      = "primary"
+                operation = "count"
+                format = {
+                  type = "number"
+                }
+              })
+            }
+          ]
+          breakdown_by_json = jsonencode({
+            operation = "terms"
+            fields    = ["category"]
+            limit     = 3
+            rank_by = {
+              direction    = "desc"
+              metric_index = 0
+              type         = "metric"
+            }
+          })
+          filters = [
+            {
+              filter_json = jsonencode({
+                type = "condition"
+                condition = {
+                  field    = "event.category"
+                  operator = "is"
+                  value    = "web"
+                }
+              })
+            }
+          ]
+          ignore_global_filters = false
+          sampling              = 1
+        }
       }
-      metrics = [
-        {
-          config_json = jsonencode({
-            type      = "primary"
-            operation = "count"
-            format = {
-              type = "number"
-            }
-          })
-        }
-      ]
-      breakdown_by_json = jsonencode({
-        operation = "terms"
-        fields    = ["category"]
-        limit     = 3
-        rank_by = {
-          direction    = "desc"
-          metric_index = 0
-          type         = "metric"
-        }
-      })
-      filters = [
-        {
-          filter_json = jsonencode({
-            type = "condition"
-            condition = {
-              field    = "event.category"
-              operator = "is"
-              value    = "web"
-            }
-          })
-        }
-      ]
-      ignore_global_filters = false
-      sampling              = 1
     }
   }]
 }
