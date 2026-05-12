@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -91,7 +92,7 @@ func (r *Resource) readAndHydrateState(
 	if diags.HasError() {
 		return state, false, diags
 	}
-	if getResp == nil || getResp.JSON200 == nil {
+	if getResp == nil {
 		// Ensure we also exercise the list endpoint before deciding the resource is gone.
 		listResp, listDiags := fleet.ListAgentDownloadSources(ctx, client, spaceID)
 		diags.Append(listDiags...)
@@ -99,8 +100,8 @@ func (r *Resource) readAndHydrateState(
 			return state, false, diags
 		}
 		if listResp != nil && listResp.JSON200 != nil {
-			for _, item := range listResp.JSON200.Items {
-				if item.Id == sourceID {
+			for _, listItem := range listResp.JSON200.Items {
+				if listItem.Id == sourceID {
 					diags.AddError("Unexpected API response", "Read by source_id returned not found but list endpoint still includes this source.")
 					return state, false, diags
 				}
@@ -109,7 +110,13 @@ func (r *Resource) readAndHydrateState(
 		return state, false, diags
 	}
 
-	item := getResp.JSON200.Item
+	body, unwrapDiags := diagutil.UnwrapJSON200(getResp.JSON200, "agent download source")
+	diags.Append(unwrapDiags...)
+	if diags.HasError() {
+		return state, false, diags
+	}
+
+	item := body.Item
 	state.ID = types.StringValue(item.Id)
 	state.SourceID = types.StringValue(item.Id)
 	state.Name = types.StringValue(item.Name)

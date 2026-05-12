@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -67,12 +68,13 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 		return
 	}
 
-	if updateResp.JSON200 == nil {
-		resp.Diagnostics.AddError("Unexpected API response", "Update agent download source response missing JSON200 body")
+	unwrapped, unwrapDiags := diagutil.UnwrapJSON200(updateResp.JSON200, "agent download source")
+	resp.Diagnostics.Append(unwrapDiags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	item := updateResp.JSON200.Item
+	item := unwrapped.Item
 	readState, found, diags := r.readAndHydrateState(ctx, client, item.Id, spaceID, plan.SpaceIDs, plan.KibanaConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {

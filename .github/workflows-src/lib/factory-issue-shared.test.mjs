@@ -16,6 +16,12 @@ const {
   createFactoryIssueModule,
 } = require('./factory-issue-shared.js');
 
+const {
+  factoryFetchIssueComments,
+  serializeIssueComments,
+  COMMENT_CONTEXT_BUDGET,
+} = require('./factory-issue-comments.js');
+
 test('factoryParseOptionalTriStateFromEnv treats missing and empty as null', () => {
   assert.equal(factoryParseOptionalTriStateFromEnv(undefined), null);
   assert.equal(factoryParseOptionalTriStateFromEnv(''), null);
@@ -119,6 +125,19 @@ test('factoryQualifyTriggerEvent rejects non-issues events', () => {
   assert.match(result.event_eligible_reason, /expected 'issues'/);
 });
 
+test('factoryQualifyTriggerEvent accepts issue_comment event', () => {
+  const result = factoryQualifyTriggerEvent({
+    eventName: 'issue_comment',
+    eventAction: '',
+    labelName: '',
+    issueLabels: [],
+    factoryLabel: 'change-factory',
+    issueOpenedNotEligibleReason: 'n/a',
+  });
+  assert.equal(result.event_eligible, true);
+  assert.match(result.event_eligible_reason, /issue_comment/);
+});
+
 test('factoryCheckActorTrust trusts write permission', () => {
   const result = factoryCheckActorTrust({ sender: 'alice', permission: 'write' });
   assert.equal(result.actor_trusted, true);
@@ -216,6 +235,153 @@ test('createFactoryIssueIntake: duplicateLinkageMode selects duplicate PR URL ha
   assert.equal(ch.duplicate_pr_url, null);
 });
 
+test('factoryFetchIssueComments returns empty array for no comments', async () => {
+  const github = {
+    rest: { issues: { listComments: async () => [] } },
+    paginate: async () => [],
+  };
+  const result = await factoryFetchIssueComments({
+    github,
+    owner: 'elastic',
+    repo: 'terraform-provider-elasticstack',
+    issueNumber: 1,
+  });
+  assert.deepEqual(result.comments, []);
+  assert.equal(result.truncated, false);
+});
+
+test('factoryFetchIssueComments filters out all bots', async () => {
+  const github = {
+    rest: { issues: { listComments: async () => [] } },
+    paginate: async () => [
+      { user: { login: 'github-actions[bot]' }, created_at: '2024-01-01T00:00:00Z', body: 'bot1' },
+      { user: { login: 'dependabot[bot]' }, created_at: '2024-01-02T00:00:00Z', body: 'bot2' },
+    ],
+  };
+  const result = await factoryFetchIssueComments({
+    github,
+    owner: 'elastic',
+    repo: 'terraform-provider-elasticstack',
+    issueNumber: 1,
+  });
+  assert.deepEqual(result.comments, []);
+  assert.equal(result.truncated, false);
+});
+
+test('factoryFetchIssueComments preserves human comments and excludes bots', async () => {
+  const github = {
+    rest: { issues: { listComments: async () => [] } },
+    paginate: async () => [
+      { user: { login: 'alice' }, created_at: '2024-01-01T00:00:00Z', body: 'hello' },
+      { user: { login: 'github-actions[bot]' }, created_at: '2024-01-02T00:00:00Z', body: 'bot' },
+      { user: { login: 'bob' }, created_at: '2024-01-03T00:00:00Z', body: 'world' },
+      { user: { login: 'dependabot[bot]' }, created_at: '2024-01-04T00:00:00Z', body: 'bot2' },
+    ],
+  };
+  const result = await factoryFetchIssueComments({
+    github,
+    owner: 'elastic',
+    repo: 'terraform-provider-elasticstack',
+    issueNumber: 1,
+  });
+  assert.equal(result.comments.length, 2);
+  assert.deepEqual(result.comments[0], { author: 'alice', createdAt: '2024-01-01T00:00:00Z', body: 'hello' });
+  assert.deepEqual(result.comments[1], { author: 'bob', createdAt: '2024-01-03T00:00:00Z', body: 'world' });
+  assert.equal(result.truncated, false);
+});
+
+test('factoryFetchIssueComments preserves ordering for multi-item results', async () => {
+  const github = {
+    rest: { issues: { listComments: async () => [] } },
+    paginate: async () => [
+      { user: { login: 'alice' }, created_at: '2024-01-01T00:00:00Z', body: 'page1' },
+      { user: { login: 'bob' }, created_at: '2024-01-02T00:00:00Z', body: 'page2' },
+      { user: { login: 'carol' }, created_at: '2024-01-03T00:00:00Z', body: 'page3' },
+    ],
+  };
+  const result = await factoryFetchIssueComments({
+    github,
+    owner: 'elastic',
+    repo: 'terraform-provider-elasticstack',
+    issueNumber: 1,
+  });
+  assert.equal(result.comments.length, 3);
+  assert.deepEqual(result.comments[2], { author: 'carol', createdAt: '2024-01-03T00:00:00Z', body: 'page3' });
+  assert.equal(result.truncated, false);
+});
+
+test('factoryFetchIssueComments truncates at 200 comments', async () => {
+  const manyComments = [];
+  for (let i = 0; i < 250; i++) {
+    manyComments.push({
+      user: { login: `user${i}` },
+      created_at: `2024-01-01T00:00:${String(i % 60).padStart(2, '0')}Z`,
+      body: `comment ${i}`,
+    });
+  }
+  const github = {
+    rest: { issues: { listComments: async () => [] } },
+    paginate: async () => manyComments,
+  };
+  const result = await factoryFetchIssueComments({
+    github,
+    owner: 'elastic',
+    repo: 'terraform-provider-elasticstack',
+    issueNumber: 1,
+  });
+  assert.equal(result.comments.length, 200);
+  assert.equal(result.truncated, true);
+  assert.equal(result.comments[0].author, 'user0');
+  assert.equal(result.comments[199].author, 'user199');
+});
+
+test('factoryFetchIssueComments truncates at 200 with interspersed bots', async () => {
+  // 198 humans, then 5 bots, then 55 more humans → should get 200 humans, truncated
+  const comments = [];
+  for (let i = 0; i < 198; i++) {
+    comments.push({ user: { login: `user${i}` }, created_at: '2024-01-01T00:00:00Z', body: `h${i}` });
+  }
+  for (let i = 0; i < 5; i++) {
+    comments.push({ user: { login: 'github-actions[bot]' }, created_at: '2024-01-02T00:00:00Z', body: 'bot' });
+  }
+  for (let i = 0; i < 55; i++) {
+    comments.push({ user: { login: `late${i}` }, created_at: '2024-01-03T00:00:00Z', body: `l${i}` });
+  }
+  const github = {
+    rest: { issues: { listComments: async () => [] } },
+    paginate: async () => comments,
+  };
+  const result = await factoryFetchIssueComments({
+    github,
+    owner: 'elastic',
+    repo: 'terraform-provider-elasticstack',
+    issueNumber: 1,
+  });
+  assert.equal(result.comments.length, 200);
+  assert.equal(result.truncated, true);
+  assert.equal(result.comments[197].author, 'user197');
+  assert.equal(result.comments[198].author, 'late0');
+});
+
+test('factoryFetchIssueComments handles nullish/ghost comment fields', async () => {
+  const github = {
+    rest: { issues: { listComments: async () => [] } },
+    paginate: async () => [
+      { user: null, created_at: undefined, body: null },
+    ],
+  };
+  const result = await factoryFetchIssueComments({
+    github,
+    owner: 'elastic',
+    repo: 'terraform-provider-elasticstack',
+    issueNumber: 1,
+  });
+  // null user → not a bot (login undefined, doesn't end with '[bot]') → included
+  assert.equal(result.comments.length, 1);
+  assert.deepEqual(result.comments[0], { author: '', createdAt: '', body: '' });
+  assert.equal(result.truncated, false);
+});
+
 test('createFactoryIssueModule binds shared exports and branch aliases', () => {
   const mod = createFactoryIssueModule({
     branchPrefix: 'demo-factory/issue-',
@@ -238,4 +404,127 @@ test('createFactoryIssueModule binds shared exports and branch aliases', () => {
     issueLabels: [],
   });
   assert.equal(event.event_eligible, true);
+});
+
+test('serializeIssueComments returns empty string for empty input', () => {
+  assert.equal(serializeIssueComments({ comments: [], truncated: false }), '');
+  assert.equal(serializeIssueComments({ comments: [], truncated: true }), '');
+});
+
+test('serializeIssueComments renders a single comment correctly', () => {
+  const result = serializeIssueComments({
+    comments: [{ author: 'alice', createdAt: '2024-01-01T12:00:00Z', body: 'Hello world.' }],
+    truncated: false,
+  });
+  assert.match(result, /\*\*@alice\*\* \(2024-01-01T12:00:00Z\):/);
+  assert.match(result, /Hello world\./);
+  assert.match(result, /---/);
+});
+
+test('serializeIssueComments renders multiple comments in order', () => {
+  const result = serializeIssueComments({
+    comments: [
+      { author: 'alice', createdAt: '2024-01-01T12:00:00Z', body: 'First.' },
+      { author: 'bob', createdAt: '2024-01-02T12:00:00Z', body: 'Second.' },
+      { author: 'carol', createdAt: '2024-01-03T12:00:00Z', body: 'Third.' },
+    ],
+    truncated: false,
+  });
+  const firstIndex = result.indexOf('First.');
+  const secondIndex = result.indexOf('Second.');
+  const thirdIndex = result.indexOf('Third.');
+  assert.ok(firstIndex < secondIndex);
+  assert.ok(secondIndex < thirdIndex);
+  assert.equal(result.includes('[... comment history truncated at 200 comments]'), false);
+});
+
+test('serializeIssueComments truncates at budget and appends marker', () => {
+  const longBody = 'x'.repeat(30_000);
+  const result = serializeIssueComments({
+    comments: [
+      { author: 'alice', createdAt: '2024-01-01T12:00:00Z', body: longBody },
+      { author: 'bob', createdAt: '2024-01-02T12:00:00Z', body: longBody },
+      { author: 'carol', createdAt: '2024-01-03T12:00:00Z', body: longBody },
+    ],
+    truncated: false,
+  });
+  assert.ok(result.includes('alice'));
+  // Output must stay within budget (with overhead for markers)
+  assert.ok(result.length <= COMMENT_CONTEXT_BUDGET, `Expected output <= ${COMMENT_CONTEXT_BUDGET} chars, got ${result.length}`);
+  assert.ok(result.includes('[... 1 more comments truncated for context budget]') || result.includes('[... 2 more comments truncated for context budget]'));
+});
+
+test('serializeIssueComments truncates body of single oversized comment', () => {
+  // Single comment whose body alone exceeds COMMENT_CONTEXT_BUDGET
+  const oversizedBody = 'y'.repeat(COMMENT_CONTEXT_BUDGET + 1_000);
+  const result = serializeIssueComments({
+    comments: [{ author: 'alice', createdAt: '2024-01-01T12:00:00Z', body: oversizedBody }],
+    truncated: false,
+  });
+  assert.ok(result.length <= COMMENT_CONTEXT_BUDGET, `Expected output <= ${COMMENT_CONTEXT_BUDGET} chars, got ${result.length}`);
+  assert.ok(result.includes('alice'));
+});
+
+test('serializeIssueComments breaks when remaining budget cannot fit comment frame', () => {
+  // Construct a first comment that fills budget to leave less than a frame for the next
+  const headerLen = '**@a** (2024-01-01T12:00:00Z):\n\n'.length; // 32
+  const footerLen = '\n\n---\n'.length; // 7
+  const frameLen = headerLen + footerLen; // 39
+  const bodyBudget = COMMENT_CONTEXT_BUDGET - 200; // 49800
+
+  const firstBody = 'x'.repeat(bodyBudget - frameLen - 1);
+  const result = serializeIssueComments({
+    comments: [
+      { author: 'a', createdAt: '2024-01-01T12:00:00Z', body: firstBody },
+      { author: 'b', createdAt: '2024-01-02T12:00:00Z', body: 'should not appear' },
+    ],
+    truncated: false,
+  });
+
+  assert.ok(result.length <= COMMENT_CONTEXT_BUDGET, `Expected output <= ${COMMENT_CONTEXT_BUDGET} chars, got ${result.length}`);
+  assert.ok(result.includes('a'));
+  assert.ok(!result.includes('should not appear'));
+  assert.ok(result.includes('[... 1 more comments truncated for context budget]'));
+});
+
+test('serializeIssueComments appends both markers when budget and fetch-cap both apply', () => {
+  const longBody = 'z'.repeat(30_000);
+  const result = serializeIssueComments({
+    comments: [
+      { author: 'alice', createdAt: '2024-01-01T12:00:00Z', body: longBody },
+      { author: 'bob', createdAt: '2024-01-02T12:00:00Z', body: longBody },
+      { author: 'carol', createdAt: '2024-01-03T12:00:00Z', body: longBody },
+    ],
+    truncated: true, // fetch-cap was hit
+  });
+  assert.ok(result.includes('[... comment history truncated at 200 comments]'), 'fetch-cap marker missing');
+  assert.ok(
+    result.includes('[... 1 more comments truncated for context budget]') ||
+    result.includes('[... 2 more comments truncated for context budget]'),
+    'budget marker missing',
+  );
+  const budgetIdx = result.indexOf('[... ');
+  const capIdx = result.lastIndexOf('[... comment history truncated at 200 comments]');
+  assert.ok(budgetIdx <= capIdx, 'budget marker should appear before fetch-cap marker');
+});
+
+test('serializeIssueComments appends fetch-cap note when truncated is true', () => {
+  const result = serializeIssueComments({
+    comments: [{ author: 'alice', createdAt: '2024-01-01T12:00:00Z', body: 'Hello.' }],
+    truncated: true,
+  });
+  assert.ok(result.includes('[... comment history truncated at 200 comments]'));
+});
+
+test('serializeIssueComments produces stable output for identical input', () => {
+  const input = {
+    comments: [
+      { author: 'alice', createdAt: '2024-01-01T12:00:00Z', body: 'Hello world.' },
+      { author: 'bob', createdAt: '2024-01-02T12:00:00Z', body: 'Second comment.' },
+    ],
+    truncated: false,
+  };
+  const run1 = serializeIssueComments(input);
+  const run2 = serializeIssueComments(input);
+  assert.equal(run1, run2);
 });

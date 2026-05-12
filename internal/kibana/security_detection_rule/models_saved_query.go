@@ -23,7 +23,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -131,13 +130,8 @@ func (d Data) toSavedQueryRuleUpdateProps(ctx context.Context, client clients.Mi
 	var diags diag.Diagnostics
 	var updateProps kbapi.SecurityDetectionsAPIRuleUpdateProps
 
-	// Parse ID to get space_id and rule_id
-	compID, resourceIDDiags := clients.CompositeIDFromStrFw(d.ID.ValueString())
-	diags.Append(resourceIDDiags...)
-
-	uid, err := uuid.Parse(compID.ResourceID)
-	if err != nil {
-		diags.AddError("ID was not a valid UUID", err.Error())
+	uid, ok := d.parseResourceUUID(&diags)
+	if !ok {
 		return updateProps, diags
 	}
 
@@ -205,7 +199,7 @@ func (d Data) toSavedQueryRuleUpdateProps(ctx context.Context, client clients.Mi
 	savedQueryRule.Language = d.getKQLQueryLanguage()
 
 	// Convert to union type
-	err = updateProps.FromSecurityDetectionsAPISavedQueryRuleUpdateProps(savedQueryRule)
+	err := updateProps.FromSecurityDetectionsAPISavedQueryRuleUpdateProps(savedQueryRule)
 	if err != nil {
 		diags.AddError(
 			"Error building update properties",

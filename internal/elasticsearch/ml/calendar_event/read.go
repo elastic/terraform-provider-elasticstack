@@ -19,7 +19,6 @@ package calendar_event
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -79,27 +78,28 @@ func readCalendarEvent(ctx context.Context, client *clients.ElasticsearchScopedC
 		return state, false, diags
 	}
 
-	res, err := typedClient.Ml.GetCalendarEvents(calendarID).Size(10000).Do(ctx)
-	if err != nil {
-		var esErr *types.ElasticsearchError
-		if errors.As(err, &esErr) && esErr.Status == 404 {
-			return state, false, nil
+	var found bool
+	pageDiags := walkMLCalendarEventPages(ctx, typedClient, calendarID, func(events []types.CalendarEvent) bool {
+		for _, event := range events {
+			if event.EventId == nil || *event.EventId != eventID {
+				continue
+			}
+			diags.Append(state.fromAPIModel(ctx, calendarEventTypedToAPI(&event))...)
+			if diags.HasError() {
+				return true
+			}
+			found = true
+			tflog.Debug(ctx, fmt.Sprintf("Successfully read ML calendar event %s from calendar: %s", eventID, calendarID))
+			return true
 		}
-		diags.AddError("Failed to get ML calendar events", fmt.Sprintf("Unable to get ML calendar events for calendar %s — %s", calendarID, err.Error()))
+		return false
+	})
+	diags.Append(pageDiags...)
+	if diags.HasError() {
 		return state, false, diags
 	}
-
-	for _, event := range res.Events {
-		if event.EventId == nil || *event.EventId != eventID {
-			continue
-		}
-		diags.Append(state.fromAPIModel(ctx, calendarEventTypedToAPI(&event))...)
-		if diags.HasError() {
-			return state, false, diags
-		}
-		tflog.Debug(ctx, fmt.Sprintf("Successfully read ML calendar event %s from calendar: %s", eventID, calendarID))
-		return state, true, diags
+	if !found {
+		return state, false, nil
 	}
-
-	return state, false, nil
+	return state, true, diags
 }

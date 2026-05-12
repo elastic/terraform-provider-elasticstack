@@ -17,7 +17,13 @@
 
 package security
 
-import _ "embed"
+import (
+	_ "embed"
+
+	"github.com/hashicorp/go-version"
+)
+
+var MinSupportedDescriptionVersion = version.Must(version.NewVersion("8.15.0"))
 
 //go:embed descriptions/role_allow_restricted_indices.md
 var roleAllowRestrictedIndicesDescription string

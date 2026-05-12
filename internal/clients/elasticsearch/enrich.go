@@ -40,7 +40,7 @@ func GetEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScoped
 
 	res, err := typedClient.Enrich.GetPolicy().Name(policyName).Do(ctx)
 	if err != nil {
-		if isNotFoundElasticsearchError(err) {
+		if IsNotFoundElasticsearchError(err) {
 			return nil, nil
 		}
 		return nil, diag.FromErr(err)
@@ -147,7 +147,7 @@ func DeleteEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchSco
 
 	_, err = typedClient.Enrich.DeletePolicy(policyName).Do(ctx)
 	if err != nil {
-		if isNotFoundElasticsearchError(err) {
+		if IsNotFoundElasticsearchError(err) {
 			return diags
 		}
 		return diag.FromErr(err)

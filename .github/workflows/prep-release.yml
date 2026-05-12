@@ -218,6 +218,48 @@ jobs:
             }
             
             /**
+             * @param {string[]} lines
+             * @param {{ start: number, end: number }[]} ranges - sorted ascending by start;
+             *    each end is exclusive. First range replaced by `newSectionContent`; others dropped.
+             * @param {string} newSectionContent
+             * @returns {string}
+             */
+            function spliceReleaseSectionRanges(lines, ranges, newSectionContent) {
+              const first = ranges[0];
+            
+              let before = lines.slice(0, first.start);
+              while (before.length > 0 && before[before.length - 1] === '') {
+                before.pop();
+              }
+            
+              const parts = [...before];
+              if (parts.length > 0) parts.push('');
+              parts.push(newSectionContent);
+            
+              let cursor = first.end;
+            
+              for (let i = 1; i < ranges.length; i++) {
+                const r = ranges[i];
+                parts.push(...lines.slice(cursor, r.start));
+                cursor = r.end;
+              }
+            
+              const after = lines.slice(cursor);
+            
+              let afterStart = 0;
+              while (afterStart < after.length && after[afterStart] === '') {
+                afterStart++;
+              }
+            
+              if (afterStart < after.length) {
+                parts.push('');
+                parts.push(...after.slice(afterStart));
+              }
+            
+              return parts.join('\n');
+            }
+            
+            /**
              * @param {string} content - Current CHANGELOG.md content.
              * @param {string} newSectionContent - Full replacement (header + body).
              * @param {'unreleased'|'release'} mode
@@ -235,17 +277,31 @@ jobs:
                 targetStart = lines.findIndex((line) => line.startsWith(`## [${targetVersion}]`));
               }
             
-              if (targetStart === -1) {
-                if (mode === 'release') {
-                  const unreleasedStart = lines.findIndex((line) => /^## \[Unreleased\]/.test(line));
-                  if (unreleasedStart !== -1) {
-                    const insertAfter = findSectionEnd(lines, unreleasedStart);
-                    const before = lines.slice(0, insertAfter);
-                    const after = lines.slice(insertAfter);
-                    return [...before, '', newSectionContent, ...after].join('\n');
-                  }
+              if (mode === 'release') {
+                const unreleasedStart = lines.findIndex((line) => /^## \[Unreleased\]/.test(line));
+                const ranges = [];
+                if (unreleasedStart !== -1) {
+                  ranges.push({
+                    start: unreleasedStart,
+                    end: findSectionEnd(lines, unreleasedStart),
+                  });
+                }
+                if (targetStart !== -1) {
+                  ranges.push({
+                    start: targetStart,
+                    end: findSectionEnd(lines, targetStart),
+                  });
+                }
+                ranges.sort((a, b) => a.start - b.start);
+            
+                if (ranges.length === 0) {
                   return newSectionContent + '\n\n' + content;
                 }
+            
+                return spliceReleaseSectionRanges(lines, ranges, newSectionContent);
+              }
+            
+              if (targetStart === -1) {
                 return newSectionContent + '\n\n' + content;
               }
             

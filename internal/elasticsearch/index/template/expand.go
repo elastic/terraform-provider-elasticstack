@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -226,39 +227,15 @@ func expandTemplateBlock(ctx context.Context, obj types.Object) (*models.Templat
 }
 
 func expandAliasElement(e AliasElementModel) (models.IndexAlias, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	ia := models.IndexAlias{Name: e.Name.ValueString()}
-
-	if !e.Filter.IsNull() && !e.Filter.IsUnknown() {
-		fs := strings.TrimSpace(e.Filter.ValueString())
-		if fs != "" {
-			filterMap := make(map[string]any)
-			if err := json.Unmarshal([]byte(fs), &filterMap); err != nil {
-				diags.AddError("Invalid alias filter JSON", err.Error())
-				return ia, diags
-			}
-			ia.Filter = filterMap
-		}
-	}
-
-	ia.IndexRouting = tfStringValue(e.IndexRouting)
-	ia.SearchRouting = tfStringValue(e.SearchRouting)
-	ia.Routing = tfStringValue(e.Routing)
-
-	if !e.IsHidden.IsNull() && !e.IsHidden.IsUnknown() {
-		ia.IsHidden = e.IsHidden.ValueBool()
-	}
-	if !e.IsWriteIndex.IsNull() && !e.IsWriteIndex.IsUnknown() {
-		ia.IsWriteIndex = e.IsWriteIndex.ValueBool()
-	}
-	return ia, diags
-}
-
-func tfStringValue(s types.String) string {
-	if s.IsNull() || s.IsUnknown() {
-		return ""
-	}
-	return s.ValueString()
+	return aliasutil.ExpandAliasFields(aliasutil.AliasFields{
+		Name:          e.Name,
+		Filter:        e.Filter,
+		IndexRouting:  e.IndexRouting,
+		SearchRouting: e.SearchRouting,
+		Routing:       e.Routing,
+		IsHidden:      e.IsHidden,
+		IsWriteIndex:  e.IsWriteIndex,
+	})
 }
 
 func expandTemplateLifecycle(obj types.Object) *models.LifecycleSettings {

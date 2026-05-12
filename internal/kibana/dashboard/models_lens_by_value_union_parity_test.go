@@ -58,7 +58,7 @@ func Test_eachExposedByValueSource_visAndLensUnionsJSONBridge(t *testing.T) {
 					}},
 					Legend: &xyLegendModel{Visibility: types.StringValue("visible"), Inside: types.BoolValue(false)},
 					Query:  &filterSimpleModel{Expression: types.StringValue("*"), Language: types.StringValue("kql")},
-				}).toAPINoESQL()
+				}).toAPINoESQL(nil)
 				require.False(t, diags.HasError())
 				var vis kbapi.KbnDashboardPanelTypeVisConfig0
 				require.NoError(t, vis.FromXyChartNoESQL(xy))
@@ -206,7 +206,7 @@ func Test_eachExposedByValueSource_visAndLensUnionsJSONBridge(t *testing.T) {
 				t.Helper()
 				pm := buildLensWafflePanelForTest(t)
 				converter := newWafflePanelConfigConverter()
-				vis0, d := converter.buildAttributes(pm)
+				vis0, d := converter.buildAttributes(pm, nil)
 				require.False(t, d.HasError())
 				return vis0
 			},
@@ -328,7 +328,7 @@ func (m lensDashboardAppByValueModel) metricsTypedVis0(t *testing.T) kbapi.KbnDa
 	require.True(t, ok)
 	conv, okc := firstLensVizConverterForPanel(pm)
 	require.True(t, okc)
-	vis, d := conv.buildAttributes(pm)
+	vis, d := conv.buildAttributes(pm, nil)
 	require.False(t, d.HasError())
 	return vis
 }

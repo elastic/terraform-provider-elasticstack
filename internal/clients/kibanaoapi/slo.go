@@ -44,13 +44,7 @@ func GetSlo(ctx context.Context, client *Client, spaceID string, sloID string) (
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		if resp.JSON200 == nil {
-			return nil, diag.Diagnostics{diag.NewErrorDiagnostic(
-				"Get SLO returned an empty response",
-				"Get SLO returned an empty response body with HTTP status 200.",
-			)}
-		}
-		return resp.JSON200, nil
+		return diagutil.UnwrapJSON200(resp.JSON200, "SLO")
 	case http.StatusNotFound:
 		return nil, nil
 	default:
@@ -89,13 +83,7 @@ func CreateSlo(ctx context.Context, client *Client, spaceID string, req kbapi.SL
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		if resp.JSON200 == nil {
-			return nil, diag.Diagnostics{diag.NewErrorDiagnostic(
-				"Create SLO returned an empty response",
-				"Create SLO returned an empty response body with HTTP status 200.",
-			)}
-		}
-		return resp.JSON200, nil
+		return diagutil.UnwrapJSON200(resp.JSON200, "SLO")
 	default:
 		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
@@ -162,13 +150,7 @@ func FindSlos(ctx context.Context, client *Client, spaceID string, params *kbapi
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		if resp.JSON200 == nil {
-			return nil, diag.Diagnostics{diag.NewErrorDiagnostic(
-				"Find SLOs returned an empty response",
-				"Find SLOs returned an empty response body with HTTP status 200.",
-			)}
-		}
-		return resp.JSON200, nil
+		return diagutil.UnwrapJSON200(resp.JSON200, "SLOs")
 	default:
 		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}

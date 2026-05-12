@@ -348,3 +348,66 @@ func Test_CreateUpdateAlertingRule_ErrorHandling(t *testing.T) {
 		})
 	}
 }
+
+func Test_CreateUpdateAlertingRule_RequestBuildError(t *testing.T) {
+	client, err := kibanaoapi.NewClient(kibanaoapi.Config{
+		URL:      "http://example.invalid",
+		Username: "test",
+		Password: "test",
+	})
+	require.NoError(t, err)
+
+	rule := models.AlertingRule{
+		RuleID:     "test-rule-id",
+		Name:       "test",
+		Consumer:   "alerts",
+		RuleTypeID: ".index-threshold",
+		Schedule:   models.AlertingRuleSchedule{Interval: "1m"},
+		Params:     map[string]any{},
+		Actions: []models.AlertingRuleAction{
+			{
+				ID:     "connector-1",
+				Params: map[string]any{"invalid": make(chan int)},
+			},
+		},
+	}
+
+	tests := []struct {
+		name            string
+		testFunc        func(context.Context, *kibanaoapi.Client, string, models.AlertingRule) (*models.AlertingRule, string, string)
+		expectedSummary string
+	}{
+		{
+			name: "create",
+			testFunc: func(ctx context.Context, client *kibanaoapi.Client, spaceID string, rule models.AlertingRule) (*models.AlertingRule, string, string) {
+				result, diags := kibanaoapi.CreateAlertingRule(ctx, client, spaceID, rule)
+				if diags.HasError() {
+					return result, diags[0].Summary(), diags[0].Detail()
+				}
+				return result, "", ""
+			},
+			expectedSummary: "Unable to build alerting rule create request",
+		},
+		{
+			name: "update",
+			testFunc: func(ctx context.Context, client *kibanaoapi.Client, spaceID string, rule models.AlertingRule) (*models.AlertingRule, string, string) {
+				result, diags := kibanaoapi.UpdateAlertingRule(ctx, client, spaceID, rule)
+				if diags.HasError() {
+					return result, diags[0].Summary(), diags[0].Detail()
+				}
+				return result, "", ""
+			},
+			expectedSummary: "Unable to build alerting rule update request",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, errSummary, errDetail := tt.testFunc(context.Background(), client, "default", rule)
+
+			require.Nil(t, result)
+			require.Equal(t, tt.expectedSummary, errSummary)
+			require.Contains(t, errDetail, "unsupported type: chan int")
+		})
+	}
+}

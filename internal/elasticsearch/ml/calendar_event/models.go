@@ -19,8 +19,10 @@ package calendar_event
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
+	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -55,6 +57,42 @@ type CalendarEventAPIModel struct {
 	EventID     string `json:"event_id,omitempty"`
 }
 
+func calendarEventAnyTimeToUnixMilli(v any) (int64, bool) {
+	if v == nil {
+		return 0, false
+	}
+	switch x := v.(type) {
+	case float64:
+		return int64(x), true
+	case int64:
+		return x, true
+	case int:
+		return int64(x), true
+	case uint64:
+		return int64(x), true
+	case json.Number:
+		i, err := x.Int64()
+		if err == nil {
+			return i, true
+		}
+		f, err := x.Float64()
+		if err != nil {
+			return 0, false
+		}
+		return int64(f), true
+	case string:
+		t, err := time.Parse(time.RFC3339, x)
+		if err != nil {
+			return 0, false
+		}
+		return t.UnixMilli(), true
+	case estypes.DateTime:
+		return calendarEventDateTimeToUnixMilli(x)
+	default:
+		return 0, false
+	}
+}
+
 func (m *CalendarEventTFModel) toAPIModel(_ context.Context) (*CalendarEventAPIModel, fwdiags.Diagnostics) {
 	var diags fwdiags.Diagnostics
 
@@ -84,15 +122,20 @@ func (m *CalendarEventTFModel) fromAPIModel(_ context.Context, apiModel *Calenda
 	m.CalendarID = types.StringValue(apiModel.CalendarID)
 	m.EventID = types.StringValue(apiModel.EventID)
 
-	// The API returns epoch milliseconds as float64 (JSON number decoded via any).
-	startMillis, ok := apiModel.StartTime.(float64)
+	startMillis, ok := calendarEventAnyTimeToUnixMilli(apiModel.StartTime)
 	if !ok {
-		diags.AddError("Invalid start_time format", "Expected epoch milliseconds as a number from the API")
+		diags.AddError(
+			"Invalid start_time format",
+			"Expected a supported time representation from the API (epoch millis, RFC3339 string, or typed DateTime)",
+		)
 		return diags
 	}
-	endMillis, ok := apiModel.EndTime.(float64)
+	endMillis, ok := calendarEventAnyTimeToUnixMilli(apiModel.EndTime)
 	if !ok {
-		diags.AddError("Invalid end_time format", "Expected epoch milliseconds as a number from the API")
+		diags.AddError(
+			"Invalid end_time format",
+			"Expected a supported time representation from the API (epoch millis, RFC3339 string, or typed DateTime)",
+		)
 		return diags
 	}
 

@@ -129,8 +129,9 @@ If specified, this mapping can include: field names, [field data types](https://
 
 **NOTE:** Static index settings (see: https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#_static_index_settings) can be only set on the index creation and later cannot be removed or updated - _apply_ will return error (see [below for nested schema](#nestedblock--settings))
 - `shard_check_on_startup` (String) Whether or not shards should be checked for corruption before opening. When corruption is detected, it will prevent the shard from being opened. Accepts `false`, `true`, `checksum`.
-- `sort_field` (Set of String) The field to sort shards in this index by.
-- `sort_order` (List of String) The direction to sort shards in. Accepts `asc`, `desc`.
+- `sort` (Attributes List) Sort configuration for documents within each shard segment. Replaces the deprecated sort_field and sort_order attributes. (see [below for nested schema](#nestedatt--sort))
+- `sort_field` (Set of String, Deprecated) Deprecated: The field to sort documents within each shard segment by.
+- `sort_order` (List of String, Deprecated) Deprecated: The direction to sort documents within each shard segment. Accepts `asc`, `desc`.
 - `timeout` (String) Period to wait for a response. If no response is received before the timeout expires, the request fails and returns an error. Defaults to `30s`.
 - `unassigned_node_left_delayed_timeout` (String) Time to delay the allocation of replica shards which become unassigned because a node has left, in time units, e.g. `10s`
 - `use_existing` (Boolean) Opt-in flag for **create-time** adoption of an index that already exists when Terraform runs create (for example after a replacement race or when managing an index created out-of-band).
@@ -204,6 +205,21 @@ Required:
 
 - `name` (String) The name of the setting to set and track.
 - `value` (String) The value of the setting to set and track.
+
+
+
+<a id="nestedatt--sort"></a>
+### Nested Schema for `sort`
+
+Required:
+
+- `field` (String) The index field to sort by.
+
+Optional:
+
+- `missing` (String) How to treat documents missing the sort field. Valid values: _last, _first.
+- `mode` (String) Which value to use when the sort field has multiple values. Valid values: min, max.
+- `order` (String) The sort direction. Valid values: asc, desc.
 
 ## Import
 

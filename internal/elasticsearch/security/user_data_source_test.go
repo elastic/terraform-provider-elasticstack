@@ -18,6 +18,7 @@
 package security_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -82,6 +83,61 @@ func TestAccDataSourceSecurityUserCustom(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_security_user.test", "enabled", "false"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_security_user.test", "roles.#", "1"),
 					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_security_user.test", "roles.*", "viewer"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_security_user.test", "metadata", "{}"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceSecurityUserNotFound(t *testing.T) {
+	username := fmt.Sprintf("nonexistent-%s", sdkacctest.RandStringFromCharSet(20, sdkacctest.CharSetAlphaNum))
+	const ds = "data.elasticstack_elasticsearch_security_user.test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables: config.Variables{
+					"username": config.StringVariable(username),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(ds, "id", ""),
+					resource.TestCheckResourceAttr(ds, "username", username),
+					resource.TestCheckNoResourceAttr(ds, "full_name"),
+					resource.TestCheckNoResourceAttr(ds, "email"),
+					resource.TestCheckNoResourceAttr(ds, "metadata"),
+					resource.TestCheckNoResourceAttr(ds, "enabled"),
+					resource.TestCheckNoResourceAttr(ds, "roles.#"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceSecurityUserOptionalNames(t *testing.T) {
+	username := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	const ds = "data.elasticstack_elasticsearch_security_user.test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables: config.Variables{
+					"username": config.StringVariable(username),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(ds, "id"),
+					resource.TestCheckResourceAttr(ds, "username", username),
+					resource.TestCheckResourceAttr(ds, "full_name", ""),
+					resource.TestCheckResourceAttr(ds, "email", ""),
+					resource.TestCheckResourceAttr(ds, "roles.#", "1"),
+					resource.TestCheckTypeSetElemAttr(ds, "roles.*", "viewer"),
+					resource.TestCheckResourceAttr(ds, "enabled", "true"),
 				),
 			},
 		},

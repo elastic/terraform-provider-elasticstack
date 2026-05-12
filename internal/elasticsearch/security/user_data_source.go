@@ -20,128 +20,133 @@ package security
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func DataSourceUser() *schema.Resource {
-	userSchema := map[string]*schema.Schema{
-		"id": {
-			Description: "Internal identifier of the resource",
-			Type:        schema.TypeString,
-			Computed:    true,
-		},
-		"username": {
-			Description: "An identifier for the user",
-			Type:        schema.TypeString,
-			Required:    true,
-		},
-		"full_name": {
-			Description: "The full name of the user.",
-			Type:        schema.TypeString,
-			Computed:    true,
-		},
-		"email": {
-			Description: "The email of the user.",
-			Type:        schema.TypeString,
-			Computed:    true,
-		},
-		"roles": {
-			Description: "A set of roles the user has. The roles determine the user’s access permissions. Default is [].",
-			Type:        schema.TypeSet,
-			Computed:    true,
-			Elem: &schema.Schema{
-				Type: schema.TypeString,
+type userDataSourceModel struct {
+	entitycore.ElasticsearchConnectionField
+	ID       types.String         `tfsdk:"id"`
+	Username types.String         `tfsdk:"username"`
+	FullName types.String         `tfsdk:"full_name"`
+	Email    types.String         `tfsdk:"email"`
+	Roles    types.Set            `tfsdk:"roles"`
+	Metadata jsontypes.Normalized `tfsdk:"metadata"`
+	Enabled  types.Bool           `tfsdk:"enabled"`
+}
+
+func NewUserDataSource() datasource.DataSource {
+	return entitycore.NewElasticsearchDataSource[userDataSourceModel](
+		entitycore.ComponentElasticsearch,
+		"security_user",
+		getUserDataSourceSchema,
+		readUserDataSource,
+	)
+}
+
+func getUserDataSourceSchema(_ context.Context) schema.Schema {
+	return schema.Schema{
+		MarkdownDescription: userDataSourceDescription,
+		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
+				MarkdownDescription: "Internal identifier of the resource",
+				Computed:            true,
+			},
+			"username": schema.StringAttribute{
+				MarkdownDescription: "An identifier for the user",
+				Required:            true,
+			},
+			"full_name": schema.StringAttribute{
+				MarkdownDescription: "The full name of the user.",
+				Computed:            true,
+			},
+			"email": schema.StringAttribute{
+				MarkdownDescription: "The email of the user.",
+				Computed:            true,
+			},
+			"roles": schema.SetAttribute{
+				MarkdownDescription: "A set of roles the user has. The roles determine the user's access permissions. Default is [].",
+				ElementType:         types.StringType,
+				Computed:            true,
+			},
+			"metadata": schema.StringAttribute{
+				MarkdownDescription: "Arbitrary metadata that you want to associate with the user.",
+				Computed:            true,
+				CustomType:          jsontypes.NormalizedType{},
+			},
+			"enabled": schema.BoolAttribute{
+				MarkdownDescription: "Specifies whether the user is enabled. The default value is true.",
+				Computed:            true,
 			},
 		},
-		"metadata": {
-			Description: "Arbitrary metadata that you want to associate with the user.",
-			Type:        schema.TypeString,
-			Computed:    true,
-		},
-		"enabled": {
-			Description: "Specifies whether the user is enabled. The default value is true.",
-			Type:        schema.TypeBool,
-			Computed:    true,
-		},
-	}
-
-	schemautil.AddConnectionSchema(userSchema)
-
-	return &schema.Resource{
-		Description: userDataSourceDescription,
-
-		ReadContext: dataSourceSecurityUserRead,
-
-		Schema: userSchema,
 	}
 }
 
-func dataSourceSecurityUserRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	factory, diags := clients.ConvertMetaToFactory(meta)
-	if diags.HasError() {
-		return diags
-	}
-	client, diags := factory.GetElasticsearchClientFromSDK(d)
-	if diags.HasError() {
-		return diags
-	}
-	usernameID := d.Get("username").(string)
-	id, diags := client.ID(ctx, usernameID)
-	if diags.HasError() {
-		return diags
-	}
-	d.SetId(id.String())
+func readUserDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedClient, config userDataSourceModel) (userDataSourceModel, diag.Diagnostics) {
+	var diags diag.Diagnostics
 
-	user, diags := elasticsearch.GetUser(ctx, client, usernameID)
-	if user == nil && diags == nil {
-		d.SetId("")
-		return diags
-	}
+	username := config.Username.ValueString()
+
+	id, sdkDiags := esClient.ID(ctx, username)
+	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
-		return diags
+		return config, diags
 	}
+	config.ID = types.StringValue(id.String())
+
+	user, sdkDiags := elasticsearch.GetUser(ctx, esClient, username)
+	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	if diags.HasError() {
+		return config, diags
+	}
+
+	if user == nil {
+		config.ID = types.StringValue("")
+		config.FullName = types.StringNull()
+		config.Email = types.StringNull()
+		config.Roles = types.SetNull(types.StringType)
+		config.Metadata = jsontypes.NewNormalizedNull()
+		config.Enabled = types.BoolNull()
+		config.Username = types.StringValue(username)
+		return config, diags
+	}
+
+	if user.Email != nil {
+		config.Email = types.StringValue(*user.Email)
+	} else {
+		config.Email = types.StringValue("")
+	}
+	if user.FullName != nil {
+		config.FullName = types.StringValue(*user.FullName)
+	} else {
+		config.FullName = types.StringValue("")
+	}
+
+	rolesSet, d := types.SetValueFrom(ctx, types.StringType, user.Roles)
+	diags.Append(d...)
+	if diags.HasError() {
+		return config, diags
+	}
+	config.Roles = rolesSet
 
 	metadata, err := json.Marshal(user.Metadata)
 	if err != nil {
-		return diag.FromErr(err)
+		diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling metadata JSON: %s", err))
+		return config, diags
 	}
+	config.Metadata = jsontypes.NewNormalizedValue(string(metadata))
 
-	// set the fields
-	if err := d.Set("username", usernameID); err != nil {
-		return diag.FromErr(err)
-	}
-	if user.Email != nil {
-		if err := d.Set("email", *user.Email); err != nil {
-			return diag.FromErr(err)
-		}
-	} else {
-		if err := d.Set("email", ""); err != nil {
-			return diag.FromErr(err)
-		}
-	}
-	if user.FullName != nil {
-		if err := d.Set("full_name", *user.FullName); err != nil {
-			return diag.FromErr(err)
-		}
-	} else {
-		if err := d.Set("full_name", ""); err != nil {
-			return diag.FromErr(err)
-		}
-	}
-	if err := d.Set("roles", user.Roles); err != nil {
-		return diag.FromErr(err)
-	}
-	if err := d.Set("metadata", string(metadata)); err != nil {
-		return diag.FromErr(err)
-	}
-	if err := d.Set("enabled", user.Enabled); err != nil {
-		return diag.FromErr(err)
-	}
+	config.Enabled = types.BoolValue(user.Enabled)
+	config.Username = types.StringValue(username)
 
-	return diags
+	return config, diags
 }

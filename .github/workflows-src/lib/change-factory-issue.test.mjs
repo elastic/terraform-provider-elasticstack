@@ -27,8 +27,10 @@ const workflowCompiledPath = path.resolve(__dirname, '../../workflows/change-fac
 const lockCompiledPath = path.resolve(__dirname, '../../workflows/change-factory-issue.lock.yml');
 const inlineScripts = [
   'qualify_trigger.inline.js',
+  'capture_command_text.inline.js',
   'check_actor_trust.inline.js',
   'check_duplicate_pr.inline.js',
+  'notify_duplicate_blocked.inline.js',
   'finalize_gate.inline.js',
 ];
 
@@ -507,7 +509,11 @@ test('changeFactoryIssueBranchName stays aligned with workflow template prefix',
 test('change-factory-issue workflow.md.tmpl wiring matches intake contract', () => {
   const workflowTmpl = readFileSync(workflowTemplatePath, 'utf8');
 
-  assert.match(workflowTmpl, /\non:\n  issues:\n    types: \[opened, labeled\]/);
+  assert.match(workflowTmpl, /\non:\n  issues:\n    types: \[labeled\]/);
+  assert.match(
+    workflowTmpl,
+    /slash_command:\n    name: change-factory\n    events: \[issue_comment\]/,
+  );
   assert.match(workflowTmpl, /status-comment:\s*true/);
   assert.match(workflowTmpl, /issues:\s*write/);
 
@@ -526,13 +532,23 @@ test('change-factory-issue workflow.md.tmpl wiring matches intake contract', () 
   );
   assert.match(
     workflowTmpl,
+    /- name: Capture command text\n      id: capture_command_text\n      if: steps\.qualify_trigger\.outputs\.event_eligible == 'true'/,
+  );
+  assert.match(
+    workflowTmpl,
     /- name: Check duplicate PR\n      id: check_duplicate_pr\n      if: >-\n        steps\.qualify_trigger\.outputs\.event_eligible == 'true' &&\n        steps\.check_actor_trust\.outputs\.actor_trusted == 'true'/,
+  );
+  assert.match(
+    workflowTmpl,
+    /- name: Notify duplicate blocked\n      id: notify_duplicate_blocked\n      if: >-\n        steps\.qualify_trigger\.outputs\.event_eligible == 'true' &&\n        steps\.check_actor_trust\.outputs\.actor_trusted == 'true' &&\n        steps\.check_duplicate_pr\.outputs\.duplicate_pr_found == 'true'/,
   );
 
   const scriptIncludes = [
     'x-script-include: scripts/qualify_trigger.inline.js',
+    'x-script-include: scripts/capture_command_text.inline.js',
     'x-script-include: scripts/check_actor_trust.inline.js',
     'x-script-include: scripts/check_duplicate_pr.inline.js',
+    'x-script-include: scripts/notify_duplicate_blocked.inline.js',
     'x-script-include: scripts/remove_trigger_label.inline.js',
     'x-script-include: scripts/finalize_gate.inline.js',
   ];
@@ -560,6 +576,16 @@ test('change-factory-issue workflow.md.tmpl wiring matches intake contract', () 
 
   assert.match(workflowTmpl, /trigger_label_removed:/);
   assert.match(workflowTmpl, /trigger_label_removed_reason:/);
+
+  assert.match(
+    workflowTmpl,
+    /human_direction: \$\{\{ steps\.capture_command_text\.outputs\.human_direction \}\}/,
+  );
+
+  assert.match(
+    workflowTmpl,
+    /DUPLICATE_PR_URL: \$\{\{ steps\.check_duplicate_pr\.outputs\.duplicate_pr_url \}\}/,
+  );
 
   assert.match(
     workflowTmpl,

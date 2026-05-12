@@ -19,9 +19,6 @@ package provider
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster"
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security"
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/transform"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana"
 	providerSchema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -45,19 +42,10 @@ func New(version string) *schema.Provider {
 			fleetKeyName: providerSchema.GetFleetConnectionSchema(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
-			"elasticstack_elasticsearch_security_role": security.DataSourceRole(),
-			"elasticstack_elasticsearch_security_user": security.DataSourceUser(),
-			"elasticstack_elasticsearch_info":          cluster.DataSourceClusterInfo(),
-
 			"elasticstack_kibana_action_connector": kibana.DataSourceConnector(),
 			"elasticstack_kibana_security_role":    kibana.DataSourceRole(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
-			"elasticstack_elasticsearch_cluster_settings":    cluster.ResourceSettings(),
-			"elasticstack_elasticsearch_snapshot_lifecycle":  cluster.ResourceSlm(),
-			"elasticstack_elasticsearch_snapshot_repository": cluster.ResourceSnapshotRepository(),
-			"elasticstack_elasticsearch_transform":           transform.ResourceTransform(),
-
 			"elasticstack_kibana_space":         kibana.ResourceSpace(),
 			"elasticstack_kibana_security_role": kibana.ResourceRole(),
 		},

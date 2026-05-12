@@ -93,18 +93,16 @@ func createCalendarEvent(ctx context.Context, client *clients.ElasticsearchScope
 	}
 
 	existingIDs := make(map[string]struct{})
-	preRes, err := typedClient.Ml.GetCalendarEvents(calendarID).Size(10000).Do(ctx)
-	if err != nil {
-		diags.AddError(
-			"Failed to list calendar events before create",
-			fmt.Sprintf("Cannot snapshot existing event IDs for calendar %s — %s", calendarID, err.Error()),
-		)
-		return plan, diags
-	}
-	for _, e := range preRes.Events {
-		if e.EventId != nil && *e.EventId != "" {
-			existingIDs[*e.EventId] = struct{}{}
+	diags.Append(walkMLCalendarEventPages(ctx, typedClient, calendarID, func(events []estypes.CalendarEvent) bool {
+		for _, e := range events {
+			if e.EventId != nil && *e.EventId != "" {
+				existingIDs[*e.EventId] = struct{}{}
+			}
 		}
+		return false
+	})...)
+	if diags.HasError() {
+		return plan, diags
 	}
 
 	eventPayload := estypes.CalendarEvent{
@@ -133,20 +131,20 @@ func createCalendarEvent(ctx context.Context, client *clients.ElasticsearchScope
 	}
 
 	if eventID == "" {
-		getRes, err := typedClient.Ml.GetCalendarEvents(calendarID).Size(10000).Do(ctx)
-		if err != nil {
-			diags.AddError("Failed to get calendar events after creation", err.Error())
-			return plan, diags
-		}
-
 		var candidates []estypes.CalendarEvent
-		for _, event := range getRes.Events {
-			if event.EventId == nil || *event.EventId == "" {
-				continue
+		diags.Append(walkMLCalendarEventPages(ctx, typedClient, calendarID, func(events []estypes.CalendarEvent) bool {
+			for _, event := range events {
+				if event.EventId == nil || *event.EventId == "" {
+					continue
+				}
+				if _, existed := existingIDs[*event.EventId]; !existed {
+					candidates = append(candidates, event)
+				}
 			}
-			if _, existed := existingIDs[*event.EventId]; !existed {
-				candidates = append(candidates, event)
-			}
+			return false
+		})...)
+		if diags.HasError() {
+			return plan, diags
 		}
 
 		switch len(candidates) {

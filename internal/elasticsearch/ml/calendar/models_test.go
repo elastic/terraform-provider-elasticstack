@@ -116,7 +116,7 @@ func TestTFModel_fromAPIModel(t *testing.T) {
 			expectedJobIDs:     []string{"job1", "job2"},
 		},
 		{
-			name:          "empty description from API becomes null",
+			name: "empty description from API preserved as empty string",
 			initialJobIDs: types.SetNull(types.StringType),
 			apiModel: &APIModel{
 				CalendarID:  "my-calendar",
@@ -124,7 +124,7 @@ func TestTFModel_fromAPIModel(t *testing.T) {
 				JobIDs:      []string{},
 			},
 			expectedCalendarID: "my-calendar",
-			expectedDesc:       types.StringNull(),
+			expectedDesc:       types.StringValue(""),
 			expectJobIDsNull:   true,
 		},
 		{
@@ -135,7 +135,7 @@ func TestTFModel_fromAPIModel(t *testing.T) {
 				JobIDs:     []string{},
 			},
 			expectedCalendarID: "my-calendar",
-			expectedDesc:       types.StringNull(),
+			expectedDesc:       types.StringValue(""),
 			expectedJobIDs:     []string{},
 		},
 		{
@@ -146,7 +146,7 @@ func TestTFModel_fromAPIModel(t *testing.T) {
 				JobIDs:     []string{},
 			},
 			expectedCalendarID: "my-calendar",
-			expectedDesc:       types.StringNull(),
+			expectedDesc:       types.StringValue(""),
 			expectJobIDsNull:   true,
 		},
 	}

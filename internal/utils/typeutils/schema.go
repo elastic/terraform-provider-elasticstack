@@ -18,7 +18,6 @@
 package typeutils
 
 import (
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -28,8 +27,4 @@ func ExpandStringSet(set *schema.Set) []string {
 		strs = append(strs, v.(string))
 	}
 	return strs
-}
-
-func IsKnown(value attr.Value) bool {
-	return !value.IsNull() && !value.IsUnknown()
 }

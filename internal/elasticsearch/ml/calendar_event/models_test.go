@@ -22,6 +22,7 @@ import (
 	"testing"
 	"time"
 
+	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
@@ -76,6 +77,40 @@ func TestCalendarEventTFModel_fromAPIModel(t *testing.T) {
 				EventID:     "evt-123",
 			},
 			expectedEventID: "evt-123",
+			expectedCalID:   "ops-calendar",
+			expectedDesc:    "planned outage",
+		},
+		{
+			name: "handles int64 epoch millis from API",
+			initialModel: &CalendarEventTFModel{
+				StartTime: timetypes.NewRFC3339TimeValue(time.Date(2026, 3, 15, 10, 0, 0, 0, time.UTC)),
+				EndTime:   timetypes.NewRFC3339TimeValue(time.Date(2026, 3, 15, 18, 0, 0, 0, time.UTC)),
+			},
+			apiModel: &CalendarEventAPIModel{
+				Description: "planned outage",
+				StartTime:   int64(startMillis),
+				EndTime:     int64(endMillis),
+				CalendarID:  "ops-calendar",
+				EventID:     "evt-789",
+			},
+			expectedEventID: "evt-789",
+			expectedCalID:   "ops-calendar",
+			expectedDesc:    "planned outage",
+		},
+		{
+			name: "handles typed DateTime values from API",
+			initialModel: &CalendarEventTFModel{
+				StartTime: timetypes.NewRFC3339TimeValue(time.Date(2026, 3, 15, 10, 0, 0, 0, time.UTC)),
+				EndTime:   timetypes.NewRFC3339TimeValue(time.Date(2026, 3, 15, 18, 0, 0, 0, time.UTC)),
+			},
+			apiModel: &CalendarEventAPIModel{
+				Description: "planned outage",
+				StartTime:   estypes.DateTime(float64(startMillis)),
+				EndTime:     estypes.DateTime(float64(endMillis)),
+				CalendarID:  "ops-calendar",
+				EventID:     "evt-dt",
+			},
+			expectedEventID: "evt-dt",
 			expectedCalID:   "ops-calendar",
 			expectedDesc:    "planned outage",
 		},

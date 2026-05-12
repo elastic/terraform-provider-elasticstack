@@ -137,13 +137,13 @@ data "elasticstack_elasticsearch_security_role" "example" {
 ## Requirements
 ### Requirement: Data source read API (DS-REQ-001)
 
-The data source SHALL use the Elasticsearch Get roles API to read a role by name ([Get role API docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-get-role.html)).
+The data source SHALL read a single Elasticsearch security role by `name` using the Get Role API. The read logic SHALL live inside the `readDataSource` callback passed to `entitycore.NewElasticsearchDataSource`.
 
-#### Scenario: Successful data source read
+#### Scenario: Role found
 
-- GIVEN a role exists in Elasticsearch
-- WHEN the data source is read
-- THEN the provider SHALL call the Get role API and populate all attributes in state
+- **GIVEN** a role exists in Elasticsearch with the requested `name`
+- **WHEN** the data source is read
+- **THEN** all computed attributes SHALL be populated from the API response
 
 ### Requirement: Data source API error surfacing (DS-REQ-002)
 
@@ -157,43 +157,44 @@ When Elasticsearch returns a non-success status for the read request (other than
 
 ### Requirement: Data source identity (DS-REQ-003)
 
-The data source SHALL expose a computed `id` representing a composite identifier in the format `<cluster_uuid>/<role_name>`, derived from the configured `name` and the target cluster UUID.
+The data source SHALL expose a computed `id` attribute in the format `<cluster_uuid>/<role_name>`, derived by calling `client.ID(ctx, roleName)` after resolving the scoped client.
 
-#### Scenario: Data source id after read
+#### Scenario: Computed id set
 
-- GIVEN a successful data source read
-- WHEN state is written
-- THEN `id` SHALL equal `<cluster_uuid>/<role_name>` for the target cluster and configured name
+- **GIVEN** the data source reads an existing role
+- **WHEN** read completes
+- **THEN** `id` SHALL equal `<cluster_uuid>/<role_name>`
 
 ### Requirement: Data source not found behavior (DS-REQ-004)
 
-When a role is not found (the API returns no result), the data source SHALL remove itself from Terraform state (set `id` to empty string) rather than returning an error.
+When a role is not found, the data source SHALL preserve SDK behavior by setting `id` to an empty string and returning no warning or error diagnostic.
 
-#### Scenario: Role does not exist
+#### Scenario: Role not found
 
-- GIVEN the role named in `name` does not exist in Elasticsearch
-- WHEN the data source reads
-- THEN `id` SHALL be set to empty string and no error diagnostic SHALL be returned
+- **GIVEN** a role does not exist with the requested `name`
+- **WHEN** the data source is read
+- **THEN** `id` SHALL be set to an empty string
+- **AND** no diagnostic SHALL be returned
 
 ### Requirement: Data source connection (DS-REQ-005–DS-REQ-006)
 
-The data source SHALL use the provider's configured Elasticsearch client by default. When the (deprecated) `elasticsearch_connection` block is configured on the data source, the data source SHALL use that connection to create an Elasticsearch client for all API calls of that instance.
+The data source SHALL use the provider's configured Elasticsearch client by default. When the `elasticsearch_connection` block is configured, the data source SHALL use that connection. Connection resolution SHALL be owned by the `entitycore.NewElasticsearchDataSource` envelope.
 
-#### Scenario: Data source with resource-scoped connection
+#### Scenario: Data source-scoped connection
 
-- GIVEN `elasticsearch_connection` is set on the data source
-- WHEN the data source reads
-- THEN the client SHALL be built from that block
+- **GIVEN** `elasticsearch_connection` is set
+- **WHEN** the data source reads the role
+- **THEN** the scoped client SHALL be built from that block
 
 ### Requirement: Data source attribute mapping (DS-REQ-007)
 
-When reading a role, the data source SHALL map all role fields from the API response to state: `name`, `description` (when present), `applications`, `cluster`, `global` (serialized as JSON string when present), `indices` (including `field_security`), `remote_indices` (including `field_security`), `metadata` (serialized as JSON string when present), and `run_as`.
+The data source SHALL map the Get Role API response into the following computed attributes: `description`, `cluster`, `run_as`, `global` (as normalized JSON string), `metadata` (as normalized JSON string), `applications` (set of objects), `indices` (set of objects with nested `field_security` list), and `remote_indices` (set of objects with nested `field_security` list). `cluster` privileges SHALL be mapped as strings.
 
-#### Scenario: Full role mapping
+#### Scenario: All attributes mapped
 
-- GIVEN a role with all fields set in Elasticsearch
-- WHEN the data source reads
-- THEN all attributes SHALL be populated in state with correct values from the API response
+- **GIVEN** a successful API response with all role fields present
+- **WHEN** read completes
+- **THEN** every computed attribute SHALL reflect the corresponding API value
 
 ### Requirement: Role CRUD APIs (REQ-001–REQ-003)
 
@@ -389,4 +390,23 @@ The `elasticstack_elasticsearch_security_role` resource and data source SHALL re
 - **WHEN** the data source reads a role
 - **THEN** the provider SHALL call `Security.GetRole` on the typed client
 - **AND** the response SHALL be used as `getrole.Response`
+
+### Requirement: Data source uses Plugin Framework and entitycore envelope
+
+The data source SHALL be implemented as a Plugin Framework `datasource.DataSource` constructed via `entitycore.NewElasticsearchDataSource`. The concrete model SHALL embed `entitycore.ElasticsearchConnectionField` and SHALL satisfy `entitycore.ElasticsearchDataSourceModel`. The envelope SHALL own config decode, scoped client resolution, and state persistence.
+
+#### Scenario: Envelope handles connection and decode
+
+- **WHEN** the data source is evaluated
+- **THEN** `entitycore.NewElasticsearchDataSource` SHALL decode the configuration into the concrete model
+- **AND** resolve the scoped Elasticsearch client from the model's `elasticsearch_connection` block
+- **AND** invoke the entity-specific read callback
+- **AND** persist the returned model to state
+
+#### Scenario: Read callback owns API call and id assignment
+
+- **WHEN** the entity-specific read callback is invoked with the scoped client and config
+- **THEN** it SHALL call `elasticsearch.GetRole`
+- **AND** when the role is found, set `model.ID` to `<cluster_uuid>/<role_name>`
+- **AND** map the API response into the model's nested attributes
 

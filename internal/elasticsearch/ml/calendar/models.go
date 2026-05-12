@@ -74,11 +74,8 @@ func (m *TFModel) fromAPIModel(ctx context.Context, apiModel *APIModel) fwdiags.
 
 	m.CalendarID = types.StringValue(apiModel.CalendarID)
 
-	if apiModel.Description != "" {
-		m.Description = types.StringValue(apiModel.Description)
-	} else {
-		m.Description = types.StringNull()
-	}
+	// Preserve empty string so `description = ""` does not drift to null after refresh.
+	m.Description = types.StringValue(apiModel.Description)
 
 	if len(apiModel.JobIDs) == 0 && m.JobIDs.IsNull() {
 		return diags

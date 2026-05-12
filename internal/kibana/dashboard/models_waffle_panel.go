@@ -45,8 +45,14 @@ type wafflePanelConfigConverter struct {
 	lensVisualizationBase
 }
 
-func (c wafflePanelConfigConverter) populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
+func (c wafflePanelConfigConverter) populateFromAttributes(ctx context.Context, dashboard *dashboardModel, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
 	seed := pm.WaffleConfig
+
+	var prior *waffleConfigModel
+	if seed != nil {
+		cpy := *seed
+		prior = &cpy
+	}
 
 	raw, err := attrs.MarshalJSON()
 	if err != nil {
@@ -64,13 +70,13 @@ func (c wafflePanelConfigConverter) populateFromAttributes(ctx context.Context, 
 		if err != nil {
 			return diagutil.FrameworkDiagFromError(err)
 		}
-		diags = pm.WaffleConfig.fromAPIESQL(ctx, wESQL)
+		diags = pm.WaffleConfig.fromAPIESQL(ctx, dashboard, prior, wESQL)
 	} else {
 		wNoESQL, err := attrs.AsWaffleNoESQL()
 		if err != nil {
 			return diagutil.FrameworkDiagFromError(err)
 		}
-		diags = pm.WaffleConfig.fromAPINoESQL(ctx, wNoESQL)
+		diags = pm.WaffleConfig.fromAPINoESQL(ctx, dashboard, prior, wNoESQL)
 	}
 	mergeWaffleConfigFromPlanSeed(pm.WaffleConfig, seed)
 	return diags
@@ -100,9 +106,9 @@ func waffleChartJSONUsesESQLDataset(waffleChartJSON []byte) (bool, error) {
 	}
 }
 
-func (c wafflePanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func (c wafflePanelConfigConverter) buildAttributes(pm panelModel, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	configModel := *pm.WaffleConfig
-	return configModel.toAPI()
+	return configModel.toAPI(dashboard)
 }
 
 // normalizeKibanaLensNumberFormatJSONString trims Lens number-format defaults Kibana adds on read
@@ -183,6 +189,7 @@ func mergeWaffleConfigFromPlanSeed(cur, seed *waffleConfigModel) {
 }
 
 type waffleConfigModel struct {
+	lensChartPresentationTFModel
 	Title               types.String           `tfsdk:"title"`
 	Description         types.String           `tfsdk:"description"`
 	DataSourceJSON      jsontypes.Normalized   `tfsdk:"data_source_json"`
@@ -248,7 +255,7 @@ func (m *waffleConfigModel) usesESQL() bool {
 	return m.Query.Expression.IsNull() && m.Query.Language.IsNull()
 }
 
-func (m *waffleConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.WaffleNoESQL) diag.Diagnostics {
+func (m *waffleConfigModel) fromAPINoESQL(ctx context.Context, dashboard *dashboardModel, prior *waffleConfigModel, api kbapi.WaffleNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 
@@ -330,10 +337,28 @@ func (m *waffleConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.WaffleN
 
 	m.EsqlMetrics = nil
 	m.EsqlGroupBy = nil
+
+	var priorLens *lensChartPresentationTFModel
+	if prior != nil {
+		p := prior.lensChartPresentationTFModel
+		priorLens = &p
+	}
+	ddWire, ddOmit, ddWireDiags := lensDrilldownsAPIToWire(api.Drilldowns)
+	diags.Append(ddWireDiags...)
+	if ddWireDiags.HasError() {
+		return diags
+	}
+	pres, presDiags := lensChartPresentationReadsFor(ctx, dashboard, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return diags
+	}
+	m.lensChartPresentationTFModel = pres
+
 	return diags
 }
 
-func (m *waffleConfigModel) fromAPIESQL(ctx context.Context, api kbapi.WaffleESQL) diag.Diagnostics {
+func (m *waffleConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashboardModel, prior *waffleConfigModel, api kbapi.WaffleESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 
@@ -443,6 +468,24 @@ func (m *waffleConfigModel) fromAPIESQL(ctx context.Context, api kbapi.WaffleESQ
 
 	m.Metrics = nil
 	m.GroupBy = nil
+
+	var priorLens *lensChartPresentationTFModel
+	if prior != nil {
+		p := prior.lensChartPresentationTFModel
+		priorLens = &p
+	}
+	ddWire, ddOmit, ddWireDiags := lensDrilldownsAPIToWire(api.Drilldowns)
+	diags.Append(ddWireDiags...)
+	if ddWireDiags.HasError() {
+		return diags
+	}
+	pres, presDiags := lensChartPresentationReadsFor(ctx, dashboard, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return diags
+	}
+	m.lensChartPresentationTFModel = pres
+
 	return diags
 }
 
@@ -511,7 +554,7 @@ func (m *waffleLegendModel) toAPI() (kbapi.WaffleLegend, diag.Diagnostics) {
 	return leg, diags
 }
 
-func (m *waffleConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func (m *waffleConfigModel) toAPI(dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 	var diags diag.Diagnostics
 
@@ -531,7 +574,7 @@ func (m *waffleConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, diag
 	}
 
 	if m.usesESQL() {
-		esql, d := m.toAPIESQL()
+		esql, d := m.toAPIESQL(dashboard)
 		diags.Append(d...)
 		if diags.HasError() {
 			return attrs, diags
@@ -542,7 +585,7 @@ func (m *waffleConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, diag
 		return attrs, diags
 	}
 
-	noESQL, d := m.toAPINoESQL()
+	noESQL, d := m.toAPINoESQL(dashboard)
 	diags.Append(d...)
 	if diags.HasError() {
 		return attrs, diags
@@ -553,11 +596,10 @@ func (m *waffleConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, diag
 	return attrs, diags
 }
 
-func (m *waffleConfigModel) toAPINoESQL() (kbapi.WaffleNoESQL, diag.Diagnostics) {
+func (m *waffleConfigModel) toAPINoESQL(dashboard *dashboardModel) (kbapi.WaffleNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	api := kbapi.WaffleNoESQL{
-		Type:      kbapi.WaffleNoESQLTypeWaffle,
-		TimeRange: lensPanelTimeRange(),
+		Type: kbapi.WaffleNoESQLTypeWaffle,
 	}
 
 	if typeutils.IsKnown(m.Title) {
@@ -634,14 +676,37 @@ func (m *waffleConfigModel) toAPINoESQL() (kbapi.WaffleNoESQL, diag.Diagnostics)
 		api.GroupBy = &gb
 	}
 
+	writes, presDiags := lensChartPresentationWritesFor(dashboard, m.lensChartPresentationTFModel)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return api, diags
+	}
+
+	api.TimeRange = writes.TimeRange
+	if writes.HideTitle != nil {
+		api.HideTitle = writes.HideTitle
+	}
+	if writes.HideBorder != nil {
+		api.HideBorder = writes.HideBorder
+	}
+	if writes.References != nil {
+		api.References = writes.References
+	}
+	if len(writes.DrilldownsRaw) > 0 {
+		items, ddDiags := decodeLensDrilldownSlice[kbapi.WaffleNoESQL_Drilldowns_Item](writes.DrilldownsRaw)
+		diags.Append(ddDiags...)
+		if !ddDiags.HasError() {
+			api.Drilldowns = &items
+		}
+	}
+
 	return api, diags
 }
 
-func (m *waffleConfigModel) toAPIESQL() (kbapi.WaffleESQL, diag.Diagnostics) {
+func (m *waffleConfigModel) toAPIESQL(dashboard *dashboardModel) (kbapi.WaffleESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	api := kbapi.WaffleESQL{
-		Type:      kbapi.WaffleESQLTypeWaffle,
-		TimeRange: lensPanelTimeRange(),
+		Type: kbapi.WaffleESQLTypeWaffle,
 	}
 
 	if typeutils.IsKnown(m.Title) {
@@ -752,6 +817,30 @@ func (m *waffleConfigModel) toAPIESQL() (kbapi.WaffleESQL, diag.Diagnostics) {
 			}
 		}
 		api.GroupBy = &gb
+	}
+
+	writes, presDiags := lensChartPresentationWritesFor(dashboard, m.lensChartPresentationTFModel)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return api, diags
+	}
+
+	api.TimeRange = writes.TimeRange
+	if writes.HideTitle != nil {
+		api.HideTitle = writes.HideTitle
+	}
+	if writes.HideBorder != nil {
+		api.HideBorder = writes.HideBorder
+	}
+	if writes.References != nil {
+		api.References = writes.References
+	}
+	if len(writes.DrilldownsRaw) > 0 {
+		items, ddDiags := decodeLensDrilldownSlice[kbapi.WaffleESQL_Drilldowns_Item](writes.DrilldownsRaw)
+		diags.Append(ddDiags...)
+		if !ddDiags.HasError() {
+			api.Drilldowns = &items
+		}
 	}
 
 	return api, diags

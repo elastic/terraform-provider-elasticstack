@@ -1,19 +1,44 @@
-pre-start = "make setup"
+[[pre-start]]
+setup = "make setup"
 
-post-start = """set -e
-cp -n .env.template .env
-PORT={{ 10000 + (branch | hash_port) % 5000 }}
-KB_PORT={{ 15000 + ((branch ~ '-kb') | hash_port) % 5000 }}
-grep -q "^ELASTICSEARCH_PORT=" .env || echo "ELASTICSEARCH_PORT=$PORT" >> .env
-grep -q "^KIBANA_PORT=" .env || echo "KIBANA_PORT=$KB_PORT" >> .env
-grep -q "^ELASTICSEARCH_URL=" .env || echo "ELASTICSEARCH_URL=http://localhost:$PORT" >> .env
-grep -q "^ELASTICSEARCH_ENDPOINTS=" .env || echo "ELASTICSEARCH_ENDPOINTS=http://localhost:$PORT" >> .env
-grep -q "^ELASTICSEARCH_USERNAME=" .env || echo "ELASTICSEARCH_USERNAME=elastic" >> .env
-grep -q "^KIBANA_ENDPOINT=" .env || echo "KIBANA_ENDPOINT=http://localhost:$KB_PORT" >> .env
-grep -q "^KIBANA_USERNAME=" .env || echo "KIBANA_USERNAME=elastic" >> .env
-direnv allow
+[[pre-start]]
+env = """python3 - <<'PY'
+from pathlib import Path
+
+env_path = Path('.env')
+if not env_path.exists():
+    env_path.write_text(Path('.env.template').read_text())
+
+port = "{{ 10000 + (branch | hash_port) % 5000 }}"
+kb_port = "{{ 15000 + ((branch ~ '-kb') | hash_port) % 5000 }}"
+
+required = {
+    "ELASTICSEARCH_PORT": port,
+    "KIBANA_PORT": kb_port,
+    "ELASTICSEARCH_URL": f"http://localhost:{port}",
+    "ELASTICSEARCH_ENDPOINTS": f"http://localhost:{port}",
+    "ELASTICSEARCH_USERNAME": "elastic",
+    "KIBANA_ENDPOINT": f"http://localhost:{kb_port}",
+    "KIBANA_USERNAME": "elastic",
+}
+
+lines = env_path.read_text().splitlines()
+existing = {
+    line.split('=', 1)[0]
+    for line in lines
+    if line and not line.startswith('#') and '=' in line
+}
+
+for key, value in required.items():
+    if key not in existing:
+        lines.append(f"{key}={value}")
+
+env_path.write_text(chr(10).join(lines) + chr(10))
+PY
 """
 
-pre-commit = "make check-lint"
+[pre-commit]
+check = "make check-lint"
 
-pre-remove = "docker compose down --volumes"
+[pre-remove]
+default = "docker compose down --volumes"
