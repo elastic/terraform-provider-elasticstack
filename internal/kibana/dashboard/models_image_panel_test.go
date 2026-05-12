@@ -149,7 +149,8 @@ func Test_populateImagePanelFromAPI_nullPreservation(t *testing.T) {
 	objFit := kbapi.KbnDashboardPanelTypeImageConfigImageConfigObjectFitContain
 
 	apiPanel := kbapi.KbnDashboardPanelTypeImage{}
-	apiPanel.Config.Title = ptrString("t")
+	title := "t"
+	apiPanel.Config.Title = &title
 	apiPanel.Config.ImageConfig.ObjectFit = &objFit
 	src := kbapi.KbnDashboardPanelTypeImageConfigImageConfigSrc0{Type: kbapi.File, FileId: "img-1"}
 	require.NoError(t, apiPanel.Config.ImageConfig.Src.FromKbnDashboardPanelTypeImageConfigImageConfigSrc0(src))
@@ -227,7 +228,62 @@ func Test_populateImagePanelFromAPI_nullPreservation(t *testing.T) {
 	assert.True(t, cfg.Drilldowns[1].URLDrilldown.OpenInNewTab.IsNull())
 }
 
-func ptrString(s string) *string { return &s }
+func Test_populateImagePanelFromAPI_import_drilldownDefaultsAndObjectFitNull(t *testing.T) {
+	useF := false
+	tr := false
+	tab := false
+	encode := true
+	objFit := kbapi.KbnDashboardPanelTypeImageConfigImageConfigObjectFitContain
+
+	apiPanel := kbapi.KbnDashboardPanelTypeImage{}
+	apiPanel.Config.ImageConfig.ObjectFit = &objFit
+	src := kbapi.KbnDashboardPanelTypeImageConfigImageConfigSrc0{Type: kbapi.File, FileId: "img-1"}
+	require.NoError(t, apiPanel.Config.ImageConfig.Src.FromKbnDashboardPanelTypeImageConfigImageConfigSrc0(src))
+
+	d0 := kbapi.KbnDashboardPanelTypeImageConfigDrilldowns0{
+		DashboardId:  "d1",
+		Label:        "l",
+		Trigger:      kbapi.KbnDashboardPanelTypeImageConfigDrilldowns0TriggerOnClickImage,
+		Type:         kbapi.KbnDashboardPanelTypeImageConfigDrilldowns0TypeDashboardDrilldown,
+		UseFilters:   &useF,
+		UseTimeRange: &tr,
+		OpenInNewTab: &tab,
+	}
+	var dashItem kbapi.KbnDashboardPanelTypeImage_Config_Drilldowns_Item
+	require.NoError(t, dashItem.FromKbnDashboardPanelTypeImageConfigDrilldowns0(d0))
+
+	d1 := kbapi.KbnDashboardPanelTypeImageConfigDrilldowns1{
+		Url:          "https://example.com",
+		Label:        "u",
+		Trigger:      kbapi.KbnDashboardPanelTypeImageConfigDrilldowns1TriggerOnClickImage,
+		Type:         kbapi.KbnDashboardPanelTypeImageConfigDrilldowns1TypeUrlDrilldown,
+		EncodeUrl:    &encode,
+		OpenInNewTab: &tab,
+	}
+	var urlItem kbapi.KbnDashboardPanelTypeImage_Config_Drilldowns_Item
+	require.NoError(t, urlItem.FromKbnDashboardPanelTypeImageConfigDrilldowns1(d1))
+
+	apiPanel.Config.Drilldowns = &[]kbapi.KbnDashboardPanelTypeImage_Config_Drilldowns_Item{dashItem, urlItem}
+
+	pm := panelModel{}
+	populateImagePanelFromAPI(&pm, nil, apiPanel)
+
+	cfg := pm.ImageConfig
+	require.NotNil(t, cfg)
+	assert.True(t, cfg.ObjectFit.IsNull(), "import: object_fit contain default should be null in state")
+
+	require.Len(t, cfg.Drilldowns, 2)
+	dd := cfg.Drilldowns[0].DashboardDrilldown
+	require.NotNil(t, dd)
+	assert.True(t, dd.UseFilters.IsNull())
+	assert.True(t, dd.UseTimeRange.IsNull())
+	assert.True(t, dd.OpenInNewTab.IsNull())
+
+	ud := cfg.Drilldowns[1].URLDrilldown
+	require.NotNil(t, ud)
+	assert.True(t, ud.EncodeURL.IsNull())
+	assert.True(t, ud.OpenInNewTab.IsNull())
+}
 
 func Test_imagePanelSrcValidator(t *testing.T) {
 	ctx := context.Background()

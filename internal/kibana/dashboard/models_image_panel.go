@@ -120,7 +120,8 @@ func imagePanelToAPI(pm panelModel, grid struct {
 		img.ObjectFit = &fit
 	}
 
-	if cfg.Src.File != nil {
+	switch {
+	case cfg.Src.File != nil:
 		src0 := kbapi.KbnDashboardPanelTypeImageConfigImageConfigSrc0{
 			Type:   kbapi.File,
 			FileId: cfg.Src.File.FileID.ValueString(),
@@ -129,7 +130,7 @@ func imagePanelToAPI(pm panelModel, grid struct {
 			diags.AddError("Invalid image src", err.Error())
 			return kbapi.DashboardPanelItem{}, diags
 		}
-	} else if cfg.Src.URL != nil {
+	case cfg.Src.URL != nil:
 		src1 := kbapi.KbnDashboardPanelTypeImageConfigImageConfigSrc1{
 			Type: kbapi.Url,
 			Url:  cfg.Src.URL.URL.ValueString(),
@@ -138,7 +139,7 @@ func imagePanelToAPI(pm panelModel, grid struct {
 			diags.AddError("Invalid image src", err.Error())
 			return kbapi.DashboardPanelItem{}, diags
 		}
-	} else {
+	default:
 		diags.AddError("Invalid image src", "Exactly one of `file` or `url` must be set inside `src`.")
 		return kbapi.DashboardPanelItem{}, diags
 	}
@@ -274,11 +275,7 @@ func imagePanelConfigFromAPIImport(apiPanel kbapi.KbnDashboardPanelTypeImage) *i
 		HideTitle:       types.BoolPointerValue(apiCfg.HideTitle),
 		HideBorder:      types.BoolPointerValue(apiCfg.HideBorder),
 		Drilldowns:      readImageDrilldownsFromAPI(apiCfg.Drilldowns, nil),
-	}
-	if apiCfg.ImageConfig.ObjectFit != nil {
-		cfg.ObjectFit = types.StringValue(string(*apiCfg.ImageConfig.ObjectFit))
-	} else {
-		cfg.ObjectFit = types.StringNull()
+		ObjectFit:       nullPreservingImageObjectFit(types.StringNull(), apiCfg.ImageConfig.ObjectFit),
 	}
 	return cfg
 }
@@ -355,8 +352,17 @@ func readImageDashboardDrilldownFromAPI(
 		Trigger:     types.StringValue(string(api.Trigger)),
 	}
 
+	// Import (no prior practitioner state for this drilldown): omit API values that match Kibana defaults so
+	// omitted HCL stays aligned with imported state (REQ-040).
+	if prior == nil {
+		m.UseFilters = imagePanelDrilldownBoolImportPreserving(api.UseFilters, imagePanelDashboardDrilldownBoolDefault)
+		m.UseTimeRange = imagePanelDrilldownBoolImportPreserving(api.UseTimeRange, imagePanelDashboardDrilldownBoolDefault)
+		m.OpenInNewTab = imagePanelDrilldownBoolImportPreserving(api.OpenInNewTab, imagePanelDashboardDrilldownBoolDefault)
+		return m
+	}
+
 	switch {
-	case prior != nil && prior.UseFilters.IsNull():
+	case prior.UseFilters.IsNull():
 		m.UseFilters = types.BoolNull()
 	case api.UseFilters != nil:
 		m.UseFilters = types.BoolValue(*api.UseFilters)
@@ -365,7 +371,7 @@ func readImageDashboardDrilldownFromAPI(
 	}
 
 	switch {
-	case prior != nil && prior.UseTimeRange.IsNull():
+	case prior.UseTimeRange.IsNull():
 		m.UseTimeRange = types.BoolNull()
 	case api.UseTimeRange != nil:
 		m.UseTimeRange = types.BoolValue(*api.UseTimeRange)
@@ -374,7 +380,7 @@ func readImageDashboardDrilldownFromAPI(
 	}
 
 	switch {
-	case prior != nil && prior.OpenInNewTab.IsNull():
+	case prior.OpenInNewTab.IsNull():
 		m.OpenInNewTab = types.BoolNull()
 	case api.OpenInNewTab != nil:
 		m.OpenInNewTab = types.BoolValue(*api.OpenInNewTab)
@@ -392,8 +398,14 @@ func readImageURLDrilldownFromAPI(api kbapi.KbnDashboardPanelTypeImageConfigDril
 		Trigger: types.StringValue(string(api.Trigger)),
 	}
 
+	if prior == nil {
+		m.EncodeURL = imagePanelDrilldownBoolImportPreserving(api.EncodeUrl, imagePanelURLDrilldownEncodeURLDefault)
+		m.OpenInNewTab = imagePanelDrilldownBoolImportPreserving(api.OpenInNewTab, imagePanelURLDrilldownOpenInNewTabDefault)
+		return m
+	}
+
 	switch {
-	case prior != nil && prior.EncodeURL.IsNull():
+	case prior.EncodeURL.IsNull():
 		m.EncodeURL = types.BoolNull()
 	case api.EncodeUrl != nil:
 		m.EncodeURL = types.BoolValue(*api.EncodeUrl)
@@ -402,7 +414,7 @@ func readImageURLDrilldownFromAPI(api kbapi.KbnDashboardPanelTypeImageConfigDril
 	}
 
 	switch {
-	case prior != nil && prior.OpenInNewTab.IsNull():
+	case prior.OpenInNewTab.IsNull():
 		m.OpenInNewTab = types.BoolNull()
 	case api.OpenInNewTab != nil:
 		m.OpenInNewTab = types.BoolValue(*api.OpenInNewTab)
@@ -411,4 +423,24 @@ func readImageURLDrilldownFromAPI(api kbapi.KbnDashboardPanelTypeImageConfigDril
 	}
 
 	return m
+}
+
+const (
+	// Kibana defaults for image panel dashboard drilldown booleans (when omitted in UI).
+	imagePanelDashboardDrilldownBoolDefault = false
+	// URL drilldown defaults match Kibana image embeddable URL drilldown schema behavior.
+	imagePanelURLDrilldownEncodeURLDefault    = true
+	imagePanelURLDrilldownOpenInNewTabDefault = false
+)
+
+// imagePanelDrilldownBoolImportPreserving maps optional API booleans on import: nil or value equal to the
+// server-side default becomes null in Terraform state so practitioners can omit those attributes without drift.
+func imagePanelDrilldownBoolImportPreserving(api *bool, serverDefault bool) types.Bool {
+	if api == nil {
+		return types.BoolNull()
+	}
+	if *api == serverDefault {
+		return types.BoolNull()
+	}
+	return types.BoolValue(*api)
 }
