@@ -50,7 +50,7 @@ type panelConfigValidator struct{}
 
 func (panelConfigValidator) Description(_ context.Context) string {
 	return "Ensures markdown panels configure `markdown_config` or `config_json`, " +
-		"`vis` panels configure exactly one visualization config block or `config_json`, " +
+		"`vis` panels configure exactly one of `viz_config`, a panel-level Lens chart block, or `config_json`, " +
 		"`slo_burn_rate` panels configure `slo_burn_rate_config`, " +
 		"`time_slider_control` panels use `time_slider_control_config` or omit config, " +
 		"`slo_overview` panels configure `slo_overview_config`, " +
@@ -85,8 +85,8 @@ func panelConfigValueStateFromValue(value attr.Value) panelConfigValueState {
 }
 
 func panelConfigSelectionList() string {
-	options := make([]string, 0, len(lensPanelConfigNames)+1)
-	options = append(options, "`config_json`")
+	options := make([]string, 0, len(lensPanelConfigNames)+3)
+	options = append(options, "`viz_config`", "`config_json`")
 	for _, name := range lensPanelConfigNames {
 		options = append(options, fmt.Sprintf("`%s`", name))
 	}
@@ -95,7 +95,7 @@ func panelConfigSelectionList() string {
 
 func panelConfigValidateDiags(
 	panelType string,
-	markdownConfig, configJSON, sloBurnRateConfig, sloErrorBudgetConfig panelConfigValueState,
+	markdownConfig, configJSON, vizConfig, sloBurnRateConfig, sloErrorBudgetConfig panelConfigValueState,
 	lensConfigs map[string]panelConfigValueState,
 	sloOverviewConfig panelConfigValueState,
 	attrPath *path.Path,
@@ -132,6 +132,11 @@ func panelConfigValidateDiags(
 		if configJSON.Set {
 			setCount++
 		}
+		vizCfg := vizConfig
+		if vizCfg.Set {
+			setCount++
+		}
+		hasUnknown = hasUnknown || vizCfg.Unknown
 		for _, name := range lensPanelConfigNames {
 			state := lensConfigs[name]
 			if state.Set {
@@ -197,6 +202,7 @@ func (v panelConfigValidator) ValidateObject(_ context.Context, req validator.Ob
 		typeValue.ValueString(),
 		panelConfigValueStateFromValue(attrs["markdown_config"]),
 		panelConfigValueStateFromValue(attrs["config_json"]),
+		panelConfigValueStateFromValue(attrs["viz_config"]),
 		panelConfigValueStateFromValue(attrs["slo_burn_rate_config"]),
 		panelConfigValueStateFromValue(attrs["slo_error_budget_config"]),
 		lensConfigs,

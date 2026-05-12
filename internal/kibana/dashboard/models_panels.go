@@ -57,6 +57,7 @@ type panelModel struct {
 	SyntheticsStatsOverviewConfig *syntheticsStatsOverviewConfigModel               `tfsdk:"synthetics_stats_overview_config"`
 	SyntheticsMonitorsConfig      *syntheticsMonitorsConfigModel                    `tfsdk:"synthetics_monitors_config"`
 	LensDashboardAppConfig        *lensDashboardAppConfigModel                      `tfsdk:"lens_dashboard_app_config"`
+	VizConfig                     *vizConfigModel                                   `tfsdk:"viz_config"`
 	ConfigJSON                    customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config_json"`
 }
 
@@ -226,7 +227,8 @@ func panelHasTypedConfig(pm *panelModel) bool {
 		pm.RangeSliderControlConfig != nil ||
 		pm.SyntheticsStatsOverviewConfig != nil ||
 		pm.SyntheticsMonitorsConfig != nil ||
-		pm.LensDashboardAppConfig != nil
+		pm.LensDashboardAppConfig != nil ||
+		pm.VizConfig != nil
 }
 
 func panelUsesConfigJSONOnly(pm *panelModel) bool {
@@ -260,6 +262,7 @@ func clearPanelConfigBlocks(pm *panelModel) {
 	pm.SyntheticsStatsOverviewConfig = nil
 	pm.SyntheticsMonitorsConfig = nil
 	pm.LensDashboardAppConfig = nil
+	pm.VizConfig = nil
 }
 
 func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelModel, panelItem kbapi.DashboardPanelItem) (panelModel, diag.Diagnostics) {
