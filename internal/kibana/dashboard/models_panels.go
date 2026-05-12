@@ -410,6 +410,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 			pm.VizConfig = &vizConfigModel{
 				ByValue: &vizByValueModel{},
 			}
+			seedWaffleLensByValueChartFromPriorPanel(&pm.VizConfig.ByValue.lensByValueChartBlocks, tfPanel)
 			d := converter.populateFromAttributes(ctx, &pm.VizConfig.ByValue.lensByValueChartBlocks, config0)
 			diags.Append(d...)
 
@@ -441,6 +442,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 			pm.VizConfig = &vizConfigModel{
 				ByValue: &vizByValueModel{},
 			}
+			seedWaffleLensByValueChartFromPriorPanel(&pm.VizConfig.ByValue.lensByValueChartBlocks, tfPanel)
 			d := converter.populateFromAttributes(ctx, &pm.VizConfig.ByValue.lensByValueChartBlocks, config0)
 			diags.Append(d...)
 		}

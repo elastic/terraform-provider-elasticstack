@@ -123,6 +123,10 @@ func alignMosaicStateFromPlan(plan, state *mosaicConfigModel) {
 		return
 	}
 	alignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
+	// Lens API commonly omits optional snapshot fields Kibana echoes as absent on read while the practitioner
+	// set them explicitly; mosaic fromAPI maps unknown "current" to null unless we replay plan here.
+	preserveKnownTfBoolIfStateNull(plan.IgnoreGlobalFilters, &state.IgnoreGlobalFilters)
+	preserveKnownTfFloat64IfStateNull(plan.Sampling, &state.Sampling)
 }
 
 func alignPieStateFromPlan(plan, state *pieChartConfigModel) {
@@ -155,6 +159,8 @@ func alignTreemapStateFromPlan(plan, state *treemapConfigModel) {
 		return
 	}
 	alignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
+	preserveKnownTfBoolIfStateNull(plan.IgnoreGlobalFilters, &state.IgnoreGlobalFilters)
+	preserveKnownTfFloat64IfStateNull(plan.Sampling, &state.Sampling)
 }
 
 func alignWaffleStateFromPlan(ctx context.Context, plan, state *waffleConfigModel) {
@@ -188,6 +194,18 @@ func alignTitleAndDescriptionFromPlan(planTitle, planDescription types.String, s
 
 func preserveKnownListIfStateNull(plan types.List, state *types.List) {
 	if typeutils.IsKnown(plan) && (state.IsNull() || state.IsUnknown()) {
+		*state = plan
+	}
+}
+
+func preserveKnownTfBoolIfStateNull(plan types.Bool, state *types.Bool) {
+	if typeutils.IsKnown(plan) && !plan.IsNull() && (!typeutils.IsKnown(*state) || state.IsNull()) {
+		*state = plan
+	}
+}
+
+func preserveKnownTfFloat64IfStateNull(plan types.Float64, state *types.Float64) {
+	if typeutils.IsKnown(plan) && !plan.IsNull() && (!typeutils.IsKnown(*state) || state.IsNull()) {
 		*state = plan
 	}
 }

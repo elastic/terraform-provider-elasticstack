@@ -113,6 +113,56 @@ func Test_alignPanelStateFromPlan_preservesCommonPanelFields(t *testing.T) {
 	assert.Equal(t, planPanels[2].VizConfig.ByValue.TagcloudConfig.TagByJSON.ValueString(), statePanels[2].VizConfig.ByValue.TagcloudConfig.TagByJSON.ValueString())
 }
 
+func Test_alignPanelStateFromPlan_preservesMosaicTreemapPartitionSnapshots(t *testing.T) {
+	plan := panelModel{
+		VizConfig: &vizConfigModel{
+			ByValue: &vizByValueModel{
+				lensByValueChartBlocks: lensByValueChartBlocks{
+					MosaicConfig: &mosaicConfigModel{
+						Title:               types.StringValue("M"),
+						Description:         types.StringValue("d"),
+						IgnoreGlobalFilters: types.BoolValue(true),
+						Sampling:            types.Float64Value(0.5),
+					},
+					TreemapConfig: &treemapConfigModel{
+						Title:               types.StringValue("T"),
+						Description:         types.StringValue("d"),
+						IgnoreGlobalFilters: types.BoolValue(true),
+						Sampling:            types.Float64Value(0.5),
+					},
+				},
+			},
+		},
+	}
+	state := panelModel{
+		VizConfig: &vizConfigModel{
+			ByValue: &vizByValueModel{
+				lensByValueChartBlocks: lensByValueChartBlocks{
+					MosaicConfig: &mosaicConfigModel{
+						Title:               types.StringValue("M"),
+						Description:         types.StringValue("d"),
+						IgnoreGlobalFilters: types.BoolNull(),
+						Sampling:            types.Float64Null(),
+					},
+					TreemapConfig: &treemapConfigModel{
+						Title:               types.StringValue("T"),
+						Description:         types.StringValue("d"),
+						IgnoreGlobalFilters: types.BoolNull(),
+						Sampling:            types.Float64Null(),
+					},
+				},
+			},
+		},
+	}
+
+	alignPanelStateFromPlan(t.Context(), &plan, &state)
+
+	assert.True(t, state.VizConfig.ByValue.MosaicConfig.IgnoreGlobalFilters.ValueBool())
+	assert.InEpsilon(t, 0.5, state.VizConfig.ByValue.MosaicConfig.Sampling.ValueFloat64(), 1e-9)
+	assert.True(t, state.VizConfig.ByValue.TreemapConfig.IgnoreGlobalFilters.ValueBool())
+	assert.InEpsilon(t, 0.5, state.VizConfig.ByValue.TreemapConfig.Sampling.ValueFloat64(), 1e-9)
+}
+
 func mustTagcloudJSON(v string) customtypes.JSONWithDefaultsValue[map[string]any] {
 	return customtypes.NewJSONWithDefaultsValue(v, populateTagcloudTagByDefaults)
 }
