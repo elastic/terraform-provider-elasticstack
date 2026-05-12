@@ -116,7 +116,7 @@ func TestTFModel_fromAPIModel(t *testing.T) {
 			expectedJobIDs:     []string{"job1", "job2"},
 		},
 		{
-			name: "empty description from API preserved as empty string",
+			name:          "empty description from API preserved as empty string",
 			initialJobIDs: types.SetNull(types.StringType),
 			apiModel: &APIModel{
 				CalendarID:  "my-calendar",
