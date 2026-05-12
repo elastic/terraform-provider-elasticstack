@@ -43,7 +43,6 @@ func ConflictRetry[T any](ctx context.Context, maxAttempts int, fn func() (T, in
 			return result, diags
 		}
 
-		// Add jitter (0-50% of backoff) to spread concurrent retries.
 		jitter := time.Duration(rand.Int64N(int64(backoff) / 2))
 		wait := backoff + jitter
 

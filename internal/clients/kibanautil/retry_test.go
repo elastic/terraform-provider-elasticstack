@@ -107,7 +107,6 @@ func TestConflictRetry(t *testing.T) {
 		if !diags.HasError() {
 			t.Fatal("expected error diagnostics")
 		}
-		// Should have both the original 409 diagnostic and the context cancellation error.
 		if len(diags) < 2 {
 			t.Fatalf("got %d diagnostics, want at least 2 (original 409 + context error)", len(diags))
 		}
