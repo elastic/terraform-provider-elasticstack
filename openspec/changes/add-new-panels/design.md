@@ -21,7 +21,7 @@ The resource is not yet released, so breaking schema changes inside this bundle 
 
 - Managing uploaded image files (`image_config.src.file.file_id` references a Kibana file id; file upload is out of scope and will be addressed by a future `elasticstack_kibana_file` resource if requested).
 - Typing the inner Discover session tab `data_source` shape field-by-field — both DSL and ES|QL data sources are handled via `data_source_json` for v1.
-- Surfacing `references` on `discover_session_config.by_reference` — deferred pending confirmation of whether the Dashboard API expects client-side references for this panel or resolves them from `ref_id` internally.
+- Surfacing `references` / `references_json` on `discover_session_config.by_reference` for v1 — spike against Kibana **9.4.0** confirms the Dashboard API resolves `ref_id` alone and rejects a top-level dashboard `references` property on create (see “Open questions”); keeping this surface omitted avoids implying an unsupported saved-objects embedding workflow for this panel.
 - Drilldown variants the API does not allow for the relevant panel today (e.g., `dashboard_drilldown` on `slo_alerts` / `discover_session`). The schema is shaped so adding them later is additive.
 - Multi-tab Discover panels — the API restricts `tabs` to a single entry today and we expose a single `tab` object accordingly.
 
@@ -59,7 +59,7 @@ The resource is not yet released, so breaking schema changes inside this bundle 
 - **`header_row_height` and `row_height` are typed as strings with validators** matching the API union (`"1".."5"|"auto"` for header, `"1".."20"|"auto"` for row). Established Terraform pattern for `number | "auto"` API unions; avoids a forked attribute pair.
 - **`time_range` is optional at the panel level**, even though the API marks it required on both branches. Practitioners SHALL be able to omit it to inherit the dashboard-root `time_range`; the model layer applies the dashboard value when the panel attribute is null at write time. Read preserves null per REQ-009 when the API echoes the inherited value back. *(See "Risks" for why this is safe.)*
 - **`selected_tab_id` is optional input and computed when omitted**, since practitioners typically don't know tab UUIDs.
-- **`references` is deferred**: not exposed on `by_reference` in v1. The decision pivots on whether the Dashboard API expects client-side `references` for this panel — to be confirmed against a stack experimentally; if needed, a follow-on change adds `references_json` mirroring `lens_dashboard_app_config.by_reference.references_json`.
+- **`references` omitted on `by_reference` for v1**: spike on Kibana **9.4.0** showed no client-side references are needed (`ref_id` is sufficient); the dashboard POST schema does not allow top-level `references`. If a future API revision introduces panel-config references like Lens’s optional list, a follow-on change MAY add `references_json`.
 - **`drilldowns` reuses the shared `url_drilldown` block** (URL-only with `on_open_panel_menu` trigger).
 
 ### Coupling and sequencing
@@ -72,12 +72,27 @@ The resource is not yet released, so breaking schema changes inside this bundle 
 - [Risk] Practitioners may want to type Discover session inner tab state (column overrides, ES|QL data sources) field-by-field in the future, which would be a breaking change for anyone relying on `data_source_json` ➝ *Mitigation*: the resource is not yet released; we are free to promote subsets of JSON to typed attributes in subsequent changes. Document the v1 boundary in resource docs.
 - [Risk] API may extend drilldowns for `slo_alerts` or `discover_session` to include `dashboard_drilldown` ➝ *Mitigation*: the typed block list is shaped so adding a new sub-block per entry is additive (the per-entry shape becomes a discriminator just like image's).
 - [Risk] Optional panel-level `time_range` on `discover_session` differs from the API's "required" marking ➝ *Mitigation*: the model layer materializes the dashboard-root `time_range` into the panel payload at write time when the panel attribute is null, so the API always sees a value. On read, null-preservation keeps state intent stable.
-- [Risk] `references` deferral could turn out to be a hard requirement at runtime (panel write fails without it) ➝ *Mitigation*: planned spike before implementation begins — verify behavior against a live Kibana with a Discover session saved object. If references are required, the follow-on `references_json` addition is additive (no schema break) and can land before this change is unblocked for archive.
+- [Risk] `references` deferral could turn out to be a hard requirement at runtime (panel write fails without it) ➝ *Mitigation*: spike completed — confirm outcome in “Open questions”. If a later stack requires references, add `references_json` additively.
 - [Risk] `slos` non-empty validation rejects configurations the API itself accepts ➝ *Mitigation*: this is a deliberate opinionated constraint; surfaced clearly in resource docs. Empty SLO alerts panels are not a meaningful authoring outcome.
 - [Risk] Shared `url_drilldown` extraction subtly changes existing SLO panel behavior ➝ *Mitigation*: the Go refactor is mechanical (extract-method), unit tests for `slo_burn_rate` / `slo_overview` already cover drilldown round-trip, and acceptance tests run as part of the bundle's verification.
 - [Risk] Acceptance test for `by_reference` Discover panels needs a Discover session saved object as a fixture ➝ *Mitigation*: use the saved-objects API in test setup, mirroring the lens-by-reference acceptance pattern already proven in `acc_lens_dashboard_app_panels_test.go`.
 
 ## Open questions to confirm during implementation
 
-- Empirically verify whether `discover_session_config.by_reference` write requires the dashboard request to include client-side `references` for the panel. If yes, fold a `references_json` attribute into this change (additive) before archival.
+### Resolved: `discover_session` `by_reference` and client-side `references` (task 5 spike)
+
+**Stack:** `STACK_VERSION=9.4.0` (see repo `.env`). **Method:** Direct HTTP calls to the running local Kibana (`KIBANA_ENDPOINT`).
+
+1. **Discover saved object fixture:** `POST /api/saved_objects/search/<id>` succeeded with attributes `{title, columns, sort, version}` (saved object type `search`). `POST` with type `discover-session` returned **400 Unsupported saved object type**, so this spike used a `search` object as the linked Discover artifact.
+
+2. **Dashboard create without references:** `POST /api/dashboards?allowUnmappedKeys=true` with a single `discover_session` panel whose `config` contained only `time_range`, `ref_id` set to that saved object’s **id string**, and `title` — **no** `references` property on the dashboard body — returned **HTTP 201**. Example response snippet: `"type":"discover_session"` with `"ref_id":"<search-id>"` (Kibana echoed empty `overrides: {}`).
+
+3. **Read-back:** `GET /api/dashboards/<dashboard-id>?allowUnmappedKeys=true` returned the same panel shape with `ref_id` intact.
+
+4. **Control: top-level `references` on the dashboard body:** A second `POST` including `"references":[{"id":"<search-id>","type":"search","name":"discoverPanelRef"}]` alongside panels returned **HTTP 400**: `[request body.references]: Additional properties are not allowed ('references' was unexpected)`. So the Dashboard API does not accept a saved-object-style top-level `references` array on create at all (this differs from how `lens-dashboard-app` carries references **inside** the panel `config` via `references_json`).
+
+**Conclusion:** For `discover_session` `by_reference` on this stack version, the Dashboard API resolves the link from `ref_id` alone (here, the `search` saved object id). Client-side `references` are **not** required for the panel, and a dashboard-level `references` array is **rejected** by validation—not merely optional.
+
+### Still open
+
 - Confirm Kibana behavior when `discover_session_config.by_value` is created without an explicit `time_range`: does the API accept it inheriting the dashboard time range, or does it require a payload value? The dashboard-time-range fallback at write time addresses the latter case; the former simply works.

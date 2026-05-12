@@ -156,7 +156,7 @@ The `by_reference` sub-block SHALL accept:
 - `selected_tab_id` — optional string and computed when omitted; the resource SHALL preserve a user-supplied value and SHALL populate it from the API response otherwise
 - `overrides` — optional `object` of typed scalars: `column_order`, `column_settings`, `sort`, `density`, `header_row_height`, `row_height`, `rows_per_page`, `sample_size` (same shapes and validators as their `tab.dsl` counterparts)
 
-The `by_reference` sub-block SHALL NOT include a `references` attribute in v1. If subsequent verification shows the Dashboard API requires client-side `references` for this panel, a follow-on change SHALL add `references_json` additively before archival of this change.
+The `by_reference` sub-block SHALL NOT include a `references` or `references_json` attribute in v1. Empirical verification on Kibana **9.4.0** (`openspec/changes/add-new-panels/design.md`, “Open questions”): creating a dashboard via `POST /api/dashboards` with a `discover_session` panel whose `config` contains only `ref_id` (and required envelope fields such as `time_range`) succeeds **without** any client-side references; a top-level dashboard `references` property is **rejected** by the Dashboard API (400 — additional properties not allowed). If a future Kibana version changes this contract, a follow-on change MAY add `references_json` or equivalent additively.
 
 #### Cross-cutting
 

@@ -42,9 +42,9 @@
 
 ## 5. Spike: verify `references` requirement
 
-- [ ] 5.1 Manually create a `discover_session` `by_reference` panel against a live Kibana stack; confirm whether the dashboard request must include client-side `references` for the panel
-- [ ] 5.2 If references are required, add a `references_json` attribute to `by_reference` (additive to this change; update the spec delta and design.md accordingly)
-- [ ] 5.3 If references are not required, document the finding inline in the design.md "Open questions" section
+- [x] 5.1 Manually create a `discover_session` `by_reference` panel against a live Kibana stack; confirm whether the dashboard request must include client-side `references` for the panel
+- [x] 5.2 **N/A** — references not required for `discover_session` `by_reference` on Kibana 9.4.0; see `design.md` “Open questions” (also: top-level dashboard `references` rejected by API validation).
+- [x] 5.3 Documented the finding in `design.md` “Open questions” (stack 9.4.0, methodology, HTTP outcomes).
 
 ## 6. Acceptance tests
 
