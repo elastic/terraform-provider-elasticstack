@@ -70,7 +70,7 @@ When a panel entry sets `type = "slo_alerts"`, the resource SHALL accept an `slo
 - `description` (string, optional)
 - `hide_title` (bool, optional)
 - `hide_border` (bool, optional)
-- `drilldowns` (list of the shared `url_drilldown` block, max 100 entries, optional). The `url_drilldown.trigger` SHALL be `"on_open_panel_menu"`. `encode_url` and `open_in_new_tab` are optional booleans subject to REQ-009 null-preservation.
+- `drilldowns` (list of the shared `url_drilldown` block, max 100 entries, optional). URL drilldown `trigger` is fixed at `"on_open_panel_menu"` for this panel; because `AllowedTriggers` collapses to that single value, the Terraform nested schema omits the `trigger` attribute (same pattern as `slo_burn_rate_config.drilldowns`). Practitioners configure `url`, `label`, and optional `encode_url` / `open_in_new_tab`; the model layer SHALL write `trigger = "on_open_panel_menu"` on the API payload. `encode_url` and `open_in_new_tab` are optional booleans subject to REQ-009 null-preservation.
 
 The shared `url_drilldown` block referenced here SHALL be the same nested-block schema consumed by `slo_burn_rate_config.drilldowns` and `slo_overview_config.drilldowns` (Go-level consolidation; behavior unchanged for existing SLO panels).
 
@@ -98,15 +98,15 @@ On write, the resource SHALL build the `kbn-dashboard-panel-type-slo_alerts` API
 
 #### Scenario: Drilldown round-trip
 
-- GIVEN `slo_alerts_config.drilldowns = [{ url_drilldown = { url = "https://kibana/...", label = "investigate", trigger = "on_open_panel_menu" } }]`
+- GIVEN `slo_alerts_config.drilldowns = [{ url_drilldown = { url = "https://kibana/...", label = "investigate" } }]` (no `trigger` attribute in Terraform because the schema omits it when only one trigger is allowed)
 - WHEN create runs and the post-apply read returns the same drilldown
 - THEN state SHALL contain that drilldown with `encode_url` and `open_in_new_tab` null per REQ-009
 
-#### Scenario: Invalid drilldown trigger
+#### Scenario: Drilldown trigger fixed by model on write
 
-- GIVEN a drilldown with `trigger = "on_click_image"`
-- WHEN Terraform validates the configuration
-- THEN the resource SHALL return an error diagnostic indicating the trigger must be `"on_open_panel_menu"`
+- GIVEN `slo_alerts_config.drilldowns = [{ url_drilldown = { url = "https://kibana/...", label = "investigate" } }]`
+- WHEN create runs and the provider builds the dashboard API request
+- THEN each emitted URL drilldown object in the panel payload SHALL include `trigger = "on_open_panel_menu"`
 
 #### Scenario: config_json rejected for slo_alerts panel type
 
@@ -118,7 +118,7 @@ On write, the resource SHALL build the `kbn-dashboard-panel-type-slo_alerts` API
 
 When a panel entry sets `type = "discover_session"`, the resource SHALL accept a `discover_session_config` block and SHALL require that block to be present. The block SHALL expose two mutually exclusive sub-blocks mirroring the API's by-value/by-reference union; exactly one of `by_value` or `by_reference` SHALL be set.
 
-The `discover_session_config` block SHALL accept the typed envelope attributes `title` (string), `description` (string), `hide_title` (bool), `hide_border` (bool), and an optional `drilldowns` list of the shared `url_drilldown` block (max 100 entries). The `url_drilldown.trigger` SHALL be `"on_open_panel_menu"`.
+The `discover_session_config` block SHALL accept the typed envelope attributes `title` (string), `description` (string), `hide_title` (bool), `hide_border` (bool), and an optional `drilldowns` list of the shared `url_drilldown` block (max 100 entries). URL drilldown `trigger` is fixed at `"on_open_panel_menu"`; the nested schema omits the Terraform `trigger` attribute when only that trigger is allowed, and the model layer SHALL write `trigger = "on_open_panel_menu"` on the API payload.
 
 #### The `by_value` sub-block
 
@@ -138,7 +138,7 @@ The `tab.dsl` sub-block SHALL accept:
 - `rows_per_page` (optional number, `1..10000`)
 - `sample_size` (optional number, `10..10000`)
 - `view_mode` (optional string, enum `"documents"`/`"patterns"`/`"aggregated"`)
-- `query` (required, the existing typed `query` block: `object({ language = string, text? = string, json? = string })`)
+- `query` (required, the existing typed `query` block: `expression` (required string) and optional `language` with validator `kql` or `lucene`, matching `getFilterSimple()` / dashboard filter query shape)
 - `data_source_json` (required string, JSON-encoded object conforming to the API `data_view_reference` or `data_view_spec` discriminator; the resource SHALL validate well-formed JSON at plan time and apply semantic JSON equality on read so key reorderings and Kibana-injected defaults do not produce diffs)
 - `filters` (optional list of `object({ filter_json = string })`, max 100). The `filter_json` element shape and normalization SHALL match the dashboard-level `filters` shape defined by REQ-037 (`dashboard-filters`).
 
@@ -153,7 +153,7 @@ The `by_reference` sub-block SHALL accept:
 
 - `time_range` — optional, same shape and inheritance semantics as for `by_value`
 - `ref_id` — required string identifying the linked Discover session saved object
-- `selected_tab_id` — optional string and computed when omitted; the resource SHALL preserve a user-supplied value and SHALL populate it from the API response otherwise
+- `selected_tab_id` — optional string and computed when omitted; the resource SHALL preserve a user-supplied value and SHALL populate it from the API response otherwise. **Acceptance-test gap:** acceptance tests that link a legacy `search` saved-object fixture cannot assert `selected_tab_id` end-to-end when that saved object type does not return `selected_tab_id` from the API; newer `discover-session` saved-object fixtures (when available) will close this gap.
 - `overrides` — optional `object` of typed scalars: `column_order`, `column_settings`, `sort`, `density`, `header_row_height`, `row_height`, `rows_per_page`, `sample_size` (same shapes and validators as their `tab.dsl` counterparts)
 
 The `by_reference` sub-block SHALL NOT include a `references` or `references_json` attribute in v1. Empirical verification on Kibana **9.4.0** (`openspec/changes/add-new-panels/design.md`, “Open questions”): creating a dashboard via `POST /api/dashboards` with a `discover_session` panel whose `config` contains only `ref_id` (and required envelope fields such as `time_range`) succeeds **without** any client-side references; a top-level dashboard `references` property is **rejected** by the Dashboard API (400 — additional properties not allowed). If a future Kibana version changes this contract, a follow-on change MAY add `references_json` or equivalent additively.
@@ -168,7 +168,7 @@ REQ-009 null-preservation SHALL apply to all optional fields, drilldown defaults
 
 #### Scenario: By-value DSL tab round-trip
 
-- GIVEN a panel with `discover_session_config = { by_value = { tab = { dsl = { query = { language = "kuery", text = "host.name : \"web-01\"" }, data_source_json = jsonencode({ type = "data_view_reference", id = "logs-*" }), column_order = ["@timestamp", "message"] } } } }`
+- GIVEN a panel with `discover_session_config = { by_value = { tab = { dsl = { query = { expression = "host.name : \"web-01\"", language = "kql" }, data_source_json = jsonencode({ type = "data_view_reference", ref_id = "logs-*" }), column_order = ["@timestamp", "message"] } } } }`
 - WHEN create runs and the post-apply read returns the same panel
 - THEN state SHALL contain the same `by_value.tab.dsl` shape, `by_value.tab.esql` SHALL be null, `by_reference` SHALL be null, and a subsequent plan SHALL show no changes
 
@@ -221,11 +221,11 @@ REQ-009 null-preservation SHALL apply to all optional fields, drilldown defaults
 - WHEN refresh runs
 - THEN the provider SHALL not produce a diff for that field
 
-#### Scenario: Drilldown trigger validation
+#### Scenario: Drilldown trigger fixed by model on write
 
-- GIVEN a `drilldowns` entry with `url_drilldown.trigger = "on_click_image"`
-- WHEN Terraform validates the configuration
-- THEN the resource SHALL return an error diagnostic indicating the trigger must be `"on_open_panel_menu"`
+- GIVEN `discover_session_config.drilldowns = [{ url_drilldown = { url = "https://kibana/...", label = "investigate" } }]`
+- WHEN create runs and the provider builds the dashboard API request
+- THEN each emitted URL drilldown object in the panel payload SHALL include `trigger = "on_open_panel_menu"`
 
 #### Scenario: selected_tab_id computed when omitted
 
@@ -238,3 +238,87 @@ REQ-009 null-preservation SHALL apply to all optional fields, drilldown defaults
 - GIVEN a panel with `type = "discover_session"` and `config_json` set
 - WHEN the provider builds the API request on create or update
 - THEN it SHALL return an error diagnostic stating that `config_json` is not supported for `discover_session`
+
+## MODIFIED Requirements
+
+### Requirement: Panels, sections, and `config_json` round-trip behavior (REQ-010)
+
+The resource SHALL support top-level `panels`, section-contained `panels`, and `sections` in the order returned by the API and the order given in configuration when building requests. For panel reads, it SHALL distinguish sections from top-level panels and map each panel's `type`, `grid`, optional **`id`**, and configuration. For typed panel mappings, the resource SHALL seed from prior state or plan so that optional panel attributes omitted by Kibana on read can be preserved. When a panel is managed through `config_json` only, the resource SHALL preserve that JSON-centric representation and SHALL NOT populate typed configuration blocks from the API for that panel.
+
+On write, practitioner-authored panel-level `config_json` SHALL be supported only for `markdown` and `vis` panel types; using practitioner-authored panel-level `config_json` with any other panel type, including `slo_burn_rate`, `slo_error_budget`, `esql_control`, `lens-dashboard-app`, `image`, `slo_alerts`, and `discover_session`, or omitting all panel configuration blocks, SHALL return an error diagnostic. Exception: when a panel's `config_json` value was populated by the provider during a prior read to preserve an unknown panel type (see "Unknown panel-type preservation" below), the provider SHALL re-emit that preserved payload on write without error, because the value originates from the API rather than from the practitioner. The `esql_control` panel type SHALL be managed exclusively through the typed `esql_control_config` block. The `lens-dashboard-app` panel type SHALL be managed exclusively through the typed `lens_dashboard_app_config` block.
+
+`config_json` SHALL NOT be supported for `options_list_control` panels; the `options_list_control` panel type SHALL be managed exclusively through the typed `options_list_control_config` block; using `config_json` with `type = "options_list_control"` SHALL return an error diagnostic.
+
+`config_json` SHALL NOT be supported for `synthetics_monitors` panels; the `synthetics_monitors` panel type SHALL be managed exclusively through the typed `synthetics_monitors_config` block; using `config_json` with `type = "synthetics_monitors"` SHALL return an error diagnostic.
+
+`config_json` SHALL NOT be supported for `synthetics_stats_overview` panels; the write-path dispatcher SHALL return an error diagnostic if `config_json` is set on a panel with `type = "synthetics_stats_overview"`. The error message SHALL indicate that `config_json` is unsupported for the configured panel type.
+
+`config_json` SHALL NOT be supported for `image` panels; the `image` panel type SHALL be managed exclusively through the typed `image_config` block; using `config_json` with `type = "image"` SHALL return an error diagnostic.
+
+`config_json` SHALL NOT be supported for `slo_alerts` panels; the `slo_alerts` panel type SHALL be managed exclusively through the typed `slo_alerts_config` block; using `config_json` with `type = "slo_alerts"` SHALL return an error diagnostic.
+
+`config_json` SHALL NOT be supported for `discover_session` panels; the `discover_session` panel type SHALL be managed exclusively through the typed `discover_session_config` block; using `config_json` with `type = "discover_session"` SHALL return an error diagnostic.
+
+**Unknown panel-type preservation**: When the read path encounters a panel whose `type` does not match any typed configuration block, the resource SHALL preserve the panel's `id`, `grid`, `type`, and the panel's full raw API configuration payload in state. The preserved payload SHALL be stored in the panel's existing `config_json` attribute (which is `Optional: true, Computed: true`), reusing that attribute for storage rather than introducing a new private field. This is an intentional implementation decision: it avoids introducing a new unexposed attribute and leverages the existing semantic-equality normalization path already in place for `config_json`. The `config_json` value in state is provider-populated, not practitioner-authored. On subsequent writes, the resource SHALL re-emit the preserved payload verbatim through the `config_json` write codepath. If a configuration declares a panel whose `type` matches no typed block and no preserved payload exists in `config_json` state, the resource SHALL return the "unsupported panel type" error diagnostic, clarifying that the type is not yet supported and was not preserved from the API.
+
+**Panel and section identity**: The Terraform attributes **`panels[].id`** and **`sections[].id`** SHALL align directly with the generated Kibana API field **`id`** for panels and sections.
+
+#### Scenario: Panel id round-trip
+
+- GIVEN a panel with `id = "panel-a"` in configuration
+- WHEN create or update runs
+- THEN the API request SHALL include the generated API `id` field (or equivalent panel identity) consistent with `panel-a` for that panel
+
+#### Scenario: config_json rejected for options_list_control panel type
+
+- GIVEN a panel with `type = "options_list_control"` configured through `config_json`
+- WHEN the provider builds the API request on create or update
+- THEN it SHALL return an error diagnostic stating that `config_json` is not supported for `options_list_control`
+
+#### Scenario: config_json rejected for synthetics_monitors panel type
+
+- GIVEN a panel with `type = "synthetics_monitors"` configured through `config_json`
+- WHEN the provider builds the API request on create or update
+- THEN it SHALL return an error diagnostic stating that `config_json` is not supported for `synthetics_monitors`
+
+#### Scenario: config_json rejected for synthetics_stats_overview panel type
+
+- GIVEN a panel with `type = "synthetics_stats_overview"` configured through `config_json`
+- WHEN the provider builds the API request on create or update
+- THEN it SHALL return an error diagnostic indicating that `config_json` is not supported for the configured panel type
+
+#### Scenario: config_json rejected for image panel type
+
+- GIVEN a panel with `type = "image"` configured through `config_json`
+- WHEN the provider builds the API request on create or update
+- THEN it SHALL return an error diagnostic stating that `config_json` is not supported for `image`
+
+#### Scenario: config_json rejected for slo_alerts panel type
+
+- GIVEN a panel with `type = "slo_alerts"` configured through `config_json`
+- WHEN the provider builds the API request on create or update
+- THEN it SHALL return an error diagnostic stating that `config_json` is not supported for `slo_alerts`
+
+#### Scenario: config_json rejected for discover_session panel type
+
+- GIVEN a panel with `type = "discover_session"` configured through `config_json`
+- WHEN the provider builds the API request on create or update
+- THEN it SHALL return an error diagnostic stating that `config_json` is not supported for `discover_session`
+
+#### Scenario: Unknown panel type preserved on read
+
+- GIVEN a dashboard managed by the resource that contains a panel whose `type` does not map to any typed configuration block in this resource (any panel type not yet modeled by the provider)
+- WHEN refresh, import, or post-apply read runs
+- THEN the resource SHALL store the panel's `id`, `grid`, `type`, and full raw API config payload in state without populating any typed config block, and a subsequent plan against unchanged configuration SHALL produce no diff
+
+#### Scenario: Unknown panel type round-trips on write
+
+- GIVEN state contains a panel with an unknown `type` and a preserved raw API payload from a prior read
+- WHEN create or update runs and the user has not modified the panel
+- THEN the provider SHALL re-emit the preserved payload verbatim in the API request body
+
+#### Scenario: Practitioner cannot author unknown panel types
+
+- GIVEN a Terraform configuration declaring `panels[].type = "<not-typed-and-no-prior-state>"` with no typed config block and no `config_json`
+- WHEN validate or plan runs
+- THEN the resource SHALL return an error diagnostic indicating the panel type is unsupported
