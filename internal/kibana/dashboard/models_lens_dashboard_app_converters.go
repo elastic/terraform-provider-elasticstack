@@ -260,23 +260,13 @@ func lensDashboardAppByReferenceToAPI(
 		v := byRef.HideBorder.ValueBool()
 		api1.HideBorder = &v
 	}
-	if typeutils.IsKnown(byRef.DrilldownsJSON) {
-		b, d := jsonBytesFromOptionalNormalizedArray(byRef.DrilldownsJSON, "by_reference.drilldowns_json")
-		diags.Append(d...)
-		if d.HasError() {
+	if byRef.Drilldowns != nil {
+		dd, ddDiags := toAPI(byRef.Drilldowns)
+		diags.Append(ddDiags...)
+		if ddDiags.HasError() {
 			return kbapi.DashboardPanelItem{}, diags
 		}
-		if len(b) > 0 {
-			var items []kbapi.KbnDashboardPanelTypeLensDashboardApp_Config_1_Drilldowns_Item
-			if err := json.Unmarshal(b, &items); err != nil {
-				diags.AddError("Invalid `by_reference.drilldowns_json` for lens-dashboard-app", err.Error())
-				return kbapi.DashboardPanelItem{}, diags
-			}
-			if items == nil {
-				items = []kbapi.KbnDashboardPanelTypeLensDashboardApp_Config_1_Drilldowns_Item{}
-			}
-			api1.Drilldowns = &items
-		}
+		api1.Drilldowns = dd
 	}
 	var config kbapi.KbnDashboardPanelTypeLensDashboardApp_Config
 	if err := config.FromKbnDashboardPanelTypeLensDashboardAppConfig1(api1); err != nil {
@@ -422,20 +412,16 @@ func populateLensDashboardAppByReferenceFromAPI(
 
 	switch {
 	case cfg1.Drilldowns != nil:
-		b, err := json.Marshal(*cfg1.Drilldowns)
-		if err != nil {
-			return diagutil.FrameworkDiagFromError(err)
+		items, drillDiags := fromAPI(ctx, cfg1.Drilldowns)
+		diags.Append(drillDiags...)
+		if drillDiags.HasError() {
+			return diags
 		}
-		if norm, ok := marshalToNormalized(b, err, "drilldowns_json", &diags); ok {
-			if prior != nil && prior.ByReference != nil {
-				norm = preservePriorNormalizedWithDefaultsIfEquivalent(ctx, prior.ByReference.DrilldownsJSON, norm, defaultOpaqueRootJSON, &diags)
-			}
-			by.DrilldownsJSON = norm
-		}
-	case prior != nil && prior.ByReference != nil && typeutils.IsKnown(prior.ByReference.DrilldownsJSON):
-		by.DrilldownsJSON = prior.ByReference.DrilldownsJSON
+		by.Drilldowns = items
+	case prior != nil && prior.ByReference != nil && prior.ByReference.Drilldowns != nil:
+		by.Drilldowns = prior.ByReference.Drilldowns
 	default:
-		by.DrilldownsJSON = jsontypes.NewNormalizedNull()
+		by.Drilldowns = nil
 	}
 
 	pm.LensDashboardAppConfig = &lensDashboardAppConfigModel{

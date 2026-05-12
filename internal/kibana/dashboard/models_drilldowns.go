@@ -398,3 +398,10 @@ func drilldownModelToLensUnionItem(m drilldownItemModel) (kbapi.KbnDashboardPane
 	}
 	return u, diags
 }
+
+// explicitEmptyDrilldowns returns a zero-length drilldown slice that is intentionally non-nil. The Lens by-reference write
+// path distinguishes a nil drilldownsModel (omit drilldowns on the wire) from explicitEmptyDrilldowns() (`drilldowns = []`),
+// which sends an empty API array so a practitioner can clear prior drilldown entries.
+func explicitEmptyDrilldowns() drilldownsModel {
+	return make(drilldownsModel, 0)
+}

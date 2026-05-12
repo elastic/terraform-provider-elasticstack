@@ -51,7 +51,7 @@ type lensDashboardAppByReferenceModel struct {
 	Description    types.String                   `tfsdk:"description"`
 	HideTitle      types.Bool                     `tfsdk:"hide_title"`
 	HideBorder     types.Bool                     `tfsdk:"hide_border"`
-	DrilldownsJSON jsontypes.Normalized           `tfsdk:"drilldowns_json"`
+	Drilldowns     drilldownsModel                `tfsdk:"drilldowns"`
 	TimeRange      lensDashboardAppTimeRangeModel `tfsdk:"time_range"`
 }
 

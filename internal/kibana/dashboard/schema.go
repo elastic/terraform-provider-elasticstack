@@ -1356,7 +1356,10 @@ func getLensDashboardAppByValueNestedAttributes() map[string]schema.Attribute {
 }
 
 // getLensByReferenceAttributes returns Lens by-reference attribute map for `lens_dashboard_app_config.by_reference`
-// (later reused by `viz_config.by_reference`). Uses `drilldowns_json` until structured drilldowns replace it.
+// and (task 4) `viz_config.by_reference`.
+//
+// `drilldowns_json` is intentionally absent — practitioners migrating from the legacy attribute get Terraform Plugin
+// Framework’s standard unsupported-argument diagnostics; CHANGELOG documents migration to structured `drilldowns`.
 func getLensByReferenceAttributes() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"ref_id": schema.StringAttribute{
@@ -1384,11 +1387,7 @@ func getLensByReferenceAttributes() map[string]schema.Attribute {
 			MarkdownDescription: "When true, suppresses the panel border.",
 			Optional:            true,
 		},
-		"drilldowns_json": schema.StringAttribute{
-			MarkdownDescription: "Optional JSON array for the API `drilldowns` field (polymorphic drilldown shapes).",
-			Optional:            true,
-			CustomType:          jsontypes.NormalizedType{},
-		},
+		"drilldowns": getStructuredDrilldownsAttribute(),
 		"time_range": schema.SingleNestedAttribute{
 			MarkdownDescription: "Required time range for the by-reference `lens-dashboard-app` config.",
 			Required:            true,
@@ -1430,9 +1429,10 @@ func getLensDashboardAppConfigSchema() map[string]schema.Attribute {
 			},
 		},
 		"by_reference": schema.SingleNestedAttribute{
-			MarkdownDescription: "By-reference `lens-dashboard-app` configuration: link a saved Lens visualization using `ref_id`, optional `references_json`, and a required `time_range`.",
-			Optional:            true,
-			Attributes:          getLensByReferenceAttributes(),
+			MarkdownDescription: "By-reference `lens-dashboard-app` configuration: link a saved Lens visualization via `ref_id`, optional `references_json`, " +
+				"optional structured `drilldowns`, and required `time_range`.",
+			Optional:   true,
+			Attributes: getLensByReferenceAttributes(),
 		},
 	}
 }
