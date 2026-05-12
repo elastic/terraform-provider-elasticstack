@@ -709,6 +709,16 @@ func Test_panelModel_toAPI_configJSONErrors(t *testing.T) {
 			errorContains: "Panel-level `config_json` is not supported for `lens-dashboard-app`",
 		},
 		{
+			name: "rejects panel-level config_json for image",
+			panel: panelModel{
+				Type:       types.StringValue("image"),
+				Grid:       panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0)},
+				ConfigJSON: customtypes.NewJSONWithDefaultsValue(`{}`, populatePanelConfigJSONDefaults),
+			},
+			errorSummary:  "Unsupported panel type for config_json",
+			errorContains: "not supported for `image`",
+		},
+		{
 			name: "rejects missing panel configuration",
 			panel: panelModel{
 				Type:       types.StringValue("markdown"),
@@ -770,15 +780,6 @@ func Test_unknownPanelRoundTrip(t *testing.T) {
 				"columns": ["_source"],
 				"sort": [{"@timestamp": "desc"}]
 			}
-		},
-		{
-			"grid": {"x": 0, "y": 16, "w": 24, "h": 12},
-			"id": "image-1",
-			"type": "image",
-			"config": {
-				"imageUrl": "https://example.com/img.png",
-				"mode": "contain"
-			}
 		}
 	]`
 
@@ -791,7 +792,7 @@ func Test_unknownPanelRoundTrip(t *testing.T) {
 	panels, sections, diags := model.mapPanelsFromAPI(t.Context(), &apiPanels)
 	require.False(t, diags.HasError())
 	require.Empty(t, sections)
-	require.Len(t, panels, 2)
+	require.Len(t, panels, 1)
 
 	// Step 3: reconstruct model with just these panels and write back to API
 	model.Panels = panels

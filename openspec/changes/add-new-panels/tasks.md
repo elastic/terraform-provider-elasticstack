@@ -7,14 +7,14 @@
 
 ## 2. Image panel (`type = "image"`)
 
-- [ ] 2.1 Add `schema_image_panel.go` with the `image_config` block, `src` discriminated sub-blocks, presentation attributes, and `drilldowns` discriminated union (`dashboard_drilldown` xor `url_drilldown`)
-- [ ] 2.2 Add validators: `src.file` xor `src.url` (exactly one); per-entry `dashboard_drilldown` xor `url_drilldown`; `object_fit` enum; drilldown trigger enums
-- [ ] 2.3 Add conflict validators (mutex with all other typed blocks and `config_json`)
-- [ ] 2.4 Update REQ-010 / panel-type-rejection table for `image` + `config_json`
-- [ ] 2.5 Create `models_image_panel.go` with the model and read/write helpers; apply REQ-009 null-preservation to optional fields and drilldown defaults (`use_filters`, `use_time_range`, `open_in_new_tab`, `encode_url`, `object_fit`)
-- [ ] 2.6 Wire into `mapPanelFromAPI` (`models_panels.go`) and the panel write dispatcher
-- [ ] 2.7 Unit tests in `models_image_panel_test.go`: both `src` variants, both drilldown variants, null-preservation, validator failures
-- [ ] 2.8 Description text under `internal/kibana/dashboard/descriptions/`
+- [x] 2.1 Add `schema_image_panel.go` with the `image_config` block, `src` discriminated sub-blocks, presentation attributes, and `drilldowns` discriminated union (`dashboard_drilldown` xor `url_drilldown`)
+- [x] 2.2 Add validators: `src.file` xor `src.url` (exactly one); per-entry `dashboard_drilldown` xor `url_drilldown`; `object_fit` enum; drilldown trigger enums
+- [x] 2.3 Add conflict validators (mutex with all other typed blocks and `config_json`)
+- [x] 2.4 Update REQ-010 / panel-type-rejection table for `image` + `config_json`
+- [x] 2.5 Create `models_image_panel.go` with the model and read/write helpers; apply REQ-009 null-preservation to optional fields and drilldown defaults (`use_filters`, `use_time_range`, `open_in_new_tab`, `encode_url`, `object_fit`)
+- [x] 2.6 Wire into `mapPanelFromAPI` (`models_panels.go`) and the panel write dispatcher
+- [x] 2.7 Unit tests in `models_image_panel_test.go`: both `src` variants, both drilldown variants, null-preservation, validator failures
+- [x] 2.8 Description text under `internal/kibana/dashboard/descriptions/`
 
 ## 3. SLO alerts panel (`type = "slo_alerts"`)
 
