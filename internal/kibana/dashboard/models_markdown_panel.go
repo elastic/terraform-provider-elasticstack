@@ -85,18 +85,21 @@ func classifyMarkdownConfigFromRoot(configBytes []byte) (markdownConfigBranch, e
 
 // populateMarkdownFromAPIAttemptByValue decodes config as KbnDashboardPanelTypeMarkdownConfig0 (with JSON fallback).
 func populateMarkdownFromAPIAttemptByValue(pm *panelModel, tfPanel *panelModel, config kbapi.KbnDashboardPanelTypeMarkdown_Config) bool {
+	raw, mErr := config.MarshalJSON()
+	if mErr != nil {
+		return false
+	}
+	branch, err := classifyMarkdownConfigFromRoot(raw)
+	if err != nil || branch != markdownConfigBranchByValue {
+		return false
+	}
 	config0, err := config.AsKbnDashboardPanelTypeMarkdownConfig0()
 	if err != nil {
-		if b, mErr := config.MarshalJSON(); mErr == nil {
-			var inline kbapi.KbnDashboardPanelTypeMarkdownConfig0
-			if json.Unmarshal(b, &inline) == nil {
-				config0 = inline
-				err = nil
-			}
+		var inline kbapi.KbnDashboardPanelTypeMarkdownConfig0
+		if json.Unmarshal(raw, &inline) != nil {
+			return false
 		}
-	}
-	if err != nil {
-		return false
+		config0 = inline
 	}
 	populateMarkdownFromAPIByValue(pm, tfPanel, config0)
 	return true
@@ -104,8 +107,19 @@ func populateMarkdownFromAPIAttemptByValue(pm *panelModel, tfPanel *panelModel, 
 
 // populateMarkdownFromAPIAttemptByReference decodes config as KbnDashboardPanelTypeMarkdownConfig1.
 func populateMarkdownFromAPIAttemptByReference(pm *panelModel, tfPanel *panelModel, config kbapi.KbnDashboardPanelTypeMarkdown_Config) bool {
+	raw, mErr := config.MarshalJSON()
+	if mErr != nil {
+		return false
+	}
+	branch, err := classifyMarkdownConfigFromRoot(raw)
+	if err != nil || branch != markdownConfigBranchByReference {
+		return false
+	}
 	cfg1, err := config.AsKbnDashboardPanelTypeMarkdownConfig1()
 	if err != nil {
+		return false
+	}
+	if cfg1.RefId == "" {
 		return false
 	}
 	populateMarkdownFromAPIByReference(pm, tfPanel, cfg1)

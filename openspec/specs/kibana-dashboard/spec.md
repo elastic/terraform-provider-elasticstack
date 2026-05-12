@@ -57,11 +57,24 @@ resource "elasticstack_kibana_dashboard" "example" {
     id = <optional, computed, string> # Terraform id aligned with API id; UseNonNullStateForUnknown
 
     markdown_config = <optional, object({
-      content     = <optional, string>
-      description = <optional, string>
-      hide_title  = <optional, bool>
-      title       = <optional, string>
-    })> # only with type = "markdown"; conflicts with all other config blocks
+      by_value = <optional, object({
+        content     = <required, string>
+        settings    = <required, object({
+          open_links_in_new_tab = <optional, bool>
+        })>
+        description = <optional, string>
+        hide_title  = <optional, bool>
+        title       = <optional, string>
+        hide_border = <optional, bool>
+      })>
+      by_reference = <optional, object({
+        ref_id      = <required, string>
+        description = <optional, string>
+        hide_title  = <optional, bool>
+        title       = <optional, string>
+        hide_border = <optional, bool>
+      })>
+    })> # only with type = "markdown"; exactly one of by_value or by_reference (REQ-012); conflicts with all other config blocks
 
     xy_chart_config = <optional, object({
       title       = <optional, string>
