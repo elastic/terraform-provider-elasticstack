@@ -18,7 +18,6 @@
 package dashboard_test
 
 import (
-	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -202,7 +201,7 @@ func TestAccResourceDashboardXYChart_filters(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.filters.#", "1"),
-					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.filters.0.filter_json", regexp.MustCompile(`"field":"log.level"`)),
+					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.filters.0.filter_json", `{"condition":{"field":"log.level","operator":"is","value":"error"},"type":"condition"}`),
 				),
 			},
 		},

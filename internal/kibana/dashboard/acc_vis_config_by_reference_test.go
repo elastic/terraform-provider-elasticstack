@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/acctest/checks"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -75,8 +76,6 @@ func TestAccResourceDashboardVisConfigByReference_minimal(t *testing.T) {
 
 func TestAccResourceDashboardVisConfigByReference_full(t *testing.T) {
 	dashboardTitle := "Acc vis by-ref full " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
-	refWire := regexp.MustCompile(`aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee`)
-	typeLens := regexp.MustCompile(`"type"\s*:\s*"lens"`)
 	br := visByRefPath
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -93,8 +92,7 @@ func TestAccResourceDashboardVisConfigByReference_full(t *testing.T) {
 					resource.TestCheckResourceAttr(visByRefDashboard, br+".description", "By reference desc"),
 					resource.TestCheckResourceAttr(visByRefDashboard, br+".hide_title", "true"),
 					resource.TestCheckResourceAttr(visByRefDashboard, br+".hide_border", "false"),
-					resource.TestMatchResourceAttr(visByRefDashboard, br+".references_json", refWire),
-					resource.TestMatchResourceAttr(visByRefDashboard, br+".references_json", typeLens),
+					checks.TestCheckResourceAttrJSONSubset(visByRefDashboard, br+".references_json", `[{"id":"aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee","type":"lens"}]`),
 					resource.TestCheckResourceAttr(visByRefDashboard, br+".time_range.from", "now-7d"),
 					resource.TestCheckResourceAttr(visByRefDashboard, br+".time_range.to", "now"),
 					resource.TestCheckResourceAttr(visByRefDashboard, br+".time_range.mode", "relative"),

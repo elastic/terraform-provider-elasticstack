@@ -18,10 +18,10 @@
 package dashboard_test
 
 import (
-	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/acctest/checks"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -131,7 +131,7 @@ func TestAccResourceDashboardMetricChart(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.metric_chart_config.breakdown_by_json"),
 					// Check filters
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.metric_chart_config.filters.#", "1"),
-					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.metric_chart_config.filters.0.filter_json", regexp.MustCompile(`"field":"event.category"`)),
+					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.metric_chart_config.filters.0.filter_json", `{"condition":{"field":"event.category","operator":"is","value":"web"},"type":"condition"}`),
 				),
 			},
 			{

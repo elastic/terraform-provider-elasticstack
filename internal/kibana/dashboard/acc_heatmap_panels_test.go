@@ -18,10 +18,10 @@
 package dashboard_test
 
 import (
-	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/acctest/checks"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -90,7 +90,7 @@ func TestAccResourceDashboardHeatmap(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.heatmap_config.axis.y.title.visible", "true"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.heatmap_config.styling.cells.labels.visible", "false"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.heatmap_config.filters.#", "1"),
-					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.heatmap_config.filters.0.filter_json", regexp.MustCompile(`"field":"host.os.keyword"`)),
+					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.heatmap_config.filters.0.filter_json", `{"condition":{"field":"host.os.keyword","operator":"is","value":"linux"},"type":"condition"}`),
 				),
 			},
 			{

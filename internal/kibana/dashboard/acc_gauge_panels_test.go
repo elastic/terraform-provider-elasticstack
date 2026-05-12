@@ -18,10 +18,10 @@
 package dashboard_test
 
 import (
-	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/acctest/checks"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -72,7 +72,7 @@ func TestAccResourceDashboardGauge(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "title", dashboardTitle),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.gauge_config.filters.#", "1"),
-					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.gauge_config.filters.0.filter_json", regexp.MustCompile(`"field":"response"`)),
+					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.gauge_config.filters.0.filter_json", `{"condition":{"field":"response","operator":"is","value":"200"},"type":"condition"}`),
 				),
 			},
 			{

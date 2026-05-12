@@ -18,10 +18,10 @@
 package dashboard_test
 
 import (
-	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/acctest/checks"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -60,7 +60,7 @@ func TestAccResourceDashboardWaffle(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.waffle_config.ignore_global_filters", "false"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.waffle_config.sampling", "1"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.waffle_config.data_source_json"),
-					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.waffle_config.metrics.0.config", regexp.MustCompile(`"operation"\s*:\s*"count"`)),
+					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.waffle_config.metrics.0.config", `{"operation":"count"}`),
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.waffle_config.value_display.mode"),
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.waffle_config.value_display.percent_decimals"),
 				),
@@ -84,9 +84,9 @@ func TestAccResourceDashboardWaffle(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.waffle_config.legend.truncate_after_lines", "8"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.waffle_config.value_display.mode", "percentage"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.waffle_config.value_display.percent_decimals", "1"),
-					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.waffle_config.metrics.0.config", regexp.MustCompile(`"operation"\s*:\s*"count"`)),
+					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.waffle_config.metrics.0.config", `{"operation":"count"}`),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.waffle_config.filters.#", "1"),
-					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.waffle_config.filters.0.filter_json", regexp.MustCompile(`"field":"host.os.keyword"`)),
+					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.waffle_config.filters.0.filter_json", `{"condition":{"field":"host.os.keyword","operator":"is","value":"linux"},"type":"condition"}`),
 				),
 			},
 			{
@@ -99,14 +99,14 @@ func TestAccResourceDashboardWaffle(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.waffle_config.title", "ESQL Waffle"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.waffle_config.description", "Waffle visualization using ES|QL"),
-					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.waffle_config.data_source_json", regexp.MustCompile(`"type"\s*:\s*"esql"`)),
+					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.waffle_config.data_source_json", `{"type":"esql"}`),
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.waffle_config.query.language"),
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.waffle_config.query.expression"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.waffle_config.metrics.#", "0"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.waffle_config.esql_metrics.#", "1"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.waffle_config.esql_metrics.0.column", "c"),
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.waffle_config.esql_metrics.0.label"),
-					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.waffle_config.esql_metrics.0.format_json", regexp.MustCompile(`"type"\s*:\s*"number"`)),
+					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.waffle_config.esql_metrics.0.format_json", `{"type":"number"}`),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.waffle_config.esql_metrics.0.color.type", "static"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.waffle_config.esql_metrics.0.color.color", "#006BB4"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.waffle_config.esql_group_by.#", "0"),
