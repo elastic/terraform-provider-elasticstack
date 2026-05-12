@@ -81,8 +81,8 @@
 
 ## 11. Update OpenSpec canonical spec
 
-- [ ] 11.1 Apply the delta spec from `openspec/changes/restructure-vis-as-symmetric-config/specs/kibana-dashboard/spec.md` into `openspec/specs/kibana-dashboard/spec.md` (handled at archive time by OpenSpec; no manual edit required during implementation, but verify the delta validates cleanly).
-- [ ] 11.2 Run `openspec validate restructure-vis-as-symmetric-config` and `openspec validate kibana-dashboard --strict` to confirm both the change and the post-merge canonical spec are well-formed.
+- [x] 11.1 Apply the delta spec from `openspec/changes/restructure-vis-as-symmetric-config/specs/kibana-dashboard/spec.md` into `openspec/specs/kibana-dashboard/spec.md` (handled at archive time by OpenSpec; no manual edit required during implementation, but verify the delta validates cleanly).
+- [x] 11.2 Run `openspec validate restructure-vis-as-symmetric-config` and `openspec validate kibana-dashboard --strict` to confirm both the change and the post-merge canonical spec are well-formed.
 
 ## 12. Final verification
 
