@@ -18,6 +18,8 @@
 package dashboard
 
 import (
+	"encoding/json"
+
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -50,30 +52,168 @@ type markdownConfigByReferenceModel struct {
 	HideBorder  types.Bool   `tfsdk:"hide_border"`
 }
 
-// populateMarkdownFromAPI maps API by-value markdown config into Terraform state.
-//
-// TODO(markdown-panel-gaps task 2): detect and populate markdown_config.by_reference from
-// KbnDashboardPanelTypeMarkdownConfig1; preserve REQ-009 null semantics across all new fields.
-func populateMarkdownFromAPI(pm *panelModel, config kbapi.KbnDashboardPanelTypeMarkdownConfig0) {
+func markdownConfigJSONHasRefID(configBytes []byte) bool {
+	var root map[string]any
+	if err := json.Unmarshal(configBytes, &root); err != nil {
+		return false
+	}
+	refID, ok := root["ref_id"].(string)
+	return ok && refID != ""
+}
+
+// populateMarkdownFromAPIByValue maps API by-value markdown config into Terraform state.
+func populateMarkdownFromAPIByValue(pm *panelModel, tfPanel *panelModel, config kbapi.KbnDashboardPanelTypeMarkdownConfig0) {
 	settings := &markdownConfigSettingsModel{
-		OpenLinksInNewTab: types.BoolPointerValue(config.Settings.OpenLinksInNewTab),
+		OpenLinksInNewTab: markdownByValueOpenLinksFromAPI(config.Settings.OpenLinksInNewTab, tfPanel),
 	}
 	pm.MarkdownConfig = &markdownConfigModel{
 		ByValue: &markdownConfigByValueModel{
 			Content:     types.StringValue(config.Content),
 			Settings:    settings,
-			Description: types.StringPointerValue(config.Description),
-			HideTitle:   types.BoolPointerValue(config.HideTitle),
-			HideBorder:  types.BoolPointerValue(config.HideBorder),
-			Title:       types.StringPointerValue(config.Title),
+			Description: markdownByValueStringFromAPI(config.Description, tfPanel, func(bv *markdownConfigByValueModel) types.String { return bv.Description }),
+			HideTitle:   markdownByValueBoolFromAPI(config.HideTitle, tfPanel, func(bv *markdownConfigByValueModel) types.Bool { return bv.HideTitle }),
+			HideBorder:  markdownByValueBoolFromAPI(config.HideBorder, tfPanel, func(bv *markdownConfigByValueModel) types.Bool { return bv.HideBorder }),
+			Title:       markdownByValueStringFromAPI(config.Title, tfPanel, func(bv *markdownConfigByValueModel) types.String { return bv.Title }),
 		},
 	}
 }
 
+// populateMarkdownFromAPIByReference maps API by-reference markdown config into Terraform state.
+func populateMarkdownFromAPIByReference(pm *panelModel, tfPanel *panelModel, config kbapi.KbnDashboardPanelTypeMarkdownConfig1) {
+	pm.MarkdownConfig = &markdownConfigModel{
+		ByReference: &markdownConfigByReferenceModel{
+			RefID:       types.StringValue(config.RefId),
+			Description: markdownByReferenceStringFromAPI(config.Description, tfPanel, func(br *markdownConfigByReferenceModel) types.String { return br.Description }),
+			HideTitle:   markdownByReferenceBoolFromAPI(config.HideTitle, tfPanel, func(br *markdownConfigByReferenceModel) types.Bool { return br.HideTitle }),
+			HideBorder:  markdownByReferenceBoolFromAPI(config.HideBorder, tfPanel, func(br *markdownConfigByReferenceModel) types.Bool { return br.HideBorder }),
+			Title:       markdownByReferenceStringFromAPI(config.Title, tfPanel, func(br *markdownConfigByReferenceModel) types.String { return br.Title }),
+		},
+	}
+}
+
+// REQ-009 optional strings (see models_slo_error_budget_panel.go).
+func markdownByValueStringFromAPI(
+	api *string,
+	tfPanel *panelModel,
+	priorField func(*markdownConfigByValueModel) types.String,
+) types.String {
+	if (tfPanel == nil || markdownPriorKnownByValueString(tfPanel, priorField)) && api != nil {
+		return types.StringValue(*api)
+	}
+	if tfPanel != nil && tfPanel.MarkdownConfig != nil && tfPanel.MarkdownConfig.ByValue != nil {
+		p := priorField(tfPanel.MarkdownConfig.ByValue)
+		if typeutils.IsKnown(p) {
+			return p
+		}
+	}
+	return types.StringNull()
+}
+
+func markdownByValueBoolFromAPI(
+	api *bool,
+	tfPanel *panelModel,
+	priorField func(*markdownConfigByValueModel) types.Bool,
+) types.Bool {
+	if (tfPanel == nil || markdownPriorKnownByValueBool(tfPanel, priorField)) && api != nil {
+		return types.BoolValue(*api)
+	}
+	if tfPanel != nil && tfPanel.MarkdownConfig != nil && tfPanel.MarkdownConfig.ByValue != nil {
+		p := priorField(tfPanel.MarkdownConfig.ByValue)
+		if typeutils.IsKnown(p) {
+			return p
+		}
+	}
+	return types.BoolNull()
+}
+
+func markdownPriorKnownByValueString(tfPanel *panelModel, priorField func(*markdownConfigByValueModel) types.String) bool {
+	if tfPanel == nil || tfPanel.MarkdownConfig == nil || tfPanel.MarkdownConfig.ByValue == nil {
+		return false
+	}
+	return typeutils.IsKnown(priorField(tfPanel.MarkdownConfig.ByValue))
+}
+
+func markdownPriorKnownByValueBool(tfPanel *panelModel, priorField func(*markdownConfigByValueModel) types.Bool) bool {
+	if tfPanel == nil || tfPanel.MarkdownConfig == nil || tfPanel.MarkdownConfig.ByValue == nil {
+		return false
+	}
+	return typeutils.IsKnown(priorField(tfPanel.MarkdownConfig.ByValue))
+}
+
+// markdownByValueOpenLinksFromAPI maps settings.open_links_in_new_tab with REQ-009 semantics:
+// Kibana defaults this to true; when the practitioner left the attribute null, keep null after
+// refresh even if the API echoes true (same pattern as SLO drilldown open_in_new_tab).
+func markdownByValueOpenLinksFromAPI(api *bool, tfPanel *panelModel) types.Bool {
+	if api != nil {
+		var prior types.Bool
+		if tfPanel != nil && tfPanel.MarkdownConfig != nil && tfPanel.MarkdownConfig.ByValue != nil && tfPanel.MarkdownConfig.ByValue.Settings != nil {
+			prior = tfPanel.MarkdownConfig.ByValue.Settings.OpenLinksInNewTab
+		} else {
+			prior = types.BoolNull()
+		}
+		if typeutils.IsKnown(prior) || !*api {
+			return types.BoolValue(*api)
+		}
+		return types.BoolNull()
+	}
+	if tfPanel != nil && tfPanel.MarkdownConfig != nil && tfPanel.MarkdownConfig.ByValue != nil && tfPanel.MarkdownConfig.ByValue.Settings != nil {
+		p := tfPanel.MarkdownConfig.ByValue.Settings.OpenLinksInNewTab
+		if typeutils.IsKnown(p) {
+			return p
+		}
+	}
+	return types.BoolNull()
+}
+
+func markdownByReferenceStringFromAPI(
+	api *string,
+	tfPanel *panelModel,
+	priorField func(*markdownConfigByReferenceModel) types.String,
+) types.String {
+	if (tfPanel == nil || markdownPriorKnownByReferenceString(tfPanel, priorField)) && api != nil {
+		return types.StringValue(*api)
+	}
+	if tfPanel != nil && tfPanel.MarkdownConfig != nil && tfPanel.MarkdownConfig.ByReference != nil {
+		p := priorField(tfPanel.MarkdownConfig.ByReference)
+		if typeutils.IsKnown(p) {
+			return p
+		}
+	}
+	return types.StringNull()
+}
+
+func markdownByReferenceBoolFromAPI(
+	api *bool,
+	tfPanel *panelModel,
+	priorField func(*markdownConfigByReferenceModel) types.Bool,
+) types.Bool {
+	if (tfPanel == nil || markdownPriorKnownByReferenceBool(tfPanel, priorField)) && api != nil {
+		return types.BoolValue(*api)
+	}
+	if tfPanel != nil && tfPanel.MarkdownConfig != nil && tfPanel.MarkdownConfig.ByReference != nil {
+		p := priorField(tfPanel.MarkdownConfig.ByReference)
+		if typeutils.IsKnown(p) {
+			return p
+		}
+	}
+	return types.BoolNull()
+}
+
+func markdownPriorKnownByReferenceString(tfPanel *panelModel, priorField func(*markdownConfigByReferenceModel) types.String) bool {
+	if tfPanel == nil || tfPanel.MarkdownConfig == nil || tfPanel.MarkdownConfig.ByReference == nil {
+		return false
+	}
+	return typeutils.IsKnown(priorField(tfPanel.MarkdownConfig.ByReference))
+}
+
+func markdownPriorKnownByReferenceBool(tfPanel *panelModel, priorField func(*markdownConfigByReferenceModel) types.Bool) bool {
+	if tfPanel == nil || tfPanel.MarkdownConfig == nil || tfPanel.MarkdownConfig.ByReference == nil {
+		return false
+	}
+	return typeutils.IsKnown(priorField(tfPanel.MarkdownConfig.ByReference))
+}
+
 // buildMarkdownConfig builds the API by-value markdown payload from Terraform.
-//
-// TODO(markdown-panel-gaps task 2): support by_reference (Config1) in panelModel.toAPI and tighten
-// validation when MarkdownConfig is present but branches are inconsistent.
 func buildMarkdownConfig(pm panelModel) kbapi.KbnDashboardPanelTypeMarkdownConfig0 {
 	if pm.MarkdownConfig == nil || pm.MarkdownConfig.ByValue == nil {
 		return kbapi.KbnDashboardPanelTypeMarkdownConfig0{}
@@ -96,6 +236,29 @@ func buildMarkdownConfig(pm panelModel) kbapi.KbnDashboardPanelTypeMarkdownConfi
 	}
 	if bv.Settings != nil && typeutils.IsKnown(bv.Settings.OpenLinksInNewTab) {
 		config.Settings.OpenLinksInNewTab = bv.Settings.OpenLinksInNewTab.ValueBoolPointer()
+	}
+	return config
+}
+
+func buildMarkdownConfigByReference(pm panelModel) kbapi.KbnDashboardPanelTypeMarkdownConfig1 {
+	br := pm.MarkdownConfig.ByReference
+	if br == nil {
+		return kbapi.KbnDashboardPanelTypeMarkdownConfig1{}
+	}
+	config := kbapi.KbnDashboardPanelTypeMarkdownConfig1{
+		RefId: br.RefID.ValueString(),
+	}
+	if typeutils.IsKnown(br.Description) {
+		config.Description = br.Description.ValueStringPointer()
+	}
+	if typeutils.IsKnown(br.HideTitle) {
+		config.HideTitle = br.HideTitle.ValueBoolPointer()
+	}
+	if typeutils.IsKnown(br.HideBorder) {
+		config.HideBorder = br.HideBorder.ValueBoolPointer()
+	}
+	if typeutils.IsKnown(br.Title) {
+		config.Title = br.Title.ValueStringPointer()
 	}
 	return config
 }
