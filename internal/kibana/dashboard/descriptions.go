@@ -57,3 +57,12 @@ var dashboardFiltersDescription string
 
 //go:embed descriptions/dashboard_filter_json.md
 var dashboardFilterJSONDescription string
+
+//go:embed descriptions/pinned_panels.md
+var pinnedPanelsDescription string
+
+//go:embed descriptions/pinned_panel_control_note.md
+var pinnedPanelControlNote string
+
+//go:embed descriptions/pinned_panel_type.md
+var pinnedPanelTypeDescription string

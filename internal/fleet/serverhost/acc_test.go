@@ -45,6 +45,7 @@ var testAccResourceFleetServerHostFromSDKConfig string
 
 func TestAccResourceFleetServerHostFromSDK(t *testing.T) {
 	policyName := sdkacctest.RandString(22)
+	hostID := fmt.Sprintf("fleet-server-host-%s", sdkacctest.RandString(12))
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -60,11 +61,12 @@ func TestAccResourceFleetServerHostFromSDK(t *testing.T) {
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionFleetServerHost),
 				Config:   testAccResourceFleetServerHostFromSDKConfig,
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable(fmt.Sprintf("FleetServerHost %s", policyName)),
+					"name":    config.StringVariable(fmt.Sprintf("FleetServerHost %s", policyName)),
+					"host_id": config.StringVariable(hostID),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "name", fmt.Sprintf("FleetServerHost %s", policyName)),
-					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "id", "fleet-server-host-id"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "id", hostID),
 					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "default", "false"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "hosts.0", "https://fleet-server:8220"),
 				),
@@ -74,11 +76,12 @@ func TestAccResourceFleetServerHostFromSDK(t *testing.T) {
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionFleetServerHost),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable(fmt.Sprintf("FleetServerHost %s", policyName)),
+					"name":    config.StringVariable(fmt.Sprintf("FleetServerHost %s", policyName)),
+					"host_id": config.StringVariable(hostID),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "name", fmt.Sprintf("FleetServerHost %s", policyName)),
-					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "id", "fleet-server-host-id"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "id", hostID),
 					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "default", "false"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "hosts.0", "https://fleet-server:8220"),
 				),
@@ -89,6 +92,7 @@ func TestAccResourceFleetServerHostFromSDK(t *testing.T) {
 
 func TestAccResourceFleetServerHost(t *testing.T) {
 	policyName := sdkacctest.RandString(22)
+	hostID := fmt.Sprintf("fleet-server-host-%s", sdkacctest.RandString(12))
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -99,11 +103,12 @@ func TestAccResourceFleetServerHost(t *testing.T) {
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionFleetServerHost),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable(fmt.Sprintf("FleetServerHost %s", policyName)),
+					"name":    config.StringVariable(fmt.Sprintf("FleetServerHost %s", policyName)),
+					"host_id": config.StringVariable(hostID),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "name", fmt.Sprintf("FleetServerHost %s", policyName)),
-					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "id", "fleet-server-host-id"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "id", hostID),
 					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "default", "false"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "hosts.0", "https://fleet-server:8220"),
 				),
@@ -113,13 +118,16 @@ func TestAccResourceFleetServerHost(t *testing.T) {
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionFleetServerHost),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable(fmt.Sprintf("Updated FleetServerHost %s", policyName)),
+					"name":    config.StringVariable(fmt.Sprintf("Updated FleetServerHost %s", policyName)),
+					"host_id": config.StringVariable(hostID),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "name", fmt.Sprintf("Updated FleetServerHost %s", policyName)),
-					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "id", "fleet-server-host-id"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "default", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "id", hostID),
+					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "default", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "hosts.#", "2"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "hosts.0", "https://fleet-server:8220"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "hosts.1", "https://fleet-server-2:8220"),
 				),
 			},
 			{
@@ -127,7 +135,8 @@ func TestAccResourceFleetServerHost(t *testing.T) {
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionFleetServerHost),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable(fmt.Sprintf("Updated FleetServerHost %s", policyName)),
+					"name":    config.StringVariable(fmt.Sprintf("Updated FleetServerHost %s", policyName)),
+					"host_id": config.StringVariable(hostID),
 				},
 				ResourceName:      "elasticstack_fleet_server_host.test_host",
 				ImportState:       true,
@@ -137,10 +146,34 @@ func TestAccResourceFleetServerHost(t *testing.T) {
 	})
 }
 
+func TestAccResourceFleetServerHost_computedID(t *testing.T) {
+	hostName := sdkacctest.RandString(22)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceFleetServerHostDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionFleetServerHost),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(fmt.Sprintf("FleetServerHost %s", hostName)),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_computed_id", "name", fmt.Sprintf("FleetServerHost %s", hostName)),
+					resource.TestCheckResourceAttrSet("elasticstack_fleet_server_host.test_computed_id", "host_id"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccResourceFleetServerHost_importFromSpace(t *testing.T) {
 	hostName := sdkacctest.RandString(22)
 	spaceName := sdkacctest.RandString(22)
 	spaceID := fmt.Sprintf("fleet-server-host-test-%s", spaceName)
+	hostID := fmt.Sprintf("fleet-server-host-%s", sdkacctest.RandString(12))
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -153,6 +186,7 @@ func TestAccResourceFleetServerHost_importFromSpace(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"name":       config.StringVariable(fmt.Sprintf("FleetServerHost %s", hostName)),
+					"host_id":    config.StringVariable(hostID),
 					"space_id":   config.StringVariable(spaceID),
 					"space_name": config.StringVariable(fmt.Sprintf("Fleet Server Host Test Space %s", spaceName)),
 				},
@@ -169,6 +203,7 @@ func TestAccResourceFleetServerHost_importFromSpace(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"name":       config.StringVariable(fmt.Sprintf("FleetServerHost %s", hostName)),
+					"host_id":    config.StringVariable(hostID),
 					"space_id":   config.StringVariable(spaceID),
 					"space_name": config.StringVariable(fmt.Sprintf("Fleet Server Host Test Space %s", spaceName)),
 				},
@@ -196,6 +231,7 @@ func TestAccResourceFleetServerHost_importFromSpace(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"name":       config.StringVariable(fmt.Sprintf("FleetServerHost %s", hostName)),
+					"host_id":    config.StringVariable(hostID),
 					"space_id":   config.StringVariable(spaceID),
 					"space_name": config.StringVariable(fmt.Sprintf("Fleet Server Host Test Space %s", spaceName)),
 				},

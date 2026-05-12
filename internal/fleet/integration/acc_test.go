@@ -421,10 +421,13 @@ func testAccCheckIntegrationInstalled(pkgName, pkgVersion string) resource.TestC
 		if diags.HasError() {
 			return fmt.Errorf("failed to get package: %v", diags)
 		}
-		if pkg == nil || pkg.InstallationInfo == nil {
+		if pkg == nil {
 			return fmt.Errorf("package %s/%s not installed", pkgName, pkgVersion)
 		}
-		installed := pkg.InstallationInfo.InstallStatus == kbapi.PackageInfoInstallationInfoInstallStatusInstalled
+		installed := false
+		if pkg.InstallationInfo != nil {
+			installed = pkg.InstallationInfo.InstallStatus == kbapi.PackageInfoInstallationInfoInstallStatusInstalled
+		}
 		if !installed && pkg.Status != nil && strings.EqualFold(*pkg.Status, "installed") {
 			installed = true
 		}
@@ -491,11 +494,13 @@ func testAccCheckIntegrationInstalledInSpace(name, version, spaceID string) reso
 		if diags.HasError() {
 			return fmt.Errorf("failed to get package: %v", diags)
 		}
-		if pkg == nil || pkg.InstallationInfo == nil {
+		if pkg == nil {
 			return fmt.Errorf("package %s/%s not installed", name, version)
 		}
-		globalInstalled := pkg.InstallationInfo.InstallStatus == kbapi.PackageInfoInstallationInfoInstallStatusInstalled
-
+		globalInstalled := false
+		if pkg.InstallationInfo != nil {
+			globalInstalled = pkg.InstallationInfo.InstallStatus == kbapi.PackageInfoInstallationInfoInstallStatusInstalled
+		}
 		if !globalInstalled && pkg.Status != nil && strings.EqualFold(*pkg.Status, "installed") {
 			globalInstalled = true
 		}

@@ -165,9 +165,9 @@ The manifest contains:
    - Each bullet: `- <summary> ([#<number>](<url>))`
 
    For **`release`** mode:
-   - Rewrite **only** the `## [${{ needs.pre_activation.outputs.target_version }}] - <today's date in YYYY-MM-DD format>` section.
-   - If a section for this version already exists, replace it. If not, insert it immediately after the `## [Unreleased]` section.
-   - Preserve all other sections exactly as-is (including the `## [Unreleased]` section — do **not** clear it).
+   - Emit the concrete `## [${{ needs.pre_activation.outputs.target_version }}] - <today's date in YYYY-MM-DD format>` section for this release run.
+   - Remove any existing `## [Unreleased]` section (header and body). If the target version section already exists, replace that block; otherwise write the release section where Unreleased was (same dual-range splice as `rewriteChangelogSection` / `changelog-rewriter.js`).
+   - Preserve every other release section unchanged. Preserve the trailing link-definition footer verbatim, including `[Unreleased]: ...`; remove only the `## [Unreleased]` *section block* (the heading plus its body up to the next `## [` heading), not those footer link-definition lines themselves.
 
 6. **Write provenance JSON** to `/tmp/gh-aw/agent/provenance.json`. This file is written to workflow memory only — it is ephemeral support data and MUST NOT be added to the git index or committed. The file must contain machine-readable provenance mapping each bullet to its backing PR:
 

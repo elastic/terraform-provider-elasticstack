@@ -27,7 +27,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
-	"github.com/hashicorp/terraform-plugin-framework-validators/float32validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -523,6 +522,11 @@ func getSchema() schema.Schema {
 				Optional:            true,
 				NestedObject:        getPanelSchema(),
 			},
+			"pinned_panels": schema.ListNestedAttribute{
+				MarkdownDescription: strings.TrimSpace(pinnedPanelsDescription),
+				Optional:            true,
+				NestedObject:        pinnedPanelsNestedObject(),
+			},
 			"sections": schema.ListNestedAttribute{
 				MarkdownDescription: "Sections organize panels into collapsible groups. This is a technical preview feature.",
 				Optional:            true,
@@ -793,42 +797,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeVis}),
 				},
 			},
-			"time_slider_control_config": schema.SingleNestedAttribute{
-				MarkdownDescription: panelConfigDescription(
-					"Configuration for a time slider control panel. Controls the visible time window within the dashboard's global time range.",
-					"time_slider_control_config",
-					panelConfigNames,
-				),
-				Optional: true,
-				Attributes: map[string]schema.Attribute{
-					"start_percentage_of_time_range": schema.Float32Attribute{
-						MarkdownDescription: "Start of the visible time window as a fraction of the dashboard global range (0.0–1.0). " +
-							"Float32 in state matches the Kibana API and avoids refresh drift.",
-						Optional: true,
-						Validators: []validator.Float32{
-							float32validator.Between(0.0, 1.0),
-						},
-					},
-					"end_percentage_of_time_range": schema.Float32Attribute{
-						MarkdownDescription: "End of the visible time window as a fraction of the dashboard global range (0.0–1.0). " +
-							"Float32 in state matches the Kibana API and avoids refresh drift.",
-						Optional: true,
-						Validators: []validator.Float32{
-							float32validator.Between(0.0, 1.0),
-						},
-					},
-					"is_anchored": schema.BoolAttribute{
-						MarkdownDescription: "Whether the start of the time window is anchored (fixed), so only the end slides.",
-						Optional:            true,
-					},
-				},
-				Validators: []validator.Object{
-					objectvalidator.ConflictsWith(
-						siblingPanelConfigPathsExcept("time_slider_control_config", panelConfigNames)...,
-					),
-					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeTimeSlider}),
-				},
-			},
+			"time_slider_control_config": panelTimeSliderControlConfigSchema(),
 			"slo_burn_rate_config": schema.SingleNestedAttribute{
 				MarkdownDescription: panelConfigDescription(
 					"Configuration for an SLO burn rate panel. Use this for panels that visualize the burn rate of an SLO over a configurable look-back window.",
@@ -934,250 +903,9 @@ func getPanelSchema() schema.NestedAttributeObject {
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeSloErrorBudget}),
 				},
 			},
-			"esql_control_config": schema.SingleNestedAttribute{
-				MarkdownDescription: panelConfigDescription(
-					"Configuration for an ES|QL control panel. Use this to manage ES|QL variable controls on a dashboard.",
-					"esql_control_config",
-					panelConfigNames,
-				),
-				Optional: true,
-				Attributes: map[string]schema.Attribute{
-					"selected_options": schema.ListAttribute{
-						MarkdownDescription: "List of currently selected option values for the control.",
-						Required:            true,
-						ElementType:         types.StringType,
-					},
-					"variable_name": schema.StringAttribute{
-						MarkdownDescription: "The ES|QL variable name that this control binds to.",
-						Required:            true,
-					},
-					"variable_type": schema.StringAttribute{
-						MarkdownDescription: "The type of ES|QL variable. Allowed values: `fields`, `values`, `functions`, `time_literal`, `multi_values`.",
-						Required:            true,
-						Validators: []validator.String{
-							stringvalidator.OneOf("fields", "values", "functions", "time_literal", "multi_values"),
-						},
-					},
-					"esql_query": schema.StringAttribute{
-						MarkdownDescription: "The ES|QL query used to populate the control's options.",
-						Required:            true,
-					},
-					"control_type": schema.StringAttribute{
-						MarkdownDescription: "The control type. Allowed values: `STATIC_VALUES`, `VALUES_FROM_QUERY`.",
-						Required:            true,
-						Validators: []validator.String{
-							stringvalidator.OneOf("STATIC_VALUES", "VALUES_FROM_QUERY"),
-						},
-					},
-					"title": schema.StringAttribute{
-						MarkdownDescription: "A human-readable title displayed above the control widget.",
-						Optional:            true,
-					},
-					"single_select": schema.BoolAttribute{
-						MarkdownDescription: "When true, restricts the control to single-value selection.",
-						Optional:            true,
-					},
-					"available_options": schema.ListAttribute{
-						MarkdownDescription: "Pre-populated list of available options shown before the query executes.",
-						Optional:            true,
-						ElementType:         types.StringType,
-					},
-					"display_settings": schema.SingleNestedAttribute{
-						MarkdownDescription: "Display configuration for the control widget.",
-						Optional:            true,
-						Attributes: map[string]schema.Attribute{
-							"placeholder": schema.StringAttribute{
-								MarkdownDescription: "Placeholder text shown when no option is selected.",
-								Optional:            true,
-							},
-							"hide_action_bar": schema.BoolAttribute{
-								MarkdownDescription: "Whether to hide the action bar on the control.",
-								Optional:            true,
-							},
-							"hide_exclude": schema.BoolAttribute{
-								MarkdownDescription: "Whether to hide the exclude option.",
-								Optional:            true,
-							},
-							"hide_exists": schema.BoolAttribute{
-								MarkdownDescription: "Whether to hide the exists filter option.",
-								Optional:            true,
-							},
-							"hide_sort": schema.BoolAttribute{
-								MarkdownDescription: "Whether to hide the sort option.",
-								Optional:            true,
-							},
-						},
-					},
-				},
-				Validators: []validator.Object{
-					objectvalidator.ConflictsWith(
-						siblingPanelConfigPathsExcept("esql_control_config", panelConfigNames)...,
-					),
-					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeEsqlControl}),
-					validators.RequiredIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeEsqlControl}),
-				},
-			},
-			"options_list_control_config": schema.SingleNestedAttribute{
-				MarkdownDescription: panelConfigDescription(
-					"Configuration for an options list control panel. Provides a dropdown or multi-select filter based on a field in a data view.",
-					"options_list_control_config",
-					panelConfigNames,
-				),
-				Optional: true,
-				Attributes: map[string]schema.Attribute{
-					"data_view_id": schema.StringAttribute{
-						MarkdownDescription: "The ID of the data view that the control is tied to.",
-						Required:            true,
-					},
-					"field_name": schema.StringAttribute{
-						MarkdownDescription: "The name of the field in the data view that the control is tied to.",
-						Required:            true,
-					},
-					"title": schema.StringAttribute{
-						MarkdownDescription: "Human-readable label displayed above the control.",
-						Optional:            true,
-					},
-					"use_global_filters": schema.BoolAttribute{
-						MarkdownDescription: "Whether the control applies the dashboard's global filters to its own query.",
-						Optional:            true,
-					},
-					"ignore_validations": schema.BoolAttribute{
-						MarkdownDescription: "Whether the control skips field-level validation against the data view.",
-						Optional:            true,
-					},
-					"single_select": schema.BoolAttribute{
-						MarkdownDescription: "When true, only one option may be selected at a time.",
-						Optional:            true,
-					},
-					"exclude": schema.BoolAttribute{
-						MarkdownDescription: "When true, selected options are used as an exclusion filter rather than an inclusion filter.",
-						Optional:            true,
-					},
-					"exists_selected": schema.BoolAttribute{
-						MarkdownDescription: "When true, the control filters for documents where the field exists.",
-						Optional:            true,
-					},
-					"run_past_timeout": schema.BoolAttribute{
-						MarkdownDescription: "When true, the control continues to show results even when the underlying query times out.",
-						Optional:            true,
-					},
-					"search_technique": schema.StringAttribute{
-						MarkdownDescription: "The technique used to match suggestions. Must be one of `prefix`, `wildcard`, or `exact` when set.",
-						Optional:            true,
-						Validators: []validator.String{
-							stringvalidator.OneOf("prefix", "wildcard", "exact"),
-						},
-					},
-					"selected_options": schema.ListAttribute{
-						MarkdownDescription: "The initially or persistently selected option values. All values are represented as strings.",
-						Optional:            true,
-						ElementType:         types.StringType,
-					},
-					"display_settings": schema.SingleNestedAttribute{
-						MarkdownDescription: "Display preferences for the control widget.",
-						Optional:            true,
-						Attributes: map[string]schema.Attribute{
-							"placeholder": schema.StringAttribute{
-								MarkdownDescription: "Placeholder text shown when no option is selected.",
-								Optional:            true,
-							},
-							"hide_action_bar": schema.BoolAttribute{
-								MarkdownDescription: "When true, hides the action bar on the control.",
-								Optional:            true,
-							},
-							"hide_exclude": schema.BoolAttribute{
-								MarkdownDescription: "When true, hides the exclude toggle.",
-								Optional:            true,
-							},
-							"hide_exists": schema.BoolAttribute{
-								MarkdownDescription: "When true, hides the exists filter option.",
-								Optional:            true,
-							},
-							"hide_sort": schema.BoolAttribute{
-								MarkdownDescription: "When true, hides the sort control.",
-								Optional:            true,
-							},
-						},
-					},
-					"sort": schema.SingleNestedAttribute{
-						MarkdownDescription: "Default sort configuration for the suggestion list.",
-						Optional:            true,
-						Attributes: map[string]schema.Attribute{
-							"by": schema.StringAttribute{
-								MarkdownDescription: "The field or criterion to sort by. Must be one of `_count` or `_key`.",
-								Required:            true,
-								Validators: []validator.String{
-									stringvalidator.OneOf("_count", "_key"),
-								},
-							},
-							"direction": schema.StringAttribute{
-								MarkdownDescription: "The sort direction. Must be one of `asc` or `desc`.",
-								Required:            true,
-								Validators: []validator.String{
-									stringvalidator.OneOf("asc", "desc"),
-								},
-							},
-						},
-					},
-				},
-				Validators: []validator.Object{
-					objectvalidator.ConflictsWith(
-						siblingPanelConfigPathsExcept("options_list_control_config", panelConfigNames)...,
-					),
-					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeOptionsListControl}),
-					validators.RequiredIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeOptionsListControl}),
-				},
-			},
-			"range_slider_control_config": schema.SingleNestedAttribute{
-				MarkdownDescription: panelConfigDescription(
-					"Configuration for a range slider control panel. Provides a min/max range filter tied to a data view field.",
-					"range_slider_control_config",
-					panelConfigNames,
-				),
-				Optional: true,
-				Attributes: map[string]schema.Attribute{
-					"title": schema.StringAttribute{
-						MarkdownDescription: "A human-readable title for the control.",
-						Optional:            true,
-					},
-					"data_view_id": schema.StringAttribute{
-						MarkdownDescription: "The ID of the data view that the control is tied to.",
-						Required:            true,
-					},
-					"field_name": schema.StringAttribute{
-						MarkdownDescription: "The name of the field in the data view that the control is tied to.",
-						Required:            true,
-					},
-					"use_global_filters": schema.BoolAttribute{
-						MarkdownDescription: "Whether the control respects dashboard-level filters.",
-						Optional:            true,
-					},
-					"ignore_validations": schema.BoolAttribute{
-						MarkdownDescription: "Whether to suppress validation errors during intermediate states.",
-						Optional:            true,
-					},
-					"value": schema.ListAttribute{
-						MarkdownDescription: "Initial range as a list of exactly 2 strings: [min, max].",
-						ElementType:         types.StringType,
-						Optional:            true,
-						Validators: []validator.List{
-							listvalidator.SizeAtLeast(2),
-							listvalidator.SizeAtMost(2),
-						},
-					},
-					"step": schema.Float32Attribute{
-						MarkdownDescription: "The step size for the range slider. Stored as float32 to match the Kibana API type and avoid refresh drift.",
-						Optional:            true,
-					},
-				},
-				Validators: []validator.Object{
-					objectvalidator.ConflictsWith(
-						siblingPanelConfigPathsExcept("range_slider_control_config", panelConfigNames)...,
-					),
-					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeRangeSlider}),
-					validators.RequiredIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeRangeSlider}),
-				},
-			},
+			"esql_control_config":         panelEsqlControlConfigSchema(),
+			"options_list_control_config": panelOptionsListControlConfigSchema(),
+			"range_slider_control_config": panelRangeSliderControlConfigSchema(),
 			"synthetics_stats_overview_config": schema.SingleNestedAttribute{
 				MarkdownDescription: panelConfigDescription(
 					"Configuration for a Synthetics stats overview panel. "+
