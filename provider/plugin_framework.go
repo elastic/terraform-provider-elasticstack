@@ -182,6 +182,7 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		sourcemap.NewSourceMapResource,
 		importsavedobjects.NewResource,
 		alertingrule.NewResource,
+		dashboard.NewResource,
 		dataview.NewResource,
 		defaultdataview.NewResource,
 		parameter.NewResource,
@@ -243,7 +244,6 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 
 func (p *Provider) experimentalResources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
-		dashboard.NewResource,
 		streams.NewResource,
 	}
 }
