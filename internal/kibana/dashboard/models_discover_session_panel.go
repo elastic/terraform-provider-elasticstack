@@ -822,6 +822,23 @@ func discoverSessionAPIConfigLooksByReference(apiCfg kbapi.KbnDashboardPanelType
 	return strings.TrimSpace(probe.RefID) != ""
 }
 
+// discoverSessionPriorTFBranchMismatchesAPI reports out-of-band branch changes (e.g. Kibana flipped
+// inline vs linked). Prior Terraform state used exclusively one branch while the API payload uses the other.
+func discoverSessionPriorTFBranchMismatchesAPI(apiLooksByRef bool, prior *discoverSessionPanelConfigModel) bool {
+	if prior == nil {
+		return false
+	}
+	hasValue := prior.ByValue != nil
+	hasRef := prior.ByReference != nil
+	if apiLooksByRef && hasValue && !hasRef {
+		return true
+	}
+	if !apiLooksByRef && hasRef && !hasValue {
+		return true
+	}
+	return false
+}
+
 func populateDiscoverSessionPanelFromAPI(ctx context.Context, pm *panelModel, tfPanel *panelModel, apiPanel kbapi.KbnDashboardPanelTypeDiscoverSession) {
 	if tfPanel == nil {
 		pm.DiscoverSessionConfig = discoverSessionPanelConfigFromAPIImport(ctx, apiPanel)
@@ -833,7 +850,30 @@ func populateDiscoverSessionPanelFromAPI(ctx context.Context, pm *panelModel, tf
 		return
 	}
 
-	if discoverSessionAPIConfigLooksByReference(apiPanel.Config) {
+	prior := tfPanel.DiscoverSessionConfig
+	apiByRef := discoverSessionAPIConfigLooksByReference(apiPanel.Config)
+
+	if discoverSessionPriorTFBranchMismatchesAPI(apiByRef, prior) {
+		// Drift import: replace typed config from API so the next plan surfaces the branch change.
+		if apiByRef {
+			cfg1, err := apiPanel.Config.AsKbnDashboardPanelTypeDiscoverSessionConfig1()
+			if err == nil {
+				if imported := discoverSessionConfig1FromAPIImport(ctx, cfg1); imported != nil {
+					*existing = *imported
+				}
+			}
+			return
+		}
+		cfg0, err := apiPanel.Config.AsKbnDashboardPanelTypeDiscoverSessionConfig0()
+		if err == nil {
+			if imported := discoverSessionConfig0FromAPIImport(ctx, cfg0); imported != nil {
+				*existing = *imported
+			}
+		}
+		return
+	}
+
+	if apiByRef {
 		cfg1, err := apiPanel.Config.AsKbnDashboardPanelTypeDiscoverSessionConfig1()
 		if err == nil {
 			discoverSessionMergeConfig1FromAPI(ctx, existing, tfPanel, cfg1)

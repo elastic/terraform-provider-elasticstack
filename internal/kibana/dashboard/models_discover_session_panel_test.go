@@ -292,6 +292,16 @@ func Test_discoverSessionTabModeValidator(t *testing.T) {
 		v.ValidateObject(ctx, validator.ObjectRequest{ConfigValue: ov, Path: path.Root("tab")}, &resp)
 		require.False(t, resp.Diagnostics.HasError(), "%s", resp.Diagnostics)
 	})
+
+	t.Run("accepts esql only", func(t *testing.T) {
+		t.Parallel()
+		ov := types.ObjectValueMust(tabTypes, map[string]attr.Value{
+			"dsl": types.ObjectNull(dslT), "esql": esqlSet,
+		})
+		var resp validator.ObjectResponse
+		v.ValidateObject(ctx, validator.ObjectRequest{ConfigValue: ov, Path: path.Root("tab")}, &resp)
+		require.False(t, resp.Diagnostics.HasError(), "%s", resp.Diagnostics)
+	})
 }
 
 func Test_discoverSession_rowHeightStringValidator(t *testing.T) {
@@ -532,6 +542,149 @@ func Test_discoverSession_byReference_selectedTabID_fromAPI_thenStable(t *testin
 	second := first
 	populateDiscoverSessionPanelFromAPI(context.Background(), &second, &first, apiPanel)
 	require.Equal(t, "resolved-tab-id", second.DiscoverSessionConfig.ByReference.SelectedTabID.ValueString())
+}
+
+func Test_populateDiscoverSessionPanelFromAPI_branchMismatch_repopulates(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("API by_reference replaces prior by_value", func(t *testing.T) {
+		shared := &discoverSessionPanelConfigModel{
+			ByValue: &discoverSessionPanelByValueModel{
+				TimeRange: &timeRangeModel{
+					From: types.StringValue("now-30m"),
+					To:   types.StringValue("now"),
+					Mode: types.StringNull(),
+				},
+				Tab: discoverSessionTabModel{
+					DSL: &discoverSessionDSLTabModel{
+						Query: &filterSimpleModel{
+							Language:   types.StringValue("kql"),
+							Expression: types.StringValue("*"),
+						},
+						DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"data_view_reference","id":"logs-*"}`),
+					},
+				},
+			},
+		}
+		pm := panelModel{DiscoverSessionConfig: shared}
+		tfPanel := panelModel{DiscoverSessionConfig: shared}
+
+		cfg1 := kbapi.KbnDashboardPanelTypeDiscoverSessionConfig1{
+			RefId:     "saved-session-99",
+			TimeRange: kbapi.KbnEsQueryServerTimeRangeSchema{From: "now-30m", To: "now"},
+		}
+		var u kbapi.KbnDashboardPanelTypeDiscoverSession_Config
+		require.NoError(t, u.FromKbnDashboardPanelTypeDiscoverSessionConfig1(cfg1))
+		apiPanel := kbapi.KbnDashboardPanelTypeDiscoverSession{Config: u, Type: kbapi.DiscoverSession, Grid: discoverSessionTestGrid()}
+
+		populateDiscoverSessionPanelFromAPI(ctx, &pm, &tfPanel, apiPanel)
+
+		require.Nil(t, pm.DiscoverSessionConfig.ByValue)
+		require.NotNil(t, pm.DiscoverSessionConfig.ByReference)
+		assert.Equal(t, "saved-session-99", pm.DiscoverSessionConfig.ByReference.RefID.ValueString())
+	})
+
+	t.Run("API by_value replaces prior by_reference", func(t *testing.T) {
+		shared := &discoverSessionPanelConfigModel{
+			ByReference: &discoverSessionPanelByRefModel{
+				TimeRange: &timeRangeModel{
+					From: types.StringValue("now-30m"),
+					To:   types.StringValue("now"),
+					Mode: types.StringNull(),
+				},
+				RefID: types.StringValue("old-ref-id"),
+			},
+		}
+		pm := panelModel{DiscoverSessionConfig: shared}
+		tfPanel := panelModel{DiscoverSessionConfig: shared}
+
+		tabItem := kbapi.KbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_Item{}
+		dsl := kbapi.KbnDashboardPanelTypeDiscoverSessionConfig0Tabs0{
+			Query: kbapi.KbnAsCodeQuery{Expression: `host.name : "x"`, Language: kbapi.Kql},
+		}
+		require.NoError(t, json.Unmarshal([]byte(`{"type":"data_view_reference","id":"metrics-*"}`), &dsl.DataSource))
+		require.NoError(t, tabItem.FromKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0(dsl))
+
+		cfg0 := kbapi.KbnDashboardPanelTypeDiscoverSessionConfig0{
+			TimeRange: kbapi.KbnEsQueryServerTimeRangeSchema{From: "now-30m", To: "now"},
+			Tabs:      []kbapi.KbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_Item{tabItem},
+		}
+		var u kbapi.KbnDashboardPanelTypeDiscoverSession_Config
+		require.NoError(t, u.FromKbnDashboardPanelTypeDiscoverSessionConfig0(cfg0))
+		apiPanel := kbapi.KbnDashboardPanelTypeDiscoverSession{Config: u, Type: kbapi.DiscoverSession, Grid: discoverSessionTestGrid()}
+
+		populateDiscoverSessionPanelFromAPI(ctx, &pm, &tfPanel, apiPanel)
+
+		require.Nil(t, pm.DiscoverSessionConfig.ByReference)
+		require.NotNil(t, pm.DiscoverSessionConfig.ByValue)
+		require.NotNil(t, pm.DiscoverSessionConfig.ByValue.Tab.DSL)
+		assert.Equal(t, `host.name : "x"`, pm.DiscoverSessionConfig.ByValue.Tab.DSL.Query.Expression.ValueString())
+	})
+}
+
+func Test_discoverSession_byReference_roundTrip(t *testing.T) {
+	ctx := context.Background()
+	grid := discoverSessionTestGrid()
+
+	pm := panelModel{
+		DiscoverSessionConfig: &discoverSessionPanelConfigModel{
+			Title:       types.StringValue("Discover link"),
+			Description: types.StringValue("linked panel"),
+			ByReference: &discoverSessionPanelByRefModel{
+				TimeRange: &timeRangeModel{
+					From: types.StringValue("now-1h"),
+					To:   types.StringValue("now"),
+					Mode: types.StringNull(),
+				},
+				RefID:         types.StringValue("saved-discover-abc"),
+				SelectedTabID: types.StringValue("tab-explicit"),
+				Overrides: &discoverSessionOverridesModel{
+					Density:     types.StringValue("compact"),
+					RowsPerPage: types.Int64Value(50),
+					SampleSize:  types.Int64Value(500),
+					Sort: []discoverSessionSortModel{
+						{Name: types.StringValue("@timestamp"), Direction: types.StringValue("desc")},
+					},
+				},
+			},
+		},
+	}
+
+	item1, diags := discoverSessionPanelToAPI(ctx, pm, grid, nil, nil)
+	require.False(t, diags.HasError(), "%s", diags)
+
+	dsPanel, err := item1.AsKbnDashboardPanelTypeDiscoverSession()
+	require.NoError(t, err)
+
+	next := pm
+	populateDiscoverSessionPanelFromAPI(ctx, &next, &pm, dsPanel)
+
+	require.Nil(t, next.DiscoverSessionConfig.ByValue)
+	br := next.DiscoverSessionConfig.ByReference
+	require.NotNil(t, br)
+	assert.Equal(t, "saved-discover-abc", br.RefID.ValueString())
+	assert.Equal(t, "tab-explicit", br.SelectedTabID.ValueString())
+	assert.Equal(t, "now-1h", br.TimeRange.From.ValueString())
+	assert.Equal(t, "now", br.TimeRange.To.ValueString())
+	require.NotNil(t, br.Overrides)
+	assert.Equal(t, "compact", br.Overrides.Density.ValueString())
+	assert.Equal(t, int64(50), br.Overrides.RowsPerPage.ValueInt64())
+	assert.Equal(t, int64(500), br.Overrides.SampleSize.ValueInt64())
+	require.Len(t, br.Overrides.Sort, 1)
+	assert.Equal(t, "@timestamp", br.Overrides.Sort[0].Name.ValueString())
+	assert.Equal(t, "desc", br.Overrides.Sort[0].Direction.ValueString())
+
+	assert.Equal(t, "Discover link", next.DiscoverSessionConfig.Title.ValueString())
+	assert.Equal(t, "linked panel", next.DiscoverSessionConfig.Description.ValueString())
+
+	item2, diags2 := discoverSessionPanelToAPI(ctx, next, grid, nil, nil)
+	require.False(t, diags2.HasError(), "%s", diags2)
+
+	raw1, err := item1.MarshalJSON()
+	require.NoError(t, err)
+	raw2, err := item2.MarshalJSON()
+	require.NoError(t, err)
+	require.JSONEq(t, string(raw1), string(raw2))
 }
 
 func Test_discoverSession_timeRange_inheritsDashboardAtWrite_keepsNullOnRead(t *testing.T) {
