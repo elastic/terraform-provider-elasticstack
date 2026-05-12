@@ -56,7 +56,7 @@ None.
 
 ### Modified Capabilities
 
-- `kibana-dashboard`: adds three new panel-behavior requirements (image, slo_alerts, discover_session). Existing REQ-010 (`config_json` typed-only enumeration) is extended in plain reading by the new panel REQs each declaring `config_json` rejected for their `type`.
+- `kibana-dashboard`: adds three new panel-behavior requirements — **REQ-040** (image / `image_config`), **REQ-041** (`slo_alerts` / `slo_alerts_config`), **REQ-042** (`discover_session` / `discover_session_config`). REQ-010 (`config_json` typed-only enumeration and panel-type rejection rules) is extended to list `image`, `slo_alerts`, and `discover_session` alongside existing typed-only panel types; each new REQ also declares `config_json` rejected for its panel `type`.
 
 ## Impact
 

@@ -47,7 +47,7 @@ The resource is not yet released, so breaking schema changes inside this bundle 
 
 - **`slos` is required with `len(slos) > 0`**. The API allows an empty list (default `[]`) but a zero-SLO alerts panel is a misconfiguration — surface the error at plan time rather than letting the user create a useless panel.
 - **`slo_instance_id` null-preservation** mirrors the existing `slo_burn_rate_config` behavior: when Kibana returns the server-side default `"*"` and prior state had it null, state stays null.
-- **`drilldowns` reuses the shared `url_drilldown` block**. Only `on_open_panel_menu` is allowed by the API today; validator constrains the trigger.
+- **`drilldowns` reuses the shared `url_drilldown` block**. Only `on_open_panel_menu` is allowed by the API today; when `AllowedTriggers` lists only that value the Terraform schema omits the `trigger` attribute and the model layer fixes `trigger = "on_open_panel_menu"` at write time (same pattern as `slo_burn_rate_config.drilldowns`).
 
 ### `discover_session_config` — Option C (typed envelope + targeted JSON escape hatches)
 
@@ -60,7 +60,7 @@ The resource is not yet released, so breaking schema changes inside this bundle 
 - **`time_range` is optional at the panel level**, even though the API marks it required on both branches. Practitioners SHALL be able to omit it to inherit the dashboard-root `time_range`; the model layer applies the dashboard value when the panel attribute is null at write time. Read preserves null per REQ-009 when the API echoes the inherited value back. *(See "Risks" for why this is safe.)*
 - **`selected_tab_id` is optional input and computed when omitted**, since practitioners typically don't know tab UUIDs.
 - **`references` omitted on `by_reference` for v1**: spike on Kibana **9.4.0** showed no client-side references are needed (`ref_id` is sufficient); the dashboard POST schema does not allow top-level `references`. If a future API revision introduces panel-config references like Lens’s optional list, a follow-on change MAY add `references_json`.
-- **`drilldowns` reuses the shared `url_drilldown` block** (URL-only with `on_open_panel_menu` trigger).
+- **`drilldowns` reuses the shared `url_drilldown` block** (URL-only with `on_open_panel_menu` trigger fixed at write time by the model layer when the schema omits `trigger`).
 
 ### Coupling and sequencing
 

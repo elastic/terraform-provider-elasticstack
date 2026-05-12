@@ -23,13 +23,13 @@
 - [x] 3.3 Update REQ-010 / panel-type-rejection table for `slo_alerts` + `config_json`
 - [x] 3.4 Create `models_slo_alerts_panel.go` with the model and read/write helpers; apply REQ-009 null-preservation including `slo_instance_id = "*"` server-default
 - [x] 3.5 Wire into `mapPanelFromAPI` and the panel write dispatcher
-- [x] 3.6 Unit tests in `models_slo_alerts_panel_test.go`: round-trip, `slo_instance_id` null-preservation, drilldown round-trip, validator failures (empty `slos`, wrong trigger)
+- [x] 3.6 Unit tests in `models_slo_alerts_panel_test.go`: round-trip, `slo_instance_id` null-preservation, drilldown round-trip, validator failures (empty `slos`); model-layer assertion that emitted API drilldown objects use `trigger = "on_open_panel_menu"`
 - [x] 3.7 Description text under `internal/kibana/dashboard/descriptions/`
 
 ## 4. Discover session panel (`type = "discover_session"`)
 
 - [x] 4.1 Add `schema_discover_session_panel.go` with `discover_session_config`, mutually exclusive `by_value` / `by_reference` sub-blocks, the single `tab` object with mutually exclusive `dsl` / `esql` sub-blocks, typed envelope fields, the shared `time_range` helper, the shared `url_drilldown` block, and `data_source_json` JSON attributes
-- [x] 4.2 Add validators: `by_value` xor `by_reference`; `tab.dsl` xor `tab.esql`; `view_mode` enum; `density` enum; `header_row_height` (`"1".."5"|"auto"`) and `row_height` (`"1".."20"|"auto"`) string validators; numeric bounds on `rows_per_page` / `sample_size`; drilldown trigger enum; well-formed JSON for `data_source_json`
+- [x] 4.2 Add validators: `by_value` xor `by_reference`; `tab.dsl` xor `tab.esql`; `view_mode` enum; `density` enum; `header_row_height` (`"1".."5"|"auto"`) and `row_height` (`"1".."20"|"auto"`) string validators; numeric bounds on `rows_per_page` / `sample_size`; well-formed JSON for `data_source_json` (URL drilldown `trigger` is not practitioner-configurable when only one API trigger applies)
 - [x] 4.3 Add semantic-equality plan modifiers on `data_source_json` (reuse existing JSON normalization helper)
 - [x] 4.4 Add conflict validators (mutex with all other typed blocks and `config_json`)
 - [x] 4.5 Update REQ-010 / panel-type-rejection table for `discover_session` + `config_json`
@@ -62,5 +62,5 @@
 
 ## 8. Spec sync
 
-- [ ] 8.1 Run `openspec validate add-new-panels --strict`
-- [ ] 8.2 Run `make check-openspec`
+- [x] 8.1 Run `openspec validate add-new-panels --strict`
+- [x] 8.2 Run `make check-openspec`
