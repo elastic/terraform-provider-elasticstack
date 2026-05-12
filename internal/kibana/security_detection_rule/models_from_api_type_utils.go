@@ -492,24 +492,7 @@ func convertOsqueryResponseActionToModel(ctx context.Context, osqueryAction kbap
 	}
 
 	// Convert ECS mapping
-	if osqueryAction.Params.EcsMapping != nil {
-		ecsMappingAttrs := make(map[string]attr.Value)
-		for key, value := range *osqueryAction.Params.EcsMapping {
-			if value.Field != nil {
-				ecsMappingAttrs[key] = types.StringPointerValue(value.Field)
-			} else {
-				ecsMappingAttrs[key] = types.StringNull()
-			}
-		}
-		ecsMappingValue, ecsDiags := types.MapValue(types.StringType, ecsMappingAttrs)
-		if ecsDiags.HasError() {
-			diags.Append(ecsDiags...)
-		} else {
-			paramsModel.EcsMapping = ecsMappingValue
-		}
-	} else {
-		paramsModel.EcsMapping = types.MapNull(types.StringType)
-	}
+	paramsModel.EcsMapping = convertEcsMappingToModel(osqueryAction.Params.EcsMapping)
 
 	// Convert queries array
 	if osqueryAction.Params.Queries != nil {
@@ -541,24 +524,7 @@ func convertOsqueryResponseActionToModel(ctx context.Context, osqueryAction kbap
 			}
 
 			// Convert query ECS mapping
-			if apiQuery.EcsMapping != nil {
-				queryEcsMappingAttrs := make(map[string]attr.Value)
-				for key, value := range *apiQuery.EcsMapping {
-					if value.Field != nil {
-						queryEcsMappingAttrs[key] = types.StringPointerValue(value.Field)
-					} else {
-						queryEcsMappingAttrs[key] = types.StringNull()
-					}
-				}
-				queryEcsMappingValue, queryEcsDiags := types.MapValue(types.StringType, queryEcsMappingAttrs)
-				if queryEcsDiags.HasError() {
-					diags.Append(queryEcsDiags...)
-				} else {
-					query.EcsMapping = queryEcsMappingValue
-				}
-			} else {
-				query.EcsMapping = types.MapNull(types.StringType)
-			}
+			query.EcsMapping = convertEcsMappingToModel(apiQuery.EcsMapping)
 
 			queries = append(queries, query)
 		}
@@ -1279,6 +1245,23 @@ func (d *Data) updateThreatFromAPI(ctx context.Context, threat *kbapi.SecurityDe
 	}
 
 	return diags
+}
+
+// convertEcsMappingToModel converts a kbapi ECS mapping pointer to a types.Map.
+func convertEcsMappingToModel(ecsMapping *kbapi.SecurityDetectionsAPIEcsMapping) types.Map {
+	if ecsMapping == nil {
+		return types.MapNull(types.StringType)
+	}
+	attrs := make(map[string]attr.Value, len(*ecsMapping))
+	for key, value := range *ecsMapping {
+		if value.Field != nil {
+			attrs[key] = types.StringPointerValue(value.Field)
+		} else {
+			attrs[key] = types.StringNull()
+		}
+	}
+	result, _ := types.MapValue(types.StringType, attrs)
+	return result
 }
 
 // parseDurationFromAPI converts an API duration to customtypes.Duration
