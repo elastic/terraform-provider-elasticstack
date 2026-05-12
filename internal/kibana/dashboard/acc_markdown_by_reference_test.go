@@ -67,16 +67,19 @@ func TestAccResourceDashboardMarkdownByReference(t *testing.T) {
 	dashboardTitle := "Acc md by-ref " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck: func() {
-			acctest.PreCheck(t)
-			markdownLibID = createAccMarkdownLibrarySavedObject(t)
-			t.Cleanup(func() { deleteAccMarkdownLibrarySavedObject(t, markdownLibID) })
-		},
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
+				PreConfig: func() {
+					if markdownLibID != "" {
+						return
+					}
+					markdownLibID = createAccMarkdownLibrarySavedObject(t)
+					t.Cleanup(func() { deleteAccMarkdownLibrarySavedObject(t, markdownLibID) })
+				},
+				ConfigDirectory: acctest.NamedTestCaseDirectory("basic"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
 					"markdown_lib_id": lazyStringVar{p: markdownLibIDPtr},
