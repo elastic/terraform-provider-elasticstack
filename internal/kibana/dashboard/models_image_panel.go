@@ -24,10 +24,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-const (
-	panelTypeImage = "image"
-)
-
 // imagePanelConfigModel is the Terraform model for `image_config`.
 type imagePanelConfigModel struct {
 	Src             imagePanelSrcModel         `tfsdk:"src"`
@@ -355,9 +351,9 @@ func readImageDashboardDrilldownFromAPI(
 	// Import (no prior practitioner state for this drilldown): omit API values that match Kibana defaults so
 	// omitted HCL stays aligned with imported state (REQ-040).
 	if prior == nil {
-		m.UseFilters = imagePanelDrilldownBoolImportPreserving(api.UseFilters, imagePanelDashboardDrilldownBoolDefault)
-		m.UseTimeRange = imagePanelDrilldownBoolImportPreserving(api.UseTimeRange, imagePanelDashboardDrilldownBoolDefault)
-		m.OpenInNewTab = imagePanelDrilldownBoolImportPreserving(api.OpenInNewTab, imagePanelDashboardDrilldownBoolDefault)
+		m.UseFilters = panelDrilldownBoolImportPreserving(api.UseFilters, drilldownDashboardBoolDefault)
+		m.UseTimeRange = panelDrilldownBoolImportPreserving(api.UseTimeRange, drilldownDashboardBoolDefault)
+		m.OpenInNewTab = panelDrilldownBoolImportPreserving(api.OpenInNewTab, drilldownDashboardBoolDefault)
 		return m
 	}
 
@@ -399,8 +395,8 @@ func readImageURLDrilldownFromAPI(api kbapi.KbnDashboardPanelTypeImageConfigDril
 	}
 
 	if prior == nil {
-		m.EncodeURL = imagePanelDrilldownBoolImportPreserving(api.EncodeUrl, imagePanelURLDrilldownEncodeURLDefault)
-		m.OpenInNewTab = imagePanelDrilldownBoolImportPreserving(api.OpenInNewTab, imagePanelURLDrilldownOpenInNewTabDefault)
+		m.EncodeURL = panelDrilldownBoolImportPreserving(api.EncodeUrl, drilldownURLEncodeURLDefault)
+		m.OpenInNewTab = panelDrilldownBoolImportPreserving(api.OpenInNewTab, drilldownURLOpenInNewTabDefault)
 		return m
 	}
 
@@ -425,22 +421,4 @@ func readImageURLDrilldownFromAPI(api kbapi.KbnDashboardPanelTypeImageConfigDril
 	return m
 }
 
-const (
-	// Kibana defaults for image panel dashboard drilldown booleans (when omitted in UI).
-	imagePanelDashboardDrilldownBoolDefault = false
-	// URL drilldown defaults match Kibana image embeddable URL drilldown schema behavior.
-	imagePanelURLDrilldownEncodeURLDefault    = true
-	imagePanelURLDrilldownOpenInNewTabDefault = false
-)
 
-// imagePanelDrilldownBoolImportPreserving maps optional API booleans on import: nil or value equal to the
-// server-side default becomes null in Terraform state so practitioners can omit those attributes without drift.
-func imagePanelDrilldownBoolImportPreserving(api *bool, serverDefault bool) types.Bool {
-	if api == nil {
-		return types.BoolNull()
-	}
-	if *api == serverDefault {
-		return types.BoolNull()
-	}
-	return types.BoolValue(*api)
-}

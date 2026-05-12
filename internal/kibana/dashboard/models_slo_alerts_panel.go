@@ -234,8 +234,8 @@ func readSloAlertsDrilldownsFromAPI(
 		}
 
 		if prior == nil {
-			out[i].EncodeURL = imagePanelDrilldownBoolImportPreserving(d.EncodeUrl, imagePanelURLDrilldownEncodeURLDefault)
-			out[i].OpenInNewTab = imagePanelDrilldownBoolImportPreserving(d.OpenInNewTab, imagePanelURLDrilldownOpenInNewTabDefault)
+			out[i].EncodeURL = panelDrilldownBoolImportPreserving(d.EncodeUrl, drilldownURLEncodeURLDefault)
+			out[i].OpenInNewTab = panelDrilldownBoolImportPreserving(d.OpenInNewTab, drilldownURLOpenInNewTabDefault)
 			continue
 		}
 

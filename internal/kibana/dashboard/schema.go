@@ -50,6 +50,7 @@ const (
 	pieChartTypeNumber               = "number"
 	pieChartTypePercent              = "percent"
 	operationTerms                   = "terms"
+	panelTypeImage                   = "image"
 	panelTypeMarkdown                = "markdown"
 	panelTypeVis                     = "vis"
 	panelTypeTimeSlider              = "time_slider_control"

@@ -1267,8 +1267,8 @@ func readDiscoverSessionDrilldownsFromConfig0(
 			p = &prior[i]
 		}
 		if p == nil {
-			out[i].EncodeURL = imagePanelDrilldownBoolImportPreserving(d.EncodeUrl, imagePanelURLDrilldownEncodeURLDefault)
-			out[i].OpenInNewTab = imagePanelDrilldownBoolImportPreserving(d.OpenInNewTab, imagePanelURLDrilldownOpenInNewTabDefault)
+			out[i].EncodeURL = panelDrilldownBoolImportPreserving(d.EncodeUrl, drilldownURLEncodeURLDefault)
+			out[i].OpenInNewTab = panelDrilldownBoolImportPreserving(d.OpenInNewTab, drilldownURLOpenInNewTabDefault)
 			continue
 		}
 		switch {
@@ -1314,8 +1314,8 @@ func readDiscoverSessionDrilldownsFromConfig1(
 			p = &prior[i]
 		}
 		if p == nil {
-			out[i].EncodeURL = imagePanelDrilldownBoolImportPreserving(d.EncodeUrl, imagePanelURLDrilldownEncodeURLDefault)
-			out[i].OpenInNewTab = imagePanelDrilldownBoolImportPreserving(d.OpenInNewTab, imagePanelURLDrilldownOpenInNewTabDefault)
+			out[i].EncodeURL = panelDrilldownBoolImportPreserving(d.EncodeUrl, drilldownURLEncodeURLDefault)
+			out[i].OpenInNewTab = panelDrilldownBoolImportPreserving(d.OpenInNewTab, drilldownURLOpenInNewTabDefault)
 			continue
 		}
 		switch {
