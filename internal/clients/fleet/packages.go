@@ -54,14 +54,7 @@ func GetPackage(ctx context.Context, client *Client, name, version, spaceID stri
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return &resp.JSON200.Item, nil
-	case http.StatusNotFound:
-		return nil, nil
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return handleGetResponse(resp.StatusCode(), resp.Body, func() *kbapi.PackageInfo { return &resp.JSON200.Item })
 }
 
 // InstallPackageOptions holds the options for installing a package.

@@ -19,7 +19,6 @@ package fleet
 
 import (
 	"context"
-	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
@@ -34,14 +33,7 @@ func GetAgentDownloadSource(ctx context.Context, client *Client, id string, spac
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return resp, nil
-	case http.StatusNotFound:
-		return nil, nil
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return handleGetResponse(resp.StatusCode(), resp.Body, func() *kbapi.GetFleetAgentDownloadSourcesSourceidResponse { return resp })
 }
 
 // CreateAgentDownloadSource creates a new agent binary download source.
@@ -56,12 +48,7 @@ func CreateAgentDownloadSource(
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return resp, nil
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return handleMutateResponse(resp.StatusCode(), resp.Body, func() *kbapi.PostFleetAgentDownloadSourcesResponse { return resp })
 }
 
 // UpdateAgentDownloadSource updates an existing agent binary download source.
@@ -77,12 +64,7 @@ func UpdateAgentDownloadSource(
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return resp, nil
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return handleMutateResponse(resp.StatusCode(), resp.Body, func() *kbapi.PutFleetAgentDownloadSourcesSourceidResponse { return resp })
 }
 
 // DeleteAgentDownloadSource deletes an existing agent binary download source.
@@ -102,10 +84,5 @@ func ListAgentDownloadSources(ctx context.Context, client *Client, spaceID strin
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return resp, nil
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return handleMutateResponse(resp.StatusCode(), resp.Body, func() *kbapi.GetFleetAgentDownloadSourcesResponse { return resp })
 }

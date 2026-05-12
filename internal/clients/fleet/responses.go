@@ -30,3 +30,31 @@ import (
 func handleDeleteResponse(statusCode int, body []byte) diag.Diagnostics {
 	return diagutil.HandleStatusResponse(statusCode, body, http.StatusOK, http.StatusNotFound)
 }
+
+// handleGetResponse handles a read-by-ID response. Returns the zero value of T
+// and nil diagnostics on 404 (resource not found). The extract callback is
+// invoked only on HTTP 200 and should return the value to surface to callers.
+func handleGetResponse[T any](statusCode int, body []byte, extract func() T) (T, diag.Diagnostics) {
+	var zero T
+	switch statusCode {
+	case http.StatusOK:
+		return extract(), nil
+	case http.StatusNotFound:
+		return zero, nil
+	default:
+		return zero, diagutil.ReportUnknownHTTPError(statusCode, body)
+	}
+}
+
+// handleMutateResponse handles a create/update response where only HTTP 200 is
+// success. The extract callback is invoked only on HTTP 200 and should return
+// the value to surface to callers.
+func handleMutateResponse[T any](statusCode int, body []byte, extract func() T) (T, diag.Diagnostics) {
+	var zero T
+	switch statusCode {
+	case http.StatusOK:
+		return extract(), nil
+	default:
+		return zero, diagutil.ReportUnknownHTTPError(statusCode, body)
+	}
+}
