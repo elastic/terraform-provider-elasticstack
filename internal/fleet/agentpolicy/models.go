@@ -61,16 +61,17 @@ func agentFeaturesFromPolicy(p *kbapi.AgentPolicy) []apiAgentFeature {
 }
 
 type features struct {
-	SupportsGlobalDataTags      bool
-	SupportsSupportsAgentless   bool
-	SupportsInactivityTimeout   bool
-	SupportsUnenrollmentTimeout bool
-	SupportsSpaceIDs            bool
-	SupportsRequiredVersions    bool
-	SupportsAgentFeatures       bool
-	SupportsAdvancedMonitoring  bool
-	SupportsAdvancedSettings    bool
-	SupportsTamperProtection    bool
+	SupportsGlobalDataTags                bool
+	SupportsSupportsAgentless             bool
+	SupportsInactivityTimeout             bool
+	SupportsUnenrollmentTimeout           bool
+	SupportsSpaceIDs                      bool
+	SupportsRequiredVersions              bool
+	SupportsAgentFeatures                 bool
+	SupportsAdvancedMonitoring            bool
+	SupportsAdvancedSettings              bool
+	SupportsMonitoringRuntimeExperimental bool
+	SupportsTamperProtection              bool
 }
 
 type globalDataTagsItemModel struct {
@@ -530,7 +531,11 @@ func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, feat featur
 				),
 			}
 		}
-		body.AdvancedSettings = model.convertAdvancedSettingsToAPI(ctx)
+		advancedSettings, diags := model.convertAdvancedSettingsToAPI(ctx, feat)
+		if diags.HasError() {
+			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diags
+		}
+		body.AdvancedSettings = advancedSettings
 	}
 
 	// Handle advanced monitoring options
@@ -705,7 +710,11 @@ func (model *agentPolicyModel) toAPIUpdateModel(ctx context.Context, feat featur
 				),
 			}
 		}
-		body.AdvancedSettings = model.convertAdvancedSettingsToAPI(ctx)
+		advancedSettings, diags := model.convertAdvancedSettingsToAPI(ctx, feat)
+		if diags.HasError() {
+			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diags
+		}
+		body.AdvancedSettings = advancedSettings
 	}
 
 	// Handle advanced monitoring options
