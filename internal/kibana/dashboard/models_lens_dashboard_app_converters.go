@@ -394,10 +394,14 @@ func populateLensDashboardAppByReferenceFromAPI(
 		RefID:     types.StringValue(cfg1.RefId),
 		TimeRange: tr,
 	}
-	by.Title = lensOptionalStringFromAPI(cfg1.Title, prior, func(br *lensDashboardAppByReferenceModel) types.String { return br.Title })
-	by.Description = lensOptionalStringFromAPI(cfg1.Description, prior, func(br *lensDashboardAppByReferenceModel) types.String { return br.Description })
-	by.HideTitle = lensOptionalBoolFromAPI(cfg1.HideTitle, prior, func(br *lensDashboardAppByReferenceModel) types.Bool { return br.HideTitle })
-	by.HideBorder = lensOptionalBoolFromAPI(cfg1.HideBorder, prior, func(br *lensDashboardAppByReferenceModel) types.Bool { return br.HideBorder })
+	var priorBR *lensDashboardAppByReferenceModel
+	if prior != nil {
+		priorBR = prior.ByReference
+	}
+	by.Title = byReferenceOptionalStringFromAPI(cfg1.Title, priorBR, func(br *lensDashboardAppByReferenceModel) types.String { return br.Title })
+	by.Description = byReferenceOptionalStringFromAPI(cfg1.Description, priorBR, func(br *lensDashboardAppByReferenceModel) types.String { return br.Description })
+	by.HideTitle = byReferenceOptionalBoolFromAPI(cfg1.HideTitle, priorBR, func(br *lensDashboardAppByReferenceModel) types.Bool { return br.HideTitle })
+	by.HideBorder = byReferenceOptionalBoolFromAPI(cfg1.HideBorder, priorBR, func(br *lensDashboardAppByReferenceModel) types.Bool { return br.HideBorder })
 
 	switch {
 	case cfg1.References != nil:
@@ -647,34 +651,35 @@ func populateLensDashboardAppByValueFromAPI(
 	return diags
 }
 
-func lensOptionalStringFromAPI(
+// byReferenceOptionalStringFromAPI returns the API value when present, falls back to the
+// known prior TF value, otherwise null. Shared by the lens-dashboard-app and vis by-reference
+// read paths since they share the same model (vizByReferenceModel = lensDashboardAppByReferenceModel).
+func byReferenceOptionalStringFromAPI(
 	api *string,
-	prior *lensDashboardAppConfigModel,
+	prior *lensDashboardAppByReferenceModel,
 	priorField func(*lensDashboardAppByReferenceModel) types.String,
 ) types.String {
 	if api != nil {
 		return types.StringValue(*api)
 	}
-	if prior != nil && prior.ByReference != nil {
-		p := priorField(prior.ByReference)
-		if typeutils.IsKnown(p) {
+	if prior != nil {
+		if p := priorField(prior); typeutils.IsKnown(p) {
 			return p
 		}
 	}
 	return types.StringNull()
 }
 
-func lensOptionalBoolFromAPI(
+func byReferenceOptionalBoolFromAPI(
 	api *bool,
-	prior *lensDashboardAppConfigModel,
+	prior *lensDashboardAppByReferenceModel,
 	priorField func(*lensDashboardAppByReferenceModel) types.Bool,
 ) types.Bool {
 	if api != nil {
 		return types.BoolValue(*api)
 	}
-	if prior != nil && prior.ByReference != nil {
-		p := priorField(prior.ByReference)
-		if typeutils.IsKnown(p) {
+	if prior != nil {
+		if p := priorField(prior); typeutils.IsKnown(p) {
 			return p
 		}
 	}

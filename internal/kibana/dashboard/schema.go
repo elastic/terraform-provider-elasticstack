@@ -1134,6 +1134,55 @@ func getVizConfigSchema() map[string]schema.Attribute {
 	}
 }
 
+// validateExactlyOneNestedAttr counts the named child attributes of a nested object
+// that are concretely set (not null, not unknown). It writes diagnostics scoped to req.Path
+// when the count is wrong, deferring (no diagnostic) if any candidate is unknown so plan
+// re-runs after refinement get a final verdict.
+//
+// Used by every "exactly one of …" object validator on the dashboard schema (mode validators
+// that gate `by_value` vs `by_reference`, source validators that pick a chart kind under
+// `by_value`, etc.). It assumes req.ConfigValue is non-null and non-known-unknown — the
+// caller short-circuits on those because the framework asks each validator separately.
+func validateExactlyOneNestedAttr(
+	req validator.ObjectRequest,
+	resp *validator.ObjectResponse,
+	blockLabel string,
+	attrNames []string,
+	missingDetail string,
+	tooManyDetail string,
+) {
+	attrs := req.ConfigValue.Attributes()
+	count := 0
+	hasUnknown := false
+	for _, name := range attrNames {
+		av, ok := attrs[name]
+		if !ok || av == nil {
+			continue
+		}
+		switch {
+		case av.IsUnknown():
+			hasUnknown = true
+		case av.IsNull():
+			// not set
+		default:
+			count++
+		}
+	}
+	if count > 1 {
+		resp.Diagnostics.AddAttributeError(req.Path, "Invalid "+blockLabel, tooManyDetail)
+		return
+	}
+	if hasUnknown {
+		return
+	}
+	if count == 0 {
+		resp.Diagnostics.AddAttributeError(req.Path, "Invalid "+blockLabel, missingDetail)
+	}
+}
+
+// modeAttrNames lists the two children of every block that uses the by_value / by_reference union.
+var modeAttrNames = []string{"by_value", "by_reference"}
+
 // lensDashboardAppConfigModeValidator enforces that exactly one of by_value or by_reference is set.
 var _ validator.Object = lensDashboardAppConfigModeValidator{}
 
@@ -1151,26 +1200,13 @@ func (v lensDashboardAppConfigModeValidator) ValidateObject(_ context.Context, r
 	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
 		return
 	}
-	attrs := req.ConfigValue.Attributes()
-	byValue := attrs["by_value"]
-	byRef := attrs["by_reference"]
-	valueSet := func(av attr.Value) bool {
-		return av != nil && !av.IsNull() && !av.IsUnknown()
-	}
-	byValueSet := valueSet(byValue)
-	byRefSet := valueSet(byRef)
-	if byValueSet && byRefSet {
-		resp.Diagnostics.AddAttributeError(req.Path, "Invalid lens_dashboard_app_config", "Exactly one of `by_value` or `by_reference` must be set inside `lens_dashboard_app_config`, not both.")
-		return
-	}
-	if !byValueSet && !byRefSet {
-		byValueUnknown := byValue != nil && byValue.IsUnknown()
-		byRefUnknown := byRef != nil && byRef.IsUnknown()
-		if byValueUnknown || byRefUnknown {
-			return
-		}
-		resp.Diagnostics.AddAttributeError(req.Path, "Invalid lens_dashboard_app_config", "Exactly one of `by_value` or `by_reference` must be set inside `lens_dashboard_app_config`.")
-	}
+	validateExactlyOneNestedAttr(
+		req, resp,
+		"lens_dashboard_app_config",
+		modeAttrNames,
+		"Exactly one of `by_value` or `by_reference` must be set inside `lens_dashboard_app_config`.",
+		"Exactly one of `by_value` or `by_reference` must be set inside `lens_dashboard_app_config`, not both.",
+	)
 }
 
 // lensDashboardAppByValueSourceValidator enforces exactly one of config_json or a typed chart block inside by_value.
@@ -1190,44 +1226,13 @@ func (lensDashboardAppByValueSourceValidator) ValidateObject(_ context.Context, 
 	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
 		return
 	}
-	attrs := req.ConfigValue.Attributes()
-	var count int
-	var hasUnknown bool
-	for _, name := range lensDashboardAppByValueSourceAttrNames {
-		av, ok := attrs[name]
-		if !ok {
-			continue
-		}
-		if av == nil {
-			continue
-		}
-		if av.IsUnknown() {
-			hasUnknown = true
-			continue
-		}
-		if av.IsNull() {
-			continue
-		}
-		count++
-	}
-	if hasUnknown {
-		return
-	}
-	if count == 0 {
-		resp.Diagnostics.AddAttributeError(
-			req.Path,
-			"Invalid lens_dashboard_app_config.by_value",
-			"Set exactly one of `config_json` or one supported typed Lens chart block inside `by_value`.",
-		)
-		return
-	}
-	if count > 1 {
-		resp.Diagnostics.AddAttributeError(
-			req.Path,
-			"Invalid lens_dashboard_app_config.by_value",
-			"Set exactly one of `config_json` or one supported typed Lens chart block inside `by_value` (more than one by-value source is set).",
-		)
-	}
+	validateExactlyOneNestedAttr(
+		req, resp,
+		"lens_dashboard_app_config.by_value",
+		lensDashboardAppByValueSourceAttrNames,
+		"Set exactly one of `config_json` or one supported typed Lens chart block inside `by_value`.",
+		"Set exactly one of `config_json` or one supported typed Lens chart block inside `by_value` (more than one by-value source is set).",
+	)
 }
 
 // getMarkdownConfigSchema returns attributes for the markdown_config block.
@@ -1318,26 +1323,13 @@ func (v markdownConfigModeValidator) ValidateObject(_ context.Context, req valid
 	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
 		return
 	}
-	attrs := req.ConfigValue.Attributes()
-	byValue := attrs["by_value"]
-	byRef := attrs["by_reference"]
-	valueSet := func(av attr.Value) bool {
-		return av != nil && !av.IsNull() && !av.IsUnknown()
-	}
-	byValueSet := valueSet(byValue)
-	byRefSet := valueSet(byRef)
-	if byValueSet && byRefSet {
-		resp.Diagnostics.AddAttributeError(req.Path, "Invalid markdown_config", "Exactly one of `by_value` or `by_reference` must be set inside `markdown_config`, not both.")
-		return
-	}
-	if !byValueSet && !byRefSet {
-		byValueUnknown := byValue != nil && byValue.IsUnknown()
-		byRefUnknown := byRef != nil && byRef.IsUnknown()
-		if byValueUnknown || byRefUnknown {
-			return
-		}
-		resp.Diagnostics.AddAttributeError(req.Path, "Invalid markdown_config", "Exactly one of `by_value` or `by_reference` must be set inside `markdown_config`.")
-	}
+	validateExactlyOneNestedAttr(
+		req, resp,
+		"markdown_config",
+		modeAttrNames,
+		"Exactly one of `by_value` or `by_reference` must be set inside `markdown_config`.",
+		"Exactly one of `by_value` or `by_reference` must be set inside `markdown_config`, not both.",
+	)
 }
 
 // vizConfigModeValidator enforces that exactly one of by_value or by_reference is set under `viz_config`.
@@ -1357,26 +1349,13 @@ func (vizConfigModeValidator) ValidateObject(_ context.Context, req validator.Ob
 	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
 		return
 	}
-	attrs := req.ConfigValue.Attributes()
-	byValue := attrs["by_value"]
-	byRef := attrs["by_reference"]
-	valueSet := func(av attr.Value) bool {
-		return av != nil && !av.IsNull() && !av.IsUnknown()
-	}
-	byValueSet := valueSet(byValue)
-	byRefSet := valueSet(byRef)
-	if byValueSet && byRefSet {
-		resp.Diagnostics.AddAttributeError(req.Path, "Invalid viz_config", "Exactly one of `by_value` or `by_reference` must be set inside `viz_config`, not both.")
-		return
-	}
-	if !byValueSet && !byRefSet {
-		byValueUnknown := byValue != nil && byValue.IsUnknown()
-		byRefUnknown := byRef != nil && byRef.IsUnknown()
-		if byValueUnknown || byRefUnknown {
-			return
-		}
-		resp.Diagnostics.AddAttributeError(req.Path, "Invalid viz_config", "Exactly one of `by_value` or `by_reference` must be set inside `viz_config`.")
-	}
+	validateExactlyOneNestedAttr(
+		req, resp,
+		"viz_config",
+		modeAttrNames,
+		"Exactly one of `by_value` or `by_reference` must be set inside `viz_config`.",
+		"Exactly one of `by_value` or `by_reference` must be set inside `viz_config`, not both.",
+	)
 }
 
 // vizByValueSourceValidator enforces exactly one typed chart kind inside `viz_config.by_value`.
@@ -1396,44 +1375,13 @@ func (vizByValueSourceValidator) ValidateObject(_ context.Context, req validator
 	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
 		return
 	}
-	attrs := req.ConfigValue.Attributes()
-	var count int
-	var hasUnknown bool
-	for _, name := range vizByValueSourceAttrNames {
-		av, ok := attrs[name]
-		if !ok {
-			continue
-		}
-		if av == nil {
-			continue
-		}
-		if av.IsUnknown() {
-			hasUnknown = true
-			continue
-		}
-		if av.IsNull() {
-			continue
-		}
-		count++
-	}
-	if hasUnknown {
-		return
-	}
-	if count == 0 {
-		resp.Diagnostics.AddAttributeError(
-			req.Path,
-			"Invalid viz_config.by_value",
-			"Set exactly one supported typed Lens chart block inside `viz_config.by_value`.",
-		)
-		return
-	}
-	if count > 1 {
-		resp.Diagnostics.AddAttributeError(
-			req.Path,
-			"Invalid viz_config.by_value",
-			"Set exactly one typed chart block inside `viz_config.by_value` (more than one by-value chart is set).",
-		)
-	}
+	validateExactlyOneNestedAttr(
+		req, resp,
+		"viz_config.by_value",
+		vizByValueSourceAttrNames,
+		"Set exactly one supported typed Lens chart block inside `viz_config.by_value`.",
+		"Set exactly one typed chart block inside `viz_config.by_value` (more than one by-value chart is set).",
+	)
 }
 
 // getSyntheticsStatsOverviewSchema returns the schema attributes for the synthetics_stats_overview_config block.

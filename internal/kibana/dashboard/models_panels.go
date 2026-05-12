@@ -415,7 +415,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 
 		vizPrior := configPriorForVizRead(tfPanel, &pm)
 
-		switch classifyVisPanelConfigFromRoot(root) {
+		switch classifyLensDashboardAppConfigFromRoot(root) {
 		case lensConfigClassByReference:
 			cfg1, err1 := visPanel.Config.AsKbnDashboardPanelTypeVisConfig1()
 			if err1 != nil {

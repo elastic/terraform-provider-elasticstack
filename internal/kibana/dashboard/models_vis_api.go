@@ -29,19 +29,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// classifyVisPanelConfigFromRoot implements design D10 for panel.type vis: classify as by_reference
-// when ref_id plus time_range (from/to) are present without a Lens chart discriminator at config root,
-// otherwise as inline by_value when a chart `type` is present.
-func classifyVisPanelConfigFromRoot(root map[string]any) lensConfigClass {
-	if !hasLensByValueChartTypeAtRoot(root) && hasLensByReferenceShapeAtRoot(root) {
-		return lensConfigClassByReference
-	}
-	if hasLensByValueChartTypeAtRoot(root) {
-		return lensConfigClassByValueChart
-	}
-	return lensConfigClassAmbiguous
-}
-
 func configPriorForVizRead(tfPanel, pm *panelModel) *vizConfigModel {
 	if tfPanel != nil && tfPanel.VizConfig != nil {
 		return tfPanel.VizConfig
@@ -50,40 +37,6 @@ func configPriorForVizRead(tfPanel, pm *panelModel) *vizConfigModel {
 		return pm.VizConfig
 	}
 	return nil
-}
-
-func vizOptionalStringFromAPI(
-	api *string,
-	prior *vizConfigModel,
-	priorField func(*vizByReferenceModel) types.String,
-) types.String {
-	if api != nil {
-		return types.StringValue(*api)
-	}
-	if prior != nil && prior.ByReference != nil {
-		p := priorField(prior.ByReference)
-		if typeutils.IsKnown(p) {
-			return p
-		}
-	}
-	return types.StringNull()
-}
-
-func vizOptionalBoolFromAPI(
-	api *bool,
-	prior *vizConfigModel,
-	priorField func(*vizByReferenceModel) types.Bool,
-) types.Bool {
-	if api != nil {
-		return types.BoolValue(*api)
-	}
-	if prior != nil && prior.ByReference != nil {
-		p := priorField(prior.ByReference)
-		if typeutils.IsKnown(p) {
-			return p
-		}
-	}
-	return types.BoolNull()
 }
 
 // populateVisByReferenceFromAPI maps API vis config branch 1 (by-reference saved object panel).
@@ -110,16 +63,14 @@ func populateVisByReferenceFromAPI(
 		RefID:     types.StringValue(cfg1.RefId),
 		TimeRange: tr,
 	}
-	by.Title = vizOptionalStringFromAPI(cfg1.Title, prior, func(br *vizByReferenceModel) types.String { return br.Title })
-	by.Description = vizOptionalStringFromAPI(cfg1.Description, prior, func(br *vizByReferenceModel) types.String {
-		return br.Description
-	})
-	by.HideTitle = vizOptionalBoolFromAPI(cfg1.HideTitle, prior, func(br *vizByReferenceModel) types.Bool {
-		return br.HideTitle
-	})
-	by.HideBorder = vizOptionalBoolFromAPI(cfg1.HideBorder, prior, func(br *vizByReferenceModel) types.Bool {
-		return br.HideBorder
-	})
+	var priorBR *lensDashboardAppByReferenceModel
+	if prior != nil {
+		priorBR = prior.ByReference
+	}
+	by.Title = byReferenceOptionalStringFromAPI(cfg1.Title, priorBR, func(br *lensDashboardAppByReferenceModel) types.String { return br.Title })
+	by.Description = byReferenceOptionalStringFromAPI(cfg1.Description, priorBR, func(br *lensDashboardAppByReferenceModel) types.String { return br.Description })
+	by.HideTitle = byReferenceOptionalBoolFromAPI(cfg1.HideTitle, priorBR, func(br *lensDashboardAppByReferenceModel) types.Bool { return br.HideTitle })
+	by.HideBorder = byReferenceOptionalBoolFromAPI(cfg1.HideBorder, priorBR, func(br *lensDashboardAppByReferenceModel) types.Bool { return br.HideBorder })
 
 	switch {
 	case cfg1.References != nil:
