@@ -98,13 +98,13 @@ On write, the resource SHALL build the `kbn-dashboard-panel-type-slo_alerts` API
 
 #### Scenario: Drilldown round-trip
 
-- GIVEN `slo_alerts_config.drilldowns = [{ url_drilldown = { url = "https://kibana/...", label = "investigate" } }]` (no `trigger` attribute in Terraform because the schema omits it when only one trigger is allowed)
+- GIVEN `slo_alerts_config.drilldowns = [{ url = "https://kibana/...", label = "investigate" }]` (no `trigger` attribute in Terraform because the schema omits it when only one trigger is allowed)
 - WHEN create runs and the post-apply read returns the same drilldown
 - THEN state SHALL contain that drilldown with `encode_url` and `open_in_new_tab` null per REQ-009
 
 #### Scenario: Drilldown trigger fixed by model on write
 
-- GIVEN `slo_alerts_config.drilldowns = [{ url_drilldown = { url = "https://kibana/...", label = "investigate" } }]`
+- GIVEN `slo_alerts_config.drilldowns = [{ url = "https://kibana/...", label = "investigate" }]`
 - WHEN create runs and the provider builds the dashboard API request
 - THEN each emitted URL drilldown object in the panel payload SHALL include `trigger = "on_open_panel_menu"`
 
@@ -223,7 +223,7 @@ REQ-009 null-preservation SHALL apply to all optional fields, drilldown defaults
 
 #### Scenario: Drilldown trigger fixed by model on write
 
-- GIVEN `discover_session_config.drilldowns = [{ url_drilldown = { url = "https://kibana/...", label = "investigate" } }]`
+- GIVEN `discover_session_config.drilldowns = [{ url = "https://kibana/...", label = "investigate" }]`
 - WHEN create runs and the provider builds the dashboard API request
 - THEN each emitted URL drilldown object in the panel payload SHALL include `trigger = "on_open_panel_menu"`
 

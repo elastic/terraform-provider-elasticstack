@@ -40,7 +40,8 @@ const discoverSessionFilterMax = 100
 const discoverSessionColumnOrderMax = 100
 
 // discoverSessionRowHeightStringValidator validates optional Discover row/header height strings:
-// either "auto" or a base-10 integer in [min, max] without leading zeros (except "0" disallowed).
+// either "auto" or a base-10 integer in [min, max], parsed with strconv.Atoi (digit strings with
+// leading zeros normalize to the same integer value; values outside the range are rejected).
 type discoverSessionRowHeightStringValidator struct {
 	min, max int
 }
