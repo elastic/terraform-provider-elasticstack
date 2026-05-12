@@ -1,8 +1,8 @@
 ## 1. Refactor `lens_dashboard_app_config` helpers (no behavior change)
 
-- [ ] 1.1 Extract `getLensByReferenceAttributes()` from `getLensDashboardAppConfigSchema()` in `internal/kibana/dashboard/schema.go`; the helper returns the by-reference attribute map (`ref_id`, `references_json`, `title`, `description`, `hide_title`, `hide_border`, structured `drilldowns` placeholder, required `time_range`).
-- [ ] 1.2 Rename `getLensDashboardAppByValueAttributes()` callers; keep behavior identical pending step 4 (still includes its own `config_json` and 11 chart blocks; legacy_metric stays out).
-- [ ] 1.3 Run `go build ./...` and existing dashboard unit tests to confirm zero behavior delta from helper extraction.
+- [x] 1.1 Extract `getLensByReferenceAttributes()` from `getLensDashboardAppConfigSchema()` in `internal/kibana/dashboard/schema.go`; the helper returns the by-reference attribute map (`ref_id`, `references_json`, `title`, `description`, `hide_title`, `hide_border`, structured `drilldowns` placeholder, required `time_range`).
+- [x] 1.2 Rename `getLensDashboardAppByValueAttributes()` callers; keep behavior identical pending step 4 (still includes its own `config_json` and 11 chart blocks; legacy_metric stays out).
+- [x] 1.3 Run `go build ./...` and existing dashboard unit tests to confirm zero behavior delta from helper extraction.
 
 ## 2. Implement structured 3-way `drilldowns` shape (REQ-038)
 
