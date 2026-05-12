@@ -31,6 +31,7 @@ import (
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/ruleaction"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -38,6 +39,12 @@ import (
 )
 
 const mlFilterResourceAddress = "elasticstack_elasticsearch_ml_filter.test"
+
+// mlFilterDestroyBlockedMinElasticsearch is the minimum Elasticsearch version where the acceptance
+// tests that assert "delete filter is blocked while a job references it via scoped custom_rules"
+// behave consistently with current server semantics in CI (older 8.x matrix images either did
+// not reject deletion or diverged on job configuration).
+var mlFilterDestroyBlockedMinElasticsearch = version.Must(version.NewVersion("8.5.0"))
 
 func TestAccResourceMLFilter(t *testing.T) {
 	filterID := fmt.Sprintf("test-filter-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
@@ -241,9 +248,13 @@ func TestAccResourceMLFilterImportFailures(t *testing.T) {
 				ConfigVariables:          importVars,
 				ResourceName:             mlFilterResourceAddress,
 				ImportState:              true,
-				ImportStateVerify:        false,
-				ImportStateId:            "not-a-composite-import-id",
-				ExpectError:              regexp.MustCompile(`Wrong resource ID`),
+				// Default ImportStatePersist=false runs import in a temp working dir while the harness
+				// replaces the main dir's config with provider stubs; post-test destroy then loses the
+				// elasticsearch block. Persist keeps the full module config on the main working dir.
+				ImportStatePersist: true,
+				ImportStateVerify:  false,
+				ImportStateId:      "not-a-composite-import-id",
+				ExpectError:        regexp.MustCompile(`Wrong resource ID`),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -251,6 +262,7 @@ func TestAccResourceMLFilterImportFailures(t *testing.T) {
 				ConfigVariables:          importVars,
 				ResourceName:             mlFilterResourceAddress,
 				ImportState:              true,
+				ImportStatePersist:       true,
 				ImportStateVerify:        false,
 				ImportStateId:            "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/extra/bad",
 				ExpectError:              regexp.MustCompile(`Wrong resource ID`),
@@ -261,6 +273,7 @@ func TestAccResourceMLFilterImportFailures(t *testing.T) {
 				ConfigVariables:          importVars,
 				ResourceName:             mlFilterResourceAddress,
 				ImportState:              true,
+				ImportStatePersist:       true,
 				ImportStateVerify:        true,
 				ImportStateIdFunc: func(s *terraform.State) (string, error) {
 					rs, ok := s.RootModule().Resources[mlFilterResourceAddress]
@@ -584,7 +597,10 @@ func TestAccResourceMLFilterDestroyBlockedByReferencedJob(t *testing.T) {
 	}
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() { acctest.PreCheck(t) },
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			skipMLFilterDestroyBlockedUnlessSupportedES(t)
+		},
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -641,7 +657,10 @@ func TestAccResourceMLFilterDestroyBlockedByTwoReferencedJobs(t *testing.T) {
 	}
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() { acctest.PreCheck(t) },
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			skipMLFilterDestroyBlockedUnlessSupportedES(t)
+		},
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -682,6 +701,22 @@ func TestAccResourceMLFilterDestroyBlockedByTwoReferencedJobs(t *testing.T) {
 			},
 		},
 	})
+}
+
+func skipMLFilterDestroyBlockedUnlessSupportedES(t *testing.T) {
+	t.Helper()
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+	if err != nil {
+		t.Fatalf("acceptance ES client: %v", err)
+	}
+	serverVersion, diags := client.ServerVersion(t.Context())
+	if diags.HasError() {
+		t.Fatalf("failed to read Elasticsearch version: %v", diags)
+	}
+	if serverVersion.LessThan(mlFilterDestroyBlockedMinElasticsearch) {
+		t.Skipf("Skipping ML filter destroy-blocked tests: server version %s is below %s (scoped custom_rules delete blocking is not exercised consistently on older matrix stacks)",
+			serverVersion, mlFilterDestroyBlockedMinElasticsearch)
+	}
 }
 
 func putMLJobReferencingFilter(ctx context.Context, t *testing.T, jobID, filterID string) {
