@@ -18,13 +18,13 @@
 
 ## 3. SLO alerts panel (`type = "slo_alerts"`)
 
-- [ ] 3.1 Add `slo_alerts_config` schema in `schema_slo_panel.go` reusing the shared `url_drilldown` block; require `slos`; add `len(slos) > 0` validator
-- [ ] 3.2 Add conflict validators (mutex with all other typed blocks and `config_json`)
-- [ ] 3.3 Update REQ-010 / panel-type-rejection table for `slo_alerts` + `config_json`
-- [ ] 3.4 Create `models_slo_alerts_panel.go` with the model and read/write helpers; apply REQ-009 null-preservation including `slo_instance_id = "*"` server-default
-- [ ] 3.5 Wire into `mapPanelFromAPI` and the panel write dispatcher
-- [ ] 3.6 Unit tests in `models_slo_alerts_panel_test.go`: round-trip, `slo_instance_id` null-preservation, drilldown round-trip, validator failures (empty `slos`, wrong trigger)
-- [ ] 3.7 Description text under `internal/kibana/dashboard/descriptions/`
+- [x] 3.1 Add `slo_alerts_config` schema in `schema_slo_panel.go` reusing the shared `url_drilldown` block; require `slos`; add `len(slos) > 0` validator
+- [x] 3.2 Add conflict validators (mutex with all other typed blocks and `config_json`)
+- [x] 3.3 Update REQ-010 / panel-type-rejection table for `slo_alerts` + `config_json`
+- [x] 3.4 Create `models_slo_alerts_panel.go` with the model and read/write helpers; apply REQ-009 null-preservation including `slo_instance_id = "*"` server-default
+- [x] 3.5 Wire into `mapPanelFromAPI` and the panel write dispatcher
+- [x] 3.6 Unit tests in `models_slo_alerts_panel_test.go`: round-trip, `slo_instance_id` null-preservation, drilldown round-trip, validator failures (empty `slos`, wrong trigger)
+- [x] 3.7 Description text under `internal/kibana/dashboard/descriptions/`
 
 ## 4. Discover session panel (`type = "discover_session"`)
 
