@@ -48,10 +48,10 @@
 
 ## 6. Acceptance tests
 
-- [ ] 6.1 `acc_image_panels_test.go`: both `src` variants, at least one `dashboard_drilldown` and one `url_drilldown`
-- [ ] 6.2 `acc_slo_alerts_panels_test.go`: create an SLO via the SLO API in test setup, attach an `slo_alerts` panel referencing it, exercise `url_drilldown`
-- [ ] 6.3 `acc_discover_session_panels_test.go`: `by_value` with `dsl` tab; `by_value` with `esql` tab; `by_reference` (saved object created in test setup mirroring lens-by-reference fixture pattern)
-- [ ] 6.4 Run `make build`, `go vet ./...`, `go test ./internal/kibana/dashboard/...`, then `TF_ACC=1 go test ./internal/kibana/dashboard/...`
+- [x] 6.1 `acc_image_panels_test.go`: both `src` variants, at least one `dashboard_drilldown` and one `url_drilldown`
+- [x] 6.2 `acc_slo_alerts_panels_test.go`: create an SLO via the SLO API in test setup, attach an `slo_alerts` panel referencing it, exercise `url_drilldown`
+- [x] 6.3 `acc_discover_session_panels_test.go`: `by_value` with `dsl` tab; `by_value` with `esql` tab; `by_reference` (saved object created in test setup mirroring lens-by-reference fixture pattern)
+- [x] 6.4 Run `make build`, `go vet ./...`, `go test ./internal/kibana/dashboard/...`, then `TF_ACC=1 go test ./internal/kibana/dashboard/...`
 
 ## 7. Examples and docs
 
