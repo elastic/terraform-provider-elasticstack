@@ -626,31 +626,21 @@ func getPanelSchema() schema.NestedAttributeObject {
 				},
 			},
 			"markdown_config": schema.SingleNestedAttribute{
-				MarkdownDescription: panelConfigDescription("The configuration of a markdown panel.", "markdown_config", panelConfigNames),
-				Optional:            true,
-				Attributes: map[string]schema.Attribute{
-					"content": schema.StringAttribute{
-						MarkdownDescription: "The content of the panel.",
-						Optional:            true,
-					},
-					"description": schema.StringAttribute{
-						MarkdownDescription: "The description of the panel.",
-						Optional:            true,
-					},
-					"hide_title": schema.BoolAttribute{
-						MarkdownDescription: "Hide the title of the panel.",
-						Optional:            true,
-					},
-					"title": schema.StringAttribute{
-						MarkdownDescription: "The title of the panel.",
-						Optional:            true,
-					},
-				},
+				MarkdownDescription: panelConfigDescription(
+					"Configuration for a `markdown` panel (the Kibana Dashboard API `kbn-dashboard-panel-type-markdown` shape). "+
+						"Set exactly one of `by_value` (inline `content` with required nested `settings`) or `by_reference` (existing library item via `ref_id`). "+
+						"Presentation fields (`description`, `hide_title`, `title`, `hide_border`) are supported in both branches.",
+					"markdown_config",
+					panelConfigNames,
+				),
+				Optional:   true,
+				Attributes: getMarkdownConfigSchema(),
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(
 						siblingPanelConfigPathsExcept("markdown_config", panelConfigNames)...,
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeMarkdown}),
+					markdownConfigModeValidator{},
 				},
 			},
 			"xy_chart_config": schema.SingleNestedAttribute{
@@ -1524,6 +1514,116 @@ func (lensDashboardAppByValueSourceValidator) ValidateObject(_ context.Context, 
 			"Invalid lens_dashboard_app_config.by_value",
 			"Set exactly one of `config_json` or one supported typed Lens chart block inside `by_value` (more than one by-value source is set).",
 		)
+	}
+}
+
+// getMarkdownConfigSchema returns attributes for the markdown_config block.
+func getMarkdownConfigSchema() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"by_value": schema.SingleNestedAttribute{
+			MarkdownDescription: "Inline markdown: required `content` and nested `settings` (API `settings` object). " +
+				"Optional `description`, `hide_title`, `title`, and `hide_border`.",
+			Optional: true,
+			Attributes: map[string]schema.Attribute{
+				"content": schema.StringAttribute{
+					MarkdownDescription: "Markdown source for the panel body (API `content`).",
+					Required:            true,
+				},
+				"settings": schema.SingleNestedAttribute{
+					MarkdownDescription: "Required settings object for by-value markdown. " +
+						"`open_links_in_new_tab` is optional; when unset, Kibana applies its default (`true`).",
+					Required: true,
+					Attributes: map[string]schema.Attribute{
+						"open_links_in_new_tab": schema.BoolAttribute{
+							MarkdownDescription: "When true, links in the markdown open in a new tab. When omitted, Kibana defaults to true.",
+							Optional:            true,
+						},
+					},
+				},
+				"description": schema.StringAttribute{
+					MarkdownDescription: "Optional panel description.",
+					Optional:            true,
+				},
+				"hide_title": schema.BoolAttribute{
+					MarkdownDescription: "When true, suppresses the panel title.",
+					Optional:            true,
+				},
+				"title": schema.StringAttribute{
+					MarkdownDescription: "Optional panel title.",
+					Optional:            true,
+				},
+				"hide_border": schema.BoolAttribute{
+					MarkdownDescription: "When true, suppresses the panel border.",
+					Optional:            true,
+				},
+			},
+		},
+		"by_reference": schema.SingleNestedAttribute{
+			MarkdownDescription: "Reference an existing markdown library item via `ref_id`. " +
+				"Optional `description`, `hide_title`, `title`, and `hide_border`.",
+			Optional: true,
+			Attributes: map[string]schema.Attribute{
+				"ref_id": schema.StringAttribute{
+					MarkdownDescription: "Unique identifier of the markdown library item (API `ref_id`). The provider does not verify the item exists at plan time.",
+					Required:            true,
+				},
+				"description": schema.StringAttribute{
+					MarkdownDescription: "Optional panel description.",
+					Optional:            true,
+				},
+				"hide_title": schema.BoolAttribute{
+					MarkdownDescription: "When true, suppresses the panel title.",
+					Optional:            true,
+				},
+				"title": schema.StringAttribute{
+					MarkdownDescription: "Optional panel title.",
+					Optional:            true,
+				},
+				"hide_border": schema.BoolAttribute{
+					MarkdownDescription: "When true, suppresses the panel border.",
+					Optional:            true,
+				},
+			},
+		},
+	}
+}
+
+// markdownConfigModeValidator enforces that exactly one of by_value or by_reference is set.
+var _ validator.Object = markdownConfigModeValidator{}
+
+type markdownConfigModeValidator struct{}
+
+func (v markdownConfigModeValidator) Description(_ context.Context) string {
+	return "Ensures exactly one of `by_value` or `by_reference` is set inside `markdown_config`."
+}
+
+func (v markdownConfigModeValidator) MarkdownDescription(ctx context.Context) string {
+	return v.Description(ctx)
+}
+
+func (v markdownConfigModeValidator) ValidateObject(_ context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
+	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+		return
+	}
+	attrs := req.ConfigValue.Attributes()
+	byValue := attrs["by_value"]
+	byRef := attrs["by_reference"]
+	valueSet := func(av attr.Value) bool {
+		return av != nil && !av.IsNull() && !av.IsUnknown()
+	}
+	byValueSet := valueSet(byValue)
+	byRefSet := valueSet(byRef)
+	if byValueSet && byRefSet {
+		resp.Diagnostics.AddAttributeError(req.Path, "Invalid markdown_config", "Exactly one of `by_value` or `by_reference` must be set inside `markdown_config`, not both.")
+		return
+	}
+	if !byValueSet && !byRefSet {
+		byValueUnknown := byValue != nil && byValue.IsUnknown()
+		byRefUnknown := byRef != nil && byRef.IsUnknown()
+		if byValueUnknown || byRefUnknown {
+			return
+		}
+		resp.Diagnostics.AddAttributeError(req.Path, "Invalid markdown_config", "Exactly one of `by_value` or `by_reference` must be set inside `markdown_config`.")
 	}
 }
 
