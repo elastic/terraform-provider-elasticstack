@@ -1262,7 +1262,7 @@ func lensByValueVisMirrorDescription(visBlockName string) string {
 }
 
 // lensDashboardAppByValueSourceAttrNames lists mutually exclusive by-value content attributes.
-// Keep in sync with getLensDashboardAppByValueAttributes.
+// Keep in sync with getLensDashboardAppByValueNestedAttributes.
 var lensDashboardAppByValueSourceAttrNames = []string{
 	"config_json",
 	"xy_chart_config",
@@ -1279,8 +1279,8 @@ var lensDashboardAppByValueSourceAttrNames = []string{
 	"legacy_metric_config",
 }
 
-// getLensDashboardAppByValueAttributes returns attributes for `lens_dashboard_app_config.by_value`.
-func getLensDashboardAppByValueAttributes() map[string]schema.Attribute {
+// getLensDashboardAppByValueNestedAttributes returns attributes for `lens_dashboard_app_config.by_value`.
+func getLensDashboardAppByValueNestedAttributes() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"config_json": schema.StringAttribute{
 			MarkdownDescription: "Optional raw normalized JSON for the by-value Lens chart `config` (full API shape, including chart `type` and `time_range` where the API requires them). " +
@@ -1355,6 +1355,64 @@ func getLensDashboardAppByValueAttributes() map[string]schema.Attribute {
 	}
 }
 
+// getLensByReferenceAttributes returns Lens by-reference attribute map for `lens_dashboard_app_config.by_reference`
+// (later reused by `viz_config.by_reference`). Uses `drilldowns_json` until structured drilldowns replace it.
+func getLensByReferenceAttributes() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"ref_id": schema.StringAttribute{
+			MarkdownDescription: "Reference name in the API `ref_id` field. When `references_json` is set, `ref_id` typically should match a `name` in that list so the link resolves as expected.",
+			Required:            true,
+		},
+		"references_json": schema.StringAttribute{
+			MarkdownDescription: "Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the API `references` list (for example wiring a `lens` saved object to `ref_id`).",
+			Optional:            true,
+			CustomType:          jsontypes.NormalizedType{},
+		},
+		"title": schema.StringAttribute{
+			MarkdownDescription: "Optional panel title.",
+			Optional:            true,
+		},
+		"description": schema.StringAttribute{
+			MarkdownDescription: "Optional panel description.",
+			Optional:            true,
+		},
+		"hide_title": schema.BoolAttribute{
+			MarkdownDescription: "When true, suppresses the panel title.",
+			Optional:            true,
+		},
+		"hide_border": schema.BoolAttribute{
+			MarkdownDescription: "When true, suppresses the panel border.",
+			Optional:            true,
+		},
+		"drilldowns_json": schema.StringAttribute{
+			MarkdownDescription: "Optional JSON array for the API `drilldowns` field (polymorphic drilldown shapes).",
+			Optional:            true,
+			CustomType:          jsontypes.NormalizedType{},
+		},
+		"time_range": schema.SingleNestedAttribute{
+			MarkdownDescription: "Required time range for the by-reference `lens-dashboard-app` config.",
+			Required:            true,
+			Attributes: map[string]schema.Attribute{
+				"from": schema.StringAttribute{
+					MarkdownDescription: "Range start, matching the Kibana time range `from` field.",
+					Required:            true,
+				},
+				"to": schema.StringAttribute{
+					MarkdownDescription: "Range end, matching the Kibana time range `to` field.",
+					Required:            true,
+				},
+				"mode": schema.StringAttribute{
+					MarkdownDescription: "Optional time range mode. When set, must be `absolute` or `relative`.",
+					Optional:            true,
+					Validators: []validator.String{
+						stringvalidator.OneOf("absolute", "relative"),
+					},
+				},
+			},
+		},
+	}
+}
+
 // getLensDashboardAppConfigSchema returns attributes for the lens_dashboard_app_config block.
 func getLensDashboardAppConfigSchema() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
@@ -1366,7 +1424,7 @@ func getLensDashboardAppConfigSchema() map[string]schema.Attribute {
 				"otherwise the response is reflected in `config_json` instead. " +
 				"Distinct from panel-level `config_json` on the panel.",
 			Optional:   true,
-			Attributes: getLensDashboardAppByValueAttributes(),
+			Attributes: getLensDashboardAppByValueNestedAttributes(),
 			Validators: []validator.Object{
 				lensDashboardAppByValueSourceValidator{},
 			},
@@ -1374,59 +1432,7 @@ func getLensDashboardAppConfigSchema() map[string]schema.Attribute {
 		"by_reference": schema.SingleNestedAttribute{
 			MarkdownDescription: "By-reference `lens-dashboard-app` configuration: link a saved Lens visualization using `ref_id`, optional `references_json`, and a required `time_range`.",
 			Optional:            true,
-			Attributes: map[string]schema.Attribute{
-				"ref_id": schema.StringAttribute{
-					MarkdownDescription: "Reference name in the API `ref_id` field. When `references_json` is set, `ref_id` typically should match a `name` in that list so the link resolves as expected.",
-					Required:            true,
-				},
-				"references_json": schema.StringAttribute{
-					MarkdownDescription: "Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the API `references` list (for example wiring a `lens` saved object to `ref_id`).",
-					Optional:            true,
-					CustomType:          jsontypes.NormalizedType{},
-				},
-				"title": schema.StringAttribute{
-					MarkdownDescription: "Optional panel title.",
-					Optional:            true,
-				},
-				"description": schema.StringAttribute{
-					MarkdownDescription: "Optional panel description.",
-					Optional:            true,
-				},
-				"hide_title": schema.BoolAttribute{
-					MarkdownDescription: "When true, suppresses the panel title.",
-					Optional:            true,
-				},
-				"hide_border": schema.BoolAttribute{
-					MarkdownDescription: "When true, suppresses the panel border.",
-					Optional:            true,
-				},
-				"drilldowns_json": schema.StringAttribute{
-					MarkdownDescription: "Optional JSON array for the API `drilldowns` field (polymorphic drilldown shapes).",
-					Optional:            true,
-					CustomType:          jsontypes.NormalizedType{},
-				},
-				"time_range": schema.SingleNestedAttribute{
-					MarkdownDescription: "Required time range for the by-reference `lens-dashboard-app` config.",
-					Required:            true,
-					Attributes: map[string]schema.Attribute{
-						"from": schema.StringAttribute{
-							MarkdownDescription: "Range start, matching the Kibana time range `from` field.",
-							Required:            true,
-						},
-						"to": schema.StringAttribute{
-							MarkdownDescription: "Range end, matching the Kibana time range `to` field.",
-							Required:            true,
-						},
-						"mode": schema.StringAttribute{
-							MarkdownDescription: "Optional time range mode. When set, must be `absolute` or `relative`.",
-							Optional:            true,
-							Validators: []validator.String{
-								stringvalidator.OneOf("absolute", "relative"),
-							},
-						},
-					},
-				},
-			},
+			Attributes:          getLensByReferenceAttributes(),
 		},
 	}
 }
