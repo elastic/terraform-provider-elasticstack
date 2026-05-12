@@ -27,6 +27,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 )
 
 // Dashboard API is in technical preview and available from 9.4.x onwards
@@ -215,8 +216,9 @@ func TestAccResourceDashboardPanels_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.w", "24"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.x", "0"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.y", "0"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.markdown_config.content", "First markdown panel"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.markdown_config.title", "My Markdown Panel"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.markdown_config.by_value.content", "First markdown panel"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.markdown_config.by_value.title", "My Markdown Panel"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.markdown_config.by_value.settings.open_links_in_new_tab", "true"),
 				),
 			},
 		},
@@ -244,13 +246,13 @@ func TestAccResourceDashboardPanels_multiple_panels(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.w", "24"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.1.grid.x", "0"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.1.grid.y", "0"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.markdown_config.title", "My Markdown Panel"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.markdown_config.by_value.title", "My Markdown Panel"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.1.grid.h", "10"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.1.grid.w", "24"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.1.grid.x", "0"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.1.grid.y", "0"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.1.markdown_config.content", "Second markdown panel"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.1.markdown_config.title", "My Markdown Panel"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.1.markdown_config.by_value.content", "Second markdown panel"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.1.markdown_config.by_value.title", "My Markdown Panel"),
 				),
 			},
 		},
@@ -284,10 +286,47 @@ func TestAccResourceDashboardPanels_with_sections(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.panels.0.grid.w", "24"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.panels.0.grid.x", "0"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.panels.0.grid.y", "0"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.panels.0.markdown_config.content", "First markdown panel"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.panels.0.markdown_config.title", "My First Markdown Panel"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.panels.0.markdown_config.hide_title", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.panels.0.markdown_config.by_value.content", "First markdown panel"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.panels.0.markdown_config.by_value.title", "My First Markdown Panel"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.panels.0.markdown_config.by_value.hide_title", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.panels.0.markdown_config.by_value.hide_border", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.panels.0.markdown_config.by_value.settings.open_links_in_new_tab", "false"),
 				),
+			},
+		},
+	})
+}
+
+func TestAccResourceDashboardMarkdownOpenLinksDefault(t *testing.T) {
+	dashboardTitle := "Test Dashboard md open-links default " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "title", dashboardTitle),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.markdown_config.by_value.content", "Markdown with empty settings"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.markdown_config.by_value.settings.open_links_in_new_tab"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
 			},
 		},
 	})
@@ -314,11 +353,11 @@ func TestAccResourceDashboardPanels_multi_sections_single_panel_each(t *testing.
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.title", "Section One"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "sections.0.id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.panels.#", "1"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.panels.0.markdown_config.content", "Section one - panel one"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.panels.0.markdown_config.by_value.content", "Section one - panel one"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.1.title", "Section Two"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "sections.1.id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.1.panels.#", "1"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.1.panels.0.markdown_config.content", "Section two - panel one"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.1.panels.0.markdown_config.by_value.content", "Section two - panel one"),
 				),
 			},
 		},
@@ -346,13 +385,13 @@ func TestAccResourceDashboardPanels_multi_sections_multi_panels_each(t *testing.
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.title", "Section One"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "sections.0.id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.panels.#", "2"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.panels.0.markdown_config.content", "Section one - panel one"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.panels.1.markdown_config.content", "Section one - panel two"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.panels.0.markdown_config.by_value.content", "Section one - panel one"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.panels.1.markdown_config.by_value.content", "Section one - panel two"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.1.title", "Section Two"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "sections.1.id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.1.panels.#", "2"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.1.panels.0.markdown_config.content", "Section two - panel one"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.1.panels.1.markdown_config.content", "Section two - panel two"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.1.panels.0.markdown_config.by_value.content", "Section two - panel one"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.1.panels.1.markdown_config.by_value.content", "Section two - panel two"),
 				),
 			},
 		},
@@ -376,17 +415,17 @@ func TestAccResourceDashboardPanels_panels_and_sections(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "title", dashboardTitle),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.#", "2"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.markdown_config.content", "Top-level panel one"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.1.markdown_config.content", "Top-level panel two"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.markdown_config.by_value.content", "Top-level panel one"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.1.markdown_config.by_value.content", "Top-level panel two"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.#", "2"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.title", "Section One"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "sections.0.id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.panels.#", "1"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.panels.0.markdown_config.content", "Section one - panel one"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.panels.0.markdown_config.by_value.content", "Section one - panel one"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.1.title", "Section Two"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "sections.1.id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.1.panels.#", "1"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.1.panels.0.markdown_config.content", "Section two - panel one"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.1.panels.0.markdown_config.by_value.content", "Section two - panel one"),
 				),
 			},
 		},
@@ -433,12 +472,27 @@ func TestAccResourceDashboardPanelsJSONConfig(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "title", dashboardTitle),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.type", "markdown"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.h", "10"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.w", "24"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.x", "0"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.y", "0"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.config_json"),
+					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.config_json", regexp.MustCompile(`panel from raw config json`)),
+					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.config_json", regexp.MustCompile(`"content"`)),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.markdown_config"),
 				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("lens_metric"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,

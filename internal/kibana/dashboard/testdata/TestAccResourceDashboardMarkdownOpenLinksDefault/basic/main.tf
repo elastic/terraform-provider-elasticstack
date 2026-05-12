@@ -4,7 +4,7 @@ variable "dashboard_title" {
 
 resource "elasticstack_kibana_dashboard" "test" {
   title       = var.dashboard_title
-  description = "Dashboard for unknown panel preservation test"
+  description = "REQ-009: by_value settings present; open_links_in_new_tab omitted"
   time_range = {
     from = "now-15m"
     to   = "now"
@@ -19,19 +19,17 @@ resource "elasticstack_kibana_dashboard" "test" {
   }
   panels = [{
     type = "markdown"
-    id   = "tf-acc-markdown-panel-uid"
     grid = {
       x = 0
       y = 0
-      w = 48
-      h = 15
+      w = 24
+      h = 10
     }
     markdown_config = {
       by_value = {
-        content = "Placeholder panel"
-        settings = {
-          open_links_in_new_tab = true
-        }
+        content = "Markdown with empty settings"
+        # settings block required; omit open_links_in_new_tab so Kibana applies default (true).
+        settings = {}
       }
     }
   }]

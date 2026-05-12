@@ -34,12 +34,8 @@ func GetMaintenanceWindow(ctx context.Context, client *Client, spaceID string, m
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return resp, nil
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return handleGetTypedResponse(resp.StatusCode(), resp.Body,
+		func() *kbapi.GetMaintenanceWindowIdResponse { return resp })
 }
 
 // CreateMaintenanceWindow creates a new maintenance window.
@@ -49,12 +45,8 @@ func CreateMaintenanceWindow(ctx context.Context, client *Client, spaceID string
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return resp, nil
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return handleMutateTypedResponse(resp.StatusCode(), resp.Body,
+		func() *kbapi.PostMaintenanceWindowResponse { return resp })
 }
 
 // UpdateMaintenanceWindow updates an existing maintenance window.
@@ -64,12 +56,7 @@ func UpdateMaintenanceWindow(ctx context.Context, client *Client, spaceID string
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return nil
-	default:
-		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK)
 }
 
 // DeleteMaintenanceWindow deletes an existing maintenance window.

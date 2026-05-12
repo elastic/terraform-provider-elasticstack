@@ -179,11 +179,6 @@ func (m *dashboardModel) mapSectionFromAPI(ctx context.Context, tfSection *secti
 	return sm, diags
 }
 
-func float32Ptr(v float64) *float32 {
-	f := float32(v)
-	return &f
-}
-
 func setPanelGridFromAPI(pm *panelModel, x, y float32, w, h *float32) {
 	pm.Grid = panelGridModel{
 		X: types.Int64Value(int64(x)),
@@ -265,21 +260,60 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 		setPanelGridFromAPI(&pm, markdownPanel.Grid.X, markdownPanel.Grid.Y, markdownPanel.Grid.W, markdownPanel.Grid.H)
 		pm.ID = types.StringPointerValue(markdownPanel.Id)
 		if !panelUsesConfigJSONOnly(tfPanel) {
-			config0, err := markdownPanel.Config.AsKbnDashboardPanelTypeMarkdownConfig0()
-			if err != nil {
-				// Kibana may return inline markdown fields without the union discriminator
-				// expected by AsKbnDashboardPanelTypeMarkdownConfig0; fall back to unmarshalling
-				// the raw config JSON into the inline schema.
-				if b, mErr := markdownPanel.Config.MarshalJSON(); mErr == nil {
-					var inline kbapi.KbnDashboardPanelTypeMarkdownConfig0
-					if json.Unmarshal(b, &inline) == nil {
-						config0 = inline
-						err = nil
-					}
+			rawConfig, rawErr := markdownPanel.Config.MarshalJSON()
+			branch := markdownConfigBranchUnknown
+			if rawErr != nil {
+				diags.AddWarning(
+					"Markdown panel configuration",
+					fmt.Sprintf(
+						"Could not marshal panel config for markdown branch classification: %v. Using union decode fallback.",
+						rawErr,
+					),
+				)
+			} else {
+				var err error
+				branch, err = classifyMarkdownConfigFromRoot(rawConfig)
+				if err != nil {
+					diags.AddWarning(
+						"Markdown panel configuration",
+						fmt.Sprintf(
+							"Could not parse panel config JSON for markdown branch classification: %v. Using union decode fallback.",
+							err,
+						),
+					)
+					branch = markdownConfigBranchUnknown
 				}
 			}
-			if err == nil {
-				populateMarkdownFromAPI(&pm, config0)
+
+			decodeMarkdownFails := func() {
+				diags.AddError(
+					"Invalid markdown panel config",
+					"Could not decode markdown panel config as by-value or by-reference.",
+				)
+			}
+
+			switch branch {
+			case markdownConfigBranchByReference:
+				if populateMarkdownFromAPIAttemptByReference(&pm, tfPanel, markdownPanel.Config, true) {
+					break
+				}
+				if !populateMarkdownFromAPIAttemptByValue(&pm, tfPanel, markdownPanel.Config, true) {
+					decodeMarkdownFails()
+				}
+			case markdownConfigBranchByValue:
+				if populateMarkdownFromAPIAttemptByValue(&pm, tfPanel, markdownPanel.Config, true) {
+					break
+				}
+				if !populateMarkdownFromAPIAttemptByReference(&pm, tfPanel, markdownPanel.Config, true) {
+					decodeMarkdownFails()
+				}
+			default:
+				if populateMarkdownFromAPIAttemptByValue(&pm, tfPanel, markdownPanel.Config, false) {
+					break
+				}
+				if !populateMarkdownFromAPIAttemptByReference(&pm, tfPanel, markdownPanel.Config, false) {
+					decodeMarkdownFails()
+				}
 			}
 		}
 		configBytes, err := markdownPanel.Config.MarshalJSON()
@@ -506,10 +540,10 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 					y, _ := grid["y"].(float64)
 					var wPtr, hPtr *float32
 					if wVal, ok := grid["w"].(float64); ok {
-						wPtr = float32Ptr(wVal)
+						wPtr = typeutils.Float32Ptr(wVal)
 					}
 					if hVal, ok := grid["h"].(float64); ok {
-						hPtr = float32Ptr(hVal)
+						hPtr = typeutils.Float32Ptr(hVal)
 					}
 					setPanelGridFromAPI(&pm, float32(x), float32(y), wPtr, hPtr)
 				}
@@ -670,20 +704,44 @@ func (pm panelModel) toAPI(dashboard *dashboardModel) (kbapi.DashboardPanelItem,
 
 	var panelItem kbapi.DashboardPanelItem
 	if pm.MarkdownConfig != nil {
-		config0 := buildMarkdownConfig(pm)
-		var config kbapi.KbnDashboardPanelTypeMarkdown_Config
-		if err := config.FromKbnDashboardPanelTypeMarkdownConfig0(config0); err != nil {
-			return kbapi.DashboardPanelItem{}, diagutil.FrameworkDiagFromError(err)
+		switch {
+		case pm.MarkdownConfig.ByReference != nil:
+			config1 := buildMarkdownConfigByReference(pm)
+			var config kbapi.KbnDashboardPanelTypeMarkdown_Config
+			if err := config.FromKbnDashboardPanelTypeMarkdownConfig1(config1); err != nil {
+				return kbapi.DashboardPanelItem{}, diagutil.FrameworkDiagFromError(err)
+			}
+			markdownPanel := kbapi.KbnDashboardPanelTypeMarkdown{
+				Config: config,
+				Grid:   grid,
+				Id:     panelID,
+			}
+			if err := panelItem.FromKbnDashboardPanelTypeMarkdown(markdownPanel); err != nil {
+				diags.AddError("Failed to create markdown panel", err.Error())
+			}
+			return panelItem, diags
+		case pm.MarkdownConfig.ByValue != nil:
+			config0 := buildMarkdownConfig(pm)
+			var config kbapi.KbnDashboardPanelTypeMarkdown_Config
+			if err := config.FromKbnDashboardPanelTypeMarkdownConfig0(config0); err != nil {
+				return kbapi.DashboardPanelItem{}, diagutil.FrameworkDiagFromError(err)
+			}
+			markdownPanel := kbapi.KbnDashboardPanelTypeMarkdown{
+				Config: config,
+				Grid:   grid,
+				Id:     panelID,
+			}
+			if err := panelItem.FromKbnDashboardPanelTypeMarkdown(markdownPanel); err != nil {
+				diags.AddError("Failed to create markdown panel", err.Error())
+			}
+			return panelItem, diags
+		default:
+			diags.AddError(
+				"Invalid markdown_config",
+				"Set `markdown_config.by_value` or `markdown_config.by_reference` (exactly one).",
+			)
+			return kbapi.DashboardPanelItem{}, diags
 		}
-		markdownPanel := kbapi.KbnDashboardPanelTypeMarkdown{
-			Config: config,
-			Grid:   grid,
-			Id:     panelID,
-		}
-		if err := panelItem.FromKbnDashboardPanelTypeMarkdown(markdownPanel); err != nil {
-			diags.AddError("Failed to create markdown panel", err.Error())
-		}
-		return panelItem, diags
 	}
 
 	if pm.SloOverviewConfig != nil {

@@ -2,9 +2,13 @@ variable "dashboard_title" {
   type = string
 }
 
+variable "markdown_lib_id" {
+  type = string
+}
+
 resource "elasticstack_kibana_dashboard" "test" {
   title       = var.dashboard_title
-  description = "Dashboard for unknown panel preservation test"
+  description = "markdown by_reference acceptance"
   time_range = {
     from = "now-15m"
     to   = "now"
@@ -19,19 +23,19 @@ resource "elasticstack_kibana_dashboard" "test" {
   }
   panels = [{
     type = "markdown"
-    id   = "tf-acc-markdown-panel-uid"
     grid = {
       x = 0
       y = 0
-      w = 48
-      h = 15
+      w = 24
+      h = 10
     }
     markdown_config = {
-      by_value = {
-        content = "Placeholder panel"
-        settings = {
-          open_links_in_new_tab = true
-        }
+      by_reference = {
+        ref_id      = var.markdown_lib_id
+        title       = "Overlay title for library markdown"
+        description = "Overlay description for by-reference panel"
+        hide_title  = true
+        hide_border = false
       }
     }
   }]
