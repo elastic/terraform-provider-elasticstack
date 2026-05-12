@@ -50,32 +50,36 @@ func CreateAgentPolicy(ctx context.Context, client *Client, req kbapi.PostFleetA
 		SysMonitoring: new(sysMonitoring),
 	}
 
-	resp, err := client.API.PostFleetAgentPoliciesWithResponse(ctx, &params, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
+	return kibanautil.ConflictRetry(ctx, kibanautil.ConflictMaxAttempts, func() (*kbapi.AgentPolicy, int, diag.Diagnostics) {
+		resp, err := client.API.PostFleetAgentPoliciesWithResponse(ctx, &params, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+		if err != nil {
+			return nil, 0, diagutil.FrameworkDiagFromError(err)
+		}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return &resp.JSON200.Item, nil
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+		switch resp.StatusCode() {
+		case http.StatusOK:
+			return &resp.JSON200.Item, resp.StatusCode(), nil
+		default:
+			return nil, resp.StatusCode(), diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
+		}
+	})
 }
 
 // UpdateAgentPolicy updates an existing agent policy.
 func UpdateAgentPolicy(ctx context.Context, client *Client, id string, spaceID string, req kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody) (*kbapi.AgentPolicy, diag.Diagnostics) {
-	resp, err := client.API.PutFleetAgentPoliciesAgentpolicyidWithResponse(ctx, id, nil, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
+	return kibanautil.ConflictRetry(ctx, kibanautil.ConflictMaxAttempts, func() (*kbapi.AgentPolicy, int, diag.Diagnostics) {
+		resp, err := client.API.PutFleetAgentPoliciesAgentpolicyidWithResponse(ctx, id, nil, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+		if err != nil {
+			return nil, 0, diagutil.FrameworkDiagFromError(err)
+		}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return &resp.JSON200.Item, nil
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+		switch resp.StatusCode() {
+		case http.StatusOK:
+			return &resp.JSON200.Item, resp.StatusCode(), nil
+		default:
+			return nil, resp.StatusCode(), diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
+		}
+	})
 }
 
 // DeleteAgentPolicy deletes an existing agent policy.
@@ -84,10 +88,12 @@ func DeleteAgentPolicy(ctx context.Context, client *Client, id string, spaceID s
 		AgentPolicyId: id,
 	}
 
-	resp, err := client.API.PostFleetAgentPoliciesDeleteWithResponse(ctx, body, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	return handleDeleteResponse(resp.StatusCode(), resp.Body)
+	_, diags := kibanautil.ConflictRetry(ctx, kibanautil.ConflictMaxAttempts, func() (struct{}, int, diag.Diagnostics) {
+		resp, err := client.API.PostFleetAgentPoliciesDeleteWithResponse(ctx, body, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+		if err != nil {
+			return struct{}{}, 0, diagutil.FrameworkDiagFromError(err)
+		}
+		return struct{}{}, resp.StatusCode(), handleDeleteResponse(resp.StatusCode(), resp.Body)
+	})
+	return diags
 }
