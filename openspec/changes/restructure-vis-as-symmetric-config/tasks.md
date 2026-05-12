@@ -11,7 +11,7 @@
 - [x] 2.3 Add `OneOf` validator for `url.trigger` (∈ `on_click_row`/`on_click_value`/`on_open_panel_menu`/`on_select_range`).
 - [x] 2.4 Add `drilldownsModel` Go struct (list of items with three nullable sub-block models) and `fromAPI(ctx, []kbapi.<DrilldownUnion>) ([]drilldownItemModel, diag.Diagnostics)` + `toAPI([]drilldownItemModel) ([]kbapi.<DrilldownUnion>, diag.Diagnostics)` helpers in a new `internal/kibana/dashboard/models_drilldowns.go`.
 - [x] 2.5 Implement read-side classification: detect API drilldown `type` field, dispatch to `dashboard`/`discover`/`url` sub-block model. Surface a clear error diagnostic when an API drilldown cannot be losslessly represented in any of the three sub-blocks.
-- [x] 2.6 Implement write-side: emit `trigger` (constant for dashboard/discover, optional pass-through for url) and `type` (constant per variant) automatically; only include practitioner-set optional fields.
+- [x] 2.6 Implement write-side: emit `trigger` (constant for dashboard/discover; required URL trigger pass-through—Terraform schema requires `url.trigger`) and `type` (constant per variant) automatically; only include practitioner-set optional fields otherwise.
 - [x] 2.7 Add unit tests for `models_drilldowns.go`: round-trip per variant; multi-item mixed-kind round-trip; invalid trigger value; unrepresentable shape diagnostic.
 
 ## 3. Migrate `lens_dashboard_app_config.by_reference.drilldowns_json` → structured `drilldowns`
@@ -67,9 +67,9 @@
 ## 9. Add new acceptance coverage for `viz_config` and structured drilldowns
 
 - [x] 9.1 Add `acc_viz_config_by_reference_test.go` covering: minimal by_reference panel (ref_id + time_range only); by_reference with `references_json`, `title`, `description`, `hide_*`; round-trip preserves all set fields; null preservation for unset optional fields.
-- [x] 9.2 Add structured drilldown acceptance coverage on `viz_config.by_reference`: dashboard variant with all optional fields; URL variant with explicit `trigger`; URL variant with omitted `trigger`; discover variant; mixed-kind multi-item list (3 items, one of each kind).
+- [x] 9.2 Add structured drilldown acceptance coverage on `viz_config.by_reference`: dashboard variant with all optional fields; URL variant with explicit `trigger`; URL variant trigger required (plan-time error when `trigger` unset); discover variant; mixed-kind multi-item list (3 items, one of each kind).
 - [x] 9.3 Add structured drilldown acceptance coverage on `lens_dashboard_app_config.by_reference`: same matrix as 9.2 (verifies the shared helper produces identical behavior).
-- [x] 9.4 Run targeted acceptance tests against the local stack: `TF_ACC=1 go test -v -run 'TestAccResourceDashboardVizConfigByReference|TestAccResourceDashboardLensDashboardAppByReference_(dashboard|discover|url|mixed)Drilldown|TestAccResourceDashboard.*urlDrilldownOmittedTrigger' ./internal/kibana/dashboard/...`.
+- [x] 9.4 Run targeted acceptance tests against the local stack: `TF_ACC=1 go test -v -run 'TestAccResourceDashboardVizConfigByReference|TestAccResourceDashboardLensDashboardAppByReference_(dashboard|discover|url|mixed)Drilldown' ./internal/kibana/dashboard/...`.
 - [x] 9.5 Run the full dashboard acceptance suite: `TF_ACC=1 go test -count=1 -timeout 30m ./internal/kibana/dashboard/...` and confirm 100% pass.
 
 ## 10. Update examples and generated docs

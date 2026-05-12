@@ -128,7 +128,7 @@ The provider SHALL set the API `trigger` field to `on_apply_filter` and the API 
 **`url` sub-block** SHALL accept:
 - `url` (required string) — templated URL. Variables documented at the Kibana drilldown URL template documentation.
 - `label` (required string) — display label.
-- `trigger` (optional string ∈ `on_click_row`/`on_click_value`/`on_open_panel_menu`/`on_select_range`) — when set, MUST be one of the four enum values; the provider SHALL reject other values at plan time. When unset, the provider SHALL omit the `trigger` field from the API payload, allowing Kibana to apply its own default.
+- `trigger` (required string ∈ `on_click_row`/`on_click_value`/`on_open_panel_menu`/`on_select_range`) — MUST be exactly one of the four enum values; the provider SHALL reject other values at plan time. Terraform requires this attribute because the Kibana dashboard API rejects URL drilldown payloads that omit `trigger` (surfacing HTTP 400 at apply); requiring it aligns validation with runtime behavior.
 - `encode_url` (optional bool, API default `true`) — when set, the URL is escaped using percent encoding.
 - `open_in_new_tab` (optional bool, API default `true`).
 
@@ -156,12 +156,17 @@ The provider SHALL set the API `type` field to `url_drilldown` automatically; th
 - THEN the provider SHALL emit a drilldown object with `type = "url_drilldown"`, `trigger = "on_click_value"`, `url`, and `label`
 - AND on read-back the provider SHALL repopulate `drilldowns[0].url` with the same values
 
-#### Scenario: URL drilldown with omitted trigger
+#### Scenario: Read-back rejects URL drilldown when API omits `trigger`
 
-- GIVEN a panel with `drilldowns = [{ url = { url = "https://example.com", label = "Open" } }]` and no `trigger` set
-- WHEN the resource is created
-- THEN the provider SHALL omit `trigger` from the emitted drilldown object
-- AND on read-back, when the API returns a drilldown without `trigger`, the provider SHALL leave `drilldowns[0].url.trigger` null
+- GIVEN Kibana returns a `url_drilldown` payload that omits `trigger` or sets it to an empty value
+- WHEN the provider maps API drilldowns into structured Terraform state
+- THEN the provider SHALL surface a clear diagnostic that the drilldown cannot be represented losslessly (required `trigger` missing)
+
+#### Scenario: URL drilldown trigger required at plan time
+
+- GIVEN a panel with structured drilldowns `drilldowns = [{ url = { url = "https://example.com", label = "Open" } }]` and no `trigger` attribute
+- WHEN Terraform validates the configuration before apply
+- THEN the configuration SHALL be rejected at plan time with a diagnostic indicating that `trigger` is required on the URL drilldown sub-block
 
 #### Scenario: URL drilldown with invalid trigger value
 

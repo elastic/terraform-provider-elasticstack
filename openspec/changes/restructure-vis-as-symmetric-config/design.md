@@ -85,11 +85,11 @@ Each variant matches the API schema exactly:
 |---|---|---|---|
 | `dashboard` | `dashboard_id`, `label` | `use_filters` (default true), `use_time_range` (default true), `open_in_new_tab` (default false) | API `trigger` and `type` are constants set by the writer (`on_apply_filter`, `dashboard_drilldown`); not surfaced |
 | `discover` | `label` | `open_in_new_tab` (default true) | API `trigger` and `type` constants set by writer |
-| `url` | `url`, `label` | `trigger` (∈ `on_click_row`/`on_click_value`/`on_open_panel_menu`/`on_select_range`), `encode_url` (default true), `open_in_new_tab` (default true) | URL drilldowns are the only variant where the API exposes a multi-value `trigger` enum; we expose it as an optional string with `OneOf` validator |
+| `url` | `url`, `label`, `trigger` (∈ `on_click_row`/`on_click_value`/`on_open_panel_menu`/`on_select_range`) | `encode_url` (default true), `open_in_new_tab` (default true) | The API expects `trigger` on dashboard writes; Terraform requires it at plan time and maps it to the API `url_drilldown` payload. |
+
+The Kibana dashboard API rejects URL drilldown objects that omit `trigger` (HTTP 400 from request validation). Exposing `trigger` as **required** in Terraform fails fast at plan time and matches runtime behavior.
 
 Alternative considered: keep `drilldowns_json`. Rejected because the user specifically requested structured 3-way support; structured drilldowns deliver plan-diff visibility for a meaningful authoring concern.
-
-Alternative considered: omit URL `trigger` (matches today's SLO blocks which don't expose it). Rejected because the API supports it and it's the sole way to author menu-only or range-only drilldowns.
 
 ### D7. Migrate `lens_dashboard_app_config.by_reference.drilldowns_json` → structured `drilldowns`
 
