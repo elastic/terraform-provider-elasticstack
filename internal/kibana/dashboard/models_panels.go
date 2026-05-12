@@ -60,6 +60,15 @@ type panelModel struct {
 	ConfigJSON                    customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config_json"`
 }
 
+// pinnedPanelModel is one dashboard pinned control bar entry (no grid placement).
+type pinnedPanelModel struct {
+	Type                     types.String                   `tfsdk:"type"`
+	TimeSliderControlConfig  *timeSliderControlConfigModel  `tfsdk:"time_slider_control_config"`
+	EsqlControlConfig        *esqlControlConfigModel        `tfsdk:"esql_control_config"`
+	OptionsListControlConfig *optionsListControlConfigModel `tfsdk:"options_list_control_config"`
+	RangeSliderControlConfig *rangeSliderControlConfigModel `tfsdk:"range_slider_control_config"`
+}
+
 type panelGridModel struct {
 	X types.Int64 `tfsdk:"x"`
 	Y types.Int64 `tfsdk:"y"`

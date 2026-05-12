@@ -11,7 +11,7 @@ resource "elasticstack_kibana_space" "test_space" {
 
 resource "elasticstack_fleet_server_host" "test_host" {
   name    = var.name
-  host_id = "fleet-server-host-id"
+  host_id = var.host_id
   default = false
   hosts = [
     "https://fleet-server:8220"
