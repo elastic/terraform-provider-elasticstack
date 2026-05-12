@@ -55,6 +55,7 @@ const (
 	panelTypeVis                     = "vis"
 	panelTypeTimeSlider              = "time_slider_control"
 	panelTypeSloAlerts               = "slo_alerts"
+	panelTypeDiscoverSession         = "discover_session"
 	panelTypeSloBurnRate             = "slo_burn_rate"
 	panelTypeSloErrorBudget          = "slo_error_budget"
 	panelTypeEsqlControl             = "esql_control"
@@ -94,6 +95,7 @@ var panelConfigNames = []string{
 	"synthetics_monitors_config",
 	"image_config",
 	"lens_dashboard_app_config",
+	"discover_session_config",
 }
 
 func siblingPanelConfigPathsExcept(name string, names []string) []path.Expression {
@@ -832,6 +834,24 @@ func getPanelSchema() schema.NestedAttributeObject {
 					validators.RequiredIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeSloAlerts}),
 				},
 			},
+			"discover_session_config": schema.SingleNestedAttribute{
+				MarkdownDescription: panelConfigDescription(
+					"Configuration for a `discover_session` panel (`kbn-dashboard-panel-type-discover_session`). "+
+						"Required when `type` is `discover_session`. Set exactly one of `by_value` or `by_reference`.",
+					"discover_session_config",
+					panelConfigNames,
+				),
+				Optional:   true,
+				Attributes: getDiscoverSessionPanelConfigAttributes(),
+				Validators: []validator.Object{
+					objectvalidator.ConflictsWith(
+						siblingPanelConfigPathsExcept("discover_session_config", panelConfigNames)...,
+					),
+					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeDiscoverSession}),
+					validators.RequiredIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeDiscoverSession}),
+					discoverSessionConfigModeValidator{},
+				},
+			},
 			"slo_burn_rate_config": schema.SingleNestedAttribute{
 				MarkdownDescription: panelConfigDescription(
 					"Configuration for an SLO burn rate panel. Use this for panels that visualize the burn rate of an SLO over a configurable look-back window.",
@@ -1244,8 +1264,8 @@ func getPanelSchema() schema.NestedAttributeObject {
 				MarkdownDescription: panelConfigDescription(
 					"The configuration of the panel as a JSON string. "+
 						"Practitioner-authored panel-level `config_json` is valid only when `type` is `markdown` or `vis`. "+
-						"Typed panel kinds such as `lens-dashboard-app`, `image`, and `slo_alerts` use their dedicated blocks "+
-						"(`lens_dashboard_app_config`, `image_config`, `slo_alerts_config`), not panel-level `config_json`.",
+						"Typed panel kinds such as `lens-dashboard-app`, `image`, `slo_alerts`, and `discover_session` use their dedicated blocks "+
+						"(`lens_dashboard_app_config`, `image_config`, `slo_alerts_config`, `discover_session_config`), not panel-level `config_json`.",
 					"config_json",
 					panelConfigNames,
 				),

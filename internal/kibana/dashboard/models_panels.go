@@ -59,6 +59,7 @@ type panelModel struct {
 	LensDashboardAppConfig        *lensDashboardAppConfigModel                      `tfsdk:"lens_dashboard_app_config"`
 	ImageConfig                   *imagePanelConfigModel                            `tfsdk:"image_config"`
 	SloAlertsConfig               *sloAlertsPanelConfigModel                        `tfsdk:"slo_alerts_config"`
+	DiscoverSessionConfig         *discoverSessionPanelConfigModel                  `tfsdk:"discover_session_config"`
 	ConfigJSON                    customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config_json"`
 }
 
@@ -230,7 +231,8 @@ func panelHasTypedConfig(pm *panelModel) bool {
 		pm.SyntheticsMonitorsConfig != nil ||
 		pm.LensDashboardAppConfig != nil ||
 		pm.ImageConfig != nil ||
-		pm.SloAlertsConfig != nil
+		pm.SloAlertsConfig != nil ||
+		pm.DiscoverSessionConfig != nil
 }
 
 func panelUsesConfigJSONOnly(pm *panelModel) bool {
@@ -266,6 +268,7 @@ func clearPanelConfigBlocks(pm *panelModel) {
 	pm.LensDashboardAppConfig = nil
 	pm.ImageConfig = nil
 	pm.SloAlertsConfig = nil
+	pm.DiscoverSessionConfig = nil
 }
 
 func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelModel, panelItem kbapi.DashboardPanelItem) (panelModel, diag.Diagnostics) {
@@ -467,6 +470,15 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 		pm.ID = types.StringPointerValue(saPanel.Id)
 		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
 		populateSloAlertsPanelFromAPI(&pm, tfPanel, saPanel)
+	case panelTypeDiscoverSession:
+		dsPanel, err := panelItem.AsKbnDashboardPanelTypeDiscoverSession()
+		if err != nil {
+			return panelModel{}, diagutil.FrameworkDiagFromError(err)
+		}
+		setPanelGridFromAPI(&pm, dsPanel.Grid.X, dsPanel.Grid.Y, dsPanel.Grid.W, dsPanel.Grid.H)
+		pm.ID = types.StringPointerValue(dsPanel.Id)
+		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
+		populateDiscoverSessionPanelFromAPI(ctx, &pm, tfPanel, dsPanel)
 	default:
 		// Round-trip stability for panel types without a typed config block.
 		pm.ID = types.StringNull()
@@ -514,7 +526,7 @@ func lensPanelTimeRange() kbapi.KbnEsQueryServerTimeRangeSchema {
 	}
 }
 
-func (m *dashboardModel) panelsToAPI() (*kbapi.DashboardPanels, diag.Diagnostics) {
+func (m *dashboardModel) panelsToAPI(ctx context.Context) (*kbapi.DashboardPanels, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if m.Panels == nil && m.Sections == nil {
 		return nil, diags
@@ -524,7 +536,7 @@ func (m *dashboardModel) panelsToAPI() (*kbapi.DashboardPanels, diag.Diagnostics
 
 	// Process panels
 	for _, pm := range m.Panels {
-		panelItem, d := pm.toAPI()
+		panelItem, d := pm.toAPI(ctx, m.TimeRange)
 		diags.Append(d...)
 		if diags.HasError() {
 			return nil, diags
@@ -561,7 +573,7 @@ func (m *dashboardModel) panelsToAPI() (*kbapi.DashboardPanels, diag.Diagnostics
 			innerPanels := make([]kbapi.DashboardPanelItem, 0, len(sm.Panels))
 
 			for _, pm := range sm.Panels {
-				item, d := pm.toAPI()
+				item, d := pm.toAPI(ctx, m.TimeRange)
 				diags.Append(d...)
 				if diags.HasError() {
 					return nil, diags
@@ -583,7 +595,7 @@ func (m *dashboardModel) panelsToAPI() (*kbapi.DashboardPanels, diag.Diagnostics
 	return &apiPanels, diags
 }
 
-func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
+func (pm panelModel) toAPI(ctx context.Context, dashboardRootTR *timeRangeModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	grid := struct {
@@ -657,6 +669,25 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 
 	if pm.SloAlertsConfig != nil {
 		return sloAlertsPanelToAPI(pm, grid, panelID)
+	}
+
+	if pm.DiscoverSessionConfig != nil {
+		return discoverSessionPanelToAPI(ctx, pm, grid, panelID, dashboardRootTR)
+	}
+
+	if pm.Type.ValueString() == panelTypeDiscoverSession {
+		if typeutils.IsKnown(pm.ConfigJSON) && !pm.ConfigJSON.IsNull() {
+			diags.AddError(
+				"Unsupported panel type for config_json",
+				"Panel-level `config_json` is not supported for `discover_session` panels. Use `discover_session_config` instead.",
+			)
+			return kbapi.DashboardPanelItem{}, diags
+		}
+		diags.AddError(
+			"Missing discover_session panel configuration",
+			"Discover session panels require `discover_session_config`.",
+		)
+		return kbapi.DashboardPanelItem{}, diags
 	}
 
 	if pm.Type.ValueString() == panelTypeSloAlerts {
@@ -897,6 +928,11 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 				"Unsupported panel type for config_json",
 				"Panel-level `config_json` is not supported for `slo_alerts` panels. Use `slo_alerts_config` instead.",
 			)
+		case panelTypeDiscoverSession:
+			diags.AddError(
+				"Unsupported panel type for config_json",
+				"Panel-level `config_json` is not supported for `discover_session` panels. Use `discover_session_config` instead.",
+			)
 		default:
 			// Unknown panel type: reconstruct the full panel JSON from the stored
 			// config_json + grid + id + type and set it directly as the raw union.
@@ -934,7 +970,7 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	case panelTypeMarkdown, panelTypeVis, panelTypeTimeSlider, panelTypeSloBurnRate,
 		panelTypeSloErrorBudget, panelTypeEsqlControl, panelTypeOptionsListControl,
 		panelTypeRangeSlider, panelTypeSyntheticsStatsOverview, panelTypeSyntheticsMonitors,
-		panelTypeLensDashboardApp, panelTypeSloOverview, panelTypeImage, panelTypeSloAlerts:
+		panelTypeLensDashboardApp, panelTypeSloOverview, panelTypeImage, panelTypeSloAlerts, panelTypeDiscoverSession:
 		diags.AddError("Unsupported panel configuration", "No panel configuration block was provided.")
 	default:
 		diags.AddError(

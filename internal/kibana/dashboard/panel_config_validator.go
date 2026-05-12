@@ -55,6 +55,7 @@ func (panelConfigValidator) Description(_ context.Context) string {
 		"`time_slider_control` panels use `time_slider_control_config` or omit config, " +
 		"`image` panels configure `image_config`, " +
 		"`slo_alerts` panels configure `slo_alerts_config`, " +
+		"`discover_session` panels configure `discover_session_config`, " +
 		"`slo_overview` panels configure `slo_overview_config`, " +
 		"and `slo_error_budget` panels configure `slo_error_budget_config`. " +
 		"`lens-dashboard-app` is validated by per-attribute validators on `lens_dashboard_app_config` " +
@@ -102,6 +103,7 @@ func panelConfigValidateDiags(
 	sloOverviewConfig panelConfigValueState,
 	imageConfig panelConfigValueState,
 	sloAlertsConfig panelConfigValueState,
+	discoverSessionConfig panelConfigValueState,
 	attrPath *path.Path,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
@@ -114,6 +116,14 @@ func panelConfigValidateDiags(
 	}
 
 	switch panelType {
+	case panelTypeDiscoverSession:
+		if discoverSessionConfig.Set {
+			return diags
+		}
+		if discoverSessionConfig.Unknown {
+			return diags
+		}
+		add("Missing discover_session panel configuration", "Discover session panels require `discover_session_config`.")
 	case panelTypeImage:
 		if imageConfig.Set {
 			return diags
@@ -223,6 +233,7 @@ func (v panelConfigValidator) ValidateObject(_ context.Context, req validator.Ob
 		panelConfigValueStateFromValue(attrs["slo_overview_config"]),
 		panelConfigValueStateFromValue(attrs["image_config"]),
 		panelConfigValueStateFromValue(attrs["slo_alerts_config"]),
+		panelConfigValueStateFromValue(attrs["discover_session_config"]),
 		&req.Path,
 	)...)
 }

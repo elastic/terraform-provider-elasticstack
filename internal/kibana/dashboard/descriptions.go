@@ -72,3 +72,21 @@ var sloAlertsPanelSlosDescription string
 
 //go:embed descriptions/slo_alerts_panel_drilldowns.md
 var sloAlertsPanelDrilldownsDescription string
+
+//go:embed descriptions/discover_session_panel_drilldowns.md
+var discoverSessionPanelDrilldownsDescription string
+
+//go:embed descriptions/discover_session_panel_by_value.md
+var discoverSessionPanelByValueDescription string
+
+//go:embed descriptions/discover_session_panel_by_reference.md
+var discoverSessionPanelByReferenceDescription string
+
+//go:embed descriptions/discover_session_panel_data_source_json.md
+var discoverSessionPanelDataSourceJSONDescription string
+
+//go:embed descriptions/discover_session_panel_dsl_filters.md
+var discoverSessionPanelDSLFiltersDescription string
+
+//go:embed descriptions/discover_session_panel_view_mode.md
+var discoverSessionPanelViewModeDescription string

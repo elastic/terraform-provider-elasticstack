@@ -1,0 +1,1 @@
+Normalized JSON for the tab `data_source` field. For `dsl`, this is the polymorphic data-source union (for example a data view reference). For `esql`, this must deserialize to the ES|QL data source shape (`type = "esql"`, query, etc.). Semantic JSON equality suppresses drift from key ordering or whitespace.

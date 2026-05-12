@@ -1,0 +1,1 @@
+Inline Discover session configuration (`kbn-dashboard-panel-type-discover_session` config branch `0`). Set `tab` with exactly one of `dsl` (data view + query) or `esql`. Omit `time_range` to inherit the dashboard root time range at write time while keeping this block null in Terraform state.
