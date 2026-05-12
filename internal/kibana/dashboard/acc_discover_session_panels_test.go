@@ -78,7 +78,51 @@ func createSearchSavedObjectForDiscoverRef(t *testing.T, id string) error {
 		body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
 		return fmt.Errorf("POST %s returned %d: %s", url, resp.StatusCode, string(body))
 	}
+
+	t.Cleanup(func() {
+		deleteSearchSavedObjectForDiscoverRef(t, id)
+	})
 	return nil
+}
+
+// deleteSearchSavedObjectForDiscoverRef removes the `search` saved object created for discover_session
+// by_reference acceptance tests. 404 is ignored (idempotent cleanup).
+func deleteSearchSavedObjectForDiscoverRef(t *testing.T, id string) {
+	t.Helper()
+
+	client, err := clients.NewAcceptanceTestingKibanaScopedClient()
+	if err != nil {
+		t.Logf("discover_session acc cleanup: kibana client: %v", err)
+		return
+	}
+	kibanaClient, err := client.GetKibanaOapiClient()
+	if err != nil {
+		t.Logf("discover_session acc cleanup: kibana oapi client: %v", err)
+		return
+	}
+
+	delURL := fmt.Sprintf("%s/api/saved_objects/search/%s", kibanaClient.URL, id)
+	delReq, err := http.NewRequestWithContext(context.Background(), http.MethodDelete, delURL, nil)
+	if err != nil {
+		t.Logf("discover_session acc cleanup: new DELETE request: %v", err)
+		return
+	}
+	delReq.Header.Set("kbn-xsrf", "true")
+
+	delResp, err := kibanaClient.HTTP.Do(delReq)
+	if err != nil {
+		t.Logf("discover_session acc cleanup: DELETE %s: %v", delURL, err)
+		return
+	}
+	defer delResp.Body.Close()
+
+	if delResp.StatusCode == http.StatusNotFound {
+		return
+	}
+	if delResp.StatusCode != http.StatusOK && delResp.StatusCode != http.StatusNoContent {
+		body, _ := io.ReadAll(io.LimitReader(delResp.Body, 4096))
+		t.Logf("discover_session acc cleanup: DELETE %s returned %d: %s", delURL, delResp.StatusCode, string(body))
+	}
 }
 
 func TestAccResourceDashboardDiscoverSession_by_value_dsl(t *testing.T) {
