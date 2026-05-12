@@ -2,13 +2,9 @@ variable "dashboard_title" {
   type = string
 }
 
-variable "markdown_lib_id" {
-  type = string
-}
-
 resource "elasticstack_kibana_dashboard" "test" {
   title       = var.dashboard_title
-  description = "markdown by_reference acceptance"
+  description = "REQ-009: by_value settings present; open_links_in_new_tab omitted"
   time_range = {
     from = "now-15m"
     to   = "now"
@@ -30,12 +26,10 @@ resource "elasticstack_kibana_dashboard" "test" {
       h = 10
     }
     markdown_config = {
-      by_reference = {
-        ref_id      = var.markdown_lib_id
-        title       = "Overlay title for library markdown"
-        description = "Overlay description for by-reference panel"
-        hide_title  = true
-        hide_border = false
+      by_value = {
+        content = "Markdown with empty settings"
+        # settings block required; omit open_links_in_new_tab so Kibana applies default (true).
+        settings = {}
       }
     }
   }]

@@ -35,8 +35,9 @@ resource "elasticstack_kibana_dashboard" "test" {
           content    = "First markdown panel"
           title      = "My First Markdown Panel"
           hide_title = false
+          hide_border = true
           settings = {
-            open_links_in_new_tab = true
+            open_links_in_new_tab = false
           }
         }
       }
