@@ -51,9 +51,9 @@
 
 ## 7. Simplify `panelConfigNames` plumbing and per-block descriptions
 
-- [ ] 7.1 Update `siblingPanelConfigPathsExcept` callers throughout `schema.go` to operate on the shrunk list.
-- [ ] 7.2 Update `panelConfigDescription` strings on each top-level panel-config block to reference the new sibling list.
-- [ ] 7.3 Add a unit test asserting that every entry in `panelConfigNames` corresponds to a registered top-level attribute on the panel object schema, and vice versa.
+- [x] 7.1 Update `siblingPanelConfigPathsExcept` callers throughout `schema.go` to operate on the shrunk list.
+- [x] 7.2 Update `panelConfigDescription` strings on each top-level panel-config block to reference the new sibling list.
+- [x] 7.3 Add a unit test asserting that every entry in `panelConfigNames` corresponds to a registered top-level attribute on the panel object schema, and vice versa.
 
 ## 8. Update existing acceptance and unit tests
 
