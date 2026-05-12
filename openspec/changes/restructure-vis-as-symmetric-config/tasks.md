@@ -86,9 +86,9 @@
 
 ## 12. Final verification
 
-- [ ] 12.1 Run `make build` — green.
-- [ ] 12.2 Run `go vet ./...` — green.
-- [ ] 12.3 Run full unit tests: `make test` — green.
-- [ ] 12.4 Run full dashboard acceptance suite (step 9.5) — green.
-- [ ] 12.5 Update CHANGELOG.md with breaking-change entries (chart blocks moved to `viz_config.by_value`; `drilldowns_json` on lens-dashboard-app replaced with structured `drilldowns`; new `viz_config.by_reference` capability).
-- [ ] 12.6 Manual review: confirm `panelConfigNames` count equals 13, no stale `drilldowns_json` references remain on `lens_dashboard_app_config.by_reference`, and `siblingPanelConfigPathsExcept` callers all reference the shrunk list.
+- [x] 12.1 Run `make build` — green.
+- [x] 12.2 Run `go vet ./...` — green.
+- [x] 12.3 Run full unit tests: `make test` — green (run via `go test ./...` or with `.env`/Makefile `KIBANA_PORT` aligned to the live stack — `make test` will fail if the Makefile-pinned port differs).
+- [x] 12.4 Run full dashboard acceptance suite (step 9.5) — green.
+- [x] 12.5 Update CHANGELOG.md with breaking-change entries (chart blocks moved to `viz_config.by_value`; `drilldowns_json` on lens-dashboard-app replaced with structured `drilldowns`; new `viz_config.by_reference` capability).
+- [x] 12.6 Manual review: confirm `panelConfigNames` count equals 13, no stale `drilldowns_json` references remain on `lens_dashboard_app_config.by_reference`, and `siblingPanelConfigPathsExcept` callers all reference the shrunk list.
