@@ -74,10 +74,10 @@
 
 ## 10. Update examples and generated docs
 
-- [ ] 10.1 Update HCL under `examples/resources/elasticstack_kibana_dashboard/` to wrap chart blocks in `viz_config.by_value` and use structured `drilldowns` where applicable.
-- [ ] 10.2 Add at least one example demonstrating `viz_config.by_reference`.
-- [ ] 10.3 Run `make docs-generate` and verify `docs/resources/kibana_dashboard.md` reflects the new schema; spot-check key sections (`viz_config`, `drilldowns`).
-- [ ] 10.4 Run `TF_ACC=1 go test ./internal/acctest -run '^TestAccExamples_planOnly$' -count=1` to confirm all updated example HCL still plans cleanly.
+- [x] 10.1 Update HCL under `examples/resources/elasticstack_kibana_dashboard/` to wrap chart blocks in `viz_config.by_value` and use structured `drilldowns` where applicable.
+- [x] 10.2 Add at least one example demonstrating `viz_config.by_reference`.
+- [x] 10.3 Run `make docs-generate` and verify `docs/resources/kibana_dashboard.md` reflects the new schema; spot-check key sections (`viz_config`, `drilldowns`).
+- [x] 10.4 Run `TF_ACC=1 go test ./internal/acctest -run '^TestAccExamples_planOnly$' -count=1` to confirm all updated example HCL still plans cleanly.
 
 ## 11. Update OpenSpec canonical spec
 
