@@ -176,10 +176,10 @@ func Test_structuredDrilldown_urlTriggerStringValidator(t *testing.T) {
 	})
 }
 
-func Test_lensAppByReferenceDeprecatedDrilldownsJSON_validator(t *testing.T) {
+func Test_byReferenceDeprecatedDrilldownsJSON_validator(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	v := lensAppByReferenceDeprecatedDrilldownsJSON{}
+	v := byReferenceDeprecatedDrilldownsJSON{}
 	p := path.Root("drilldowns_json")
 
 	// terraform-plugin-framework's validator.StringRequest types ConfigValue as types.String (= basetypes.StringValue).
@@ -214,6 +214,8 @@ func Test_lensAppByReferenceDeprecatedDrilldownsJSON_validator(t *testing.T) {
 		var resp validator.StringResponse
 		v.ValidateString(ctx, validator.StringRequest{Path: p, ConfigValue: normalizedToSchemaStringForValidatorHarness(jsontypes.NewNormalizedValue(`[]`))}, &resp)
 		require.True(t, resp.Diagnostics.HasError())
-		require.Contains(t, resp.Diagnostics.Errors()[0].Detail(), "structured `drilldowns`")
+		detail := resp.Diagnostics.Errors()[0].Detail()
+		require.Contains(t, detail, "by-reference panels")
+		require.Contains(t, detail, "structured `drilldowns`")
 	})
 }

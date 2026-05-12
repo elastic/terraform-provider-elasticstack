@@ -1505,14 +1505,15 @@ func getLensByReferenceAttributes() map[string]schema.Attribute {
 			Optional:           true,
 			CustomType:         jsontypes.NormalizedType{},
 			Validators: []validator.String{
-				lensAppByReferenceDeprecatedDrilldownsJSON{},
+				byReferenceDeprecatedDrilldownsJSON{},
 			},
 			MarkdownDescription: "Deprecated legacy JSON-array escape hatch replaced by structured `drilldowns`; " +
 				"if set (including empty array), configuration is rejected with migration guidance.",
 		},
 		"time_range": schema.SingleNestedAttribute{
-			MarkdownDescription: "Required time range for the by-reference `lens-dashboard-app` config.",
-			Required:            true,
+			MarkdownDescription: "Required time range for the by-reference panel config " +
+				"(used by both `lens_dashboard_app_config.by_reference` and `viz_config.by_reference`).",
+			Required: true,
 			Attributes: map[string]schema.Attribute{
 				"from": schema.StringAttribute{
 					MarkdownDescription: "Range start, matching the Kibana time range `from` field.",
