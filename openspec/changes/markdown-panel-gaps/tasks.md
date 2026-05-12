@@ -22,7 +22,7 @@
 
 ## 4. Examples
 
-- [ ] 4.1 Update any markdown panel examples under `examples/resources/elasticstack_kibana_dashboard/` to the new shape
+- [x] 4.1 Update any markdown panel examples under `examples/resources/elasticstack_kibana_dashboard/` to the new shape
 
 ## 5. Spec sync
 
