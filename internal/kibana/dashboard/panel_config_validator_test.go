@@ -19,7 +19,6 @@ package dashboard
 
 import (
 	"context"
-	"maps"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -30,15 +29,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func lensConfigStates(overrides map[string]panelConfigValueState) map[string]panelConfigValueState {
-	states := make(map[string]panelConfigValueState, len(lensPanelConfigNames))
-	for _, name := range lensPanelConfigNames {
-		states[name] = panelConfigValueState{}
-	}
-	maps.Copy(states, overrides)
-	return states
-}
-
 func Test_panelConfigValidateDiags_markdown(t *testing.T) {
 	t.Run("accepts markdown_config", func(t *testing.T) {
 		diags := panelConfigValidateDiags(
@@ -47,7 +37,7 @@ func Test_panelConfigValidateDiags_markdown(t *testing.T) {
 			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
-			lensConfigStates(nil),
+			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
@@ -64,7 +54,7 @@ func Test_panelConfigValidateDiags_markdown(t *testing.T) {
 			panelConfigValueState{Set: true},
 			panelConfigValueState{},
 			panelConfigValueState{},
-			lensConfigStates(nil),
+			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
@@ -81,7 +71,7 @@ func Test_panelConfigValidateDiags_markdown(t *testing.T) {
 			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
-			lensConfigStates(nil),
+			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
@@ -95,16 +85,14 @@ func Test_panelConfigValidateDiags_markdown(t *testing.T) {
 }
 
 func Test_panelConfigValidateDiags_vis(t *testing.T) {
-	t.Run("accepts one typed config", func(t *testing.T) {
+	t.Run("accepts config_json fallback", func(t *testing.T) {
 		diags := panelConfigValidateDiags(
 			"vis",
 			panelConfigValueState{},
+			panelConfigValueState{Set: true},
 			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
-			lensConfigStates(map[string]panelConfigValueState{
-				"xy_chart_config": {Set: true},
-			}),
 			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
@@ -114,14 +102,14 @@ func Test_panelConfigValidateDiags_vis(t *testing.T) {
 		require.False(t, diags.HasError())
 	})
 
-	t.Run("accepts config_json fallback", func(t *testing.T) {
+	t.Run("accepts viz_config as sole vis configuration", func(t *testing.T) {
 		diags := panelConfigValidateDiags(
 			"vis",
+			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{Set: true},
 			panelConfigValueState{},
 			panelConfigValueState{},
-			lensConfigStates(nil),
 			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
@@ -138,7 +126,7 @@ func Test_panelConfigValidateDiags_vis(t *testing.T) {
 			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
-			lensConfigStates(nil),
+			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
@@ -150,38 +138,14 @@ func Test_panelConfigValidateDiags_vis(t *testing.T) {
 		require.Equal(t, "Missing vis panel configuration", diags[0].Summary())
 	})
 
-	t.Run("rejects multiple typed configs", func(t *testing.T) {
-		diags := panelConfigValidateDiags(
-			"vis",
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			lensConfigStates(map[string]panelConfigValueState{
-				"xy_chart_config": {Set: true},
-				"heatmap_config":  {Set: true},
-			}),
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			nil,
-		)
-		require.True(t, diags.HasError())
-		require.Len(t, diags, 1)
-		require.Equal(t, "Invalid vis panel configuration", diags[0].Summary())
-	})
-
-	t.Run("rejects typed config plus config_json", func(t *testing.T) {
+	t.Run("rejects viz_config and config_json together", func(t *testing.T) {
 		diags := panelConfigValidateDiags(
 			"vis",
 			panelConfigValueState{},
 			panelConfigValueState{Set: true},
+			panelConfigValueState{Set: true},
 			panelConfigValueState{},
 			panelConfigValueState{},
-			lensConfigStates(map[string]panelConfigValueState{
-				"gauge_config": {Set: true},
-			}),
 			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
@@ -191,6 +155,7 @@ func Test_panelConfigValidateDiags_vis(t *testing.T) {
 		require.True(t, diags.HasError())
 		require.Len(t, diags, 1)
 		require.Equal(t, "Invalid vis panel configuration", diags[0].Summary())
+		require.Contains(t, diags[0].Detail(), "viz_config")
 	})
 
 	t.Run("defers when config_json is unknown", func(t *testing.T) {
@@ -200,7 +165,24 @@ func Test_panelConfigValidateDiags_vis(t *testing.T) {
 			panelConfigValueState{Unknown: true},
 			panelConfigValueState{},
 			panelConfigValueState{},
-			lensConfigStates(nil),
+			panelConfigValueState{},
+			panelConfigValueState{},
+			panelConfigValueState{},
+			panelConfigValueState{},
+			panelConfigValueState{},
+			nil,
+		)
+		require.False(t, diags.HasError())
+	})
+
+	t.Run("defers when viz_config is unknown", func(t *testing.T) {
+		diags := panelConfigValidateDiags(
+			"vis",
+			panelConfigValueState{},
+			panelConfigValueState{},
+			panelConfigValueState{Unknown: true},
+			panelConfigValueState{},
+			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
@@ -219,7 +201,7 @@ func Test_panelConfigValidateDiags_timeSlider(t *testing.T) {
 			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
-			lensConfigStates(nil),
+			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
@@ -238,7 +220,7 @@ func Test_panelConfigValidateDiags_timeSlider(t *testing.T) {
 			panelConfigValueState{Set: true},
 			panelConfigValueState{},
 			panelConfigValueState{},
-			lensConfigStates(nil),
+			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
@@ -255,7 +237,7 @@ func Test_panelConfigValidateDiags_timeSlider(t *testing.T) {
 			panelConfigValueState{Unknown: true},
 			panelConfigValueState{},
 			panelConfigValueState{},
-			lensConfigStates(nil),
+			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
@@ -272,9 +254,9 @@ func Test_panelConfigValidateDiags_SloBurnRate(t *testing.T) {
 			"slo_burn_rate",
 			panelConfigValueState{},
 			panelConfigValueState{},
+			panelConfigValueState{},
 			panelConfigValueState{Set: true},
 			panelConfigValueState{},
-			lensConfigStates(nil),
 			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
@@ -291,7 +273,7 @@ func Test_panelConfigValidateDiags_SloBurnRate(t *testing.T) {
 			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
-			lensConfigStates(nil),
+			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
@@ -308,9 +290,9 @@ func Test_panelConfigValidateDiags_SloBurnRate(t *testing.T) {
 			"slo_burn_rate",
 			panelConfigValueState{},
 			panelConfigValueState{},
+			panelConfigValueState{},
 			panelConfigValueState{Unknown: true},
 			panelConfigValueState{},
-			lensConfigStates(nil),
 			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
@@ -390,8 +372,8 @@ func Test_panelConfigValidateDiags_sloErrorBudget(t *testing.T) {
 			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
+			panelConfigValueState{},
 			panelConfigValueState{Set: true},
-			lensConfigStates(nil),
 			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
@@ -407,8 +389,8 @@ func Test_panelConfigValidateDiags_sloErrorBudget(t *testing.T) {
 			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
+			panelConfigValueState{},
 			panelConfigValueState{Unknown: true},
-			lensConfigStates(nil),
 			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
@@ -425,7 +407,7 @@ func Test_panelConfigValidateDiags_sloErrorBudget(t *testing.T) {
 			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
-			lensConfigStates(nil),
+			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
@@ -459,7 +441,7 @@ func Test_panelConfigValidateDiags_optionsListControl(t *testing.T) {
 			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
-			lensConfigStates(nil),
+			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
@@ -478,7 +460,7 @@ func Test_panelConfigValidateDiags_optionsListControl(t *testing.T) {
 			panelConfigValueState{Set: true},
 			panelConfigValueState{},
 			panelConfigValueState{},
-			lensConfigStates(nil),
+			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
@@ -495,7 +477,7 @@ func Test_panelConfigValidateDiags_optionsListControl(t *testing.T) {
 			panelConfigValueState{Unknown: true},
 			panelConfigValueState{},
 			panelConfigValueState{},
-			lensConfigStates(nil),
+			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
@@ -611,7 +593,7 @@ func Test_panelConfigValidateDiags_image(t *testing.T) {
 			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
-			lensConfigStates(nil),
+			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{Set: true},
 			panelConfigValueState{},
@@ -628,7 +610,7 @@ func Test_panelConfigValidateDiags_image(t *testing.T) {
 			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
-			lensConfigStates(nil),
+			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
@@ -649,7 +631,7 @@ func Test_panelConfigValidateDiags_sloAlerts(t *testing.T) {
 			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
-			lensConfigStates(nil),
+			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{Set: true},
@@ -666,7 +648,7 @@ func Test_panelConfigValidateDiags_sloAlerts(t *testing.T) {
 			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
-			lensConfigStates(nil),
+			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
@@ -687,7 +669,7 @@ func Test_panelConfigValidateDiags_discoverSession(t *testing.T) {
 			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
-			lensConfigStates(nil),
+			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
@@ -704,7 +686,7 @@ func Test_panelConfigValidateDiags_discoverSession(t *testing.T) {
 			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
-			lensConfigStates(nil),
+			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},

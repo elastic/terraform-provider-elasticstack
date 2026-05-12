@@ -25,6 +25,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const testTimestampField = "@timestamp"
+
 // kbapiTestArtifacts is a test helper; nested field name matches generated kbapi.
 //
 //nolint:revive // var-naming: `Id` matches kbapi SLOsArtifacts OpenAPI
@@ -56,6 +58,147 @@ func makeApmAvailabilityIndicator(t *testing.T) kbapi.SLOsSloWithSummaryResponse
 	var result kbapi.SLOsSloWithSummaryResponse_Indicator
 	require.NoError(t, result.FromSLOsIndicatorPropertiesApmAvailability(ind))
 	return result
+}
+
+func makeKqlGood(t *testing.T, kql string) kbapi.SLOsKqlWithFiltersGood {
+	t.Helper()
+	var g kbapi.SLOsKqlWithFiltersGood
+	require.NoError(t, g.FromSLOsKqlWithFiltersGood0(kql))
+	return g
+}
+
+func makeKqlTotal(t *testing.T, kql string) kbapi.SLOsKqlWithFiltersTotal {
+	t.Helper()
+	var to kbapi.SLOsKqlWithFiltersTotal
+	require.NoError(t, to.FromSLOsKqlWithFiltersTotal0(kql))
+	return to
+}
+
+func makeApmAvail(t *testing.T) kbapi.SLOsIndicatorPropertiesApmAvailability {
+	t.Helper()
+	return kbapi.SLOsIndicatorPropertiesApmAvailability{
+		Type: "sli.apm.transactionErrorRate",
+		Params: struct {
+			Environment     string  `json:"environment"`
+			Filter          *string `json:"filter,omitempty"`
+			Index           string  `json:"index"`
+			Service         string  `json:"service"`
+			TransactionName string  `json:"transactionName"`
+			TransactionType string  `json:"transactionType"`
+		}{Service: "s", Environment: "e", TransactionType: "t", TransactionName: "n", Index: "i"},
+	}
+}
+
+func makeApmLatency(t *testing.T) kbapi.SLOsIndicatorPropertiesApmLatency {
+	t.Helper()
+	return kbapi.SLOsIndicatorPropertiesApmLatency{
+		Type: "sli.apm.transactionDuration",
+		Params: struct {
+			Environment     string  `json:"environment"`
+			Filter          *string `json:"filter,omitempty"`
+			Index           string  `json:"index"`
+			Service         string  `json:"service"`
+			Threshold       float64 `json:"threshold"`
+			TransactionName string  `json:"transactionName"`
+			TransactionType string  `json:"transactionType"`
+		}{Service: "s", Environment: "e", TransactionType: "t", TransactionName: "n", Index: "i", Threshold: 100},
+	}
+}
+
+func makeCustomKql(t *testing.T) kbapi.SLOsIndicatorPropertiesCustomKql {
+	t.Helper()
+	ind := kbapi.SLOsIndicatorPropertiesCustomKql{Type: "sli.kql.custom"}
+	ind.Params.Index = "i"
+	ind.Params.TimestampField = testTimestampField
+	ind.Params.Good = makeKqlGood(t, "status:200")
+	ind.Params.Total = makeKqlTotal(t, "status:*")
+	return ind
+}
+
+func makeCustomMetric(t *testing.T) kbapi.SLOsIndicatorPropertiesCustomMetric {
+	t.Helper()
+	ind := kbapi.SLOsIndicatorPropertiesCustomMetric{Type: "sli.metric.custom"}
+	ind.Params.Index = "i"
+	ind.Params.TimestampField = testTimestampField
+	ind.Params.Good.Equation = "A"
+	ind.Params.Total.Equation = "A"
+	return ind
+}
+
+func makeHistogram(t *testing.T) kbapi.SLOsIndicatorPropertiesHistogram {
+	t.Helper()
+	ind := kbapi.SLOsIndicatorPropertiesHistogram{Type: "sli.histogram.custom"}
+	ind.Params.Index = "i"
+	ind.Params.TimestampField = testTimestampField
+	ind.Params.Good.Aggregation = "value_count"
+	ind.Params.Good.Field = "f"
+	ind.Params.Total.Aggregation = "value_count"
+	ind.Params.Total.Field = "f"
+	return ind
+}
+
+func makeTimesliceMetric(t *testing.T) kbapi.SLOsIndicatorPropertiesTimesliceMetric {
+	t.Helper()
+	ind := kbapi.SLOsIndicatorPropertiesTimesliceMetric{Type: "sli.metric.timeslice"}
+	ind.Params.Index = "i"
+	ind.Params.TimestampField = testTimestampField
+	ind.Params.Metric.Comparator = "GT"
+	ind.Params.Metric.Equation = "A"
+	ind.Params.Metric.Threshold = 0.99
+	return ind
+}
+
+func makeResponseIndicator(t *testing.T, ind any) kbapi.SLOsSloWithSummaryResponse_Indicator {
+	t.Helper()
+	var result kbapi.SLOsSloWithSummaryResponse_Indicator
+	var err error
+	switch v := ind.(type) {
+	case kbapi.SLOsIndicatorPropertiesApmAvailability:
+		err = result.FromSLOsIndicatorPropertiesApmAvailability(v)
+	case kbapi.SLOsIndicatorPropertiesApmLatency:
+		err = result.FromSLOsIndicatorPropertiesApmLatency(v)
+	case kbapi.SLOsIndicatorPropertiesCustomKql:
+		err = result.FromSLOsIndicatorPropertiesCustomKql(v)
+	case kbapi.SLOsIndicatorPropertiesCustomMetric:
+		err = result.FromSLOsIndicatorPropertiesCustomMetric(v)
+	case kbapi.SLOsIndicatorPropertiesHistogram:
+		err = result.FromSLOsIndicatorPropertiesHistogram(v)
+	case kbapi.SLOsIndicatorPropertiesTimesliceMetric:
+		err = result.FromSLOsIndicatorPropertiesTimesliceMetric(v)
+	default:
+		t.Fatalf("unhandled indicator type in test helper: %T", ind)
+	}
+	require.NoError(t, err)
+	return result
+}
+
+func Test_applyResponseIndicator_allTypes(t *testing.T) {
+	cases := []struct {
+		name string
+		ind  any
+	}{
+		{name: "apm availability", ind: makeApmAvail(t)},
+		{name: "apm latency", ind: makeApmLatency(t)},
+		{name: "custom kql", ind: makeCustomKql(t)},
+		{name: "custom metric", ind: makeCustomMetric(t)},
+		{name: "histogram", ind: makeHistogram(t)},
+		{name: "timeslice metric", ind: makeTimesliceMetric(t)},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name+"/create", func(t *testing.T) {
+			src := makeResponseIndicator(t, tc.ind)
+			got, err := ResponseIndicatorToCreateIndicator(src)
+			require.NoError(t, err)
+			require.NotEmpty(t, got)
+		})
+		t.Run(tc.name+"/update", func(t *testing.T) {
+			src := makeResponseIndicator(t, tc.ind)
+			got, err := ResponseIndicatorToUpdateIndicator(src)
+			require.NoError(t, err)
+			require.NotEmpty(t, got)
+		})
+	}
 }
 
 func Test_SloResponseToModel(t *testing.T) {

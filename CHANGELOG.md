@@ -6,6 +6,14 @@ Removed top-level `enabled` from `elasticstack_fleet_integration_policy`. In pra
 
 The documented minimum supported Elastic Stack version is now 8.0. 7.x is no longer included in the acceptance test matrix or officially supported. Compatibility branches and version gates for pre-8.0 Elasticsearch behavior have been removed from the transform and ILM resources.
 
+#### **`elasticstack_kibana_dashboard` (experimental)**
+
+This resource remains **experimental**. If you compile it into the provider (`TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL=true`, or downstream packaging that exposes experimental resources), your dashboard HCL may need updating on upgrade:
+
+- For `panel.type = "vis"`, the typed Lens chart blocks (`xy_chart_config`, `metric_chart_config`, etc.) moved from sibling attributes on the panel into `viz_config.by_value`; set exactly one chart block inside that nested object.
+- `lens_dashboard_app_config.by_reference.drilldowns_json` is removed from the schema; use structured `drilldowns` (`dashboard`, `discover`, and `url` blocks) instead.
+- Structured URL drilldowns require `trigger` (`on_click_row`, `on_click_value`, `on_open_panel_menu`, or `on_select_range`); the Kibana dashboard API rejects URL drilldowns without `trigger`, and the provider now enforces this at plan time.
+
 
 #### `elasticstack_kibana_security_detection_rule` action `params` format change
 
@@ -44,6 +52,10 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   ]
 }
 ```
+
+### Added
+
+- **Experimental:** `elasticstack_kibana_dashboard` now exposes `viz_config.by_reference` for `vis` panels (saved Lens by reference): `ref_id`, optional `references_json`, optional structured `drilldowns`, required `time_range`, and the same presentation fields as `lens_dashboard_app_config.by_reference`, symmetric with `lens_dashboard_app_config`.
 
 ### Changes
 

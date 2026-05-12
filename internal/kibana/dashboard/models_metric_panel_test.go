@@ -49,12 +49,12 @@ func Test_metricChartPanelConfigConverter_populateFromAttributes_buildAttributes
 	require.NoError(t, attrs.FromMetricNoESQL(apiChart))
 
 	converter := newMetricChartPanelConfigConverter()
-	pm := &panelModel{}
-	diags := converter.populateFromAttributes(ctx, nil, pm, attrs)
+	vizBv := vizByValueModel{}
+	diags := converter.populateFromAttributes(ctx, nil, nil, &vizBv.lensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
-	require.NotNil(t, pm.MetricChartConfig)
+	require.NotNil(t, vizBv.MetricChartConfig)
 
-	attrs2, diags := converter.buildAttributes(*pm, nil)
+	attrs2, diags := converter.buildAttributes(&vizBv.lensByValueChartBlocks, nil)
 	require.False(t, diags.HasError())
 
 	variant0, err := attrs2.AsMetricNoESQL()

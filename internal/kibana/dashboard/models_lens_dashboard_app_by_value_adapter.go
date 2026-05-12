@@ -46,50 +46,130 @@ func lensByValueModelHasAnyTypedChartBlock(m *lensDashboardAppByValueModel) bool
 		m.LegacyMetricConfig != nil
 }
 
-// lensByValueToScratchVisPanel copies the non-nil typed chart from by_value onto a
-// scratch top-level `panelModel` so existing vis `lensVisualizationConverter` code can run.
-func lensByValueToScratchVisPanel(byValue lensDashboardAppByValueModel) (panelModel, bool) {
-	var pm panelModel
-	switch {
-	case byValue.XYChartConfig != nil:
-		pm.XYChartConfig = byValue.XYChartConfig
-	case byValue.TreemapConfig != nil:
-		pm.TreemapConfig = byValue.TreemapConfig
-	case byValue.MosaicConfig != nil:
-		pm.MosaicConfig = byValue.MosaicConfig
-	case byValue.DatatableConfig != nil:
-		pm.DatatableConfig = byValue.DatatableConfig
-	case byValue.TagcloudConfig != nil:
-		pm.TagcloudConfig = byValue.TagcloudConfig
-	case byValue.HeatmapConfig != nil:
-		pm.HeatmapConfig = byValue.HeatmapConfig
-	case byValue.WaffleConfig != nil:
-		pm.WaffleConfig = byValue.WaffleConfig
-	case byValue.RegionMapConfig != nil:
-		pm.RegionMapConfig = byValue.RegionMapConfig
-	case byValue.GaugeConfig != nil:
-		pm.GaugeConfig = byValue.GaugeConfig
-	case byValue.MetricChartConfig != nil:
-		pm.MetricChartConfig = byValue.MetricChartConfig.expandToVisMetricChart()
-	case byValue.PieChartConfig != nil:
-		pm.PieChartConfig = byValue.PieChartConfig
-	case byValue.LegacyMetricConfig != nil:
-		pm.LegacyMetricConfig = byValue.LegacyMetricConfig
-	default:
-		return panelModel{}, false
+// lensByValueChartBlocksForTypedLensApp materializes shared `lensByValueChartBlocks` from
+// `lens_dashboard_app_config.by_value` fields so vis converters can run (metric expands for the duration).
+func lensByValueChartBlocksForTypedLensApp(byValue lensDashboardAppByValueModel) (*lensByValueChartBlocks, bool) {
+	if !lensByValueModelHasAnyTypedChartBlock(&byValue) {
+		return nil, false
 	}
-	return pm, true
+	var blocks lensByValueChartBlocks
+	set := 0
+	if byValue.XYChartConfig != nil {
+		set++
+		blocks.XYChartConfig = byValue.XYChartConfig
+	}
+	if byValue.TreemapConfig != nil {
+		set++
+		blocks.TreemapConfig = byValue.TreemapConfig
+	}
+	if byValue.MosaicConfig != nil {
+		set++
+		blocks.MosaicConfig = byValue.MosaicConfig
+	}
+	if byValue.DatatableConfig != nil {
+		set++
+		blocks.DatatableConfig = byValue.DatatableConfig
+	}
+	if byValue.TagcloudConfig != nil {
+		set++
+		blocks.TagcloudConfig = byValue.TagcloudConfig
+	}
+	if byValue.HeatmapConfig != nil {
+		set++
+		blocks.HeatmapConfig = byValue.HeatmapConfig
+	}
+	if byValue.WaffleConfig != nil {
+		set++
+		blocks.WaffleConfig = byValue.WaffleConfig
+	}
+	if byValue.RegionMapConfig != nil {
+		set++
+		blocks.RegionMapConfig = byValue.RegionMapConfig
+	}
+	if byValue.GaugeConfig != nil {
+		set++
+		blocks.GaugeConfig = byValue.GaugeConfig
+	}
+	if byValue.MetricChartConfig != nil {
+		set++
+		blocks.MetricChartConfig = byValue.MetricChartConfig.expandToVisMetricChart()
+	}
+	if byValue.PieChartConfig != nil {
+		set++
+		blocks.PieChartConfig = byValue.PieChartConfig
+	}
+	if byValue.LegacyMetricConfig != nil {
+		set++
+		blocks.LegacyMetricConfig = byValue.LegacyMetricConfig
+	}
+	if set != 1 {
+		return nil, false
+	}
+	return &blocks, true
 }
 
-// firstLensVizConverterForPanel returns the first converter whose handlesTFConfig
-// matches a scratch `panelModel` (same rule as `panelModel.toAPI` for vis).
-func firstLensVizConverterForPanel(pm panelModel) (lensVisualizationConverter, bool) {
-	for _, c := range lensVizConverters {
-		if c.handlesTFConfig(pm) {
-			return c, true
-		}
+// lensByValueModelFromChartBlocksAfterRead maps chart blocks populated by a vis converter into
+// lens_dashboard_app_config.by_value (typed block only; config_json left unset).
+func lensByValueModelFromChartBlocksAfterRead(blocks *lensByValueChartBlocks) (lensDashboardAppByValueModel, bool) {
+	if blocks == nil {
+		return lensDashboardAppByValueModel{}, false
 	}
-	return nil, false
+	out := lensDashboardAppByValueModel{
+		ConfigJSON: jsontypes.NewNormalizedNull(),
+	}
+	set := 0
+	if blocks.XYChartConfig != nil {
+		set++
+		out.XYChartConfig = blocks.XYChartConfig
+	}
+	if blocks.TreemapConfig != nil {
+		set++
+		out.TreemapConfig = blocks.TreemapConfig
+	}
+	if blocks.MosaicConfig != nil {
+		set++
+		out.MosaicConfig = blocks.MosaicConfig
+	}
+	if blocks.DatatableConfig != nil {
+		set++
+		out.DatatableConfig = blocks.DatatableConfig
+	}
+	if blocks.TagcloudConfig != nil {
+		set++
+		out.TagcloudConfig = blocks.TagcloudConfig
+	}
+	if blocks.HeatmapConfig != nil {
+		set++
+		out.HeatmapConfig = blocks.HeatmapConfig
+	}
+	if blocks.WaffleConfig != nil {
+		set++
+		out.WaffleConfig = blocks.WaffleConfig
+	}
+	if blocks.RegionMapConfig != nil {
+		set++
+		out.RegionMapConfig = blocks.RegionMapConfig
+	}
+	if blocks.GaugeConfig != nil {
+		set++
+		out.GaugeConfig = blocks.GaugeConfig
+	}
+	if blocks.MetricChartConfig != nil {
+		set++
+		out.MetricChartConfig = metricLensByValueFromVisFull(blocks.MetricChartConfig)
+	}
+	if blocks.PieChartConfig != nil {
+		set++
+		out.PieChartConfig = blocks.PieChartConfig
+	}
+	if blocks.LegacyMetricConfig != nil {
+		set++
+		out.LegacyMetricConfig = blocks.LegacyMetricConfig
+	}
+	if set != 1 {
+		return lensDashboardAppByValueModel{}, false
+	}
+	return out, true
 }
 
 // visConfig0ToLensAppConfig0 bridges KbnDashboardPanelTypeVisConfig0 to
@@ -121,71 +201,6 @@ func lensByValueConfigFromVisConfig0(vis kbapi.KbnDashboardPanelTypeVisConfig0) 
 	return out, nil
 }
 
-// lensByValueModelFromVizPanelAfterRead maps a `panelModel` that has been populated
-// by the vis converter back into `lensDashboardAppByValueModel` (typed block only;
-// `config_json` is left unset for optional JSON).
-func lensByValueModelFromVizPanelAfterRead(pm *panelModel) (lensDashboardAppByValueModel, bool) {
-	if pm == nil {
-		return lensDashboardAppByValueModel{}, false
-	}
-	out := lensDashboardAppByValueModel{
-		ConfigJSON: jsontypes.NewNormalizedNull(),
-	}
-	set := 0
-	if pm.XYChartConfig != nil {
-		set++
-		out.XYChartConfig = pm.XYChartConfig
-	}
-	if pm.TreemapConfig != nil {
-		set++
-		out.TreemapConfig = pm.TreemapConfig
-	}
-	if pm.MosaicConfig != nil {
-		set++
-		out.MosaicConfig = pm.MosaicConfig
-	}
-	if pm.DatatableConfig != nil {
-		set++
-		out.DatatableConfig = pm.DatatableConfig
-	}
-	if pm.TagcloudConfig != nil {
-		set++
-		out.TagcloudConfig = pm.TagcloudConfig
-	}
-	if pm.HeatmapConfig != nil {
-		set++
-		out.HeatmapConfig = pm.HeatmapConfig
-	}
-	if pm.WaffleConfig != nil {
-		set++
-		out.WaffleConfig = pm.WaffleConfig
-	}
-	if pm.RegionMapConfig != nil {
-		set++
-		out.RegionMapConfig = pm.RegionMapConfig
-	}
-	if pm.GaugeConfig != nil {
-		set++
-		out.GaugeConfig = pm.GaugeConfig
-	}
-	if pm.MetricChartConfig != nil {
-		set++
-		out.MetricChartConfig = metricLensByValueFromVisFull(pm.MetricChartConfig)
-	}
-	if pm.PieChartConfig != nil {
-		set++
-		out.PieChartConfig = pm.PieChartConfig
-	}
-	if pm.LegacyMetricConfig != nil {
-		set++
-		out.LegacyMetricConfig = pm.LegacyMetricConfig
-	}
-	if set != 1 {
-		return lensDashboardAppByValueModel{}, false
-	}
-	return out, true
-}
-
 // tryPopulateTypedLensByValueFromAPI fills `pm.LensDashboardAppConfig` from API
 // config bytes when prior state used a matching typed by-value chart. Returns true
 // if state was set; otherwise the caller should fall back to by_value.config_json.
@@ -200,11 +215,11 @@ func tryPopulateTypedLensByValueFromAPI(
 	if prior == nil || prior.ByValue == nil {
 		return false
 	}
-	scratchPM, hasTyped := lensByValueToScratchVisPanel(*prior.ByValue)
+	priorBlocks, hasTyped := lensByValueChartBlocksForTypedLensApp(*prior.ByValue)
 	if !hasTyped {
 		return false
 	}
-	conv, ok := firstLensVizConverterForPanel(scratchPM)
+	conv, ok := firstLensVizConverterForChartBlocks(priorBlocks)
 	if !ok {
 		return false
 	}
@@ -215,7 +230,17 @@ func tryPopulateTypedLensByValueFromAPI(
 	if conv.vizType() != detectLensVizType(vis0) {
 		return false
 	}
-	d := conv.populateFromAttributes(ctx, dashboard, &scratchPM, vis0)
+	var scratch lensByValueChartBlocks
+	var priorPanel *panelModel
+	if prior != nil && prior.ByValue != nil {
+		v := *prior.ByValue
+		priorPanel = &panelModel{
+			LensDashboardAppConfig: &lensDashboardAppConfigModel{
+				ByValue: &v,
+			},
+		}
+	}
+	d := conv.populateFromAttributes(ctx, dashboard, priorPanel, &scratch, vis0)
 	if d.HasError() {
 		// Intentional: no error diagnostic here; caller falls back to by_value.config_json
 		// (REQ-035) without treating typed read as a user failure.
@@ -224,7 +249,7 @@ func tryPopulateTypedLensByValueFromAPI(
 	if diags != nil {
 		diags.Append(d...)
 	}
-	by, ok2 := lensByValueModelFromVizPanelAfterRead(&scratchPM)
+	by, ok2 := lensByValueModelFromChartBlocksAfterRead(&scratch)
 	if !ok2 {
 		return false
 	}
@@ -232,4 +257,28 @@ func tryPopulateTypedLensByValueFromAPI(
 		ByValue: &by,
 	}
 	return true
+}
+
+// lensByValueToScratchVisPanel maps a typed lens_dashboard_app.by_value chart to a synthetic vis
+// panel Model that shares lensByValueChartBlocks (tests and parity checks only).
+func lensByValueToScratchVisPanel(by lensDashboardAppByValueModel) (panelModel, bool) {
+	blocks, ok := lensByValueChartBlocksForTypedLensApp(by)
+	if !ok {
+		return panelModel{}, false
+	}
+	return panelModel{
+		VizConfig: &vizConfigModel{
+			ByValue: &vizByValueModel{lensByValueChartBlocks: *blocks},
+		},
+	}, true
+}
+
+// firstLensVizConverterForPanel resolves the Lens converter for whichever typed chart sits under
+// viz_config.by_value or lens_dashboard_app_config.by_value on the panel.
+func firstLensVizConverterForPanel(pm panelModel) (lensVisualizationConverter, bool) {
+	blocks := lensByValueChartBlocksFromPanel(&pm)
+	if blocks == nil {
+		return nil, false
+	}
+	return firstLensVizConverterForChartBlocks(blocks)
 }

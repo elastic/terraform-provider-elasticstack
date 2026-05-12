@@ -25,50 +25,54 @@ resource "elasticstack_kibana_dashboard" "test" {
       w = 24
       h = 15
     }
-    waffle_config = {
-      title       = "Complete Waffle"
-      description = "Complete waffle visualization"
-      data_source_json = jsonencode({
-        type          = "data_view_spec"
-        index_pattern = "metrics-*"
+    viz_config = {
+      by_value = {
+        waffle_config = {
+          title       = "Complete Waffle"
+          description = "Complete waffle visualization"
+          data_source_json = jsonencode({
+            type          = "data_view_spec"
+            index_pattern = "metrics-*"
 
-        time_field = "@timestamp"
-      })
-      query = {
-        language   = "kql"
-        expression = ""
-      }
-      filters = [
-        {
-          filter_json = jsonencode({
-            type = "condition"
-            condition = {
-              field    = "host.os.keyword"
-              operator = "is"
-              value    = "linux"
+            time_field = "@timestamp"
+          })
+          query = {
+            language   = "kql"
+            expression = ""
+          }
+          filters = [
+            {
+              filter_json = jsonencode({
+                type = "condition"
+                condition = {
+                  field    = "host.os.keyword"
+                  operator = "is"
+                  value    = "linux"
+                }
+              })
             }
-          })
+          ]
+          legend = {
+            size                 = "s"
+            visible              = "visible"
+            truncate_after_lines = 8
+            values               = ["absolute"]
+          }
+          value_display = {
+            mode             = "percentage"
+            percent_decimals = 1
+          }
+          metrics = [
+            {
+              config = jsonencode({
+                operation = "count"
+              })
+            }
+          ]
+          ignore_global_filters = true
+          sampling              = 0.5
         }
-      ]
-      legend = {
-        size                 = "s"
-        visible              = "visible"
-        truncate_after_lines = 8
-        values               = ["absolute"]
       }
-      value_display = {
-        mode             = "percentage"
-        percent_decimals = 1
-      }
-      metrics = [
-        {
-          config = jsonencode({
-            operation = "count"
-          })
-        }
-      ]
-      ignore_global_filters = true
-      sampling              = 0.5
     }
   }]
 }

@@ -26,34 +26,38 @@ resource "elasticstack_kibana_dashboard" "test" {
       h = 15
     }
 
-    waffle_config = {
-      title       = "ESQL Waffle"
-      description = "Waffle visualization using ES|QL"
+    viz_config = {
+      by_value = {
+        waffle_config = {
+          title       = "ESQL Waffle"
+          description = "Waffle visualization using ES|QL"
 
-      data_source_json = jsonencode({
-        type = "esql"
-        # Single-bucket STATS avoids group-by coloring rules in Lens ("Coloring cannot be
-        # assigned to a collapsed grouping dimension" with BY + collapse).
-        query = "FROM metrics-* | STATS c = COUNT() | LIMIT 10"
-      })
+          data_source_json = jsonencode({
+            type = "esql"
+            # Single-bucket STATS avoids group-by coloring rules in Lens ("Coloring cannot be
+            # assigned to a collapsed grouping dimension" with BY + collapse).
+            query = "FROM metrics-* | STATS c = COUNT() | LIMIT 10"
+          })
 
-      # Omit `query` for ES|QL mode (see provider docs).
+          # Omit `query` for ES|QL mode (see provider docs).
 
-      legend = {
-        size = "m"
-      }
+          legend = {
+            size = "m"
+          }
 
-      esql_metrics = [{
-        column      = "c"
-        format_json = jsonencode({ type = "number" })
-        color = {
-          type  = "static"
-          color = "#006BB4"
+          esql_metrics = [{
+            column      = "c"
+            format_json = jsonencode({ type = "number" })
+            color = {
+              type  = "static"
+              color = "#006BB4"
+            }
+          }]
+
+          ignore_global_filters = false
+          sampling              = 1
         }
-      }]
-
-      ignore_global_filters = false
-      sampling              = 1
+      }
     }
   }]
 }

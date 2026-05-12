@@ -33,7 +33,9 @@ func newPieChartPanelConfigConverter() pieChartPanelConfigConverter {
 	return pieChartPanelConfigConverter{
 		lensVisualizationBase: lensVisualizationBase{
 			visualizationType: string(kbapi.PieNoESQLTypePie),
-			hasTFPanelConfig:  func(pm panelModel) bool { return pm.PieChartConfig != nil },
+			hasTFChartBlock: func(blocks *lensByValueChartBlocks) bool {
+				return blocks != nil && blocks.PieChartConfig != nil
+			},
 		},
 	}
 }
@@ -42,30 +44,36 @@ type pieChartPanelConfigConverter struct {
 	lensVisualizationBase
 }
 
-func (c pieChartPanelConfigConverter) populateFromAttributes(ctx context.Context, dashboard *dashboardModel, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
+func (c pieChartPanelConfigConverter) populateFromAttributes(
+	ctx context.Context,
+	dashboard *dashboardModel,
+	tfPanel *panelModel,
+	blocks *lensByValueChartBlocks,
+	attrs kbapi.KbnDashboardPanelTypeVisConfig0,
+) diag.Diagnostics {
 	// Populate the model.
 	//
 	// Disambiguate NoESQL vs ESQL using dataset type; regenerated clients can
 	// decode an empty no-ESQL query for ESQL payloads.
 	var prior *pieChartConfigModel
-	if pm.PieChartConfig != nil {
-		cpy := *pm.PieChartConfig
+	if b := lensByValueChartBlocksFromPanel(tfPanel); b != nil && b.PieChartConfig != nil {
+		cpy := *b.PieChartConfig
 		prior = &cpy
 	}
-	pm.PieChartConfig = &pieChartConfigModel{}
+	blocks.PieChartConfig = &pieChartConfigModel{}
 	if noESQL, err := attrs.AsPieNoESQL(); err == nil && !isPieNoESQLCandidateActuallyESQL(noESQL) {
-		return pm.PieChartConfig.fromAPINoESQL(ctx, dashboard, prior, noESQL)
+		return blocks.PieChartConfig.fromAPINoESQL(ctx, dashboard, prior, noESQL)
 	}
 	esql, err := attrs.AsPieESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	return pm.PieChartConfig.fromAPIESQL(ctx, dashboard, prior, esql)
+	return blocks.PieChartConfig.fromAPIESQL(ctx, dashboard, prior, esql)
 }
 
-func (c pieChartPanelConfigConverter) buildAttributes(pm panelModel, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func (c pieChartPanelConfigConverter) buildAttributes(blocks *lensByValueChartBlocks, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	configModel := *pm.PieChartConfig
+	configModel := *blocks.PieChartConfig
 
 	// Convert the structured model to API schema
 	attrs, pieDiags := configModel.toAPI(dashboard)

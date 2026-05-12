@@ -34,7 +34,9 @@ func newGaugePanelConfigConverter() gaugePanelConfigConverter {
 	return gaugePanelConfigConverter{
 		lensVisualizationBase: lensVisualizationBase{
 			visualizationType: string(kbapi.GaugeNoESQLTypeGauge),
-			hasTFPanelConfig:  func(pm panelModel) bool { return pm.GaugeConfig != nil },
+			hasTFChartBlock: func(blocks *lensByValueChartBlocks) bool {
+				return blocks != nil && blocks.GaugeConfig != nil
+			},
 		},
 	}
 }
@@ -43,24 +45,30 @@ type gaugePanelConfigConverter struct {
 	lensVisualizationBase
 }
 
-func (c gaugePanelConfigConverter) populateFromAttributes(ctx context.Context, dashboard *dashboardModel, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
+func (c gaugePanelConfigConverter) populateFromAttributes(
+	ctx context.Context,
+	dashboard *dashboardModel,
+	tfPanel *panelModel,
+	blocks *lensByValueChartBlocks,
+	attrs kbapi.KbnDashboardPanelTypeVisConfig0,
+) diag.Diagnostics {
 	gaugeNoESQL, err := attrs.AsGaugeNoESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
 	var prior *gaugeConfigModel
-	if pm.GaugeConfig != nil {
-		cpy := *pm.GaugeConfig
+	if b := lensByValueChartBlocksFromPanel(tfPanel); b != nil && b.GaugeConfig != nil {
+		cpy := *b.GaugeConfig
 		prior = &cpy
 	}
-	pm.GaugeConfig = &gaugeConfigModel{}
-	return pm.GaugeConfig.fromAPI(ctx, dashboard, prior, gaugeNoESQL)
+	blocks.GaugeConfig = &gaugeConfigModel{}
+	return blocks.GaugeConfig.fromAPI(ctx, dashboard, prior, gaugeNoESQL)
 }
 
-func (c gaugePanelConfigConverter) buildAttributes(pm panelModel, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func (c gaugePanelConfigConverter) buildAttributes(blocks *lensByValueChartBlocks, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	configModel := *pm.GaugeConfig
+	configModel := *blocks.GaugeConfig
 
 	gaugeNoESQL, gaugeDiags := configModel.toAPI(dashboard)
 	diags.Append(gaugeDiags...)

@@ -47,12 +47,12 @@ func Test_tagcloudPanelConfigConverter_populateFromAttributes_buildAttributes_ro
 	require.NoError(t, attrs.FromTagcloudNoESQL(api))
 
 	converter := newTagcloudPanelConfigConverter()
-	pm := &panelModel{}
-	diags := converter.populateFromAttributes(ctx, nil, pm, attrs)
+	vizBv := vizByValueModel{}
+	diags := converter.populateFromAttributes(ctx, nil, nil, &vizBv.lensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
-	require.NotNil(t, pm.TagcloudConfig)
+	require.NotNil(t, vizBv.TagcloudConfig)
 
-	attrs2, diags := converter.buildAttributes(*pm, nil)
+	attrs2, diags := converter.buildAttributes(&vizBv.lensByValueChartBlocks, nil)
 	require.False(t, diags.HasError())
 
 	tagcloudNoESQL2, err := attrs2.AsTagcloudNoESQL()
