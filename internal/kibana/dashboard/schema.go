@@ -91,6 +91,7 @@ var panelConfigNames = []string{
 	"synthetics_stats_overview_config",
 	"synthetics_monitors_config",
 	"lens_dashboard_app_config",
+	"viz_config",
 }
 
 func siblingPanelConfigPathsExcept(name string, names []string) []path.Expression {
@@ -1233,6 +1234,25 @@ func getPanelSchema() schema.NestedAttributeObject {
 					lensDashboardAppConfigModeValidator{},
 				},
 			},
+			"viz_config": schema.SingleNestedAttribute{
+				MarkdownDescription: panelConfigDescription(
+					"Configuration for a `vis` panel (`type = \"vis\"`). "+
+						"Optional typed alternative to authoring vis config only via panel-level chart blocks or `config_json`. "+
+						"Set exactly one of `by_value` (exactly one of 12 Lens chart kinds) or `by_reference`. "+
+						"With `by_reference`, use structured `drilldowns` and required `time_range` like `lens_dashboard_app_config.by_reference`.",
+					"viz_config",
+					panelConfigNames,
+				),
+				Optional:   true,
+				Attributes: getVizConfigSchema(),
+				Validators: []validator.Object{
+					objectvalidator.ConflictsWith(
+						siblingPanelConfigPathsExcept("viz_config", panelConfigNames)...,
+					),
+					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeVis}),
+					vizConfigModeValidator{},
+				},
+			},
 			"config_json": schema.StringAttribute{
 				MarkdownDescription: panelConfigDescription(
 					"The configuration of the panel as a JSON string. "+
@@ -1259,6 +1279,99 @@ func getPanelSchema() schema.NestedAttributeObject {
 func lensByValueVisMirrorDescription(visBlockName string) string {
 	return "Typed Lens chart for a `lens-dashboard-app` by-value panel. The chart is sent as the Kibana `lens-dashboard-app` API `config` and does not create a `type = \"vis\"` panel. " +
 		"Reuses the same attribute shape as the `type = \"vis\"` panel block `" + visBlockName + "`."
+}
+
+// vizConfigByValueBlockDescription documents a typed `viz_config.by_value` chart block (mirrors the panel-level vis chart attribute of the same name).
+func vizConfigByValueBlockDescription(visSiblingName string) string {
+	return "Typed Lens visualization inside `viz_config.by_value`. " +
+		"Mutually exclusive with the other chart blocks in the same `by_value` block. " +
+		"Reuses the same attribute shape as panel-level `" + visSiblingName + "` for `type = \"vis\"` panels."
+}
+
+// vizByValueSourceAttrNames lists mutually exclusive typed chart kinds under `viz_config.by_value`.
+// Keep in sync with getVizByValueAttributes().
+var vizByValueSourceAttrNames = []string{
+	"xy_chart_config",
+	"metric_chart_config",
+	"legacy_metric_config",
+	"gauge_config",
+	"heatmap_config",
+	"tagcloud_config",
+	"region_map_config",
+	"datatable_config",
+	"pie_chart_config",
+	"mosaic_config",
+	"treemap_config",
+	"waffle_config",
+}
+
+// getVizByValueAttributes returns typed chart attributes for `viz_config.by_value` (inline `vis` config).
+func getVizByValueAttributes() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"xy_chart_config": schema.SingleNestedAttribute{
+			MarkdownDescription: vizConfigByValueBlockDescription("xy_chart_config"),
+			Optional:            true,
+			Attributes:          getXYChartConfigAttributes(),
+		},
+		"metric_chart_config": schema.SingleNestedAttribute{
+			MarkdownDescription: vizConfigByValueBlockDescription("metric_chart_config"),
+			Optional:            true,
+			Attributes:          getMetricChart(),
+		},
+		"legacy_metric_config": schema.SingleNestedAttribute{
+			MarkdownDescription: vizConfigByValueBlockDescription("legacy_metric_config"),
+			Optional:            true,
+			Attributes:          getLegacyMetricSchema(),
+		},
+		"gauge_config": schema.SingleNestedAttribute{
+			MarkdownDescription: vizConfigByValueBlockDescription("gauge_config"),
+			Optional:            true,
+			Attributes:          getGaugeSchema(),
+		},
+		"heatmap_config": schema.SingleNestedAttribute{
+			MarkdownDescription: vizConfigByValueBlockDescription("heatmap_config"),
+			Optional:            true,
+			Attributes:          getHeatmapSchema(),
+		},
+		"tagcloud_config": schema.SingleNestedAttribute{
+			MarkdownDescription: vizConfigByValueBlockDescription("tagcloud_config"),
+			Optional:            true,
+			Attributes:          getTagcloudSchema(),
+		},
+		"region_map_config": schema.SingleNestedAttribute{
+			MarkdownDescription: vizConfigByValueBlockDescription("region_map_config"),
+			Optional:            true,
+			Attributes:          getRegionMapSchema(),
+		},
+		"datatable_config": schema.SingleNestedAttribute{
+			MarkdownDescription: vizConfigByValueBlockDescription("datatable_config"),
+			Optional:            true,
+			Attributes:          getDatatableSchema(),
+		},
+		"pie_chart_config": schema.SingleNestedAttribute{
+			MarkdownDescription: vizConfigByValueBlockDescription("pie_chart_config"),
+			Optional:            true,
+			Attributes:          getPieChart(),
+		},
+		"mosaic_config": schema.SingleNestedAttribute{
+			MarkdownDescription: vizConfigByValueBlockDescription("mosaic_config"),
+			Optional:            true,
+			Attributes:          getMosaicSchema(),
+		},
+		"treemap_config": schema.SingleNestedAttribute{
+			MarkdownDescription: vizConfigByValueBlockDescription("treemap_config"),
+			Optional:            true,
+			Attributes:          getTreemapSchema(),
+		},
+		"waffle_config": schema.SingleNestedAttribute{
+			MarkdownDescription: vizConfigByValueBlockDescription("waffle_config"),
+			Optional:            true,
+			Attributes:          getWaffleSchema(),
+			Validators: []validator.Object{
+				waffleConfigModeValidator{},
+			},
+		},
+	}
 }
 
 // lensDashboardAppByValueSourceAttrNames lists mutually exclusive by-value content attributes.
@@ -1355,7 +1468,8 @@ func getLensDashboardAppByValueNestedAttributes() map[string]schema.Attribute {
 	}
 }
 
-// getLensByReferenceAttributes returns Lens by-reference attribute map for `lens_dashboard_app_config.by_reference`.
+// getLensByReferenceAttributes returns the by-reference attribute map shared by `lens_dashboard_app_config.by_reference`
+// and `viz_config.by_reference`.
 // Structured `drilldowns` is required for new authoring; `drilldowns_json` is retained only so custom validators emit a
 // deliberate migration diagnostic (REQ-035 / delta spec scenario) alongside Terraform's deprecation warning.
 func getLensByReferenceAttributes() map[string]schema.Attribute {
@@ -1439,6 +1553,27 @@ func getLensDashboardAppConfigSchema() map[string]schema.Attribute {
 		"by_reference": schema.SingleNestedAttribute{
 			MarkdownDescription: "By-reference `lens-dashboard-app` configuration: link a saved Lens visualization via `ref_id`, optional `references_json`, " +
 				"optional structured `drilldowns`, and required `time_range`.",
+			Optional:   true,
+			Attributes: getLensByReferenceAttributes(),
+		},
+	}
+}
+
+// getVizConfigSchema returns attributes for `viz_config` on `vis` panels (symmetric with `getLensDashboardAppConfigSchema`, minus `by_value.config_json`).
+func getVizConfigSchema() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"by_value": schema.SingleNestedAttribute{
+			MarkdownDescription: "Inline by-value Lens visualization configuration for `type = \"vis\"` panels (`viz_config`). " +
+				"Exactly one typed chart kind must be set (no raw JSON here — use panel-level `config_json` for that).",
+			Optional:   true,
+			Attributes: getVizByValueAttributes(),
+			Validators: []validator.Object{
+				vizByValueSourceValidator{},
+			},
+		},
+		"by_reference": schema.SingleNestedAttribute{
+			MarkdownDescription: "By-reference `vis` configuration: structured `drilldowns`, `ref_id`, optional `references_json`, and required `time_range`. " +
+				"Shares the attribute shape with `lens_dashboard_app_config.by_reference` via `getLensByReferenceAttributes()`.",
 			Optional:   true,
 			Attributes: getLensByReferenceAttributes(),
 		},
@@ -1537,6 +1672,102 @@ func (lensDashboardAppByValueSourceValidator) ValidateObject(_ context.Context, 
 			req.Path,
 			"Invalid lens_dashboard_app_config.by_value",
 			"Set exactly one of `config_json` or one supported typed Lens chart block inside `by_value` (more than one by-value source is set).",
+		)
+	}
+}
+
+// vizConfigModeValidator enforces that exactly one of by_value or by_reference is set under `viz_config`.
+var _ validator.Object = vizConfigModeValidator{}
+
+type vizConfigModeValidator struct{}
+
+func (vizConfigModeValidator) Description(_ context.Context) string {
+	return "Ensures exactly one of `by_value` or `by_reference` is set inside `viz_config`."
+}
+
+func (v vizConfigModeValidator) MarkdownDescription(ctx context.Context) string {
+	return v.Description(ctx)
+}
+
+func (vizConfigModeValidator) ValidateObject(_ context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
+	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+		return
+	}
+	attrs := req.ConfigValue.Attributes()
+	byValue := attrs["by_value"]
+	byRef := attrs["by_reference"]
+	valueSet := func(av attr.Value) bool {
+		return av != nil && !av.IsNull() && !av.IsUnknown()
+	}
+	byValueSet := valueSet(byValue)
+	byRefSet := valueSet(byRef)
+	if byValueSet && byRefSet {
+		resp.Diagnostics.AddAttributeError(req.Path, "Invalid viz_config", "Exactly one of `by_value` or `by_reference` must be set inside `viz_config`, not both.")
+		return
+	}
+	if !byValueSet && !byRefSet {
+		byValueUnknown := byValue != nil && byValue.IsUnknown()
+		byRefUnknown := byRef != nil && byRef.IsUnknown()
+		if byValueUnknown || byRefUnknown {
+			return
+		}
+		resp.Diagnostics.AddAttributeError(req.Path, "Invalid viz_config", "Exactly one of `by_value` or `by_reference` must be set inside `viz_config`.")
+	}
+}
+
+// vizByValueSourceValidator enforces exactly one typed chart kind inside `viz_config.by_value`.
+var _ validator.Object = vizByValueSourceValidator{}
+
+type vizByValueSourceValidator struct{}
+
+func (vizByValueSourceValidator) Description(_ context.Context) string {
+	return "Ensures exactly one supported typed Lens chart block is set inside `viz_config.by_value`."
+}
+
+func (v vizByValueSourceValidator) MarkdownDescription(ctx context.Context) string {
+	return v.Description(ctx)
+}
+
+func (vizByValueSourceValidator) ValidateObject(_ context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
+	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+		return
+	}
+	attrs := req.ConfigValue.Attributes()
+	var count int
+	var hasUnknown bool
+	for _, name := range vizByValueSourceAttrNames {
+		av, ok := attrs[name]
+		if !ok {
+			continue
+		}
+		if av == nil {
+			continue
+		}
+		if av.IsUnknown() {
+			hasUnknown = true
+			continue
+		}
+		if av.IsNull() {
+			continue
+		}
+		count++
+	}
+	if hasUnknown {
+		return
+	}
+	if count == 0 {
+		resp.Diagnostics.AddAttributeError(
+			req.Path,
+			"Invalid viz_config.by_value",
+			"Set exactly one supported typed Lens chart block inside `viz_config.by_value`.",
+		)
+		return
+	}
+	if count > 1 {
+		resp.Diagnostics.AddAttributeError(
+			req.Path,
+			"Invalid viz_config.by_value",
+			"Set exactly one typed chart block inside `viz_config.by_value` (more than one by-value chart is set).",
 		)
 	}
 }
