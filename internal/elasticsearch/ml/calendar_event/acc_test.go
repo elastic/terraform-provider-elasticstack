@@ -98,23 +98,10 @@ func TestAccResourceMLCalendarEvent_validation_endBeforeStart(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				Config: fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_ml_calendar" "holder" {
-  calendar_id = %q
-  description = "holder for event validation"
-}
-
-resource "elasticstack_elasticsearch_ml_calendar_event" "bad" {
-  calendar_id = elasticstack_elasticsearch_ml_calendar.holder.calendar_id
-  description = "bad window"
-  start_time  = "2026-06-02T06:00:00Z"
-  end_time    = "2026-06-02T00:00:00Z"
-}
-`, calendarID),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("plan"),
+				ConfigVariables: config.Variables{
+					"holder_calendar_id": config.StringVariable(calendarID),
+				},
 				PlanOnly:    true,
 				ExpectError: regexp.MustCompile(`(?i)(Invalid event time range|end_time must be after)`),
 			},
@@ -130,24 +117,10 @@ func TestAccResourceMLCalendarEvent_validation_invalidCalendarIDRegex(t *testing
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				Config: fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_ml_calendar" "holder" {
-  calendar_id = %q
-  description = "holder"
-}
-
-resource "elasticstack_elasticsearch_ml_calendar_event" "bad" {
-  calendar_id = "INVALID_EVENT_CAL"
-  description = "x"
-  start_time  = "2026-06-01T00:00:00Z"
-  end_time    = "2026-06-01T01:00:00Z"
-  depends_on  = [elasticstack_elasticsearch_ml_calendar.holder]
-}
-`, calendarID),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("plan"),
+				ConfigVariables: config.Variables{
+					"holder_calendar_id": config.StringVariable(calendarID),
+				},
 				PlanOnly:    true,
 				ExpectError: regexp.MustCompile(`(?i)(calendar_id|invalid|match|lowercase|alphanumeric)`),
 			},
@@ -157,36 +130,25 @@ resource "elasticstack_elasticsearch_ml_calendar_event" "bad" {
 
 func TestAccResourceMLCalendarEvent_importWrongIDFormat(t *testing.T) {
 	calendarID := fmt.Sprintf("test-cal-evt-badimp-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
-	cfg := fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_ml_calendar" "test" {
-  calendar_id = %q
-}
-
-resource "elasticstack_elasticsearch_ml_calendar_event" "test" {
-  calendar_id = elasticstack_elasticsearch_ml_calendar.test.calendar_id
-  description = "Import test event"
-  start_time  = "2026-07-01T00:00:00Z"
-  end_time    = "2026-07-01T12:00:00Z"
-}
-`, calendarID)
+	importVars := config.Variables{
+		"calendar_id": config.StringVariable(calendarID),
+	}
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				Config:                   cfg,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          importVars,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_ml_calendar_event.test", "id"),
 				),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				Config:                   cfg,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          importVars,
 				ResourceName:             "elasticstack_elasticsearch_ml_calendar_event.test",
 				ImportState:              true,
 				ImportStatePersist:       true,

@@ -135,18 +135,9 @@ func TestAccResourceMLCalendar_validation_invalidCalendarIDRegex(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				Config: `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_ml_calendar" "bad" {
-  calendar_id = "INVALID_UPPER"
-  description = "x"
-}
-`,
-				PlanOnly:    true,
-				ExpectError: regexp.MustCompile(`(?i)(calendar_id|invalid|match|lowercase|alphanumeric)`),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("plan"),
+				PlanOnly:                 true,
+				ExpectError:              regexp.MustCompile(`(?i)(calendar_id|invalid|match|lowercase|alphanumeric)`),
 			},
 		},
 	})
@@ -159,16 +150,10 @@ func TestAccResourceMLCalendar_validation_calendarIDTooLong(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				Config: fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_ml_calendar" "bad" {
-  calendar_id = %q
-  description = "x"
-}
-`, longID),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("plan"),
+				ConfigVariables: config.Variables{
+					"calendar_id": config.StringVariable(longID),
+				},
 				PlanOnly:    true,
 				ExpectError: regexp.MustCompile(`(?i)(calendar_id|64|length)`),
 			},
@@ -178,30 +163,25 @@ resource "elasticstack_elasticsearch_ml_calendar" "bad" {
 
 func TestAccResourceMLCalendar_importWrongIDFormat(t *testing.T) {
 	calendarID := fmt.Sprintf("test-cal-badimp-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
-	cfg := fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_ml_calendar" "test" {
-  calendar_id = %q
-  description   = "Calendar for import test"
-}
-`, calendarID)
+	importVars := config.Variables{
+		"calendar_id": config.StringVariable(calendarID),
+	}
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				Config:                   cfg,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          importVars,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_ml_calendar.test", "id"),
 				),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				Config:                   cfg,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          importVars,
 				ResourceName:             "elasticstack_elasticsearch_ml_calendar.test",
 				ImportState:              true,
 				// Default ImportStatePersist=false runs import in a temp working dir; the harness

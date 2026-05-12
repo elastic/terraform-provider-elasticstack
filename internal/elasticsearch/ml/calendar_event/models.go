@@ -148,8 +148,8 @@ func (m *CalendarEventTFModel) fromAPIModel(_ context.Context, apiModel *Calenda
 		endLoc = t.Location()
 	}
 
-	startTime := time.UnixMilli(int64(startMillis)).In(startLoc)
-	endTime := time.UnixMilli(int64(endMillis)).In(endLoc)
+	startTime := time.UnixMilli(startMillis).In(startLoc)
+	endTime := time.UnixMilli(endMillis).In(endLoc)
 
 	m.StartTime = timetypes.NewRFC3339TimeValue(startTime)
 	m.EndTime = timetypes.NewRFC3339TimeValue(endTime)
