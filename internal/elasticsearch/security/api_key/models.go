@@ -352,6 +352,11 @@ func (model *tfModel) populateFromAPI(apiKey *estypes.ApiKey, serverVersion *ver
 
 			model.RoleDescriptors = customtypes.NewJSONWithDefaultsValue(descriptors.ValueString(), populateRoleDescriptorsDefaults)
 		}
+	} else if !typeutils.IsKnown(model.RoleDescriptors) {
+		// The Get API Key endpoint does not return role_descriptors prior to 8.5.0.
+		// If the value is unknown (e.g. not specified in config during Create), set
+		// it to null so Terraform receives a known value after apply.
+		model.RoleDescriptors = customtypes.NewJSONWithDefaultsNull(populateRoleDescriptorsDefaults)
 	}
 
 	if apiKey.Metadata != nil {
