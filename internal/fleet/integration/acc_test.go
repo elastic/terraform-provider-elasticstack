@@ -117,8 +117,11 @@ func TestAccResourceIntegration(t *testing.T) {
 				ResourceName:             "elasticstack_fleet_integration.test_integration",
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ImportState:              true,
-				ImportStateVerify:        true,
-				ExpectError:              regexp.MustCompile("Resource Import Not Implemented"),
+				// Default ImportStatePersist=false runs import in a temp working dir while the harness
+				// replaces the main dir's config with provider stubs; post-test destroy then loses ES config.
+				ImportStatePersist: true,
+				ImportStateVerify:  true,
+				ExpectError:        regexp.MustCompile("Resource Import Not Implemented"),
 			},
 		},
 	})
@@ -200,9 +203,10 @@ func TestAccResourceIntegrationWithPolicy(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
 				},
-				ImportState:       true,
-				ImportStateVerify: true,
-				ExpectError:       regexp.MustCompile("Resource Import Not Implemented"),
+				ImportState:        true,
+				ImportStatePersist: true,
+				ImportStateVerify:  true,
+				ExpectError:        regexp.MustCompile("Resource Import Not Implemented"),
 			},
 		},
 	})
