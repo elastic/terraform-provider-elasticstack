@@ -49,11 +49,26 @@ func createSearchSavedObjectForDiscoverRef(t *testing.T, id string) error {
 		return fmt.Errorf("kibana oapi client: %w", err)
 	}
 
+	searchSource := map[string]any{
+		"query": map[string]any{
+			"language": "kuery",
+			"query":    "",
+		},
+		"filter": []any{},
+	}
+	searchSourceJSON, err := json.Marshal(searchSource)
+	if err != nil {
+		return fmt.Errorf("marshal searchSource for saved search: %w", err)
+	}
+
 	payload := map[string]any{
 		"attributes": map[string]any{
 			"title":   "tf-acc-discover-ref-" + id,
 			"columns": []string{"@timestamp", "message"},
 			"sort":    [][]string{{"@timestamp", "desc"}},
+			"kibanaSavedObjectMeta": map[string]any{
+				"searchSourceJSON": string(searchSourceJSON),
+			},
 		},
 	}
 	raw, err := json.Marshal(payload)
