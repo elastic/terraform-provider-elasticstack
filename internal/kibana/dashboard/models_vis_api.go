@@ -155,7 +155,7 @@ func populateVisByReferenceFromAPI(
 
 	by.DrilldownsJSON = jsontypes.NewNormalizedNull()
 
-	brCopy := vizByReferenceModel(by)
+	brCopy := by
 	pm.VizConfig = &vizConfigModel{
 		ByReference: &brCopy,
 	}
@@ -258,8 +258,7 @@ func vizConfigToAPI(pm panelModel, grid struct {
 	}
 	switch {
 	case cfg.ByReference != nil:
-		br := lensDashboardAppByReferenceModel(*cfg.ByReference)
-		return vizByReferenceToAPI(br, grid, panelID)
+		return vizByReferenceToAPI(*cfg.ByReference, grid, panelID)
 	case cfg.ByValue != nil:
 		blocks := &cfg.ByValue.lensByValueChartBlocks
 		conv, okConv := firstLensVizConverterForChartBlocks(blocks)
