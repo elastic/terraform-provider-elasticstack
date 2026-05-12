@@ -96,7 +96,7 @@ func Test_drilldownItemModeValidator(t *testing.T) {
 		urlVals := map[string]attr.Value{
 			"url":             types.StringValue("https://x"),
 			"label":           types.StringValue("u"),
-			"trigger":         types.StringNull(),
+			"trigger":         types.StringValue("on_click_value"),
 			"encode_url":      types.BoolNull(),
 			"open_in_new_tab": types.BoolNull(),
 		}
@@ -153,6 +153,7 @@ func Test_structuredDrilldown_urlTriggerStringValidator(t *testing.T) {
 	require.True(t, ok)
 	triggerAttr, ok := urlAttr.Attributes["trigger"].(schema.StringAttribute)
 	require.True(t, ok)
+	require.True(t, triggerAttr.Required)
 	require.NotEmpty(t, triggerAttr.Validators)
 
 	t.Run("rejects_invalid", func(t *testing.T) {

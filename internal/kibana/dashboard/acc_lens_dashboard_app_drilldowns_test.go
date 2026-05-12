@@ -18,6 +18,7 @@
 package dashboard_test
 
 import (
+	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -133,10 +134,22 @@ func TestAccResourceDashboardLensDashboardAppByReference_urlDrilldownExplicitTri
 	})
 }
 
-func TestAccResourceDashboardLensDashboardAppByReference_urlDrilldownOmittedTrigger(t *testing.T) {
-	// Mirror TestAccResourceDashboardVizConfigByReference_urlDrilldownOmittedTrigger: Kibana rejects URL
-	// drilldowns without `trigger` at dashboard write time.
-	t.Skip("Kibana OpenAPI validation requires URL drilldown trigger on dashboard write; see models_drilldowns unit tests for omit behavior")
+func TestAccResourceDashboardLensDashboardAppByReference_urlDrilldown_triggerRequired_planRejected(t *testing.T) {
+	dashboardTitle := "Acc lens dd trig req " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+	triggerRequired := regexp.MustCompile(`(?i)trigger`)
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
+				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
+				PlanOnly:                 true,
+				ExpectError:              triggerRequired,
+			},
+		},
+	})
 }
 
 func TestAccResourceDashboardLensDashboardAppByReference_mixedDrilldowns(t *testing.T) {

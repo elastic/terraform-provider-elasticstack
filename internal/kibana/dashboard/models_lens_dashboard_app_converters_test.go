@@ -479,7 +479,8 @@ func TestPopulateLensDashboardAppFromAPI_byReferenceRead_drilldowns(t *testing.T
 			{
 				"type": "url_drilldown",
 				"url": "https://example.com/",
-				"label": "U"
+				"label": "U",
+				"trigger": "on_click_value"
 			},
 			{
 				"type": "discover_drilldown",
@@ -503,6 +504,7 @@ func TestPopulateLensDashboardAppFromAPI_byReferenceRead_drilldowns(t *testing.T
 	require.NotNil(t, dd[1].URL)
 	require.Equal(t, "https://example.com/", dd[1].URL.URL.ValueString())
 	require.Equal(t, "U", dd[1].URL.Label.ValueString())
+	require.Equal(t, "on_click_value", dd[1].URL.Trigger.ValueString())
 	require.NotNil(t, dd[2].Discover)
 	require.Equal(t, "Discover me", dd[2].Discover.Label.ValueString())
 }

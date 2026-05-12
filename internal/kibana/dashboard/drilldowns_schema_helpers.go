@@ -85,8 +85,9 @@ func getStructuredDrilldownsAttribute() schema.Attribute {
 					},
 				},
 				"url": schema.SingleNestedAttribute{
-					MarkdownDescription: "Custom URL drilldown (`url_drilldown`). Requires `url` and `label`. " +
-						"Optional `trigger` restricts when the drilldown appears.",
+					MarkdownDescription: "Custom URL drilldown (`url_drilldown`). Requires `url`, `label`, and `trigger` " +
+						"(one of `on_click_row`, `on_click_value`, `on_open_panel_menu`, `on_select_range`). " +
+						"The Kibana dashboard API rejects URL drilldowns without `trigger`.",
 					Optional: true,
 					Attributes: map[string]schema.Attribute{
 						"url": schema.StringAttribute{
@@ -99,8 +100,8 @@ func getStructuredDrilldownsAttribute() schema.Attribute {
 							Required:            true,
 						},
 						"trigger": schema.StringAttribute{
-							MarkdownDescription: "Optional trigger name. Omit to defer to the API default.",
-							Optional:            true,
+							MarkdownDescription: "Trigger that activates the drilldown. Required; the Kibana dashboard API rejects URL drilldowns when this field is omitted.",
+							Required:            true,
 							Validators: []validator.String{
 								stringvalidator.OneOf(structuredDrilldownURLTriggerEnum...),
 							},

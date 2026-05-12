@@ -292,19 +292,20 @@ func decodeURLBranchLens(raw []byte) (drilldownItemModel, diag.Diagnostics) {
 		return drilldownItemModel{}, diags
 	}
 	triggerStr := string(obj.Trigger)
-	if triggerStr != "" && !kbapi.KbnDashboardPanelTypeLensDashboardAppConfig1Drilldowns2Trigger(triggerStr).Valid() {
+	if triggerStr == "" {
+		diags.Append(diag.NewErrorDiagnostic(diagnosticSummaryDrilldownConv,
+			"URL drilldown from the API omits required field `trigger`; structured drilldowns cannot represent this losslessly."))
+		return drilldownItemModel{}, diags
+	}
+	if !kbapi.KbnDashboardPanelTypeLensDashboardAppConfig1Drilldowns2Trigger(triggerStr).Valid() {
 		diags.Append(diag.NewErrorDiagnostic(diagnosticSummaryDrilldownConv,
 			fmt.Sprintf("URL drilldown has unsupported API `trigger` %#q.", triggerStr)))
 		return drilldownItemModel{}, diags
 	}
 	url := &drilldownURLBlockModel{
-		URL:   types.StringValue(obj.Url),
-		Label: types.StringValue(obj.Label),
-	}
-	if triggerStr != "" {
-		url.Trigger = types.StringValue(triggerStr)
-	} else {
-		url.Trigger = types.StringNull()
+		URL:     types.StringValue(obj.Url),
+		Label:   types.StringValue(obj.Label),
+		Trigger: types.StringValue(triggerStr),
 	}
 	if obj.EncodeUrl != nil {
 		url.EncodeURL = types.BoolValue(*obj.EncodeUrl)
@@ -366,6 +367,8 @@ func drilldownModelToLensUnionItem(m drilldownItemModel) (kbapi.KbnDashboardPane
 			"url":   m.URL.URL.ValueString(),
 			"label": m.URL.Label.ValueString(),
 		}
+		// During plan refinement `trigger` may be unknown; omit it from the wire map until known.
+		// Terraform schema marks `trigger` required, so finalized applies always emit it.
 		if typeutils.IsKnown(m.URL.Trigger) {
 			trigger := m.URL.Trigger.ValueString()
 			if !kbapi.KbnDashboardPanelTypeLensDashboardAppConfig1Drilldowns2Trigger(trigger).Valid() {

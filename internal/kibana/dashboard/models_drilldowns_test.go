@@ -91,36 +91,6 @@ func Test_structuredDrilldowns_urlRoundTrip_explicitTrigger(t *testing.T) {
 	assertURLBlocksEqual(t, want.URL, got[0].URL)
 }
 
-func Test_structuredDrilldowns_urlRoundTrip_omittedTrigger(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-	want := drilldownItemModel{
-		URL: &drilldownURLBlockModel{
-			URL:       types.StringValue("https://example.com"),
-			Label:     types.StringValue("Open"),
-			Trigger:   types.StringNull(),
-			EncodeURL: types.BoolNull(),
-		},
-	}
-	api, diags := toAPI(drilldownsModel{want})
-	require.False(t, diags.HasError())
-	require.NotNil(t, api)
-
-	raw, err := json.Marshal((*api)[0])
-	require.NoError(t, err)
-	var wire map[string]any
-	require.NoError(t, json.Unmarshal(raw, &wire))
-	_, hasTrigger := wire["trigger"]
-	require.False(t, hasTrigger, "expected trigger omitted from emitted JSON when unset")
-
-	got, diags := fromAPI(ctx, api)
-	require.False(t, diags.HasError())
-	require.Len(t, got, 1)
-	require.True(t, got[0].URL.Trigger.IsNull())
-	require.Equal(t, want.URL.URL.ValueString(), got[0].URL.URL.ValueString())
-	require.Equal(t, want.URL.Label.ValueString(), got[0].URL.Label.ValueString())
-}
-
 func Test_structuredDrilldowns_mixedThreeItemsPreserveOrderAndKind(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
@@ -313,6 +283,25 @@ func Test_structuredDrilldowns_fromAPI_dashboardWrongTriggerLossless(t *testing.
 	_, diags := fromAPI(ctx, &[]kbapi.KbnDashboardPanelTypeLensDashboardApp_Config_1_Drilldowns_Item{item})
 	require.True(t, diags.HasError())
 	require.Contains(t, diags.Errors()[0].Detail(), "Dashboard drilldown API `trigger`")
+}
+
+func Test_structuredDrilldowns_fromAPI_urlMissingTrigger(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	payload := `{
+	  "type": "url_drilldown",
+	  "url": "https://example.com/none",
+	  "label": "x"
+	}`
+	itemLens := drilldownLensItemFromJSON(t, payload)
+	_, diagsLens := fromAPI(ctx, &[]kbapi.KbnDashboardPanelTypeLensDashboardApp_Config_1_Drilldowns_Item{itemLens})
+	require.True(t, diagsLens.HasError())
+	require.Contains(t, diagsLens.Errors()[0].Detail(), "omits required field `trigger`")
+
+	itemVis := drilldownVisItemFromJSON(t, payload)
+	_, diagsVis := drilldownsFromVisByRefAPI(ctx, &[]kbapi.KbnDashboardPanelTypeVis_Config_1_Drilldowns_Item{itemVis})
+	require.True(t, diagsVis.HasError())
+	require.Contains(t, diagsVis.Errors()[0].Detail(), "omits required field `trigger`")
 }
 
 func Test_structuredDrilldowns_fromAPI_urlUnreadableTrigger(t *testing.T) {

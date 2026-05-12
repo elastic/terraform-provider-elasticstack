@@ -230,11 +230,22 @@ func TestAccResourceDashboardVizConfigByReference_urlDrilldownExplicitTrigger(t 
 	})
 }
 
-func TestAccResourceDashboardVizConfigByReference_urlDrilldownOmittedTrigger(t *testing.T) {
-	// Kibana rejects dashboard writes when a URL drilldown omits `trigger`: apply returns HTTP 400
-	// with OpenAPI validation on `request body.panels.0.config.*.type` (observed against 9.4+ dev).
-	// Omitted-trigger encoding/decoding is covered by unit tests on models_drilldowns.go.
-	t.Skip("Kibana OpenAPI validation requires URL drilldown trigger on dashboard write; see models_drilldowns unit tests for omit behavior")
+func TestAccResourceDashboardVizConfigByReference_urlDrilldown_triggerRequired_planRejected(t *testing.T) {
+	dashboardTitle := "Acc viz dd trig req " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+	triggerRequired := regexp.MustCompile(`(?i)trigger`)
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
+				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
+				PlanOnly:                 true,
+				ExpectError:              triggerRequired,
+			},
+		},
+	})
 }
 
 func TestAccResourceDashboardVizConfigByReference_mixedDrilldowns(t *testing.T) {
