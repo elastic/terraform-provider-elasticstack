@@ -26,12 +26,12 @@
 
 ## 4. Add `viz_config` schema (REQ-037)
 
-- [ ] 4.1 Add `viz_config` to `panelConfigNames` (insert in the new shrunk list — see step 7).
-- [ ] 4.2 Implement `getVizByValueAttributes()` returning a 12-block attribute map (`xy_chart_config`, `metric_chart_config`, `legacy_metric_config`, `gauge_config`, `heatmap_config`, `tagcloud_config`, `region_map_config`, `datatable_config`, `pie_chart_config`, `mosaic_config`, `treemap_config`, `waffle_config`); reuse the existing `getXYChartConfigAttributes()`, `getMetricChart()`, etc. functions verbatim (no chart-block internal change).
-- [ ] 4.3 Implement `vizByValueSourceValidator` (exactly one of the 12 chart blocks set; reject zero or 2+).
-- [ ] 4.4 Implement `getVizConfigSchema()` returning `by_value` (using `getVizByValueAttributes()` + `vizByValueSourceValidator`) and `by_reference` (using `getLensByReferenceAttributes()`); add `vizConfigModeValidator` enforcing exactly-one of `by_value`/`by_reference`.
-- [ ] 4.5 Wire `viz_config` into the panel-level attribute map in `getSchema()` with: `Optional`, sibling-conflict validators (matching the new shrunk `panelConfigNames`), and `AllowedIfDependentPathExpressionOneOf(panel.type, ["vis"])`.
-- [ ] 4.6 Add `vizConfigModel` Go struct (`ByValue *vizByValueModel`, `ByReference *vizByReferenceModel`) and helper functions for read/write classification per design D10.
+- [x] 4.1 Add `viz_config` to `panelConfigNames` (insert in the new shrunk list — see step 7).
+- [x] 4.2 Implement `getVizByValueAttributes()` returning a 12-block attribute map (`xy_chart_config`, `metric_chart_config`, `legacy_metric_config`, `gauge_config`, `heatmap_config`, `tagcloud_config`, `region_map_config`, `datatable_config`, `pie_chart_config`, `mosaic_config`, `treemap_config`, `waffle_config`); reuse the existing `getXYChartConfigAttributes()`, `getMetricChart()`, etc. functions verbatim (no chart-block internal change).
+- [x] 4.3 Implement `vizByValueSourceValidator` (exactly one of the 12 chart blocks set; reject zero or 2+).
+- [x] 4.4 Implement `getVizConfigSchema()` returning `by_value` (using `getVizByValueAttributes()` + `vizByValueSourceValidator`) and `by_reference` (using `getLensByReferenceAttributes()`); add `vizConfigModeValidator` enforcing exactly-one of `by_value`/`by_reference`.
+- [x] 4.5 Wire `viz_config` into the panel-level attribute map in `getSchema()` with: `Optional`, sibling-conflict validators (matching the new shrunk `panelConfigNames`), and `AllowedIfDependentPathExpressionOneOf(panel.type, ["vis"])`.
+- [x] 4.6 Add `vizConfigModel` Go struct (`ByValue *vizByValueModel`, `ByReference *vizByReferenceModel`) and helper functions for read/write classification per design D10.
 
 ## 5. Move 12 chart blocks from panel level to under `viz_config.by_value`
 
