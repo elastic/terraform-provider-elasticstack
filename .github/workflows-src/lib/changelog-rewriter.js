@@ -18,13 +18,6 @@ function findSectionEnd(lines, startIndex) {
 }
 
 /**
- * @param {string} content - Current CHANGELOG.md content.
- * @param {string} newSectionContent - Full replacement (header + body).
- * @param {'unreleased'|'release'} mode
- * @param {string} targetVersion - Version without leading v (release mode only).
- * @returns {string}
- */
-/**
  * @param {string[]} lines
  * @param {{ start: number, end: number }[]} ranges - sorted ascending by start;
  *    each end is exclusive. First range replaced by `newSectionContent`; others dropped.
@@ -66,6 +59,13 @@ function spliceReleaseSectionRanges(lines, ranges, newSectionContent) {
   return parts.join('\n');
 }
 
+/**
+ * @param {string} content - Current CHANGELOG.md content.
+ * @param {string} newSectionContent - Full replacement (header + body).
+ * @param {'unreleased'|'release'} mode
+ * @param {string} targetVersion - Version without leading v (release mode only).
+ * @returns {string}
+ */
 function rewriteChangelogSection(content, newSectionContent, mode, targetVersion) {
   const lines = content.split('\n');
 
