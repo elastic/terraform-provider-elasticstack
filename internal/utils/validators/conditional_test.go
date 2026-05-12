@@ -21,6 +21,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -1132,4 +1133,186 @@ func TestRequiredIfDependentPathExpressionOneOf_treatsEmptyStringAsUnset(t *test
 	response := &validator.StringResponse{}
 	v.ValidateString(context.Background(), request, response)
 	require.True(t, response.Diagnostics.HasError(), "empty string should count as unset for required-if validation")
+}
+
+func TestForbiddenIfDrilldownVariantSiblingNestedPresent(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+
+	childAttrs := func() map[string]schema.Attribute {
+		return map[string]schema.Attribute{
+			"id": schema.StringAttribute{Required: true},
+		}
+	}
+
+	testSchema := schema.Schema{
+		Attributes: map[string]schema.Attribute{
+			"dashboard_drilldown": schema.SingleNestedAttribute{
+				Optional: true,
+				Validators: []validator.Object{
+					ForbiddenIfDrilldownVariantSiblingNestedPresent(
+						path.MatchRelative().AtParent().AtName("discover_drilldown"),
+					),
+				},
+				Attributes: childAttrs(),
+			},
+			"discover_drilldown": schema.SingleNestedAttribute{
+				Optional: true,
+				Validators: []validator.Object{
+					ForbiddenIfDrilldownVariantSiblingNestedPresent(
+						path.MatchRelative().AtParent().AtName("dashboard_drilldown"),
+					),
+				},
+				Attributes: childAttrs(),
+			},
+		},
+	}
+
+	nestedTfType := tftypes.Object{AttributeTypes: map[string]tftypes.Type{"id": tftypes.String}}
+	nestedAttrTypes := map[string]attr.Type{"id": types.StringType}
+
+	makeRootRaw := func(dashSet, discoverSet bool) tftypes.Value {
+		dashTf := tftypes.NewValue(nestedTfType, nil)
+		disTf := tftypes.NewValue(nestedTfType, nil)
+		if dashSet {
+			dashTf = tftypes.NewValue(nestedTfType, map[string]tftypes.Value{
+				"id": tftypes.NewValue(tftypes.String, "d1"),
+			})
+		}
+		if discoverSet {
+			disTf = tftypes.NewValue(nestedTfType, map[string]tftypes.Value{
+				"id": tftypes.NewValue(tftypes.String, "s1"),
+			})
+		}
+		return tftypes.NewValue(
+			tftypes.Object{AttributeTypes: map[string]tftypes.Type{
+				"dashboard_drilldown": nestedTfType,
+				"discover_drilldown":  nestedTfType,
+			}},
+			map[string]tftypes.Value{
+				"dashboard_drilldown": dashTf,
+				"discover_drilldown":  disTf,
+			},
+		)
+	}
+
+	dashObjFilled := types.ObjectValueMust(
+		nestedAttrTypes,
+		map[string]attr.Value{"id": types.StringValue("d1")},
+	)
+
+	t.Run("dashboard set alone — no error", func(t *testing.T) {
+		raw := makeRootRaw(true, false)
+		cfg := tfsdk.Config{Raw: raw, Schema: testSchema}
+
+		v := ForbiddenIfDrilldownVariantSiblingNestedPresent(path.MatchRelative().AtParent().AtName("discover_drilldown"))
+		resp := &validator.ObjectResponse{}
+		v.ValidateObject(ctx, validator.ObjectRequest{
+			Path:        path.Root("dashboard_drilldown"),
+			ConfigValue: dashObjFilled,
+			Config:      cfg,
+		}, resp)
+
+		require.False(t, resp.Diagnostics.HasError(), resp.Diagnostics.Errors())
+	})
+
+	t.Run("dashboard and discover both set — error", func(t *testing.T) {
+		raw := makeRootRaw(true, true)
+		cfg := tfsdk.Config{Raw: raw, Schema: testSchema}
+
+		v := ForbiddenIfDrilldownVariantSiblingNestedPresent(path.MatchRelative().AtParent().AtName("discover_drilldown"))
+		resp := &validator.ObjectResponse{}
+		v.ValidateObject(ctx, validator.ObjectRequest{
+			Path:        path.Root("dashboard_drilldown"),
+			ConfigValue: dashObjFilled,
+			Config:      cfg,
+		}, resp)
+
+		require.True(t, resp.Diagnostics.HasError(), "expected validation error when sibling variant is also set")
+	})
+
+	t.Run("discover sibling unknown — no error", func(t *testing.T) {
+		dashTf := tftypes.NewValue(nestedTfType, map[string]tftypes.Value{
+			"id": tftypes.NewValue(tftypes.String, "d1"),
+		})
+		disTfVal, err := types.ObjectUnknown(nestedAttrTypes).ToTerraformValue(ctx)
+		require.NoError(t, err)
+		raw := tftypes.NewValue(
+			tftypes.Object{AttributeTypes: map[string]tftypes.Type{
+				"dashboard_drilldown": nestedTfType,
+				"discover_drilldown":  nestedTfType,
+			}},
+			map[string]tftypes.Value{
+				"dashboard_drilldown": dashTf,
+				"discover_drilldown":  disTfVal,
+			},
+		)
+		cfg := tfsdk.Config{Raw: raw, Schema: testSchema}
+
+		v := ForbiddenIfDrilldownVariantSiblingNestedPresent(path.MatchRelative().AtParent().AtName("discover_drilldown"))
+		resp := &validator.ObjectResponse{}
+		v.ValidateObject(ctx, validator.ObjectRequest{
+			Path:        path.Root("dashboard_drilldown"),
+			ConfigValue: dashObjFilled,
+			Config:      cfg,
+		}, resp)
+
+		require.False(t, resp.Diagnostics.HasError(), "unknown sibling must not satisfy nested-present condition")
+	})
+}
+
+func TestForbiddenIfDrilldownVariantSiblingNestedPresent_urlDrilldownSibling(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	childAttrs := map[string]schema.Attribute{
+		"id": schema.StringAttribute{Required: true},
+	}
+	testSchema := schema.Schema{
+		Attributes: map[string]schema.Attribute{
+			"dashboard_drilldown": schema.SingleNestedAttribute{
+				Optional: true,
+				Validators: []validator.Object{
+					ForbiddenIfDrilldownVariantSiblingNestedPresent(
+						path.MatchRelative().AtParent().AtName("url_drilldown"),
+					),
+				},
+				Attributes: childAttrs,
+			},
+			"url_drilldown": schema.SingleNestedAttribute{
+				Optional:   true,
+				Attributes: childAttrs,
+			},
+		},
+	}
+
+	nestedTfType := tftypes.Object{AttributeTypes: map[string]tftypes.Type{"id": tftypes.String}}
+	nestedAttrTypes := map[string]attr.Type{"id": types.StringType}
+
+	dashObj := types.ObjectValueMust(nestedAttrTypes, map[string]attr.Value{"id": types.StringValue("dash")})
+	raw := tftypes.NewValue(
+		tftypes.Object{AttributeTypes: map[string]tftypes.Type{
+			"dashboard_drilldown": nestedTfType,
+			"url_drilldown":       nestedTfType,
+		}},
+		map[string]tftypes.Value{
+			"dashboard_drilldown": tftypes.NewValue(nestedTfType, map[string]tftypes.Value{
+				"id": tftypes.NewValue(tftypes.String, "d1"),
+			}),
+			"url_drilldown": tftypes.NewValue(nestedTfType, map[string]tftypes.Value{
+				"id": tftypes.NewValue(tftypes.String, "u1"),
+			}),
+		},
+	)
+	cfg := tfsdk.Config{Raw: raw, Schema: testSchema}
+
+	v := ForbiddenIfDrilldownVariantSiblingNestedPresent(path.MatchRelative().AtParent().AtName("url_drilldown"))
+	resp := &validator.ObjectResponse{}
+	v.ValidateObject(ctx, validator.ObjectRequest{
+		Path:        path.Root("dashboard_drilldown"),
+		ConfigValue: dashObj,
+		Config:      cfg,
+	}, resp)
+	require.True(t, resp.Diagnostics.HasError(), "url_drilldown sibling object should trigger forbid-when-dashboard-set")
 }

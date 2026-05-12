@@ -64,7 +64,7 @@ type integrationPolicyInputModelV1 struct {
 	VarsJSON    jsontypes.Normalized `tfsdk:"vars_json"`
 }
 
-func (m integrationPolicyModelV1) toV2(ctx context.Context) (integrationPolicyModel, diag.Diagnostics) {
+func (m integrationPolicyModelV1) toV3(ctx context.Context) (integrationPolicyModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	var varsJSONVal VarsJSONValue
@@ -79,8 +79,11 @@ func (m integrationPolicyModelV1) toV2(ctx context.Context) (integrationPolicyMo
 		diags.Append(d...)
 	}
 
-	// Convert V1 model to V2 model
-	stateModelV2 := integrationPolicyModel{
+	// Convert V1 model to live (V3) model. The legacy top-level `enabled`
+	// attribute is deliberately dropped: the Kibana Fleet package-policy
+	// request API does not accept it, so it has never had any effect on the
+	// wire and was removed from the schema in V3.
+	stateModelV3 := integrationPolicyModel{
 		ID:                 m.ID,
 		KibanaConnection:   providerschema.KibanaConnectionNullList(),
 		PolicyID:           m.PolicyID,
@@ -89,7 +92,6 @@ func (m integrationPolicyModelV1) toV2(ctx context.Context) (integrationPolicyMo
 		AgentPolicyID:      m.AgentPolicyID,
 		AgentPolicyIDs:     m.AgentPolicyIDs,
 		Description:        m.Description,
-		Enabled:            m.Enabled,
 		Force:              m.Force,
 		IntegrationName:    m.IntegrationName,
 		IntegrationVersion: m.IntegrationVersion,
@@ -98,19 +100,18 @@ func (m integrationPolicyModelV1) toV2(ctx context.Context) (integrationPolicyMo
 		VarsJSON:           varsJSONVal,
 	}
 
-	// Convert inputs from V1 to V2
 	inputsV1 := typeutils.ListTypeAs[integrationPolicyInputModelV1](ctx, m.Input, path.Root("input"), &diags)
-	inputsV2 := make(map[string]integrationPolicyInputsModel, len(inputsV1))
+	inputsV3 := make(map[string]integrationPolicyInputsModel, len(inputsV1))
 
 	for _, inputV1 := range inputsV1 {
 		id := inputV1.InputID.ValueString()
 		streams, d := updateStreamsV1ToV2(ctx, inputV1.StreamsJSON, id)
 		diags.Append(d...)
 		if diags.HasError() {
-			return stateModelV2, diags
+			return stateModelV3, diags
 		}
 
-		inputsV2[id] = integrationPolicyInputsModel{
+		inputsV3[id] = integrationPolicyInputsModel{
 			Enabled:  inputV1.Enabled,
 			Vars:     inputV1.VarsJSON,
 			Streams:  streams,
@@ -118,18 +119,19 @@ func (m integrationPolicyModelV1) toV2(ctx context.Context) (integrationPolicyMo
 		}
 	}
 
-	inputsValue, d := NewInputsValueFrom(ctx, getInputsElementType(), inputsV2)
+	inputsValue, d := NewInputsValueFrom(ctx, getInputsElementType(), inputsV3)
 	diags.Append(d...)
 
-	stateModelV2.Inputs = inputsValue
-	return stateModelV2, diags
+	stateModelV3.Inputs = inputsValue
+	return stateModelV3, diags
 }
 
-// The schema between V1 and V2 is mostly the same. Except for:
-// * The input block was moved to an map attribute.
-// * The streams attribute inside the input block was also moved to a map attribute.
-// This upgrader translates the old list structures into the new map structures.
-func upgradeV1ToV2(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
+// upgradeV1ToV3 upgrades V1 state directly to the live V3 schema. V1 used a list
+// `input` block and JSON-string stream payloads; V3 uses an `inputs` map with a
+// nested `streams` map (see updateStreamsV1ToV2 for the shared list-to-map logic
+// retained from the V1→V2 implementation). The legacy top-level `enabled`
+// attribute present in V1/V2 is dropped during the conversion.
+func upgradeV1ToV3(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
 	var stateModelV1 integrationPolicyModelV1
 
 	diags := req.State.Get(ctx, &stateModelV1)
@@ -138,13 +140,13 @@ func upgradeV1ToV2(ctx context.Context, req resource.UpgradeStateRequest, resp *
 		return
 	}
 
-	stateModelV2, diags := stateModelV1.toV2(ctx)
+	stateModelV3, diags := stateModelV1.toV3(ctx)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	diags = resp.State.Set(ctx, stateModelV2)
+	diags = resp.State.Set(ctx, stateModelV3)
 	resp.Diagnostics.Append(diags...)
 }
 

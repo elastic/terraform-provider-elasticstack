@@ -90,3 +90,12 @@ var discoverSessionPanelDSLFiltersDescription string
 
 //go:embed descriptions/discover_session_panel_view_mode.md
 var discoverSessionPanelViewModeDescription string
+
+//go:embed descriptions/pinned_panels.md
+var pinnedPanelsDescription string
+
+//go:embed descriptions/pinned_panel_control_note.md
+var pinnedPanelControlNote string
+
+//go:embed descriptions/pinned_panel_type.md
+var pinnedPanelTypeDescription string

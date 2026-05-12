@@ -95,17 +95,17 @@ func Test_legacyMetricConfigModel_fromAPI_toAPI_NoESQL(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(apiJSON), &api))
 
 	model1 := &legacyMetricConfigModel{}
-	diags := model1.fromAPINoESQL(ctx, api)
+	diags := model1.fromAPINoESQL(ctx, nil, nil, api)
 	require.False(t, diags.HasError())
 
-	attrs2, diags := model1.toAPI()
+	attrs2, diags := model1.toAPI(nil)
 	require.False(t, diags.HasError())
 
 	noESQL2, err := attrs2.AsLegacyMetricNoESQL()
 	require.NoError(t, err)
 
 	model2 := &legacyMetricConfigModel{}
-	diags = model2.fromAPINoESQL(ctx, noESQL2)
+	diags = model2.fromAPINoESQL(ctx, nil, nil, noESQL2)
 	require.False(t, diags.HasError())
 
 	assertLegacyMetricConfigEqual(ctx, t, model1, model2)
@@ -132,11 +132,11 @@ func Test_legacyMetricPanelConfigConverter_populateFromAttributes_buildAttribute
 
 	converter := newLegacyMetricPanelConfigConverter()
 	pm := &panelModel{}
-	diags := converter.populateFromAttributes(ctx, pm, attrs)
+	diags := converter.populateFromAttributes(ctx, nil, pm, attrs)
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm.LegacyMetricConfig)
 
-	attrs2, diags := converter.buildAttributes(*pm)
+	attrs2, diags := converter.buildAttributes(*pm, nil)
 	require.False(t, diags.HasError())
 
 	noESQL2, err := attrs2.AsLegacyMetricNoESQL()
@@ -161,7 +161,7 @@ func Test_legacyMetricConfigModel_toAPI_requiresQueryForNoESQL(t *testing.T) {
 		),
 	}
 
-	_, diags := model.toAPI()
+	_, diags := model.toAPI(nil)
 	require.True(t, diags.HasError())
 }
 
@@ -177,14 +177,14 @@ func Test_legacyMetricConfigModel_fromAPI_roundTrip(t *testing.T) {
 		"metric": {"operation": "count", "format": {"type": "number"}}
 	}`), &api))
 		model1 := &legacyMetricConfigModel{}
-		diags := model1.fromAPINoESQL(ctx, api)
+		diags := model1.fromAPINoESQL(ctx, nil, nil, api)
 		require.False(t, diags.HasError())
-		attrs2, diags := model1.toAPI()
+		attrs2, diags := model1.toAPI(nil)
 		require.False(t, diags.HasError())
 		noESQL2, err := attrs2.AsLegacyMetricNoESQL()
 		require.NoError(t, err)
 		model2 := &legacyMetricConfigModel{}
-		diags = model2.fromAPINoESQL(ctx, noESQL2)
+		diags = model2.fromAPINoESQL(ctx, nil, nil, noESQL2)
 		require.False(t, diags.HasError())
 		assertLegacyMetricConfigEqual(ctx, t, model1, model2)
 	})
@@ -192,7 +192,7 @@ func Test_legacyMetricConfigModel_fromAPI_roundTrip(t *testing.T) {
 
 func Test_legacyMetricConfigModel_toAPI_nil(t *testing.T) {
 	var model *legacyMetricConfigModel
-	_, diags := model.toAPI()
+	_, diags := model.toAPI(nil)
 	require.True(t, diags.HasError())
 }
 
@@ -201,7 +201,7 @@ func Test_legacyMetricConfigModel_toAPI_unsupportedDataset(t *testing.T) {
 		DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"unknown"}`),
 		MetricJSON:     customtypes.NewJSONWithDefaultsValue[map[string]any](`{}`, populateLegacyMetricMetricDefaults),
 	}
-	_, diags := model.toAPI()
+	_, diags := model.toAPI(nil)
 	require.True(t, diags.HasError())
 	assert.Contains(t, diags.Errors()[0].Summary(), "Unsupported legacy metric dataset")
 }
@@ -217,7 +217,7 @@ func Test_legacyMetricConfigModel_toAPI_ESQL_withQuery(t *testing.T) {
 			"color": {"type": "static", "color": "#fff"}
 		}`, populateLegacyMetricMetricDefaults),
 	}
-	_, diags := model.toAPI()
+	_, diags := model.toAPI(nil)
 	require.True(t, diags.HasError())
 	summary := diags.Errors()[0].Summary()
 	assert.True(t,
@@ -233,7 +233,7 @@ func Test_legacyMetricConfigModel_toAPI_missingMetric(t *testing.T) {
 		Query:          &filterSimpleModel{Language: types.StringValue("kql"), Expression: types.StringValue("")},
 		MetricJSON:     customtypes.NewJSONWithDefaultsNull[map[string]any](populateLegacyMetricMetricDefaults),
 	}
-	_, diags := model.toAPI()
+	_, diags := model.toAPI(nil)
 	require.True(t, diags.HasError())
 	assert.Contains(t, diags.Errors()[0].Summary(), "Missing metric")
 }
@@ -263,4 +263,38 @@ func Test_legacyMetricConfigModel_datasetType_errors(t *testing.T) {
 		require.True(t, diags.HasError())
 		assert.Contains(t, diags.Errors()[0].Summary(), "Missing dataset type")
 	})
+}
+
+func Test_legacyMetricConfig_lensChartPresentation_hideTitleRoundTrip(t *testing.T) {
+	ctx := context.Background()
+	dash := lensPresentationTestDashboard()
+	apiJSON := `{
+		"type": "legacy_metric",
+		"title": "Legacy Metric",
+		"description": "Legacy metric description",
+		"data_source": {"type": "data_view_spec", "index_pattern": "metrics-*"},
+		"query": {"language": "kql", "query": ""},
+		"sampling": 0.5,
+		"ignore_global_filters": true,
+		"filters": [{"query": "status:200", "language": "kql"}],
+		"metric": {"operation": "count", "format": {"type": "number"}}
+	}`
+
+	var api kbapi.LegacyMetricNoESQL
+	require.NoError(t, json.Unmarshal([]byte(apiJSON), &api))
+
+	base := &legacyMetricConfigModel{}
+	require.False(t, base.fromAPINoESQL(ctx, nil, nil, api).HasError())
+
+	m := *base
+	m.HideTitle = types.BoolValue(true)
+
+	attrs, diags := m.toAPI(dash)
+	require.False(t, diags.HasError())
+	out, err := attrs.AsLegacyMetricNoESQL()
+	require.NoError(t, err)
+
+	got := &legacyMetricConfigModel{}
+	require.False(t, got.fromAPINoESQL(ctx, dash, &m, out).HasError())
+	assert.Equal(t, types.BoolValue(true), got.HideTitle)
 }

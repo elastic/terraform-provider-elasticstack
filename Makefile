@@ -1,4 +1,26 @@
+# Preserve environment and command-line variable values across .env inclusion.
+# The .env file (auto-created from .env.template) may contain defaults that
+# would otherwise silently override values set via workflow matrices or local shell.
+define _env_guard_save
+_$(1)_ORIGIN := $(origin $(1))
+_$(1)_VALUE  := $($(1))
+endef
+
+define _env_guard_restore
+ifneq ($(filter environment command line,$(_$(1)_ORIGIN)),)
+  override $(1) := $(_$(1)_VALUE)
+endif
+endef
+
+# Guard variables present in both .env.template and CI/local usage.
+_ENV_GUARD_VARS := STACK_VERSION FLEET_IMAGE ELASTICSEARCH_PASSWORD KIBANA_PASSWORD
+
+$(foreach v,$(_ENV_GUARD_VARS),$(eval $(call _env_guard_save,$v)))
+
 -include .env
+
+$(foreach v,$(_ENV_GUARD_VARS),$(eval $(call _env_guard_restore,$v)))
+
 .DEFAULT_GOAL = help
 SHELL := /bin/bash
 

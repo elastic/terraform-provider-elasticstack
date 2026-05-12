@@ -194,7 +194,7 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 			Input:              types.ListNull(getInputTypeV1()),
 		}
 
-		v2Model, diags := v1Model.toV2(ctx)
+		v2Model, diags := v1Model.toV3(ctx)
 		require.Empty(t, diags)
 
 		assert.Equal(t, v1Model.ID, v2Model.ID)
@@ -203,7 +203,6 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 		assert.Equal(t, v1Model.Namespace, v2Model.Namespace)
 		assert.Equal(t, v1Model.AgentPolicyID, v2Model.AgentPolicyID)
 		assert.Equal(t, v1Model.Description, v2Model.Description)
-		assert.Equal(t, v1Model.Enabled, v2Model.Enabled)
 		assert.Equal(t, v1Model.Force, v2Model.Force)
 		assert.Equal(t, v1Model.IntegrationName, v2Model.IntegrationName)
 		assert.Equal(t, v1Model.IntegrationVersion, v2Model.IntegrationVersion)
@@ -226,7 +225,7 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 			Input:              types.ListNull(getInputTypeV1()),
 		}
 
-		v2Model, diags := v1Model.toV2(ctx)
+		v2Model, diags := v1Model.toV3(ctx)
 		require.Empty(t, diags)
 
 		assert.Equal(t, v1Model.AgentPolicyIDs, v2Model.AgentPolicyIDs)
@@ -247,7 +246,7 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 			Input:              types.ListNull(getInputTypeV1()),
 		}
 
-		v2Model, diags := v1Model.toV2(ctx)
+		v2Model, diags := v1Model.toV3(ctx)
 		require.Empty(t, diags)
 
 		assert.Equal(t, v1Model.SpaceIDs, v2Model.SpaceIDs)
@@ -264,7 +263,7 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 			Input:              types.ListNull(getInputTypeV1()),
 		}
 
-		v2Model, diags := v1Model.toV2(ctx)
+		v2Model, diags := v1Model.toV3(ctx)
 		require.Empty(t, diags)
 
 		assert.True(t, v2Model.Inputs.IsNull() || len(v2Model.Inputs.Elements()) == 0)
@@ -292,7 +291,7 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 			Input:              inputList,
 		}
 
-		v2Model, diags := v1Model.toV2(ctx)
+		v2Model, diags := v1Model.toV3(ctx)
 		require.Empty(t, diags)
 		assert.False(t, v2Model.Inputs.IsNull())
 
@@ -341,7 +340,7 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 			Input:              inputList,
 		}
 
-		v2Model, diags := v1Model.toV2(ctx)
+		v2Model, diags := v1Model.toV3(ctx)
 		require.Empty(t, diags)
 		assert.False(t, v2Model.Inputs.IsNull())
 
@@ -411,7 +410,7 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 			Input:              inputList,
 		}
 
-		v2Model, diags := v1Model.toV2(ctx)
+		v2Model, diags := v1Model.toV3(ctx)
 		require.Empty(t, diags)
 		assert.False(t, v2Model.Inputs.IsNull())
 
@@ -460,7 +459,7 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 			Input:              inputList,
 		}
 
-		_, diags = v1Model.toV2(ctx)
+		_, diags = v1Model.toV3(ctx)
 		require.NotEmpty(t, diags)
 		assert.True(t, diags.HasError())
 	})
@@ -479,7 +478,7 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 			Input:              types.ListNull(getInputTypeV1()),
 		}
 
-		v2Model, diags := v1Model.toV2(ctx)
+		v2Model, diags := v1Model.toV3(ctx)
 		require.Empty(t, diags)
 
 		assert.True(t, v2Model.Description.IsNull())
