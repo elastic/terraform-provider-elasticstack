@@ -719,6 +719,25 @@ func Test_panelModel_toAPI_configJSONErrors(t *testing.T) {
 			errorContains: "not supported for `image`",
 		},
 		{
+			name: "rejects panel-level config_json for slo_alerts",
+			panel: panelModel{
+				Type:       types.StringValue(panelTypeSloAlerts),
+				Grid:       panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0)},
+				ConfigJSON: customtypes.NewJSONWithDefaultsValue(`{}`, populatePanelConfigJSONDefaults),
+			},
+			errorSummary:  "Unsupported panel type for config_json",
+			errorContains: "not supported for `slo_alerts`",
+		},
+		{
+			name: "rejects missing slo_alerts_config",
+			panel: panelModel{
+				Type: types.StringValue(panelTypeSloAlerts),
+				Grid: panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0)},
+			},
+			errorSummary:  "Missing SLO alerts panel configuration",
+			errorContains: "require `slo_alerts_config`",
+		},
+		{
 			name: "rejects missing panel configuration",
 			panel: panelModel{
 				Type:       types.StringValue("markdown"),

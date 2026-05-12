@@ -66,3 +66,9 @@ var imagePanelDrilldownsDescription string
 
 //go:embed descriptions/image_panel_url_drilldown_url.md
 var imagePanelURLDrilldownURLDescription string
+
+//go:embed descriptions/slo_alerts_panel_slos.md
+var sloAlertsPanelSlosDescription string
+
+//go:embed descriptions/slo_alerts_panel_drilldowns.md
+var sloAlertsPanelDrilldownsDescription string

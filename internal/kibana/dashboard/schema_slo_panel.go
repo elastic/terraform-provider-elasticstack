@@ -139,6 +139,65 @@ func getSloGroupsSchema() map[string]schema.Attribute {
 	return attrs
 }
 
+// getSloAlertsPanelConfigAttributes returns schema attributes for `slo_alerts_config`.
+func getSloAlertsPanelConfigAttributes() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"slos": schema.ListNestedAttribute{
+			MarkdownDescription: sloAlertsPanelSlosDescription,
+			Required:            true,
+			NestedObject: schema.NestedAttributeObject{
+				Attributes: map[string]schema.Attribute{
+					"slo_id": schema.StringAttribute{
+						MarkdownDescription: "Identifier of the SLO to include.",
+						Required:            true,
+						Validators: []validator.String{
+							stringvalidator.LengthAtLeast(1),
+						},
+					},
+					"slo_instance_id": schema.StringAttribute{
+						MarkdownDescription: "SLO instance ID when the SLO uses grouping. Omit for all instances (API default `\"*\"`). Unset values stay null when the API echoes that default (REQ-009).",
+						Optional:            true,
+					},
+				},
+			},
+			Validators: []validator.List{
+				listvalidator.SizeAtLeast(1),
+				listvalidator.SizeAtMost(100),
+			},
+		},
+		"title": schema.StringAttribute{
+			MarkdownDescription: "Optional panel title.",
+			Optional:            true,
+		},
+		"description": schema.StringAttribute{
+			MarkdownDescription: "Optional panel description.",
+			Optional:            true,
+		},
+		"hide_title": schema.BoolAttribute{
+			MarkdownDescription: "When true, hides the panel title.",
+			Optional:            true,
+		},
+		"hide_border": schema.BoolAttribute{
+			MarkdownDescription: "When true, hides the panel border.",
+			Optional:            true,
+		},
+		"drilldowns": schema.ListNestedAttribute{
+			MarkdownDescription: sloAlertsPanelDrilldownsDescription,
+			Optional:            true,
+			Validators: []validator.List{
+				listvalidator.SizeAtMost(100),
+			},
+			NestedObject: urlDrilldownNestedAttributeObject(URLDrilldownNestedOpts{
+				AllowedTriggers:                 []string{"on_open_panel_menu"},
+				URLMarkdownDescription:          "Templated URL for the drilldown.",
+				LabelMarkdownDescription:        "Display label shown in the drilldown menu.",
+				EncodeURLMarkdownDescription:    "When true, the URL is percent-encoded. Omit to use the API default.",
+				OpenInNewTabMarkdownDescription: "When true, the URL opens in a new browser tab. Omit to use the API default.",
+			}),
+		},
+	}
+}
+
 // sloOverviewConfigModeValidator ensures exactly one of single or groups is set.
 var _ validator.Object = sloOverviewConfigModeValidator{}
 

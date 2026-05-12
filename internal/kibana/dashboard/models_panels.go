@@ -58,6 +58,7 @@ type panelModel struct {
 	SyntheticsMonitorsConfig      *syntheticsMonitorsConfigModel                    `tfsdk:"synthetics_monitors_config"`
 	LensDashboardAppConfig        *lensDashboardAppConfigModel                      `tfsdk:"lens_dashboard_app_config"`
 	ImageConfig                   *imagePanelConfigModel                            `tfsdk:"image_config"`
+	SloAlertsConfig               *sloAlertsPanelConfigModel                        `tfsdk:"slo_alerts_config"`
 	ConfigJSON                    customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config_json"`
 }
 
@@ -228,7 +229,8 @@ func panelHasTypedConfig(pm *panelModel) bool {
 		pm.SyntheticsStatsOverviewConfig != nil ||
 		pm.SyntheticsMonitorsConfig != nil ||
 		pm.LensDashboardAppConfig != nil ||
-		pm.ImageConfig != nil
+		pm.ImageConfig != nil ||
+		pm.SloAlertsConfig != nil
 }
 
 func panelUsesConfigJSONOnly(pm *panelModel) bool {
@@ -263,6 +265,7 @@ func clearPanelConfigBlocks(pm *panelModel) {
 	pm.SyntheticsMonitorsConfig = nil
 	pm.LensDashboardAppConfig = nil
 	pm.ImageConfig = nil
+	pm.SloAlertsConfig = nil
 }
 
 func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelModel, panelItem kbapi.DashboardPanelItem) (panelModel, diag.Diagnostics) {
@@ -455,6 +458,15 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 		pm.ID = types.StringPointerValue(imgPanel.Id)
 		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
 		populateImagePanelFromAPI(&pm, tfPanel, imgPanel)
+	case panelTypeSloAlerts:
+		saPanel, err := panelItem.AsKbnDashboardPanelTypeSloAlerts()
+		if err != nil {
+			return panelModel{}, diagutil.FrameworkDiagFromError(err)
+		}
+		setPanelGridFromAPI(&pm, saPanel.Grid.X, saPanel.Grid.Y, saPanel.Grid.W, saPanel.Grid.H)
+		pm.ID = types.StringPointerValue(saPanel.Id)
+		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
+		populateSloAlertsPanelFromAPI(&pm, tfPanel, saPanel)
 	default:
 		// Round-trip stability for panel types without a typed config block.
 		pm.ID = types.StringNull()
@@ -642,6 +654,26 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	if pm.ImageConfig != nil {
 		return imagePanelToAPI(pm, grid, panelID)
 	}
+
+	if pm.SloAlertsConfig != nil {
+		return sloAlertsPanelToAPI(pm, grid, panelID)
+	}
+
+	if pm.Type.ValueString() == panelTypeSloAlerts {
+		if typeutils.IsKnown(pm.ConfigJSON) && !pm.ConfigJSON.IsNull() {
+			diags.AddError(
+				"Unsupported panel type for config_json",
+				"Panel-level `config_json` is not supported for `slo_alerts` panels. Use `slo_alerts_config` instead.",
+			)
+			return kbapi.DashboardPanelItem{}, diags
+		}
+		diags.AddError(
+			"Missing SLO alerts panel configuration",
+			"SLO alerts panels require `slo_alerts_config`.",
+		)
+		return kbapi.DashboardPanelItem{}, diags
+	}
+
 	if pm.Type.ValueString() == panelTypeImage {
 		if typeutils.IsKnown(pm.ConfigJSON) && !pm.ConfigJSON.IsNull() {
 			diags.AddError(
@@ -860,6 +892,11 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 				"Unsupported panel type for config_json",
 				"Panel-level `config_json` is not supported for `image` panels. Use `image_config` instead.",
 			)
+		case panelTypeSloAlerts:
+			diags.AddError(
+				"Unsupported panel type for config_json",
+				"Panel-level `config_json` is not supported for `slo_alerts` panels. Use `slo_alerts_config` instead.",
+			)
 		default:
 			// Unknown panel type: reconstruct the full panel JSON from the stored
 			// config_json + grid + id + type and set it directly as the raw union.
@@ -897,7 +934,7 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	case panelTypeMarkdown, panelTypeVis, panelTypeTimeSlider, panelTypeSloBurnRate,
 		panelTypeSloErrorBudget, panelTypeEsqlControl, panelTypeOptionsListControl,
 		panelTypeRangeSlider, panelTypeSyntheticsStatsOverview, panelTypeSyntheticsMonitors,
-		panelTypeLensDashboardApp, panelTypeSloOverview, panelTypeImage:
+		panelTypeLensDashboardApp, panelTypeSloOverview, panelTypeImage, panelTypeSloAlerts:
 		diags.AddError("Unsupported panel configuration", "No panel configuration block was provided.")
 	default:
 		diags.AddError(

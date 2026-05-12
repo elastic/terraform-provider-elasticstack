@@ -54,6 +54,7 @@ const (
 	panelTypeMarkdown                = "markdown"
 	panelTypeVis                     = "vis"
 	panelTypeTimeSlider              = "time_slider_control"
+	panelTypeSloAlerts               = "slo_alerts"
 	panelTypeSloBurnRate             = "slo_burn_rate"
 	panelTypeSloErrorBudget          = "slo_error_budget"
 	panelTypeEsqlControl             = "esql_control"
@@ -82,6 +83,7 @@ var panelConfigNames = []string{
 	"heatmap_config",
 	"waffle_config",
 	"time_slider_control_config",
+	"slo_alerts_config",
 	"slo_burn_rate_config",
 	"slo_overview_config",
 	"slo_error_budget_config",
@@ -813,6 +815,23 @@ func getPanelSchema() schema.NestedAttributeObject {
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeTimeSlider}),
 				},
 			},
+			"slo_alerts_config": schema.SingleNestedAttribute{
+				MarkdownDescription: panelConfigDescription(
+					"Configuration for an `slo_alerts` panel (`kbn-dashboard-panel-type-slo_alerts`). "+
+						"Required when `type` is `slo_alerts`.",
+					"slo_alerts_config",
+					panelConfigNames,
+				),
+				Optional:   true,
+				Attributes: getSloAlertsPanelConfigAttributes(),
+				Validators: []validator.Object{
+					objectvalidator.ConflictsWith(
+						siblingPanelConfigPathsExcept("slo_alerts_config", panelConfigNames)...,
+					),
+					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeSloAlerts}),
+					validators.RequiredIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeSloAlerts}),
+				},
+			},
 			"slo_burn_rate_config": schema.SingleNestedAttribute{
 				MarkdownDescription: panelConfigDescription(
 					"Configuration for an SLO burn rate panel. Use this for panels that visualize the burn rate of an SLO over a configurable look-back window.",
@@ -1225,7 +1244,8 @@ func getPanelSchema() schema.NestedAttributeObject {
 				MarkdownDescription: panelConfigDescription(
 					"The configuration of the panel as a JSON string. "+
 						"Practitioner-authored panel-level `config_json` is valid only when `type` is `markdown` or `vis`. "+
-						"Typed panel kinds such as `lens-dashboard-app` and `image` use their dedicated blocks (`lens_dashboard_app_config`, `image_config`), not panel-level `config_json`.",
+						"Typed panel kinds such as `lens-dashboard-app`, `image`, and `slo_alerts` use their dedicated blocks "+
+						"(`lens_dashboard_app_config`, `image_config`, `slo_alerts_config`), not panel-level `config_json`.",
 					"config_json",
 					panelConfigNames,
 				),
