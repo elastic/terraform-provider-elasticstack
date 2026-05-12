@@ -42,6 +42,42 @@ test('rewriteChangelogSection release replaces Unreleased section with new versi
   assert.ok(newIdx !== -1 && oldIdx !== -1 && newIdx < oldIdx);
 });
 
+test('rewriteChangelogSection release prepends new section when neither Unreleased nor target heading exists', () => {
+  const before = ['# Changelog', '', '## [0.9.0]', 'prior release'].join('\n');
+  const newSection = '## [1.0.0] - 2026-06-01\n\n### Changes\n\n- leap ([#501](https://example/501))';
+  const out = rewriteChangelogSection(before, newSection, 'release', '1.0.0');
+  assert.ok(out.startsWith('## [1.0.0]'));
+  assert.ok(!out.includes('## [Unreleased]'));
+  assert.match(out, /# Changelog/);
+  const vNew = out.indexOf('## [1.0.0]');
+  const vPrev = out.indexOf('## [0.9.0]');
+  assert.ok(vNew !== -1 && vPrev !== -1 && vNew < vPrev);
+  assert.ok(out.includes('prior release'));
+});
+
+test('rewriteChangelogSection release replaces version block only when target exists without Unreleased', () => {
+  const before = [
+    '# Changelog',
+    '',
+    '## [1.0.0] - stale-date',
+    '',
+    '- stale bullet ([#11](https://example/11))',
+    '',
+    '## [0.9.0]',
+    'older',
+  ].join('\n');
+  const newSection =
+    '## [1.0.0] - 2026-06-15\n\n### Changes\n\n- current ([#502](https://example/502))';
+  const out = rewriteChangelogSection(before, newSection, 'release', '1.0.0');
+  assert.ok(!out.includes('## [Unreleased]'));
+  assert.equal([...out.matchAll(/^## \[1\.0\.0\]/gm)].length, 1);
+  assert.ok(out.includes('- current'));
+  assert.ok(!out.includes('- stale bullet'));
+  const vTen = out.indexOf('## [1.0.0]');
+  const vNine = out.indexOf('## [0.9.0]');
+  assert.ok(vTen !== -1 && vNine !== -1 && vTen < vNine);
+});
+
 // Release re-run collapses lingering Unreleased: dual-range splice is exercised
 // here directly (see design.md) rather than via the engine, so positioning and
 // removal order stay independent of rendered section bodies / PR harness data.
