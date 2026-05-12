@@ -15,10 +15,10 @@
 
 ## 3. Tests
 
-- [ ] 3.1 Update existing unit tests in `models_markdown_panel_test.go` for the new shape
-- [ ] 3.2 Add unit tests for the by-reference branch and the discriminator validators
-- [ ] 3.3 Update the existing markdown acceptance test to the new shape; add a by-reference acceptance test that creates a markdown library item via the saved-objects API beforehand
-- [ ] 3.4 Run `make build`, `go vet ./...`, `go test ./internal/kibana/dashboard/...` (`TF_ACC=1` for acceptance)
+- [x] 3.1 Update existing unit tests in `models_markdown_panel_test.go` for the new shape
+- [x] 3.2 Add unit tests for the by-reference branch and the discriminator validators
+- [x] 3.3 Update the existing markdown acceptance test to the new shape; add a by-reference acceptance test that creates a markdown library item via the saved-objects API beforehand
+- [x] 3.4 Run `make build`, `go vet ./...`, `go test ./internal/kibana/dashboard/...` (`TF_ACC=1` for acceptance)
 
 ## 4. Examples
 
