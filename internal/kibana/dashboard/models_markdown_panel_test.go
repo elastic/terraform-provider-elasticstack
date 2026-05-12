@@ -31,29 +31,41 @@ func Test_populateMarkdownFromAPI(t *testing.T) {
 	description := "desc"
 	hideTitle := true
 	title := "panel title"
+	openLinks := false
 	cfg := kbapi.KbnDashboardPanelTypeMarkdownConfig0{
 		Content:     content,
 		Description: &description,
 		HideTitle:   &hideTitle,
 		Title:       &title,
 	}
+	cfg.Settings.OpenLinksInNewTab = &openLinks
 
 	pm := &panelModel{}
 	populateMarkdownFromAPI(pm, cfg)
 	require.NotNil(t, pm.MarkdownConfig)
-	assert.Equal(t, types.StringValue(content), pm.MarkdownConfig.Content)
-	assert.Equal(t, types.StringValue(description), pm.MarkdownConfig.Description)
-	assert.Equal(t, types.BoolValue(hideTitle), pm.MarkdownConfig.HideTitle)
-	assert.Equal(t, types.StringValue(title), pm.MarkdownConfig.Title)
+	require.NotNil(t, pm.MarkdownConfig.ByValue)
+	require.Nil(t, pm.MarkdownConfig.ByReference)
+	bv := pm.MarkdownConfig.ByValue
+	assert.Equal(t, types.StringValue(content), bv.Content)
+	assert.Equal(t, types.StringValue(description), bv.Description)
+	assert.Equal(t, types.BoolValue(hideTitle), bv.HideTitle)
+	assert.Equal(t, types.StringValue(title), bv.Title)
+	require.NotNil(t, bv.Settings)
+	assert.Equal(t, types.BoolValue(openLinks), bv.Settings.OpenLinksInNewTab)
 }
 
 func Test_buildMarkdownConfig(t *testing.T) {
 	pm := panelModel{
 		MarkdownConfig: &markdownConfigModel{
-			Content:     types.StringValue("hello"),
-			Description: types.StringValue("desc"),
-			HideTitle:   types.BoolValue(false),
-			Title:       types.StringValue("panel title"),
+			ByValue: &markdownConfigByValueModel{
+				Content:     types.StringValue("hello"),
+				Description: types.StringValue("desc"),
+				HideTitle:   types.BoolValue(false),
+				Title:       types.StringValue("panel title"),
+				Settings: &markdownConfigSettingsModel{
+					OpenLinksInNewTab: types.BoolValue(true),
+				},
+			},
 		},
 	}
 
@@ -61,17 +73,24 @@ func Test_buildMarkdownConfig(t *testing.T) {
 	require.NotNil(t, cfg.Description)
 	require.NotNil(t, cfg.HideTitle)
 	require.NotNil(t, cfg.Title)
+	require.NotNil(t, cfg.Settings.OpenLinksInNewTab)
 	assert.Equal(t, "hello", cfg.Content)
 	assert.Equal(t, "desc", *cfg.Description)
 	assert.False(t, *cfg.HideTitle)
 	assert.Equal(t, "panel title", *cfg.Title)
+	assert.True(t, *cfg.Settings.OpenLinksInNewTab)
 }
 
 func Test_markdownConfigRoundTripViaUnion(t *testing.T) {
 	pm := panelModel{
 		MarkdownConfig: &markdownConfigModel{
-			Content:   types.StringValue("round trip"),
-			HideTitle: types.BoolValue(true),
+			ByValue: &markdownConfigByValueModel{
+				Content:   types.StringValue("round trip"),
+				HideTitle: types.BoolValue(true),
+				Settings: &markdownConfigSettingsModel{
+					OpenLinksInNewTab: types.BoolNull(),
+				},
+			},
 		},
 	}
 
@@ -85,6 +104,7 @@ func Test_markdownConfigRoundTripViaUnion(t *testing.T) {
 	pm2 := &panelModel{}
 	populateMarkdownFromAPI(pm2, decoded)
 	require.NotNil(t, pm2.MarkdownConfig)
-	assert.Equal(t, pm.MarkdownConfig.Content, pm2.MarkdownConfig.Content)
-	assert.Equal(t, pm.MarkdownConfig.HideTitle, pm2.MarkdownConfig.HideTitle)
+	require.NotNil(t, pm2.MarkdownConfig.ByValue)
+	assert.Equal(t, pm.MarkdownConfig.ByValue.Content, pm2.MarkdownConfig.ByValue.Content)
+	assert.Equal(t, pm.MarkdownConfig.ByValue.HideTitle, pm2.MarkdownConfig.ByValue.HideTitle)
 }

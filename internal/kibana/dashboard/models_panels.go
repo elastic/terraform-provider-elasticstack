@@ -587,6 +587,22 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 
 	var panelItem kbapi.DashboardPanelItem
 	if pm.MarkdownConfig != nil {
+		// TODO(markdown-panel-gaps task 2): build KbnDashboardPanelTypeMarkdownConfig1 from ByReference
+		// and merge with REQ-009 null-preservation for read/write.
+		if pm.MarkdownConfig.ByReference != nil {
+			diags.AddError(
+				"Markdown by_reference not implemented",
+				"`markdown_config.by_reference` apply/read support is implemented in markdown-panel-gaps task 2.",
+			)
+			return kbapi.DashboardPanelItem{}, diags
+		}
+		if pm.MarkdownConfig.ByValue == nil {
+			diags.AddError(
+				"Invalid markdown_config",
+				"Set `markdown_config.by_value` or `markdown_config.by_reference` (exactly one).",
+			)
+			return kbapi.DashboardPanelItem{}, diags
+		}
 		config0 := buildMarkdownConfig(pm)
 		var config kbapi.KbnDashboardPanelTypeMarkdown_Config
 		if err := config.FromKbnDashboardPanelTypeMarkdownConfig0(config0); err != nil {

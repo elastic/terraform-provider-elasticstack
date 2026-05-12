@@ -1,10 +1,10 @@
 ## 1. Schema restructure
 
-- [ ] 1.1 Replace flat `markdown_config` with `by_value` / `by_reference` sub-blocks per the design
-- [ ] 1.2 Add `settings = object({ open_links_in_new_tab = bool })` (required) under `by_value`
-- [ ] 1.3 Add `hide_border` to both sub-blocks
-- [ ] 1.4 Conditional validators: exactly one of `by_value` / `by_reference` set
-- [ ] 1.5 Update descriptions under `internal/kibana/dashboard/descriptions/`
+- [x] 1.1 Replace flat `markdown_config` with `by_value` / `by_reference` sub-blocks per the design
+- [x] 1.2 Add `settings = object({ open_links_in_new_tab = bool })` (required) under `by_value`
+- [x] 1.3 Add `hide_border` to both sub-blocks
+- [x] 1.4 Conditional validators: exactly one of `by_value` / `by_reference` set
+- [x] 1.5 Update descriptions under `internal/kibana/dashboard/descriptions/`
 
 ## 2. Model and mapping
 
