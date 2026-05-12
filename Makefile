@@ -211,6 +211,14 @@ workflow-test: ## Run unit tests for workflow source generation
 check-workflows: ## Check generated workflow markdown sources
 	@ go run ./scripts/compile-workflow-sources --manifest .github/workflows-src/manifest.json --check --verbose
 
+.PHONY: skill-generate
+skill-generate: ## Generate the elasticstack-terraform agent skill into dist/skill/
+	@ go run ./scripts/generate-skill -provider-version $(VERSION)
+
+.PHONY: skill-test
+skill-test: ## Run unit tests for the skill generator
+	@ go test ./scripts/generate-skill/... -count=1
+
 .PHONY: gen
 gen: docs-generate ## Generate the code and documentation
 	@ go generate ./...
