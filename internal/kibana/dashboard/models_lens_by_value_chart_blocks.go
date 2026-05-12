@@ -48,16 +48,6 @@ func lensByValueChartBlocksFromPanel(pm *panelModel) *lensByValueChartBlocks {
 	return nil
 }
 
-func vizByValuePriorChartBlocks(tfPanel, pm *panelModel) *lensByValueChartBlocks {
-	if tfPanel != nil && tfPanel.VizConfig != nil && tfPanel.VizConfig.ByValue != nil {
-		return &tfPanel.VizConfig.ByValue.lensByValueChartBlocks
-	}
-	if pm != nil && pm.VizConfig != nil && pm.VizConfig.ByValue != nil {
-		return &pm.VizConfig.ByValue.lensByValueChartBlocks
-	}
-	return nil
-}
-
 func firstLensVizConverterForChartBlocks(blocks *lensByValueChartBlocks) (lensVisualizationConverter, bool) {
 	for _, c := range lensVizConverters {
 		if c.handlesTFConfigBlocks(blocks) {

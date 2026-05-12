@@ -5,9 +5,9 @@
 // the Apache License, Version 2.0 (the "License"); you may
 // not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing,
 // software distributed under the License is distributed on an
 // "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -92,6 +92,99 @@ func Test_mapPanelFromAPI_vis_byValue_populatesNestedChartBlock(t *testing.T) {
 	require.Nil(t, pm.VizConfig.ByReference)
 	require.NotNil(t, pm.VizConfig.ByValue)
 	require.NotNil(t, pm.VizConfig.ByValue.MetricChartConfig)
+}
+
+func Test_mapPanelFromAPI_vis_byValue_prefersAPIChartOverStalePriorXYBlock(t *testing.T) {
+	ctx := context.Background()
+
+	tfPanel := panelModel{
+		Type: types.StringValue("vis"),
+		VizConfig: &vizConfigModel{
+			ByValue: &vizByValueModel{
+				lensByValueChartBlocks: lensByValueChartBlocks{
+					XYChartConfig: &xyChartConfigModel{
+						Title: types.StringValue("Old XY Title"),
+						Axis: &xyAxisModel{
+							X: &xyAxisConfigModel{},
+							Y: &yAxisConfigModel{},
+						},
+						Decorations: &xyDecorationsModel{},
+						Fitting:     &xyFittingModel{Type: types.StringValue("none")},
+						Legend:      &xyLegendModel{Inside: types.BoolValue(false), Visibility: types.StringValue("visible")},
+						Query:       &filterSimpleModel{Language: types.StringValue("kql"), Expression: types.StringValue("*")},
+					},
+				},
+			},
+		},
+		ConfigJSON: customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults),
+	}
+
+	const apiPanelsJSON = `[
+		{
+			"type": "vis",
+			"grid": { "x": 0, "y": 0, "w": 6, "h": 6 },
+			"id": "viz-chart-swap",
+			"config": {
+				"type": "metric",
+				"title": "Metric From API",
+				"query": { "expression": "*", "language": "kql" },
+				"metrics": []
+			}
+		}
+	]`
+	var apiPanels kbapi.DashboardPanels
+	require.NoError(t, json.Unmarshal([]byte(apiPanelsJSON), &apiPanels))
+	item := apiPanels[0]
+	panelRow, err := item.AsDashboardPanelItem()
+	require.NoError(t, err)
+
+	dm := dashboardModel{}
+	out, diags := dm.mapPanelFromAPI(ctx, &tfPanel, panelRow)
+	require.False(t, diags.HasError(), "%s", diags)
+	require.NotNil(t, out.VizConfig)
+	require.NotNil(t, out.VizConfig.ByValue)
+	require.Nil(t, out.VizConfig.ByValue.XYChartConfig)
+	require.NotNil(t, out.VizConfig.ByValue.MetricChartConfig)
+	assert.Equal(t, "Metric From API", out.VizConfig.ByValue.MetricChartConfig.Title.ValueString())
+}
+
+func Test_mapPanelFromAPI_vis_unsupportedChartDiagnostic(t *testing.T) {
+	ctx := context.Background()
+
+	original := lensVizConverters
+	lensVizConverters = nil // no converters match metric (or anything)
+	t.Cleanup(func() {
+		lensVizConverters = original
+	})
+
+	const apiPanelsJSON = `[
+		{
+			"type": "vis",
+			"grid": { "x": 0, "y": 0, "w": 4, "h": 4 },
+			"config": {
+				"type": "metric",
+				"title": "M",
+				"query": { "expression": "*", "language": "kql" },
+				"metrics": []
+			}
+		}
+	]`
+	var apiPanels kbapi.DashboardPanels
+	require.NoError(t, json.Unmarshal([]byte(apiPanelsJSON), &apiPanels))
+
+	dm := &dashboardModel{}
+	_, _, diags := dm.mapPanelsFromAPI(ctx, &apiPanels)
+	require.True(t, diags.HasError())
+	found := false
+	for _, d := range diags {
+		if d.Summary() == "Unsupported visualization chart type" {
+			found = true
+			assert.Contains(t, d.Detail(), "metric")
+			assert.Contains(t, d.Detail(), "config_json")
+			break
+		}
+	}
+	require.True(t, found, "expected Unsupported visualization chart type diagnostic")
 }
 
 func Test_mapPanelFromAPI_vis_ambiguousPreservesPriorByReference(t *testing.T) {

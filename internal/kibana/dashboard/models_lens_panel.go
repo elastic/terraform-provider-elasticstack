@@ -119,3 +119,17 @@ func detectLensVizType(attrs kbapi.KbnDashboardPanelTypeVisConfig0) string {
 	}
 	return ""
 }
+
+// lensVizConverterForType returns the typed Lens converter for viz_config.by_value whose discriminator
+// matches strings produced by detectLensVizType, or nil when the provider does not model that chart kind.
+func lensVizConverterForType(vizType string) lensVisualizationConverter {
+	if vizType == "" {
+		return nil
+	}
+	for _, c := range lensVizConverters {
+		if c.vizType() == vizType {
+			return c
+		}
+	}
+	return nil
+}

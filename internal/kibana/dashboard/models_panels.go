@@ -31,10 +31,10 @@ import (
 )
 
 type panelModel struct {
-	Type           types.String         `tfsdk:"type"`
-	Grid           panelGridModel       `tfsdk:"grid"`
-	ID             types.String         `tfsdk:"id"`
-	MarkdownConfig *markdownConfigModel `tfsdk:"markdown_config"`
+	Type                          types.String                                      `tfsdk:"type"`
+	Grid                          panelGridModel                                    `tfsdk:"grid"`
+	ID                            types.String                                      `tfsdk:"id"`
+	MarkdownConfig                *markdownConfigModel                              `tfsdk:"markdown_config"`
 	TimeSliderControlConfig       *timeSliderControlConfigModel                     `tfsdk:"time_slider_control_config"`
 	SloBurnRateConfig             *sloBurnRateConfigModel                           `tfsdk:"slo_burn_rate_config"`
 	SloOverviewConfig             *sloOverviewConfigModel                           `tfsdk:"slo_overview_config"`
@@ -388,21 +388,30 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 				break
 			}
 			vizType := detectLensVizType(config0)
-			for _, converter := range lensVizConverters {
-				if converter.vizType() != vizType {
-					continue
-				}
-				priorBlocks := vizByValuePriorChartBlocks(tfPanel, &pm)
-				if tfPanel != nil && priorBlocks != nil && !converter.handlesTFConfigBlocks(priorBlocks) {
-					continue
-				}
-				pm.VizConfig = &vizConfigModel{
-					ByValue: &vizByValueModel{},
-				}
-				d := converter.populateFromAttributes(ctx, &pm.VizConfig.ByValue.lensByValueChartBlocks, config0)
-				diags.Append(d...)
+			if vizType == "" {
+				diags.AddError(
+					"Unsupported visualization chart type",
+					"The `vis` panel config has a top-level chart discriminator but could not resolve a Lens chart kind from the union; use panel-level `config_json` until this shape is modeled.",
+				)
 				break
 			}
+			converter := lensVizConverterForType(vizType)
+			if converter == nil {
+				diags.AddError(
+					"Unsupported visualization chart type",
+					fmt.Sprintf(
+						"The dashboard returned Lens visualization discriminator %q which this provider does not support as typed `viz_config.by_value`. "+
+							"Use panel-level `config_json` as the escape hatch to manage this panel until support is added.",
+						vizType,
+					),
+				)
+				break
+			}
+			pm.VizConfig = &vizConfigModel{
+				ByValue: &vizByValueModel{},
+			}
+			d := converter.populateFromAttributes(ctx, &pm.VizConfig.ByValue.lensByValueChartBlocks, config0)
+			diags.Append(d...)
 
 		default:
 			if vizPrior != nil && vizPrior.ByReference != nil {
@@ -417,21 +426,23 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 			if vizType == "" {
 				break
 			}
-			for _, converter := range lensVizConverters {
-				if converter.vizType() != vizType {
-					continue
-				}
-				priorBlocks := vizByValuePriorChartBlocks(tfPanel, &pm)
-				if tfPanel != nil && priorBlocks != nil && !converter.handlesTFConfigBlocks(priorBlocks) {
-					continue
-				}
-				pm.VizConfig = &vizConfigModel{
-					ByValue: &vizByValueModel{},
-				}
-				d := converter.populateFromAttributes(ctx, &pm.VizConfig.ByValue.lensByValueChartBlocks, config0)
-				diags.Append(d...)
+			converter := lensVizConverterForType(vizType)
+			if converter == nil {
+				diags.AddError(
+					"Unsupported visualization chart type",
+					fmt.Sprintf(
+						"The dashboard returned Lens visualization discriminator %q which this provider does not support as typed `viz_config.by_value`. "+
+							"Use panel-level `config_json` as the escape hatch to manage this panel until support is added.",
+						vizType,
+					),
+				)
 				break
 			}
+			pm.VizConfig = &vizConfigModel{
+				ByValue: &vizByValueModel{},
+			}
+			d := converter.populateFromAttributes(ctx, &pm.VizConfig.ByValue.lensByValueChartBlocks, config0)
+			diags.Append(d...)
 		}
 	case panelTypeSloErrorBudget:
 		sebPanel, err := panelItem.AsKbnDashboardPanelTypeSloErrorBudget()
