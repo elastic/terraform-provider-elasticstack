@@ -33,7 +33,9 @@ func newDatatablePanelConfigConverter() datatablePanelConfigConverter {
 	return datatablePanelConfigConverter{
 		lensVisualizationBase: lensVisualizationBase{
 			visualizationType: string(kbapi.DatatableNoESQLTypeDataTable),
-			hasTFPanelConfig:  func(pm panelModel) bool { return pm.DatatableConfig != nil },
+			hasTFChartBlock: func(blocks *lensByValueChartBlocks) bool {
+				return blocks != nil && blocks.DatatableConfig != nil
+			},
 		},
 	}
 }
@@ -42,46 +44,52 @@ type datatablePanelConfigConverter struct {
 	lensVisualizationBase
 }
 
-func (c datatablePanelConfigConverter) populateFromAttributes(ctx context.Context, dashboard *dashboardModel, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
+func (c datatablePanelConfigConverter) populateFromAttributes(
+	ctx context.Context,
+	dashboard *dashboardModel,
+	tfPanel *panelModel,
+	blocks *lensByValueChartBlocks,
+	attrs kbapi.KbnDashboardPanelTypeVisConfig0,
+) diag.Diagnostics {
 	var priorNo *datatableNoESQLConfigModel
 	var priorEsql *datatableESQLConfigModel
-	if pm.DatatableConfig != nil {
-		if pm.DatatableConfig.NoESQL != nil {
-			cpy := *pm.DatatableConfig.NoESQL
+	if b := lensByValueChartBlocksFromPanel(tfPanel); b != nil && b.DatatableConfig != nil {
+		if b.DatatableConfig.NoESQL != nil {
+			cpy := *b.DatatableConfig.NoESQL
 			priorNo = &cpy
 		}
-		if pm.DatatableConfig.ESQL != nil {
-			cpy := *pm.DatatableConfig.ESQL
+		if b.DatatableConfig.ESQL != nil {
+			cpy := *b.DatatableConfig.ESQL
 			priorEsql = &cpy
 		}
 	}
 
-	pm.DatatableConfig = &datatableConfigModel{}
+	blocks.DatatableConfig = &datatableConfigModel{}
 
 	if datatableNoESQL, err := attrs.AsDatatableNoESQL(); err == nil && !isDatatableNoESQLCandidateActuallyESQL(datatableNoESQL) {
-		pm.DatatableConfig.NoESQL = &datatableNoESQLConfigModel{}
-		return pm.DatatableConfig.NoESQL.fromAPI(ctx, dashboard, priorNo, datatableNoESQL)
+		blocks.DatatableConfig.NoESQL = &datatableNoESQLConfigModel{}
+		return blocks.DatatableConfig.NoESQL.fromAPI(ctx, dashboard, priorNo, datatableNoESQL)
 	}
 	datatableESQL, err := attrs.AsDatatableESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	pm.DatatableConfig.ESQL = &datatableESQLConfigModel{}
-	return pm.DatatableConfig.ESQL.fromAPI(ctx, dashboard, priorEsql, datatableESQL)
+	blocks.DatatableConfig.ESQL = &datatableESQLConfigModel{}
+	return blocks.DatatableConfig.ESQL.fromAPI(ctx, dashboard, priorEsql, datatableESQL)
 }
 
-func (c datatablePanelConfigConverter) buildAttributes(pm panelModel, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func (c datatablePanelConfigConverter) buildAttributes(blocks *lensByValueChartBlocks, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	if pm.DatatableConfig == nil {
+	if blocks.DatatableConfig == nil {
 		return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
 	}
 
 	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 
 	switch {
-	case pm.DatatableConfig.NoESQL != nil:
-		noESQL, noDiags := pm.DatatableConfig.NoESQL.toAPI(dashboard)
+	case blocks.DatatableConfig.NoESQL != nil:
+		noESQL, noDiags := blocks.DatatableConfig.NoESQL.toAPI(dashboard)
 		diags.Append(noDiags...)
 		if diags.HasError() {
 			return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
@@ -91,8 +99,8 @@ func (c datatablePanelConfigConverter) buildAttributes(pm panelModel, dashboard 
 			diags.AddError("Failed to convert datatable no-esql config", err.Error())
 			return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
 		}
-	case pm.DatatableConfig.ESQL != nil:
-		esql, esqlDiags := pm.DatatableConfig.ESQL.toAPI(dashboard)
+	case blocks.DatatableConfig.ESQL != nil:
+		esql, esqlDiags := blocks.DatatableConfig.ESQL.toAPI(dashboard)
 		diags.Append(esqlDiags...)
 		if diags.HasError() {
 			return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags

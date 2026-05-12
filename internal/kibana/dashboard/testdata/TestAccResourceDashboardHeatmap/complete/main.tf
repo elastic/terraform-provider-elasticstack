@@ -25,93 +25,97 @@ resource "elasticstack_kibana_dashboard" "test" {
       w = 24
       h = 15
     }
-    heatmap_config = {
-      title       = "Complete Heatmap"
-      description = "Complete heatmap visualization"
-      data_source_json = jsonencode({
-        type          = "data_view_spec"
-        index_pattern = "metrics-*"
+    viz_config = {
+      by_value = {
+        heatmap_config = {
+          title       = "Complete Heatmap"
+          description = "Complete heatmap visualization"
+          data_source_json = jsonencode({
+            type          = "data_view_spec"
+            index_pattern = "metrics-*"
 
-        time_field = "@timestamp"
-      })
-      query = {
-        language   = "kql"
-        expression = ""
-      }
-      filters = [
-        {
-          filter_json = jsonencode({
-            type = "condition"
-            condition = {
-              field    = "host.os.keyword"
-              operator = "is"
-              value    = "linux"
-            }
+            time_field = "@timestamp"
           })
-        }
-      ]
-      metric_json = jsonencode({
-        operation = "count"
-      })
-      x_axis_json = jsonencode({
-        operation = "filters"
-        filters = [
-          {
-            label = "All"
-            filter = {
-              expression = "*"
-              language   = "kql"
+          query = {
+            language   = "kql"
+            expression = ""
+          }
+          filters = [
+            {
+              filter_json = jsonencode({
+                type = "condition"
+                condition = {
+                  field    = "host.os.keyword"
+                  operator = "is"
+                  value    = "linux"
+                }
+              })
+            }
+          ]
+          metric_json = jsonencode({
+            operation = "count"
+          })
+          x_axis_json = jsonencode({
+            operation = "filters"
+            filters = [
+              {
+                label = "All"
+                filter = {
+                  expression = "*"
+                  language   = "kql"
+                }
+              }
+            ]
+          })
+          y_axis_json = jsonencode({
+            operation = "filters"
+            filters = [
+              {
+                label = "All"
+                filter = {
+                  expression = "*"
+                  language   = "kql"
+                }
+              }
+            ]
+          })
+          axis = {
+            x = {
+              labels = {
+                orientation = "vertical"
+                visible     = false
+              }
+              title = {
+                value   = "Custom X Axis"
+                visible = true
+              }
+            }
+            y = {
+              labels = {
+                visible = false
+              }
+              title = {
+                value   = "Custom Y Axis"
+                visible = true
+              }
             }
           }
-        ]
-      })
-      y_axis_json = jsonencode({
-        operation = "filters"
-        filters = [
-          {
-            label = "All"
-            filter = {
-              expression = "*"
-              language   = "kql"
+          styling = {
+            cells = {
+              labels = {
+                visible = false
+              }
             }
           }
-        ]
-      })
-      axis = {
-        x = {
-          labels = {
-            orientation = "vertical"
-            visible     = false
+          legend = {
+            visibility           = "hidden"
+            size                 = "s"
+            truncate_after_lines = 10
           }
-          title = {
-            value   = "Custom X Axis"
-            visible = true
-          }
-        }
-        y = {
-          labels = {
-            visible = false
-          }
-          title = {
-            value   = "Custom Y Axis"
-            visible = true
-          }
+          ignore_global_filters = true
+          sampling              = 0.5
         }
       }
-      styling = {
-        cells = {
-          labels = {
-            visible = false
-          }
-        }
-      }
-      legend = {
-        visibility           = "hidden"
-        size                 = "s"
-        truncate_after_lines = 10
-      }
-      ignore_global_filters = true
-      sampling              = 0.5
     }
   }]
 }

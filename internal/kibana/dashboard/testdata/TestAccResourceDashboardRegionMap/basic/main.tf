@@ -25,48 +25,52 @@ resource "elasticstack_kibana_dashboard" "test" {
       w = 24
       h = 15
     }
-    region_map_config = {
-      title       = "Sample Region Map"
-      description = "Test region map visualization"
-      data_source_json = jsonencode({
-        type          = "data_view_spec"
-        index_pattern = "metrics-*"
+    viz_config = {
+      by_value = {
+        region_map_config = {
+          title       = "Sample Region Map"
+          description = "Test region map visualization"
+          data_source_json = jsonencode({
+            type          = "data_view_spec"
+            index_pattern = "metrics-*"
 
-        time_field = "@timestamp"
-      })
-      query = {
-        language   = "kql"
-        expression = ""
-      }
-      metric_json = jsonencode({
-        operation = "count"
-      })
-      region_json = jsonencode({
-        operation = "filters"
-        filters = [
-          {
-            label = "All"
-            filter = {
-              expression = "*"
-              language   = "kql"
-            }
-          }
-        ]
-      })
-      ignore_global_filters = false
-      sampling              = 1
-      filters = [
-        {
-          filter_json = jsonencode({
-            type = "condition"
-            condition = {
-              field    = "status"
-              operator = "is"
-              value    = "active"
-            }
+            time_field = "@timestamp"
           })
+          query = {
+            language   = "kql"
+            expression = ""
+          }
+          metric_json = jsonencode({
+            operation = "count"
+          })
+          region_json = jsonencode({
+            operation = "filters"
+            filters = [
+              {
+                label = "All"
+                filter = {
+                  expression = "*"
+                  language   = "kql"
+                }
+              }
+            ]
+          })
+          ignore_global_filters = false
+          sampling              = 1
+          filters = [
+            {
+              filter_json = jsonencode({
+                type = "condition"
+                condition = {
+                  field    = "status"
+                  operator = "is"
+                  value    = "active"
+                }
+              })
+            }
+          ]
         }
-      ]
+      }
     }
   }]
 }

@@ -171,12 +171,12 @@ func Test_regionMapPanelConfigConverter_populateFromAttributes_buildAttributes_r
 	require.NoError(t, attrs.FromRegionMapNoESQL(api))
 
 	converter := newRegionMapPanelConfigConverter()
-	pm := &panelModel{}
-	diags := converter.populateFromAttributes(ctx, nil, pm, attrs)
+	vizBv := vizByValueModel{}
+	diags := converter.populateFromAttributes(ctx, nil, nil, &vizBv.lensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
-	require.NotNil(t, pm.RegionMapConfig)
+	require.NotNil(t, vizBv.RegionMapConfig)
 
-	attrs2, diags := converter.buildAttributes(*pm, nil)
+	attrs2, diags := converter.buildAttributes(&vizBv.lensByValueChartBlocks, nil)
 	require.False(t, diags.HasError())
 
 	noESQL2, err := attrs2.AsRegionMapNoESQL()
@@ -203,12 +203,12 @@ func Test_regionMapPanelConfigConverter_populateFromAttributes_buildAttributes_r
 	require.NoError(t, attrs.FromRegionMapESQL(api))
 
 	converter := newRegionMapPanelConfigConverter()
-	pm := &panelModel{}
-	diags := converter.populateFromAttributes(ctx, nil, pm, attrs)
+	vizBv := vizByValueModel{}
+	diags := converter.populateFromAttributes(ctx, nil, nil, &vizBv.lensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
-	require.NotNil(t, pm.RegionMapConfig)
+	require.NotNil(t, vizBv.RegionMapConfig)
 
-	attrs2, diags := converter.buildAttributes(*pm, nil)
+	attrs2, diags := converter.buildAttributes(&vizBv.lensByValueChartBlocks, nil)
 	require.False(t, diags.HasError())
 
 	esql2, err := attrs2.AsRegionMapESQL()

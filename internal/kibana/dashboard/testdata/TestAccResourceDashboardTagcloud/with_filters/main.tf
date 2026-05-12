@@ -25,46 +25,50 @@ resource "elasticstack_kibana_dashboard" "test" {
       w = 48
       h = 20
     }
-    tagcloud_config = {
-      title       = "Filtered Tagcloud"
-      description = "Tagcloud with filters and custom settings"
-      data_source_json = jsonencode({
-        type          = "data_view_spec"
-        index_pattern = "logs-*"
+    viz_config = {
+      by_value = {
+        tagcloud_config = {
+          title       = "Filtered Tagcloud"
+          description = "Tagcloud with filters and custom settings"
+          data_source_json = jsonencode({
+            type          = "data_view_spec"
+            index_pattern = "logs-*"
 
-        time_field = "@timestamp"
-      })
-      query = {
-        language   = "kql"
-        expression = "service.name:*"
-      }
-      filters = [
-        {
-          filter_json = jsonencode({
-            type = "condition"
-            condition = {
-              field    = "log.level"
-              operator = "is"
-              value    = "error"
-            }
+            time_field = "@timestamp"
           })
+          query = {
+            language   = "kql"
+            expression = "service.name:*"
+          }
+          filters = [
+            {
+              filter_json = jsonencode({
+                type = "condition"
+                condition = {
+                  field    = "log.level"
+                  operator = "is"
+                  value    = "error"
+                }
+              })
+            }
+          ]
+          metric_json = jsonencode({
+            operation = "sum"
+            field     = "event.duration"
+          })
+          tag_by_json = jsonencode({
+            operation = "terms"
+            fields    = ["service.name"]
+            limit     = 15
+          })
+          orientation           = "vertical"
+          ignore_global_filters = true
+          sampling              = 0.5
+          font_size = {
+            min = 12
+            max = 100
+          }
         }
-      ]
-      metric_json = jsonencode({
-        operation = "sum"
-        field     = "event.duration"
-      })
-      tag_by_json = jsonencode({
-        operation = "terms"
-        fields    = ["service.name"]
-        limit     = 15
-      })
-      orientation           = "vertical"
-      ignore_global_filters = true
-      sampling              = 0.5
-      font_size = {
-        min = 12
-        max = 100
       }
     }
   }]

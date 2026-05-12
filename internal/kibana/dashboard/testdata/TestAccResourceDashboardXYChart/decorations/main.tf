@@ -25,65 +25,69 @@ resource "elasticstack_kibana_dashboard" "test" {
       w = 24
       h = 15
     }
-    xy_chart_config = {
-      title       = "Sample XY Chart"
-      description = "Test XY chart visualization"
-      axis = {
-        y = {
-          scale = "linear"
-          domain_json = jsonencode({
-            type = "fit"
-          })
-          title = {
-            value   = "Count"
-            visible = true
-          }
-        }
-        x = {
-          title = {
-            value   = "Timestamp"
-            visible = true
-          }
-        }
-      }
-      decorations = {
-        line_interpolation = "smooth"
-        minimum_bar_height = 2
-        fill_opacity       = 0.3
-        show_value_labels  = false
-      }
-      fitting = {
-        type = "none"
-      }
-      layers = [
-        {
-          type = "line"
-          data_layer = {
-            ignore_global_filters = false
-            sampling              = 1
-            data_source_json = jsonencode({
-              type          = "data_view_spec"
-              index_pattern = "metrics-*"
-            })
-            y = [
-              {
-                config_json = jsonencode({
-                  operation     = "count"
-                  empty_as_null = true
-                })
+    viz_config = {
+      by_value = {
+        xy_chart_config = {
+          title       = "Sample XY Chart"
+          description = "Test XY chart visualization"
+          axis = {
+            y = {
+              scale = "linear"
+              domain_json = jsonencode({
+                type = "fit"
+              })
+              title = {
+                value   = "Count"
+                visible = true
               }
-            ]
+            }
+            x = {
+              title = {
+                value   = "Timestamp"
+                visible = true
+              }
+            }
+          }
+          decorations = {
+            line_interpolation = "smooth"
+            minimum_bar_height = 2
+            fill_opacity       = 0.3
+            show_value_labels  = false
+          }
+          fitting = {
+            type = "none"
+          }
+          layers = [
+            {
+              type = "line"
+              data_layer = {
+                ignore_global_filters = false
+                sampling              = 1
+                data_source_json = jsonencode({
+                  type          = "data_view_spec"
+                  index_pattern = "metrics-*"
+                })
+                y = [
+                  {
+                    config_json = jsonencode({
+                      operation     = "count"
+                      empty_as_null = true
+                    })
+                  }
+                ]
+              }
+            }
+          ]
+          legend = {
+            visibility = "visible"
+            inside     = false
+            position   = "right"
+          }
+          query = {
+            language   = "kql"
+            expression = ""
           }
         }
-      ]
-      legend = {
-        visibility = "visible"
-        inside     = false
-        position   = "right"
-      }
-      query = {
-        language   = "kql"
-        expression = ""
       }
     }
   }]

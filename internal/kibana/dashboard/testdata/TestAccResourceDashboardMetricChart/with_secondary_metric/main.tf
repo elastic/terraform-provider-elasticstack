@@ -25,47 +25,51 @@ resource "elasticstack_kibana_dashboard" "test" {
       w = 24
       h = 15
     }
-    metric_chart_config = {
-      title       = "Sample Metric Chart with Secondary Metric"
-      description = "Test metric chart with secondary metric"
-      data_source_json = jsonencode({
-        type          = "data_view_spec"
-        index_pattern = "metrics-*"
+    viz_config = {
+      by_value = {
+        metric_chart_config = {
+          title       = "Sample Metric Chart with Secondary Metric"
+          description = "Test metric chart with secondary metric"
+          data_source_json = jsonencode({
+            type          = "data_view_spec"
+            index_pattern = "metrics-*"
 
-        time_field = "@timestamp"
-      })
-      query = {
-        language   = "kql"
-        expression = "status:active"
-      }
-      metrics = [
-        {
-          config_json = jsonencode({
-            type      = "primary"
-            operation = "count"
-            format = {
-              type = "number"
-            }
+            time_field = "@timestamp"
           })
-        },
-        {
-          config_json = jsonencode({
-            type      = "secondary"
-            operation = "sum"
-            field     = "bytes"
-            format = {
-              type = "number"
+          query = {
+            language   = "kql"
+            expression = "status:active"
+          }
+          metrics = [
+            {
+              config_json = jsonencode({
+                type      = "primary"
+                operation = "count"
+                format = {
+                  type = "number"
+                }
+              })
+            },
+            {
+              config_json = jsonencode({
+                type      = "secondary"
+                operation = "sum"
+                field     = "bytes"
+                format = {
+                  type = "number"
+                }
+                filter = {
+                  expression = ""
+                  language   = "kql"
+                }
+                time_scale = "h"
+              })
             }
-            filter = {
-              expression = ""
-              language   = "kql"
-            }
-            time_scale = "h"
-          })
+          ]
+          ignore_global_filters = false
+          sampling              = 1
         }
-      ]
-      ignore_global_filters = false
-      sampling              = 1
+      }
     }
   }]
 }

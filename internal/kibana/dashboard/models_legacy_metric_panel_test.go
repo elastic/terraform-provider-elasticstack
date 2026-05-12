@@ -131,12 +131,12 @@ func Test_legacyMetricPanelConfigConverter_populateFromAttributes_buildAttribute
 	require.NoError(t, attrs.FromLegacyMetricNoESQL(apiNoESQL))
 
 	converter := newLegacyMetricPanelConfigConverter()
-	pm := &panelModel{}
-	diags := converter.populateFromAttributes(ctx, nil, pm, attrs)
+	vizBv := vizByValueModel{}
+	diags := converter.populateFromAttributes(ctx, nil, nil, &vizBv.lensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
-	require.NotNil(t, pm.LegacyMetricConfig)
+	require.NotNil(t, vizBv.LegacyMetricConfig)
 
-	attrs2, diags := converter.buildAttributes(*pm, nil)
+	attrs2, diags := converter.buildAttributes(&vizBv.lensByValueChartBlocks, nil)
 	require.False(t, diags.HasError())
 
 	noESQL2, err := attrs2.AsLegacyMetricNoESQL()

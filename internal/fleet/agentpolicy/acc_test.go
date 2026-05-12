@@ -882,7 +882,7 @@ func TestAccResourceAgentPolicyWithAdvancedSettings(t *testing.T) {
 					}
 					return !agentpolicy.MonitoringRuntimeExperimentalSupported(serverVersion), nil
 				},
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_with_monitoring_runtime"),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("update_with_monitoring_runtime"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
 				},
@@ -909,7 +909,7 @@ func TestAccResourceAgentPolicyWithAdvancedSettings(t *testing.T) {
 					}
 					return !agentpolicy.MonitoringRuntimeExperimentalSupported(serverVersion), nil
 				},
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("reset_monitoring_runtime"),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("reset_monitoring_runtime"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
 				},

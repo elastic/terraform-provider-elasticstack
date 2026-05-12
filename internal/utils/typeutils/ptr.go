@@ -19,7 +19,7 @@ package typeutils
 
 // MapRef takes the reference of the given map value. If the value is nil, it returns nil rather
 // than a pointer to nil.
-func MapRef[T any, M ~map[string]T](value M) *M {
+func MapRef[K comparable, T any, M ~map[K]T](value M) *M {
 	if value == nil {
 		return nil
 	}
@@ -33,6 +33,21 @@ func SliceRef[T any, S ~[]T](value S) *S {
 		return nil
 	}
 	return &value
+}
+
+// SliceNilIfEmpty takes the reference of the given slice value. If the value is nil or empty, it
+// returns nil rather than a pointer to an empty slice.
+func SliceNilIfEmpty[T any, S ~[]T](value S) *S {
+	if len(value) == 0 {
+		return nil
+	}
+	return &value
+}
+
+// Float32Ptr converts a float64 to a *float32.
+func Float32Ptr(v float64) *float32 {
+	f := float32(v)
+	return &f
 }
 
 // Deref returns the value referenced by the given pointer. If the pointer is nil, a zero value is
