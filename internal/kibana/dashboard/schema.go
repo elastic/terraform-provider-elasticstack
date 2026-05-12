@@ -1355,11 +1355,9 @@ func getLensDashboardAppByValueNestedAttributes() map[string]schema.Attribute {
 	}
 }
 
-// getLensByReferenceAttributes returns Lens by-reference attribute map for `lens_dashboard_app_config.by_reference`
-// and (task 4) `viz_config.by_reference`.
-//
-// `drilldowns_json` is intentionally absent — practitioners migrating from the legacy attribute get Terraform Plugin
-// Framework’s standard unsupported-argument diagnostics; CHANGELOG documents migration to structured `drilldowns`.
+// getLensByReferenceAttributes returns Lens by-reference attribute map for `lens_dashboard_app_config.by_reference`.
+// Structured `drilldowns` is required for new authoring; `drilldowns_json` is retained only so custom validators emit a
+// deliberate migration diagnostic (REQ-035 / delta spec scenario) alongside Terraform's deprecation warning.
 func getLensByReferenceAttributes() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"ref_id": schema.StringAttribute{
@@ -1388,6 +1386,16 @@ func getLensByReferenceAttributes() map[string]schema.Attribute {
 			Optional:            true,
 		},
 		"drilldowns": getStructuredDrilldownsAttribute(),
+		"drilldowns_json": schema.StringAttribute{
+			DeprecationMessage: "Use the structured `drilldowns` attribute instead.",
+			Optional:           true,
+			CustomType:         jsontypes.NormalizedType{},
+			Validators: []validator.String{
+				lensAppByReferenceDeprecatedDrilldownsJSON{},
+			},
+			MarkdownDescription: "Deprecated legacy JSON-array escape hatch replaced by structured `drilldowns`; " +
+				"if set (including empty array), configuration is rejected with migration guidance.",
+		},
 		"time_range": schema.SingleNestedAttribute{
 			MarkdownDescription: "Required time range for the by-reference `lens-dashboard-app` config.",
 			Required:            true,

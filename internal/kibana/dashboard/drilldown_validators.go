@@ -83,3 +83,29 @@ func (drilldownItemModeValidator) ValidateObject(_ context.Context, req validato
 		)
 	}
 }
+
+var _ validator.String = lensAppByReferenceDeprecatedDrilldownsJSON{}
+
+// lensAppByReferenceDeprecatedDrilldownsJSON rejects any configured `drilldowns_json` value on Lens by-reference panels so
+// plan-time diagnostics can direct practitioners to structured `drilldowns`. Deprecation warnings are emitted separately via
+// `DeprecationMessage` on the schema attribute; this validator always emits an error for known non-null config values.
+type lensAppByReferenceDeprecatedDrilldownsJSON struct{}
+
+func (lensAppByReferenceDeprecatedDrilldownsJSON) Description(_ context.Context) string {
+	return "Rejects deprecated `drilldowns_json` with migration guidance toward structured `drilldowns`."
+}
+
+func (v lensAppByReferenceDeprecatedDrilldownsJSON) MarkdownDescription(ctx context.Context) string {
+	return v.Description(ctx)
+}
+
+func (lensAppByReferenceDeprecatedDrilldownsJSON) ValidateString(_ context.Context, req validator.StringRequest, resp *validator.StringResponse) {
+	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+		return
+	}
+	resp.Diagnostics.AddAttributeError(
+		req.Path,
+		"Unsupported `drilldowns_json` attribute",
+		"`drilldowns_json` is no longer supported. Use the structured `drilldowns` block instead. See the resource documentation for the new shape.",
+	)
+}

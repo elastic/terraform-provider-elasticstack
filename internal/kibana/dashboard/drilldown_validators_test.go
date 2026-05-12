@@ -21,6 +21,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -172,5 +173,47 @@ func Test_structuredDrilldown_urlTriggerStringValidator(t *testing.T) {
 			m.ValidateString(ctx, req, &resp)
 		}
 		require.False(t, resp.Diagnostics.HasError())
+	})
+}
+
+func Test_lensAppByReferenceDeprecatedDrilldownsJSON_validator(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	v := lensAppByReferenceDeprecatedDrilldownsJSON{}
+	p := path.Root("drilldowns_json")
+
+	// terraform-plugin-framework's validator.StringRequest types ConfigValue as types.String (= basetypes.StringValue).
+	// Normalize JSON literals to plain string values mirroring Known/Unknown/Null behavior (CustomType validates JSON separately).
+	normalizedToSchemaStringForValidatorHarness := func(n jsontypes.Normalized) types.String {
+		switch {
+		case n.IsNull():
+			return types.StringNull()
+		case n.IsUnknown():
+			return types.StringUnknown()
+		default:
+			return types.StringValue(n.ValueString())
+		}
+	}
+
+	t.Run("defers_unknown", func(t *testing.T) {
+		t.Parallel()
+		var resp validator.StringResponse
+		v.ValidateString(ctx, validator.StringRequest{Path: p, ConfigValue: normalizedToSchemaStringForValidatorHarness(jsontypes.NewNormalizedUnknown())}, &resp)
+		require.False(t, resp.Diagnostics.HasError())
+	})
+
+	t.Run("noop_on_null_config", func(t *testing.T) {
+		t.Parallel()
+		var resp validator.StringResponse
+		v.ValidateString(ctx, validator.StringRequest{Path: p, ConfigValue: normalizedToSchemaStringForValidatorHarness(jsontypes.NewNormalizedNull())}, &resp)
+		require.False(t, resp.Diagnostics.HasError())
+	})
+
+	t.Run("errors_on_known_value_even_empty_array_json", func(t *testing.T) {
+		t.Parallel()
+		var resp validator.StringResponse
+		v.ValidateString(ctx, validator.StringRequest{Path: p, ConfigValue: normalizedToSchemaStringForValidatorHarness(jsontypes.NewNormalizedValue(`[]`))}, &resp)
+		require.True(t, resp.Diagnostics.HasError())
+		require.Contains(t, resp.Diagnostics.Errors()[0].Detail(), "structured `drilldowns`")
 	})
 }

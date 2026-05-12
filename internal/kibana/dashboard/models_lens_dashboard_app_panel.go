@@ -45,13 +45,15 @@ type lensDashboardAppByValueModel struct {
 }
 
 type lensDashboardAppByReferenceModel struct {
-	RefID          types.String                   `tfsdk:"ref_id"`
-	ReferencesJSON jsontypes.Normalized           `tfsdk:"references_json"`
-	Title          types.String                   `tfsdk:"title"`
-	Description    types.String                   `tfsdk:"description"`
-	HideTitle      types.Bool                     `tfsdk:"hide_title"`
-	HideBorder     types.Bool                     `tfsdk:"hide_border"`
-	Drilldowns     drilldownsModel                `tfsdk:"drilldowns"`
+	RefID          types.String         `tfsdk:"ref_id"`
+	ReferencesJSON jsontypes.Normalized `tfsdk:"references_json"`
+	Title          types.String         `tfsdk:"title"`
+	Description    types.String         `tfsdk:"description"`
+	HideTitle      types.Bool           `tfsdk:"hide_title"`
+	HideBorder     types.Bool           `tfsdk:"hide_border"`
+	Drilldowns     drilldownsModel      `tfsdk:"drilldowns"`
+	// DrilldownsJSON stays in TF state/schema only so deprecated practitioners see plan-time diagnostics; read/write uses Drilldowns.
+	DrilldownsJSON jsontypes.Normalized           `tfsdk:"drilldowns_json"`
 	TimeRange      lensDashboardAppTimeRangeModel `tfsdk:"time_range"`
 }
 
