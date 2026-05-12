@@ -26,6 +26,7 @@ import (
 	timeouts "github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/mapvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -254,6 +255,10 @@ func getSchema(ctx context.Context) schema.Schema {
 													"A rule must either have a non-empty `scope` or at least one condition. " +
 													"You may set `conditions` on the same rule.",
 												Optional: true,
+												Validators: []validator.Map{
+													mapvalidator.SizeAtLeast(1),
+													mapvalidator.NoNullValues(),
+												},
 												NestedObject: schema.NestedAttributeObject{
 													Attributes: map[string]schema.Attribute{
 														"filter_id": schema.StringAttribute{
