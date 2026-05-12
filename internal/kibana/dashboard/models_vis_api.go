@@ -153,8 +153,6 @@ func populateVisByReferenceFromAPI(
 		by.Drilldowns = nil
 	}
 
-	by.DrilldownsJSON = jsontypes.NewNormalizedNull()
-
 	brCopy := by
 	pm.VizConfig = &vizConfigModel{
 		ByReference: &brCopy,

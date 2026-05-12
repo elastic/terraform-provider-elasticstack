@@ -393,7 +393,6 @@ func TestPopulateLensDashboardAppFromAPI_byReferencePath(t *testing.T) {
 	require.Equal(t, "T2", br.Title.ValueString())
 	require.Equal(t, "D2", br.Description.ValueString())
 	require.Nil(t, br.Drilldowns)
-	require.True(t, br.DrilldownsJSON.IsNull())
 }
 
 func TestPopulateLensDashboardAppFromAPI_byReference_keepsPriorDrilldownsWhenAPIOmits(t *testing.T) {
@@ -427,7 +426,6 @@ func TestPopulateLensDashboardAppFromAPI_byReference_keepsPriorDrilldownsWhenAPI
 	require.Len(t, got, 1)
 	require.NotNil(t, got[0].Dashboard)
 	assertDashboardBlocksEqual(t, priorWant[0].Dashboard, got[0].Dashboard)
-	require.True(t, pm.LensDashboardAppConfig.ByReference.DrilldownsJSON.IsNull())
 }
 
 func TestLensDashboardAppByReferenceToAPI_discoverAndURLKinds(t *testing.T) {

@@ -65,7 +65,6 @@ func Test_vizConfigModeValidator(t *testing.T) {
 			"hide_title":      types.BoolNull(),
 			"hide_border":     types.BoolNull(),
 			"drilldowns":      types.ListNull(drillElemType),
-			"drilldowns_json": jsontypes.NewNormalizedNull(),
 			"time_range":      tr,
 		})
 	}

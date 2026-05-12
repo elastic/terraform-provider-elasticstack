@@ -431,8 +431,6 @@ func populateLensDashboardAppByReferenceFromAPI(
 		by.Drilldowns = nil
 	}
 
-	by.DrilldownsJSON = jsontypes.NewNormalizedNull()
-
 	pm.LensDashboardAppConfig = &lensDashboardAppConfigModel{
 		ByReference: &by,
 	}

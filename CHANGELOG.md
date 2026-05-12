@@ -11,7 +11,7 @@ The documented minimum supported Elastic Stack version is now 8.0. 7.x is no lon
 This resource remains **experimental**. If you compile it into the provider (`TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL=true`, or downstream packaging that exposes experimental resources), your dashboard HCL may need updating on upgrade:
 
 - For `panel.type = "vis"`, the typed Lens chart blocks (`xy_chart_config`, `metric_chart_config`, etc.) moved from sibling attributes on the panel into `viz_config.by_value`; set exactly one chart block inside that nested object.
-- `lens_dashboard_app_config.by_reference` no longer supports `drilldowns_json` for authoring. Use structured `drilldowns` (`dashboard`, `discover`, and `url` blocks). Any remaining `drilldowns_json` attribute is deliberately rejected so practitioners get a clear migration diagnostic.
+- `lens_dashboard_app_config.by_reference.drilldowns_json` is removed from the schema; use structured `drilldowns` (`dashboard`, `discover`, and `url` blocks) instead.
 - Structured URL drilldowns require `trigger` (`on_click_row`, `on_click_value`, `on_open_panel_menu`, or `on_select_range`); the Kibana dashboard API rejects URL drilldowns without `trigger`, and the provider now enforces this at plan time.
 
 
