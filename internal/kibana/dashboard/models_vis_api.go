@@ -244,7 +244,7 @@ func vizByReferenceToAPI(
 	return panelItem, diags
 }
 
-func vizConfigToAPI(pm panelModel, grid struct {
+func vizConfigToAPI(pm panelModel, dashboard *dashboardModel, grid struct {
 	H *float32 `json:"h,omitempty"`
 	W *float32 `json:"w,omitempty"`
 	X float32  `json:"x"`
@@ -266,7 +266,7 @@ func vizConfigToAPI(pm panelModel, grid struct {
 			diags.AddError("Invalid `viz_config.by_value`", "The typed chart block could not be resolved to a Lens visualization converter.")
 			return kbapi.DashboardPanelItem{}, diags
 		}
-		config0, d := conv.buildAttributes(blocks)
+		config0, d := conv.buildAttributes(blocks, dashboard)
 		diags.Append(d...)
 		if d.HasError() {
 			return kbapi.DashboardPanelItem{}, diags

@@ -868,8 +868,21 @@ func TestAccResourceAgentPolicyWithAdvancedSettings(t *testing.T) {
 			// Step 6: Set monitoring_runtime_experimental = "process"
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agentpolicy.MinVersionAdvancedSettings),
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_with_monitoring_runtime"),
+				SkipFunc: func() (bool, error) {
+					if skip, err := versionutils.CheckIfVersionIsUnsupported(agentpolicy.MinVersionAdvancedSettings)(); err != nil || skip {
+						return skip, err
+					}
+					client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+					if err != nil {
+						return false, err
+					}
+					serverVersion, diags := client.ServerVersion(context.Background())
+					if diags.HasError() {
+						return false, fmt.Errorf("failed to parse the elasticsearch version %v", diags)
+					}
+					return !agentpolicy.MonitoringRuntimeExperimentalSupported(serverVersion), nil
+				},
+				ConfigDirectory: acctest.NamedTestCaseDirectory("update_with_monitoring_runtime"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
 				},
@@ -882,8 +895,21 @@ func TestAccResourceAgentPolicyWithAdvancedSettings(t *testing.T) {
 			// Step 7: Reset monitoring_runtime_experimental to "" (disabled)
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agentpolicy.MinVersionAdvancedSettings),
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("reset_monitoring_runtime"),
+				SkipFunc: func() (bool, error) {
+					if skip, err := versionutils.CheckIfVersionIsUnsupported(agentpolicy.MinVersionAdvancedSettings)(); err != nil || skip {
+						return skip, err
+					}
+					client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+					if err != nil {
+						return false, err
+					}
+					serverVersion, diags := client.ServerVersion(context.Background())
+					if diags.HasError() {
+						return false, fmt.Errorf("failed to parse the elasticsearch version %v", diags)
+					}
+					return !agentpolicy.MonitoringRuntimeExperimentalSupported(serverVersion), nil
+				},
+				ConfigDirectory: acctest.NamedTestCaseDirectory("reset_monitoring_runtime"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
 				},

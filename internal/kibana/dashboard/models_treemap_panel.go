@@ -46,27 +46,36 @@ type treemapPanelConfigConverter struct {
 	lensVisualizationBase
 }
 
-func (c treemapPanelConfigConverter) populateFromAttributes(_ context.Context, blocks *lensByValueChartBlocks, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
-	if blocks.TreemapConfig == nil {
-		blocks.TreemapConfig = &treemapConfigModel{}
+func (c treemapPanelConfigConverter) populateFromAttributes(
+	ctx context.Context,
+	dashboard *dashboardModel,
+	tfPanel *panelModel,
+	blocks *lensByValueChartBlocks,
+	attrs kbapi.KbnDashboardPanelTypeVisConfig0,
+) diag.Diagnostics {
+	var prior *treemapConfigModel
+	if b := lensByValueChartBlocksFromPanel(tfPanel); b != nil && b.TreemapConfig != nil {
+		cpy := *b.TreemapConfig
+		prior = &cpy
 	}
+	blocks.TreemapConfig = &treemapConfigModel{}
 
 	if noESQL, err := attrs.AsTreemapNoESQL(); err == nil && !isTreemapNoESQLCandidateActuallyESQL(noESQL) {
-		return blocks.TreemapConfig.fromAPINoESQL(noESQL)
+		return blocks.TreemapConfig.fromAPINoESQL(ctx, dashboard, prior, noESQL)
 	}
 
 	treemapESQL, err := attrs.AsTreemapESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	return blocks.TreemapConfig.fromAPIESQL(treemapESQL)
+	return blocks.TreemapConfig.fromAPIESQL(ctx, dashboard, prior, treemapESQL)
 }
 
-func (c treemapPanelConfigConverter) buildAttributes(blocks *lensByValueChartBlocks) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func (c treemapPanelConfigConverter) buildAttributes(blocks *lensByValueChartBlocks, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	configModel := *blocks.TreemapConfig
 
-	attrs, treemapDiags := configModel.toAPI()
+	attrs, treemapDiags := configModel.toAPI(dashboard)
 	diags.Append(treemapDiags...)
 	return attrs, diags
 }
@@ -86,6 +95,7 @@ func isTreemapNoESQLCandidateActuallyESQL(api kbapi.TreemapNoESQL) bool {
 }
 
 type treemapConfigModel struct {
+	lensChartPresentationTFModel
 	Title               types.String                                        `tfsdk:"title"`
 	Description         types.String                                        `tfsdk:"description"`
 	DataSourceJSON      jsontypes.Normalized                                `tfsdk:"data_source_json"`
@@ -99,7 +109,7 @@ type treemapConfigModel struct {
 	ValueDisplay        *partitionValueDisplay                              `tfsdk:"value_display"`
 }
 
-func (m *treemapConfigModel) fromAPINoESQL(api kbapi.TreemapNoESQL) diag.Diagnostics {
+func (m *treemapConfigModel) fromAPINoESQL(ctx context.Context, dashboard *dashboardModel, prior *treemapConfigModel, api kbapi.TreemapNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	m.Title = types.StringPointerValue(api.Title)
@@ -150,10 +160,27 @@ func (m *treemapConfigModel) fromAPINoESQL(api kbapi.TreemapNoESQL) diag.Diagnos
 		m.ValueDisplay = nil
 	}
 
+	var priorLens *lensChartPresentationTFModel
+	if prior != nil {
+		p := prior.lensChartPresentationTFModel
+		priorLens = &p
+	}
+	ddWire, ddOmit, ddWireDiags := lensDrilldownsAPIToWire(api.Drilldowns)
+	diags.Append(ddWireDiags...)
+	if ddWireDiags.HasError() {
+		return diags
+	}
+	pres, presDiags := lensChartPresentationReadsFor(ctx, dashboard, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return diags
+	}
+	m.lensChartPresentationTFModel = pres
+
 	return diags
 }
 
-func (m *treemapConfigModel) fromAPIESQL(api kbapi.TreemapESQL) diag.Diagnostics {
+func (m *treemapConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashboardModel, prior *treemapConfigModel, api kbapi.TreemapESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// ES|QL charts don't have a query block. Clear it to avoid carrying over
@@ -205,10 +232,27 @@ func (m *treemapConfigModel) fromAPIESQL(api kbapi.TreemapESQL) diag.Diagnostics
 		m.ValueDisplay = nil
 	}
 
+	var priorLens *lensChartPresentationTFModel
+	if prior != nil {
+		p := prior.lensChartPresentationTFModel
+		priorLens = &p
+	}
+	ddWire, ddOmit, ddWireDiags := lensDrilldownsAPIToWire(api.Drilldowns)
+	diags.Append(ddWireDiags...)
+	if ddWireDiags.HasError() {
+		return diags
+	}
+	pres, presDiags := lensChartPresentationReadsFor(ctx, dashboard, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return diags
+	}
+	m.lensChartPresentationTFModel = pres
+
 	return diags
 }
 
-func (m *treemapConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func (m *treemapConfigModel) toAPI(dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 	var diags diag.Diagnostics
 
@@ -217,7 +261,7 @@ func (m *treemapConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, dia
 	}
 
 	if m.usesESQL() {
-		esql, esqlDiags := m.toAPITreemapESQL()
+		esql, esqlDiags := m.toAPITreemapESQL(dashboard)
 		diags.Append(esqlDiags...)
 		if diags.HasError() {
 			return attrs, diags
@@ -228,7 +272,7 @@ func (m *treemapConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, dia
 		return attrs, diags
 	}
 
-	noESQL, noESQLDiags := m.toAPINoESQL()
+	noESQL, noESQLDiags := m.toAPINoESQL(dashboard)
 	diags.Append(noESQLDiags...)
 	if diags.HasError() {
 		return attrs, diags
@@ -240,7 +284,7 @@ func (m *treemapConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, dia
 	return attrs, diags
 }
 
-func (m *treemapConfigModel) toAPITreemapESQL() (kbapi.TreemapESQL, diag.Diagnostics) {
+func (m *treemapConfigModel) toAPITreemapESQL(dashboard *dashboardModel) (kbapi.TreemapESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var api kbapi.TreemapESQL
 
@@ -284,7 +328,6 @@ func (m *treemapConfigModel) toAPITreemapESQL() (kbapi.TreemapESQL, diag.Diagnos
 	}
 
 	api.Legend = m.Legend.toTreemapLegend()
-	api.TimeRange = lensPanelTimeRange()
 
 	if typeutils.IsKnown(m.Title) {
 		api.Title = new(m.Title.ValueString())
@@ -308,6 +351,30 @@ func (m *treemapConfigModel) toAPITreemapESQL() (kbapi.TreemapESQL, diag.Diagnos
 		api.Styling.Values = kbapi.ValueDisplay{Mode: &defaultMode}
 	}
 
+	writes, presDiags := lensChartPresentationWritesFor(dashboard, m.lensChartPresentationTFModel)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return api, diags
+	}
+
+	api.TimeRange = writes.TimeRange
+	if writes.HideTitle != nil {
+		api.HideTitle = writes.HideTitle
+	}
+	if writes.HideBorder != nil {
+		api.HideBorder = writes.HideBorder
+	}
+	if writes.References != nil {
+		api.References = writes.References
+	}
+	if len(writes.DrilldownsRaw) > 0 {
+		items, ddDiags := decodeLensDrilldownSlice[kbapi.TreemapESQL_Drilldowns_Item](writes.DrilldownsRaw)
+		diags.Append(ddDiags...)
+		if !ddDiags.HasError() {
+			api.Drilldowns = &items
+		}
+	}
+
 	return api, diags
 }
 
@@ -321,11 +388,10 @@ func (m *treemapConfigModel) usesESQL() bool {
 	return m.Query.Expression.IsNull() && m.Query.Language.IsNull()
 }
 
-func (m *treemapConfigModel) toAPINoESQL() (kbapi.TreemapNoESQL, diag.Diagnostics) {
+func (m *treemapConfigModel) toAPINoESQL(dashboard *dashboardModel) (kbapi.TreemapNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	api := kbapi.TreemapNoESQL{
-		Type:      kbapi.TreemapNoESQLTypeTreemap,
-		TimeRange: lensPanelTimeRange(),
+		Type: kbapi.TreemapNoESQLTypeTreemap,
 	}
 
 	if typeutils.IsKnown(m.Title) {
@@ -396,6 +462,30 @@ func (m *treemapConfigModel) toAPINoESQL() (kbapi.TreemapNoESQL, diag.Diagnostic
 
 	if m.ValueDisplay != nil {
 		api.Styling.Values = m.ValueDisplay.toValueDisplay()
+	}
+
+	writes, presDiags := lensChartPresentationWritesFor(dashboard, m.lensChartPresentationTFModel)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return api, diags
+	}
+
+	api.TimeRange = writes.TimeRange
+	if writes.HideTitle != nil {
+		api.HideTitle = writes.HideTitle
+	}
+	if writes.HideBorder != nil {
+		api.HideBorder = writes.HideBorder
+	}
+	if writes.References != nil {
+		api.References = writes.References
+	}
+	if len(writes.DrilldownsRaw) > 0 {
+		items, ddDiags := decodeLensDrilldownSlice[kbapi.TreemapNoESQL_Drilldowns_Item](writes.DrilldownsRaw)
+		diags.Append(ddDiags...)
+		if !ddDiags.HasError() {
+			api.Drilldowns = &items
+		}
 	}
 
 	return api, diags

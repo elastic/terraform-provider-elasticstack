@@ -41,7 +41,7 @@ import (
 //
 // (Vis equivalents: KbnDashboardPanelTypeVisConfig1Drilldowns0/1/2.)
 
-// drilldownsModel is Terraform state for REQ-038 structured drilldown lists.
+// drilldownsModel is Terraform state for REQ-039 structured drilldown lists.
 type drilldownsModel []drilldownItemModel
 
 type drilldownItemModel struct {

@@ -43,7 +43,11 @@ func lensByValueChartBlocksFromPanel(pm *panelModel) *lensByValueChartBlocks {
 		return &pm.VizConfig.ByValue.lensByValueChartBlocks
 	}
 	if pm.LensDashboardAppConfig != nil && pm.LensDashboardAppConfig.ByValue != nil {
-		return &pm.LensDashboardAppConfig.ByValue.lensByValueChartBlocks
+		blocks, ok := lensByValueChartBlocksForTypedLensApp(*pm.LensDashboardAppConfig.ByValue)
+		if !ok {
+			return nil
+		}
+		return blocks
 	}
 	return nil
 }

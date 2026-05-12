@@ -271,7 +271,7 @@ func Test_panel_toAPI_vis_byReference_writesVisConfig1(t *testing.T) {
 		ConfigJSON: customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults),
 	}
 
-	item, diags := pm.toAPI()
+	item, diags := pm.toAPI(nil)
 	require.False(t, diags.HasError())
 
 	visPanel, err := item.AsKbnDashboardPanelTypeVis()
@@ -292,7 +292,7 @@ func Test_panel_toAPI_vis_configJSONWithoutViz_unmarshalsOpaqueConfigJSON(t *tes
 			populatePanelConfigJSONDefaults,
 		),
 	}
-	item, diags := pm.toAPI()
+	item, diags := pm.toAPI(nil)
 	require.False(t, diags.HasError())
 	v, err := item.AsKbnDashboardPanelTypeVis()
 	require.NoError(t, err)

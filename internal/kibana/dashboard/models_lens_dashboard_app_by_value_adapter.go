@@ -46,13 +46,66 @@ func lensByValueModelHasAnyTypedChartBlock(m *lensDashboardAppByValueModel) bool
 		m.LegacyMetricConfig != nil
 }
 
-// lensByValueChartBlocksForTypedLensApp returns a pointer to the embedded chart blocks when
-// exactly one typed chart is set on by_value (shared pointers with byValue).
+// lensByValueChartBlocksForTypedLensApp materializes shared `lensByValueChartBlocks` from
+// `lens_dashboard_app_config.by_value` fields so vis converters can run (metric expands for the duration).
 func lensByValueChartBlocksForTypedLensApp(byValue lensDashboardAppByValueModel) (*lensByValueChartBlocks, bool) {
 	if !lensByValueModelHasAnyTypedChartBlock(&byValue) {
 		return nil, false
 	}
-	return &byValue.lensByValueChartBlocks, true
+	var blocks lensByValueChartBlocks
+	set := 0
+	if byValue.XYChartConfig != nil {
+		set++
+		blocks.XYChartConfig = byValue.XYChartConfig
+	}
+	if byValue.TreemapConfig != nil {
+		set++
+		blocks.TreemapConfig = byValue.TreemapConfig
+	}
+	if byValue.MosaicConfig != nil {
+		set++
+		blocks.MosaicConfig = byValue.MosaicConfig
+	}
+	if byValue.DatatableConfig != nil {
+		set++
+		blocks.DatatableConfig = byValue.DatatableConfig
+	}
+	if byValue.TagcloudConfig != nil {
+		set++
+		blocks.TagcloudConfig = byValue.TagcloudConfig
+	}
+	if byValue.HeatmapConfig != nil {
+		set++
+		blocks.HeatmapConfig = byValue.HeatmapConfig
+	}
+	if byValue.WaffleConfig != nil {
+		set++
+		blocks.WaffleConfig = byValue.WaffleConfig
+	}
+	if byValue.RegionMapConfig != nil {
+		set++
+		blocks.RegionMapConfig = byValue.RegionMapConfig
+	}
+	if byValue.GaugeConfig != nil {
+		set++
+		blocks.GaugeConfig = byValue.GaugeConfig
+	}
+	if byValue.MetricChartConfig != nil {
+		set++
+		blocks.MetricChartConfig = byValue.MetricChartConfig.expandToVisMetricChart()
+	}
+	if byValue.PieChartConfig != nil {
+		set++
+		blocks.PieChartConfig = byValue.PieChartConfig
+	}
+	if byValue.LegacyMetricConfig != nil {
+		set++
+		blocks.LegacyMetricConfig = byValue.LegacyMetricConfig
+	}
+	if set != 1 {
+		return nil, false
+	}
+	return &blocks, true
 }
 
 // lensByValueModelFromChartBlocksAfterRead maps chart blocks populated by a vis converter into
@@ -103,7 +156,7 @@ func lensByValueModelFromChartBlocksAfterRead(blocks *lensByValueChartBlocks) (l
 	}
 	if blocks.MetricChartConfig != nil {
 		set++
-		out.MetricChartConfig = blocks.MetricChartConfig
+		out.MetricChartConfig = metricLensByValueFromVisFull(blocks.MetricChartConfig)
 	}
 	if blocks.PieChartConfig != nil {
 		set++
@@ -153,6 +206,7 @@ func lensByValueConfigFromVisConfig0(vis kbapi.KbnDashboardPanelTypeVisConfig0) 
 // if state was set; otherwise the caller should fall back to by_value.config_json.
 func tryPopulateTypedLensByValueFromAPI(
 	ctx context.Context,
+	dashboard *dashboardModel,
 	prior *lensDashboardAppConfigModel,
 	configBytes []byte,
 	pm *panelModel,
@@ -177,7 +231,16 @@ func tryPopulateTypedLensByValueFromAPI(
 		return false
 	}
 	var scratch lensByValueChartBlocks
-	d := conv.populateFromAttributes(ctx, &scratch, vis0)
+	var priorPanel *panelModel
+	if prior != nil && prior.ByValue != nil {
+		v := *prior.ByValue
+		priorPanel = &panelModel{
+			LensDashboardAppConfig: &lensDashboardAppConfigModel{
+				ByValue: &v,
+			},
+		}
+	}
+	d := conv.populateFromAttributes(ctx, dashboard, priorPanel, &scratch, vis0)
 	if d.HasError() {
 		// Intentional: no error diagnostic here; caller falls back to by_value.config_json
 		// (REQ-035) without treating typed read as a user failure.

@@ -22,13 +22,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
@@ -118,28 +116,8 @@ func UpdateAlertingRule(ctx context.Context, client *Client, spaceID string, rul
 			return nil, diags
 		}
 
-		var wasEnabled bool
-		if data, err := json.Marshal(unwrapped); err == nil {
-			var temp struct {
-				Enabled bool `json:"enabled"`
-			}
-			if err := json.Unmarshal(data, &temp); err == nil {
-				wasEnabled = temp.Enabled
-			}
-		}
-
-		shouldBeEnabled := rule.Enabled != nil && *rule.Enabled
-
-		if shouldBeEnabled && !wasEnabled {
-			if diags := EnableAlertingRule(ctx, client, spaceID, rule.RuleID); diags.HasError() {
-				return nil, diags
-			}
-		}
-
-		if !shouldBeEnabled && wasEnabled {
-			if diags := DisableAlertingRule(ctx, client, spaceID, rule.RuleID); diags.HasError() {
-				return nil, diags
-			}
+		if diags := reconcileRuleEnabled(ctx, client, spaceID, rule, unwrapped); diags.HasError() {
+			return nil, diags
 		}
 
 		returnedRule, convDiags := ConvertResponseToModel(spaceID, unwrapped)
@@ -215,417 +193,26 @@ func DisableAlertingRule(ctx context.Context, client *Client, spaceID string, ru
 	}
 }
 
-func ConvertResponseToModel(spaceID string, resp any) (*models.AlertingRule, diag.Diagnostics) {
-	if resp == nil {
-		return nil, nil
-	}
-
-	data, err := json.Marshal(resp)
-	if err != nil {
-		return nil, diag.Diagnostics{diag.NewErrorDiagnostic("Failed to marshal response", err.Error())}
-	}
-
-	var intermediate struct {
-		ID         string `json:"id"`
-		Name       string `json:"name"`
-		Consumer   string `json:"consumer"`
-		Enabled    bool   `json:"enabled"`
-		RuleTypeID string `json:"rule_type_id"`
-		Schedule   struct {
-			Interval string `json:"interval"`
-		} `json:"schedule"`
-		Params          map[string]any `json:"params"`
-		Tags            []string       `json:"tags"`
-		NotifyWhen      *string        `json:"notify_when"`
-		Throttle        *string        `json:"throttle"`
-		ScheduledTaskID *string        `json:"scheduled_task_id"`
-		ExecutionStatus struct {
-			LastExecutionDate string `json:"last_execution_date"`
-			Status            string `json:"status"`
-		} `json:"execution_status"`
-		AlertDelay *struct {
-			Active float32 `json:"active"`
-		} `json:"alert_delay"`
-		Flapping *struct {
-			Enabled               *bool   `json:"enabled,omitempty"`
-			LookBackWindow        float64 `json:"look_back_window"`
-			StatusChangeThreshold float64 `json:"status_change_threshold"`
-		} `json:"flapping"`
-		Actions []struct {
-			Group     *string        `json:"group"`
-			ID        string         `json:"id"`
-			Params    map[string]any `json:"params"`
-			Frequency *struct {
-				NotifyWhen string  `json:"notify_when"`
-				Summary    bool    `json:"summary"`
-				Throttle   *string `json:"throttle"`
-			} `json:"frequency"`
-			AlertsFilter *struct {
-				Query *struct {
-					Kql string `json:"kql"`
-				} `json:"query"`
-				Timeframe *struct {
-					Days  []int `json:"days"`
-					Hours struct {
-						Start string `json:"start"`
-						End   string `json:"end"`
-					} `json:"hours"`
-					Timezone string `json:"timezone"`
-				} `json:"timeframe"`
-			} `json:"alerts_filter"`
-		} `json:"actions"`
-	}
-
-	if err := json.Unmarshal(data, &intermediate); err != nil {
-		return nil, diag.Diagnostics{diag.NewErrorDiagnostic("Failed to unmarshal response", err.Error())}
-	}
-
-	if intermediate.ID == "" || intermediate.Name == "" || intermediate.Consumer == "" || intermediate.RuleTypeID == "" {
-		return nil, diag.Diagnostics{diag.NewErrorDiagnostic(
-			"Invalid rule response",
-			"Response is missing required fields (id, name, consumer, or rule_type_id)",
-		)}
-	}
-
-	actions := []models.AlertingRuleAction{}
-	for _, action := range intermediate.Actions {
-		a := models.AlertingRuleAction{
-			Group:  typeutils.DerefOrElse(action.Group, "default"),
-			ID:     action.ID,
-			Params: action.Params,
+func reconcileRuleEnabled(ctx context.Context, client *Client, spaceID string, rule models.AlertingRule, unwrapped any) diag.Diagnostics {
+	var wasEnabled bool
+	if data, err := json.Marshal(unwrapped); err == nil {
+		var temp struct {
+			Enabled bool `json:"enabled"`
 		}
-
-		if action.Frequency != nil {
-			a.Frequency = &models.ActionFrequency{
-				Summary:    action.Frequency.Summary,
-				NotifyWhen: action.Frequency.NotifyWhen,
-				Throttle:   action.Frequency.Throttle,
-			}
-		}
-
-		if action.AlertsFilter != nil {
-			a.AlertsFilter = &models.ActionAlertsFilter{}
-
-			if action.AlertsFilter.Query != nil {
-				a.AlertsFilter.Kql = &action.AlertsFilter.Query.Kql
-			}
-
-			if action.AlertsFilter.Timeframe != nil {
-				days := make([]int32, len(action.AlertsFilter.Timeframe.Days))
-				for i, d := range action.AlertsFilter.Timeframe.Days {
-					days[i] = int32(d)
-				}
-				a.AlertsFilter.Timeframe = &models.AlertsFilterTimeframe{
-					Days:       days,
-					Timezone:   action.AlertsFilter.Timeframe.Timezone,
-					HoursStart: action.AlertsFilter.Timeframe.Hours.Start,
-					HoursEnd:   action.AlertsFilter.Timeframe.Hours.End,
-				}
-			}
-		}
-
-		actions = append(actions, a)
-	}
-
-	var alertDelay *float32
-	if intermediate.AlertDelay != nil {
-		alertDelay = &intermediate.AlertDelay.Active
-	}
-
-	var flapping *models.AlertingRuleFlapping
-	if intermediate.Flapping != nil {
-		flapping = &models.AlertingRuleFlapping{
-			LookBackWindow:        int64(intermediate.Flapping.LookBackWindow),
-			StatusChangeThreshold: int64(intermediate.Flapping.StatusChangeThreshold),
-			Enabled:               intermediate.Flapping.Enabled,
+		if err := json.Unmarshal(data, &temp); err == nil {
+			wasEnabled = temp.Enabled
 		}
 	}
 
-	var lastExecutionDate *time.Time
-	if intermediate.ExecutionStatus.LastExecutionDate != "" {
-		if parsed, err := time.Parse(time.RFC3339, intermediate.ExecutionStatus.LastExecutionDate); err == nil {
-			lastExecutionDate = &parsed
-		}
+	shouldBeEnabled := rule.Enabled != nil && *rule.Enabled
+
+	if shouldBeEnabled && !wasEnabled {
+		return EnableAlertingRule(ctx, client, spaceID, rule.RuleID)
 	}
 
-	var status *string
-	if intermediate.ExecutionStatus.Status != "" {
-		status = &intermediate.ExecutionStatus.Status
+	if !shouldBeEnabled && wasEnabled {
+		return DisableAlertingRule(ctx, client, spaceID, rule.RuleID)
 	}
 
-	return &models.AlertingRule{
-		RuleID:     intermediate.ID,
-		SpaceID:    spaceID,
-		Name:       intermediate.Name,
-		Consumer:   intermediate.Consumer,
-		NotifyWhen: intermediate.NotifyWhen,
-		Params:     intermediate.Params,
-		RuleTypeID: intermediate.RuleTypeID,
-		Schedule: models.AlertingRuleSchedule{
-			Interval: intermediate.Schedule.Interval,
-		},
-		Enabled:         &intermediate.Enabled,
-		Tags:            intermediate.Tags,
-		Throttle:        intermediate.Throttle,
-		ScheduledTaskID: intermediate.ScheduledTaskID,
-		ExecutionStatus: models.AlertingRuleExecutionStatus{
-			LastExecutionDate: lastExecutionDate,
-			Status:            status,
-		},
-		Actions:    actions,
-		AlertDelay: alertDelay,
-		Flapping:   flapping,
-	}, nil
-}
-
-func buildCreateRequestBody(rule models.AlertingRule) (kbapi.AlertingRuleAPIBodyGeneric, error) {
-	body := kbapi.AlertingRuleAPIBodyGeneric{
-		Consumer:   rule.Consumer,
-		Name:       rule.Name,
-		RuleTypeId: rule.RuleTypeID,
-		Schedule: struct {
-			Interval string `json:"interval"`
-		}{
-			Interval: rule.Schedule.Interval,
-		},
-	}
-
-	if rule.Params != nil {
-		params := kbapi.AlertingRuleAPIParams(typeutils.PointerInterfaceMapFromAnyMap(rule.Params))
-		body.Params = &params
-	}
-
-	if rule.Enabled != nil {
-		body.Enabled = rule.Enabled
-	}
-
-	if err := applyOptionalRuleFields(buildOptionalRuleFields(rule), &body); err != nil {
-		return body, fmt.Errorf("apply optional fields: %w", err)
-	}
-
-	if len(rule.Actions) > 0 {
-		if err := convertActionsSlice(rule.Actions, &body.Actions); err != nil {
-			return body, fmt.Errorf("convert actions: %w", err)
-		}
-	}
-
-	return body, nil
-}
-
-func buildUpdateRequestBody(rule models.AlertingRule) (kbapi.PutAlertingRuleIdJSONRequestBody, error) {
-	body := kbapi.PutAlertingRuleIdJSONRequestBody{
-		Name: rule.Name,
-		Schedule: struct {
-			Interval string `json:"interval"`
-		}{
-			Interval: rule.Schedule.Interval,
-		},
-	}
-
-	if rule.Params != nil {
-		params := typeutils.PointerInterfaceMapFromAnyMap(rule.Params)
-		body.Params = &params
-	}
-
-	if err := applyOptionalRuleFields(buildOptionalRuleFields(rule), &body); err != nil {
-		return body, fmt.Errorf("apply optional fields: %w", err)
-	}
-
-	if len(rule.Actions) > 0 {
-		if err := convertActionsSlice(rule.Actions, &body.Actions); err != nil {
-			return body, fmt.Errorf("convert actions: %w", err)
-		}
-	}
-
-	return body, nil
-}
-
-// alertingRuleAction is a shared intermediate type for action slices used by both
-// buildCreateRequestBody and buildUpdateRequestBody. It uses primitive types (int, string)
-// whose JSON wire representation is identical to the kbapi-specific type aliases
-// (AlertingRuleAPIBodyGeneric* and PutAlertingRuleIdJSONBody*).
-type alertingRuleAction struct {
-	AlertsFilter            *alertingRuleActionAlertsFilter `json:"alerts_filter,omitempty"`
-	Frequency               *alertingRuleActionFrequency    `json:"frequency,omitempty"`
-	Group                   *string                         `json:"group,omitempty"`
-	Id                      string                          `json:"id"` //nolint:revive // var-naming: API struct field
-	Params                  *map[string]*any                `json:"params,omitempty"`
-	UseAlertDataForTemplate *bool                           `json:"use_alert_data_for_template,omitempty"`
-	Uuid                    *string                         `json:"uuid,omitempty"` //nolint:revive // var-naming: API struct field
-}
-
-type alertingRuleActionFrequency struct {
-	NotifyWhen string  `json:"notify_when"`
-	Summary    bool    `json:"summary"`
-	Throttle   *string `json:"throttle,omitempty"`
-}
-
-type alertingRuleActionAlertsFilter struct {
-	Query     *alertingRuleActionQuery     `json:"query,omitempty"`
-	Timeframe *alertingRuleActionTimeframe `json:"timeframe,omitempty"`
-}
-
-type alertingRuleActionQuery struct {
-	Filters []alertingRuleActionQueryFilter `json:"filters"`
-	Kql     string                          `json:"kql"`
-}
-
-type alertingRuleActionQueryFilter struct {
-	State *struct {
-		Store string `json:"store"`
-	} `json:"$state,omitempty"`
-	Meta  map[string]*any  `json:"meta"`
-	Query *map[string]*any `json:"query,omitempty"`
-}
-
-type alertingRuleActionTimeframe struct {
-	Days  []int `json:"days"`
-	Hours struct {
-		End   string `json:"end"`
-		Start string `json:"start"`
-	} `json:"hours"`
-	Timezone string `json:"timezone"`
-}
-
-// buildActionsSlice converts model actions to a shared intermediate slice. Both
-// buildCreateRequestBody and buildUpdateRequestBody marshal this into their respective
-// kbapi-specific action types via JSON, which is lossless because all kbapi type
-// aliases share the same underlying int/string primitives.
-func buildActionsSlice(modelActions []models.AlertingRuleAction) []alertingRuleAction {
-	actions := make([]alertingRuleAction, len(modelActions))
-	for i, action := range modelActions {
-		actions[i].Id = action.ID
-		if action.Group != "" {
-			group := action.Group
-			actions[i].Group = &group
-		}
-		if action.Params != nil {
-			params := typeutils.PointerInterfaceMapFromAnyMap(action.Params)
-			actions[i].Params = &params
-		}
-		if action.Frequency != nil {
-			actions[i].Frequency = &alertingRuleActionFrequency{
-				NotifyWhen: action.Frequency.NotifyWhen,
-				Summary:    action.Frequency.Summary,
-				Throttle:   action.Frequency.Throttle,
-			}
-		}
-		if action.AlertsFilter != nil {
-			filter := &alertingRuleActionAlertsFilter{}
-			if action.AlertsFilter.Kql != nil {
-				filter.Query = &alertingRuleActionQuery{
-					Kql:     *action.AlertsFilter.Kql,
-					Filters: []alertingRuleActionQueryFilter{},
-				}
-			}
-			if action.AlertsFilter.Timeframe != nil {
-				days := make([]int, len(action.AlertsFilter.Timeframe.Days))
-				for j, d := range action.AlertsFilter.Timeframe.Days {
-					days[j] = int(d)
-				}
-				filter.Timeframe = &alertingRuleActionTimeframe{
-					Days: days,
-					Hours: struct {
-						End   string `json:"end"`
-						Start string `json:"start"`
-					}{
-						Start: action.AlertsFilter.Timeframe.HoursStart,
-						End:   action.AlertsFilter.Timeframe.HoursEnd,
-					},
-					Timezone: action.AlertsFilter.Timeframe.Timezone,
-				}
-			}
-			actions[i].AlertsFilter = filter
-		}
-	}
-	return actions
-}
-
-func convertActionsSlice(modelActions []models.AlertingRuleAction, target any) error {
-	data, err := json.Marshal(buildActionsSlice(modelActions))
-	if err != nil {
-		return fmt.Errorf("marshal actions: %w", err)
-	}
-	if err := json.Unmarshal(data, target); err != nil {
-		return fmt.Errorf("unmarshal actions: %w", err)
-	}
-	return nil
-}
-
-// flappingWire is a type alias for the flapping JSON object on create/update alerting rule requests.
-// Using an alias (not a new defined type) keeps values assignable to both Post and Put Flapping fields in kbapi.
-type flappingWire = struct {
-	Enabled               *bool   `json:"enabled,omitempty"`
-	LookBackWindow        float32 `json:"look_back_window"`
-	StatusChangeThreshold float32 `json:"status_change_threshold"`
-}
-
-func flappingWireFromModel(f *models.AlertingRuleFlapping) *flappingWire {
-	if f == nil {
-		return nil
-	}
-	return &flappingWire{
-		Enabled:               f.Enabled,
-		LookBackWindow:        float32(f.LookBackWindow),
-		StatusChangeThreshold: float32(f.StatusChangeThreshold),
-	}
-}
-
-// ruleBodyOptionalFields holds optional fields shared by create and update alerting rule request
-// bodies. JSON field names are identical between AlertingRuleAPIBodyGeneric and
-// PutAlertingRuleIdJSONBody, so a single intermediate struct can be marshaled into either via
-// applyOptionalRuleFields.
-type ruleBodyOptionalFields struct {
-	NotifyWhen *string   `json:"notify_when,omitempty"`
-	Throttle   *string   `json:"throttle,omitempty"`
-	Tags       *[]string `json:"tags,omitempty"`
-	AlertDelay *struct {
-		Active float32 `json:"active"`
-	} `json:"alert_delay,omitempty"`
-	Flapping *flappingWire `json:"flapping,omitempty"`
-}
-
-func buildOptionalRuleFields(rule models.AlertingRule) ruleBodyOptionalFields {
-	fields := ruleBodyOptionalFields{}
-
-	if rule.NotifyWhen != nil && *rule.NotifyWhen != "" {
-		fields.NotifyWhen = rule.NotifyWhen
-	}
-
-	if rule.Throttle != nil {
-		fields.Throttle = rule.Throttle
-	}
-
-	if rule.Tags != nil {
-		tags := rule.Tags
-		fields.Tags = &tags
-	}
-
-	if rule.AlertDelay != nil {
-		fields.AlertDelay = &struct {
-			Active float32 `json:"active"`
-		}{
-			Active: *rule.AlertDelay,
-		}
-	}
-
-	if w := flappingWireFromModel(rule.Flapping); w != nil {
-		fields.Flapping = w
-	}
-
-	return fields
-}
-
-// applyOptionalRuleFields merges the shared optional fields into target via JSON round-trip.
-// This is lossless because the JSON field names and underlying types match between
-// AlertingRuleAPIBodyGeneric and PutAlertingRuleIdJSONBody for these fields.
-func applyOptionalRuleFields(fields ruleBodyOptionalFields, target any) error {
-	data, err := json.Marshal(fields)
-	if err != nil {
-		return fmt.Errorf("marshal optional fields: %w", err)
-	}
-	if err := json.Unmarshal(data, target); err != nil {
-		return fmt.Errorf("unmarshal optional fields: %w", err)
-	}
 	return nil
 }

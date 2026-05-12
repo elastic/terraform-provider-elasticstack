@@ -87,6 +87,9 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 
 	alignDashboardStateFromPlanPanels(planPanels, readModel.Panels)
 
+	planPinned := planModel.PinnedPanels
+	alignDashboardStateFromPlanPinnedPanels(ctx, planPinned, readModel.PinnedPanels)
+
 	// Set state
 	diags = resp.State.Set(ctx, *readModel)
 	resp.Diagnostics.Append(diags...)

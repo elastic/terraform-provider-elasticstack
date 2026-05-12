@@ -38,6 +38,20 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// statusResponseHandler wraps an http.HandlerFunc to also respond to /api/status
+// with a Kibana version response so that the provider's version checks succeed.
+func statusResponseHandler(handler http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/status" {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"version":{"number":"8.14.0","build_flavor":"default"}}`))
+			return
+		}
+		handler(w, r)
+	}
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 // Response body helpers
 // ────────────────────────────────────────────────────────────────────────────
@@ -183,7 +197,7 @@ func TestSourceMapCreate_MultipartJSON(t *testing.T) {
 	var capturedBody []byte
 	var capturedContentType string
 
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewServer(statusResponseHandler(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case r.Method == http.MethodPost && strings.Contains(r.URL.Path, "sourcemaps"):
 			raw, _ := io.ReadAll(r.Body)
@@ -266,7 +280,7 @@ func TestSourceMapCreate_MultipartBinary(t *testing.T) {
 	var capturedBody []byte
 	var capturedContentType string
 
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewServer(statusResponseHandler(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case r.Method == http.MethodPost && strings.Contains(r.URL.Path, "sourcemaps"):
 			raw, _ := io.ReadAll(r.Body)
@@ -334,7 +348,7 @@ func TestSourceMapCreate_MultipartBoundaryAndFieldNames(t *testing.T) {
 	var capturedContentType string
 	var capturedBody []byte
 
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewServer(statusResponseHandler(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case r.Method == http.MethodPost && strings.Contains(r.URL.Path, "sourcemaps"):
 			raw, _ := io.ReadAll(r.Body)
@@ -409,7 +423,7 @@ func TestSourceMapRead_FoundOnPage1(t *testing.T) {
 		sourceMapJSON  = `{"version":3,"file":"test.min.js","sources":["test.js"],"mappings":"AAAA"}`
 	)
 
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewServer(statusResponseHandler(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case r.Method == http.MethodPost && strings.Contains(r.URL.Path, "sourcemaps"):
 			w.Header().Set("Content-Type", "application/json")
@@ -465,7 +479,7 @@ func TestSourceMapRead_FoundOnPage2(t *testing.T) {
 
 	var readCallCount atomic.Int32
 
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewServer(statusResponseHandler(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case r.Method == http.MethodPost && strings.Contains(r.URL.Path, "sourcemaps"):
 			w.Header().Set("Content-Type", "application/json")
@@ -544,7 +558,7 @@ func TestSourceMapRead_NotFoundRemovesFromState(t *testing.T) {
 	// causing the resource to be removed from state on the next plan in step 2.
 	var getCallCount atomic.Int32
 
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewServer(statusResponseHandler(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case r.Method == http.MethodPost && strings.Contains(r.URL.Path, "sourcemaps"):
 			w.Header().Set("Content-Type", "application/json")
@@ -612,7 +626,7 @@ func TestSourceMapRead_ArtifactBodyNil(t *testing.T) {
 
 	var getCallCount atomic.Int32
 
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewServer(statusResponseHandler(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case r.Method == http.MethodPost && strings.Contains(r.URL.Path, "sourcemaps"):
 			w.Header().Set("Content-Type", "application/json")

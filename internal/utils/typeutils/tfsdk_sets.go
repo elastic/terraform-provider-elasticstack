@@ -22,33 +22,28 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
-func NonEmptyListOrDefault[T any](ctx context.Context, original types.List, elemType attr.Type, slice []T) (types.List, diag.Diagnostics) {
+// NonEmptySetOrDefault returns the original set if slice is empty,
+// otherwise converts slice into a types.Set.
+func NonEmptySetOrDefault[T any](ctx context.Context, original types.Set, elemType attr.Type, slice []T) (types.Set, diag.Diagnostics) {
 	if len(slice) == 0 {
 		return original, nil
 	}
 
-	return types.ListValueFrom(ctx, elemType, slice)
+	return types.SetValueFrom(ctx, elemType, slice)
 }
 
-// EnsureTypedList converts untyped zero-value lists to properly typed null lists.
-// This is commonly needed during import operations where the framework may create
-// untyped lists with DynamicPseudoType elements, which causes type conversion errors.
-// If the list already has a proper type, it is returned unchanged.
-func EnsureTypedList(ctx context.Context, list types.List, elemType attr.Type) types.List {
-	// Check if the list has no element type (nil)
-	if list.ElementType(ctx) == nil {
-		return types.ListNull(elemType)
-	}
+// SetTypeAs converts a types.Set into a tfsdk aware []T.
+func SetTypeAs[T any](ctx context.Context, value types.Set, p path.Path, diags *diag.Diagnostics) []T {
+	return elementsAs[[]T](ctx, value, p, diags)
+}
 
-	// Check if the list has a dynamic pseudo type
-	if _, ok := list.ElementType(ctx).(basetypes.DynamicType); ok {
-		return types.ListNull(elemType)
-	}
-
-	// List is already properly typed, return as-is
+// SetValueFrom converts a tfsdk aware []T to a types.Set.
+func SetValueFrom[T any](ctx context.Context, value []T, elemType attr.Type, p path.Path, diags *diag.Diagnostics) types.Set {
+	list, d := types.SetValueFrom(ctx, elemType, value)
+	diags.Append(convertToAttrDiags(d, p)...)
 	return list
 }

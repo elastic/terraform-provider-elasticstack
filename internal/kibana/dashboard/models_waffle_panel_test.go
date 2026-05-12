@@ -62,7 +62,7 @@ func Test_wafflePanelConfigConverter_populateFromAttributes_NoESQL_emptyQueryNoL
 
 	converter := newWafflePanelConfigConverter()
 	vizBv := vizByValueModel{}
-	diags := converter.populateFromAttributes(ctx, &vizBv.lensByValueChartBlocks, attrs)
+	diags := converter.populateFromAttributes(ctx, nil, nil, &vizBv.lensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError(), "%s", diags)
 	require.NotNil(t, vizBv.WaffleConfig)
 	assert.False(t, vizBv.WaffleConfig.usesESQL())
@@ -91,11 +91,11 @@ func Test_wafflePanelConfigConverter_populateFromAttributes_buildAttributes_roun
 
 	converter := newWafflePanelConfigConverter()
 	vizBv := vizByValueModel{}
-	diags := converter.populateFromAttributes(ctx, &vizBv.lensByValueChartBlocks, attrs)
+	diags := converter.populateFromAttributes(ctx, nil, nil, &vizBv.lensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError(), "%s", diags)
 	require.NotNil(t, vizBv.WaffleConfig)
 
-	attrs2, diags := converter.buildAttributes(&vizBv.lensByValueChartBlocks)
+	attrs2, diags := converter.buildAttributes(&vizBv.lensByValueChartBlocks, nil)
 	require.False(t, diags.HasError(), "%s", diags)
 
 	noESQL2, err := attrs2.AsWaffleNoESQL()
@@ -159,12 +159,12 @@ func Test_wafflePanelConfigConverter_populateFromAttributes_buildAttributes_roun
 
 	converter := newWafflePanelConfigConverter()
 	vizBv := vizByValueModel{}
-	diags := converter.populateFromAttributes(ctx, &vizBv.lensByValueChartBlocks, attrs)
+	diags := converter.populateFromAttributes(ctx, nil, nil, &vizBv.lensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError(), "%s", diags)
 	require.NotNil(t, vizBv.WaffleConfig)
 	assert.True(t, vizBv.WaffleConfig.usesESQL())
 
-	attrs2, diags := converter.buildAttributes(&vizBv.lensByValueChartBlocks)
+	attrs2, diags := converter.buildAttributes(&vizBv.lensByValueChartBlocks, nil)
 	require.False(t, diags.HasError(), "%s", diags)
 
 	esql2, err := attrs2.AsWaffleESQL()
@@ -188,7 +188,7 @@ func Test_waffleConfigModel_toAPI_NoESQL_errors(t *testing.T) {
 			Expression: types.StringValue(""),
 		},
 	}
-	_, diags := m.toAPI()
+	_, diags := m.toAPI(nil)
 	require.True(t, diags.HasError())
 
 	m2 := &waffleConfigModel{
@@ -202,7 +202,7 @@ func Test_waffleConfigModel_toAPI_NoESQL_errors(t *testing.T) {
 		},
 		Metrics: nil,
 	}
-	_, diags2 := m2.toAPI()
+	_, diags2 := m2.toAPI(nil)
 	require.True(t, diags2.HasError())
 }
 
@@ -214,6 +214,27 @@ func Test_waffleConfigModel_toAPI_ESQL_errors(t *testing.T) {
 		},
 		Query: nil,
 	}
-	_, diags := m.toAPI()
+	_, diags := m.toAPI(nil)
 	require.True(t, diags.HasError())
+}
+
+func Test_waffleConfig_lensChartPresentation_hideTitleRoundTrip(t *testing.T) {
+	ctx := context.Background()
+	dash := lensPresentationTestDashboard()
+	pm := buildLensWafflePanelForTest(t)
+
+	require.NotNil(t, pm.VizConfig)
+	require.NotNil(t, pm.VizConfig.ByValue)
+	require.NotNil(t, pm.VizConfig.ByValue.WaffleConfig)
+	m := *pm.VizConfig.ByValue.WaffleConfig
+	m.HideTitle = types.BoolValue(true)
+
+	attrs, diags := m.toAPI(dash)
+	require.False(t, diags.HasError())
+	api, err := attrs.AsWaffleNoESQL()
+	require.NoError(t, err)
+
+	got := &waffleConfigModel{}
+	require.False(t, got.fromAPINoESQL(ctx, dash, &m, api).HasError())
+	assert.Equal(t, types.BoolValue(true), got.HideTitle)
 }

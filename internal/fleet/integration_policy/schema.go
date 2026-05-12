@@ -47,13 +47,13 @@ import (
 var integrationPolicyDescription string
 
 func (r *integrationPolicyResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = getSchemaV2()
+	resp.Schema = getSchemaV3()
 }
 
-func getSchemaV2() schema.Schema {
+func getSchemaV3() schema.Schema {
 	varsAreSensitive := !logging.IsDebugOrHigher() && os.Getenv("TF_ACC") != "1"
 	return schema.Schema{
-		Version:     2,
+		Version:     3,
 		Description: integrationPolicyDescription,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -99,12 +99,6 @@ func getSchemaV2() schema.Schema {
 			"description": schema.StringAttribute{
 				Description: "The description of the integration policy.",
 				Optional:    true,
-			},
-			"enabled": schema.BoolAttribute{
-				Description: "Enable the integration policy.",
-				Computed:    true,
-				Optional:    true,
-				Default:     booldefault.StaticBool(true),
 			},
 			"force": schema.BoolAttribute{
 				Description: "Force operations, such as creation and deletion, to occur.",

@@ -45,21 +45,32 @@ type gaugePanelConfigConverter struct {
 	lensVisualizationBase
 }
 
-func (c gaugePanelConfigConverter) populateFromAttributes(ctx context.Context, blocks *lensByValueChartBlocks, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
+func (c gaugePanelConfigConverter) populateFromAttributes(
+	ctx context.Context,
+	dashboard *dashboardModel,
+	tfPanel *panelModel,
+	blocks *lensByValueChartBlocks,
+	attrs kbapi.KbnDashboardPanelTypeVisConfig0,
+) diag.Diagnostics {
 	gaugeNoESQL, err := attrs.AsGaugeNoESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
+	var prior *gaugeConfigModel
+	if b := lensByValueChartBlocksFromPanel(tfPanel); b != nil && b.GaugeConfig != nil {
+		cpy := *b.GaugeConfig
+		prior = &cpy
+	}
 	blocks.GaugeConfig = &gaugeConfigModel{}
-	return blocks.GaugeConfig.fromAPI(ctx, gaugeNoESQL)
+	return blocks.GaugeConfig.fromAPI(ctx, dashboard, prior, gaugeNoESQL)
 }
 
-func (c gaugePanelConfigConverter) buildAttributes(blocks *lensByValueChartBlocks) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func (c gaugePanelConfigConverter) buildAttributes(blocks *lensByValueChartBlocks, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	configModel := *blocks.GaugeConfig
 
-	gaugeNoESQL, gaugeDiags := configModel.toAPI()
+	gaugeNoESQL, gaugeDiags := configModel.toAPI(dashboard)
 	diags.Append(gaugeDiags...)
 	if diags.HasError() {
 		return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
@@ -75,6 +86,7 @@ func (c gaugePanelConfigConverter) buildAttributes(blocks *lensByValueChartBlock
 }
 
 type gaugeConfigModel struct {
+	lensChartPresentationTFModel
 	Title               types.String                                      `tfsdk:"title"`
 	Description         types.String                                      `tfsdk:"description"`
 	DataSourceJSON      jsontypes.Normalized                              `tfsdk:"data_source_json"`
@@ -90,7 +102,7 @@ type gaugeStylingModel struct {
 	ShapeJSON jsontypes.Normalized `tfsdk:"shape_json"`
 }
 
-func (m *gaugeConfigModel) fromAPI(ctx context.Context, api kbapi.GaugeNoESQL) diag.Diagnostics {
+func (m *gaugeConfigModel) fromAPI(ctx context.Context, dashboard *dashboardModel, prior *gaugeConfigModel, api kbapi.GaugeNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 
@@ -135,15 +147,31 @@ func (m *gaugeConfigModel) fromAPI(ctx context.Context, api kbapi.GaugeNoESQL) d
 		m.Styling.ShapeJSON = jsontypes.NewNormalizedNull()
 	}
 
+	var priorLens *lensChartPresentationTFModel
+	if prior != nil {
+		p := prior.lensChartPresentationTFModel
+		priorLens = &p
+	}
+	ddWire, ddOmit, ddWireDiags := lensDrilldownsAPIToWire(api.Drilldowns)
+	diags.Append(ddWireDiags...)
+	if ddWireDiags.HasError() {
+		return diags
+	}
+	pres, presDiags := lensChartPresentationReadsFor(ctx, dashboard, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return diags
+	}
+	m.lensChartPresentationTFModel = pres
+
 	return diags
 }
 
-func (m *gaugeConfigModel) toAPI() (kbapi.GaugeNoESQL, diag.Diagnostics) {
+func (m *gaugeConfigModel) toAPI(dashboard *dashboardModel) (kbapi.GaugeNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var api kbapi.GaugeNoESQL
 
 	api.Type = kbapi.GaugeNoESQLTypeGauge
-	api.TimeRange = lensPanelTimeRange()
 
 	if !m.Title.IsNull() {
 		api.Title = m.Title.ValueStringPointer()
@@ -188,6 +216,30 @@ func (m *gaugeConfigModel) toAPI() (kbapi.GaugeNoESQL, diag.Diagnostics) {
 		diags.Append(shapeDiags...)
 		if !shapeDiags.HasError() {
 			api.Styling.Shape = &shape
+		}
+	}
+
+	writes, presDiags := lensChartPresentationWritesFor(dashboard, m.lensChartPresentationTFModel)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return api, diags
+	}
+
+	api.TimeRange = writes.TimeRange
+	if writes.HideTitle != nil {
+		api.HideTitle = writes.HideTitle
+	}
+	if writes.HideBorder != nil {
+		api.HideBorder = writes.HideBorder
+	}
+	if writes.References != nil {
+		api.References = writes.References
+	}
+	if len(writes.DrilldownsRaw) > 0 {
+		items, ddDiags := decodeLensDrilldownSlice[kbapi.GaugeNoESQL_Drilldowns_Item](writes.DrilldownsRaw)
+		diags.Append(ddDiags...)
+		if !ddDiags.HasError() {
+			api.Drilldowns = &items
 		}
 	}
 

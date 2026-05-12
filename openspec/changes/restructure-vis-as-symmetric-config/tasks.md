@@ -4,7 +4,7 @@
 - [x] 1.2 Rename `getLensDashboardAppByValueAttributes()` callers; keep behavior identical pending step 4 (still includes its own `config_json` and 11 chart blocks; legacy_metric stays out).
 - [x] 1.3 Run `go build ./...` and existing dashboard unit tests to confirm zero behavior delta from helper extraction.
 
-## 2. Implement structured 3-way `drilldowns` shape (REQ-038)
+## 2. Implement structured 3-way `drilldowns` shape (REQ-041)
 
 - [x] 2.1 Add `getStructuredDrilldownsAttribute()` returning a `ListNestedAttribute` whose item object exposes `dashboard`, `discover`, and `url` `SingleNestedAttribute` sub-blocks; wire all per-variant attributes per the design table (`dashboard_id`/`label`/`use_filters`/`use_time_range`/`open_in_new_tab` for dashboard; `label`/`open_in_new_tab` for discover; `url`/`label`/`trigger`/`encode_url`/`open_in_new_tab` for url).
 - [x] 2.2 Add `drilldownItemModeValidator` enforcing exactly one of `dashboard`/`discover`/`url` per item; cover both zero-set and multi-set cases.
@@ -24,7 +24,7 @@
 - [x] 3.6 Update existing acceptance tests under `internal/kibana/dashboard/acc_lens_dashboard_app_panels_test.go` (and any other test that uses `drilldowns_json`) to use the structured `drilldowns` shape.
 - [x] 3.7 Update `models_lens_dashboard_app_*_test.go` unit tests for the new field shape.
 
-## 4. Add `viz_config` schema (REQ-037)
+## 4. Add `viz_config` schema (REQ-042)
 
 - [x] 4.1 Add `viz_config` to `panelConfigNames` (insert in the new shrunk list — see step 7).
 - [x] 4.2 Implement `getVizByValueAttributes()` returning a 12-block attribute map (`xy_chart_config`, `metric_chart_config`, `legacy_metric_config`, `gauge_config`, `heatmap_config`, `tagcloud_config`, `region_map_config`, `datatable_config`, `pie_chart_config`, `mosaic_config`, `treemap_config`, `waffle_config`); reuse the existing `getXYChartConfigAttributes()`, `getMetricChart()`, etc. functions verbatim (no chart-block internal change).

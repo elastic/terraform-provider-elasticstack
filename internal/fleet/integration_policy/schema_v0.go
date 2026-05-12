@@ -86,21 +86,23 @@ func getSchemaV0() *schema.Schema {
 	}
 }
 
-// This function first upgrades v0 to v1, and then re-uses the v1 to v2 upgrader.
-func upgradeV0ToV2(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
+// upgradeV0ToV3 upgrades V0 state to the live V3 schema by chaining V0→V1
+// (string-to-normalized-JSON conversion) and V1→V3 (input list to map plus
+// dropping the legacy `enabled` attribute).
+func upgradeV0ToV3(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
 	stateModelV1, diags := upgradeV0ToV1(ctx, req)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	stateModelV2, diags := stateModelV1.toV2(ctx)
+	stateModelV3, diags := stateModelV1.toV3(ctx)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	diags = resp.State.Set(ctx, stateModelV2)
+	diags = resp.State.Set(ctx, stateModelV3)
 	resp.Diagnostics.Append(diags...)
 }
 

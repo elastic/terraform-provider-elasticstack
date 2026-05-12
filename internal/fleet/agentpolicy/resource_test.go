@@ -15,20 +15,38 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package typeutils
+package agentpolicy
 
 import (
-	"context"
+	"testing"
 
-	"github.com/hashicorp/terraform-plugin-framework/attr"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/go-version"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func NonEmptySetOrDefault[T any](ctx context.Context, original types.Set, elemType attr.Type, slice []T) (types.Set, diag.Diagnostics) {
-	if len(slice) == 0 {
-		return original, nil
+func TestMonitoringRuntimeExperimentalSupported(t *testing.T) {
+	tests := []struct {
+		name     string
+		version  string
+		expected bool
+	}{
+		{"8.17.0", "8.17.0", false},
+		{"8.18.8", "8.18.8", false},
+		{"8.19.0", "8.19.0", true},
+		{"8.19.5", "8.19.5", true},
+		{"9.0.0", "9.0.0", false},
+		{"9.0.8", "9.0.8", false},
+		{"9.1.0", "9.1.0", true},
+		{"9.4.0", "9.4.0", true},
+		{"10.0.0", "10.0.0", true},
 	}
 
-	return types.SetValueFrom(ctx, elemType, slice)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			v, err := version.NewVersion(tt.version)
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, MonitoringRuntimeExperimentalSupported(v))
+		})
+	}
 }

@@ -43,6 +43,7 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 	}
 
 	prevPanels := stateModel.Panels
+	prevPinned := stateModel.PinnedPanels
 	readModel, diags := r.read(ctx, client, stateModel)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -56,6 +57,8 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 	}
 
 	alignDashboardStateFromPlanPanels(prevPanels, readModel.Panels)
+
+	alignDashboardStateFromPlanPinnedPanels(ctx, prevPinned, readModel.PinnedPanels)
 
 	// Set state
 	resp.Diagnostics.Append(resp.State.Set(ctx, *readModel)...)

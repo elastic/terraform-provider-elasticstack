@@ -44,12 +44,31 @@ type datatablePanelConfigConverter struct {
 	lensVisualizationBase
 }
 
-func (c datatablePanelConfigConverter) populateFromAttributes(ctx context.Context, blocks *lensByValueChartBlocks, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
+func (c datatablePanelConfigConverter) populateFromAttributes(
+	ctx context.Context,
+	dashboard *dashboardModel,
+	tfPanel *panelModel,
+	blocks *lensByValueChartBlocks,
+	attrs kbapi.KbnDashboardPanelTypeVisConfig0,
+) diag.Diagnostics {
+	var priorNo *datatableNoESQLConfigModel
+	var priorEsql *datatableESQLConfigModel
+	if b := lensByValueChartBlocksFromPanel(tfPanel); b != nil && b.DatatableConfig != nil {
+		if b.DatatableConfig.NoESQL != nil {
+			cpy := *b.DatatableConfig.NoESQL
+			priorNo = &cpy
+		}
+		if b.DatatableConfig.ESQL != nil {
+			cpy := *b.DatatableConfig.ESQL
+			priorEsql = &cpy
+		}
+	}
+
 	blocks.DatatableConfig = &datatableConfigModel{}
 
 	if datatableNoESQL, err := attrs.AsDatatableNoESQL(); err == nil && !isDatatableNoESQLCandidateActuallyESQL(datatableNoESQL) {
 		blocks.DatatableConfig.NoESQL = &datatableNoESQLConfigModel{}
-		return blocks.DatatableConfig.NoESQL.fromAPI(ctx, datatableNoESQL)
+		return blocks.DatatableConfig.NoESQL.fromAPI(ctx, dashboard, priorNo, datatableNoESQL)
 	}
 	datatableESQL, err := attrs.AsDatatableESQL()
 	if err != nil {
@@ -57,10 +76,10 @@ func (c datatablePanelConfigConverter) populateFromAttributes(ctx context.Contex
 	}
 
 	blocks.DatatableConfig.ESQL = &datatableESQLConfigModel{}
-	return blocks.DatatableConfig.ESQL.fromAPI(ctx, datatableESQL)
+	return blocks.DatatableConfig.ESQL.fromAPI(ctx, dashboard, priorEsql, datatableESQL)
 }
 
-func (c datatablePanelConfigConverter) buildAttributes(blocks *lensByValueChartBlocks) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func (c datatablePanelConfigConverter) buildAttributes(blocks *lensByValueChartBlocks, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if blocks.DatatableConfig == nil {
 		return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
@@ -70,7 +89,7 @@ func (c datatablePanelConfigConverter) buildAttributes(blocks *lensByValueChartB
 
 	switch {
 	case blocks.DatatableConfig.NoESQL != nil:
-		noESQL, noDiags := blocks.DatatableConfig.NoESQL.toAPI()
+		noESQL, noDiags := blocks.DatatableConfig.NoESQL.toAPI(dashboard)
 		diags.Append(noDiags...)
 		if diags.HasError() {
 			return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
@@ -81,7 +100,7 @@ func (c datatablePanelConfigConverter) buildAttributes(blocks *lensByValueChartB
 			return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
 		}
 	case blocks.DatatableConfig.ESQL != nil:
-		esql, esqlDiags := blocks.DatatableConfig.ESQL.toAPI()
+		esql, esqlDiags := blocks.DatatableConfig.ESQL.toAPI(dashboard)
 		diags.Append(esqlDiags...)
 		if diags.HasError() {
 			return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
@@ -104,6 +123,7 @@ type datatableConfigModel struct {
 }
 
 type datatableNoESQLConfigModel struct {
+	lensChartPresentationTFModel
 	Title               types.String            `tfsdk:"title"`
 	Description         types.String            `tfsdk:"description"`
 	DataSourceJSON      jsontypes.Normalized    `tfsdk:"data_source_json"`
@@ -118,6 +138,7 @@ type datatableNoESQLConfigModel struct {
 }
 
 type datatableESQLConfigModel struct {
+	lensChartPresentationTFModel
 	Title               types.String            `tfsdk:"title"`
 	Description         types.String            `tfsdk:"description"`
 	DataSourceJSON      jsontypes.Normalized    `tfsdk:"data_source_json"`
@@ -184,7 +205,7 @@ type datatableDensityHeightValueModel struct {
 	Lines types.Float64 `tfsdk:"lines"`
 }
 
-func (m *datatableNoESQLConfigModel) fromAPI(ctx context.Context, api kbapi.DatatableNoESQL) diag.Diagnostics {
+func (m *datatableNoESQLConfigModel) fromAPI(ctx context.Context, dashboard *dashboardModel, prior *datatableNoESQLConfigModel, api kbapi.DatatableNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 
@@ -251,13 +272,29 @@ func (m *datatableNoESQLConfigModel) fromAPI(ctx context.Context, api kbapi.Data
 		}
 	}
 
+	var priorLens *lensChartPresentationTFModel
+	if prior != nil {
+		p := prior.lensChartPresentationTFModel
+		priorLens = &p
+	}
+	ddWire, ddOmit, ddWireDiags := lensDrilldownsAPIToWire(api.Drilldowns)
+	diags.Append(ddWireDiags...)
+	if ddWireDiags.HasError() {
+		return diags
+	}
+	pres, presDiags := lensChartPresentationReadsFor(ctx, dashboard, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return diags
+	}
+	m.lensChartPresentationTFModel = pres
+
 	return diags
 }
 
-func (m *datatableNoESQLConfigModel) toAPI() (kbapi.DatatableNoESQL, diag.Diagnostics) {
+func (m *datatableNoESQLConfigModel) toAPI(dashboard *dashboardModel) (kbapi.DatatableNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	api := kbapi.DatatableNoESQL{Type: kbapi.DatatableNoESQLTypeDataTable}
-	api.TimeRange = lensPanelTimeRange()
 
 	if typeutils.IsKnown(m.Title) {
 		api.Title = m.Title.ValueStringPointer()
@@ -337,10 +374,34 @@ func (m *datatableNoESQLConfigModel) toAPI() (kbapi.DatatableNoESQL, diag.Diagno
 		api.SplitMetricsBy = &splits
 	}
 
+	writes, presDiags := lensChartPresentationWritesFor(dashboard, m.lensChartPresentationTFModel)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return api, diags
+	}
+
+	api.TimeRange = writes.TimeRange
+	if writes.HideTitle != nil {
+		api.HideTitle = writes.HideTitle
+	}
+	if writes.HideBorder != nil {
+		api.HideBorder = writes.HideBorder
+	}
+	if writes.References != nil {
+		api.References = writes.References
+	}
+	if len(writes.DrilldownsRaw) > 0 {
+		items, ddDiags := decodeLensDrilldownSlice[kbapi.DatatableNoESQL_Drilldowns_Item](writes.DrilldownsRaw)
+		diags.Append(ddDiags...)
+		if !ddDiags.HasError() {
+			api.Drilldowns = &items
+		}
+	}
+
 	return api, diags
 }
 
-func (m *datatableESQLConfigModel) fromAPI(ctx context.Context, api kbapi.DatatableESQL) diag.Diagnostics {
+func (m *datatableESQLConfigModel) fromAPI(ctx context.Context, dashboard *dashboardModel, prior *datatableESQLConfigModel, api kbapi.DatatableESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 
@@ -404,13 +465,29 @@ func (m *datatableESQLConfigModel) fromAPI(ctx context.Context, api kbapi.Datata
 		}
 	}
 
+	var priorLens *lensChartPresentationTFModel
+	if prior != nil {
+		p := prior.lensChartPresentationTFModel
+		priorLens = &p
+	}
+	ddWire, ddOmit, ddWireDiags := lensDrilldownsAPIToWire(api.Drilldowns)
+	diags.Append(ddWireDiags...)
+	if ddWireDiags.HasError() {
+		return diags
+	}
+	pres, presDiags := lensChartPresentationReadsFor(ctx, dashboard, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return diags
+	}
+	m.lensChartPresentationTFModel = pres
+
 	return diags
 }
 
-func (m *datatableESQLConfigModel) toAPI() (kbapi.DatatableESQL, diag.Diagnostics) {
+func (m *datatableESQLConfigModel) toAPI(dashboard *dashboardModel) (kbapi.DatatableESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	api := kbapi.DatatableESQL{Type: kbapi.DatatableESQLTypeDataTable}
-	api.TimeRange = lensPanelTimeRange()
 
 	if typeutils.IsKnown(m.Title) {
 		api.Title = m.Title.ValueStringPointer()
@@ -499,6 +576,30 @@ func (m *datatableESQLConfigModel) toAPI() (kbapi.DatatableESQL, diag.Diagnostic
 			}
 		}
 		api.SplitMetricsBy = &splits
+	}
+
+	writes, presDiags := lensChartPresentationWritesFor(dashboard, m.lensChartPresentationTFModel)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return api, diags
+	}
+
+	api.TimeRange = writes.TimeRange
+	if writes.HideTitle != nil {
+		api.HideTitle = writes.HideTitle
+	}
+	if writes.HideBorder != nil {
+		api.HideBorder = writes.HideBorder
+	}
+	if writes.References != nil {
+		api.References = writes.References
+	}
+	if len(writes.DrilldownsRaw) > 0 {
+		items, ddDiags := decodeLensDrilldownSlice[kbapi.DatatableESQL_Drilldowns_Item](writes.DrilldownsRaw)
+		diags.Append(ddDiags...)
+		if !ddDiags.HasError() {
+			api.Drilldowns = &items
+		}
 	}
 
 	return api, diags
