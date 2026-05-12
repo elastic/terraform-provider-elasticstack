@@ -31,10 +31,11 @@ import (
 )
 
 type panelModel struct {
-	Type                          types.String                                      `tfsdk:"type"`
-	Grid                          panelGridModel                                    `tfsdk:"grid"`
-	ID                            types.String                                      `tfsdk:"id"`
-	MarkdownConfig                *markdownConfigModel                              `tfsdk:"markdown_config"`
+	Type           types.String         `tfsdk:"type"`
+	Grid           panelGridModel       `tfsdk:"grid"`
+	ID             types.String         `tfsdk:"id"`
+	MarkdownConfig *markdownConfigModel `tfsdk:"markdown_config"`
+	// Zombie vis chart fields below: no longer surfaced at panel schema (task 5); mapPanelFromAPI still fills them until task 6 moves data to `viz_config.by_value`.
 	XYChartConfig                 *xyChartConfigModel                               `tfsdk:"xy_chart_config"`
 	TreemapConfig                 *treemapConfigModel                               `tfsdk:"treemap_config"`
 	MosaicConfig                  *mosaicConfigModel                                `tfsdk:"mosaic_config"`

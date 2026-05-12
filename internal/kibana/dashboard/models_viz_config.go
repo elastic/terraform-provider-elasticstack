@@ -22,7 +22,7 @@ package dashboard
 type vizByReferenceModel = lensDashboardAppByReferenceModel
 
 // vizByValueModel is Terraform model for viz_config.by_value (12 Lens chart kinds, no nested config_json; design D4).
-// Field ordering mirrors lensDashboardAppByValueModel omitting ConfigJSON (task 5 will move panel-level chart models here).
+// Chart conversion helpers under models_<kind>_panel.go still use zombie panel-level panelModel pointers until task 6; field shapes align with this struct for rewiring (Option B in task 5).
 type vizByValueModel struct {
 	XYChartConfig      *xyChartConfigModel      `tfsdk:"xy_chart_config"`
 	TreemapConfig      *treemapConfigModel      `tfsdk:"treemap_config"`
