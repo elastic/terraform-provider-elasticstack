@@ -73,6 +73,69 @@ func Test_populateMarkdownFromAPIByValue_openLinksNullPreservedWhenAPIDefaultTru
 	assert.True(t, pm.MarkdownConfig.ByValue.Settings.OpenLinksInNewTab.IsNull())
 }
 
+func Test_populateMarkdownFromAPIByValue_hideBorderNullPreservedWhenAPIEchoesFalse(t *testing.T) {
+	apiFalse := false
+	cfg := kbapi.KbnDashboardPanelTypeMarkdownConfig0{Content: "hi"}
+	cfg.HideBorder = &apiFalse
+
+	tfPanel := &panelModel{
+		MarkdownConfig: &markdownConfigModel{
+			ByValue: &markdownConfigByValueModel{
+				Content:    types.StringValue("hi"),
+				HideBorder: types.BoolNull(),
+				Settings:   &markdownConfigSettingsModel{},
+			},
+		},
+	}
+	pm := &panelModel{}
+	populateMarkdownFromAPIByValue(pm, tfPanel, cfg)
+	assert.True(t, pm.MarkdownConfig.ByValue.HideBorder.IsNull())
+}
+
+func Test_populateMarkdownFromAPIByValue_hideBorderNullPreservedWhenAPIEchoesTrue(t *testing.T) {
+	apiTrue := true
+	cfg := kbapi.KbnDashboardPanelTypeMarkdownConfig0{Content: "hi"}
+	cfg.HideBorder = &apiTrue
+
+	tfPanel := &panelModel{
+		MarkdownConfig: &markdownConfigModel{
+			ByValue: &markdownConfigByValueModel{
+				Content:    types.StringValue("hi"),
+				HideBorder: types.BoolNull(),
+				Settings:   &markdownConfigSettingsModel{},
+			},
+		},
+	}
+	pm := &panelModel{}
+	populateMarkdownFromAPIByValue(pm, tfPanel, cfg)
+	assert.True(t, pm.MarkdownConfig.ByValue.HideBorder.IsNull())
+}
+
+func Test_classifyMarkdownConfigFromRoot(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name string
+		raw  string
+		want markdownConfigBranch
+	}{
+		{name: "by_value", raw: `{"content":"# a"}`, want: markdownConfigBranchByValue},
+		{name: "by_reference", raw: `{"ref_id":"lib-1"}`, want: markdownConfigBranchByReference},
+		{name: "unknown_both", raw: `{"ref_id":"lib-1","content":"# a"}`, want: markdownConfigBranchUnknown},
+		{name: "unknown_neither", raw: `{"title":"t"}`, want: markdownConfigBranchUnknown},
+		{name: "by_value_empty_content", raw: `{"content":""}`, want: markdownConfigBranchByValue},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			br, err := classifyMarkdownConfigFromRoot([]byte(tc.raw))
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, br)
+		})
+	}
+	_, err := classifyMarkdownConfigFromRoot([]byte(`not json`))
+	require.Error(t, err)
+}
+
 func Test_markdownByReferenceRoundTripViaUnion(t *testing.T) {
 	pm := panelModel{
 		MarkdownConfig: &markdownConfigModel{
@@ -128,7 +191,7 @@ func Test_markdownConfigRoundTripViaUnion(t *testing.T) {
 				Content:   types.StringValue("round trip"),
 				HideTitle: types.BoolValue(true),
 				Settings: &markdownConfigSettingsModel{
-					OpenLinksInNewTab: types.BoolNull(),
+					OpenLinksInNewTab: types.BoolValue(false),
 				},
 			},
 		},
@@ -147,4 +210,6 @@ func Test_markdownConfigRoundTripViaUnion(t *testing.T) {
 	require.NotNil(t, pm2.MarkdownConfig.ByValue)
 	assert.Equal(t, pm.MarkdownConfig.ByValue.Content, pm2.MarkdownConfig.ByValue.Content)
 	assert.Equal(t, pm.MarkdownConfig.ByValue.HideTitle, pm2.MarkdownConfig.ByValue.HideTitle)
+	require.NotNil(t, pm2.MarkdownConfig.ByValue.Settings)
+	assert.Equal(t, types.BoolValue(false), pm2.MarkdownConfig.ByValue.Settings.OpenLinksInNewTab)
 }
