@@ -76,7 +76,7 @@
 
 - [x] 10.1 Update HCL under `examples/resources/elasticstack_kibana_dashboard/` to wrap chart blocks in `viz_config.by_value` and use structured `drilldowns` where applicable.
 - [x] 10.2 Add at least one example demonstrating `viz_config.by_reference`.
-- [x] 10.3 Run `make docs-generate` and verify `docs/resources/kibana_dashboard.md` reflects the new schema; spot-check key sections (`viz_config`, `drilldowns`).
+- [x] 10.3 Verify the `kibana_dashboard` resource generated docs locally with experimental schema enabled (`TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL=true` on the same `tfplugindocs generate …` invocation as `make docs-generate`; that Makefile target pins `TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL=false`). Spot-check key sections (`viz_config.by_value`, `viz_config.by_reference`, structured `drilldowns`, required `url.trigger`). Do NOT commit a regenerated `docs/resources/kibana_dashboard.md` — the resource is experimental and the default `make docs-generate` excludes it from the committed docs tree.
 - [x] 10.4 Run `TF_ACC=1 go test ./internal/acctest -run '^TestAccExamples_planOnly$' -count=1` to confirm all updated example HCL still plans cleanly.
 
 ## 11. Update OpenSpec canonical spec
