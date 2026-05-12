@@ -18,15 +18,26 @@
 package filter_test
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"os"
+	"regexp"
+	"strings"
 	"testing"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/ml/putjob"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/ruleaction"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
+
+const mlFilterResourceAddress = "elasticstack_elasticsearch_ml_filter.test"
 
 func TestAccResourceMLFilter(t *testing.T) {
 	filterID := fmt.Sprintf("test-filter-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
@@ -41,10 +52,10 @@ func TestAccResourceMLFilter(t *testing.T) {
 					"filter_id": config.StringVariable(filterID),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_filter.test", "filter_id", filterID),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_filter.test", "description", "Safe domains filter"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_filter.test", "items.#", "2"),
-					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_ml_filter.test", "id"),
+					resource.TestCheckResourceAttr(mlFilterResourceAddress, "filter_id", filterID),
+					resource.TestCheckResourceAttr(mlFilterResourceAddress, "description", "Safe domains filter"),
+					resource.TestCheckResourceAttr(mlFilterResourceAddress, "items.#", "2"),
+					resource.TestCheckResourceAttrSet(mlFilterResourceAddress, "id"),
 				),
 			},
 			{
@@ -54,10 +65,10 @@ func TestAccResourceMLFilter(t *testing.T) {
 					"filter_id": config.StringVariable(filterID),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_filter.test", "filter_id", filterID),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_filter.test", "description", "Updated safe domains filter"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_filter.test", "items.#", "3"),
-					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_ml_filter.test", "id"),
+					resource.TestCheckResourceAttr(mlFilterResourceAddress, "filter_id", filterID),
+					resource.TestCheckResourceAttr(mlFilterResourceAddress, "description", "Updated safe domains filter"),
+					resource.TestCheckResourceAttr(mlFilterResourceAddress, "items.#", "3"),
+					resource.TestCheckResourceAttrSet(mlFilterResourceAddress, "id"),
 				),
 			},
 		},
@@ -77,10 +88,10 @@ func TestAccResourceMLFilterNoItems(t *testing.T) {
 					"filter_id": config.StringVariable(filterID),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_filter.test", "filter_id", filterID),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_filter.test", "description", "Empty filter"),
-					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_ml_filter.test", "items.#"),
-					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_ml_filter.test", "id"),
+					resource.TestCheckResourceAttr(mlFilterResourceAddress, "filter_id", filterID),
+					resource.TestCheckResourceAttr(mlFilterResourceAddress, "description", "Empty filter"),
+					resource.TestCheckNoResourceAttr(mlFilterResourceAddress, "items.#"),
+					resource.TestCheckResourceAttrSet(mlFilterResourceAddress, "id"),
 				),
 			},
 		},
@@ -100,18 +111,18 @@ func TestAccResourceMLFilterImport(t *testing.T) {
 					"filter_id": config.StringVariable(filterID),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_filter.test", "filter_id", filterID),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_filter.test", "description", "Filter for import test"),
+					resource.TestCheckResourceAttr(mlFilterResourceAddress, "filter_id", filterID),
+					resource.TestCheckResourceAttr(mlFilterResourceAddress, "description", "Filter for import test"),
 				),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
-				ResourceName:             "elasticstack_elasticsearch_ml_filter.test",
+				ResourceName:             mlFilterResourceAddress,
 				ImportState:              true,
 				ImportStateVerify:        true,
 				ImportStateIdFunc: func(s *terraform.State) (string, error) {
-					rs := s.RootModule().Resources["elasticstack_elasticsearch_ml_filter.test"]
+					rs := s.RootModule().Resources[mlFilterResourceAddress]
 					return rs.Primary.ID, nil
 				},
 				ConfigVariables: config.Variables{
@@ -120,4 +131,855 @@ func TestAccResourceMLFilterImport(t *testing.T) {
 			},
 		},
 	})
+}
+
+func TestAccResourceMLFilterFilterIDReplace(t *testing.T) {
+	filterID1 := fmt.Sprintf("test-filter-repl-a-%s", sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum))
+	filterID2 := fmt.Sprintf("test-filter-repl-b-%s", sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum))
+	t.Cleanup(func() {
+		deleteMLFilterBestEffort(t.Context(), t, filterID1)
+		deleteMLFilterBestEffort(t.Context(), t, filterID2)
+	})
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"filter_id": config.StringVariable(filterID1),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(mlFilterResourceAddress, "filter_id", filterID1),
+					resource.TestCheckResourceAttrSet(mlFilterResourceAddress, "id"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"filter_id": config.StringVariable(filterID2),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(mlFilterResourceAddress, "filter_id", filterID2),
+					resource.TestCheckResourceAttrSet(mlFilterResourceAddress, "id"),
+					func(_ *terraform.State) error {
+						if err := assertMLFilterAbsentES(t.Context(), t, filterID1); err != nil {
+							return err
+						}
+						return assertMLFilterPresentES(t.Context(), t, filterID2)
+					},
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceMLFilterReconcileAfterOutOfBandChange(t *testing.T) {
+	filterID := fmt.Sprintf("test-filter-reconcile-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	t.Cleanup(func() {
+		deleteMLFilterBestEffort(t.Context(), t, filterID)
+	})
+
+	vars := config.Variables{
+		"filter_id": config.StringVariable(filterID),
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(mlFilterResourceAddress, "filter_id", filterID),
+					resource.TestCheckResourceAttr(mlFilterResourceAddress, "description", "Baseline description for drift reconcile"),
+					resource.TestCheckResourceAttr(mlFilterResourceAddress, "items.#", "3"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				PreConfig: func() {
+					updateMLFilterDescriptionOutOfBand(t.Context(), t, filterID, "Drifted out-of-band description")
+				},
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(mlFilterResourceAddress, "description", "Baseline description for drift reconcile"),
+					resource.TestCheckResourceAttr(mlFilterResourceAddress, "items.#", "3"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceMLFilterImportFailures(t *testing.T) {
+	filterID := fmt.Sprintf("test-filter-impfail-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	t.Cleanup(func() {
+		deleteMLFilterBestEffort(t.Context(), t, filterID)
+	})
+	importVars := config.Variables{
+		"filter_id": config.StringVariable(filterID),
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          importVars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(mlFilterResourceAddress, "filter_id", filterID),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          importVars,
+				ResourceName:             mlFilterResourceAddress,
+				ImportState:              true,
+				ImportStateVerify:        false,
+				ImportStateId:            "not-a-composite-import-id",
+				ExpectError:              regexp.MustCompile(`Wrong resource ID`),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          importVars,
+				ResourceName:             mlFilterResourceAddress,
+				ImportState:              true,
+				ImportStateVerify:        false,
+				ImportStateId:            "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/extra/bad",
+				ExpectError:              regexp.MustCompile(`Wrong resource ID`),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          importVars,
+				ResourceName:             mlFilterResourceAddress,
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					rs, ok := s.RootModule().Resources[mlFilterResourceAddress]
+					if !ok || rs.Primary.ID == "" {
+						return "", fmt.Errorf("no %s in state", mlFilterResourceAddress)
+					}
+					parts := strings.SplitN(rs.Primary.ID, "/", 2)
+					if len(parts) != 2 {
+						return "", fmt.Errorf("unexpected composite id %q", rs.Primary.ID)
+					}
+					return parts[0] + "/nonexistent-filter-id-for-import-test", nil
+				},
+				ExpectError: regexp.MustCompile(`Failed to get ML filter|Unable to get ML filter|Cannot import non-existent`),
+			},
+		},
+	})
+}
+
+func TestAccResourceMLFilterManyItems(t *testing.T) {
+	filterID := fmt.Sprintf("test-filter-many-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	t.Cleanup(func() {
+		deleteMLFilterBestEffort(t.Context(), t, filterID)
+	})
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"filter_id": config.StringVariable(filterID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(mlFilterResourceAddress, "filter_id", filterID),
+					resource.TestCheckResourceAttr(mlFilterResourceAddress, "items.#", "250"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceMLFilterDescriptionTooLong(t *testing.T) {
+	filterID := fmt.Sprintf("test-filter-longdesc-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	t.Cleanup(func() {
+		deleteMLFilterBestEffort(t.Context(), t, filterID)
+	})
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"filter_id": config.StringVariable(filterID),
+				},
+				ExpectError: regexp.MustCompile(`Invalid Attribute Value Length|4096|expected length`),
+			},
+		},
+	})
+}
+
+func TestAccResourceMLFilterEmptyDescription(t *testing.T) {
+	filterID := fmt.Sprintf("test-filter-emptydesc-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	t.Cleanup(func() {
+		deleteMLFilterBestEffort(t.Context(), t, filterID)
+	})
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"filter_id": config.StringVariable(filterID),
+				},
+				ExpectError: regexp.MustCompile(`Invalid Attribute Value Length|between 1 and 4096|got: 0`),
+			},
+		},
+	})
+}
+
+func TestAccResourceMLFilterInvalidFilterID(t *testing.T) {
+	filterID := "INVALID_UPPERCASE_ID"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"filter_id": config.StringVariable(filterID),
+				},
+				ExpectError: regexp.MustCompile(`lowercase|must contain`),
+			},
+		},
+	})
+}
+
+func TestAccResourceMLFilterCreateWhenFilterExists(t *testing.T) {
+	filterID := fmt.Sprintf("test-filter-dup-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	t.Cleanup(func() {
+		deleteMLFilterBestEffort(t.Context(), t, filterID)
+	})
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				PreConfig: func() {
+					putMLFilterOutOfBand(t.Context(), t, filterID, "Out-of-band filter before Terraform create", []string{"oob.example.com"})
+				},
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"filter_id": config.StringVariable(filterID),
+				},
+				ExpectError: regexp.MustCompile(`Failed to create ML filter`),
+			},
+		},
+	})
+}
+
+func TestAccResourceMLFilterRecreateAfterRemoteDeleted(t *testing.T) {
+	filterID := fmt.Sprintf("test-filter-recreate-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	t.Cleanup(func() {
+		deleteMLFilterBestEffort(t.Context(), t, filterID)
+	})
+
+	vars := config.Variables{
+		"filter_id": config.StringVariable(filterID),
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(mlFilterResourceAddress, "filter_id", filterID),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				PreConfig: func() {
+					deleteMLFilterStrict(t.Context(), t, filterID)
+				},
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(mlFilterResourceAddress, "filter_id", filterID),
+					resource.TestCheckResourceAttr(mlFilterResourceAddress, "description", "Filter deleted out-of-band then recreated by Terraform"),
+					resource.TestCheckResourceAttr(mlFilterResourceAddress, "items.#", "2"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceMLFilterUpdateWhenRemoteDeleted(t *testing.T) {
+	filterID := fmt.Sprintf("test-filter-upd-miss-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	t.Cleanup(func() {
+		deleteMLFilterBestEffort(t.Context(), t, filterID)
+	})
+
+	vars := config.Variables{
+		"filter_id": config.StringVariable(filterID),
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		// Without this, the pre-apply plan refreshes state, sees the remote filter is gone,
+		// drops the instance from state, and the step becomes a successful create instead of
+		// an update that hits the "filter missing" path in the provider.
+		AdditionalCLIOptions: &resource.AdditionalCLIOptions{
+			Plan: resource.PlanOptions{
+				NoRefresh: true,
+			},
+		},
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(mlFilterResourceAddress, "filter_id", filterID),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				PreConfig: func() {
+					deleteMLFilterStrict(t.Context(), t, filterID)
+				},
+				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: vars,
+				ExpectError:     regexp.MustCompile(`Filter not found`),
+			},
+		},
+	})
+}
+
+// TestAccResourceMLFilterUpdateForbiddenReadOnlyUser checks that an update using elasticsearch_connection
+// credentials whose role only grants the cluster privilege "none" (no ML access) fails with a clear
+// Elasticsearch authorization error.
+//
+// Requires TF_ACC=1, security enabled, and ELASTICSEARCH_ENDPOINTS (same as TestAccResourceAnomalyDetectionJobExplicitConnection).
+// Note: acceptance runs with ELASTICSEARCH_USERNAME set; the provider resolves Framework elasticsearch_connection
+// clients via config.NewFromFrameworkElasticsearchResourceConnection so scoped credentials are not replaced by env.
+func TestAccResourceMLFilterUpdateForbiddenReadOnlyUser(t *testing.T) {
+	endpoints := mlFilterAccESEndpoints()
+	if len(endpoints) == 0 {
+		t.Skip("ELASTICSEARCH_ENDPOINTS must contain at least one non-empty endpoint to run this test")
+	}
+	endpointVars := make([]config.Variable, 0, len(endpoints))
+	for _, endpoint := range endpoints {
+		endpointVars = append(endpointVars, config.StringVariable(endpoint))
+	}
+
+	roleName := fmt.Sprintf("ml_filter_acc_none_priv_%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	userName := fmt.Sprintf("ml_filter_acc_ro_%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	password := sdkacctest.RandStringFromCharSet(20, sdkacctest.CharSetAlphaNum)
+
+	putMLReadOnlyAccTestSecurity(t.Context(), t, roleName, userName, password)
+
+	filterID := fmt.Sprintf("test-filter-ro-upd-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	t.Cleanup(func() {
+		ctx := context.Background()
+		deleteMLFilterBestEffort(ctx, t, filterID)
+		deleteMLAccSecurityUserBestEffort(ctx, t, userName)
+		deleteMLAccSecurityRoleBestEffort(ctx, t, roleName)
+	})
+
+	vars := config.Variables{
+		"filter_id": config.StringVariable(filterID),
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(mlFilterResourceAddress, "filter_id", filterID),
+					resource.TestCheckResourceAttr(mlFilterResourceAddress, "description", "Created by admin for read-only update denial test"),
+					resource.TestCheckResourceAttr(mlFilterResourceAddress, "items.#", "1"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_ro"),
+				ConfigVariables: config.Variables{
+					"filter_id":   config.StringVariable(filterID),
+					"endpoints":   config.ListVariable(endpointVars...),
+					"ro_username": config.StringVariable(userName),
+					"ro_password": config.StringVariable(password),
+				},
+				ExpectError: regexp.MustCompile(`(?i)(Failed to update ML filter|Failed to get current ML filter|Failed to get ML filter|403|Forbidden|security_exception)`),
+			},
+		},
+	})
+}
+
+func TestAccResourceMLFilterDestroyWhenRemoteDeleted(t *testing.T) {
+	filterID := fmt.Sprintf("test-filter-del-miss-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	t.Cleanup(func() {
+		deleteMLFilterBestEffort(t.Context(), t, filterID)
+	})
+
+	vars := config.Variables{
+		"filter_id": config.StringVariable(filterID),
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(mlFilterResourceAddress, "filter_id", filterID),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				PreConfig: func() {
+					deleteMLFilterBestEffort(t.Context(), t, filterID)
+				},
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: vars,
+				Destroy:         true,
+			},
+		},
+	})
+}
+
+// TestAccResourceMLFilterDestroyBlockedByReferencedJob checks that deleting an ML filter fails while an
+// anomaly detection job still references it via detector custom_rules scope (Elasticsearch refuses delete).
+// The job is created with the Elasticsearch API because the Terraform ML anomaly detection job resource does not
+// yet expose scope on custom rules.
+//
+// Requires TF_ACC=1 and a cluster where ML anomaly detection jobs can be created (same expectation as other ML acceptance tests).
+func TestAccResourceMLFilterDestroyBlockedByReferencedJob(t *testing.T) {
+	filterID := fmt.Sprintf("test-filter-blockdel-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	jobID := fmt.Sprintf("test-ad-blockdel-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+
+	t.Cleanup(func() {
+		deleteMLJobBestEffort(t.Context(), t, jobID)
+		deleteMLFilterBestEffort(t.Context(), t, filterID)
+	})
+
+	vars := config.Variables{
+		"filter_id": config.StringVariable(filterID),
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(mlFilterResourceAddress, "filter_id", filterID),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				PreConfig: func() {
+					putMLJobReferencingFilter(t.Context(), t, jobID, filterID)
+				},
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(mlFilterResourceAddress, "filter_id", filterID),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars,
+				Destroy:                  true,
+				ExpectError:              regexp.MustCompile(`Failed to delete ML filter`),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				PreConfig: func() {
+					deleteMLJobBestEffort(t.Context(), t, jobID)
+				},
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: vars,
+				Destroy:         true,
+			},
+		},
+	})
+}
+
+func TestAccResourceMLFilterDestroyBlockedByTwoReferencedJobs(t *testing.T) {
+	filterID := fmt.Sprintf("test-filter-2jobs-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	jobID1 := fmt.Sprintf("test-ad-2jobs-a-%s", sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum))
+	jobID2 := fmt.Sprintf("test-ad-2jobs-b-%s", sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum))
+
+	t.Cleanup(func() {
+		deleteMLJobBestEffort(t.Context(), t, jobID1)
+		deleteMLJobBestEffort(t.Context(), t, jobID2)
+		deleteMLFilterBestEffort(t.Context(), t, filterID)
+	})
+
+	vars := config.Variables{
+		"filter_id": config.StringVariable(filterID),
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(mlFilterResourceAddress, "filter_id", filterID),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				PreConfig: func() {
+					putMLJobReferencingFilter(t.Context(), t, jobID1, filterID)
+					putMLJobReferencingFilter(t.Context(), t, jobID2, filterID)
+				},
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(mlFilterResourceAddress, "filter_id", filterID),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars,
+				Destroy:                  true,
+				ExpectError:              regexp.MustCompile(`Failed to delete ML filter`),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				PreConfig: func() {
+					deleteMLJobBestEffort(t.Context(), t, jobID1)
+					deleteMLJobBestEffort(t.Context(), t, jobID2)
+				},
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: vars,
+				Destroy:         true,
+			},
+		},
+	})
+}
+
+func putMLJobReferencingFilter(ctx context.Context, t *testing.T, jobID, filterID string) {
+	t.Helper()
+
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+	if err != nil {
+		t.Fatalf("acceptance ES client: %v", err)
+	}
+	typed, err := client.GetESClient()
+	if err != nil {
+		t.Fatalf("typed ES client: %v", err)
+	}
+
+	detectorFunction := "count"
+	partitionField := "host"
+	timeField := "@timestamp"
+	timeFormat := "epoch_ms"
+
+	_, err = typed.Ml.PutJob(jobID).Request(&putjob.Request{
+		AnalysisConfig: types.AnalysisConfig{
+			BucketSpan: types.Duration("15m"),
+			Detectors: []types.Detector{
+				{
+					Function:           &detectorFunction,
+					PartitionFieldName: &partitionField,
+					CustomRules: []types.DetectionRule{
+						{
+							Actions: []ruleaction.RuleAction{ruleaction.Skipresult},
+							Scope: map[string]types.FilterRef{
+								"host": {FilterId: filterID},
+							},
+						},
+					},
+				},
+			},
+		},
+		DataDescription: types.DataDescription{
+			TimeField:  &timeField,
+			TimeFormat: &timeFormat,
+		},
+	}).Do(ctx)
+	if err != nil {
+		t.Fatalf("Ml.PutJob: %v", err)
+	}
+}
+
+func deleteMLJobBestEffort(ctx context.Context, t *testing.T, jobID string) {
+	t.Helper()
+
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+	if err != nil {
+		t.Logf("Ml.DeleteJob cleanup: no client: %v", err)
+		return
+	}
+	typed, err := client.GetESClient()
+	if err != nil {
+		t.Logf("Ml.DeleteJob cleanup: %v", err)
+		return
+	}
+
+	_, err = typed.Ml.DeleteJob(jobID).Force(true).Do(ctx)
+	if err == nil {
+		return
+	}
+	var esErr *types.ElasticsearchError
+	if errors.As(err, &esErr) && esErr.Status == 404 {
+		return
+	}
+	t.Logf("Ml.DeleteJob %q: %v", jobID, err)
+}
+
+func putMLFilterOutOfBand(ctx context.Context, t *testing.T, filterID, description string, items []string) {
+	t.Helper()
+
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+	if err != nil {
+		t.Fatalf("acceptance ES client: %v", err)
+	}
+	typed, err := client.GetESClient()
+	if err != nil {
+		t.Fatalf("typed ES client: %v", err)
+	}
+
+	put := typed.Ml.PutFilter(filterID).Description(description)
+	if len(items) > 0 {
+		put = put.Items(items...)
+	}
+	_, err = put.Do(ctx)
+	if err != nil {
+		t.Fatalf("Ml.PutFilter out-of-band: %v", err)
+	}
+}
+
+func deleteMLFilterBestEffort(ctx context.Context, t *testing.T, filterID string) {
+	t.Helper()
+
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+	if err != nil {
+		t.Logf("Ml.DeleteFilter cleanup: no client: %v", err)
+		return
+	}
+	typed, err := client.GetESClient()
+	if err != nil {
+		t.Logf("Ml.DeleteFilter cleanup: %v", err)
+		return
+	}
+
+	_, err = typed.Ml.DeleteFilter(filterID).Do(ctx)
+	if err == nil {
+		return
+	}
+	var esErr *types.ElasticsearchError
+	if errors.As(err, &esErr) && esErr.Status == 404 {
+		return
+	}
+	t.Logf("Ml.DeleteFilter %q: %v", filterID, err)
+}
+
+func deleteMLFilterStrict(ctx context.Context, t *testing.T, filterID string) {
+	t.Helper()
+
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+	if err != nil {
+		t.Fatalf("acceptance ES client: %v", err)
+	}
+	typed, err := client.GetESClient()
+	if err != nil {
+		t.Fatalf("typed ES client: %v", err)
+	}
+
+	_, err = typed.Ml.DeleteFilter(filterID).Do(ctx)
+	if err == nil {
+		return
+	}
+	var esErr *types.ElasticsearchError
+	if errors.As(err, &esErr) && esErr.Status == 404 {
+		return
+	}
+	t.Fatalf("Ml.DeleteFilter %q: %v", filterID, err)
+}
+
+func updateMLFilterDescriptionOutOfBand(ctx context.Context, t *testing.T, filterID, newDescription string) {
+	t.Helper()
+
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+	if err != nil {
+		t.Fatalf("acceptance ES client: %v", err)
+	}
+	typed, err := client.GetESClient()
+	if err != nil {
+		t.Fatalf("typed ES client: %v", err)
+	}
+
+	_, err = typed.Ml.UpdateFilter(filterID).Description(newDescription).Do(ctx)
+	if err != nil {
+		t.Fatalf("Ml.UpdateFilter out-of-band: %v", err)
+	}
+}
+
+func assertMLFilterAbsentES(ctx context.Context, t *testing.T, filterID string) error {
+	t.Helper()
+
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+	if err != nil {
+		return fmt.Errorf("acceptance ES client: %w", err)
+	}
+	typed, err := client.GetESClient()
+	if err != nil {
+		return fmt.Errorf("typed ES client: %w", err)
+	}
+
+	res, err := typed.Ml.GetFilters().FilterId(filterID).Do(ctx)
+	if err != nil {
+		var esErr *types.ElasticsearchError
+		if errors.As(err, &esErr) && esErr.Status == 404 {
+			return nil
+		}
+		return fmt.Errorf("get filter %q: %w", filterID, err)
+	}
+	if len(res.Filters) == 0 {
+		return nil
+	}
+	return fmt.Errorf("expected ML filter %q to be absent in Elasticsearch", filterID)
+}
+
+func assertMLFilterPresentES(ctx context.Context, t *testing.T, filterID string) error {
+	t.Helper()
+
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+	if err != nil {
+		return fmt.Errorf("acceptance ES client: %w", err)
+	}
+	typed, err := client.GetESClient()
+	if err != nil {
+		return fmt.Errorf("typed ES client: %w", err)
+	}
+
+	res, err := typed.Ml.GetFilters().FilterId(filterID).Do(ctx)
+	if err != nil {
+		return fmt.Errorf("get filter %q: %w", filterID, err)
+	}
+	if len(res.Filters) == 0 {
+		return fmt.Errorf("expected ML filter %q to exist in Elasticsearch", filterID)
+	}
+	return nil
+}
+
+func mlFilterAccESEndpoints() []string {
+	rawEndpoints := os.Getenv("ELASTICSEARCH_ENDPOINTS")
+	parts := strings.Split(rawEndpoints, ",")
+	endpoints := make([]string, 0, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part != "" {
+			endpoints = append(endpoints, part)
+		}
+	}
+	return endpoints
+}
+
+func putMLReadOnlyAccTestSecurity(ctx context.Context, t *testing.T, roleName, userName, password string) {
+	t.Helper()
+
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+	if err != nil {
+		t.Fatalf("acceptance ES client: %v", err)
+	}
+	typed, err := client.GetESClient()
+	if err != nil {
+		t.Fatalf("typed ES client: %v", err)
+	}
+
+	// "none" is a predefined cluster privilege: the user can authenticate but has no cluster-level
+	// permissions, so ML filter APIs return 403 (often surfaced via Read or Update diagnostics).
+	const roleBody = `{
+  "cluster": ["none"],
+  "indices": [],
+  "applications": [],
+  "run_as": []
+}`
+	_, err = typed.Security.PutRole(roleName).Raw(strings.NewReader(roleBody)).Do(ctx)
+	if err != nil {
+		t.Fatalf("Security.PutRole %q: %v", roleName, err)
+	}
+
+	_, err = typed.Security.PutUser(userName).Password(password).Roles(roleName).Do(ctx)
+	if err != nil {
+		t.Fatalf("Security.PutUser %q: %v", userName, err)
+	}
+}
+
+func deleteMLAccSecurityUserBestEffort(ctx context.Context, t *testing.T, userName string) {
+	t.Helper()
+
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+	if err != nil {
+		t.Logf("Security.DeleteUser cleanup: no client: %v", err)
+		return
+	}
+	typed, err := client.GetESClient()
+	if err != nil {
+		t.Logf("Security.DeleteUser cleanup: %v", err)
+		return
+	}
+
+	_, err = typed.Security.DeleteUser(userName).Do(ctx)
+	if err == nil {
+		return
+	}
+	var esErr *types.ElasticsearchError
+	if errors.As(err, &esErr) && esErr.Status == 404 {
+		return
+	}
+	t.Logf("Security.DeleteUser %q: %v", userName, err)
+}
+
+func deleteMLAccSecurityRoleBestEffort(ctx context.Context, t *testing.T, roleName string) {
+	t.Helper()
+
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+	if err != nil {
+		t.Logf("Security.DeleteRole cleanup: no client: %v", err)
+		return
+	}
+	typed, err := client.GetESClient()
+	if err != nil {
+		t.Logf("Security.DeleteRole cleanup: %v", err)
+		return
+	}
+
+	_, err = typed.Security.DeleteRole(roleName).Do(ctx)
+	if err == nil {
+		return
+	}
+	var esErr *types.ElasticsearchError
+	if errors.As(err, &esErr) && esErr.Status == 404 {
+		return
+	}
+	t.Logf("Security.DeleteRole %q: %v", roleName, err)
 }
