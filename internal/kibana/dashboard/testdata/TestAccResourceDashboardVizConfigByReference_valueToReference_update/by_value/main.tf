@@ -30,19 +30,28 @@ resource "elasticstack_kibana_dashboard" "test" {
         metric_chart_config = {
           title       = "Metric Chart"
           description = "Test metric chart"
+          data_source_json = jsonencode({
+            type          = "data_view_spec"
+            index_pattern = "logs-*"
+            time_field    = "@timestamp"
+          })
           query = {
             language   = "kql"
             expression = "*"
           }
-          data_source_json = jsonencode({
-            type          = "data_view_spec"
-            index_pattern = "logs-*"
-          })
-          metrics = [{
-            config_json = jsonencode({
-              operation = "count"
-            })
-          }]
+          metrics = [
+            {
+              config_json = jsonencode({
+                type      = "primary"
+                operation = "count"
+                format = {
+                  type = "number"
+                }
+              })
+            }
+          ]
+          ignore_global_filters = false
+          sampling              = 1
         }
       }
     }
