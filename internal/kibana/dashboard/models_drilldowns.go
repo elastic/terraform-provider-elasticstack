@@ -399,9 +399,10 @@ func drilldownModelToLensUnionItem(m drilldownItemModel) (kbapi.KbnDashboardPane
 	return u, diags
 }
 
-// explicitEmptyDrilldowns returns a zero-length drilldown slice that is intentionally non-nil. The Lens by-reference write
-// path distinguishes a nil drilldownsModel (omit drilldowns on the wire) from explicitEmptyDrilldowns() (`drilldowns = []`),
-// which sends an empty API array so a practitioner can clear prior drilldown entries.
+// explicitEmptyDrilldowns builds a slice that is intentionally non-nil with length 0. Terraform Plugin Framework decodes:
+// - a null/absent optional `drilldowns` attribute into a nil Go slice (`reflect.Zero` on slice type — see terraform-plugin-framework `internal/reflect/into.go`);
+// - practitioner `drilldowns = []` into reflect.MakeSlice(..., 0, 0), i.e. a non-nil empty slice (`internal/reflect/slice.go`).
+// lensDashboardAppByReferenceToAPI therefore uses `byRef.Drilldowns != nil` to distinguish omission from explicit empty-clear.
 func explicitEmptyDrilldowns() drilldownsModel {
 	return make(drilldownsModel, 0)
 }

@@ -294,6 +294,7 @@ func TestLensDashboardAppByReferenceToAPI_mapsFields(t *testing.T) {
 
 func TestLensDashboardAppByReferenceToAPI_emptyStructuredDrilldowns_sendsEmptyArray(t *testing.T) {
 	t.Parallel()
+	// Mirrors Terraform `drilldowns = []`: framework reflects a known-empty nested list attribute as non-nil slice (len 0).
 	byRef := lensDashboardAppByReferenceModel{
 		RefID: types.StringValue("lensRef"),
 		TimeRange: lensDashboardAppTimeRangeModel{
@@ -316,6 +317,28 @@ func TestLensDashboardAppByReferenceToAPI_emptyStructuredDrilldowns_sendsEmptyAr
 	require.Equal(t, []any{}, wire["drilldowns"])
 }
 
+func TestLensDashboardAppByReferenceToAPI_omittedStructuredDrilldowns_nilSliceSkipsAPIField(t *testing.T) {
+	t.Parallel()
+	byRef := lensDashboardAppByReferenceModel{
+		RefID: types.StringValue("lensRef"),
+		TimeRange: lensDashboardAppTimeRangeModel{
+			From: types.StringValue("2024-01-01T00:00:00.000Z"),
+			To:   types.StringValue("2024-01-01T01:00:00.000Z"),
+		},
+	}
+	item, diags := lensDashboardAppByReferenceToAPI(byRef, lensDashboardAPIGrid{}, nil)
+	require.False(t, diags.HasError())
+	ld, err := item.AsKbnDashboardPanelTypeLensDashboardApp()
+	require.NoError(t, err)
+	cfg1, err := ld.Config.AsKbnDashboardPanelTypeLensDashboardAppConfig1()
+	require.NoError(t, err)
+	require.Nil(t, cfg1.Drilldowns)
+	var wire map[string]any
+	require.NoError(t, json.Unmarshal(mustJSON(t, ld.Config), &wire))
+	_, has := wire["drilldowns"]
+	require.False(t, has, "omitted drills should omit API drilldowns key/json field where possible")
+}
+
 func TestLensDashboardAppByReferenceToAPI_emptyReferencesJSON_sendsEmptyArray(t *testing.T) {
 	t.Parallel()
 	byRef := lensDashboardAppByReferenceModel{
@@ -334,10 +357,10 @@ func TestLensDashboardAppByReferenceToAPI_emptyReferencesJSON_sendsEmptyArray(t 
 	require.NoError(t, err)
 	require.NotNil(t, cfg1.References)
 	require.Empty(t, *cfg1.References)
-	var wire map[string]any
-	require.NoError(t, json.Unmarshal(mustJSON(t, ld.Config), &wire))
-	require.Contains(t, wire, "references")
-	require.Equal(t, []any{}, wire["references"])
+	var wireRefs map[string]any
+	require.NoError(t, json.Unmarshal(mustJSON(t, ld.Config), &wireRefs))
+	require.Contains(t, wireRefs, "references")
+	require.Equal(t, []any{}, wireRefs["references"])
 }
 
 func TestPopulateLensDashboardAppFromAPI_byReferencePath(t *testing.T) {
@@ -368,6 +391,42 @@ func TestPopulateLensDashboardAppFromAPI_byReferencePath(t *testing.T) {
 	require.Equal(t, "absolute", br.TimeRange.Mode.ValueString())
 	require.Equal(t, "T2", br.Title.ValueString())
 	require.Equal(t, "D2", br.Description.ValueString())
+	require.Nil(t, br.Drilldowns)
+	require.True(t, br.DrilldownsJSON.IsNull())
+}
+
+func TestPopulateLensDashboardAppFromAPI_byReference_keepsPriorDrilldownsWhenAPIOmits(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	priorWant := drilldownsModel{
+		{
+			Dashboard: &drilldownDashboardBlockModel{
+				DashboardID: types.StringValue("dddddddd-dddd-dddd-dddd-dddddddddddd"),
+				Label:       types.StringValue("kept-drill"),
+			},
+		},
+	}
+	tf := panelModel{
+		LensDashboardAppConfig: &lensDashboardAppConfigModel{
+			ByReference: &lensDashboardAppByReferenceModel{
+				RefID:      types.StringValue("r1"),
+				TimeRange:  lensDashboardAppTimeRangeModel{From: types.StringValue("a"), To: types.StringValue("b")},
+				Drilldowns: priorWant,
+			},
+		},
+	}
+	pm := tf
+	apiWire := []byte(`{"ref_id":"r1","time_range":{"from":"a","to":"b"}}`)
+	var cfgUnion kbapi.KbnDashboardPanelTypeLensDashboardApp_Config
+	require.NoError(t, cfgUnion.UnmarshalJSON(apiWire))
+	api := kbapi.KbnDashboardPanelTypeLensDashboardApp{Config: cfgUnion}
+	diags := populateLensDashboardAppFromAPI(ctx, &pm, &tf, api)
+	require.False(t, diags.HasError())
+	got := pm.LensDashboardAppConfig.ByReference.Drilldowns
+	require.Len(t, got, 1)
+	require.NotNil(t, got[0].Dashboard)
+	assertDashboardBlocksEqual(t, priorWant[0].Dashboard, got[0].Dashboard)
+	require.True(t, pm.LensDashboardAppConfig.ByReference.DrilldownsJSON.IsNull())
 }
 
 func TestLensDashboardAppByReferenceToAPI_discoverAndURLKinds(t *testing.T) {
