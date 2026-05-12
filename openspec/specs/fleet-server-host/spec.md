@@ -15,7 +15,7 @@ resource "elasticstack_fleet_server_host" "example" {
 
   name    = <required, string>
   hosts   = <required, list(string)>    # at least one entry
-  default = <optional, bool>
+  default = <optional+computed, bool>  # defaults to false when omitted
   space_ids = <optional+computed, set(string)>
 }
 ```
@@ -94,6 +94,17 @@ On delete, the resource SHALL use the first space ID from state as the space con
 - WHEN destroy runs
 - THEN the Fleet delete API SHALL be called using `space-a` as the space context
 
+### Requirement: Delete clears default before removal (REQ-010a)
+
+The Fleet API rejects deletion of a server host that is currently marked as default. On delete, when state has `default = true`, the resource SHALL first issue an update to set `is_default = false` (using the same operational space as the delete) and then SHALL issue the delete request. If the pre-delete update returns an error, the resource SHALL surface it to diagnostics and SHALL NOT proceed with the delete.
+
+#### Scenario: Destroying a default server host
+
+- GIVEN state has `default = true`
+- WHEN `terraform destroy` runs
+- THEN the resource SHALL update the host with `is_default = false` before calling the Fleet delete API
+- AND the delete SHALL succeed without manual intervention
+
 ### Requirement: Read — not found removes from state (REQ-011)
 
 On read, if the Fleet API returns a nil response for the server host, the resource SHALL remove itself from state. When the Fleet API returns an error, the resource SHALL surface it to Terraform diagnostics.
@@ -106,7 +117,13 @@ On read, if the Fleet API returns a nil response for the server host, the resour
 
 ### Requirement: State mapping (REQ-012)
 
-On read, the resource SHALL map `id`, `host_id`, `name`, `hosts`, and `default` from the API response. `space_ids` is not returned by the Fleet API; if `space_ids` is unknown in state after the API call, the resource SHALL set it to explicit null. If `space_ids` has a configured value, the resource SHALL preserve it.
+On read, the resource SHALL map `id`, `host_id`, `name`, `hosts`, and `default` from the API response. The `default` attribute SHALL always carry a known boolean value in state — when the user omits it from configuration, it SHALL default to `false` so plan and post-apply state agree. `space_ids` is not returned by the Fleet API; if `space_ids` is unknown in state after the API call, the resource SHALL set it to explicit null. If `space_ids` has a configured value, the resource SHALL preserve it.
+
+#### Scenario: default omitted from config
+
+- GIVEN config does not set `default`
+- WHEN apply completes
+- THEN state SHALL have `default = false` (matching the Fleet API response) with no inconsistent-result error
 
 #### Scenario: space_ids preserved after read
 

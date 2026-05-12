@@ -19,6 +19,7 @@ package agentpolicy
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
@@ -26,6 +27,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
@@ -191,9 +193,9 @@ func (model *agentPolicyModel) populateAdvancedSettingsFromAPI(ctx context.Conte
 }
 
 // convertAdvancedSettingsToAPI converts the advanced settings config to API format
-func (model *agentPolicyModel) convertAdvancedSettingsToAPI(ctx context.Context) *advancedSettingsAPIValues {
+func (model *agentPolicyModel) convertAdvancedSettingsToAPI(ctx context.Context, feat features) (*advancedSettingsAPIValues, diag.Diagnostics) {
 	if !typeutils.IsKnown(model.AdvancedSettings) {
-		return nil
+		return nil, nil
 	}
 
 	var settings advancedSettingsModel
@@ -212,7 +214,7 @@ func (model *agentPolicyModel) convertAdvancedSettingsToAPI(ctx context.Context)
 		typeutils.IsKnown(settings.MonitoringRuntimeExperimental)
 
 	if !hasValues {
-		return nil
+		return nil, nil
 	}
 
 	result := &advancedSettingsAPIValues{}
@@ -245,8 +247,17 @@ func (model *agentPolicyModel) convertAdvancedSettingsToAPI(ctx context.Context)
 		result.AgentDownloadTargetDirectory = settings.DownloadTargetDirectory.ValueString()
 	}
 	if typeutils.IsKnown(settings.MonitoringRuntimeExperimental) {
+		if !feat.SupportsMonitoringRuntimeExperimental {
+			return nil, diag.Diagnostics{
+				diag.NewAttributeErrorDiagnostic(
+					path.Root("advanced_settings").AtName("monitoring_runtime_experimental"),
+					"Unsupported Elasticsearch version",
+					fmt.Sprintf("monitoring_runtime_experimental is only supported in Elastic Stack 8.19.x or 9.1.0 and above"),
+				),
+			}
+		}
 		result.AgentMonitoringRuntimeExperimental = settings.MonitoringRuntimeExperimental.ValueString()
 	}
 
-	return result
+	return result, nil
 }

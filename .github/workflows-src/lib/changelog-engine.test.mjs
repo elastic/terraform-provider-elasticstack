@@ -240,7 +240,7 @@ test('runChangelogRenderAndWrite none PR with breaking changes is excluded and h
   assert.ok(text.includes('Internal schema change'));
 });
 
-test('runChangelogRenderAndWrite release inserts section after Unreleased', () => {
+test('runChangelogRenderAndWrite release replaces Unreleased section with new versioned section', () => {
   const core = mockCore();
   const dir = mkdtempSync(path.join(os.tmpdir(), 'clog-'));
   const changelogPath = path.join(dir, 'CHANGELOG.md');
@@ -268,13 +268,14 @@ test('runChangelogRenderAndWrite release inserts section after Unreleased', () =
   });
   assert.match(out.sectionHeader, /^## \[1\.0\.0\] - \d{4}-\d{2}-\d{2}$/);
   const text = readFileSync(changelogPath, 'utf8');
-  const u = text.indexOf('## [Unreleased]');
+  assert.ok(!text.includes('## [Unreleased]'));
+  assert.ok(text.includes('ship'));
   const r = text.indexOf('## [1.0.0]');
   const old = text.indexOf('## [0.9.0]');
-  assert.ok(u !== -1 && r !== -1 && r > u && old > r);
+  assert.ok(r !== -1 && old !== -1 && r < old);
 });
 
-test('runChangelogRenderAndWrite release with zero PRs writes header-only section', () => {
+test('runChangelogRenderAndWrite release with zero PRs replaces Unreleased with header-only section', () => {
   const core = mockCore();
   const dir = mkdtempSync(path.join(os.tmpdir(), 'clog-'));
   const changelogPath = path.join(dir, 'CHANGELOG.md');
@@ -297,11 +298,11 @@ test('runChangelogRenderAndWrite release with zero PRs writes header-only sectio
   assert.equal(out.hasUserFacingChanges, false);
   assert.equal(out.included.length, 0);
   const text = readFileSync(changelogPath, 'utf8');
-  const u = text.indexOf('## [Unreleased]');
+  assert.ok(!text.includes('## [Unreleased]'));
+  assert.ok(!text.includes('pending'));
   const r = text.indexOf('## [1.0.0]');
   const old = text.indexOf('## [0.9.0]');
-  assert.ok(u !== -1 && r !== -1 && r > u && old > r);
-  assert.ok(text.includes('## [1.0.0]'));
+  assert.ok(r !== -1 && old !== -1 && r < old);
 });
 
 test('runChangelogRenderAndWrite assembly failure calls setFailed and throws', () => {

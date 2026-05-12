@@ -3,6 +3,11 @@ variable "name" {
   type        = string
 }
 
+variable "host_id" {
+  description = "The Fleet server host ID"
+  type        = string
+}
+
 variable "space_id" {
   description = "The Kibana space ID to create the server host in"
   type        = string

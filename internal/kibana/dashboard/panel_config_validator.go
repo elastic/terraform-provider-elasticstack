@@ -204,3 +204,134 @@ func (v panelConfigValidator) ValidateObject(_ context.Context, req validator.Ob
 		&req.Path,
 	)...)
 }
+
+var _ validator.Object = pinnedPanelControlValidator{}
+
+type pinnedPanelControlValidator struct{}
+
+func (pinnedPanelControlValidator) Description(_ context.Context) string {
+	return "Ensures each pinned panel entry sets exactly one `*_control_config` block matching `type` " +
+		"(only the four dashboard control kinds allowed for `pinned_panels`)."
+}
+
+func (v pinnedPanelControlValidator) MarkdownDescription(ctx context.Context) string {
+	return v.Description(ctx)
+}
+
+func pinnedPanelExpectedTypedControlAttr(panelType string) (attrName string, ok bool) {
+	switch panelType {
+	case panelTypeOptionsListControl:
+		return "options_list_control_config", true
+	case panelTypeRangeSlider:
+		return "range_slider_control_config", true
+	case panelTypeTimeSlider:
+		return "time_slider_control_config", true
+	case panelTypeEsqlControl:
+		return "esql_control_config", true
+	default:
+		return "", false
+	}
+}
+
+const pinnedPanelAllowedTypesDetail = "`options_list_control`, `range_slider_control`, `time_slider_control`, or `esql_control`"
+
+func (v pinnedPanelControlValidator) ValidateObject(_ context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
+	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+		return
+	}
+
+	attrs := req.ConfigValue.Attributes()
+	typeAttr := attrs["type"]
+
+	var panelType string
+	var typeKnown bool
+	if typeAttr != nil && !typeAttr.IsNull() && !typeAttr.IsUnknown() {
+		typeValue, ok := typeAttr.(interface{ ValueString() string })
+		if !ok {
+			resp.Diagnostics.AddAttributeError(req.Path.AtName("type"), "Invalid pinned panel entry type", "The `type` attribute must be a string value.")
+			return
+		}
+		panelType = typeValue.ValueString()
+		typeKnown = true
+	}
+
+	states := make(map[string]panelConfigValueState, len(pinnedPanelControlConfigNames))
+	setAttrs := make([]string, 0, len(pinnedPanelControlConfigNames))
+	anyUnknownSlot := false
+	for _, name := range pinnedPanelControlConfigNames {
+		st := panelConfigValueStateFromValue(attrs[name])
+		states[name] = st
+		if st.Unknown {
+			anyUnknownSlot = true
+		}
+		if st.Set {
+			setAttrs = append(setAttrs, name)
+		}
+	}
+	setCount := len(setAttrs)
+
+	if typeKnown {
+		if _, valid := pinnedPanelExpectedTypedControlAttr(panelType); !valid {
+			resp.Diagnostics.AddAttributeError(
+				req.Path.AtName("type"),
+				"Invalid pinned panel entry type",
+				fmt.Sprintf("Pinned panel entries only support dashboard controls in the control bar; `type` must be %s, got %q.",
+					pinnedPanelAllowedTypesDetail,
+					panelType,
+				),
+			)
+			return
+		}
+	}
+
+	if setCount >= 2 {
+		quoted := make([]string, len(setAttrs))
+		for i, name := range setAttrs {
+			quoted[i] = "`" + name + "`"
+		}
+		resp.Diagnostics.AddAttributeError(
+			req.Path,
+			"Invalid pinned panel entry configuration",
+			fmt.Sprintf("Pinned panel entry must set exactly one typed control configuration block; found %s.", strings.Join(quoted, ", ")),
+		)
+		return
+	}
+
+	if setCount == 1 {
+		if !typeKnown {
+			return
+		}
+		expectedAttr, _ := pinnedPanelExpectedTypedControlAttr(panelType)
+		if setAttrs[0] != expectedAttr {
+			resp.Diagnostics.AddAttributeError(
+				req.Path.AtName(setAttrs[0]),
+				"Pinned panel control does not match type",
+				fmt.Sprintf("Pinned panel entry has `type = %q` but sets `%s`; use `%s` instead.", panelType, setAttrs[0], expectedAttr),
+			)
+			return
+		}
+		for _, name := range pinnedPanelControlConfigNames {
+			if name == expectedAttr {
+				continue
+			}
+			if states[name].Unknown {
+				return
+			}
+		}
+		return
+	}
+
+	if anyUnknownSlot {
+		return
+	}
+	if !typeKnown {
+		return
+	}
+
+	expectedAttr, _ := pinnedPanelExpectedTypedControlAttr(panelType)
+	resp.Diagnostics.AddAttributeError(
+		req.Path.AtName(expectedAttr),
+		"Missing pinned panel control configuration",
+		fmt.Sprintf("Pinned panel entry with `type = %q` must set `%s`.", panelType, expectedAttr),
+	)
+}

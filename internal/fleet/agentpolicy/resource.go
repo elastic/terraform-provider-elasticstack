@@ -51,6 +51,29 @@ var (
 	MinVersionTamperProtection = version.Must(version.NewVersion("8.10.0"))
 )
 
+// MonitoringRuntimeExperimentalSupported returns true if the given version
+// supports the monitoring_runtime_experimental advanced setting: 8.19.x or 9.1.0+.
+func MonitoringRuntimeExperimentalSupported(v *version.Version) bool {
+	if v == nil {
+		return false
+	}
+	segments := v.Segments()
+	if len(segments) < 2 {
+		return false
+	}
+	major, minor := segments[0], segments[1]
+	switch {
+	case major >= 10:
+		return true
+	case major == 9 && minor >= 1:
+		return true
+	case major == 8 && minor >= 19:
+		return true
+	default:
+		return false
+	}
+}
+
 type agentPolicyResource struct {
 	*entitycore.ResourceBase
 	*fleet.SpaceImporter
@@ -119,16 +142,22 @@ func (r *agentPolicyResource) buildFeatures(ctx context.Context, apiClient *clie
 		return features{}, diagutil.FrameworkDiagsFromSDK(diags)
 	}
 
+	supportsMonitoringRuntimeExperimental, diags := apiClient.EnforceVersionCheck(ctx, MonitoringRuntimeExperimentalSupported)
+	if diags.HasError() {
+		return features{}, diagutil.FrameworkDiagsFromSDK(diags)
+	}
+
 	return features{
-		SupportsGlobalDataTags:      supportsGDT,
-		SupportsSupportsAgentless:   supportsSupportsAgentless,
-		SupportsInactivityTimeout:   supportsInactivityTimeout,
-		SupportsUnenrollmentTimeout: supportsUnenrollmentTimeout,
-		SupportsSpaceIDs:            supportsSpaceIDs,
-		SupportsRequiredVersions:    supportsRequiredVersions,
-		SupportsAgentFeatures:       supportsAgentFeatures,
-		SupportsAdvancedMonitoring:  supportsAdvancedMonitoring,
-		SupportsAdvancedSettings:    supportsAdvancedSettings,
-		SupportsTamperProtection:    supportsTamperProtection,
+		SupportsGlobalDataTags:                supportsGDT,
+		SupportsSupportsAgentless:             supportsSupportsAgentless,
+		SupportsInactivityTimeout:             supportsInactivityTimeout,
+		SupportsUnenrollmentTimeout:           supportsUnenrollmentTimeout,
+		SupportsSpaceIDs:                      supportsSpaceIDs,
+		SupportsRequiredVersions:              supportsRequiredVersions,
+		SupportsAgentFeatures:                 supportsAgentFeatures,
+		SupportsAdvancedMonitoring:            supportsAdvancedMonitoring,
+		SupportsAdvancedSettings:              supportsAdvancedSettings,
+		SupportsMonitoringRuntimeExperimental: supportsMonitoringRuntimeExperimental,
+		SupportsTamperProtection:              supportsTamperProtection,
 	}, nil
 }
