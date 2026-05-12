@@ -51,6 +51,7 @@ Adds optional `time_range`, `hide_title`, `hide_border`, `references_json`, and 
 
 ### Changes
 
+- Fix scoped Plugin Framework Elasticsearch clients built from an `elasticsearch_connection` block so `ELASTICSEARCH_*` environment variables no longer override Terraform credentials or merge across incompatible auth modes (basic, API key, bearer). ([#2882](https://github.com/elastic/terraform-provider-elasticstack/pull/2882))
 - Fix ILM policy delete failures when the policy is still referenced by indices (e.g. Fleet-managed data stream backing indices) ([#2714](https://github.com/elastic/terraform-provider-elasticstack/pull/2714))
 - Migrated `elasticstack_elasticsearch_data_stream` resource from Plugin SDK to Plugin Framework ([#2744](https://github.com/elastic/terraform-provider-elasticstack/pull/2744))
 - Add elasticstack_apm_source_map resource for managing APM source maps via Kibana API ([#2712](https://github.com/elastic/terraform-provider-elasticstack/pull/2712))
