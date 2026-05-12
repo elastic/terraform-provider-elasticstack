@@ -689,6 +689,12 @@ func TestAccResourceIntegration_destroyWithILMCrossDependency(t *testing.T) {
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				PreConfig: func() {
+					notSupported, err := versionutils.CheckIfVersionIsUnsupported(minVersionIntegration)()
+					require.NoError(t, err)
+					if notSupported {
+						return
+					}
+
 					client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 					require.NoError(t, err)
 					ctx := context.Background()
@@ -722,6 +728,12 @@ func TestAccResourceIntegration_destroyWithILMCrossDependency(t *testing.T) {
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				PreConfig: func() {
+					notSupported, err := versionutils.CheckIfVersionIsUnsupported(minVersionIntegration)()
+					require.NoError(t, err)
+					if notSupported {
+						return
+					}
+
 					client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 					require.NoError(t, err)
 					ctx := context.Background()

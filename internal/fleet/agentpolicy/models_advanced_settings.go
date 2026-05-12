@@ -19,7 +19,6 @@ package agentpolicy
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
@@ -252,7 +251,7 @@ func (model *agentPolicyModel) convertAdvancedSettingsToAPI(ctx context.Context,
 				diag.NewAttributeErrorDiagnostic(
 					path.Root("advanced_settings").AtName("monitoring_runtime_experimental"),
 					"Unsupported Elasticsearch version",
-					fmt.Sprintf("monitoring_runtime_experimental is only supported in Elastic Stack 8.19.x or 9.1.0 and above"),
+					"monitoring_runtime_experimental is only supported in Elastic Stack 8.19.x or 9.1.0 and above",
 				),
 			}
 		}
