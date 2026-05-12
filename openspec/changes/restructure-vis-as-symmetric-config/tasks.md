@@ -66,11 +66,11 @@
 
 ## 9. Add new acceptance coverage for `viz_config` and structured drilldowns
 
-- [ ] 9.1 Add `acc_viz_config_by_reference_test.go` covering: minimal by_reference panel (ref_id + time_range only); by_reference with `references_json`, `title`, `description`, `hide_*`; round-trip preserves all set fields; null preservation for unset optional fields.
-- [ ] 9.2 Add structured drilldown acceptance coverage on `viz_config.by_reference`: dashboard variant with all optional fields; URL variant with explicit `trigger`; URL variant with omitted `trigger`; discover variant; mixed-kind multi-item list (3 items, one of each kind).
-- [ ] 9.3 Add structured drilldown acceptance coverage on `lens_dashboard_app_config.by_reference`: same matrix as 9.2 (verifies the shared helper produces identical behavior).
-- [ ] 9.4 Run targeted acceptance tests against the local stack: `TF_ACC=1 go test -v -run 'TestAccDashboard_VizConfigByReference|TestAccDashboard_StructuredDrilldowns' ./internal/kibana/dashboard/...`.
-- [ ] 9.5 Run the full dashboard acceptance suite: `TF_ACC=1 go test -count=1 -timeout 30m ./internal/kibana/dashboard/...` and confirm 100% pass.
+- [x] 9.1 Add `acc_viz_config_by_reference_test.go` covering: minimal by_reference panel (ref_id + time_range only); by_reference with `references_json`, `title`, `description`, `hide_*`; round-trip preserves all set fields; null preservation for unset optional fields.
+- [x] 9.2 Add structured drilldown acceptance coverage on `viz_config.by_reference`: dashboard variant with all optional fields; URL variant with explicit `trigger`; URL variant with omitted `trigger`; discover variant; mixed-kind multi-item list (3 items, one of each kind).
+- [x] 9.3 Add structured drilldown acceptance coverage on `lens_dashboard_app_config.by_reference`: same matrix as 9.2 (verifies the shared helper produces identical behavior).
+- [x] 9.4 Run targeted acceptance tests against the local stack: `TF_ACC=1 go test -v -run 'TestAccResourceDashboardVizConfigByReference|TestAccResourceDashboardLensDashboardAppByReference_(dashboard|discover|url|mixed)Drilldown|TestAccResourceDashboard.*urlDrilldownOmittedTrigger' ./internal/kibana/dashboard/...`.
+- [x] 9.5 Run the full dashboard acceptance suite: `TF_ACC=1 go test -count=1 -timeout 30m ./internal/kibana/dashboard/...` and confirm 100% pass.
 
 ## 10. Update examples and generated docs
 
