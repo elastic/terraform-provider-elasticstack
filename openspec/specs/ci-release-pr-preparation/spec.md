@@ -34,6 +34,16 @@ Before mutating repository state, deterministic repository-authored steps SHALL 
 - **THEN** the workflow SHALL derive a stable branch name such as `prep-release-0.14.4`
 - **AND** it SHALL derive a stable pull-request title such as `Prepare 0.14.4 release`
 
+### Requirement: Git identity is configured before any commit-creating operation
+The workflow SHALL configure a deterministic git author and committer identity (e.g. `github-actions[bot]`) before any step that may create a commit. On GitHub Actions runners the default git identity is not set, so the workflow MUST explicitly configure it.
+
+#### Scenario: Existing branch is fast-forwarded by merging origin/main
+- **GIVEN** a release branch named `prep-release-0.14.4` already exists on the remote
+- **AND** `origin/main` has new commits since the branch was last pushed
+- **WHEN** the workflow switches to that branch and merges `origin/main`
+- **THEN** the merge SHALL succeed because git identity was already configured
+- **AND** the merge commit SHALL use the configured bot identity
+
 ### Requirement: Release preparation changes are limited to deterministic version bump plumbing
 The release preparation workflow SHALL apply only the deterministic release-preparation changes owned by that workflow. It SHALL update the top-level provider `VERSION` in `Makefile` to the target version, and it SHALL invoke the shared deterministic changelog engine in release mode to regenerate the concrete release section in `CHANGELOG.md` before opening or reusing the release pull request. The workflow SHALL NOT perform agentic changelog synthesis.
 
