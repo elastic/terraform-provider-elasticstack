@@ -25,6 +25,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -299,4 +300,129 @@ func Test_panel_toAPI_vis_configJSONWithoutViz_unmarshalsOpaqueConfigJSON(t *tes
 	raw, err := v.Config.MarshalJSON()
 	require.NoError(t, err)
 	assert.Contains(t, string(raw), "attributes")
+}
+
+func Test_vizConfigToAPI_missingVizConfig_diagnostic(t *testing.T) {
+	pm := panelModel{
+		Type:       types.StringValue("vis"),
+		Grid:       panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0), W: types.Int64Value(10), H: types.Int64Value(10)},
+		VizConfig:  nil,
+		ConfigJSON: customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults),
+	}
+	_, diags := vizConfigToAPI(pm, nil, struct {
+		H *float32 `json:"h,omitempty"`
+		W *float32 `json:"w,omitempty"`
+		X float32  `json:"x"`
+		Y float32  `json:"y"`
+	}{}, nil)
+	require.True(t, diags.HasError())
+	found := false
+	for _, d := range diags {
+		if d.Summary() == "Missing `viz_config`" {
+			found = true
+			break
+		}
+	}
+	require.True(t, found, "expected Missing viz_config diagnostic")
+}
+
+func Test_vizConfigToAPI_byValue_missingConverter_diagnostic(t *testing.T) {
+	pm := panelModel{
+		Type: types.StringValue("vis"),
+		Grid: panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0), W: types.Int64Value(10), H: types.Int64Value(10)},
+		VizConfig: &vizConfigModel{
+			ByValue: &vizByValueModel{
+				lensByValueChartBlocks: lensByValueChartBlocks{},
+			},
+		},
+		ConfigJSON: customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults),
+	}
+	_, diags := vizConfigToAPI(pm, nil, struct {
+		H *float32 `json:"h,omitempty"`
+		W *float32 `json:"w,omitempty"`
+		X float32  `json:"x"`
+		Y float32  `json:"y"`
+	}{}, nil)
+	require.True(t, diags.HasError())
+	found := false
+	for _, d := range diags {
+		if d.Summary() == "Invalid `viz_config.by_value`" {
+			found = true
+			break
+		}
+	}
+	require.True(t, found, "expected Invalid viz_config.by_value diagnostic")
+}
+
+func Test_vizByReferenceToAPI_invalidReferencesJSON_diagnostic(t *testing.T) {
+	byRef := lensDashboardAppByReferenceModel{
+		RefID: types.StringValue("lens:out"),
+		TimeRange: lensDashboardAppTimeRangeModel{
+			From: types.StringValue("now-1h"),
+			To:   types.StringValue("now"),
+		},
+		ReferencesJSON: jsontypes.NewNormalizedValue(`not-valid-json`),
+	}
+	_, diags := vizByReferenceToAPI(byRef, struct {
+		H *float32 `json:"h,omitempty"`
+		W *float32 `json:"w,omitempty"`
+		X float32  `json:"x"`
+		Y float32  `json:"y"`
+	}{X: 0, Y: 0}, nil)
+	require.True(t, diags.HasError())
+	found := false
+	for _, d := range diags {
+		if d.Summary() == "Invalid `viz_config.by_reference.references_json`" {
+			found = true
+			break
+		}
+	}
+	require.True(t, found, "expected Invalid references_json diagnostic")
+}
+
+func Test_populateVisByReferenceFromAPI_emptyDrilldownsSlice(t *testing.T) {
+	ctx := context.Background()
+	cfg1 := kbapi.KbnDashboardPanelTypeVisConfig1{
+		RefId: "lens:ref",
+		TimeRange: kbapi.KbnEsQueryServerTimeRangeSchema{
+			From: "now-7d",
+			To:   "now",
+		},
+		Drilldowns: &[]kbapi.KbnDashboardPanelTypeVis_Config_1_Drilldowns_Item{},
+	}
+	pm := &panelModel{}
+	diags := populateVisByReferenceFromAPI(ctx, nil, pm, cfg1)
+	require.False(t, diags.HasError())
+	require.NotNil(t, pm.VizConfig)
+	require.NotNil(t, pm.VizConfig.ByReference)
+	// API returns empty slice → populated as empty drilldownsModel (not nil)
+	assert.NotNil(t, pm.VizConfig.ByReference.Drilldowns)
+	assert.Empty(t, pm.VizConfig.ByReference.Drilldowns)
+}
+
+func Test_populateVisByReferenceFromAPI_nilDrilldownsFallsBackToPrior(t *testing.T) {
+	ctx := context.Background()
+	cfg1 := kbapi.KbnDashboardPanelTypeVisConfig1{
+		RefId: "lens:ref",
+		TimeRange: kbapi.KbnEsQueryServerTimeRangeSchema{
+			From: "now-7d",
+			To:   "now",
+		},
+		// Drilldowns intentionally nil
+	}
+	prior := &vizConfigModel{
+		ByReference: &lensDashboardAppByReferenceModel{
+			RefID: types.StringValue("prior"),
+			TimeRange: lensDashboardAppTimeRangeModel{
+				From: types.StringValue("now-30d"),
+				To:   types.StringValue("now"),
+			},
+		},
+	}
+	pm := &panelModel{}
+	diags := populateVisByReferenceFromAPI(ctx, prior, pm, cfg1)
+	require.False(t, diags.HasError())
+	require.NotNil(t, pm.VizConfig)
+	require.NotNil(t, pm.VizConfig.ByReference)
+	assert.Equal(t, "lens:ref", pm.VizConfig.ByReference.RefID.ValueString())
 }

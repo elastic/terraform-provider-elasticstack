@@ -161,6 +161,19 @@ func TestAccResourceDashboardVizConfigByReference_dashboardDrilldown(t *testing.
 					PreApply: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
 				},
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
+				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
+				ResourceName:             vizByRefDashboard,
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ImportStateVerifyIgnore: []string{
+					"panels.0.viz_config.by_reference.references_json",
+					"panels.0.id",
+				},
+			},
 		},
 	})
 }
@@ -191,6 +204,19 @@ func TestAccResourceDashboardVizConfigByReference_discoverDrilldown(t *testing.T
 				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
 				ConfigPlanChecks: resource.ConfigPlanChecks{
 					PreApply: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
+				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
+				ResourceName:             vizByRefDashboard,
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ImportStateVerifyIgnore: []string{
+					"panels.0.viz_config.by_reference.references_json",
+					"panels.0.id",
 				},
 			},
 		},
@@ -224,6 +250,64 @@ func TestAccResourceDashboardVizConfigByReference_urlDrilldownExplicitTrigger(t 
 				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
 				ConfigPlanChecks: resource.ConfigPlanChecks{
 					PreApply: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
+				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
+				ResourceName:             vizByRefDashboard,
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ImportStateVerifyIgnore: []string{
+					"panels.0.viz_config.by_reference.references_json",
+					"panels.0.id",
+				},
+			},
+		},
+	})
+}
+
+func TestAccResourceDashboardVizConfigByReference_valueToReference_update(t *testing.T) {
+	dashboardTitle := "Acc viz val2ref " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+	br := "panels.0.viz_config.by_reference"
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("by_value"),
+				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(vizByRefDashboard, "panels.0.type", "vis"),
+					resource.TestCheckResourceAttr(vizByRefDashboard, "panels.0.viz_config.by_value.metric_chart_config.title", "Metric Chart"),
+					resource.TestCheckNoResourceAttr(vizByRefDashboard, br),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("by_reference"),
+				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(vizByRefDashboard, "panels.0.type", "vis"),
+					resource.TestCheckResourceAttr(vizByRefDashboard, br+".ref_id", "lensRef"),
+					resource.TestCheckResourceAttr(vizByRefDashboard, br+".time_range.from", "now-7d"),
+					resource.TestCheckNoResourceAttr(vizByRefDashboard, "panels.0.viz_config.by_value"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("by_reference"),
+				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
+				ResourceName:             vizByRefDashboard,
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ImportStateVerifyIgnore: []string{
+					"panels.0.id",
 				},
 			},
 		},
@@ -279,6 +363,19 @@ func TestAccResourceDashboardVizConfigByReference_mixedDrilldowns(t *testing.T) 
 				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
 				ConfigPlanChecks: resource.ConfigPlanChecks{
 					PreApply: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
+				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
+				ResourceName:             vizByRefDashboard,
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ImportStateVerifyIgnore: []string{
+					"panels.0.viz_config.by_reference.references_json",
+					"panels.0.id",
 				},
 			},
 		},
