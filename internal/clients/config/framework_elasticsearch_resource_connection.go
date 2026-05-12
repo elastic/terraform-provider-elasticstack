@@ -30,8 +30,14 @@ import (
 // one [ElasticsearchConnection] element).
 //
 // Unlike [NewFromFramework], credentials from the connection block are not replaced by
-// ELASTICSEARCH_USERNAME / ELASTICSEARCH_PASSWORD / ELASTICSEARCH_API_KEY / ELASTICSEARCH_BEARER_TOKEN
-// when those environment variables are set and the corresponding field is non-empty in the block.
+// ELASTICSEARCH_USERNAME / ELASTICSEARCH_PASSWORD / ELASTICSEARCH_API_KEY / ELASTICSEARCH_BEARER_TOKEN /
+// ELASTICSEARCH_ES_CLIENT_AUTHENTICATION when those environment variables are set and the corresponding
+// field is non-empty in the block.
+//
+// When the block selects an auth mode (bearer token, API key, or username/password), environment
+// variables for other auth mechanisms are not applied, so the client does not silently pick a
+// different credential type than the one configured in Terraform.
+//
 // Empty fields still pick up environment defaults so optional credentials behave like the provider.
 func NewFromFrameworkElasticsearchResourceConnection(ctx context.Context, esConns []ElasticsearchConnection, version string) (Client, diag.Diagnostics) {
 	if len(esConns) == 0 {
@@ -51,10 +57,14 @@ func NewFromFrameworkElasticsearchResourceConnection(ctx context.Context, esConn
 	}
 
 	if esCfg != nil {
+		// newElasticsearchConfigFromFramework ends with withEnvironmentOverrides(), which can still
+		// overwrite bearer / ES-Client-Authentication from process env even when the connection block
+		// chose basic auth or API keys. Re-align typed auth with the connection block.
+		scopedRestoreElasticsearchAuthFromElasticsearchConnection(esCfg, esConns[0])
 		client.Elasticsearch = new(esCfg.toElasticsearchConfiguration())
 	}
 
-	return client, nil
+	return client, diags
 }
 
 func newBaseConfigForElasticsearchFrameworkConnection(config ProviderConfiguration, version string) baseConfig {
@@ -78,25 +88,90 @@ func newBaseConfigForElasticsearchFrameworkConnection(config ProviderConfigurati
 }
 
 func mergeElasticsearchCredentialEnvDefaultsWhenEmpty(b baseConfig) baseConfig {
-	if b.Username == "" {
-		if v, ok := os.LookupEnv("ELASTICSEARCH_USERNAME"); ok {
-			b.Username = v
+	usingBearer := b.BearerToken != ""
+	usingAPIKey := b.APIKey != ""
+	usingBasic := b.Username != "" || b.Password != ""
+
+	switch {
+	case usingBearer:
+		return b
+	case usingAPIKey:
+		if b.APIKey == "" {
+			if v, ok := os.LookupEnv("ELASTICSEARCH_API_KEY"); ok {
+				b.APIKey = v
+			}
 		}
-	}
-	if b.Password == "" {
-		if v, ok := os.LookupEnv("ELASTICSEARCH_PASSWORD"); ok {
-			b.Password = v
+		return b
+	case usingBasic:
+		if b.Username == "" {
+			if v, ok := os.LookupEnv("ELASTICSEARCH_USERNAME"); ok {
+				b.Username = v
+			}
 		}
-	}
-	if b.APIKey == "" {
-		if v, ok := os.LookupEnv("ELASTICSEARCH_API_KEY"); ok {
-			b.APIKey = v
+		if b.Password == "" {
+			if v, ok := os.LookupEnv("ELASTICSEARCH_PASSWORD"); ok {
+				b.Password = v
+			}
 		}
-	}
-	if b.BearerToken == "" {
-		if v, ok := os.LookupEnv("ELASTICSEARCH_BEARER_TOKEN"); ok {
-			b.BearerToken = v
+		return b
+	default:
+		if b.Username == "" {
+			if v, ok := os.LookupEnv("ELASTICSEARCH_USERNAME"); ok {
+				b.Username = v
+			}
 		}
+		if b.Password == "" {
+			if v, ok := os.LookupEnv("ELASTICSEARCH_PASSWORD"); ok {
+				b.Password = v
+			}
+		}
+		if b.APIKey == "" {
+			if v, ok := os.LookupEnv("ELASTICSEARCH_API_KEY"); ok {
+				b.APIKey = v
+			}
+		}
+		if b.BearerToken == "" {
+			if v, ok := os.LookupEnv("ELASTICSEARCH_BEARER_TOKEN"); ok {
+				b.BearerToken = v
+			}
+		}
+		return b
 	}
-	return b
+}
+
+func scopedRestoreElasticsearchAuthFromElasticsearchConnection(esCfg *elasticsearchConfig, es ElasticsearchConnection) {
+	blockBearer := es.BearerToken.ValueString()
+	blockAPIKey := es.APIKey.ValueString()
+	blockUser := es.Username.ValueString()
+	blockPass := es.Password.ValueString()
+
+	usingBearer := blockBearer != ""
+	usingAPIKey := blockAPIKey != ""
+	usingBasic := blockUser != "" || blockPass != ""
+
+	switch {
+	case usingBearer:
+		esCfg.bearerToken = blockBearer
+		if es.ESClientAuthentication.ValueString() != "" {
+			esCfg.esClientAuthentication = es.ESClientAuthentication.ValueString()
+		} else {
+			esCfg.esClientAuthentication = ""
+		}
+	case usingAPIKey:
+		esCfg.config.APIKey = blockAPIKey
+		esCfg.bearerToken = ""
+		esCfg.esClientAuthentication = ""
+	case usingBasic:
+		if blockUser != "" {
+			esCfg.config.Username = blockUser
+		}
+		if blockPass != "" {
+			esCfg.config.Password = blockPass
+		}
+		esCfg.bearerToken = ""
+		esCfg.esClientAuthentication = ""
+	default:
+		// No explicit auth in the connection block: leave bearer / ES-Client-Authentication as set by
+		// withEnvironmentOverrides (env-driven defaults).
+	}
 }
