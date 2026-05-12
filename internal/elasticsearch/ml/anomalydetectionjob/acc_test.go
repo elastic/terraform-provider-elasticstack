@@ -25,6 +25,7 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/ml/putfilter"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -42,6 +43,21 @@ const testResourceAddr = "elasticstack_elasticsearch_ml_anomaly_detection_job.te
 var mlJobOpenFailsUnknownFilterRE = regexp.MustCompile(
 	`(?is)(filter|not found|resource_not_found|does not exist|could not find|illegal_argument|validation)`)
 
+// mlOpenJobErrorLooksLikeMLNodeCapacity reports whether OpenJob failed because the cluster could not
+// assign the job to an ML node (common under CI load). In that case the response is not a reliable
+// signal about missing filter ids, so callers may retry OpenJob.
+func mlOpenJobErrorLooksLikeMLNodeCapacity(err error) bool {
+	if err == nil {
+		return false
+	}
+	s := strings.ToLower(err.Error())
+	return strings.Contains(s, "429") ||
+		strings.Contains(s, "too_many_requests") ||
+		strings.Contains(s, "no ml nodes") ||
+		strings.Contains(s, "insufficient memory") ||
+		(strings.Contains(s, "insufficient") && strings.Contains(s, "capacity"))
+}
+
 // testAccCheckOpenMLJobFailsWithUnknownFilter verifies OpenJob fails because scope references a missing
 // ML filter. PutJob/UpdateJob may still succeed in Elasticsearch; opening surfaces the problem.
 func testAccCheckOpenMLJobFailsWithUnknownFilter(jobID string) resource.TestCheckFunc {
@@ -55,13 +71,32 @@ func testAccCheckOpenMLJobFailsWithUnknownFilter(jobID string) resource.TestChec
 		if err != nil {
 			return err
 		}
-		_, err = es.Ml.OpenJob(jobID).Do(ctx)
+		const maxAttempts = 15
+		const betweenAttempts = 4 * time.Second
+		var openErr error
+		for attempt := range maxAttempts {
+			_, openErr = es.Ml.OpenJob(jobID).Do(ctx)
+			if openErr == nil {
+				break
+			}
+			if mlOpenJobErrorLooksLikeMLNodeCapacity(openErr) && attempt+1 < maxAttempts {
+				time.Sleep(betweenAttempts)
+				continue
+			}
+			break
+		}
+		err = openErr
 		if err == nil {
 			_, closeErr := es.Ml.CloseJob(jobID).Force(true).Do(ctx)
 			if closeErr != nil {
 				return fmt.Errorf("OpenJob unexpectedly succeeded for job %q (bad ML filter); CloseJob cleanup failed: %w", jobID, closeErr)
 			}
 			return fmt.Errorf("OpenJob unexpectedly succeeded for job %q; missing ML filter should prevent opening", jobID)
+		}
+		if mlOpenJobErrorLooksLikeMLNodeCapacity(err) {
+			maxWait := time.Duration(maxAttempts-1) * betweenAttempts
+			return fmt.Errorf("OpenJob for job %q still failing with ML node capacity errors after %d attempts (~%s); last error: %w",
+				jobID, maxAttempts, maxWait, err)
 		}
 		if !mlJobOpenFailsUnknownFilterRE.MatchString(err.Error()) {
 			return fmt.Errorf("OpenJob failed for job %q but error did not match unknown-filter pattern: %w", jobID, err)

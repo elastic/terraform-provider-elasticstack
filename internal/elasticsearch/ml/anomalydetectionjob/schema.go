@@ -205,7 +205,7 @@ func getSchema(ctx context.Context) schema.Schema {
 										"Each rule must either have a non-empty `scope` or at least one `conditions` entry. " +
 										"Multiple conditions are combined together with a logical AND. " +
 										"A non-empty `scope` and one or more `conditions` may both be set on the same rule; they are not mutually exclusive.",
-									Optional:            true,
+									Optional: true,
 									NestedObject: schema.NestedAttributeObject{
 										Attributes: map[string]schema.Attribute{
 											"actions": schema.ListAttribute{
@@ -223,7 +223,7 @@ func getSchema(ctx context.Context) schema.Schema {
 													"If you specify more than one condition, Elasticsearch combines them together with a logical AND. " +
 													"A rule must either have a non-empty `scope` or at least one condition. " +
 													"You may set `scope` on the same rule.",
-												Optional:            true,
+												Optional: true,
 												NestedObject: schema.NestedAttributeObject{
 													Attributes: map[string]schema.Attribute{
 														"applies_to": schema.StringAttribute{
