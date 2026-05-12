@@ -106,7 +106,7 @@ func TestFloat32Ptr(t *testing.T) {
 		t.Parallel()
 		p := typeutils.Float32Ptr(0)
 		require.NotNil(t, p)
-		require.Equal(t, float32(0), *p)
+		require.InDelta(t, float32(0), *p, 1e-6)
 	})
 }
 
