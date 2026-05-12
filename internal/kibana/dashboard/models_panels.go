@@ -35,19 +35,20 @@ type panelModel struct {
 	Grid           panelGridModel       `tfsdk:"grid"`
 	ID             types.String         `tfsdk:"id"`
 	MarkdownConfig *markdownConfigModel `tfsdk:"markdown_config"`
-	// Zombie vis chart fields below: no longer surfaced at panel schema (task 5); mapPanelFromAPI still fills them until task 6 moves data to `viz_config.by_value`.
-	XYChartConfig                 *xyChartConfigModel                               `tfsdk:"xy_chart_config"`
-	TreemapConfig                 *treemapConfigModel                               `tfsdk:"treemap_config"`
-	MosaicConfig                  *mosaicConfigModel                                `tfsdk:"mosaic_config"`
-	DatatableConfig               *datatableConfigModel                             `tfsdk:"datatable_config"`
-	TagcloudConfig                *tagcloudConfigModel                              `tfsdk:"tagcloud_config"`
-	MetricChartConfig             *metricChartConfigModel                           `tfsdk:"metric_chart_config"`
-	PieChartConfig                *pieChartConfigModel                              `tfsdk:"pie_chart_config"`
-	GaugeConfig                   *gaugeConfigModel                                 `tfsdk:"gauge_config"`
-	LegacyMetricConfig            *legacyMetricConfigModel                          `tfsdk:"legacy_metric_config"`
-	RegionMapConfig               *regionMapConfigModel                             `tfsdk:"region_map_config"`
-	HeatmapConfig                 *heatmapConfigModel                               `tfsdk:"heatmap_config"`
-	WaffleConfig                  *waffleConfigModel                                `tfsdk:"waffle_config"`
+	// Zombie vis chart fields below: not in schema (task 5). Tagged `tfsdk:"-"` so PF omits them from struct↔state conversion
+	// (avoids Value Conversion errors until task 6 deletes them and rewires mapPanelFromAPI to `pm.VizConfig.ByValue.*`; writes are discarded meanwhile).
+	XYChartConfig                 *xyChartConfigModel                               `tfsdk:"-"`
+	TreemapConfig                 *treemapConfigModel                               `tfsdk:"-"`
+	MosaicConfig                  *mosaicConfigModel                                `tfsdk:"-"`
+	DatatableConfig               *datatableConfigModel                             `tfsdk:"-"`
+	TagcloudConfig                *tagcloudConfigModel                              `tfsdk:"-"`
+	MetricChartConfig             *metricChartConfigModel                           `tfsdk:"-"`
+	PieChartConfig                *pieChartConfigModel                              `tfsdk:"-"`
+	GaugeConfig                   *gaugeConfigModel                                 `tfsdk:"-"`
+	LegacyMetricConfig            *legacyMetricConfigModel                          `tfsdk:"-"`
+	RegionMapConfig               *regionMapConfigModel                             `tfsdk:"-"`
+	HeatmapConfig                 *heatmapConfigModel                               `tfsdk:"-"`
+	WaffleConfig                  *waffleConfigModel                                `tfsdk:"-"`
 	TimeSliderControlConfig       *timeSliderControlConfigModel                     `tfsdk:"time_slider_control_config"`
 	SloBurnRateConfig             *sloBurnRateConfigModel                           `tfsdk:"slo_burn_rate_config"`
 	SloOverviewConfig             *sloOverviewConfigModel                           `tfsdk:"slo_overview_config"`
