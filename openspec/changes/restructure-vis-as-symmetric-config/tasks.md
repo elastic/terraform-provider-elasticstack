@@ -42,12 +42,12 @@
 
 ## 6. Refactor `mapPanelFromAPI` and `toAPI` for `case "vis":`
 
-- [ ] 6.1 In `internal/kibana/dashboard/models_panels.go` `case "vis":`, classify the API `config` per design D10 (try by_reference: object with non-empty `ref_id` and `time_range`, no top-level chart `type`; else by_value: dispatch to chart-kind detection via existing `detectLensVizType` from `models_lens_panel.go`).
-- [ ] 6.2 Reuse `detectLensVizType` to populate `viz_config.by_value.<chart_block>` (replacing the previous panel-level chart-block assignment).
-- [ ] 6.3 Implement `viz_config.by_reference` read path: populate `ref_id`, `references_json`, `title`, `description`, `hide_title`, `hide_border`, `time_range`, structured `drilldowns` (via `models_drilldowns.go`).
-- [ ] 6.4 Symmetric write path in `toAPI`: when `viz_config.by_value` is set, emit the chart object as inline `config`; when `viz_config.by_reference` is set, emit the object form.
-- [ ] 6.5 Preserve existing panel-level `config_json` behavior for `type = "vis"` with no `viz_config`: unmarshal `config_json` directly into `KbnDashboardPanelTypeVis_Config` (existing code path).
-- [ ] 6.6 Preserve REQ-009 by-reference preservation per design D10 step (3): if API response cannot be classified and prior state had `viz_config.by_reference`, preserve prior block.
+- [x] 6.1 In `internal/kibana/dashboard/models_panels.go` `case "vis":`, classify the API `config` per design D10 (try by_reference: object with non-empty `ref_id` and `time_range`, no top-level chart `type`; else by_value: dispatch to chart-kind detection via existing `detectLensVizType` from `models_lens_panel.go`).
+- [x] 6.2 Reuse `detectLensVizType` to populate `viz_config.by_value.<chart_block>` (replacing the previous panel-level chart-block assignment).
+- [x] 6.3 Implement `viz_config.by_reference` read path: populate `ref_id`, `references_json`, `title`, `description`, `hide_title`, `hide_border`, `time_range`, structured `drilldowns` (via `models_drilldowns.go`).
+- [x] 6.4 Symmetric write path in `toAPI`: when `viz_config.by_value` is set, emit the chart object as inline `config`; when `viz_config.by_reference` is set, emit the object form.
+- [x] 6.5 Preserve existing panel-level `config_json` behavior for `type = "vis"` with no `viz_config`: unmarshal `config_json` directly into `KbnDashboardPanelTypeVis_Config` (existing code path).
+- [x] 6.6 Preserve REQ-009 by-reference preservation per design D10 step (3): if API response cannot be classified and prior state had `viz_config.by_reference`, preserve prior block.
 
 ## 7. Simplify `panelConfigNames` plumbing and per-block descriptions
 

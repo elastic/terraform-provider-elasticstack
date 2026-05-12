@@ -609,12 +609,12 @@ func Test_xyChartPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 	require.NoError(t, attrs.FromXyChartNoESQL(xyChart))
 
 	converter := newXYChartPanelConfigConverter()
-	pm := &panelModel{}
-	diags = converter.populateFromAttributes(ctx, pm, attrs)
+	vizBv := vizByValueModel{}
+	diags = converter.populateFromAttributes(ctx, &vizBv.lensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
-	require.NotNil(t, pm.XYChartConfig)
+	require.NotNil(t, vizBv.XYChartConfig)
 
-	attrs2, diags := converter.buildAttributes(*pm)
+	attrs2, diags := converter.buildAttributes(&vizBv.lensByValueChartBlocks)
 	require.False(t, diags.HasError())
 
 	chart2, err := attrs2.AsXyChartNoESQL()
@@ -775,7 +775,10 @@ func Test_xyLegendModel_toAPI_nil(t *testing.T) {
 func Test_alignXYChartStateFromPlanPanels_preservesPractitionerIntent(t *testing.T) {
 	planPanels := []panelModel{
 		{
-			XYChartConfig: &xyChartConfigModel{
+			VizConfig: &vizConfigModel{
+				ByValue: &vizByValueModel{
+					lensByValueChartBlocks: lensByValueChartBlocks{
+						XYChartConfig: &xyChartConfigModel{
 				Title: types.StringValue("Sample XY Chart"),
 				Axis: &xyAxisModel{
 					X: &xyAxisConfigModel{
@@ -853,13 +856,19 @@ func Test_alignXYChartStateFromPlanPanels_preservesPractitionerIntent(t *testing
 						},
 					},
 				},
+						},
+					},
+				},
 			},
 		},
 	}
 
 	statePanels := []panelModel{
 		{
-			XYChartConfig: &xyChartConfigModel{
+			VizConfig: &vizConfigModel{
+				ByValue: &vizByValueModel{
+					lensByValueChartBlocks: lensByValueChartBlocks{
+						XYChartConfig: &xyChartConfigModel{
 				Title: types.StringValue(""),
 				Axis: &xyAxisModel{
 					X: &xyAxisConfigModel{
@@ -925,13 +934,17 @@ func Test_alignXYChartStateFromPlanPanels_preservesPractitionerIntent(t *testing
 						},
 					},
 				},
+						},
+					},
+				},
 			},
 		},
 	}
 
 	alignXYChartStateFromPlanPanels(planPanels, statePanels)
 
-	got := statePanels[0].XYChartConfig
+	planXY := planPanels[0].VizConfig.ByValue.XYChartConfig
+	got := statePanels[0].VizConfig.ByValue.XYChartConfig
 	require.NotNil(t, got)
 	assert.Equal(t, types.StringValue("Sample XY Chart"), got.Title)
 	assert.True(t, got.Axis.X.Scale.IsNull())
@@ -940,20 +953,20 @@ func Test_alignXYChartStateFromPlanPanels_preservesPractitionerIntent(t *testing
 	assert.True(t, got.Axis.X.LabelOrientation.IsNull())
 	assert.True(t, got.Axis.X.DomainJSON.IsNull())
 	require.NotNil(t, got.Axis.Y2)
-	assert.Equal(t, planPanels[0].XYChartConfig.Axis.Y2.DomainJSON.ValueString(), got.Axis.Y2.DomainJSON.ValueString())
-	assert.Equal(t, planPanels[0].XYChartConfig.Axis.Y.DomainJSON.ValueString(), got.Axis.Y.DomainJSON.ValueString())
+	assert.Equal(t, planXY.Axis.Y2.DomainJSON.ValueString(), got.Axis.Y2.DomainJSON.ValueString())
+	assert.Equal(t, planXY.Axis.Y.DomainJSON.ValueString(), got.Axis.Y.DomainJSON.ValueString())
 	assert.True(t, got.Decorations.ShowEndZones.IsNull())
 	assert.True(t, got.Decorations.ShowCurrentTimeMarker.IsNull())
 	assert.True(t, got.Decorations.PointVisibility.IsNull())
 	assert.True(t, got.Decorations.LineInterpolation.IsNull())
 	assert.Equal(t, types.Float64Value(0.3), got.Decorations.FillOpacity)
 	assert.True(t, got.Legend.TruncateAfterLines.IsNull())
-	assert.Equal(t, planPanels[0].XYChartConfig.Layers[0].DataLayer.DataSourceJSON.ValueString(), got.Layers[0].DataLayer.DataSourceJSON.ValueString())
-	assert.Equal(t, planPanels[0].XYChartConfig.Layers[0].DataLayer.XJSON.ValueString(), got.Layers[0].DataLayer.XJSON.ValueString())
-	assert.Equal(t, planPanels[0].XYChartConfig.Layers[0].DataLayer.BreakdownByJSON.ValueString(), got.Layers[0].DataLayer.BreakdownByJSON.ValueString())
-	assert.Equal(t, planPanels[0].XYChartConfig.Layers[0].DataLayer.Y[0].ConfigJSON.ValueString(), got.Layers[0].DataLayer.Y[0].ConfigJSON.ValueString())
-	assert.Equal(t, planPanels[0].XYChartConfig.Layers[1].ReferenceLineLayer.DataSourceJSON.ValueString(), got.Layers[1].ReferenceLineLayer.DataSourceJSON.ValueString())
-	assert.Equal(t, planPanels[0].XYChartConfig.Layers[1].ReferenceLineLayer.Thresholds[0].ValueJSON.ValueString(), got.Layers[1].ReferenceLineLayer.Thresholds[0].ValueJSON.ValueString())
+	assert.Equal(t, planXY.Layers[0].DataLayer.DataSourceJSON.ValueString(), got.Layers[0].DataLayer.DataSourceJSON.ValueString())
+	assert.Equal(t, planXY.Layers[0].DataLayer.XJSON.ValueString(), got.Layers[0].DataLayer.XJSON.ValueString())
+	assert.Equal(t, planXY.Layers[0].DataLayer.BreakdownByJSON.ValueString(), got.Layers[0].DataLayer.BreakdownByJSON.ValueString())
+	assert.Equal(t, planXY.Layers[0].DataLayer.Y[0].ConfigJSON.ValueString(), got.Layers[0].DataLayer.Y[0].ConfigJSON.ValueString())
+	assert.Equal(t, planXY.Layers[1].ReferenceLineLayer.DataSourceJSON.ValueString(), got.Layers[1].ReferenceLineLayer.DataSourceJSON.ValueString())
+	assert.Equal(t, planXY.Layers[1].ReferenceLineLayer.Thresholds[0].ValueJSON.ValueString(), got.Layers[1].ReferenceLineLayer.Thresholds[0].ValueJSON.ValueString())
 }
 
 func Test_filterSimpleModel_toAPI_nil(t *testing.T) {
