@@ -185,6 +185,99 @@ func Test_structuredDrilldowns_toAPI_urlInvalidTrigger(t *testing.T) {
 	require.Contains(t, diags.Errors()[0].Detail(), "Unsupported URL drilldown `trigger`")
 }
 
+func Test_structuredDrilldowns_toAPI_unknownOptionalsSkipWireFields_andNoPanic(t *testing.T) {
+	t.Parallel()
+	m := drilldownItemModel{
+		Dashboard: &drilldownDashboardBlockModel{
+			DashboardID:  types.StringValue("d1"),
+			Label:        types.StringValue("lbl"),
+			UseFilters:   types.BoolUnknown(),
+			UseTimeRange: types.BoolValue(true),
+			OpenInNewTab: types.BoolNull(),
+		},
+	}
+	require.NotPanics(t, func() {
+		api, diags := toAPI(drilldownsModel{m})
+		require.False(t, diags.HasError())
+		require.Len(t, *api, 1)
+		raw, err := json.Marshal((*api)[0])
+		require.NoError(t, err)
+		var wire map[string]any
+		require.NoError(t, json.Unmarshal(raw, &wire))
+		if _, ok := wire["use_filters"]; ok {
+			t.Fatalf("expected use_filters omitted when unknown, got wire=%v", wire)
+		}
+		require.Equal(t, true, wire["use_time_range"])
+	})
+
+	urlm := drilldownItemModel{
+		URL: &drilldownURLBlockModel{
+			URL:          types.StringValue("https://example.com"),
+			Label:        types.StringValue("x"),
+			Trigger:      types.StringUnknown(),
+			EncodeURL:    types.BoolUnknown(),
+			OpenInNewTab: types.BoolValue(false),
+		},
+	}
+	require.NotPanics(t, func() {
+		api, diags := toAPI(drilldownsModel{urlm})
+		require.False(t, diags.HasError())
+		raw, err := json.Marshal((*api)[0])
+		require.NoError(t, err)
+		var wire map[string]any
+		require.NoError(t, json.Unmarshal(raw, &wire))
+		if _, ok := wire["trigger"]; ok {
+			t.Fatalf("expected trigger omitted when unknown")
+		}
+		if _, ok := wire["encode_url"]; ok {
+			t.Fatalf("expected encode_url omitted when unknown")
+		}
+		require.Equal(t, false, wire["open_in_new_tab"])
+	})
+
+	disc := drilldownItemModel{
+		Discover: &drilldownDiscoverBlockModel{
+			Label:        types.StringValue("d"),
+			OpenInNewTab: types.BoolUnknown(),
+		},
+	}
+	require.NotPanics(t, func() {
+		api, diags := toAPI(drilldownsModel{disc})
+		require.False(t, diags.HasError())
+		raw, err := json.Marshal((*api)[0])
+		require.NoError(t, err)
+		var wire map[string]any
+		require.NoError(t, json.Unmarshal(raw, &wire))
+		if _, ok := wire["open_in_new_tab"]; ok {
+			t.Fatalf("expected open_in_new_tab omitted when unknown")
+		}
+	})
+}
+
+func Test_structuredDrilldowns_fromAPI_accumulatesMultipleItemErrors(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	items := []kbapi.KbnDashboardPanelTypeLensDashboardApp_Config_1_Drilldowns_Item{
+		drilldownLensItemFromJSON(t, `{"type":"bad_a"}`),
+		drilldownLensItemFromJSON(t, `{"type":"bad_b"}`),
+	}
+	_, diags := fromAPI(ctx, &items)
+	require.True(t, diags.HasError())
+	errs := diags.Errors()
+	require.Len(t, errs, 2)
+	require.Contains(t, errs[0].Detail(), "Unsupported API drilldown `type`")
+	require.Contains(t, errs[1].Detail(), "Unsupported API drilldown `type`")
+
+	visItems := []kbapi.KbnDashboardPanelTypeVis_Config_1_Drilldowns_Item{
+		drilldownVisItemFromJSON(t, `{"type":"bad_a"}`),
+		drilldownVisItemFromJSON(t, `{"type":"bad_b"}`),
+	}
+	_, diagsVis := drilldownsFromVisByRefAPI(ctx, &visItems)
+	require.True(t, diagsVis.HasError())
+	errsVis := diagsVis.Errors()
+	require.Len(t, errsVis, 2)
+}
+
 func Test_structuredDrilldowns_fromAPI_unsupportedDrilldownType(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
