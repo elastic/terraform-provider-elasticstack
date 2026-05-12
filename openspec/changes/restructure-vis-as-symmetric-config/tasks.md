@@ -6,13 +6,13 @@
 
 ## 2. Implement structured 3-way `drilldowns` shape (REQ-038)
 
-- [ ] 2.1 Add `getStructuredDrilldownsAttribute()` returning a `ListNestedAttribute` whose item object exposes `dashboard`, `discover`, and `url` `SingleNestedAttribute` sub-blocks; wire all per-variant attributes per the design table (`dashboard_id`/`label`/`use_filters`/`use_time_range`/`open_in_new_tab` for dashboard; `label`/`open_in_new_tab` for discover; `url`/`label`/`trigger`/`encode_url`/`open_in_new_tab` for url).
-- [ ] 2.2 Add `drilldownItemModeValidator` enforcing exactly one of `dashboard`/`discover`/`url` per item; cover both zero-set and multi-set cases.
-- [ ] 2.3 Add `OneOf` validator for `url.trigger` (∈ `on_click_row`/`on_click_value`/`on_open_panel_menu`/`on_select_range`).
-- [ ] 2.4 Add `drilldownsModel` Go struct (list of items with three nullable sub-block models) and `fromAPI(ctx, []kbapi.<DrilldownUnion>) ([]drilldownItemModel, diag.Diagnostics)` + `toAPI([]drilldownItemModel) ([]kbapi.<DrilldownUnion>, diag.Diagnostics)` helpers in a new `internal/kibana/dashboard/models_drilldowns.go`.
-- [ ] 2.5 Implement read-side classification: detect API drilldown `type` field, dispatch to `dashboard`/`discover`/`url` sub-block model. Surface a clear error diagnostic when an API drilldown cannot be losslessly represented in any of the three sub-blocks.
-- [ ] 2.6 Implement write-side: emit `trigger` (constant for dashboard/discover, optional pass-through for url) and `type` (constant per variant) automatically; only include practitioner-set optional fields.
-- [ ] 2.7 Add unit tests for `models_drilldowns.go`: round-trip per variant; multi-item mixed-kind round-trip; invalid trigger value; unrepresentable shape diagnostic.
+- [x] 2.1 Add `getStructuredDrilldownsAttribute()` returning a `ListNestedAttribute` whose item object exposes `dashboard`, `discover`, and `url` `SingleNestedAttribute` sub-blocks; wire all per-variant attributes per the design table (`dashboard_id`/`label`/`use_filters`/`use_time_range`/`open_in_new_tab` for dashboard; `label`/`open_in_new_tab` for discover; `url`/`label`/`trigger`/`encode_url`/`open_in_new_tab` for url).
+- [x] 2.2 Add `drilldownItemModeValidator` enforcing exactly one of `dashboard`/`discover`/`url` per item; cover both zero-set and multi-set cases.
+- [x] 2.3 Add `OneOf` validator for `url.trigger` (∈ `on_click_row`/`on_click_value`/`on_open_panel_menu`/`on_select_range`).
+- [x] 2.4 Add `drilldownsModel` Go struct (list of items with three nullable sub-block models) and `fromAPI(ctx, []kbapi.<DrilldownUnion>) ([]drilldownItemModel, diag.Diagnostics)` + `toAPI([]drilldownItemModel) ([]kbapi.<DrilldownUnion>, diag.Diagnostics)` helpers in a new `internal/kibana/dashboard/models_drilldowns.go`.
+- [x] 2.5 Implement read-side classification: detect API drilldown `type` field, dispatch to `dashboard`/`discover`/`url` sub-block model. Surface a clear error diagnostic when an API drilldown cannot be losslessly represented in any of the three sub-blocks.
+- [x] 2.6 Implement write-side: emit `trigger` (constant for dashboard/discover, optional pass-through for url) and `type` (constant per variant) automatically; only include practitioner-set optional fields.
+- [x] 2.7 Add unit tests for `models_drilldowns.go`: round-trip per variant; multi-item mixed-kind round-trip; invalid trigger value; unrepresentable shape diagnostic.
 
 ## 3. Migrate `lens_dashboard_app_config.by_reference.drilldowns_json` → structured `drilldowns`
 
