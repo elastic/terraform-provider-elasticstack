@@ -45,7 +45,7 @@ type panelModel struct {
 	SyntheticsStatsOverviewConfig *syntheticsStatsOverviewConfigModel               `tfsdk:"synthetics_stats_overview_config"`
 	SyntheticsMonitorsConfig      *syntheticsMonitorsConfigModel                    `tfsdk:"synthetics_monitors_config"`
 	LensDashboardAppConfig        *lensDashboardAppConfigModel                      `tfsdk:"lens_dashboard_app_config"`
-	VizConfig                     *vizConfigModel                                   `tfsdk:"viz_config"`
+	VisConfig                     *visConfigModel                                   `tfsdk:"vis_config"`
 	ImageConfig                   *imagePanelConfigModel                            `tfsdk:"image_config"`
 	SloAlertsConfig               *sloAlertsPanelConfigModel                        `tfsdk:"slo_alerts_config"`
 	DiscoverSessionConfig         *discoverSessionPanelConfigModel                  `tfsdk:"discover_session_config"`
@@ -80,7 +80,7 @@ type sectionGridModel struct {
 	Y types.Int64 `tfsdk:"y"`
 }
 
-var lensVizConverters = []lensVisualizationConverter{
+var lensVisConverters = []lensVisualizationConverter{
 	newXYChartPanelConfigConverter(),
 	newTreemapPanelConfigConverter(),
 	newMosaicPanelConfigConverter(),
@@ -211,7 +211,7 @@ func panelHasTypedConfig(pm *panelModel) bool {
 		pm.SyntheticsStatsOverviewConfig != nil ||
 		pm.SyntheticsMonitorsConfig != nil ||
 		pm.LensDashboardAppConfig != nil ||
-		pm.VizConfig != nil ||
+		pm.VisConfig != nil ||
 		pm.ImageConfig != nil ||
 		pm.SloAlertsConfig != nil ||
 		pm.DiscoverSessionConfig != nil
@@ -236,7 +236,7 @@ func clearPanelConfigBlocks(pm *panelModel) {
 	pm.SyntheticsStatsOverviewConfig = nil
 	pm.SyntheticsMonitorsConfig = nil
 	pm.LensDashboardAppConfig = nil
-	pm.VizConfig = nil
+	pm.VisConfig = nil
 	pm.ImageConfig = nil
 	pm.SloAlertsConfig = nil
 	pm.DiscoverSessionConfig = nil
@@ -422,7 +422,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 			break
 		}
 
-		vizPrior := configPriorForVizRead(tfPanel, &pm)
+		visPrior := configPriorForVisRead(tfPanel, &pm)
 
 		switch classifyLensDashboardAppConfigFromRoot(root) {
 		case lensConfigClassByReference:
@@ -431,7 +431,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 				diags.AddError("Invalid visualization panel configuration on read", err1.Error())
 				break
 			}
-			diags.Append(populateVisByReferenceFromAPI(ctx, vizPrior, &pm, cfg1)...)
+			diags.Append(populateVisByReferenceFromAPI(ctx, visPrior, &pm, cfg1)...)
 
 		case lensConfigClassByValueChart:
 			config0, err0 := visPanel.Config.AsKbnDashboardPanelTypeVisConfig0()
@@ -439,35 +439,35 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 				diags.AddError("Invalid visualization panel configuration on read", err0.Error())
 				break
 			}
-			vizType := detectLensVizType(config0)
-			if vizType == "" {
+			visType := detectLensVisType(config0)
+			if visType == "" {
 				diags.AddError(
 					"Unsupported visualization chart type",
 					"The `vis` panel config has a top-level chart discriminator but could not resolve a Lens chart kind from the union; use panel-level `config_json` until this shape is modeled.",
 				)
 				break
 			}
-			converter := lensVizConverterForType(vizType)
+			converter := lensVisConverterForType(visType)
 			if converter == nil {
 				diags.AddError(
 					"Unsupported visualization chart type",
 					fmt.Sprintf(
-						"The dashboard returned Lens visualization discriminator %q which this provider does not support as typed `viz_config.by_value`. "+
+						"The dashboard returned Lens visualization discriminator %q which this provider does not support as typed `vis_config.by_value`. "+
 							"Use panel-level `config_json` as the escape hatch to manage this panel until support is added.",
-						vizType,
+						visType,
 					),
 				)
 				break
 			}
-			pm.VizConfig = &vizConfigModel{
-				ByValue: &vizByValueModel{},
+			pm.VisConfig = &visConfigModel{
+				ByValue: &visByValueModel{},
 			}
-			seedWaffleLensByValueChartFromPriorPanel(&pm.VizConfig.ByValue.lensByValueChartBlocks, tfPanel)
-			d := converter.populateFromAttributes(ctx, m, tfPanel, &pm.VizConfig.ByValue.lensByValueChartBlocks, config0)
+			seedWaffleLensByValueChartFromPriorPanel(&pm.VisConfig.ByValue.lensByValueChartBlocks, tfPanel)
+			d := converter.populateFromAttributes(ctx, m, tfPanel, &pm.VisConfig.ByValue.lensByValueChartBlocks, config0)
 			diags.Append(d...)
 
 		default:
-			if vizPrior != nil && vizPrior.ByReference != nil {
+			if visPrior != nil && visPrior.ByReference != nil {
 				// REQ-009 / D10: ambiguous API shape — preserve prior by_reference (pm seeded from tfPanel).
 				break
 			}
@@ -475,27 +475,27 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 			if err0 != nil {
 				break
 			}
-			vizType := detectLensVizType(config0)
-			if vizType == "" {
+			visType := detectLensVisType(config0)
+			if visType == "" {
 				break
 			}
-			converter := lensVizConverterForType(vizType)
+			converter := lensVisConverterForType(visType)
 			if converter == nil {
 				diags.AddError(
 					"Unsupported visualization chart type",
 					fmt.Sprintf(
-						"The dashboard returned Lens visualization discriminator %q which this provider does not support as typed `viz_config.by_value`. "+
+						"The dashboard returned Lens visualization discriminator %q which this provider does not support as typed `vis_config.by_value`. "+
 							"Use panel-level `config_json` as the escape hatch to manage this panel until support is added.",
-						vizType,
+						visType,
 					),
 				)
 				break
 			}
-			pm.VizConfig = &vizConfigModel{
-				ByValue: &vizByValueModel{},
+			pm.VisConfig = &visConfigModel{
+				ByValue: &visByValueModel{},
 			}
-			seedWaffleLensByValueChartFromPriorPanel(&pm.VizConfig.ByValue.lensByValueChartBlocks, tfPanel)
-			d := converter.populateFromAttributes(ctx, m, tfPanel, &pm.VizConfig.ByValue.lensByValueChartBlocks, config0)
+			seedWaffleLensByValueChartFromPriorPanel(&pm.VisConfig.ByValue.lensByValueChartBlocks, tfPanel)
+			d := converter.populateFromAttributes(ctx, m, tfPanel, &pm.VisConfig.ByValue.lensByValueChartBlocks, config0)
 			diags.Append(d...)
 		}
 	case panelTypeSloErrorBudget:
@@ -793,8 +793,8 @@ func (pm panelModel) toAPI(ctx context.Context, dashboard *dashboardModel) (kbap
 	if pm.LensDashboardAppConfig != nil {
 		return lensDashboardAppToAPI(pm, lensGrid, panelID, dashboard)
 	}
-	if pm.VizConfig != nil {
-		return vizConfigToAPI(pm, dashboard, grid, panelID)
+	if pm.VisConfig != nil {
+		return visConfigToAPI(pm, dashboard, grid, panelID)
 	}
 	if pm.Type.ValueString() == panelTypeLensDashboardApp {
 		if typeutils.IsKnown(pm.ConfigJSON) && !pm.ConfigJSON.IsNull() {

@@ -53,16 +53,16 @@ func buildLensMosaicPanelForTest(t *testing.T) panelModel {
 	require.NoError(t, attrs.FromMosaicNoESQL(api))
 
 	converter := newMosaicPanelConfigConverter()
-	vizBv := vizByValueModel{}
-	diags := converter.populateFromAttributes(context.Background(), nil, nil, &vizBv.lensByValueChartBlocks, attrs)
+	visBv := visByValueModel{}
+	diags := converter.populateFromAttributes(context.Background(), nil, nil, &visBv.lensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
 
 	return panelModel{
 		Type: types.StringValue("vis"),
 		ID:   types.StringValue("mosaic-1"),
 		Grid: panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0), W: types.Int64Value(6), H: types.Int64Value(6)},
-		VizConfig: &vizConfigModel{
-			ByValue: &vizBv,
+		VisConfig: &visConfigModel{
+			ByValue: &visBv,
 		},
 		ConfigJSON: customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults),
 	}
@@ -87,16 +87,16 @@ func buildLensTreemapPanelForTest(t *testing.T) panelModel {
 	require.NoError(t, attrs.FromTreemapNoESQL(api))
 
 	converter := newTreemapPanelConfigConverter()
-	vizBv := vizByValueModel{}
-	diags := converter.populateFromAttributes(context.Background(), nil, nil, &vizBv.lensByValueChartBlocks, attrs)
+	visBv := visByValueModel{}
+	diags := converter.populateFromAttributes(context.Background(), nil, nil, &visBv.lensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
 
 	return panelModel{
 		Type: types.StringValue("vis"),
 		ID:   types.StringValue("treemap-1"),
 		Grid: panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0), W: types.Int64Value(6), H: types.Int64Value(6)},
-		VizConfig: &vizConfigModel{
-			ByValue: &vizBv,
+		VisConfig: &visConfigModel{
+			ByValue: &visBv,
 		},
 		ConfigJSON: customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults),
 	}
@@ -120,16 +120,16 @@ func buildLensWafflePanelForTest(t *testing.T) panelModel {
 	require.NoError(t, attrs.FromWaffleNoESQL(api))
 
 	converter := newWafflePanelConfigConverter()
-	vizBv := vizByValueModel{}
-	diags := converter.populateFromAttributes(context.Background(), nil, nil, &vizBv.lensByValueChartBlocks, attrs)
+	visBv := visByValueModel{}
+	diags := converter.populateFromAttributes(context.Background(), nil, nil, &visBv.lensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
 
 	return panelModel{
 		Type: types.StringValue("vis"),
 		ID:   types.StringValue("waffle-1"),
 		Grid: panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0), W: types.Int64Value(8), H: types.Int64Value(10)},
-		VizConfig: &vizConfigModel{
-			ByValue: &vizBv,
+		VisConfig: &visConfigModel{
+			ByValue: &visBv,
 		},
 		ConfigJSON: customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults),
 	}
@@ -476,7 +476,7 @@ func assertPanelsEqual(t *testing.T, expected, actual panelModel) {
 	assert.Equal(t, expected.Grid, actual.Grid)
 	assert.Equal(t, expected.ID, actual.ID)
 	assert.Equal(t, expected.MarkdownConfig, actual.MarkdownConfig)
-	assert.Equal(t, expected.VizConfig, actual.VizConfig)
+	assert.Equal(t, expected.VisConfig, actual.VisConfig)
 	assert.Equal(t, expected.LensDashboardAppConfig, actual.LensDashboardAppConfig)
 	// ConfigJSON: use semantic equality (handles formatting differences)
 	ctx := context.Background()

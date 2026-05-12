@@ -102,7 +102,7 @@ func Test_panelConfigValidateDiags_vis(t *testing.T) {
 		require.False(t, diags.HasError())
 	})
 
-	t.Run("accepts viz_config as sole vis configuration", func(t *testing.T) {
+	t.Run("accepts vis_config as sole vis configuration", func(t *testing.T) {
 		diags := panelConfigValidateDiags(
 			"vis",
 			panelConfigValueState{},
@@ -138,7 +138,7 @@ func Test_panelConfigValidateDiags_vis(t *testing.T) {
 		require.Equal(t, "Missing vis panel configuration", diags[0].Summary())
 	})
 
-	t.Run("rejects viz_config and config_json together", func(t *testing.T) {
+	t.Run("rejects vis_config and config_json together", func(t *testing.T) {
 		diags := panelConfigValidateDiags(
 			"vis",
 			panelConfigValueState{},
@@ -155,7 +155,7 @@ func Test_panelConfigValidateDiags_vis(t *testing.T) {
 		require.True(t, diags.HasError())
 		require.Len(t, diags, 1)
 		require.Equal(t, "Invalid vis panel configuration", diags[0].Summary())
-		require.Contains(t, diags[0].Detail(), "viz_config")
+		require.Contains(t, diags[0].Detail(), "vis_config")
 	})
 
 	t.Run("defers when config_json is unknown", func(t *testing.T) {
@@ -175,7 +175,7 @@ func Test_panelConfigValidateDiags_vis(t *testing.T) {
 		require.False(t, diags.HasError())
 	})
 
-	t.Run("defers when viz_config is unknown", func(t *testing.T) {
+	t.Run("defers when vis_config is unknown", func(t *testing.T) {
 		diags := panelConfigValidateDiags(
 			"vis",
 			panelConfigValueState{},

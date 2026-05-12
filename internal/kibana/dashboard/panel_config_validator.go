@@ -35,7 +35,7 @@ type panelConfigValidator struct{}
 
 func (panelConfigValidator) Description(_ context.Context) string {
 	return "Ensures markdown panels configure `markdown_config` or `config_json`, " +
-		"`vis` panels configure exactly one of `viz_config` or `config_json` (typed chart blocks belong under `viz_config.by_value`), " +
+		"`vis` panels configure exactly one of `vis_config` or `config_json` (typed chart blocks belong under `vis_config.by_value`), " +
 		"`slo_burn_rate` panels configure `slo_burn_rate_config`, " +
 		"`time_slider_control` panels use `time_slider_control_config` or omit config, " +
 		"`image` panels configure `image_config`, " +
@@ -73,13 +73,13 @@ func panelConfigValueStateFromValue(value attr.Value) panelConfigValueState {
 }
 
 func panelConfigSelectionList() string {
-	options := []string{"`viz_config`", "`config_json`"}
+	options := []string{"`vis_config`", "`config_json`"}
 	return strings.Join(options, ", ")
 }
 
 func panelConfigValidateDiags(
 	panelType string,
-	markdownConfig, configJSON, vizConfig, sloBurnRateConfig, sloErrorBudgetConfig panelConfigValueState,
+	markdownConfig, configJSON, visConfig, sloBurnRateConfig, sloErrorBudgetConfig panelConfigValueState,
 	sloOverviewConfig panelConfigValueState,
 	imageConfig panelConfigValueState,
 	sloAlertsConfig panelConfigValueState,
@@ -138,11 +138,11 @@ func panelConfigValidateDiags(
 		add("Missing markdown panel configuration", "Markdown panels require either `markdown_config` or `config_json`.")
 	case panelTypeVis:
 		setCount := 0
-		hasUnknown := configJSON.Unknown || vizConfig.Unknown
+		hasUnknown := configJSON.Unknown || visConfig.Unknown
 		if configJSON.Set {
 			setCount++
 		}
-		if vizConfig.Set {
+		if visConfig.Set {
 			setCount++
 		}
 
@@ -198,7 +198,7 @@ func (v panelConfigValidator) ValidateObject(_ context.Context, req validator.Ob
 		typeValue.ValueString(),
 		panelConfigValueStateFromValue(attrs["markdown_config"]),
 		panelConfigValueStateFromValue(attrs["config_json"]),
-		panelConfigValueStateFromValue(attrs["viz_config"]),
+		panelConfigValueStateFromValue(attrs["vis_config"]),
 		panelConfigValueStateFromValue(attrs["slo_burn_rate_config"]),
 		panelConfigValueStateFromValue(attrs["slo_error_budget_config"]),
 		panelConfigValueStateFromValue(attrs["slo_overview_config"]),

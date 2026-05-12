@@ -34,7 +34,7 @@ var structuredDrilldownURLTriggerEnum = []string{
 func getStructuredDrilldownsAttribute() schema.Attribute {
 	return schema.ListNestedAttribute{
 		MarkdownDescription: "Structured dashboard, Discover, or URL drilldown entries for by-reference panels — " +
-			"shared by `viz_config.by_reference` (`vis` panels) and `lens_dashboard_app_config.by_reference` (`lens-dashboard-app` panels). " +
+			"shared by `vis_config.by_reference` (`vis` panels) and `lens_dashboard_app_config.by_reference` (`lens-dashboard-app` panels). " +
 			"Each element must contain exactly one of `dashboard`, `discover`, or `url`; " +
 			"the provider sets API `type` and (for dashboard/discover) `trigger` automatically.",
 		Optional: true,
