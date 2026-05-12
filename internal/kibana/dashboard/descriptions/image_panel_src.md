@@ -1,0 +1,1 @@
+Image source for the panel. Set exactly one nested branch: `file` (uploaded Kibana file id) or `url` (external image URL). Matches the Kibana Dashboard API `kbn-dashboard-panel-type-image` `config.image_config.src` union.

@@ -90,6 +90,7 @@ var panelConfigNames = []string{
 	"range_slider_control_config",
 	"synthetics_stats_overview_config",
 	"synthetics_monitors_config",
+	"image_config",
 	"lens_dashboard_app_config",
 }
 
@@ -1181,6 +1182,23 @@ func getPanelSchema() schema.NestedAttributeObject {
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeSyntheticsMonitors}),
 				},
 			},
+			"image_config": schema.SingleNestedAttribute{
+				MarkdownDescription: panelConfigDescription(
+					"Configuration for an `image` panel (`kbn-dashboard-panel-type-image`). Required when `type` is `image`. "+
+						"References the Kibana Dashboard API image embeddable `config` shape.",
+					"image_config",
+					panelConfigNames,
+				),
+				Optional:   true,
+				Attributes: getImagePanelConfigAttributes(),
+				Validators: []validator.Object{
+					objectvalidator.ConflictsWith(
+						siblingPanelConfigPathsExcept("image_config", panelConfigNames)...,
+					),
+					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeImage}),
+					validators.RequiredIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeImage}),
+				},
+			},
 			"lens_dashboard_app_config": schema.SingleNestedAttribute{
 				MarkdownDescription: panelConfigDescription(
 					"Configuration for a `lens-dashboard-app` panel (the Kibana Dashboard API `lens-dashboard-app` panel type). "+
@@ -1207,7 +1225,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 				MarkdownDescription: panelConfigDescription(
 					"The configuration of the panel as a JSON string. "+
 						"Practitioner-authored panel-level `config_json` is valid only when `type` is `markdown` or `vis`. "+
-						"`lens-dashboard-app` and other typed panel kinds use their dedicated blocks (for `lens-dashboard-app`, use `lens_dashboard_app_config`, not panel-level `config_json`).",
+						"Typed panel kinds such as `lens-dashboard-app` and `image` use their dedicated blocks (`lens_dashboard_app_config`, `image_config`), not panel-level `config_json`.",
 					"config_json",
 					panelConfigNames,
 				),

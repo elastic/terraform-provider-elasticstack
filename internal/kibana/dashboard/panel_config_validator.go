@@ -53,6 +53,7 @@ func (panelConfigValidator) Description(_ context.Context) string {
 		"`vis` panels configure exactly one visualization config block or `config_json`, " +
 		"`slo_burn_rate` panels configure `slo_burn_rate_config`, " +
 		"`time_slider_control` panels use `time_slider_control_config` or omit config, " +
+		"`image` panels configure `image_config`, " +
 		"`slo_overview` panels configure `slo_overview_config`, " +
 		"and `slo_error_budget` panels configure `slo_error_budget_config`. " +
 		"`lens-dashboard-app` is validated by per-attribute validators on `lens_dashboard_app_config` " +
@@ -98,6 +99,7 @@ func panelConfigValidateDiags(
 	markdownConfig, configJSON, sloBurnRateConfig, sloErrorBudgetConfig panelConfigValueState,
 	lensConfigs map[string]panelConfigValueState,
 	sloOverviewConfig panelConfigValueState,
+	imageConfig panelConfigValueState,
 	attrPath *path.Path,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
@@ -110,6 +112,14 @@ func panelConfigValidateDiags(
 	}
 
 	switch panelType {
+	case panelTypeImage:
+		if imageConfig.Set {
+			return diags
+		}
+		if imageConfig.Unknown {
+			return diags
+		}
+		add("Missing image panel configuration", "Image panels require `image_config`.")
 	case panelTypeSloOverview:
 		if sloOverviewConfig.Set {
 			return diags
@@ -201,6 +211,7 @@ func (v panelConfigValidator) ValidateObject(_ context.Context, req validator.Ob
 		panelConfigValueStateFromValue(attrs["slo_error_budget_config"]),
 		lensConfigs,
 		panelConfigValueStateFromValue(attrs["slo_overview_config"]),
+		panelConfigValueStateFromValue(attrs["image_config"]),
 		&req.Path,
 	)...)
 }
