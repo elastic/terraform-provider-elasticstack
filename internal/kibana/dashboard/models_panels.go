@@ -190,11 +190,6 @@ func (m *dashboardModel) mapSectionFromAPI(ctx context.Context, tfSection *secti
 	return sm, diags
 }
 
-func float32Ptr(v float64) *float32 {
-	f := float32(v)
-	return &f
-}
-
 func setPanelGridFromAPI(pm *panelModel, x, y float32, w, h *float32) {
 	pm.Grid = panelGridModel{
 		X: types.Int64Value(int64(x)),
@@ -466,10 +461,10 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 					y, _ := grid["y"].(float64)
 					var wPtr, hPtr *float32
 					if wVal, ok := grid["w"].(float64); ok {
-						wPtr = float32Ptr(wVal)
+						wPtr = typeutils.Float32Ptr(wVal)
 					}
 					if hVal, ok := grid["h"].(float64); ok {
-						hPtr = float32Ptr(hVal)
+						hPtr = typeutils.Float32Ptr(hVal)
 					}
 					setPanelGridFromAPI(&pm, float32(x), float32(y), wPtr, hPtr)
 				}
