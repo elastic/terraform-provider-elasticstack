@@ -4,7 +4,7 @@ go 1.26.1
 
 require (
 	github.com/elastic/elastic-transport-go/v8 v8.11.0
-	github.com/elastic/go-elasticsearch/v8 v8.19.5
+	github.com/elastic/go-elasticsearch/v8 v8.19.6
 	github.com/google/go-github/v86 v86.0.0
 	github.com/google/gofuzz v1.2.0
 	github.com/google/uuid v1.6.0
