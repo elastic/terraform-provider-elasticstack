@@ -411,27 +411,10 @@ func getSchema() schema.Schema {
 				MarkdownDescription: "A short description of the dashboard.",
 				Optional:            true,
 			},
-			"time_range": schema.SingleNestedAttribute{
-				MarkdownDescription: "Dashboard time selection (`from`, `to`, optional `mode`). Aligns with the Kibana Dashboard API `time_range` object.",
-				Required:            true,
-				Attributes: map[string]schema.Attribute{
-					"from": schema.StringAttribute{
-						MarkdownDescription: "Start of the time range (e.g., 'now-15m', '2023-01-01T00:00:00Z').",
-						Required:            true,
-					},
-					"to": schema.StringAttribute{
-						MarkdownDescription: "End of the time range (e.g., 'now', '2023-12-31T23:59:59Z').",
-						Required:            true,
-					},
-					"mode": schema.StringAttribute{
-						MarkdownDescription: "Time range mode. Valid values are `absolute` or `relative`. When the GET API omits `mode`, the provider preserves the prior `time_range.mode` from configuration or state.",
-						Optional:            true,
-						Validators: []validator.String{
-							stringvalidator.OneOf("absolute", "relative"),
-						},
-					},
-				},
-			},
+			"time_range": timeRangeSingleNestedAttribute(
+				"Dashboard time selection (`from`, `to`, optional `mode`). Aligns with the Kibana Dashboard API `time_range` object.",
+				true,
+			),
 			"refresh_interval": schema.SingleNestedAttribute{
 				MarkdownDescription: "Auto-refresh settings for the dashboard. Aligns with the Kibana Dashboard API `refresh_interval` object.",
 				Required:            true,
