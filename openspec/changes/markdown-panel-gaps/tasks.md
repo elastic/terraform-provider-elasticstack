@@ -8,10 +8,10 @@
 
 ## 2. Model and mapping
 
-- [ ] 2.1 Restructure the markdown panel model in `models_markdown_panel.go` to mirror the new schema
-- [ ] 2.2 Map to `KbnDashboardPanelTypeMarkdownConfig0` (by-value) and `KbnDashboardPanelTypeMarkdownConfig1` (by-reference) in write
-- [ ] 2.3 Detect the API branch on read and populate the matching sub-block, leaving the other null
-- [ ] 2.4 Apply REQ-009 null-preservation to `open_links_in_new_tab` and `hide_border`
+- [x] 2.1 Restructure the markdown panel model in `models_markdown_panel.go` to mirror the new schema
+- [x] 2.2 Map to `KbnDashboardPanelTypeMarkdownConfig0` (by-value) and `KbnDashboardPanelTypeMarkdownConfig1` (by-reference) in write
+- [x] 2.3 Detect the API branch on read and populate the matching sub-block, leaving the other null
+- [x] 2.4 Apply REQ-009 null-preservation to `open_links_in_new_tab` and `hide_border`
 
 ## 3. Tests
 

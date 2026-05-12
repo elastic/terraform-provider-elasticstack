@@ -41,7 +41,7 @@ func Test_populateMarkdownFromAPI(t *testing.T) {
 	cfg.Settings.OpenLinksInNewTab = &openLinks
 
 	pm := &panelModel{}
-	populateMarkdownFromAPI(pm, cfg)
+	populateMarkdownFromAPIByValue(pm, nil, cfg)
 	require.NotNil(t, pm.MarkdownConfig)
 	require.NotNil(t, pm.MarkdownConfig.ByValue)
 	require.Nil(t, pm.MarkdownConfig.ByReference)
@@ -52,6 +52,46 @@ func Test_populateMarkdownFromAPI(t *testing.T) {
 	assert.Equal(t, types.StringValue(title), bv.Title)
 	require.NotNil(t, bv.Settings)
 	assert.Equal(t, types.BoolValue(openLinks), bv.Settings.OpenLinksInNewTab)
+}
+
+func Test_populateMarkdownFromAPIByValue_openLinksNullPreservedWhenAPIDefaultTrue(t *testing.T) {
+	apiTrue := true
+	cfg := kbapi.KbnDashboardPanelTypeMarkdownConfig0{Content: "hi"}
+	cfg.Settings.OpenLinksInNewTab = &apiTrue
+
+	tfPanel := &panelModel{
+		MarkdownConfig: &markdownConfigModel{
+			ByValue: &markdownConfigByValueModel{
+				Content:  types.StringValue("hi"),
+				Settings: &markdownConfigSettingsModel{OpenLinksInNewTab: types.BoolNull()},
+			},
+		},
+	}
+	pm := &panelModel{}
+	populateMarkdownFromAPIByValue(pm, tfPanel, cfg)
+	require.NotNil(t, pm.MarkdownConfig.ByValue.Settings)
+	assert.True(t, pm.MarkdownConfig.ByValue.Settings.OpenLinksInNewTab.IsNull())
+}
+
+func Test_markdownByReferenceRoundTripViaUnion(t *testing.T) {
+	pm := panelModel{
+		MarkdownConfig: &markdownConfigModel{
+			ByReference: &markdownConfigByReferenceModel{
+				RefID: types.StringValue("lib-md-1"),
+				Title: types.StringValue("shared"),
+			},
+		},
+	}
+	cfg1 := buildMarkdownConfigByReference(pm)
+	var union kbapi.KbnDashboardPanelTypeMarkdown_Config
+	require.NoError(t, union.FromKbnDashboardPanelTypeMarkdownConfig1(cfg1))
+	decoded, err := union.AsKbnDashboardPanelTypeMarkdownConfig1()
+	require.NoError(t, err)
+	pm2 := &panelModel{}
+	populateMarkdownFromAPIByReference(pm2, nil, decoded)
+	require.NotNil(t, pm2.MarkdownConfig.ByReference)
+	assert.Equal(t, "lib-md-1", pm2.MarkdownConfig.ByReference.RefID.ValueString())
+	assert.Equal(t, "shared", pm2.MarkdownConfig.ByReference.Title.ValueString())
 }
 
 func Test_buildMarkdownConfig(t *testing.T) {
@@ -102,7 +142,7 @@ func Test_markdownConfigRoundTripViaUnion(t *testing.T) {
 	require.NoError(t, err)
 
 	pm2 := &panelModel{}
-	populateMarkdownFromAPI(pm2, decoded)
+	populateMarkdownFromAPIByValue(pm2, nil, decoded)
 	require.NotNil(t, pm2.MarkdownConfig)
 	require.NotNil(t, pm2.MarkdownConfig.ByValue)
 	assert.Equal(t, pm.MarkdownConfig.ByValue.Content, pm2.MarkdownConfig.ByValue.Content)
