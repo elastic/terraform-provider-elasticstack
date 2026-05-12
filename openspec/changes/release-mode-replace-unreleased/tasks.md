@@ -15,10 +15,10 @@
 
 ## 3. Compiled workflow + verification
 
-- [ ] 3.1 Inspect `.github/workflows-src/changelog-generation/` and `.github/workflows/changelog-generation.yml` for any inline duplication of the rewriter logic; if found, update the template and regenerate via `scripts/compile-workflow-sources/main.go` (or the documented compile command).
-- [ ] 3.2 Run `make build` and any project lint targets (`make check-lint` if available) to ensure no toolchain regressions.
-- [ ] 3.3 Run `npx openspec validate --all` to confirm the change and modified delta spec are structurally valid.
-- [ ] 3.4 Manually verify by checking out a recent `prep-release-*` branch (or reproducing the PR #2857 scenario locally) and re-running the engine to confirm the resulting `CHANGELOG.md` contains only the `## [x.y.z]` section with no leftover `## [Unreleased]` heading.
+- [x] 3.1 Inspect `.github/workflows-src/changelog-generation/` and `.github/workflows/changelog-generation.yml` for any inline duplication of the rewriter logic; if found, update the template and regenerate via `scripts/compile-workflow-sources/main.go` (or the documented compile command).
+- [x] 3.2 Run `make build` and any project lint targets (`make check-lint` if available) to ensure no toolchain regressions.
+- [x] 3.3 Run `npx openspec validate --all` to confirm the change and modified delta spec are structurally valid.
+- [x] 3.4 Manually verify by checking out a recent `prep-release-*` branch (or reproducing the PR #2857 scenario locally) and re-running the engine to confirm the resulting `CHANGELOG.md` contains only the `## [x.y.z]` section with no leftover `## [Unreleased]` heading.
 
 ## 4. Sync / archive
 
