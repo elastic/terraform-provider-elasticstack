@@ -230,6 +230,10 @@ func TestAccResourceMLFilterImportFailures(t *testing.T) {
 	importVars := config.Variables{
 		"filter_id": config.StringVariable(filterID),
 	}
+	// Capture the cluster UUID segment of the composite import id while the resource is in state.
+	// The final import step must run with this address absent from state; otherwise Terraform core
+	// returns "Resource already managed by Terraform" before the provider can surface a read error.
+	clusterUUID := make([]string, 1)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -240,6 +244,18 @@ func TestAccResourceMLFilterImportFailures(t *testing.T) {
 				ConfigVariables:          importVars,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(mlFilterResourceAddress, "filter_id", filterID),
+					func(s *terraform.State) error {
+						rs, ok := s.RootModule().Resources[mlFilterResourceAddress]
+						if !ok || rs.Primary.ID == "" {
+							return fmt.Errorf("no %s in state", mlFilterResourceAddress)
+						}
+						parts := strings.SplitN(rs.Primary.ID, "/", 2)
+						if len(parts) != 2 {
+							return fmt.Errorf("unexpected composite id %q", rs.Primary.ID)
+						}
+						clusterUUID[0] = parts[0]
+						return nil
+					},
 				),
 			},
 			{
@@ -271,22 +287,18 @@ func TestAccResourceMLFilterImportFailures(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables:          importVars,
+				Destroy:                  true,
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          importVars,
 				ResourceName:             mlFilterResourceAddress,
 				ImportState:              true,
 				ImportStatePersist:       true,
-				ImportStateVerify:        true,
-				ImportStateIdFunc: func(s *terraform.State) (string, error) {
-					rs, ok := s.RootModule().Resources[mlFilterResourceAddress]
-					if !ok || rs.Primary.ID == "" {
-						return "", fmt.Errorf("no %s in state", mlFilterResourceAddress)
-					}
-					parts := strings.SplitN(rs.Primary.ID, "/", 2)
-					if len(parts) != 2 {
-						return "", fmt.Errorf("unexpected composite id %q", rs.Primary.ID)
-					}
-					return parts[0] + "/nonexistent-filter-id-for-import-test", nil
-				},
-				ExpectError: regexp.MustCompile(`Failed to get ML filter|Unable to get ML filter|Cannot import non-existent`),
+				ImportStateVerify:        false,
+				ImportStateId:            fmt.Sprintf("%s/nonexistent-filter-id-for-import-test", clusterUUID[0]),
+				ExpectError:              regexp.MustCompile(`Failed to get ML filter|Unable to get ML filter|Cannot import non-existent`),
 			},
 		},
 	})
