@@ -1,1 +1,3 @@
-Normalized JSON for the tab `data_source` field. For `dsl`, this is the polymorphic data-source union (for example a data view reference). For `esql`, this must deserialize to the ES|QL data source shape (`type = "esql"`, query, etc.). Semantic JSON equality suppresses drift from key ordering or whitespace.
+Normalized JSON for the tab `data_source` field. Author an object that matches the **Kibana Dashboard API** schema for `kbn-dashboard-panel-type-discover_session` tabs: for `tab.dsl`, the polymorphic DSL data-source union (`data_view_reference`, `data_view_spec`, etc. — see the OpenAPI bundled with the [Kibana REST API reference](https://www.elastic.co/docs/api/doc/kibana)); for `tab.esql`, use the ES|QL data-source shape (`type = "esql"` plus query and related fields).
+
+Use **`ref_id`** for `data_view_reference` links (not `id`). Semantic JSON equality suppresses drift from key ordering or whitespace.

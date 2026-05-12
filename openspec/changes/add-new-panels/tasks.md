@@ -55,10 +55,10 @@
 
 ## 7. Examples and docs
 
-- [ ] 7.1 Add an image panel example under `examples/resources/elasticstack_kibana_dashboard/`
-- [ ] 7.2 Add an `slo_alerts` panel example
-- [ ] 7.3 Add a `discover_session` panel example covering both `by_value` (one tab variant) and `by_reference`
-- [ ] 7.4 Document in resource docs: `file_id` lifecycle (out of scope for this change, future resource), `data_source_json` shape pointers to the API schema, and the v1 single-`tab` constraint
+- [x] 7.1 Add an image panel example under `examples/resources/elasticstack_kibana_dashboard/`
+- [x] 7.2 Add an `slo_alerts` panel example
+- [x] 7.3 Add a `discover_session` panel example covering both `by_value` (one tab variant) and `by_reference`
+- [x] 7.4 Document in resource docs: `file_id` lifecycle (out of scope for this change, future resource), `data_source_json` shape pointers to the API schema, and the v1 single-`tab` constraint
 
 ## 8. Spec sync
 

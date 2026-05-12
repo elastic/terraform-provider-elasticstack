@@ -382,8 +382,22 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 }
 
 func getSchema() schema.Schema {
+	dashboardNotes := "### Notes\n\n" +
+		"- **Image `file_id`**: `image_config.src.file.file_id` is an opaque Kibana file asset id. " +
+		"Uploading or lifecycle-managing that file is outside this resource for now; prepare the id outside Terraform " +
+		"(for example via Kibana UI or HTTP upload). A future `elasticstack_kibana_file` resource may cover uploads.\n" +
+		"- **`discover_session` `data_source_json`**: Must be JSON matching the Kibana Dashboard API tab payload — " +
+		"the polymorphic data source for DSL tabs (`data_view_reference`, `data_view_spec`, etc.) and the ES|QL branch " +
+		"for `tab.esql`. Follow the OpenAPI shapes published with the [Kibana REST API]" +
+		"(https://www.elastic.co/docs/api/doc/kibana) (`kbn-dashboard-panel-type-discover_session`). " +
+		"For `data_view_reference`, use **`ref_id`** (not `id`) for the linked data view.\n" +
+		"- **Single Discover tab**: `discover_session_config.by_value.tab` is one object because the API currently allows " +
+		"a single tab entry; a future `tabs` list could be added without breaking existing configs if Kibana lifts the limit."
+
 	return schema.Schema{
-		MarkdownDescription: "Manages Kibana [dashboards](https://www.elastic.co/docs/api/doc/kibana). This functionality is in technical preview and may be changed or removed in a future release.",
+		MarkdownDescription: "Manages Kibana [dashboards](https://www.elastic.co/docs/api/doc/kibana). " +
+			"This functionality is in technical preview and may be changed or removed in a future release.\n\n" +
+			dashboardNotes,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,
