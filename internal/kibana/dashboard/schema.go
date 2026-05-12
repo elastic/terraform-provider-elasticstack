@@ -67,31 +67,19 @@ const (
 var sloBurnRateDurationRegex = regexp.MustCompile(`^\d+[mhd]$`)
 
 var panelConfigNames = []string{
-	"markdown_config",
 	"config_json",
-	"xy_chart_config",
-	"treemap_config",
-	"mosaic_config",
-	"tagcloud_config",
-	"region_map_config",
-	"legacy_metric_config",
-	"gauge_config",
-	"metric_chart_config",
-	"pie_chart_config",
-	"datatable_config",
-	"heatmap_config",
-	"waffle_config",
+	"markdown_config",
+	"viz_config",
+	"lens_dashboard_app_config",
+	"esql_control_config",
+	"options_list_control_config",
+	"range_slider_control_config",
 	"time_slider_control_config",
 	"slo_burn_rate_config",
 	"slo_overview_config",
 	"slo_error_budget_config",
-	"esql_control_config",
-	"options_list_control_config",
-	"range_slider_control_config",
-	"synthetics_stats_overview_config",
 	"synthetics_monitors_config",
-	"lens_dashboard_app_config",
-	"viz_config",
+	"synthetics_stats_overview_config",
 }
 
 func siblingPanelConfigPathsExcept(name string, names []string) []path.Expression {
@@ -654,146 +642,6 @@ func getPanelSchema() schema.NestedAttributeObject {
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeMarkdown}),
 				},
 			},
-			"xy_chart_config": schema.SingleNestedAttribute{
-				MarkdownDescription: panelConfigDescription("Configuration for an XY chart panel. Use this for line, area, and bar charts.", "xy_chart_config", panelConfigNames),
-				Optional:            true,
-				Attributes:          getXYChartConfigAttributes(),
-				Validators: []validator.Object{
-					objectvalidator.ConflictsWith(
-						siblingPanelConfigPathsExcept("xy_chart_config", panelConfigNames)...,
-					),
-					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeVis}),
-				},
-			},
-			"treemap_config": schema.SingleNestedAttribute{
-				MarkdownDescription: panelConfigDescription("Configuration for a treemap chart panel.", "treemap_config", panelConfigNames),
-				Optional:            true,
-				Attributes:          getTreemapSchema(),
-				Validators: []validator.Object{
-					objectvalidator.ConflictsWith(
-						siblingPanelConfigPathsExcept("treemap_config", panelConfigNames)...,
-					),
-					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeVis}),
-				},
-			},
-			"mosaic_config": schema.SingleNestedAttribute{
-				MarkdownDescription: panelConfigDescription(
-					"Configuration for a mosaic chart panel. Mosaic charts require two slicing dimensions "+
-						"(group_by and group_breakdown_by).",
-					"mosaic_config", panelConfigNames),
-				Optional:   true,
-				Attributes: getMosaicSchema(),
-				Validators: []validator.Object{
-					objectvalidator.ConflictsWith(
-						siblingPanelConfigPathsExcept("mosaic_config", panelConfigNames)...,
-					),
-					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeVis}),
-				},
-			},
-			"datatable_config": schema.SingleNestedAttribute{
-				MarkdownDescription: panelConfigDescription("Configuration for a datatable chart panel.", "datatable_config", panelConfigNames),
-				Optional:            true,
-				Attributes:          getDatatableSchema(),
-				Validators: []validator.Object{
-					objectvalidator.ConflictsWith(
-						siblingPanelConfigPathsExcept("datatable_config", panelConfigNames)...,
-					),
-					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeVis}),
-				},
-			},
-			"tagcloud_config": schema.SingleNestedAttribute{
-				MarkdownDescription: panelConfigDescription("Configuration for a tagcloud chart panel. Tag clouds visualize word frequency.", "tagcloud_config", panelConfigNames),
-				Optional:            true,
-				Attributes:          getTagcloudSchema(),
-				Validators: []validator.Object{
-					objectvalidator.ConflictsWith(
-						siblingPanelConfigPathsExcept("tagcloud_config", panelConfigNames)...,
-					),
-					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeVis}),
-				},
-			},
-			"heatmap_config": schema.SingleNestedAttribute{
-				MarkdownDescription: panelConfigDescription("Configuration for a heatmap chart panel.", "heatmap_config", panelConfigNames),
-				Optional:            true,
-				Attributes:          getHeatmapSchema(),
-				Validators: []validator.Object{
-					objectvalidator.ConflictsWith(
-						siblingPanelConfigPathsExcept("heatmap_config", panelConfigNames)...,
-					),
-					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeVis}),
-				},
-			},
-			"waffle_config": schema.SingleNestedAttribute{
-				MarkdownDescription: panelConfigDescription(
-					"Configuration for a waffle (grid) chart Lens panel. Omit `query` (or leave `query.expression` and `query.language` unset) for ES|QL mode.",
-					"waffle_config",
-					panelConfigNames,
-				),
-				Optional:   true,
-				Attributes: getWaffleSchema(),
-				Validators: []validator.Object{
-					objectvalidator.ConflictsWith(
-						siblingPanelConfigPathsExcept("waffle_config", panelConfigNames)...,
-					),
-					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeVis}),
-					waffleConfigModeValidator{},
-				},
-			},
-			"region_map_config": schema.SingleNestedAttribute{
-				MarkdownDescription: panelConfigDescription("Configuration for a region map chart panel. Use this for geographic region maps.", "region_map_config", panelConfigNames),
-				Optional:            true,
-				Attributes:          getRegionMapSchema(),
-				Validators: []validator.Object{
-					objectvalidator.ConflictsWith(
-						siblingPanelConfigPathsExcept("region_map_config", panelConfigNames)...,
-					),
-					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeVis}),
-				},
-			},
-			"gauge_config": schema.SingleNestedAttribute{
-				MarkdownDescription: panelConfigDescription("Configuration for a gauge chart panel.", "gauge_config", panelConfigNames),
-				Optional:            true,
-				Attributes:          getGaugeSchema(),
-				Validators: []validator.Object{
-					objectvalidator.ConflictsWith(
-						siblingPanelConfigPathsExcept("gauge_config", panelConfigNames)...,
-					),
-					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeVis}),
-				},
-			},
-			"metric_chart_config": schema.SingleNestedAttribute{
-				MarkdownDescription: panelConfigDescription("Configuration for a metric chart panel. Metric charts display key performance indicators.", "metric_chart_config", panelConfigNames),
-				Optional:            true,
-				Attributes:          getMetricChart(),
-				Validators: []validator.Object{
-					objectvalidator.ConflictsWith(
-						siblingPanelConfigPathsExcept("metric_chart_config", panelConfigNames)...,
-					),
-					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeVis}),
-				},
-			},
-			"pie_chart_config": schema.SingleNestedAttribute{
-				MarkdownDescription: panelConfigDescription("Configuration for a pie chart panel. Use this for pie and donut charts.", "pie_chart_config", panelConfigNames),
-				Optional:            true,
-				Attributes:          getPieChart(),
-				Validators: []validator.Object{
-					objectvalidator.ConflictsWith(
-						siblingPanelConfigPathsExcept("pie_chart_config", panelConfigNames)...,
-					),
-					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeVis}),
-				},
-			},
-			"legacy_metric_config": schema.SingleNestedAttribute{
-				MarkdownDescription: panelConfigDescription("Configuration for a legacy metric chart panel. Use this for legacy single-value metric visualizations.", "legacy_metric_config", panelConfigNames),
-				Optional:            true,
-				Attributes:          getLegacyMetricSchema(),
-				Validators: []validator.Object{
-					objectvalidator.ConflictsWith(
-						siblingPanelConfigPathsExcept("legacy_metric_config", panelConfigNames)...,
-					),
-					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeVis}),
-				},
-			},
 			"time_slider_control_config": schema.SingleNestedAttribute{
 				MarkdownDescription: panelConfigDescription(
 					"Configuration for a time slider control panel. Controls the visible time window within the dashboard's global time range.",
@@ -1237,8 +1085,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 			"viz_config": schema.SingleNestedAttribute{
 				MarkdownDescription: panelConfigDescription(
 					"Configuration for a `vis` panel (`type = \"vis\"`). "+
-						"Optional typed alternative to authoring vis config only via panel-level chart blocks or `config_json`. "+
-						"Set exactly one of `by_value` (exactly one of 12 Lens chart kinds) or `by_reference`. "+
+						"Typed alternative to `config_json`: set exactly one of `by_value` (exactly one of 12 Lens chart kinds) or `by_reference`. "+
 						"With `by_reference`, use structured `drilldowns` and required `time_range` like `lens_dashboard_app_config.by_reference`.",
 					"viz_config",
 					panelConfigNames,
@@ -1275,17 +1122,17 @@ func getPanelSchema() schema.NestedAttributeObject {
 	}
 }
 
-// lensByValueVisMirrorDescription documents a typed by-value block that mirrors a vis `*_chart_config` / `*_config` block.
+// lensByValueVisMirrorDescription documents a typed by-value block whose shape matches the same-named block under `viz_config.by_value`.
 func lensByValueVisMirrorDescription(visBlockName string) string {
 	return "Typed Lens chart for a `lens-dashboard-app` by-value panel. The chart is sent as the Kibana `lens-dashboard-app` API `config` and does not create a `type = \"vis\"` panel. " +
-		"Reuses the same attribute shape as the `type = \"vis\"` panel block `" + visBlockName + "`."
+		"Attribute shape matches `viz_config.by_value." + visBlockName + "` for `type = \"vis\"` panels."
 }
 
-// vizConfigByValueBlockDescription documents a typed `viz_config.by_value` chart block (mirrors the panel-level vis chart attribute of the same name).
+// vizConfigByValueBlockDescription documents a typed `viz_config.by_value` chart block.
 func vizConfigByValueBlockDescription(visSiblingName string) string {
 	return "Typed Lens visualization inside `viz_config.by_value`. " +
 		"Mutually exclusive with the other chart blocks in the same `by_value` block. " +
-		"Reuses the same attribute shape as panel-level `" + visSiblingName + "` for `type = \"vis\"` panels."
+		"Shares the attribute shape with `lens_dashboard_app_config.by_value." + visSiblingName + "`."
 }
 
 // vizByValueSourceAttrNames lists mutually exclusive typed chart kinds under `viz_config.by_value`.
