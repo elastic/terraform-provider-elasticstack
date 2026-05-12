@@ -9,7 +9,12 @@ resource "elasticstack_kibana_dashboard" "test" {
     type = "lens-dashboard-app"
     grid = { x = 0, y = 0, w = 4, h = 4 }
     markdown_config = {
-      content = "c"
+      by_value = {
+        content = "c"
+        settings = {
+          open_links_in_new_tab = true
+        }
+      }
     }
     lens_dashboard_app_config = {
       by_reference = {

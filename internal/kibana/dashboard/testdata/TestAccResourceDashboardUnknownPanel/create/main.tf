@@ -27,7 +27,12 @@ resource "elasticstack_kibana_dashboard" "test" {
       h = 15
     }
     markdown_config = {
-      content = "Placeholder panel"
+      by_value = {
+        content = "Placeholder panel"
+        settings = {
+          open_links_in_new_tab = true
+        }
+      }
     }
   }]
 }
