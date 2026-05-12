@@ -49,7 +49,7 @@ func GetDashboard(ctx context.Context, client *Client, spaceID string, dashboard
 	}
 
 	return handleGetTypedResponse(resp.StatusCode(), resp.Body,
-		func() kbapi.GetDashboardsIdResponse { return *resp })
+		func() *kbapi.GetDashboardsIdResponse { return resp })
 }
 
 // CreateDashboard creates a new dashboard.
@@ -83,7 +83,8 @@ func UpdateDashboard(ctx context.Context, client *Client, spaceID string, dashbo
 	}
 
 	return handleMutateTypedResponse(resp.StatusCode(), resp.Body,
-		func() kbapi.PutDashboardsIdResponse { return *resp })
+		func() *kbapi.PutDashboardsIdResponse { return resp },
+		http.StatusOK, http.StatusCreated)
 }
 
 // DeleteDashboard deletes an existing dashboard.

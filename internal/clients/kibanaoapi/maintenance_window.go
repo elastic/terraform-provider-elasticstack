@@ -34,8 +34,8 @@ func GetMaintenanceWindow(ctx context.Context, client *Client, spaceID string, m
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	return handleMutateTypedResponse(resp.StatusCode(), resp.Body,
-		func() kbapi.GetMaintenanceWindowIdResponse { return *resp })
+	return handleGetTypedResponse(resp.StatusCode(), resp.Body,
+		func() *kbapi.GetMaintenanceWindowIdResponse { return resp })
 }
 
 // CreateMaintenanceWindow creates a new maintenance window.
@@ -46,7 +46,7 @@ func CreateMaintenanceWindow(ctx context.Context, client *Client, spaceID string
 	}
 
 	return handleMutateTypedResponse(resp.StatusCode(), resp.Body,
-		func() kbapi.PostMaintenanceWindowResponse { return *resp })
+		func() *kbapi.PostMaintenanceWindowResponse { return resp })
 }
 
 // UpdateMaintenanceWindow updates an existing maintenance window.

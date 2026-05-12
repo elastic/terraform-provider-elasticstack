@@ -34,7 +34,7 @@ func GetExceptionList(ctx context.Context, client *Client, spaceID string, param
 	}
 
 	return handleGetTypedResponse(resp.StatusCode(), resp.Body,
-		func() kbapi.SecurityExceptionsAPIExceptionList { return *resp.JSON200 })
+		func() *kbapi.SecurityExceptionsAPIExceptionList { return resp.JSON200 })
 }
 
 // CreateExceptionList creates a new exception list.
@@ -45,7 +45,7 @@ func CreateExceptionList(ctx context.Context, client *Client, spaceID string, bo
 	}
 
 	return handleMutateTypedResponse(resp.StatusCode(), resp.Body,
-		func() kbapi.SecurityExceptionsAPIExceptionList { return *resp.JSON200 })
+		func() *kbapi.SecurityExceptionsAPIExceptionList { return resp.JSON200 })
 }
 
 // UpdateExceptionList updates an existing exception list.
@@ -56,7 +56,7 @@ func UpdateExceptionList(ctx context.Context, client *Client, spaceID string, bo
 	}
 
 	return handleMutateTypedResponse(resp.StatusCode(), resp.Body,
-		func() kbapi.SecurityExceptionsAPIExceptionList { return *resp.JSON200 })
+		func() *kbapi.SecurityExceptionsAPIExceptionList { return resp.JSON200 })
 }
 
 // DeleteExceptionList deletes an existing exception list.
@@ -77,7 +77,7 @@ func GetExceptionListItem(ctx context.Context, client *Client, spaceID string, p
 	}
 
 	return handleGetTypedResponse(resp.StatusCode(), resp.Body,
-		func() kbapi.SecurityExceptionsAPIExceptionListItem { return *resp.JSON200 })
+		func() *kbapi.SecurityExceptionsAPIExceptionListItem { return resp.JSON200 })
 }
 
 // CreateExceptionListItem creates a new exception list item.
@@ -88,7 +88,7 @@ func CreateExceptionListItem(ctx context.Context, client *Client, spaceID string
 	}
 
 	return handleMutateTypedResponse(resp.StatusCode(), resp.Body,
-		func() kbapi.SecurityExceptionsAPIExceptionListItem { return *resp.JSON200 })
+		func() *kbapi.SecurityExceptionsAPIExceptionListItem { return resp.JSON200 })
 }
 
 // UpdateExceptionListItem updates an existing exception list item.
@@ -99,7 +99,7 @@ func UpdateExceptionListItem(ctx context.Context, client *Client, spaceID string
 	}
 
 	return handleMutateTypedResponse(resp.StatusCode(), resp.Body,
-		func() kbapi.SecurityExceptionsAPIExceptionListItem { return *resp.JSON200 })
+		func() *kbapi.SecurityExceptionsAPIExceptionListItem { return resp.JSON200 })
 }
 
 // DeleteExceptionListItem deletes an existing exception list item.

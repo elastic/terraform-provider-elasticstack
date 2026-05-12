@@ -49,7 +49,7 @@ func GetDataView(ctx context.Context, client *Client, spaceID string, viewID str
 	}
 
 	return handleGetTypedResponse(resp.StatusCode(), resp.Body,
-		func() kbapi.DataViewsDataViewResponseObject { return *resp.JSON200 })
+		func() *kbapi.DataViewsDataViewResponseObject { return resp.JSON200 })
 }
 
 // CreateDataView creates a new data view.
@@ -60,7 +60,7 @@ func CreateDataView(ctx context.Context, client *Client, spaceID string, req kba
 	}
 
 	return handleMutateTypedResponse(resp.StatusCode(), resp.Body,
-		func() kbapi.DataViewsDataViewResponseObject { return *resp.JSON200 })
+		func() *kbapi.DataViewsDataViewResponseObject { return resp.JSON200 })
 }
 
 // UpdateDataView updates an existing data view.
@@ -71,7 +71,7 @@ func UpdateDataView(ctx context.Context, client *Client, spaceID string, viewID 
 	}
 
 	return handleMutateTypedResponse(resp.StatusCode(), resp.Body,
-		func() kbapi.DataViewsDataViewResponseObject { return *resp.JSON200 })
+		func() *kbapi.DataViewsDataViewResponseObject { return resp.JSON200 })
 }
 
 // DeleteDataView deletes an existing data view.
