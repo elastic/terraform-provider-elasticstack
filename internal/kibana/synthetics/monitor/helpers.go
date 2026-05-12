@@ -24,24 +24,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// mapPtr returns a pointer to v, or nil if v is nil. Unlike typeutils.MapRef,
-// the key type is not restricted to string.
-func mapPtr[K comparable, V any](v map[K]V) *map[K]V {
-	if v == nil {
-		return nil
-	}
-	return &v
-}
-
-// slicePtr returns a pointer to v, or nil if v is empty. Unlike typeutils.SliceRef,
-// an empty (but non-nil) slice also yields nil.
-func slicePtr[T any](v []T) *[]T {
-	if len(v) == 0 {
-		return nil
-	}
-	return &v
-}
-
 // stringEnumPtr converts a types.String to a typed enum pointer, returning nil for
 // null, unknown, or empty-string values.
 func stringEnumPtr[T ~string](v types.String) *T {

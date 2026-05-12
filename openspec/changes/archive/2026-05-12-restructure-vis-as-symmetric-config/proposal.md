@@ -13,7 +13,7 @@ This change introduces a `viz_config = { by_value, by_reference }` block that mi
 - **BREAKING**: Move the 12 typed Lens chart blocks (`xy_chart_config`, `metric_chart_config`, `legacy_metric_config`, `gauge_config`, `heatmap_config`, `tagcloud_config`, `region_map_config`, `datatable_config`, `pie_chart_config`, `mosaic_config`, `treemap_config`, `waffle_config`) from panel-level siblings into `viz_config.by_value`.
 - Add `viz_config.by_reference` (`ref_id`, `references_json`, `title`, `description`, `hide_title`, `hide_border`, `drilldowns`, required `time_range`) for by-reference Vis panels.
 - Add **structured 3-way `drilldowns`** support (`dashboard_drilldown`, `discover_drilldown`, `url_drilldown`) on both `viz_config.by_reference` and `lens_dashboard_app_config.by_reference`.
-- **BREAKING**: Replace `lens_dashboard_app_config.by_reference.drilldowns_json` with the new structured `drilldowns` block list (same shape as on `viz_config.by_reference`).
+- **BREAKING**: Remove `lens_dashboard_app_config.by_reference.drilldowns_json` from the schema; structured `drilldowns` (same shape as on `viz_config.by_reference`) is the only authoring surface (no deprecation/migration path — the resource is unreleased).
 - Make `time_range` **required** on `viz_config.by_reference` (consistent with `lens_dashboard_app_config.by_reference`).
 - Extract shared helpers: `getLensByValueAttributes(includeLegacyMetric bool)` (or two helpers — implementation choice) and `getLensByReferenceAttributes()` reused by both `viz_config` and `lens_dashboard_app_config`.
 - Shrink `panelConfigNames` from 24 entries to ~13 (one per API panel `type`, plus the universal panel-level `config_json`); simplify `siblingPanelConfigPathsExcept` callers and per-block descriptions to reflect the new two-layer structure.
@@ -37,7 +37,7 @@ This change introduces a `viz_config = { by_value, by_reference }` block that mi
   - `internal/kibana/dashboard/models_panels.go`, `models_lens_panel.go`, `models_lens_dashboard_app_*` — refactor `case "vis":` in `mapPanelFromAPI` to populate `viz_config.{by_value|by_reference}`; symmetric write path in `toAPI`; add structured drilldown read/write helpers (shared with `lens_dashboard_app_config.by_reference`).
   - `internal/kibana/dashboard/panel_config_validator.go` — simplify type→block lookup to operate at the panel-type level.
   - All existing chart-block model files (`models_xy_chart_panel.go`, `models_metric_panel.go`, …) — no internal shape changes; only the wiring path (parent attribute name) changes.
-- **HCL surface**: every test, example, and user dashboard config that uses a typed Vis chart at panel level must wrap the chart block in `viz_config.by_value`. `lens_dashboard_app_config.by_reference.drilldowns_json` callers must migrate to structured `drilldowns`.
+- **HCL surface**: every test, example, and user dashboard config that uses a typed Vis chart at panel level must wrap the chart block in `viz_config.by_value`. `lens_dashboard_app_config.by_reference.drilldowns_json` is no longer accepted (attribute removed from schema); rewrite to structured `drilldowns`.
 - **Tests**: HCL updates across `acc_*_test.go` and `models_*_test.go`; new acceptance coverage for `viz_config.by_reference` and structured drilldowns (3 trigger types × representative panels).
 - **Examples**: `examples/resources/elasticstack_kibana_dashboard/` HCL refactored.
 - **Docs**: regenerated via `make docs-generate`.

@@ -1,6 +1,6 @@
 ## ADDED Requirements
 
-### Requirement: `viz_config` block for `vis` panels (REQ-037)
+### Requirement: `viz_config` block for `vis` panels (REQ-042)
 
 For `type = "vis"` panels, the resource SHALL accept a `viz_config` block with exactly one of `by_value` or `by_reference` sub-blocks set. `viz_config` SHALL be valid only on panels with `type = "vis"`, SHALL be mutually exclusive with all other panel-type configuration blocks, and SHALL be mutually exclusive with panel-level `config_json`.
 
@@ -12,7 +12,7 @@ For `type = "vis"` panels, the resource SHALL accept a `viz_config` block with e
 - `time_range` (required object with `from`, `to`, optional `mode` ∈ `absolute`/`relative`) — required even though the API marks it optional, for parity with `lens_dashboard_app_config.by_reference.time_range`.
 - `title`, `description` (optional strings).
 - `hide_title`, `hide_border` (optional booleans).
-- `drilldowns` (optional list of structured drilldown blocks, see REQ-038).
+- `drilldowns` (optional list of structured drilldown blocks, see REQ-041).
 
 **On write (create and update):**
 
@@ -105,102 +105,6 @@ The resource SHALL classify the API `config` JSON object in this order: (1) **By
 - WHEN the resource is created
 - THEN the provider SHALL unmarshal `config_json` and send the decoded JSON object directly as the panel API `config`
 - AND the panel SHALL appear in state with panel-level `config_json` populated and `viz_config` null
-
-### Requirement: Structured 3-way `drilldowns` shape (REQ-038)
-
-The resource SHALL expose drilldowns on `viz_config.by_reference` and `lens_dashboard_app_config.by_reference` as a list of structured `drilldowns` blocks. Each list item SHALL contain exactly one of three sub-blocks: `dashboard`, `discover`, or `url`, mirroring the API drilldown union (`dashboard_drilldown`, `discover_drilldown`, `url_drilldown`).
-
-**`dashboard` sub-block** SHALL accept:
-- `dashboard_id` (required string) — target dashboard ID.
-- `label` (required string) — display label.
-- `use_filters` (optional bool, API default `true`) — when set, filters are passed to the opening dashboard.
-- `use_time_range` (optional bool, API default `true`) — when set, time range is passed to the opening dashboard.
-- `open_in_new_tab` (optional bool, API default `false`) — when set, the dashboard opens in a new browser tab.
-
-The provider SHALL set the API `trigger` field to `on_apply_filter` and the API `type` field to `dashboard_drilldown` automatically; these are not surfaced as Terraform attributes.
-
-**`discover` sub-block** SHALL accept:
-- `label` (required string) — display label.
-- `open_in_new_tab` (optional bool, API default `true`).
-
-The provider SHALL set the API `trigger` field to `on_apply_filter` and the API `type` field to `discover_drilldown` automatically; these are not surfaced as Terraform attributes.
-
-**`url` sub-block** SHALL accept:
-- `url` (required string) — templated URL. Variables documented at the Kibana drilldown URL template documentation.
-- `label` (required string) — display label.
-- `trigger` (optional string ∈ `on_click_row`/`on_click_value`/`on_open_panel_menu`/`on_select_range`) — when set, MUST be one of the four enum values; the provider SHALL reject other values at plan time. When unset, the provider SHALL omit the `trigger` field from the API payload, allowing Kibana to apply its own default.
-- `encode_url` (optional bool, API default `true`) — when set, the URL is escaped using percent encoding.
-- `open_in_new_tab` (optional bool, API default `true`).
-
-The provider SHALL set the API `type` field to `url_drilldown` automatically; this is not surfaced as a Terraform attribute.
-
-**Per-item validation:** schema validation SHALL enforce that exactly one of `dashboard`, `discover`, or `url` is set on each drilldown list item; setting zero or two-or-more sub-blocks SHALL be rejected at plan time.
-
-**On write:** the resource SHALL emit each drilldown as the matching API drilldown object, including only the fields whose Terraform attributes are set; default values listed above SHALL be sent only when the practitioner explicitly sets them.
-
-**On read:** the resource SHALL classify each API drilldown by its `type` field and populate the matching sub-block. When the API returns a drilldown whose shape cannot be losslessly represented in the structured form (for example a future drilldown variant added to the API), the provider SHALL surface a clear diagnostic at refresh time. There is no `drilldowns_json` fallback on `viz_config.by_reference` or `lens_dashboard_app_config.by_reference`.
-
-#### Scenario: Dashboard drilldown round-trip
-
-- GIVEN a panel with a structured drilldown:
-  - `drilldowns = [{ dashboard = { dashboard_id = "abc-123", label = "Open detail dashboard", use_filters = false, open_in_new_tab = true } }]`
-- WHEN the resource is created
-- THEN the provider SHALL emit a drilldown object with `type = "dashboard_drilldown"`, `trigger = "on_apply_filter"`, `dashboard_id = "abc-123"`, `label = "Open detail dashboard"`, `use_filters = false`, and `open_in_new_tab = true`
-- AND on read-back the provider SHALL repopulate `drilldowns[0].dashboard` with the same values
-- AND `drilldowns[0].discover` and `drilldowns[0].url` SHALL be null
-
-#### Scenario: URL drilldown with explicit trigger round-trip
-
-- GIVEN a panel with `drilldowns = [{ url = { url = "https://example.com", label = "Open", trigger = "on_click_value" } }]`
-- WHEN the resource is created
-- THEN the provider SHALL emit a drilldown object with `type = "url_drilldown"`, `trigger = "on_click_value"`, `url`, and `label`
-- AND on read-back the provider SHALL repopulate `drilldowns[0].url` with the same values
-
-#### Scenario: URL drilldown with omitted trigger
-
-- GIVEN a panel with `drilldowns = [{ url = { url = "https://example.com", label = "Open" } }]` and no `trigger` set
-- WHEN the resource is created
-- THEN the provider SHALL omit `trigger` from the emitted drilldown object
-- AND on read-back, when the API returns a drilldown without `trigger`, the provider SHALL leave `drilldowns[0].url.trigger` null
-
-#### Scenario: URL drilldown with invalid trigger value
-
-- GIVEN a panel with `drilldowns = [{ url = { url = "...", label = "...", trigger = "on_invalid" } }]`
-- WHEN Terraform validates the configuration
-- THEN the configuration SHALL be rejected at plan time with a diagnostic indicating the allowed `trigger` values
-
-#### Scenario: Discover drilldown round-trip
-
-- GIVEN a panel with `drilldowns = [{ discover = { label = "Open in Discover", open_in_new_tab = false } }]`
-- WHEN the resource is created
-- THEN the provider SHALL emit a drilldown object with `type = "discover_drilldown"`, `trigger = "on_apply_filter"`, `label`, and `open_in_new_tab = false`
-- AND on read-back the provider SHALL repopulate `drilldowns[0].discover` with the same values
-
-#### Scenario: Multiple drilldowns of mixed kinds in one list
-
-- GIVEN a panel with `drilldowns = [{ dashboard = {...} }, { url = {...} }, { discover = {...} }]`
-- WHEN the resource is created
-- THEN the provider SHALL emit three drilldown objects in the same list order in the API payload
-- AND on read-back the provider SHALL repopulate the list preserving order and per-item kind
-
-#### Scenario: Drilldown item with no sub-block set
-
-- GIVEN a panel with `drilldowns = [{}]` (no `dashboard`, `discover`, or `url` set)
-- WHEN Terraform validates the configuration
-- THEN the configuration SHALL be rejected at plan time with a diagnostic indicating that exactly one of `dashboard`, `discover`, or `url` must be set
-
-#### Scenario: Drilldown item with multiple sub-blocks set
-
-- GIVEN a panel with `drilldowns = [{ url = {...}, dashboard = {...} }]`
-- WHEN Terraform validates the configuration
-- THEN the configuration SHALL be rejected at plan time with a diagnostic indicating that exactly one of `dashboard`, `discover`, or `url` must be set
-
-#### Scenario: Read-back surfaces diagnostic for unrepresentable drilldown
-
-- GIVEN a managed panel whose state contains structured `drilldowns`
-- WHEN Kibana returns a drilldown shape (for example, a new future drilldown `type`) that cannot be losslessly represented as `dashboard`, `discover`, or `url`
-- THEN the provider SHALL surface a clear diagnostic at refresh
-- AND SHALL NOT silently drop or mistype the drilldown into a wrong sub-block
 
 ## MODIFIED Requirements
 
@@ -295,7 +199,7 @@ REQ-006 is extended to include:
 
 ### Requirement: `lens-dashboard-app` panel behavior (REQ-035)
 
-For `type = "lens-dashboard-app"` panels, the resource SHALL accept `lens_dashboard_app_config` with exactly one of the `by_value` or `by_reference` sub-blocks set. Within `by_value`, practitioners SHALL configure exactly one by-value source: either `config_json` containing a JSON object that maps directly to the generated by-value `KbnDashboardPanelTypeLensDashboardApp.config` union, or one supported typed Lens chart block. Within `by_reference`, the `ref_id` and `time_range` attributes are required. The optional by-reference attributes `references_json`, `title`, `description`, `hide_title`, `hide_border`, and `drilldowns` MAY be set. The `drilldowns` attribute SHALL be the structured 3-way drilldowns shape defined in REQ-038 (the legacy `drilldowns_json` attribute is no longer accepted).
+For `type = "lens-dashboard-app"` panels, the resource SHALL accept `lens_dashboard_app_config` with exactly one of the `by_value` or `by_reference` sub-blocks set. Within `by_value`, practitioners SHALL configure exactly one by-value source: either `config_json` containing a JSON object that maps directly to the generated by-value `KbnDashboardPanelTypeLensDashboardApp.config` union, or one supported typed Lens chart block. Within `by_reference`, the `ref_id` and `time_range` attributes are required. The optional by-reference attributes `references_json`, `title`, `description`, `hide_title`, `hide_border`, and `drilldowns` MAY be set. The `drilldowns` attribute SHALL be the structured 3-way drilldowns shape defined in REQ-041; the legacy `drilldowns_json` attribute is removed from the schema (the resource is unreleased, so no migration path is provided).
 
 **On write (create and update):**
 
@@ -303,15 +207,15 @@ For by-value panels authored through `config_json`, the resource SHALL map `by_v
 
 For by-value panels authored through a supported typed Lens chart block, the resource SHALL convert that typed chart model into the matching generated by-value Lens chart schema and SHALL send the resulting object directly as the panel API `config`. The provider SHALL NOT wrap the chart object in an `attributes` object and SHALL NOT change the dashboard panel discriminator to `vis`.
 
-For by-reference panels, the resource SHALL set the API `config.ref_id` field from `by_reference.ref_id`, set the API `config.time_range` object from `by_reference.time_range`, and include `references`, `title`, `description`, `hide_title`, `hide_border`, and `drilldowns` only when their corresponding Terraform attributes are set. `references_json` SHALL map to the API `references` array of `{ id, name, type }` objects. A saved Lens visualization reference SHALL be represented through `references_json`, typically with a reference whose `name` matches `ref_id`, whose `type` is `lens`, and whose `id` is the saved object ID. The structured `drilldowns` list SHALL be emitted per the rules in REQ-038.
+For by-reference panels, the resource SHALL set the API `config.ref_id` field from `by_reference.ref_id`, set the API `config.time_range` object from `by_reference.time_range`, and include `references`, `title`, `description`, `hide_title`, `hide_border`, and `drilldowns` only when their corresponding Terraform attributes are set. `references_json` SHALL map to the API `references` array of `{ id, name, type }` objects. A saved Lens visualization reference SHALL be represented through `references_json`, typically with a reference whose `name` matches `ref_id`, whose `type` is `lens`, and whose `id` is the saved object ID. The structured `drilldowns` list SHALL be emitted per the rules in REQ-041.
 
 **On read:**
 
-The resource SHALL classify the API `config` JSON object in this order: (1) **By-value:** if the object has a non-empty string at top-level `type` (the by-value Lens chart discriminator), the resource SHALL leave `by_reference` unset and populate `by_value` from the API read, including when `ref_id` and `time_range` are also present. When prior plan or state selected a supported typed by-value chart block and the API response can be represented by that same typed chart block, the resource SHALL repopulate that typed chart block. Otherwise, the resource SHALL populate `by_value.config_json` from the API read, including the practitioner string preservation rule below when plan or state includes a prior `by_value.config_json` object. (2) **By-reference:** otherwise, if the object omits that chart discriminator and has non-empty `ref_id` and a `time_range` with non-empty `from` and `to`, the resource SHALL populate `by_reference` and leave `by_value` unset. When prior plan or state had `by_reference.drilldowns`, the structured `drilldowns` list SHALL be repopulated per REQ-038. (3) **Neither (1) nor (2):** if prior plan or state had `by_reference`, the resource SHALL preserve that prior `by_reference` block per REQ-009 and SHALL NOT silently mode-flip to `by_value`. (4) Otherwise, the resource SHALL populate `by_value.config_json` from the API read (and the same preservation rule when applicable). Fields absent from the API response SHALL not be forced into state from the API response alone. Optional by-reference attributes SHALL also follow REQ-009 panel read seeding and alignment so prior practitioner intent is preserved when the API omits or differs on optional values.
+The resource SHALL classify the API `config` JSON object in this order: (1) **By-value:** if the object has a non-empty string at top-level `type` (the by-value Lens chart discriminator), the resource SHALL leave `by_reference` unset and populate `by_value` from the API read, including when `ref_id` and `time_range` are also present. When prior plan or state selected a supported typed by-value chart block and the API response can be represented by that same typed chart block, the resource SHALL repopulate that typed chart block. Otherwise, the resource SHALL populate `by_value.config_json` from the API read, including the practitioner string preservation rule below when plan or state includes a prior `by_value.config_json` object. (2) **By-reference:** otherwise, if the object omits that chart discriminator and has non-empty `ref_id` and a `time_range` with non-empty `from` and `to`, the resource SHALL populate `by_reference` and leave `by_value` unset. When prior plan or state had `by_reference.drilldowns`, the structured `drilldowns` list SHALL be repopulated per REQ-041. (3) **Neither (1) nor (2):** if prior plan or state had `by_reference`, the resource SHALL preserve that prior `by_reference` block per REQ-009 and SHALL NOT silently mode-flip to `by_value`. (4) Otherwise, the resource SHALL populate `by_value.config_json` from the API read (and the same preservation rule when applicable). Fields absent from the API response SHALL not be forced into state from the API response alone. Optional by-reference attributes SHALL also follow REQ-009 panel read seeding and alignment so prior practitioner intent is preserved when the API omits or differs on optional values.
 
 `by_value.config_json` and `by_reference.references_json` SHALL use semantic JSON equality for plan comparison. API-injected field ordering SHALL NOT create spurious plan diffs. For `by_value.config_json`, when a read of the Kibana `config` returns additional key paths and values the practitioner's object did not set (Kibana default or enrichment) while every value path the practitioner's `config_json` object sets is still present in the API object with the same value, the provider SHALL preserve the practitioner's `by_value.config_json` string in state; the implementation may treat top-level `styling` as rewritable by Kibana, optional empty `filters` (including `null` or omission), a default KQL `query` (only `language` and/or `expression: ""` matching API omission), and related cases consistent with a non-destructive next write; if the response changes a value the user set, or the prior object cannot be read as a value-subset of the API in this sense, the provider SHALL use the read-back value to avoid a destructive next write. For ordered JSON arrays on that value-subset path, the API may only **append** after the practitioner's last index; reordered or prepended content relative to the practitioner's array is not treated as a safe enrichment match.
 
-The `lens-dashboard-app` panel type is distinct from the `vis` Lens panel path. Typed by-value Lens chart blocks under `lens_dashboard_app_config.by_value` SHALL use the `lens-dashboard-app` panel discriminator and `KbnDashboardPanelTypeLensDashboardApp.config` by-value shape. Typed by-value Lens chart blocks reached via `viz_config.by_value` (REQ-037) SHALL use the `vis` panel discriminator instead.
+The `lens-dashboard-app` panel type is distinct from the `vis` Lens panel path. Typed by-value Lens chart blocks under `lens_dashboard_app_config.by_value` SHALL use the `lens-dashboard-app` panel discriminator and `KbnDashboardPanelTypeLensDashboardApp.config` by-value shape. Typed by-value Lens chart blocks reached via `viz_config.by_value` (REQ-042) SHALL use the `vis` panel discriminator instead.
 
 #### Scenario: Creation of a by-reference lens-dashboard-app panel
 
@@ -357,7 +261,7 @@ The `lens-dashboard-app` panel type is distinct from the `vis` Lens panel path. 
   - `lens_dashboard_app_config.by_reference.drilldowns = [{ url = { url = "https://example.com", label = "Open", trigger = "on_click_value" } }]`
 - WHEN the resource is created or updated
 - THEN the provider SHALL include the `time_range` object and a `drilldowns` array (with the URL drilldown emitting `type = "url_drilldown"` and `trigger = "on_click_value"`) in the API payload
-- AND on read-back the provider SHALL repopulate `time_range` and the structured `drilldowns` list per REQ-038
+- AND on read-back the provider SHALL repopulate `time_range` and the structured `drilldowns` list per REQ-041
 
 #### Scenario: Invalid mixed configuration — both sub-blocks set
 
@@ -406,12 +310,12 @@ The `lens-dashboard-app` panel type is distinct from the `vis` Lens panel path. 
 - THEN the provider SHALL populate `by_value.config_json` in state
 - AND the provider SHALL NOT convert it to a typed by-value chart block
 
-#### Scenario: drilldowns_json no longer accepted
+#### Scenario: drilldowns_json removed from schema
 
 - GIVEN a `lens_dashboard_app_config.by_reference` block with a `drilldowns_json` attribute set
 - WHEN Terraform validates the configuration
-- THEN the configuration SHALL be rejected at plan time with a diagnostic indicating the attribute is no longer supported and pointing to the structured `drilldowns` block
+- THEN the configuration SHALL be rejected by the Terraform Plugin Framework's standard "unsupported attribute" diagnostic (the schema no longer defines `drilldowns_json`)
 
 ## REMOVED Requirements
 
-(none — `drilldowns_json` removal on `lens_dashboard_app_config.by_reference` is captured as part of the MODIFIED REQ-035 above; the block-level requirement remains, only the attribute is replaced)
+(none — `drilldowns_json` removal on `lens_dashboard_app_config.by_reference` is captured as part of the MODIFIED REQ-035 above; the block-level requirement remains, only the attribute is removed)

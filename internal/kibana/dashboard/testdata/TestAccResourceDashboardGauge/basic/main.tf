@@ -25,30 +25,34 @@ resource "elasticstack_kibana_dashboard" "test" {
       w = 24
       h = 15
     }
-    gauge_config = {
-      title       = "Sample Gauge"
-      description = "Test gauge visualization"
-      data_source_json = jsonencode({
-        type          = "data_view_spec"
-        index_pattern = "metrics-*"
+    viz_config = {
+      by_value = {
+        gauge_config = {
+          title       = "Sample Gauge"
+          description = "Test gauge visualization"
+          data_source_json = jsonencode({
+            type          = "data_view_spec"
+            index_pattern = "metrics-*"
 
-        time_field = "@timestamp"
-      })
-      query = {
-        language   = "kql"
-        expression = ""
+            time_field = "@timestamp"
+          })
+          query = {
+            language   = "kql"
+            expression = ""
+          }
+          metric_json = jsonencode({
+            operation     = "count"
+            empty_as_null = false
+          })
+          styling = {
+            shape_json = jsonencode({
+              type = "circle"
+            })
+          }
+          ignore_global_filters = false
+          sampling              = 1
+        }
       }
-      metric_json = jsonencode({
-        operation     = "count"
-        empty_as_null = false
-      })
-      styling = {
-        shape_json = jsonencode({
-          type = "circle"
-        })
-      }
-      ignore_global_filters = false
-      sampling              = 1
     }
   }]
 }

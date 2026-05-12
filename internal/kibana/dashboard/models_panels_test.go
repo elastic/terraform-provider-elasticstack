@@ -53,15 +53,18 @@ func buildLensMosaicPanelForTest(t *testing.T) panelModel {
 	require.NoError(t, attrs.FromMosaicNoESQL(api))
 
 	converter := newMosaicPanelConfigConverter()
-	pm := &panelModel{}
-	diags := converter.populateFromAttributes(context.Background(), nil, pm, attrs)
+	vizBv := vizByValueModel{}
+	diags := converter.populateFromAttributes(context.Background(), nil, nil, &vizBv.lensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
 
 	return panelModel{
-		Type:         types.StringValue("vis"),
-		ID:           types.StringValue("mosaic-1"),
-		Grid:         panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0), W: types.Int64Value(6), H: types.Int64Value(6)},
-		MosaicConfig: pm.MosaicConfig,
+		Type: types.StringValue("vis"),
+		ID:   types.StringValue("mosaic-1"),
+		Grid: panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0), W: types.Int64Value(6), H: types.Int64Value(6)},
+		VizConfig: &vizConfigModel{
+			ByValue: &vizBv,
+		},
+		ConfigJSON: customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults),
 	}
 }
 
@@ -84,15 +87,18 @@ func buildLensTreemapPanelForTest(t *testing.T) panelModel {
 	require.NoError(t, attrs.FromTreemapNoESQL(api))
 
 	converter := newTreemapPanelConfigConverter()
-	pm := &panelModel{}
-	diags := converter.populateFromAttributes(context.Background(), nil, pm, attrs)
+	vizBv := vizByValueModel{}
+	diags := converter.populateFromAttributes(context.Background(), nil, nil, &vizBv.lensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
 
 	return panelModel{
-		Type:          types.StringValue("vis"),
-		ID:            types.StringValue("treemap-1"),
-		Grid:          panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0), W: types.Int64Value(6), H: types.Int64Value(6)},
-		TreemapConfig: pm.TreemapConfig,
+		Type: types.StringValue("vis"),
+		ID:   types.StringValue("treemap-1"),
+		Grid: panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0), W: types.Int64Value(6), H: types.Int64Value(6)},
+		VizConfig: &vizConfigModel{
+			ByValue: &vizBv,
+		},
+		ConfigJSON: customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults),
 	}
 }
 
@@ -114,15 +120,18 @@ func buildLensWafflePanelForTest(t *testing.T) panelModel {
 	require.NoError(t, attrs.FromWaffleNoESQL(api))
 
 	converter := newWafflePanelConfigConverter()
-	pm := &panelModel{}
-	diags := converter.populateFromAttributes(context.Background(), nil, pm, attrs)
+	vizBv := vizByValueModel{}
+	diags := converter.populateFromAttributes(context.Background(), nil, nil, &vizBv.lensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
 
 	return panelModel{
-		Type:         types.StringValue("vis"),
-		ID:           types.StringValue("waffle-1"),
-		Grid:         panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0), W: types.Int64Value(8), H: types.Int64Value(10)},
-		WaffleConfig: pm.WaffleConfig,
+		Type: types.StringValue("vis"),
+		ID:   types.StringValue("waffle-1"),
+		Grid: panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0), W: types.Int64Value(8), H: types.Int64Value(10)},
+		VizConfig: &vizConfigModel{
+			ByValue: &vizBv,
+		},
+		ConfigJSON: customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults),
 	}
 }
 
@@ -196,10 +205,16 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 					},
 					ID: types.StringValue("1"),
 					MarkdownConfig: &markdownConfigModel{
-						Title:       types.StringValue("My Panel"),
-						Content:     types.StringValue("some content"),
-						HideTitle:   types.BoolValue(true),
-						Description: types.StringNull(),
+						ByValue: &markdownConfigByValueModel{
+							Content:     types.StringValue("some content"),
+							Title:       types.StringValue("My Panel"),
+							HideTitle:   types.BoolValue(true),
+							Description: types.StringNull(),
+							HideBorder:  types.BoolNull(),
+							Settings: &markdownConfigSettingsModel{
+								OpenLinksInNewTab: types.BoolNull(),
+							},
+						},
 					},
 					ConfigJSON: customtypes.NewJSONWithDefaultsValue(`{
 						"title": "My Panel",
@@ -232,10 +247,16 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 					},
 					ID: types.StringNull(),
 					MarkdownConfig: &markdownConfigModel{
-						Title:       types.StringNull(),
-						Content:     types.StringValue(""),
-						HideTitle:   types.BoolNull(),
-						Description: types.StringNull(),
+						ByValue: &markdownConfigByValueModel{
+							Content:     types.StringValue(""),
+							Title:       types.StringNull(),
+							HideTitle:   types.BoolNull(),
+							Description: types.StringNull(),
+							HideBorder:  types.BoolNull(),
+							Settings: &markdownConfigSettingsModel{
+								OpenLinksInNewTab: types.BoolNull(),
+							},
+						},
 					},
 					ConfigJSON: customtypes.NewJSONWithDefaultsValue(`{"unknownField": "something"}`, populatePanelConfigJSONDefaults),
 				},
@@ -277,10 +298,16 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 							},
 							ID: types.StringNull(),
 							MarkdownConfig: &markdownConfigModel{
-								Title:       types.StringValue("Inner Panel"),
-								Content:     types.StringValue("Inner content"),
-								HideTitle:   types.BoolNull(),
-								Description: types.StringNull(),
+								ByValue: &markdownConfigByValueModel{
+									Content:     types.StringValue("Inner content"),
+									Title:       types.StringValue("Inner Panel"),
+									HideTitle:   types.BoolNull(),
+									Description: types.StringNull(),
+									HideBorder:  types.BoolNull(),
+									Settings: &markdownConfigSettingsModel{
+										OpenLinksInNewTab: types.BoolNull(),
+									},
+								},
 							},
 							ConfigJSON: customtypes.NewJSONWithDefaultsValue(`{ "title": "Inner Panel", "content": "Inner content" }`, populatePanelConfigJSONDefaults),
 						},
@@ -327,10 +354,16 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 					},
 					ID: types.StringValue("panel1"),
 					MarkdownConfig: &markdownConfigModel{
-						Title:       types.StringValue("Panel 1"),
-						Content:     types.StringValue("Panel 1 body"),
-						HideTitle:   types.BoolNull(),
-						Description: types.StringNull(),
+						ByValue: &markdownConfigByValueModel{
+							Content:     types.StringValue("Panel 1 body"),
+							Title:       types.StringValue("Panel 1"),
+							HideTitle:   types.BoolNull(),
+							Description: types.StringNull(),
+							HideBorder:  types.BoolNull(),
+							Settings: &markdownConfigSettingsModel{
+								OpenLinksInNewTab: types.BoolNull(),
+							},
+						},
 					},
 					ConfigJSON: customtypes.NewJSONWithDefaultsValue(`{ "title": "Panel 1", "content": "Panel 1 body" }`, populatePanelConfigJSONDefaults),
 				},
@@ -366,10 +399,16 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 							},
 							ID: types.StringNull(),
 							MarkdownConfig: &markdownConfigModel{
-								Title:       types.StringValue("Inner Panel"),
-								Content:     types.StringValue("Inner panel body"),
-								HideTitle:   types.BoolNull(),
-								Description: types.StringNull(),
+								ByValue: &markdownConfigByValueModel{
+									Content:     types.StringValue("Inner panel body"),
+									Title:       types.StringValue("Inner Panel"),
+									HideTitle:   types.BoolNull(),
+									Description: types.StringNull(),
+									HideBorder:  types.BoolNull(),
+									Settings: &markdownConfigSettingsModel{
+										OpenLinksInNewTab: types.BoolNull(),
+									},
+								},
 							},
 							ConfigJSON: customtypes.NewJSONWithDefaultsValue(`{ "title": "Inner Panel", "content": "Inner panel body" }`, populatePanelConfigJSONDefaults),
 						},
@@ -437,16 +476,8 @@ func assertPanelsEqual(t *testing.T, expected, actual panelModel) {
 	assert.Equal(t, expected.Grid, actual.Grid)
 	assert.Equal(t, expected.ID, actual.ID)
 	assert.Equal(t, expected.MarkdownConfig, actual.MarkdownConfig)
-	assert.Equal(t, expected.XYChartConfig, actual.XYChartConfig)
-	assert.Equal(t, expected.TreemapConfig, actual.TreemapConfig)
-	assert.Equal(t, expected.DatatableConfig, actual.DatatableConfig)
-	assert.Equal(t, expected.TagcloudConfig, actual.TagcloudConfig)
-	assert.Equal(t, expected.MetricChartConfig, actual.MetricChartConfig)
-	assert.Equal(t, expected.PieChartConfig, actual.PieChartConfig)
-	assert.Equal(t, expected.GaugeConfig, actual.GaugeConfig)
-	assert.Equal(t, expected.LegacyMetricConfig, actual.LegacyMetricConfig)
-	assert.Equal(t, expected.RegionMapConfig, actual.RegionMapConfig)
-	assert.Equal(t, expected.HeatmapConfig, actual.HeatmapConfig)
+	assert.Equal(t, expected.VizConfig, actual.VizConfig)
+	assert.Equal(t, expected.LensDashboardAppConfig, actual.LensDashboardAppConfig)
 	// ConfigJSON: use semantic equality (handles formatting differences)
 	ctx := context.Background()
 	eq, diags := expected.ConfigJSON.StringSemanticEquals(ctx, actual.ConfigJSON)
@@ -487,9 +518,14 @@ func Test_panelsToAPI(t *testing.T) {
 						},
 						ID: types.StringValue("1"),
 						MarkdownConfig: &markdownConfigModel{
-							Title:     types.StringValue("My Panel"),
-							Content:   types.StringValue("some content"),
-							HideTitle: types.BoolValue(true),
+							ByValue: &markdownConfigByValueModel{
+								Content:   types.StringValue("some content"),
+								Title:     types.StringValue("My Panel"),
+								HideTitle: types.BoolValue(true),
+								Settings: &markdownConfigSettingsModel{
+									OpenLinksInNewTab: types.BoolNull(),
+								},
+							},
 						},
 						ConfigJSON: customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults),
 					},
@@ -654,7 +690,13 @@ func Test_panelsToAPI(t *testing.T) {
 								Type: types.StringValue("markdown"),
 								Grid: panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0), W: types.Int64Value(5), H: types.Int64Value(5)},
 								MarkdownConfig: &markdownConfigModel{
-									Title: types.StringValue("Inner Text"),
+									ByValue: &markdownConfigByValueModel{
+										Content: types.StringValue(""),
+										Title:   types.StringValue("Inner Text"),
+										Settings: &markdownConfigSettingsModel{
+											OpenLinksInNewTab: types.BoolNull(),
+										},
+									},
 								},
 							},
 						},

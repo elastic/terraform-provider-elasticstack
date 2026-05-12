@@ -25,42 +25,46 @@ resource "elasticstack_kibana_dashboard" "test" {
       w = 24
       h = 10
     }
-    legacy_metric_config = {
-      title       = "Legacy Metric"
-      description = "Legacy metric chart"
-      data_source_json = jsonencode({
-        type          = "data_view_spec"
-        index_pattern = "metrics-*"
+    viz_config = {
+      by_value = {
+        legacy_metric_config = {
+          title       = "Legacy Metric"
+          description = "Legacy metric chart"
+          data_source_json = jsonencode({
+            type          = "data_view_spec"
+            index_pattern = "metrics-*"
 
-        time_field = "@timestamp"
-      })
-      query = {
-        language   = "kql"
-        expression = ""
-      }
-      filters = [
-        {
-          filter_json = jsonencode({
-            type = "condition"
-            condition = {
-              field    = "status"
-              operator = "is"
-              value    = "200"
+            time_field = "@timestamp"
+          })
+          query = {
+            language   = "kql"
+            expression = ""
+          }
+          filters = [
+            {
+              filter_json = jsonencode({
+                type = "condition"
+                condition = {
+                  field    = "status"
+                  operator = "is"
+                  value    = "200"
+                }
+              })
+            }
+          ]
+          metric_json = jsonencode({
+            operation     = "count"
+            empty_as_null = false
+            format = {
+              type     = "number"
+              decimals = 2
+              compact  = false
             }
           })
+          sampling              = 0.5
+          ignore_global_filters = true
         }
-      ]
-      metric_json = jsonencode({
-        operation     = "count"
-        empty_as_null = false
-        format = {
-          type     = "number"
-          decimals = 2
-          compact  = false
-        }
-      })
-      sampling              = 0.5
-      ignore_global_filters = true
+      }
     }
   }]
 }

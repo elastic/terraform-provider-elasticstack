@@ -25,43 +25,47 @@ resource "elasticstack_kibana_dashboard" "test" {
       w = 24
       h = 15
     }
-    metric_chart_config = {
-      title       = "Metric presentation acc"
-      description = "Cross-cutting lens presentation acceptance"
-      time_range = {
-        from = "now-30d"
-        to   = "now-1d"
-      }
-      hide_title = true
-      drilldowns = [
-        {
-          discover_drilldown = {
-            label = "Open Discover"
+    viz_config = {
+      by_value = {
+        metric_chart_config = {
+          title       = "Metric presentation acc"
+          description = "Cross-cutting lens presentation acceptance"
+          time_range = {
+            from = "now-30d"
+            to   = "now-1d"
           }
-        }
-      ]
-      data_source_json = jsonencode({
-        type          = "data_view_spec"
-        index_pattern = "metrics-*"
-        time_field    = "@timestamp"
-      })
-      query = {
-        language   = "kql"
-        expression = ""
-      }
-      metrics = [
-        {
-          config_json = jsonencode({
-            type      = "primary"
-            operation = "count"
-            format = {
-              type = "number"
+          hide_title = true
+          drilldowns = [
+            {
+              discover_drilldown = {
+                label = "Open Discover"
+              }
             }
+          ]
+          data_source_json = jsonencode({
+            type          = "data_view_spec"
+            index_pattern = "metrics-*"
+            time_field    = "@timestamp"
           })
+          query = {
+            language   = "kql"
+            expression = ""
+          }
+          metrics = [
+            {
+              config_json = jsonencode({
+                type      = "primary"
+                operation = "count"
+                format = {
+                  type = "number"
+                }
+              })
+            }
+          ]
+          ignore_global_filters = false
+          sampling              = 1
         }
-      ]
-      ignore_global_filters = false
-      sampling              = 1
+      }
     }
   }]
 }

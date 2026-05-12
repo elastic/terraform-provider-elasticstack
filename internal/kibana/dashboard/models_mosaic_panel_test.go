@@ -60,12 +60,12 @@ func Test_mosaicPanelConfigConverter_populateFromAttributes_buildAttributes_roun
 	require.NoError(t, attrs.FromMosaicNoESQL(api))
 
 	converter := newMosaicPanelConfigConverter()
-	pm := &panelModel{}
-	diags := converter.populateFromAttributes(ctx, nil, pm, attrs)
+	vizBv := vizByValueModel{}
+	diags := converter.populateFromAttributes(ctx, nil, nil, &vizBv.lensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
-	require.NotNil(t, pm.MosaicConfig)
+	require.NotNil(t, vizBv.MosaicConfig)
 
-	attrs2, diags := converter.buildAttributes(*pm, nil)
+	attrs2, diags := converter.buildAttributes(&vizBv.lensByValueChartBlocks, nil)
 	require.False(t, diags.HasError())
 
 	noESQL2, err := attrs2.AsMosaicNoESQL()
@@ -100,12 +100,12 @@ func Test_mosaicPanelConfigConverter_populateFromAttributes_buildAttributes_roun
 	require.NoError(t, attrs.FromMosaicESQL(api))
 
 	converter := newMosaicPanelConfigConverter()
-	pm := &panelModel{}
-	diags := converter.populateFromAttributes(ctx, nil, pm, attrs)
+	vizBv := vizByValueModel{}
+	diags := converter.populateFromAttributes(ctx, nil, nil, &vizBv.lensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
-	require.NotNil(t, pm.MosaicConfig)
+	require.NotNil(t, vizBv.MosaicConfig)
 
-	attrs2, diags := converter.buildAttributes(*pm, nil)
+	attrs2, diags := converter.buildAttributes(&vizBv.lensByValueChartBlocks, nil)
 	require.False(t, diags.HasError())
 
 	esql2, err := attrs2.AsMosaicESQL()
@@ -403,7 +403,10 @@ func Test_mosaicConfig_lensChartPresentation_hideTitleRoundTrip(t *testing.T) {
 	dash := lensPresentationTestDashboard()
 	pm := buildLensMosaicPanelForTest(t)
 
-	m := *pm.MosaicConfig
+	require.NotNil(t, pm.VizConfig)
+	require.NotNil(t, pm.VizConfig.ByValue)
+	require.NotNil(t, pm.VizConfig.ByValue.MosaicConfig)
+	m := *pm.VizConfig.ByValue.MosaicConfig
 	m.HideTitle = types.BoolValue(true)
 
 	attrs, diags := m.toAPI(dash)

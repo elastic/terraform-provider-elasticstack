@@ -25,7 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestRuleViolatesScopeOrConditionsRequirement(t *testing.T) {
+func TestCustomRuleMissingScopeAndConditions(t *testing.T) {
 	t.Parallel()
 
 	conditionElemType := types.ObjectType{
@@ -46,25 +46,25 @@ func TestRuleViolatesScopeOrConditionsRequirement(t *testing.T) {
 		name        string
 		cond        types.List
 		scope       types.Map
-		wantViolate bool
+		wantMissing bool
 	}{
 		{
 			name:        "both null",
 			cond:        types.ListNull(conditionElemType),
 			scope:       types.MapNull(scopeElemType),
-			wantViolate: true,
+			wantMissing: true,
 		},
 		{
-			name:        "unknown conditions skips violation",
+			name:        "unknown conditions skips",
 			cond:        types.ListUnknown(conditionElemType),
 			scope:       types.MapNull(scopeElemType),
-			wantViolate: false,
+			wantMissing: false,
 		},
 		{
-			name:        "unknown scope skips violation",
+			name:        "unknown scope skips",
 			cond:        types.ListNull(conditionElemType),
 			scope:       types.MapUnknown(scopeElemType),
-			wantViolate: false,
+			wantMissing: false,
 		},
 		{
 			name: "non-empty scope",
@@ -75,7 +75,7 @@ func TestRuleViolatesScopeOrConditionsRequirement(t *testing.T) {
 					"filter_type": types.StringNull(),
 				}),
 			}),
-			wantViolate: false,
+			wantMissing: false,
 		},
 		{
 			name: "non-empty conditions",
@@ -87,15 +87,15 @@ func TestRuleViolatesScopeOrConditionsRequirement(t *testing.T) {
 				}),
 			}),
 			scope:       types.MapNull(scopeElemType),
-			wantViolate: false,
+			wantMissing: false,
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			got := ruleViolatesScopeOrConditionsRequirement(tc.cond, tc.scope)
-			require.Equal(t, tc.wantViolate, got)
+			got := customRuleMissingScopeAndConditions(tc.cond, tc.scope)
+			require.Equal(t, tc.wantMissing, got)
 		})
 	}
 }

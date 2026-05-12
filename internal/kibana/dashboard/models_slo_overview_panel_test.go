@@ -376,7 +376,7 @@ func Test_panelConfigValidateDiags_sloOverview_accepted(t *testing.T) {
 		panelConfigValueState{},
 		panelConfigValueState{},
 		panelConfigValueState{},
-		lensConfigStates(nil),
+		panelConfigValueState{},
 		panelConfigValueState{Set: true},
 		nil,
 	)
@@ -390,7 +390,7 @@ func Test_panelConfigValidateDiags_sloOverview_missing(t *testing.T) {
 		panelConfigValueState{},
 		panelConfigValueState{},
 		panelConfigValueState{},
-		lensConfigStates(nil),
+		panelConfigValueState{},
 		panelConfigValueState{},
 		nil,
 	)

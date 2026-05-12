@@ -25,81 +25,85 @@ resource "elasticstack_kibana_dashboard" "test" {
       w = 24
       h = 15
     }
-    heatmap_config = {
-      title       = "Sample Heatmap"
-      description = "Test heatmap visualization"
-      data_source_json = jsonencode({
-        type          = "data_view_spec"
-        index_pattern = "metrics-*"
+    viz_config = {
+      by_value = {
+        heatmap_config = {
+          title       = "Sample Heatmap"
+          description = "Test heatmap visualization"
+          data_source_json = jsonencode({
+            type          = "data_view_spec"
+            index_pattern = "metrics-*"
 
-        time_field = "@timestamp"
-      })
-      query = {
-        language   = "kql"
-        expression = ""
-      }
-      metric_json = jsonencode({
-        operation = "count"
-      })
-      x_axis_json = jsonencode({
-        operation = "filters"
-        filters = [
-          {
-            label = "All"
-            filter = {
-              expression = "*"
-              language   = "kql"
+            time_field = "@timestamp"
+          })
+          query = {
+            language   = "kql"
+            expression = ""
+          }
+          metric_json = jsonencode({
+            operation = "count"
+          })
+          x_axis_json = jsonencode({
+            operation = "filters"
+            filters = [
+              {
+                label = "All"
+                filter = {
+                  expression = "*"
+                  language   = "kql"
+                }
+              }
+            ]
+          })
+          y_axis_json = jsonencode({
+            operation = "filters"
+            filters = [
+              {
+                label = "All"
+                filter = {
+                  expression = "*"
+                  language   = "kql"
+                }
+              }
+            ]
+          })
+          axis = {
+            x = {
+              labels = {
+                orientation = "horizontal"
+                visible     = true
+              }
+              title = {
+                value   = "X Axis"
+                visible = true
+              }
+            }
+            y = {
+              labels = {
+                visible = true
+              }
+              title = {
+                value   = "Y Axis"
+                visible = true
+              }
             }
           }
-        ]
-      })
-      y_axis_json = jsonencode({
-        operation = "filters"
-        filters = [
-          {
-            label = "All"
-            filter = {
-              expression = "*"
-              language   = "kql"
+          styling = {
+            cells = {
+              labels = {
+                visible = true
+              }
             }
           }
-        ]
-      })
-      axis = {
-        x = {
-          labels = {
-            orientation = "horizontal"
-            visible     = true
+          legend = {
+            visibility           = "visible"
+            size                 = "m"
+            truncate_after_lines = 5
           }
-          title = {
-            value   = "X Axis"
-            visible = true
-          }
-        }
-        y = {
-          labels = {
-            visible = true
-          }
-          title = {
-            value   = "Y Axis"
-            visible = true
-          }
+          ignore_global_filters = false
+          sampling              = 1
         }
       }
-      styling = {
-        cells = {
-          labels = {
-            visible = true
-          }
-        }
-      }
-      legend = {
-        visibility           = "visible"
-        size                 = "m"
-        truncate_after_lines = 5
-      }
-      ignore_global_filters = false
-      sampling              = 1
     }
   }]
 }

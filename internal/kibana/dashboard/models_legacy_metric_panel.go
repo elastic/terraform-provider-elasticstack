@@ -41,7 +41,9 @@ func newLegacyMetricPanelConfigConverter() legacyMetricPanelConfigConverter {
 	return legacyMetricPanelConfigConverter{
 		lensVisualizationBase: lensVisualizationBase{
 			visualizationType: string(kbapi.LegacyMetric),
-			hasTFPanelConfig:  func(pm panelModel) bool { return pm.LegacyMetricConfig != nil },
+			hasTFChartBlock: func(blocks *lensByValueChartBlocks) bool {
+				return blocks != nil && blocks.LegacyMetricConfig != nil
+			},
 		},
 	}
 }
@@ -50,24 +52,30 @@ type legacyMetricPanelConfigConverter struct {
 	lensVisualizationBase
 }
 
-func (c legacyMetricPanelConfigConverter) populateFromAttributes(ctx context.Context, dashboard *dashboardModel, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
+func (c legacyMetricPanelConfigConverter) populateFromAttributes(
+	ctx context.Context,
+	dashboard *dashboardModel,
+	tfPanel *panelModel,
+	blocks *lensByValueChartBlocks,
+	attrs kbapi.KbnDashboardPanelTypeVisConfig0,
+) diag.Diagnostics {
 	legacyMetric, err := attrs.AsLegacyMetricNoESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
 	var prior *legacyMetricConfigModel
-	if pm.LegacyMetricConfig != nil {
-		cpy := *pm.LegacyMetricConfig
+	if b := lensByValueChartBlocksFromPanel(tfPanel); b != nil && b.LegacyMetricConfig != nil {
+		cpy := *b.LegacyMetricConfig
 		prior = &cpy
 	}
-	pm.LegacyMetricConfig = &legacyMetricConfigModel{}
-	return pm.LegacyMetricConfig.fromAPINoESQL(ctx, dashboard, prior, legacyMetric)
+	blocks.LegacyMetricConfig = &legacyMetricConfigModel{}
+	return blocks.LegacyMetricConfig.fromAPINoESQL(ctx, dashboard, prior, legacyMetric)
 }
 
-func (c legacyMetricPanelConfigConverter) buildAttributes(pm panelModel, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func (c legacyMetricPanelConfigConverter) buildAttributes(blocks *lensByValueChartBlocks, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	configModel := *pm.LegacyMetricConfig
+	configModel := *blocks.LegacyMetricConfig
 
 	attrs, legacyDiags := configModel.toAPI(dashboard)
 	diags.Append(legacyDiags...)

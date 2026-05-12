@@ -56,8 +56,7 @@ func NewAnomalyDetectionJobResource() resource.Resource {
 	return newAnomalyDetectionJobResource()
 }
 
-// ValidateConfig rejects detector custom rules that have neither scope nor conditions when both are
-// known at plan time, matching Elasticsearch validation for ML custom rules.
+// ValidateConfig rejects custom rules with no scope and no conditions when both are known at plan time.
 func (r *anomalyDetectionJobResource) ValidateConfig(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
 	var config TFModel
 	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)

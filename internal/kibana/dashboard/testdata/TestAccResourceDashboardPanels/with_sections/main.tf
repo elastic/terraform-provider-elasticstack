@@ -31,9 +31,15 @@ resource "elasticstack_kibana_dashboard" "test" {
         h = 10
       }
       markdown_config = {
-        content    = "First markdown panel"
-        title      = "My First Markdown Panel"
-        hide_title = false
+        by_value = {
+          content     = "First markdown panel"
+          title       = "My First Markdown Panel"
+          hide_title  = false
+          hide_border = true
+          settings = {
+            open_links_in_new_tab = false
+          }
+        }
       }
     }]
   }]

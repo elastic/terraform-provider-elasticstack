@@ -36,7 +36,9 @@ func newWafflePanelConfigConverter() wafflePanelConfigConverter {
 	return wafflePanelConfigConverter{
 		lensVisualizationBase: lensVisualizationBase{
 			visualizationType: string(kbapi.WaffleNoESQLTypeWaffle),
-			hasTFPanelConfig:  func(pm panelModel) bool { return pm.WaffleConfig != nil },
+			hasTFChartBlock: func(blocks *lensByValueChartBlocks) bool {
+				return blocks != nil && blocks.WaffleConfig != nil
+			},
 		},
 	}
 }
@@ -45,12 +47,21 @@ type wafflePanelConfigConverter struct {
 	lensVisualizationBase
 }
 
-func (c wafflePanelConfigConverter) populateFromAttributes(ctx context.Context, dashboard *dashboardModel, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
-	seed := pm.WaffleConfig
+func (c wafflePanelConfigConverter) populateFromAttributes(
+	ctx context.Context,
+	dashboard *dashboardModel,
+	tfPanel *panelModel,
+	blocks *lensByValueChartBlocks,
+	attrs kbapi.KbnDashboardPanelTypeVisConfig0,
+) diag.Diagnostics {
+	seed := blocks.WaffleConfig
 
 	var prior *waffleConfigModel
 	if seed != nil {
 		cpy := *seed
+		prior = &cpy
+	} else if b := lensByValueChartBlocksFromPanel(tfPanel); b != nil && b.WaffleConfig != nil {
+		cpy := *b.WaffleConfig
 		prior = &cpy
 	}
 
@@ -63,22 +74,22 @@ func (c wafflePanelConfigConverter) populateFromAttributes(ctx context.Context, 
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	pm.WaffleConfig = &waffleConfigModel{}
+	blocks.WaffleConfig = &waffleConfigModel{}
 	var diags diag.Diagnostics
 	if esql {
 		wESQL, err := attrs.AsWaffleESQL()
 		if err != nil {
 			return diagutil.FrameworkDiagFromError(err)
 		}
-		diags = pm.WaffleConfig.fromAPIESQL(ctx, dashboard, prior, wESQL)
+		diags = blocks.WaffleConfig.fromAPIESQL(ctx, dashboard, prior, wESQL)
 	} else {
 		wNoESQL, err := attrs.AsWaffleNoESQL()
 		if err != nil {
 			return diagutil.FrameworkDiagFromError(err)
 		}
-		diags = pm.WaffleConfig.fromAPINoESQL(ctx, dashboard, prior, wNoESQL)
+		diags = blocks.WaffleConfig.fromAPINoESQL(ctx, dashboard, prior, wNoESQL)
 	}
-	mergeWaffleConfigFromPlanSeed(pm.WaffleConfig, seed)
+	mergeWaffleConfigFromPlanSeed(blocks.WaffleConfig, seed)
 	return diags
 }
 
@@ -106,8 +117,8 @@ func waffleChartJSONUsesESQLDataset(waffleChartJSON []byte) (bool, error) {
 	}
 }
 
-func (c wafflePanelConfigConverter) buildAttributes(pm panelModel, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
-	configModel := *pm.WaffleConfig
+func (c wafflePanelConfigConverter) buildAttributes(blocks *lensByValueChartBlocks, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+	configModel := *blocks.WaffleConfig
 	return configModel.toAPI(dashboard)
 }
 

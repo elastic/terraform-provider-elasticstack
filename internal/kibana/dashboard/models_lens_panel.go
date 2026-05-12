@@ -26,25 +26,25 @@ import (
 
 type lensVisualizationConverter interface {
 	vizType() string
-	handlesTFConfig(pm panelModel) bool
-	populateFromAttributes(ctx context.Context, dashboard *dashboardModel, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics
-	buildAttributes(pm panelModel, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics)
+	handlesTFConfigBlocks(blocks *lensByValueChartBlocks) bool
+	populateFromAttributes(ctx context.Context, dashboard *dashboardModel, tfPanel *panelModel, blocks *lensByValueChartBlocks, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics
+	buildAttributes(blocks *lensByValueChartBlocks, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics)
 }
 
 type lensVisualizationBase struct {
 	visualizationType string
-	hasTFPanelConfig  func(pm panelModel) bool
+	hasTFChartBlock   func(blocks *lensByValueChartBlocks) bool
 }
 
 func (c lensVisualizationBase) vizType() string {
 	return c.visualizationType
 }
 
-func (c lensVisualizationBase) handlesTFConfig(pm panelModel) bool {
-	if c.hasTFPanelConfig == nil {
+func (c lensVisualizationBase) handlesTFConfigBlocks(blocks *lensByValueChartBlocks) bool {
+	if blocks == nil || c.hasTFChartBlock == nil {
 		return false
 	}
-	return c.hasTFPanelConfig(pm)
+	return c.hasTFChartBlock(blocks)
 }
 
 func detectLensVizType(attrs kbapi.KbnDashboardPanelTypeVisConfig0) string {
@@ -118,4 +118,18 @@ func detectLensVizType(attrs kbapi.KbnDashboardPanelTypeVisConfig0) string {
 		return string(chart.Type)
 	}
 	return ""
+}
+
+// lensVizConverterForType returns the typed Lens converter for viz_config.by_value whose discriminator
+// matches strings produced by detectLensVizType, or nil when the provider does not model that chart kind.
+func lensVizConverterForType(vizType string) lensVisualizationConverter {
+	if vizType == "" {
+		return nil
+	}
+	for _, c := range lensVizConverters {
+		if c.vizType() == vizType {
+			return c
+		}
+	}
+	return nil
 }

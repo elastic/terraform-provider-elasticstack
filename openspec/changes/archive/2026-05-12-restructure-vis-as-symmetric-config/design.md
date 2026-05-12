@@ -85,17 +85,17 @@ Each variant matches the API schema exactly:
 |---|---|---|---|
 | `dashboard` | `dashboard_id`, `label` | `use_filters` (default true), `use_time_range` (default true), `open_in_new_tab` (default false) | API `trigger` and `type` are constants set by the writer (`on_apply_filter`, `dashboard_drilldown`); not surfaced |
 | `discover` | `label` | `open_in_new_tab` (default true) | API `trigger` and `type` constants set by writer |
-| `url` | `url`, `label` | `trigger` (∈ `on_click_row`/`on_click_value`/`on_open_panel_menu`/`on_select_range`), `encode_url` (default true), `open_in_new_tab` (default true) | URL drilldowns are the only variant where the API exposes a multi-value `trigger` enum; we expose it as an optional string with `OneOf` validator |
+| `url` | `url`, `label`, `trigger` (∈ `on_click_row`/`on_click_value`/`on_open_panel_menu`/`on_select_range`) | `encode_url` (default true), `open_in_new_tab` (default true) | The API expects `trigger` on dashboard writes; Terraform requires it at plan time and maps it to the API `url_drilldown` payload. |
+
+The Kibana dashboard API rejects URL drilldown objects that omit `trigger` (HTTP 400 from request validation). Exposing `trigger` as **required** in Terraform fails fast at plan time and matches runtime behavior.
 
 Alternative considered: keep `drilldowns_json`. Rejected because the user specifically requested structured 3-way support; structured drilldowns deliver plan-diff visibility for a meaningful authoring concern.
 
-Alternative considered: omit URL `trigger` (matches today's SLO blocks which don't expose it). Rejected because the API supports it and it's the sole way to author menu-only or range-only drilldowns.
-
-### D7. Migrate `lens_dashboard_app_config.by_reference.drilldowns_json` → structured `drilldowns`
+### D7. Replace `lens_dashboard_app_config.by_reference.drilldowns_json` with structured `drilldowns`
 
 Same shape as `viz_config.by_reference.drilldowns`. The shared `getLensByReferenceAttributes()` helper guarantees both stay in lockstep.
 
-This is **breaking** for any user authoring `lens_dashboard_app_config.by_reference.drilldowns_json`. Pre-release; acceptable.
+This is **breaking** for any user authoring `lens_dashboard_app_config.by_reference.drilldowns_json`. The resource is unreleased, so the attribute is removed from the schema entirely with no deprecation/migration path; the Plugin Framework's standard "unsupported attribute" diagnostic surfaces the breakage to any practitioner with stale config.
 
 ### D8. Read-back round-trip for structured drilldowns
 
@@ -122,7 +122,7 @@ The switch case inspects the `vis.config` discriminator (effectively: try by_ref
   - **Mitigation**: `make docs-generate` regenerates everything; spot-check key examples. Description boilerplate (`Mutually exclusive with …`) actually shrinks because the sibling list is now scoped.
 
 - **[Risk] Read-back round-trip for structured drilldowns may surface latent API drift.** If a real Kibana instance returns a drilldown shape the resource cannot model losslessly (extra fields, future drilldown variant), refresh produces a plan-time error rather than silently degrading.
-  - **Mitigation**: Acceptance test coverage for all three variants × representative panels. Document the strict round-trip behavior in the spec scenarios. If brittleness emerges, a follow-up change can add a `drilldowns_json` opt-out at the by_reference level.
+  - **Mitigation**: Acceptance test coverage for all three variants × representative panels. Document the strict round-trip behavior in the spec scenarios. If brittleness emerges, a follow-up change can re-introduce a `drilldowns_json` opt-out at the by_reference level.
 
 - **[Risk] Subtle breakage in mutual-exclusion validators if `panelConfigNames` is incompletely updated.** With chart blocks no longer in the top-level list, any leftover validator referencing the old names compiles but fails at plan time.
   - **Mitigation**: Compile-time enforcement via constant references; targeted unit test that asserts every entry in `panelConfigNames` corresponds to a registered top-level attribute and vice versa.

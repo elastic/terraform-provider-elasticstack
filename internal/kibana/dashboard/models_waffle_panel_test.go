@@ -61,13 +61,13 @@ func Test_wafflePanelConfigConverter_populateFromAttributes_NoESQL_emptyQueryNoL
 	require.NoError(t, attrs.FromWaffleNoESQL(waffle))
 
 	converter := newWafflePanelConfigConverter()
-	pm := &panelModel{}
-	diags := converter.populateFromAttributes(ctx, nil, pm, attrs)
+	vizBv := vizByValueModel{}
+	diags := converter.populateFromAttributes(ctx, nil, nil, &vizBv.lensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError(), "%s", diags)
-	require.NotNil(t, pm.WaffleConfig)
-	assert.False(t, pm.WaffleConfig.usesESQL())
-	require.NotNil(t, pm.WaffleConfig.Query)
-	assert.True(t, pm.WaffleConfig.Query.Expression.IsNull() || pm.WaffleConfig.Query.Expression.ValueString() == "")
+	require.NotNil(t, vizBv.WaffleConfig)
+	assert.False(t, vizBv.WaffleConfig.usesESQL())
+	require.NotNil(t, vizBv.WaffleConfig.Query)
+	assert.True(t, vizBv.WaffleConfig.Query.Expression.IsNull() || vizBv.WaffleConfig.Query.Expression.ValueString() == "")
 }
 
 func Test_wafflePanelConfigConverter_populateFromAttributes_buildAttributes_roundTrip_NoESQL(t *testing.T) {
@@ -90,12 +90,12 @@ func Test_wafflePanelConfigConverter_populateFromAttributes_buildAttributes_roun
 	require.NoError(t, attrs.FromWaffleNoESQL(waffle))
 
 	converter := newWafflePanelConfigConverter()
-	pm := &panelModel{}
-	diags := converter.populateFromAttributes(ctx, nil, pm, attrs)
+	vizBv := vizByValueModel{}
+	diags := converter.populateFromAttributes(ctx, nil, nil, &vizBv.lensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError(), "%s", diags)
-	require.NotNil(t, pm.WaffleConfig)
+	require.NotNil(t, vizBv.WaffleConfig)
 
-	attrs2, diags := converter.buildAttributes(*pm, nil)
+	attrs2, diags := converter.buildAttributes(&vizBv.lensByValueChartBlocks, nil)
 	require.False(t, diags.HasError(), "%s", diags)
 
 	noESQL2, err := attrs2.AsWaffleNoESQL()
@@ -158,13 +158,13 @@ func Test_wafflePanelConfigConverter_populateFromAttributes_buildAttributes_roun
 	require.NoError(t, attrs.FromWaffleESQL(waffle))
 
 	converter := newWafflePanelConfigConverter()
-	pm := &panelModel{}
-	diags := converter.populateFromAttributes(ctx, nil, pm, attrs)
+	vizBv := vizByValueModel{}
+	diags := converter.populateFromAttributes(ctx, nil, nil, &vizBv.lensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError(), "%s", diags)
-	require.NotNil(t, pm.WaffleConfig)
-	assert.True(t, pm.WaffleConfig.usesESQL())
+	require.NotNil(t, vizBv.WaffleConfig)
+	assert.True(t, vizBv.WaffleConfig.usesESQL())
 
-	attrs2, diags := converter.buildAttributes(*pm, nil)
+	attrs2, diags := converter.buildAttributes(&vizBv.lensByValueChartBlocks, nil)
 	require.False(t, diags.HasError(), "%s", diags)
 
 	esql2, err := attrs2.AsWaffleESQL()
@@ -223,7 +223,10 @@ func Test_waffleConfig_lensChartPresentation_hideTitleRoundTrip(t *testing.T) {
 	dash := lensPresentationTestDashboard()
 	pm := buildLensWafflePanelForTest(t)
 
-	m := *pm.WaffleConfig
+	require.NotNil(t, pm.VizConfig)
+	require.NotNil(t, pm.VizConfig.ByValue)
+	require.NotNil(t, pm.VizConfig.ByValue.WaffleConfig)
+	m := *pm.VizConfig.ByValue.WaffleConfig
 	m.HideTitle = types.BoolValue(true)
 
 	attrs, diags := m.toAPI(dash)

@@ -25,32 +25,36 @@ resource "elasticstack_kibana_dashboard" "test" {
       w = 24
       h = 15
     }
-    metric_chart_config = {
-      title       = "Sample Metric Chart"
-      description = "Test metric chart visualization"
-      data_source_json = jsonencode({
-        type          = "data_view_spec"
-        index_pattern = "metrics-*"
+    viz_config = {
+      by_value = {
+        metric_chart_config = {
+          title       = "Sample Metric Chart"
+          description = "Test metric chart visualization"
+          data_source_json = jsonencode({
+            type          = "data_view_spec"
+            index_pattern = "metrics-*"
 
-        time_field = "@timestamp"
-      })
-      query = {
-        language   = "kql"
-        expression = ""
-      }
-      metrics = [
-        {
-          config_json = jsonencode({
-            type      = "primary"
-            operation = "count"
-            format = {
-              type = "number"
-            }
+            time_field = "@timestamp"
           })
+          query = {
+            language   = "kql"
+            expression = ""
+          }
+          metrics = [
+            {
+              config_json = jsonencode({
+                type      = "primary"
+                operation = "count"
+                format = {
+                  type = "number"
+                }
+              })
+            }
+          ]
+          ignore_global_filters = false
+          sampling              = 1
         }
-      ]
-      ignore_global_filters = false
-      sampling              = 1
+      }
     }
   }]
 }

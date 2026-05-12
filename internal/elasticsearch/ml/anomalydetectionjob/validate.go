@@ -35,8 +35,7 @@ func validateConfigCustomRules(ctx context.Context, config *TFModel) diag.Diagno
 
 	ac := config.AnalysisConfig
 	for i := range ac.Detectors {
-		det := &ac.Detectors[i]
-		cr := det.CustomRules
+		cr := ac.Detectors[i].CustomRules
 		if cr.IsUnknown() || cr.IsNull() {
 			continue
 		}
@@ -48,7 +47,7 @@ func validateConfigCustomRules(ctx context.Context, config *TFModel) diag.Diagno
 		}
 
 		for j, rule := range rules {
-			if !ruleViolatesScopeOrConditionsRequirement(rule.Conditions, rule.Scope) {
+			if !customRuleMissingScopeAndConditions(rule.Conditions, rule.Scope) {
 				continue
 			}
 			diags.AddAttributeError(
@@ -62,28 +61,11 @@ func validateConfigCustomRules(ctx context.Context, config *TFModel) diag.Diagno
 	return diags
 }
 
-func ruleViolatesScopeOrConditionsRequirement(conditions types.List, scope types.Map) bool {
-	condEmpty, condKnown := listKnownEmpty(conditions)
-	scopeEmpty, scopeKnown := mapKnownEmpty(scope)
-	return condKnown && scopeKnown && condEmpty && scopeEmpty
-}
-
-func listKnownEmpty(l types.List) (empty, known bool) {
-	if l.IsUnknown() {
-		return false, false
+func customRuleMissingScopeAndConditions(conditions types.List, scope types.Map) bool {
+	if conditions.IsUnknown() || scope.IsUnknown() {
+		return false
 	}
-	if l.IsNull() {
-		return true, true
-	}
-	return len(l.Elements()) == 0, true
-}
-
-func mapKnownEmpty(m types.Map) (empty, known bool) {
-	if m.IsUnknown() {
-		return false, false
-	}
-	if m.IsNull() {
-		return true, true
-	}
-	return len(m.Elements()) == 0, true
+	condEmpty := conditions.IsNull() || len(conditions.Elements()) == 0
+	scopeEmpty := scope.IsNull() || len(scope.Elements()) == 0
+	return condEmpty && scopeEmpty
 }

@@ -567,61 +567,42 @@ func stringToInt64(v string) (int64, error) {
 	return res, err
 }
 
-func syntheticsMonitorTimeoutToInt64(v *kbapi.SyntheticsMonitor_Timeout) (int64, error) {
-	if v == nil {
-		return 0, nil
-	}
-
-	if s, err := v.AsSyntheticsMonitorTimeout0(); err == nil {
+// unionToInt64 converts a string-or-float32 union type to int64 using the provided accessor callbacks.
+// The float variant must represent a whole number; fractional values are rejected.
+func unionToInt64(asStr func() (string, error), asFloat func() (float32, error), fieldName string) (int64, error) {
+	if s, err := asStr(); err == nil {
 		return stringToInt64(s)
 	}
 
-	if n, err := v.AsSyntheticsMonitorTimeout1(); err == nil {
+	if n, err := asFloat(); err == nil {
 		if math.Trunc(float64(n)) != float64(n) {
-			return 0, fmt.Errorf("timeout must be a whole number, got %v", n)
+			return 0, fmt.Errorf("%s must be a whole number, got %v", fieldName, n)
 		}
 		return int64(n), nil
 	}
 
-	return 0, fmt.Errorf("timeout has unsupported type")
+	return 0, fmt.Errorf("%s has unsupported type", fieldName)
+}
+
+func syntheticsMonitorTimeoutToInt64(v *kbapi.SyntheticsMonitor_Timeout) (int64, error) {
+	if v == nil {
+		return 0, nil
+	}
+	return unionToInt64(v.AsSyntheticsMonitorTimeout0, v.AsSyntheticsMonitorTimeout1, "timeout")
 }
 
 func syntheticsMonitorWaitToInt64(v *kbapi.SyntheticsMonitor_Wait) (int64, error) {
 	if v == nil {
 		return 0, nil
 	}
-
-	if s, err := v.AsSyntheticsMonitorWait0(); err == nil {
-		return stringToInt64(s)
-	}
-
-	if n, err := v.AsSyntheticsMonitorWait1(); err == nil {
-		if math.Trunc(float64(n)) != float64(n) {
-			return 0, fmt.Errorf("wait must be a whole number, got %v", n)
-		}
-		return int64(n), nil
-	}
-
-	return 0, fmt.Errorf("wait has unsupported type")
+	return unionToInt64(v.AsSyntheticsMonitorWait0, v.AsSyntheticsMonitorWait1, "wait")
 }
 
 func syntheticsMonitorMaxRedirectsToInt64(v *kbapi.SyntheticsMonitor_MaxRedirects) (int64, error) {
 	if v == nil {
 		return 0, nil
 	}
-
-	if s, err := v.AsSyntheticsMonitorMaxRedirects0(); err == nil {
-		return stringToInt64(s)
-	}
-
-	if n, err := v.AsSyntheticsMonitorMaxRedirects1(); err == nil {
-		if math.Trunc(float64(n)) != float64(n) {
-			return 0, fmt.Errorf("max_redirects must be a whole number, got %v", n)
-		}
-		return int64(n), nil
-	}
-
-	return 0, fmt.Errorf("max_redirects has unsupported type")
+	return unionToInt64(v.AsSyntheticsMonitorMaxRedirects0, v.AsSyntheticsMonitorMaxRedirects1, "max_redirects")
 }
 
 func (v *tfModelV0) toModelV0(ctx context.Context, api *kbapi.SyntheticsMonitor, space string) (*tfModelV0, diag.Diagnostics) {
@@ -943,7 +924,7 @@ func toSSLConfig(ctx context.Context, dg diag.Diagnostics, v tfSSLConfig, p stri
 			return nil, dg
 		}
 		ssl = &kbapi.SyntheticsSslConfig{
-			SupportedProtocols: slicePtr(sslSupportedProtocols),
+			SupportedProtocols: typeutils.SliceNilIfEmpty(sslSupportedProtocols),
 		}
 	}
 
@@ -960,7 +941,7 @@ func toSSLConfig(ctx context.Context, dg diag.Diagnostics, v tfSSLConfig, p stri
 		if ssl == nil {
 			ssl = &kbapi.SyntheticsSslConfig{}
 		}
-		ssl.CertificateAuthorities = slicePtr(certAuths)
+		ssl.CertificateAuthorities = typeutils.SliceNilIfEmpty(certAuths)
 	}
 
 	if !v.SslCertificate.IsUnknown() && !v.SslCertificate.IsNull() {
@@ -1104,23 +1085,23 @@ func (v *tfModelV0) newHTTPMonitorRequest(
 		Enabled:              v.Enabled.ValueBoolPointer(),
 		Ipv4:                 h.IPv4.ValueBoolPointer(),
 		Ipv6:                 h.IPv6.ValueBoolPointer(),
-		Labels:               mapPtr(labels),
-		Locations:            slicePtr(locations),
+		Labels:               typeutils.MapRef(labels),
+		Locations:            typeutils.SliceNilIfEmpty(locations),
 		MaxRedirects:         int64ToSyntheticsHTTPMonitorFieldsMaxRedirects(h.MaxRedirects),
 		Mode:                 stringEnumPtr[kbapi.SyntheticsHttpMonitorFieldsMode](h.Mode),
 		Name:                 v.Name.ValueString(),
 		Namespace:            typeutils.NonEmptyStringPointerValue(v.Namespace),
-		Params:               mapPtr(params),
+		Params:               typeutils.MapRef(params),
 		Password:             typeutils.NonEmptyStringPointerValue(h.Password),
-		PrivateLocations:     slicePtr(synthetics.ValueStringSlice(v.PrivateLocations)),
-		ProxyHeaders:         mapPtr(proxyHeaders),
+		PrivateLocations:     typeutils.SliceNilIfEmpty(synthetics.ValueStringSlice(v.PrivateLocations)),
+		ProxyHeaders:         typeutils.MapRef(proxyHeaders),
 		ProxyUrl:             typeutils.NonEmptyStringPointerValue(h.ProxyURL),
-		Response:             mapPtr(response),
+		Response:             typeutils.MapRef(response),
 		RetestOnFailure:      v.RetestOnFailure.ValueBoolPointer(),
 		Schedule:             int64ToFloat32Ptr(v.Schedule),
 		ServiceName:          typeutils.NonEmptyStringPointerValue(v.APMServiceName),
 		Ssl:                  ssl,
-		Tags:                 slicePtr(synthetics.ValueStringSlice(v.Tags)),
+		Tags:                 typeutils.SliceNilIfEmpty(synthetics.ValueStringSlice(v.Tags)),
 		Timeout:              int64ToFloat32Ptr(v.TimeoutSeconds),
 		Type:                 kbapi.SyntheticsHttpMonitorFieldsType(kbapi.SyntheticsMonitorTypeHttp),
 		Url:                  h.URL.ValueString(),
@@ -1158,19 +1139,19 @@ func (v *tfModelV0) newTCPMonitorRequest(
 		Alert:                 alert,
 		Enabled:               v.Enabled.ValueBoolPointer(),
 		Host:                  v.TCP.Host.ValueString(),
-		Labels:                mapPtr(labels),
-		Locations:             slicePtr(locations),
+		Labels:                typeutils.MapRef(labels),
+		Locations:             typeutils.SliceNilIfEmpty(locations),
 		Name:                  v.Name.ValueString(),
 		Namespace:             typeutils.NonEmptyStringPointerValue(v.Namespace),
-		Params:                mapPtr(params),
-		PrivateLocations:      slicePtr(synthetics.ValueStringSlice(v.PrivateLocations)),
+		Params:                typeutils.MapRef(params),
+		PrivateLocations:      typeutils.SliceNilIfEmpty(synthetics.ValueStringSlice(v.PrivateLocations)),
 		ProxyUrl:              typeutils.NonEmptyStringPointerValue(v.TCP.ProxyURL),
 		ProxyUseLocalResolver: v.TCP.ProxyUseLocalResolver.ValueBoolPointer(),
 		RetestOnFailure:       v.RetestOnFailure.ValueBoolPointer(),
 		Schedule:              int64ToFloat32Ptr(v.Schedule),
 		ServiceName:           typeutils.NonEmptyStringPointerValue(v.APMServiceName),
 		Ssl:                   ssl,
-		Tags:                  slicePtr(synthetics.ValueStringSlice(v.Tags)),
+		Tags:                  typeutils.SliceNilIfEmpty(synthetics.ValueStringSlice(v.Tags)),
 		Timeout:               int64ToFloat32Ptr(v.TimeoutSeconds),
 		Type:                  kbapi.SyntheticsTcpMonitorFieldsType(kbapi.SyntheticsMonitorTypeTcp),
 		AdditionalProperties:  additionalProperties,
@@ -1182,16 +1163,16 @@ func (v *tfModelV0) newICMPMonitorRequest(labels map[string]string, locations []
 		Alert:            alert,
 		Enabled:          v.Enabled.ValueBoolPointer(),
 		Host:             v.ICMP.Host.ValueString(),
-		Labels:           mapPtr(labels),
-		Locations:        slicePtr(locations),
+		Labels:           typeutils.MapRef(labels),
+		Locations:        typeutils.SliceNilIfEmpty(locations),
 		Name:             v.Name.ValueString(),
 		Namespace:        typeutils.NonEmptyStringPointerValue(v.Namespace),
-		Params:           mapPtr(params),
-		PrivateLocations: slicePtr(synthetics.ValueStringSlice(v.PrivateLocations)),
+		Params:           typeutils.MapRef(params),
+		PrivateLocations: typeutils.SliceNilIfEmpty(synthetics.ValueStringSlice(v.PrivateLocations)),
 		RetestOnFailure:  v.RetestOnFailure.ValueBoolPointer(),
 		Schedule:         int64ToFloat32Ptr(v.Schedule),
 		ServiceName:      typeutils.NonEmptyStringPointerValue(v.APMServiceName),
-		Tags:             slicePtr(synthetics.ValueStringSlice(v.Tags)),
+		Tags:             typeutils.SliceNilIfEmpty(synthetics.ValueStringSlice(v.Tags)),
 		Timeout:          int64ToFloat32Ptr(v.TimeoutSeconds),
 		Type:             kbapi.SyntheticsIcmpMonitorFieldsType(kbapi.SyntheticsMonitorTypeIcmp),
 		Wait:             int64ToSyntheticsIcmpMonitorFieldsWait(v.ICMP.Wait),
@@ -1214,19 +1195,19 @@ func (v *tfModelV0) newBrowserMonitorRequest(
 		Enabled:           v.Enabled.ValueBoolPointer(),
 		IgnoreHttpsErrors: v.Browser.IgnoreHTTPSErrors.ValueBoolPointer(),
 		InlineScript:      v.Browser.InlineScript.ValueString(),
-		Labels:            mapPtr(labels),
-		Locations:         slicePtr(locations),
+		Labels:            typeutils.MapRef(labels),
+		Locations:         typeutils.SliceNilIfEmpty(locations),
 		Name:              v.Name.ValueString(),
 		Namespace:         typeutils.NonEmptyStringPointerValue(v.Namespace),
-		Params:            mapPtr(params),
-		PlaywrightOptions: mapPtr(playwrightOptions),
-		PrivateLocations:  slicePtr(synthetics.ValueStringSlice(v.PrivateLocations)),
+		Params:            typeutils.MapRef(params),
+		PlaywrightOptions: typeutils.MapRef(playwrightOptions),
+		PrivateLocations:  typeutils.SliceNilIfEmpty(synthetics.ValueStringSlice(v.PrivateLocations)),
 		RetestOnFailure:   v.RetestOnFailure.ValueBoolPointer(),
 		Schedule:          int64ToFloat32Ptr(v.Schedule),
 		Screenshots:       stringEnumPtr[kbapi.SyntheticsBrowserMonitorFieldsScreenshots](v.Browser.Screenshots),
 		ServiceName:       typeutils.NonEmptyStringPointerValue(v.APMServiceName),
-		SyntheticsArgs:    slicePtr(synthetics.ValueStringSlice(v.Browser.SyntheticsArgs)),
-		Tags:              slicePtr(synthetics.ValueStringSlice(v.Tags)),
+		SyntheticsArgs:    typeutils.SliceNilIfEmpty(synthetics.ValueStringSlice(v.Browser.SyntheticsArgs)),
+		Tags:              typeutils.SliceNilIfEmpty(synthetics.ValueStringSlice(v.Tags)),
 		Timeout:           int64ToFloat32Ptr(v.TimeoutSeconds),
 		Type:              kbapi.SyntheticsBrowserMonitorFieldsType(kbapi.SyntheticsMonitorTypeBrowser),
 	}, dg

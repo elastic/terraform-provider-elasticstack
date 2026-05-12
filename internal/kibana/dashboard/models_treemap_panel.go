@@ -35,7 +35,9 @@ func newTreemapPanelConfigConverter() treemapPanelConfigConverter {
 	return treemapPanelConfigConverter{
 		lensVisualizationBase: lensVisualizationBase{
 			visualizationType: string(kbapi.TreemapNoESQLTypeTreemap),
-			hasTFPanelConfig:  func(pm panelModel) bool { return pm.TreemapConfig != nil },
+			hasTFChartBlock: func(blocks *lensByValueChartBlocks) bool {
+				return blocks != nil && blocks.TreemapConfig != nil
+			},
 		},
 	}
 }
@@ -44,30 +46,34 @@ type treemapPanelConfigConverter struct {
 	lensVisualizationBase
 }
 
-func (c treemapPanelConfigConverter) populateFromAttributes(ctx context.Context, dashboard *dashboardModel, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
+func (c treemapPanelConfigConverter) populateFromAttributes(
+	ctx context.Context,
+	dashboard *dashboardModel,
+	tfPanel *panelModel,
+	blocks *lensByValueChartBlocks,
+	attrs kbapi.KbnDashboardPanelTypeVisConfig0,
+) diag.Diagnostics {
 	var prior *treemapConfigModel
-	if pm.TreemapConfig != nil {
-		cpy := *pm.TreemapConfig
+	if b := lensByValueChartBlocksFromPanel(tfPanel); b != nil && b.TreemapConfig != nil {
+		cpy := *b.TreemapConfig
 		prior = &cpy
 	}
-	if pm.TreemapConfig == nil {
-		pm.TreemapConfig = &treemapConfigModel{}
-	}
+	blocks.TreemapConfig = &treemapConfigModel{}
 
 	if noESQL, err := attrs.AsTreemapNoESQL(); err == nil && !isTreemapNoESQLCandidateActuallyESQL(noESQL) {
-		return pm.TreemapConfig.fromAPINoESQL(ctx, dashboard, prior, noESQL)
+		return blocks.TreemapConfig.fromAPINoESQL(ctx, dashboard, prior, noESQL)
 	}
 
 	treemapESQL, err := attrs.AsTreemapESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	return pm.TreemapConfig.fromAPIESQL(ctx, dashboard, prior, treemapESQL)
+	return blocks.TreemapConfig.fromAPIESQL(ctx, dashboard, prior, treemapESQL)
 }
 
-func (c treemapPanelConfigConverter) buildAttributes(pm panelModel, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func (c treemapPanelConfigConverter) buildAttributes(blocks *lensByValueChartBlocks, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	configModel := *pm.TreemapConfig
+	configModel := *blocks.TreemapConfig
 
 	attrs, treemapDiags := configModel.toAPI(dashboard)
 	diags.Append(treemapDiags...)

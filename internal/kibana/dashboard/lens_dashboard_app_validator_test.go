@@ -48,16 +48,8 @@ func Test_lensDashboardAppConfigModeValidator(t *testing.T) {
 		})
 	}
 
-	byRefAttrs := map[string]attr.Type{
-		"ref_id":          types.StringType,
-		"references_json": jsontypes.NormalizedType{},
-		"title":           types.StringType,
-		"description":     types.StringType,
-		"hide_title":      types.BoolType,
-		"hide_border":     types.BoolType,
-		"drilldowns_json": jsontypes.NormalizedType{},
-		"time_range":      types.ObjectType{AttrTypes: map[string]attr.Type{"from": types.StringType, "to": types.StringType, "mode": types.StringType}},
-	}
+	byRefAttrs := lensByReferenceAttributeTypes(t)
+	drillElemType := byRefAttrs["drilldowns"].(types.ListType).ElemType
 	byRefObj := func() types.Object {
 		tr := types.ObjectValueMust(
 			map[string]attr.Type{"from": types.StringType, "to": types.StringType, "mode": types.StringType},
@@ -74,7 +66,7 @@ func Test_lensDashboardAppConfigModeValidator(t *testing.T) {
 			"description":     types.StringNull(),
 			"hide_title":      types.BoolNull(),
 			"hide_border":     types.BoolNull(),
-			"drilldowns_json": jsontypes.NewNormalizedNull(),
+			"drilldowns":      types.ListNull(drillElemType),
 			"time_range":      tr,
 		})
 	}
@@ -171,6 +163,14 @@ func Test_lensDashboardAppConfigModeValidator(t *testing.T) {
 			})
 		}
 	})
+}
+
+func lensByReferenceAttributeTypes(t *testing.T) map[string]attr.Type {
+	t.Helper()
+	lda := getLensDashboardAppConfigSchema()
+	br, ok := lda["by_reference"].(schema.SingleNestedAttribute)
+	require.True(t, ok)
+	return br.GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
 func Test_lensDashboardAppByReferenceTimeRangeModeStringValidators(t *testing.T) {

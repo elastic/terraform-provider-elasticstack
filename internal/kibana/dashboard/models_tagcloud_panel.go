@@ -33,7 +33,9 @@ func newTagcloudPanelConfigConverter() tagcloudPanelConfigConverter {
 	return tagcloudPanelConfigConverter{
 		lensVisualizationBase: lensVisualizationBase{
 			visualizationType: string(kbapi.TagcloudNoESQLTypeTagCloud),
-			hasTFPanelConfig:  func(pm panelModel) bool { return pm.TagcloudConfig != nil },
+			hasTFChartBlock: func(blocks *lensByValueChartBlocks) bool {
+				return blocks != nil && blocks.TagcloudConfig != nil
+			},
 		},
 	}
 }
@@ -42,24 +44,30 @@ type tagcloudPanelConfigConverter struct {
 	lensVisualizationBase
 }
 
-func (c tagcloudPanelConfigConverter) populateFromAttributes(ctx context.Context, dashboard *dashboardModel, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
+func (c tagcloudPanelConfigConverter) populateFromAttributes(
+	ctx context.Context,
+	dashboard *dashboardModel,
+	tfPanel *panelModel,
+	blocks *lensByValueChartBlocks,
+	attrs kbapi.KbnDashboardPanelTypeVisConfig0,
+) diag.Diagnostics {
 	tagcloudNoESQL, err := attrs.AsTagcloudNoESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
 	var prior *tagcloudConfigModel
-	if pm.TagcloudConfig != nil {
-		cpy := *pm.TagcloudConfig
+	if b := lensByValueChartBlocksFromPanel(tfPanel); b != nil && b.TagcloudConfig != nil {
+		cpy := *b.TagcloudConfig
 		prior = &cpy
 	}
-	pm.TagcloudConfig = &tagcloudConfigModel{}
-	return pm.TagcloudConfig.fromAPI(ctx, dashboard, prior, tagcloudNoESQL)
+	blocks.TagcloudConfig = &tagcloudConfigModel{}
+	return blocks.TagcloudConfig.fromAPI(ctx, dashboard, prior, tagcloudNoESQL)
 }
 
-func (c tagcloudPanelConfigConverter) buildAttributes(pm panelModel, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func (c tagcloudPanelConfigConverter) buildAttributes(blocks *lensByValueChartBlocks, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	configModel := *pm.TagcloudConfig
+	configModel := *blocks.TagcloudConfig
 
 	// Convert the structured model to API schema
 	tagcloudNoESQL, tagcloudDiags := configModel.toAPI(dashboard)

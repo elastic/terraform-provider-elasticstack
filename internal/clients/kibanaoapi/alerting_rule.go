@@ -145,14 +145,7 @@ func DeleteAlertingRule(ctx context.Context, client *Client, spaceID string, rul
 		return diag.Diagnostics{diag.NewErrorDiagnostic("Unable to delete alerting rule", err.Error())}
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusNoContent, http.StatusOK:
-		return nil
-	case http.StatusNotFound:
-		return nil
-	default:
-		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusNoContent, http.StatusOK, http.StatusNotFound)
 }
 
 func EnableAlertingRule(ctx context.Context, client *Client, spaceID string, ruleID string) diag.Diagnostics {
@@ -165,12 +158,7 @@ func EnableAlertingRule(ctx context.Context, client *Client, spaceID string, rul
 		return diag.Diagnostics{diag.NewErrorDiagnostic("Unable to enable alerting rule", err.Error())}
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusNoContent, http.StatusOK:
-		return nil
-	default:
-		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusNoContent, http.StatusOK)
 }
 
 func DisableAlertingRule(ctx context.Context, client *Client, spaceID string, ruleID string) diag.Diagnostics {
@@ -185,12 +173,7 @@ func DisableAlertingRule(ctx context.Context, client *Client, spaceID string, ru
 		return diag.Diagnostics{diag.NewErrorDiagnostic("Unable to disable alerting rule", err.Error())}
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusNoContent, http.StatusOK:
-		return nil
-	default:
-		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusNoContent, http.StatusOK)
 }
 
 func reconcileRuleEnabled(ctx context.Context, client *Client, spaceID string, rule models.AlertingRule, unwrapped any) diag.Diagnostics {

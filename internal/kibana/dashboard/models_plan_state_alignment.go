@@ -50,17 +50,21 @@ func alignPanelStateFromPlan(ctx context.Context, plan, state *panelModel) {
 	}
 
 	preservePlanJSONIfStateOmitsOptionalKeys(plan.ConfigJSON.Normalized, &state.ConfigJSON.Normalized, "filters", "query", "settings")
-	alignDatatableStateFromPlan(plan.DatatableConfig, state.DatatableConfig)
-	alignGaugeStateFromPlan(ctx, plan.GaugeConfig, state.GaugeConfig)
-	alignHeatmapStateFromPlan(ctx, plan.HeatmapConfig, state.HeatmapConfig)
-	alignLegacyMetricStateFromPlan(ctx, plan.LegacyMetricConfig, state.LegacyMetricConfig)
-	alignMetricStateFromPlan(plan.MetricChartConfig, state.MetricChartConfig)
-	alignMosaicStateFromPlan(plan.MosaicConfig, state.MosaicConfig)
-	alignPieStateFromPlan(plan.PieChartConfig, state.PieChartConfig)
-	alignRegionMapStateFromPlan(ctx, plan.RegionMapConfig, state.RegionMapConfig)
-	alignTagcloudStateFromPlan(ctx, plan.TagcloudConfig, state.TagcloudConfig)
-	alignTreemapStateFromPlan(plan.TreemapConfig, state.TreemapConfig)
-	alignWaffleStateFromPlan(ctx, plan.WaffleConfig, state.WaffleConfig)
+	planBlocks := lensByValueChartBlocksFromPanel(plan)
+	stateBlocks := lensByValueChartBlocksFromPanel(state)
+	if planBlocks != nil && stateBlocks != nil {
+		alignDatatableStateFromPlan(planBlocks.DatatableConfig, stateBlocks.DatatableConfig)
+		alignGaugeStateFromPlan(ctx, planBlocks.GaugeConfig, stateBlocks.GaugeConfig)
+		alignHeatmapStateFromPlan(ctx, planBlocks.HeatmapConfig, stateBlocks.HeatmapConfig)
+		alignLegacyMetricStateFromPlan(ctx, planBlocks.LegacyMetricConfig, stateBlocks.LegacyMetricConfig)
+		alignMetricStateFromPlan(planBlocks.MetricChartConfig, stateBlocks.MetricChartConfig)
+		alignMosaicStateFromPlan(planBlocks.MosaicConfig, stateBlocks.MosaicConfig)
+		alignPieStateFromPlan(planBlocks.PieChartConfig, stateBlocks.PieChartConfig)
+		alignRegionMapStateFromPlan(ctx, planBlocks.RegionMapConfig, stateBlocks.RegionMapConfig)
+		alignTagcloudStateFromPlan(ctx, planBlocks.TagcloudConfig, stateBlocks.TagcloudConfig)
+		alignTreemapStateFromPlan(planBlocks.TreemapConfig, stateBlocks.TreemapConfig)
+		alignWaffleStateFromPlan(ctx, planBlocks.WaffleConfig, stateBlocks.WaffleConfig)
+	}
 	alignEsqlControlStateFromPlan(plan.EsqlControlConfig, state.EsqlControlConfig)
 }
 
@@ -128,6 +132,10 @@ func alignMosaicStateFromPlan(plan, state *mosaicConfigModel) {
 		return
 	}
 	alignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
+	// Lens API commonly omits optional snapshot fields Kibana echoes as absent on read while the practitioner
+	// set them explicitly; mosaic fromAPI maps unknown "current" to null unless we replay plan here.
+	preserveKnownTfBoolIfStateNull(plan.IgnoreGlobalFilters, &state.IgnoreGlobalFilters)
+	preserveKnownTfFloat64IfStateNull(plan.Sampling, &state.Sampling)
 }
 
 func alignPieStateFromPlan(plan, state *pieChartConfigModel) {
@@ -160,6 +168,8 @@ func alignTreemapStateFromPlan(plan, state *treemapConfigModel) {
 		return
 	}
 	alignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
+	preserveKnownTfBoolIfStateNull(plan.IgnoreGlobalFilters, &state.IgnoreGlobalFilters)
+	preserveKnownTfFloat64IfStateNull(plan.Sampling, &state.Sampling)
 }
 
 func alignWaffleStateFromPlan(ctx context.Context, plan, state *waffleConfigModel) {
@@ -193,6 +203,18 @@ func alignTitleAndDescriptionFromPlan(planTitle, planDescription types.String, s
 
 func preserveKnownListIfStateNull(plan types.List, state *types.List) {
 	if typeutils.IsKnown(plan) && (state.IsNull() || state.IsUnknown()) {
+		*state = plan
+	}
+}
+
+func preserveKnownTfBoolIfStateNull(plan types.Bool, state *types.Bool) {
+	if typeutils.IsKnown(plan) && !plan.IsNull() && (!typeutils.IsKnown(*state) || state.IsNull()) {
+		*state = plan
+	}
+}
+
+func preserveKnownTfFloat64IfStateNull(plan types.Float64, state *types.Float64) {
+	if typeutils.IsKnown(plan) && !plan.IsNull() && (!typeutils.IsKnown(*state) || state.IsNull()) {
 		*state = plan
 	}
 }

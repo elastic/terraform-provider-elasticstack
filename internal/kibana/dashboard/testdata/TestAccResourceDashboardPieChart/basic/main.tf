@@ -25,54 +25,58 @@ resource "elasticstack_kibana_dashboard" "test" {
       w = 24
       h = 15
     }
-    pie_chart_config = {
-      title          = "Sample Pie Chart"
-      description    = "Test pie chart visualization"
-      donut_hole     = "s"
-      label_position = "inside"
-      data_source_json = jsonencode({
-        type          = "data_view_spec"
-        index_pattern = "metrics-*"
+    viz_config = {
+      by_value = {
+        pie_chart_config = {
+          title          = "Sample Pie Chart"
+          description    = "Test pie chart visualization"
+          donut_hole     = "s"
+          label_position = "inside"
+          data_source_json = jsonencode({
+            type          = "data_view_spec"
+            index_pattern = "metrics-*"
 
-        time_field = "@timestamp"
-      })
-      query = {
-        language   = "kql"
-        expression = ""
+            time_field = "@timestamp"
+          })
+          query = {
+            language   = "kql"
+            expression = ""
+          }
+          metrics = [
+            {
+              config = jsonencode({
+                operation = "count"
+                format    = { type = "number" }
+              })
+            }
+          ]
+          group_by = [
+            {
+              config = jsonencode({
+                operation = "terms"
+                fields    = ["DestCountry"]
+                color = {
+                  mode    = "categorical"
+                  palette = "default"
+                  mapping = []
+                  unassigned = {
+                    type  = "color_code"
+                    value = "#555555"
+                  }
+                }
+                limit = 5
+                rank_by = {
+                  direction    = "desc"
+                  metric_index = 0
+                  type         = "metric"
+                }
+              })
+            }
+          ]
+          ignore_global_filters = false
+          sampling              = 1
+        }
       }
-      metrics = [
-        {
-          config = jsonencode({
-            operation = "count"
-            format    = { type = "number" }
-          })
-        }
-      ]
-      group_by = [
-        {
-          config = jsonencode({
-            operation = "terms"
-            fields    = ["DestCountry"]
-            color = {
-              mode    = "categorical"
-              palette = "default"
-              mapping = []
-              unassigned = {
-                type  = "color_code"
-                value = "#555555"
-              }
-            }
-            limit = 5
-            rank_by = {
-              direction    = "desc"
-              metric_index = 0
-              type         = "metric"
-            }
-          })
-        }
-      ]
-      ignore_global_filters = false
-      sampling              = 1
     }
   }]
 }
