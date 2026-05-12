@@ -67,7 +67,24 @@ func TestAccResourceDashboardMarkdownByReference(t *testing.T) {
 	dashboardTitle := "Acc md by-ref " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck: func() { acctest.PreCheck(t) },
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			// Kibana only registers the `markdown` saved-object type on stacks where this
+			// suite's dashboard API is exercised (see minDashboardAPISupport). Older
+			// versions return 400 "Unsupported saved object type: 'markdown'".
+			//
+			// terraform-plugin-testing runs each step's PreConfig before SkipFunc, so
+			// bootstrap in PreConfig cannot be gated by step SkipFunc alone; skip here
+			// (TestCase PreCheck runs before any steps).
+			if skip, err := versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport)(); err != nil {
+				t.Fatalf("markdown by-reference acceptance test version check: %v", err)
+			} else if skip {
+				t.Skipf(
+					"Skipping test: stack version is below %s (required for `markdown` saved-object type)",
+					minDashboardAPISupport,
+				)
+			}
+		},
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
