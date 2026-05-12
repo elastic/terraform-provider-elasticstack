@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"strings"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -141,36 +142,13 @@ func expandAliasSet(ctx context.Context, set types.Set) (map[string]models.Index
 
 // expandAliasElement converts a single AliasModel to a models.IndexAlias.
 func expandAliasElement(am AliasModel) (models.IndexAlias, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	ia := models.IndexAlias{Name: am.Name.ValueString()}
-
-	if !am.Filter.IsNull() && !am.Filter.IsUnknown() {
-		fs := strings.TrimSpace(am.Filter.ValueString())
-		if fs != "" {
-			filterMap := make(map[string]any)
-			if err := json.Unmarshal([]byte(fs), &filterMap); err != nil {
-				diags.AddError("Invalid alias filter JSON", err.Error())
-				return ia, diags
-			}
-			ia.Filter = filterMap
-		}
-	}
-
-	if !am.IndexRouting.IsNull() && !am.IndexRouting.IsUnknown() {
-		ia.IndexRouting = am.IndexRouting.ValueString()
-	}
-	if !am.SearchRouting.IsNull() && !am.SearchRouting.IsUnknown() {
-		ia.SearchRouting = am.SearchRouting.ValueString()
-	}
-	if !am.Routing.IsNull() && !am.Routing.IsUnknown() {
-		ia.Routing = am.Routing.ValueString()
-	}
-	if !am.IsHidden.IsNull() && !am.IsHidden.IsUnknown() {
-		ia.IsHidden = am.IsHidden.ValueBool()
-	}
-	if !am.IsWriteIndex.IsNull() && !am.IsWriteIndex.IsUnknown() {
-		ia.IsWriteIndex = am.IsWriteIndex.ValueBool()
-	}
-
-	return ia, diags
+	return aliasutil.ExpandAliasFields(aliasutil.AliasFields{
+		Name:          am.Name,
+		Filter:        am.Filter,
+		IndexRouting:  am.IndexRouting,
+		SearchRouting: am.SearchRouting,
+		Routing:       am.Routing,
+		IsHidden:      am.IsHidden,
+		IsWriteIndex:  am.IsWriteIndex,
+	})
 }

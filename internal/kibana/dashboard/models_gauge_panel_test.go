@@ -114,7 +114,7 @@ func Test_gaugeConfigModel_fromAPI_toAPI(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			model := &gaugeConfigModel{}
-			diags := model.fromAPI(context.Background(), tt.api)
+			diags := model.fromAPI(context.Background(), nil, nil, tt.api)
 			require.False(t, diags.HasError(), "fromAPI should not return errors")
 
 			assert.Equal(t, tt.expected.Title, model.Title, "Title should match")
@@ -137,7 +137,7 @@ func Test_gaugeConfigModel_fromAPI_toAPI(t *testing.T) {
 				assert.Len(t, model.Filters, 1, "Filters should be populated")
 			}
 
-			apiResult, diags := model.toAPI()
+			apiResult, diags := model.toAPI(nil)
 			require.False(t, diags.HasError(), "toAPI should not return errors")
 
 			if tt.api.Title != nil {
@@ -182,11 +182,11 @@ func Test_gaugePanelConfigConverter_populateFromAttributes_buildAttributes_round
 
 	converter := newGaugePanelConfigConverter()
 	pm := &panelModel{}
-	diags := converter.populateFromAttributes(ctx, pm, attrs)
+	diags := converter.populateFromAttributes(ctx, nil, pm, attrs)
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm.GaugeConfig)
 
-	attrs2, diags := converter.buildAttributes(*pm)
+	attrs2, diags := converter.buildAttributes(*pm, nil)
 	require.False(t, diags.HasError())
 
 	gaugeNoESQL2, err := attrs2.AsGaugeNoESQL()
@@ -195,4 +195,8 @@ func Test_gaugePanelConfigConverter_populateFromAttributes_buildAttributes_round
 	assert.Equal(t, "Converter round-trip test", *gaugeNoESQL2.Description)
 	assert.True(t, *gaugeNoESQL2.IgnoreGlobalFilters)
 	assert.InDelta(t, 0.5, *gaugeNoESQL2.Sampling, 0.001)
+}
+
+func Test_gaugeConfig_lensChartPresentation_comprehensive(t *testing.T) {
+	runGaugeNoESQLLensChartPresentationComprehensive(t)
 }

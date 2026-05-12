@@ -143,6 +143,25 @@ func (k *KibanaScopedClient) EnforceMinVersion(ctx context.Context, minVersion *
 	return serverVersion.GreaterThanOrEqual(minVersion), nil
 }
 
+// EnforceVersionCheck returns true when the given version check function
+// returns true, or when the server is running in serverless mode.
+func (k *KibanaScopedClient) EnforceVersionCheck(ctx context.Context, check func(*version.Version) bool) (bool, diag.Diagnostics) {
+	flavor, diags := k.ServerFlavor(ctx)
+	if diags.HasError() {
+		return false, diags
+	}
+	if flavor == ServerlessFlavor {
+		return true, nil
+	}
+
+	sv, diags := k.ServerVersion(ctx)
+	if diags.HasError() {
+		return false, diags
+	}
+
+	return check(sv), nil
+}
+
 // kibanaScopedClientFromAPIClient constructs a KibanaScopedClient from the
 // Kibana-related fields of an *apiClient. This is the canonical adapter used by
 // the factory and by NewAcceptanceTestingKibanaScopedClient.

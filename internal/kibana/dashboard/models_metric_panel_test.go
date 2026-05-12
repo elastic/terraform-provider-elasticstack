@@ -50,11 +50,11 @@ func Test_metricChartPanelConfigConverter_populateFromAttributes_buildAttributes
 
 	converter := newMetricChartPanelConfigConverter()
 	pm := &panelModel{}
-	diags := converter.populateFromAttributes(ctx, pm, attrs)
+	diags := converter.populateFromAttributes(ctx, nil, pm, attrs)
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm.MetricChartConfig)
 
-	attrs2, diags := converter.buildAttributes(*pm)
+	attrs2, diags := converter.buildAttributes(*pm, nil)
 	require.False(t, diags.HasError())
 
 	variant0, err := attrs2.AsMetricNoESQL()
@@ -142,7 +142,7 @@ func Test_metricChartConfigModel_fromAPI_toAPI_variant0(t *testing.T) {
 			}
 
 			// Test toAPI round-trip
-			resultSchema, diags := model.toAPI()
+			resultSchema, diags := model.toAPI(nil)
 			require.False(t, diags.HasError(), "toAPI should not have errors")
 
 			// Verify we can convert back to variant 0
@@ -239,7 +239,7 @@ func Test_metricChartConfigModel_fromAPI_toAPI_variant1(t *testing.T) {
 			assert.Nil(t, model.Query)
 
 			// Test toAPI round-trip
-			resultSchema, diags := model.toAPI()
+			resultSchema, diags := model.toAPI(nil)
 			require.False(t, diags.HasError(), "toAPI should not have errors")
 
 			// Verify we can convert back to variant 1
@@ -301,7 +301,7 @@ func Test_metricChartConfigModel_withMetrics(t *testing.T) {
 	assert.Equal(t, "count", parsedMetric["operation"])
 
 	// Test toAPI round-trip
-	resultSchema, diags := model.toAPI()
+	resultSchema, diags := model.toAPI(nil)
 	require.False(t, diags.HasError())
 
 	resultVariant1, err := resultSchema.AsMetricESQL()
@@ -345,7 +345,7 @@ func Test_metricChartConfigModel_withDataset(t *testing.T) {
 	assert.Equal(t, "test-dataview", parsedDataset["id"])
 
 	// Round-trip: toAPI should preserve dataset
-	resultSchema, diags := model.toAPI()
+	resultSchema, diags := model.toAPI(nil)
 	require.False(t, diags.HasError())
 	resultVariant0, err := resultSchema.AsMetricNoESQL()
 	require.NoError(t, err)
@@ -386,7 +386,7 @@ func Test_metricChartConfigModel_withFilters(t *testing.T) {
 	assert.Contains(t, model.Filters[0].FilterJSON.ValueString(), `"field":"status"`)
 
 	// Test toAPI round-trip
-	resultSchema, diags := model.toAPI()
+	resultSchema, diags := model.toAPI(nil)
 	require.False(t, diags.HasError())
 
 	resultVariant0, err := resultSchema.AsMetricNoESQL()
@@ -430,7 +430,7 @@ func Test_metricChartConfigModel_withBreakdownBy(t *testing.T) {
 	assert.Equal(t, "category", parsedBreakdown["field"])
 
 	// Test toAPI round-trip
-	resultSchema, diags := model.toAPI()
+	resultSchema, diags := model.toAPI(nil)
 	require.False(t, diags.HasError())
 
 	resultVariant0, err := resultSchema.AsMetricNoESQL()
@@ -481,4 +481,8 @@ func Test_metricChartMetricConfigsEquivalent_secondaryDefaults(t *testing.T) {
 		populateMetricChartMetricDefaults,
 	)
 	assert.True(t, metricChartMetricConfigsEquivalent(prior, current))
+}
+
+func Test_metricChartConfig_lensChartPresentation_comprehensive(t *testing.T) {
+	runMetricNoESQLLensChartPresentationComprehensive(t)
 }

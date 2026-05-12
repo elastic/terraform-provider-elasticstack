@@ -68,7 +68,7 @@ func Test_pieChartPanelConfigConverter_populateFromAttributes_buildAttributes_ro
 
 	converter := newPieChartPanelConfigConverter()
 	pm := &panelModel{}
-	diags := converter.populateFromAttributes(ctx, pm, attrs)
+	diags := converter.populateFromAttributes(ctx, nil, pm, attrs)
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm.PieChartConfig)
 	require.NotNil(t, pm.PieChartConfig.Legend)
@@ -77,7 +77,7 @@ func Test_pieChartPanelConfigConverter_populateFromAttributes_buildAttributes_ro
 	assert.InEpsilon(t, float64(3), pm.PieChartConfig.Legend.TruncateAfterLine.ValueFloat64(), 0.001)
 	assert.Equal(t, string(visibility), pm.PieChartConfig.Legend.Visible.ValueString())
 
-	attrs2, diags := converter.buildAttributes(*pm)
+	attrs2, diags := converter.buildAttributes(*pm, nil)
 	require.False(t, diags.HasError())
 
 	noESQL2, err := attrs2.AsPieNoESQL()
@@ -136,7 +136,7 @@ func Test_pieChartConfigModel_fromAPI_toAPI_PieNoESQL(t *testing.T) {
 	}
 
 	model := &pieChartConfigModel{}
-	diags := model.fromAPINoESQL(apiChart)
+	diags := model.fromAPINoESQL(context.Background(), nil, nil, apiChart)
 	require.False(t, diags.HasError(), "fromAPINoESQL should not have errors")
 
 	// Verify fields
@@ -152,7 +152,7 @@ func Test_pieChartConfigModel_fromAPI_toAPI_PieNoESQL(t *testing.T) {
 	assert.Equal(t, string(visibility), model.Legend.Visible.ValueString())
 
 	// Test toAPI
-	resultAttrs, diags := model.toAPI()
+	resultAttrs, diags := model.toAPI(nil)
 	require.False(t, diags.HasError(), "toAPI should not have errors")
 
 	resultNoESQL, err := resultAttrs.AsPieNoESQL()
@@ -185,7 +185,7 @@ func Test_pieChartConfigModel_fromAPI_toAPI_PieESQL(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(apiJSON), &apiESQL))
 
 	model := &pieChartConfigModel{}
-	diags := model.fromAPIESQL(apiESQL)
+	diags := model.fromAPIESQL(context.Background(), nil, nil, apiESQL)
 	require.False(t, diags.HasError())
 
 	assert.Equal(t, "ESQL Pie Chart", model.Title.ValueString())
@@ -196,7 +196,7 @@ func Test_pieChartConfigModel_fromAPI_toAPI_PieESQL(t *testing.T) {
 	assert.Equal(t, "auto", model.Legend.Size.ValueString())
 	assert.Equal(t, string(kbapi.PieLegendVisibilityVisible), model.Legend.Visible.ValueString())
 
-	resultAttrs, diags := model.toAPI()
+	resultAttrs, diags := model.toAPI(nil)
 	require.False(t, diags.HasError())
 
 	esql2, err := resultAttrs.AsPieESQL()
@@ -229,7 +229,7 @@ func Test_pieChartConfigModel_toAPI_withMetrics(t *testing.T) {
 		},
 	}
 
-	attrs, diags := model.toAPI()
+	attrs, diags := model.toAPI(nil)
 	require.False(t, diags.HasError())
 
 	noESQL, err := attrs.AsPieNoESQL()
@@ -257,7 +257,7 @@ func Test_pieChartConfigModel_toAPI_withGroupBy(t *testing.T) {
 		},
 	}
 
-	attrs, diags := model.toAPI()
+	attrs, diags := model.toAPI(nil)
 	require.False(t, diags.HasError())
 
 	noESQL, err := attrs.AsPieNoESQL()
@@ -277,7 +277,7 @@ func Test_pieChartConfigModel_toAPI_legendOmitted(t *testing.T) {
 		Legend: nil,
 	}
 
-	attrs, diags := model.toAPI()
+	attrs, diags := model.toAPI(nil)
 	require.False(t, diags.HasError())
 
 	noESQL, err := attrs.AsPieNoESQL()
@@ -311,10 +311,14 @@ func Test_pieChartConfigModel_toAPI_legendOmitted_PieESQL(t *testing.T) {
 		Legend: nil,
 	}
 
-	attrs, diags := model.toAPI()
+	attrs, diags := model.toAPI(nil)
 	require.False(t, diags.HasError())
 
 	esql, err := attrs.AsPieESQL()
 	require.NoError(t, err)
 	assert.Equal(t, kbapi.LegendSizeAuto, esql.Legend.Size)
+}
+
+func Test_pieChartConfig_lensChartPresentation_comprehensive(t *testing.T) {
+	runPieNoESQLLensChartPresentationComprehensive(t)
 }

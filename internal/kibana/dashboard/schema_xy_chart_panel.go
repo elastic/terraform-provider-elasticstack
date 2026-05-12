@@ -18,6 +18,8 @@
 package dashboard
 
 import (
+	"maps"
+
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
@@ -265,9 +267,11 @@ func getXYLegendSchema() map[string]schema.Attribute {
 	}
 }
 
-// getXYChartConfigAttributes returns attributes for an `xy_chart_config` block (vis panels and lens-dashboard-app by_value).
-func getXYChartConfigAttributes() map[string]schema.Attribute {
-	return map[string]schema.Attribute{
+// getXYChartConfigAttributes returns attributes for an `xy_chart_config` block.
+// When includePresentation is true, optional chart-root presentation fields (REQ-037) are merged in for `type = vis` panels only;
+// lens-dashboard-app `by_value` mirrors pass false.
+func getXYChartConfigAttributes(includePresentation bool) map[string]schema.Attribute {
+	attrs := map[string]schema.Attribute{
 		"title": schema.StringAttribute{
 			MarkdownDescription: "The title of the chart displayed in the panel.",
 			Optional:            true,
@@ -315,6 +319,10 @@ func getXYChartConfigAttributes() map[string]schema.Attribute {
 			NestedObject:        getChartFilter(),
 		},
 	}
+	if includePresentation {
+		maps.Copy(attrs, lensChartPresentationAttributes())
+	}
+	return attrs
 }
 
 // getXYLayerSchema returns the schema for XY chart layers

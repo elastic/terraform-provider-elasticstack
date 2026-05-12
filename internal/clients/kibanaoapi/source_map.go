@@ -106,16 +106,22 @@ func UploadSourceMap(ctx context.Context, client *Client, opts UploadSourceMapOp
 }
 
 // ListSourceMaps fetches one page of source map artifacts from Kibana.
-func ListSourceMaps(ctx context.Context, client *Client, spaceID string, page, perPage float32) ([]SourceMapArtifact, fwdiags.Diagnostics) {
+func ListSourceMaps(ctx context.Context, client *Client, spaceID string, page, perPage *float32) ([]SourceMapArtifact, fwdiags.Diagnostics) {
 	var diags fwdiags.Diagnostics
+
+	params := &kbapi.GetSourceMapsParams{
+		ElasticApiVersion: kbapi.GetSourceMapsParamsElasticApiVersionN20231031,
+	}
+	if page != nil {
+		params.Page = page
+	}
+	if perPage != nil {
+		params.PerPage = perPage
+	}
 
 	apiResp, err := client.API.GetSourceMapsWithResponse(
 		ctx,
-		&kbapi.GetSourceMapsParams{
-			Page:              &page,
-			PerPage:           &perPage,
-			ElasticApiVersion: kbapi.GetSourceMapsParamsElasticApiVersionN20231031,
-		},
+		params,
 		kibanautil.SpaceAwarePathRequestEditor(spaceID),
 	)
 	if err != nil {
