@@ -29,12 +29,33 @@ import (
 
 const mlCalendarEventsPageSize = 1000
 
+// mlCalendarEventsPageFetcher loads one page of ML calendar events (used for tests and production).
+type mlCalendarEventsPageFetcher interface {
+	FetchMLCalendarEventsPage(ctx context.Context, calendarID string, from, size int) ([]types.CalendarEvent, error)
+}
+
+type typedClientCalendarEventsFetcher struct {
+	client *elasticsearch.TypedClient
+}
+
+func (f typedClientCalendarEventsFetcher) FetchMLCalendarEventsPage(ctx context.Context, calendarID string, from, size int) ([]types.CalendarEvent, error) {
+	res, err := f.client.Ml.GetCalendarEvents(calendarID).From(from).Size(size).Do(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return res.Events, nil
+}
+
 // walkMLCalendarEventPages calls fn for each page of calendar events until fn returns true,
 // an error occurs, or there are no more events.
 func walkMLCalendarEventPages(ctx context.Context, typedClient *elasticsearch.TypedClient, calendarID string, fn func([]types.CalendarEvent) (stop bool)) fwdiags.Diagnostics {
+	return walkMLCalendarEventPagesWith(ctx, typedClientCalendarEventsFetcher{client: typedClient}, calendarID, fn)
+}
+
+func walkMLCalendarEventPagesWith(ctx context.Context, fetcher mlCalendarEventsPageFetcher, calendarID string, fn func([]types.CalendarEvent) (stop bool)) fwdiags.Diagnostics {
 	var diags fwdiags.Diagnostics
 	for from := 0; ; from += mlCalendarEventsPageSize {
-		res, err := typedClient.Ml.GetCalendarEvents(calendarID).From(from).Size(mlCalendarEventsPageSize).Do(ctx)
+		events, err := fetcher.FetchMLCalendarEventsPage(ctx, calendarID, from, mlCalendarEventsPageSize)
 		if err != nil {
 			var esErr *types.ElasticsearchError
 			if from == 0 && errors.As(err, &esErr) && esErr.Status == 404 {
@@ -46,13 +67,13 @@ func walkMLCalendarEventPages(ctx context.Context, typedClient *elasticsearch.Ty
 			)
 			return diags
 		}
-		if len(res.Events) == 0 {
+		if len(events) == 0 {
 			return diags
 		}
-		if fn(res.Events) {
+		if fn(events) {
 			return diags
 		}
-		if len(res.Events) < mlCalendarEventsPageSize {
+		if len(events) < mlCalendarEventsPageSize {
 			return diags
 		}
 	}

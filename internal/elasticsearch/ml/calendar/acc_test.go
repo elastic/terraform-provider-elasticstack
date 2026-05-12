@@ -19,6 +19,8 @@ package calendar_test
 
 import (
 	"fmt"
+	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -122,6 +124,88 @@ func TestAccResourceMLCalendarImport(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"calendar_id": config.StringVariable(calendarID),
 				},
+			},
+		},
+	})
+}
+
+func TestAccResourceMLCalendar_validation_invalidCalendarIDRegex(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				Config: `
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_ml_calendar" "bad" {
+  calendar_id = "INVALID_UPPER"
+  description = "x"
+}
+`,
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile(`(?i)(calendar_id|invalid|match|lowercase|alphanumeric)`),
+			},
+		},
+	})
+}
+
+func TestAccResourceMLCalendar_validation_calendarIDTooLong(t *testing.T) {
+	longID := strings.Repeat("a", 65)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				Config: fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_ml_calendar" "bad" {
+  calendar_id = %q
+  description = "x"
+}
+`, longID),
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile(`(?i)(calendar_id|64|length)`),
+			},
+		},
+	})
+}
+
+func TestAccResourceMLCalendar_importWrongIDFormat(t *testing.T) {
+	calendarID := fmt.Sprintf("test-cal-badimp-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	cfg := fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_ml_calendar" "test" {
+  calendar_id = %q
+  description   = "Calendar for import test"
+}
+`, calendarID)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				Config:                   cfg,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_ml_calendar.test", "id"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				Config:                   cfg,
+				ResourceName:             "elasticstack_elasticsearch_ml_calendar.test",
+				ImportState:              true,
+				ImportStateId:            "not-a-valid-composite-id",
+				ExpectError:              regexp.MustCompile(`Wrong resource ID`),
 			},
 		},
 	})
