@@ -567,61 +567,42 @@ func stringToInt64(v string) (int64, error) {
 	return res, err
 }
 
-func syntheticsMonitorTimeoutToInt64(v *kbapi.SyntheticsMonitor_Timeout) (int64, error) {
-	if v == nil {
-		return 0, nil
-	}
-
-	if s, err := v.AsSyntheticsMonitorTimeout0(); err == nil {
+// unionToInt64 converts a string-or-float32 union type to int64 using the provided accessor callbacks.
+// The float variant must represent a whole number; fractional values are rejected.
+func unionToInt64(asStr func() (string, error), asFloat func() (float32, error), fieldName string) (int64, error) {
+	if s, err := asStr(); err == nil {
 		return stringToInt64(s)
 	}
 
-	if n, err := v.AsSyntheticsMonitorTimeout1(); err == nil {
+	if n, err := asFloat(); err == nil {
 		if math.Trunc(float64(n)) != float64(n) {
-			return 0, fmt.Errorf("timeout must be a whole number, got %v", n)
+			return 0, fmt.Errorf("%s must be a whole number, got %v", fieldName, n)
 		}
 		return int64(n), nil
 	}
 
-	return 0, fmt.Errorf("timeout has unsupported type")
+	return 0, fmt.Errorf("%s has unsupported type", fieldName)
+}
+
+func syntheticsMonitorTimeoutToInt64(v *kbapi.SyntheticsMonitor_Timeout) (int64, error) {
+	if v == nil {
+		return 0, nil
+	}
+	return unionToInt64(v.AsSyntheticsMonitorTimeout0, v.AsSyntheticsMonitorTimeout1, "timeout")
 }
 
 func syntheticsMonitorWaitToInt64(v *kbapi.SyntheticsMonitor_Wait) (int64, error) {
 	if v == nil {
 		return 0, nil
 	}
-
-	if s, err := v.AsSyntheticsMonitorWait0(); err == nil {
-		return stringToInt64(s)
-	}
-
-	if n, err := v.AsSyntheticsMonitorWait1(); err == nil {
-		if math.Trunc(float64(n)) != float64(n) {
-			return 0, fmt.Errorf("wait must be a whole number, got %v", n)
-		}
-		return int64(n), nil
-	}
-
-	return 0, fmt.Errorf("wait has unsupported type")
+	return unionToInt64(v.AsSyntheticsMonitorWait0, v.AsSyntheticsMonitorWait1, "wait")
 }
 
 func syntheticsMonitorMaxRedirectsToInt64(v *kbapi.SyntheticsMonitor_MaxRedirects) (int64, error) {
 	if v == nil {
 		return 0, nil
 	}
-
-	if s, err := v.AsSyntheticsMonitorMaxRedirects0(); err == nil {
-		return stringToInt64(s)
-	}
-
-	if n, err := v.AsSyntheticsMonitorMaxRedirects1(); err == nil {
-		if math.Trunc(float64(n)) != float64(n) {
-			return 0, fmt.Errorf("max_redirects must be a whole number, got %v", n)
-		}
-		return int64(n), nil
-	}
-
-	return 0, fmt.Errorf("max_redirects has unsupported type")
+	return unionToInt64(v.AsSyntheticsMonitorMaxRedirects0, v.AsSyntheticsMonitorMaxRedirects1, "max_redirects")
 }
 
 func (v *tfModelV0) toModelV0(ctx context.Context, api *kbapi.SyntheticsMonitor, space string) (*tfModelV0, diag.Diagnostics) {
