@@ -57,12 +57,12 @@
 
 ## 8. Update existing acceptance and unit tests
 
-- [ ] 8.1 Inventory all acceptance tests using a panel-level chart block: `acc_xy_panels_test.go`, `acc_metric_panels_test.go`, `acc_legacy_metric_panels_test.go`, `acc_gauge_panels_test.go`, `acc_heatmap_panels_test.go`, `acc_tagcloud_panels_test.go`, `acc_region_map_panels_test.go`, `acc_datatable_panels_test.go`, `acc_pie_chart_panels_test.go`, `acc_mosaic_panels_test.go`, `acc_treemap_panels_test.go`, `acc_waffle_panels_test.go`. For each, wrap the chart block HCL in `viz_config = { by_value = { ... } }` and update `resource.TestCheckResourceAttr` paths accordingly.
-- [ ] 8.2 Update `acc_lens_dashboard_app_panels_test.go` to use structured `drilldowns` instead of `drilldowns_json` (covered by step 3.6 — confirm here).
-- [ ] 8.3 Update unit-test fixtures in `models_*_panel_test.go` and `models_panels_test.go` to reflect the new model nesting where they construct `panelModel` directly.
-- [ ] 8.4 Update `lens_by_value_embed_wiring_test.go`, `lens_dashboard_app_validator_test.go`, `models_lens_by_value_union_parity_test.go` to reflect new helper functions and structured drilldowns.
-- [ ] 8.5 Update `panel_config_validator_test.go` to cover the simplified mutual-exclusion shape.
-- [ ] 8.6 Run `go test ./internal/kibana/dashboard/... -count=1 -short` (unit) and confirm all pass.
+- [x] 8.1 Inventory all acceptance tests using a panel-level chart block: `acc_xy_panels_test.go`, `acc_metric_panels_test.go`, `acc_legacy_metric_panels_test.go`, `acc_gauge_panels_test.go`, `acc_heatmap_panels_test.go`, `acc_tagcloud_panels_test.go`, `acc_region_map_panels_test.go`, `acc_datatable_panels_test.go`, `acc_pie_chart_panels_test.go`, `acc_mosaic_panels_test.go`, `acc_treemap_panels_test.go`, `acc_waffle_panels_test.go`. For each, wrap the chart block HCL in `viz_config = { by_value = { ... } }` and update `resource.TestCheckResourceAttr` paths accordingly.
+- [x] 8.2 Update `acc_lens_dashboard_app_panels_test.go` to use structured `drilldowns` instead of `drilldowns_json` (covered by step 3.6 — confirm here).
+- [x] 8.3 Update unit-test fixtures in `models_*_panel_test.go` and `models_panels_test.go` to reflect the new model nesting where they construct `panelModel` directly.
+- [x] 8.4 Update `lens_by_value_embed_wiring_test.go`, `lens_dashboard_app_validator_test.go`, `models_lens_by_value_union_parity_test.go` to reflect new helper functions and structured drilldowns.
+- [x] 8.5 Update `panel_config_validator_test.go` to cover the simplified mutual-exclusion shape.
+- [x] 8.6 Run `go test ./internal/kibana/dashboard/... -count=1 -short` (unit) and confirm all pass.
 
 ## 9. Add new acceptance coverage for `viz_config` and structured drilldowns
 
