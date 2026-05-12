@@ -33,7 +33,9 @@ var structuredDrilldownURLTriggerEnum = []string{
 
 func getStructuredDrilldownsAttribute() schema.Attribute {
 	return schema.ListNestedAttribute{
-		MarkdownDescription: "Structured dashboard, Discover, or URL drilldown entries for by-reference Lens (`lens_dashboard_app`) panels. " +
+		MarkdownDescription: "Structured dashboard, Discover, or URL drilldown entries for by-reference Lens panels " +
+			"(Kibana panel type `lens-dashboard-app`), including `lens_dashboard_app_config.by_reference` " +
+			"and `viz_config.by_reference`. " +
 			"This helper is reused as additional panel types adopt the same drilldown union. " +
 			"Each element must contain exactly one of `dashboard`, `discover`, or `url`; " +
 			"the provider sets API `type` and (for dashboard/discover) `trigger` automatically.",
