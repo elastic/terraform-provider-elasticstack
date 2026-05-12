@@ -420,5 +420,3 @@ func readImageURLDrilldownFromAPI(api kbapi.KbnDashboardPanelTypeImageConfigDril
 
 	return m
 }
-
-

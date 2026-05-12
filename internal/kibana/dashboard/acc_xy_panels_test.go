@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/acctest/checks"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -69,13 +70,9 @@ func TestAccResourceDashboardXYChartMinimalConfig(t *testing.T) {
 	})
 }
 
-var xyChartDataLayerBreakdownRe = regexp.MustCompile(
-	`(?s)^\{.*"collapse_by"\s*:\s*"avg".*"column"\s*:\s*"host\.name".*"mode"\s*:\s*"categorical".*\}$`,
-)
+const xyChartDataLayerBreakdownExpected = `{"collapse_by":"avg","color":{"mapping":[{"color":{"type":"color_code","value":"#54B399"},"values":["host-a"]}],"mode":"categorical","palette":"default","unassigned":{"type":"color_code","value":"#D3DAE6"}},"column":"host.name","format":{"type":"number"}}`
 
-var xyChartPresentationReferencesRe = regexp.MustCompile(
-	`(?s)^\[.*"id"\s*:\s*"acc-ref-id".*"name"\s*:\s*"acc-ref-name".*"type"\s*:\s*"index-pattern".*\]$`,
-)
+const xyChartPresentationReferencesExpected = `[{"id":"acc-ref-id","name":"acc-ref-name","type":"index-pattern"}]`
 
 func TestAccResourceDashboardXYChart_basic(t *testing.T) {
 	dashboardTitle := "Test Dashboard with XY Chart " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
@@ -306,10 +303,10 @@ func TestAccResourceDashboardXYChart_layers(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.xy_chart_config.layers.0.data_layer.ignore_global_filters", "false"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.xy_chart_config.layers.0.data_layer.sampling", "1"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.xy_chart_config.layers.0.data_layer.x_json"),
-					resource.TestMatchResourceAttr(
+					checks.TestCheckResourceAttrJSONSubset(
 						"elasticstack_kibana_dashboard.test",
 						"panels.0.viz_config.by_value.xy_chart_config.layers.0.data_layer.breakdown_by_json",
-						xyChartDataLayerBreakdownRe,
+						xyChartDataLayerBreakdownExpected,
 					),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.xy_chart_config.layers.0.data_layer.y.#", "1"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.xy_chart_config.layers.0.data_layer.y.0.config_json"),
@@ -450,8 +447,6 @@ func TestAccResourceDashboardXYChart_chartTimeRangeLifecycle(t *testing.T) {
 	})
 }
 
-
-
 func TestAccResourceDashboardXYChart_lensPresentationFields(t *testing.T) {
 	dashboardTitle := "Test Dashboard XY presentation " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 	targetTitle := "Test Dashboard XY presentation target " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
@@ -470,7 +465,7 @@ func TestAccResourceDashboardXYChart_lensPresentationFields(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.xy_chart_config.hide_title", "true"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.xy_chart_config.hide_border", "true"),
-					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.xy_chart_config.references_json", xyChartPresentationReferencesRe),
+					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.xy_chart_config.references_json", xyChartPresentationReferencesExpected),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.xy_chart_config.drilldowns.#", "3"),
 					resource.TestCheckResourceAttrPair(
 						"elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.xy_chart_config.drilldowns.0.dashboard_drilldown.dashboard_id",
@@ -496,7 +491,7 @@ func TestAccResourceDashboardXYChart_lensPresentationFields(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.xy_chart_config.hide_title", "false"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.xy_chart_config.hide_border", "true"),
-					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.xy_chart_config.references_json", xyChartPresentationReferencesRe),
+					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.xy_chart_config.references_json", xyChartPresentationReferencesExpected),
 					resource.TestCheckResourceAttrPair(
 						"elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.xy_chart_config.drilldowns.0.dashboard_drilldown.dashboard_id",
 						"elasticstack_kibana_dashboard.target", "dashboard_id",

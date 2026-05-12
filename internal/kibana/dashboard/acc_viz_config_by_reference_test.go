@@ -29,11 +29,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 )
 
-const vizByRefDashboard = "elasticstack_kibana_dashboard.test"
+const (
+	vizByRefDashboard = "elasticstack_kibana_dashboard.test"
+	vizByRefPath      = "panels.0.viz_config.by_reference"
+)
 
 func TestAccResourceDashboardVizConfigByReference_minimal(t *testing.T) {
 	dashboardTitle := "Acc viz by-ref min " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
-	br := "panels.0.viz_config.by_reference"
+	br := vizByRefPath
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
@@ -74,7 +77,7 @@ func TestAccResourceDashboardVizConfigByReference_full(t *testing.T) {
 	dashboardTitle := "Acc viz by-ref full " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 	refWire := regexp.MustCompile(`aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee`)
 	typeLens := regexp.MustCompile(`"type"\s*:\s*"lens"`)
-	br := "panels.0.viz_config.by_reference"
+	br := vizByRefPath
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
@@ -271,7 +274,7 @@ func TestAccResourceDashboardVizConfigByReference_urlDrilldownExplicitTrigger(t 
 
 func TestAccResourceDashboardVizConfigByReference_valueToReference_update(t *testing.T) {
 	dashboardTitle := "Acc viz val2ref " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
-	br := "panels.0.viz_config.by_reference"
+	br := vizByRefPath
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
