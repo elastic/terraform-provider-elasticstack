@@ -19,6 +19,7 @@ package calendar_test
 
 import (
 	"fmt"
+	"os"
 	"regexp"
 	"strings"
 	"testing"
@@ -179,15 +180,13 @@ resource "elasticstack_elasticsearch_ml_calendar" "bad" {
 func TestAccResourceMLCalendar_importWrongIDFormat(t *testing.T) {
 	calendarID := fmt.Sprintf("test-cal-badimp-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	cfg := fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
+%s
 
 resource "elasticstack_elasticsearch_ml_calendar" "test" {
   calendar_id = %q
   description   = "Calendar for import test"
 }
-`, calendarID)
+`, testAccElasticstackProviderBlockWithESFromEnv(t), calendarID)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -209,4 +208,33 @@ resource "elasticstack_elasticsearch_ml_calendar" "test" {
 			},
 		},
 	})
+}
+
+// testAccElasticstackProviderBlockWithESFromEnv returns a provider block with explicit
+// elasticsearch.endpoints so post-test destroy still configures the client after import
+// steps that expect errors (the harness can otherwise lose env-based config for destroy).
+//
+// When ELASTICSEARCH_ENDPOINTS is unset (e.g. TF_ACC is off and the test will skip), this
+// falls back to the empty elasticsearch block so the test file can still compile and
+// validate without a cluster.
+func testAccElasticstackProviderBlockWithESFromEnv(t *testing.T) string {
+	t.Helper()
+	raw := strings.TrimSpace(os.Getenv("ELASTICSEARCH_ENDPOINTS"))
+	if raw == "" {
+		return `provider "elasticstack" {
+  elasticsearch {}
+}`
+	}
+	parts := strings.Split(raw, ",")
+	ep := strings.TrimSpace(parts[0])
+	if ep == "" {
+		return `provider "elasticstack" {
+  elasticsearch {}
+}`
+	}
+	return fmt.Sprintf(`provider "elasticstack" {
+  elasticsearch {
+    endpoints = [%q]
+  }
+}`, ep)
 }

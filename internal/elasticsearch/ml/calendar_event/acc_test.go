@@ -19,7 +19,9 @@ package calendar_event_test
 
 import (
 	"fmt"
+	"os"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -158,9 +160,7 @@ resource "elasticstack_elasticsearch_ml_calendar_event" "bad" {
 func TestAccResourceMLCalendarEvent_importWrongIDFormat(t *testing.T) {
 	calendarID := fmt.Sprintf("test-cal-evt-badimp-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	cfg := fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
+%s
 
 resource "elasticstack_elasticsearch_ml_calendar" "test" {
   calendar_id = %q
@@ -172,7 +172,7 @@ resource "elasticstack_elasticsearch_ml_calendar_event" "test" {
   start_time  = "2026-07-01T00:00:00Z"
   end_time    = "2026-07-01T12:00:00Z"
 }
-`, calendarID)
+`, testAccElasticstackProviderBlockWithESFromEnv(t), calendarID)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -194,4 +194,26 @@ resource "elasticstack_elasticsearch_ml_calendar_event" "test" {
 			},
 		},
 	})
+}
+
+func testAccElasticstackProviderBlockWithESFromEnv(t *testing.T) string {
+	t.Helper()
+	raw := strings.TrimSpace(os.Getenv("ELASTICSEARCH_ENDPOINTS"))
+	if raw == "" {
+		return `provider "elasticstack" {
+  elasticsearch {}
+}`
+	}
+	parts := strings.Split(raw, ",")
+	ep := strings.TrimSpace(parts[0])
+	if ep == "" {
+		return `provider "elasticstack" {
+  elasticsearch {}
+}`
+	}
+	return fmt.Sprintf(`provider "elasticstack" {
+  elasticsearch {
+    endpoints = [%q]
+  }
+}`, ep)
 }
