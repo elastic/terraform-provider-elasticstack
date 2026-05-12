@@ -323,24 +323,24 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 
 			switch branch {
 			case markdownConfigBranchByReference:
-				if populateMarkdownFromAPIAttemptByReference(&pm, tfPanel, markdownPanel.Config) {
+				if populateMarkdownFromAPIAttemptByReference(&pm, tfPanel, markdownPanel.Config, true) {
 					break
 				}
-				if !populateMarkdownFromAPIAttemptByValue(&pm, tfPanel, markdownPanel.Config) {
+				if !populateMarkdownFromAPIAttemptByValue(&pm, tfPanel, markdownPanel.Config, true) {
 					decodeMarkdownFails()
 				}
 			case markdownConfigBranchByValue:
-				if populateMarkdownFromAPIAttemptByValue(&pm, tfPanel, markdownPanel.Config) {
+				if populateMarkdownFromAPIAttemptByValue(&pm, tfPanel, markdownPanel.Config, true) {
 					break
 				}
-				if !populateMarkdownFromAPIAttemptByReference(&pm, tfPanel, markdownPanel.Config) {
+				if !populateMarkdownFromAPIAttemptByReference(&pm, tfPanel, markdownPanel.Config, true) {
 					decodeMarkdownFails()
 				}
 			default:
-				if populateMarkdownFromAPIAttemptByValue(&pm, tfPanel, markdownPanel.Config) {
+				if populateMarkdownFromAPIAttemptByValue(&pm, tfPanel, markdownPanel.Config, false) {
 					break
 				}
-				if !populateMarkdownFromAPIAttemptByReference(&pm, tfPanel, markdownPanel.Config) {
+				if !populateMarkdownFromAPIAttemptByReference(&pm, tfPanel, markdownPanel.Config, false) {
 					decodeMarkdownFails()
 				}
 			}

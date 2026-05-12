@@ -84,14 +84,18 @@ func classifyMarkdownConfigFromRoot(configBytes []byte) (markdownConfigBranch, e
 }
 
 // populateMarkdownFromAPIAttemptByValue decodes config as KbnDashboardPanelTypeMarkdownConfig0 (with JSON fallback).
-func populateMarkdownFromAPIAttemptByValue(pm *panelModel, tfPanel *panelModel, config kbapi.KbnDashboardPanelTypeMarkdown_Config) bool {
+// When enforceClassifier is true, raw JSON must classify as by-value (disambiguates the markdown union); when false,
+// decoding is attempted for unknown-shaped payloads so REQ-010 can fall through to config_json when types fail.
+func populateMarkdownFromAPIAttemptByValue(pm *panelModel, tfPanel *panelModel, config kbapi.KbnDashboardPanelTypeMarkdown_Config, enforceClassifier bool) bool {
 	raw, mErr := config.MarshalJSON()
 	if mErr != nil {
 		return false
 	}
-	branch, err := classifyMarkdownConfigFromRoot(raw)
-	if err != nil || branch != markdownConfigBranchByValue {
-		return false
+	if enforceClassifier {
+		branch, err := classifyMarkdownConfigFromRoot(raw)
+		if err != nil || branch != markdownConfigBranchByValue {
+			return false
+		}
 	}
 	config0, err := config.AsKbnDashboardPanelTypeMarkdownConfig0()
 	if err != nil {
@@ -106,14 +110,18 @@ func populateMarkdownFromAPIAttemptByValue(pm *panelModel, tfPanel *panelModel, 
 }
 
 // populateMarkdownFromAPIAttemptByReference decodes config as KbnDashboardPanelTypeMarkdownConfig1.
-func populateMarkdownFromAPIAttemptByReference(pm *panelModel, tfPanel *panelModel, config kbapi.KbnDashboardPanelTypeMarkdown_Config) bool {
+// When enforceClassifier is true, raw JSON must classify as by-reference; when false, decoding is only attempted
+// when the payload is a valid by-reference shape (non-empty ref_id after parse).
+func populateMarkdownFromAPIAttemptByReference(pm *panelModel, tfPanel *panelModel, config kbapi.KbnDashboardPanelTypeMarkdown_Config, enforceClassifier bool) bool {
 	raw, mErr := config.MarshalJSON()
 	if mErr != nil {
 		return false
 	}
-	branch, err := classifyMarkdownConfigFromRoot(raw)
-	if err != nil || branch != markdownConfigBranchByReference {
-		return false
+	if enforceClassifier {
+		branch, err := classifyMarkdownConfigFromRoot(raw)
+		if err != nil || branch != markdownConfigBranchByReference {
+			return false
+		}
 	}
 	cfg1, err := config.AsKbnDashboardPanelTypeMarkdownConfig1()
 	if err != nil {
