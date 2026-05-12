@@ -91,7 +91,9 @@ func newMetricChartPanelConfigConverter() metricChartPanelConfigConverter {
 	return metricChartPanelConfigConverter{
 		lensVisualizationBase: lensVisualizationBase{
 			visualizationType: string(kbapi.MetricNoESQLTypeMetric),
-			hasTFPanelConfig:  func(pm panelModel) bool { return pm.MetricChartConfig != nil },
+			hasTFChartBlock: func(blocks *lensByValueChartBlocks) bool {
+				return blocks != nil && blocks.MetricChartConfig != nil
+			},
 		},
 	}
 }
@@ -100,35 +102,34 @@ type metricChartPanelConfigConverter struct {
 	lensVisualizationBase
 }
 
-func (c metricChartPanelConfigConverter) populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
+func (c metricChartPanelConfigConverter) populateFromAttributes(ctx context.Context, blocks *lensByValueChartBlocks, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
 	// Populate the model.
 	//
 	// Disambiguate variant 0 vs 1 using dataset type. The regenerated API can
 	// return an empty standard-query object, so query presence is not reliable.
 	//
 	// Always allocate a fresh metricChartConfigModel so that fromAPIVariant0/1
-	// does not mutate the plan's struct (pm is seeded from the plan via pm = *tfPanel,
-	// so pm.MetricChartConfig is aliased to the plan's pointer). Seed the fresh
-	// struct with the prior metrics slice so the inline priorMetrics preservation
+	// does not mutate the plan's struct (blocks is seeded from the plan via panel
+	// read path). Seed the fresh struct with the prior metrics slice so the inline priorMetrics preservation
 	// inside fromAPIVariant0 can still compare against plan values.
-	priorConfig := pm.MetricChartConfig
-	pm.MetricChartConfig = &metricChartConfigModel{}
+	priorConfig := blocks.MetricChartConfig
+	blocks.MetricChartConfig = &metricChartConfigModel{}
 	if priorConfig != nil {
-		pm.MetricChartConfig.Metrics = priorConfig.Metrics
+		blocks.MetricChartConfig.Metrics = priorConfig.Metrics
 	}
 	if variant0, err := attrs.AsMetricNoESQL(); err == nil && !isMetricNoESQLCandidateActuallyESQL(variant0) {
-		return pm.MetricChartConfig.fromAPIVariant0(ctx, variant0)
+		return blocks.MetricChartConfig.fromAPIVariant0(ctx, variant0)
 	}
 	variant1, err := attrs.AsMetricESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	return pm.MetricChartConfig.fromAPIVariant1(ctx, variant1)
+	return blocks.MetricChartConfig.fromAPIVariant1(ctx, variant1)
 }
 
-func (c metricChartPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func (c metricChartPanelConfigConverter) buildAttributes(blocks *lensByValueChartBlocks) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	configModel := *pm.MetricChartConfig
+	configModel := *blocks.MetricChartConfig
 
 	// Convert the structured model to API schema
 	attrs, metricDiags := configModel.toAPI()

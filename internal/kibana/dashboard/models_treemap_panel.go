@@ -35,7 +35,9 @@ func newTreemapPanelConfigConverter() treemapPanelConfigConverter {
 	return treemapPanelConfigConverter{
 		lensVisualizationBase: lensVisualizationBase{
 			visualizationType: string(kbapi.TreemapNoESQLTypeTreemap),
-			hasTFPanelConfig:  func(pm panelModel) bool { return pm.TreemapConfig != nil },
+			hasTFChartBlock: func(blocks *lensByValueChartBlocks) bool {
+				return blocks != nil && blocks.TreemapConfig != nil
+			},
 		},
 	}
 }
@@ -44,25 +46,25 @@ type treemapPanelConfigConverter struct {
 	lensVisualizationBase
 }
 
-func (c treemapPanelConfigConverter) populateFromAttributes(_ context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
-	if pm.TreemapConfig == nil {
-		pm.TreemapConfig = &treemapConfigModel{}
+func (c treemapPanelConfigConverter) populateFromAttributes(_ context.Context, blocks *lensByValueChartBlocks, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
+	if blocks.TreemapConfig == nil {
+		blocks.TreemapConfig = &treemapConfigModel{}
 	}
 
 	if noESQL, err := attrs.AsTreemapNoESQL(); err == nil && !isTreemapNoESQLCandidateActuallyESQL(noESQL) {
-		return pm.TreemapConfig.fromAPINoESQL(noESQL)
+		return blocks.TreemapConfig.fromAPINoESQL(noESQL)
 	}
 
 	treemapESQL, err := attrs.AsTreemapESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	return pm.TreemapConfig.fromAPIESQL(treemapESQL)
+	return blocks.TreemapConfig.fromAPIESQL(treemapESQL)
 }
 
-func (c treemapPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func (c treemapPanelConfigConverter) buildAttributes(blocks *lensByValueChartBlocks) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	configModel := *pm.TreemapConfig
+	configModel := *blocks.TreemapConfig
 
 	attrs, treemapDiags := configModel.toAPI()
 	diags.Append(treemapDiags...)

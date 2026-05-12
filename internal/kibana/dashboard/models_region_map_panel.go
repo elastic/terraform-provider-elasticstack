@@ -34,7 +34,9 @@ func newRegionMapPanelConfigConverter() regionMapPanelConfigConverter {
 	return regionMapPanelConfigConverter{
 		lensVisualizationBase: lensVisualizationBase{
 			visualizationType: string(kbapi.RegionMapNoESQLTypeRegionMap),
-			hasTFPanelConfig:  func(pm panelModel) bool { return pm.RegionMapConfig != nil },
+			hasTFChartBlock: func(blocks *lensByValueChartBlocks) bool {
+				return blocks != nil && blocks.RegionMapConfig != nil
+			},
 		},
 	}
 }
@@ -43,18 +45,18 @@ type regionMapPanelConfigConverter struct {
 	lensVisualizationBase
 }
 
-func (c regionMapPanelConfigConverter) populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
-	pm.RegionMapConfig = &regionMapConfigModel{}
+func (c regionMapPanelConfigConverter) populateFromAttributes(ctx context.Context, blocks *lensByValueChartBlocks, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
+	blocks.RegionMapConfig = &regionMapConfigModel{}
 
 	if noESQL, err := attrs.AsRegionMapNoESQL(); err == nil && !isRegionMapNoESQLCandidateActuallyESQL(noESQL) {
-		return pm.RegionMapConfig.fromAPINoESQL(ctx, noESQL)
+		return blocks.RegionMapConfig.fromAPINoESQL(ctx, noESQL)
 	}
 
 	regionMapESQL, err := attrs.AsRegionMapESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	return pm.RegionMapConfig.fromAPIESQL(ctx, regionMapESQL)
+	return blocks.RegionMapConfig.fromAPIESQL(ctx, regionMapESQL)
 }
 
 func isRegionMapNoESQLCandidateActuallyESQL(api kbapi.RegionMapNoESQL) bool {
@@ -71,9 +73,9 @@ func isRegionMapNoESQLCandidateActuallyESQL(api kbapi.RegionMapNoESQL) bool {
 	return ds.Type == legacyMetricDatasetTypeESQL || ds.Type == legacyMetricDatasetTypeTable
 }
 
-func (c regionMapPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func (c regionMapPanelConfigConverter) buildAttributes(blocks *lensByValueChartBlocks) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	configModel := *pm.RegionMapConfig
+	configModel := *blocks.RegionMapConfig
 
 	attrs, regionDiags := configModel.toAPI()
 	diags.Append(regionDiags...)

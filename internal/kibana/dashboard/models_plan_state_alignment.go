@@ -41,17 +41,21 @@ func alignPanelStateFromPlan(ctx context.Context, plan, state *panelModel) {
 	}
 
 	preservePlanJSONIfStateOmitsOptionalKeys(plan.ConfigJSON.Normalized, &state.ConfigJSON.Normalized, "filters", "query", "settings")
-	alignDatatableStateFromPlan(plan.DatatableConfig, state.DatatableConfig)
-	alignGaugeStateFromPlan(ctx, plan.GaugeConfig, state.GaugeConfig)
-	alignHeatmapStateFromPlan(ctx, plan.HeatmapConfig, state.HeatmapConfig)
-	alignLegacyMetricStateFromPlan(ctx, plan.LegacyMetricConfig, state.LegacyMetricConfig)
-	alignMetricStateFromPlan(plan.MetricChartConfig, state.MetricChartConfig)
-	alignMosaicStateFromPlan(plan.MosaicConfig, state.MosaicConfig)
-	alignPieStateFromPlan(plan.PieChartConfig, state.PieChartConfig)
-	alignRegionMapStateFromPlan(ctx, plan.RegionMapConfig, state.RegionMapConfig)
-	alignTagcloudStateFromPlan(ctx, plan.TagcloudConfig, state.TagcloudConfig)
-	alignTreemapStateFromPlan(plan.TreemapConfig, state.TreemapConfig)
-	alignWaffleStateFromPlan(ctx, plan.WaffleConfig, state.WaffleConfig)
+	planBlocks := lensByValueChartBlocksFromPanel(plan)
+	stateBlocks := lensByValueChartBlocksFromPanel(state)
+	if planBlocks != nil && stateBlocks != nil {
+		alignDatatableStateFromPlan(planBlocks.DatatableConfig, stateBlocks.DatatableConfig)
+		alignGaugeStateFromPlan(ctx, planBlocks.GaugeConfig, stateBlocks.GaugeConfig)
+		alignHeatmapStateFromPlan(ctx, planBlocks.HeatmapConfig, stateBlocks.HeatmapConfig)
+		alignLegacyMetricStateFromPlan(ctx, planBlocks.LegacyMetricConfig, stateBlocks.LegacyMetricConfig)
+		alignMetricStateFromPlan(planBlocks.MetricChartConfig, stateBlocks.MetricChartConfig)
+		alignMosaicStateFromPlan(planBlocks.MosaicConfig, stateBlocks.MosaicConfig)
+		alignPieStateFromPlan(planBlocks.PieChartConfig, stateBlocks.PieChartConfig)
+		alignRegionMapStateFromPlan(ctx, planBlocks.RegionMapConfig, stateBlocks.RegionMapConfig)
+		alignTagcloudStateFromPlan(ctx, planBlocks.TagcloudConfig, stateBlocks.TagcloudConfig)
+		alignTreemapStateFromPlan(planBlocks.TreemapConfig, stateBlocks.TreemapConfig)
+		alignWaffleStateFromPlan(ctx, planBlocks.WaffleConfig, stateBlocks.WaffleConfig)
+	}
 	alignEsqlControlStateFromPlan(plan.EsqlControlConfig, state.EsqlControlConfig)
 }
 

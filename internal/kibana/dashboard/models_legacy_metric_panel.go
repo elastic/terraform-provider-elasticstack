@@ -41,7 +41,9 @@ func newLegacyMetricPanelConfigConverter() legacyMetricPanelConfigConverter {
 	return legacyMetricPanelConfigConverter{
 		lensVisualizationBase: lensVisualizationBase{
 			visualizationType: string(kbapi.LegacyMetric),
-			hasTFPanelConfig:  func(pm panelModel) bool { return pm.LegacyMetricConfig != nil },
+			hasTFChartBlock: func(blocks *lensByValueChartBlocks) bool {
+				return blocks != nil && blocks.LegacyMetricConfig != nil
+			},
 		},
 	}
 }
@@ -50,19 +52,19 @@ type legacyMetricPanelConfigConverter struct {
 	lensVisualizationBase
 }
 
-func (c legacyMetricPanelConfigConverter) populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
+func (c legacyMetricPanelConfigConverter) populateFromAttributes(ctx context.Context, blocks *lensByValueChartBlocks, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
 	legacyMetric, err := attrs.AsLegacyMetricNoESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	pm.LegacyMetricConfig = &legacyMetricConfigModel{}
-	return pm.LegacyMetricConfig.fromAPINoESQL(ctx, legacyMetric)
+	blocks.LegacyMetricConfig = &legacyMetricConfigModel{}
+	return blocks.LegacyMetricConfig.fromAPINoESQL(ctx, legacyMetric)
 }
 
-func (c legacyMetricPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func (c legacyMetricPanelConfigConverter) buildAttributes(blocks *lensByValueChartBlocks) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	configModel := *pm.LegacyMetricConfig
+	configModel := *blocks.LegacyMetricConfig
 
 	attrs, legacyDiags := configModel.toAPI()
 	diags.Append(legacyDiags...)

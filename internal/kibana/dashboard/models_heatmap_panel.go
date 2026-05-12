@@ -34,7 +34,9 @@ func newHeatmapPanelConfigConverter() heatmapPanelConfigConverter {
 	return heatmapPanelConfigConverter{
 		lensVisualizationBase: lensVisualizationBase{
 			visualizationType: string(kbapi.HeatmapNoESQLTypeHeatmap),
-			hasTFPanelConfig:  func(pm panelModel) bool { return pm.HeatmapConfig != nil },
+			hasTFChartBlock: func(blocks *lensByValueChartBlocks) bool {
+				return blocks != nil && blocks.HeatmapConfig != nil
+			},
 		},
 	}
 }
@@ -43,21 +45,21 @@ type heatmapPanelConfigConverter struct {
 	lensVisualizationBase
 }
 
-func (c heatmapPanelConfigConverter) populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
-	pm.HeatmapConfig = &heatmapConfigModel{}
+func (c heatmapPanelConfigConverter) populateFromAttributes(ctx context.Context, blocks *lensByValueChartBlocks, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
+	blocks.HeatmapConfig = &heatmapConfigModel{}
 	if heatmapNoESQL, err := attrs.AsHeatmapNoESQL(); err == nil && !isHeatmapNoESQLCandidateActuallyESQL(heatmapNoESQL) {
-		return pm.HeatmapConfig.fromAPINoESQL(ctx, heatmapNoESQL)
+		return blocks.HeatmapConfig.fromAPINoESQL(ctx, heatmapNoESQL)
 	}
 	heatmapESQL, err := attrs.AsHeatmapESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	return pm.HeatmapConfig.fromAPIESQL(ctx, heatmapESQL)
+	return blocks.HeatmapConfig.fromAPIESQL(ctx, heatmapESQL)
 }
 
-func (c heatmapPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func (c heatmapPanelConfigConverter) buildAttributes(blocks *lensByValueChartBlocks) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	configModel := *pm.HeatmapConfig
+	configModel := *blocks.HeatmapConfig
 
 	attrs, heatmapDiags := configModel.toAPI()
 	diags.Append(heatmapDiags...)

@@ -22,20 +22,8 @@ package dashboard
 type vizByReferenceModel = lensDashboardAppByReferenceModel
 
 // vizByValueModel is Terraform model for viz_config.by_value (12 Lens chart kinds, no nested config_json; design D4).
-// Chart conversion helpers under models_<kind>_panel.go still use zombie panel-level panelModel pointers until task 6; field shapes align with this struct for rewiring (Option B in task 5).
 type vizByValueModel struct {
-	XYChartConfig      *xyChartConfigModel      `tfsdk:"xy_chart_config"`
-	TreemapConfig      *treemapConfigModel      `tfsdk:"treemap_config"`
-	MosaicConfig       *mosaicConfigModel       `tfsdk:"mosaic_config"`
-	DatatableConfig    *datatableConfigModel    `tfsdk:"datatable_config"`
-	TagcloudConfig     *tagcloudConfigModel     `tfsdk:"tagcloud_config"`
-	HeatmapConfig      *heatmapConfigModel      `tfsdk:"heatmap_config"`
-	WaffleConfig       *waffleConfigModel       `tfsdk:"waffle_config"`
-	RegionMapConfig    *regionMapConfigModel    `tfsdk:"region_map_config"`
-	GaugeConfig        *gaugeConfigModel        `tfsdk:"gauge_config"`
-	MetricChartConfig  *metricChartConfigModel  `tfsdk:"metric_chart_config"`
-	PieChartConfig     *pieChartConfigModel     `tfsdk:"pie_chart_config"`
-	LegacyMetricConfig *legacyMetricConfigModel `tfsdk:"legacy_metric_config"`
+	lensByValueChartBlocks
 }
 
 // vizConfigModel is nested `viz_config` on panels with type vis (design D10; mapPanelFromAPI / toAPI classification in task 6).

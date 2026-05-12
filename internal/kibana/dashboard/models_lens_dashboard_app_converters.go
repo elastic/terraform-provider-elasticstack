@@ -148,13 +148,13 @@ func lensDashboardAppByValueToAPI(
 	panelID *string,
 ) (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	if scratch, ok := lensByValueToScratchVisPanel(byValue); ok {
-		conv, okConv := firstLensVizConverterForPanel(scratch)
+	if blocks, ok := lensByValueChartBlocksForTypedLensApp(byValue); ok {
+		conv, okConv := firstLensVizConverterForChartBlocks(blocks)
 		if !okConv {
 			diags.AddError("Invalid `by_value` for lens-dashboard-app", "The typed by-value chart block could not be resolved to a Lens visualization converter.")
 			return kbapi.DashboardPanelItem{}, diags
 		}
-		vis0, d := conv.buildAttributes(scratch)
+		vis0, d := conv.buildAttributes(blocks)
 		diags.Append(d...)
 		if d.HasError() {
 			return kbapi.DashboardPanelItem{}, diags

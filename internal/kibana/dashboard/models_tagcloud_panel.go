@@ -33,7 +33,9 @@ func newTagcloudPanelConfigConverter() tagcloudPanelConfigConverter {
 	return tagcloudPanelConfigConverter{
 		lensVisualizationBase: lensVisualizationBase{
 			visualizationType: string(kbapi.TagcloudNoESQLTypeTagCloud),
-			hasTFPanelConfig:  func(pm panelModel) bool { return pm.TagcloudConfig != nil },
+			hasTFChartBlock: func(blocks *lensByValueChartBlocks) bool {
+				return blocks != nil && blocks.TagcloudConfig != nil
+			},
 		},
 	}
 }
@@ -42,20 +44,20 @@ type tagcloudPanelConfigConverter struct {
 	lensVisualizationBase
 }
 
-func (c tagcloudPanelConfigConverter) populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
+func (c tagcloudPanelConfigConverter) populateFromAttributes(ctx context.Context, blocks *lensByValueChartBlocks, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
 	tagcloudNoESQL, err := attrs.AsTagcloudNoESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
 	// Populate the model
-	pm.TagcloudConfig = &tagcloudConfigModel{}
-	return pm.TagcloudConfig.fromAPI(ctx, tagcloudNoESQL)
+	blocks.TagcloudConfig = &tagcloudConfigModel{}
+	return blocks.TagcloudConfig.fromAPI(ctx, tagcloudNoESQL)
 }
 
-func (c tagcloudPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func (c tagcloudPanelConfigConverter) buildAttributes(blocks *lensByValueChartBlocks) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	configModel := *pm.TagcloudConfig
+	configModel := *blocks.TagcloudConfig
 
 	// Convert the structured model to API schema
 	tagcloudNoESQL, tagcloudDiags := configModel.toAPI()

@@ -34,7 +34,9 @@ func newMosaicPanelConfigConverter() mosaicPanelConfigConverter {
 	return mosaicPanelConfigConverter{
 		lensVisualizationBase: lensVisualizationBase{
 			visualizationType: string(kbapi.MosaicNoESQLTypeMosaic),
-			hasTFPanelConfig:  func(pm panelModel) bool { return pm.MosaicConfig != nil },
+			hasTFChartBlock: func(blocks *lensByValueChartBlocks) bool {
+				return blocks != nil && blocks.MosaicConfig != nil
+			},
 		},
 	}
 }
@@ -43,25 +45,25 @@ type mosaicPanelConfigConverter struct {
 	lensVisualizationBase
 }
 
-func (c mosaicPanelConfigConverter) populateFromAttributes(_ context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
-	if pm.MosaicConfig == nil {
-		pm.MosaicConfig = &mosaicConfigModel{}
+func (c mosaicPanelConfigConverter) populateFromAttributes(_ context.Context, blocks *lensByValueChartBlocks, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
+	if blocks.MosaicConfig == nil {
+		blocks.MosaicConfig = &mosaicConfigModel{}
 	}
 
 	if noESQL, err := attrs.AsMosaicNoESQL(); err == nil && !isMosaicNoESQLCandidateActuallyESQL(noESQL) {
-		return pm.MosaicConfig.fromAPINoESQL(noESQL)
+		return blocks.MosaicConfig.fromAPINoESQL(noESQL)
 	}
 
 	mosaicESQL, err := attrs.AsMosaicESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	return pm.MosaicConfig.fromAPIESQL(mosaicESQL)
+	return blocks.MosaicConfig.fromAPIESQL(mosaicESQL)
 }
 
-func (c mosaicPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func (c mosaicPanelConfigConverter) buildAttributes(blocks *lensByValueChartBlocks) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	configModel := *pm.MosaicConfig
+	configModel := *blocks.MosaicConfig
 
 	attrs, mosaicDiags := configModel.toAPI()
 	diags.Append(mosaicDiags...)
