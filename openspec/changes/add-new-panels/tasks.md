@@ -28,17 +28,17 @@
 
 ## 4. Discover session panel (`type = "discover_session"`)
 
-- [ ] 4.1 Add `schema_discover_session_panel.go` with `discover_session_config`, mutually exclusive `by_value` / `by_reference` sub-blocks, the single `tab` object with mutually exclusive `dsl` / `esql` sub-blocks, typed envelope fields, the shared `time_range` helper, the shared `url_drilldown` block, and `data_source_json` JSON attributes
-- [ ] 4.2 Add validators: `by_value` xor `by_reference`; `tab.dsl` xor `tab.esql`; `view_mode` enum; `density` enum; `header_row_height` (`"1".."5"|"auto"`) and `row_height` (`"1".."20"|"auto"`) string validators; numeric bounds on `rows_per_page` / `sample_size`; drilldown trigger enum; well-formed JSON for `data_source_json`
-- [ ] 4.3 Add semantic-equality plan modifiers on `data_source_json` (reuse existing JSON normalization helper)
-- [ ] 4.4 Add conflict validators (mutex with all other typed blocks and `config_json`)
-- [ ] 4.5 Update REQ-010 / panel-type-rejection table for `discover_session` + `config_json`
-- [ ] 4.6 Create `models_discover_session_panel.go` with the model, read/write helpers, and dashboard-time-range fallback for null panel-level `time_range` at write time
-- [ ] 4.7 Apply REQ-009 null-preservation to all optional fields, drilldown defaults, and panel-level `time_range`
-- [ ] 4.8 Compute `selected_tab_id` from API response when omitted in configuration
-- [ ] 4.9 Wire into `mapPanelFromAPI` and the panel write dispatcher
-- [ ] 4.10 Unit tests in `models_discover_session_panel_test.go`: `by_value` (both `dsl` and `esql` tabs), `by_reference` (with and without `selected_tab_id`), JSON normalization, validator failures, time_range inheritance from dashboard
-- [ ] 4.11 Description text under `internal/kibana/dashboard/descriptions/`
+- [x] 4.1 Add `schema_discover_session_panel.go` with `discover_session_config`, mutually exclusive `by_value` / `by_reference` sub-blocks, the single `tab` object with mutually exclusive `dsl` / `esql` sub-blocks, typed envelope fields, the shared `time_range` helper, the shared `url_drilldown` block, and `data_source_json` JSON attributes
+- [x] 4.2 Add validators: `by_value` xor `by_reference`; `tab.dsl` xor `tab.esql`; `view_mode` enum; `density` enum; `header_row_height` (`"1".."5"|"auto"`) and `row_height` (`"1".."20"|"auto"`) string validators; numeric bounds on `rows_per_page` / `sample_size`; drilldown trigger enum; well-formed JSON for `data_source_json`
+- [x] 4.3 Add semantic-equality plan modifiers on `data_source_json` (reuse existing JSON normalization helper)
+- [x] 4.4 Add conflict validators (mutex with all other typed blocks and `config_json`)
+- [x] 4.5 Update REQ-010 / panel-type-rejection table for `discover_session` + `config_json`
+- [x] 4.6 Create `models_discover_session_panel.go` with the model, read/write helpers, and dashboard-time-range fallback for null panel-level `time_range` at write time
+- [x] 4.7 Apply REQ-009 null-preservation to all optional fields, drilldown defaults, and panel-level `time_range`
+- [x] 4.8 Compute `selected_tab_id` from API response when omitted in configuration
+- [x] 4.9 Wire into `mapPanelFromAPI` and the panel write dispatcher
+- [x] 4.10 Unit tests in `models_discover_session_panel_test.go`: `by_value` (both `dsl` and `esql` tabs), `by_reference` (with and without `selected_tab_id`), JSON normalization, validator failures, time_range inheritance from dashboard
+- [x] 4.11 Description text under `internal/kibana/dashboard/descriptions/`
 
 ## 5. Spike: verify `references` requirement
 
