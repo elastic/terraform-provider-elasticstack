@@ -52,13 +52,64 @@ type markdownConfigByReferenceModel struct {
 	HideBorder  types.Bool   `tfsdk:"hide_border"`
 }
 
-func markdownConfigJSONHasRefID(configBytes []byte) bool {
+// markdownConfigBranch classifies raw markdown panel `config` JSON for union decode.
+type markdownConfigBranch int
+
+const (
+	markdownConfigBranchUnknown markdownConfigBranch = iota
+	markdownConfigBranchByValue
+	markdownConfigBranchByReference
+)
+
+// classifyMarkdownConfigFromRoot inspects unmarshalled config JSON (see kbn-dashboard-panel-type-markdown):
+// by-value carries string `content` and no library `ref_id`; by-reference carries non-empty `ref_id` and no `content`.
+// Ambiguous or unparseable payloads return markdownConfigBranchUnknown and try-by-value-then-by-reference in the caller.
+func classifyMarkdownConfigFromRoot(configBytes []byte) (markdownConfigBranch, error) {
 	var root map[string]any
 	if err := json.Unmarshal(configBytes, &root); err != nil {
+		return markdownConfigBranchUnknown, err
+	}
+	refID, refOK := root["ref_id"].(string)
+	hasRef := refOK && refID != ""
+	_, hasContent := root["content"].(string)
+
+	switch {
+	case hasRef && !hasContent:
+		return markdownConfigBranchByReference, nil
+	case hasContent && !hasRef:
+		return markdownConfigBranchByValue, nil
+	default:
+		return markdownConfigBranchUnknown, nil
+	}
+}
+
+// populateMarkdownFromAPIAttemptByValue decodes config as KbnDashboardPanelTypeMarkdownConfig0 (with JSON fallback).
+func populateMarkdownFromAPIAttemptByValue(pm *panelModel, tfPanel *panelModel, config kbapi.KbnDashboardPanelTypeMarkdown_Config) bool {
+	config0, err := config.AsKbnDashboardPanelTypeMarkdownConfig0()
+	if err != nil {
+		if b, mErr := config.MarshalJSON(); mErr == nil {
+			var inline kbapi.KbnDashboardPanelTypeMarkdownConfig0
+			if json.Unmarshal(b, &inline) == nil {
+				config0 = inline
+				err = nil
+			}
+		}
+	}
+	if err != nil {
 		return false
 	}
-	refID, ok := root["ref_id"].(string)
-	return ok && refID != ""
+	populateMarkdownFromAPIByValue(pm, tfPanel, config0)
+	return true
+}
+
+// populateMarkdownFromAPIAttemptByReference decodes config as KbnDashboardPanelTypeMarkdownConfig1.
+func populateMarkdownFromAPIAttemptByReference(pm *panelModel, tfPanel *panelModel, config kbapi.KbnDashboardPanelTypeMarkdown_Config) bool {
+	cfg1, err := config.AsKbnDashboardPanelTypeMarkdownConfig1()
+	if err != nil {
+		return false
+	}
+	populateMarkdownFromAPIByReference(pm, tfPanel, cfg1)
+	return true
 }
 
 // populateMarkdownFromAPIByValue maps API by-value markdown config into Terraform state.

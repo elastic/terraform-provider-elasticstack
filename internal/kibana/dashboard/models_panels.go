@@ -290,27 +290,58 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 		pm.ID = types.StringPointerValue(markdownPanel.Id)
 		if !panelUsesConfigJSONOnly(tfPanel) {
 			rawConfig, rawErr := markdownPanel.Config.MarshalJSON()
-			if rawErr == nil && markdownConfigJSONHasRefID(rawConfig) {
-				cfg1, err1 := markdownPanel.Config.AsKbnDashboardPanelTypeMarkdownConfig1()
-				if err1 == nil {
-					populateMarkdownFromAPIByReference(&pm, tfPanel, cfg1)
-				}
+			branch := markdownConfigBranchUnknown
+			if rawErr != nil {
+				diags.AddWarning(
+					"Markdown panel configuration",
+					fmt.Sprintf(
+						"Could not marshal panel config for markdown branch classification: %v. Using union decode fallback.",
+						rawErr,
+					),
+				)
 			} else {
-				config0, err := markdownPanel.Config.AsKbnDashboardPanelTypeMarkdownConfig0()
+				var err error
+				branch, err = classifyMarkdownConfigFromRoot(rawConfig)
 				if err != nil {
-					// Kibana may return inline markdown fields without the union discriminator
-					// expected by AsKbnDashboardPanelTypeMarkdownConfig0; fall back to unmarshalling
-					// the raw config JSON into the inline schema.
-					if b, mErr := markdownPanel.Config.MarshalJSON(); mErr == nil {
-						var inline kbapi.KbnDashboardPanelTypeMarkdownConfig0
-						if json.Unmarshal(b, &inline) == nil {
-							config0 = inline
-							err = nil
-						}
-					}
+					diags.AddWarning(
+						"Markdown panel configuration",
+						fmt.Sprintf(
+							"Could not parse panel config JSON for markdown branch classification: %v. Using union decode fallback.",
+							err,
+						),
+					)
+					branch = markdownConfigBranchUnknown
 				}
-				if err == nil {
-					populateMarkdownFromAPIByValue(&pm, tfPanel, config0)
+			}
+
+			decodeMarkdownFails := func() {
+				diags.AddError(
+					"Invalid markdown panel config",
+					"Could not decode markdown panel config as by-value or by-reference.",
+				)
+			}
+
+			switch branch {
+			case markdownConfigBranchByReference:
+				if populateMarkdownFromAPIAttemptByReference(&pm, tfPanel, markdownPanel.Config) {
+					break
+				}
+				if !populateMarkdownFromAPIAttemptByValue(&pm, tfPanel, markdownPanel.Config) {
+					decodeMarkdownFails()
+				}
+			case markdownConfigBranchByValue:
+				if populateMarkdownFromAPIAttemptByValue(&pm, tfPanel, markdownPanel.Config) {
+					break
+				}
+				if !populateMarkdownFromAPIAttemptByReference(&pm, tfPanel, markdownPanel.Config) {
+					decodeMarkdownFails()
+				}
+			default:
+				if populateMarkdownFromAPIAttemptByValue(&pm, tfPanel, markdownPanel.Config) {
+					break
+				}
+				if !populateMarkdownFromAPIAttemptByReference(&pm, tfPanel, markdownPanel.Config) {
+					decodeMarkdownFails()
 				}
 			}
 		}
