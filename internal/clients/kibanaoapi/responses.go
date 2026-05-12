@@ -52,3 +52,30 @@ func handleMutateResponse[T any](statusCode int, body []byte) (*T, diag.Diagnost
 		return nil, diagutil.ReportUnknownHTTPError(statusCode, body)
 	}
 }
+
+// handleGetTypedResponse handles a read response for kbapi typed-struct responses.
+// The extract callback is called only on HTTP 200 and should return the pre-parsed
+// struct from the response (e.g. *resp.JSON200). Returns (nil, nil) on 404.
+func handleGetTypedResponse[T any](statusCode int, body []byte, extract func() T) (*T, diag.Diagnostics) {
+	switch statusCode {
+	case http.StatusOK:
+		v := extract()
+		return &v, nil
+	case http.StatusNotFound:
+		return nil, nil
+	default:
+		return nil, diagutil.ReportUnknownHTTPError(statusCode, body)
+	}
+}
+
+// handleMutateTypedResponse handles a create/update response for kbapi typed-struct responses.
+// The extract callback is called only on HTTP 200 and should return the pre-parsed struct.
+func handleMutateTypedResponse[T any](statusCode int, body []byte, extract func() T) (*T, diag.Diagnostics) {
+	switch statusCode {
+	case http.StatusOK:
+		v := extract()
+		return &v, nil
+	default:
+		return nil, diagutil.ReportUnknownHTTPError(statusCode, body)
+	}
+}
