@@ -874,26 +874,13 @@ func getPanelSchema() schema.NestedAttributeObject {
 					"drilldowns": schema.ListNestedAttribute{
 						MarkdownDescription: "Optional list of URL drilldowns attached to the panel.",
 						Optional:            true,
-						NestedObject: schema.NestedAttributeObject{
-							Attributes: map[string]schema.Attribute{
-								"url": schema.StringAttribute{
-									MarkdownDescription: "Templated URL for the drilldown.",
-									Required:            true,
-								},
-								"label": schema.StringAttribute{
-									MarkdownDescription: "Display label shown in the drilldown menu.",
-									Required:            true,
-								},
-								"encode_url": schema.BoolAttribute{
-									MarkdownDescription: "When true, the URL is percent-encoded. Omit to use the API default.",
-									Optional:            true,
-								},
-								"open_in_new_tab": schema.BoolAttribute{
-									MarkdownDescription: "When true, the URL opens in a new browser tab. Omit to use the API default.",
-									Optional:            true,
-								},
-							},
-						},
+						NestedObject: urlDrilldownNestedAttributeObject(URLDrilldownNestedOpts{
+							AllowedTriggers:                 []string{"on_open_panel_menu"},
+							URLMarkdownDescription:          "Templated URL for the drilldown.",
+							LabelMarkdownDescription:        "Display label shown in the drilldown menu.",
+							EncodeURLMarkdownDescription:    "When true, the URL is percent-encoded. Omit to use the API default.",
+							OpenInNewTabMarkdownDescription: "When true, the URL opens in a new browser tab. Omit to use the API default.",
+						}),
 					},
 				},
 				Validators: []validator.Object{

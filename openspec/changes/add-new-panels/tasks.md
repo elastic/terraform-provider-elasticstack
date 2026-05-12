@@ -2,8 +2,8 @@
 
 - [x] 1.1 Add a `schema_shared_drilldowns.go` (or equivalent) factory function returning the shared `url_drilldown` nested-block schema with trigger validators
 - [x] 1.2 Add a shared `time_range` nested-block schema helper mirroring the dashboard-root shape (`from`, `to`, `mode?`)
-- [ ] 1.3 Refactor `slo_burn_rate_config.drilldowns` and `slo_overview_config.drilldowns` schemas to consume the shared `url_drilldown` factory (no behavior change)
-- [ ] 1.4 Confirm `slo_burn_rate` / `slo_overview` unit + acceptance tests still pass unchanged after the refactor
+- [x] 1.3 Refactor `slo_burn_rate_config.drilldowns` and `slo_overview_config.drilldowns` schemas to consume the shared `url_drilldown` factory (no behavior change)
+- [x] 1.4 Confirm `slo_burn_rate` / `slo_overview` unit + acceptance tests still pass unchanged after the refactor
 
 ## 2. Image panel (`type = "image"`)
 
