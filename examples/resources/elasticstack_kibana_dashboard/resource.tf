@@ -89,3 +89,37 @@ resource "elasticstack_kibana_dashboard" "lens_app_typed_by_value" {
     }
   }]
 }
+
+# Classic Lens (`vis`) panel: same typed metric chart as above, nested under `viz_config.by_value`.
+# Contrasts with `lens-dashboard-app`: API sends `type = "vis"` and inline chart config.
+resource "elasticstack_kibana_dashboard" "vis_typed_by_value" {
+  title            = "Dashboard with vis (typed by-value)"
+  description      = "Example: metric via viz_config.by_value.metric_chart_config"
+  time_range       = { from = "now-15m", to = "now" }
+  refresh_interval = { pause = true, value = 0 }
+  query            = { language = "kql", text = "" }
+
+  panels = [{
+    type = "vis"
+    grid = { x = 0, y = 0, w = 24, h = 15 }
+    viz_config = {
+      by_value = {
+        metric_chart_config = {
+          data_source_json = jsonencode({
+            type          = "data_view_spec"
+            index_pattern = "metrics-*"
+            time_field    = "@timestamp"
+          })
+          query = { expression = "" }
+          metrics = [{
+            config_json = jsonencode({
+              type      = "primary"
+              operation = "count"
+              format    = { type = "number" }
+            })
+          }]
+        }
+      }
+    }
+  }]
+}
