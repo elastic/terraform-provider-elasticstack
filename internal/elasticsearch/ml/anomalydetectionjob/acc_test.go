@@ -422,6 +422,57 @@ func TestAccResourceAnomalyDetectionJobCustomRulesScope(t *testing.T) {
 	})
 }
 
+// TestAccResourceAnomalyDetectionJobCustomRulesScopeAndConditions asserts Elasticsearch accepts a
+// single custom rule with both a non-empty scope and at least one condition (inclusive OR from the
+// API docs, not mutually exclusive). The ML filter is created out-of-band like the scope-only acc test.
+func TestAccResourceAnomalyDetectionJobCustomRulesScopeAndConditions(t *testing.T) {
+	jobID := fmt.Sprintf("test-ad-scope-cond-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	filterID := fmt.Sprintf("test-ad-scope-cond-flt-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	addr := testResourceAddr
+
+	setupAccMLFilterOutOfBand(t, filterID)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"job_id":    config.StringVariable(jobID),
+					"filter_id": config.StringVariable(filterID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "job_id", jobID),
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.#", "1"),
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.0.actions.#", "1"),
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.0.actions.0", "skip_result"),
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.0.scope.clientip.filter_id", filterID),
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.0.scope.clientip.filter_type", "include"),
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.0.conditions.#", "1"),
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.0.conditions.0.applies_to", "actual"),
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.0.conditions.0.operator", "lt"),
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.0.conditions.0.value", "10"),
+					resource.TestCheckResourceAttrSet(addr, "id"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"job_id":    config.StringVariable(jobID),
+					"filter_id": config.StringVariable(filterID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.0.scope.clientip.filter_type", "exclude"),
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.0.conditions.0.value", "20"),
+					resource.TestCheckResourceAttrSet(addr, "id"),
+				),
+			},
+		},
+	})
+}
+
 // TestAccResourceAnomalyDetectionJobCustomRulesScope_missingFilterOnCreate applies a job whose scope
 // references a filter id that was never created. Elasticsearch may still accept PutJob; opening the
 // job must fail until the filter exists (proves the configuration is not runnable as-is).

@@ -89,6 +89,23 @@ func TestCustomRuleMissingScopeAndConditions(t *testing.T) {
 			scope:       types.MapNull(scopeElemType),
 			wantMissing: false,
 		},
+		{
+			name: "non-empty scope and non-empty conditions together",
+			cond: types.ListValueMust(conditionElemType, []attr.Value{
+				types.ObjectValueMust(conditionElemType.AttributeTypes(), map[string]attr.Value{
+					"applies_to": types.StringValue("actual"),
+					"operator":   types.StringValue("lt"),
+					"value":      types.Float64Value(10),
+				}),
+			}),
+			scope: types.MapValueMust(scopeElemType, map[string]attr.Value{
+				"clientip": types.ObjectValueMust(scopeElemType.AttributeTypes(), map[string]attr.Value{
+					"filter_id":   types.StringValue("flt-1"),
+					"filter_type": types.StringValue("include"),
+				}),
+			}),
+			wantMissing: false,
+		},
 	}
 
 	for _, tc := range cases {
