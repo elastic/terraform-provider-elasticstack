@@ -1507,6 +1507,7 @@ On create and update, the resource SHALL include `pinned_panels` in the dashboar
 - GIVEN `pinned_panels` is unset in configuration
 - WHEN read runs and the API returns `pinned_panels: []`
 - THEN the Terraform `pinned_panels` attribute SHALL remain unset
+
 ### Requirement: Lens chart presentation fields on typed `vis` panels (REQ-037)
 
 For every typed Lens chart block on `vis` panels (`xy_chart_config`, `metric_chart_config`, `legacy_metric_config`, `gauge_config`, `heatmap_config`, `tagcloud_config`, `region_map_config`, `datatable_config`, `pie_chart_config`, `mosaic_config`, `treemap_config`, `waffle_config`), the resource SHALL expose the following optional flat-sibling attributes that mirror the corresponding fields on the Kibana chart-root API schemas:
