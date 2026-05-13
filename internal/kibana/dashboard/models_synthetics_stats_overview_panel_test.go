@@ -91,7 +91,7 @@ func Test_buildSyntheticsStatsOverviewConfig_withDrilldowns(t *testing.T) {
 	pm := panelModel{
 		SyntheticsStatsOverviewConfig: &syntheticsStatsOverviewConfigModel{
 			Title: types.StringNull(),
-			Drilldowns: []syntheticsStatsOverviewDrilldownModel{
+			Drilldowns: []urlDrilldownModel{
 				{
 					URL:          types.StringValue("https://example.com/{{context.panel.title}}"),
 					Label:        types.StringValue("View details"),
@@ -119,7 +119,7 @@ func Test_buildSyntheticsStatsOverviewConfig_withDrilldowns(t *testing.T) {
 func Test_buildSyntheticsStatsOverviewConfig_withDrilldowns_optionalBoolsSet(t *testing.T) {
 	pm := panelModel{
 		SyntheticsStatsOverviewConfig: &syntheticsStatsOverviewConfigModel{
-			Drilldowns: []syntheticsStatsOverviewDrilldownModel{
+			Drilldowns: []urlDrilldownModel{
 				{
 					URL:          types.StringValue("https://example.com"),
 					Label:        types.StringValue("Link"),
@@ -299,7 +299,7 @@ func Test_populateSyntheticsStatsOverviewFromAPI_explicitFields_roundTrip(t *tes
 // Test: drilldown optional bool null-preservation.
 func Test_populateSyntheticsStatsOverviewFromAPI_drilldowns_nullPreservation(t *testing.T) {
 	existing := &syntheticsStatsOverviewConfigModel{
-		Drilldowns: []syntheticsStatsOverviewDrilldownModel{
+		Drilldowns: []urlDrilldownModel{
 			{
 				URL:          types.StringValue("https://example.com"),
 				Label:        types.StringValue("View"),
