@@ -20,6 +20,7 @@ package dashboard
 import (
 	"context"
 	"encoding/json"
+	"reflect"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -295,12 +296,21 @@ func Test_heatmapPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 func Test_heatmapConfigModel_noXAxisYAxisTFSDKFields(t *testing.T) {
 	// Verify the heatmap model struct doesn't expose x_axis_json / y_axis_json as tfsdk attributes.
 	// These were removed from the schema and replaced by internal representation.
-	m := &heatmapConfigModel{}
-	// The struct should have DataSourceJSON (tfsdk:"data_source_json") and MetricJSON (tfsdk:"metric_json")
-	// but NO public tfsdk fields for x_axis_json or y_axis_json.
-	// We verify this by checking that the internal xAxisJSON/yAxisJSON fields exist but are unexported.
-	assert.True(t, m.xAxisJSON.IsNull() || true, "xAxisJSON is an internal field (unexported)")
-	assert.True(t, m.yAxisJSON.IsNull() || true, "yAxisJSON is an internal field (unexported)")
+	// Use reflection to confirm no exported field has a tfsdk tag of "x_axis_json" or "y_axis_json",
+	// and that the internal unexported fields exist.
+	typ := reflect.TypeOf(heatmapConfigModel{})
+	for i := 0; i < typ.NumField(); i++ {
+		field := typ.Field(i)
+		if tag, ok := field.Tag.Lookup("tfsdk"); ok {
+			assert.NotEqual(t, "x_axis_json", tag, "heatmapConfigModel must not have tfsdk:x_axis_json on field %s", field.Name)
+			assert.NotEqual(t, "y_axis_json", tag, "heatmapConfigModel must not have tfsdk:y_axis_json on field %s", field.Name)
+		}
+	}
+	// Verify the internal (unexported) fields exist.
+	_, hasXAxis := typ.FieldByName("xAxisJSON")
+	_, hasYAxis := typ.FieldByName("yAxisJSON")
+	assert.True(t, hasXAxis, "heatmapConfigModel should have unexported field xAxisJSON")
+	assert.True(t, hasYAxis, "heatmapConfigModel should have unexported field yAxisJSON")
 }
 
 func Test_heatmapConfig_lensChartPresentation_hideTitleRoundTrip(t *testing.T) {
