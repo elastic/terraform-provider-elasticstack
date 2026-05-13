@@ -12,10 +12,10 @@
 - [x] 1.10 Create `models/image.go` with `ImagePanelConfigModel`, `ImagePanelSrcModel`, `ImagePanelSrcFileModel`, `ImagePanelSrcURLModel`, `ImagePanelDrilldownModel`, `ImagePanelDashboardDrilldownModel`, `ImagePanelURLDrilldownModel`
 - [x] 1.11 Create `models/slo_alerts.go` with `SloAlertsPanelConfigModel`, `SloAlertsPanelSloModel`, `SloAlertsPanelDrilldownModel`
 - [x] 1.12 Create `models/discover_session.go` with `DiscoverSessionPanelConfigModel`, `DiscoverSessionPanelByValueModel`, `DiscoverSessionTabModel`, `DiscoverSessionDSLTabModel`, `DiscoverSessionESQLTabModel`, `DiscoverSessionPanelByRefModel`, `DiscoverSessionOverridesModel`, `DiscoverSessionSortModel`, `DiscoverSessionColumnSettingModel`, `DiscoverSessionPanelDrilldown`
-- [x] 1.13 Create `models/lens.go` with `LensByValueChartBlocks`, `LensDashboardAppConfigModel`, `VizConfigModel`, `VizByValueModel`, `VizByReferenceModel`, `LensChartPresentationTFModel`
+- [x] 1.13 Create `models/lens.go` with `LensByValueChartBlocks`, `LensDashboardAppConfigModel`, `VisConfigModel`, `VisByValueModel`, `VisByReferenceModel`, `LensChartPresentationTFModel`
 - [x] 1.14 Create `models/lens_xy.go` with `XYChartConfigModel`, `XYLayerModel`, `XYAxisModel`, etc.
 - [x] 1.15 Create `models/lens_gauge.go` with `GaugeConfigModel`, `GaugeStylingModel`
-- [x] 1.16 Create `models/lens_metric.go` with `MetricChartConfigModel`, `MetricChartMetricModel`
+- [x] 1.16 Create `models/lens_metric.go` with `MetricChartConfigModel`, `MetricItemModel`
 - [x] 1.17 Create `models/lens_pie.go` with `PieChartConfigModel`
 - [x] 1.18 Create `models/lens_treemap.go` with `TreemapConfigModel`
 - [x] 1.19 Create `models/lens_mosaic.go` with `MosaicConfigModel`
