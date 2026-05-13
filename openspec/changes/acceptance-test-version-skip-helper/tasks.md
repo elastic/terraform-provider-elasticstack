@@ -64,7 +64,7 @@
 
 ## 7. Final Verification and Archive
 
-- [ ] 7.1 Confirm all 284 target test cases now use the top-level helper
-- [ ] 7.2 Confirm the 36 non-uniform `SkipFunc` cases remain untouched (progressive gating, partial skipping, custom skips)
-- [ ] 7.3 Run `make check-openspec` and `make check-lint` pass cleanly
-- [ ] 7.4 Archive the change with `openspec archive acceptance-test-version-skip-helper`
+- [x] 7.1 Confirm all 284 target test cases now use the top-level helper (`SkipIfUnsupported`: 278; `SkipIfUnsupportedConstraints`: 17; **total 295** — slight variance vs ~284 target due to multi-call sites per test / subtests)
+- [x] 7.2 Confirm the 36 non-uniform `SkipFunc` cases remain untouched (progressive gating, partial skipping, custom skips) — per-step `SkipFunc` with `CheckIfVersionIsUnsupported`: 120; `CheckIfVersionMeetsConstraints`: 6; plus `CheckIfNotServerless`: 1 (**127** lines with `versionutils` directly on `SkipFunc`); additional composite skips (`skipFn`, `skipDashboardOrKqlSLOUnsupported`, `skipKqlSLO*`, `skipAgentPolicyTamperProtectionTest`, etc.) preserved; spot-checked ILM, streams query, agent policy tamper, dashboard SLO alerts panels
+- [x] 7.3 Run `make check-openspec` and `make check-lint` pass cleanly
+- [ ] 7.4 Archive the change with `openspec archive acceptance-test-version-skip-helper` — **intentionally not run here**: archiving is performed by the PR `verify-openspec` workflow, not this orchestrator.
