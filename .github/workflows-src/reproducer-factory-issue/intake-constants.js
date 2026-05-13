@@ -1,6 +1,6 @@
 /**
  * Reproducer-factory issue intake configuration. Keep `ISSUE_BRANCH_PREFIX` aligned with
- * `workflow.md.tmpl` (`reproducer-factory/issue-${{ github.event.issue.number }}`).
+ * `workflow.md.tmpl` (branch pattern `reproducer-factory/issue-{n}`).
  */
 'use strict';
 
