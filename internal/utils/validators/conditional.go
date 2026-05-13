@@ -679,9 +679,10 @@ func OneOfWhenDependentPathExpressionEquals(dependentPathExpression path.Express
 
 			if !slices.Contains(allowedValues, currentValueStr) {
 				diags.AddAttributeError(p, "Invalid Attribute Value Match",
-					fmt.Sprintf("Attribute %s must be one of [%s] when type is \"%s\", got: \"%s\"",
+					fmt.Sprintf("Attribute %s must be one of [%s] when %s equals %q, got: %q",
 						p,
 						strings.Join(allowedValues, ", "),
+						descStr,
 						dependentValueStr,
 						currentValueStr,
 					),

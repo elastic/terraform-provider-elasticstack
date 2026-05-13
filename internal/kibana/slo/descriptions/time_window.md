@@ -1,6 +1,1 @@
-Currently supports `calendarAligned` and `rolling` time windows.
-
-- For `type = "rolling"`: duration must be one of `7d` (7 days), `30d` (30 days), or `90d` (90 days).
-- For `type = "calendarAligned"`: duration must be either `1w` (weekly) or `1M` (monthly).
-
-Rolling time window SLOs only consider SLI data from the last duration period as a moving window. Calendar aligned time windows align to calendar boundaries.
+Currently supports `calendarAligned` and `rolling` time windows. For `type = "rolling"`, duration must be one of `7d` (7 days), `30d` (30 days), or `90d` (90 days). For `type = "calendarAligned"`, duration must be either `1w` (weekly) or `1M` (monthly). Rolling time window SLOs only consider SLI data from the last duration period as a moving window. Calendar aligned time windows align to calendar boundaries.
