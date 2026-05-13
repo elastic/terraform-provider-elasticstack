@@ -288,7 +288,10 @@ func Test_mosaicConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 
 	assert.Equal(t, types.StringValue("ESQL Mosaic"), model.Title)
 	assert.Nil(t, model.Query)
-	assert.False(t, model.GroupBy.IsNull())
+	assert.True(t, model.GroupBy.IsNull())
+	assert.True(t, model.Metrics.IsNull())
+	assert.NotEmpty(t, model.EsqlMetrics)
+	assert.NotEmpty(t, model.EsqlGroupBy)
 	assert.False(t, model.GroupBreakdownBy.IsNull())
 	require.NotNil(t, model.ValueDisplay)
 	assert.Equal(t, types.StringValue("absolute"), model.ValueDisplay.Mode)
@@ -382,19 +385,31 @@ func Test_mosaicConfigModel_toAPI_metrics_json_exactly_one(t *testing.T) {
 	})
 	t.Run("esql_empty_array", func(t *testing.T) {
 		model := newTestMosaicESQLModel(t)
-		model.Metrics = customtypes.NewJSONWithDefaultsValue[[]map[string]any](`[]`, populatePartitionMetricsDefaults)
+		model.EsqlMetrics = nil
 		_, diags := model.toAPI(nil)
-		requireMosaicMetricsExactlyOneDiagnostic(t, diags)
+		require.True(t, diags.HasError())
+		var found bool
+		for _, d := range diags.Errors() {
+			if d.Summary() == "Invalid esql_metrics" && strings.Contains(d.Detail(), "exactly one") {
+				found = true
+				break
+			}
+		}
+		require.True(t, found, "expected Invalid esql_metrics with 'exactly one' in detail, got %#v", diags)
 	})
 	t.Run("esql_two_items", func(t *testing.T) {
 		model := newTestMosaicESQLModel(t)
-		model.Metrics = customtypes.NewJSONWithDefaultsValue[[]map[string]any](
-			`[{"column":"bytes","operation":"value","format":{"type":"number","decimals":2}},`+
-				`{"column":"events","operation":"value","format":{"type":"number","decimals":2}}]`,
-			populatePartitionMetricsDefaults,
-		)
+		model.EsqlMetrics = append(model.EsqlMetrics, mosaicEsqlMetric{Column: types.StringValue("extra")})
 		_, diags := model.toAPI(nil)
-		requireMosaicMetricsExactlyOneDiagnostic(t, diags)
+		require.True(t, diags.HasError())
+		var found bool
+		for _, d := range diags.Errors() {
+			if d.Summary() == "Invalid esql_metrics" && strings.Contains(d.Detail(), "exactly one") {
+				found = true
+				break
+			}
+		}
+		require.True(t, found, "expected Invalid esql_metrics with 'exactly one' in detail, got %#v", diags)
 	})
 }
 
