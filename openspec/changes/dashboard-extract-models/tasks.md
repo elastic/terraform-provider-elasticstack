@@ -34,9 +34,9 @@
 - [x] 2.2 Update `models.go` to use `models.DashboardModel` instead of `dashboardModel`
 - [x] 2.3 Update `create.go`/`read.go`/`update.go`/`delete.go`/`resource.go` to use `models.DashboardModel`
 - [x] 2.4 Update all `models_*.go` conversion files to import `models/` and use exported type names
-- [x] 2.5 Update `schema.go` to reference `models.TimeRangeModel` where needed
-- [x] 2.6 Update `panel_config_validator.go` to use `models.PanelModel`
-- [x] 2.7 Update `panel_config_defaults.go` to reference model types
+- [x] 2.5 Update `schema.go` to reference `models.TimeRangeModel` where needed (no change required — file does not reference `tfsdk` model types directly)
+- [x] 2.6 Update `panel_config_validator.go` to use `models.PanelModel` (no change required — validators operate on schema/plan paths without concrete model types)
+- [x] 2.7 Update `panel_config_defaults.go` to reference model types (no change required — defaults are built from schema without importing `dashboard/models`)
 - [x] 2.8 Update `models_plan_state_alignment.go` to use exported model types
 - [x] 2.9 Update `pinned_panels_mapping.go` to use `models.PinnedPanelModel`
 - [x] 2.10 Remove struct definitions from all original `dashboard/models_*.go` files (keep conversion functions)
