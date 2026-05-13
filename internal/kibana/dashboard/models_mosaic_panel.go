@@ -107,6 +107,22 @@ type mosaicConfigModel struct {
 	Metrics             customtypes.JSONWithDefaultsValue[[]map[string]any] `tfsdk:"metrics_json"`
 	Legend              *partitionLegendModel                               `tfsdk:"legend"`
 	ValueDisplay        *partitionValueDisplay                              `tfsdk:"value_display"`
+	EsqlMetrics         []mosaicEsqlMetric                                  `tfsdk:"esql_metrics"`
+	EsqlGroupBy         []mosaicEsqlGroupBy                                 `tfsdk:"esql_group_by"`
+}
+
+type mosaicEsqlMetric struct {
+	Column     types.String         `tfsdk:"column"`
+	Label      types.String         `tfsdk:"label"`
+	FormatJSON jsontypes.Normalized `tfsdk:"format_json"`
+}
+
+type mosaicEsqlGroupBy struct {
+	Column     types.String         `tfsdk:"column"`
+	CollapseBy types.String         `tfsdk:"collapse_by"`
+	ColorJSON  jsontypes.Normalized `tfsdk:"color_json"`
+	FormatJSON jsontypes.Normalized `tfsdk:"format_json"`
+	Label      types.String         `tfsdk:"label"`
 }
 
 func (m *mosaicConfigModel) fromAPINoESQL(ctx context.Context, dashboard *dashboardModel, prior *mosaicConfigModel, api kbapi.MosaicNoESQL) diag.Diagnostics {
@@ -191,6 +207,8 @@ func (m *mosaicConfigModel) fromAPINoESQL(ctx context.Context, dashboard *dashbo
 		return diags
 	}
 	m.lensChartPresentationTFModel = pres
+	m.EsqlMetrics = nil
+	m.EsqlGroupBy = nil
 
 	return diags
 }
@@ -212,15 +230,8 @@ func (m *mosaicConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashboar
 	}
 	m.DataSourceJSON = dv
 
-	if api.GroupBy != nil {
-		gb, gbDiags := newPartitionGroupByJSONFromAPI(api.GroupBy)
-		diags.Append(gbDiags...)
-		if !gbDiags.HasError() {
-			m.GroupBy = gb
-		}
-	} else {
-		m.GroupBy = customtypes.NewJSONWithDefaultsNull(populatePartitionGroupByDefaults)
-	}
+	m.GroupBy = customtypes.NewJSONWithDefaultsNull(populatePartitionGroupByDefaults)
+	m.Metrics = customtypes.NewJSONWithDefaultsNull(populatePartitionMetricsDefaults)
 
 	if api.GroupBreakdownBy != nil {
 		gbb, gbbDiags := newPartitionGroupByJSONFromAPI(api.GroupBreakdownBy)
@@ -232,17 +243,45 @@ func (m *mosaicConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashboar
 		m.GroupBreakdownBy = customtypes.NewJSONWithDefaultsNull(populatePartitionGroupByDefaults)
 	}
 
-	metricBytes, err := json.Marshal(api.Metric)
-	if err != nil {
-		diags.AddError("Failed to marshal metric", err.Error())
+	metricFormat, ok := lensESQLNumberFormatJSONFromAPI(api.Metric.Format, "esql_metrics.format_json", &diags)
+	if !ok {
 		return diags
 	}
-	metricsWrapped, err := json.Marshal([]json.RawMessage{json.RawMessage(metricBytes)})
-	if err != nil {
-		diags.AddError("Failed to marshal metrics_json", err.Error())
-		return diags
+	m.EsqlMetrics = []mosaicEsqlMetric{
+		{
+			Column:     types.StringValue(api.Metric.Column),
+			FormatJSON: metricFormat,
+			Label:      types.StringNull(),
+		},
 	}
-	m.Metrics = customtypes.NewJSONWithDefaultsValue(string(metricsWrapped), populatePartitionMetricsDefaults)
+	if api.Metric.Label != nil {
+		m.EsqlMetrics[0].Label = types.StringValue(*api.Metric.Label)
+	}
+
+	if api.GroupBy != nil && len(*api.GroupBy) > 0 {
+		m.EsqlGroupBy = make([]mosaicEsqlGroupBy, len(*api.GroupBy))
+		for i, gb := range *api.GroupBy {
+			m.EsqlGroupBy[i].Column = types.StringValue(gb.Column)
+			m.EsqlGroupBy[i].CollapseBy = types.StringValue(string(gb.CollapseBy))
+			colorBytes, err := json.Marshal(gb.Color)
+			if err != nil {
+				diags.AddError("Failed to marshal esql group_by color", err.Error())
+				continue
+			}
+			m.EsqlGroupBy[i].ColorJSON = jsontypes.NewNormalizedValue(string(colorBytes))
+			formatBytes, err := json.Marshal(gb.Format)
+			if err != nil {
+				diags.AddError("Failed to marshal esql group_by format", err.Error())
+				continue
+			}
+			m.EsqlGroupBy[i].FormatJSON = jsontypes.NewNormalizedValue(string(formatBytes))
+			if gb.Label != nil {
+				m.EsqlGroupBy[i].Label = types.StringValue(*gb.Label)
+			} else {
+				m.EsqlGroupBy[i].Label = types.StringNull()
+			}
+		}
+	}
 
 	if len(api.Filters) > 0 {
 		m.Filters = populateFiltersFromAPI(api.Filters, &diags)
@@ -325,61 +364,78 @@ func (m *mosaicConfigModel) usesESQL() bool {
 func (m *mosaicConfigModel) toAPIMosaicESQL(dashboard *dashboardModel) (kbapi.MosaicESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var api kbapi.MosaicESQL
+	api.Type = kbapi.MosaicESQLTypeMosaic
 
 	if m.DataSourceJSON.IsNull() {
 		diags.AddError("Missing data_source_json", "mosaic_config.data_source_json must be provided")
 		return api, diags
 	}
-	if m.GroupBy.IsNull() {
-		diags.AddError("Missing group_by_json", "mosaic_config.group_by_json must be provided")
-		return api, diags
-	}
-	if m.GroupBreakdownBy.IsNull() {
-		diags.AddError("Missing group_breakdown_by_json", "mosaic_config.group_breakdown_by_json must be provided")
-		return api, diags
-	}
-	if m.Metrics.IsNull() {
-		diags.AddError("Missing metrics_json", "mosaic_config.metrics_json must be provided")
+	if err := json.Unmarshal([]byte(m.DataSourceJSON.ValueString()), &api.DataSource); err != nil {
+		diags.AddError("Failed to unmarshal data_source_json", err.Error())
 		return api, diags
 	}
 	if m.Legend == nil {
 		diags.AddError("Missing legend", "mosaic_config.legend must be provided")
 		return api, diags
 	}
-	if diags.HasError() {
-		return api, diags
-	}
+	api.Legend = m.Legend.toMosaicLegend()
 
-	api = kbapi.MosaicESQL{
-		Type:   kbapi.MosaicESQLTypeMosaic,
-		Legend: m.Legend.toMosaicLegend(),
-	}
-
-	if err := json.Unmarshal([]byte(m.DataSourceJSON.ValueString()), &api.DataSource); err != nil {
-		diags.AddError("Failed to unmarshal data_source_json", err.Error())
-		return api, diags
-	}
-	if err := json.Unmarshal([]byte(m.GroupBy.ValueString()), &api.GroupBy); err != nil {
-		diags.AddError("Failed to unmarshal group_by", err.Error())
+	if m.GroupBreakdownBy.IsNull() {
+		diags.AddError("Missing group_breakdown_by_json", "mosaic_config.group_breakdown_by_json must be provided")
 		return api, diags
 	}
 	if err := json.Unmarshal([]byte(m.GroupBreakdownBy.ValueString()), &api.GroupBreakdownBy); err != nil {
 		diags.AddError("Failed to unmarshal group_breakdown_by", err.Error())
 		return api, diags
 	}
-	var rawMetrics []json.RawMessage
-	if err := json.Unmarshal([]byte(m.Metrics.ValueString()), &rawMetrics); err != nil {
-		diags.AddError("Failed to unmarshal metrics_json", err.Error())
+
+	if len(m.EsqlMetrics) != 1 {
+		diags.AddError("Invalid esql_metrics", "mosaic_config.esql_metrics must contain exactly one item")
 		return api, diags
 	}
-	if len(rawMetrics) != 1 {
-		diags.AddError("Invalid metrics_json", "mosaic_config.metrics_json must contain exactly one item")
+	em := m.EsqlMetrics[0]
+	api.Metric.Column = em.Column.ValueString()
+	if typeutils.IsKnown(em.Label) {
+		l := em.Label.ValueString()
+		api.Metric.Label = &l
+	}
+	if err := json.Unmarshal([]byte(em.FormatJSON.ValueString()), &api.Metric.Format); err != nil {
+		diags.AddError("Failed to unmarshal esql metric format_json", err.Error())
 		return api, diags
 	}
-	if err := json.Unmarshal(rawMetrics[0], &api.Metric); err != nil {
-		diags.AddError("Failed to unmarshal metric", err.Error())
+
+	if len(m.EsqlGroupBy) == 0 {
+		diags.AddError("Missing esql_group_by", "mosaic_config.esql_group_by must contain at least one item")
 		return api, diags
 	}
+	groupBy := make([]struct {
+		CollapseBy kbapi.CollapseBy   `json:"collapse_by"`
+		Color      kbapi.ColorMapping `json:"color"`
+		Column     string             `json:"column"`
+		Format     kbapi.FormatType   `json:"format"`
+		Label      *string            `json:"label,omitempty"`
+	}, len(m.EsqlGroupBy))
+	for i, eg := range m.EsqlGroupBy {
+		groupBy[i].Column = eg.Column.ValueString()
+		groupBy[i].CollapseBy = kbapi.CollapseBy(eg.CollapseBy.ValueString())
+		if err := json.Unmarshal([]byte(eg.ColorJSON.ValueString()), &groupBy[i].Color); err != nil {
+			diags.AddError("Failed to unmarshal esql group_by color_json", err.Error())
+			return api, diags
+		}
+		formatSrc := defaultNumberFormatJSON
+		if typeutils.IsKnown(eg.FormatJSON) {
+			formatSrc = eg.FormatJSON.ValueString()
+		}
+		if err := json.Unmarshal([]byte(formatSrc), &groupBy[i].Format); err != nil {
+			diags.AddError("Failed to unmarshal esql group_by format_json", err.Error())
+			return api, diags
+		}
+		if typeutils.IsKnown(eg.Label) {
+			l := eg.Label.ValueString()
+			groupBy[i].Label = &l
+		}
+	}
+	api.GroupBy = &groupBy
 
 	if typeutils.IsKnown(m.Title) {
 		api.Title = new(m.Title.ValueString())

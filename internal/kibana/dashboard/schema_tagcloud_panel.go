@@ -23,6 +23,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
@@ -82,8 +83,8 @@ func getTagcloudSchema(includePresentation bool) map[string]schema.Attribute {
 		Required:            true,
 	}
 	attrs["query"] = schema.SingleNestedAttribute{
-		MarkdownDescription: "Query configuration for filtering data.",
-		Required:            true,
+		MarkdownDescription: "Query configuration for filtering data. Required for non-ES|QL tagclouds; omit for ES|QL mode.",
+		Optional:            true,
 		Attributes:          getFilterSimple(),
 	}
 	attrs["orientation"] = schema.StringAttribute{
@@ -108,14 +109,64 @@ func getTagcloudSchema(includePresentation bool) map[string]schema.Attribute {
 		},
 	}
 	attrs["metric_json"] = schema.StringAttribute{
-		MarkdownDescription: tagcloudMetricDescription,
+		MarkdownDescription: tagcloudMetricDescription + " Required for non-ES|QL tagclouds; mutually exclusive with `esql_metric`.",
 		CustomType:          customtypes.NewJSONWithDefaultsType(populateTagcloudMetricDefaults),
-		Required:            true,
+		Optional:            true,
+		Validators: []validator.String{
+			stringvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("esql_metric")),
+		},
 	}
 	attrs["tag_by_json"] = schema.StringAttribute{
-		MarkdownDescription: "Tag grouping configuration as JSON. Can be a date histogram, terms, histogram, range, or filters operation. This determines how tags are grouped and displayed.",
-		CustomType:          customtypes.NewJSONWithDefaultsType(populateTagcloudTagByDefaults),
-		Required:            true,
+		MarkdownDescription: "Tag grouping configuration as JSON. Can be a date histogram, terms, histogram, range, or filters operation. " +
+			"This determines how tags are grouped and displayed. Required for non-ES|QL tagclouds; mutually exclusive with `esql_tag_by`.",
+		CustomType: customtypes.NewJSONWithDefaultsType(populateTagcloudTagByDefaults),
+		Optional:   true,
+		Validators: []validator.String{
+			stringvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("esql_tag_by")),
+		},
+	}
+	attrs["esql_metric"] = schema.SingleNestedAttribute{
+		MarkdownDescription: "Typed metric column for ES|QL tagclouds. Mutually exclusive with `metric_json`.",
+		Optional:            true,
+		Attributes: map[string]schema.Attribute{
+			"column": schema.StringAttribute{
+				MarkdownDescription: "ES|QL column name for the metric.",
+				Required:            true,
+			},
+			"format_json": schema.StringAttribute{
+				MarkdownDescription: "Number or other format configuration as JSON (`formatType` union).",
+				CustomType:          jsontypes.NormalizedType{},
+				Required:            true,
+			},
+			"label": schema.StringAttribute{
+				MarkdownDescription: "Optional label for the metric.",
+				Optional:            true,
+			},
+		},
+	}
+	attrs["esql_tag_by"] = schema.SingleNestedAttribute{
+		MarkdownDescription: "Typed tag-by column for ES|QL tagclouds. Mutually exclusive with `tag_by_json`.",
+		Optional:            true,
+		Attributes: map[string]schema.Attribute{
+			"column": schema.StringAttribute{
+				MarkdownDescription: "ES|QL column for the tag dimension.",
+				Required:            true,
+			},
+			"format_json": schema.StringAttribute{
+				MarkdownDescription: "Column format as JSON (`formatType` union).",
+				CustomType:          jsontypes.NormalizedType{},
+				Required:            true,
+			},
+			"color_json": schema.StringAttribute{
+				MarkdownDescription: "Color mapping as JSON (`colorMapping` union).",
+				CustomType:          jsontypes.NormalizedType{},
+				Required:            true,
+			},
+			"label": schema.StringAttribute{
+				MarkdownDescription: "Optional label for the tag-by column.",
+				Optional:            true,
+			},
+		},
 	}
 	if includePresentation {
 		maps.Copy(attrs, lensChartPresentationAttributes())

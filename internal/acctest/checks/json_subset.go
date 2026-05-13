@@ -29,7 +29,8 @@ import (
 // TestCheckResourceAttrJSONSubset checks that the JSON value of the specified
 // resource attribute contains all keys and values from the expected JSON subset.
 // Object keys are matched regardless of order; nested objects and arrays are
-// compared recursively.
+// compared recursively. Arrays are matched in order: the expected array must
+// be a prefix of the actual array (element-by-element starting at index 0).
 func TestCheckResourceAttrJSONSubset(name, key, expectedJSON string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		ms := s.RootModule()
@@ -86,7 +87,7 @@ func jsonSubset(actual, expected any, path string) error {
 			}
 			av, ok := act[k]
 			if !ok {
-				return fmt.Errorf("%s: missing key %q", path, k)
+				return fmt.Errorf("%s: missing key", subPath)
 			}
 			if err := jsonSubset(av, v, subPath); err != nil {
 				return err

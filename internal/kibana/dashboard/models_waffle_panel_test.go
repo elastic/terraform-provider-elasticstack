@@ -218,6 +218,48 @@ func Test_waffleConfigModel_toAPI_ESQL_errors(t *testing.T) {
 	require.True(t, diags.HasError())
 }
 
+func Test_waffleConfigModel_config_json_metricRoundTrip(t *testing.T) {
+	// Verifies that waffle metrics use config_json (not config) for round-trip.
+	// The struct field Config has tfsdk tag "config_json".
+	ctx := context.Background()
+
+	apiJSON := `{
+		"type": "waffle",
+		"data_source": {"type":"dataView","id":"metrics-*"},
+		"query": {"language":"kql","query":"status:200"},
+		"legend": {"size":"medium"},
+		"metrics": [{"operation":"count"},{"operation":"sum","field":"bytes"}],
+		"group_by": [{"operation":"terms","field":"host.name","collapse_by":"avg"}]
+	}`
+	var waffle kbapi.WaffleNoESQL
+	require.NoError(t, json.Unmarshal([]byte(apiJSON), &waffle))
+
+	model := &waffleConfigModel{}
+	diags := model.fromAPINoESQL(ctx, nil, nil, waffle)
+	require.False(t, diags.HasError(), "%s", diags)
+
+	// Metrics should use config_json (the tfsdk tag on waffleDSLMetric.Config)
+	require.Len(t, model.Metrics, 2)
+	assert.False(t, model.Metrics[0].Config.IsNull())
+	assert.False(t, model.Metrics[1].Config.IsNull())
+	assert.Contains(t, model.Metrics[0].Config.ValueString(), "count")
+	assert.Contains(t, model.Metrics[1].Config.ValueString(), "sum")
+
+	// GroupBy should also use config_json (the tfsdk tag on waffleDSLGroupBy.Config)
+	require.Len(t, model.GroupBy, 1)
+	assert.False(t, model.GroupBy[0].Config.IsNull())
+	assert.Contains(t, model.GroupBy[0].Config.ValueString(), "terms")
+
+	// Round-trip back to API
+	attrs, diags := model.toAPI(nil)
+	require.False(t, diags.HasError())
+	noESQL, err := attrs.AsWaffleNoESQL()
+	require.NoError(t, err)
+	require.Len(t, noESQL.Metrics, 2)
+	require.NotNil(t, noESQL.GroupBy)
+	require.Len(t, *noESQL.GroupBy, 1)
+}
+
 func Test_waffleConfig_lensChartPresentation_hideTitleRoundTrip(t *testing.T) {
 	ctx := context.Background()
 	dash := lensPresentationTestDashboard()

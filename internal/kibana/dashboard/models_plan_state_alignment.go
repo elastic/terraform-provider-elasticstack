@@ -96,6 +96,9 @@ func alignGaugeStateFromPlan(ctx context.Context, plan, state *gaugeConfigModel)
 	}
 	alignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
 	preservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.MetricJSON, &state.MetricJSON)
+	if plan.EsqlMetric != nil && state.EsqlMetric != nil {
+		alignGaugeEsqlMetricStateFromPlan(plan.EsqlMetric, state.EsqlMetric)
+	}
 }
 
 func alignHeatmapStateFromPlan(ctx context.Context, plan, state *heatmapConfigModel) {
@@ -161,6 +164,13 @@ func alignTagcloudStateFromPlan(ctx context.Context, plan, state *tagcloudConfig
 	preservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.MetricJSON, &state.MetricJSON)
 	preservePlanJSONIfStateAddsOptionalKeys(plan.TagByJSON.Normalized, &state.TagByJSON.Normalized, "rank_by", "color")
 	preservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.TagByJSON, &state.TagByJSON)
+	if plan.EsqlMetric != nil && state.EsqlMetric != nil {
+		preserveNormalizedJSONSemanticEquality(plan.EsqlMetric.FormatJSON, &state.EsqlMetric.FormatJSON)
+	}
+	if plan.EsqlTagBy != nil && state.EsqlTagBy != nil {
+		preserveNormalizedJSONSemanticEquality(plan.EsqlTagBy.FormatJSON, &state.EsqlTagBy.FormatJSON)
+		preserveNormalizedJSONSemanticEquality(plan.EsqlTagBy.ColorJSON, &state.EsqlTagBy.ColorJSON)
+	}
 }
 
 func alignTreemapStateFromPlan(plan, state *treemapConfigModel) {
@@ -302,4 +312,71 @@ func preservePlanJSONIfStateOmitsOptionalKeys(plan jsontypes.Normalized, state *
 	if reflect.DeepEqual(stateNormalized, planNormalized) {
 		*state = plan
 	}
+}
+
+const gaugeEsqlTicksModeBandsDefault = "bands"
+
+// gaugeEsqlAutoColorSentinel is the normalized form of Kibana's default
+// `{"type":"auto"}` color payload, precomputed so `gaugeEsqlColorJSONIsAuto`
+// does not allocate a fresh map on every alignment pass.
+var gaugeEsqlAutoColorSentinel = normalizeXYPlanComparisonJSON(map[string]any{"type": "auto"})
+
+func preserveNormalizedJSONSemanticEquality(plan jsontypes.Normalized, state *jsontypes.Normalized) {
+	if !typeutils.IsKnown(plan) || !typeutils.IsKnown(*state) {
+		return
+	}
+
+	var planObj map[string]any
+	if err := json.Unmarshal([]byte(plan.ValueString()), &planObj); err != nil {
+		return
+	}
+	var stateObj map[string]any
+	if err := json.Unmarshal([]byte(state.ValueString()), &stateObj); err != nil {
+		return
+	}
+
+	if reflect.DeepEqual(normalizeXYPlanComparisonJSON(planObj), normalizeXYPlanComparisonJSON(stateObj)) {
+		*state = plan
+	}
+}
+
+func alignGaugeEsqlMetricStateFromPlan(plan, state *gaugeEsqlMetric) {
+	if plan == nil || state == nil {
+		return
+	}
+	if plan.Title == nil && gaugeEsqlTitleMatchesKibanaDefaultVisible(state.Title) {
+		state.Title = nil
+	}
+	if plan.Ticks == nil && gaugeEsqlTicksMatchesKibanaDefaultBands(state.Ticks) {
+		state.Ticks = nil
+	}
+	if plan.ColorJSON.IsNull() && typeutils.IsKnown(state.ColorJSON) && gaugeEsqlColorJSONIsAuto(state.ColorJSON) {
+		state.ColorJSON = jsontypes.NewNormalizedNull()
+	}
+}
+
+func gaugeEsqlTitleMatchesKibanaDefaultVisible(title *gaugeEsqlTitle) bool {
+	if title == nil {
+		return false
+	}
+	textUnset := !typeutils.IsKnown(title.Text) || title.Text.IsNull()
+	visibleTrue := typeutils.IsKnown(title.Visible) && !title.Visible.IsNull() && title.Visible.ValueBool()
+	return textUnset && visibleTrue
+}
+
+func gaugeEsqlTicksMatchesKibanaDefaultBands(ticks *gaugeEsqlTicks) bool {
+	if ticks == nil {
+		return false
+	}
+	modeBands := typeutils.IsKnown(ticks.Mode) && ticks.Mode.ValueString() == gaugeEsqlTicksModeBandsDefault
+	visibleTrue := typeutils.IsKnown(ticks.Visible) && !ticks.Visible.IsNull() && ticks.Visible.ValueBool()
+	return modeBands && visibleTrue
+}
+
+func gaugeEsqlColorJSONIsAuto(color jsontypes.Normalized) bool {
+	var m map[string]any
+	if err := json.Unmarshal([]byte(color.ValueString()), &m); err != nil {
+		return false
+	}
+	return reflect.DeepEqual(normalizeXYPlanComparisonJSON(m), gaugeEsqlAutoColorSentinel)
 }

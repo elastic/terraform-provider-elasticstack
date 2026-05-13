@@ -46,40 +46,46 @@ func GetProxy(ctx context.Context, client *Client, spaceID, proxyID string) (*kb
 
 // CreateProxy creates a new Fleet proxy.
 func CreateProxy(ctx context.Context, client *Client, spaceID string, body kbapi.PostFleetProxiesJSONRequestBody) (*kbapi.FleetProxyItem, diag.Diagnostics) {
-	resp, err := client.API.PostFleetProxiesWithResponse(ctx, body, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
+	return kibanautil.ConflictRetry(ctx, kibanautil.ConflictMaxAttempts, func() (*kbapi.FleetProxyItem, int, diag.Diagnostics) {
+		resp, err := client.API.PostFleetProxiesWithResponse(ctx, body, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+		if err != nil {
+			return nil, 0, diagutil.FrameworkDiagFromError(err)
+		}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return &resp.JSON200.Item, nil
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+		switch resp.StatusCode() {
+		case http.StatusOK:
+			return &resp.JSON200.Item, resp.StatusCode(), nil
+		default:
+			return nil, resp.StatusCode(), diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
+		}
+	})
 }
 
 // UpdateProxy updates an existing Fleet proxy.
 func UpdateProxy(ctx context.Context, client *Client, spaceID, proxyID string, body kbapi.PutFleetProxiesItemidJSONRequestBody) (*kbapi.FleetProxyItem, diag.Diagnostics) {
-	resp, err := client.API.PutFleetProxiesItemidWithResponse(ctx, proxyID, body, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
+	return kibanautil.ConflictRetry(ctx, kibanautil.ConflictMaxAttempts, func() (*kbapi.FleetProxyItem, int, diag.Diagnostics) {
+		resp, err := client.API.PutFleetProxiesItemidWithResponse(ctx, proxyID, body, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+		if err != nil {
+			return nil, 0, diagutil.FrameworkDiagFromError(err)
+		}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return &resp.JSON200.Item, nil
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+		switch resp.StatusCode() {
+		case http.StatusOK:
+			return &resp.JSON200.Item, resp.StatusCode(), nil
+		default:
+			return nil, resp.StatusCode(), diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
+		}
+	})
 }
 
 // DeleteProxy deletes an existing Fleet proxy.
 func DeleteProxy(ctx context.Context, client *Client, spaceID, proxyID string) diag.Diagnostics {
-	resp, err := client.API.DeleteFleetProxiesItemidWithResponse(ctx, proxyID, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	return handleDeleteResponse(resp.StatusCode(), resp.Body)
+	_, diags := kibanautil.ConflictRetry(ctx, kibanautil.ConflictMaxAttempts, func() (struct{}, int, diag.Diagnostics) {
+		resp, err := client.API.DeleteFleetProxiesItemidWithResponse(ctx, proxyID, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+		if err != nil {
+			return struct{}{}, 0, diagutil.FrameworkDiagFromError(err)
+		}
+		return struct{}{}, resp.StatusCode(), handleDeleteResponse(resp.StatusCode(), resp.Body)
+	})
+	return diags
 }

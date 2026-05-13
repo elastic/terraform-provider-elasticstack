@@ -57,6 +57,11 @@ func TestAccIndicesDataSource(t *testing.T) {
 // "match everything" forms — omitted target, "*", and "_all" — each return a
 // non-empty result with a populated id.
 func TestAccIndicesDataSource_Target_DefaultAndExplicitAll(t *testing.T) {
+	fixtureIdx := strings.ToLower(fmt.Sprintf("tf-acc-indices-defaultall-%s", sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)))
+	vars := config.Variables{
+		"fixture_index": config.StringVariable(fixtureIdx),
+	}
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
@@ -64,6 +69,7 @@ func TestAccIndicesDataSource_Target_DefaultAndExplicitAll(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				// Omitted target — defaults to "*" (all indices).
 				ConfigDirectory: acctest.NamedTestCaseDirectory("no_target"),
+				ConfigVariables: vars,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.all_default", "id", "*"),
 					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_indices.all_default", "target"),
@@ -75,6 +81,7 @@ func TestAccIndicesDataSource_Target_DefaultAndExplicitAll(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				// Explicit "*" wildcard — should return all non-hidden indices.
 				ConfigDirectory: acctest.NamedTestCaseDirectory("star"),
+				ConfigVariables: vars,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.all_star", "id", "*"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.all_star", "target", "*"),
@@ -86,6 +93,7 @@ func TestAccIndicesDataSource_Target_DefaultAndExplicitAll(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				// Explicit "_all" wildcard — equivalent to "*".
 				ConfigDirectory: acctest.NamedTestCaseDirectory("explicit_all"),
+				ConfigVariables: vars,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.all_explicit", "id", "_all"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.all_explicit", "target", "_all"),

@@ -288,7 +288,10 @@ func Test_mosaicConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 
 	assert.Equal(t, types.StringValue("ESQL Mosaic"), model.Title)
 	assert.Nil(t, model.Query)
-	assert.False(t, model.GroupBy.IsNull())
+	assert.True(t, model.GroupBy.IsNull())
+	assert.True(t, model.Metrics.IsNull())
+	assert.NotEmpty(t, model.EsqlMetrics)
+	assert.NotEmpty(t, model.EsqlGroupBy)
 	assert.False(t, model.GroupBreakdownBy.IsNull())
 	require.NotNil(t, model.ValueDisplay)
 	assert.Equal(t, types.StringValue("absolute"), model.ValueDisplay.Mode)
@@ -382,20 +385,104 @@ func Test_mosaicConfigModel_toAPI_metrics_json_exactly_one(t *testing.T) {
 	})
 	t.Run("esql_empty_array", func(t *testing.T) {
 		model := newTestMosaicESQLModel(t)
-		model.Metrics = customtypes.NewJSONWithDefaultsValue[[]map[string]any](`[]`, populatePartitionMetricsDefaults)
+		model.EsqlMetrics = nil
 		_, diags := model.toAPI(nil)
-		requireMosaicMetricsExactlyOneDiagnostic(t, diags)
+		require.True(t, diags.HasError())
+		var found bool
+		for _, d := range diags.Errors() {
+			if d.Summary() == "Invalid esql_metrics" && strings.Contains(d.Detail(), "exactly one") {
+				found = true
+				break
+			}
+		}
+		require.True(t, found, "expected Invalid esql_metrics with 'exactly one' in detail, got %#v", diags)
 	})
 	t.Run("esql_two_items", func(t *testing.T) {
 		model := newTestMosaicESQLModel(t)
-		model.Metrics = customtypes.NewJSONWithDefaultsValue[[]map[string]any](
-			`[{"column":"bytes","operation":"value","format":{"type":"number","decimals":2}},`+
-				`{"column":"events","operation":"value","format":{"type":"number","decimals":2}}]`,
-			populatePartitionMetricsDefaults,
-		)
+		model.EsqlMetrics = append(model.EsqlMetrics, mosaicEsqlMetric{Column: types.StringValue("extra")})
 		_, diags := model.toAPI(nil)
-		requireMosaicMetricsExactlyOneDiagnostic(t, diags)
+		require.True(t, diags.HasError())
+		var found bool
+		for _, d := range diags.Errors() {
+			if d.Summary() == "Invalid esql_metrics" && strings.Contains(d.Detail(), "exactly one") {
+				found = true
+				break
+			}
+		}
+		require.True(t, found, "expected Invalid esql_metrics with 'exactly one' in detail, got %#v", diags)
 	})
+}
+
+func Test_mosaicConfigModel_esqlTypedMetricsRoundTrip(t *testing.T) {
+	// Verifies esql_metrics typed nested attribute round-trips correctly for mosaic.
+	groupBy := `[{"collapse_by":"avg","column":"host.name","operation":"value",` +
+		`"format":{"type":"number","decimals":2},` +
+		`"color":{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"color_code","value":"#D3DAE6"}}}]`
+	groupBreakdownBy := `[{"collapse_by":"avg","column":"service.name","operation":"value",` +
+		`"format":{"type":"number","decimals":2},` +
+		`"color":{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"color_code","value":"#D3DAE6"}}}]`
+	apiJSON := `{
+		"type": "mosaic",
+		"title": "ESQL Mosaic Typed Test",
+		"description": "test",
+		"ignore_global_filters": false,
+		"sampling": 1,
+		"data_source": {"type":"esql","query":"FROM metrics-* | LIMIT 10"},
+		"legend": {"size": "small"},
+		"metric": {"column":"bytes","operation":"value","format":{"type":"number","decimals":2}},
+		"group_by": ` + groupBy + `,
+		"group_breakdown_by": ` + groupBreakdownBy + `
+	}`
+	var api kbapi.MosaicESQL
+	require.NoError(t, json.Unmarshal([]byte(apiJSON), &api))
+
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+	require.NoError(t, attrs.FromMosaicESQL(api))
+
+	converter := newMosaicPanelConfigConverter()
+	visBv := visByValueModel{}
+	diags := converter.populateFromAttributes(context.Background(), nil, nil, &visBv.lensByValueChartBlocks, attrs)
+	require.False(t, diags.HasError())
+	require.NotNil(t, visBv.MosaicConfig)
+
+	// ES|QL mode: EsqlMetrics populated, Metrics/GroupBy null, Query nil
+	assert.Nil(t, visBv.MosaicConfig.Query)
+	assert.True(t, visBv.MosaicConfig.Metrics.IsNull())
+	assert.True(t, visBv.MosaicConfig.GroupBy.IsNull())
+	require.NotEmpty(t, visBv.MosaicConfig.EsqlMetrics)
+	assert.Equal(t, "bytes", visBv.MosaicConfig.EsqlMetrics[0].Column.ValueString())
+	require.NotEmpty(t, visBv.MosaicConfig.EsqlGroupBy)
+	assert.Equal(t, "host.name", visBv.MosaicConfig.EsqlGroupBy[0].Column.ValueString())
+}
+
+func Test_mosaicConfigModel_truncateAfterLinesIsInt64(t *testing.T) {
+	// Verify truncate_after_lines is Int64 (not Float64) per REQ-043.
+	api := kbapi.MosaicNoESQL{
+		Type:  kbapi.MosaicNoESQLTypeMosaic,
+		Query: kbapi.FilterSimple{Expression: "x", Language: func() *kbapi.FilterSimpleLanguage { l := kbapi.FilterSimpleLanguage("kql"); return &l }()},
+		Legend: kbapi.MosaicLegend{
+			Size:               kbapi.LegendSizeM,
+			TruncateAfterLines: new(float32(5)),
+		},
+	}
+	require.NoError(t, json.Unmarshal([]byte(`{"type":"dataView","id":"x"}`), &api.DataSource))
+	var metricUnion kbapi.MosaicNoESQL_Metric
+	require.NoError(t, json.Unmarshal([]byte(`{"operation":"count"}`), &metricUnion))
+	api.Metric = metricUnion
+	var groupByItem kbapi.MosaicNoESQL_GroupBy_Item
+	require.NoError(t, json.Unmarshal([]byte(`{"operation":"terms","field":"host.name","collapse_by":"avg"}`), &groupByItem))
+	groupBy := []kbapi.MosaicNoESQL_GroupBy_Item{groupByItem}
+	api.GroupBy = &groupBy
+	var groupBreakdownByItem kbapi.MosaicNoESQL_GroupBreakdownBy_Item
+	require.NoError(t, json.Unmarshal([]byte(`{"operation":"terms","field":"service.name","collapse_by":"avg"}`), &groupBreakdownByItem))
+	groupBreakdownBy := []kbapi.MosaicNoESQL_GroupBreakdownBy_Item{groupBreakdownByItem}
+	api.GroupBreakdownBy = &groupBreakdownBy
+
+	model := &mosaicConfigModel{}
+	diags := model.fromAPINoESQL(context.Background(), nil, nil, api)
+	require.False(t, diags.HasError())
+	require.NotNil(t, model.Legend)
+	assert.Equal(t, int64(5), model.Legend.TruncateAfterLine.ValueInt64())
 }
 
 func Test_mosaicConfig_lensChartPresentation_hideTitleRoundTrip(t *testing.T) {

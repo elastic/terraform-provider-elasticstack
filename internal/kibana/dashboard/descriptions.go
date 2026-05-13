@@ -28,12 +28,6 @@ var referenceLineIconDescription string
 //go:embed descriptions/tagcloud_metric.md
 var tagcloudMetricDescription string
 
-//go:embed descriptions/heatmap_x_axis.md
-var heatmapXAxisDescription string
-
-//go:embed descriptions/heatmap_y_axis.md
-var heatmapYAxisDescription string
-
 //go:embed descriptions/region_map_region.md
 var regionMapRegionDescription string
 

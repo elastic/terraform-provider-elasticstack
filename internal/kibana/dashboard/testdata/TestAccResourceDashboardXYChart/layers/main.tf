@@ -116,10 +116,6 @@ resource "elasticstack_kibana_dashboard" "test" {
             inside     = false
             position   = "right"
           }
-          query = {
-            language   = "kql"
-            expression = ""
-          }
         }
       }
     }
