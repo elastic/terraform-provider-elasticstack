@@ -194,9 +194,9 @@ func seedPinnedPanelModelForRead(tf *models.PinnedPanelModel, discriminator stri
 	return ppm, populateTf
 }
 
-// applyPinnedControlConfig assigns the active control config from a synthetic
-// models.PanelModel onto ppm and clears the other three sibling slots so each pinned
-// entry only carries the discriminator-matching block.
+// applyPinnedControlConfig copies the active control config from a synthetic
+// `models.PanelModel` into ppm, clears the other sibling config slots on ppm, and leaves
+// each pinned entry with only the block that matches the active discriminator.
 func pinnedPanelApplyPinnedControlConfig(pp *models.PinnedPanelModel, active string, pm *models.PanelModel) {
 	pp.OptionsListControlConfig = nil
 	pp.RangeSliderControlConfig = nil

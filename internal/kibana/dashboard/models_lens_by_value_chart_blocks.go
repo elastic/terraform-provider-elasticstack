@@ -19,9 +19,9 @@ package dashboard
 
 import "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 
-// vis_config.by_value and lens_dashboard_app_config.by_value (design D3/D10).
-// Embedded in both Terraform models so attributes stay at the by_value object root.
-
+// lensByValueChartBlocksFromPanel returns the typed Lens chart block wrapper for the panel's
+// active by-value path: either `vis_config.by_value` or `lens_dashboard_app_config.by_value`
+// (design D3/D10). Attributes remain at the by_value object root on both Terraform models.
 func lensByValueChartBlocksFromPanel(pm *models.PanelModel) *models.LensByValueChartBlocks {
 	if pm == nil {
 		return nil
