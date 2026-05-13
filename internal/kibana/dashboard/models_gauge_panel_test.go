@@ -269,3 +269,76 @@ func Test_gaugePanelConfigConverter_routesESQL(t *testing.T) {
 	assert.Nil(t, visBv.GaugeConfig.Query)
 	assert.Equal(t, "c", visBv.GaugeConfig.EsqlMetric.Column.ValueString())
 }
+
+func Test_gaugeConfigModel_fromAPIESQL_toAPIESQL_roundTrip_populatedOptionalMetricFields(t *testing.T) {
+	ctx := context.Background()
+
+	api := kbapi.GaugeESQL{Type: kbapi.GaugeESQLTypeGauge}
+	require.NoError(t, json.Unmarshal([]byte(`{"type":"esql","query":"FROM metrics-* | STATS revenue = SUM(value)"}`), &api.DataSource))
+	require.NoError(t, json.Unmarshal([]byte(`{"type":"number","decimals":4}`), &api.Metric.Format))
+	api.Metric.Column = "revenue"
+	label := "Rev"
+	api.Metric.Label = &label
+	sub := "Subtitle"
+	api.Metric.Subtitle = &sub
+	require.NoError(t, json.Unmarshal([]byte(`{"type":"auto"}`), &api.Metric.Color))
+
+	gl := "Goal label"
+	api.Metric.Goal = &struct {
+		Column string  `json:"column"`
+		Label  *string `json:"label,omitempty"`
+	}{Column: "goal_col", Label: &gl}
+
+	ml := "Max label"
+	api.Metric.Max = &struct {
+		Column string  `json:"column"`
+		Label  *string `json:"label,omitempty"`
+	}{Column: "max_col", Label: &ml}
+
+	minl := "Min label"
+	api.Metric.Min = &struct {
+		Column string  `json:"column"`
+		Label  *string `json:"label,omitempty"`
+	}{Column: "min_col", Label: &minl}
+
+	mode := kbapi.GaugeESQLMetricTicksModeAuto
+	tvis := false
+	api.Metric.Ticks = &struct {
+		Mode    *kbapi.GaugeESQLMetricTicksMode `json:"mode,omitempty"`
+		Visible *bool                           `json:"visible,omitempty"`
+	}{Mode: &mode, Visible: &tvis}
+
+	tx := "Gauge metric title"
+	titleVis := true
+	api.Metric.Title = &struct {
+		Text    *string `json:"text,omitempty"`
+		Visible *bool   `json:"visible,omitempty"`
+	}{Text: &tx, Visible: &titleVis}
+
+	m := &gaugeConfigModel{}
+	diags := m.fromAPIESQL(ctx, nil, nil, api)
+	require.False(t, diags.HasError(), "%v", diags)
+
+	attrs, diags := m.toAPI(nil)
+	require.False(t, diags.HasError(), "%v", diags)
+	apiOut, err := attrs.AsGaugeESQL()
+	require.NoError(t, err)
+
+	wantMetric, err := json.Marshal(api.Metric)
+	require.NoError(t, err)
+	gotMetric, err := json.Marshal(apiOut.Metric)
+	require.NoError(t, err)
+	assert.JSONEq(t, string(wantMetric), string(gotMetric))
+
+	m2 := &gaugeConfigModel{}
+	diags = m2.fromAPIESQL(ctx, nil, nil, apiOut)
+	require.False(t, diags.HasError(), "%v", diags)
+
+	attrs2, diags := m2.toAPI(nil)
+	require.False(t, diags.HasError(), "%v", diags)
+	apiOut2, err := attrs2.AsGaugeESQL()
+	require.NoError(t, err)
+	gotMetric2, err := json.Marshal(apiOut2.Metric)
+	require.NoError(t, err)
+	assert.JSONEq(t, string(wantMetric), string(gotMetric2))
+}

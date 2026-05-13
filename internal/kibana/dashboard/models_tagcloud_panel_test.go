@@ -387,7 +387,7 @@ func Test_tagcloudConfigModel_fromAPIESQL_toAPIESQL_roundTrip(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(`{"type":"esql","query":"FROM logs-* | STATS count = COUNT() BY host"}`), &api.DataSource))
 	require.NoError(t, json.Unmarshal([]byte(`{"type":"number"}`), &api.Metric.Format))
 	api.Metric.Column = "count"
-	require.NoError(t, json.Unmarshal([]byte(`{"type":"string"}`), &api.TagBy.Format))
+	require.NoError(t, json.Unmarshal([]byte(`{"type":"number"}`), &api.TagBy.Format))
 	require.NoError(t, json.Unmarshal([]byte(`{"mode":"categorical","palette":"default","mapping":[]}`), &api.TagBy.Color))
 	api.TagBy.Column = "host"
 
@@ -404,7 +404,7 @@ func Test_tagcloudConfigModel_fromAPIESQL_toAPIESQL_roundTrip(t *testing.T) {
 	assert.Equal(t, "count", model.EsqlMetric.Column.ValueString())
 	assert.Equal(t, "host", model.EsqlTagBy.Column.ValueString())
 	assert.JSONEq(t, `{"type":"number"}`, model.EsqlMetric.FormatJSON.ValueString())
-	assert.JSONEq(t, `{"type":"string"}`, model.EsqlTagBy.FormatJSON.ValueString())
+	assert.JSONEq(t, `{"type":"number"}`, model.EsqlTagBy.FormatJSON.ValueString())
 	assert.JSONEq(t, `{"mode":"categorical","palette":"default","mapping":[]}`, model.EsqlTagBy.ColorJSON.ValueString())
 
 	attrs, diags := model.toAPI(nil)
@@ -417,11 +417,32 @@ func Test_tagcloudConfigModel_fromAPIESQL_toAPIESQL_roundTrip(t *testing.T) {
 }
 
 func Test_tagcloudConfigModel_toAPIESQL_requiresEsqlBlocks(t *testing.T) {
-	m := &tagcloudConfigModel{
-		DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"esql","query":"FROM logs-*"}`),
-	}
-	_, diags := m.toAPIESQL(nil)
-	require.True(t, diags.HasError(), "expected error when esql_metric is missing")
+	t.Run("missing_esql_metric", func(t *testing.T) {
+		m := &tagcloudConfigModel{
+			DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"esql","query":"FROM logs-*"}`),
+		}
+		_, diags := m.toAPIESQL(nil)
+		require.True(t, diags.HasError(), "expected error when esql_metric is missing")
+	})
+	t.Run("missing_esql_tag_by", func(t *testing.T) {
+		m := &tagcloudConfigModel{
+			DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"esql","query":"FROM logs-*"}`),
+			EsqlMetric: &tagcloudEsqlMetric{
+				Column:     types.StringValue("c"),
+				FormatJSON: jsontypes.NewNormalizedValue(`{"type":"number"}`),
+			},
+		}
+		_, diags := m.toAPIESQL(nil)
+		require.True(t, diags.HasError(), "expected error when esql_tag_by is missing")
+		found := false
+		for _, d := range diags {
+			if d.Summary() == "Missing esql_tag_by" {
+				found = true
+				break
+			}
+		}
+		require.True(t, found, "expected Missing esql_tag_by diagnostic, got %#v", diags)
+	})
 }
 
 func Test_tagcloudPanelConfigConverter_routesESQL(t *testing.T) {
@@ -431,7 +452,7 @@ func Test_tagcloudPanelConfigConverter_routesESQL(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(`{"type":"esql","query":"FROM logs-* | STATS c = COUNT() BY h"}`), &api.DataSource))
 	require.NoError(t, json.Unmarshal([]byte(`{"type":"number"}`), &api.Metric.Format))
 	api.Metric.Column = "c"
-	require.NoError(t, json.Unmarshal([]byte(`{"type":"string"}`), &api.TagBy.Format))
+	require.NoError(t, json.Unmarshal([]byte(`{"type":"number"}`), &api.TagBy.Format))
 	require.NoError(t, json.Unmarshal([]byte(`{"mode":"categorical","palette":"default","mapping":[]}`), &api.TagBy.Color))
 	api.TagBy.Column = "h"
 
