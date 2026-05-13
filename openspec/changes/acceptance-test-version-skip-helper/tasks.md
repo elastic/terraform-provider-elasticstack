@@ -1,11 +1,11 @@
 ## 1. Core Helper Implementation
 
-- [ ] 1.1 Add `Flavor` enum (`Any`, `Stateful`, `Serverless`) and `String() string` method to `internal/versionutils/testutils.go`
-- [ ] 1.2 Add unexported `checkSkip(minVersion, constraints, flavor)` function that creates one ES client and evaluates version + flavor rules
-- [ ] 1.3 Add exported `SkipIfUnsupported(t *testing.T, minVersion *version.Version, flavor Flavor)` helper
-- [ ] 1.4 Add exported `SkipIfUnsupportedConstraints(t *testing.T, constraints version.Constraints, flavor Flavor)` helper
-- [ ] 1.5 Add unit tests for `checkSkip` covering: below-min version, above-min version, serverless bypass, `FlavorStateful` on serverless, `FlavorServerless` on stateful, client-creation error
-- [ ] 1.6 Run `make check-lint` and fix any issues
+- [x] 1.1 Add `Flavor` enum (`Any`, `Stateful`, `Serverless`) and `String() string` method to `internal/versionutils/testutils.go`
+- [x] 1.2 Add unexported `checkSkip(minVersion, constraints, flavor)` function that creates one ES client and evaluates version + flavor rules
+- [x] 1.3 Add exported `SkipIfUnsupported(t *testing.T, minVersion *version.Version, flavor Flavor)` helper
+- [x] 1.4 Add exported `SkipIfUnsupportedConstraints(t *testing.T, constraints version.Constraints, flavor Flavor)` helper
+- [x] 1.5 Add unit tests for `checkSkip` covering: below-min version, above-min version, serverless bypass, `FlavorStateful` on serverless, `FlavorServerless` on stateful, client-creation error
+- [x] 1.6 Run `make check-lint` and fix any issues
 
 ## 2. Representative Package Migration (Dashboard)
 
