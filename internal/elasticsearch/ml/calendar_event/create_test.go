@@ -18,6 +18,7 @@
 package calendar_event
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -44,16 +45,17 @@ func TestCalendarEventMatchesPlanWire(t *testing.T) {
 	startMs := time.Date(2026, 1, 1, 10, 0, 0, 0, time.UTC).UnixMilli()
 	endMs := time.Date(2026, 1, 1, 11, 0, 0, 0, time.UTC).UnixMilli()
 	tr := true
-	fs := "86400"
+	fsRaw, err := json.Marshal(int64(86400))
+	assert.NoError(t, err)
 
 	plan := calendarEventWire{
 		Description: "outage",
 		StartTime:   millisJSONRaw(startMs),
 		EndTime:     millisJSONRaw(endMs),
-		SkipResult: &tr,
+		SkipResult:  &tr,
 	}
 	ev := plan
-	ev.ForceTimeShift = &fs
+	ev.ForceTimeShift = json.RawMessage(fsRaw)
 
 	assert.False(t, calendarEventMatchesPlanWire(ev, plan))
 

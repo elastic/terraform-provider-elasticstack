@@ -22,6 +22,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
@@ -71,20 +73,41 @@ func createCalendarEvent(ctx context.Context, client *clients.ElasticsearchScope
 		return plan, diags
 	}
 
-	postRes, err := typedClient.Ml.PostCalendarEvents(calendarID).Raw(bytes.NewReader(body)).Do(ctx)
+	postHTTP, err := typedClient.Ml.PostCalendarEvents(calendarID).Raw(bytes.NewReader(body)).Perform(ctx)
 	if err != nil {
 		diags.AddError("Failed to create ML calendar event", fmt.Sprintf("Unable to create ML calendar event for calendar %s — %s", calendarID, err.Error()))
 		return plan, diags
 	}
+	defer postHTTP.Body.Close()
+	postBodyBytes, readErr := io.ReadAll(postHTTP.Body)
+	if readErr != nil {
+		diags.AddError("Failed to read ML calendar event response", readErr.Error())
+		return plan, diags
+	}
+	if postHTTP.StatusCode >= 300 {
+		diags.AddError("Failed to create ML calendar event", fmt.Sprintf("Unable to create ML calendar event for calendar %s — status %d: %s", calendarID, postHTTP.StatusCode, string(postBodyBytes)))
+		return plan, diags
+	}
 
 	var eventID string
-	if postRes != nil {
-		for _, e := range postRes.Events {
-			if e.EventId != nil && *e.EventId != "" {
-				eventID = *e.EventId
+	var postWire struct {
+		Events []calendarEventWire `json:"events"`
+	}
+	if err := json.Unmarshal(postBodyBytes, &postWire); err != nil {
+		diags.AddError("Failed to decode ML calendar event response", fmt.Sprintf("Unable to decode post calendar events response for calendar %s — %s", calendarID, err.Error()))
+		return plan, diags
+	}
+	for i := range postWire.Events {
+		ev := postWire.Events[i]
+		if calendarEventMatchesPlanWire(ev, planWire) {
+			if id := calendarEventWireEventID(&ev); id != "" {
+				eventID = id
 				break
 			}
 		}
+	}
+	if eventID == "" && len(postWire.Events) == 1 {
+		eventID = calendarEventWireEventID(&postWire.Events[0])
 	}
 
 	if eventID == "" {
@@ -118,11 +141,25 @@ func createCalendarEvent(ctx context.Context, client *clients.ElasticsearchScope
 				}
 			}
 		}
-	}
 
-	if eventID == "" {
-		diags.AddError("Failed to identify created event", "Could not determine the new event ID from the API response or calendar events list")
-		return plan, diags
+		if eventID == "" {
+			const maxPostRespDiag = 768
+			var detail strings.Builder
+			detail.WriteString("Could not determine the new event ID from the API response or calendar events list. ")
+			detail.WriteString(fmt.Sprintf("post response had %d event(s). ", len(postWire.Events)))
+			for i := range postWire.Events {
+				detail.WriteString(fmt.Sprintf("[%d] event_id=%q description=%q; ", i, calendarEventWireEventID(&postWire.Events[i]), postWire.Events[i].Description))
+			}
+			detail.WriteString(fmt.Sprintf("new-event candidates from list: %d. ", len(candidates)))
+			ps := string(postBodyBytes)
+			if len(ps) > maxPostRespDiag {
+				ps = ps[:maxPostRespDiag] + "...(truncated)"
+			}
+			detail.WriteString("post response excerpt: ")
+			detail.WriteString(ps)
+			diags.AddError("Failed to identify created event", detail.String())
+			return plan, diags
+		}
 	}
 
 	compID, sdkDiags := client.ID(ctx, calendarID+"/"+eventID)

@@ -24,6 +24,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -83,22 +84,26 @@ func getSchema(_ context.Context) schema.Schema {
 			},
 			"skip_result": schema.BoolAttribute{
 				MarkdownDescription: "If true, results are not generated for buckets that fall inside the event period. " +
-					"Maps to `skip_result` in the Elasticsearch API.",
+					"Defaults to `true`, matching the Elasticsearch API default. Maps to `skip_result` in the Elasticsearch API.",
 				Optional: true,
+				Computed: true,
+				Default:  booldefault.StaticBool(true),
 				PlanModifiers: []planmodifier.Bool{
 					boolplanmodifier.RequiresReplace(),
 				},
 			},
 			"skip_model_update": schema.BoolAttribute{
 				MarkdownDescription: "If true, model updates are not generated for buckets that fall inside the event period. " +
-					"Maps to `skip_model_update` in the Elasticsearch API.",
+					"Defaults to `true`, matching the Elasticsearch API default. Maps to `skip_model_update` in the Elasticsearch API.",
 				Optional: true,
+				Computed: true,
+				Default:  booldefault.StaticBool(true),
 				PlanModifiers: []planmodifier.Bool{
 					boolplanmodifier.RequiresReplace(),
 				},
 			},
 			"force_time_shift": schema.StringAttribute{
-				MarkdownDescription: "When set, changes the duration of the event to the specified value in seconds. " +
+				MarkdownDescription: "When set, changes the duration of the event to the specified value in seconds (decimal digits as a string; the API uses a JSON number). " +
 					"Maps to `force_time_shift` in the Elasticsearch API.",
 				Optional: true,
 				PlanModifiers: []planmodifier.String{

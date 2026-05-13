@@ -20,6 +20,8 @@ package calendar_event
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"strings"
 
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 )
@@ -37,9 +39,10 @@ type calendarEventWire struct {
 	CalendarID  *string         `json:"calendar_id,omitempty"`
 	SkipResult  *bool           `json:"skip_result,omitempty"`
 	// SkipResultsLegacy is accepted on decode only; Elasticsearch may still return `skip_results` in some versions.
-	SkipResultsLegacy *bool   `json:"skip_results,omitempty"`
-	SkipModelUpdate   *bool   `json:"skip_model_update,omitempty"`
-	ForceTimeShift    *string `json:"force_time_shift,omitempty"`
+	SkipResultsLegacy *bool `json:"skip_results,omitempty"`
+	SkipModelUpdate   *bool `json:"skip_model_update,omitempty"`
+	// ForceTimeShift is JSON number or string in API responses; RawMessage accepts both.
+	ForceTimeShift json.RawMessage `json:"force_time_shift,omitempty"`
 }
 
 func rawJSONToAny(raw json.RawMessage) (any, error) {
@@ -51,6 +54,56 @@ func rawJSONToAny(raw json.RawMessage) (any, error) {
 		return nil, err
 	}
 	return v, nil
+}
+
+// forceTimeShiftWireToStringPtr decodes API JSON (number or string) into a decimal string for Terraform state.
+func forceTimeShiftWireToStringPtr(raw json.RawMessage) (*string, error) {
+	if len(raw) == 0 {
+		return nil, nil
+	}
+	var u any
+	if err := json.Unmarshal(raw, &u); err != nil {
+		return nil, err
+	}
+	switch v := u.(type) {
+	case float64:
+		if v == float64(int64(v)) {
+			s := strconv.FormatInt(int64(v), 10)
+			return &s, nil
+		}
+		s := strconv.FormatFloat(v, 'f', -1, 64)
+		return &s, nil
+	case json.Number:
+		if i, err := v.Int64(); err == nil {
+			s := strconv.FormatInt(i, 10)
+			return &s, nil
+		}
+		f, err := v.Float64()
+		if err != nil {
+			return nil, err
+		}
+		s := strconv.FormatFloat(f, 'f', -1, 64)
+		return &s, nil
+	case string:
+		return &v, nil
+	default:
+		return nil, fmt.Errorf("unsupported force_time_shift type %T", u)
+	}
+}
+
+func forceTimeShiftStringToJSONRaw(s string) (json.RawMessage, error) {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return nil, fmt.Errorf("empty force_time_shift")
+	}
+	if n, err := strconv.ParseInt(s, 10, 64); err == nil {
+		return json.Marshal(n)
+	}
+	f, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		return nil, fmt.Errorf("force_time_shift must be numeric: %w", err)
+	}
+	return json.Marshal(f)
 }
 
 func effectiveSkipResultPtr(w *calendarEventWire) *bool {
@@ -75,13 +128,18 @@ func wireEventToAPIModel(w *calendarEventWire) (*CalendarEventAPIModel, fwdiags.
 		diags.AddError("Invalid end_time in API response", err.Error())
 		return nil, diags
 	}
+	fts, err := forceTimeShiftWireToStringPtr(w.ForceTimeShift)
+	if err != nil {
+		diags.AddError("Invalid force_time_shift in API response", err.Error())
+		return nil, diags
+	}
 	m := &CalendarEventAPIModel{
 		Description:     w.Description,
 		StartTime:       startAny,
 		EndTime:         endAny,
 		SkipResult:      effectiveSkipResultPtr(w),
 		SkipModelUpdate: w.SkipModelUpdate,
-		ForceTimeShift:  w.ForceTimeShift,
+		ForceTimeShift:  fts,
 	}
 	if w.CalendarID != nil {
 		m.CalendarID = *w.CalendarID
@@ -126,8 +184,12 @@ func calendarEventWireFromTFModel(m *CalendarEventTFModel) (calendarEventWire, f
 		w.SkipModelUpdate = &v
 	}
 	if !m.ForceTimeShift.IsNull() && !m.ForceTimeShift.IsUnknown() {
-		s := m.ForceTimeShift.ValueString()
-		w.ForceTimeShift = &s
+		raw, err := forceTimeShiftStringToJSONRaw(m.ForceTimeShift.ValueString())
+		if err != nil {
+			diags.AddError("Invalid force_time_shift", err.Error())
+			return calendarEventWire{}, diags
+		}
+		w.ForceTimeShift = raw
 	}
 	return w, diags
 }
@@ -141,6 +203,28 @@ func optionalBoolPtrEqual(a, b *bool) bool {
 	default:
 		return *a == *b
 	}
+}
+
+// optionalBoolPtrEqualLenientMLCalendarBool compares optional ML calendar booleans for POST/list identity.
+// Elasticsearch may omit JSON false values; POST echoes may include server defaults (typically true) while
+// Terraform leaves unconfigured attributes unset (nil in the plan wire).
+func optionalBoolPtrEqualLenientMLCalendarBool(a, b *bool) bool {
+	if optionalBoolPtrEqual(a, b) {
+		return true
+	}
+	if a != nil && !*a && b == nil {
+		return true
+	}
+	if b != nil && !*b && a == nil {
+		return true
+	}
+	if a != nil && *a && b == nil {
+		return true
+	}
+	if b != nil && *b && a == nil {
+		return true
+	}
+	return false
 }
 
 func optionalStringPtrEqual(a, b *string) bool {
@@ -178,13 +262,21 @@ func calendarEventMatchesPlanWire(ev, plan calendarEventWire) bool {
 	if !ok1 || !ok2 || evSm != plSm || evEm != plEm {
 		return false
 	}
-	if !optionalBoolPtrEqual(effectiveSkipResultPtr(&ev), effectiveSkipResultPtr(&plan)) {
+	if !optionalBoolPtrEqualLenientMLCalendarBool(effectiveSkipResultPtr(&ev), effectiveSkipResultPtr(&plan)) {
 		return false
 	}
-	if !optionalBoolPtrEqual(ev.SkipModelUpdate, plan.SkipModelUpdate) {
+	if !optionalBoolPtrEqualLenientMLCalendarBool(ev.SkipModelUpdate, plan.SkipModelUpdate) {
 		return false
 	}
-	if !optionalStringPtrEqual(ev.ForceTimeShift, plan.ForceTimeShift) {
+	evFT, errEv := forceTimeShiftWireToStringPtr(ev.ForceTimeShift)
+	if errEv != nil {
+		return false
+	}
+	plFT, errPl := forceTimeShiftWireToStringPtr(plan.ForceTimeShift)
+	if errPl != nil {
+		return false
+	}
+	if !optionalStringPtrEqual(evFT, plFT) {
 		return false
 	}
 	return true
