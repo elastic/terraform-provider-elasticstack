@@ -27,7 +27,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	timeouts "github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -369,13 +368,9 @@ func (plan *TFModel) fromAPIModel(ctx context.Context, apiModel *APIModel) diag.
 	plan.Groups, groupDiags = typeutils.NonEmptySetOrDefault(ctx, plan.Groups, types.StringType, apiModel.Groups)
 	diags.Append(groupDiags...)
 
-	if len(apiModel.Calendars) > 0 {
-		calSet, calDiags := calendarsToTFSet(ctx, apiModel.Calendars)
-		diags.Append(calDiags...)
-		plan.Calendars = calSet
-	} else {
-		plan.Calendars = types.SetNull(types.StringType)
-	}
+	var calDiags diag.Diagnostics
+	plan.Calendars, calDiags = typeutils.NonEmptySetOrDefault(ctx, plan.Calendars, types.StringType, apiModel.Calendars)
+	diags.Append(calDiags...)
 
 	// Convert optional fields
 	plan.AllowLazyOpen = types.BoolPointerValue(apiModel.AllowLazyOpen)
@@ -412,12 +407,6 @@ func (plan *TFModel) fromAPIModel(ctx context.Context, apiModel *APIModel) diag.
 
 	// Convert data_description
 	plan.DataDescription = plan.convertDataDescriptionFromAPI(ctx, &apiModel.DataDescription, &diags)
-
-	// Convert model_plot_config
-	plan.ModelPlotConfig = plan.convertModelPlotConfigFromAPI(ctx, apiModel.ModelPlotConfig, &diags)
-
-	// Convert analysis_limits
-	plan.AnalysisLimits = plan.convertAnalysisLimitsFromAPI(ctx, apiModel.AnalysisLimits, &diags)
 
 	// Convert model_plot_config
 	plan.ModelPlotConfig = plan.convertModelPlotConfigFromAPI(ctx, apiModel.ModelPlotConfig, &diags)
@@ -633,17 +622,6 @@ func (plan *TFModel) convertModelPlotConfigFromAPI(ctx context.Context, apiModel
 	modelPlotConfigObjectValue, d := types.ObjectValueFrom(ctx, getModelPlotConfigAttrTypes(ctx), modelPlotConfigTF)
 	diags.Append(d...)
 	return modelPlotConfigObjectValue
-}
-
-func calendarsToTFSet(_ context.Context, ids []string) (types.Set, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	elems := make([]attr.Value, 0, len(ids))
-	for _, id := range ids {
-		elems = append(elems, types.StringValue(id))
-	}
-	s, d := types.SetValue(types.StringType, elems)
-	diags.Append(d...)
-	return s, diags
 }
 
 func calendarIDsFromTFSet(ctx context.Context, s types.Set) ([]string, diag.Diagnostics) {

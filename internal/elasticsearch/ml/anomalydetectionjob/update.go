@@ -61,7 +61,10 @@ func (r *anomalyDetectionJobResource) Update(ctx context.Context, req resource.U
 		return
 	}
 
-	calendarChanged := !plan.Calendars.Equal(state.Calendars)
+	// Avoid calendar reconciliation when the planned value is unknown (e.g. depends on a
+	// resource created in the same apply); otherwise sync could treat unknown as "empty" and
+	// strip all prior calendar assignments.
+	calendarChanged := !plan.Calendars.IsUnknown() && !plan.Calendars.Equal(state.Calendars)
 
 	// Only proceed with update if there are changes
 	if !hasJobFieldChanges && !calendarChanged {
