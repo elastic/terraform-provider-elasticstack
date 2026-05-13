@@ -6,24 +6,6 @@ Removed top-level `enabled` from `elasticstack_fleet_integration_policy`. In pra
 
 The documented minimum supported Elastic Stack version is now 8.0. 7.x is no longer included in the acceptance test matrix or officially supported. Compatibility branches and version gates for pre-8.0 Elasticsearch behavior have been removed from the transform and ILM resources.
 
-#### **`elasticstack_kibana_dashboard` (experimental)**
-
-This resource remains **experimental**. If you compile it into the provider (`TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL=true`, or downstream packaging that exposes experimental resources), your dashboard HCL may need updating on upgrade:
-
-- For `panel.type = "vis"`, the typed Lens chart blocks (`xy_chart_config`, `metric_chart_config`, etc.) moved from sibling attributes on the panel into `viz_config.by_value`; set exactly one chart block inside that nested object.
-- `lens_dashboard_app_config.by_reference.drilldowns_json` is removed from the schema; use structured `drilldowns` (`dashboard`, `discover`, and `url` blocks) instead.
-- Structured URL drilldowns require `trigger` (`on_click_row`, `on_click_value`, `on_open_panel_menu`, or `on_select_range`); the Kibana dashboard API rejects URL drilldowns without `trigger`, and the provider now enforces this at plan time.
-
-The following additional schema inconsistencies have been fixed in `elasticstack_kibana_dashboard`:
-
-- **Waffle & pie chart `config_json` rename:** `metrics[].config` and `group_by[].config` are renamed to `metrics[].config_json` and `group_by[].config_json` to align with the datatable and metric chart convention. Update any HCL referencing the old attribute names.
-- **Heatmap `x_axis_json` / `y_axis_json` removed:** These raw JSON attributes are removed. Breakdown dimensions are now handled internally by the model layer; use the typed `axis` block instead.
-- **Treemap & mosaic ES|QL typed schemas:** `metrics_json` and `group_by_json` are no longer used for ES|QL mode. Use the new typed `esql_metrics` and `esql_group_by` nested blocks, which are mutually exclusive with their JSON counterparts.
-- **Pie chart `data_source_json` now required:** All other typed Lens charts already require this; pie now matches.
-- **XY chart `query` now optional:** ES|QL XY panels carry no query in the API; the schema now allows omitting `query`.
-- **Pie chart schema defaults removed:** `ignore_global_filters` and `sampling` no longer have hardcoded schema-level defaults; they derive from `lensChartBaseAttributes()` and reconcile from API read-back.
-- **Partition legend `truncate_after_lines` normalized to `Int64`:** The API uses `float32`, but fractional line truncation is semantically wrong. All partition chart legends (treemap, mosaic, pie, waffle) now use `Int64`.
-- **Gauge & tagcloud ES|QL mode:** `query` is now optional on both; typed `esql_metric` and `esql_tag_by` blocks are added for ES|QL mode, mutually exclusive with `metric_json` / `tag_by_json`.
 
 #### `elasticstack_kibana_security_detection_rule` action `params` format change
 
@@ -63,12 +45,10 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 }
 ```
 
-### Added
-
-- **Experimental:** `elasticstack_kibana_dashboard` now exposes `viz_config.by_reference` for `vis` panels (saved Lens by reference): `ref_id`, optional `references_json`, optional structured `drilldowns`, required `time_range`, and the same presentation fields as `lens_dashboard_app_config.by_reference`, symmetric with `lens_dashboard_app_config`.
-
 ### Changes
 
+- Add optional `scope` on detector `custom_rules` for ML anomaly detection jobs (map analysis field names to ML `filter_id` and optional `filter_type`). ([#2877](https://github.com/elastic/terraform-provider-elasticstack/pull/2877))
+- Added plan-time validation for kibana_slo time_window.duration based on window type. ([#2914](https://github.com/elastic/terraform-provider-elasticstack/pull/2914))
 - Remove top-level `enabled` field from `elasticstack_fleet_integration_policy`. ([#2773](https://github.com/elastic/terraform-provider-elasticstack/pull/2773))
 - Adds sort nested block to elasticstack_elasticsearch_index resource with deprecation of sort_field/sort_order and seamless migration ([#2851](https://github.com/elastic/terraform-provider-elasticstack/pull/2851))
 - Fix crash when role_descriptors is not set in elasticstack_elasticsearch_security_api_key ([#2855](https://github.com/elastic/terraform-provider-elasticstack/pull/2855))
