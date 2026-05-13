@@ -40,20 +40,20 @@
 
 ## 5. Kibana Package Migrations
 
-- [ ] 5.1 Migrate `internal/kibana/agentbuildertool/acc_test.go`
-- [ ] 5.2 Migrate `internal/kibana/agentbuilderworkflow/acc_test.go`
-- [ ] 5.3 Migrate `internal/kibana/agentbuilderagent/acc_test.go`
-- [ ] 5.4 Migrate `internal/kibana/dataview/acc_test.go` uniform-skip tests
-- [ ] 5.5 Migrate `internal/kibana/defaultdataview/acc_test.go`
-- [ ] 5.6 Migrate `internal/kibana/maintenance_window/acc_test.go`
-- [ ] 5.7 Migrate `internal/kibana/security_detection_rule/acc_test.go` uniform-skip tests
-- [ ] 5.8 Migrate `internal/kibana/slo/acc_test.go` uniform-skip tests
-- [ ] 5.9 Migrate `internal/kibana/synthetics/monitor/acc_test.go` uniform-skip tests
-- [ ] 5.10 Migrate `internal/kibana/synthetics/parameter/acc_test.go`
-- [ ] 5.11 Migrate `internal/kibana/synthetics/privatelocation/acc_test.go`
-- [ ] 5.12 Migrate `internal/kibana/streams/acc_test.go`
-- [ ] 5.13 Migrate `internal/kibana/security_exception_item/acc_test.go` uniform-skip tests
-- [ ] 5.14 Run `make check-lint` and targeted Kibana acceptance tests
+- [x] 5.1 Migrate `internal/kibana/agentbuildertool/acc_test.go`
+- [x] 5.2 Migrate `internal/kibana/agentbuilderworkflow/acc_test.go`
+- [x] 5.3 Migrate `internal/kibana/agentbuilderagent/acc_test.go`
+- [x] 5.4 Migrate `internal/kibana/dataview/acc_test.go` uniform-skip tests
+- [x] 5.5 Migrate `internal/kibana/defaultdataview/acc_test.go`
+- [x] 5.6 Migrate `internal/kibana/maintenance_window/acc_test.go`
+- [x] 5.7 Migrate `internal/kibana/security_detection_rule/acc_test.go` uniform-skip tests
+- [x] 5.8 Migrate `internal/kibana/slo/acc_test.go` uniform-skip tests
+- [x] 5.9 Migrate `internal/kibana/synthetics/monitor/acc_test.go` uniform-skip tests
+- [x] 5.10 Migrate `internal/kibana/synthetics/parameter/acc_test.go`
+- [x] 5.11 Migrate `internal/kibana/synthetics/privatelocation/acc_test.go`
+- [x] 5.12 Migrate `internal/kibana/streams/acc_test.go`
+- [x] 5.13 Migrate `internal/kibana/security_exception_item/acc_test.go` uniform-skip tests
+- [x] 5.14 Run `make check-lint` and targeted Kibana acceptance tests (lint verified after commits; Kibana acceptance not run — no local stack)
 
 ## 6. Provider and Remaining Migrations
 
