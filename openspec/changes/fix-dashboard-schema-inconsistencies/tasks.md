@@ -72,7 +72,7 @@
 
 ## 8. Finalization
 
-- [ ] 8.1 Run `make build` and fix compilation errors
+- [x] 8.1 Run `make build` and fix compilation errors
 - [ ] 8.2 Run `make check-lint` and fix any lint issues
 - [ ] 8.3 Run `make check-openspec` and fix any spec validation issues
 - [ ] 8.4 Update CHANGELOG.md with breaking changes summary
