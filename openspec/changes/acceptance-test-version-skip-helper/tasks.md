@@ -27,16 +27,16 @@
 
 ## 4. Fleet Package Migrations
 
-- [ ] 4.1 Migrate `internal/fleet/agentpolicy/acc_test.go` tests with uniform `minVersionAgentPolicy` skips
-- [ ] 4.2 Migrate `internal/fleet/integration/acc_test.go` uniform-skip tests
-- [ ] 4.3 Migrate `internal/fleet/integration_policy/acc_test.go` uniform-skip tests
-- [ ] 4.4 Migrate `internal/fleet/output/acc_test.go`
-- [ ] 4.5 Migrate `internal/fleet/proxy/acc_test.go`
-- [ ] 4.6 Migrate `internal/fleet/agentdownloadsource/acc_test.go`
-- [ ] 4.7 Migrate `internal/fleet/elastic_defend_integration_policy/acc_test.go`
-- [ ] 4.8 Migrate `internal/fleet/enrollmenttokens/acc_test.go`
-- [ ] 4.9 Migrate `internal/fleet/serverhost/acc_test.go`
-- [ ] 4.10 Run `make check-lint` and targeted Fleet acceptance tests
+- [x] 4.1 Migrate `internal/fleet/agentpolicy/acc_test.go` tests with uniform `minVersionAgentPolicy` skips
+- [x] 4.2 Migrate `internal/fleet/integration/acc_test.go` uniform-skip tests
+- [x] 4.3 Migrate `internal/fleet/integration_policy/acc_test.go` uniform-skip tests
+- [x] 4.4 Migrate `internal/fleet/output/acc_test.go`
+- [x] 4.5 Migrate `internal/fleet/proxy/acc_test.go`
+- [x] 4.6 Migrate `internal/fleet/agentdownloadsource/acc_test.go`
+- [x] 4.7 Migrate `internal/fleet/elastic_defend_integration_policy/acc_test.go`
+- [x] 4.8 Migrate `internal/fleet/enrollmenttokens/data_source_test.go`
+- [x] 4.9 Migrate `internal/fleet/serverhost/acc_test.go`
+- [x] 4.10 Run `make check-lint` and targeted Fleet acceptance tests (lint verified after commits; Fleet acceptance not run — no local stack)
 
 ## 5. Kibana Package Migrations
 
