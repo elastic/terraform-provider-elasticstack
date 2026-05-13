@@ -17,17 +17,5 @@
 
 package dashboard
 
-// visByReferenceModel duplicates lensDashboardAppByReferenceModel — both branches use getLensByReferenceAttributes()
+// models.VisByReferenceModel duplicates models.LensDashboardAppByReferenceModel — both branches use getLensByReferenceAttributes()
 // in schema and identical API saved-object linkage fields on read/write (design D3).
-type visByReferenceModel = lensDashboardAppByReferenceModel
-
-// visByValueModel is Terraform model for vis_config.by_value (12 Lens chart kinds, no nested config_json; design D4).
-type visByValueModel struct {
-	lensByValueChartBlocks
-}
-
-// visConfigModel is nested `vis_config` on panels with type vis (design D10; mapPanelFromAPI / toAPI classification in task 6).
-type visConfigModel struct {
-	ByValue     *visByValueModel     `tfsdk:"by_value"`
-	ByReference *visByReferenceModel `tfsdk:"by_reference"`
-}

@@ -19,17 +19,13 @@ package dashboard
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// AccessControlValue maps to the access_control block
-type AccessControlValue struct {
-	AccessMode types.String `tfsdk:"access_mode"`
-}
-
 // toCreateAPI converts the Terraform model to the POST API model
-func (m *AccessControlValue) toCreateAPI() kbapi.KbnDashboardAccessControl {
+func accessControlValueToCreateAPI(m *models.AccessControlValue) kbapi.KbnDashboardAccessControl {
 	result := kbapi.KbnDashboardAccessControl{}
 	if m == nil {
 		return result
@@ -44,12 +40,12 @@ func (m *AccessControlValue) toCreateAPI() kbapi.KbnDashboardAccessControl {
 }
 
 // newAccessControlFromAPI maps the API response to the Terraform model
-func newAccessControlFromAPI(accessMode *string) *AccessControlValue {
+func newAccessControlFromAPI(accessMode *string) *models.AccessControlValue {
 	if accessMode == nil {
 		return nil
 	}
 
-	return &AccessControlValue{
+	return &models.AccessControlValue{
 		AccessMode: types.StringPointerValue(accessMode),
 	}
 }

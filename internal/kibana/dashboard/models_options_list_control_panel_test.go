@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
@@ -38,8 +39,8 @@ func makeAPIConfig(dataViewID, fieldName string) *kbapi.KbnDashboardPanelTypeOpt
 
 // Test: nil config block with non-nil tfPanel preserves nil intent.
 func Test_populateOptionsListControlFromAPI_nilBlock_preservedAsNil(t *testing.T) {
-	pm := &panelModel{}
-	tfPanel := &panelModel{}
+	pm := &models.PanelModel{}
+	tfPanel := &models.PanelModel{}
 	populateOptionsListControlFromAPI(pm, tfPanel, makeAPIConfig(optionsListControlTestDataViewID, "field1"))
 	assert.Nil(t, pm.OptionsListControlConfig)
 }
@@ -49,7 +50,7 @@ func Test_populateOptionsListControlFromAPI_nilBlock_preservedAsNil(t *testing.T
 // ignore_validations, run_past_timeout) and sort are intentionally left null to avoid
 // post-import drift when users have not explicitly configured them.
 func Test_populateOptionsListControlFromAPI_import_populatesUserConfigurableFields(t *testing.T) {
-	pm := &panelModel{}
+	pm := &models.PanelModel{}
 	st := kbapi.Prefix
 	var api kbapi.KbnDashboardPanelTypeOptionsListControl
 	api.Config.DataViewId = optionsListControlTestDataViewID
@@ -107,7 +108,7 @@ func Test_populateOptionsListControlFromAPI_import_populatesUserConfigurableFiel
 
 // Test: on import with no optional fields, only required fields are populated.
 func Test_populateOptionsListControlFromAPI_import_requiredFieldsOnly(t *testing.T) {
-	pm := &panelModel{}
+	pm := &models.PanelModel{}
 	populateOptionsListControlFromAPI(pm, nil, makeAPIConfig("dv2", "status"))
 	require.NotNil(t, pm.OptionsListControlConfig)
 	assert.Equal(t, types.StringValue("dv2"), pm.OptionsListControlConfig.DataViewID)
@@ -118,15 +119,15 @@ func Test_populateOptionsListControlFromAPI_import_requiredFieldsOnly(t *testing
 
 // Test: existing block with known fields gets updated from API.
 func Test_populateOptionsListControlFromAPI_knownFields_updatedFromAPI(t *testing.T) {
-	pm := &panelModel{
-		OptionsListControlConfig: &optionsListControlConfigModel{
+	pm := &models.PanelModel{
+		OptionsListControlConfig: &models.OptionsListControlConfigModel{
 			DataViewID:       types.StringValue("old-dv"),
 			FieldName:        types.StringValue("old-field"),
 			UseGlobalFilters: types.BoolValue(false),
 			SearchTechnique:  types.StringValue("prefix"),
 		},
 	}
-	tfPanel := &panelModel{OptionsListControlConfig: pm.OptionsListControlConfig}
+	tfPanel := &models.PanelModel{OptionsListControlConfig: pm.OptionsListControlConfig}
 	st := kbapi.Wildcard
 	var api kbapi.KbnDashboardPanelTypeOptionsListControl
 	api.Config.DataViewId = "new-dv"
@@ -143,15 +144,15 @@ func Test_populateOptionsListControlFromAPI_knownFields_updatedFromAPI(t *testin
 
 // Test: null-preservation — null optional fields in state are not overwritten by API values.
 func Test_populateOptionsListControlFromAPI_nullFields_preservedAsNull(t *testing.T) {
-	pm := &panelModel{
-		OptionsListControlConfig: &optionsListControlConfigModel{
+	pm := &models.PanelModel{
+		OptionsListControlConfig: &models.OptionsListControlConfigModel{
 			DataViewID:       types.StringValue(optionsListControlTestDataViewID),
 			FieldName:        types.StringValue("f1"),
 			UseGlobalFilters: types.BoolNull(),
 			SearchTechnique:  types.StringNull(),
 		},
 	}
-	tfPanel := &panelModel{OptionsListControlConfig: pm.OptionsListControlConfig}
+	tfPanel := &models.PanelModel{OptionsListControlConfig: pm.OptionsListControlConfig}
 	st := kbapi.Exact
 	var api kbapi.KbnDashboardPanelTypeOptionsListControl
 	api.Config.DataViewId = optionsListControlTestDataViewID
@@ -166,14 +167,14 @@ func Test_populateOptionsListControlFromAPI_nullFields_preservedAsNull(t *testin
 
 // Test: nil display_settings block in state is preserved as nil even when API returns data.
 func Test_populateOptionsListControlFromAPI_nilDisplaySettings_preservedAsNil(t *testing.T) {
-	pm := &panelModel{
-		OptionsListControlConfig: &optionsListControlConfigModel{
+	pm := &models.PanelModel{
+		OptionsListControlConfig: &models.OptionsListControlConfigModel{
 			DataViewID:      types.StringValue(optionsListControlTestDataViewID),
 			FieldName:       types.StringValue("f1"),
 			DisplaySettings: nil,
 		},
 	}
-	tfPanel := &panelModel{OptionsListControlConfig: pm.OptionsListControlConfig}
+	tfPanel := &models.PanelModel{OptionsListControlConfig: pm.OptionsListControlConfig}
 	var api kbapi.KbnDashboardPanelTypeOptionsListControl
 	api.Config.DataViewId = optionsListControlTestDataViewID
 	api.Config.FieldName = "f1"
@@ -193,8 +194,8 @@ func Test_populateOptionsListControlFromAPI_nilDisplaySettings_preservedAsNil(t 
 
 // Test: buildOptionsListControlConfig sets all known fields.
 func Test_buildOptionsListControlConfig_allFields(t *testing.T) {
-	pm := panelModel{
-		OptionsListControlConfig: &optionsListControlConfigModel{
+	pm := models.PanelModel{
+		OptionsListControlConfig: &models.OptionsListControlConfigModel{
 			DataViewID:        types.StringValue(optionsListControlTestDataViewID),
 			FieldName:         types.StringValue("field1"),
 			Title:             types.StringValue("My Title"),
@@ -206,14 +207,14 @@ func Test_buildOptionsListControlConfig_allFields(t *testing.T) {
 			RunPastTimeout:    types.BoolValue(true),
 			SearchTechnique:   types.StringValue("exact"),
 			SelectedOptions:   types.ListValueMust(types.StringType, []attr.Value{types.StringValue("active"), types.StringValue("inactive")}),
-			DisplaySettings: &optionsListControlDisplaySettingsModel{
+			DisplaySettings: &models.OptionsListControlDisplaySettingsModel{
 				Placeholder:   types.StringValue("Pick one"),
 				HideActionBar: types.BoolValue(true),
 				HideExclude:   types.BoolValue(false),
 				HideExists:    types.BoolValue(true),
 				HideSort:      types.BoolValue(false),
 			},
-			Sort: &optionsListControlSortModel{
+			Sort: &models.OptionsListControlSortModel{
 				By:        types.StringValue("_count"),
 				Direction: types.StringValue("desc"),
 			},
@@ -246,8 +247,8 @@ func Test_buildOptionsListControlConfig_allFields(t *testing.T) {
 
 // Test: buildOptionsListControlConfig with null SelectedOptions omits the field.
 func Test_buildOptionsListControlConfig_nullSelectedOptions_omitted(t *testing.T) {
-	pm := panelModel{
-		OptionsListControlConfig: &optionsListControlConfigModel{
+	pm := models.PanelModel{
+		OptionsListControlConfig: &models.OptionsListControlConfigModel{
 			DataViewID:      types.StringValue(optionsListControlTestDataViewID),
 			FieldName:       types.StringValue("field1"),
 			SelectedOptions: types.ListNull(types.StringType),
@@ -260,8 +261,8 @@ func Test_buildOptionsListControlConfig_nullSelectedOptions_omitted(t *testing.T
 
 // Test: buildOptionsListControlConfig with nil optional fields omits them.
 func Test_buildOptionsListControlConfig_nullOptionalFields_omitted(t *testing.T) {
-	pm := panelModel{
-		OptionsListControlConfig: &optionsListControlConfigModel{
+	pm := models.PanelModel{
+		OptionsListControlConfig: &models.OptionsListControlConfigModel{
 			DataViewID:       types.StringValue(optionsListControlTestDataViewID),
 			FieldName:        types.StringValue("field1"),
 			UseGlobalFilters: types.BoolNull(),
@@ -279,48 +280,48 @@ func Test_buildOptionsListControlConfig_nullOptionalFields_omitted(t *testing.T)
 
 // Test: round-trip — build then populate returns identical state.
 func Test_optionsListControl_roundTrip(t *testing.T) {
-	original := &optionsListControlConfigModel{
+	original := &models.OptionsListControlConfigModel{
 		DataViewID:       types.StringValue("my-dv"),
 		FieldName:        types.StringValue("status"),
 		SearchTechnique:  types.StringValue("prefix"),
 		SingleSelect:     types.BoolValue(true),
 		UseGlobalFilters: types.BoolValue(false),
-		DisplaySettings: &optionsListControlDisplaySettingsModel{
+		DisplaySettings: &models.OptionsListControlDisplaySettingsModel{
 			Placeholder:   types.StringValue("Search..."),
 			HideActionBar: types.BoolValue(false),
 			HideExclude:   types.BoolNull(),
 			HideExists:    types.BoolNull(),
 			HideSort:      types.BoolValue(true),
 		},
-		Sort: &optionsListControlSortModel{
+		Sort: &models.OptionsListControlSortModel{
 			By:        types.StringValue("_key"),
 			Direction: types.StringValue("asc"),
 		},
 	}
 
-	pm := panelModel{OptionsListControlConfig: original}
+	pm := models.PanelModel{OptionsListControlConfig: original}
 	olPanel := kbapi.KbnDashboardPanelTypeOptionsListControl{}
 	buildOptionsListControlConfig(pm, &olPanel)
 
-	out := &panelModel{OptionsListControlConfig: &optionsListControlConfigModel{
+	out := &models.PanelModel{OptionsListControlConfig: &models.OptionsListControlConfigModel{
 		DataViewID:       types.StringValue("my-dv"),
 		FieldName:        types.StringValue("status"),
 		SearchTechnique:  types.StringValue("prefix"),
 		SingleSelect:     types.BoolValue(true),
 		UseGlobalFilters: types.BoolValue(false),
-		DisplaySettings: &optionsListControlDisplaySettingsModel{
+		DisplaySettings: &models.OptionsListControlDisplaySettingsModel{
 			Placeholder:   types.StringValue("Search..."),
 			HideActionBar: types.BoolValue(false),
 			HideExclude:   types.BoolNull(),
 			HideExists:    types.BoolNull(),
 			HideSort:      types.BoolValue(true),
 		},
-		Sort: &optionsListControlSortModel{
+		Sort: &models.OptionsListControlSortModel{
 			By:        types.StringValue("_key"),
 			Direction: types.StringValue("asc"),
 		},
 	}}
-	tfPanel := &panelModel{OptionsListControlConfig: out.OptionsListControlConfig}
+	tfPanel := &models.PanelModel{OptionsListControlConfig: out.OptionsListControlConfig}
 	populateOptionsListControlFromAPI(out, tfPanel, &olPanel)
 
 	require.NotNil(t, out.OptionsListControlConfig)

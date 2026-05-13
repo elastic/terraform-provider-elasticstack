@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
@@ -42,23 +43,24 @@ func Test_eachExposedByValueSource_visAndLensUnionsJSONBridge(t *testing.T) {
 			"xy_chart_config",
 			func(t *testing.T) kbapi.KbnDashboardPanelTypeVisConfig0 {
 				t.Helper()
-				xy, diags := (&xyChartConfigModel{
+				cfg := &models.XYChartConfigModel{
 					Title:       types.StringValue("Parity"),
-					Axis:        &xyAxisModel{X: &xyAxisConfigModel{}, Y: &yAxisConfigModel{}},
-					Decorations: &xyDecorationsModel{},
-					Fitting:     &xyFittingModel{Type: types.StringValue("none")},
-					Layers: []xyLayerModel{{
+					Axis:        &models.XYAxisModel{X: &models.XYAxisConfigModel{}, Y: &models.YAxisConfigModel{}},
+					Decorations: &models.XYDecorationsModel{},
+					Fitting:     &models.XYFittingModel{Type: types.StringValue("none")},
+					Layers: []models.XYLayerModel{{
 						Type: types.StringValue("area"),
-						DataLayer: &dataLayerModel{
+						DataLayer: &models.DataLayerModel{
 							DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"dataView","id":"logs-*"}`),
-							Y: []yMetricModel{
+							Y: []models.YMetricModel{
 								{ConfigJSON: jsontypes.NewNormalizedValue(`{"operation":"count","color":"#68BC00","axis":"left"}`)},
 							},
 						},
 					}},
-					Legend: &xyLegendModel{Visibility: types.StringValue("visible"), Inside: types.BoolValue(false)},
-					Query:  &filterSimpleModel{Expression: types.StringValue("*"), Language: types.StringValue("kql")},
-				}).toAPINoESQL(nil)
+					Legend: &models.XYLegendModel{Visibility: types.StringValue("visible"), Inside: types.BoolValue(false)},
+					Query:  &models.FilterSimpleModel{Expression: types.StringValue("*"), Language: types.StringValue("kql")},
+				}
+				xy, diags := xyChartConfigToAPINoESQL(cfg, nil)
 				require.False(t, diags.HasError())
 				var vis kbapi.KbnDashboardPanelTypeVisConfig0
 				require.NoError(t, vis.FromXyChartNoESQL(xy))
@@ -260,7 +262,7 @@ func Test_eachExposedByValueSource_visAndLensUnionsJSONBridge(t *testing.T) {
 			func(t *testing.T) kbapi.KbnDashboardPanelTypeVisConfig0 {
 				t.Helper()
 				m := testMetricByValueFromRoundTrip(t)
-				return m.metricsTypedVis0(t)
+				return lensDashboardAppByValueMetricsTypedVis0(m, t)
 			},
 			"metric",
 		},
@@ -324,7 +326,7 @@ func Test_eachExposedByValueSource_visAndLensUnionsJSONBridge(t *testing.T) {
 	}
 }
 
-func (m lensDashboardAppByValueModel) metricsTypedVis0(t *testing.T) kbapi.KbnDashboardPanelTypeVisConfig0 {
+func lensDashboardAppByValueMetricsTypedVis0(m models.LensDashboardAppByValueModel, t *testing.T) kbapi.KbnDashboardPanelTypeVisConfig0 {
 	t.Helper()
 	pm, ok := lensByValueToScratchVisPanel(m)
 	require.True(t, ok)

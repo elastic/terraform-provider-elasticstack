@@ -22,13 +22,14 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 // lensByValueModelHasAnyTypedChartBlock is true when the by_value model was authored
 // with a typed chart block (not raw config_json) as the single source.
-func lensByValueModelHasAnyTypedChartBlock(m *lensDashboardAppByValueModel) bool {
+func lensByValueModelHasAnyTypedChartBlock(m *models.LensDashboardAppByValueModel) bool {
 	if m == nil {
 		return false
 	}
@@ -46,13 +47,13 @@ func lensByValueModelHasAnyTypedChartBlock(m *lensDashboardAppByValueModel) bool
 		m.LegacyMetricConfig != nil
 }
 
-// lensByValueChartBlocksForTypedLensApp materializes shared `lensByValueChartBlocks` from
+// lensByValueChartBlocksForTypedLensApp materializes shared `models.LensByValueChartBlocks` from
 // `lens_dashboard_app_config.by_value` fields so vis converters can run (metric expands for the duration).
-func lensByValueChartBlocksForTypedLensApp(byValue lensDashboardAppByValueModel) (*lensByValueChartBlocks, bool) {
+func lensByValueChartBlocksForTypedLensApp(byValue models.LensDashboardAppByValueModel) (*models.LensByValueChartBlocks, bool) {
 	if !lensByValueModelHasAnyTypedChartBlock(&byValue) {
 		return nil, false
 	}
-	var blocks lensByValueChartBlocks
+	var blocks models.LensByValueChartBlocks
 	set := 0
 	if byValue.XYChartConfig != nil {
 		set++
@@ -92,7 +93,7 @@ func lensByValueChartBlocksForTypedLensApp(byValue lensDashboardAppByValueModel)
 	}
 	if byValue.MetricChartConfig != nil {
 		set++
-		blocks.MetricChartConfig = byValue.MetricChartConfig.expandToVisMetricChart()
+		blocks.MetricChartConfig = metricChartLensByValueTFExpandToVisMetricChart(byValue.MetricChartConfig)
 	}
 	if byValue.PieChartConfig != nil {
 		set++
@@ -110,11 +111,11 @@ func lensByValueChartBlocksForTypedLensApp(byValue lensDashboardAppByValueModel)
 
 // lensByValueModelFromChartBlocksAfterRead maps chart blocks populated by a vis converter into
 // lens_dashboard_app_config.by_value (typed block only; config_json left unset).
-func lensByValueModelFromChartBlocksAfterRead(blocks *lensByValueChartBlocks) (lensDashboardAppByValueModel, bool) {
+func lensByValueModelFromChartBlocksAfterRead(blocks *models.LensByValueChartBlocks) (models.LensDashboardAppByValueModel, bool) {
 	if blocks == nil {
-		return lensDashboardAppByValueModel{}, false
+		return models.LensDashboardAppByValueModel{}, false
 	}
-	out := lensDashboardAppByValueModel{
+	out := models.LensDashboardAppByValueModel{
 		ConfigJSON: jsontypes.NewNormalizedNull(),
 	}
 	set := 0
@@ -167,7 +168,7 @@ func lensByValueModelFromChartBlocksAfterRead(blocks *lensByValueChartBlocks) (l
 		out.LegacyMetricConfig = blocks.LegacyMetricConfig
 	}
 	if set != 1 {
-		return lensDashboardAppByValueModel{}, false
+		return models.LensDashboardAppByValueModel{}, false
 	}
 	return out, true
 }
@@ -206,10 +207,10 @@ func lensByValueConfigFromVisConfig0(vis kbapi.KbnDashboardPanelTypeVisConfig0) 
 // if state was set; otherwise the caller should fall back to by_value.config_json.
 func tryPopulateTypedLensByValueFromAPI(
 	ctx context.Context,
-	dashboard *dashboardModel,
-	prior *lensDashboardAppConfigModel,
+	dashboard *models.DashboardModel,
+	prior *models.LensDashboardAppConfigModel,
 	configBytes []byte,
-	pm *panelModel,
+	pm *models.PanelModel,
 	diags *diag.Diagnostics,
 ) bool {
 	if prior == nil || prior.ByValue == nil {
@@ -230,12 +231,12 @@ func tryPopulateTypedLensByValueFromAPI(
 	if conv.visType() != detectLensVisType(vis0) {
 		return false
 	}
-	var scratch lensByValueChartBlocks
-	var priorPanel *panelModel
+	var scratch models.LensByValueChartBlocks
+	var priorPanel *models.PanelModel
 	if prior != nil && prior.ByValue != nil {
 		v := *prior.ByValue
-		priorPanel = &panelModel{
-			LensDashboardAppConfig: &lensDashboardAppConfigModel{
+		priorPanel = &models.PanelModel{
+			LensDashboardAppConfig: &models.LensDashboardAppConfigModel{
 				ByValue: &v,
 			},
 		}
@@ -253,29 +254,29 @@ func tryPopulateTypedLensByValueFromAPI(
 	if !ok2 {
 		return false
 	}
-	pm.LensDashboardAppConfig = &lensDashboardAppConfigModel{
+	pm.LensDashboardAppConfig = &models.LensDashboardAppConfigModel{
 		ByValue: &by,
 	}
 	return true
 }
 
 // lensByValueToScratchVisPanel maps a typed lens_dashboard_app.by_value chart to a synthetic vis
-// panel Model that shares lensByValueChartBlocks (tests and parity checks only).
-func lensByValueToScratchVisPanel(by lensDashboardAppByValueModel) (panelModel, bool) {
+// panel Model that shares models.LensByValueChartBlocks (tests and parity checks only).
+func lensByValueToScratchVisPanel(by models.LensDashboardAppByValueModel) (models.PanelModel, bool) {
 	blocks, ok := lensByValueChartBlocksForTypedLensApp(by)
 	if !ok {
-		return panelModel{}, false
+		return models.PanelModel{}, false
 	}
-	return panelModel{
-		VisConfig: &visConfigModel{
-			ByValue: &visByValueModel{lensByValueChartBlocks: *blocks},
+	return models.PanelModel{
+		VisConfig: &models.VisConfigModel{
+			ByValue: &models.VisByValueModel{LensByValueChartBlocks: *blocks},
 		},
 	}, true
 }
 
 // firstLensVisConverterForPanel resolves the Lens converter for whichever typed chart sits under
 // vis_config.by_value or lens_dashboard_app_config.by_value on the panel.
-func firstLensVisConverterForPanel(pm panelModel) (lensVisualizationConverter, bool) {
+func firstLensVisConverterForPanel(pm models.PanelModel) (lensVisualizationConverter, bool) {
 	blocks := lensByValueChartBlocksFromPanel(&pm)
 	if blocks == nil {
 		return nil, false

@@ -16,25 +16,3 @@
 // under the License.
 
 package dashboard
-
-import (
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
-	"github.com/hashicorp/terraform-plugin-framework/types"
-)
-
-type timeRangeModel struct {
-	From types.String `tfsdk:"from"`
-	To   types.String `tfsdk:"to"`
-	Mode types.String `tfsdk:"mode"`
-}
-
-type refreshIntervalModel struct {
-	Pause types.Bool  `tfsdk:"pause"`
-	Value types.Int64 `tfsdk:"value"`
-}
-
-type dashboardQueryModel struct {
-	Language types.String         `tfsdk:"language"`
-	Text     types.String         `tfsdk:"text"`
-	JSON     jsontypes.Normalized `tfsdk:"json"`
-}

@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -63,7 +64,7 @@ func mustStringList(elems ...string) types.List {
 
 // Test: on import (tfPanel == nil) with API data, populate all fields.
 func Test_populateRangeSliderControlFromAPI_import_allFields(t *testing.T) {
-	pm := &panelModel{}
+	pm := &models.PanelModel{}
 	apiCfg := apiRangeSliderConfig(
 		rsWithTitle("My Control"),
 		withUseGlobalFilters(true),
@@ -84,7 +85,7 @@ func Test_populateRangeSliderControlFromAPI_import_allFields(t *testing.T) {
 
 // Test: on import (tfPanel == nil) with minimal API data (only required fields).
 func Test_populateRangeSliderControlFromAPI_import_requiredOnly(t *testing.T) {
-	pm := &panelModel{}
+	pm := &models.PanelModel{}
 	populateRangeSliderControlFromAPI(context.Background(), pm, nil, apiRangeSliderConfig())
 	require.NotNil(t, pm.RangeSliderControlConfig)
 	assert.Equal(t, types.StringValue("dv-1"), pm.RangeSliderControlConfig.DataViewID)
@@ -98,16 +99,16 @@ func Test_populateRangeSliderControlFromAPI_import_requiredOnly(t *testing.T) {
 
 // Test: when existing config block is nil and API returns data, preserve nil (null-preservation).
 func Test_populateRangeSliderControlFromAPI_nilBlock_preservesNil(t *testing.T) {
-	pm := &panelModel{}
-	tfPanel := &panelModel{}
+	pm := &models.PanelModel{}
+	tfPanel := &models.PanelModel{}
 	populateRangeSliderControlFromAPI(context.Background(), pm, tfPanel, apiRangeSliderConfig())
 	assert.Nil(t, pm.RangeSliderControlConfig)
 }
 
 // Test: when config block exists with known fields, they are updated from API.
 func Test_populateRangeSliderControlFromAPI_knownFields_updatedFromAPI(t *testing.T) {
-	pm := &panelModel{
-		RangeSliderControlConfig: &rangeSliderControlConfigModel{
+	pm := &models.PanelModel{
+		RangeSliderControlConfig: &models.RangeSliderControlConfigModel{
 			DataViewID:        types.StringValue("dv-old"),
 			FieldName:         types.StringValue("old-field"),
 			Title:             types.StringValue("old title"),
@@ -117,7 +118,7 @@ func Test_populateRangeSliderControlFromAPI_knownFields_updatedFromAPI(t *testin
 			Step:              types.Float32Value(1),
 		},
 	}
-	tfPanel := &panelModel{RangeSliderControlConfig: pm.RangeSliderControlConfig}
+	tfPanel := &models.PanelModel{RangeSliderControlConfig: pm.RangeSliderControlConfig}
 	apiCfg := apiRangeSliderConfig(
 		rsWithTitle("new title"),
 		withUseGlobalFilters(true),
@@ -138,8 +139,8 @@ func Test_populateRangeSliderControlFromAPI_knownFields_updatedFromAPI(t *testin
 
 // Test: null-preservation — null optional fields in state are not overwritten by API values.
 func Test_populateRangeSliderControlFromAPI_nullOptionalFields_preserved(t *testing.T) {
-	pm := &panelModel{
-		RangeSliderControlConfig: &rangeSliderControlConfigModel{
+	pm := &models.PanelModel{
+		RangeSliderControlConfig: &models.RangeSliderControlConfigModel{
 			DataViewID:        types.StringValue("dv-1"),
 			FieldName:         types.StringValue("bytes"),
 			Title:             types.StringNull(),
@@ -149,7 +150,7 @@ func Test_populateRangeSliderControlFromAPI_nullOptionalFields_preserved(t *test
 			Step:              types.Float32Null(),
 		},
 	}
-	tfPanel := &panelModel{RangeSliderControlConfig: pm.RangeSliderControlConfig}
+	tfPanel := &models.PanelModel{RangeSliderControlConfig: pm.RangeSliderControlConfig}
 	apiCfg := apiRangeSliderConfig(
 		rsWithTitle("ignored"),
 		withUseGlobalFilters(true),
@@ -172,8 +173,8 @@ func Test_populateRangeSliderControlFromAPI_nullOptionalFields_preserved(t *test
 
 // Test: buildRangeSliderControlConfig sets known fields and omits null fields.
 func Test_buildRangeSliderControlConfig_knownFields(t *testing.T) {
-	pm := panelModel{
-		RangeSliderControlConfig: &rangeSliderControlConfigModel{
+	pm := models.PanelModel{
+		RangeSliderControlConfig: &models.RangeSliderControlConfigModel{
 			DataViewID:        types.StringValue("dv-1"),
 			FieldName:         types.StringValue("bytes"),
 			Title:             types.StringValue("My Slider"),
@@ -201,8 +202,8 @@ func Test_buildRangeSliderControlConfig_knownFields(t *testing.T) {
 
 // Test: buildRangeSliderControlConfig omits null optional fields.
 func Test_buildRangeSliderControlConfig_nullOptionalFields(t *testing.T) {
-	pm := panelModel{
-		RangeSliderControlConfig: &rangeSliderControlConfigModel{
+	pm := models.PanelModel{
+		RangeSliderControlConfig: &models.RangeSliderControlConfigModel{
 			DataViewID:        types.StringValue("dv-1"),
 			FieldName:         types.StringValue("bytes"),
 			Title:             types.StringNull(),
@@ -225,7 +226,7 @@ func Test_buildRangeSliderControlConfig_nullOptionalFields(t *testing.T) {
 
 // Test: round-trip — write then read back yields the same values.
 func Test_rangeSliderControl_roundTrip(t *testing.T) {
-	original := rangeSliderControlConfigModel{
+	original := models.RangeSliderControlConfigModel{
 		DataViewID:        types.StringValue("dv-1"),
 		FieldName:         types.StringValue("price"),
 		Title:             types.StringValue("Price Range"),
@@ -234,12 +235,12 @@ func Test_rangeSliderControl_roundTrip(t *testing.T) {
 		Value:             mustStringList("50", "200"),
 		Step:              types.Float32Value(10),
 	}
-	pm := panelModel{RangeSliderControlConfig: &original}
+	pm := models.PanelModel{RangeSliderControlConfig: &original}
 	rsPanel := kbapi.KbnDashboardPanelTypeRangeSliderControl{}
 	buildRangeSliderControlConfig(pm, &rsPanel)
 
-	out := &panelModel{
-		RangeSliderControlConfig: &rangeSliderControlConfigModel{
+	out := &models.PanelModel{
+		RangeSliderControlConfig: &models.RangeSliderControlConfigModel{
 			DataViewID:        types.StringValue("dv-1"),
 			FieldName:         types.StringValue("price"),
 			Title:             types.StringValue("Price Range"),
@@ -249,7 +250,7 @@ func Test_rangeSliderControl_roundTrip(t *testing.T) {
 			Step:              types.Float32Value(10),
 		},
 	}
-	tfPanel := &panelModel{RangeSliderControlConfig: out.RangeSliderControlConfig}
+	tfPanel := &models.PanelModel{RangeSliderControlConfig: out.RangeSliderControlConfig}
 	populateRangeSliderControlFromAPI(context.Background(), out, tfPanel, &rsPanel)
 
 	require.NotNil(t, out.RangeSliderControlConfig)
@@ -264,8 +265,8 @@ func Test_rangeSliderControl_roundTrip(t *testing.T) {
 
 // Test: value list with exactly 2 elements is preserved correctly.
 func Test_rangeSliderControl_value_exactlyTwoElements(t *testing.T) {
-	pm := panelModel{
-		RangeSliderControlConfig: &rangeSliderControlConfigModel{
+	pm := models.PanelModel{
+		RangeSliderControlConfig: &models.RangeSliderControlConfigModel{
 			DataViewID: types.StringValue("dv-1"),
 			FieldName:  types.StringValue("bytes"),
 			Value:      mustStringList("0", "1000"),

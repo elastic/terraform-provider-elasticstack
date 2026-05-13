@@ -23,6 +23,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -34,7 +35,7 @@ func defaultOpaqueRootJSON(v any) any { return v }
 // configPriorForLensRead returns the last known lens_dashboard_app_config from
 // plan/state. tfPanel is the panel at the same index from the prior model (nil on
 // import or when a panel is new); it is the authoritative source when present.
-func configPriorForLensRead(tfPanel, pm *panelModel) *lensDashboardAppConfigModel {
+func configPriorForLensRead(tfPanel, pm *models.PanelModel) *models.LensDashboardAppConfigModel {
 	if tfPanel != nil && tfPanel.LensDashboardAppConfig != nil {
 		return tfPanel.LensDashboardAppConfig
 	}
@@ -126,7 +127,7 @@ type lensDashboardAPIGrid struct {
 // lensDashboardAppToAPI converts a lens-dashboard-app panel to the Kibana API model.
 // parentDashboard is the enclosing dashboard resource model (required for typed by_value charts
 // so chart roots resolve time_range from dashboard-level defaults; by_reference does not use it).
-func lensDashboardAppToAPI(pm panelModel, grid lensDashboardAPIGrid, panelID *string, parentDashboard *dashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
+func lensDashboardAppToAPI(pm models.PanelModel, grid lensDashboardAPIGrid, panelID *string, parentDashboard *models.DashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	cfg := pm.LensDashboardAppConfig
 	if cfg == nil {
@@ -145,13 +146,13 @@ func lensDashboardAppToAPI(pm panelModel, grid lensDashboardAPIGrid, panelID *st
 }
 
 // parentDashboard is the enclosing dashboard resource model when converting typed by_value charts.
-// Callers that build payloads in isolation (e.g. unit tests) pass nil; panelModel.toAPI passes
+// Callers that build payloads in isolation (e.g. unit tests) pass nil; models.PanelModel.toAPI passes
 // the real enclosing dashboard model.
 func lensDashboardAppByValueToAPI(
-	byValue lensDashboardAppByValueModel,
+	byValue models.LensDashboardAppByValueModel,
 	grid lensDashboardAPIGrid,
 	panelID *string,
-	parentDashboard *dashboardModel,
+	parentDashboard *models.DashboardModel,
 ) (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if blocks, ok := lensByValueChartBlocksForTypedLensApp(byValue); ok {
@@ -216,7 +217,7 @@ func lensDashboardAppByValueToAPI(
 }
 
 func lensDashboardAppByReferenceToAPI(
-	byRef lensDashboardAppByReferenceModel,
+	byRef models.LensDashboardAppByReferenceModel,
 	grid lensDashboardAPIGrid,
 	panelID *string,
 ) (kbapi.DashboardPanelItem, diag.Diagnostics) {
@@ -322,9 +323,9 @@ func jsonBytesFromOptionalNormalizedArray(n jsontypes.Normalized, field string) 
 // the same index from the prior model (used for prior lens mode and optional seeding).
 func populateLensDashboardAppFromAPI(
 	ctx context.Context,
-	dashboard *dashboardModel,
-	pm *panelModel,
-	tfPanel *panelModel,
+	dashboard *models.DashboardModel,
+	pm *models.PanelModel,
+	tfPanel *models.PanelModel,
 	api kbapi.KbnDashboardPanelTypeLensDashboardApp,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
@@ -373,12 +374,12 @@ func populateLensDashboardAppFromAPI(
 
 func populateLensDashboardAppByReferenceFromAPI(
 	ctx context.Context,
-	prior *lensDashboardAppConfigModel,
-	pm *panelModel,
+	prior *models.LensDashboardAppConfigModel,
+	pm *models.PanelModel,
 	cfg1 kbapi.KbnDashboardPanelTypeLensDashboardAppConfig1,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
-	tr := lensDashboardAppTimeRangeModel{
+	tr := models.LensDashboardAppTimeRangeModel{
 		From: types.StringValue(cfg1.TimeRange.From),
 		To:   types.StringValue(cfg1.TimeRange.To),
 	}
@@ -390,18 +391,18 @@ func populateLensDashboardAppByReferenceFromAPI(
 	default:
 		tr.Mode = types.StringNull()
 	}
-	by := lensDashboardAppByReferenceModel{
+	by := models.LensDashboardAppByReferenceModel{
 		RefID:     types.StringValue(cfg1.RefId),
 		TimeRange: tr,
 	}
-	var priorBR *lensDashboardAppByReferenceModel
+	var priorBR *models.LensDashboardAppByReferenceModel
 	if prior != nil {
 		priorBR = prior.ByReference
 	}
-	by.Title = byReferenceOptionalStringFromAPI(cfg1.Title, priorBR, func(br *lensDashboardAppByReferenceModel) types.String { return br.Title })
-	by.Description = byReferenceOptionalStringFromAPI(cfg1.Description, priorBR, func(br *lensDashboardAppByReferenceModel) types.String { return br.Description })
-	by.HideTitle = byReferenceOptionalBoolFromAPI(cfg1.HideTitle, priorBR, func(br *lensDashboardAppByReferenceModel) types.Bool { return br.HideTitle })
-	by.HideBorder = byReferenceOptionalBoolFromAPI(cfg1.HideBorder, priorBR, func(br *lensDashboardAppByReferenceModel) types.Bool { return br.HideBorder })
+	by.Title = byReferenceOptionalStringFromAPI(cfg1.Title, priorBR, func(br *models.LensDashboardAppByReferenceModel) types.String { return br.Title })
+	by.Description = byReferenceOptionalStringFromAPI(cfg1.Description, priorBR, func(br *models.LensDashboardAppByReferenceModel) types.String { return br.Description })
+	by.HideTitle = byReferenceOptionalBoolFromAPI(cfg1.HideTitle, priorBR, func(br *models.LensDashboardAppByReferenceModel) types.Bool { return br.HideTitle })
+	by.HideBorder = byReferenceOptionalBoolFromAPI(cfg1.HideBorder, priorBR, func(br *models.LensDashboardAppByReferenceModel) types.Bool { return br.HideBorder })
 
 	switch {
 	case cfg1.References != nil:
@@ -435,7 +436,7 @@ func populateLensDashboardAppByReferenceFromAPI(
 		by.Drilldowns = nil
 	}
 
-	pm.LensDashboardAppConfig = &lensDashboardAppConfigModel{
+	pm.LensDashboardAppConfig = &models.LensDashboardAppConfigModel{
 		ByReference: &by,
 	}
 	return diags
@@ -616,10 +617,10 @@ func jsonValueSubsumedByCurrentAny(prior, current any) bool {
 // back to `by_value.config_json`.
 func populateLensDashboardAppByValueFromAPI(
 	ctx context.Context,
-	dashboard *dashboardModel,
-	prior *lensDashboardAppConfigModel,
+	dashboard *models.DashboardModel,
+	prior *models.LensDashboardAppConfigModel,
 	configBytes []byte,
-	pm *panelModel,
+	pm *models.PanelModel,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 	norm, okNorm := marshalToNormalized(configBytes, nil, "by_value.config_json", &diags)
@@ -629,8 +630,8 @@ func populateLensDashboardAppByValueFromAPI(
 			if typeutils.IsKnown(prior.ByValue.ConfigJSON) {
 				norm = preservePriorLensByValueConfigJSON(ctx, prior.ByValue.ConfigJSON, norm, &diags)
 			}
-			pm.LensDashboardAppConfig = &lensDashboardAppConfigModel{
-				ByValue: &lensDashboardAppByValueModel{ConfigJSON: norm},
+			pm.LensDashboardAppConfig = &models.LensDashboardAppConfigModel{
+				ByValue: &models.LensDashboardAppByValueModel{ConfigJSON: norm},
 			}
 		}
 		return diags
@@ -644,8 +645,8 @@ func populateLensDashboardAppByValueFromAPI(
 		if prior != nil && prior.ByValue != nil && typeutils.IsKnown(prior.ByValue.ConfigJSON) {
 			norm = preservePriorLensByValueConfigJSON(ctx, prior.ByValue.ConfigJSON, norm, &diags)
 		}
-		pm.LensDashboardAppConfig = &lensDashboardAppConfigModel{
-			ByValue: &lensDashboardAppByValueModel{ConfigJSON: norm},
+		pm.LensDashboardAppConfig = &models.LensDashboardAppConfigModel{
+			ByValue: &models.LensDashboardAppByValueModel{ConfigJSON: norm},
 		}
 	}
 	return diags
@@ -653,11 +654,11 @@ func populateLensDashboardAppByValueFromAPI(
 
 // byReferenceOptionalStringFromAPI returns the API value when present, falls back to the
 // known prior TF value, otherwise null. Shared by the lens-dashboard-app and vis by-reference
-// read paths since they share the same model (visByReferenceModel = lensDashboardAppByReferenceModel).
+// read paths since they share the same model (models.VisByReferenceModel = models.LensDashboardAppByReferenceModel).
 func byReferenceOptionalStringFromAPI(
 	api *string,
-	prior *lensDashboardAppByReferenceModel,
-	priorField func(*lensDashboardAppByReferenceModel) types.String,
+	prior *models.LensDashboardAppByReferenceModel,
+	priorField func(*models.LensDashboardAppByReferenceModel) types.String,
 ) types.String {
 	if api != nil {
 		return types.StringValue(*api)
@@ -672,8 +673,8 @@ func byReferenceOptionalStringFromAPI(
 
 func byReferenceOptionalBoolFromAPI(
 	api *bool,
-	prior *lensDashboardAppByReferenceModel,
-	priorField func(*lensDashboardAppByReferenceModel) types.Bool,
+	prior *models.LensDashboardAppByReferenceModel,
+	priorField func(*models.LensDashboardAppByReferenceModel) types.Bool,
 ) types.Bool {
 	if api != nil {
 		return types.BoolValue(*api)
