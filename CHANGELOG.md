@@ -45,6 +45,10 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 }
 ```
 
+### Added
+
+- Add `elasticstack_elasticsearch_ml_calendar_job` resource to assign one anomaly detection job to an ML calendar (`PUT _ml/calendars/{calendar_id}/jobs/{job_id}`)
+
 ### Changes
 
 - Add optional `scope` on detector `custom_rules` for ML anomaly detection jobs (map analysis field names to ML `filter_id` and optional `filter_type`). ([#2877](https://github.com/elastic/terraform-provider-elasticstack/pull/2877))
