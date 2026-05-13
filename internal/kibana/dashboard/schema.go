@@ -935,6 +935,9 @@ func getVisByValueAttributes() map[string]schema.Attribute {
 			MarkdownDescription: visConfigByValueBlockDescription("gauge_config"),
 			Optional:            true,
 			Attributes:          getGaugeSchema(true),
+			Validators: []validator.Object{
+				gaugeConfigModeValidator{},
+			},
 		},
 		"heatmap_config": schema.SingleNestedAttribute{
 			MarkdownDescription: visConfigByValueBlockDescription("heatmap_config"),
@@ -945,6 +948,9 @@ func getVisByValueAttributes() map[string]schema.Attribute {
 			MarkdownDescription: visConfigByValueBlockDescription("tagcloud_config"),
 			Optional:            true,
 			Attributes:          getTagcloudSchema(true),
+			Validators: []validator.Object{
+				tagcloudConfigModeValidator{},
+			},
 		},
 		"region_map_config": schema.SingleNestedAttribute{
 			MarkdownDescription: visConfigByValueBlockDescription("region_map_config"),
@@ -1034,6 +1040,9 @@ func getLensDashboardAppByValueNestedAttributes() map[string]schema.Attribute {
 			MarkdownDescription: lensByValueVisMirrorDescription("tagcloud_config"),
 			Optional:            true,
 			Attributes:          getTagcloudSchema(false),
+			Validators: []validator.Object{
+				tagcloudConfigModeValidator{},
+			},
 		},
 		"heatmap_config": schema.SingleNestedAttribute{
 			MarkdownDescription: lensByValueVisMirrorDescription("heatmap_config"),
@@ -1057,6 +1066,9 @@ func getLensDashboardAppByValueNestedAttributes() map[string]schema.Attribute {
 			MarkdownDescription: lensByValueVisMirrorDescription("gauge_config"),
 			Optional:            true,
 			Attributes:          getGaugeSchema(false),
+			Validators: []validator.Object{
+				gaugeConfigModeValidator{},
+			},
 		},
 		"metric_chart_config": schema.SingleNestedAttribute{
 			MarkdownDescription: lensByValueVisMirrorDescription("metric_chart_config"),
