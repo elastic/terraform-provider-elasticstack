@@ -59,13 +59,13 @@ func (c heatmapPanelConfigConverter) populateFromAttributes(
 	}
 	blocks.HeatmapConfig = &models.HeatmapConfigModel{}
 	if heatmapNoESQL, err := attrs.AsHeatmapNoESQL(); err == nil && !isHeatmapNoESQLCandidateActuallyESQL(heatmapNoESQL) {
-		return heatmapConfigFromAPINoESQL(blocks.HeatmapConfig, ctx, dashboard, prior, heatmapNoESQL)
+		return heatmapConfigFromAPINoESQL(ctx, blocks.HeatmapConfig, dashboard, prior, heatmapNoESQL)
 	}
 	heatmapESQL, err := attrs.AsHeatmapESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	return heatmapConfigFromAPIESQL(blocks.HeatmapConfig, ctx, dashboard, prior, heatmapESQL)
+	return heatmapConfigFromAPIESQL(ctx, blocks.HeatmapConfig, dashboard, prior, heatmapESQL)
 }
 
 func (c heatmapPanelConfigConverter) buildAttributes(blocks *models.LensByValueChartBlocks, dashboard *models.DashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
@@ -155,7 +155,7 @@ func heatmapConfigPopulateCommonFields(m *models.HeatmapConfigModel,
 	return !diags.HasError()
 }
 
-func heatmapConfigFromAPINoESQL(m *models.HeatmapConfigModel, ctx context.Context, dashboard *models.DashboardModel, prior *models.HeatmapConfigModel, api kbapi.HeatmapNoESQL) diag.Diagnostics {
+func heatmapConfigFromAPINoESQL(ctx context.Context, m *models.HeatmapConfigModel, dashboard *models.DashboardModel, prior *models.HeatmapConfigModel, api kbapi.HeatmapNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 
@@ -212,7 +212,7 @@ func heatmapConfigFromAPINoESQL(m *models.HeatmapConfigModel, ctx context.Contex
 	return diags
 }
 
-func heatmapConfigFromAPIESQL(m *models.HeatmapConfigModel, ctx context.Context, dashboard *models.DashboardModel, prior *models.HeatmapConfigModel, api kbapi.HeatmapESQL) diag.Diagnostics {
+func heatmapConfigFromAPIESQL(ctx context.Context, m *models.HeatmapConfigModel, dashboard *models.DashboardModel, prior *models.HeatmapConfigModel, api kbapi.HeatmapESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 

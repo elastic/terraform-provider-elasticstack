@@ -46,7 +46,7 @@ var lensVisConverters = []lensVisualizationConverter{
 	newWafflePanelConfigConverter(),
 }
 
-func dashboardMapPanelsFromAPI(m *models.DashboardModel, ctx context.Context, apiPanels *kbapi.DashboardPanels) ([]models.PanelModel, []models.SectionModel, diag.Diagnostics) {
+func dashboardMapPanelsFromAPI(ctx context.Context, m *models.DashboardModel, apiPanels *kbapi.DashboardPanels) ([]models.PanelModel, []models.SectionModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if apiPanels == nil || len(*apiPanels) == 0 {
 		return nil, nil, diags
@@ -64,7 +64,7 @@ func dashboardMapPanelsFromAPI(m *models.DashboardModel, ctx context.Context, ap
 			if tfSectionIndex < len(m.Sections) {
 				tfSection = &m.Sections[tfSectionIndex]
 			}
-			sectionModel, d := dashboardMapSectionFromAPI(m, ctx, tfSection, section)
+			sectionModel, d := dashboardMapSectionFromAPI(ctx, m, tfSection, section)
 			diags.Append(d...)
 			if diags.HasError() {
 				return nil, nil, diags
@@ -81,7 +81,7 @@ func dashboardMapPanelsFromAPI(m *models.DashboardModel, ctx context.Context, ap
 				tfPanel = &m.Panels[tfPanelIndex]
 			}
 
-			panel, d := dashboardMapPanelFromAPI(m, ctx, tfPanel, panelItem)
+			panel, d := dashboardMapPanelFromAPI(ctx, m, tfPanel, panelItem)
 			diags.Append(d...)
 			if diags.HasError() {
 				return nil, nil, diags
@@ -94,7 +94,7 @@ func dashboardMapPanelsFromAPI(m *models.DashboardModel, ctx context.Context, ap
 	return panels, sections, diags
 }
 
-func dashboardMapSectionFromAPI(m *models.DashboardModel, ctx context.Context, tfSection *models.SectionModel, section kbapi.KbnDashboardSection) (models.SectionModel, diag.Diagnostics) {
+func dashboardMapSectionFromAPI(ctx context.Context, m *models.DashboardModel, tfSection *models.SectionModel, section kbapi.KbnDashboardSection) (models.SectionModel, diag.Diagnostics) {
 	collapsed := types.BoolPointerValue(section.Collapsed)
 	if tfSection != nil && !typeutils.IsKnown(tfSection.Collapsed) && section.Collapsed != nil && !*section.Collapsed {
 		collapsed = types.BoolNull()
@@ -120,7 +120,7 @@ func dashboardMapSectionFromAPI(m *models.DashboardModel, ctx context.Context, t
 				tfPanel = &tfSection.Panels[tfPanelIndex]
 			}
 
-			pm, d := dashboardMapPanelFromAPI(m, ctx, tfPanel, p)
+			pm, d := dashboardMapPanelFromAPI(ctx, m, tfPanel, p)
 			diags.Append(d...)
 			if diags.HasError() {
 				return models.SectionModel{}, diags
@@ -193,7 +193,7 @@ func clearPanelConfigBlocks(pm *models.PanelModel) {
 	pm.DiscoverSessionConfig = nil
 }
 
-func dashboardMapPanelFromAPI(m *models.DashboardModel, ctx context.Context, tfPanel *models.PanelModel, panelItem kbapi.DashboardPanelItem) (models.PanelModel, diag.Diagnostics) {
+func dashboardMapPanelFromAPI(ctx context.Context, m *models.DashboardModel, tfPanel *models.PanelModel, panelItem kbapi.DashboardPanelItem) (models.PanelModel, diag.Diagnostics) {
 	// Start from the existing TF model when available (plan or prior state).
 	//
 	// Kibana may omit optional attributes on reads even when they were provided on
@@ -571,7 +571,7 @@ func timeRangeModelToAPI(tr *models.TimeRangeModel) kbapi.KbnEsQueryServerTimeRa
 // resolveChartTimeRange returns the API time_range for a typed Lens chart root: chart-level when set,
 // otherwise copied from the dashboard-level time_range (both are required API inputs).
 //
-// Production dashboard writes (`panelsToAPI` / `models.PanelModel.toAPI`) always pass the enclosing
+// Production dashboard writes (`dashboardPanelsToAPI` / `panelToAPI`) always pass the enclosing
 // `models.DashboardModel`, so null chart-level `time_range` inherits dashboard-level values (REQ-013).
 //
 // The `now-15m` / `now` fallback below applies when there is no chart-level override and either
@@ -594,7 +594,7 @@ func resolveChartTimeRange(dashboard *models.DashboardModel, chartLevel *models.
 	}
 }
 
-func dashboardPanelsToAPI(m *models.DashboardModel, ctx context.Context) (*kbapi.DashboardPanels, diag.Diagnostics) {
+func dashboardPanelsToAPI(ctx context.Context, m *models.DashboardModel) (*kbapi.DashboardPanels, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if m.Panels == nil && m.Sections == nil {
 		return nil, diags
@@ -604,7 +604,7 @@ func dashboardPanelsToAPI(m *models.DashboardModel, ctx context.Context) (*kbapi
 
 	// Process panels
 	for _, pm := range m.Panels {
-		panelItem, d := panelToAPI(pm, ctx, m)
+		panelItem, d := panelToAPI(ctx, pm, m)
 		diags.Append(d...)
 		if diags.HasError() {
 			return nil, diags
@@ -641,7 +641,7 @@ func dashboardPanelsToAPI(m *models.DashboardModel, ctx context.Context) (*kbapi
 			innerPanels := make([]kbapi.DashboardPanelItem, 0, len(sm.Panels))
 
 			for _, pm := range sm.Panels {
-				item, d := panelToAPI(pm, ctx, m)
+				item, d := panelToAPI(ctx, pm, m)
 				diags.Append(d...)
 				if diags.HasError() {
 					return nil, diags
@@ -663,7 +663,7 @@ func dashboardPanelsToAPI(m *models.DashboardModel, ctx context.Context) (*kbapi
 	return &apiPanels, diags
 }
 
-func panelToAPI(pm models.PanelModel, ctx context.Context, dashboard *models.DashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
+func panelToAPI(ctx context.Context, pm models.PanelModel, dashboard *models.DashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	var dashTR *models.TimeRangeModel

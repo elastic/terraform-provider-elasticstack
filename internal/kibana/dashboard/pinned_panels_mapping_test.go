@@ -94,7 +94,7 @@ func Test_dashboardModel_mapPinnedPanelsFromAPI_unsetVsEmptyAndDrift(t *testing.
 	t.Run("prior nil + API nil yields nil", func(t *testing.T) {
 		t.Parallel()
 		var d models.DashboardModel
-		out, diags := dashboardMapPinnedPanelsFromAPI(&d,ctx, nil, nil)
+		out, diags := dashboardMapPinnedPanelsFromAPI(ctx, &d, nil, nil)
 		require.False(t, diags.HasError())
 		require.Nil(t, out)
 	})
@@ -103,7 +103,7 @@ func Test_dashboardModel_mapPinnedPanelsFromAPI_unsetVsEmptyAndDrift(t *testing.
 		t.Parallel()
 		var d models.DashboardModel
 		api := []kbapi.DashboardPinnedPanels_Item{}
-		out, diags := dashboardMapPinnedPanelsFromAPI(&d,ctx, nil, &api)
+		out, diags := dashboardMapPinnedPanelsFromAPI(ctx, &d, nil, &api)
 		require.False(t, diags.HasError())
 		require.Nil(t, out)
 	})
@@ -112,7 +112,7 @@ func Test_dashboardModel_mapPinnedPanelsFromAPI_unsetVsEmptyAndDrift(t *testing.
 		t.Parallel()
 		var d models.DashboardModel
 		api := []kbapi.DashboardPinnedPanels_Item{}
-		out, diags := dashboardMapPinnedPanelsFromAPI(&d,ctx, []models.PinnedPanelModel{}, &api)
+		out, diags := dashboardMapPinnedPanelsFromAPI(ctx, &d, []models.PinnedPanelModel{}, &api)
 		require.False(t, diags.HasError())
 		require.NotNil(t, out)
 		require.Empty(t, out)
@@ -125,7 +125,7 @@ func Test_dashboardModel_mapPinnedPanelsFromAPI_unsetVsEmptyAndDrift(t *testing.
 		api := mustAPIPinnedItems(t, src)
 		require.NotNil(t, api)
 
-		out, diags := dashboardMapPinnedPanelsFromAPI(&d,ctx, nil, api)
+		out, diags := dashboardMapPinnedPanelsFromAPI(ctx, &d, nil, api)
 		require.False(t, diags.HasError())
 		require.Len(t, out, 1)
 		require.Equal(t, panelTypeOptionsListControl, out[0].Type.ValueString())
@@ -160,7 +160,7 @@ func Test_dashboardModel_mapPinnedPanelsFromAPI_unsetVsEmptyAndDrift(t *testing.
 		api := mustAPIPinnedItems(t, newPinnedDashboardModelBase([]models.PinnedPanelModel{prior[0], prior[1]}))
 		require.NotNil(t, api)
 
-		out, diags := dashboardMapPinnedPanelsFromAPI(&d,ctx, prior, api)
+		out, diags := dashboardMapPinnedPanelsFromAPI(ctx, &d, prior, api)
 		require.False(t, diags.HasError())
 		require.Len(t, out, 2)
 		require.Same(t, ol, out[0].OptionsListControlConfig)
@@ -183,7 +183,7 @@ func Test_dashboardModel_mapPinnedPanelsFromAPI_unsetVsEmptyAndDrift(t *testing.
 		api := mustAPIPinnedItems(t, apiModel)
 		require.NotNil(t, api)
 
-		out, diags := dashboardMapPinnedPanelsFromAPI(&d,ctx, prior, api)
+		out, diags := dashboardMapPinnedPanelsFromAPI(ctx, &d, prior, api)
 		require.False(t, diags.HasError())
 		require.Len(t, out, 1)
 		require.Equal(t, panelTypeRangeSlider, out[0].Type.ValueString())
@@ -200,7 +200,7 @@ func Test_dashboardModel_toAPIRequests_pinnedPanelsJSONShape(t *testing.T) {
 		t.Parallel()
 		diags := &diag.Diagnostics{}
 		m := newPinnedDashboardModelBase(nil)
-		req := dashboardToAPICreateRequest(m, ctx, diags)
+		req := dashboardToAPICreateRequest(ctx, m, diags)
 		require.False(t, diags.HasError())
 
 		raw, err := json.Marshal(req)
@@ -216,7 +216,7 @@ func Test_dashboardModel_toAPIRequests_pinnedPanelsJSONShape(t *testing.T) {
 		t.Parallel()
 		diags := &diag.Diagnostics{}
 		m := newPinnedDashboardModelBase([]models.PinnedPanelModel{})
-		req := dashboardToAPICreateRequest(m, ctx, diags)
+		req := dashboardToAPICreateRequest(ctx, m, diags)
 		require.False(t, diags.HasError())
 		require.NotNil(t, req.PinnedPanels)
 		require.Empty(t, *req.PinnedPanels)
@@ -226,7 +226,7 @@ func Test_dashboardModel_toAPIRequests_pinnedPanelsJSONShape(t *testing.T) {
 		t.Parallel()
 		diags := &diag.Diagnostics{}
 		m := newPinnedDashboardModelBase(nil)
-		req := dashboardToAPIUpdateRequest(m, ctx, diags)
+		req := dashboardToAPIUpdateRequest(ctx, m, diags)
 		require.False(t, diags.HasError())
 		require.Nil(t, req.PinnedPanels)
 	})
@@ -235,7 +235,7 @@ func Test_dashboardModel_toAPIRequests_pinnedPanelsJSONShape(t *testing.T) {
 		t.Parallel()
 		diags := &diag.Diagnostics{}
 		m := newPinnedDashboardModelBase([]models.PinnedPanelModel{})
-		req := dashboardToAPIUpdateRequest(m, ctx, diags)
+		req := dashboardToAPIUpdateRequest(ctx, m, diags)
 		require.False(t, diags.HasError())
 		require.NotNil(t, req.PinnedPanels)
 		require.Empty(t, *req.PinnedPanels)
@@ -247,7 +247,7 @@ func Test_dashboardModel_toAPIRequests_pinnedPanelsJSONShape(t *testing.T) {
 		m := newPinnedDashboardModelBase([]models.PinnedPanelModel{
 			pinnedFixtureOptionsList("status"),
 		})
-		req := dashboardToAPIUpdateRequest(m, ctx, diags)
+		req := dashboardToAPIUpdateRequest(ctx, m, diags)
 		require.False(t, diags.HasError())
 		require.NotNil(t, req.PinnedPanels)
 		require.Len(t, *req.PinnedPanels, 1)
@@ -263,7 +263,7 @@ func Test_dashboardModel_toAPIRequests_pinnedPanelsJSONShape(t *testing.T) {
 		m := newPinnedDashboardModelBase([]models.PinnedPanelModel{
 			pinnedFixtureOptionsList("status"),
 		})
-		req := dashboardToAPICreateRequest(m, ctx, diags)
+		req := dashboardToAPICreateRequest(ctx, m, diags)
 		require.False(t, diags.HasError())
 		require.NotNil(t, req.PinnedPanels)
 		require.Len(t, *req.PinnedPanels, 1)

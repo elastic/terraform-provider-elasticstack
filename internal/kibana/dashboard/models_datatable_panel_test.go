@@ -136,7 +136,7 @@ func Test_datatableNoESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 	api.Styling.Paging = &paging
 
 	model := &models.DatatableNoESQLConfigModel{}
-	diags := datatableNoESQLConfigFromAPI(model, context.Background(), nil, nil, api)
+	diags := datatableNoESQLConfigFromAPI(context.Background(), model, nil, nil, api)
 	require.False(t, diags.HasError())
 
 	assert.Equal(t, types.StringValue("Datatable NoESQL"), model.Title)
@@ -236,7 +236,7 @@ func Test_datatableESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 	api.Styling.Paging = &paging
 
 	model := &models.DatatableESQLConfigModel{}
-	diags := datatableESQLConfigFromAPI(model, context.Background(), nil, nil, api)
+	diags := datatableESQLConfigFromAPI(context.Background(), model, nil, nil, api)
 	require.False(t, diags.HasError())
 
 	assert.Equal(t, types.StringValue("Datatable ESQL"), model.Title)

@@ -77,7 +77,7 @@ func sampleDatatableNoESQLModel(t *testing.T) *models.DatatableNoESQLConfigModel
 	api.Metrics = append(api.Metrics, metric)
 
 	m := &models.DatatableNoESQLConfigModel{}
-	diags := datatableNoESQLConfigFromAPI(m, context.Background(), nil, nil, api)
+	diags := datatableNoESQLConfigFromAPI(context.Background(), m, nil, nil, api)
 	require.False(t, diags.HasError())
 	return m
 }
@@ -104,7 +104,7 @@ func sampleMetricNoESQLModel(t *testing.T) *models.MetricChartConfigModel {
 	apiChart.Metrics = append(apiChart.Metrics, metric)
 
 	m := &models.MetricChartConfigModel{}
-	diags := metricChartConfigFromAPIVariant0(m, context.Background(), nil, nil, apiChart)
+	diags := metricChartConfigFromAPIVariant0(context.Background(), m, nil, nil, apiChart)
 	require.False(t, diags.HasError())
 	return m
 }
@@ -120,7 +120,7 @@ func sampleGaugeNoESQLModel(t *testing.T) *models.GaugeConfigModel {
 	require.NoError(t, json.Unmarshal([]byte(`{"operation":"count"}`), &api.Metric))
 
 	m := &models.GaugeConfigModel{}
-	diags := gaugeConfigFromAPI(m, context.Background(), nil, nil, api)
+	diags := gaugeConfigFromAPI(context.Background(), m, nil, nil, api)
 	require.False(t, diags.HasError())
 	return m
 }
@@ -146,7 +146,7 @@ func samplePieNoESQLModel(t *testing.T) *models.PieChartConfigModel {
 	apiChart.Metrics = append(apiChart.Metrics, metric)
 
 	m := &models.PieChartConfigModel{}
-	diags := pieChartConfigFromAPINoESQL(m, context.Background(), nil, nil, apiChart)
+	diags := pieChartConfigFromAPINoESQL(context.Background(), m, nil, nil, apiChart)
 	require.False(t, diags.HasError())
 	return m
 }
@@ -175,7 +175,7 @@ func runDatatableNoESQLLensChartPresentationComprehensive(t *testing.T) {
 		api.TimeRange = timeRangeModelToAPI(dash.TimeRange)
 
 		out := &models.DatatableNoESQLConfigModel{}
-		diags = datatableNoESQLConfigFromAPI(out, ctx, dash, &m, api)
+		diags = datatableNoESQLConfigFromAPI(ctx, out, dash, &m, api)
 		require.False(t, diags.HasError())
 		assert.Nil(t, out.TimeRange)
 	})
@@ -190,7 +190,7 @@ func runDatatableNoESQLLensChartPresentationComprehensive(t *testing.T) {
 		assert.True(t, *api.HideTitle)
 
 		out := &models.DatatableNoESQLConfigModel{}
-		diags = datatableNoESQLConfigFromAPI(out, ctx, dash, &m, api)
+		diags = datatableNoESQLConfigFromAPI(ctx, out, dash, &m, api)
 		require.False(t, diags.HasError())
 		assert.Equal(t, types.BoolValue(true), out.HideTitle)
 	})
@@ -205,7 +205,7 @@ func runDatatableNoESQLLensChartPresentationComprehensive(t *testing.T) {
 		assert.GreaterOrEqual(t, len(*api.Drilldowns), 1)
 
 		out := &models.DatatableNoESQLConfigModel{}
-		diags = datatableNoESQLConfigFromAPI(out, ctx, dash, &m, api)
+		diags = datatableNoESQLConfigFromAPI(ctx, out, dash, &m, api)
 		require.False(t, diags.HasError())
 		require.Len(t, out.Drilldowns, 1)
 		require.NotNil(t, out.Drilldowns[0].URLDrilldown)
@@ -229,7 +229,7 @@ func runMetricNoESQLLensChartPresentationComprehensive(t *testing.T) {
 		api.TimeRange = timeRangeModelToAPI(dash.TimeRange)
 
 		out := &models.MetricChartConfigModel{}
-		diags = metricChartConfigFromAPIVariant0(out, ctx, dash, &m, api)
+		diags = metricChartConfigFromAPIVariant0(ctx, out, dash, &m, api)
 		require.False(t, diags.HasError())
 		assert.Nil(t, out.TimeRange)
 	})
@@ -246,7 +246,7 @@ func runMetricNoESQLLensChartPresentationComprehensive(t *testing.T) {
 		assert.True(t, *api.HideBorder)
 
 		out := &models.MetricChartConfigModel{}
-		diags = metricChartConfigFromAPIVariant0(out, ctx, dash, &m, api)
+		diags = metricChartConfigFromAPIVariant0(ctx, out, dash, &m, api)
 		require.False(t, diags.HasError())
 		assert.Equal(t, types.BoolValue(true), out.HideBorder)
 	})
@@ -268,7 +268,7 @@ func runGaugeNoESQLLensChartPresentationComprehensive(t *testing.T) {
 		api.TimeRange = timeRangeModelToAPI(dash.TimeRange)
 
 		out := &models.GaugeConfigModel{}
-		diags = gaugeConfigFromAPI(out, ctx, dash, &m, api)
+		diags = gaugeConfigFromAPI(ctx, out, dash, &m, api)
 		require.False(t, diags.HasError())
 		assert.Nil(t, out.TimeRange)
 	})
@@ -285,7 +285,7 @@ func runGaugeNoESQLLensChartPresentationComprehensive(t *testing.T) {
 		require.NotNil(t, api.References)
 
 		out := &models.GaugeConfigModel{}
-		diags = gaugeConfigFromAPI(out, ctx, dash, &m, api)
+		diags = gaugeConfigFromAPI(ctx, out, dash, &m, api)
 		require.False(t, diags.HasError())
 		assert.JSONEq(t, raw, out.ReferencesJSON.ValueString())
 	})
@@ -313,7 +313,7 @@ func runPieNoESQLLensChartPresentationComprehensive(t *testing.T) {
 		require.NotNil(t, api.Drilldowns)
 
 		out := &models.PieChartConfigModel{}
-		diags = pieChartConfigFromAPINoESQL(out, ctx, dash, &m, api)
+		diags = pieChartConfigFromAPINoESQL(ctx, out, dash, &m, api)
 		require.False(t, diags.HasError())
 		require.Len(t, out.Drilldowns, 1)
 		require.NotNil(t, out.Drilldowns[0].DiscoverDrilldown)

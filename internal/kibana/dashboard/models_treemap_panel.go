@@ -61,14 +61,14 @@ func (c treemapPanelConfigConverter) populateFromAttributes(
 	blocks.TreemapConfig = &models.TreemapConfigModel{}
 
 	if noESQL, err := attrs.AsTreemapNoESQL(); err == nil && !isTreemapNoESQLCandidateActuallyESQL(noESQL) {
-		return treemapConfigFromAPINoESQL(blocks.TreemapConfig, ctx, dashboard, prior, noESQL)
+		return treemapConfigFromAPINoESQL(ctx, blocks.TreemapConfig, dashboard, prior, noESQL)
 	}
 
 	treemapESQL, err := attrs.AsTreemapESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	return treemapConfigFromAPIESQL(blocks.TreemapConfig, ctx, dashboard, prior, treemapESQL)
+	return treemapConfigFromAPIESQL(ctx, blocks.TreemapConfig, dashboard, prior, treemapESQL)
 }
 
 func (c treemapPanelConfigConverter) buildAttributes(blocks *models.LensByValueChartBlocks, dashboard *models.DashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
@@ -94,7 +94,7 @@ func isTreemapNoESQLCandidateActuallyESQL(api kbapi.TreemapNoESQL) bool {
 	return ds.Type == legacyMetricDatasetTypeESQL || ds.Type == legacyMetricDatasetTypeTable
 }
 
-func treemapConfigFromAPINoESQL(m *models.TreemapConfigModel, ctx context.Context, dashboard *models.DashboardModel, prior *models.TreemapConfigModel, api kbapi.TreemapNoESQL) diag.Diagnostics {
+func treemapConfigFromAPINoESQL(ctx context.Context, m *models.TreemapConfigModel, dashboard *models.DashboardModel, prior *models.TreemapConfigModel, api kbapi.TreemapNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	m.Title = types.StringPointerValue(api.Title)
@@ -167,7 +167,7 @@ func treemapConfigFromAPINoESQL(m *models.TreemapConfigModel, ctx context.Contex
 	return diags
 }
 
-func treemapConfigFromAPIESQL(m *models.TreemapConfigModel, ctx context.Context, dashboard *models.DashboardModel, prior *models.TreemapConfigModel, api kbapi.TreemapESQL) diag.Diagnostics {
+func treemapConfigFromAPIESQL(ctx context.Context, m *models.TreemapConfigModel, dashboard *models.DashboardModel, prior *models.TreemapConfigModel, api kbapi.TreemapESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// ES|QL charts don't have a query block. Clear it to avoid carrying over

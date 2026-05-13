@@ -40,7 +40,7 @@ const jsonNullString = "null"
 const defaultNumberFormatJSON = `{"type":"number"}`
 
 // populateFromAPI populates the Terraform model from the API response
-func dashboardPopulateFromAPI(m *models.DashboardModel, ctx context.Context, resp *kbapi.GetDashboardsIdResponse, dashboardID string, spaceID string) diag.Diagnostics {
+func dashboardPopulateFromAPI(ctx context.Context, m *models.DashboardModel, resp *kbapi.GetDashboardsIdResponse, dashboardID string, spaceID string) diag.Diagnostics {
 	var diags diag.Diagnostics
 	priorPinnedPanels := m.PinnedPanels
 	data := resp.JSON200
@@ -97,7 +97,7 @@ func dashboardPopulateFromAPI(m *models.DashboardModel, ctx context.Context, res
 		q.JSON = jsontypes.NewNormalizedNull()
 	}
 	m.Query = q
-	dashboardMapDashboardFiltersFromAPI(m, ctx, &data.Data, &diags)
+	dashboardMapDashboardFiltersFromAPI(ctx, m, &data.Data, &diags)
 
 	// Map tags
 	if data.Data.Tags != nil && len(*data.Data.Tags) > 0 {
@@ -118,12 +118,12 @@ func dashboardPopulateFromAPI(m *models.DashboardModel, ctx context.Context, res
 	m.AccessControl = newAccessControlFromAPI(accessMode)
 
 	// Map panels
-	panels, sections, panelsDiags := dashboardMapPanelsFromAPI(m, ctx, data.Data.Panels)
+	panels, sections, panelsDiags := dashboardMapPanelsFromAPI(ctx, m, data.Data.Panels)
 	diags.Append(panelsDiags...)
 	m.Panels = panels
 	m.Sections = sections
 
-	pinnedPanels, pinnedDiags := dashboardMapPinnedPanelsFromAPI(m, ctx, priorPinnedPanels, data.Data.PinnedPanels)
+	pinnedPanels, pinnedDiags := dashboardMapPinnedPanelsFromAPI(ctx, m, priorPinnedPanels, data.Data.PinnedPanels)
 	diags.Append(pinnedDiags...)
 	m.PinnedPanels = pinnedPanels
 
@@ -131,7 +131,7 @@ func dashboardPopulateFromAPI(m *models.DashboardModel, ctx context.Context, res
 }
 
 // toAPICreateRequest converts the Terraform model to an API create request
-func dashboardToAPICreateRequest(m *models.DashboardModel, ctx context.Context, diags *diag.Diagnostics) kbapi.PostDashboardsJSONRequestBody {
+func dashboardToAPICreateRequest(ctx context.Context, m *models.DashboardModel, diags *diag.Diagnostics) kbapi.PostDashboardsJSONRequestBody {
 	req := kbapi.PostDashboardsJSONRequestBody{}
 	req.Title = m.Title.ValueString()
 	if m.RefreshInterval != nil {
@@ -177,10 +177,10 @@ func dashboardToAPICreateRequest(m *models.DashboardModel, ctx context.Context, 
 	req.AccessControl = accessControlValueToCreateAPI(m.AccessControl)
 
 	// Set panels
-	panels, panelsDiags := dashboardPanelsToAPI(m, ctx)
+	panels, panelsDiags := dashboardPanelsToAPI(ctx, m)
 	diags.Append(panelsDiags...)
 	req.Panels = panels
-	dashboardDashboardFiltersToCreateAPI(m, ctx, &req, diags)
+	dashboardDashboardFiltersToCreateAPI(ctx, m, &req, diags)
 
 	pinnedPanels, pinnedDiags := dashboardPinnedPanelsToAPICreateItems(m)
 	diags.Append(pinnedDiags...)
@@ -190,7 +190,7 @@ func dashboardToAPICreateRequest(m *models.DashboardModel, ctx context.Context, 
 }
 
 // toAPIUpdateRequest converts the Terraform model to an API update request
-func dashboardToAPIUpdateRequest(m *models.DashboardModel, ctx context.Context, diags *diag.Diagnostics) kbapi.PutDashboardsIdJSONRequestBody {
+func dashboardToAPIUpdateRequest(ctx context.Context, m *models.DashboardModel, diags *diag.Diagnostics) kbapi.PutDashboardsIdJSONRequestBody {
 	req := kbapi.PutDashboardsIdJSONRequestBody{}
 	req.Title = m.Title.ValueString()
 	if m.RefreshInterval != nil {
@@ -233,12 +233,12 @@ func dashboardToAPIUpdateRequest(m *models.DashboardModel, ctx context.Context, 
 	req.Options = options
 
 	// Set panels.
-	panels, panelsDiags := dashboardPanelsToAPI(m, ctx)
+	panels, panelsDiags := dashboardPanelsToAPI(ctx, m)
 	diags.Append(panelsDiags...)
 	if panels != nil {
 		req.Panels = panels
 	}
-	dashboardDashboardFiltersToUpdateAPI(m, ctx, &req, diags)
+	dashboardDashboardFiltersToUpdateAPI(ctx, m, &req, diags)
 
 	pinnedPanels, pinnedDiags := dashboardPinnedPanelsToAPICreateItems(m)
 	diags.Append(pinnedDiags...)
@@ -288,7 +288,7 @@ func dashboardRootSavedFiltersElementType() types.ObjectType {
 // mapDashboardFiltersFromAPI sets m.Filters from the API in response order.
 // REQ-037 / REQ-009: when filters were unset in state and the API returns no filters (nil or empty),
 // the attribute stays null rather than becoming an empty list.
-func dashboardMapDashboardFiltersFromAPI(m *models.DashboardModel, ctx context.Context, api *kbapi.KbnDashboardData, diags *diag.Diagnostics) {
+func dashboardMapDashboardFiltersFromAPI(ctx context.Context, m *models.DashboardModel, api *kbapi.KbnDashboardData, diags *diag.Diagnostics) {
 	priorUnset := m.Filters.IsNull()
 	apiFilters := api.Filters
 	hasItems := apiFilters != nil && len(*apiFilters) > 0
@@ -319,7 +319,7 @@ func dashboardMapDashboardFiltersFromAPI(m *models.DashboardModel, ctx context.C
 // Returns (nil, false) when the attribute is unknown/null so callers leave the request
 // field untouched; returns (&empty, true) when the list is known-empty so callers send
 // an explicit empty array.
-func dashboardBuildDashboardFiltersForAPI(m *models.DashboardModel, ctx context.Context, diags *diag.Diagnostics) (*kbapi.DashboardFilters, bool) {
+func dashboardBuildDashboardFiltersForAPI(ctx context.Context, m *models.DashboardModel, diags *diag.Diagnostics) (*kbapi.DashboardFilters, bool) {
 	if !typeutils.IsKnown(m.Filters) {
 		return nil, false
 	}
@@ -340,14 +340,14 @@ func dashboardBuildDashboardFiltersForAPI(m *models.DashboardModel, ctx context.
 	return &items, true
 }
 
-func dashboardDashboardFiltersToCreateAPI(m *models.DashboardModel, ctx context.Context, req *kbapi.PostDashboardsJSONRequestBody, diags *diag.Diagnostics) {
-	if filters, ok := dashboardBuildDashboardFiltersForAPI(m, ctx, diags); ok {
+func dashboardDashboardFiltersToCreateAPI(ctx context.Context, m *models.DashboardModel, req *kbapi.PostDashboardsJSONRequestBody, diags *diag.Diagnostics) {
+	if filters, ok := dashboardBuildDashboardFiltersForAPI(ctx, m, diags); ok {
 		req.Filters = filters
 	}
 }
 
-func dashboardDashboardFiltersToUpdateAPI(m *models.DashboardModel, ctx context.Context, req *kbapi.PutDashboardsIdJSONRequestBody, diags *diag.Diagnostics) {
-	if filters, ok := dashboardBuildDashboardFiltersForAPI(m, ctx, diags); ok {
+func dashboardDashboardFiltersToUpdateAPI(ctx context.Context, m *models.DashboardModel, req *kbapi.PutDashboardsIdJSONRequestBody, diags *diag.Diagnostics) {
+	if filters, ok := dashboardBuildDashboardFiltersForAPI(ctx, m, diags); ok {
 		req.Filters = filters
 	}
 }

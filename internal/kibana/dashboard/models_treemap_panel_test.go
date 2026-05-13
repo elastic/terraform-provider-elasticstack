@@ -161,7 +161,7 @@ func Test_treemapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 	api.Metrics = []kbapi.TreemapNoESQL_Metrics_Item{metricItem}
 
 	model := &models.TreemapConfigModel{}
-	diags := treemapConfigFromAPINoESQL(model, context.Background(), nil, nil, api)
+	diags := treemapConfigFromAPINoESQL(context.Background(), model, nil, nil, api)
 	require.False(t, diags.HasError())
 
 	assert.Equal(t, types.StringValue("Test Treemap"), model.Title)
@@ -250,7 +250,7 @@ func Test_treemapConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(`{"type":"esql","query":"FROM metrics-* | LIMIT 10"}`), &api.DataSource))
 
 	model := &models.TreemapConfigModel{}
-	diags := treemapConfigFromAPIESQL(model, context.Background(), nil, nil, api)
+	diags := treemapConfigFromAPIESQL(context.Background(), model, nil, nil, api)
 	require.False(t, diags.HasError())
 
 	assert.Equal(t, types.StringValue("ESQL Treemap"), model.Title)
@@ -308,7 +308,7 @@ func Test_treemapConfigModel_fromAPINoESQL_preservesKnownWhenAPIIsDefault(t *tes
 		IgnoreGlobalFilters: types.BoolValue(true),
 		Sampling:            types.Float64Value(0.5),
 	}
-	diags := treemapConfigFromAPINoESQL(model, context.Background(), nil, nil, api)
+	diags := treemapConfigFromAPINoESQL(context.Background(), model, nil, nil, api)
 	require.False(t, diags.HasError())
 
 	// Should preserve existing values when API has defaults
@@ -409,7 +409,7 @@ func Test_treemapConfigModel_truncateAfterLinesIsInt64(t *testing.T) {
 	api.GroupBy = &groupBy
 
 	model := &models.TreemapConfigModel{}
-	diags := treemapConfigFromAPINoESQL(model, context.Background(), nil, nil, api)
+	diags := treemapConfigFromAPINoESQL(context.Background(), model, nil, nil, api)
 	require.False(t, diags.HasError())
 	require.NotNil(t, model.Legend)
 	assert.Equal(t, int64(5), model.Legend.TruncateAfterLine.ValueInt64())
@@ -432,6 +432,6 @@ func Test_treemapConfig_lensChartPresentation_hideTitleRoundTrip(t *testing.T) {
 	require.NoError(t, err)
 
 	got := &models.TreemapConfigModel{}
-	require.False(t, treemapConfigFromAPINoESQL(got, ctx, dash, &m, api).HasError())
+	require.False(t, treemapConfigFromAPINoESQL(ctx, got, dash, &m, api).HasError())
 	assert.Equal(t, types.BoolValue(true), got.HideTitle)
 }

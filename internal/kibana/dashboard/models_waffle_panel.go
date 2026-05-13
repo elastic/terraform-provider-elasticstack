@@ -82,13 +82,13 @@ func (c wafflePanelConfigConverter) populateFromAttributes(
 		if err != nil {
 			return diagutil.FrameworkDiagFromError(err)
 		}
-		diags = waffleConfigFromAPIESQL(blocks.WaffleConfig, ctx, dashboard, prior, wESQL)
+		diags = waffleConfigFromAPIESQL(ctx, blocks.WaffleConfig, dashboard, prior, wESQL)
 	} else {
 		wNoESQL, err := attrs.AsWaffleNoESQL()
 		if err != nil {
 			return diagutil.FrameworkDiagFromError(err)
 		}
-		diags = waffleConfigFromAPINoESQL(blocks.WaffleConfig, ctx, dashboard, prior, wNoESQL)
+		diags = waffleConfigFromAPINoESQL(ctx, blocks.WaffleConfig, dashboard, prior, wNoESQL)
 	}
 	mergeWaffleConfigFromPlanSeed(blocks.WaffleConfig, seed)
 	return diags
@@ -210,7 +210,7 @@ func waffleConfigUsesESQL(m *models.WaffleConfigModel) bool {
 	return m.Query.Expression.IsNull() && m.Query.Language.IsNull()
 }
 
-func waffleConfigFromAPINoESQL(m *models.WaffleConfigModel, ctx context.Context, dashboard *models.DashboardModel, prior *models.WaffleConfigModel, api kbapi.WaffleNoESQL) diag.Diagnostics {
+func waffleConfigFromAPINoESQL(ctx context.Context, m *models.WaffleConfigModel, dashboard *models.DashboardModel, prior *models.WaffleConfigModel, api kbapi.WaffleNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 
@@ -237,7 +237,7 @@ func waffleConfigFromAPINoESQL(m *models.WaffleConfigModel, ctx context.Context,
 	m.Filters = populateFiltersFromAPI(api.Filters, &diags)
 
 	m.Legend = &models.WaffleLegendModel{}
-	waffleLegendFromAPI(m.Legend, ctx, api.Legend)
+	waffleLegendFromAPI(ctx, m.Legend, api.Legend)
 
 	if api.Styling.Values.Mode != nil || api.Styling.Values.PercentDecimals != nil {
 		m.ValueDisplay = &models.WaffleValueDisplay{
@@ -313,7 +313,7 @@ func waffleConfigFromAPINoESQL(m *models.WaffleConfigModel, ctx context.Context,
 	return diags
 }
 
-func waffleConfigFromAPIESQL(m *models.WaffleConfigModel, ctx context.Context, dashboard *models.DashboardModel, prior *models.WaffleConfigModel, api kbapi.WaffleESQL) diag.Diagnostics {
+func waffleConfigFromAPIESQL(ctx context.Context, m *models.WaffleConfigModel, dashboard *models.DashboardModel, prior *models.WaffleConfigModel, api kbapi.WaffleESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 
@@ -339,7 +339,7 @@ func waffleConfigFromAPIESQL(m *models.WaffleConfigModel, ctx context.Context, d
 	m.Filters = populateFiltersFromAPI(api.Filters, &diags)
 
 	m.Legend = &models.WaffleLegendModel{}
-	waffleLegendFromAPI(m.Legend, ctx, api.Legend)
+	waffleLegendFromAPI(ctx, m.Legend, api.Legend)
 
 	if api.Styling.Values.Mode != nil || api.Styling.Values.PercentDecimals != nil {
 		m.ValueDisplay = &models.WaffleValueDisplay{
@@ -444,7 +444,7 @@ func waffleConfigFromAPIESQL(m *models.WaffleConfigModel, ctx context.Context, d
 	return diags
 }
 
-func waffleLegendFromAPI(m *models.WaffleLegendModel, ctx context.Context, api kbapi.WaffleLegend) {
+func waffleLegendFromAPI(ctx context.Context, m *models.WaffleLegendModel, api kbapi.WaffleLegend) {
 	_ = ctx
 	m.Size = types.StringValue(string(api.Size))
 	if api.TruncateAfterLines != nil {

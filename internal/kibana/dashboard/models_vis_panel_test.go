@@ -50,7 +50,7 @@ func Test_mapPanelFromAPI_vis_byReference_populatesVisConfig(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(apiPanelsJSON), &apiPanels))
 
 	dm := &models.DashboardModel{}
-	panels, sections, diags := dashboardMapPanelsFromAPI(dm, ctx, &apiPanels)
+	panels, sections, diags := dashboardMapPanelsFromAPI(ctx, dm, &apiPanels)
 	require.False(t, diags.HasError())
 	require.Nil(t, sections)
 	require.Len(t, panels, 1)
@@ -85,7 +85,7 @@ func Test_mapPanelFromAPI_vis_byValue_populatesNestedChartBlock(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(apiPanelsJSON), &apiPanels))
 
 	dm := &models.DashboardModel{}
-	panels, _, diags := dashboardMapPanelsFromAPI(dm, ctx, &apiPanels)
+	panels, _, diags := dashboardMapPanelsFromAPI(ctx, dm, &apiPanels)
 	require.False(t, diags.HasError())
 	require.Len(t, panels, 1)
 
@@ -141,7 +141,7 @@ func Test_mapPanelFromAPI_vis_byValue_prefersAPIChartOverStalePriorXYBlock(t *te
 	require.NoError(t, err)
 
 	dm := models.DashboardModel{}
-	out, diags := dashboardMapPanelFromAPI(&dm, ctx, &tfPanel, panelRow)
+	out, diags := dashboardMapPanelFromAPI(ctx, &dm, &tfPanel, panelRow)
 	require.False(t, diags.HasError(), "%s", diags)
 	require.NotNil(t, out.VisConfig)
 	require.NotNil(t, out.VisConfig.ByValue)
@@ -175,7 +175,7 @@ func Test_mapPanelFromAPI_vis_unsupportedChartDiagnostic(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(apiPanelsJSON), &apiPanels))
 
 	dm := &models.DashboardModel{}
-	_, _, diags := dashboardMapPanelsFromAPI(dm, ctx, &apiPanels)
+	_, _, diags := dashboardMapPanelsFromAPI(ctx, dm, &apiPanels)
 	require.True(t, diags.HasError())
 	found := false
 	for _, d := range diags {
@@ -219,7 +219,7 @@ func Test_mapPanelFromAPI_vis_ambiguousPreservesPriorByReference(t *testing.T) {
 	require.NoError(t, err)
 
 	dm := models.DashboardModel{}
-	out, diags := dashboardMapPanelFromAPI(&dm, ctx, &priorPanel, panelRow)
+	out, diags := dashboardMapPanelFromAPI(ctx, &dm, &priorPanel, panelRow)
 	require.False(t, diags.HasError())
 	require.NotNil(t, out.VisConfig)
 	require.Nil(t, out.VisConfig.ByValue)
@@ -251,7 +251,7 @@ func Test_mapPanelFromAPI_vis_configJSONOnlyLeavesVisUnset(t *testing.T) {
 	require.NoError(t, err)
 
 	dm := models.DashboardModel{}
-	out, diags := dashboardMapPanelFromAPI(&dm, ctx, &tfPrior, panelRow)
+	out, diags := dashboardMapPanelFromAPI(ctx, &dm, &tfPrior, panelRow)
 	require.False(t, diags.HasError())
 	assert.Nil(t, out.VisConfig)
 }
@@ -273,7 +273,7 @@ func Test_panel_toAPI_vis_byReference_writesVisConfig1(t *testing.T) {
 		ConfigJSON: customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults),
 	}
 
-	item, diags := panelToAPI(pm, context.Background(), nil)
+	item, diags := panelToAPI(context.Background(), pm, nil)
 	require.False(t, diags.HasError())
 
 	visPanel, err := item.AsKbnDashboardPanelTypeVis()
@@ -294,7 +294,7 @@ func Test_panel_toAPI_vis_configJSONWithoutVis_unmarshalsOpaqueConfigJSON(t *tes
 			populatePanelConfigJSONDefaults,
 		),
 	}
-	item, diags := panelToAPI(pm, context.Background(), nil)
+	item, diags := panelToAPI(context.Background(), pm, nil)
 	require.False(t, diags.HasError())
 	v, err := item.AsKbnDashboardPanelTypeVis()
 	require.NoError(t, err)

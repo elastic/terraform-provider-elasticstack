@@ -96,7 +96,7 @@ func Test_legacyMetricConfigModel_fromAPI_toAPI_NoESQL(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(apiJSON), &api))
 
 	model1 := &models.LegacyMetricConfigModel{}
-	diags := legacyMetricConfigFromAPINoESQL(model1, ctx, nil, nil, api)
+	diags := legacyMetricConfigFromAPINoESQL(ctx, model1, nil, nil, api)
 	require.False(t, diags.HasError())
 
 	attrs2, diags := legacyMetricConfigToAPI(model1, nil)
@@ -106,7 +106,7 @@ func Test_legacyMetricConfigModel_fromAPI_toAPI_NoESQL(t *testing.T) {
 	require.NoError(t, err)
 
 	model2 := &models.LegacyMetricConfigModel{}
-	diags = legacyMetricConfigFromAPINoESQL(model2, ctx, nil, nil, noESQL2)
+	diags = legacyMetricConfigFromAPINoESQL(ctx, model2, nil, nil, noESQL2)
 	require.False(t, diags.HasError())
 
 	assertLegacyMetricConfigEqual(ctx, t, model1, model2)
@@ -178,14 +178,14 @@ func Test_legacyMetricConfigModel_fromAPI_roundTrip(t *testing.T) {
 		"metric": {"operation": "count", "format": {"type": "number"}}
 	}`), &api))
 		model1 := &models.LegacyMetricConfigModel{}
-		diags := legacyMetricConfigFromAPINoESQL(model1, ctx, nil, nil, api)
+		diags := legacyMetricConfigFromAPINoESQL(ctx, model1, nil, nil, api)
 		require.False(t, diags.HasError())
 		attrs2, diags := legacyMetricConfigToAPI(model1, nil)
 		require.False(t, diags.HasError())
 		noESQL2, err := attrs2.AsLegacyMetricNoESQL()
 		require.NoError(t, err)
 		model2 := &models.LegacyMetricConfigModel{}
-		diags = legacyMetricConfigFromAPINoESQL(model2, ctx, nil, nil, noESQL2)
+		diags = legacyMetricConfigFromAPINoESQL(ctx, model2, nil, nil, noESQL2)
 		require.False(t, diags.HasError())
 		assertLegacyMetricConfigEqual(ctx, t, model1, model2)
 	})
@@ -285,7 +285,7 @@ func Test_legacyMetricConfig_lensChartPresentation_hideTitleRoundTrip(t *testing
 	require.NoError(t, json.Unmarshal([]byte(apiJSON), &api))
 
 	base := &models.LegacyMetricConfigModel{}
-	require.False(t, legacyMetricConfigFromAPINoESQL(base, ctx, nil, nil, api).HasError())
+	require.False(t, legacyMetricConfigFromAPINoESQL(ctx, base, nil, nil, api).HasError())
 
 	m := *base
 	m.HideTitle = types.BoolValue(true)
@@ -296,6 +296,6 @@ func Test_legacyMetricConfig_lensChartPresentation_hideTitleRoundTrip(t *testing
 	require.NoError(t, err)
 
 	got := &models.LegacyMetricConfigModel{}
-	require.False(t, legacyMetricConfigFromAPINoESQL(got, ctx, dash, &m, out).HasError())
+	require.False(t, legacyMetricConfigFromAPINoESQL(ctx, got, dash, &m, out).HasError())
 	assert.Equal(t, types.BoolValue(true), got.HideTitle)
 }

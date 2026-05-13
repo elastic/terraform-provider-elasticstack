@@ -137,7 +137,7 @@ func Test_pieChartConfigModel_fromAPI_toAPI_PieNoESQL(t *testing.T) {
 	}
 
 	model := &models.PieChartConfigModel{}
-	diags := pieChartConfigFromAPINoESQL(model, context.Background(), nil, nil, apiChart)
+	diags := pieChartConfigFromAPINoESQL(context.Background(), model, nil, nil, apiChart)
 	require.False(t, diags.HasError(), "fromAPINoESQL should not have errors")
 
 	// Verify fields
@@ -186,7 +186,7 @@ func Test_pieChartConfigModel_fromAPI_toAPI_PieESQL(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(apiJSON), &apiESQL))
 
 	model := &models.PieChartConfigModel{}
-	diags := pieChartConfigFromAPIESQL(model, context.Background(), nil, nil, apiESQL)
+	diags := pieChartConfigFromAPIESQL(context.Background(), model, nil, nil, apiESQL)
 	require.False(t, diags.HasError())
 
 	assert.Equal(t, "ESQL Pie Chart", model.Title.ValueString())
@@ -375,7 +375,7 @@ func Test_pieChartConfigModel_config_json_metricRoundTrip(t *testing.T) {
 
 	// Round-trip back
 	model2 := &models.PieChartConfigModel{}
-	diags = pieChartConfigFromAPINoESQL(model2, context.Background(), nil, nil, noESQL)
+	diags = pieChartConfigFromAPINoESQL(context.Background(), model2, nil, nil, noESQL)
 	require.False(t, diags.HasError())
 	require.Len(t, model2.Metrics, 1)
 	assert.False(t, model2.Metrics[0].Config.IsNull())

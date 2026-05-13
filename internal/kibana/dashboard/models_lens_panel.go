@@ -28,7 +28,13 @@ import (
 type lensVisualizationConverter interface {
 	visType() string
 	handlesTFConfigBlocks(blocks *models.LensByValueChartBlocks) bool
-	populateFromAttributes(ctx context.Context, dashboard *models.DashboardModel, tfPanel *models.PanelModel, blocks *models.LensByValueChartBlocks, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics
+	populateFromAttributes(
+		ctx context.Context,
+		dashboard *models.DashboardModel,
+		tfPanel *models.PanelModel,
+		blocks *models.LensByValueChartBlocks,
+		attrs kbapi.KbnDashboardPanelTypeVisConfig0,
+	) diag.Diagnostics
 	buildAttributes(blocks *models.LensByValueChartBlocks, dashboard *models.DashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics)
 }
 

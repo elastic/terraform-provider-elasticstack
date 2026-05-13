@@ -96,7 +96,7 @@ func TestDashboardModel_populateFromAPI_clearsAccessControlWhenAccessModeMissing
 		},
 	}
 
-	diags := dashboardPopulateFromAPI(model, context.Background(), resp, "dashboard-id", "default")
+	diags := dashboardPopulateFromAPI(context.Background(), model, resp, "dashboard-id", "default")
 	assert.False(t, diags.HasError())
 	assert.Nil(t, model.AccessControl)
 }

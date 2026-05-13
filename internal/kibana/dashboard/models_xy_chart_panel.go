@@ -61,13 +61,13 @@ func (c xyChartPanelConfigConverter) populateFromAttributes(
 	}
 	blocks.XYChartConfig = &models.XYChartConfigModel{}
 	if xyChart, err := attrs.AsXyChartNoESQL(); err == nil {
-		return xyChartConfigFromAPINoESQL(blocks.XYChartConfig, ctx, dashboard, prior, xyChart)
+		return xyChartConfigFromAPINoESQL(ctx, blocks.XYChartConfig, dashboard, prior, xyChart)
 	}
 	xyChart, err := attrs.AsXyChartESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	return xyChartConfigFromAPIESQL(blocks.XYChartConfig, ctx, dashboard, prior, xyChart)
+	return xyChartConfigFromAPIESQL(ctx, blocks.XYChartConfig, dashboard, prior, xyChart)
 }
 
 func (c xyChartPanelConfigConverter) buildAttributes(blocks *models.LensByValueChartBlocks, dashboard *models.DashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
@@ -726,7 +726,7 @@ func xyFittingToAPI(m *models.XYFittingModel) kbapi.XyFitting {
 	return out
 }
 
-func xyLegendFromAPI(m *models.XYLegendModel, ctx context.Context, apiLegend kbapi.XyLegend) diag.Diagnostics {
+func xyLegendFromAPI(ctx context.Context, m *models.XYLegendModel, apiLegend kbapi.XyLegend) diag.Diagnostics {
 	var diags diag.Diagnostics
 	m.Position = types.StringNull()
 	m.Size = types.StringNull()
@@ -1193,7 +1193,7 @@ func xyChartConfigToAPIESQL(m *models.XYChartConfigModel, dashboard *models.Dash
 	return chart, diags
 }
 
-func xyChartConfigFromAPINoESQL(m *models.XYChartConfigModel, ctx context.Context, dashboard *models.DashboardModel, prior *models.XYChartConfigModel, apiChart kbapi.XyChartNoESQL) diag.Diagnostics {
+func xyChartConfigFromAPINoESQL(ctx context.Context, m *models.XYChartConfigModel, dashboard *models.DashboardModel, prior *models.XYChartConfigModel, apiChart kbapi.XyChartNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	m.Title = types.StringPointerValue(apiChart.Title)
@@ -1210,7 +1210,7 @@ func xyChartConfigFromAPINoESQL(m *models.XYChartConfigModel, ctx context.Contex
 			if i < len(priorLayers) {
 				layer = priorLayers[i]
 			}
-			layerDiags := xyLayerFromAPILayersNoESQL(&layer, ctx, apiLayer)
+			layerDiags := xyLayerFromAPILayersNoESQL(ctx, &layer, apiLayer)
 			diags.Append(layerDiags...)
 			if !layerDiags.HasError() {
 				m.Layers = append(m.Layers, layer)
@@ -1229,7 +1229,7 @@ func xyChartConfigFromAPINoESQL(m *models.XYChartConfigModel, ctx context.Contex
 	xyFittingFromAPI(m.Fitting, apiChart.Styling.Fitting)
 
 	m.Legend = &models.XYLegendModel{}
-	legendDiags := xyLegendFromAPI(m.Legend, ctx, apiChart.Legend)
+	legendDiags := xyLegendFromAPI(ctx, m.Legend, apiChart.Legend)
 	diags.Append(legendDiags...)
 
 	// Preserve nil query when prior state omitted it (query is optional in schema).
@@ -1262,7 +1262,7 @@ func xyChartConfigFromAPINoESQL(m *models.XYChartConfigModel, ctx context.Contex
 	return diags
 }
 
-func xyChartConfigFromAPIESQL(m *models.XYChartConfigModel, ctx context.Context, dashboard *models.DashboardModel, prior *models.XYChartConfigModel, apiChart kbapi.XyChartESQL) diag.Diagnostics {
+func xyChartConfigFromAPIESQL(ctx context.Context, m *models.XYChartConfigModel, dashboard *models.DashboardModel, prior *models.XYChartConfigModel, apiChart kbapi.XyChartESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	m.Title = types.StringPointerValue(apiChart.Title)
@@ -1279,7 +1279,7 @@ func xyChartConfigFromAPIESQL(m *models.XYChartConfigModel, ctx context.Context,
 			if i < len(priorLayers) {
 				layer = priorLayers[i]
 			}
-			layerDiags := xyLayerFromAPILayerESQL(&layer, ctx, apiLayer)
+			layerDiags := xyLayerFromAPILayerESQL(ctx, &layer, apiLayer)
 			diags.Append(layerDiags...)
 			if !layerDiags.HasError() {
 				m.Layers = append(m.Layers, layer)
@@ -1298,7 +1298,7 @@ func xyChartConfigFromAPIESQL(m *models.XYChartConfigModel, ctx context.Context,
 	xyFittingFromAPI(m.Fitting, apiChart.Styling.Fitting)
 
 	m.Legend = &models.XYLegendModel{}
-	legendDiags := xyLegendFromAPI(m.Legend, ctx, apiChart.Legend)
+	legendDiags := xyLegendFromAPI(ctx, m.Legend, apiChart.Legend)
 	diags.Append(legendDiags...)
 
 	m.Query = nil

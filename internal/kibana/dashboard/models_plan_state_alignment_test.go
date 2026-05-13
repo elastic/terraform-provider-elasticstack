@@ -118,7 +118,7 @@ func Test_alignPanelStateFromPlan_preservesMosaicTreemapPartitionSnapshots(t *te
 	plan := models.PanelModel{
 		VisConfig: &models.VisConfigModel{
 			ByValue: &models.VisByValueModel{
-					LensByValueChartBlocks: models.LensByValueChartBlocks{
+				LensByValueChartBlocks: models.LensByValueChartBlocks{
 					MosaicConfig: &models.MosaicConfigModel{
 						Title:               types.StringValue("M"),
 						Description:         types.StringValue("d"),
@@ -138,7 +138,7 @@ func Test_alignPanelStateFromPlan_preservesMosaicTreemapPartitionSnapshots(t *te
 	state := models.PanelModel{
 		VisConfig: &models.VisConfigModel{
 			ByValue: &models.VisByValueModel{
-					LensByValueChartBlocks: models.LensByValueChartBlocks{
+				LensByValueChartBlocks: models.LensByValueChartBlocks{
 					MosaicConfig: &models.MosaicConfigModel{
 						Title:               types.StringValue("M"),
 						Description:         types.StringValue("d"),

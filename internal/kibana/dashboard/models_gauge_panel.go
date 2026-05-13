@@ -61,14 +61,14 @@ func (c gaugePanelConfigConverter) populateFromAttributes(
 	blocks.GaugeConfig = &models.GaugeConfigModel{}
 
 	if noESQL, err := attrs.AsGaugeNoESQL(); err == nil && !isGaugeNoESQLCandidateActuallyESQL(noESQL) {
-		return gaugeConfigFromAPI(blocks.GaugeConfig, ctx, dashboard, prior, noESQL)
+		return gaugeConfigFromAPI(ctx, blocks.GaugeConfig, dashboard, prior, noESQL)
 	}
 
 	gaugeESQL, err := attrs.AsGaugeESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	return gaugeConfigFromAPIESQL(blocks.GaugeConfig, ctx, dashboard, prior, gaugeESQL)
+	return gaugeConfigFromAPIESQL(ctx, blocks.GaugeConfig, dashboard, prior, gaugeESQL)
 }
 
 func (c gaugePanelConfigConverter) buildAttributes(blocks *models.LensByValueChartBlocks, dashboard *models.DashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
@@ -89,7 +89,7 @@ func gaugeConfigUsesESQL(m *models.GaugeConfigModel) bool {
 	return m.Query.Expression.IsNull() && m.Query.Language.IsNull()
 }
 
-func gaugeConfigFromAPI(m *models.GaugeConfigModel, ctx context.Context, dashboard *models.DashboardModel, prior *models.GaugeConfigModel, api kbapi.GaugeNoESQL) diag.Diagnostics {
+func gaugeConfigFromAPI(ctx context.Context, m *models.GaugeConfigModel, dashboard *models.DashboardModel, prior *models.GaugeConfigModel, api kbapi.GaugeNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 
@@ -155,7 +155,7 @@ func gaugeConfigFromAPI(m *models.GaugeConfigModel, ctx context.Context, dashboa
 	return diags
 }
 
-func gaugeConfigFromAPIESQL(m *models.GaugeConfigModel, ctx context.Context, dashboard *models.DashboardModel, prior *models.GaugeConfigModel, api kbapi.GaugeESQL) diag.Diagnostics {
+func gaugeConfigFromAPIESQL(ctx context.Context, m *models.GaugeConfigModel, dashboard *models.DashboardModel, prior *models.GaugeConfigModel, api kbapi.GaugeESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	m.Title = types.StringPointerValue(api.Title)
@@ -363,7 +363,7 @@ func gaugeConfigToAPINoESQL(m *models.GaugeConfigModel, dashboard *models.Dashbo
 		diags.AddError("Missing query", "gauge_config.query must be set for non-ES|QL gauges (or omit `query` entirely for ES|QL mode)")
 		return api, diags
 	}
-		api.Query = filterSimpleToAPI(m.Query)
+	api.Query = filterSimpleToAPI(m.Query)
 
 	api.Filters = buildFiltersForAPI(m.Filters, &diags)
 

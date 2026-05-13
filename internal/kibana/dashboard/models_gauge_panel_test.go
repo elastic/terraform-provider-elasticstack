@@ -116,7 +116,7 @@ func Test_gaugeConfigModel_fromAPI_toAPI(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			model := &models.GaugeConfigModel{}
-			diags := gaugeConfigFromAPI(model, context.Background(), nil, nil, tt.api)
+			diags := gaugeConfigFromAPI(context.Background(), model, nil, nil, tt.api)
 			require.False(t, diags.HasError(), "fromAPI should not return errors")
 
 			assert.Equal(t, tt.expected.Title, model.Title, "Title should match")
@@ -218,7 +218,7 @@ func Test_gaugeConfigModel_fromAPIESQL_toAPIESQL_roundTrip(t *testing.T) {
 	api.Metric.Label = &label
 
 	model := &models.GaugeConfigModel{}
-	diags := gaugeConfigFromAPIESQL(model, ctx, nil, nil, api)
+	diags := gaugeConfigFromAPIESQL(ctx, model, nil, nil, api)
 	require.False(t, diags.HasError(), "fromAPIESQL should not return errors: %v", diags)
 
 	// Query should be nil for ES|QL mode.
@@ -317,7 +317,7 @@ func Test_gaugeConfigModel_fromAPIESQL_toAPIESQL_roundTrip_populatedOptionalMetr
 	}{Text: &tx, Visible: &titleVis}
 
 	m := &models.GaugeConfigModel{}
-	diags := gaugeConfigFromAPIESQL(m, ctx, nil, nil, api)
+	diags := gaugeConfigFromAPIESQL(ctx, m, nil, nil, api)
 	require.False(t, diags.HasError(), "%v", diags)
 
 	attrs, diags := gaugeConfigToAPI(m, nil)
@@ -332,7 +332,7 @@ func Test_gaugeConfigModel_fromAPIESQL_toAPIESQL_roundTrip_populatedOptionalMetr
 	assert.JSONEq(t, string(wantMetric), string(gotMetric))
 
 	m2 := &models.GaugeConfigModel{}
-	diags = gaugeConfigFromAPIESQL(m2, ctx, nil, nil, apiOut)
+	diags = gaugeConfigFromAPIESQL(ctx, m2, nil, nil, apiOut)
 	require.False(t, diags.HasError(), "%v", diags)
 
 	attrs2, diags := gaugeConfigToAPI(m2, nil)

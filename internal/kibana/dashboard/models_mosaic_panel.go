@@ -61,14 +61,14 @@ func (c mosaicPanelConfigConverter) populateFromAttributes(
 	blocks.MosaicConfig = &models.MosaicConfigModel{}
 
 	if noESQL, err := attrs.AsMosaicNoESQL(); err == nil && !isMosaicNoESQLCandidateActuallyESQL(noESQL) {
-		return mosaicConfigFromAPINoESQL(blocks.MosaicConfig, ctx, dashboard, prior, noESQL)
+		return mosaicConfigFromAPINoESQL(ctx, blocks.MosaicConfig, dashboard, prior, noESQL)
 	}
 
 	mosaicESQL, err := attrs.AsMosaicESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	return mosaicConfigFromAPIESQL(blocks.MosaicConfig, ctx, dashboard, prior, mosaicESQL)
+	return mosaicConfigFromAPIESQL(ctx, blocks.MosaicConfig, dashboard, prior, mosaicESQL)
 }
 
 func (c mosaicPanelConfigConverter) buildAttributes(blocks *models.LensByValueChartBlocks, dashboard *models.DashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
@@ -94,7 +94,7 @@ func isMosaicNoESQLCandidateActuallyESQL(api kbapi.MosaicNoESQL) bool {
 	return ds.Type == legacyMetricDatasetTypeESQL || ds.Type == legacyMetricDatasetTypeTable
 }
 
-func mosaicConfigFromAPINoESQL(m *models.MosaicConfigModel, ctx context.Context, dashboard *models.DashboardModel, prior *models.MosaicConfigModel, api kbapi.MosaicNoESQL) diag.Diagnostics {
+func mosaicConfigFromAPINoESQL(ctx context.Context, m *models.MosaicConfigModel, dashboard *models.DashboardModel, prior *models.MosaicConfigModel, api kbapi.MosaicNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	m.Title = types.StringPointerValue(api.Title)
@@ -182,7 +182,7 @@ func mosaicConfigFromAPINoESQL(m *models.MosaicConfigModel, ctx context.Context,
 	return diags
 }
 
-func mosaicConfigFromAPIESQL(m *models.MosaicConfigModel, ctx context.Context, dashboard *models.DashboardModel, prior *models.MosaicConfigModel, api kbapi.MosaicESQL) diag.Diagnostics {
+func mosaicConfigFromAPIESQL(ctx context.Context, m *models.MosaicConfigModel, dashboard *models.DashboardModel, prior *models.MosaicConfigModel, api kbapi.MosaicESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	m.Query = nil

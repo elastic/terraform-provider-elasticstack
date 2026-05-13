@@ -61,14 +61,14 @@ func (c tagcloudPanelConfigConverter) populateFromAttributes(
 	blocks.TagcloudConfig = &models.TagcloudConfigModel{}
 
 	if noESQL, err := attrs.AsTagcloudNoESQL(); err == nil && !isTagcloudNoESQLCandidateActuallyESQL(noESQL) {
-		return tagcloudConfigFromAPI(blocks.TagcloudConfig, ctx, dashboard, prior, noESQL)
+		return tagcloudConfigFromAPI(ctx, blocks.TagcloudConfig, dashboard, prior, noESQL)
 	}
 
 	tagcloudESQL, err := attrs.AsTagcloudESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	return tagcloudConfigFromAPIESQL(blocks.TagcloudConfig, ctx, dashboard, prior, tagcloudESQL)
+	return tagcloudConfigFromAPIESQL(ctx, blocks.TagcloudConfig, dashboard, prior, tagcloudESQL)
 }
 
 func (c tagcloudPanelConfigConverter) buildAttributes(blocks *models.LensByValueChartBlocks, dashboard *models.DashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
@@ -116,7 +116,7 @@ func tagcloudConfigUsesESQL(m *models.TagcloudConfigModel) bool {
 	return m.Query.Expression.IsNull() && m.Query.Language.IsNull()
 }
 
-func tagcloudConfigFromAPI(m *models.TagcloudConfigModel, ctx context.Context, dashboard *models.DashboardModel, prior *models.TagcloudConfigModel, api kbapi.TagcloudNoESQL) diag.Diagnostics {
+func tagcloudConfigFromAPI(ctx context.Context, m *models.TagcloudConfigModel, dashboard *models.DashboardModel, prior *models.TagcloudConfigModel, api kbapi.TagcloudNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 
@@ -180,7 +180,7 @@ func tagcloudConfigFromAPI(m *models.TagcloudConfigModel, ctx context.Context, d
 	return diags
 }
 
-func tagcloudConfigFromAPIESQL(m *models.TagcloudConfigModel, ctx context.Context, dashboard *models.DashboardModel, prior *models.TagcloudConfigModel, api kbapi.TagcloudESQL) diag.Diagnostics {
+func tagcloudConfigFromAPIESQL(ctx context.Context, m *models.TagcloudConfigModel, dashboard *models.DashboardModel, prior *models.TagcloudConfigModel, api kbapi.TagcloudESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	m.Title = types.StringPointerValue(api.Title)

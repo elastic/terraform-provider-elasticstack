@@ -110,10 +110,10 @@ func Test_regionMapConfigModel_fromAPI_toAPI(t *testing.T) {
 			model := &models.RegionMapConfigModel{}
 
 			if tt.apiNoESQL != nil {
-				diags := regionMapConfigFromAPINoESQL(model, context.Background(), nil, nil, *tt.apiNoESQL)
+				diags := regionMapConfigFromAPINoESQL(context.Background(), model, nil, nil, *tt.apiNoESQL)
 				require.False(t, diags.HasError())
 			} else if tt.apiESQL != nil {
-				diags := regionMapConfigFromAPIESQL(model, context.Background(), nil, nil, *tt.apiESQL)
+				diags := regionMapConfigFromAPIESQL(context.Background(), model, nil, nil, *tt.apiESQL)
 				require.False(t, diags.HasError())
 			}
 
@@ -238,7 +238,7 @@ func Test_regionMapConfig_lensChartPresentation_hideTitleRoundTrip(t *testing.T)
 	require.NoError(t, json.Unmarshal([]byte(`{"operation":"filters","filters":[{"filter":{"query":"*","language":"kql"},"label":"All"}]}`), &api.Region))
 
 	base := &models.RegionMapConfigModel{}
-	require.False(t, regionMapConfigFromAPINoESQL(base, ctx, nil, nil, api).HasError())
+	require.False(t, regionMapConfigFromAPINoESQL(ctx, base, nil, nil, api).HasError())
 
 	m := *base
 	m.HideTitle = types.BoolValue(true)
@@ -249,6 +249,6 @@ func Test_regionMapConfig_lensChartPresentation_hideTitleRoundTrip(t *testing.T)
 	require.NoError(t, err)
 
 	got := &models.RegionMapConfigModel{}
-	require.False(t, regionMapConfigFromAPINoESQL(got, ctx, dash, &m, out).HasError())
+	require.False(t, regionMapConfigFromAPINoESQL(ctx, got, dash, &m, out).HasError())
 	assert.Equal(t, types.BoolValue(true), got.HideTitle)
 }

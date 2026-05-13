@@ -214,7 +214,12 @@ func pinnedPanelApplyPinnedControlConfig(pp *models.PinnedPanelModel, active str
 	}
 }
 
-func dashboardMapPinnedPanelsFromAPI(m *models.DashboardModel, ctx context.Context, prior []models.PinnedPanelModel, api *[]kbapi.DashboardPinnedPanels_Item) ([]models.PinnedPanelModel, diag.Diagnostics) {
+func dashboardMapPinnedPanelsFromAPI(
+	ctx context.Context,
+	_ *models.DashboardModel,
+	prior []models.PinnedPanelModel,
+	api *[]kbapi.DashboardPinnedPanels_Item,
+) ([]models.PinnedPanelModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	if api == nil || len(*api) == 0 {

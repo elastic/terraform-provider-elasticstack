@@ -75,7 +75,7 @@ func Test_mapDashboardFiltersFromAPI_nullPreserved_whenAPINilOrEmpty(t *testing.
 	t.Run("API Filters nil", func(t *testing.T) {
 		m := &models.DashboardModel{Filters: rootFiltersListNull()}
 		var diags diag.Diagnostics
-		dashboardMapDashboardFiltersFromAPI(m, ctx, &kbapi.KbnDashboardData{Filters: nil}, &diags)
+		dashboardMapDashboardFiltersFromAPI(ctx, m, &kbapi.KbnDashboardData{Filters: nil}, &diags)
 		require.False(t, diags.HasError())
 		require.True(t, m.Filters.IsNull())
 	})
@@ -84,7 +84,7 @@ func Test_mapDashboardFiltersFromAPI_nullPreserved_whenAPINilOrEmpty(t *testing.
 		m := &models.DashboardModel{Filters: rootFiltersListNull()}
 		empty := []kbapi.DashboardFilters_Item{}
 		var diags diag.Diagnostics
-		dashboardMapDashboardFiltersFromAPI(m, ctx, &kbapi.KbnDashboardData{Filters: &empty}, &diags)
+		dashboardMapDashboardFiltersFromAPI(ctx, m, &kbapi.KbnDashboardData{Filters: &empty}, &diags)
 		require.False(t, diags.HasError())
 		require.True(t, m.Filters.IsNull())
 	})
@@ -92,7 +92,7 @@ func Test_mapDashboardFiltersFromAPI_nullPreserved_whenAPINilOrEmpty(t *testing.
 	t.Run("known empty list stays empty when API nil", func(t *testing.T) {
 		m := &models.DashboardModel{Filters: rootFiltersListEmpty(ctx, t)}
 		var diags diag.Diagnostics
-		dashboardMapDashboardFiltersFromAPI(m, ctx, &kbapi.KbnDashboardData{Filters: nil}, &diags)
+		dashboardMapDashboardFiltersFromAPI(ctx, m, &kbapi.KbnDashboardData{Filters: nil}, &diags)
 		require.False(t, diags.HasError())
 		require.False(t, m.Filters.IsNull())
 		require.False(t, m.Filters.IsUnknown())
@@ -103,7 +103,7 @@ func Test_mapDashboardFiltersFromAPI_nullPreserved_whenAPINilOrEmpty(t *testing.
 		m := &models.DashboardModel{Filters: rootFiltersListEmpty(ctx, t)}
 		empty := []kbapi.DashboardFilters_Item{}
 		var diags diag.Diagnostics
-		dashboardMapDashboardFiltersFromAPI(m, ctx, &kbapi.KbnDashboardData{Filters: &empty}, &diags)
+		dashboardMapDashboardFiltersFromAPI(ctx, m, &kbapi.KbnDashboardData{Filters: &empty}, &diags)
 		require.False(t, diags.HasError())
 		require.False(t, m.Filters.IsNull())
 		require.Empty(t, m.Filters.Elements())
@@ -123,7 +123,7 @@ func Test_mapDashboardFiltersFromAPI_orderPreserved(t *testing.T) {
 	}
 	m := &models.DashboardModel{Filters: rootFiltersListNull()}
 	var diags diag.Diagnostics
-	dashboardMapDashboardFiltersFromAPI(m, ctx, &kbapi.KbnDashboardData{Filters: &items}, &diags)
+	dashboardMapDashboardFiltersFromAPI(ctx, m, &kbapi.KbnDashboardData{Filters: &items}, &diags)
 	require.False(t, diags.HasError())
 
 	elems := typeutils.ListTypeAs[models.ChartFilterJSONModel](ctx, m.Filters, path.Root("filters"), &diags)
@@ -140,7 +140,7 @@ func Test_mapDashboardFiltersFromAPI_normalizesKeyOrder(t *testing.T) {
 	item := mustUnmarshalFilterItem(t, reordered)
 	m := &models.DashboardModel{Filters: rootFiltersListNull()}
 	var diags diag.Diagnostics
-	dashboardMapDashboardFiltersFromAPI(m, ctx, &kbapi.KbnDashboardData{Filters: &[]kbapi.DashboardFilters_Item{item}}, &diags)
+	dashboardMapDashboardFiltersFromAPI(ctx, m, &kbapi.KbnDashboardData{Filters: &[]kbapi.DashboardFilters_Item{item}}, &diags)
 	require.False(t, diags.HasError())
 
 	elems := typeutils.ListTypeAs[models.ChartFilterJSONModel](ctx, m.Filters, path.Root("filters"), &diags)
@@ -163,7 +163,7 @@ func Test_dashboardModel_dashboardFiltersToCreateAPI_writeSemantics(t *testing.T
 		m := &models.DashboardModel{Filters: rootFiltersListNull()}
 		var diags diag.Diagnostics
 		var req kbapi.PostDashboardsJSONRequestBody
-		dashboardDashboardFiltersToCreateAPI(m, ctx, &req, &diags)
+		dashboardDashboardFiltersToCreateAPI(ctx, m, &req, &diags)
 		require.False(t, diags.HasError())
 		require.Nil(t, req.Filters)
 	})
@@ -172,7 +172,7 @@ func Test_dashboardModel_dashboardFiltersToCreateAPI_writeSemantics(t *testing.T
 		m := &models.DashboardModel{Filters: rootFiltersListEmpty(ctx, t)}
 		var diags diag.Diagnostics
 		var req kbapi.PostDashboardsJSONRequestBody
-		dashboardDashboardFiltersToCreateAPI(m, ctx, &req, &diags)
+		dashboardDashboardFiltersToCreateAPI(ctx, m, &req, &diags)
 		require.False(t, diags.HasError())
 		require.NotNil(t, req.Filters)
 		require.Empty(t, *req.Filters)
@@ -186,7 +186,7 @@ func Test_dashboardModel_dashboardFiltersToCreateAPI_writeSemantics(t *testing.T
 		}
 		require.False(t, diags.HasError())
 		var req kbapi.PostDashboardsJSONRequestBody
-		dashboardDashboardFiltersToCreateAPI(m, ctx, &req, &diags)
+		dashboardDashboardFiltersToCreateAPI(ctx, m, &req, &diags)
 		require.False(t, diags.HasError())
 		require.NotNil(t, req.Filters)
 		require.Len(t, *req.Filters, len(raws))
@@ -210,7 +210,7 @@ func Test_dashboardModel_dashboardFiltersToUpdateAPI_writeSemantics(t *testing.T
 		m := &models.DashboardModel{Filters: rootFiltersListNull()}
 		var diags diag.Diagnostics
 		var req kbapi.PutDashboardsIdJSONRequestBody
-		dashboardDashboardFiltersToUpdateAPI(m, ctx, &req, &diags)
+		dashboardDashboardFiltersToUpdateAPI(ctx, m, &req, &diags)
 		require.False(t, diags.HasError())
 		require.Nil(t, req.Filters)
 	})
@@ -219,7 +219,7 @@ func Test_dashboardModel_dashboardFiltersToUpdateAPI_writeSemantics(t *testing.T
 		m := &models.DashboardModel{Filters: rootFiltersListEmpty(ctx, t)}
 		var diags diag.Diagnostics
 		var req kbapi.PutDashboardsIdJSONRequestBody
-		dashboardDashboardFiltersToUpdateAPI(m, ctx, &req, &diags)
+		dashboardDashboardFiltersToUpdateAPI(ctx, m, &req, &diags)
 		require.False(t, diags.HasError())
 		require.NotNil(t, req.Filters)
 		require.Empty(t, *req.Filters)
@@ -233,7 +233,7 @@ func Test_dashboardModel_dashboardFiltersToUpdateAPI_writeSemantics(t *testing.T
 		}
 		require.False(t, diags.HasError())
 		var req kbapi.PutDashboardsIdJSONRequestBody
-		dashboardDashboardFiltersToUpdateAPI(m, ctx, &req, &diags)
+		dashboardDashboardFiltersToUpdateAPI(ctx, m, &req, &diags)
 		require.False(t, diags.HasError())
 		require.NotNil(t, req.Filters)
 		require.Len(t, *req.Filters, len(raws))

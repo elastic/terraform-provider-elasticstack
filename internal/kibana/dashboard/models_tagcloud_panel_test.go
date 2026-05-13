@@ -159,7 +159,7 @@ func Test_tagcloudConfigModel_fromAPI_toAPI(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test fromAPI
 			model := &models.TagcloudConfigModel{}
-			diags := tagcloudConfigFromAPI(model, context.Background(), nil, nil, tt.api)
+			diags := tagcloudConfigFromAPI(context.Background(), model, nil, nil, tt.api)
 			require.False(t, diags.HasError(), "fromAPI should not return errors")
 
 			// Validate expected fields
@@ -295,7 +295,7 @@ func Test_fontSizeModel_roundTrip(t *testing.T) {
 
 			// Convert to model
 			model := &models.TagcloudConfigModel{}
-			diags := tagcloudConfigFromAPI(model, context.Background(), nil, nil, api)
+			diags := tagcloudConfigFromAPI(context.Background(), model, nil, nil, api)
 			require.False(t, diags.HasError())
 
 			// Convert back to API
@@ -393,7 +393,7 @@ func Test_tagcloudConfigModel_fromAPIESQL_toAPIESQL_roundTrip(t *testing.T) {
 	api.TagBy.Column = "host"
 
 	model := &models.TagcloudConfigModel{}
-	diags := tagcloudConfigFromAPIESQL(model, ctx, nil, nil, api)
+	diags := tagcloudConfigFromAPIESQL(ctx, model, nil, nil, api)
 	require.False(t, diags.HasError(), "fromAPIESQL should not return errors: %v", diags)
 
 	assert.Nil(t, model.Query)
@@ -481,7 +481,7 @@ func Test_tagcloudConfig_lensChartPresentation_hideTitleRoundTrip(t *testing.T) 
 	require.NoError(t, json.Unmarshal([]byte(`{"operation":{"operation_type":"terms"},"field":"tags.keyword"}`), &api.TagBy))
 
 	base := &models.TagcloudConfigModel{}
-	require.False(t, tagcloudConfigFromAPI(base, ctx, nil, nil, api).HasError())
+	require.False(t, tagcloudConfigFromAPI(ctx, base, nil, nil, api).HasError())
 
 	m := *base
 	m.HideTitle = types.BoolValue(true)
@@ -492,6 +492,6 @@ func Test_tagcloudConfig_lensChartPresentation_hideTitleRoundTrip(t *testing.T) 
 	require.NoError(t, err)
 
 	got := &models.TagcloudConfigModel{}
-	require.False(t, tagcloudConfigFromAPI(got, ctx, dash, &m, out).HasError())
+	require.False(t, tagcloudConfigFromAPI(ctx, got, dash, &m, out).HasError())
 	assert.Equal(t, types.BoolValue(true), got.HideTitle)
 }

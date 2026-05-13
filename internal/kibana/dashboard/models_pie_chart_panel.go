@@ -62,13 +62,13 @@ func (c pieChartPanelConfigConverter) populateFromAttributes(
 	}
 	blocks.PieChartConfig = &models.PieChartConfigModel{}
 	if noESQL, err := attrs.AsPieNoESQL(); err == nil && !isPieNoESQLCandidateActuallyESQL(noESQL) {
-		return pieChartConfigFromAPINoESQL(blocks.PieChartConfig, ctx, dashboard, prior, noESQL)
+		return pieChartConfigFromAPINoESQL(ctx, blocks.PieChartConfig, dashboard, prior, noESQL)
 	}
 	esql, err := attrs.AsPieESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	return pieChartConfigFromAPIESQL(blocks.PieChartConfig, ctx, dashboard, prior, esql)
+	return pieChartConfigFromAPIESQL(ctx, blocks.PieChartConfig, dashboard, prior, esql)
 }
 
 func (c pieChartPanelConfigConverter) buildAttributes(blocks *models.LensByValueChartBlocks, dashboard *models.DashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
@@ -145,7 +145,7 @@ func pieChartConfigPopulateCommonFields(m *models.PieChartConfigModel,
 	return !diags.HasError()
 }
 
-func pieChartConfigFromAPINoESQL(m *models.PieChartConfigModel, ctx context.Context, dashboard *models.DashboardModel, prior *models.PieChartConfigModel, apiChart kbapi.PieNoESQL) diag.Diagnostics {
+func pieChartConfigFromAPINoESQL(ctx context.Context, m *models.PieChartConfigModel, dashboard *models.DashboardModel, prior *models.PieChartConfigModel, apiChart kbapi.PieNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	var donutHole *string
@@ -224,7 +224,7 @@ func pieChartConfigFromAPINoESQL(m *models.PieChartConfigModel, ctx context.Cont
 	return diags
 }
 
-func pieChartConfigFromAPIESQL(m *models.PieChartConfigModel, ctx context.Context, dashboard *models.DashboardModel, prior *models.PieChartConfigModel, apiChart kbapi.PieESQL) diag.Diagnostics {
+func pieChartConfigFromAPIESQL(ctx context.Context, m *models.PieChartConfigModel, dashboard *models.DashboardModel, prior *models.PieChartConfigModel, apiChart kbapi.PieESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	var donutHole *string

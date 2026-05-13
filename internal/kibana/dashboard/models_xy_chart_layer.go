@@ -44,7 +44,7 @@ func xyReferenceLineLayerTypeFromTF(tfType string) kbapi.XyReferenceLineLayerNoE
 }
 
 // fromAPILayersNoESQL populates the layer model from a DSL (non-ES|QL) XY layer union value.
-func xyLayerFromAPILayersNoESQL(m *models.XYLayerModel, ctx context.Context, apiLayer kbapi.XyLayersNoESQL) diag.Diagnostics {
+func xyLayerFromAPILayersNoESQL(ctx context.Context, m *models.XYLayerModel, apiLayer kbapi.XyLayersNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	layerJSON, err := apiLayer.MarshalJSON()
@@ -84,14 +84,14 @@ func xyLayerFromAPILayersNoESQL(m *models.XYLayerModel, ctx context.Context, api
 		return diags
 	}
 	m.DataLayer = &models.DataLayerModel{}
-	return dataLayerFromAPINoESQL(m.DataLayer, ctx, dl)
+	return dataLayerFromAPINoESQL(ctx, m.DataLayer, dl)
 }
 
 // fromAPILayerESQL populates the layer model from an ES|QL XY data layer.
-func xyLayerFromAPILayerESQL(m *models.XYLayerModel, ctx context.Context, apiLayer kbapi.XyLayerESQL) diag.Diagnostics {
+func xyLayerFromAPILayerESQL(ctx context.Context, m *models.XYLayerModel, apiLayer kbapi.XyLayerESQL) diag.Diagnostics {
 	m.Type = types.StringValue(string(apiLayer.Type))
 	m.DataLayer = &models.DataLayerModel{}
-	return dataLayerFromAPIESql(m.DataLayer, ctx, apiLayer)
+	return dataLayerFromAPIESql(ctx, m.DataLayer, apiLayer)
 }
 
 // toAPILayersNoESQL converts the layer model to the DSL layer union type.
@@ -139,7 +139,7 @@ func xyLayerToAPILayerESQL(m *models.XYLayerModel) (kbapi.XyLayerESQL, diag.Diag
 }
 
 // fromAPINoESQL populates data layer from NoESQL API response
-func dataLayerFromAPINoESQL(m *models.DataLayerModel, ctx context.Context, apiLayer kbapi.XyLayerNoESQL) diag.Diagnostics {
+func dataLayerFromAPINoESQL(ctx context.Context, m *models.DataLayerModel, apiLayer kbapi.XyLayerNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// Marshal to JSON to preserve the exact structure
@@ -194,7 +194,7 @@ func dataLayerFromAPINoESQL(m *models.DataLayerModel, ctx context.Context, apiLa
 }
 
 // fromAPIESql populates data layer from ESQL API response
-func dataLayerFromAPIESql(m *models.DataLayerModel, ctx context.Context, apiLayer kbapi.XyLayerESQL) diag.Diagnostics {
+func dataLayerFromAPIESql(ctx context.Context, m *models.DataLayerModel, apiLayer kbapi.XyLayerESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// Marshal to JSON to preserve the exact structure

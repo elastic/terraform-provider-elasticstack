@@ -69,7 +69,7 @@ func (c legacyMetricPanelConfigConverter) populateFromAttributes(
 		prior = &cpy
 	}
 	blocks.LegacyMetricConfig = &models.LegacyMetricConfigModel{}
-	return legacyMetricConfigFromAPINoESQL(blocks.LegacyMetricConfig, ctx, dashboard, prior, legacyMetric)
+	return legacyMetricConfigFromAPINoESQL(ctx, blocks.LegacyMetricConfig, dashboard, prior, legacyMetric)
 }
 
 func (c legacyMetricPanelConfigConverter) buildAttributes(blocks *models.LensByValueChartBlocks, dashboard *models.DashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
@@ -111,7 +111,13 @@ func legacyMetricConfigPopulateCommonFields(m *models.LegacyMetricConfigModel,
 	return !diags.HasError()
 }
 
-func legacyMetricConfigFromAPINoESQL(m *models.LegacyMetricConfigModel, ctx context.Context, dashboard *models.DashboardModel, prior *models.LegacyMetricConfigModel, api kbapi.LegacyMetricNoESQL) diag.Diagnostics {
+func legacyMetricConfigFromAPINoESQL(
+	ctx context.Context,
+	m *models.LegacyMetricConfigModel,
+	dashboard *models.DashboardModel,
+	prior *models.LegacyMetricConfigModel,
+	api kbapi.LegacyMetricNoESQL,
+) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 

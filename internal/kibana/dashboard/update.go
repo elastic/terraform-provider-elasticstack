@@ -59,7 +59,7 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 	}
 
 	// Convert the plan to an API request
-	apiReq := dashboardToAPIUpdateRequest(&planModel, ctx, &resp.Diagnostics)
+	apiReq := dashboardToAPIUpdateRequest(ctx, &planModel, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}

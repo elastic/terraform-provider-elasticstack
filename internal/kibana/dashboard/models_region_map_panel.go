@@ -59,14 +59,14 @@ func (c regionMapPanelConfigConverter) populateFromAttributes(
 	blocks.RegionMapConfig = &models.RegionMapConfigModel{}
 
 	if noESQL, err := attrs.AsRegionMapNoESQL(); err == nil && !isRegionMapNoESQLCandidateActuallyESQL(noESQL) {
-		return regionMapConfigFromAPINoESQL(blocks.RegionMapConfig, ctx, dashboard, prior, noESQL)
+		return regionMapConfigFromAPINoESQL(ctx, blocks.RegionMapConfig, dashboard, prior, noESQL)
 	}
 
 	regionMapESQL, err := attrs.AsRegionMapESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	return regionMapConfigFromAPIESQL(blocks.RegionMapConfig, ctx, dashboard, prior, regionMapESQL)
+	return regionMapConfigFromAPIESQL(ctx, blocks.RegionMapConfig, dashboard, prior, regionMapESQL)
 }
 
 func isRegionMapNoESQLCandidateActuallyESQL(api kbapi.RegionMapNoESQL) bool {
@@ -118,7 +118,13 @@ func regionMapConfigPopulateCommonFields(m *models.RegionMapConfigModel,
 	return !diags.HasError()
 }
 
-func regionMapConfigFromAPINoESQL(m *models.RegionMapConfigModel, ctx context.Context, dashboard *models.DashboardModel, prior *models.RegionMapConfigModel, api kbapi.RegionMapNoESQL) diag.Diagnostics {
+func regionMapConfigFromAPINoESQL(
+	ctx context.Context,
+	m *models.RegionMapConfigModel,
+	dashboard *models.DashboardModel,
+	prior *models.RegionMapConfigModel,
+	api kbapi.RegionMapNoESQL,
+) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 
@@ -164,7 +170,7 @@ func regionMapConfigFromAPINoESQL(m *models.RegionMapConfigModel, ctx context.Co
 	return diags
 }
 
-func regionMapConfigFromAPIESQL(m *models.RegionMapConfigModel, ctx context.Context, dashboard *models.DashboardModel, prior *models.RegionMapConfigModel, api kbapi.RegionMapESQL) diag.Diagnostics {
+func regionMapConfigFromAPIESQL(ctx context.Context, m *models.RegionMapConfigModel, dashboard *models.DashboardModel, prior *models.RegionMapConfigModel, api kbapi.RegionMapESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 

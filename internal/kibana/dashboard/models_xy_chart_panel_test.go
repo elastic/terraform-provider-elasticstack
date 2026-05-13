@@ -481,7 +481,7 @@ func Test_xyLegendModel_fromAPI_toAPI_Inside(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test fromAPI
 			model := &models.XYLegendModel{}
-			diags := xyLegendFromAPI(model, ctx, tt.apiLegend)
+			diags := xyLegendFromAPI(ctx, model, tt.apiLegend)
 			require.False(t, diags.HasError())
 
 			assert.Equal(t, tt.expected.Inside, model.Inside)
@@ -554,7 +554,7 @@ func Test_xyLegendModel_fromAPI_toAPI_Outside(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test fromAPI
 			model := &models.XYLegendModel{}
-			diags := xyLegendFromAPI(model, ctx, tt.apiLegend)
+			diags := xyLegendFromAPI(ctx, model, tt.apiLegend)
 			require.False(t, diags.HasError())
 
 			assert.Equal(t, tt.expected.Inside, model.Inside)
@@ -717,7 +717,7 @@ func Test_xyChartConfigModel_toAPI_fromAPI(t *testing.T) {
 			}
 
 			model2 := &models.XYChartConfigModel{}
-			diags = xyChartConfigFromAPINoESQL(model2, ctx, nil, nil, apiChart)
+			diags = xyChartConfigFromAPINoESQL(ctx, model2, nil, nil, apiChart)
 			require.False(t, diags.HasError())
 
 			assert.Equal(t, tt.model.Title, model2.Title)
@@ -842,7 +842,7 @@ func Test_xyChartConfig_lensChartPresentation_timeRange_inheritanceAndMode(t *te
 
 		apiChart.TimeRange = dashTR
 		out := &models.XYChartConfigModel{}
-		diags = xyChartConfigFromAPINoESQL(out, ctx, dash, m, apiChart)
+		diags = xyChartConfigFromAPINoESQL(ctx, out, dash, m, apiChart)
 		require.False(t, diags.HasError())
 		assert.Nil(t, out.TimeRange)
 	})
@@ -861,7 +861,7 @@ func Test_xyChartConfig_lensChartPresentation_timeRange_inheritanceAndMode(t *te
 		require.False(t, lensTimeRangesAPILiteralEqual(apiChart.TimeRange, dashTR), "API chart time_range should differ from dashboard for this scenario")
 
 		out := &models.XYChartConfigModel{}
-		diags = xyChartConfigFromAPINoESQL(out, ctx, dash, m, apiChart)
+		diags = xyChartConfigFromAPINoESQL(ctx, out, dash, m, apiChart)
 		require.False(t, diags.HasError())
 		require.NotNil(t, out.TimeRange)
 		assert.Equal(t, "now-30d", out.TimeRange.From.ValueString())
@@ -882,7 +882,7 @@ func Test_xyChartConfig_lensChartPresentation_timeRange_inheritanceAndMode(t *te
 
 		want := *m.TimeRange
 		out := &models.XYChartConfigModel{}
-		diags = xyChartConfigFromAPINoESQL(out, ctx, dash, m, apiChart)
+		diags = xyChartConfigFromAPINoESQL(ctx, out, dash, m, apiChart)
 		require.False(t, diags.HasError())
 		require.NotNil(t, out.TimeRange)
 		assert.Equal(t, want.From, out.TimeRange.From)
@@ -909,7 +909,7 @@ func Test_xyChartConfig_lensChartPresentation_timeRange_inheritanceAndMode(t *te
 		}
 
 		out := &models.XYChartConfigModel{}
-		diags := xyChartConfigFromAPINoESQL(out, ctx, dash, prior, apiChart)
+		diags := xyChartConfigFromAPINoESQL(ctx, out, dash, prior, apiChart)
 		require.False(t, diags.HasError())
 		require.NotNil(t, out.TimeRange)
 		assert.True(t, out.TimeRange.Mode.IsNull())
@@ -938,7 +938,7 @@ func Test_xyChartConfigModel_lensChartPresentation_boolsReferences_andNullPreser
 			assert.Equal(t, v, *apiChart.HideTitle)
 
 			out := &models.XYChartConfigModel{}
-			diags = xyChartConfigFromAPINoESQL(out, ctx, dash, m, apiChart)
+			diags = xyChartConfigFromAPINoESQL(ctx, out, dash, m, apiChart)
 			require.False(t, diags.HasError())
 			assert.Equal(t, types.BoolValue(v), out.HideTitle)
 		}
@@ -955,7 +955,7 @@ func Test_xyChartConfigModel_lensChartPresentation_boolsReferences_andNullPreser
 			assert.Equal(t, v, *apiChart.HideBorder)
 
 			out := &models.XYChartConfigModel{}
-			diags = xyChartConfigFromAPINoESQL(out, ctx, dash, m, apiChart)
+			diags = xyChartConfigFromAPINoESQL(ctx, out, dash, m, apiChart)
 			require.False(t, diags.HasError())
 			assert.Equal(t, types.BoolValue(v), out.HideBorder)
 		}
@@ -971,7 +971,7 @@ func Test_xyChartConfigModel_lensChartPresentation_boolsReferences_andNullPreser
 		apiChart.HideTitle = nil
 
 		out := &models.XYChartConfigModel{}
-		diags = xyChartConfigFromAPINoESQL(out, ctx, dash, prior, apiChart)
+		diags = xyChartConfigFromAPINoESQL(ctx, out, dash, prior, apiChart)
 		require.False(t, diags.HasError())
 		assert.True(t, out.HideTitle.IsNull())
 	})
@@ -986,7 +986,7 @@ func Test_xyChartConfigModel_lensChartPresentation_boolsReferences_andNullPreser
 		apiChart.HideBorder = nil
 
 		out := &models.XYChartConfigModel{}
-		diags = xyChartConfigFromAPINoESQL(out, ctx, dash, prior, apiChart)
+		diags = xyChartConfigFromAPINoESQL(ctx, out, dash, prior, apiChart)
 		require.False(t, diags.HasError())
 		assert.True(t, out.HideBorder.IsNull())
 	})
@@ -1001,7 +1001,7 @@ func Test_xyChartConfigModel_lensChartPresentation_boolsReferences_andNullPreser
 		require.NotNil(t, apiChart.References)
 
 		out := &models.XYChartConfigModel{}
-		diags = xyChartConfigFromAPINoESQL(out, ctx, dash, m, apiChart)
+		diags = xyChartConfigFromAPINoESQL(ctx, out, dash, m, apiChart)
 		require.False(t, diags.HasError())
 		require.True(t, typeutils.IsKnown(out.ReferencesJSON))
 		assert.JSONEq(t, raw, out.ReferencesJSON.ValueString())
@@ -1017,7 +1017,7 @@ func Test_xyChartConfigModel_lensChartPresentation_boolsReferences_andNullPreser
 		apiChart.References = nil
 
 		out := &models.XYChartConfigModel{}
-		diags = xyChartConfigFromAPINoESQL(out, ctx, dash, prior, apiChart)
+		diags = xyChartConfigFromAPINoESQL(ctx, out, dash, prior, apiChart)
 		require.False(t, diags.HasError())
 		assert.True(t, out.ReferencesJSON.IsNull())
 	})
@@ -1033,7 +1033,7 @@ func Test_xyChartConfigModel_lensChartPresentation_boolsReferences_andNullPreser
 		apiChart.References = &empty
 
 		out := &models.XYChartConfigModel{}
-		diags = xyChartConfigFromAPINoESQL(out, ctx, dash, prior, apiChart)
+		diags = xyChartConfigFromAPINoESQL(ctx, out, dash, prior, apiChart)
 		require.False(t, diags.HasError())
 		assert.True(t, out.ReferencesJSON.IsNull())
 	})
@@ -1074,7 +1074,7 @@ func Test_xyChartConfigModel_lensChartPresentation_dashboardDrilldown_roundTrip(
 	assert.Equal(t, lensDrilldownTriggerOnApplyFilter, wire["trigger"])
 
 	out := &models.XYChartConfigModel{}
-	diags = xyChartConfigFromAPINoESQL(out, ctx, dash, m, apiChart)
+	diags = xyChartConfigFromAPINoESQL(ctx, out, dash, m, apiChart)
 	require.False(t, diags.HasError())
 	require.Len(t, out.Drilldowns, 1)
 	require.NotNil(t, out.Drilldowns[0].DashboardDrilldown)

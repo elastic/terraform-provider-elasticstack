@@ -96,7 +96,11 @@ func discoverSessionPanelToAPI(ctx context.Context, pm models.PanelModel, grid s
 	return panelItem, diags
 }
 
-func discoverSessionByValueToAPI(ctx context.Context, cfg *models.DiscoverSessionPanelConfigModel, dashTR *models.TimeRangeModel) (kbapi.KbnDashboardPanelTypeDiscoverSessionConfig0, diag.Diagnostics) {
+func discoverSessionByValueToAPI(
+	ctx context.Context,
+	cfg *models.DiscoverSessionPanelConfigModel,
+	dashTR *models.TimeRangeModel,
+) (kbapi.KbnDashboardPanelTypeDiscoverSessionConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	api := kbapi.KbnDashboardPanelTypeDiscoverSessionConfig0{}
 
@@ -117,7 +121,11 @@ func discoverSessionByValueToAPI(ctx context.Context, cfg *models.DiscoverSessio
 	return api, diags
 }
 
-func discoverSessionByReferenceToAPI(ctx context.Context, cfg *models.DiscoverSessionPanelConfigModel, dashTR *models.TimeRangeModel) (kbapi.KbnDashboardPanelTypeDiscoverSessionConfig1, diag.Diagnostics) {
+func discoverSessionByReferenceToAPI(
+	ctx context.Context,
+	cfg *models.DiscoverSessionPanelConfigModel,
+	dashTR *models.TimeRangeModel,
+) (kbapi.KbnDashboardPanelTypeDiscoverSessionConfig1, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	api := kbapi.KbnDashboardPanelTypeDiscoverSessionConfig1{}
 
@@ -1354,7 +1362,12 @@ func discoverSessionMergeTimeRangeModel(prior *models.TimeRangeModel, api kbapi.
 	return tr
 }
 
-func discoverSessionMergeTabFromAPI(ctx context.Context, existing *models.DiscoverSessionTabModel, prior models.DiscoverSessionTabModel, tab kbapi.KbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_Item) {
+func discoverSessionMergeTabFromAPI(
+	ctx context.Context,
+	existing *models.DiscoverSessionTabModel,
+	prior models.DiscoverSessionTabModel,
+	tab kbapi.KbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_Item,
+) {
 	if dsl, err := tab.AsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0(); err == nil && existing.DSL != nil && prior.DSL != nil {
 		discoverSessionMergeDSLTabFromAPI(ctx, existing.DSL, *prior.DSL, dsl)
 		return
@@ -1364,7 +1377,12 @@ func discoverSessionMergeTabFromAPI(ctx context.Context, existing *models.Discov
 	}
 }
 
-func discoverSessionMergeDSLTabFromAPI(ctx context.Context, existing *models.DiscoverSessionDSLTabModel, prior models.DiscoverSessionDSLTabModel, api kbapi.KbnDashboardPanelTypeDiscoverSessionConfig0Tabs0) {
+func discoverSessionMergeDSLTabFromAPI(
+	ctx context.Context,
+	existing *models.DiscoverSessionDSLTabModel,
+	prior models.DiscoverSessionDSLTabModel,
+	api kbapi.KbnDashboardPanelTypeDiscoverSessionConfig0Tabs0,
+) {
 	var diags diag.Diagnostics
 
 	if typeutils.IsKnown(prior.ColumnOrder) && api.ColumnOrder != nil {
@@ -1428,7 +1446,12 @@ func discoverSessionMergeDSLTabFromAPI(ctx context.Context, existing *models.Dis
 	}
 }
 
-func discoverSessionMergeESQLTabFromAPI(ctx context.Context, existing *models.DiscoverSessionESQLTabModel, prior models.DiscoverSessionESQLTabModel, api kbapi.KbnDashboardPanelTypeDiscoverSessionConfig0Tabs1) {
+func discoverSessionMergeESQLTabFromAPI(
+	ctx context.Context,
+	existing *models.DiscoverSessionESQLTabModel,
+	prior models.DiscoverSessionESQLTabModel,
+	api kbapi.KbnDashboardPanelTypeDiscoverSessionConfig0Tabs1,
+) {
 	var diags diag.Diagnostics
 
 	if typeutils.IsKnown(prior.ColumnOrder) && api.ColumnOrder != nil {

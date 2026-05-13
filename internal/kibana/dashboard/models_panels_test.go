@@ -454,7 +454,7 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 			require.NoError(t, err)
 
 			model := &models.DashboardModel{}
-			panels, sections, diags := dashboardMapPanelsFromAPI(model, t.Context(), &apiPanels)
+			panels, sections, diags := dashboardMapPanelsFromAPI(t.Context(), model, &apiPanels)
 			require.False(t, diags.HasError())
 
 			assert.Len(t, panels, len(tt.expectedPanels))
@@ -750,7 +750,7 @@ func Test_panelsToAPI(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, diags := dashboardPanelsToAPI(&tt.model, context.Background())
+			result, diags := dashboardPanelsToAPI(context.Background(), &tt.model)
 			require.False(t, diags.HasError())
 
 			jsonBytes, err := json.Marshal(result)
@@ -875,7 +875,7 @@ func Test_panelModel_toAPI_configJSONErrors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, diags := panelToAPI(tt.panel, context.Background(), nil)
+			_, diags := panelToAPI(context.Background(), tt.panel, nil)
 			require.True(t, diags.HasError())
 			require.Equal(t, tt.errorSummary, diags[0].Summary())
 			require.Contains(t, diags[0].Detail(), tt.errorContains)
@@ -903,14 +903,14 @@ func Test_unknownPanelRoundTrip(t *testing.T) {
 
 	// Step 2: read into TF model
 	model := &models.DashboardModel{}
-	panels, sections, diags := dashboardMapPanelsFromAPI(model, t.Context(), &apiPanels)
+	panels, sections, diags := dashboardMapPanelsFromAPI(t.Context(), model, &apiPanels)
 	require.False(t, diags.HasError())
 	require.Empty(t, sections)
 	require.Len(t, panels, 1)
 
 	// Step 3: reconstruct model with just these panels and write back to API
 	model.Panels = panels
-	result, diags := dashboardPanelsToAPI(model, context.Background())
+	result, diags := dashboardPanelsToAPI(context.Background(), model)
 	require.False(t, diags.HasError())
 
 	// Step 4: verify round-trip equality (semantic JSON comparison)
@@ -933,7 +933,7 @@ func Test_unknownPanelToAPIErrorWithoutConfigJSON(t *testing.T) {
 		ID:         types.StringNull(),
 		ConfigJSON: customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults),
 	}
-	_, diags := panelToAPI(panel, context.Background(), nil)
+	_, diags := panelToAPI(context.Background(), panel, nil)
 	require.True(t, diags.HasError())
 	require.Equal(t, "Unsupported panel type", diags[0].Summary())
 	require.Contains(t, diags[0].Detail(), "not yet supported")

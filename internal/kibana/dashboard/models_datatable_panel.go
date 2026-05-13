@@ -69,7 +69,7 @@ func (c datatablePanelConfigConverter) populateFromAttributes(
 
 	if datatableNoESQL, err := attrs.AsDatatableNoESQL(); err == nil && !isDatatableNoESQLCandidateActuallyESQL(datatableNoESQL) {
 		blocks.DatatableConfig.NoESQL = &models.DatatableNoESQLConfigModel{}
-		return datatableNoESQLConfigFromAPI(blocks.DatatableConfig.NoESQL, ctx, dashboard, priorNo, datatableNoESQL)
+		return datatableNoESQLConfigFromAPI(ctx, blocks.DatatableConfig.NoESQL, dashboard, priorNo, datatableNoESQL)
 	}
 	datatableESQL, err := attrs.AsDatatableESQL()
 	if err != nil {
@@ -77,7 +77,7 @@ func (c datatablePanelConfigConverter) populateFromAttributes(
 	}
 
 	blocks.DatatableConfig.ESQL = &models.DatatableESQLConfigModel{}
-	return datatableESQLConfigFromAPI(blocks.DatatableConfig.ESQL, ctx, dashboard, priorEsql, datatableESQL)
+	return datatableESQLConfigFromAPI(ctx, blocks.DatatableConfig.ESQL, dashboard, priorEsql, datatableESQL)
 }
 
 func (c datatablePanelConfigConverter) buildAttributes(blocks *models.LensByValueChartBlocks, dashboard *models.DashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
@@ -134,7 +134,13 @@ func isDatatableNoESQLCandidateActuallyESQL(apiTable kbapi.DatatableNoESQL) bool
 	return dataset.Type == legacyMetricDatasetTypeESQL || dataset.Type == legacyMetricDatasetTypeTable
 }
 
-func datatableNoESQLConfigFromAPI(m *models.DatatableNoESQLConfigModel, ctx context.Context, dashboard *models.DashboardModel, prior *models.DatatableNoESQLConfigModel, api kbapi.DatatableNoESQL) diag.Diagnostics {
+func datatableNoESQLConfigFromAPI(
+	ctx context.Context,
+	m *models.DatatableNoESQLConfigModel,
+	dashboard *models.DashboardModel,
+	prior *models.DatatableNoESQLConfigModel,
+	api kbapi.DatatableNoESQL,
+) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 
@@ -330,7 +336,13 @@ func datatableNoESQLConfigToAPI(m *models.DatatableNoESQLConfigModel, dashboard 
 	return api, diags
 }
 
-func datatableESQLConfigFromAPI(m *models.DatatableESQLConfigModel, ctx context.Context, dashboard *models.DashboardModel, prior *models.DatatableESQLConfigModel, api kbapi.DatatableESQL) diag.Diagnostics {
+func datatableESQLConfigFromAPI(
+	ctx context.Context,
+	m *models.DatatableESQLConfigModel,
+	dashboard *models.DashboardModel,
+	prior *models.DatatableESQLConfigModel,
+	api kbapi.DatatableESQL,
+) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 

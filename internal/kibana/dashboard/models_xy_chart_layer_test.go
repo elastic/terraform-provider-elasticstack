@@ -41,7 +41,7 @@ func Test_dataLayerModel_fromAPINoESQL_toAPIXyLayerNoESQL(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(layerJSON), &apiLayer))
 
 	model := &models.DataLayerModel{}
-	diags := dataLayerFromAPINoESQL(model, context.Background(), apiLayer)
+	diags := dataLayerFromAPINoESQL(context.Background(), model, apiLayer)
 	require.False(t, diags.HasError())
 
 	assert.False(t, model.DataSourceJSON.IsNull())
@@ -73,7 +73,7 @@ func Test_dataLayerModel_fromAPIESql_toAPIXyLayerESQL(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(layerJSON), &apiLayer))
 
 	model := &models.DataLayerModel{}
-	diags := dataLayerFromAPIESql(model, context.Background(), apiLayer)
+	diags := dataLayerFromAPIESql(context.Background(), model, apiLayer)
 	require.False(t, diags.HasError())
 
 	assert.False(t, model.DataSourceJSON.IsNull())
@@ -197,7 +197,7 @@ func Test_xyLayerModel_fromAPILayersNoESQL_toAPILayersNoESQL_referenceLine(t *te
 	require.NoError(t, apiLayer.UnmarshalJSON([]byte(layerJSON)))
 
 	model := &models.XYLayerModel{}
-	diags := xyLayerFromAPILayersNoESQL(model, context.Background(), apiLayer)
+	diags := xyLayerFromAPILayersNoESQL(context.Background(), model, apiLayer)
 	require.False(t, diags.HasError())
 
 	assert.Equal(t, types.StringValue("reference_lines"), model.Type)
@@ -224,7 +224,7 @@ func Test_xyLayerModel_fromAPILayersNoESQL_toAPILayersNoESQL_dataLayer(t *testin
 	require.NoError(t, apiLayer.UnmarshalJSON([]byte(layerJSON)))
 
 	model := &models.XYLayerModel{}
-	diags := xyLayerFromAPILayersNoESQL(model, context.Background(), apiLayer)
+	diags := xyLayerFromAPILayersNoESQL(context.Background(), model, apiLayer)
 	require.False(t, diags.HasError())
 
 	assert.Equal(t, types.StringValue("area"), model.Type)

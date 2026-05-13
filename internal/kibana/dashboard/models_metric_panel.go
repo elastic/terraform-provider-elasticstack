@@ -130,13 +130,13 @@ func (c metricChartPanelConfigConverter) populateFromAttributes(
 		blocks.MetricChartConfig.Metrics = priorConfig.Metrics
 	}
 	if variant0, err := attrs.AsMetricNoESQL(); err == nil && !isMetricNoESQLCandidateActuallyESQL(variant0) {
-		return metricChartConfigFromAPIVariant0(blocks.MetricChartConfig, ctx, dashboard, priorConfig, variant0)
+		return metricChartConfigFromAPIVariant0(ctx, blocks.MetricChartConfig, dashboard, priorConfig, variant0)
 	}
 	variant1, err := attrs.AsMetricESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	return metricChartConfigFromAPIVariant1(blocks.MetricChartConfig, ctx, dashboard, priorConfig, variant1)
+	return metricChartConfigFromAPIVariant1(ctx, blocks.MetricChartConfig, dashboard, priorConfig, variant1)
 }
 
 func (c metricChartPanelConfigConverter) buildAttributes(blocks *models.LensByValueChartBlocks, dashboard *models.DashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
@@ -191,7 +191,7 @@ func isMetricNoESQLCandidateActuallyESQL(apiChart kbapi.MetricNoESQL) bool {
 	return dataset.Type == legacyMetricDatasetTypeESQL || dataset.Type == legacyMetricDatasetTypeTable
 }
 
-func metricChartConfigFromAPI(m *models.MetricChartConfigModel, ctx context.Context, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
+func metricChartConfigFromAPI(ctx context.Context, m *models.MetricChartConfigModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// Try to get the metric chart variant 0 (non-ESQL) or 1 (ESQL)
@@ -203,15 +203,15 @@ func metricChartConfigFromAPI(m *models.MetricChartConfigModel, ctx context.Cont
 		if isMetricNoESQLCandidateActuallyESQL(variant0) {
 			variant1, err1 := attrs.AsMetricESQL()
 			if err1 == nil {
-				return metricChartConfigFromAPIVariant1(m, ctx, nil, nil, variant1)
+				return metricChartConfigFromAPIVariant1(ctx, m, nil, nil, variant1)
 			}
 		}
-		return metricChartConfigFromAPIVariant0(m, ctx, nil, nil, variant0)
+		return metricChartConfigFromAPIVariant0(ctx, m, nil, nil, variant0)
 	}
 
 	variant1, err := attrs.AsMetricESQL()
 	if err == nil {
-		return metricChartConfigFromAPIVariant1(m, ctx, nil, nil, variant1)
+		return metricChartConfigFromAPIVariant1(ctx, m, nil, nil, variant1)
 	}
 
 	diags.AddError("Failed to parse metric chart schema", "Could not parse as either variant 0 or 1")
@@ -244,7 +244,13 @@ func metricChartConfigPopulateCommonFields(m *models.MetricChartConfigModel,
 	return !diags.HasError()
 }
 
-func metricChartConfigFromAPIVariant0(m *models.MetricChartConfigModel, ctx context.Context, dashboard *models.DashboardModel, prior *models.MetricChartConfigModel, apiChart kbapi.MetricNoESQL) diag.Diagnostics {
+func metricChartConfigFromAPIVariant0(
+	ctx context.Context,
+	m *models.MetricChartConfigModel,
+	dashboard *models.DashboardModel,
+	prior *models.MetricChartConfigModel,
+	apiChart kbapi.MetricNoESQL,
+) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 
@@ -307,7 +313,13 @@ func metricChartConfigFromAPIVariant0(m *models.MetricChartConfigModel, ctx cont
 	return diags
 }
 
-func metricChartConfigFromAPIVariant1(m *models.MetricChartConfigModel, ctx context.Context, dashboard *models.DashboardModel, prior *models.MetricChartConfigModel, apiChart kbapi.MetricESQL) diag.Diagnostics {
+func metricChartConfigFromAPIVariant1(
+	ctx context.Context,
+	m *models.MetricChartConfigModel,
+	dashboard *models.DashboardModel,
+	prior *models.MetricChartConfigModel,
+	apiChart kbapi.MetricESQL,
+) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 

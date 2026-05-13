@@ -184,7 +184,7 @@ func Test_mosaicConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 	api.Metric = metricUnion
 
 	model := &models.MosaicConfigModel{}
-	diags := mosaicConfigFromAPINoESQL(model, context.Background(), nil, nil, api)
+	diags := mosaicConfigFromAPINoESQL(context.Background(), model, nil, nil, api)
 	require.False(t, diags.HasError())
 
 	assert.Equal(t, types.StringValue("Test Mosaic"), model.Title)
@@ -284,7 +284,7 @@ func Test_mosaicConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(`{"type":"esql","query":"FROM metrics-* | LIMIT 10"}`), &api.DataSource))
 
 	model := &models.MosaicConfigModel{}
-	diags := mosaicConfigFromAPIESQL(model, context.Background(), nil, nil, api)
+	diags := mosaicConfigFromAPIESQL(context.Background(), model, nil, nil, api)
 	require.False(t, diags.HasError())
 
 	assert.Equal(t, types.StringValue("ESQL Mosaic"), model.Title)
@@ -328,7 +328,7 @@ func newTestMosaicNoESQLModel(t *testing.T) *models.MosaicConfigModel {
 	var api kbapi.MosaicNoESQL
 	require.NoError(t, json.Unmarshal([]byte(apiJSON), &api))
 	model := &models.MosaicConfigModel{}
-	require.False(t, mosaicConfigFromAPINoESQL(model, context.Background(), nil, nil, api).HasError())
+	require.False(t, mosaicConfigFromAPINoESQL(context.Background(), model, nil, nil, api).HasError())
 	return model
 }
 
@@ -351,7 +351,7 @@ func newTestMosaicESQLModel(t *testing.T) *models.MosaicConfigModel {
 	var api kbapi.MosaicESQL
 	require.NoError(t, json.Unmarshal([]byte(apiJSON), &api))
 	model := &models.MosaicConfigModel{}
-	require.False(t, mosaicConfigFromAPIESQL(model, context.Background(), nil, nil, api).HasError())
+	require.False(t, mosaicConfigFromAPIESQL(context.Background(), model, nil, nil, api).HasError())
 	return model
 }
 
@@ -480,7 +480,7 @@ func Test_mosaicConfigModel_truncateAfterLinesIsInt64(t *testing.T) {
 	api.GroupBreakdownBy = &groupBreakdownBy
 
 	model := &models.MosaicConfigModel{}
-	diags := mosaicConfigFromAPINoESQL(model, context.Background(), nil, nil, api)
+	diags := mosaicConfigFromAPINoESQL(context.Background(), model, nil, nil, api)
 	require.False(t, diags.HasError())
 	require.NotNil(t, model.Legend)
 	assert.Equal(t, int64(5), model.Legend.TruncateAfterLine.ValueInt64())
@@ -503,6 +503,6 @@ func Test_mosaicConfig_lensChartPresentation_hideTitleRoundTrip(t *testing.T) {
 	require.NoError(t, err)
 
 	got := &models.MosaicConfigModel{}
-	require.False(t, mosaicConfigFromAPINoESQL(got, ctx, dash, &m, api).HasError())
+	require.False(t, mosaicConfigFromAPINoESQL(ctx, got, dash, &m, api).HasError())
 	assert.Equal(t, types.BoolValue(true), got.HideTitle)
 }

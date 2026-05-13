@@ -99,6 +99,6 @@ func (r *Resource) read(ctx context.Context, apiClient *clients.KibanaScopedClie
 		return nil, diags
 	}
 
-	diags.Append(dashboardPopulateFromAPI(&stateModel, ctx, getResp, dashboardID, spaceID)...)
+	diags.Append(dashboardPopulateFromAPI(ctx, &stateModel, getResp, dashboardID, spaceID)...)
 	return &stateModel, diags
 }

@@ -114,7 +114,7 @@ func Test_heatmapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 	heatmap.Filters = filters
 
 	model := &models.HeatmapConfigModel{}
-	diags := heatmapConfigFromAPINoESQL(model, context.Background(), nil, nil, heatmap)
+	diags := heatmapConfigFromAPINoESQL(context.Background(), model, nil, nil, heatmap)
 	require.False(t, diags.HasError())
 
 	assert.Equal(t, types.StringValue("Test Heatmap"), model.Title)
@@ -189,7 +189,7 @@ func Test_heatmapConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(esqlHeatmapJSON), &heatmap))
 
 	model := &models.HeatmapConfigModel{}
-	diags := heatmapConfigFromAPIESQL(model, context.Background(), nil, nil, heatmap)
+	diags := heatmapConfigFromAPIESQL(context.Background(), model, nil, nil, heatmap)
 	require.False(t, diags.HasError())
 	assert.Nil(t, model.Query)
 	assert.Equal(t, types.StringValue("ESQL Heatmap"), model.Title)
@@ -345,7 +345,7 @@ func Test_heatmapConfig_lensChartPresentation_hideTitleRoundTrip(t *testing.T) {
 	heatmap.Y = &yAxis
 
 	base := &models.HeatmapConfigModel{}
-	require.False(t, heatmapConfigFromAPINoESQL(base, ctx, nil, nil, heatmap).HasError())
+	require.False(t, heatmapConfigFromAPINoESQL(ctx, base, nil, nil, heatmap).HasError())
 
 	m := *base
 	m.HideTitle = types.BoolValue(true)
@@ -356,6 +356,6 @@ func Test_heatmapConfig_lensChartPresentation_hideTitleRoundTrip(t *testing.T) {
 	require.NoError(t, err)
 
 	got := &models.HeatmapConfigModel{}
-	require.False(t, heatmapConfigFromAPINoESQL(got, ctx, dash, &m, api).HasError())
+	require.False(t, heatmapConfigFromAPINoESQL(ctx, got, dash, &m, api).HasError())
 	assert.Equal(t, types.BoolValue(true), got.HideTitle)
 }

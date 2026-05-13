@@ -52,7 +52,7 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 	spaceID := planModel.SpaceID.ValueString()
 
 	// Convert the plan to an API request.
-	apiReq := dashboardToAPICreateRequest(&planModel, ctx, &resp.Diagnostics)
+	apiReq := dashboardToAPICreateRequest(ctx, &planModel, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}

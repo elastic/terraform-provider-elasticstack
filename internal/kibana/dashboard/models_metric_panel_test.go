@@ -120,7 +120,7 @@ func Test_metricChartConfigModel_fromAPI_toAPI_variant0(t *testing.T) {
 			require.NoError(t, err)
 
 			model := &models.MetricChartConfigModel{}
-			diags := metricChartConfigFromAPI(model, ctx, attrs)
+			diags := metricChartConfigFromAPI(ctx, model, attrs)
 			require.False(t, diags.HasError(), "fromAPI should not have errors")
 
 			// Verify the fields
@@ -214,7 +214,7 @@ func Test_metricChartConfigModel_fromAPI_toAPI_variant1(t *testing.T) {
 			require.NoError(t, err)
 
 			model := &models.MetricChartConfigModel{}
-			diags := metricChartConfigFromAPI(model, ctx, attrs)
+			diags := metricChartConfigFromAPI(ctx, model, attrs)
 			require.False(t, diags.HasError(), "fromAPI should not have errors")
 
 			// Verify the fields
@@ -287,7 +287,7 @@ func Test_metricChartConfigModel_withMetrics(t *testing.T) {
 	require.NoError(t, err)
 
 	model := &models.MetricChartConfigModel{}
-	diags := metricChartConfigFromAPI(model, ctx, attrs)
+	diags := metricChartConfigFromAPI(ctx, model, attrs)
 	require.False(t, diags.HasError())
 
 	// Verify metrics were populated
@@ -333,7 +333,7 @@ func Test_metricChartConfigModel_withDataset(t *testing.T) {
 	require.NoError(t, err)
 
 	model := &models.MetricChartConfigModel{}
-	diags := metricChartConfigFromAPI(model, ctx, attrs)
+	diags := metricChartConfigFromAPI(ctx, model, attrs)
 	require.False(t, diags.HasError())
 
 	// Verify dataset was populated
@@ -379,7 +379,7 @@ func Test_metricChartConfigModel_withFilters(t *testing.T) {
 	require.NoError(t, err)
 
 	model := &models.MetricChartConfigModel{}
-	diags := metricChartConfigFromAPI(model, ctx, attrs)
+	diags := metricChartConfigFromAPI(ctx, model, attrs)
 	require.False(t, diags.HasError())
 
 	// Verify filters were populated
@@ -418,7 +418,7 @@ func Test_metricChartConfigModel_withBreakdownBy(t *testing.T) {
 	require.NoError(t, err)
 
 	model := &models.MetricChartConfigModel{}
-	diags := metricChartConfigFromAPI(model, ctx, attrs)
+	diags := metricChartConfigFromAPI(ctx, model, attrs)
 	require.False(t, diags.HasError())
 
 	// Verify breakdown_by was populated

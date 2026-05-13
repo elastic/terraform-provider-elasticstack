@@ -236,7 +236,7 @@ func Test_waffleConfigModel_config_json_metricRoundTrip(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(apiJSON), &waffle))
 
 	model := &models.WaffleConfigModel{}
-	diags := waffleConfigFromAPINoESQL(model, ctx, nil, nil, waffle)
+	diags := waffleConfigFromAPINoESQL(ctx, model, nil, nil, waffle)
 	require.False(t, diags.HasError(), "%s", diags)
 
 	// Metrics should use config_json (the tfsdk tag on waffleDSLMetric.Config)
@@ -278,6 +278,6 @@ func Test_waffleConfig_lensChartPresentation_hideTitleRoundTrip(t *testing.T) {
 	require.NoError(t, err)
 
 	got := &models.WaffleConfigModel{}
-	require.False(t, waffleConfigFromAPINoESQL(got, ctx, dash, &m, api).HasError())
+	require.False(t, waffleConfigFromAPINoESQL(ctx, got, dash, &m, api).HasError())
 	assert.Equal(t, types.BoolValue(true), got.HideTitle)
 }
