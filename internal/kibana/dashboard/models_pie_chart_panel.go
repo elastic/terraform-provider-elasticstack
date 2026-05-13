@@ -102,11 +102,11 @@ type pieChartConfigModel struct {
 }
 
 type pieMetricModel struct {
-	Config customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config"`
+	Config customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config_json"`
 }
 
 type pieGroupByModel struct {
-	Config customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config"`
+	Config customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config_json"`
 }
 
 func isPieNoESQLCandidateActuallyESQL(apiChart kbapi.PieNoESQL) bool {

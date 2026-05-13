@@ -217,11 +217,11 @@ type waffleConfigModel struct {
 }
 
 type waffleDSLMetric struct {
-	Config customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config"`
+	Config customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config_json"`
 }
 
 type waffleDSLGroupBy struct {
-	Config customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config"`
+	Config customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config_json"`
 }
 
 type waffleLegendModel struct {

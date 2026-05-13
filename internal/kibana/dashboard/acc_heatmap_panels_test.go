@@ -62,8 +62,6 @@ func TestAccResourceDashboardHeatmap(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.heatmap_config.query.expression", ""),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.heatmap_config.data_source_json"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.heatmap_config.metric_json"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.heatmap_config.x_axis_json"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.heatmap_config.y_axis_json"),
 				),
 			},
 			{
@@ -108,8 +106,6 @@ func TestAccResourceDashboardHeatmap(t *testing.T) {
 					"panels.0.vis_config.by_value.heatmap_config.description",
 					"panels.0.vis_config.by_value.heatmap_config.metric_json",
 					"panels.0.vis_config.by_value.heatmap_config.data_source_json",
-					"panels.0.vis_config.by_value.heatmap_config.x_axis_json",
-					"panels.0.vis_config.by_value.heatmap_config.y_axis_json",
 				},
 			},
 		},
