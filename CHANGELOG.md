@@ -47,6 +47,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 
 ### Changes
 
+- Fleet resources now retry on HTTP 409 Conflict with exponential backoff, resolving failures when running `terraform apply` with `parallelism > 1`. ([#2911](https://github.com/elastic/terraform-provider-elasticstack/pull/2911))
 - Add `elasticstack_kibana_dashboard` resource ([#2902](https://github.com/elastic/terraform-provider-elasticstack/pull/2902))
 - Add `elasticstack_elasticsearch_ml_filter` resource for managing Elasticsearch ML filters (used with anomaly detection `custom_rules`). ([#1970](https://github.com/elastic/terraform-provider-elasticstack/pull/1970))
 - Improve docs on ML Anomaly job results_index_name ([#2919](https://github.com/elastic/terraform-provider-elasticstack/pull/2919))
