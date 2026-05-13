@@ -43,8 +43,8 @@
 
 ## 3. Verify
 
-- [ ] 3.1 `go build ./internal/kibana/dashboard/...` passes
-- [ ] 3.2 `go vet ./internal/kibana/dashboard/...` passes
-- [ ] 3.3 `go test ./internal/kibana/dashboard/...` passes (all unit tests)
-- [ ] 3.4 `make build` passes
-- [ ] 3.5 No user-visible schema changes confirmed by diffing generated docs
+- [x] 3.1 `go build ./internal/kibana/dashboard/...` passes
+- [x] 3.2 `go vet ./internal/kibana/dashboard/...` passes
+- [x] 3.3 `go test ./internal/kibana/dashboard/...` passes (all unit tests)
+- [x] 3.4 `make build` passes
+- [x] 3.5 No user-visible schema changes confirmed by diffing generated docs
