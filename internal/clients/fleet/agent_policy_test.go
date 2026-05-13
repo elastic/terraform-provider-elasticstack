@@ -32,9 +32,9 @@ import (
 
 func TestCreateAgentPolicy(t *testing.T) {
 	t.Run("retries_on_409_then_succeeds", func(t *testing.T) {
-		var calls int64
-		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			n := atomic.AddInt64(&calls, 1)
+		var calls atomic.Int64
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			n := calls.Add(1)
 			w.Header().Set("Content-Type", "application/json")
 			if n < 3 {
 				w.WriteHeader(http.StatusConflict)
@@ -57,15 +57,15 @@ func TestCreateAgentPolicy(t *testing.T) {
 		if policy == nil || policy.Id != "test-id" {
 			t.Fatalf("got policy %+v, want id=test-id", policy)
 		}
-		if got := atomic.LoadInt64(&calls); got != 3 {
+		if got := calls.Load(); got != 3 {
 			t.Fatalf("server received %d requests, want 3", got)
 		}
 	})
 
 	t.Run("max_retries_exhausted_returns_error", func(t *testing.T) {
-		var calls int64
-		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			atomic.AddInt64(&calls, 1)
+		var calls atomic.Int64
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			calls.Add(1)
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusConflict)
 			fmt.Fprint(w, `{"statusCode":409,"error":"Conflict","message":"write lock"}`)
@@ -81,15 +81,15 @@ func TestCreateAgentPolicy(t *testing.T) {
 		if !diags.HasError() {
 			t.Fatal("expected error diagnostics")
 		}
-		if got := atomic.LoadInt64(&calls); got != int64(kibanautil.ConflictMaxAttempts) {
+		if got := calls.Load(); got != int64(kibanautil.ConflictMaxAttempts) {
 			t.Fatalf("server received %d requests, want %d (maxAttempts)", got, kibanautil.ConflictMaxAttempts)
 		}
 	})
 
 	t.Run("non_409_error_is_not_retried", func(t *testing.T) {
-		var calls int64
-		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			atomic.AddInt64(&calls, 1)
+		var calls atomic.Int64
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			calls.Add(1)
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusBadRequest)
 			fmt.Fprint(w, `{"statusCode":400,"error":"Bad Request","message":"invalid body"}`)
@@ -105,7 +105,7 @@ func TestCreateAgentPolicy(t *testing.T) {
 		if !diags.HasError() {
 			t.Fatal("expected error diagnostics")
 		}
-		if got := atomic.LoadInt64(&calls); got != 1 {
+		if got := calls.Load(); got != 1 {
 			t.Fatalf("server received %d requests, want 1 (no retry on non-409)", got)
 		}
 	})
