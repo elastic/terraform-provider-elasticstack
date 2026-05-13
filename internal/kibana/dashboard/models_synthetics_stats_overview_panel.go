@@ -40,7 +40,6 @@ type syntheticsStatsOverviewFiltersModel struct {
 	MonitorIDs   []syntheticsFilterItemModel `tfsdk:"monitor_ids"`
 	Locations    []syntheticsFilterItemModel `tfsdk:"locations"`
 	MonitorTypes []syntheticsFilterItemModel `tfsdk:"monitor_types"`
-	Statuses     []syntheticsFilterItemModel `tfsdk:"statuses"`
 }
 
 // buildSyntheticsStatsOverviewConfig writes the TF model into the API panel struct.
@@ -114,10 +113,9 @@ func buildSyntheticsStatsOverviewConfig(pm panelModel, panel *kbapi.KbnDashboard
 		monitorIDs := toAPIItems(cfg.Filters.MonitorIDs)
 		locations := toAPIItems(cfg.Filters.Locations)
 		monitorTypes := toAPIItems(cfg.Filters.MonitorTypes)
-		statuses := toAPIItems(cfg.Filters.Statuses)
 
 		// Only set the filters struct when at least one category is non-empty.
-		if projects != nil || tags != nil || monitorIDs != nil || locations != nil || monitorTypes != nil || statuses != nil {
+		if projects != nil || tags != nil || monitorIDs != nil || locations != nil || monitorTypes != nil {
 			panel.Config.Filters = &struct {
 				Locations *[]struct {
 					Label string `json:"label"`
@@ -135,10 +133,6 @@ func buildSyntheticsStatsOverviewConfig(pm panelModel, panel *kbapi.KbnDashboard
 					Label string `json:"label"`
 					Value string `json:"value"`
 				} `json:"projects,omitempty"`
-				Statuses *[]struct {
-					Label string `json:"label"`
-					Value string `json:"value"`
-				} `json:"statuses,omitempty"`
 				Tags *[]struct {
 					Label string `json:"label"`
 					Value string `json:"value"`
@@ -149,7 +143,6 @@ func buildSyntheticsStatsOverviewConfig(pm panelModel, panel *kbapi.KbnDashboard
 				MonitorIds:   monitorIDs,
 				Locations:    locations,
 				MonitorTypes: monitorTypes,
-				Statuses:     statuses,
 			}
 		}
 	}
@@ -191,9 +184,6 @@ func populateSyntheticsStatsOverviewFromAPI(pm *panelModel, tfPanel *panelModel,
 	// If the API returned a completely empty config (all fields absent/nil), nil out the block
 	// regardless of prior state. This mirrors the import-path behaviour: an empty API config
 	// round-trips as null in state (REQ-033).
-	// Note: cfg.Filters == nil (strictly absent) is checked here rather than !syntheticsFiltersHasAnyEntry
-	// because a non-nil empty filters object still signals that Kibana acknowledged the filters field;
-	// in that case the block survives (filters are cleared by readSyntheticsStatsOverviewFiltersFromAPI).
 	if cfg.Title == nil && cfg.Description == nil && cfg.HideTitle == nil && cfg.HideBorder == nil &&
 		(cfg.Drilldowns == nil || len(*cfg.Drilldowns) == 0) && cfg.Filters == nil {
 		pm.SyntheticsStatsOverviewConfig = nil
@@ -236,10 +226,6 @@ func syntheticsFiltersHasAnyEntry(f *struct {
 		Label string `json:"label"`
 		Value string `json:"value"`
 	} `json:"projects,omitempty"`
-	Statuses *[]struct {
-		Label string `json:"label"`
-		Value string `json:"value"`
-	} `json:"statuses,omitempty"`
 	Tags *[]struct {
 		Label string `json:"label"`
 		Value string `json:"value"`
@@ -252,8 +238,7 @@ func syntheticsFiltersHasAnyEntry(f *struct {
 		(f.Tags != nil && len(*f.Tags) > 0) ||
 		(f.MonitorIds != nil && len(*f.MonitorIds) > 0) ||
 		(f.Locations != nil && len(*f.Locations) > 0) ||
-		(f.MonitorTypes != nil && len(*f.MonitorTypes) > 0) ||
-		(f.Statuses != nil && len(*f.Statuses) > 0)
+		(f.MonitorTypes != nil && len(*f.MonitorTypes) > 0)
 }
 
 // readSyntheticsStatsOverviewDrilldownsFromAPI converts API drilldowns to TF models.
@@ -349,6 +334,5 @@ func readSyntheticsStatsOverviewFiltersFromAPI(
 		MonitorIDs:   fromAPIItems(apiFilters.MonitorIds),
 		Locations:    fromAPIItems(apiFilters.Locations),
 		MonitorTypes: fromAPIItems(apiFilters.MonitorTypes),
-		Statuses:     fromAPIItems(apiFilters.Statuses),
 	}
 }

@@ -366,10 +366,6 @@ func Test_populateSyntheticsStatsOverviewFromAPI_emptyFilters_treatedAsAbsent(t 
 			Label string `json:"label"`
 			Value string `json:"value"`
 		} `json:"projects,omitempty"`
-		Statuses *[]struct {
-			Label string `json:"label"`
-			Value string `json:"value"`
-		} `json:"statuses,omitempty"`
 		Tags *[]struct {
 			Label string `json:"label"`
 			Value string `json:"value"`
@@ -410,10 +406,6 @@ func Test_populateSyntheticsStatsOverviewFromAPI_import_withFilters(t *testing.T
 			Label string `json:"label"`
 			Value string `json:"value"`
 		} `json:"projects,omitempty"`
-		Statuses *[]struct {
-			Label string `json:"label"`
-			Value string `json:"value"`
-		} `json:"statuses,omitempty"`
 		Tags *[]struct {
 			Label string `json:"label"`
 			Value string `json:"value"`
@@ -487,10 +479,6 @@ func Test_populateSyntheticsStatsOverviewFromAPI_refresh_emptyFilters_clearsBloc
 			Label string `json:"label"`
 			Value string `json:"value"`
 		} `json:"projects,omitempty"`
-		Statuses *[]struct {
-			Label string `json:"label"`
-			Value string `json:"value"`
-		} `json:"statuses,omitempty"`
 		Tags *[]struct {
 			Label string `json:"label"`
 			Value string `json:"value"`

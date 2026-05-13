@@ -55,6 +55,30 @@ resource "elasticstack_kibana_dashboard" "test" {
           metric_json = jsonencode({
             operation = "count"
           })
+          x_axis_json = jsonencode({
+            operation = "filters"
+            filters = [
+              {
+                label = "All"
+                filter = {
+                  expression = "*"
+                  language   = "kql"
+                }
+              }
+            ]
+          })
+          y_axis_json = jsonencode({
+            operation = "filters"
+            filters = [
+              {
+                label = "All"
+                filter = {
+                  expression = "*"
+                  language   = "kql"
+                }
+              }
+            ]
+          })
           axis = {
             x = {
               labels = {

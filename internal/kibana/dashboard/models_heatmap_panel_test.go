@@ -293,23 +293,23 @@ func Test_heatmapPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 	assert.Equal(t, "host", esql2.X.Column)
 }
 
-func Test_heatmapConfigModel_noXAxisYAxisTFSDKFields(t *testing.T) {
-	// Verify the heatmap model struct doesn't expose x_axis_json / y_axis_json as tfsdk attributes.
-	// These were removed from the schema and replaced by internal representation.
-	// Use reflection to confirm no exported field has a tfsdk tag of "x_axis_json" or "y_axis_json",
-	// and that the internal unexported fields exist.
+func Test_heatmapConfigModel_xAxisYAxisTFSDKFields(t *testing.T) {
+	// Verify the heatmap model struct exposes x_axis_json / y_axis_json as tfsdk attributes.
+	// These are required/optional schema attributes that practitioners provide for breakdown dimensions.
 	typ := reflect.TypeFor[heatmapConfigModel]()
+	foundX, foundY := false, false
 	for field := range typ.Fields() {
 		if tag, ok := field.Tag.Lookup("tfsdk"); ok {
-			assert.NotEqual(t, "x_axis_json", tag, "heatmapConfigModel must not have tfsdk:x_axis_json on field %s", field.Name)
-			assert.NotEqual(t, "y_axis_json", tag, "heatmapConfigModel must not have tfsdk:y_axis_json on field %s", field.Name)
+			if tag == "x_axis_json" {
+				foundX = true
+			}
+			if tag == "y_axis_json" {
+				foundY = true
+			}
 		}
 	}
-	// Verify the internal (unexported) fields exist.
-	_, hasXAxis := typ.FieldByName("xAxisJSON")
-	_, hasYAxis := typ.FieldByName("yAxisJSON")
-	assert.True(t, hasXAxis, "heatmapConfigModel should have unexported field xAxisJSON")
-	assert.True(t, hasYAxis, "heatmapConfigModel should have unexported field yAxisJSON")
+	assert.True(t, foundX, "heatmapConfigModel should have tfsdk:x_axis_json field")
+	assert.True(t, foundY, "heatmapConfigModel should have tfsdk:y_axis_json field")
 }
 
 func Test_heatmapConfig_lensChartPresentation_hideTitleRoundTrip(t *testing.T) {

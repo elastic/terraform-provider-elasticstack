@@ -94,11 +94,8 @@ type heatmapConfigModel struct {
 	Styling             *heatmapStylingModel                              `tfsdk:"styling"`
 	Legend              *heatmapLegendModel                               `tfsdk:"legend"`
 	MetricJSON          customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"metric_json"`
-	// xAxisJSON and yAxisJSON are internal-only fields (not exposed in schema) used to
-	// round-trip API breakdown dimensions through the model layer without exposing raw
-	// JSON to practitioners.
-	xAxisJSON jsontypes.Normalized
-	yAxisJSON jsontypes.Normalized
+	XAxisJSON           jsontypes.Normalized                              `tfsdk:"x_axis_json"`
+	YAxisJSON           jsontypes.Normalized                              `tfsdk:"y_axis_json"`
 }
 
 type heatmapStylingModel struct {
@@ -148,6 +145,7 @@ func (m *heatmapConfigModel) populateCommonFields(
 	axis kbapi.HeatmapAxes,
 	styling kbapi.HeatmapStyling,
 	legend kbapi.HeatmapLegend,
+	prior *heatmapConfigModel,
 	diags *diag.Diagnostics,
 ) bool {
 	m.Title = types.StringPointerValue(title)
@@ -165,7 +163,11 @@ func (m *heatmapConfigModel) populateCommonFields(
 	m.DataSourceJSON = dv
 	m.Filters = populateFiltersFromAPI(filters, diags)
 	m.Axis = &heatmapAxesModel{}
-	axisDiags := m.Axis.fromAPI(axis)
+	var priorAxis *heatmapAxesModel
+	if prior != nil {
+		priorAxis = prior.Axis
+	}
+	axisDiags := m.Axis.fromAPI(axis, priorAxis)
 	diags.Append(axisDiags...)
 	m.Styling = &heatmapStylingModel{}
 	m.Styling.fromAPI(styling)
@@ -179,7 +181,7 @@ func (m *heatmapConfigModel) fromAPINoESQL(ctx context.Context, dashboard *dashb
 	_ = ctx
 
 	datasetBytes, datasetErr := json.Marshal(api.DataSource)
-	if !m.populateCommonFields(api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling, datasetBytes, datasetErr, api.Filters, api.Axis, api.Styling, api.Legend, &diags) {
+	if !m.populateCommonFields(api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling, datasetBytes, datasetErr, api.Filters, api.Axis, api.Styling, api.Legend, prior, &diags) {
 		return diags
 	}
 
@@ -195,7 +197,7 @@ func (m *heatmapConfigModel) fromAPINoESQL(ctx context.Context, dashboard *dashb
 		diags.AddError("Failed to marshal x_axis", err.Error())
 		return diags
 	}
-	m.xAxisJSON = jsontypes.NewNormalizedValue(string(xAxisBytes))
+	m.XAxisJSON = jsontypes.NewNormalizedValue(string(xAxisBytes))
 
 	if api.Y != nil {
 		yAxisBytes, err := api.Y.MarshalJSON()
@@ -203,9 +205,9 @@ func (m *heatmapConfigModel) fromAPINoESQL(ctx context.Context, dashboard *dashb
 			diags.AddError("Failed to marshal y_axis", err.Error())
 			return diags
 		}
-		m.yAxisJSON = jsontypes.NewNormalizedValue(string(yAxisBytes))
+		m.YAxisJSON = jsontypes.NewNormalizedValue(string(yAxisBytes))
 	} else {
-		m.yAxisJSON = jsontypes.NewNormalizedNull()
+		m.YAxisJSON = jsontypes.NewNormalizedNull()
 	}
 
 	m.Query = &filterSimpleModel{}
@@ -236,7 +238,7 @@ func (m *heatmapConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashboa
 	_ = ctx
 
 	datasetBytes, datasetErr := json.Marshal(api.DataSource)
-	if !m.populateCommonFields(api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling, datasetBytes, datasetErr, api.Filters, api.Axis, api.Styling, api.Legend, &diags) {
+	if !m.populateCommonFields(api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling, datasetBytes, datasetErr, api.Filters, api.Axis, api.Styling, api.Legend, prior, &diags) {
 		return diags
 	}
 
@@ -252,7 +254,7 @@ func (m *heatmapConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashboa
 		diags.AddError("Failed to marshal x_axis", err.Error())
 		return diags
 	}
-	m.xAxisJSON = jsontypes.NewNormalizedValue(string(xAxisBytes))
+	m.XAxisJSON = jsontypes.NewNormalizedValue(string(xAxisBytes))
 
 	if api.Y != nil {
 		yAxisBytes, err := json.Marshal(api.Y)
@@ -260,9 +262,9 @@ func (m *heatmapConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashboa
 			diags.AddError("Failed to marshal y_axis", err.Error())
 			return diags
 		}
-		m.yAxisJSON = jsontypes.NewNormalizedValue(string(yAxisBytes))
+		m.YAxisJSON = jsontypes.NewNormalizedValue(string(yAxisBytes))
 	} else {
-		m.yAxisJSON = jsontypes.NewNormalizedNull()
+		m.YAxisJSON = jsontypes.NewNormalizedNull()
 	}
 
 	var priorLens *lensChartPresentationTFModel
@@ -364,24 +366,19 @@ func (m *heatmapConfigModel) toAPINoESQL(dashboard *dashboardModel) (kbapi.Heatm
 		return api, diags
 	}
 
-	if typeutils.IsKnown(m.xAxisJSON) {
-		if err := json.Unmarshal([]byte(m.xAxisJSON.ValueString()), &api.X); err != nil {
-			diags.AddError("Failed to unmarshal internal x_axis", err.Error())
-			return api, diags
-		}
-	} else {
-		// On create without prior x breakdown state, emit an empty object rather than
-		// null so the Kibana API receives a valid dimension placeholder.
-		if err := json.Unmarshal([]byte("{}"), &api.X); err != nil {
-			diags.AddError("Failed to initialize default x_axis", err.Error())
-			return api, diags
-		}
+	if m.XAxisJSON.IsNull() {
+		diags.AddError("Missing x_axis", "heatmap_config.x_axis_json must be provided")
+		return api, diags
+	}
+	if err := json.Unmarshal([]byte(m.XAxisJSON.ValueString()), &api.X); err != nil {
+		diags.AddError("Failed to unmarshal x_axis_json", err.Error())
+		return api, diags
 	}
 
-	if typeutils.IsKnown(m.yAxisJSON) {
+	if !m.YAxisJSON.IsNull() {
 		var yAxis kbapi.HeatmapNoESQL_Y
-		if err := json.Unmarshal([]byte(m.yAxisJSON.ValueString()), &yAxis); err != nil {
-			diags.AddError("Failed to unmarshal internal y_axis", err.Error())
+		if err := json.Unmarshal([]byte(m.YAxisJSON.ValueString()), &yAxis); err != nil {
+			diags.AddError("Failed to unmarshal y_axis_json", err.Error())
 			return api, diags
 		}
 		api.Y = &yAxis
@@ -394,11 +391,7 @@ func (m *heatmapConfigModel) toAPINoESQL(dashboard *dashboardModel) (kbapi.Heatm
 	axis, axisDiags := m.Axis.toAPI()
 	diags.Append(axisDiags...)
 	if axis.X.Scale == "" {
-		if typeutils.IsKnown(m.xAxisJSON) {
-			axis.X.Scale = inferHeatmapXAxisScale(m.xAxisJSON.ValueString())
-		} else {
-			axis.X.Scale = kbapi.HeatmapXAxisScaleOrdinal
-		}
+		axis.X.Scale = inferHeatmapXAxisScale(m.XAxisJSON.ValueString())
 	}
 	api.Axis = axis
 
@@ -488,21 +481,23 @@ func (m *heatmapConfigModel) toAPIESQL(dashboard *dashboardModel) (kbapi.Heatmap
 		return api, diags
 	}
 
-	if typeutils.IsKnown(m.xAxisJSON) {
-		if err := json.Unmarshal([]byte(m.xAxisJSON.ValueString()), &api.X); err != nil {
-			diags.AddError("Failed to unmarshal internal x_axis", err.Error())
-			return api, diags
-		}
+	if m.XAxisJSON.IsNull() {
+		diags.AddError("Missing x_axis", "heatmap_config.x_axis_json must be provided")
+		return api, diags
+	}
+	if err := json.Unmarshal([]byte(m.XAxisJSON.ValueString()), &api.X); err != nil {
+		diags.AddError("Failed to unmarshal x_axis_json", err.Error())
+		return api, diags
 	}
 
-	if typeutils.IsKnown(m.yAxisJSON) {
+	if !m.YAxisJSON.IsNull() {
 		yAxis := new(struct {
 			Column string           `json:"column"`
 			Format kbapi.FormatType `json:"format"`
 			Label  *string          `json:"label,omitempty"`
 		})
-		if err := json.Unmarshal([]byte(m.yAxisJSON.ValueString()), yAxis); err != nil {
-			diags.AddError("Failed to unmarshal internal y_axis", err.Error())
+		if err := json.Unmarshal([]byte(m.YAxisJSON.ValueString()), yAxis); err != nil {
+			diags.AddError("Failed to unmarshal y_axis_json", err.Error())
 			return api, diags
 		}
 		api.Y = yAxis
@@ -515,11 +510,7 @@ func (m *heatmapConfigModel) toAPIESQL(dashboard *dashboardModel) (kbapi.Heatmap
 	axis, axisDiags := m.Axis.toAPI()
 	diags.Append(axisDiags...)
 	if axis.X.Scale == "" {
-		if typeutils.IsKnown(m.xAxisJSON) {
-			axis.X.Scale = inferHeatmapXAxisScale(m.xAxisJSON.ValueString())
-		} else {
-			axis.X.Scale = kbapi.HeatmapXAxisScaleOrdinal
-		}
+		axis.X.Scale = inferHeatmapXAxisScale(m.XAxisJSON.ValueString())
 	}
 	api.Axis = axis
 
@@ -571,14 +562,22 @@ type heatmapAxesModel struct {
 	Y *heatmapYAxisModel `tfsdk:"y"`
 }
 
-func (m *heatmapAxesModel) fromAPI(api kbapi.HeatmapAxes) diag.Diagnostics {
+func (m *heatmapAxesModel) fromAPI(api kbapi.HeatmapAxes, prior *heatmapAxesModel) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
 	m.X = &heatmapXAxisModel{}
-	m.X.fromAPI(api.X)
+	var priorX *heatmapXAxisModel
+	if prior != nil {
+		priorX = prior.X
+	}
+	m.X.fromAPI(api.X, priorX)
 
 	m.Y = &heatmapYAxisModel{}
-	m.Y.fromAPI(api.Y)
+	var priorY *heatmapYAxisModel
+	if prior != nil {
+		priorY = prior.Y
+	}
+	m.Y.fromAPI(api.Y, priorY)
 
 	return diags
 }
@@ -607,7 +606,7 @@ type heatmapXAxisModel struct {
 	Title  *axisTitleModel          `tfsdk:"title"`
 }
 
-func (m *heatmapXAxisModel) fromAPI(api kbapi.HeatmapXAxis) {
+func (m *heatmapXAxisModel) fromAPI(api kbapi.HeatmapXAxis, _ *heatmapXAxisModel) {
 	if api.Labels != nil {
 		m.Labels = &heatmapXAxisLabelsModel{}
 		m.Labels.fromAPI(api.Labels)
@@ -673,14 +672,22 @@ type heatmapYAxisModel struct {
 	Title  *axisTitleModel          `tfsdk:"title"`
 }
 
-func (m *heatmapYAxisModel) fromAPI(api kbapi.HeatmapYAxis) {
+func (m *heatmapYAxisModel) fromAPI(api kbapi.HeatmapYAxis, prior *heatmapYAxisModel) {
 	if api.Labels != nil {
 		m.Labels = &heatmapYAxisLabelsModel{}
 		m.Labels.fromAPI(api.Labels)
+	} else if prior != nil && prior.Labels != nil {
+		// Kibana may omit Y-axis labels when there is no Y breakdown dimension.
+		// Preserve the prior state to avoid a false drift.
+		m.Labels = prior.Labels
 	}
 	if api.Title != nil {
 		m.Title = &axisTitleModel{}
 		m.Title.fromAPI(api.Title)
+	} else if prior != nil && prior.Title != nil {
+		// Kibana may omit Y-axis title when there is no Y breakdown dimension.
+		// Preserve the prior state to avoid a false drift.
+		m.Title = prior.Title
 	}
 }
 

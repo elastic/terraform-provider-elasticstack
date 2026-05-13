@@ -1501,11 +1501,6 @@ func getSyntheticsStatsOverviewSchema() map[string]schema.Attribute {
 					Optional:            true,
 					NestedObject:        filterItemSchema,
 				},
-				"statuses": schema.ListNestedAttribute{
-					MarkdownDescription: "Filter by monitor status.",
-					Optional:            true,
-					NestedObject:        filterItemSchema,
-				},
 			},
 		},
 	}
@@ -1634,6 +1629,16 @@ func getHeatmapSchema(includePresentation bool) map[string]schema.Attribute {
 		MarkdownDescription: "Legend configuration for the heatmap.",
 		Required:            true,
 		Attributes:          getHeatmapLegendSchema(),
+	}
+	attrs["x_axis_json"] = schema.StringAttribute{
+		MarkdownDescription: "Breakdown dimension configuration for the X axis as JSON. This specifies the operation (e.g., `terms`, `date_histogram`, `histogram`, `range`, `filters`) and its parameters.",
+		CustomType:          jsontypes.NormalizedType{},
+		Required:            true,
+	}
+	attrs["y_axis_json"] = schema.StringAttribute{
+		MarkdownDescription: "Breakdown dimension configuration for the Y axis as JSON. When omitted, the heatmap renders without a Y breakdown.",
+		CustomType:          jsontypes.NormalizedType{},
+		Optional:            true,
 	}
 	attrs["metric_json"] = schema.StringAttribute{
 		MarkdownDescription: "Metric configuration as JSON. For non-ES|QL, this can be a field metric, pipeline metric, or formula. For ES|QL, this is the metric column/operation/color configuration.",
@@ -2721,11 +2726,6 @@ func getSyntheticsMonitorsSchema() map[string]schema.Attribute {
 				},
 				"monitor_types": schema.ListNestedAttribute{
 					MarkdownDescription: "Filter by monitor types. Each entry has a `label` (display name) and a `value` (monitor type, e.g. `browser`, `http`, `tcp`, `icmp`).",
-					Optional:            true,
-					NestedObject:        filterItemSchema,
-				},
-				"statuses": schema.ListNestedAttribute{
-					MarkdownDescription: "Filter by monitor status.",
 					Optional:            true,
 					NestedObject:        filterItemSchema,
 				},
