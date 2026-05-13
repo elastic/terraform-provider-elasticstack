@@ -2457,14 +2457,22 @@ func getGaugeSchema(includePresentation bool) map[string]schema.Attribute {
 		Required:            true,
 	}
 	attrs["query"] = schema.SingleNestedAttribute{
-		MarkdownDescription: "Query configuration for filtering data.",
-		Required:            true,
+		MarkdownDescription: "Query configuration for filtering data. Required for non-ES|QL gauges; omit for ES|QL mode.",
+		Optional:            true,
 		Attributes:          getFilterSimple(),
 	}
 	attrs["metric_json"] = schema.StringAttribute{
-		MarkdownDescription: gaugeMetricDescription,
+		MarkdownDescription: gaugeMetricDescription + " Required for non-ES|QL gauges; mutually exclusive with `esql_metric`.",
 		CustomType:          customtypes.NewJSONWithDefaultsType(populateGaugeMetricDefaults),
-		Required:            true,
+		Optional:            true,
+		Validators: []validator.String{
+			stringvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("esql_metric")),
+		},
+	}
+	attrs["esql_metric"] = schema.SingleNestedAttribute{
+		MarkdownDescription: "Typed metric column for ES|QL gauges. Mutually exclusive with `metric_json`.",
+		Optional:            true,
+		Attributes:          getGaugeESQLMetricSchema(),
 	}
 	attrs["styling"] = schema.SingleNestedAttribute{
 		MarkdownDescription: "Gauge styling configuration.",
@@ -2481,6 +2489,82 @@ func getGaugeSchema(includePresentation bool) map[string]schema.Attribute {
 		maps.Copy(attrs, lensChartPresentationAttributes())
 	}
 	return attrs
+}
+
+// getGaugeESQLMetricSchema returns the typed attribute schema for the
+// `esql_metric` block on gauge ES|QL charts.
+func getGaugeESQLMetricSchema() map[string]schema.Attribute {
+	gaugeRefSchema := func(desc string) schema.SingleNestedAttribute {
+		return schema.SingleNestedAttribute{
+			MarkdownDescription: desc,
+			Optional:            true,
+			Attributes: map[string]schema.Attribute{
+				"column": schema.StringAttribute{
+					MarkdownDescription: "ES|QL column name.",
+					Required:            true,
+				},
+				"label": schema.StringAttribute{
+					MarkdownDescription: "Optional label for the operation.",
+					Optional:            true,
+				},
+			},
+		}
+	}
+	return map[string]schema.Attribute{
+		"column": schema.StringAttribute{
+			MarkdownDescription: "ES|QL column name for the metric.",
+			Required:            true,
+		},
+		"format_json": schema.StringAttribute{
+			MarkdownDescription: "Number or other format configuration as JSON (`formatType` union).",
+			CustomType:          jsontypes.NormalizedType{},
+			Required:            true,
+		},
+		"label": schema.StringAttribute{
+			MarkdownDescription: "Optional label for the metric.",
+			Optional:            true,
+		},
+		"color_json": schema.StringAttribute{
+			MarkdownDescription: "Gauge fill color configuration as JSON (`colorByValue`, `noColor`, or `autoColor` union).",
+			CustomType:          jsontypes.NormalizedType{},
+			Optional:            true,
+		},
+		"subtitle": schema.StringAttribute{
+			MarkdownDescription: "Subtitle text rendered below the gauge value.",
+			Optional:            true,
+		},
+		"goal": gaugeRefSchema("Goal column reference."),
+		"max":  gaugeRefSchema("Max column reference."),
+		"min":  gaugeRefSchema("Min column reference."),
+		"ticks": schema.SingleNestedAttribute{
+			MarkdownDescription: "Tick configuration.",
+			Optional:            true,
+			Attributes: map[string]schema.Attribute{
+				"mode": schema.StringAttribute{
+					MarkdownDescription: "Tick placement mode.",
+					Optional:            true,
+				},
+				"visible": schema.BoolAttribute{
+					MarkdownDescription: "Whether tick marks are displayed.",
+					Optional:            true,
+				},
+			},
+		},
+		"title": schema.SingleNestedAttribute{
+			MarkdownDescription: "Title configuration.",
+			Optional:            true,
+			Attributes: map[string]schema.Attribute{
+				"text": schema.StringAttribute{
+					MarkdownDescription: "Title text.",
+					Optional:            true,
+				},
+				"visible": schema.BoolAttribute{
+					MarkdownDescription: "Whether the title is displayed.",
+					Optional:            true,
+				},
+			},
+		},
+	}
 }
 
 // getMetricChart returns the schema for metric chart configuration.
