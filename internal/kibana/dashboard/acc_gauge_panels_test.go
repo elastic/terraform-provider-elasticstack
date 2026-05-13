@@ -72,7 +72,7 @@ func TestAccResourceDashboardGauge(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "title", dashboardTitle),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.gauge_config.filters.#", "1"),
-					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.gauge_config.filters.0.filter_json", `{"condition":{"field":"response","operator":"is","value":"200"},"type":"condition"}`),
+					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.gauge_config.filters.0.filter_json", `{"condition":{"field":"response","operator":"is","value":"200"},"type":"condition"}`), //nolint:lll
 				),
 			},
 			{

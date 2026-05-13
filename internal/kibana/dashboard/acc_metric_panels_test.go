@@ -131,7 +131,7 @@ func TestAccResourceDashboardMetricChart(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.metric_chart_config.breakdown_by_json"),
 					// Check filters
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.metric_chart_config.filters.#", "1"),
-					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.metric_chart_config.filters.0.filter_json", `{"condition":{"field":"event.category","operator":"is","value":"web"},"type":"condition"}`),
+					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.metric_chart_config.filters.0.filter_json", `{"condition":{"field":"event.category","operator":"is","value":"web"},"type":"condition"}`), //nolint:lll
 				),
 			},
 			{

@@ -97,7 +97,7 @@ func TestAccResourceDashboardPieChart(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.legend.truncate_after_lines", "5"),
 
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.filters.#", "1"),
-					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.filters.0.filter_json", `{"condition":{"field":"response","operator":"is","value":"200"},"type":"condition"}`),
+					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.filters.0.filter_json", `{"condition":{"field":"response","operator":"is","value":"200"},"type":"condition"}`), //nolint:lll
 
 					// Check metrics and group_by
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.metrics.#", "1"),

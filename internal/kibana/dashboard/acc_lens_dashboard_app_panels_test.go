@@ -48,7 +48,7 @@ func TestAccResourceDashboardLensDashboardAppByValue_basic(t *testing.T) {
 				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.type", "lens-dashboard-app"),
-					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "panels.0.lens_dashboard_app_config.by_value.config_json", `{"type":"metric","title":"Acc by-value","data_source":{"index_pattern":"metrics-*"}}`),
+					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "panels.0.lens_dashboard_app_config.by_value.config_json", `{"type":"metric","title":"Acc by-value","data_source":{"index_pattern":"metrics-*"}}`), //nolint:lll
 				),
 			},
 			// Same config again: require an empty pre-apply plan (no post-apply drift on refresh).
@@ -134,7 +134,7 @@ func TestAccResourceDashboardLensDashboardAppByReference(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.lens_dashboard_app_config.by_reference.time_range.from", "now-7d"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.lens_dashboard_app_config.by_reference.time_range.to", "now"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.lens_dashboard_app_config.by_reference.time_range.mode", "relative"),
-					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "panels.0.lens_dashboard_app_config.by_reference.references_json", `[{"id":"aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee","type":"lens"}]`),
+					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "panels.0.lens_dashboard_app_config.by_reference.references_json", `[{"id":"aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee","type":"lens"}]`), //nolint:lll
 				),
 			},
 			{

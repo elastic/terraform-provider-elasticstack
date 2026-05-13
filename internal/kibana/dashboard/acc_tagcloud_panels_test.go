@@ -91,7 +91,7 @@ func TestAccResourceDashboardTagcloud(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.tagcloud_config.query.expression", "service.name:*"),
 					// Check filters
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.tagcloud_config.filters.#", "1"),
-					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.tagcloud_config.filters.0.filter_json", `{"condition":{"field":"log.level","operator":"is","value":"error"},"type":"condition"}`),
+					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.tagcloud_config.filters.0.filter_json", `{"condition":{"field":"log.level","operator":"is","value":"error"},"type":"condition"}`), //nolint:lll
 				),
 			},
 			{

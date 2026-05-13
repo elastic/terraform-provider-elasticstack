@@ -69,7 +69,7 @@ func TestAccResourceDashboardXYChartMinimalConfig(t *testing.T) {
 	})
 }
 
-const xyChartDataLayerBreakdownExpected = `{"collapse_by":"avg","color":{"mapping":[{"color":{"type":"color_code","value":"#54B399"},"values":["host-a"]}],"mode":"categorical","palette":"default","unassigned":{"type":"color_code","value":"#D3DAE6"}},"column":"host.name","format":{"type":"number"}}`
+const xyChartDataLayerBreakdownExpected = `{"collapse_by":"avg","color":{"mapping":[{"color":{"type":"color_code","value":"#54B399"},"values":["host-a"]}],"mode":"categorical","palette":"default","unassigned":{"type":"color_code","value":"#D3DAE6"}},"column":"host.name","format":{"type":"number"}}` //nolint:lll
 
 const xyChartPresentationReferencesExpected = `[{"id":"acc-ref-id","name":"acc-ref-name","type":"index-pattern"}]`
 
@@ -201,7 +201,7 @@ func TestAccResourceDashboardXYChart_filters(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.filters.#", "1"),
-					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.filters.0.filter_json", `{"condition":{"field":"log.level","operator":"is","value":"error"},"type":"condition"}`),
+					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.filters.0.filter_json", `{"condition":{"field":"log.level","operator":"is","value":"error"},"type":"condition"}`), //nolint:lll
 				),
 			},
 		},
