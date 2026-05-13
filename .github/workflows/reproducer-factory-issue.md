@@ -3000,9 +3000,13 @@ Follow this decision tree end-to-end for **issue #${{ needs.pre_activation.outpu
 
 The reproducer comment **MUST** conform to the `ci-reproducer-factory-comment-format` capability. The workflow automatically prepends `<!-- gha-reproducer-factory -->`; **do not** include that marker in the body you pass to `update-reproducer-comment`.
 
-Structurally:
+1. **`## Bug reproduction`** — Open the body with this H2 heading. Immediately below it, add a provenance header that records the run timestamp, the run link (`${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`), and a one-line notice that the comment is replaced on each run, e.g.:
 
-- **Outcome A**: sections include `### Summary`, `### Root cause`, `### Reproduction test`, then `### References`, then a closed `<details>` block for pipeline metadata JSON.
+   > This comment is replaced on each workflow run.
+
+2. **Outcome-specific sections** (after the provenance header):
+
+- **Outcome A**: `### Summary`, `### Root cause`, `### Reproduction test`, then `### References`, then a closed `<details>` block for pipeline metadata JSON.
 - **Outcome B**: `### Summary`, `### Investigation avenues` with **exactly three** numbered items — each item **must** reference a concrete file path, Go symbol, git commit, or API endpoint (not vague advice).
 - **Outcome C**: `### Summary`, `### Evidence`, then `### References`, then the `<details>` JSON block.
 
