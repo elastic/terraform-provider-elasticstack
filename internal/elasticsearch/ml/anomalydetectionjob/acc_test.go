@@ -18,6 +18,7 @@
 package anomalydetectionjob_test
 
 import (
+	"context"
 	_ "embed"
 	"fmt"
 	"os"
@@ -25,12 +26,39 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 const testResourceAddr = "elasticstack_elasticsearch_ml_anomaly_detection_job.test"
+
+// setupAccMLCalendars creates ML calendars via the Elasticsearch API for acceptance tests that
+// assign anomaly detection jobs to calendars. Calendars are deleted in t.Cleanup after the test.
+func setupAccMLCalendars(t *testing.T, calendarIDs ...string) {
+	t.Helper()
+	ctx := context.Background()
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+	if err != nil {
+		t.Fatalf("acceptance elasticsearch client: %v", err)
+	}
+	es, err := client.GetESClient()
+	if err != nil {
+		t.Fatalf("get elasticsearch client: %v", err)
+	}
+	for _, id := range calendarIDs {
+		desc := fmt.Sprintf("terraform acc calendar %s", id)
+		if _, err := es.Ml.PutCalendar(id).Description(desc).Do(ctx); err != nil {
+			t.Fatalf("put ML calendar %q: %v", id, err)
+		}
+		t.Cleanup(func() {
+			if _, delErr := es.Ml.DeleteCalendar(id).Do(context.Background()); delErr != nil {
+				t.Logf("cleanup delete ML calendar %q: %v", id, delErr)
+			}
+		})
+	}
+}
 
 func TestAccResourceAnomalyDetectionJobBasic(t *testing.T) {
 	jobID := fmt.Sprintf("test-anomaly-detector-basic-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
@@ -469,6 +497,66 @@ func TestAccResourceAnomalyDetectionJobExplicitConnection(t *testing.T) {
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"elasticsearch_connection"},
+			},
+		},
+	})
+}
+
+// TestAccResourceAnomalyDetectionJobCalendars exercises optional calendars: create with one calendar,
+// add a second on update, then remove the first so only the second remains. Calendars are created
+// out-of-band via the Elasticsearch ML APIs (see setupAccMLCalendars).
+func TestAccResourceAnomalyDetectionJobCalendars(t *testing.T) {
+	jobID := fmt.Sprintf("test-ad-cal-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	// Prefixes ensure lexicographic order matches [calA, calB] for set attribute indices in checks.
+	calA := fmt.Sprintf("acc-cal-a-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	calB := fmt.Sprintf("acc-cal-b-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	setupAccMLCalendars(t, calA, calB)
+
+	addr := testResourceAddr
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"job_id": config.StringVariable(jobID),
+					"cal_a":  config.StringVariable(calA),
+					"cal_b":  config.StringVariable(calB),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "job_id", jobID),
+					resource.TestCheckResourceAttr(addr, "calendars.#", "1"),
+					resource.TestCheckResourceAttr(addr, "calendars.0", calA),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_two"),
+				ConfigVariables: config.Variables{
+					"job_id": config.StringVariable(jobID),
+					"cal_a":  config.StringVariable(calA),
+					"cal_b":  config.StringVariable(calB),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "calendars.#", "2"),
+					resource.TestCheckResourceAttr(addr, "calendars.0", calA),
+					resource.TestCheckResourceAttr(addr, "calendars.1", calB),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_one"),
+				ConfigVariables: config.Variables{
+					"job_id": config.StringVariable(jobID),
+					"cal_a":  config.StringVariable(calA),
+					"cal_b":  config.StringVariable(calB),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "calendars.#", "1"),
+					resource.TestCheckResourceAttr(addr, "calendars.0", calB),
+				),
 			},
 		},
 	})
