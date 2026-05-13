@@ -95,7 +95,13 @@ func testAccCheckDestroyMLAnomalyDetectionJob(jobID string, calendarIDs []string
 		}
 		jobsRes, err := es.Ml.GetJobs().JobId(jobID).AllowNoMatch(true).Do(ctx)
 		if err != nil {
-			return fmt.Errorf("get ML job %q: %w", jobID, err)
+			var esErr *types.ElasticsearchError
+			if errors.As(err, &esErr) && esErr.Status == 404 {
+				// Job already removed (some clusters return 404 here even with allow_no_match).
+				jobsRes = nil
+			} else {
+				return fmt.Errorf("get ML job %q: %w", jobID, err)
+			}
 		}
 		if jobsRes != nil && len(jobsRes.Jobs) > 0 {
 			return fmt.Errorf("ML anomaly job %q still exists after destroy", jobID)
@@ -657,7 +663,7 @@ func TestAccResourceAnomalyDetectionJobCalendars(t *testing.T) {
 	})
 }
 
-// TestAccResourceAnomalyDetectionJobCalendarsEmptyFirst creates a job with no calendars, then assigns one on update.
+// TestAccResourceAnomalyDetectionJobCalendarsEmptyFirst creates a job with explicit empty calendars, then assigns one on update.
 func TestAccResourceAnomalyDetectionJobCalendarsEmptyFirst(t *testing.T) {
 	jobID := fmt.Sprintf("test-ad-cal-empty-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	calA := fmt.Sprintf("acc-cal-a-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))

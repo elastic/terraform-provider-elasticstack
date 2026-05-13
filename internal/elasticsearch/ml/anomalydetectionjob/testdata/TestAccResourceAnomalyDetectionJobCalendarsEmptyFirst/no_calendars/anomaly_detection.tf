@@ -12,7 +12,9 @@ provider "elasticstack" {
 
 resource "elasticstack_elasticsearch_ml_anomaly_detection_job" "test" {
   job_id      = var.job_id
-  description = "ACC ML calendars: create without calendars attribute"
+  description = "ACC ML calendars: explicit empty calendars on create"
+
+  calendars = toset([])
 
   analysis_config = {
     bucket_span = "15m"
