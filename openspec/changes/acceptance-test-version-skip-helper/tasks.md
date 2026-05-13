@@ -18,12 +18,12 @@
 
 ## 3. Elasticsearch Package Migrations
 
-- [ ] 3.1 Migrate `internal/elasticsearch/index/datastreamlifecycle/acc_test.go`
-- [ ] 3.2 Migrate `internal/elasticsearch/index/ilm/acc_test.go` cold-allocate, hot-actions, warm-downsample tests
-- [ ] 3.3 Migrate `internal/elasticsearch/index/template/acc_test.go` and `acc_from_sdk_test.go` template tests
-- [ ] 3.4 Migrate `internal/elasticsearch/security/api_key/acc_test.go` single-version tests
-- [ ] 3.5 Migrate `internal/elasticsearch/transform/transform_test.go`
-- [ ] 3.6 Run `make check-lint` and targeted ES acceptance tests
+- [x] 3.1 Migrate `internal/elasticsearch/index/datastreamlifecycle/acc_test.go`
+- [x] 3.2 Migrate `internal/elasticsearch/index/ilm/acc_test.go` cold-allocate, hot-actions, warm-downsample tests
+- [x] 3.3 Migrate `internal/elasticsearch/index/template/acc_test.go` and `acc_from_sdk_test.go` template tests
+- [x] 3.4 Migrate `internal/elasticsearch/security/api_key/acc_test.go` single-version tests
+- [x] 3.5 Migrate `internal/elasticsearch/transform/transform_test.go`
+- [x] 3.6 Run `make check-lint` and targeted ES acceptance tests
 
 ## 4. Fleet Package Migrations
 
