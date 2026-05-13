@@ -1,7 +1,7 @@
 ## 1. Repository prerequisites
 
-- [ ] 1.1 Create `internal/acctest/reproductions/` Go package with a `.gitkeep` or package stub so the fallback test-file path is valid
-- [ ] 1.2 Verify or create the `reproducer-factory` GitHub label in the repository
+- [x] 1.1 Create `internal/acctest/reproductions/` Go package with a `.gitkeep` or package stub so the fallback test-file path is valid
+- [x] 1.2 Verify or create the `reproducer-factory` GitHub label in the repository
 
 ## 2. Workflow source scaffolding
 
