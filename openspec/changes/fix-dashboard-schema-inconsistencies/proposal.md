@@ -1,11 +1,10 @@
 ## Why
 
-The `elasticstack_kibana_dashboard` resource schema accumulated inconsistencies across panel types during rapid panel expansion: divergent attribute naming (`config` vs `config_json`), mismatched Terraform types (`Float64` vs `Int64` for `truncate_after_lines`), redundant JSON fields alongside typed equivalents (heatmap `x_axis_json`/`y_axis_json`), and fragmented drilldown schemas. Since the resource is graduating from experimental to GA, this is the last opportunity to align the schema with itself and the Kibana Dashboard API before practitioners depend on it.
+The `elasticstack_kibana_dashboard` resource schema accumulated inconsistencies across panel types during rapid panel expansion: divergent attribute naming (`config` vs `config_json`), mismatched Terraform types (`Float64` vs `Int64` for `truncate_after_lines`), and fragmented drilldown schemas. Since the resource is graduating from experimental to GA, this is the last opportunity to align the schema with itself and the Kibana Dashboard API before practitioners depend on it.
 
 ## What Changes
 
 - **BREAKING** Rename waffle and pie chart nested metric/group-by attribute from `config` to `config_json` to align with metric chart and datatable conventions.
-- **BREAKING** Remove heatmap `x_axis_json` and `y_axis_json` in favour of the existing typed `axis` block (plus model-layer mapping to API `x`/`y` breakdown dimensions).
 - **BREAKING** Split treemap and mosaic ES|QL configuration from raw `metrics_json`/`group_by_json` into typed nested schemas matching waffle's `esql_metrics`/`esql_group_by` pattern.
 - Normalize partition chart legend `truncate_after_lines` to `Int64` consistently (the API uses `float32`, but fractional line truncation is semantically wrong).
 - Fix pie chart to use shared `lensChartBaseAttributes()` instead of inline attribute definitions, removing spurious schema-level defaults on `ignore_global_filters` and `sampling`.
@@ -29,7 +28,6 @@ The `elasticstack_kibana_dashboard` resource schema accumulated inconsistencies 
   - Attribute naming conventions for JSON metric/group-by blocks.
   - Legend type consistency (`truncate_after_lines`).
   - Required vs optional status of `data_source_json` and `query` on typed Lens charts.
-  - Removal of redundant `x_axis_json`/`y_axis_json` on heatmap in favour of typed `axis` block.
   - ES|QL treemap/mosaic typed schema expansion.
 
 ## Impact

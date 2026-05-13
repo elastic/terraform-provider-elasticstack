@@ -2,7 +2,7 @@
 
 - [x] 1.1 Rename waffle `metrics[].config` → `metrics[].config_json` and `group_by[].config` → `group_by[].config_json` in `schema.go`
 - [x] 1.2 Rename pie `metrics[].config` → `metrics[].config_json` and `group_by[].config` → `group_by[].config_json` in `schema.go`
-- [x] 1.3 Remove heatmap `x_axis_json` and `y_axis_json` from `getHeatmapSchema()` in `schema.go`
+- [x] 1.3 ~~Remove heatmap `x_axis_json` and `y_axis_json` from `getHeatmapSchema()` in `schema.go`~~ — dropped from this change; heatmap retains raw `x_axis_json`/`y_axis_json` (see design decision).
 - [x] 1.4 Change XY chart `query` from Required to Optional in `schema_xy_chart_panel.go`
 - [x] 1.5 Change pie `data_source_json` from Optional to Required in `schema.go`
 - [x] 1.6 Remove explicit `Default: booldefault.StaticBool(false)` and `Default: float64default.StaticFloat64(1.0)` from pie chart in `schema.go`; refactor `getPieChart()` to start from `lensChartBaseAttributes()`
@@ -24,7 +24,7 @@
 
 - [x] 3.1 Update `waffleConfigModel` struct tags and `toAPI`/`fromAPI`/`fromAPIESQL` for `config_json` rename
 - [x] 3.2 Update `pieChartConfigModel` struct tags and `toAPI`/`fromAPI`/`fromAPIESQL` for `config_json` rename and `data_source_json` required handling
-- [x] 3.3 Update `heatmapConfigModel` to remove `XAxisJSON`/`YAxisJSON` fields; update `toAPI`/`fromAPI`/`fromAPIESQL` to map dimensions through internal representation
+- [x] 3.3 ~~Update `heatmapConfigModel` to remove `XAxisJSON`/`YAxisJSON` fields; update `toAPI`/`fromAPI`/`fromAPIESQL` to map dimensions through internal representation~~ — dropped from this change (see task 1.3 note).
 - [x] 3.4 Update `treemapConfigModel` to add ES|QL typed fields; update `toAPI`/`fromAPI`/`fromAPIESQL`
 - [x] 3.5 Update `mosaicConfigModel` to add ES|QL typed fields; update `toAPI`/`fromAPI`/`fromAPIESQL`
 - [x] 3.6 Update `xyChartConfigModel` to remove required query handling in `fromAPI`; ensure ES|QL path sets `Query = nil`
@@ -33,13 +33,13 @@
 ## 4. Default normalization and config_json defaults
 
 - [x] 4.1 Update `populateLensAttributesDefaults()` in `panel_config_defaults.go` for waffle and pie `config_json` rename
-- [x] 4.2 Remove heatmap `x_axis_json`/`y_axis_json` default normalization paths if any exist in `panel_config_defaults.go`
+- [x] 4.2 ~~Remove heatmap `x_axis_json`/`y_axis_json` default normalization paths if any exist in `panel_config_defaults.go`~~ — dropped from this change (see task 1.3 note).
 
 ## 5. Test fixtures
 
 - [x] 5.1 Update all waffle acceptance test `.tf` fixtures to use `config_json`
 - [x] 5.2 Update all pie chart acceptance test `.tf` fixtures to use `config_json` and ensure `data_source_json` is present
-- [x] 5.3 Update all heatmap acceptance test `.tf` fixtures to remove `x_axis_json`/`y_axis_json`
+- [x] 5.3 ~~Update all heatmap acceptance test `.tf` fixtures to remove `x_axis_json`/`y_axis_json`~~ — dropped from this change (see task 1.3 note).
 - [x] 5.4 Update all treemap acceptance test `.tf` fixtures for ES|QL typed schemas (add new ES|QL test fixtures)
 - [x] 5.5 Update all mosaic acceptance test `.tf` fixtures for ES|QL typed schemas (add new ES|QL test fixtures)
 - [x] 5.6 Update XY chart acceptance test `.tf` fixtures to remove required `query` where testing ES|QL mode
@@ -49,7 +49,7 @@
 
 - [x] 6.1 Update `models_waffle_panel_test.go` for `config_json` rename
 - [x] 6.2 Update `models_pie_chart_panel_test.go` for `config_json` rename and `data_source_json` required handling
-- [x] 6.3 Update `models_heatmap_panel_test.go` for removed `x_axis_json`/`y_axis_json`
+- [x] 6.3 ~~Update `models_heatmap_panel_test.go` for removed `x_axis_json`/`y_axis_json`~~ — dropped from this change (see task 1.3 note).
 - [x] 6.4 Update `models_treemap_panel_test.go` and `models_mosaic_panel_test.go` for ES|QL typed schemas
 - [x] 6.5 Update `models_xy_chart_panel_test.go` for optional query
 - [x] 6.6 Update `panel_config_defaults_test.go` for renamed attributes

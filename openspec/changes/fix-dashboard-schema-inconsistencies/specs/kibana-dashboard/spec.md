@@ -76,9 +76,9 @@ When the panel is in ES|QL mode, the resource SHALL expose typed nested schemas 
 
 ### Requirement: Heatmap panel behavior (REQ-018)
 
-For heatmap `vis` panels, the resource SHALL require `data_source_json`, `axis`, `styling.cells`, `legend`, and `metric_json`. **`legend.visibility` SHALL use the string values `visible` or `hidden`,** matching the API enum. It SHALL treat the panel as non-ES|QL when a real `query` is present, and in that mode `query` SHALL be required. It SHALL treat the panel as ES|QL when `query` is omitted or empty by the implementation's mode test. Heatmap metric normalization SHALL use the same metric-default behavior shared with the tagcloud implementation.
+For heatmap `vis` panels, the resource SHALL require `data_source_json`, `axis`, `styling.cells`, `legend`, `metric_json`, and `x_axis_json` (with optional `y_axis_json`). **`legend.visibility` SHALL use the string values `visible` or `hidden`,** matching the API enum. It SHALL treat the panel as non-ES|QL when a real `query` is present, and in that mode `query` SHALL be required. It SHALL treat the panel as ES|QL when `query` is omitted or empty by the implementation's mode test. Heatmap metric normalization SHALL use the same metric-default behavior shared with the tagcloud implementation.
 
-The resource SHALL map the API `x` and `y` breakdown dimension fields through the typed `axis` block and the model-layer converter. **`x_axis_json` and `y_axis_json` SHALL NOT be exposed as Terraform attributes.** The model layer SHALL read the API `x` and `y` breakdown JSON and, when needed, map them through internal representation rather than exposing raw JSON fields to practitioners.
+The resource SHALL retain `x_axis_json` and `y_axis_json` as raw JSON attributes for the X and Y breakdown dimensions; this change does not remove them in favor of the typed `axis` block. The typed `axis` block continues to represent visual axis configuration (labels, title, orientation), while `x_axis_json` / `y_axis_json` carry the breakdown operation JSON (e.g. `terms`, `date_histogram`).
 
 #### Scenario: Non-ES|QL heatmap requires query
 
@@ -91,12 +91,6 @@ The resource SHALL map the API `x` and `y` breakdown dimension fields through th
 - GIVEN `heatmap_config.legend.visibility = "hidden"`
 - WHEN the provider builds the API request
 - THEN it SHALL set API heatmap legend visibility to the `hidden` enum value
-
-#### Scenario: Heatmap axis block replaces x_axis_json and y_axis_json
-
-- GIVEN a heatmap panel configured with the typed `axis` block
-- WHEN the provider builds the API request and reads the panel back
-- THEN the panel SHALL convert to and from the API `x` and `y` breakdown dimensions without requiring raw `x_axis_json` or `y_axis_json` attributes in Terraform configuration
 
 ### Requirement: Waffle panel behavior (REQ-019)
 

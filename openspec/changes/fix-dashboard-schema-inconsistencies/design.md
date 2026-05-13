@@ -4,7 +4,6 @@ The `elasticstack_kibana_dashboard` resource was built incrementally across mult
 
 - Pie chart skipped `lensChartBaseAttributes()` and defined its own `ignore_global_filters` / `sampling` with explicit schema defaults.
 - Waffle and pie chart used `metrics[].config` while metric chart and datatable used `metrics[].config_json`.
-- Heatmap exposed raw `x_axis_json` / `y_axis_json` alongside a typed `axis` block that partially overlaps.
 - Treemap and mosaic ES|QL mode reused the same raw JSON attributes (`metrics_json`, `group_by_json`) as their non-ES|QL mode, while waffle introduced typed ES|QL nested schemas (`esql_metrics`, `esql_group_by`).
 - Synthetics panels duplicated an identical inline filter item schema and defined drilldowns as raw inline attributes instead of reusing the shared `urlDrilldownNestedAttributeObject()` helper.
 - `panelTypeSloOverview` was defined in `models_slo_overview_panel.go` instead of `schema.go`.
@@ -15,7 +14,6 @@ The resource is graduating from experimental to GA (`graduate-kibana-dashboard`)
 
 **Goals:**
 - Align metric/group-by JSON attribute naming to `config_json` consistently across all panel types.
-- Remove redundant heatmap `x_axis_json` / `y_axis_json`; model layer handles API `x`/`y` breakdown dimension mapping internally.
 - Expand treemap and mosaic ES|QL support to typed nested schemas matching waffle.
 - Normalize `truncate_after_lines` to `Int64` in all partition chart legends.
 - Fix pie chart to use `lensChartBaseAttributes()`, removing spurious schema defaults.
@@ -39,13 +37,9 @@ The resource is graduating from experimental to GA (`graduate-kibana-dashboard`)
 
 **Implementation:** Update schema definitions in `getWaffleSchema()` and `getPieChart()`, update model structs (`waffleConfigModel`, `pieChartConfigModel`) and their `tfsdk` tags, update `populateLensAttributesDefaults()` in `panel_config_defaults.go`, and update all acceptance test fixtures.
 
-### Decision: Remove heatmap `x_axis_json` / `y_axis_json`
+### Decision: Keep heatmap `x_axis_json` / `y_axis_json`
 
-**Rationale:** The API's `HeatmapNoESQL` has `x` and `y` fields that represent breakdown dimensions, while the typed `axis` block represents visual axis configuration. Exposing both caused confusion — practitioners had to set both the typed `axis` block and raw JSON for dimensions. The model layer already reads API `x`/`y`; it can map them through internal representation without exposing raw JSON to practitioners.
-
-**Alternative considered:** Keep them and rename to `x_json`/`y_json`. Rejected because it still duplicates the `axis` block conceptually and the typed `axis` block already exists.
-
-**Implementation:** Remove attributes from `getHeatmapSchema()`, remove fields from `heatmapConfigModel`, update `toAPI`/`fromAPI` methods to derive dimension JSON from the typed axis block (or internal model state), and rewrite acceptance test fixtures.
+**Rationale:** An earlier iteration of this change proposed removing `x_axis_json` and `y_axis_json` in favor of the typed `axis` block. On closer review, the typed `axis` block only models visual axis configuration (labels, title, orientation), while `x_axis_json` / `y_axis_json` carry the breakdown operation JSON (`terms`, `date_histogram`, `histogram`, `range`, `filters`). The two concerns do not overlap, and removing the raw JSON attributes would leave no way to express the X/Y breakdowns through typed Terraform configuration today. Heatmap therefore retains both blocks as-is; aligning them to a typed dimension schema is deferred to a future change if practitioner demand emerges.
 
 ### Decision: Expand treemap/mosaic ES|QL to typed schemas
 
@@ -78,7 +72,6 @@ The resource is graduating from experimental to GA (`graduate-kibana-dashboard`)
 | Breaking existing experimental dashboards in practitioner state | Acceptable because the resource is unreleased/graduating; document in CHANGELOG and release notes. |
 | Acceptance test fixtures need mass updates | Batch-update test fixtures at the same time as schema changes; run targeted acceptance tests to verify. |
 | Model-layer changes for treemap/mosaic ES|QL are non-trivial | Implement one chart at a time; verify with existing waffle ES|QL tests as reference. |
-| Heatmap `x_axis_json`/`y_axis_json` removal may lose practitioner-authored dimension JSON that doesn't fit typed `axis` | The `axis` block already supports labels, title, and orientation. Breakdown dimensions (the former `x_axis_json`/`y_axis_json` content) are mapped from API `x`/`y` through the model layer; in practice the typed axis + model mapping covers all known use cases. |
 
 ## Migration Plan
 
