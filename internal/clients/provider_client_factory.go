@@ -169,7 +169,7 @@ func (f *ProviderClientFactory) GetElasticsearchClient(ctx context.Context, esCo
 		return nil, diags
 	}
 
-	cfg, diags := config.NewFromFrameworkElasticsearchResourceConnection(ctx, esConns, f.defaultClient.version)
+	cfg, diags := config.NewFromFramework(ctx, config.ProviderConfiguration{Elasticsearch: esConns}, f.defaultClient.version)
 	if diags.HasError() {
 		return nil, diags
 	}

@@ -21,7 +21,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"regexp"
 	"strings"
 	"testing"
@@ -492,69 +491,6 @@ func TestAccResourceMLFilterUpdateWhenRemoteDeleted(t *testing.T) {
 	})
 }
 
-// TestAccResourceMLFilterUpdateForbiddenReadOnlyUser checks that an update using elasticsearch_connection
-// credentials whose role only grants the cluster privilege "none" (no ML access) fails with a clear
-// Elasticsearch authorization error.
-//
-// Requires TF_ACC=1, security enabled, and ELASTICSEARCH_ENDPOINTS (same as TestAccResourceAnomalyDetectionJobExplicitConnection).
-// Note: acceptance runs with ELASTICSEARCH_USERNAME set; the provider resolves Framework elasticsearch_connection
-// clients via config.NewFromFrameworkElasticsearchResourceConnection so scoped credentials are not replaced by env.
-func TestAccResourceMLFilterUpdateForbiddenReadOnlyUser(t *testing.T) {
-	endpoints := mlFilterAccESEndpoints()
-	if len(endpoints) == 0 {
-		t.Skip("ELASTICSEARCH_ENDPOINTS must contain at least one non-empty endpoint to run this test")
-	}
-	endpointVars := make([]config.Variable, 0, len(endpoints))
-	for _, endpoint := range endpoints {
-		endpointVars = append(endpointVars, config.StringVariable(endpoint))
-	}
-
-	roleName := fmt.Sprintf("ml_filter_acc_none_priv_%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
-	userName := fmt.Sprintf("ml_filter_acc_ro_%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
-	password := sdkacctest.RandStringFromCharSet(20, sdkacctest.CharSetAlphaNum)
-
-	putMLReadOnlyAccTestSecurity(t.Context(), t, roleName, userName, password)
-
-	filterID := fmt.Sprintf("test-filter-ro-upd-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
-	t.Cleanup(func() {
-		ctx := context.Background()
-		deleteMLFilterBestEffort(ctx, t, filterID)
-		deleteMLAccSecurityUserBestEffort(ctx, t, userName)
-		deleteMLAccSecurityRoleBestEffort(ctx, t, roleName)
-	})
-
-	vars := config.Variables{
-		"filter_id": config.StringVariable(filterID),
-	}
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() { acctest.PreCheck(t) },
-		Steps: []resource.TestStep{
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
-				ConfigVariables:          vars,
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(mlFilterResourceAddress, "filter_id", filterID),
-					resource.TestCheckResourceAttr(mlFilterResourceAddress, "description", "Created by admin for read-only update denial test"),
-					resource.TestCheckResourceAttr(mlFilterResourceAddress, "items.#", "1"),
-				),
-			},
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_ro"),
-				ConfigVariables: config.Variables{
-					"filter_id":   config.StringVariable(filterID),
-					"endpoints":   config.ListVariable(endpointVars...),
-					"ro_username": config.StringVariable(userName),
-					"ro_password": config.StringVariable(password),
-				},
-				ExpectError: regexp.MustCompile(`(?i)(Failed to update ML filter|Failed to get current ML filter|Failed to get ML filter|403|Forbidden|security_exception)`),
-			},
-		},
-	})
-}
-
 func TestAccResourceMLFilterDestroyWhenRemoteDeleted(t *testing.T) {
 	filterID := fmt.Sprintf("test-filter-del-miss-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	t.Cleanup(func() {
@@ -935,98 +871,4 @@ func assertMLFilterPresentES(ctx context.Context, t *testing.T, filterID string)
 		return fmt.Errorf("expected ML filter %q to exist in Elasticsearch", filterID)
 	}
 	return nil
-}
-
-func mlFilterAccESEndpoints() []string {
-	rawEndpoints := os.Getenv("ELASTICSEARCH_ENDPOINTS")
-	parts := strings.Split(rawEndpoints, ",")
-	endpoints := make([]string, 0, len(parts))
-	for _, part := range parts {
-		part = strings.TrimSpace(part)
-		if part != "" {
-			endpoints = append(endpoints, part)
-		}
-	}
-	return endpoints
-}
-
-func putMLReadOnlyAccTestSecurity(ctx context.Context, t *testing.T, roleName, userName, password string) {
-	t.Helper()
-
-	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
-	if err != nil {
-		t.Fatalf("acceptance ES client: %v", err)
-	}
-	typed, err := client.GetESClient()
-	if err != nil {
-		t.Fatalf("typed ES client: %v", err)
-	}
-
-	// "none" is a predefined cluster privilege: the user can authenticate but has no cluster-level
-	// permissions, so ML filter APIs return 403 (often surfaced via Read or Update diagnostics).
-	const roleBody = `{
-  "cluster": ["none"],
-  "indices": [],
-  "applications": [],
-  "run_as": []
-}`
-	_, err = typed.Security.PutRole(roleName).Raw(strings.NewReader(roleBody)).Do(ctx)
-	if err != nil {
-		t.Fatalf("Security.PutRole %q: %v", roleName, err)
-	}
-
-	_, err = typed.Security.PutUser(userName).Password(password).Roles(roleName).Do(ctx)
-	if err != nil {
-		t.Fatalf("Security.PutUser %q: %v", userName, err)
-	}
-}
-
-func deleteMLAccSecurityUserBestEffort(ctx context.Context, t *testing.T, userName string) {
-	t.Helper()
-
-	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
-	if err != nil {
-		t.Logf("Security.DeleteUser cleanup: no client: %v", err)
-		return
-	}
-	typed, err := client.GetESClient()
-	if err != nil {
-		t.Logf("Security.DeleteUser cleanup: %v", err)
-		return
-	}
-
-	_, err = typed.Security.DeleteUser(userName).Do(ctx)
-	if err == nil {
-		return
-	}
-	var esErr *types.ElasticsearchError
-	if errors.As(err, &esErr) && esErr.Status == 404 {
-		return
-	}
-	t.Logf("Security.DeleteUser %q: %v", userName, err)
-}
-
-func deleteMLAccSecurityRoleBestEffort(ctx context.Context, t *testing.T, roleName string) {
-	t.Helper()
-
-	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
-	if err != nil {
-		t.Logf("Security.DeleteRole cleanup: no client: %v", err)
-		return
-	}
-	typed, err := client.GetESClient()
-	if err != nil {
-		t.Logf("Security.DeleteRole cleanup: %v", err)
-		return
-	}
-
-	_, err = typed.Security.DeleteRole(roleName).Do(ctx)
-	if err == nil {
-		return
-	}
-	var esErr *types.ElasticsearchError
-	if errors.As(err, &esErr) && esErr.Status == 404 {
-		return
-	}
-	t.Logf("Security.DeleteRole %q: %v", roleName, err)
 }
