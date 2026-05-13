@@ -191,6 +191,10 @@ func (m *heatmapConfigModel) fromAPINoESQL(ctx context.Context, dashboard *dashb
 	m.MetricJSON = preservePriorJSONWithDefaultsIfEquivalent(ctx, m.MetricJSON, mv, &diags)
 
 	xAxisBytes, err := api.X.MarshalJSON()
+	if err != nil {
+		diags.AddError("Failed to marshal x_axis", err.Error())
+		return diags
+	}
 	m.xAxisJSON = jsontypes.NewNormalizedValue(string(xAxisBytes))
 
 	if api.Y != nil {
@@ -365,6 +369,13 @@ func (m *heatmapConfigModel) toAPINoESQL(dashboard *dashboardModel) (kbapi.Heatm
 			diags.AddError("Failed to unmarshal internal x_axis", err.Error())
 			return api, diags
 		}
+	} else {
+		// On create without prior x breakdown state, emit an empty object rather than
+		// null so the Kibana API receives a valid dimension placeholder.
+		if err := json.Unmarshal([]byte("{}"), &api.X); err != nil {
+			diags.AddError("Failed to initialize default x_axis", err.Error())
+			return api, diags
+		}
 	}
 
 	if typeutils.IsKnown(m.yAxisJSON) {
@@ -486,9 +497,9 @@ func (m *heatmapConfigModel) toAPIESQL(dashboard *dashboardModel) (kbapi.Heatmap
 
 	if typeutils.IsKnown(m.yAxisJSON) {
 		yAxis := new(struct {
-			Column string `json:"column"`
+			Column string           `json:"column"`
 			Format kbapi.FormatType `json:"format"`
-			Label  *string `json:"label,omitempty"`
+			Label  *string          `json:"label,omitempty"`
 		})
 		if err := json.Unmarshal([]byte(m.yAxisJSON.ValueString()), yAxis); err != nil {
 			diags.AddError("Failed to unmarshal internal y_axis", err.Error())
