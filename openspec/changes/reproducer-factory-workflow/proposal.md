@@ -25,7 +25,7 @@ Bug reports arrive without a systematic way to confirm whether the described fai
 ## Impact
 
 - New source tree at `.github/workflows-src/reproducer-factory-issue/` (workflow template, intake-constants, inline scripts)
-- New compiled lock file at `.github/workflows/reproducer-factory-issue.lock.yml` (generated via existing `make workflows` / `npm run compile`)
+- New compiled lock file at `.github/workflows/reproducer-factory-issue.lock.yml` (generated via `make workflow-generate`)
 - New `internal/acctest/reproductions/` directory (created on first use by the agent)
 - Requires the `reproducer-factory` GitHub label to exist in the repository
 - Requires the same secrets already used by code-factory: `CLAUDE_LITELLM_PROXY_API_KEY`, `GH_AW_GITHUB_MCP_SERVER_TOKEN`, `GH_AW_GITHUB_TOKEN`, `GH_AW_CI_TRIGGER_TOKEN`

@@ -1,3 +1,9 @@
+# `ci-reproducer-factory-comment-format` — sticky comment format for reproducer-factory outcomes
+
+## Purpose
+
+Define the format of the reproduction-output comment produced by the `reproducer-factory` workflow as a sticky comment on the triggering issue, authored by `github-actions[bot]`. The comment is always emitted regardless of outcome and covers three variants: bug reproduced, cannot reproduce, and appears already fixed.
+
 ## ADDED Requirements
 
 ### Requirement: Comment is authored by github-actions[bot] and identified by a marker

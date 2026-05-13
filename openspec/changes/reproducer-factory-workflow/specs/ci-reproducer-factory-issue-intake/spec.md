@@ -1,3 +1,11 @@
+# `ci-reproducer-factory-issue-intake` — reproducer-factory agentic workflow issue intake
+
+Workflow implementation: repository-authored source under `.github/workflows-src/reproducer-factory-issue/`, compiled to `.github/workflows/reproducer-factory-issue.lock.yml`.
+
+## Purpose
+
+Define requirements for a GitHub Agentic Workflow that reacts to trusted GitHub issues labeled `reproducer-factory` and attempts to reproduce the described failure condition as a passing acceptance test, producing a sticky comment and optionally a pull request depending on the outcome.
+
 ## ADDED Requirements
 
 ### Requirement: Workflow source is repository-authored and generated
@@ -47,15 +55,15 @@ For issue-event intake, before agent activation the workflow SHALL determine whe
 - **THEN** the workflow SHALL NOT require the issue-event actor trust check as a prerequisite for activation
 
 ### Requirement: Workflow suppresses duplicate linked pull requests
-Before running the reproduction agent, the pre-activation job SHALL check for an existing open pull request linked to the triggering issue on the `reproducer-factory/issue-{n}` branch. The check SHALL look for a PR whose body contains `Closes #N` (where N is the issue number) and whose head branch is `reproducer-factory/issue-{n}`. If a matching open PR is found, the workflow SHALL skip agent activation and emit `noop` instead.
+Before running the reproduction agent, the pre-activation job SHALL check for an existing open pull request linked to the triggering issue. A PR SHALL be considered a match when ALL of the following hold: it is open, it carries the `reproducer-factory` label, its head branch is `reproducer-factory/issue-{n}`, and its body contains `Related to #N` (where N is the issue number). If a matching open PR is found, the workflow SHALL skip agent activation and emit `noop` instead.
 
 #### Scenario: Existing linked PR prevents a duplicate issue-event run
-- **WHEN** an eligible `reproducer-factory` issue event fires for an issue that already has an open PR with `Closes #N` on branch `reproducer-factory/issue-{n}`
+- **WHEN** an eligible `reproducer-factory` issue event fires for an issue that already has an open PR carrying the `reproducer-factory` label with `Related to #N` in its body on branch `reproducer-factory/issue-{n}`
 - **THEN** the workflow SHALL NOT activate the reproduction agent
 - **AND** the workflow SHALL emit `noop`
 
 #### Scenario: Unrelated PR does not block issue intake
-- **WHEN** the triggering issue has open PRs that do not carry the `reproducer-factory/issue-{n}` branch or do not include `Closes #N`
+- **WHEN** the triggering issue has open PRs that do not carry the `reproducer-factory` label, do not use branch `reproducer-factory/issue-{n}`, or do not include `Related to #N`
 - **THEN** the workflow SHALL proceed normally to agent activation
 
 ### Requirement: Workflow normalises issue intake context across entry modes
@@ -159,11 +167,11 @@ Regardless of outcome, the agent SHALL always emit exactly one `update-reproduce
 - **AND** the agent SHALL NOT emit `create-pull-request`
 
 ### Requirement: Agent creates exactly one linked pull request when reproduction succeeds
-When the reproduction test passes, the agent SHALL create exactly one pull request on branch `reproducer-factory/issue-{n}` labeled `reproducer-factory`. The PR body SHALL include `Closes #N` to establish deterministic linkage for duplicate-PR suppression on future runs. The PR SHALL contain only the reproduction test file and no other changes.
+When the reproduction test passes, the agent SHALL create exactly one pull request on branch `reproducer-factory/issue-{n}` labeled `reproducer-factory`. The PR body SHALL include `Related to #N` to establish deterministic linkage for duplicate-PR suppression on future runs. The PR SHALL contain only the reproduction test file and no other changes. `Related to` is used rather than a closing keyword because the reproduction does not resolve the issue — it confirms it.
 
 #### Scenario: Eligible issue-event intake creates a reproduction PR
 - **WHEN** the reproduction test passes for an eligible issue event
-- **THEN** the agent SHALL emit `create-pull-request` with branch `reproducer-factory/issue-{n}` and body containing `Closes #N`
+- **THEN** the agent SHALL emit `create-pull-request` with branch `reproducer-factory/issue-{n}` and body containing `Related to #N`
 
 #### Scenario: No PR is created when reproduction fails
 - **WHEN** the agent reaches outcome B (cannot reproduce) or outcome C (appears fixed)
