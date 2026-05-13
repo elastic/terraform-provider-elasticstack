@@ -14,6 +14,16 @@ This resource remains **experimental**. If you compile it into the provider (`TF
 - `lens_dashboard_app_config.by_reference.drilldowns_json` is removed from the schema; use structured `drilldowns` (`dashboard`, `discover`, and `url` blocks) instead.
 - Structured URL drilldowns require `trigger` (`on_click_row`, `on_click_value`, `on_open_panel_menu`, or `on_select_range`); the Kibana dashboard API rejects URL drilldowns without `trigger`, and the provider now enforces this at plan time.
 
+The following additional schema inconsistencies have been fixed in `elasticstack_kibana_dashboard`:
+
+- **Waffle & pie chart `config_json` rename:** `metrics[].config` and `group_by[].config` are renamed to `metrics[].config_json` and `group_by[].config_json` to align with the datatable and metric chart convention. Update any HCL referencing the old attribute names.
+- **Heatmap `x_axis_json` / `y_axis_json` removed:** These raw JSON attributes are removed. Breakdown dimensions are now handled internally by the model layer; use the typed `axis` block instead.
+- **Treemap & mosaic ES|QL typed schemas:** `metrics_json` and `group_by_json` are no longer used for ES|QL mode. Use the new typed `esql_metrics` and `esql_group_by` nested blocks, which are mutually exclusive with their JSON counterparts.
+- **Pie chart `data_source_json` now required:** All other typed Lens charts already require this; pie now matches.
+- **XY chart `query` now optional:** ES|QL XY panels carry no query in the API; the schema now allows omitting `query`.
+- **Pie chart schema defaults removed:** `ignore_global_filters` and `sampling` no longer have hardcoded schema-level defaults; they derive from `lensChartBaseAttributes()` and reconcile from API read-back.
+- **Partition legend `truncate_after_lines` normalized to `Int64`:** The API uses `float32`, but fractional line truncation is semantically wrong. All partition chart legends (treemap, mosaic, pie, waffle) now use `Int64`.
+- **Gauge & tagcloud ES|QL mode:** `query` is now optional on both; typed `esql_metric` and `esql_tag_by` blocks are added for ES|QL mode, mutually exclusive with `metric_json` / `tag_by_json`.
 
 #### `elasticstack_kibana_security_detection_rule` action `params` format change
 
