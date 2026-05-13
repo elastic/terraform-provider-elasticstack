@@ -179,6 +179,17 @@ func TestCheckSkip_flavorServerlessOnServerlessNoSkip(t *testing.T) {
 	require.Empty(t, reason)
 }
 
+func TestCheckSkip_unknownFlavorReturnsError(t *testing.T) {
+	t.Parallel()
+
+	stub := stubServerInfo(testVer812, "default", nil)
+
+	skip, reason, err := checkSkip(context.Background(), nil, nil, Flavor(99), stub)
+	require.ErrorContains(t, err, "unknown acceptance test flavor")
+	require.False(t, skip)
+	require.Empty(t, reason)
+}
+
 func TestCheckSkip_getServerInfoParseErrorPropagates(t *testing.T) {
 	t.Parallel()
 

@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/hashicorp/go-version"
@@ -103,9 +104,18 @@ func checkSkip(ctx context.Context, minVersion *version.Version, constraints ver
 		if !isServerless {
 			return true, "test requires serverless elasticsearch but cluster is stateful", nil
 		}
+	default:
+		return false, "", fmt.Errorf("unknown acceptance test flavor %v (%s)", wantFlavor, wantFlavor.String())
 	}
 
 	return false, "", nil
+}
+
+func skipContext(t *testing.T) context.Context {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
+	t.Cleanup(cancel)
+	return ctx
 }
 
 // SkipIfUnsupported skips the test when the acceptance Elasticsearch connection reports a
@@ -113,7 +123,7 @@ func checkSkip(ctx context.Context, minVersion *version.Version, constraints ver
 // Serverless clusters bypass minimum-version checks. Infrastructure failures call t.Fatal.
 func SkipIfUnsupported(t *testing.T, minVersion *version.Version, flavor Flavor) {
 	t.Helper()
-	skip, reason, err := checkSkip(context.Background(), minVersion, nil, flavor, fetchAcceptanceServerInfo)
+	skip, reason, err := checkSkip(skipContext(t), minVersion, nil, flavor, fetchAcceptanceServerInfo)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -127,7 +137,7 @@ func SkipIfUnsupported(t *testing.T, minVersion *version.Version, flavor Flavor)
 // constraint checks. Infrastructure failures call t.Fatal.
 func SkipIfUnsupportedConstraints(t *testing.T, constraints version.Constraints, flavor Flavor) {
 	t.Helper()
-	skip, reason, err := checkSkip(context.Background(), nil, constraints, flavor, fetchAcceptanceServerInfo)
+	skip, reason, err := checkSkip(skipContext(t), nil, constraints, flavor, fetchAcceptanceServerInfo)
 	if err != nil {
 		t.Fatal(err)
 	}

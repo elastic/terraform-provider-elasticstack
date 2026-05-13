@@ -76,13 +76,6 @@ func TestAccResourceDashboardUnknownPanel(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				PreConfig: func() {
-					notSupported, err := versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport)()
-					if err != nil {
-						t.Fatalf("checking version: %v", err)
-					}
-					if notSupported {
-						return
-					}
 					if dashboardID == "" {
 						t.Fatal("dashboardID not set from step 1")
 					}
