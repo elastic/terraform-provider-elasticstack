@@ -534,13 +534,14 @@ func TestAccResourceILMSearchableSnapshotPhases(t *testing.T) {
 func TestAccResourceILMHotActions(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
+	versionutils.SkipIfUnsupported(t, allowWriteAfterShrinkVersionLimit, versionutils.FlavorAny)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceILMDestroy,
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(allowWriteAfterShrinkVersionLimit),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("number_of_shards"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -558,7 +559,6 @@ func TestAccResourceILMHotActions(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(allowWriteAfterShrinkVersionLimit),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("max_primary_shard_size"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -581,13 +581,14 @@ func TestAccResourceILMHotActions(t *testing.T) {
 func TestAccResourceILMWarmDownsampleAndShrink(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
+	versionutils.SkipIfUnsupported(t, allowWriteAfterShrinkVersionLimit, versionutils.FlavorAny)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceILMDestroy,
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(allowWriteAfterShrinkVersionLimit),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -608,7 +609,6 @@ func TestAccResourceILMWarmDownsampleAndShrink(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(allowWriteAfterShrinkVersionLimit),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -634,13 +634,14 @@ func TestAccResourceILMWarmDownsampleAndShrink(t *testing.T) {
 func TestAccResourceILMColdAllocateAndDownsample(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
+	versionutils.SkipIfUnsupported(t, downsampleVersionLimit, versionutils.FlavorAny)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceILMDestroy,
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(downsampleVersionLimit),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -659,7 +660,6 @@ func TestAccResourceILMColdAllocateAndDownsample(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(downsampleVersionLimit),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
