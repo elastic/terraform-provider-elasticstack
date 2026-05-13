@@ -43,6 +43,9 @@ resource "elasticstack_kibana_dashboard" "test" {
         monitor_types = [
           { label = "HTTP", value = "http" }
         ]
+        statuses = [
+          { label = "Up", value = "up" }
+        ]
       }
     }
   }]

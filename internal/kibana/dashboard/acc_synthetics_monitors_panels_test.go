@@ -128,6 +128,8 @@ func TestAccResourceDashboardSyntheticsMonitors(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.synthetics_monitors_config.filters.locations.0.value", "us-east"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.synthetics_monitors_config.filters.monitor_types.#", "1"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.synthetics_monitors_config.filters.monitor_types.0.value", "http"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.synthetics_monitors_config.filters.statuses.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.synthetics_monitors_config.filters.statuses.0.value", "up"),
 				),
 			},
 			// Import with all filter dimensions.
