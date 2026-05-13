@@ -67,17 +67,17 @@ func Test_pieChartPanelConfigConverter_populateFromAttributes_buildAttributes_ro
 	require.NoError(t, attrs.FromPieNoESQL(apiChart))
 
 	converter := newPieChartPanelConfigConverter()
-	vizBv := vizByValueModel{}
-	diags := converter.populateFromAttributes(ctx, nil, nil, &vizBv.lensByValueChartBlocks, attrs)
+	visBv := visByValueModel{}
+	diags := converter.populateFromAttributes(ctx, nil, nil, &visBv.lensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
-	require.NotNil(t, vizBv.PieChartConfig)
-	require.NotNil(t, vizBv.PieChartConfig.Legend)
-	assert.Equal(t, "auto", vizBv.PieChartConfig.Legend.Size.ValueString())
-	assert.True(t, vizBv.PieChartConfig.Legend.Nested.ValueBool())
-	assert.InEpsilon(t, float64(3), vizBv.PieChartConfig.Legend.TruncateAfterLine.ValueFloat64(), 0.001)
-	assert.Equal(t, string(visibility), vizBv.PieChartConfig.Legend.Visible.ValueString())
+	require.NotNil(t, visBv.PieChartConfig)
+	require.NotNil(t, visBv.PieChartConfig.Legend)
+	assert.Equal(t, "auto", visBv.PieChartConfig.Legend.Size.ValueString())
+	assert.True(t, visBv.PieChartConfig.Legend.Nested.ValueBool())
+	assert.InEpsilon(t, float64(3), visBv.PieChartConfig.Legend.TruncateAfterLine.ValueFloat64(), 0.001)
+	assert.Equal(t, string(visibility), visBv.PieChartConfig.Legend.Visible.ValueString())
 
-	attrs2, diags := converter.buildAttributes(&vizBv.lensByValueChartBlocks, nil)
+	attrs2, diags := converter.buildAttributes(&visBv.lensByValueChartBlocks, nil)
 	require.False(t, diags.HasError())
 
 	noESQL2, err := attrs2.AsPieNoESQL()

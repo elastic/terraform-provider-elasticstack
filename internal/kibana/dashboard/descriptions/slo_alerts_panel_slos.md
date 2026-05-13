@@ -1,0 +1,1 @@
+SLO entries whose alerts this panel displays (at least one, at most 100). Each entry references an SLO by `slo_id`; set `slo_instance_id` only when the SLO is grouped and you need a specific instance.

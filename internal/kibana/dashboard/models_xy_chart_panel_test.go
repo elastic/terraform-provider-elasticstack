@@ -610,12 +610,12 @@ func Test_xyChartPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 	require.NoError(t, attrs.FromXyChartNoESQL(xyChart))
 
 	converter := newXYChartPanelConfigConverter()
-	vizBv := vizByValueModel{}
-	diags = converter.populateFromAttributes(ctx, nil, nil, &vizBv.lensByValueChartBlocks, attrs)
+	visBv := visByValueModel{}
+	diags = converter.populateFromAttributes(ctx, nil, nil, &visBv.lensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
-	require.NotNil(t, vizBv.XYChartConfig)
+	require.NotNil(t, visBv.XYChartConfig)
 
-	attrs2, diags := converter.buildAttributes(&vizBv.lensByValueChartBlocks, nil)
+	attrs2, diags := converter.buildAttributes(&visBv.lensByValueChartBlocks, nil)
 	require.False(t, diags.HasError())
 
 	chart2, err := attrs2.AsXyChartNoESQL()
@@ -1057,8 +1057,8 @@ func Test_xyLegendModel_toAPI_nil(t *testing.T) {
 func Test_alignXYChartStateFromPlanPanels_preservesPractitionerIntent(t *testing.T) {
 	planPanels := []panelModel{
 		{
-			VizConfig: &vizConfigModel{
-				ByValue: &vizByValueModel{
+			VisConfig: &visConfigModel{
+				ByValue: &visByValueModel{
 					lensByValueChartBlocks: lensByValueChartBlocks{
 						XYChartConfig: &xyChartConfigModel{
 							Title: types.StringValue("Sample XY Chart"),
@@ -1147,8 +1147,8 @@ func Test_alignXYChartStateFromPlanPanels_preservesPractitionerIntent(t *testing
 
 	statePanels := []panelModel{
 		{
-			VizConfig: &vizConfigModel{
-				ByValue: &vizByValueModel{
+			VisConfig: &visConfigModel{
+				ByValue: &visByValueModel{
 					lensByValueChartBlocks: lensByValueChartBlocks{
 						XYChartConfig: &xyChartConfigModel{
 							Title: types.StringValue(""),
@@ -1225,8 +1225,8 @@ func Test_alignXYChartStateFromPlanPanels_preservesPractitionerIntent(t *testing
 
 	alignXYChartStateFromPlanPanels(planPanels, statePanels)
 
-	planXY := planPanels[0].VizConfig.ByValue.XYChartConfig
-	got := statePanels[0].VizConfig.ByValue.XYChartConfig
+	planXY := planPanels[0].VisConfig.ByValue.XYChartConfig
+	got := statePanels[0].VisConfig.ByValue.XYChartConfig
 	require.NotNil(t, got)
 	assert.Equal(t, types.StringValue("Sample XY Chart"), got.Title)
 	assert.True(t, got.Axis.X.Scale.IsNull())

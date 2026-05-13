@@ -45,7 +45,10 @@ type panelModel struct {
 	SyntheticsStatsOverviewConfig *syntheticsStatsOverviewConfigModel               `tfsdk:"synthetics_stats_overview_config"`
 	SyntheticsMonitorsConfig      *syntheticsMonitorsConfigModel                    `tfsdk:"synthetics_monitors_config"`
 	LensDashboardAppConfig        *lensDashboardAppConfigModel                      `tfsdk:"lens_dashboard_app_config"`
-	VizConfig                     *vizConfigModel                                   `tfsdk:"viz_config"`
+	VisConfig                     *visConfigModel                                   `tfsdk:"vis_config"`
+	ImageConfig                   *imagePanelConfigModel                            `tfsdk:"image_config"`
+	SloAlertsConfig               *sloAlertsPanelConfigModel                        `tfsdk:"slo_alerts_config"`
+	DiscoverSessionConfig         *discoverSessionPanelConfigModel                  `tfsdk:"discover_session_config"`
 	ConfigJSON                    customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config_json"`
 }
 
@@ -77,7 +80,7 @@ type sectionGridModel struct {
 	Y types.Int64 `tfsdk:"y"`
 }
 
-var lensVizConverters = []lensVisualizationConverter{
+var lensVisConverters = []lensVisualizationConverter{
 	newXYChartPanelConfigConverter(),
 	newTreemapPanelConfigConverter(),
 	newMosaicPanelConfigConverter(),
@@ -208,7 +211,10 @@ func panelHasTypedConfig(pm *panelModel) bool {
 		pm.SyntheticsStatsOverviewConfig != nil ||
 		pm.SyntheticsMonitorsConfig != nil ||
 		pm.LensDashboardAppConfig != nil ||
-		pm.VizConfig != nil
+		pm.VisConfig != nil ||
+		pm.ImageConfig != nil ||
+		pm.SloAlertsConfig != nil ||
+		pm.DiscoverSessionConfig != nil
 }
 
 func panelUsesConfigJSONOnly(pm *panelModel) bool {
@@ -230,7 +236,10 @@ func clearPanelConfigBlocks(pm *panelModel) {
 	pm.SyntheticsStatsOverviewConfig = nil
 	pm.SyntheticsMonitorsConfig = nil
 	pm.LensDashboardAppConfig = nil
-	pm.VizConfig = nil
+	pm.VisConfig = nil
+	pm.ImageConfig = nil
+	pm.SloAlertsConfig = nil
+	pm.DiscoverSessionConfig = nil
 }
 
 func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelModel, panelItem kbapi.DashboardPanelItem) (panelModel, diag.Diagnostics) {
@@ -413,7 +422,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 			break
 		}
 
-		vizPrior := configPriorForVizRead(tfPanel, &pm)
+		visPrior := configPriorForVisRead(tfPanel, &pm)
 
 		switch classifyLensDashboardAppConfigFromRoot(root) {
 		case lensConfigClassByReference:
@@ -422,7 +431,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 				diags.AddError("Invalid visualization panel configuration on read", err1.Error())
 				break
 			}
-			diags.Append(populateVisByReferenceFromAPI(ctx, vizPrior, &pm, cfg1)...)
+			diags.Append(populateVisByReferenceFromAPI(ctx, visPrior, &pm, cfg1)...)
 
 		case lensConfigClassByValueChart:
 			config0, err0 := visPanel.Config.AsKbnDashboardPanelTypeVisConfig0()
@@ -430,35 +439,35 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 				diags.AddError("Invalid visualization panel configuration on read", err0.Error())
 				break
 			}
-			vizType := detectLensVizType(config0)
-			if vizType == "" {
+			visType := detectLensVisType(config0)
+			if visType == "" {
 				diags.AddError(
 					"Unsupported visualization chart type",
 					"The `vis` panel config has a top-level chart discriminator but could not resolve a Lens chart kind from the union; use panel-level `config_json` until this shape is modeled.",
 				)
 				break
 			}
-			converter := lensVizConverterForType(vizType)
+			converter := lensVisConverterForType(visType)
 			if converter == nil {
 				diags.AddError(
 					"Unsupported visualization chart type",
 					fmt.Sprintf(
-						"The dashboard returned Lens visualization discriminator %q which this provider does not support as typed `viz_config.by_value`. "+
+						"The dashboard returned Lens visualization discriminator %q which this provider does not support as typed `vis_config.by_value`. "+
 							"Use panel-level `config_json` as the escape hatch to manage this panel until support is added.",
-						vizType,
+						visType,
 					),
 				)
 				break
 			}
-			pm.VizConfig = &vizConfigModel{
-				ByValue: &vizByValueModel{},
+			pm.VisConfig = &visConfigModel{
+				ByValue: &visByValueModel{},
 			}
-			seedWaffleLensByValueChartFromPriorPanel(&pm.VizConfig.ByValue.lensByValueChartBlocks, tfPanel)
-			d := converter.populateFromAttributes(ctx, m, tfPanel, &pm.VizConfig.ByValue.lensByValueChartBlocks, config0)
+			seedWaffleLensByValueChartFromPriorPanel(&pm.VisConfig.ByValue.lensByValueChartBlocks, tfPanel)
+			d := converter.populateFromAttributes(ctx, m, tfPanel, &pm.VisConfig.ByValue.lensByValueChartBlocks, config0)
 			diags.Append(d...)
 
 		default:
-			if vizPrior != nil && vizPrior.ByReference != nil {
+			if visPrior != nil && visPrior.ByReference != nil {
 				// REQ-009 / D10: ambiguous API shape — preserve prior by_reference (pm seeded from tfPanel).
 				break
 			}
@@ -466,27 +475,27 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 			if err0 != nil {
 				break
 			}
-			vizType := detectLensVizType(config0)
-			if vizType == "" {
+			visType := detectLensVisType(config0)
+			if visType == "" {
 				break
 			}
-			converter := lensVizConverterForType(vizType)
+			converter := lensVisConverterForType(visType)
 			if converter == nil {
 				diags.AddError(
 					"Unsupported visualization chart type",
 					fmt.Sprintf(
-						"The dashboard returned Lens visualization discriminator %q which this provider does not support as typed `viz_config.by_value`. "+
+						"The dashboard returned Lens visualization discriminator %q which this provider does not support as typed `vis_config.by_value`. "+
 							"Use panel-level `config_json` as the escape hatch to manage this panel until support is added.",
-						vizType,
+						visType,
 					),
 				)
 				break
 			}
-			pm.VizConfig = &vizConfigModel{
-				ByValue: &vizByValueModel{},
+			pm.VisConfig = &visConfigModel{
+				ByValue: &visByValueModel{},
 			}
-			seedWaffleLensByValueChartFromPriorPanel(&pm.VizConfig.ByValue.lensByValueChartBlocks, tfPanel)
-			d := converter.populateFromAttributes(ctx, m, tfPanel, &pm.VizConfig.ByValue.lensByValueChartBlocks, config0)
+			seedWaffleLensByValueChartFromPriorPanel(&pm.VisConfig.ByValue.lensByValueChartBlocks, tfPanel)
+			d := converter.populateFromAttributes(ctx, m, tfPanel, &pm.VisConfig.ByValue.lensByValueChartBlocks, config0)
 			diags.Append(d...)
 		}
 	case panelTypeSloErrorBudget:
@@ -526,6 +535,33 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
 		d := populateLensDashboardAppFromAPI(ctx, m, &pm, tfPanel, ldPanel)
 		diags.Append(d...)
+	case panelTypeImage:
+		imgPanel, err := panelItem.AsKbnDashboardPanelTypeImage()
+		if err != nil {
+			return panelModel{}, diagutil.FrameworkDiagFromError(err)
+		}
+		setPanelGridFromAPI(&pm, imgPanel.Grid.X, imgPanel.Grid.Y, imgPanel.Grid.W, imgPanel.Grid.H)
+		pm.ID = types.StringPointerValue(imgPanel.Id)
+		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
+		populateImagePanelFromAPI(&pm, tfPanel, imgPanel)
+	case panelTypeSloAlerts:
+		saPanel, err := panelItem.AsKbnDashboardPanelTypeSloAlerts()
+		if err != nil {
+			return panelModel{}, diagutil.FrameworkDiagFromError(err)
+		}
+		setPanelGridFromAPI(&pm, saPanel.Grid.X, saPanel.Grid.Y, saPanel.Grid.W, saPanel.Grid.H)
+		pm.ID = types.StringPointerValue(saPanel.Id)
+		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
+		populateSloAlertsPanelFromAPI(&pm, tfPanel, saPanel)
+	case panelTypeDiscoverSession:
+		dsPanel, err := panelItem.AsKbnDashboardPanelTypeDiscoverSession()
+		if err != nil {
+			return panelModel{}, diagutil.FrameworkDiagFromError(err)
+		}
+		setPanelGridFromAPI(&pm, dsPanel.Grid.X, dsPanel.Grid.Y, dsPanel.Grid.W, dsPanel.Grid.H)
+		pm.ID = types.StringPointerValue(dsPanel.Id)
+		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
+		populateDiscoverSessionPanelFromAPI(ctx, &pm, tfPanel, dsPanel)
 	default:
 		// Round-trip stability for panel types without a typed config block.
 		pm.ID = types.StringNull()
@@ -607,7 +643,7 @@ func resolveChartTimeRange(dashboard *dashboardModel, chartLevel *timeRangeModel
 	}
 }
 
-func (m *dashboardModel) panelsToAPI() (*kbapi.DashboardPanels, diag.Diagnostics) {
+func (m *dashboardModel) panelsToAPI(ctx context.Context) (*kbapi.DashboardPanels, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if m.Panels == nil && m.Sections == nil {
 		return nil, diags
@@ -617,7 +653,7 @@ func (m *dashboardModel) panelsToAPI() (*kbapi.DashboardPanels, diag.Diagnostics
 
 	// Process panels
 	for _, pm := range m.Panels {
-		panelItem, d := pm.toAPI(m)
+		panelItem, d := pm.toAPI(ctx, m)
 		diags.Append(d...)
 		if diags.HasError() {
 			return nil, diags
@@ -654,7 +690,7 @@ func (m *dashboardModel) panelsToAPI() (*kbapi.DashboardPanels, diag.Diagnostics
 			innerPanels := make([]kbapi.DashboardPanelItem, 0, len(sm.Panels))
 
 			for _, pm := range sm.Panels {
-				item, d := pm.toAPI(m)
+				item, d := pm.toAPI(ctx, m)
 				diags.Append(d...)
 				if diags.HasError() {
 					return nil, diags
@@ -676,8 +712,13 @@ func (m *dashboardModel) panelsToAPI() (*kbapi.DashboardPanels, diag.Diagnostics
 	return &apiPanels, diags
 }
 
-func (pm panelModel) toAPI(dashboard *dashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
+func (pm panelModel) toAPI(ctx context.Context, dashboard *dashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	var diags diag.Diagnostics
+
+	var dashTR *timeRangeModel
+	if dashboard != nil {
+		dashTR = dashboard.TimeRange
+	}
 
 	grid := struct {
 		H *float32 `json:"h,omitempty"`
@@ -752,8 +793,8 @@ func (pm panelModel) toAPI(dashboard *dashboardModel) (kbapi.DashboardPanelItem,
 	if pm.LensDashboardAppConfig != nil {
 		return lensDashboardAppToAPI(pm, lensGrid, panelID, dashboard)
 	}
-	if pm.VizConfig != nil {
-		return vizConfigToAPI(pm, dashboard, grid, panelID)
+	if pm.VisConfig != nil {
+		return visConfigToAPI(pm, dashboard, grid, panelID)
 	}
 	if pm.Type.ValueString() == panelTypeLensDashboardApp {
 		if typeutils.IsKnown(pm.ConfigJSON) && !pm.ConfigJSON.IsNull() {
@@ -767,6 +808,63 @@ func (pm panelModel) toAPI(dashboard *dashboardModel) (kbapi.DashboardPanelItem,
 		diags.AddError(
 			"Missing `lens_dashboard_app_config`",
 			"The `lens_dashboard_app_config` block is required for `lens-dashboard-app` panels.",
+		)
+		return kbapi.DashboardPanelItem{}, diags
+	}
+
+	if pm.ImageConfig != nil {
+		return imagePanelToAPI(pm, grid, panelID)
+	}
+
+	if pm.SloAlertsConfig != nil {
+		return sloAlertsPanelToAPI(pm, grid, panelID)
+	}
+
+	if pm.DiscoverSessionConfig != nil {
+		return discoverSessionPanelToAPI(ctx, pm, grid, panelID, dashTR)
+	}
+
+	if pm.Type.ValueString() == panelTypeDiscoverSession {
+		if typeutils.IsKnown(pm.ConfigJSON) && !pm.ConfigJSON.IsNull() {
+			diags.AddError(
+				"Unsupported panel type for config_json",
+				"Panel-level `config_json` is not supported for `discover_session` panels. Use `discover_session_config` instead.",
+			)
+			return kbapi.DashboardPanelItem{}, diags
+		}
+		diags.AddError(
+			"Missing discover_session panel configuration",
+			"Discover session panels require `discover_session_config`.",
+		)
+		return kbapi.DashboardPanelItem{}, diags
+	}
+
+	if pm.Type.ValueString() == panelTypeSloAlerts {
+		if typeutils.IsKnown(pm.ConfigJSON) && !pm.ConfigJSON.IsNull() {
+			diags.AddError(
+				"Unsupported panel type for config_json",
+				"Panel-level `config_json` is not supported for `slo_alerts` panels. Use `slo_alerts_config` instead.",
+			)
+			return kbapi.DashboardPanelItem{}, diags
+		}
+		diags.AddError(
+			"Missing SLO alerts panel configuration",
+			"SLO alerts panels require `slo_alerts_config`.",
+		)
+		return kbapi.DashboardPanelItem{}, diags
+	}
+
+	if pm.Type.ValueString() == panelTypeImage {
+		if typeutils.IsKnown(pm.ConfigJSON) && !pm.ConfigJSON.IsNull() {
+			diags.AddError(
+				"Unsupported panel type for config_json",
+				"Panel-level `config_json` is not supported for `image` panels. Use `image_config` instead.",
+			)
+			return kbapi.DashboardPanelItem{}, diags
+		}
+		diags.AddError(
+			"Missing image panel configuration",
+			"Image panels require `image_config`.",
 		)
 		return kbapi.DashboardPanelItem{}, diags
 	}
@@ -940,6 +1038,21 @@ func (pm panelModel) toAPI(dashboard *dashboardModel) (kbapi.DashboardPanelItem,
 				"Unsupported panel type for config_json",
 				"The synthetics_stats_overview panel type must be managed through the typed synthetics_stats_overview_config block, not config_json.",
 			)
+		case panelTypeImage:
+			diags.AddError(
+				"Unsupported panel type for config_json",
+				"Panel-level `config_json` is not supported for `image` panels. Use `image_config` instead.",
+			)
+		case panelTypeSloAlerts:
+			diags.AddError(
+				"Unsupported panel type for config_json",
+				"Panel-level `config_json` is not supported for `slo_alerts` panels. Use `slo_alerts_config` instead.",
+			)
+		case panelTypeDiscoverSession:
+			diags.AddError(
+				"Unsupported panel type for config_json",
+				"Panel-level `config_json` is not supported for `discover_session` panels. Use `discover_session_config` instead.",
+			)
 		default:
 			// Unknown panel type: reconstruct the full panel JSON from the stored
 			// config_json + grid + id + type and set it directly as the raw union.
@@ -977,7 +1090,7 @@ func (pm panelModel) toAPI(dashboard *dashboardModel) (kbapi.DashboardPanelItem,
 	case panelTypeMarkdown, panelTypeVis, panelTypeTimeSlider, panelTypeSloBurnRate,
 		panelTypeSloErrorBudget, panelTypeEsqlControl, panelTypeOptionsListControl,
 		panelTypeRangeSlider, panelTypeSyntheticsStatsOverview, panelTypeSyntheticsMonitors,
-		panelTypeLensDashboardApp, panelTypeSloOverview:
+		panelTypeLensDashboardApp, panelTypeSloOverview, panelTypeImage, panelTypeSloAlerts, panelTypeDiscoverSession:
 		diags.AddError("Unsupported panel configuration", "No panel configuration block was provided.")
 	default:
 		diags.AddError(

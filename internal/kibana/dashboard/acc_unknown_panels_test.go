@@ -24,10 +24,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/acctest/checks"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/terraform-plugin-testing/config"
@@ -107,7 +107,7 @@ func TestAccResourceDashboardUnknownPanel(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.h", "15"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.id"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.config_json"),
-					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.config_json", regexp.MustCompile(`"image_config"\s*:`)),
+					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "panels.0.config_json", `{"image_config":{}}`),
 				),
 			},
 		},
