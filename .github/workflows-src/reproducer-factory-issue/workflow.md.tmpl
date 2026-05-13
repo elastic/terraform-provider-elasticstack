@@ -476,6 +476,17 @@ The reproducer comment **MUST** conform to the `ci-reproducer-factory-comment-fo
 
 Place `### References` **before** the `<details>` metadata block.
 
+3. **Pipeline metadata block** — After `### References`, include exactly one HTML `<details>` element (**no** `open` attribute) with `<summary>🤖 Pipeline metadata</summary>` containing exactly one fenced ```json``` code block. The JSON object MUST match `ci-reproducer-factory-comment-format` (`openspec/specs/ci-reproducer-factory-comment-format/spec.md`):
+
+- `schema_version` (string, required): e.g. `"1.0"`.
+- `outcome` (string, required): `"reproduced"`, `"cannot-reproduce"`, or `"appears-fixed"`.
+- `test_name` (string, optional): `TestAccReproduceIssue{N}` — present for outcomes A and C.
+- `test_file` (string, optional): relative path to the test file — present for outcome A.
+- `pr_url` (string, optional): reproduction PR URL — present for outcome A.
+- `references` (array, optional): each entry has `type` (`"elastic-docs"`, `"repo-path"`, `"issue"`, `"pr"`, `"external"`) and `url` or `path`.
+
+The JSON `outcome` and optional fields MUST be internally consistent with the human-readable outcome sections above.
+
 ## Pull request contract
 
 **Outcome A only:**
