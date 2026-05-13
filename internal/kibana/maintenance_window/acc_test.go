@@ -29,13 +29,13 @@ import (
 var minMaintenanceWindowAPISupport = version.Must(version.NewVersion("9.1.0"))
 
 func TestAccResourceMaintenanceWindow(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minMaintenanceWindowAPISupport, versionutils.FlavorAny)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minMaintenanceWindowAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_maintenance_window.test_maintenance_window", "title", "Terraform Maintenance Window"),
@@ -52,7 +52,6 @@ func TestAccResourceMaintenanceWindow(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minMaintenanceWindowAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_maintenance_window.test_maintenance_window", "title", "Terraform Maintenance Window UPDATED"),

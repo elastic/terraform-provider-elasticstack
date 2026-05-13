@@ -31,6 +31,8 @@ import (
 var minDataViewAPISupport = version.Must(version.NewVersion("8.1.0"))
 
 func TestAccResourceDefaultDataView(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minDataViewAPISupport, versionutils.FlavorAny)
+
 	indexName1 := "my-index-" + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 	indexName2 := "my-other-index-" + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
@@ -39,7 +41,6 @@ func TestAccResourceDefaultDataView(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDataViewAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
 				ConfigVariables: config.Variables{
 					"index_name": config.StringVariable(indexName1),
@@ -54,7 +55,6 @@ func TestAccResourceDefaultDataView(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDataViewAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"index_name1": config.StringVariable(indexName1),
@@ -68,7 +68,6 @@ func TestAccResourceDefaultDataView(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDataViewAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("unset"),
 				ConfigVariables: config.Variables{
 					"index_name1": config.StringVariable(indexName1),
@@ -85,6 +84,8 @@ func TestAccResourceDefaultDataView(t *testing.T) {
 }
 
 func TestAccResourceDefaultDataViewWithSkipDelete(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minDataViewAPISupport, versionutils.FlavorAny)
+
 	indexName := "my-index-" + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
@@ -92,7 +93,6 @@ func TestAccResourceDefaultDataViewWithSkipDelete(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDataViewAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("skip_delete"),
 				ConfigVariables: config.Variables{
 					"index_name": config.StringVariable(indexName),
@@ -108,6 +108,8 @@ func TestAccResourceDefaultDataViewWithSkipDelete(t *testing.T) {
 }
 
 func TestAccResourceDefaultDataViewWithCustomSpace(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minDataViewAPISupport, versionutils.FlavorAny)
+
 	indexName := "my-index-" + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 	spaceID := "test-space-" + sdkacctest.RandStringFromCharSet(6, sdkacctest.CharSetAlphaNum)
 
@@ -116,7 +118,6 @@ func TestAccResourceDefaultDataViewWithCustomSpace(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDataViewAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("custom_space"),
 				ConfigVariables: config.Variables{
 					"index_name": config.StringVariable(indexName),
