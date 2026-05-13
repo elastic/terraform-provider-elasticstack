@@ -289,12 +289,12 @@ func Test_datatablePanelConfigConverter_populateFromAttributes_buildAttributes_r
 	require.NoError(t, attrs.FromDatatableNoESQL(api))
 
 	converter := newDatatablePanelConfigConverter()
-	vizBv := vizByValueModel{}
-	diags := converter.populateFromAttributes(ctx, nil, nil, &vizBv.lensByValueChartBlocks, attrs)
+	visBv := visByValueModel{}
+	diags := converter.populateFromAttributes(ctx, nil, nil, &visBv.lensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
-	require.NotNil(t, vizBv.DatatableConfig)
+	require.NotNil(t, visBv.DatatableConfig)
 
-	attrs2, diags := converter.buildAttributes(&vizBv.lensByValueChartBlocks, nil)
+	attrs2, diags := converter.buildAttributes(&visBv.lensByValueChartBlocks, nil)
 	require.False(t, diags.HasError())
 
 	noESQL2, err := attrs2.AsDatatableNoESQL()
@@ -324,12 +324,12 @@ func Test_datatablePanelConfigConverter_populateFromAttributes_buildAttributes_r
 	require.NoError(t, attrs.FromDatatableESQL(api))
 
 	converter := newDatatablePanelConfigConverter()
-	vizBv := vizByValueModel{}
-	diags := converter.populateFromAttributes(ctx, nil, nil, &vizBv.lensByValueChartBlocks, attrs)
+	visBv := visByValueModel{}
+	diags := converter.populateFromAttributes(ctx, nil, nil, &visBv.lensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
-	require.NotNil(t, vizBv.DatatableConfig)
+	require.NotNil(t, visBv.DatatableConfig)
 
-	attrs2, diags := converter.buildAttributes(&vizBv.lensByValueChartBlocks, nil)
+	attrs2, diags := converter.buildAttributes(&visBv.lensByValueChartBlocks, nil)
 	require.False(t, diags.HasError())
 
 	esql2, err := attrs2.AsDatatableESQL()

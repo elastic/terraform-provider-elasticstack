@@ -50,9 +50,12 @@ const (
 	pieChartTypeNumber               = "number"
 	pieChartTypePercent              = "percent"
 	operationTerms                   = "terms"
+	panelTypeImage                   = "image"
 	panelTypeMarkdown                = "markdown"
 	panelTypeVis                     = "vis"
 	panelTypeTimeSlider              = "time_slider_control"
+	panelTypeSloAlerts               = "slo_alerts"
+	panelTypeDiscoverSession         = "discover_session"
 	panelTypeSloBurnRate             = "slo_burn_rate"
 	panelTypeSloErrorBudget          = "slo_error_budget"
 	panelTypeEsqlControl             = "esql_control"
@@ -68,17 +71,20 @@ var sloBurnRateDurationRegex = regexp.MustCompile(`^\d+[mhd]$`)
 var panelConfigNames = []string{
 	"config_json",
 	"markdown_config",
-	"viz_config",
+	"vis_config",
 	"lens_dashboard_app_config",
 	"esql_control_config",
 	"options_list_control_config",
 	"range_slider_control_config",
 	"time_slider_control_config",
+	"slo_alerts_config",
 	"slo_burn_rate_config",
 	"slo_overview_config",
 	"slo_error_budget_config",
 	"synthetics_monitors_config",
 	"synthetics_stats_overview_config",
+	"image_config",
+	"discover_session_config",
 }
 
 func siblingPanelConfigPathsExcept(name string, names []string) []path.Expression {
@@ -365,8 +371,22 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 }
 
 func getSchema() schema.Schema {
+	dashboardNotes := "### Notes\n\n" +
+		"- **Image `file_id`**: `image_config.src.file.file_id` is an opaque Kibana file asset id. " +
+		"Uploading or lifecycle-managing that file is outside this resource for now; prepare the id outside Terraform " +
+		"(for example via Kibana UI or HTTP upload). A future `elasticstack_kibana_file` resource may cover uploads.\n" +
+		"- **`discover_session` `data_source_json`**: Must be JSON matching the Kibana Dashboard API tab payload — " +
+		"the polymorphic data source for DSL tabs (`data_view_reference`, `data_view_spec`, etc.) and the ES|QL branch " +
+		"for `tab.esql`. Follow the OpenAPI shapes published with the [Kibana REST API]" +
+		"(https://www.elastic.co/docs/api/doc/kibana) (`kbn-dashboard-panel-type-discover_session`). " +
+		"For `data_view_reference`, use **`ref_id`** (not `id`) for the linked data view.\n" +
+		"- **Single Discover tab**: `discover_session_config.by_value.tab` is one object because the API currently allows " +
+		"a single tab entry; a future `tabs` list could be added without breaking existing configs if Kibana lifts the limit."
+
 	return schema.Schema{
-		MarkdownDescription: "Manages Kibana [dashboards](https://www.elastic.co/docs/api/doc/kibana). This functionality is in technical preview and may be changed or removed in a future release.",
+		MarkdownDescription: "Manages Kibana [dashboards](https://www.elastic.co/docs/api/doc/kibana). " +
+			"This functionality is in technical preview and may be changed or removed in a future release.\n\n" +
+			dashboardNotes,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,
@@ -399,27 +419,10 @@ func getSchema() schema.Schema {
 				MarkdownDescription: "A short description of the dashboard.",
 				Optional:            true,
 			},
-			"time_range": schema.SingleNestedAttribute{
-				MarkdownDescription: "Dashboard time selection (`from`, `to`, optional `mode`). Aligns with the Kibana Dashboard API `time_range` object.",
-				Required:            true,
-				Attributes: map[string]schema.Attribute{
-					"from": schema.StringAttribute{
-						MarkdownDescription: "Start of the time range (e.g., 'now-15m', '2023-01-01T00:00:00Z').",
-						Required:            true,
-					},
-					"to": schema.StringAttribute{
-						MarkdownDescription: "End of the time range (e.g., 'now', '2023-12-31T23:59:59Z').",
-						Required:            true,
-					},
-					"mode": schema.StringAttribute{
-						MarkdownDescription: "Time range mode. Valid values are `absolute` or `relative`. When the GET API omits `mode`, the provider preserves the prior `time_range.mode` from configuration or state.",
-						Optional:            true,
-						Validators: []validator.String{
-							stringvalidator.OneOf("absolute", "relative"),
-						},
-					},
-				},
-			},
+			"time_range": timeRangeSingleNestedAttribute(
+				"Dashboard time selection (`from`, `to`, optional `mode`). Aligns with the Kibana Dashboard API `time_range` object.",
+				true,
+			),
 			"refresh_interval": schema.SingleNestedAttribute{
 				MarkdownDescription: "Auto-refresh settings for the dashboard. Aligns with the Kibana Dashboard API `refresh_interval` object.",
 				Required:            true,
@@ -637,6 +640,41 @@ func getPanelSchema() schema.NestedAttributeObject {
 				},
 			},
 			"time_slider_control_config": panelTimeSliderControlConfigSchema(),
+			"slo_alerts_config": schema.SingleNestedAttribute{
+				MarkdownDescription: panelConfigDescription(
+					"Configuration for an `slo_alerts` panel (`kbn-dashboard-panel-type-slo_alerts`). "+
+						"Required when `type` is `slo_alerts`.",
+					"slo_alerts_config",
+					panelConfigNames,
+				),
+				Optional:   true,
+				Attributes: getSloAlertsPanelConfigAttributes(),
+				Validators: []validator.Object{
+					objectvalidator.ConflictsWith(
+						siblingPanelConfigPathsExcept("slo_alerts_config", panelConfigNames)...,
+					),
+					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeSloAlerts}),
+					validators.RequiredIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeSloAlerts}),
+				},
+			},
+			"discover_session_config": schema.SingleNestedAttribute{
+				MarkdownDescription: panelConfigDescription(
+					"Configuration for a `discover_session` panel (`kbn-dashboard-panel-type-discover_session`). "+
+						"Required when `type` is `discover_session`. Set exactly one of `by_value` or `by_reference`.",
+					"discover_session_config",
+					panelConfigNames,
+				),
+				Optional:   true,
+				Attributes: getDiscoverSessionPanelConfigAttributes(),
+				Validators: []validator.Object{
+					objectvalidator.ConflictsWith(
+						siblingPanelConfigPathsExcept("discover_session_config", panelConfigNames)...,
+					),
+					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeDiscoverSession}),
+					validators.RequiredIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeDiscoverSession}),
+					discoverSessionConfigModeValidator{},
+				},
+			},
 			"slo_burn_rate_config": schema.SingleNestedAttribute{
 				MarkdownDescription: panelConfigDescription(
 					"Configuration for an SLO burn rate panel. Use this for panels that visualize the burn rate of an SLO over a configurable look-back window.",
@@ -682,26 +720,13 @@ func getPanelSchema() schema.NestedAttributeObject {
 					"drilldowns": schema.ListNestedAttribute{
 						MarkdownDescription: "Optional list of URL drilldowns attached to the panel.",
 						Optional:            true,
-						NestedObject: schema.NestedAttributeObject{
-							Attributes: map[string]schema.Attribute{
-								"url": schema.StringAttribute{
-									MarkdownDescription: "Templated URL for the drilldown.",
-									Required:            true,
-								},
-								"label": schema.StringAttribute{
-									MarkdownDescription: "Display label shown in the drilldown menu.",
-									Required:            true,
-								},
-								"encode_url": schema.BoolAttribute{
-									MarkdownDescription: "When true, the URL is percent-encoded. Omit to use the API default.",
-									Optional:            true,
-								},
-								"open_in_new_tab": schema.BoolAttribute{
-									MarkdownDescription: "When true, the URL opens in a new browser tab. Omit to use the API default.",
-									Optional:            true,
-								},
-							},
-						},
+						NestedObject: urlDrilldownNestedAttributeObject(URLDrilldownNestedOpts{
+							AllowedTriggers:                 []string{"on_open_panel_menu"},
+							URLMarkdownDescription:          "Templated URL for the drilldown.",
+							LabelMarkdownDescription:        "Display label shown in the drilldown menu.",
+							EncodeURLMarkdownDescription:    "When true, the URL is percent-encoded. Omit to use the API default.",
+							OpenInNewTabMarkdownDescription: "When true, the URL opens in a new browser tab. Omit to use the API default.",
+						}),
 					},
 				},
 				Validators: []validator.Object{
@@ -778,6 +803,23 @@ func getPanelSchema() schema.NestedAttributeObject {
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeSyntheticsMonitors}),
 				},
 			},
+			"image_config": schema.SingleNestedAttribute{
+				MarkdownDescription: panelConfigDescription(
+					"Configuration for an `image` panel (`kbn-dashboard-panel-type-image`). Required when `type` is `image`. "+
+						"References the Kibana Dashboard API image embeddable `config` shape.",
+					"image_config",
+					panelConfigNames,
+				),
+				Optional:   true,
+				Attributes: getImagePanelConfigAttributes(),
+				Validators: []validator.Object{
+					objectvalidator.ConflictsWith(
+						siblingPanelConfigPathsExcept("image_config", panelConfigNames)...,
+					),
+					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeImage}),
+					validators.RequiredIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeImage}),
+				},
+			},
 			"lens_dashboard_app_config": schema.SingleNestedAttribute{
 				MarkdownDescription: panelConfigDescription(
 					"Configuration for a `lens-dashboard-app` panel (the Kibana Dashboard API `lens-dashboard-app` panel type). "+
@@ -800,29 +842,30 @@ func getPanelSchema() schema.NestedAttributeObject {
 					lensDashboardAppConfigModeValidator{},
 				},
 			},
-			"viz_config": schema.SingleNestedAttribute{
+			"vis_config": schema.SingleNestedAttribute{
 				MarkdownDescription: panelConfigDescription(
 					"Configuration for a `vis` panel (`type = \"vis\"`). "+
 						"Typed alternative to `config_json`: set exactly one of `by_value` (exactly one of 12 Lens chart kinds) or `by_reference`. "+
 						"With `by_reference`, use structured `drilldowns` and required `time_range` like `lens_dashboard_app_config.by_reference`.",
-					"viz_config",
+					"vis_config",
 					panelConfigNames,
 				),
 				Optional:   true,
-				Attributes: getVizConfigSchema(),
+				Attributes: getVisConfigSchema(),
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(
-						siblingPanelConfigPathsExcept("viz_config", panelConfigNames)...,
+						siblingPanelConfigPathsExcept("vis_config", panelConfigNames)...,
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeVis}),
-					vizConfigModeValidator{},
+					visConfigModeValidator{},
 				},
 			},
 			"config_json": schema.StringAttribute{
 				MarkdownDescription: panelConfigDescription(
 					"The configuration of the panel as a JSON string. "+
 						"Practitioner-authored panel-level `config_json` is valid only when `type` is `markdown` or `vis`. "+
-						"`lens-dashboard-app` and other typed panel kinds use their dedicated blocks (for `lens-dashboard-app`, use `lens_dashboard_app_config`, not panel-level `config_json`).",
+						"Typed panel kinds such as `lens-dashboard-app`, `image`, `slo_alerts`, and `discover_session` use their dedicated blocks "+
+						"(`lens_dashboard_app_config`, `image_config`, `slo_alerts_config`, `discover_session_config`), not panel-level `config_json`.",
 					"config_json",
 					panelConfigNames,
 				),
@@ -840,22 +883,22 @@ func getPanelSchema() schema.NestedAttributeObject {
 	}
 }
 
-// lensByValueVisMirrorDescription documents a typed by-value block whose shape matches the same-named block under `viz_config.by_value`.
+// lensByValueVisMirrorDescription documents a typed by-value block whose shape matches the same-named block under `vis_config.by_value`.
 func lensByValueVisMirrorDescription(visBlockName string) string {
 	return "Typed Lens chart for a `lens-dashboard-app` by-value panel. The chart is sent as the Kibana `lens-dashboard-app` API `config` and does not create a `type = \"vis\"` panel. " +
-		"Attribute shape matches `viz_config.by_value." + visBlockName + "` for `type = \"vis\"` panels."
+		"Attribute shape matches `vis_config.by_value." + visBlockName + "` for `type = \"vis\"` panels."
 }
 
-// vizConfigByValueBlockDescription documents a typed `viz_config.by_value` chart block.
-func vizConfigByValueBlockDescription(visSiblingName string) string {
-	return "Typed Lens visualization inside `viz_config.by_value`. " +
+// visConfigByValueBlockDescription documents a typed `vis_config.by_value` chart block.
+func visConfigByValueBlockDescription(visSiblingName string) string {
+	return "Typed Lens visualization inside `vis_config.by_value`. " +
 		"Mutually exclusive with the other chart blocks in the same `by_value` block. " +
 		"Shares the attribute shape with `lens_dashboard_app_config.by_value." + visSiblingName + "`."
 }
 
-// vizByValueSourceAttrNames lists mutually exclusive typed chart kinds under `viz_config.by_value`.
-// Keep in sync with getVizByValueAttributes().
-var vizByValueSourceAttrNames = []string{
+// visByValueSourceAttrNames lists mutually exclusive typed chart kinds under `vis_config.by_value`.
+// Keep in sync with getVisByValueAttributes().
+var visByValueSourceAttrNames = []string{
 	"xy_chart_config",
 	"metric_chart_config",
 	"legacy_metric_config",
@@ -870,66 +913,66 @@ var vizByValueSourceAttrNames = []string{
 	"waffle_config",
 }
 
-// getVizByValueAttributes returns typed chart attributes for `viz_config.by_value` (inline `vis` config).
-func getVizByValueAttributes() map[string]schema.Attribute {
+// getVisByValueAttributes returns typed chart attributes for `vis_config.by_value` (inline `vis` config).
+func getVisByValueAttributes() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"xy_chart_config": schema.SingleNestedAttribute{
-			MarkdownDescription: vizConfigByValueBlockDescription("xy_chart_config"),
+			MarkdownDescription: visConfigByValueBlockDescription("xy_chart_config"),
 			Optional:            true,
 			Attributes:          getXYChartConfigAttributes(true),
 		},
 		"metric_chart_config": schema.SingleNestedAttribute{
-			MarkdownDescription: vizConfigByValueBlockDescription("metric_chart_config"),
+			MarkdownDescription: visConfigByValueBlockDescription("metric_chart_config"),
 			Optional:            true,
 			Attributes:          getMetricChart(true),
 		},
 		"legacy_metric_config": schema.SingleNestedAttribute{
-			MarkdownDescription: vizConfigByValueBlockDescription("legacy_metric_config"),
+			MarkdownDescription: visConfigByValueBlockDescription("legacy_metric_config"),
 			Optional:            true,
 			Attributes:          getLegacyMetricSchema(true),
 		},
 		"gauge_config": schema.SingleNestedAttribute{
-			MarkdownDescription: vizConfigByValueBlockDescription("gauge_config"),
+			MarkdownDescription: visConfigByValueBlockDescription("gauge_config"),
 			Optional:            true,
 			Attributes:          getGaugeSchema(true),
 		},
 		"heatmap_config": schema.SingleNestedAttribute{
-			MarkdownDescription: vizConfigByValueBlockDescription("heatmap_config"),
+			MarkdownDescription: visConfigByValueBlockDescription("heatmap_config"),
 			Optional:            true,
 			Attributes:          getHeatmapSchema(true),
 		},
 		"tagcloud_config": schema.SingleNestedAttribute{
-			MarkdownDescription: vizConfigByValueBlockDescription("tagcloud_config"),
+			MarkdownDescription: visConfigByValueBlockDescription("tagcloud_config"),
 			Optional:            true,
 			Attributes:          getTagcloudSchema(true),
 		},
 		"region_map_config": schema.SingleNestedAttribute{
-			MarkdownDescription: vizConfigByValueBlockDescription("region_map_config"),
+			MarkdownDescription: visConfigByValueBlockDescription("region_map_config"),
 			Optional:            true,
 			Attributes:          getRegionMapSchema(true),
 		},
 		"datatable_config": schema.SingleNestedAttribute{
-			MarkdownDescription: vizConfigByValueBlockDescription("datatable_config"),
+			MarkdownDescription: visConfigByValueBlockDescription("datatable_config"),
 			Optional:            true,
 			Attributes:          getDatatableSchema(true),
 		},
 		"pie_chart_config": schema.SingleNestedAttribute{
-			MarkdownDescription: vizConfigByValueBlockDescription("pie_chart_config"),
+			MarkdownDescription: visConfigByValueBlockDescription("pie_chart_config"),
 			Optional:            true,
 			Attributes:          getPieChart(true),
 		},
 		"mosaic_config": schema.SingleNestedAttribute{
-			MarkdownDescription: vizConfigByValueBlockDescription("mosaic_config"),
+			MarkdownDescription: visConfigByValueBlockDescription("mosaic_config"),
 			Optional:            true,
 			Attributes:          getMosaicSchema(true),
 		},
 		"treemap_config": schema.SingleNestedAttribute{
-			MarkdownDescription: vizConfigByValueBlockDescription("treemap_config"),
+			MarkdownDescription: visConfigByValueBlockDescription("treemap_config"),
 			Optional:            true,
 			Attributes:          getTreemapSchema(true),
 		},
 		"waffle_config": schema.SingleNestedAttribute{
-			MarkdownDescription: vizConfigByValueBlockDescription("waffle_config"),
+			MarkdownDescription: visConfigByValueBlockDescription("waffle_config"),
 			Optional:            true,
 			Attributes:          getWaffleSchema(true),
 			Validators: []validator.Object{
@@ -1034,7 +1077,7 @@ func getLensDashboardAppByValueNestedAttributes() map[string]schema.Attribute {
 }
 
 // getLensByReferenceAttributes returns the by-reference attribute map shared by `lens_dashboard_app_config.by_reference`
-// and `viz_config.by_reference`. Drilldowns are authored exclusively via the structured `drilldowns` block.
+// and `vis_config.by_reference`. Drilldowns are authored exclusively via the structured `drilldowns` block.
 func getLensByReferenceAttributes() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"ref_id": schema.StringAttribute{
@@ -1065,7 +1108,7 @@ func getLensByReferenceAttributes() map[string]schema.Attribute {
 		"drilldowns": getStructuredDrilldownsAttribute(),
 		"time_range": schema.SingleNestedAttribute{
 			MarkdownDescription: "Required time range for the by-reference panel config " +
-				"(used by both `lens_dashboard_app_config.by_reference` and `viz_config.by_reference`).",
+				"(used by both `lens_dashboard_app_config.by_reference` and `vis_config.by_reference`).",
 			Required: true,
 			Attributes: map[string]schema.Attribute{
 				"from": schema.StringAttribute{
@@ -1113,16 +1156,16 @@ func getLensDashboardAppConfigSchema() map[string]schema.Attribute {
 	}
 }
 
-// getVizConfigSchema returns attributes for `viz_config` on `vis` panels (symmetric with `getLensDashboardAppConfigSchema`, minus `by_value.config_json`).
-func getVizConfigSchema() map[string]schema.Attribute {
+// getVisConfigSchema returns attributes for `vis_config` on `vis` panels (symmetric with `getLensDashboardAppConfigSchema`, minus `by_value.config_json`).
+func getVisConfigSchema() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"by_value": schema.SingleNestedAttribute{
-			MarkdownDescription: "Inline by-value Lens visualization configuration for `type = \"vis\"` panels (`viz_config`). " +
+			MarkdownDescription: "Inline by-value Lens visualization configuration for `type = \"vis\"` panels (`vis_config`). " +
 				"Exactly one typed chart kind must be set (no raw JSON here — use panel-level `config_json` for that).",
 			Optional:   true,
-			Attributes: getVizByValueAttributes(),
+			Attributes: getVisByValueAttributes(),
 			Validators: []validator.Object{
-				vizByValueSourceValidator{},
+				visByValueSourceValidator{},
 			},
 		},
 		"by_reference": schema.SingleNestedAttribute{
@@ -1332,55 +1375,55 @@ func (v markdownConfigModeValidator) ValidateObject(_ context.Context, req valid
 	)
 }
 
-// vizConfigModeValidator enforces that exactly one of by_value or by_reference is set under `viz_config`.
-var _ validator.Object = vizConfigModeValidator{}
+// visConfigModeValidator enforces that exactly one of by_value or by_reference is set under `vis_config`.
+var _ validator.Object = visConfigModeValidator{}
 
-type vizConfigModeValidator struct{}
+type visConfigModeValidator struct{}
 
-func (vizConfigModeValidator) Description(_ context.Context) string {
-	return "Ensures exactly one of `by_value` or `by_reference` is set inside `viz_config`."
+func (visConfigModeValidator) Description(_ context.Context) string {
+	return "Ensures exactly one of `by_value` or `by_reference` is set inside `vis_config`."
 }
 
-func (v vizConfigModeValidator) MarkdownDescription(ctx context.Context) string {
+func (v visConfigModeValidator) MarkdownDescription(ctx context.Context) string {
 	return v.Description(ctx)
 }
 
-func (vizConfigModeValidator) ValidateObject(_ context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
+func (visConfigModeValidator) ValidateObject(_ context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
 	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
 		return
 	}
 	validateExactlyOneNestedAttr(
 		req, resp,
-		"viz_config",
+		"vis_config",
 		modeAttrNames,
-		"Exactly one of `by_value` or `by_reference` must be set inside `viz_config`.",
-		"Exactly one of `by_value` or `by_reference` must be set inside `viz_config`, not both.",
+		"Exactly one of `by_value` or `by_reference` must be set inside `vis_config`.",
+		"Exactly one of `by_value` or `by_reference` must be set inside `vis_config`, not both.",
 	)
 }
 
-// vizByValueSourceValidator enforces exactly one typed chart kind inside `viz_config.by_value`.
-var _ validator.Object = vizByValueSourceValidator{}
+// visByValueSourceValidator enforces exactly one typed chart kind inside `vis_config.by_value`.
+var _ validator.Object = visByValueSourceValidator{}
 
-type vizByValueSourceValidator struct{}
+type visByValueSourceValidator struct{}
 
-func (vizByValueSourceValidator) Description(_ context.Context) string {
-	return "Ensures exactly one supported typed Lens chart block is set inside `viz_config.by_value`."
+func (visByValueSourceValidator) Description(_ context.Context) string {
+	return "Ensures exactly one supported typed Lens chart block is set inside `vis_config.by_value`."
 }
 
-func (v vizByValueSourceValidator) MarkdownDescription(ctx context.Context) string {
+func (v visByValueSourceValidator) MarkdownDescription(ctx context.Context) string {
 	return v.Description(ctx)
 }
 
-func (vizByValueSourceValidator) ValidateObject(_ context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
+func (visByValueSourceValidator) ValidateObject(_ context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
 	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
 		return
 	}
 	validateExactlyOneNestedAttr(
 		req, resp,
-		"viz_config.by_value",
-		vizByValueSourceAttrNames,
-		"Set exactly one supported typed Lens chart block inside `viz_config.by_value`.",
-		"Set exactly one typed chart block inside `viz_config.by_value` (more than one by-value chart is set).",
+		"vis_config.by_value",
+		visByValueSourceAttrNames,
+		"Set exactly one supported typed Lens chart block inside `vis_config.by_value`.",
+		"Set exactly one typed chart block inside `vis_config.by_value` (more than one by-value chart is set).",
 	)
 }
 

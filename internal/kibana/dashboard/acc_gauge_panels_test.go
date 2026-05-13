@@ -18,10 +18,10 @@
 package dashboard_test
 
 import (
-	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/acctest/checks"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -50,15 +50,15 @@ func TestAccResourceDashboardGauge(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.w", "24"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.x", "0"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.y", "0"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.gauge_config.title", "Sample Gauge"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.gauge_config.description", "Test gauge visualization"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.gauge_config.ignore_global_filters", "false"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.gauge_config.sampling", "1"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.gauge_config.query.language", "kql"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.gauge_config.query.expression", ""),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.gauge_config.data_source_json"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.gauge_config.metric_json"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.gauge_config.styling.shape_json"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.gauge_config.title", "Sample Gauge"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.gauge_config.description", "Test gauge visualization"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.gauge_config.ignore_global_filters", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.gauge_config.sampling", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.gauge_config.query.language", "kql"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.gauge_config.query.expression", ""),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.gauge_config.data_source_json"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.gauge_config.metric_json"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.gauge_config.styling.shape_json"),
 				),
 			},
 			{
@@ -71,8 +71,8 @@ func TestAccResourceDashboardGauge(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "title", dashboardTitle),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.gauge_config.filters.#", "1"),
-					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.gauge_config.filters.0.filter_json", regexp.MustCompile(`"field":"response"`)),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.gauge_config.filters.#", "1"),
+					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.gauge_config.filters.0.filter_json", `{"condition":{"field":"response","operator":"is","value":"200"},"type":"condition"}`), //nolint:lll
 				),
 			},
 			{
@@ -86,10 +86,10 @@ func TestAccResourceDashboardGauge(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 				ImportStateVerifyIgnore: []string{
-					"panels.0.viz_config.by_value.gauge_config.title",
-					"panels.0.viz_config.by_value.gauge_config.description",
-					"panels.0.viz_config.by_value.gauge_config.data_source_json",
-					"panels.0.viz_config.by_value.gauge_config.metric_json",
+					"panels.0.vis_config.by_value.gauge_config.title",
+					"panels.0.vis_config.by_value.gauge_config.description",
+					"panels.0.vis_config.by_value.gauge_config.data_source_json",
+					"panels.0.vis_config.by_value.gauge_config.metric_json",
 				},
 			},
 		},

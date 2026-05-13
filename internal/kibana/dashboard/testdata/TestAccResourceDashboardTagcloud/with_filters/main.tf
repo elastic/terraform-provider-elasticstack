@@ -25,7 +25,7 @@ resource "elasticstack_kibana_dashboard" "test" {
       w = 48
       h = 20
     }
-    viz_config = {
+    vis_config = {
       by_value = {
         tagcloud_config = {
           title       = "Filtered Tagcloud"

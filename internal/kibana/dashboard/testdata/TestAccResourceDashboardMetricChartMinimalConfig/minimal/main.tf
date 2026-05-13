@@ -23,7 +23,7 @@ resource "elasticstack_kibana_dashboard" "test" {
   panels = [{
     type = "vis"
     grid = { x = 0, y = 0, w = 24, h = 15 }
-    viz_config = {
+    vis_config = {
       by_value = {
         metric_chart_config = {
           data_source_json = jsonencode({ type = "data_view_spec", index_pattern = "metrics-*" })
