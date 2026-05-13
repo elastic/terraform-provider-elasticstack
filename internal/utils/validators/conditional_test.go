@@ -1316,3 +1316,194 @@ func TestForbiddenIfDrilldownVariantSiblingNestedPresent_urlDrilldownSibling(t *
 	}, resp)
 	require.True(t, resp.Diagnostics.HasError(), "url_drilldown sibling object should trigger forbid-when-dashboard-set")
 }
+
+func TestOneOfWhenDependentPathExpressionEquals(t *testing.T) {
+	t.Parallel()
+
+	type testCase struct {
+		name           string
+		currentValue   types.String
+		dependentValue types.String
+		expectedError  bool
+		expectedMsg    string
+	}
+
+	testCases := []testCase{
+		{
+			name:           "condition not met - dependent is different value",
+			currentValue:   types.StringValue("invalid"),
+			dependentValue: types.StringValue("calendarAligned"),
+			expectedError:  false,
+		},
+		{
+			name:           "condition met - valid rolling value",
+			currentValue:   types.StringValue("7d"),
+			dependentValue: types.StringValue("rolling"),
+			expectedError:  false,
+		},
+		{
+			name:           "condition met - valid rolling value 30d",
+			currentValue:   types.StringValue("30d"),
+			dependentValue: types.StringValue("rolling"),
+			expectedError:  false,
+		},
+		{
+			name:           "condition met - invalid rolling value",
+			currentValue:   types.StringValue("4d"),
+			dependentValue: types.StringValue("rolling"),
+			expectedError:  true,
+			expectedMsg:    `must be one of [7d, 30d, 90d]`,
+		},
+		{
+			name:           "condition met - current null",
+			currentValue:   types.StringNull(),
+			dependentValue: types.StringValue("rolling"),
+			expectedError:  false,
+		},
+		{
+			name:           "condition met - current unknown",
+			currentValue:   types.StringUnknown(),
+			dependentValue: types.StringValue("rolling"),
+			expectedError:  false,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			testSchema := schema.Schema{
+				Attributes: map[string]schema.Attribute{
+					"duration": schema.StringAttribute{
+						Optional: true,
+					},
+					"type": schema.StringAttribute{
+						Optional: true,
+					},
+				},
+			}
+
+			currentTfValue, err := testCase.currentValue.ToTerraformValue(context.Background())
+			require.NoError(t, err)
+			dependentTfValue, err := testCase.dependentValue.ToTerraformValue(context.Background())
+			require.NoError(t, err)
+
+			rawConfigValues := map[string]tftypes.Value{
+				"duration": currentTfValue,
+				"type":     dependentTfValue,
+			}
+
+			rawConfig := tftypes.NewValue(
+				tftypes.Object{
+					AttributeTypes: map[string]tftypes.Type{
+						"duration": tftypes.String,
+						"type":     tftypes.String,
+					},
+				},
+				rawConfigValues,
+			)
+
+			config := tfsdk.Config{
+				Raw:    rawConfig,
+				Schema: testSchema,
+			}
+
+			v := OneOfWhenDependentPathExpressionEquals(
+				path.MatchRelative().AtParent().AtName("type"),
+				"rolling",
+				[]string{"7d", "30d", "90d"},
+			)
+
+			request := validator.StringRequest{
+				Path:        path.Root("duration"),
+				ConfigValue: testCase.currentValue,
+				Config:      config,
+			}
+
+			response := &validator.StringResponse{}
+			v.ValidateString(context.Background(), request, response)
+
+			if testCase.expectedError {
+				require.True(t, response.Diagnostics.HasError(), "Expected validation error but got none")
+				if testCase.expectedMsg != "" {
+					require.Contains(t, response.Diagnostics.Errors()[0].Detail(), testCase.expectedMsg)
+				}
+			} else {
+				require.False(t, response.Diagnostics.HasError(), "Expected no validation error but got: %v", response.Diagnostics.Errors())
+			}
+		})
+	}
+}
+
+func TestOneOfWhenDependentPathExpressionEquals_calendarAligned(t *testing.T) {
+	t.Parallel()
+
+	testSchema := schema.Schema{
+		Attributes: map[string]schema.Attribute{
+			"duration": schema.StringAttribute{
+				Optional: true,
+			},
+			"type": schema.StringAttribute{
+				Optional: true,
+			},
+		},
+	}
+
+	currentValue := types.StringValue("30d")
+	dependentValue := types.StringValue("calendarAligned")
+
+	currentTfValue, err := currentValue.ToTerraformValue(context.Background())
+	require.NoError(t, err)
+	dependentTfValue, err := dependentValue.ToTerraformValue(context.Background())
+	require.NoError(t, err)
+
+	rawConfigValues := map[string]tftypes.Value{
+		"duration": currentTfValue,
+		"type":     dependentTfValue,
+	}
+
+	rawConfig := tftypes.NewValue(
+		tftypes.Object{
+			AttributeTypes: map[string]tftypes.Type{
+				"duration": tftypes.String,
+				"type":     tftypes.String,
+			},
+		},
+		rawConfigValues,
+	)
+
+	config := tfsdk.Config{
+		Raw:    rawConfig,
+		Schema: testSchema,
+	}
+
+	v := OneOfWhenDependentPathExpressionEquals(
+		path.MatchRelative().AtParent().AtName("type"),
+		"calendarAligned",
+		[]string{"1w", "1M"},
+	)
+
+	request := validator.StringRequest{
+		Path:        path.Root("duration"),
+		ConfigValue: currentValue,
+		Config:      config,
+	}
+
+	response := &validator.StringResponse{}
+	v.ValidateString(context.Background(), request, response)
+
+	require.True(t, response.Diagnostics.HasError(), "Expected validation error but got none")
+	require.Contains(t, response.Diagnostics.Errors()[0].Detail(), `must be one of [1w, 1M]`)
+	require.Contains(t, response.Diagnostics.Errors()[0].Summary(), "Invalid Attribute Value Match")
+}
+
+func TestOneOfWhenDependentPathExpressionEquals_Description(t *testing.T) {
+	t.Parallel()
+	v := OneOfWhenDependentPathExpressionEquals(
+		path.MatchRelative().AtParent().AtName("type"),
+		"rolling",
+		[]string{"7d", "30d", "90d"},
+	)
+	require.Contains(t, v.Description(context.Background()), "value must be one of")
+	require.Contains(t, v.Description(context.Background()), "rolling")
+}

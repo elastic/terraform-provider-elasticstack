@@ -140,7 +140,7 @@ Optional:
 - `by_field_name` (String) The field used to split the data.
 
 In particular, this property is used for analyzing the splits with respect to their own history. It is used for finding unusual values in the context of the split.
-- `custom_rules` (Attributes List) Custom rules enable you to customize the way detectors operate. (see [below for nested schema](#nestedatt--analysis_config--detectors--custom_rules))
+- `custom_rules` (Attributes List) Custom rules enable you to customize the way detectors operate. Each rule must either have a non-empty `scope` or at least one `conditions` entry. Multiple conditions are combined together with a logical AND. A non-empty `scope` and one or more `conditions` may both be set on the same rule; they are not mutually exclusive. (see [below for nested schema](#nestedatt--analysis_config--detectors--custom_rules))
 - `detector_description` (String) A description of the detector.
 - `exclude_frequent` (String) Contains one of the following values: all, none, by, or over.
 - `field_name` (String) The field that the detector function analyzes. Some functions require a field. Functions that don't require a field are count, rare, and freq_rare.
@@ -156,7 +156,8 @@ In particular, this property is used for analyzing the splits with respect to th
 Optional:
 
 - `actions` (List of String) The set of actions to be triggered when the rule applies. If more than one action is specified the effects of all actions are combined.
-- `conditions` (Attributes List) An array of numeric conditions when the rule applies. (see [below for nested schema](#nestedatt--analysis_config--detectors--custom_rules--conditions))
+- `conditions` (Attributes List) An array of numeric conditions when the rule applies. If you specify more than one condition, Elasticsearch combines them together with a logical AND. A rule must either have a non-empty `scope` or at least one condition. You may set `scope` on the same rule. (see [below for nested schema](#nestedatt--analysis_config--detectors--custom_rules--conditions))
+- `scope` (Attributes Map) Maps an analysis field name (typically matching `by_field_name`, `over_field_name`, or `partition_field_name` on the detector) to an ML filter reference. Each `filter_id` must identify an ML filter that already exists in the cluster (for example, created using the Elasticsearch ML filter APIs). A rule must either have a non-empty `scope` or at least one condition. You may set `conditions` on the same rule. (see [below for nested schema](#nestedatt--analysis_config--detectors--custom_rules--scope))
 
 <a id="nestedatt--analysis_config--detectors--custom_rules--conditions"></a>
 ### Nested Schema for `analysis_config.detectors.custom_rules.conditions`
@@ -166,6 +167,18 @@ Required:
 - `applies_to` (String) Specifies the result property to which the condition applies.
 - `operator` (String) Specifies the condition operator.
 - `value` (Number) The value that is compared against the applies_to field using the operator.
+
+
+<a id="nestedatt--analysis_config--detectors--custom_rules--scope"></a>
+### Nested Schema for `analysis_config.detectors.custom_rules.scope`
+
+Required:
+
+- `filter_id` (String) The ML filter identifier (`filter_id`) to apply.
+
+Optional:
+
+- `filter_type` (String) `include` applies the rule to values in the filter; `exclude` applies it to values not in the filter.
 
 
 
