@@ -64,7 +64,7 @@ func readCalendarJob(ctx context.Context, client *clients.ElasticsearchScopedCli
 		if errors.As(err, &esErr) && esErr.Status == 404 {
 			return state, false, nil
 		}
-		diags.AddError("Failed to get ML calendar", fmt.Sprintf("Unable to get ML calendar %q — %s", calendarID, err.Error()))
+		diags.AddError("Failed to get ML calendar", fmt.Sprintf("Unable to get ML calendar %q: %s", calendarID, err.Error()))
 		return state, false, diags
 	}
 

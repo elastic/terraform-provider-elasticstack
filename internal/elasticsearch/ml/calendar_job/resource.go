@@ -21,7 +21,10 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -36,8 +39,11 @@ type calendarJobResource struct {
 	*entitycore.ElasticsearchResource[TFModel]
 }
 
+func updateCalendarJobNoOp(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, plan TFModel) (TFModel, diag.Diagnostics) {
+	return plan, nil
+}
+
 func newCalendarJobResource() *calendarJobResource {
-	phCreate, phUpdate := entitycore.PlaceholderElasticsearchWriteCallbacks[TFModel]()
 	return &calendarJobResource{
 		ElasticsearchResource: entitycore.NewElasticsearchResource(
 			entitycore.ComponentElasticsearch,
@@ -45,8 +51,8 @@ func newCalendarJobResource() *calendarJobResource {
 			getSchema,
 			readCalendarJob,
 			deleteCalendarJob,
-			phCreate,
-			phUpdate,
+			createCalendarJob,
+			updateCalendarJobNoOp,
 		),
 	}
 }
@@ -54,54 +60,6 @@ func newCalendarJobResource() *calendarJobResource {
 // NewCalendarJobResource returns the ML calendar–job assignment resource.
 func NewCalendarJobResource() resource.Resource {
 	return newCalendarJobResource()
-}
-
-func (r *calendarJobResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	if r.Client() == nil {
-		resp.Diagnostics.AddError("Client not configured", "Provider client is not configured")
-		return
-	}
-
-	var plan TFModel
-	diags := req.Plan.Get(ctx, &plan)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, connDiags := r.Client().GetElasticsearchClient(ctx, plan.GetElasticsearchConnection())
-	resp.Diagnostics.Append(connDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	written, callDiags := createCalendarJob(ctx, client, plan.GetResourceID().ValueString(), plan)
-	resp.Diagnostics.Append(callDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	readModel, found, readDiags := readCalendarJob(ctx, client, plan.GetResourceID().ValueString(), written)
-	resp.Diagnostics.Append(readDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	if !found {
-		resp.Diagnostics.AddError(
-			"Failed to read calendar job assignment",
-			"Assignment was not found after create",
-		)
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &readModel)...)
-}
-
-func (r *calendarJobResource) Update(_ context.Context, _ resource.UpdateRequest, resp *resource.UpdateResponse) {
-	resp.Diagnostics.AddError(
-		"Update not supported",
-		"Calendar job assignments do not support in-place updates. Changing calendar_id or job_id requires replacement.",
-	)
 }
 
 func (r *calendarJobResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
@@ -117,7 +75,27 @@ func (r *calendarJobResource) ImportState(ctx context.Context, req resource.Impo
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
+	if r.Client() == nil {
+		resp.Diagnostics.AddError("Client not configured", "Provider client is not configured")
+		return
+	}
+
+	client, connDiags := r.Client().GetElasticsearchClient(ctx, providerschema.ElasticsearchConnectionNullList())
+	resp.Diagnostics.Append(connDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	normalized, idDiags := client.ID(ctx, calendarID+"|"+jobID)
+	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(idDiags)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	idStr := normalized.String()
+
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("elasticsearch_connection"), providerschema.ElasticsearchConnectionNullList())...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), idStr)...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("calendar_id"), calendarID)...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("job_id"), jobID)...)
 }

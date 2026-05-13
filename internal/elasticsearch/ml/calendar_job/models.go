@@ -47,7 +47,7 @@ func (m TFModel) GetResourceID() types.String {
 	c := m.CalendarID.ValueString()
 	j := m.JobID.ValueString()
 	if c == "" || j == "" {
-		return types.StringValue("")
+		return types.StringUnknown()
 	}
 	return types.StringValue(c + "|" + j)
 }

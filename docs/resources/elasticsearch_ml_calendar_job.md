@@ -3,12 +3,12 @@
 page_title: "elasticstack_elasticsearch_ml_calendar_job Resource - terraform-provider-elasticstack"
 subcategory: "Ml"
 description: |-
-  Assigns a single anomaly detection job to an ML calendar using PUT _ml/calendars/{calendar_id}/jobs/{job_id} (and removes it on destroy). The computed id is <cluster_uuid>/<calendar_id>|<job_id> (a pipe separates calendar and job because the composite ID only allows one slash). See the ML put calendar job API https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-ml-put-calendar-job for details.
+  Assigns a single anomaly detection job to an ML calendar using PUT _ml/calendars/{calendar_id}/jobs/{job_id} (and removes it on destroy). The computed id is <cluster_uuid>/<calendar_id>|<job_id> (a pipe separates calendar and job because the composite ID only allows one slash). See the Elasticsearch REST API reference for the ML put calendar job operation for details.
 ---
 
 # elasticstack_elasticsearch_ml_calendar_job (Resource)
 
-Assigns a single anomaly detection job to an ML calendar using `PUT _ml/calendars/{calendar_id}/jobs/{job_id}` (and removes it on destroy). The computed `id` is `<cluster_uuid>/<calendar_id>|<job_id>` (a pipe separates calendar and job because the composite ID only allows one slash). See the [ML put calendar job API](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-ml-put-calendar-job) for details.
+Assigns a single anomaly detection job to an ML calendar using `PUT _ml/calendars/{calendar_id}/jobs/{job_id}` (and removes it on destroy). The computed `id` is `<cluster_uuid>/<calendar_id>|<job_id>` (a pipe separates calendar and job because the composite ID only allows one slash). See the Elasticsearch REST API reference for the ML put calendar job operation for details.
 
 
 

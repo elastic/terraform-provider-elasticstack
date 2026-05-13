@@ -56,8 +56,11 @@ func setupAccMLCalendar(t *testing.T, calendarID string) {
 }
 
 func TestAccResourceMLCalendarJob_basic(t *testing.T) {
+	acctest.PreCheck(t)
+
 	calendarID := fmt.Sprintf("test-cal-job-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	jobID := fmt.Sprintf("test-cal-job-ad-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	setupAccMLCalendar(t, calendarID)
 
 	vars := config.Variables{
 		"calendar_id": config.StringVariable(calendarID),
@@ -68,7 +71,6 @@ func TestAccResourceMLCalendarJob_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			acctest.PreCheck(t)
-			setupAccMLCalendar(t, calendarID)
 		},
 		Steps: []resource.TestStep{
 			{
@@ -86,8 +88,11 @@ func TestAccResourceMLCalendarJob_basic(t *testing.T) {
 }
 
 func TestAccResourceMLCalendarJob_import(t *testing.T) {
+	acctest.PreCheck(t)
+
 	calendarID := fmt.Sprintf("test-cal-job-imp-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	jobID := fmt.Sprintf("test-cal-job-imp-ad-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	setupAccMLCalendar(t, calendarID)
 
 	vars := config.Variables{
 		"calendar_id": config.StringVariable(calendarID),
@@ -98,7 +103,6 @@ func TestAccResourceMLCalendarJob_import(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			acctest.PreCheck(t)
-			setupAccMLCalendar(t, calendarID)
 		},
 		Steps: []resource.TestStep{
 			{
@@ -118,6 +122,7 @@ func TestAccResourceMLCalendarJob_import(t *testing.T) {
 				ResourceName:             addr,
 				ImportState:              true,
 				ImportStateVerify:        true,
+				ImportStateVerifyIgnore:  []string{"elasticsearch_connection"},
 				ImportStateIdFunc: func(s *terraform.State) (string, error) {
 					rs := s.RootModule().Resources[addr]
 					return rs.Primary.ID, nil

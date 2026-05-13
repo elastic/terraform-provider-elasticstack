@@ -40,7 +40,7 @@ func getSchema(_ context.Context) schema.Schema {
 		MarkdownDescription: "Assigns a single anomaly detection job to an ML calendar using " +
 			"`PUT _ml/calendars/{calendar_id}/jobs/{job_id}` (and removes it on destroy). " +
 			"The computed `id` is `<cluster_uuid>/<calendar_id>|<job_id>` (a pipe separates calendar and job because the composite ID only allows one slash). " +
-			"See the [ML put calendar job API](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-ml-put-calendar-job) for details.",
+			"See the Elasticsearch REST API reference for the ML put calendar job operation for details.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Internal composite identifier of the resource.",
@@ -59,7 +59,7 @@ func getSchema(_ context.Context) schema.Schema {
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(1, 64),
 					stringvalidator.RegexMatches(
-						regexp.MustCompile(`^[a-z0-9]([a-z0-9_-]*[a-z0-9])?$|^[a-z0-9]$`),
+						regexp.MustCompile(`^[a-z0-9]([a-z0-9_-]*[a-z0-9])?$`),
 						calendarIDAllowedCharsMessage,
 					),
 				},
@@ -73,7 +73,7 @@ func getSchema(_ context.Context) schema.Schema {
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(1, 64),
 					stringvalidator.RegexMatches(
-						regexp.MustCompile(`^[a-z0-9][a-z0-9_-]*[a-z0-9]$|^[a-z0-9]$`),
+						regexp.MustCompile(`^[a-z0-9]([a-z0-9_-]*[a-z0-9])?$`),
 						jobIDAllowedCharsMessage,
 					),
 				},

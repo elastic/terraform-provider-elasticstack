@@ -54,7 +54,7 @@ func deleteCalendarJob(ctx context.Context, client *clients.ElasticsearchScopedC
 		}
 		diags.AddError(
 			"Failed to remove ML job from calendar",
-			fmt.Sprintf("Unable to remove job %q from calendar %q — %s", jobID, calendarID, err.Error()),
+			fmt.Sprintf("Unable to remove job %q from calendar %q: %s", jobID, calendarID, err.Error()),
 		)
 		return diags
 	}

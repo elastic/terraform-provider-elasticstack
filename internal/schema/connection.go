@@ -48,6 +48,30 @@ func KibanaConnectionNullList() types.List {
 	})
 }
 
+// ElasticsearchConnectionNullList returns a properly-typed null list value for the
+// elasticsearch_connection block. Use when building state in ImportState so the
+// framework list element type matches the resource schema.
+func ElasticsearchConnectionNullList() types.List {
+	return types.ListNull(types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"username":                 types.StringType,
+			"password":                 types.StringType,
+			"api_key":                  types.StringType,
+			"bearer_token":             types.StringType,
+			"es_client_authentication": types.StringType,
+			"endpoints":                types.ListType{ElemType: types.StringType},
+			"headers":                  types.MapType{ElemType: types.StringType},
+			"insecure":                 types.BoolType,
+			"ca_file":                  types.StringType,
+			"ca_data":                  types.StringType,
+			"cert_file":                types.StringType,
+			"key_file":                 types.StringType,
+			"cert_data":                types.StringType,
+			"key_data":                 types.StringType,
+		},
+	})
+}
+
 func GetEsFWConnectionBlock() fwschema.Block {
 	usernamePath := path.MatchRelative().AtParent().AtName("username")
 	passwordPath := path.MatchRelative().AtParent().AtName("password")
