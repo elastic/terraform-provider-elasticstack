@@ -114,3 +114,104 @@ func TestCheckSkip_fetchError(t *testing.T) {
 	require.False(t, skip)
 	require.Empty(t, reason)
 }
+
+func TestCheckSkip_constraintsStatefulSatisfiedNoSkip(t *testing.T) {
+	t.Parallel()
+
+	constraints, err := version.NewConstraint(">=8.9.0,!=8.11.0")
+	require.NoError(t, err)
+
+	stub := stubServerInfo(testVer812, "default", nil)
+
+	skip, reason, err := checkSkip(context.Background(), nil, constraints, FlavorAny, stub)
+	require.NoError(t, err)
+	require.False(t, skip)
+	require.Empty(t, reason)
+}
+
+func TestCheckSkip_constraintsStatefulViolatedSkips(t *testing.T) {
+	t.Parallel()
+
+	constraints, err := version.NewConstraint(">=8.9.0,!=8.11.0")
+	require.NoError(t, err)
+
+	stub := stubServerInfo(testVer811, "default", nil)
+
+	skip, reason, err := checkSkip(context.Background(), nil, constraints, FlavorAny, stub)
+	require.NoError(t, err)
+	require.True(t, skip)
+	require.Contains(t, reason, "does not satisfy constraints")
+}
+
+func TestCheckSkip_constraintsServerlessBypassesEvenWhenViolated(t *testing.T) {
+	t.Parallel()
+
+	constraints, err := version.NewConstraint(">=8.9.0,!=8.11.0")
+	require.NoError(t, err)
+
+	stub := stubServerInfo(testVer811, clients.ServerlessFlavor, nil)
+
+	skip, reason, err := checkSkip(context.Background(), nil, constraints, FlavorAny, stub)
+	require.NoError(t, err)
+	require.False(t, skip)
+	require.Empty(t, reason)
+}
+
+func TestCheckSkip_flavorStatefulOnStatefulNoSkip(t *testing.T) {
+	t.Parallel()
+
+	stub := stubServerInfo(testVer812, "default", nil)
+
+	skip, reason, err := checkSkip(context.Background(), nil, nil, FlavorStateful, stub)
+	require.NoError(t, err)
+	require.False(t, skip)
+	require.Empty(t, reason)
+}
+
+func TestCheckSkip_flavorServerlessOnServerlessNoSkip(t *testing.T) {
+	t.Parallel()
+
+	stub := stubServerInfo(testVer812, clients.ServerlessFlavor, nil)
+
+	skip, reason, err := checkSkip(context.Background(), nil, nil, FlavorServerless, stub)
+	require.NoError(t, err)
+	require.False(t, skip)
+	require.Empty(t, reason)
+}
+
+func TestCheckSkip_getServerInfoParseErrorPropagates(t *testing.T) {
+	t.Parallel()
+
+	parseErr := errors.New("failed to parse the elasticsearch server version: invalid semver")
+	stub := stubServerInfo(nil, "", parseErr)
+
+	constraints, err := version.NewConstraint(">=8.0.0")
+	require.NoError(t, err)
+
+	skip, reason, err := checkSkip(context.Background(), nil, constraints, FlavorAny, stub)
+	require.ErrorIs(t, err, parseErr)
+	require.ErrorContains(t, err, "failed to parse the elasticsearch server version")
+	require.False(t, skip)
+	require.Empty(t, reason)
+}
+
+func TestFlavor_String(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name   string
+		flavor Flavor
+		want   string
+	}{
+		{name: "Any", flavor: FlavorAny, want: "Any"},
+		{name: "Stateful", flavor: FlavorStateful, want: "Stateful"},
+		{name: "Serverless", flavor: FlavorServerless, want: "Serverless"},
+		{name: "unknown", flavor: Flavor(99), want: "Flavor(99)"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			require.Equal(t, tt.want, tt.flavor.String())
+		})
+	}
+}

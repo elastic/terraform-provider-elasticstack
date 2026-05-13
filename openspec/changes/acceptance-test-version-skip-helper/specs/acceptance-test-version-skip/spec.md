@@ -3,7 +3,7 @@
 ### Requirement: Skip tests when Elasticsearch version is below a minimum
 The `versionutils.SkipIfUnsupported` helper SHALL skip the current test when the connected Elasticsearch server version is strictly less than the supplied minimum version.
 
-#### Scenario: Statevful cluster below minimum version
+#### Scenario: Stateful cluster below minimum version
 - **WHEN** `SkipIfUnsupported(t, v8_11_0, FlavorAny)` is called
 - **AND** the connected cluster reports `build_flavor` of `"default"` and version `8.10.0`
 - **THEN** the helper calls `t.Skip` with a message indicating the version mismatch
