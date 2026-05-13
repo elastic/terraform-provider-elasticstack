@@ -64,7 +64,7 @@ resource "elasticstack_kibana_dashboard" "test" {
           }
           metrics = [
             {
-              config = jsonencode({
+              config_json = jsonencode({
                 operation = "count"
               })
             }
