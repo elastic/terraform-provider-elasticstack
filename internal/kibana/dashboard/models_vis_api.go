@@ -29,12 +29,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func configPriorForVizRead(tfPanel, pm *panelModel) *vizConfigModel {
-	if tfPanel != nil && tfPanel.VizConfig != nil {
-		return tfPanel.VizConfig
+func configPriorForVisRead(tfPanel, pm *panelModel) *visConfigModel {
+	if tfPanel != nil && tfPanel.VisConfig != nil {
+		return tfPanel.VisConfig
 	}
-	if pm != nil && pm.VizConfig != nil {
-		return pm.VizConfig
+	if pm != nil && pm.VisConfig != nil {
+		return pm.VisConfig
 	}
 	return nil
 }
@@ -42,7 +42,7 @@ func configPriorForVizRead(tfPanel, pm *panelModel) *vizConfigModel {
 // populateVisByReferenceFromAPI maps API vis config branch 1 (by-reference saved object panel).
 func populateVisByReferenceFromAPI(
 	ctx context.Context,
-	prior *vizConfigModel,
+	prior *visConfigModel,
 	pm *panelModel,
 	cfg1 kbapi.KbnDashboardPanelTypeVisConfig1,
 ) diag.Diagnostics {
@@ -105,13 +105,13 @@ func populateVisByReferenceFromAPI(
 	}
 
 	brCopy := by
-	pm.VizConfig = &vizConfigModel{
+	pm.VisConfig = &visConfigModel{
 		ByReference: &brCopy,
 	}
 	return diags
 }
 
-func vizByReferenceToAPI(
+func visByReferenceToAPI(
 	byRef lensDashboardAppByReferenceModel,
 	grid struct {
 		H *float32 `json:"h,omitempty"`
@@ -134,7 +134,7 @@ func vizByReferenceToAPI(
 		api1.TimeRange.Mode = &m
 	}
 	if typeutils.IsKnown(byRef.ReferencesJSON) {
-		refs, d := jsonBytesFromOptionalNormalizedArray(byRef.ReferencesJSON, "viz_config.by_reference.references_json")
+		refs, d := jsonBytesFromOptionalNormalizedArray(byRef.ReferencesJSON, "vis_config.by_reference.references_json")
 		diags.Append(d...)
 		if d.HasError() {
 			return kbapi.DashboardPanelItem{}, diags
@@ -142,7 +142,7 @@ func vizByReferenceToAPI(
 		if len(refs) > 0 {
 			var out []kbapi.KbnContentManagementUtilsReferenceSchema
 			if err := json.Unmarshal(refs, &out); err != nil {
-				diags.AddError("Invalid `viz_config.by_reference.references_json`", err.Error())
+				diags.AddError("Invalid `vis_config.by_reference.references_json`", err.Error())
 				return kbapi.DashboardPanelItem{}, diags
 			}
 			if out == nil {
@@ -193,26 +193,26 @@ func vizByReferenceToAPI(
 	return panelItem, diags
 }
 
-func vizConfigToAPI(pm panelModel, dashboard *dashboardModel, grid struct {
+func visConfigToAPI(pm panelModel, dashboard *dashboardModel, grid struct {
 	H *float32 `json:"h,omitempty"`
 	W *float32 `json:"w,omitempty"`
 	X float32  `json:"x"`
 	Y float32  `json:"y"`
 }, panelID *string) (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	cfg := pm.VizConfig
+	cfg := pm.VisConfig
 	if cfg == nil {
-		diags.AddError("Missing `viz_config`", "The `viz_config` block is required for typed `vis` panels.")
+		diags.AddError("Missing `vis_config`", "The `vis_config` block is required for typed `vis` panels.")
 		return kbapi.DashboardPanelItem{}, diags
 	}
 	switch {
 	case cfg.ByReference != nil:
-		return vizByReferenceToAPI(*cfg.ByReference, grid, panelID)
+		return visByReferenceToAPI(*cfg.ByReference, grid, panelID)
 	case cfg.ByValue != nil:
 		blocks := &cfg.ByValue.lensByValueChartBlocks
-		conv, okConv := firstLensVizConverterForChartBlocks(blocks)
+		conv, okConv := firstLensVisConverterForChartBlocks(blocks)
 		if !okConv {
-			diags.AddError("Invalid `viz_config.by_value`", "The typed chart block could not be resolved to a Lens visualization converter.")
+			diags.AddError("Invalid `vis_config.by_value`", "The typed chart block could not be resolved to a Lens visualization converter.")
 			return kbapi.DashboardPanelItem{}, diags
 		}
 		config0, d := conv.buildAttributes(blocks, dashboard)
@@ -237,7 +237,7 @@ func vizConfigToAPI(pm panelModel, dashboard *dashboardModel, grid struct {
 		}
 		return panelItem, diags
 	default:
-		diags.AddError("Invalid `viz_config`", "Exactly one of `by_value` or `by_reference` must be set inside `viz_config`.")
+		diags.AddError("Invalid `vis_config`", "Exactly one of `by_value` or `by_reference` must be set inside `vis_config`.")
 		return kbapi.DashboardPanelItem{}, diags
 	}
 }

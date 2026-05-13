@@ -155,7 +155,7 @@ func lensDashboardAppByValueToAPI(
 ) (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if blocks, ok := lensByValueChartBlocksForTypedLensApp(byValue); ok {
-		conv, okConv := firstLensVizConverterForChartBlocks(blocks)
+		conv, okConv := firstLensVisConverterForChartBlocks(blocks)
 		if !okConv {
 			diags.AddError("Invalid `by_value` for lens-dashboard-app", "The typed by-value chart block could not be resolved to a Lens visualization converter.")
 			return kbapi.DashboardPanelItem{}, diags
@@ -653,7 +653,7 @@ func populateLensDashboardAppByValueFromAPI(
 
 // byReferenceOptionalStringFromAPI returns the API value when present, falls back to the
 // known prior TF value, otherwise null. Shared by the lens-dashboard-app and vis by-reference
-// read paths since they share the same model (vizByReferenceModel = lensDashboardAppByReferenceModel).
+// read paths since they share the same model (visByReferenceModel = lensDashboardAppByReferenceModel).
 func byReferenceOptionalStringFromAPI(
 	api *string,
 	prior *lensDashboardAppByReferenceModel,

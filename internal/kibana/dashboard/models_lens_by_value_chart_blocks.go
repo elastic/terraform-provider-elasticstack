@@ -18,7 +18,7 @@
 package dashboard
 
 // lensByValueChartBlocks holds the shared typed Lens chart pointers for
-// viz_config.by_value and lens_dashboard_app_config.by_value (design D3/D10).
+// vis_config.by_value and lens_dashboard_app_config.by_value (design D3/D10).
 // Embedded in both Terraform models so attributes stay at the by_value object root.
 type lensByValueChartBlocks struct {
 	XYChartConfig      *xyChartConfigModel      `tfsdk:"xy_chart_config"`
@@ -39,8 +39,8 @@ func lensByValueChartBlocksFromPanel(pm *panelModel) *lensByValueChartBlocks {
 	if pm == nil {
 		return nil
 	}
-	if pm.VizConfig != nil && pm.VizConfig.ByValue != nil {
-		return &pm.VizConfig.ByValue.lensByValueChartBlocks
+	if pm.VisConfig != nil && pm.VisConfig.ByValue != nil {
+		return &pm.VisConfig.ByValue.lensByValueChartBlocks
 	}
 	if pm.LensDashboardAppConfig != nil && pm.LensDashboardAppConfig.ByValue != nil {
 		blocks, ok := lensByValueChartBlocksForTypedLensApp(*pm.LensDashboardAppConfig.ByValue)
@@ -52,8 +52,8 @@ func lensByValueChartBlocksFromPanel(pm *panelModel) *lensByValueChartBlocks {
 	return nil
 }
 
-func firstLensVizConverterForChartBlocks(blocks *lensByValueChartBlocks) (lensVisualizationConverter, bool) {
-	for _, c := range lensVizConverters {
+func firstLensVisConverterForChartBlocks(blocks *lensByValueChartBlocks) (lensVisualizationConverter, bool) {
+	for _, c := range lensVisConverters {
 		if c.handlesTFConfigBlocks(blocks) {
 			return c, true
 		}
@@ -65,10 +65,10 @@ func firstLensVizConverterForChartBlocks(blocks *lensByValueChartBlocks) (lensVi
 // into dest before vis read-mapping replaces blocks.WaffleConfig. The waffle converter keeps that pointer as
 // `seed` across `populateFromAttributes` so mergeWaffleConfigFromPlanSeed can reconcile Kibana read omissions.
 func seedWaffleLensByValueChartFromPriorPanel(dest *lensByValueChartBlocks, prior *panelModel) {
-	if dest == nil || prior == nil || prior.VizConfig == nil || prior.VizConfig.ByValue == nil {
+	if dest == nil || prior == nil || prior.VisConfig == nil || prior.VisConfig.ByValue == nil {
 		return
 	}
-	src := &prior.VizConfig.ByValue.lensByValueChartBlocks
+	src := &prior.VisConfig.ByValue.lensByValueChartBlocks
 	if src.WaffleConfig != nil {
 		dest.WaffleConfig = src.WaffleConfig
 	}

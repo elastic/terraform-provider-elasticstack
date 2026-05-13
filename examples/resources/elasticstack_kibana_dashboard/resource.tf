@@ -57,7 +57,7 @@ resource "elasticstack_kibana_dashboard" "my_dashboard_json" {
 
 # Inline Lens (`lens-dashboard-app`) panels: typed by-value metric charts (`metric_chart_config`, etc.;
 # not `by_value.config_json`). These blocks intentionally omit chart-level presentation fields (REQ-039 on `vis`);
-# panels with typed chart `*_config` nested under `viz_config.by_value` when you need `time_range`, `drilldowns`, etc.
+# panels with typed chart `*_config` nested under `vis_config.by_value` when you need `time_range`, `drilldowns`, etc.
 resource "elasticstack_kibana_dashboard" "lens_app_typed_by_value" {
   title            = "Dashboard with lens-dashboard-app (typed by-value)"
   description      = "Example: two metric panels sharing dashboard time_range (no chart-level presentation fields)"
@@ -115,11 +115,11 @@ resource "elasticstack_kibana_dashboard" "lens_app_typed_by_value" {
   ]
 }
 
-# Classic Lens (`vis`) panel: same typed metric chart as above, nested under `viz_config.by_value`.
+# Classic Lens (`vis`) panel: same typed metric chart as above, nested under `vis_config.by_value`.
 # Contrasts with `lens-dashboard-app`: API sends `type = "vis"` and inline chart config.
 resource "elasticstack_kibana_dashboard" "vis_typed_by_value" {
   title            = "Dashboard with vis (typed by-value)"
-  description      = "Example: metric via viz_config.by_value.metric_chart_config"
+  description      = "Example: metric via vis_config.by_value.metric_chart_config"
   time_range       = { from = "now-15m", to = "now" }
   refresh_interval = { pause = true, value = 0 }
   query            = { language = "kql", text = "" }
@@ -127,7 +127,7 @@ resource "elasticstack_kibana_dashboard" "vis_typed_by_value" {
   panels = [{
     type = "vis"
     grid = { x = 0, y = 0, w = 24, h = 15 }
-    viz_config = {
+    vis_config = {
       by_value = {
         metric_chart_config = {
           data_source_json = jsonencode({

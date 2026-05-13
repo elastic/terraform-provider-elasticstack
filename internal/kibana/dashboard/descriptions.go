@@ -58,6 +58,39 @@ var dashboardFiltersDescription string
 //go:embed descriptions/dashboard_filter_json.md
 var dashboardFilterJSONDescription string
 
+//go:embed descriptions/image_panel_src.md
+var imagePanelSrcDescription string
+
+//go:embed descriptions/image_panel_drilldowns.md
+var imagePanelDrilldownsDescription string
+
+//go:embed descriptions/image_panel_url_drilldown_url.md
+var imagePanelURLDrilldownURLDescription string
+
+//go:embed descriptions/slo_alerts_panel_slos.md
+var sloAlertsPanelSlosDescription string
+
+//go:embed descriptions/slo_alerts_panel_drilldowns.md
+var sloAlertsPanelDrilldownsDescription string
+
+//go:embed descriptions/discover_session_panel_drilldowns.md
+var discoverSessionPanelDrilldownsDescription string
+
+//go:embed descriptions/discover_session_panel_by_value.md
+var discoverSessionPanelByValueDescription string
+
+//go:embed descriptions/discover_session_panel_by_reference.md
+var discoverSessionPanelByReferenceDescription string
+
+//go:embed descriptions/discover_session_panel_data_source_json.md
+var discoverSessionPanelDataSourceJSONDescription string
+
+//go:embed descriptions/discover_session_panel_dsl_filters.md
+var discoverSessionPanelDSLFiltersDescription string
+
+//go:embed descriptions/discover_session_panel_view_mode.md
+var discoverSessionPanelViewModeDescription string
+
 //go:embed descriptions/pinned_panels.md
 var pinnedPanelsDescription string
 
