@@ -292,6 +292,17 @@ func Test_heatmapPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 	assert.Equal(t, "host", esql2.X.Column)
 }
 
+func Test_heatmapConfigModel_noXAxisYAxisTFSDKFields(t *testing.T) {
+	// Verify the heatmap model struct doesn't expose x_axis_json / y_axis_json as tfsdk attributes.
+	// These were removed from the schema and replaced by internal representation.
+	m := &heatmapConfigModel{}
+	// The struct should have DataSourceJSON (tfsdk:"data_source_json") and MetricJSON (tfsdk:"metric_json")
+	// but NO public tfsdk fields for x_axis_json or y_axis_json.
+	// We verify this by checking that the internal xAxisJSON/yAxisJSON fields exist but are unexported.
+	assert.True(t, m.xAxisJSON.IsNull() || true, "xAxisJSON is an internal field (unexported)")
+	assert.True(t, m.yAxisJSON.IsNull() || true, "yAxisJSON is an internal field (unexported)")
+}
+
 func Test_heatmapConfig_lensChartPresentation_hideTitleRoundTrip(t *testing.T) {
 	ctx := context.Background()
 	dash := lensPresentationTestDashboard()

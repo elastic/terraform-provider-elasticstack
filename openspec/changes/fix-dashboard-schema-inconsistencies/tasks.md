@@ -32,8 +32,8 @@
 
 ## 4. Default normalization and config_json defaults
 
-- [ ] 4.1 Update `populateLensAttributesDefaults()` in `panel_config_defaults.go` for waffle and pie `config_json` rename
-- [ ] 4.2 Remove heatmap `x_axis_json`/`y_axis_json` default normalization paths if any exist in `panel_config_defaults.go`
+- [x] 4.1 Update `populateLensAttributesDefaults()` in `panel_config_defaults.go` for waffle and pie `config_json` rename
+- [x] 4.2 Remove heatmap `x_axis_json`/`y_axis_json` default normalization paths if any exist in `panel_config_defaults.go`
 
 ## 5. Test fixtures
 
@@ -47,28 +47,28 @@
 
 ## 6. Unit and integration tests
 
-- [ ] 6.1 Update `models_waffle_panel_test.go` for `config_json` rename
-- [ ] 6.2 Update `models_pie_chart_panel_test.go` for `config_json` rename and `data_source_json` required handling
-- [ ] 6.3 Update `models_heatmap_panel_test.go` for removed `x_axis_json`/`y_axis_json`
-- [ ] 6.4 Update `models_treemap_panel_test.go` and `models_mosaic_panel_test.go` for ES|QL typed schemas
-- [ ] 6.5 Update `models_xy_chart_panel_test.go` for optional query
-- [ ] 6.6 Update `panel_config_defaults_test.go` for renamed attributes
+- [x] 6.1 Update `models_waffle_panel_test.go` for `config_json` rename
+- [x] 6.2 Update `models_pie_chart_panel_test.go` for `config_json` rename and `data_source_json` required handling
+- [x] 6.3 Update `models_heatmap_panel_test.go` for removed `x_axis_json`/`y_axis_json`
+- [x] 6.4 Update `models_treemap_panel_test.go` and `models_mosaic_panel_test.go` for ES|QL typed schemas
+- [x] 6.5 Update `models_xy_chart_panel_test.go` for optional query
+- [x] 6.6 Update `panel_config_defaults_test.go` for renamed attributes
 - [ ] 6.7 Run `make build` and fix compilation errors
 - [ ] 6.8 Run targeted acceptance tests for affected panel types: waffle, pie, heatmap, treemap, mosaic, XY, synthetics
 
 ## 7. ES|QL support for gauge and tagcloud
 
-- [ ] 7.1 Make `query` Optional in `getGaugeSchema()` and `getTagcloudSchema()` in `schema.go`
-- [ ] 7.2 Add `esql_metric` typed nested attribute to `getGaugeSchema()` (column, format_json, optional label/color_json/subtitle/goal/max/min/ticks/title) with mutual-exclusion validator against `metric_json`
-- [ ] 7.3 Add `esql_metric` typed nested attribute to `getTagcloudSchema()` (column, format_json, optional label) with mutual-exclusion validator against `metric_json`
-- [ ] 7.4 Add `esql_tag_by` typed nested attribute to `getTagcloudSchema()` (column, format_json, color_json, optional label) with mutual-exclusion validator against `tag_by_json`
-- [ ] 7.5 Implement `fromAPIESQL()` on `gaugeConfigModel` using `kbapi.GaugeESQL`; set `Query = nil` and populate typed `esql_metric` block
-- [ ] 7.6 Implement `fromAPIESQL()` on `tagcloudConfigModel` using `kbapi.TagcloudESQL`; set `Query = nil` and populate typed `esql_metric` / `esql_tag_by` blocks
-- [ ] 7.7 Update gauge and tagcloud `fromPanelAPI` dispatch to route ES|QL API payloads to the new `fromAPIESQL` path
-- [ ] 7.8 Implement ES|QL write path (`toAPI` guard or separate `toAPIESQL`) for gauge and tagcloud that emits `kbapi.GaugeESQL` / `kbapi.TagcloudESQL`
-- [ ] 7.9 Add gauge ES|QL acceptance test fixture and test case
-- [ ] 7.10 Add tagcloud ES|QL acceptance test fixture and test case
-- [ ] 7.11 Add unit tests for `fromAPIESQL` and `toAPIESQL` paths in `models_gauge_panel_test.go` and `models_tagcloud_panel_test.go`
+- [x] 7.1 Make `query` Optional in `getGaugeSchema()` and `getTagcloudSchema()` in `schema.go`
+- [x] 7.2 Add `esql_metric` typed nested attribute to `getGaugeSchema()` (column, format_json, optional label/color_json/subtitle/goal/max/min/ticks/title) with mutual-exclusion validator against `metric_json`
+- [x] 7.3 Add `esql_metric` typed nested attribute to `getTagcloudSchema()` (column, format_json, optional label) with mutual-exclusion validator against `metric_json`
+- [x] 7.4 Add `esql_tag_by` typed nested attribute to `getTagcloudSchema()` (column, format_json, color_json, optional label) with mutual-exclusion validator against `tag_by_json`
+- [x] 7.5 Implement `fromAPIESQL()` on `gaugeConfigModel` using `kbapi.GaugeESQL`; set `Query = nil` and populate typed `esql_metric` block
+- [x] 7.6 Implement `fromAPIESQL()` on `tagcloudConfigModel` using `kbapi.TagcloudESQL`; set `Query = nil` and populate typed `esql_metric` / `esql_tag_by` blocks
+- [x] 7.7 Update gauge and tagcloud `fromPanelAPI` dispatch to route ES|QL API payloads to the new `fromAPIESQL` path
+- [x] 7.8 Implement ES|QL write path (`toAPI` guard or separate `toAPIESQL`) for gauge and tagcloud that emits `kbapi.GaugeESQL` / `kbapi.TagcloudESQL`
+- [x] 7.9 Add gauge ES|QL acceptance test fixture and test case
+- [x] 7.10 Add tagcloud ES|QL acceptance test fixture and test case
+- [x] 7.11 Add unit tests for `fromAPIESQL` and `toAPIESQL` paths in `models_gauge_panel_test.go` and `models_tagcloud_panel_test.go`
 
 ## 8. Finalization
 
