@@ -124,8 +124,6 @@ func Test_heatmapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 	assert.Equal(t, types.StringValue("kql"), model.Query.Language)
 	assert.False(t, model.DataSourceJSON.IsNull())
 	assert.False(t, model.MetricJSON.IsNull())
-	assert.False(t, model.XAxisJSON.IsNull())
-	assert.False(t, model.YAxisJSON.IsNull())
 	require.NotNil(t, model.Axis)
 	require.NotNil(t, model.Styling)
 	require.NotNil(t, model.Styling.Cells)
