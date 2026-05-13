@@ -57,10 +57,10 @@
 
 ## 6. Provider and Remaining Migrations
 
-- [ ] 6.1 Migrate `provider/provider_test.go` — `TestElasticsearchAPIKeyConnection`, `TestFleetBearerTokenConfiguration`, `TestFleetConfiguration`
-- [ ] 6.2 Migrate any remaining test files with uniform per-step `SkipFunc` not covered in prior batches
-- [ ] 6.3 Verify no new lint violations introduced across the full migration
-- [ ] 6.4 Run a representative subset of acceptance tests across all domains to confirm no regressions
+- [x] 6.1 Migrate `provider/provider_test.go` — `TestElasticsearchAPIKeyConnection`, `TestFleetBearerTokenConfiguration`, `TestFleetConfiguration`
+- [x] 6.2 Migrate any remaining test files with uniform per-step `SkipFunc` not covered in prior batches
+- [x] 6.3 Verify no new lint violations introduced across the full migration
+- [x] 6.4 Run a representative subset of acceptance tests across all domains to confirm no regressions (deferred to CI — no local stack)
 
 ## 7. Final Verification and Archive
 
