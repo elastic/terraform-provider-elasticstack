@@ -24,6 +24,7 @@ import (
 
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCalendarEventDateTimeToUnixMilli(t *testing.T) {
@@ -46,7 +47,7 @@ func TestCalendarEventMatchesPlanWire(t *testing.T) {
 	endMs := time.Date(2026, 1, 1, 11, 0, 0, 0, time.UTC).UnixMilli()
 	tr := true
 	fsRaw, err := json.Marshal(int64(86400))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	plan := calendarEventWire{
 		Description: "outage",

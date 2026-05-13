@@ -145,18 +145,17 @@ func createCalendarEvent(ctx context.Context, client *clients.ElasticsearchScope
 		if eventID == "" {
 			const maxPostRespDiag = 768
 			var detail strings.Builder
-			detail.WriteString("Could not determine the new event ID from the API response or calendar events list. ")
-			detail.WriteString(fmt.Sprintf("post response had %d event(s). ", len(postWire.Events)))
+			fmt.Fprintf(&detail, "Could not determine the new event ID from the API response or calendar events list. ")
+			fmt.Fprintf(&detail, "post response had %d event(s). ", len(postWire.Events))
 			for i := range postWire.Events {
-				detail.WriteString(fmt.Sprintf("[%d] event_id=%q description=%q; ", i, calendarEventWireEventID(&postWire.Events[i]), postWire.Events[i].Description))
+				fmt.Fprintf(&detail, "[%d] event_id=%q description=%q; ", i, calendarEventWireEventID(&postWire.Events[i]), postWire.Events[i].Description)
 			}
-			detail.WriteString(fmt.Sprintf("new-event candidates from list: %d. ", len(candidates)))
+			fmt.Fprintf(&detail, "new-event candidates from list: %d. ", len(candidates))
 			ps := string(postBodyBytes)
 			if len(ps) > maxPostRespDiag {
 				ps = ps[:maxPostRespDiag] + "...(truncated)"
 			}
-			detail.WriteString("post response excerpt: ")
-			detail.WriteString(ps)
+			fmt.Fprintf(&detail, "post response excerpt: %s", ps)
 			diags.AddError("Failed to identify created event", detail.String())
 			return plan, diags
 		}
