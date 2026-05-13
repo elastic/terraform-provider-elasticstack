@@ -90,24 +90,9 @@ func (v gaugeConfigModeValidator) ValidateObject(ctx context.Context, req valida
 		return
 	}
 
-	var queryObj types.Object
-	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, req.Path.AtName("query"), &queryObj)...)
-	if resp.Diagnostics.HasError() {
+	esqlMode, ok := lensQueryESQLMode(ctx, req.Config, req.Path, &resp.Diagnostics)
+	if !ok {
 		return
-	}
-
-	esqlMode := queryObj.IsNull()
-	if queryObj.IsUnknown() {
-		return
-	}
-	if !esqlMode {
-		var lang, qStr types.String
-		resp.Diagnostics.Append(req.Config.GetAttribute(ctx, req.Path.AtName("query").AtName("language"), &lang)...)
-		resp.Diagnostics.Append(req.Config.GetAttribute(ctx, req.Path.AtName("query").AtName("expression"), &qStr)...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-		esqlMode = lang.IsNull() && qStr.IsNull()
 	}
 
 	var metricJSON customtypes.JSONWithDefaultsValue[map[string]any]

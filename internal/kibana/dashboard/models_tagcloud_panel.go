@@ -76,17 +76,7 @@ func (c tagcloudPanelConfigConverter) buildAttributes(blocks *lensByValueChartBl
 }
 
 func isTagcloudNoESQLCandidateActuallyESQL(api kbapi.TagcloudNoESQL) bool {
-	body, err := api.DataSource.MarshalJSON()
-	if err != nil {
-		return false
-	}
-	var ds struct {
-		Type string `json:"type"`
-	}
-	if err := json.Unmarshal(body, &ds); err != nil {
-		return false
-	}
-	return ds.Type == legacyMetricDatasetTypeESQL || ds.Type == legacyMetricDatasetTypeTable
+	return lensDataSourceIsESQLOrTable(api.DataSource.MarshalJSON())
 }
 
 type tagcloudConfigModel struct {
@@ -122,6 +112,32 @@ type tagcloudEsqlTagBy struct {
 type fontSizeModel struct {
 	Min types.Float64 `tfsdk:"min"`
 	Max types.Float64 `tfsdk:"max"`
+}
+
+// applyStylingFromAPI populates the typed `orientation` and `font_size`
+// attributes from a TagcloudStyling payload. Used by both NoESQL and ES|QL
+// reads so the two paths stay in lockstep.
+func (m *tagcloudConfigModel) applyStylingFromAPI(s kbapi.TagcloudStyling) {
+	if s.Orientation != "" {
+		m.Orientation = types.StringValue(string(s.Orientation))
+	} else {
+		m.Orientation = types.StringNull()
+	}
+	if s.FontSize == nil {
+		m.FontSize = nil
+		return
+	}
+	m.FontSize = &fontSizeModel{}
+	if s.FontSize.Min != nil {
+		m.FontSize.Min = types.Float64Value(float64(*s.FontSize.Min))
+	} else {
+		m.FontSize.Min = types.Float64Null()
+	}
+	if s.FontSize.Max != nil {
+		m.FontSize.Max = types.Float64Value(float64(*s.FontSize.Max))
+	} else {
+		m.FontSize.Max = types.Float64Null()
+	}
 }
 
 func (m *tagcloudConfigModel) usesESQL() bool {
@@ -160,25 +176,7 @@ func (m *tagcloudConfigModel) fromAPI(ctx context.Context, dashboard *dashboardM
 
 	m.Filters = populateFiltersFromAPI(api.Filters, &diags)
 
-	if api.Styling.Orientation != "" {
-		m.Orientation = types.StringValue(string(api.Styling.Orientation))
-	} else {
-		m.Orientation = types.StringNull()
-	}
-
-	if api.Styling.FontSize != nil {
-		m.FontSize = &fontSizeModel{}
-		if api.Styling.FontSize.Min != nil {
-			m.FontSize.Min = types.Float64Value(float64(*api.Styling.FontSize.Min))
-		} else {
-			m.FontSize.Min = types.Float64Null()
-		}
-		if api.Styling.FontSize.Max != nil {
-			m.FontSize.Max = types.Float64Value(float64(*api.Styling.FontSize.Max))
-		} else {
-			m.FontSize.Max = types.Float64Null()
-		}
-	}
+	m.applyStylingFromAPI(api.Styling)
 
 	metricBytes, err := api.Metric.MarshalJSON()
 	mv, ok := marshalToJSONWithDefaults(metricBytes, err, "metric", populateTagcloudMetricDefaults, &diags)
@@ -239,24 +237,7 @@ func (m *tagcloudConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashbo
 	m.Query = nil
 	m.Filters = populateFiltersFromAPI(api.Filters, &diags)
 
-	if api.Styling.Orientation != "" {
-		m.Orientation = types.StringValue(string(api.Styling.Orientation))
-	} else {
-		m.Orientation = types.StringNull()
-	}
-	if api.Styling.FontSize != nil {
-		m.FontSize = &fontSizeModel{}
-		if api.Styling.FontSize.Min != nil {
-			m.FontSize.Min = types.Float64Value(float64(*api.Styling.FontSize.Min))
-		} else {
-			m.FontSize.Min = types.Float64Null()
-		}
-		if api.Styling.FontSize.Max != nil {
-			m.FontSize.Max = types.Float64Value(float64(*api.Styling.FontSize.Max))
-		} else {
-			m.FontSize.Max = types.Float64Null()
-		}
-	}
+	m.applyStylingFromAPI(api.Styling)
 
 	m.MetricJSON = customtypes.NewJSONWithDefaultsNull(populateTagcloudMetricDefaults)
 	m.TagByJSON = customtypes.NewJSONWithDefaultsNull(populateTagcloudTagByDefaults)
@@ -264,15 +245,11 @@ func (m *tagcloudConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashbo
 	em := &tagcloudEsqlMetric{
 		Column: types.StringValue(api.Metric.Column),
 	}
-	formatBytes, fErr := json.Marshal(api.Metric.Format)
-	if fErr != nil {
-		diags.AddError("Failed to marshal esql metric format", fErr.Error())
+	metricFormat, ok := lensESQLNumberFormatJSONFromAPI(api.Metric.Format, "esql_metric.format_json", &diags)
+	if !ok {
 		return diags
 	}
-	if string(formatBytes) == jsonNullString || len(formatBytes) == 0 {
-		formatBytes = []byte(defaultNumberFormatJSON)
-	}
-	em.FormatJSON = jsontypes.NewNormalizedValue(normalizeKibanaLensNumberFormatJSONString(string(formatBytes)))
+	em.FormatJSON = metricFormat
 	if api.Metric.Label != nil {
 		em.Label = types.StringValue(*api.Metric.Label)
 	} else {
@@ -283,15 +260,11 @@ func (m *tagcloudConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashbo
 	tb := &tagcloudEsqlTagBy{
 		Column: types.StringValue(api.TagBy.Column),
 	}
-	tbFormatBytes, tfErr := json.Marshal(api.TagBy.Format)
-	if tfErr != nil {
-		diags.AddError("Failed to marshal esql tag_by format", tfErr.Error())
+	tagByFormat, ok := lensESQLNumberFormatJSONFromAPI(api.TagBy.Format, "esql_tag_by.format_json", &diags)
+	if !ok {
 		return diags
 	}
-	if string(tbFormatBytes) == jsonNullString || len(tbFormatBytes) == 0 {
-		tbFormatBytes = []byte(defaultNumberFormatJSON)
-	}
-	tb.FormatJSON = jsontypes.NewNormalizedValue(normalizeKibanaLensNumberFormatJSONString(string(tbFormatBytes)))
+	tb.FormatJSON = tagByFormat
 	colorBytes, cErr := json.Marshal(api.TagBy.Color)
 	if cErr != nil {
 		diags.AddError("Failed to marshal esql tag_by color", cErr.Error())

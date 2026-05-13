@@ -76,17 +76,7 @@ func (c gaugePanelConfigConverter) buildAttributes(blocks *lensByValueChartBlock
 }
 
 func isGaugeNoESQLCandidateActuallyESQL(api kbapi.GaugeNoESQL) bool {
-	body, err := api.DataSource.MarshalJSON()
-	if err != nil {
-		return false
-	}
-	var ds struct {
-		Type string `json:"type"`
-	}
-	if err := json.Unmarshal(body, &ds); err != nil {
-		return false
-	}
-	return ds.Type == legacyMetricDatasetTypeESQL || ds.Type == legacyMetricDatasetTypeTable
+	return lensDataSourceIsESQLOrTable(api.DataSource.MarshalJSON())
 }
 
 type gaugeConfigModel struct {
@@ -237,15 +227,11 @@ func (m *gaugeConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashboard
 	em := &gaugeEsqlMetric{
 		Column: types.StringValue(api.Metric.Column),
 	}
-	formatBytes, fErr := json.Marshal(api.Metric.Format)
-	if fErr != nil {
-		diags.AddError("Failed to marshal esql metric format", fErr.Error())
+	formatVal, ok := lensESQLNumberFormatJSONFromAPI(api.Metric.Format, "esql_metric.format_json", &diags)
+	if !ok {
 		return diags
 	}
-	if string(formatBytes) == jsonNullString || len(formatBytes) == 0 {
-		formatBytes = []byte(defaultNumberFormatJSON)
-	}
-	em.FormatJSON = jsontypes.NewNormalizedValue(normalizeKibanaLensNumberFormatJSONString(string(formatBytes)))
+	em.FormatJSON = formatVal
 
 	if api.Metric.Label != nil {
 		em.Label = types.StringValue(*api.Metric.Label)

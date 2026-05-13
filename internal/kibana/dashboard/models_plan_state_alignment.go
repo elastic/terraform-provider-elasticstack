@@ -316,6 +316,11 @@ func preservePlanJSONIfStateOmitsOptionalKeys(plan jsontypes.Normalized, state *
 
 const gaugeEsqlTicksModeBandsDefault = "bands"
 
+// gaugeEsqlAutoColorSentinel is the normalized form of Kibana's default
+// `{"type":"auto"}` color payload, precomputed so `gaugeEsqlColorJSONIsAuto`
+// does not allocate a fresh map on every alignment pass.
+var gaugeEsqlAutoColorSentinel = normalizeXYPlanComparisonJSON(map[string]any{"type": "auto"})
+
 func preserveNormalizedJSONSemanticEquality(plan jsontypes.Normalized, state *jsontypes.Normalized) {
 	if !typeutils.IsKnown(plan) || !typeutils.IsKnown(*state) {
 		return
@@ -373,7 +378,5 @@ func gaugeEsqlColorJSONIsAuto(color jsontypes.Normalized) bool {
 	if err := json.Unmarshal([]byte(color.ValueString()), &m); err != nil {
 		return false
 	}
-	want := normalizeXYPlanComparisonJSON(map[string]any{"type": "auto"})
-	got := normalizeXYPlanComparisonJSON(m)
-	return reflect.DeepEqual(got, want)
+	return reflect.DeepEqual(normalizeXYPlanComparisonJSON(m), gaugeEsqlAutoColorSentinel)
 }
