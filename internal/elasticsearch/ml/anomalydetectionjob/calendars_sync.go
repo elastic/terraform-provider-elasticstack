@@ -34,7 +34,9 @@ func listCalendarIDsForJob(ctx context.Context, typed *elasticsearch.TypedClient
 	var out []string
 	from := 0
 	for {
-		res, err := typed.Ml.GetCalendars().CalendarId("*").From(from).Size(getCalendarsPageSize).Do(ctx)
+		// From/Size are only valid when the calendar id is omitted (see ES ML get calendars API);
+		// do not use CalendarId("*") — that still sends calendar_id and rejects from/size with 400.
+		res, err := typed.Ml.GetCalendars().From(from).Size(getCalendarsPageSize).Do(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("ml get calendars: %w", err)
 		}
