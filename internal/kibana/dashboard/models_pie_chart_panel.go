@@ -372,10 +372,13 @@ func (m *pieChartConfigModel) toAPI(dashboard *dashboardModel) (kbapi.KbnDashboa
 		}
 
 		// Dataset
-		if !m.DataSourceJSON.IsNull() {
-			if err := json.Unmarshal([]byte(m.DataSourceJSON.ValueString()), &chart.DataSource); err != nil {
-				diags.AddError("Failed to unmarshal pie_chart_config.data_source_json", err.Error())
-			}
+		if m.DataSourceJSON.IsNull() {
+			diags.AddError("Missing dataset", "pie_chart_config.data_source_json must be provided")
+			return attrs, diags
+		}
+		if err := json.Unmarshal([]byte(m.DataSourceJSON.ValueString()), &chart.DataSource); err != nil {
+			diags.AddError("Failed to unmarshal pie_chart_config.data_source_json", err.Error())
+			return attrs, diags
 		}
 
 		// Query
@@ -474,10 +477,13 @@ func (m *pieChartConfigModel) toAPI(dashboard *dashboardModel) (kbapi.KbnDashboa
 		}
 
 		// Dataset
-		if !m.DataSourceJSON.IsNull() {
-			if err := json.Unmarshal([]byte(m.DataSourceJSON.ValueString()), &chart.DataSource); err != nil {
-				diags.AddError("Failed to unmarshal pie_chart_config.data_source_json", err.Error())
-			}
+		if m.DataSourceJSON.IsNull() {
+			diags.AddError("Missing dataset", "pie_chart_config.data_source_json must be provided")
+			return attrs, diags
+		}
+		if err := json.Unmarshal([]byte(m.DataSourceJSON.ValueString()), &chart.DataSource); err != nil {
+			diags.AddError("Failed to unmarshal pie_chart_config.data_source_json", err.Error())
+			return attrs, diags
 		}
 
 		// Filters
