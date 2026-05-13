@@ -372,24 +372,23 @@ func TestAccResourceMLCalendarJob_planCalendarIDTooLong(t *testing.T) {
 	})
 }
 
-func TestAccResourceMLCalendarJob_applyJobNotFound(t *testing.T) {
-	calendarID := fmt.Sprintf("test-cal-job-missjob-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
-	missingJobID := fmt.Sprintf("this-ml-job-does-not-exist-%s", sdkacctest.RandStringFromCharSet(12, sdkacctest.CharSetAlphaNum))
+func TestAccResourceMLCalendarJob_applyCalendarNotFound(t *testing.T) {
+	// Elasticsearch accepts PutCalendarJob for a job_id that does not exist yet, so
+	// "missing job" does not reliably fail apply. A calendar that was never created does.
+	missingCalendarID := fmt.Sprintf("test-cal-job-misscal-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	jobID := fmt.Sprintf("test-cal-job-misscal-ad-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			acctest.PreCheck(t)
-			setupAccMLCalendar(t, calendarID)
-		},
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
-					"calendar_id":    config.StringVariable(calendarID),
-					"missing_job_id": config.StringVariable(missingJobID),
+					"missing_calendar_id": config.StringVariable(missingCalendarID),
+					"job_id":              config.StringVariable(jobID),
 				},
-				ExpectError: regexp.MustCompile(`Failed to assign ML job to calendar|Unable to assign job`),
+				ExpectError: regexp.MustCompile(`(?i)failed to assign|unable to assign|not.*found|resource_not_found|unknown.*calendar|no.*calendar`),
 			},
 		},
 	})
