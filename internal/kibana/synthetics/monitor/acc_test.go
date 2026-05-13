@@ -47,6 +47,8 @@ const (
 )
 
 func validationTest(t *testing.T, check resource.ErrorCheckFunc) {
+	versionutils.SkipIfUnsupported(t, minKibanaVersion, versionutils.FlavorAny)
+
 	name := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
@@ -54,7 +56,6 @@ func validationTest(t *testing.T, check resource.ErrorCheckFunc) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("validate"),
 				ConfigVariables: config.Variables{
 					"name": config.StringVariable(name),
@@ -425,6 +426,7 @@ func TestSyntheticMonitorTCPResource(t *testing.T) {
 }
 
 func TestSyntheticMonitorICMPResource(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minKibanaVersion, versionutils.FlavorAny)
 
 	icmpMonitorID := "elasticstack_kibana_synthetics_monitor.icmp-monitor"
 	bmMonitorID := "elasticstack_kibana_synthetics_monitor.icmp-monitor-min"
@@ -438,7 +440,6 @@ func TestSyntheticMonitorICMPResource(t *testing.T) {
 			// Create and Read icmp monitor with minimum fields
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("icmp_min"),
 				ConfigVariables: config.Variables{
 					"name": config.StringVariable(bmName),
@@ -457,7 +458,6 @@ func TestSyntheticMonitorICMPResource(t *testing.T) {
 			// Create and Read icmp monitor
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("icmp_create"),
 				ConfigVariables: config.Variables{
 					"name": config.StringVariable(name),
@@ -484,7 +484,6 @@ func TestSyntheticMonitorICMPResource(t *testing.T) {
 			// ImportState testing
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
 				ResourceName:             icmpMonitorID,
 				ImportState:              true,
 				ImportStateVerify:        true,
@@ -496,7 +495,6 @@ func TestSyntheticMonitorICMPResource(t *testing.T) {
 			// Update and Read icmp monitor
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
 				ResourceName:             icmpMonitorID,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("icmp_update"),
 				ConfigVariables: config.Variables{
@@ -645,6 +643,8 @@ func TestSyntheticMonitorBrowserResource(t *testing.T) {
 }
 
 func TestSyntheticMonitorHTTPResource_nonDefaultSpace(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, privatelocation.MinVersionSpaceID, versionutils.FlavorAny)
+
 	httpMonitorID := "elasticstack_kibana_synthetics_monitor.http-monitor"
 	name := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	spaceID := sdkacctest.RandStringFromCharSet(12, accTestKibanaSpaceIDCharset)
@@ -654,9 +654,7 @@ func TestSyntheticMonitorHTTPResource_nonDefaultSpace(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				// Fleet agent policy space_ids (required to scope the policy to the Kibana space) needs 9.1+.
-				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(privatelocation.MinVersionSpaceID),
-				ConfigDirectory: acctest.NamedTestCaseDirectory("http_non_default_space"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("http_non_default_space"),
 				ConfigVariables: config.Variables{
 					"name":     config.StringVariable(name),
 					"space_id": config.StringVariable(spaceID),
@@ -678,6 +676,8 @@ func TestSyntheticMonitorHTTPResource_nonDefaultSpace(t *testing.T) {
 }
 
 func TestSyntheticMonitorTCPResource_nonDefaultSpace(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, privatelocation.MinVersionSpaceID, versionutils.FlavorAny)
+
 	tcpMonitorID := "elasticstack_kibana_synthetics_monitor.tcp-monitor"
 	name := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	spaceID := sdkacctest.RandStringFromCharSet(12, accTestKibanaSpaceIDCharset)
@@ -687,7 +687,6 @@ func TestSyntheticMonitorTCPResource_nonDefaultSpace(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(privatelocation.MinVersionSpaceID),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("tcp_non_default_space"),
 				ConfigVariables: config.Variables{
 					"name":     config.StringVariable(name),
@@ -709,6 +708,8 @@ func TestSyntheticMonitorTCPResource_nonDefaultSpace(t *testing.T) {
 }
 
 func TestSyntheticMonitorICMPResource_nonDefaultSpace(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, privatelocation.MinVersionSpaceID, versionutils.FlavorAny)
+
 	icmpMonitorID := "elasticstack_kibana_synthetics_monitor.icmp-monitor"
 	name := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	spaceID := sdkacctest.RandStringFromCharSet(12, accTestKibanaSpaceIDCharset)
@@ -718,7 +719,6 @@ func TestSyntheticMonitorICMPResource_nonDefaultSpace(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(privatelocation.MinVersionSpaceID),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("icmp_non_default_space"),
 				ConfigVariables: config.Variables{
 					"name":     config.StringVariable(name),
@@ -740,6 +740,8 @@ func TestSyntheticMonitorICMPResource_nonDefaultSpace(t *testing.T) {
 }
 
 func TestSyntheticMonitorBrowserResource_nonDefaultSpace(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, privatelocation.MinVersionSpaceID, versionutils.FlavorAny)
+
 	browserMonitorID := "elasticstack_kibana_synthetics_monitor.browser-monitor"
 	name := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	spaceID := sdkacctest.RandStringFromCharSet(12, accTestKibanaSpaceIDCharset)
@@ -749,7 +751,6 @@ func TestSyntheticMonitorBrowserResource_nonDefaultSpace(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(privatelocation.MinVersionSpaceID),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("browser_non_default_space"),
 				ConfigVariables: config.Variables{
 					"name":     config.StringVariable(name),
@@ -771,6 +772,8 @@ func TestSyntheticMonitorBrowserResource_nonDefaultSpace(t *testing.T) {
 }
 
 func TestSyntheticMonitorLabelsResource(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, monitor.MinLabelsVersion, versionutils.FlavorAny)
+
 	labelsMonitorID := "elasticstack_kibana_synthetics_monitor.http-monitor-labels"
 	name := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
@@ -780,7 +783,6 @@ func TestSyntheticMonitorLabelsResource(t *testing.T) {
 			// Create and Read monitor with labels
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(monitor.MinLabelsVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("labels_create"),
 				ConfigVariables: config.Variables{
 					"name": config.StringVariable(name),
@@ -798,7 +800,6 @@ func TestSyntheticMonitorLabelsResource(t *testing.T) {
 			// ImportState testing
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(monitor.MinLabelsVersion),
 				ResourceName:             labelsMonitorID,
 				ImportState:              true,
 				ImportStateVerify:        true,
@@ -810,7 +811,6 @@ func TestSyntheticMonitorLabelsResource(t *testing.T) {
 			// Update labels - change values but keep same keys
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(monitor.MinLabelsVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("labels_update"),
 				ConfigVariables: config.Variables{
 					"name": config.StringVariable(name),
@@ -827,7 +827,6 @@ func TestSyntheticMonitorLabelsResource(t *testing.T) {
 			// Remove all labels - this tests the round-trip consistency fix
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(monitor.MinLabelsVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("labels_removed"),
 				ConfigVariables: config.Variables{
 					"name": config.StringVariable(name),
