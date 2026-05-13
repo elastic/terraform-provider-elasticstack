@@ -37,13 +37,13 @@
 
 ## 5. Test fixtures
 
-- [ ] 5.1 Update all waffle acceptance test `.tf` fixtures to use `config_json`
-- [ ] 5.2 Update all pie chart acceptance test `.tf` fixtures to use `config_json` and ensure `data_source_json` is present
-- [ ] 5.3 Update all heatmap acceptance test `.tf` fixtures to remove `x_axis_json`/`y_axis_json`
-- [ ] 5.4 Update all treemap acceptance test `.tf` fixtures for ES|QL typed schemas (add new ES|QL test fixtures)
-- [ ] 5.5 Update all mosaic acceptance test `.tf` fixtures for ES|QL typed schemas (add new ES|QL test fixtures)
-- [ ] 5.6 Update XY chart acceptance test `.tf` fixtures to remove required `query` where testing ES|QL mode
-- [ ] 5.7 Update synthetics acceptance test `.tf` fixtures for shared drilldown schema shape changes
+- [x] 5.1 Update all waffle acceptance test `.tf` fixtures to use `config_json`
+- [x] 5.2 Update all pie chart acceptance test `.tf` fixtures to use `config_json` and ensure `data_source_json` is present
+- [x] 5.3 Update all heatmap acceptance test `.tf` fixtures to remove `x_axis_json`/`y_axis_json`
+- [x] 5.4 Update all treemap acceptance test `.tf` fixtures for ES|QL typed schemas (add new ES|QL test fixtures)
+- [x] 5.5 Update all mosaic acceptance test `.tf` fixtures for ES|QL typed schemas (add new ES|QL test fixtures)
+- [x] 5.6 Update XY chart acceptance test `.tf` fixtures to remove required `query` where testing ES|QL mode
+- [x] 5.7 Update synthetics acceptance test `.tf` fixtures for shared drilldown schema shape changes
 
 ## 6. Unit and integration tests
 
