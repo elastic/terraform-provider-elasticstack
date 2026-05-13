@@ -33,6 +33,9 @@ import (
 // setupAccMLCalendar creates an ML calendar via the Elasticsearch API so acceptance tests
 // do not depend on the elasticstack_elasticsearch_ml_calendar resource (which may not
 // be present on all branches). The calendar is deleted in t.Cleanup after the test.
+//
+// Call only from resource.TestCase.PreCheck after acctest.PreCheck so no Elasticsearch
+// work runs when acceptance prerequisites are not satisfied.
 func setupAccMLCalendar(t *testing.T, calendarID string) {
 	t.Helper()
 	ctx := context.Background()
@@ -56,11 +59,8 @@ func setupAccMLCalendar(t *testing.T, calendarID string) {
 }
 
 func TestAccResourceMLCalendarJob_basic(t *testing.T) {
-	acctest.PreCheck(t)
-
 	calendarID := fmt.Sprintf("test-cal-job-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	jobID := fmt.Sprintf("test-cal-job-ad-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
-	setupAccMLCalendar(t, calendarID)
 
 	vars := config.Variables{
 		"calendar_id": config.StringVariable(calendarID),
@@ -71,6 +71,7 @@ func TestAccResourceMLCalendarJob_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			acctest.PreCheck(t)
+			setupAccMLCalendar(t, calendarID)
 		},
 		Steps: []resource.TestStep{
 			{
@@ -88,11 +89,8 @@ func TestAccResourceMLCalendarJob_basic(t *testing.T) {
 }
 
 func TestAccResourceMLCalendarJob_import(t *testing.T) {
-	acctest.PreCheck(t)
-
 	calendarID := fmt.Sprintf("test-cal-job-imp-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	jobID := fmt.Sprintf("test-cal-job-imp-ad-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
-	setupAccMLCalendar(t, calendarID)
 
 	vars := config.Variables{
 		"calendar_id": config.StringVariable(calendarID),
@@ -103,6 +101,7 @@ func TestAccResourceMLCalendarJob_import(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			acctest.PreCheck(t)
+			setupAccMLCalendar(t, calendarID)
 		},
 		Steps: []resource.TestStep{
 			{
