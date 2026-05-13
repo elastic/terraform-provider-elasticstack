@@ -26,6 +26,7 @@ import (
 	timeouts "github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/mapvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -200,8 +201,11 @@ func getSchema(ctx context.Context) schema.Schema {
 									},
 								},
 								"custom_rules": schema.ListNestedAttribute{
-									MarkdownDescription: "Custom rules enable you to customize the way detectors operate.",
-									Optional:            true,
+									MarkdownDescription: "Custom rules enable you to customize the way detectors operate. " +
+										"Each rule must either have a non-empty `scope` or at least one `conditions` entry. " +
+										"Multiple conditions are combined together with a logical AND. " +
+										"A non-empty `scope` and one or more `conditions` may both be set on the same rule; they are not mutually exclusive.",
+									Optional: true,
 									NestedObject: schema.NestedAttributeObject{
 										Attributes: map[string]schema.Attribute{
 											"actions": schema.ListAttribute{
@@ -215,8 +219,11 @@ func getSchema(ctx context.Context) schema.Schema {
 												},
 											},
 											"conditions": schema.ListNestedAttribute{
-												MarkdownDescription: "An array of numeric conditions when the rule applies.",
-												Optional:            true,
+												MarkdownDescription: "An array of numeric conditions when the rule applies. " +
+													"If you specify more than one condition, Elasticsearch combines them together with a logical AND. " +
+													"A rule must either have a non-empty `scope` or at least one condition. " +
+													"You may set `scope` on the same rule.",
+												Optional: true,
 												NestedObject: schema.NestedAttributeObject{
 													Attributes: map[string]schema.Attribute{
 														"applies_to": schema.StringAttribute{
@@ -236,6 +243,37 @@ func getSchema(ctx context.Context) schema.Schema {
 														"value": schema.Float64Attribute{
 															MarkdownDescription: "The value that is compared against the applies_to field using the operator.",
 															Required:            true,
+														},
+													},
+												},
+											},
+											"scope": schema.MapNestedAttribute{
+												MarkdownDescription: "Maps an analysis field name " +
+													"(typically matching `by_field_name`, `over_field_name`, or `partition_field_name` on the detector) " +
+													"to an ML filter reference. Each `filter_id` must identify an ML filter that already exists in the cluster " +
+													"(for example, created using the Elasticsearch ML filter APIs). " +
+													"A rule must either have a non-empty `scope` or at least one condition. " +
+													"You may set `conditions` on the same rule.",
+												Optional: true,
+												Validators: []validator.Map{
+													mapvalidator.SizeAtLeast(1),
+													mapvalidator.NoNullValues(),
+												},
+												NestedObject: schema.NestedAttributeObject{
+													Attributes: map[string]schema.Attribute{
+														"filter_id": schema.StringAttribute{
+															MarkdownDescription: "The ML filter identifier (`filter_id`) to apply.",
+															Required:            true,
+															Validators: []validator.String{
+																stringvalidator.LengthAtLeast(1),
+															},
+														},
+														"filter_type": schema.StringAttribute{
+															MarkdownDescription: "`include` applies the rule to values in the filter; `exclude` applies it to values not in the filter.",
+															Optional:            true,
+															Validators: []validator.String{
+																stringvalidator.OneOf("include", "exclude"),
+															},
 														},
 													},
 												},

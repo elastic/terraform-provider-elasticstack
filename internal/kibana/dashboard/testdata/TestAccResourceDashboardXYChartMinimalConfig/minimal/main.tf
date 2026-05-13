@@ -28,7 +28,7 @@ resource "elasticstack_kibana_dashboard" "test" {
   panels = [{
     type = "vis"
     grid = { x = 0, y = 0, w = 24, h = 15 }
-    viz_config = {
+    vis_config = {
       by_value = {
         xy_chart_config = {
           axis = {

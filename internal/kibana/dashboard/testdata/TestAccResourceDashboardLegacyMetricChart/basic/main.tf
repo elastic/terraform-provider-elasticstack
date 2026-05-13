@@ -25,7 +25,7 @@ resource "elasticstack_kibana_dashboard" "test" {
       w = 24
       h = 10
     }
-    viz_config = {
+    vis_config = {
       by_value = {
         legacy_metric_config = {
           title       = "Legacy Metric"

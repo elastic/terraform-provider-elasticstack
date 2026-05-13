@@ -173,7 +173,21 @@ func getSchema() schema.Schema {
 				Validators:  []validator.List{listvalidator.SizeBetween(1, 1)},
 				NestedObject: schema.NestedBlockObject{
 					Attributes: map[string]schema.Attribute{
-						"duration": schema.StringAttribute{Required: true},
+						"duration": schema.StringAttribute{
+							Required: true,
+							Validators: []validator.String{
+								validators.OneOfWhenDependentPathExpressionEquals(
+									path.MatchRelative().AtParent().AtName("type"),
+									"rolling",
+									[]string{"7d", "30d", "90d"},
+								),
+								validators.OneOfWhenDependentPathExpressionEquals(
+									path.MatchRelative().AtParent().AtName("type"),
+									"calendarAligned",
+									[]string{"1w", "1M"},
+								),
+							},
+						},
 						"type": schema.StringAttribute{
 							Required: true,
 							Validators: []validator.String{
