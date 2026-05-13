@@ -221,8 +221,9 @@ func prepareStreamsEnvironment(t *testing.T) {
 }
 
 func TestAccResourceKibanaStreamWired(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionStreamsAcc, versionutils.FlavorAny)
+
 	suffix := sdkacctest.RandStringFromCharSet(6, sdkacctest.CharSetAlphaNum)
-	skipFn := versionutils.CheckIfVersionIsUnsupported(minVersionStreamsAcc)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() {
@@ -233,7 +234,6 @@ func TestAccResourceKibanaStreamWired(t *testing.T) {
 			// Step 1: create a minimal wired stream.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 skipFn,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"suffix": config.StringVariable(suffix),
@@ -252,7 +252,6 @@ func TestAccResourceKibanaStreamWired(t *testing.T) {
 			// Step 2: add a processing step — assert the step JSON value (not just count).
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 skipFn,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"suffix": config.StringVariable(suffix),
@@ -266,7 +265,6 @@ func TestAccResourceKibanaStreamWired(t *testing.T) {
 			// Step 3: full update — lifecycle, failure_store, index settings, attached query.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 skipFn,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_full"),
 				ConfigVariables: config.Variables{
 					"suffix": config.StringVariable(suffix),
@@ -284,7 +282,6 @@ func TestAccResourceKibanaStreamWired(t *testing.T) {
 			// Step 4: import from the fully-configured state.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 skipFn,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_full"),
 				ConfigVariables: config.Variables{
 					"suffix": config.StringVariable(suffix),
