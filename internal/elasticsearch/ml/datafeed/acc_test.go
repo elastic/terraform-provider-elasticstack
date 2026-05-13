@@ -21,6 +21,7 @@ import (
 	_ "embed"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 	"testing"
 
@@ -30,6 +31,59 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
+
+// testAccCheckMLDatafeedExpandWildcardsFromAll accepts either Elasticsearch representation
+// of indices_options.expand_wildcards = ["all"]: some versions keep a single "all" token,
+// others normalize to open, closed, and hidden. Step 2 (PlanOnly) still proves the
+// provider suppresses perpetual drift via ExpandWildcardsType semantic equality.
+func testAccCheckMLDatafeedExpandWildcardsFromAll(resourceAddr string) resource.TestCheckFunc {
+	prefixes := []string{
+		"indices_options.expand_wildcards.",
+		"indices_options.0.expand_wildcards.",
+	}
+	wantExpanded := []string{"closed", "hidden", "open"}
+
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceAddr]
+		if !ok {
+			return fmt.Errorf("resource not found: %s", resourceAddr)
+		}
+		seen := make(map[string]struct{})
+		var values []string
+		for _, prefix := range prefixes {
+			for k, v := range rs.Primary.Attributes {
+				if !strings.HasPrefix(k, prefix) {
+					continue
+				}
+				rest := strings.TrimPrefix(k, prefix)
+				if rest == "#" {
+					continue
+				}
+				if strings.Contains(rest, ".") {
+					continue
+				}
+				if _, dup := seen[v]; dup {
+					continue
+				}
+				seen[v] = struct{}{}
+				values = append(values, v)
+			}
+		}
+		switch len(values) {
+		case 1:
+			if values[0] == "all" {
+				return nil
+			}
+		case 3:
+			slices.Sort(values)
+			if slices.Equal(values, wantExpanded) {
+				return nil
+			}
+		}
+		slices.Sort(values)
+		return fmt.Errorf("%s: want expand_wildcards [all] or %v, got %v", resourceAddr, wantExpanded, values)
+	}
+}
 
 func TestAccResourceDatafeed(t *testing.T) {
 	jobID := fmt.Sprintf("test-job-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
@@ -446,11 +500,7 @@ func TestAccResourceDatafeedExpandWildcardsAll(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceAddr, "datafeed_id", datafeedID),
-					// This stack returns "all" as-is (1 element). Stacks that expand "all"
-					// to ["open","closed","hidden"] would have count 3; semantic equality
-					// handles both via SetSemanticEquals in either case.
-					resource.TestCheckResourceAttr(resourceAddr, "indices_options.expand_wildcards.#", "1"),
-					resource.TestCheckTypeSetElemAttr(resourceAddr, "indices_options.expand_wildcards.*", "all"),
+					testAccCheckMLDatafeedExpandWildcardsFromAll(resourceAddr),
 				),
 			},
 			// Step 2: re-apply the same config (still expand_wildcards = ["all"]).
