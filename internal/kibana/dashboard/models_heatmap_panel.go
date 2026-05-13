@@ -193,19 +193,19 @@ func (m *heatmapConfigModel) fromAPINoESQL(ctx context.Context, dashboard *dashb
 	m.MetricJSON = preservePriorJSONWithDefaultsIfEquivalent(ctx, m.MetricJSON, mv, &diags)
 
 	xAxisBytes, err := api.X.MarshalJSON()
-	if err != nil {
-		diags.AddError("Failed to marshal x_axis", err.Error())
+	xv, ok := marshalToNormalized(xAxisBytes, err, "x_axis", &diags)
+	if !ok {
 		return diags
 	}
-	m.XAxisJSON = jsontypes.NewNormalizedValue(string(xAxisBytes))
+	m.XAxisJSON = xv
 
 	if api.Y != nil {
 		yAxisBytes, err := api.Y.MarshalJSON()
-		if err != nil {
-			diags.AddError("Failed to marshal y_axis", err.Error())
+		yv, ok := marshalToNormalized(yAxisBytes, err, "y_axis", &diags)
+		if !ok {
 			return diags
 		}
-		m.YAxisJSON = jsontypes.NewNormalizedValue(string(yAxisBytes))
+		m.YAxisJSON = yv
 	} else {
 		m.YAxisJSON = jsontypes.NewNormalizedNull()
 	}

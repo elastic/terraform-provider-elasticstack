@@ -30,13 +30,8 @@ const (
 )
 
 // urlDrilldownModel is the shared Terraform model for URL-only drilldown lists used by
-// panels that hardcode trigger and type (synthetics stats overview, SLO panels, etc.).
-//
-// NOTE: Currently unused after reverting synthetics stats overview to its own drilldown
-// model. Kept for future use when more panel types adopt the shared model.
-
-var _ = urlDrilldownModel{}
-
+// panels that hardcode trigger and type. Currently kept for future use when more panel
+// types adopt the shared shape.
 type urlDrilldownModel struct {
 	URL          types.String `tfsdk:"url"`
 	Label        types.String `tfsdk:"label"`

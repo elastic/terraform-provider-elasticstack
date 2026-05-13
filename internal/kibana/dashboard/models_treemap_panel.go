@@ -234,12 +234,11 @@ func (m *treemapConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashboa
 			} else {
 				m.EsqlMetrics[i].Label = types.StringNull()
 			}
-			formatBytes, err := json.Marshal(met.Format)
-			if err != nil {
-				diags.AddError("Failed to marshal esql metric format", err.Error())
+			formatVal, ok := lensESQLNumberFormatJSONFromAPI(met.Format, "esql_metrics.format_json", &diags)
+			if !ok {
 				continue
 			}
-			m.EsqlMetrics[i].FormatJSON = jsontypes.NewNormalizedValue(string(formatBytes))
+			m.EsqlMetrics[i].FormatJSON = formatVal
 			if met.Color != nil {
 				staticColor, colorErr := met.Color.AsStaticColor()
 				if colorErr == nil {

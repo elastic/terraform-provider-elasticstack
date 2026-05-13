@@ -61,27 +61,19 @@ func tagcloudConfigModeValidateDiags(esqlMode bool, metricJSON, tagByJSON custom
 		}
 	}
 
-	hasNonEmptyQueryMode := !esqlMode
+	hasMetricJSON := tagcloudJSONDefaultsLooksSet(metricJSON)
+	hasTagByJSON := tagcloudJSONDefaultsLooksSet(tagByJSON)
 	hasEsqlMetric := tagcloudObjectLooksSet(esqlMetric)
 	hasEsqlTagBy := tagcloudObjectLooksSet(esqlTagBy)
 
-	if hasNonEmptyQueryMode && (hasEsqlMetric || hasEsqlTagBy) {
-		add(
-			"Invalid tagcloud_config fields",
-			"Do not set `esql_metric` or `esql_tag_by` when using a non-ES|QL tagcloud "+
-				"(`query` with both `expression` and `language` set). "+
-				"Use `metric_json` and `tag_by_json`, or omit `query` for ES|QL mode.",
-		)
-	}
-
 	if esqlMode {
-		if tagcloudJSONDefaultsLooksSet(metricJSON) {
+		if hasMetricJSON {
 			add(
 				"Invalid tagcloud_config for ES|QL mode",
 				"Do not set `metric_json` when using ES|QL mode (omit `query` or leave `query.expression` and `query.language` unset). Use `esql_metric` instead.",
 			)
 		}
-		if tagcloudJSONDefaultsLooksSet(tagByJSON) {
+		if hasTagByJSON {
 			add(
 				"Invalid tagcloud_config for ES|QL mode",
 				"Do not set `tag_by_json` when using ES|QL mode (omit `query` or leave `query.expression` and `query.language` unset). Use `esql_tag_by` instead.",
@@ -107,7 +99,21 @@ func tagcloudConfigModeValidateDiags(esqlMode bool, metricJSON, tagByJSON custom
 	if hasEsqlMetric || hasEsqlTagBy {
 		add(
 			"Invalid tagcloud_config for non-ES|QL mode",
-			"Do not set `esql_metric` or `esql_tag_by` when using a non-ES|QL tagcloud. Set `query` and use `metric_json` / `tag_by_json` instead.",
+			"Do not set `esql_metric` or `esql_tag_by` when using a non-ES|QL tagcloud "+
+				"(`query` with both `expression` and `language` set). "+
+				"Use `metric_json` and `tag_by_json` instead, or omit `query` for ES|QL mode.",
+		)
+	}
+	if !hasMetricJSON {
+		add(
+			"Missing metric_json",
+			"Non-ES|QL tagclouds require `metric_json`. Set it, or omit `query` and provide `esql_metric` for ES|QL mode.",
+		)
+	}
+	if !hasTagByJSON {
+		add(
+			"Missing tag_by_json",
+			"Non-ES|QL tagclouds require `tag_by_json`. Set it, or omit `query` and provide `esql_tag_by` for ES|QL mode.",
 		)
 	}
 	return diags

@@ -87,7 +87,7 @@ func jsonSubset(actual, expected any, path string) error {
 			}
 			av, ok := act[k]
 			if !ok {
-				return fmt.Errorf("%s: missing key %q", subPath, k)
+				return fmt.Errorf("%s: missing key", subPath)
 			}
 			if err := jsonSubset(av, v, subPath); err != nil {
 				return err

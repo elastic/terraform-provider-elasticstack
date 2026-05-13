@@ -243,18 +243,15 @@ func (m *mosaicConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashboar
 		m.GroupBreakdownBy = customtypes.NewJSONWithDefaultsNull(populatePartitionGroupByDefaults)
 	}
 
-	// Populate typed ES|QL metric (exactly one expected)
+	metricFormat, ok := lensESQLNumberFormatJSONFromAPI(api.Metric.Format, "esql_metrics.format_json", &diags)
+	if !ok {
+		return diags
+	}
 	m.EsqlMetrics = []mosaicEsqlMetric{
 		{
-			Column: types.StringValue(api.Metric.Column),
-			FormatJSON: func() jsontypes.Normalized {
-				b, err := json.Marshal(api.Metric.Format)
-				if err != nil {
-					return jsontypes.NewNormalizedNull()
-				}
-				return jsontypes.NewNormalizedValue(string(b))
-			}(),
-			Label: types.StringNull(),
+			Column:     types.StringValue(api.Metric.Column),
+			FormatJSON: metricFormat,
+			Label:      types.StringNull(),
 		},
 	}
 	if api.Metric.Label != nil {

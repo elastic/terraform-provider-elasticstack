@@ -53,24 +53,17 @@ func gaugeConfigModeValidateDiags(esqlMode bool, metricJSON customtypes.JSONWith
 		}
 	}
 
-	hasNonEmptyQueryMode := !esqlMode
+	hasMetricJSON := typeutils.IsKnown(metricJSON) && !metricJSON.IsNull()
 	hasEsqlMetric := typeutils.IsKnown(esqlMetricObj) && !esqlMetricObj.IsNull()
 
-	if hasNonEmptyQueryMode && hasEsqlMetric {
-		add(
-			"Invalid gauge_config fields",
-			"Do not set `esql_metric` when using a non-ES|QL gauge (`query` with both `expression` and `language` set). Omit `esql_metric` and use `metric_json`, or omit `query` for ES|QL mode.",
-		)
-	}
-
 	if esqlMode {
-		if typeutils.IsKnown(metricJSON) && !metricJSON.IsNull() {
+		if hasMetricJSON {
 			add(
 				"Invalid gauge_config for ES|QL mode",
 				"Do not set `metric_json` when using ES|QL mode (omit `query` or leave `query.expression` and `query.language` unset). Use `esql_metric` instead.",
 			)
 		}
-		if !typeutils.IsKnown(esqlMetricObj) || esqlMetricObj.IsNull() {
+		if !hasEsqlMetric {
 			add("Missing esql_metric", "ES|QL gauges require `esql_metric`.")
 		}
 		return diags
@@ -79,7 +72,13 @@ func gaugeConfigModeValidateDiags(esqlMode bool, metricJSON customtypes.JSONWith
 	if hasEsqlMetric {
 		add(
 			"Invalid gauge_config for non-ES|QL mode",
-			"Do not set `esql_metric` when using a non-ES|QL gauge. Set `query` and use `metric_json` instead.",
+			"Do not set `esql_metric` when using a non-ES|QL gauge (`query` with both `expression` and `language` set). Use `metric_json` instead, or omit `query` for ES|QL mode.",
+		)
+	}
+	if !hasMetricJSON {
+		add(
+			"Missing metric_json",
+			"Non-ES|QL gauges require `metric_json`. Set it, or omit `query` and provide `esql_metric` for ES|QL mode.",
 		)
 	}
 	return diags
