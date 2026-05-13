@@ -22,13 +22,13 @@
 
 ## 3. Model layer updates
 
-- [ ] 3.1 Update `waffleConfigModel` struct tags and `toAPI`/`fromAPI`/`fromAPIESQL` for `config_json` rename
-- [ ] 3.2 Update `pieChartConfigModel` struct tags and `toAPI`/`fromAPI`/`fromAPIESQL` for `config_json` rename and `data_source_json` required handling
-- [ ] 3.3 Update `heatmapConfigModel` to remove `XAxisJSON`/`YAxisJSON` fields; update `toAPI`/`fromAPI`/`fromAPIESQL` to map dimensions through internal representation
-- [ ] 3.4 Update `treemapConfigModel` to add ES|QL typed fields; update `toAPI`/`fromAPI`/`fromAPIESQL`
-- [ ] 3.5 Update `mosaicConfigModel` to add ES|QL typed fields; update `toAPI`/`fromAPI`/`fromAPIESQL`
-- [ ] 3.6 Update `xyChartConfigModel` to remove required query handling in `fromAPI`; ensure ES|QL path sets `Query = nil`
-- [ ] 3.7 Update `syntheticsStatsOverviewConfigModel` and `syntheticsMonitorsConfigModel` for shared filter helper and shared drilldown helper
+- [x] 3.1 Update `waffleConfigModel` struct tags and `toAPI`/`fromAPI`/`fromAPIESQL` for `config_json` rename
+- [x] 3.2 Update `pieChartConfigModel` struct tags and `toAPI`/`fromAPI`/`fromAPIESQL` for `config_json` rename and `data_source_json` required handling
+- [x] 3.3 Update `heatmapConfigModel` to remove `XAxisJSON`/`YAxisJSON` fields; update `toAPI`/`fromAPI`/`fromAPIESQL` to map dimensions through internal representation
+- [x] 3.4 Update `treemapConfigModel` to add ES|QL typed fields; update `toAPI`/`fromAPI`/`fromAPIESQL`
+- [x] 3.5 Update `mosaicConfigModel` to add ES|QL typed fields; update `toAPI`/`fromAPI`/`fromAPIESQL`
+- [x] 3.6 Update `xyChartConfigModel` to remove required query handling in `fromAPI`; ensure ES|QL path sets `Query = nil`
+- [x] 3.7 Update `syntheticsStatsOverviewConfigModel` and `syntheticsMonitorsConfigModel` for shared filter helper and shared drilldown helper
 
 ## 4. Default normalization and config_json defaults
 
