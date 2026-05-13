@@ -25,7 +25,7 @@ resource "elasticstack_kibana_dashboard" "test" {
       w = 24
       h = 15
     }
-    viz_config = {
+    vis_config = {
       by_value = {
         xy_chart_config = {
           title       = "Sample XY Chart"

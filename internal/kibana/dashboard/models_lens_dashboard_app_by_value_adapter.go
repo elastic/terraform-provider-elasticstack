@@ -219,7 +219,7 @@ func tryPopulateTypedLensByValueFromAPI(
 	if !hasTyped {
 		return false
 	}
-	conv, ok := firstLensVizConverterForChartBlocks(priorBlocks)
+	conv, ok := firstLensVisConverterForChartBlocks(priorBlocks)
 	if !ok {
 		return false
 	}
@@ -227,7 +227,7 @@ func tryPopulateTypedLensByValueFromAPI(
 	if err := json.Unmarshal(configBytes, &vis0); err != nil {
 		return false
 	}
-	if conv.vizType() != detectLensVizType(vis0) {
+	if conv.visType() != detectLensVisType(vis0) {
 		return false
 	}
 	var scratch lensByValueChartBlocks
@@ -267,18 +267,18 @@ func lensByValueToScratchVisPanel(by lensDashboardAppByValueModel) (panelModel, 
 		return panelModel{}, false
 	}
 	return panelModel{
-		VizConfig: &vizConfigModel{
-			ByValue: &vizByValueModel{lensByValueChartBlocks: *blocks},
+		VisConfig: &visConfigModel{
+			ByValue: &visByValueModel{lensByValueChartBlocks: *blocks},
 		},
 	}, true
 }
 
-// firstLensVizConverterForPanel resolves the Lens converter for whichever typed chart sits under
-// viz_config.by_value or lens_dashboard_app_config.by_value on the panel.
-func firstLensVizConverterForPanel(pm panelModel) (lensVisualizationConverter, bool) {
+// firstLensVisConverterForPanel resolves the Lens converter for whichever typed chart sits under
+// vis_config.by_value or lens_dashboard_app_config.by_value on the panel.
+func firstLensVisConverterForPanel(pm panelModel) (lensVisualizationConverter, bool) {
 	blocks := lensByValueChartBlocksFromPanel(&pm)
 	if blocks == nil {
 		return nil, false
 	}
-	return firstLensVizConverterForChartBlocks(blocks)
+	return firstLensVisConverterForChartBlocks(blocks)
 }

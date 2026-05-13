@@ -18,10 +18,10 @@
 package dashboard_test
 
 import (
-	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/acctest/checks"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -92,17 +92,17 @@ func TestAccResourceDashboardMetricChart(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.x", "0"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.y", "0"),
 					// Check metric chart config
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.metric_chart_config.title", "Sample Metric Chart"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.metric_chart_config.description", "Test metric chart visualization"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.metric_chart_config.ignore_global_filters", "false"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.metric_chart_config.sampling", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.metric_chart_config.title", "Sample Metric Chart"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.metric_chart_config.description", "Test metric chart visualization"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.metric_chart_config.ignore_global_filters", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.metric_chart_config.sampling", "1"),
 					// Check query
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.metric_chart_config.query.language", "kql"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.metric_chart_config.query.expression", ""),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.metric_chart_config.query.language", "kql"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.metric_chart_config.query.expression", ""),
 					// Check JSON fields are set
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.metric_chart_config.data_source_json"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.metric_chart_config.metrics.#", "1"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.metric_chart_config.metrics.0.config_json"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.metric_chart_config.data_source_json"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.metric_chart_config.metrics.#", "1"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.metric_chart_config.metrics.0.config_json"),
 				),
 			},
 			{
@@ -117,21 +117,21 @@ func TestAccResourceDashboardMetricChart(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "title", dashboardTitle+" with Filters"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.#", "1"),
 					// Check metric chart config with filters
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.metric_chart_config.title", "Sample Metric Chart with Filters"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.metric_chart_config.description", "Test metric chart with filters visualization"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.metric_chart_config.ignore_global_filters", "false"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.metric_chart_config.sampling", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.metric_chart_config.title", "Sample Metric Chart with Filters"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.metric_chart_config.description", "Test metric chart with filters visualization"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.metric_chart_config.ignore_global_filters", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.metric_chart_config.sampling", "1"),
 					// Check query
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.metric_chart_config.query.language", "kql"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.metric_chart_config.query.expression", "status:active"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.metric_chart_config.query.language", "kql"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.metric_chart_config.query.expression", "status:active"),
 					// Check JSON fields are set
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.metric_chart_config.data_source_json"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.metric_chart_config.metrics.#", "1"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.metric_chart_config.metrics.0.config_json"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.metric_chart_config.breakdown_by_json"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.metric_chart_config.data_source_json"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.metric_chart_config.metrics.#", "1"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.metric_chart_config.metrics.0.config_json"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.metric_chart_config.breakdown_by_json"),
 					// Check filters
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.metric_chart_config.filters.#", "1"),
-					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.metric_chart_config.filters.0.filter_json", regexp.MustCompile(`"field":"event.category"`)),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.metric_chart_config.filters.#", "1"),
+					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.metric_chart_config.filters.0.filter_json", `{"condition":{"field":"event.category","operator":"is","value":"web"},"type":"condition"}`), //nolint:lll
 				),
 			},
 			{
@@ -146,12 +146,12 @@ func TestAccResourceDashboardMetricChart(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "title", dashboardTitle+" with Secondary Metric"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.#", "1"),
 					// Check metric chart config with secondary metric
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.metric_chart_config.title", "Sample Metric Chart with Secondary Metric"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.metric_chart_config.description", "Test metric chart with secondary metric"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.metric_chart_config.data_source_json"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.metric_chart_config.metrics.#", "2"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.metric_chart_config.metrics.0.config_json"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.metric_chart_config.metrics.1.config_json"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.metric_chart_config.title", "Sample Metric Chart with Secondary Metric"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.metric_chart_config.description", "Test metric chart with secondary metric"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.metric_chart_config.data_source_json"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.metric_chart_config.metrics.#", "2"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.metric_chart_config.metrics.0.config_json"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.metric_chart_config.metrics.1.config_json"),
 				),
 			},
 			{
@@ -166,12 +166,12 @@ func TestAccResourceDashboardMetricChart(t *testing.T) {
 				ImportStateVerify: true,
 				// Ignore JSON fields that may have API/defaults differences
 				ImportStateVerifyIgnore: []string{
-					"panels.0.viz_config.by_value.metric_chart_config.title",
-					"panels.0.viz_config.by_value.metric_chart_config.description",
-					"panels.0.viz_config.by_value.metric_chart_config.data_source_json",
-					"panels.0.viz_config.by_value.metric_chart_config.metrics.0.config_json",
-					"panels.0.viz_config.by_value.metric_chart_config.metrics.1.config_json",
-					"panels.0.viz_config.by_value.metric_chart_config.breakdown_by_json",
+					"panels.0.vis_config.by_value.metric_chart_config.title",
+					"panels.0.vis_config.by_value.metric_chart_config.description",
+					"panels.0.vis_config.by_value.metric_chart_config.data_source_json",
+					"panels.0.vis_config.by_value.metric_chart_config.metrics.0.config_json",
+					"panels.0.vis_config.by_value.metric_chart_config.metrics.1.config_json",
+					"panels.0.vis_config.by_value.metric_chart_config.breakdown_by_json",
 				},
 			},
 		},
@@ -193,12 +193,12 @@ func TestAccResourceDashboardMetricChart_lensPresentationCrossCutting(t *testing
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.metric_chart_config.time_range.from", "now-30d"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.metric_chart_config.time_range.to", "now-1d"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.metric_chart_config.hide_title", "true"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.metric_chart_config.drilldowns.#", "1"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.metric_chart_config.drilldowns.0.discover_drilldown.label", "Open Discover"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.metric_chart_config.drilldowns.0.discover_drilldown.trigger", "on_apply_filter"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.metric_chart_config.time_range.from", "now-30d"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.metric_chart_config.time_range.to", "now-1d"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.metric_chart_config.hide_title", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.metric_chart_config.drilldowns.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.metric_chart_config.drilldowns.0.discover_drilldown.label", "Open Discover"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.metric_chart_config.drilldowns.0.discover_drilldown.trigger", "on_apply_filter"),
 				),
 			},
 			{

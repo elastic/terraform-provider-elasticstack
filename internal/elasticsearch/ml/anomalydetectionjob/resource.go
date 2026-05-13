@@ -27,9 +27,10 @@ import (
 )
 
 var (
-	_ resource.Resource                = newAnomalyDetectionJobResource()
-	_ resource.ResourceWithConfigure   = newAnomalyDetectionJobResource()
-	_ resource.ResourceWithImportState = newAnomalyDetectionJobResource()
+	_ resource.Resource                   = newAnomalyDetectionJobResource()
+	_ resource.ResourceWithConfigure      = newAnomalyDetectionJobResource()
+	_ resource.ResourceWithImportState    = newAnomalyDetectionJobResource()
+	_ resource.ResourceWithValidateConfig = newAnomalyDetectionJobResource()
 )
 
 type anomalyDetectionJobResource struct {
@@ -53,6 +54,16 @@ func newAnomalyDetectionJobResource() *anomalyDetectionJobResource {
 
 func NewAnomalyDetectionJobResource() resource.Resource {
 	return newAnomalyDetectionJobResource()
+}
+
+// ValidateConfig rejects custom rules with no scope and no conditions when both are known at plan time.
+func (r *anomalyDetectionJobResource) ValidateConfig(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
+	var config TFModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	resp.Diagnostics.Append(validateConfigCustomRules(ctx, &config)...)
 }
 
 func (r *anomalyDetectionJobResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

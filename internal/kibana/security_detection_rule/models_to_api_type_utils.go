@@ -31,6 +31,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
@@ -76,28 +77,7 @@ func (d Data) buildOsqueryResponseAction(ctx context.Context, params ResponseAct
 		timeout := float32(params.Timeout.ValueInt64())
 		osqueryAction.Params.Timeout = &timeout
 	}
-	if typeutils.IsKnown(params.EcsMapping) {
-
-		// Convert map to ECS mapping structure
-		ecsMappingElems := make(map[string]basetypes.StringValue)
-		elemDiags := params.EcsMapping.ElementsAs(ctx, &ecsMappingElems, false)
-		if !elemDiags.HasError() {
-			ecsMapping := make(kbapi.SecurityDetectionsAPIEcsMapping)
-			for key, value := range ecsMappingElems {
-				if stringVal := value; typeutils.IsKnown(value) {
-					ecsMapping[key] = struct {
-						Field *string                                      `json:"field,omitempty"`
-						Value *kbapi.SecurityDetectionsAPIEcsMapping_Value `json:"value,omitempty"`
-					}{
-						Field: stringVal.ValueStringPointer(),
-					}
-				}
-			}
-			osqueryAction.Params.EcsMapping = &ecsMapping
-		} else {
-			diags.Append(elemDiags...)
-		}
-	}
+	osqueryAction.Params.EcsMapping = buildEcsMappingFromModel(ctx, params.EcsMapping, &diags)
 	if typeutils.IsKnown(params.Queries) {
 		queries := make([]OsqueryQueryModel, len(params.Queries.Elements()))
 		queriesDiags := params.Queries.ElementsAs(ctx, &queries, false)
@@ -120,25 +100,7 @@ func (d Data) buildOsqueryResponseAction(ctx context.Context, params ResponseAct
 				if typeutils.IsKnown(query.Snapshot) {
 					apiQuery.Snapshot = query.Snapshot.ValueBoolPointer()
 				}
-				if typeutils.IsKnown(query.EcsMapping) {
-					// Convert map to ECS mapping structure for queries
-					queryEcsMappingElems := make(map[string]basetypes.StringValue)
-					queryElemDiags := query.EcsMapping.ElementsAs(ctx, &queryEcsMappingElems, false)
-					if !queryElemDiags.HasError() {
-						queryEcsMapping := make(kbapi.SecurityDetectionsAPIEcsMapping)
-						for key, value := range queryEcsMappingElems {
-							if stringVal := value; typeutils.IsKnown(value) {
-								queryEcsMapping[key] = struct {
-									Field *string                                      `json:"field,omitempty"`
-									Value *kbapi.SecurityDetectionsAPIEcsMapping_Value `json:"value,omitempty"`
-								}{
-									Field: stringVal.ValueStringPointer(),
-								}
-							}
-						}
-						apiQuery.EcsMapping = &queryEcsMapping
-					}
-				}
+				apiQuery.EcsMapping = buildEcsMappingFromModel(ctx, query.EcsMapping, &diags)
 				apiQueries = append(apiQueries, apiQuery)
 			}
 			osqueryAction.Params.Queries = &apiQueries
@@ -892,6 +854,28 @@ func (d Data) threatFiltersToAPI(ctx context.Context) (*kbapi.SecurityDetections
 	}
 
 	return &apiThreatFilters, diags
+}
+
+// buildEcsMappingFromModel converts a types.Map to a kbapi ECS mapping pointer.
+func buildEcsMappingFromModel(ctx context.Context, value types.Map, diags *diag.Diagnostics) *kbapi.SecurityDetectionsAPIEcsMapping {
+	if !typeutils.IsKnown(value) {
+		return nil
+	}
+	elems := make(map[string]basetypes.StringValue)
+	if d := value.ElementsAs(ctx, &elems, false); d.HasError() {
+		diags.Append(d...)
+		return nil
+	}
+	result := make(kbapi.SecurityDetectionsAPIEcsMapping, len(elems))
+	for key, v := range elems {
+		if typeutils.IsKnown(v) {
+			result[key] = struct {
+				Field *string                                      `json:"field,omitempty"`
+				Value *kbapi.SecurityDetectionsAPIEcsMapping_Value `json:"value,omitempty"`
+			}{Field: v.ValueStringPointer()}
+		}
+	}
+	return &result
 }
 
 // parseDurationToAPI converts a customtypes.Duration to the API structure

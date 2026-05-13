@@ -654,6 +654,22 @@ func TestAccResourceSloValidation(t *testing.T) {
 				},
 				ExpectError: regexp.MustCompile(`(?s)time_window\[[0-9]\]\.type.*not_a_valid_type`),
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("time_window_invalid_duration_rolling"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable("tw-dur-rolling"),
+				},
+				ExpectError: regexp.MustCompile(`(?s)Invalid Attribute Value Match.*duration`),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("time_window_invalid_duration_calendar"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable("tw-dur-calendar"),
+				},
+				ExpectError: regexp.MustCompile(`(?s)Invalid Attribute Value Match.*duration`),
+			},
 		},
 	})
 }

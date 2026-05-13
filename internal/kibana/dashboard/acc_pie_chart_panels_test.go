@@ -18,10 +18,10 @@
 package dashboard_test
 
 import (
-	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/acctest/checks"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -48,23 +48,23 @@ func TestAccResourceDashboardPieChart(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.type", "vis"),
 
 					// Check pie chart config
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.pie_chart_config.title", "Sample Pie Chart"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.pie_chart_config.description", "Test pie chart visualization"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.pie_chart_config.donut_hole", "s"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.pie_chart_config.label_position", "inside"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.title", "Sample Pie Chart"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.description", "Test pie chart visualization"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.donut_hole", "s"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.label_position", "inside"),
 
 					// Check query
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.pie_chart_config.query.language", "kql"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.query.language", "kql"),
 
 					// Check JSON fields are set
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.pie_chart_config.data_source_json"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.data_source_json"),
 					// Omitted legend in config: schema default matches typical Kibana read-back (size/visibility auto)
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.pie_chart_config.legend.size", "auto"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.pie_chart_config.legend.visible", "auto"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.pie_chart_config.metrics.#", "1"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.pie_chart_config.metrics.0.config"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.pie_chart_config.group_by.#", "1"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.pie_chart_config.group_by.0.config"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.legend.size", "auto"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.legend.visible", "auto"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.metrics.#", "1"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.metrics.0.config"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.group_by.#", "1"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.group_by.0.config"),
 				),
 			},
 			{
@@ -80,30 +80,30 @@ func TestAccResourceDashboardPieChart(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "title", dashboardTitle),
 
 					// Check pie chart config
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.pie_chart_config.title", "Full Pie Chart"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.pie_chart_config.description", "Full pie chart visualization"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.pie_chart_config.donut_hole", "l"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.pie_chart_config.label_position", "outside"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.title", "Full Pie Chart"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.description", "Full pie chart visualization"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.donut_hole", "l"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.label_position", "outside"),
 
 					// Check new attributes (using values compatible with current API behavior/defaults)
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.pie_chart_config.ignore_global_filters", "false"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.pie_chart_config.sampling", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.ignore_global_filters", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.sampling", "1"),
 
 					// Check JSON fields and structured legend (including optional nested / truncate)
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.pie_chart_config.data_source_json"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.pie_chart_config.legend.size", "auto"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.pie_chart_config.legend.visible", "visible"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.pie_chart_config.legend.nested", "true"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.pie_chart_config.legend.truncate_after_lines", "5"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.data_source_json"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.legend.size", "auto"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.legend.visible", "visible"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.legend.nested", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.legend.truncate_after_lines", "5"),
 
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.pie_chart_config.filters.#", "1"),
-					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.pie_chart_config.filters.0.filter_json", regexp.MustCompile(`"field":"response"`)),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.filters.#", "1"),
+					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.filters.0.filter_json", `{"condition":{"field":"response","operator":"is","value":"200"},"type":"condition"}`), //nolint:lll
 
 					// Check metrics and group_by
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.pie_chart_config.metrics.#", "1"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.pie_chart_config.metrics.0.config"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.pie_chart_config.group_by.#", "1"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.pie_chart_config.group_by.0.config"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.metrics.#", "1"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.metrics.0.config"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.group_by.#", "1"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.group_by.0.config"),
 				),
 			},
 			{
@@ -119,11 +119,11 @@ func TestAccResourceDashboardPieChart(t *testing.T) {
 				// Legend attributes are verified in apply steps above; import compares them too.
 				// JSON blobs stay ignored due to normalization; treemap follows the same pattern.
 				ImportStateVerifyIgnore: []string{
-					"panels.0.viz_config.by_value.pie_chart_config.title",
-					"panels.0.viz_config.by_value.pie_chart_config.description",
-					"panels.0.viz_config.by_value.pie_chart_config.group_by.0.config",
-					"panels.0.viz_config.by_value.pie_chart_config.metrics.0.config",
-					"panels.0.viz_config.by_value.pie_chart_config.data_source_json",
+					"panels.0.vis_config.by_value.pie_chart_config.title",
+					"panels.0.vis_config.by_value.pie_chart_config.description",
+					"panels.0.vis_config.by_value.pie_chart_config.group_by.0.config",
+					"panels.0.vis_config.by_value.pie_chart_config.metrics.0.config",
+					"panels.0.vis_config.by_value.pie_chart_config.data_source_json",
 				},
 			},
 		},
@@ -145,12 +145,12 @@ func TestAccResourceDashboardPieChart_lensPresentationCrossCutting(t *testing.T)
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.pie_chart_config.time_range.from", "now-30d"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.pie_chart_config.time_range.to", "now-1d"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.pie_chart_config.hide_title", "true"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.pie_chart_config.drilldowns.#", "1"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.pie_chart_config.drilldowns.0.discover_drilldown.label", "Open Discover"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.viz_config.by_value.pie_chart_config.drilldowns.0.discover_drilldown.trigger", "on_apply_filter"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.time_range.from", "now-30d"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.time_range.to", "now-1d"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.hide_title", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.drilldowns.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.drilldowns.0.discover_drilldown.label", "Open Discover"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.drilldowns.0.discover_drilldown.trigger", "on_apply_filter"),
 				),
 			},
 			{

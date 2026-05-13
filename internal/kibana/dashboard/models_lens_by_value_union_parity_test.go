@@ -328,7 +328,7 @@ func (m lensDashboardAppByValueModel) metricsTypedVis0(t *testing.T) kbapi.KbnDa
 	t.Helper()
 	pm, ok := lensByValueToScratchVisPanel(m)
 	require.True(t, ok)
-	conv, okc := firstLensVizConverterForPanel(pm)
+	conv, okc := firstLensVisConverterForPanel(pm)
 	require.True(t, okc)
 	blocks := lensByValueChartBlocksFromPanel(&pm)
 	require.NotNil(t, blocks)

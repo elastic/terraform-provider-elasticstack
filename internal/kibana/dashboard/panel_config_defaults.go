@@ -55,8 +55,8 @@ func populateLensAttributesDefaults(attrs map[string]any) map[string]any {
 		return attrs
 	}
 
-	vizType, _ := attrs["type"].(string)
-	switch vizType {
+	visType, _ := attrs["type"].(string)
+	switch visType {
 	case "legacy_metric":
 		populateLegacyMetricAttributes(attrs)
 	case "tagcloud":

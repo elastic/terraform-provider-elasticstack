@@ -29,8 +29,8 @@ import (
 func Test_alignPanelStateFromPlan_preservesCommonPanelFields(t *testing.T) {
 	planPanels := []panelModel{
 		{
-			VizConfig: &vizConfigModel{
-				ByValue: &vizByValueModel{
+			VisConfig: &visConfigModel{
+				ByValue: &visByValueModel{
 					lensByValueChartBlocks: lensByValueChartBlocks{
 						MosaicConfig: &mosaicConfigModel{
 							Title:       types.StringValue("Sample Mosaic"),
@@ -48,8 +48,8 @@ func Test_alignPanelStateFromPlan_preservesCommonPanelFields(t *testing.T) {
 			},
 		},
 		{
-			VizConfig: &vizConfigModel{
-				ByValue: &vizByValueModel{
+			VisConfig: &visConfigModel{
+				ByValue: &visByValueModel{
 					lensByValueChartBlocks: lensByValueChartBlocks{
 						TagcloudConfig: &tagcloudConfigModel{
 							Title:       types.StringValue("Sample Tagcloud"),
@@ -64,8 +64,8 @@ func Test_alignPanelStateFromPlan_preservesCommonPanelFields(t *testing.T) {
 
 	statePanels := []panelModel{
 		{
-			VizConfig: &vizConfigModel{
-				ByValue: &vizByValueModel{
+			VisConfig: &visConfigModel{
+				ByValue: &visByValueModel{
 					lensByValueChartBlocks: lensByValueChartBlocks{
 						MosaicConfig: &mosaicConfigModel{
 							Title:       types.StringValue(""),
@@ -83,8 +83,8 @@ func Test_alignPanelStateFromPlan_preservesCommonPanelFields(t *testing.T) {
 			},
 		},
 		{
-			VizConfig: &vizConfigModel{
-				ByValue: &vizByValueModel{
+			VisConfig: &visConfigModel{
+				ByValue: &visByValueModel{
 					lensByValueChartBlocks: lensByValueChartBlocks{
 						TagcloudConfig: &tagcloudConfigModel{
 							Title:       types.StringValue(""),
@@ -103,20 +103,20 @@ func Test_alignPanelStateFromPlan_preservesCommonPanelFields(t *testing.T) {
 		alignPanelStateFromPlan(t.Context(), &planPanels[i], &statePanels[i])
 	}
 
-	assert.Equal(t, planPanels[0].VizConfig.ByValue.MosaicConfig.Title, statePanels[0].VizConfig.ByValue.MosaicConfig.Title)
-	assert.Equal(t, planPanels[0].VizConfig.ByValue.MosaicConfig.Description, statePanels[0].VizConfig.ByValue.MosaicConfig.Description)
+	assert.Equal(t, planPanels[0].VisConfig.ByValue.MosaicConfig.Title, statePanels[0].VisConfig.ByValue.MosaicConfig.Title)
+	assert.Equal(t, planPanels[0].VisConfig.ByValue.MosaicConfig.Description, statePanels[0].VisConfig.ByValue.MosaicConfig.Description)
 	assert.Equal(t, planPanels[1].EsqlControlConfig.EsqlQuery, statePanels[1].EsqlControlConfig.EsqlQuery)
 	assert.Equal(t, planPanels[1].EsqlControlConfig.Title, statePanels[1].EsqlControlConfig.Title)
 	assert.Equal(t, planPanels[1].EsqlControlConfig.AvailableOptions, statePanels[1].EsqlControlConfig.AvailableOptions)
-	assert.Equal(t, planPanels[2].VizConfig.ByValue.TagcloudConfig.Title, statePanels[2].VizConfig.ByValue.TagcloudConfig.Title)
-	assert.Equal(t, planPanels[2].VizConfig.ByValue.TagcloudConfig.Description, statePanels[2].VizConfig.ByValue.TagcloudConfig.Description)
-	assert.Equal(t, planPanels[2].VizConfig.ByValue.TagcloudConfig.TagByJSON.ValueString(), statePanels[2].VizConfig.ByValue.TagcloudConfig.TagByJSON.ValueString())
+	assert.Equal(t, planPanels[2].VisConfig.ByValue.TagcloudConfig.Title, statePanels[2].VisConfig.ByValue.TagcloudConfig.Title)
+	assert.Equal(t, planPanels[2].VisConfig.ByValue.TagcloudConfig.Description, statePanels[2].VisConfig.ByValue.TagcloudConfig.Description)
+	assert.Equal(t, planPanels[2].VisConfig.ByValue.TagcloudConfig.TagByJSON.ValueString(), statePanels[2].VisConfig.ByValue.TagcloudConfig.TagByJSON.ValueString())
 }
 
 func Test_alignPanelStateFromPlan_preservesMosaicTreemapPartitionSnapshots(t *testing.T) {
 	plan := panelModel{
-		VizConfig: &vizConfigModel{
-			ByValue: &vizByValueModel{
+		VisConfig: &visConfigModel{
+			ByValue: &visByValueModel{
 				lensByValueChartBlocks: lensByValueChartBlocks{
 					MosaicConfig: &mosaicConfigModel{
 						Title:               types.StringValue("M"),
@@ -135,8 +135,8 @@ func Test_alignPanelStateFromPlan_preservesMosaicTreemapPartitionSnapshots(t *te
 		},
 	}
 	state := panelModel{
-		VizConfig: &vizConfigModel{
-			ByValue: &vizByValueModel{
+		VisConfig: &visConfigModel{
+			ByValue: &visByValueModel{
 				lensByValueChartBlocks: lensByValueChartBlocks{
 					MosaicConfig: &mosaicConfigModel{
 						Title:               types.StringValue("M"),
@@ -157,10 +157,10 @@ func Test_alignPanelStateFromPlan_preservesMosaicTreemapPartitionSnapshots(t *te
 
 	alignPanelStateFromPlan(t.Context(), &plan, &state)
 
-	assert.True(t, state.VizConfig.ByValue.MosaicConfig.IgnoreGlobalFilters.ValueBool())
-	assert.InEpsilon(t, 0.5, state.VizConfig.ByValue.MosaicConfig.Sampling.ValueFloat64(), 1e-9)
-	assert.True(t, state.VizConfig.ByValue.TreemapConfig.IgnoreGlobalFilters.ValueBool())
-	assert.InEpsilon(t, 0.5, state.VizConfig.ByValue.TreemapConfig.Sampling.ValueFloat64(), 1e-9)
+	assert.True(t, state.VisConfig.ByValue.MosaicConfig.IgnoreGlobalFilters.ValueBool())
+	assert.InEpsilon(t, 0.5, state.VisConfig.ByValue.MosaicConfig.Sampling.ValueFloat64(), 1e-9)
+	assert.True(t, state.VisConfig.ByValue.TreemapConfig.IgnoreGlobalFilters.ValueBool())
+	assert.InEpsilon(t, 0.5, state.VisConfig.ByValue.TreemapConfig.Sampling.ValueFloat64(), 1e-9)
 }
 
 func mustTagcloudJSON(v string) customtypes.JSONWithDefaultsValue[map[string]any] {

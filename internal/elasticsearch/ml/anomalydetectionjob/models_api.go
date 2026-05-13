@@ -26,6 +26,7 @@ import (
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/appliesto"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/conditionoperator"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/excludefrequent"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/filtertype"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/ruleaction"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -85,10 +86,17 @@ type DetectorAPIModel struct {
 	CustomRules         []CustomRuleAPIModel `json:"custom_rules,omitempty"`
 }
 
+// FilterScopeAPIModel is one entry under a detection rule's scope (field name -> ML filter).
+type FilterScopeAPIModel struct {
+	FilterID   string `json:"filter_id"`
+	FilterType string `json:"filter_type,omitempty"`
+}
+
 // CustomRuleAPIModel represents a custom rule in API format
 type CustomRuleAPIModel struct {
-	Actions    []any                   `json:"actions,omitempty"`
-	Conditions []RuleConditionAPIModel `json:"conditions,omitempty"`
+	Actions    []any                          `json:"actions,omitempty"`
+	Conditions []RuleConditionAPIModel        `json:"conditions,omitempty"`
+	Scope      map[string]FilterScopeAPIModel `json:"scope,omitempty"`
 }
 
 // RuleConditionAPIModel represents a rule condition in API format
@@ -478,6 +486,17 @@ func detectionRuleAPIModelToTyped(cr *CustomRuleAPIModel) types.DetectionRule {
 			}
 		}
 	}
+	if len(cr.Scope) > 0 {
+		rule.Scope = make(map[string]types.FilterRef, len(cr.Scope))
+		for k, v := range cr.Scope {
+			fr := types.FilterRef{FilterId: v.FilterID}
+			if v.FilterType != "" {
+				ft := filtertype.FilterType{Name: v.FilterType}
+				fr.FilterType = &ft
+			}
+			rule.Scope[k] = fr
+		}
+	}
 	return rule
 }
 
@@ -563,6 +582,16 @@ func typedDetectionRuleToAPIModel(cr *types.DetectionRule) CustomRuleAPIModel {
 				Operator:  c.Operator.Name,
 				Value:     float64(c.Value),
 			}
+		}
+	}
+	if len(cr.Scope) > 0 {
+		rule.Scope = make(map[string]FilterScopeAPIModel, len(cr.Scope))
+		for k, v := range cr.Scope {
+			fs := FilterScopeAPIModel{FilterID: v.FilterId}
+			if v.FilterType != nil {
+				fs.FilterType = v.FilterType.Name
+			}
+			rule.Scope[k] = fs
 		}
 	}
 	return rule

@@ -60,12 +60,12 @@ func Test_mosaicPanelConfigConverter_populateFromAttributes_buildAttributes_roun
 	require.NoError(t, attrs.FromMosaicNoESQL(api))
 
 	converter := newMosaicPanelConfigConverter()
-	vizBv := vizByValueModel{}
-	diags := converter.populateFromAttributes(ctx, nil, nil, &vizBv.lensByValueChartBlocks, attrs)
+	visBv := visByValueModel{}
+	diags := converter.populateFromAttributes(ctx, nil, nil, &visBv.lensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
-	require.NotNil(t, vizBv.MosaicConfig)
+	require.NotNil(t, visBv.MosaicConfig)
 
-	attrs2, diags := converter.buildAttributes(&vizBv.lensByValueChartBlocks, nil)
+	attrs2, diags := converter.buildAttributes(&visBv.lensByValueChartBlocks, nil)
 	require.False(t, diags.HasError())
 
 	noESQL2, err := attrs2.AsMosaicNoESQL()
@@ -100,12 +100,12 @@ func Test_mosaicPanelConfigConverter_populateFromAttributes_buildAttributes_roun
 	require.NoError(t, attrs.FromMosaicESQL(api))
 
 	converter := newMosaicPanelConfigConverter()
-	vizBv := vizByValueModel{}
-	diags := converter.populateFromAttributes(ctx, nil, nil, &vizBv.lensByValueChartBlocks, attrs)
+	visBv := visByValueModel{}
+	diags := converter.populateFromAttributes(ctx, nil, nil, &visBv.lensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
-	require.NotNil(t, vizBv.MosaicConfig)
+	require.NotNil(t, visBv.MosaicConfig)
 
-	attrs2, diags := converter.buildAttributes(&vizBv.lensByValueChartBlocks, nil)
+	attrs2, diags := converter.buildAttributes(&visBv.lensByValueChartBlocks, nil)
 	require.False(t, diags.HasError())
 
 	esql2, err := attrs2.AsMosaicESQL()
@@ -403,10 +403,10 @@ func Test_mosaicConfig_lensChartPresentation_hideTitleRoundTrip(t *testing.T) {
 	dash := lensPresentationTestDashboard()
 	pm := buildLensMosaicPanelForTest(t)
 
-	require.NotNil(t, pm.VizConfig)
-	require.NotNil(t, pm.VizConfig.ByValue)
-	require.NotNil(t, pm.VizConfig.ByValue.MosaicConfig)
-	m := *pm.VizConfig.ByValue.MosaicConfig
+	require.NotNil(t, pm.VisConfig)
+	require.NotNil(t, pm.VisConfig.ByValue)
+	require.NotNil(t, pm.VisConfig.ByValue.MosaicConfig)
+	m := *pm.VisConfig.ByValue.MosaicConfig
 	m.HideTitle = types.BoolValue(true)
 
 	attrs, diags := m.toAPI(dash)
