@@ -93,7 +93,7 @@ This identifier can contain lowercase alphanumeric characters (a-z and 0-9), hyp
 - `model_plot_config` (Attributes) This advanced configuration option stores model information along with the results. It provides a more detailed view into anomaly detection. (see [below for nested schema](#nestedatt--model_plot_config))
 - `model_snapshot_retention_days` (Number) Advanced configuration option, which affects the automatic removal of old model snapshots for this job.
 - `renormalization_window_days` (Number) Advanced configuration option. The period over which adjustments to the score are applied, as new data is seen.
-- `results_index_name` (String) A text string that affects the name of the machine learning results index.
+- `results_index_name` (String) A text string that affects the name of the machine learning results index. Do not start the value with `custom-`; Elasticsearch automatically adds this prefix.
 - `results_retention_days` (Number) Advanced configuration option. The period of time (in days) that results are retained.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 

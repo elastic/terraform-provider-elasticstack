@@ -445,7 +445,7 @@ func getSchema(ctx context.Context) schema.Schema {
 				},
 			},
 			"results_index_name": schema.StringAttribute{
-				MarkdownDescription: "A text string that affects the name of the machine learning results index.",
+				MarkdownDescription: "A text string that affects the name of the machine learning results index. Do not start the value with `custom-`; Elasticsearch automatically adds this prefix.",
 				Optional:            true,
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
