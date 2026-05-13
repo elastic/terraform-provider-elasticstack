@@ -196,6 +196,10 @@ func Test_populateSyntheticsMonitorsFromAPI_import_withFilters(t *testing.T) {
 			Label string `json:"label"`
 			Value string `json:"value"`
 		} `json:"projects,omitempty"`
+		Statuses *[]struct {
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"statuses,omitempty"`
 		Tags *[]struct {
 			Label string `json:"label"`
 			Value string `json:"value"`
@@ -264,6 +268,10 @@ func Test_populateSyntheticsMonitorsFromAPI_nilBlock_preservesNilIntent(t *testi
 			Label string `json:"label"`
 			Value string `json:"value"`
 		} `json:"projects,omitempty"`
+		Statuses *[]struct {
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"statuses,omitempty"`
 		Tags *[]struct {
 			Label string `json:"label"`
 			Value string `json:"value"`
@@ -303,6 +311,10 @@ func Test_populateSyntheticsMonitorsFromAPI_emptyAPIFilters_nullPreservation(t *
 			Label string `json:"label"`
 			Value string `json:"value"`
 		} `json:"projects,omitempty"`
+		Statuses *[]struct {
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"statuses,omitempty"`
 		Tags *[]struct {
 			Label string `json:"label"`
 			Value string `json:"value"`
@@ -348,6 +360,10 @@ func Test_populateSyntheticsMonitorsFromAPI_filtersRoundTrip(t *testing.T) {
 			Label string `json:"label"`
 			Value string `json:"value"`
 		} `json:"projects,omitempty"`
+		Statuses *[]struct {
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"statuses,omitempty"`
 		Tags *[]struct {
 			Label string `json:"label"`
 			Value string `json:"value"`
@@ -392,6 +408,10 @@ func Test_populateSyntheticsMonitorsFromAPI_emptyFiltersBlock_preserved(t *testi
 			Label string `json:"label"`
 			Value string `json:"value"`
 		} `json:"projects,omitempty"`
+		Statuses *[]struct {
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"statuses,omitempty"`
 		Tags *[]struct {
 			Label string `json:"label"`
 			Value string `json:"value"`

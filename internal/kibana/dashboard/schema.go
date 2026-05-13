@@ -1501,6 +1501,11 @@ func getSyntheticsStatsOverviewSchema() map[string]schema.Attribute {
 					Optional:            true,
 					NestedObject:        filterItemSchema,
 				},
+				"statuses": schema.ListNestedAttribute{
+					MarkdownDescription: "Filter by monitor status.",
+					Optional:            true,
+					NestedObject:        filterItemSchema,
+				},
 			},
 		},
 	}
@@ -2716,6 +2721,11 @@ func getSyntheticsMonitorsSchema() map[string]schema.Attribute {
 				},
 				"monitor_types": schema.ListNestedAttribute{
 					MarkdownDescription: "Filter by monitor types. Each entry has a `label` (display name) and a `value` (monitor type, e.g. `browser`, `http`, `tcp`, `icmp`).",
+					Optional:            true,
+					NestedObject:        filterItemSchema,
+				},
+				"statuses": schema.ListNestedAttribute{
+					MarkdownDescription: "Filter by monitor status.",
 					Optional:            true,
 					NestedObject:        filterItemSchema,
 				},
