@@ -425,7 +425,7 @@ func (m *mosaicConfigModel) toAPIMosaicESQL(dashboard *dashboardModel) (kbapi.Mo
 			diags.AddError("Failed to unmarshal esql group_by color_json", err.Error())
 			return api, diags
 		}
-		formatSrc := `{"type":"number"}`
+		formatSrc := defaultNumberFormatJSON
 		if typeutils.IsKnown(eg.FormatJSON) {
 			formatSrc = eg.FormatJSON.ValueString()
 		}

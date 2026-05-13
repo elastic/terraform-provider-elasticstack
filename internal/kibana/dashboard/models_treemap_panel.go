@@ -111,9 +111,9 @@ type treemapConfigModel struct {
 }
 
 type treemapEsqlMetric struct {
-	Column     types.String           `tfsdk:"column"`
-	Label      types.String           `tfsdk:"label"`
-	FormatJSON jsontypes.Normalized   `tfsdk:"format_json"`
+	Column     types.String            `tfsdk:"column"`
+	Label      types.String            `tfsdk:"label"`
+	FormatJSON jsontypes.Normalized    `tfsdk:"format_json"`
 	Color      *treemapEsqlMetricColor `tfsdk:"color"`
 }
 
@@ -417,7 +417,7 @@ func (m *treemapConfigModel) toAPITreemapESQL(dashboard *dashboardModel) (kbapi.
 			diags.AddError("Failed to unmarshal esql group_by color_json", err.Error())
 			return api, diags
 		}
-		formatSrc := `{"type":"number"}`
+		formatSrc := defaultNumberFormatJSON
 		if typeutils.IsKnown(eg.FormatJSON) {
 			formatSrc = eg.FormatJSON.ValueString()
 		}
