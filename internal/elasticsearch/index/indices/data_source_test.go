@@ -340,6 +340,8 @@ var slowlogLevelVersionConstraint, _ = version.NewConstraint("< 8.0.0")
 // TestAccIndicesDataSource_ReadsSlowlogLevels verifies the slowlog level fields on
 // Elastic Stack versions that still expose them.
 func TestAccIndicesDataSource_ReadsSlowlogLevels(t *testing.T) {
+	versionutils.SkipIfUnsupportedConstraints(t, slowlogLevelVersionConstraint, versionutils.FlavorAny)
+
 	indexName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlpha)
 
 	resource.Test(t, resource.TestCase{
@@ -347,7 +349,6 @@ func TestAccIndicesDataSource_ReadsSlowlogLevels(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(slowlogLevelVersionConstraint),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables: config.Variables{
 					"index_name": config.StringVariable(indexName),

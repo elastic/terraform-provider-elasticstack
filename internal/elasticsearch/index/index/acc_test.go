@@ -540,6 +540,8 @@ func TestAccResourceIndexSlowlog(t *testing.T) {
 var indexingSlowlogLevelVersionConstraint, _ = version.NewConstraint("< 8.0.0")
 
 func TestAccResourceIndexSlowlogLevel(t *testing.T) {
+	versionutils.SkipIfUnsupportedConstraints(t, indexingSlowlogLevelVersionConstraint, versionutils.FlavorAny)
+
 	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -547,7 +549,6 @@ func TestAccResourceIndexSlowlogLevel(t *testing.T) {
 		CheckDestroy: checkResourceIndexDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(indexingSlowlogLevelVersionConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
