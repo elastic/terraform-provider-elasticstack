@@ -143,12 +143,13 @@ func deleteSearchSavedObjectForDiscoverRef(t *testing.T, id string) {
 func TestAccResourceDashboardDiscoverSession_by_value_dsl(t *testing.T) {
 	dashboardTitle := "Acc disc dsl " + sdkacctest.RandStringFromCharSet(6, sdkacctest.CharSetAlphaNum)
 
+	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("dsl"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
@@ -161,7 +162,6 @@ func TestAccResourceDashboardDiscoverSession_by_value_dsl(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("dsl"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
@@ -179,12 +179,13 @@ func TestAccResourceDashboardDiscoverSession_by_value_dsl(t *testing.T) {
 func TestAccResourceDashboardDiscoverSession_by_value_esql(t *testing.T) {
 	dashboardTitle := "Acc disc esql " + sdkacctest.RandStringFromCharSet(6, sdkacctest.CharSetAlphaNum)
 
+	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("esql"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
@@ -196,7 +197,6 @@ func TestAccResourceDashboardDiscoverSession_by_value_esql(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("esql"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
@@ -215,12 +215,13 @@ func TestAccResourceDashboardDiscoverSession_by_reference(t *testing.T) {
 	dashboardTitle := "Acc disc ref " + sdkacctest.RandStringFromCharSet(6, sdkacctest.CharSetAlphaNum)
 	refID := "acc-disc-ref-" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
+	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				PreConfig: func() {
 					if err := createSearchSavedObjectForDiscoverRef(t, refID); err != nil {
 						t.Fatalf("create search saved object: %v", err)
@@ -239,7 +240,6 @@ func TestAccResourceDashboardDiscoverSession_by_reference(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
