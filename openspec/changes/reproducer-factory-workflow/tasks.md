@@ -5,13 +5,13 @@
 
 ## 2. Workflow source scaffolding
 
-- [ ] 2.1 Create `.github/workflows-src/reproducer-factory-issue/scripts/` directory and `intake-constants.js` with `FACTORY_LABEL = 'reproducer-factory'`, `ISSUE_BRANCH_PREFIX = 'reproducer-factory/issue-'`, `DUPLICATE_LINKAGE_MODE = 'related-literal'`
-- [ ] 2.2 Extend `.github/workflows-src/lib/factory-issue-shared.js` to support a `related-literal` duplicate-linkage mode: add a third branch to `bodyPattern` and `linkagePhrase` that matches `Related to #N` (analogous to the existing `closes-literal` branch for `Closes #N`)
-- [ ] 2.3 Copy shared inline scripts from `research-factory-issue/scripts/` without modification: `check_actor_trust.inline.js`, `fetch_issue_comments.inline.js`, `fetch_live_issue.inline.js`, `finalize_gate.inline.js`, `qualify_trigger.inline.js`, `remove_trigger_label.inline.js`, `validate_dispatch_inputs.inline.js`
-- [ ] 2.4 Copy `check_duplicate_pr.inline.js` from `code-factory-issue/scripts/` (uses `intake-constants.js` for branch prefix via shared lib — no change needed beyond the `intake-constants.js` values from 2.1)
-- [ ] 2.5 Write `fetch_prior_reproducer_comment.inline.js` — adapts `research-factory-issue/scripts/fetch_prior_research_comment.inline.js` to search for the `<!-- gha-reproducer-factory -->` marker instead of `<!-- gha-research-factory -->`
-- [ ] 2.6 Write `write_context_files.inline.js` — adapts the research-factory version to write to `/tmp/reproducer-factory-context/` and name the prior-comment file `prior_reproducer_comment.md`
-- [ ] 2.7 Write `update_reproducer_comment.job.js` — adapts `research-factory-issue/scripts/update_research_comment.job.js` to use the `<!-- gha-reproducer-factory -->` marker and the `REPRODUCER_FACTORY_ISSUE_NUMBER` env var
+- [x] 2.1 Create `.github/workflows-src/reproducer-factory-issue/scripts/` directory and `intake-constants.js` with `FACTORY_LABEL = 'reproducer-factory'`, `ISSUE_BRANCH_PREFIX = 'reproducer-factory/issue-'`, `DUPLICATE_LINKAGE_MODE = 'related-literal'`
+- [x] 2.2 Extend `.github/workflows-src/lib/factory-issue-shared.js` to support a `related-literal` duplicate-linkage mode: add a third branch to `bodyPattern` and `linkagePhrase` that matches `Related to #N` (analogous to the existing `closes-literal` branch for `Closes #N`)
+- [x] 2.3 Copy shared inline scripts from `research-factory-issue/scripts/` without modification: `check_actor_trust.inline.js`, `fetch_issue_comments.inline.js`, `fetch_live_issue.inline.js`, `finalize_gate.inline.js`, `qualify_trigger.inline.js`, `remove_trigger_label.inline.js`, `validate_dispatch_inputs.inline.js`
+- [x] 2.4 Copy `check_duplicate_pr.inline.js` from `code-factory-issue/scripts/` (uses `intake-constants.js` for branch prefix via shared lib — no change needed beyond the `intake-constants.js` values from 2.1)
+- [x] 2.5 Write `fetch_prior_reproducer_comment.inline.js` — adapts `research-factory-issue/scripts/fetch_prior_research_comment.inline.js` to search for the `<!-- gha-reproducer-factory -->` marker instead of `<!-- gha-research-factory -->`
+- [x] 2.6 Write `write_context_files.inline.js` — adapts the research-factory version to write to `/tmp/reproducer-factory-context/` and name the prior-comment file `prior_reproducer_comment.md`
+- [x] 2.7 Write `update_reproducer_comment.job.js` — adapts `research-factory-issue/scripts/update_research_comment.job.js` to use the `<!-- gha-reproducer-factory -->` marker and the `REPRODUCER_FACTORY_ISSUE_NUMBER` env var
 
 ## 3. Agent prompt (workflow.md.tmpl)
 
