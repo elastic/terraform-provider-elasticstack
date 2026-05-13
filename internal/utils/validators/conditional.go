@@ -528,7 +528,7 @@ func AllowedIfDependentPathExpressionOneOf(dependentPathExpression path.Expressi
 //	)
 //	// This would require the current attribute when sibling "type" equals "custom" or "advanced"
 func RequiredIfDependentPathExpressionOneOf(dependentPathExpression path.Expression, allowedValues []string) Condition {
-	descStr := "dependent field"
+	const descStr = "dependent field"
 	return Condition{
 		dependentPathExpression: &dependentPathExpression,
 		allowedValues:           allowedValues,
@@ -595,7 +595,7 @@ func RequiredIfDependentPathExpressionOneOf(dependentPathExpression path.Express
 //	)
 //	// This will prevent setting the current attribute when sibling "type" equals "basic" or "simple"
 func ForbiddenIfDependentPathExpressionOneOf(dependentPathExpression path.Expression, allowedValues []string) Condition {
-	descStr := "dependent field"
+	const descStr = "dependent field"
 	return Condition{
 		dependentPathExpression: &dependentPathExpression,
 		allowedValues:           allowedValues,
@@ -654,7 +654,7 @@ func ForbiddenIfDependentPathExpressionOneOf(dependentPathExpression path.Expres
 // Returns:
 //   - condition: A validation condition that enforces the one-of rule
 func OneOfWhenDependentPathExpressionEquals(dependentPathExpression path.Expression, dependentValue string, allowedValues []string) Condition {
-	descStr := "dependent field"
+	const descStr = "dependent field"
 	return Condition{
 		dependentPathExpression: &dependentPathExpression,
 		allowedValues:           []string{dependentValue}, // for checking the dependent field
