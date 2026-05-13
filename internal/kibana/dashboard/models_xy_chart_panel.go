@@ -1300,8 +1300,13 @@ func (m *xyChartConfigModel) fromAPINoESQL(ctx context.Context, dashboard *dashb
 	legendDiags := m.Legend.fromAPI(ctx, apiChart.Legend)
 	diags.Append(legendDiags...)
 
-	m.Query = &filterSimpleModel{}
-	m.Query.fromAPI(apiChart.Query)
+	// Preserve nil query when prior state omitted it (query is optional in schema).
+	if prior != nil && prior.Query == nil {
+		m.Query = nil
+	} else {
+		m.Query = &filterSimpleModel{}
+		m.Query.fromAPI(apiChart.Query)
+	}
 
 	m.Filters = populateFiltersFromAPI(apiChart.Filters, &diags)
 
