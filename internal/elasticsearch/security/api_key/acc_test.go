@@ -143,13 +143,14 @@ func TestAccResourceSecurityAPIKeyRotation(t *testing.T) {
 	var firstKeyID string
 	var firstRotationID string
 
+	versionutils.SkipIfUnsupported(t, apikey.MinVersion, versionutils.FlavorAny)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceSecurityAPIKeyDestroy,
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(apikey.MinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("rotation"),
 				ConfigVariables: config.Variables{
 					"api_key_name": config.StringVariable(apiKeyName),
@@ -176,7 +177,6 @@ func TestAccResourceSecurityAPIKeyRotation(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(apikey.MinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("rotation"),
 				ConfigVariables: config.Variables{
 					"api_key_name": config.StringVariable(apiKeyName),
@@ -207,13 +207,14 @@ func TestAccResourceSecurityAPIKeyWithRemoteIndices(t *testing.T) {
 	// generate a random name
 	apiKeyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
+	versionutils.SkipIfUnsupported(t, minSupportedRemoteIndicesVersion, versionutils.FlavorAny)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceSecurityAPIKeyDestroy,
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedRemoteIndicesVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"api_key_name": config.StringVariable(apiKeyName),
@@ -264,13 +265,14 @@ func TestAccResourceSecurityAPIKeyWithWorkflowRestriction(t *testing.T) {
 	// generate a random name
 	apiKeyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
+	versionutils.SkipIfUnsupported(t, apikey.MinVersionWithRestriction, versionutils.FlavorAny)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceSecurityAPIKeyDestroy,
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(apikey.MinVersionWithRestriction),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"api_key_name": config.StringVariable(apiKeyName),
@@ -354,6 +356,8 @@ func TestAccResourceSecurityAPIKeyFromSDK(t *testing.T) {
 	apiKeyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	var initialAPIKey string
 
+	versionutils.SkipIfUnsupported(t, apikey.MinVersion, versionutils.FlavorAny)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceSecurityAPIKeyDestroy,
@@ -366,8 +370,7 @@ func TestAccResourceSecurityAPIKeyFromSDK(t *testing.T) {
 						VersionConstraint: "0.11.9",
 					},
 				},
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(apikey.MinVersion),
-				Config:   testAccResourceSecurityAPIKeyFromSDKConfig,
+				Config: testAccResourceSecurityAPIKeyFromSDKConfig,
 				ConfigVariables: config.Variables{
 					"api_key_name": config.StringVariable(apiKeyName),
 				},
@@ -389,7 +392,6 @@ func TestAccResourceSecurityAPIKeyFromSDK(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(apikey.MinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("no_expiration"),
 				ConfigVariables: config.Variables{
 					"api_key_name": config.StringVariable(apiKeyName),
@@ -411,13 +413,14 @@ func TestAccResourceSecurityAPIKeyFromSDK(t *testing.T) {
 func TestAccResourceSecurityAPIKeyNonExpiring(t *testing.T) {
 	apiKeyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
+	versionutils.SkipIfUnsupported(t, apikey.MinVersion, versionutils.FlavorAny)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceSecurityAPIKeyDestroy,
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(apikey.MinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"api_key_name": config.StringVariable(apiKeyName),
@@ -444,13 +447,14 @@ func TestAccResourceSecurityAPIKeyExplicitConnection(t *testing.T) {
 		t.Fatal("ELASTICSEARCH_ENDPOINTS must contain at least one endpoint")
 	}
 
+	versionutils.SkipIfUnsupported(t, apikey.MinVersion, versionutils.FlavorAny)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceSecurityAPIKeyDestroy,
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(apikey.MinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: func() config.Variables {
 					endpointVars := make([]config.Variable, len(endpoints))
@@ -522,13 +526,14 @@ func TestAccResourceSecurityAPIKeyCrossCluster(t *testing.T) {
 	// generate a random name
 	apiKeyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
+	versionutils.SkipIfUnsupported(t, apikey.MinVersionWithCrossCluster, versionutils.FlavorAny)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceSecurityAPIKeyDestroy,
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(apikey.MinVersionWithCrossCluster),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"api_key_name": config.StringVariable(apiKeyName),
@@ -546,7 +551,6 @@ func TestAccResourceSecurityAPIKeyCrossCluster(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(apikey.MinVersionWithCrossCluster),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"api_key_name": config.StringVariable(apiKeyName),
@@ -570,13 +574,14 @@ func TestAccResourceSecurityAPIKeyWithDefaultAllowRestrictedIndices(t *testing.T
 	// generate a random name
 	apiKeyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
+	versionutils.SkipIfUnsupported(t, apikey.MinVersion, versionutils.FlavorAny)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceSecurityAPIKeyDestroy,
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(apikey.MinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"api_key_name": config.StringVariable(apiKeyName),
@@ -617,13 +622,14 @@ func TestAccResourceSecurityAPIKeyWithDefaultAllowRestrictedIndices(t *testing.T
 func TestAccResourceSecurityAPIKeyNoRoleDescriptors(t *testing.T) {
 	apiKeyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
+	versionutils.SkipIfUnsupported(t, apikey.MinVersion, versionutils.FlavorAny)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceSecurityAPIKeyDestroy,
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(apikey.MinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"api_key_name": config.StringVariable(apiKeyName),
