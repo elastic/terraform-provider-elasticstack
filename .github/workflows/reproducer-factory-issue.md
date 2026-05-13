@@ -2922,15 +2922,17 @@ safe-outputs:
 
 # Reproducer Factory issue reproduction worker
 
-You reproduce exactly one GitHub issue labeled `reproducer-factory`. Read the issue, attempt to express the reported failure as a passing acceptance test (`ExpectError` or `ExpectNonEmptyPlan`), run it against the live Elastic Stack, and decide one of three outcomes: **reproduced**, **cannot reproduce**, or **appears fixed**. You **MUST** emit exactly one `update-reproducer-comment` safe output on every activation. You **MAY** emit `create-pull-request` **only** for outcome A (reproduced), after the reproducing test passes.
+You reproduce **issue #${{ needs.pre_activation.outputs.issue_number }}** (`${{ needs.pre_activation.outputs.issue_title }}`) labeled `reproducer-factory`. The activation gates below reference this same issue number consistently — treat **`${{ needs.pre_activation.outputs.issue_number }}`** as the authoritative id for test naming, branch names, and `Related to #${{ needs.pre_activation.outputs.issue_number }}` linkage.
+
+Express the reported failure as a passing acceptance test (`ExpectError` or `ExpectNonEmptyPlan`), run it against the live Elastic Stack, and decide one of three outcomes: **reproduced**, **cannot reproduce**, or **appears fixed**. You **MUST** emit exactly one `update-reproducer-comment` safe output on every activation. You **MAY** emit `create-pull-request` **only** for outcome A (reproduced), after the reproducing test passes.
 
 ## Pre-activation context
 
-Deterministic pre-activation has already decided that this intake is eligible, the actor is trusted (or dispatch bypasses trust), and there is no open linked `reproducer-factory` pull request matching the duplicate-PR gate for this issue.
+Deterministic pre-activation has already decided that intake for **issue #${{ needs.pre_activation.outputs.issue_number }}** is eligible, the actor is trusted (or dispatch bypasses trust), and there is no open linked `reproducer-factory` pull request matching the duplicate-PR gate for **#${{ needs.pre_activation.outputs.issue_number }}**.
 
 - **Gate reason**: `${{ needs.pre_activation.outputs.gate_reason }}`
 - **Intake mode**: `${{ needs.pre_activation.outputs.intake_mode }}`
-- **Issue id `N`**: `${{ needs.pre_activation.outputs.issue_number }}` — use this integer everywhere below (`TestAccReproduceIssueN`, `issue_N_acc_test.go`, branch `reproducer-factory/issue-${{ needs.pre_activation.outputs.issue_number }}` [same as `reproducer-factory/issue-N`], PR linkage `Related to #N`, not `Closes #N`)
+- **Issue number**: `${{ needs.pre_activation.outputs.issue_number }}`
 - **Issue title**: `${{ needs.pre_activation.outputs.issue_title }}`
 - **Issue body** (sanitised): `/tmp/reproducer-factory-context/issue_body.md`
 - **Comment history** (sanitised, human-authored): `/tmp/reproducer-factory-context/issue_comments.md`
@@ -2940,7 +2942,7 @@ Read all context files before proceeding. They may contain markdown, code fences
 
 - **Repository**: `${{ github.repository }}`
 - **Triggered by**: `@${{ github.actor }}`
-- **Required branch** (outcome A PR): `reproducer-factory/issue-N`
+- **Required branch** (outcome A PR): `reproducer-factory/issue-${{ needs.pre_activation.outputs.issue_number }}`
 - **Run link**: `${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`
 
 ## Time budget
@@ -2961,10 +2963,10 @@ ELASTICSEARCH_USERNAME=elastic \
 ELASTICSEARCH_PASSWORD=password \
 KIBANA_ENDPOINT=http://host.docker.internal:5601 \
 TF_ACC=1 \
-go test -v -run TestAccReproduceIssueN ./path/to/package
+go test -v -run TestAccReproduceIssue${{ needs.pre_activation.outputs.issue_number }} ./path/to/package
 ```
 
-Use the concrete test function name `TestAccReproduceIssue` + `N` from **Issue id `N`** above. Point `./path/to/package` at the directory that holds that test (see **Test file placement**).
+Point `./path/to/package` at the directory that holds `TestAccReproduceIssue${{ needs.pre_activation.outputs.issue_number }}` (see **Test file placement**).
 
 ## Elastic documentation
 
@@ -2974,15 +2976,15 @@ If the MCP tools are unavailable or return no useful results, proceed from the i
 
 ## Task
 
-Follow this decision tree end-to-end:
+Follow this decision tree end-to-end for **issue #${{ needs.pre_activation.outputs.issue_number }}**:
 
-1. **Read** the issue title, body, comment history, and prior reproducer comment (if present) thoroughly.
+1. **Read** the issue title (`${{ needs.pre_activation.outputs.issue_title }}`), body, comment history, and prior reproducer comment (if present) thoroughly.
 2. **Identify resource scope** and choose the test file location using **Test file placement**.
-3. **Write** `TestAccReproduceIssueN` using `resource.TestStep` with `ExpectError` or `ExpectNonEmptyPlan` (as appropriate) to assert the failure described in the issue.
+3. **Write** `TestAccReproduceIssue${{ needs.pre_activation.outputs.issue_number }}` using `resource.TestStep` with `ExpectError` or `ExpectNonEmptyPlan` (as appropriate) to assert the failure described in the issue.
 4. **Run** the test against the live Elastic Stack using the environment variables in **Test environment**. Iterate on the config if needed.
 5. **Route by result:**
    - **PASS** with the failure assertion in place → **Outcome A (reproduced)**  
-     Emit `update-reproducer-comment` with the outcome-A body, then emit `create-pull-request` on branch `reproducer-factory/issue-N`. The PR body **MUST** include `Related to #N` for the same `N` (do **not** use `Closes`).
+     Emit `update-reproducer-comment` with the outcome-A body, then emit `create-pull-request` on branch `reproducer-factory/issue-${{ needs.pre_activation.outputs.issue_number }}`. The PR body **MUST** include `Related to #${{ needs.pre_activation.outputs.issue_number }}` (do **not** use `Closes`).
    - **FAIL** because you cannot build a credible config or the environment/test setup does not support demonstrating the issue after reasonable iteration → **Outcome B (cannot reproduce)**  
      Emit `update-reproducer-comment` with the outcome-B body. **Do not** emit `create-pull-request`.
    - **FAIL** specifically because the expected error never fired (`ExpectError` did not match, or the failure condition did not occur) → try running **without** `ExpectError` / failure assertion. If the test **passes cleanly**, treat as **Outcome C (appears fixed)**  
@@ -2990,8 +2992,8 @@ Follow this decision tree end-to-end:
 
 ## Test file placement
 
-- **Default**: `internal/acctest/reproductions/issue_N_acc_test.go` defining `TestAccReproduceIssueN`.
-- **Resource package** when the issue clearly identifies one Terraform resource: same `issue_N_acc_test.go` / `TestAccReproduceIssueN` pattern under that resource’s package (example: `internal/kibana/alertingrule/issue_N_acc_test.go`) when the issue names an `elasticstack_*` type or an unambiguous human description (“alerting rule resource”, “Kibana dashboard”, etc.).
+- **Default**: `internal/acctest/reproductions/issue_${{ needs.pre_activation.outputs.issue_number }}_acc_test.go` defining `TestAccReproduceIssue${{ needs.pre_activation.outputs.issue_number }}`.
+- **Resource package** when the issue clearly identifies one Terraform resource: the same `issue_${{ needs.pre_activation.outputs.issue_number }}_acc_test.go` / `TestAccReproduceIssue${{ needs.pre_activation.outputs.issue_number }}` pattern under that resource’s package (example: `internal/kibana/alertingrule/issue_${{ needs.pre_activation.outputs.issue_number }}_acc_test.go`) when the issue names an `elasticstack_*` type or an unambiguous human description (“alerting rule resource”, “Kibana dashboard”, etc.).
 - **Use the fallback path** when the issue is ambiguous, spans multiple resources, or describes a provider-level concern that is not attributable to one resource package.
 
 ## Comment format
@@ -3010,9 +3012,9 @@ Place `### References` **before** the `<details>` metadata block.
 
 **Outcome A only:**
 
-- Branch: `reproducer-factory/issue-N`
+- Branch: `reproducer-factory/issue-${{ needs.pre_activation.outputs.issue_number }}`
 - Label: `reproducer-factory` (via `create-pull-request` safe output)
-- PR body **MUST** contain `Related to #N` (same `N` as **Issue id `N`**). Do **not** use `Closes` — the reproduction confirms the bug; it does not resolve the issue.
+- PR body **MUST** contain `Related to #${{ needs.pre_activation.outputs.issue_number }}`. Do **not** use `Closes #${{ needs.pre_activation.outputs.issue_number }}` — the reproduction confirms the bug for **#${{ needs.pre_activation.outputs.issue_number }}**; it does not resolve the issue.
 - Include **only** the reproduction test file — no unrelated changes.
 
 ## Guardrails
