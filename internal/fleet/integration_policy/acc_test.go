@@ -108,6 +108,8 @@ func TestJsonTypes(t *testing.T) {
 }
 
 func TestAccResourceIntegrationPolicyMultipleAgentPolicies(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionIntegrationPolicyIDs, versionutils.FlavorAny)
+
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
@@ -115,7 +117,6 @@ func TestAccResourceIntegrationPolicyMultipleAgentPolicies(t *testing.T) {
 		CheckDestroy: checkResourceIntegrationPolicyDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicyIDs),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -132,7 +133,6 @@ func TestAccResourceIntegrationPolicyMultipleAgentPolicies(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicyIDs),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("multiple_agent_policies"),
 				ConfigVariables: config.Variables{
@@ -149,7 +149,6 @@ func TestAccResourceIntegrationPolicyMultipleAgentPolicies(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicyIDs),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("single_agent_policy"),
 				ConfigVariables: config.Variables{
@@ -170,6 +169,8 @@ func TestAccResourceIntegrationPolicyMultipleAgentPolicies(t *testing.T) {
 }
 
 func TestAccResourceIntegrationPolicyWithOutput(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionOutputID, versionutils.FlavorAny)
+
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
@@ -178,7 +179,6 @@ func TestAccResourceIntegrationPolicyWithOutput(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutputID),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -201,7 +201,6 @@ func TestAccResourceIntegrationPolicyWithOutput(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutputID),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"policy_name":         config.StringVariable(policyName),
@@ -228,6 +227,8 @@ func TestAccResourceIntegrationPolicyWithOutput(t *testing.T) {
 }
 
 func TestAccResourceIntegrationPolicy(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionIntegrationPolicy, versionutils.FlavorAny)
+
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
@@ -236,7 +237,6 @@ func TestAccResourceIntegrationPolicy(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -260,7 +260,6 @@ func TestAccResourceIntegrationPolicy(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -287,6 +286,8 @@ func TestAccResourceIntegrationPolicy(t *testing.T) {
 }
 
 func TestAccResourceIntegrationPolicyForce(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionIntegrationPolicy, versionutils.FlavorAny)
+
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
@@ -295,7 +296,6 @@ func TestAccResourceIntegrationPolicyForce(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -318,6 +318,8 @@ func TestAccResourceIntegrationPolicySecretsFromSDK(t *testing.T) {
 	sdkConstrains, err := version.NewConstraint(">=8.10.0,<8.16.0")
 	require.NoError(t, err)
 
+	versionutils.SkipIfUnsupportedConstraints(t, sdkConstrains, versionutils.FlavorAny)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceIntegrationPolicyDestroy,
@@ -329,8 +331,7 @@ func TestAccResourceIntegrationPolicySecretsFromSDK(t *testing.T) {
 						VersionConstraint: "0.11.7",
 					},
 				},
-				SkipFunc: versionutils.CheckIfVersionMeetsConstraints(sdkConstrains),
-				Config:   sdkCreateTestConfig,
+				Config: sdkCreateTestConfig,
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
 					"secret_key":  config.StringVariable("created"),
@@ -355,7 +356,6 @@ func TestAccResourceIntegrationPolicySecretsFromSDK(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(sdkConstrains),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("current"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -388,13 +388,14 @@ func TestAccResourceIntegrationPolicySecrets(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	t.Run("single valued secrets", func(t *testing.T) {
+		versionutils.SkipIfUnsupported(t, minVersionIntegrationPolicy, versionutils.FlavorAny)
+
 		resource.Test(t, resource.TestCase{
 			PreCheck:     func() { acctest.PreCheck(t) },
 			CheckDestroy: checkResourceIntegrationPolicyDestroy,
 			Steps: []resource.TestStep{
 				{
 					ProtoV6ProviderFactories: acctest.Providers,
-					SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
 					ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 					ConfigVariables: config.Variables{
 						"policy_name": config.StringVariable(policyName),
@@ -421,7 +422,6 @@ func TestAccResourceIntegrationPolicySecrets(t *testing.T) {
 				},
 				{
 					ProtoV6ProviderFactories: acctest.Providers,
-					SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
 					ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 					ConfigVariables: config.Variables{
 						"policy_name": config.StringVariable(policyName),
@@ -448,7 +448,6 @@ func TestAccResourceIntegrationPolicySecrets(t *testing.T) {
 				},
 				{
 					ProtoV6ProviderFactories: acctest.Providers,
-					SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
 					ResourceName:             "elasticstack_fleet_integration_policy.test_policy",
 					ConfigDirectory:          acctest.NamedTestCaseDirectory("import_test"),
 					ConfigVariables: config.Variables{
@@ -476,13 +475,14 @@ func TestAccResourceIntegrationPolicySecrets(t *testing.T) {
 	})
 
 	t.Run("multi-valued secrets", func(t *testing.T) {
+		versionutils.SkipIfUnsupported(t, minVersionSQLIntegration, versionutils.FlavorAny)
+
 		resource.Test(t, resource.TestCase{
 			PreCheck:     func() { acctest.PreCheck(t) },
 			CheckDestroy: checkResourceIntegrationPolicyDestroy,
 			Steps: []resource.TestStep{
 				{
 					ProtoV6ProviderFactories: acctest.Providers,
-					SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionSQLIntegration),
 					ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 					ConfigVariables: config.Variables{
 						"policy_name": config.StringVariable(policyName),
@@ -504,11 +504,8 @@ func TestAccResourceIntegrationPolicySecrets(t *testing.T) {
 				},
 				{
 					ProtoV6ProviderFactories: acctest.Providers,
-					SkipFunc: func() (bool, error) {
-						return versionutils.CheckIfVersionIsUnsupported(minVersionSQLIntegration)()
-					},
-					ResourceName:    "elasticstack_fleet_integration_policy.test_policy",
-					ConfigDirectory: acctest.NamedTestCaseDirectory("import_test"),
+					ResourceName:             "elasticstack_fleet_integration_policy.test_policy",
+					ConfigDirectory:          acctest.NamedTestCaseDirectory("import_test"),
 					ConfigVariables: config.Variables{
 						"policy_name": config.StringVariable(policyName),
 						"secret_key":  config.StringVariable("created"),
@@ -530,6 +527,8 @@ func TestAccResourceIntegrationPolicySecrets(t *testing.T) {
 }
 
 func TestAccIntegrationPolicyAzureMetrics(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionIntegrationPolicy, versionutils.FlavorAny)
+
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
@@ -538,7 +537,6 @@ func TestAccIntegrationPolicyAzureMetrics(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -567,6 +565,8 @@ func TestAccIntegrationPolicyAzureMetrics(t *testing.T) {
 }
 
 func TestAccIntegrationPolicyInputs(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionIntegrationPolicy, versionutils.FlavorAny)
+
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
@@ -575,7 +575,6 @@ func TestAccIntegrationPolicyInputs(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -605,7 +604,6 @@ func TestAccIntegrationPolicyInputs(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_disabled_input"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -630,7 +628,6 @@ func TestAccIntegrationPolicyInputs(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_enabled_input"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -649,7 +646,6 @@ func TestAccIntegrationPolicyInputs(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_reenable_input"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -684,7 +680,6 @@ func TestAccIntegrationPolicyInputs(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_logfile_tags_only"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -715,7 +710,6 @@ func TestAccIntegrationPolicyInputs(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("minimal"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -733,7 +727,6 @@ func TestAccIntegrationPolicyInputs(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("unset"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -752,6 +745,8 @@ func TestAccIntegrationPolicyInputs(t *testing.T) {
 }
 
 func TestAccResourceIntegrationPolicyGCPVertexAI(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionGCPVertexAI, versionutils.FlavorAny)
+
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
@@ -759,7 +754,6 @@ func TestAccResourceIntegrationPolicyGCPVertexAI(t *testing.T) {
 		CheckDestroy: checkResourceIntegrationPolicyDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionGCPVertexAI),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -787,7 +781,6 @@ func TestAccResourceIntegrationPolicyGCPVertexAI(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionGCPVertexAI),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
@@ -826,6 +819,8 @@ func TestAccResourceIntegrationPolicyGCPVertexAI(t *testing.T) {
 }
 
 func TestAccResourceIntegrationPolicy_VersionUpdate(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionIntegrationPolicy, versionutils.FlavorAny)
+
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
@@ -834,7 +829,6 @@ func TestAccResourceIntegrationPolicy_VersionUpdate(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -852,7 +846,6 @@ func TestAccResourceIntegrationPolicy_VersionUpdate(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -874,6 +867,8 @@ func TestAccResourceIntegrationPolicy_VersionUpdate(t *testing.T) {
 }
 
 func TestAccResourceIntegrationPolicy_importFromSpace(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionSpaceIDs, versionutils.FlavorAny)
+
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	spaceName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	spaceID := fmt.Sprintf("fleet-import-test-%s", spaceName)
@@ -884,7 +879,6 @@ func TestAccResourceIntegrationPolicy_importFromSpace(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionSpaceIDs),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -901,7 +895,6 @@ func TestAccResourceIntegrationPolicy_importFromSpace(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionSpaceIDs),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
