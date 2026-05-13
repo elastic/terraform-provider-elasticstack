@@ -681,7 +681,7 @@ When the chart-level `time_range` is null in configuration and state, the provid
 
 When the chart-level `time_range` is set in configuration, the provider SHALL pass the configured values to the API verbatim, overriding the dashboard-level value for that panel only.
 
-For XY chart `vis` panels specifically, the resource SHALL require `axis`, `decorations`, `fitting`, `legend`, `query`, and at least one `layers` entry. The axis object SHALL use `x`, optional primary `y`, and optional `secondary_y`; `axis.x.domain_json` SHALL represent the X-axis domain, and each configured Y axis SHALL require `domain_json`. Each layer SHALL represent either a data layer or a reference-line layer, not both.
+For XY chart `vis` panels specifically, the resource SHALL require `axis`, `decorations`, `fitting`, `legend`, and at least one `layers` entry. The axis object SHALL use `x`, optional primary `y`, and optional `secondary_y`; `axis.x.domain_json` SHALL represent the X-axis domain, and each configured Y axis SHALL require `domain_json`. Each layer SHALL represent either a data layer or a reference-line layer, not both. **`query` SHALL be optional** on the XY chart schema so that ES|QL XY panels (which carry no `query` in the API) are valid without a dummy query block.
 
 REQ-025 governs raw `config_json` `vis` panels; the typed-vs-raw distinction is unchanged.
 
@@ -705,9 +705,17 @@ REQ-025 governs raw `config_json` `vis` panels; the typed-vs-raw distinction is 
 - WHEN Terraform validates the resource schema
 - THEN the configuration SHALL require at least one layer and the fixed XY sub-blocks needed by the schema
 
+#### Scenario: ES|QL XY panel omits query
+
+- GIVEN an XY chart panel configured for ES|QL mode (no usable query expression)
+- WHEN Terraform validates the resource schema
+- THEN the configuration SHALL be accepted without a `query` block
+
 ### Requirement: Treemap panel behavior (REQ-014)
 
 For treemap `vis` panels, the resource SHALL require `data_source_json`, `group_by_json`, `metrics_json`, and `legend`. It SHALL treat the panel as non-ES|QL when a real `query` is present, and in that mode `query` SHALL be required. It SHALL treat the panel as ES|QL when `query` is omitted or both `query.query` and `query.language` are null. For semantic equality and read-back reconciliation, treemap `group_by_json` and `metrics_json` SHALL normalize the partition defaults used by the implementation, including terms-style defaults such as `collapse_by`, `format`, `rank_by`, and `size`.
+
+When the panel is in ES|QL mode, the resource SHALL expose typed nested schemas for `esql_metrics` and `esql_group_by` matching the structure used by waffle `esql_metrics` and `esql_group_by`. These typed schemas SHALL be mutually exclusive with the non-ES|QL `metrics_json` and `group_by_json` fields respectively.
 
 #### Scenario: Treemap mode selection
 
@@ -715,15 +723,29 @@ For treemap `vis` panels, the resource SHALL require `data_source_json`, `group_
 - WHEN the provider converts it to or from the API model
 - THEN it SHALL treat the panel as ES|QL mode rather than non-ES|QL mode
 
+#### Scenario: Treemap ES|QL typed metrics round-trip
+
+- GIVEN a treemap panel in ES|QL mode with `esql_metrics` configured with at least one entry
+- WHEN the provider builds the API request and reads the panel back
+- THEN the typed `esql_metrics` entries SHALL round-trip without drift
+
 ### Requirement: Mosaic panel behavior (REQ-015)
 
 For mosaic `vis` panels, the resource SHALL require `data_source_json`, `group_by_json`, `group_breakdown_by_json`, `metrics_json`, and `legend`. It SHALL use the same ES|QL-vs-non-ES|QL query rule as treemap panels, and non-ES|QL mosaics SHALL require `query`. `metrics_json` SHALL represent exactly one metric in the Terraform model. On read-back, mosaic partition dimensions SHALL be normalized to drop API-emitted top-level null keys that would otherwise create drift.
+
+When the panel is in ES|QL mode, the resource SHALL expose typed nested schemas for `esql_metrics` and `esql_group_by` matching the structure used by waffle `esql_metrics` and `esql_group_by`. These typed schemas SHALL be mutually exclusive with the non-ES|QL `metrics_json` and `group_by_json` fields respectively.
 
 #### Scenario: Mosaic requires secondary breakdown
 
 - GIVEN a mosaic panel configuration
 - WHEN Terraform validates or the provider builds the API request
 - THEN the panel SHALL require `group_breakdown_by_json` in addition to `group_by_json`
+
+#### Scenario: Mosaic ES|QL typed metrics round-trip
+
+- GIVEN a mosaic panel in ES|QL mode with `esql_metrics` configured with exactly one entry
+- WHEN the provider builds the API request and reads the panel back
+- THEN the typed `esql_metrics` entries SHALL round-trip without drift
 
 ### Requirement: Datatable panel behavior (REQ-016)
 
@@ -737,7 +759,11 @@ For datatable `vis` panels, the resource SHALL support exactly one of the `no_es
 
 ### Requirement: Tagcloud panel behavior (REQ-017)
 
-For tagcloud `vis` panels, the resource SHALL support the non-ES|QL tagcloud shape implemented by the provider. It SHALL require `data_source_json`, `query`, `metric_json`, and `tag_by_json`, with optional `filters`, `ignore_global_filters`, `sampling`, `orientation`, and `font_size`. For semantic equality it SHALL normalize tagcloud metric defaults and the `terms`-operation defaults for `tag_by_json`, including the default `rank_by` value.
+For tagcloud `vis` panels, the resource SHALL support both non-ES|QL and ES|QL modes.
+
+Non-ES|QL mode requires a `query` block with non-null `expression` and `language`; in that mode the resource SHALL require `data_source_json`, `query`, `metric_json`, and `tag_by_json`, with optional `filters`, `ignore_global_filters`, `sampling`, `orientation`, and `font_size`. For semantic equality it SHALL normalize tagcloud metric defaults and the `terms`-operation defaults for `tag_by_json`, including the default `rank_by` value.
+
+ES|QL mode is selected when `query` is omitted or both `expression` and `language` are null; in ES|QL mode the resource SHALL require `data_source_json` and typed `esql_metric` and `esql_tag_by` blocks instead of `metric_json` and `tag_by_json`. The `query` attribute SHALL be Optional on the schema so that ES|QL configurations are valid. The `esql_metric` block SHALL contain required `column` (string) and `format_json` (normalized JSON for the format type), and optional `label` (string). The `esql_tag_by` block SHALL contain required `column` (string), `format_json` (normalized JSON), and `color_json` (normalized JSON for the color mapping), and optional `label` (string).
 
 #### Scenario: Tagcloud terms defaults
 
@@ -745,9 +771,17 @@ For tagcloud `vis` panels, the resource SHALL support the non-ES|QL tagcloud sha
 - WHEN state is compared or refreshed
 - THEN the provider SHALL treat the default `rank_by` as part of semantic equality
 
+#### Scenario: Tagcloud ES|QL round-trip
+
+- GIVEN a tagcloud panel in ES|QL mode with `esql_metric.column = "count"` and `esql_tag_by.column = "host"`
+- WHEN create runs and the post-apply read returns the same panel
+- THEN state SHALL contain the typed `esql_metric` and `esql_tag_by` blocks and `metric_json`/`tag_by_json` SHALL be null
+
 ### Requirement: Heatmap panel behavior (REQ-018)
 
-For heatmap `vis` panels, the resource SHALL require `data_source_json`, `axis`, `styling.cells`, `legend`, `metric_json`, and `x_axis_json`. **`legend.visibility` SHALL use the string values `visible` or `hidden`,** matching the API enum. It SHALL treat the panel as non-ES|QL when a real `query` is present, and in that mode `query` SHALL be required. It SHALL treat the panel as ES|QL when `query` is omitted or empty by the implementation's mode test. Heatmap metric normalization SHALL use the same metric-default behavior shared with the tagcloud implementation.
+For heatmap `vis` panels, the resource SHALL require `data_source_json`, `axis`, `styling.cells`, `legend`, `metric_json`, and `x_axis_json` (with optional `y_axis_json`). **`legend.visibility` SHALL use the string values `visible` or `hidden`,** matching the API enum. It SHALL treat the panel as non-ES|QL when a real `query` is present, and in that mode `query` SHALL be required. It SHALL treat the panel as ES|QL when `query` is omitted or empty by the implementation's mode test. Heatmap metric normalization SHALL use the same metric-default behavior shared with the tagcloud implementation.
+
+The resource SHALL retain `x_axis_json` and `y_axis_json` as raw JSON attributes for the X and Y breakdown dimensions; this change does not remove them in favor of the typed `axis` block. The typed `axis` block continues to represent visual axis configuration (labels, title, orientation), while `x_axis_json` / `y_axis_json` carry the breakdown operation JSON (e.g. `terms`, `date_histogram`).
 
 #### Scenario: Non-ES|QL heatmap requires query
 
@@ -765,11 +799,19 @@ For heatmap `vis` panels, the resource SHALL require `data_source_json`, `axis`,
 
 For waffle `vis` panels, the resource SHALL enforce mutually exclusive non-ES|QL and ES|QL modes. In non-ES|QL mode it SHALL require `query` and at least one `metrics` entry, and it MAY accept `group_by`. In ES|QL mode it SHALL require at least one `esql_metrics` entry, it MAY accept `esql_group_by`, and it SHALL reject `metrics` and `group_by`. On read-back, the provider SHALL preserve the waffle fields that Kibana may omit or materialize differently, including the implementation's merge behavior for `ignore_global_filters`, `sampling`, legend values, visibility, and value-display details. ES|QL number-format JSON for waffle metric formats SHALL normalize the default decimals and compact settings trimmed by the implementation.
 
+Non-ES|QL waffle metric and group-by entries SHALL use the attribute name **`config_json`** (not `config`) to align with the datatable and metric chart conventions. Each entry SHALL be a JSON string with defaults.
+
 #### Scenario: Waffle ES|QL validation
 
 - GIVEN a waffle panel in ES|QL mode
 - WHEN Terraform validates the resource schema
 - THEN the configuration SHALL require at least one `esql_metrics` entry and SHALL reject `metrics` or `group_by`
+
+#### Scenario: Waffle non-ES|QL uses config_json
+
+- GIVEN a waffle panel in non-ES|QL mode with `metrics = [{ config_json = jsonencode({ operation = "count" }) }]`
+- WHEN the provider builds the API request and reads the panel back
+- THEN the metrics SHALL round-trip using the `config_json` attribute name with no plan diff
 
 ### Requirement: Region map panel behavior (REQ-020)
 
@@ -783,13 +825,23 @@ For region-map `vis` panels, the resource SHALL require `data_source_json`, `met
 
 ### Requirement: Gauge panel behavior (REQ-021)
 
-For gauge `vis` panels, the resource SHALL support the non-ES|QL gauge shape implemented by the provider. It SHALL require `data_source_json`, `query`, and `metric_json`, and it MAY accept `shape_json`, `filters`, `ignore_global_filters`, and `sampling`. Gauge metric semantic equality SHALL include the implementation's defaults for `empty_as_null`, `hide_title`, and `ticks`.
+For gauge `vis` panels, the resource SHALL support both non-ES|QL and ES|QL modes.
+
+Non-ES|QL mode requires a `query` block with non-null `expression` and `language`; in that mode the resource SHALL require `data_source_json`, `query`, and `metric_json`, and it MAY accept `shape_json`, `filters`, `ignore_global_filters`, and `sampling`. Gauge metric semantic equality SHALL include the implementation's defaults for `empty_as_null`, `hide_title`, and `ticks`.
+
+ES|QL mode is selected when `query` is omitted or both `expression` and `language` are null; in ES|QL mode the resource SHALL require `data_source_json` and a typed `esql_metric` block instead of `metric_json`. The `query` attribute SHALL be Optional on the schema so that ES|QL configurations are valid. The `esql_metric` block SHALL contain required `column` (string) and `format_json` (normalized JSON for the format type), and optional `label` (string), `color_json` (normalized JSON for the gauge fill color), `subtitle` (string), `goal` (object: required `column` string, optional `label` string), `max` (object: required `column` string, optional `label` string), `min` (object: required `column` string, optional `label` string), `ticks` (object: optional `mode` string, optional `visible` bool), and `title` (object: optional `text` string, optional `visible` bool).
 
 #### Scenario: Gauge metric defaults
 
 - GIVEN a gauge metric configuration that omits the implementation's defaulted fields
 - WHEN the provider compares or refreshes state
 - THEN it SHALL normalize those defaults for semantic equality
+
+#### Scenario: Gauge ES|QL round-trip
+
+- GIVEN a gauge panel in ES|QL mode with `esql_metric.column = "revenue"` and `esql_metric.format_json` set to a number format
+- WHEN create runs and the post-apply read returns the same panel
+- THEN state SHALL contain the typed `esql_metric` block and `metric_json` SHALL be null
 
 ### Requirement: Metric chart panel behavior (REQ-022)
 
@@ -803,9 +855,13 @@ For metric-chart `vis` panels, the resource SHALL map the provider's two metric-
 
 ### Requirement: Pie chart panel behavior (REQ-023)
 
-For pie `vis` panels, the resource SHALL require at least one `metrics` entry and MAY accept `group_by`. It SHALL select the non-ES|QL branch when `query` is present and the ES|QL branch otherwise. When Kibana omits `ignore_global_filters` or `sampling` on read, the provider SHALL treat their default values as `false` and `1.0` respectively. Pie metric and group-by semantic equality SHALL normalize the implementation's pie metric defaults and visualization group-by defaults.
+For pie `vis` panels, the resource SHALL require `data_source_json`, at least one `metrics` entry, and MAY accept `group_by`. It SHALL select the non-ES|QL branch when `query` is present and the ES|QL branch otherwise. When Kibana omits `ignore_global_filters` or `sampling` on read, the provider SHALL treat their default values as `false` and `1.0` respectively. Pie metric and group-by semantic equality SHALL normalize the implementation's pie metric defaults and visualization group-by defaults.
 
-When `data_source_json` is set, it SHALL remain a normalized JSON string for the pie data source object. The resource SHALL expose an optional structured **`legend`** block matching treemap and mosaic legends (attributes `nested`, required `size`, optional `truncate_after_lines`, optional `visible`). The Terraform attribute `legend.visible` SHALL map to the API field `legend.visibility`. When the `legend` block is absent from practitioner configuration, the provider SHALL still build a valid API pie legend by supplying the implementation default legend size `auto`. The Terraform schema SHALL use an optional computed **`legend`** with a default object (typically size and visibility `auto`) so plan-time defaults align with typical Kibana read-back when the block is omitted.
+Pie chart attributes SHALL derive from the shared `lensChartBaseAttributes()` helper, so `ignore_global_filters` and `sampling` SHALL be `Optional: true, Computed: true` without explicit Terraform schema defaults. **`data_source_json` SHALL be Required** on `pie_chart_config` to align with all other typed Lens chart blocks.
+
+Pie metric and group-by entries SHALL use the attribute name **`config_json`** (not `config`) to align with the datatable and metric chart conventions.
+
+The resource SHALL expose an optional structured **`legend`** block matching treemap and mosaic legends (attributes `nested`, required `size`, optional `truncate_after_lines`, optional `visible`). The Terraform attribute `legend.visible` SHALL map to the API field `legend.visibility`. When the `legend` block is absent from practitioner configuration, the provider SHALL still build a valid API pie legend by supplying the implementation default legend size `auto`. The Terraform schema SHALL use an optional computed **`legend`** with a default object (typically size and visibility `auto`) so plan-time defaults align with typical Kibana read-back when the block is omitted.
 
 #### Scenario: Pie chart API defaults
 
@@ -813,11 +869,11 @@ When `data_source_json` is set, it SHALL remain a normalized JSON string for the
 - WHEN state is refreshed
 - THEN the provider SHALL reconcile those fields as `false` and `1.0`
 
-#### Scenario: Pie chart uses data_source_json
+#### Scenario: Pie chart requires data_source_json
 
-- GIVEN `pie_chart_config` with `data_source_json` set to a normalized JSON string for the pie data source
-- WHEN the provider builds the visualization attributes
-- THEN it SHALL decode `data_source_json` into the API pie data-source shape
+- GIVEN a `pie_chart_config` block with no `data_source_json` set
+- WHEN Terraform validates the resource schema
+- THEN the provider SHALL return an error diagnostic indicating that `data_source_json` is required
 
 #### Scenario: Pie chart uses structured legend
 
@@ -839,6 +895,12 @@ When `data_source_json` is set, it SHALL remain a normalized JSON string for the
 - WHEN the provider refreshes state
 - THEN it SHALL populate `pie_chart_config.legend`
 - AND it SHALL NOT populate `pie_chart_config.legend_json`
+
+#### Scenario: Pie chart config_json naming
+
+- GIVEN a pie panel with `metrics = [{ config_json = jsonencode({ operation = "count" }) }]`
+- WHEN the provider builds the API request and reads the panel back
+- THEN the metrics SHALL round-trip using the `config_json` attribute name with no plan diff
 
 ### Requirement: Legacy metric panel behavior (REQ-024)
 
@@ -1243,7 +1305,7 @@ The `synthetics_stats_overview_config` block SHALL expose the following optional
   - `label` (string): the human-readable label for the drilldown action.
   - `encode_url` (bool, optional): whether to URL-encode the drilldown target; defaults to `true` at the API level.
   - `open_in_new_tab` (bool, optional): whether to open the drilldown in a new browser tab; defaults to `true` at the API level.
-  - The API fields `trigger` and `type` each accept only one value (`on_open_panel_menu` and `url_drilldown` respectively). These SHALL be hardcoded in the write converter and SHALL NOT be exposed as user-configurable Terraform attributes (matching the established pattern for `slo_overview_config` and `slo_error_budget_config` drilldowns).
+  - The API fields `trigger` and `type` each accept only one value (`on_open_panel_menu` and `url_drilldown` respectively). These SHALL be hardcoded in the write converter and SHALL NOT be exposed as user-configurable Terraform attributes.
 - `filters` (nested block, optional): Synthetics-specific monitor filter constraints. Each filter category within the block is optional and accepts a `list(object({ label = string, value = string }))`:
   - `projects`: filter by Synthetics project.
   - `tags`: filter by monitor tag.
@@ -1308,7 +1370,7 @@ The provider SHALL seed `synthetics_monitors_config` from prior state or plan on
 
 **Shared filter model:**
 
-The filter structure used by `synthetics_monitors_config` (lists of `{ label, value }` pairs for each filter dimension) is identical to the filter structure used by `synthetics_stats_overview_config` (REQ-033). The implementation SHOULD share filter model types and converter functions between the two panel types to avoid duplication.
+The filter structure used by `synthetics_monitors_config` (lists of `{ label, value }` pairs for each filter dimension) is identical to the filter structure used by `synthetics_stats_overview_config` (REQ-033). Both panel types SHALL consume the same shared nested-block schema function for filter items, eliminating the current inline duplication.
 
 #### Scenario: Synthetics monitors panel with no config block
 
@@ -2001,6 +2063,43 @@ The resource SHALL classify the API `config` JSON object in this order: (1) **By
 - WHEN the resource is created
 - THEN the provider SHALL unmarshal `config_json` and send the decoded JSON object directly as the panel API `config`
 - AND the panel SHALL appear in state with panel-level `config_json` populated and `vis_config` null
+
+### Requirement: Typed partition chart legends (REQ-043)
+
+Partition chart legends (treemap, mosaic, pie, waffle) SHALL expose `truncate_after_lines` as an `Int64` attribute in the Terraform schema. The API specifies `float32` for this field, but the value represents an integer count of lines before truncation. All partition chart legend schemas SHALL use `Int64` consistently.
+
+#### Scenario: Legend truncate_after_lines accepts integer values
+
+- GIVEN a treemap panel with `legend.truncate_after_lines = 5`
+- WHEN the provider builds the API request
+- THEN it SHALL encode the value as `5` in the API payload
+- AND read-back SHALL preserve the integer value without drift
+
+#### Scenario: Legend truncate_after_lines rejects fractional practitioner input
+
+- GIVEN a mosaic panel with `legend.truncate_after_lines = 5.5`
+- WHEN Terraform validates the resource schema
+- THEN the provider SHALL return an error diagnostic because the attribute type is `Int64`
+
+### Requirement: Waffle value_display reuse (REQ-044)
+
+Waffle `value_display` SHALL use the shared `getPartitionValueDisplaySchema()` helper, ensuring the same attribute names, types, and documentation text as treemap and mosaic `value_display`.
+
+#### Scenario: Waffle value_display shape matches treemap
+
+- GIVEN a waffle panel with `value_display = { mode = "percentage", percent_decimals = 2 }`
+- WHEN Terraform validates the configuration
+- THEN the validation SHALL pass and the attribute descriptions SHALL match those used by `treemap_config.value_display`
+
+### Requirement: SLO overview constant definition site (REQ-045)
+
+The `panelTypeSloOverview` constant SHALL be defined in `schema.go` alongside all other dashboard panel type constants. It SHALL NOT be defined in a panel-specific model file.
+
+#### Scenario: Constant location
+
+- GIVEN a code review of `schema.go`
+- WHEN the reviewer searches for `panelTypeSloOverview`
+- THEN the constant SHALL be found in `schema.go` together with `panelTypeSloAlerts`, `panelTypeSloBurnRate`, and other panel type constants
 
 ## Traceability
 
