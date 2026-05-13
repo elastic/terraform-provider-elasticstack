@@ -47,4 +47,10 @@ resource "elasticstack_elasticsearch_ml_anomaly_detection_job" "test" {
     time_field  = "@timestamp"
     time_format = "epoch_ms"
   }
+
+  analysis_limits = {
+    model_memory_limit = "10mb"
+  }
+
+  allow_lazy_open = true
 }
