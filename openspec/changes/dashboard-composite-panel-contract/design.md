@@ -1,16 +1,18 @@
 ## Context
 
-After `dashboard-panel-contract` and `dashboard-lens-contract`, all simple panels and all Lens chart converters live in isolated subpackages with self-registration. Two complex panel handlers remain in the monolith: `vis` (the `viz_config` block) and `lens_dashboard_app` (the `lens_dashboard_app_config` block). Both are composite handlers: they dispatch to the `lenscommon` converter registry for by_value charts, and share by_reference presentation logic.
+After `dashboard-panel-contract` and `dashboard-lens-contract`, all simple panels and all Lens chart converters live in isolated subpackages with self-registration. Three complex panel handlers remain in the monolith: `vis` (the `viz_config` block), `lens_dashboard_app` (the `lens_dashboard_app_config` block), and `discover_session` (the `discover_session_config` block). The first two are Lens composite handlers: they dispatch to the `lenscommon` converter registry for by_value charts and share by_reference presentation logic. `discover_session` is independently composite: it dispatches to a `dsl` vs `esql` tab sub-registry for by_value, and supports a by_reference path with optional overrides.
 
-This change extracts them into proper `iface.Handler` implementations and completes the central-file cleanup. It also renames `viz_config` to `vis_config` to match Kibana's panel type string `"vis"` and establish the universal block naming convention.
+This change extracts all three into proper `iface.Handler` implementations and completes the central-file cleanup. It also renames `viz_config` to `vis_config` to match Kibana's panel type string `"vis"` and establish the universal block naming convention.
 
 ## Goals / Non-Goals
 
 **Goals:**
 - `vis` panel handler lives in `dashboard/panel/visconfig/`
 - `lens_dashboard_app` panel handler lives in `dashboard/panel/lensdashboardapp/`
-- Both consume `lenscommon` registry for by_value chart dispatch
-- Both share `lenscommon.ByReference` for by_reference read/write
+- `discover_session` panel handler lives in `dashboard/panel/discoversession/`
+- `vis` and `lens_dashboard_app` consume `lenscommon` registry for by_value chart dispatch
+- `vis` and `lens_dashboard_app` share `lenscommon.ByReference` for by_reference read/write
+- `discover_session` dispatches by_value to a `dsl` vs `esql` tab selector; handles by_reference with overrides
 - `viz_config` renamed to `vis_config` in the Terraform schema
 - All central switch/case code eliminated
 - Schema, validator, and defaults fully assembled from registries
@@ -140,9 +142,76 @@ func byValueAttributes() map[string]schema.Attribute {
 }
 ```
 
+### discoversession package structure
+
+```
+dashboard/panel/discoversession/
+  api.go       — Handler implementation
+  schema.go    — discover_session_config block with by_value and by_reference branches
+  model.go     — config classification, tab dispatch helpers
+  api_test.go  — unit tests covering by_value DSL, by_value ESQL, and by_reference paths
+```
+
+`discover_session` is composite in a different axis from `vis`/`lens_dashboard_app`: its `by_value.tab` block holds either a `dsl` or `esql` sub-block (exactly-one-of enforced by validator), rather than a Lens chart kind. This is analogous to the chart-kind dispatch in `vis`, but does not use the `lenscommon` registry.
+
+```go
+type Handler struct{}
+
+func (h Handler) PanelType() string { return "discover_session" }
+
+func (h Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
+    // 1. Extract grid, id, config JSON
+    // 2. Classify: by_value (DSL tab? ESQL tab?) or by_reference?
+    // 3. Delegate to populateByValue or populateByReference
+}
+
+func (h Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
+    // 1. If by_value with dsl tab set: build DSL by_value API payload
+    // 2. If by_value with esql tab set: build ESQL by_value API payload
+    // 3. If by_reference: build by_reference API payload
+}
+```
+
+The `discover_session_config` block schema:
+
+```go
+func schemaAttributes() map[string]schema.Attribute {
+    return map[string]schema.Attribute{
+        "title":       schema.StringAttribute{Optional: true},
+        "description": schema.StringAttribute{Optional: true},
+        "hide_title":  schema.BoolAttribute{Optional: true},
+        "hide_border": schema.BoolAttribute{Optional: true},
+        "drilldowns": schema.ListNestedAttribute{
+            Optional:     true,
+            NestedObject: panelkit.URLDrilldownSchema(),
+        },
+        "by_value": schema.SingleNestedAttribute{
+            Optional: true,
+            Attributes: map[string]schema.Attribute{
+                "time_range": panelkit.TimeRangeSchema(),
+                "tab": schema.SingleNestedAttribute{
+                    Required: true,
+                    Attributes: map[string]schema.Attribute{
+                        "dsl":  dslTabSchema(),   // Optional
+                        "esql": esqlTabSchema(),  // Optional
+                    },
+                    Validators: []validator.Object{discoverSessionTabValidator{}},
+                },
+            },
+        },
+        "by_reference": schema.SingleNestedAttribute{
+            Optional:   true,
+            Attributes: byReferenceAttributes(),
+        },
+    }
+}
+```
+
+`discover_session` does not use the `lenscommon.ByReference` shared helper because its by_reference model includes a `selected_tab_id` field and an `overrides` sub-block not present in the Lens by_reference shape.
+
 ### Final cleanup
 
-After visconfig and lensdashboardapp handlers are registered, the following files are deleted or stripped to shells:
+After visconfig, lensdashboardapp, and discoversession handlers are registered, the following files are deleted or stripped to shells:
 
 | File | Fate |
 |------|------|
@@ -153,6 +222,9 @@ After visconfig and lensdashboardapp handlers are registered, the following file
 | `models_viz_config.go` | Delete; absorbed into `visconfig/` |
 | `models_vis_panel_test.go` | Move tests to `panel/visconfig/api_test.go` |
 | `models_vis_api.go` | Delete; absorbed into `lenscommon/by_reference.go` |
+| `models_discover_session_panel.go` | Delete; absorbed into `panel/discoversession/` |
+| `models_discover_session_panel_test.go` | Move tests to `panel/discoversession/api_test.go` |
+| `schema_discover_session_panel.go` | Delete; absorbed into `panel/discoversession/schema.go` |
 | `panel_config_validator.go` | Remove all hard-coded panel types; keep only registry dispatch loop and pinned panel logic |
 | `panel_config_defaults.go` | Remove hard-coded lens chart dispatch; keep only top-level entry point that delegates to registries |
 | `schema.go` | Remove `panelConfigNames` hard-coded slice and the `getLensDashboardAppByValueNestedAttributes` / `getVizByValueAttributes` factory functions; panel attributes assemble from `registry.AllHandlers()`; lens by_value blocks assemble from `lenscommon.All()` |
@@ -177,7 +249,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 }
 ```
 
-The composite handlers (`visconfig` and `lensdashboardapp`) in turn assemble their inner `by_value` blocks from the `lenscommon` converter registry. The result is a fully dynamic schema: adding a panel handler adds a top-level config block; adding a Lens converter adds a typed chart block inside both composite handlers, all without touching `schema.go`.
+The Lens composite handlers (`visconfig` and `lensdashboardapp`) in turn assemble their inner `by_value` blocks from the `lenscommon` converter registry. `discoversession` assembles its own static `by_value.tab` schema. The result is a fully dynamic schema: adding a panel handler adds a top-level config block; adding a Lens converter adds a typed chart block inside both Lens composite handlers, all without touching `schema.go`.
 
 The `panelConfigValidator`:
 

@@ -52,6 +52,23 @@
 - [ ] 2.23 Remove markdown cases from `models_panels.go` switch and `toAPI()` cascade
 - [ ] 2.24 Register `markdown.Handler{}` in `registry.go`
 
+### SLO alerts panel
+- [ ] 2.25 Create `panel/sloalerts/api.go` with Handler and `FromAPI`/`ToAPI`
+- [ ] 2.26 Create `panel/sloalerts/model.go` with `populateFromAPI`, `buildConfig`
+- [ ] 2.27 Create `panel/sloalerts/schema.go` with `SchemaAttribute()` (uses `panelkit.URLDrilldownSchema()` for drilldowns)
+- [ ] 2.28 Create `panel/sloalerts/api_test.go` with `contracttest.Run` call
+- [ ] 2.29 Remove `slo_alerts` cases from `models_panels.go` switch and `toAPI()` cascade
+- [ ] 2.30 Register `sloalerts.Handler{}` in `registry.go`
+
+### Image panel
+- [ ] 2.31 Add `panelkit.ImageDrilldownSchema()` factory to `panelkit/schema.go` for the dashboard+URL drilldown variant
+- [ ] 2.32 Create `panel/image/api.go` with Handler and `FromAPI`/`ToAPI`
+- [ ] 2.33 Create `panel/image/model.go` with `populateFromAPI`, `buildConfig`
+- [ ] 2.34 Create `panel/image/schema.go` with `SchemaAttribute()` (uses `panelkit.ImageDrilldownSchema()`)
+- [ ] 2.35 Create `panel/image/api_test.go` with `contracttest.Run` call + handwritten tests for file vs URL src variants and dashboard vs URL drilldown variants
+- [ ] 2.36 Remove `image` cases from `models_panels.go` switch and `toAPI()` cascade
+- [ ] 2.37 Register `image.Handler{}` in `registry.go`
+
 ## 3. Refactor validators and schema assembly
 
 - [ ] 3.1 Refactor `panel_config_validator.go` to remove all simple panel cases from `panelConfigValidateDiags`
@@ -77,5 +94,5 @@
 - [ ] 6.3 `go test ./internal/kibana/dashboard/panelkit/contracttest/...` passes (harness self-tests against stub handler)
 - [ ] 6.4 `go test ./internal/kibana/dashboard/panel/...` passes (all `contracttest.Run` calls pass for every migrated panel)
 - [ ] 6.5 `go test ./internal/kibana/dashboard/...` passes (all remaining unit tests)
-- [ ] 6.6 All migrated panel acceptance tests pass (`slo_*`, `synthetics_*`, control panel, markdown)
+- [ ] 6.6 All migrated panel acceptance tests pass (`slo_*`, `synthetics_*`, control panel, markdown, image, slo_alerts)
 - [ ] 6.7 `make build` passes

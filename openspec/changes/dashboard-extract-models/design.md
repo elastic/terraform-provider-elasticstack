@@ -67,6 +67,9 @@ dashboard/models/
   markdown.go           — MarkdownConfigModel
   controls.go           — TimeSliderControlConfigModel, OptionsListControlConfigModel, etc.
   synthetics.go         — SyntheticsStatsOverviewConfigModel, SyntheticsMonitorsConfigModel
+  image.go              — ImagePanelConfigModel, ImagePanelSrcModel, ImagePanelSrcFileModel, ImagePanelSrcURLModel, ImagePanelDrilldownModel, ImagePanelDashboardDrilldownModel, ImagePanelURLDrilldownModel
+  slo_alerts.go         — SloAlertsPanelConfigModel, SloAlertsPanelSloModel, SloAlertsPanelDrilldownModel
+  discover_session.go   — DiscoverSessionPanelConfigModel, DiscoverSessionPanelByValueModel, DiscoverSessionTabModel, DiscoverSessionDSLTabModel, DiscoverSessionESQLTabModel, DiscoverSessionPanelByRefModel, DiscoverSessionOverridesModel, DiscoverSessionSortModel, DiscoverSessionColumnSettingModel, DiscoverSessionPanelDrilldown
   lens.go               — LensByValueChartBlocks, LensDashboardAppConfigModel, VizConfigModel, VizByValueModel, VizByReferenceModel
   lens_xy.go            — XYChartConfigModel, XYLayerModel, …
   lens_gauge.go         — GaugeConfigModel, GaugeStylingModel

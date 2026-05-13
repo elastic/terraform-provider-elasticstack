@@ -96,6 +96,7 @@ var panelHandlers = []iface.Handler{
     sloburnrate.Handler{},
     slooverview.Handler{},
     sloerrorbudget.Handler{},
+    sloalerts.Handler{},
     syntheticsstatsoverview.Handler{},
     syntheticsmonitors.Handler{},
     timeslider.Handler{},
@@ -103,6 +104,7 @@ var panelHandlers = []iface.Handler{
     rangeslider.Handler{},
     esqlcontrol.Handler{},
     markdown.Handler{},
+    image.Handler{},
     // visconfig and lensdashboardapp added in Change 4
 }
 
@@ -284,7 +286,9 @@ func sloBurnRateSchemaAttributes() map[string]schema.Attribute {
 }
 ```
 
-`panelkit.URLDrilldownSchema()` is also used by `slo_overview` and the `lenscommon.ByReferenceAttributes()` factory. A future `slo_alerts` panel (or any other drilldown-bearing panel) imports the same function. No duplication of the 4–6 attribute drilldown shape.
+`panelkit.URLDrilldownSchema()` is also used by `slo_overview`, `slo_alerts`, and the `lenscommon.ByReferenceAttributes()` factory. No duplication of the 4–6 attribute URL drilldown shape.
+
+The `image` panel has a distinct drilldown shape: each drilldown entry carries either a `dashboard_drilldown` sub-block or a `url_drilldown` sub-block (not the URL-only shape). A separate `panelkit.ImageDrilldownSchema()` factory is added for this shape; no other current panel reuses it.
 
 ### Null-preservation pattern
 

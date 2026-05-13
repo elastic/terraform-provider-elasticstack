@@ -9,21 +9,24 @@
 - [ ] 1.7 Create `models/markdown.go` with `MarkdownConfigModel`, `MarkdownConfigByValueModel`, `MarkdownConfigByReferenceModel`, `MarkdownConfigSettingsModel`
 - [ ] 1.8 Create `models/controls.go` with `TimeSliderControlConfigModel`, `OptionsListControlConfigModel`, `RangeSliderControlConfigModel`, `EsqlControlConfigModel`
 - [ ] 1.9 Create `models/synthetics.go` with `SyntheticsStatsOverviewConfigModel`, `SyntheticsMonitorsConfigModel`
-- [ ] 1.10 Create `models/lens.go` with `LensByValueChartBlocks`, `LensDashboardAppConfigModel`, `VizConfigModel`, `VizByValueModel`, `VizByReferenceModel`, `LensChartPresentationTFModel`
-- [ ] 1.11 Create `models/lens_xy.go` with `XYChartConfigModel`, `XYLayerModel`, `XYAxisModel`, etc.
-- [ ] 1.12 Create `models/lens_gauge.go` with `GaugeConfigModel`, `GaugeStylingModel`
-- [ ] 1.13 Create `models/lens_metric.go` with `MetricChartConfigModel`, `MetricChartMetricModel`
-- [ ] 1.14 Create `models/lens_pie.go` with `PieChartConfigModel`
-- [ ] 1.15 Create `models/lens_treemap.go` with `TreemapConfigModel`
-- [ ] 1.16 Create `models/lens_mosaic.go` with `MosaicConfigModel`
-- [ ] 1.17 Create `models/lens_datatable.go` with `DatatableConfigModel`, `DatatableNoESQLConfigModel`, `DatatableESQLConfigModel`
-- [ ] 1.18 Create `models/lens_tagcloud.go` with `TagcloudConfigModel`
-- [ ] 1.19 Create `models/lens_heatmap.go` with `HeatmapConfigModel`
-- [ ] 1.20 Create `models/lens_region_map.go` with `RegionMapConfigModel`
-- [ ] 1.21 Create `models/lens_legacy_metric.go` with `LegacyMetricConfigModel`
-- [ ] 1.22 Create `models/lens_waffle.go` with `WaffleConfigModel`
-- [ ] 1.23 Create `models/filters.go` with `ChartFilterJSONModel`, `FilterSimpleModel`
-- [ ] 1.24 Ensure `models/` package imports only TPF types, `customtypes`, and `jsontypes` (no `kbapi`, no `dashboard`)
+- [ ] 1.10 Create `models/image.go` with `ImagePanelConfigModel`, `ImagePanelSrcModel`, `ImagePanelSrcFileModel`, `ImagePanelSrcURLModel`, `ImagePanelDrilldownModel`, `ImagePanelDashboardDrilldownModel`, `ImagePanelURLDrilldownModel`
+- [ ] 1.11 Create `models/slo_alerts.go` with `SloAlertsPanelConfigModel`, `SloAlertsPanelSloModel`, `SloAlertsPanelDrilldownModel`
+- [ ] 1.12 Create `models/discover_session.go` with `DiscoverSessionPanelConfigModel`, `DiscoverSessionPanelByValueModel`, `DiscoverSessionTabModel`, `DiscoverSessionDSLTabModel`, `DiscoverSessionESQLTabModel`, `DiscoverSessionPanelByRefModel`, `DiscoverSessionOverridesModel`, `DiscoverSessionSortModel`, `DiscoverSessionColumnSettingModel`, `DiscoverSessionPanelDrilldown`
+- [ ] 1.13 Create `models/lens.go` with `LensByValueChartBlocks`, `LensDashboardAppConfigModel`, `VizConfigModel`, `VizByValueModel`, `VizByReferenceModel`, `LensChartPresentationTFModel`
+- [ ] 1.14 Create `models/lens_xy.go` with `XYChartConfigModel`, `XYLayerModel`, `XYAxisModel`, etc.
+- [ ] 1.15 Create `models/lens_gauge.go` with `GaugeConfigModel`, `GaugeStylingModel`
+- [ ] 1.16 Create `models/lens_metric.go` with `MetricChartConfigModel`, `MetricChartMetricModel`
+- [ ] 1.17 Create `models/lens_pie.go` with `PieChartConfigModel`
+- [ ] 1.18 Create `models/lens_treemap.go` with `TreemapConfigModel`
+- [ ] 1.19 Create `models/lens_mosaic.go` with `MosaicConfigModel`
+- [ ] 1.20 Create `models/lens_datatable.go` with `DatatableConfigModel`, `DatatableNoESQLConfigModel`, `DatatableESQLConfigModel`
+- [ ] 1.21 Create `models/lens_tagcloud.go` with `TagcloudConfigModel`
+- [ ] 1.22 Create `models/lens_heatmap.go` with `HeatmapConfigModel`
+- [ ] 1.23 Create `models/lens_region_map.go` with `RegionMapConfigModel`
+- [ ] 1.24 Create `models/lens_legacy_metric.go` with `LegacyMetricConfigModel`
+- [ ] 1.25 Create `models/lens_waffle.go` with `WaffleConfigModel`
+- [ ] 1.26 Create `models/filters.go` with `ChartFilterJSONModel`, `FilterSimpleModel`
+- [ ] 1.27 Ensure `models/` package imports only TPF types, `customtypes`, and `jsontypes` (no `kbapi`, no `dashboard`)
 
 ## 2. Update dashboard package references
 
