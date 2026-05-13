@@ -31,5 +31,5 @@ resource "elasticstack_elasticsearch_ml_anomaly_detection_job" "job" {
 
 resource "elasticstack_elasticsearch_ml_calendar_job" "test" {
   calendar_id = var.calendar_id
-  job_id = elasticstack_elasticsearch_ml_anomaly_detection_job.job.job_id
+  job_id      = elasticstack_elasticsearch_ml_anomaly_detection_job.job.job_id
 }

@@ -12,7 +12,7 @@ provider "elasticstack" {
 
 resource "elasticstack_elasticsearch_ml_anomaly_detection_job" "job" {
   job_id      = var.job_id
-  description = "ACC job for ml_calendar_job"
+  description = "ACC job for ml_calendar_job calendar_id too long plan"
 
   analysis_config = {
     bucket_span = "15m"

@@ -6,13 +6,17 @@ variable "job_id" {
   type = string
 }
 
+variable "invalid_job_id" {
+  type = string
+}
+
 provider "elasticstack" {
   elasticsearch {}
 }
 
 resource "elasticstack_elasticsearch_ml_anomaly_detection_job" "job" {
   job_id      = var.job_id
-  description = "ACC job for ml_calendar_job"
+  description = "ACC job for ml_calendar_job invalid job_id plan"
 
   analysis_config = {
     bucket_span = "15m"
@@ -31,5 +35,5 @@ resource "elasticstack_elasticsearch_ml_anomaly_detection_job" "job" {
 
 resource "elasticstack_elasticsearch_ml_calendar_job" "test" {
   calendar_id = var.calendar_id
-  job_id      = elasticstack_elasticsearch_ml_anomaly_detection_job.job.job_id
+  job_id      = var.invalid_job_id
 }
