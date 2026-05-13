@@ -19,8 +19,10 @@ package anomalydetectionjob
 
 import (
 	"context"
+	"slices"
 	"testing"
 
+	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -47,6 +49,30 @@ func TestCalendarIDsFromTFSet_unknownOrNull(t *testing.T) {
 		}
 		if out != nil {
 			t.Fatalf("expected nil slice, got %#v", out)
+		}
+	})
+}
+
+func TestCalendarIDsContainingJobFromPage(t *testing.T) {
+	t.Parallel()
+	job := "job-a"
+	t.Run("empty page", func(t *testing.T) {
+		t.Parallel()
+		got := calendarIDsContainingJobFromPage(nil, job)
+		if len(got) != 0 {
+			t.Fatalf("got %#v", got)
+		}
+	})
+	t.Run("filters and preserves order of append", func(t *testing.T) {
+		t.Parallel()
+		page := []estypes.Calendar{
+			{CalendarId: "cal-1", JobIds: []string{"other"}},
+			{CalendarId: "cal-2", JobIds: []string{job, "other"}},
+			{CalendarId: "cal-3", JobIds: []string{}},
+		}
+		got := calendarIDsContainingJobFromPage(page, job)
+		if !slices.Equal(got, []string{"cal-2"}) {
+			t.Fatalf("got %#v", got)
 		}
 	})
 }

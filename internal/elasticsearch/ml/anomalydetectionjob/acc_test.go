@@ -20,16 +20,20 @@ package anomalydetectionjob_test
 import (
 	"context"
 	_ "embed"
+	"errors"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 	"testing"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 const testResourceAddr = "elasticstack_elasticsearch_ml_anomaly_detection_job.test"
@@ -57,6 +61,62 @@ func setupAccMLCalendars(t *testing.T, calendarIDs ...string) {
 				t.Logf("cleanup delete ML calendar %q: %v", id, delErr)
 			}
 		})
+	}
+}
+
+// accPutMLJobOnCalendar assigns an existing ML job to a calendar (used to simulate out-of-band drift).
+func accPutMLJobOnCalendar(t *testing.T, calendarID, jobID string) {
+	t.Helper()
+	ctx := context.Background()
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+	if err != nil {
+		t.Fatalf("acceptance elasticsearch client: %v", err)
+	}
+	es, err := client.GetESClient()
+	if err != nil {
+		t.Fatalf("get elasticsearch client: %v", err)
+	}
+	if _, err := es.Ml.PutCalendarJob(calendarID, jobID).Do(ctx); err != nil {
+		t.Fatalf("put ML job %q on calendar %q: %v", jobID, calendarID, err)
+	}
+}
+
+// testAccCheckDestroyMLAnomalyDetectionJob verifies the ML job is gone and is not still attached to any given calendar.
+func testAccCheckDestroyMLAnomalyDetectionJob(jobID string, calendarIDs []string) resource.TestCheckFunc {
+	return func(_ *terraform.State) error {
+		ctx := context.Background()
+		client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+		if err != nil {
+			return fmt.Errorf("acceptance elasticsearch client: %w", err)
+		}
+		es, err := client.GetESClient()
+		if err != nil {
+			return fmt.Errorf("get elasticsearch client: %w", err)
+		}
+		jobsRes, err := es.Ml.GetJobs().JobId(jobID).AllowNoMatch(true).Do(ctx)
+		if err != nil {
+			return fmt.Errorf("get ML job %q: %w", jobID, err)
+		}
+		if jobsRes != nil && len(jobsRes.Jobs) > 0 {
+			return fmt.Errorf("ML anomaly job %q still exists after destroy", jobID)
+		}
+		for _, calID := range calendarIDs {
+			calRes, err := es.Ml.GetCalendars().CalendarId(calID).Do(ctx)
+			if err != nil {
+				var esErr *types.ElasticsearchError
+				if errors.As(err, &esErr) && esErr.Status == 404 {
+					continue
+				}
+				return fmt.Errorf("get ML calendar %q: %w", calID, err)
+			}
+			if calRes == nil || len(calRes.Calendars) == 0 {
+				continue
+			}
+			if slices.Contains(calRes.Calendars[0].JobIds, jobID) {
+				return fmt.Errorf("ML job %q still listed on calendar %q after destroy", jobID, calID)
+			}
+		}
+		return nil
 	}
 }
 
@@ -503,19 +563,22 @@ func TestAccResourceAnomalyDetectionJobExplicitConnection(t *testing.T) {
 }
 
 // TestAccResourceAnomalyDetectionJobCalendars exercises optional calendars: create with one calendar,
-// add a second on update, then remove the first so only the second remains. Calendars are created
-// out-of-band via the Elasticsearch ML APIs (see setupAccMLCalendars).
+// add a second on update, then remove the first so only the second remains, then clear all calendars.
+// It ends with import verification and a destroy check that the job is detached from calendars.
 func TestAccResourceAnomalyDetectionJobCalendars(t *testing.T) {
 	jobID := fmt.Sprintf("test-ad-cal-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	// Prefixes ensure lexicographic order matches [calA, calB] for set attribute indices in checks.
 	calA := fmt.Sprintf("acc-cal-a-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	calB := fmt.Sprintf("acc-cal-b-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
-	setupAccMLCalendars(t, calA, calB)
 
 	addr := testResourceAddr
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() { acctest.PreCheck(t) },
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			setupAccMLCalendars(t, calA, calB)
+		},
+		CheckDestroy: testAccCheckDestroyMLAnomalyDetectionJob(jobID, []string{calA, calB}),
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -556,6 +619,123 @@ func TestAccResourceAnomalyDetectionJobCalendars(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(addr, "calendars.#", "1"),
 					resource.TestCheckResourceAttr(addr, "calendars.0", calB),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_none"),
+				ConfigVariables: config.Variables{
+					"job_id": config.StringVariable(jobID),
+					"cal_a":  config.StringVariable(calA),
+					"cal_b":  config.StringVariable(calB),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "job_id", jobID),
+					resource.TestCheckResourceAttr(addr, "calendars.#", "0"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_none"),
+				ConfigVariables: config.Variables{
+					"job_id": config.StringVariable(jobID),
+					"cal_a":  config.StringVariable(calA),
+					"cal_b":  config.StringVariable(calB),
+				},
+				ResourceName:      addr,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					rs, ok := s.RootModule().Resources[addr]
+					if !ok {
+						return "", fmt.Errorf("resource %q not found in state", addr)
+					}
+					return rs.Primary.ID, nil
+				},
+			},
+		},
+	})
+}
+
+// TestAccResourceAnomalyDetectionJobCalendarsEmptyFirst creates a job with no calendars, then assigns one on update.
+func TestAccResourceAnomalyDetectionJobCalendarsEmptyFirst(t *testing.T) {
+	jobID := fmt.Sprintf("test-ad-cal-empty-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	calA := fmt.Sprintf("acc-cal-a-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	addr := testResourceAddr
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			setupAccMLCalendars(t, calA)
+		},
+		CheckDestroy: testAccCheckDestroyMLAnomalyDetectionJob(jobID, []string{calA}),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("no_calendars"),
+				ConfigVariables: config.Variables{
+					"job_id": config.StringVariable(jobID),
+					"cal_a":  config.StringVariable(calA),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "job_id", jobID),
+					resource.TestCheckResourceAttr(addr, "calendars.#", "0"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("add_calendar"),
+				ConfigVariables: config.Variables{
+					"job_id": config.StringVariable(jobID),
+					"cal_a":  config.StringVariable(calA),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "calendars.#", "1"),
+					resource.TestCheckResourceAttr(addr, "calendars.0", calA),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceAnomalyDetectionJobCalendarsDrift simulates out-of-band calendar membership; the next apply reconciles to config.
+func TestAccResourceAnomalyDetectionJobCalendarsDrift(t *testing.T) {
+	jobID := fmt.Sprintf("test-ad-cal-drift-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	calA := fmt.Sprintf("acc-cal-a-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	calDrift := fmt.Sprintf("acc-cal-drift-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	addr := testResourceAddr
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			setupAccMLCalendars(t, calA, calDrift)
+		},
+		CheckDestroy: testAccCheckDestroyMLAnomalyDetectionJob(jobID, []string{calA, calDrift}),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"job_id": config.StringVariable(jobID),
+					"cal_a":  config.StringVariable(calA),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "job_id", jobID),
+					resource.TestCheckResourceAttr(addr, "calendars.#", "1"),
+					resource.TestCheckResourceAttr(addr, "calendars.0", calA),
+				),
+			},
+			{
+				PreConfig:                func() { accPutMLJobOnCalendar(t, calDrift, jobID) },
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"job_id": config.StringVariable(jobID),
+					"cal_a":  config.StringVariable(calA),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "calendars.#", "1"),
+					resource.TestCheckResourceAttr(addr, "calendars.0", calA),
 				),
 			},
 		},

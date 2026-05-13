@@ -369,7 +369,13 @@ func (plan *TFModel) fromAPIModel(ctx context.Context, apiModel *APIModel) diag.
 	diags.Append(groupDiags...)
 
 	var calDiags diag.Diagnostics
-	plan.Calendars, calDiags = typeutils.NonEmptySetOrDefault(ctx, plan.Calendars, types.StringType, apiModel.Calendars)
+	if len(apiModel.Calendars) == 0 {
+		// Always reflect empty API membership as an empty set (not the prior TF value) so
+		// refresh/import match Elasticsearch and empty `calendars` in config.
+		plan.Calendars, calDiags = types.SetValueFrom(ctx, types.StringType, []string{})
+	} else {
+		plan.Calendars, calDiags = typeutils.NonEmptySetOrDefault(ctx, plan.Calendars, types.StringType, apiModel.Calendars)
+	}
 	diags.Append(calDiags...)
 
 	// Convert optional fields

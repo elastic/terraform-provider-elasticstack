@@ -29,6 +29,18 @@ import (
 
 const getCalendarsPageSize = 500
 
+// calendarIDsContainingJobFromPage returns calendar IDs on a single ML get-calendars response page
+// whose job_ids include jobID. Used by listCalendarIDsForJob and covered by unit tests.
+func calendarIDsContainingJobFromPage(cals []types.Calendar, jobID string) []string {
+	var out []string
+	for _, cal := range cals {
+		if slices.Contains(cal.JobIds, jobID) {
+			out = append(out, cal.CalendarId)
+		}
+	}
+	return out
+}
+
 // listCalendarIDsForJob returns sorted calendar IDs that include jobID in their job_ids.
 func listCalendarIDsForJob(ctx context.Context, typed *elasticsearch.TypedClient, jobID string) ([]string, error) {
 	var out []string
@@ -43,11 +55,7 @@ func listCalendarIDsForJob(ctx context.Context, typed *elasticsearch.TypedClient
 		if len(res.Calendars) == 0 {
 			break
 		}
-		for _, cal := range res.Calendars {
-			if slices.Contains(cal.JobIds, jobID) {
-				out = append(out, cal.CalendarId)
-			}
-		}
+		out = append(out, calendarIDsContainingJobFromPage(res.Calendars, jobID)...)
 		if len(res.Calendars) < getCalendarsPageSize {
 			break
 		}
