@@ -299,8 +299,7 @@ func Test_heatmapConfigModel_noXAxisYAxisTFSDKFields(t *testing.T) {
 	// Use reflection to confirm no exported field has a tfsdk tag of "x_axis_json" or "y_axis_json",
 	// and that the internal unexported fields exist.
 	typ := reflect.TypeFor[heatmapConfigModel]()
-	for i := range typ.NumField() {
-		field := typ.Field(i)
+	for field := range typ.Fields() {
 		if tag, ok := field.Tag.Lookup("tfsdk"); ok {
 			assert.NotEqual(t, "x_axis_json", tag, "heatmapConfigModel must not have tfsdk:x_axis_json on field %s", field.Name)
 			assert.NotEqual(t, "y_axis_json", tag, "heatmapConfigModel must not have tfsdk:y_axis_json on field %s", field.Name)
