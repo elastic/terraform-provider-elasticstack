@@ -79,10 +79,12 @@ func getSchema() schema.Schema {
 			},
 			"avatar_color": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				MarkdownDescription: "Hex color code for the agent avatar (e.g., `#BFDBFF`).",
 			},
 			"avatar_symbol": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				MarkdownDescription: "Symbol or initials for the agent avatar (e.g., `SI`).",
 			},
 			"labels": schema.SetAttribute{

@@ -118,17 +118,21 @@ func (d *Data) updateCommonRuleFieldsFromAPI(ctx context.Context, fields commonA
 	d.UpdatedBy = types.StringValue(fields.UpdatedBy)
 	d.Revision = types.Int64Value(fields.Revision)
 
-	diags.Append(d.updateTimelineIDFromAPI(ctx, fields.TimelineID)...)
-	diags.Append(d.updateTimelineTitleFromAPI(ctx, fields.TimelineTitle)...)
-	diags.Append(d.updateDataViewIDFromAPI(ctx, fields.DataViewID)...)
-	diags.Append(d.updateNamespaceFromAPI(ctx, fields.Namespace)...)
-	diags.Append(d.updateRuleNameOverrideFromAPI(ctx, fields.RuleNameOverride)...)
-	diags.Append(d.updateTimestampOverrideFromAPI(ctx, fields.TimestampOverride)...)
-	diags.Append(d.updateTimestampOverrideFallbackDisabledFromAPI(ctx, fields.TimestampOverrideFallbackDisabled)...)
-	diags.Append(d.updateBuildingBlockTypeFromAPI(ctx, fields.BuildingBlockType)...)
-	diags.Append(d.updateLicenseFromAPI(ctx, fields.License)...)
-	diags.Append(d.updateNoteFromAPI(ctx, fields.Note)...)
-	diags.Append(d.updateSetupFromAPI(ctx, fields.Setup)...)
+	d.TimelineID = typeutils.StringishPointerValue(fields.TimelineID)
+	d.TimelineTitle = typeutils.StringishPointerValue(fields.TimelineTitle)
+	d.DataViewID = typeutils.StringishPointerValue(fields.DataViewID)
+	d.Namespace = typeutils.StringishPointerValue(fields.Namespace)
+	d.RuleNameOverride = typeutils.StringishPointerValue(fields.RuleNameOverride)
+	d.TimestampOverride = typeutils.StringishPointerValue(fields.TimestampOverride)
+	if fields.TimestampOverrideFallbackDisabled != nil {
+		d.TimestampOverrideFallbackDisabled = types.BoolValue(*fields.TimestampOverrideFallbackDisabled)
+	} else {
+		d.TimestampOverrideFallbackDisabled = types.BoolNull()
+	}
+	d.BuildingBlockType = typeutils.StringishPointerValue(fields.BuildingBlockType)
+	d.License = typeutils.StringishPointerValue(fields.License)
+	d.Note = typeutils.StringishPointerValue(fields.Note)
+	d.Setup = typeutils.NonEmptyStringishValue(fields.Setup)
 
 	diags.Append(d.updateIndexFromAPI(ctx, fields.Index)...)
 	diags.Append(d.updateAuthorFromAPI(ctx, fields.Author)...)
@@ -492,24 +496,7 @@ func convertOsqueryResponseActionToModel(ctx context.Context, osqueryAction kbap
 	}
 
 	// Convert ECS mapping
-	if osqueryAction.Params.EcsMapping != nil {
-		ecsMappingAttrs := make(map[string]attr.Value)
-		for key, value := range *osqueryAction.Params.EcsMapping {
-			if value.Field != nil {
-				ecsMappingAttrs[key] = types.StringPointerValue(value.Field)
-			} else {
-				ecsMappingAttrs[key] = types.StringNull()
-			}
-		}
-		ecsMappingValue, ecsDiags := types.MapValue(types.StringType, ecsMappingAttrs)
-		if ecsDiags.HasError() {
-			diags.Append(ecsDiags...)
-		} else {
-			paramsModel.EcsMapping = ecsMappingValue
-		}
-	} else {
-		paramsModel.EcsMapping = types.MapNull(types.StringType)
-	}
+	paramsModel.EcsMapping = convertEcsMappingToModel(osqueryAction.Params.EcsMapping)
 
 	// Convert queries array
 	if osqueryAction.Params.Queries != nil {
@@ -541,24 +528,7 @@ func convertOsqueryResponseActionToModel(ctx context.Context, osqueryAction kbap
 			}
 
 			// Convert query ECS mapping
-			if apiQuery.EcsMapping != nil {
-				queryEcsMappingAttrs := make(map[string]attr.Value)
-				for key, value := range *apiQuery.EcsMapping {
-					if value.Field != nil {
-						queryEcsMappingAttrs[key] = types.StringPointerValue(value.Field)
-					} else {
-						queryEcsMappingAttrs[key] = types.StringNull()
-					}
-				}
-				queryEcsMappingValue, queryEcsDiags := types.MapValue(types.StringType, queryEcsMappingAttrs)
-				if queryEcsDiags.HasError() {
-					diags.Append(queryEcsDiags...)
-				} else {
-					query.EcsMapping = queryEcsMappingValue
-				}
-			} else {
-				query.EcsMapping = types.MapNull(types.StringType)
-			}
+			query.EcsMapping = convertEcsMappingToModel(apiQuery.EcsMapping)
 
 			queries = append(queries, query)
 		}
@@ -835,164 +805,6 @@ func (d *Data) updateReferencesFromAPI(ctx context.Context, references []string)
 		d.References = typeutils.ListValueFrom(ctx, references, types.StringType, path.Root("references"), &diags)
 	} else {
 		d.References = types.ListValueMust(types.StringType, []attr.Value{})
-	}
-
-	return diags
-}
-
-// Helper function to update data view ID from API response
-func (d *Data) updateDataViewIDFromAPI(ctx context.Context, dataViewID *kbapi.SecurityDetectionsAPIDataViewId) diag.Diagnostics {
-	diags := diag.Diagnostics{}
-	_ = ctx
-
-	if dataViewID != nil {
-		d.DataViewID = types.StringValue(*dataViewID)
-	} else {
-		d.DataViewID = types.StringNull()
-	}
-
-	return diags
-}
-
-// Helper function to update timeline ID from API response
-func (d *Data) updateTimelineIDFromAPI(ctx context.Context, timelineID *kbapi.SecurityDetectionsAPITimelineTemplateId) diag.Diagnostics {
-	diags := diag.Diagnostics{}
-	_ = ctx
-
-	if timelineID != nil {
-		d.TimelineID = types.StringValue(*timelineID)
-	} else {
-		d.TimelineID = types.StringNull()
-	}
-
-	return diags
-}
-
-// Helper function to update timeline title from API response
-func (d *Data) updateTimelineTitleFromAPI(ctx context.Context, timelineTitle *kbapi.SecurityDetectionsAPITimelineTemplateTitle) diag.Diagnostics {
-	diags := diag.Diagnostics{}
-	_ = ctx
-
-	if timelineTitle != nil {
-		d.TimelineTitle = types.StringValue(*timelineTitle)
-	} else {
-		d.TimelineTitle = types.StringNull()
-	}
-
-	return diags
-}
-
-// Helper function to update namespace from API response
-func (d *Data) updateNamespaceFromAPI(ctx context.Context, namespace *kbapi.SecurityDetectionsAPIAlertsIndexNamespace) diag.Diagnostics {
-	diags := diag.Diagnostics{}
-	_ = ctx
-
-	if namespace != nil {
-		d.Namespace = types.StringValue(*namespace)
-	} else {
-		d.Namespace = types.StringNull()
-	}
-
-	return diags
-}
-
-// Helper function to update rule name override from API response
-func (d *Data) updateRuleNameOverrideFromAPI(ctx context.Context, ruleNameOverride *kbapi.SecurityDetectionsAPIRuleNameOverride) diag.Diagnostics {
-	diags := diag.Diagnostics{}
-	_ = ctx
-
-	if ruleNameOverride != nil {
-		d.RuleNameOverride = types.StringValue(*ruleNameOverride)
-	} else {
-		d.RuleNameOverride = types.StringNull()
-	}
-
-	return diags
-}
-
-// Helper function to update timestamp override from API response
-func (d *Data) updateTimestampOverrideFromAPI(ctx context.Context, timestampOverride *kbapi.SecurityDetectionsAPITimestampOverride) diag.Diagnostics {
-	diags := diag.Diagnostics{}
-	_ = ctx
-
-	if timestampOverride != nil {
-		d.TimestampOverride = types.StringValue(*timestampOverride)
-	} else {
-		d.TimestampOverride = types.StringNull()
-	}
-
-	return diags
-}
-
-// Helper function to update timestamp override fallback disabled from API response
-func (d *Data) updateTimestampOverrideFallbackDisabledFromAPI(
-	ctx context.Context,
-	timestampOverrideFallbackDisabled *kbapi.SecurityDetectionsAPITimestampOverrideFallbackDisabled,
-) diag.Diagnostics {
-	diags := diag.Diagnostics{}
-	_ = ctx
-
-	if timestampOverrideFallbackDisabled != nil {
-		d.TimestampOverrideFallbackDisabled = types.BoolValue(*timestampOverrideFallbackDisabled)
-	} else {
-		d.TimestampOverrideFallbackDisabled = types.BoolNull()
-	}
-
-	return diags
-}
-
-// Helper function to update building block type from API response
-func (d *Data) updateBuildingBlockTypeFromAPI(ctx context.Context, buildingBlockType *kbapi.SecurityDetectionsAPIBuildingBlockType) diag.Diagnostics {
-	diags := diag.Diagnostics{}
-	_ = ctx
-
-	if buildingBlockType != nil {
-		d.BuildingBlockType = types.StringValue(*buildingBlockType)
-	} else {
-		d.BuildingBlockType = types.StringNull()
-	}
-
-	return diags
-}
-
-// Helper function to update license from API response
-func (d *Data) updateLicenseFromAPI(ctx context.Context, license *kbapi.SecurityDetectionsAPIRuleLicense) diag.Diagnostics {
-	diags := diag.Diagnostics{}
-	_ = ctx
-
-	if license != nil {
-		d.License = types.StringValue(*license)
-	} else {
-		d.License = types.StringNull()
-	}
-
-	return diags
-}
-
-// Helper function to update note from API response
-func (d *Data) updateNoteFromAPI(ctx context.Context, note *kbapi.SecurityDetectionsAPIInvestigationGuide) diag.Diagnostics {
-	diags := diag.Diagnostics{}
-	_ = ctx
-
-	if note != nil {
-		d.Note = types.StringValue(*note)
-	} else {
-		d.Note = types.StringNull()
-	}
-
-	return diags
-}
-
-// Helper function to update setup from API response
-func (d *Data) updateSetupFromAPI(ctx context.Context, setup kbapi.SecurityDetectionsAPISetupGuide) diag.Diagnostics {
-	diags := diag.Diagnostics{}
-	_ = ctx
-
-	// Handle setup field - if empty, set to null to maintain consistency with optional schema
-	if setup != "" {
-		d.Setup = types.StringValue(setup)
-	} else {
-		d.Setup = types.StringNull()
 	}
 
 	return diags
@@ -1279,6 +1091,23 @@ func (d *Data) updateThreatFromAPI(ctx context.Context, threat *kbapi.SecurityDe
 	}
 
 	return diags
+}
+
+// convertEcsMappingToModel converts a kbapi ECS mapping pointer to a types.Map.
+func convertEcsMappingToModel(ecsMapping *kbapi.SecurityDetectionsAPIEcsMapping) types.Map {
+	if ecsMapping == nil {
+		return types.MapNull(types.StringType)
+	}
+	attrs := make(map[string]attr.Value, len(*ecsMapping))
+	for key, value := range *ecsMapping {
+		if value.Field != nil {
+			attrs[key] = types.StringPointerValue(value.Field)
+		} else {
+			attrs[key] = types.StringNull()
+		}
+	}
+	result, _ := types.MapValue(types.StringType, attrs)
+	return result
 }
 
 // parseDurationFromAPI converts an API duration to customtypes.Duration

@@ -25,29 +25,29 @@ import (
 )
 
 type lensVisualizationConverter interface {
-	vizType() string
-	handlesTFConfig(pm panelModel) bool
-	populateFromAttributes(ctx context.Context, dashboard *dashboardModel, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics
-	buildAttributes(pm panelModel, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics)
+	visType() string
+	handlesTFConfigBlocks(blocks *lensByValueChartBlocks) bool
+	populateFromAttributes(ctx context.Context, dashboard *dashboardModel, tfPanel *panelModel, blocks *lensByValueChartBlocks, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics
+	buildAttributes(blocks *lensByValueChartBlocks, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics)
 }
 
 type lensVisualizationBase struct {
 	visualizationType string
-	hasTFPanelConfig  func(pm panelModel) bool
+	hasTFChartBlock   func(blocks *lensByValueChartBlocks) bool
 }
 
-func (c lensVisualizationBase) vizType() string {
+func (c lensVisualizationBase) visType() string {
 	return c.visualizationType
 }
 
-func (c lensVisualizationBase) handlesTFConfig(pm panelModel) bool {
-	if c.hasTFPanelConfig == nil {
+func (c lensVisualizationBase) handlesTFConfigBlocks(blocks *lensByValueChartBlocks) bool {
+	if blocks == nil || c.hasTFChartBlock == nil {
 		return false
 	}
-	return c.hasTFPanelConfig(pm)
+	return c.hasTFChartBlock(blocks)
 }
 
-func detectLensVizType(attrs kbapi.KbnDashboardPanelTypeVisConfig0) string {
+func detectLensVisType(attrs kbapi.KbnDashboardPanelTypeVisConfig0) string {
 	if chart, err := attrs.AsXyChartNoESQL(); err == nil {
 		return string(chart.Type)
 	}
@@ -118,4 +118,18 @@ func detectLensVizType(attrs kbapi.KbnDashboardPanelTypeVisConfig0) string {
 		return string(chart.Type)
 	}
 	return ""
+}
+
+// lensVisConverterForType returns the typed Lens converter for vis_config.by_value whose discriminator
+// matches strings produced by detectLensVisType, or nil when the provider does not model that chart kind.
+func lensVisConverterForType(visType string) lensVisualizationConverter {
+	if visType == "" {
+		return nil
+	}
+	for _, c := range lensVisConverters {
+		if c.visType() == visType {
+			return c
+		}
+	}
+	return nil
 }

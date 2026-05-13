@@ -610,12 +610,12 @@ func Test_xyChartPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 	require.NoError(t, attrs.FromXyChartNoESQL(xyChart))
 
 	converter := newXYChartPanelConfigConverter()
-	pm := &panelModel{}
-	diags = converter.populateFromAttributes(ctx, nil, pm, attrs)
+	visBv := visByValueModel{}
+	diags = converter.populateFromAttributes(ctx, nil, nil, &visBv.lensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
-	require.NotNil(t, pm.XYChartConfig)
+	require.NotNil(t, visBv.XYChartConfig)
 
-	attrs2, diags := converter.buildAttributes(*pm, nil)
+	attrs2, diags := converter.buildAttributes(&visBv.lensByValueChartBlocks, nil)
 	require.False(t, diags.HasError())
 
 	chart2, err := attrs2.AsXyChartNoESQL()
@@ -745,7 +745,82 @@ func minimalXYChartConfigForPresentationTests() *xyChartConfigModel {
 	}
 }
 
-func Test_xyChartConfigModel_lensChartPresentation_timeRange_inheritanceAndMode(t *testing.T) {
+func Test_xyChartConfigModel_esqlMode_queryNil(t *testing.T) {
+	// ES|QL XY panels should have nil query; query is optional on the schema.
+	// Build a model in ES|QL mode (all data layers have esql data_source) and verify
+	// that toAPIESQL emits a valid payload without requiring query.
+	m := &xyChartConfigModel{
+		Title: types.StringValue("ESQL XY Chart"),
+		Axis: &xyAxisModel{
+			X: &xyAxisConfigModel{},
+			Y: &yAxisConfigModel{},
+		},
+		Decorations: &xyDecorationsModel{},
+		Fitting:     &xyFittingModel{Type: types.StringValue("none")},
+		Layers: []xyLayerModel{
+			{
+				Type: types.StringValue("area"),
+				DataLayer: &dataLayerModel{
+					DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"esql","query":"FROM logs-* | LIMIT 10"}`),
+					Y: []yMetricModel{
+						{ConfigJSON: jsontypes.NewNormalizedValue(`{"operation":"count","axis":"left"}`)},
+					},
+				},
+			},
+		},
+		Legend: &xyLegendModel{
+			Inside:     types.BoolValue(false),
+			Visibility: types.StringValue("visible"),
+		},
+		Query: nil, // ES|QL mode: no query
+	}
+
+	// Verify ES|QL mode detection
+	assert.True(t, m.xyUsesESQL())
+
+	// Build the ES|QL API payload
+	esqlChart, diags := m.toAPIESQL(nil)
+	require.False(t, diags.HasError(), "diags: %v", diags)
+	assert.Equal(t, kbapi.XyChartESQLTypeXy, esqlChart.Type)
+	assert.Len(t, esqlChart.Layers, 1)
+}
+
+func Test_xyChartConfigModel_optionalQuery_noESQL_nilQueryNoError(t *testing.T) {
+	// Non-ES|QL XY panels with nil query should NOT error; query is optional in the schema.
+	// The API payload will simply omit the query field.
+	m := &xyChartConfigModel{
+		Title: types.StringValue("Non-ESQL XY Chart no query"),
+		Axis: &xyAxisModel{
+			X: &xyAxisConfigModel{},
+			Y: &yAxisConfigModel{},
+		},
+		Decorations: &xyDecorationsModel{},
+		Fitting:     &xyFittingModel{Type: types.StringValue("none")},
+		Layers: []xyLayerModel{
+			{
+				Type: types.StringValue("area"),
+				DataLayer: &dataLayerModel{
+					DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"dataView","id":"logs-*"}`),
+					Y: []yMetricModel{
+						{ConfigJSON: jsontypes.NewNormalizedValue(`{"operation":"count","axis":"left"}`)},
+					},
+				},
+			},
+		},
+		Legend: &xyLegendModel{
+			Inside:     types.BoolValue(false),
+			Visibility: types.StringValue("visible"),
+		},
+		Query: nil, // Query is now optional
+	}
+
+	assert.False(t, m.xyUsesESQL())
+
+	_, diags := m.toAPINoESQL(nil)
+	assert.False(t, diags.HasError(), "expected no error when non-ES|QL XY chart has no query; query is optional: %v", diags)
+}
+
+func Test_xyChartConfig_lensChartPresentation_timeRange_inheritanceAndMode(t *testing.T) {
 	ctx := context.Background()
 
 	dash := &dashboardModel{
@@ -1057,79 +1132,85 @@ func Test_xyLegendModel_toAPI_nil(t *testing.T) {
 func Test_alignXYChartStateFromPlanPanels_preservesPractitionerIntent(t *testing.T) {
 	planPanels := []panelModel{
 		{
-			XYChartConfig: &xyChartConfigModel{
-				Title: types.StringValue("Sample XY Chart"),
-				Axis: &xyAxisModel{
-					X: &xyAxisConfigModel{
-						Title: &axisTitleModel{
-							Value:   types.StringValue("Timestamp"),
-							Visible: types.BoolValue(true),
-						},
-						Grid:             types.BoolNull(),
-						Ticks:            types.BoolNull(),
-						LabelOrientation: types.StringNull(),
-						Scale:            types.StringNull(),
-						DomainJSON:       jsontypes.NewNormalizedNull(),
-					},
-					Y: &yAxisConfigModel{
-						Title: &axisTitleModel{
-							Value:   types.StringValue("Count"),
-							Visible: types.BoolValue(true),
-						},
-						Grid:             types.BoolNull(),
-						Ticks:            types.BoolNull(),
-						LabelOrientation: types.StringNull(),
-						Scale:            types.StringValue("linear"),
-						DomainJSON:       jsontypes.NewNormalizedValue(`{"type":"fit"}`),
-					},
-					Y2: &yAxisConfigModel{
-						Title: &axisTitleModel{
-							Value:   types.StringValue("Rate"),
-							Visible: types.BoolValue(true),
-						},
-						Grid:             types.BoolValue(false),
-						Ticks:            types.BoolValue(false),
-						LabelOrientation: types.StringValue("vertical"),
-						Scale:            types.StringValue("sqrt"),
-						DomainJSON:       jsontypes.NewNormalizedValue(`{"type":"fit"}`),
-					},
-				},
-				Decorations: &xyDecorationsModel{
-					ShowEndZones:          types.BoolNull(),
-					ShowCurrentTimeMarker: types.BoolNull(),
-					PointVisibility:       types.StringNull(),
-					LineInterpolation:     types.StringNull(),
-					FillOpacity:           types.Float64Value(0.3),
-				},
-				Legend: &xyLegendModel{
-					Visibility:         types.StringValue("visible"),
-					Inside:             types.BoolValue(false),
-					Position:           types.StringValue("right"),
-					TruncateAfterLines: types.Int64Null(),
-				},
-				Layers: []xyLayerModel{
-					{
-						Type: types.StringValue("line"),
-						DataLayer: &dataLayerModel{
-							DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"data_view_spec","index_pattern":"metrics-*"}`),
-							XJSON:          jsontypes.NewNormalizedValue(`{"column":"@timestamp","format":{"type":"number"}}`),
-							BreakdownByJSON: jsontypes.NewNormalizedValue(
-								`{"column":"host.name","collapse_by":"avg","format":{"type":"number"},` +
-									`"color":{"mode":"categorical","palette":"default","mapping":[],` +
-									`"unassigned":{"type":"color_code","value":"#D3DAE6"}}}`,
-							),
-							Y: []yMetricModel{
-								{ConfigJSON: jsontypes.NewNormalizedValue(`{"operation":"count","empty_as_null":true,"format":{"type":"number"}}`)},
+			VisConfig: &visConfigModel{
+				ByValue: &visByValueModel{
+					lensByValueChartBlocks: lensByValueChartBlocks{
+						XYChartConfig: &xyChartConfigModel{
+							Title: types.StringValue("Sample XY Chart"),
+							Axis: &xyAxisModel{
+								X: &xyAxisConfigModel{
+									Title: &axisTitleModel{
+										Value:   types.StringValue("Timestamp"),
+										Visible: types.BoolValue(true),
+									},
+									Grid:             types.BoolNull(),
+									Ticks:            types.BoolNull(),
+									LabelOrientation: types.StringNull(),
+									Scale:            types.StringNull(),
+									DomainJSON:       jsontypes.NewNormalizedNull(),
+								},
+								Y: &yAxisConfigModel{
+									Title: &axisTitleModel{
+										Value:   types.StringValue("Count"),
+										Visible: types.BoolValue(true),
+									},
+									Grid:             types.BoolNull(),
+									Ticks:            types.BoolNull(),
+									LabelOrientation: types.StringNull(),
+									Scale:            types.StringValue("linear"),
+									DomainJSON:       jsontypes.NewNormalizedValue(`{"type":"fit"}`),
+								},
+								Y2: &yAxisConfigModel{
+									Title: &axisTitleModel{
+										Value:   types.StringValue("Rate"),
+										Visible: types.BoolValue(true),
+									},
+									Grid:             types.BoolValue(false),
+									Ticks:            types.BoolValue(false),
+									LabelOrientation: types.StringValue("vertical"),
+									Scale:            types.StringValue("sqrt"),
+									DomainJSON:       jsontypes.NewNormalizedValue(`{"type":"fit"}`),
+								},
 							},
-						},
-					},
-					{
-						Type: types.StringValue("reference_lines"),
-						ReferenceLineLayer: &referenceLineLayerModel{
-							DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"data_view_spec","index_pattern":"metrics-*"}`),
-							Thresholds: []thresholdModel{
+							Decorations: &xyDecorationsModel{
+								ShowEndZones:          types.BoolNull(),
+								ShowCurrentTimeMarker: types.BoolNull(),
+								PointVisibility:       types.StringNull(),
+								LineInterpolation:     types.StringNull(),
+								FillOpacity:           types.Float64Value(0.3),
+							},
+							Legend: &xyLegendModel{
+								Visibility:         types.StringValue("visible"),
+								Inside:             types.BoolValue(false),
+								Position:           types.StringValue("right"),
+								TruncateAfterLines: types.Int64Null(),
+							},
+							Layers: []xyLayerModel{
 								{
-									ValueJSON: jsontypes.NewNormalizedValue(`{"operation":"static_value","value":42,"label":"","format":{"type":"number"}}`),
+									Type: types.StringValue("line"),
+									DataLayer: &dataLayerModel{
+										DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"data_view_spec","index_pattern":"metrics-*"}`),
+										XJSON:          jsontypes.NewNormalizedValue(`{"column":"@timestamp","format":{"type":"number"}}`),
+										BreakdownByJSON: jsontypes.NewNormalizedValue(
+											`{"column":"host.name","collapse_by":"avg","format":{"type":"number"},` +
+												`"color":{"mode":"categorical","palette":"default","mapping":[],` +
+												`"unassigned":{"type":"color_code","value":"#D3DAE6"}}}`,
+										),
+										Y: []yMetricModel{
+											{ConfigJSON: jsontypes.NewNormalizedValue(`{"operation":"count","empty_as_null":true,"format":{"type":"number"}}`)},
+										},
+									},
+								},
+								{
+									Type: types.StringValue("reference_lines"),
+									ReferenceLineLayer: &referenceLineLayerModel{
+										DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"data_view_spec","index_pattern":"metrics-*"}`),
+										Thresholds: []thresholdModel{
+											{
+												ValueJSON: jsontypes.NewNormalizedValue(`{"operation":"static_value","value":42,"label":"","format":{"type":"number"}}`),
+											},
+										},
+									},
 								},
 							},
 						},
@@ -1141,67 +1222,73 @@ func Test_alignXYChartStateFromPlanPanels_preservesPractitionerIntent(t *testing
 
 	statePanels := []panelModel{
 		{
-			XYChartConfig: &xyChartConfigModel{
-				Title: types.StringValue(""),
-				Axis: &xyAxisModel{
-					X: &xyAxisConfigModel{
-						Title:            &axisTitleModel{},
-						Grid:             types.BoolValue(true),
-						Ticks:            types.BoolValue(true),
-						LabelOrientation: types.StringValue("horizontal"),
-						Scale:            types.StringValue("ordinal"),
-						DomainJSON:       jsontypes.NewNormalizedValue(`{"type":"fit","rounding":false}`),
-					},
-					Y: &yAxisConfigModel{
-						Title: &axisTitleModel{
-							Value:   types.StringValue("Count"),
-							Visible: types.BoolValue(true),
-						},
-						Grid:             types.BoolValue(true),
-						Ticks:            types.BoolValue(true),
-						LabelOrientation: types.StringValue("horizontal"),
-						Scale:            types.StringValue("linear"),
-						DomainJSON:       jsontypes.NewNormalizedValue(`{"type":"fit","rounding":true}`),
-					},
-					Y2: nil,
-				},
-				Decorations: &xyDecorationsModel{
-					ShowEndZones:          types.BoolValue(false),
-					ShowCurrentTimeMarker: types.BoolValue(false),
-					PointVisibility:       types.StringValue("auto"),
-					LineInterpolation:     types.StringValue("linear"),
-					FillOpacity:           types.Float64Null(),
-				},
-				Legend: &xyLegendModel{
-					Visibility:         types.StringValue("visible"),
-					Inside:             types.BoolValue(false),
-					Position:           types.StringValue("right"),
-					TruncateAfterLines: types.Int64Value(1),
-				},
-				Layers: []xyLayerModel{
-					{
-						Type: types.StringValue("line"),
-						DataLayer: &dataLayerModel{
-							DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"data_view_spec","index_pattern":"metrics-*","time_field":"@timestamp"}`),
-							XJSON:          jsontypes.NewNormalizedValue(`{"column":"@timestamp","format":{"type":"number","decimals":2,"compact":false}}`),
-							BreakdownByJSON: jsontypes.NewNormalizedValue(
-								`{"column":"host.name","collapse_by":"avg",` +
-									`"format":{"type":"number","decimals":2,"compact":false},` +
-									`"color":{"mode":"categorical","palette":"default","mapping":[],` +
-									`"unassigned":{"type":"color_code","value":"#D3DAE6"}}}`,
-							),
-							Y: []yMetricModel{
-								{ConfigJSON: jsontypes.NewNormalizedValue(`{"operation":"count","empty_as_null":true,"format":{"type":"number","decimals":2,"compact":false},"axis_id":"y"}`)},
+			VisConfig: &visConfigModel{
+				ByValue: &visByValueModel{
+					lensByValueChartBlocks: lensByValueChartBlocks{
+						XYChartConfig: &xyChartConfigModel{
+							Title: types.StringValue(""),
+							Axis: &xyAxisModel{
+								X: &xyAxisConfigModel{
+									Title:            &axisTitleModel{},
+									Grid:             types.BoolValue(true),
+									Ticks:            types.BoolValue(true),
+									LabelOrientation: types.StringValue("horizontal"),
+									Scale:            types.StringValue("ordinal"),
+									DomainJSON:       jsontypes.NewNormalizedValue(`{"type":"fit","rounding":false}`),
+								},
+								Y: &yAxisConfigModel{
+									Title: &axisTitleModel{
+										Value:   types.StringValue("Count"),
+										Visible: types.BoolValue(true),
+									},
+									Grid:             types.BoolValue(true),
+									Ticks:            types.BoolValue(true),
+									LabelOrientation: types.StringValue("horizontal"),
+									Scale:            types.StringValue("linear"),
+									DomainJSON:       jsontypes.NewNormalizedValue(`{"type":"fit","rounding":true}`),
+								},
+								Y2: nil,
 							},
-						},
-					},
-					{
-						Type: types.StringValue("reference_lines"),
-						ReferenceLineLayer: &referenceLineLayerModel{
-							DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"data_view_spec","index_pattern":"metrics-*","time_field":"@timestamp"}`),
-							Thresholds: []thresholdModel{
+							Decorations: &xyDecorationsModel{
+								ShowEndZones:          types.BoolValue(false),
+								ShowCurrentTimeMarker: types.BoolValue(false),
+								PointVisibility:       types.StringValue("auto"),
+								LineInterpolation:     types.StringValue("linear"),
+								FillOpacity:           types.Float64Null(),
+							},
+							Legend: &xyLegendModel{
+								Visibility:         types.StringValue("visible"),
+								Inside:             types.BoolValue(false),
+								Position:           types.StringValue("right"),
+								TruncateAfterLines: types.Int64Value(1),
+							},
+							Layers: []xyLayerModel{
 								{
-									ValueJSON: jsontypes.NewNormalizedValue(`{"operation":"static_value","value":42,"label":"","format":{"type":"number","decimals":2,"compact":false},"axis_id":"y"}`),
+									Type: types.StringValue("line"),
+									DataLayer: &dataLayerModel{
+										DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"data_view_spec","index_pattern":"metrics-*","time_field":"@timestamp"}`),
+										XJSON:          jsontypes.NewNormalizedValue(`{"column":"@timestamp","format":{"type":"number","decimals":2,"compact":false}}`),
+										BreakdownByJSON: jsontypes.NewNormalizedValue(
+											`{"column":"host.name","collapse_by":"avg",` +
+												`"format":{"type":"number","decimals":2,"compact":false},` +
+												`"color":{"mode":"categorical","palette":"default","mapping":[],` +
+												`"unassigned":{"type":"color_code","value":"#D3DAE6"}}}`,
+										),
+										Y: []yMetricModel{
+											{ConfigJSON: jsontypes.NewNormalizedValue(`{"operation":"count","empty_as_null":true,"format":{"type":"number","decimals":2,"compact":false},"axis_id":"y"}`)},
+										},
+									},
+								},
+								{
+									Type: types.StringValue("reference_lines"),
+									ReferenceLineLayer: &referenceLineLayerModel{
+										DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"data_view_spec","index_pattern":"metrics-*","time_field":"@timestamp"}`),
+										Thresholds: []thresholdModel{
+											{
+												ValueJSON: jsontypes.NewNormalizedValue(`{"operation":"static_value","value":42,"label":"","format":{"type":"number","decimals":2,"compact":false},"axis_id":"y"}`),
+											},
+										},
+									},
 								},
 							},
 						},
@@ -1213,7 +1300,8 @@ func Test_alignXYChartStateFromPlanPanels_preservesPractitionerIntent(t *testing
 
 	alignXYChartStateFromPlanPanels(planPanels, statePanels)
 
-	got := statePanels[0].XYChartConfig
+	planXY := planPanels[0].VisConfig.ByValue.XYChartConfig
+	got := statePanels[0].VisConfig.ByValue.XYChartConfig
 	require.NotNil(t, got)
 	assert.Equal(t, types.StringValue("Sample XY Chart"), got.Title)
 	assert.True(t, got.Axis.X.Scale.IsNull())
@@ -1222,20 +1310,20 @@ func Test_alignXYChartStateFromPlanPanels_preservesPractitionerIntent(t *testing
 	assert.True(t, got.Axis.X.LabelOrientation.IsNull())
 	assert.True(t, got.Axis.X.DomainJSON.IsNull())
 	require.NotNil(t, got.Axis.Y2)
-	assert.Equal(t, planPanels[0].XYChartConfig.Axis.Y2.DomainJSON.ValueString(), got.Axis.Y2.DomainJSON.ValueString())
-	assert.Equal(t, planPanels[0].XYChartConfig.Axis.Y.DomainJSON.ValueString(), got.Axis.Y.DomainJSON.ValueString())
+	assert.Equal(t, planXY.Axis.Y2.DomainJSON.ValueString(), got.Axis.Y2.DomainJSON.ValueString())
+	assert.Equal(t, planXY.Axis.Y.DomainJSON.ValueString(), got.Axis.Y.DomainJSON.ValueString())
 	assert.True(t, got.Decorations.ShowEndZones.IsNull())
 	assert.True(t, got.Decorations.ShowCurrentTimeMarker.IsNull())
 	assert.True(t, got.Decorations.PointVisibility.IsNull())
 	assert.True(t, got.Decorations.LineInterpolation.IsNull())
 	assert.Equal(t, types.Float64Value(0.3), got.Decorations.FillOpacity)
 	assert.True(t, got.Legend.TruncateAfterLines.IsNull())
-	assert.Equal(t, planPanels[0].XYChartConfig.Layers[0].DataLayer.DataSourceJSON.ValueString(), got.Layers[0].DataLayer.DataSourceJSON.ValueString())
-	assert.Equal(t, planPanels[0].XYChartConfig.Layers[0].DataLayer.XJSON.ValueString(), got.Layers[0].DataLayer.XJSON.ValueString())
-	assert.Equal(t, planPanels[0].XYChartConfig.Layers[0].DataLayer.BreakdownByJSON.ValueString(), got.Layers[0].DataLayer.BreakdownByJSON.ValueString())
-	assert.Equal(t, planPanels[0].XYChartConfig.Layers[0].DataLayer.Y[0].ConfigJSON.ValueString(), got.Layers[0].DataLayer.Y[0].ConfigJSON.ValueString())
-	assert.Equal(t, planPanels[0].XYChartConfig.Layers[1].ReferenceLineLayer.DataSourceJSON.ValueString(), got.Layers[1].ReferenceLineLayer.DataSourceJSON.ValueString())
-	assert.Equal(t, planPanels[0].XYChartConfig.Layers[1].ReferenceLineLayer.Thresholds[0].ValueJSON.ValueString(), got.Layers[1].ReferenceLineLayer.Thresholds[0].ValueJSON.ValueString())
+	assert.Equal(t, planXY.Layers[0].DataLayer.DataSourceJSON.ValueString(), got.Layers[0].DataLayer.DataSourceJSON.ValueString())
+	assert.Equal(t, planXY.Layers[0].DataLayer.XJSON.ValueString(), got.Layers[0].DataLayer.XJSON.ValueString())
+	assert.Equal(t, planXY.Layers[0].DataLayer.BreakdownByJSON.ValueString(), got.Layers[0].DataLayer.BreakdownByJSON.ValueString())
+	assert.Equal(t, planXY.Layers[0].DataLayer.Y[0].ConfigJSON.ValueString(), got.Layers[0].DataLayer.Y[0].ConfigJSON.ValueString())
+	assert.Equal(t, planXY.Layers[1].ReferenceLineLayer.DataSourceJSON.ValueString(), got.Layers[1].ReferenceLineLayer.DataSourceJSON.ValueString())
+	assert.Equal(t, planXY.Layers[1].ReferenceLineLayer.Thresholds[0].ValueJSON.ValueString(), got.Layers[1].ReferenceLineLayer.Thresholds[0].ValueJSON.ValueString())
 }
 
 func Test_filterSimpleModel_toAPI_nil(t *testing.T) {

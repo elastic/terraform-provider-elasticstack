@@ -206,7 +206,9 @@ func Test_eachExposedByValueSource_visAndLensUnionsJSONBridge(t *testing.T) {
 				t.Helper()
 				pm := buildLensWafflePanelForTest(t)
 				converter := newWafflePanelConfigConverter()
-				vis0, d := converter.buildAttributes(pm, nil)
+				blocks := lensByValueChartBlocksFromPanel(&pm)
+				require.NotNil(t, blocks)
+				vis0, d := converter.buildAttributes(blocks, nil)
 				require.False(t, d.HasError())
 				return vis0
 			},
@@ -326,9 +328,11 @@ func (m lensDashboardAppByValueModel) metricsTypedVis0(t *testing.T) kbapi.KbnDa
 	t.Helper()
 	pm, ok := lensByValueToScratchVisPanel(m)
 	require.True(t, ok)
-	conv, okc := firstLensVizConverterForPanel(pm)
+	conv, okc := firstLensVisConverterForPanel(pm)
 	require.True(t, okc)
-	vis, d := conv.buildAttributes(pm, nil)
+	blocks := lensByValueChartBlocksFromPanel(&pm)
+	require.NotNil(t, blocks)
+	vis, d := conv.buildAttributes(blocks, nil)
 	require.False(t, d.HasError())
 	return vis
 }

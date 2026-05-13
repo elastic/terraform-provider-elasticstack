@@ -35,7 +35,9 @@ func newXYChartPanelConfigConverter() xyChartPanelConfigConverter {
 	return xyChartPanelConfigConverter{
 		lensVisualizationBase: lensVisualizationBase{
 			visualizationType: string(kbapi.XyChartNoESQLTypeXy),
-			hasTFPanelConfig:  func(pm panelModel) bool { return pm.XYChartConfig != nil },
+			hasTFChartBlock: func(blocks *lensByValueChartBlocks) bool {
+				return blocks != nil && blocks.XYChartConfig != nil
+			},
 		},
 	}
 }
@@ -44,27 +46,33 @@ type xyChartPanelConfigConverter struct {
 	lensVisualizationBase
 }
 
-func (c xyChartPanelConfigConverter) populateFromAttributes(ctx context.Context, dashboard *dashboardModel, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
+func (c xyChartPanelConfigConverter) populateFromAttributes(
+	ctx context.Context,
+	dashboard *dashboardModel,
+	tfPanel *panelModel,
+	blocks *lensByValueChartBlocks,
+	attrs kbapi.KbnDashboardPanelTypeVisConfig0,
+) diag.Diagnostics {
 	var prior *xyChartConfigModel
-	if pm.XYChartConfig != nil {
-		cpy := *pm.XYChartConfig
+	if b := lensByValueChartBlocksFromPanel(tfPanel); b != nil && b.XYChartConfig != nil {
+		cpy := *b.XYChartConfig
 		prior = &cpy
 	}
-	pm.XYChartConfig = &xyChartConfigModel{}
+	blocks.XYChartConfig = &xyChartConfigModel{}
 	if xyChart, err := attrs.AsXyChartNoESQL(); err == nil {
-		return pm.XYChartConfig.fromAPINoESQL(ctx, dashboard, prior, xyChart)
+		return blocks.XYChartConfig.fromAPINoESQL(ctx, dashboard, prior, xyChart)
 	}
 	xyChart, err := attrs.AsXyChartESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	return pm.XYChartConfig.fromAPIESQL(ctx, dashboard, prior, xyChart)
+	return blocks.XYChartConfig.fromAPIESQL(ctx, dashboard, prior, xyChart)
 }
 
-func (c xyChartPanelConfigConverter) buildAttributes(pm panelModel, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func (c xyChartPanelConfigConverter) buildAttributes(blocks *lensByValueChartBlocks, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
-	configModel := *pm.XYChartConfig
+	configModel := *blocks.XYChartConfig
 
 	if configModel.xyUsesESQL() {
 		chart, xyDiags := configModel.toAPIESQL(dashboard)
@@ -1292,8 +1300,13 @@ func (m *xyChartConfigModel) fromAPINoESQL(ctx context.Context, dashboard *dashb
 	legendDiags := m.Legend.fromAPI(ctx, apiChart.Legend)
 	diags.Append(legendDiags...)
 
-	m.Query = &filterSimpleModel{}
-	m.Query.fromAPI(apiChart.Query)
+	// Preserve nil query when prior state omitted it (query is optional in schema).
+	if prior != nil && prior.Query == nil {
+		m.Query = nil
+	} else {
+		m.Query = &filterSimpleModel{}
+		m.Query.fromAPI(apiChart.Query)
+	}
 
 	m.Filters = populateFiltersFromAPI(apiChart.Filters, &diags)
 
@@ -1385,12 +1398,23 @@ func (m *xyChartConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashboa
 func alignXYChartStateFromPlanPanels(planPanels, statePanels []panelModel) {
 	n := min(len(statePanels), len(planPanels))
 	for i := range n {
-		pp, sp := planPanels[i].XYChartConfig, statePanels[i].XYChartConfig
+		pp, sp := xyChartConfigFromLensOrVisPlanPanel(planPanels[i]), xyChartConfigFromLensOrVisPlanPanel(statePanels[i])
 		if pp == nil || sp == nil {
 			continue
 		}
 		alignXYChartStateFromPlan(pp, sp)
 	}
+}
+
+func xyChartConfigFromLensOrVisPlanPanel(pm panelModel) *xyChartConfigModel {
+	if pm.VisConfig != nil && pm.VisConfig.ByValue != nil && pm.VisConfig.ByValue.XYChartConfig != nil {
+		return pm.VisConfig.ByValue.XYChartConfig
+	}
+	if pm.LensDashboardAppConfig != nil && pm.LensDashboardAppConfig.ByValue != nil &&
+		pm.LensDashboardAppConfig.ByValue.XYChartConfig != nil {
+		return pm.LensDashboardAppConfig.ByValue.XYChartConfig
+	}
+	return nil
 }
 
 func alignXYChartStateFromPlan(plan, state *xyChartConfigModel) {

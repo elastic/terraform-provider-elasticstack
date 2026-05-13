@@ -1,0 +1,1 @@
+Templated URL for the drilldown. Variables are documented in the [Kibana drilldown URL template variables](https://www.elastic.co/docs/explore-analyze/dashboards/drilldowns#url-template-variable) section of the Elastic docs.

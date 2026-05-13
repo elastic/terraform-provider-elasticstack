@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/acctest/checks"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -47,9 +48,7 @@ func TestAccResourceDashboardLensDashboardAppByValue_basic(t *testing.T) {
 				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.type", "lens-dashboard-app"),
-					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.lens_dashboard_app_config.by_value.config_json", regexp.MustCompile(`"type"\s*:\s*"metric"`)),
-					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.lens_dashboard_app_config.by_value.config_json", regexp.MustCompile(`"title"\s*:\s*"Acc by-value"`)),
-					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.lens_dashboard_app_config.by_value.config_json", regexp.MustCompile(`"index_pattern"\s*:\s*"metrics-\*"`)),
+					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "panels.0.lens_dashboard_app_config.by_value.config_json", `{"type":"metric","title":"Acc by-value","data_source":{"index_pattern":"metrics-*"}}`), //nolint:lll
 				),
 			},
 			// Same config again: require an empty pre-apply plan (no post-apply drift on refresh).
@@ -76,7 +75,6 @@ func TestAccResourceDashboardLensDashboardAppByValue_basic(t *testing.T) {
 // `config_json`; the import step only asserts panel `config_json` is still absent.
 func TestAccResourceDashboardLensDashboardAppByValueTypedMetric_basic(t *testing.T) {
 	dashboardTitle := "Acc lens app typed m " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
-	dataSourceRe := regexp.MustCompile(`"index_pattern"\s*:\s*"metrics-\*"`)
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
@@ -87,7 +85,7 @@ func TestAccResourceDashboardLensDashboardAppByValueTypedMetric_basic(t *testing
 				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.type", "lens-dashboard-app"),
-					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.lens_dashboard_app_config.by_value.metric_chart_config.data_source_json", dataSourceRe),
+					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "panels.0.lens_dashboard_app_config.by_value.metric_chart_config.data_source_json", `{"index_pattern":"metrics-*"}`),
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.config_json"),
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.lens_dashboard_app_config.by_value.config_json"),
 				),
@@ -119,8 +117,6 @@ func TestAccResourceDashboardLensDashboardAppByValueTypedMetric_basic(t *testing
 
 func TestAccResourceDashboardLensDashboardAppByReference(t *testing.T) {
 	dashboardTitle := "Acc lens app by-ref " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
-	refWireID := regexp.MustCompile(`aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee`)
-	typeLens := regexp.MustCompile(`"type"\s*:\s*"lens"`)
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
@@ -138,8 +134,7 @@ func TestAccResourceDashboardLensDashboardAppByReference(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.lens_dashboard_app_config.by_reference.time_range.from", "now-7d"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.lens_dashboard_app_config.by_reference.time_range.to", "now"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.lens_dashboard_app_config.by_reference.time_range.mode", "relative"),
-					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.lens_dashboard_app_config.by_reference.references_json", refWireID),
-					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.lens_dashboard_app_config.by_reference.references_json", typeLens),
+					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "panels.0.lens_dashboard_app_config.by_reference.references_json", `[{"id":"aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee","type":"lens"}]`), //nolint:lll
 				),
 			},
 			{

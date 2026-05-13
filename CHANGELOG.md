@@ -47,6 +47,8 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 
 ### Changes
 
+- Add optional `scope` on detector `custom_rules` for ML anomaly detection jobs (map analysis field names to ML `filter_id` and optional `filter_type`). ([#2877](https://github.com/elastic/terraform-provider-elasticstack/pull/2877))
+- Added plan-time validation for kibana_slo time_window.duration based on window type. ([#2914](https://github.com/elastic/terraform-provider-elasticstack/pull/2914))
 - Remove top-level `enabled` field from `elasticstack_fleet_integration_policy`. ([#2773](https://github.com/elastic/terraform-provider-elasticstack/pull/2773))
 - Adds sort nested block to elasticstack_elasticsearch_index resource with deprecation of sort_field/sort_order and seamless migration ([#2851](https://github.com/elastic/terraform-provider-elasticstack/pull/2851))
 - Fix crash when role_descriptors is not set in elasticstack_elasticsearch_security_api_key ([#2855](https://github.com/elastic/terraform-provider-elasticstack/pull/2855))
@@ -67,6 +69,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 - Fixed enrich policy resource recreation on every apply when `query` is not configured, by treating marshaled-null API responses as equivalent to an absent query. ([#2691](https://github.com/elastic/terraform-provider-elasticstack/pull/2691))
 - Duplicate `actions` block `group` values are now rejected at plan time with a clear error instead of failing with an opaque HTTP 400 at apply time. ([#2656](https://github.com/elastic/terraform-provider-elasticstack/pull/2656))
 - Poll for job closed state before deleting ML anomaly detection job to eliminate HTTP 409 version_conflict_engine_exception on teardown ([#2669](https://github.com/elastic/terraform-provider-elasticstack/pull/2669))
+- Add `elasticstack_elasticsearch_ml_filter` resource for managing Elasticsearch ML filters (used with anomaly detection `custom_rules`). ([#1970](https://github.com/elastic/terraform-provider-elasticstack/pull/1970))
 - Adds `elasticstack_fleet_proxy` resource for managing fleet proxies ([#2364](https://github.com/elastic/terraform-provider-elasticstack/pull/2364))
 - `elasticstack_fleet_integration` now syncs `space_id` from Fleet on both create and read, preventing state drift that caused unexpected forced replacements. ([#2582](https://github.com/elastic/terraform-provider-elasticstack/pull/2582))
 - Add space-aware Kibana asset management for elasticstack_fleet_integration on Kibana >= 8.15.0 ([#2608](https://github.com/elastic/terraform-provider-elasticstack/pull/2608))

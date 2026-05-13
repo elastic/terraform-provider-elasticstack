@@ -27,10 +27,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-const (
-	panelTypeSloOverview = "slo_overview"
-)
-
 // sloOverviewConfigModel is the top-level typed block for SLO overview panels.
 // Exactly one of Single or Groups must be set.
 type sloOverviewConfigModel struct {

@@ -35,6 +35,9 @@ import (
 // jsonNullString is the JSON encoding of null; json.Marshal uses it for unset union/API fields.
 const jsonNullString = "null"
 
+// defaultNumberFormatJSON is the fallback Kibana number format used when the API omits format.
+const defaultNumberFormatJSON = `{"type":"number"}`
+
 // dashboardModel is the top-level Terraform model
 type dashboardModel struct {
 	ID               types.String          `tfsdk:"id"`
@@ -194,7 +197,7 @@ func (m *dashboardModel) toAPICreateRequest(ctx context.Context, diags *diag.Dia
 	req.AccessControl = m.AccessControl.toCreateAPI()
 
 	// Set panels
-	panels, panelsDiags := m.panelsToAPI()
+	panels, panelsDiags := m.panelsToAPI(ctx)
 	diags.Append(panelsDiags...)
 	req.Panels = panels
 
@@ -251,7 +254,7 @@ func (m *dashboardModel) toAPIUpdateRequest(ctx context.Context, diags *diag.Dia
 	req.Options = options
 
 	// Set panels.
-	panels, panelsDiags := m.panelsToAPI()
+	panels, panelsDiags := m.panelsToAPI(ctx)
 	diags.Append(panelsDiags...)
 	if panels != nil {
 		req.Panels = panels

@@ -35,18 +35,6 @@ type panelModel struct {
 	Grid                          panelGridModel                                    `tfsdk:"grid"`
 	ID                            types.String                                      `tfsdk:"id"`
 	MarkdownConfig                *markdownConfigModel                              `tfsdk:"markdown_config"`
-	XYChartConfig                 *xyChartConfigModel                               `tfsdk:"xy_chart_config"`
-	TreemapConfig                 *treemapConfigModel                               `tfsdk:"treemap_config"`
-	MosaicConfig                  *mosaicConfigModel                                `tfsdk:"mosaic_config"`
-	DatatableConfig               *datatableConfigModel                             `tfsdk:"datatable_config"`
-	TagcloudConfig                *tagcloudConfigModel                              `tfsdk:"tagcloud_config"`
-	MetricChartConfig             *metricChartConfigModel                           `tfsdk:"metric_chart_config"`
-	PieChartConfig                *pieChartConfigModel                              `tfsdk:"pie_chart_config"`
-	GaugeConfig                   *gaugeConfigModel                                 `tfsdk:"gauge_config"`
-	LegacyMetricConfig            *legacyMetricConfigModel                          `tfsdk:"legacy_metric_config"`
-	RegionMapConfig               *regionMapConfigModel                             `tfsdk:"region_map_config"`
-	HeatmapConfig                 *heatmapConfigModel                               `tfsdk:"heatmap_config"`
-	WaffleConfig                  *waffleConfigModel                                `tfsdk:"waffle_config"`
 	TimeSliderControlConfig       *timeSliderControlConfigModel                     `tfsdk:"time_slider_control_config"`
 	SloBurnRateConfig             *sloBurnRateConfigModel                           `tfsdk:"slo_burn_rate_config"`
 	SloOverviewConfig             *sloOverviewConfigModel                           `tfsdk:"slo_overview_config"`
@@ -57,6 +45,10 @@ type panelModel struct {
 	SyntheticsStatsOverviewConfig *syntheticsStatsOverviewConfigModel               `tfsdk:"synthetics_stats_overview_config"`
 	SyntheticsMonitorsConfig      *syntheticsMonitorsConfigModel                    `tfsdk:"synthetics_monitors_config"`
 	LensDashboardAppConfig        *lensDashboardAppConfigModel                      `tfsdk:"lens_dashboard_app_config"`
+	VisConfig                     *visConfigModel                                   `tfsdk:"vis_config"`
+	ImageConfig                   *imagePanelConfigModel                            `tfsdk:"image_config"`
+	SloAlertsConfig               *sloAlertsPanelConfigModel                        `tfsdk:"slo_alerts_config"`
+	DiscoverSessionConfig         *discoverSessionPanelConfigModel                  `tfsdk:"discover_session_config"`
 	ConfigJSON                    customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config_json"`
 }
 
@@ -88,7 +80,7 @@ type sectionGridModel struct {
 	Y types.Int64 `tfsdk:"y"`
 }
 
-var lensVizConverters = []lensVisualizationConverter{
+var lensVisConverters = []lensVisualizationConverter{
 	newXYChartPanelConfigConverter(),
 	newTreemapPanelConfigConverter(),
 	newMosaicPanelConfigConverter(),
@@ -190,11 +182,6 @@ func (m *dashboardModel) mapSectionFromAPI(ctx context.Context, tfSection *secti
 	return sm, diags
 }
 
-func float32Ptr(v float64) *float32 {
-	f := float32(v)
-	return &f
-}
-
 func setPanelGridFromAPI(pm *panelModel, x, y float32, w, h *float32) {
 	pm.Grid = panelGridModel{
 		X: types.Int64Value(int64(x)),
@@ -214,18 +201,6 @@ func setPanelGridFromAPI(pm *panelModel, x, y float32, w, h *float32) {
 
 func panelHasTypedConfig(pm *panelModel) bool {
 	return pm.MarkdownConfig != nil ||
-		pm.XYChartConfig != nil ||
-		pm.TreemapConfig != nil ||
-		pm.MosaicConfig != nil ||
-		pm.DatatableConfig != nil ||
-		pm.TagcloudConfig != nil ||
-		pm.MetricChartConfig != nil ||
-		pm.PieChartConfig != nil ||
-		pm.GaugeConfig != nil ||
-		pm.LegacyMetricConfig != nil ||
-		pm.RegionMapConfig != nil ||
-		pm.HeatmapConfig != nil ||
-		pm.WaffleConfig != nil ||
 		pm.TimeSliderControlConfig != nil ||
 		pm.SloBurnRateConfig != nil ||
 		pm.SloOverviewConfig != nil ||
@@ -235,7 +210,11 @@ func panelHasTypedConfig(pm *panelModel) bool {
 		pm.RangeSliderControlConfig != nil ||
 		pm.SyntheticsStatsOverviewConfig != nil ||
 		pm.SyntheticsMonitorsConfig != nil ||
-		pm.LensDashboardAppConfig != nil
+		pm.LensDashboardAppConfig != nil ||
+		pm.VisConfig != nil ||
+		pm.ImageConfig != nil ||
+		pm.SloAlertsConfig != nil ||
+		pm.DiscoverSessionConfig != nil
 }
 
 func panelUsesConfigJSONOnly(pm *panelModel) bool {
@@ -247,18 +226,6 @@ func panelUsesConfigJSONOnly(pm *panelModel) bool {
 
 func clearPanelConfigBlocks(pm *panelModel) {
 	pm.MarkdownConfig = nil
-	pm.XYChartConfig = nil
-	pm.TreemapConfig = nil
-	pm.MosaicConfig = nil
-	pm.DatatableConfig = nil
-	pm.TagcloudConfig = nil
-	pm.MetricChartConfig = nil
-	pm.PieChartConfig = nil
-	pm.GaugeConfig = nil
-	pm.LegacyMetricConfig = nil
-	pm.RegionMapConfig = nil
-	pm.HeatmapConfig = nil
-	pm.WaffleConfig = nil
 	pm.TimeSliderControlConfig = nil
 	pm.SloBurnRateConfig = nil
 	pm.SloOverviewConfig = nil
@@ -269,6 +236,10 @@ func clearPanelConfigBlocks(pm *panelModel) {
 	pm.SyntheticsStatsOverviewConfig = nil
 	pm.SyntheticsMonitorsConfig = nil
 	pm.LensDashboardAppConfig = nil
+	pm.VisConfig = nil
+	pm.ImageConfig = nil
+	pm.SloAlertsConfig = nil
+	pm.DiscoverSessionConfig = nil
 }
 
 func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelModel, panelItem kbapi.DashboardPanelItem) (panelModel, diag.Diagnostics) {
@@ -298,21 +269,60 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 		setPanelGridFromAPI(&pm, markdownPanel.Grid.X, markdownPanel.Grid.Y, markdownPanel.Grid.W, markdownPanel.Grid.H)
 		pm.ID = types.StringPointerValue(markdownPanel.Id)
 		if !panelUsesConfigJSONOnly(tfPanel) {
-			config0, err := markdownPanel.Config.AsKbnDashboardPanelTypeMarkdownConfig0()
-			if err != nil {
-				// Kibana may return inline markdown fields without the union discriminator
-				// expected by AsKbnDashboardPanelTypeMarkdownConfig0; fall back to unmarshalling
-				// the raw config JSON into the inline schema.
-				if b, mErr := markdownPanel.Config.MarshalJSON(); mErr == nil {
-					var inline kbapi.KbnDashboardPanelTypeMarkdownConfig0
-					if json.Unmarshal(b, &inline) == nil {
-						config0 = inline
-						err = nil
-					}
+			rawConfig, rawErr := markdownPanel.Config.MarshalJSON()
+			branch := markdownConfigBranchUnknown
+			if rawErr != nil {
+				diags.AddWarning(
+					"Markdown panel configuration",
+					fmt.Sprintf(
+						"Could not marshal panel config for markdown branch classification: %v. Using union decode fallback.",
+						rawErr,
+					),
+				)
+			} else {
+				var err error
+				branch, err = classifyMarkdownConfigFromRoot(rawConfig)
+				if err != nil {
+					diags.AddWarning(
+						"Markdown panel configuration",
+						fmt.Sprintf(
+							"Could not parse panel config JSON for markdown branch classification: %v. Using union decode fallback.",
+							err,
+						),
+					)
+					branch = markdownConfigBranchUnknown
 				}
 			}
-			if err == nil {
-				populateMarkdownFromAPI(&pm, config0)
+
+			decodeMarkdownFails := func() {
+				diags.AddError(
+					"Invalid markdown panel config",
+					"Could not decode markdown panel config as by-value or by-reference.",
+				)
+			}
+
+			switch branch {
+			case markdownConfigBranchByReference:
+				if populateMarkdownFromAPIAttemptByReference(&pm, tfPanel, markdownPanel.Config, true) {
+					break
+				}
+				if !populateMarkdownFromAPIAttemptByValue(&pm, tfPanel, markdownPanel.Config, true) {
+					decodeMarkdownFails()
+				}
+			case markdownConfigBranchByValue:
+				if populateMarkdownFromAPIAttemptByValue(&pm, tfPanel, markdownPanel.Config, true) {
+					break
+				}
+				if !populateMarkdownFromAPIAttemptByReference(&pm, tfPanel, markdownPanel.Config, true) {
+					decodeMarkdownFails()
+				}
+			default:
+				if populateMarkdownFromAPIAttemptByValue(&pm, tfPanel, markdownPanel.Config, false) {
+					break
+				}
+				if !populateMarkdownFromAPIAttemptByReference(&pm, tfPanel, markdownPanel.Config, false) {
+					decodeMarkdownFails()
+				}
 			}
 		}
 		configBytes, err := markdownPanel.Config.MarshalJSON()
@@ -396,24 +406,97 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 
 		configBytes, err := visPanel.Config.MarshalJSON()
 		if err == nil {
-			pm.ConfigJSON = customtypes.NewJSONWithDefaultsValue(string(configBytes), populatePanelConfigJSONDefaults)
+			configJSON := customtypes.NewJSONWithDefaultsValue(string(configBytes), populatePanelConfigJSONDefaults)
+			if tfPanel != nil {
+				configJSON = preservePriorJSONWithDefaultsIfEquivalent(ctx, tfPanel.ConfigJSON, configJSON, &diags)
+			}
+			pm.ConfigJSON = configJSON
 		}
 
-		config0, err := visPanel.Config.AsKbnDashboardPanelTypeVisConfig0()
-		if err == nil && !panelUsesConfigJSONOnly(tfPanel) {
-			vizType := detectLensVizType(config0)
-			for _, converter := range lensVizConverters {
-				if converter.vizType() != vizType {
-					continue
-				}
-				if tfPanel != nil && !converter.handlesTFConfig(*tfPanel) {
-					continue
-				}
+		if panelUsesConfigJSONOnly(tfPanel) {
+			break
+		}
 
-				d := converter.populateFromAttributes(ctx, m, &pm, config0)
-				diags.Append(d...)
+		var root map[string]any
+		if len(configBytes) == 0 || json.Unmarshal(configBytes, &root) != nil {
+			break
+		}
+
+		visPrior := configPriorForVisRead(tfPanel, &pm)
+
+		switch classifyLensDashboardAppConfigFromRoot(root) {
+		case lensConfigClassByReference:
+			cfg1, err1 := visPanel.Config.AsKbnDashboardPanelTypeVisConfig1()
+			if err1 != nil {
+				diags.AddError("Invalid visualization panel configuration on read", err1.Error())
 				break
 			}
+			diags.Append(populateVisByReferenceFromAPI(ctx, visPrior, &pm, cfg1)...)
+
+		case lensConfigClassByValueChart:
+			config0, err0 := visPanel.Config.AsKbnDashboardPanelTypeVisConfig0()
+			if err0 != nil {
+				diags.AddError("Invalid visualization panel configuration on read", err0.Error())
+				break
+			}
+			visType := detectLensVisType(config0)
+			if visType == "" {
+				diags.AddError(
+					"Unsupported visualization chart type",
+					"The `vis` panel config has a top-level chart discriminator but could not resolve a Lens chart kind from the union; use panel-level `config_json` until this shape is modeled.",
+				)
+				break
+			}
+			converter := lensVisConverterForType(visType)
+			if converter == nil {
+				diags.AddError(
+					"Unsupported visualization chart type",
+					fmt.Sprintf(
+						"The dashboard returned Lens visualization discriminator %q which this provider does not support as typed `vis_config.by_value`. "+
+							"Use panel-level `config_json` as the escape hatch to manage this panel until support is added.",
+						visType,
+					),
+				)
+				break
+			}
+			pm.VisConfig = &visConfigModel{
+				ByValue: &visByValueModel{},
+			}
+			seedWaffleLensByValueChartFromPriorPanel(&pm.VisConfig.ByValue.lensByValueChartBlocks, tfPanel)
+			d := converter.populateFromAttributes(ctx, m, tfPanel, &pm.VisConfig.ByValue.lensByValueChartBlocks, config0)
+			diags.Append(d...)
+
+		default:
+			if visPrior != nil && visPrior.ByReference != nil {
+				// REQ-009 / D10: ambiguous API shape — preserve prior by_reference (pm seeded from tfPanel).
+				break
+			}
+			config0, err0 := visPanel.Config.AsKbnDashboardPanelTypeVisConfig0()
+			if err0 != nil {
+				break
+			}
+			visType := detectLensVisType(config0)
+			if visType == "" {
+				break
+			}
+			converter := lensVisConverterForType(visType)
+			if converter == nil {
+				diags.AddError(
+					"Unsupported visualization chart type",
+					fmt.Sprintf(
+						"The dashboard returned Lens visualization discriminator %q which this provider does not support as typed `vis_config.by_value`. "+
+							"Use panel-level `config_json` as the escape hatch to manage this panel until support is added.",
+						visType,
+					),
+				)
+				break
+			}
+			pm.VisConfig = &visConfigModel{
+				ByValue: &visByValueModel{},
+			}
+			seedWaffleLensByValueChartFromPriorPanel(&pm.VisConfig.ByValue.lensByValueChartBlocks, tfPanel)
+			d := converter.populateFromAttributes(ctx, m, tfPanel, &pm.VisConfig.ByValue.lensByValueChartBlocks, config0)
+			diags.Append(d...)
 		}
 	case panelTypeSloErrorBudget:
 		sebPanel, err := panelItem.AsKbnDashboardPanelTypeSloErrorBudget()
@@ -452,6 +535,33 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
 		d := populateLensDashboardAppFromAPI(ctx, m, &pm, tfPanel, ldPanel)
 		diags.Append(d...)
+	case panelTypeImage:
+		imgPanel, err := panelItem.AsKbnDashboardPanelTypeImage()
+		if err != nil {
+			return panelModel{}, diagutil.FrameworkDiagFromError(err)
+		}
+		setPanelGridFromAPI(&pm, imgPanel.Grid.X, imgPanel.Grid.Y, imgPanel.Grid.W, imgPanel.Grid.H)
+		pm.ID = types.StringPointerValue(imgPanel.Id)
+		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
+		populateImagePanelFromAPI(&pm, tfPanel, imgPanel)
+	case panelTypeSloAlerts:
+		saPanel, err := panelItem.AsKbnDashboardPanelTypeSloAlerts()
+		if err != nil {
+			return panelModel{}, diagutil.FrameworkDiagFromError(err)
+		}
+		setPanelGridFromAPI(&pm, saPanel.Grid.X, saPanel.Grid.Y, saPanel.Grid.W, saPanel.Grid.H)
+		pm.ID = types.StringPointerValue(saPanel.Id)
+		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
+		populateSloAlertsPanelFromAPI(&pm, tfPanel, saPanel)
+	case panelTypeDiscoverSession:
+		dsPanel, err := panelItem.AsKbnDashboardPanelTypeDiscoverSession()
+		if err != nil {
+			return panelModel{}, diagutil.FrameworkDiagFromError(err)
+		}
+		setPanelGridFromAPI(&pm, dsPanel.Grid.X, dsPanel.Grid.Y, dsPanel.Grid.W, dsPanel.Grid.H)
+		pm.ID = types.StringPointerValue(dsPanel.Id)
+		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
+		populateDiscoverSessionPanelFromAPI(ctx, &pm, tfPanel, dsPanel)
 	default:
 		// Round-trip stability for panel types without a typed config block.
 		pm.ID = types.StringNull()
@@ -466,10 +576,10 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 					y, _ := grid["y"].(float64)
 					var wPtr, hPtr *float32
 					if wVal, ok := grid["w"].(float64); ok {
-						wPtr = float32Ptr(wVal)
+						wPtr = typeutils.Float32Ptr(wVal)
 					}
 					if hVal, ok := grid["h"].(float64); ok {
-						hPtr = float32Ptr(hVal)
+						hPtr = typeutils.Float32Ptr(hVal)
 					}
 					setPanelGridFromAPI(&pm, float32(x), float32(y), wPtr, hPtr)
 				}
@@ -533,7 +643,7 @@ func resolveChartTimeRange(dashboard *dashboardModel, chartLevel *timeRangeModel
 	}
 }
 
-func (m *dashboardModel) panelsToAPI() (*kbapi.DashboardPanels, diag.Diagnostics) {
+func (m *dashboardModel) panelsToAPI(ctx context.Context) (*kbapi.DashboardPanels, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if m.Panels == nil && m.Sections == nil {
 		return nil, diags
@@ -543,7 +653,7 @@ func (m *dashboardModel) panelsToAPI() (*kbapi.DashboardPanels, diag.Diagnostics
 
 	// Process panels
 	for _, pm := range m.Panels {
-		panelItem, d := pm.toAPI(m)
+		panelItem, d := pm.toAPI(ctx, m)
 		diags.Append(d...)
 		if diags.HasError() {
 			return nil, diags
@@ -580,7 +690,7 @@ func (m *dashboardModel) panelsToAPI() (*kbapi.DashboardPanels, diag.Diagnostics
 			innerPanels := make([]kbapi.DashboardPanelItem, 0, len(sm.Panels))
 
 			for _, pm := range sm.Panels {
-				item, d := pm.toAPI(m)
+				item, d := pm.toAPI(ctx, m)
 				diags.Append(d...)
 				if diags.HasError() {
 					return nil, diags
@@ -602,8 +712,13 @@ func (m *dashboardModel) panelsToAPI() (*kbapi.DashboardPanels, diag.Diagnostics
 	return &apiPanels, diags
 }
 
-func (pm panelModel) toAPI(dashboard *dashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
+func (pm panelModel) toAPI(ctx context.Context, dashboard *dashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	var diags diag.Diagnostics
+
+	var dashTR *timeRangeModel
+	if dashboard != nil {
+		dashTR = dashboard.TimeRange
+	}
 
 	grid := struct {
 		H *float32 `json:"h,omitempty"`
@@ -630,20 +745,44 @@ func (pm panelModel) toAPI(dashboard *dashboardModel) (kbapi.DashboardPanelItem,
 
 	var panelItem kbapi.DashboardPanelItem
 	if pm.MarkdownConfig != nil {
-		config0 := buildMarkdownConfig(pm)
-		var config kbapi.KbnDashboardPanelTypeMarkdown_Config
-		if err := config.FromKbnDashboardPanelTypeMarkdownConfig0(config0); err != nil {
-			return kbapi.DashboardPanelItem{}, diagutil.FrameworkDiagFromError(err)
+		switch {
+		case pm.MarkdownConfig.ByReference != nil:
+			config1 := buildMarkdownConfigByReference(pm)
+			var config kbapi.KbnDashboardPanelTypeMarkdown_Config
+			if err := config.FromKbnDashboardPanelTypeMarkdownConfig1(config1); err != nil {
+				return kbapi.DashboardPanelItem{}, diagutil.FrameworkDiagFromError(err)
+			}
+			markdownPanel := kbapi.KbnDashboardPanelTypeMarkdown{
+				Config: config,
+				Grid:   grid,
+				Id:     panelID,
+			}
+			if err := panelItem.FromKbnDashboardPanelTypeMarkdown(markdownPanel); err != nil {
+				diags.AddError("Failed to create markdown panel", err.Error())
+			}
+			return panelItem, diags
+		case pm.MarkdownConfig.ByValue != nil:
+			config0 := buildMarkdownConfig(pm)
+			var config kbapi.KbnDashboardPanelTypeMarkdown_Config
+			if err := config.FromKbnDashboardPanelTypeMarkdownConfig0(config0); err != nil {
+				return kbapi.DashboardPanelItem{}, diagutil.FrameworkDiagFromError(err)
+			}
+			markdownPanel := kbapi.KbnDashboardPanelTypeMarkdown{
+				Config: config,
+				Grid:   grid,
+				Id:     panelID,
+			}
+			if err := panelItem.FromKbnDashboardPanelTypeMarkdown(markdownPanel); err != nil {
+				diags.AddError("Failed to create markdown panel", err.Error())
+			}
+			return panelItem, diags
+		default:
+			diags.AddError(
+				"Invalid markdown_config",
+				"Set `markdown_config.by_value` or `markdown_config.by_reference` (exactly one).",
+			)
+			return kbapi.DashboardPanelItem{}, diags
 		}
-		markdownPanel := kbapi.KbnDashboardPanelTypeMarkdown{
-			Config: config,
-			Grid:   grid,
-			Id:     panelID,
-		}
-		if err := panelItem.FromKbnDashboardPanelTypeMarkdown(markdownPanel); err != nil {
-			diags.AddError("Failed to create markdown panel", err.Error())
-		}
-		return panelItem, diags
 	}
 
 	if pm.SloOverviewConfig != nil {
@@ -653,6 +792,9 @@ func (pm panelModel) toAPI(dashboard *dashboardModel) (kbapi.DashboardPanelItem,
 	lensGrid := lensDashboardAPIGrid{H: grid.H, W: grid.W, X: grid.X, Y: grid.Y}
 	if pm.LensDashboardAppConfig != nil {
 		return lensDashboardAppToAPI(pm, lensGrid, panelID, dashboard)
+	}
+	if pm.VisConfig != nil {
+		return visConfigToAPI(pm, dashboard, grid, panelID)
 	}
 	if pm.Type.ValueString() == panelTypeLensDashboardApp {
 		if typeutils.IsKnown(pm.ConfigJSON) && !pm.ConfigJSON.IsNull() {
@@ -666,6 +808,63 @@ func (pm panelModel) toAPI(dashboard *dashboardModel) (kbapi.DashboardPanelItem,
 		diags.AddError(
 			"Missing `lens_dashboard_app_config`",
 			"The `lens_dashboard_app_config` block is required for `lens-dashboard-app` panels.",
+		)
+		return kbapi.DashboardPanelItem{}, diags
+	}
+
+	if pm.ImageConfig != nil {
+		return imagePanelToAPI(pm, grid, panelID)
+	}
+
+	if pm.SloAlertsConfig != nil {
+		return sloAlertsPanelToAPI(pm, grid, panelID)
+	}
+
+	if pm.DiscoverSessionConfig != nil {
+		return discoverSessionPanelToAPI(ctx, pm, grid, panelID, dashTR)
+	}
+
+	if pm.Type.ValueString() == panelTypeDiscoverSession {
+		if typeutils.IsKnown(pm.ConfigJSON) && !pm.ConfigJSON.IsNull() {
+			diags.AddError(
+				"Unsupported panel type for config_json",
+				"Panel-level `config_json` is not supported for `discover_session` panels. Use `discover_session_config` instead.",
+			)
+			return kbapi.DashboardPanelItem{}, diags
+		}
+		diags.AddError(
+			"Missing discover_session panel configuration",
+			"Discover session panels require `discover_session_config`.",
+		)
+		return kbapi.DashboardPanelItem{}, diags
+	}
+
+	if pm.Type.ValueString() == panelTypeSloAlerts {
+		if typeutils.IsKnown(pm.ConfigJSON) && !pm.ConfigJSON.IsNull() {
+			diags.AddError(
+				"Unsupported panel type for config_json",
+				"Panel-level `config_json` is not supported for `slo_alerts` panels. Use `slo_alerts_config` instead.",
+			)
+			return kbapi.DashboardPanelItem{}, diags
+		}
+		diags.AddError(
+			"Missing SLO alerts panel configuration",
+			"SLO alerts panels require `slo_alerts_config`.",
+		)
+		return kbapi.DashboardPanelItem{}, diags
+	}
+
+	if pm.Type.ValueString() == panelTypeImage {
+		if typeutils.IsKnown(pm.ConfigJSON) && !pm.ConfigJSON.IsNull() {
+			diags.AddError(
+				"Unsupported panel type for config_json",
+				"Panel-level `config_json` is not supported for `image` panels. Use `image_config` instead.",
+			)
+			return kbapi.DashboardPanelItem{}, diags
+		}
+		diags.AddError(
+			"Missing image panel configuration",
+			"Image panels require `image_config`.",
 		)
 		return kbapi.DashboardPanelItem{}, diags
 	}
@@ -795,35 +994,6 @@ func (pm panelModel) toAPI(dashboard *dashboardModel) (kbapi.DashboardPanelItem,
 		return panelItem, diags
 	}
 
-	for _, converter := range lensVizConverters {
-		if !converter.handlesTFConfig(pm) {
-			continue
-		}
-
-		config0, d := converter.buildAttributes(pm, dashboard)
-		diags.Append(d...)
-		if diags.HasError() {
-			return kbapi.DashboardPanelItem{}, diags
-		}
-
-		var config kbapi.KbnDashboardPanelTypeVis_Config
-		if err := config.FromKbnDashboardPanelTypeVisConfig0(config0); err != nil {
-			diags.AddError("Failed to create visualization panel config", err.Error())
-			return kbapi.DashboardPanelItem{}, diags
-		}
-
-		visPanel := kbapi.KbnDashboardPanelTypeVis{
-			Config: config,
-			Grid:   grid,
-			Id:     panelID,
-			Type:   kbapi.Vis,
-		}
-		if err := panelItem.FromKbnDashboardPanelTypeVis(visPanel); err != nil {
-			diags.AddError("Failed to create visualization panel", err.Error())
-		}
-		return panelItem, diags
-	}
-
 	if typeutils.IsKnown(pm.ConfigJSON) {
 		configJSON := []byte(pm.ConfigJSON.ValueString())
 		switch pm.Type.ValueString() {
@@ -868,6 +1038,21 @@ func (pm panelModel) toAPI(dashboard *dashboardModel) (kbapi.DashboardPanelItem,
 				"Unsupported panel type for config_json",
 				"The synthetics_stats_overview panel type must be managed through the typed synthetics_stats_overview_config block, not config_json.",
 			)
+		case panelTypeImage:
+			diags.AddError(
+				"Unsupported panel type for config_json",
+				"Panel-level `config_json` is not supported for `image` panels. Use `image_config` instead.",
+			)
+		case panelTypeSloAlerts:
+			diags.AddError(
+				"Unsupported panel type for config_json",
+				"Panel-level `config_json` is not supported for `slo_alerts` panels. Use `slo_alerts_config` instead.",
+			)
+		case panelTypeDiscoverSession:
+			diags.AddError(
+				"Unsupported panel type for config_json",
+				"Panel-level `config_json` is not supported for `discover_session` panels. Use `discover_session_config` instead.",
+			)
 		default:
 			// Unknown panel type: reconstruct the full panel JSON from the stored
 			// config_json + grid + id + type and set it directly as the raw union.
@@ -905,7 +1090,7 @@ func (pm panelModel) toAPI(dashboard *dashboardModel) (kbapi.DashboardPanelItem,
 	case panelTypeMarkdown, panelTypeVis, panelTypeTimeSlider, panelTypeSloBurnRate,
 		panelTypeSloErrorBudget, panelTypeEsqlControl, panelTypeOptionsListControl,
 		panelTypeRangeSlider, panelTypeSyntheticsStatsOverview, panelTypeSyntheticsMonitors,
-		panelTypeLensDashboardApp, panelTypeSloOverview:
+		panelTypeLensDashboardApp, panelTypeSloOverview, panelTypeImage, panelTypeSloAlerts, panelTypeDiscoverSession:
 		diags.AddError("Unsupported panel configuration", "No panel configuration block was provided.")
 	default:
 		diags.AddError(

@@ -104,17 +104,8 @@ func (model *agentDataSourceModel) populateFromAPI(ctx context.Context, spaceID 
 		model.Description = types.StringNull()
 	}
 
-	if data.AvatarColor != nil && *data.AvatarColor != "" {
-		model.AvatarColor = types.StringValue(*data.AvatarColor)
-	} else {
-		model.AvatarColor = types.StringNull()
-	}
-
-	if data.AvatarSymbol != nil && *data.AvatarSymbol != "" {
-		model.AvatarSymbol = types.StringValue(*data.AvatarSymbol)
-	} else {
-		model.AvatarSymbol = types.StringNull()
-	}
+	model.AvatarColor = types.StringPointerValue(data.AvatarColor)
+	model.AvatarSymbol = types.StringPointerValue(data.AvatarSymbol)
 
 	cfg := data.Configuration
 
@@ -153,17 +144,8 @@ func (model *agentModel) populateFromAPI(ctx context.Context, spaceID string, da
 		model.Description = types.StringNull()
 	}
 
-	if data.AvatarColor != nil && *data.AvatarColor != "" {
-		model.AvatarColor = types.StringValue(*data.AvatarColor)
-	} else {
-		model.AvatarColor = types.StringNull()
-	}
-
-	if data.AvatarSymbol != nil && *data.AvatarSymbol != "" {
-		model.AvatarSymbol = types.StringValue(*data.AvatarSymbol)
-	} else {
-		model.AvatarSymbol = types.StringNull()
-	}
+	model.AvatarColor = types.StringPointerValue(data.AvatarColor)
+	model.AvatarSymbol = types.StringPointerValue(data.AvatarSymbol)
 
 	cfg := data.Configuration
 

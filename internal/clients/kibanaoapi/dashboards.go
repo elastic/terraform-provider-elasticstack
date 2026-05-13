@@ -48,14 +48,8 @@ func GetDashboard(ctx context.Context, client *Client, spaceID string, dashboard
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return resp, nil
-	case http.StatusNotFound:
-		return nil, nil
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return handleGetTypedResponse(resp.StatusCode(), resp.Body,
+		func() *kbapi.GetDashboardsIdResponse { return resp })
 }
 
 // CreateDashboard creates a new dashboard.
@@ -88,12 +82,9 @@ func UpdateDashboard(ctx context.Context, client *Client, spaceID string, dashbo
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return resp, nil
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return handleMutateTypedResponse(resp.StatusCode(), resp.Body,
+		func() *kbapi.PutDashboardsIdResponse { return resp },
+		http.StatusOK, http.StatusCreated)
 }
 
 // DeleteDashboard deletes an existing dashboard.

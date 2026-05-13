@@ -260,8 +260,10 @@ func runGaugeNoESQLLensChartPresentationComprehensive(t *testing.T) {
 		m := *base
 		m.TimeRange = nil
 
-		api, diags := m.toAPI(dash)
+		attrs, diags := m.toAPI(dash)
 		require.False(t, diags.HasError())
+		api, err := attrs.AsGaugeNoESQL()
+		require.NoError(t, err)
 		api.TimeRange = timeRangeModelToAPI(dash.TimeRange)
 
 		out := &gaugeConfigModel{}
@@ -275,8 +277,10 @@ func runGaugeNoESQLLensChartPresentationComprehensive(t *testing.T) {
 		m := *base
 		m.ReferencesJSON = jsontypes.NewNormalizedValue(raw)
 
-		api, diags := m.toAPI(dash)
+		attrs, diags := m.toAPI(dash)
 		require.False(t, diags.HasError())
+		api, err := attrs.AsGaugeNoESQL()
+		require.NoError(t, err)
 		require.NotNil(t, api.References)
 
 		out := &gaugeConfigModel{}

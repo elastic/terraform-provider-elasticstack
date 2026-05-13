@@ -26,9 +26,14 @@ resource "elasticstack_kibana_dashboard" "test" {
       h = 10
     }
     markdown_config = {
-      content    = "First markdown panel"
-      title      = "My Markdown Panel"
-      hide_title = true
+      by_value = {
+        content    = "First markdown panel"
+        title      = "My Markdown Panel"
+        hide_title = true
+        settings = {
+          open_links_in_new_tab = true
+        }
+      }
     }
     }, {
     type = "markdown"
@@ -39,9 +44,14 @@ resource "elasticstack_kibana_dashboard" "test" {
       h = 10
     }
     markdown_config = {
-      content    = "Second markdown panel"
-      title      = "My Markdown Panel"
-      hide_title = true
+      by_value = {
+        content    = "Second markdown panel"
+        title      = "My Markdown Panel"
+        hide_title = true
+        settings = {
+          open_links_in_new_tab = true
+        }
+      }
     }
   }]
 }

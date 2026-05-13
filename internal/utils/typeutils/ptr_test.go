@@ -30,13 +30,21 @@ func TestMapRef(t *testing.T) {
 	t.Run("nil returns nil", func(t *testing.T) {
 		t.Parallel()
 		var m map[string]int
-		require.Nil(t, typeutils.MapRef[int](m))
+		require.Nil(t, typeutils.MapRef(m))
 	})
 
 	t.Run("non-nil returns pointer to map", func(t *testing.T) {
 		t.Parallel()
 		m := map[string]int{"a": 1}
-		p := typeutils.MapRef[int](m)
+		p := typeutils.MapRef(m)
+		require.NotNil(t, p)
+		require.Equal(t, m, *p)
+	})
+
+	t.Run("non-string key supported", func(t *testing.T) {
+		t.Parallel()
+		m := map[int]string{1: "a"}
+		p := typeutils.MapRef(m)
 		require.NotNil(t, p)
 		require.Equal(t, m, *p)
 	})
@@ -57,6 +65,48 @@ func TestSliceRef(t *testing.T) {
 		p := typeutils.SliceRef[int](s)
 		require.NotNil(t, p)
 		require.Equal(t, s, *p)
+	})
+}
+
+func TestSliceNilIfEmpty(t *testing.T) {
+	t.Parallel()
+
+	t.Run("nil returns nil", func(t *testing.T) {
+		t.Parallel()
+		var s []int
+		require.Nil(t, typeutils.SliceNilIfEmpty(s))
+	})
+
+	t.Run("empty slice returns nil", func(t *testing.T) {
+		t.Parallel()
+		s := []int{}
+		require.Nil(t, typeutils.SliceNilIfEmpty(s))
+	})
+
+	t.Run("non-empty returns pointer to slice", func(t *testing.T) {
+		t.Parallel()
+		s := []int{1, 2, 3}
+		p := typeutils.SliceNilIfEmpty(s)
+		require.NotNil(t, p)
+		require.Equal(t, s, *p)
+	})
+}
+
+func TestFloat32Ptr(t *testing.T) {
+	t.Parallel()
+
+	t.Run("converts float64 to *float32", func(t *testing.T) {
+		t.Parallel()
+		p := typeutils.Float32Ptr(3.14)
+		require.NotNil(t, p)
+		require.InDelta(t, float32(3.14), *p, 1e-6)
+	})
+
+	t.Run("zero value", func(t *testing.T) {
+		t.Parallel()
+		p := typeutils.Float32Ptr(0)
+		require.NotNil(t, p)
+		require.InDelta(t, float32(0), *p, 1e-6)
 	})
 }
 
