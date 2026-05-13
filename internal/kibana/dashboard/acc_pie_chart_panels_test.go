@@ -62,9 +62,9 @@ func TestAccResourceDashboardPieChart(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.legend.size", "auto"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.legend.visible", "auto"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.metrics.#", "1"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.metrics.0.config"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.metrics.0.config_json"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.group_by.#", "1"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.group_by.0.config"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.group_by.0.config_json"),
 				),
 			},
 			{
@@ -101,9 +101,9 @@ func TestAccResourceDashboardPieChart(t *testing.T) {
 
 					// Check metrics and group_by
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.metrics.#", "1"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.metrics.0.config"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.metrics.0.config_json"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.group_by.#", "1"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.group_by.0.config"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.pie_chart_config.group_by.0.config_json"),
 				),
 			},
 			{
@@ -121,8 +121,8 @@ func TestAccResourceDashboardPieChart(t *testing.T) {
 				ImportStateVerifyIgnore: []string{
 					"panels.0.vis_config.by_value.pie_chart_config.title",
 					"panels.0.vis_config.by_value.pie_chart_config.description",
-					"panels.0.vis_config.by_value.pie_chart_config.group_by.0.config",
-					"panels.0.vis_config.by_value.pie_chart_config.metrics.0.config",
+					"panels.0.vis_config.by_value.pie_chart_config.group_by.0.config_json",
+					"panels.0.vis_config.by_value.pie_chart_config.metrics.0.config_json",
 					"panels.0.vis_config.by_value.pie_chart_config.data_source_json",
 				},
 			},

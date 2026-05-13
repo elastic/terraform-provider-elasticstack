@@ -60,7 +60,7 @@ func TestAccResourceDashboardWaffle(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.waffle_config.ignore_global_filters", "false"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.waffle_config.sampling", "1"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.waffle_config.data_source_json"),
-					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.waffle_config.metrics.0.config", `{"operation":"count"}`),
+					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.waffle_config.metrics.0.config_json", `{"operation":"count"}`),
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.waffle_config.value_display.mode"),
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.waffle_config.value_display.percent_decimals"),
 				),
@@ -84,7 +84,7 @@ func TestAccResourceDashboardWaffle(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.waffle_config.legend.truncate_after_lines", "8"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.waffle_config.value_display.mode", "percentage"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.waffle_config.value_display.percent_decimals", "1"),
-					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.waffle_config.metrics.0.config", `{"operation":"count"}`),
+					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.waffle_config.metrics.0.config_json", `{"operation":"count"}`),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.waffle_config.filters.#", "1"),
 					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.waffle_config.filters.0.filter_json", `{"condition":{"field":"host.os.keyword","operator":"is","value":"linux"},"type":"condition"}`), //nolint:lll
 				),
@@ -128,8 +128,8 @@ func TestAccResourceDashboardWaffle(t *testing.T) {
 				ImportStateVerifyIgnore: []string{
 					"panels.0.vis_config.by_value.waffle_config.title",
 					"panels.0.vis_config.by_value.waffle_config.description",
-					"panels.0.vis_config.by_value.waffle_config.metrics.0.config",
-					"panels.0.vis_config.by_value.waffle_config.group_by.0.config",
+					"panels.0.vis_config.by_value.waffle_config.metrics.0.config_json",
+					"panels.0.vis_config.by_value.waffle_config.group_by.0.config_json",
 					"panels.0.vis_config.by_value.waffle_config.data_source_json",
 					"panels.0.vis_config.by_value.waffle_config.ignore_global_filters",
 					"panels.0.vis_config.by_value.waffle_config.sampling",
