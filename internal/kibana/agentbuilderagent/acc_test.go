@@ -309,8 +309,8 @@ func TestAccResourceAgentBuilderAgentAvatar(t *testing.T) {
 					"agent_id": config.StringVariable(agentID),
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckNoResourceAttr(testResourceID, "avatar_color"),
-					resource.TestCheckNoResourceAttr(testResourceID, "avatar_symbol"),
+					resource.TestCheckResourceAttr(testResourceID, "avatar_color", ""),
+					resource.TestCheckResourceAttr(testResourceID, "avatar_symbol", ""),
 				),
 			},
 		},
