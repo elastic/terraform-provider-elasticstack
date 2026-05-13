@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -46,21 +45,6 @@ func parseCalendarEventFullCompositeID(id string) (calendarID, eventID string, d
 	return splitCalendarEventResourcePath(parts[1])
 }
 
-func calendarEventTypedToAPI(e *types.CalendarEvent) *CalendarEventAPIModel {
-	m := &CalendarEventAPIModel{
-		Description: e.Description,
-		StartTime:   e.StartTime,
-		EndTime:     e.EndTime,
-	}
-	if e.CalendarId != nil {
-		m.CalendarID = *e.CalendarId
-	}
-	if e.EventId != nil {
-		m.EventID = *e.EventId
-	}
-	return m
-}
-
 func readCalendarEvent(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state CalendarEventTFModel) (CalendarEventTFModel, bool, fwdiags.Diagnostics) {
 	var diags fwdiags.Diagnostics
 
@@ -79,12 +63,17 @@ func readCalendarEvent(ctx context.Context, client *clients.ElasticsearchScopedC
 	}
 
 	var found bool
-	pageDiags := walkMLCalendarEventPages(ctx, typedClient, calendarID, func(events []types.CalendarEvent) bool {
+	pageDiags := walkMLCalendarEventPages(ctx, typedClient, calendarID, func(events []calendarEventWire) bool {
 		for _, event := range events {
-			if event.EventId == nil || *event.EventId != eventID {
+			if calendarEventWireEventID(&event) != eventID {
 				continue
 			}
-			diags.Append(state.fromAPIModel(ctx, calendarEventTypedToAPI(&event))...)
+			apiModel, convDiags := wireEventToAPIModel(&event)
+			diags.Append(convDiags...)
+			if diags.HasError() {
+				return true
+			}
+			diags.Append(state.fromAPIModel(ctx, apiModel)...)
 			if diags.HasError() {
 				return true
 			}

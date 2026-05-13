@@ -24,6 +24,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -32,7 +33,7 @@ import (
 func getSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: "Manages scheduled events for a Machine Learning calendar. " +
-			"See the [ML Calendar Events API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/ml-post-calendar-event.html) for more details.",
+			"See the [ML post calendar events API](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-ml-post-calendar-events) for more details.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Internal composite identifier of the resource.",
@@ -78,6 +79,33 @@ func getSchema(_ context.Context) schema.Schema {
 				CustomType:          timetypes.RFC3339Type{},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
+				},
+			},
+			"skip_results": schema.BoolAttribute{
+				MarkdownDescription: "If true, results are not generated for buckets that fall inside the event period. " +
+					"Maps to `skip_results` in the Elasticsearch API.",
+				Optional: true,
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.RequiresReplace(),
+				},
+			},
+			"skip_model_update": schema.BoolAttribute{
+				MarkdownDescription: "If true, model updates are not generated for buckets that fall inside the event period. " +
+					"Maps to `skip_model_update` in the Elasticsearch API.",
+				Optional: true,
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.RequiresReplace(),
+				},
+			},
+			"force_time_shift": schema.StringAttribute{
+				MarkdownDescription: "When set, changes the duration of the event to the specified value in seconds. " +
+					"Maps to `force_time_shift` in the Elasticsearch API.",
+				Optional: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
+				Validators: []validator.String{
+					stringvalidator.LengthAtLeast(1),
 				},
 			},
 			"event_id": schema.StringAttribute{

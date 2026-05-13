@@ -40,17 +40,27 @@ func mustMillis(t *testing.T, dt estypes.DateTime) int64 {
 	return v
 }
 
-func TestCalendarEventMatchesPlan(t *testing.T) {
+func TestCalendarEventMatchesPlanWire(t *testing.T) {
 	startMs := time.Date(2026, 1, 1, 10, 0, 0, 0, time.UTC).UnixMilli()
 	endMs := time.Date(2026, 1, 1, 11, 0, 0, 0, time.UTC).UnixMilli()
+	tr := true
+	fs := "86400"
 
-	ev := estypes.CalendarEvent{
+	plan := calendarEventWire{
 		Description: "outage",
-		StartTime:   estypes.DateTime(float64(startMs)),
-		EndTime:     estypes.DateTime(float64(endMs)),
+		StartTime:   millisJSONRaw(startMs),
+		EndTime:     millisJSONRaw(endMs),
+		SkipResults: &tr,
 	}
+	ev := plan
+	ev.ForceTimeShift = &fs
 
-	assert.True(t, calendarEventMatchesPlan(ev, "outage", startMs, endMs))
-	assert.False(t, calendarEventMatchesPlan(ev, "other", startMs, endMs))
-	assert.False(t, calendarEventMatchesPlan(ev, "outage", startMs+1, endMs))
+	assert.False(t, calendarEventMatchesPlanWire(ev, plan))
+
+	evMatch := plan
+	assert.True(t, calendarEventMatchesPlanWire(evMatch, plan))
+
+	ev2 := plan
+	ev2.Description = "other"
+	assert.False(t, calendarEventMatchesPlanWire(ev2, plan))
 }

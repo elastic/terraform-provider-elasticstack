@@ -22,27 +22,26 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 type stubEventsPager struct {
-	fetch func(ctx context.Context, calendarID string, from, size int) ([]types.CalendarEvent, error)
+	fetch func(ctx context.Context, calendarID string, from, size int) ([]calendarEventWire, error)
 }
 
-func (s stubEventsPager) FetchMLCalendarEventsPage(ctx context.Context, calendarID string, from, size int) ([]types.CalendarEvent, error) {
+func (s stubEventsPager) FetchMLCalendarEventsPage(ctx context.Context, calendarID string, from, size int) ([]calendarEventWire, error) {
 	return s.fetch(ctx, calendarID, from, size)
 }
 
-func TestWalkMLCalendarEventPagesWith_firstPage404NoDiag(t *testing.T) {
+func TestWalkMLCalendarEventPagesWith_firstPageEmptyNoDiag(t *testing.T) {
 	ctx := context.Background()
-	p := stubEventsPager{fetch: func(_ context.Context, _ string, from, _ int) ([]types.CalendarEvent, error) {
+	p := stubEventsPager{fetch: func(_ context.Context, _ string, from, _ int) ([]calendarEventWire, error) {
 		require.Equal(t, 0, from)
-		return nil, &types.ElasticsearchError{Status: 404}
+		return []calendarEventWire{}, nil
 	}}
 	var calls int
-	diags := walkMLCalendarEventPagesWith(ctx, p, "cal", func([]types.CalendarEvent) bool {
+	diags := walkMLCalendarEventPagesWith(ctx, p, "cal", func([]calendarEventWire) bool {
 		calls++
 		return false
 	})
@@ -52,11 +51,11 @@ func TestWalkMLCalendarEventPagesWith_firstPage404NoDiag(t *testing.T) {
 
 func TestWalkMLCalendarEventPagesWith_firstPageNon404Error(t *testing.T) {
 	ctx := context.Background()
-	p := stubEventsPager{fetch: func(_ context.Context, _ string, from, _ int) ([]types.CalendarEvent, error) {
+	p := stubEventsPager{fetch: func(_ context.Context, _ string, from, _ int) ([]calendarEventWire, error) {
 		require.Equal(t, 0, from)
 		return nil, fmt.Errorf("network down")
 	}}
-	diags := walkMLCalendarEventPagesWith(ctx, p, "cal", func([]types.CalendarEvent) bool { return false })
+	diags := walkMLCalendarEventPagesWith(ctx, p, "cal", func([]calendarEventWire) bool { return false })
 	require.True(t, diags.HasError())
 	assert.Contains(t, diags.Errors()[0].Summary(), "Failed to list ML calendar events")
 }
@@ -64,12 +63,12 @@ func TestWalkMLCalendarEventPagesWith_firstPageNon404Error(t *testing.T) {
 func TestWalkMLCalendarEventPagesWith_stopAfterFirstPage(t *testing.T) {
 	ctx := context.Background()
 	id := "only-one"
-	p := stubEventsPager{fetch: func(_ context.Context, _ string, from, _ int) ([]types.CalendarEvent, error) {
+	p := stubEventsPager{fetch: func(_ context.Context, _ string, from, _ int) ([]calendarEventWire, error) {
 		require.Equal(t, 0, from)
-		return []types.CalendarEvent{{EventId: &id}}, nil
+		return []calendarEventWire{{EventID: &id}}, nil
 	}}
 	var saw int
-	diags := walkMLCalendarEventPagesWith(ctx, p, "cal", func(ev []types.CalendarEvent) bool {
+	diags := walkMLCalendarEventPagesWith(ctx, p, "cal", func(ev []calendarEventWire) bool {
 		saw += len(ev)
 		return true
 	})
@@ -79,25 +78,25 @@ func TestWalkMLCalendarEventPagesWith_stopAfterFirstPage(t *testing.T) {
 
 func TestWalkMLCalendarEventPagesWith_multiPage(t *testing.T) {
 	ctx := context.Background()
-	p := stubEventsPager{fetch: func(_ context.Context, _ string, from, size int) ([]types.CalendarEvent, error) {
+	p := stubEventsPager{fetch: func(_ context.Context, _ string, from, size int) ([]calendarEventWire, error) {
 		require.Equal(t, mlCalendarEventsPageSize, size)
 		switch from {
 		case 0:
-			out := make([]types.CalendarEvent, mlCalendarEventsPageSize)
+			out := make([]calendarEventWire, mlCalendarEventsPageSize)
 			for i := range out {
 				s := fmt.Sprintf("id-%d", i)
-				out[i] = types.CalendarEvent{EventId: &s}
+				out[i] = calendarEventWire{EventID: &s}
 			}
 			return out, nil
 		case mlCalendarEventsPageSize:
 			s := "last-page"
-			return []types.CalendarEvent{{EventId: &s}}, nil
+			return []calendarEventWire{{EventID: &s}}, nil
 		default:
 			return nil, fmt.Errorf("unexpected from=%d", from)
 		}
 	}}
 	var total int
-	diags := walkMLCalendarEventPagesWith(ctx, p, "cal", func(ev []types.CalendarEvent) bool {
+	diags := walkMLCalendarEventPagesWith(ctx, p, "cal", func(ev []calendarEventWire) bool {
 		total += len(ev)
 		return false
 	})
@@ -107,18 +106,18 @@ func TestWalkMLCalendarEventPagesWith_multiPage(t *testing.T) {
 
 func TestWalkMLCalendarEventPagesWith_secondPageError(t *testing.T) {
 	ctx := context.Background()
-	p := stubEventsPager{fetch: func(_ context.Context, _ string, from, _ int) ([]types.CalendarEvent, error) {
+	p := stubEventsPager{fetch: func(_ context.Context, _ string, from, _ int) ([]calendarEventWire, error) {
 		if from == 0 {
-			out := make([]types.CalendarEvent, mlCalendarEventsPageSize)
+			out := make([]calendarEventWire, mlCalendarEventsPageSize)
 			for i := range out {
 				s := fmt.Sprintf("id-%d", i)
-				out[i] = types.CalendarEvent{EventId: &s}
+				out[i] = calendarEventWire{EventID: &s}
 			}
 			return out, nil
 		}
 		return nil, fmt.Errorf("boom on page 2")
 	}}
-	diags := walkMLCalendarEventPagesWith(ctx, p, "cal", func([]types.CalendarEvent) bool { return false })
+	diags := walkMLCalendarEventPagesWith(ctx, p, "cal", func([]calendarEventWire) bool { return false })
 	require.True(t, diags.HasError())
 	assert.Contains(t, diags.Errors()[0].Detail(), "boom on page 2")
 }

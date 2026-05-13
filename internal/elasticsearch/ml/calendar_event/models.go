@@ -36,6 +36,9 @@ type CalendarEventTFModel struct {
 	StartTime               timetypes.RFC3339 `tfsdk:"start_time"`
 	EndTime                 timetypes.RFC3339 `tfsdk:"end_time"`
 	EventID                 types.String      `tfsdk:"event_id"`
+	SkipResults             types.Bool        `tfsdk:"skip_results"`
+	SkipModelUpdate         types.Bool        `tfsdk:"skip_model_update"`
+	ForceTimeShift          types.String      `tfsdk:"force_time_shift"`
 }
 
 // GetID implements entitycore.ElasticsearchResourceModel.
@@ -50,11 +53,14 @@ func (m CalendarEventTFModel) GetElasticsearchConnection() types.List {
 }
 
 type CalendarEventAPIModel struct {
-	Description string `json:"description"`
-	StartTime   any    `json:"start_time"`
-	EndTime     any    `json:"end_time"`
-	CalendarID  string `json:"calendar_id,omitempty"`
-	EventID     string `json:"event_id,omitempty"`
+	Description     string  `json:"description"`
+	StartTime       any     `json:"start_time"`
+	EndTime         any     `json:"end_time"`
+	CalendarID      string  `json:"calendar_id,omitempty"`
+	EventID         string  `json:"event_id,omitempty"`
+	SkipResults     *bool   `json:"skip_results,omitempty"`
+	SkipModelUpdate *bool   `json:"skip_model_update,omitempty"`
+	ForceTimeShift  *string `json:"force_time_shift,omitempty"`
 }
 
 func calendarEventAnyTimeToUnixMilli(v any) (int64, bool) {
@@ -86,11 +92,13 @@ func calendarEventAnyTimeToUnixMilli(v any) (int64, bool) {
 			return 0, false
 		}
 		return t.UnixMilli(), true
-	case estypes.DateTime:
-		return calendarEventDateTimeToUnixMilli(x)
 	default:
 		return 0, false
 	}
+}
+
+func calendarEventDateTimeToUnixMilli(dt estypes.DateTime) (int64, bool) {
+	return calendarEventAnyTimeToUnixMilli(any(dt))
 }
 
 func (m *CalendarEventTFModel) toAPIModel(_ context.Context) (*CalendarEventAPIModel, fwdiags.Diagnostics) {
@@ -109,10 +117,29 @@ func (m *CalendarEventTFModel) toAPIModel(_ context.Context) (*CalendarEventAPIM
 	}
 
 	return &CalendarEventAPIModel{
-		Description: m.Description.ValueString(),
-		StartTime:   startTime.UnixMilli(),
-		EndTime:     endTime.UnixMilli(),
+		Description:     m.Description.ValueString(),
+		StartTime:       startTime.UnixMilli(),
+		EndTime:         endTime.UnixMilli(),
+		SkipResults:     optionalBoolToAPIPtr(m.SkipResults),
+		SkipModelUpdate: optionalBoolToAPIPtr(m.SkipModelUpdate),
+		ForceTimeShift:  optionalStringToAPIPtr(m.ForceTimeShift),
 	}, diags
+}
+
+func optionalBoolToAPIPtr(b types.Bool) *bool {
+	if b.IsNull() || b.IsUnknown() {
+		return nil
+	}
+	v := b.ValueBool()
+	return &v
+}
+
+func optionalStringToAPIPtr(s types.String) *string {
+	if s.IsNull() || s.IsUnknown() {
+		return nil
+	}
+	v := s.ValueString()
+	return &v
 }
 
 func (m *CalendarEventTFModel) fromAPIModel(_ context.Context, apiModel *CalendarEventAPIModel) fwdiags.Diagnostics {
@@ -153,6 +180,22 @@ func (m *CalendarEventTFModel) fromAPIModel(_ context.Context, apiModel *Calenda
 
 	m.StartTime = timetypes.NewRFC3339TimeValue(startTime)
 	m.EndTime = timetypes.NewRFC3339TimeValue(endTime)
+
+	if apiModel.SkipResults != nil {
+		m.SkipResults = types.BoolValue(*apiModel.SkipResults)
+	} else {
+		m.SkipResults = types.BoolNull()
+	}
+	if apiModel.SkipModelUpdate != nil {
+		m.SkipModelUpdate = types.BoolValue(*apiModel.SkipModelUpdate)
+	} else {
+		m.SkipModelUpdate = types.BoolNull()
+	}
+	if apiModel.ForceTimeShift != nil {
+		m.ForceTimeShift = types.StringValue(*apiModel.ForceTimeShift)
+	} else {
+		m.ForceTimeShift = types.StringNull()
+	}
 
 	return diags
 }

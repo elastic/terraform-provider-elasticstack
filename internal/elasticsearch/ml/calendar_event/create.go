@@ -18,12 +18,11 @@
 package calendar_event
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
-	"time"
 
-	"github.com/elastic/go-elasticsearch/v8/typedapi/ml/postcalendarevents"
-	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
@@ -31,58 +30,16 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func calendarEventDateTimeToUnixMilli(dt estypes.DateTime) (int64, bool) {
-	switch v := any(dt).(type) {
-	case float64:
-		return int64(v), true
-	case int64:
-		return v, true
-	case int:
-		return int64(v), true
-	case string:
-		t, err := time.Parse(time.RFC3339, v)
-		if err != nil {
-			return 0, false
-		}
-		return t.UnixMilli(), true
-	default:
-		return 0, false
-	}
-}
-
-func calendarEventMatchesPlan(e estypes.CalendarEvent, description string, startMs, endMs int64) bool {
-	if e.Description != description {
-		return false
-	}
-	sm, ok1 := calendarEventDateTimeToUnixMilli(e.StartTime)
-	em, ok2 := calendarEventDateTimeToUnixMilli(e.EndTime)
-	return ok1 && ok2 && sm == startMs && em == endMs
-}
-
 func createCalendarEvent(ctx context.Context, client *clients.ElasticsearchScopedClient, plan CalendarEventTFModel) (CalendarEventTFModel, fwdiags.Diagnostics) {
 	var diags fwdiags.Diagnostics
 
 	calendarID := plan.CalendarID.ValueString()
 
-	apiModel, convDiags := plan.toAPIModel(ctx)
-	diags.Append(convDiags...)
+	planWire, wdiags := calendarEventWireFromTFModel(&plan)
+	diags.Append(wdiags...)
 	if diags.HasError() {
 		return plan, diags
 	}
-
-	startTime, d := plan.StartTime.ValueRFC3339Time()
-	diags.Append(d...)
-	if diags.HasError() {
-		return plan, diags
-	}
-	endTime, d := plan.EndTime.ValueRFC3339Time()
-	diags.Append(d...)
-	if diags.HasError() {
-		return plan, diags
-	}
-	planDesc := plan.Description.ValueString()
-	planStartMs := startTime.UnixMilli()
-	planEndMs := endTime.UnixMilli()
 
 	tflog.Debug(ctx, fmt.Sprintf("Creating ML calendar event for calendar: %s", calendarID))
 
@@ -93,10 +50,10 @@ func createCalendarEvent(ctx context.Context, client *clients.ElasticsearchScope
 	}
 
 	existingIDs := make(map[string]struct{})
-	diags.Append(walkMLCalendarEventPages(ctx, typedClient, calendarID, func(events []estypes.CalendarEvent) bool {
+	diags.Append(walkMLCalendarEventPages(ctx, typedClient, calendarID, func(events []calendarEventWire) bool {
 		for _, e := range events {
-			if e.EventId != nil && *e.EventId != "" {
-				existingIDs[*e.EventId] = struct{}{}
+			if id := calendarEventWireEventID(&e); id != "" {
+				existingIDs[id] = struct{}{}
 			}
 		}
 		return false
@@ -105,16 +62,16 @@ func createCalendarEvent(ctx context.Context, client *clients.ElasticsearchScope
 		return plan, diags
 	}
 
-	eventPayload := estypes.CalendarEvent{
-		Description: apiModel.Description,
-		StartTime:   apiModel.StartTime,
-		EndTime:     apiModel.EndTime,
+	postBody := struct {
+		Events []calendarEventWire `json:"events"`
+	}{Events: []calendarEventWire{planWire}}
+	body, err := json.Marshal(postBody)
+	if err != nil {
+		diags.AddError("Failed to marshal ML calendar event request", err.Error())
+		return plan, diags
 	}
 
-	postReq := postcalendarevents.NewRequest()
-	postReq.Events = []estypes.CalendarEvent{eventPayload}
-
-	postRes, err := typedClient.Ml.PostCalendarEvents(calendarID).Request(postReq).Do(ctx)
+	postRes, err := typedClient.Ml.PostCalendarEvents(calendarID).Raw(bytes.NewReader(body)).Do(ctx)
 	if err != nil {
 		diags.AddError("Failed to create ML calendar event", fmt.Sprintf("Unable to create ML calendar event for calendar %s — %s", calendarID, err.Error()))
 		return plan, diags
@@ -131,13 +88,14 @@ func createCalendarEvent(ctx context.Context, client *clients.ElasticsearchScope
 	}
 
 	if eventID == "" {
-		var candidates []estypes.CalendarEvent
-		diags.Append(walkMLCalendarEventPages(ctx, typedClient, calendarID, func(events []estypes.CalendarEvent) bool {
+		var candidates []calendarEventWire
+		diags.Append(walkMLCalendarEventPages(ctx, typedClient, calendarID, func(events []calendarEventWire) bool {
 			for _, event := range events {
-				if event.EventId == nil || *event.EventId == "" {
+				id := calendarEventWireEventID(&event)
+				if id == "" {
 					continue
 				}
-				if _, existed := existingIDs[*event.EventId]; !existed {
+				if _, existed := existingIDs[id]; !existed {
 					candidates = append(candidates, event)
 				}
 			}
@@ -151,11 +109,11 @@ func createCalendarEvent(ctx context.Context, client *clients.ElasticsearchScope
 		case 0:
 			break
 		case 1:
-			eventID = *candidates[0].EventId
+			eventID = calendarEventWireEventID(&candidates[0])
 		default:
 			for i := range candidates {
-				if calendarEventMatchesPlan(candidates[i], planDesc, planStartMs, planEndMs) {
-					eventID = *candidates[i].EventId
+				if calendarEventMatchesPlanWire(candidates[i], planWire) {
+					eventID = calendarEventWireEventID(&candidates[i])
 					break
 				}
 			}

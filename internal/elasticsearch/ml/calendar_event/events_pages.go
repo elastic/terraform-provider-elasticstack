@@ -19,11 +19,12 @@ package calendar_event
 
 import (
 	"context"
-	"errors"
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 
 	"github.com/elastic/go-elasticsearch/v8"
-	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
@@ -31,36 +32,46 @@ const mlCalendarEventsPageSize = 1000
 
 // mlCalendarEventsPageFetcher loads one page of ML calendar events (used for tests and production).
 type mlCalendarEventsPageFetcher interface {
-	FetchMLCalendarEventsPage(ctx context.Context, calendarID string, from, size int) ([]types.CalendarEvent, error)
+	FetchMLCalendarEventsPage(ctx context.Context, calendarID string, from, size int) ([]calendarEventWire, error)
 }
 
 type typedClientCalendarEventsFetcher struct {
 	client *elasticsearch.TypedClient
 }
 
-func (f typedClientCalendarEventsFetcher) FetchMLCalendarEventsPage(ctx context.Context, calendarID string, from, size int) ([]types.CalendarEvent, error) {
-	res, err := f.client.Ml.GetCalendarEvents(calendarID).From(from).Size(size).Do(ctx)
+func (f typedClientCalendarEventsFetcher) FetchMLCalendarEventsPage(ctx context.Context, calendarID string, from, size int) ([]calendarEventWire, error) {
+	res, err := f.client.Ml.GetCalendarEvents(calendarID).From(from).Size(size).Perform(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return res.Events, nil
+	defer res.Body.Close()
+	if from == 0 && res.StatusCode == http.StatusNotFound {
+		return []calendarEventWire{}, nil
+	}
+	if res.StatusCode >= 300 {
+		body, _ := io.ReadAll(res.Body)
+		return nil, fmt.Errorf("unable to list ML calendar events for calendar %s (offset %d): status %d: %s", calendarID, from, res.StatusCode, string(body))
+	}
+	var envelope struct {
+		Events []calendarEventWire `json:"events"`
+	}
+	if err := json.NewDecoder(res.Body).Decode(&envelope); err != nil {
+		return nil, fmt.Errorf("decode ML calendar events for calendar %s: %w", calendarID, err)
+	}
+	return envelope.Events, nil
 }
 
 // walkMLCalendarEventPages calls fn for each page of calendar events until fn returns true,
 // an error occurs, or there are no more events.
-func walkMLCalendarEventPages(ctx context.Context, typedClient *elasticsearch.TypedClient, calendarID string, fn func([]types.CalendarEvent) (stop bool)) fwdiags.Diagnostics {
+func walkMLCalendarEventPages(ctx context.Context, typedClient *elasticsearch.TypedClient, calendarID string, fn func([]calendarEventWire) (stop bool)) fwdiags.Diagnostics {
 	return walkMLCalendarEventPagesWith(ctx, typedClientCalendarEventsFetcher{client: typedClient}, calendarID, fn)
 }
 
-func walkMLCalendarEventPagesWith(ctx context.Context, fetcher mlCalendarEventsPageFetcher, calendarID string, fn func([]types.CalendarEvent) (stop bool)) fwdiags.Diagnostics {
+func walkMLCalendarEventPagesWith(ctx context.Context, fetcher mlCalendarEventsPageFetcher, calendarID string, fn func([]calendarEventWire) (stop bool)) fwdiags.Diagnostics {
 	var diags fwdiags.Diagnostics
 	for from := 0; ; from += mlCalendarEventsPageSize {
 		events, err := fetcher.FetchMLCalendarEventsPage(ctx, calendarID, from, mlCalendarEventsPageSize)
 		if err != nil {
-			var esErr *types.ElasticsearchError
-			if from == 0 && errors.As(err, &esErr) && esErr.Status == 404 {
-				return diags
-			}
 			diags.AddError(
 				"Failed to list ML calendar events",
 				fmt.Sprintf("Unable to list events for calendar %s (offset %d) — %s", calendarID, from, err.Error()),
