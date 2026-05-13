@@ -1,4 +1,4 @@
-## MODIFIED Requirements
+## ADDED Requirements
 
 ### Requirement: `time_window.duration` description is accurate
 The description for `time_window.duration` SHALL list the exact permitted values per window type, replacing the previous inaccurate text.
