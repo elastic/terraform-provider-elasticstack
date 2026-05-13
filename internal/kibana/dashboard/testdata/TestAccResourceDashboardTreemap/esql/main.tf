@@ -39,39 +39,21 @@ resource "elasticstack_kibana_dashboard" "test" {
 
           # Note: omit `query` block for ES|QL mode.
 
-          group_by_json = jsonencode([
-            {
-              column = "host.name"
-              format = {
-                type = "number"
-              }
-              color = {
-                mode    = "categorical"
-                palette = "default"
-                mapping = []
-                unassigned = {
-                  type  = "color_code"
-                  value = "#D3DAE6"
-                }
-              }
-              collapse_by = "avg"
-            }
-          ])
+          esql_group_by = [{
+            column      = "host.name"
+            collapse_by = "avg"
+            color_json  = jsonencode({ mode = "categorical", palette = "default", mapping = [], unassigned = { type = "color_code", value = "#D3DAE6" } })
+            format_json = jsonencode({ type = "number" })
+          }]
 
-          metrics_json = jsonencode([
-            {
-              column = "bytes"
-              format = {
-                type     = "number"
-                decimals = 2
-                compact  = false
-              }
-              color = {
-                type  = "static"
-                color = "#54B399"
-              }
+          esql_metrics = [{
+            column      = "bytes"
+            format_json = jsonencode({ type = "number", decimals = 2, compact = false })
+            color = {
+              type  = "static"
+              color = "#54B399"
             }
-          ])
+          }]
 
           legend = {
             nested               = false
