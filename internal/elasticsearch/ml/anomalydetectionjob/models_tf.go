@@ -27,6 +27,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	timeouts "github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -103,6 +104,13 @@ type DetectorTFModel struct {
 type CustomRuleTFModel struct {
 	Actions    types.List `tfsdk:"actions"`
 	Conditions types.List `tfsdk:"conditions"`
+	Scope      types.Map  `tfsdk:"scope"`
+}
+
+// ScopeEntryTFModel is one value in custom_rules.scope (map keys are analysis field names).
+type ScopeEntryTFModel struct {
+	FilterID   types.String `tfsdk:"filter_id"`
+	FilterType types.String `tfsdk:"filter_type"`
 }
 
 // RuleConditionTFModel represents a rule condition
@@ -214,6 +222,23 @@ func (plan *TFModel) toAPIModel(ctx context.Context) (*APIModel, diag.Diagnostic
 						}
 					}
 					apiRules[j].Conditions = apiConditions
+				}
+
+				if typeutils.IsKnown(rule.Scope) && !rule.Scope.IsNull() {
+					var scopeEntries map[string]ScopeEntryTFModel
+					d := rule.Scope.ElementsAs(ctx, &scopeEntries, false)
+					diags.Append(d...)
+					if diags.HasError() {
+						return nil, diags
+					}
+					apiRules[j].Scope = make(map[string]FilterScopeAPIModel, len(scopeEntries))
+					for sk, ent := range scopeEntries {
+						fs := FilterScopeAPIModel{FilterID: ent.FilterID.ValueString()}
+						if typeutils.IsKnown(ent.FilterType) && ent.FilterType.ValueString() != "" {
+							fs.FilterType = ent.FilterType.ValueString()
+						}
+						apiRules[j].Scope[sk] = fs
+					}
 				}
 			}
 			apiDetectors[i].CustomRules = apiRules
@@ -486,6 +511,9 @@ func (plan *TFModel) convertAnalysisConfigFromAPI(ctx context.Context, apiConfig
 				diags.Append(d...)
 			}
 			ruleConditionElemType := types.ObjectType{AttrTypes: getRuleConditionAttrTypes(ctx)}
+			scopeMapType := getCustomRuleAttrTypes(ctx)["scope"].(types.MapType)
+			scopeValueElemType := scopeMapType.ElemType
+			scopeObjAttrTypes := scopeValueElemType.(types.ObjectType).AttrTypes
 
 			customRulesTF := make([]CustomRuleTFModel, len(detector.CustomRules))
 			for j, rule := range detector.CustomRules {
@@ -527,6 +555,31 @@ func (plan *TFModel) convertAnalysisConfigFromAPI(ctx context.Context, apiConfig
 					customRulesTF[j].Conditions = typeutils.EnsureTypedList(ctx, originalCustomRules[j].Conditions, ruleConditionElemType)
 				default:
 					customRulesTF[j].Conditions = types.ListNull(ruleConditionElemType)
+				}
+
+				// Convert scope
+				switch {
+				case len(rule.Scope) > 0:
+					objs := make(map[string]attr.Value, len(rule.Scope))
+					for sk, sv := range rule.Scope {
+						ftVal := types.StringNull()
+						if sv.FilterType != "" {
+							ftVal = types.StringValue(sv.FilterType)
+						}
+						ov, d := types.ObjectValueFrom(ctx, scopeObjAttrTypes, ScopeEntryTFModel{
+							FilterID:   types.StringValue(sv.FilterID),
+							FilterType: ftVal,
+						})
+						diags.Append(d...)
+						objs[sk] = ov
+					}
+					mv, d := types.MapValueFrom(ctx, scopeValueElemType, objs)
+					diags.Append(d...)
+					customRulesTF[j].Scope = mv
+				case j < len(originalCustomRules) && typeutils.IsKnown(originalCustomRules[j].Scope):
+					customRulesTF[j].Scope = originalCustomRules[j].Scope
+				default:
+					customRulesTF[j].Scope = types.MapNull(scopeValueElemType)
 				}
 			}
 

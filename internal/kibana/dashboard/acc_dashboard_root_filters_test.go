@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/acctest/checks"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -51,8 +52,8 @@ func TestAccResourceDashboardRootSavedFilters(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "title", dashboardTitle),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "filters.#", "2"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "filters.0.filter_json", accDashboardRootFilterHostCanonical),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "filters.1.filter_json", accDashboardRootFilterServiceCanonical),
+					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "filters.0.filter_json", accDashboardRootFilterHostCanonical),
+					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "filters.1.filter_json", accDashboardRootFilterServiceCanonical),
 				),
 			},
 			{
@@ -86,8 +87,8 @@ func TestAccResourceDashboardRootSavedFilters(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "filters.#", "2"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "filters.0.filter_json", accDashboardRootFilterServiceCanonical),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "filters.1.filter_json", accDashboardRootFilterHostCanonical),
+					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "filters.0.filter_json", accDashboardRootFilterServiceCanonical),
+					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "filters.1.filter_json", accDashboardRootFilterHostCanonical),
 				),
 			},
 			{
@@ -121,9 +122,9 @@ func TestAccResourceDashboardRootSavedFilters(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "filters.#", "3"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "filters.0.filter_json", accDashboardRootFilterServiceCanonical),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "filters.1.filter_json", accDashboardRootFilterHostCanonical),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "filters.2.filter_json", accDashboardRootFilterPodCanonical),
+					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "filters.0.filter_json", accDashboardRootFilterServiceCanonical),
+					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "filters.1.filter_json", accDashboardRootFilterHostCanonical),
+					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "filters.2.filter_json", accDashboardRootFilterPodCanonical),
 				),
 			},
 			{

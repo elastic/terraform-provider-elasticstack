@@ -110,7 +110,7 @@ func Test_populatePanelConfigJSONDefaults_markdown(t *testing.T) {
 func Test_populatePanelConfigJSONDefaults_unknownLensType(t *testing.T) {
 	input := map[string]any{
 		"attributes": map[string]any{
-			"type": "unknown_viz",
+			"type": "unknown_vis",
 			"data": "something",
 		},
 	}

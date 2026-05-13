@@ -74,26 +74,13 @@ func getSloSharedDisplaySchema() map[string]schema.Attribute {
 		"drilldowns": schema.ListNestedAttribute{
 			MarkdownDescription: "URL drilldowns attached to the panel. The trigger (`on_open_panel_menu`) and type (`url_drilldown`) are set automatically.",
 			Optional:            true,
-			NestedObject: schema.NestedAttributeObject{
-				Attributes: map[string]schema.Attribute{
-					"url": schema.StringAttribute{
-						MarkdownDescription: "The URL template for the drilldown. Variables are documented at https://www.elastic.co/docs/explore-analyze/dashboards/drilldowns#url-template-variable.",
-						Required:            true,
-					},
-					"label": schema.StringAttribute{
-						MarkdownDescription: "The display label for the drilldown link.",
-						Required:            true,
-					},
-					"encode_url": schema.BoolAttribute{
-						MarkdownDescription: "When true, the URL is percent-encoded.",
-						Optional:            true,
-					},
-					"open_in_new_tab": schema.BoolAttribute{
-						MarkdownDescription: "When true, the drilldown URL opens in a new browser tab.",
-						Optional:            true,
-					},
-				},
-			},
+			NestedObject: urlDrilldownNestedAttributeObject(URLDrilldownNestedOpts{
+				AllowedTriggers:                 []string{"on_open_panel_menu"},
+				URLMarkdownDescription:          "The URL template for the drilldown. Variables are documented at https://www.elastic.co/docs/explore-analyze/dashboards/drilldowns#url-template-variable.",
+				LabelMarkdownDescription:        "The display label for the drilldown link.",
+				EncodeURLMarkdownDescription:    "When true, the URL is percent-encoded.",
+				OpenInNewTabMarkdownDescription: "When true, the drilldown URL opens in a new browser tab.",
+			}),
 		},
 	}
 }
@@ -150,6 +137,65 @@ func getSloGroupsSchema() map[string]schema.Attribute {
 		},
 	}
 	return attrs
+}
+
+// getSloAlertsPanelConfigAttributes returns schema attributes for `slo_alerts_config`.
+func getSloAlertsPanelConfigAttributes() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"slos": schema.ListNestedAttribute{
+			MarkdownDescription: sloAlertsPanelSlosDescription,
+			Required:            true,
+			NestedObject: schema.NestedAttributeObject{
+				Attributes: map[string]schema.Attribute{
+					"slo_id": schema.StringAttribute{
+						MarkdownDescription: "Identifier of the SLO to include.",
+						Required:            true,
+						Validators: []validator.String{
+							stringvalidator.LengthAtLeast(1),
+						},
+					},
+					"slo_instance_id": schema.StringAttribute{
+						MarkdownDescription: "SLO instance ID when the SLO uses grouping. Omit for all instances (API default `\"*\"`). Unset values stay null when the API echoes that default (REQ-009).",
+						Optional:            true,
+					},
+				},
+			},
+			Validators: []validator.List{
+				listvalidator.SizeAtLeast(1),
+				listvalidator.SizeAtMost(100),
+			},
+		},
+		"title": schema.StringAttribute{
+			MarkdownDescription: "Optional panel title.",
+			Optional:            true,
+		},
+		"description": schema.StringAttribute{
+			MarkdownDescription: "Optional panel description.",
+			Optional:            true,
+		},
+		"hide_title": schema.BoolAttribute{
+			MarkdownDescription: "When true, hides the panel title.",
+			Optional:            true,
+		},
+		"hide_border": schema.BoolAttribute{
+			MarkdownDescription: "When true, hides the panel border.",
+			Optional:            true,
+		},
+		"drilldowns": schema.ListNestedAttribute{
+			MarkdownDescription: sloAlertsPanelDrilldownsDescription,
+			Optional:            true,
+			Validators: []validator.List{
+				listvalidator.SizeAtMost(100),
+			},
+			NestedObject: urlDrilldownNestedAttributeObject(URLDrilldownNestedOpts{
+				AllowedTriggers:                 []string{"on_open_panel_menu"},
+				URLMarkdownDescription:          "Templated URL for the drilldown.",
+				LabelMarkdownDescription:        "Display label shown in the drilldown menu.",
+				EncodeURLMarkdownDescription:    "When true, the URL is percent-encoded. Omit to use the API default.",
+				OpenInNewTabMarkdownDescription: "When true, the URL opens in a new browser tab. Omit to use the API default.",
+			}),
+		},
+	}
 }
 
 // sloOverviewConfigModeValidator ensures exactly one of single or groups is set.

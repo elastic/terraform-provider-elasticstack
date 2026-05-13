@@ -26,7 +26,7 @@ resource "elasticstack_kibana_dashboard" "test" {
       h = 15
     }
 
-    viz_config = {
+    vis_config = {
       by_value = {
         treemap_config = {
           title       = ""

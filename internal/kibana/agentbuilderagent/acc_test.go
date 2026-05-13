@@ -58,7 +58,7 @@ func TestAccResourceAgentBuilderAgent(t *testing.T) {
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceID, "agent_id", agentID),
-					resource.TestCheckResourceAttrSet(resourceID, "id"),
+					resource.TestCheckResourceAttr(resourceID, "id", "default/"+agentID),
 					resource.TestCheckResourceAttr(resourceID, "name", "Test Agent"),
 					resource.TestCheckResourceAttr(resourceID, "description", "A test agent for acceptance testing"),
 					resource.TestCheckResourceAttr(resourceID, "labels.#", "2"),
@@ -66,7 +66,7 @@ func TestAccResourceAgentBuilderAgent(t *testing.T) {
 					resource.TestCheckTypeSetElemAttr(resourceID, "labels.*", "agent"),
 					resource.TestCheckResourceAttr(resourceID, "tools.#", "1"),
 					resource.TestCheckTypeSetElemAttr(resourceID, "tools.*", "platform.core.index_explorer"),
-					resource.TestCheckResourceAttrSet(resourceID, "instructions"),
+					resource.TestCheckResourceAttr(resourceID, "instructions", "You are a helpful assistant that searches logs. Use the available tools to help answer questions."),
 				),
 			},
 			{
@@ -92,11 +92,12 @@ func TestAccResourceAgentBuilderAgent(t *testing.T) {
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceID, "agent_id", agentID),
-					resource.TestCheckResourceAttrSet(resourceID, "id"),
+					resource.TestCheckResourceAttr(resourceID, "id", "default/"+agentID),
 					resource.TestCheckResourceAttr(resourceID, "name", "Updated Test Agent"),
 					resource.TestCheckResourceAttr(resourceID, "description", "An updated test agent"),
 					resource.TestCheckResourceAttr(resourceID, "labels.#", "3"),
 					resource.TestCheckResourceAttr(resourceID, "tools.#", "2"),
+					resource.TestCheckResourceAttr(resourceID, "instructions", "You are an updated helpful assistant. Use the available tools wisely."),
 				),
 			},
 		},
@@ -276,6 +277,65 @@ func TestAccDataSourceKibanaAgentBuilderAgentWithDependencies(t *testing.T) {
 					resource.TestCheckResourceAttrPair(dataSourceID, "tools.1.configuration", "elasticstack_kibana_agentbuilder_tool.workflow", "configuration"),
 					resource.TestCheckResourceAttrPair(dataSourceID, "tools.1.workflow_id", "elasticstack_kibana_agentbuilder_workflow.test", "workflow_id"),
 					resource.TestCheckResourceAttrPair(dataSourceID, "tools.1.workflow_configuration_yaml", "elasticstack_kibana_agentbuilder_workflow.test", "configuration_yaml"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceAgentBuilderAgentAvatar(t *testing.T) {
+	agentID := "test-agent-avatar-" + uuid.New().String()[:8]
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheckWithWorkflowsEnabled(t, minKibanaAgentBuilderAPIVersion) },
+		Steps: []resource.TestStep{
+			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_avatar"),
+				ConfigVariables: config.Variables{
+					"agent_id": config.StringVariable(agentID),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(testResourceID, "avatar_color", "#BFDBFF"),
+					resource.TestCheckResourceAttr(testResourceID, "avatar_symbol", "TA"),
+				),
+			},
+			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_no_avatar"),
+				ConfigVariables: config.Variables{
+					"agent_id": config.StringVariable(agentID),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(testResourceID, "avatar_color", ""),
+					resource.TestCheckResourceAttr(testResourceID, "avatar_symbol", ""),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceAgentBuilderAgentKibanaConnection(t *testing.T) {
+	agentID := "test-agent-kbconn-" + uuid.New().String()[:8]
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheckWithExplicitKibanaEndpoint(t)
+			acctest.PreCheckWithWorkflowsEnabled(t, minKibanaAgentBuilderAPIVersion)
+		},
+		Steps: []resource.TestStep{
+			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: acctest.KibanaConnectionVariables(config.Variables{
+					"agent_id": config.StringVariable(agentID),
+				}),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(testResourceID, "kibana_connection.#", "1"),
+					resource.TestCheckResourceAttr(testResourceID, "kibana_connection.0.insecure", "false"),
 				),
 			},
 		},
