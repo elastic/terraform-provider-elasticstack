@@ -76,5 +76,5 @@
 - [x] 8.2 Run `make check-lint` and fix any lint issues
 - [x] 8.3 Run `make check-openspec` and fix any spec validation issues
 - [x] 8.4 Update CHANGELOG.md with breaking changes summary
-- [ ] 8.5 Verify all acceptance test fixtures compile with `terraform fmt`
+- [x] 8.5 Verify all acceptance test fixtures compile with `terraform fmt`
 - [ ] 8.6 OpenSpec verify change completeness (`openspec verify change fix-dashboard-schema-inconsistencies`)
