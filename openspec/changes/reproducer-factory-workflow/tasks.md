@@ -20,6 +20,6 @@
 
 ## 4. Build and validation
 
-- [ ] 4.1 Run `make workflow-generate` (or equivalent) to compile `reproducer-factory-issue.lock.yml` and verify the compiled file is produced without errors
-- [ ] 4.2 Run `make check-openspec` (or `npx openspec validate`) to confirm the new specs pass structural validation
-- [ ] 4.3 Run the existing workflow-lib test suite (`npm test` or `make test-workflows`) to confirm no regressions in shared library code
+- [x] 4.1 Run `make workflow-generate` (or equivalent) to compile `reproducer-factory-issue.lock.yml` and verify the compiled file is produced without errors
+- [x] 4.2 Run `make check-openspec` (or `npx openspec validate`) to confirm the new specs pass structural validation
+- [x] 4.3 Run the existing workflow-lib test suite (`npm test` or `make test-workflows`) to confirm no regressions in shared library code
