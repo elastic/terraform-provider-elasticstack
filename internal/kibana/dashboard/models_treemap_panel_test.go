@@ -254,8 +254,10 @@ func Test_treemapConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 
 	assert.Equal(t, types.StringValue("ESQL Treemap"), model.Title)
 	assert.False(t, model.DataSourceJSON.IsNull())
-	assert.False(t, model.GroupBy.IsNull())
-	assert.False(t, model.Metrics.IsNull())
+	assert.True(t, model.GroupBy.IsNull())
+	assert.True(t, model.Metrics.IsNull())
+	assert.NotEmpty(t, model.EsqlMetrics)
+	assert.NotEmpty(t, model.EsqlGroupBy)
 	assert.Nil(t, model.Query)
 
 	lensAttrs, diags := model.toAPI(nil)
