@@ -25,19 +25,21 @@ import (
 )
 
 // calendarEventWire is the JSON shape for ML calendar events (POST body and GET list responses).
-// The go-elasticsearch typed CalendarEvent struct does not yet include skip_results, skip_model_update,
+// The go-elasticsearch typed CalendarEvent struct does not yet include skip_result, skip_model_update,
 // or force_time_shift, so we decode list/post payloads with this type.
 //
 // https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-ml-post-calendar-events
 type calendarEventWire struct {
-	Description     string          `json:"description"`
-	StartTime       json.RawMessage `json:"start_time"`
-	EndTime         json.RawMessage `json:"end_time"`
-	EventID         *string         `json:"event_id,omitempty"`
-	CalendarID      *string         `json:"calendar_id,omitempty"`
-	SkipResults     *bool           `json:"skip_results,omitempty"`
-	SkipModelUpdate *bool           `json:"skip_model_update,omitempty"`
-	ForceTimeShift  *string         `json:"force_time_shift,omitempty"`
+	Description string          `json:"description"`
+	StartTime   json.RawMessage `json:"start_time"`
+	EndTime     json.RawMessage `json:"end_time"`
+	EventID     *string         `json:"event_id,omitempty"`
+	CalendarID  *string         `json:"calendar_id,omitempty"`
+	SkipResult  *bool           `json:"skip_result,omitempty"`
+	// SkipResultsLegacy is accepted on decode only; Elasticsearch may still return `skip_results` in some versions.
+	SkipResultsLegacy *bool   `json:"skip_results,omitempty"`
+	SkipModelUpdate   *bool   `json:"skip_model_update,omitempty"`
+	ForceTimeShift    *string `json:"force_time_shift,omitempty"`
 }
 
 func rawJSONToAny(raw json.RawMessage) (any, error) {
@@ -49,6 +51,16 @@ func rawJSONToAny(raw json.RawMessage) (any, error) {
 		return nil, err
 	}
 	return v, nil
+}
+
+func effectiveSkipResultPtr(w *calendarEventWire) *bool {
+	if w == nil {
+		return nil
+	}
+	if w.SkipResult != nil {
+		return w.SkipResult
+	}
+	return w.SkipResultsLegacy
 }
 
 func wireEventToAPIModel(w *calendarEventWire) (*CalendarEventAPIModel, fwdiags.Diagnostics) {
@@ -67,7 +79,7 @@ func wireEventToAPIModel(w *calendarEventWire) (*CalendarEventAPIModel, fwdiags.
 		Description:     w.Description,
 		StartTime:       startAny,
 		EndTime:         endAny,
-		SkipResults:     w.SkipResults,
+		SkipResult:      effectiveSkipResultPtr(w),
 		SkipModelUpdate: w.SkipModelUpdate,
 		ForceTimeShift:  w.ForceTimeShift,
 	}
@@ -105,9 +117,9 @@ func calendarEventWireFromTFModel(m *CalendarEventTFModel) (calendarEventWire, f
 		StartTime:   millisJSONRaw(startTime.UnixMilli()),
 		EndTime:     millisJSONRaw(endTime.UnixMilli()),
 	}
-	if !m.SkipResults.IsNull() && !m.SkipResults.IsUnknown() {
-		v := m.SkipResults.ValueBool()
-		w.SkipResults = &v
+	if !m.SkipResult.IsNull() && !m.SkipResult.IsUnknown() {
+		v := m.SkipResult.ValueBool()
+		w.SkipResult = &v
 	}
 	if !m.SkipModelUpdate.IsNull() && !m.SkipModelUpdate.IsUnknown() {
 		v := m.SkipModelUpdate.ValueBool()
@@ -166,7 +178,7 @@ func calendarEventMatchesPlanWire(ev, plan calendarEventWire) bool {
 	if !ok1 || !ok2 || evSm != plSm || evEm != plEm {
 		return false
 	}
-	if !optionalBoolPtrEqual(ev.SkipResults, plan.SkipResults) {
+	if !optionalBoolPtrEqual(effectiveSkipResultPtr(&ev), effectiveSkipResultPtr(&plan)) {
 		return false
 	}
 	if !optionalBoolPtrEqual(ev.SkipModelUpdate, plan.SkipModelUpdate) {

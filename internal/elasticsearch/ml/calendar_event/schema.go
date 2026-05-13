@@ -81,9 +81,9 @@ func getSchema(_ context.Context) schema.Schema {
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			"skip_results": schema.BoolAttribute{
+			"skip_result": schema.BoolAttribute{
 				MarkdownDescription: "If true, results are not generated for buckets that fall inside the event period. " +
-					"Maps to `skip_results` in the Elasticsearch API.",
+					"Maps to `skip_result` in the Elasticsearch API.",
 				Optional: true,
 				PlanModifiers: []planmodifier.Bool{
 					boolplanmodifier.RequiresReplace(),

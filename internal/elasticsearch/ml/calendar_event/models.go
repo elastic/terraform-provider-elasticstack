@@ -36,7 +36,7 @@ type CalendarEventTFModel struct {
 	StartTime               timetypes.RFC3339 `tfsdk:"start_time"`
 	EndTime                 timetypes.RFC3339 `tfsdk:"end_time"`
 	EventID                 types.String      `tfsdk:"event_id"`
-	SkipResults             types.Bool        `tfsdk:"skip_results"`
+	SkipResult              types.Bool        `tfsdk:"skip_result"`
 	SkipModelUpdate         types.Bool        `tfsdk:"skip_model_update"`
 	ForceTimeShift          types.String      `tfsdk:"force_time_shift"`
 }
@@ -58,7 +58,7 @@ type CalendarEventAPIModel struct {
 	EndTime         any     `json:"end_time"`
 	CalendarID      string  `json:"calendar_id,omitempty"`
 	EventID         string  `json:"event_id,omitempty"`
-	SkipResults     *bool   `json:"skip_results,omitempty"`
+	SkipResult      *bool   `json:"skip_result,omitempty"`
 	SkipModelUpdate *bool   `json:"skip_model_update,omitempty"`
 	ForceTimeShift  *string `json:"force_time_shift,omitempty"`
 }
@@ -120,7 +120,7 @@ func (m *CalendarEventTFModel) toAPIModel(_ context.Context) (*CalendarEventAPIM
 		Description:     m.Description.ValueString(),
 		StartTime:       startTime.UnixMilli(),
 		EndTime:         endTime.UnixMilli(),
-		SkipResults:     optionalBoolToAPIPtr(m.SkipResults),
+		SkipResult:      optionalBoolToAPIPtr(m.SkipResult),
 		SkipModelUpdate: optionalBoolToAPIPtr(m.SkipModelUpdate),
 		ForceTimeShift:  optionalStringToAPIPtr(m.ForceTimeShift),
 	}, diags
@@ -181,10 +181,10 @@ func (m *CalendarEventTFModel) fromAPIModel(_ context.Context, apiModel *Calenda
 	m.StartTime = timetypes.NewRFC3339TimeValue(startTime)
 	m.EndTime = timetypes.NewRFC3339TimeValue(endTime)
 
-	if apiModel.SkipResults != nil {
-		m.SkipResults = types.BoolValue(*apiModel.SkipResults)
+	if apiModel.SkipResult != nil {
+		m.SkipResult = types.BoolValue(*apiModel.SkipResult)
 	} else {
-		m.SkipResults = types.BoolNull()
+		m.SkipResult = types.BoolNull()
 	}
 	if apiModel.SkipModelUpdate != nil {
 		m.SkipModelUpdate = types.BoolValue(*apiModel.SkipModelUpdate)

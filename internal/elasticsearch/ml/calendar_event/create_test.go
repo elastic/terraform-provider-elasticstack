@@ -50,7 +50,7 @@ func TestCalendarEventMatchesPlanWire(t *testing.T) {
 		Description: "outage",
 		StartTime:   millisJSONRaw(startMs),
 		EndTime:     millisJSONRaw(endMs),
-		SkipResults: &tr,
+		SkipResult: &tr,
 	}
 	ev := plan
 	ev.ForceTimeShift = &fs

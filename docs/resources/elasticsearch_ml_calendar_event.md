@@ -3,12 +3,12 @@
 page_title: "elasticstack_elasticsearch_ml_calendar_event Resource - terraform-provider-elasticstack"
 subcategory: "Ml"
 description: |-
-  Manages scheduled events for a Machine Learning calendar. See the ML Calendar Events API documentation https://www.elastic.co/guide/en/elasticsearch/reference/current/ml-post-calendar-event.html for more details.
+  Manages scheduled events for a Machine Learning calendar. See the ML post calendar events API https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-ml-post-calendar-events for more details.
 ---
 
 # elasticstack_elasticsearch_ml_calendar_event (Resource)
 
-Manages scheduled events for a Machine Learning calendar. See the [ML Calendar Events API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/ml-post-calendar-event.html) for more details.
+Manages scheduled events for a Machine Learning calendar. See the [ML post calendar events API](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-ml-post-calendar-events) for more details.
 
 
 
@@ -25,6 +25,9 @@ Manages scheduled events for a Machine Learning calendar. See the [ML Calendar E
 ### Optional
 
 - `elasticsearch_connection` (Block List) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `force_time_shift` (String) When set, changes the duration of the event to the specified value in seconds. Maps to `force_time_shift` in the Elasticsearch API.
+- `skip_model_update` (Boolean) If true, model updates are not generated for buckets that fall inside the event period. Maps to `skip_model_update` in the Elasticsearch API.
+- `skip_result` (Boolean) If true, results are not generated for buckets that fall inside the event period. Maps to `skip_result` in the Elasticsearch API.
 
 ### Read-Only
 

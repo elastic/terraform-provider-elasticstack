@@ -54,6 +54,47 @@ func TestAccResourceMLCalendarEvent(t *testing.T) {
 	})
 }
 
+func TestAccResourceMLCalendarEvent_optionalSchedulingFields(t *testing.T) {
+	calendarID := fmt.Sprintf("test-cal-evt-opt-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	vars := config.Variables{
+		"calendar_id": config.StringVariable(calendarID),
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_calendar_event.test", "calendar_id", calendarID),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_calendar_event.test", "description", "ACC outage with optional scheduling fields"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_calendar_event.test", "start_time", "2026-09-01T00:00:00Z"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_calendar_event.test", "end_time", "2026-09-01T02:00:00Z"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_calendar_event.test", "skip_result", "true"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_calendar_event.test", "skip_model_update", "true"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_calendar_event.test", "force_time_shift", "3600"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_ml_calendar_event.test", "event_id"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_ml_calendar_event.test", "id"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars,
+				ResourceName:             "elasticstack_elasticsearch_ml_calendar_event.test",
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					rs := s.RootModule().Resources["elasticstack_elasticsearch_ml_calendar_event.test"]
+					return rs.Primary.ID, nil
+				},
+			},
+		},
+	})
+}
+
 func TestAccResourceMLCalendarEventImport(t *testing.T) {
 	calendarID := fmt.Sprintf("test-cal-evt-imp-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 
