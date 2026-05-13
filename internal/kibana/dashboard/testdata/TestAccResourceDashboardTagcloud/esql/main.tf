@@ -44,7 +44,7 @@ resource "elasticstack_kibana_dashboard" "test" {
 
           esql_tag_by = {
             column      = "host"
-            format_json = jsonencode({ type = "string" })
+            format_json = jsonencode({ type = "number" })
             color_json = jsonencode({
               mode    = "categorical"
               palette = "default"
