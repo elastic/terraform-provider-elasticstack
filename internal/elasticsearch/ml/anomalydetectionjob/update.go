@@ -55,14 +55,16 @@ func (r *anomalyDetectionJobResource) Update(ctx context.Context, req resource.U
 
 	// Create update body with only updatable fields
 	updateBody := &UpdateAPIModel{}
-	hasChanges, diags := updateBody.BuildFromPlan(ctx, &plan, &state)
+	hasJobFieldChanges, diags := updateBody.BuildFromPlan(ctx, &plan, &state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
+	calendarChanged := !plan.Calendars.Equal(state.Calendars)
+
 	// Only proceed with update if there are changes
-	if !hasChanges {
+	if !hasJobFieldChanges && !calendarChanged {
 		tflog.Debug(ctx, fmt.Sprintf("No updates needed for ML anomaly detection job: %s", jobID))
 		resp.Diagnostics.AddWarning("No changes detected to updatable fields during an update operation", `
 Changes to non-updateable fields should force a recreation of the anomaly detection job.
@@ -83,19 +85,35 @@ Please report this warning to the provider developers.`)
 		return
 	}
 
-	// Send the update as raw JSON so that all fields including
-	// categorization_examples_limit are included. The typed updatejob.Request
-	// uses types.AnalysisMemoryLimit which only models model_memory_limit,
-	// dropping categorization_examples_limit.
-	updateJSON, err := json.Marshal(updateBody)
-	if err != nil {
-		resp.Diagnostics.AddError("Failed to marshal ML anomaly detection job update", err.Error())
-		return
+	if hasJobFieldChanges {
+		// Send the update as raw JSON so that all fields including
+		// categorization_examples_limit are included. The typed updatejob.Request
+		// uses types.AnalysisMemoryLimit which only models model_memory_limit,
+		// dropping categorization_examples_limit.
+		updateJSON, err := json.Marshal(updateBody)
+		if err != nil {
+			resp.Diagnostics.AddError("Failed to marshal ML anomaly detection job update", err.Error())
+			return
+		}
+		_, err = typedClient.Ml.UpdateJob(jobID).Raw(bytes.NewReader(updateJSON)).Do(ctx)
+		if err != nil {
+			resp.Diagnostics.AddError("Failed to update ML anomaly detection job", fmt.Sprintf("Unable to update ML anomaly detection job: %s — %s", jobID, err.Error()))
+			return
+		}
 	}
-	_, err = typedClient.Ml.UpdateJob(jobID).Raw(bytes.NewReader(updateJSON)).Do(ctx)
-	if err != nil {
-		resp.Diagnostics.AddError("Failed to update ML anomaly detection job", fmt.Sprintf("Unable to update ML anomaly detection job: %s — %s", jobID, err.Error()))
-		return
+
+	if calendarChanged {
+		prev, d := calendarIDsFromTFSet(ctx, state.Calendars)
+		resp.Diagnostics.Append(d...)
+		next, d := calendarIDsFromTFSet(ctx, plan.Calendars)
+		resp.Diagnostics.Append(d...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		if err := syncJobCalendars(ctx, typedClient, jobID, next, prev); err != nil {
+			resp.Diagnostics.AddError("Failed to update ML job calendar assignments", err.Error())
+			return
+		}
 	}
 
 	// Read back the updated job to get the current state

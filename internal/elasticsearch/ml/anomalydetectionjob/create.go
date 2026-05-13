@@ -59,6 +59,18 @@ func createAnomalyDetectionJob(ctx context.Context, client *clients.Elasticsearc
 		return plan, diags
 	}
 
+	desired, calDiags := calendarIDsFromTFSet(ctx, plan.Calendars)
+	diags.Append(calDiags...)
+	if diags.HasError() {
+		return plan, diags
+	}
+	if len(desired) > 0 {
+		if err := syncJobCalendars(ctx, typedClient, jobID, desired, nil); err != nil {
+			diags.AddError("Failed to assign ML job to calendars", err.Error())
+			return plan, diags
+		}
+	}
+
 	// Set the composite ID so the envelope and readFunc can carry it through.
 	compID, sdkDiags := client.ID(ctx, jobID)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)

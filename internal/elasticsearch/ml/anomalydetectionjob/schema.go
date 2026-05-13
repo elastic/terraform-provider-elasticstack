@@ -26,6 +26,7 @@ import (
 	timeouts "github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -86,6 +87,23 @@ func getSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "A set of job groups. A job can belong to no groups or many.",
 				Optional:            true,
 				ElementType:         types.StringType,
+			},
+			"calendars": schema.SetAttribute{
+				MarkdownDescription: "ML calendar IDs this job should be assigned to. " +
+					"Membership is managed with the ML calendar APIs (`PUT`/`DELETE _ml/calendars/{calendar_id}/jobs/{job_id}`) " +
+					"after the job exists; calendars are not part of the Put job JSON body.",
+				Optional:    true,
+				ElementType: types.StringType,
+				Validators: []validator.Set{
+					setvalidator.ValueStringsAre(
+						stringvalidator.LengthBetween(1, 64),
+						stringvalidator.RegexMatches(
+							regexp.MustCompile(`^[a-z0-9]([a-z0-9_-]*[a-z0-9])?$|^[a-z0-9]$`),
+							"each calendar id must contain lowercase alphanumeric characters, hyphens, and underscores, "+
+								"and must start and end with alphanumeric characters",
+						),
+					),
+				},
 			},
 			"analysis_config": schema.SingleNestedAttribute{
 				MarkdownDescription: "Specifies how to analyze the data. After you create a job, you cannot change the analysis configuration; all the properties are informational.",

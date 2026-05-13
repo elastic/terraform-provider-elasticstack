@@ -78,6 +78,12 @@ func readAnomalyDetectionJob(ctx context.Context, client *clients.ElasticsearchS
 
 	// Convert the typed response to APIModel, then populate TF model
 	apiModel := fromTypedJob(&res.Jobs[0])
+	calIDs, err := listCalendarIDsForJob(ctx, typedClient, jobID)
+	if err != nil {
+		diags.AddError("Failed to list ML calendars for job", err.Error())
+		return state, false, diags
+	}
+	apiModel.Calendars = calIDs
 	diags.Append(state.fromAPIModel(ctx, apiModel)...)
 	if diags.HasError() {
 		return state, false, diags

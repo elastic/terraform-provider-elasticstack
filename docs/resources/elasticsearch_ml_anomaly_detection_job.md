@@ -85,6 +85,7 @@ This identifier can contain lowercase alphanumeric characters (a-z and 0-9), hyp
 - `allow_lazy_open` (Boolean) Advanced configuration option. Specifies whether this job can open when there is insufficient machine learning node capacity for it to be immediately assigned to a node.
 - `analysis_limits` (Attributes) Limits can be applied for the resources required to hold the mathematical models in memory. (see [below for nested schema](#nestedatt--analysis_limits))
 - `background_persist_interval` (String) Advanced configuration option. The time between each periodic persistence of the model.
+- `calendars` (Set of String) ML calendar IDs this job should be assigned to. Membership is managed with the ML calendar APIs (`PUT`/`DELETE _ml/calendars/{calendar_id}/jobs/{job_id}`) after the job exists; calendars are not part of the Put job JSON body.
 - `custom_settings` (String) Advanced configuration option. Contains custom meta data about the job. For example, it can contain custom URL information.
 - `daily_model_snapshot_retention_after_days` (Number) Advanced configuration option, which affects the automatic removal of old model snapshots for this job.
 - `description` (String) A description of the job.

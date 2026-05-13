@@ -58,6 +58,22 @@ func deleteAnomalyDetectionJob(ctx context.Context, client *clients.Elasticsearc
 		return diags
 	}
 
+	prevCalendars, calDiags := calendarIDsFromTFSet(ctx, state.Calendars)
+	diags.Append(calDiags...)
+	if diags.HasError() {
+		return diags
+	}
+	for _, cal := range prevCalendars {
+		_, err := typedClient.Ml.DeleteCalendarJob(cal, jobID).Do(ctx)
+		if err != nil {
+			var esErr *types.ElasticsearchError
+			if errors.As(err, &esErr) && esErr.Status == 404 {
+				continue
+			}
+			tflog.Warn(ctx, fmt.Sprintf("Failed to remove ML job %s from calendar %s before delete: %s", jobID, cal, err.Error()))
+		}
+	}
+
 	// First, close the job if it's open. Force=true and AllowNoMatch=true to be safe.
 	_, err = typedClient.Ml.CloseJob(jobID).Force(true).AllowNoMatch(true).Do(ctx)
 	if err != nil {

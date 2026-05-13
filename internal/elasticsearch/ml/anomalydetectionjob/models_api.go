@@ -35,9 +35,12 @@ import (
 
 // APIModel represents the API model for ML anomaly detection jobs
 type APIModel struct {
-	JobID                                string                   `json:"job_id"`
-	Description                          string                   `json:"description,omitempty"`
-	Groups                               []string                 `json:"groups,omitempty"`
+	JobID       string   `json:"job_id"`
+	Description string   `json:"description,omitempty"`
+	Groups      []string `json:"groups,omitempty"`
+	// Calendars is not part of the Elasticsearch Put job JSON; it is populated for
+	// Terraform read/mapping and used to sync calendar–job membership out-of-band.
+	Calendars                            []string                 `json:"-"`
 	AnalysisConfig                       AnalysisConfigAPIModel   `json:"analysis_config"`
 	AnalysisLimits                       *AnalysisLimitsAPIModel  `json:"analysis_limits,omitempty"`
 	DataDescription                      DataDescriptionAPIModel  `json:"data_description"`
