@@ -1,17 +1,17 @@
 ## 1. Schema fixes — naming, types, and helpers
 
-- [ ] 1.1 Rename waffle `metrics[].config` → `metrics[].config_json` and `group_by[].config` → `group_by[].config_json` in `schema.go`
-- [ ] 1.2 Rename pie `metrics[].config` → `metrics[].config_json` and `group_by[].config` → `group_by[].config_json` in `schema.go`
-- [ ] 1.3 Remove heatmap `x_axis_json` and `y_axis_json` from `getHeatmapSchema()` in `schema.go`
-- [ ] 1.4 Change XY chart `query` from Required to Optional in `schema_xy_chart_panel.go`
-- [ ] 1.5 Change pie `data_source_json` from Optional to Required in `schema.go`
-- [ ] 1.6 Remove explicit `Default: booldefault.StaticBool(false)` and `Default: float64default.StaticFloat64(1.0)` from pie chart in `schema.go`; refactor `getPieChart()` to start from `lensChartBaseAttributes()`
-- [ ] 1.7 Normalize partition legend `truncate_after_lines` to `Int64` (treemap, mosaic, pie in `getPartitionLegendSchema()`)
-- [ ] 1.8 Extract shared synthetics filter item schema into a helper `syntheticsFilterItemSchema()` and replace inline definitions in `getSyntheticsStatsOverviewSchema()` and `getSyntheticsMonitorsSchema()`
-- [ ] 1.9 Replace synthetics drilldowns inline definitions with `urlDrilldownNestedAttributeObject()` in `getSyntheticsStatsOverviewSchema()`
-- [ ] 1.10 Replace synthetics drilldowns inline definitions with `urlDrilldownNestedAttributeObject()` in `getSyntheticsMonitorsSchema()`
-- [ ] 1.11 Refactor waffle `value_display` to use `getPartitionValueDisplaySchema()` instead of inline definition
-- [ ] 1.12 Move `panelTypeSloOverview` constant from `models_slo_overview_panel.go` to `schema.go`
+- [x] 1.1 Rename waffle `metrics[].config` → `metrics[].config_json` and `group_by[].config` → `group_by[].config_json` in `schema.go`
+- [x] 1.2 Rename pie `metrics[].config` → `metrics[].config_json` and `group_by[].config` → `group_by[].config_json` in `schema.go`
+- [x] 1.3 Remove heatmap `x_axis_json` and `y_axis_json` from `getHeatmapSchema()` in `schema.go`
+- [x] 1.4 Change XY chart `query` from Required to Optional in `schema_xy_chart_panel.go`
+- [x] 1.5 Change pie `data_source_json` from Optional to Required in `schema.go`
+- [x] 1.6 Remove explicit `Default: booldefault.StaticBool(false)` and `Default: float64default.StaticFloat64(1.0)` from pie chart in `schema.go`; refactor `getPieChart()` to start from `lensChartBaseAttributes()`
+- [x] 1.7 Normalize partition legend `truncate_after_lines` to `Int64` (treemap, mosaic, pie in `getPartitionLegendSchema()`)
+- [x] 1.8 Extract shared synthetics filter item schema into a helper `syntheticsFilterItemSchema()` and replace inline definitions in `getSyntheticsStatsOverviewSchema()` and `getSyntheticsMonitorsSchema()`
+- [x] 1.9 Replace synthetics drilldowns inline definitions with `urlDrilldownNestedAttributeObject()` in `getSyntheticsStatsOverviewSchema()`
+- [x] 1.10 Replace synthetics drilldowns inline definitions with `urlDrilldownNestedAttributeObject()` in `getSyntheticsMonitorsSchema()`
+- [x] 1.11 Refactor waffle `value_display` to use `getPartitionValueDisplaySchema()` instead of inline definition
+- [x] 1.12 Move `panelTypeSloOverview` constant from `models_slo_overview_panel.go` to `schema.go`
 
 ## 2. Treemap and mosaic ES|QL typed schema expansion
 
