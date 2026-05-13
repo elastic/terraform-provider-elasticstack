@@ -9,12 +9,12 @@
 
 ## 2. Representative Package Migration (Dashboard)
 
-- [ ] 2.1 Migrate `internal/kibana/dashboard/acc_test.go` from per-step `SkipFunc` to top-level `SkipIfUnsupported(t, minDashboardAPISupport, FlavorAny)`
-- [ ] 2.2 Migrate `internal/kibana/dashboard/acc_gauge_panels_test.go`
-- [ ] 2.3 Migrate `internal/kibana/dashboard/acc_heatmap_panels_test.go`
-- [ ] 2.4 Migrate `internal/kibana/dashboard/acc_esql_control_panels_test.go`
-- [ ] 2.5 Migrate remaining `internal/kibana/dashboard/acc_*_panels_test.go` files with identical `minDashboardAPISupport` skips
-- [ ] 2.6 Run `make check-lint` and targeted dashboard acceptance tests to confirm no regressions
+- [x] 2.1 Migrate `internal/kibana/dashboard/acc_test.go` from per-step `SkipFunc` to top-level `SkipIfUnsupported(t, minDashboardAPISupport, FlavorAny)`
+- [x] 2.2 Migrate `internal/kibana/dashboard/acc_gauge_panels_test.go`
+- [x] 2.3 Migrate `internal/kibana/dashboard/acc_heatmap_panels_test.go`
+- [x] 2.4 Migrate `internal/kibana/dashboard/acc_esql_control_panels_test.go`
+- [x] 2.5 Migrate remaining `internal/kibana/dashboard/acc_*_panels_test.go` files with identical `minDashboardAPISupport` skips
+- [x] 2.6 Run `make check-lint` and targeted dashboard acceptance tests to confirm no regressions
 
 ## 3. Elasticsearch Package Migrations
 
