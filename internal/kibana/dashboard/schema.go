@@ -1973,12 +1973,12 @@ func getWaffleSchema(includePresentation bool) map[string]schema.Attribute {
 	attrs["esql_metrics"] = schema.ListNestedAttribute{
 		MarkdownDescription: "Metric columns for ES|QL waffles (minimum 1). Mutually exclusive with `metrics`.",
 		Optional:            true,
-		NestedObject:        getWaffleESQLMetricSchema(),
+		NestedObject:        getPartitionESQLMetricSchema(),
 	}
 	attrs["esql_group_by"] = schema.ListNestedAttribute{
 		MarkdownDescription: "Breakdown columns for ES|QL waffles. Mutually exclusive with `group_by`.",
 		Optional:            true,
-		NestedObject:        getWaffleESQLGroupBySchema(),
+		NestedObject:        getPartitionESQLGroupBySchema(),
 	}
 	return attrs
 }
@@ -2015,7 +2015,9 @@ func getWaffleLegendSchema() map[string]schema.Attribute {
 	}
 }
 
-func getWaffleESQLMetricSchema() schema.NestedAttributeObject {
+// getPartitionESQLMetricSchema returns the shared ES|QL metric schema used by waffle,
+// treemap, and mosaic.
+func getPartitionESQLMetricSchema() schema.NestedAttributeObject {
 	return schema.NestedAttributeObject{
 		Attributes: map[string]schema.Attribute{
 			"column": schema.StringAttribute{
@@ -2036,7 +2038,7 @@ func getWaffleESQLMetricSchema() schema.NestedAttributeObject {
 				Required:            true,
 				Attributes: map[string]schema.Attribute{
 					"type": schema.StringAttribute{
-						MarkdownDescription: "Color type; use `static` for waffle ES|QL metrics.",
+						MarkdownDescription: "Color type; use `static` for partition chart ES|QL metrics.",
 						Required:            true,
 						Validators: []validator.String{
 							stringvalidator.OneOf("static"),
@@ -2052,7 +2054,9 @@ func getWaffleESQLMetricSchema() schema.NestedAttributeObject {
 	}
 }
 
-func getWaffleESQLGroupBySchema() schema.NestedAttributeObject {
+// getPartitionESQLGroupBySchema returns the shared ES|QL group-by schema used by waffle,
+// treemap, and mosaic.
+func getPartitionESQLGroupBySchema() schema.NestedAttributeObject {
 	return schema.NestedAttributeObject{
 		Attributes: map[string]schema.Attribute{
 			"column": schema.StringAttribute{
@@ -2084,6 +2088,29 @@ func getWaffleESQLGroupBySchema() schema.NestedAttributeObject {
 	}
 }
 
+// getMosaicESQLMetricSchema returns the ES|QL metric schema for mosaic.
+// Mosaic ES|QL uses a single metric without color, so this omits the color
+// block present in waffle/treemap.
+func getMosaicESQLMetricSchema() schema.NestedAttributeObject {
+	return schema.NestedAttributeObject{
+		Attributes: map[string]schema.Attribute{
+			"column": schema.StringAttribute{
+				MarkdownDescription: "ES|QL column name for the metric.",
+				Required:            true,
+			},
+			"label": schema.StringAttribute{
+				MarkdownDescription: "Optional label for the metric.",
+				Optional:            true,
+			},
+			"format_json": schema.StringAttribute{
+				MarkdownDescription: "Number or other format configuration as JSON (`formatType` union).",
+				CustomType:          jsontypes.NormalizedType{},
+				Required:            true,
+			},
+		},
+	}
+}
+
 // getTreemapSchema returns the schema for treemap chart configuration.
 func getTreemapSchema(includePresentation bool) map[string]schema.Attribute {
 	base := getPartitionChartBaseSchema(includePresentation)
@@ -2093,14 +2120,20 @@ func getTreemapSchema(includePresentation bool) map[string]schema.Attribute {
 				"For non-ES|QL, each item can be date histogram, terms, histogram, range, or filters operations; " +
 				"for ES|QL, each item is the column/operation/color configuration.",
 			CustomType: customtypes.NewJSONWithDefaultsType(populatePartitionGroupByDefaults),
-			Required:   true,
+			Optional:   true,
+			Validators: []validator.String{
+				stringvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("esql_group_by")),
+			},
 		},
 		"metrics_json": schema.StringAttribute{
 			MarkdownDescription: "Array of metric configurations as JSON (minimum 1). " +
 				"For non-ES|QL, each item can be a field metric, pipeline metric, or formula; " +
 				"for ES|QL, each item is the column/operation/color/format configuration.",
 			CustomType: customtypes.NewJSONWithDefaultsType(populatePartitionMetricsDefaults),
-			Required:   true,
+			Optional:   true,
+			Validators: []validator.String{
+				stringvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("esql_metrics")),
+			},
 		},
 		"legend": schema.SingleNestedAttribute{
 			MarkdownDescription: "Legend configuration for the treemap chart.",
@@ -2111,6 +2144,22 @@ func getTreemapSchema(includePresentation bool) map[string]schema.Attribute {
 			MarkdownDescription: "Configuration for displaying values in chart cells.",
 			Optional:            true,
 			Attributes:          getPartitionValueDisplaySchema(),
+		},
+		"esql_metrics": schema.ListNestedAttribute{
+			MarkdownDescription: "Metric columns for ES|QL treemaps. Mutually exclusive with `metrics_json`.",
+			Optional:            true,
+			NestedObject:        getPartitionESQLMetricSchema(),
+			Validators: []validator.List{
+				listvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("metrics_json")),
+			},
+		},
+		"esql_group_by": schema.ListNestedAttribute{
+			MarkdownDescription: "Breakdown columns for ES|QL treemaps. Mutually exclusive with `group_by_json`.",
+			Optional:            true,
+			NestedObject:        getPartitionESQLGroupBySchema(),
+			Validators: []validator.List{
+				listvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("group_by_json")),
+			},
 		},
 	}
 	maps.Copy(base, treemapSpecific)
@@ -2126,7 +2175,10 @@ func getMosaicSchema(includePresentation bool) map[string]schema.Attribute {
 				"For non-ES|QL, each item can be date histogram, terms, histogram, range, or filters operations; " +
 				"for ES|QL, each item is the column/operation/color configuration.",
 			CustomType: customtypes.NewJSONWithDefaultsType(populatePartitionGroupByDefaults),
-			Required:   true,
+			Optional:   true,
+			Validators: []validator.String{
+				stringvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("esql_group_by")),
+			},
 		},
 		"group_breakdown_by_json": schema.StringAttribute{
 			MarkdownDescription: "Array of secondary breakdown dimensions as JSON (minimum 1). " +
@@ -2141,7 +2193,10 @@ func getMosaicSchema(includePresentation bool) map[string]schema.Attribute {
 				"For non-ES|QL, each item can be a field metric, pipeline metric, or formula; " +
 				"for ES|QL, each item is the column/operation/color/format configuration.",
 			CustomType: customtypes.NewJSONWithDefaultsType(populatePartitionMetricsDefaults),
-			Required:   true,
+			Optional:   true,
+			Validators: []validator.String{
+				stringvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("esql_metrics")),
+			},
 		},
 		"legend": schema.SingleNestedAttribute{
 			MarkdownDescription: "Legend configuration for the mosaic chart.",
@@ -2152,6 +2207,22 @@ func getMosaicSchema(includePresentation bool) map[string]schema.Attribute {
 			MarkdownDescription: "Configuration for displaying values in chart cells.",
 			Optional:            true,
 			Attributes:          getPartitionValueDisplaySchema(),
+		},
+		"esql_metrics": schema.ListNestedAttribute{
+			MarkdownDescription: "Metric columns for ES|QL mosaics (exactly 1). Mutually exclusive with `metrics_json`.",
+			Optional:            true,
+			NestedObject:        getMosaicESQLMetricSchema(),
+			Validators: []validator.List{
+				listvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("metrics_json")),
+			},
+		},
+		"esql_group_by": schema.ListNestedAttribute{
+			MarkdownDescription: "Breakdown columns for ES|QL mosaics. Mutually exclusive with `group_by_json`.",
+			Optional:            true,
+			NestedObject:        getPartitionESQLGroupBySchema(),
+			Validators: []validator.List{
+				listvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("group_by_json")),
+			},
 		},
 	}
 	maps.Copy(base, mosaicSpecific)

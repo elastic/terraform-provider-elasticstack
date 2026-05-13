@@ -15,10 +15,10 @@
 
 ## 2. Treemap and mosaic ES|QL typed schema expansion
 
-- [ ] 2.1 Add `esql_metrics` typed nested attribute to `getTreemapSchema()` with mutual-exclusion validator against `metrics_json`
-- [ ] 2.2 Add `esql_group_by` typed nested attribute to `getTreemapSchema()` with mutual-exclusion validator against `group_by_json`
-- [ ] 2.3 Add `esql_metrics` typed nested attribute to `getMosaicSchema()` with mutual-exclusion validator against `metrics_json`
-- [ ] 2.4 Add `esql_group_by` typed nested attribute to `getMosaicSchema()` with mutual-exclusion validator against `group_by_json`
+- [x] 2.1 Add `esql_metrics` typed nested attribute to `getTreemapSchema()` with mutual-exclusion validator against `metrics_json`
+- [x] 2.2 Add `esql_group_by` typed nested attribute to `getTreemapSchema()` with mutual-exclusion validator against `group_by_json`
+- [x] 2.3 Add `esql_metrics` typed nested attribute to `getMosaicSchema()` with mutual-exclusion validator against `metrics_json`
+- [x] 2.4 Add `esql_group_by` typed nested attribute to `getMosaicSchema()` with mutual-exclusion validator against `group_by_json`
 
 ## 3. Model layer updates
 
