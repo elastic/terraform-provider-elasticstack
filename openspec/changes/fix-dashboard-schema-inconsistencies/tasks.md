@@ -53,8 +53,8 @@
 - [x] 6.4 Update `models_treemap_panel_test.go` and `models_mosaic_panel_test.go` for ES|QL typed schemas
 - [x] 6.5 Update `models_xy_chart_panel_test.go` for optional query
 - [x] 6.6 Update `panel_config_defaults_test.go` for renamed attributes
-- [ ] 6.7 Run `make build` and fix compilation errors
-- [ ] 6.8 Run targeted acceptance tests for affected panel types: waffle, pie, heatmap, treemap, mosaic, XY, synthetics
+- [x] 6.7 Run `make build` and fix compilation errors
+- [x] 6.8 Run targeted acceptance tests for affected panel types: waffle, pie, heatmap, treemap, mosaic, XY, synthetics
 
 ## 7. ES|QL support for gauge and tagcloud
 
