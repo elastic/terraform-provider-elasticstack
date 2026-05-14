@@ -9,6 +9,23 @@
  *   - refreshReleasePR    — update the prep-release-* PR body with metadata
  */
 
+const NO_CHANGELOG_LABEL = 'no-changelog';
+
+/**
+ * Ensure the `no-changelog` label is applied to a PR.
+ *
+ * @param {{ github: object, owner: string, repo: string, issue_number: number }} opts
+ * @returns {Promise<void>}
+ */
+async function addNoChangelogLabel({ github, owner, repo, issue_number }) {
+  await github.rest.issues.addLabels({
+    owner,
+    repo,
+    issue_number,
+    labels: [NO_CHANGELOG_LABEL],
+  });
+}
+
 /**
  * Build the PR body for the generated-changelog PR (unreleased mode).
  *
@@ -73,6 +90,12 @@ async function manageUnreleasedPR({ github, owner, repo, compareRange }) {
       pull_number: existingPR.number,
       body: prBody,
     });
+    await addNoChangelogLabel({
+      github,
+      owner,
+      repo,
+      issue_number: existingPR.number,
+    });
     return {
       prAction: 'updated',
       prNumber: existingPR.number,
@@ -87,6 +110,12 @@ async function manageUnreleasedPR({ github, owner, repo, compareRange }) {
     body: prBody,
     head: 'generated-changelog',
     base: 'main',
+  });
+  await addNoChangelogLabel({
+    github,
+    owner,
+    repo,
+    issue_number: newPR.number,
   });
   return {
     prAction: 'created',
@@ -146,6 +175,12 @@ async function refreshReleasePR({ github, core, owner, repo, prNumber, compareRa
     repo,
     pull_number: num,
     body: prBody,
+  });
+  await addNoChangelogLabel({
+    github,
+    owner,
+    repo,
+    issue_number: num,
   });
   core.info(`Release PR #${num} metadata refreshed`);
 }

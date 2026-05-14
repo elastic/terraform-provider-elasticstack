@@ -16,9 +16,9 @@
 
 ## 4. Apply `no-changelog` label to changelog-generation PRs
 
-- [ ] 4.1 In `manageUnreleasedPR`: after creating a new PR call `github.rest.issues.addLabels` to apply `no-changelog`
-- [ ] 4.2 In `manageUnreleasedPR`: after updating an existing PR call `github.rest.issues.addLabels` to apply `no-changelog` (idempotent)
-- [ ] 4.3 In `refreshReleasePR`: after locating the release prep PR call `github.rest.issues.addLabels` to apply `no-changelog`
+- [x] 4.1 In `manageUnreleasedPR`: after creating a new PR call `github.rest.issues.addLabels` to apply `no-changelog`
+- [x] 4.2 In `manageUnreleasedPR`: after updating an existing PR call `github.rest.issues.addLabels` to apply `no-changelog` (idempotent)
+- [x] 4.3 In `refreshReleasePR`: after locating the release prep PR call `github.rest.issues.addLabels` to apply `no-changelog`
 
 ## 5. Tests for `no-changelog` label application
 

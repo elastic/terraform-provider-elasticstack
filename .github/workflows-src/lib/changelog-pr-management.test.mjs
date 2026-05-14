@@ -57,6 +57,7 @@ test('buildReleasePRBody: body contains Compare range:', () => {
 test('manageUnreleasedPR: existing open PR → updates body, returns action=updated', async () => {
   const updateCalls = [];
   const createCalls = [];
+  const addLabelsCalls = [];
 
   const github = {
     rest: {
@@ -71,6 +72,12 @@ test('manageUnreleasedPR: existing open PR → updates body, returns action=upda
         create: async (args) => {
           createCalls.push(args);
           return { data: { number: 99, html_url: 'https://github.com/org/repo/pull/99' } };
+        },
+      },
+      issues: {
+        addLabels: async (args) => {
+          addLabelsCalls.push(args);
+          return { data: {} };
         },
       },
     },
@@ -92,6 +99,9 @@ test('manageUnreleasedPR: existing open PR → updates body, returns action=upda
   assert.ok(updateCalls[0].body.includes('Do not make manual edits'), 'body should include warning text');
 
   assert.equal(createCalls.length, 0, 'pulls.create should not be called');
+  assert.equal(addLabelsCalls.length, 1, 'issues.addLabels should be called once');
+  assert.equal(addLabelsCalls[0].issue_number, 42);
+  assert.deepEqual(addLabelsCalls[0].labels, ['no-changelog']);
 });
 
 // ---------------------------------------------------------------------------
@@ -101,6 +111,7 @@ test('manageUnreleasedPR: existing open PR → updates body, returns action=upda
 test('manageUnreleasedPR: no existing PR → creates new PR, returns action=created with head=generated-changelog', async () => {
   const createCalls = [];
   const updateCalls = [];
+  const addLabelsCalls = [];
 
   const github = {
     rest: {
@@ -113,6 +124,12 @@ test('manageUnreleasedPR: no existing PR → creates new PR, returns action=crea
         create: async (args) => {
           createCalls.push(args);
           return { data: { number: 7, html_url: 'https://github.com/org/repo/pull/7' } };
+        },
+      },
+      issues: {
+        addLabels: async (args) => {
+          addLabelsCalls.push(args);
+          return { data: {} };
         },
       },
     },
@@ -134,6 +151,9 @@ test('manageUnreleasedPR: no existing PR → creates new PR, returns action=crea
   assert.equal(createCalls[0].base, 'main');
 
   assert.equal(updateCalls.length, 0, 'pulls.update should not be called');
+  assert.equal(addLabelsCalls.length, 1, 'issues.addLabels should be called once');
+  assert.equal(addLabelsCalls[0].issue_number, 7);
+  assert.deepEqual(addLabelsCalls[0].labels, ['no-changelog']);
 });
 
 // ---------------------------------------------------------------------------
@@ -142,6 +162,7 @@ test('manageUnreleasedPR: no existing PR → creates new PR, returns action=crea
 
 test('refreshReleasePR: prNumber present → calls pulls.update with correct body', async () => {
   const updateCalls = [];
+  const addLabelsCalls = [];
   const warnings = [];
 
   const github = {
@@ -149,6 +170,12 @@ test('refreshReleasePR: prNumber present → calls pulls.update with correct bod
       pulls: {
         update: async (args) => {
           updateCalls.push(args);
+          return { data: {} };
+        },
+      },
+      issues: {
+        addLabels: async (args) => {
+          addLabelsCalls.push(args);
           return { data: {} };
         },
       },
@@ -175,6 +202,9 @@ test('refreshReleasePR: prNumber present → calls pulls.update with correct bod
   assert.ok(updateCalls[0].body.includes('**Version:** `2.0.0`'), 'body should include version');
   assert.ok(updateCalls[0].body.includes('**Compare range:** `v1.0.0...v2.0.0`'), 'body should include compare range');
   assert.match(updateCalls[0].body, /\*\*Generated:\*\* \d{4}-\d{2}-\d{2}/);
+  assert.equal(addLabelsCalls.length, 1, 'issues.addLabels should be called once');
+  assert.equal(addLabelsCalls[0].issue_number, 55);
+  assert.deepEqual(addLabelsCalls[0].labels, ['no-changelog']);
 
   assert.equal(warnings.length, 0, 'no warnings should be emitted');
 });
@@ -261,6 +291,7 @@ test('findOpenReleasePrepPRNumber: no matching PR → null', async () => {
 
 test('refreshReleasePR: prNumber absent but prep-release PR exists → updates looked-up PR', async () => {
   const updateCalls = [];
+  const addLabelsCalls = [];
 
   const github = {
     rest: {
@@ -272,6 +303,12 @@ test('refreshReleasePR: prNumber absent but prep-release PR exists → updates l
         },
         update: async (args) => {
           updateCalls.push(args);
+          return { data: {} };
+        },
+      },
+      issues: {
+        addLabels: async (args) => {
+          addLabelsCalls.push(args);
           return { data: {} };
         },
       },
@@ -297,6 +334,9 @@ test('refreshReleasePR: prNumber absent but prep-release PR exists → updates l
 
   assert.equal(updateCalls.length, 1);
   assert.equal(updateCalls[0].pull_number, 77);
+  assert.equal(addLabelsCalls.length, 1, 'issues.addLabels should be called once');
+  assert.equal(addLabelsCalls[0].issue_number, 77);
+  assert.deepEqual(addLabelsCalls[0].labels, ['no-changelog']);
 });
 
 test('refreshReleasePR: prNumber absent and no prep-release PR → warning, no pulls.update', async () => {
