@@ -18,8 +18,6 @@
 package markdown
 
 import (
-	"context"
-
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
@@ -29,8 +27,6 @@ import (
 )
 
 const panelConfigBlock = "markdown_config"
-
-var byValueReferenceAttrNames = []string{"by_value", "by_reference"}
 
 // SchemaAttribute returns the markdown_config SingleNestedAttribute (lifted from dashboard/schema.go).
 func SchemaAttribute() schema.Attribute {
@@ -50,7 +46,13 @@ func SchemaAttribute() schema.Attribute {
 				panelkit.SiblingTypedPanelConfigConflictPathsExcept(panelConfigBlock, panelkit.TypedSiblingPanelConfigBlockNames())...,
 			),
 			validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelMarkdown}),
-			configModeValidator{},
+			panelkit.ExactlyOneOfNestedAttrsValidator(panelkit.ExactlyOneOfNestedAttrsOpts{
+				AttrNames:     []string{"by_value", "by_reference"},
+				Summary:       "Invalid " + panelConfigBlock,
+				MissingDetail: "Exactly one of `by_value` or `by_reference` must be set inside `markdown_config`.",
+				TooManyDetail: "Exactly one of `by_value` or `by_reference` must be set inside `markdown_config`, not both.",
+				Description:   "Ensures exactly one of `by_value` or `by_reference` is set inside `markdown_config`.",
+			}),
 		},
 	}
 }
@@ -125,64 +127,3 @@ func nestedAttributes() map[string]schema.Attribute {
 	}
 }
 
-var _ validator.Object = configModeValidator{}
-
-type configModeValidator struct{}
-
-func (v configModeValidator) Description(_ context.Context) string {
-	return "Ensures exactly one of `by_value` or `by_reference` is set inside `markdown_config`."
-}
-
-func (v configModeValidator) MarkdownDescription(ctx context.Context) string {
-	return v.Description(ctx)
-}
-
-func (v configModeValidator) ValidateObject(_ context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
-	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
-		return
-	}
-	validateExactlyOneNestedAttr(
-		req, resp,
-		panelConfigBlock,
-		byValueReferenceAttrNames,
-		"Exactly one of `by_value` or `by_reference` must be set inside `markdown_config`.",
-		"Exactly one of `by_value` or `by_reference` must be set inside `markdown_config`, not both.",
-	)
-}
-
-func validateExactlyOneNestedAttr(
-	req validator.ObjectRequest,
-	resp *validator.ObjectResponse,
-	blockLabel string,
-	attrNames []string,
-	missingDetail string,
-	tooManyDetail string,
-) {
-	attrs := req.ConfigValue.Attributes()
-	count := 0
-	hasUnknown := false
-	for _, name := range attrNames {
-		av, ok := attrs[name]
-		if !ok || av == nil {
-			continue
-		}
-		switch {
-		case av.IsUnknown():
-			hasUnknown = true
-		case av.IsNull():
-			// not set
-		default:
-			count++
-		}
-	}
-	if count > 1 {
-		resp.Diagnostics.AddAttributeError(req.Path, "Invalid "+blockLabel, tooManyDetail)
-		return
-	}
-	if hasUnknown {
-		return
-	}
-	if count == 0 {
-		resp.Diagnostics.AddAttributeError(req.Path, "Invalid "+blockLabel, missingDetail)
-	}
-}

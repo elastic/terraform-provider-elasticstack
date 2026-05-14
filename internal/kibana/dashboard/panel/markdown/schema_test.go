@@ -21,6 +21,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -31,7 +32,12 @@ import (
 func Test_configModeValidator(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	v := configModeValidator{}
+	v := panelkit.ExactlyOneOfNestedAttrsValidator(panelkit.ExactlyOneOfNestedAttrsOpts{
+		AttrNames:     []string{"by_value", "by_reference"},
+		Summary:       "Invalid markdown_config",
+		MissingDetail: "Exactly one of `by_value` or `by_reference` must be set inside `markdown_config`.",
+		TooManyDetail: "Exactly one of `by_value` or `by_reference` must be set inside `markdown_config`, not both.",
+	})
 
 	settingsAttrs := map[string]attr.Type{
 		"open_links_in_new_tab": types.BoolType,

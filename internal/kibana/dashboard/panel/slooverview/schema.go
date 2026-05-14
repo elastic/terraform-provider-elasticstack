@@ -18,8 +18,6 @@
 package slooverview
 
 import (
-	"context"
-
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -49,7 +47,13 @@ func SchemaAttribute() schema.Attribute {
 				panelkit.SiblingTypedPanelConfigConflictPathsExcept("slo_overview_config", panelkit.TypedSiblingPanelConfigBlockNames())...,
 			),
 			validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelType}),
-			sloOverviewConfigModeValidator{},
+			panelkit.ExactlyOneOfNestedAttrsValidator(panelkit.ExactlyOneOfNestedAttrsOpts{
+				AttrNames:     []string{"single", "groups"},
+				Summary:       "Invalid slo_overview_config",
+				MissingDetail: "Exactly one of `single` or `groups` must be configured inside `slo_overview_config`.",
+				TooManyDetail: "Exactly one of `single` or `groups` must be configured inside `slo_overview_config`, not both.",
+				Description:   "Ensures exactly one of `single` or `groups` is configured inside `slo_overview_config`.",
+			}),
 		},
 	}
 }
@@ -158,39 +162,3 @@ func groupsAttributes() map[string]schema.Attribute {
 	return attrs
 }
 
-var _ validator.Object = sloOverviewConfigModeValidator{}
-
-type sloOverviewConfigModeValidator struct{}
-
-func (v sloOverviewConfigModeValidator) Description(_ context.Context) string {
-	return "Ensures exactly one of `single` or `groups` is configured inside `slo_overview_config`."
-}
-
-func (v sloOverviewConfigModeValidator) MarkdownDescription(ctx context.Context) string {
-	return v.Description(ctx)
-}
-
-func (v sloOverviewConfigModeValidator) ValidateObject(_ context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
-	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
-		return
-	}
-	attrs := req.ConfigValue.Attributes()
-	singleVal := attrs["single"]
-	groupsVal := attrs["groups"]
-
-	singleSet := singleVal != nil && !singleVal.IsNull() && !singleVal.IsUnknown()
-	groupsSet := groupsVal != nil && !groupsVal.IsNull() && !groupsVal.IsUnknown()
-
-	if singleSet && groupsSet {
-		resp.Diagnostics.AddAttributeError(req.Path, "Invalid slo_overview_config", "Exactly one of `single` or `groups` must be configured inside `slo_overview_config`, not both.")
-		return
-	}
-	if !singleSet && !groupsSet {
-		singleUnknown := singleVal != nil && singleVal.IsUnknown()
-		groupsUnknown := groupsVal != nil && groupsVal.IsUnknown()
-		if singleUnknown || groupsUnknown {
-			return
-		}
-		resp.Diagnostics.AddAttributeError(req.Path, "Invalid slo_overview_config", "Exactly one of `single` or `groups` must be configured inside `slo_overview_config`.")
-	}
-}

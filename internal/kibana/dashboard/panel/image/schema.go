@@ -18,7 +18,6 @@
 package image
 
 import (
-	"context"
 	_ "embed"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
@@ -26,7 +25,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -98,7 +96,13 @@ func nestedAttributes() map[string]schema.Attribute {
 				},
 			},
 			Validators: []validator.Object{
-				srcValidator{},
+				panelkit.ExactlyOneOfNestedAttrsValidator(panelkit.ExactlyOneOfNestedAttrsOpts{
+					AttrNames:     []string{"file", "url"},
+					Summary:       "Invalid image_config.src",
+					MissingDetail: "Exactly one of `file` or `url` must be set inside `src`.",
+					TooManyDetail: "Exactly one of `file` or `url` must be set inside `src`, not both.",
+					Description:   "Ensures exactly one of `file` or `url` is set inside `image_config.src`.",
+				}),
 			},
 		},
 		"alt_text": schema.StringAttribute{
@@ -151,43 +155,3 @@ func nestedAttributes() map[string]schema.Attribute {
 	}
 }
 
-var _ validator.Object = srcValidator{}
-
-type srcValidator struct{}
-
-func (v srcValidator) Description(_ context.Context) string {
-	return "Ensures exactly one of `file` or `url` is set inside `image_config.src`."
-}
-
-func (v srcValidator) MarkdownDescription(ctx context.Context) string {
-	return v.Description(ctx)
-}
-
-func (srcValidator) ValidateObject(_ context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
-	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
-		return
-	}
-	attrs := req.ConfigValue.Attributes()
-	fileVal := attrs["file"]
-	urlVal := attrs["url"]
-
-	fileSet := attrObjectSet(fileVal)
-	urlSet := attrObjectSet(urlVal)
-
-	if fileSet && urlSet {
-		resp.Diagnostics.AddAttributeError(req.Path, "Invalid image_config.src", "Exactly one of `file` or `url` must be set inside `src`, not both.")
-		return
-	}
-	if !fileSet && !urlSet {
-		fileUnknown := fileVal != nil && fileVal.IsUnknown()
-		urlUnknown := urlVal != nil && urlVal.IsUnknown()
-		if fileUnknown || urlUnknown {
-			return
-		}
-		resp.Diagnostics.AddAttributeError(req.Path, "Invalid image_config.src", "Exactly one of `file` or `url` must be set inside `src`.")
-	}
-}
-
-func attrObjectSet(v attr.Value) bool {
-	return v != nil && !v.IsNull() && !v.IsUnknown()
-}

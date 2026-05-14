@@ -23,6 +23,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -284,7 +285,12 @@ func Test_populateImagePanelFromAPI_import_setsSrcBranches(t *testing.T) {
 
 func Test_imagePanelSrcValidator(t *testing.T) {
 	ctx := context.Background()
-	v := srcValidator{}
+	v := panelkit.ExactlyOneOfNestedAttrsValidator(panelkit.ExactlyOneOfNestedAttrsOpts{
+		AttrNames:     []string{"file", "url"},
+		Summary:       "Invalid image_config.src",
+		MissingDetail: "Exactly one of `file` or `url` must be set inside `src`.",
+		TooManyDetail: "Exactly one of `file` or `url` must be set inside `src`, not both.",
+	})
 
 	fileType := types.ObjectType{AttrTypes: map[string]attr.Type{"file_id": types.StringType}}
 	urlType := types.ObjectType{AttrTypes: map[string]attr.Type{"url": types.StringType}}
