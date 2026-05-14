@@ -88,9 +88,9 @@
 //     ([KibanaCreateFunc], [KibanaUpdateFunc]). The envelope injects the
 //     kibana_connection block, resolves resource identity via composite-ID-or-fallback
 //     for Read, Update, and Delete, validates spaceID for Create, resolves the
-//     scoped Kibana client, and owns state persistence. Create and Update callbacks
-//     receive the plan model (Create can use plan.GetResourceID() for user-ID resources).
-//     It does not implement
+//     scoped Kibana client, and owns state persistence. Create callbacks receive
+//     the plan model (and can call plan.GetResourceID() for user-ID resources);
+//     Update callbacks receive both plan and prior state. It does not implement
 //     ImportState; concrete resources add that when needed. Resources that override
 //     Create or Update may pass [PlaceholderKibanaWriteCallbacks] until their logic
 //     is migrated into envelope callbacks. Constructor shape and callback types are

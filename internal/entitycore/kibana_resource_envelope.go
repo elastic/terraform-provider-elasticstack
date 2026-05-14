@@ -69,14 +69,16 @@ type KibanaCreateFunc[T KibanaResourceModel] func(
 	T,
 ) (T, diag.Diagnostics)
 
-// KibanaUpdateFunc performs the update after the envelope decodes the plan,
-// resolves the resource identity, resolves the scoped Kibana client, and passes
-// the planned model. It returns the model to persist in state.
+// KibanaUpdateFunc performs the update after the envelope decodes the plan
+// and prior state, resolves the resource identity, resolves the scoped Kibana
+// client, and passes both the plan and prior models. It returns the model to
+// persist in state.
 type KibanaUpdateFunc[T KibanaResourceModel] func(
 	context.Context,
 	*clients.KibanaScopedClient,
 	string,
 	string,
+	T,
 	T,
 ) (T, diag.Diagnostics)
 
@@ -117,7 +119,7 @@ func PlaceholderKibanaWriteCallbacks[T KibanaResourceModel]() (KibanaCreateFunc[
 		var zero T
 		return zero, diags
 	}
-	updateFn := func(_ context.Context, _ *clients.KibanaScopedClient, _, _ string, _ T) (T, diag.Diagnostics) {
+	updateFn := func(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ string, _ T, _ T) (T, diag.Diagnostics) {
 		var diags diag.Diagnostics
 		diags.AddError(
 			placeholderKibanaWriteCallbackSummary,
@@ -275,9 +277,9 @@ func (r *KibanaResource[T]) Read(ctx context.Context, req resource.ReadRequest, 
 	}
 }
 
-// Update implements [resource.Resource]: decode plan, resolve identity on the
-// plan model, validate resourceID, resolve client, invoke the update callback,
-// then persist the returned model.
+// Update implements [resource.Resource]: decode plan and prior state, resolve
+// identity on the plan model, validate resourceID, resolve client, invoke the
+// update callback, then persist the returned model.
 func (r *KibanaResource[T]) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	if r.updateFunc == nil {
 		resp.Diagnostics.AddError(
@@ -289,6 +291,12 @@ func (r *KibanaResource[T]) Update(ctx context.Context, req resource.UpdateReque
 
 	var plan T
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var prior T
+	resp.Diagnostics.Append(req.State.Get(ctx, &prior)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -313,7 +321,7 @@ func (r *KibanaResource[T]) Update(ctx context.Context, req resource.UpdateReque
 		return
 	}
 
-	resultModel, callDiags := r.updateFunc(ctx, client, resourceID, spaceID, plan)
+	resultModel, callDiags := r.updateFunc(ctx, client, resourceID, spaceID, plan, prior)
 	resp.Diagnostics.Append(callDiags...)
 	if resp.Diagnostics.HasError() {
 		return
