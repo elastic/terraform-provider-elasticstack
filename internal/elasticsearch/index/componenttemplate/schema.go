@@ -50,7 +50,7 @@ func aliasAttrTypes() map[string]attr.Type {
 func templateAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
 		"alias":    types.SetType{ElemType: types.ObjectType{AttrTypes: aliasAttrTypes()}},
-		"mappings": jsontypes.NormalizedType{},
+		"mappings": esindex.MappingsType{},
 		"settings": customtypes.IndexSettingsType{},
 	}
 }
@@ -100,7 +100,7 @@ func getSchema(_ context.Context) schema.Schema {
 							"See the [explicit mapping documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/explicit-mapping.html) " +
 							"for more details.",
 						Optional:   true,
-						CustomType: jsontypes.NormalizedType{},
+						CustomType: esindex.MappingsType{},
 						Validators: []validator.String{
 							esindex.StringIsJSONObject{},
 						},
