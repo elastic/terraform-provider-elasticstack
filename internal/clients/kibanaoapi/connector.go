@@ -313,8 +313,8 @@ func connectorConfigWithDefaults[T any](plan string, setDefaults func(*T)) (stri
 	return string(customJSON), nil
 }
 
-// parseGenAiApiProvider extracts the apiProvider field from a Gen AI connector config JSON.
-func parseGenAiApiProvider(plan string) (string, error) {
+// parseGenAiAPIProvider extracts the apiProvider field from a Gen AI connector config JSON.
+func parseGenAiAPIProvider(plan string) (string, error) {
 	var configMap map[string]any
 	if err := json.Unmarshal([]byte(plan), &configMap); err != nil {
 		return "", err
@@ -331,7 +331,7 @@ func parseGenAiApiProvider(plan string) (string, error) {
 // When setOtherDefaults is non-nil it is applied to the "Other" provider config;
 // otherwise the "Other" config is remarshed without modification.
 func dispatchGenAiConfig(plan string, setOtherDefaults func(*kbapi.GenaiOpenaiOtherConfig)) (string, error) {
-	apiProvider, err := parseGenAiApiProvider(plan)
+	apiProvider, err := parseGenAiAPIProvider(plan)
 	if err != nil {
 		return "", err
 	}
