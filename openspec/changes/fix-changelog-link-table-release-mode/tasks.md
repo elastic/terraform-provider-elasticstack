@@ -5,9 +5,9 @@
 
 ## 2. Wire `rewriteLinkTable` into the engine
 
-- [ ] 2.1 Add `previousTag = ''` optional parameter to `runChangelogRenderAndWrite` in `changelog-engine-factory.js`
-- [ ] 2.2 Call `rewriteLinkTable(updatedChangelog, targetVersion, previousTag)` after `rewriteChangelogSection` in `runChangelogRenderAndWrite`, writing the result to `CHANGELOG.md`
-- [ ] 2.3 Pass `previousTag: renderOutcome`-context `previousTag` from `runChangelogEngine` into its internal `runChangelogRenderAndWrite` call
+- [x] 2.1 Add `previousTag = ''` optional parameter to `runChangelogRenderAndWrite` in `changelog-engine-factory.js`
+- [x] 2.2 Call `rewriteLinkTable(updatedChangelog, targetVersion, previousTag)` after `rewriteChangelogSection` in `runChangelogRenderAndWrite`, writing the result to `CHANGELOG.md`
+- [x] 2.3 Pass `previousTag: renderOutcome`-context `previousTag` from `runChangelogEngine` into its internal `runChangelogRenderAndWrite` call
 
 ## 3. Wire `previousTag` in call sites
 
