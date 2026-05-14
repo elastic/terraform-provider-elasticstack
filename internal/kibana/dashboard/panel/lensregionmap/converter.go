@@ -65,8 +65,8 @@ func (converter) SchemaAttribute() schema.Attribute {
 	attrs["region_json"] = schema.StringAttribute{
 		MarkdownDescription: "Region configuration as JSON. For ES|QL, this defines the region column and EMS join. " +
 			"For standard mode, this defines the bucket operation (terms, histogram, range, filters) and optional EMS settings.",
-		CustomType:          jsontypes.NormalizedType{},
-		Required:            true,
+		CustomType: jsontypes.NormalizedType{},
+		Required:   true,
 	}
 	maps.Copy(attrs, lenscommon.LensChartPresentationAttributes())
 	return schema.SingleNestedAttribute{

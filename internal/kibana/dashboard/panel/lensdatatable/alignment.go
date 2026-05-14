@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package lenspie
+package lensdatatable
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
@@ -23,15 +23,22 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// Section 5 will delegate alignPanelStateFromPlan; this duplicates dashboard.alignPieStateFromPlan until then.
-func alignPieStateFromPlan(plan, state *models.LensByValueChartBlocks) {
+func alignDatatableStateFromPlan(plan, state *models.DatatableConfigModel) {
 	if plan == nil || state == nil {
 		return
 	}
-	alignPieConfigStateFromPlan(plan.PieChartConfig, state.PieChartConfig)
+	alignDatatableNoESQLStateFromPlan(plan.NoESQL, state.NoESQL)
+	alignDatatableESQLStateFromPlan(plan.ESQL, state.ESQL)
 }
 
-func alignPieConfigStateFromPlan(plan, state *models.PieChartConfigModel) {
+func alignDatatableNoESQLStateFromPlan(plan, state *models.DatatableNoESQLConfigModel) {
+	if plan == nil || state == nil {
+		return
+	}
+	alignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
+}
+
+func alignDatatableESQLStateFromPlan(plan, state *models.DatatableESQLConfigModel) {
 	if plan == nil || state == nil {
 		return
 	}

@@ -15,27 +15,33 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package lenspie
+package lensmetric
 
 import (
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// Section 5 will delegate alignPanelStateFromPlan; this duplicates dashboard.alignPieStateFromPlan until then.
-func alignPieStateFromPlan(plan, state *models.LensByValueChartBlocks) {
-	if plan == nil || state == nil {
-		return
-	}
-	alignPieConfigStateFromPlan(plan.PieChartConfig, state.PieChartConfig)
-}
-
-func alignPieConfigStateFromPlan(plan, state *models.PieChartConfigModel) {
+func alignMetricStateFromPlan(plan, state *models.MetricChartConfigModel) {
 	if plan == nil || state == nil {
 		return
 	}
 	alignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
+	lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(plan.DataSourceJSON, &state.DataSourceJSON, "time_field")
+	lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(plan.BreakdownByJSON, &state.BreakdownByJSON, "rank_by")
+	m := min(len(plan.Metrics), len(state.Metrics))
+	for i := range m {
+		preserveMetricChartMetricConfigFromPlan(plan.Metrics[i].ConfigJSON, &state.Metrics[i].ConfigJSON)
+	}
+}
+
+func preserveMetricChartMetricConfigFromPlan(plan customtypes.JSONWithDefaultsValue[map[string]any], state *customtypes.JSONWithDefaultsValue[map[string]any]) {
+	if lenscommon.MetricChartMetricConfigsEquivalent(plan, *state) {
+		*state = plan
+	}
 }
 
 func alignTitleAndDescriptionFromPlan(planTitle, planDescription types.String, stateTitle, stateDescription *types.String) {

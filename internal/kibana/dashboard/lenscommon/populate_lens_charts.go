@@ -19,7 +19,7 @@ package lenscommon
 
 const (
 	// OperationTerms is the Lens terms breakdown discriminator used by several charts.
-	OperationTerms = "terms"
+	OperationTerms      = "terms"
 	pieChartTypeNumber  = "number"
 	pieChartTypePercent = "percent"
 	dashboardValueAvg   = "average"
@@ -306,9 +306,9 @@ func PopulateTagcloudTagByDefaults(model map[string]any) map[string]any {
 	if operation, ok := model["operation"].(string); ok && operation == OperationTerms {
 		if _, exists := model["rank_by"]; !exists {
 			model["rank_by"] = map[string]any{
-				"type":          "metric",
-				"metric_index":  float64(0),
-				"direction":     "desc",
+				"type":         "metric",
+				"metric_index": float64(0),
+				"direction":    "desc",
 			}
 		}
 		if _, exists := model["color"]; !exists {

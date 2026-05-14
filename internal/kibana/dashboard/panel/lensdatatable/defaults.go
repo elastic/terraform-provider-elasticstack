@@ -15,12 +15,11 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package lenspie
+package lensdatatable
 
 import "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 
-// populatePieLensAttributes duplicates dashboard.populatePieChartAttributes until Section 5 routes via converters.
-func populatePieLensAttributes(attrs map[string]any) map[string]any {
+func populateDatatableLensAttributes(attrs map[string]any) map[string]any {
 	if attrs == nil {
 		return attrs
 	}
@@ -30,14 +29,21 @@ func populatePieLensAttributes(attrs map[string]any) map[string]any {
 	if metrics, ok := attrs["metrics"].([]any); ok {
 		for i, m := range metrics {
 			if metricMap, ok := m.(map[string]any); ok {
-				metrics[i] = lenscommon.PopulatePieChartMetricDefaults(metricMap)
+				metrics[i] = lenscommon.PopulateLensMetricDefaults(metricMap)
 			}
 		}
 	}
-	if groupBy, ok := attrs["group_by"].([]any); ok {
-		for i, g := range groupBy {
-			if groupMap, ok := g.(map[string]any); ok {
-				groupBy[i] = lenscommon.PopulateLensGroupByDefaults(groupMap)
+	if rows, ok := attrs["rows"].([]any); ok {
+		for i, r := range rows {
+			if rowMap, ok := r.(map[string]any); ok {
+				rows[i] = lenscommon.PopulateLensGroupByDefaults(rowMap)
+			}
+		}
+	}
+	if splitBy, ok := attrs["split_metrics_by"].([]any); ok {
+		for i, s := range splitBy {
+			if splitMap, ok := s.(map[string]any); ok {
+				splitBy[i] = lenscommon.PopulateLensGroupByDefaults(splitMap)
 			}
 		}
 	}

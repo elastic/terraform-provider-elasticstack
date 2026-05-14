@@ -18,11 +18,16 @@
 package dashboard
 
 import (
-	_ "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/lensgauge" // side-effect: register gauge VizConverter with lenscommon (dashboard-lens-contract).
+	_ "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/lensdatatable"    // side-effect: register datatable VizConverter with lenscommon (dashboard-lens-contract).
+	_ "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/lensgauge"        // side-effect: register gauge VizConverter with lenscommon (dashboard-lens-contract).
+	_ "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/lensheatmap"      // side-effect: register heatmap VizConverter with lenscommon (dashboard-lens-contract).
 	_ "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/lenslegacymetric" // side-effect: register legacy_metric VizConverter with lenscommon (dashboard-lens-contract).
-	_ "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/lensmosaic" // side-effect: register mosaic VizConverter with lenscommon (dashboard-lens-contract).
-	_ "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/lenspie" // side-effect: register pie VizConverter with lenscommon (dashboard-lens-contract).
-	_ "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/lensregionmap" // side-effect: register region_map VizConverter with lenscommon (dashboard-lens-contract).
-	_ "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/lenstagcloud" // side-effect: register tagcloud VizConverter with lenscommon (dashboard-lens-contract).
-	_ "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/lenstreemap" // side-effect: register treemap VizConverter with lenscommon (dashboard-lens-contract).
+	_ "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/lensmetric"       // side-effect: register metric VizConverter with lenscommon (dashboard-lens-contract).
+	_ "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/lensmosaic"       // side-effect: register mosaic VizConverter with lenscommon (dashboard-lens-contract).
+	_ "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/lenspie"          // side-effect: register pie VizConverter with lenscommon (dashboard-lens-contract).
+	_ "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/lensregionmap"    // side-effect: register region_map VizConverter with lenscommon (dashboard-lens-contract).
+	_ "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/lenstagcloud"     // side-effect: register tagcloud VizConverter with lenscommon (dashboard-lens-contract).
+	_ "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/lenstreemap"      // side-effect: register treemap VizConverter with lenscommon (dashboard-lens-contract).
+	_ "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/lenswaffle"       // side-effect: register waffle VizConverter with lenscommon (dashboard-lens-contract).
+	_ "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/lensxy"           // side-effect: register xy VizConverter with lenscommon (dashboard-lens-contract).
 )

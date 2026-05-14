@@ -15,27 +15,34 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package lenspie
+package lensheatmap
 
 import (
+	"context"
+
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// Section 5 will delegate alignPanelStateFromPlan; this duplicates dashboard.alignPieStateFromPlan until then.
-func alignPieStateFromPlan(plan, state *models.LensByValueChartBlocks) {
-	if plan == nil || state == nil {
-		return
-	}
-	alignPieConfigStateFromPlan(plan.PieChartConfig, state.PieChartConfig)
-}
-
-func alignPieConfigStateFromPlan(plan, state *models.PieChartConfigModel) {
+func alignHeatmapStateFromPlan(ctx context.Context, plan, state *models.HeatmapConfigModel) {
 	if plan == nil || state == nil {
 		return
 	}
 	alignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
+	preservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.MetricJSON, &state.MetricJSON)
+}
+
+func preservePlanJSONWithDefaultsIfSemanticallyEqual[T any](ctx context.Context, plan customtypes.JSONWithDefaultsValue[T], state *customtypes.JSONWithDefaultsValue[T]) {
+	if !typeutils.IsKnown(plan) || !typeutils.IsKnown(*state) {
+		return
+	}
+
+	eq, diags := plan.StringSemanticEquals(ctx, *state)
+	if !diags.HasError() && eq {
+		*state = plan
+	}
 }
 
 func alignTitleAndDescriptionFromPlan(planTitle, planDescription types.String, stateTitle, stateDescription *types.String) {

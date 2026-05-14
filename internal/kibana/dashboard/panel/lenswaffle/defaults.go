@@ -15,12 +15,11 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package lenspie
+package lenswaffle
 
 import "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 
-// populatePieLensAttributes duplicates dashboard.populatePieChartAttributes until Section 5 routes via converters.
-func populatePieLensAttributes(attrs map[string]any) map[string]any {
+func populateWaffleLensAttributes(attrs map[string]any) map[string]any {
 	if attrs == nil {
 		return attrs
 	}

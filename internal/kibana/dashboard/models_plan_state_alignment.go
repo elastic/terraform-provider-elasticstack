@@ -37,10 +37,6 @@ func alignDashboardStateFromPlanPanels(planPanels, statePanels []models.PanelMod
 	lenscommon.ApplySliceAligners(planPanels, statePanels)
 }
 
-func init() {
-	lenscommon.RegisterSliceAligner(alignXYChartStateFromPlanPanels)
-}
-
 func alignDashboardStateFromPlanPinnedPanels(ctx context.Context, planPins, statePins []models.PinnedPanelModel) {
 	n := min(len(planPins), len(statePins))
 	for i := range n {
@@ -210,6 +206,15 @@ func alignTitleAndDescriptionFromPlan(planTitle, planDescription types.String, s
 	preserveKnownStringIfStateBlank(planDescription, stateDescription)
 }
 
+func preserveKnownStringIfStateBlank(plan types.String, state *types.String) {
+	if !typeutils.IsKnown(plan) {
+		return
+	}
+	if state.IsNull() || state.IsUnknown() || state.ValueString() == "" {
+		*state = plan
+	}
+}
+
 func preserveKnownTfBoolIfStateNull(plan types.Bool, state *types.Bool) {
 	if typeutils.IsKnown(plan) && !plan.IsNull() && (!typeutils.IsKnown(*state) || state.IsNull()) {
 		*state = plan
@@ -233,48 +238,8 @@ func preservePlanJSONWithDefaultsIfSemanticallyEqual[T any](ctx context.Context,
 	}
 }
 
-func metricChartMetricConfigsEquivalent(plan, state customtypes.JSONWithDefaultsValue[map[string]any]) bool {
-	if !typeutils.IsKnown(plan) || !typeutils.IsKnown(state) {
-		return false
-	}
-
-	var planObj map[string]any
-	if err := json.Unmarshal([]byte(plan.ValueString()), &planObj); err != nil {
-		return false
-	}
-	var stateObj map[string]any
-	if err := json.Unmarshal([]byte(state.ValueString()), &stateObj); err != nil {
-		return false
-	}
-
-	planNormalized := lenscommon.NormalizeXYPlanComparisonJSON(populateMetricChartMetricDefaults(planObj))
-	stateNormalized := lenscommon.NormalizeXYPlanComparisonJSON(populateMetricChartMetricDefaults(stateObj))
-	return reflect.DeepEqual(planNormalized, stateNormalized)
-}
-
 func preserveMetricChartMetricConfigFromPlan(plan customtypes.JSONWithDefaultsValue[map[string]any], state *customtypes.JSONWithDefaultsValue[map[string]any]) {
-	if metricChartMetricConfigsEquivalent(plan, *state) {
-		*state = plan
-	}
-}
-
-func preservePlanNormalizedJSONWithDefaultsIfSemanticallyEqual[T any](plan jsontypes.Normalized, state *jsontypes.Normalized, defaults func(T) T) {
-	if !typeutils.IsKnown(plan) || !typeutils.IsKnown(*state) {
-		return
-	}
-
-	var planObj T
-	if err := json.Unmarshal([]byte(plan.ValueString()), &planObj); err != nil {
-		return
-	}
-	var stateObj T
-	if err := json.Unmarshal([]byte(state.ValueString()), &stateObj); err != nil {
-		return
-	}
-
-	planNormalized := lenscommon.NormalizeXYPlanComparisonJSON(defaults(planObj))
-	stateNormalized := lenscommon.NormalizeXYPlanComparisonJSON(defaults(stateObj))
-	if reflect.DeepEqual(planNormalized, stateNormalized) {
+	if lenscommon.MetricChartMetricConfigsEquivalent(plan, *state) {
 		*state = plan
 	}
 }

@@ -15,31 +15,19 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package lenspie
+package lensheatmap
 
 import "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 
-// populatePieLensAttributes duplicates dashboard.populatePieChartAttributes until Section 5 routes via converters.
-func populatePieLensAttributes(attrs map[string]any) map[string]any {
+func populateHeatmapLensAttributes(attrs map[string]any) map[string]any {
 	if attrs == nil {
 		return attrs
 	}
 	if _, exists := attrs["filters"]; !exists {
 		attrs["filters"] = []any{}
 	}
-	if metrics, ok := attrs["metrics"].([]any); ok {
-		for i, m := range metrics {
-			if metricMap, ok := m.(map[string]any); ok {
-				metrics[i] = lenscommon.PopulatePieChartMetricDefaults(metricMap)
-			}
-		}
-	}
-	if groupBy, ok := attrs["group_by"].([]any); ok {
-		for i, g := range groupBy {
-			if groupMap, ok := g.(map[string]any); ok {
-				groupBy[i] = lenscommon.PopulateLensGroupByDefaults(groupMap)
-			}
-		}
+	if metric, ok := attrs["metric"].(map[string]any); ok {
+		attrs["metric"] = lenscommon.PopulateTagcloudMetricDefaults(metric)
 	}
 	return attrs
 }
