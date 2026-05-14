@@ -38,7 +38,7 @@ Each converter must:
 
 ## 4. Delete old lens infrastructure
 
-- [ ] 4.1 Delete `dashboard/models_lens_panel.go` (replaced by `lenscommon/`)
+- [x] 4.1 Delete `dashboard/models_lens_panel.go` (replaced by `lenscommon/`)
 - [ ] 4.2 Delete `dashboard/models_lens_dashboard_app_converters.go` (by_reference moves to `lenscommon/`)
 - [ ] 4.3 Delete `dashboard/models_lens_dashboard_app_by_value_adapter.go` (absorbed into composites later)
 - [ ] 4.4 Delete `dashboard/models_lens_dashboard_app_panel.go` (absorbed into composites later)
