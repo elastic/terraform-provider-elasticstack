@@ -3,14 +3,12 @@
 page_title: "elasticstack_elasticsearch_ml_calendar_event Resource - terraform-provider-elasticstack"
 subcategory: "Ml"
 description: |-
-  Manages scheduled events for a Machine Learning calendar. See the ML post calendar events API https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-ml-post-calendar-events for more details. **Import** id format: `<cluster_uuid>/<calendar_id>/<event_id>` (the same value as the computed `id` attribute).
+  Manages scheduled events for a Machine Learning calendar. See the ML post calendar events API https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-ml-post-calendar-events for more details. Import id format: <cluster_uuid>/<calendar_id>/<event_id> (the same value as the computed id attribute).
 ---
 
 # elasticstack_elasticsearch_ml_calendar_event (Resource)
 
-Manages scheduled events for a Machine Learning calendar. See the [ML post calendar events API](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-ml-post-calendar-events) for more details.
-
-**Import** id format: `<cluster_uuid>/<calendar_id>/<event_id>` (the same value as the computed `id` attribute).
+Manages scheduled events for a Machine Learning calendar. See the [ML post calendar events API](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-ml-post-calendar-events) for more details. **Import** id format: `<cluster_uuid>/<calendar_id>/<event_id>` (the same value as the computed `id` attribute).
 
 
 
@@ -28,8 +26,8 @@ Manages scheduled events for a Machine Learning calendar. See the [ML post calen
 
 - `elasticsearch_connection` (Block List) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - `force_time_shift` (String) When set, changes the duration of the event to the specified value in seconds (decimal digits as a string; the API uses a JSON number). Maps to `force_time_shift` in the Elasticsearch API.
-- `skip_model_update` (Boolean) If true, model updates are not generated for buckets that fall inside the event period. Defaults to: `true` (Elasticsearch API default). Maps to `skip_model_update` in the Elasticsearch API.
-- `skip_result` (Boolean) If true, results are not generated for buckets that fall inside the event period. Defaults to: `true` (Elasticsearch API default). Maps to `skip_result` in the Elasticsearch API.
+- `skip_model_update` (Boolean) If true, model updates are not generated for buckets that fall inside the event period. Defaults to `true`, matching the Elasticsearch API default. Maps to `skip_model_update` in the Elasticsearch API.
+- `skip_result` (Boolean) If true, results are not generated for buckets that fall inside the event period. Defaults to `true`, matching the Elasticsearch API default. Maps to `skip_result` in the Elasticsearch API.
 
 ### Read-Only
 

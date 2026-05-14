@@ -43,9 +43,10 @@ func TestTryReadCompositeID(t *testing.T) {
 			wantResource:  "resource-id",
 		},
 		{
-			name:      "malformed composite ID",
-			id:        "space-a/resource-id/extra",
-			wantError: true,
+			name:          "composite ID with slash in resource segment",
+			id:            "space-a/resource-id/extra",
+			wantClusterID: "space-a",
+			wantResource:  "resource-id/extra",
 		},
 	}
 
