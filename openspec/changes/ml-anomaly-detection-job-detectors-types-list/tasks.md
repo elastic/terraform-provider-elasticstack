@@ -76,8 +76,8 @@
 
 ## 6. Build and verify
 
-- [ ] 6.1 Run `make build` and confirm the provider compiles without errors.
-- [ ] 6.2 Run the targeted acceptance tests for the anomaly detection job resource to
+- [x] 6.1 Run `make build` and confirm the provider compiles without errors.
+- [x] 6.2 Run the targeted acceptance tests for the anomaly detection job resource to
   confirm existing and new tests pass (requires a running Elasticsearch stack; see
   [`dev-docs/high-level/testing.md`](../../../dev-docs/high-level/testing.md)).
 
