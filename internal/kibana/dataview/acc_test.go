@@ -409,6 +409,7 @@ func TestAccResourceDataViewFieldAttrs(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					checkIDUnchanged,
 					testAccCheckFieldAttrsCustomLabel("host.hostname", "Host"),
+					testAccCheckFieldAttrsCustomLabelServerSide(t, "host.hostname", "Host"),
 				),
 			},
 			{
@@ -418,6 +419,7 @@ func TestAccResourceDataViewFieldAttrs(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					checkIDUnchanged,
 					testAccCheckFieldAttrsCustomLabel("host.hostname", "Hostname"),
+					testAccCheckFieldAttrsCustomLabelServerSide(t, "host.hostname", "Hostname"),
 				),
 			},
 			{
@@ -427,6 +429,7 @@ func TestAccResourceDataViewFieldAttrs(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					checkIDUnchanged,
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_data_view.fa_dv", "data_view.field_attrs.%"),
+					testAccCheckFieldAttrsCustomLabelServerSide(t, "host.hostname", ""),
 				),
 			},
 			{

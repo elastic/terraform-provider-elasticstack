@@ -125,3 +125,86 @@ func testAccCheckFieldAttrsCustomLabel(fieldKey, want string) resource.TestCheck
 		return fmt.Errorf("no field_attrs[%q].custom_label in state (want %q)", fieldKey, want)
 	}
 }
+
+// testAccCheckFieldAttrsCustomLabelServerSide queries Kibana directly for the data view's
+// fieldAttrs and verifies the requested field's customLabel matches `want`. Pass want="" to
+// assert the entry is either absent or has a null customLabel (i.e. it was actually cleared
+// server-side, not just dropped from Terraform state). This complements
+// testAccCheckFieldAttrsCustomLabel, which only inspects state and would still pass if
+// UpdateFieldMetadata silently no-oped (state would just echo whatever the API returned).
+func testAccCheckFieldAttrsCustomLabelServerSide(t *testing.T, fieldKey, want string) resource.TestCheckFunc {
+	t.Helper()
+	return func(s *terraform.State) error {
+		rs := s.RootModule().Resources[testAccFieldAttrsDataViewAddress]
+		if rs == nil {
+			return fmt.Errorf("%s not found in state", testAccFieldAttrsDataViewAddress)
+		}
+
+		composite, diags := clients.CompositeIDFromStr(rs.Primary.ID)
+		if diags.HasError() {
+			return fmt.Errorf("parse data view id: %v", diags)
+		}
+
+		apiClient, err := clients.NewAcceptanceTestingKibanaScopedClient()
+		if err != nil {
+			return fmt.Errorf("acceptance kibana client: %w", err)
+		}
+		kc, err := apiClient.GetKibanaOapiClient()
+		if err != nil {
+			return fmt.Errorf("kibana openapi client: %w", err)
+		}
+
+		spaceID := composite.ClusterID
+		viewID := composite.ResourceID
+
+		path := fmt.Sprintf("/api/data_views/data_view/%s", url.PathEscape(viewID))
+		if spaceID != "" && spaceID != "default" {
+			path = fmt.Sprintf("/s/%s/api/data_views/data_view/%s", url.PathEscape(spaceID), url.PathEscape(viewID))
+		}
+		endpoint := strings.TrimRight(kc.URL, "/") + path
+		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, endpoint, nil)
+		if err != nil {
+			return fmt.Errorf("build GET %s: %w", endpoint, err)
+		}
+		req.Header.Set("kbn-xsrf", "true")
+
+		resp, err := kc.HTTP.Do(req)
+		if err != nil {
+			return fmt.Errorf("GET %s: %w", endpoint, err)
+		}
+		defer resp.Body.Close()
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+		if resp.StatusCode != http.StatusOK {
+			return fmt.Errorf("GET %s: status %d: %s", endpoint, resp.StatusCode, string(body))
+		}
+
+		var doc struct {
+			DataView struct {
+				FieldAttrs map[string]struct {
+					CustomLabel *string `json:"customLabel,omitempty"`
+				} `json:"fieldAttrs"`
+			} `json:"data_view"`
+		}
+		if err := json.Unmarshal(body, &doc); err != nil {
+			return fmt.Errorf("decode GET %s body: %w", endpoint, err)
+		}
+
+		entry, present := doc.DataView.FieldAttrs[fieldKey]
+		if want == "" {
+			if !present || entry.CustomLabel == nil || *entry.CustomLabel == "" {
+				return nil
+			}
+			return fmt.Errorf("server-side field_attrs[%q].customLabel = %q, want cleared", fieldKey, *entry.CustomLabel)
+		}
+		if !present {
+			return fmt.Errorf("server-side field_attrs[%q] not found (want customLabel=%q)", fieldKey, want)
+		}
+		if entry.CustomLabel == nil {
+			return fmt.Errorf("server-side field_attrs[%q].customLabel is null (want %q)", fieldKey, want)
+		}
+		if *entry.CustomLabel != want {
+			return fmt.Errorf("server-side field_attrs[%q].customLabel = %q, want %q", fieldKey, *entry.CustomLabel, want)
+		}
+		return nil
+	}
+}
