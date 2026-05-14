@@ -21,12 +21,12 @@
 ## 2. Migrate simple panels to Handler implementations
 
 ### SLO panels
-- [ ] 2.1 Create `panel/sloburnrate/api.go` with `Handler` and `FromAPI`/`ToAPI`
-- [ ] 2.2 Create `panel/sloburnrate/model.go` with `populateFromAPI`, `buildConfig` (exported)
-- [ ] 2.3 Create `panel/sloburnrate/schema.go` with `SchemaAttribute()`
-- [ ] 2.4 Create `panel/sloburnrate/api_test.go` with `contracttest.Run` call + any additional drilldown-specific assertions
-- [ ] 2.5 Remove SLO burn rate cases from `models_panels.go` switch and `toAPI()` cascade
-- [ ] 2.6 Register `sloburnrate.Handler{}` in `registry.go`
+- [x] 2.1 Create `panel/sloburnrate/api.go` with `Handler` and `FromAPI`/`ToAPI`
+- [x] 2.2 Create `panel/sloburnrate/model.go` with `populateFromAPI`, `buildConfig` (exported)
+- [x] 2.3 Create `panel/sloburnrate/schema.go` with `SchemaAttribute()`
+- [x] 2.4 Create `panel/sloburnrate/api_test.go` with `contracttest.Run` call + any additional drilldown-specific assertions
+- [x] 2.5 Remove SLO burn rate cases from `models_panels.go` switch and `toAPI()` cascade
+- [x] 2.6 Register `sloburnrate.Handler{}` in `registry.go`
 - [ ] 2.7 Repeat 2.1–2.6 for `slo_overview` (include `contracttest.Run` in `api_test.go`)
 - [ ] 2.8 Repeat 2.1–2.6 for `slo_error_budget` (include `contracttest.Run` in `api_test.go`)
 
