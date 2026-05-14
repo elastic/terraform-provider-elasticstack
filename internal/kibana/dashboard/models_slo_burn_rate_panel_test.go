@@ -121,7 +121,7 @@ func Test_buildSloBurnRateConfig_withDrilldowns(t *testing.T) {
 		SloBurnRateConfig: &models.SloBurnRateConfigModel{
 			SloID:    types.StringValue("slo-1"),
 			Duration: types.StringValue("3h"),
-			Drilldowns: []models.SloBurnRateDrilldownModel{
+			Drilldowns: []models.URLDrilldownModel{
 				{
 					URL:          types.StringValue("https://example.com"),
 					Label:        types.StringValue("View details"),
@@ -150,7 +150,7 @@ func Test_buildSloBurnRateConfig_withDrilldowns_optionalBoolsSet(t *testing.T) {
 		SloBurnRateConfig: &models.SloBurnRateConfigModel{
 			SloID:    types.StringValue("slo-1"),
 			Duration: types.StringValue("3h"),
-			Drilldowns: []models.SloBurnRateDrilldownModel{
+			Drilldowns: []models.URLDrilldownModel{
 				{
 					URL:          types.StringValue("https://example.com"),
 					Label:        types.StringValue("Link"),
@@ -325,7 +325,7 @@ func Test_populateSloBurnRateFromAPI_drilldowns_optionalBoolNullPreservation(t *
 	existing := &models.SloBurnRateConfigModel{
 		SloID:    types.StringValue("slo-1"),
 		Duration: types.StringValue("6d"),
-		Drilldowns: []models.SloBurnRateDrilldownModel{
+		Drilldowns: []models.URLDrilldownModel{
 			{
 				URL:          types.StringValue("https://example.com"),
 				Label:        types.StringValue("View"),
@@ -371,7 +371,7 @@ func Test_populateSloBurnRateFromAPI_drilldowns_optionalBoolsExplicit_roundTrip(
 	existing := &models.SloBurnRateConfigModel{
 		SloID:    types.StringValue("slo-1"),
 		Duration: types.StringValue("6d"),
-		Drilldowns: []models.SloBurnRateDrilldownModel{
+		Drilldowns: []models.URLDrilldownModel{
 			{
 				URL:          types.StringValue("https://example.com"),
 				Label:        types.StringValue("View"),

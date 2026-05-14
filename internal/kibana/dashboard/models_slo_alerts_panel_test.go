@@ -151,7 +151,7 @@ func Test_sloAlerts_drilldown_roundTrip_defaultsNull_refreshAndImport(t *testing
 	pm := models.PanelModel{
 		SloAlertsConfig: &models.SloAlertsPanelConfigModel{
 			Slos: []models.SloAlertsPanelSloModel{{SloID: types.StringValue("slo-1")}},
-			Drilldowns: []models.SloAlertsPanelDrilldownModel{
+			Drilldowns: []models.URLDrilldownModel{
 				{
 					URL:          types.StringValue("https://kibana.example/drill"),
 					Label:        types.StringValue("investigate"),
@@ -199,7 +199,7 @@ func Test_sloAlertsPanelToAPI_drilldownWritesTrigger(t *testing.T) {
 	pm := models.PanelModel{
 		SloAlertsConfig: &models.SloAlertsPanelConfigModel{
 			Slos: []models.SloAlertsPanelSloModel{{SloID: types.StringValue("x")}},
-			Drilldowns: []models.SloAlertsPanelDrilldownModel{
+			Drilldowns: []models.URLDrilldownModel{
 				{URL: types.StringValue("https://z"), Label: types.StringValue("lbl")},
 			},
 		},

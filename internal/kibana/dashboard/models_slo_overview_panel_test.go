@@ -37,7 +37,7 @@ func Test_sloSingleToAPI_basic(t *testing.T) {
 		Description:   types.StringValue("A description"),
 		HideTitle:     types.BoolValue(true),
 		HideBorder:    types.BoolValue(false),
-		Drilldowns: []models.SloDrilldownModel{
+		Drilldowns: []models.URLDrilldownModel{
 			{
 				URL:          types.StringValue("https://example.com"),
 				Label:        types.StringValue("Open dashboard"),

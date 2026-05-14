@@ -35,7 +35,7 @@ type SloOverviewSingleModel struct {
 	Description   types.String        `tfsdk:"description"`
 	HideTitle     types.Bool          `tfsdk:"hide_title"`
 	HideBorder    types.Bool          `tfsdk:"hide_border"`
-	Drilldowns    []SloDrilldownModel `tfsdk:"drilldowns"`
+	Drilldowns    []URLDrilldownModel `tfsdk:"drilldowns"`
 }
 
 type SloOverviewGroupsModel struct {
@@ -43,7 +43,7 @@ type SloOverviewGroupsModel struct {
 	Description  types.String          `tfsdk:"description"`
 	HideTitle    types.Bool            `tfsdk:"hide_title"`
 	HideBorder   types.Bool            `tfsdk:"hide_border"`
-	Drilldowns   []SloDrilldownModel   `tfsdk:"drilldowns"`
+	Drilldowns   []URLDrilldownModel   `tfsdk:"drilldowns"`
 	GroupFilters *SloGroupFiltersModel `tfsdk:"group_filters"`
 }
 
@@ -52,11 +52,4 @@ type SloGroupFiltersModel struct {
 	Groups      []types.String       `tfsdk:"groups"`
 	KQLQuery    types.String         `tfsdk:"kql_query"`
 	FiltersJSON jsontypes.Normalized `tfsdk:"filters_json"`
-}
-
-type SloDrilldownModel struct {
-	URL          types.String `tfsdk:"url"`
-	Label        types.String `tfsdk:"label"`
-	EncodeURL    types.Bool   `tfsdk:"encode_url"`
-	OpenInNewTab types.Bool   `tfsdk:"open_in_new_tab"`
 }

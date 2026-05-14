@@ -105,7 +105,7 @@ func Test_buildSyntheticsMonitorsPanel_withFilters(t *testing.T) {
 	pm := models.PanelModel{
 		Type: types.StringValue(panelTypeSyntheticsMonitors),
 		SyntheticsMonitorsConfig: &models.SyntheticsMonitorsConfigModel{
-			Filters: &models.SyntheticsMonitorsFiltersModel{
+			Filters: &models.SyntheticsFiltersModel{
 				Projects: []models.SyntheticsFilterItemModel{
 					{Label: types.StringValue("My Project"), Value: types.StringValue("proj-1")},
 				},
@@ -133,7 +133,7 @@ func Test_buildSyntheticsMonitorsPanel_allFilterDimensions(t *testing.T) {
 	pm := models.PanelModel{
 		Type: types.StringValue(panelTypeSyntheticsMonitors),
 		SyntheticsMonitorsConfig: &models.SyntheticsMonitorsConfigModel{
-			Filters: &models.SyntheticsMonitorsFiltersModel{
+			Filters: &models.SyntheticsFiltersModel{
 				Projects:     []models.SyntheticsFilterItemModel{{Label: types.StringValue("P1"), Value: types.StringValue("p1")}},
 				Tags:         []models.SyntheticsFilterItemModel{{Label: types.StringValue("T1"), Value: types.StringValue("t1")}},
 				MonitorIDs:   []models.SyntheticsFilterItemModel{{Label: types.StringValue("M1"), Value: types.StringValue("m1")}},
@@ -318,7 +318,7 @@ func Test_populateSyntheticsMonitorsFromAPI_emptyAPIFilters_nullPreservation(t *
 // Prior state had filters configured; API round-trips them back.
 func Test_populateSyntheticsMonitorsFromAPI_filtersRoundTrip(t *testing.T) {
 	existing := &models.SyntheticsMonitorsConfigModel{
-		Filters: &models.SyntheticsMonitorsFiltersModel{
+		Filters: &models.SyntheticsFiltersModel{
 			Projects: []models.SyntheticsFilterItemModel{
 				{Label: types.StringValue("P1"), Value: types.StringValue("p1")},
 			},
@@ -369,7 +369,7 @@ func Test_populateSyntheticsMonitorsFromAPI_filtersRoundTrip(t *testing.T) {
 // API returns an empty filters struct — the empty filters block is preserved to avoid a
 // perpetual diff.
 func Test_populateSyntheticsMonitorsFromAPI_emptyFiltersBlock_preserved(t *testing.T) {
-	emptyFilters := &models.SyntheticsMonitorsFiltersModel{} // all slices nil
+	emptyFilters := &models.SyntheticsFiltersModel{} // all slices nil
 	existing := &models.SyntheticsMonitorsConfigModel{Filters: emptyFilters}
 	pm := &models.PanelModel{SyntheticsMonitorsConfig: existing}
 	tfPanel := &models.PanelModel{SyntheticsMonitorsConfig: existing}

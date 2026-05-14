@@ -277,8 +277,8 @@ func readSyntheticsStatsOverviewDrilldownsFromAPI(
 // priorFilters is the existing TF state (may be nil on import).
 func readSyntheticsStatsOverviewFiltersFromAPI(
 	apiPanel kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview,
-	priorFilters *models.SyntheticsStatsOverviewFiltersModel,
-) *models.SyntheticsStatsOverviewFiltersModel {
+	priorFilters *models.SyntheticsFiltersModel,
+) *models.SyntheticsFiltersModel {
 	apiFilters := apiPanel.Config.Filters
 
 	if apiFilters == nil {
@@ -310,7 +310,7 @@ func readSyntheticsStatsOverviewFiltersFromAPI(
 		return out
 	}
 
-	return &models.SyntheticsStatsOverviewFiltersModel{
+	return &models.SyntheticsFiltersModel{
 		Projects:     fromAPIItems(apiFilters.Projects),
 		Tags:         fromAPIItems(apiFilters.Tags),
 		MonitorIDs:   fromAPIItems(apiFilters.MonitorIds),

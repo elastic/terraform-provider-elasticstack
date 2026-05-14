@@ -288,7 +288,7 @@ func fromSyntheticsAPIFilters(apiFilters *struct {
 		Label string `json:"label"`
 		Value string `json:"value"`
 	} `json:"tags,omitempty"`
-}) *models.SyntheticsMonitorsFiltersModel {
+}) *models.SyntheticsFiltersModel {
 	if apiFilters == nil {
 		return nil
 	}
@@ -304,7 +304,7 @@ func fromSyntheticsAPIFilters(apiFilters *struct {
 		return nil
 	}
 
-	return &models.SyntheticsMonitorsFiltersModel{
+	return &models.SyntheticsFiltersModel{
 		Projects:     projects,
 		Tags:         tags,
 		MonitorIDs:   monitorIDs,

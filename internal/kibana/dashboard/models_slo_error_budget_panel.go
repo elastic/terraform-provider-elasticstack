@@ -133,14 +133,14 @@ func populateSloErrorBudgetFromAPI(pm *models.PanelModel, tfPanel *models.PanelM
 	// Drilldowns round-trip with default normalization.
 	if apiConfig.Drilldowns != nil {
 		// Determine prior drilldown intent.
-		var priorDrilldowns []models.SloErrorBudgetDrilldownModel
+		var priorDrilldowns []models.URLDrilldownModel
 		if tfPanel != nil && tfPanel.SloErrorBudgetConfig != nil {
 			priorDrilldowns = tfPanel.SloErrorBudgetConfig.Drilldowns
 		}
 
-		newDrilldowns := make([]models.SloErrorBudgetDrilldownModel, 0, len(*apiConfig.Drilldowns))
+		newDrilldowns := make([]models.URLDrilldownModel, 0, len(*apiConfig.Drilldowns))
 		for i, d := range *apiConfig.Drilldowns {
-			dm := models.SloErrorBudgetDrilldownModel{
+			dm := models.URLDrilldownModel{
 				URL:   types.StringValue(d.Url),
 				Label: types.StringValue(d.Label),
 			}

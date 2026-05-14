@@ -22,22 +22,15 @@ import (
 )
 
 type SloAlertsPanelConfigModel struct {
-	Slos        []SloAlertsPanelSloModel       `tfsdk:"slos"`
-	Title       types.String                   `tfsdk:"title"`
-	Description types.String                   `tfsdk:"description"`
-	HideTitle   types.Bool                     `tfsdk:"hide_title"`
-	HideBorder  types.Bool                     `tfsdk:"hide_border"`
-	Drilldowns  []SloAlertsPanelDrilldownModel `tfsdk:"drilldowns"`
+	Slos        []SloAlertsPanelSloModel `tfsdk:"slos"`
+	Title       types.String             `tfsdk:"title"`
+	Description types.String             `tfsdk:"description"`
+	HideTitle   types.Bool               `tfsdk:"hide_title"`
+	HideBorder  types.Bool               `tfsdk:"hide_border"`
+	Drilldowns  []URLDrilldownModel      `tfsdk:"drilldowns"`
 }
 
 type SloAlertsPanelSloModel struct {
 	SloID         types.String `tfsdk:"slo_id"`
 	SloInstanceID types.String `tfsdk:"slo_instance_id"`
-}
-
-type SloAlertsPanelDrilldownModel struct {
-	URL          types.String `tfsdk:"url"`
-	Label        types.String `tfsdk:"label"`
-	EncodeURL    types.Bool   `tfsdk:"encode_url"`
-	OpenInNewTab types.Bool   `tfsdk:"open_in_new_tab"`
 }

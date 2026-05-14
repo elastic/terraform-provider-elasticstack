@@ -158,7 +158,7 @@ func Test_buildSloErrorBudgetConfig_withDrilldowns(t *testing.T) {
 	pm := models.PanelModel{
 		SloErrorBudgetConfig: &models.SloErrorBudgetConfigModel{
 			SloID: types.StringValue("my-slo-id"),
-			Drilldowns: []models.SloErrorBudgetDrilldownModel{
+			Drilldowns: []models.URLDrilldownModel{
 				{
 					URL:          types.StringValue("https://example.com"),
 					Label:        types.StringValue("Open in example"),
@@ -187,7 +187,7 @@ func Test_buildSloErrorBudgetConfig_drilldownsWithNullOptionalBools(t *testing.T
 	pm := models.PanelModel{
 		SloErrorBudgetConfig: &models.SloErrorBudgetConfigModel{
 			SloID: types.StringValue("my-slo-id"),
-			Drilldowns: []models.SloErrorBudgetDrilldownModel{
+			Drilldowns: []models.URLDrilldownModel{
 				{
 					URL:          types.StringValue("https://example.com"),
 					Label:        types.StringValue("Go"),
@@ -296,7 +296,7 @@ func Test_populateSloErrorBudgetFromAPI_drilldowns_roundTrip(t *testing.T) {
 	pm := &models.PanelModel{
 		SloErrorBudgetConfig: &models.SloErrorBudgetConfigModel{
 			SloID: types.StringValue(""),
-			Drilldowns: []models.SloErrorBudgetDrilldownModel{
+			Drilldowns: []models.URLDrilldownModel{
 				{
 					URL:          types.StringValue("https://example.com"),
 					Label:        types.StringValue("Go"),
@@ -309,7 +309,7 @@ func Test_populateSloErrorBudgetFromAPI_drilldowns_roundTrip(t *testing.T) {
 	tfPanel := &models.PanelModel{
 		SloErrorBudgetConfig: &models.SloErrorBudgetConfigModel{
 			SloID: types.StringValue(""),
-			Drilldowns: []models.SloErrorBudgetDrilldownModel{
+			Drilldowns: []models.URLDrilldownModel{
 				{
 					URL:          types.StringValue("https://example.com"),
 					Label:        types.StringValue("Go"),
@@ -340,7 +340,7 @@ func Test_populateSloErrorBudgetFromAPI_drilldowns_falseValueWritten(t *testing.
 	pm := &models.PanelModel{
 		SloErrorBudgetConfig: &models.SloErrorBudgetConfigModel{
 			SloID: types.StringValue(""),
-			Drilldowns: []models.SloErrorBudgetDrilldownModel{
+			Drilldowns: []models.URLDrilldownModel{
 				{
 					URL:          types.StringValue("https://example.com"),
 					Label:        types.StringValue("Go"),
@@ -353,7 +353,7 @@ func Test_populateSloErrorBudgetFromAPI_drilldowns_falseValueWritten(t *testing.
 	tfPanel := &models.PanelModel{
 		SloErrorBudgetConfig: &models.SloErrorBudgetConfigModel{
 			SloID: types.StringValue(""),
-			Drilldowns: []models.SloErrorBudgetDrilldownModel{
+			Drilldowns: []models.URLDrilldownModel{
 				{
 					URL:          types.StringValue("https://example.com"),
 					Label:        types.StringValue("Go"),
@@ -381,7 +381,7 @@ func Test_populateSloErrorBudgetFromAPI_drilldowns_knownEncodeURLUpdated(t *test
 	pm := &models.PanelModel{
 		SloErrorBudgetConfig: &models.SloErrorBudgetConfigModel{
 			SloID: types.StringValue(""),
-			Drilldowns: []models.SloErrorBudgetDrilldownModel{
+			Drilldowns: []models.URLDrilldownModel{
 				{
 					URL:          types.StringValue("https://example.com"),
 					Label:        types.StringValue("Go"),
@@ -394,7 +394,7 @@ func Test_populateSloErrorBudgetFromAPI_drilldowns_knownEncodeURLUpdated(t *test
 	tfPanel := &models.PanelModel{
 		SloErrorBudgetConfig: &models.SloErrorBudgetConfigModel{
 			SloID: types.StringValue(""),
-			Drilldowns: []models.SloErrorBudgetDrilldownModel{
+			Drilldowns: []models.URLDrilldownModel{
 				{
 					URL:          types.StringValue("https://example.com"),
 					Label:        types.StringValue("Go"),

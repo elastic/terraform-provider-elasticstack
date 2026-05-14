@@ -160,21 +160,21 @@ func readSloBurnRateDrilldownsFromAPI(
 		Type         kbapi.SloBurnRateEmbeddableDrilldownsType    `json:"type"`
 		Url          string                                       `json:"url"` //nolint:revive
 	},
-	priorDrilldowns []models.SloBurnRateDrilldownModel,
-) []models.SloBurnRateDrilldownModel {
+	priorDrilldowns []models.URLDrilldownModel,
+) []models.URLDrilldownModel {
 	if apiDrilldowns == nil || len(*apiDrilldowns) == 0 {
 		return nil
 	}
 
-	result := make([]models.SloBurnRateDrilldownModel, len(*apiDrilldowns))
+	result := make([]models.URLDrilldownModel, len(*apiDrilldowns))
 	for i, d := range *apiDrilldowns {
-		result[i] = models.SloBurnRateDrilldownModel{
+		result[i] = models.URLDrilldownModel{
 			URL:   types.StringValue(d.Url),
 			Label: types.StringValue(d.Label),
 		}
 
 		// Determine prior state for this drilldown (if it exists at this index).
-		var prior *models.SloBurnRateDrilldownModel
+		var prior *models.URLDrilldownModel
 		if i < len(priorDrilldowns) {
 			prior = &priorDrilldowns[i]
 		}

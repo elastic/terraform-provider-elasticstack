@@ -144,7 +144,7 @@ func Test_buildSyntheticsStatsOverviewConfig_withDrilldowns_optionalBoolsSet(t *
 func Test_buildSyntheticsStatsOverviewConfig_withFilters(t *testing.T) {
 	pm := models.PanelModel{
 		SyntheticsStatsOverviewConfig: &models.SyntheticsStatsOverviewConfigModel{
-			Filters: &models.SyntheticsStatsOverviewFiltersModel{
+			Filters: &models.SyntheticsFiltersModel{
 				Projects: []models.SyntheticsFilterItemModel{
 					{Label: types.StringValue("My Project"), Value: types.StringValue("my-project")},
 				},
@@ -177,7 +177,7 @@ func Test_buildSyntheticsStatsOverviewConfig_emptyFilters_notSent(t *testing.T) 
 	// A filters block with no entries should not produce a filters payload.
 	pm := models.PanelModel{
 		SyntheticsStatsOverviewConfig: &models.SyntheticsStatsOverviewConfigModel{
-			Filters: &models.SyntheticsStatsOverviewFiltersModel{
+			Filters: &models.SyntheticsFiltersModel{
 				Projects: nil,
 				Tags:     nil,
 			},
@@ -429,7 +429,7 @@ func Test_populateSyntheticsStatsOverviewFromAPI_import_withFilters(t *testing.T
 func Test_populateSyntheticsStatsOverviewFromAPI_refresh_emptyAPIConfig_nilsBlock(t *testing.T) {
 	existing := &models.SyntheticsStatsOverviewConfigModel{
 		Title: types.StringValue("Old Title"),
-		Filters: &models.SyntheticsStatsOverviewFiltersModel{
+		Filters: &models.SyntheticsFiltersModel{
 			Projects: []models.SyntheticsFilterItemModel{
 				{Label: types.StringValue("My Project"), Value: types.StringValue("my-project")},
 			},
@@ -452,7 +452,7 @@ func Test_populateSyntheticsStatsOverviewFromAPI_refresh_emptyAPIConfig_nilsBloc
 // when prior state had a populated filters block.
 func Test_populateSyntheticsStatsOverviewFromAPI_refresh_emptyFilters_clearsBlock(t *testing.T) {
 	existing := &models.SyntheticsStatsOverviewConfigModel{
-		Filters: &models.SyntheticsStatsOverviewFiltersModel{
+		Filters: &models.SyntheticsFiltersModel{
 			Projects: []models.SyntheticsFilterItemModel{
 				{Label: types.StringValue("My Project"), Value: types.StringValue("my-project")},
 			},
@@ -497,7 +497,7 @@ func Test_populateSyntheticsStatsOverviewFromAPI_refresh_emptyFilters_clearsBloc
 // When the entire config is absent from the API response, it round-trips as null in state (REQ-033).
 func Test_populateSyntheticsStatsOverviewFromAPI_refresh_allNilConfig_nilsBlock(t *testing.T) {
 	existing := &models.SyntheticsStatsOverviewConfigModel{
-		Filters: &models.SyntheticsStatsOverviewFiltersModel{
+		Filters: &models.SyntheticsFiltersModel{
 			Projects: []models.SyntheticsFilterItemModel{
 				{Label: types.StringValue("My Project"), Value: types.StringValue("my-project")},
 			},
@@ -522,7 +522,7 @@ func Test_populateSyntheticsStatsOverviewFromAPI_refresh_nilFiltersWithOtherConf
 	title := "My Panel"
 	existing := &models.SyntheticsStatsOverviewConfigModel{
 		Title: types.StringValue(title),
-		Filters: &models.SyntheticsStatsOverviewFiltersModel{
+		Filters: &models.SyntheticsFiltersModel{
 			Projects: []models.SyntheticsFilterItemModel{
 				{Label: types.StringValue("My Project"), Value: types.StringValue("my-project")},
 			},

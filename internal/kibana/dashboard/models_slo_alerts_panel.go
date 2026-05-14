@@ -196,18 +196,18 @@ func readSloAlertsDrilldownsFromAPI(
 		Type         kbapi.SloAlertsEmbeddableDrilldownsType    `json:"type"`
 		Url          string                                     `json:"url"` //nolint:revive
 	},
-	priorDrilldowns []models.SloAlertsPanelDrilldownModel,
-) []models.SloAlertsPanelDrilldownModel {
+	priorDrilldowns []models.URLDrilldownModel,
+) []models.URLDrilldownModel {
 	if apiDrilldowns == nil || len(*apiDrilldowns) == 0 {
 		return nil
 	}
 
-	out := make([]models.SloAlertsPanelDrilldownModel, len(*apiDrilldowns))
+	out := make([]models.URLDrilldownModel, len(*apiDrilldowns))
 	for i, d := range *apiDrilldowns {
 		out[i].URL = types.StringValue(d.Url)
 		out[i].Label = types.StringValue(d.Label)
 
-		var prior *models.SloAlertsPanelDrilldownModel
+		var prior *models.URLDrilldownModel
 		if i < len(priorDrilldowns) {
 			prior = &priorDrilldowns[i]
 		}

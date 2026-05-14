@@ -22,19 +22,12 @@ import (
 )
 
 type SloBurnRateConfigModel struct {
-	SloID         types.String                `tfsdk:"slo_id"`
-	Duration      types.String                `tfsdk:"duration"`
-	SloInstanceID types.String                `tfsdk:"slo_instance_id"`
-	Title         types.String                `tfsdk:"title"`
-	Description   types.String                `tfsdk:"description"`
-	HideTitle     types.Bool                  `tfsdk:"hide_title"`
-	HideBorder    types.Bool                  `tfsdk:"hide_border"`
-	Drilldowns    []SloBurnRateDrilldownModel `tfsdk:"drilldowns"`
-}
-
-type SloBurnRateDrilldownModel struct {
-	URL          types.String `tfsdk:"url"`
-	Label        types.String `tfsdk:"label"`
-	EncodeURL    types.Bool   `tfsdk:"encode_url"`
-	OpenInNewTab types.Bool   `tfsdk:"open_in_new_tab"`
+	SloID         types.String        `tfsdk:"slo_id"`
+	Duration      types.String        `tfsdk:"duration"`
+	SloInstanceID types.String        `tfsdk:"slo_instance_id"`
+	Title         types.String        `tfsdk:"title"`
+	Description   types.String        `tfsdk:"description"`
+	HideTitle     types.Bool          `tfsdk:"hide_title"`
+	HideBorder    types.Bool          `tfsdk:"hide_border"`
+	Drilldowns    []URLDrilldownModel `tfsdk:"drilldowns"`
 }

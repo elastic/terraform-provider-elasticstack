@@ -22,32 +22,24 @@ import (
 )
 
 type SyntheticsStatsOverviewConfigModel struct {
-	Title       types.String                         `tfsdk:"title"`
-	Description types.String                         `tfsdk:"description"`
-	HideTitle   types.Bool                           `tfsdk:"hide_title"`
-	HideBorder  types.Bool                           `tfsdk:"hide_border"`
-	Drilldowns  []URLDrilldownModel                  `tfsdk:"drilldowns"`
-	Filters     *SyntheticsStatsOverviewFiltersModel `tfsdk:"filters"`
-}
-
-type SyntheticsStatsOverviewFiltersModel struct {
-	Projects     []SyntheticsFilterItemModel `tfsdk:"projects"`
-	Tags         []SyntheticsFilterItemModel `tfsdk:"tags"`
-	MonitorIDs   []SyntheticsFilterItemModel `tfsdk:"monitor_ids"`
-	Locations    []SyntheticsFilterItemModel `tfsdk:"locations"`
-	MonitorTypes []SyntheticsFilterItemModel `tfsdk:"monitor_types"`
+	Title       types.String            `tfsdk:"title"`
+	Description types.String            `tfsdk:"description"`
+	HideTitle   types.Bool              `tfsdk:"hide_title"`
+	HideBorder  types.Bool              `tfsdk:"hide_border"`
+	Drilldowns  []URLDrilldownModel     `tfsdk:"drilldowns"`
+	Filters     *SyntheticsFiltersModel `tfsdk:"filters"`
 }
 
 type SyntheticsMonitorsConfigModel struct {
-	Title       types.String                    `tfsdk:"title"`
-	Description types.String                    `tfsdk:"description"`
-	HideTitle   types.Bool                      `tfsdk:"hide_title"`
-	HideBorder  types.Bool                      `tfsdk:"hide_border"`
-	View        types.String                    `tfsdk:"view"`
-	Filters     *SyntheticsMonitorsFiltersModel `tfsdk:"filters"`
+	Title       types.String            `tfsdk:"title"`
+	Description types.String            `tfsdk:"description"`
+	HideTitle   types.Bool              `tfsdk:"hide_title"`
+	HideBorder  types.Bool              `tfsdk:"hide_border"`
+	View        types.String            `tfsdk:"view"`
+	Filters     *SyntheticsFiltersModel `tfsdk:"filters"`
 }
 
-type SyntheticsMonitorsFiltersModel struct {
+type SyntheticsFiltersModel struct {
 	Projects     []SyntheticsFilterItemModel `tfsdk:"projects"`
 	Tags         []SyntheticsFilterItemModel `tfsdk:"tags"`
 	MonitorIDs   []SyntheticsFilterItemModel `tfsdk:"monitor_ids"`

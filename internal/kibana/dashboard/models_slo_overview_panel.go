@@ -149,7 +149,7 @@ func singleToAPI(m *models.SloOverviewSingleModel) (kbapi.SloSingleOverviewEmbed
 }
 
 // setDrilldownsOnSingle sets the Drilldowns field on a SloSingleOverviewEmbeddable.
-func setDrilldownsOnSingle(api *kbapi.SloSingleOverviewEmbeddable, drilldowns []models.SloDrilldownModel) diag.Diagnostics {
+func setDrilldownsOnSingle(api *kbapi.SloSingleOverviewEmbeddable, drilldowns []models.URLDrilldownModel) diag.Diagnostics {
 	return injectDrilldownsJSON(api, drilldowns)
 }
 
@@ -190,7 +190,7 @@ func groupsToAPI(m *models.SloOverviewGroupsModel) (kbapi.SloGroupOverviewEmbedd
 }
 
 // setDrilldownsOnGroups sets the Drilldowns field on a SloGroupOverviewEmbeddable.
-func setDrilldownsOnGroups(api *kbapi.SloGroupOverviewEmbeddable, drilldowns []models.SloDrilldownModel) diag.Diagnostics {
+func setDrilldownsOnGroups(api *kbapi.SloGroupOverviewEmbeddable, drilldowns []models.URLDrilldownModel) diag.Diagnostics {
 	return injectDrilldownsJSON(api, drilldowns)
 }
 
@@ -198,7 +198,7 @@ func setDrilldownsOnGroups(api *kbapi.SloGroupOverviewEmbeddable, drilldowns []m
 // provided drilldown models, and unmarshals back. Used for both single and groups SLO
 // overview embeddables whose Drilldowns field has an anonymous struct type that cannot
 // be referenced directly in typed Go code.
-func injectDrilldownsJSON(api any, drilldowns []models.SloDrilldownModel) diag.Diagnostics {
+func injectDrilldownsJSON(api any, drilldowns []models.URLDrilldownModel) diag.Diagnostics {
 	ddsJSON, err := json.Marshal(buildDrilldownsWire(drilldowns))
 	if err != nil {
 		return diag.Diagnostics{diag.NewErrorDiagnostic("Failed to marshal drilldowns", err.Error())}
@@ -224,7 +224,7 @@ func injectDrilldownsJSON(api any, drilldowns []models.SloDrilldownModel) diag.D
 
 // buildDrilldownsWire converts TF drilldown models to JSON wire format.
 // trigger and type are always hardcoded to the only values Kibana accepts for SLO overview panels.
-func buildDrilldownsWire(drilldowns []models.SloDrilldownModel) []sloDrilldownWireJSON {
+func buildDrilldownsWire(drilldowns []models.URLDrilldownModel) []sloDrilldownWireJSON {
 	result := make([]sloDrilldownWireJSON, len(drilldowns))
 	for i, dd := range drilldowns {
 		result[i] = sloDrilldownWireJSON{
@@ -517,14 +517,14 @@ func sloGroupsFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, api kba
 
 // drilldownsFromWireJSON decodes a JSON array of drilldown objects into TF models.
 // trigger and type are not stored in state — they are always hardcoded constants.
-func drilldownsFromWireJSON(b []byte) []models.SloDrilldownModel {
+func drilldownsFromWireJSON(b []byte) []models.URLDrilldownModel {
 	var wire []sloDrilldownWireJSON
 	if err := json.Unmarshal(b, &wire); err != nil {
 		return nil
 	}
-	result := make([]models.SloDrilldownModel, len(wire))
+	result := make([]models.URLDrilldownModel, len(wire))
 	for i, dd := range wire {
-		result[i] = models.SloDrilldownModel{
+		result[i] = models.URLDrilldownModel{
 			URL:   types.StringValue(dd.URL),
 			Label: types.StringValue(dd.Label),
 		}
