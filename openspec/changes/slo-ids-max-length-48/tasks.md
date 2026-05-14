@@ -5,8 +5,8 @@
 
 ## 2. Add regression coverage
 
-- [ ] 2.1 Add or update an acceptance test fixture under `internal/kibana/slo/testdata/` that configures a valid 48-character `slo_id`.
-- [ ] 2.2 Update `internal/kibana/slo/acc_test.go` assertions so the acceptance suite verifies the 48-character `slo_id` is accepted and stored in state.
+- [x] 2.1 Add or update an acceptance test fixture under `internal/kibana/slo/testdata/` that configures a valid 48-character `slo_id`.
+- [x] 2.2 Update `internal/kibana/slo/acc_test.go` assertions so the acceptance suite verifies the 48-character `slo_id` is accepted and stored in state.
 
 ## 3. Verify requirements alignment
 
