@@ -123,7 +123,7 @@ func dashboardPopulateFromAPI(ctx context.Context, m *models.DashboardModel, res
 	m.Panels = panels
 	m.Sections = sections
 
-	pinnedPanels, pinnedDiags := dashboardMapPinnedPanelsFromAPI(ctx, m, priorPinnedPanels, data.Data.PinnedPanels)
+	pinnedPanels, pinnedDiags := dashboardMapPinnedPanelsFromAPI(ctx, priorPinnedPanels, data.Data.PinnedPanels)
 	diags.Append(pinnedDiags...)
 	m.PinnedPanels = pinnedPanels
 

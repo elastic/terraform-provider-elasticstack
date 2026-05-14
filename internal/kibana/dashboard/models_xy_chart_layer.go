@@ -29,16 +29,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// models.XYLayerModel represents a layer in an XY chart
-
-// models.DataLayerModel represents a data layer (NoESQL or ESQL)
-
-// models.YMetricModel represents a Y-axis metric
-
-// models.ReferenceLineLayerModel represents a reference line layer
-
-// models.ThresholdModel represents a reference line threshold
-
 func xyReferenceLineLayerTypeFromTF(tfType string) kbapi.XyReferenceLineLayerNoESQLType {
 	return kbapi.XyReferenceLineLayerNoESQLType(tfType)
 }

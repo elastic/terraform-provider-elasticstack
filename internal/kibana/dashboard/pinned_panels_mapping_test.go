@@ -93,26 +93,23 @@ func Test_dashboardModel_mapPinnedPanelsFromAPI_unsetVsEmptyAndDrift(t *testing.
 
 	t.Run("prior nil + API nil yields nil", func(t *testing.T) {
 		t.Parallel()
-		var d models.DashboardModel
-		out, diags := dashboardMapPinnedPanelsFromAPI(ctx, &d, nil, nil)
+		out, diags := dashboardMapPinnedPanelsFromAPI(ctx, nil, nil)
 		require.False(t, diags.HasError())
 		require.Nil(t, out)
 	})
 
 	t.Run("prior nil + API empty slice yields nil", func(t *testing.T) {
 		t.Parallel()
-		var d models.DashboardModel
 		api := []kbapi.DashboardPinnedPanels_Item{}
-		out, diags := dashboardMapPinnedPanelsFromAPI(ctx, &d, nil, &api)
+		out, diags := dashboardMapPinnedPanelsFromAPI(ctx, nil, &api)
 		require.False(t, diags.HasError())
 		require.Nil(t, out)
 	})
 
 	t.Run("prior empty slice + API empty slice yields empty slice", func(t *testing.T) {
 		t.Parallel()
-		var d models.DashboardModel
 		api := []kbapi.DashboardPinnedPanels_Item{}
-		out, diags := dashboardMapPinnedPanelsFromAPI(ctx, &d, []models.PinnedPanelModel{}, &api)
+		out, diags := dashboardMapPinnedPanelsFromAPI(ctx, []models.PinnedPanelModel{}, &api)
 		require.False(t, diags.HasError())
 		require.NotNil(t, out)
 		require.Empty(t, out)
@@ -120,12 +117,11 @@ func Test_dashboardModel_mapPinnedPanelsFromAPI_unsetVsEmptyAndDrift(t *testing.
 
 	t.Run("prior nil + API one entry yields one populated entry", func(t *testing.T) {
 		t.Parallel()
-		var d models.DashboardModel
 		src := newPinnedDashboardModelBase([]models.PinnedPanelModel{pinnedFixtureOptionsList("status")})
 		api := mustAPIPinnedItems(t, src)
 		require.NotNil(t, api)
 
-		out, diags := dashboardMapPinnedPanelsFromAPI(ctx, &d, nil, api)
+		out, diags := dashboardMapPinnedPanelsFromAPI(ctx, nil, api)
 		require.False(t, diags.HasError())
 		require.Len(t, out, 1)
 		require.Equal(t, panelTypeOptionsListControl, out[0].Type.ValueString())
@@ -136,7 +132,6 @@ func Test_dashboardModel_mapPinnedPanelsFromAPI_unsetVsEmptyAndDrift(t *testing.
 
 	t.Run("prior populated + API populated same indices and types reuses prior pointers", func(t *testing.T) {
 		t.Parallel()
-		var d models.DashboardModel
 
 		ol := &models.OptionsListControlConfigModel{
 			DataViewID: types.StringValue("dv"),
@@ -160,7 +155,7 @@ func Test_dashboardModel_mapPinnedPanelsFromAPI_unsetVsEmptyAndDrift(t *testing.
 		api := mustAPIPinnedItems(t, newPinnedDashboardModelBase([]models.PinnedPanelModel{prior[0], prior[1]}))
 		require.NotNil(t, api)
 
-		out, diags := dashboardMapPinnedPanelsFromAPI(ctx, &d, prior, api)
+		out, diags := dashboardMapPinnedPanelsFromAPI(ctx, prior, api)
 		require.False(t, diags.HasError())
 		require.Len(t, out, 2)
 		require.Same(t, ol, out[0].OptionsListControlConfig)
@@ -169,7 +164,6 @@ func Test_dashboardModel_mapPinnedPanelsFromAPI_unsetVsEmptyAndDrift(t *testing.
 
 	t.Run("prior populated + API type drift clears mismatched typed configs", func(t *testing.T) {
 		t.Parallel()
-		var d models.DashboardModel
 
 		priorOL := &models.OptionsListControlConfigModel{
 			DataViewID: types.StringValue("dv"),
@@ -183,7 +177,7 @@ func Test_dashboardModel_mapPinnedPanelsFromAPI_unsetVsEmptyAndDrift(t *testing.
 		api := mustAPIPinnedItems(t, apiModel)
 		require.NotNil(t, api)
 
-		out, diags := dashboardMapPinnedPanelsFromAPI(ctx, &d, prior, api)
+		out, diags := dashboardMapPinnedPanelsFromAPI(ctx, prior, api)
 		require.False(t, diags.HasError())
 		require.Len(t, out, 1)
 		require.Equal(t, panelTypeRangeSlider, out[0].Type.ValueString())

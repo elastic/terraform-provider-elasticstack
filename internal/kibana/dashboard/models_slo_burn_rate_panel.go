@@ -24,8 +24,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// models.SloBurnRateDrilldownModel represents a single drilldown entry within slo_burn_rate_config.
-
 // buildSloBurnRateConfig writes the TF model fields into the API panel struct.
 func buildSloBurnRateConfig(pm models.PanelModel, panel *kbapi.KbnDashboardPanelTypeSloBurnRate) {
 	cfg := pm.SloBurnRateConfig
