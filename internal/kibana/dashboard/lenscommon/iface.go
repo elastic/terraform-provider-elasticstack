@@ -44,6 +44,12 @@ type VizConverter interface {
 	// or lens_dashboard_app_config.by_value.
 	SchemaAttribute() schema.Attribute
 
+	// PopulateFromAttributes reads the typed API chart payload from attrs and writes the result into the
+	// matching blocks.<Chart>Config field. The caller MUST seed blocks.<Chart>Config from prior state
+	// (for example existing Terraform state) before invoking the converter so prior-dependent merge logic
+	// (drilldowns, presentation, JSON defaults preservation) sees the pre-existing values. After this
+	// method returns successfully, blocks.<Chart>Config points to the freshly populated model.
+	// Implementations may copy blocks.<Chart>Config into a local prior variable before reconstruction.
 	PopulateFromAttributes(ctx context.Context, resolver Resolver, blocks *models.LensByValueChartBlocks, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics
 	BuildAttributes(blocks *models.LensByValueChartBlocks, resolver Resolver) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics)
 	AlignStateFromPlan(ctx context.Context, plan, state *models.LensByValueChartBlocks)
