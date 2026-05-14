@@ -1,7 +1,7 @@
 ## 1. Custom `FieldAttrsType` and `FieldAttrsValue`
 
-- [ ] 1.1 Create `internal/kibana/dataview/field_attrs_type.go` implementing `FieldAttrsType` as a `basetypes.MapTypable`, following the pattern in `internal/fleet/integration_policy/inputs_type.go`. Include `String()`, `ValueType()`, `Equal()`, `ValueFromMap()`, `ValueFromTerraform()`, and `NewFieldAttrsType(elemType attr.Type)` constructor.
-- [ ] 1.2 Create `internal/kibana/dataview/field_attrs_value.go` implementing `FieldAttrsValue` as `basetypes.MapValuableWithSemanticEquals`, following the pattern in `internal/fleet/integration_policy/inputs_value.go`. Include:
+- [x] 1.1 Create `internal/kibana/dataview/field_attrs_type.go` implementing `FieldAttrsType` as a `basetypes.MapTypable`, following the pattern in `internal/fleet/integration_policy/inputs_type.go`. Include `String()`, `ValueType()`, `Equal()`, `ValueFromMap()`, `ValueFromTerraform()`, and `NewFieldAttrsType(elemType attr.Type)` constructor.
+- [x] 1.2 Create `internal/kibana/dataview/field_attrs_value.go` implementing `FieldAttrsValue` as `basetypes.MapValuableWithSemanticEquals`, following the pattern in `internal/fleet/integration_policy/inputs_value.go`. Include:
   - `Type()`, `Equal()` methods
   - `MapSemanticEquals(ctx, priorValuable)` with the following logic:
     - If new value is null: equal iff all prior entries are count-only (no `custom_label`)
