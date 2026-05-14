@@ -1,7 +1,7 @@
 ## 1. Changelog-generation workflow template
 
-- [ ] 1.1 Add `GH_AW_CI_TRIGGER_TOKEN` environment variable to the release-mode push step in `.github/workflows-src/changelog-generation/workflow.yml.tmpl`, and add the empty-commit CI trigger logic after the `git push`
-- [ ] 1.2 Add `GH_AW_CI_TRIGGER_TOKEN` environment variable to the unreleased-mode push step in `.github/workflows-src/changelog-generation/workflow.yml.tmpl`, and add the empty-commit CI trigger logic (with `--force`) after the `git push`
+- [x] 1.1 Add `GH_AW_CI_TRIGGER_TOKEN` environment variable to the release-mode push step in `.github/workflows-src/changelog-generation/workflow.yml.tmpl`, and add the empty-commit CI trigger logic after the `git push`
+- [x] 1.2 Add `GH_AW_CI_TRIGGER_TOKEN` environment variable to the unreleased-mode push step in `.github/workflows-src/changelog-generation/workflow.yml.tmpl`, and add the empty-commit CI trigger logic (with `--force`) after the `git push`
 
 ## 2. Prep-release workflow template
 
