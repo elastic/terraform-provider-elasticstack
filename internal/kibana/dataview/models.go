@@ -48,7 +48,7 @@ func reconcileIncomingFieldAttrsWithTerraformPlan(ctx context.Context, planned F
 		return stripServerCountOnlyWhenFieldAttrsUnset(ctx, planned, incoming, diags)
 	}
 
-	elemObjType := getFieldAttrElemType().(types.ObjectType)
+	elemObjType := getFieldAttrElemType()
 	plannedElems := planned.Elements()
 	out := make(map[string]attr.Value)
 
@@ -66,31 +66,34 @@ func reconcileIncomingFieldAttrsWithTerraformPlan(ctx context.Context, planned F
 			return incoming
 		}
 
-		priorVal, plannedField := plannedElems[fieldName]
+		plannedAV, plannedField := plannedElems[fieldName]
 		if !plannedField {
 			// Kibana may echo cleared fields as explicit null keys; omit them so removed keys
-			// do not reappear in state (REQ-015; TestAccResourceDataViewFieldAttrs).
+			// do not reappear in state.
 			if incomingM.CustomLabel.IsNull() && incomingM.Count.IsNull() {
 				continue
 			}
 			out[fieldName] = av
 			continue
 		}
-		priorOV, ok := priorVal.(basetypes.ObjectValue)
+		plannedOV, ok := plannedAV.(basetypes.ObjectValue)
 		if !ok {
 			diags.AddAttributeError(path.Root("data_view").AtName("field_attrs").AtMapKey(fieldName),
-				"Invalid field_attrs value", fmt.Sprintf("expected ObjectValue, got %T", priorVal))
+				"Invalid field_attrs value", fmt.Sprintf("expected ObjectValue, got %T", plannedAV))
 			return incoming
 		}
 
-		var planM fieldAttrModel
-		diags.Append(priorOV.As(ctx, &planM, basetypes.ObjectAsOptions{})...)
+		var plannedM fieldAttrModel
+		diags.Append(plannedOV.As(ctx, &plannedM, basetypes.ObjectAsOptions{})...)
 		if diags.HasError() {
 			return incoming
 		}
 
+		// Drop server-injected popularity counts when the plan omitted count for this field, so
+		// the post-apply state matches the planned shape (otherwise apply fails the framework's
+		// "inconsistent result after apply" check).
 		m := incomingM
-		if planM.Count.IsNull() && !incomingM.Count.IsNull() {
+		if plannedM.Count.IsNull() && !incomingM.Count.IsNull() {
 			m.Count = types.Int64Null()
 		}
 
@@ -146,10 +149,10 @@ func stripServerCountOnlyWhenFieldAttrsUnset(ctx context.Context, existing Field
 			return incoming
 		}
 
-		if m.CustomLabel.IsNull() && m.Count.IsNull() {
-			continue
-		}
-		if m.CustomLabel.IsNull() && !m.Count.IsNull() {
+		// When the plan omits field_attrs entirely, only retain entries Kibana attributes to a
+		// user-managed custom_label. Server-only popularity counts (custom_label null) and
+		// fully-null echoes are both dropped to avoid spurious refresh drift.
+		if m.CustomLabel.IsNull() {
 			continue
 		}
 		out[fieldName] = av
@@ -176,7 +179,7 @@ func (model *dataViewModel) populateFromAPI(ctx context.Context, data *kbapi.Dat
 		ResourceID: *data.DataView.Id,
 	}
 
-	// An existing null map should should be semantically equal to an empty map.
+	// An existing null map should be semantically equal to an empty map.
 	semanticEqualEmptyMap := func(existing types.Map, incoming types.Map) types.Map {
 		if !typeutils.IsKnown(existing) && len(incoming.Elements()) == 0 {
 			return types.MapNull(incoming.ElementType(ctx))
