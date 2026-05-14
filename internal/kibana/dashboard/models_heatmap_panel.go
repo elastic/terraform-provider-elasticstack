@@ -23,6 +23,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -582,7 +583,7 @@ func heatmapXAxisFromAPI(m *models.HeatmapXAxisModel, api kbapi.HeatmapXAxis, _ 
 	}
 	if api.Title != nil {
 		m.Title = &models.AxisTitleModel{}
-		axisTitleFromAPI(m.Title, api.Title)
+		lenscommon.AxisTitleFromAPI(m.Title, api.Title)
 	}
 }
 
@@ -595,7 +596,7 @@ func heatmapXAxisToAPI(m *models.HeatmapXAxisModel) kbapi.HeatmapXAxis {
 		axis.Labels = heatmapXAxisLabelsToAPI(m.Labels)
 	}
 	if m.Title != nil {
-		axis.Title = axisTitleToAPI(m.Title)
+		axis.Title = lenscommon.AxisTitleToAPI(m.Title)
 	}
 	return axis
 }
@@ -642,7 +643,7 @@ func heatmapYAxisFromAPI(m *models.HeatmapYAxisModel, api kbapi.HeatmapYAxis, pr
 	}
 	if api.Title != nil {
 		m.Title = &models.AxisTitleModel{}
-		axisTitleFromAPI(m.Title, api.Title)
+		lenscommon.AxisTitleFromAPI(m.Title, api.Title)
 	} else if prior != nil && prior.Title != nil {
 		// Kibana may omit Y-axis title when there is no Y breakdown dimension.
 		// Preserve the prior state to avoid a false drift.
@@ -659,7 +660,7 @@ func heatmapYAxisToAPI(m *models.HeatmapYAxisModel) kbapi.HeatmapYAxis {
 		axis.Labels = heatmapYAxisLabelsToAPI(m.Labels)
 	}
 	if m.Title != nil {
-		axis.Title = axisTitleToAPI(m.Title)
+		axis.Title = lenscommon.AxisTitleToAPI(m.Title)
 	}
 	return axis
 }

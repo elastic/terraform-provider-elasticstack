@@ -23,6 +23,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -273,9 +274,9 @@ func metricChartConfigFromAPIVariant0(
 			}
 			cfg := customtypes.NewJSONWithDefaultsValue(
 				string(metricJSON),
-				populateMetricChartMetricDefaults,
+				lenscommon.PopulateMetricChartMetricDefaults,
 			)
-			if i < len(priorMetrics) && metricChartMetricConfigsEquivalent(priorMetrics[i].ConfigJSON, cfg) {
+			if i < len(priorMetrics) && lenscommon.MetricChartMetricConfigsEquivalent(priorMetrics[i].ConfigJSON, cfg) {
 				cfg = priorMetrics[i].ConfigJSON
 			}
 			m.Metrics[i].ConfigJSON = cfg
@@ -341,9 +342,9 @@ func metricChartConfigFromAPIVariant1(
 			}
 			cfg := customtypes.NewJSONWithDefaultsValue(
 				string(metricJSON),
-				populateMetricChartMetricDefaults,
+				lenscommon.PopulateMetricChartMetricDefaults,
 			)
-			if i < len(priorMetrics) && metricChartMetricConfigsEquivalent(priorMetrics[i].ConfigJSON, cfg) {
+			if i < len(priorMetrics) && lenscommon.MetricChartMetricConfigsEquivalent(priorMetrics[i].ConfigJSON, cfg) {
 				cfg = priorMetrics[i].ConfigJSON
 			}
 			m.Metrics[i].ConfigJSON = cfg
