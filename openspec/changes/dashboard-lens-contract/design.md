@@ -210,7 +210,7 @@ dashboard/panel/
 ### Deleted files
 
 - `models_lens_panel.go` — `detectLensVizType`, `lensVizConverterForType`, the `lensVisualizationConverter` interface all move to `lenscommon/`
-- `models_lens_by_value_chart_blocks.go` — the `lensByValueChartBlocks` struct moves to `models/lens.go`; helper functions use `panelkit` reflection or move to `lenscommon/`
+- `models_lens_by_value_chart_blocks.go` — the LensByValueChartBlocks struct already lives in models/lens.go; remaining helpers (LensByValueChartBlocksFromPanel, seedWaffleLensByValueChartFromPriorPanel, firstLensVisConverterForChartBlocks) move to their nearest typed homes in dashboard/ and the file is deleted. Sections 3–4 will revisit final placement once converter packages and the legacy dispatcher are removed.
 
 ### State alignment delegation
 

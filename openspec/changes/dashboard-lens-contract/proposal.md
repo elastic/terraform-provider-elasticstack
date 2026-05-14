@@ -38,7 +38,7 @@ func init() { lenscommon.Register(xyConverter{}) }
 ### Refactored files
 
 - `models_lens_panel.go` — deleted; registry lives in `lenscommon/`
-- `models_lens_by_value_chart_blocks.go` — chart block struct moves to `models/lens.go`; helpers use reflection from `panelkit`
+- `models_lens_by_value_chart_blocks.go` — chart block struct already lives in `models/lens.go`; remaining helpers relocate to their nearest typed homes (lens dashboard app adapter, waffle panel, lens panel) and the file is deleted.
 - `models_plan_state_alignment.go` — lens chart alignment delegates to `converter.AlignStateFromPlan(...)`
 - `panel_config_defaults.go` — lens chart defaulting delegates to `converter.PopulateJSONDefaults(...)`
 

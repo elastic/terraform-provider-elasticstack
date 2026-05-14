@@ -11,7 +11,7 @@
 
 - [x] 2.1 Move `lensByValueChartBlocks` struct from `dashboard/models_lens_by_value_chart_blocks.go` to `models/lens.go` as exported `LensByValueChartBlocks`
 - [x] 2.2 Update all references across dashboard package to use `models.LensByValueChartBlocks`
-- [x] 2.3 Move `lensByValueChartBlocksFromPanel` and related helpers to `panelkit/` or delete if superseded by reflection
+- [x] 2.3 Relocate `lensByValueChartBlocksFromPanel` (now exported as `LensByValueChartBlocksFromPanel`), `seedWaffleLensByValueChartFromPriorPanel`, and `firstLensVisConverterForChartBlocks` to their nearest typed homes in `dashboard/` so `models_lens_by_value_chart_blocks.go` can be deleted.
 - [x] 2.4 Delete `dashboard/models_lens_by_value_chart_blocks.go`
 
 ## 3. Migrate converters (12 total)
@@ -42,7 +42,7 @@ Each converter must:
 - [ ] 4.2 Delete `dashboard/models_lens_dashboard_app_converters.go` (by_reference moves to `lenscommon/`)
 - [ ] 4.3 Delete `dashboard/models_lens_dashboard_app_by_value_adapter.go` (absorbed into composites later)
 - [ ] 4.4 Delete `dashboard/models_lens_dashboard_app_panel.go` (absorbed into composites later)
-- [ ] 4.5 Delete `dashboard/models_lens_by_value_chart_blocks.go` (struct moved to `models/`)
+- [x] 4.5 Verify `dashboard/models_lens_by_value_chart_blocks.go` remains deleted (completed in §2.4)
 - [ ] 4.6 Update or delete `dashboard/models_lens_panel.go` tests (moved to converter packages)
 
 ## 5. Refactor state alignment and defaults
