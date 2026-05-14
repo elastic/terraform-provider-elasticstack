@@ -11,19 +11,35 @@
 
 const NO_CHANGELOG_LABEL = 'no-changelog';
 
+function warn(core, message) {
+  if (core && typeof core.warning === 'function') {
+    core.warning(message);
+  }
+}
+
 /**
  * Ensure the `no-changelog` label is applied to a PR.
  *
- * @param {{ github: object, owner: string, repo: string, issue_number: number }} opts
+ * Labeling is best-effort: if the primary PR create/update already succeeded,
+ * a subsequent labeling failure should not fail the whole workflow.
+ *
+ * @param {{ github: object, core?: object, owner: string, repo: string, issue_number: number }} opts
  * @returns {Promise<void>}
  */
-async function addNoChangelogLabel({ github, owner, repo, issue_number }) {
-  await github.rest.issues.addLabels({
-    owner,
-    repo,
-    issue_number,
-    labels: [NO_CHANGELOG_LABEL],
-  });
+async function addNoChangelogLabel({ github, core, owner, repo, issue_number }) {
+  try {
+    await github.rest.issues.addLabels({
+      owner,
+      repo,
+      issue_number,
+      labels: [NO_CHANGELOG_LABEL],
+    });
+  } catch (err) {
+    warn(
+      core,
+      `Failed to apply ${NO_CHANGELOG_LABEL} label to PR #${issue_number}: ${err.message || String(err)}`
+    );
+  }
 }
 
 /**
@@ -94,6 +110,7 @@ async function manageUnreleasedPR({ github, owner, repo, compareRange }) {
       github,
       owner,
       repo,
+      core: github.core,
       issue_number: existingPR.number,
     });
     return {
@@ -115,6 +132,7 @@ async function manageUnreleasedPR({ github, owner, repo, compareRange }) {
     github,
     owner,
     repo,
+    core: github.core,
     issue_number: newPR.number,
   });
   return {
@@ -178,6 +196,7 @@ async function refreshReleasePR({ github, core, owner, repo, prNumber, compareRa
   });
   await addNoChangelogLabel({
     github,
+    core,
     owner,
     repo,
     issue_number: num,

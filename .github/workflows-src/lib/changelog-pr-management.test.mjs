@@ -156,6 +156,41 @@ test('manageUnreleasedPR: no existing PR → creates new PR, returns action=crea
   assert.deepEqual(addLabelsCalls[0].labels, ['no-changelog']);
 });
 
+test('manageUnreleasedPR: addLabels failure warns and does not fail after creating PR', async () => {
+  const warnings = [];
+
+  const github = {
+    core: {
+      warning: (msg) => warnings.push(msg),
+    },
+    rest: {
+      pulls: {
+        list: async () => ({ data: [] }),
+        create: async () => ({
+          data: { number: 7, html_url: 'https://github.com/org/repo/pull/7' },
+        }),
+      },
+      issues: {
+        addLabels: async () => {
+          throw new Error('boom');
+        },
+      },
+    },
+  };
+
+  const result = await manageUnreleasedPR({
+    github,
+    owner: 'org',
+    repo: 'repo',
+    compareRange: 'v0.9.0...HEAD',
+  });
+
+  assert.equal(result.prAction, 'created');
+  assert.equal(result.prNumber, 7);
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0], /Failed to apply no-changelog label to PR #7: boom/);
+});
+
 // ---------------------------------------------------------------------------
 // refreshReleasePR: prNumber present → pulls.update called
 // ---------------------------------------------------------------------------
@@ -207,6 +242,46 @@ test('refreshReleasePR: prNumber present → calls pulls.update with correct bod
   assert.deepEqual(addLabelsCalls[0].labels, ['no-changelog']);
 
   assert.equal(warnings.length, 0, 'no warnings should be emitted');
+});
+
+test('refreshReleasePR: addLabels failure warns and does not fail after updating PR', async () => {
+  const updateCalls = [];
+  const warnings = [];
+
+  const github = {
+    rest: {
+      pulls: {
+        update: async (args) => {
+          updateCalls.push(args);
+          return { data: {} };
+        },
+      },
+      issues: {
+        addLabels: async () => {
+          throw new Error('label failed');
+        },
+      },
+    },
+  };
+
+  const core = {
+    info: () => {},
+    warning: (msg) => warnings.push(msg),
+  };
+
+  await refreshReleasePR({
+    github,
+    core,
+    owner: 'org',
+    repo: 'repo',
+    prNumber: 55,
+    compareRange: 'v1.0.0...v2.0.0',
+    targetVersion: '2.0.0',
+  });
+
+  assert.equal(updateCalls.length, 1, 'pulls.update should still succeed');
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0], /Failed to apply no-changelog label to PR #55: label failed/);
 });
 
 // ---------------------------------------------------------------------------
