@@ -29,8 +29,13 @@ import (
 type Config struct {
 	FullAPIResponse string
 	SkipFields      []string
-	// OmitValidateRequiredZero skips appendValidateRequiredZeroIssues (panels whose shallow required Terraform attributes
-	// are not scalar fixture keys — e.g. required List attributes inside config).
+	// OmitValidateRequiredZero skips appendValidateRequiredZeroIssues entirely for this panel (not per-attribute).
+	//
+	// Use only when the panel has a shallow required Terraform attribute whose type is non-scalar (list, map, or
+	// object) and attrsForShallowFixture cannot synthesize a typed null/zero from the raw JSON fixture.
+	//
+	// TODO(contracttest): generalize required-zero synthesis for list/map/object shallow required attributes so
+	// callers need not set OmitValidateRequiredZero; then deprecate this field.
 	OmitValidateRequiredZero bool
 	// OmitRequiredLeafPresence disables the required-leaf-presence harness phase that checks every required Terraform leaf
 	// path against raw fixture.config navigation. Enable only when the panel's exported API JSON layout does not align with

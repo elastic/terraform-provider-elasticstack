@@ -39,6 +39,21 @@ func pinnedPanelsDiagnosticsErrorsDetail(d diag.Diagnostics) string {
 	return strings.Join(parts, "; ")
 }
 
+// appendHandlerDiagnosticsWithPinnedItemPath rewrites handler-emitted diagnostics onto `itemPath` so list-index
+// context is preserved (iface.PinnedHandler implementations use diag.AddError/AddWarning without paths).
+func appendHandlerDiagnosticsWithPinnedItemPath(dst *diag.Diagnostics, itemPath path.Path, src diag.Diagnostics) {
+	for _, d := range src {
+		switch d.Severity() {
+		case diag.SeverityError:
+			dst.AddAttributeError(itemPath, d.Summary(), d.Detail())
+		case diag.SeverityWarning:
+			dst.AddAttributeWarning(itemPath, d.Summary(), d.Detail())
+		default:
+			dst.Append(diag.WithPath(itemPath, d))
+		}
+	}
+}
+
 func dashboardPinnedPanelsToAPICreateItems(m *models.DashboardModel) (*kbapi.DashboardPinnedPanels, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if m.PinnedPanels == nil {
@@ -85,7 +100,7 @@ func pinnedPanelToPinnedAPIItem(pp models.PinnedPanelModel, itemPath path.Path) 
 		diags.AddAttributeError(itemPath, summary, pinnedPanelsDiagnosticsErrorsDetail(itemDiags))
 		return kbapi.DashboardPinnedPanels_Item{}, diags
 	}
-	diags.Append(itemDiags...)
+	appendHandlerDiagnosticsWithPinnedItemPath(&diags, itemPath, itemDiags)
 	return item, diags
 }
 
@@ -129,7 +144,7 @@ func dashboardMapPinnedPanelsFromAPI(
 		}
 
 		ppm, d := h.PinnedHandler().FromAPI(ctx, tf, raw)
-		diags.Append(d...)
+		appendHandlerDiagnosticsWithPinnedItemPath(&diags, itemPath, d)
 		if diags.HasError() {
 			return nil, diags
 		}
