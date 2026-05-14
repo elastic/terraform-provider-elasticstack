@@ -32,10 +32,10 @@
 
 ## 5. Update Flow
 
-- [ ] 5.1 In `internal/kibana/dataview/update.go`, after the `UpdateDataViewNamespaces` call (and only when there are no existing errors), compare `stateInner.FieldAttributes` and `planInner.FieldAttributes`:
+- [x] 5.1 In `internal/kibana/dataview/update.go`, after the `UpdateDataViewNamespaces` call (and only when there are no existing errors), compare `stateInner.FieldAttributes` and `planInner.FieldAttributes`:
   - Build a `map[string]interface{}` delta of all fields present in the plan that differ from state, plus all fields removed from plan (using an empty object `{}` or the appropriate clearing payload).
   - If the delta is non-empty, call `kibanaoapi.UpdateFieldMetadata(ctx, oapiClient, spaceID, viewID, delta)` and append any diagnostics.
-- [ ] 5.2 Ensure the `populateFromAPI` call at the end of `Update` re-reads the data view state after both `UpdateDataView` and `UpdateFieldMetadata` have run so that final state reflects all changes.
+- [x] 5.2 Ensure the `populateFromAPI` call at the end of `Update` re-reads the data view state after both `UpdateDataView` and `UpdateFieldMetadata` have run so that final state reflects all changes.
 
 ## 6. Acceptance Tests
 

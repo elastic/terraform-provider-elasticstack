@@ -87,6 +87,43 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 		return
 	}
 
+	// Apply field_attrs delta via UpdateFieldMetadata (after main update and namespace reconciliation).
+	if !planInner.FieldAttributes.IsUnknown() && !stateInner.FieldAttributes.IsUnknown() {
+		planFA := map[string]fieldAttrModel{}
+		stateFA := map[string]fieldAttrModel{}
+		if !planInner.FieldAttributes.IsNull() {
+			diags := planInner.FieldAttributes.ElementsAs(ctx, &planFA, false)
+			resp.Diagnostics.Append(diags...)
+		}
+		if !stateInner.FieldAttributes.IsNull() {
+			diags := stateInner.FieldAttributes.ElementsAs(ctx, &stateFA, false)
+			resp.Diagnostics.Append(diags...)
+		}
+		if !resp.Diagnostics.HasError() {
+			delta := buildFieldAttrsMetadataDelta(planFA, stateFA)
+			if len(delta) > 0 {
+				resp.Diagnostics.Append(
+					kibanaoapi.UpdateFieldMetadata(ctx, oapiClient, spaceID, viewID, delta)...,
+				)
+				if resp.Diagnostics.HasError() {
+					return
+				}
+				refreshed, refreshDiags := kibanaoapi.GetDataView(ctx, oapiClient, spaceID, viewID)
+				resp.Diagnostics.Append(refreshDiags...)
+				if resp.Diagnostics.HasError() {
+					return
+				}
+				if refreshed != nil {
+					dataView = refreshed
+				}
+			}
+		}
+	}
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	diags = planModel.populateFromAPI(ctx, dataView, spaceID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -95,4 +132,31 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 
 	diags = resp.State.Set(ctx, planModel)
 	resp.Diagnostics.Append(diags...)
+}
+
+// buildFieldAttrsMetadataDelta returns a JSON-shaped map for POST .../fields: keys are field names,
+// values are objects with camelCase keys matching kbapi.DataViewsFieldattrs (`customLabel`, `count`).
+// Removed fields use an empty object as a minimal clearing payload (REQ-016).
+func buildFieldAttrsMetadataDelta(planFA, stateFA map[string]fieldAttrModel) map[string]interface{} {
+	delta := map[string]interface{}{}
+
+	for name, planEntry := range planFA {
+		stateEntry, exists := stateFA[name]
+		if !exists || !planEntry.CustomLabel.Equal(stateEntry.CustomLabel) || !planEntry.Count.Equal(stateEntry.Count) {
+			payload := map[string]interface{}{}
+			if !planEntry.CustomLabel.IsNull() {
+				payload["customLabel"] = planEntry.CustomLabel.ValueString()
+			}
+			if !planEntry.Count.IsNull() {
+				payload["count"] = planEntry.Count.ValueInt64()
+			}
+			delta[name] = payload
+		}
+	}
+	for name := range stateFA {
+		if _, stillInPlan := planFA[name]; !stillInPlan {
+			delta[name] = map[string]interface{}{}
+		}
+	}
+	return delta
 }
