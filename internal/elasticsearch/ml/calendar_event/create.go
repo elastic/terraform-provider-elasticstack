@@ -30,10 +30,15 @@ import (
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/hashicorp/go-version"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
+
+// mlCalendarEventOptionalAPIFieldsMinElasticsearch is the minimum Elasticsearch version that accepts
+// skip_result, skip_model_update, and force_time_shift on the post calendar events API.
+var mlCalendarEventOptionalAPIFieldsMinElasticsearch = version.Must(version.NewVersion("8.16.0"))
 
 func createCalendarEvent(ctx context.Context, client *clients.ElasticsearchScopedClient, plan CalendarEventTFModel) (CalendarEventTFModel, fwdiags.Diagnostics) {
 	var diags fwdiags.Diagnostics
@@ -44,6 +49,23 @@ func createCalendarEvent(ctx context.Context, client *clients.ElasticsearchScope
 	diags.Append(wdiags...)
 	if diags.HasError() {
 		return plan, diags
+	}
+
+	if postCalendarEventWireNeedsRawPOSTBody(planWire) {
+		sv, vdiags := client.ServerVersion(ctx)
+		diags.Append(diagutil.FrameworkDiagsFromSDK(vdiags)...)
+		if diags.HasError() {
+			return plan, diags
+		}
+		if sv.LessThan(mlCalendarEventOptionalAPIFieldsMinElasticsearch) {
+			diags.AddError(
+				"ML calendar event optional scheduling fields not supported",
+				fmt.Sprintf("skip_result, skip_model_update, and force_time_shift require Elasticsearch %s or newer; "+
+					"this cluster is %s. Omit these arguments or upgrade Elasticsearch.",
+					mlCalendarEventOptionalAPIFieldsMinElasticsearch.String(), sv.String()),
+			)
+			return plan, diags
+		}
 	}
 
 	tflog.Debug(ctx, fmt.Sprintf("Creating ML calendar event for calendar: %s", calendarID))

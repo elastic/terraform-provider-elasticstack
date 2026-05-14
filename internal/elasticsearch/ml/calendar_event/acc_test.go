@@ -23,11 +23,17 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
+
+// mlCalendarEventOptionalSchedulingMinElasticsearch is the minimum Elasticsearch version for the
+// post calendar events API fields skip_result, skip_model_update, and force_time_shift (see ES #112837).
+var mlCalendarEventOptionalSchedulingMinElasticsearch = version.Must(version.NewVersion("8.16.0"))
 
 func TestAccResourceMLCalendarEvent(t *testing.T) {
 	calendarID := fmt.Sprintf("test-cal-evt-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
@@ -55,6 +61,7 @@ func TestAccResourceMLCalendarEvent(t *testing.T) {
 }
 
 func TestAccResourceMLCalendarEvent_optionalSchedulingFields(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, mlCalendarEventOptionalSchedulingMinElasticsearch, versionutils.FlavorAny)
 	calendarID := fmt.Sprintf("test-cal-evt-opt-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	vars := config.Variables{
 		"calendar_id": config.StringVariable(calendarID),
