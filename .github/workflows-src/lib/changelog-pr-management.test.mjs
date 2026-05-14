@@ -85,6 +85,7 @@ test('manageUnreleasedPR: existing open PR → updates body, returns action=upda
 
   const result = await manageUnreleasedPR({
     github,
+    core: null,
     owner: 'org',
     repo: 'repo',
     compareRange: 'v1.0.0...HEAD',
@@ -137,6 +138,7 @@ test('manageUnreleasedPR: no existing PR → creates new PR, returns action=crea
 
   const result = await manageUnreleasedPR({
     github,
+    core: null,
     owner: 'org',
     repo: 'repo',
     compareRange: 'v0.9.0...HEAD',
@@ -180,6 +182,7 @@ test('manageUnreleasedPR: addLabels failure warns and does not fail after creati
 
   const result = await manageUnreleasedPR({
     github,
+    core: github.core,
     owner: 'org',
     repo: 'repo',
     compareRange: 'v0.9.0...HEAD',
@@ -219,6 +222,7 @@ test('manageUnreleasedPR: addLabels failure warns and does not fail after updati
 
   const result = await manageUnreleasedPR({
     github,
+    core: github.core,
     owner: 'org',
     repo: 'repo',
     compareRange: 'v1.0.0...HEAD',

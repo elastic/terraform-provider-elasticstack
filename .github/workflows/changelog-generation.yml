@@ -1389,10 +1389,10 @@ jobs:
              * If found, updates its body and returns action='updated'.
              * If not found, creates a new PR and returns action='created'.
              *
-             * @param {{ github: object, owner: string, repo: string, compareRange: string }} opts
+             * @param {{ github: object, core?: object, owner: string, repo: string, compareRange: string }} opts
              * @returns {Promise<{ prAction: string, prNumber: number, prUrl: string }>}
              */
-            async function manageUnreleasedPR({ github, owner, repo, compareRange }) {
+            async function manageUnreleasedPR({ github, core, owner, repo, compareRange }) {
               const prBody = buildUnreleasedPRBody({ compareRange });
             
               const { data: existingPRs } = await github.rest.pulls.list({
@@ -1415,7 +1415,7 @@ jobs:
                   github,
                   owner,
                   repo,
-                  core: github.core,
+                  core,
                   issue_number: existingPR.number,
                 });
                 return {
@@ -1437,7 +1437,7 @@ jobs:
                 github,
                 owner,
                 repo,
-                core: github.core,
+                core,
                 issue_number: newPR.number,
               });
               return {
@@ -1641,10 +1641,10 @@ jobs:
              * If found, updates its body and returns action='updated'.
              * If not found, creates a new PR and returns action='created'.
              *
-             * @param {{ github: object, owner: string, repo: string, compareRange: string }} opts
+             * @param {{ github: object, core?: object, owner: string, repo: string, compareRange: string }} opts
              * @returns {Promise<{ prAction: string, prNumber: number, prUrl: string }>}
              */
-            async function manageUnreleasedPR({ github, owner, repo, compareRange }) {
+            async function manageUnreleasedPR({ github, core, owner, repo, compareRange }) {
               const prBody = buildUnreleasedPRBody({ compareRange });
             
               const { data: existingPRs } = await github.rest.pulls.list({
@@ -1667,7 +1667,7 @@ jobs:
                   github,
                   owner,
                   repo,
-                  core: github.core,
+                  core,
                   issue_number: existingPR.number,
                 });
                 return {
@@ -1689,7 +1689,7 @@ jobs:
                 github,
                 owner,
                 repo,
-                core: github.core,
+                core,
                 issue_number: newPR.number,
               });
               return {
@@ -1774,7 +1774,7 @@ jobs:
             const { owner, repo } = context.repo;
             const compareRange = process.env.COMPARE_RANGE;
             
-            const result = await manageUnreleasedPR({ github, owner, repo, compareRange });
+            const result = await manageUnreleasedPR({ github, core, owner, repo, compareRange });
             core.setOutput('pr_action', result.prAction);
             core.setOutput('pr_number', String(result.prNumber));
             core.setOutput('pr_url', result.prUrl);

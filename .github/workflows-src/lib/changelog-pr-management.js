@@ -84,10 +84,10 @@ function buildReleasePRBody({ targetVersion, compareRange }) {
  * If found, updates its body and returns action='updated'.
  * If not found, creates a new PR and returns action='created'.
  *
- * @param {{ github: object, owner: string, repo: string, compareRange: string }} opts
+ * @param {{ github: object, core?: object, owner: string, repo: string, compareRange: string }} opts
  * @returns {Promise<{ prAction: string, prNumber: number, prUrl: string }>}
  */
-async function manageUnreleasedPR({ github, owner, repo, compareRange }) {
+async function manageUnreleasedPR({ github, core, owner, repo, compareRange }) {
   const prBody = buildUnreleasedPRBody({ compareRange });
 
   const { data: existingPRs } = await github.rest.pulls.list({
@@ -110,7 +110,7 @@ async function manageUnreleasedPR({ github, owner, repo, compareRange }) {
       github,
       owner,
       repo,
-      core: github.core,
+      core,
       issue_number: existingPR.number,
     });
     return {
@@ -132,7 +132,7 @@ async function manageUnreleasedPR({ github, owner, repo, compareRange }) {
     github,
     owner,
     repo,
-    core: github.core,
+    core,
     issue_number: newPR.number,
   });
   return {
