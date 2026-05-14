@@ -24,6 +24,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -153,7 +154,7 @@ func normalizeKibanaLensNumberFormatJSONString(jsonStr string) string {
 	if b, ok := m["compact"].(bool); ok && !b {
 		delete(m, "compact")
 	}
-	sorted := sortJSONMapKeysRecursive(m)
+	sorted := lenscommon.SortJSONMapKeysRecursive(m)
 	out, err := json.Marshal(sorted)
 	if err != nil {
 		return jsonStr
