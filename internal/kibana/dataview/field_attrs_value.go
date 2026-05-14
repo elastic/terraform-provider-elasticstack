@@ -77,18 +77,9 @@ func (v FieldAttrsValue) MapSemanticEquals(ctx context.Context, priorValuable ba
 		if priorValue.IsUnknown() {
 			return false, diags
 		}
-		for _, priorAttr := range priorValue.Elements() {
-			priorOV, ok := priorAttr.(basetypes.ObjectValue)
+		for fieldName, priorAttr := range priorValue.Elements() {
+			priorModel, ok := decodeFieldAttrEntry(ctx, fieldName, priorAttr, &diags)
 			if !ok {
-				diags.AddError(
-					"Semantic Equality Check Error",
-					"Expected basetypes.ObjectValue for field_attrs entry, got "+fmt.Sprintf("%T", priorAttr),
-				)
-				return false, diags
-			}
-			var priorModel fieldAttrModel
-			diags.Append(priorOV.As(ctx, &priorModel, basetypes.ObjectAsOptions{})...)
-			if diags.HasError() {
 				return false, diags
 			}
 			if !priorModel.CustomLabel.IsNull() {
@@ -102,40 +93,24 @@ func (v FieldAttrsValue) MapSemanticEquals(ctx context.Context, priorValuable ba
 		return priorValue.IsUnknown(), diags
 	}
 
+	// MapValue.Elements() copies the underlying map, so hoist both sides once instead of
+	// re-copying per iteration (would otherwise be O(N*M) for an N-key plan vs M-key state).
 	newElems := v.Elements()
+	priorElems := priorValue.Elements()
+
 	for fieldName, newAttrValue := range newElems {
-		newOV, ok := newAttrValue.(basetypes.ObjectValue)
+		newModel, ok := decodeFieldAttrEntry(ctx, fieldName, newAttrValue, &diags)
 		if !ok {
-			diags.AddError(
-				"Semantic Equality Check Error",
-				"Expected basetypes.ObjectValue for field_attrs entry "+fieldName+", got "+fmt.Sprintf("%T", newAttrValue),
-			)
 			return false, diags
 		}
 
-		var newModel fieldAttrModel
-		diags.Append(newOV.As(ctx, &newModel, basetypes.ObjectAsOptions{})...)
-		if diags.HasError() {
-			return false, diags
-		}
-
-		priorAttrValue, exists := priorValue.Elements()[fieldName]
+		priorAttrValue, exists := priorElems[fieldName]
 		if !exists {
 			return false, diags
 		}
 
-		priorOV, ok := priorAttrValue.(basetypes.ObjectValue)
+		priorModel, ok := decodeFieldAttrEntry(ctx, fieldName, priorAttrValue, &diags)
 		if !ok {
-			diags.AddError(
-				"Semantic Equality Check Error",
-				"Expected basetypes.ObjectValue for field_attrs entry "+fieldName+", got "+fmt.Sprintf("%T", priorAttrValue),
-			)
-			return false, diags
-		}
-
-		var priorModel fieldAttrModel
-		diags.Append(priorOV.As(ctx, &priorModel, basetypes.ObjectAsOptions{})...)
-		if diags.HasError() {
 			return false, diags
 		}
 
@@ -143,39 +118,49 @@ func (v FieldAttrsValue) MapSemanticEquals(ctx context.Context, priorValuable ba
 			return false, diags
 		}
 
-		if !newModel.Count.IsNull() {
-			if priorModel.Count.IsNull() || !newModel.Count.Equal(priorModel.Count) {
-				return false, diags
-			}
+		// A null planned count is satisfied by any prior count (server may inject popularity);
+		// an explicit planned count must match.
+		if !newModel.Count.IsNull() && (priorModel.Count.IsNull() || !newModel.Count.Equal(priorModel.Count)) {
+			return false, diags
 		}
 	}
 
-	for fieldName, priorAttrValue := range priorValue.Elements() {
+	for fieldName, priorAttrValue := range priorElems {
 		if _, inNew := newElems[fieldName]; inNew {
 			continue
 		}
-
-		priorOV, ok := priorAttrValue.(basetypes.ObjectValue)
+		priorModel, ok := decodeFieldAttrEntry(ctx, fieldName, priorAttrValue, &diags)
 		if !ok {
-			diags.AddError(
-				"Semantic Equality Check Error",
-				"Expected basetypes.ObjectValue for field_attrs entry "+fieldName+", got "+fmt.Sprintf("%T", priorAttrValue),
-			)
 			return false, diags
 		}
-
-		var priorModel fieldAttrModel
-		diags.Append(priorOV.As(ctx, &priorModel, basetypes.ObjectAsOptions{})...)
-		if diags.HasError() {
-			return false, diags
-		}
-
+		// Removing a server-only count entry is not a real change; removing a user-managed
+		// labelled entry is.
 		if !priorModel.CustomLabel.IsNull() {
 			return false, diags
 		}
 	}
 
 	return true, diags
+}
+
+// decodeFieldAttrEntry asserts the inner ObjectValue and decodes it into a fieldAttrModel,
+// reporting a uniform diagnostic on type mismatch. Centralizes the error message used by both
+// the new/prior loops in MapSemanticEquals.
+func decodeFieldAttrEntry(ctx context.Context, fieldName string, av attr.Value, diags *diag.Diagnostics) (fieldAttrModel, bool) {
+	ov, ok := av.(basetypes.ObjectValue)
+	if !ok {
+		diags.AddError(
+			"Semantic Equality Check Error",
+			fmt.Sprintf("Expected basetypes.ObjectValue for field_attrs entry %s, got %T", fieldName, av),
+		)
+		return fieldAttrModel{}, false
+	}
+	var m fieldAttrModel
+	diags.Append(ov.As(ctx, &m, basetypes.ObjectAsOptions{})...)
+	if diags.HasError() {
+		return fieldAttrModel{}, false
+	}
+	return m, true
 }
 
 // NewFieldAttrsNull creates a FieldAttrsValue with a null value.
@@ -190,14 +175,6 @@ func NewFieldAttrsUnknown(elemType attr.Type) FieldAttrsValue {
 	return FieldAttrsValue{
 		MapValue: basetypes.NewMapUnknown(elemType),
 	}
-}
-
-// NewFieldAttrsValue creates a FieldAttrsValue with a known value.
-func NewFieldAttrsValue(elemType attr.Type, elements map[string]attr.Value) (FieldAttrsValue, diag.Diagnostics) {
-	mapValue, diags := basetypes.NewMapValue(elemType, elements)
-	return FieldAttrsValue{
-		MapValue: mapValue,
-	}, diags
 }
 
 // NewFieldAttrsValueFrom creates a FieldAttrsValue from a map of Go values.
