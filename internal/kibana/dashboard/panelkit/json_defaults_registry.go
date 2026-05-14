@@ -15,22 +15,28 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package rangeslider
+package panelkit
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 )
 
-var panelJSONPopulateDefaults customtypes.PopulateDefaultsFunc[map[string]any]
+// GlobalPanelJSONDefaults is set once by dashboard init and shared by all panel packages.
+// Panel packages must not import the dashboard package (circular dependency), so this
+// shared variable in panelkit acts as the bridge.
+var GlobalPanelJSONDefaults customtypes.PopulateDefaultsFunc[map[string]any]
 
-func SetPopulatePanelConfigJSONDefaults(fn customtypes.PopulateDefaultsFunc[map[string]any]) {
-	panelJSONPopulateDefaults = fn
-}
-
-func panelConfigJSONNull() customtypes.JSONWithDefaultsValue[map[string]any] {
-	fn := panelJSONPopulateDefaults
+// PanelJSONDefaultsFunc returns GlobalPanelJSONDefaults, falling back to an identity
+// function when it has not been set (e.g. in unit tests).
+func PanelJSONDefaultsFunc() customtypes.PopulateDefaultsFunc[map[string]any] {
+	fn := GlobalPanelJSONDefaults
 	if fn == nil {
 		fn = func(m map[string]any) map[string]any { return m }
 	}
-	return customtypes.NewJSONWithDefaultsNull(fn)
+	return fn
+}
+
+// PanelConfigJSONNull returns a null JSONWithDefaultsValue wired with PanelJSONDefaultsFunc.
+func PanelConfigJSONNull() customtypes.JSONWithDefaultsValue[map[string]any] {
+	return customtypes.NewJSONWithDefaultsNull(PanelJSONDefaultsFunc())
 }

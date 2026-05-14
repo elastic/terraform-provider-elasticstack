@@ -58,7 +58,7 @@ func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item k
 
 	pm.Grid = panelkit.GridFromAPI(rsPanel.Grid.X, rsPanel.Grid.Y, rsPanel.Grid.W, rsPanel.Grid.H)
 	pm.ID = panelkit.IDFromAPI(rsPanel.Id)
-	pm.ConfigJSON = panelConfigJSONNull()
+	pm.ConfigJSON = panelkit.PanelConfigJSONNull()
 	PopulateFromAPI(ctx, pm, prior, &rsPanel)
 	return nil
 }

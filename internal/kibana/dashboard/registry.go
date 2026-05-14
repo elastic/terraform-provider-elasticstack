@@ -56,18 +56,7 @@ var panelTypeToHandler map[string]iface.Handler
 var derivedPanelConfigNames []string
 
 func init() {
-	sloburnrate.SetPopulatePanelConfigJSONDefaults(populatePanelConfigJSONDefaults)
-	sloerrorbudget.SetPopulatePanelConfigJSONDefaults(populatePanelConfigJSONDefaults)
-	slooverview.SetPopulatePanelConfigJSONDefaults(populatePanelConfigJSONDefaults)
-	syntheticsmonitors.SetPopulatePanelConfigJSONDefaults(populatePanelConfigJSONDefaults)
-	syntheticsstatsoverview.SetPopulatePanelConfigJSONDefaults(populatePanelConfigJSONDefaults)
-	timeslider.SetPopulatePanelConfigJSONDefaults(populatePanelConfigJSONDefaults)
-	optionslist.SetPopulatePanelConfigJSONDefaults(populatePanelConfigJSONDefaults)
-	rangeslider.SetPopulatePanelConfigJSONDefaults(populatePanelConfigJSONDefaults)
-	esqlcontrol.SetPopulatePanelConfigJSONDefaults(populatePanelConfigJSONDefaults)
-	markdown.SetPopulatePanelConfigJSONDefaults(populatePanelConfigJSONDefaults)
-	sloalerts.SetPopulatePanelConfigJSONDefaults(populatePanelConfigJSONDefaults)
-	image.SetPopulatePanelConfigJSONDefaults(populatePanelConfigJSONDefaults)
+	panelkit.GlobalPanelJSONDefaults = populatePanelConfigJSONDefaults
 	panelTypeToHandler = make(map[string]iface.Handler, len(panelHandlers))
 	derivedPanelConfigNames = append(derivedPanelConfigNames, "config_json")
 	for _, h := range panelHandlers {
