@@ -19,17 +19,17 @@ package validators
 
 import (
 	"regexp"
+
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 )
 
-var alertingDurationPattern = "^[1-9][0-9]*(?:d|h|m|s)$"
+var alertingDurationRegex = regexp.MustCompile(`^[1-9][0-9]*(?:d|h|m|s)$`)
 
 func StringMatchesAlertingDurationRegex(s string) (matched bool, err error) {
-	return regexp.MatchString(alertingDurationPattern, s)
+	return alertingDurationRegex.MatchString(s), nil
 }
 
-var StringIsAlertingDuration = regexStringValidator{
-	description: "a valid alerting duration in seconds (s), minutes (m), hours (h), or days (d)",
-	errSummary:  "expected value to be a valid alerting duration",
-	errDetail:   "This value must be a valid alerting duration in seconds (s), minutes (m), hours (h), or days (d).",
-	matchFn:     StringMatchesAlertingDurationRegex,
-}
+var StringIsAlertingDuration = stringvalidator.RegexMatches(
+	alertingDurationRegex,
+	"This value must be a valid alerting duration in seconds (s), minutes (m), hours (h), or days (d).",
+)

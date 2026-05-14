@@ -19,16 +19,17 @@ package validators
 
 import (
 	"regexp"
+
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 )
 
+var onWeekDayRegex = regexp.MustCompile(`^(((\+|-)[1-5])?(MO|TU|WE|TH|FR|SA|SU))$`)
+
 func StringMatchesOnWeekDayRegex(s string) (matched bool, err error) {
-	pattern := `^(((\+|-)[1-5])?(MO|TU|WE|TH|FR|SA|SU))$`
-	return regexp.MatchString(pattern, s)
+	return onWeekDayRegex.MatchString(s), nil
 }
 
-var StringIsMaintenanceWindowOnWeekDay = regexStringValidator{
-	description: "a valid OnWeekDay. Accepted values are specific days of the week (`[MO,TU,WE,TH,FR,SA,SU]`) or nth day of month (`[+1MO, -3FR, +2WE, -4SA, -5SU]`).",
-	errSummary:  "expected value to be a valid OnWeekDay",
-	errDetail:   "This value must be a valid OnWeekDay. Accepted values are specific days of the week (`[MO,TU,WE,TH,FR,SA,SU]`) or nth day of month (`[+1MO, -3FR, +2WE, -4SA, -5SU]`).",
-	matchFn:     StringMatchesOnWeekDayRegex,
-}
+var StringIsMaintenanceWindowOnWeekDay = stringvalidator.RegexMatches(
+	onWeekDayRegex,
+	"This value must be a valid OnWeekDay. Accepted values are specific days of the week (`[MO,TU,WE,TH,FR,SA,SU]`) or nth day of month (`[+1MO, -3FR, +2WE, -4SA, -5SU]`).",
+)
