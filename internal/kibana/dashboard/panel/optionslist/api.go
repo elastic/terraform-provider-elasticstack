@@ -133,18 +133,10 @@ func (Handler) ValidatePanelConfig(_ context.Context, panelTypeDiscriminator str
 	writeErr := func(field, msg string) {
 		out.AddAttributeError(cfgPath.AtName(field), "Invalid options list control configuration", msg)
 	}
-	if s, ok := dataViewAttr.(types.String); ok {
-		if s.IsNull() || s.IsUnknown() || s.ValueString() == "" {
-			writeErr("data_view_id", "`data_view_id` is required.")
-		}
-	} else if dataViewAttr != nil {
+	if deferDV, missDV := panelkit.StringAttrDeferOrMissing(dataViewAttr); !deferDV && missDV {
 		writeErr("data_view_id", "`data_view_id` is required.")
 	}
-	if s, ok := fieldNameAttr.(types.String); ok {
-		if s.IsNull() || s.IsUnknown() || s.ValueString() == "" {
-			writeErr("field_name", "`field_name` is required.")
-		}
-	} else if fieldNameAttr != nil {
+	if deferFN, missFN := panelkit.StringAttrDeferOrMissing(fieldNameAttr); !deferFN && missFN {
 		writeErr("field_name", "`field_name` is required.")
 	}
 	return out

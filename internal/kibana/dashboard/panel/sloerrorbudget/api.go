@@ -111,6 +111,16 @@ func (Handler) ValidatePanelConfig(_ context.Context, panelTypeDiscriminator str
 	cfgPath := attrPath
 	if !flat {
 		cfgPath = attrPath.AtName(panelConfigAttrsKeyPrefix)
+		nestedRaw := attrs[panelConfigAttrsKeyPrefix]
+		if nestedRaw != nil {
+			switch {
+			case nestedRaw.IsUnknown():
+				return out
+			case nestedRaw.IsNull():
+				out.AddAttributeError(cfgPath, "Missing slo_error_budget panel configuration", "SLO error budget panels require `slo_error_budget_config`.")
+				return out
+			}
+		}
 	}
 
 	var sloVal attr.Value
@@ -120,11 +130,7 @@ func (Handler) ValidatePanelConfig(_ context.Context, panelTypeDiscriminator str
 		sloVal = obj.Attributes()["slo_id"]
 	}
 
-	if sloStr, ok := sloVal.(types.String); ok {
-		if sloStr.IsNull() || sloStr.IsUnknown() || sloStr.ValueString() == "" {
-			out.AddAttributeError(cfgPath.AtName("slo_id"), `Invalid SLO error budget configuration`, "`slo_id` is required.")
-		}
-	} else if sloVal != nil {
+	if deferSLO, missSLO := panelkit.StringAttrDeferOrMissing(sloVal); !deferSLO && missSLO {
 		out.AddAttributeError(cfgPath.AtName("slo_id"), `Invalid SLO error budget configuration`, "`slo_id` is required.")
 	}
 	return out

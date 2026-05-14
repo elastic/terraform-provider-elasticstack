@@ -17,7 +17,10 @@
 
 package panelkit
 
-import "github.com/hashicorp/terraform-plugin-framework/attr"
+import (
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
 
 // AttrConcreteSet reports whether v is known and non-null Terraform config state (concretely "set").
 func AttrConcreteSet(v attr.Value) bool {
@@ -27,4 +30,29 @@ func AttrConcreteSet(v attr.Value) bool {
 // AttrUnknown reports whether v is Terraform unknown (plan-time deferred).
 func AttrUnknown(v attr.Value) bool {
 	return v != nil && v.IsUnknown()
+}
+
+// StringAttrDeferOrMissing distinguishes unknown Terraform strings (defer validation until values refine)
+// from known-but-absent strings (null/empty → missing).
+func StringAttrDeferOrMissing(v attr.Value) (deferValidate bool, missing bool) {
+	if v == nil {
+		return false, true
+	}
+	if v.IsUnknown() {
+		return true, false
+	}
+	if v.IsNull() {
+		return false, true
+	}
+	s, ok := v.(types.String)
+	if !ok {
+		return false, true
+	}
+	if s.IsUnknown() {
+		return true, false
+	}
+	if s.IsNull() || s.ValueString() == "" {
+		return false, true
+	}
+	return false, false
 }

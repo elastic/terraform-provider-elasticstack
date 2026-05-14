@@ -126,13 +126,11 @@ func (Handler) ValidatePanelConfig(_ context.Context, panelTypeDiscriminator str
 
 	requiredString := func(name, label string) {
 		v := attrRead[name]
-		if s, ok := v.(types.String); ok {
-			if s.IsNull() || s.IsUnknown() || s.ValueString() == "" {
-				out.AddAttributeError(cfgPath.AtName(name), "Invalid ES|QL control configuration", "`"+label+"` is required.")
-			}
+		deferVal, missing := panelkit.StringAttrDeferOrMissing(v)
+		if deferVal {
 			return
 		}
-		if v != nil {
+		if missing {
 			out.AddAttributeError(cfgPath.AtName(name), "Invalid ES|QL control configuration", "`"+label+"` is required.")
 		}
 	}
@@ -143,8 +141,15 @@ func (Handler) ValidatePanelConfig(_ context.Context, panelTypeDiscriminator str
 	requiredString("control_type", "control_type")
 
 	sel := attrRead["selected_options"]
-	if sel == nil || sel.IsNull() || sel.IsUnknown() {
+	switch {
+	case sel == nil:
 		out.AddAttributeError(cfgPath.AtName("selected_options"), "Invalid ES|QL control configuration", "`selected_options` is required.")
+	case sel.IsUnknown():
+		// Defer until list elements are known (cross-resource graphs).
+	default:
+		if sel.IsNull() {
+			out.AddAttributeError(cfgPath.AtName("selected_options"), "Invalid ES|QL control configuration", "`selected_options` is required.")
+		}
 	}
 	return out
 }

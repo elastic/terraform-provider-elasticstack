@@ -125,6 +125,16 @@ func (Handler) ValidatePanelConfig(_ context.Context, panelTypeDiscriminator str
 	cfgPath := attrPath
 	if !flat {
 		cfgPath = attrPath.AtName(panelConfigAttrsKeyPrefix)
+		nestedRaw := attrs[panelConfigAttrsKeyPrefix]
+		if nestedRaw != nil {
+			switch {
+			case nestedRaw.IsUnknown():
+				return out
+			case nestedRaw.IsNull():
+				out.AddAttributeError(cfgPath, "Missing SLO burn rate panel configuration", "SLO burn rate panels require `slo_burn_rate_config`.")
+				return out
+			}
+		}
 	}
 
 	var sloVal, durVal attr.Value
@@ -138,27 +148,25 @@ func (Handler) ValidatePanelConfig(_ context.Context, panelTypeDiscriminator str
 		durVal = objAttrs["duration"]
 	}
 
-	if sloStr, ok := sloVal.(types.String); ok {
-		if sloStr.IsNull() || sloStr.IsUnknown() || sloStr.ValueString() == "" {
-			out.AddAttributeError(cfgPath.AtName("slo_id"), `Invalid SLO burn rate configuration`, "`slo_id` is required.")
-		}
-	} else if sloVal != nil {
+	deferSLO, missSLO := panelkit.StringAttrDeferOrMissing(sloVal)
+	if !deferSLO && missSLO {
 		out.AddAttributeError(cfgPath.AtName("slo_id"), `Invalid SLO burn rate configuration`, "`slo_id` is required.")
 	}
 
-	if durStr, ok := durVal.(types.String); ok {
-		switch {
-		case durStr.IsNull() || durStr.IsUnknown() || durStr.ValueString() == "":
-			out.AddAttributeError(cfgPath.AtName("duration"), `Invalid SLO burn rate configuration`, "`duration` is required.")
-		case !sloBurnRateDurationRegexp.MatchString(durStr.ValueString()):
+	deferDur, missDur := panelkit.StringAttrDeferOrMissing(durVal)
+	switch {
+	case deferDur:
+	case missDur:
+		out.AddAttributeError(cfgPath.AtName("duration"), `Invalid SLO burn rate configuration`, "`duration` is required.")
+	default:
+		durStr := durVal.(types.String)
+		if !sloBurnRateDurationRegexp.MatchString(durStr.ValueString()) {
 			out.AddAttributeError(
 				cfgPath.AtName("duration"),
 				`Invalid SLO burn rate configuration`,
 				"`duration` must match the pattern `^\\d+[mhd]$` (a positive integer followed by m, h, or d).",
 			)
 		}
-	} else if durVal != nil {
-		out.AddAttributeError(cfgPath.AtName("duration"), `Invalid SLO burn rate configuration`, "`duration` is required.")
 	}
 
 	return out
