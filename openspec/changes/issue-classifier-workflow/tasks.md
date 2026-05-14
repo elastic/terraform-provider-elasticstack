@@ -1,6 +1,6 @@
 ## 1. Pre-activation script
 
-- [ ] 1.1 Create `.github/workflows-src/issue-classifier/scripts/compute_issues.inline.js` — determines trigger mode (`event`, `scheduled`, `dispatch`), queries untriaged issues for scheduled/dispatch paths, checks `triaged` label for event path, outputs `mode`, `issues_json` (JSON array of `{number, title}`), `issue_count`, and `gate_reason`
+- [x] 1.1 Create `.github/workflows-src/issue-classifier/scripts/compute_issues.inline.js` — determines trigger mode (`event`, `scheduled`, `dispatch`), queries untriaged issues for scheduled/dispatch paths, checks `triaged` label for event path, outputs `mode`, `issues_json` (JSON array of `{number, title}`), `issue_count`, and `gate_reason`
 
 ## 2. Workflow source file
 
