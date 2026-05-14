@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package panelkit
 
 import (
@@ -10,16 +27,25 @@ import (
 var panelModelTfsdkFieldIndex map[string]int
 
 func init() {
-	t := reflect.TypeOf(models.PanelModel{})
+	t := reflect.TypeFor[models.PanelModel]()
 	panelModelTfsdkFieldIndex = make(map[string]int, t.NumField())
-	for i := 0; i < t.NumField(); i++ {
+	for i := range t.NumField() {
 		f := t.Field(i)
 		tag := f.Tag.Get("tfsdk")
 		if tag == "" {
 			continue
 		}
+		if prev, dup := panelModelTfsdkFieldIndex[tag]; dup {
+			panic(fmt.Sprintf(
+				"dashboard panel PanelModel reflection: duplicate tfsdk tag %q on fields %s and %s",
+				tag, t.Field(prev).Name, f.Name))
+		}
 		panelModelTfsdkFieldIndex[tag] = i
 	}
+}
+
+func unknownPanelBlockPanic(blockName string) {
+	panic(fmt.Sprintf("panelkit: unknown PanelModel block %q (no matching tfsdk tag on PanelModel)", blockName))
 }
 
 // HasPanelConfigBlock reports whether blockName is a tfsdk tag on models.PanelModel.
@@ -60,7 +86,7 @@ func ClearConfig(pm *models.PanelModel, blockName string) {
 	}
 	idx, ok := panelModelTfsdkFieldIndex[blockName]
 	if !ok {
-		return
+		unknownPanelBlockPanic(blockName)
 	}
 	fv := reflect.ValueOf(pm).Elem().Field(idx)
 	if !fv.CanSet() {
@@ -77,7 +103,7 @@ func SetConfig(pm *models.PanelModel, blockName string, cfg any) {
 	}
 	idx, ok := panelModelTfsdkFieldIndex[blockName]
 	if !ok {
-		panic(fmt.Sprintf("panelkit.SetConfig: unknown block %q", blockName))
+		unknownPanelBlockPanic(blockName)
 	}
 	fv := reflect.ValueOf(pm).Elem().Field(idx)
 	if !fv.CanSet() {
@@ -106,7 +132,7 @@ func EnsureMutableTypedConfig(pm *models.PanelModel, blockName string) {
 	}
 	idx, ok := panelModelTfsdkFieldIndex[blockName]
 	if !ok {
-		return
+		unknownPanelBlockPanic(blockName)
 	}
 	fv := reflect.ValueOf(pm).Elem().Field(idx)
 	if !fv.CanSet() || fv.Kind() != reflect.Pointer {
