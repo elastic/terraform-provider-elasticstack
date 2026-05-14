@@ -50,7 +50,7 @@ None.
 
 ### Modified Capabilities
 
-- `kibana-dashboard`: internal refactoring only. User-visible schema and behavior are unchanged.
+- `kibana-dashboard`: internal refactoring; XY pinned-panel state alignment now runs through the same per-chart Lens converters as dashboard panels (see Impact ▸ Behavioral note). Typed schema and read/write contracts remain unchanged aside from that drift-handling improvement.
 
 ## Impact
 
@@ -64,6 +64,10 @@ None.
 
 - Converter unit tests co-located with each converter package
 - Existing acceptance tests for all Lens chart types pass unchanged
+
+### Behavioral note
+
+Pinned panels now receive XY chart state alignment consistent with non-pinned panels (previously only delivered through the dashboard-level slice aligner).
 
 ### Examples
 
