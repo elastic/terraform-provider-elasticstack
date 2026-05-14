@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -30,22 +31,22 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func testPinnedDashboardModelMinimalQuery() *dashboardQueryModel {
-	return &dashboardQueryModel{
+func testPinnedDashboardModelMinimalQuery() *models.DashboardQueryModel {
+	return &models.DashboardQueryModel{
 		Language: types.StringValue("kql"),
 		Text:     types.StringValue(""),
 		JSON:     jsontypes.NewNormalizedNull(),
 	}
 }
 
-func newPinnedDashboardModelBase(pinned []pinnedPanelModel) *dashboardModel {
-	return &dashboardModel{
+func newPinnedDashboardModelBase(pinned []models.PinnedPanelModel) *models.DashboardModel {
+	return &models.DashboardModel{
 		Title: types.StringValue("pinned-mapping-test"),
-		RefreshInterval: &refreshIntervalModel{
+		RefreshInterval: &models.RefreshIntervalModel{
 			Pause: types.BoolValue(true),
 			Value: types.Int64Value(0),
 		},
-		TimeRange: &timeRangeModel{
+		TimeRange: &models.TimeRangeModel{
 			From: types.StringValue("now-15m"),
 			To:   types.StringValue("now"),
 		},
@@ -54,20 +55,20 @@ func newPinnedDashboardModelBase(pinned []pinnedPanelModel) *dashboardModel {
 	}
 }
 
-func pinnedFixtureOptionsList(field string) pinnedPanelModel {
-	return pinnedPanelModel{
+func pinnedFixtureOptionsList(field string) models.PinnedPanelModel {
+	return models.PinnedPanelModel{
 		Type: types.StringValue(panelTypeOptionsListControl),
-		OptionsListControlConfig: &optionsListControlConfigModel{
+		OptionsListControlConfig: &models.OptionsListControlConfigModel{
 			DataViewID: types.StringValue("dv"),
 			FieldName:  types.StringValue(field),
 		},
 	}
 }
 
-func pinnedFixtureRangeSlider(minVal, maxVal string, step float32) pinnedPanelModel {
-	return pinnedPanelModel{
+func pinnedFixtureRangeSlider(minVal, maxVal string, step float32) models.PinnedPanelModel {
+	return models.PinnedPanelModel{
 		Type: types.StringValue(panelTypeRangeSlider),
-		RangeSliderControlConfig: &rangeSliderControlConfigModel{
+		RangeSliderControlConfig: &models.RangeSliderControlConfigModel{
 			DataViewID: types.StringValue("dv"),
 			FieldName:  types.StringValue("source.bytes"),
 			Value: types.ListValueMust(types.StringType, []attr.Value{
@@ -79,9 +80,9 @@ func pinnedFixtureRangeSlider(minVal, maxVal string, step float32) pinnedPanelMo
 	}
 }
 
-func mustAPIPinnedItems(t *testing.T, dm *dashboardModel) *kbapi.DashboardPinnedPanels {
+func mustAPIPinnedItems(t *testing.T, dm *models.DashboardModel) *kbapi.DashboardPinnedPanels {
 	t.Helper()
-	items, diags := dm.pinnedPanelsToAPICreateItems()
+	items, diags := dashboardPinnedPanelsToAPICreateItems(dm)
 	require.False(t, diags.HasError(), "%s", diags)
 	return items
 }
@@ -92,26 +93,23 @@ func Test_dashboardModel_mapPinnedPanelsFromAPI_unsetVsEmptyAndDrift(t *testing.
 
 	t.Run("prior nil + API nil yields nil", func(t *testing.T) {
 		t.Parallel()
-		var d dashboardModel
-		out, diags := d.mapPinnedPanelsFromAPI(ctx, nil, nil)
+		out, diags := dashboardMapPinnedPanelsFromAPI(ctx, nil, nil)
 		require.False(t, diags.HasError())
 		require.Nil(t, out)
 	})
 
 	t.Run("prior nil + API empty slice yields nil", func(t *testing.T) {
 		t.Parallel()
-		var d dashboardModel
 		api := []kbapi.DashboardPinnedPanels_Item{}
-		out, diags := d.mapPinnedPanelsFromAPI(ctx, nil, &api)
+		out, diags := dashboardMapPinnedPanelsFromAPI(ctx, nil, &api)
 		require.False(t, diags.HasError())
 		require.Nil(t, out)
 	})
 
 	t.Run("prior empty slice + API empty slice yields empty slice", func(t *testing.T) {
 		t.Parallel()
-		var d dashboardModel
 		api := []kbapi.DashboardPinnedPanels_Item{}
-		out, diags := d.mapPinnedPanelsFromAPI(ctx, []pinnedPanelModel{}, &api)
+		out, diags := dashboardMapPinnedPanelsFromAPI(ctx, []models.PinnedPanelModel{}, &api)
 		require.False(t, diags.HasError())
 		require.NotNil(t, out)
 		require.Empty(t, out)
@@ -119,12 +117,11 @@ func Test_dashboardModel_mapPinnedPanelsFromAPI_unsetVsEmptyAndDrift(t *testing.
 
 	t.Run("prior nil + API one entry yields one populated entry", func(t *testing.T) {
 		t.Parallel()
-		var d dashboardModel
-		src := newPinnedDashboardModelBase([]pinnedPanelModel{pinnedFixtureOptionsList("status")})
+		src := newPinnedDashboardModelBase([]models.PinnedPanelModel{pinnedFixtureOptionsList("status")})
 		api := mustAPIPinnedItems(t, src)
 		require.NotNil(t, api)
 
-		out, diags := d.mapPinnedPanelsFromAPI(ctx, nil, api)
+		out, diags := dashboardMapPinnedPanelsFromAPI(ctx, nil, api)
 		require.False(t, diags.HasError())
 		require.Len(t, out, 1)
 		require.Equal(t, panelTypeOptionsListControl, out[0].Type.ValueString())
@@ -135,13 +132,12 @@ func Test_dashboardModel_mapPinnedPanelsFromAPI_unsetVsEmptyAndDrift(t *testing.
 
 	t.Run("prior populated + API populated same indices and types reuses prior pointers", func(t *testing.T) {
 		t.Parallel()
-		var d dashboardModel
 
-		ol := &optionsListControlConfigModel{
+		ol := &models.OptionsListControlConfigModel{
 			DataViewID: types.StringValue("dv"),
 			FieldName:  types.StringValue("status"),
 		}
-		rs := &rangeSliderControlConfigModel{
+		rs := &models.RangeSliderControlConfigModel{
 			DataViewID: types.StringValue("dv"),
 			FieldName:  types.StringValue("source.bytes"),
 			Value: types.ListValueMust(types.StringType, []attr.Value{
@@ -151,15 +147,15 @@ func Test_dashboardModel_mapPinnedPanelsFromAPI_unsetVsEmptyAndDrift(t *testing.
 			Step: types.Float32Value(10),
 		}
 
-		prior := []pinnedPanelModel{
+		prior := []models.PinnedPanelModel{
 			{Type: types.StringValue(panelTypeOptionsListControl), OptionsListControlConfig: ol},
 			{Type: types.StringValue(panelTypeRangeSlider), RangeSliderControlConfig: rs},
 		}
 
-		api := mustAPIPinnedItems(t, newPinnedDashboardModelBase([]pinnedPanelModel{prior[0], prior[1]}))
+		api := mustAPIPinnedItems(t, newPinnedDashboardModelBase([]models.PinnedPanelModel{prior[0], prior[1]}))
 		require.NotNil(t, api)
 
-		out, diags := d.mapPinnedPanelsFromAPI(ctx, prior, api)
+		out, diags := dashboardMapPinnedPanelsFromAPI(ctx, prior, api)
 		require.False(t, diags.HasError())
 		require.Len(t, out, 2)
 		require.Same(t, ol, out[0].OptionsListControlConfig)
@@ -168,21 +164,20 @@ func Test_dashboardModel_mapPinnedPanelsFromAPI_unsetVsEmptyAndDrift(t *testing.
 
 	t.Run("prior populated + API type drift clears mismatched typed configs", func(t *testing.T) {
 		t.Parallel()
-		var d dashboardModel
 
-		priorOL := &optionsListControlConfigModel{
+		priorOL := &models.OptionsListControlConfigModel{
 			DataViewID: types.StringValue("dv"),
 			FieldName:  types.StringValue("status"),
 		}
-		prior := []pinnedPanelModel{
+		prior := []models.PinnedPanelModel{
 			{Type: types.StringValue(panelTypeOptionsListControl), OptionsListControlConfig: priorOL},
 		}
 
-		apiModel := newPinnedDashboardModelBase([]pinnedPanelModel{pinnedFixtureRangeSlider("1", "2", 1)})
+		apiModel := newPinnedDashboardModelBase([]models.PinnedPanelModel{pinnedFixtureRangeSlider("1", "2", 1)})
 		api := mustAPIPinnedItems(t, apiModel)
 		require.NotNil(t, api)
 
-		out, diags := d.mapPinnedPanelsFromAPI(ctx, prior, api)
+		out, diags := dashboardMapPinnedPanelsFromAPI(ctx, prior, api)
 		require.False(t, diags.HasError())
 		require.Len(t, out, 1)
 		require.Equal(t, panelTypeRangeSlider, out[0].Type.ValueString())
@@ -199,7 +194,7 @@ func Test_dashboardModel_toAPIRequests_pinnedPanelsJSONShape(t *testing.T) {
 		t.Parallel()
 		diags := &diag.Diagnostics{}
 		m := newPinnedDashboardModelBase(nil)
-		req := m.toAPICreateRequest(ctx, diags)
+		req := dashboardToAPICreateRequest(ctx, m, diags)
 		require.False(t, diags.HasError())
 
 		raw, err := json.Marshal(req)
@@ -214,8 +209,8 @@ func Test_dashboardModel_toAPIRequests_pinnedPanelsJSONShape(t *testing.T) {
 	t.Run("create includes explicit empty pinned_panels array", func(t *testing.T) {
 		t.Parallel()
 		diags := &diag.Diagnostics{}
-		m := newPinnedDashboardModelBase([]pinnedPanelModel{})
-		req := m.toAPICreateRequest(ctx, diags)
+		m := newPinnedDashboardModelBase([]models.PinnedPanelModel{})
+		req := dashboardToAPICreateRequest(ctx, m, diags)
 		require.False(t, diags.HasError())
 		require.NotNil(t, req.PinnedPanels)
 		require.Empty(t, *req.PinnedPanels)
@@ -225,7 +220,7 @@ func Test_dashboardModel_toAPIRequests_pinnedPanelsJSONShape(t *testing.T) {
 		t.Parallel()
 		diags := &diag.Diagnostics{}
 		m := newPinnedDashboardModelBase(nil)
-		req := m.toAPIUpdateRequest(ctx, diags)
+		req := dashboardToAPIUpdateRequest(ctx, m, diags)
 		require.False(t, diags.HasError())
 		require.Nil(t, req.PinnedPanels)
 	})
@@ -233,8 +228,8 @@ func Test_dashboardModel_toAPIRequests_pinnedPanelsJSONShape(t *testing.T) {
 	t.Run("update assigns explicit empty pinned_panels array", func(t *testing.T) {
 		t.Parallel()
 		diags := &diag.Diagnostics{}
-		m := newPinnedDashboardModelBase([]pinnedPanelModel{})
-		req := m.toAPIUpdateRequest(ctx, diags)
+		m := newPinnedDashboardModelBase([]models.PinnedPanelModel{})
+		req := dashboardToAPIUpdateRequest(ctx, m, diags)
 		require.False(t, diags.HasError())
 		require.NotNil(t, req.PinnedPanels)
 		require.Empty(t, *req.PinnedPanels)
@@ -243,10 +238,10 @@ func Test_dashboardModel_toAPIRequests_pinnedPanelsJSONShape(t *testing.T) {
 	t.Run("update assigns non-empty pinned_panels", func(t *testing.T) {
 		t.Parallel()
 		diags := &diag.Diagnostics{}
-		m := newPinnedDashboardModelBase([]pinnedPanelModel{
+		m := newPinnedDashboardModelBase([]models.PinnedPanelModel{
 			pinnedFixtureOptionsList("status"),
 		})
-		req := m.toAPIUpdateRequest(ctx, diags)
+		req := dashboardToAPIUpdateRequest(ctx, m, diags)
 		require.False(t, diags.HasError())
 		require.NotNil(t, req.PinnedPanels)
 		require.Len(t, *req.PinnedPanels, 1)
@@ -259,10 +254,10 @@ func Test_dashboardModel_toAPIRequests_pinnedPanelsJSONShape(t *testing.T) {
 	t.Run("pinned panel payload JSON does not include grid", func(t *testing.T) {
 		t.Parallel()
 		diags := &diag.Diagnostics{}
-		m := newPinnedDashboardModelBase([]pinnedPanelModel{
+		m := newPinnedDashboardModelBase([]models.PinnedPanelModel{
 			pinnedFixtureOptionsList("status"),
 		})
-		req := m.toAPICreateRequest(ctx, diags)
+		req := dashboardToAPICreateRequest(ctx, m, diags)
 		require.False(t, diags.HasError())
 		require.NotNil(t, req.PinnedPanels)
 		require.Len(t, *req.PinnedPanels, 1)

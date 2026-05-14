@@ -23,13 +23,14 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func configPriorForVisRead(tfPanel, pm *panelModel) *visConfigModel {
+func configPriorForVisRead(tfPanel, pm *models.PanelModel) *models.VisConfigModel {
 	if tfPanel != nil && tfPanel.VisConfig != nil {
 		return tfPanel.VisConfig
 	}
@@ -42,12 +43,12 @@ func configPriorForVisRead(tfPanel, pm *panelModel) *visConfigModel {
 // populateVisByReferenceFromAPI maps API vis config branch 1 (by-reference saved object panel).
 func populateVisByReferenceFromAPI(
 	ctx context.Context,
-	prior *visConfigModel,
-	pm *panelModel,
+	prior *models.VisConfigModel,
+	pm *models.PanelModel,
 	cfg1 kbapi.KbnDashboardPanelTypeVisConfig1,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
-	tr := lensDashboardAppTimeRangeModel{
+	tr := models.LensDashboardAppTimeRangeModel{
 		From: types.StringValue(cfg1.TimeRange.From),
 		To:   types.StringValue(cfg1.TimeRange.To),
 	}
@@ -59,18 +60,18 @@ func populateVisByReferenceFromAPI(
 	default:
 		tr.Mode = types.StringNull()
 	}
-	by := lensDashboardAppByReferenceModel{
+	by := models.LensDashboardAppByReferenceModel{
 		RefID:     types.StringValue(cfg1.RefId),
 		TimeRange: tr,
 	}
-	var priorBR *lensDashboardAppByReferenceModel
+	var priorBR *models.LensDashboardAppByReferenceModel
 	if prior != nil {
 		priorBR = prior.ByReference
 	}
-	by.Title = byReferenceOptionalStringFromAPI(cfg1.Title, priorBR, func(br *lensDashboardAppByReferenceModel) types.String { return br.Title })
-	by.Description = byReferenceOptionalStringFromAPI(cfg1.Description, priorBR, func(br *lensDashboardAppByReferenceModel) types.String { return br.Description })
-	by.HideTitle = byReferenceOptionalBoolFromAPI(cfg1.HideTitle, priorBR, func(br *lensDashboardAppByReferenceModel) types.Bool { return br.HideTitle })
-	by.HideBorder = byReferenceOptionalBoolFromAPI(cfg1.HideBorder, priorBR, func(br *lensDashboardAppByReferenceModel) types.Bool { return br.HideBorder })
+	by.Title = byReferenceOptionalStringFromAPI(cfg1.Title, priorBR, func(br *models.LensDashboardAppByReferenceModel) types.String { return br.Title })
+	by.Description = byReferenceOptionalStringFromAPI(cfg1.Description, priorBR, func(br *models.LensDashboardAppByReferenceModel) types.String { return br.Description })
+	by.HideTitle = byReferenceOptionalBoolFromAPI(cfg1.HideTitle, priorBR, func(br *models.LensDashboardAppByReferenceModel) types.Bool { return br.HideTitle })
+	by.HideBorder = byReferenceOptionalBoolFromAPI(cfg1.HideBorder, priorBR, func(br *models.LensDashboardAppByReferenceModel) types.Bool { return br.HideBorder })
 
 	switch {
 	case cfg1.References != nil:
@@ -105,14 +106,14 @@ func populateVisByReferenceFromAPI(
 	}
 
 	brCopy := by
-	pm.VisConfig = &visConfigModel{
+	pm.VisConfig = &models.VisConfigModel{
 		ByReference: &brCopy,
 	}
 	return diags
 }
 
 func visByReferenceToAPI(
-	byRef lensDashboardAppByReferenceModel,
+	byRef models.LensDashboardAppByReferenceModel,
 	grid struct {
 		H *float32 `json:"h,omitempty"`
 		W *float32 `json:"w,omitempty"`
@@ -193,7 +194,7 @@ func visByReferenceToAPI(
 	return panelItem, diags
 }
 
-func visConfigToAPI(pm panelModel, dashboard *dashboardModel, grid struct {
+func visConfigToAPI(pm models.PanelModel, dashboard *models.DashboardModel, grid struct {
 	H *float32 `json:"h,omitempty"`
 	W *float32 `json:"w,omitempty"`
 	X float32  `json:"x"`
@@ -209,7 +210,7 @@ func visConfigToAPI(pm panelModel, dashboard *dashboardModel, grid struct {
 	case cfg.ByReference != nil:
 		return visByReferenceToAPI(*cfg.ByReference, grid, panelID)
 	case cfg.ByValue != nil:
-		blocks := &cfg.ByValue.lensByValueChartBlocks
+		blocks := &cfg.ByValue.LensByValueChartBlocks
 		conv, okConv := firstLensVisConverterForChartBlocks(blocks)
 		if !okConv {
 			diags.AddError("Invalid `vis_config.by_value`", "The typed chart block could not be resolved to a Lens visualization converter.")

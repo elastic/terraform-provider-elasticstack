@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -112,8 +113,8 @@ func Test_heatmapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 	filters := []kbapi.LensPanelFilters_Item{fItem}
 	heatmap.Filters = filters
 
-	model := &heatmapConfigModel{}
-	diags := model.fromAPINoESQL(context.Background(), nil, nil, heatmap)
+	model := &models.HeatmapConfigModel{}
+	diags := heatmapConfigFromAPINoESQL(context.Background(), model, nil, nil, heatmap)
 	require.False(t, diags.HasError())
 
 	assert.Equal(t, types.StringValue("Test Heatmap"), model.Title)
@@ -131,7 +132,7 @@ func Test_heatmapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 	require.NotNil(t, model.Legend)
 	assert.Equal(t, types.StringValue("visible"), model.Legend.Visibility)
 
-	chart, diags := model.toAPI(nil)
+	chart, diags := heatmapConfigToAPI(model, nil)
 	require.False(t, diags.HasError())
 
 	heatmapRoundTrip, err := chart.AsHeatmapNoESQL()
@@ -151,11 +152,11 @@ func Test_heatmapLegendModel_visibility_hidden_roundTrip(t *testing.T) {
 			return &v
 		}(),
 	}
-	var m heatmapLegendModel
-	m.fromAPI(api)
+	m := &models.HeatmapLegendModel{}
+	heatmapLegendFromAPI(m, api)
 	assert.Equal(t, types.StringValue("hidden"), m.Visibility)
 
-	out, diags := m.toAPI()
+	out, diags := heatmapLegendToAPI(m)
 	require.False(t, diags.HasError())
 	require.NotNil(t, out.Visibility)
 	assert.Equal(t, kbapi.HeatmapLegendVisibilityHidden, *out.Visibility)
@@ -187,14 +188,14 @@ func Test_heatmapConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 	var heatmap kbapi.HeatmapESQL
 	require.NoError(t, json.Unmarshal([]byte(esqlHeatmapJSON), &heatmap))
 
-	model := &heatmapConfigModel{}
-	diags := model.fromAPIESQL(context.Background(), nil, nil, heatmap)
+	model := &models.HeatmapConfigModel{}
+	diags := heatmapConfigFromAPIESQL(context.Background(), model, nil, nil, heatmap)
 	require.False(t, diags.HasError())
 	assert.Nil(t, model.Query)
 	assert.Equal(t, types.StringValue("ESQL Heatmap"), model.Title)
 	assert.Equal(t, types.StringValue("ESQL heatmap description"), model.Description)
 
-	chart, diags := model.toAPI(nil)
+	chart, diags := heatmapConfigToAPI(model, nil)
 	require.False(t, diags.HasError())
 
 	heatmapRoundTrip, err := chart.AsHeatmapESQL()
@@ -235,12 +236,12 @@ func Test_heatmapPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 	require.NoError(t, attrs.FromHeatmapNoESQL(heatmap))
 
 	converter := newHeatmapPanelConfigConverter()
-	visBv := visByValueModel{}
-	diags := converter.populateFromAttributes(ctx, nil, nil, &visBv.lensByValueChartBlocks, attrs)
+	visBv := models.VisByValueModel{}
+	diags := converter.populateFromAttributes(ctx, nil, nil, &visBv.LensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
 	require.NotNil(t, visBv.HeatmapConfig)
 
-	attrs2, diags := converter.buildAttributes(&visBv.lensByValueChartBlocks, nil)
+	attrs2, diags := converter.buildAttributes(&visBv.LensByValueChartBlocks, nil)
 	require.False(t, diags.HasError())
 
 	noESQL2, err := attrs2.AsHeatmapNoESQL()
@@ -278,12 +279,12 @@ func Test_heatmapPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 	require.NoError(t, attrs.FromHeatmapESQL(heatmap))
 
 	converter := newHeatmapPanelConfigConverter()
-	visBv := visByValueModel{}
-	diags := converter.populateFromAttributes(ctx, nil, nil, &visBv.lensByValueChartBlocks, attrs)
+	visBv := models.VisByValueModel{}
+	diags := converter.populateFromAttributes(ctx, nil, nil, &visBv.LensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
 	require.NotNil(t, visBv.HeatmapConfig)
 
-	attrs2, diags := converter.buildAttributes(&visBv.lensByValueChartBlocks, nil)
+	attrs2, diags := converter.buildAttributes(&visBv.LensByValueChartBlocks, nil)
 	require.False(t, diags.HasError())
 
 	esql2, err := attrs2.AsHeatmapESQL()
@@ -296,7 +297,7 @@ func Test_heatmapPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 func Test_heatmapConfigModel_xAxisYAxisTFSDKFields(t *testing.T) {
 	// Verify the heatmap model struct exposes x_axis_json / y_axis_json as tfsdk attributes.
 	// These are required/optional schema attributes that practitioners provide for breakdown dimensions.
-	typ := reflect.TypeFor[heatmapConfigModel]()
+	typ := reflect.TypeFor[models.HeatmapConfigModel]()
 	foundX, foundY := false, false
 	for field := range typ.Fields() {
 		if tag, ok := field.Tag.Lookup("tfsdk"); ok {
@@ -308,8 +309,8 @@ func Test_heatmapConfigModel_xAxisYAxisTFSDKFields(t *testing.T) {
 			}
 		}
 	}
-	assert.True(t, foundX, "heatmapConfigModel should have tfsdk:x_axis_json field")
-	assert.True(t, foundY, "heatmapConfigModel should have tfsdk:y_axis_json field")
+	assert.True(t, foundX, "models.HeatmapConfigModel should have tfsdk:x_axis_json field")
+	assert.True(t, foundY, "models.HeatmapConfigModel should have tfsdk:y_axis_json field")
 }
 
 func Test_heatmapConfig_lensChartPresentation_hideTitleRoundTrip(t *testing.T) {
@@ -343,18 +344,18 @@ func Test_heatmapConfig_lensChartPresentation_hideTitleRoundTrip(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(`{"operation":"filters","filters":[{"label":"All","filter":{"query":"*","language":"kql"}}]}`), &yAxis))
 	heatmap.Y = &yAxis
 
-	base := &heatmapConfigModel{}
-	require.False(t, base.fromAPINoESQL(ctx, nil, nil, heatmap).HasError())
+	base := &models.HeatmapConfigModel{}
+	require.False(t, heatmapConfigFromAPINoESQL(ctx, base, nil, nil, heatmap).HasError())
 
 	m := *base
 	m.HideTitle = types.BoolValue(true)
 
-	attrs, diags := m.toAPI(dash)
+	attrs, diags := heatmapConfigToAPI(&m, dash)
 	require.False(t, diags.HasError())
 	api, err := attrs.AsHeatmapNoESQL()
 	require.NoError(t, err)
 
-	got := &heatmapConfigModel{}
-	require.False(t, got.fromAPINoESQL(ctx, dash, &m, api).HasError())
+	got := &models.HeatmapConfigModel{}
+	require.False(t, heatmapConfigFromAPINoESQL(ctx, got, dash, &m, api).HasError())
 	assert.Equal(t, types.BoolValue(true), got.HideTitle)
 }

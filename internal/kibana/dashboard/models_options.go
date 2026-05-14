@@ -19,33 +19,24 @@ package dashboard
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-type optionsModel struct {
-	HidePanelTitles  types.Bool `tfsdk:"hide_panel_titles"`
-	UseMargins       types.Bool `tfsdk:"use_margins"`
-	SyncColors       types.Bool `tfsdk:"sync_colors"`
-	SyncTooltips     types.Bool `tfsdk:"sync_tooltips"`
-	SyncCursor       types.Bool `tfsdk:"sync_cursor"`
-	AutoApplyFilters types.Bool `tfsdk:"auto_apply_filters"`
-	HidePanelBorders types.Bool `tfsdk:"hide_panel_borders"`
-}
-
-func (m *dashboardModel) optionsToAPI() (kbapi.KbnDashboardOptions, diag.Diagnostics) {
+func dashboardOptionsToAPI(m *models.DashboardModel) (kbapi.KbnDashboardOptions, diag.Diagnostics) {
 	if m.Options == nil {
 		return kbapi.KbnDashboardOptions{}, diag.Diagnostics{}
 	}
-	o := m.Options.toAPI()
+	o := optionsToAPI(*m.Options)
 	if o == nil {
 		return kbapi.KbnDashboardOptions{}, diag.Diagnostics{}
 	}
 	return *o, diag.Diagnostics{}
 }
 
-func (m *dashboardModel) mapOptionsFromAPI(options kbapi.KbnDashboardOptions) *optionsModel {
+func dashboardMapOptionsFromAPI(m *models.DashboardModel, options kbapi.KbnDashboardOptions) *models.OptionsModel {
 	// Kibana snapshots can materialize dashboard option defaults even when the
 	// options block was omitted in Terraform config. Preserve a nil options block
 	// in that case to avoid "inconsistent result after apply".
@@ -53,7 +44,7 @@ func (m *dashboardModel) mapOptionsFromAPI(options kbapi.KbnDashboardOptions) *o
 		return nil
 	}
 
-	model := optionsModel{
+	model := models.OptionsModel{
 		HidePanelTitles:  types.BoolPointerValue(options.HidePanelTitles),
 		UseMargins:       types.BoolPointerValue(options.UseMargins),
 		SyncColors:       types.BoolPointerValue(options.SyncColors),
@@ -66,7 +57,7 @@ func (m *dashboardModel) mapOptionsFromAPI(options kbapi.KbnDashboardOptions) *o
 	return &model
 }
 
-func (m optionsModel) toAPI() *kbapi.KbnDashboardOptions {
+func optionsToAPI(m models.OptionsModel) *kbapi.KbnDashboardOptions {
 	options := kbapi.KbnDashboardOptions{}
 	if typeutils.IsKnown(m.HidePanelTitles) {
 		options.HidePanelTitles = m.HidePanelTitles.ValueBoolPointer()

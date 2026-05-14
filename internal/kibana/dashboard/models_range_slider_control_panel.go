@@ -21,19 +21,10 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
-
-type rangeSliderControlConfigModel struct {
-	Title             types.String  `tfsdk:"title"`
-	DataViewID        types.String  `tfsdk:"data_view_id"`
-	FieldName         types.String  `tfsdk:"field_name"`
-	UseGlobalFilters  types.Bool    `tfsdk:"use_global_filters"`
-	IgnoreValidations types.Bool    `tfsdk:"ignore_validations"`
-	Value             types.List    `tfsdk:"value"`
-	Step              types.Float32 `tfsdk:"step"`
-}
 
 // populateRangeSliderControlFromAPI reads back a range slider control config from the API
 // response and updates the panel model. Null-preservation semantics apply: if a field is
@@ -43,7 +34,7 @@ type rangeSliderControlConfigModel struct {
 //
 // tfPanel is the prior TF state/plan panel, or nil on import. When nil, the function
 // populates all API-returned fields unconditionally (no prior intent to preserve).
-func populateRangeSliderControlFromAPI(ctx context.Context, pm *panelModel, tfPanel *panelModel, rs *kbapi.KbnDashboardPanelTypeRangeSliderControl) {
+func populateRangeSliderControlFromAPI(ctx context.Context, pm *models.PanelModel, tfPanel *models.PanelModel, rs *kbapi.KbnDashboardPanelTypeRangeSliderControl) {
 	if rs == nil {
 		return
 	}
@@ -52,7 +43,7 @@ func populateRangeSliderControlFromAPI(ctx context.Context, pm *panelModel, tfPa
 
 	// On import (tfPanel == nil) there is no prior intent. Populate from API unconditionally.
 	if tfPanel == nil {
-		pm.RangeSliderControlConfig = &rangeSliderControlConfigModel{
+		pm.RangeSliderControlConfig = &models.RangeSliderControlConfigModel{
 			DataViewID: types.StringValue(apiConfig.DataViewId),
 			FieldName:  types.StringValue(apiConfig.FieldName),
 		}
@@ -104,7 +95,7 @@ func populateRangeSliderControlFromAPI(ctx context.Context, pm *panelModel, tfPa
 }
 
 // buildRangeSliderControlConfig writes the TF model fields into the API panel struct.
-func buildRangeSliderControlConfig(pm panelModel, rsPanel *kbapi.KbnDashboardPanelTypeRangeSliderControl) {
+func buildRangeSliderControlConfig(pm models.PanelModel, rsPanel *kbapi.KbnDashboardPanelTypeRangeSliderControl) {
 	cfg := pm.RangeSliderControlConfig
 	if cfg == nil {
 		return

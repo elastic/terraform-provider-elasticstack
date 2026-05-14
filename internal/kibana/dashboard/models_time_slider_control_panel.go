@@ -19,15 +19,10 @@ package dashboard
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
-
-type timeSliderControlConfigModel struct {
-	StartPercentageOfTimeRange types.Float32 `tfsdk:"start_percentage_of_time_range"`
-	EndPercentageOfTimeRange   types.Float32 `tfsdk:"end_percentage_of_time_range"`
-	IsAnchored                 types.Bool    `tfsdk:"is_anchored"`
-}
 
 // populateTimeSliderControlFromAPI reads back a time slider control config from the API
 // response and updates the panel model. Null-preservation semantics apply: if a field is
@@ -37,7 +32,7 @@ type timeSliderControlConfigModel struct {
 //
 // tfPanel is the prior TF state/plan panel, or nil on import. When nil, the function
 // populates all API-returned fields unconditionally (no prior intent to preserve).
-func populateTimeSliderControlFromAPI(pm *panelModel, tfPanel *panelModel, apiConfig struct {
+func populateTimeSliderControlFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiConfig struct {
 	EndPercentageOfTimeRange   *float32 `json:"end_percentage_of_time_range,omitempty"`
 	IsAnchored                 *bool    `json:"is_anchored,omitempty"`
 	StartPercentageOfTimeRange *float32 `json:"start_percentage_of_time_range,omitempty"`
@@ -51,7 +46,7 @@ func populateTimeSliderControlFromAPI(pm *panelModel, tfPanel *panelModel, apiCo
 			apiConfig.IsAnchored == nil {
 			return
 		}
-		pm.TimeSliderControlConfig = &timeSliderControlConfigModel{}
+		pm.TimeSliderControlConfig = &models.TimeSliderControlConfigModel{}
 		existing = pm.TimeSliderControlConfig
 		if apiConfig.StartPercentageOfTimeRange != nil {
 			existing.StartPercentageOfTimeRange = types.Float32Value(*apiConfig.StartPercentageOfTimeRange)
@@ -90,7 +85,7 @@ func populateTimeSliderControlFromAPI(pm *panelModel, tfPanel *panelModel, apiCo
 }
 
 // buildTimeSliderControlConfig writes the TF model fields into the API panel struct.
-func buildTimeSliderControlConfig(pm panelModel, tsPanel *kbapi.KbnDashboardPanelTypeTimeSliderControl) {
+func buildTimeSliderControlConfig(pm models.PanelModel, tsPanel *kbapi.KbnDashboardPanelTypeTimeSliderControl) {
 	cfg := pm.TimeSliderControlConfig
 	if cfg == nil {
 		return

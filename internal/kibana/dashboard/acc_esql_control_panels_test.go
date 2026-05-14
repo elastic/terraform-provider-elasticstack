@@ -31,13 +31,14 @@ import (
 func TestAccResourceDashboardESQLControl_with_config(t *testing.T) {
 	dashboardTitle := "Test Dashboard with ES|QL Control " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
+	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			// Create with full config
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_config"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
@@ -63,7 +64,6 @@ func TestAccResourceDashboardESQLControl_with_config(t *testing.T) {
 			// Refresh/plan: no drift
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_config"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
@@ -74,7 +74,6 @@ func TestAccResourceDashboardESQLControl_with_config(t *testing.T) {
 			// Import
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_config"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
@@ -93,7 +92,6 @@ func TestAccResourceDashboardESQLControl_with_config(t *testing.T) {
 			// Update to empty config block (exercises with_config → empty_config update path)
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty_config"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
@@ -113,13 +111,14 @@ func TestAccResourceDashboardESQLControl_with_config(t *testing.T) {
 func TestAccResourceDashboardESQLControl_empty_config(t *testing.T) {
 	dashboardTitle := "Test Dashboard with ES|QL Control " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
+	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			// Create with minimal config block (required fields only, no optional title/time_window overrides)
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty_config"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
@@ -139,13 +138,14 @@ func TestAccResourceDashboardESQLControl_empty_config(t *testing.T) {
 func TestAccResourceDashboardESQLControl_no_config(t *testing.T) {
 	dashboardTitle := "Test Dashboard with ES|QL Control " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
+	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			// esql_control_config is required when type = "esql_control"; omitting it must be rejected.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("no_config"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
@@ -159,13 +159,14 @@ func TestAccResourceDashboardESQLControl_no_config(t *testing.T) {
 func TestAccResourceDashboardESQLControlValuesFromQuery(t *testing.T) {
 	dashboardTitle := "Test Dashboard with ES|QL Control VALUES_FROM_QUERY " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
+	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			// Create with VALUES_FROM_QUERY control type
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("values_from_query"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
@@ -182,7 +183,6 @@ func TestAccResourceDashboardESQLControlValuesFromQuery(t *testing.T) {
 			// Refresh/plan: no drift (selected_options may be updated by Kibana for VALUES_FROM_QUERY)
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("values_from_query"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
@@ -197,13 +197,14 @@ func TestAccResourceDashboardESQLControlValuesFromQuery(t *testing.T) {
 func TestAccResourceDashboardESQLControlDisplaySettings(t *testing.T) {
 	dashboardTitle := "Test Dashboard with ES|QL Control display_settings " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
+	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			// Create with display_settings block
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_display_settings"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
@@ -218,7 +219,6 @@ func TestAccResourceDashboardESQLControlDisplaySettings(t *testing.T) {
 			// Refresh/plan: no drift
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_display_settings"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
@@ -231,12 +231,13 @@ func TestAccResourceDashboardESQLControlDisplaySettings(t *testing.T) {
 }
 
 func TestAccResourceDashboardESQLControlConfigJSONRejected(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("config_json_rejected"),
 				ExpectError:              regexp.MustCompile(`(?i)esql_control|not supported|not allowed`),
 			},
@@ -245,13 +246,14 @@ func TestAccResourceDashboardESQLControlConfigJSONRejected(t *testing.T) {
 }
 
 func TestAccResourceDashboardESQLControlInvalidConfig(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			// esql_control_config with type = "vis" must be rejected (REQ-006)
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("invalid_panel_type"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable("unused"),
@@ -263,18 +265,18 @@ func TestAccResourceDashboardESQLControlInvalidConfig(t *testing.T) {
 }
 
 func TestAccResourceDashboardESQLControlInvalidEnum(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("invalid_variable_type"),
 				ExpectError:              regexp.MustCompile(`(?i)unsupported_type`),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("invalid_control_type"),
 				ExpectError:              regexp.MustCompile(`(?i)UNSUPPORTED`),
 			},

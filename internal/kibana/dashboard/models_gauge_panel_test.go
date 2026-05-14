@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
@@ -39,7 +40,7 @@ func Test_gaugeConfigModel_fromAPI_toAPI(t *testing.T) {
 	tests := []struct {
 		name     string
 		api      kbapi.GaugeNoESQL
-		expected *gaugeConfigModel
+		expected *models.GaugeConfigModel
 	}{
 		{
 			name: "full gauge config",
@@ -72,12 +73,12 @@ func Test_gaugeConfigModel_fromAPI_toAPI(t *testing.T) {
 
 				return api
 			}(),
-			expected: &gaugeConfigModel{
+			expected: &models.GaugeConfigModel{
 				Title:               types.StringValue("Test Gauge"),
 				Description:         types.StringValue("A test gauge description"),
 				IgnoreGlobalFilters: types.BoolValue(true),
 				Sampling:            types.Float64Value(0.5),
-				Query: &filterSimpleModel{
+				Query: &models.FilterSimpleModel{
 					Language:   types.StringValue("kql"),
 					Expression: types.StringValue("status:active"),
 				},
@@ -99,12 +100,12 @@ func Test_gaugeConfigModel_fromAPI_toAPI(t *testing.T) {
 
 				return api
 			}(),
-			expected: &gaugeConfigModel{
+			expected: &models.GaugeConfigModel{
 				Title:               types.StringNull(),
 				Description:         types.StringNull(),
 				IgnoreGlobalFilters: types.BoolNull(),
 				Sampling:            types.Float64Null(),
-				Query: &filterSimpleModel{
+				Query: &models.FilterSimpleModel{
 					Language:   types.StringValue("kql"), // Language should default to "kql"
 					Expression: types.StringValue("*"),
 				},
@@ -114,8 +115,8 @@ func Test_gaugeConfigModel_fromAPI_toAPI(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			model := &gaugeConfigModel{}
-			diags := model.fromAPI(context.Background(), nil, nil, tt.api)
+			model := &models.GaugeConfigModel{}
+			diags := gaugeConfigFromAPI(context.Background(), model, nil, nil, tt.api)
 			require.False(t, diags.HasError(), "fromAPI should not return errors")
 
 			assert.Equal(t, tt.expected.Title, model.Title, "Title should match")
@@ -138,7 +139,7 @@ func Test_gaugeConfigModel_fromAPI_toAPI(t *testing.T) {
 				assert.Len(t, model.Filters, 1, "Filters should be populated")
 			}
 
-			attrsResult, diags := model.toAPI(nil)
+			attrsResult, diags := gaugeConfigToAPI(model, nil)
 			require.False(t, diags.HasError(), "toAPI should not return errors")
 			apiResult, err := attrsResult.AsGaugeNoESQL()
 			require.NoError(t, err)
@@ -184,12 +185,12 @@ func Test_gaugePanelConfigConverter_populateFromAttributes_buildAttributes_round
 	require.NoError(t, attrs.FromGaugeNoESQL(api))
 
 	converter := newGaugePanelConfigConverter()
-	visBv := visByValueModel{}
-	diags := converter.populateFromAttributes(ctx, nil, nil, &visBv.lensByValueChartBlocks, attrs)
+	visBv := models.VisByValueModel{}
+	diags := converter.populateFromAttributes(ctx, nil, nil, &visBv.LensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
 	require.NotNil(t, visBv.GaugeConfig)
 
-	attrs2, diags := converter.buildAttributes(&visBv.lensByValueChartBlocks, nil)
+	attrs2, diags := converter.buildAttributes(&visBv.LensByValueChartBlocks, nil)
 	require.False(t, diags.HasError())
 
 	gaugeNoESQL2, err := attrs2.AsGaugeNoESQL()
@@ -216,13 +217,13 @@ func Test_gaugeConfigModel_fromAPIESQL_toAPIESQL_roundTrip(t *testing.T) {
 	label := "Revenue"
 	api.Metric.Label = &label
 
-	model := &gaugeConfigModel{}
-	diags := model.fromAPIESQL(ctx, nil, nil, api)
+	model := &models.GaugeConfigModel{}
+	diags := gaugeConfigFromAPIESQL(ctx, model, nil, nil, api)
 	require.False(t, diags.HasError(), "fromAPIESQL should not return errors: %v", diags)
 
 	// Query should be nil for ES|QL mode.
 	assert.Nil(t, model.Query, "Query should be nil for ES|QL")
-	assert.True(t, model.usesESQL(), "model should report ES|QL mode")
+	assert.True(t, gaugeConfigUsesESQL(model), "model should report ES|QL mode")
 	// metric_json should be null in ES|QL mode; typed esql_metric populated.
 	assert.True(t, model.MetricJSON.IsNull(), "MetricJSON should be null")
 	require.NotNil(t, model.EsqlMetric)
@@ -231,7 +232,7 @@ func Test_gaugeConfigModel_fromAPIESQL_toAPIESQL_roundTrip(t *testing.T) {
 	assert.JSONEq(t, `{"type":"number"}`, model.EsqlMetric.FormatJSON.ValueString())
 
 	// Round-trip via toAPI -> AsGaugeESQL.
-	attrs, diags := model.toAPI(nil)
+	attrs, diags := gaugeConfigToAPI(model, nil)
 	require.False(t, diags.HasError(), "toAPI should not return errors: %v", diags)
 	out, err := attrs.AsGaugeESQL()
 	require.NoError(t, err)
@@ -242,10 +243,10 @@ func Test_gaugeConfigModel_fromAPIESQL_toAPIESQL_roundTrip(t *testing.T) {
 }
 
 func Test_gaugeConfigModel_toAPIESQL_requiresEsqlMetric(t *testing.T) {
-	m := &gaugeConfigModel{
+	m := &models.GaugeConfigModel{
 		DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"esql","query":"FROM metrics-*"}`),
 	}
-	_, diags := m.toAPIESQL(nil)
+	_, diags := gaugeConfigToAPIESQL(m, nil)
 	require.True(t, diags.HasError(), "expected error when esql_metric is missing")
 }
 
@@ -261,8 +262,8 @@ func Test_gaugePanelConfigConverter_routesESQL(t *testing.T) {
 	require.NoError(t, attrs.FromGaugeESQL(api))
 
 	converter := newGaugePanelConfigConverter()
-	visBv := visByValueModel{}
-	diags := converter.populateFromAttributes(ctx, nil, nil, &visBv.lensByValueChartBlocks, attrs)
+	visBv := models.VisByValueModel{}
+	diags := converter.populateFromAttributes(ctx, nil, nil, &visBv.LensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
 	require.NotNil(t, visBv.GaugeConfig)
 	require.NotNil(t, visBv.GaugeConfig.EsqlMetric)
@@ -315,11 +316,11 @@ func Test_gaugeConfigModel_fromAPIESQL_toAPIESQL_roundTrip_populatedOptionalMetr
 		Visible *bool   `json:"visible,omitempty"`
 	}{Text: &tx, Visible: &titleVis}
 
-	m := &gaugeConfigModel{}
-	diags := m.fromAPIESQL(ctx, nil, nil, api)
+	m := &models.GaugeConfigModel{}
+	diags := gaugeConfigFromAPIESQL(ctx, m, nil, nil, api)
 	require.False(t, diags.HasError(), "%v", diags)
 
-	attrs, diags := m.toAPI(nil)
+	attrs, diags := gaugeConfigToAPI(m, nil)
 	require.False(t, diags.HasError(), "%v", diags)
 	apiOut, err := attrs.AsGaugeESQL()
 	require.NoError(t, err)
@@ -330,11 +331,11 @@ func Test_gaugeConfigModel_fromAPIESQL_toAPIESQL_roundTrip_populatedOptionalMetr
 	require.NoError(t, err)
 	assert.JSONEq(t, string(wantMetric), string(gotMetric))
 
-	m2 := &gaugeConfigModel{}
-	diags = m2.fromAPIESQL(ctx, nil, nil, apiOut)
+	m2 := &models.GaugeConfigModel{}
+	diags = gaugeConfigFromAPIESQL(ctx, m2, nil, nil, apiOut)
 	require.False(t, diags.HasError(), "%v", diags)
 
-	attrs2, diags := m2.toAPI(nil)
+	attrs2, diags := gaugeConfigToAPI(m2, nil)
 	require.False(t, diags.HasError(), "%v", diags)
 	apiOut2, err := attrs2.AsGaugeESQL()
 	require.NoError(t, err)

@@ -44,6 +44,8 @@ const (
 // TestAccResourceElasticDefendIntegrationPolicy covers create, update, import,
 // and description round-trip behavior for the Elastic Defend resource.
 func TestAccResourceElasticDefendIntegrationPolicy(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionElasticDefend, versionutils.FlavorAny)
+
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
@@ -54,7 +56,6 @@ func TestAccResourceElasticDefendIntegrationPolicy(t *testing.T) {
 			// antivirus_registration, and attack_surface_reduction.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionElasticDefend),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -152,7 +153,6 @@ func TestAccResourceElasticDefendIntegrationPolicy(t *testing.T) {
 			// Step 2: Update description and nested policy settings
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionElasticDefend),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -238,7 +238,6 @@ func TestAccResourceElasticDefendIntegrationPolicy(t *testing.T) {
 			// Step 3: Import
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionElasticDefend),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -257,7 +256,6 @@ func TestAccResourceElasticDefendIntegrationPolicy(t *testing.T) {
 			// Also exercises the force attribute.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionElasticDefend),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("description_removed"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -280,6 +278,8 @@ func TestAccResourceElasticDefendIntegrationPolicy(t *testing.T) {
 // TestAccResourceElasticDefendIntegrationPolicyDisappears covers the
 // refresh-after-out-of-band-delete scenario.
 func TestAccResourceElasticDefendIntegrationPolicyDisappears(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionElasticDefend, versionutils.FlavorAny)
+
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
@@ -288,7 +288,6 @@ func TestAccResourceElasticDefendIntegrationPolicyDisappears(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionElasticDefend),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -310,6 +309,8 @@ func TestAccResourceElasticDefendIntegrationPolicyDisappears(t *testing.T) {
 // that antivirus_registration and attack_surface_reduction also apply their
 // schema defaults.
 func TestAccResourceElasticDefendIntegrationPolicyPopupDefaults(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionElasticDefend, versionutils.FlavorAny)
+
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
@@ -318,7 +319,6 @@ func TestAccResourceElasticDefendIntegrationPolicyPopupDefaults(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionElasticDefend),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -364,6 +364,8 @@ func TestAccResourceElasticDefendIntegrationPolicyPopupDefaults(t *testing.T) {
 // the resource can be created when an entity-local kibana_connection block is
 // supplied instead of relying on the provider-level Kibana configuration.
 func TestAccResourceElasticDefendIntegrationPolicyKibanaConnection(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionElasticDefend, versionutils.FlavorAny)
+
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
@@ -375,7 +377,6 @@ func TestAccResourceElasticDefendIntegrationPolicyKibanaConnection(t *testing.T)
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionElasticDefend),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: acctest.KibanaConnectionVariables(config.Variables{
 					"policy_name": config.StringVariable(policyName),

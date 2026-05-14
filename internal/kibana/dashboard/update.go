@@ -22,11 +22,12 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
 func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var planModel dashboardModel
+	var planModel models.DashboardModel
 
 	diags := req.Plan.Get(ctx, &planModel)
 	resp.Diagnostics.Append(diags...)
@@ -58,7 +59,7 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 	}
 
 	// Convert the plan to an API request
-	apiReq := planModel.toAPIUpdateRequest(ctx, &resp.Diagnostics)
+	apiReq := dashboardToAPIUpdateRequest(ctx, &planModel, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}

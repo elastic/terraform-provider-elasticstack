@@ -194,7 +194,7 @@ func (f *ProviderClientFactory) GetElasticsearchClient(ctx context.Context, esCo
 	}
 
 	return &ElasticsearchScopedClient{
-		typedClient: esClient.ToTyped(),
+		typedClient: esClient,
 		esEndpoints: esEndpoints,
 	}, nil
 }
@@ -241,7 +241,7 @@ func (f *ProviderClientFactory) GetElasticsearchClientFromSDK(d *schema.Resource
 	}
 
 	return &ElasticsearchScopedClient{
-		typedClient: esClient.ToTyped(),
+		typedClient: esClient,
 		esEndpoints: esEndpoints,
 	}, nil
 }

@@ -41,13 +41,14 @@ func TestProvider(t *testing.T) {
 }
 
 func TestElasticsearchAPIKeyConnection(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, apikey.MinVersion, versionutils.FlavorAny)
+
 	apiKeyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(apikey.MinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables: tfconfig.Variables{
 					"api_key_name": tfconfig.StringVariable(apiKeyName),
@@ -86,6 +87,8 @@ func TestElasticsearchBearerTokenConnection(t *testing.T) {
 }
 
 func TestFleetConfiguration(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionForFleet, versionutils.FlavorAny)
+
 	envConfig := config.NewFromEnv("acceptance-testing")
 
 	resource.Test(t, resource.TestCase{
@@ -93,7 +96,6 @@ func TestFleetConfiguration(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionForFleet),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables:          fleetConfigVariables(envConfig),
 				Check: resource.ComposeTestCheckFunc(
@@ -110,6 +112,8 @@ func TestFleetBearerTokenConfiguration(t *testing.T) {
 		t.Skip("FLEET_BEARER_TOKEN not set, skipping bearer token test")
 	}
 
+	versionutils.SkipIfUnsupported(t, minVersionForFleet, versionutils.FlavorAny)
+
 	envConfig := config.NewFromEnv("acceptance-testing")
 
 	resource.Test(t, resource.TestCase{
@@ -117,7 +121,6 @@ func TestFleetBearerTokenConfiguration(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionForFleet),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables:          fleetBearerTokenConfigVariables(envConfig, bearerToken),
 				Check: resource.ComposeTestCheckFunc(

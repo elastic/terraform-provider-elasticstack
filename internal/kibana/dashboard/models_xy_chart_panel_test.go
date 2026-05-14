@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -45,8 +46,8 @@ func Test_xyAxisModel_fromAPI_toAPI(t *testing.T) {
 	var apiAxis kbapi.VisApiXyAxisConfig
 	require.NoError(t, json.Unmarshal(raw, &apiAxis))
 
-	model := &xyAxisModel{}
-	diags := model.fromAPI(apiAxis)
+	model := &models.XYAxisModel{}
+	diags := xyAxisFromAPI(model, apiAxis)
 	require.False(t, diags.HasError())
 
 	require.NotNil(t, model.X)
@@ -60,10 +61,10 @@ func Test_xyAxisModel_fromAPI_toAPI(t *testing.T) {
 	require.NotNil(t, model.Y2)
 	assert.Equal(t, types.BoolValue(false), model.Y2.Grid)
 
-	out, d := model.toAPI()
+	out, d := xyAxisToAPI(model)
 	require.False(t, d.HasError())
-	model2 := &xyAxisModel{}
-	diags = model2.fromAPI(out)
+	model2 := &models.XYAxisModel{}
+	diags = xyAxisFromAPI(model2, out)
 	require.False(t, diags.HasError())
 	assert.Equal(t, model.X.Grid, model2.X.Grid)
 	assert.Equal(t, model.Y.Grid, model2.Y.Grid)
@@ -73,7 +74,7 @@ func Test_xyAxisConfigModel_fromAPI_toAPI(t *testing.T) {
 	tests := []struct {
 		name     string
 		apiAxis  *xyAxisConfigAPIModel
-		expected *xyAxisConfigModel
+		expected *models.XYAxisConfigModel
 	}{
 		{
 			name: "all fields populated",
@@ -95,11 +96,11 @@ func Test_xyAxisConfigModel_fromAPI_toAPI(t *testing.T) {
 					Visible: new(true),
 				},
 			},
-			expected: &xyAxisConfigModel{
+			expected: &models.XYAxisConfigModel{
 				Grid:             types.BoolValue(true),
 				Ticks:            types.BoolValue(false),
 				LabelOrientation: types.StringValue("horizontal"),
-				Title: &axisTitleModel{
+				Title: &models.AxisTitleModel{
 					Value:   types.StringValue("X Axis Title"),
 					Visible: types.BoolValue(true),
 				},
@@ -120,7 +121,7 @@ func Test_xyAxisConfigModel_fromAPI_toAPI(t *testing.T) {
 				Labels: nil,
 				Title:  nil,
 			},
-			expected: &xyAxisConfigModel{
+			expected: &models.XYAxisConfigModel{
 				Grid:             types.BoolValue(false),
 				Ticks:            types.BoolNull(),
 				LabelOrientation: types.StringNull(),
@@ -137,7 +138,7 @@ func Test_xyAxisConfigModel_fromAPI_toAPI(t *testing.T) {
 					Visible bool `json:"visible"`
 				}{Visible: true},
 			},
-			expected: &xyAxisConfigModel{
+			expected: &models.XYAxisConfigModel{
 				Grid:  types.BoolValue(true),
 				Ticks: types.BoolValue(true),
 			},
@@ -147,8 +148,8 @@ func Test_xyAxisConfigModel_fromAPI_toAPI(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test fromAPI
-			model := &xyAxisConfigModel{}
-			diags := model.fromAPI(tt.apiAxis)
+			model := &models.XYAxisConfigModel{}
+			diags := xyAxisConfigFromAPI(model, tt.apiAxis)
 			require.False(t, diags.HasError())
 
 			if tt.expected == nil {
@@ -166,7 +167,7 @@ func Test_xyAxisConfigModel_fromAPI_toAPI(t *testing.T) {
 			}
 
 			// Test toAPI round-trip
-			apiAxis, diags := model.toAPI()
+			apiAxis, diags := xyAxisConfigToAPI(model)
 			require.False(t, diags.HasError())
 
 			if tt.apiAxis != nil {
@@ -191,8 +192,8 @@ func Test_yAxisConfigModel_fromAPIY_toAPIY(t *testing.T) {
 	require.NoError(t, json.Unmarshal(raw, &env))
 	require.NotNil(t, env.Y)
 
-	model := &yAxisConfigModel{}
-	diags := model.fromAPIY(env.Y)
+	model := &models.YAxisConfigModel{}
+	diags := YAxisConfigFromAPIY(model, env.Y)
 	require.False(t, diags.HasError())
 
 	assert.Equal(t, types.BoolValue(true), model.Grid)
@@ -203,7 +204,7 @@ func Test_yAxisConfigModel_fromAPIY_toAPIY(t *testing.T) {
 	assert.Equal(t, types.StringValue("Y Axis Title"), model.Title.Value)
 	assert.Equal(t, types.BoolValue(false), model.Title.Visible)
 
-	apiY, diags := model.toAPIY()
+	apiY, diags := YAxisConfigToAPIY(model)
 	require.False(t, diags.HasError())
 	require.NotNil(t, apiY)
 }
@@ -223,8 +224,8 @@ func Test_yAxisConfigModel_fromAPISecondaryY_toAPISecondaryY(t *testing.T) {
 	require.NoError(t, json.Unmarshal(raw, &env))
 	require.NotNil(t, env.Y2)
 
-	model := &yAxisConfigModel{}
-	diags := model.fromAPIY2(env.Y2)
+	model := &models.YAxisConfigModel{}
+	diags := YAxisConfigFromAPIY2(model, env.Y2)
 	require.False(t, diags.HasError())
 
 	assert.Equal(t, types.BoolValue(false), model.Grid)
@@ -232,7 +233,7 @@ func Test_yAxisConfigModel_fromAPISecondaryY_toAPISecondaryY(t *testing.T) {
 	assert.Equal(t, types.StringValue("angled"), model.LabelOrientation)
 	assert.Equal(t, types.StringValue("log"), model.Scale)
 
-	apiY, diags := model.toAPIY2()
+	apiY, diags := YAxisConfigToAPIY2(model)
 	require.False(t, diags.HasError())
 	require.NotNil(t, apiY)
 }
@@ -244,7 +245,7 @@ func Test_axisTitleModel_fromAPI_toAPI(t *testing.T) {
 			Text    *string `json:"text,omitempty"`
 			Visible *bool   `json:"visible,omitempty"`
 		}
-		expected *axisTitleModel
+		expected *models.AxisTitleModel
 	}{
 		{
 			name: "all fields populated",
@@ -255,7 +256,7 @@ func Test_axisTitleModel_fromAPI_toAPI(t *testing.T) {
 				Text:    new("Test Title"),
 				Visible: new(true),
 			},
-			expected: &axisTitleModel{
+			expected: &models.AxisTitleModel{
 				Value:   types.StringValue("Test Title"),
 				Visible: types.BoolValue(true),
 			},
@@ -263,7 +264,7 @@ func Test_axisTitleModel_fromAPI_toAPI(t *testing.T) {
 		{
 			name:     "nil title",
 			apiTitle: nil,
-			expected: &axisTitleModel{},
+			expected: &models.AxisTitleModel{},
 		},
 		{
 			name: "only value",
@@ -274,7 +275,7 @@ func Test_axisTitleModel_fromAPI_toAPI(t *testing.T) {
 				Text:    new("Only Value"),
 				Visible: nil,
 			},
-			expected: &axisTitleModel{
+			expected: &models.AxisTitleModel{
 				Value:   types.StringValue("Only Value"),
 				Visible: types.BoolNull(),
 			},
@@ -288,7 +289,7 @@ func Test_axisTitleModel_fromAPI_toAPI(t *testing.T) {
 				Text:    nil,
 				Visible: new(false),
 			},
-			expected: &axisTitleModel{
+			expected: &models.AxisTitleModel{
 				Value:   types.StringNull(),
 				Visible: types.BoolValue(false),
 			},
@@ -298,13 +299,13 @@ func Test_axisTitleModel_fromAPI_toAPI(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test fromAPI
-			model := &axisTitleModel{}
-			model.fromAPI(tt.apiTitle)
+			model := &models.AxisTitleModel{}
+			axisTitleFromAPI(model, tt.apiTitle)
 			assert.Equal(t, tt.expected.Value, model.Value)
 			assert.Equal(t, tt.expected.Visible, model.Visible)
 
 			// Test toAPI
-			apiTitle := model.toAPI()
+			apiTitle := axisTitleToAPI(model)
 			assert.NotNil(t, apiTitle)
 		})
 	}
@@ -349,8 +350,8 @@ func Test_xyDecorationsModel_readFromStyling_writeToStyling(t *testing.T) {
 		Points: kbapi.XyStylingPoints{Visibility: &pts},
 	}
 
-	model := &xyDecorationsModel{}
-	model.readFromStyling(styling)
+	model := &models.XYDecorationsModel{}
+	xyDecorationsReadFromStyling(model, styling)
 
 	assert.Equal(t, types.BoolValue(true), model.ShowEndZones)
 	assert.Equal(t, types.BoolValue(false), model.ShowCurrentTimeMarker)
@@ -362,9 +363,9 @@ func Test_xyDecorationsModel_readFromStyling_writeToStyling(t *testing.T) {
 
 	var out kbapi.XyStyling
 	out.Fitting = kbapi.XyFitting{Type: kbapi.XyFittingTypeNone}
-	model.writeToStyling(&out)
-	model2 := &xyDecorationsModel{}
-	model2.readFromStyling(out)
+	xyDecorationsWriteToStyling(model, &out)
+	model2 := &models.XYDecorationsModel{}
+	xyDecorationsReadFromStyling(model2, out)
 	assert.Equal(t, model.ShowEndZones, model2.ShowEndZones)
 	assert.Equal(t, model.PointVisibility, model2.PointVisibility)
 }
@@ -373,7 +374,7 @@ func Test_xyFittingModel_fromAPI_toAPI(t *testing.T) {
 	tests := []struct {
 		name        string
 		apiFitting  kbapi.XyFitting
-		expected    *xyFittingModel
+		expected    *models.XYFittingModel
 		expectError bool
 	}{
 		{
@@ -383,7 +384,7 @@ func Test_xyFittingModel_fromAPI_toAPI(t *testing.T) {
 				Emphasize: new(true),
 				Extend:    func() *kbapi.XyFittingExtend { e := kbapi.XyFittingExtendZero; return &e }(),
 			},
-			expected: &xyFittingModel{
+			expected: &models.XYFittingModel{
 				Type:     types.StringValue("linear"),
 				Dotted:   types.BoolValue(true),
 				EndValue: types.StringValue("zero"),
@@ -396,7 +397,7 @@ func Test_xyFittingModel_fromAPI_toAPI(t *testing.T) {
 				Emphasize: nil,
 				Extend:    nil,
 			},
-			expected: &xyFittingModel{
+			expected: &models.XYFittingModel{
 				Type:     types.StringValue("none"),
 				Dotted:   types.BoolNull(),
 				EndValue: types.StringNull(),
@@ -407,15 +408,15 @@ func Test_xyFittingModel_fromAPI_toAPI(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test fromAPI
-			model := &xyFittingModel{}
-			model.fromAPI(tt.apiFitting)
+			model := &models.XYFittingModel{}
+			xyFittingFromAPI(model, tt.apiFitting)
 
 			assert.Equal(t, tt.expected.Type, model.Type)
 			assert.Equal(t, tt.expected.Dotted, model.Dotted)
 			assert.Equal(t, tt.expected.EndValue, model.EndValue)
 
 			// Test toAPI
-			apiFitting := model.toAPI()
+			apiFitting := xyFittingToAPI(model)
 			assert.NotNil(t, apiFitting)
 
 			// Verify type is preserved
@@ -430,7 +431,7 @@ func Test_xyLegendModel_fromAPI_toAPI_Inside(t *testing.T) {
 	tests := []struct {
 		name      string
 		apiLegend kbapi.XyLegend
-		expected  *xyLegendModel
+		expected  *models.XYLegendModel
 	}{
 		{
 			name: "inside legend with all fields",
@@ -466,7 +467,7 @@ func Test_xyLegendModel_fromAPI_toAPI_Inside(t *testing.T) {
 				_ = result.FromXyLegendInside(legend)
 				return result
 			}(),
-			expected: &xyLegendModel{
+			expected: &models.XYLegendModel{
 				Inside:             types.BoolValue(true),
 				Visibility:         types.StringValue("visible"),
 				TruncateAfterLines: types.Int64Value(3),
@@ -479,8 +480,8 @@ func Test_xyLegendModel_fromAPI_toAPI_Inside(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test fromAPI
-			model := &xyLegendModel{}
-			diags := model.fromAPI(ctx, tt.apiLegend)
+			model := &models.XYLegendModel{}
+			diags := xyLegendFromAPI(ctx, model, tt.apiLegend)
 			require.False(t, diags.HasError())
 
 			assert.Equal(t, tt.expected.Inside, model.Inside)
@@ -490,7 +491,7 @@ func Test_xyLegendModel_fromAPI_toAPI_Inside(t *testing.T) {
 			assert.Equal(t, tt.expected.Alignment, model.Alignment)
 
 			// Test toAPI
-			apiLegend, diags := model.toAPI()
+			apiLegend, diags := xyLegendToAPI(model)
 			require.False(t, diags.HasError())
 			assert.NotNil(t, apiLegend)
 		})
@@ -503,7 +504,7 @@ func Test_xyLegendModel_fromAPI_toAPI_Outside(t *testing.T) {
 	tests := []struct {
 		name      string
 		apiLegend kbapi.XyLegend
-		expected  *xyLegendModel
+		expected  *models.XYLegendModel
 	}{
 		{
 			name: "outside legend with all fields",
@@ -539,7 +540,7 @@ func Test_xyLegendModel_fromAPI_toAPI_Outside(t *testing.T) {
 				_ = result.FromXyLegendOutsideVertical(legend)
 				return result
 			}(),
-			expected: &xyLegendModel{
+			expected: &models.XYLegendModel{
 				Inside:             types.BoolValue(false),
 				Visibility:         types.StringValue("hidden"),
 				TruncateAfterLines: types.Int64Value(5),
@@ -552,8 +553,8 @@ func Test_xyLegendModel_fromAPI_toAPI_Outside(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test fromAPI
-			model := &xyLegendModel{}
-			diags := model.fromAPI(ctx, tt.apiLegend)
+			model := &models.XYLegendModel{}
+			diags := xyLegendFromAPI(ctx, model, tt.apiLegend)
 			require.False(t, diags.HasError())
 
 			assert.Equal(t, tt.expected.Inside, model.Inside)
@@ -563,7 +564,7 @@ func Test_xyLegendModel_fromAPI_toAPI_Outside(t *testing.T) {
 			assert.Equal(t, tt.expected.Size, model.Size)
 
 			// Test toAPI
-			apiLegend, diags := model.toAPI()
+			apiLegend, diags := xyLegendToAPI(model)
 			require.False(t, diags.HasError())
 			assert.NotNil(t, apiLegend)
 		})
@@ -573,49 +574,49 @@ func Test_xyLegendModel_fromAPI_toAPI_Outside(t *testing.T) {
 func Test_xyChartPanelConfigConverter_populateFromAttributes_buildAttributes_roundTrip(t *testing.T) {
 	ctx := context.Background()
 
-	model := &xyChartConfigModel{
+	model := &models.XYChartConfigModel{
 		Title:       types.StringValue("XY Chart Round-Trip"),
 		Description: types.StringValue("Converter test"),
-		Axis: &xyAxisModel{
-			X: &xyAxisConfigModel{},
-			Y: &yAxisConfigModel{},
+		Axis: &models.XYAxisModel{
+			X: &models.XYAxisConfigModel{},
+			Y: &models.YAxisConfigModel{},
 		},
-		Decorations: &xyDecorationsModel{},
-		Fitting:     &xyFittingModel{Type: types.StringValue("none")},
-		Layers: []xyLayerModel{
+		Decorations: &models.XYDecorationsModel{},
+		Fitting:     &models.XYFittingModel{Type: types.StringValue("none")},
+		Layers: []models.XYLayerModel{
 			{
 				Type: types.StringValue("area"),
-				DataLayer: &dataLayerModel{
+				DataLayer: &models.DataLayerModel{
 					DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"dataView","id":"logs-*"}`),
-					Y: []yMetricModel{
+					Y: []models.YMetricModel{
 						{ConfigJSON: jsontypes.NewNormalizedValue(`{"operation":"count","color":"#68BC00","axis":"left"}`)},
 					},
 				},
 			},
 		},
-		Legend: &xyLegendModel{
+		Legend: &models.XYLegendModel{
 			Inside:     types.BoolValue(false),
 			Visibility: types.StringValue("visible"),
 		},
-		Query: &filterSimpleModel{
+		Query: &models.FilterSimpleModel{
 			Expression: types.StringValue("*"),
 			Language:   types.StringValue("kql"),
 		},
 	}
 
-	xyChart, diags := model.toAPINoESQL(nil)
+	xyChart, diags := xyChartConfigToAPINoESQL(model, nil)
 	require.False(t, diags.HasError())
 
 	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 	require.NoError(t, attrs.FromXyChartNoESQL(xyChart))
 
 	converter := newXYChartPanelConfigConverter()
-	visBv := visByValueModel{}
-	diags = converter.populateFromAttributes(ctx, nil, nil, &visBv.lensByValueChartBlocks, attrs)
+	visBv := models.VisByValueModel{}
+	diags = converter.populateFromAttributes(ctx, nil, nil, &visBv.LensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
 	require.NotNil(t, visBv.XYChartConfig)
 
-	attrs2, diags := converter.buildAttributes(&visBv.lensByValueChartBlocks, nil)
+	attrs2, diags := converter.buildAttributes(&visBv.LensByValueChartBlocks, nil)
 	require.False(t, diags.HasError())
 
 	chart2, err := attrs2.AsXyChartNoESQL()
@@ -630,35 +631,35 @@ func Test_xyChartConfigModel_toAPI_fromAPI(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		model       *xyChartConfigModel
+		model       *models.XYChartConfigModel
 		expectError bool
 	}{
 		{
 			name: "complete config",
-			model: &xyChartConfigModel{
+			model: &models.XYChartConfigModel{
 				Title:       types.StringValue("Test XY Chart"),
 				Description: types.StringValue("A test chart"),
-				Axis: &xyAxisModel{
-					X: &xyAxisConfigModel{
+				Axis: &models.XYAxisModel{
+					X: &models.XYAxisConfigModel{
 						Grid:  types.BoolValue(true),
 						Ticks: types.BoolValue(false),
 					},
-					Y: &yAxisConfigModel{},
+					Y: &models.YAxisConfigModel{},
 				},
-				Decorations: &xyDecorationsModel{
+				Decorations: &models.XYDecorationsModel{
 					ShowEndZones:    types.BoolValue(true),
 					PointVisibility: types.StringValue("never"),
 				},
-				Fitting: &xyFittingModel{
+				Fitting: &models.XYFittingModel{
 					Type:   types.StringValue("linear"),
 					Dotted: types.BoolValue(true),
 				},
-				Layers: []xyLayerModel{
+				Layers: []models.XYLayerModel{
 					{
 						Type: types.StringValue("area"),
-						DataLayer: &dataLayerModel{
+						DataLayer: &models.DataLayerModel{
 							DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"dataView","id":"logs-*"}`),
-							Y: []yMetricModel{
+							Y: []models.YMetricModel{
 								{
 									ConfigJSON: jsontypes.NewNormalizedValue(`{"operation":"count","color":"#68BC00","axis":"left"}`),
 								},
@@ -666,11 +667,11 @@ func Test_xyChartConfigModel_toAPI_fromAPI(t *testing.T) {
 						},
 					},
 				},
-				Legend: &xyLegendModel{
+				Legend: &models.XYLegendModel{
 					Inside:     types.BoolValue(false),
 					Visibility: types.StringValue("visible"),
 				},
-				Query: &filterSimpleModel{
+				Query: &models.FilterSimpleModel{
 					Expression: types.StringValue("*"),
 					Language:   types.StringValue("kql"),
 				},
@@ -679,19 +680,19 @@ func Test_xyChartConfigModel_toAPI_fromAPI(t *testing.T) {
 		},
 		{
 			name: "minimal config",
-			model: &xyChartConfigModel{
+			model: &models.XYChartConfigModel{
 				Title: types.StringValue("Minimal Chart"),
-				Axis: &xyAxisModel{
-					X: &xyAxisConfigModel{},
-					Y: &yAxisConfigModel{},
+				Axis: &models.XYAxisModel{
+					X: &models.XYAxisConfigModel{},
+					Y: &models.YAxisConfigModel{},
 				},
-				Decorations: &xyDecorationsModel{},
-				Fitting:     &xyFittingModel{Type: types.StringValue("none")},
-				Legend: &xyLegendModel{
+				Decorations: &models.XYDecorationsModel{},
+				Fitting:     &models.XYFittingModel{Type: types.StringValue("none")},
+				Legend: &models.XYLegendModel{
 					Inside:     types.BoolValue(false),
 					Visibility: types.StringValue("visible"),
 				},
-				Query: &filterSimpleModel{
+				Query: &models.FilterSimpleModel{
 					Expression: types.StringValue("*"),
 					Language:   types.StringValue("kql"),
 				},
@@ -702,7 +703,7 @@ func Test_xyChartConfigModel_toAPI_fromAPI(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			apiChart, diags := tt.model.toAPINoESQL(nil)
+			apiChart, diags := xyChartConfigToAPINoESQL(tt.model, nil)
 			if tt.expectError {
 				assert.True(t, diags.HasError())
 				return
@@ -715,8 +716,8 @@ func Test_xyChartConfigModel_toAPI_fromAPI(t *testing.T) {
 				assert.Equal(t, tt.model.Title.ValueString(), *apiChart.Title)
 			}
 
-			model2 := &xyChartConfigModel{}
-			diags = model2.fromAPINoESQL(ctx, nil, nil, apiChart)
+			model2 := &models.XYChartConfigModel{}
+			diags = xyChartConfigFromAPINoESQL(ctx, model2, nil, nil, apiChart)
 			require.False(t, diags.HasError())
 
 			assert.Equal(t, tt.model.Title, model2.Title)
@@ -725,20 +726,20 @@ func Test_xyChartConfigModel_toAPI_fromAPI(t *testing.T) {
 	}
 }
 
-func minimalXYChartConfigForPresentationTests() *xyChartConfigModel {
-	return &xyChartConfigModel{
+func minimalXYChartConfigForPresentationTests() *models.XYChartConfigModel {
+	return &models.XYChartConfigModel{
 		Title: types.StringValue("Presentation Wiring"),
-		Axis: &xyAxisModel{
-			X: &xyAxisConfigModel{},
-			Y: &yAxisConfigModel{},
+		Axis: &models.XYAxisModel{
+			X: &models.XYAxisConfigModel{},
+			Y: &models.YAxisConfigModel{},
 		},
-		Decorations: &xyDecorationsModel{},
-		Fitting:     &xyFittingModel{Type: types.StringValue("none")},
-		Legend: &xyLegendModel{
+		Decorations: &models.XYDecorationsModel{},
+		Fitting:     &models.XYFittingModel{Type: types.StringValue("none")},
+		Legend: &models.XYLegendModel{
 			Inside:     types.BoolValue(false),
 			Visibility: types.StringValue("visible"),
 		},
-		Query: &filterSimpleModel{
+		Query: &models.FilterSimpleModel{
 			Expression: types.StringValue("*"),
 			Language:   types.StringValue("kql"),
 		},
@@ -749,26 +750,26 @@ func Test_xyChartConfigModel_esqlMode_queryNil(t *testing.T) {
 	// ES|QL XY panels should have nil query; query is optional on the schema.
 	// Build a model in ES|QL mode (all data layers have esql data_source) and verify
 	// that toAPIESQL emits a valid payload without requiring query.
-	m := &xyChartConfigModel{
+	m := &models.XYChartConfigModel{
 		Title: types.StringValue("ESQL XY Chart"),
-		Axis: &xyAxisModel{
-			X: &xyAxisConfigModel{},
-			Y: &yAxisConfigModel{},
+		Axis: &models.XYAxisModel{
+			X: &models.XYAxisConfigModel{},
+			Y: &models.YAxisConfigModel{},
 		},
-		Decorations: &xyDecorationsModel{},
-		Fitting:     &xyFittingModel{Type: types.StringValue("none")},
-		Layers: []xyLayerModel{
+		Decorations: &models.XYDecorationsModel{},
+		Fitting:     &models.XYFittingModel{Type: types.StringValue("none")},
+		Layers: []models.XYLayerModel{
 			{
 				Type: types.StringValue("area"),
-				DataLayer: &dataLayerModel{
+				DataLayer: &models.DataLayerModel{
 					DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"esql","query":"FROM logs-* | LIMIT 10"}`),
-					Y: []yMetricModel{
+					Y: []models.YMetricModel{
 						{ConfigJSON: jsontypes.NewNormalizedValue(`{"operation":"count","axis":"left"}`)},
 					},
 				},
 			},
 		},
-		Legend: &xyLegendModel{
+		Legend: &models.XYLegendModel{
 			Inside:     types.BoolValue(false),
 			Visibility: types.StringValue("visible"),
 		},
@@ -776,10 +777,10 @@ func Test_xyChartConfigModel_esqlMode_queryNil(t *testing.T) {
 	}
 
 	// Verify ES|QL mode detection
-	assert.True(t, m.xyUsesESQL())
+	assert.True(t, xyChartConfigXyUsesESQL(m))
 
 	// Build the ES|QL API payload
-	esqlChart, diags := m.toAPIESQL(nil)
+	esqlChart, diags := xyChartConfigToAPIESQL(m, nil)
 	require.False(t, diags.HasError(), "diags: %v", diags)
 	assert.Equal(t, kbapi.XyChartESQLTypeXy, esqlChart.Type)
 	assert.Len(t, esqlChart.Layers, 1)
@@ -788,43 +789,43 @@ func Test_xyChartConfigModel_esqlMode_queryNil(t *testing.T) {
 func Test_xyChartConfigModel_optionalQuery_noESQL_nilQueryNoError(t *testing.T) {
 	// Non-ES|QL XY panels with nil query should NOT error; query is optional in the schema.
 	// The API payload will simply omit the query field.
-	m := &xyChartConfigModel{
+	m := &models.XYChartConfigModel{
 		Title: types.StringValue("Non-ESQL XY Chart no query"),
-		Axis: &xyAxisModel{
-			X: &xyAxisConfigModel{},
-			Y: &yAxisConfigModel{},
+		Axis: &models.XYAxisModel{
+			X: &models.XYAxisConfigModel{},
+			Y: &models.YAxisConfigModel{},
 		},
-		Decorations: &xyDecorationsModel{},
-		Fitting:     &xyFittingModel{Type: types.StringValue("none")},
-		Layers: []xyLayerModel{
+		Decorations: &models.XYDecorationsModel{},
+		Fitting:     &models.XYFittingModel{Type: types.StringValue("none")},
+		Layers: []models.XYLayerModel{
 			{
 				Type: types.StringValue("area"),
-				DataLayer: &dataLayerModel{
+				DataLayer: &models.DataLayerModel{
 					DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"dataView","id":"logs-*"}`),
-					Y: []yMetricModel{
+					Y: []models.YMetricModel{
 						{ConfigJSON: jsontypes.NewNormalizedValue(`{"operation":"count","axis":"left"}`)},
 					},
 				},
 			},
 		},
-		Legend: &xyLegendModel{
+		Legend: &models.XYLegendModel{
 			Inside:     types.BoolValue(false),
 			Visibility: types.StringValue("visible"),
 		},
 		Query: nil, // Query is now optional
 	}
 
-	assert.False(t, m.xyUsesESQL())
+	assert.False(t, xyChartConfigXyUsesESQL(m))
 
-	_, diags := m.toAPINoESQL(nil)
+	_, diags := xyChartConfigToAPINoESQL(m, nil)
 	assert.False(t, diags.HasError(), "expected no error when non-ES|QL XY chart has no query; query is optional: %v", diags)
 }
 
 func Test_xyChartConfig_lensChartPresentation_timeRange_inheritanceAndMode(t *testing.T) {
 	ctx := context.Background()
 
-	dash := &dashboardModel{
-		TimeRange: &timeRangeModel{
+	dash := &models.DashboardModel{
+		TimeRange: &models.TimeRangeModel{
 			From: types.StringValue("now-7d"),
 			To:   types.StringValue("now"),
 		},
@@ -835,13 +836,13 @@ func Test_xyChartConfig_lensChartPresentation_timeRange_inheritanceAndMode(t *te
 		m := minimalXYChartConfigForPresentationTests()
 		require.Nil(t, m.TimeRange)
 
-		apiChart, diags := m.toAPINoESQL(dash)
+		apiChart, diags := xyChartConfigToAPINoESQL(m, dash)
 		require.False(t, diags.HasError())
 		assert.True(t, lensTimeRangesAPILiteralEqual(apiChart.TimeRange, dashTR), "write path should inherit dashboard time_range when chart-level is null")
 
 		apiChart.TimeRange = dashTR
-		out := &xyChartConfigModel{}
-		diags = out.fromAPINoESQL(ctx, dash, m, apiChart)
+		out := &models.XYChartConfigModel{}
+		diags = xyChartConfigFromAPINoESQL(ctx, out, dash, m, apiChart)
 		require.False(t, diags.HasError())
 		assert.Nil(t, out.TimeRange)
 	})
@@ -851,7 +852,7 @@ func Test_xyChartConfig_lensChartPresentation_timeRange_inheritanceAndMode(t *te
 		require.Nil(t, m.TimeRange)
 
 		base := minimalXYChartConfigForPresentationTests()
-		apiChart, diags := base.toAPINoESQL(dash)
+		apiChart, diags := xyChartConfigToAPINoESQL(base, dash)
 		require.False(t, diags.HasError())
 		apiChart.TimeRange = kbapi.KbnEsQueryServerTimeRangeSchema{
 			From: "now-30d",
@@ -859,8 +860,8 @@ func Test_xyChartConfig_lensChartPresentation_timeRange_inheritanceAndMode(t *te
 		}
 		require.False(t, lensTimeRangesAPILiteralEqual(apiChart.TimeRange, dashTR), "API chart time_range should differ from dashboard for this scenario")
 
-		out := &xyChartConfigModel{}
-		diags = out.fromAPINoESQL(ctx, dash, m, apiChart)
+		out := &models.XYChartConfigModel{}
+		diags = xyChartConfigFromAPINoESQL(ctx, out, dash, m, apiChart)
 		require.False(t, diags.HasError())
 		require.NotNil(t, out.TimeRange)
 		assert.Equal(t, "now-30d", out.TimeRange.From.ValueString())
@@ -869,19 +870,19 @@ func Test_xyChartConfig_lensChartPresentation_timeRange_inheritanceAndMode(t *te
 
 	t.Run("explicit chart time_range override round-trips", func(t *testing.T) {
 		m := minimalXYChartConfigForPresentationTests()
-		m.TimeRange = &timeRangeModel{
+		m.TimeRange = &models.TimeRangeModel{
 			From: types.StringValue("now-30d"),
 			To:   types.StringValue("now-1d"),
 		}
 
-		apiChart, diags := m.toAPINoESQL(dash)
+		apiChart, diags := xyChartConfigToAPINoESQL(m, dash)
 		require.False(t, diags.HasError())
 		assert.Equal(t, "now-30d", apiChart.TimeRange.From)
 		assert.Equal(t, "now-1d", apiChart.TimeRange.To)
 
 		want := *m.TimeRange
-		out := &xyChartConfigModel{}
-		diags = out.fromAPINoESQL(ctx, dash, m, apiChart)
+		out := &models.XYChartConfigModel{}
+		diags = xyChartConfigFromAPINoESQL(ctx, out, dash, m, apiChart)
 		require.False(t, diags.HasError())
 		require.NotNil(t, out.TimeRange)
 		assert.Equal(t, want.From, out.TimeRange.From)
@@ -890,7 +891,7 @@ func Test_xyChartConfig_lensChartPresentation_timeRange_inheritanceAndMode(t *te
 
 	t.Run("time_range mode null preserved when API omits mode", func(t *testing.T) {
 		prior := minimalXYChartConfigForPresentationTests()
-		prior.TimeRange = &timeRangeModel{
+		prior.TimeRange = &models.TimeRangeModel{
 			From: types.StringValue("now-7d"),
 			To:   types.StringValue("now"),
 			Mode: types.StringNull(),
@@ -898,7 +899,7 @@ func Test_xyChartConfig_lensChartPresentation_timeRange_inheritanceAndMode(t *te
 
 		apiChart := func() kbapi.XyChartNoESQL {
 			m := minimalXYChartConfigForPresentationTests()
-			api, diags := m.toAPINoESQL(dash)
+			api, diags := xyChartConfigToAPINoESQL(m, dash)
 			require.False(t, diags.HasError())
 			return api
 		}()
@@ -907,8 +908,8 @@ func Test_xyChartConfig_lensChartPresentation_timeRange_inheritanceAndMode(t *te
 			To:   "now",
 		}
 
-		out := &xyChartConfigModel{}
-		diags := out.fromAPINoESQL(ctx, dash, prior, apiChart)
+		out := &models.XYChartConfigModel{}
+		diags := xyChartConfigFromAPINoESQL(ctx, out, dash, prior, apiChart)
 		require.False(t, diags.HasError())
 		require.NotNil(t, out.TimeRange)
 		assert.True(t, out.TimeRange.Mode.IsNull())
@@ -919,8 +920,8 @@ func Test_xyChartConfig_lensChartPresentation_timeRange_inheritanceAndMode(t *te
 
 func Test_xyChartConfigModel_lensChartPresentation_boolsReferences_andNullPreservation(t *testing.T) {
 	ctx := context.Background()
-	dash := &dashboardModel{
-		TimeRange: &timeRangeModel{
+	dash := &models.DashboardModel{
+		TimeRange: &models.TimeRangeModel{
 			From: types.StringValue("now-7d"),
 			To:   types.StringValue("now"),
 		},
@@ -931,13 +932,13 @@ func Test_xyChartConfigModel_lensChartPresentation_boolsReferences_andNullPreser
 			m := minimalXYChartConfigForPresentationTests()
 			m.HideTitle = types.BoolValue(v)
 
-			apiChart, diags := m.toAPINoESQL(dash)
+			apiChart, diags := xyChartConfigToAPINoESQL(m, dash)
 			require.False(t, diags.HasError())
 			require.NotNil(t, apiChart.HideTitle)
 			assert.Equal(t, v, *apiChart.HideTitle)
 
-			out := &xyChartConfigModel{}
-			diags = out.fromAPINoESQL(ctx, dash, m, apiChart)
+			out := &models.XYChartConfigModel{}
+			diags = xyChartConfigFromAPINoESQL(ctx, out, dash, m, apiChart)
 			require.False(t, diags.HasError())
 			assert.Equal(t, types.BoolValue(v), out.HideTitle)
 		}
@@ -948,13 +949,13 @@ func Test_xyChartConfigModel_lensChartPresentation_boolsReferences_andNullPreser
 			m := minimalXYChartConfigForPresentationTests()
 			m.HideBorder = types.BoolValue(v)
 
-			apiChart, diags := m.toAPINoESQL(dash)
+			apiChart, diags := xyChartConfigToAPINoESQL(m, dash)
 			require.False(t, diags.HasError())
 			require.NotNil(t, apiChart.HideBorder)
 			assert.Equal(t, v, *apiChart.HideBorder)
 
-			out := &xyChartConfigModel{}
-			diags = out.fromAPINoESQL(ctx, dash, m, apiChart)
+			out := &models.XYChartConfigModel{}
+			diags = xyChartConfigFromAPINoESQL(ctx, out, dash, m, apiChart)
 			require.False(t, diags.HasError())
 			assert.Equal(t, types.BoolValue(v), out.HideBorder)
 		}
@@ -965,12 +966,12 @@ func Test_xyChartConfigModel_lensChartPresentation_boolsReferences_andNullPreser
 		prior.HideTitle = types.BoolNull()
 
 		m := minimalXYChartConfigForPresentationTests()
-		apiChart, diags := m.toAPINoESQL(dash)
+		apiChart, diags := xyChartConfigToAPINoESQL(m, dash)
 		require.False(t, diags.HasError())
 		apiChart.HideTitle = nil
 
-		out := &xyChartConfigModel{}
-		diags = out.fromAPINoESQL(ctx, dash, prior, apiChart)
+		out := &models.XYChartConfigModel{}
+		diags = xyChartConfigFromAPINoESQL(ctx, out, dash, prior, apiChart)
 		require.False(t, diags.HasError())
 		assert.True(t, out.HideTitle.IsNull())
 	})
@@ -980,12 +981,12 @@ func Test_xyChartConfigModel_lensChartPresentation_boolsReferences_andNullPreser
 		prior.HideBorder = types.BoolNull()
 
 		m := minimalXYChartConfigForPresentationTests()
-		apiChart, diags := m.toAPINoESQL(dash)
+		apiChart, diags := xyChartConfigToAPINoESQL(m, dash)
 		require.False(t, diags.HasError())
 		apiChart.HideBorder = nil
 
-		out := &xyChartConfigModel{}
-		diags = out.fromAPINoESQL(ctx, dash, prior, apiChart)
+		out := &models.XYChartConfigModel{}
+		diags = xyChartConfigFromAPINoESQL(ctx, out, dash, prior, apiChart)
 		require.False(t, diags.HasError())
 		assert.True(t, out.HideBorder.IsNull())
 	})
@@ -995,12 +996,12 @@ func Test_xyChartConfigModel_lensChartPresentation_boolsReferences_andNullPreser
 		m := minimalXYChartConfigForPresentationTests()
 		m.ReferencesJSON = jsontypes.NewNormalizedValue(raw)
 
-		apiChart, diags := m.toAPINoESQL(dash)
+		apiChart, diags := xyChartConfigToAPINoESQL(m, dash)
 		require.False(t, diags.HasError())
 		require.NotNil(t, apiChart.References)
 
-		out := &xyChartConfigModel{}
-		diags = out.fromAPINoESQL(ctx, dash, m, apiChart)
+		out := &models.XYChartConfigModel{}
+		diags = xyChartConfigFromAPINoESQL(ctx, out, dash, m, apiChart)
 		require.False(t, diags.HasError())
 		require.True(t, typeutils.IsKnown(out.ReferencesJSON))
 		assert.JSONEq(t, raw, out.ReferencesJSON.ValueString())
@@ -1011,12 +1012,12 @@ func Test_xyChartConfigModel_lensChartPresentation_boolsReferences_andNullPreser
 		prior.ReferencesJSON = jsontypes.NewNormalizedNull()
 
 		m := minimalXYChartConfigForPresentationTests()
-		apiChart, diags := m.toAPINoESQL(dash)
+		apiChart, diags := xyChartConfigToAPINoESQL(m, dash)
 		require.False(t, diags.HasError())
 		apiChart.References = nil
 
-		out := &xyChartConfigModel{}
-		diags = out.fromAPINoESQL(ctx, dash, prior, apiChart)
+		out := &models.XYChartConfigModel{}
+		diags = xyChartConfigFromAPINoESQL(ctx, out, dash, prior, apiChart)
 		require.False(t, diags.HasError())
 		assert.True(t, out.ReferencesJSON.IsNull())
 	})
@@ -1026,13 +1027,13 @@ func Test_xyChartConfigModel_lensChartPresentation_boolsReferences_andNullPreser
 		prior.ReferencesJSON = jsontypes.NewNormalizedNull()
 
 		m := minimalXYChartConfigForPresentationTests()
-		apiChart, diags := m.toAPINoESQL(dash)
+		apiChart, diags := xyChartConfigToAPINoESQL(m, dash)
 		require.False(t, diags.HasError())
 		empty := []kbapi.KbnContentManagementUtilsReferenceSchema{}
 		apiChart.References = &empty
 
-		out := &xyChartConfigModel{}
-		diags = out.fromAPINoESQL(ctx, dash, prior, apiChart)
+		out := &models.XYChartConfigModel{}
+		diags = xyChartConfigFromAPINoESQL(ctx, out, dash, prior, apiChart)
 		require.False(t, diags.HasError())
 		assert.True(t, out.ReferencesJSON.IsNull())
 	})
@@ -1040,17 +1041,17 @@ func Test_xyChartConfigModel_lensChartPresentation_boolsReferences_andNullPreser
 
 func Test_xyChartConfigModel_lensChartPresentation_dashboardDrilldown_roundTrip(t *testing.T) {
 	ctx := context.Background()
-	dash := &dashboardModel{
-		TimeRange: &timeRangeModel{
+	dash := &models.DashboardModel{
+		TimeRange: &models.TimeRangeModel{
 			From: types.StringValue("now-7d"),
 			To:   types.StringValue("now"),
 		},
 	}
 
 	m := minimalXYChartConfigForPresentationTests()
-	m.Drilldowns = []lensDrilldownItemTFModel{
+	m.Drilldowns = []models.LensDrilldownItemTFModel{
 		{
-			DashboardDrilldown: &lensDashboardDrilldownTFModel{
+			DashboardDrilldown: &models.LensDashboardDrilldownTFModel{
 				DashboardID:  types.StringValue("dash-abc"),
 				Label:        types.StringValue("Open related"),
 				UseFilters:   types.BoolValue(true),
@@ -1060,7 +1061,7 @@ func Test_xyChartConfigModel_lensChartPresentation_dashboardDrilldown_roundTrip(
 		},
 	}
 
-	apiChart, diags := m.toAPINoESQL(dash)
+	apiChart, diags := xyChartConfigToAPINoESQL(m, dash)
 	require.False(t, diags.HasError())
 	require.NotNil(t, apiChart.Drilldowns)
 	require.GreaterOrEqual(t, len(*apiChart.Drilldowns), 1)
@@ -1072,8 +1073,8 @@ func Test_xyChartConfigModel_lensChartPresentation_dashboardDrilldown_roundTrip(
 	assert.Equal(t, "dashboard_drilldown", wire["type"])
 	assert.Equal(t, lensDrilldownTriggerOnApplyFilter, wire["trigger"])
 
-	out := &xyChartConfigModel{}
-	diags = out.fromAPINoESQL(ctx, dash, m, apiChart)
+	out := &models.XYChartConfigModel{}
+	diags = xyChartConfigFromAPINoESQL(ctx, out, dash, m, apiChart)
 	require.False(t, diags.HasError())
 	require.Len(t, out.Drilldowns, 1)
 	require.NotNil(t, out.Drilldowns[0].DashboardDrilldown)
@@ -1082,64 +1083,64 @@ func Test_xyChartConfigModel_lensChartPresentation_dashboardDrilldown_roundTrip(
 }
 
 func Test_xyAxisConfigModel_toAPI_nil(t *testing.T) {
-	var model *xyAxisConfigModel
-	apiAxis, diags := model.toAPI()
+	var model *models.XYAxisConfigModel
+	apiAxis, diags := xyAxisConfigToAPI(model)
 	assert.False(t, diags.HasError())
 	assert.Nil(t, apiAxis)
 }
 
 func Test_yAxisConfigModel_toAPIY_nil(t *testing.T) {
-	var model *yAxisConfigModel
-	apiAxis, diags := model.toAPIY()
+	var model *models.YAxisConfigModel
+	apiAxis, diags := YAxisConfigToAPIY(model)
 	assert.False(t, diags.HasError())
 	assert.Nil(t, apiAxis)
 }
 
 func Test_yAxisConfigModel_toAPIY2_nil(t *testing.T) {
-	var model *yAxisConfigModel
-	apiAxis, diags := model.toAPIY2()
+	var model *models.YAxisConfigModel
+	apiAxis, diags := YAxisConfigToAPIY2(model)
 	assert.False(t, diags.HasError())
 	assert.Nil(t, apiAxis)
 }
 
 func Test_axisTitleModel_toAPI_nil(t *testing.T) {
-	var model *axisTitleModel
-	apiTitle := model.toAPI()
+	var model *models.AxisTitleModel
+	apiTitle := axisTitleToAPI(model)
 	assert.Nil(t, apiTitle)
 }
 
 func Test_xyDecorationsModel_writeToStyling_nil(t *testing.T) {
-	var model *xyDecorationsModel
+	var model *models.XYDecorationsModel
 	var s kbapi.XyStyling
-	model.writeToStyling(&s)
+	xyDecorationsWriteToStyling(model, &s)
 	assert.Nil(t, s.Overlays.PartialBuckets)
 }
 
 func Test_xyFittingModel_toAPI_nil(t *testing.T) {
-	var model *xyFittingModel
-	apiFitting := model.toAPI()
+	var model *models.XYFittingModel
+	apiFitting := xyFittingToAPI(model)
 	assert.NotNil(t, apiFitting) // Returns empty struct, not nil
 }
 
 func Test_xyLegendModel_toAPI_nil(t *testing.T) {
-	var model *xyLegendModel
-	apiLegend, diags := model.toAPI()
+	var model *models.XYLegendModel
+	apiLegend, diags := xyLegendToAPI(model)
 	assert.False(t, diags.HasError())
 	// Check it doesn't panic
 	assert.NotNil(t, apiLegend)
 }
 
 func Test_alignXYChartStateFromPlanPanels_preservesPractitionerIntent(t *testing.T) {
-	planPanels := []panelModel{
+	planPanels := []models.PanelModel{
 		{
-			VisConfig: &visConfigModel{
-				ByValue: &visByValueModel{
-					lensByValueChartBlocks: lensByValueChartBlocks{
-						XYChartConfig: &xyChartConfigModel{
+			VisConfig: &models.VisConfigModel{
+				ByValue: &models.VisByValueModel{
+					LensByValueChartBlocks: models.LensByValueChartBlocks{
+						XYChartConfig: &models.XYChartConfigModel{
 							Title: types.StringValue("Sample XY Chart"),
-							Axis: &xyAxisModel{
-								X: &xyAxisConfigModel{
-									Title: &axisTitleModel{
+							Axis: &models.XYAxisModel{
+								X: &models.XYAxisConfigModel{
+									Title: &models.AxisTitleModel{
 										Value:   types.StringValue("Timestamp"),
 										Visible: types.BoolValue(true),
 									},
@@ -1149,8 +1150,8 @@ func Test_alignXYChartStateFromPlanPanels_preservesPractitionerIntent(t *testing
 									Scale:            types.StringNull(),
 									DomainJSON:       jsontypes.NewNormalizedNull(),
 								},
-								Y: &yAxisConfigModel{
-									Title: &axisTitleModel{
+								Y: &models.YAxisConfigModel{
+									Title: &models.AxisTitleModel{
 										Value:   types.StringValue("Count"),
 										Visible: types.BoolValue(true),
 									},
@@ -1160,8 +1161,8 @@ func Test_alignXYChartStateFromPlanPanels_preservesPractitionerIntent(t *testing
 									Scale:            types.StringValue("linear"),
 									DomainJSON:       jsontypes.NewNormalizedValue(`{"type":"fit"}`),
 								},
-								Y2: &yAxisConfigModel{
-									Title: &axisTitleModel{
+								Y2: &models.YAxisConfigModel{
+									Title: &models.AxisTitleModel{
 										Value:   types.StringValue("Rate"),
 										Visible: types.BoolValue(true),
 									},
@@ -1172,23 +1173,23 @@ func Test_alignXYChartStateFromPlanPanels_preservesPractitionerIntent(t *testing
 									DomainJSON:       jsontypes.NewNormalizedValue(`{"type":"fit"}`),
 								},
 							},
-							Decorations: &xyDecorationsModel{
+							Decorations: &models.XYDecorationsModel{
 								ShowEndZones:          types.BoolNull(),
 								ShowCurrentTimeMarker: types.BoolNull(),
 								PointVisibility:       types.StringNull(),
 								LineInterpolation:     types.StringNull(),
 								FillOpacity:           types.Float64Value(0.3),
 							},
-							Legend: &xyLegendModel{
+							Legend: &models.XYLegendModel{
 								Visibility:         types.StringValue("visible"),
 								Inside:             types.BoolValue(false),
 								Position:           types.StringValue("right"),
 								TruncateAfterLines: types.Int64Null(),
 							},
-							Layers: []xyLayerModel{
+							Layers: []models.XYLayerModel{
 								{
 									Type: types.StringValue("line"),
-									DataLayer: &dataLayerModel{
+									DataLayer: &models.DataLayerModel{
 										DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"data_view_spec","index_pattern":"metrics-*"}`),
 										XJSON:          jsontypes.NewNormalizedValue(`{"column":"@timestamp","format":{"type":"number"}}`),
 										BreakdownByJSON: jsontypes.NewNormalizedValue(
@@ -1196,16 +1197,16 @@ func Test_alignXYChartStateFromPlanPanels_preservesPractitionerIntent(t *testing
 												`"color":{"mode":"categorical","palette":"default","mapping":[],` +
 												`"unassigned":{"type":"color_code","value":"#D3DAE6"}}}`,
 										),
-										Y: []yMetricModel{
+										Y: []models.YMetricModel{
 											{ConfigJSON: jsontypes.NewNormalizedValue(`{"operation":"count","empty_as_null":true,"format":{"type":"number"}}`)},
 										},
 									},
 								},
 								{
 									Type: types.StringValue("reference_lines"),
-									ReferenceLineLayer: &referenceLineLayerModel{
+									ReferenceLineLayer: &models.ReferenceLineLayerModel{
 										DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"data_view_spec","index_pattern":"metrics-*"}`),
-										Thresholds: []thresholdModel{
+										Thresholds: []models.ThresholdModel{
 											{
 												ValueJSON: jsontypes.NewNormalizedValue(`{"operation":"static_value","value":42,"label":"","format":{"type":"number"}}`),
 											},
@@ -1220,24 +1221,24 @@ func Test_alignXYChartStateFromPlanPanels_preservesPractitionerIntent(t *testing
 		},
 	}
 
-	statePanels := []panelModel{
+	statePanels := []models.PanelModel{
 		{
-			VisConfig: &visConfigModel{
-				ByValue: &visByValueModel{
-					lensByValueChartBlocks: lensByValueChartBlocks{
-						XYChartConfig: &xyChartConfigModel{
+			VisConfig: &models.VisConfigModel{
+				ByValue: &models.VisByValueModel{
+					LensByValueChartBlocks: models.LensByValueChartBlocks{
+						XYChartConfig: &models.XYChartConfigModel{
 							Title: types.StringValue(""),
-							Axis: &xyAxisModel{
-								X: &xyAxisConfigModel{
-									Title:            &axisTitleModel{},
+							Axis: &models.XYAxisModel{
+								X: &models.XYAxisConfigModel{
+									Title:            &models.AxisTitleModel{},
 									Grid:             types.BoolValue(true),
 									Ticks:            types.BoolValue(true),
 									LabelOrientation: types.StringValue("horizontal"),
 									Scale:            types.StringValue("ordinal"),
 									DomainJSON:       jsontypes.NewNormalizedValue(`{"type":"fit","rounding":false}`),
 								},
-								Y: &yAxisConfigModel{
-									Title: &axisTitleModel{
+								Y: &models.YAxisConfigModel{
+									Title: &models.AxisTitleModel{
 										Value:   types.StringValue("Count"),
 										Visible: types.BoolValue(true),
 									},
@@ -1249,23 +1250,23 @@ func Test_alignXYChartStateFromPlanPanels_preservesPractitionerIntent(t *testing
 								},
 								Y2: nil,
 							},
-							Decorations: &xyDecorationsModel{
+							Decorations: &models.XYDecorationsModel{
 								ShowEndZones:          types.BoolValue(false),
 								ShowCurrentTimeMarker: types.BoolValue(false),
 								PointVisibility:       types.StringValue("auto"),
 								LineInterpolation:     types.StringValue("linear"),
 								FillOpacity:           types.Float64Null(),
 							},
-							Legend: &xyLegendModel{
+							Legend: &models.XYLegendModel{
 								Visibility:         types.StringValue("visible"),
 								Inside:             types.BoolValue(false),
 								Position:           types.StringValue("right"),
 								TruncateAfterLines: types.Int64Value(1),
 							},
-							Layers: []xyLayerModel{
+							Layers: []models.XYLayerModel{
 								{
 									Type: types.StringValue("line"),
-									DataLayer: &dataLayerModel{
+									DataLayer: &models.DataLayerModel{
 										DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"data_view_spec","index_pattern":"metrics-*","time_field":"@timestamp"}`),
 										XJSON:          jsontypes.NewNormalizedValue(`{"column":"@timestamp","format":{"type":"number","decimals":2,"compact":false}}`),
 										BreakdownByJSON: jsontypes.NewNormalizedValue(
@@ -1274,16 +1275,16 @@ func Test_alignXYChartStateFromPlanPanels_preservesPractitionerIntent(t *testing
 												`"color":{"mode":"categorical","palette":"default","mapping":[],` +
 												`"unassigned":{"type":"color_code","value":"#D3DAE6"}}}`,
 										),
-										Y: []yMetricModel{
+										Y: []models.YMetricModel{
 											{ConfigJSON: jsontypes.NewNormalizedValue(`{"operation":"count","empty_as_null":true,"format":{"type":"number","decimals":2,"compact":false},"axis_id":"y"}`)},
 										},
 									},
 								},
 								{
 									Type: types.StringValue("reference_lines"),
-									ReferenceLineLayer: &referenceLineLayerModel{
+									ReferenceLineLayer: &models.ReferenceLineLayerModel{
 										DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"data_view_spec","index_pattern":"metrics-*","time_field":"@timestamp"}`),
-										Thresholds: []thresholdModel{
+										Thresholds: []models.ThresholdModel{
 											{
 												ValueJSON: jsontypes.NewNormalizedValue(`{"operation":"static_value","value":42,"label":"","format":{"type":"number","decimals":2,"compact":false},"axis_id":"y"}`),
 											},
@@ -1327,14 +1328,14 @@ func Test_alignXYChartStateFromPlanPanels_preservesPractitionerIntent(t *testing
 }
 
 func Test_filterSimpleModel_toAPI_nil(t *testing.T) {
-	var model *filterSimpleModel
-	apiQuery := model.toAPI()
+	var model *models.FilterSimpleModel
+	apiQuery := filterSimpleToAPI(model)
 	assert.NotNil(t, apiQuery) // Returns empty struct, not nil
 }
 
 func Test_xyAxisModel_toAPI_nil(t *testing.T) {
-	var model *xyAxisModel
-	apiAxis, diags := model.toAPI()
+	var model *models.XYAxisModel
+	apiAxis, diags := xyAxisToAPI(model)
 	assert.False(t, diags.HasError())
 	assert.NotNil(t, apiAxis) // Returns empty struct, not nil
 }
@@ -1342,14 +1343,14 @@ func Test_xyAxisModel_toAPI_nil(t *testing.T) {
 func Test_axisTitleIsDefault(t *testing.T) {
 	tests := []struct {
 		name   string
-		title  *axisTitleModel
+		title  *models.AxisTitleModel
 		expect bool
 	}{
 		{"nil", nil, true},
-		{"value known", &axisTitleModel{Value: types.StringValue("x")}, false},
-		{"visible true", &axisTitleModel{Visible: types.BoolValue(true)}, true},
-		{"visible false", &axisTitleModel{Visible: types.BoolValue(false)}, false},
-		{"empty", &axisTitleModel{}, true},
+		{"value known", &models.AxisTitleModel{Value: types.StringValue("x")}, false},
+		{"visible true", &models.AxisTitleModel{Visible: types.BoolValue(true)}, true},
+		{"visible false", &models.AxisTitleModel{Visible: types.BoolValue(false)}, false},
+		{"empty", &models.AxisTitleModel{}, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

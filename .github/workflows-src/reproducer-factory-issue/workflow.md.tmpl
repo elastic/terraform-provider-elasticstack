@@ -1,0 +1,506 @@
+---
+name: Reproducer Factory Issue Intake
+timeout-minutes: 65
+description: >-
+  Reacts to trusted qualifying `reproducer-factory` issue events or internal workflow dispatch
+  requests, suppresses duplicate linked pull requests, and delegates bug reproduction to an agent
+  that emits a sticky reproducer comment and optionally opens a single linked PR when the bug is
+  reproduced as a passing acceptance test.
+on:
+  issues:
+    types: [opened, labeled]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Issue number to reproduce'
+        required: true
+        type: number
+      source_workflow:
+        description: 'Source workflow that triggered this dispatch'
+        required: false
+        type: string
+  status-comment: true
+  permissions:
+    contents: read
+    issues: write
+    pull-requests: read
+  steps:
+    - name: Determine intake mode
+      id: determine_intake_mode
+      uses: actions/github-script@v9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const mode = context.eventName === 'workflow_dispatch' ? 'dispatch' : 'issue-event';
+          core.setOutput('intake_mode', mode);
+          core.info(`Intake mode: ${mode}`);
+    - name: Qualify trigger event
+      id: qualify_trigger
+      if: steps.determine_intake_mode.outputs.intake_mode == 'issue-event'
+      uses: actions/github-script@v9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        x-script-include: scripts/qualify_trigger.inline.js
+    - name: Capture issue context
+      id: capture_issue_context
+      if: steps.determine_intake_mode.outputs.intake_mode == 'issue-event'
+      uses: actions/github-script@v9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          core.setOutput('issue_number', context.payload.issue?.number ?? '');
+          core.setOutput('issue_title', context.payload.issue?.title ?? '');
+          core.setOutput('issue_body', context.payload.issue?.body ?? '');
+    - name: Validate dispatch inputs
+      id: validate_dispatch_inputs
+      if: steps.determine_intake_mode.outputs.intake_mode == 'dispatch'
+      uses: actions/github-script@v9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        x-script-include: scripts/validate_dispatch_inputs.inline.js
+    - name: Fetch live issue
+      id: fetch_live_issue
+      if: >-
+        steps.determine_intake_mode.outputs.intake_mode == 'dispatch' &&
+        steps.validate_dispatch_inputs.outputs.event_eligible == 'true'
+      env:
+        INPUT_ISSUE_NUMBER: ${{ steps.validate_dispatch_inputs.outputs.issue_number }}
+      uses: actions/github-script@v9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        x-script-include: scripts/fetch_live_issue.inline.js
+    - name: Check actor trust
+      id: check_actor_trust
+      if: >-
+        steps.determine_intake_mode.outputs.intake_mode == 'issue-event' &&
+        steps.qualify_trigger.outputs.event_eligible == 'true'
+      uses: actions/github-script@v9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        x-script-include: scripts/check_actor_trust.inline.js
+    - name: Fetch issue comments
+      id: fetch_issue_comments
+      if: >-
+        (
+          steps.determine_intake_mode.outputs.intake_mode == 'issue-event' &&
+          steps.qualify_trigger.outputs.event_eligible == 'true' &&
+          steps.check_actor_trust.outputs.actor_trusted == 'true'
+        ) || (
+          steps.determine_intake_mode.outputs.intake_mode == 'dispatch' &&
+          steps.validate_dispatch_inputs.outputs.event_eligible == 'true'
+        )
+      env:
+        INPUT_ISSUE_NUMBER: >-
+          ${{ steps.determine_intake_mode.outputs.intake_mode == 'issue-event'
+            && steps.capture_issue_context.outputs.issue_number
+            || steps.validate_dispatch_inputs.outputs.issue_number }}
+      uses: actions/github-script@v9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        x-script-include: scripts/fetch_issue_comments.inline.js
+    - name: Fetch prior reproducer comment
+      id: fetch_prior_reproducer_comment
+      if: >-
+        (
+          steps.determine_intake_mode.outputs.intake_mode == 'issue-event' &&
+          steps.qualify_trigger.outputs.event_eligible == 'true' &&
+          steps.check_actor_trust.outputs.actor_trusted == 'true'
+        ) || (
+          steps.determine_intake_mode.outputs.intake_mode == 'dispatch' &&
+          steps.validate_dispatch_inputs.outputs.event_eligible == 'true'
+        )
+      env:
+        INPUT_ISSUE_NUMBER: >-
+          ${{ steps.determine_intake_mode.outputs.intake_mode == 'issue-event'
+            && steps.capture_issue_context.outputs.issue_number
+            || steps.validate_dispatch_inputs.outputs.issue_number }}
+      uses: actions/github-script@v9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        x-script-include: scripts/fetch_prior_reproducer_comment.inline.js
+    - name: Check duplicate PR
+      id: check_duplicate_pr
+      if: >-
+        (
+          steps.determine_intake_mode.outputs.intake_mode == 'issue-event' &&
+          steps.qualify_trigger.outputs.event_eligible == 'true' &&
+          steps.check_actor_trust.outputs.actor_trusted == 'true'
+        ) || (
+          steps.determine_intake_mode.outputs.intake_mode == 'dispatch' &&
+          steps.validate_dispatch_inputs.outputs.event_eligible == 'true'
+        )
+      uses: actions/github-script@v9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        x-script-include: scripts/check_duplicate_pr.inline.js
+    - name: Remove trigger label
+      id: remove_trigger_label
+      if: >-
+        steps.determine_intake_mode.outputs.intake_mode == 'issue-event' &&
+        steps.qualify_trigger.outputs.event_eligible == 'true' &&
+        steps.check_actor_trust.outputs.actor_trusted == 'true' &&
+        steps.check_duplicate_pr.outputs.duplicate_pr_found != 'true'
+      uses: actions/github-script@v9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        x-script-include: scripts/remove_trigger_label.inline.js
+    - name: Normalize context
+      id: normalize_context
+      if: always()
+      env:
+        INTAKE_MODE: ${{ steps.determine_intake_mode.outputs.intake_mode }}
+        ISSUE_NUMBER_EVENT: ${{ steps.capture_issue_context.outputs.issue_number }}
+        ISSUE_TITLE_EVENT: ${{ steps.capture_issue_context.outputs.issue_title }}
+        ISSUE_BODY_EVENT: ${{ steps.capture_issue_context.outputs.issue_body }}
+        EVENT_ELIGIBLE_EVENT: ${{ steps.qualify_trigger.outputs.event_eligible }}
+        EVENT_ELIGIBLE_REASON_EVENT: ${{ steps.qualify_trigger.outputs.event_eligible_reason }}
+        ACTOR_TRUSTED_EVENT: ${{ steps.check_actor_trust.outputs.actor_trusted }}
+        ACTOR_TRUSTED_REASON_EVENT: ${{ steps.check_actor_trust.outputs.actor_trusted_reason }}
+        TRIGGER_LABEL_REMOVED_EVENT: ${{ steps.remove_trigger_label.outputs.trigger_label_removed }}
+        TRIGGER_LABEL_REMOVED_REASON_EVENT: ${{ steps.remove_trigger_label.outputs.trigger_label_removed_reason }}
+        ISSUE_NUMBER_DISPATCH: ${{ steps.fetch_live_issue.outputs.issue_number }}
+        ISSUE_TITLE_DISPATCH: ${{ steps.fetch_live_issue.outputs.issue_title }}
+        ISSUE_BODY_DISPATCH: ${{ steps.fetch_live_issue.outputs.issue_body }}
+        EVENT_ELIGIBLE_DISPATCH: ${{ steps.validate_dispatch_inputs.outputs.event_eligible }}
+        EVENT_ELIGIBLE_REASON_DISPATCH: ${{ steps.validate_dispatch_inputs.outputs.event_eligible_reason }}
+        ISSUE_COMMENTS: ${{ steps.fetch_issue_comments.outputs.issue_comments }}
+        PRIOR_REPRODUCER_COMMENT: ${{ steps.fetch_prior_reproducer_comment.outputs.prior_reproducer_comment }}
+        SOURCE_WORKFLOW: ${{ github.event.inputs.source_workflow }}
+        DUPLICATE_PR_FOUND: ${{ steps.check_duplicate_pr.outputs.duplicate_pr_found }}
+        DUPLICATE_PR_URL: ${{ steps.check_duplicate_pr.outputs.duplicate_pr_url }}
+      run: |
+        echo "intake_mode=${INTAKE_MODE}" >> "$GITHUB_OUTPUT"
+        EOF_DELIM="EOF_$(cat /proc/sys/kernel/random/uuid 2>/dev/null || date +%s%N)"
+
+        if [ "${INTAKE_MODE}" = "issue-event" ]; then
+          echo "issue_number=${ISSUE_NUMBER_EVENT}" >> "$GITHUB_OUTPUT"
+          echo "issue_title=${ISSUE_TITLE_EVENT}" >> "$GITHUB_OUTPUT"
+          {
+            echo "issue_body<<${EOF_DELIM}"
+            printf '%s\n' "${ISSUE_BODY_EVENT}"
+            echo "${EOF_DELIM}"
+          } >> "$GITHUB_OUTPUT"
+          echo "event_eligible=${EVENT_ELIGIBLE_EVENT}" >> "$GITHUB_OUTPUT"
+          echo "event_eligible_reason=${EVENT_ELIGIBLE_REASON_EVENT}" >> "$GITHUB_OUTPUT"
+          echo "actor_trusted=${ACTOR_TRUSTED_EVENT}" >> "$GITHUB_OUTPUT"
+          echo "actor_trusted_reason=${ACTOR_TRUSTED_REASON_EVENT}" >> "$GITHUB_OUTPUT"
+          echo "trigger_label_removed=${TRIGGER_LABEL_REMOVED_EVENT}" >> "$GITHUB_OUTPUT"
+          echo "trigger_label_removed_reason=${TRIGGER_LABEL_REMOVED_REASON_EVENT}" >> "$GITHUB_OUTPUT"
+        else
+          echo "issue_number=${ISSUE_NUMBER_DISPATCH}" >> "$GITHUB_OUTPUT"
+          echo "issue_title=${ISSUE_TITLE_DISPATCH}" >> "$GITHUB_OUTPUT"
+          {
+            echo "issue_body<<${EOF_DELIM}"
+            printf '%s\n' "${ISSUE_BODY_DISPATCH}"
+            echo "${EOF_DELIM}"
+          } >> "$GITHUB_OUTPUT"
+          echo "event_eligible=${EVENT_ELIGIBLE_DISPATCH}" >> "$GITHUB_OUTPUT"
+          echo "event_eligible_reason=${EVENT_ELIGIBLE_REASON_DISPATCH}" >> "$GITHUB_OUTPUT"
+          echo "actor_trusted=true" >> "$GITHUB_OUTPUT"
+          echo "actor_trusted_reason=Dispatch intake bypasses actor trust check." >> "$GITHUB_OUTPUT"
+          echo "trigger_label_removed=false" >> "$GITHUB_OUTPUT"
+          echo "trigger_label_removed_reason=Trigger label removal is not required for dispatch intake." >> "$GITHUB_OUTPUT"
+          echo "source_workflow=${SOURCE_WORKFLOW}" >> "$GITHUB_OUTPUT"
+        fi
+
+        {
+          echo "issue_comments<<${EOF_DELIM}"
+          printf '%s\n' "${ISSUE_COMMENTS}"
+          echo "${EOF_DELIM}"
+        } >> "$GITHUB_OUTPUT"
+
+        {
+          echo "prior_reproducer_comment<<${EOF_DELIM}"
+          printf '%s\n' "${PRIOR_REPRODUCER_COMMENT}"
+          echo "${EOF_DELIM}"
+        } >> "$GITHUB_OUTPUT"
+
+        echo "duplicate_pr_found=${DUPLICATE_PR_FOUND}" >> "$GITHUB_OUTPUT"
+        echo "duplicate_pr_url=${DUPLICATE_PR_URL}" >> "$GITHUB_OUTPUT"
+      shell: bash
+    - name: Write issue context to files
+      id: write_context_files
+      if: >-
+        steps.normalize_context.outputs.event_eligible == 'true' &&
+        steps.normalize_context.outputs.actor_trusted == 'true' &&
+        steps.check_duplicate_pr.outputs.duplicate_pr_found != 'true' &&
+        steps.normalize_context.outputs.issue_number != ''
+      env:
+        ISSUE_BODY: ${{ steps.normalize_context.outputs.issue_body }}
+        ISSUE_COMMENTS: ${{ steps.normalize_context.outputs.issue_comments }}
+        PRIOR_REPRODUCER_COMMENT: ${{ steps.normalize_context.outputs.prior_reproducer_comment }}
+      uses: actions/github-script@v9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        x-script-include: scripts/write_context_files.inline.js
+    - name: Upload issue context artifact
+      if: >-
+        steps.normalize_context.outputs.event_eligible == 'true' &&
+        steps.normalize_context.outputs.actor_trusted == 'true' &&
+        steps.check_duplicate_pr.outputs.duplicate_pr_found != 'true' &&
+        steps.normalize_context.outputs.issue_number != ''
+      uses: actions/upload-artifact@v4
+      with:
+        name: reproducer-factory-issue-context
+        path: /tmp/reproducer-factory-context/
+        if-no-files-found: error
+    - name: Finalize gate reason
+      id: finalize_gate
+      if: always()
+      uses: actions/github-script@v9
+      env:
+        EVENT_ELIGIBLE: ${{ steps.normalize_context.outputs.event_eligible }}
+        EVENT_ELIGIBLE_REASON: ${{ steps.normalize_context.outputs.event_eligible_reason }}
+        ACTOR_TRUSTED: ${{ steps.normalize_context.outputs.actor_trusted }}
+        ACTOR_TRUSTED_REASON: ${{ steps.normalize_context.outputs.actor_trusted_reason }}
+        DUPLICATE_PR_FOUND: ${{ steps.check_duplicate_pr.outputs.duplicate_pr_found }}
+        DUPLICATE_PR_URL: ${{ steps.check_duplicate_pr.outputs.duplicate_pr_url }}
+        DUPLICATE_GATE_REASON: ${{ steps.check_duplicate_pr.outputs.gate_reason }}
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        x-script-include: scripts/finalize_gate.inline.js
+env:
+  REPRODUCER_FACTORY_ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue_number }}
+concurrency:
+  group: reproducer-factory-issue-${{ github.event.issue.number || inputs.issue_number }}
+  cancel-in-progress: false
+if: >-
+  needs.pre_activation.outputs.event_eligible == 'true' &&
+  needs.pre_activation.outputs.actor_trusted == 'true' &&
+  needs.pre_activation.outputs.duplicate_pr_found != 'true' &&
+  needs.pre_activation.outputs.issue_number != ''
+steps:
+  - name: Setup Go
+    uses: actions/setup-go@v6
+    with:
+      go-version-file: go.mod
+      cache: false
+  - name: Export Go paths for AWF chroot mode
+    run: |
+      echo "GOROOT=$(go env GOROOT)" >> "$GITHUB_ENV"
+      echo "GOPATH=$(go env GOPATH)" >> "$GITHUB_ENV"
+      echo "GOMODCACHE=$(go env GOMODCACHE)" >> "$GITHUB_ENV"
+  - name: Download issue context artifact
+    uses: actions/download-artifact@v4
+    with:
+      name: reproducer-factory-issue-context
+      path: /tmp/reproducer-factory-context/
+  - name: Setup Node.js
+    uses: actions/setup-node@v6
+    with:
+      node-version-file: package.json
+  - name: Setup Terraform CLI
+    uses: hashicorp/setup-terraform@v4
+    with:
+      terraform_wrapper: false
+  - name: Setup Elastic Stack
+    run: make docker-fleet
+  - name: Get dependencies
+    run: make setup
+  - name: Setup Kibana user
+    run: make set-kibana-password
+  - id: get-api-key
+    name: Get ES API key
+    run: |-
+      echo "apikey=$(make create-es-api-key | jq -r .encoded)" >> "$GITHUB_OUTPUT"
+  - id: setup-fleet
+    name: Setup Fleet
+    run: |-
+      make setup-kibana-fleet
+    env:
+      FLEET_NAME: "fleet"
+  - name: Docker compose logs
+    if: failure()
+    run: docker compose logs --no-color
+engine:
+  id: claude
+  model: "llm-gateway/claude-sonnet-4-6"
+  args:
+    - "--effort"
+    - "high"
+  env:
+    ANTHROPIC_BASE_URL: "https://elastic.litellm-prod.ai/"
+    ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_LITELLM_PROXY_API_KEY }}
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+jobs:
+  pre-activation:
+    outputs:
+      intake_mode: ${{ steps.normalize_context.outputs.intake_mode }}
+      issue_number: ${{ steps.normalize_context.outputs.issue_number }}
+      issue_title: ${{ steps.normalize_context.outputs.issue_title }}
+      issue_body: ${{ steps.normalize_context.outputs.issue_body }}
+      event_eligible: ${{ steps.normalize_context.outputs.event_eligible }}
+      event_eligible_reason: ${{ steps.normalize_context.outputs.event_eligible_reason }}
+      actor_trusted: ${{ steps.normalize_context.outputs.actor_trusted }}
+      actor_trusted_reason: ${{ steps.normalize_context.outputs.actor_trusted_reason }}
+      duplicate_pr_found: ${{ steps.check_duplicate_pr.outputs.duplicate_pr_found }}
+      duplicate_pr_url: ${{ steps.check_duplicate_pr.outputs.duplicate_pr_url }}
+      trigger_label_removed: ${{ steps.normalize_context.outputs.trigger_label_removed }}
+      trigger_label_removed_reason: ${{ steps.normalize_context.outputs.trigger_label_removed_reason }}
+      source_workflow: ${{ steps.normalize_context.outputs.source_workflow }}
+      gate_reason: ${{ steps.finalize_gate.outputs.gate_reason }}
+tools:
+  github:
+    toolsets: [issues, pull_requests, repos]
+network:
+  allowed: [defaults, node, go, elastic.litellm-prod.ai, www.elastic.co]
+mcp-servers:
+  elastic-docs:
+    url: "https://www.elastic.co/docs/_mcp/"
+    allowed: ["*"]
+checkout:
+  fetch-depth: 0
+safe-outputs:
+  jobs:
+    update-reproducer-comment:
+      description: Create or update the reproducer-factory sticky comment on the triggering issue
+      permissions:
+        contents: read
+        issues: write
+      runs-on: ubuntu-latest
+      output: "Reproducer comment created or updated successfully."
+      inputs:
+        body:
+          description: Markdown body of the reproducer comment (without the gha-reproducer-factory marker)
+          required: true
+          type: string
+      steps:
+        - name: Create or update reproducer comment
+          uses: actions/github-script@v9
+          env:
+            REPRODUCER_FACTORY_ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue_number }}
+          with:
+            github-token: ${{ secrets.GITHUB_TOKEN }}
+            script: |
+              //include: scripts/update_reproducer_comment.job.js
+  create-pull-request:
+    labels: [reproducer-factory]
+    max: 1
+  noop:
+    max: 1
+    report-as-issue: false
+---
+
+# Reproducer Factory issue reproduction worker
+
+You reproduce **issue #${{ needs.pre_activation.outputs.issue_number }}** (`${{ needs.pre_activation.outputs.issue_title }}`) labeled `reproducer-factory`. The activation gates below reference this same issue number consistently — treat **`${{ needs.pre_activation.outputs.issue_number }}`** as the authoritative id for test naming, branch names, and `Related to #${{ needs.pre_activation.outputs.issue_number }}` linkage.
+
+Express the reported failure as a passing acceptance test (`ExpectError` or `ExpectNonEmptyPlan`), run it against the live Elastic Stack, and decide one of three outcomes: **reproduced**, **cannot reproduce**, or **appears fixed**. You **MUST** emit exactly one `update-reproducer-comment` safe output on every activation. You **MAY** emit `create-pull-request` **only** for outcome A (reproduced), after the reproducing test passes.
+
+## Pre-activation context
+
+Deterministic pre-activation has already decided that intake for **issue #${{ needs.pre_activation.outputs.issue_number }}** is eligible, the actor is trusted (or dispatch bypasses trust), and there is no open linked `reproducer-factory` pull request matching the duplicate-PR gate for **#${{ needs.pre_activation.outputs.issue_number }}**.
+
+- **Gate reason**: `${{ needs.pre_activation.outputs.gate_reason }}`
+- **Intake mode**: `${{ needs.pre_activation.outputs.intake_mode }}`
+- **Issue number**: `${{ needs.pre_activation.outputs.issue_number }}`
+- **Issue title**: `${{ needs.pre_activation.outputs.issue_title }}`
+- **Issue body** (sanitised): `/tmp/reproducer-factory-context/issue_body.md`
+- **Comment history** (sanitised, human-authored): `/tmp/reproducer-factory-context/issue_comments.md`
+- **Prior reproducer comment** (if any): `/tmp/reproducer-factory-context/prior_reproducer_comment.md`
+
+Read all context files before proceeding. They may contain markdown, code fences, and other content that cannot be safely embedded inline in a prompt.
+
+- **Repository**: `${{ github.repository }}`
+- **Triggered by**: `@${{ github.actor }}`
+- **Required branch** (outcome A PR): `reproducer-factory/issue-${{ needs.pre_activation.outputs.issue_number }}`
+- **Run link**: `${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`
+
+## Time budget
+
+Reserve approximately **55 minutes** for investigation, documentation lookup, test authoring, and test runs. The job hard-kills at **65 minutes**. Reserve the final **~5 minutes** for emitting safe outputs (`update-reproducer-comment`, and `create-pull-request` only for outcome A).
+
+## Partial output preference
+
+If you are running short on time, prefer emitting a **partial-but-valid** `update-reproducer-comment` (for example an honest outcome-B comment with clear unknowns) over emitting `noop`. A partial comment that documents what you tried is more useful than silence.
+
+## Test environment
+
+The Elastic Stack is available in the agent environment. Run targeted acceptance tests with:
+
+```bash
+ELASTICSEARCH_ENDPOINTS=http://host.docker.internal:9200 \
+ELASTICSEARCH_USERNAME=elastic \
+ELASTICSEARCH_PASSWORD=password \
+KIBANA_ENDPOINT=http://host.docker.internal:5601 \
+TF_ACC=1 \
+go test -v -run TestAccReproduceIssue${{ needs.pre_activation.outputs.issue_number }} ./path/to/package
+```
+
+Point `./path/to/package` at the directory that holds `TestAccReproduceIssue${{ needs.pre_activation.outputs.issue_number }}` (see **Test file placement**).
+
+## Elastic documentation
+
+An `elastic-docs` MCP server is available with `search_docs`, `find_related_docs`, and `get_document_by_url`. Use these **before** writing the reproduction test to ground API behavior and constraints. This grounding step reduces incorrect assumptions about API shape.
+
+If the MCP tools are unavailable or return no useful results, proceed from the issue content and repository code alone — **do not** emit `noop` solely because documentation tools failed.
+
+## Task
+
+Follow this decision tree end-to-end for **issue #${{ needs.pre_activation.outputs.issue_number }}**:
+
+1. **Read** the issue title (`${{ needs.pre_activation.outputs.issue_title }}`), body, comment history, and prior reproducer comment (if present) thoroughly.
+2. **Identify resource scope** and choose the test file location using **Test file placement**.
+3. **Write** `TestAccReproduceIssue${{ needs.pre_activation.outputs.issue_number }}` using `resource.TestStep` with `ExpectError` or `ExpectNonEmptyPlan` (as appropriate) to assert the failure described in the issue.
+4. **Run** the test against the live Elastic Stack using the environment variables in **Test environment**. Iterate on the config if needed.
+5. **Route by result:**
+   - **PASS** with the failure assertion in place → **Outcome A (reproduced)**  
+     Emit `update-reproducer-comment` with the outcome-A body, then emit `create-pull-request` on branch `reproducer-factory/issue-${{ needs.pre_activation.outputs.issue_number }}`. The PR body **MUST** include `Related to #${{ needs.pre_activation.outputs.issue_number }}` (do **not** use `Closes`).
+   - **FAIL** because you cannot build a credible config or the environment/test setup does not support demonstrating the issue after reasonable iteration → **Outcome B (cannot reproduce)**  
+     Emit `update-reproducer-comment` with the outcome-B body. **Do not** emit `create-pull-request`.
+   - **FAIL** specifically because the expected error never fired (`ExpectError` did not match, or the failure condition did not occur) → try running **without** `ExpectError` / failure assertion. If the test **passes cleanly**, treat as **Outcome C (appears fixed)**  
+     Emit `update-reproducer-comment` with the outcome-C body, including the test configuration (inline or fenced), test output showing no matching error, and any relevant recent git history. **Do not** emit `create-pull-request`.
+
+## Test file placement
+
+- **Default**: `internal/acctest/reproductions/issue_${{ needs.pre_activation.outputs.issue_number }}_acc_test.go` defining `TestAccReproduceIssue${{ needs.pre_activation.outputs.issue_number }}`.
+- **Resource package** when the issue clearly identifies one Terraform resource: the same `issue_${{ needs.pre_activation.outputs.issue_number }}_acc_test.go` / `TestAccReproduceIssue${{ needs.pre_activation.outputs.issue_number }}` pattern under that resource’s package (example: `internal/kibana/alertingrule/issue_${{ needs.pre_activation.outputs.issue_number }}_acc_test.go`) when the issue names an `elasticstack_*` type or an unambiguous human description (“alerting rule resource”, “Kibana dashboard”, etc.).
+- **Use the fallback path** when the issue is ambiguous, spans multiple resources, or describes a provider-level concern that is not attributable to one resource package.
+
+## Comment format
+
+The reproducer comment **MUST** conform to the `ci-reproducer-factory-comment-format` capability. The workflow automatically prepends `<!-- gha-reproducer-factory -->`; **do not** include that marker in the body you pass to `update-reproducer-comment`.
+
+1. **`## Bug reproduction`** — Open the body with this H2 heading. Immediately below it, add a provenance header that records the run timestamp, the run link (`${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`), and a one-line notice that the comment is replaced on each run, e.g.:
+
+   > This comment is replaced on each workflow run.
+
+2. **Outcome-specific sections** (after the provenance header):
+
+- **Outcome A**: `### Summary`, `### Root cause`, `### Reproduction test`, then `### References`, then a closed `<details>` block for pipeline metadata JSON.
+- **Outcome B**: `### Summary`, `### Investigation avenues` with **exactly three** numbered items — each item **must** reference a concrete file path, Go symbol, git commit, or API endpoint (not vague advice).
+- **Outcome C**: `### Summary`, `### Evidence`, then `### References`, then the `<details>` JSON block.
+
+Place `### References` **before** the `<details>` metadata block.
+
+3. **Pipeline metadata block** — After `### References`, include exactly one HTML `<details>` element (**no** `open` attribute) with `<summary>🤖 Pipeline metadata</summary>` containing exactly one fenced ```json``` code block. The JSON object MUST match `ci-reproducer-factory-comment-format` (`openspec/specs/ci-reproducer-factory-comment-format/spec.md`):
+
+- `schema_version` (string, required): e.g. `"1.0"`.
+- `outcome` (string, required): `"reproduced"`, `"cannot-reproduce"`, or `"appears-fixed"`.
+- `test_name` (string, optional): `TestAccReproduceIssue{N}` — present for outcomes A and C.
+- `test_file` (string, optional): relative path to the test file — present for outcome A.
+- `pr_url` (string, optional): reproduction PR URL — present for outcome A.
+- `references` (array, optional): each entry has `type` (`"elastic-docs"`, `"repo-path"`, `"issue"`, `"pr"`, `"external"`) and `url` or `path`.
+
+The JSON `outcome` and optional fields MUST be internally consistent with the human-readable outcome sections above.
+
+## Pull request contract
+
+**Outcome A only:**
+
+- Branch: `reproducer-factory/issue-${{ needs.pre_activation.outputs.issue_number }}`
+- Label: `reproducer-factory` (via `create-pull-request` safe output)
+- PR body **MUST** contain `Related to #${{ needs.pre_activation.outputs.issue_number }}`. Do **not** use `Closes #${{ needs.pre_activation.outputs.issue_number }}` — the reproduction confirms the bug for **#${{ needs.pre_activation.outputs.issue_number }}**; it does not resolve the issue.
+- Include **only** the reproduction test file — no unrelated changes.
+
+## Guardrails
+
+- Do **not** re-check pre-activation gates (event eligibility, actor trust, duplicate PR state); pre-activation already handled them.
+- Emit **only** configured safe outputs — **no** free-form issue comments, **no** label changes, **no** extra pull requests.
+- Emit **at most one** `update-reproducer-comment` and **at most one** `create-pull-request`.
+- If you cannot complete a full investigation, prefer a **partial** outcome-B `update-reproducer-comment` that states unknowns honestly over `noop`.
+- Do **not** emit `noop` solely because the `elastic-docs` MCP server is unavailable.
+- Do **not** include `<!-- gha-reproducer-factory -->` in the markdown you pass to `update-reproducer-comment`; the workflow adds it.

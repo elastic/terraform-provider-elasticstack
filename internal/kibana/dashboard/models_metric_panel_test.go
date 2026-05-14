@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/stretchr/testify/assert"
@@ -49,12 +50,12 @@ func Test_metricChartPanelConfigConverter_populateFromAttributes_buildAttributes
 	require.NoError(t, attrs.FromMetricNoESQL(apiChart))
 
 	converter := newMetricChartPanelConfigConverter()
-	visBv := visByValueModel{}
-	diags := converter.populateFromAttributes(ctx, nil, nil, &visBv.lensByValueChartBlocks, attrs)
+	visBv := models.VisByValueModel{}
+	diags := converter.populateFromAttributes(ctx, nil, nil, &visBv.LensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
 	require.NotNil(t, visBv.MetricChartConfig)
 
-	attrs2, diags := converter.buildAttributes(&visBv.lensByValueChartBlocks, nil)
+	attrs2, diags := converter.buildAttributes(&visBv.LensByValueChartBlocks, nil)
 	require.False(t, diags.HasError())
 
 	variant0, err := attrs2.AsMetricNoESQL()
@@ -118,8 +119,8 @@ func Test_metricChartConfigModel_fromAPI_toAPI_variant0(t *testing.T) {
 			err := attrs.FromMetricNoESQL(tt.apiChart)
 			require.NoError(t, err)
 
-			model := &metricChartConfigModel{}
-			diags := model.fromAPI(ctx, attrs)
+			model := &models.MetricChartConfigModel{}
+			diags := metricChartConfigFromAPI(ctx, model, attrs)
 			require.False(t, diags.HasError(), "fromAPI should not have errors")
 
 			// Verify the fields
@@ -142,7 +143,7 @@ func Test_metricChartConfigModel_fromAPI_toAPI_variant0(t *testing.T) {
 			}
 
 			// Test toAPI round-trip
-			resultSchema, diags := model.toAPI(nil)
+			resultSchema, diags := metricChartConfigToAPI(model, nil)
 			require.False(t, diags.HasError(), "toAPI should not have errors")
 
 			// Verify we can convert back to variant 0
@@ -212,8 +213,8 @@ func Test_metricChartConfigModel_fromAPI_toAPI_variant1(t *testing.T) {
 			err := attrs.FromMetricESQL(tt.apiChart)
 			require.NoError(t, err)
 
-			model := &metricChartConfigModel{}
-			diags := model.fromAPI(ctx, attrs)
+			model := &models.MetricChartConfigModel{}
+			diags := metricChartConfigFromAPI(ctx, model, attrs)
 			require.False(t, diags.HasError(), "fromAPI should not have errors")
 
 			// Verify the fields
@@ -239,7 +240,7 @@ func Test_metricChartConfigModel_fromAPI_toAPI_variant1(t *testing.T) {
 			assert.Nil(t, model.Query)
 
 			// Test toAPI round-trip
-			resultSchema, diags := model.toAPI(nil)
+			resultSchema, diags := metricChartConfigToAPI(model, nil)
 			require.False(t, diags.HasError(), "toAPI should not have errors")
 
 			// Verify we can convert back to variant 1
@@ -285,8 +286,8 @@ func Test_metricChartConfigModel_withMetrics(t *testing.T) {
 	err = attrs.FromMetricESQL(apiChart)
 	require.NoError(t, err)
 
-	model := &metricChartConfigModel{}
-	diags := model.fromAPI(ctx, attrs)
+	model := &models.MetricChartConfigModel{}
+	diags := metricChartConfigFromAPI(ctx, model, attrs)
 	require.False(t, diags.HasError())
 
 	// Verify metrics were populated
@@ -301,7 +302,7 @@ func Test_metricChartConfigModel_withMetrics(t *testing.T) {
 	assert.Equal(t, "count", parsedMetric["operation"])
 
 	// Test toAPI round-trip
-	resultSchema, diags := model.toAPI(nil)
+	resultSchema, diags := metricChartConfigToAPI(model, nil)
 	require.False(t, diags.HasError())
 
 	resultVariant1, err := resultSchema.AsMetricESQL()
@@ -331,8 +332,8 @@ func Test_metricChartConfigModel_withDataset(t *testing.T) {
 	err = attrs.FromMetricNoESQL(apiChart)
 	require.NoError(t, err)
 
-	model := &metricChartConfigModel{}
-	diags := model.fromAPI(ctx, attrs)
+	model := &models.MetricChartConfigModel{}
+	diags := metricChartConfigFromAPI(ctx, model, attrs)
 	require.False(t, diags.HasError())
 
 	// Verify dataset was populated
@@ -345,7 +346,7 @@ func Test_metricChartConfigModel_withDataset(t *testing.T) {
 	assert.Equal(t, "test-dataview", parsedDataset["id"])
 
 	// Round-trip: toAPI should preserve dataset
-	resultSchema, diags := model.toAPI(nil)
+	resultSchema, diags := metricChartConfigToAPI(model, nil)
 	require.False(t, diags.HasError())
 	resultVariant0, err := resultSchema.AsMetricNoESQL()
 	require.NoError(t, err)
@@ -377,8 +378,8 @@ func Test_metricChartConfigModel_withFilters(t *testing.T) {
 	err := attrs.FromMetricNoESQL(apiChart)
 	require.NoError(t, err)
 
-	model := &metricChartConfigModel{}
-	diags := model.fromAPI(ctx, attrs)
+	model := &models.MetricChartConfigModel{}
+	diags := metricChartConfigFromAPI(ctx, model, attrs)
 	require.False(t, diags.HasError())
 
 	// Verify filters were populated
@@ -386,7 +387,7 @@ func Test_metricChartConfigModel_withFilters(t *testing.T) {
 	assert.Contains(t, model.Filters[0].FilterJSON.ValueString(), `"field":"status"`)
 
 	// Test toAPI round-trip
-	resultSchema, diags := model.toAPI(nil)
+	resultSchema, diags := metricChartConfigToAPI(model, nil)
 	require.False(t, diags.HasError())
 
 	resultVariant0, err := resultSchema.AsMetricNoESQL()
@@ -416,8 +417,8 @@ func Test_metricChartConfigModel_withBreakdownBy(t *testing.T) {
 	err = attrs.FromMetricNoESQL(apiChart)
 	require.NoError(t, err)
 
-	model := &metricChartConfigModel{}
-	diags := model.fromAPI(ctx, attrs)
+	model := &models.MetricChartConfigModel{}
+	diags := metricChartConfigFromAPI(ctx, model, attrs)
 	require.False(t, diags.HasError())
 
 	// Verify breakdown_by was populated
@@ -430,7 +431,7 @@ func Test_metricChartConfigModel_withBreakdownBy(t *testing.T) {
 	assert.Equal(t, "category", parsedBreakdown["field"])
 
 	// Test toAPI round-trip
-	resultSchema, diags := model.toAPI(nil)
+	resultSchema, diags := metricChartConfigToAPI(model, nil)
 	require.False(t, diags.HasError())
 
 	resultVariant0, err := resultSchema.AsMetricNoESQL()
@@ -449,7 +450,7 @@ func Test_metricItemModel_jsonRoundTrip(t *testing.T) {
 	for i, configJSON := range metricConfigs {
 		t.Run(string(rune('A'+i)), func(t *testing.T) {
 			// Create a metric item with the config
-			item := metricItemModel{
+			item := models.MetricItemModel{
 				ConfigJSON: customtypes.NewJSONWithDefaultsValue[map[string]any](
 					configJSON,
 					populateLensMetricDefaults,

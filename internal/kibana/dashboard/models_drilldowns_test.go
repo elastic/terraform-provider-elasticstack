@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
 )
@@ -30,8 +31,8 @@ import (
 func Test_structuredDrilldowns_dashboardRoundTrip(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	want := drilldownItemModel{
-		Dashboard: &drilldownDashboardBlockModel{
+	want := models.DrilldownItemModel{
+		Dashboard: &models.DrilldownDashboardBlockModel{
 			DashboardID:  types.StringValue("dash-id-1"),
 			Label:        types.StringValue("Open detail dashboard"),
 			UseFilters:   types.BoolValue(false),
@@ -39,7 +40,7 @@ func Test_structuredDrilldowns_dashboardRoundTrip(t *testing.T) {
 			OpenInNewTab: types.BoolValue(true),
 		},
 	}
-	api, diags := toAPI(drilldownsModel{want})
+	api, diags := toAPI(models.DrilldownsModel{want})
 	require.False(t, diags.HasError())
 	require.NotNil(t, api)
 	got, diags := fromAPI(ctx, api)
@@ -53,13 +54,13 @@ func Test_structuredDrilldowns_dashboardRoundTrip(t *testing.T) {
 func Test_structuredDrilldowns_discoverRoundTrip(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	want := drilldownItemModel{
-		Discover: &drilldownDiscoverBlockModel{
+	want := models.DrilldownItemModel{
+		Discover: &models.DrilldownDiscoverBlockModel{
 			Label:        types.StringValue("Open in Discover"),
 			OpenInNewTab: types.BoolValue(false),
 		},
 	}
-	api, diags := toAPI(drilldownsModel{want})
+	api, diags := toAPI(models.DrilldownsModel{want})
 	require.False(t, diags.HasError())
 	got, diags := fromAPI(ctx, api)
 	require.False(t, diags.HasError())
@@ -72,8 +73,8 @@ func Test_structuredDrilldowns_discoverRoundTrip(t *testing.T) {
 func Test_structuredDrilldowns_urlRoundTrip_explicitTrigger(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	want := drilldownItemModel{
-		URL: &drilldownURLBlockModel{
+	want := models.DrilldownItemModel{
+		URL: &models.DrilldownURLBlockModel{
 			URL:          types.StringValue("https://example.com/{{event.field}}"),
 			Label:        types.StringValue("External"),
 			Trigger:      types.StringValue("on_click_value"),
@@ -81,7 +82,7 @@ func Test_structuredDrilldowns_urlRoundTrip_explicitTrigger(t *testing.T) {
 			OpenInNewTab: types.BoolValue(true),
 		},
 	}
-	api, diags := toAPI(drilldownsModel{want})
+	api, diags := toAPI(models.DrilldownsModel{want})
 	require.False(t, diags.HasError())
 	got, diags := fromAPI(ctx, api)
 	require.False(t, diags.HasError())
@@ -94,16 +95,16 @@ func Test_structuredDrilldowns_urlRoundTrip_explicitTrigger(t *testing.T) {
 func Test_structuredDrilldowns_mixedThreeItemsPreserveOrderAndKind(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	want := drilldownsModel{
+	want := models.DrilldownsModel{
 		{
-			Dashboard: &drilldownDashboardBlockModel{
+			Dashboard: &models.DrilldownDashboardBlockModel{
 				DashboardID: types.StringValue("dash-a"),
 				Label:       types.StringValue("D1"),
 				UseFilters:  types.BoolNull(),
 			},
 		},
 		{
-			URL: &drilldownURLBlockModel{
+			URL: &models.DrilldownURLBlockModel{
 				URL:       types.StringValue("https://a.example"),
 				Label:     types.StringValue("url1"),
 				Trigger:   types.StringValue("on_open_panel_menu"),
@@ -111,7 +112,7 @@ func Test_structuredDrilldowns_mixedThreeItemsPreserveOrderAndKind(t *testing.T)
 			},
 		},
 		{
-			Discover: &drilldownDiscoverBlockModel{
+			Discover: &models.DrilldownDiscoverBlockModel{
 				Label:        types.StringValue("disc"),
 				OpenInNewTab: types.BoolNull(),
 			},
@@ -141,9 +142,9 @@ func Test_structuredDrilldowns_mixedThreeItemsPreserveOrderAndKind(t *testing.T)
 
 func Test_structuredDrilldowns_toAPI_urlInvalidTrigger(t *testing.T) {
 	t.Parallel()
-	bad := drilldownsModel{
+	bad := models.DrilldownsModel{
 		{
-			URL: &drilldownURLBlockModel{
+			URL: &models.DrilldownURLBlockModel{
 				URL:     types.StringValue("https://x"),
 				Label:   types.StringValue("lbl"),
 				Trigger: types.StringValue("not_a_real_trigger"),
@@ -157,8 +158,8 @@ func Test_structuredDrilldowns_toAPI_urlInvalidTrigger(t *testing.T) {
 
 func Test_structuredDrilldowns_toAPI_unknownOptionalsSkipWireFields_andNoPanic(t *testing.T) {
 	t.Parallel()
-	m := drilldownItemModel{
-		Dashboard: &drilldownDashboardBlockModel{
+	m := models.DrilldownItemModel{
+		Dashboard: &models.DrilldownDashboardBlockModel{
 			DashboardID:  types.StringValue("d1"),
 			Label:        types.StringValue("lbl"),
 			UseFilters:   types.BoolUnknown(),
@@ -167,7 +168,7 @@ func Test_structuredDrilldowns_toAPI_unknownOptionalsSkipWireFields_andNoPanic(t
 		},
 	}
 	require.NotPanics(t, func() {
-		api, diags := toAPI(drilldownsModel{m})
+		api, diags := toAPI(models.DrilldownsModel{m})
 		require.False(t, diags.HasError())
 		require.Len(t, *api, 1)
 		raw, err := json.Marshal((*api)[0])
@@ -180,8 +181,8 @@ func Test_structuredDrilldowns_toAPI_unknownOptionalsSkipWireFields_andNoPanic(t
 		require.Equal(t, true, wire["use_time_range"])
 	})
 
-	urlm := drilldownItemModel{
-		URL: &drilldownURLBlockModel{
+	urlm := models.DrilldownItemModel{
+		URL: &models.DrilldownURLBlockModel{
 			URL:          types.StringValue("https://example.com"),
 			Label:        types.StringValue("x"),
 			Trigger:      types.StringUnknown(),
@@ -190,7 +191,7 @@ func Test_structuredDrilldowns_toAPI_unknownOptionalsSkipWireFields_andNoPanic(t
 		},
 	}
 	require.NotPanics(t, func() {
-		api, diags := toAPI(drilldownsModel{urlm})
+		api, diags := toAPI(models.DrilldownsModel{urlm})
 		require.False(t, diags.HasError())
 		raw, err := json.Marshal((*api)[0])
 		require.NoError(t, err)
@@ -205,14 +206,14 @@ func Test_structuredDrilldowns_toAPI_unknownOptionalsSkipWireFields_andNoPanic(t
 		require.Equal(t, false, wire["open_in_new_tab"])
 	})
 
-	disc := drilldownItemModel{
-		Discover: &drilldownDiscoverBlockModel{
+	disc := models.DrilldownItemModel{
+		Discover: &models.DrilldownDiscoverBlockModel{
 			Label:        types.StringValue("d"),
 			OpenInNewTab: types.BoolUnknown(),
 		},
 	}
 	require.NotPanics(t, func() {
-		api, diags := toAPI(drilldownsModel{disc})
+		api, diags := toAPI(models.DrilldownsModel{disc})
 		require.False(t, diags.HasError())
 		raw, err := json.Marshal((*api)[0])
 		require.NoError(t, err)
@@ -332,7 +333,7 @@ func drilldownVisItemFromJSON(t *testing.T, payload string) kbapi.KbnDashboardPa
 	return item
 }
 
-func assertDrilldownItemEqualKinds(t *testing.T, want, got drilldownItemModel) {
+func assertDrilldownItemEqualKinds(t *testing.T, want, got models.DrilldownItemModel) {
 	t.Helper()
 	if want.Dashboard != nil {
 		require.NotNil(t, got.Dashboard)
@@ -356,7 +357,7 @@ func assertDrilldownItemEqualKinds(t *testing.T, want, got drilldownItemModel) {
 	}
 }
 
-func assertDashboardBlocksEqual(t *testing.T, want, got *drilldownDashboardBlockModel) {
+func assertDashboardBlocksEqual(t *testing.T, want, got *models.DrilldownDashboardBlockModel) {
 	t.Helper()
 	require.Equal(t, want.DashboardID.ValueString(), got.DashboardID.ValueString())
 	require.Equal(t, want.Label.ValueString(), got.Label.ValueString())
@@ -374,7 +375,7 @@ func assertDashboardBlocksEqual(t *testing.T, want, got *drilldownDashboardBlock
 	}
 }
 
-func assertDiscoverBlocksEqual(t *testing.T, want, got *drilldownDiscoverBlockModel) {
+func assertDiscoverBlocksEqual(t *testing.T, want, got *models.DrilldownDiscoverBlockModel) {
 	t.Helper()
 	require.Equal(t, want.Label.ValueString(), got.Label.ValueString())
 	require.Equal(t, want.OpenInNewTab.IsNull(), got.OpenInNewTab.IsNull())
@@ -383,7 +384,7 @@ func assertDiscoverBlocksEqual(t *testing.T, want, got *drilldownDiscoverBlockMo
 	}
 }
 
-func assertURLBlocksEqual(t *testing.T, want, got *drilldownURLBlockModel) {
+func assertURLBlocksEqual(t *testing.T, want, got *models.DrilldownURLBlockModel) {
 	t.Helper()
 	require.Equal(t, want.URL.ValueString(), got.URL.ValueString())
 	require.Equal(t, want.Label.ValueString(), got.Label.ValueString())

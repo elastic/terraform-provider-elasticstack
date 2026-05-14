@@ -2100,6 +2100,7 @@ The `panelTypeSloOverview` constant SHALL be defined in `schema.go` alongside al
 - GIVEN a code review of `schema.go`
 - WHEN the reviewer searches for `panelTypeSloOverview`
 - THEN the constant SHALL be found in `schema.go` together with `panelTypeSloAlerts`, `panelTypeSloBurnRate`, and other panel type constants
+
 ### Requirement: Provider registration (REQ-040)
 
 The `elasticstack_kibana_dashboard` resource SHALL be registered through the provider's standard Plugin Framework resource set returned by `Provider.resources(...)` in `provider/plugin_framework.go`. It SHALL NOT be returned from `Provider.experimentalResources(...)`, and practitioners SHALL NOT be required to set `TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL=true` to use the resource.
@@ -2122,6 +2123,25 @@ The `elasticstack_kibana_dashboard` resource SHALL be registered through the pro
 - **WHEN** Terraform plans or applies against a released provider build with `TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL` unset
 - **THEN** the provider SHALL recognize and operate the resource without requiring the environment variable
 
+### Requirement: Dashboard model package extraction preserves behavior (REQ-043)
+
+The `elasticstack_kibana_dashboard` resource implementation SHALL isolate Terraform model structs in `internal/kibana/dashboard/models` while preserving the resource's externally observable behavior. All Terraform model structs used by the dashboard resource and its panel/config submodels SHALL move to the `models` package and SHALL be exported so conversion, validation, schema, and lifecycle code in `internal/kibana/dashboard` can reference them without import cycles.
+
+This extraction SHALL be mechanical only: it SHALL NOT change the Terraform schema, API payload shapes, state alignment rules, plan semantics, import behavior, or read/write behavior described by existing dashboard requirements.
+
+#### Scenario: Existing dashboard configuration remains behaviorally unchanged after model extraction
+
+- GIVEN a dashboard configuration that was accepted before the model extraction
+- WHEN the provider plans, applies, reads, and refreshes that configuration after the extraction
+- THEN the resource SHALL expose the same schema and SHALL produce the same observable behavior and state transitions as before
+
+#### Scenario: Dashboard logic references exported models package types
+
+- GIVEN dashboard resource implementation code that performs schema, validation, lifecycle, or API conversion work
+- WHEN it references dashboard Terraform model structs
+- THEN those structs SHALL be imported from `internal/kibana/dashboard/models`
+- AND the extraction SHALL avoid introducing Go import cycles between the models package and dashboard logic packages
+
 ## Traceability
 
 | Area | Primary files |
@@ -2133,7 +2153,7 @@ The `elasticstack_kibana_dashboard` resource SHALL be registered through the pro
 | Options / access control mapping | `internal/kibana/dashboard/models_options.go`, `internal/kibana/dashboard/models_access_control.go` |
 | Panels / sections mapping | `internal/kibana/dashboard/models_panels.go` |
 | Visualization-specific panel converters | `internal/kibana/dashboard/models_*_panel.go` |
-| `lens-dashboard-app` panel / REQ-035 | `internal/kibana/dashboard/models_lens_dashboard_app_panel.go`, `internal/kibana/dashboard/models_lens_dashboard_app_converters.go`, `internal/kibana/dashboard/models_lens_dashboard_app_by_value_adapter.go`, `internal/kibana/dashboard/models_lens_dashboard_app_by_value_adapter_test.go` |
+| `lens-dashboard-app` panel / REQ-035 | `internal/kibana/dashboard/models/lens.go`, `internal/kibana/dashboard/models/panel.go`, `internal/kibana/dashboard/models_lens_panel.go`, `internal/kibana/dashboard/models_lens_dashboard_app_converters.go`, `internal/kibana/dashboard/models_lens_dashboard_app_by_value_adapter.go`, `internal/kibana/dashboard/models_lens_dashboard_app_by_value_adapter_test.go` |
 | `viz` panel / `vis_config` / REQ-042 | `internal/kibana/dashboard/models_panels.go`, `internal/kibana/dashboard/models_lens_panel.go`, `internal/kibana/dashboard/schema.go` |
 | Drift normalization | `internal/kibana/dashboard/panel_config_defaults.go`, `internal/kibana/dashboard/models_plan_state_alignment.go`, `internal/kibana/dashboard/models_xy_chart_panel.go` |
 | Waffle validation | `internal/kibana/dashboard/waffle_config_validator.go` |

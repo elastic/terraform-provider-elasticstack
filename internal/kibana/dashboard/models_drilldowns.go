@@ -23,6 +23,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -41,43 +42,13 @@ import (
 //
 // (Vis equivalents: KbnDashboardPanelTypeVisConfig1Drilldowns0/1/2.)
 
-// drilldownsModel is Terraform state for REQ-039 structured drilldown lists.
-type drilldownsModel []drilldownItemModel
-
-type drilldownItemModel struct {
-	Dashboard *drilldownDashboardBlockModel `tfsdk:"dashboard"`
-	Discover  *drilldownDiscoverBlockModel  `tfsdk:"discover"`
-	URL       *drilldownURLBlockModel       `tfsdk:"url"`
-}
-
-type drilldownDashboardBlockModel struct {
-	DashboardID  types.String `tfsdk:"dashboard_id"`
-	Label        types.String `tfsdk:"label"`
-	UseFilters   types.Bool   `tfsdk:"use_filters"`
-	UseTimeRange types.Bool   `tfsdk:"use_time_range"`
-	OpenInNewTab types.Bool   `tfsdk:"open_in_new_tab"`
-}
-
-type drilldownDiscoverBlockModel struct {
-	Label        types.String `tfsdk:"label"`
-	OpenInNewTab types.Bool   `tfsdk:"open_in_new_tab"`
-}
-
-type drilldownURLBlockModel struct {
-	URL          types.String `tfsdk:"url"`
-	Label        types.String `tfsdk:"label"`
-	Trigger      types.String `tfsdk:"trigger"`
-	EncodeURL    types.Bool   `tfsdk:"encode_url"`
-	OpenInNewTab types.Bool   `tfsdk:"open_in_new_tab"`
-}
-
 // fromAPI decodes Lens by-reference drilldown union items (`KbnDashboardPanelTypeLensDashboardApp_Config_1_Drilldowns_Item`).
-func fromAPI(ctx context.Context, api *[]kbapi.KbnDashboardPanelTypeLensDashboardApp_Config_1_Drilldowns_Item) (drilldownsModel, diag.Diagnostics) {
+func fromAPI(ctx context.Context, api *[]kbapi.KbnDashboardPanelTypeLensDashboardApp_Config_1_Drilldowns_Item) (models.DrilldownsModel, diag.Diagnostics) {
 	_ = ctx
 	if api == nil {
 		return nil, nil
 	}
-	out := make(drilldownsModel, 0, len(*api))
+	out := make(models.DrilldownsModel, 0, len(*api))
 	var diags diag.Diagnostics
 	for _, item := range *api {
 		m, itemDiags := drilldownItemFromLensUnionRaw(item)
@@ -93,7 +64,7 @@ func fromAPI(ctx context.Context, api *[]kbapi.KbnDashboardPanelTypeLensDashboar
 }
 
 // toAPI encodes structured drilldowns into Lens by-reference drilldown unions.
-func toAPI(items drilldownsModel) (*[]kbapi.KbnDashboardPanelTypeLensDashboardApp_Config_1_Drilldowns_Item, diag.Diagnostics) {
+func toAPI(items models.DrilldownsModel) (*[]kbapi.KbnDashboardPanelTypeLensDashboardApp_Config_1_Drilldowns_Item, diag.Diagnostics) {
 	if items == nil {
 		return nil, nil
 	}
@@ -111,12 +82,12 @@ func toAPI(items drilldownsModel) (*[]kbapi.KbnDashboardPanelTypeLensDashboardAp
 }
 
 // drilldownsFromVisByRefAPI translates API drilldowns on `vis.by_reference`.
-func drilldownsFromVisByRefAPI(ctx context.Context, api *[]kbapi.KbnDashboardPanelTypeVis_Config_1_Drilldowns_Item) (drilldownsModel, diag.Diagnostics) {
+func drilldownsFromVisByRefAPI(ctx context.Context, api *[]kbapi.KbnDashboardPanelTypeVis_Config_1_Drilldowns_Item) (models.DrilldownsModel, diag.Diagnostics) {
 	_ = ctx
 	if api == nil {
 		return nil, nil
 	}
-	out := make(drilldownsModel, 0, len(*api))
+	out := make(models.DrilldownsModel, 0, len(*api))
 	var diags diag.Diagnostics
 	for _, item := range *api {
 		m, itemDiags := drilldownItemFromVisUnionRaw(item)
@@ -132,7 +103,7 @@ func drilldownsFromVisByRefAPI(ctx context.Context, api *[]kbapi.KbnDashboardPan
 }
 
 // drilldownsToVisByRefAPI translates structured drilldowns for `vis.by_reference`.
-func drilldownsToVisByRefAPI(items drilldownsModel) (*[]kbapi.KbnDashboardPanelTypeVis_Config_1_Drilldowns_Item, diag.Diagnostics) {
+func drilldownsToVisByRefAPI(items models.DrilldownsModel) (*[]kbapi.KbnDashboardPanelTypeVis_Config_1_Drilldowns_Item, diag.Diagnostics) {
 	lensSlice, diags := toAPI(items)
 	if diags.HasError() || lensSlice == nil {
 		return nil, diags
@@ -163,29 +134,29 @@ type drilldownTypeJSONPeek struct {
 
 const diagnosticSummaryDrilldownConv = "Structured drilldowns"
 
-func drilldownItemFromLensUnionRaw(item kbapi.KbnDashboardPanelTypeLensDashboardApp_Config_1_Drilldowns_Item) (drilldownItemModel, diag.Diagnostics) {
+func drilldownItemFromLensUnionRaw(item kbapi.KbnDashboardPanelTypeLensDashboardApp_Config_1_Drilldowns_Item) (models.DrilldownItemModel, diag.Diagnostics) {
 	raw, err := json.Marshal(item)
 	if err != nil {
-		return drilldownItemModel{}, diag.Diagnostics{diag.NewErrorDiagnostic(diagnosticSummaryDrilldownConv, err.Error())}
+		return models.DrilldownItemModel{}, diag.Diagnostics{diag.NewErrorDiagnostic(diagnosticSummaryDrilldownConv, err.Error())}
 	}
 	return decodePeekedLensDrilldownJSON(raw)
 }
 
-func drilldownItemFromVisUnionRaw(item kbapi.KbnDashboardPanelTypeVis_Config_1_Drilldowns_Item) (drilldownItemModel, diag.Diagnostics) {
+func drilldownItemFromVisUnionRaw(item kbapi.KbnDashboardPanelTypeVis_Config_1_Drilldowns_Item) (models.DrilldownItemModel, diag.Diagnostics) {
 	raw, err := json.Marshal(item)
 	if err != nil {
-		return drilldownItemModel{}, diag.Diagnostics{diag.NewErrorDiagnostic(diagnosticSummaryDrilldownConv, err.Error())}
+		return models.DrilldownItemModel{}, diag.Diagnostics{diag.NewErrorDiagnostic(diagnosticSummaryDrilldownConv, err.Error())}
 	}
 	return decodePeekedLensDrilldownJSON(raw)
 }
 
 // Shared JSON discriminator branch for Lens and Vis by-reference unions (matching wire shape).
-func decodePeekedLensDrilldownJSON(raw []byte) (drilldownItemModel, diag.Diagnostics) {
+func decodePeekedLensDrilldownJSON(raw []byte) (models.DrilldownItemModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var peek drilldownTypeJSONPeek
 	if err := json.Unmarshal(raw, &peek); err != nil {
 		diags.Append(diag.NewErrorDiagnostic(diagnosticSummaryDrilldownConv, err.Error()))
-		return drilldownItemModel{}, diags
+		return models.DrilldownItemModel{}, diags
 	}
 	switch peek.Type {
 	case string(kbapi.KbnDashboardPanelTypeLensDashboardAppConfig1Drilldowns0TypeDashboardDrilldown):
@@ -204,29 +175,29 @@ func decodePeekedLensDrilldownJSON(raw []byte) (drilldownItemModel, diag.Diagnos
 				"Unsupported API drilldown `type` %#q; cannot represent it using structured terraform drilldown blocks.",
 				peek.Type)))
 	}
-	return drilldownItemModel{}, diags
+	return models.DrilldownItemModel{}, diags
 }
 
-func decodeDashboardBranchLens(raw []byte) (drilldownItemModel, diag.Diagnostics) {
+func decodeDashboardBranchLens(raw []byte) (models.DrilldownItemModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var obj kbapi.KbnDashboardPanelTypeLensDashboardAppConfig1Drilldowns0
 	if err := json.Unmarshal(raw, &obj); err != nil {
 		diags.Append(diag.NewErrorDiagnostic(diagnosticSummaryDrilldownConv, err.Error()))
-		return drilldownItemModel{}, diags
+		return models.DrilldownItemModel{}, diags
 	}
 	wantType := kbapi.KbnDashboardPanelTypeLensDashboardAppConfig1Drilldowns0TypeDashboardDrilldown
 	if obj.Type != wantType {
 		diags.Append(diag.NewErrorDiagnostic(diagnosticSummaryDrilldownConv,
 			fmt.Sprintf("Expected drilldown type %q but API returned %#q.", wantType, obj.Type)))
-		return drilldownItemModel{}, diags
+		return models.DrilldownItemModel{}, diags
 	}
 	wantTr := kbapi.KbnDashboardPanelTypeLensDashboardAppConfig1Drilldowns0TriggerOnApplyFilter
 	if obj.Trigger != wantTr {
 		diags.Append(diag.NewErrorDiagnostic(diagnosticSummaryDrilldownConv,
 			fmt.Sprintf("Dashboard drilldown API `trigger` must be %#q for lossless import; API returned %#q.", wantTr, obj.Trigger)))
-		return drilldownItemModel{}, diags
+		return models.DrilldownItemModel{}, diags
 	}
-	dm := &drilldownDashboardBlockModel{
+	dm := &models.DrilldownDashboardBlockModel{
 		DashboardID: types.StringValue(obj.DashboardId),
 		Label:       types.StringValue(obj.Label),
 	}
@@ -245,29 +216,29 @@ func decodeDashboardBranchLens(raw []byte) (drilldownItemModel, diag.Diagnostics
 	} else {
 		dm.OpenInNewTab = types.BoolNull()
 	}
-	return drilldownItemModel{Dashboard: dm}, diags
+	return models.DrilldownItemModel{Dashboard: dm}, diags
 }
 
-func decodeDiscoverBranchLens(raw []byte) (drilldownItemModel, diag.Diagnostics) {
+func decodeDiscoverBranchLens(raw []byte) (models.DrilldownItemModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var obj kbapi.KbnDashboardPanelTypeLensDashboardAppConfig1Drilldowns1
 	if err := json.Unmarshal(raw, &obj); err != nil {
 		diags.Append(diag.NewErrorDiagnostic(diagnosticSummaryDrilldownConv, err.Error()))
-		return drilldownItemModel{}, diags
+		return models.DrilldownItemModel{}, diags
 	}
 	wantType := kbapi.KbnDashboardPanelTypeLensDashboardAppConfig1Drilldowns1TypeDiscoverDrilldown
 	if obj.Type != wantType {
 		diags.Append(diag.NewErrorDiagnostic(diagnosticSummaryDrilldownConv,
 			fmt.Sprintf("Expected drilldown type %q but API returned %#q.", wantType, obj.Type)))
-		return drilldownItemModel{}, diags
+		return models.DrilldownItemModel{}, diags
 	}
 	wantTr := kbapi.KbnDashboardPanelTypeLensDashboardAppConfig1Drilldowns1TriggerOnApplyFilter
 	if obj.Trigger != wantTr {
 		diags.Append(diag.NewErrorDiagnostic(diagnosticSummaryDrilldownConv,
 			fmt.Sprintf("Discover drilldown API `trigger` must be %#q for lossless import; API returned %#q.", wantTr, obj.Trigger)))
-		return drilldownItemModel{}, diags
+		return models.DrilldownItemModel{}, diags
 	}
-	discover := &drilldownDiscoverBlockModel{
+	discover := &models.DrilldownDiscoverBlockModel{
 		Label: types.StringValue(obj.Label),
 	}
 	if obj.OpenInNewTab != nil {
@@ -275,34 +246,34 @@ func decodeDiscoverBranchLens(raw []byte) (drilldownItemModel, diag.Diagnostics)
 	} else {
 		discover.OpenInNewTab = types.BoolNull()
 	}
-	return drilldownItemModel{Discover: discover}, diags
+	return models.DrilldownItemModel{Discover: discover}, diags
 }
 
-func decodeURLBranchLens(raw []byte) (drilldownItemModel, diag.Diagnostics) {
+func decodeURLBranchLens(raw []byte) (models.DrilldownItemModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var obj kbapi.KbnDashboardPanelTypeLensDashboardAppConfig1Drilldowns2
 	if err := json.Unmarshal(raw, &obj); err != nil {
 		diags.Append(diag.NewErrorDiagnostic(diagnosticSummaryDrilldownConv, err.Error()))
-		return drilldownItemModel{}, diags
+		return models.DrilldownItemModel{}, diags
 	}
 	wantType := kbapi.KbnDashboardPanelTypeLensDashboardAppConfig1Drilldowns2TypeUrlDrilldown
 	if obj.Type != wantType {
 		diags.Append(diag.NewErrorDiagnostic(diagnosticSummaryDrilldownConv,
 			fmt.Sprintf("Expected drilldown type %q but API returned %#q.", wantType, obj.Type)))
-		return drilldownItemModel{}, diags
+		return models.DrilldownItemModel{}, diags
 	}
 	triggerStr := string(obj.Trigger)
 	if triggerStr == "" {
 		diags.Append(diag.NewErrorDiagnostic(diagnosticSummaryDrilldownConv,
 			"URL drilldown from the API omits required field `trigger`; structured drilldowns cannot represent this losslessly."))
-		return drilldownItemModel{}, diags
+		return models.DrilldownItemModel{}, diags
 	}
 	if !kbapi.KbnDashboardPanelTypeLensDashboardAppConfig1Drilldowns2Trigger(triggerStr).Valid() {
 		diags.Append(diag.NewErrorDiagnostic(diagnosticSummaryDrilldownConv,
 			fmt.Sprintf("URL drilldown has unsupported API `trigger` %#q.", triggerStr)))
-		return drilldownItemModel{}, diags
+		return models.DrilldownItemModel{}, diags
 	}
-	url := &drilldownURLBlockModel{
+	url := &models.DrilldownURLBlockModel{
 		URL:     types.StringValue(obj.Url),
 		Label:   types.StringValue(obj.Label),
 		Trigger: types.StringValue(triggerStr),
@@ -317,10 +288,10 @@ func decodeURLBranchLens(raw []byte) (drilldownItemModel, diag.Diagnostics) {
 	} else {
 		url.OpenInNewTab = types.BoolNull()
 	}
-	return drilldownItemModel{URL: url}, diags
+	return models.DrilldownItemModel{URL: url}, diags
 }
 
-func drilldownModelToLensUnionItem(m drilldownItemModel) (kbapi.KbnDashboardPanelTypeLensDashboardApp_Config_1_Drilldowns_Item, diag.Diagnostics) {
+func drilldownModelToLensUnionItem(m models.DrilldownItemModel) (kbapi.KbnDashboardPanelTypeLensDashboardApp_Config_1_Drilldowns_Item, diag.Diagnostics) {
 	var u kbapi.KbnDashboardPanelTypeLensDashboardApp_Config_1_Drilldowns_Item
 	var diags diag.Diagnostics
 	switch {
@@ -406,6 +377,6 @@ func drilldownModelToLensUnionItem(m drilldownItemModel) (kbapi.KbnDashboardPane
 // - a null/absent optional `drilldowns` attribute into a nil Go slice (`reflect.Zero` on slice type — see terraform-plugin-framework `internal/reflect/into.go`);
 // - practitioner `drilldowns = []` into reflect.MakeSlice(..., 0, 0), i.e. a non-nil empty slice (`internal/reflect/slice.go`).
 // lensDashboardAppByReferenceToAPI therefore uses `byRef.Drilldowns != nil` to distinguish omission from explicit empty-clear.
-func explicitEmptyDrilldowns() drilldownsModel {
-	return make(drilldownsModel, 0)
+func explicitEmptyDrilldowns() models.DrilldownsModel {
+	return make(models.DrilldownsModel, 0)
 }

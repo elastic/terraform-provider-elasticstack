@@ -22,62 +22,19 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// xyLayerModel represents a layer in an XY chart
-type xyLayerModel struct {
-	Type               types.String             `tfsdk:"type"`
-	DataLayer          *dataLayerModel          `tfsdk:"data_layer"`
-	ReferenceLineLayer *referenceLineLayerModel `tfsdk:"reference_line_layer"`
-}
-
-// dataLayerModel represents a data layer (NoESQL or ESQL)
-type dataLayerModel struct {
-	DataSourceJSON      jsontypes.Normalized `tfsdk:"data_source_json"`
-	IgnoreGlobalFilters types.Bool           `tfsdk:"ignore_global_filters"`
-	Sampling            types.Float64        `tfsdk:"sampling"`
-	XJSON               jsontypes.Normalized `tfsdk:"x_json"`
-	Y                   []yMetricModel       `tfsdk:"y"`
-	BreakdownByJSON     jsontypes.Normalized `tfsdk:"breakdown_by_json"`
-}
-
-// yMetricModel represents a Y-axis metric
-type yMetricModel struct {
-	ConfigJSON jsontypes.Normalized `tfsdk:"config_json"`
-}
-
-// referenceLineLayerModel represents a reference line layer
-type referenceLineLayerModel struct {
-	DataSourceJSON      jsontypes.Normalized `tfsdk:"data_source_json"`
-	IgnoreGlobalFilters types.Bool           `tfsdk:"ignore_global_filters"`
-	Sampling            types.Float64        `tfsdk:"sampling"`
-	Thresholds          []thresholdModel     `tfsdk:"thresholds"`
-}
-
-// thresholdModel represents a reference line threshold
-type thresholdModel struct {
-	Axis        types.String         `tfsdk:"axis"`
-	ColorJSON   jsontypes.Normalized `tfsdk:"color_json"`
-	Column      types.String         `tfsdk:"column"`
-	ValueJSON   jsontypes.Normalized `tfsdk:"value_json"`
-	Fill        types.String         `tfsdk:"fill"`
-	Icon        types.String         `tfsdk:"icon"`
-	Operation   types.String         `tfsdk:"operation"`
-	StrokeDash  types.String         `tfsdk:"stroke_dash"`
-	StrokeWidth types.Float64        `tfsdk:"stroke_width"`
-	Text        types.String         `tfsdk:"text"`
-}
-
 func xyReferenceLineLayerTypeFromTF(tfType string) kbapi.XyReferenceLineLayerNoESQLType {
 	return kbapi.XyReferenceLineLayerNoESQLType(tfType)
 }
 
 // fromAPILayersNoESQL populates the layer model from a DSL (non-ES|QL) XY layer union value.
-func (m *xyLayerModel) fromAPILayersNoESQL(ctx context.Context, apiLayer kbapi.XyLayersNoESQL) diag.Diagnostics {
+func xyLayerFromAPILayersNoESQL(ctx context.Context, m *models.XYLayerModel, apiLayer kbapi.XyLayersNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	layerJSON, err := apiLayer.MarshalJSON()
@@ -102,8 +59,8 @@ func (m *xyLayerModel) fromAPILayersNoESQL(ctx context.Context, apiLayer kbapi.X
 			diags.AddError("Failed to parse reference line layer", err.Error())
 			return diags
 		}
-		m.ReferenceLineLayer = &referenceLineLayerModel{}
-		return m.ReferenceLineLayer.fromAPINoESQL(refLine)
+		m.ReferenceLineLayer = &models.ReferenceLineLayerModel{}
+		return referenceLineLayerFromAPINoESQL(m.ReferenceLineLayer, refLine)
 	}
 
 	if layerType.Type == string(kbapi.Annotations) {
@@ -116,24 +73,24 @@ func (m *xyLayerModel) fromAPILayersNoESQL(ctx context.Context, apiLayer kbapi.X
 		diags.AddError("Failed to parse data layer", err.Error())
 		return diags
 	}
-	m.DataLayer = &dataLayerModel{}
-	return m.DataLayer.fromAPINoESQL(ctx, dl)
+	m.DataLayer = &models.DataLayerModel{}
+	return dataLayerFromAPINoESQL(ctx, m.DataLayer, dl)
 }
 
 // fromAPILayerESQL populates the layer model from an ES|QL XY data layer.
-func (m *xyLayerModel) fromAPILayerESQL(ctx context.Context, apiLayer kbapi.XyLayerESQL) diag.Diagnostics {
+func xyLayerFromAPILayerESQL(ctx context.Context, m *models.XYLayerModel, apiLayer kbapi.XyLayerESQL) diag.Diagnostics {
 	m.Type = types.StringValue(string(apiLayer.Type))
-	m.DataLayer = &dataLayerModel{}
-	return m.DataLayer.fromAPIESql(ctx, apiLayer)
+	m.DataLayer = &models.DataLayerModel{}
+	return dataLayerFromAPIESql(ctx, m.DataLayer, apiLayer)
 }
 
 // toAPILayersNoESQL converts the layer model to the DSL layer union type.
-func (m *xyLayerModel) toAPILayersNoESQL() (kbapi.XyLayersNoESQL, diag.Diagnostics) {
+func xyLayerToAPILayersNoESQL(m *models.XYLayerModel) (kbapi.XyLayersNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var out kbapi.XyLayersNoESQL
 
 	if m.ReferenceLineLayer != nil {
-		ref, refDiags := m.ReferenceLineLayer.toAPIXyReferenceLineLayerNoESQL(m.Type.ValueString())
+		ref, refDiags := referenceLineLayerToAPIXyReferenceLineLayerNoESQL(m.ReferenceLineLayer, m.Type.ValueString())
 		diags.Append(refDiags...)
 		if diags.HasError() {
 			return out, diags
@@ -145,7 +102,7 @@ func (m *xyLayerModel) toAPILayersNoESQL() (kbapi.XyLayersNoESQL, diag.Diagnosti
 	}
 
 	if m.DataLayer != nil {
-		dl, dataDiags := m.DataLayer.toAPIXyLayerNoESQL(m.Type.ValueString())
+		dl, dataDiags := dataLayerToAPIXyLayerNoESQL(m.DataLayer, m.Type.ValueString())
 		diags.Append(dataDiags...)
 		if diags.HasError() {
 			return out, diags
@@ -161,18 +118,18 @@ func (m *xyLayerModel) toAPILayersNoESQL() (kbapi.XyLayersNoESQL, diag.Diagnosti
 }
 
 // toAPILayerESQL converts a configured data layer to the ES|QL API layer type.
-func (m *xyLayerModel) toAPILayerESQL() (kbapi.XyLayerESQL, diag.Diagnostics) {
+func xyLayerToAPILayerESQL(m *models.XYLayerModel) (kbapi.XyLayerESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var zero kbapi.XyLayerESQL
 	if m.DataLayer == nil {
 		diags.AddError("Invalid layer", "ES|QL XY charts require a data_layer")
 		return zero, diags
 	}
-	return m.DataLayer.toAPIXyLayerESQL(m.Type.ValueString())
+	return dataLayerToAPIXyLayerESQL(m.DataLayer, m.Type.ValueString())
 }
 
 // fromAPINoESQL populates data layer from NoESQL API response
-func (m *dataLayerModel) fromAPINoESQL(ctx context.Context, apiLayer kbapi.XyLayerNoESQL) diag.Diagnostics {
+func dataLayerFromAPINoESQL(ctx context.Context, m *models.DataLayerModel, apiLayer kbapi.XyLayerNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// Marshal to JSON to preserve the exact structure
@@ -208,7 +165,7 @@ func (m *dataLayerModel) fromAPINoESQL(ctx context.Context, apiLayer kbapi.XyLay
 	// Convert Y metrics
 	if len(apiLayer.Y) > 0 {
 		priorY := m.Y
-		m.Y = make([]yMetricModel, 0, len(apiLayer.Y))
+		m.Y = make([]models.YMetricModel, 0, len(apiLayer.Y))
 		for i, y := range apiLayer.Y {
 			yJSON, err := json.Marshal(y)
 			if err == nil {
@@ -216,7 +173,7 @@ func (m *dataLayerModel) fromAPINoESQL(ctx context.Context, apiLayer kbapi.XyLay
 				if i < len(priorY) {
 					cfg = preservePriorNormalizedWithDefaultsIfEquivalent(ctx, priorY[i].ConfigJSON, cfg, populateLensMetricDefaults, &diags)
 				}
-				m.Y = append(m.Y, yMetricModel{
+				m.Y = append(m.Y, models.YMetricModel{
 					ConfigJSON: cfg,
 				})
 			}
@@ -227,7 +184,7 @@ func (m *dataLayerModel) fromAPINoESQL(ctx context.Context, apiLayer kbapi.XyLay
 }
 
 // fromAPIESql populates data layer from ESQL API response
-func (m *dataLayerModel) fromAPIESql(ctx context.Context, apiLayer kbapi.XyLayerESQL) diag.Diagnostics {
+func dataLayerFromAPIESql(ctx context.Context, m *models.DataLayerModel, apiLayer kbapi.XyLayerESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// Marshal to JSON to preserve the exact structure
@@ -263,7 +220,7 @@ func (m *dataLayerModel) fromAPIESql(ctx context.Context, apiLayer kbapi.XyLayer
 	// Convert Y metrics
 	if len(apiLayer.Y) > 0 {
 		priorY := m.Y
-		m.Y = make([]yMetricModel, 0, len(apiLayer.Y))
+		m.Y = make([]models.YMetricModel, 0, len(apiLayer.Y))
 		for i, y := range apiLayer.Y {
 			yJSON, err := json.Marshal(y)
 			if err == nil {
@@ -271,7 +228,7 @@ func (m *dataLayerModel) fromAPIESql(ctx context.Context, apiLayer kbapi.XyLayer
 				if i < len(priorY) {
 					cfg = preservePriorNormalizedWithDefaultsIfEquivalent(ctx, priorY[i].ConfigJSON, cfg, populateLensMetricDefaults, &diags)
 				}
-				m.Y = append(m.Y, yMetricModel{
+				m.Y = append(m.Y, models.YMetricModel{
 					ConfigJSON: cfg,
 				})
 			}
@@ -282,7 +239,7 @@ func (m *dataLayerModel) fromAPIESql(ctx context.Context, apiLayer kbapi.XyLayer
 }
 
 // toAPIXyLayerNoESQL converts a data layer model to the typed non-ES|QL API layer.
-func (m *dataLayerModel) toAPIXyLayerNoESQL(layerType string) (kbapi.XyLayerNoESQL, diag.Diagnostics) {
+func dataLayerToAPIXyLayerNoESQL(m *models.DataLayerModel, layerType string) (kbapi.XyLayerNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	layer := kbapi.XyLayerNoESQL{Type: kbapi.XyLayerNoESQLType(layerType)}
 
@@ -330,7 +287,7 @@ func (m *dataLayerModel) toAPIXyLayerNoESQL(layerType string) (kbapi.XyLayerNoES
 }
 
 // toAPIXyLayerESQL converts a data layer model to the typed ES|QL API layer.
-func (m *dataLayerModel) toAPIXyLayerESQL(layerType string) (kbapi.XyLayerESQL, diag.Diagnostics) {
+func dataLayerToAPIXyLayerESQL(m *models.DataLayerModel, layerType string) (kbapi.XyLayerESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var zero kbapi.XyLayerESQL
 
@@ -390,7 +347,7 @@ func (m *dataLayerModel) toAPIXyLayerESQL(layerType string) (kbapi.XyLayerESQL, 
 }
 
 // fromAPINoESQL populates reference line layer from NoESQL API response
-func (m *referenceLineLayerModel) fromAPINoESQL(apiLayer kbapi.XyReferenceLineLayerNoESQL) diag.Diagnostics {
+func referenceLineLayerFromAPINoESQL(m *models.ReferenceLineLayerModel, apiLayer kbapi.XyReferenceLineLayerNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// Marshal to JSON to preserve the exact structure
@@ -410,7 +367,7 @@ func (m *referenceLineLayerModel) fromAPINoESQL(apiLayer kbapi.XyReferenceLineLa
 
 	// Convert thresholds
 	if len(apiLayer.Thresholds) > 0 {
-		m.Thresholds = make([]thresholdModel, 0, len(apiLayer.Thresholds))
+		m.Thresholds = make([]models.ThresholdModel, 0, len(apiLayer.Thresholds))
 		for _, t := range apiLayer.Thresholds {
 			thresholdJSON, err := json.Marshal(t)
 			if err != nil {
@@ -420,8 +377,8 @@ func (m *referenceLineLayerModel) fromAPINoESQL(apiLayer kbapi.XyReferenceLineLa
 			var probe map[string]any
 			_ = json.Unmarshal(thresholdJSON, &probe)
 			if _, hasAxis := probe["axis"].(string); hasAxis || probe["column"] != nil {
-				var tm thresholdModel
-				tmDiags := tm.fromAPIJSON(thresholdJSON)
+				var tm models.ThresholdModel
+				tmDiags := thresholdFromAPIJSON(&tm, thresholdJSON)
 				diags.Append(tmDiags...)
 				if !tmDiags.HasError() {
 					m.Thresholds = append(m.Thresholds, tm)
@@ -431,7 +388,7 @@ func (m *referenceLineLayerModel) fromAPINoESQL(apiLayer kbapi.XyReferenceLineLa
 
 			// NoESQL reference line thresholds are operation definitions (count, sum, static_value, formula, etc)
 			// rather than the richer object shape used by ES|QL reference lines.
-			m.Thresholds = append(m.Thresholds, thresholdModel{
+			m.Thresholds = append(m.Thresholds, models.ThresholdModel{
 				Axis:        types.StringNull(),
 				ColorJSON:   jsontypes.NewNormalizedNull(),
 				Column:      types.StringNull(),
@@ -450,7 +407,7 @@ func (m *referenceLineLayerModel) fromAPINoESQL(apiLayer kbapi.XyReferenceLineLa
 }
 
 // toAPIXyReferenceLineLayerNoESQL converts a reference line layer model to the typed API layer.
-func (m *referenceLineLayerModel) toAPIXyReferenceLineLayerNoESQL(layerType string) (kbapi.XyReferenceLineLayerNoESQL, diag.Diagnostics) {
+func referenceLineLayerToAPIXyReferenceLineLayerNoESQL(m *models.ReferenceLineLayerModel, layerType string) (kbapi.XyReferenceLineLayerNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	layer := kbapi.XyReferenceLineLayerNoESQL{
 		Type: xyReferenceLineLayerTypeFromTF(layerType),
@@ -491,7 +448,7 @@ func (m *referenceLineLayerModel) toAPIXyReferenceLineLayerNoESQL(layerType stri
 				continue
 			}
 
-			thresholdMap, tDiags := t.toAPI()
+			thresholdMap, tDiags := thresholdToAPI(&t)
 			diags.Append(tDiags...)
 			if tDiags.HasError() {
 				continue
@@ -515,7 +472,7 @@ func (m *referenceLineLayerModel) toAPIXyReferenceLineLayerNoESQL(layerType stri
 }
 
 // fromAPIJSON populates threshold from JSON
-func (m *thresholdModel) fromAPIJSON(jsonData []byte) diag.Diagnostics {
+func thresholdFromAPIJSON(m *models.ThresholdModel, jsonData []byte) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	var thresholdData map[string]any
@@ -590,7 +547,7 @@ func (m *thresholdModel) fromAPIJSON(jsonData []byte) diag.Diagnostics {
 }
 
 // toAPI converts threshold to API map
-func (m *thresholdModel) toAPI() (map[string]any, diag.Diagnostics) {
+func thresholdToAPI(m *models.ThresholdModel) (map[string]any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	threshold := make(map[string]any)
 

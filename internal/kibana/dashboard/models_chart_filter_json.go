@@ -21,17 +21,14 @@ import (
 	"encoding/json"
 	"sort"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-// chartFilterJSONModel holds one dashboard chart filter as API-shaped JSON.
 // The payload must match one of the union members for the parent chart's *_Filters_Item type
 // (condition, group, DSL, or spatial — see Kibana dashboard OpenAPI / kbapi).
-type chartFilterJSONModel struct {
-	FilterJSON jsontypes.Normalized `tfsdk:"filter_json"`
-}
 
 func decodeChartFilterJSON(n jsontypes.Normalized, dst any) diag.Diagnostics {
 	var diags diag.Diagnostics
@@ -45,7 +42,7 @@ func decodeChartFilterJSON(n jsontypes.Normalized, dst any) diag.Diagnostics {
 	return diags
 }
 
-func (m *chartFilterJSONModel) populateFromAPIItem(item any) diag.Diagnostics {
+func chartFilterJSONPopulateFromAPIItem(m *models.ChartFilterJSONModel, item any) diag.Diagnostics {
 	return populateFilterJSONFromMarshaled(item, &m.FilterJSON)
 }
 

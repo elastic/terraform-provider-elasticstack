@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -48,8 +49,8 @@ func Test_mapPanelFromAPI_vis_byReference_populatesVisConfig(t *testing.T) {
 	var apiPanels kbapi.DashboardPanels
 	require.NoError(t, json.Unmarshal([]byte(apiPanelsJSON), &apiPanels))
 
-	dm := &dashboardModel{}
-	panels, sections, diags := dm.mapPanelsFromAPI(ctx, &apiPanels)
+	dm := &models.DashboardModel{}
+	panels, sections, diags := dashboardMapPanelsFromAPI(ctx, dm, &apiPanels)
 	require.False(t, diags.HasError())
 	require.Nil(t, sections)
 	require.Len(t, panels, 1)
@@ -83,8 +84,8 @@ func Test_mapPanelFromAPI_vis_byValue_populatesNestedChartBlock(t *testing.T) {
 	var apiPanels kbapi.DashboardPanels
 	require.NoError(t, json.Unmarshal([]byte(apiPanelsJSON), &apiPanels))
 
-	dm := &dashboardModel{}
-	panels, _, diags := dm.mapPanelsFromAPI(ctx, &apiPanels)
+	dm := &models.DashboardModel{}
+	panels, _, diags := dashboardMapPanelsFromAPI(ctx, dm, &apiPanels)
 	require.False(t, diags.HasError())
 	require.Len(t, panels, 1)
 
@@ -98,21 +99,21 @@ func Test_mapPanelFromAPI_vis_byValue_populatesNestedChartBlock(t *testing.T) {
 func Test_mapPanelFromAPI_vis_byValue_prefersAPIChartOverStalePriorXYBlock(t *testing.T) {
 	ctx := context.Background()
 
-	tfPanel := panelModel{
+	tfPanel := models.PanelModel{
 		Type: types.StringValue("vis"),
-		VisConfig: &visConfigModel{
-			ByValue: &visByValueModel{
-				lensByValueChartBlocks: lensByValueChartBlocks{
-					XYChartConfig: &xyChartConfigModel{
+		VisConfig: &models.VisConfigModel{
+			ByValue: &models.VisByValueModel{
+				LensByValueChartBlocks: models.LensByValueChartBlocks{
+					XYChartConfig: &models.XYChartConfigModel{
 						Title: types.StringValue("Old XY Title"),
-						Axis: &xyAxisModel{
-							X: &xyAxisConfigModel{},
-							Y: &yAxisConfigModel{},
+						Axis: &models.XYAxisModel{
+							X: &models.XYAxisConfigModel{},
+							Y: &models.YAxisConfigModel{},
 						},
-						Decorations: &xyDecorationsModel{},
-						Fitting:     &xyFittingModel{Type: types.StringValue("none")},
-						Legend:      &xyLegendModel{Inside: types.BoolValue(false), Visibility: types.StringValue("visible")},
-						Query:       &filterSimpleModel{Language: types.StringValue("kql"), Expression: types.StringValue("*")},
+						Decorations: &models.XYDecorationsModel{},
+						Fitting:     &models.XYFittingModel{Type: types.StringValue("none")},
+						Legend:      &models.XYLegendModel{Inside: types.BoolValue(false), Visibility: types.StringValue("visible")},
+						Query:       &models.FilterSimpleModel{Language: types.StringValue("kql"), Expression: types.StringValue("*")},
 					},
 				},
 			},
@@ -139,8 +140,8 @@ func Test_mapPanelFromAPI_vis_byValue_prefersAPIChartOverStalePriorXYBlock(t *te
 	panelRow, err := item.AsDashboardPanelItem()
 	require.NoError(t, err)
 
-	dm := dashboardModel{}
-	out, diags := dm.mapPanelFromAPI(ctx, &tfPanel, panelRow)
+	dm := models.DashboardModel{}
+	out, diags := dashboardMapPanelFromAPI(ctx, &dm, &tfPanel, panelRow)
 	require.False(t, diags.HasError(), "%s", diags)
 	require.NotNil(t, out.VisConfig)
 	require.NotNil(t, out.VisConfig.ByValue)
@@ -173,8 +174,8 @@ func Test_mapPanelFromAPI_vis_unsupportedChartDiagnostic(t *testing.T) {
 	var apiPanels kbapi.DashboardPanels
 	require.NoError(t, json.Unmarshal([]byte(apiPanelsJSON), &apiPanels))
 
-	dm := &dashboardModel{}
-	_, _, diags := dm.mapPanelsFromAPI(ctx, &apiPanels)
+	dm := &models.DashboardModel{}
+	_, _, diags := dashboardMapPanelsFromAPI(ctx, dm, &apiPanels)
 	require.True(t, diags.HasError())
 	found := false
 	for _, d := range diags {
@@ -190,12 +191,12 @@ func Test_mapPanelFromAPI_vis_unsupportedChartDiagnostic(t *testing.T) {
 
 func Test_mapPanelFromAPI_vis_ambiguousPreservesPriorByReference(t *testing.T) {
 	ctx := context.Background()
-	priorPanel := panelModel{
+	priorPanel := models.PanelModel{
 		Type: types.StringValue("vis"),
-		VisConfig: &visConfigModel{
-			ByReference: &visByReferenceModel{
+		VisConfig: &models.VisConfigModel{
+			ByReference: &models.VisByReferenceModel{
 				RefID: types.StringValue("saved/prior/ref"),
-				TimeRange: lensDashboardAppTimeRangeModel{
+				TimeRange: models.LensDashboardAppTimeRangeModel{
 					From: types.StringValue("now-30d"),
 					To:   types.StringValue("now"),
 				},
@@ -217,8 +218,8 @@ func Test_mapPanelFromAPI_vis_ambiguousPreservesPriorByReference(t *testing.T) {
 	panelRow, err := item.AsDashboardPanelItem()
 	require.NoError(t, err)
 
-	dm := dashboardModel{}
-	out, diags := dm.mapPanelFromAPI(ctx, &priorPanel, panelRow)
+	dm := models.DashboardModel{}
+	out, diags := dashboardMapPanelFromAPI(ctx, &dm, &priorPanel, panelRow)
 	require.False(t, diags.HasError())
 	require.NotNil(t, out.VisConfig)
 	require.Nil(t, out.VisConfig.ByValue)
@@ -240,7 +241,7 @@ func Test_mapPanelFromAPI_vis_configJSONOnlyLeavesVisUnset(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(apiPanelsJSON), &apiPanels))
 
 	raw := `{"wrapped": {}}`
-	tfPrior := panelModel{
+	tfPrior := models.PanelModel{
 		ConfigJSON: customtypes.NewJSONWithDefaultsValue(raw, populatePanelConfigJSONDefaults),
 		VisConfig:  nil,
 	}
@@ -249,21 +250,21 @@ func Test_mapPanelFromAPI_vis_configJSONOnlyLeavesVisUnset(t *testing.T) {
 	panelRow, err := item.AsDashboardPanelItem()
 	require.NoError(t, err)
 
-	dm := dashboardModel{}
-	out, diags := dm.mapPanelFromAPI(ctx, &tfPrior, panelRow)
+	dm := models.DashboardModel{}
+	out, diags := dashboardMapPanelFromAPI(ctx, &dm, &tfPrior, panelRow)
 	require.False(t, diags.HasError())
 	assert.Nil(t, out.VisConfig)
 }
 
 func Test_panel_toAPI_vis_byReference_writesVisConfig1(t *testing.T) {
-	pm := panelModel{
+	pm := models.PanelModel{
 		Type: types.StringValue("vis"),
-		Grid: panelGridModel{X: types.Int64Value(1), Y: types.Int64Value(2), W: types.Int64Value(24), H: types.Int64Value(14)},
+		Grid: models.PanelGridModel{X: types.Int64Value(1), Y: types.Int64Value(2), W: types.Int64Value(24), H: types.Int64Value(14)},
 		ID:   types.StringValue("p-ref"),
-		VisConfig: &visConfigModel{
-			ByReference: &visByReferenceModel{
+		VisConfig: &models.VisConfigModel{
+			ByReference: &models.VisByReferenceModel{
 				RefID: types.StringValue("lens:out"),
-				TimeRange: lensDashboardAppTimeRangeModel{
+				TimeRange: models.LensDashboardAppTimeRangeModel{
 					From: types.StringValue("now-1h"),
 					To:   types.StringValue("now"),
 				},
@@ -272,7 +273,7 @@ func Test_panel_toAPI_vis_byReference_writesVisConfig1(t *testing.T) {
 		ConfigJSON: customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults),
 	}
 
-	item, diags := pm.toAPI(context.Background(), nil)
+	item, diags := panelToAPI(context.Background(), pm, nil)
 	require.False(t, diags.HasError())
 
 	visPanel, err := item.AsKbnDashboardPanelTypeVis()
@@ -285,15 +286,15 @@ func Test_panel_toAPI_vis_byReference_writesVisConfig1(t *testing.T) {
 }
 
 func Test_panel_toAPI_vis_configJSONWithoutVis_unmarshalsOpaqueConfigJSON(t *testing.T) {
-	pm := panelModel{
+	pm := models.PanelModel{
 		Type: types.StringValue("vis"),
-		Grid: panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0), W: types.Int64Value(10), H: types.Int64Value(10)},
+		Grid: models.PanelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0), W: types.Int64Value(10), H: types.Int64Value(10)},
 		ConfigJSON: customtypes.NewJSONWithDefaultsValue(
 			`{"attributes":{"references":[]}}`,
 			populatePanelConfigJSONDefaults,
 		),
 	}
-	item, diags := pm.toAPI(context.Background(), nil)
+	item, diags := panelToAPI(context.Background(), pm, nil)
 	require.False(t, diags.HasError())
 	v, err := item.AsKbnDashboardPanelTypeVis()
 	require.NoError(t, err)
@@ -303,9 +304,9 @@ func Test_panel_toAPI_vis_configJSONWithoutVis_unmarshalsOpaqueConfigJSON(t *tes
 }
 
 func Test_visConfigToAPI_missingVisConfig_diagnostic(t *testing.T) {
-	pm := panelModel{
+	pm := models.PanelModel{
 		Type:       types.StringValue("vis"),
-		Grid:       panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0), W: types.Int64Value(10), H: types.Int64Value(10)},
+		Grid:       models.PanelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0), W: types.Int64Value(10), H: types.Int64Value(10)},
 		VisConfig:  nil,
 		ConfigJSON: customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults),
 	}
@@ -327,12 +328,12 @@ func Test_visConfigToAPI_missingVisConfig_diagnostic(t *testing.T) {
 }
 
 func Test_visConfigToAPI_byValue_missingConverter_diagnostic(t *testing.T) {
-	pm := panelModel{
+	pm := models.PanelModel{
 		Type: types.StringValue("vis"),
-		Grid: panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0), W: types.Int64Value(10), H: types.Int64Value(10)},
-		VisConfig: &visConfigModel{
-			ByValue: &visByValueModel{
-				lensByValueChartBlocks: lensByValueChartBlocks{},
+		Grid: models.PanelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0), W: types.Int64Value(10), H: types.Int64Value(10)},
+		VisConfig: &models.VisConfigModel{
+			ByValue: &models.VisByValueModel{
+				LensByValueChartBlocks: models.LensByValueChartBlocks{},
 			},
 		},
 		ConfigJSON: customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults),
@@ -355,9 +356,9 @@ func Test_visConfigToAPI_byValue_missingConverter_diagnostic(t *testing.T) {
 }
 
 func Test_visByReferenceToAPI_invalidReferencesJSON_diagnostic(t *testing.T) {
-	byRef := lensDashboardAppByReferenceModel{
+	byRef := models.LensDashboardAppByReferenceModel{
 		RefID: types.StringValue("lens:out"),
-		TimeRange: lensDashboardAppTimeRangeModel{
+		TimeRange: models.LensDashboardAppTimeRangeModel{
 			From: types.StringValue("now-1h"),
 			To:   types.StringValue("now"),
 		},
@@ -390,12 +391,12 @@ func Test_populateVisByReferenceFromAPI_emptyDrilldownsSlice(t *testing.T) {
 		},
 		Drilldowns: &[]kbapi.KbnDashboardPanelTypeVis_Config_1_Drilldowns_Item{},
 	}
-	pm := &panelModel{}
+	pm := &models.PanelModel{}
 	diags := populateVisByReferenceFromAPI(ctx, nil, pm, cfg1)
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm.VisConfig)
 	require.NotNil(t, pm.VisConfig.ByReference)
-	// API returns empty slice → populated as empty drilldownsModel (not nil)
+	// API returns empty slice → populated as empty models.DrilldownsModel (not nil)
 	assert.NotNil(t, pm.VisConfig.ByReference.Drilldowns)
 	assert.Empty(t, pm.VisConfig.ByReference.Drilldowns)
 }
@@ -410,16 +411,16 @@ func Test_populateVisByReferenceFromAPI_nilDrilldownsFallsBackToPrior(t *testing
 		},
 		// Drilldowns intentionally nil
 	}
-	prior := &visConfigModel{
-		ByReference: &lensDashboardAppByReferenceModel{
+	prior := &models.VisConfigModel{
+		ByReference: &models.LensDashboardAppByReferenceModel{
 			RefID: types.StringValue("prior"),
-			TimeRange: lensDashboardAppTimeRangeModel{
+			TimeRange: models.LensDashboardAppTimeRangeModel{
 				From: types.StringValue("now-30d"),
 				To:   types.StringValue("now"),
 			},
 		},
 	}
-	pm := &panelModel{}
+	pm := &models.PanelModel{}
 	diags := populateVisByReferenceFromAPI(ctx, prior, pm, cfg1)
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm.VisConfig)

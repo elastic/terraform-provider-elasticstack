@@ -38,12 +38,13 @@ import (
 
 func TestAccResourceDashboardLensDashboardAppByValue_basic(t *testing.T) {
 	dashboardTitle := "Acc lens app by-val " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
 				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
 				Check: resource.ComposeTestCheckFunc(
@@ -55,7 +56,6 @@ func TestAccResourceDashboardLensDashboardAppByValue_basic(t *testing.T) {
 			// PreApply cannot be combined with PlanOnly (framework limitation); a no-op apply is fine.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
 				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
 				ConfigPlanChecks: resource.ConfigPlanChecks{
@@ -75,12 +75,13 @@ func TestAccResourceDashboardLensDashboardAppByValue_basic(t *testing.T) {
 // `config_json`; the import step only asserts panel `config_json` is still absent.
 func TestAccResourceDashboardLensDashboardAppByValueTypedMetric_basic(t *testing.T) {
 	dashboardTitle := "Acc lens app typed m " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
 				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
 				Check: resource.ComposeTestCheckFunc(
@@ -92,7 +93,6 @@ func TestAccResourceDashboardLensDashboardAppByValueTypedMetric_basic(t *testing
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
 				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
 				ConfigPlanChecks: resource.ConfigPlanChecks{
@@ -101,7 +101,6 @@ func TestAccResourceDashboardLensDashboardAppByValueTypedMetric_basic(t *testing
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
 				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
 				ResourceName:             "elasticstack_kibana_dashboard.test",
@@ -117,12 +116,13 @@ func TestAccResourceDashboardLensDashboardAppByValueTypedMetric_basic(t *testing
 
 func TestAccResourceDashboardLensDashboardAppByReference(t *testing.T) {
 	dashboardTitle := "Acc lens app by-ref " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
 				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
 				Check: resource.ComposeTestCheckFunc(
@@ -139,7 +139,6 @@ func TestAccResourceDashboardLensDashboardAppByReference(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("updated"),
 				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
 				Check: resource.ComposeTestCheckFunc(
@@ -154,7 +153,6 @@ func TestAccResourceDashboardLensDashboardAppByReference(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("updated"),
 				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
 				ResourceName:             "elasticstack_kibana_dashboard.test",
@@ -171,12 +169,13 @@ func TestAccResourceDashboardLensDashboardAppByReference(t *testing.T) {
 
 func TestAccResourceDashboardLensDashboardAppByReferenceAbsoluteTimeMode(t *testing.T) {
 	dashboardTitle := "Acc lens app abs " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("absolute_time_mode"),
 				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
 				Check: resource.ComposeTestCheckFunc(
@@ -187,7 +186,6 @@ func TestAccResourceDashboardLensDashboardAppByReferenceAbsoluteTimeMode(t *test
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("absolute_time_mode"),
 				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
 				ResourceName:             "elasticstack_kibana_dashboard.test",
@@ -218,43 +216,45 @@ func TestAccResourceDashboardLensDashboardAppPlan(t *testing.T) {
 	panelConfigNotAllowed := regexp.MustCompile(`config_json|can only be set when|markdown|vis`)
 	configJSONWithLens := regexp.MustCompile(`Invalid Configuration|conflict`)
 
+	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
-			{ProtoV6ProviderFactories: acctest.Providers, SkipFunc: versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+			{ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("wrong_type"), ConfigVariables: config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
 				PlanOnly: true, ExpectError: allowedIfMarkdown},
-			{ProtoV6ProviderFactories: acctest.Providers, SkipFunc: versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+			{ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("wrong_type_vis"), ConfigVariables: config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
 				PlanOnly: true, ExpectError: visWithLensOnly},
-			{ProtoV6ProviderFactories: acctest.Providers, SkipFunc: versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+			{ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("missing_config"), ConfigVariables: config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
 				PlanOnly: true, ExpectError: requiredIfMissing},
-			{ProtoV6ProviderFactories: acctest.Providers, SkipFunc: versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+			{ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("sibling_config_conflict"), ConfigVariables: config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
 				PlanOnly: true, ExpectError: conflictOrInvalid},
-			{ProtoV6ProviderFactories: acctest.Providers, SkipFunc: versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+			{ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("vis_type_with_lens_block"), ConfigVariables: config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
 				PlanOnly: true, ExpectError: visConfigJSONPlusLens},
-			{ProtoV6ProviderFactories: acctest.Providers, SkipFunc: versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+			{ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("invalid_time_mode"), ConfigVariables: config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
 				PlanOnly: true, ExpectError: invalidTimeMode},
-			{ProtoV6ProviderFactories: acctest.Providers, SkipFunc: versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+			{ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("both_value_and_reference"), ConfigVariables: config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
 				PlanOnly: true, ExpectError: bothSubblocks},
-			{ProtoV6ProviderFactories: acctest.Providers, SkipFunc: versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+			{ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("neither_value_nor_reference"), ConfigVariables: config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
 				PlanOnly: true, ExpectError: neitherSubblock},
-			{ProtoV6ProviderFactories: acctest.Providers, SkipFunc: versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+			{ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("panel_config_json_forbidden"), ConfigVariables: config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
 				PlanOnly: true, ExpectError: panelConfigNotAllowed},
-			{ProtoV6ProviderFactories: acctest.Providers, SkipFunc: versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+			{ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("panel_config_json_with_lens_block"), ConfigVariables: config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
 				PlanOnly: true, ExpectError: configJSONWithLens},
-			{ProtoV6ProviderFactories: acctest.Providers, SkipFunc: versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+			{ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("by_value_no_source"), ConfigVariables: config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
 				PlanOnly: true, ExpectError: byValueSourceInvalid},
-			{ProtoV6ProviderFactories: acctest.Providers, SkipFunc: versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+			{ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("by_value_config_json_and_metric_typed"), ConfigVariables: config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
 				PlanOnly: true, ExpectError: byValueSourceInvalid},
 		},

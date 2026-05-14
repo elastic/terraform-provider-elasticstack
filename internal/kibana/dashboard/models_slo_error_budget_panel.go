@@ -19,29 +19,13 @@ package dashboard
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-type sloErrorBudgetConfigModel struct {
-	SloID         types.String                   `tfsdk:"slo_id"`
-	SloInstanceID types.String                   `tfsdk:"slo_instance_id"`
-	Title         types.String                   `tfsdk:"title"`
-	Description   types.String                   `tfsdk:"description"`
-	HideTitle     types.Bool                     `tfsdk:"hide_title"`
-	HideBorder    types.Bool                     `tfsdk:"hide_border"`
-	Drilldowns    []sloErrorBudgetDrilldownModel `tfsdk:"drilldowns"`
-}
-
-type sloErrorBudgetDrilldownModel struct {
-	URL          types.String `tfsdk:"url"`
-	Label        types.String `tfsdk:"label"`
-	EncodeURL    types.Bool   `tfsdk:"encode_url"`
-	OpenInNewTab types.Bool   `tfsdk:"open_in_new_tab"`
-}
-
 // buildSloErrorBudgetConfig writes the TF model fields into the API panel struct.
-func buildSloErrorBudgetConfig(pm panelModel, sebPanel *kbapi.KbnDashboardPanelTypeSloErrorBudget) {
+func buildSloErrorBudgetConfig(pm models.PanelModel, sebPanel *kbapi.KbnDashboardPanelTypeSloErrorBudget) {
 	cfg := pm.SloErrorBudgetConfig
 	if cfg == nil {
 		return
@@ -98,7 +82,7 @@ func buildSloErrorBudgetConfig(pm panelModel, sebPanel *kbapi.KbnDashboardPanelT
 //     null intent with true), so practitioners who omit these fields don't observe drift
 //
 // tfPanel is the prior TF state/plan panel, or nil on import.
-func populateSloErrorBudgetFromAPI(pm *panelModel, tfPanel *panelModel, apiConfig kbapi.SloErrorBudgetEmbeddable) {
+func populateSloErrorBudgetFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiConfig kbapi.SloErrorBudgetEmbeddable) {
 	existing := pm.SloErrorBudgetConfig
 
 	// Determine the prior intent for slo_instance_id null-preservation.
@@ -118,7 +102,7 @@ func populateSloErrorBudgetFromAPI(pm *panelModel, tfPanel *panelModel, apiConfi
 			return
 		}
 		// Import path: create block from API.
-		pm.SloErrorBudgetConfig = &sloErrorBudgetConfigModel{}
+		pm.SloErrorBudgetConfig = &models.SloErrorBudgetConfigModel{}
 		existing = pm.SloErrorBudgetConfig
 	}
 
@@ -149,14 +133,14 @@ func populateSloErrorBudgetFromAPI(pm *panelModel, tfPanel *panelModel, apiConfi
 	// Drilldowns round-trip with default normalization.
 	if apiConfig.Drilldowns != nil {
 		// Determine prior drilldown intent.
-		var priorDrilldowns []sloErrorBudgetDrilldownModel
+		var priorDrilldowns []models.URLDrilldownModel
 		if tfPanel != nil && tfPanel.SloErrorBudgetConfig != nil {
 			priorDrilldowns = tfPanel.SloErrorBudgetConfig.Drilldowns
 		}
 
-		newDrilldowns := make([]sloErrorBudgetDrilldownModel, 0, len(*apiConfig.Drilldowns))
+		newDrilldowns := make([]models.URLDrilldownModel, 0, len(*apiConfig.Drilldowns))
 		for i, d := range *apiConfig.Drilldowns {
-			dm := sloErrorBudgetDrilldownModel{
+			dm := models.URLDrilldownModel{
 				URL:   types.StringValue(d.Url),
 				Label: types.StringValue(d.Label),
 			}

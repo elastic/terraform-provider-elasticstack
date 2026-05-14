@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 )
@@ -29,7 +30,7 @@ func Test_filterSimpleModel_fromAPI_toAPI(t *testing.T) {
 	tests := []struct {
 		name     string
 		apiQuery kbapi.FilterSimple
-		expected *filterSimpleModel
+		expected *models.FilterSimpleModel
 	}{
 		{
 			name: "all fields populated",
@@ -37,7 +38,7 @@ func Test_filterSimpleModel_fromAPI_toAPI(t *testing.T) {
 				Expression: "test query",
 				Language:   func() *kbapi.FilterSimpleLanguage { l := kbapi.FilterSimpleLanguage("kql"); return &l }(),
 			},
-			expected: &filterSimpleModel{
+			expected: &models.FilterSimpleModel{
 				Expression: types.StringValue("test query"),
 				Language:   types.StringValue("kql"),
 			},
@@ -48,7 +49,7 @@ func Test_filterSimpleModel_fromAPI_toAPI(t *testing.T) {
 				Expression: "simple query",
 				Language:   nil,
 			},
-			expected: &filterSimpleModel{
+			expected: &models.FilterSimpleModel{
 				Expression: types.StringValue("simple query"),
 				Language:   types.StringValue("kql"),
 			},
@@ -58,14 +59,14 @@ func Test_filterSimpleModel_fromAPI_toAPI(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test fromAPI
-			model := &filterSimpleModel{}
-			model.fromAPI(tt.apiQuery)
+			model := &models.FilterSimpleModel{}
+			filterSimpleFromAPI(model, tt.apiQuery)
 
 			assert.Equal(t, tt.expected.Expression, model.Expression)
 			assert.Equal(t, tt.expected.Language, model.Language)
 
 			// Test toAPI
-			apiQuery := model.toAPI()
+			apiQuery := filterSimpleToAPI(model)
 			assert.Equal(t, tt.apiQuery.Expression, apiQuery.Expression)
 			assert.Equal(t, tt.expected.Language.ValueString(), string(*apiQuery.Language))
 		})

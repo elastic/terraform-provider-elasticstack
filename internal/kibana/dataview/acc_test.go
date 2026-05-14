@@ -110,6 +110,8 @@ func TestAccResourceDataView(t *testing.T) {
 }
 
 func TestAccResourceDataViewColorFieldFormat(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minFullDataviewSupport, versionutils.FlavorAny)
+
 	indexName := "my-color-index-" + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -117,7 +119,6 @@ func TestAccResourceDataViewColorFieldFormat(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minFullDataviewSupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"index_name": config.StringVariable(indexName),
@@ -138,7 +139,6 @@ func TestAccResourceDataViewColorFieldFormat(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minFullDataviewSupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("import"),
 				ConfigVariables: config.Variables{
 					"index_name": config.StringVariable(indexName),
@@ -249,6 +249,8 @@ func testAccIsDataViewCreatePath(path, spaceID string) bool {
 }
 
 func TestAccResourceDataViewNamespaces(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minFullDataviewSupport, versionutils.FlavorAny)
+
 	indexName := "ns-test-" + sdkacctest.RandStringFromCharSet(6, sdkacctest.CharSetAlphaNum)
 	space1 := "space-a-" + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 	space2 := "space-b-" + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
@@ -285,7 +287,6 @@ func TestAccResourceDataViewNamespaces(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minFullDataviewSupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("initial"),
 				ConfigVariables:          vars,
 				Check: resource.ComposeTestCheckFunc(
@@ -295,7 +296,6 @@ func TestAccResourceDataViewNamespaces(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minFullDataviewSupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("add_space"),
 				ConfigVariables:          vars,
 				Check: resource.ComposeTestCheckFunc(
@@ -305,7 +305,6 @@ func TestAccResourceDataViewNamespaces(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minFullDataviewSupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("remove_space"),
 				ConfigVariables:          vars,
 				Check: resource.ComposeTestCheckFunc(
@@ -315,7 +314,6 @@ func TestAccResourceDataViewNamespaces(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minFullDataviewSupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("add_remove_space"),
 				ConfigVariables:          vars,
 				Check: resource.ComposeTestCheckFunc(

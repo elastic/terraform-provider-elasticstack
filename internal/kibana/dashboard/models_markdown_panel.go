@@ -21,37 +21,11 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
-
-// markdownConfigModel is the TF model for markdown_config (by-value / by-reference union).
-type markdownConfigModel struct {
-	ByValue     *markdownConfigByValueModel     `tfsdk:"by_value"`
-	ByReference *markdownConfigByReferenceModel `tfsdk:"by_reference"`
-}
-
-type markdownConfigByValueModel struct {
-	Content     types.String                 `tfsdk:"content"`
-	Settings    *markdownConfigSettingsModel `tfsdk:"settings"`
-	Description types.String                 `tfsdk:"description"`
-	HideTitle   types.Bool                   `tfsdk:"hide_title"`
-	Title       types.String                 `tfsdk:"title"`
-	HideBorder  types.Bool                   `tfsdk:"hide_border"`
-}
-
-type markdownConfigSettingsModel struct {
-	OpenLinksInNewTab types.Bool `tfsdk:"open_links_in_new_tab"`
-}
-
-type markdownConfigByReferenceModel struct {
-	RefID       types.String `tfsdk:"ref_id"`
-	Description types.String `tfsdk:"description"`
-	HideTitle   types.Bool   `tfsdk:"hide_title"`
-	Title       types.String `tfsdk:"title"`
-	HideBorder  types.Bool   `tfsdk:"hide_border"`
-}
 
 // markdownConfigBranch classifies raw markdown panel `config` JSON for union decode.
 type markdownConfigBranch int
@@ -104,7 +78,7 @@ func marshalAndClassifyMarkdownConfig(config kbapi.KbnDashboardPanelTypeMarkdown
 // populateMarkdownFromAPIAttemptByValue decodes config as KbnDashboardPanelTypeMarkdownConfig0 (with JSON fallback).
 // When enforceClassifier is true, raw JSON must classify as by-value (disambiguates the markdown union); when false,
 // decoding is attempted for unknown-shaped payloads so REQ-010 can fall through to config_json when types fail.
-func populateMarkdownFromAPIAttemptByValue(pm *panelModel, tfPanel *panelModel, config kbapi.KbnDashboardPanelTypeMarkdown_Config, enforceClassifier bool) bool {
+func populateMarkdownFromAPIAttemptByValue(pm *models.PanelModel, tfPanel *models.PanelModel, config kbapi.KbnDashboardPanelTypeMarkdown_Config, enforceClassifier bool) bool {
 	raw, ok := marshalAndClassifyMarkdownConfig(config, enforceClassifier, markdownConfigBranchByValue)
 	if !ok {
 		return false
@@ -124,7 +98,7 @@ func populateMarkdownFromAPIAttemptByValue(pm *panelModel, tfPanel *panelModel, 
 // populateMarkdownFromAPIAttemptByReference decodes config as KbnDashboardPanelTypeMarkdownConfig1.
 // When enforceClassifier is true, raw JSON must classify as by-reference; when false, decoding is only attempted
 // when the payload is a valid by-reference shape (non-empty ref_id after parse).
-func populateMarkdownFromAPIAttemptByReference(pm *panelModel, tfPanel *panelModel, config kbapi.KbnDashboardPanelTypeMarkdown_Config, enforceClassifier bool) bool {
+func populateMarkdownFromAPIAttemptByReference(pm *models.PanelModel, tfPanel *models.PanelModel, config kbapi.KbnDashboardPanelTypeMarkdown_Config, enforceClassifier bool) bool {
 	if _, ok := marshalAndClassifyMarkdownConfig(config, enforceClassifier, markdownConfigBranchByReference); !ok {
 		return false
 	}
@@ -140,33 +114,33 @@ func populateMarkdownFromAPIAttemptByReference(pm *panelModel, tfPanel *panelMod
 }
 
 // populateMarkdownFromAPIByValue maps API by-value markdown config into Terraform state.
-func populateMarkdownFromAPIByValue(pm *panelModel, tfPanel *panelModel, config kbapi.KbnDashboardPanelTypeMarkdownConfig0) {
-	byValue := func(m *markdownConfigModel) *markdownConfigByValueModel { return m.ByValue }
-	settings := &markdownConfigSettingsModel{
+func populateMarkdownFromAPIByValue(pm *models.PanelModel, tfPanel *models.PanelModel, config kbapi.KbnDashboardPanelTypeMarkdownConfig0) {
+	byValue := func(m *models.MarkdownConfigModel) *models.MarkdownConfigByValueModel { return m.ByValue }
+	settings := &models.MarkdownConfigSettingsModel{
 		OpenLinksInNewTab: markdownByValueOpenLinksFromAPI(config.Settings.OpenLinksInNewTab, tfPanel),
 	}
-	pm.MarkdownConfig = &markdownConfigModel{
-		ByValue: &markdownConfigByValueModel{
+	pm.MarkdownConfig = &models.MarkdownConfigModel{
+		ByValue: &models.MarkdownConfigByValueModel{
 			Content:     types.StringValue(config.Content),
 			Settings:    settings,
-			Description: markdownStringFromAPI(config.Description, tfPanel, byValue, func(bv *markdownConfigByValueModel) types.String { return bv.Description }),
-			HideTitle:   markdownBoolFromAPI(config.HideTitle, tfPanel, byValue, func(bv *markdownConfigByValueModel) types.Bool { return bv.HideTitle }),
-			HideBorder:  markdownBoolFromAPI(config.HideBorder, tfPanel, byValue, func(bv *markdownConfigByValueModel) types.Bool { return bv.HideBorder }),
-			Title:       markdownStringFromAPI(config.Title, tfPanel, byValue, func(bv *markdownConfigByValueModel) types.String { return bv.Title }),
+			Description: markdownStringFromAPI(config.Description, tfPanel, byValue, func(bv *models.MarkdownConfigByValueModel) types.String { return bv.Description }),
+			HideTitle:   markdownBoolFromAPI(config.HideTitle, tfPanel, byValue, func(bv *models.MarkdownConfigByValueModel) types.Bool { return bv.HideTitle }),
+			HideBorder:  markdownBoolFromAPI(config.HideBorder, tfPanel, byValue, func(bv *models.MarkdownConfigByValueModel) types.Bool { return bv.HideBorder }),
+			Title:       markdownStringFromAPI(config.Title, tfPanel, byValue, func(bv *models.MarkdownConfigByValueModel) types.String { return bv.Title }),
 		},
 	}
 }
 
 // populateMarkdownFromAPIByReference maps API by-reference markdown config into Terraform state.
-func populateMarkdownFromAPIByReference(pm *panelModel, tfPanel *panelModel, config kbapi.KbnDashboardPanelTypeMarkdownConfig1) {
-	byReference := func(m *markdownConfigModel) *markdownConfigByReferenceModel { return m.ByReference }
-	pm.MarkdownConfig = &markdownConfigModel{
-		ByReference: &markdownConfigByReferenceModel{
+func populateMarkdownFromAPIByReference(pm *models.PanelModel, tfPanel *models.PanelModel, config kbapi.KbnDashboardPanelTypeMarkdownConfig1) {
+	byReference := func(m *models.MarkdownConfigModel) *models.MarkdownConfigByReferenceModel { return m.ByReference }
+	pm.MarkdownConfig = &models.MarkdownConfigModel{
+		ByReference: &models.MarkdownConfigByReferenceModel{
 			RefID:       types.StringValue(config.RefId),
-			Description: markdownStringFromAPI(config.Description, tfPanel, byReference, func(br *markdownConfigByReferenceModel) types.String { return br.Description }),
-			HideTitle:   markdownBoolFromAPI(config.HideTitle, tfPanel, byReference, func(br *markdownConfigByReferenceModel) types.Bool { return br.HideTitle }),
-			HideBorder:  markdownBoolFromAPI(config.HideBorder, tfPanel, byReference, func(br *markdownConfigByReferenceModel) types.Bool { return br.HideBorder }),
-			Title:       markdownStringFromAPI(config.Title, tfPanel, byReference, func(br *markdownConfigByReferenceModel) types.String { return br.Title }),
+			Description: markdownStringFromAPI(config.Description, tfPanel, byReference, func(br *models.MarkdownConfigByReferenceModel) types.String { return br.Description }),
+			HideTitle:   markdownBoolFromAPI(config.HideTitle, tfPanel, byReference, func(br *models.MarkdownConfigByReferenceModel) types.Bool { return br.HideTitle }),
+			HideBorder:  markdownBoolFromAPI(config.HideBorder, tfPanel, byReference, func(br *models.MarkdownConfigByReferenceModel) types.Bool { return br.HideBorder }),
+			Title:       markdownStringFromAPI(config.Title, tfPanel, byReference, func(br *models.MarkdownConfigByReferenceModel) types.String { return br.Title }),
 		},
 	}
 }
@@ -174,8 +148,8 @@ func populateMarkdownFromAPIByReference(pm *panelModel, tfPanel *panelModel, con
 // markdownPriorKnown reports whether the prior TF state for a markdown branch field is a known value.
 // M is the branch model type; V is an attr.Value field type (types.String or types.Bool).
 func markdownPriorKnown[M any, V attr.Value](
-	tfPanel *panelModel,
-	branchOf func(*markdownConfigModel) *M,
+	tfPanel *models.PanelModel,
+	branchOf func(*models.MarkdownConfigModel) *M,
 	priorField func(*M) V,
 ) bool {
 	if tfPanel == nil || tfPanel.MarkdownConfig == nil {
@@ -192,8 +166,8 @@ func markdownPriorKnown[M any, V attr.Value](
 // applying REQ-009 prior-state semantics for the given branch of the markdown config union.
 func markdownStringFromAPI[M any](
 	api *string,
-	tfPanel *panelModel,
-	branchOf func(*markdownConfigModel) *M,
+	tfPanel *models.PanelModel,
+	branchOf func(*models.MarkdownConfigModel) *M,
 	priorField func(*M) types.String,
 ) types.String {
 	if (tfPanel == nil || markdownPriorKnown(tfPanel, branchOf, priorField)) && api != nil {
@@ -215,8 +189,8 @@ func markdownStringFromAPI[M any](
 // applying REQ-009 prior-state semantics for the given branch of the markdown config union.
 func markdownBoolFromAPI[M any](
 	api *bool,
-	tfPanel *panelModel,
-	branchOf func(*markdownConfigModel) *M,
+	tfPanel *models.PanelModel,
+	branchOf func(*models.MarkdownConfigModel) *M,
 	priorField func(*M) types.Bool,
 ) types.Bool {
 	if (tfPanel == nil || markdownPriorKnown(tfPanel, branchOf, priorField)) && api != nil {
@@ -237,7 +211,7 @@ func markdownBoolFromAPI[M any](
 // markdownByValueOpenLinksFromAPI maps settings.open_links_in_new_tab with REQ-009 semantics:
 // Kibana defaults this to true; when the practitioner left the attribute null, keep null after
 // refresh even if the API echoes true (same pattern as SLO drilldown open_in_new_tab).
-func markdownByValueOpenLinksFromAPI(api *bool, tfPanel *panelModel) types.Bool {
+func markdownByValueOpenLinksFromAPI(api *bool, tfPanel *models.PanelModel) types.Bool {
 	if api != nil {
 		var prior types.Bool
 		if tfPanel != nil && tfPanel.MarkdownConfig != nil && tfPanel.MarkdownConfig.ByValue != nil && tfPanel.MarkdownConfig.ByValue.Settings != nil {
@@ -276,7 +250,7 @@ func markdownOptBoolPtr(v types.Bool) *bool {
 }
 
 // buildMarkdownConfig builds the API by-value markdown payload from Terraform.
-func buildMarkdownConfig(pm panelModel) kbapi.KbnDashboardPanelTypeMarkdownConfig0 {
+func buildMarkdownConfig(pm models.PanelModel) kbapi.KbnDashboardPanelTypeMarkdownConfig0 {
 	if pm.MarkdownConfig == nil || pm.MarkdownConfig.ByValue == nil {
 		return kbapi.KbnDashboardPanelTypeMarkdownConfig0{}
 	}
@@ -295,7 +269,7 @@ func buildMarkdownConfig(pm panelModel) kbapi.KbnDashboardPanelTypeMarkdownConfi
 }
 
 // buildMarkdownConfigByReference builds the API by-reference markdown payload from Terraform.
-func buildMarkdownConfigByReference(pm panelModel) kbapi.KbnDashboardPanelTypeMarkdownConfig1 {
+func buildMarkdownConfigByReference(pm models.PanelModel) kbapi.KbnDashboardPanelTypeMarkdownConfig1 {
 	if pm.MarkdownConfig == nil || pm.MarkdownConfig.ByReference == nil {
 		return kbapi.KbnDashboardPanelTypeMarkdownConfig1{}
 	}

@@ -40,14 +40,14 @@ func TestAccResourceIndexTemplateFromSDK(t *testing.T) {
 	acctest.PreCheck(t)
 
 	templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
-	skipBelowDSO := versionutils.CheckIfVersionIsUnsupported(index.MinSupportedDataStreamOptionsVersion)
+
+	versionutils.SkipIfUnsupported(t, index.MinSupportedDataStreamOptionsVersion, versionutils.FlavorAny)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceIndexTemplateDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: skipBelowDSO,
 				// 0.14.5 is the latest registry release at the time of this pin; the resource was still
 				// on Plugin SDK v2 through that line. The in-tree provider is Plugin Framework.
 				ExternalProviders: map[string]resource.ExternalProvider{
@@ -86,7 +86,6 @@ func TestAccResourceIndexTemplateFromSDK(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 skipBelowDSO,
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("step2_pf"),
 				ConfigVariables: config.Variables{
@@ -114,7 +113,6 @@ func TestAccResourceIndexTemplateFromSDK(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 skipBelowDSO,
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("step2_pf"),
 				ConfigVariables: config.Variables{

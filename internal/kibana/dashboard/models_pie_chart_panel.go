@@ -23,8 +23,8 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -33,7 +33,7 @@ func newPieChartPanelConfigConverter() pieChartPanelConfigConverter {
 	return pieChartPanelConfigConverter{
 		lensVisualizationBase: lensVisualizationBase{
 			visualizationType: string(kbapi.PieNoESQLTypePie),
-			hasTFChartBlock: func(blocks *lensByValueChartBlocks) bool {
+			hasTFChartBlock: func(blocks *models.LensByValueChartBlocks) bool {
 				return blocks != nil && blocks.PieChartConfig != nil
 			},
 		},
@@ -46,67 +46,43 @@ type pieChartPanelConfigConverter struct {
 
 func (c pieChartPanelConfigConverter) populateFromAttributes(
 	ctx context.Context,
-	dashboard *dashboardModel,
-	tfPanel *panelModel,
-	blocks *lensByValueChartBlocks,
+	dashboard *models.DashboardModel,
+	tfPanel *models.PanelModel,
+	blocks *models.LensByValueChartBlocks,
 	attrs kbapi.KbnDashboardPanelTypeVisConfig0,
 ) diag.Diagnostics {
 	// Populate the model.
 	//
 	// Disambiguate NoESQL vs ESQL using dataset type; regenerated clients can
 	// decode an empty no-ESQL query for ESQL payloads.
-	var prior *pieChartConfigModel
+	var prior *models.PieChartConfigModel
 	if b := lensByValueChartBlocksFromPanel(tfPanel); b != nil && b.PieChartConfig != nil {
 		cpy := *b.PieChartConfig
 		prior = &cpy
 	}
-	blocks.PieChartConfig = &pieChartConfigModel{}
+	blocks.PieChartConfig = &models.PieChartConfigModel{}
 	if noESQL, err := attrs.AsPieNoESQL(); err == nil && !isPieNoESQLCandidateActuallyESQL(noESQL) {
-		return blocks.PieChartConfig.fromAPINoESQL(ctx, dashboard, prior, noESQL)
+		return pieChartConfigFromAPINoESQL(ctx, blocks.PieChartConfig, dashboard, prior, noESQL)
 	}
 	esql, err := attrs.AsPieESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	return blocks.PieChartConfig.fromAPIESQL(ctx, dashboard, prior, esql)
+	return pieChartConfigFromAPIESQL(ctx, blocks.PieChartConfig, dashboard, prior, esql)
 }
 
-func (c pieChartPanelConfigConverter) buildAttributes(blocks *lensByValueChartBlocks, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func (c pieChartPanelConfigConverter) buildAttributes(blocks *models.LensByValueChartBlocks, dashboard *models.DashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	configModel := *blocks.PieChartConfig
 
 	// Convert the structured model to API schema
-	attrs, pieDiags := configModel.toAPI(dashboard)
+	attrs, pieDiags := pieChartConfigToAPI(&configModel, dashboard)
 	diags.Append(pieDiags...)
 	if diags.HasError() {
 		return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
 	}
 
 	return attrs, diags
-}
-
-type pieChartConfigModel struct {
-	lensChartPresentationTFModel
-	Title               types.String           `tfsdk:"title"`
-	Description         types.String           `tfsdk:"description"`
-	DataSourceJSON      jsontypes.Normalized   `tfsdk:"data_source_json"`
-	IgnoreGlobalFilters types.Bool             `tfsdk:"ignore_global_filters"`
-	Sampling            types.Float64          `tfsdk:"sampling"`
-	DonutHole           types.String           `tfsdk:"donut_hole"`
-	LabelPosition       types.String           `tfsdk:"label_position"`
-	Legend              *partitionLegendModel  `tfsdk:"legend"`
-	Query               *filterSimpleModel     `tfsdk:"query"`
-	Filters             []chartFilterJSONModel `tfsdk:"filters"`
-	Metrics             []pieMetricModel       `tfsdk:"metrics"`
-	GroupBy             []pieGroupByModel      `tfsdk:"group_by"`
-}
-
-type pieMetricModel struct {
-	Config customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config_json"`
-}
-
-type pieGroupByModel struct {
-	Config customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config_json"`
 }
 
 func isPieNoESQLCandidateActuallyESQL(apiChart kbapi.PieNoESQL) bool {
@@ -125,7 +101,7 @@ func isPieNoESQLCandidateActuallyESQL(apiChart kbapi.PieNoESQL) bool {
 	return dataset.Type == legacyMetricDatasetTypeESQL || dataset.Type == legacyMetricDatasetTypeTable
 }
 
-func (m *pieChartConfigModel) populateCommonFields(
+func pieChartConfigPopulateCommonFields(m *models.PieChartConfigModel,
 	title, description *string,
 	ignoreGlobalFilters *bool,
 	sampling *float32,
@@ -163,13 +139,13 @@ func (m *pieChartConfigModel) populateCommonFields(
 		return false
 	}
 	m.DataSourceJSON = dv
-	m.Legend = &partitionLegendModel{}
-	m.Legend.fromPieLegend(legend)
+	m.Legend = &models.PartitionLegendModel{}
+	partitionLegendFromPieLegend(m.Legend, legend)
 	m.Filters = populateFiltersFromAPI(filters, diags)
 	return !diags.HasError()
 }
 
-func (m *pieChartConfigModel) fromAPINoESQL(ctx context.Context, dashboard *dashboardModel, prior *pieChartConfigModel, apiChart kbapi.PieNoESQL) diag.Diagnostics {
+func pieChartConfigFromAPINoESQL(ctx context.Context, m *models.PieChartConfigModel, dashboard *models.DashboardModel, prior *models.PieChartConfigModel, apiChart kbapi.PieNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	var donutHole *string
@@ -184,7 +160,7 @@ func (m *pieChartConfigModel) fromAPINoESQL(ctx context.Context, dashboard *dash
 	}
 	datasetBytes, datasetErr := json.Marshal(apiChart.DataSource)
 
-	if !m.populateCommonFields(
+	if !pieChartConfigPopulateCommonFields(m,
 		apiChart.Title, apiChart.Description, apiChart.IgnoreGlobalFilters, apiChart.Sampling,
 		donutHole, labelPosition,
 		datasetBytes, datasetErr, apiChart.Legend,
@@ -193,12 +169,12 @@ func (m *pieChartConfigModel) fromAPINoESQL(ctx context.Context, dashboard *dash
 		return diags
 	}
 
-	m.Query = &filterSimpleModel{}
-	m.Query.fromAPI(apiChart.Query)
+	m.Query = &models.FilterSimpleModel{}
+	filterSimpleFromAPI(m.Query, apiChart.Query)
 
 	// Metrics
 	if len(apiChart.Metrics) > 0 {
-		m.Metrics = make([]pieMetricModel, len(apiChart.Metrics))
+		m.Metrics = make([]models.PieMetricModel, len(apiChart.Metrics))
 		for i, metric := range apiChart.Metrics {
 			metricJSON, err := json.Marshal(metric)
 			if err != nil {
@@ -214,7 +190,7 @@ func (m *pieChartConfigModel) fromAPINoESQL(ctx context.Context, dashboard *dash
 
 	// GroupBy
 	if apiChart.GroupBy != nil && len(*apiChart.GroupBy) > 0 {
-		m.GroupBy = make([]pieGroupByModel, len(*apiChart.GroupBy))
+		m.GroupBy = make([]models.PieGroupByModel, len(*apiChart.GroupBy))
 		for i, groupBy := range *apiChart.GroupBy {
 			groupByJSON, err := json.Marshal(groupBy)
 			if err != nil {
@@ -228,9 +204,9 @@ func (m *pieChartConfigModel) fromAPINoESQL(ctx context.Context, dashboard *dash
 		}
 	}
 
-	var priorLens *lensChartPresentationTFModel
+	var priorLens *models.LensChartPresentationTFModel
 	if prior != nil {
-		p := prior.lensChartPresentationTFModel
+		p := prior.LensChartPresentationTFModel
 		priorLens = &p
 	}
 	ddWire, ddOmit, ddWireDiags := lensDrilldownsAPIToWire(apiChart.Drilldowns)
@@ -243,12 +219,12 @@ func (m *pieChartConfigModel) fromAPINoESQL(ctx context.Context, dashboard *dash
 	if presDiags.HasError() {
 		return diags
 	}
-	m.lensChartPresentationTFModel = pres
+	m.LensChartPresentationTFModel = pres
 
 	return diags
 }
 
-func (m *pieChartConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashboardModel, prior *pieChartConfigModel, apiChart kbapi.PieESQL) diag.Diagnostics {
+func pieChartConfigFromAPIESQL(ctx context.Context, m *models.PieChartConfigModel, dashboard *models.DashboardModel, prior *models.PieChartConfigModel, apiChart kbapi.PieESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	var donutHole *string
@@ -263,7 +239,7 @@ func (m *pieChartConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashbo
 	}
 	datasetBytes, datasetErr := json.Marshal(apiChart.DataSource)
 
-	if !m.populateCommonFields(
+	if !pieChartConfigPopulateCommonFields(m,
 		apiChart.Title, apiChart.Description, apiChart.IgnoreGlobalFilters, apiChart.Sampling,
 		donutHole, labelPosition,
 		datasetBytes, datasetErr, apiChart.Legend,
@@ -276,7 +252,7 @@ func (m *pieChartConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashbo
 
 	// Metrics
 	if len(apiChart.Metrics) > 0 {
-		m.Metrics = make([]pieMetricModel, len(apiChart.Metrics))
+		m.Metrics = make([]models.PieMetricModel, len(apiChart.Metrics))
 		for i, metric := range apiChart.Metrics {
 			metricJSON, err := json.Marshal(metric)
 			if err != nil {
@@ -292,7 +268,7 @@ func (m *pieChartConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashbo
 
 	// GroupBy
 	if apiChart.GroupBy != nil && len(*apiChart.GroupBy) > 0 {
-		m.GroupBy = make([]pieGroupByModel, len(*apiChart.GroupBy))
+		m.GroupBy = make([]models.PieGroupByModel, len(*apiChart.GroupBy))
 		for i, groupBy := range *apiChart.GroupBy {
 			groupByJSON, err := json.Marshal(groupBy)
 			if err != nil {
@@ -306,9 +282,9 @@ func (m *pieChartConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashbo
 		}
 	}
 
-	var priorLens *lensChartPresentationTFModel
+	var priorLens *models.LensChartPresentationTFModel
 	if prior != nil {
-		p := prior.lensChartPresentationTFModel
+		p := prior.LensChartPresentationTFModel
 		priorLens = &p
 	}
 	ddWire, ddOmit, ddWireDiags := lensDrilldownsAPIToWire(apiChart.Drilldowns)
@@ -321,12 +297,12 @@ func (m *pieChartConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashbo
 	if presDiags.HasError() {
 		return diags
 	}
-	m.lensChartPresentationTFModel = pres
+	m.LensChartPresentationTFModel = pres
 
 	return diags
 }
 
-func (m *pieChartConfigModel) toAPI(dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func pieChartConfigToAPI(m *models.PieChartConfigModel, dashboard *models.DashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 
@@ -365,7 +341,7 @@ func (m *pieChartConfigModel) toAPI(dashboard *dashboardModel) (kbapi.KbnDashboa
 
 		// Legend
 		if m.Legend != nil {
-			chart.Legend = m.Legend.toPieLegend()
+			chart.Legend = partitionLegendToPieLegend(m.Legend)
 		}
 		if chart.Legend.Size == "" {
 			chart.Legend.Size = kbapi.LegendSizeAuto
@@ -382,7 +358,7 @@ func (m *pieChartConfigModel) toAPI(dashboard *dashboardModel) (kbapi.KbnDashboa
 		}
 
 		// Query
-		chart.Query = m.Query.toAPI()
+		chart.Query = filterSimpleToAPI(m.Query)
 
 		// Filters
 		chart.Filters = buildFiltersForAPI(m.Filters, &diags)
@@ -412,7 +388,7 @@ func (m *pieChartConfigModel) toAPI(dashboard *dashboardModel) (kbapi.KbnDashboa
 		// Always set type to pie as it's required by the schema
 		chart.Type = kbapi.PieNoESQLTypePie
 
-		writes, presDiags := lensChartPresentationWritesFor(dashboard, m.lensChartPresentationTFModel)
+		writes, presDiags := lensChartPresentationWritesFor(dashboard, m.LensChartPresentationTFModel)
 		diags.Append(presDiags...)
 		if presDiags.HasError() {
 			return attrs, diags
@@ -470,7 +446,7 @@ func (m *pieChartConfigModel) toAPI(dashboard *dashboardModel) (kbapi.KbnDashboa
 
 		// Legend
 		if m.Legend != nil {
-			chart.Legend = m.Legend.toPieLegend()
+			chart.Legend = partitionLegendToPieLegend(m.Legend)
 		}
 		if chart.Legend.Size == "" {
 			chart.Legend.Size = kbapi.LegendSizeAuto
@@ -529,7 +505,7 @@ func (m *pieChartConfigModel) toAPI(dashboard *dashboardModel) (kbapi.KbnDashboa
 		// Always set type to pie as it's required by the schema
 		chart.Type = kbapi.PieESQLTypePie
 
-		writes, presDiags := lensChartPresentationWritesFor(dashboard, m.lensChartPresentationTFModel)
+		writes, presDiags := lensChartPresentationWritesFor(dashboard, m.LensChartPresentationTFModel)
 		diags.Append(presDiags...)
 		if presDiags.HasError() {
 			return attrs, diags

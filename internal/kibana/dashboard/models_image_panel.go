@@ -19,60 +19,13 @@ package dashboard
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// imagePanelConfigModel is the Terraform model for `image_config`.
-type imagePanelConfigModel struct {
-	Src             imagePanelSrcModel         `tfsdk:"src"`
-	AltText         types.String               `tfsdk:"alt_text"`
-	ObjectFit       types.String               `tfsdk:"object_fit"`
-	BackgroundColor types.String               `tfsdk:"background_color"`
-	Title           types.String               `tfsdk:"title"`
-	Description     types.String               `tfsdk:"description"`
-	HideTitle       types.Bool                 `tfsdk:"hide_title"`
-	HideBorder      types.Bool                 `tfsdk:"hide_border"`
-	Drilldowns      []imagePanelDrilldownModel `tfsdk:"drilldowns"`
-}
-
-type imagePanelSrcModel struct {
-	File *imagePanelSrcFileModel `tfsdk:"file"`
-	URL  *imagePanelSrcURLModel  `tfsdk:"url"`
-}
-
-type imagePanelSrcFileModel struct {
-	FileID types.String `tfsdk:"file_id"`
-}
-
-type imagePanelSrcURLModel struct {
-	URL types.String `tfsdk:"url"`
-}
-
-type imagePanelDrilldownModel struct {
-	DashboardDrilldown *imagePanelDashboardDrilldownModel `tfsdk:"dashboard_drilldown"`
-	URLDrilldown       *imagePanelURLDrilldownModel       `tfsdk:"url_drilldown"`
-}
-
-type imagePanelDashboardDrilldownModel struct {
-	DashboardID  types.String `tfsdk:"dashboard_id"`
-	Label        types.String `tfsdk:"label"`
-	Trigger      types.String `tfsdk:"trigger"`
-	UseFilters   types.Bool   `tfsdk:"use_filters"`
-	UseTimeRange types.Bool   `tfsdk:"use_time_range"`
-	OpenInNewTab types.Bool   `tfsdk:"open_in_new_tab"`
-}
-
-type imagePanelURLDrilldownModel struct {
-	URL          types.String `tfsdk:"url"`
-	Label        types.String `tfsdk:"label"`
-	Trigger      types.String `tfsdk:"trigger"`
-	EncodeURL    types.Bool   `tfsdk:"encode_url"`
-	OpenInNewTab types.Bool   `tfsdk:"open_in_new_tab"`
-}
-
-func imagePanelToAPI(pm panelModel, grid struct {
+func imagePanelToAPI(pm models.PanelModel, grid struct {
 	H *float32 `json:"h,omitempty"`
 	W *float32 `json:"w,omitempty"`
 	X float32  `json:"x"`
@@ -160,7 +113,7 @@ func imagePanelToAPI(pm panelModel, grid struct {
 	return panelItem, diags
 }
 
-func imagePanelDrilldownToAPI(d imagePanelDrilldownModel) (kbapi.KbnDashboardPanelTypeImage_Config_Drilldowns_Item, diag.Diagnostics) {
+func imagePanelDrilldownToAPI(d models.ImagePanelDrilldownModel) (kbapi.KbnDashboardPanelTypeImage_Config_Drilldowns_Item, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var item kbapi.KbnDashboardPanelTypeImage_Config_Drilldowns_Item
 
@@ -208,7 +161,7 @@ func imagePanelDrilldownToAPI(d imagePanelDrilldownModel) (kbapi.KbnDashboardPan
 	return item, diags
 }
 
-func populateImagePanelFromAPI(pm *panelModel, tfPanel *panelModel, apiPanel kbapi.KbnDashboardPanelTypeImage) {
+func populateImagePanelFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiPanel kbapi.KbnDashboardPanelTypeImage) {
 	apiCfg := apiPanel.Config
 
 	if tfPanel == nil {
@@ -260,9 +213,9 @@ func nullPreservingImageObjectFit(prior types.String, api *kbapi.KbnDashboardPan
 	return types.StringValue(v)
 }
 
-func imagePanelConfigFromAPIImport(apiPanel kbapi.KbnDashboardPanelTypeImage) *imagePanelConfigModel {
+func imagePanelConfigFromAPIImport(apiPanel kbapi.KbnDashboardPanelTypeImage) *models.ImagePanelConfigModel {
 	apiCfg := apiPanel.Config
-	cfg := &imagePanelConfigModel{
+	cfg := &models.ImagePanelConfigModel{
 		Src:             imagePanelSrcFromAPI(apiCfg.ImageConfig.Src),
 		AltText:         types.StringPointerValue(apiCfg.ImageConfig.AltText),
 		BackgroundColor: types.StringPointerValue(apiCfg.ImageConfig.BackgroundColor),
@@ -276,18 +229,18 @@ func imagePanelConfigFromAPIImport(apiPanel kbapi.KbnDashboardPanelTypeImage) *i
 	return cfg
 }
 
-func imagePanelSrcFromAPI(src kbapi.KbnDashboardPanelTypeImage_Config_ImageConfig_Src) imagePanelSrcModel {
-	var out imagePanelSrcModel
+func imagePanelSrcFromAPI(src kbapi.KbnDashboardPanelTypeImage_Config_ImageConfig_Src) models.ImagePanelSrcModel {
+	var out models.ImagePanelSrcModel
 	src0, err := src.AsKbnDashboardPanelTypeImageConfigImageConfigSrc0()
 	if err == nil && src0.Type == kbapi.File {
-		out.File = &imagePanelSrcFileModel{
+		out.File = &models.ImagePanelSrcFileModel{
 			FileID: types.StringValue(src0.FileId),
 		}
 		return out
 	}
 	src1, err := src.AsKbnDashboardPanelTypeImageConfigImageConfigSrc1()
 	if err == nil && src1.Type == kbapi.Url {
-		out.URL = &imagePanelSrcURLModel{
+		out.URL = &models.ImagePanelSrcURLModel{
 			URL: types.StringValue(src1.Url),
 		}
 	}
@@ -296,14 +249,14 @@ func imagePanelSrcFromAPI(src kbapi.KbnDashboardPanelTypeImage_Config_ImageConfi
 
 func readImageDrilldownsFromAPI(
 	api *[]kbapi.KbnDashboardPanelTypeImage_Config_Drilldowns_Item,
-	prior []imagePanelDrilldownModel,
-) []imagePanelDrilldownModel {
+	prior []models.ImagePanelDrilldownModel,
+) []models.ImagePanelDrilldownModel {
 	if api == nil || len(*api) == 0 {
 		return nil
 	}
-	out := make([]imagePanelDrilldownModel, len(*api))
+	out := make([]models.ImagePanelDrilldownModel, len(*api))
 	for i, item := range *api {
-		var p *imagePanelDrilldownModel
+		var p *models.ImagePanelDrilldownModel
 		if i < len(prior) {
 			p = &prior[i]
 		}
@@ -312,37 +265,37 @@ func readImageDrilldownsFromAPI(
 	return out
 }
 
-func readImageDrilldownFromAPI(item kbapi.KbnDashboardPanelTypeImage_Config_Drilldowns_Item, prior *imagePanelDrilldownModel) imagePanelDrilldownModel {
+func readImageDrilldownFromAPI(item kbapi.KbnDashboardPanelTypeImage_Config_Drilldowns_Item, prior *models.ImagePanelDrilldownModel) models.ImagePanelDrilldownModel {
 	dd0, err0 := item.AsKbnDashboardPanelTypeImageConfigDrilldowns0()
 	if err0 == nil && dd0.Type == kbapi.KbnDashboardPanelTypeImageConfigDrilldowns0TypeDashboardDrilldown {
-		var priorDash *imagePanelDashboardDrilldownModel
+		var priorDash *models.ImagePanelDashboardDrilldownModel
 		if prior != nil {
 			priorDash = prior.DashboardDrilldown
 		}
-		return imagePanelDrilldownModel{
+		return models.ImagePanelDrilldownModel{
 			DashboardDrilldown: readImageDashboardDrilldownFromAPI(dd0, priorDash),
 		}
 	}
 
 	dd1, err1 := item.AsKbnDashboardPanelTypeImageConfigDrilldowns1()
 	if err1 == nil && dd1.Type == kbapi.KbnDashboardPanelTypeImageConfigDrilldowns1TypeUrlDrilldown {
-		var priorURL *imagePanelURLDrilldownModel
+		var priorURL *models.ImagePanelURLDrilldownModel
 		if prior != nil {
 			priorURL = prior.URLDrilldown
 		}
-		return imagePanelDrilldownModel{
+		return models.ImagePanelDrilldownModel{
 			URLDrilldown: readImageURLDrilldownFromAPI(dd1, priorURL),
 		}
 	}
 
-	return imagePanelDrilldownModel{}
+	return models.ImagePanelDrilldownModel{}
 }
 
 func readImageDashboardDrilldownFromAPI(
 	api kbapi.KbnDashboardPanelTypeImageConfigDrilldowns0,
-	prior *imagePanelDashboardDrilldownModel,
-) *imagePanelDashboardDrilldownModel {
-	m := &imagePanelDashboardDrilldownModel{
+	prior *models.ImagePanelDashboardDrilldownModel,
+) *models.ImagePanelDashboardDrilldownModel {
+	m := &models.ImagePanelDashboardDrilldownModel{
 		DashboardID: types.StringValue(api.DashboardId),
 		Label:       types.StringValue(api.Label),
 		Trigger:     types.StringValue(string(api.Trigger)),
@@ -387,8 +340,8 @@ func readImageDashboardDrilldownFromAPI(
 	return m
 }
 
-func readImageURLDrilldownFromAPI(api kbapi.KbnDashboardPanelTypeImageConfigDrilldowns1, prior *imagePanelURLDrilldownModel) *imagePanelURLDrilldownModel {
-	m := &imagePanelURLDrilldownModel{
+func readImageURLDrilldownFromAPI(api kbapi.KbnDashboardPanelTypeImageConfigDrilldowns1, prior *models.ImagePanelURLDrilldownModel) *models.ImagePanelURLDrilldownModel {
+	m := &models.ImagePanelURLDrilldownModel{
 		URL:     types.StringValue(api.Url),
 		Label:   types.StringValue(api.Label),
 		Trigger: types.StringValue(string(api.Trigger)),

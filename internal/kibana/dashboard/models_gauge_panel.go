@@ -23,6 +23,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -34,7 +35,7 @@ func newGaugePanelConfigConverter() gaugePanelConfigConverter {
 	return gaugePanelConfigConverter{
 		lensVisualizationBase: lensVisualizationBase{
 			visualizationType: string(kbapi.GaugeNoESQLTypeGauge),
-			hasTFChartBlock: func(blocks *lensByValueChartBlocks) bool {
+			hasTFChartBlock: func(blocks *models.LensByValueChartBlocks) bool {
 				return blocks != nil && blocks.GaugeConfig != nil
 			},
 		},
@@ -47,85 +48,38 @@ type gaugePanelConfigConverter struct {
 
 func (c gaugePanelConfigConverter) populateFromAttributes(
 	ctx context.Context,
-	dashboard *dashboardModel,
-	tfPanel *panelModel,
-	blocks *lensByValueChartBlocks,
+	dashboard *models.DashboardModel,
+	tfPanel *models.PanelModel,
+	blocks *models.LensByValueChartBlocks,
 	attrs kbapi.KbnDashboardPanelTypeVisConfig0,
 ) diag.Diagnostics {
-	var prior *gaugeConfigModel
+	var prior *models.GaugeConfigModel
 	if b := lensByValueChartBlocksFromPanel(tfPanel); b != nil && b.GaugeConfig != nil {
 		cpy := *b.GaugeConfig
 		prior = &cpy
 	}
-	blocks.GaugeConfig = &gaugeConfigModel{}
+	blocks.GaugeConfig = &models.GaugeConfigModel{}
 
 	if noESQL, err := attrs.AsGaugeNoESQL(); err == nil && !isGaugeNoESQLCandidateActuallyESQL(noESQL) {
-		return blocks.GaugeConfig.fromAPI(ctx, dashboard, prior, noESQL)
+		return gaugeConfigFromAPI(ctx, blocks.GaugeConfig, dashboard, prior, noESQL)
 	}
 
 	gaugeESQL, err := attrs.AsGaugeESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	return blocks.GaugeConfig.fromAPIESQL(ctx, dashboard, prior, gaugeESQL)
+	return gaugeConfigFromAPIESQL(ctx, blocks.GaugeConfig, dashboard, prior, gaugeESQL)
 }
 
-func (c gaugePanelConfigConverter) buildAttributes(blocks *lensByValueChartBlocks, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
-	configModel := *blocks.GaugeConfig
-	return configModel.toAPI(dashboard)
+func (c gaugePanelConfigConverter) buildAttributes(blocks *models.LensByValueChartBlocks, dashboard *models.DashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+	return gaugeConfigToAPI(blocks.GaugeConfig, dashboard)
 }
 
 func isGaugeNoESQLCandidateActuallyESQL(api kbapi.GaugeNoESQL) bool {
 	return lensDataSourceIsESQLOrTable(api.DataSource.MarshalJSON())
 }
 
-type gaugeConfigModel struct {
-	lensChartPresentationTFModel
-	Title               types.String                                      `tfsdk:"title"`
-	Description         types.String                                      `tfsdk:"description"`
-	DataSourceJSON      jsontypes.Normalized                              `tfsdk:"data_source_json"`
-	IgnoreGlobalFilters types.Bool                                        `tfsdk:"ignore_global_filters"`
-	Sampling            types.Float64                                     `tfsdk:"sampling"`
-	Query               *filterSimpleModel                                `tfsdk:"query"`
-	Filters             []chartFilterJSONModel                            `tfsdk:"filters"`
-	MetricJSON          customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"metric_json"`
-	EsqlMetric          *gaugeEsqlMetric                                  `tfsdk:"esql_metric"`
-	Styling             *gaugeStylingModel                                `tfsdk:"styling"`
-}
-
-type gaugeStylingModel struct {
-	ShapeJSON jsontypes.Normalized `tfsdk:"shape_json"`
-}
-
-type gaugeEsqlMetric struct {
-	Column     types.String         `tfsdk:"column"`
-	FormatJSON jsontypes.Normalized `tfsdk:"format_json"`
-	Label      types.String         `tfsdk:"label"`
-	ColorJSON  jsontypes.Normalized `tfsdk:"color_json"`
-	Subtitle   types.String         `tfsdk:"subtitle"`
-	Goal       *gaugeEsqlColumnRef  `tfsdk:"goal"`
-	Max        *gaugeEsqlColumnRef  `tfsdk:"max"`
-	Min        *gaugeEsqlColumnRef  `tfsdk:"min"`
-	Ticks      *gaugeEsqlTicks      `tfsdk:"ticks"`
-	Title      *gaugeEsqlTitle      `tfsdk:"title"`
-}
-
-type gaugeEsqlColumnRef struct {
-	Column types.String `tfsdk:"column"`
-	Label  types.String `tfsdk:"label"`
-}
-
-type gaugeEsqlTicks struct {
-	Mode    types.String `tfsdk:"mode"`
-	Visible types.Bool   `tfsdk:"visible"`
-}
-
-type gaugeEsqlTitle struct {
-	Text    types.String `tfsdk:"text"`
-	Visible types.Bool   `tfsdk:"visible"`
-}
-
-func (m *gaugeConfigModel) usesESQL() bool {
+func gaugeConfigUsesESQL(m *models.GaugeConfigModel) bool {
 	if m == nil {
 		return false
 	}
@@ -135,7 +89,7 @@ func (m *gaugeConfigModel) usesESQL() bool {
 	return m.Query.Expression.IsNull() && m.Query.Language.IsNull()
 }
 
-func (m *gaugeConfigModel) fromAPI(ctx context.Context, dashboard *dashboardModel, prior *gaugeConfigModel, api kbapi.GaugeNoESQL) diag.Diagnostics {
+func gaugeConfigFromAPI(ctx context.Context, m *models.GaugeConfigModel, dashboard *models.DashboardModel, prior *models.GaugeConfigModel, api kbapi.GaugeNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 
@@ -156,8 +110,8 @@ func (m *gaugeConfigModel) fromAPI(ctx context.Context, dashboard *dashboardMode
 		m.Sampling = types.Float64Null()
 	}
 
-	m.Query = &filterSimpleModel{}
-	m.Query.fromAPI(api.Query)
+	m.Query = &models.FilterSimpleModel{}
+	filterSimpleFromAPI(m.Query, api.Query)
 
 	m.Filters = populateFiltersFromAPI(api.Filters, &diags)
 
@@ -169,7 +123,7 @@ func (m *gaugeConfigModel) fromAPI(ctx context.Context, dashboard *dashboardMode
 	m.MetricJSON = preservePriorJSONWithDefaultsIfEquivalent(ctx, m.MetricJSON, mv, &diags)
 	m.EsqlMetric = nil
 
-	m.Styling = &gaugeStylingModel{}
+	m.Styling = &models.GaugeStylingModel{}
 	if api.Styling.Shape != nil {
 		shapeBytes, err := api.Styling.Shape.MarshalJSON()
 		sv, ok := marshalToNormalized(shapeBytes, err, "shape", &diags)
@@ -181,9 +135,9 @@ func (m *gaugeConfigModel) fromAPI(ctx context.Context, dashboard *dashboardMode
 		m.Styling.ShapeJSON = jsontypes.NewNormalizedNull()
 	}
 
-	var priorLens *lensChartPresentationTFModel
+	var priorLens *models.LensChartPresentationTFModel
 	if prior != nil {
-		p := prior.lensChartPresentationTFModel
+		p := prior.LensChartPresentationTFModel
 		priorLens = &p
 	}
 	ddWire, ddOmit, ddWireDiags := lensDrilldownsAPIToWire(api.Drilldowns)
@@ -196,12 +150,12 @@ func (m *gaugeConfigModel) fromAPI(ctx context.Context, dashboard *dashboardMode
 	if presDiags.HasError() {
 		return diags
 	}
-	m.lensChartPresentationTFModel = pres
+	m.LensChartPresentationTFModel = pres
 
 	return diags
 }
 
-func (m *gaugeConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashboardModel, prior *gaugeConfigModel, api kbapi.GaugeESQL) diag.Diagnostics {
+func gaugeConfigFromAPIESQL(ctx context.Context, m *models.GaugeConfigModel, dashboard *models.DashboardModel, prior *models.GaugeConfigModel, api kbapi.GaugeESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	m.Title = types.StringPointerValue(api.Title)
@@ -224,7 +178,7 @@ func (m *gaugeConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashboard
 	m.Filters = populateFiltersFromAPI(api.Filters, &diags)
 	m.MetricJSON = customtypes.NewJSONWithDefaultsNull(populateGaugeMetricDefaults)
 
-	em := &gaugeEsqlMetric{
+	em := &models.GaugeEsqlMetric{
 		Column: types.StringValue(api.Metric.Column),
 	}
 	formatVal, ok := lensESQLNumberFormatJSONFromAPI(api.Metric.Format, "esql_metric.format_json", &diags)
@@ -261,7 +215,7 @@ func (m *gaugeConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashboard
 	}
 
 	if api.Metric.Goal != nil {
-		em.Goal = &gaugeEsqlColumnRef{Column: types.StringValue(api.Metric.Goal.Column)}
+		em.Goal = &models.GaugeEsqlColumnRef{Column: types.StringValue(api.Metric.Goal.Column)}
 		if api.Metric.Goal.Label != nil {
 			em.Goal.Label = types.StringValue(*api.Metric.Goal.Label)
 		} else {
@@ -269,7 +223,7 @@ func (m *gaugeConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashboard
 		}
 	}
 	if api.Metric.Max != nil {
-		em.Max = &gaugeEsqlColumnRef{Column: types.StringValue(api.Metric.Max.Column)}
+		em.Max = &models.GaugeEsqlColumnRef{Column: types.StringValue(api.Metric.Max.Column)}
 		if api.Metric.Max.Label != nil {
 			em.Max.Label = types.StringValue(*api.Metric.Max.Label)
 		} else {
@@ -277,7 +231,7 @@ func (m *gaugeConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashboard
 		}
 	}
 	if api.Metric.Min != nil {
-		em.Min = &gaugeEsqlColumnRef{Column: types.StringValue(api.Metric.Min.Column)}
+		em.Min = &models.GaugeEsqlColumnRef{Column: types.StringValue(api.Metric.Min.Column)}
 		if api.Metric.Min.Label != nil {
 			em.Min.Label = types.StringValue(*api.Metric.Min.Label)
 		} else {
@@ -285,7 +239,7 @@ func (m *gaugeConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashboard
 		}
 	}
 	if api.Metric.Ticks != nil {
-		em.Ticks = &gaugeEsqlTicks{}
+		em.Ticks = &models.GaugeEsqlTicks{}
 		if api.Metric.Ticks.Mode != nil {
 			em.Ticks.Mode = types.StringValue(string(*api.Metric.Ticks.Mode))
 		} else {
@@ -298,7 +252,7 @@ func (m *gaugeConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashboard
 		}
 	}
 	if api.Metric.Title != nil {
-		em.Title = &gaugeEsqlTitle{}
+		em.Title = &models.GaugeEsqlTitle{}
 		if api.Metric.Title.Text != nil {
 			em.Title.Text = types.StringValue(*api.Metric.Title.Text)
 		} else {
@@ -312,7 +266,7 @@ func (m *gaugeConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashboard
 	}
 	m.EsqlMetric = em
 
-	m.Styling = &gaugeStylingModel{}
+	m.Styling = &models.GaugeStylingModel{}
 	if api.Styling.Shape != nil {
 		shapeBytes, err := api.Styling.Shape.MarshalJSON()
 		sv, ok := marshalToNormalized(shapeBytes, err, "shape", &diags)
@@ -324,9 +278,9 @@ func (m *gaugeConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashboard
 		m.Styling.ShapeJSON = jsontypes.NewNormalizedNull()
 	}
 
-	var priorLens *lensChartPresentationTFModel
+	var priorLens *models.LensChartPresentationTFModel
 	if prior != nil {
-		p := prior.lensChartPresentationTFModel
+		p := prior.LensChartPresentationTFModel
 		priorLens = &p
 	}
 	ddWire, ddOmit, ddWireDiags := lensDrilldownsAPIToWire(api.Drilldowns)
@@ -339,12 +293,12 @@ func (m *gaugeConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashboard
 	if presDiags.HasError() {
 		return diags
 	}
-	m.lensChartPresentationTFModel = pres
+	m.LensChartPresentationTFModel = pres
 
 	return diags
 }
 
-func (m *gaugeConfigModel) toAPI(dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func gaugeConfigToAPI(m *models.GaugeConfigModel, dashboard *models.DashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 	var diags diag.Diagnostics
 
@@ -352,8 +306,8 @@ func (m *gaugeConfigModel) toAPI(dashboard *dashboardModel) (kbapi.KbnDashboardP
 		return attrs, diags
 	}
 
-	if m.usesESQL() {
-		esql, d := m.toAPIESQL(dashboard)
+	if gaugeConfigUsesESQL(m) {
+		esql, d := gaugeConfigToAPIESQL(m, dashboard)
 		diags.Append(d...)
 		if diags.HasError() {
 			return attrs, diags
@@ -364,7 +318,7 @@ func (m *gaugeConfigModel) toAPI(dashboard *dashboardModel) (kbapi.KbnDashboardP
 		return attrs, diags
 	}
 
-	noESQL, d := m.toAPINoESQL(dashboard)
+	noESQL, d := gaugeConfigToAPINoESQL(m, dashboard)
 	diags.Append(d...)
 	if diags.HasError() {
 		return attrs, diags
@@ -375,7 +329,7 @@ func (m *gaugeConfigModel) toAPI(dashboard *dashboardModel) (kbapi.KbnDashboardP
 	return attrs, diags
 }
 
-func (m *gaugeConfigModel) toAPINoESQL(dashboard *dashboardModel) (kbapi.GaugeNoESQL, diag.Diagnostics) {
+func gaugeConfigToAPINoESQL(m *models.GaugeConfigModel, dashboard *models.DashboardModel) (kbapi.GaugeNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var api kbapi.GaugeNoESQL
 
@@ -409,7 +363,7 @@ func (m *gaugeConfigModel) toAPINoESQL(dashboard *dashboardModel) (kbapi.GaugeNo
 		diags.AddError("Missing query", "gauge_config.query must be set for non-ES|QL gauges (or omit `query` entirely for ES|QL mode)")
 		return api, diags
 	}
-	api.Query = m.Query.toAPI()
+	api.Query = filterSimpleToAPI(m.Query)
 
 	api.Filters = buildFiltersForAPI(m.Filters, &diags)
 
@@ -431,7 +385,7 @@ func (m *gaugeConfigModel) toAPINoESQL(dashboard *dashboardModel) (kbapi.GaugeNo
 		}
 	}
 
-	writes, presDiags := lensChartPresentationWritesFor(dashboard, m.lensChartPresentationTFModel)
+	writes, presDiags := lensChartPresentationWritesFor(dashboard, m.LensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return api, diags
@@ -458,7 +412,7 @@ func (m *gaugeConfigModel) toAPINoESQL(dashboard *dashboardModel) (kbapi.GaugeNo
 	return api, diags
 }
 
-func (m *gaugeConfigModel) toAPIESQL(dashboard *dashboardModel) (kbapi.GaugeESQL, diag.Diagnostics) {
+func gaugeConfigToAPIESQL(m *models.GaugeConfigModel, dashboard *models.DashboardModel) (kbapi.GaugeESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var api kbapi.GaugeESQL
 	api.Type = kbapi.GaugeESQLTypeGauge
@@ -581,7 +535,7 @@ func (m *gaugeConfigModel) toAPIESQL(dashboard *dashboardModel) (kbapi.GaugeESQL
 		}
 	}
 
-	writes, presDiags := lensChartPresentationWritesFor(dashboard, m.lensChartPresentationTFModel)
+	writes, presDiags := lensChartPresentationWritesFor(dashboard, m.LensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return api, diags

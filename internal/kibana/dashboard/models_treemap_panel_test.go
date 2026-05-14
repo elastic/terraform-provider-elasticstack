@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -53,12 +54,12 @@ func Test_treemapPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 	require.NoError(t, attrs.FromTreemapNoESQL(api))
 
 	converter := newTreemapPanelConfigConverter()
-	visBv := visByValueModel{}
-	diags := converter.populateFromAttributes(ctx, nil, nil, &visBv.lensByValueChartBlocks, attrs)
+	visBv := models.VisByValueModel{}
+	diags := converter.populateFromAttributes(ctx, nil, nil, &visBv.LensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
 	require.NotNil(t, visBv.TreemapConfig)
 
-	attrs2, diags := converter.buildAttributes(&visBv.lensByValueChartBlocks, nil)
+	attrs2, diags := converter.buildAttributes(&visBv.LensByValueChartBlocks, nil)
 	require.False(t, diags.HasError())
 
 	noESQL2, err := attrs2.AsTreemapNoESQL()
@@ -88,12 +89,12 @@ func Test_treemapPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 	require.NoError(t, attrs.FromTreemapESQL(api))
 
 	converter := newTreemapPanelConfigConverter()
-	visBv := visByValueModel{}
-	diags := converter.populateFromAttributes(ctx, nil, nil, &visBv.lensByValueChartBlocks, attrs)
+	visBv := models.VisByValueModel{}
+	diags := converter.populateFromAttributes(ctx, nil, nil, &visBv.LensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
 	require.NotNil(t, visBv.TreemapConfig)
 
-	attrs2, diags := converter.buildAttributes(&visBv.lensByValueChartBlocks, nil)
+	attrs2, diags := converter.buildAttributes(&visBv.LensByValueChartBlocks, nil)
 	require.False(t, diags.HasError())
 
 	esql2, err := attrs2.AsTreemapESQL()
@@ -159,8 +160,8 @@ func Test_treemapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(`{"operation":"count"}`), &metricItem))
 	api.Metrics = []kbapi.TreemapNoESQL_Metrics_Item{metricItem}
 
-	model := &treemapConfigModel{}
-	diags := model.fromAPINoESQL(context.Background(), nil, nil, api)
+	model := &models.TreemapConfigModel{}
+	diags := treemapConfigFromAPINoESQL(context.Background(), model, nil, nil, api)
 	require.False(t, diags.HasError())
 
 	assert.Equal(t, types.StringValue("Test Treemap"), model.Title)
@@ -179,7 +180,7 @@ func Test_treemapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 	assert.Equal(t, types.StringValue("percentage"), model.ValueDisplay.Mode)
 	assert.Equal(t, types.Float64Value(2), model.ValueDisplay.PercentDecimals)
 
-	lensAttrs, diags := model.toAPI(nil)
+	lensAttrs, diags := treemapConfigToAPI(model, nil)
 	require.False(t, diags.HasError())
 
 	roundTrip, err := lensAttrs.AsTreemapNoESQL()
@@ -248,8 +249,8 @@ func Test_treemapConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 	}
 	require.NoError(t, json.Unmarshal([]byte(`{"type":"esql","query":"FROM metrics-* | LIMIT 10"}`), &api.DataSource))
 
-	model := &treemapConfigModel{}
-	diags := model.fromAPIESQL(context.Background(), nil, nil, api)
+	model := &models.TreemapConfigModel{}
+	diags := treemapConfigFromAPIESQL(context.Background(), model, nil, nil, api)
 	require.False(t, diags.HasError())
 
 	assert.Equal(t, types.StringValue("ESQL Treemap"), model.Title)
@@ -260,7 +261,7 @@ func Test_treemapConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 	assert.NotEmpty(t, model.EsqlGroupBy)
 	assert.Nil(t, model.Query)
 
-	lensAttrs, diags := model.toAPI(nil)
+	lensAttrs, diags := treemapConfigToAPI(model, nil)
 	require.False(t, diags.HasError())
 
 	b, err := json.Marshal(lensAttrs)
@@ -303,11 +304,11 @@ func Test_treemapConfigModel_fromAPINoESQL_preservesKnownWhenAPIIsDefault(t *tes
 	groupBy := []kbapi.TreemapNoESQL_GroupBy_Item{groupByItem}
 	api.GroupBy = &groupBy
 
-	model := &treemapConfigModel{
+	model := &models.TreemapConfigModel{
 		IgnoreGlobalFilters: types.BoolValue(true),
 		Sampling:            types.Float64Value(0.5),
 	}
-	diags := model.fromAPINoESQL(context.Background(), nil, nil, api)
+	diags := treemapConfigFromAPINoESQL(context.Background(), model, nil, nil, api)
 	require.False(t, diags.HasError())
 
 	// Should preserve existing values when API has defaults
@@ -335,13 +336,13 @@ func Test_treemapConfigModel_toAPIESQLChartSchema(t *testing.T) {
 	require.NoError(t, attrs.FromTreemapESQL(api))
 
 	converter := newTreemapPanelConfigConverter()
-	visBv := visByValueModel{}
+	visBv := models.VisByValueModel{}
 	ctx := context.Background()
-	diags := converter.populateFromAttributes(ctx, nil, nil, &visBv.lensByValueChartBlocks, attrs)
+	diags := converter.populateFromAttributes(ctx, nil, nil, &visBv.LensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
 	require.NotNil(t, visBv.TreemapConfig)
 
-	lensAttrs, lensDiags := visBv.TreemapConfig.toAPI(nil)
+	lensAttrs, lensDiags := treemapConfigToAPI(visBv.TreemapConfig, nil)
 	require.False(t, lensDiags.HasError())
 
 	b, err := json.Marshal(lensAttrs)
@@ -372,8 +373,8 @@ func Test_treemapConfigModel_esqlTypedMetricsRoundTrip(t *testing.T) {
 	require.NoError(t, attrs.FromTreemapESQL(api))
 
 	converter := newTreemapPanelConfigConverter()
-	visBv := visByValueModel{}
-	diags := converter.populateFromAttributes(context.Background(), nil, nil, &visBv.lensByValueChartBlocks, attrs)
+	visBv := models.VisByValueModel{}
+	diags := converter.populateFromAttributes(context.Background(), nil, nil, &visBv.LensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
 	require.NotNil(t, visBv.TreemapConfig)
 
@@ -407,8 +408,8 @@ func Test_treemapConfigModel_truncateAfterLinesIsInt64(t *testing.T) {
 	groupBy := []kbapi.TreemapNoESQL_GroupBy_Item{groupByItem}
 	api.GroupBy = &groupBy
 
-	model := &treemapConfigModel{}
-	diags := model.fromAPINoESQL(context.Background(), nil, nil, api)
+	model := &models.TreemapConfigModel{}
+	diags := treemapConfigFromAPINoESQL(context.Background(), model, nil, nil, api)
 	require.False(t, diags.HasError())
 	require.NotNil(t, model.Legend)
 	assert.Equal(t, int64(5), model.Legend.TruncateAfterLine.ValueInt64())
@@ -425,12 +426,12 @@ func Test_treemapConfig_lensChartPresentation_hideTitleRoundTrip(t *testing.T) {
 	m := *pm.VisConfig.ByValue.TreemapConfig
 	m.HideTitle = types.BoolValue(true)
 
-	attrs, diags := m.toAPI(dash)
+	attrs, diags := treemapConfigToAPI(&m, dash)
 	require.False(t, diags.HasError())
 	api, err := attrs.AsTreemapNoESQL()
 	require.NoError(t, err)
 
-	got := &treemapConfigModel{}
-	require.False(t, got.fromAPINoESQL(ctx, dash, &m, api).HasError())
+	got := &models.TreemapConfigModel{}
+	require.False(t, treemapConfigFromAPINoESQL(ctx, got, dash, &m, api).HasError())
 	assert.Equal(t, types.BoolValue(true), got.HideTitle)
 }

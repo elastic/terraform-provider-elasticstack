@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -40,9 +41,9 @@ func sloAlertsEmbeddableFromJSON(t *testing.T, raw string) kbapi.SloAlertsEmbedd
 }
 
 func Test_sloAlertsPanelToAPI_minimal(t *testing.T) {
-	pm := panelModel{
-		SloAlertsConfig: &sloAlertsPanelConfigModel{
-			Slos: []sloAlertsPanelSloModel{
+	pm := models.PanelModel{
+		SloAlertsConfig: &models.SloAlertsPanelConfigModel{
+			Slos: []models.SloAlertsPanelSloModel{
 				{SloID: types.StringValue("slo-1")},
 			},
 		},
@@ -65,9 +66,9 @@ func Test_sloAlertsPanelToAPI_minimal(t *testing.T) {
 }
 
 func Test_sloAlertsPanel_roundTrip_minimal(t *testing.T) {
-	pm := panelModel{
-		SloAlertsConfig: &sloAlertsPanelConfigModel{
-			Slos: []sloAlertsPanelSloModel{
+	pm := models.PanelModel{
+		SloAlertsConfig: &models.SloAlertsPanelConfigModel{
+			Slos: []models.SloAlertsPanelSloModel{
 				{SloID: types.StringValue("slo-1"), SloInstanceID: types.StringNull()},
 			},
 		},
@@ -94,9 +95,9 @@ func Test_sloAlertsPanel_roundTrip_minimal(t *testing.T) {
 }
 
 func Test_sloAlertsPanel_roundTrip_multipleSlos(t *testing.T) {
-	pm := panelModel{
-		SloAlertsConfig: &sloAlertsPanelConfigModel{
-			Slos: []sloAlertsPanelSloModel{
+	pm := models.PanelModel{
+		SloAlertsConfig: &models.SloAlertsPanelConfigModel{
+			Slos: []models.SloAlertsPanelSloModel{
 				{SloID: types.StringValue("a"), SloInstanceID: types.StringNull()},
 				{SloID: types.StringValue("b"), SloInstanceID: types.StringValue("inst-2")},
 			},
@@ -126,9 +127,9 @@ func Test_populateSloAlertsPanelFromAPI_sloInstanceID_nullPreserved_refreshAndIm
 	}
 
 	t.Run("refresh", func(t *testing.T) {
-		prior := panelModel{
-			SloAlertsConfig: &sloAlertsPanelConfigModel{
-				Slos: []sloAlertsPanelSloModel{
+		prior := models.PanelModel{
+			SloAlertsConfig: &models.SloAlertsPanelConfigModel{
+				Slos: []models.SloAlertsPanelSloModel{
 					{SloID: types.StringValue("slo-1"), SloInstanceID: types.StringNull()},
 				},
 			},
@@ -139,7 +140,7 @@ func Test_populateSloAlertsPanelFromAPI_sloInstanceID_nullPreserved_refreshAndIm
 	})
 
 	t.Run("import", func(t *testing.T) {
-		pm := panelModel{}
+		pm := models.PanelModel{}
 		populateSloAlertsPanelFromAPI(&pm, nil, apiPanel)
 		require.NotNil(t, pm.SloAlertsConfig)
 		assert.True(t, pm.SloAlertsConfig.Slos[0].SloInstanceID.IsNull())
@@ -147,10 +148,10 @@ func Test_populateSloAlertsPanelFromAPI_sloInstanceID_nullPreserved_refreshAndIm
 }
 
 func Test_sloAlerts_drilldown_roundTrip_defaultsNull_refreshAndImport(t *testing.T) {
-	pm := panelModel{
-		SloAlertsConfig: &sloAlertsPanelConfigModel{
-			Slos: []sloAlertsPanelSloModel{{SloID: types.StringValue("slo-1")}},
-			Drilldowns: []sloAlertsPanelDrilldownModel{
+	pm := models.PanelModel{
+		SloAlertsConfig: &models.SloAlertsPanelConfigModel{
+			Slos: []models.SloAlertsPanelSloModel{{SloID: types.StringValue("slo-1")}},
+			Drilldowns: []models.URLDrilldownModel{
 				{
 					URL:          types.StringValue("https://kibana.example/drill"),
 					Label:        types.StringValue("investigate"),
@@ -186,7 +187,7 @@ func Test_sloAlerts_drilldown_roundTrip_defaultsNull_refreshAndImport(t *testing
 	})
 
 	t.Run("import", func(t *testing.T) {
-		pmImport := panelModel{}
+		pmImport := models.PanelModel{}
 		populateSloAlertsPanelFromAPI(&pmImport, nil, apiPanel)
 		d := pmImport.SloAlertsConfig.Drilldowns[0]
 		assert.True(t, d.EncodeURL.IsNull())
@@ -195,10 +196,10 @@ func Test_sloAlerts_drilldown_roundTrip_defaultsNull_refreshAndImport(t *testing
 }
 
 func Test_sloAlertsPanelToAPI_drilldownWritesTrigger(t *testing.T) {
-	pm := panelModel{
-		SloAlertsConfig: &sloAlertsPanelConfigModel{
-			Slos: []sloAlertsPanelSloModel{{SloID: types.StringValue("x")}},
-			Drilldowns: []sloAlertsPanelDrilldownModel{
+	pm := models.PanelModel{
+		SloAlertsConfig: &models.SloAlertsPanelConfigModel{
+			Slos: []models.SloAlertsPanelSloModel{{SloID: types.StringValue("x")}},
+			Drilldowns: []models.URLDrilldownModel{
 				{URL: types.StringValue("https://z"), Label: types.StringValue("lbl")},
 			},
 		},
@@ -264,7 +265,7 @@ func Test_sloAlerts_slos_nonempty_accepted(t *testing.T) {
 func Test_populateSloAlertsPanelFromAPI_import_preservesDrilldownDefaults(t *testing.T) {
 	raw := `{"slos":[{"slo_id":"slo-1"}],"drilldowns":[{"url":"https://example.com","label":"open","trigger":"on_open_panel_menu","type":"url_drilldown","encode_url":true,"open_in_new_tab":false}]}`
 
-	pm := panelModel{}
+	pm := models.PanelModel{}
 	populateSloAlertsPanelFromAPI(&pm, nil, kbapi.KbnDashboardPanelTypeSloAlerts{
 		Config: sloAlertsEmbeddableFromJSON(t, raw),
 	})

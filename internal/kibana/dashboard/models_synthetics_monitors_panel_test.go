@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -47,7 +48,7 @@ func makeTestGrid() struct {
 }
 
 func Test_buildSyntheticsMonitorsPanel_noConfig(t *testing.T) {
-	pm := panelModel{
+	pm := models.PanelModel{
 		Type: types.StringValue(panelTypeSyntheticsMonitors),
 	}
 	grid := makeTestGrid()
@@ -62,9 +63,9 @@ func Test_buildSyntheticsMonitorsPanel_noConfig(t *testing.T) {
 }
 
 func Test_buildSyntheticsMonitorsPanel_emptyConfigBlock(t *testing.T) {
-	pm := panelModel{
+	pm := models.PanelModel{
 		Type:                     types.StringValue(panelTypeSyntheticsMonitors),
-		SyntheticsMonitorsConfig: &syntheticsMonitorsConfigModel{},
+		SyntheticsMonitorsConfig: &models.SyntheticsMonitorsConfigModel{},
 	}
 	grid := makeTestGrid()
 
@@ -74,9 +75,9 @@ func Test_buildSyntheticsMonitorsPanel_emptyConfigBlock(t *testing.T) {
 }
 
 func Test_buildSyntheticsMonitorsPanel_withDisplaySettings(t *testing.T) {
-	pm := panelModel{
+	pm := models.PanelModel{
 		Type: types.StringValue(panelTypeSyntheticsMonitors),
-		SyntheticsMonitorsConfig: &syntheticsMonitorsConfigModel{
+		SyntheticsMonitorsConfig: &models.SyntheticsMonitorsConfigModel{
 			Title:       types.StringValue("Synthetics Monitors"),
 			Description: types.StringValue("Shows the production monitors"),
 			HideTitle:   types.BoolValue(true),
@@ -101,14 +102,14 @@ func Test_buildSyntheticsMonitorsPanel_withDisplaySettings(t *testing.T) {
 }
 
 func Test_buildSyntheticsMonitorsPanel_withFilters(t *testing.T) {
-	pm := panelModel{
+	pm := models.PanelModel{
 		Type: types.StringValue(panelTypeSyntheticsMonitors),
-		SyntheticsMonitorsConfig: &syntheticsMonitorsConfigModel{
-			Filters: &syntheticsMonitorsFiltersModel{
-				Projects: []syntheticsFilterItemModel{
+		SyntheticsMonitorsConfig: &models.SyntheticsMonitorsConfigModel{
+			Filters: &models.SyntheticsFiltersModel{
+				Projects: []models.SyntheticsFilterItemModel{
 					{Label: types.StringValue("My Project"), Value: types.StringValue("proj-1")},
 				},
-				Tags: []syntheticsFilterItemModel{
+				Tags: []models.SyntheticsFilterItemModel{
 					{Label: types.StringValue("prod"), Value: types.StringValue("prod")},
 				},
 			},
@@ -129,15 +130,15 @@ func Test_buildSyntheticsMonitorsPanel_withFilters(t *testing.T) {
 }
 
 func Test_buildSyntheticsMonitorsPanel_allFilterDimensions(t *testing.T) {
-	pm := panelModel{
+	pm := models.PanelModel{
 		Type: types.StringValue(panelTypeSyntheticsMonitors),
-		SyntheticsMonitorsConfig: &syntheticsMonitorsConfigModel{
-			Filters: &syntheticsMonitorsFiltersModel{
-				Projects:     []syntheticsFilterItemModel{{Label: types.StringValue("P1"), Value: types.StringValue("p1")}},
-				Tags:         []syntheticsFilterItemModel{{Label: types.StringValue("T1"), Value: types.StringValue("t1")}},
-				MonitorIDs:   []syntheticsFilterItemModel{{Label: types.StringValue("M1"), Value: types.StringValue("m1")}},
-				Locations:    []syntheticsFilterItemModel{{Label: types.StringValue("L1"), Value: types.StringValue("l1")}},
-				MonitorTypes: []syntheticsFilterItemModel{{Label: types.StringValue("http"), Value: types.StringValue("http")}},
+		SyntheticsMonitorsConfig: &models.SyntheticsMonitorsConfigModel{
+			Filters: &models.SyntheticsFiltersModel{
+				Projects:     []models.SyntheticsFilterItemModel{{Label: types.StringValue("P1"), Value: types.StringValue("p1")}},
+				Tags:         []models.SyntheticsFilterItemModel{{Label: types.StringValue("T1"), Value: types.StringValue("t1")}},
+				MonitorIDs:   []models.SyntheticsFilterItemModel{{Label: types.StringValue("M1"), Value: types.StringValue("m1")}},
+				Locations:    []models.SyntheticsFilterItemModel{{Label: types.StringValue("L1"), Value: types.StringValue("l1")}},
+				MonitorTypes: []models.SyntheticsFilterItemModel{{Label: types.StringValue("http"), Value: types.StringValue("http")}},
 			},
 		},
 	}
@@ -166,14 +167,14 @@ func makeSyntheticsPanel() kbapi.KbnDashboardPanelTypeSyntheticsMonitors {
 
 // On import (tfPanel == nil) with no filters returned from API, config remains nil.
 func Test_populateSyntheticsMonitorsFromAPI_import_noFilters(t *testing.T) {
-	pm := &panelModel{}
+	pm := &models.PanelModel{}
 	populateSyntheticsMonitorsFromAPI(pm, nil, makeSyntheticsPanel())
 	assert.Nil(t, pm.SyntheticsMonitorsConfig)
 }
 
 // On import with project filter data in API response, config is populated.
 func Test_populateSyntheticsMonitorsFromAPI_import_withFilters(t *testing.T) {
-	pm := &panelModel{}
+	pm := &models.PanelModel{}
 	apiPanel := makeSyntheticsPanel()
 	projects := []struct {
 		Label string `json:"label"`
@@ -214,7 +215,7 @@ func Test_populateSyntheticsMonitorsFromAPI_import_withFilters(t *testing.T) {
 
 // On import with display settings returned from the API, config is populated.
 func Test_populateSyntheticsMonitorsFromAPI_import_withDisplaySettings(t *testing.T) {
-	pm := &panelModel{}
+	pm := &models.PanelModel{}
 	apiPanel := makeSyntheticsPanel()
 	title := "Synthetics Monitors"
 	description := "Shows the production monitors"
@@ -240,8 +241,8 @@ func Test_populateSyntheticsMonitorsFromAPI_import_withDisplaySettings(t *testin
 // Null-preservation: prior state has no config block; API returns filters.
 // The config block should remain nil (preserve practitioner intent).
 func Test_populateSyntheticsMonitorsFromAPI_nilBlock_preservesNilIntent(t *testing.T) {
-	pm := &panelModel{}
-	tfPanel := &panelModel{} // no SyntheticsMonitorsConfig
+	pm := &models.PanelModel{}
+	tfPanel := &models.PanelModel{} // no SyntheticsMonitorsConfig
 	apiPanel := makeSyntheticsPanel()
 	projects := []struct {
 		Label string `json:"label"`
@@ -278,11 +279,11 @@ func Test_populateSyntheticsMonitorsFromAPI_nilBlock_preservesNilIntent(t *testi
 // Null-preservation: prior state had config block with no filters. API returns empty filters.
 // The filters should remain nil.
 func Test_populateSyntheticsMonitorsFromAPI_emptyAPIFilters_nullPreservation(t *testing.T) {
-	existing := &syntheticsMonitorsConfigModel{
+	existing := &models.SyntheticsMonitorsConfigModel{
 		Filters: nil, // practitioner wrote synthetics_monitors_config = {}
 	}
-	pm := &panelModel{SyntheticsMonitorsConfig: existing}
-	tfPanel := &panelModel{SyntheticsMonitorsConfig: existing}
+	pm := &models.PanelModel{SyntheticsMonitorsConfig: existing}
+	tfPanel := &models.PanelModel{SyntheticsMonitorsConfig: existing}
 
 	// API returns present but empty filters struct
 	apiPanel := makeSyntheticsPanel()
@@ -316,15 +317,15 @@ func Test_populateSyntheticsMonitorsFromAPI_emptyAPIFilters_nullPreservation(t *
 
 // Prior state had filters configured; API round-trips them back.
 func Test_populateSyntheticsMonitorsFromAPI_filtersRoundTrip(t *testing.T) {
-	existing := &syntheticsMonitorsConfigModel{
-		Filters: &syntheticsMonitorsFiltersModel{
-			Projects: []syntheticsFilterItemModel{
+	existing := &models.SyntheticsMonitorsConfigModel{
+		Filters: &models.SyntheticsFiltersModel{
+			Projects: []models.SyntheticsFilterItemModel{
 				{Label: types.StringValue("P1"), Value: types.StringValue("p1")},
 			},
 		},
 	}
-	pm := &panelModel{SyntheticsMonitorsConfig: existing}
-	tfPanel := &panelModel{SyntheticsMonitorsConfig: existing}
+	pm := &models.PanelModel{SyntheticsMonitorsConfig: existing}
+	tfPanel := &models.PanelModel{SyntheticsMonitorsConfig: existing}
 
 	apiPanel := makeSyntheticsPanel()
 	projects := []struct {
@@ -368,10 +369,10 @@ func Test_populateSyntheticsMonitorsFromAPI_filtersRoundTrip(t *testing.T) {
 // API returns an empty filters struct — the empty filters block is preserved to avoid a
 // perpetual diff.
 func Test_populateSyntheticsMonitorsFromAPI_emptyFiltersBlock_preserved(t *testing.T) {
-	emptyFilters := &syntheticsMonitorsFiltersModel{} // all slices nil
-	existing := &syntheticsMonitorsConfigModel{Filters: emptyFilters}
-	pm := &panelModel{SyntheticsMonitorsConfig: existing}
-	tfPanel := &panelModel{SyntheticsMonitorsConfig: existing}
+	emptyFilters := &models.SyntheticsFiltersModel{} // all slices nil
+	existing := &models.SyntheticsMonitorsConfigModel{Filters: emptyFilters}
+	pm := &models.PanelModel{SyntheticsMonitorsConfig: existing}
+	tfPanel := &models.PanelModel{SyntheticsMonitorsConfig: existing}
 
 	// API returns an empty filters struct (all dimensions absent).
 	apiPanel := makeSyntheticsPanel()
@@ -406,9 +407,9 @@ func Test_populateSyntheticsMonitorsFromAPI_emptyFiltersBlock_preserved(t *testi
 
 // Prior state had config with no filters; API returns nil filters → keep filters nil.
 func Test_populateSyntheticsMonitorsFromAPI_apiNilFilters_preservesNilFilters(t *testing.T) {
-	existing := &syntheticsMonitorsConfigModel{Filters: nil}
-	pm := &panelModel{SyntheticsMonitorsConfig: existing}
-	tfPanel := &panelModel{SyntheticsMonitorsConfig: existing}
+	existing := &models.SyntheticsMonitorsConfigModel{Filters: nil}
+	pm := &models.PanelModel{SyntheticsMonitorsConfig: existing}
+	tfPanel := &models.PanelModel{SyntheticsMonitorsConfig: existing}
 
 	populateSyntheticsMonitorsFromAPI(pm, tfPanel, makeSyntheticsPanel())
 

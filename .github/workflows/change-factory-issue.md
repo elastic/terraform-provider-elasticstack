@@ -26,13 +26,17 @@ on:
         script: |
           /**
            * Change-factory issue intake configuration. Keep `ISSUE_BRANCH_PREFIX` aligned with
-           * `workflow.md.tmpl` (`change-factory/issue-${{ github.event.issue.number }}`).
+           * the branch name used in `workflow.md.tmpl`: change-factory/issue-{n}.
+           *
+           * The duplicate-linkage mode is `'related-literal'` because the change-factory PR body
+           * uses `Related to #N` rather than a GitHub closing keyword; merging a proposal-only PR
+           * must not auto-close the source issue.
            */
           'use strict';
           
           const ISSUE_BRANCH_PREFIX = 'change-factory/issue-';
           const FACTORY_LABEL = 'change-factory';
-          const DUPLICATE_LINKAGE_MODE = 'github-keywords';
+          const DUPLICATE_LINKAGE_MODE = 'related-literal';
           const ISSUE_OPENED_NOT_ELIGIBLE_REASON =
             'Issue opened event does not qualify because the issue was created without the change-factory label or issue labels were missing.';
           
@@ -163,7 +167,7 @@ on:
           }
           
           /**
-           * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'github-keywords' }} params
+           * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords' }} params
            * @returns {{ duplicate_pr_found: boolean, duplicate_pr_url: string | null, gate_reason: string }}
            */
           function factoryCheckDuplicatePR({
@@ -175,9 +179,16 @@ on:
           }) {
             const expectedBranch = `${branchPrefix}${issueNumber}`;
             const expectedClosesExample = `Closes #${issueNumber}`;
-            const bodyPattern = duplicateLinkageMode === 'closes-literal'
-              ? new RegExp(`Closes #${issueNumber}(?![0-9])`)
-              : issueClosingReferencePattern(issueNumber);
+            const expectedRelatedExample = `Related to #${issueNumber}`;
+          
+            let bodyPattern;
+            if (duplicateLinkageMode === 'closes-literal') {
+              bodyPattern = new RegExp(`Closes #${issueNumber}(?![0-9])`);
+            } else if (duplicateLinkageMode === 'related-literal') {
+              bodyPattern = new RegExp(`\\bRelated to #${issueNumber}(?![0-9])`);
+            } else {
+              bodyPattern = issueClosingReferencePattern(issueNumber);
+            }
           
             const duplicate = (pullRequests || []).find(pr => (
               pr.state === 'open' &&
@@ -188,9 +199,14 @@ on:
           
             if (duplicate) {
               const url = duplicate.html_url ?? null;
-              const linkagePhrase = duplicateLinkageMode === 'closes-literal'
-                ? `canonical linkage '${expectedClosesExample}'`
-                : `issue-closing reference such as '${expectedClosesExample}'`;
+              let linkagePhrase;
+              if (duplicateLinkageMode === 'closes-literal') {
+                linkagePhrase = `canonical linkage '${expectedClosesExample}'`;
+              } else if (duplicateLinkageMode === 'related-literal') {
+                linkagePhrase = `literal linkage \`${expectedRelatedExample}\``;
+              } else {
+                linkagePhrase = `issue-closing reference such as '${expectedClosesExample}'`;
+              }
           
               return {
                 duplicate_pr_found: true,
@@ -199,9 +215,14 @@ on:
               };
             }
           
-            const linkageTail = duplicateLinkageMode === 'closes-literal'
-              ? `canonical linkage '${expectedClosesExample}'`
-              : `issue-closing reference such as '${expectedClosesExample}'`;
+            let linkageTail;
+            if (duplicateLinkageMode === 'closes-literal') {
+              linkageTail = `canonical linkage '${expectedClosesExample}'`;
+            } else if (duplicateLinkageMode === 'related-literal') {
+              linkageTail = `literal linkage \`${expectedRelatedExample}\``;
+            } else {
+              linkageTail = `issue-closing reference such as '${expectedClosesExample}'`;
+            }
           
             return {
               duplicate_pr_found: false,
@@ -283,7 +304,7 @@ on:
            *   branchPrefix: string,
            *   factoryLabel: string,
            *   issueOpenedNotEligibleReason: string,
-           *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',
+           *   duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords',
            * }} config
            */
           function createFactoryIssueIntake(config) {
@@ -336,7 +357,7 @@ on:
            *   branchPrefix: string,
            *   factoryLabel: string,
            *   issueOpenedNotEligibleReason: string,
-           *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',
+           *   duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords',
            *   issueBranchNameAliases?: string[],
            * }} config
            */
@@ -413,13 +434,17 @@ on:
         script: |
           /**
            * Change-factory issue intake configuration. Keep `ISSUE_BRANCH_PREFIX` aligned with
-           * `workflow.md.tmpl` (`change-factory/issue-${{ github.event.issue.number }}`).
+           * the branch name used in `workflow.md.tmpl`: change-factory/issue-{n}.
+           *
+           * The duplicate-linkage mode is `'related-literal'` because the change-factory PR body
+           * uses `Related to #N` rather than a GitHub closing keyword; merging a proposal-only PR
+           * must not auto-close the source issue.
            */
           'use strict';
           
           const ISSUE_BRANCH_PREFIX = 'change-factory/issue-';
           const FACTORY_LABEL = 'change-factory';
-          const DUPLICATE_LINKAGE_MODE = 'github-keywords';
+          const DUPLICATE_LINKAGE_MODE = 'related-literal';
           const ISSUE_OPENED_NOT_ELIGIBLE_REASON =
             'Issue opened event does not qualify because the issue was created without the change-factory label or issue labels were missing.';
           
@@ -550,7 +575,7 @@ on:
           }
           
           /**
-           * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'github-keywords' }} params
+           * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords' }} params
            * @returns {{ duplicate_pr_found: boolean, duplicate_pr_url: string | null, gate_reason: string }}
            */
           function factoryCheckDuplicatePR({
@@ -562,9 +587,16 @@ on:
           }) {
             const expectedBranch = `${branchPrefix}${issueNumber}`;
             const expectedClosesExample = `Closes #${issueNumber}`;
-            const bodyPattern = duplicateLinkageMode === 'closes-literal'
-              ? new RegExp(`Closes #${issueNumber}(?![0-9])`)
-              : issueClosingReferencePattern(issueNumber);
+            const expectedRelatedExample = `Related to #${issueNumber}`;
+          
+            let bodyPattern;
+            if (duplicateLinkageMode === 'closes-literal') {
+              bodyPattern = new RegExp(`Closes #${issueNumber}(?![0-9])`);
+            } else if (duplicateLinkageMode === 'related-literal') {
+              bodyPattern = new RegExp(`\\bRelated to #${issueNumber}(?![0-9])`);
+            } else {
+              bodyPattern = issueClosingReferencePattern(issueNumber);
+            }
           
             const duplicate = (pullRequests || []).find(pr => (
               pr.state === 'open' &&
@@ -575,9 +607,14 @@ on:
           
             if (duplicate) {
               const url = duplicate.html_url ?? null;
-              const linkagePhrase = duplicateLinkageMode === 'closes-literal'
-                ? `canonical linkage '${expectedClosesExample}'`
-                : `issue-closing reference such as '${expectedClosesExample}'`;
+              let linkagePhrase;
+              if (duplicateLinkageMode === 'closes-literal') {
+                linkagePhrase = `canonical linkage '${expectedClosesExample}'`;
+              } else if (duplicateLinkageMode === 'related-literal') {
+                linkagePhrase = `literal linkage \`${expectedRelatedExample}\``;
+              } else {
+                linkagePhrase = `issue-closing reference such as '${expectedClosesExample}'`;
+              }
           
               return {
                 duplicate_pr_found: true,
@@ -586,9 +623,14 @@ on:
               };
             }
           
-            const linkageTail = duplicateLinkageMode === 'closes-literal'
-              ? `canonical linkage '${expectedClosesExample}'`
-              : `issue-closing reference such as '${expectedClosesExample}'`;
+            let linkageTail;
+            if (duplicateLinkageMode === 'closes-literal') {
+              linkageTail = `canonical linkage '${expectedClosesExample}'`;
+            } else if (duplicateLinkageMode === 'related-literal') {
+              linkageTail = `literal linkage \`${expectedRelatedExample}\``;
+            } else {
+              linkageTail = `issue-closing reference such as '${expectedClosesExample}'`;
+            }
           
             return {
               duplicate_pr_found: false,
@@ -670,7 +712,7 @@ on:
            *   branchPrefix: string,
            *   factoryLabel: string,
            *   issueOpenedNotEligibleReason: string,
-           *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',
+           *   duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords',
            * }} config
            */
           function createFactoryIssueIntake(config) {
@@ -723,7 +765,7 @@ on:
            *   branchPrefix: string,
            *   factoryLabel: string,
            *   issueOpenedNotEligibleReason: string,
-           *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',
+           *   duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords',
            *   issueBranchNameAliases?: string[],
            * }} config
            */
@@ -804,13 +846,17 @@ on:
         script: |
           /**
            * Change-factory issue intake configuration. Keep `ISSUE_BRANCH_PREFIX` aligned with
-           * `workflow.md.tmpl` (`change-factory/issue-${{ github.event.issue.number }}`).
+           * the branch name used in `workflow.md.tmpl`: change-factory/issue-{n}.
+           *
+           * The duplicate-linkage mode is `'related-literal'` because the change-factory PR body
+           * uses `Related to #N` rather than a GitHub closing keyword; merging a proposal-only PR
+           * must not auto-close the source issue.
            */
           'use strict';
           
           const ISSUE_BRANCH_PREFIX = 'change-factory/issue-';
           const FACTORY_LABEL = 'change-factory';
-          const DUPLICATE_LINKAGE_MODE = 'github-keywords';
+          const DUPLICATE_LINKAGE_MODE = 'related-literal';
           const ISSUE_OPENED_NOT_ELIGIBLE_REASON =
             'Issue opened event does not qualify because the issue was created without the change-factory label or issue labels were missing.';
           
@@ -941,7 +987,7 @@ on:
           }
           
           /**
-           * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'github-keywords' }} params
+           * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords' }} params
            * @returns {{ duplicate_pr_found: boolean, duplicate_pr_url: string | null, gate_reason: string }}
            */
           function factoryCheckDuplicatePR({
@@ -953,9 +999,16 @@ on:
           }) {
             const expectedBranch = `${branchPrefix}${issueNumber}`;
             const expectedClosesExample = `Closes #${issueNumber}`;
-            const bodyPattern = duplicateLinkageMode === 'closes-literal'
-              ? new RegExp(`Closes #${issueNumber}(?![0-9])`)
-              : issueClosingReferencePattern(issueNumber);
+            const expectedRelatedExample = `Related to #${issueNumber}`;
+          
+            let bodyPattern;
+            if (duplicateLinkageMode === 'closes-literal') {
+              bodyPattern = new RegExp(`Closes #${issueNumber}(?![0-9])`);
+            } else if (duplicateLinkageMode === 'related-literal') {
+              bodyPattern = new RegExp(`\\bRelated to #${issueNumber}(?![0-9])`);
+            } else {
+              bodyPattern = issueClosingReferencePattern(issueNumber);
+            }
           
             const duplicate = (pullRequests || []).find(pr => (
               pr.state === 'open' &&
@@ -966,9 +1019,14 @@ on:
           
             if (duplicate) {
               const url = duplicate.html_url ?? null;
-              const linkagePhrase = duplicateLinkageMode === 'closes-literal'
-                ? `canonical linkage '${expectedClosesExample}'`
-                : `issue-closing reference such as '${expectedClosesExample}'`;
+              let linkagePhrase;
+              if (duplicateLinkageMode === 'closes-literal') {
+                linkagePhrase = `canonical linkage '${expectedClosesExample}'`;
+              } else if (duplicateLinkageMode === 'related-literal') {
+                linkagePhrase = `literal linkage \`${expectedRelatedExample}\``;
+              } else {
+                linkagePhrase = `issue-closing reference such as '${expectedClosesExample}'`;
+              }
           
               return {
                 duplicate_pr_found: true,
@@ -977,9 +1035,14 @@ on:
               };
             }
           
-            const linkageTail = duplicateLinkageMode === 'closes-literal'
-              ? `canonical linkage '${expectedClosesExample}'`
-              : `issue-closing reference such as '${expectedClosesExample}'`;
+            let linkageTail;
+            if (duplicateLinkageMode === 'closes-literal') {
+              linkageTail = `canonical linkage '${expectedClosesExample}'`;
+            } else if (duplicateLinkageMode === 'related-literal') {
+              linkageTail = `literal linkage \`${expectedRelatedExample}\``;
+            } else {
+              linkageTail = `issue-closing reference such as '${expectedClosesExample}'`;
+            }
           
             return {
               duplicate_pr_found: false,
@@ -1061,7 +1124,7 @@ on:
            *   branchPrefix: string,
            *   factoryLabel: string,
            *   issueOpenedNotEligibleReason: string,
-           *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',
+           *   duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords',
            * }} config
            */
           function createFactoryIssueIntake(config) {
@@ -1114,7 +1177,7 @@ on:
            *   branchPrefix: string,
            *   factoryLabel: string,
            *   issueOpenedNotEligibleReason: string,
-           *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',
+           *   duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords',
            *   issueBranchNameAliases?: string[],
            * }} config
            */
@@ -1503,13 +1566,17 @@ on:
         script: |
           /**
            * Change-factory issue intake configuration. Keep `ISSUE_BRANCH_PREFIX` aligned with
-           * `workflow.md.tmpl` (`change-factory/issue-${{ github.event.issue.number }}`).
+           * the branch name used in `workflow.md.tmpl`: change-factory/issue-{n}.
+           *
+           * The duplicate-linkage mode is `'related-literal'` because the change-factory PR body
+           * uses `Related to #N` rather than a GitHub closing keyword; merging a proposal-only PR
+           * must not auto-close the source issue.
            */
           'use strict';
           
           const ISSUE_BRANCH_PREFIX = 'change-factory/issue-';
           const FACTORY_LABEL = 'change-factory';
-          const DUPLICATE_LINKAGE_MODE = 'github-keywords';
+          const DUPLICATE_LINKAGE_MODE = 'related-literal';
           const ISSUE_OPENED_NOT_ELIGIBLE_REASON =
             'Issue opened event does not qualify because the issue was created without the change-factory label or issue labels were missing.';
           
@@ -1640,7 +1707,7 @@ on:
           }
           
           /**
-           * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'github-keywords' }} params
+           * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords' }} params
            * @returns {{ duplicate_pr_found: boolean, duplicate_pr_url: string | null, gate_reason: string }}
            */
           function factoryCheckDuplicatePR({
@@ -1652,9 +1719,16 @@ on:
           }) {
             const expectedBranch = `${branchPrefix}${issueNumber}`;
             const expectedClosesExample = `Closes #${issueNumber}`;
-            const bodyPattern = duplicateLinkageMode === 'closes-literal'
-              ? new RegExp(`Closes #${issueNumber}(?![0-9])`)
-              : issueClosingReferencePattern(issueNumber);
+            const expectedRelatedExample = `Related to #${issueNumber}`;
+          
+            let bodyPattern;
+            if (duplicateLinkageMode === 'closes-literal') {
+              bodyPattern = new RegExp(`Closes #${issueNumber}(?![0-9])`);
+            } else if (duplicateLinkageMode === 'related-literal') {
+              bodyPattern = new RegExp(`\\bRelated to #${issueNumber}(?![0-9])`);
+            } else {
+              bodyPattern = issueClosingReferencePattern(issueNumber);
+            }
           
             const duplicate = (pullRequests || []).find(pr => (
               pr.state === 'open' &&
@@ -1665,9 +1739,14 @@ on:
           
             if (duplicate) {
               const url = duplicate.html_url ?? null;
-              const linkagePhrase = duplicateLinkageMode === 'closes-literal'
-                ? `canonical linkage '${expectedClosesExample}'`
-                : `issue-closing reference such as '${expectedClosesExample}'`;
+              let linkagePhrase;
+              if (duplicateLinkageMode === 'closes-literal') {
+                linkagePhrase = `canonical linkage '${expectedClosesExample}'`;
+              } else if (duplicateLinkageMode === 'related-literal') {
+                linkagePhrase = `literal linkage \`${expectedRelatedExample}\``;
+              } else {
+                linkagePhrase = `issue-closing reference such as '${expectedClosesExample}'`;
+              }
           
               return {
                 duplicate_pr_found: true,
@@ -1676,9 +1755,14 @@ on:
               };
             }
           
-            const linkageTail = duplicateLinkageMode === 'closes-literal'
-              ? `canonical linkage '${expectedClosesExample}'`
-              : `issue-closing reference such as '${expectedClosesExample}'`;
+            let linkageTail;
+            if (duplicateLinkageMode === 'closes-literal') {
+              linkageTail = `canonical linkage '${expectedClosesExample}'`;
+            } else if (duplicateLinkageMode === 'related-literal') {
+              linkageTail = `literal linkage \`${expectedRelatedExample}\``;
+            } else {
+              linkageTail = `issue-closing reference such as '${expectedClosesExample}'`;
+            }
           
             return {
               duplicate_pr_found: false,
@@ -1760,7 +1844,7 @@ on:
            *   branchPrefix: string,
            *   factoryLabel: string,
            *   issueOpenedNotEligibleReason: string,
-           *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',
+           *   duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords',
            * }} config
            */
           function createFactoryIssueIntake(config) {
@@ -1813,7 +1897,7 @@ on:
            *   branchPrefix: string,
            *   factoryLabel: string,
            *   issueOpenedNotEligibleReason: string,
-           *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',
+           *   duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords',
            *   issueBranchNameAliases?: string[],
            * }} config
            */
@@ -1913,13 +1997,17 @@ on:
         script: |
           /**
            * Change-factory issue intake configuration. Keep `ISSUE_BRANCH_PREFIX` aligned with
-           * `workflow.md.tmpl` (`change-factory/issue-${{ github.event.issue.number }}`).
+           * the branch name used in `workflow.md.tmpl`: change-factory/issue-{n}.
+           *
+           * The duplicate-linkage mode is `'related-literal'` because the change-factory PR body
+           * uses `Related to #N` rather than a GitHub closing keyword; merging a proposal-only PR
+           * must not auto-close the source issue.
            */
           'use strict';
           
           const ISSUE_BRANCH_PREFIX = 'change-factory/issue-';
           const FACTORY_LABEL = 'change-factory';
-          const DUPLICATE_LINKAGE_MODE = 'github-keywords';
+          const DUPLICATE_LINKAGE_MODE = 'related-literal';
           const ISSUE_OPENED_NOT_ELIGIBLE_REASON =
             'Issue opened event does not qualify because the issue was created without the change-factory label or issue labels were missing.';
           
@@ -2050,7 +2138,7 @@ on:
           }
           
           /**
-           * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'github-keywords' }} params
+           * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords' }} params
            * @returns {{ duplicate_pr_found: boolean, duplicate_pr_url: string | null, gate_reason: string }}
            */
           function factoryCheckDuplicatePR({
@@ -2062,9 +2150,16 @@ on:
           }) {
             const expectedBranch = `${branchPrefix}${issueNumber}`;
             const expectedClosesExample = `Closes #${issueNumber}`;
-            const bodyPattern = duplicateLinkageMode === 'closes-literal'
-              ? new RegExp(`Closes #${issueNumber}(?![0-9])`)
-              : issueClosingReferencePattern(issueNumber);
+            const expectedRelatedExample = `Related to #${issueNumber}`;
+          
+            let bodyPattern;
+            if (duplicateLinkageMode === 'closes-literal') {
+              bodyPattern = new RegExp(`Closes #${issueNumber}(?![0-9])`);
+            } else if (duplicateLinkageMode === 'related-literal') {
+              bodyPattern = new RegExp(`\\bRelated to #${issueNumber}(?![0-9])`);
+            } else {
+              bodyPattern = issueClosingReferencePattern(issueNumber);
+            }
           
             const duplicate = (pullRequests || []).find(pr => (
               pr.state === 'open' &&
@@ -2075,9 +2170,14 @@ on:
           
             if (duplicate) {
               const url = duplicate.html_url ?? null;
-              const linkagePhrase = duplicateLinkageMode === 'closes-literal'
-                ? `canonical linkage '${expectedClosesExample}'`
-                : `issue-closing reference such as '${expectedClosesExample}'`;
+              let linkagePhrase;
+              if (duplicateLinkageMode === 'closes-literal') {
+                linkagePhrase = `canonical linkage '${expectedClosesExample}'`;
+              } else if (duplicateLinkageMode === 'related-literal') {
+                linkagePhrase = `literal linkage \`${expectedRelatedExample}\``;
+              } else {
+                linkagePhrase = `issue-closing reference such as '${expectedClosesExample}'`;
+              }
           
               return {
                 duplicate_pr_found: true,
@@ -2086,9 +2186,14 @@ on:
               };
             }
           
-            const linkageTail = duplicateLinkageMode === 'closes-literal'
-              ? `canonical linkage '${expectedClosesExample}'`
-              : `issue-closing reference such as '${expectedClosesExample}'`;
+            let linkageTail;
+            if (duplicateLinkageMode === 'closes-literal') {
+              linkageTail = `canonical linkage '${expectedClosesExample}'`;
+            } else if (duplicateLinkageMode === 'related-literal') {
+              linkageTail = `literal linkage \`${expectedRelatedExample}\``;
+            } else {
+              linkageTail = `issue-closing reference such as '${expectedClosesExample}'`;
+            }
           
             return {
               duplicate_pr_found: false,
@@ -2170,7 +2275,7 @@ on:
            *   branchPrefix: string,
            *   factoryLabel: string,
            *   issueOpenedNotEligibleReason: string,
-           *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',
+           *   duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords',
            * }} config
            */
           function createFactoryIssueIntake(config) {
@@ -2223,7 +2328,7 @@ on:
            *   branchPrefix: string,
            *   factoryLabel: string,
            *   issueOpenedNotEligibleReason: string,
-           *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',
+           *   duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords',
            *   issueBranchNameAliases?: string[],
            * }} config
            */
@@ -2543,13 +2648,17 @@ on:
         script: |
           /**
            * Change-factory issue intake configuration. Keep `ISSUE_BRANCH_PREFIX` aligned with
-           * `workflow.md.tmpl` (`change-factory/issue-${{ github.event.issue.number }}`).
+           * the branch name used in `workflow.md.tmpl`: change-factory/issue-{n}.
+           *
+           * The duplicate-linkage mode is `'related-literal'` because the change-factory PR body
+           * uses `Related to #N` rather than a GitHub closing keyword; merging a proposal-only PR
+           * must not auto-close the source issue.
            */
           'use strict';
           
           const ISSUE_BRANCH_PREFIX = 'change-factory/issue-';
           const FACTORY_LABEL = 'change-factory';
-          const DUPLICATE_LINKAGE_MODE = 'github-keywords';
+          const DUPLICATE_LINKAGE_MODE = 'related-literal';
           const ISSUE_OPENED_NOT_ELIGIBLE_REASON =
             'Issue opened event does not qualify because the issue was created without the change-factory label or issue labels were missing.';
           
@@ -2680,7 +2789,7 @@ on:
           }
           
           /**
-           * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'github-keywords' }} params
+           * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords' }} params
            * @returns {{ duplicate_pr_found: boolean, duplicate_pr_url: string | null, gate_reason: string }}
            */
           function factoryCheckDuplicatePR({
@@ -2692,9 +2801,16 @@ on:
           }) {
             const expectedBranch = `${branchPrefix}${issueNumber}`;
             const expectedClosesExample = `Closes #${issueNumber}`;
-            const bodyPattern = duplicateLinkageMode === 'closes-literal'
-              ? new RegExp(`Closes #${issueNumber}(?![0-9])`)
-              : issueClosingReferencePattern(issueNumber);
+            const expectedRelatedExample = `Related to #${issueNumber}`;
+          
+            let bodyPattern;
+            if (duplicateLinkageMode === 'closes-literal') {
+              bodyPattern = new RegExp(`Closes #${issueNumber}(?![0-9])`);
+            } else if (duplicateLinkageMode === 'related-literal') {
+              bodyPattern = new RegExp(`\\bRelated to #${issueNumber}(?![0-9])`);
+            } else {
+              bodyPattern = issueClosingReferencePattern(issueNumber);
+            }
           
             const duplicate = (pullRequests || []).find(pr => (
               pr.state === 'open' &&
@@ -2705,9 +2821,14 @@ on:
           
             if (duplicate) {
               const url = duplicate.html_url ?? null;
-              const linkagePhrase = duplicateLinkageMode === 'closes-literal'
-                ? `canonical linkage '${expectedClosesExample}'`
-                : `issue-closing reference such as '${expectedClosesExample}'`;
+              let linkagePhrase;
+              if (duplicateLinkageMode === 'closes-literal') {
+                linkagePhrase = `canonical linkage '${expectedClosesExample}'`;
+              } else if (duplicateLinkageMode === 'related-literal') {
+                linkagePhrase = `literal linkage \`${expectedRelatedExample}\``;
+              } else {
+                linkagePhrase = `issue-closing reference such as '${expectedClosesExample}'`;
+              }
           
               return {
                 duplicate_pr_found: true,
@@ -2716,9 +2837,14 @@ on:
               };
             }
           
-            const linkageTail = duplicateLinkageMode === 'closes-literal'
-              ? `canonical linkage '${expectedClosesExample}'`
-              : `issue-closing reference such as '${expectedClosesExample}'`;
+            let linkageTail;
+            if (duplicateLinkageMode === 'closes-literal') {
+              linkageTail = `canonical linkage '${expectedClosesExample}'`;
+            } else if (duplicateLinkageMode === 'related-literal') {
+              linkageTail = `literal linkage \`${expectedRelatedExample}\``;
+            } else {
+              linkageTail = `issue-closing reference such as '${expectedClosesExample}'`;
+            }
           
             return {
               duplicate_pr_found: false,
@@ -2800,7 +2926,7 @@ on:
            *   branchPrefix: string,
            *   factoryLabel: string,
            *   issueOpenedNotEligibleReason: string,
-           *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',
+           *   duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords',
            * }} config
            */
           function createFactoryIssueIntake(config) {
@@ -2853,7 +2979,7 @@ on:
            *   branchPrefix: string,
            *   factoryLabel: string,
            *   issueOpenedNotEligibleReason: string,
-           *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',
+           *   duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords',
            *   issueBranchNameAliases?: string[],
            * }} config
            */
@@ -3091,9 +3217,11 @@ After the files exist, **validate the OpenSpec artifacts** before opening a pull
    resolve any `blocked` state tied to missing artifacts.
 
 Open **exactly one** pull request for this branch using the `create-pull-request` safe output. The
-pull request must be labeled `change-factory` and `no-changelog` and include canonical issue linkage
-`Closes #${{ github.event.issue.number }}` in the PR body so future workflow runs can detect the
-linked PR deterministically.
+pull request must be labeled `change-factory` and `no-changelog` and include the literal phrase
+`Related to #${{ github.event.issue.number }}` in the PR body so future workflow runs can detect the
+linked PR deterministically. Use `Related to` rather than a GitHub closing keyword (`Closes`, `Fixes`,
+`Resolves`, etc.) - this PR delivers an OpenSpec proposal only; the underlying request still needs
+implementation, so merging this PR must NOT auto-close issue #${{ github.event.issue.number }}.
 
 ## Pull request contract
 
@@ -3106,7 +3234,7 @@ The linked pull request must:
   clients, or docs outside that directory in this pull request.
 - be the only open `change-factory` pull request for this issue
 - carry the `change-factory` and `no-changelog` labels
-- include `Closes #${{ github.event.issue.number }}` in the PR body
+- include `Related to #${{ github.event.issue.number }}` in the PR body (not `Closes`, `Fixes`, or any other GitHub closing keyword)
 
 ## Out of scope - do not do these in this run
 

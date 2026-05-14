@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -67,16 +68,9 @@ func mapOptionalFloatWithSnapshotDefault(current types.Float64, apiValue *float3
 	}
 }
 
-// partitionLegendModel is the shared Terraform model for partition chart legends
 // (treemap, mosaic, pie). Used by treemap, mosaic, and pie chart config models.
-type partitionLegendModel struct {
-	Nested            types.Bool   `tfsdk:"nested"`
-	Size              types.String `tfsdk:"size"`
-	TruncateAfterLine types.Int64  `tfsdk:"truncate_after_lines"`
-	Visible           types.String `tfsdk:"visible"`
-}
 
-func (m *partitionLegendModel) fromTreemapLegend(api kbapi.TreemapLegend) {
+func partitionLegendFromTreemapLegend(m *models.PartitionLegendModel, api kbapi.TreemapLegend) {
 	m.Nested = types.BoolPointerValue(api.Nested)
 	m.Size = types.StringValue(string(api.Size))
 	if api.TruncateAfterLines != nil {
@@ -91,7 +85,7 @@ func (m *partitionLegendModel) fromTreemapLegend(api kbapi.TreemapLegend) {
 	}
 }
 
-func (m *partitionLegendModel) fromMosaicLegend(api kbapi.MosaicLegend) {
+func partitionLegendFromMosaicLegend(m *models.PartitionLegendModel, api kbapi.MosaicLegend) {
 	m.Nested = types.BoolPointerValue(api.Nested)
 	m.Size = types.StringValue(string(api.Size))
 	if api.TruncateAfterLines != nil {
@@ -106,7 +100,7 @@ func (m *partitionLegendModel) fromMosaicLegend(api kbapi.MosaicLegend) {
 	}
 }
 
-func (m *partitionLegendModel) toTreemapLegend() kbapi.TreemapLegend {
+func partitionLegendToTreemapLegend(m *models.PartitionLegendModel) kbapi.TreemapLegend {
 	legend := kbapi.TreemapLegend{Size: kbapi.LegendSize(m.Size.ValueString())}
 	if typeutils.IsKnown(m.Nested) {
 		legend.Nested = new(m.Nested.ValueBool())
@@ -121,7 +115,7 @@ func (m *partitionLegendModel) toTreemapLegend() kbapi.TreemapLegend {
 	return legend
 }
 
-func (m *partitionLegendModel) toMosaicLegend() kbapi.MosaicLegend {
+func partitionLegendToMosaicLegend(m *models.PartitionLegendModel) kbapi.MosaicLegend {
 	legend := kbapi.MosaicLegend{Size: kbapi.LegendSize(m.Size.ValueString())}
 	if typeutils.IsKnown(m.Nested) {
 		legend.Nested = new(m.Nested.ValueBool())
@@ -136,7 +130,7 @@ func (m *partitionLegendModel) toMosaicLegend() kbapi.MosaicLegend {
 	return legend
 }
 
-func (m *partitionLegendModel) fromPieLegend(api kbapi.PieLegend) {
+func partitionLegendFromPieLegend(m *models.PartitionLegendModel, api kbapi.PieLegend) {
 	m.Nested = types.BoolPointerValue(api.Nested)
 	if api.Size != "" {
 		m.Size = types.StringValue(string(api.Size))
@@ -156,7 +150,7 @@ func (m *partitionLegendModel) fromPieLegend(api kbapi.PieLegend) {
 	}
 }
 
-func (m *partitionLegendModel) toPieLegend() kbapi.PieLegend {
+func partitionLegendToPieLegend(m *models.PartitionLegendModel) kbapi.PieLegend {
 	legend := kbapi.PieLegend{Size: kbapi.LegendSize(m.Size.ValueString())}
 	if typeutils.IsKnown(m.Nested) {
 		legend.Nested = new(m.Nested.ValueBool())
@@ -171,14 +165,7 @@ func (m *partitionLegendModel) toPieLegend() kbapi.PieLegend {
 	return legend
 }
 
-// partitionValueDisplay is the shared Terraform model for partition chart value display
-// (treemap, mosaic). Used by both treemap and mosaic config models.
-type partitionValueDisplay struct {
-	Mode            types.String  `tfsdk:"mode"`
-	PercentDecimals types.Float64 `tfsdk:"percent_decimals"`
-}
-
-func (m *partitionValueDisplay) fromValueDisplay(api kbapi.ValueDisplay) {
+func partitionValueDisplayFromValueDisplay(m *models.PartitionValueDisplay, api kbapi.ValueDisplay) {
 	m.Mode = typeutils.StringishPointerValue(api.Mode)
 	if api.PercentDecimals != nil {
 		m.PercentDecimals = types.Float64Value(float64(*api.PercentDecimals))
@@ -187,7 +174,7 @@ func (m *partitionValueDisplay) fromValueDisplay(api kbapi.ValueDisplay) {
 	}
 }
 
-func (m *partitionValueDisplay) toValueDisplay() kbapi.ValueDisplay {
+func partitionValueDisplayToValueDisplay(m *models.PartitionValueDisplay) kbapi.ValueDisplay {
 	vd := kbapi.ValueDisplay{}
 	if typeutils.IsKnown(m.Mode) {
 		mode := kbapi.ValueDisplayMode(m.Mode.ValueString())

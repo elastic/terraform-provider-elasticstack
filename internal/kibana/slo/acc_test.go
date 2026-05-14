@@ -402,6 +402,8 @@ func TestAccResourceSloGroupBy(t *testing.T) {
 }
 
 func TestAccResourceSloPreventInitialBackfill(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, slo.SLOSupportsPreventInitialBackfillMinVersion, versionutils.FlavorAny)
+
 	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -409,7 +411,6 @@ func TestAccResourceSloPreventInitialBackfill(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(slo.SLOSupportsPreventInitialBackfillMinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("test"),
 				ConfigVariables: config.Variables{
 					"name": config.StringVariable(sloName),
@@ -425,6 +426,8 @@ func TestAccResourceSloPreventInitialBackfill(t *testing.T) {
 }
 
 func TestAccResourceSlo_timeslice_metric_indicator_basic(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, sloTimesliceMetricsMinVersion, versionutils.FlavorAny)
+
 	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -432,7 +435,6 @@ func TestAccResourceSlo_timeslice_metric_indicator_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("test"),
 				ConfigVariables: config.Variables{
 					"name": config.StringVariable(sloName),
@@ -454,6 +456,8 @@ func TestAccResourceSlo_timeslice_metric_indicator_basic(t *testing.T) {
 }
 
 func TestAccResourceSlo_timeslice_metric_indicator_percentile(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, sloTimesliceMetricsMinVersion, versionutils.FlavorAny)
+
 	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -461,7 +465,6 @@ func TestAccResourceSlo_timeslice_metric_indicator_percentile(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("test"),
 				ConfigVariables: config.Variables{
 					"name": config.StringVariable(sloName),
@@ -482,6 +485,8 @@ func TestAccResourceSlo_timeslice_metric_indicator_percentile(t *testing.T) {
 }
 
 func TestAccResourceSlo_timeslice_metric_indicator_doc_count(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, sloTimesliceMetricsMinVersion, versionutils.FlavorAny)
+
 	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -489,7 +494,6 @@ func TestAccResourceSlo_timeslice_metric_indicator_doc_count(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("test"),
 				ConfigVariables: config.Variables{
 					"name": config.StringVariable(sloName),
@@ -510,6 +514,8 @@ func TestAccResourceSlo_timeslice_metric_indicator_doc_count(t *testing.T) {
 }
 
 func TestAccResourceSlo_timeslice_metric_indicator_multiple_mixed_metrics(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, sloTimesliceMetricsMinVersion, versionutils.FlavorAny)
+
 	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -517,7 +523,6 @@ func TestAccResourceSlo_timeslice_metric_indicator_multiple_mixed_metrics(t *tes
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("test"),
 				ConfigVariables: config.Variables{
 					"name": config.StringVariable(sloName),
@@ -543,6 +548,8 @@ func TestAccResourceSlo_timeslice_metric_indicator_multiple_mixed_metrics(t *tes
 }
 
 func TestAccResourceSlo_metric_custom_indicator_doc_count(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, sloTimesliceMetricsMinVersion, versionutils.FlavorAny)
+
 	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -550,7 +557,6 @@ func TestAccResourceSlo_metric_custom_indicator_doc_count(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("test"),
 				ConfigVariables: config.Variables{
 					"name": config.StringVariable(sloName),
@@ -796,6 +802,8 @@ func TestAccResourceSloFromSDK(t *testing.T) {
 	sloConstraints, err := version.NewConstraint(">=8.9.0,!=8.11.0,!=8.11.1,!=8.11.2,!=8.11.3,!=8.11.4")
 	require.NoError(t, err)
 
+	versionutils.SkipIfUnsupportedConstraints(t, sloConstraints, versionutils.FlavorAny)
+
 	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
@@ -810,8 +818,7 @@ func TestAccResourceSloFromSDK(t *testing.T) {
 						VersionConstraint: "0.13.1",
 					},
 				},
-				SkipFunc: versionutils.CheckIfVersionMeetsConstraints(sloConstraints),
-				Config:   sloFromSDKCreateConfig,
+				Config: sloFromSDKCreateConfig,
 				ConfigVariables: config.Variables{
 					"name": config.StringVariable(sloName),
 				},
@@ -825,7 +832,6 @@ func TestAccResourceSloFromSDK(t *testing.T) {
 			{
 				// Verify the current (Framework) implementation can read and manage the SDK-created state.
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(sloConstraints),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"name": config.StringVariable(sloName),
@@ -845,6 +851,8 @@ func TestAccResourceSloRangeFromZero(t *testing.T) {
 	constraints, err := version.NewConstraint(">=8.12.0")
 	require.NoError(t, err)
 
+	versionutils.SkipIfUnsupportedConstraints(t, constraints, versionutils.FlavorAny)
+
 	suffix := sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -852,7 +860,6 @@ func TestAccResourceSloRangeFromZero(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(constraints),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("test"),
 				ConfigVariables: config.Variables{
 					"suffix": config.StringVariable(suffix),
@@ -902,6 +909,8 @@ func TestAccResourceSloRangeFromZero(t *testing.T) {
 // (e.g. float64(float32(0.999)) = 0.9990000128746033), causing a "provider
 // produced inconsistent result after apply" error.
 func TestAccResourceSloFloatPrecision(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, sloTimesliceMetricsMinVersion, versionutils.FlavorAny)
+
 	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -909,7 +918,6 @@ func TestAccResourceSloFloatPrecision(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("test"),
 				ConfigVariables: config.Variables{
 					"name": config.StringVariable(sloName),
@@ -930,6 +938,8 @@ func TestAccResourceSloFloatPrecision(t *testing.T) {
 // float64(float32(0.001)) = 0.0010000000474974513, causing a "provider produced
 // inconsistent result after apply" error when those fields were float32 in the client.
 func TestAccResourceSloHistogramFloatPrecision(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, sloTimesliceMetricsMinVersion, versionutils.FlavorAny)
+
 	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -937,7 +947,6 @@ func TestAccResourceSloHistogramFloatPrecision(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("test"),
 				ConfigVariables: config.Variables{
 					"name": config.StringVariable(sloName),

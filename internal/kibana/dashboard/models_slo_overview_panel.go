@@ -21,58 +21,17 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// sloOverviewConfigModel is the top-level typed block for SLO overview panels.
 // Exactly one of Single or Groups must be set.
-type sloOverviewConfigModel struct {
-	Single *sloSingleConfigModel `tfsdk:"single"`
-	Groups *sloGroupsConfigModel `tfsdk:"groups"`
-}
 
-// sloSingleConfigModel holds single-SLO overview configuration.
-type sloSingleConfigModel struct {
-	SloID         types.String        `tfsdk:"slo_id"`
-	SloInstanceID types.String        `tfsdk:"slo_instance_id"`
-	RemoteName    types.String        `tfsdk:"remote_name"`
-	Title         types.String        `tfsdk:"title"`
-	Description   types.String        `tfsdk:"description"`
-	HideTitle     types.Bool          `tfsdk:"hide_title"`
-	HideBorder    types.Bool          `tfsdk:"hide_border"`
-	Drilldowns    []sloDrilldownModel `tfsdk:"drilldowns"`
-}
-
-// sloGroupsConfigModel holds groups SLO overview configuration.
-type sloGroupsConfigModel struct {
-	Title        types.String          `tfsdk:"title"`
-	Description  types.String          `tfsdk:"description"`
-	HideTitle    types.Bool            `tfsdk:"hide_title"`
-	HideBorder   types.Bool            `tfsdk:"hide_border"`
-	Drilldowns   []sloDrilldownModel   `tfsdk:"drilldowns"`
-	GroupFilters *sloGroupFiltersModel `tfsdk:"group_filters"`
-}
-
-// sloGroupFiltersModel holds the group_filters block for groups mode.
-type sloGroupFiltersModel struct {
-	GroupBy     types.String         `tfsdk:"group_by"`
-	Groups      []types.String       `tfsdk:"groups"`
-	KQLQuery    types.String         `tfsdk:"kql_query"`
-	FiltersJSON jsontypes.Normalized `tfsdk:"filters_json"`
-}
-
-// sloDrilldownModel holds one URL drilldown entry.
 // trigger and type are always hardcoded to "on_open_panel_menu" / "url_drilldown" — they
 // are not exposed to users (matching the slo_burn_rate_config drilldowns approach).
-type sloDrilldownModel struct {
-	URL          types.String `tfsdk:"url"`
-	Label        types.String `tfsdk:"label"`
-	EncodeURL    types.Bool   `tfsdk:"encode_url"`
-	OpenInNewTab types.Bool   `tfsdk:"open_in_new_tab"`
-}
 
 // sloDrilldownWireJSON is the JSON wire format for drilldown entries.
 // It uses snake_case JSON tags matching the Kibana API.
@@ -86,7 +45,7 @@ type sloDrilldownWireJSON struct {
 }
 
 // sloOverviewToAPI converts TF model to Kibana API panel item.
-func sloOverviewToAPI(pm panelModel, grid struct {
+func sloOverviewToAPI(pm models.PanelModel, grid struct {
 	H *float32 `json:"h,omitempty"`
 	W *float32 `json:"w,omitempty"`
 	X float32  `json:"x"`
@@ -153,9 +112,9 @@ func sloOverviewToAPI(pm panelModel, grid struct {
 	return item, diags
 }
 
-// singleToAPI converts a sloSingleConfigModel to the kbapi SloSingleOverviewEmbeddable type.
+// singleToAPI converts a models.SloOverviewSingleModel to the kbapi SloSingleOverviewEmbeddable type.
 // Drilldowns are serialized via JSON to avoid referencing the anonymous field type.
-func singleToAPI(m *sloSingleConfigModel) (kbapi.SloSingleOverviewEmbeddable, diag.Diagnostics) {
+func singleToAPI(m *models.SloOverviewSingleModel) (kbapi.SloSingleOverviewEmbeddable, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	api := kbapi.SloSingleOverviewEmbeddable{
 		OverviewMode: kbapi.SloSingleOverviewEmbeddableOverviewModeSingle,
@@ -190,12 +149,12 @@ func singleToAPI(m *sloSingleConfigModel) (kbapi.SloSingleOverviewEmbeddable, di
 }
 
 // setDrilldownsOnSingle sets the Drilldowns field on a SloSingleOverviewEmbeddable.
-func setDrilldownsOnSingle(api *kbapi.SloSingleOverviewEmbeddable, drilldowns []sloDrilldownModel) diag.Diagnostics {
+func setDrilldownsOnSingle(api *kbapi.SloSingleOverviewEmbeddable, drilldowns []models.URLDrilldownModel) diag.Diagnostics {
 	return injectDrilldownsJSON(api, drilldowns)
 }
 
-// groupsToAPI converts a sloGroupsConfigModel to the kbapi SloGroupOverviewEmbeddable type.
-func groupsToAPI(m *sloGroupsConfigModel) (kbapi.SloGroupOverviewEmbeddable, diag.Diagnostics) {
+// groupsToAPI converts a models.SloOverviewGroupsModel to the kbapi SloGroupOverviewEmbeddable type.
+func groupsToAPI(m *models.SloOverviewGroupsModel) (kbapi.SloGroupOverviewEmbeddable, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	api := kbapi.SloGroupOverviewEmbeddable{
 		OverviewMode: kbapi.Groups,
@@ -231,7 +190,7 @@ func groupsToAPI(m *sloGroupsConfigModel) (kbapi.SloGroupOverviewEmbeddable, dia
 }
 
 // setDrilldownsOnGroups sets the Drilldowns field on a SloGroupOverviewEmbeddable.
-func setDrilldownsOnGroups(api *kbapi.SloGroupOverviewEmbeddable, drilldowns []sloDrilldownModel) diag.Diagnostics {
+func setDrilldownsOnGroups(api *kbapi.SloGroupOverviewEmbeddable, drilldowns []models.URLDrilldownModel) diag.Diagnostics {
 	return injectDrilldownsJSON(api, drilldowns)
 }
 
@@ -239,7 +198,7 @@ func setDrilldownsOnGroups(api *kbapi.SloGroupOverviewEmbeddable, drilldowns []s
 // provided drilldown models, and unmarshals back. Used for both single and groups SLO
 // overview embeddables whose Drilldowns field has an anonymous struct type that cannot
 // be referenced directly in typed Go code.
-func injectDrilldownsJSON(api any, drilldowns []sloDrilldownModel) diag.Diagnostics {
+func injectDrilldownsJSON(api any, drilldowns []models.URLDrilldownModel) diag.Diagnostics {
 	ddsJSON, err := json.Marshal(buildDrilldownsWire(drilldowns))
 	if err != nil {
 		return diag.Diagnostics{diag.NewErrorDiagnostic("Failed to marshal drilldowns", err.Error())}
@@ -265,7 +224,7 @@ func injectDrilldownsJSON(api any, drilldowns []sloDrilldownModel) diag.Diagnost
 
 // buildDrilldownsWire converts TF drilldown models to JSON wire format.
 // trigger and type are always hardcoded to the only values Kibana accepts for SLO overview panels.
-func buildDrilldownsWire(drilldowns []sloDrilldownModel) []sloDrilldownWireJSON {
+func buildDrilldownsWire(drilldowns []models.URLDrilldownModel) []sloDrilldownWireJSON {
 	result := make([]sloDrilldownWireJSON, len(drilldowns))
 	for i, dd := range drilldowns {
 		result[i] = sloDrilldownWireJSON{
@@ -284,7 +243,7 @@ func buildDrilldownsWire(drilldowns []sloDrilldownModel) []sloDrilldownWireJSON 
 	return result
 }
 
-func groupFiltersToAPI(m *sloGroupFiltersModel) (*struct {
+func groupFiltersToAPI(m *models.SloGroupFiltersModel) (*struct {
 	Filters  *[]kbapi.SloGroupOverviewEmbeddable_GroupFilters_Filters_Item `json:"filters,omitempty"`
 	GroupBy  *kbapi.SloGroupOverviewEmbeddableGroupFiltersGroupBy          `json:"group_by,omitempty"`
 	Groups   *[]string                                                     `json:"groups,omitempty"`
@@ -329,7 +288,7 @@ func groupFiltersToAPI(m *sloGroupFiltersModel) (*struct {
 
 // sloOverviewFromAPI reads a KbnDashboardPanelTypeSloOverview from the API response and
 // populates the panel model. tfPanel is the prior TF state/plan (may be nil on import).
-func sloOverviewFromAPI(pm *panelModel, tfPanel *panelModel, panel kbapi.KbnDashboardPanelTypeSloOverview) diag.Diagnostics {
+func sloOverviewFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, panel kbapi.KbnDashboardPanelTypeSloOverview) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	discriminator, err := panel.Config.Discriminator()
@@ -385,16 +344,16 @@ func sloBoolFromAPIOrPrior(apiVal *bool, priorVal types.Bool) types.Bool {
 	return types.BoolNull()
 }
 
-func sloSingleFromAPI(pm *panelModel, tfPanel *panelModel, api kbapi.SloSingleOverviewEmbeddable) diag.Diagnostics {
+func sloSingleFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, api kbapi.SloSingleOverviewEmbeddable) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// Determine prior state for null-preservation
-	var priorSingle *sloSingleConfigModel
+	var priorSingle *models.SloOverviewSingleModel
 	if tfPanel != nil && tfPanel.SloOverviewConfig != nil {
 		priorSingle = tfPanel.SloOverviewConfig.Single
 	}
 
-	m := &sloSingleConfigModel{}
+	m := &models.SloOverviewSingleModel{}
 
 	m.SloID = types.StringValue(api.SloId)
 
@@ -461,19 +420,19 @@ func sloSingleFromAPI(pm *panelModel, tfPanel *panelModel, api kbapi.SloSingleOv
 		}
 	}
 
-	pm.SloOverviewConfig = &sloOverviewConfigModel{Single: m}
+	pm.SloOverviewConfig = &models.SloOverviewConfigModel{Single: m}
 	return diags
 }
 
-func sloGroupsFromAPI(pm *panelModel, tfPanel *panelModel, api kbapi.SloGroupOverviewEmbeddable) diag.Diagnostics {
+func sloGroupsFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, api kbapi.SloGroupOverviewEmbeddable) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	var priorGroups *sloGroupsConfigModel
+	var priorGroups *models.SloOverviewGroupsModel
 	if tfPanel != nil && tfPanel.SloOverviewConfig != nil {
 		priorGroups = tfPanel.SloOverviewConfig.Groups
 	}
 
-	m := &sloGroupsConfigModel{}
+	m := &models.SloOverviewGroupsModel{}
 
 	var priorGroupsTitle types.String
 	if priorGroups != nil {
@@ -510,7 +469,7 @@ func sloGroupsFromAPI(pm *panelModel, tfPanel *panelModel, api kbapi.SloGroupOve
 		// Null-preservation: if prior state had a group_filters block (or this is an import with
 		// no prior state), populate from API. If prior state had no group_filters block, keep null
 		// even when the API echoes back defaults (e.g. group_by="status").
-		gf := &sloGroupFiltersModel{}
+		gf := &models.SloGroupFiltersModel{}
 
 		var priorGroupBy types.String
 		if priorGroups != nil && priorGroups.GroupFilters != nil {
@@ -552,20 +511,20 @@ func sloGroupsFromAPI(pm *panelModel, tfPanel *panelModel, api kbapi.SloGroupOve
 		m.GroupFilters = priorGroups.GroupFilters
 	}
 
-	pm.SloOverviewConfig = &sloOverviewConfigModel{Groups: m}
+	pm.SloOverviewConfig = &models.SloOverviewConfigModel{Groups: m}
 	return diags
 }
 
 // drilldownsFromWireJSON decodes a JSON array of drilldown objects into TF models.
 // trigger and type are not stored in state — they are always hardcoded constants.
-func drilldownsFromWireJSON(b []byte) []sloDrilldownModel {
+func drilldownsFromWireJSON(b []byte) []models.URLDrilldownModel {
 	var wire []sloDrilldownWireJSON
 	if err := json.Unmarshal(b, &wire); err != nil {
 		return nil
 	}
-	result := make([]sloDrilldownModel, len(wire))
+	result := make([]models.URLDrilldownModel, len(wire))
 	for i, dd := range wire {
-		result[i] = sloDrilldownModel{
+		result[i] = models.URLDrilldownModel{
 			URL:   types.StringValue(dd.URL),
 			Label: types.StringValue(dd.Label),
 		}

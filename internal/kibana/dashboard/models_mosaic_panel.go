@@ -23,6 +23,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -34,7 +35,7 @@ func newMosaicPanelConfigConverter() mosaicPanelConfigConverter {
 	return mosaicPanelConfigConverter{
 		lensVisualizationBase: lensVisualizationBase{
 			visualizationType: string(kbapi.MosaicNoESQLTypeMosaic),
-			hasTFChartBlock: func(blocks *lensByValueChartBlocks) bool {
+			hasTFChartBlock: func(blocks *models.LensByValueChartBlocks) bool {
 				return blocks != nil && blocks.MosaicConfig != nil
 			},
 		},
@@ -47,34 +48,34 @@ type mosaicPanelConfigConverter struct {
 
 func (c mosaicPanelConfigConverter) populateFromAttributes(
 	ctx context.Context,
-	dashboard *dashboardModel,
-	tfPanel *panelModel,
-	blocks *lensByValueChartBlocks,
+	dashboard *models.DashboardModel,
+	tfPanel *models.PanelModel,
+	blocks *models.LensByValueChartBlocks,
 	attrs kbapi.KbnDashboardPanelTypeVisConfig0,
 ) diag.Diagnostics {
-	var prior *mosaicConfigModel
+	var prior *models.MosaicConfigModel
 	if b := lensByValueChartBlocksFromPanel(tfPanel); b != nil && b.MosaicConfig != nil {
 		cpy := *b.MosaicConfig
 		prior = &cpy
 	}
-	blocks.MosaicConfig = &mosaicConfigModel{}
+	blocks.MosaicConfig = &models.MosaicConfigModel{}
 
 	if noESQL, err := attrs.AsMosaicNoESQL(); err == nil && !isMosaicNoESQLCandidateActuallyESQL(noESQL) {
-		return blocks.MosaicConfig.fromAPINoESQL(ctx, dashboard, prior, noESQL)
+		return mosaicConfigFromAPINoESQL(ctx, blocks.MosaicConfig, dashboard, prior, noESQL)
 	}
 
 	mosaicESQL, err := attrs.AsMosaicESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	return blocks.MosaicConfig.fromAPIESQL(ctx, dashboard, prior, mosaicESQL)
+	return mosaicConfigFromAPIESQL(ctx, blocks.MosaicConfig, dashboard, prior, mosaicESQL)
 }
 
-func (c mosaicPanelConfigConverter) buildAttributes(blocks *lensByValueChartBlocks, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func (c mosaicPanelConfigConverter) buildAttributes(blocks *models.LensByValueChartBlocks, dashboard *models.DashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	configModel := *blocks.MosaicConfig
 
-	attrs, mosaicDiags := configModel.toAPI(dashboard)
+	attrs, mosaicDiags := mosaicConfigToAPI(&configModel, dashboard)
 	diags.Append(mosaicDiags...)
 	return attrs, diags
 }
@@ -93,39 +94,7 @@ func isMosaicNoESQLCandidateActuallyESQL(api kbapi.MosaicNoESQL) bool {
 	return ds.Type == legacyMetricDatasetTypeESQL || ds.Type == legacyMetricDatasetTypeTable
 }
 
-type mosaicConfigModel struct {
-	lensChartPresentationTFModel
-	Title               types.String                                        `tfsdk:"title"`
-	Description         types.String                                        `tfsdk:"description"`
-	DataSourceJSON      jsontypes.Normalized                                `tfsdk:"data_source_json"`
-	IgnoreGlobalFilters types.Bool                                          `tfsdk:"ignore_global_filters"`
-	Sampling            types.Float64                                       `tfsdk:"sampling"`
-	Query               *filterSimpleModel                                  `tfsdk:"query"`
-	Filters             []chartFilterJSONModel                              `tfsdk:"filters"`
-	GroupBy             customtypes.JSONWithDefaultsValue[[]map[string]any] `tfsdk:"group_by_json"`
-	GroupBreakdownBy    customtypes.JSONWithDefaultsValue[[]map[string]any] `tfsdk:"group_breakdown_by_json"`
-	Metrics             customtypes.JSONWithDefaultsValue[[]map[string]any] `tfsdk:"metrics_json"`
-	Legend              *partitionLegendModel                               `tfsdk:"legend"`
-	ValueDisplay        *partitionValueDisplay                              `tfsdk:"value_display"`
-	EsqlMetrics         []mosaicEsqlMetric                                  `tfsdk:"esql_metrics"`
-	EsqlGroupBy         []mosaicEsqlGroupBy                                 `tfsdk:"esql_group_by"`
-}
-
-type mosaicEsqlMetric struct {
-	Column     types.String         `tfsdk:"column"`
-	Label      types.String         `tfsdk:"label"`
-	FormatJSON jsontypes.Normalized `tfsdk:"format_json"`
-}
-
-type mosaicEsqlGroupBy struct {
-	Column     types.String         `tfsdk:"column"`
-	CollapseBy types.String         `tfsdk:"collapse_by"`
-	ColorJSON  jsontypes.Normalized `tfsdk:"color_json"`
-	FormatJSON jsontypes.Normalized `tfsdk:"format_json"`
-	Label      types.String         `tfsdk:"label"`
-}
-
-func (m *mosaicConfigModel) fromAPINoESQL(ctx context.Context, dashboard *dashboardModel, prior *mosaicConfigModel, api kbapi.MosaicNoESQL) diag.Diagnostics {
+func mosaicConfigFromAPINoESQL(ctx context.Context, m *models.MosaicConfigModel, dashboard *models.DashboardModel, prior *models.MosaicConfigModel, api kbapi.MosaicNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	m.Title = types.StringPointerValue(api.Title)
@@ -172,8 +141,8 @@ func (m *mosaicConfigModel) fromAPINoESQL(ctx context.Context, dashboard *dashbo
 	}
 	m.Metrics = customtypes.NewJSONWithDefaultsValue(string(metricsWrapped), populatePartitionMetricsDefaults)
 
-	m.Query = &filterSimpleModel{}
-	m.Query.fromAPI(api.Query)
+	m.Query = &models.FilterSimpleModel{}
+	filterSimpleFromAPI(m.Query, api.Query)
 
 	if len(api.Filters) > 0 {
 		m.Filters = populateFiltersFromAPI(api.Filters, &diags)
@@ -181,19 +150,19 @@ func (m *mosaicConfigModel) fromAPINoESQL(ctx context.Context, dashboard *dashbo
 		m.Filters = nil
 	}
 
-	m.Legend = &partitionLegendModel{}
-	m.Legend.fromMosaicLegend(api.Legend)
+	m.Legend = &models.PartitionLegendModel{}
+	partitionLegendFromMosaicLegend(m.Legend, api.Legend)
 
 	if api.Styling.Values.Mode != nil || api.Styling.Values.PercentDecimals != nil {
-		m.ValueDisplay = &partitionValueDisplay{}
-		m.ValueDisplay.fromValueDisplay(api.Styling.Values)
+		m.ValueDisplay = &models.PartitionValueDisplay{}
+		partitionValueDisplayFromValueDisplay(m.ValueDisplay, api.Styling.Values)
 	} else {
 		m.ValueDisplay = nil
 	}
 
-	var priorLens *lensChartPresentationTFModel
+	var priorLens *models.LensChartPresentationTFModel
 	if prior != nil {
-		p := prior.lensChartPresentationTFModel
+		p := prior.LensChartPresentationTFModel
 		priorLens = &p
 	}
 	ddWire, ddOmit, ddWireDiags := lensDrilldownsAPIToWire(api.Drilldowns)
@@ -206,14 +175,14 @@ func (m *mosaicConfigModel) fromAPINoESQL(ctx context.Context, dashboard *dashbo
 	if presDiags.HasError() {
 		return diags
 	}
-	m.lensChartPresentationTFModel = pres
+	m.LensChartPresentationTFModel = pres
 	m.EsqlMetrics = nil
 	m.EsqlGroupBy = nil
 
 	return diags
 }
 
-func (m *mosaicConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashboardModel, prior *mosaicConfigModel, api kbapi.MosaicESQL) diag.Diagnostics {
+func mosaicConfigFromAPIESQL(ctx context.Context, m *models.MosaicConfigModel, dashboard *models.DashboardModel, prior *models.MosaicConfigModel, api kbapi.MosaicESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	m.Query = nil
@@ -247,7 +216,7 @@ func (m *mosaicConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashboar
 	if !ok {
 		return diags
 	}
-	m.EsqlMetrics = []mosaicEsqlMetric{
+	m.EsqlMetrics = []models.MosaicEsqlMetric{
 		{
 			Column:     types.StringValue(api.Metric.Column),
 			FormatJSON: metricFormat,
@@ -259,7 +228,7 @@ func (m *mosaicConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashboar
 	}
 
 	if api.GroupBy != nil && len(*api.GroupBy) > 0 {
-		m.EsqlGroupBy = make([]mosaicEsqlGroupBy, len(*api.GroupBy))
+		m.EsqlGroupBy = make([]models.MosaicEsqlGroupBy, len(*api.GroupBy))
 		for i, gb := range *api.GroupBy {
 			m.EsqlGroupBy[i].Column = types.StringValue(gb.Column)
 			m.EsqlGroupBy[i].CollapseBy = types.StringValue(string(gb.CollapseBy))
@@ -289,19 +258,19 @@ func (m *mosaicConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashboar
 		m.Filters = nil
 	}
 
-	m.Legend = &partitionLegendModel{}
-	m.Legend.fromMosaicLegend(api.Legend)
+	m.Legend = &models.PartitionLegendModel{}
+	partitionLegendFromMosaicLegend(m.Legend, api.Legend)
 
 	if api.Styling.Values.Mode != nil || api.Styling.Values.PercentDecimals != nil {
-		m.ValueDisplay = &partitionValueDisplay{}
-		m.ValueDisplay.fromValueDisplay(api.Styling.Values)
+		m.ValueDisplay = &models.PartitionValueDisplay{}
+		partitionValueDisplayFromValueDisplay(m.ValueDisplay, api.Styling.Values)
 	} else {
 		m.ValueDisplay = nil
 	}
 
-	var priorLens *lensChartPresentationTFModel
+	var priorLens *models.LensChartPresentationTFModel
 	if prior != nil {
-		p := prior.lensChartPresentationTFModel
+		p := prior.LensChartPresentationTFModel
 		priorLens = &p
 	}
 	ddWire, ddOmit, ddWireDiags := lensDrilldownsAPIToWire(api.Drilldowns)
@@ -314,12 +283,12 @@ func (m *mosaicConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashboar
 	if presDiags.HasError() {
 		return diags
 	}
-	m.lensChartPresentationTFModel = pres
+	m.LensChartPresentationTFModel = pres
 
 	return diags
 }
 
-func (m *mosaicConfigModel) toAPI(dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func mosaicConfigToAPI(m *models.MosaicConfigModel, dashboard *models.DashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 	var diags diag.Diagnostics
 
@@ -327,8 +296,8 @@ func (m *mosaicConfigModel) toAPI(dashboard *dashboardModel) (kbapi.KbnDashboard
 		return attrs, diags
 	}
 
-	if m.usesESQL() {
-		esql, esqlDiags := m.toAPIMosaicESQL(dashboard)
+	if mosaicConfigUsesESQL(m) {
+		esql, esqlDiags := mosaicConfigToAPIMosaicESQL(m, dashboard)
 		diags.Append(esqlDiags...)
 		if diags.HasError() {
 			return attrs, diags
@@ -339,7 +308,7 @@ func (m *mosaicConfigModel) toAPI(dashboard *dashboardModel) (kbapi.KbnDashboard
 		return attrs, diags
 	}
 
-	noESQL, noESQLDiags := m.toAPINoESQL(dashboard)
+	noESQL, noESQLDiags := mosaicConfigToAPINoESQL(m, dashboard)
 	diags.Append(noESQLDiags...)
 	if diags.HasError() {
 		return attrs, diags
@@ -351,7 +320,7 @@ func (m *mosaicConfigModel) toAPI(dashboard *dashboardModel) (kbapi.KbnDashboard
 	return attrs, diags
 }
 
-func (m *mosaicConfigModel) usesESQL() bool {
+func mosaicConfigUsesESQL(m *models.MosaicConfigModel) bool {
 	if m == nil {
 		return false
 	}
@@ -361,7 +330,7 @@ func (m *mosaicConfigModel) usesESQL() bool {
 	return m.Query.Expression.IsNull() && m.Query.Language.IsNull()
 }
 
-func (m *mosaicConfigModel) toAPIMosaicESQL(dashboard *dashboardModel) (kbapi.MosaicESQL, diag.Diagnostics) {
+func mosaicConfigToAPIMosaicESQL(m *models.MosaicConfigModel, dashboard *models.DashboardModel) (kbapi.MosaicESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var api kbapi.MosaicESQL
 	api.Type = kbapi.MosaicESQLTypeMosaic
@@ -378,7 +347,7 @@ func (m *mosaicConfigModel) toAPIMosaicESQL(dashboard *dashboardModel) (kbapi.Mo
 		diags.AddError("Missing legend", "mosaic_config.legend must be provided")
 		return api, diags
 	}
-	api.Legend = m.Legend.toMosaicLegend()
+	api.Legend = partitionLegendToMosaicLegend(m.Legend)
 
 	if m.GroupBreakdownBy.IsNull() {
 		diags.AddError("Missing group_breakdown_by_json", "mosaic_config.group_breakdown_by_json must be provided")
@@ -453,13 +422,13 @@ func (m *mosaicConfigModel) toAPIMosaicESQL(dashboard *dashboardModel) (kbapi.Mo
 	api.Filters = buildFiltersForAPI(m.Filters, &diags)
 
 	if m.ValueDisplay != nil {
-		api.Styling.Values = m.ValueDisplay.toValueDisplay()
+		api.Styling.Values = partitionValueDisplayToValueDisplay(m.ValueDisplay)
 	} else {
 		defaultMode := kbapi.ValueDisplayModePercentage
 		api.Styling.Values = kbapi.ValueDisplay{Mode: &defaultMode}
 	}
 
-	writes, presDiags := lensChartPresentationWritesFor(dashboard, m.lensChartPresentationTFModel)
+	writes, presDiags := lensChartPresentationWritesFor(dashboard, m.LensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return api, diags
@@ -486,7 +455,7 @@ func (m *mosaicConfigModel) toAPIMosaicESQL(dashboard *dashboardModel) (kbapi.Mo
 	return api, diags
 }
 
-func (m *mosaicConfigModel) toAPINoESQL(dashboard *dashboardModel) (kbapi.MosaicNoESQL, diag.Diagnostics) {
+func mosaicConfigToAPINoESQL(m *models.MosaicConfigModel, dashboard *models.DashboardModel) (kbapi.MosaicNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	api := kbapi.MosaicNoESQL{
 		Type: kbapi.MosaicNoESQLTypeMosaic,
@@ -566,7 +535,7 @@ func (m *mosaicConfigModel) toAPINoESQL(dashboard *dashboardModel) (kbapi.Mosaic
 		diags.AddError("Missing query", "mosaic_config.query is required for non-ES|QL mosaic charts")
 		return api, diags
 	}
-	api.Query = m.Query.toAPI()
+	api.Query = filterSimpleToAPI(m.Query)
 
 	api.Filters = buildFiltersForAPI(m.Filters, &diags)
 
@@ -574,13 +543,13 @@ func (m *mosaicConfigModel) toAPINoESQL(dashboard *dashboardModel) (kbapi.Mosaic
 		diags.AddError("Missing legend", "mosaic_config.legend must be provided")
 		return api, diags
 	}
-	api.Legend = m.Legend.toMosaicLegend()
+	api.Legend = partitionLegendToMosaicLegend(m.Legend)
 
 	if m.ValueDisplay != nil {
-		api.Styling.Values = m.ValueDisplay.toValueDisplay()
+		api.Styling.Values = partitionValueDisplayToValueDisplay(m.ValueDisplay)
 	}
 
-	writes, presDiags := lensChartPresentationWritesFor(dashboard, m.lensChartPresentationTFModel)
+	writes, presDiags := lensChartPresentationWritesFor(dashboard, m.LensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return api, diags

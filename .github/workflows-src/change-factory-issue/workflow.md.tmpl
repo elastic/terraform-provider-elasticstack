@@ -316,9 +316,11 @@ After the files exist, **validate the OpenSpec artifacts** before opening a pull
    resolve any `blocked` state tied to missing artifacts.
 
 Open **exactly one** pull request for this branch using the `create-pull-request` safe output. The
-pull request must be labeled `change-factory` and `no-changelog` and include canonical issue linkage
-`Closes #${{ github.event.issue.number }}` in the PR body so future workflow runs can detect the
-linked PR deterministically.
+pull request must be labeled `change-factory` and `no-changelog` and include the literal phrase
+`Related to #${{ github.event.issue.number }}` in the PR body so future workflow runs can detect the
+linked PR deterministically. Use `Related to` rather than a GitHub closing keyword (`Closes`, `Fixes`,
+`Resolves`, etc.) - this PR delivers an OpenSpec proposal only; the underlying request still needs
+implementation, so merging this PR must NOT auto-close issue #${{ github.event.issue.number }}.
 
 ## Pull request contract
 
@@ -331,7 +333,7 @@ The linked pull request must:
   clients, or docs outside that directory in this pull request.
 - be the only open `change-factory` pull request for this issue
 - carry the `change-factory` and `no-changelog` labels
-- include `Closes #${{ github.event.issue.number }}` in the PR body
+- include `Related to #${{ github.event.issue.number }}` in the PR body (not `Closes`, `Fixes`, or any other GitHub closing keyword)
 
 ## Out of scope - do not do these in this run
 

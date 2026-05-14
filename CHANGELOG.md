@@ -1,4 +1,4 @@
-## [Unreleased]
+## [0.15.0] - 2026-05-13
 
 ### Breaking changes
 
@@ -51,6 +51,10 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 
 ### Changes
 
+- Fleet resources now retry on HTTP 409 Conflict with exponential backoff, resolving failures when running `terraform apply` with `parallelism > 1`. ([#2911](https://github.com/elastic/terraform-provider-elasticstack/pull/2911))
+- Add `elasticstack_kibana_dashboard` resource ([#2902](https://github.com/elastic/terraform-provider-elasticstack/pull/2902))
+- Add `elasticstack_elasticsearch_ml_filter` resource for managing Elasticsearch ML filters (used with anomaly detection `custom_rules`). ([#1970](https://github.com/elastic/terraform-provider-elasticstack/pull/1970))
+- Improve docs on ML Anomaly job results_index_name ([#2919](https://github.com/elastic/terraform-provider-elasticstack/pull/2919))
 - Add optional `scope` on detector `custom_rules` for ML anomaly detection jobs (map analysis field names to ML `filter_id` and optional `filter_type`). ([#2877](https://github.com/elastic/terraform-provider-elasticstack/pull/2877))
 - Added plan-time validation for kibana_slo time_window.duration based on window type. ([#2914](https://github.com/elastic/terraform-provider-elasticstack/pull/2914))
 - Remove top-level `enabled` field from `elasticstack_fleet_integration_policy`. ([#2773](https://github.com/elastic/terraform-provider-elasticstack/pull/2773))
@@ -73,7 +77,6 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 - Fixed enrich policy resource recreation on every apply when `query` is not configured, by treating marshaled-null API responses as equivalent to an absent query. ([#2691](https://github.com/elastic/terraform-provider-elasticstack/pull/2691))
 - Duplicate `actions` block `group` values are now rejected at plan time with a clear error instead of failing with an opaque HTTP 400 at apply time. ([#2656](https://github.com/elastic/terraform-provider-elasticstack/pull/2656))
 - Poll for job closed state before deleting ML anomaly detection job to eliminate HTTP 409 version_conflict_engine_exception on teardown ([#2669](https://github.com/elastic/terraform-provider-elasticstack/pull/2669))
-- Add `elasticstack_elasticsearch_ml_filter` resource for managing Elasticsearch ML filters (used with anomaly detection `custom_rules`). ([#1970](https://github.com/elastic/terraform-provider-elasticstack/pull/1970))
 - Adds `elasticstack_fleet_proxy` resource for managing fleet proxies ([#2364](https://github.com/elastic/terraform-provider-elasticstack/pull/2364))
 - `elasticstack_fleet_integration` now syncs `space_id` from Fleet on both create and read, preventing state drift that caused unexpected forced replacements. ([#2582](https://github.com/elastic/terraform-provider-elasticstack/pull/2582))
 - Add space-aware Kibana asset management for elasticstack_fleet_integration on Kibana >= 8.15.0 ([#2608](https://github.com/elastic/terraform-provider-elasticstack/pull/2608))
@@ -888,7 +891,8 @@ resource "elasticstack_fleet_output" "output" {
 - Initial set of docs
 - CI integration
 
-[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.14.5...HEAD
+[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.15.0...HEAD
+[0.15.0]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.14.5...v0.15.0
 [0.14.5]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.14.4...v0.14.5
 [0.14.4]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.14.3...v0.14.4
 [0.14.3]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.14.2...v0.14.3

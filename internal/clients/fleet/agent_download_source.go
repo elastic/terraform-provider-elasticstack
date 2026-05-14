@@ -51,17 +51,19 @@ func CreateAgentDownloadSource(
 	spaceID string,
 	req kbapi.PostFleetAgentDownloadSourcesJSONRequestBody,
 ) (*kbapi.PostFleetAgentDownloadSourcesResponse, diag.Diagnostics) {
-	resp, err := client.API.PostFleetAgentDownloadSourcesWithResponse(ctx, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
+	return kibanautil.ConflictRetry(ctx, kibanautil.ConflictMaxAttempts, func() (*kbapi.PostFleetAgentDownloadSourcesResponse, int, diag.Diagnostics) {
+		resp, err := client.API.PostFleetAgentDownloadSourcesWithResponse(ctx, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+		if err != nil {
+			return nil, 0, diagutil.FrameworkDiagFromError(err)
+		}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return resp, nil
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+		switch resp.StatusCode() {
+		case http.StatusOK:
+			return resp, resp.StatusCode(), nil
+		default:
+			return nil, resp.StatusCode(), diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
+		}
+	})
 }
 
 // UpdateAgentDownloadSource updates an existing agent binary download source.
@@ -72,27 +74,31 @@ func UpdateAgentDownloadSource(
 	spaceID string,
 	req kbapi.PutFleetAgentDownloadSourcesSourceidJSONRequestBody,
 ) (*kbapi.PutFleetAgentDownloadSourcesSourceidResponse, diag.Diagnostics) {
-	resp, err := client.API.PutFleetAgentDownloadSourcesSourceidWithResponse(ctx, id, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
+	return kibanautil.ConflictRetry(ctx, kibanautil.ConflictMaxAttempts, func() (*kbapi.PutFleetAgentDownloadSourcesSourceidResponse, int, diag.Diagnostics) {
+		resp, err := client.API.PutFleetAgentDownloadSourcesSourceidWithResponse(ctx, id, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+		if err != nil {
+			return nil, 0, diagutil.FrameworkDiagFromError(err)
+		}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return resp, nil
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+		switch resp.StatusCode() {
+		case http.StatusOK:
+			return resp, resp.StatusCode(), nil
+		default:
+			return nil, resp.StatusCode(), diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
+		}
+	})
 }
 
 // DeleteAgentDownloadSource deletes an existing agent binary download source.
 func DeleteAgentDownloadSource(ctx context.Context, client *Client, id string, spaceID string) diag.Diagnostics {
-	resp, err := client.API.DeleteFleetAgentDownloadSourcesSourceidWithResponse(ctx, id, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	return handleDeleteResponse(resp.StatusCode(), resp.Body)
+	_, diags := kibanautil.ConflictRetry(ctx, kibanautil.ConflictMaxAttempts, func() (struct{}, int, diag.Diagnostics) {
+		resp, err := client.API.DeleteFleetAgentDownloadSourcesSourceidWithResponse(ctx, id, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+		if err != nil {
+			return struct{}{}, 0, diagutil.FrameworkDiagFromError(err)
+		}
+		return struct{}{}, resp.StatusCode(), handleDeleteResponse(resp.StatusCode(), resp.Body)
+	})
+	return diags
 }
 
 // ListAgentDownloadSources reads all agent binary download sources from the API.

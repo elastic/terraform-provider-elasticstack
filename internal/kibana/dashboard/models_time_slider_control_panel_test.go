@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -45,23 +46,23 @@ func apiTimeSliderConfig(start, end *float32, anchored *bool) struct {
 
 // Test: when existing config block is nil and API returns empty config, leave nil.
 func Test_populateTimeSliderControlFromAPI_nilBlock_emptyAPIConfig(t *testing.T) {
-	pm := &panelModel{}
-	tfPanel := &panelModel{}
+	pm := &models.PanelModel{}
+	tfPanel := &models.PanelModel{}
 	populateTimeSliderControlFromAPI(pm, tfPanel, apiTimeSliderConfig(nil, nil, nil))
 	assert.Nil(t, pm.TimeSliderControlConfig)
 }
 
 // Test: when existing config block is nil and API returns data, preserve nil (null-preservation).
 func Test_populateTimeSliderControlFromAPI_nilBlock_withAPIData(t *testing.T) {
-	pm := &panelModel{}
-	tfPanel := &panelModel{}
+	pm := &models.PanelModel{}
+	tfPanel := &models.PanelModel{}
 	populateTimeSliderControlFromAPI(pm, tfPanel, apiTimeSliderConfig(new(float32(0.1)), new(float32(0.9)), new(true)))
 	assert.Nil(t, pm.TimeSliderControlConfig)
 }
 
 // Test: on import (tfPanel == nil) with API data, populate block from API.
 func Test_populateTimeSliderControlFromAPI_import_withAPIData(t *testing.T) {
-	pm := &panelModel{}
+	pm := &models.PanelModel{}
 	populateTimeSliderControlFromAPI(pm, nil, apiTimeSliderConfig(new(float32(0.1)), new(float32(0.9)), new(true)))
 	require.NotNil(t, pm.TimeSliderControlConfig)
 	assert.Equal(t, types.Float32Value(0.1), pm.TimeSliderControlConfig.StartPercentageOfTimeRange)
@@ -71,21 +72,21 @@ func Test_populateTimeSliderControlFromAPI_import_withAPIData(t *testing.T) {
 
 // Test: on import (tfPanel == nil) with empty API config, leave nil.
 func Test_populateTimeSliderControlFromAPI_import_emptyAPIConfig(t *testing.T) {
-	pm := &panelModel{}
+	pm := &models.PanelModel{}
 	populateTimeSliderControlFromAPI(pm, nil, apiTimeSliderConfig(nil, nil, nil))
 	assert.Nil(t, pm.TimeSliderControlConfig)
 }
 
 // Test: when config block exists with known fields, populate from API.
 func Test_populateTimeSliderControlFromAPI_knownFields_populatedFromAPI(t *testing.T) {
-	pm := &panelModel{
-		TimeSliderControlConfig: &timeSliderControlConfigModel{
+	pm := &models.PanelModel{
+		TimeSliderControlConfig: &models.TimeSliderControlConfigModel{
 			StartPercentageOfTimeRange: types.Float32Value(0.1),
 			EndPercentageOfTimeRange:   types.Float32Value(0.9),
 			IsAnchored:                 types.BoolValue(false),
 		},
 	}
-	tfPanel := &panelModel{TimeSliderControlConfig: pm.TimeSliderControlConfig}
+	tfPanel := &models.PanelModel{TimeSliderControlConfig: pm.TimeSliderControlConfig}
 	populateTimeSliderControlFromAPI(pm, tfPanel, apiTimeSliderConfig(new(float32(0.2)), new(float32(0.8)), new(true)))
 	require.NotNil(t, pm.TimeSliderControlConfig)
 	assert.Equal(t, types.Float32Value(0.2), pm.TimeSliderControlConfig.StartPercentageOfTimeRange)
@@ -95,14 +96,14 @@ func Test_populateTimeSliderControlFromAPI_knownFields_populatedFromAPI(t *testi
 
 // Test: null-preservation — null fields in state are not overwritten by API values.
 func Test_populateTimeSliderControlFromAPI_nullFields_preservedAsNull(t *testing.T) {
-	pm := &panelModel{
-		TimeSliderControlConfig: &timeSliderControlConfigModel{
+	pm := &models.PanelModel{
+		TimeSliderControlConfig: &models.TimeSliderControlConfigModel{
 			StartPercentageOfTimeRange: types.Float32Null(),
 			EndPercentageOfTimeRange:   types.Float32Null(),
 			IsAnchored:                 types.BoolNull(),
 		},
 	}
-	tfPanel := &panelModel{TimeSliderControlConfig: pm.TimeSliderControlConfig}
+	tfPanel := &models.PanelModel{TimeSliderControlConfig: pm.TimeSliderControlConfig}
 	populateTimeSliderControlFromAPI(pm, tfPanel, apiTimeSliderConfig(new(float32(0.5)), new(float32(0.5)), new(true)))
 	require.NotNil(t, pm.TimeSliderControlConfig)
 	assert.True(t, pm.TimeSliderControlConfig.StartPercentageOfTimeRange.IsNull())
@@ -112,14 +113,14 @@ func Test_populateTimeSliderControlFromAPI_nullFields_preservedAsNull(t *testing
 
 // Test: mixed — some fields known, some null.
 func Test_populateTimeSliderControlFromAPI_mixedFields(t *testing.T) {
-	pm := &panelModel{
-		TimeSliderControlConfig: &timeSliderControlConfigModel{
+	pm := &models.PanelModel{
+		TimeSliderControlConfig: &models.TimeSliderControlConfigModel{
 			StartPercentageOfTimeRange: types.Float32Value(0.1),
 			EndPercentageOfTimeRange:   types.Float32Null(),
 			IsAnchored:                 types.BoolNull(),
 		},
 	}
-	tfPanel := &panelModel{TimeSliderControlConfig: pm.TimeSliderControlConfig}
+	tfPanel := &models.PanelModel{TimeSliderControlConfig: pm.TimeSliderControlConfig}
 	populateTimeSliderControlFromAPI(pm, tfPanel, apiTimeSliderConfig(new(float32(0.2)), new(float32(0.8)), new(true)))
 	require.NotNil(t, pm.TimeSliderControlConfig)
 	// known field is updated
@@ -131,8 +132,8 @@ func Test_populateTimeSliderControlFromAPI_mixedFields(t *testing.T) {
 
 // Test: buildTimeSliderControlConfig sets known fields and omits null fields.
 func Test_buildTimeSliderControlConfig_knownFields(t *testing.T) {
-	pm := panelModel{
-		TimeSliderControlConfig: &timeSliderControlConfigModel{
+	pm := models.PanelModel{
+		TimeSliderControlConfig: &models.TimeSliderControlConfigModel{
 			StartPercentageOfTimeRange: types.Float32Value(0.25),
 			EndPercentageOfTimeRange:   types.Float32Value(0.75),
 			IsAnchored:                 types.BoolValue(true),
@@ -157,8 +158,8 @@ func Test_buildTimeSliderControlConfig_knownFields(t *testing.T) {
 
 // Test: buildTimeSliderControlConfig omits null fields.
 func Test_buildTimeSliderControlConfig_nullFields(t *testing.T) {
-	pm := panelModel{
-		TimeSliderControlConfig: &timeSliderControlConfigModel{
+	pm := models.PanelModel{
+		TimeSliderControlConfig: &models.TimeSliderControlConfigModel{
 			StartPercentageOfTimeRange: types.Float32Null(),
 			EndPercentageOfTimeRange:   types.Float32Null(),
 			IsAnchored:                 types.BoolNull(),
@@ -179,8 +180,8 @@ func Test_buildTimeSliderControlConfig_nullFields(t *testing.T) {
 
 // Test: boundary values 0.0 and 1.0 are valid.
 func Test_buildTimeSliderControlConfig_boundaryValues(t *testing.T) {
-	pm := panelModel{
-		TimeSliderControlConfig: &timeSliderControlConfigModel{
+	pm := models.PanelModel{
+		TimeSliderControlConfig: &models.TimeSliderControlConfigModel{
 			StartPercentageOfTimeRange: types.Float32Value(0.0),
 			EndPercentageOfTimeRange:   types.Float32Value(1.0),
 			IsAnchored:                 types.BoolNull(),
@@ -204,8 +205,8 @@ func Test_buildTimeSliderControlConfig_boundaryValues(t *testing.T) {
 func Test_timeSliderPercentage_float32RoundTrip_writeThenRead(t *testing.T) {
 	start := float32(0.1)
 	end := float32(0.9)
-	pm := panelModel{
-		TimeSliderControlConfig: &timeSliderControlConfigModel{
+	pm := models.PanelModel{
+		TimeSliderControlConfig: &models.TimeSliderControlConfigModel{
 			StartPercentageOfTimeRange: types.Float32Value(start),
 			EndPercentageOfTimeRange:   types.Float32Value(end),
 			IsAnchored:                 types.BoolValue(false),
@@ -222,14 +223,14 @@ func Test_timeSliderPercentage_float32RoundTrip_writeThenRead(t *testing.T) {
 	require.NotNil(t, tsPanel.Config.StartPercentageOfTimeRange)
 	require.NotNil(t, tsPanel.Config.EndPercentageOfTimeRange)
 
-	out := &panelModel{
-		TimeSliderControlConfig: &timeSliderControlConfigModel{
+	out := &models.PanelModel{
+		TimeSliderControlConfig: &models.TimeSliderControlConfigModel{
 			StartPercentageOfTimeRange: types.Float32Value(start),
 			EndPercentageOfTimeRange:   types.Float32Value(end),
 			IsAnchored:                 types.BoolValue(false),
 		},
 	}
-	tfPanel := &panelModel{TimeSliderControlConfig: out.TimeSliderControlConfig}
+	tfPanel := &models.PanelModel{TimeSliderControlConfig: out.TimeSliderControlConfig}
 	populateTimeSliderControlFromAPI(out, tfPanel, tsPanel.Config)
 
 	require.NotNil(t, out.TimeSliderControlConfig)

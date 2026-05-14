@@ -188,7 +188,7 @@ func elasticsearchScopedClientFromAPIClient(a *apiClient) *ElasticsearchScopedCl
 		esEndpoints:              a.esEndpoints,
 	}
 	if a.elasticsearch != nil {
-		sc.typedClient = a.elasticsearch.ToTyped()
+		sc.typedClient = a.elasticsearch
 	}
 	return sc
 }

@@ -38,12 +38,13 @@ const (
 func TestAccResourceDashboardVisConfigByReference_minimal(t *testing.T) {
 	dashboardTitle := "Acc vis by-ref min " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 	br := visByRefPath
+	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("minimal"),
 				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
 				Check: resource.ComposeTestCheckFunc(
@@ -63,7 +64,6 @@ func TestAccResourceDashboardVisConfigByReference_minimal(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("minimal"),
 				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
 				ConfigPlanChecks: resource.ConfigPlanChecks{
@@ -77,12 +77,13 @@ func TestAccResourceDashboardVisConfigByReference_minimal(t *testing.T) {
 func TestAccResourceDashboardVisConfigByReference_full(t *testing.T) {
 	dashboardTitle := "Acc vis by-ref full " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 	br := visByRefPath
+	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
 				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
 				Check: resource.ComposeTestCheckFunc(
@@ -101,7 +102,6 @@ func TestAccResourceDashboardVisConfigByReference_full(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("updated"),
 				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
 				Check: resource.ComposeTestCheckFunc(
@@ -116,7 +116,6 @@ func TestAccResourceDashboardVisConfigByReference_full(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("updated"),
 				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
 				ResourceName:             visByRefDashboard,
@@ -134,12 +133,13 @@ func TestAccResourceDashboardVisConfigByReference_full(t *testing.T) {
 func TestAccResourceDashboardVisConfigByReference_dashboardDrilldown(t *testing.T) {
 	dashboardTitle := "Acc vis dd dash " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 	p := "panels.0.vis_config.by_reference.drilldowns.0.dashboard"
+	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
 				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
 				Check: resource.ComposeTestCheckFunc(
@@ -155,7 +155,6 @@ func TestAccResourceDashboardVisConfigByReference_dashboardDrilldown(t *testing.
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
 				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
 				ConfigPlanChecks: resource.ConfigPlanChecks{
@@ -164,7 +163,6 @@ func TestAccResourceDashboardVisConfigByReference_dashboardDrilldown(t *testing.
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
 				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
 				ResourceName:             visByRefDashboard,
@@ -182,12 +180,13 @@ func TestAccResourceDashboardVisConfigByReference_dashboardDrilldown(t *testing.
 func TestAccResourceDashboardVisConfigByReference_discoverDrilldown(t *testing.T) {
 	dashboardTitle := "Acc vis dd disc " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 	p := "panels.0.vis_config.by_reference.drilldowns.0.discover"
+	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
 				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
 				Check: resource.ComposeTestCheckFunc(
@@ -200,7 +199,6 @@ func TestAccResourceDashboardVisConfigByReference_discoverDrilldown(t *testing.T
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
 				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
 				ConfigPlanChecks: resource.ConfigPlanChecks{
@@ -209,7 +207,6 @@ func TestAccResourceDashboardVisConfigByReference_discoverDrilldown(t *testing.T
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
 				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
 				ResourceName:             visByRefDashboard,
@@ -227,12 +224,13 @@ func TestAccResourceDashboardVisConfigByReference_discoverDrilldown(t *testing.T
 func TestAccResourceDashboardVisConfigByReference_urlDrilldownExplicitTrigger(t *testing.T) {
 	dashboardTitle := "Acc vis dd urle " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 	p := "panels.0.vis_config.by_reference.drilldowns.0.url"
+	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
 				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
 				Check: resource.ComposeTestCheckFunc(
@@ -246,7 +244,6 @@ func TestAccResourceDashboardVisConfigByReference_urlDrilldownExplicitTrigger(t 
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
 				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
 				ConfigPlanChecks: resource.ConfigPlanChecks{
@@ -255,7 +252,6 @@ func TestAccResourceDashboardVisConfigByReference_urlDrilldownExplicitTrigger(t 
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
 				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
 				ResourceName:             visByRefDashboard,
@@ -273,12 +269,13 @@ func TestAccResourceDashboardVisConfigByReference_urlDrilldownExplicitTrigger(t 
 func TestAccResourceDashboardVisConfigByReference_valueToReference_update(t *testing.T) {
 	dashboardTitle := "Acc vis val2ref " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 	br := visByRefPath
+	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("by_value"),
 				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
 				Check: resource.ComposeTestCheckFunc(
@@ -289,7 +286,6 @@ func TestAccResourceDashboardVisConfigByReference_valueToReference_update(t *tes
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("by_reference"),
 				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
 				Check: resource.ComposeTestCheckFunc(
@@ -301,7 +297,6 @@ func TestAccResourceDashboardVisConfigByReference_valueToReference_update(t *tes
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("by_reference"),
 				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
 				ResourceName:             visByRefDashboard,
@@ -318,12 +313,13 @@ func TestAccResourceDashboardVisConfigByReference_valueToReference_update(t *tes
 func TestAccResourceDashboardVisConfigByReference_urlDrilldown_triggerRequired_planRejected(t *testing.T) {
 	dashboardTitle := "Acc vis dd trig req " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 	triggerRequired := regexp.MustCompile(`(?i)trigger`)
+	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
 				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
 				PlanOnly:                 true,
@@ -336,12 +332,13 @@ func TestAccResourceDashboardVisConfigByReference_urlDrilldown_triggerRequired_p
 func TestAccResourceDashboardVisConfigByReference_mixedDrilldowns(t *testing.T) {
 	dashboardTitle := "Acc vis dd mix " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 	dd := "panels.0.vis_config.by_reference.drilldowns"
+	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
 				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
 				Check: resource.ComposeTestCheckFunc(
@@ -359,7 +356,6 @@ func TestAccResourceDashboardVisConfigByReference_mixedDrilldowns(t *testing.T) 
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
 				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
 				ConfigPlanChecks: resource.ConfigPlanChecks{
@@ -368,7 +364,6 @@ func TestAccResourceDashboardVisConfigByReference_mixedDrilldowns(t *testing.T) 
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
 				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)},
 				ResourceName:             visByRefDashboard,

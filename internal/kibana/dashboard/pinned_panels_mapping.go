@@ -23,14 +23,15 @@ import (
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (pp pinnedPanelModel) syntheticPanelModel() panelModel {
-	return panelModel{
+func pinnedPanelSyntheticPanelModel(pp models.PinnedPanelModel) models.PanelModel {
+	return models.PanelModel{
 		Type:                     pp.Type,
 		TimeSliderControlConfig:  pp.TimeSliderControlConfig,
 		EsqlControlConfig:        pp.EsqlControlConfig,
@@ -58,7 +59,7 @@ func pinnedPanelsDiagnosticsErrorsDetail(d diag.Diagnostics) string {
 	return strings.Join(parts, "; ")
 }
 
-func (m *dashboardModel) pinnedPanelsToAPICreateItems() (*kbapi.DashboardPinnedPanels, diag.Diagnostics) {
+func dashboardPinnedPanelsToAPICreateItems(m *models.DashboardModel) (*kbapi.DashboardPinnedPanels, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if m.PinnedPanels == nil {
 		return nil, diags
@@ -67,7 +68,7 @@ func (m *dashboardModel) pinnedPanelsToAPICreateItems() (*kbapi.DashboardPinnedP
 	items := make(kbapi.DashboardPinnedPanels, 0, len(m.PinnedPanels))
 	for i := range m.PinnedPanels {
 		itemPath := path.Root("pinned_panels").AtListIndex(i)
-		item, itemDiags := m.PinnedPanels[i].toPinnedAPIItem(itemPath)
+		item, itemDiags := pinnedPanelToPinnedAPIItem(m.PinnedPanels[i], itemPath)
 		diags.Append(itemDiags...)
 		if diags.HasError() {
 			return nil, diags
@@ -77,9 +78,9 @@ func (m *dashboardModel) pinnedPanelsToAPICreateItems() (*kbapi.DashboardPinnedP
 	return &items, diags
 }
 
-func (pp pinnedPanelModel) toPinnedAPIItem(itemPath path.Path) (kbapi.DashboardPinnedPanels_Item, diag.Diagnostics) {
+func pinnedPanelToPinnedAPIItem(pp models.PinnedPanelModel, itemPath path.Path) (kbapi.DashboardPinnedPanels_Item, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	pm := pp.syntheticPanelModel()
+	pm := pinnedPanelSyntheticPanelModel(pp)
 
 	switch pm.Type.ValueString() {
 	case panelTypeOptionsListControl:
@@ -174,14 +175,14 @@ func (pp pinnedPanelModel) toPinnedAPIItem(itemPath path.Path) (kbapi.DashboardP
 // from the API response, carrying prior TF state forward only when its `type`
 // matches. populateTf is non-nil only when the prior TF state can be reused for
 // drift preservation in populate*FromAPI helpers.
-func seedPinnedPanelModelForRead(tf *pinnedPanelModel, discriminator string) (ppm pinnedPanelModel, populateTf *panelModel) {
+func seedPinnedPanelModelForRead(tf *models.PinnedPanelModel, discriminator string) (ppm models.PinnedPanelModel, populateTf *models.PanelModel) {
 	if tf != nil {
 		ppm = *tf
 	}
 	ppm.Type = types.StringValue(discriminator)
 
 	if tf != nil && typeutils.IsKnown(tf.Type) && tf.Type.ValueString() == discriminator {
-		pm := tf.syntheticPanelModel()
+		pm := pinnedPanelSyntheticPanelModel(*tf)
 		populateTf = &pm
 	} else {
 		ppm.OptionsListControlConfig = nil
@@ -193,10 +194,10 @@ func seedPinnedPanelModelForRead(tf *pinnedPanelModel, discriminator string) (pp
 	return ppm, populateTf
 }
 
-// applyPinnedControlConfig assigns the active control config from a synthetic
-// panelModel onto ppm and clears the other three sibling slots so each pinned
-// entry only carries the discriminator-matching block.
-func (pp *pinnedPanelModel) applyPinnedControlConfig(active string, pm *panelModel) {
+// applyPinnedControlConfig copies the active control config from a synthetic
+// `models.PanelModel` into ppm, clears the other sibling config slots on ppm, and leaves
+// each pinned entry with only the block that matches the active discriminator.
+func pinnedPanelApplyPinnedControlConfig(pp *models.PinnedPanelModel, active string, pm *models.PanelModel) {
 	pp.OptionsListControlConfig = nil
 	pp.RangeSliderControlConfig = nil
 	pp.TimeSliderControlConfig = nil
@@ -213,21 +214,25 @@ func (pp *pinnedPanelModel) applyPinnedControlConfig(active string, pm *panelMod
 	}
 }
 
-func (m *dashboardModel) mapPinnedPanelsFromAPI(ctx context.Context, prior []pinnedPanelModel, api *[]kbapi.DashboardPinnedPanels_Item) ([]pinnedPanelModel, diag.Diagnostics) {
+func dashboardMapPinnedPanelsFromAPI(
+	ctx context.Context,
+	prior []models.PinnedPanelModel,
+	api *[]kbapi.DashboardPinnedPanels_Item,
+) ([]models.PinnedPanelModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	if api == nil || len(*api) == 0 {
 		if prior == nil {
 			return nil, diags
 		}
-		return []pinnedPanelModel{}, diags
+		return []models.PinnedPanelModel{}, diags
 	}
 
-	out := make([]pinnedPanelModel, 0, len(*api))
+	out := make([]models.PinnedPanelModel, 0, len(*api))
 	for i, raw := range *api {
 		itemPath := path.Root("pinned_panels").AtListIndex(i)
 
-		var tf *pinnedPanelModel
+		var tf *models.PinnedPanelModel
 		if i < len(prior) {
 			tf = &prior[i]
 		}
@@ -253,10 +258,10 @@ func (m *dashboardModel) mapPinnedPanelsFromAPI(ctx context.Context, prior []pin
 
 			ppm, populateTf := seedPinnedPanelModelForRead(tf, panelTypeOptionsListControl)
 
-			pm := ppm.syntheticPanelModel()
+			pm := pinnedPanelSyntheticPanelModel(ppm)
 			populateOptionsListControlFromAPI(&pm, populateTf, &olPanel)
 
-			ppm.applyPinnedControlConfig(panelTypeOptionsListControl, &pm)
+			pinnedPanelApplyPinnedControlConfig(&ppm, panelTypeOptionsListControl, &pm)
 			out = append(out, ppm)
 
 		case panelTypeRangeSlider:
@@ -273,10 +278,10 @@ func (m *dashboardModel) mapPinnedPanelsFromAPI(ctx context.Context, prior []pin
 
 			ppm, populateTf := seedPinnedPanelModelForRead(tf, panelTypeRangeSlider)
 
-			pm := ppm.syntheticPanelModel()
+			pm := pinnedPanelSyntheticPanelModel(ppm)
 			populateRangeSliderControlFromAPI(ctx, &pm, populateTf, &rsPanel)
 
-			ppm.applyPinnedControlConfig(panelTypeRangeSlider, &pm)
+			pinnedPanelApplyPinnedControlConfig(&ppm, panelTypeRangeSlider, &pm)
 			out = append(out, ppm)
 
 		case panelTypeTimeSlider:
@@ -293,10 +298,10 @@ func (m *dashboardModel) mapPinnedPanelsFromAPI(ctx context.Context, prior []pin
 
 			ppm, populateTf := seedPinnedPanelModelForRead(tf, panelTypeTimeSlider)
 
-			pm := ppm.syntheticPanelModel()
+			pm := pinnedPanelSyntheticPanelModel(ppm)
 			populateTimeSliderControlFromAPI(&pm, populateTf, tsPanel.Config)
 
-			ppm.applyPinnedControlConfig(panelTypeTimeSlider, &pm)
+			pinnedPanelApplyPinnedControlConfig(&ppm, panelTypeTimeSlider, &pm)
 			out = append(out, ppm)
 
 		case panelTypeEsqlControl:
@@ -313,10 +318,10 @@ func (m *dashboardModel) mapPinnedPanelsFromAPI(ctx context.Context, prior []pin
 
 			ppm, populateTf := seedPinnedPanelModelForRead(tf, panelTypeEsqlControl)
 
-			pm := ppm.syntheticPanelModel()
+			pm := pinnedPanelSyntheticPanelModel(ppm)
 			populateEsqlControlFromAPI(&pm, populateTf, esqlPanel.Config)
 
-			ppm.applyPinnedControlConfig(panelTypeEsqlControl, &pm)
+			pinnedPanelApplyPinnedControlConfig(&ppm, panelTypeEsqlControl, &pm)
 			out = append(out, ppm)
 
 		default:
