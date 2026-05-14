@@ -17,6 +17,10 @@
 
 package lenscommon
 
+// ForType opaque-alias assertions against the live converter registry are in
+// registry_aliases_external_test.go as package lenscommon_test to avoid an import cycle
+// (panel/lens* packages import lenscommon).
+
 import (
 	"context"
 	"testing"
