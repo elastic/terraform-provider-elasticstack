@@ -694,7 +694,7 @@ Optional:
 
 Required:
 
-- `label` (String) Display label for the drilldown.
+- `label` (String) Display label shown in the drilldown menu.
 - `trigger` (String) When this drilldown runs. Allowed values: `on_click_image`, `on_open_panel_menu` (Kibana image panel URL drilldown triggers).
 - `url` (String) Templated URL for the drilldown. Variables are documented in the [Kibana drilldown URL template variables](https://www.elastic.co/docs/explore-analyze/dashboards/drilldowns#url-template-variable) section of the Elastic docs.
 
@@ -5561,7 +5561,7 @@ Optional:
 
 Required:
 
-- `label` (String) Display label for the drilldown.
+- `label` (String) Display label shown in the drilldown menu.
 - `trigger` (String) When this drilldown runs. Allowed values: `on_click_image`, `on_open_panel_menu` (Kibana image panel URL drilldown triggers).
 - `url` (String) Templated URL for the drilldown. Variables are documented in the [Kibana drilldown URL template variables](https://www.elastic.co/docs/explore-analyze/dashboards/drilldowns#url-template-variable) section of the Elastic docs.
 
