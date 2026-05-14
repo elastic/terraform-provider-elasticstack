@@ -1,8 +1,8 @@
 ## 1. Fix `AnalysisConfigTFModel.Detectors` field type
 
-- [ ] 1.1 In `internal/elasticsearch/ml/anomalydetectionjob/models_tf.go`, change
+- [x] 1.1 In `internal/elasticsearch/ml/anomalydetectionjob/models_tf.go`, change
   `AnalysisConfigTFModel.Detectors` from `[]DetectorTFModel` to `types.List` (line ~81).
-- [ ] 1.2 Reuse the existing `getDetectorAttrTypes(ctx context.Context) map[string]attr.Type`
+- [x] 1.2 Reuse the existing `getDetectorAttrTypes(ctx context.Context) map[string]attr.Type`
   helper from `internal/elasticsearch/ml/anomalydetectionjob/schema.go` for the full
   `DetectorTFModel` `attr.Type` map (including the `custom_rules` nested object type via
   `getCustomRuleAttrTypes`) when updating `convertAnalysisConfigFromAPI` and any
@@ -11,7 +11,7 @@
 
 ## 2. Update `toAPIModel` detectors loop
 
-- [ ] 2.1 In `models_tf.go` `toAPIModel` method, replace the direct `make([]DetectorAPIModel, len(analysisConfig.Detectors))` / `range analysisConfig.Detectors` pattern with:
+- [x] 2.1 In `models_tf.go` `toAPIModel` method, replace the direct `make([]DetectorAPIModel, len(analysisConfig.Detectors))` / `range analysisConfig.Detectors` pattern with:
   ```go
   var detectorsTF []DetectorTFModel
   diags.Append(analysisConfig.Detectors.ElementsAs(ctx, &detectorsTF, false)...)
@@ -24,7 +24,7 @@
 
 ## 3. Update `convertAnalysisConfigFromAPI` detectors assignment
 
-- [ ] 3.1 In `models_tf.go` `convertAnalysisConfigFromAPI`, replace the final
+- [x] 3.1 In `models_tf.go` `convertAnalysisConfigFromAPI`, replace the final
   `analysisConfigTF.Detectors = detectorsTF` assignment (where `detectorsTF` is a
   `[]DetectorTFModel` slice) with:
   ```go
@@ -34,7 +34,7 @@
   diags.Append(d...)
   analysisConfigTF.Detectors = detectorsListVal
   ```
-- [ ] 3.2 Update the existing code that reads from `analysisConfigTF.Detectors` as a
+- [x] 3.2 Update the existing code that reads from `analysisConfigTF.Detectors` as a
   slice (e.g. `if len(analysisConfigTF.Detectors) > i` guard for preserving
   `originalDetector`): extract the prior `[]DetectorTFModel` from the incoming
   `analysisConfigTF.Detectors` using `ElementsAs` before the detectors loop, or use a
@@ -42,7 +42,7 @@
 
 ## 4. Update `validateConfigCustomRules`
 
-- [ ] 4.1 In `internal/elasticsearch/ml/anomalydetectionjob/validate.go`, change the
+- [x] 4.1 In `internal/elasticsearch/ml/anomalydetectionjob/validate.go`, change the
   `for i := range ac.Detectors` loop to guard with an `IsUnknown` / `IsNull` check on
   `ac.Detectors` first, then extract `[]DetectorTFModel` via `ElementsAs`:
   ```go
@@ -62,7 +62,7 @@
 
 ## 5. Acceptance test
 
-- [ ] 5.1 In `internal/elasticsearch/ml/anomalydetectionjob/acc_test.go` (or associated
+- [x] 5.1 In `internal/elasticsearch/ml/anomalydetectionjob/acc_test.go` (or associated
   testdata), add a test case (or `resource.TestStep`) that:
   - Declares a `variable "detectors"` with a `list(object({...}))` type and the minimal
     repro default from issue #2966.
@@ -71,7 +71,7 @@
   - Includes a `resource.TestCheckResourceAttr` assertion confirming at least one
     detector attribute (e.g. `analysis_config.detectors.0.function`) reflects the
     expected value.
-- [ ] 5.2 Ensure the new test is grouped under or named consistently with existing
+- [x] 5.2 Ensure the new test is grouped under or named consistently with existing
   `TestAccResourceAnomalyDetectionJob*` tests.
 
 ## 6. Build and verify
@@ -83,7 +83,7 @@
 
 ## 7. OpenSpec
 
-- [ ] 7.1 Keep delta spec
+- [x] 7.1 Keep delta spec
   `openspec/changes/ml-anomaly-detection-job-detectors-types-list/specs/elasticsearch-ml-anomaly-detection-job/spec.md`
   aligned with implementation; add normative requirements for the `types.List` field type
   and variable-sourced detectors test.
