@@ -70,7 +70,8 @@ function rewriteLinkTable(content, targetVersion, previousTag) {
     return content;
   }
 
-  const unreleasedLineMatch = content.match(/^\[Unreleased\]:\s*(https?:\/\/.+\/compare\/).*/m);
+  const unreleasedLineRegex = /^\[Unreleased\]:[ \t]*(https?:\/\/.+\/compare\/).*$/m;
+  const unreleasedLineMatch = content.match(unreleasedLineRegex);
   if (!unreleasedLineMatch) {
     return content;
   }
@@ -79,13 +80,13 @@ function rewriteLinkTable(content, targetVersion, previousTag) {
   const unreleasedLine = `[Unreleased]: ${baseCompareUrl}v${targetVersion}...HEAD`;
   const releaseLine = `[${targetVersion}]: ${baseCompareUrl}${previousTag}...v${targetVersion}`;
 
-  let updated = content.replace(/^\[Unreleased\]:.*$/m, unreleasedLine);
+  let updated = content.replace(unreleasedLineRegex, unreleasedLine);
 
   if (new RegExp(`^\\[${targetVersion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\]:`, 'm').test(updated)) {
     return updated;
   }
 
-  return updated.replace(unreleasedLine, `${unreleasedLine}\n${releaseLine}`);
+  return updated.replace(/^\[Unreleased\]:.*$/m, `${unreleasedLine}\n${releaseLine}`);
 }
 
 /**
