@@ -22,7 +22,6 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -30,41 +29,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
-
-func newGaugePanelConfigConverter() gaugePanelConfigConverter {
-	return gaugePanelConfigConverter{}
-}
-
-type gaugePanelConfigConverter struct{}
-
-func (c gaugePanelConfigConverter) populateFromAttributes(
-	ctx context.Context,
-	dashboard *models.DashboardModel,
-	tfPanel *models.PanelModel,
-	blocks *models.LensByValueChartBlocks,
-	attrs kbapi.KbnDashboardPanelTypeVisConfig0,
-) diag.Diagnostics {
-	var prior *models.GaugeConfigModel
-	if b := LensByValueChartBlocksFromPanel(tfPanel); b != nil && b.GaugeConfig != nil {
-		cpy := *b.GaugeConfig
-		prior = &cpy
-	}
-	blocks.GaugeConfig = &models.GaugeConfigModel{}
-
-	if noESQL, err := attrs.AsGaugeNoESQL(); err == nil && !isGaugeNoESQLCandidateActuallyESQL(noESQL) {
-		return gaugeConfigFromAPI(ctx, blocks.GaugeConfig, dashboard, prior, noESQL)
-	}
-
-	gaugeESQL, err := attrs.AsGaugeESQL()
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	return gaugeConfigFromAPIESQL(ctx, blocks.GaugeConfig, dashboard, prior, gaugeESQL)
-}
-
-func (c gaugePanelConfigConverter) buildAttributes(blocks *models.LensByValueChartBlocks, dashboard *models.DashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
-	return gaugeConfigToAPI(blocks.GaugeConfig, dashboard)
-}
 
 func isGaugeNoESQLCandidateActuallyESQL(api kbapi.GaugeNoESQL) bool {
 	return lensDataSourceIsESQLOrTable(api.DataSource.MarshalJSON())
