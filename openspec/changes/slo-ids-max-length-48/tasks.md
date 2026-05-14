@@ -10,5 +10,5 @@
 
 ## 3. Verify requirements alignment
 
-- [ ] 3.1 Confirm the implementation and tests satisfy the `kibana-slo` delta spec for 48-character `slo_id` acceptance and rejection only above the new limit.
-- [ ] 3.2 Run the relevant OpenSpec and Go test commands for the touched SLO resource paths.
+- [x] 3.1 Confirm the implementation and tests satisfy the `kibana-slo` delta spec for 48-character `slo_id` acceptance and rejection only above the new limit.
+- [x] 3.2 Run the relevant OpenSpec and Go test commands for the touched SLO resource paths.
