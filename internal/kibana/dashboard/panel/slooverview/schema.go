@@ -40,13 +40,13 @@ func SchemaAttribute() schema.Attribute {
 		MarkdownDescription: panelkit.PanelConfigDescription(
 			"Configuration for an SLO overview panel. Use either `single` (for a single SLO) or `groups` (for grouped SLO overview).",
 			"slo_overview_config",
-			panelkit.TypedSiblingPanelConfigBlockNames,
+			panelkit.TypedSiblingPanelConfigBlockNames(),
 		),
 		Optional:   true,
 		Attributes: nestedAttributes(),
 		Validators: []validator.Object{
 			objectvalidator.ConflictsWith(
-				panelkit.SiblingTypedPanelConfigConflictPathsExcept("slo_overview_config", panelkit.TypedSiblingPanelConfigBlockNames)...,
+				panelkit.SiblingTypedPanelConfigConflictPathsExcept("slo_overview_config", panelkit.TypedSiblingPanelConfigBlockNames())...,
 			),
 			validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelType}),
 			sloOverviewConfigModeValidator{},

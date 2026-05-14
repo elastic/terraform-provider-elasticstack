@@ -47,13 +47,13 @@ func SchemaAttribute() schema.Attribute {
 			"Configuration for an `slo_alerts` panel (`kbn-dashboard-panel-type-slo_alerts`). "+
 				"Required when `type` is `slo_alerts`.",
 			panelConfigBlock,
-			panelkit.TypedSiblingPanelConfigBlockNames,
+			panelkit.TypedSiblingPanelConfigBlockNames(),
 		),
 		Optional:   true,
 		Attributes: nestedAttributes(),
 		Validators: []validator.Object{
 			objectvalidator.ConflictsWith(
-				panelkit.SiblingTypedPanelConfigConflictPathsExcept(panelConfigBlock, panelkit.TypedSiblingPanelConfigBlockNames)...,
+				panelkit.SiblingTypedPanelConfigConflictPathsExcept(panelConfigBlock, panelkit.TypedSiblingPanelConfigBlockNames())...,
 			),
 			validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelType}),
 			validators.RequiredIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelType}),

@@ -49,7 +49,7 @@ func SchemaAttribute() schema.Attribute {
 				"All fields are optional; an absent or empty block shows statistics "+
 				"for all monitors visible within the space.",
 			"synthetics_stats_overview_config",
-			panelkit.TypedSiblingPanelConfigBlockNames,
+			panelkit.TypedSiblingPanelConfigBlockNames(),
 		),
 		Optional: true,
 		Attributes: map[string]schema.Attribute{
@@ -110,7 +110,7 @@ func SchemaAttribute() schema.Attribute {
 		},
 		Validators: []validator.Object{
 			objectvalidator.ConflictsWith(
-				panelkit.SiblingTypedPanelConfigConflictPathsExcept("synthetics_stats_overview_config", panelkit.TypedSiblingPanelConfigBlockNames)...,
+				panelkit.SiblingTypedPanelConfigConflictPathsExcept("synthetics_stats_overview_config", panelkit.TypedSiblingPanelConfigBlockNames())...,
 			),
 			validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelType}),
 		},

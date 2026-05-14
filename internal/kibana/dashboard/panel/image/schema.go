@@ -50,13 +50,13 @@ func SchemaAttribute() schema.Attribute {
 			"Configuration for an `image` panel (`kbn-dashboard-panel-type-image`). Required when `type` is `image`. "+
 				"References the Kibana Dashboard API image embeddable `config` shape.",
 			panelConfigBlock,
-			panelkit.TypedSiblingPanelConfigBlockNames,
+			panelkit.TypedSiblingPanelConfigBlockNames(),
 		),
 		Optional:   true,
 		Attributes: nestedAttributes(),
 		Validators: []validator.Object{
 			objectvalidator.ConflictsWith(
-				panelkit.SiblingTypedPanelConfigConflictPathsExcept(panelConfigBlock, panelkit.TypedSiblingPanelConfigBlockNames)...,
+				panelkit.SiblingTypedPanelConfigConflictPathsExcept(panelConfigBlock, panelkit.TypedSiblingPanelConfigBlockNames())...,
 			),
 			validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelType}),
 			validators.RequiredIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelType}),

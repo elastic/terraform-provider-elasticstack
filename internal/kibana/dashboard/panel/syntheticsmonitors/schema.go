@@ -49,7 +49,7 @@ func SchemaAttribute() schema.Attribute {
 			"Configuration for a Synthetics monitors panel. Displays a table of Elastic Synthetics monitors "+
 				"and their current status. All fields are optional — omit the block entirely for a bare panel with no filtering.",
 			"synthetics_monitors_config",
-			panelkit.TypedSiblingPanelConfigBlockNames,
+			panelkit.TypedSiblingPanelConfigBlockNames(),
 		),
 		Optional: true,
 		Attributes: map[string]schema.Attribute{
@@ -110,7 +110,7 @@ func SchemaAttribute() schema.Attribute {
 		},
 		Validators: []validator.Object{
 			objectvalidator.ConflictsWith(
-				panelkit.SiblingTypedPanelConfigConflictPathsExcept("synthetics_monitors_config", panelkit.TypedSiblingPanelConfigBlockNames)...,
+				panelkit.SiblingTypedPanelConfigConflictPathsExcept("synthetics_monitors_config", panelkit.TypedSiblingPanelConfigBlockNames())...,
 			),
 			validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelType}),
 		},

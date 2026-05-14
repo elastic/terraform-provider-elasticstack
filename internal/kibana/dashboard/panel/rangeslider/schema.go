@@ -36,7 +36,7 @@ func SchemaAttribute() schema.Attribute {
 		MarkdownDescription: panelkit.PanelConfigDescription(
 			"Configuration for a range slider control panel. Provides a min/max range filter tied to a data view field.",
 			"range_slider_control_config",
-			panelkit.TypedSiblingPanelConfigBlockNames,
+			panelkit.TypedSiblingPanelConfigBlockNames(),
 		),
 		Optional: true,
 		Attributes: map[string]schema.Attribute{
@@ -76,7 +76,7 @@ func SchemaAttribute() schema.Attribute {
 		},
 		Validators: []validator.Object{
 			objectvalidator.ConflictsWith(
-				panelkit.SiblingTypedPanelConfigConflictPathsExcept("range_slider_control_config", panelkit.TypedSiblingPanelConfigBlockNames)...,
+				panelkit.SiblingTypedPanelConfigConflictPathsExcept("range_slider_control_config", panelkit.TypedSiblingPanelConfigBlockNames())...,
 			),
 			validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelType}),
 			validators.RequiredIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelType}),

@@ -17,24 +17,19 @@
 
 package panelkit
 
-// TypedSiblingPanelConfigBlockNames lists panel-level typed config attribute names (`*_config`).
-// Until section 3.4 of dashboard-panel-contract migrates getPanelSchema to registry.ConfigNames(), this slice must remain
-// in sync with dashboard/schema.go panelConfigNames (currently an alias).
-var TypedSiblingPanelConfigBlockNames = []string{
-	"config_json",
-	"markdown_config",
-	"vis_config",
-	"lens_dashboard_app_config",
-	"esql_control_config",
-	"options_list_control_config",
-	"range_slider_control_config",
-	"time_slider_control_config",
-	"slo_alerts_config",
-	"slo_burn_rate_config",
-	"slo_overview_config",
-	"slo_error_budget_config",
-	"synthetics_monitors_config",
-	"synthetics_stats_overview_config",
-	"image_config",
-	"discover_session_config",
+// typedSiblingPanelConfigBlockNames lists panel-level typed config attribute names (`*_config`),
+// populated once from dashboard registry init plus explicit unmigrated panel blocks.
+var typedSiblingPanelConfigBlockNames []string
+
+// SetTypedSiblingPanelConfigBlockNames configures the mutually exclusive sibling name list used for
+// panel-level ConflictsWith / documentation. Dashboard init calls this after registering handlers.
+func SetTypedSiblingPanelConfigBlockNames(names []string) {
+	typedSiblingPanelConfigBlockNames = append([]string(nil), names...)
+}
+
+// TypedSiblingPanelConfigBlockNames returns a copy of panel-level typed config sibling names.
+func TypedSiblingPanelConfigBlockNames() []string {
+	out := make([]string, len(typedSiblingPanelConfigBlockNames))
+	copy(out, typedSiblingPanelConfigBlockNames)
+	return out
 }

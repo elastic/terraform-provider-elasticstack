@@ -36,7 +36,7 @@ func SchemaAttribute() schema.Attribute {
 		MarkdownDescription: panelkit.PanelConfigDescription(
 			"Configuration for an ES|QL control panel. Use this to manage ES|QL variable controls on a dashboard.",
 			"esql_control_config",
-			panelkit.TypedSiblingPanelConfigBlockNames,
+			panelkit.TypedSiblingPanelConfigBlockNames(),
 		),
 		Optional: true,
 		Attributes: map[string]schema.Attribute{
@@ -109,7 +109,7 @@ func SchemaAttribute() schema.Attribute {
 		},
 		Validators: []validator.Object{
 			objectvalidator.ConflictsWith(
-				panelkit.SiblingTypedPanelConfigConflictPathsExcept("esql_control_config", panelkit.TypedSiblingPanelConfigBlockNames)...,
+				panelkit.SiblingTypedPanelConfigConflictPathsExcept("esql_control_config", panelkit.TypedSiblingPanelConfigBlockNames())...,
 			),
 			validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelType}),
 			validators.RequiredIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelType}),

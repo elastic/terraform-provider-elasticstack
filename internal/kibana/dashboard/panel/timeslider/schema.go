@@ -35,7 +35,7 @@ func SchemaAttribute() schema.Attribute {
 		MarkdownDescription: panelkit.PanelConfigDescription(
 			"Configuration for a time slider control panel. Controls the visible time window within the dashboard's global time range.",
 			"time_slider_control_config",
-			panelkit.TypedSiblingPanelConfigBlockNames,
+			panelkit.TypedSiblingPanelConfigBlockNames(),
 		),
 		Optional: true,
 		Attributes: map[string]schema.Attribute{
@@ -62,7 +62,7 @@ func SchemaAttribute() schema.Attribute {
 		},
 		Validators: []validator.Object{
 			objectvalidator.ConflictsWith(
-				panelkit.SiblingTypedPanelConfigConflictPathsExcept("time_slider_control_config", panelkit.TypedSiblingPanelConfigBlockNames)...,
+				panelkit.SiblingTypedPanelConfigConflictPathsExcept("time_slider_control_config", panelkit.TypedSiblingPanelConfigBlockNames())...,
 			),
 			validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelType}),
 		},

@@ -74,6 +74,10 @@ func init() {
 		panelkit.MustPanelConfigBlockTagged(block)
 		derivedPanelConfigNames = append(derivedPanelConfigNames, block)
 	}
+
+	typedSiblings := append([]string{}, derivedPanelConfigNames...)
+	typedSiblings = append(typedSiblings, []string{"vis_config", "lens_dashboard_app_config", "discover_session_config"}...)
+	panelkit.SetTypedSiblingPanelConfigBlockNames(typedSiblings)
 }
 
 func LookupHandler(panelType string) iface.Handler { return panelTypeToHandler[panelType] }

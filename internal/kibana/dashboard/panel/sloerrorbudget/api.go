@@ -104,6 +104,7 @@ func (Handler) ValidatePanelConfig(_ context.Context, panelTypeDiscriminator str
 
 	flat, obj, shaped := sloErrorBudgetAttrsShape(attrs)
 	if !shaped {
+		out.AddAttributeError(attrPath.AtName(panelConfigAttrsKeyPrefix), "Missing slo_error_budget panel configuration", "SLO error budget panels require `slo_error_budget_config`.")
 		return out
 	}
 

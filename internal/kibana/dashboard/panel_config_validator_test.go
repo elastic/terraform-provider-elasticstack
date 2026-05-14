@@ -21,8 +21,14 @@ import (
 	"context"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/image"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/markdown"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/sloalerts"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/sloburnrate"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/sloerrorbudget"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/slooverview"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	tfvalidator "github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -30,58 +36,56 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func Test_panelConfigValidateDiags_markdown(t *testing.T) {
-	t.Run("accepts markdown_config", func(t *testing.T) {
-		diags := panelConfigValidateDiags(
-			"markdown",
-			panelConfigValueState{Set: true},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			nil,
-		)
+var testAttrPathPanel = path.Root("panel")
+
+// appendValidatePanelDiagnostics mirrors panelConfigValidator.ValidateObject semantics for isolated tests:
+// aggregate registry handler validation then legacy unmigrated-panel checks (discover_session, vis).
+func appendValidatePanelDiagnostics(ctx context.Context, panel string, attrs map[string]attr.Value) diag.Diagnostics {
+	var diags diag.Diagnostics
+	for _, h := range AllHandlers() {
+		diags.Append(h.ValidatePanelConfig(ctx, panel, attrs, testAttrPathPanel)...)
+	}
+	diags.Append(panelConfigValidateDiags(
+		panel,
+		panelConfigValueStateFromValue(attrs["config_json"]),
+		panelConfigValueStateFromValue(attrs["vis_config"]),
+		panelConfigValueStateFromValue(attrs["discover_session_config"]),
+		&testAttrPathPanel,
+	)...)
+	return diags
+}
+
+func Test_markdownHandler_ValidatePanelConfig(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("accepts markdown_config set", func(t *testing.T) {
+		diags := markdown.Handler{}.ValidatePanelConfig(ctx, "markdown", map[string]attr.Value{
+			"markdown_config": types.BoolValue(true),
+			"config_json":     types.StringNull(),
+		}, testAttrPathPanel)
 		require.False(t, diags.HasError())
 	})
 
 	t.Run("accepts config_json fallback", func(t *testing.T) {
-		diags := panelConfigValidateDiags(
-			"markdown",
-			panelConfigValueState{},
-			panelConfigValueState{Set: true},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			nil,
-		)
+		diags := markdown.Handler{}.ValidatePanelConfig(ctx, "markdown", map[string]attr.Value{
+			"config_json": types.StringValue(`{}`),
+		}, testAttrPathPanel)
 		require.False(t, diags.HasError())
 	})
 
 	t.Run("rejects missing config", func(t *testing.T) {
-		diags := panelConfigValidateDiags(
-			"markdown",
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			nil,
-		)
+		diags := markdown.Handler{}.ValidatePanelConfig(ctx, "markdown", map[string]attr.Value{}, testAttrPathPanel)
 		require.True(t, diags.HasError())
 		require.Len(t, diags, 1)
 		require.Equal(t, "Missing markdown panel configuration", diags[0].Summary())
+	})
+
+	t.Run("rejects markdown_config combined with panel config_json", func(t *testing.T) {
+		diags := markdown.Handler{}.ValidatePanelConfig(ctx, "markdown", map[string]attr.Value{
+			"markdown_config": types.BoolValue(true),
+			"config_json":     types.StringValue(`{}`),
+		}, testAttrPathPanel)
+		require.True(t, diags.HasError())
 	})
 }
 
@@ -89,13 +93,7 @@ func Test_panelConfigValidateDiags_vis(t *testing.T) {
 	t.Run("accepts config_json fallback", func(t *testing.T) {
 		diags := panelConfigValidateDiags(
 			"vis",
-			panelConfigValueState{},
 			panelConfigValueState{Set: true},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
 			nil,
@@ -107,13 +105,7 @@ func Test_panelConfigValidateDiags_vis(t *testing.T) {
 		diags := panelConfigValidateDiags(
 			"vis",
 			panelConfigValueState{},
-			panelConfigValueState{},
 			panelConfigValueState{Set: true},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
 			panelConfigValueState{},
 			nil,
 		)
@@ -123,12 +115,6 @@ func Test_panelConfigValidateDiags_vis(t *testing.T) {
 	t.Run("rejects missing config", func(t *testing.T) {
 		diags := panelConfigValidateDiags(
 			"vis",
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
@@ -142,14 +128,8 @@ func Test_panelConfigValidateDiags_vis(t *testing.T) {
 	t.Run("rejects vis_config and config_json together", func(t *testing.T) {
 		diags := panelConfigValidateDiags(
 			"vis",
-			panelConfigValueState{},
 			panelConfigValueState{Set: true},
 			panelConfigValueState{Set: true},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
 			panelConfigValueState{},
 			nil,
 		)
@@ -162,13 +142,7 @@ func Test_panelConfigValidateDiags_vis(t *testing.T) {
 	t.Run("defers when config_json is unknown", func(t *testing.T) {
 		diags := panelConfigValidateDiags(
 			"vis",
-			panelConfigValueState{},
 			panelConfigValueState{Unknown: true},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
 			nil,
@@ -180,18 +154,26 @@ func Test_panelConfigValidateDiags_vis(t *testing.T) {
 		diags := panelConfigValidateDiags(
 			"vis",
 			panelConfigValueState{},
-			panelConfigValueState{},
 			panelConfigValueState{Unknown: true},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
 			panelConfigValueState{},
 			nil,
 		)
 		require.False(t, diags.HasError())
 	})
+}
+
+func Test_registryDispatch_markdown_badConfig(t *testing.T) {
+	ctx := context.Background()
+	diags := appendValidatePanelDiagnostics(ctx, "markdown", map[string]attr.Value{})
+	require.True(t, diags.HasError())
+	var sawMarkdown bool
+	for _, d := range diags {
+		if d.Summary() == "Missing markdown panel configuration" {
+			sawMarkdown = true
+			break
+		}
+	}
+	require.True(t, sawMarkdown)
 }
 
 func Test_panelConfigValidateDiags_timeSlider(t *testing.T) {
@@ -201,29 +183,15 @@ func Test_panelConfigValidateDiags_timeSlider(t *testing.T) {
 			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
 			nil,
 		)
 		require.False(t, diags.HasError())
 	})
 
 	t.Run("does not emit diagnostic for practitioner-authored config_json", func(t *testing.T) {
-		// Schema validation on `config_json` (type allowlist) produces the single plan-time error;
-		// this object validator intentionally does not duplicate it.
 		diags := panelConfigValidateDiags(
 			"time_slider_control",
-			panelConfigValueState{},
 			panelConfigValueState{Set: true},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
 			nil,
@@ -234,13 +202,7 @@ func Test_panelConfigValidateDiags_timeSlider(t *testing.T) {
 	t.Run("accepts time_slider when config_json is unknown", func(t *testing.T) {
 		diags := panelConfigValidateDiags(
 			"time_slider_control",
-			panelConfigValueState{},
 			panelConfigValueState{Unknown: true},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
 			nil,
@@ -249,58 +211,21 @@ func Test_panelConfigValidateDiags_timeSlider(t *testing.T) {
 	})
 }
 
-func Test_panelConfigValidateDiags_SloBurnRate(t *testing.T) {
-	t.Run("accepts slo_burn_rate_config", func(t *testing.T) {
-		diags := panelConfigValidateDiags(
-			"slo_burn_rate",
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{Set: true},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			nil,
-		)
+func Test_sloBurn_rateHandler_ValidatePanelConfig(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("accepts slo_burn_rate_config via flat attrs", func(t *testing.T) {
+		diags := sloburnrate.Handler{}.ValidatePanelConfig(ctx, "slo_burn_rate", map[string]attr.Value{
+			"slo_id":   types.StringValue("foo"),
+			"duration": types.StringValue("5m"),
+		}, testAttrPathPanel)
 		require.False(t, diags.HasError())
 	})
 
-	t.Run("rejects missing config", func(t *testing.T) {
-		diags := panelConfigValidateDiags(
-			"slo_burn_rate",
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			nil,
-		)
+	t.Run("rejects missing config block on full-panel attrs shape", func(t *testing.T) {
+		diags := sloburnrate.Handler{}.ValidatePanelConfig(ctx, "slo_burn_rate", map[string]attr.Value{}, testAttrPathPanel)
 		require.True(t, diags.HasError())
-		require.Len(t, diags, 1)
 		require.Equal(t, "Missing SLO burn rate panel configuration", diags[0].Summary())
-	})
-
-	t.Run("defers when config is unknown", func(t *testing.T) {
-		diags := panelConfigValidateDiags(
-			"slo_burn_rate",
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{Unknown: true},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			nil,
-		)
-		require.False(t, diags.HasError())
 	})
 }
 
@@ -366,55 +291,18 @@ func Test_rangeSliderControlValueListSizeValidator(t *testing.T) {
 	}
 }
 
-func Test_panelConfigValidateDiags_sloErrorBudget(t *testing.T) {
-	t.Run("accepts slo_error_budget_config", func(t *testing.T) {
-		diags := panelConfigValidateDiags(
-			"slo_error_budget",
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{Set: true},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			nil,
-		)
-		require.False(t, diags.HasError())
-	})
+func Test_slo_error_budget_ValidatePanelConfig(t *testing.T) {
+	ctx := context.Background()
 
-	t.Run("defers when slo_error_budget_config is unknown", func(t *testing.T) {
-		diags := panelConfigValidateDiags(
-			"slo_error_budget",
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{Unknown: true},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			nil,
-		)
+	t.Run("accepts slo_error_budget_config via flat slo_id", func(t *testing.T) {
+		diags := sloerrorbudget.Handler{}.ValidatePanelConfig(ctx, "slo_error_budget", map[string]attr.Value{
+			"slo_id": types.StringValue("sid"),
+		}, testAttrPathPanel)
 		require.False(t, diags.HasError())
 	})
 
 	t.Run("rejects missing slo_error_budget_config", func(t *testing.T) {
-		diags := panelConfigValidateDiags(
-			"slo_error_budget",
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			nil,
-		)
+		diags := sloerrorbudget.Handler{}.ValidatePanelConfig(ctx, "slo_error_budget", map[string]attr.Value{}, testAttrPathPanel)
 		require.True(t, diags.HasError())
 		require.Len(t, diags, 1)
 		require.Equal(t, "Missing slo_error_budget panel configuration", diags[0].Summary())
@@ -443,29 +331,15 @@ func Test_panelConfigValidateDiags_optionsListControl(t *testing.T) {
 			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
 			nil,
 		)
 		require.False(t, diags.HasError())
 	})
 
 	t.Run("does not emit diagnostic for practitioner-authored config_json", func(t *testing.T) {
-		// Schema validation on `config_json` (type allowlist) produces the single plan-time error;
-		// this object validator intentionally does not duplicate it.
 		diags := panelConfigValidateDiags(
 			"options_list_control",
-			panelConfigValueState{},
 			panelConfigValueState{Set: true},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
 			nil,
@@ -476,13 +350,7 @@ func Test_panelConfigValidateDiags_optionsListControl(t *testing.T) {
 	t.Run("accepts options_list_control when config_json is unknown", func(t *testing.T) {
 		diags := panelConfigValidateDiags(
 			"options_list_control",
-			panelConfigValueState{},
 			panelConfigValueState{Unknown: true},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
 			nil,
@@ -588,76 +456,36 @@ func Test_timeSliderControlPercentageValidators(t *testing.T) {
 	}
 }
 
-func Test_panelConfigValidateDiags_image(t *testing.T) {
+func Test_imageHandler_ValidatePanelConfig(t *testing.T) {
+	ctx := context.Background()
+
 	t.Run("accepts image_config", func(t *testing.T) {
-		diags := panelConfigValidateDiags(
-			panelTypeImage,
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{Set: true},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			nil,
-		)
+		diags := image.Handler{}.ValidatePanelConfig(ctx, panelTypeImage, map[string]attr.Value{
+			"image_config": types.BoolValue(true),
+		}, testAttrPathPanel)
 		require.False(t, diags.HasError())
 	})
 
 	t.Run("rejects missing image_config", func(t *testing.T) {
-		diags := panelConfigValidateDiags(
-			panelTypeImage,
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			nil,
-		)
+		diags := image.Handler{}.ValidatePanelConfig(ctx, panelTypeImage, map[string]attr.Value{}, testAttrPathPanel)
 		require.True(t, diags.HasError())
 		require.Len(t, diags, 1)
 		require.Equal(t, "Missing image panel configuration", diags[0].Summary())
 	})
 }
 
-func Test_panelConfigValidateDiags_sloAlerts(t *testing.T) {
+func Test_slo_alerts_ValidatePanelConfig(t *testing.T) {
+	ctx := context.Background()
+
 	t.Run("accepts slo_alerts_config", func(t *testing.T) {
-		diags := panelConfigValidateDiags(
-			panelTypeSloAlerts,
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{Set: true},
-			panelConfigValueState{},
-			nil,
-		)
+		diags := sloalerts.Handler{}.ValidatePanelConfig(ctx, panelTypeSloAlerts, map[string]attr.Value{
+			"slo_alerts_config": types.BoolValue(true),
+		}, testAttrPathPanel)
 		require.False(t, diags.HasError())
 	})
 
 	t.Run("rejects missing slo_alerts_config", func(t *testing.T) {
-		diags := panelConfigValidateDiags(
-			panelTypeSloAlerts,
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			nil,
-		)
+		diags := sloalerts.Handler{}.ValidatePanelConfig(ctx, panelTypeSloAlerts, map[string]attr.Value{}, testAttrPathPanel)
 		require.True(t, diags.HasError())
 		require.Len(t, diags, 1)
 		require.Equal(t, "Missing SLO alerts panel configuration", diags[0].Summary())
@@ -668,12 +496,6 @@ func Test_panelConfigValidateDiags_discoverSession(t *testing.T) {
 	t.Run("accepts discover_session_config", func(t *testing.T) {
 		diags := panelConfigValidateDiags(
 			panelTypeDiscoverSession,
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{Set: true},
@@ -688,12 +510,6 @@ func Test_panelConfigValidateDiags_discoverSession(t *testing.T) {
 			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
 			nil,
 		)
 		require.True(t, diags.HasError())
@@ -702,38 +518,20 @@ func Test_panelConfigValidateDiags_discoverSession(t *testing.T) {
 	})
 }
 
-func Test_panelConfigValidateDiags_sloOverview_accepted(t *testing.T) {
-	diags := panelConfigValidateDiags(
-		panelTypeSloOverview,
-		panelConfigValueState{},
-		panelConfigValueState{},
-		panelConfigValueState{},
-		panelConfigValueState{},
-		panelConfigValueState{},
-		panelConfigValueState{Set: true},
-		panelConfigValueState{},
-		panelConfigValueState{},
-		panelConfigValueState{},
-		nil,
-	)
-	require.False(t, diags.HasError())
-}
+func Test_slo_overview_ValidatePanelConfig(t *testing.T) {
+	ctx := context.Background()
 
-func Test_panelConfigValidateDiags_sloOverview_missing(t *testing.T) {
-	diags := panelConfigValidateDiags(
-		panelTypeSloOverview,
-		panelConfigValueState{},
-		panelConfigValueState{},
-		panelConfigValueState{},
-		panelConfigValueState{},
-		panelConfigValueState{},
-		panelConfigValueState{},
-		panelConfigValueState{},
-		panelConfigValueState{},
-		panelConfigValueState{},
-		nil,
-	)
-	require.True(t, diags.HasError())
-	require.Len(t, diags, 1)
-	require.Equal(t, "Missing SLO overview panel configuration", diags[0].Summary())
+	t.Run("accepts slo_overview_config", func(t *testing.T) {
+		diags := slooverview.Handler{}.ValidatePanelConfig(ctx, panelTypeSloOverview, map[string]attr.Value{
+			"slo_overview_config": types.BoolValue(true),
+		}, testAttrPathPanel)
+		require.False(t, diags.HasError())
+	})
+
+	t.Run("missing", func(t *testing.T) {
+		diags := slooverview.Handler{}.ValidatePanelConfig(ctx, panelTypeSloOverview, map[string]attr.Value{}, testAttrPathPanel)
+		require.True(t, diags.HasError())
+		require.Len(t, diags, 1)
+		require.Equal(t, "Missing SLO overview panel configuration", diags[0].Summary())
+	})
 }

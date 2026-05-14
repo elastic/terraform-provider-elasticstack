@@ -77,10 +77,15 @@ func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kb
 	return panelItem, diags
 }
 
-func (Handler) ValidatePanelConfig(_ context.Context, panelTypeDiscriminator string, _ map[string]attr.Value, _ path.Path) diag.Diagnostics {
+func (Handler) ValidatePanelConfig(_ context.Context, panelTypeDiscriminator string, attrs map[string]attr.Value, attrPath path.Path) diag.Diagnostics {
 	var out diag.Diagnostics
 	if panelTypeDiscriminator != panelType {
 		return out
 	}
+	cfg := attrs[panelType+"_config"]
+	if panelkit.AttrConcreteSet(cfg) || panelkit.AttrUnknown(cfg) {
+		return out
+	}
+	out.AddAttributeError(attrPath, "Missing SLO overview panel configuration", "SLO overview panels require `slo_overview_config`.")
 	return out
 }

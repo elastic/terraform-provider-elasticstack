@@ -163,6 +163,37 @@ func (Handler) ToAPI(pm models.PanelModel, _ *models.DashboardModel) (kbapi.Dash
 	return kbapi.DashboardPanelItem{}, diags
 }
 
-func (Handler) ValidatePanelConfig(_ context.Context, _ string, _ map[string]attr.Value, _ path.Path) diag.Diagnostics {
-	return nil
+// ValidatePanelConfig enforces markdown panel presence/exclusion rules at the dashboard panel object scope.
+func (Handler) ValidatePanelConfig(_ context.Context, panelTypeDiscriminator string, attrs map[string]attr.Value, attrPath path.Path) diag.Diagnostics {
+	var diags diag.Diagnostics
+	if panelTypeDiscriminator != panelType {
+		return diags
+	}
+	const mdBlock = panelType + "_config"
+	md := attrs[mdBlock]
+	cj := attrs["config_json"]
+	mdSet := panelkit.AttrConcreteSet(md)
+	mdUnk := panelkit.AttrUnknown(md)
+	cjSet := panelkit.AttrConcreteSet(cj)
+	cjUnk := panelkit.AttrUnknown(cj)
+	if mdSet && cjSet {
+		diags.AddAttributeError(
+			attrPath,
+			"Invalid markdown panel configuration",
+			"Markdown panels cannot set both `markdown_config` and panel-level `config_json`; use exactly one.",
+		)
+		return diags
+	}
+	if mdSet || cjSet {
+		return diags
+	}
+	if mdUnk || cjUnk {
+		return diags
+	}
+	diags.AddAttributeError(
+		attrPath,
+		"Missing markdown panel configuration",
+		"Markdown panels require either `markdown_config` or `config_json`.",
+	)
+	return diags
 }

@@ -71,11 +71,11 @@
 
 ## 3. Refactor validators and schema assembly
 
-- [ ] 3.1 Refactor `panel_config_validator.go` to remove all simple panel cases from `panelConfigValidateDiags`
-- [ ] 3.2 Add registry dispatch loop: iterate `registry.AllHandlers()`, call `ValidatePanelConfig` per handler
-- [ ] 3.3 Refactor `getPanelSchema()` in `schema.go` to assemble panel config attributes from `registry.AllHandlers()`
-- [ ] 3.4 Remove hard-coded `panelConfigNames` slice; derive from `registry.ConfigNames()`
-- [ ] 3.5 Ensure conflict validators (`objectvalidator.ConflictsWith`) still reference correct sibling paths via derived names
+- [x] 3.1 Refactor `panel_config_validator.go` to remove all simple panel cases from `panelConfigValidateDiags`
+- [x] 3.2 Add registry dispatch loop: iterate `registry.AllHandlers()`, call `ValidatePanelConfig` per handler
+- [x] 3.3 Refactor `getPanelSchema()` in `schema.go` to assemble panel config attributes from `registry.AllHandlers()`
+- [x] 3.4 Remove hard-coded `panelConfigNames` slice; derive from `registry.ConfigNames()`
+- [x] 3.5 Ensure conflict validators (`objectvalidator.ConflictsWith`) still reference correct sibling paths via derived names
 
 ## 4. State alignment delegation
 

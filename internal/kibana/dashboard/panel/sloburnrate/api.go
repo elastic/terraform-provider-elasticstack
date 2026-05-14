@@ -118,6 +118,7 @@ func (Handler) ValidatePanelConfig(_ context.Context, panelTypeDiscriminator str
 
 	flat, obj, shaped := sloBurnRateAttrsShape(attrs)
 	if !shaped {
+		out.AddAttributeError(attrPath.AtName(panelConfigAttrsKeyPrefix), "Missing SLO burn rate panel configuration", "SLO burn rate panels require `slo_burn_rate_config`.")
 		return out
 	}
 

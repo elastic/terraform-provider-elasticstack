@@ -20,20 +20,8 @@ package dashboard
 import (
 	"context"
 	"maps"
-	"regexp"
 	"strings"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/esqlcontrol"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/image"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/markdown"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/optionslist"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/rangeslider"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/sloalerts"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/sloerrorbudget"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/slooverview"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/syntheticsmonitors"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/syntheticsstatsoverview"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/timeslider"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
@@ -78,9 +66,11 @@ const (
 	panelTypeSloOverview             = "slo_overview"
 )
 
-var sloBurnRateDurationRegex = regexp.MustCompile(`^\d+[mhd]$`)
-
-var panelConfigNames = panelkit.TypedSiblingPanelConfigBlockNames
+// panelConfigNames returns the full set of panel-level typed config attribute names used for mutual-exclusion
+// validators and documentation. Populated from the registry (plus unmigrated siblings) via panelkit wiring.
+func panelConfigNames() []string {
+	return panelkit.TypedSiblingPanelConfigBlockNames()
+}
 
 func isFieldMetricOperation(operation string) bool {
 	switch operation {
@@ -552,192 +542,128 @@ func getSchema() schema.Schema {
 }
 
 func getPanelSchema() schema.NestedAttributeObject {
+	names := panelConfigNames()
+	attrs := map[string]schema.Attribute{
+		"type": schema.StringAttribute{
+			MarkdownDescription: "The type of the panel (e.g. 'markdown', 'vis').",
+			Required:            true,
+		},
+		"grid": schema.SingleNestedAttribute{
+			MarkdownDescription: "The grid coordinates and dimensions of the panel.",
+			Required:            true,
+			Attributes: map[string]schema.Attribute{
+				"x": schema.Int64Attribute{
+					MarkdownDescription: "The X coordinate.",
+					Required:            true,
+				},
+				"y": schema.Int64Attribute{
+					MarkdownDescription: "The Y coordinate.",
+					Required:            true,
+				},
+				"w": schema.Int64Attribute{
+					MarkdownDescription: "The width.",
+					Optional:            true,
+				},
+				"h": schema.Int64Attribute{
+					MarkdownDescription: "The height.",
+					Optional:            true,
+				},
+			},
+		},
+		"id": schema.StringAttribute{
+			MarkdownDescription: "The identifier of the panel (API `id`).",
+			Optional:            true,
+			Computed:            true,
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseNonNullStateForUnknown(),
+			},
+		},
+	}
+	for _, h := range AllHandlers() {
+		attrs[h.PanelType()+"_config"] = h.SchemaAttribute()
+	}
+	attrs["discover_session_config"] = schema.SingleNestedAttribute{
+		MarkdownDescription: panelkit.PanelConfigDescription(
+			"Configuration for a `discover_session` panel (`kbn-dashboard-panel-type-discover_session`). "+
+				"Required when `type` is `discover_session`. Set exactly one of `by_value` or `by_reference`.",
+			"discover_session_config",
+			names,
+		),
+		Optional:   true,
+		Attributes: getDiscoverSessionPanelConfigAttributes(),
+		Validators: []validator.Object{
+			objectvalidator.ConflictsWith(
+				panelkit.SiblingTypedPanelConfigConflictPathsExcept("discover_session_config", names)...,
+			),
+			validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeDiscoverSession}),
+			validators.RequiredIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeDiscoverSession}),
+			discoverSessionConfigModeValidator{},
+		},
+	}
+	attrs["lens_dashboard_app_config"] = schema.SingleNestedAttribute{
+		MarkdownDescription: panelkit.PanelConfigDescription(
+			"Configuration for a `lens-dashboard-app` panel (the Kibana Dashboard API `lens-dashboard-app` panel type). "+
+				"Required when `type` is `lens-dashboard-app`. "+
+				"Set exactly one of `by_value` or `by_reference`. "+
+				"With `by_value`, set exactly one of `config_json` or one supported typed Lens chart block. "+
+				"With `by_reference`, use `ref_id` and `references_json` to map the API `references` list. "+
+				"Supported typed by-value blocks are sent as the `lens-dashboard-app` API `config` and do not use `type = \"vis\"` panels.",
+			"lens_dashboard_app_config",
+			names,
+		),
+		Optional:   true,
+		Attributes: getLensDashboardAppConfigSchema(),
+		Validators: []validator.Object{
+			objectvalidator.ConflictsWith(
+				panelkit.SiblingTypedPanelConfigConflictPathsExcept("lens_dashboard_app_config", names)...,
+			),
+			validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeLensDashboardApp}),
+			validators.RequiredIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeLensDashboardApp}),
+			lensDashboardAppConfigModeValidator{},
+		},
+	}
+	attrs["vis_config"] = schema.SingleNestedAttribute{
+		MarkdownDescription: panelkit.PanelConfigDescription(
+			"Configuration for a `vis` panel (`type = \"vis\"`). "+
+				"Typed alternative to `config_json`: set exactly one of `by_value` (exactly one of 12 Lens chart kinds) or `by_reference`. "+
+				"With `by_reference`, use structured `drilldowns` and required `time_range` like `lens_dashboard_app_config.by_reference`.",
+			"vis_config",
+			names,
+		),
+		Optional:   true,
+		Attributes: getVisConfigSchema(),
+		Validators: []validator.Object{
+			objectvalidator.ConflictsWith(
+				panelkit.SiblingTypedPanelConfigConflictPathsExcept("vis_config", names)...,
+			),
+			validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeVis}),
+			visConfigModeValidator{},
+		},
+	}
+	attrs["config_json"] = schema.StringAttribute{
+		MarkdownDescription: panelkit.PanelConfigDescription(
+			"The configuration of the panel as a JSON string. "+
+				"Practitioner-authored panel-level `config_json` is valid only when `type` is `markdown` or `vis`. "+
+				"Typed panel kinds such as `lens-dashboard-app`, `image`, `slo_alerts`, and `discover_session` use their dedicated blocks "+
+				"(`lens_dashboard_app_config`, `image_config`, `slo_alerts_config`, `discover_session_config`), not panel-level `config_json`.",
+			"config_json",
+			names,
+		),
+		CustomType: customtypes.NewJSONWithDefaultsType(populatePanelConfigJSONDefaults),
+		Optional:   true,
+		Computed:   true,
+		Validators: []validator.String{
+			stringvalidator.ConflictsWith(
+				panelkit.SiblingTypedPanelConfigConflictPathsExcept("config_json", names)...,
+			),
+			validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeVis, panelTypeMarkdown}),
+		},
+	}
 	return schema.NestedAttributeObject{
 		Validators: []validator.Object{
 			panelConfigValidator{},
 		},
-		Attributes: map[string]schema.Attribute{
-			"type": schema.StringAttribute{
-				MarkdownDescription: "The type of the panel (e.g. 'markdown', 'vis').",
-				Required:            true,
-			},
-			"grid": schema.SingleNestedAttribute{
-				MarkdownDescription: "The grid coordinates and dimensions of the panel.",
-				Required:            true,
-				Attributes: map[string]schema.Attribute{
-					"x": schema.Int64Attribute{
-						MarkdownDescription: "The X coordinate.",
-						Required:            true,
-					},
-					"y": schema.Int64Attribute{
-						MarkdownDescription: "The Y coordinate.",
-						Required:            true,
-					},
-					"w": schema.Int64Attribute{
-						MarkdownDescription: "The width.",
-						Optional:            true,
-					},
-					"h": schema.Int64Attribute{
-						MarkdownDescription: "The height.",
-						Optional:            true,
-					},
-				},
-			},
-			"id": schema.StringAttribute{
-				MarkdownDescription: "The identifier of the panel (API `id`).",
-				Optional:            true,
-				Computed:            true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseNonNullStateForUnknown(),
-				},
-			},
-			"markdown_config":            markdown.SchemaAttribute(),
-			"time_slider_control_config": timeslider.SchemaAttribute(),
-			"slo_alerts_config":          sloalerts.SchemaAttribute(),
-			"discover_session_config": schema.SingleNestedAttribute{
-				MarkdownDescription: panelkit.PanelConfigDescription(
-					"Configuration for a `discover_session` panel (`kbn-dashboard-panel-type-discover_session`). "+
-						"Required when `type` is `discover_session`. Set exactly one of `by_value` or `by_reference`.",
-					"discover_session_config",
-					panelConfigNames,
-				),
-				Optional:   true,
-				Attributes: getDiscoverSessionPanelConfigAttributes(),
-				Validators: []validator.Object{
-					objectvalidator.ConflictsWith(
-						panelkit.SiblingTypedPanelConfigConflictPathsExcept("discover_session_config", panelConfigNames)...,
-					),
-					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeDiscoverSession}),
-					validators.RequiredIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeDiscoverSession}),
-					discoverSessionConfigModeValidator{},
-				},
-			},
-			"slo_burn_rate_config": schema.SingleNestedAttribute{
-				MarkdownDescription: panelkit.PanelConfigDescription(
-					"Configuration for an SLO burn rate panel. Use this for panels that visualize the burn rate of an SLO over a configurable look-back window.",
-					"slo_burn_rate_config",
-					panelConfigNames,
-				),
-				Optional: true,
-				Attributes: map[string]schema.Attribute{
-					"slo_id": schema.StringAttribute{
-						MarkdownDescription: "The ID of the SLO to display the burn rate for.",
-						Required:            true,
-					},
-					"duration": schema.StringAttribute{
-						MarkdownDescription: "Duration for the burn rate chart in the format `[value][unit]`, where unit is `m` (minutes), `h` (hours), or `d` (days). For example: `5m`, `3h`, `6d`.",
-						Required:            true,
-						Validators: []validator.String{
-							stringvalidator.RegexMatches(
-								sloBurnRateDurationRegex,
-								"must match the pattern `^\\d+[mhd]$` (a positive integer followed by m, h, or d)",
-							),
-						},
-					},
-					"slo_instance_id": schema.StringAttribute{
-						MarkdownDescription: "ID of the SLO instance. Set when the SLO uses `group_by`; identifies which instance to show. Omit to show all instances (API default `\"*\"`).",
-						Optional:            true,
-					},
-					"title": schema.StringAttribute{
-						MarkdownDescription: "Optional panel title.",
-						Optional:            true,
-					},
-					"description": schema.StringAttribute{
-						MarkdownDescription: "Optional panel description.",
-						Optional:            true,
-					},
-					"hide_title": schema.BoolAttribute{
-						MarkdownDescription: "When true, hides the panel title.",
-						Optional:            true,
-					},
-					"hide_border": schema.BoolAttribute{
-						MarkdownDescription: "When true, hides the panel border.",
-						Optional:            true,
-					},
-					"drilldowns": schema.ListNestedAttribute{
-						MarkdownDescription: "Optional list of URL drilldowns attached to the panel.",
-						Optional:            true,
-						NestedObject:        panelkit.URLDrilldownSchema(panelkit.URLDrilldownOptions{}),
-					},
-				},
-				Validators: []validator.Object{
-					objectvalidator.ConflictsWith(
-						panelkit.SiblingTypedPanelConfigConflictPathsExcept("slo_burn_rate_config", panelConfigNames)...,
-					),
-					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeSloBurnRate}),
-				},
-			},
-			// Migrated panel: SchemaAttribute() comes from the iface.Handler implementation.
-			// Section 3.3 of dashboard-panel-contract replaces these per-panel calls with a
-			// loop over registry.AllHandlers().
-			"slo_overview_config":              slooverview.SchemaAttribute(),
-			"slo_error_budget_config":          sloerrorbudget.SchemaAttribute(),
-			"esql_control_config":              esqlcontrol.SchemaAttribute(),
-			"options_list_control_config":      optionslist.SchemaAttribute(),
-			"range_slider_control_config":      rangeslider.SchemaAttribute(),
-			"synthetics_stats_overview_config": syntheticsstatsoverview.SchemaAttribute(),
-			"synthetics_monitors_config":       syntheticsmonitors.SchemaAttribute(),
-			"image_config":                     image.SchemaAttribute(),
-			"lens_dashboard_app_config": schema.SingleNestedAttribute{
-				MarkdownDescription: panelkit.PanelConfigDescription(
-					"Configuration for a `lens-dashboard-app` panel (the Kibana Dashboard API `lens-dashboard-app` panel type). "+
-						"Required when `type` is `lens-dashboard-app`. "+
-						"Set exactly one of `by_value` or `by_reference`. "+
-						"With `by_value`, set exactly one of `config_json` or one supported typed Lens chart block. "+
-						"With `by_reference`, use `ref_id` and `references_json` to map the API `references` list. "+
-						"Supported typed by-value blocks are sent as the `lens-dashboard-app` API `config` and do not use `type = \"vis\"` panels.",
-					"lens_dashboard_app_config",
-					panelConfigNames,
-				),
-				Optional:   true,
-				Attributes: getLensDashboardAppConfigSchema(),
-				Validators: []validator.Object{
-					objectvalidator.ConflictsWith(
-						panelkit.SiblingTypedPanelConfigConflictPathsExcept("lens_dashboard_app_config", panelConfigNames)...,
-					),
-					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeLensDashboardApp}),
-					validators.RequiredIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeLensDashboardApp}),
-					lensDashboardAppConfigModeValidator{},
-				},
-			},
-			"vis_config": schema.SingleNestedAttribute{
-				MarkdownDescription: panelkit.PanelConfigDescription(
-					"Configuration for a `vis` panel (`type = \"vis\"`). "+
-						"Typed alternative to `config_json`: set exactly one of `by_value` (exactly one of 12 Lens chart kinds) or `by_reference`. "+
-						"With `by_reference`, use structured `drilldowns` and required `time_range` like `lens_dashboard_app_config.by_reference`.",
-					"vis_config",
-					panelConfigNames,
-				),
-				Optional:   true,
-				Attributes: getVisConfigSchema(),
-				Validators: []validator.Object{
-					objectvalidator.ConflictsWith(
-						panelkit.SiblingTypedPanelConfigConflictPathsExcept("vis_config", panelConfigNames)...,
-					),
-					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeVis}),
-					visConfigModeValidator{},
-				},
-			},
-			"config_json": schema.StringAttribute{
-				MarkdownDescription: panelkit.PanelConfigDescription(
-					"The configuration of the panel as a JSON string. "+
-						"Practitioner-authored panel-level `config_json` is valid only when `type` is `markdown` or `vis`. "+
-						"Typed panel kinds such as `lens-dashboard-app`, `image`, `slo_alerts`, and `discover_session` use their dedicated blocks "+
-						"(`lens_dashboard_app_config`, `image_config`, `slo_alerts_config`, `discover_session_config`), not panel-level `config_json`.",
-					"config_json",
-					panelConfigNames,
-				),
-				CustomType: customtypes.NewJSONWithDefaultsType(populatePanelConfigJSONDefaults),
-				Optional:   true,
-				Computed:   true,
-				Validators: []validator.String{
-					stringvalidator.ConflictsWith(
-						panelkit.SiblingTypedPanelConfigConflictPathsExcept("config_json", panelConfigNames)...,
-					),
-					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeVis, panelTypeMarkdown}),
-				},
-			},
-		},
+		Attributes: attrs,
 	}
 }
 

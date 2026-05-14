@@ -20,6 +20,8 @@ package dashboard
 import (
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/stretchr/testify/require"
 )
 
@@ -33,20 +35,21 @@ const (
 )
 
 func Test_panelConfigNames_matchesPanelSchemaAttributes(t *testing.T) {
-	require.Len(t, panelConfigNames, expectedPanelConfigs,
+	names := panelConfigNames()
+	require.Len(t, names, expectedPanelConfigs,
 		"design D9 expects exactly %d top-level panel-config names", expectedPanelConfigs)
 
-	seenNames := make(map[string]struct{}, len(panelConfigNames))
-	for _, n := range panelConfigNames {
+	seenNames := make(map[string]struct{}, len(names))
+	for _, n := range names {
 		_, dup := seenNames[n]
 		require.False(t, dup, "panelConfigNames contains duplicate entry %q", n)
 		seenNames[n] = struct{}{}
 	}
 
 	panel := getPanelSchema()
-	panelConfigKeys := seenNames // same keys
+	panelConfigKeys := seenNames
 
-	for _, n := range panelConfigNames {
+	for _, n := range names {
 		_, ok := panel.Attributes[n]
 		require.True(t, ok,
 			"panel object schema missing attribute %q listed in panelConfigNames", n)
@@ -67,6 +70,26 @@ func Test_panelConfigNames_matchesPanelSchemaAttributes(t *testing.T) {
 			"panel schema has panel-config attribute %q that is absent from panelConfigNames", attrName)
 	}
 
-	require.Len(t, panel.Attributes, len(skippedStructural)+len(panelConfigNames),
+	require.Len(t, panel.Attributes, len(skippedStructural)+len(names),
 		"panel.Attributes size should equal structural attrs plus panelConfigNames entries")
+}
+
+func Test_getPanelSchema_registeredHandlerConfigKeys(t *testing.T) {
+	panel := getPanelSchema()
+	for _, h := range AllHandlers() {
+		key := h.PanelType() + "_config"
+		_, ok := panel.Attributes[key]
+		require.True(t, ok, "registry handler schema missing panel attribute %q", key)
+		_, inner := panel.Attributes[key].(schema.SingleNestedAttribute)
+		require.True(t, inner, "handler %q SchemaAttribute must be SingleNestedAttribute for key %s", h.PanelType(), key)
+	}
+}
+
+func Test_sibling_conflict_paths_exclude_only_self(t *testing.T) {
+	names := panelConfigNames()
+	for _, h := range AllHandlers() {
+		self := h.PanelType() + "_config"
+		pathExprs := panelkit.SiblingTypedPanelConfigConflictPathsExcept(self, names)
+		require.Len(t, pathExprs, len(names)-1, "panel %q sibling conflict coverage", h.PanelType())
+	}
 }
