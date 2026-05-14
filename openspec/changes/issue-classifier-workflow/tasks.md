@@ -9,8 +9,8 @@
 
 ## 3. Compile and validate
 
-- [ ] 3.1 Run `gh aw compile issue-classifier` to produce `.github/workflows/issue-classifier.lock.yml` and `.github/workflows/issue-classifier.md`
-- [ ] 3.2 Run `npx openspec validate` (or `make check-openspec`) and confirm no spec violations
+- [x] 3.1 Run `gh aw compile issue-classifier` to produce `.github/workflows/issue-classifier.lock.yml` and `.github/workflows/issue-classifier.md`
+- [x] 3.2 Run `npx openspec validate` (or `make check-openspec`) and confirm no spec violations
 
 ## 4. Label prerequisites
 
