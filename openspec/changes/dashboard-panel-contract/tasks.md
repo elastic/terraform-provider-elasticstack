@@ -27,12 +27,12 @@
 - [x] 2.4 Create `panel/sloburnrate/api_test.go` with `contracttest.Run` call + any additional drilldown-specific assertions
 - [x] 2.5 Remove SLO burn rate cases from `models_panels.go` switch and `toAPI()` cascade
 - [x] 2.6 Register `sloburnrate.Handler{}` in `registry.go`
-- [ ] 2.7 Repeat 2.1–2.6 for `slo_overview` (include `contracttest.Run` in `api_test.go`)
-- [ ] 2.8 Repeat 2.1–2.6 for `slo_error_budget` (include `contracttest.Run` in `api_test.go`)
+- [x] 2.7 Repeat 2.1–2.6 for `slo_overview` (include `contracttest.Run` in `api_test.go`)
+- [x] 2.8 Repeat 2.1–2.6 for `slo_error_budget` (include `contracttest.Run` in `api_test.go`)
 
 ### Synthetics panels
-- [ ] 2.9 Repeat 2.1–2.6 for `synthetics_stats_overview` (include `contracttest.Run` in `api_test.go`)
-- [ ] 2.10 Repeat 2.1–2.6 for `synthetics_monitors` (include `contracttest.Run` in `api_test.go`)
+- [x] 2.9 Repeat 2.1–2.6 for `synthetics_stats_overview` (include `contracttest.Run` in `api_test.go`)
+- [x] 2.10 Repeat 2.1–2.6 for `synthetics_monitors` (include `contracttest.Run` in `api_test.go`)
 
 ### Control panels
 - [ ] 2.11 Create `panel/timeslider/` with Handler and PinnedHandler
