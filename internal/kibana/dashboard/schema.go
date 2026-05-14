@@ -23,6 +23,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
@@ -85,31 +86,6 @@ var panelConfigNames = []string{
 	"synthetics_stats_overview_config",
 	"image_config",
 	"discover_session_config",
-}
-
-func siblingPanelConfigPathsExcept(name string, names []string) []path.Expression {
-	paths := make([]path.Expression, 0, len(names)-1)
-	for _, n := range names {
-		if n == name {
-			continue
-		}
-		paths = append(paths, path.MatchRelative().AtParent().AtName(n))
-	}
-	return paths
-}
-
-func panelConfigDescription(base, self string, names []string) string {
-	others := make([]string, 0, len(names)-1)
-	for _, name := range names {
-		if name == self {
-			continue
-		}
-		others = append(others, "`"+name+"`")
-	}
-	if len(others) == 0 {
-		return base
-	}
-	return base + " Mutually exclusive with " + strings.Join(others, ", ") + "."
 }
 
 func isFieldMetricOperation(operation string) bool {
@@ -622,7 +598,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 				},
 			},
 			"markdown_config": schema.SingleNestedAttribute{
-				MarkdownDescription: panelConfigDescription(
+				MarkdownDescription: panelkit.PanelConfigDescription(
 					"Configuration for a `markdown` panel (the Kibana Dashboard API `kbn-dashboard-panel-type-markdown` shape). "+
 						"Set exactly one of `by_value` (inline `content` with required nested `settings`) or `by_reference` (existing library item via `ref_id`). "+
 						"Presentation fields (`description`, `hide_title`, `title`, `hide_border`) are supported in both branches.",
@@ -633,7 +609,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 				Attributes: getMarkdownConfigSchema(),
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(
-						siblingPanelConfigPathsExcept("markdown_config", panelConfigNames)...,
+						panelkit.SiblingTypedPanelConfigConflictPathsExcept("markdown_config", panelConfigNames)...,
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeMarkdown}),
 					markdownConfigModeValidator{},
@@ -641,7 +617,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 			},
 			"time_slider_control_config": panelTimeSliderControlConfigSchema(),
 			"slo_alerts_config": schema.SingleNestedAttribute{
-				MarkdownDescription: panelConfigDescription(
+				MarkdownDescription: panelkit.PanelConfigDescription(
 					"Configuration for an `slo_alerts` panel (`kbn-dashboard-panel-type-slo_alerts`). "+
 						"Required when `type` is `slo_alerts`.",
 					"slo_alerts_config",
@@ -651,14 +627,14 @@ func getPanelSchema() schema.NestedAttributeObject {
 				Attributes: getSloAlertsPanelConfigAttributes(),
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(
-						siblingPanelConfigPathsExcept("slo_alerts_config", panelConfigNames)...,
+						panelkit.SiblingTypedPanelConfigConflictPathsExcept("slo_alerts_config", panelConfigNames)...,
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeSloAlerts}),
 					validators.RequiredIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeSloAlerts}),
 				},
 			},
 			"discover_session_config": schema.SingleNestedAttribute{
-				MarkdownDescription: panelConfigDescription(
+				MarkdownDescription: panelkit.PanelConfigDescription(
 					"Configuration for a `discover_session` panel (`kbn-dashboard-panel-type-discover_session`). "+
 						"Required when `type` is `discover_session`. Set exactly one of `by_value` or `by_reference`.",
 					"discover_session_config",
@@ -668,7 +644,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 				Attributes: getDiscoverSessionPanelConfigAttributes(),
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(
-						siblingPanelConfigPathsExcept("discover_session_config", panelConfigNames)...,
+						panelkit.SiblingTypedPanelConfigConflictPathsExcept("discover_session_config", panelConfigNames)...,
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeDiscoverSession}),
 					validators.RequiredIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeDiscoverSession}),
@@ -676,7 +652,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 				},
 			},
 			"slo_burn_rate_config": schema.SingleNestedAttribute{
-				MarkdownDescription: panelConfigDescription(
+				MarkdownDescription: panelkit.PanelConfigDescription(
 					"Configuration for an SLO burn rate panel. Use this for panels that visualize the burn rate of an SLO over a configurable look-back window.",
 					"slo_burn_rate_config",
 					panelConfigNames,
@@ -731,13 +707,13 @@ func getPanelSchema() schema.NestedAttributeObject {
 				},
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(
-						siblingPanelConfigPathsExcept("slo_burn_rate_config", panelConfigNames)...,
+						panelkit.SiblingTypedPanelConfigConflictPathsExcept("slo_burn_rate_config", panelConfigNames)...,
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeSloBurnRate}),
 				},
 			},
 			"slo_overview_config": schema.SingleNestedAttribute{
-				MarkdownDescription: panelConfigDescription(
+				MarkdownDescription: panelkit.PanelConfigDescription(
 					"Configuration for an SLO overview panel. Use either `single` (for a single SLO) or `groups` (for grouped SLO overview).",
 					"slo_overview_config",
 					panelConfigNames,
@@ -746,14 +722,14 @@ func getPanelSchema() schema.NestedAttributeObject {
 				Attributes: getSloOverviewSchema(),
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(
-						siblingPanelConfigPathsExcept("slo_overview_config", panelConfigNames)...,
+						panelkit.SiblingTypedPanelConfigConflictPathsExcept("slo_overview_config", panelConfigNames)...,
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeSloOverview}),
 					sloOverviewConfigModeValidator{},
 				},
 			},
 			"slo_error_budget_config": schema.SingleNestedAttribute{
-				MarkdownDescription: panelConfigDescription(
+				MarkdownDescription: panelkit.PanelConfigDescription(
 					"Configuration for an SLO error budget panel. Displays the burn chart of remaining error budget for a specific SLO.",
 					"slo_error_budget_config",
 					panelConfigNames,
@@ -762,7 +738,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 				Attributes: getSloErrorBudgetSchema(),
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(
-						siblingPanelConfigPathsExcept("slo_error_budget_config", panelConfigNames)...,
+						panelkit.SiblingTypedPanelConfigConflictPathsExcept("slo_error_budget_config", panelConfigNames)...,
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeSloErrorBudget}),
 				},
@@ -771,7 +747,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 			"options_list_control_config": panelOptionsListControlConfigSchema(),
 			"range_slider_control_config": panelRangeSliderControlConfigSchema(),
 			"synthetics_stats_overview_config": schema.SingleNestedAttribute{
-				MarkdownDescription: panelConfigDescription(
+				MarkdownDescription: panelkit.PanelConfigDescription(
 					"Configuration for a Synthetics stats overview panel. "+
 						"All fields are optional; an absent or empty block shows statistics "+
 						"for all monitors visible within the space.",
@@ -782,13 +758,13 @@ func getPanelSchema() schema.NestedAttributeObject {
 				Attributes: getSyntheticsStatsOverviewSchema(),
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(
-						siblingPanelConfigPathsExcept("synthetics_stats_overview_config", panelConfigNames)...,
+						panelkit.SiblingTypedPanelConfigConflictPathsExcept("synthetics_stats_overview_config", panelConfigNames)...,
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeSyntheticsStatsOverview}),
 				},
 			},
 			"synthetics_monitors_config": schema.SingleNestedAttribute{
-				MarkdownDescription: panelConfigDescription(
+				MarkdownDescription: panelkit.PanelConfigDescription(
 					"Configuration for a Synthetics monitors panel. Displays a table of Elastic Synthetics monitors "+
 						"and their current status. All fields are optional — omit the block entirely for a bare panel with no filtering.",
 					"synthetics_monitors_config",
@@ -798,13 +774,13 @@ func getPanelSchema() schema.NestedAttributeObject {
 				Attributes: getSyntheticsMonitorsSchema(),
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(
-						siblingPanelConfigPathsExcept("synthetics_monitors_config", panelConfigNames)...,
+						panelkit.SiblingTypedPanelConfigConflictPathsExcept("synthetics_monitors_config", panelConfigNames)...,
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeSyntheticsMonitors}),
 				},
 			},
 			"image_config": schema.SingleNestedAttribute{
-				MarkdownDescription: panelConfigDescription(
+				MarkdownDescription: panelkit.PanelConfigDescription(
 					"Configuration for an `image` panel (`kbn-dashboard-panel-type-image`). Required when `type` is `image`. "+
 						"References the Kibana Dashboard API image embeddable `config` shape.",
 					"image_config",
@@ -814,14 +790,14 @@ func getPanelSchema() schema.NestedAttributeObject {
 				Attributes: getImagePanelConfigAttributes(),
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(
-						siblingPanelConfigPathsExcept("image_config", panelConfigNames)...,
+						panelkit.SiblingTypedPanelConfigConflictPathsExcept("image_config", panelConfigNames)...,
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeImage}),
 					validators.RequiredIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeImage}),
 				},
 			},
 			"lens_dashboard_app_config": schema.SingleNestedAttribute{
-				MarkdownDescription: panelConfigDescription(
+				MarkdownDescription: panelkit.PanelConfigDescription(
 					"Configuration for a `lens-dashboard-app` panel (the Kibana Dashboard API `lens-dashboard-app` panel type). "+
 						"Required when `type` is `lens-dashboard-app`. "+
 						"Set exactly one of `by_value` or `by_reference`. "+
@@ -835,7 +811,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 				Attributes: getLensDashboardAppConfigSchema(),
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(
-						siblingPanelConfigPathsExcept("lens_dashboard_app_config", panelConfigNames)...,
+						panelkit.SiblingTypedPanelConfigConflictPathsExcept("lens_dashboard_app_config", panelConfigNames)...,
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeLensDashboardApp}),
 					validators.RequiredIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeLensDashboardApp}),
@@ -843,7 +819,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 				},
 			},
 			"vis_config": schema.SingleNestedAttribute{
-				MarkdownDescription: panelConfigDescription(
+				MarkdownDescription: panelkit.PanelConfigDescription(
 					"Configuration for a `vis` panel (`type = \"vis\"`). "+
 						"Typed alternative to `config_json`: set exactly one of `by_value` (exactly one of 12 Lens chart kinds) or `by_reference`. "+
 						"With `by_reference`, use structured `drilldowns` and required `time_range` like `lens_dashboard_app_config.by_reference`.",
@@ -854,14 +830,14 @@ func getPanelSchema() schema.NestedAttributeObject {
 				Attributes: getVisConfigSchema(),
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(
-						siblingPanelConfigPathsExcept("vis_config", panelConfigNames)...,
+						panelkit.SiblingTypedPanelConfigConflictPathsExcept("vis_config", panelConfigNames)...,
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeVis}),
 					visConfigModeValidator{},
 				},
 			},
 			"config_json": schema.StringAttribute{
-				MarkdownDescription: panelConfigDescription(
+				MarkdownDescription: panelkit.PanelConfigDescription(
 					"The configuration of the panel as a JSON string. "+
 						"Practitioner-authored panel-level `config_json` is valid only when `type` is `markdown` or `vis`. "+
 						"Typed panel kinds such as `lens-dashboard-app`, `image`, `slo_alerts`, and `discover_session` use their dedicated blocks "+
@@ -874,7 +850,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 				Computed:   true,
 				Validators: []validator.String{
 					stringvalidator.ConflictsWith(
-						siblingPanelConfigPathsExcept("config_json", panelConfigNames)...,
+						panelkit.SiblingTypedPanelConfigConflictPathsExcept("config_json", panelConfigNames)...,
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeVis, panelTypeMarkdown}),
 				},

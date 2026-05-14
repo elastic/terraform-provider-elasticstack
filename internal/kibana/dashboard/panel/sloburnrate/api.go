@@ -121,6 +121,11 @@ func (Handler) ValidatePanelConfig(_ context.Context, panelTypeDiscriminator str
 		return out
 	}
 
+	cfgPath := attrPath
+	if !flat {
+		cfgPath = attrPath.AtName(panelConfigAttrsKeyPrefix)
+	}
+
 	var sloVal, durVal attr.Value
 
 	switch {
@@ -134,25 +139,25 @@ func (Handler) ValidatePanelConfig(_ context.Context, panelTypeDiscriminator str
 
 	if sloStr, ok := sloVal.(types.String); ok {
 		if sloStr.IsNull() || sloStr.IsUnknown() || sloStr.ValueString() == "" {
-			out.AddAttributeError(attrPath.AtName("slo_id"), `Invalid SLO burn rate configuration`, "`slo_id` is required.")
+			out.AddAttributeError(cfgPath.AtName("slo_id"), `Invalid SLO burn rate configuration`, "`slo_id` is required.")
 		}
 	} else if sloVal != nil {
-		out.AddAttributeError(attrPath.AtName("slo_id"), `Invalid SLO burn rate configuration`, "`slo_id` is required.")
+		out.AddAttributeError(cfgPath.AtName("slo_id"), `Invalid SLO burn rate configuration`, "`slo_id` is required.")
 	}
 
 	if durStr, ok := durVal.(types.String); ok {
 		switch {
 		case durStr.IsNull() || durStr.IsUnknown() || durStr.ValueString() == "":
-			out.AddAttributeError(attrPath.AtName("duration"), `Invalid SLO burn rate configuration`, "`duration` is required.")
-		case !sloBurnRateDurationRegex.MatchString(durStr.ValueString()):
+			out.AddAttributeError(cfgPath.AtName("duration"), `Invalid SLO burn rate configuration`, "`duration` is required.")
+		case !sloBurnRateDurationRegexp.MatchString(durStr.ValueString()):
 			out.AddAttributeError(
-				attrPath.AtName("duration"),
+				cfgPath.AtName("duration"),
 				`Invalid SLO burn rate configuration`,
 				"`duration` must match the pattern `^\\d+[mhd]$` (a positive integer followed by m, h, or d).",
 			)
 		}
 	} else if durVal != nil {
-		out.AddAttributeError(attrPath.AtName("duration"), `Invalid SLO burn rate configuration`, "`duration` is required.")
+		out.AddAttributeError(cfgPath.AtName("duration"), `Invalid SLO burn rate configuration`, "`duration` is required.")
 	}
 
 	return out

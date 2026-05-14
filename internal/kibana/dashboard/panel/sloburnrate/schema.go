@@ -18,21 +18,45 @@
 package sloburnrate
 
 import (
-	"regexp"
-
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
+	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
-var sloBurnRateDurationRegex = regexp.MustCompile(`^\d+[mhd]$`)
+// typedSiblingPanelConfigBlockNames mirrors internal/kibana/dashboard/schema.go panelConfigNames;
+// kept in sync until OpenSpec dashboard-panel-contract §3.3 derives sibling names from the registry slice.
+var typedSiblingPanelConfigBlockNames = []string{
+	"config_json",
+	"markdown_config",
+	"vis_config",
+	"lens_dashboard_app_config",
+	"esql_control_config",
+	"options_list_control_config",
+	"range_slider_control_config",
+	"time_slider_control_config",
+	"slo_alerts_config",
+	"slo_burn_rate_config",
+	"slo_overview_config",
+	"slo_error_budget_config",
+	"synthetics_monitors_config",
+	"synthetics_stats_overview_config",
+	"image_config",
+	"discover_session_config",
+}
 
 // SchemaAttribute returns the slo_burn_rate_config SingleNestedAttribute definition.
 func SchemaAttribute() schema.Attribute {
 	return schema.SingleNestedAttribute{
-		MarkdownDescription: "Configuration for an SLO burn rate panel. Use this for panels that visualize the burn rate of an SLO over a configurable look-back window.",
-		Optional:            true,
+		MarkdownDescription: panelkit.PanelConfigDescription(
+			"Configuration for an SLO burn rate panel. Use this for panels that visualize the burn rate of an SLO over a configurable look-back window.",
+			"slo_burn_rate_config",
+			typedSiblingPanelConfigBlockNames,
+		),
+		Optional: true,
 		Attributes: map[string]schema.Attribute{
 			"slo_id": schema.StringAttribute{
 				MarkdownDescription: "The ID of the SLO to display the burn rate for.",
@@ -43,7 +67,7 @@ func SchemaAttribute() schema.Attribute {
 				Required:            true,
 				Validators: []validator.String{
 					stringvalidator.RegexMatches(
-						sloBurnRateDurationRegex,
+						sloBurnRateDurationRegexp,
 						"must match the pattern `^\\d+[mhd]$` (a positive integer followed by m, h, or d)",
 					),
 				},
@@ -73,6 +97,12 @@ func SchemaAttribute() schema.Attribute {
 				Optional:            true,
 				NestedObject:        panelkit.URLDrilldownSchema(),
 			},
+		},
+		Validators: []validator.Object{
+			objectvalidator.ConflictsWith(
+				panelkit.SiblingTypedPanelConfigConflictPathsExcept("slo_burn_rate_config", typedSiblingPanelConfigBlockNames)...,
+			),
+			validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"slo_burn_rate"}),
 		},
 	}
 }

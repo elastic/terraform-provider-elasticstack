@@ -139,10 +139,7 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiConfig 
 		existing.HideBorder = types.BoolPointerValue(apiConfig.HideBorder)
 	}
 
-	// Drilldowns: preserve a nil typed list slice (practitioner omitted drilldowns) despite API payloads.
-	if existing.Drilldowns != nil {
-		existing.Drilldowns = readSloBurnRateDrilldownsFromAPI(apiConfig.Drilldowns, existing.Drilldowns)
-	}
+	existing.Drilldowns = readSloBurnRateDrilldownsFromAPI(apiConfig.Drilldowns, existing.Drilldowns)
 
 	return nil
 }

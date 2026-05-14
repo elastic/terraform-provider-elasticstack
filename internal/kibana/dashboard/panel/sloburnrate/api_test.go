@@ -49,6 +49,9 @@ func TestContract(t *testing.T) {
 				}]
 			}
 		}`,
+		// Drilldowns are always refreshed from the API when slo_burn_rate_config is present — null-preservation
+		// on the drilldown list is not modeled; omit harness checks on that collection (config path for round-trip; leaf name for NullPreserve walker).
+		SkipFields: []string{"config.drilldowns", "drilldowns"},
 	})
 }
 

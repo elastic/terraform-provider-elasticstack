@@ -15,6 +15,10 @@
 // specific language governing permissions and limitations
 // under the License.
 
+// Bridges the dashboard-level populatePanelConfigJSONDefaults into this package without importing the
+// dashboard package (which would introduce a circular dependency).
+// Section 5 of dashboard-panel-contract routes JSON defaulting through Handler.PopulateJSONDefaults and
+// deletes this bridging approach.
 package sloburnrate
 
 import (
