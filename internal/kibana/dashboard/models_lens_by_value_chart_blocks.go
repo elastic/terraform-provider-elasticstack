@@ -27,16 +27,3 @@ func firstLensVisConverterForChartBlocks(blocks *models.LensByValueChartBlocks) 
 	}
 	return nil, false
 }
-
-// seedWaffleLensByValueChartFromPriorPanel assigns the waffle chart pointer from practitioner plan/state
-// into dest before vis read-mapping replaces blocks.WaffleConfig. The waffle converter keeps that pointer as
-// `seed` across `populateFromAttributes` so mergeWaffleConfigFromPlanSeed can reconcile Kibana read omissions.
-func seedWaffleLensByValueChartFromPriorPanel(dest *models.LensByValueChartBlocks, prior *models.PanelModel) {
-	if dest == nil || prior == nil || prior.VisConfig == nil || prior.VisConfig.ByValue == nil {
-		return
-	}
-	src := &prior.VisConfig.ByValue.LensByValueChartBlocks
-	if src.WaffleConfig != nil {
-		dest.WaffleConfig = src.WaffleConfig
-	}
-}
