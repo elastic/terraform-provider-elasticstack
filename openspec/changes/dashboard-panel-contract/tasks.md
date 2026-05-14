@@ -89,10 +89,10 @@
 
 ## 6. Verification
 
-- [ ] 6.1 `go build ./internal/kibana/dashboard/...` passes
-- [ ] 6.2 `go vet ./...` passes
-- [ ] 6.3 `go test ./internal/kibana/dashboard/panelkit/contracttest/...` passes (harness self-tests against stub handler)
-- [ ] 6.4 `go test ./internal/kibana/dashboard/panel/...` passes (all `contracttest.Run` calls pass for every migrated panel)
-- [ ] 6.5 `go test ./internal/kibana/dashboard/...` passes (all remaining unit tests)
-- [ ] 6.6 All migrated panel acceptance tests pass (`slo_*`, `synthetics_*`, control panel, markdown, image, slo_alerts)
-- [ ] 6.7 `make build` passes
+- [x] 6.1 `go build ./internal/kibana/dashboard/...` passes
+- [x] 6.2 `go vet ./...` passes
+- [x] 6.3 `go test ./internal/kibana/dashboard/panelkit/contracttest/...` passes (harness self-tests against stub handler)
+- [x] 6.4 `go test ./internal/kibana/dashboard/panel/...` passes (all `contracttest.Run` calls pass for every migrated panel)
+- [x] 6.5 `go test ./internal/kibana/dashboard/...` passes (all remaining unit tests)
+- [x] 6.6 All migrated panel acceptance tests pass (`slo_*`, `synthetics_*`, control panel, markdown, image, slo_alerts)
+- [x] 6.7 `make build` passes
