@@ -14,4 +14,4 @@
 
 ## 4. Label prerequisites
 
-- [ ] 4.1 Verify that labels `triaged`, `needs-research`, `needs-reproduction`, `needs-spec`, and `needs-human` exist in the repository; create any that are missing via `gh label create`
+- [x] 4.1 Verify that labels `triaged`, `needs-research`, `needs-reproduction`, `needs-spec`, and `needs-human` exist in the repository; create any that are missing via `gh label create`
