@@ -1,7 +1,25 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package contracttest
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -106,42 +124,211 @@ func (synthStatsHandler) PopulateJSONDefaults(config map[string]any) map[string]
 
 func (synthStatsHandler) PinnedHandler() iface.PinnedHandler { return nil }
 
-type brokenContractHandler struct{}
-
-func (brokenContractHandler) PanelType() string { return "contracttest_broken_stub" }
-
-func (brokenContractHandler) SchemaAttribute() schema.Attribute {
+func sloBurnRateHarnessSchema() schema.Attribute {
 	return schema.SingleNestedAttribute{
 		Optional: true,
 		Attributes: map[string]schema.Attribute{
-			"required_field": schema.StringAttribute{Required: true},
+			"slo_id": schema.StringAttribute{
+				Required: true,
+			},
+			"duration": schema.StringAttribute{
+				Required: true,
+			},
+			"slo_instance_id": schema.StringAttribute{Optional: true},
+			"title":           schema.StringAttribute{Optional: true},
 		},
 	}
 }
 
-func (brokenContractHandler) FromAPI(_ context.Context, pm, _ *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
-	disc, _ := item.Discriminator()
-	pm.Type = types.StringValue(disc)
+func populateSLOBurnHarness(pm *models.PanelModel, tfPanel *models.PanelModel, apiConfig kbapi.SloBurnRateEmbeddable) {
+	if tfPanel == nil {
+		cfg := &models.SloBurnRateConfigModel{
+			SloID:    types.StringValue(apiConfig.SloId),
+			Duration: types.StringValue(apiConfig.Duration),
+		}
+		if apiConfig.SloInstanceId != nil && *apiConfig.SloInstanceId != "*" {
+			cfg.SloInstanceID = types.StringValue(*apiConfig.SloInstanceId)
+		} else {
+			cfg.SloInstanceID = types.StringNull()
+		}
+		cfg.Title = types.StringPointerValue(apiConfig.Title)
+		pm.SloBurnRateConfig = cfg
+		return
+	}
+
+	existing := pm.SloBurnRateConfig
+	if existing == nil {
+		return
+	}
+
+	existing.SloID = types.StringValue(apiConfig.SloId)
+	existing.Duration = types.StringValue(apiConfig.Duration)
+	if typeutils.IsKnown(existing.SloInstanceID) {
+		existing.SloInstanceID = types.StringPointerValue(apiConfig.SloInstanceId)
+	}
+	if typeutils.IsKnown(existing.Title) {
+		existing.Title = types.StringPointerValue(apiConfig.Title)
+	}
+}
+
+func buildSLOBurnHarnessPanel(pm models.PanelModel) kbapi.KbnDashboardPanelTypeSloBurnRate {
+	grid := panelkit.GridToAPI(pm.Grid)
+	id := panelkit.IDToAPI(pm.ID)
+	panel := kbapi.KbnDashboardPanelTypeSloBurnRate{
+		Grid: grid,
+		Id:   id,
+		Type: kbapi.SloBurnRate,
+	}
+	cfg := pm.SloBurnRateConfig
+	if cfg == nil {
+		return panel
+	}
+	embed := kbapi.SloBurnRateEmbeddable{
+		SloId:    cfg.SloID.ValueString(),
+		Duration: cfg.Duration.ValueString(),
+	}
+	if typeutils.IsKnown(cfg.SloInstanceID) {
+		embed.SloInstanceId = cfg.SloInstanceID.ValueStringPointer()
+	}
+	if typeutils.IsKnown(cfg.Title) && cfg.Title.ValueStringPointer() != nil {
+		embed.Title = cfg.Title.ValueStringPointer()
+	}
+	panel.Config = embed
+	return panel
+}
+
+type sloBurnHarnessBase struct{}
+
+func (sloBurnHarnessBase) PanelType() string { return "slo_burn_rate" }
+
+func (sloBurnHarnessBase) SchemaAttribute() schema.Attribute { return sloBurnRateHarnessSchema() }
+
+func (sloBurnHarnessBase) sloFromAPI(pm, prior *models.PanelModel, item kbapi.DashboardPanelItem, mut func(*models.SloBurnRateConfigModel, kbapi.SloBurnRateEmbeddable)) diag.Diagnostics {
+	apiPanel, err := item.AsKbnDashboardPanelTypeSloBurnRate()
+	if err != nil {
+		var d diag.Diagnostics
+		d.AddError("panel union", err.Error())
+		return d
+	}
+	pm.Type = types.StringValue("slo_burn_rate")
+	pm.Grid = panelkit.GridFromAPI(apiPanel.Grid.X, apiPanel.Grid.Y, apiPanel.Grid.W, apiPanel.Grid.H)
+	pm.ID = panelkit.IDFromAPI(apiPanel.Id)
+	pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(jsonDefaultsNoOp)
+	populateSLOBurnHarness(pm, prior, apiPanel.Config)
+	if mut != nil && pm.SloBurnRateConfig != nil {
+		mut(pm.SloBurnRateConfig, apiPanel.Config)
+	}
 	return nil
 }
 
-func (brokenContractHandler) ToAPI(_ models.PanelModel, _ *models.DashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
-	return kbapi.DashboardPanelItem{}, nil
+func (sloBurnHarnessBase) sloToAPI(pm models.PanelModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
+	panel := buildSLOBurnHarnessPanel(pm)
+	var out kbapi.DashboardPanelItem
+	if err := out.FromKbnDashboardPanelTypeSloBurnRate(panel); err != nil {
+		var d diag.Diagnostics
+		d.AddError("ToAPI", err.Error())
+		return kbapi.DashboardPanelItem{}, d
+	}
+	return out, nil
 }
 
-func (brokenContractHandler) ValidatePanelConfig(_ context.Context, _ string, _ map[string]attr.Value, _ path.Path) diag.Diagnostics {
+func (sloBurnHarnessBase) ValidatePanelConfig(_ context.Context, _ string, attrs map[string]attr.Value, _ path.Path) diag.Diagnostics {
+	var d diag.Diagnostics
+	sv, ok := attrs["slo_id"].(types.String)
+	if !ok || sv.IsUnknown() || sv.IsNull() {
+		d.AddError("validation", "slo_id is required")
+	}
+	dv, ok := attrs["duration"].(types.String)
+	if !ok || dv.IsUnknown() || dv.IsNull() {
+		d.AddError("validation", "duration is required")
+	}
+	return d
+}
+
+func (sloBurnHarnessBase) AlignStateFromPlan(_ context.Context, _, _ *models.PanelModel) {}
+
+func (sloBurnHarnessBase) ClassifyJSON(_ map[string]any) bool { return false }
+
+func (sloBurnHarnessBase) PopulateJSONDefaults(config map[string]any) map[string]any { return config }
+
+func (sloBurnHarnessBase) PinnedHandler() iface.PinnedHandler { return nil }
+
+type brokenSLOBurnReflect struct{ sloBurnHarnessBase }
+
+func (brokenSLOBurnReflect) FromAPI(_ context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
+	apiPanel, err := item.AsKbnDashboardPanelTypeSloBurnRate()
+	if err != nil {
+		var d diag.Diagnostics
+		d.AddError("panel union", err.Error())
+		return d
+	}
+	pm.Type = types.StringValue("slo_burn_rate")
+	pm.Grid = panelkit.GridFromAPI(apiPanel.Grid.X, apiPanel.Grid.Y, apiPanel.Grid.W, apiPanel.Grid.H)
+	pm.ID = panelkit.IDFromAPI(apiPanel.Id)
+	pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(jsonDefaultsNoOp)
+	pm.SloBurnRateConfig = nil
 	return nil
 }
 
-func (brokenContractHandler) AlignStateFromPlan(_ context.Context, _, _ *models.PanelModel) {}
-
-func (brokenContractHandler) ClassifyJSON(_ map[string]any) bool { return false }
-
-func (brokenContractHandler) PopulateJSONDefaults(config map[string]any) map[string]any {
-	return config
+func (brokenSLOBurnReflect) ToAPI(models.PanelModel, *models.DashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
+	out, err := ParseDashboardPanel(sloBurnHarnessFixtureJSON)
+	if err != nil {
+		var d diag.Diagnostics
+		d.AddError("ToAPI", err.Error())
+		return kbapi.DashboardPanelItem{}, d
+	}
+	return out, nil
 }
 
-func (brokenContractHandler) PinnedHandler() iface.PinnedHandler { return nil }
+type brokenSLOBurnRoundTrip struct{ sloBurnHarnessBase }
+
+func (h brokenSLOBurnRoundTrip) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
+	return h.sloFromAPI(pm, prior, item, nil)
+}
+
+func (brokenSLOBurnRoundTrip) ToAPI(pm models.PanelModel, _ *models.DashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
+	if cfg := pm.SloBurnRateConfig; cfg != nil {
+		dupCfg := *cfg
+		dupCfg.Duration = types.StringValue("999d")
+		pmDup := pm
+		pmDup.SloBurnRateConfig = &dupCfg
+		return sloBurnHarnessBase{}.sloToAPI(pmDup)
+	}
+	return sloBurnHarnessBase{}.sloToAPI(pm)
+}
+
+type brokenSLOBurnSchema struct{ sloBurnHarnessBase }
+
+func (h brokenSLOBurnSchema) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
+	return h.sloFromAPI(pm, prior, item, nil)
+}
+
+func (h brokenSLOBurnSchema) ToAPI(pm models.PanelModel, _ *models.DashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
+	return h.sloBurnHarnessBase.sloToAPI(pm)
+}
+
+func (brokenSLOBurnSchema) ValidatePanelConfig(_ context.Context, _ string, _ map[string]attr.Value, _ path.Path) diag.Diagnostics {
+	return nil
+}
+
+type brokenSLOBurnNullPreserve struct{ sloBurnHarnessBase }
+
+func (h brokenSLOBurnNullPreserve) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
+	return h.sloFromAPI(pm, prior, item, func(cfg *models.SloBurnRateConfigModel, api kbapi.SloBurnRateEmbeddable) {
+		cfg.Title = types.StringPointerValue(api.Title)
+	})
+}
+
+func (h brokenSLOBurnNullPreserve) ToAPI(pm models.PanelModel, _ *models.DashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
+	return h.sloBurnHarnessBase.sloToAPI(pm)
+}
+
+const sloBurnHarnessFixtureJSON = `{
+  "type": "slo_burn_rate",
+  "grid": { "x": 0, "y": 0, "w": 6, "h": 4 },
+  "id": "slo-br-contract-harness",
+  "config": { "sloId": "slo-contract-id", "duration": "5m", "title": "api-title-harness" }
+}`
 
 func TestContractHarness_syntheticsStatsOverviewSmoke(t *testing.T) {
 	const fixture = `{
@@ -154,13 +341,37 @@ func TestContractHarness_syntheticsStatsOverviewSmoke(t *testing.T) {
 	require.False(t, t.Failed(), "expected harness to pass for minimal synthetics handler")
 }
 
-func TestContractHarness_brokenHandlerReportsFailures(t *testing.T) {
-	const fixture = `{
-  "type": "contracttest_broken_stub",
-  "grid": { "x": 0, "y": 0, "w": 6, "h": 4 },
-  "config": { "requiredField": "ok" }
-}`
-	ctx := context.Background()
-	msgs := runChecks(ctx, brokenContractHandler{}, Config{FullAPIResponse: fixture})
-	require.NotEmpty(t, msgs)
+func TestContractHarness_PlantedFailuresSLOBurnShapes(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name string
+		h    iface.Handler
+		tag  string
+	}{
+		{"reflect_stub", brokenSLOBurnReflect{}, "[Reflect]"},
+		{"roundtrip_stub", brokenSLOBurnRoundTrip{}, "[RoundTrip]"},
+		{"schema_stub", brokenSLOBurnSchema{}, "[Schema]"},
+		{"null_preserve_stub", brokenSLOBurnNullPreserve{}, "[NullPreserve]"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			ctx := context.Background()
+			msgs := runChecks(ctx, tc.h, Config{FullAPIResponse: sloBurnHarnessFixtureJSON})
+			require.True(t,
+				slicesContainAnyPrefix(msgs, tc.tag),
+				"want at least one issue containing prefix %s; messages:\n%s", tc.tag, strings.Join(msgs, "\n"))
+		})
+	}
+}
+
+func slicesContainAnyPrefix(xs []string, prefix string) bool {
+	for _, s := range xs {
+		if strings.Contains(s, prefix) {
+			return true
+		}
+	}
+	return false
 }

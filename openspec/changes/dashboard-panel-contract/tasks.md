@@ -15,8 +15,8 @@
 - [x] 1.3 Create `dashboard/panelkit/nullpreserve.go` with `PreserveString`, `PreserveBool`, `PreserveList`, `PreserveFloat64`
 - [x] 1.4 Create `dashboard/panelkit/reflection.go` with `HasConfig`, `ClearConfig`, `SetConfig` using tfsdk tag matching
 - [x] 1.5 Verify `panelkit` reflection panics at init if any registered handler has a block name with no matching tfsdk tag
-- [x] 1.6 Create `dashboard/registry.go` with `panelHandlers` slice, `panelTypeToHandler` map, `panelConfigNames` derivation
-- [x] 1.7 Create `dashboard/router.go` with `mapPanelFromAPI` and `panelModelToAPI` delegating to registry
+- [x] 1.6 Create `dashboard/registry.go` with `panelHandlers` slice, `panelTypeToHandler` map, and `derivedPanelConfigNames` (typed `*_config` names plus `config_json`) populated at `init`
+- [x] 1.7 Create `dashboard/router.go` with `mapPanelFromAPIViaRegistry` and `panelModelToAPIViaRegistry` delegating registry lookup to `iface.Handler` conversions (alongside existing dashboard mapping until handlers are registered)
 
 ## 2. Migrate simple panels to Handler implementations
 

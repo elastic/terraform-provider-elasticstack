@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package contracttest
 
 import (
@@ -43,7 +60,7 @@ func navigateStructByTFSegments(root reflect.Value, segments []string) (reflect.
 }
 
 func fieldIndexByTfsdk(t reflect.Type, want string) (int, bool) {
-	for i := 0; i < t.NumField(); i++ {
+	for i := range t.NumField() {
 		f := t.Field(i)
 		if f.Tag.Get("tfsdk") == want {
 			return i, true
@@ -61,7 +78,10 @@ func allocPathParents(root reflect.Value, segments []string) (reflect.Value, boo
 	}
 	cur := root.Elem()
 
-	for si := 0; si < len(segments)-1; si++ {
+	if len(segments) == 1 {
+		return cur, cur.Kind() == reflect.Struct
+	}
+	for si := range len(segments) - 1 {
 		seg := segments[si]
 		if cur.Kind() != reflect.Struct {
 			return reflect.Value{}, false
@@ -86,6 +106,55 @@ func allocPathParents(root reflect.Value, segments []string) (reflect.Value, boo
 	}
 
 	return cur, cur.Kind() == reflect.Struct
+}
+
+func modelLeafReflect(pm *models.PanelModel, block string, segments []string) (reflect.Value, bool) {
+	if pm == nil {
+		return reflect.Value{}, false
+	}
+	rt := reflect.ValueOf(pm).Elem()
+	idx, ok := fieldIndexByTfsdk(rt.Type(), block)
+	if !ok {
+		return reflect.Value{}, false
+	}
+	fv := rt.Field(idx)
+	got, navigated := navigateStructByTFSegments(fv, segments)
+	return got, navigated && got.IsValid()
+}
+
+func writableModelLeaf(pm *models.PanelModel, block string, segments []string) (reflect.Value, bool) {
+	rt := reflect.ValueOf(pm).Elem()
+	idx, ok := fieldIndexByTfsdk(rt.Type(), block)
+	if !ok {
+		return reflect.Value{}, false
+	}
+	ptrField := rt.Field(idx)
+	if ptrField.Kind() != reflect.Pointer || !ptrField.CanSet() {
+		return reflect.Value{}, false
+	}
+	if ptrField.IsNil() {
+		ptrField.Set(reflect.New(ptrField.Type().Elem()))
+	}
+	parentStruct, navigated := allocPathParents(ptrField, segments)
+	if !navigated {
+		return reflect.Value{}, false
+	}
+	leafSeg := segments[len(segments)-1]
+	fidx, ok := fieldIndexByTfsdk(parentStruct.Type(), leafSeg)
+	if !ok {
+		return reflect.Value{}, false
+	}
+	dest := parentStruct.Field(fidx)
+	return dest, dest.CanSet()
+}
+
+func reflectZeroModelLeaf(pm *models.PanelModel, block string, segments []string) bool {
+	dest, ok := writableModelLeaf(pm, block, segments)
+	if !ok || !dest.CanSet() {
+		return false
+	}
+	dest.Set(reflect.Zero(dest.Type()))
+	return true
 }
 
 func setStructLeaf(pm *models.PanelModel, blockName string, segments []string, val attr.Value) bool {

@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package contracttest
 
 import (
@@ -44,6 +61,7 @@ func appendRequiredJSONPresenceIssues(handler iface.Handler, fixtureJSON string,
 	}
 }
 
+// appendValidateRequiredZeroIssues validates each shallow required attribute independently (one key per ValidatePanelConfig call).
 func appendValidateRequiredZeroIssues(handler iface.Handler, fixtureJSON string, issues *[]string) {
 	sn, ok := handler.SchemaAttribute().(schema.SingleNestedAttribute)
 	if !ok {
@@ -61,25 +79,36 @@ func appendValidateRequiredZeroIssues(handler iface.Handler, fixtureJSON string,
 	}
 	sort.Strings(shallowKeys)
 
-	attrs, err := attrsForShallowFixture(cfg, shallowKeys)
+	attrsTemplate, err := attrsForShallowFixture(cfg, shallowKeys)
 	if err != nil {
 		*issues = append(*issues, fmt.Sprintf("[Schema] build ValidatePanel attrs: %v", err))
 		return
 	}
 
-	target := shallowKeys[0]
-	nv, err := nullAttrFromExisting(attrs[target])
-	if err != nil {
-		*issues = append(*issues, fmt.Sprintf("[Schema] build null attr: %v", err))
-		return
-	}
-	attrs[target] = nv
-
 	ctx := context.Background()
-	diags := handler.ValidatePanelConfig(ctx, handler.PanelType(), attrs, path.Root("panels").AtMapKey("stub"))
-	if !diags.HasError() {
-		*issues = append(*issues, fmt.Sprintf("[Schema] ValidatePanelConfig expected error when %#v is null", target))
+	rootPath := path.Root("panels").AtMapKey("stub")
+
+	for _, target := range shallowKeys {
+		nv, err := nullAttrFromExisting(attrsTemplate[target])
+		if err != nil {
+			*issues = append(*issues, fmt.Sprintf("[Schema] ValidatePanelConfig null %q: %v", target, err))
+			continue
+		}
+		attrs := shallowCloneAttrs(attrsTemplate)
+		attrs[target] = nv
+		diags := handler.ValidatePanelConfig(ctx, handler.PanelType(), attrs, rootPath)
+		if !diags.HasError() {
+			*issues = append(*issues, fmt.Sprintf("[Schema] ValidatePanelConfig expected error when %#v is zeroed/null", target))
+		}
 	}
+}
+
+func shallowCloneAttrs(in map[string]attr.Value) map[string]attr.Value {
+	out := make(map[string]attr.Value, len(in))
+	for k, v := range in {
+		out[k] = v
+	}
+	return out
 }
 
 func flattenShallowRequired(lp leafPaths) []string {
