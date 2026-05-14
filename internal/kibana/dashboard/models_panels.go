@@ -551,6 +551,18 @@ func dashboardPanelsToAPI(ctx context.Context, m *models.DashboardModel) (*kbapi
 	return &apiPanels, diags
 }
 
+// panelDispatcherAllowsTypedConfigOmission reports panel types whose handlers may serialize when the Terraform
+// *_config block is absent (optional block or API-default empty synthetics payload). Other registered handlers rely
+// on HasConfig(...) or legacy error branches instead.
+func panelDispatcherAllowsTypedConfigOmission(panelType string) bool {
+	switch panelType {
+	case panelTypeTimeSlider, panelTypeSyntheticsStatsOverview, panelTypeSyntheticsMonitors:
+		return true
+	default:
+		return false
+	}
+}
+
 func panelToAPI(ctx context.Context, pm models.PanelModel, dashboard *models.DashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	for _, h := range AllHandlers() {
 		if panelkit.HasConfig(&pm, h.PanelType()+"_config") {
@@ -559,10 +571,13 @@ func panelToAPI(ctx context.Context, pm models.PanelModel, dashboard *models.Das
 	}
 
 	// Registered handlers may still apply when the practitioner omits an optional typed *_config block
-	// (see e.g. `time_slider_control` with no `time_slider_control_config`).
+	// (see e.g. `time_slider_control` with no `time_slider_control_config`, or synthetics panels with defaults).
 	if typeutils.IsKnown(pm.Type) {
-		if h := LookupHandler(pm.Type.ValueString()); h != nil {
-			return h.ToAPI(pm, dashboard)
+		pt := pm.Type.ValueString()
+		if panelDispatcherAllowsTypedConfigOmission(pt) {
+			if h := LookupHandler(pt); h != nil {
+				return h.ToAPI(pm, dashboard)
+			}
 		}
 	}
 
