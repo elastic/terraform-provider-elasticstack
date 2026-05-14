@@ -39,11 +39,11 @@
 
 ## 6. Acceptance Tests
 
-- [ ] 6.1 Add or update a test step in `internal/kibana/dataview/acc_test.go` that:
+- [x] 6.1 Add or update a test step in `internal/kibana/dataview/acc_test.go` that:
   - Creates a data view with no `field_attrs` in config
   - Simulates (or asserts via `terraform plan`) that server-generated `count` entries do not cause a diff
-- [ ] 6.2 Add a test step that exercises in-place update of `field_attrs` (add a `custom_label` entry, verify no replacement, verify the label is written via `UpdateFieldMetadata`)
-- [ ] 6.3 Add a test step that removes a `field_attrs` entry previously set in config and verifies the resource is updated in place (not replaced)
+- [x] 6.2 Add a test step that exercises in-place update of `field_attrs` (add a `custom_label` entry, verify no replacement, verify the label is written via `UpdateFieldMetadata`)
+- [x] 6.3 Add a test step that removes a `field_attrs` entry previously set in config and verifies the resource is updated in place (not replaced)
 
 ## 7. Requirements Update
 
