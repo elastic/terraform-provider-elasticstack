@@ -1135,7 +1135,7 @@ func TestNewElasticsearchResource_Write_shortCircuitEmptyWriteID(t *testing.T) {
 		_ *clients.ElasticsearchScopedClient,
 		_ string,
 		plan testResourceModel,
-	) (testResourceModel, diag.Diagnostics) { //nolint:unparam // stub create callback; envelope tests only assert writeFn is not invoked
+	) (testResourceModel, diag.Diagnostics) {
 		writeCalled = true
 		return plan, nil
 	}
