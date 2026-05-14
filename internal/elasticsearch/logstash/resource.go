@@ -45,7 +45,7 @@ func newLogstashPipelineResource() *logstashPipelineResource {
 			readLogstashPipeline,
 			deleteLogstashPipeline,
 			writeLogstashPipeline,
-			writeLogstashPipelineUpdate,
+			writeLogstashPipeline,
 		),
 	}
 }

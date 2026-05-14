@@ -114,7 +114,7 @@ func newPipelineResource() *pipelineResource {
 			readIngestPipeline,
 			deleteIngestPipeline,
 			writeIngestPipeline,
-			writeIngestPipelineUpdate,
+			writeIngestPipeline,
 		),
 	}
 }
@@ -208,10 +208,6 @@ func writeIngestPipeline(ctx context.Context, client *clients.ElasticsearchScope
 	data.ID = types.StringValue(compID.String())
 
 	return data, diags
-}
-
-func writeIngestPipelineUpdate(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, data Data) (Data, diag.Diagnostics) {
-	return writeIngestPipeline(ctx, client, resourceID, data)
 }
 
 func buildPipelineBody(ctx context.Context, data Data) (map[string]any, diag.Diagnostics) {

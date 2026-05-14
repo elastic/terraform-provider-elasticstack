@@ -60,10 +60,6 @@ func writeSnapshotRepository(ctx context.Context, client *esclients.Elasticsearc
 	return data, diags
 }
 
-func writeSnapshotRepositoryUpdate(ctx context.Context, client *esclients.ElasticsearchScopedClient, resourceID string, data Data) (Data, diag.Diagnostics) {
-	return writeSnapshotRepository(ctx, client, resourceID, data)
-}
-
 // extractSettings determines the repository type and builds the settings map.
 func extractSettings(ctx context.Context, data Data) (string, map[string]any, diag.Diagnostics) {
 	var diags diag.Diagnostics

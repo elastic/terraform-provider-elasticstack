@@ -134,7 +134,3 @@ func writeSlm(ctx context.Context, client *esclients.ElasticsearchScopedClient, 
 	data.ID = fwtypes.StringValue(id.String())
 	return data, diags
 }
-
-func writeSlmUpdate(ctx context.Context, client *esclients.ElasticsearchScopedClient, resourceID string, data Data) (Data, diag.Diagnostics) {
-	return writeSlm(ctx, client, resourceID, data)
-}

@@ -45,7 +45,7 @@ func newRoleMappingResource() *roleMappingResource {
 			readRoleMappingResource,
 			deleteRoleMapping,
 			writeRoleMapping,
-			writeRoleMappingUpdate,
+			writeRoleMapping,
 		),
 	}
 }
