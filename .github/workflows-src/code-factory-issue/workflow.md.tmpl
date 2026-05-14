@@ -267,7 +267,13 @@ steps:
       BIND_ADDRESS: "0.0.0.0"
       ELASTICSEARCH_PORT: "8080"
       KIBANA_PORT: "80"
-    run: make docker-fleet
+    run: |
+      make docker-fleet
+      {
+        echo "ELASTICSEARCH_PORT=8080"
+        echo "KIBANA_PORT=80"
+      } >> "$GITHUB_ENV"
+    shell: bash
   - name: Get dependencies
     run: make setup
   - name: Setup Kibana user
@@ -360,7 +366,7 @@ Deterministic pre-activation has already decided that this intake is eligible, t
 
 ## Test environment
 
-The Elastic Stack is available in the agent environment. It is exposed on AWF-allowed host ports `8080` (Elasticsearch) and `80` (Kibana), reachable via `host.docker.internal` from the sandbox. Run targeted acceptance tests with:
+The Elastic Stack is available in the agent environment. It is exposed on AWF-allowed host ports `8080` (Elasticsearch) and `80` (Kibana), reachable via `host.docker.internal` from the sandbox. If `terraform` is not on PATH inside the agent container, it is also available at `./.bin/terraform` relative to the workspace. Run targeted acceptance tests with:
 
 ```bash
 ELASTICSEARCH_ENDPOINTS=http://host.docker.internal:8080 \

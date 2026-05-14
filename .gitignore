@@ -11,6 +11,7 @@ example.tf
 terraform.tfplan
 terraform.tfstate
 bin/
+.bin/
 dist/
 modules-dev/
 /pkg/
