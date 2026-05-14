@@ -32,6 +32,7 @@ import (
 func TestPopulateFromAPI(t *testing.T) {
 	ctx := context.Background()
 	var diags diag.Diagnostics
+	countFive := 5
 
 	tests := []struct {
 		name          string
@@ -218,6 +219,43 @@ func TestPopulateFromAPI(t *testing.T) {
 					FieldAttributes: NewFieldAttrsNull(getFieldAttrElemType()),
 					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType()),
 					FieldFormats:    types.MapNull(getFieldFormatElemType()),
+				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
+			},
+		},
+		{
+			name: "field_attrs_omitted_strips_server_count_only",
+			existingModel: dataViewModel{
+				ID:      types.StringValue("existing-space-id/view-id"),
+				SpaceID: types.StringValue("existing-space-id"),
+				DataView: typeutils.ObjectValueFrom(ctx, &innerModel{
+					ID:              types.StringValue("view-id"),
+					SourceFilters:   types.ListNull(types.StringType),
+					FieldAttributes: NewFieldAttrsNull(getFieldAttrElemType()),
+					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType()),
+					FieldFormats:    types.MapNull(getFieldFormatElemType()),
+					Namespaces:      types.ListNull(types.StringType),
+				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
+			},
+			response: kbapi.DataViewsDataViewResponseObject{
+				DataView: &kbapi.DataViewsDataViewResponseObjectInner{
+					Id: new("view-id"),
+					FieldAttrs: &map[string]kbapi.DataViewsFieldattrs{
+						"host.hostname": {
+							Count: &countFive,
+						},
+					},
+				},
+			},
+			expectedModel: dataViewModel{
+				ID:      types.StringValue("existing-space-id/view-id"),
+				SpaceID: types.StringValue("existing-space-id"),
+				DataView: typeutils.ObjectValueFrom(ctx, &innerModel{
+					ID:              types.StringValue("view-id"),
+					SourceFilters:   types.ListNull(types.StringType),
+					FieldAttributes: NewFieldAttrsNull(getFieldAttrElemType()),
+					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType()),
+					FieldFormats:    types.MapNull(getFieldFormatElemType()),
+					Namespaces:      types.ListNull(types.StringType),
 				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
 			},
 		},

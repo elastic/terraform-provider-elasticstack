@@ -19,16 +19,62 @@ package dataview
 
 import (
 	"context"
+	"fmt"
 	"maps"
 	"slices"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
+
+// stripServerCountOnlyWhenFieldAttrsUnset removes Kibana-populated popularity counts from the
+// field_attrs snapshot when Terraform state still has the attribute omitted (null). Otherwise
+// plan-time MapSemanticEquals is never invoked for a null-config attribute and refresh shows drift
+// (REQ-015; see TestAccResourceDataViewFieldAttrs).
+func stripServerCountOnlyWhenFieldAttrsUnset(ctx context.Context, existing FieldAttrsValue, incoming types.Map, diags *diag.Diagnostics) types.Map {
+	if !existing.IsNull() {
+		return incoming
+	}
+	if incoming.IsNull() || incoming.IsUnknown() || len(incoming.Elements()) == 0 {
+		return incoming
+	}
+
+	elemType := incoming.ElementType(ctx)
+	out := make(map[string]attr.Value)
+	for fieldName, av := range incoming.Elements() {
+		ov, ok := av.(basetypes.ObjectValue)
+		if !ok {
+			diags.AddAttributeError(path.Root("data_view").AtName("field_attrs").AtMapKey(fieldName),
+				"Invalid field_attrs value", fmt.Sprintf("expected ObjectValue, got %T", av))
+			return incoming
+		}
+
+		var m fieldAttrModel
+		diags.Append(ov.As(ctx, &m, basetypes.ObjectAsOptions{})...)
+		if diags.HasError() {
+			return incoming
+		}
+
+		if m.CustomLabel.IsNull() && !m.Count.IsNull() {
+			continue
+		}
+		out[fieldName] = av
+	}
+
+	if len(out) == 0 {
+		return types.MapNull(elemType)
+	}
+
+	mv, d := types.MapValue(elemType, out)
+	diags.Append(d...)
+	return mv
+}
 
 func (model *dataViewModel) populateFromAPI(ctx context.Context, data *kbapi.DataViewsDataViewResponseObject, spaceID string) diag.Diagnostics {
 	if data == nil {
@@ -116,16 +162,19 @@ func (model *dataViewModel) populateFromAPI(ctx context.Context, data *kbapi.Dat
 						func(item kbapi.DataViewsSourcefilterItem, _ typeutils.ListMeta) string {
 							return item.Value
 						})),
-				FieldAttributes: FieldAttrsValue{
-					MapValue: semanticEqualEmptyMap(dvInner.FieldAttributes.MapValue,
-						typeutils.MapToMapType(ctx, typeutils.Deref(item.FieldAttrs), getFieldAttrElemType(), meta.Path.AtName("field_attrs"), &diags,
-							func(item kbapi.DataViewsFieldattrs, _ typeutils.MapMeta) fieldAttrModel {
-								return fieldAttrModel{
-									CustomLabel: types.StringPointerValue(item.CustomLabel),
-									Count:       types.Int64PointerValue(typeutils.Itol(item.Count)),
-								}
-							})),
-				},
+				FieldAttributes: func() FieldAttrsValue {
+					incoming := typeutils.MapToMapType(ctx, typeutils.Deref(item.FieldAttrs), getFieldAttrElemType(), meta.Path.AtName("field_attrs"), &diags,
+						func(item kbapi.DataViewsFieldattrs, _ typeutils.MapMeta) fieldAttrModel {
+							return fieldAttrModel{
+								CustomLabel: types.StringPointerValue(item.CustomLabel),
+								Count:       types.Int64PointerValue(typeutils.Itol(item.Count)),
+							}
+						})
+					incoming = stripServerCountOnlyWhenFieldAttrsUnset(ctx, dvInner.FieldAttributes, incoming, &diags)
+					return FieldAttrsValue{
+						MapValue: semanticEqualEmptyMap(dvInner.FieldAttributes.MapValue, incoming),
+					}
+				}(),
 				RuntimeFieldMap: semanticEqualEmptyMap(dvInner.RuntimeFieldMap,
 					typeutils.MapToMapType(ctx, typeutils.Deref(item.RuntimeFieldMap), getRuntimeFieldMapElemType(), meta.Path.AtName("runtime_field_map"), &diags,
 						func(item kbapi.DataViewsRuntimefieldmap, _ typeutils.MapMeta) runtimeFieldModel {
