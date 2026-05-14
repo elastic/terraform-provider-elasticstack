@@ -18,12 +18,16 @@
 package dashboard
 
 import (
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/esqlcontrol"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/iface"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/optionslist"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/rangeslider"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/sloburnrate"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/sloerrorbudget"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/slooverview"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/syntheticsmonitors"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/syntheticsstatsoverview"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/timeslider"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 )
 
@@ -34,6 +38,10 @@ var panelHandlers = []iface.Handler{
 	slooverview.Handler{},
 	syntheticsmonitors.Handler{},
 	syntheticsstatsoverview.Handler{},
+	timeslider.Handler{},
+	optionslist.Handler{},
+	rangeslider.Handler{},
+	esqlcontrol.Handler{},
 }
 
 var panelTypeToHandler map[string]iface.Handler
@@ -45,6 +53,10 @@ func init() {
 	slooverview.SetPopulatePanelConfigJSONDefaults(populatePanelConfigJSONDefaults)
 	syntheticsmonitors.SetPopulatePanelConfigJSONDefaults(populatePanelConfigJSONDefaults)
 	syntheticsstatsoverview.SetPopulatePanelConfigJSONDefaults(populatePanelConfigJSONDefaults)
+	timeslider.SetPopulatePanelConfigJSONDefaults(populatePanelConfigJSONDefaults)
+	optionslist.SetPopulatePanelConfigJSONDefaults(populatePanelConfigJSONDefaults)
+	rangeslider.SetPopulatePanelConfigJSONDefaults(populatePanelConfigJSONDefaults)
+	esqlcontrol.SetPopulatePanelConfigJSONDefaults(populatePanelConfigJSONDefaults)
 	panelTypeToHandler = make(map[string]iface.Handler, len(panelHandlers))
 	derivedPanelConfigNames = append(derivedPanelConfigNames, "config_json")
 	for _, h := range panelHandlers {

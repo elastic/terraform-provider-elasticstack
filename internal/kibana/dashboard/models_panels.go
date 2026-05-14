@@ -293,50 +293,6 @@ func dashboardMapPanelFromAPI(ctx context.Context, m *models.DashboardModel, tfP
 			pm.ConfigJSON = configJSON
 		}
 
-	case panelTypeTimeSlider:
-		tsPanel, err := panelItem.AsKbnDashboardPanelTypeTimeSliderControl()
-		if err != nil {
-			return models.PanelModel{}, diagutil.FrameworkDiagFromError(err)
-		}
-		setPanelGridFromAPI(&pm, tsPanel.Grid.X, tsPanel.Grid.Y, tsPanel.Grid.W, tsPanel.Grid.H)
-		pm.ID = types.StringPointerValue(tsPanel.Id)
-		// Computed read-back only: practitioner-authored config_json is not supported for
-		// time_slider_control (see `config_json` type-allowlist validators on the panel schema).
-		if configBytes, err := json.Marshal(tsPanel.Config); err == nil {
-			pm.ConfigJSON = customtypes.NewJSONWithDefaultsValue(string(configBytes), populatePanelConfigJSONDefaults)
-		}
-		populateTimeSliderControlFromAPI(&pm, tfPanel, tsPanel.Config)
-	case panelTypeEsqlControl:
-		esqlPanel, err := panelItem.AsKbnDashboardPanelTypeEsqlControl()
-		if err != nil {
-			return models.PanelModel{}, diagutil.FrameworkDiagFromError(err)
-		}
-		setPanelGridFromAPI(&pm, esqlPanel.Grid.X, esqlPanel.Grid.Y, esqlPanel.Grid.W, esqlPanel.Grid.H)
-		pm.ID = types.StringPointerValue(esqlPanel.Id)
-		// ES|QL control panels are managed via esql_control_config; config_json remains unset.
-		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
-		populateEsqlControlFromAPI(&pm, tfPanel, esqlPanel.Config)
-	case panelTypeOptionsListControl:
-		olPanel, err := panelItem.AsKbnDashboardPanelTypeOptionsListControl()
-		if err != nil {
-			return models.PanelModel{}, diagutil.FrameworkDiagFromError(err)
-		}
-		setPanelGridFromAPI(&pm, olPanel.Grid.X, olPanel.Grid.Y, olPanel.Grid.W, olPanel.Grid.H)
-		pm.ID = types.StringPointerValue(olPanel.Id)
-		if configBytes, err := json.Marshal(olPanel.Config); err == nil {
-			pm.ConfigJSON = customtypes.NewJSONWithDefaultsValue(string(configBytes), populatePanelConfigJSONDefaults)
-		}
-		populateOptionsListControlFromAPI(&pm, tfPanel, &olPanel)
-	case panelTypeRangeSlider:
-		rsPanel, err := panelItem.AsKbnDashboardPanelTypeRangeSliderControl()
-		if err != nil {
-			return models.PanelModel{}, diagutil.FrameworkDiagFromError(err)
-		}
-		setPanelGridFromAPI(&pm, rsPanel.Grid.X, rsPanel.Grid.Y, rsPanel.Grid.W, rsPanel.Grid.H)
-		pm.ID = types.StringPointerValue(rsPanel.Id)
-		// Range slider control panels are managed via range_slider_control_config; config_json remains unset.
-		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
-		populateRangeSliderControlFromAPI(ctx, &pm, tfPanel, &rsPanel)
 	case panelTypeVis:
 		visPanel, err := panelItem.AsKbnDashboardPanelTypeVis()
 		if err != nil {
@@ -602,8 +558,9 @@ func panelToAPI(ctx context.Context, pm models.PanelModel, dashboard *models.Das
 		}
 	}
 
-	switch pm.Type.ValueString() {
-	case panelTypeSyntheticsStatsOverview, panelTypeSyntheticsMonitors:
+	// Registered handlers may still apply when the practitioner omits an optional typed *_config block
+	// (see e.g. `time_slider_control` with no `time_slider_control_config`).
+	if typeutils.IsKnown(pm.Type) {
 		if h := LookupHandler(pm.Type.ValueString()); h != nil {
 			return h.ToAPI(pm, dashboard)
 		}
@@ -761,42 +718,6 @@ func panelToAPI(ctx context.Context, pm models.PanelModel, dashboard *models.Das
 		return kbapi.DashboardPanelItem{}, diags
 	}
 
-	if pm.Type.ValueString() == panelTypeRangeSlider || pm.RangeSliderControlConfig != nil {
-		if pm.RangeSliderControlConfig == nil {
-			diags.AddError(
-				"Missing range slider control panel configuration",
-				"Range slider control panels require `range_slider_control_config`.",
-			)
-			return kbapi.DashboardPanelItem{}, diags
-		}
-		rsPanel := kbapi.KbnDashboardPanelTypeRangeSliderControl{
-			Grid: grid,
-			Id:   panelID,
-		}
-		buildRangeSliderControlConfig(pm, &rsPanel)
-		if err := panelItem.FromKbnDashboardPanelTypeRangeSliderControl(rsPanel); err != nil {
-			diags.AddError("Failed to create range slider control panel", err.Error())
-		}
-		return panelItem, diags
-	}
-
-	if pm.Type.ValueString() == panelTypeTimeSlider || pm.TimeSliderControlConfig != nil {
-		tsPanel := kbapi.KbnDashboardPanelTypeTimeSliderControl{
-			Grid: grid,
-			Id:   panelID,
-			Config: struct {
-				EndPercentageOfTimeRange   *float32 `json:"end_percentage_of_time_range,omitempty"`
-				IsAnchored                 *bool    `json:"is_anchored,omitempty"`
-				StartPercentageOfTimeRange *float32 `json:"start_percentage_of_time_range,omitempty"`
-			}{},
-		}
-		buildTimeSliderControlConfig(pm, &tsPanel)
-		if err := panelItem.FromKbnDashboardPanelTypeTimeSliderControl(tsPanel); err != nil {
-			diags.AddError("Failed to create time slider control panel", err.Error())
-		}
-		return panelItem, diags
-	}
-
 	if pm.Type.ValueString() == panelTypeSloBurnRate {
 		if typeutils.IsKnown(pm.ConfigJSON) && !pm.ConfigJSON.IsNull() {
 			diags.AddError(
@@ -810,33 +731,6 @@ func panelToAPI(ctx context.Context, pm models.PanelModel, dashboard *models.Das
 			"SLO burn rate panels require `slo_burn_rate_config`.",
 		)
 		return kbapi.DashboardPanelItem{}, diags
-	}
-
-	if pm.EsqlControlConfig != nil {
-		esqlPanel := kbapi.KbnDashboardPanelTypeEsqlControl{
-			Grid: grid,
-			Id:   panelID,
-		}
-		diags.Append(buildEsqlControlConfig(pm, &esqlPanel)...)
-		if diags.HasError() {
-			return kbapi.DashboardPanelItem{}, diags
-		}
-		if err := panelItem.FromKbnDashboardPanelTypeEsqlControl(esqlPanel); err != nil {
-			diags.AddError("Failed to create esql control panel", err.Error())
-		}
-		return panelItem, diags
-	}
-
-	if pm.Type.ValueString() == panelTypeOptionsListControl || pm.OptionsListControlConfig != nil {
-		olPanel := kbapi.KbnDashboardPanelTypeOptionsListControl{
-			Grid: grid,
-			Id:   panelID,
-		}
-		buildOptionsListControlConfig(pm, &olPanel)
-		if err := panelItem.FromKbnDashboardPanelTypeOptionsListControl(olPanel); err != nil {
-			diags.AddError("Failed to create options list control panel", err.Error())
-		}
-		return panelItem, diags
 	}
 
 	// Practitioner-authored `config_json`: some typed panel discriminators enumerate explicit rejects (example:
@@ -906,6 +800,26 @@ func panelToAPI(ctx context.Context, pm models.PanelModel, dashboard *models.Das
 			diags.AddError(
 				"Unsupported panel type for config_json",
 				"Panel-level `config_json` is not supported for `discover_session` panels. Use `discover_session_config` instead.",
+			)
+		case panelTypeTimeSlider:
+			diags.AddError(
+				"Unsupported panel type for config_json",
+				"Panel-level `config_json` is not supported for `time_slider_control` panels. Use `time_slider_control_config` or omit config.",
+			)
+		case panelTypeEsqlControl:
+			diags.AddError(
+				"Unsupported panel type for config_json",
+				"Panel-level `config_json` is not supported for `esql_control` panels. Use `esql_control_config` instead.",
+			)
+		case panelTypeOptionsListControl:
+			diags.AddError(
+				"Unsupported panel type for config_json",
+				"Panel-level `config_json` is not supported for `options_list_control` panels. Use `options_list_control_config` instead.",
+			)
+		case panelTypeRangeSlider:
+			diags.AddError(
+				"Unsupported panel type for config_json",
+				"Panel-level `config_json` is not supported for `range_slider_control` panels. Use `range_slider_control_config` instead.",
 			)
 		default:
 			// Unknown panel type: reconstruct the full panel JSON from the stored

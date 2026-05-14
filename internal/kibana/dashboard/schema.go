@@ -23,10 +23,14 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/esqlcontrol"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/optionslist"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/rangeslider"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/sloerrorbudget"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/slooverview"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/syntheticsmonitors"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/syntheticsstatsoverview"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/timeslider"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
@@ -602,7 +606,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 					markdownConfigModeValidator{},
 				},
 			},
-			"time_slider_control_config": panelTimeSliderControlConfigSchema(),
+			"time_slider_control_config": timeslider.SchemaAttribute(),
 			"slo_alerts_config": schema.SingleNestedAttribute{
 				MarkdownDescription: panelkit.PanelConfigDescription(
 					"Configuration for an `slo_alerts` panel (`kbn-dashboard-panel-type-slo_alerts`). "+
@@ -698,9 +702,9 @@ func getPanelSchema() schema.NestedAttributeObject {
 			// loop over registry.AllHandlers().
 			"slo_overview_config":              slooverview.SchemaAttribute(),
 			"slo_error_budget_config":          sloerrorbudget.SchemaAttribute(),
-			"esql_control_config":              panelEsqlControlConfigSchema(),
-			"options_list_control_config":      panelOptionsListControlConfigSchema(),
-			"range_slider_control_config":      panelRangeSliderControlConfigSchema(),
+			"esql_control_config":              esqlcontrol.SchemaAttribute(),
+			"options_list_control_config":      optionslist.SchemaAttribute(),
+			"range_slider_control_config":      rangeslider.SchemaAttribute(),
 			"synthetics_stats_overview_config": syntheticsstatsoverview.SchemaAttribute(),
 			"synthetics_monitors_config":       syntheticsmonitors.SchemaAttribute(),
 			"image_config": schema.SingleNestedAttribute{

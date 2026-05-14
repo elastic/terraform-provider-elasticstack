@@ -21,12 +21,9 @@ import (
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-validators/float32validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
-	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -69,24 +66,6 @@ func timeSliderControlConfigInnerAttributes() map[string]schema.Attribute {
 		"is_anchored": schema.BoolAttribute{
 			MarkdownDescription: "Whether the start of the time window is anchored (fixed), so only the end slides.",
 			Optional:            true,
-		},
-	}
-}
-
-func panelTimeSliderControlConfigSchema() schema.SingleNestedAttribute {
-	return schema.SingleNestedAttribute{
-		MarkdownDescription: panelkit.PanelConfigDescription(
-			"Configuration for a time slider control panel. Controls the visible time window within the dashboard's global time range.",
-			"time_slider_control_config",
-			panelConfigNames,
-		),
-		Optional:   true,
-		Attributes: timeSliderControlConfigInnerAttributes(),
-		Validators: []validator.Object{
-			objectvalidator.ConflictsWith(
-				panelkit.SiblingTypedPanelConfigConflictPathsExcept("time_slider_control_config", panelConfigNames)...,
-			),
-			validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeTimeSlider}),
 		},
 	}
 }
@@ -170,25 +149,6 @@ func esqlControlConfigInnerAttributes() map[string]schema.Attribute {
 					Optional:            true,
 				},
 			},
-		},
-	}
-}
-
-func panelEsqlControlConfigSchema() schema.SingleNestedAttribute {
-	return schema.SingleNestedAttribute{
-		MarkdownDescription: panelkit.PanelConfigDescription(
-			"Configuration for an ES|QL control panel. Use this to manage ES|QL variable controls on a dashboard.",
-			"esql_control_config",
-			panelConfigNames,
-		),
-		Optional:   true,
-		Attributes: esqlControlConfigInnerAttributes(),
-		Validators: []validator.Object{
-			objectvalidator.ConflictsWith(
-				panelkit.SiblingTypedPanelConfigConflictPathsExcept("esql_control_config", panelConfigNames)...,
-			),
-			validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeEsqlControl}),
-			validators.RequiredIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeEsqlControl}),
 		},
 	}
 }
@@ -304,25 +264,6 @@ func optionsListControlConfigInnerAttributes() map[string]schema.Attribute {
 	}
 }
 
-func panelOptionsListControlConfigSchema() schema.SingleNestedAttribute {
-	return schema.SingleNestedAttribute{
-		MarkdownDescription: panelkit.PanelConfigDescription(
-			"Configuration for an options list control panel. Provides a dropdown or multi-select filter based on a field in a data view.",
-			"options_list_control_config",
-			panelConfigNames,
-		),
-		Optional:   true,
-		Attributes: optionsListControlConfigInnerAttributes(),
-		Validators: []validator.Object{
-			objectvalidator.ConflictsWith(
-				panelkit.SiblingTypedPanelConfigConflictPathsExcept("options_list_control_config", panelConfigNames)...,
-			),
-			validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeOptionsListControl}),
-			validators.RequiredIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeOptionsListControl}),
-		},
-	}
-}
-
 func pinnedOptionsListControlConfigSchema() schema.SingleNestedAttribute {
 	return schema.SingleNestedAttribute{
 		MarkdownDescription: panelkit.PanelConfigDescription(
@@ -369,25 +310,6 @@ func rangeSliderControlConfigInnerAttributes() map[string]schema.Attribute {
 		"step": schema.Float32Attribute{
 			MarkdownDescription: "The step size for the range slider. Stored as float32 to match the Kibana API type and avoid refresh drift.",
 			Optional:            true,
-		},
-	}
-}
-
-func panelRangeSliderControlConfigSchema() schema.SingleNestedAttribute {
-	return schema.SingleNestedAttribute{
-		MarkdownDescription: panelkit.PanelConfigDescription(
-			"Configuration for a range slider control panel. Provides a min/max range filter tied to a data view field.",
-			"range_slider_control_config",
-			panelConfigNames,
-		),
-		Optional:   true,
-		Attributes: rangeSliderControlConfigInnerAttributes(),
-		Validators: []validator.Object{
-			objectvalidator.ConflictsWith(
-				panelkit.SiblingTypedPanelConfigConflictPathsExcept("range_slider_control_config", panelConfigNames)...,
-			),
-			validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeRangeSlider}),
-			validators.RequiredIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeRangeSlider}),
 		},
 	}
 }

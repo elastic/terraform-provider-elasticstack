@@ -23,6 +23,7 @@ import (
 	"reflect"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/esqlcontrol"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -39,8 +40,8 @@ func alignDashboardStateFromPlanPanels(planPanels, statePanels []models.PanelMod
 func alignDashboardStateFromPlanPinnedPanels(ctx context.Context, planPins, statePins []models.PinnedPanelModel) {
 	n := min(len(planPins), len(statePins))
 	for i := range n {
-		plan := pinnedPanelSyntheticPanelModel(planPins[i])
-		state := pinnedPanelSyntheticPanelModel(statePins[i])
+		plan := planPins[i].SyntheticPanel()
+		state := statePins[i].SyntheticPanel()
 		alignPanelStateFromPlan(ctx, &plan, &state)
 	}
 }
@@ -66,7 +67,7 @@ func alignPanelStateFromPlan(ctx context.Context, plan, state *models.PanelModel
 		alignTreemapStateFromPlan(planBlocks.TreemapConfig, stateBlocks.TreemapConfig)
 		alignWaffleStateFromPlan(ctx, planBlocks.WaffleConfig, stateBlocks.WaffleConfig)
 	}
-	alignEsqlControlStateFromPlan(plan.EsqlControlConfig, state.EsqlControlConfig)
+	esqlcontrol.AlignEsqlPanels(plan, state)
 }
 
 func alignDatatableStateFromPlan(plan, state *models.DatatableConfigModel) {
@@ -198,24 +199,9 @@ func alignWaffleStateFromPlan(ctx context.Context, plan, state *models.WaffleCon
 	}
 }
 
-func alignEsqlControlStateFromPlan(plan, state *models.EsqlControlConfigModel) {
-	if plan == nil || state == nil {
-		return
-	}
-	preserveKnownStringIfStateBlank(plan.EsqlQuery, &state.EsqlQuery)
-	preserveKnownStringIfStateBlank(plan.Title, &state.Title)
-	preserveKnownListIfStateNull(plan.AvailableOptions, &state.AvailableOptions)
-}
-
 func alignTitleAndDescriptionFromPlan(planTitle, planDescription types.String, stateTitle, stateDescription *types.String) {
 	preserveKnownStringIfStateBlank(planTitle, stateTitle)
 	preserveKnownStringIfStateBlank(planDescription, stateDescription)
-}
-
-func preserveKnownListIfStateNull(plan types.List, state *types.List) {
-	if typeutils.IsKnown(plan) && (state.IsNull() || state.IsUnknown()) {
-		*state = plan
-	}
 }
 
 func preserveKnownTfBoolIfStateNull(plan types.Bool, state *types.Bool) {
