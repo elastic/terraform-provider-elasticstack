@@ -1243,6 +1243,7 @@ jobs:
           git push origin HEAD:${TARGET_BRANCH}
           if [ -n "${GH_AW_CI_TRIGGER_TOKEN}" ]; then
             SERVER_URL="${GITHUB_SERVER_URL#https://}"
+            SERVER_URL="${SERVER_URL#http://}"
             git remote set-url origin "https://x-access-token:${GH_AW_CI_TRIGGER_TOKEN}@${SERVER_URL}/${GITHUB_REPOSITORY}.git"
             git commit --allow-empty -m "chore: trigger CI"
             git push origin HEAD:${TARGET_BRANCH}
@@ -1453,6 +1454,7 @@ jobs:
           git push origin HEAD:generated-changelog --force
           if [ -n "${GH_AW_CI_TRIGGER_TOKEN}" ]; then
             SERVER_URL="${GITHUB_SERVER_URL#https://}"
+            SERVER_URL="${SERVER_URL#http://}"
             git remote set-url origin "https://x-access-token:${GH_AW_CI_TRIGGER_TOKEN}@${SERVER_URL}/${GITHUB_REPOSITORY}.git"
             git commit --allow-empty -m "chore: trigger CI"
             git push origin HEAD:generated-changelog --force
