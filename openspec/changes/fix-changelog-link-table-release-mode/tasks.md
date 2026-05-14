@@ -36,4 +36,4 @@
 
 ## 7. Update engine-level release tests
 
-- [ ] 7.1 Update existing release-mode tests in `changelog-engine.test.mjs` that write a changelog with a link table to assert that `[Unreleased]:` is updated and `[NEW]:` is inserted
+- [x] 7.1 Update existing release-mode tests in `changelog-engine.test.mjs` that write a changelog with a link table to assert that `[Unreleased]:` is updated and `[NEW]:` is inserted
