@@ -24,7 +24,7 @@ import (
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func updateCalendar(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, plan TFModel, _ TFModel) (TFModel, fwdiags.Diagnostics) {
+func updateCalendar(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, plan TFModel) (TFModel, fwdiags.Diagnostics) {
 	// Calendar definition changes (notably `description`) use RequiresReplace on the schema so
 	// Terraform runs delete+create. ML put calendar is create-only on Elasticsearch 8.0.x, so an
 	// in-place PUT would return "calendar already exists". Job associations live on

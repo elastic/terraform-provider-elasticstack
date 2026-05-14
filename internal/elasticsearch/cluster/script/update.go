@@ -75,6 +75,6 @@ func writeScript(ctx context.Context, client *clients.ElasticsearchScopedClient,
 	return data, diags
 }
 
-func writeScriptUpdate(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, data Data, _ Data) (Data, diag.Diagnostics) {
+func writeScriptUpdate(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, data Data) (Data, diag.Diagnostics) {
 	return writeScript(ctx, client, resourceID, data)
 }

@@ -25,7 +25,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func updateInferenceEndpoint(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, plan Data, _ Data) (Data, diag.Diagnostics) {
+func updateInferenceEndpoint(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, plan Data) (Data, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	update, modelDiags := plan.toUpdateModel(ctx)

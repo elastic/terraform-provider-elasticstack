@@ -82,6 +82,6 @@ func writeLogstashPipeline(ctx context.Context, client *clients.ElasticsearchSco
 	return data, diags
 }
 
-func writeLogstashPipelineUpdate(ctx context.Context, client *clients.ElasticsearchScopedClient, pipelineID string, data Data, _ Data) (Data, diag.Diagnostics) {
+func writeLogstashPipelineUpdate(ctx context.Context, client *clients.ElasticsearchScopedClient, pipelineID string, data Data) (Data, diag.Diagnostics) {
 	return writeLogstashPipeline(ctx, client, pipelineID, data)
 }

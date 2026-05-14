@@ -27,7 +27,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func updateDataStreamLifecycle(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, plan tfModel, _ tfModel) (tfModel, diag.Diagnostics) {
+func updateDataStreamLifecycle(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, plan tfModel) (tfModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	id, sdkDiags := client.ID(ctx, resourceID)

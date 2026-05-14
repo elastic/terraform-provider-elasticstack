@@ -60,7 +60,7 @@ func writeSnapshotRepository(ctx context.Context, client *esclients.Elasticsearc
 	return data, diags
 }
 
-func writeSnapshotRepositoryUpdate(ctx context.Context, client *esclients.ElasticsearchScopedClient, resourceID string, data Data, _ Data) (Data, diag.Diagnostics) {
+func writeSnapshotRepositoryUpdate(ctx context.Context, client *esclients.ElasticsearchScopedClient, resourceID string, data Data) (Data, diag.Diagnostics) {
 	return writeSnapshotRepository(ctx, client, resourceID, data)
 }
 

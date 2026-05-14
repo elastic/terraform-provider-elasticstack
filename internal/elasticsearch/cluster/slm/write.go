@@ -135,6 +135,6 @@ func writeSlm(ctx context.Context, client *esclients.ElasticsearchScopedClient, 
 	return data, diags
 }
 
-func writeSlmUpdate(ctx context.Context, client *esclients.ElasticsearchScopedClient, resourceID string, data Data, _ Data) (Data, diag.Diagnostics) {
+func writeSlmUpdate(ctx context.Context, client *esclients.ElasticsearchScopedClient, resourceID string, data Data) (Data, diag.Diagnostics) {
 	return writeSlm(ctx, client, resourceID, data)
 }

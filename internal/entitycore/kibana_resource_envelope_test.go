@@ -92,7 +92,6 @@ func testKibanaUpdateFuncFound(
 	resourceID string,
 	spaceID string,
 	plan testKibanaResourceModel,
-	_ testKibanaResourceModel,
 ) (testKibanaResourceModel, diag.Diagnostics) {
 	plan.ID = types.StringValue(spaceID + "/" + resourceID)
 	return plan, nil
@@ -1122,12 +1121,12 @@ func TestNewKibanaResource_Update_happyPath(t *testing.T) {
 	require.Equal(t, "my-resource", result.Name.ValueString())
 }
 
-func TestNewKibanaResource_Update_callbackReceivesPlanAndPrior(t *testing.T) {
+func TestNewKibanaResource_Update_callbackReceivesPlan(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	factory := newTestConfiguredFactory(ctx, t)
 	updateCalled := false
-	var receivedPlan, receivedPrior testKibanaResourceModel
+	var receivedPlan testKibanaResourceModel
 	r := NewKibanaResource[testKibanaResourceModel](
 		ComponentKibana,
 		"test_entity",
@@ -1135,10 +1134,9 @@ func TestNewKibanaResource_Update_callbackReceivesPlanAndPrior(t *testing.T) {
 		testKibanaReadFuncFound,
 		testKibanaDeleteFunc,
 		testKibanaCreateFuncFound,
-		func(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ string, plan testKibanaResourceModel, prior testKibanaResourceModel) (testKibanaResourceModel, diag.Diagnostics) {
+		func(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ string, plan testKibanaResourceModel) (testKibanaResourceModel, diag.Diagnostics) {
 			updateCalled = true
 			receivedPlan = plan
-			receivedPrior = prior
 			return plan, nil
 		},
 	)
@@ -1154,7 +1152,6 @@ func TestNewKibanaResource_Update_callbackReceivesPlanAndPrior(t *testing.T) {
 	require.False(t, resp.Diagnostics.HasError())
 	require.True(t, updateCalled, "update callback should be called")
 	require.Equal(t, "my-resource", receivedPlan.Name.ValueString())
-	require.Equal(t, "default/my-resource", receivedPrior.ID.ValueString())
 }
 
 func TestNewKibanaResource_Update_happyPath_fallback(t *testing.T) {
@@ -1170,7 +1167,7 @@ func TestNewKibanaResource_Update_happyPath_fallback(t *testing.T) {
 		testKibanaReadFuncFound,
 		testKibanaDeleteFunc,
 		testKibanaCreateFuncFound,
-		func(_ context.Context, _ *clients.KibanaScopedClient, resourceID string, spaceID string, plan testKibanaResourceModel, _ testKibanaResourceModel) (testKibanaResourceModel, diag.Diagnostics) {
+		func(_ context.Context, _ *clients.KibanaScopedClient, resourceID string, spaceID string, plan testKibanaResourceModel) (testKibanaResourceModel, diag.Diagnostics) {
 			updateCalled = true
 			receivedResourceID = resourceID
 			receivedSpaceID = spaceID
@@ -1208,7 +1205,7 @@ func TestNewKibanaResource_Update_shortCircuitPlanGetError(t *testing.T) {
 		testKibanaReadFuncFound,
 		testKibanaDeleteFunc,
 		testKibanaCreateFuncFound,
-		func(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ string, _ testKibanaResourceModel, _ testKibanaResourceModel) (testKibanaResourceModel, diag.Diagnostics) {
+		func(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ string, _ testKibanaResourceModel) (testKibanaResourceModel, diag.Diagnostics) {
 			updateCalled = true
 			return testKibanaResourceModel{}, nil
 		},
@@ -1234,44 +1231,6 @@ func TestNewKibanaResource_Update_shortCircuitPlanGetError(t *testing.T) {
 	require.False(t, updateCalled, "update callback should not run when plan.Get fails")
 }
 
-func TestNewKibanaResource_Update_shortCircuitStateGetError(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-	factory := newTestConfiguredFactory(ctx, t)
-	updateCalled := false
-	r := NewKibanaResource[testKibanaResourceModel](
-		ComponentKibana,
-		"test_entity",
-		getTestKibanaResourceSchema,
-		testKibanaReadFuncFound,
-		testKibanaDeleteFunc,
-		testKibanaCreateFuncFound,
-		func(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ string, _ testKibanaResourceModel, _ testKibanaResourceModel) (testKibanaResourceModel, diag.Diagnostics) {
-			updateCalled = true
-			return testKibanaResourceModel{}, nil
-		},
-	)
-	r.client = factory
-
-	plan := makeTestKibanaResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, "default/my-resource"), tftypes.NewValue(tftypes.String, "default"))
-	objType := testKibanaResourceObjectType()
-	objValue := tftypes.NewValue(objType, map[string]tftypes.Value{
-		"id":                tftypes.NewValue(tftypes.String, "default/my-resource"),
-		"name":              tftypes.NewValue(tftypes.String, "my-resource"),
-		"space_id":          tftypes.NewValue(tftypes.String, "default"),
-		"kibana_connection": tftypes.NewValue(kibanaConnectionBlockType(), nil),
-	})
-	badSchema := getTestKibanaResourceSchema(context.Background())
-	prior := tfsdk.State{Raw: objValue, Schema: badSchema}
-	resp := resource.UpdateResponse{State: prior}
-	req := resource.UpdateRequest{Plan: plan, State: prior}
-
-	r.Update(ctx, req, &resp)
-
-	require.True(t, resp.Diagnostics.HasError())
-	require.False(t, updateCalled, "update callback should not run when state.Get fails")
-}
-
 func TestNewKibanaResource_Update_shortCircuitEmptyResourceID(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
@@ -1284,7 +1243,7 @@ func TestNewKibanaResource_Update_shortCircuitEmptyResourceID(t *testing.T) {
 		testKibanaReadFuncFound,
 		testKibanaDeleteFunc,
 		testKibanaCreateFuncFound,
-		func(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ string, _ testKibanaResourceModel, _ testKibanaResourceModel) (testKibanaResourceModel, diag.Diagnostics) {
+		func(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ string, _ testKibanaResourceModel) (testKibanaResourceModel, diag.Diagnostics) {
 			updateCalled = true
 			return testKibanaResourceModel{}, nil
 		},
@@ -1322,7 +1281,7 @@ func TestNewKibanaResource_Update_shortCircuitClientError(t *testing.T) {
 		testKibanaReadFuncFound,
 		testKibanaDeleteFunc,
 		testKibanaCreateFuncFound,
-		func(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ string, _ testKibanaResourceModel, _ testKibanaResourceModel) (testKibanaResourceModel, diag.Diagnostics) {
+		func(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ string, _ testKibanaResourceModel) (testKibanaResourceModel, diag.Diagnostics) {
 			updateCalled = true
 			return testKibanaResourceModel{}, nil
 		},
@@ -1352,7 +1311,7 @@ func TestNewKibanaResource_Update_shortCircuitCallbackError(t *testing.T) {
 		testKibanaReadFuncFound,
 		testKibanaDeleteFunc,
 		testKibanaCreateFuncFound,
-		func(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ string, _ testKibanaResourceModel, _ testKibanaResourceModel) (testKibanaResourceModel, diag.Diagnostics) {
+		func(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ string, _ testKibanaResourceModel) (testKibanaResourceModel, diag.Diagnostics) {
 			var diags diag.Diagnostics
 			diags.AddError("update error", "something went wrong")
 			return testKibanaResourceModel{}, diags
@@ -1811,7 +1770,6 @@ func TestKibanaResource_Create_versionReqDiagsStopCreate(t *testing.T) {
 			_ string,
 			_ string,
 			_ testKibanaResourceModelWithVersionReqs,
-			_ testKibanaResourceModelWithVersionReqs,
 		) (testKibanaResourceModelWithVersionReqs, diag.Diagnostics) {
 			return testKibanaResourceModelWithVersionReqs{}, nil
 		},
@@ -1875,7 +1833,6 @@ func TestKibanaResource_Read_versionReqDiagsStopRead(t *testing.T) {
 			_ string,
 			_ string,
 			_ testKibanaResourceModelWithVersionReqs,
-			_ testKibanaResourceModelWithVersionReqs,
 		) (testKibanaResourceModelWithVersionReqs, diag.Diagnostics) {
 			return testKibanaResourceModelWithVersionReqs{}, nil
 		},
@@ -1935,7 +1892,6 @@ func TestKibanaResource_Update_versionReqDiagsStopUpdate(t *testing.T) {
 			_ *clients.KibanaScopedClient,
 			_ string,
 			_ string,
-			_ testKibanaResourceModelWithVersionReqs,
 			_ testKibanaResourceModelWithVersionReqs,
 		) (testKibanaResourceModelWithVersionReqs, diag.Diagnostics) {
 			updateCalled = true

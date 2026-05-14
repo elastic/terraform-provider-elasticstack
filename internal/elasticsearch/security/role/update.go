@@ -92,6 +92,6 @@ func writeRole(ctx context.Context, client *clients.ElasticsearchScopedClient, r
 	return data, diags
 }
 
-func writeRoleUpdate(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, data Data, _ Data) (Data, diag.Diagnostics) {
+func writeRoleUpdate(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, data Data) (Data, diag.Diagnostics) {
 	return writeRole(ctx, client, resourceID, data)
 }

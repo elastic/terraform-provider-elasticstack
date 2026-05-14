@@ -24,7 +24,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func updateStream(ctx context.Context, client *clients.KibanaScopedClient, _, _ string, plan, _ streamModel) (streamModel, diag.Diagnostics) {
+func updateStream(ctx context.Context, client *clients.KibanaScopedClient, _, _ string, plan streamModel) (streamModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	readModel, upsertDiags := upsertStream(ctx, client, plan)

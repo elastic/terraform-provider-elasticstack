@@ -83,6 +83,6 @@ func writeSystemUser(ctx context.Context, client *clients.ElasticsearchScopedCli
 	return data, diags
 }
 
-func writeSystemUserUpdate(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, data Data, _ Data) (Data, diag.Diagnostics) {
+func writeSystemUserUpdate(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, data Data) (Data, diag.Diagnostics) {
 	return writeSystemUser(ctx, client, resourceID, data)
 }

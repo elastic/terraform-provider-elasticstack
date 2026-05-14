@@ -84,7 +84,7 @@ func testCreateFuncFound(_ context.Context, _ *clients.ElasticsearchScopedClient
 	return model, nil
 }
 
-func testUpdateFuncFound(_ context.Context, _ *clients.ElasticsearchScopedClient, resourceID string, model testResourceModel, _ testResourceModel) (testResourceModel, diag.Diagnostics) {
+func testUpdateFuncFound(_ context.Context, _ *clients.ElasticsearchScopedClient, resourceID string, model testResourceModel) (testResourceModel, diag.Diagnostics) {
 	model.ID = types.StringValue("cluster/" + resourceID)
 	return model, nil
 }
@@ -1079,9 +1079,9 @@ func TestNewElasticsearchResource_Update_invokesUpdateCallbackNotCreate(t *testi
 			createCalled = true
 			return testCreateFuncFound(ctx, client, resourceID, model)
 		},
-		func(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, model testResourceModel, prior testResourceModel) (testResourceModel, diag.Diagnostics) {
+		func(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, model testResourceModel) (testResourceModel, diag.Diagnostics) {
 			updateCalled = true
-			return testUpdateFuncFound(ctx, client, resourceID, model, prior)
+			return testUpdateFuncFound(ctx, client, resourceID, model)
 		},
 	)
 	r.client = factory
@@ -1139,9 +1139,6 @@ func TestNewElasticsearchResource_Write_shortCircuitEmptyWriteID(t *testing.T) {
 		writeCalled = true
 		return plan, nil
 	}
-	updateWriteFn := func(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, model testResourceModel, _ testResourceModel) (testResourceModel, diag.Diagnostics) {
-		return writeFn(ctx, client, resourceID, model)
-	}
 	r := NewElasticsearchResource[testResourceModel](
 		ComponentElasticsearch,
 		"test_entity",
@@ -1149,7 +1146,7 @@ func TestNewElasticsearchResource_Write_shortCircuitEmptyWriteID(t *testing.T) {
 		testReadFuncFound,
 		testDeleteFunc,
 		writeFn,
-		updateWriteFn,
+		writeFn,
 	)
 	r.client = factory
 
@@ -1195,7 +1192,7 @@ func TestNewElasticsearchResource_Update_shortCircuitUnknownWriteID(t *testing.T
 		testReadFuncFound,
 		testDeleteFunc,
 		testCreateFuncFound,
-		func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, _ testResourceModel, _ testResourceModel) (testResourceModel, diag.Diagnostics) {
+		func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, _ testResourceModel) (testResourceModel, diag.Diagnostics) {
 			updateCalled = true
 			return testResourceModel{}, nil
 		},
@@ -1232,7 +1229,7 @@ func TestNewElasticsearchResource_Update_shortCircuitClientError(t *testing.T) {
 		testReadFuncFound,
 		testDeleteFunc,
 		testCreateFuncFound,
-		func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, _ testResourceModel, _ testResourceModel) (testResourceModel, diag.Diagnostics) {
+		func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, _ testResourceModel) (testResourceModel, diag.Diagnostics) {
 			updateCalled = true
 			return testResourceModel{}, nil
 		},
@@ -1262,7 +1259,7 @@ func TestNewElasticsearchResource_Update_shortCircuitCallbackError(t *testing.T)
 		testReadFuncFound,
 		testDeleteFunc,
 		testCreateFuncFound,
-		func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, _ testResourceModel, _ testResourceModel) (testResourceModel, diag.Diagnostics) {
+		func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, _ testResourceModel) (testResourceModel, diag.Diagnostics) {
 			var diags diag.Diagnostics
 			diags.AddError("update error", "something went wrong")
 			return testResourceModel{}, diags

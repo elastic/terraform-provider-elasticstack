@@ -84,7 +84,6 @@ func upsertEnrichPolicyUpdate(
 	client *clients.ElasticsearchScopedClient,
 	resourceID string,
 	data PolicyDataWithExecute,
-	_ PolicyDataWithExecute,
 ) (PolicyDataWithExecute, diag.Diagnostics) {
 	return upsertEnrichPolicy(ctx, client, resourceID, data)
 }
