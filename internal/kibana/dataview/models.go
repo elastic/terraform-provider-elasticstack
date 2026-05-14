@@ -370,15 +370,33 @@ func (model dataViewModel) toAPIUpdateModel(ctx context.Context) (kbapi.DataView
 	body := kbapi.DataViewsUpdateDataViewRequestObject{
 		DataView: typeutils.Deref(typeutils.ObjectTypeToStruct(ctx, model.DataView, path.Root("data_view"), &diags,
 			func(item innerModel, meta typeutils.ObjectMeta) kbapi.DataViewsUpdateDataViewRequestObjectInner {
+				// Kibana's PUT data view performs a partial merge: omitted fields keep their
+				// stored value. Always emit collection fields, defaulting null to empty, so
+				// in-place updates that drop a previously-set source_filters / field_formats /
+				// runtime_field_map actually clear the saved object server-side. Otherwise
+				// Terraform reports "Provider produced inconsistent result after apply" because
+				// the refreshed state still carries the prior values.
+				fieldFormats := convertFieldFormats(typeutils.MapTypeToMap(ctx, item.FieldFormats, meta.Path.AtName("field_formats"), &diags,
+					func(item fieldFormatModel, meta typeutils.MapMeta) kbapi.DataViewsFieldformat {
+						return convertFieldFormat(ctx, item, meta)
+					}))
+				if fieldFormats == nil {
+					fieldFormats = kbapi.DataViewsFieldformats{}
+				}
+				runtimeFieldMap := typeutils.MapTypeToMap(ctx, item.RuntimeFieldMap, meta.Path.AtName("runtime_field_map"), &diags, convertRuntimeFieldMap)
+				if runtimeFieldMap == nil {
+					runtimeFieldMap = map[string]kbapi.DataViewsRuntimefieldmap{}
+				}
+				sourceFilters := typeutils.ListTypeToSlice(ctx, item.SourceFilters, meta.Path.AtName("source_filters"), &diags, convertSourceFilter)
+				if sourceFilters == nil {
+					sourceFilters = []kbapi.DataViewsSourcefilterItem{}
+				}
 				return kbapi.DataViewsUpdateDataViewRequestObjectInner{
-					AllowNoIndex: item.AllowNoIndex.ValueBoolPointer(),
-					FieldFormats: typeutils.MapRef(convertFieldFormats(typeutils.MapTypeToMap(ctx, item.FieldFormats, meta.Path.AtName("field_formats"), &diags,
-						func(item fieldFormatModel, meta typeutils.MapMeta) kbapi.DataViewsFieldformat {
-							return convertFieldFormat(ctx, item, meta)
-						}))),
+					AllowNoIndex:    item.AllowNoIndex.ValueBoolPointer(),
+					FieldFormats:    &fieldFormats,
 					Name:            typeutils.ValueStringPointer(item.Name),
-					RuntimeFieldMap: typeutils.MapRef(typeutils.MapTypeToMap(ctx, item.RuntimeFieldMap, meta.Path.AtName("runtime_field_map"), &diags, convertRuntimeFieldMap)),
-					SourceFilters:   typeutils.SliceRef(typeutils.ListTypeToSlice(ctx, item.SourceFilters, meta.Path.AtName("source_filters"), &diags, convertSourceFilter)),
+					RuntimeFieldMap: &runtimeFieldMap,
+					SourceFilters:   &sourceFilters,
 					TimeFieldName:   typeutils.ValueStringPointer(item.TimeFieldName),
 					Title:           item.Title.ValueStringPointer(),
 				}

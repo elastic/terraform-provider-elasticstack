@@ -988,10 +988,14 @@ func TestToAPIUpdateModel(t *testing.T) {
 			},
 			expectedRequest: kbapi.DataViewsUpdateDataViewRequestObject{
 				DataView: kbapi.DataViewsUpdateDataViewRequestObjectInner{
-					AllowNoIndex:  new(true),
-					Name:          new("name"),
-					TimeFieldName: new("time_field_name"),
-					Title:         new("title"),
+					AllowNoIndex: new(true),
+					// Empty (not nil) so PUT actually clears prior server-side values.
+					FieldFormats:    &kbapi.DataViewsFieldformats{},
+					Name:            new("name"),
+					RuntimeFieldMap: &map[string]kbapi.DataViewsRuntimefieldmap{},
+					SourceFilters:   &[]kbapi.DataViewsSourcefilterItem{},
+					TimeFieldName:   new("time_field_name"),
+					Title:           new("title"),
 				},
 			},
 		},
