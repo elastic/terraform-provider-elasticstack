@@ -83,13 +83,13 @@ func GetSchema(_ context.Context) schema.Schema {
 			"processors": schema.ListAttribute{
 				MarkdownDescription: ingestPipelineProcessorsDescription,
 				Required:            true,
-				ElementType:         jsontypes.NormalizedType{},
+				ElementType:         ProcessorJSONType{},
 				Validators:          []validator.List{listvalidator.SizeAtLeast(1)},
 			},
 			"on_failure": schema.ListAttribute{
 				MarkdownDescription: ingestPipelineOnFailureDescription,
 				Optional:            true,
-				ElementType:         jsontypes.NormalizedType{},
+				ElementType:         ProcessorJSONType{},
 				Validators:          []validator.List{listvalidator.SizeAtLeast(1)},
 			},
 			"metadata": schema.StringAttribute{
@@ -256,19 +256,19 @@ func buildPipelineBody(ctx context.Context, data Data) (map[string]any, diag.Dia
 // list so Terraform does not record an empty Optional list as set.
 func jsonListFromSlice[T any](ctx context.Context, items []T, label string) (types.List, diag.Diagnostics) {
 	if len(items) == 0 {
-		return types.ListNull(jsontypes.NormalizedType{}), nil
+		return types.ListNull(ProcessorJSONType{}), nil
 	}
-	values := make([]jsontypes.Normalized, len(items))
+	values := make([]ProcessorJSONValue, len(items))
 	for i, v := range items {
 		b, err := json.Marshal(v)
 		if err != nil {
 			var diags diag.Diagnostics
 			diags.AddError(fmt.Sprintf("Failed to serialize %s", label), err.Error())
-			return types.ListNull(jsontypes.NormalizedType{}), diags
+			return types.ListNull(ProcessorJSONType{}), diags
 		}
-		values[i] = jsontypes.NewNormalizedValue(string(b))
+		values[i] = NewProcessorJSONValue(string(b))
 	}
-	return types.ListValueFrom(ctx, jsontypes.NormalizedType{}, values)
+	return types.ListValueFrom(ctx, ProcessorJSONType{}, values)
 }
 
 // decodeJSONList unmarshals each Normalized element of list into a JSON object.
@@ -278,7 +278,7 @@ func decodeJSONList(ctx context.Context, list types.List, label string) ([]map[s
 	if !typeutils.IsKnown(list) {
 		return nil, diags
 	}
-	var values []jsontypes.Normalized
+	var values []ProcessorJSONValue
 	diags.Append(list.ElementsAs(ctx, &values, false)...)
 	if diags.HasError() {
 		return nil, diags
