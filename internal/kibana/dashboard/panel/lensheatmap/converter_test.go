@@ -151,5 +151,56 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 	assert.Equal(t, "status:200", heatmapRoundTrip.Query.Expression)
 }
 
+func TestConverter_roundTrip_ESQL_heatmap(t *testing.T) {
+	ctx := context.Background()
+	var c converter
+	resolver := stubResolver{}
+
+	const esqlJSON = `{
+		"type": "heatmap",
+		"title": "Heatmap ESQL RT",
+		"description": "Converter test",
+		"ignore_global_filters": false,
+		"sampling": 1,
+		"axis": { "x": {}, "y": {} },
+		"styling": { "cells": {} },
+		"legend": { "size": "m" },
+		"data_source": {"type":"esql","query":"FROM logs-* | LIMIT 10"},
+		"metric": {
+			"color": {"type":"dynamic","range":"absolute","steps":[{"type":"from","from":0,"color":"#000000"}]},
+			"column": "bytes",
+			"format": {"type":"number"},
+			"operation": "value"
+		},
+		"x": {"column":"host","format":{"type":"number"},"operation":"value"},
+		"y": {"column":"service","format":{"type":"number"},"operation":"value"}
+	}`
+	var heatmap kbapi.HeatmapESQL
+	require.NoError(t, json.Unmarshal([]byte(esqlJSON), &heatmap))
+
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+	require.NoError(t, attrs.FromHeatmapESQL(heatmap))
+
+	blocks := &models.LensByValueChartBlocks{}
+	diags := c.PopulateFromAttributes(ctx, resolver, blocks, attrs)
+	require.False(t, diags.HasError(), "%v", diags)
+	require.NotNil(t, blocks.HeatmapConfig)
+	require.Nil(t, blocks.HeatmapConfig.Query)
+	assert.Contains(t, blocks.HeatmapConfig.DataSourceJSON.ValueString(), "FROM logs-*")
+
+	attrs2, diags := c.BuildAttributes(blocks, resolver)
+	require.False(t, diags.HasError(), "%v", diags)
+
+	out, err := attrs2.AsHeatmapESQL()
+	require.NoError(t, err)
+	assert.Equal(t, kbapi.HeatmapESQLTypeHeatmap, out.Type)
+	require.NotNil(t, out.Title)
+	assert.Equal(t, "Heatmap ESQL RT", *out.Title)
+	assert.Equal(t, "host", out.X.Column)
+	dsBytes, err := json.Marshal(out.DataSource)
+	require.NoError(t, err)
+	assert.Contains(t, string(dsBytes), "FROM logs-*")
+}
+
 //go:fix inline
 func newFloat32(f float32) *float32 { return new(f) }

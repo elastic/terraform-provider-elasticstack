@@ -18,12 +18,14 @@
 package lensxy
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -108,4 +110,59 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 	require.Len(t, out.XYChartConfig.Layers[0].DataLayer.Y, 1)
 	require.NotNil(t, out.XYChartConfig.Query)
 	require.Equal(t, wantExpr, out.XYChartConfig.Query.Expression.ValueString())
+}
+
+func TestConverter_roundTrip_ESQL_xy(t *testing.T) {
+	ctx := t.Context()
+	var c converter
+	resolver := stubResolver{}
+
+	const xyESQLJSON = `{
+		"type": "xy",
+		"title": "XY ESQL RT",
+		"axis": { "x": {}, "y": {} },
+		"filters": [],
+		"layers": [
+			{
+				"type": "line",
+				"data_source": {"type": "esql", "query": "FROM logs-* | LIMIT 10"},
+				"ignore_global_filters": false,
+				"sampling": 1,
+				"y": [
+					{
+						"column": "bytes",
+						"format": { "type": "number" }
+					}
+				]
+			}
+		],
+		"legend": { "visibility": "visible", "inside": false, "size": "auto" },
+		"styling": { "line": { "curve": "linear" } },
+		"time_range": { "from": "now-7d", "to": "now" }
+	}`
+	var chart kbapi.XyChartESQL
+	require.NoError(t, json.Unmarshal([]byte(xyESQLJSON), &chart))
+
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+	require.NoError(t, attrs.FromXyChartESQL(chart))
+
+	blocks := &models.LensByValueChartBlocks{}
+	diags := c.PopulateFromAttributes(ctx, resolver, blocks, attrs)
+	require.False(t, diags.HasError(), "%v", diags)
+	require.NotNil(t, blocks.XYChartConfig)
+	require.Len(t, blocks.XYChartConfig.Layers, 1)
+	require.Contains(t, blocks.XYChartConfig.Layers[0].DataLayer.DataSourceJSON.ValueString(), "FROM logs-*")
+
+	attrs2, diags := c.BuildAttributes(blocks, resolver)
+	require.False(t, diags.HasError(), "%v", diags)
+
+	out, err := attrs2.AsXyChartESQL()
+	require.NoError(t, err)
+	assert.Equal(t, kbapi.XyChartESQLTypeXy, out.Type)
+	require.NotNil(t, out.Title)
+	assert.Equal(t, "XY ESQL RT", *out.Title)
+	require.Len(t, out.Layers, 1)
+	dsBytes, err := json.Marshal(out.Layers[0].DataSource)
+	require.NoError(t, err)
+	assert.Contains(t, string(dsBytes), "FROM logs-*")
 }

@@ -18,12 +18,14 @@
 package lensdatatable
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -90,4 +92,51 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 	require.Equal(t, noESQL.Title.ValueString(), out.DatatableConfig.NoESQL.Title.ValueString())
 	require.Equal(t, noESQL.Query.Expression.ValueString(), out.DatatableConfig.NoESQL.Query.Expression.ValueString())
 	require.Len(t, out.DatatableConfig.NoESQL.Metrics, 1)
+}
+
+func TestConverter_roundTrip_ESQL_datatable(t *testing.T) {
+	ctx := t.Context()
+	var c converter
+	resolver := stubResolver{}
+
+	metric := kbapi.DatatableESQLMetric{
+		Column: "host.name",
+	}
+	title := "Datatable ESQL RT"
+	desc := "Converter test"
+	igf := false
+	samp := float32(1)
+	api := kbapi.DatatableESQL{
+		Type:                kbapi.DatatableESQLTypeDataTable,
+		Title:               &title,
+		Description:         &desc,
+		IgnoreGlobalFilters: &igf,
+		Sampling:            &samp,
+		Styling:             kbapi.DatatableStyling{Density: kbapi.DatatableDensity{Mode: new(kbapi.DatatableDensityModeExpanded)}},
+		Metrics:             &[]kbapi.DatatableESQLMetric{metric},
+	}
+	require.NoError(t, json.Unmarshal([]byte(`{"type":"esql","query":"FROM metrics-* | LIMIT 10"}`), &api.DataSource))
+
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+	require.NoError(t, attrs.FromDatatableESQL(api))
+
+	blocks := &models.LensByValueChartBlocks{}
+	diags := c.PopulateFromAttributes(ctx, resolver, blocks, attrs)
+	require.False(t, diags.HasError(), "%v", diags)
+	require.NotNil(t, blocks.DatatableConfig)
+	require.Nil(t, blocks.DatatableConfig.NoESQL)
+	require.NotNil(t, blocks.DatatableConfig.ESQL)
+	assert.Contains(t, blocks.DatatableConfig.ESQL.DataSourceJSON.ValueString(), "FROM metrics-*")
+
+	attrs2, diags := c.BuildAttributes(blocks, resolver)
+	require.False(t, diags.HasError(), "%v", diags)
+
+	out, err := attrs2.AsDatatableESQL()
+	require.NoError(t, err)
+	assert.Equal(t, kbapi.DatatableESQLTypeDataTable, out.Type)
+	require.NotNil(t, out.Title)
+	assert.Equal(t, "Datatable ESQL RT", *out.Title)
+	dsBytes, err := json.Marshal(out.DataSource)
+	require.NoError(t, err)
+	assert.Contains(t, string(dsBytes), "FROM metrics-*")
 }
