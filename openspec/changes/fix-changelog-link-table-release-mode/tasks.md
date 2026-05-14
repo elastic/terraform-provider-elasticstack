@@ -11,8 +11,8 @@
 
 ## 3. Wire `previousTag` in call sites
 
-- [ ] 3.1 Pass `previousTag: ctx.previousTag` to `runChangelogRenderAndWrite` in `run-changelog-engine.inline.js`
-- [ ] 3.2 Pass `previousTag: ctx.previousTag` to `runChangelogRenderAndWrite` in `changelog-engine-workflow.js`
+- [x] 3.1 Pass `previousTag: ctx.previousTag` to `runChangelogRenderAndWrite` in `run-changelog-engine.inline.js`
+- [x] 3.2 Pass `previousTag: ctx.previousTag` to `runChangelogRenderAndWrite` in `changelog-engine-workflow.js`
 
 ## 4. Apply `no-changelog` label to changelog-generation PRs
 
