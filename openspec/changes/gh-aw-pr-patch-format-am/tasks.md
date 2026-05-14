@@ -1,7 +1,7 @@
 ## 1. Update workflow source configuration
-- [ ] 1.1 Inspect the authored `code-factory` and `change-factory` workflow sources to find their `safe-outputs.create-pull-request` blocks.
-- [ ] 1.2 Add `patch-format: am` to both authored workflow sources.
-- [ ] 1.3 Regenerate the compiled workflow artifacts so the checked-in `.md` and `.lock.yml` outputs match the authored source.
+- [x] 1.1 Inspect the authored `code-factory` and `change-factory` workflow sources to find their `safe-outputs.create-pull-request` blocks.
+- [x] 1.2 Add `patch-format: am` to both authored workflow sources.
+- [x] 1.3 Regenerate the compiled workflow artifacts so the checked-in `.md` and `.lock.yml` outputs match the authored source.
 
 ## 2. Update requirements
 - [ ] 2.1 Add a delta spec for `ci-code-factory-issue-intake` requiring `safe-outputs.create-pull-request.patch-format: am` in the authored workflow frontmatter and generated artifacts.
