@@ -25,6 +25,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -211,6 +212,13 @@ func dashboardMapPanelFromAPI(ctx context.Context, m *models.DashboardModel, tfP
 	pm.Type = types.StringValue(discriminator)
 
 	var diags diag.Diagnostics
+	if h := LookupHandler(discriminator); h != nil {
+		diags = h.FromAPI(ctx, &pm, tfPanel, panelItem)
+		alignPanelStateFromPlan(ctx, tfPanel, &pm)
+		h.AlignStateFromPlan(ctx, tfPanel, &pm)
+		return pm, diags
+	}
+
 	switch discriminator {
 	case panelTypeMarkdown:
 		markdownPanel, err := panelItem.AsKbnDashboardPanelTypeMarkdown()
@@ -307,15 +315,6 @@ func dashboardMapPanelFromAPI(ctx context.Context, m *models.DashboardModel, tfP
 			pm.ConfigJSON = customtypes.NewJSONWithDefaultsValue(string(configBytes), populatePanelConfigJSONDefaults)
 		}
 		populateTimeSliderControlFromAPI(&pm, tfPanel, tsPanel.Config)
-	case panelTypeSloBurnRate:
-		sbrPanel, err := panelItem.AsKbnDashboardPanelTypeSloBurnRate()
-		if err != nil {
-			return models.PanelModel{}, diagutil.FrameworkDiagFromError(err)
-		}
-		setPanelGridFromAPI(&pm, sbrPanel.Grid.X, sbrPanel.Grid.Y, sbrPanel.Grid.W, sbrPanel.Grid.H)
-		pm.ID = types.StringPointerValue(sbrPanel.Id)
-		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
-		populateSloBurnRateFromAPI(&pm, tfPanel, sbrPanel.Config)
 	case panelTypeEsqlControl:
 		esqlPanel, err := panelItem.AsKbnDashboardPanelTypeEsqlControl()
 		if err != nil {
@@ -514,38 +513,7 @@ func dashboardMapPanelFromAPI(ctx context.Context, m *models.DashboardModel, tfP
 		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
 		populateDiscoverSessionPanelFromAPI(ctx, &pm, tfPanel, dsPanel)
 	default:
-		// Round-trip stability for panel types without a typed config block.
-		pm.ID = types.StringNull()
-		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
-		pm.Grid = models.PanelGridModel{}
-		rawBytes, err := panelItem.MarshalJSON()
-		if err == nil {
-			var rawObj map[string]any
-			if err := json.Unmarshal(rawBytes, &rawObj); err == nil {
-				if grid, ok := rawObj["grid"].(map[string]any); ok {
-					x, _ := grid["x"].(float64)
-					y, _ := grid["y"].(float64)
-					var wPtr, hPtr *float32
-					if wVal, ok := grid["w"].(float64); ok {
-						wPtr = typeutils.Float32Ptr(wVal)
-					}
-					if hVal, ok := grid["h"].(float64); ok {
-						hPtr = typeutils.Float32Ptr(hVal)
-					}
-					setPanelGridFromAPI(&pm, float32(x), float32(y), wPtr, hPtr)
-				}
-				if id, ok := rawObj["id"].(string); ok && id != "" {
-					pm.ID = types.StringValue(id)
-				}
-				if config, ok := rawObj["config"]; ok {
-					configBytes, mErr := json.Marshal(config)
-					if mErr == nil {
-						pm.ConfigJSON = customtypes.NewJSONWithDefaultsValue(string(configBytes), populatePanelConfigJSONDefaults)
-					}
-				}
-			}
-		}
-		clearPanelConfigBlocks(&pm)
+		fillUnknownDashboardPanelFromAPI(ctx, tfPanel, &pm, panelItem)
 	}
 
 	alignPanelStateFromPlan(ctx, tfPanel, &pm)
@@ -664,6 +632,12 @@ func dashboardPanelsToAPI(ctx context.Context, m *models.DashboardModel) (*kbapi
 }
 
 func panelToAPI(ctx context.Context, pm models.PanelModel, dashboard *models.DashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
+	for _, h := range AllHandlers() {
+		if panelkit.HasConfig(&pm, h.PanelType()+"_config") {
+			return h.ToAPI(pm, dashboard)
+		}
+	}
+
 	var diags diag.Diagnostics
 
 	var dashTR *models.TimeRangeModel
@@ -856,23 +830,19 @@ func panelToAPI(ctx context.Context, pm models.PanelModel, dashboard *models.Das
 		return panelItem, diags
 	}
 
-	if pm.Type.ValueString() == panelTypeSloBurnRate || pm.SloBurnRateConfig != nil {
-		if pm.SloBurnRateConfig == nil {
+	if pm.Type.ValueString() == panelTypeSloBurnRate {
+		if typeutils.IsKnown(pm.ConfigJSON) && !pm.ConfigJSON.IsNull() {
 			diags.AddError(
-				"Missing SLO burn rate panel configuration",
-				"SLO burn rate panels require `slo_burn_rate_config`.",
+				"Unsupported panel type for config_json",
+				"Panel-level `config_json` is not supported for `slo_burn_rate` panels. Use `slo_burn_rate_config` instead.",
 			)
 			return kbapi.DashboardPanelItem{}, diags
 		}
-		sbrPanel := kbapi.KbnDashboardPanelTypeSloBurnRate{
-			Grid: grid,
-			Id:   panelID,
-		}
-		buildSloBurnRateConfig(pm, &sbrPanel)
-		if err := panelItem.FromKbnDashboardPanelTypeSloBurnRate(sbrPanel); err != nil {
-			diags.AddError("Failed to create SLO burn rate panel", err.Error())
-		}
-		return panelItem, diags
+		diags.AddError(
+			"Missing SLO burn rate panel configuration",
+			"SLO burn rate panels require `slo_burn_rate_config`.",
+		)
+		return kbapi.DashboardPanelItem{}, diags
 	}
 
 	if pm.SloErrorBudgetConfig != nil {
@@ -979,6 +949,11 @@ func panelToAPI(ctx context.Context, pm models.PanelModel, dashboard *models.Das
 				diags.AddError("Failed to create visualization panel", err.Error())
 			}
 			return panelItem, diags
+		case panelTypeSloBurnRate:
+			diags.AddError(
+				"Unsupported panel type for config_json",
+				"Panel-level `config_json` is not supported for `slo_burn_rate` panels. Use `slo_burn_rate_config` instead.",
+			)
 		case panelTypeSloOverview:
 			diags.AddError(
 				"Unsupported panel type for config_json",

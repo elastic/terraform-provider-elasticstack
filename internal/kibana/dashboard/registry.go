@@ -19,16 +19,20 @@ package dashboard
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/iface"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/sloburnrate"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 )
 
 // panelHandlers is populated as individual panel implementations land.
-var panelHandlers = []iface.Handler{}
+var panelHandlers = []iface.Handler{
+	sloburnrate.Handler{},
+}
 
 var panelTypeToHandler map[string]iface.Handler
 var derivedPanelConfigNames []string
 
 func init() {
+	sloburnrate.SetPopulatePanelConfigJSONDefaults(populatePanelConfigJSONDefaults)
 	panelTypeToHandler = make(map[string]iface.Handler, len(panelHandlers))
 	derivedPanelConfigNames = append(derivedPanelConfigNames, "config_json")
 	for _, h := range panelHandlers {

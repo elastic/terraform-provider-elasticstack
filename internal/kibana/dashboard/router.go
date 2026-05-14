@@ -22,7 +22,6 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
@@ -31,48 +30,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-//nolint:unused // wired by section 2 of dashboard-panel-contract OpenSpec change
-func mapPanelFromAPIViaRegistry(ctx context.Context, dashboard *models.DashboardModel, tfPanel *models.PanelModel, item kbapi.DashboardPanelItem) (models.PanelModel, diag.Diagnostics) {
-	_ = dashboard
-	var pm models.PanelModel
-	if tfPanel != nil {
-		pm = *tfPanel
-	}
-
-	discriminator, err := item.Discriminator()
-	if err != nil {
-		return models.PanelModel{}, diagutil.FrameworkDiagFromError(err)
-	}
-	pm.Type = types.StringValue(discriminator)
-
-	handler := LookupHandler(discriminator)
-	if handler == nil {
-		fillUnknownDashboardPanelFromAPI(ctx, tfPanel, &pm, item)
-		alignPanelStateFromPlan(ctx, tfPanel, &pm)
-		return pm, nil
-	}
-
-	diags := handler.FromAPI(ctx, &pm, tfPanel, item)
-	alignPanelStateFromPlan(ctx, tfPanel, &pm)
-	handler.AlignStateFromPlan(ctx, tfPanel, &pm)
-	return pm, diags
-}
-
-//nolint:unused // wired by section 2 of dashboard-panel-contract OpenSpec change
-func panelModelToAPIViaRegistry(ctx context.Context, pm models.PanelModel, dashboard *models.DashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	for _, h := range AllHandlers() {
-		if panelkit.HasConfig(&pm, h.PanelType()+"_config") {
-			panelItem, d := h.ToAPI(pm, dashboard)
-			diags.Append(d...)
-			return panelItem, diags
-		}
-	}
-
-	return panelToAPI(ctx, pm, dashboard)
-}
-
-//nolint:unused // wired by section 2 of dashboard-panel-contract OpenSpec change
 func fillUnknownDashboardPanelFromAPI(ctx context.Context, tfPanel *models.PanelModel, pm *models.PanelModel, panelItem kbapi.DashboardPanelItem) {
 	pm.ID = types.StringNull()
 	pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
