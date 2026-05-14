@@ -75,8 +75,8 @@ func lensDrilldownItemToRawJSON(item models.LensDrilldownItemTFModel, index int)
 	return lenscommon.LensDrilldownItemToRawJSON(item, index)
 }
 
-func lensDrilldownItemFromAPIJSON(raw []byte, index int) (models.LensDrilldownItemTFModel, diag.Diagnostics) {
-	return lenscommon.LensDrilldownItemFromAPIJSON(raw, index)
+func lensDrilldownItemFromAPIJSON(raw []byte) (models.LensDrilldownItemTFModel, diag.Diagnostics) {
+	return lenscommon.LensDrilldownItemFromAPIJSON(raw, "drilldowns[0]")
 }
 
 func lensDrilldownsToRawJSON(items []models.LensDrilldownItemTFModel) ([][]byte, diag.Diagnostics) {

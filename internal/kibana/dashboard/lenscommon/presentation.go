@@ -24,7 +24,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -307,8 +306,8 @@ func lensPresentationReferencesJSONRead(ctx context.Context, prior jsontypes.Nor
 		return jsontypes.NewNormalizedNull(), diags
 	}
 
-	if norm, ok := marshalToNormalized(b, err, "references_json", &diags); ok {
-		norm = preservePriorNormalizedWithDefaultsIfEquivalent(ctx, prior, norm, defaultOpaqueRootJSON, &diags)
+	if norm, ok := MarshalToNormalized(b, err, "references_json", &diags); ok {
+		norm = PreservePriorNormalizedWithDefaultsIfEquivalent(ctx, prior, norm, defaultOpaqueRootJSON, &diags)
 		return norm, diags
 	}
 
@@ -343,7 +342,7 @@ func drilldownsFromAPI(wire [][]byte) ([]models.LensDrilldownItemTFModel, diag.D
 
 	out := make([]models.LensDrilldownItemTFModel, 0, len(wire))
 	for i, b := range wire {
-		item, d := LensDrilldownItemFromAPIJSON(b, i)
+		item, d := LensDrilldownItemFromAPIJSON(b, fmt.Sprintf("drilldowns[%d]", i))
 		diags.Append(d...)
 		if d.HasError() {
 			return nil, diags
@@ -355,15 +354,15 @@ func drilldownsFromAPI(wire [][]byte) ([]models.LensDrilldownItemTFModel, diag.D
 }
 
 // LensDrilldownItemFromAPIJSON decodes one drilldown union JSON blob into a Terraform list item.
-func LensDrilldownItemFromAPIJSON(raw []byte, index int) (models.LensDrilldownItemTFModel, diag.Diagnostics) {
+// pathPrefix labels diagnostics (e.g. drilldownsFromAPI passes `fmt.Sprintf("drilldowns[%d]", i)`).
+func LensDrilldownItemFromAPIJSON(raw []byte, pathPrefix string) (models.LensDrilldownItemTFModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	path := fmt.Sprintf("drilldowns[%d]", index)
 
 	var head struct {
 		Type string `json:"type"`
 	}
 	if err := json.Unmarshal(raw, &head); err != nil {
-		diags.AddError("Invalid "+path, err.Error())
+		diags.AddError("Invalid "+pathPrefix, err.Error())
 		return models.LensDrilldownItemTFModel{}, diags
 	}
 
@@ -379,7 +378,7 @@ func LensDrilldownItemFromAPIJSON(raw []byte, index int) (models.LensDrilldownIt
 			OpenInNewTab *bool `json:"open_in_new_tab"`
 		}
 		if err := json.Unmarshal(raw, &body); err != nil {
-			diags.AddError("Invalid "+path+".dashboard_drilldown", err.Error())
+			diags.AddError("Invalid "+pathPrefix+".dashboard_drilldown", err.Error())
 			return models.LensDrilldownItemTFModel{}, diags
 		}
 
@@ -406,7 +405,7 @@ func LensDrilldownItemFromAPIJSON(raw []byte, index int) (models.LensDrilldownIt
 			OpenInNewTab *bool  `json:"open_in_new_tab"`
 		}
 		if err := json.Unmarshal(raw, &body); err != nil {
-			diags.AddError("Invalid "+path+".discover_drilldown", err.Error())
+			diags.AddError("Invalid "+pathPrefix+".discover_drilldown", err.Error())
 			return models.LensDrilldownItemTFModel{}, diags
 		}
 
@@ -432,7 +431,7 @@ func LensDrilldownItemFromAPIJSON(raw []byte, index int) (models.LensDrilldownIt
 			OpenInNewTab *bool  `json:"open_in_new_tab"`
 		}
 		if err := json.Unmarshal(raw, &body); err != nil {
-			diags.AddError("Invalid "+path+".url_drilldown", err.Error())
+			diags.AddError("Invalid "+pathPrefix+".url_drilldown", err.Error())
 			return models.LensDrilldownItemTFModel{}, diags
 		}
 
@@ -447,7 +446,7 @@ func LensDrilldownItemFromAPIJSON(raw []byte, index int) (models.LensDrilldownIt
 		}, diags
 
 	default:
-		diags.AddError("Invalid "+path, fmt.Sprintf("Unknown drilldown type %q", head.Type))
+		diags.AddError("Invalid "+pathPrefix, fmt.Sprintf("Unknown drilldown type %q", head.Type))
 		return models.LensDrilldownItemTFModel{}, diags
 	}
 }
@@ -508,32 +507,6 @@ func LensChartPresentationReadsFor(
 	}
 
 	return out, diags
-}
-
-func marshalToNormalized(bytes []byte, err error, fieldName string, diags *diag.Diagnostics) (jsontypes.Normalized, bool) {
-	if err != nil {
-		diags.AddError("Failed to marshal "+fieldName, err.Error())
-		return jsontypes.Normalized{}, false
-	}
-	return jsontypes.NewNormalizedValue(string(bytes)), true
-}
-
-func preservePriorNormalizedWithDefaultsIfEquivalent[T any](ctx context.Context, prior, current jsontypes.Normalized, defaults func(T) T, diags *diag.Diagnostics) jsontypes.Normalized {
-	if prior.IsNull() || prior.IsUnknown() || current.IsNull() || current.IsUnknown() {
-		return current
-	}
-
-	priorWithDefaults := customtypes.NewJSONWithDefaultsValue(prior.ValueString(), defaults)
-	currentWithDefaults := customtypes.NewJSONWithDefaultsValue(current.ValueString(), defaults)
-	eq, d := priorWithDefaults.StringSemanticEquals(ctx, currentWithDefaults)
-	diags.Append(d...)
-	if d.HasError() {
-		return current
-	}
-	if eq {
-		return prior
-	}
-	return current
 }
 
 func defaultOpaqueRootJSON(v any) any { return v }

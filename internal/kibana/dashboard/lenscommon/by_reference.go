@@ -177,9 +177,9 @@ func PopulateLensByReferenceTFModelFromLensAppConfig1(
 			diags.AddError("Failed to marshal references_json", err.Error())
 			return models.LensDashboardAppByReferenceModel{}, diags
 		}
-		if norm, ok := marshalToNormalized(b, err, "references_json", &diags); ok {
+		if norm, ok := MarshalToNormalized(b, err, "references_json", &diags); ok {
 			if prior != nil {
-				norm = preservePriorNormalizedWithDefaultsIfEquivalent(ctx, prior.ReferencesJSON, norm, defaultOpaqueRootJSON, &diags)
+				norm = PreservePriorNormalizedWithDefaultsIfEquivalent(ctx, prior.ReferencesJSON, norm, defaultOpaqueRootJSON, &diags)
 			}
 			by.ReferencesJSON = norm
 		}

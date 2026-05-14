@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
@@ -69,14 +70,14 @@ func buildFiltersForAPI(filters []models.ChartFilterJSONModel, diags *diag.Diagn
 	return items
 }
 
-// marshalToNormalized stores the already-marshaled bytes as a jsontypes.Normalized value,
-// or adds an error to diags and returns (zero, false) on failure.
+// marshalToNormalized delegates to lenscommon.MarshalToNormalized (canonical implementation).
 func marshalToNormalized(bytes []byte, err error, fieldName string, diags *diag.Diagnostics) (jsontypes.Normalized, bool) {
-	if err != nil {
-		diags.AddError("Failed to marshal "+fieldName, err.Error())
-		return jsontypes.Normalized{}, false
-	}
-	return jsontypes.NewNormalizedValue(string(bytes)), true
+	return lenscommon.MarshalToNormalized(bytes, err, fieldName, diags)
+}
+
+// preservePriorNormalizedWithDefaultsIfEquivalent delegates to lenscommon.PreservePriorNormalizedWithDefaultsIfEquivalent.
+func preservePriorNormalizedWithDefaultsIfEquivalent[T any](ctx context.Context, prior, current jsontypes.Normalized, defaults func(T) T, diags *diag.Diagnostics) jsontypes.Normalized {
+	return lenscommon.PreservePriorNormalizedWithDefaultsIfEquivalent(ctx, prior, current, defaults, diags)
 }
 
 // marshalToJSONWithDefaults stores the already-marshaled bytes as a JSONWithDefaultsValue,
@@ -148,22 +149,4 @@ func lensQueryESQLMode(ctx context.Context, config tfsdk.Config, attrPath path.P
 		return false, false
 	}
 	return lang.IsNull() && expr.IsNull(), true
-}
-
-func preservePriorNormalizedWithDefaultsIfEquivalent[T any](ctx context.Context, prior, current jsontypes.Normalized, defaults func(T) T, diags *diag.Diagnostics) jsontypes.Normalized {
-	if prior.IsNull() || prior.IsUnknown() || current.IsNull() || current.IsUnknown() {
-		return current
-	}
-
-	priorWithDefaults := customtypes.NewJSONWithDefaultsValue(prior.ValueString(), defaults)
-	currentWithDefaults := customtypes.NewJSONWithDefaultsValue(current.ValueString(), defaults)
-	eq, d := priorWithDefaults.StringSemanticEquals(ctx, currentWithDefaults)
-	diags.Append(d...)
-	if d.HasError() {
-		return current
-	}
-	if eq {
-		return prior
-	}
-	return current
 }

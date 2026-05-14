@@ -532,4 +532,3 @@ func populateLensDashboardAppByValueFromAPI(
 	}
 	return diags
 }
-
