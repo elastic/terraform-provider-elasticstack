@@ -24,6 +24,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TestTryReadCompositeID documents behavior of [TryReadCompositeID], which delegates
+// to [clients.CompositeIDFromStr] via [GetCompositeID]. Expectations here must stay
+// aligned with CompositeIDFromStr in internal/clients/api_client.go (first-slash
+// split; legacy "/<resource>" ids with an empty cluster segment).
 func TestTryReadCompositeID(t *testing.T) {
 	tests := []struct {
 		name          string
@@ -32,6 +36,7 @@ func TestTryReadCompositeID(t *testing.T) {
 		wantResource  string
 		wantError     bool
 	}{
+		// Cases below mirror clients.CompositeIDFromStr (via GetCompositeID).
 		{
 			name: "bare ID",
 			id:   "resource-id",
@@ -67,6 +72,9 @@ func TestTryReadCompositeID(t *testing.T) {
 			}
 
 			require.False(t, diags.HasError())
+			// Plain ids have no "/": TryReadCompositeID returns nil without diagnostics.
+			// Legacy "/resource" parses to cluster "" and resource "resource", so we must
+			// not treat wantClusterID=="" alone as "expect nil" (see bare ID case above).
 			if tt.wantClusterID == "" && tt.wantResource == "" {
 				assert.Nil(t, compositeID)
 				return
