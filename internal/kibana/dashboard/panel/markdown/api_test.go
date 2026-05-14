@@ -68,6 +68,29 @@ func TestClassifyJSON_byValueContentString(t *testing.T) {
 	require.False(t, h.ClassifyJSON(nil))
 }
 
+func TestPopulateJSONDefaults_openLinksWhenAbsent(t *testing.T) {
+	t.Parallel()
+	h := markdown.Handler{}
+	cfg := map[string]any{"content": "hello"}
+	got := h.PopulateJSONDefaults(cfg)
+	settings := got["settings"].(map[string]any)
+	require.Equal(t, true, settings["open_links_in_new_tab"])
+}
+
+func TestPopulateJSONDefaults_preservesExplicitOpenLinks(t *testing.T) {
+	t.Parallel()
+	h := markdown.Handler{}
+	cfg := map[string]any{
+		"content": "hello",
+		"settings": map[string]any{
+			"open_links_in_new_tab": false,
+		},
+	}
+	got := h.PopulateJSONDefaults(cfg)
+	settings := got["settings"].(map[string]any)
+	require.Equal(t, false, settings["open_links_in_new_tab"])
+}
+
 func TestFromAPI_byReference_populatesRefID(t *testing.T) {
 	t.Parallel()
 	raw := `{
