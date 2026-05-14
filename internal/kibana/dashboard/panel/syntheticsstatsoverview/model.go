@@ -15,21 +15,22 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package dashboard
+package syntheticsstatsoverview
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// buildSyntheticsStatsOverviewConfig writes the TF model into the API panel struct.
+// BuildConfig writes the TF model into the API panel struct.
 // When the config block is nil or entirely null, an empty config object is sent (valid: shows all monitors).
-func buildSyntheticsStatsOverviewConfig(pm models.PanelModel, panel *kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview) {
+func BuildConfig(pm models.PanelModel, panel *kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview) diag.Diagnostics {
 	cfg := pm.SyntheticsStatsOverviewConfig
 	if cfg == nil {
-		return
+		return nil
 	}
 
 	if typeutils.IsKnown(cfg.Title) {
@@ -71,9 +72,6 @@ func buildSyntheticsStatsOverviewConfig(pm models.PanelModel, panel *kbapi.KbnDa
 	}
 
 	if cfg.Filters != nil {
-		// apiFilterItem is a type alias for the anonymous filter-entry struct shared by all
-		// filter categories in the Kibana API. The alias lets us write a single inline helper
-		// without repeating the struct literal for each category.
 		type apiFilterItem = struct {
 			Label string `json:"label"`
 			Value string `json:"value"`
@@ -96,7 +94,6 @@ func buildSyntheticsStatsOverviewConfig(pm models.PanelModel, panel *kbapi.KbnDa
 		locations := toAPIItems(cfg.Filters.Locations)
 		monitorTypes := toAPIItems(cfg.Filters.MonitorTypes)
 
-		// Only set the filters struct when at least one category is non-empty.
 		if projects != nil || tags != nil || monitorIDs != nil || locations != nil || monitorTypes != nil {
 			panel.Config.Filters = &struct {
 				Locations *[]struct {
@@ -128,22 +125,17 @@ func buildSyntheticsStatsOverviewConfig(pm models.PanelModel, panel *kbapi.KbnDa
 			}
 		}
 	}
+	return nil
 }
 
-// populateSyntheticsStatsOverviewFromAPI reads back a synthetics stats overview panel from the
-// API response and updates the panel model. Null-preservation semantics apply.
-//
-// tfPanel is the prior TF state/plan panel, or nil on import. When nil, all API-returned
-// fields are populated unconditionally (no prior intent to preserve).
-func populateSyntheticsStatsOverviewFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiPanel kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview) {
+// PopulateFromAPI reads back a synthetics stats overview panel from the API response.
+func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiPanel kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview) diag.Diagnostics {
 	cfg := apiPanel.Config
 
-	// On import (tfPanel == nil), populate unconditionally when at least one API field is set.
-	if tfPanel == nil {
+	if prior == nil {
 		if cfg.Title == nil && cfg.Description == nil && cfg.HideTitle == nil && cfg.HideBorder == nil &&
 			(cfg.Drilldowns == nil || len(*cfg.Drilldowns) == 0) && !syntheticsFiltersHasAnyEntry(cfg.Filters) {
-			// Empty config — keep block null.
-			return
+			return nil
 		}
 		pm.SyntheticsStatsOverviewConfig = &models.SyntheticsStatsOverviewConfigModel{
 			Title:       types.StringPointerValue(cfg.Title),
@@ -153,26 +145,21 @@ func populateSyntheticsStatsOverviewFromAPI(pm *models.PanelModel, tfPanel *mode
 			Drilldowns:  readSyntheticsStatsOverviewDrilldownsFromAPI(apiPanel, nil),
 			Filters:     readSyntheticsStatsOverviewFiltersFromAPI(apiPanel, nil),
 		}
-		return
+		return nil
 	}
 
 	existing := pm.SyntheticsStatsOverviewConfig
 
-	// If prior state had no config block, preserve nil intent.
 	if existing == nil {
-		return
+		return nil
 	}
 
-	// If the API returned a completely empty config (all fields absent/nil), nil out the block
-	// regardless of prior state. This mirrors the import-path behaviour: an empty API config
-	// round-trips as null in state (REQ-033).
 	if cfg.Title == nil && cfg.Description == nil && cfg.HideTitle == nil && cfg.HideBorder == nil &&
 		(cfg.Drilldowns == nil || len(*cfg.Drilldowns) == 0) && cfg.Filters == nil {
 		pm.SyntheticsStatsOverviewConfig = nil
-		return
+		return nil
 	}
 
-	// Block exists in state — apply null-preservation per field.
 	if typeutils.IsKnown(existing.Title) {
 		existing.Title = types.StringPointerValue(cfg.Title)
 	}
@@ -188,9 +175,9 @@ func populateSyntheticsStatsOverviewFromAPI(pm *models.PanelModel, tfPanel *mode
 
 	existing.Drilldowns = readSyntheticsStatsOverviewDrilldownsFromAPI(apiPanel, existing.Drilldowns)
 	existing.Filters = readSyntheticsStatsOverviewFiltersFromAPI(apiPanel, existing.Filters)
+	return nil
 }
 
-// syntheticsFiltersHasAnyEntry returns true if the filters object has at least one non-empty category.
 func syntheticsFiltersHasAnyEntry(f *struct {
 	Locations *[]struct {
 		Label string `json:"label"`
@@ -223,9 +210,6 @@ func syntheticsFiltersHasAnyEntry(f *struct {
 		(f.MonitorTypes != nil && len(*f.MonitorTypes) > 0)
 }
 
-// readSyntheticsStatsOverviewDrilldownsFromAPI converts API drilldowns to TF models.
-// priorDrilldowns is the existing TF state (may be nil on import).
-// Optional bool fields (encode_url, open_in_new_tab) use null-preservation when prior state is available.
 func readSyntheticsStatsOverviewDrilldownsFromAPI(
 	apiPanel kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview,
 	priorDrilldowns []models.URLDrilldownModel,
@@ -237,7 +221,6 @@ func readSyntheticsStatsOverviewDrilldownsFromAPI(
 
 	result := make([]models.URLDrilldownModel, len(*apiDrilldowns))
 	for i, d := range *apiDrilldowns {
-		// trigger and type are not stored in state — they are always hardcoded constants.
 		result[i] = models.URLDrilldownModel{
 			URL:   types.StringValue(d.Url),
 			Label: types.StringValue(d.Label),
@@ -248,7 +231,6 @@ func readSyntheticsStatsOverviewDrilldownsFromAPI(
 			prior = &priorDrilldowns[i]
 		}
 
-		// encode_url: null-preserve if prior was null; otherwise populate from API.
 		switch {
 		case prior != nil && prior.EncodeURL.IsNull():
 			result[i].EncodeURL = types.BoolNull()
@@ -258,7 +240,6 @@ func readSyntheticsStatsOverviewDrilldownsFromAPI(
 			result[i].EncodeURL = types.BoolNull()
 		}
 
-		// open_in_new_tab: null-preserve if prior was null; otherwise populate from API.
 		switch {
 		case prior != nil && prior.OpenInNewTab.IsNull():
 			result[i].OpenInNewTab = types.BoolNull()
@@ -271,10 +252,6 @@ func readSyntheticsStatsOverviewDrilldownsFromAPI(
 	return result
 }
 
-// readSyntheticsStatsOverviewFiltersFromAPI converts API filters to TF model.
-// When the API omits the filters field entirely (nil), the prior state is preserved to avoid false drift.
-// When the API returns an explicit empty filters object, nil is returned regardless of prior state.
-// priorFilters is the existing TF state (may be nil on import).
 func readSyntheticsStatsOverviewFiltersFromAPI(
 	apiPanel kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview,
 	priorFilters *models.SyntheticsFiltersModel,
@@ -282,16 +259,13 @@ func readSyntheticsStatsOverviewFiltersFromAPI(
 	apiFilters := apiPanel.Config.Filters
 
 	if apiFilters == nil {
-		// API did not return a filters field at all — preserve prior state to avoid false drift.
 		return priorFilters
 	}
 
-	// API returned a filters object (possibly empty) — an empty object means "no filters".
 	if !syntheticsFiltersHasAnyEntry(apiFilters) {
 		return nil
 	}
 
-	// apiFilterItem is a type alias for the anonymous filter-entry struct shared by all categories.
 	type apiFilterItem = struct {
 		Label string `json:"label"`
 		Value string `json:"value"`

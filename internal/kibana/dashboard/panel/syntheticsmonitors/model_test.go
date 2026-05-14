@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package dashboard
+package syntheticsmonitors
 
 import (
 	"testing"
@@ -31,30 +31,32 @@ import (
 // buildSyntheticsMonitorsPanel (write path) tests
 // ─────────────────────────────────────────────────────────────────────────────
 
-func makeTestGrid() struct {
-	H *float32 `json:"h,omitempty"`
-	W *float32 `json:"w,omitempty"`
-	X float32  `json:"x"`
-	Y float32  `json:"y"`
-} {
+func makeSynthAPIGrid() kbapi.KbnDashboardPanelGrid {
 	w := float32(24)
 	h := float32(15)
-	return struct {
-		H *float32 `json:"h,omitempty"`
-		W *float32 `json:"w,omitempty"`
-		X float32  `json:"x"`
-		Y float32  `json:"y"`
-	}{H: &h, W: &w, X: 0, Y: 0}
+	return kbapi.KbnDashboardPanelGrid{H: &h, W: &w, X: 0, Y: 0}
+}
+
+func buildSynthMonitorsAPI(t *testing.T, pm models.PanelModel, grid kbapi.KbnDashboardPanelGrid, id *string) kbapi.KbnDashboardPanelTypeSyntheticsMonitors {
+	t.Helper()
+	p := kbapi.KbnDashboardPanelTypeSyntheticsMonitors{
+		Grid: grid,
+		Id:   id,
+		Type: kbapi.SyntheticsMonitors,
+	}
+	d := BuildConfig(pm, &p)
+	require.False(t, d.HasError(), "%v", d)
+	return p
 }
 
 func Test_buildSyntheticsMonitorsPanel_noConfig(t *testing.T) {
 	pm := models.PanelModel{
-		Type: types.StringValue(panelTypeSyntheticsMonitors),
+		Type: types.StringValue("synthetics_monitors"),
 	}
-	grid := makeTestGrid()
+	grid := makeSynthAPIGrid()
 	id := "panel-1"
 
-	panel := buildSyntheticsMonitorsPanel(pm, grid, &id)
+	panel := buildSynthMonitorsAPI(t, pm, grid, &id)
 
 	assert.Equal(t, kbapi.SyntheticsMonitors, panel.Type)
 	require.NotNil(t, panel.Id)
@@ -64,19 +66,19 @@ func Test_buildSyntheticsMonitorsPanel_noConfig(t *testing.T) {
 
 func Test_buildSyntheticsMonitorsPanel_emptyConfigBlock(t *testing.T) {
 	pm := models.PanelModel{
-		Type:                     types.StringValue(panelTypeSyntheticsMonitors),
+		Type:                     types.StringValue("synthetics_monitors"),
 		SyntheticsMonitorsConfig: &models.SyntheticsMonitorsConfigModel{},
 	}
-	grid := makeTestGrid()
+	grid := makeSynthAPIGrid()
 
-	panel := buildSyntheticsMonitorsPanel(pm, grid, nil)
+	panel := buildSynthMonitorsAPI(t, pm, grid, nil)
 
 	assert.Nil(t, panel.Config.Filters)
 }
 
 func Test_buildSyntheticsMonitorsPanel_withDisplaySettings(t *testing.T) {
 	pm := models.PanelModel{
-		Type: types.StringValue(panelTypeSyntheticsMonitors),
+		Type: types.StringValue("synthetics_monitors"),
 		SyntheticsMonitorsConfig: &models.SyntheticsMonitorsConfigModel{
 			Title:       types.StringValue("Synthetics Monitors"),
 			Description: types.StringValue("Shows the production monitors"),
@@ -85,9 +87,9 @@ func Test_buildSyntheticsMonitorsPanel_withDisplaySettings(t *testing.T) {
 			View:        types.StringValue("compactView"),
 		},
 	}
-	grid := makeTestGrid()
+	grid := makeSynthAPIGrid()
 
-	panel := buildSyntheticsMonitorsPanel(pm, grid, nil)
+	panel := buildSynthMonitorsAPI(t, pm, grid, nil)
 
 	require.NotNil(t, panel.Config.Title)
 	require.NotNil(t, panel.Config.Description)
@@ -103,7 +105,7 @@ func Test_buildSyntheticsMonitorsPanel_withDisplaySettings(t *testing.T) {
 
 func Test_buildSyntheticsMonitorsPanel_withFilters(t *testing.T) {
 	pm := models.PanelModel{
-		Type: types.StringValue(panelTypeSyntheticsMonitors),
+		Type: types.StringValue("synthetics_monitors"),
 		SyntheticsMonitorsConfig: &models.SyntheticsMonitorsConfigModel{
 			Filters: &models.SyntheticsFiltersModel{
 				Projects: []models.SyntheticsFilterItemModel{
@@ -115,9 +117,9 @@ func Test_buildSyntheticsMonitorsPanel_withFilters(t *testing.T) {
 			},
 		},
 	}
-	grid := makeTestGrid()
+	grid := makeSynthAPIGrid()
 
-	panel := buildSyntheticsMonitorsPanel(pm, grid, nil)
+	panel := buildSynthMonitorsAPI(t, pm, grid, nil)
 
 	require.NotNil(t, panel.Config.Filters)
 	require.NotNil(t, panel.Config.Filters.Projects)
@@ -131,7 +133,7 @@ func Test_buildSyntheticsMonitorsPanel_withFilters(t *testing.T) {
 
 func Test_buildSyntheticsMonitorsPanel_allFilterDimensions(t *testing.T) {
 	pm := models.PanelModel{
-		Type: types.StringValue(panelTypeSyntheticsMonitors),
+		Type: types.StringValue("synthetics_monitors"),
 		SyntheticsMonitorsConfig: &models.SyntheticsMonitorsConfigModel{
 			Filters: &models.SyntheticsFiltersModel{
 				Projects:     []models.SyntheticsFilterItemModel{{Label: types.StringValue("P1"), Value: types.StringValue("p1")}},
@@ -142,9 +144,9 @@ func Test_buildSyntheticsMonitorsPanel_allFilterDimensions(t *testing.T) {
 			},
 		},
 	}
-	grid := makeTestGrid()
+	grid := makeSynthAPIGrid()
 
-	panel := buildSyntheticsMonitorsPanel(pm, grid, nil)
+	panel := buildSynthMonitorsAPI(t, pm, grid, nil)
 
 	require.NotNil(t, panel.Config.Filters)
 	assert.NotNil(t, panel.Config.Filters.Projects)
@@ -168,7 +170,8 @@ func makeSyntheticsPanel() kbapi.KbnDashboardPanelTypeSyntheticsMonitors {
 // On import (tfPanel == nil) with no filters returned from API, config remains nil.
 func Test_populateSyntheticsMonitorsFromAPI_import_noFilters(t *testing.T) {
 	pm := &models.PanelModel{}
-	populateSyntheticsMonitorsFromAPI(pm, nil, makeSyntheticsPanel())
+	diag := PopulateFromAPI(pm, nil, makeSyntheticsPanel())
+	require.False(t, diag.HasError(), "%v", diag)
 	assert.Nil(t, pm.SyntheticsMonitorsConfig)
 }
 
@@ -204,7 +207,8 @@ func Test_populateSyntheticsMonitorsFromAPI_import_withFilters(t *testing.T) {
 	}{
 		Projects: &projects,
 	}
-	populateSyntheticsMonitorsFromAPI(pm, nil, apiPanel)
+	diag := PopulateFromAPI(pm, nil, apiPanel)
+	require.False(t, diag.HasError(), "%v", diag)
 
 	require.NotNil(t, pm.SyntheticsMonitorsConfig)
 	require.NotNil(t, pm.SyntheticsMonitorsConfig.Filters)
@@ -228,7 +232,8 @@ func Test_populateSyntheticsMonitorsFromAPI_import_withDisplaySettings(t *testin
 	apiPanel.Config.HideBorder = &hideBorder
 	apiPanel.Config.View = &view
 
-	populateSyntheticsMonitorsFromAPI(pm, nil, apiPanel)
+	diag := PopulateFromAPI(pm, nil, apiPanel)
+	require.False(t, diag.HasError(), "%v", diag)
 
 	require.NotNil(t, pm.SyntheticsMonitorsConfig)
 	assert.Equal(t, "Synthetics Monitors", pm.SyntheticsMonitorsConfig.Title.ValueString())
@@ -272,7 +277,8 @@ func Test_populateSyntheticsMonitorsFromAPI_nilBlock_preservesNilIntent(t *testi
 	}{
 		Projects: &projects,
 	}
-	populateSyntheticsMonitorsFromAPI(pm, tfPanel, apiPanel)
+	diag := PopulateFromAPI(pm, tfPanel, apiPanel)
+	require.False(t, diag.HasError(), "%v", diag)
 	assert.Nil(t, pm.SyntheticsMonitorsConfig, "config block should remain nil when prior state had no config block")
 }
 
@@ -309,7 +315,8 @@ func Test_populateSyntheticsMonitorsFromAPI_emptyAPIFilters_nullPreservation(t *
 			Value string `json:"value"`
 		} `json:"tags,omitempty"`
 	}{}
-	populateSyntheticsMonitorsFromAPI(pm, tfPanel, apiPanel)
+	diag := PopulateFromAPI(pm, tfPanel, apiPanel)
+	require.False(t, diag.HasError(), "%v", diag)
 
 	require.NotNil(t, pm.SyntheticsMonitorsConfig)
 	assert.Nil(t, pm.SyntheticsMonitorsConfig.Filters, "filters should remain nil when API returns empty filters")
@@ -356,7 +363,8 @@ func Test_populateSyntheticsMonitorsFromAPI_filtersRoundTrip(t *testing.T) {
 	}{
 		Projects: &projects,
 	}
-	populateSyntheticsMonitorsFromAPI(pm, tfPanel, apiPanel)
+	diag := PopulateFromAPI(pm, tfPanel, apiPanel)
+	require.False(t, diag.HasError(), "%v", diag)
 
 	require.NotNil(t, pm.SyntheticsMonitorsConfig)
 	require.NotNil(t, pm.SyntheticsMonitorsConfig.Filters)
@@ -398,7 +406,8 @@ func Test_populateSyntheticsMonitorsFromAPI_emptyFiltersBlock_preserved(t *testi
 			Value string `json:"value"`
 		} `json:"tags,omitempty"`
 	}{}
-	populateSyntheticsMonitorsFromAPI(pm, tfPanel, apiPanel)
+	diag := PopulateFromAPI(pm, tfPanel, apiPanel)
+	require.False(t, diag.HasError(), "%v", diag)
 
 	require.NotNil(t, pm.SyntheticsMonitorsConfig)
 	// Empty filters block should be preserved (not dropped) to avoid a perpetual diff.
@@ -411,7 +420,8 @@ func Test_populateSyntheticsMonitorsFromAPI_apiNilFilters_preservesNilFilters(t 
 	pm := &models.PanelModel{SyntheticsMonitorsConfig: existing}
 	tfPanel := &models.PanelModel{SyntheticsMonitorsConfig: existing}
 
-	populateSyntheticsMonitorsFromAPI(pm, tfPanel, makeSyntheticsPanel())
+	diag := PopulateFromAPI(pm, tfPanel, makeSyntheticsPanel())
+	require.False(t, diag.HasError(), "%v", diag)
 
 	require.NotNil(t, pm.SyntheticsMonitorsConfig)
 	assert.Nil(t, pm.SyntheticsMonitorsConfig.Filters)

@@ -23,6 +23,10 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/sloerrorbudget"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/slooverview"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/syntheticsmonitors"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/syntheticsstatsoverview"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
@@ -712,73 +716,13 @@ func getPanelSchema() schema.NestedAttributeObject {
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeSloBurnRate}),
 				},
 			},
-			"slo_overview_config": schema.SingleNestedAttribute{
-				MarkdownDescription: panelkit.PanelConfigDescription(
-					"Configuration for an SLO overview panel. Use either `single` (for a single SLO) or `groups` (for grouped SLO overview).",
-					"slo_overview_config",
-					panelConfigNames,
-				),
-				Optional:   true,
-				Attributes: getSloOverviewSchema(),
-				Validators: []validator.Object{
-					objectvalidator.ConflictsWith(
-						panelkit.SiblingTypedPanelConfigConflictPathsExcept("slo_overview_config", panelConfigNames)...,
-					),
-					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeSloOverview}),
-					sloOverviewConfigModeValidator{},
-				},
-			},
-			"slo_error_budget_config": schema.SingleNestedAttribute{
-				MarkdownDescription: panelkit.PanelConfigDescription(
-					"Configuration for an SLO error budget panel. Displays the burn chart of remaining error budget for a specific SLO.",
-					"slo_error_budget_config",
-					panelConfigNames,
-				),
-				Optional:   true,
-				Attributes: getSloErrorBudgetSchema(),
-				Validators: []validator.Object{
-					objectvalidator.ConflictsWith(
-						panelkit.SiblingTypedPanelConfigConflictPathsExcept("slo_error_budget_config", panelConfigNames)...,
-					),
-					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeSloErrorBudget}),
-				},
-			},
-			"esql_control_config":         panelEsqlControlConfigSchema(),
-			"options_list_control_config": panelOptionsListControlConfigSchema(),
-			"range_slider_control_config": panelRangeSliderControlConfigSchema(),
-			"synthetics_stats_overview_config": schema.SingleNestedAttribute{
-				MarkdownDescription: panelkit.PanelConfigDescription(
-					"Configuration for a Synthetics stats overview panel. "+
-						"All fields are optional; an absent or empty block shows statistics "+
-						"for all monitors visible within the space.",
-					"synthetics_stats_overview_config",
-					panelConfigNames,
-				),
-				Optional:   true,
-				Attributes: getSyntheticsStatsOverviewSchema(),
-				Validators: []validator.Object{
-					objectvalidator.ConflictsWith(
-						panelkit.SiblingTypedPanelConfigConflictPathsExcept("synthetics_stats_overview_config", panelConfigNames)...,
-					),
-					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeSyntheticsStatsOverview}),
-				},
-			},
-			"synthetics_monitors_config": schema.SingleNestedAttribute{
-				MarkdownDescription: panelkit.PanelConfigDescription(
-					"Configuration for a Synthetics monitors panel. Displays a table of Elastic Synthetics monitors "+
-						"and their current status. All fields are optional — omit the block entirely for a bare panel with no filtering.",
-					"synthetics_monitors_config",
-					panelConfigNames,
-				),
-				Optional:   true,
-				Attributes: getSyntheticsMonitorsSchema(),
-				Validators: []validator.Object{
-					objectvalidator.ConflictsWith(
-						panelkit.SiblingTypedPanelConfigConflictPathsExcept("synthetics_monitors_config", panelConfigNames)...,
-					),
-					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeSyntheticsMonitors}),
-				},
-			},
+			"slo_overview_config":              slooverview.SchemaAttribute(),
+			"slo_error_budget_config":          sloerrorbudget.SchemaAttribute(),
+			"esql_control_config":              panelEsqlControlConfigSchema(),
+			"options_list_control_config":      panelOptionsListControlConfigSchema(),
+			"range_slider_control_config":      panelRangeSliderControlConfigSchema(),
+			"synthetics_stats_overview_config": syntheticsstatsoverview.SchemaAttribute(),
+			"synthetics_monitors_config":       syntheticsmonitors.SchemaAttribute(),
 			"image_config": schema.SingleNestedAttribute{
 				MarkdownDescription: panelkit.PanelConfigDescription(
 					"Configuration for an `image` panel (`kbn-dashboard-panel-type-image`). Required when `type` is `image`. "+
@@ -1415,140 +1359,6 @@ func (visByValueSourceValidator) ValidateObject(_ context.Context, req validator
 	)
 }
 
-func syntheticsFilterItemSchema() schema.NestedAttributeObject {
-	return schema.NestedAttributeObject{
-		Attributes: map[string]schema.Attribute{
-			"label": schema.StringAttribute{
-				MarkdownDescription: "Display label for the filter option.",
-				Required:            true,
-			},
-			"value": schema.StringAttribute{
-				MarkdownDescription: "Value for the filter option.",
-				Required:            true,
-			},
-		},
-	}
-}
-
-// getSyntheticsStatsOverviewSchema returns the schema attributes for the synthetics_stats_overview_config block.
-func getSyntheticsStatsOverviewSchema() map[string]schema.Attribute {
-	filterItemSchema := syntheticsFilterItemSchema()
-
-	return map[string]schema.Attribute{
-		"title": schema.StringAttribute{
-			MarkdownDescription: "Display title shown in the panel header.",
-			Optional:            true,
-		},
-		"description": schema.StringAttribute{
-			MarkdownDescription: "Descriptive text for the panel.",
-			Optional:            true,
-		},
-		"hide_title": schema.BoolAttribute{
-			MarkdownDescription: "When true, suppresses the panel title in the dashboard.",
-			Optional:            true,
-		},
-		"hide_border": schema.BoolAttribute{
-			MarkdownDescription: "When true, suppresses the panel border in the dashboard.",
-			Optional:            true,
-		},
-		"drilldowns": schema.ListNestedAttribute{
-			MarkdownDescription: "Optional list of URL drilldown actions attached to the panel. The API allows up to 100 drilldowns per panel.",
-			Optional:            true,
-			NestedObject: urlDrilldownNestedAttributeObject(URLDrilldownNestedOpts{
-				AllowedTriggers: []string{"on_open_panel_menu"},
-			}),
-		},
-		"filters": schema.SingleNestedAttribute{
-			MarkdownDescription: "Optional Synthetics monitor filter constraints. Each filter category " +
-				"accepts a list of `{ label, value }` objects. Omit the block or individual categories " +
-				"to apply no filtering for those dimensions.",
-			Optional: true,
-			Attributes: map[string]schema.Attribute{
-				"projects": schema.ListNestedAttribute{
-					MarkdownDescription: "Filter by Synthetics project.",
-					Optional:            true,
-					NestedObject:        filterItemSchema,
-				},
-				"tags": schema.ListNestedAttribute{
-					MarkdownDescription: "Filter by monitor tag.",
-					Optional:            true,
-					NestedObject:        filterItemSchema,
-				},
-				"monitor_ids": schema.ListNestedAttribute{
-					MarkdownDescription: "Filter by monitor ID. The API accepts up to 5000 entries.",
-					Optional:            true,
-					NestedObject:        filterItemSchema,
-				},
-				"locations": schema.ListNestedAttribute{
-					MarkdownDescription: "Filter by monitor location.",
-					Optional:            true,
-					NestedObject:        filterItemSchema,
-				},
-				"monitor_types": schema.ListNestedAttribute{
-					MarkdownDescription: "Filter by monitor type (e.g. `browser`, `http`).",
-					Optional:            true,
-					NestedObject:        filterItemSchema,
-				},
-			},
-		},
-	}
-}
-
-// getSloErrorBudgetSchema returns the schema for SLO error budget panel configuration.
-func getSloErrorBudgetSchema() map[string]schema.Attribute {
-	return map[string]schema.Attribute{
-		"slo_id": schema.StringAttribute{
-			MarkdownDescription: "The ID of the SLO to display the error budget for.",
-			Required:            true,
-		},
-		"slo_instance_id": schema.StringAttribute{
-			MarkdownDescription: "ID of the SLO instance. Set when the SLO uses group_by; identifies which instance to show. Defaults to `*` (all instances) when omitted.",
-			Optional:            true,
-		},
-		"title": schema.StringAttribute{
-			MarkdownDescription: "The title displayed in the panel header.",
-			Optional:            true,
-		},
-		"description": schema.StringAttribute{
-			MarkdownDescription: "The description of the panel.",
-			Optional:            true,
-		},
-		"hide_title": schema.BoolAttribute{
-			MarkdownDescription: "Hide the title of the panel.",
-			Optional:            true,
-		},
-		"hide_border": schema.BoolAttribute{
-			MarkdownDescription: "Hide the border of the panel.",
-			Optional:            true,
-		},
-		"drilldowns": schema.ListNestedAttribute{
-			MarkdownDescription: "URL drilldowns to configure on the panel.",
-			Optional:            true,
-			NestedObject: schema.NestedAttributeObject{
-				Attributes: map[string]schema.Attribute{
-					"url": schema.StringAttribute{
-						MarkdownDescription: "Templated URL. Variables documented at https://www.elastic.co/docs/explore-analyze/dashboards/drilldowns#url-template-variable",
-						Required:            true,
-					},
-					"label": schema.StringAttribute{
-						MarkdownDescription: "The label displayed for the drilldown.",
-						Required:            true,
-					},
-					"encode_url": schema.BoolAttribute{
-						MarkdownDescription: "When true, the URL is escaped using percent encoding. Defaults to `true` when omitted.",
-						Optional:            true,
-					},
-					"open_in_new_tab": schema.BoolAttribute{
-						MarkdownDescription: "When true, the drilldown URL opens in a new browser tab. Defaults to `true` when omitted.",
-						Optional:            true,
-					},
-				},
-			},
-		},
-	}
-}
-
-// getFilterSimple returns the schema for simple filter configuration
 func getFilterSimple() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"language": schema.StringAttribute{
@@ -2742,66 +2552,4 @@ func getPieChart(includePresentation bool) map[string]schema.Attribute {
 		maps.Copy(attrs, lensChartPresentationAttributes())
 	}
 	return attrs
-}
-
-// getSyntheticsMonitorsSchema returns the schema for the synthetics_monitors_config block.
-// All fields are optional — the block itself may be omitted for a bare panel.
-func getSyntheticsMonitorsSchema() map[string]schema.Attribute {
-	filterItemSchema := syntheticsFilterItemSchema()
-	return map[string]schema.Attribute{
-		"title": schema.StringAttribute{
-			MarkdownDescription: "Display title shown in the panel header.",
-			Optional:            true,
-		},
-		"description": schema.StringAttribute{
-			MarkdownDescription: "Descriptive text for the panel.",
-			Optional:            true,
-		},
-		"hide_title": schema.BoolAttribute{
-			MarkdownDescription: "When true, suppresses the panel title in the dashboard.",
-			Optional:            true,
-		},
-		"hide_border": schema.BoolAttribute{
-			MarkdownDescription: "When true, suppresses the panel border in the dashboard.",
-			Optional:            true,
-		},
-		"view": schema.StringAttribute{
-			MarkdownDescription: "View mode for the panel. Valid values are `cardView` and `compactView`.",
-			Optional:            true,
-			Validators: []validator.String{
-				stringvalidator.OneOf("cardView", "compactView"),
-			},
-		},
-		"filters": schema.SingleNestedAttribute{
-			MarkdownDescription: "Optional filter configuration for the Synthetics monitors panel. Omit to show all monitors.",
-			Optional:            true,
-			Attributes: map[string]schema.Attribute{
-				"projects": schema.ListNestedAttribute{
-					MarkdownDescription: "Filter by project. Each entry has a `label` (display name) and a `value` (project ID).",
-					Optional:            true,
-					NestedObject:        filterItemSchema,
-				},
-				"tags": schema.ListNestedAttribute{
-					MarkdownDescription: "Filter by tags. Each entry has a `label` (display name) and a `value` (tag).",
-					Optional:            true,
-					NestedObject:        filterItemSchema,
-				},
-				"monitor_ids": schema.ListNestedAttribute{
-					MarkdownDescription: "Filter by monitor IDs. Each entry has a `label` (display name) and a `value` (monitor ID). The Kibana API accepts up to 5000 items.",
-					Optional:            true,
-					NestedObject:        filterItemSchema,
-				},
-				"locations": schema.ListNestedAttribute{
-					MarkdownDescription: "Filter by monitor locations. Each entry has a `label` (display name) and a `value` (location ID).",
-					Optional:            true,
-					NestedObject:        filterItemSchema,
-				},
-				"monitor_types": schema.ListNestedAttribute{
-					MarkdownDescription: "Filter by monitor types. Each entry has a `label` (display name) and a `value` (monitor type, e.g. `browser`, `http`, `tcp`, `icmp`).",
-					Optional:            true,
-					NestedObject:        filterItemSchema,
-				},
-			},
-		},
-	}
 }

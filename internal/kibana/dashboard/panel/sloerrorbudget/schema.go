@@ -15,73 +15,64 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package sloburnrate
+package sloerrorbudget
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
-	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
-// SchemaAttribute returns the slo_burn_rate_config SingleNestedAttribute definition.
+const panelType = "slo_error_budget"
+
+// SchemaAttribute returns the slo_error_budget_config SingleNestedAttribute definition.
 func SchemaAttribute() schema.Attribute {
 	return schema.SingleNestedAttribute{
 		MarkdownDescription: panelkit.PanelConfigDescription(
-			"Configuration for an SLO burn rate panel. Use this for panels that visualize the burn rate of an SLO over a configurable look-back window.",
-			"slo_burn_rate_config",
+			"Configuration for an SLO error budget panel. Displays the burn chart of remaining error budget for a specific SLO.",
+			"slo_error_budget_config",
 			panelkit.TypedSiblingPanelConfigBlockNames,
 		),
 		Optional: true,
 		Attributes: map[string]schema.Attribute{
 			"slo_id": schema.StringAttribute{
-				MarkdownDescription: "The ID of the SLO to display the burn rate for.",
+				MarkdownDescription: "The ID of the SLO to display the error budget for.",
 				Required:            true,
-			},
-			"duration": schema.StringAttribute{
-				MarkdownDescription: "Duration for the burn rate chart in the format `[value][unit]`, where unit is `m` (minutes), `h` (hours), or `d` (days). For example: `5m`, `3h`, `6d`.",
-				Required:            true,
-				Validators: []validator.String{
-					stringvalidator.RegexMatches(
-						sloBurnRateDurationRegexp,
-						"must match the pattern `^\\d+[mhd]$` (a positive integer followed by m, h, or d)",
-					),
-				},
 			},
 			"slo_instance_id": schema.StringAttribute{
-				MarkdownDescription: "ID of the SLO instance. Set when the SLO uses `group_by`; identifies which instance to show. Omit to show all instances (API default `\"*\"`).",
+				MarkdownDescription: "ID of the SLO instance. Set when the SLO uses group_by; identifies which instance to show. Defaults to `*` (all instances) when omitted.",
 				Optional:            true,
 			},
 			"title": schema.StringAttribute{
-				MarkdownDescription: "Optional panel title.",
+				MarkdownDescription: "The title displayed in the panel header.",
 				Optional:            true,
 			},
 			"description": schema.StringAttribute{
-				MarkdownDescription: "Optional panel description.",
+				MarkdownDescription: "The description of the panel.",
 				Optional:            true,
 			},
 			"hide_title": schema.BoolAttribute{
-				MarkdownDescription: "When true, hides the panel title.",
+				MarkdownDescription: "Hide the title of the panel.",
 				Optional:            true,
 			},
 			"hide_border": schema.BoolAttribute{
-				MarkdownDescription: "When true, hides the panel border.",
+				MarkdownDescription: "Hide the border of the panel.",
 				Optional:            true,
 			},
 			"drilldowns": schema.ListNestedAttribute{
-				MarkdownDescription: "Optional list of URL drilldowns attached to the panel.",
+				MarkdownDescription: "URL drilldowns to configure on the panel.",
 				Optional:            true,
 				NestedObject:        panelkit.URLDrilldownSchema(),
 			},
 		},
 		Validators: []validator.Object{
 			objectvalidator.ConflictsWith(
-				panelkit.SiblingTypedPanelConfigConflictPathsExcept("slo_burn_rate_config", panelkit.TypedSiblingPanelConfigBlockNames)...,
+				panelkit.SiblingTypedPanelConfigConflictPathsExcept("slo_error_budget_config", panelkit.TypedSiblingPanelConfigBlockNames)...,
 			),
-			validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"slo_burn_rate"}),
+			validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelType}),
 		},
 	}
 }

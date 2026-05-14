@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package dashboard
+package sloerrorbudget
 
 import (
 	"testing"
@@ -97,7 +97,8 @@ func Test_buildSloErrorBudgetConfig_minimal(t *testing.T) {
 		},
 	}
 	var sebPanel kbapi.KbnDashboardPanelTypeSloErrorBudget
-	buildSloErrorBudgetConfig(pm, &sebPanel)
+	bdc := BuildConfig(pm, &sebPanel)
+	require.False(t, bdc.HasError(), "%v", bdc)
 	assert.Equal(t, "my-slo-id", sebPanel.Config.SloId)
 	assert.Nil(t, sebPanel.Config.SloInstanceId)
 	assert.Nil(t, sebPanel.Config.Title)
@@ -115,7 +116,8 @@ func Test_buildSloErrorBudgetConfig_sebWithSloInstanceID(t *testing.T) {
 		},
 	}
 	var sebPanel kbapi.KbnDashboardPanelTypeSloErrorBudget
-	buildSloErrorBudgetConfig(pm, &sebPanel)
+	bdc := BuildConfig(pm, &sebPanel)
+	require.False(t, bdc.HasError(), "%v", bdc)
 	require.NotNil(t, sebPanel.Config.SloInstanceId)
 	assert.Equal(t, "my-instance", *sebPanel.Config.SloInstanceId)
 }
@@ -128,7 +130,8 @@ func Test_buildSloErrorBudgetConfig_nullSloInstanceID(t *testing.T) {
 		},
 	}
 	var sebPanel kbapi.KbnDashboardPanelTypeSloErrorBudget
-	buildSloErrorBudgetConfig(pm, &sebPanel)
+	bdc := BuildConfig(pm, &sebPanel)
+	require.False(t, bdc.HasError(), "%v", bdc)
 	assert.Nil(t, sebPanel.Config.SloInstanceId)
 }
 
@@ -143,7 +146,8 @@ func Test_buildSloErrorBudgetConfig_withDisplayFields(t *testing.T) {
 		},
 	}
 	var sebPanel kbapi.KbnDashboardPanelTypeSloErrorBudget
-	buildSloErrorBudgetConfig(pm, &sebPanel)
+	bdc := BuildConfig(pm, &sebPanel)
+	require.False(t, bdc.HasError(), "%v", bdc)
 	require.NotNil(t, sebPanel.Config.Title)
 	assert.Equal(t, "My Title", *sebPanel.Config.Title)
 	require.NotNil(t, sebPanel.Config.Description)
@@ -169,18 +173,19 @@ func Test_buildSloErrorBudgetConfig_withDrilldowns(t *testing.T) {
 		},
 	}
 	var sebPanel kbapi.KbnDashboardPanelTypeSloErrorBudget
-	buildSloErrorBudgetConfig(pm, &sebPanel)
+	bdc := BuildConfig(pm, &sebPanel)
+	require.False(t, bdc.HasError(), "%v", bdc)
 	require.NotNil(t, sebPanel.Config.Drilldowns)
 	require.Len(t, *sebPanel.Config.Drilldowns, 1)
-	d := (*sebPanel.Config.Drilldowns)[0]
-	assert.Equal(t, "https://example.com", d.Url)
-	assert.Equal(t, "Open in example", d.Label)
-	assert.Equal(t, kbapi.SloErrorBudgetEmbeddableDrilldownsTriggerOnOpenPanelMenu, d.Trigger)
-	assert.Equal(t, kbapi.SloErrorBudgetEmbeddableDrilldownsTypeUrlDrilldown, d.Type)
-	require.NotNil(t, d.EncodeUrl)
-	assert.True(t, *d.EncodeUrl)
-	require.NotNil(t, d.OpenInNewTab)
-	assert.False(t, *d.OpenInNewTab)
+	ddr := (*sebPanel.Config.Drilldowns)[0]
+	assert.Equal(t, "https://example.com", ddr.Url)
+	assert.Equal(t, "Open in example", ddr.Label)
+	assert.Equal(t, kbapi.SloErrorBudgetEmbeddableDrilldownsTriggerOnOpenPanelMenu, ddr.Trigger)
+	assert.Equal(t, kbapi.SloErrorBudgetEmbeddableDrilldownsTypeUrlDrilldown, ddr.Type)
+	require.NotNil(t, ddr.EncodeUrl)
+	assert.True(t, *ddr.EncodeUrl)
+	require.NotNil(t, ddr.OpenInNewTab)
+	assert.False(t, *ddr.OpenInNewTab)
 }
 
 func Test_buildSloErrorBudgetConfig_drilldownsWithNullOptionalBools(t *testing.T) {
@@ -198,11 +203,12 @@ func Test_buildSloErrorBudgetConfig_drilldownsWithNullOptionalBools(t *testing.T
 		},
 	}
 	var sebPanel kbapi.KbnDashboardPanelTypeSloErrorBudget
-	buildSloErrorBudgetConfig(pm, &sebPanel)
+	bdc := BuildConfig(pm, &sebPanel)
+	require.False(t, bdc.HasError(), "%v", bdc)
 	require.NotNil(t, sebPanel.Config.Drilldowns)
-	d := (*sebPanel.Config.Drilldowns)[0]
-	assert.Nil(t, d.EncodeUrl)
-	assert.Nil(t, d.OpenInNewTab)
+	ddr := (*sebPanel.Config.Drilldowns)[0]
+	assert.Nil(t, ddr.EncodeUrl)
+	assert.Nil(t, ddr.OpenInNewTab)
 }
 
 // ---- populateSloErrorBudgetFromAPI ----
@@ -219,7 +225,8 @@ func Test_populateSloErrorBudgetFromAPI_minimal(t *testing.T) {
 		},
 	}
 	apiCfg := makeSloErrorBudgetAPIConfig()
-	populateSloErrorBudgetFromAPI(pm, tfPanel, apiCfg)
+	diag := PopulateFromAPI(pm, tfPanel, apiCfg)
+	require.False(t, diag.HasError(), "%v", diag)
 	require.NotNil(t, pm.SloErrorBudgetConfig)
 	assert.Equal(t, "my-slo-id", pm.SloErrorBudgetConfig.SloID.ValueString())
 }
@@ -239,7 +246,8 @@ func Test_populateSloErrorBudgetFromAPI_sloInstanceID_nullPreservation(t *testin
 		},
 	}
 	apiCfg := makeSloErrorBudgetAPIConfig(sebWithSloInstanceID("*"))
-	populateSloErrorBudgetFromAPI(pm, tfPanel, apiCfg)
+	diag := PopulateFromAPI(pm, tfPanel, apiCfg)
+	require.False(t, diag.HasError(), "%v", diag)
 	require.NotNil(t, pm.SloErrorBudgetConfig)
 	assert.True(t, pm.SloErrorBudgetConfig.SloInstanceID.IsNull(), "slo_instance_id should remain null")
 }
@@ -259,7 +267,8 @@ func Test_populateSloErrorBudgetFromAPI_sloInstanceID_writtenWhenKnown(t *testin
 		},
 	}
 	apiCfg := makeSloErrorBudgetAPIConfig(sebWithSloInstanceID("new-instance"))
-	populateSloErrorBudgetFromAPI(pm, tfPanel, apiCfg)
+	diag := PopulateFromAPI(pm, tfPanel, apiCfg)
+	require.False(t, diag.HasError(), "%v", diag)
 	assert.Equal(t, "new-instance", pm.SloErrorBudgetConfig.SloInstanceID.ValueString())
 }
 
@@ -273,7 +282,8 @@ func Test_populateSloErrorBudgetFromAPI_import_populatesAll(t *testing.T) {
 		sebWithHideTitle(true),
 		sebWithHideBorder(false),
 	)
-	populateSloErrorBudgetFromAPI(pm, nil, apiCfg)
+	diag := PopulateFromAPI(pm, nil, apiCfg)
+	require.False(t, diag.HasError(), "%v", diag)
 	require.NotNil(t, pm.SloErrorBudgetConfig)
 	assert.Equal(t, "my-slo-id", pm.SloErrorBudgetConfig.SloID.ValueString())
 	assert.Equal(t, "my-instance", pm.SloErrorBudgetConfig.SloInstanceID.ValueString())
@@ -288,7 +298,8 @@ func Test_populateSloErrorBudgetFromAPI_nilPriorBlock_preservesNil(t *testing.T)
 	pm := &models.PanelModel{}
 	tfPanel := &models.PanelModel{} // SloErrorBudgetConfig is nil
 	apiCfg := makeSloErrorBudgetAPIConfig()
-	populateSloErrorBudgetFromAPI(pm, tfPanel, apiCfg)
+	diag := PopulateFromAPI(pm, tfPanel, apiCfg)
+	require.False(t, diag.HasError(), "%v", diag)
 	assert.Nil(t, pm.SloErrorBudgetConfig)
 }
 
@@ -323,7 +334,8 @@ func Test_populateSloErrorBudgetFromAPI_drilldowns_roundTrip(t *testing.T) {
 	apiCfg := makeSloErrorBudgetAPIConfig(
 		withSloDrilldown("https://example.com", "Go", new(true), new(true)),
 	)
-	populateSloErrorBudgetFromAPI(pm, tfPanel, apiCfg)
+	diag := PopulateFromAPI(pm, tfPanel, apiCfg)
+	require.False(t, diag.HasError(), "%v", diag)
 	require.NotNil(t, pm.SloErrorBudgetConfig)
 	require.Len(t, pm.SloErrorBudgetConfig.Drilldowns, 1)
 	d := pm.SloErrorBudgetConfig.Drilldowns[0]
@@ -367,7 +379,8 @@ func Test_populateSloErrorBudgetFromAPI_drilldowns_falseValueWritten(t *testing.
 	apiCfg := makeSloErrorBudgetAPIConfig(
 		withSloDrilldown("https://example.com", "Go", new(false), new(false)),
 	)
-	populateSloErrorBudgetFromAPI(pm, tfPanel, apiCfg)
+	diag := PopulateFromAPI(pm, tfPanel, apiCfg)
+	require.False(t, diag.HasError(), "%v", diag)
 	d := pm.SloErrorBudgetConfig.Drilldowns[0]
 	// false is non-default, so it should be written even when prior state was null
 	assert.False(t, d.EncodeURL.IsNull(), "encode_url false should be written")
@@ -407,7 +420,8 @@ func Test_populateSloErrorBudgetFromAPI_drilldowns_knownEncodeURLUpdated(t *test
 	apiCfg := makeSloErrorBudgetAPIConfig(
 		withSloDrilldown("https://example.com", "Go", new(true), new(true)),
 	)
-	populateSloErrorBudgetFromAPI(pm, tfPanel, apiCfg)
+	diag := PopulateFromAPI(pm, tfPanel, apiCfg)
+	require.False(t, diag.HasError(), "%v", diag)
 	d := pm.SloErrorBudgetConfig.Drilldowns[0]
 	assert.False(t, d.EncodeURL.IsNull())
 	assert.True(t, d.EncodeURL.ValueBool())

@@ -15,42 +15,21 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package dashboard
+package syntheticsmonitors
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// All fields are optional; the block itself may be omitted for a bare panel with no filtering.
-
-// Synthetics monitors panel (projects, tags, monitor_ids, locations, monitor_types).
-// Each dimension is a list of { label, value } pairs.
-
-// buildSyntheticsMonitorsPanel converts the Terraform panel model to the Kibana API panel struct.
-func buildSyntheticsMonitorsPanel(pm models.PanelModel, grid struct {
-	H *float32 `json:"h,omitempty"`
-	W *float32 `json:"w,omitempty"`
-	X float32  `json:"x"`
-	Y float32  `json:"y"`
-}, id *string) kbapi.KbnDashboardPanelTypeSyntheticsMonitors {
-	panel := kbapi.KbnDashboardPanelTypeSyntheticsMonitors{
-		Grid: kbapi.KbnDashboardPanelGrid{
-			H: grid.H,
-			W: grid.W,
-			X: grid.X,
-			Y: grid.Y,
-		},
-		Type: kbapi.SyntheticsMonitors,
-		Id:   id,
-	}
-
+// BuildConfig writes Terraform monitors panel config onto the typed API panel (Grid/Id/Type must be set by the Handler).
+func BuildConfig(pm models.PanelModel, panel *kbapi.KbnDashboardPanelTypeSyntheticsMonitors) diag.Diagnostics {
 	cfg := pm.SyntheticsMonitorsConfig
 	if cfg == nil {
-		// No config configured — emit an empty config object (valid per API schema).
-		return panel
+		return nil
 	}
 
 	if typeutils.IsKnown(cfg.Title) {
@@ -71,7 +50,7 @@ func buildSyntheticsMonitorsPanel(pm models.PanelModel, grid struct {
 	}
 
 	if cfg.Filters == nil {
-		return panel
+		return nil
 	}
 
 	if len(cfg.Filters.Projects) > 0 {
@@ -100,10 +79,9 @@ func buildSyntheticsMonitorsPanel(pm models.PanelModel, grid struct {
 		panel.Config.Filters.MonitorTypes = &items
 	}
 
-	return panel
+	return nil
 }
 
-// ensureSyntheticsAPIFilters initialises the Config.Filters pointer if it is nil.
 func ensureSyntheticsAPIFilters(f *struct {
 	Locations *[]struct {
 		Label string `json:"label"`
@@ -174,7 +152,6 @@ func ensureSyntheticsAPIFilters(f *struct {
 	}{}
 }
 
-// toSyntheticsFilterItems converts a slice of TF filter items to the anonymous API struct slice.
 func toSyntheticsFilterItems(items []models.SyntheticsFilterItemModel) []struct {
 	Label string `json:"label"`
 	Value string `json:"value"`
@@ -190,17 +167,11 @@ func toSyntheticsFilterItems(items []models.SyntheticsFilterItemModel) []struct 
 	return result
 }
 
-// populateSyntheticsMonitorsFromAPI reads back the Kibana API panel and updates the panel model.
-// Implements null-preservation: when the prior TF state omitted the config block entirely, this
-// call is a no-op to preserve practitioner intent.
-//
-// apiPanel is the panel returned from the API. tfPanel is the prior TF state/plan panel, or nil
-// on import.
-func populateSyntheticsMonitorsFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiPanel kbapi.KbnDashboardPanelTypeSyntheticsMonitors) {
+// PopulateFromAPI reads the Kibana API panel into Terraform panel state.
+func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiPanel kbapi.KbnDashboardPanelTypeSyntheticsMonitors) diag.Diagnostics {
 	apiFilters := apiPanel.Config.Filters
 
-	// On import (tfPanel == nil), populate config from API unconditionally.
-	if tfPanel == nil {
+	if prior == nil {
 		filters := fromSyntheticsAPIFilters(apiFilters)
 		if apiPanel.Config.Title == nil &&
 			apiPanel.Config.Description == nil &&
@@ -208,8 +179,7 @@ func populateSyntheticsMonitorsFromAPI(pm *models.PanelModel, tfPanel *models.Pa
 			apiPanel.Config.HideBorder == nil &&
 			apiPanel.Config.View == nil &&
 			filters == nil {
-			// API returned no meaningful config — keep config block null on import.
-			return
+			return nil
 		}
 		pm.SyntheticsMonitorsConfig = &models.SyntheticsMonitorsConfigModel{
 			Title:       types.StringPointerValue(apiPanel.Config.Title),
@@ -219,17 +189,15 @@ func populateSyntheticsMonitorsFromAPI(pm *models.PanelModel, tfPanel *models.Pa
 			View:        syntheticsMonitorsViewValue(apiPanel.Config.View),
 			Filters:     filters,
 		}
-		return
+		return nil
 	}
 
 	existing := pm.SyntheticsMonitorsConfig
 
-	// Prior state had no config block — preserve nil intent.
 	if existing == nil {
-		return
+		return nil
 	}
 
-	// Config block exists in state — update known attributes while preserving omitted/null intent.
 	if typeutils.IsKnown(existing.Title) {
 		existing.Title = types.StringPointerValue(apiPanel.Config.Title)
 	}
@@ -247,26 +215,20 @@ func populateSyntheticsMonitorsFromAPI(pm *models.PanelModel, tfPanel *models.Pa
 	}
 
 	if apiFilters == nil {
-		// API returned no filters; preserve prior filters block intent.
-		return
+		return nil
 	}
 
 	filters := fromSyntheticsAPIFilters(apiFilters)
 	if filters == nil {
-		// API returned empty or absent filters.
 		if existing.Filters == nil {
-			// Both prior state and API have no meaningful filter content — keep null.
-			return
+			return nil
 		}
-		// Prior state had an explicit (possibly empty) filters block.
-		// Preserve the empty block to avoid a perpetual diff for `filters = {}`.
-		return
+		return nil
 	}
 	existing.Filters = filters
+	return nil
 }
 
-// fromSyntheticsAPIFilters converts the API filters struct to the TF model.
-// Returns nil when all filter dimensions are absent or empty (null-preservation).
 func fromSyntheticsAPIFilters(apiFilters *struct {
 	Locations *[]struct {
 		Label string `json:"label"`
@@ -299,7 +261,6 @@ func fromSyntheticsAPIFilters(apiFilters *struct {
 	locations := fromSyntheticsAPIItems(apiFilters.Locations)
 	monitorTypes := fromSyntheticsAPIItems(apiFilters.MonitorTypes)
 
-	// If all dimensions are nil (empty or absent), treat filters as null.
 	if projects == nil && tags == nil && monitorIDs == nil && locations == nil && monitorTypes == nil {
 		return nil
 	}
@@ -313,8 +274,6 @@ func fromSyntheticsAPIFilters(apiFilters *struct {
 	}
 }
 
-// fromSyntheticsAPIItems converts a pointer to an API filter item slice to a TF model slice.
-// Returns nil when the slice is absent or empty.
 func fromSyntheticsAPIItems(items *[]struct {
 	Label string `json:"label"`
 	Value string `json:"value"`

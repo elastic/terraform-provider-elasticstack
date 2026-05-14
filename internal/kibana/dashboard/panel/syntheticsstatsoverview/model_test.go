@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package dashboard
+package syntheticsstatsoverview
 
 import (
 	"testing"
@@ -34,7 +34,8 @@ import (
 func Test_buildSyntheticsStatsOverviewConfig_nilConfig(t *testing.T) {
 	pm := models.PanelModel{}
 	var panel kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview
-	buildSyntheticsStatsOverviewConfig(pm, &panel)
+	bdc := BuildConfig(pm, &panel)
+	require.False(t, bdc.HasError(), "%v", bdc)
 	// Zero config — no panic, nothing set.
 	assert.Nil(t, panel.Config.Title)
 	assert.Nil(t, panel.Config.Description)
@@ -56,7 +57,8 @@ func Test_buildSyntheticsStatsOverviewConfig_emptyConfig(t *testing.T) {
 		},
 	}
 	var panel kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview
-	buildSyntheticsStatsOverviewConfig(pm, &panel)
+	bdc := BuildConfig(pm, &panel)
+	require.False(t, bdc.HasError(), "%v", bdc)
 
 	assert.Nil(t, panel.Config.Title)
 	assert.Nil(t, panel.Config.Description)
@@ -76,7 +78,8 @@ func Test_buildSyntheticsStatsOverviewConfig_displaySettings(t *testing.T) {
 		},
 	}
 	var panel kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview
-	buildSyntheticsStatsOverviewConfig(pm, &panel)
+	bdc := BuildConfig(pm, &panel)
+	require.False(t, bdc.HasError(), "%v", bdc)
 
 	require.NotNil(t, panel.Config.Title)
 	assert.Equal(t, "My Panel", *panel.Config.Title)
@@ -103,18 +106,19 @@ func Test_buildSyntheticsStatsOverviewConfig_withDrilldowns(t *testing.T) {
 		},
 	}
 	var panel kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview
-	buildSyntheticsStatsOverviewConfig(pm, &panel)
+	bdc := BuildConfig(pm, &panel)
+	require.False(t, bdc.HasError(), "%v", bdc)
 
 	require.NotNil(t, panel.Config.Drilldowns)
 	require.Len(t, *panel.Config.Drilldowns, 1)
-	d := (*panel.Config.Drilldowns)[0]
-	assert.Equal(t, "https://example.com/{{context.panel.title}}", d.Url)
-	assert.Equal(t, "View details", d.Label)
+	ddr := (*panel.Config.Drilldowns)[0]
+	assert.Equal(t, "https://example.com/{{context.panel.title}}", ddr.Url)
+	assert.Equal(t, "View details", ddr.Label)
 	// trigger and type are always hardcoded constants.
-	assert.Equal(t, kbapi.KbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsTriggerOnOpenPanelMenu, d.Trigger)
-	assert.Equal(t, kbapi.KbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsTypeUrlDrilldown, d.Type)
-	assert.Nil(t, d.EncodeUrl)
-	assert.Nil(t, d.OpenInNewTab)
+	assert.Equal(t, kbapi.KbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsTriggerOnOpenPanelMenu, ddr.Trigger)
+	assert.Equal(t, kbapi.KbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsTypeUrlDrilldown, ddr.Type)
+	assert.Nil(t, ddr.EncodeUrl)
+	assert.Nil(t, ddr.OpenInNewTab)
 }
 
 func Test_buildSyntheticsStatsOverviewConfig_withDrilldowns_optionalBoolsSet(t *testing.T) {
@@ -131,14 +135,15 @@ func Test_buildSyntheticsStatsOverviewConfig_withDrilldowns_optionalBoolsSet(t *
 		},
 	}
 	var panel kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview
-	buildSyntheticsStatsOverviewConfig(pm, &panel)
+	bdc := BuildConfig(pm, &panel)
+	require.False(t, bdc.HasError(), "%v", bdc)
 
 	require.NotNil(t, panel.Config.Drilldowns)
-	d := (*panel.Config.Drilldowns)[0]
-	require.NotNil(t, d.EncodeUrl)
-	assert.True(t, *d.EncodeUrl)
-	require.NotNil(t, d.OpenInNewTab)
-	assert.False(t, *d.OpenInNewTab)
+	ddr := (*panel.Config.Drilldowns)[0]
+	require.NotNil(t, ddr.EncodeUrl)
+	assert.True(t, *ddr.EncodeUrl)
+	require.NotNil(t, ddr.OpenInNewTab)
+	assert.False(t, *ddr.OpenInNewTab)
 }
 
 func Test_buildSyntheticsStatsOverviewConfig_withFilters(t *testing.T) {
@@ -158,7 +163,8 @@ func Test_buildSyntheticsStatsOverviewConfig_withFilters(t *testing.T) {
 		},
 	}
 	var panel kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview
-	buildSyntheticsStatsOverviewConfig(pm, &panel)
+	bdc := BuildConfig(pm, &panel)
+	require.False(t, bdc.HasError(), "%v", bdc)
 
 	require.NotNil(t, panel.Config.Filters)
 	require.NotNil(t, panel.Config.Filters.Projects)
@@ -184,7 +190,8 @@ func Test_buildSyntheticsStatsOverviewConfig_emptyFilters_notSent(t *testing.T) 
 		},
 	}
 	var panel kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview
-	buildSyntheticsStatsOverviewConfig(pm, &panel)
+	bdc := BuildConfig(pm, &panel)
+	require.False(t, bdc.HasError(), "%v", bdc)
 	assert.Nil(t, panel.Config.Filters)
 }
 
@@ -201,7 +208,8 @@ func makeSyntheticsAPIConfig() kbapi.KbnDashboardPanelTypeSyntheticsStatsOvervie
 func Test_populateSyntheticsStatsOverviewFromAPI_import_emptyConfig_blockIsNull(t *testing.T) {
 	pm := &models.PanelModel{}
 	panel := makeSyntheticsAPIConfig()
-	populateSyntheticsStatsOverviewFromAPI(pm, nil, panel)
+	diag := PopulateFromAPI(pm, nil, panel)
+	require.False(t, diag.HasError(), "%v", diag)
 
 	assert.Nil(t, pm.SyntheticsStatsOverviewConfig, "block should be null when API config is empty on import")
 }
@@ -219,7 +227,8 @@ func Test_populateSyntheticsStatsOverviewFromAPI_import_withFields(t *testing.T)
 	hideBorder := false
 	panel.Config.HideBorder = &hideBorder
 
-	populateSyntheticsStatsOverviewFromAPI(pm, nil, panel)
+	diag := PopulateFromAPI(pm, nil, panel)
+	require.False(t, diag.HasError(), "%v", diag)
 
 	require.NotNil(t, pm.SyntheticsStatsOverviewConfig)
 	cfg := pm.SyntheticsStatsOverviewConfig
@@ -238,7 +247,8 @@ func Test_populateSyntheticsStatsOverviewFromAPI_nilBlock_preservesNilIntent(t *
 	title := "Should not appear"
 	panel.Config.Title = &title
 
-	populateSyntheticsStatsOverviewFromAPI(pm, tfPanel, panel)
+	diag := PopulateFromAPI(pm, tfPanel, panel)
+	require.False(t, diag.HasError(), "%v", diag)
 
 	assert.Nil(t, pm.SyntheticsStatsOverviewConfig, "block should remain nil when prior state had no config block")
 }
@@ -258,7 +268,8 @@ func Test_populateSyntheticsStatsOverviewFromAPI_nullPreservation_strings(t *tes
 	title := "API title"
 	panel.Config.Title = &title
 
-	populateSyntheticsStatsOverviewFromAPI(pm, tfPanel, panel)
+	diag := PopulateFromAPI(pm, tfPanel, panel)
+	require.False(t, diag.HasError(), "%v", diag)
 
 	require.NotNil(t, pm.SyntheticsStatsOverviewConfig)
 	// title was null in prior state — preserve null even though API returned a value.
@@ -287,7 +298,8 @@ func Test_populateSyntheticsStatsOverviewFromAPI_explicitFields_roundTrip(t *tes
 	hideBorder := false
 	panel.Config.HideBorder = &hideBorder
 
-	populateSyntheticsStatsOverviewFromAPI(pm, tfPanel, panel)
+	diag := PopulateFromAPI(pm, tfPanel, panel)
+	require.False(t, diag.HasError(), "%v", diag)
 
 	require.NotNil(t, pm.SyntheticsStatsOverviewConfig)
 	cfg := pm.SyntheticsStatsOverviewConfig
@@ -333,7 +345,8 @@ func Test_populateSyntheticsStatsOverviewFromAPI_drilldowns_nullPreservation(t *
 		},
 	}
 
-	populateSyntheticsStatsOverviewFromAPI(pm, tfPanel, panel)
+	diag := PopulateFromAPI(pm, tfPanel, panel)
+	require.False(t, diag.HasError(), "%v", diag)
 
 	require.NotNil(t, pm.SyntheticsStatsOverviewConfig)
 	require.Len(t, pm.SyntheticsStatsOverviewConfig.Drilldowns, 1)
@@ -373,7 +386,8 @@ func Test_populateSyntheticsStatsOverviewFromAPI_emptyFilters_treatedAsAbsent(t 
 		} `json:"tags,omitempty"`
 	}{} // all nil categories
 
-	populateSyntheticsStatsOverviewFromAPI(pm, nil, panel)
+	diag := PopulateFromAPI(pm, nil, panel)
+	require.False(t, diag.HasError(), "%v", diag)
 
 	require.NotNil(t, pm.SyntheticsStatsOverviewConfig)
 	assert.Nil(t, pm.SyntheticsStatsOverviewConfig.Filters, "empty filters should not populate the filters block")
@@ -415,7 +429,8 @@ func Test_populateSyntheticsStatsOverviewFromAPI_import_withFilters(t *testing.T
 		Projects: &projects,
 	}
 
-	populateSyntheticsStatsOverviewFromAPI(pm, nil, panel)
+	diag := PopulateFromAPI(pm, nil, panel)
+	require.False(t, diag.HasError(), "%v", diag)
 
 	require.NotNil(t, pm.SyntheticsStatsOverviewConfig)
 	require.NotNil(t, pm.SyntheticsStatsOverviewConfig.Filters)
@@ -441,7 +456,8 @@ func Test_populateSyntheticsStatsOverviewFromAPI_refresh_emptyAPIConfig_nilsBloc
 	// API returns completely empty config (no title, no description, no drilldowns, no filters).
 	panel := makeSyntheticsAPIConfig()
 
-	populateSyntheticsStatsOverviewFromAPI(pm, tfPanel, panel)
+	diag := PopulateFromAPI(pm, tfPanel, panel)
+	require.False(t, diag.HasError(), "%v", diag)
 
 	assert.Nil(t, pm.SyntheticsStatsOverviewConfig,
 		"block should be nil when API returns empty config on refresh, matching import-path behaviour")
@@ -486,7 +502,8 @@ func Test_populateSyntheticsStatsOverviewFromAPI_refresh_emptyFilters_clearsBloc
 		} `json:"tags,omitempty"`
 	}{} // all nil categories
 
-	populateSyntheticsStatsOverviewFromAPI(pm, tfPanel, panel)
+	diag := PopulateFromAPI(pm, tfPanel, panel)
+	require.False(t, diag.HasError(), "%v", diag)
 
 	require.NotNil(t, pm.SyntheticsStatsOverviewConfig)
 	assert.Nil(t, pm.SyntheticsStatsOverviewConfig.Filters,
@@ -510,7 +527,8 @@ func Test_populateSyntheticsStatsOverviewFromAPI_refresh_allNilConfig_nilsBlock(
 	// API returns nil filters (field not present) AND all other config fields are also nil.
 	panel.Config.Filters = nil
 
-	populateSyntheticsStatsOverviewFromAPI(pm, tfPanel, panel)
+	diag := PopulateFromAPI(pm, tfPanel, panel)
+	require.False(t, diag.HasError(), "%v", diag)
 
 	assert.Nil(t, pm.SyntheticsStatsOverviewConfig,
 		"block should be nil when API returns completely empty config (all fields nil) on refresh")
@@ -536,7 +554,8 @@ func Test_populateSyntheticsStatsOverviewFromAPI_refresh_nilFiltersWithOtherConf
 	panel.Config.Title = &title
 	panel.Config.Filters = nil
 
-	populateSyntheticsStatsOverviewFromAPI(pm, tfPanel, panel)
+	diag := PopulateFromAPI(pm, tfPanel, panel)
+	require.False(t, diag.HasError(), "%v", diag)
 
 	require.NotNil(t, pm.SyntheticsStatsOverviewConfig,
 		"block should survive when API returns other config fields even if filters field is absent")

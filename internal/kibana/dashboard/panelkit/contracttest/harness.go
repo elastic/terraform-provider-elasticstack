@@ -29,6 +29,10 @@ import (
 type Config struct {
 	FullAPIResponse string
 	SkipFields      []string
+	// OmitRequiredLeafPresence skips appendRequiredJSONPresenceIssues (required TF paths vs raw API fixture.config).
+	// Use for panels whose API discriminator shape does not nest the same segments as terraform (e.g. slo_overview
+	// exposes single-SLO attributes at config top level while terraform nests them under `single`).
+	OmitRequiredLeafPresence bool
 }
 
 func Run(t *testing.T, handler iface.Handler, cfg Config) {
@@ -52,7 +56,9 @@ func runChecks(ctx context.Context, handler iface.Handler, cfg Config) []string 
 	var issues []string
 
 	appendOuterSchemaIssues(handler, &issues)
-	appendRequiredJSONPresenceIssues(handler, cfg.FullAPIResponse, &issues)
+	if !cfg.OmitRequiredLeafPresence {
+		appendRequiredJSONPresenceIssues(handler, cfg.FullAPIResponse, &issues)
+	}
 	if panelkit.HasPanelConfigBlock(block) {
 		appendValidateRequiredZeroIssues(ctx, handler, cfg.FullAPIResponse, &issues)
 	}

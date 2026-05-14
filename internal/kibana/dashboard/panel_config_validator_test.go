@@ -21,6 +21,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/sloerrorbudget"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -421,7 +422,9 @@ func Test_panelConfigValidateDiags_sloErrorBudget(t *testing.T) {
 }
 
 func Test_getSloErrorBudgetSchema_drilldownsHardcodeAPIConstants(t *testing.T) {
-	drilldownsAttr, ok := getSloErrorBudgetSchema()["drilldowns"].(schema.ListNestedAttribute)
+	sna, ok := sloerrorbudget.SchemaAttribute().(schema.SingleNestedAttribute)
+	require.True(t, ok)
+	drilldownsAttr, ok := sna.Attributes["drilldowns"].(schema.ListNestedAttribute)
 	require.True(t, ok)
 
 	attrs := drilldownsAttr.NestedObject.Attributes
@@ -697,4 +700,40 @@ func Test_panelConfigValidateDiags_discoverSession(t *testing.T) {
 		require.Len(t, diags, 1)
 		require.Equal(t, "Missing discover_session panel configuration", diags[0].Summary())
 	})
+}
+
+func Test_panelConfigValidateDiags_sloOverview_accepted(t *testing.T) {
+	diags := panelConfigValidateDiags(
+		panelTypeSloOverview,
+		panelConfigValueState{},
+		panelConfigValueState{},
+		panelConfigValueState{},
+		panelConfigValueState{},
+		panelConfigValueState{},
+		panelConfigValueState{Set: true},
+		panelConfigValueState{},
+		panelConfigValueState{},
+		panelConfigValueState{},
+		nil,
+	)
+	require.False(t, diags.HasError())
+}
+
+func Test_panelConfigValidateDiags_sloOverview_missing(t *testing.T) {
+	diags := panelConfigValidateDiags(
+		panelTypeSloOverview,
+		panelConfigValueState{},
+		panelConfigValueState{},
+		panelConfigValueState{},
+		panelConfigValueState{},
+		panelConfigValueState{},
+		panelConfigValueState{},
+		panelConfigValueState{},
+		panelConfigValueState{},
+		panelConfigValueState{},
+		nil,
+	)
+	require.True(t, diags.HasError())
+	require.Len(t, diags, 1)
+	require.Equal(t, "Missing SLO overview panel configuration", diags[0].Summary())
 }

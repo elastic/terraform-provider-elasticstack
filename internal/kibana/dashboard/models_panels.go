@@ -292,16 +292,7 @@ func dashboardMapPanelFromAPI(ctx context.Context, m *models.DashboardModel, tfP
 			}
 			pm.ConfigJSON = configJSON
 		}
-	case panelTypeSloOverview:
-		sloPanel, err := panelItem.AsKbnDashboardPanelTypeSloOverview()
-		if err != nil {
-			return models.PanelModel{}, diagutil.FrameworkDiagFromError(err)
-		}
-		setPanelGridFromAPI(&pm, sloPanel.Grid.X, sloPanel.Grid.Y, sloPanel.Grid.W, sloPanel.Grid.H)
-		pm.ID = types.StringPointerValue(sloPanel.Id)
-		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
-		d := sloOverviewFromAPI(&pm, tfPanel, sloPanel)
-		diags.Append(d...)
+
 	case panelTypeTimeSlider:
 		tsPanel, err := panelItem.AsKbnDashboardPanelTypeTimeSliderControl()
 		if err != nil {
@@ -448,33 +439,6 @@ func dashboardMapPanelFromAPI(ctx context.Context, m *models.DashboardModel, tfP
 			d := converter.populateFromAttributes(ctx, m, tfPanel, &pm.VisConfig.ByValue.LensByValueChartBlocks, config0)
 			diags.Append(d...)
 		}
-	case panelTypeSloErrorBudget:
-		sebPanel, err := panelItem.AsKbnDashboardPanelTypeSloErrorBudget()
-		if err != nil {
-			return models.PanelModel{}, diagutil.FrameworkDiagFromError(err)
-		}
-		setPanelGridFromAPI(&pm, sebPanel.Grid.X, sebPanel.Grid.Y, sebPanel.Grid.W, sebPanel.Grid.H)
-		pm.ID = types.StringPointerValue(sebPanel.Id)
-		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
-		populateSloErrorBudgetFromAPI(&pm, tfPanel, sebPanel.Config)
-	case panelTypeSyntheticsStatsOverview:
-		ssoPanel, err := panelItem.AsKbnDashboardPanelTypeSyntheticsStatsOverview()
-		if err != nil {
-			return models.PanelModel{}, diagutil.FrameworkDiagFromError(err)
-		}
-		setPanelGridFromAPI(&pm, ssoPanel.Grid.X, ssoPanel.Grid.Y, ssoPanel.Grid.W, ssoPanel.Grid.H)
-		pm.ID = types.StringPointerValue(ssoPanel.Id)
-		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
-		populateSyntheticsStatsOverviewFromAPI(&pm, tfPanel, ssoPanel)
-	case panelTypeSyntheticsMonitors:
-		smPanel, err := panelItem.AsKbnDashboardPanelTypeSyntheticsMonitors()
-		if err != nil {
-			return models.PanelModel{}, diagutil.FrameworkDiagFromError(err)
-		}
-		setPanelGridFromAPI(&pm, smPanel.Grid.X, smPanel.Grid.Y, smPanel.Grid.W, smPanel.Grid.H)
-		pm.ID = types.StringPointerValue(smPanel.Id)
-		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
-		populateSyntheticsMonitorsFromAPI(&pm, tfPanel, smPanel)
 	case panelTypeLensDashboardApp:
 		ldPanel, err := panelItem.AsKbnDashboardPanelTypeLensDashboardApp()
 		if err != nil {
@@ -638,6 +602,13 @@ func panelToAPI(ctx context.Context, pm models.PanelModel, dashboard *models.Das
 		}
 	}
 
+	switch pm.Type.ValueString() {
+	case panelTypeSyntheticsStatsOverview, panelTypeSyntheticsMonitors:
+		if h := LookupHandler(pm.Type.ValueString()); h != nil {
+			return h.ToAPI(pm, dashboard)
+		}
+	}
+
 	var diags diag.Diagnostics
 
 	var dashTR *models.TimeRangeModel
@@ -708,10 +679,6 @@ func panelToAPI(ctx context.Context, pm models.PanelModel, dashboard *models.Das
 			)
 			return kbapi.DashboardPanelItem{}, diags
 		}
-	}
-
-	if pm.SloOverviewConfig != nil {
-		return sloOverviewToAPI(pm, grid, panelID)
 	}
 
 	lensGrid := lensDashboardAPIGrid{H: grid.H, W: grid.W, X: grid.X, Y: grid.Y}
@@ -843,49 +810,6 @@ func panelToAPI(ctx context.Context, pm models.PanelModel, dashboard *models.Das
 			"SLO burn rate panels require `slo_burn_rate_config`.",
 		)
 		return kbapi.DashboardPanelItem{}, diags
-	}
-
-	if pm.SloErrorBudgetConfig != nil {
-		sebPanel := kbapi.KbnDashboardPanelTypeSloErrorBudget{
-			Grid: grid,
-			Id:   panelID,
-		}
-		buildSloErrorBudgetConfig(pm, &sebPanel)
-		if err := panelItem.FromKbnDashboardPanelTypeSloErrorBudget(sebPanel); err != nil {
-			diags.AddError("Failed to create SLO error budget panel", err.Error())
-		}
-		return panelItem, diags
-	}
-
-	if pm.SyntheticsStatsOverviewConfig != nil {
-		ssoPanel := kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview{
-			Grid: grid,
-			Id:   panelID,
-		}
-		buildSyntheticsStatsOverviewConfig(pm, &ssoPanel)
-		if err := panelItem.FromKbnDashboardPanelTypeSyntheticsStatsOverview(ssoPanel); err != nil {
-			diags.AddError("Failed to create synthetics stats overview panel", err.Error())
-		}
-		return panelItem, diags
-	}
-
-	if pm.Type.ValueString() == panelTypeSyntheticsStatsOverview {
-		// Panel type is synthetics_stats_overview with no config block: send empty config.
-		ssoPanel := kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview{
-			Grid: grid,
-			Id:   panelID,
-		}
-		if err := panelItem.FromKbnDashboardPanelTypeSyntheticsStatsOverview(ssoPanel); err != nil {
-			diags.AddError("Failed to create synthetics stats overview panel", err.Error())
-		}
-		return panelItem, diags
-	}
-	if pm.Type.ValueString() == panelTypeSyntheticsMonitors || pm.SyntheticsMonitorsConfig != nil {
-		smPanel := buildSyntheticsMonitorsPanel(pm, grid, panelID)
-		if err := panelItem.FromKbnDashboardPanelTypeSyntheticsMonitors(smPanel); err != nil {
-			diags.AddError("Failed to create synthetics monitors panel", err.Error())
-		}
-		return panelItem, diags
 	}
 
 	if pm.EsqlControlConfig != nil {

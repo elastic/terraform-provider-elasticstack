@@ -15,20 +15,21 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package dashboard
+package sloerrorbudget
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// buildSloErrorBudgetConfig writes the TF model fields into the API panel struct.
-func buildSloErrorBudgetConfig(pm models.PanelModel, sebPanel *kbapi.KbnDashboardPanelTypeSloErrorBudget) {
+// BuildConfig writes the TF model fields into the API panel struct.
+func BuildConfig(pm models.PanelModel, sebPanel *kbapi.KbnDashboardPanelTypeSloErrorBudget) diag.Diagnostics {
 	cfg := pm.SloErrorBudgetConfig
 	if cfg == nil {
-		return
+		return nil
 	}
 
 	sebPanel.Config.SloId = cfg.SloID.ValueString()
@@ -73,69 +74,51 @@ func buildSloErrorBudgetConfig(pm models.PanelModel, sebPanel *kbapi.KbnDashboar
 		}
 		sebPanel.Config.Drilldowns = &drilldowns
 	}
+	return nil
 }
 
-// populateSloErrorBudgetFromAPI reads back an SLO error budget config from the API
-// response and updates the panel model. Null-preservation semantics apply:
-//   - slo_instance_id: if null in prior state, keep null even if the API returns "*"
-//   - encode_url / open_in_new_tab: normalize API default true to null (don't overwrite
-//     null intent with true), so practitioners who omit these fields don't observe drift
-//
-// tfPanel is the prior TF state/plan panel, or nil on import.
-func populateSloErrorBudgetFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiConfig kbapi.SloErrorBudgetEmbeddable) {
+// PopulateFromAPI reads back an SLO error budget config from the API response.
+func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiConfig kbapi.SloErrorBudgetEmbeddable) diag.Diagnostics {
 	existing := pm.SloErrorBudgetConfig
 
-	// Determine the prior intent for slo_instance_id null-preservation.
 	var priorSloInstanceID types.String
-	if tfPanel != nil && tfPanel.SloErrorBudgetConfig != nil {
-		priorSloInstanceID = tfPanel.SloErrorBudgetConfig.SloInstanceID
-	} else if tfPanel == nil {
-		// Import: no prior intent — populate all API-returned values.
-		priorSloInstanceID = types.StringValue("*") // treat as "known", so we write the API value
+	if prior != nil && prior.SloErrorBudgetConfig != nil {
+		priorSloInstanceID = prior.SloErrorBudgetConfig.SloInstanceID
+	} else if prior == nil {
+		priorSloInstanceID = types.StringValue("*")
 	}
 
 	if existing == nil {
-		// If tfPanel is nil (import) or no config block in prior state,
-		// only create one if the API returned data.
-		if tfPanel != nil {
-			// Prior state had no block — preserve nil intent.
-			return
+		if prior != nil {
+			return nil
 		}
-		// Import path: create block from API.
 		pm.SloErrorBudgetConfig = &models.SloErrorBudgetConfigModel{}
 		existing = pm.SloErrorBudgetConfig
 	}
 
-	// Always update slo_id from API.
 	existing.SloID = types.StringValue(apiConfig.SloId)
 
-	// slo_instance_id: only write if prior intent was non-null (or import).
-	// Normalize "*" (all-instances wildcard) to null, matching create+refresh behaviour.
 	if typeutils.IsKnown(priorSloInstanceID) && apiConfig.SloInstanceId != nil && *apiConfig.SloInstanceId != "*" {
 		existing.SloInstanceID = types.StringValue(*apiConfig.SloInstanceId)
 	}
 
-	// Import has no prior intent, so populate all optional display fields. During normal
-	// refreshes, preserve omitted values unless the practitioner configured them.
-	if (tfPanel == nil || typeutils.IsKnown(existing.Title)) && apiConfig.Title != nil {
+	if (prior == nil || typeutils.IsKnown(existing.Title)) && apiConfig.Title != nil {
 		existing.Title = types.StringValue(*apiConfig.Title)
 	}
-	if (tfPanel == nil || typeutils.IsKnown(existing.Description)) && apiConfig.Description != nil {
+	if (prior == nil || typeutils.IsKnown(existing.Description)) && apiConfig.Description != nil {
 		existing.Description = types.StringValue(*apiConfig.Description)
 	}
-	if (tfPanel == nil || typeutils.IsKnown(existing.HideTitle)) && apiConfig.HideTitle != nil {
+	if (prior == nil || typeutils.IsKnown(existing.HideTitle)) && apiConfig.HideTitle != nil {
 		existing.HideTitle = types.BoolValue(*apiConfig.HideTitle)
 	}
-	if (tfPanel == nil || typeutils.IsKnown(existing.HideBorder)) && apiConfig.HideBorder != nil {
+	if (prior == nil || typeutils.IsKnown(existing.HideBorder)) && apiConfig.HideBorder != nil {
 		existing.HideBorder = types.BoolValue(*apiConfig.HideBorder)
 	}
 
-	// Drilldowns round-trip with default normalization.
 	if apiConfig.Drilldowns != nil {
-		// Determine prior drilldown intent.
 		var priorDrilldowns []models.URLDrilldownModel
-		if tfPanel != nil && tfPanel.SloErrorBudgetConfig != nil {
-			priorDrilldowns = tfPanel.SloErrorBudgetConfig.Drilldowns
+		if prior != nil && prior.SloErrorBudgetConfig != nil {
+			priorDrilldowns = prior.SloErrorBudgetConfig.Drilldowns
 		}
 
 		newDrilldowns := make([]models.URLDrilldownModel, 0, len(*apiConfig.Drilldowns))
@@ -145,8 +128,6 @@ func populateSloErrorBudgetFromAPI(pm *models.PanelModel, tfPanel *models.PanelM
 				Label: types.StringValue(d.Label),
 			}
 
-			// encode_url: normalize API default (true) — only write if prior state had it set,
-			// or if API returned false (non-default).
 			if d.EncodeUrl != nil {
 				priorEncodeURL := types.BoolNull()
 				if i < len(priorDrilldowns) {
@@ -157,7 +138,6 @@ func populateSloErrorBudgetFromAPI(pm *models.PanelModel, tfPanel *models.PanelM
 				}
 			}
 
-			// open_in_new_tab: same normalization.
 			if d.OpenInNewTab != nil {
 				priorOpenInNewTab := types.BoolNull()
 				if i < len(priorDrilldowns) {
@@ -172,4 +152,5 @@ func populateSloErrorBudgetFromAPI(pm *models.PanelModel, tfPanel *models.PanelM
 		}
 		existing.Drilldowns = newDrilldowns
 	}
+	return nil
 }

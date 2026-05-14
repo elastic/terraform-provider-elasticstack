@@ -20,12 +20,20 @@ package dashboard
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/iface"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/sloburnrate"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/sloerrorbudget"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/slooverview"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/syntheticsmonitors"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/syntheticsstatsoverview"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 )
 
 // panelHandlers is populated as individual panel implementations land.
 var panelHandlers = []iface.Handler{
 	sloburnrate.Handler{},
+	sloerrorbudget.Handler{},
+	slooverview.Handler{},
+	syntheticsmonitors.Handler{},
+	syntheticsstatsoverview.Handler{},
 }
 
 var panelTypeToHandler map[string]iface.Handler
@@ -33,6 +41,10 @@ var derivedPanelConfigNames []string
 
 func init() {
 	sloburnrate.SetPopulatePanelConfigJSONDefaults(populatePanelConfigJSONDefaults)
+	sloerrorbudget.SetPopulatePanelConfigJSONDefaults(populatePanelConfigJSONDefaults)
+	slooverview.SetPopulatePanelConfigJSONDefaults(populatePanelConfigJSONDefaults)
+	syntheticsmonitors.SetPopulatePanelConfigJSONDefaults(populatePanelConfigJSONDefaults)
+	syntheticsstatsoverview.SetPopulatePanelConfigJSONDefaults(populatePanelConfigJSONDefaults)
 	panelTypeToHandler = make(map[string]iface.Handler, len(panelHandlers))
 	derivedPanelConfigNames = append(derivedPanelConfigNames, "config_json")
 	for _, h := range panelHandlers {

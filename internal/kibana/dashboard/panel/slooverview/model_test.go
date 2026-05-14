@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package dashboard
+package slooverview
 
 import (
 	"testing"
@@ -139,7 +139,7 @@ func Test_sloSingleFromAPI_roundtrip(t *testing.T) {
 	}
 
 	pm := &models.PanelModel{}
-	diags := sloOverviewFromAPI(pm, nil, panel)
+	diags := PopulateFromAPI(pm, nil, panel)
 	require.False(t, diags.HasError())
 
 	require.NotNil(t, pm.SloOverviewConfig)
@@ -183,7 +183,7 @@ func Test_sloGroupsFromAPI_roundtrip(t *testing.T) {
 	}
 
 	pm := &models.PanelModel{}
-	diags := sloOverviewFromAPI(pm, nil, panel)
+	diags := PopulateFromAPI(pm, nil, panel)
 	require.False(t, diags.HasError())
 
 	require.NotNil(t, pm.SloOverviewConfig)
@@ -197,7 +197,6 @@ func Test_sloGroupsFromAPI_roundtrip(t *testing.T) {
 }
 
 func Test_sloInstanceID_null_preservation(t *testing.T) {
-	// Kibana returns slo_instance_id = "*" but prior state was null → preserve null
 	defaultInstanceID := "*"
 	apiSingle := kbapi.SloSingleOverviewEmbeddable{
 		OverviewMode:  kbapi.SloSingleOverviewEmbeddableOverviewModeSingle,
@@ -219,29 +218,26 @@ func Test_sloInstanceID_null_preservation(t *testing.T) {
 		Type: kbapi.SloOverview,
 	}
 
-	// Prior state had slo_instance_id = null
 	tfPanel := &models.PanelModel{
 		SloOverviewConfig: &models.SloOverviewConfigModel{
 			Single: &models.SloOverviewSingleModel{
 				SloID:         types.StringValue("slo-456"),
-				SloInstanceID: types.StringNull(), // null in prior state
+				SloInstanceID: types.StringNull(),
 			},
 		},
 	}
 
 	pm := &models.PanelModel{}
 	*pm = *tfPanel
-	diags := sloOverviewFromAPI(pm, tfPanel, panel)
+	diags := PopulateFromAPI(pm, tfPanel, panel)
 	require.False(t, diags.HasError())
 
 	require.NotNil(t, pm.SloOverviewConfig)
 	require.NotNil(t, pm.SloOverviewConfig.Single)
-	// Should be preserved as null, not updated to "*"
 	assert.True(t, pm.SloOverviewConfig.Single.SloInstanceID.IsNull())
 }
 
 func Test_sloInstanceID_explicit_value_preserved(t *testing.T) {
-	// Kibana returns slo_instance_id = "instance-1" when prior state has explicit value
 	instanceID := "instance-1"
 	apiSingle := kbapi.SloSingleOverviewEmbeddable{
 		OverviewMode:  kbapi.SloSingleOverviewEmbeddableOverviewModeSingle,
@@ -267,23 +263,23 @@ func Test_sloInstanceID_explicit_value_preserved(t *testing.T) {
 		SloOverviewConfig: &models.SloOverviewConfigModel{
 			Single: &models.SloOverviewSingleModel{
 				SloID:         types.StringValue("slo-789"),
-				SloInstanceID: types.StringValue("instance-1"), // explicitly set
+				SloInstanceID: types.StringValue("instance-1"),
 			},
 		},
 	}
 
 	pm := &models.PanelModel{}
 	*pm = *tfPanel
-	diags := sloOverviewFromAPI(pm, tfPanel, panel)
+	diags := PopulateFromAPI(pm, tfPanel, panel)
 	require.False(t, diags.HasError())
 
 	require.NotNil(t, pm.SloOverviewConfig.Single)
 	assert.Equal(t, types.StringValue("instance-1"), pm.SloOverviewConfig.Single.SloInstanceID)
 }
 
-func Test_sloOverviewToAPI_single(t *testing.T) {
+func Test_sloOverview_handlerToAPI_single(t *testing.T) {
 	pm := models.PanelModel{
-		Type: types.StringValue(panelTypeSloOverview),
+		Type: types.StringValue(panelType),
 		Grid: models.PanelGridModel{
 			X: types.Int64Value(0),
 			Y: types.Int64Value(0),
@@ -303,16 +299,8 @@ func Test_sloOverviewToAPI_single(t *testing.T) {
 		},
 	}
 
-	w := float32(24)
-	h := float32(10)
-	grid := struct {
-		H *float32 `json:"h,omitempty"`
-		W *float32 `json:"w,omitempty"`
-		X float32  `json:"x"`
-		Y float32  `json:"y"`
-	}{H: &h, W: &w, X: 0, Y: 0}
-
-	item, diags := sloOverviewToAPI(pm, grid, nil)
+	var h Handler
+	item, diags := h.ToAPI(pm, nil)
 	require.False(t, diags.HasError())
 
 	panel, err := item.AsKbnDashboardPanelTypeSloOverview()
@@ -324,9 +312,9 @@ func Test_sloOverviewToAPI_single(t *testing.T) {
 	assert.Equal(t, kbapi.SloSingleOverviewEmbeddableOverviewModeSingle, single.OverviewMode)
 }
 
-func Test_sloOverviewToAPI_groups(t *testing.T) {
+func Test_sloOverview_handlerToAPI_groups(t *testing.T) {
 	pm := models.PanelModel{
-		Type: types.StringValue(panelTypeSloOverview),
+		Type: types.StringValue(panelType),
 		Grid: models.PanelGridModel{
 			X: types.Int64Value(0),
 			Y: types.Int64Value(0),
@@ -348,16 +336,8 @@ func Test_sloOverviewToAPI_groups(t *testing.T) {
 		},
 	}
 
-	w := float32(24)
-	h := float32(10)
-	grid := struct {
-		H *float32 `json:"h,omitempty"`
-		W *float32 `json:"w,omitempty"`
-		X float32  `json:"x"`
-		Y float32  `json:"y"`
-	}{H: &h, W: &w, X: 0, Y: 0}
-
-	item, diags := sloOverviewToAPI(pm, grid, nil)
+	var h Handler
+	item, diags := h.ToAPI(pm, nil)
 	require.False(t, diags.HasError())
 
 	panel, err := item.AsKbnDashboardPanelTypeSloOverview()
@@ -368,40 +348,4 @@ func Test_sloOverviewToAPI_groups(t *testing.T) {
 	require.NotNil(t, groups.GroupFilters)
 	require.NotNil(t, groups.GroupFilters.GroupBy)
 	assert.Equal(t, kbapi.SloGroupOverviewEmbeddableGroupFiltersGroupBySloTags, *groups.GroupFilters.GroupBy)
-}
-
-func Test_panelConfigValidateDiags_sloOverview_accepted(t *testing.T) {
-	diags := panelConfigValidateDiags(
-		panelTypeSloOverview,
-		panelConfigValueState{},
-		panelConfigValueState{},
-		panelConfigValueState{},
-		panelConfigValueState{},
-		panelConfigValueState{},
-		panelConfigValueState{Set: true},
-		panelConfigValueState{},
-		panelConfigValueState{},
-		panelConfigValueState{},
-		nil,
-	)
-	assert.False(t, diags.HasError())
-}
-
-func Test_panelConfigValidateDiags_sloOverview_missing(t *testing.T) {
-	diags := panelConfigValidateDiags(
-		panelTypeSloOverview,
-		panelConfigValueState{},
-		panelConfigValueState{},
-		panelConfigValueState{},
-		panelConfigValueState{},
-		panelConfigValueState{},
-		panelConfigValueState{},
-		panelConfigValueState{},
-		panelConfigValueState{},
-		panelConfigValueState{},
-		nil,
-	)
-	assert.True(t, diags.HasError())
-	require.Len(t, diags, 1)
-	assert.Equal(t, "Missing SLO overview panel configuration", diags[0].Summary())
 }
