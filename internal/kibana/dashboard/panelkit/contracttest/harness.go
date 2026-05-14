@@ -29,6 +29,9 @@ import (
 type Config struct {
 	FullAPIResponse string
 	SkipFields      []string
+	// OmitValidateRequiredZero skips appendValidateRequiredZeroIssues (panels whose shallow required Terraform attributes
+	// are not scalar fixture keys — e.g. required List attributes inside config).
+	OmitValidateRequiredZero bool
 	// OmitRequiredLeafPresence disables the required-leaf-presence harness phase that checks every required Terraform leaf
 	// path against raw fixture.config navigation. Enable only when the panel's exported API JSON layout does not align with
 	// Terraform's nested paths (flat config keys vs nested single|groups, or optional filters/drilldown trees only present
@@ -61,7 +64,7 @@ func runChecks(ctx context.Context, handler iface.Handler, cfg Config) []string 
 	if !cfg.OmitRequiredLeafPresence {
 		appendRequiredJSONPresenceIssues(handler, cfg.FullAPIResponse, &issues)
 	}
-	if panelkit.HasPanelConfigBlock(block) {
+	if panelkit.HasPanelConfigBlock(block) && !cfg.OmitValidateRequiredZero {
 		appendValidateRequiredZeroIssues(ctx, handler, cfg.FullAPIResponse, &issues)
 	}
 
