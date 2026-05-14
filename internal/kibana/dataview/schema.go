@@ -286,6 +286,11 @@ func getDataViewAttrTypes() map[string]attr.Type {
 	return getSchema().Attributes["data_view"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
+// getFieldAttrElemType is intentionally hardcoded rather than derived from the schema (as
+// getRuntimeFieldMapElemType / getFieldFormatElemType are): the schema's field_attrs CustomType
+// is constructed by calling NewFieldAttrsType(getFieldAttrElemType()), so reading the type back
+// from the schema would recurse during package initialization. TestFieldAttrElemType_matchesSchema
+// guards against the resulting drift hazard if either side ever changes shape.
 func getFieldAttrElemType() attr.Type {
 	return types.ObjectType{
 		AttrTypes: map[string]attr.Type{
