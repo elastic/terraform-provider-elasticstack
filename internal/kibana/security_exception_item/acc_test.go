@@ -47,12 +47,13 @@ const minExceptionItemAPISupportConstraint = ">=7.9.0"
 var allTestsVersionsConstraint, _ = version.NewConstraint(exceptionItemBugVersionConstraint + "," + minExceptionItemAPISupportConstraint)
 
 func TestAccResourceExceptionItem(t *testing.T) {
+	versionutils.SkipIfUnsupportedConstraints(t, allTestsVersionsConstraint, versionutils.FlavorAny)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceExceptionItemDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -78,7 +79,6 @@ func TestAccResourceExceptionItem(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
@@ -98,7 +98,6 @@ func TestAccResourceExceptionItem(t *testing.T) {
 				),
 			},
 			{ // Import
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
@@ -119,12 +118,13 @@ func TestAccResourceExceptionItem(t *testing.T) {
 }
 
 func TestAccResourceExceptionItem_BasicUsage(t *testing.T) {
+	versionutils.SkipIfUnsupportedConstraints(t, allTestsVersionsConstraint, versionutils.FlavorAny)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceExceptionItemDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic_create"),
 				ConfigVariables: config.Variables{
@@ -149,7 +149,6 @@ func TestAccResourceExceptionItem_BasicUsage(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic_update"),
 				ConfigVariables: config.Variables{
@@ -169,7 +168,6 @@ func TestAccResourceExceptionItem_BasicUsage(t *testing.T) {
 				),
 			},
 			{ // Import
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic_update"),
 				ConfigVariables: config.Variables{
@@ -189,6 +187,8 @@ func TestAccResourceExceptionItem_BasicUsage(t *testing.T) {
 }
 
 func TestAccResourceExceptionItemWithSpace(t *testing.T) {
+	versionutils.SkipIfUnsupportedConstraints(t, allTestsVersionsConstraint, versionutils.FlavorAny)
+
 	resourceName := "elasticstack_kibana_security_exception_item.test"
 	spaceResourceName := "elasticstack_kibana_space.test"
 	spaceID := fmt.Sprintf("test-space-%s", uuid.New().String()[:8])
@@ -199,7 +199,6 @@ func TestAccResourceExceptionItemWithSpace(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"space_id":       config.StringVariable(spaceID),
@@ -233,7 +232,6 @@ func TestAccResourceExceptionItemWithSpace(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"space_id":       config.StringVariable(spaceID),
@@ -261,7 +259,6 @@ func TestAccResourceExceptionItemWithSpace(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers, // Import
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"space_id":       config.StringVariable(spaceID),
@@ -282,6 +279,8 @@ func TestAccResourceExceptionItemWithSpace(t *testing.T) {
 }
 
 func TestAccResourceExceptionItemNamespaceType_Agnostic(t *testing.T) {
+	versionutils.SkipIfUnsupportedConstraints(t, allTestsVersionsConstraint, versionutils.FlavorAny)
+
 	listID := fmt.Sprintf("test-exception-list-agnostic-%s", uuid.New().String()[:8])
 	itemID := fmt.Sprintf("test-exception-item-agnostic-%s", uuid.New().String()[:8])
 
@@ -290,7 +289,6 @@ func TestAccResourceExceptionItemNamespaceType_Agnostic(t *testing.T) {
 		CheckDestroy: checkResourceExceptionItemDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("agnostic_create"),
 				ConfigVariables: config.Variables{
@@ -308,7 +306,6 @@ func TestAccResourceExceptionItemNamespaceType_Agnostic(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("agnostic_update"),
 				ConfigVariables: config.Variables{
@@ -325,7 +322,6 @@ func TestAccResourceExceptionItemNamespaceType_Agnostic(t *testing.T) {
 				),
 			},
 			{ // Import
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("agnostic_update"),
 				ConfigVariables: config.Variables{
@@ -341,6 +337,8 @@ func TestAccResourceExceptionItemNamespaceType_Agnostic(t *testing.T) {
 }
 
 func TestAccResourceExceptionItemEntryType_Match(t *testing.T) {
+	versionutils.SkipIfUnsupportedConstraints(t, allTestsVersionsConstraint, versionutils.FlavorAny)
+
 	listID := fmt.Sprintf("test-exception-list-match-%s", uuid.New().String()[:8])
 	itemID := fmt.Sprintf("test-exception-item-match-%s", uuid.New().String()[:8])
 
@@ -349,7 +347,6 @@ func TestAccResourceExceptionItemEntryType_Match(t *testing.T) {
 		CheckDestroy: checkResourceExceptionItemDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("match"),
 				ConfigVariables: config.Variables{
@@ -364,7 +361,6 @@ func TestAccResourceExceptionItemEntryType_Match(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("match_multiple"),
 				ConfigVariables: config.Variables{
@@ -392,6 +388,8 @@ func TestAccResourceExceptionItemEntryType_Match(t *testing.T) {
 }
 
 func TestAccResourceExceptionItemEntryType_MatchAny(t *testing.T) {
+	versionutils.SkipIfUnsupportedConstraints(t, allTestsVersionsConstraint, versionutils.FlavorAny)
+
 	listID := fmt.Sprintf("test-exception-list-match-any-%s", uuid.New().String()[:8])
 	itemID := fmt.Sprintf("test-exception-item-match-any-%s", uuid.New().String()[:8])
 
@@ -400,7 +398,6 @@ func TestAccResourceExceptionItemEntryType_MatchAny(t *testing.T) {
 		CheckDestroy: checkResourceExceptionItemDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("match_any"),
 				ConfigVariables: config.Variables{
@@ -417,7 +414,6 @@ func TestAccResourceExceptionItemEntryType_MatchAny(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("match_any_multiple"),
 				ConfigVariables: config.Variables{
@@ -445,6 +441,8 @@ func TestAccResourceExceptionItemEntryType_MatchAny(t *testing.T) {
 }
 
 func TestAccResourceExceptionItemEntryType_List(t *testing.T) {
+	versionutils.SkipIfUnsupportedConstraints(t, allTestsVersionsConstraint, versionutils.FlavorAny)
+
 	exceptionListID := fmt.Sprintf("test-exception-list-list-entry-%s", uuid.New().String()[:8])
 	itemID := fmt.Sprintf("test-exception-item-list-entry-%s", uuid.New().String()[:8])
 	valueListIDIP := fmt.Sprintf("test-value-list-ip-%s", uuid.New().String()[:8])
@@ -457,7 +455,6 @@ func TestAccResourceExceptionItemEntryType_List(t *testing.T) {
 		CheckDestroy: checkResourceExceptionItemDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("list"),
 				ConfigVariables: config.Variables{
@@ -476,7 +473,6 @@ func TestAccResourceExceptionItemEntryType_List(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("list_update"),
 				ConfigVariables: config.Variables{
@@ -496,7 +492,6 @@ func TestAccResourceExceptionItemEntryType_List(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("list_keyword"),
 				ConfigVariables: config.Variables{
@@ -515,7 +510,6 @@ func TestAccResourceExceptionItemEntryType_List(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("list_keyword_update"),
 				ConfigVariables: config.Variables{
@@ -535,7 +529,6 @@ func TestAccResourceExceptionItemEntryType_List(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("list_ip_range"),
 				ConfigVariables: config.Variables{
@@ -554,7 +547,6 @@ func TestAccResourceExceptionItemEntryType_List(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("list_ip_range_update"),
 				ConfigVariables: config.Variables{
@@ -574,7 +566,6 @@ func TestAccResourceExceptionItemEntryType_List(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("list_multiple"),
 				ConfigVariables: config.Variables{
@@ -610,6 +601,8 @@ func TestAccResourceExceptionItemEntryType_List(t *testing.T) {
 }
 
 func TestAccResourceExceptionItemEntryType_Exists(t *testing.T) {
+	versionutils.SkipIfUnsupportedConstraints(t, allTestsVersionsConstraint, versionutils.FlavorAny)
+
 	listID := fmt.Sprintf("test-exception-list-exists-%s", uuid.New().String()[:8])
 	itemID := fmt.Sprintf("test-exception-item-exists-%s", uuid.New().String()[:8])
 
@@ -618,7 +611,6 @@ func TestAccResourceExceptionItemEntryType_Exists(t *testing.T) {
 		CheckDestroy: checkResourceExceptionItemDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("exists"),
 				ConfigVariables: config.Variables{
@@ -632,7 +624,6 @@ func TestAccResourceExceptionItemEntryType_Exists(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("exists_multiple"),
 				ConfigVariables: config.Variables{
@@ -657,6 +648,8 @@ func TestAccResourceExceptionItemEntryType_Exists(t *testing.T) {
 }
 
 func TestAccResourceExceptionItemEntryType_Nested(t *testing.T) {
+	versionutils.SkipIfUnsupportedConstraints(t, allTestsVersionsConstraint, versionutils.FlavorAny)
+
 	listID := fmt.Sprintf("test-exception-list-nested-%s", uuid.New().String()[:8])
 	itemID := fmt.Sprintf("test-exception-item-nested-%s", uuid.New().String()[:8])
 
@@ -665,7 +658,6 @@ func TestAccResourceExceptionItemEntryType_Nested(t *testing.T) {
 		CheckDestroy: checkResourceExceptionItemDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("nested"),
 				ConfigVariables: config.Variables{
@@ -682,7 +674,6 @@ func TestAccResourceExceptionItemEntryType_Nested(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("nested_match_any"),
 				ConfigVariables: config.Variables{
@@ -701,7 +692,6 @@ func TestAccResourceExceptionItemEntryType_Nested(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("nested_exists"),
 				ConfigVariables: config.Variables{
@@ -717,7 +707,6 @@ func TestAccResourceExceptionItemEntryType_Nested(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("nested_multiple"),
 				ConfigVariables: config.Variables{
@@ -741,7 +730,6 @@ func TestAccResourceExceptionItemEntryType_Nested(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("nested_multiple_inner_entries"),
 				ConfigVariables: config.Variables{
@@ -774,6 +762,8 @@ func TestAccResourceExceptionItemEntryType_Nested(t *testing.T) {
 }
 
 func TestAccResourceExceptionItemEntryType_Wildcard(t *testing.T) {
+	versionutils.SkipIfUnsupportedConstraints(t, allTestsVersionsConstraint, versionutils.FlavorAny)
+
 	listID := fmt.Sprintf("test-exception-list-wildcard-%s", uuid.New().String()[:8])
 	itemID := fmt.Sprintf("test-exception-item-wildcard-%s", uuid.New().String()[:8])
 
@@ -782,7 +772,6 @@ func TestAccResourceExceptionItemEntryType_Wildcard(t *testing.T) {
 		CheckDestroy: checkResourceExceptionItemDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("wildcard"),
 				ConfigVariables: config.Variables{
@@ -797,7 +786,6 @@ func TestAccResourceExceptionItemEntryType_Wildcard(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("wildcard_multiple"),
 				ConfigVariables: config.Variables{
@@ -825,6 +813,8 @@ func TestAccResourceExceptionItemEntryType_Wildcard(t *testing.T) {
 }
 
 func TestAccResourceExceptionItemValidation(t *testing.T) {
+	versionutils.SkipIfUnsupportedConstraints(t, allTestsVersionsConstraint, versionutils.FlavorAny)
+
 	listID := fmt.Sprintf("test-exception-list-validation-%s", uuid.New().String()[:8])
 	itemID := fmt.Sprintf("test-exception-item-validation-%s", uuid.New().String()[:8])
 
@@ -834,7 +824,6 @@ func TestAccResourceExceptionItemValidation(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Test 1: Match entry missing value
 			{
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation_match_missing_value"),
 				ConfigVariables: config.Variables{
@@ -846,7 +835,6 @@ func TestAccResourceExceptionItemValidation(t *testing.T) {
 			},
 			// Test 2: Match entry missing operator
 			{
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation_match_missing_operator"),
 				ConfigVariables: config.Variables{
@@ -858,7 +846,6 @@ func TestAccResourceExceptionItemValidation(t *testing.T) {
 			},
 			// Test 3: Wildcard entry missing value
 			{
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation_wildcard_missing_value"),
 				ConfigVariables: config.Variables{
@@ -870,7 +857,6 @@ func TestAccResourceExceptionItemValidation(t *testing.T) {
 			},
 			// Test 4: MatchAny entry missing values
 			{
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation_match_any_missing_values"),
 				ConfigVariables: config.Variables{
@@ -882,7 +868,6 @@ func TestAccResourceExceptionItemValidation(t *testing.T) {
 			},
 			// Test 5: MatchAny entry missing operator
 			{
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation_match_any_missing_operator"),
 				ConfigVariables: config.Variables{
@@ -894,7 +879,6 @@ func TestAccResourceExceptionItemValidation(t *testing.T) {
 			},
 			// Test 6: List entry missing list object
 			{
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation_list_missing_list_object"),
 				ConfigVariables: config.Variables{
@@ -906,7 +890,6 @@ func TestAccResourceExceptionItemValidation(t *testing.T) {
 			},
 			// Test 7: List entry missing list.id
 			{
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation_list_missing_list_id"),
 				ConfigVariables: config.Variables{
@@ -918,7 +901,6 @@ func TestAccResourceExceptionItemValidation(t *testing.T) {
 			},
 			// Test 8: List entry missing list.type
 			{
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation_list_missing_list_type"),
 				ConfigVariables: config.Variables{
@@ -930,7 +912,6 @@ func TestAccResourceExceptionItemValidation(t *testing.T) {
 			},
 			// Test 9: Exists entry missing operator
 			{
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation_exists_missing_operator"),
 				ConfigVariables: config.Variables{
@@ -942,7 +923,6 @@ func TestAccResourceExceptionItemValidation(t *testing.T) {
 			},
 			// Test 10: Nested entry missing entries
 			{
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation_nested_missing_entries"),
 				ConfigVariables: config.Variables{
@@ -954,7 +934,6 @@ func TestAccResourceExceptionItemValidation(t *testing.T) {
 			},
 			// Test 11: Nested entry with invalid entry type
 			{
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation_nested_invalid_entry_type"),
 				ConfigVariables: config.Variables{
@@ -966,7 +945,6 @@ func TestAccResourceExceptionItemValidation(t *testing.T) {
 			},
 			// Test 12: Nested match entry missing value
 			{
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation_nested_entry_missing_value"),
 				ConfigVariables: config.Variables{
@@ -978,7 +956,6 @@ func TestAccResourceExceptionItemValidation(t *testing.T) {
 			},
 			// Test 13: Nested entry missing operator
 			{
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation_nested_entry_missing_operator"),
 				ConfigVariables: config.Variables{

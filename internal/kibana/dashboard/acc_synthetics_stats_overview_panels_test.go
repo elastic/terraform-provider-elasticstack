@@ -33,12 +33,13 @@ import (
 func TestAccResourceDashboardSyntheticsStatsOverviewMinimal(t *testing.T) {
 	dashboardTitle := "Test Dashboard Synthetics Stats Overview Minimal " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
+	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("no_config"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
@@ -54,7 +55,6 @@ func TestAccResourceDashboardSyntheticsStatsOverviewMinimal(t *testing.T) {
 			// Import
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("no_config"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
@@ -72,12 +72,13 @@ func TestAccResourceDashboardSyntheticsStatsOverviewMinimal(t *testing.T) {
 func TestAccResourceDashboardSyntheticsStatsOverviewDisplaySettings(t *testing.T) {
 	dashboardTitle := "Test Dashboard Synthetics Stats Overview Display " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
+	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_display_settings"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
@@ -93,7 +94,6 @@ func TestAccResourceDashboardSyntheticsStatsOverviewDisplaySettings(t *testing.T
 			// Import
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_display_settings"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
@@ -110,12 +110,13 @@ func TestAccResourceDashboardSyntheticsStatsOverviewDisplaySettings(t *testing.T
 func TestAccResourceDashboardSyntheticsStatsOverviewWithFilters(t *testing.T) {
 	dashboardTitle := "Test Dashboard Synthetics Stats Overview Filters " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
+	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_filters"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
@@ -132,7 +133,6 @@ func TestAccResourceDashboardSyntheticsStatsOverviewWithFilters(t *testing.T) {
 			// Import
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_filters"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
@@ -149,12 +149,13 @@ func TestAccResourceDashboardSyntheticsStatsOverviewWithFilters(t *testing.T) {
 func TestAccResourceDashboardSyntheticsStatsOverviewWithDrilldowns(t *testing.T) {
 	dashboardTitle := "Test Dashboard Synthetics Stats Overview Drilldowns " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
+	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_drilldowns"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
@@ -178,13 +179,14 @@ func TestAccResourceDashboardSyntheticsStatsOverviewWithDrilldowns(t *testing.T)
 
 // TestAccResourceDashboardSyntheticsStatsOverviewInvalidConfig tests validation errors.
 func TestAccResourceDashboardSyntheticsStatsOverviewInvalidConfig(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			// config_json rejected for synthetics_stats_overview panel type (schema validator).
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("invalid_config_json"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable("unused"),
@@ -194,7 +196,6 @@ func TestAccResourceDashboardSyntheticsStatsOverviewInvalidConfig(t *testing.T) 
 			// synthetics_stats_overview_config rejected for non-synthetics_stats_overview panel type.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("invalid_panel_type"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable("unused"),

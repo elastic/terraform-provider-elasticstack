@@ -310,7 +310,7 @@ func getXYChartConfigAttributes(includePresentation bool) map[string]schema.Attr
 		},
 		"query": schema.SingleNestedAttribute{
 			MarkdownDescription: "Query configuration for filtering data.",
-			Required:            true,
+			Optional:            true,
 			Attributes:          getFilterSimple(),
 		},
 		"filters": schema.ListNestedAttribute{

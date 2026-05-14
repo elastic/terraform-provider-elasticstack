@@ -49,8 +49,6 @@ var (
 	// version echoed back from the request path) require this floor.
 	minVersionInstallationInfo = version.Must(version.NewVersion("8.9.0"))
 	minVersionSpaceIDReadback  = version.Must(version.NewVersion("8.10.0"))
-
-	skipUnlessSpaceAwareIntegration = versionutils.CheckIfVersionIsUnsupported(integration.MinVersionSpaceAwareIntegration)
 )
 
 //go:embed testdata/TestAccResourceIntegrationFromSDK/main.tf
@@ -60,6 +58,8 @@ var testAccResourceIntegrationFromSDKConfig string
 var testAccResourceIntegrationFrom013SDKConfig string
 
 func TestAccResourceIntegrationFromSDK(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionIntegration, versionutils.FlavorAny)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
@@ -70,8 +70,7 @@ func TestAccResourceIntegrationFromSDK(t *testing.T) {
 						VersionConstraint: "0.11.7",
 					},
 				},
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
-				Config:   testAccResourceIntegrationFromSDKConfig,
+				Config: testAccResourceIntegrationFromSDKConfig,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "name", "tcp"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "version", "1.16.0"),
@@ -79,7 +78,6 @@ func TestAccResourceIntegrationFromSDK(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "name", "tcp"),
@@ -127,6 +125,8 @@ func TestAccResourceIntegration(t *testing.T) {
 // TestAccResourceIntegration_kibanaConnection exercises the kibana_connection block
 // (scoped Kibana client via r.Client). Import is not implemented for this resource.
 func TestAccResourceIntegration_kibanaConnection(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionIntegration, versionutils.FlavorAny)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			acctest.PreCheck(t)
@@ -135,7 +135,6 @@ func TestAccResourceIntegration_kibanaConnection(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables:          acctest.KibanaConnectionVariables(),
 				Check: resource.ComposeTestCheckFunc(
@@ -148,7 +147,6 @@ func TestAccResourceIntegration_kibanaConnection(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables:          acctest.KibanaConnectionVariables(),
 				Check: resource.ComposeTestCheckFunc(
@@ -164,13 +162,14 @@ func TestAccResourceIntegration_kibanaConnection(t *testing.T) {
 }
 
 func TestAccResourceIntegrationWithPolicy(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionIntegrationPolicy, versionutils.FlavorAny)
+
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("v1_16_0"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -182,7 +181,6 @@ func TestAccResourceIntegrationWithPolicy(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("v1_17_0"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -194,7 +192,6 @@ func TestAccResourceIntegrationWithPolicy(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
 				ResourceName:             "elasticstack_fleet_integration.test_integration",
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("v1_17_0"),
 				ConfigVariables: config.Variables{
@@ -209,12 +206,13 @@ func TestAccResourceIntegrationWithPolicy(t *testing.T) {
 }
 
 func TestAccResourceIntegrationDeleted(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionIntegration, versionutils.FlavorAny)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "name", "sysmon_linux"),
@@ -223,7 +221,6 @@ func TestAccResourceIntegrationDeleted(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				// Force uninstall the integration
 				PreConfig: func() {
@@ -253,13 +250,14 @@ func TestAccResourceIntegrationDeleted(t *testing.T) {
 // InstallationInfo.Version and records the actually-installed version in
 // state, so plan sees a diff between state and config.
 func TestAccResourceIntegration_ExternalChange(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionInstallationInfo, versionutils.FlavorAny)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			// Step 1: apply tcp@1.16.0 via terraform.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionInstallationInfo),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "name", "tcp"),
@@ -278,7 +276,6 @@ func TestAccResourceIntegration_ExternalChange(t *testing.T) {
 			// observable through the integration GET alone.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionInstallationInfo),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				PreConfig: func() {
 					notSupported, err := versionutils.CheckIfVersionIsUnsupported(minVersionIntegration)()
@@ -307,12 +304,13 @@ func TestAccResourceIntegration_ExternalChange(t *testing.T) {
 }
 
 func TestAccResourceIntegrationWithPrerelease(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionIntegration, versionutils.FlavorAny)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_prerelease", "name", "tcp"),
@@ -371,6 +369,8 @@ func TestAccResourceIntegrationWithAllParameters(t *testing.T) {
 }
 
 func TestAccResourceIntegrationFrom0_13_1(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionIntegration, versionutils.FlavorAny)
+
 	spaceID := "aa_test_space_" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -382,8 +382,7 @@ func TestAccResourceIntegrationFrom0_13_1(t *testing.T) {
 						VersionConstraint: "0.13.1",
 					},
 				},
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
-				Config:   testAccResourceIntegrationFrom013SDKConfig,
+				Config: testAccResourceIntegrationFrom013SDKConfig,
 				ConfigVariables: config.Variables{
 					"space_id": config.StringVariable(spaceID),
 				},
@@ -394,7 +393,6 @@ func TestAccResourceIntegrationFrom0_13_1(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("upgrade"),
 				ConfigVariables: config.Variables{
 					"space_id": config.StringVariable(spaceID),
@@ -442,13 +440,14 @@ func testAccCheckIntegrationInstalled(pkgName, pkgVersion string) resource.TestC
 // Terraform removes the resource from state on destroy but leaves the integration
 // package installed in Fleet.
 func TestAccResourceIntegrationSkipDestroy(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionIntegration, versionutils.FlavorAny)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			// Step 1: Install tcp@1.16.0 with skip_destroy = true; assert attributes.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_skip_destroy"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_skip_destroy", "name", "tcp"),
@@ -461,7 +460,6 @@ func TestAccResourceIntegrationSkipDestroy(t *testing.T) {
 			// package is still installed via the Fleet API.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty_config"),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckIntegrationInstalled("tcp", "1.16.0"),
@@ -471,7 +469,6 @@ func TestAccResourceIntegrationSkipDestroy(t *testing.T) {
 			// final destroy properly uninstalls the package on cleanup.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("without_skip_destroy"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_skip_destroy", "name", "tcp"),
@@ -547,6 +544,8 @@ func preinstallTCPDefault(t *testing.T) func() {
 // that each space-scoped resource triggers the kibana_assets endpoint rather
 // than a full global install.
 func TestAccResourceIntegration_MultiSpaceInstall(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, integration.MinVersionSpaceAwareIntegration, versionutils.FlavorAny)
+
 	spaceA := "test_a_" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	spaceB := "test_b_" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
@@ -554,7 +553,6 @@ func TestAccResourceIntegration_MultiSpaceInstall(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 skipUnlessSpaceAwareIntegration,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"space_a": config.StringVariable(spaceA),
@@ -582,6 +580,8 @@ func TestAccResourceIntegration_MultiSpaceInstall(t *testing.T) {
 // space B. When the space B resource is removed, the package must remain
 // installed in space A.
 func TestAccResourceIntegration_MultiSpaceDelete(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, integration.MinVersionSpaceAwareIntegration, versionutils.FlavorAny)
+
 	spaceA := "test_a_" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	spaceB := "test_b_" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
@@ -589,7 +589,6 @@ func TestAccResourceIntegration_MultiSpaceDelete(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 skipUnlessSpaceAwareIntegration,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"space_a": config.StringVariable(spaceA),
@@ -603,7 +602,6 @@ func TestAccResourceIntegration_MultiSpaceDelete(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 skipUnlessSpaceAwareIntegration,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("space_a_only"),
 				ConfigVariables: config.Variables{
 					"space_a": config.StringVariable(spaceA),
@@ -625,13 +623,14 @@ func TestAccResourceIntegration_MultiSpaceDelete(t *testing.T) {
 // package is pre-installed in the default space so that removing assets from
 // the target space does not remove the global installation record.
 func TestAccResourceIntegration_SpaceAwareDrift(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, integration.MinVersionSpaceAwareIntegration, versionutils.FlavorAny)
+
 	spaceA := "test_a_" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 skipUnlessSpaceAwareIntegration,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"space_a": config.StringVariable(spaceA),
@@ -644,7 +643,6 @@ func TestAccResourceIntegration_SpaceAwareDrift(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 skipUnlessSpaceAwareIntegration,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"space_a": config.StringVariable(spaceA),
@@ -667,6 +665,8 @@ func TestAccResourceIntegration_SpaceAwareDrift(t *testing.T) {
 // still references it. Regression test for
 // https://github.com/elastic/terraform-provider-elasticstack/issues/1999.
 func TestAccResourceIntegration_destroyWithILMCrossDependency(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionIntegration, versionutils.FlavorAny)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
@@ -674,7 +674,6 @@ func TestAccResourceIntegration_destroyWithILMCrossDependency(t *testing.T) {
 			// attach it to the Fleet-managed index template.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "name", "system"),
@@ -686,7 +685,6 @@ func TestAccResourceIntegration_destroyWithILMCrossDependency(t *testing.T) {
 			// index that references the ILM policy via the Fleet-managed template.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				PreConfig: func() {
 					notSupported, err := versionutils.CheckIfVersionIsUnsupported(minVersionIntegration)()
@@ -713,7 +711,6 @@ func TestAccResourceIntegration_destroyWithILMCrossDependency(t *testing.T) {
 			// Step 3: Destroy the ILM policy (force_destroy clears references first).
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ResourceName:             "elasticstack_elasticsearch_index_lifecycle.test",
 				Destroy:                  true,
@@ -725,7 +722,6 @@ func TestAccResourceIntegration_destroyWithILMCrossDependency(t *testing.T) {
 			// the end of the test case can clean up the remaining resources.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				PreConfig: func() {
 					notSupported, err := versionutils.CheckIfVersionIsUnsupported(minVersionIntegration)()

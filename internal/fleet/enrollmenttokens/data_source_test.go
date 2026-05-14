@@ -40,6 +40,8 @@ var minVersionEnrollmentTokens = version.Must(version.NewVersion("8.6.0"))
 var minVersionEnrollmentTokensSpaceID = version.Must(version.NewVersion("9.1.0"))
 
 func TestAccDataSourceEnrollmentTokens(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionEnrollmentTokens, versionutils.FlavorAny)
+
 	policyID := uuid.New().String()
 
 	resource.Test(t, resource.TestCase{
@@ -48,7 +50,6 @@ func TestAccDataSourceEnrollmentTokens(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionEnrollmentTokens),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables: config.Variables{
 					"policy_id": config.StringVariable(policyID),
@@ -71,13 +72,14 @@ func TestAccDataSourceEnrollmentTokens(t *testing.T) {
 }
 
 func TestAccDataSourceEnrollmentTokensNoPolicyID(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionEnrollmentTokens, versionutils.FlavorAny)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceAgentPolicyDestroy,
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionEnrollmentTokens),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_fleet_enrollment_tokens.all", "id"),
@@ -93,6 +95,8 @@ func TestAccDataSourceEnrollmentTokensNoPolicyID(t *testing.T) {
 }
 
 func TestAccDataSourceEnrollmentTokensSpaceID(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionEnrollmentTokensSpaceID, versionutils.FlavorAny)
+
 	spaceID := "test-" + sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
 	spaceName := "Test Space " + sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
 
@@ -102,7 +106,6 @@ func TestAccDataSourceEnrollmentTokensSpaceID(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionEnrollmentTokensSpaceID),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("space_id"),
 				ConfigVariables: config.Variables{
 					"space_id":   config.StringVariable(spaceID),

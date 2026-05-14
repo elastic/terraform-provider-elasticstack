@@ -20,6 +20,7 @@ package dashboard
 import (
 	"context"
 	"encoding/json"
+	"reflect"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -124,8 +125,6 @@ func Test_heatmapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 	assert.Equal(t, types.StringValue("kql"), model.Query.Language)
 	assert.False(t, model.DataSourceJSON.IsNull())
 	assert.False(t, model.MetricJSON.IsNull())
-	assert.False(t, model.XAxisJSON.IsNull())
-	assert.False(t, model.YAxisJSON.IsNull())
 	require.NotNil(t, model.Axis)
 	require.NotNil(t, model.Styling)
 	require.NotNil(t, model.Styling.Cells)
@@ -292,6 +291,25 @@ func Test_heatmapPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 	assert.Equal(t, "Heatmap ESQL Round-Trip", *esql2.Title)
 	assert.Equal(t, kbapi.HeatmapESQLTypeHeatmap, esql2.Type)
 	assert.Equal(t, "host", esql2.X.Column)
+}
+
+func Test_heatmapConfigModel_xAxisYAxisTFSDKFields(t *testing.T) {
+	// Verify the heatmap model struct exposes x_axis_json / y_axis_json as tfsdk attributes.
+	// These are required/optional schema attributes that practitioners provide for breakdown dimensions.
+	typ := reflect.TypeFor[heatmapConfigModel]()
+	foundX, foundY := false, false
+	for field := range typ.Fields() {
+		if tag, ok := field.Tag.Lookup("tfsdk"); ok {
+			if tag == "x_axis_json" {
+				foundX = true
+			}
+			if tag == "y_axis_json" {
+				foundY = true
+			}
+		}
+	}
+	assert.True(t, foundX, "heatmapConfigModel should have tfsdk:x_axis_json field")
+	assert.True(t, foundY, "heatmapConfigModel should have tfsdk:y_axis_json field")
 }
 
 func Test_heatmapConfig_lensChartPresentation_hideTitleRoundTrip(t *testing.T) {

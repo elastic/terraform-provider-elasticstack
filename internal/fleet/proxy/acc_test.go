@@ -38,6 +38,8 @@ import (
 var minFleetProxyVersion = version.Must(version.NewVersion("8.7.1"))
 
 func TestAccResourceFleetProxy(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minFleetProxyVersion, versionutils.FlavorAny)
+
 	proxyName := sdkacctest.RandString(22)
 
 	resource.Test(t, resource.TestCase{
@@ -45,7 +47,6 @@ func TestAccResourceFleetProxy(t *testing.T) {
 		CheckDestroy: checkResourceFleetProxyDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minFleetProxyVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -62,7 +63,6 @@ func TestAccResourceFleetProxy(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minFleetProxyVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
@@ -76,7 +76,6 @@ func TestAccResourceFleetProxy(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minFleetProxyVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("change_headers"),
 				ConfigVariables: config.Variables{
@@ -90,7 +89,6 @@ func TestAccResourceFleetProxy(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minFleetProxyVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("clear_headers"),
 				ConfigVariables: config.Variables{
@@ -102,7 +100,6 @@ func TestAccResourceFleetProxy(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minFleetProxyVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("clear_headers"),
 				ConfigVariables: config.Variables{
@@ -127,6 +124,8 @@ func TestAccResourceFleetProxy(t *testing.T) {
 // "set to null", so the update path must not unconditionally include cert
 // values from prior state.
 func TestAccResourceFleetProxy_TLS(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minFleetProxyVersion, versionutils.FlavorAny)
+
 	proxyName := sdkacctest.RandString(22)
 
 	resource.Test(t, resource.TestCase{
@@ -134,7 +133,6 @@ func TestAccResourceFleetProxy_TLS(t *testing.T) {
 		CheckDestroy: checkResourceFleetProxyDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minFleetProxyVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_certs"),
 				ConfigVariables: config.Variables{
@@ -147,7 +145,6 @@ func TestAccResourceFleetProxy_TLS(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minFleetProxyVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("clear_certs"),
 				ConfigVariables: config.Variables{
@@ -170,6 +167,8 @@ func TestAccResourceFleetProxy_TLS(t *testing.T) {
 // capture/compare helpers assert the replacement actually happened rather
 // than just an in-place update on the same record.
 func TestAccResourceFleetProxy_ExplicitProxyID(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minFleetProxyVersion, versionutils.FlavorAny)
+
 	suffix := sdkacctest.RandString(8)
 	firstID := fmt.Sprintf("tf-acc-proxy-%s", suffix)
 	secondID := fmt.Sprintf("tf-acc-proxy-%s-renamed", suffix)
@@ -180,7 +179,6 @@ func TestAccResourceFleetProxy_ExplicitProxyID(t *testing.T) {
 		CheckDestroy: checkResourceFleetProxyDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minFleetProxyVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_proxy_id"),
 				ConfigVariables: config.Variables{
@@ -194,7 +192,6 @@ func TestAccResourceFleetProxy_ExplicitProxyID(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minFleetProxyVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_proxy_id"),
 				ConfigVariables: config.Variables{
@@ -217,6 +214,8 @@ func TestAccResourceFleetProxy_ExplicitProxyID(t *testing.T) {
 // create would land in `default` (succeeding) but the destroy check would
 // then find a leftover record in the non-default space.
 func TestAccResourceFleetProxy_NonDefaultSpace(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minFleetProxyVersion, versionutils.FlavorAny)
+
 	suffix := sdkacctest.RandString(8)
 	spaceID := fmt.Sprintf("fleet-proxy-%s", suffix)
 
@@ -225,7 +224,6 @@ func TestAccResourceFleetProxy_NonDefaultSpace(t *testing.T) {
 		CheckDestroy: checkResourceFleetProxyDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minFleetProxyVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("non_default_space"),
 				ConfigVariables: config.Variables{

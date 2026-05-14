@@ -31,13 +31,14 @@ import (
 func TestAccResourceDashboardSloBurnRate(t *testing.T) {
 	dashboardTitle := "Test Dashboard SLO Burn Rate " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
+	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			// Create with required fields only
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("required_only"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
@@ -59,7 +60,6 @@ func TestAccResourceDashboardSloBurnRate(t *testing.T) {
 			// Import
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("required_only"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
@@ -71,7 +71,6 @@ func TestAccResourceDashboardSloBurnRate(t *testing.T) {
 			// Re-apply with no changes — verify slo_instance_id stays null (no drift).
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("required_only"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
@@ -88,12 +87,13 @@ func TestAccResourceDashboardSloBurnRate(t *testing.T) {
 func TestAccResourceDashboardSloBurnRateWithInstanceID(t *testing.T) {
 	dashboardTitle := "Test Dashboard SLO Burn Rate Instance " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
+	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_instance_id"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
@@ -110,7 +110,6 @@ func TestAccResourceDashboardSloBurnRateWithInstanceID(t *testing.T) {
 			// Import
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_instance_id"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
@@ -126,12 +125,13 @@ func TestAccResourceDashboardSloBurnRateWithInstanceID(t *testing.T) {
 func TestAccResourceDashboardSloBurnRateWithDrilldowns(t *testing.T) {
 	dashboardTitle := "Test Dashboard SLO Burn Rate Drilldowns " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
+	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_drilldowns"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
@@ -156,13 +156,14 @@ func TestAccResourceDashboardSloBurnRateWithDrilldowns(t *testing.T) {
 func TestAccResourceDashboardSloBurnRateDisplayOptions_with_display_options(t *testing.T) {
 	dashboardTitle := "Test Dashboard SLO Burn Rate Display " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
+	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			// Create with display options: hide_title=true, hide_border=false, duration="5m" (minutes unit)
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_display_options"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
@@ -187,13 +188,14 @@ func TestAccResourceDashboardSloBurnRateDisplayOptions_with_display_options(t *t
 func TestAccResourceDashboardSloBurnRateDisplayOptions_display_options_updated(t *testing.T) {
 	dashboardTitle := "Test Dashboard SLO Burn Rate Display " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
+	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			// Create with display options first, then update: change duration, flip hide_title/hide_border, remove title/description
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_display_options"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
@@ -201,7 +203,6 @@ func TestAccResourceDashboardSloBurnRateDisplayOptions_display_options_updated(t
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("display_options_updated"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
@@ -220,12 +221,13 @@ func TestAccResourceDashboardSloBurnRateDisplayOptions_display_options_updated(t
 
 // Invalid duration is rejected at plan time.
 func TestAccResourceDashboardSloBurnRateInvalidDuration(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("invalid_duration"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable("unused"),
@@ -237,12 +239,13 @@ func TestAccResourceDashboardSloBurnRateInvalidDuration(t *testing.T) {
 }
 
 func TestAccResourceDashboardSloBurnRateInvalidConfig(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("invalid_panel_type"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable("unused"),
@@ -251,7 +254,6 @@ func TestAccResourceDashboardSloBurnRateInvalidConfig(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("invalid_config_json"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable("unused"),
@@ -260,7 +262,6 @@ func TestAccResourceDashboardSloBurnRateInvalidConfig(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("missing_config"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable("unused"),

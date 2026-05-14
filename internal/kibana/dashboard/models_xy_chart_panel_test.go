@@ -745,7 +745,82 @@ func minimalXYChartConfigForPresentationTests() *xyChartConfigModel {
 	}
 }
 
-func Test_xyChartConfigModel_lensChartPresentation_timeRange_inheritanceAndMode(t *testing.T) {
+func Test_xyChartConfigModel_esqlMode_queryNil(t *testing.T) {
+	// ES|QL XY panels should have nil query; query is optional on the schema.
+	// Build a model in ES|QL mode (all data layers have esql data_source) and verify
+	// that toAPIESQL emits a valid payload without requiring query.
+	m := &xyChartConfigModel{
+		Title: types.StringValue("ESQL XY Chart"),
+		Axis: &xyAxisModel{
+			X: &xyAxisConfigModel{},
+			Y: &yAxisConfigModel{},
+		},
+		Decorations: &xyDecorationsModel{},
+		Fitting:     &xyFittingModel{Type: types.StringValue("none")},
+		Layers: []xyLayerModel{
+			{
+				Type: types.StringValue("area"),
+				DataLayer: &dataLayerModel{
+					DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"esql","query":"FROM logs-* | LIMIT 10"}`),
+					Y: []yMetricModel{
+						{ConfigJSON: jsontypes.NewNormalizedValue(`{"operation":"count","axis":"left"}`)},
+					},
+				},
+			},
+		},
+		Legend: &xyLegendModel{
+			Inside:     types.BoolValue(false),
+			Visibility: types.StringValue("visible"),
+		},
+		Query: nil, // ES|QL mode: no query
+	}
+
+	// Verify ES|QL mode detection
+	assert.True(t, m.xyUsesESQL())
+
+	// Build the ES|QL API payload
+	esqlChart, diags := m.toAPIESQL(nil)
+	require.False(t, diags.HasError(), "diags: %v", diags)
+	assert.Equal(t, kbapi.XyChartESQLTypeXy, esqlChart.Type)
+	assert.Len(t, esqlChart.Layers, 1)
+}
+
+func Test_xyChartConfigModel_optionalQuery_noESQL_nilQueryNoError(t *testing.T) {
+	// Non-ES|QL XY panels with nil query should NOT error; query is optional in the schema.
+	// The API payload will simply omit the query field.
+	m := &xyChartConfigModel{
+		Title: types.StringValue("Non-ESQL XY Chart no query"),
+		Axis: &xyAxisModel{
+			X: &xyAxisConfigModel{},
+			Y: &yAxisConfigModel{},
+		},
+		Decorations: &xyDecorationsModel{},
+		Fitting:     &xyFittingModel{Type: types.StringValue("none")},
+		Layers: []xyLayerModel{
+			{
+				Type: types.StringValue("area"),
+				DataLayer: &dataLayerModel{
+					DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"dataView","id":"logs-*"}`),
+					Y: []yMetricModel{
+						{ConfigJSON: jsontypes.NewNormalizedValue(`{"operation":"count","axis":"left"}`)},
+					},
+				},
+			},
+		},
+		Legend: &xyLegendModel{
+			Inside:     types.BoolValue(false),
+			Visibility: types.StringValue("visible"),
+		},
+		Query: nil, // Query is now optional
+	}
+
+	assert.False(t, m.xyUsesESQL())
+
+	_, diags := m.toAPINoESQL(nil)
+	assert.False(t, diags.HasError(), "expected no error when non-ES|QL XY chart has no query; query is optional: %v", diags)
+}
+
+func Test_xyChartConfig_lensChartPresentation_timeRange_inheritanceAndMode(t *testing.T) {
 	ctx := context.Background()
 
 	dash := &dashboardModel{

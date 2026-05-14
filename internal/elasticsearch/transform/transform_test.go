@@ -143,13 +143,14 @@ func TestAccResourceTransformWithAdvancedSettings(t *testing.T) {
 	transformName := sdkacctest.RandStringFromCharSet(18, sdkacctest.CharSetAlphaNum)
 	pipelineName := sdkacctest.RandStringFromCharSet(20, sdkacctest.CharSetAlphaNum)
 
+	versionutils.SkipIfUnsupported(t, minSupportedAdvancedSettingsVersion, versionutils.FlavorAny)
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceTransformDestroy,
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedAdvancedSettingsVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"transform_name": config.StringVariable(transformName),
@@ -208,13 +209,15 @@ func TestAccResourceTransformNoDefer(t *testing.T) {
 
 func TestAccResourceTransformWithAliases(t *testing.T) {
 	transformName := sdkacctest.RandStringFromCharSet(18, sdkacctest.CharSetAlphaNum)
+
+	versionutils.SkipIfUnsupported(t, minSupportedDestAliasesVersion, versionutils.FlavorAny)
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceTransformDestroy,
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedDestAliasesVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"transform_name": config.StringVariable(transformName),
@@ -230,7 +233,6 @@ func TestAccResourceTransformWithAliases(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedDestAliasesVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"transform_name": config.StringVariable(transformName),

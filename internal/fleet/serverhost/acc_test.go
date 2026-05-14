@@ -44,6 +44,8 @@ var (
 var testAccResourceFleetServerHostFromSDKConfig string
 
 func TestAccResourceFleetServerHostFromSDK(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionFleetServerHost, versionutils.FlavorAny)
+
 	policyName := sdkacctest.RandString(22)
 	hostID := fmt.Sprintf("fleet-server-host-%s", sdkacctest.RandString(12))
 
@@ -58,8 +60,7 @@ func TestAccResourceFleetServerHostFromSDK(t *testing.T) {
 						VersionConstraint: "0.11.7",
 					},
 				},
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionFleetServerHost),
-				Config:   testAccResourceFleetServerHostFromSDKConfig,
+				Config: testAccResourceFleetServerHostFromSDKConfig,
 				ConfigVariables: config.Variables{
 					"name":    config.StringVariable(fmt.Sprintf("FleetServerHost %s", policyName)),
 					"host_id": config.StringVariable(hostID),
@@ -73,7 +74,6 @@ func TestAccResourceFleetServerHostFromSDK(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionFleetServerHost),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"name":    config.StringVariable(fmt.Sprintf("FleetServerHost %s", policyName)),
@@ -91,6 +91,8 @@ func TestAccResourceFleetServerHostFromSDK(t *testing.T) {
 }
 
 func TestAccResourceFleetServerHost(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionFleetServerHost, versionutils.FlavorAny)
+
 	policyName := sdkacctest.RandString(22)
 	hostID := fmt.Sprintf("fleet-server-host-%s", sdkacctest.RandString(12))
 
@@ -100,7 +102,6 @@ func TestAccResourceFleetServerHost(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionFleetServerHost),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"name":    config.StringVariable(fmt.Sprintf("FleetServerHost %s", policyName)),
@@ -115,7 +116,6 @@ func TestAccResourceFleetServerHost(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionFleetServerHost),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"name":    config.StringVariable(fmt.Sprintf("Updated FleetServerHost %s", policyName)),
@@ -132,7 +132,6 @@ func TestAccResourceFleetServerHost(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionFleetServerHost),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"name":    config.StringVariable(fmt.Sprintf("Updated FleetServerHost %s", policyName)),
@@ -147,6 +146,8 @@ func TestAccResourceFleetServerHost(t *testing.T) {
 }
 
 func TestAccResourceFleetServerHost_computedID(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionFleetServerHost, versionutils.FlavorAny)
+
 	hostName := sdkacctest.RandString(22)
 
 	resource.Test(t, resource.TestCase{
@@ -155,7 +156,6 @@ func TestAccResourceFleetServerHost_computedID(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionFleetServerHost),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"name": config.StringVariable(fmt.Sprintf("FleetServerHost %s", hostName)),
@@ -170,6 +170,8 @@ func TestAccResourceFleetServerHost_computedID(t *testing.T) {
 }
 
 func TestAccResourceFleetServerHost_importFromSpace(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionFleetServerHostSpaces, versionutils.FlavorAny)
+
 	hostName := sdkacctest.RandString(22)
 	spaceName := sdkacctest.RandString(22)
 	spaceID := fmt.Sprintf("fleet-server-host-test-%s", spaceName)
@@ -182,7 +184,6 @@ func TestAccResourceFleetServerHost_importFromSpace(t *testing.T) {
 			// Create a server host in a space.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionFleetServerHostSpaces),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"name":       config.StringVariable(fmt.Sprintf("FleetServerHost %s", hostName)),
@@ -199,7 +200,6 @@ func TestAccResourceFleetServerHost_importFromSpace(t *testing.T) {
 			// Scenario 1: composite ID import (<space>/<host_id>) — space_ids is populated.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionFleetServerHostSpaces),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"name":       config.StringVariable(fmt.Sprintf("FleetServerHost %s", hostName)),
@@ -227,7 +227,6 @@ func TestAccResourceFleetServerHost_importFromSpace(t *testing.T) {
 			// Scenario 2: plain ID import (no space prefix) — space_ids is NOT set.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionFleetServerHostSpaces),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"name":       config.StringVariable(fmt.Sprintf("FleetServerHost %s", hostName)),

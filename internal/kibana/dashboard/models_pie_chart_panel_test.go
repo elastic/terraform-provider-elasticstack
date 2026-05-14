@@ -74,7 +74,7 @@ func Test_pieChartPanelConfigConverter_populateFromAttributes_buildAttributes_ro
 	require.NotNil(t, visBv.PieChartConfig.Legend)
 	assert.Equal(t, "auto", visBv.PieChartConfig.Legend.Size.ValueString())
 	assert.True(t, visBv.PieChartConfig.Legend.Nested.ValueBool())
-	assert.InEpsilon(t, float64(3), visBv.PieChartConfig.Legend.TruncateAfterLine.ValueFloat64(), 0.001)
+	assert.Equal(t, int64(3), visBv.PieChartConfig.Legend.TruncateAfterLine.ValueInt64())
 	assert.Equal(t, string(visibility), visBv.PieChartConfig.Legend.Visible.ValueString())
 
 	attrs2, diags := converter.buildAttributes(&visBv.lensByValueChartBlocks, nil)
@@ -148,7 +148,7 @@ func Test_pieChartConfigModel_fromAPI_toAPI_PieNoESQL(t *testing.T) {
 	require.NotNil(t, model.Legend)
 	assert.Equal(t, "auto", model.Legend.Size.ValueString())
 	assert.True(t, model.Legend.Nested.ValueBool())
-	assert.InEpsilon(t, float64(4), model.Legend.TruncateAfterLine.ValueFloat64(), 0.001)
+	assert.Equal(t, int64(4), model.Legend.TruncateAfterLine.ValueInt64())
 	assert.Equal(t, string(visibility), model.Legend.Visible.ValueString())
 
 	// Test toAPI
@@ -317,6 +317,71 @@ func Test_pieChartConfigModel_toAPI_legendOmitted_PieESQL(t *testing.T) {
 	esql, err := attrs.AsPieESQL()
 	require.NoError(t, err)
 	assert.Equal(t, kbapi.LegendSizeAuto, esql.Legend.Size)
+}
+
+func Test_pieChartConfigModel_toAPI_dataSourceJSONRequired(t *testing.T) {
+	// data_source_json is Required on pie_chart_config; null should produce an error.
+	model := &pieChartConfigModel{
+		Title:          types.StringValue("Pie without data source"),
+		DataSourceJSON: jsontypes.NewNormalizedNull(),
+		Query:          &filterSimpleModel{Expression: types.StringValue("*"), Language: types.StringValue("kql")},
+		Metrics: []pieMetricModel{
+			{Config: customtypes.NewJSONWithDefaultsValue[map[string]any](`{"operation":"count"}`, populatePieChartMetricDefaults)},
+		},
+		Legend: &partitionLegendModel{
+			Size:    types.StringValue("auto"),
+			Visible: types.StringValue("visible"),
+		},
+	}
+
+	_, diags := model.toAPI(nil)
+	require.True(t, diags.HasError())
+	var found bool
+	for _, d := range diags.Errors() {
+		if d.Summary() == "Missing dataset" {
+			found = true
+		}
+	}
+	assert.True(t, found, "expected 'Missing dataset' error for null data_source_json, got: %v", diags)
+}
+
+func Test_pieChartConfigModel_config_json_metricRoundTrip(t *testing.T) {
+	// Verifies that pie metrics use config_json (not config) for round-trip.
+	model := &pieChartConfigModel{
+		Title:          types.StringValue("Pie config_json test"),
+		DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"dataView","id":"logs-*"}`),
+		Query:          &filterSimpleModel{Expression: types.StringValue("*"), Language: types.StringValue("kql")},
+		Metrics: []pieMetricModel{
+			{Config: customtypes.NewJSONWithDefaultsValue[map[string]any](`{"operation":"count"}`, populatePieChartMetricDefaults)},
+		},
+		GroupBy: []pieGroupByModel{
+			{Config: customtypes.NewJSONWithDefaultsValue(`{"operation":"terms","field":"host.name"}`, populateLensGroupByDefaults)},
+		},
+		Legend: &partitionLegendModel{
+			Size:    types.StringValue("auto"),
+			Visible: types.StringValue("visible"),
+		},
+	}
+
+	attrs, diags := model.toAPI(nil)
+	require.False(t, diags.HasError())
+
+	noESQL, err := attrs.AsPieNoESQL()
+	require.NoError(t, err)
+	require.Len(t, noESQL.Metrics, 1)
+	require.NotNil(t, noESQL.GroupBy)
+	require.Len(t, *noESQL.GroupBy, 1)
+
+	// Round-trip back
+	model2 := &pieChartConfigModel{}
+	diags = model2.fromAPINoESQL(context.Background(), nil, nil, noESQL)
+	require.False(t, diags.HasError())
+	require.Len(t, model2.Metrics, 1)
+	assert.False(t, model2.Metrics[0].Config.IsNull())
+	assert.Contains(t, model2.Metrics[0].Config.ValueString(), "count")
+	require.Len(t, model2.GroupBy, 1)
+	assert.False(t, model2.GroupBy[0].Config.IsNull())
+	assert.Contains(t, model2.GroupBy[0].Config.ValueString(), "terms")
 }
 
 func Test_pieChartConfig_lensChartPresentation_comprehensive(t *testing.T) {

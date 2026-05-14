@@ -254,8 +254,10 @@ func Test_treemapConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 
 	assert.Equal(t, types.StringValue("ESQL Treemap"), model.Title)
 	assert.False(t, model.DataSourceJSON.IsNull())
-	assert.False(t, model.GroupBy.IsNull())
-	assert.False(t, model.Metrics.IsNull())
+	assert.True(t, model.GroupBy.IsNull())
+	assert.True(t, model.Metrics.IsNull())
+	assert.NotEmpty(t, model.EsqlMetrics)
+	assert.NotEmpty(t, model.EsqlGroupBy)
 	assert.Nil(t, model.Query)
 
 	lensAttrs, diags := model.toAPI(nil)
@@ -348,6 +350,68 @@ func Test_treemapConfigModel_toAPIESQLChartSchema(t *testing.T) {
 	require.NoError(t, json.Unmarshal(b, &out))
 	assert.Equal(t, "treemap", out["type"])
 	assert.Equal(t, "ESQL Treemap", out["title"])
+}
+
+func Test_treemapConfigModel_esqlTypedMetricsRoundTrip(t *testing.T) {
+	// Verifies esql_metrics typed nested attribute round-trips correctly.
+	apiJSON := `{
+		"type": "treemap",
+		"title": "ESQL Treemap Typed Test",
+		"description": "test",
+		"ignore_global_filters": false,
+		"sampling": 1,
+		"data_source": {"type":"esql","query":"FROM metrics-* | LIMIT 10"},
+		"legend": {"size": "small"},
+		"metrics": [{"column":"bytes","operation":"value","color":{"type":"static","color":"#54B399"},"format":{"type":"number","decimals":2}}],
+		"group_by": [{"collapse_by":"avg","column":"host.name","operation":"value","color":{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"color_code","value":"#D3DAE6"}}}]
+	}`
+	var api kbapi.TreemapESQL
+	require.NoError(t, json.Unmarshal([]byte(apiJSON), &api))
+
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+	require.NoError(t, attrs.FromTreemapESQL(api))
+
+	converter := newTreemapPanelConfigConverter()
+	visBv := visByValueModel{}
+	diags := converter.populateFromAttributes(context.Background(), nil, nil, &visBv.lensByValueChartBlocks, attrs)
+	require.False(t, diags.HasError())
+	require.NotNil(t, visBv.TreemapConfig)
+
+	// ES|QL mode: EsqlMetrics populated, Metrics/GroupBy null, Query nil
+	assert.Nil(t, visBv.TreemapConfig.Query)
+	assert.True(t, visBv.TreemapConfig.Metrics.IsNull())
+	assert.True(t, visBv.TreemapConfig.GroupBy.IsNull())
+	require.NotEmpty(t, visBv.TreemapConfig.EsqlMetrics)
+	assert.Equal(t, "bytes", visBv.TreemapConfig.EsqlMetrics[0].Column.ValueString())
+	require.NotEmpty(t, visBv.TreemapConfig.EsqlGroupBy)
+	assert.Equal(t, "host.name", visBv.TreemapConfig.EsqlGroupBy[0].Column.ValueString())
+	assert.Equal(t, "avg", visBv.TreemapConfig.EsqlGroupBy[0].CollapseBy.ValueString())
+}
+
+func Test_treemapConfigModel_truncateAfterLinesIsInt64(t *testing.T) {
+	// Verify truncate_after_lines is Int64 (not Float64) per REQ-043.
+	api := kbapi.TreemapNoESQL{
+		Type:  kbapi.TreemapNoESQLTypeTreemap,
+		Query: kbapi.FilterSimple{Expression: "x", Language: func() *kbapi.FilterSimpleLanguage { l := kbapi.FilterSimpleLanguage("kql"); return &l }()},
+		Legend: kbapi.TreemapLegend{
+			Size:               kbapi.LegendSizeM,
+			TruncateAfterLines: new(float32(5)),
+		},
+	}
+	require.NoError(t, json.Unmarshal([]byte(`{"type":"dataView","id":"x"}`), &api.DataSource))
+	var metricItem kbapi.TreemapNoESQL_Metrics_Item
+	require.NoError(t, json.Unmarshal([]byte(`{"operation":"count"}`), &metricItem))
+	api.Metrics = []kbapi.TreemapNoESQL_Metrics_Item{metricItem}
+	var groupByItem kbapi.TreemapNoESQL_GroupBy_Item
+	require.NoError(t, json.Unmarshal([]byte(`{"operation":"terms","field":"host.name","collapse_by":"avg"}`), &groupByItem))
+	groupBy := []kbapi.TreemapNoESQL_GroupBy_Item{groupByItem}
+	api.GroupBy = &groupBy
+
+	model := &treemapConfigModel{}
+	diags := model.fromAPINoESQL(context.Background(), nil, nil, api)
+	require.False(t, diags.HasError())
+	require.NotNil(t, model.Legend)
+	assert.Equal(t, int64(5), model.Legend.TruncateAfterLine.ValueInt64())
 }
 
 func Test_treemapConfig_lensChartPresentation_hideTitleRoundTrip(t *testing.T) {

@@ -217,11 +217,11 @@ type waffleConfigModel struct {
 }
 
 type waffleDSLMetric struct {
-	Config customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config"`
+	Config customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config_json"`
 }
 
 type waffleDSLGroupBy struct {
-	Config customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config"`
+	Config customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config_json"`
 }
 
 type waffleLegendModel struct {
@@ -428,7 +428,7 @@ func (m *waffleConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashboar
 					}
 					// Kibana may omit format on saved-object round-trip, leaving Format as an empty union.
 					if string(b) == jsonNullString || len(b) == 0 {
-						b = []byte(`{"type":"number"}`)
+						b = []byte(defaultNumberFormatJSON)
 					}
 					return jsontypes.NewNormalizedValue(normalizeKibanaLensNumberFormatJSONString(string(b)))
 				}(),
@@ -460,7 +460,7 @@ func (m *waffleConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashboar
 				continue
 			}
 			if string(formatBytes) == jsonNullString || len(formatBytes) == 0 {
-				formatBytes = []byte(`{"type":"number"}`)
+				formatBytes = []byte(defaultNumberFormatJSON)
 			}
 			formatStr := normalizeKibanaLensNumberFormatJSONString(string(formatBytes))
 			eg := waffleEsqlGroupBy{
@@ -815,7 +815,7 @@ func (m *waffleConfigModel) toAPIESQL(dashboard *dashboardModel) (kbapi.WaffleES
 			}
 			gb[i].Column = eg.Column.ValueString()
 			gb[i].CollapseBy = kbapi.CollapseBy(eg.CollapseBy.ValueString())
-			formatSrc := `{"type":"number"}`
+			formatSrc := defaultNumberFormatJSON
 			if typeutils.IsKnown(eg.FormatJSON) {
 				formatSrc = eg.FormatJSON.ValueString()
 			}

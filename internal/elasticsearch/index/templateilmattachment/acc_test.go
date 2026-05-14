@@ -45,17 +45,11 @@ const fleetSystemVersion = "1.18.0"
 const preservesTemplateIndexName = "logs-ilm-preserve"
 
 func TestAccResourceIndexTemplateIlmAttachment_fleet(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, templateilmattachment.MinVersion, versionutils.FlavorAny)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			acctest.PreCheck(t)
-			// Skip before installing Fleet package if version is unsupported (PreCheck runs before SkipFunc).
-			notSupported, err := versionutils.CheckIfVersionIsUnsupported(templateilmattachment.MinVersion)()
-			if err != nil {
-				t.Fatalf("checking version: %v", err)
-			}
-			if notSupported {
-				t.Skip("Elasticsearch version does not support this test")
-			}
 			// Install system package via Fleet API so it is available (avoids conflict with tcp/sysmon_linux tests).
 			client, err := clients.NewAcceptanceTestingKibanaScopedClient()
 			if err != nil {
@@ -75,7 +69,6 @@ func TestAccResourceIndexTemplateIlmAttachment_fleet(t *testing.T) {
 			// Create
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(templateilmattachment.MinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name":          config.StringVariable("test-fleet-policy-1"),
@@ -94,7 +87,6 @@ func TestAccResourceIndexTemplateIlmAttachment_fleet(t *testing.T) {
 			// Update
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(templateilmattachment.MinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name":          config.StringVariable("test-fleet-policy-2"),
@@ -110,7 +102,6 @@ func TestAccResourceIndexTemplateIlmAttachment_fleet(t *testing.T) {
 			// Update again
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(templateilmattachment.MinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name":          config.StringVariable("test-fleet-policy-3"),
@@ -126,7 +117,6 @@ func TestAccResourceIndexTemplateIlmAttachment_fleet(t *testing.T) {
 			// Import
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(templateilmattachment.MinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name":          config.StringVariable("test-fleet-policy-3"),
@@ -141,6 +131,8 @@ func TestAccResourceIndexTemplateIlmAttachment_fleet(t *testing.T) {
 }
 
 func TestAccResourceIndexTemplateIlmAttachment_connectionOverrideBasicAuth(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, templateilmattachment.MinVersion, versionutils.FlavorAny)
+
 	indexTemplate := fmt.Sprintf("logs-ilm-basic-%s", sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum))
 	policyName := fmt.Sprintf("test-ilm-basic-%s", sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum))
 	endpoint := primaryESEndpoint()
@@ -151,7 +143,6 @@ func TestAccResourceIndexTemplateIlmAttachment_connectionOverrideBasicAuth(t *te
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(templateilmattachment.MinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"endpoint":       config.StringVariable(endpoint),
@@ -179,6 +170,8 @@ func TestAccResourceIndexTemplateIlmAttachment_connectionOverrideBasicAuth(t *te
 }
 
 func TestAccResourceIndexTemplateIlmAttachment_connectionOverrideAPIKey(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, templateilmattachment.MinVersion, versionutils.FlavorAny)
+
 	indexTemplate := fmt.Sprintf("logs-ilm-apikey-%s", sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum))
 	policyName := fmt.Sprintf("test-ilm-apikey-%s", sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum))
 	endpoint := primaryESEndpoint()
@@ -189,7 +182,6 @@ func TestAccResourceIndexTemplateIlmAttachment_connectionOverrideAPIKey(t *testi
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(templateilmattachment.MinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"endpoint":       config.StringVariable(endpoint),
@@ -213,6 +205,8 @@ func TestAccResourceIndexTemplateIlmAttachment_connectionOverrideAPIKey(t *testi
 }
 
 func TestAccResourceIndexTemplateIlmAttachment_connectionOverrideBearerToken(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, templateilmattachment.MinVersion, versionutils.FlavorAny)
+
 	indexTemplate := fmt.Sprintf("logs-ilm-bearer-%s", sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum))
 	policyName := fmt.Sprintf("test-ilm-bearer-%s", sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum))
 	endpoint := primaryESEndpoint()
@@ -227,7 +221,6 @@ func TestAccResourceIndexTemplateIlmAttachment_connectionOverrideBearerToken(t *
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(templateilmattachment.MinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"bearer_token":   config.StringVariable(bearerToken),
@@ -267,23 +260,17 @@ func TestAccResourceIndexTemplateIlmAttachment_connectionValidationConflictingAu
 // the template in place. PreCheck creates the template with index.number_of_shards; our resource
 // adds ILM; after destroy the template must still exist without the ILM setting.
 func TestAccResourceIndexTemplateIlmAttachment_preservesTemplateOnDestroy(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, templateilmattachment.MinVersion, versionutils.FlavorAny)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			acctest.PreCheck(t)
-			notSupported, err := versionutils.CheckIfVersionIsUnsupported(templateilmattachment.MinVersion)()
-			if err != nil {
-				t.Fatalf("checking version: %v", err)
-			}
-			if notSupported {
-				t.Skip("Elasticsearch version does not support this test")
-			}
 			createPreservesTestComponentTemplate(t)
 		},
 		CheckDestroy: checkPreservesTemplateDestroy,
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(templateilmattachment.MinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"index_template": config.StringVariable(preservesTemplateIndexName),

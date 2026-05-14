@@ -74,17 +74,19 @@ func CreatePackagePolicy(ctx context.Context, client *Client, spaceID string, re
 		Format: new(kbapi.PostFleetPackagePoliciesParamsFormatSimplified),
 	}
 
-	resp, err := client.API.PostFleetPackagePoliciesWithResponse(ctx, &params, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
+	return kibanautil.ConflictRetry(ctx, kibanautil.ConflictMaxAttempts, func() (*kbapi.PackagePolicy, int, diag.Diagnostics) {
+		resp, err := client.API.PostFleetPackagePoliciesWithResponse(ctx, &params, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+		if err != nil {
+			return nil, 0, diagutil.FrameworkDiagFromError(err)
+		}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return &resp.JSON200.Item, nil
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+		switch resp.StatusCode() {
+		case http.StatusOK:
+			return &resp.JSON200.Item, resp.StatusCode(), nil
+		default:
+			return nil, resp.StatusCode(), diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
+		}
+	})
 }
 
 // CreateDefendPackagePolicy creates a new Elastic Defend package policy using
@@ -96,17 +98,19 @@ func CreateDefendPackagePolicy(ctx context.Context, client *Client, spaceID stri
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	resp, err := client.API.PostFleetPackagePoliciesWithResponse(ctx, nil, unionReq, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
+	return kibanautil.ConflictRetry(ctx, kibanautil.ConflictMaxAttempts, func() (*kbapi.PackagePolicy, int, diag.Diagnostics) {
+		resp, err := client.API.PostFleetPackagePoliciesWithResponse(ctx, nil, unionReq, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+		if err != nil {
+			return nil, 0, diagutil.FrameworkDiagFromError(err)
+		}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return &resp.JSON200.Item, nil
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+		switch resp.StatusCode() {
+		case http.StatusOK:
+			return &resp.JSON200.Item, resp.StatusCode(), nil
+		default:
+			return nil, resp.StatusCode(), diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
+		}
+	})
 }
 
 // UpdatePackagePolicy updates an existing package policy.
@@ -115,17 +119,19 @@ func UpdatePackagePolicy(ctx context.Context, client *Client, id string, spaceID
 		Format: new(kbapi.Simplified),
 	}
 
-	resp, err := client.API.PutFleetPackagePoliciesPackagepolicyidWithResponse(ctx, id, &params, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
+	return kibanautil.ConflictRetry(ctx, kibanautil.ConflictMaxAttempts, func() (*kbapi.PackagePolicy, int, diag.Diagnostics) {
+		resp, err := client.API.PutFleetPackagePoliciesPackagepolicyidWithResponse(ctx, id, &params, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+		if err != nil {
+			return nil, 0, diagutil.FrameworkDiagFromError(err)
+		}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return &resp.JSON200.Item, nil
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+		switch resp.StatusCode() {
+		case http.StatusOK:
+			return &resp.JSON200.Item, resp.StatusCode(), nil
+		default:
+			return nil, resp.StatusCode(), diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
+		}
+	})
 }
 
 // UpdateDefendPackagePolicy updates an existing Elastic Defend package policy
@@ -138,17 +144,19 @@ func UpdateDefendPackagePolicy(ctx context.Context, client *Client, id string, s
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	resp, err := client.API.PutFleetPackagePoliciesPackagepolicyidWithResponse(ctx, id, nil, unionReq, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
+	return kibanautil.ConflictRetry(ctx, kibanautil.ConflictMaxAttempts, func() (*kbapi.PackagePolicy, int, diag.Diagnostics) {
+		resp, err := client.API.PutFleetPackagePoliciesPackagepolicyidWithResponse(ctx, id, nil, unionReq, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+		if err != nil {
+			return nil, 0, diagutil.FrameworkDiagFromError(err)
+		}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return &resp.JSON200.Item, nil
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+		switch resp.StatusCode() {
+		case http.StatusOK:
+			return &resp.JSON200.Item, resp.StatusCode(), nil
+		default:
+			return nil, resp.StatusCode(), diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
+		}
+	})
 }
 
 // DeletePackagePolicy deletes an existing package policy.
@@ -157,10 +165,12 @@ func DeletePackagePolicy(ctx context.Context, client *Client, id string, spaceID
 		Force: &force,
 	}
 
-	resp, err := client.API.DeleteFleetPackagePoliciesPackagepolicyidWithResponse(ctx, id, &params, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	return handleDeleteResponse(resp.StatusCode(), resp.Body)
+	_, diags := kibanautil.ConflictRetry(ctx, kibanautil.ConflictMaxAttempts, func() (struct{}, int, diag.Diagnostics) {
+		resp, err := client.API.DeleteFleetPackagePoliciesPackagepolicyidWithResponse(ctx, id, &params, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+		if err != nil {
+			return struct{}{}, 0, diagutil.FrameworkDiagFromError(err)
+		}
+		return struct{}{}, resp.StatusCode(), handleDeleteResponse(resp.StatusCode(), resp.Body)
+	})
+	return diags
 }

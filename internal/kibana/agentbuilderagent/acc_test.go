@@ -43,6 +43,8 @@ var (
 )
 
 func TestAccResourceAgentBuilderAgent(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderAPIVersion, versionutils.FlavorAny)
+
 	agentID := "test-agent-" + uuid.New().String()[:8]
 	resourceID := testResourceID
 
@@ -50,7 +52,6 @@ func TestAccResourceAgentBuilderAgent(t *testing.T) {
 		PreCheck: func() { acctest.PreCheckWithWorkflowsEnabled(t, minKibanaAgentBuilderAPIVersion) },
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -58,7 +59,7 @@ func TestAccResourceAgentBuilderAgent(t *testing.T) {
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceID, "agent_id", agentID),
-					resource.TestCheckResourceAttrSet(resourceID, "id"),
+					resource.TestCheckResourceAttr(resourceID, "id", "default/"+agentID),
 					resource.TestCheckResourceAttr(resourceID, "name", "Test Agent"),
 					resource.TestCheckResourceAttr(resourceID, "description", "A test agent for acceptance testing"),
 					resource.TestCheckResourceAttr(resourceID, "labels.#", "2"),
@@ -66,11 +67,10 @@ func TestAccResourceAgentBuilderAgent(t *testing.T) {
 					resource.TestCheckTypeSetElemAttr(resourceID, "labels.*", "agent"),
 					resource.TestCheckResourceAttr(resourceID, "tools.#", "1"),
 					resource.TestCheckTypeSetElemAttr(resourceID, "tools.*", "platform.core.index_explorer"),
-					resource.TestCheckResourceAttrSet(resourceID, "instructions"),
+					resource.TestCheckResourceAttr(resourceID, "instructions", "You are a helpful assistant that searches logs. Use the available tools to help answer questions."),
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -84,7 +84,6 @@ func TestAccResourceAgentBuilderAgent(t *testing.T) {
 				ImportStateVerify: true,
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
@@ -92,11 +91,12 @@ func TestAccResourceAgentBuilderAgent(t *testing.T) {
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceID, "agent_id", agentID),
-					resource.TestCheckResourceAttrSet(resourceID, "id"),
+					resource.TestCheckResourceAttr(resourceID, "id", "default/"+agentID),
 					resource.TestCheckResourceAttr(resourceID, "name", "Updated Test Agent"),
 					resource.TestCheckResourceAttr(resourceID, "description", "An updated test agent"),
 					resource.TestCheckResourceAttr(resourceID, "labels.#", "3"),
 					resource.TestCheckResourceAttr(resourceID, "tools.#", "2"),
+					resource.TestCheckResourceAttr(resourceID, "instructions", "You are an updated helpful assistant. Use the available tools wisely."),
 				),
 			},
 		},
@@ -104,6 +104,8 @@ func TestAccResourceAgentBuilderAgent(t *testing.T) {
 }
 
 func TestAccResourceAgentBuilderAgentSpace(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderAPIVersion, versionutils.FlavorAny)
+
 	agentID := "test-agent-space-" + uuid.New().String()[:8]
 	spaceID := fmt.Sprintf("test-space-%s", uuid.New().String()[:8])
 	resourceID := testResourceID
@@ -112,7 +114,6 @@ func TestAccResourceAgentBuilderAgentSpace(t *testing.T) {
 		PreCheck: func() { acctest.PreCheckWithWorkflowsEnabled(t, minKibanaAgentBuilderAPIVersion) },
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -127,7 +128,6 @@ func TestAccResourceAgentBuilderAgentSpace(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -146,6 +146,8 @@ func TestAccResourceAgentBuilderAgentSpace(t *testing.T) {
 }
 
 func TestAccDataSourceKibanaAgentBuilderAgent(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderAPIVersion, versionutils.FlavorAny)
+
 	agentID := "test-agent-" + uuid.New().String()[:8]
 	spaceAgentID := "test-agent-space-" + uuid.New().String()[:8]
 	spaceID := fmt.Sprintf("test-space-%s", uuid.New().String()[:8])
@@ -154,7 +156,6 @@ func TestAccDataSourceKibanaAgentBuilderAgent(t *testing.T) {
 		PreCheck: func() { acctest.PreCheckWithWorkflowsEnabled(t, minKibanaAgentBuilderAPIVersion) },
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables: config.Variables{
@@ -172,7 +173,6 @@ func TestAccDataSourceKibanaAgentBuilderAgent(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read_space"),
 				ConfigVariables: config.Variables{
@@ -200,6 +200,8 @@ func TestAccDataSourceKibanaAgentBuilderAgent(t *testing.T) {
 }
 
 func TestAccDataSourceKibanaAgentBuilderAgentKibanaConnection(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderAPIVersion, versionutils.FlavorAny)
+
 	agentID := "test-agent-kbconn-" + uuid.New().String()[:8]
 
 	checks := []resource.TestCheckFunc{
@@ -221,7 +223,6 @@ func TestAccDataSourceKibanaAgentBuilderAgentKibanaConnection(t *testing.T) {
 		},
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables: acctest.KibanaConnectionVariables(config.Variables{
@@ -234,6 +235,8 @@ func TestAccDataSourceKibanaAgentBuilderAgentKibanaConnection(t *testing.T) {
 }
 
 func TestAccDataSourceKibanaAgentBuilderAgentWithDependencies(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderAPIVersion, versionutils.FlavorAny)
+
 	agentID := "test-agent-deps-" + uuid.New().String()[:8]
 	esqlToolID := "test-esql-tool-" + uuid.New().String()[:8]
 	workflowToolID := "test-wf-tool-" + uuid.New().String()[:8]
@@ -242,7 +245,6 @@ func TestAccDataSourceKibanaAgentBuilderAgentWithDependencies(t *testing.T) {
 		PreCheck: func() { acctest.PreCheckWithWorkflowsEnabled(t, minKibanaAgentBuilderWorkflowAPIVersion) },
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables: config.Variables{
@@ -282,7 +284,69 @@ func TestAccDataSourceKibanaAgentBuilderAgentWithDependencies(t *testing.T) {
 	})
 }
 
+func TestAccResourceAgentBuilderAgentAvatar(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderAPIVersion, versionutils.FlavorAny)
+
+	agentID := "test-agent-avatar-" + uuid.New().String()[:8]
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheckWithWorkflowsEnabled(t, minKibanaAgentBuilderAPIVersion) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_avatar"),
+				ConfigVariables: config.Variables{
+					"agent_id": config.StringVariable(agentID),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(testResourceID, "avatar_color", "#BFDBFF"),
+					resource.TestCheckResourceAttr(testResourceID, "avatar_symbol", "TA"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_no_avatar"),
+				ConfigVariables: config.Variables{
+					"agent_id": config.StringVariable(agentID),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(testResourceID, "avatar_color", ""),
+					resource.TestCheckResourceAttr(testResourceID, "avatar_symbol", ""),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceAgentBuilderAgentKibanaConnection(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderAPIVersion, versionutils.FlavorAny)
+
+	agentID := "test-agent-kbconn-" + uuid.New().String()[:8]
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheckWithExplicitKibanaEndpoint(t)
+			acctest.PreCheckWithWorkflowsEnabled(t, minKibanaAgentBuilderAPIVersion)
+		},
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: acctest.KibanaConnectionVariables(config.Variables{
+					"agent_id": config.StringVariable(agentID),
+				}),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(testResourceID, "kibana_connection.#", "1"),
+					resource.TestCheckResourceAttr(testResourceID, "kibana_connection.0.insecure", "false"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccDataSourceKibanaAgentBuilderAgentWorkflowTool(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderAPIVersion, versionutils.FlavorAny)
+
 	agentID := "test-agent-wft-" + uuid.New().String()[:8]
 	workflowToolID := "test-wf-tool-" + uuid.New().String()[:8]
 
@@ -290,7 +354,6 @@ func TestAccDataSourceKibanaAgentBuilderAgentWorkflowTool(t *testing.T) {
 		PreCheck: func() { acctest.PreCheckWithWorkflowsEnabled(t, minKibanaAgentBuilderWorkflowAPIVersion) },
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables: config.Variables{

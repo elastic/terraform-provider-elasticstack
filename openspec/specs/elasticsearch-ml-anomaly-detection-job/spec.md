@@ -38,6 +38,9 @@ resource "elasticstack_elasticsearch_ml_anomaly_detection_job" "example" {
           operator   = <required, string>  # one of: gt, gte, lt, lte
           value      = <required, float64>
         }
+        scope = <optional, map of scope entries>  # map keys are analysis field names (e.g. by_field_name, over_field_name, partition_field_name); min 1 entry; no null keys; each entry has:
+          filter_id   = <required, string>  # minimum 1 char; references an existing ML filter
+          filter_type = <optional, string>  # one of: include, exclude
       }
     }
 
@@ -252,7 +255,7 @@ The `job_id` attribute SHALL be validated to be between 1 and 64 characters, con
 
 ### Requirement: analysis_config.detectors validation (REQ-024)
 
-The `analysis_config.detectors` list SHALL contain at least one element. Each detector `function` SHALL be one of the enumerated values. Each detector `exclude_frequent` SHALL be one of: `all`, `none`, `by`, `over`. Each detector `custom_rules[*].actions` value SHALL be one of: `skip_result`, `skip_model_update`. Each detector `custom_rules[*].conditions[*].applies_to` SHALL be one of: `actual`, `typical`, `diff_from_typical`, `time`. Each detector `custom_rules[*].conditions[*].operator` SHALL be one of: `gt`, `gte`, `lt`, `lte`.
+The `analysis_config.detectors` list SHALL contain at least one element. Each detector `function` SHALL be one of the enumerated values. Each detector `exclude_frequent` SHALL be one of: `all`, `none`, `by`, `over`. Each detector `custom_rules[*].actions` value SHALL be one of: `skip_result`, `skip_model_update`. Each detector `custom_rules[*].conditions[*].applies_to` SHALL be one of: `actual`, `typical`, `diff_from_typical`, `time`. Each detector `custom_rules[*].conditions[*].operator` SHALL be one of: `gt`, `gte`, `lt`, `lte`. Each detector `custom_rules[*].scope` entry SHALL have a `filter_id` that is at least 1 character. Each detector `custom_rules[*].scope[*].filter_type` SHALL be one of: `include`, `exclude`. Each detector `custom_rules` entry SHALL have either a non-empty `scope` or at least one `conditions` entry; both may be set simultaneously. When both `scope` and `conditions` are unknown at plan time, the validation SHALL be skipped (to avoid false positives).
 
 #### Scenario: Empty detectors list rejected
 
@@ -262,7 +265,7 @@ The `analysis_config.detectors` list SHALL contain at least one element. Each de
 
 ### Requirement: Mapping — config to API model (REQ-025–REQ-026)
 
-On create and update, optional fields that are null or unknown SHALL be omitted from the API request body. On create, the resource SHALL serialize `analysis_config.detectors[*].custom_rules[*].actions` as a JSON array of strings and SHALL serialize `analysis_config.detectors[*].custom_rules[*].conditions[*]` as objects containing `applies_to`, `operator`, and `value`. The `custom_settings` field SHALL be validated as a JSON string and SHALL be decoded into a `map[string]any` for the API request. When `custom_settings` is not valid JSON, the resource SHALL return an error diagnostic and SHALL not call the API.
+On create and update, optional fields that are null or unknown SHALL be omitted from the API request body. On create, the resource SHALL serialize `analysis_config.detectors[*].custom_rules[*].actions` as a JSON array of strings and SHALL serialize `analysis_config.detectors[*].custom_rules[*].conditions[*]` as objects containing `applies_to`, `operator`, and `value`. The resource SHALL serialize `analysis_config.detectors[*].custom_rules[*].scope` as a JSON object mapping analysis field names to objects containing `filter_id` (required) and `filter_type` (omitted when not configured or empty). The `custom_settings` field SHALL be validated as a JSON string and SHALL be decoded into a `map[string]any` for the API request. When `custom_settings` is not valid JSON, the resource SHALL return an error diagnostic and SHALL not call the API.
 
 #### Scenario: Invalid custom_settings JSON
 
@@ -276,6 +279,18 @@ On create and update, optional fields that are null or unknown SHALL be omitted 
 - WHEN create builds the Put Job request body
 - THEN the request SHALL include those `custom_rules` entries with their configured values
 
+#### Scenario: Custom rules with scope are sent on create
+
+- GIVEN a detector with `custom_rules` containing `scope` entries
+- WHEN create builds the Put Job request body
+- THEN the request SHALL include the `scope` map with each entry containing `filter_id` and, when configured, `filter_type`
+
+#### Scenario: Custom rules scope with omitted filter_type
+
+- GIVEN a detector with `custom_rules` containing a `scope` entry where `filter_type` is not set
+- WHEN create or update builds the API request body
+- THEN the `filter_type` field SHALL be omitted from that scope entry's JSON object
+
 ### Requirement: Mapping — API response to state (REQ-027–REQ-031)
 
 On read, the resource SHALL set the following state attributes from the Get Jobs API response:
@@ -284,7 +299,7 @@ On read, the resource SHALL set the following state attributes from the Get Jobs
 - `analysis_config.bucket_span`, `categorization_field_name`, `latency`, `model_prune_window`, `multivariate_by_fields`, and `summary_count_field_name` from the corresponding `analysis_config` API fields.
 - `analysis_config.categorization_filters` SHALL use the API values when Elasticsearch returns a non-empty list. When Elasticsearch omits the list or returns it empty, the resource SHALL preserve the prior configured value so server-side normalization into `categorization_analyzer` does not create drift.
 - `analysis_config.influencers` SHALL use the API values when Elasticsearch returns a non-empty list. When Elasticsearch omits the list or returns it empty, the resource SHALL preserve the prior configured value, including an explicit empty list.
-- `analysis_config.detectors[*]` SHALL be set from the corresponding detector in the API response. When the prior detector configuration omitted `detector_description` and Elasticsearch returns an auto-generated description, the resource SHALL keep `detector_description` null in state instead of storing the generated value. `custom_rules[*].actions` and `custom_rules[*].conditions` SHALL be populated from the API response; when Elasticsearch omits an empty `actions` or `conditions` list, the resource SHALL preserve a previously configured empty list rather than converting it to null.
+- `analysis_config.detectors[*]` SHALL be set from the corresponding detector in the API response. When the prior detector configuration omitted `detector_description` and Elasticsearch returns an auto-generated description, the resource SHALL keep `detector_description` null in state instead of storing the generated value. `custom_rules[*].actions` and `custom_rules[*].conditions` SHALL be populated from the API response; when Elasticsearch omits an empty `actions` or `conditions` list, the resource SHALL preserve a previously configured empty list rather than converting it to null. `custom_rules[*].scope` SHALL be populated from the API response when non-empty; when Elasticsearch omits an empty `scope` map, the resource SHALL preserve the prior configured `scope` value rather than converting it to null. Within each scope entry, when the API returns an empty or absent `filter_type`, the resource SHALL store `filter_type` as null in state.
 - `analysis_config.per_partition_categorization` SHALL be populated only when the block was previously configured or when Elasticsearch reports `enabled = true`. When the block exists in prior state and Elasticsearch omits `stop_on_warn`, the resource SHALL preserve the prior `stop_on_warn` value.
 - Empty or nil string fields in the API response SHALL be stored as null in state (not as empty string), using `typeutils.NonEmptyStringishValue`.
 - `results_index_name` SHALL be stored after stripping a `custom-` prefix from the API response value.
@@ -325,6 +340,36 @@ On read, the resource SHALL set the following state attributes from the Get Jobs
 - GIVEN a detector with `custom_rules` containing conditions
 - WHEN create succeeds and read refreshes state
 - THEN the configured `actions` and `conditions` SHALL be present in state
+
+#### Scenario: Custom rule scope round-trip from API to state
+
+- GIVEN a detector with `custom_rules` containing `scope` entries referencing ML filters
+- WHEN create succeeds and read refreshes state
+- THEN the configured `scope` entries SHALL be present in state with correct `filter_id` and `filter_type` values
+
+#### Scenario: Custom rule scope with absent filter_type stored as null
+
+- GIVEN a detector with `custom_rules` containing `scope` entries where `filter_type` is not configured
+- WHEN read runs and the API omits `filter_type`
+- THEN `filter_type` SHALL be null in state (not empty string)
+
+#### Scenario: Custom rule with empty scope preserved from prior state
+
+- GIVEN a detector with `custom_rules` where the API returns an empty `scope` map
+- WHEN read runs and the prior state has a configured `scope` value
+- THEN the prior configured `scope` value SHALL be preserved in state
+
+#### Scenario: Custom rule with both scope and conditions accepted
+
+- GIVEN a detector with `custom_rules` containing both a non-empty `scope` and at least one `conditions` entry
+- WHEN create runs
+- THEN the provider SHALL send both `scope` and `conditions` to the Elasticsearch API and SHALL not reject the configuration
+
+#### Scenario: Custom rule with neither scope nor conditions rejected
+
+- GIVEN a detector with `custom_rules` containing an entry with no `scope` and no `conditions`
+- WHEN the configuration is validated
+- THEN the provider SHALL return a validation error indicating a rule must have either a non-empty `scope` or at least one condition
 
 #### Scenario: Disabled per-partition categorization preserves configured stop_on_warn
 

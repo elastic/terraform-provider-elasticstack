@@ -292,7 +292,7 @@ resource "elasticstack_kibana_slo" "timeslice_metric" {
 - `slo_id` (String) An ID (8 to 36 characters) that contains only letters, numbers, hyphens, and underscores. If omitted, a UUIDv1 will be generated server-side.
 - `space_id` (String) An identifier for the space. If space_id is not provided, the default space is used.
 - `tags` (List of String) The tags for the SLO.
-- `time_window` (Block List) Currently support `calendarAligned` and `rolling` time windows. Any duration greater than 1 day can be used: days, weeks, months, quarters, years. Rolling time window requires a duration, e.g. `1w` for one week, and type: `rolling`. SLOs defined with such time window, will only consider the SLI data from the last duration period as a moving window. Calendar aligned time window requires a duration, limited to `1M` for monthly or `1w` for weekly, and type: `calendarAligned`. (see [below for nested schema](#nestedblock--time_window))
+- `time_window` (Block List) Currently supports `calendarAligned` and `rolling` time windows. For `type = "rolling"`, duration must be one of `7d` (7 days), `30d` (30 days), or `90d` (90 days). For `type = "calendarAligned"`, duration must be either `1w` (weekly) or `1M` (monthly). Rolling time window SLOs only consider SLI data from the last duration period as a moving window. Calendar aligned time windows align to calendar boundaries. (see [below for nested schema](#nestedblock--time_window))
 - `timeslice_metric_indicator` (Block List) Defines a timeslice metric indicator for SLO. (see [below for nested schema](#nestedblock--timeslice_metric_indicator))
 
 ### Read-Only

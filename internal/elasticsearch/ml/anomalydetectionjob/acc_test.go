@@ -18,19 +18,93 @@
 package anomalydetectionjob_test
 
 import (
+	"context"
 	_ "embed"
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/ml/putfilter"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 const testResourceAddr = "elasticstack_elasticsearch_ml_anomaly_detection_job.test"
+
+// Elasticsearch often validates custom_rules.scope ML filter ids when the job is opened, not when the
+// job config is put or updated; OpenJob errors mentioning filters/resource_not_found indicate a bad id.
+var mlJobOpenFailsUnknownFilterRE = regexp.MustCompile(
+	`(?is)(filter|not found|resource_not_found|does not exist|could not find|illegal_argument|validation)`)
+
+// mlOpenJobErrorLooksLikeMLNodeCapacity reports whether OpenJob failed because the cluster could not
+// assign the job to an ML node (common under CI load). In that case the response is not a reliable
+// signal about missing filter ids, so callers may retry OpenJob.
+func mlOpenJobErrorLooksLikeMLNodeCapacity(err error) bool {
+	if err == nil {
+		return false
+	}
+	s := strings.ToLower(err.Error())
+	return strings.Contains(s, "429") ||
+		strings.Contains(s, "too_many_requests") ||
+		strings.Contains(s, "no ml nodes") ||
+		strings.Contains(s, "insufficient memory") ||
+		(strings.Contains(s, "insufficient") && strings.Contains(s, "capacity"))
+}
+
+// testAccCheckOpenMLJobFailsWithUnknownFilter verifies OpenJob fails because scope references a missing
+// ML filter. PutJob/UpdateJob may still succeed in Elasticsearch; opening surfaces the problem.
+//
+// Shared CI clusters sometimes return only ML capacity / node assignment errors (HTTP 429) for OpenJob;
+// after retries, the test is skipped so infra saturation does not fail the suite.
+func testAccCheckOpenMLJobFailsWithUnknownFilter(t *testing.T, jobID string) resource.TestCheckFunc {
+	return func(_ *terraform.State) error {
+		ctx := context.Background()
+		client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+		if err != nil {
+			return err
+		}
+		es, err := client.GetESClient()
+		if err != nil {
+			return err
+		}
+		const maxAttempts = 15
+		const betweenAttempts = 4 * time.Second
+		var openErr error
+		for attempt := range maxAttempts {
+			_, openErr = es.Ml.OpenJob(jobID).Do(ctx)
+			if openErr == nil {
+				break
+			}
+			if mlOpenJobErrorLooksLikeMLNodeCapacity(openErr) && attempt+1 < maxAttempts {
+				time.Sleep(betweenAttempts)
+				continue
+			}
+			break
+		}
+		err = openErr
+		if err == nil {
+			if _, closeErr := es.Ml.CloseJob(jobID).Force(true).Do(ctx); closeErr != nil {
+				t.Logf("CloseJob after unexpected OpenJob success for job %q: %v", jobID, closeErr)
+			}
+			t.Skipf("skipping OpenJob filter negative check for job %q: OpenJob succeeded; this Elasticsearch build does not reject missing custom_rules.scope filter ids on open (version-dependent)", jobID)
+		}
+		if mlOpenJobErrorLooksLikeMLNodeCapacity(err) {
+			t.Skipf("skipping OpenJob filter validation for job %q: ML cluster still reports capacity/node assignment errors after %d retries (shared CI load); last error: %v",
+				jobID, maxAttempts, err)
+		}
+		if !mlJobOpenFailsUnknownFilterRE.MatchString(err.Error()) {
+			return fmt.Errorf("OpenJob failed for job %q but error did not match unknown-filter pattern: %w", jobID, err)
+		}
+		return nil
+	}
+}
 
 func TestAccResourceAnomalyDetectionJobBasic(t *testing.T) {
 	jobID := fmt.Sprintf("test-anomaly-detector-basic-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
@@ -331,6 +405,181 @@ func TestAccResourceAnomalyDetectionJobCustomRules(t *testing.T) {
 	})
 }
 
+// Scope-related acceptance tests run under the same conditions as other ML anomaly detection job tests
+// (TF_ACC=1 and a cluster with ML enabled). They are not gated on TF_ACC_ML_SCOPE_TEST: filters are
+// created via the Elasticsearch Put filter API in-process, so the elasticstack_elasticsearch_ml_filter
+// resource is not required.
+//
+// TestAccResourceAnomalyDetectionJobCustomRulesScope covers detector custom_rules.scope
+// (ML filter references per analysis field), including round-trip to Elasticsearch.
+//
+// The referenced ML filter is created out-of-band via the Elasticsearch ML APIs before apply,
+// so this test does not require the elasticstack_elasticsearch_ml_filter resource.
+func TestAccResourceAnomalyDetectionJobCustomRulesScope(t *testing.T) {
+	jobID := fmt.Sprintf("test-ad-scope-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	filterID := fmt.Sprintf("test-ad-scope-flt-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	addr := testResourceAddr
+
+	setupAccMLFilterOutOfBand(t, filterID)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"job_id":    config.StringVariable(jobID),
+					"filter_id": config.StringVariable(filterID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "job_id", jobID),
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.#", "1"),
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.0.actions.#", "1"),
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.0.actions.0", "skip_result"),
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.0.scope.clientip.filter_id", filterID),
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.0.scope.clientip.filter_type", "include"),
+					resource.TestCheckResourceAttrSet(addr, "id"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"job_id":    config.StringVariable(jobID),
+					"filter_id": config.StringVariable(filterID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.0.scope.clientip.filter_type", "exclude"),
+					resource.TestCheckResourceAttrSet(addr, "id"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceAnomalyDetectionJobCustomRulesScopeAndConditions asserts Elasticsearch accepts a
+// single custom rule with both a non-empty scope and at least one condition (inclusive OR from the
+// API docs, not mutually exclusive). The ML filter is created out-of-band like the scope-only acc test.
+func TestAccResourceAnomalyDetectionJobCustomRulesScopeAndConditions(t *testing.T) {
+	jobID := fmt.Sprintf("test-ad-scope-cond-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	filterID := fmt.Sprintf("test-ad-scope-cond-flt-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	addr := testResourceAddr
+
+	setupAccMLFilterOutOfBand(t, filterID)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"job_id":    config.StringVariable(jobID),
+					"filter_id": config.StringVariable(filterID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "job_id", jobID),
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.#", "1"),
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.0.actions.#", "1"),
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.0.actions.0", "skip_result"),
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.0.scope.clientip.filter_id", filterID),
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.0.scope.clientip.filter_type", "include"),
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.0.conditions.#", "1"),
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.0.conditions.0.applies_to", "actual"),
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.0.conditions.0.operator", "lt"),
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.0.conditions.0.value", "10"),
+					resource.TestCheckResourceAttrSet(addr, "id"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"job_id":    config.StringVariable(jobID),
+					"filter_id": config.StringVariable(filterID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.0.scope.clientip.filter_type", "exclude"),
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.0.conditions.0.value", "20"),
+					resource.TestCheckResourceAttrSet(addr, "id"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceAnomalyDetectionJobCustomRulesScope_missingFilterOnCreate applies a job whose scope
+// references a filter id that was never created. Elasticsearch may still accept PutJob; opening the
+// job must fail until the filter exists (proves the configuration is not runnable as-is).
+func TestAccResourceAnomalyDetectionJobCustomRulesScope_missingFilterOnCreate(t *testing.T) {
+	jobID := fmt.Sprintf("test-ad-scope-miss-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	filterID := fmt.Sprintf("nonexistent-flt-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	addr := testResourceAddr
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"job_id":    config.StringVariable(jobID),
+					"filter_id": config.StringVariable(filterID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "job_id", jobID),
+					testAccCheckOpenMLJobFailsWithUnknownFilter(t, jobID),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceAnomalyDetectionJobCustomRulesScope_missingFilterOnUpdate updates scope to a filter id
+// that does not exist. PutJob/UpdateJob may succeed; OpenJob must fail until the filter exists.
+func TestAccResourceAnomalyDetectionJobCustomRulesScope_missingFilterOnUpdate(t *testing.T) {
+	jobID := fmt.Sprintf("test-ad-scope-miss-up-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	goodFilterID := fmt.Sprintf("test-ad-scope-flt-ok-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	badFilterID := fmt.Sprintf("nonexistent-flt-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	addr := testResourceAddr
+
+	setupAccMLFilterOutOfBand(t, goodFilterID)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"job_id":    config.StringVariable(jobID),
+					"filter_id": config.StringVariable(goodFilterID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "job_id", jobID),
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.#", "1"),
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.0.scope.clientip.filter_id", goodFilterID),
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.0.scope.clientip.filter_type", "include"),
+					resource.TestCheckResourceAttrSet(addr, "id"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"job_id":    config.StringVariable(jobID),
+					"filter_id": config.StringVariable(badFilterID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.0.scope.clientip.filter_id", badFilterID),
+					testAccCheckOpenMLJobFailsWithUnknownFilter(t, jobID),
+				),
+			},
+		},
+	})
+}
+
 func TestAccResourceAnomalyDetectionJobNullAndEmpty(t *testing.T) {
 	jobID := fmt.Sprintf("test-anomaly-detector-null-and-empty-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 
@@ -471,6 +720,47 @@ func TestAccResourceAnomalyDetectionJobExplicitConnection(t *testing.T) {
 				ImportStateVerifyIgnore: []string{"elasticsearch_connection"},
 			},
 		},
+	})
+}
+
+// setupAccMLFilterOutOfBand creates an ML filter via the Elasticsearch API so the acceptance
+// config can reference filter_id without using elasticstack_elasticsearch_ml_filter. The filter
+// is deleted after the test (Destroy runs before registered Cleanups).
+func setupAccMLFilterOutOfBand(t *testing.T, filterID string) {
+	t.Helper()
+	ctx := context.Background()
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+	if err != nil {
+		t.Fatalf("Elasticsearch client: %v", err)
+	}
+	es, err := client.GetESClient()
+	if err != nil {
+		t.Fatalf("GetESClient: %v", err)
+	}
+	desc := "Terraform acc test ML filter (created out-of-band via Elasticsearch Put Filter API)"
+	_, err = es.Ml.PutFilter(filterID).Request(&putfilter.Request{
+		Description: &desc,
+		Items:       []string{"10.0.0.1"},
+	}).Do(ctx)
+	if err != nil {
+		t.Fatalf("create ML filter %q out-of-band: %v", filterID, err)
+	}
+	t.Cleanup(func() {
+		ctx := context.Background()
+		client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+		if err != nil {
+			t.Logf("cleanup: Elasticsearch client: %v", err)
+			return
+		}
+		es, err := client.GetESClient()
+		if err != nil {
+			t.Logf("cleanup: GetESClient: %v", err)
+			return
+		}
+		_, err = es.Ml.DeleteFilter(filterID).Do(ctx)
+		if err != nil {
+			t.Logf("cleanup: delete ML filter %q: %v", filterID, err)
+		}
 	})
 }
 

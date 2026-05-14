@@ -22,33 +22,12 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
-
-// streamsLockRetry retries fn (up to maxAttempts) when the Kibana Streams API
-// returns HTTP 409 "Could not acquire lock for applying changes". The API holds
-// a short exclusive lock during writes; a brief exponential backoff resolves
-// the contention without user-visible errors on concurrent applies/destroys.
-func streamsLockRetry[T any](ctx context.Context, maxAttempts int, fn func() (T, int, diag.Diagnostics)) (T, diag.Diagnostics) {
-	backoff := 500 * time.Millisecond
-	for attempt := 1; ; attempt++ {
-		result, statusCode, diags := fn()
-		if statusCode != http.StatusConflict || attempt >= maxAttempts {
-			return result, diags
-		}
-		select {
-		case <-ctx.Done():
-			return result, diagutil.FrameworkDiagFromError(ctx.Err())
-		case <-time.After(backoff):
-		}
-		backoff *= 2
-	}
-}
 
 // StreamResponse is our own typed response struct for the Streams API.
 //
@@ -208,7 +187,7 @@ func UpsertStream(ctx context.Context, client *Client, spaceID string, name stri
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	return streamsLockRetry(ctx, 5, func() (*StreamResponse, int, diag.Diagnostics) {
+	return kibanautil.ConflictRetry(ctx, kibanautil.ConflictMaxAttempts, func() (*StreamResponse, int, diag.Diagnostics) {
 		resp, err := client.API.PutStreamsNameWithBodyWithResponse(
 			ctx, name, "application/json", bytes.NewReader(body),
 			kibanautil.SpaceAwarePathRequestEditor(spaceID),
@@ -233,7 +212,7 @@ func UpsertStream(ctx context.Context, client *Client, spaceID string, name stri
 // For classic streams this is a no-op (classic streams cannot be deleted via the API).
 // Retries on HTTP 409 (Kibana Streams write-lock contention) with exponential backoff.
 func DeleteStream(ctx context.Context, client *Client, spaceID string, name string) diag.Diagnostics {
-	_, diags := streamsLockRetry(ctx, 5, func() (struct{}, int, diag.Diagnostics) {
+	_, diags := kibanautil.ConflictRetry(ctx, kibanautil.ConflictMaxAttempts, func() (struct{}, int, diag.Diagnostics) {
 		resp, err := client.API.DeleteStreamsNameWithResponse(
 			ctx, name, kbapi.DeleteStreamsNameJSONRequestBody{},
 			kibanautil.SpaceAwarePathRequestEditor(spaceID),

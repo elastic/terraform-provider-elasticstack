@@ -52,37 +52,31 @@ func (c gaugePanelConfigConverter) populateFromAttributes(
 	blocks *lensByValueChartBlocks,
 	attrs kbapi.KbnDashboardPanelTypeVisConfig0,
 ) diag.Diagnostics {
-	gaugeNoESQL, err := attrs.AsGaugeNoESQL()
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
 	var prior *gaugeConfigModel
 	if b := lensByValueChartBlocksFromPanel(tfPanel); b != nil && b.GaugeConfig != nil {
 		cpy := *b.GaugeConfig
 		prior = &cpy
 	}
 	blocks.GaugeConfig = &gaugeConfigModel{}
-	return blocks.GaugeConfig.fromAPI(ctx, dashboard, prior, gaugeNoESQL)
+
+	if noESQL, err := attrs.AsGaugeNoESQL(); err == nil && !isGaugeNoESQLCandidateActuallyESQL(noESQL) {
+		return blocks.GaugeConfig.fromAPI(ctx, dashboard, prior, noESQL)
+	}
+
+	gaugeESQL, err := attrs.AsGaugeESQL()
+	if err != nil {
+		return diagutil.FrameworkDiagFromError(err)
+	}
+	return blocks.GaugeConfig.fromAPIESQL(ctx, dashboard, prior, gaugeESQL)
 }
 
 func (c gaugePanelConfigConverter) buildAttributes(blocks *lensByValueChartBlocks, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
-	var diags diag.Diagnostics
 	configModel := *blocks.GaugeConfig
+	return configModel.toAPI(dashboard)
+}
 
-	gaugeNoESQL, gaugeDiags := configModel.toAPI(dashboard)
-	diags.Append(gaugeDiags...)
-	if diags.HasError() {
-		return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
-	}
-
-	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
-	if err := attrs.FromGaugeNoESQL(gaugeNoESQL); err != nil {
-		diags.AddError("Failed to create gauge attributes", err.Error())
-		return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
-	}
-
-	return attrs, diags
+func isGaugeNoESQLCandidateActuallyESQL(api kbapi.GaugeNoESQL) bool {
+	return lensDataSourceIsESQLOrTable(api.DataSource.MarshalJSON())
 }
 
 type gaugeConfigModel struct {
@@ -95,11 +89,50 @@ type gaugeConfigModel struct {
 	Query               *filterSimpleModel                                `tfsdk:"query"`
 	Filters             []chartFilterJSONModel                            `tfsdk:"filters"`
 	MetricJSON          customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"metric_json"`
+	EsqlMetric          *gaugeEsqlMetric                                  `tfsdk:"esql_metric"`
 	Styling             *gaugeStylingModel                                `tfsdk:"styling"`
 }
 
 type gaugeStylingModel struct {
 	ShapeJSON jsontypes.Normalized `tfsdk:"shape_json"`
+}
+
+type gaugeEsqlMetric struct {
+	Column     types.String         `tfsdk:"column"`
+	FormatJSON jsontypes.Normalized `tfsdk:"format_json"`
+	Label      types.String         `tfsdk:"label"`
+	ColorJSON  jsontypes.Normalized `tfsdk:"color_json"`
+	Subtitle   types.String         `tfsdk:"subtitle"`
+	Goal       *gaugeEsqlColumnRef  `tfsdk:"goal"`
+	Max        *gaugeEsqlColumnRef  `tfsdk:"max"`
+	Min        *gaugeEsqlColumnRef  `tfsdk:"min"`
+	Ticks      *gaugeEsqlTicks      `tfsdk:"ticks"`
+	Title      *gaugeEsqlTitle      `tfsdk:"title"`
+}
+
+type gaugeEsqlColumnRef struct {
+	Column types.String `tfsdk:"column"`
+	Label  types.String `tfsdk:"label"`
+}
+
+type gaugeEsqlTicks struct {
+	Mode    types.String `tfsdk:"mode"`
+	Visible types.Bool   `tfsdk:"visible"`
+}
+
+type gaugeEsqlTitle struct {
+	Text    types.String `tfsdk:"text"`
+	Visible types.Bool   `tfsdk:"visible"`
+}
+
+func (m *gaugeConfigModel) usesESQL() bool {
+	if m == nil {
+		return false
+	}
+	if m.Query == nil {
+		return true
+	}
+	return m.Query.Expression.IsNull() && m.Query.Language.IsNull()
 }
 
 func (m *gaugeConfigModel) fromAPI(ctx context.Context, dashboard *dashboardModel, prior *gaugeConfigModel, api kbapi.GaugeNoESQL) diag.Diagnostics {
@@ -134,6 +167,7 @@ func (m *gaugeConfigModel) fromAPI(ctx context.Context, dashboard *dashboardMode
 		return diags
 	}
 	m.MetricJSON = preservePriorJSONWithDefaultsIfEquivalent(ctx, m.MetricJSON, mv, &diags)
+	m.EsqlMetric = nil
 
 	m.Styling = &gaugeStylingModel{}
 	if api.Styling.Shape != nil {
@@ -167,7 +201,181 @@ func (m *gaugeConfigModel) fromAPI(ctx context.Context, dashboard *dashboardMode
 	return diags
 }
 
-func (m *gaugeConfigModel) toAPI(dashboard *dashboardModel) (kbapi.GaugeNoESQL, diag.Diagnostics) {
+func (m *gaugeConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashboardModel, prior *gaugeConfigModel, api kbapi.GaugeESQL) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	m.Title = types.StringPointerValue(api.Title)
+	m.Description = types.StringPointerValue(api.Description)
+	m.IgnoreGlobalFilters = types.BoolPointerValue(api.IgnoreGlobalFilters)
+	if api.Sampling != nil {
+		m.Sampling = types.Float64Value(float64(*api.Sampling))
+	} else {
+		m.Sampling = types.Float64Null()
+	}
+
+	datasetBytes, err := json.Marshal(api.DataSource)
+	dv, ok := marshalToNormalized(datasetBytes, err, "data_source_json", &diags)
+	if !ok {
+		return diags
+	}
+	m.DataSourceJSON = dv
+
+	m.Query = nil
+	m.Filters = populateFiltersFromAPI(api.Filters, &diags)
+	m.MetricJSON = customtypes.NewJSONWithDefaultsNull(populateGaugeMetricDefaults)
+
+	em := &gaugeEsqlMetric{
+		Column: types.StringValue(api.Metric.Column),
+	}
+	formatVal, ok := lensESQLNumberFormatJSONFromAPI(api.Metric.Format, "esql_metric.format_json", &diags)
+	if !ok {
+		return diags
+	}
+	em.FormatJSON = formatVal
+
+	if api.Metric.Label != nil {
+		em.Label = types.StringValue(*api.Metric.Label)
+	} else {
+		em.Label = types.StringNull()
+	}
+
+	if api.Metric.Color != nil {
+		colorBytes, cErr := api.Metric.Color.MarshalJSON()
+		if cErr != nil {
+			diags.AddError("Failed to marshal esql metric color", cErr.Error())
+			return diags
+		}
+		if len(colorBytes) > 0 && string(colorBytes) != jsonNullString {
+			em.ColorJSON = jsontypes.NewNormalizedValue(string(colorBytes))
+		} else {
+			em.ColorJSON = jsontypes.NewNormalizedNull()
+		}
+	} else {
+		em.ColorJSON = jsontypes.NewNormalizedNull()
+	}
+
+	if api.Metric.Subtitle != nil {
+		em.Subtitle = types.StringValue(*api.Metric.Subtitle)
+	} else {
+		em.Subtitle = types.StringNull()
+	}
+
+	if api.Metric.Goal != nil {
+		em.Goal = &gaugeEsqlColumnRef{Column: types.StringValue(api.Metric.Goal.Column)}
+		if api.Metric.Goal.Label != nil {
+			em.Goal.Label = types.StringValue(*api.Metric.Goal.Label)
+		} else {
+			em.Goal.Label = types.StringNull()
+		}
+	}
+	if api.Metric.Max != nil {
+		em.Max = &gaugeEsqlColumnRef{Column: types.StringValue(api.Metric.Max.Column)}
+		if api.Metric.Max.Label != nil {
+			em.Max.Label = types.StringValue(*api.Metric.Max.Label)
+		} else {
+			em.Max.Label = types.StringNull()
+		}
+	}
+	if api.Metric.Min != nil {
+		em.Min = &gaugeEsqlColumnRef{Column: types.StringValue(api.Metric.Min.Column)}
+		if api.Metric.Min.Label != nil {
+			em.Min.Label = types.StringValue(*api.Metric.Min.Label)
+		} else {
+			em.Min.Label = types.StringNull()
+		}
+	}
+	if api.Metric.Ticks != nil {
+		em.Ticks = &gaugeEsqlTicks{}
+		if api.Metric.Ticks.Mode != nil {
+			em.Ticks.Mode = types.StringValue(string(*api.Metric.Ticks.Mode))
+		} else {
+			em.Ticks.Mode = types.StringNull()
+		}
+		if api.Metric.Ticks.Visible != nil {
+			em.Ticks.Visible = types.BoolValue(*api.Metric.Ticks.Visible)
+		} else {
+			em.Ticks.Visible = types.BoolNull()
+		}
+	}
+	if api.Metric.Title != nil {
+		em.Title = &gaugeEsqlTitle{}
+		if api.Metric.Title.Text != nil {
+			em.Title.Text = types.StringValue(*api.Metric.Title.Text)
+		} else {
+			em.Title.Text = types.StringNull()
+		}
+		if api.Metric.Title.Visible != nil {
+			em.Title.Visible = types.BoolValue(*api.Metric.Title.Visible)
+		} else {
+			em.Title.Visible = types.BoolNull()
+		}
+	}
+	m.EsqlMetric = em
+
+	m.Styling = &gaugeStylingModel{}
+	if api.Styling.Shape != nil {
+		shapeBytes, err := api.Styling.Shape.MarshalJSON()
+		sv, ok := marshalToNormalized(shapeBytes, err, "shape", &diags)
+		if !ok {
+			return diags
+		}
+		m.Styling.ShapeJSON = sv
+	} else {
+		m.Styling.ShapeJSON = jsontypes.NewNormalizedNull()
+	}
+
+	var priorLens *lensChartPresentationTFModel
+	if prior != nil {
+		p := prior.lensChartPresentationTFModel
+		priorLens = &p
+	}
+	ddWire, ddOmit, ddWireDiags := lensDrilldownsAPIToWire(api.Drilldowns)
+	diags.Append(ddWireDiags...)
+	if ddWireDiags.HasError() {
+		return diags
+	}
+	pres, presDiags := lensChartPresentationReadsFor(ctx, dashboard, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return diags
+	}
+	m.lensChartPresentationTFModel = pres
+
+	return diags
+}
+
+func (m *gaugeConfigModel) toAPI(dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+	var diags diag.Diagnostics
+
+	if m == nil {
+		return attrs, diags
+	}
+
+	if m.usesESQL() {
+		esql, d := m.toAPIESQL(dashboard)
+		diags.Append(d...)
+		if diags.HasError() {
+			return attrs, diags
+		}
+		if err := attrs.FromGaugeESQL(esql); err != nil {
+			diags.AddError("Failed to create gauge ES|QL attributes", err.Error())
+		}
+		return attrs, diags
+	}
+
+	noESQL, d := m.toAPINoESQL(dashboard)
+	diags.Append(d...)
+	if diags.HasError() {
+		return attrs, diags
+	}
+	if err := attrs.FromGaugeNoESQL(noESQL); err != nil {
+		diags.AddError("Failed to create gauge attributes", err.Error())
+	}
+	return attrs, diags
+}
+
+func (m *gaugeConfigModel) toAPINoESQL(dashboard *dashboardModel) (kbapi.GaugeNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var api kbapi.GaugeNoESQL
 
@@ -197,17 +405,21 @@ func (m *gaugeConfigModel) toAPI(dashboard *dashboardModel) (kbapi.GaugeNoESQL, 
 		api.Sampling = &sampling
 	}
 
-	if m.Query != nil {
-		api.Query = m.Query.toAPI()
+	if m.Query == nil {
+		diags.AddError("Missing query", "gauge_config.query must be set for non-ES|QL gauges (or omit `query` entirely for ES|QL mode)")
+		return api, diags
 	}
+	api.Query = m.Query.toAPI()
 
 	api.Filters = buildFiltersForAPI(m.Filters, &diags)
 
-	if typeutils.IsKnown(m.MetricJSON) {
-		if err := json.Unmarshal([]byte(m.MetricJSON.ValueString()), &api.Metric); err != nil {
-			diags.AddError("Failed to unmarshal metric", err.Error())
-			return api, diags
-		}
+	if m.MetricJSON.IsNull() {
+		diags.AddError("Missing metric_json", "gauge_config.metric_json must be set for non-ES|QL gauges (or use `esql_metric` in ES|QL mode)")
+		return api, diags
+	}
+	if err := json.Unmarshal([]byte(m.MetricJSON.ValueString()), &api.Metric); err != nil {
+		diags.AddError("Failed to unmarshal metric", err.Error())
+		return api, diags
 	}
 
 	if m.Styling != nil && typeutils.IsKnown(m.Styling.ShapeJSON) {
@@ -237,6 +449,156 @@ func (m *gaugeConfigModel) toAPI(dashboard *dashboardModel) (kbapi.GaugeNoESQL, 
 	}
 	if len(writes.DrilldownsRaw) > 0 {
 		items, ddDiags := decodeLensDrilldownSlice[kbapi.GaugeNoESQL_Drilldowns_Item](writes.DrilldownsRaw)
+		diags.Append(ddDiags...)
+		if !ddDiags.HasError() {
+			api.Drilldowns = &items
+		}
+	}
+
+	return api, diags
+}
+
+func (m *gaugeConfigModel) toAPIESQL(dashboard *dashboardModel) (kbapi.GaugeESQL, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	var api kbapi.GaugeESQL
+	api.Type = kbapi.GaugeESQLTypeGauge
+
+	if typeutils.IsKnown(m.Title) {
+		api.Title = m.Title.ValueStringPointer()
+	}
+	if typeutils.IsKnown(m.Description) {
+		api.Description = m.Description.ValueStringPointer()
+	}
+	if typeutils.IsKnown(m.IgnoreGlobalFilters) {
+		api.IgnoreGlobalFilters = m.IgnoreGlobalFilters.ValueBoolPointer()
+	}
+	if typeutils.IsKnown(m.Sampling) {
+		s := float32(m.Sampling.ValueFloat64())
+		api.Sampling = &s
+	}
+
+	if m.DataSourceJSON.IsNull() {
+		diags.AddError("Missing data_source_json", "gauge_config.data_source_json must be provided")
+		return api, diags
+	}
+	if err := json.Unmarshal([]byte(m.DataSourceJSON.ValueString()), &api.DataSource); err != nil {
+		diags.AddError("Failed to unmarshal gauge_config.data_source_json", err.Error())
+		return api, diags
+	}
+
+	api.Filters = buildFiltersForAPI(m.Filters, &diags)
+
+	if m.EsqlMetric == nil {
+		diags.AddError("Missing esql_metric", "gauge_config.esql_metric must be set in ES|QL mode")
+		return api, diags
+	}
+	api.Metric.Column = m.EsqlMetric.Column.ValueString()
+	if err := json.Unmarshal([]byte(m.EsqlMetric.FormatJSON.ValueString()), &api.Metric.Format); err != nil {
+		diags.AddError("Failed to unmarshal esql_metric.format_json", err.Error())
+		return api, diags
+	}
+	if typeutils.IsKnown(m.EsqlMetric.Label) {
+		l := m.EsqlMetric.Label.ValueString()
+		api.Metric.Label = &l
+	}
+	if typeutils.IsKnown(m.EsqlMetric.ColorJSON) {
+		var color kbapi.GaugeESQL_Metric_Color
+		if err := json.Unmarshal([]byte(m.EsqlMetric.ColorJSON.ValueString()), &color); err != nil {
+			diags.AddError("Failed to unmarshal esql_metric.color_json", err.Error())
+			return api, diags
+		}
+		api.Metric.Color = &color
+	}
+	if typeutils.IsKnown(m.EsqlMetric.Subtitle) {
+		s := m.EsqlMetric.Subtitle.ValueString()
+		api.Metric.Subtitle = &s
+	}
+	if m.EsqlMetric.Goal != nil {
+		api.Metric.Goal = &struct {
+			Column string  `json:"column"`
+			Label  *string `json:"label,omitempty"`
+		}{Column: m.EsqlMetric.Goal.Column.ValueString()}
+		if typeutils.IsKnown(m.EsqlMetric.Goal.Label) {
+			l := m.EsqlMetric.Goal.Label.ValueString()
+			api.Metric.Goal.Label = &l
+		}
+	}
+	if m.EsqlMetric.Max != nil {
+		api.Metric.Max = &struct {
+			Column string  `json:"column"`
+			Label  *string `json:"label,omitempty"`
+		}{Column: m.EsqlMetric.Max.Column.ValueString()}
+		if typeutils.IsKnown(m.EsqlMetric.Max.Label) {
+			l := m.EsqlMetric.Max.Label.ValueString()
+			api.Metric.Max.Label = &l
+		}
+	}
+	if m.EsqlMetric.Min != nil {
+		api.Metric.Min = &struct {
+			Column string  `json:"column"`
+			Label  *string `json:"label,omitempty"`
+		}{Column: m.EsqlMetric.Min.Column.ValueString()}
+		if typeutils.IsKnown(m.EsqlMetric.Min.Label) {
+			l := m.EsqlMetric.Min.Label.ValueString()
+			api.Metric.Min.Label = &l
+		}
+	}
+	if m.EsqlMetric.Ticks != nil {
+		api.Metric.Ticks = &struct {
+			Mode    *kbapi.GaugeESQLMetricTicksMode `json:"mode,omitempty"`
+			Visible *bool                           `json:"visible,omitempty"`
+		}{}
+		if typeutils.IsKnown(m.EsqlMetric.Ticks.Mode) {
+			mode := kbapi.GaugeESQLMetricTicksMode(m.EsqlMetric.Ticks.Mode.ValueString())
+			api.Metric.Ticks.Mode = &mode
+		}
+		if typeutils.IsKnown(m.EsqlMetric.Ticks.Visible) {
+			v := m.EsqlMetric.Ticks.Visible.ValueBool()
+			api.Metric.Ticks.Visible = &v
+		}
+	}
+	if m.EsqlMetric.Title != nil {
+		api.Metric.Title = &struct {
+			Text    *string `json:"text,omitempty"`
+			Visible *bool   `json:"visible,omitempty"`
+		}{}
+		if typeutils.IsKnown(m.EsqlMetric.Title.Text) {
+			t := m.EsqlMetric.Title.Text.ValueString()
+			api.Metric.Title.Text = &t
+		}
+		if typeutils.IsKnown(m.EsqlMetric.Title.Visible) {
+			v := m.EsqlMetric.Title.Visible.ValueBool()
+			api.Metric.Title.Visible = &v
+		}
+	}
+
+	if m.Styling != nil && typeutils.IsKnown(m.Styling.ShapeJSON) {
+		var shape kbapi.GaugeStyling_Shape
+		shapeDiags := m.Styling.ShapeJSON.Unmarshal(&shape)
+		diags.Append(shapeDiags...)
+		if !shapeDiags.HasError() {
+			api.Styling.Shape = &shape
+		}
+	}
+
+	writes, presDiags := lensChartPresentationWritesFor(dashboard, m.lensChartPresentationTFModel)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return api, diags
+	}
+
+	api.TimeRange = writes.TimeRange
+	if writes.HideTitle != nil {
+		api.HideTitle = writes.HideTitle
+	}
+	if writes.HideBorder != nil {
+		api.HideBorder = writes.HideBorder
+	}
+	if writes.References != nil {
+		api.References = writes.References
+	}
+	if len(writes.DrilldownsRaw) > 0 {
+		items, ddDiags := decodeLensDrilldownSlice[kbapi.GaugeESQL_Drilldowns_Item](writes.DrilldownsRaw)
 		diags.Append(ddDiags...)
 		if !ddDiags.HasError() {
 			api.Drilldowns = &items

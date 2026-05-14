@@ -55,18 +55,6 @@ resource "elasticstack_kibana_dashboard" "test" {
               }
             ]
           })
-          y_axis_json = jsonencode({
-            operation = "filters"
-            filters = [
-              {
-                label = "All"
-                filter = {
-                  expression = "*"
-                  language   = "kql"
-                }
-              }
-            ]
-          })
           axis = {
             x = {
               labels = {
