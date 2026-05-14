@@ -3098,6 +3098,7 @@ safe-outputs:
   create-pull-request:
     labels: [change-factory, no-changelog]
     max: 1
+    patch-format: am
   add-comment:
     max: 1
     target: triggering
