@@ -48,6 +48,12 @@ func TestTryReadCompositeID(t *testing.T) {
 			wantClusterID: "space-a",
 			wantResource:  "resource-id/extra",
 		},
+		{
+			name:          "legacy composite ID with empty cluster segment",
+			id:            "/resource-id",
+			wantClusterID: "",
+			wantResource:  "resource-id",
+		},
 	}
 
 	for _, tt := range tests {
@@ -61,7 +67,7 @@ func TestTryReadCompositeID(t *testing.T) {
 			}
 
 			require.False(t, diags.HasError())
-			if tt.wantClusterID == "" {
+			if tt.wantClusterID == "" && tt.wantResource == "" {
 				assert.Nil(t, compositeID)
 				return
 			}

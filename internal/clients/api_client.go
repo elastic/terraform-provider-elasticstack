@@ -46,13 +46,26 @@ const ServerlessFlavor = "serverless"
 // slash (no nested slash in the resource segment) behave the same as the historical parser.
 // Some Elasticsearch resources (for example ML calendar events) use a resource segment of the
 // form "<calendar_id>/<event_id>".
+//
+// For backward compatibility, an ID with an empty cluster segment and a non-empty resource
+// segment (for example "/<synthetics_monitor_id>" from legacy CompositeID.String formatting) is
+// accepted; an empty resource segment (including a trailing slash) is rejected.
 func CompositeIDFromStr(id string) (*CompositeID, diag.Diagnostics) {
 	parts := strings.SplitN(id, "/", 2)
-	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+	if len(parts) != 2 || parts[1] == "" {
 		return nil, diagutil.SDKErrorDiag(
 			"Wrong resource ID.",
 			"Resource ID must have following format: <cluster_uuid>/<resource identifier>",
 		)
+	}
+	// Legacy Kibana synthetics (and similar) IDs were persisted as "/<resource_identifier>" when the
+	// "cluster" segment was empty, which fmt.Sprintf produced from CompositeID.String(). Accept a
+	// missing first segment only when the resource segment is non-empty; reject "cluster/" etc.
+	if parts[0] == "" {
+		return &CompositeID{
+			ClusterID:  "",
+			ResourceID: parts[1],
+		}, nil
 	}
 	return &CompositeID{
 		ClusterID:  parts[0],

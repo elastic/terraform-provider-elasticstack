@@ -307,8 +307,11 @@ func TestAccResourceMLFilterImportFailures(t *testing.T) {
 				ImportState:              true,
 				ImportStateKind:          resource.ImportBlockWithID,
 				ImportStateVerify:        false,
-				ImportStateId:            "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/extra/bad",
-				ExpectError:              regexp.MustCompile(`Wrong resource ID`),
+				// Must be invalid for SplitN composite parsing: two non-empty segments would be a
+				// legal cluster/resource pair (resource id may contain slashes). Trailing slash
+				// yields an empty resource segment, which CompositeIDFromStr rejects.
+				ImportStateId: fmt.Sprintf("%s/", clusterUUID[0]),
+				ExpectError:   regexp.MustCompile(`Wrong resource ID`),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
