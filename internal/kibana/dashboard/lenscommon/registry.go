@@ -33,12 +33,33 @@ func Register(c VizConverter) {
 	convertersByType[c.VizType()] = c
 }
 
+// canonicalVizTypeForOpaqueAttrs maps shorthand or legacy strings sometimes found in opaque
+// panel config_json attributes["type"] to the kbapi discriminator strings used as registry keys.
+func canonicalVizTypeForOpaqueAttrs(vizType string) string {
+	switch vizType {
+	case "tagcloud":
+		return "tag_cloud"
+	case "datatable":
+		return "data_table"
+	default:
+		return vizType
+	}
+}
+
 // ForType returns the converter registered for vizType, or nil if none.
+// vizType may be either the kbapi discriminator (for example "tag_cloud") or legacy opaque-json
+// spellings still accepted by practitioners ("tagcloud").
 func ForType(vizType string) VizConverter {
 	if convertersByType == nil {
 		return nil
 	}
-	return convertersByType[vizType]
+	if c := convertersByType[vizType]; c != nil {
+		return c
+	}
+	if alt := canonicalVizTypeForOpaqueAttrs(vizType); alt != vizType {
+		return convertersByType[alt]
+	}
+	return nil
 }
 
 // FirstForBlocks returns the first converter (in stable All() order) whose HandlesBlocks reports true.
