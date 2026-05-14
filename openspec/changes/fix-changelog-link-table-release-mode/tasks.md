@@ -22,9 +22,9 @@
 
 ## 5. Tests for `no-changelog` label application
 
-- [ ] 5.1 Add test: `manageUnreleasedPR` creates PR and applies `no-changelog` label
-- [ ] 5.2 Add test: `manageUnreleasedPR` updates existing PR and applies `no-changelog` label
-- [ ] 5.3 Add test: `refreshReleasePR` applies `no-changelog` label to located release prep PR
+- [x] 5.1 Add test: `manageUnreleasedPR` creates PR and applies `no-changelog` label
+- [x] 5.2 Add test: `manageUnreleasedPR` updates existing PR and applies `no-changelog` label
+- [x] 5.3 Add test: `refreshReleasePR` applies `no-changelog` label to located release prep PR
 
 ## 6. Tests for `rewriteLinkTable`
 
