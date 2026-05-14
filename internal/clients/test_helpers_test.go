@@ -73,6 +73,7 @@ func kibanaConnectionAttrTypes() map[string]attr.Type {
 		"api_key":      types.StringType,
 		"bearer_token": types.StringType,
 		"endpoints":    types.ListType{ElemType: types.StringType},
+		"headers":      types.MapType{ElemType: types.StringType},
 		"ca_certs":     types.ListType{ElemType: types.StringType},
 		"insecure":     types.BoolType,
 	}

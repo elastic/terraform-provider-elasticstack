@@ -117,6 +117,7 @@ func TestGetKibanaClient_WithConnection(t *testing.T) {
 		Endpoints: types.ListValueMust(types.StringType, []attr.Value{
 			types.StringValue("http://kibana.example.com:5601"),
 		}),
+		Headers:  types.MapNull(types.StringType),
 		CACerts:  types.ListValueMust(types.StringType, []attr.Value{}),
 		Insecure: types.BoolValue(false),
 	}
@@ -212,6 +213,7 @@ func newScopedClientFromFactory(t *testing.T, endpoint string) *KibanaScopedClie
 		Endpoints: types.ListValueMust(types.StringType, []attr.Value{
 			types.StringValue(endpoint),
 		}),
+		Headers:  types.MapNull(types.StringType),
 		CACerts:  types.ListValueMust(types.StringType, []attr.Value{}),
 		Insecure: types.BoolValue(false),
 	}
@@ -387,6 +389,7 @@ func TestGetKibanaClient_EntityLocalMissingEndpoint(t *testing.T) {
 		BearerToken: types.StringValue(""),
 		// Endpoints intentionally empty.
 		Endpoints: types.ListValueMust(types.StringType, []attr.Value{}),
+		Headers:   types.MapNull(types.StringType),
 		CACerts:   types.ListValueMust(types.StringType, []attr.Value{}),
 		Insecure:  types.BoolValue(false),
 	}

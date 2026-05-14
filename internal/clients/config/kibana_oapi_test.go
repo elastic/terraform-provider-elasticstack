@@ -155,6 +155,40 @@ func Test_newKibanaOapiConfigFromSDK(t *testing.T) {
 					},
 				}
 			},
+		}, {
+			name: "should set custom headers from config",
+			args: func() args {
+				baseCfg := baseConfig{
+					Username: "elastic",
+					Password: "changeme",
+				}
+
+				return args{
+					baseCfg: baseCfg,
+					resourceData: map[string]any{
+						"kibana": []any{
+							map[string]any{
+								"endpoints": []any{"example.com/kibana"},
+								"username":  "kibana",
+								"password":  "baltic",
+								"headers": map[string]any{
+									"CF-Access-Client-Id":     "client-id",
+									"CF-Access-Client-Secret": "client-secret",
+								},
+							},
+						},
+					},
+					expectedConfig: kibanaOapiConfig{
+						URL:      "example.com/kibana",
+						Username: "kibana",
+						Password: "baltic",
+						Headers: map[string]string{
+							"CF-Access-Client-Id":     "client-id",
+							"CF-Access-Client-Secret": "client-secret",
+						},
+					},
+				}
+			},
 		},
 	}
 
@@ -349,6 +383,45 @@ func Test_newKibanaOapiConfigFromFramework(t *testing.T) {
 						URL:      "example.com/kibana",
 						Username: "elastic",
 						Password: "changeme",
+					},
+				}
+			},
+		},
+		{
+			name: "should set custom headers from framework config",
+			args: func() args {
+				baseCfg := baseConfig{
+					Username: "elastic",
+					Password: "changeme",
+				}
+
+				return args{
+					baseCfg: baseCfg,
+					providerConfig: ProviderConfiguration{
+						Kibana: []KibanaConnection{
+							{
+								Username: types.StringValue("kibana"),
+								Password: types.StringValue("baltic"),
+								Endpoints: types.ListValueMust(types.StringType, []attr.Value{
+									types.StringValue("example.com/kibana"),
+								}),
+								CACerts:  types.ListValueMust(types.StringType, []attr.Value{}),
+								Insecure: types.BoolValue(false),
+								Headers: types.MapValueMust(types.StringType, map[string]attr.Value{
+									"CF-Access-Client-Id":     types.StringValue("client-id"),
+									"CF-Access-Client-Secret": types.StringValue("client-secret"),
+								}),
+							},
+						},
+					},
+					expectedConfig: kibanaOapiConfig{
+						URL:      "example.com/kibana",
+						Username: "kibana",
+						Password: "baltic",
+						Headers: map[string]string{
+							"CF-Access-Client-Id":     "client-id",
+							"CF-Access-Client-Secret": "client-secret",
+						},
 					},
 				}
 			},
