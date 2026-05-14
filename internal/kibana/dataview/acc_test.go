@@ -344,17 +344,17 @@ func TestAccResourceDataViewFieldAttrs(t *testing.T) {
 
 	var dataViewID string
 	captureID := func(s *terraform.State) error {
-		rs := s.RootModule().Resources["elasticstack_kibana_data_view.fa_dv"]
+		rs := s.RootModule().Resources[testAccFieldAttrsDataViewAddress]
 		if rs == nil {
-			return fmt.Errorf("elasticstack_kibana_data_view.fa_dv not found in state")
+			return fmt.Errorf("%s not found in state", testAccFieldAttrsDataViewAddress)
 		}
 		dataViewID = rs.Primary.ID
 		return nil
 	}
 	checkIDUnchanged := func(s *terraform.State) error {
-		rs := s.RootModule().Resources["elasticstack_kibana_data_view.fa_dv"]
+		rs := s.RootModule().Resources[testAccFieldAttrsDataViewAddress]
 		if rs == nil {
-			return fmt.Errorf("elasticstack_kibana_data_view.fa_dv not found in state")
+			return fmt.Errorf("%s not found in state", testAccFieldAttrsDataViewAddress)
 		}
 		if rs.Primary.ID != dataViewID {
 			return fmt.Errorf("data view was recreated: id changed from %s to %s", dataViewID, rs.Primary.ID)
@@ -381,8 +381,8 @@ func TestAccResourceDataViewFieldAttrs(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("no_field_attrs"),
 				ConfigVariables:          vars,
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_data_view.fa_dv", "id"),
-					resource.TestCheckNoResourceAttr("elasticstack_kibana_data_view.fa_dv", "data_view.field_attrs.%"),
+					resource.TestCheckResourceAttrSet(testAccFieldAttrsDataViewAddress, "id"),
+					resource.TestCheckNoResourceAttr(testAccFieldAttrsDataViewAddress, "data_view.field_attrs.%"),
 					captureID,
 				),
 			},
@@ -428,7 +428,7 @@ func TestAccResourceDataViewFieldAttrs(t *testing.T) {
 				ConfigVariables:          vars,
 				Check: resource.ComposeTestCheckFunc(
 					checkIDUnchanged,
-					resource.TestCheckNoResourceAttr("elasticstack_kibana_data_view.fa_dv", "data_view.field_attrs.%"),
+					resource.TestCheckNoResourceAttr(testAccFieldAttrsDataViewAddress, "data_view.field_attrs.%"),
 					testAccCheckFieldAttrsCustomLabelServerSide(t, "host.hostname", ""),
 				),
 			},

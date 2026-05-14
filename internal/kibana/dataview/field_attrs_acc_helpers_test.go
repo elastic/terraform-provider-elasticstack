@@ -18,85 +18,56 @@
 package dataview_test
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
-	"net/url"
 	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 const testAccFieldAttrsDataViewAddress = "elasticstack_kibana_data_view.fa_dv"
 
-// testAccInjectHostHostnameFieldCount POSTs field metadata so Kibana records a server-side
-// popularity count for host.hostname (simulates Discover usage). REQ-015 scenario 1.
-func testAccInjectHostHostnameFieldCount(t *testing.T, s *terraform.State) error {
-	t.Helper()
-
+// resolveFieldAttrsDataView returns the OAPI client and parsed (spaceID, viewID) for the
+// managed data view, so per-test helpers don't have to repeat the same plumbing.
+func resolveFieldAttrsDataView(s *terraform.State) (*kibanaoapi.Client, string, string, error) {
 	rs := s.RootModule().Resources[testAccFieldAttrsDataViewAddress]
 	if rs == nil {
-		return fmt.Errorf("%s not found in state", testAccFieldAttrsDataViewAddress)
+		return nil, "", "", fmt.Errorf("%s not found in state", testAccFieldAttrsDataViewAddress)
 	}
-
 	composite, diags := clients.CompositeIDFromStr(rs.Primary.ID)
 	if diags.HasError() {
-		return fmt.Errorf("parse data view id: %v", diags)
+		return nil, "", "", fmt.Errorf("parse data view id: %v", diags)
 	}
-
 	apiClient, err := clients.NewAcceptanceTestingKibanaScopedClient()
 	if err != nil {
-		return fmt.Errorf("acceptance kibana client: %w", err)
+		return nil, "", "", fmt.Errorf("acceptance kibana client: %w", err)
 	}
 	kc, err := apiClient.GetKibanaOapiClient()
 	if err != nil {
-		return fmt.Errorf("kibana openapi client: %w", err)
+		return nil, "", "", fmt.Errorf("kibana openapi client: %w", err)
 	}
+	return kc, composite.ClusterID, composite.ResourceID, nil
+}
 
-	spaceID := composite.ClusterID
-	viewID := composite.ResourceID
-
-	path := fmt.Sprintf("/api/data_views/data_view/%s/fields", url.PathEscape(viewID))
-	if spaceID != "" && spaceID != "default" {
-		path = fmt.Sprintf("/s/%s/api/data_views/data_view/%s/fields", url.PathEscape(spaceID), url.PathEscape(viewID))
-	}
-
-	payload := map[string]any{
-		"fields": map[string]any{
-			"host.hostname": map[string]any{
-				"count": 5,
-			},
-		},
-	}
-	raw, err := json.Marshal(payload)
+// testAccInjectHostHostnameFieldCount writes a server-side popularity count for host.hostname
+// (simulates Discover usage) by reusing the production UpdateFieldMetadata wrapper, so this
+// helper cannot drift from the space-aware path / payload shape used at runtime.
+func testAccInjectHostHostnameFieldCount(t *testing.T, s *terraform.State) error {
+	t.Helper()
+	client, spaceID, viewID, err := resolveFieldAttrsDataView(s)
 	if err != nil {
-		return fmt.Errorf("marshal field metadata body: %w", err)
+		return err
 	}
-
-	endpoint := strings.TrimRight(kc.URL, "/") + path
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, endpoint, bytes.NewReader(raw))
-	if err != nil {
-		return fmt.Errorf("build POST %s: %w", endpoint, err)
+	diags := kibanaoapi.UpdateFieldMetadata(context.Background(), client, spaceID, viewID, map[string]any{
+		"host.hostname": map[string]any{"count": 5},
+	})
+	if diags.HasError() {
+		return fmt.Errorf("inject host.hostname count: %v", diags)
 	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("kbn-xsrf", "true")
-
-	resp, err := kc.HTTP.Do(req)
-	if err != nil {
-		return fmt.Errorf("POST %s: %w", endpoint, err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
-		return fmt.Errorf("POST %s: status %d: %s", endpoint, resp.StatusCode, string(body))
-	}
-
 	return nil
 }
 
@@ -126,84 +97,51 @@ func testAccCheckFieldAttrsCustomLabel(fieldKey, want string) resource.TestCheck
 	}
 }
 
-// testAccCheckFieldAttrsCustomLabelServerSide queries Kibana directly for the data view's
-// fieldAttrs and verifies the requested field's customLabel matches `want`. Pass want="" to
-// assert the entry is either absent or has a null customLabel (i.e. it was actually cleared
-// server-side, not just dropped from Terraform state). This complements
-// testAccCheckFieldAttrsCustomLabel, which only inspects state and would still pass if
-// UpdateFieldMetadata silently no-oped (state would just echo whatever the API returned).
+// testAccCheckFieldAttrsCustomLabelServerSide queries Kibana via GetDataView and verifies the
+// requested field's customLabel matches `want`. Pass want="" to assert the entry is either
+// absent or has a null customLabel (i.e. it was actually cleared server-side, not just dropped
+// from Terraform state).
 func testAccCheckFieldAttrsCustomLabelServerSide(t *testing.T, fieldKey, want string) resource.TestCheckFunc {
 	t.Helper()
 	return func(s *terraform.State) error {
-		rs := s.RootModule().Resources[testAccFieldAttrsDataViewAddress]
-		if rs == nil {
-			return fmt.Errorf("%s not found in state", testAccFieldAttrsDataViewAddress)
+		client, spaceID, viewID, err := resolveFieldAttrsDataView(s)
+		if err != nil {
+			return err
 		}
-
-		composite, diags := clients.CompositeIDFromStr(rs.Primary.ID)
+		view, diags := kibanaoapi.GetDataView(context.Background(), client, spaceID, viewID)
 		if diags.HasError() {
-			return fmt.Errorf("parse data view id: %v", diags)
+			return fmt.Errorf("get data view %s/%s: %v", spaceID, viewID, diags)
+		}
+		if view == nil {
+			return fmt.Errorf("data view %s/%s not found", spaceID, viewID)
 		}
 
-		apiClient, err := clients.NewAcceptanceTestingKibanaScopedClient()
-		if err != nil {
-			return fmt.Errorf("acceptance kibana client: %w", err)
+		var entry struct {
+			label   *string
+			present bool
 		}
-		kc, err := apiClient.GetKibanaOapiClient()
-		if err != nil {
-			return fmt.Errorf("kibana openapi client: %w", err)
-		}
-
-		spaceID := composite.ClusterID
-		viewID := composite.ResourceID
-
-		path := fmt.Sprintf("/api/data_views/data_view/%s", url.PathEscape(viewID))
-		if spaceID != "" && spaceID != "default" {
-			path = fmt.Sprintf("/s/%s/api/data_views/data_view/%s", url.PathEscape(spaceID), url.PathEscape(viewID))
-		}
-		endpoint := strings.TrimRight(kc.URL, "/") + path
-		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, endpoint, nil)
-		if err != nil {
-			return fmt.Errorf("build GET %s: %w", endpoint, err)
-		}
-		req.Header.Set("kbn-xsrf", "true")
-
-		resp, err := kc.HTTP.Do(req)
-		if err != nil {
-			return fmt.Errorf("GET %s: %w", endpoint, err)
-		}
-		defer resp.Body.Close()
-		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
-		if resp.StatusCode != http.StatusOK {
-			return fmt.Errorf("GET %s: status %d: %s", endpoint, resp.StatusCode, string(body))
+		if view.DataView.FieldAttrs != nil {
+			fa, ok := (*view.DataView.FieldAttrs)[fieldKey]
+			entry.present = ok
+			if ok {
+				entry.label = fa.CustomLabel
+			}
 		}
 
-		var doc struct {
-			DataView struct {
-				FieldAttrs map[string]struct {
-					CustomLabel *string `json:"customLabel,omitempty"`
-				} `json:"fieldAttrs"`
-			} `json:"data_view"`
-		}
-		if err := json.Unmarshal(body, &doc); err != nil {
-			return fmt.Errorf("decode GET %s body: %w", endpoint, err)
-		}
-
-		entry, present := doc.DataView.FieldAttrs[fieldKey]
 		if want == "" {
-			if !present || entry.CustomLabel == nil || *entry.CustomLabel == "" {
+			if !entry.present || entry.label == nil || *entry.label == "" {
 				return nil
 			}
-			return fmt.Errorf("server-side field_attrs[%q].customLabel = %q, want cleared", fieldKey, *entry.CustomLabel)
+			return fmt.Errorf("server-side field_attrs[%q].customLabel = %q, want cleared", fieldKey, *entry.label)
 		}
-		if !present {
+		if !entry.present {
 			return fmt.Errorf("server-side field_attrs[%q] not found (want customLabel=%q)", fieldKey, want)
 		}
-		if entry.CustomLabel == nil {
+		if entry.label == nil {
 			return fmt.Errorf("server-side field_attrs[%q].customLabel is null (want %q)", fieldKey, want)
 		}
-		if *entry.CustomLabel != want {
-			return fmt.Errorf("server-side field_attrs[%q].customLabel = %q, want %q", fieldKey, *entry.CustomLabel, want)
+		if *entry.label != want {
+			return fmt.Errorf("server-side field_attrs[%q].customLabel = %q, want %q", fieldKey, *entry.label, want)
 		}
 		return nil
 	}
