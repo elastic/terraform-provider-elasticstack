@@ -30,6 +30,7 @@ import (
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/ruleaction"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -532,6 +533,8 @@ func TestAccResourceMLFilterDestroyWhenRemoteDeleted(t *testing.T) {
 //
 // Requires TF_ACC=1 and a cluster where ML anomaly detection jobs can be created (same expectation as other ML acceptance tests).
 func TestAccResourceMLFilterDestroyBlockedByReferencedJob(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, mlFilterDestroyBlockedMinElasticsearch, versionutils.FlavorAny)
+
 	filterID := fmt.Sprintf("test-filter-blockdel-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	jobID := fmt.Sprintf("test-ad-blockdel-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 
@@ -545,10 +548,7 @@ func TestAccResourceMLFilterDestroyBlockedByReferencedJob(t *testing.T) {
 	}
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			acctest.PreCheck(t)
-			skipMLFilterDestroyBlockedUnlessSupportedES(t)
-		},
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -590,6 +590,8 @@ func TestAccResourceMLFilterDestroyBlockedByReferencedJob(t *testing.T) {
 }
 
 func TestAccResourceMLFilterDestroyBlockedByTwoReferencedJobs(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, mlFilterDestroyBlockedMinElasticsearch, versionutils.FlavorAny)
+
 	filterID := fmt.Sprintf("test-filter-2jobs-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	jobID1 := fmt.Sprintf("test-ad-2jobs-a-%s", sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum))
 	jobID2 := fmt.Sprintf("test-ad-2jobs-b-%s", sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum))
@@ -605,10 +607,7 @@ func TestAccResourceMLFilterDestroyBlockedByTwoReferencedJobs(t *testing.T) {
 	}
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			acctest.PreCheck(t)
-			skipMLFilterDestroyBlockedUnlessSupportedES(t)
-		},
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -649,22 +648,6 @@ func TestAccResourceMLFilterDestroyBlockedByTwoReferencedJobs(t *testing.T) {
 			},
 		},
 	})
-}
-
-func skipMLFilterDestroyBlockedUnlessSupportedES(t *testing.T) {
-	t.Helper()
-	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
-	if err != nil {
-		t.Fatalf("acceptance ES client: %v", err)
-	}
-	serverVersion, diags := client.ServerVersion(t.Context())
-	if diags.HasError() {
-		t.Fatalf("failed to read Elasticsearch version: %v", diags)
-	}
-	if serverVersion.LessThan(mlFilterDestroyBlockedMinElasticsearch) {
-		t.Skipf("Skipping ML filter destroy-blocked tests: server version %s is below %s (scoped custom_rules delete blocking is not exercised consistently on older matrix stacks)",
-			serverVersion, mlFilterDestroyBlockedMinElasticsearch)
-	}
 }
 
 func putMLJobReferencingFilter(ctx context.Context, t *testing.T, jobID, filterID string) {
