@@ -65,7 +65,7 @@ func TestAccResourceMLFilter(t *testing.T) {
 					resource.TestCheckTypeSetElemAttr(mlFilterResourceAddress, "items.*", "*.example.com"),
 					resource.TestCheckTypeSetElemAttr(mlFilterResourceAddress, "items.*", "trusted.org"),
 					resource.TestMatchResourceAttr(mlFilterResourceAddress, "id",
-						regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/`+regexp.QuoteMeta(filterID)+`$`)),
+						regexp.MustCompile(`^[A-Za-z0-9_-]{22}/`+regexp.QuoteMeta(filterID)+`$`)),
 				),
 			},
 			{
