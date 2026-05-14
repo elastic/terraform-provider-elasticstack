@@ -11,9 +11,9 @@
 
 ## 2. Schema Change
 
-- [ ] 2.1 In `internal/kibana/dataview/schema.go`, replace `mapplanmodifier.RequiresReplace()` on `field_attrs` with `CustomType: NewFieldAttrsType(getFieldAttrElemType())`. Remove the `PlanModifiers` slice from the attribute.
-- [ ] 2.2 Remove the `mapplanmodifier` import from `schema.go` if it is no longer used elsewhere in the file.
-- [ ] 2.3 Run `make build` to verify the schema change compiles without error.
+- [x] 2.1 In `internal/kibana/dataview/schema.go`, replace `mapplanmodifier.RequiresReplace()` on `field_attrs` with `CustomType: NewFieldAttrsType(getFieldAttrElemType())`. Remove the `PlanModifiers` slice from the attribute.
+- [x] 2.2 Remove the `mapplanmodifier` import from `schema.go` if it is no longer used elsewhere in the file.
+- [x] 2.3 Run `make build` to verify the schema change compiles without error.
 
 ## 3. Model Update
 
