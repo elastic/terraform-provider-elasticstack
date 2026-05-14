@@ -473,20 +473,22 @@ func panelDispatcherAllowsTypedConfigOmission(panelType string) bool {
 }
 
 func panelToAPI(ctx context.Context, pm models.PanelModel, dashboard *models.DashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
-	for _, h := range AllHandlers() {
-		if panelkit.HasConfig(&pm, h.PanelType()+"_config") {
-			return h.ToAPI(pm, dashboard)
+	// Type-first dispatch: when pm.Type is known the registry resolves the handler in O(1).
+	// Optional typed *_config blocks (allowlist) still dispatch when the block itself is absent.
+	if typeutils.IsKnown(pm.Type) {
+		pt := pm.Type.ValueString()
+		if h := LookupHandler(pt); h != nil {
+			if panelkit.HasConfig(&pm, pt+"_config") || panelDispatcherAllowsTypedConfigOmission(pt) {
+				return h.ToAPI(pm, dashboard)
+			}
 		}
 	}
 
-	// Registered handlers may still apply when the practitioner omits an optional typed *_config block
-	// (see e.g. `time_slider_control` with no `time_slider_control_config`, or synthetics panels with defaults).
-	if typeutils.IsKnown(pm.Type) {
-		pt := pm.Type.ValueString()
-		if panelDispatcherAllowsTypedConfigOmission(pt) {
-			if h := LookupHandler(pt); h != nil {
-				return h.ToAPI(pm, dashboard)
-			}
+	// Fallback: pm.Type may be unset while a typed *_config block is populated (e.g. legacy plan-state shapes).
+	// Scan handlers so writes still resolve to the correct dispatcher.
+	for _, h := range AllHandlers() {
+		if panelkit.HasConfig(&pm, h.PanelType()+"_config") {
+			return h.ToAPI(pm, dashboard)
 		}
 	}
 

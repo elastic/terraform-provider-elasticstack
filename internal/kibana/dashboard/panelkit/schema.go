@@ -21,7 +21,6 @@ import (
 	"context"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
@@ -238,23 +237,17 @@ func (imageDrilldownEntryValidator) ValidateObject(_ context.Context, req valida
 	dashVal := attrs["dashboard_drilldown"]
 	urlVal := attrs["url_drilldown"]
 
-	dashSet := imageAttrObjectSet(dashVal)
-	urlSet := imageAttrObjectSet(urlVal)
+	dashSet := AttrConcreteSet(dashVal)
+	urlSet := AttrConcreteSet(urlVal)
 
 	if dashSet && urlSet {
 		resp.Diagnostics.AddAttributeError(req.Path, "Invalid drilldown entry", "Exactly one of `dashboard_drilldown` or `url_drilldown` must be set, not both.")
 		return
 	}
 	if !dashSet && !urlSet {
-		dashUnknown := dashVal != nil && dashVal.IsUnknown()
-		urlUnknown := urlVal != nil && urlVal.IsUnknown()
-		if dashUnknown || urlUnknown {
+		if AttrUnknown(dashVal) || AttrUnknown(urlVal) {
 			return
 		}
 		resp.Diagnostics.AddAttributeError(req.Path, "Invalid drilldown entry", "Exactly one of `dashboard_drilldown` or `url_drilldown` must be set.")
 	}
-}
-
-func imageAttrObjectSet(v attr.Value) bool {
-	return v != nil && !v.IsNull() && !v.IsUnknown()
 }

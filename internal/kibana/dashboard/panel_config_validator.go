@@ -167,19 +167,15 @@ func (v pinnedPanelControlValidator) MarkdownDescription(ctx context.Context) st
 	return v.Description(ctx)
 }
 
+// pinnedPanelExpectedTypedControlAttr resolves the typed `*_control_config` block name for a pinned
+// panel type by deferring to the registry. Returns ok=false for any panel type that is not registered
+// or that does not implement PinnedHandler (i.e. not a pinned-capable control).
 func pinnedPanelExpectedTypedControlAttr(panelType string) (attrName string, ok bool) {
-	switch panelType {
-	case panelTypeOptionsListControl:
-		return "options_list_control_config", true
-	case panelTypeRangeSlider:
-		return "range_slider_control_config", true
-	case panelTypeTimeSlider:
-		return "time_slider_control_config", true
-	case panelTypeEsqlControl:
-		return "esql_control_config", true
-	default:
+	h := LookupHandler(panelType)
+	if h == nil || h.PinnedHandler() == nil {
 		return "", false
 	}
+	return h.PanelType() + "_config", true
 }
 
 const pinnedPanelAllowedTypesDetail = "`options_list_control`, `range_slider_control`, `time_slider_control`, or `esql_control`"
