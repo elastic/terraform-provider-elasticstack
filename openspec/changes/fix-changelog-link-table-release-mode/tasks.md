@@ -28,11 +28,11 @@
 
 ## 6. Tests for `rewriteLinkTable`
 
-- [ ] 6.1 Add test: standard release — updates `[Unreleased]:` URL and inserts `[NEW]:` entry
-- [ ] 6.2 Add test: idempotent re-run — `[NEW]:` not duplicated when entry already present
-- [ ] 6.3 Add test: no-op when `[Unreleased]:` line is absent
-- [ ] 6.4 Add test: no-op when `previousTag` is empty string
-- [ ] 6.5 Add test: no-op when `targetVersion` is empty string (unreleased mode guard)
+- [x] 6.1 Add test: standard release — updates `[Unreleased]:` URL and inserts `[NEW]:` entry
+- [x] 6.2 Add test: idempotent re-run — `[NEW]:` not duplicated when entry already present
+- [x] 6.3 Add test: no-op when `[Unreleased]:` line is absent
+- [x] 6.4 Add test: no-op when `previousTag` is empty string
+- [x] 6.5 Add test: no-op when `targetVersion` is empty string (unreleased mode guard)
 
 ## 7. Update engine-level release tests
 
