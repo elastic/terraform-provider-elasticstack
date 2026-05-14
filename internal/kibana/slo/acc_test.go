@@ -965,9 +965,11 @@ func TestAccResourceSlo_long_slo_id(t *testing.T) {
 	// This test exposes a bug in Kibana present in 8.11.x
 	slo8_9Constraints, err := version.NewConstraint(">=8.9.0,!=8.11.0,!=8.11.1,!=8.11.2,!=8.11.3,!=8.11.4")
 	require.NoError(t, err)
+	versionutils.SkipIfUnsupportedConstraints(t, slo8_9Constraints, versionutils.FlavorAny)
 
 	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	longSloID := "my-slo-id-that-is-exactly-48-characters-long-now"
+	require.Len(t, longSloID, 48, "slo_id must be exactly 48 characters to test the boundary")
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -975,7 +977,6 @@ func TestAccResourceSlo_long_slo_id(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(slo8_9Constraints),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("test"),
 				ConfigVariables: config.Variables{
 					"name":   config.StringVariable(sloName),
