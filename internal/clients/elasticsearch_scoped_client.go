@@ -25,6 +25,7 @@ import (
 
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/core/info"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -110,13 +111,10 @@ func (e *ElasticsearchScopedClient) ClusterID(ctx context.Context) (*string, dia
 		return &uuid, diags
 	}
 
-	diags = append(diags, diag.Diagnostic{
-		Severity: diag.Error,
-		Summary:  "Unable to get cluster UUID",
-		Detail: `Unable to get cluster UUID.
-		There might be a problem with permissions or cluster is still starting up and UUID has not been populated yet.`,
-	})
-	return nil, diags
+	return nil, append(diags, diagutil.SDKErrorDiag(
+		"Unable to get cluster UUID",
+		"Unable to get cluster UUID.\n\tThere might be a problem with permissions or cluster is still starting up and UUID has not been populated yet.",
+	)...)
 }
 
 // ID returns a CompositeID combining the cluster UUID and the given resourceID.
