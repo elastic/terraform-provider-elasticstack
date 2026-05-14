@@ -56,7 +56,8 @@ v0.14.5 had no `ValidateConfig` so full config decoding only happened at apply t
   A helper `getDetectorAttrTypes(ctx)` is needed; it can be derived from
   `schema.ListNestedAttribute` or declared as a function returning the `attr.Types` map
   for `DetectorTFModel`. Other helpers (`getCustomRuleAttrTypes`, `getRuleConditionAttrTypes`)
-  already follow this pattern in the same file.
+  already follow this pattern in `internal/elasticsearch/ml/anomalydetectionjob/schema.go`
+  and are reused from `models_tf.go`.
 
 - **`validateConfigCustomRules` guard**: add `ac.Detectors.IsUnknown()` check before
   `ElementsAs`. If unknown, return early (validation is deferred to apply time, matching
@@ -65,7 +66,7 @@ v0.14.5 had no `ValidateConfig` so full config decoding only happened at apply t
 - **Acceptance test**: add a sub-test or separate test function for the variable-based
   repro. Use `resource.TestStep` with a Terraform configuration that mirrors the minimal
   repro from the issue (`variable "detectors"` with the same default, assigned to
-  `analysis_config { detectors = var.detectors }`). The test should verify the resource
+  `analysis_config = { detectors = var.detectors }`). The test should verify the resource
   plans and applies without error.
 
 ## Risks / Trade-offs

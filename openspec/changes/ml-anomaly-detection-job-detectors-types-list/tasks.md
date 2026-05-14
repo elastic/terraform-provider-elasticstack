@@ -2,10 +2,12 @@
 
 - [ ] 1.1 In `internal/elasticsearch/ml/anomalydetectionjob/models_tf.go`, change
   `AnalysisConfigTFModel.Detectors` from `[]DetectorTFModel` to `types.List` (line ~81).
-- [ ] 1.2 Add or confirm a `getDetectorAttrTypes(ctx context.Context) map[string]attr.Type`
-  helper in the same file, returning the full `attr.Type` map for `DetectorTFModel`
-  (including the `custom_rules` nested object type via `getCustomRuleAttrTypes`). This
-  helper is needed by both `convertAnalysisConfigFromAPI` and any `ListValueFrom` call.
+- [ ] 1.2 Reuse the existing `getDetectorAttrTypes(ctx context.Context) map[string]attr.Type`
+  helper from `internal/elasticsearch/ml/anomalydetectionjob/schema.go` for the full
+  `DetectorTFModel` `attr.Type` map (including the `custom_rules` nested object type via
+  `getCustomRuleAttrTypes`) when updating `convertAnalysisConfigFromAPI` and any
+  `types.ListValueFrom` call. Do not add a duplicate helper in `models_tf.go`; if the
+  helper must be relocated, move/centralize it rather than maintaining two copies.
 
 ## 2. Update `toAPIModel` detectors loop
 
@@ -64,10 +66,10 @@
   testdata), add a test case (or `resource.TestStep`) that:
   - Declares a `variable "detectors"` with a `list(object({...}))` type and the minimal
     repro default from issue #2966.
-  - Assigns `analysis_config { detectors = var.detectors }` at the resource site.
+  - Assigns `analysis_config = { detectors = var.detectors }` at the resource site.
   - Verifies that plan and apply succeed without a `Value Conversion Error`.
   - Includes a `resource.TestCheckResourceAttr` assertion confirming at least one
-    detector attribute (e.g. `analysis_config.0.detectors.0.function`) reflects the
+    detector attribute (e.g. `analysis_config.detectors.0.function`) reflects the
     expected value.
 - [ ] 5.2 Ensure the new test is grouped under or named consistently with existing
   `TestAccResourceAnomalyDetectionJob*` tests.

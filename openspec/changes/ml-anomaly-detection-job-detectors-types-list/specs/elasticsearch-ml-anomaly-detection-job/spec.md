@@ -72,7 +72,7 @@ The acceptance test suite SHALL include at least one test case for
 from issue #2966 (`function` as required string; `field_name`, `by_field_name`,
 `detector_description` as optional string). The test SHALL assert that plan and apply
 complete without a `Value Conversion Error` and SHALL verify at least one detector
-attribute in state (e.g. `analysis_config.0.detectors.0.function`). The test SHALL be
+attribute in state (e.g. `analysis_config.detectors.0.function`). The test SHALL be
 named consistently with the existing `TestAccResourceAnomalyDetectionJob*` convention.
 
 #### Scenario: Acceptance test — variable-sourced detectors plan and apply
