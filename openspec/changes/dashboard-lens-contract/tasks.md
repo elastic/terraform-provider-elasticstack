@@ -39,11 +39,11 @@ Each converter must:
 ## 4. Delete old lens infrastructure
 
 - [x] 4.1 Delete `dashboard/models_lens_panel.go` (replaced by `lenscommon/`)
-- [ ] 4.2 Delete `dashboard/models_lens_dashboard_app_converters.go` (by_reference moves to `lenscommon/`)
-- [ ] 4.3 Delete `dashboard/models_lens_dashboard_app_by_value_adapter.go` (absorbed into composites later)
-- [ ] 4.4 Delete `dashboard/models_lens_dashboard_app_panel.go` (absorbed into composites later)
+- [ ] 4.2 Delete `dashboard/models_lens_dashboard_app_converters.go` (by_reference moves to `lenscommon/`) — **deferred**: file still holds live `lensDashboardAppByValueToAPI` / scratch-panel glue (~534 lines); needs staged extraction before deletion.
+- [ ] 4.3 Delete `dashboard/models_lens_dashboard_app_by_value_adapter.go` (absorbed into composites later) — **deferred**: still owns `LensByValueChartBlocksFromPanel`, typed lens-app block wiring, and metric expansion helpers; moving to `lenscommon/blocks.go` needs cycle-free model-only refactor (or composite-panel contract).
+- [x] 4.4 Delete `dashboard/models_lens_dashboard_app_panel.go` (absorbed into composites later) — **N/A on this branch** (file does not exist — superseded by registry / composite handler work).
 - [x] 4.5 Verify `dashboard/models_lens_by_value_chart_blocks.go` remains deleted (completed in §2.4)
-- [ ] 4.6 Update or delete `dashboard/models_lens_panel.go` tests (moved to converter packages)
+- [x] 4.6 Update or delete `dashboard/models_lens_panel.go` tests (moved to converter packages) — dashboard wiring covered via `lenscommon.ForType` / `PopulateFromAttributes` in per-chart tests, `models_panels_test.go`, adapter tests, and regression `lens_by_value_embed_wiring_test.go`.
 
 ## 5. Refactor state alignment and defaults
 
