@@ -139,7 +139,7 @@ func (v panelConfigValidator) ValidateObject(ctx context.Context, req validator.
 	}
 
 	panel := typeValue.ValueString()
-	for _, h := range AllHandlers() {
+	if h := LookupHandler(panel); h != nil {
 		if diags := h.ValidatePanelConfig(ctx, panel, attrs, req.Path); len(diags) > 0 {
 			resp.Diagnostics.Append(diags...)
 		}

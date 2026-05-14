@@ -23,8 +23,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 )
 
-// PanelConfigDescription builds the MarkdownDescription for an optional typed panel *_config sibling,
-// documenting mutual exclusion against other typed panel config siblings.
+// PanelConfigDescription builds MarkdownDescription for a mutually exclusive optional panel sibling
+// (typed `*_config`, `config_json`, or other panel-level config blocks in the sibling list passed
+// from dashboard registry init), documenting which other sibling attributes conflict with self.
 func PanelConfigDescription(base, self string, names []string) string {
 	others := make([]string, 0, len(names)-1)
 	for _, name := range names {

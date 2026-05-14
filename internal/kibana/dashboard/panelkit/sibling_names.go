@@ -17,17 +17,19 @@
 
 package panelkit
 
-// typedSiblingPanelConfigBlockNames lists panel-level typed config attribute names (`*_config`),
-// populated once from dashboard registry init plus explicit unmigrated panel blocks.
+// typedSiblingPanelConfigBlockNames holds panel-level attribute names configured as mutually
+// exclusive siblings: optional `config_json`, each registered handler's typed `*_config` block name,
+// and unmigrated panel blocks (`vis_config`, `lens_dashboard_app_config`, `discover_session_config`).
 var typedSiblingPanelConfigBlockNames []string
 
 // SetTypedSiblingPanelConfigBlockNames configures the mutually exclusive sibling name list used for
-// panel-level ConflictsWith / documentation. Dashboard init calls this after registering handlers.
+// panel-level ConflictsWith / MarkdownDescription hints. Dashboard init calls this after
+// registering handlers and appending non-*_config panel config siblings used by unmigrated panels.
 func SetTypedSiblingPanelConfigBlockNames(names []string) {
 	typedSiblingPanelConfigBlockNames = append([]string(nil), names...)
 }
 
-// TypedSiblingPanelConfigBlockNames returns a copy of panel-level typed config sibling names.
+// TypedSiblingPanelConfigBlockNames returns a copy of the mutually exclusive sibling name list.
 func TypedSiblingPanelConfigBlockNames() []string {
 	out := make([]string, len(typedSiblingPanelConfigBlockNames))
 	copy(out, typedSiblingPanelConfigBlockNames)

@@ -18,6 +18,8 @@
 package dashboard
 
 import (
+	"fmt"
+
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/esqlcontrol"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/iface"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/image"
@@ -69,8 +71,12 @@ func init() {
 	panelTypeToHandler = make(map[string]iface.Handler, len(panelHandlers))
 	derivedPanelConfigNames = append(derivedPanelConfigNames, "config_json")
 	for _, h := range panelHandlers {
-		panelTypeToHandler[h.PanelType()] = h
-		block := h.PanelType() + "_config"
+		pt := h.PanelType()
+		if _, dup := panelTypeToHandler[pt]; dup {
+			panic(fmt.Sprintf("dashboard: duplicate iface.Handler.PanelType registration: %q", pt))
+		}
+		panelTypeToHandler[pt] = h
+		block := pt + "_config"
 		panelkit.MustPanelConfigBlockTagged(block)
 		derivedPanelConfigNames = append(derivedPanelConfigNames, block)
 	}
