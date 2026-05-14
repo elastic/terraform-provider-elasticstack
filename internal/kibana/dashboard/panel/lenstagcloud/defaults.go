@@ -15,11 +15,23 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package dashboard
+package lenstagcloud
 
-import (
-	_ "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/lenslegacymetric" // side-effect: register legacy_metric VizConverter with lenscommon (dashboard-lens-contract).
-	_ "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/lenspie" // side-effect: register pie VizConverter with lenscommon (dashboard-lens-contract).
-	_ "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/lensregionmap" // side-effect: register region_map VizConverter with lenscommon (dashboard-lens-contract).
-	_ "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/lenstagcloud" // side-effect: register tagcloud VizConverter with lenscommon (dashboard-lens-contract).
-)
+import "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
+
+// populateTagcloudLensAttributes duplicates dashboard.populateTagcloudAttributes until Section 5 routes via converters.
+func populateTagcloudLensAttributes(attrs map[string]any) map[string]any {
+	if attrs == nil {
+		return attrs
+	}
+	if _, exists := attrs["filters"]; !exists {
+		attrs["filters"] = []any{}
+	}
+	if metric, ok := attrs["metric"].(map[string]any); ok {
+		attrs["metric"] = lenscommon.PopulateTagcloudMetricDefaults(metric)
+	}
+	if tagBy, ok := attrs["tag_by"].(map[string]any); ok {
+		attrs["tag_by"] = lenscommon.PopulateTagcloudTagByDefaults(tagBy)
+	}
+	return attrs
+}
