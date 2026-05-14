@@ -139,9 +139,20 @@ jobs:
           git commit -m "chore(release): prepare ${TARGET_VERSION}"
 
       - name: Push release branch
+        env:
+          GH_AW_CI_TRIGGER_TOKEN: ${{ secrets.GH_AW_CI_TRIGGER_TOKEN }}
         run: |
           BRANCH="${{ steps.meta.outputs.BRANCH }}"
           git push origin "${BRANCH}"
+          if [ -n "${GH_AW_CI_TRIGGER_TOKEN}" ]; then
+            SERVER_URL="${GITHUB_SERVER_URL#https://}"
+            SERVER_URL="${SERVER_URL#http://}"
+            git remote set-url origin "https://x-access-token:${GH_AW_CI_TRIGGER_TOKEN}@${SERVER_URL}/${GITHUB_REPOSITORY}.git"
+            git commit --allow-empty -m "chore: trigger CI"
+            git push origin "${BRANCH}"
+          else
+            echo "::warning::GH_AW_CI_TRIGGER_TOKEN is not set; CI will not be triggered automatically"
+          fi
 
       - name: Check if release PR already exists
         id: pr-check
