@@ -45,29 +45,29 @@
 - [x] 2.18 Remove hard-coded control cases from `pinned_panels_mapping.go`
 
 ### Markdown panel
-- [ ] 2.19 Create `panel/markdown/api.go` with Handler supporting both typed config and config_json paths
-- [ ] 2.20 Create `panel/markdown/model.go` with `populateFromAPI`, `buildConfigByValue`, `buildConfigByReference`
-- [ ] 2.21 Create `panel/markdown/schema.go` with `SchemaAttribute()`
-- [ ] 2.22 Create `panel/markdown/api_test.go` with `contracttest.Run` call covering by_value path; additional handwritten tests for by_reference and config_json fallback branch classification
-- [ ] 2.23 Remove markdown cases from `models_panels.go` switch and `toAPI()` cascade
-- [ ] 2.24 Register `markdown.Handler{}` in `registry.go`
+- [x] 2.19 Create `panel/markdown/api.go` with Handler supporting both typed config and config_json paths
+- [x] 2.20 Create `panel/markdown/model.go` with `populateFromAPI`, `buildConfigByValue`, `buildConfigByReference`
+- [x] 2.21 Create `panel/markdown/schema.go` with `SchemaAttribute()`
+- [x] 2.22 Create `panel/markdown/api_test.go` with `contracttest.Run` call covering by_value path; additional handwritten tests for by_reference and config_json fallback branch classification
+- [x] 2.23 Remove markdown cases from `models_panels.go` switch and `toAPI()` cascade
+- [x] 2.24 Register `markdown.Handler{}` in `registry.go`
 
 ### SLO alerts panel
-- [ ] 2.25 Create `panel/sloalerts/api.go` with Handler and `FromAPI`/`ToAPI`
-- [ ] 2.26 Create `panel/sloalerts/model.go` with `populateFromAPI`, `buildConfig`
-- [ ] 2.27 Create `panel/sloalerts/schema.go` with `SchemaAttribute()` (uses `panelkit.URLDrilldownSchema()` for drilldowns)
-- [ ] 2.28 Create `panel/sloalerts/api_test.go` with `contracttest.Run` call
-- [ ] 2.29 Remove `slo_alerts` cases from `models_panels.go` switch and `toAPI()` cascade
-- [ ] 2.30 Register `sloalerts.Handler{}` in `registry.go`
+- [x] 2.25 Create `panel/sloalerts/api.go` with Handler and `FromAPI`/`ToAPI`
+- [x] 2.26 Create `panel/sloalerts/model.go` with `populateFromAPI`, `buildConfig`
+- [x] 2.27 Create `panel/sloalerts/schema.go` with `SchemaAttribute()` (uses `panelkit.URLDrilldownSchema()` for drilldowns)
+- [x] 2.28 Create `panel/sloalerts/api_test.go` with `contracttest.Run` call
+- [x] 2.29 Remove `slo_alerts` cases from `models_panels.go` switch and `toAPI()` cascade
+- [x] 2.30 Register `sloalerts.Handler{}` in `registry.go`
 
 ### Image panel
-- [ ] 2.31 Add `panelkit.ImageDrilldownSchema()` factory to `panelkit/schema.go` for the dashboard+URL drilldown variant
-- [ ] 2.32 Create `panel/image/api.go` with Handler and `FromAPI`/`ToAPI`
-- [ ] 2.33 Create `panel/image/model.go` with `populateFromAPI`, `buildConfig`
-- [ ] 2.34 Create `panel/image/schema.go` with `SchemaAttribute()` (uses `panelkit.ImageDrilldownSchema()`)
-- [ ] 2.35 Create `panel/image/api_test.go` with `contracttest.Run` call + handwritten tests for file vs URL src variants and dashboard vs URL drilldown variants
-- [ ] 2.36 Remove `image` cases from `models_panels.go` switch and `toAPI()` cascade
-- [ ] 2.37 Register `image.Handler{}` in `registry.go`
+- [x] 2.31 Add `panelkit.ImageDrilldownSchema()` factory to `panelkit/schema.go` for the dashboard+URL drilldown variant
+- [x] 2.32 Create `panel/image/api.go` with Handler and `FromAPI`/`ToAPI`
+- [x] 2.33 Create `panel/image/model.go` with `populateFromAPI`, `buildConfig`
+- [x] 2.34 Create `panel/image/schema.go` with `SchemaAttribute()` (uses `panelkit.ImageDrilldownSchema()`)
+- [x] 2.35 Create `panel/image/api_test.go` with `contracttest.Run` call + handwritten tests for file vs URL src variants and dashboard vs URL drilldown variants
+- [x] 2.36 Remove `image` cases from `models_panels.go` switch and `toAPI()` cascade
+- [x] 2.37 Register `image.Handler{}` in `registry.go`
 
 ## 3. Refactor validators and schema assembly
 
