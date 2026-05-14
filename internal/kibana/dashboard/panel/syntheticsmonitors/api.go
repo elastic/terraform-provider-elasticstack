@@ -77,9 +77,6 @@ func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kb
 	return panelItem, diags
 }
 
-func (Handler) ValidatePanelConfig(_ context.Context, panelTypeDiscriminator string, _ map[string]attr.Value, _ path.Path) diag.Diagnostics {
-	if panelTypeDiscriminator != (Handler{}).PanelType() {
-		return nil
-	}
+func (Handler) ValidatePanelConfig(_ context.Context, _ map[string]attr.Value, _ path.Path) diag.Diagnostics {
 	return nil
 }

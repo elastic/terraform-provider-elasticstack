@@ -96,12 +96,8 @@ func sloErrorBudgetAttrsShape(attrs map[string]attr.Value) (flat bool, obj types
 	return false, types.Object{}, false
 }
 
-func (Handler) ValidatePanelConfig(_ context.Context, panelTypeDiscriminator string, attrs map[string]attr.Value, attrPath path.Path) diag.Diagnostics {
+func (Handler) ValidatePanelConfig(_ context.Context, attrs map[string]attr.Value, attrPath path.Path) diag.Diagnostics {
 	var out diag.Diagnostics
-	if panelTypeDiscriminator != panelType {
-		return out
-	}
-
 	flat, obj, shaped := sloErrorBudgetAttrsShape(attrs)
 	if !shaped {
 		out.AddAttributeError(attrPath.AtName(panelConfigAttrsKeyPrefix), "Missing slo_error_budget panel configuration", "SLO error budget panels require `slo_error_budget_config`.")

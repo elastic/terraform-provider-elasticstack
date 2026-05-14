@@ -106,12 +106,8 @@ func esqlAttrsShape(attrs map[string]attr.Value) (flat bool, nested types.Object
 }
 
 // ValidatePanelConfig checks required shallow leaves for typed esql configs (covers contracttest flattened attrs).
-func (Handler) ValidatePanelConfig(_ context.Context, panelTypeDiscriminator string, attrs map[string]attr.Value, attrPath path.Path) diag.Diagnostics {
+func (Handler) ValidatePanelConfig(_ context.Context, attrs map[string]attr.Value, attrPath path.Path) diag.Diagnostics {
 	var out diag.Diagnostics
-	if panelTypeDiscriminator != panelType {
-		return out
-	}
-
 	flat, nested, shaped := esqlAttrsShape(attrs)
 	if !shaped {
 		return out

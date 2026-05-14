@@ -108,12 +108,8 @@ func optionsListAttrsShape(attrs map[string]attr.Value) (flat bool, obj types.Ob
 }
 
 // ValidatePanelConfig enforces presence of DataViewID and FieldName for options_list panels.
-func (Handler) ValidatePanelConfig(_ context.Context, panelTypeDiscriminator string, attrs map[string]attr.Value, attrPath path.Path) diag.Diagnostics {
+func (Handler) ValidatePanelConfig(_ context.Context, attrs map[string]attr.Value, attrPath path.Path) diag.Diagnostics {
 	var out diag.Diagnostics
-	if panelTypeDiscriminator != panelType {
-		return out
-	}
-
 	flat, obj, shaped := optionsListAttrsShape(attrs)
 	if !shaped {
 		return out

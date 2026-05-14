@@ -110,12 +110,8 @@ func sloBurnRateAttrsShape(attrs map[string]attr.Value) (flat bool, obj types.Ob
 
 // ValidatePanelConfig returns diagnostics only for this panel type when required fields inside
 // slo_burn_rate_config are absent and the validated attribute map targets that nested object.
-func (Handler) ValidatePanelConfig(_ context.Context, panelTypeDiscriminator string, attrs map[string]attr.Value, attrPath path.Path) diag.Diagnostics {
+func (Handler) ValidatePanelConfig(_ context.Context, attrs map[string]attr.Value, attrPath path.Path) diag.Diagnostics {
 	var out diag.Diagnostics
-	if panelTypeDiscriminator != panelType {
-		return out
-	}
-
 	flat, obj, shaped := sloBurnRateAttrsShape(attrs)
 	if !shaped {
 		out.AddAttributeError(attrPath.AtName(panelConfigAttrsKeyPrefix), "Missing SLO burn rate panel configuration", "SLO burn rate panels require `slo_burn_rate_config`.")

@@ -109,10 +109,7 @@ func (synthStatsHandler) ToAPI(pm models.PanelModel, dashboard *models.Dashboard
 	return out, nil
 }
 
-func (synthStatsHandler) ValidatePanelConfig(_ context.Context, panelType string, _ map[string]attr.Value, _ path.Path) diag.Diagnostics {
-	if panelType != "synthetics_stats_overview" {
-		return nil
-	}
+func (synthStatsHandler) ValidatePanelConfig(_ context.Context, _ map[string]attr.Value, _ path.Path) diag.Diagnostics {
 	return nil
 }
 
@@ -232,7 +229,7 @@ func (sloBurnHarnessBase) sloToAPI(pm models.PanelModel) (kbapi.DashboardPanelIt
 	return out, nil
 }
 
-func (sloBurnHarnessBase) ValidatePanelConfig(_ context.Context, _ string, attrs map[string]attr.Value, _ path.Path) diag.Diagnostics {
+func (sloBurnHarnessBase) ValidatePanelConfig(_ context.Context, attrs map[string]attr.Value, _ path.Path) diag.Diagnostics {
 	var d diag.Diagnostics
 	sv, ok := attrs["slo_id"].(types.String)
 	if !ok || sv.IsUnknown() || sv.IsNull() {
@@ -307,7 +304,7 @@ func (h brokenSLOBurnSchema) ToAPI(pm models.PanelModel, _ *models.DashboardMode
 	return h.sloToAPI(pm)
 }
 
-func (brokenSLOBurnSchema) ValidatePanelConfig(_ context.Context, _ string, _ map[string]attr.Value, _ path.Path) diag.Diagnostics {
+func (brokenSLOBurnSchema) ValidatePanelConfig(_ context.Context, _ map[string]attr.Value, _ path.Path) diag.Diagnostics {
 	return nil
 }
 

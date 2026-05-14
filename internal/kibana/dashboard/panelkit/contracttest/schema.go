@@ -95,7 +95,7 @@ func appendValidateRequiredZeroIssues(ctx context.Context, handler iface.Handler
 		}
 		attrs := shallowCloneAttrs(attrsTemplate)
 		attrs[target] = nv
-		diags := handler.ValidatePanelConfig(ctx, handler.PanelType(), attrs, rootPath)
+		diags := handler.ValidatePanelConfig(ctx, attrs, rootPath)
 		if !diags.HasError() {
 			*issues = append(*issues, fmt.Sprintf("[Schema] ValidatePanelConfig expected error when %#v is zeroed/null", target))
 		}

@@ -84,11 +84,8 @@ func (Handler) ToAPI(pm models.PanelModel, _ *models.DashboardModel) (kbapi.Dash
 	return panelItem, diags
 }
 
-func (Handler) ValidatePanelConfig(_ context.Context, panelTypeDiscriminator string, attrs map[string]attr.Value, attrPath path.Path) diag.Diagnostics {
+func (Handler) ValidatePanelConfig(_ context.Context, attrs map[string]attr.Value, attrPath path.Path) diag.Diagnostics {
 	var diags diag.Diagnostics
-	if panelTypeDiscriminator != panelType {
-		return diags
-	}
 	cv := attrs[panelConfigBlock]
 	if panelkit.AttrConcreteSet(cv) || panelkit.AttrUnknown(cv) {
 		return diags

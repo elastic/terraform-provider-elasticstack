@@ -41,7 +41,7 @@ type Handler interface {
     SchemaAttribute() schema.Attribute
     FromAPI(ctx context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics
     ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics)
-    ValidatePanelConfig(ctx context.Context, panelType string, attrs map[string]attr.Value, attrPath path.Path) diag.Diagnostics
+    ValidatePanelConfig(ctx context.Context, attrs map[string]attr.Value, attrPath path.Path) diag.Diagnostics
     AlignStateFromPlan(ctx context.Context, plan, state *models.PanelModel)
     ClassifyJSON(config map[string]any) bool
     PopulateJSONDefaults(config map[string]any) map[string]any
@@ -201,7 +201,7 @@ func (h Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (
     return item, diags
 }
 
-func (h Handler) ValidatePanelConfig(ctx context.Context, panelType string, attrs map[string]attr.Value, attrPath path.Path) diag.Diagnostics {
+func (h Handler) ValidatePanelConfig(ctx context.Context, attrs map[string]attr.Value, attrPath path.Path) diag.Diagnostics {
     // ...
 }
 

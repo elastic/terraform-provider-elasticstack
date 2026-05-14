@@ -164,11 +164,8 @@ func (Handler) ToAPI(pm models.PanelModel, _ *models.DashboardModel) (kbapi.Dash
 }
 
 // ValidatePanelConfig enforces markdown panel presence/exclusion rules at the dashboard panel object scope.
-func (Handler) ValidatePanelConfig(_ context.Context, panelTypeDiscriminator string, attrs map[string]attr.Value, attrPath path.Path) diag.Diagnostics {
+func (Handler) ValidatePanelConfig(_ context.Context, attrs map[string]attr.Value, attrPath path.Path) diag.Diagnostics {
 	var diags diag.Diagnostics
-	if panelTypeDiscriminator != panelType {
-		return diags
-	}
 	const mdBlock = panelType + "_config"
 	md := attrs[mdBlock]
 	cj := attrs["config_json"]

@@ -98,10 +98,7 @@ func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kb
 	return panelItem, nil
 }
 
-// ValidatePanelConfig no-ops optional-only fields aside from guarding the discriminator.
-func (Handler) ValidatePanelConfig(_ context.Context, panelTypeDiscriminator string, _ map[string]attr.Value, _ path.Path) diag.Diagnostics {
-	if panelTypeDiscriminator != panelType {
-		return nil
-	}
+// ValidatePanelConfig is a no-op: all time_slider_control_config attributes are optional.
+func (Handler) ValidatePanelConfig(_ context.Context, _ map[string]attr.Value, _ path.Path) diag.Diagnostics {
 	return nil
 }

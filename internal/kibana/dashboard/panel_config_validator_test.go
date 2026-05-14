@@ -39,11 +39,12 @@ import (
 var testAttrPathPanel = path.Root("panel")
 
 // appendValidatePanelDiagnostics mirrors panelConfigValidator.ValidateObject semantics for isolated tests:
-// aggregate registry handler validation then legacy unmigrated-panel checks (discover_session, vis).
+// resolve the handler via the registry, run its panel validation, then run the legacy unmigrated-panel
+// checks (discover_session, vis).
 func appendValidatePanelDiagnostics(ctx context.Context, panel string, attrs map[string]attr.Value) diag.Diagnostics {
 	var diags diag.Diagnostics
-	for _, h := range AllHandlers() {
-		diags.Append(h.ValidatePanelConfig(ctx, panel, attrs, testAttrPathPanel)...)
+	if h := LookupHandler(panel); h != nil {
+		diags.Append(h.ValidatePanelConfig(ctx, attrs, testAttrPathPanel)...)
 	}
 	diags.Append(panelConfigValidateDiags(
 		panel,
@@ -59,7 +60,7 @@ func Test_markdownHandler_ValidatePanelConfig(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("accepts markdown_config set", func(t *testing.T) {
-		diags := markdown.Handler{}.ValidatePanelConfig(ctx, "markdown", map[string]attr.Value{
+		diags := markdown.Handler{}.ValidatePanelConfig(ctx, map[string]attr.Value{
 			"markdown_config": types.BoolValue(true),
 			"config_json":     types.StringNull(),
 		}, testAttrPathPanel)
@@ -67,21 +68,21 @@ func Test_markdownHandler_ValidatePanelConfig(t *testing.T) {
 	})
 
 	t.Run("accepts config_json fallback", func(t *testing.T) {
-		diags := markdown.Handler{}.ValidatePanelConfig(ctx, "markdown", map[string]attr.Value{
+		diags := markdown.Handler{}.ValidatePanelConfig(ctx, map[string]attr.Value{
 			"config_json": types.StringValue(`{}`),
 		}, testAttrPathPanel)
 		require.False(t, diags.HasError())
 	})
 
 	t.Run("rejects missing config", func(t *testing.T) {
-		diags := markdown.Handler{}.ValidatePanelConfig(ctx, "markdown", map[string]attr.Value{}, testAttrPathPanel)
+		diags := markdown.Handler{}.ValidatePanelConfig(ctx, map[string]attr.Value{}, testAttrPathPanel)
 		require.True(t, diags.HasError())
 		require.Len(t, diags, 1)
 		require.Equal(t, "Missing markdown panel configuration", diags[0].Summary())
 	})
 
 	t.Run("rejects markdown_config combined with panel config_json", func(t *testing.T) {
-		diags := markdown.Handler{}.ValidatePanelConfig(ctx, "markdown", map[string]attr.Value{
+		diags := markdown.Handler{}.ValidatePanelConfig(ctx, map[string]attr.Value{
 			"markdown_config": types.BoolValue(true),
 			"config_json":     types.StringValue(`{}`),
 		}, testAttrPathPanel)
@@ -215,7 +216,7 @@ func Test_sloBurn_rateHandler_ValidatePanelConfig(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("accepts slo_burn_rate_config via flat attrs", func(t *testing.T) {
-		diags := sloburnrate.Handler{}.ValidatePanelConfig(ctx, "slo_burn_rate", map[string]attr.Value{
+		diags := sloburnrate.Handler{}.ValidatePanelConfig(ctx, map[string]attr.Value{
 			"slo_id":   types.StringValue("foo"),
 			"duration": types.StringValue("5m"),
 		}, testAttrPathPanel)
@@ -223,7 +224,7 @@ func Test_sloBurn_rateHandler_ValidatePanelConfig(t *testing.T) {
 	})
 
 	t.Run("rejects missing config block on full-panel attrs shape", func(t *testing.T) {
-		diags := sloburnrate.Handler{}.ValidatePanelConfig(ctx, "slo_burn_rate", map[string]attr.Value{}, testAttrPathPanel)
+		diags := sloburnrate.Handler{}.ValidatePanelConfig(ctx, map[string]attr.Value{}, testAttrPathPanel)
 		require.True(t, diags.HasError())
 		require.Equal(t, "Missing SLO burn rate panel configuration", diags[0].Summary())
 	})
@@ -295,14 +296,14 @@ func Test_slo_error_budget_ValidatePanelConfig(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("accepts slo_error_budget_config via flat slo_id", func(t *testing.T) {
-		diags := sloerrorbudget.Handler{}.ValidatePanelConfig(ctx, "slo_error_budget", map[string]attr.Value{
+		diags := sloerrorbudget.Handler{}.ValidatePanelConfig(ctx, map[string]attr.Value{
 			"slo_id": types.StringValue("sid"),
 		}, testAttrPathPanel)
 		require.False(t, diags.HasError())
 	})
 
 	t.Run("rejects missing slo_error_budget_config", func(t *testing.T) {
-		diags := sloerrorbudget.Handler{}.ValidatePanelConfig(ctx, "slo_error_budget", map[string]attr.Value{}, testAttrPathPanel)
+		diags := sloerrorbudget.Handler{}.ValidatePanelConfig(ctx, map[string]attr.Value{}, testAttrPathPanel)
 		require.True(t, diags.HasError())
 		require.Len(t, diags, 1)
 		require.Equal(t, "Missing slo_error_budget panel configuration", diags[0].Summary())
@@ -460,14 +461,14 @@ func Test_imageHandler_ValidatePanelConfig(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("accepts image_config", func(t *testing.T) {
-		diags := image.Handler{}.ValidatePanelConfig(ctx, panelTypeImage, map[string]attr.Value{
+		diags := image.Handler{}.ValidatePanelConfig(ctx, map[string]attr.Value{
 			"image_config": types.BoolValue(true),
 		}, testAttrPathPanel)
 		require.False(t, diags.HasError())
 	})
 
 	t.Run("rejects missing image_config", func(t *testing.T) {
-		diags := image.Handler{}.ValidatePanelConfig(ctx, panelTypeImage, map[string]attr.Value{}, testAttrPathPanel)
+		diags := image.Handler{}.ValidatePanelConfig(ctx, map[string]attr.Value{}, testAttrPathPanel)
 		require.True(t, diags.HasError())
 		require.Len(t, diags, 1)
 		require.Equal(t, "Missing image panel configuration", diags[0].Summary())
@@ -478,14 +479,14 @@ func Test_slo_alerts_ValidatePanelConfig(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("accepts slo_alerts_config", func(t *testing.T) {
-		diags := sloalerts.Handler{}.ValidatePanelConfig(ctx, panelTypeSloAlerts, map[string]attr.Value{
+		diags := sloalerts.Handler{}.ValidatePanelConfig(ctx, map[string]attr.Value{
 			"slo_alerts_config": types.BoolValue(true),
 		}, testAttrPathPanel)
 		require.False(t, diags.HasError())
 	})
 
 	t.Run("rejects missing slo_alerts_config", func(t *testing.T) {
-		diags := sloalerts.Handler{}.ValidatePanelConfig(ctx, panelTypeSloAlerts, map[string]attr.Value{}, testAttrPathPanel)
+		diags := sloalerts.Handler{}.ValidatePanelConfig(ctx, map[string]attr.Value{}, testAttrPathPanel)
 		require.True(t, diags.HasError())
 		require.Len(t, diags, 1)
 		require.Equal(t, "Missing SLO alerts panel configuration", diags[0].Summary())
@@ -522,14 +523,14 @@ func Test_slo_overview_ValidatePanelConfig(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("accepts slo_overview_config", func(t *testing.T) {
-		diags := slooverview.Handler{}.ValidatePanelConfig(ctx, panelTypeSloOverview, map[string]attr.Value{
+		diags := slooverview.Handler{}.ValidatePanelConfig(ctx, map[string]attr.Value{
 			"slo_overview_config": types.BoolValue(true),
 		}, testAttrPathPanel)
 		require.False(t, diags.HasError())
 	})
 
 	t.Run("missing", func(t *testing.T) {
-		diags := slooverview.Handler{}.ValidatePanelConfig(ctx, panelTypeSloOverview, map[string]attr.Value{}, testAttrPathPanel)
+		diags := slooverview.Handler{}.ValidatePanelConfig(ctx, map[string]attr.Value{}, testAttrPathPanel)
 		require.True(t, diags.HasError())
 		require.Len(t, diags, 1)
 		require.Equal(t, "Missing SLO overview panel configuration", diags[0].Summary())
