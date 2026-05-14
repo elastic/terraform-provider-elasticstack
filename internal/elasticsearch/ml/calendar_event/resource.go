@@ -38,7 +38,7 @@ type calendarEventResource struct {
 }
 
 func newCalendarEventResource() *calendarEventResource {
-	phCreate, phUpdate := entitycore.PlaceholderElasticsearchWriteCallbacks[CalendarEventTFModel]()
+	phCreate, _ := entitycore.PlaceholderElasticsearchWriteCallbacks[CalendarEventTFModel]()
 	return &calendarEventResource{
 		ElasticsearchResource: entitycore.NewElasticsearchResource(
 			entitycore.ComponentElasticsearch,
@@ -47,7 +47,7 @@ func newCalendarEventResource() *calendarEventResource {
 			readCalendarEvent,
 			deleteCalendarEvent,
 			phCreate,
-			phUpdate,
+			updateCalendarEventNoOp,
 		),
 	}
 }
@@ -96,13 +96,6 @@ func (r *calendarEventResource) Create(ctx context.Context, req resource.CreateR
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &readModel)...)
-}
-
-func (r *calendarEventResource) Update(_ context.Context, _ resource.UpdateRequest, resp *resource.UpdateResponse) {
-	resp.Diagnostics.AddError(
-		"Update not supported",
-		"Calendar events do not support in-place updates. All attribute changes require replacement.",
-	)
 }
 
 func (r *calendarEventResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

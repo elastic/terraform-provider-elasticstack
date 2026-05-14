@@ -23,6 +23,7 @@ import (
 	"time"
 
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -45,7 +46,22 @@ type CalendarEventTFModel struct {
 func (m CalendarEventTFModel) GetID() types.String { return m.ID }
 
 // GetResourceID implements entitycore.ElasticsearchResourceModel.
-func (m CalendarEventTFModel) GetResourceID() types.String { return m.CalendarID }
+// It returns "<calendar_id>/<event_id>" for the composite Elasticsearch resource ID segment
+// (after the cluster UUID), matching delete/read and the envelope write path.
+func (m CalendarEventTFModel) GetResourceID() types.String {
+	if !typeutils.IsKnown(m.CalendarID) || !typeutils.IsKnown(m.EventID) {
+		return types.StringUnknown()
+	}
+	if m.CalendarID.IsNull() || m.EventID.IsNull() {
+		return types.StringNull()
+	}
+	c := m.CalendarID.ValueString()
+	e := m.EventID.ValueString()
+	if c == "" || e == "" {
+		return types.StringUnknown()
+	}
+	return types.StringValue(c + "/" + e)
+}
 
 // GetElasticsearchConnection implements entitycore.ElasticsearchResourceModel.
 func (m CalendarEventTFModel) GetElasticsearchConnection() types.List {

@@ -88,10 +88,26 @@ func (r *calendarResource) Update(ctx context.Context, req resource.UpdateReques
 	}
 
 	var planJobIDs []string
-	if !plan.JobIDs.IsNull() && !plan.JobIDs.IsUnknown() {
+	switch {
+	case !plan.JobIDs.IsNull() && !plan.JobIDs.IsUnknown():
 		d := plan.JobIDs.ElementsAs(ctx, &planJobIDs, false)
 		resp.Diagnostics.Append(d...)
 		if resp.Diagnostics.HasError() {
+			return
+		}
+	case plan.JobIDs.IsUnknown():
+		// Unknown must not be interpreted as an empty set (that would delete every job).
+		if !state.JobIDs.IsNull() && !state.JobIDs.IsUnknown() {
+			d := state.JobIDs.ElementsAs(ctx, &planJobIDs, false)
+			resp.Diagnostics.Append(d...)
+			if resp.Diagnostics.HasError() {
+				return
+			}
+		} else {
+			resp.Diagnostics.AddError(
+				"Invalid ML calendar update plan",
+				"`job_ids` is unknown at apply time and prior state has no `job_ids` to fall back on; refusing to update to avoid removing every job from the calendar.",
+			)
 			return
 		}
 	}
