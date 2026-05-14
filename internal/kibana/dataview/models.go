@@ -33,6 +33,82 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
+// reconcileIncomingFieldAttrsWithTerraformPlan maps Kibana API field_attrs into Terraform state in
+// a way consistent with planned optional attributes: when Terraform omits popularity `count` for a
+// field entry, omit the server-derived count instead of leaking it into apply state (fixes
+// inconsistent-result-after-apply when Kibana echoes injected counts alongside custom labels;
+// REQ-015; TestAccResourceDataViewFieldAttrs).
+//
+// When the entire field_attrs planned value is null, delegates to stripServerCountOnlyWhenFieldAttrsUnset.
+func reconcileIncomingFieldAttrsWithTerraformPlan(ctx context.Context, planned FieldAttrsValue, incoming types.Map, diags *diag.Diagnostics) types.Map {
+	if incoming.IsNull() || incoming.IsUnknown() {
+		return incoming
+	}
+	if planned.IsNull() {
+		return stripServerCountOnlyWhenFieldAttrsUnset(ctx, planned, incoming, diags)
+	}
+
+	elemObjType := getFieldAttrElemType().(types.ObjectType)
+	plannedElems := planned.Elements()
+	out := make(map[string]attr.Value)
+
+	for fieldName, av := range incoming.Elements() {
+		ov, ok := av.(basetypes.ObjectValue)
+		if !ok {
+			diags.AddAttributeError(path.Root("data_view").AtName("field_attrs").AtMapKey(fieldName),
+				"Invalid field_attrs value", fmt.Sprintf("expected ObjectValue, got %T", av))
+			return incoming
+		}
+
+		var incomingM fieldAttrModel
+		diags.Append(ov.As(ctx, &incomingM, basetypes.ObjectAsOptions{})...)
+		if diags.HasError() {
+			return incoming
+		}
+
+		priorVal, plannedField := plannedElems[fieldName]
+		if !plannedField {
+			out[fieldName] = av
+			continue
+		}
+		priorOV, ok := priorVal.(basetypes.ObjectValue)
+		if !ok {
+			diags.AddAttributeError(path.Root("data_view").AtName("field_attrs").AtMapKey(fieldName),
+				"Invalid field_attrs value", fmt.Sprintf("expected ObjectValue, got %T", priorVal))
+			return incoming
+		}
+
+		var planM fieldAttrModel
+		diags.Append(priorOV.As(ctx, &planM, basetypes.ObjectAsOptions{})...)
+		if diags.HasError() {
+			return incoming
+		}
+
+		m := incomingM
+		if planM.Count.IsNull() && !incomingM.Count.IsNull() {
+			m.Count = types.Int64Null()
+		}
+
+		obj, d := types.ObjectValue(elemObjType.AttrTypes, map[string]attr.Value{
+			"custom_label": m.CustomLabel,
+			"count":        m.Count,
+		})
+		diags.Append(d...)
+		if diags.HasError() {
+			return incoming
+		}
+		out[fieldName] = obj
+	}
+
+	elemType := incoming.ElementType(ctx)
+	mv, d := types.MapValue(elemType, out)
+	diags.Append(d...)
+	if diags.HasError() {
+		return incoming
+	}
+	return mv
+}
+
 // stripServerCountOnlyWhenFieldAttrsUnset removes Kibana-populated popularity counts from the
 // field_attrs snapshot when Terraform state still has the attribute omitted (null). Otherwise
 // plan-time MapSemanticEquals is never invoked for a null-config attribute and refresh shows drift
@@ -170,7 +246,7 @@ func (model *dataViewModel) populateFromAPI(ctx context.Context, data *kbapi.Dat
 								Count:       types.Int64PointerValue(typeutils.Itol(item.Count)),
 							}
 						})
-					incoming = stripServerCountOnlyWhenFieldAttrsUnset(ctx, dvInner.FieldAttributes, incoming, &diags)
+					incoming = reconcileIncomingFieldAttrsWithTerraformPlan(ctx, dvInner.FieldAttributes, incoming, &diags)
 					return FieldAttrsValue{
 						MapValue: semanticEqualEmptyMap(dvInner.FieldAttributes.MapValue, incoming),
 					}

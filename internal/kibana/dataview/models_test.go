@@ -259,6 +259,58 @@ func TestPopulateFromAPI(t *testing.T) {
 				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
 			},
 		},
+		{
+			name: "field_attrs_custom_label_omits_server_count_when_count_unset_in_plan",
+			existingModel: dataViewModel{
+				ID:      types.StringValue("existing-space-id/view-id"),
+				SpaceID: types.StringValue("existing-space-id"),
+				DataView: typeutils.ObjectValueFrom(ctx, &innerModel{
+					ID:            types.StringValue("view-id"),
+					SourceFilters: types.ListNull(types.StringType),
+					FieldAttributes: FieldAttrsValue{
+						MapValue: typeutils.MapValueFrom(ctx, map[string]fieldAttrModel{
+							"host.hostname": {
+								CustomLabel: types.StringValue("Host"),
+								Count:       types.Int64Null(),
+							},
+						}, getFieldAttrElemType(), path.Root("data_view").AtName("field_attrs"), &diags),
+					},
+					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType()),
+					FieldFormats:    types.MapNull(getFieldFormatElemType()),
+					Namespaces:      types.ListNull(types.StringType),
+				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
+			},
+			response: kbapi.DataViewsDataViewResponseObject{
+				DataView: &kbapi.DataViewsDataViewResponseObjectInner{
+					Id: new("view-id"),
+					FieldAttrs: &map[string]kbapi.DataViewsFieldattrs{
+						"host.hostname": {
+							CustomLabel: new("Host"),
+							Count:       &countFive,
+						},
+					},
+				},
+			},
+			expectedModel: dataViewModel{
+				ID:      types.StringValue("existing-space-id/view-id"),
+				SpaceID: types.StringValue("existing-space-id"),
+				DataView: typeutils.ObjectValueFrom(ctx, &innerModel{
+					ID:            types.StringValue("view-id"),
+					SourceFilters: types.ListNull(types.StringType),
+					FieldAttributes: FieldAttrsValue{
+						MapValue: typeutils.MapValueFrom(ctx, map[string]fieldAttrModel{
+							"host.hostname": {
+								CustomLabel: types.StringValue("Host"),
+								Count:       types.Int64Null(),
+							},
+						}, getFieldAttrElemType(), path.Root("data_view").AtName("field_attrs"), &diags),
+					},
+					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType()),
+					FieldFormats:    types.MapNull(getFieldFormatElemType()),
+					Namespaces:      types.ListNull(types.StringType),
+				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
+			},
+		},
 	}
 
 	require.Empty(t, diags)
@@ -266,7 +318,6 @@ func TestPopulateFromAPI(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			diags := tt.existingModel.populateFromAPI(ctx, &tt.response, tt.existingModel.SpaceID.ValueString())
-
 			require.Equal(t, tt.expectedModel, tt.existingModel)
 			require.Empty(t, diags)
 		})
