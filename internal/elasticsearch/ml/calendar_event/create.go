@@ -117,8 +117,7 @@ func createCalendarEvent(ctx context.Context, client *clients.ElasticsearchScope
 
 		resp, err := typedClient.Ml.PostCalendarEvents(calendarID).Request(req).Do(ctx)
 		if err != nil {
-			var esErr *estypes.ElasticsearchError
-			if errors.As(err, &esErr) {
+			if esErr, ok := errors.AsType[*estypes.ElasticsearchError](err); ok {
 				diags.AddError("Failed to create ML calendar event", fmt.Sprintf("Unable to create ML calendar event for calendar %s — %s", calendarID, esErr.Error()))
 				return plan, diags
 			}

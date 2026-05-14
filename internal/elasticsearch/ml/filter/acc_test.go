@@ -264,13 +264,10 @@ func TestAccResourceMLFilterImportFailures(t *testing.T) {
 				ConfigVariables:          importVars,
 				ResourceName:             mlFilterResourceAddress,
 				ImportState:              true,
-				// Default ImportStatePersist=false runs import in a temp working dir while the harness
-				// replaces the main dir's config with provider stubs; post-test destroy then loses the
-				// elasticsearch block. Persist keeps the full module config on the main working dir.
-				ImportStatePersist: true,
-				ImportStateVerify:  false,
-				ImportStateId:      "not-a-composite-import-id",
-				ExpectError:        regexp.MustCompile(`Wrong resource ID`),
+				ImportStateKind:          resource.ImportBlockWithID,
+				ImportStateVerify:        false,
+				ImportStateId:            "not-a-composite-import-id",
+				ExpectError:              regexp.MustCompile(`Wrong resource ID`),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -278,7 +275,7 @@ func TestAccResourceMLFilterImportFailures(t *testing.T) {
 				ConfigVariables:          importVars,
 				ResourceName:             mlFilterResourceAddress,
 				ImportState:              true,
-				ImportStatePersist:       true,
+				ImportStateKind:          resource.ImportBlockWithID,
 				ImportStateVerify:        false,
 				ImportStateId:            "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/extra/bad",
 				ExpectError:              regexp.MustCompile(`Wrong resource ID`),
@@ -295,7 +292,7 @@ func TestAccResourceMLFilterImportFailures(t *testing.T) {
 				ConfigVariables:          importVars,
 				ResourceName:             mlFilterResourceAddress,
 				ImportState:              true,
-				ImportStatePersist:       true,
+				ImportStateKind:          resource.ImportBlockWithID,
 				ImportStateVerify:        false,
 				ImportStateId:            fmt.Sprintf("%s/nonexistent-filter-id-for-import-test", clusterUUID[0]),
 				ExpectError:              regexp.MustCompile(`Failed to get ML filter|Unable to get ML filter|Cannot import non-existent`),

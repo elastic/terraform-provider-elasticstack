@@ -193,7 +193,6 @@ func TestAccResourceMLCalendarEvent_importWrongIDFormat(t *testing.T) {
 				ResourceName:             "elasticstack_elasticsearch_ml_calendar_event.test",
 				ImportState:              true,
 				ImportStateKind:          resource.ImportBlockWithID,
-				ImportStatePersist:       true,
 				ImportStateVerify:        false,
 				ImportStateId:            "missing-slash-segment",
 				ExpectError:              regexp.MustCompile(`Wrong resource ID`),

@@ -47,8 +47,7 @@ func deleteCalendarEvent(ctx context.Context, client *clients.ElasticsearchScope
 
 	_, err = typedClient.Ml.DeleteCalendarEvent(calendarID, eventID).Do(ctx)
 	if err != nil {
-		var esErr *types.ElasticsearchError
-		if errors.As(err, &esErr) && esErr.Status == 404 {
+		if esErr, ok := errors.AsType[*types.ElasticsearchError](err); ok && esErr.Status == 404 {
 			tflog.Debug(ctx, fmt.Sprintf("ML calendar event %s already deleted from calendar: %s", eventID, calendarID))
 			return diags
 		}
