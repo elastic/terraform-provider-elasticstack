@@ -62,6 +62,7 @@ func TestAccResourceAgentBuilderWorkflow(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceID, "enabled", "true"),
 					resource.TestCheckResourceAttr(resourceID, "valid", "true"),
 					resource.TestCheckResourceAttrSet(resourceID, "configuration_yaml"),
+					resource.TestMatchResourceAttr(resourceID, "configuration_yaml", regexp.MustCompile(`name: Test Workflow`)),
 				),
 			},
 			{
@@ -113,6 +114,19 @@ func TestAccResourceAgentBuilderWorkflow(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceID, "name", "Updated Test Workflow"),
 					resource.TestCheckResourceAttr(resourceID, "description", "An updated test workflow"),
 					resource.TestCheckResourceAttr(resourceID, "enabled", "false"),
+					resource.TestCheckResourceAttr(resourceID, "valid", "true"),
+				),
+			},
+			{
+				// Verify description is empty when YAML omits the description field.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_no_description"),
+				ConfigVariables: config.Variables{
+					"workflow_id": config.StringVariable(workflowID),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceID, "workflow_id", workflowID),
+					resource.TestCheckResourceAttr(resourceID, "description", ""),
 					resource.TestCheckResourceAttr(resourceID, "valid", "true"),
 				),
 			},
@@ -328,6 +342,53 @@ func TestAccDataSourceKibanaAgentBuilderWorkflowKibanaConnection(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables:          acctest.KibanaConnectionVariables(config.Variables{}),
 				Check:                    resource.ComposeAggregateTestCheckFunc(checks...),
+			},
+		},
+	})
+}
+
+// TestAccResourceAgentBuilderWorkflowKibanaConnection exercises the kibana_connection block
+// on the workflow resource, covering all sub-attributes and verifying import round-trip.
+func TestAccResourceAgentBuilderWorkflowKibanaConnection(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderAPIVersion, versionutils.FlavorAny)
+
+	workflowID := "workflow-" + uuid.New().String()
+	resourceID := "elasticstack_kibana_agentbuilder_workflow.test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheckWithExplicitKibanaEndpoint(t)
+			acctest.PreCheckWithWorkflowsEnabled(t, minKibanaAgentBuilderAPIVersion)
+		},
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: acctest.KibanaConnectionVariables(config.Variables{
+					"workflow_id": config.StringVariable(workflowID),
+				}),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceID, "workflow_id", workflowID),
+					resource.TestCheckResourceAttr(resourceID, "kibana_connection.#", "1"),
+					resource.TestCheckResourceAttrSet(resourceID, "kibana_connection.0.endpoints.0"),
+					resource.TestCheckResourceAttr(resourceID, "kibana_connection.0.insecure", "false"),
+					resource.TestCheckResourceAttr(resourceID, "valid", "true"),
+				),
+			},
+			{
+				// Import ignores kibana_connection (same pattern as tool tests).
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: acctest.KibanaConnectionVariables(config.Variables{
+					"workflow_id": config.StringVariable(workflowID),
+				}),
+				ResourceName:            resourceID,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"kibana_connection"},
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					return s.RootModule().Resources[resourceID].Primary.ID, nil
+				},
 			},
 		},
 	})
