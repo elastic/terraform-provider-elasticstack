@@ -215,7 +215,6 @@ func dashboardMapPanelFromAPI(ctx context.Context, m *models.DashboardModel, tfP
 	if h := LookupHandler(discriminator); h != nil {
 		diags = h.FromAPI(ctx, &pm, tfPanel, panelItem)
 		alignPanelStateFromPlan(ctx, tfPanel, &pm)
-		h.AlignStateFromPlan(ctx, tfPanel, &pm)
 		return pm, diags
 	}
 

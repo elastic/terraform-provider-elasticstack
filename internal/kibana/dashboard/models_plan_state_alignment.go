@@ -23,7 +23,6 @@ import (
 	"reflect"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/esqlcontrol"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -67,7 +66,9 @@ func alignPanelStateFromPlan(ctx context.Context, plan, state *models.PanelModel
 		alignTreemapStateFromPlan(planBlocks.TreemapConfig, stateBlocks.TreemapConfig)
 		alignWaffleStateFromPlan(ctx, planBlocks.WaffleConfig, stateBlocks.WaffleConfig)
 	}
-	esqlcontrol.AlignEsqlPanels(plan, state)
+	if h := LookupHandler(state.Type.ValueString()); h != nil {
+		h.AlignStateFromPlan(ctx, plan, state)
+	}
 }
 
 func alignDatatableStateFromPlan(plan, state *models.DatatableConfigModel) {
