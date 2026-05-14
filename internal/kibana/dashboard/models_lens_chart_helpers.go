@@ -63,13 +63,6 @@ func preservePriorJSONWithDefaultsIfEquivalent[T any](ctx context.Context, prior
 	return lenscommon.PreservePriorJSONWithDefaultsIfEquivalent(ctx, prior, current, diags)
 }
 
-// lensDataSourceIsESQLOrTable reports whether a Lens chart's `data_source` union
-// JSON is the ES|QL ("esql") or table ("table") dataset shape. Both map to the
-// ES|QL API variant of a chart panel. Returns false on marshal/unmarshal error.
-func lensDataSourceIsESQLOrTable(body []byte, err error) bool {
-	return lenscommon.LensDataSourceIsESQLOrTable(body, err)
-}
-
 // lensESQLNumberFormatJSONFromAPI marshals a Lens ES|QL dimension `format` union
 // value to a normalized Terraform string. Empty or null JSON is replaced with the
 // default number-format payload so Terraform state matches what Kibana echoes.

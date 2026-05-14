@@ -50,27 +50,20 @@ func Test_metricChartPanelConfigConverter_populateFromAttributes_buildAttributes
 	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 	require.NoError(t, attrs.FromMetricNoESQL(apiChart))
 
-	converter := newMetricChartPanelConfigConverter()
+	c := lenscommon.ForType(string(kbapi.MetricNoESQLTypeMetric))
+	require.NotNil(t, c)
 	visBv := models.VisByValueModel{}
-	diags := converter.populateFromAttributes(ctx, nil, nil, &visBv.LensByValueChartBlocks, attrs)
+	diags := c.PopulateFromAttributes(ctx, lensChartResolver(nil), &visBv.LensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
 	require.NotNil(t, visBv.MetricChartConfig)
 
-	attrs2, diags := converter.buildAttributes(&visBv.LensByValueChartBlocks, nil)
+	attrs2, diags := c.BuildAttributes(&visBv.LensByValueChartBlocks, lensChartResolver(nil))
 	require.False(t, diags.HasError())
 
 	variant0, err := attrs2.AsMetricNoESQL()
 	require.NoError(t, err)
 	assert.Equal(t, "Metric Round-Trip", *variant0.Title)
 	assert.Equal(t, kbapi.MetricNoESQLTypeMetric, variant0.Type)
-}
-
-func Test_newMetricChartPanelConfigConverter(t *testing.T) {
-	converter := newMetricChartPanelConfigConverter()
-	assert.NotNil(t, converter)
-	c := lenscommon.ForType(string(kbapi.MetricNoESQLTypeMetric))
-	require.NotNil(t, c)
-	assert.Equal(t, string(kbapi.MetricNoESQLTypeMetric), c.VizType())
 }
 
 func Test_metricChartConfigModel_fromAPI_toAPI_variant0(t *testing.T) {

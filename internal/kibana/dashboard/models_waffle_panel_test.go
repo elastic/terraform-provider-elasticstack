@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -61,9 +62,10 @@ func Test_wafflePanelConfigConverter_populateFromAttributes_NoESQL_emptyQueryNoL
 	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 	require.NoError(t, attrs.FromWaffleNoESQL(waffle))
 
-	converter := newWafflePanelConfigConverter()
+	c := lenscommon.ForType(string(kbapi.WaffleNoESQLTypeWaffle))
+	require.NotNil(t, c)
 	visBv := models.VisByValueModel{}
-	diags := converter.populateFromAttributes(ctx, nil, nil, &visBv.LensByValueChartBlocks, attrs)
+	diags := c.PopulateFromAttributes(ctx, lensChartResolver(nil), &visBv.LensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError(), "%s", diags)
 	require.NotNil(t, visBv.WaffleConfig)
 	assert.False(t, waffleConfigUsesESQL(visBv.WaffleConfig))
@@ -90,13 +92,14 @@ func Test_wafflePanelConfigConverter_populateFromAttributes_buildAttributes_roun
 	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 	require.NoError(t, attrs.FromWaffleNoESQL(waffle))
 
-	converter := newWafflePanelConfigConverter()
+	c := lenscommon.ForType(string(kbapi.WaffleNoESQLTypeWaffle))
+	require.NotNil(t, c)
 	visBv := models.VisByValueModel{}
-	diags := converter.populateFromAttributes(ctx, nil, nil, &visBv.LensByValueChartBlocks, attrs)
+	diags := c.PopulateFromAttributes(ctx, lensChartResolver(nil), &visBv.LensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError(), "%s", diags)
 	require.NotNil(t, visBv.WaffleConfig)
 
-	attrs2, diags := converter.buildAttributes(&visBv.LensByValueChartBlocks, nil)
+	attrs2, diags := c.BuildAttributes(&visBv.LensByValueChartBlocks, lensChartResolver(nil))
 	require.False(t, diags.HasError(), "%s", diags)
 
 	noESQL2, err := attrs2.AsWaffleNoESQL()
@@ -158,14 +161,15 @@ func Test_wafflePanelConfigConverter_populateFromAttributes_buildAttributes_roun
 	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 	require.NoError(t, attrs.FromWaffleESQL(waffle))
 
-	converter := newWafflePanelConfigConverter()
+	c := lenscommon.ForType(string(kbapi.WaffleNoESQLTypeWaffle))
+	require.NotNil(t, c)
 	visBv := models.VisByValueModel{}
-	diags := converter.populateFromAttributes(ctx, nil, nil, &visBv.LensByValueChartBlocks, attrs)
+	diags := c.PopulateFromAttributes(ctx, lensChartResolver(nil), &visBv.LensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError(), "%s", diags)
 	require.NotNil(t, visBv.WaffleConfig)
 	assert.True(t, waffleConfigUsesESQL(visBv.WaffleConfig))
 
-	attrs2, diags := converter.buildAttributes(&visBv.LensByValueChartBlocks, nil)
+	attrs2, diags := c.BuildAttributes(&visBv.LensByValueChartBlocks, lensChartResolver(nil))
 	require.False(t, diags.HasError(), "%s", diags)
 
 	esql2, err := attrs2.AsWaffleESQL()

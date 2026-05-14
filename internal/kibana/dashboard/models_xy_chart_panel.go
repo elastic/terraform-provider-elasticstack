@@ -31,51 +31,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func newXYChartPanelConfigConverter() xyChartPanelConfigConverter {
-	return xyChartPanelConfigConverter{}
-}
-
-type xyChartPanelConfigConverter struct{}
-
-func (c xyChartPanelConfigConverter) populateFromAttributes(
-	ctx context.Context,
-	dashboard *models.DashboardModel,
-	tfPanel *models.PanelModel,
-	blocks *models.LensByValueChartBlocks,
-	attrs kbapi.KbnDashboardPanelTypeVisConfig0,
-) diag.Diagnostics {
-	conv := lenscommon.ForType(string(kbapi.XyChartNoESQLTypeXy))
-	if conv == nil {
-		var d diag.Diagnostics
-		d.AddError("XY Lens converter missing", "lensxy VizConverter is not registered")
-		return d
-	}
-
-	var prior *models.XYChartConfigModel
-	if b := LensByValueChartBlocksFromPanel(tfPanel); b != nil && b.XYChartConfig != nil {
-		cpy := *b.XYChartConfig
-		prior = &cpy
-	}
-	if prior != nil {
-		p := *prior
-		blocks.XYChartConfig = &p
-	} else {
-		blocks.XYChartConfig = nil
-	}
-
-	return conv.PopulateFromAttributes(ctx, lensChartResolver(dashboard), blocks, attrs)
-}
-
-func (c xyChartPanelConfigConverter) buildAttributes(blocks *models.LensByValueChartBlocks, dashboard *models.DashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
-	conv := lenscommon.ForType(string(kbapi.XyChartNoESQLTypeXy))
-	if conv == nil {
-		var d diag.Diagnostics
-		d.AddError("XY Lens converter missing", "lensxy VizConverter is not registered")
-		return kbapi.KbnDashboardPanelTypeVisConfig0{}, d
-	}
-	return conv.BuildAttributes(blocks, lensChartResolver(dashboard))
-}
-
 func xyAxisFromAPI(m *models.XYAxisModel, apiAxis kbapi.VisApiXyAxisConfig) diag.Diagnostics {
 	var diags diag.Diagnostics
 

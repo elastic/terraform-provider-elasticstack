@@ -33,14 +33,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func Test_newXYChartPanelConfigConverter(t *testing.T) {
-	converter := newXYChartPanelConfigConverter()
-	assert.NotNil(t, converter)
-	c := lenscommon.ForType(string(kbapi.XyChartNoESQLTypeXy))
-	require.NotNil(t, c)
-	assert.Equal(t, string(kbapi.XyChartNoESQLTypeXy), c.VizType())
-}
-
 func Test_xyAxisModel_fromAPI_toAPI(t *testing.T) {
 	raw := []byte(`{
 		"x":{"grid":{"visible":true},"ticks":{"visible":false}},
@@ -614,13 +606,14 @@ func Test_xyChartPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 	require.NoError(t, attrs.FromXyChartNoESQL(xyChart))
 
-	converter := newXYChartPanelConfigConverter()
+	c := lenscommon.ForType(string(kbapi.XyChartNoESQLTypeXy))
+	require.NotNil(t, c)
 	visBv := models.VisByValueModel{}
-	diags = converter.populateFromAttributes(ctx, nil, nil, &visBv.LensByValueChartBlocks, attrs)
+	diags = c.PopulateFromAttributes(ctx, lensChartResolver(nil), &visBv.LensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
 	require.NotNil(t, visBv.XYChartConfig)
 
-	attrs2, diags := converter.buildAttributes(&visBv.LensByValueChartBlocks, nil)
+	attrs2, diags := c.BuildAttributes(&visBv.LensByValueChartBlocks, lensChartResolver(nil))
 	require.False(t, diags.HasError())
 
 	chart2, err := attrs2.AsXyChartNoESQL()

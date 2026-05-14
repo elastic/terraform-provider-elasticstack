@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -53,9 +54,10 @@ func buildLensMosaicPanelForTest(t *testing.T) models.PanelModel {
 	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 	require.NoError(t, attrs.FromMosaicNoESQL(api))
 
-	converter := newMosaicPanelConfigConverter()
+	c := lenscommon.ForType(string(kbapi.MosaicNoESQLTypeMosaic))
+	require.NotNil(t, c)
 	visBv := models.VisByValueModel{}
-	diags := converter.populateFromAttributes(context.Background(), nil, nil, &visBv.LensByValueChartBlocks, attrs)
+	diags := c.PopulateFromAttributes(context.Background(), lensChartResolver(nil), &visBv.LensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
 
 	return models.PanelModel{
@@ -87,9 +89,10 @@ func buildLensTreemapPanelForTest(t *testing.T) models.PanelModel {
 	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 	require.NoError(t, attrs.FromTreemapNoESQL(api))
 
-	converter := newTreemapPanelConfigConverter()
+	c := lenscommon.ForType(string(kbapi.TreemapNoESQLTypeTreemap))
+	require.NotNil(t, c)
 	visBv := models.VisByValueModel{}
-	diags := converter.populateFromAttributes(context.Background(), nil, nil, &visBv.LensByValueChartBlocks, attrs)
+	diags := c.PopulateFromAttributes(context.Background(), lensChartResolver(nil), &visBv.LensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
 
 	return models.PanelModel{
@@ -120,9 +123,10 @@ func buildLensWafflePanelForTest(t *testing.T) models.PanelModel {
 	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 	require.NoError(t, attrs.FromWaffleNoESQL(api))
 
-	converter := newWafflePanelConfigConverter()
+	c := lenscommon.ForType(string(kbapi.WaffleNoESQLTypeWaffle))
+	require.NotNil(t, c)
 	visBv := models.VisByValueModel{}
-	diags := converter.populateFromAttributes(context.Background(), nil, nil, &visBv.LensByValueChartBlocks, attrs)
+	diags := c.PopulateFromAttributes(context.Background(), lensChartResolver(nil), &visBv.LensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
 
 	return models.PanelModel{

@@ -30,10 +30,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func isGaugeNoESQLCandidateActuallyESQL(api kbapi.GaugeNoESQL) bool {
-	return lensDataSourceIsESQLOrTable(api.DataSource.MarshalJSON())
-}
-
 func gaugeConfigUsesESQL(m *models.GaugeConfigModel) bool {
 	if m == nil {
 		return false

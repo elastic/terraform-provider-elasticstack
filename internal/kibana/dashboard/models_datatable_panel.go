@@ -29,22 +29,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func isDatatableNoESQLCandidateActuallyESQL(apiTable kbapi.DatatableNoESQL) bool {
-	body, err := json.Marshal(apiTable.DataSource)
-	if err != nil {
-		return false
-	}
-
-	var dataset struct {
-		Type string `json:"type"`
-	}
-	if err := json.Unmarshal(body, &dataset); err != nil {
-		return false
-	}
-
-	return dataset.Type == legacyMetricDatasetTypeESQL || dataset.Type == legacyMetricDatasetTypeTable
-}
-
 func datatableNoESQLConfigFromAPI(
 	ctx context.Context,
 	m *models.DatatableNoESQLConfigModel,

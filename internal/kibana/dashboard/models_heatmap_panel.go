@@ -22,7 +22,6 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -30,64 +29,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
-
-func newHeatmapPanelConfigConverter() heatmapPanelConfigConverter {
-	return heatmapPanelConfigConverter{}
-}
-
-type heatmapPanelConfigConverter struct{}
-
-func (c heatmapPanelConfigConverter) populateFromAttributes(
-	ctx context.Context,
-	dashboard *models.DashboardModel,
-	tfPanel *models.PanelModel,
-	blocks *models.LensByValueChartBlocks,
-	attrs kbapi.KbnDashboardPanelTypeVisConfig0,
-) diag.Diagnostics {
-	var prior *models.HeatmapConfigModel
-	if b := LensByValueChartBlocksFromPanel(tfPanel); b != nil && b.HeatmapConfig != nil {
-		cpy := *b.HeatmapConfig
-		prior = &cpy
-	}
-	blocks.HeatmapConfig = &models.HeatmapConfigModel{}
-	if heatmapNoESQL, err := attrs.AsHeatmapNoESQL(); err == nil && !isHeatmapNoESQLCandidateActuallyESQL(heatmapNoESQL) {
-		return heatmapConfigFromAPINoESQL(ctx, blocks.HeatmapConfig, dashboard, prior, heatmapNoESQL)
-	}
-	heatmapESQL, err := attrs.AsHeatmapESQL()
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	return heatmapConfigFromAPIESQL(ctx, blocks.HeatmapConfig, dashboard, prior, heatmapESQL)
-}
-
-func (c heatmapPanelConfigConverter) buildAttributes(blocks *models.LensByValueChartBlocks, dashboard *models.DashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	configModel := *blocks.HeatmapConfig
-
-	attrs, heatmapDiags := heatmapConfigToAPI(&configModel, dashboard)
-	diags.Append(heatmapDiags...)
-	if diags.HasError() {
-		return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
-	}
-
-	return attrs, diags
-}
-
-func isHeatmapNoESQLCandidateActuallyESQL(apiChart kbapi.HeatmapNoESQL) bool {
-	body, err := apiChart.DataSource.MarshalJSON()
-	if err != nil {
-		return false
-	}
-
-	var dataset struct {
-		Type string `json:"type"`
-	}
-	if err := json.Unmarshal(body, &dataset); err != nil {
-		return false
-	}
-
-	return dataset.Type == legacyMetricDatasetTypeESQL || dataset.Type == legacyMetricDatasetTypeTable
-}
 
 func inferHeatmapXAxisScale(xAxisJSON string) kbapi.HeatmapXAxisScale {
 	var axis map[string]any

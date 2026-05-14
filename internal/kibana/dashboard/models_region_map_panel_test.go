@@ -30,14 +30,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func Test_newRegionMapPanelConfigConverter(t *testing.T) {
-	converter := newRegionMapPanelConfigConverter()
-	assert.NotNil(t, converter)
-	c := lenscommon.ForType(string(kbapi.RegionMapNoESQLTypeRegionMap))
-	require.NotNil(t, c)
-	assert.Equal(t, string(kbapi.RegionMapNoESQLTypeRegionMap), c.VizType())
-}
-
 func Test_regionMapConfigModel_fromAPI_toAPI(t *testing.T) {
 	tests := []struct {
 		name         string
@@ -174,13 +166,14 @@ func Test_regionMapPanelConfigConverter_populateFromAttributes_buildAttributes_r
 	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 	require.NoError(t, attrs.FromRegionMapNoESQL(api))
 
-	converter := newRegionMapPanelConfigConverter()
+	c := lenscommon.ForType(string(kbapi.RegionMapNoESQLTypeRegionMap))
+	require.NotNil(t, c)
 	visBv := models.VisByValueModel{}
-	diags := converter.populateFromAttributes(ctx, nil, nil, &visBv.LensByValueChartBlocks, attrs)
+	diags := c.PopulateFromAttributes(ctx, lensChartResolver(nil), &visBv.LensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
 	require.NotNil(t, visBv.RegionMapConfig)
 
-	attrs2, diags := converter.buildAttributes(&visBv.LensByValueChartBlocks, nil)
+	attrs2, diags := c.BuildAttributes(&visBv.LensByValueChartBlocks, lensChartResolver(nil))
 	require.False(t, diags.HasError())
 
 	noESQL2, err := attrs2.AsRegionMapNoESQL()
@@ -206,13 +199,14 @@ func Test_regionMapPanelConfigConverter_populateFromAttributes_buildAttributes_r
 	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 	require.NoError(t, attrs.FromRegionMapESQL(api))
 
-	converter := newRegionMapPanelConfigConverter()
+	c := lenscommon.ForType(string(kbapi.RegionMapNoESQLTypeRegionMap))
+	require.NotNil(t, c)
 	visBv := models.VisByValueModel{}
-	diags := converter.populateFromAttributes(ctx, nil, nil, &visBv.LensByValueChartBlocks, attrs)
+	diags := c.PopulateFromAttributes(ctx, lensChartResolver(nil), &visBv.LensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
 	require.NotNil(t, visBv.RegionMapConfig)
 
-	attrs2, diags := converter.buildAttributes(&visBv.LensByValueChartBlocks, nil)
+	attrs2, diags := c.BuildAttributes(&visBv.LensByValueChartBlocks, lensChartResolver(nil))
 	require.False(t, diags.HasError())
 
 	esql2, err := attrs2.AsRegionMapESQL()

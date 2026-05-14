@@ -22,7 +22,6 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
@@ -31,61 +30,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
-
-func newTreemapPanelConfigConverter() treemapPanelConfigConverter {
-	return treemapPanelConfigConverter{}
-}
-
-type treemapPanelConfigConverter struct{}
-
-//nolint:unparam // legacy test helper; dashboard/tfPanel are often nil
-func (c treemapPanelConfigConverter) populateFromAttributes(
-	ctx context.Context,
-	dashboard *models.DashboardModel,
-	tfPanel *models.PanelModel,
-	blocks *models.LensByValueChartBlocks,
-	attrs kbapi.KbnDashboardPanelTypeVisConfig0,
-) diag.Diagnostics {
-	var prior *models.TreemapConfigModel
-	if b := LensByValueChartBlocksFromPanel(tfPanel); b != nil && b.TreemapConfig != nil {
-		cpy := *b.TreemapConfig
-		prior = &cpy
-	}
-	blocks.TreemapConfig = &models.TreemapConfigModel{}
-
-	if noESQL, err := attrs.AsTreemapNoESQL(); err == nil && !isTreemapNoESQLCandidateActuallyESQL(noESQL) {
-		return treemapConfigFromAPINoESQL(ctx, blocks.TreemapConfig, dashboard, prior, noESQL)
-	}
-
-	treemapESQL, err := attrs.AsTreemapESQL()
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	return treemapConfigFromAPIESQL(ctx, blocks.TreemapConfig, dashboard, prior, treemapESQL)
-}
-
-func (c treemapPanelConfigConverter) buildAttributes(blocks *models.LensByValueChartBlocks, dashboard *models.DashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	configModel := *blocks.TreemapConfig
-
-	attrs, treemapDiags := treemapConfigToAPI(&configModel, dashboard)
-	diags.Append(treemapDiags...)
-	return attrs, diags
-}
-
-func isTreemapNoESQLCandidateActuallyESQL(api kbapi.TreemapNoESQL) bool {
-	body, err := api.DataSource.MarshalJSON()
-	if err != nil {
-		return false
-	}
-	var ds struct {
-		Type string `json:"type"`
-	}
-	if err := json.Unmarshal(body, &ds); err != nil {
-		return false
-	}
-	return ds.Type == legacyMetricDatasetTypeESQL || ds.Type == legacyMetricDatasetTypeTable
-}
 
 func treemapConfigFromAPINoESQL(ctx context.Context, m *models.TreemapConfigModel, dashboard *models.DashboardModel, prior *models.TreemapConfigModel, api kbapi.TreemapNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
