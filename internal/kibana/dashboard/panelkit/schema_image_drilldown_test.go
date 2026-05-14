@@ -30,7 +30,12 @@ import (
 
 func Test_imageDrilldownEntryValidator(t *testing.T) {
 	ctx := context.Background()
-	v := imageDrilldownEntryValidator{}
+	v := ExactlyOneOfNestedAttrsValidator(ExactlyOneOfNestedAttrsOpts{
+		AttrNames:     []string{"dashboard_drilldown", "url_drilldown"},
+		Summary:       "Invalid drilldown entry",
+		MissingDetail: "Exactly one of `dashboard_drilldown` or `url_drilldown` must be set.",
+		TooManyDetail: "Exactly one of `dashboard_drilldown` or `url_drilldown` must be set, not both.",
+	})
 
 	dashType := types.ObjectType{AttrTypes: map[string]attr.Type{
 		"dashboard_id": types.StringType,

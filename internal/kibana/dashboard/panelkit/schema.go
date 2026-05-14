@@ -18,8 +18,6 @@
 package panelkit
 
 import (
-	"context"
-
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -205,7 +203,13 @@ func ImageDrilldownSchema(opts ImageDrilldownOptions) schema.NestedAttributeObje
 			},
 		},
 		Validators: []validator.Object{
-			imageDrilldownEntryValidator{},
+			ExactlyOneOfNestedAttrsValidator(ExactlyOneOfNestedAttrsOpts{
+				AttrNames:     []string{"dashboard_drilldown", "url_drilldown"},
+				Summary:       "Invalid drilldown entry",
+				MissingDetail: "Exactly one of `dashboard_drilldown` or `url_drilldown` must be set.",
+				TooManyDetail: "Exactly one of `dashboard_drilldown` or `url_drilldown` must be set, not both.",
+				Description:   "Ensures exactly one of `dashboard_drilldown` or `url_drilldown` is set on each `drilldowns` entry.",
+			}),
 		},
 	}
 }
@@ -215,39 +219,4 @@ func nz(s, def string) string {
 		return s
 	}
 	return def
-}
-
-var _ validator.Object = imageDrilldownEntryValidator{}
-
-type imageDrilldownEntryValidator struct{}
-
-func (imageDrilldownEntryValidator) Description(_ context.Context) string {
-	return "Ensures exactly one of `dashboard_drilldown` or `url_drilldown` is set on each `drilldowns` entry."
-}
-
-func (v imageDrilldownEntryValidator) MarkdownDescription(ctx context.Context) string {
-	return v.Description(ctx)
-}
-
-func (imageDrilldownEntryValidator) ValidateObject(_ context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
-	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
-		return
-	}
-	attrs := req.ConfigValue.Attributes()
-	dashVal := attrs["dashboard_drilldown"]
-	urlVal := attrs["url_drilldown"]
-
-	dashSet := AttrConcreteSet(dashVal)
-	urlSet := AttrConcreteSet(urlVal)
-
-	if dashSet && urlSet {
-		resp.Diagnostics.AddAttributeError(req.Path, "Invalid drilldown entry", "Exactly one of `dashboard_drilldown` or `url_drilldown` must be set, not both.")
-		return
-	}
-	if !dashSet && !urlSet {
-		if AttrUnknown(dashVal) || AttrUnknown(urlVal) {
-			return
-		}
-		resp.Diagnostics.AddAttributeError(req.Path, "Invalid drilldown entry", "Exactly one of `dashboard_drilldown` or `url_drilldown` must be set.")
-	}
 }
