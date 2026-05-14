@@ -15,9 +15,20 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package dashboard
+package lensregionmap
 
-import (
-	_ "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/lenslegacymetric" // side-effect: register legacy_metric VizConverter with lenscommon (dashboard-lens-contract).
-	_ "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/lensregionmap" // side-effect: register region_map VizConverter with lenscommon (dashboard-lens-contract).
-)
+import "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
+
+// populateRegionMapLensAttributes duplicates dashboard.populateRegionMapAttributes until Section 5 routes via converters.
+func populateRegionMapLensAttributes(attrs map[string]any) map[string]any {
+	if attrs == nil {
+		return attrs
+	}
+	if _, exists := attrs["filters"]; !exists {
+		attrs["filters"] = []any{}
+	}
+	if metric, ok := attrs["metric"].(map[string]any); ok {
+		attrs["metric"] = lenscommon.PopulateRegionMapMetricDefaults(metric)
+	}
+	return attrs
+}
