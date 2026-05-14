@@ -17,11 +17,11 @@
 
 ## 3. Model Update
 
-- [ ] 3.1 In `internal/kibana/dataview/models.go`, change the `FieldAttributes` field in `innerModel` from `types.Map` to `FieldAttrsValue`.
-- [ ] 3.2 Update the `populateFromAPI` call that builds `FieldAttributes` to produce a `FieldAttrsValue` instead of a `types.Map`. Use the `NewFieldAttrsValueFrom` (or equivalent) constructor.
-- [ ] 3.3 Update `toAPICreateModel` to extract the underlying `map[string]attr.Value` from `FieldAttrsValue` when building the create API request body.
-- [ ] 3.4 Verify `toAPIUpdateModel` does not need changes (it already omits `FieldAttrs`).
-- [ ] 3.5 Run `make build` to verify model changes compile without error.
+- [x] 3.1 In `internal/kibana/dataview/models.go`, change the `FieldAttributes` field in `innerModel` from `types.Map` to `FieldAttrsValue`.
+- [x] 3.2 Update the `populateFromAPI` call that builds `FieldAttributes` to produce a `FieldAttrsValue` instead of a `types.Map`. Use the `NewFieldAttrsValueFrom` (or equivalent) constructor.
+- [x] 3.3 Update `toAPICreateModel` to extract the underlying `map[string]attr.Value` from `FieldAttrsValue` when building the create API request body.
+- [x] 3.4 Verify `toAPIUpdateModel` does not need changes (it already omits `FieldAttrs`).
+- [x] 3.5 Run `make build` to verify model changes compile without error.
 
 ## 4. API Wrapper
 

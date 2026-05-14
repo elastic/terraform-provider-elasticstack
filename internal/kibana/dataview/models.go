@@ -116,14 +116,16 @@ func (model *dataViewModel) populateFromAPI(ctx context.Context, data *kbapi.Dat
 						func(item kbapi.DataViewsSourcefilterItem, _ typeutils.ListMeta) string {
 							return item.Value
 						})),
-				FieldAttributes: semanticEqualEmptyMap(dvInner.FieldAttributes,
-					typeutils.MapToMapType(ctx, typeutils.Deref(item.FieldAttrs), getFieldAttrElemType(), meta.Path.AtName("field_attrs"), &diags,
-						func(item kbapi.DataViewsFieldattrs, _ typeutils.MapMeta) fieldAttrModel {
-							return fieldAttrModel{
-								CustomLabel: types.StringPointerValue(item.CustomLabel),
-								Count:       types.Int64PointerValue(typeutils.Itol(item.Count)),
-							}
-						})),
+				FieldAttributes: FieldAttrsValue{
+					MapValue: semanticEqualEmptyMap(dvInner.FieldAttributes.MapValue,
+						typeutils.MapToMapType(ctx, typeutils.Deref(item.FieldAttrs), getFieldAttrElemType(), meta.Path.AtName("field_attrs"), &diags,
+							func(item kbapi.DataViewsFieldattrs, _ typeutils.MapMeta) fieldAttrModel {
+								return fieldAttrModel{
+									CustomLabel: types.StringPointerValue(item.CustomLabel),
+									Count:       types.Int64PointerValue(typeutils.Itol(item.Count)),
+								}
+							})),
+				},
 				RuntimeFieldMap: semanticEqualEmptyMap(dvInner.RuntimeFieldMap,
 					typeutils.MapToMapType(ctx, typeutils.Deref(item.RuntimeFieldMap), getRuntimeFieldMapElemType(), meta.Path.AtName("runtime_field_map"), &diags,
 						func(item kbapi.DataViewsRuntimefieldmap, _ typeutils.MapMeta) runtimeFieldModel {
@@ -199,7 +201,7 @@ func (model dataViewModel) toAPICreateModel(ctx context.Context) (kbapi.DataView
 
 				return kbapi.DataViewsCreateDataViewRequestObjectInner{
 					AllowNoIndex: item.AllowNoIndex.ValueBoolPointer(),
-					FieldAttrs: typeutils.MapRef(typeutils.MapTypeToMap(ctx, item.FieldAttributes, meta.Path.AtName("field_attrs"), &diags,
+					FieldAttrs: typeutils.MapRef(typeutils.MapTypeToMap(ctx, item.FieldAttributes.MapValue, meta.Path.AtName("field_attrs"), &diags,
 						func(item fieldAttrModel, _ typeutils.MapMeta) kbapi.DataViewsFieldattrs {
 							return kbapi.DataViewsFieldattrs{
 								Count:       typeutils.Ltoi(item.Count.ValueInt64Pointer()),
@@ -338,16 +340,16 @@ type dataViewModel struct {
 }
 
 type innerModel struct {
-	Title           types.String `tfsdk:"title"`
-	Name            types.String `tfsdk:"name"`
-	ID              types.String `tfsdk:"id"`
-	TimeFieldName   types.String `tfsdk:"time_field_name"`
-	SourceFilters   types.List   `tfsdk:"source_filters"`    // > string
-	FieldAttributes types.Map    `tfsdk:"field_attrs"`       // > fieldAttrModel
-	RuntimeFieldMap types.Map    `tfsdk:"runtime_field_map"` // > runtimeFieldModel
-	FieldFormats    types.Map    `tfsdk:"field_formats"`     // > fieldFormatModel
-	AllowNoIndex    types.Bool   `tfsdk:"allow_no_index"`
-	Namespaces      types.List   `tfsdk:"namespaces"` // > string
+	Title           types.String    `tfsdk:"title"`
+	Name            types.String    `tfsdk:"name"`
+	ID              types.String    `tfsdk:"id"`
+	TimeFieldName   types.String    `tfsdk:"time_field_name"`
+	SourceFilters   types.List      `tfsdk:"source_filters"`    // > string
+	FieldAttributes FieldAttrsValue `tfsdk:"field_attrs"`       // > fieldAttrModel (custom MapTypable)
+	RuntimeFieldMap types.Map       `tfsdk:"runtime_field_map"` // > runtimeFieldModel
+	FieldFormats    types.Map       `tfsdk:"field_formats"`     // > fieldFormatModel
+	AllowNoIndex    types.Bool      `tfsdk:"allow_no_index"`
+	Namespaces      types.List      `tfsdk:"namespaces"` // > string
 }
 
 type fieldAttrModel struct {
