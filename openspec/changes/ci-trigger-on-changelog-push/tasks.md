@@ -5,7 +5,7 @@
 
 ## 2. Prep-release workflow template
 
-- [ ] 2.1 Add `GH_AW_CI_TRIGGER_TOKEN` environment variable to the release-branch push step in `.github/workflows-src/prep-release/workflow.yml.tmpl`, and add the empty-commit CI trigger logic after the `git push`
+- [x] 2.1 Add `GH_AW_CI_TRIGGER_TOKEN` environment variable to the release-branch push step in `.github/workflows-src/prep-release/workflow.yml.tmpl`, and add the empty-commit CI trigger logic after the `git push`
 
 ## 3. Recompile and verify
 
