@@ -55,8 +55,8 @@
 
 ## 8. Validation
 
-- [ ] 8.1 Run `make build` to ensure the provider compiles.
-- [ ] 8.2 Run `make check-lint` to ensure lint passes.
-- [ ] 8.3 Run unit tests: `go test ./internal/kibana/dataview/...`
-- [ ] 8.4 Run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate fix-dataview-field-attrs-drift --type change`
+- [x] 8.1 Run `make build` to ensure the provider compiles.
+- [x] 8.2 Run `make check-lint` to ensure lint passes.
+- [x] 8.3 Run unit tests: `go test ./internal/kibana/dataview/...`
+- [x] 8.4 Run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate fix-dataview-field-attrs-drift --type change`
 - [ ] 8.5 If a Kibana stack is available, run acceptance tests: `TF_ACC=1 go test -v -run TestAccResourceDataView ./internal/kibana/dataview/... -timeout 20m`
