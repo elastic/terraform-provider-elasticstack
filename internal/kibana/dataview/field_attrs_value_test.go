@@ -71,7 +71,7 @@ func TestFieldAttrsValue_MapSemanticEquals(t *testing.T) {
 		{
 			name:   "null vs prior with only server-injected count is equal (REQ-015 scenario 1)",
 			newVal: NewFieldAttrsNull(elemType),
-			priorVal: mustNewFieldAttrsValue(t, ctx, elemType, map[string]fieldAttrModel{
+			priorVal: mustNewFieldAttrsValue(ctx, t, elemType, map[string]fieldAttrModel{
 				"host.hostname": {CustomLabel: types.StringNull(), Count: types.Int64Value(5)},
 			}),
 			expected: true,
@@ -79,7 +79,7 @@ func TestFieldAttrsValue_MapSemanticEquals(t *testing.T) {
 		{
 			name:   "null vs prior with custom_label is a real removal (not equal)",
 			newVal: NewFieldAttrsNull(elemType),
-			priorVal: mustNewFieldAttrsValue(t, ctx, elemType, map[string]fieldAttrModel{
+			priorVal: mustNewFieldAttrsValue(ctx, t, elemType, map[string]fieldAttrModel{
 				"host.hostname": {CustomLabel: types.StringValue("Host"), Count: types.Int64Null()},
 			}),
 			expected: false,
@@ -87,7 +87,7 @@ func TestFieldAttrsValue_MapSemanticEquals(t *testing.T) {
 		{
 			name:   "null vs prior mixing server-only and user-managed entry is not equal",
 			newVal: NewFieldAttrsNull(elemType),
-			priorVal: mustNewFieldAttrsValue(t, ctx, elemType, map[string]fieldAttrModel{
+			priorVal: mustNewFieldAttrsValue(ctx, t, elemType, map[string]fieldAttrModel{
 				"host.hostname": {CustomLabel: types.StringNull(), Count: types.Int64Value(5)},
 				"keep.me":       {CustomLabel: types.StringValue("Keep"), Count: types.Int64Null()},
 			}),
@@ -95,78 +95,78 @@ func TestFieldAttrsValue_MapSemanticEquals(t *testing.T) {
 		},
 		{
 			name: "same custom_label and null counts is equal",
-			newVal: mustNewFieldAttrsValue(t, ctx, elemType, map[string]fieldAttrModel{
+			newVal: mustNewFieldAttrsValue(ctx, t, elemType, map[string]fieldAttrModel{
 				"f1": {CustomLabel: types.StringValue("Same"), Count: types.Int64Null()},
 			}),
-			priorVal: mustNewFieldAttrsValue(t, ctx, elemType, map[string]fieldAttrModel{
+			priorVal: mustNewFieldAttrsValue(ctx, t, elemType, map[string]fieldAttrModel{
 				"f1": {CustomLabel: types.StringValue("Same"), Count: types.Int64Null()},
 			}),
 			expected: true,
 		},
 		{
 			name: "same custom_label, plan omits count, state has server count is equal (REQ-015)",
-			newVal: mustNewFieldAttrsValue(t, ctx, elemType, map[string]fieldAttrModel{
+			newVal: mustNewFieldAttrsValue(ctx, t, elemType, map[string]fieldAttrModel{
 				"f1": {CustomLabel: types.StringValue("Same"), Count: types.Int64Null()},
 			}),
-			priorVal: mustNewFieldAttrsValue(t, ctx, elemType, map[string]fieldAttrModel{
+			priorVal: mustNewFieldAttrsValue(ctx, t, elemType, map[string]fieldAttrModel{
 				"f1": {CustomLabel: types.StringValue("Same"), Count: types.Int64Value(7)},
 			}),
 			expected: true,
 		},
 		{
 			name: "explicit count change is detected",
-			newVal: mustNewFieldAttrsValue(t, ctx, elemType, map[string]fieldAttrModel{
+			newVal: mustNewFieldAttrsValue(ctx, t, elemType, map[string]fieldAttrModel{
 				"f1": {CustomLabel: types.StringValue("L"), Count: types.Int64Value(3)},
 			}),
-			priorVal: mustNewFieldAttrsValue(t, ctx, elemType, map[string]fieldAttrModel{
+			priorVal: mustNewFieldAttrsValue(ctx, t, elemType, map[string]fieldAttrModel{
 				"f1": {CustomLabel: types.StringValue("L"), Count: types.Int64Value(2)},
 			}),
 			expected: false,
 		},
 		{
 			name: "plan introduces explicit count where state had none is detected",
-			newVal: mustNewFieldAttrsValue(t, ctx, elemType, map[string]fieldAttrModel{
+			newVal: mustNewFieldAttrsValue(ctx, t, elemType, map[string]fieldAttrModel{
 				"f1": {CustomLabel: types.StringValue("L"), Count: types.Int64Value(1)},
 			}),
-			priorVal: mustNewFieldAttrsValue(t, ctx, elemType, map[string]fieldAttrModel{
+			priorVal: mustNewFieldAttrsValue(ctx, t, elemType, map[string]fieldAttrModel{
 				"f1": {CustomLabel: types.StringValue("L"), Count: types.Int64Null()},
 			}),
 			expected: false,
 		},
 		{
 			name: "different custom_label is detected (strict comparison)",
-			newVal: mustNewFieldAttrsValue(t, ctx, elemType, map[string]fieldAttrModel{
+			newVal: mustNewFieldAttrsValue(ctx, t, elemType, map[string]fieldAttrModel{
 				"f1": {CustomLabel: types.StringValue("New"), Count: types.Int64Null()},
 			}),
-			priorVal: mustNewFieldAttrsValue(t, ctx, elemType, map[string]fieldAttrModel{
+			priorVal: mustNewFieldAttrsValue(ctx, t, elemType, map[string]fieldAttrModel{
 				"f1": {CustomLabel: types.StringValue("Old"), Count: types.Int64Null()},
 			}),
 			expected: false,
 		},
 		{
 			name: "plan adds a new field is a real change",
-			newVal: mustNewFieldAttrsValue(t, ctx, elemType, map[string]fieldAttrModel{
+			newVal: mustNewFieldAttrsValue(ctx, t, elemType, map[string]fieldAttrModel{
 				"new.field": {CustomLabel: types.StringValue("New"), Count: types.Int64Null()},
 			}),
-			priorVal: mustNewFieldAttrsValue(t, ctx, elemType, map[string]fieldAttrModel{}),
+			priorVal: mustNewFieldAttrsValue(ctx, t, elemType, map[string]fieldAttrModel{}),
 			expected: false,
 		},
 		{
-			name:   "plan adds field where state has only server-only entries is a real change",
-			newVal: mustNewFieldAttrsValue(t, ctx, elemType, map[string]fieldAttrModel{
+			name: "plan adds field where state has only server-only entries is a real change",
+			newVal: mustNewFieldAttrsValue(ctx, t, elemType, map[string]fieldAttrModel{
 				"new.field": {CustomLabel: types.StringValue("New"), Count: types.Int64Null()},
 			}),
-			priorVal: mustNewFieldAttrsValue(t, ctx, elemType, map[string]fieldAttrModel{
+			priorVal: mustNewFieldAttrsValue(ctx, t, elemType, map[string]fieldAttrModel{
 				"server.only": {CustomLabel: types.StringNull(), Count: types.Int64Value(3)},
 			}),
 			expected: false,
 		},
 		{
 			name: "plan drops a server-only count entry is equal (suppress drift)",
-			newVal: mustNewFieldAttrsValue(t, ctx, elemType, map[string]fieldAttrModel{
+			newVal: mustNewFieldAttrsValue(ctx, t, elemType, map[string]fieldAttrModel{
 				"keep": {CustomLabel: types.StringValue("Keep"), Count: types.Int64Null()},
 			}),
-			priorVal: mustNewFieldAttrsValue(t, ctx, elemType, map[string]fieldAttrModel{
+			priorVal: mustNewFieldAttrsValue(ctx, t, elemType, map[string]fieldAttrModel{
 				"keep":        {CustomLabel: types.StringValue("Keep"), Count: types.Int64Null()},
 				"server.only": {CustomLabel: types.StringNull(), Count: types.Int64Value(5)},
 			}),
@@ -174,10 +174,10 @@ func TestFieldAttrsValue_MapSemanticEquals(t *testing.T) {
 		},
 		{
 			name: "plan drops a user-managed entry is a real change",
-			newVal: mustNewFieldAttrsValue(t, ctx, elemType, map[string]fieldAttrModel{
+			newVal: mustNewFieldAttrsValue(ctx, t, elemType, map[string]fieldAttrModel{
 				"keep": {CustomLabel: types.StringValue("Keep"), Count: types.Int64Null()},
 			}),
-			priorVal: mustNewFieldAttrsValue(t, ctx, elemType, map[string]fieldAttrModel{
+			priorVal: mustNewFieldAttrsValue(ctx, t, elemType, map[string]fieldAttrModel{
 				"keep":   {CustomLabel: types.StringValue("Keep"), Count: types.Int64Null()},
 				"remove": {CustomLabel: types.StringValue("Bye"), Count: types.Int64Null()},
 			}),
@@ -185,8 +185,8 @@ func TestFieldAttrsValue_MapSemanticEquals(t *testing.T) {
 		},
 		{
 			name:     "empty map vs empty map is equal",
-			newVal:   mustNewFieldAttrsValue(t, ctx, elemType, map[string]fieldAttrModel{}),
-			priorVal: mustNewFieldAttrsValue(t, ctx, elemType, map[string]fieldAttrModel{}),
+			newVal:   mustNewFieldAttrsValue(ctx, t, elemType, map[string]fieldAttrModel{}),
+			priorVal: mustNewFieldAttrsValue(ctx, t, elemType, map[string]fieldAttrModel{}),
 			expected: true,
 		},
 	}
@@ -215,7 +215,7 @@ func TestFieldAttrsValue_MapSemanticEquals_TypeMismatch(t *testing.T) {
 	assert.Contains(t, diags[0].Summary(), "Semantic Equality Check Error")
 }
 
-func mustNewFieldAttrsValue(t *testing.T, ctx context.Context, elemType attr.Type, entries map[string]fieldAttrModel) FieldAttrsValue {
+func mustNewFieldAttrsValue(ctx context.Context, t *testing.T, elemType attr.Type, entries map[string]fieldAttrModel) FieldAttrsValue {
 	t.Helper()
 	v, diags := NewFieldAttrsValueFrom(ctx, elemType, entries)
 	require.False(t, diags.HasError(), "build FieldAttrsValue: %v", diags)
