@@ -2290,7 +2290,7 @@ steps:
   - name: Stage Terraform for agent
     run: |
       mkdir -p .bin
-      TF_BIN="$(command -v terraform)"
+      TF_BIN="$(command -v terraform || true)"
       if [ -z "$TF_BIN" ]; then
         echo "terraform binary not found in PATH" >&2
         exit 1
