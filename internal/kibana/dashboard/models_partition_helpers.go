@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -71,119 +72,35 @@ func mapOptionalFloatWithSnapshotDefault(current types.Float64, apiValue *float3
 // (treemap, mosaic, pie). Used by treemap, mosaic, and pie chart config models.
 
 func partitionLegendFromTreemapLegend(m *models.PartitionLegendModel, api kbapi.TreemapLegend) {
-	m.Nested = types.BoolPointerValue(api.Nested)
-	m.Size = types.StringValue(string(api.Size))
-	if api.TruncateAfterLines != nil {
-		m.TruncateAfterLine = types.Int64Value(int64(*api.TruncateAfterLines))
-	} else {
-		m.TruncateAfterLine = types.Int64Null()
-	}
-	if api.Visibility != nil {
-		m.Visible = types.StringValue(string(*api.Visibility))
-	} else {
-		m.Visible = types.StringNull()
-	}
+	lenscommon.PartitionLegendFromTreemapLegend(m, api)
 }
 
 func partitionLegendFromMosaicLegend(m *models.PartitionLegendModel, api kbapi.MosaicLegend) {
-	m.Nested = types.BoolPointerValue(api.Nested)
-	m.Size = types.StringValue(string(api.Size))
-	if api.TruncateAfterLines != nil {
-		m.TruncateAfterLine = types.Int64Value(int64(*api.TruncateAfterLines))
-	} else {
-		m.TruncateAfterLine = types.Int64Null()
-	}
-	if api.Visibility != nil {
-		m.Visible = types.StringValue(string(*api.Visibility))
-	} else {
-		m.Visible = types.StringNull()
-	}
+	lenscommon.PartitionLegendFromMosaicLegend(m, api)
 }
 
 func partitionLegendToTreemapLegend(m *models.PartitionLegendModel) kbapi.TreemapLegend {
-	legend := kbapi.TreemapLegend{Size: kbapi.LegendSize(m.Size.ValueString())}
-	if typeutils.IsKnown(m.Nested) {
-		legend.Nested = new(m.Nested.ValueBool())
-	}
-	if typeutils.IsKnown(m.TruncateAfterLine) {
-		legend.TruncateAfterLines = new(float32(m.TruncateAfterLine.ValueInt64()))
-	}
-	if typeutils.IsKnown(m.Visible) {
-		v := kbapi.TreemapLegendVisibility(m.Visible.ValueString())
-		legend.Visibility = &v
-	}
-	return legend
+	return lenscommon.PartitionLegendToTreemapLegend(m)
 }
 
 func partitionLegendToMosaicLegend(m *models.PartitionLegendModel) kbapi.MosaicLegend {
-	legend := kbapi.MosaicLegend{Size: kbapi.LegendSize(m.Size.ValueString())}
-	if typeutils.IsKnown(m.Nested) {
-		legend.Nested = new(m.Nested.ValueBool())
-	}
-	if typeutils.IsKnown(m.TruncateAfterLine) {
-		legend.TruncateAfterLines = new(float32(m.TruncateAfterLine.ValueInt64()))
-	}
-	if typeutils.IsKnown(m.Visible) {
-		v := kbapi.MosaicLegendVisibility(m.Visible.ValueString())
-		legend.Visibility = &v
-	}
-	return legend
+	return lenscommon.PartitionLegendToMosaicLegend(m)
 }
 
 func partitionLegendFromPieLegend(m *models.PartitionLegendModel, api kbapi.PieLegend) {
-	m.Nested = types.BoolPointerValue(api.Nested)
-	if api.Size != "" {
-		m.Size = types.StringValue(string(api.Size))
-	} else {
-		m.Size = types.StringValue(string(kbapi.LegendSizeAuto))
-	}
-	if api.TruncateAfterLines != nil {
-		m.TruncateAfterLine = types.Int64Value(int64(*api.TruncateAfterLines))
-	} else {
-		m.TruncateAfterLine = types.Int64Null()
-	}
-	if api.Visibility != nil {
-		m.Visible = types.StringValue(string(*api.Visibility))
-	} else {
-		// Align with pie_chart_config.legend schema default (visible = auto) when Kibana omits the field.
-		m.Visible = types.StringValue(string(kbapi.PieLegendVisibilityAuto))
-	}
+	lenscommon.PartitionLegendFromPieLegend(m, api)
 }
 
 func partitionLegendToPieLegend(m *models.PartitionLegendModel) kbapi.PieLegend {
-	legend := kbapi.PieLegend{Size: kbapi.LegendSize(m.Size.ValueString())}
-	if typeutils.IsKnown(m.Nested) {
-		legend.Nested = new(m.Nested.ValueBool())
-	}
-	if typeutils.IsKnown(m.TruncateAfterLine) {
-		legend.TruncateAfterLines = new(float32(m.TruncateAfterLine.ValueInt64()))
-	}
-	if typeutils.IsKnown(m.Visible) {
-		v := kbapi.PieLegendVisibility(m.Visible.ValueString())
-		legend.Visibility = &v
-	}
-	return legend
+	return lenscommon.PartitionLegendToPieLegend(m)
 }
 
 func partitionValueDisplayFromValueDisplay(m *models.PartitionValueDisplay, api kbapi.ValueDisplay) {
-	m.Mode = typeutils.StringishPointerValue(api.Mode)
-	if api.PercentDecimals != nil {
-		m.PercentDecimals = types.Float64Value(float64(*api.PercentDecimals))
-	} else {
-		m.PercentDecimals = types.Float64Null()
-	}
+	lenscommon.PartitionValueDisplayFromAPI(m, api)
 }
 
 func partitionValueDisplayToValueDisplay(m *models.PartitionValueDisplay) kbapi.ValueDisplay {
-	vd := kbapi.ValueDisplay{}
-	if typeutils.IsKnown(m.Mode) {
-		mode := kbapi.ValueDisplayMode(m.Mode.ValueString())
-		vd.Mode = &mode
-	}
-	if typeutils.IsKnown(m.PercentDecimals) {
-		vd.PercentDecimals = new(float32(m.PercentDecimals.ValueFloat64()))
-	}
-	return vd
+	return lenscommon.PartitionValueDisplayToAPI(m)
 }
 
 // stripTopLevelNullMapKeys removes keys whose value is nil so JSON state matches compact user configs.
