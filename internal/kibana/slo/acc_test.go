@@ -962,10 +962,10 @@ func TestAccResourceSloHistogramFloatPrecision(t *testing.T) {
 }
 
 func TestAccResourceSlo_long_slo_id(t *testing.T) {
-	// This test exposes a bug in Kibana present in 8.11.x
-	slo8_9Constraints, err := version.NewConstraint(">=8.9.0,!=8.11.0,!=8.11.1,!=8.11.2,!=8.11.3,!=8.11.4")
+	// 48-character slo_id is only supported server-side from 8.16.0 onwards.
+	slo8_16Constraints, err := version.NewConstraint(">=8.16.0")
 	require.NoError(t, err)
-	versionutils.SkipIfUnsupportedConstraints(t, slo8_9Constraints, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupportedConstraints(t, slo8_16Constraints, versionutils.FlavorAny)
 
 	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	longSloID := "my-slo-id-that-is-exactly-48-characters-long-now"
