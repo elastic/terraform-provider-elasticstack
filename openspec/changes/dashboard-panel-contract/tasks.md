@@ -1,22 +1,22 @@
 ## 0. contracttest harness
 
-- [ ] 0.1 Create `dashboard/panelkit/contracttest/parse.go` — raw JSON string → `kbapi.DashboardPanelItem` adapter
-- [ ] 0.2 Create `dashboard/panelkit/contracttest/roundtrip.go` — `FromAPI → ToAPI` stability assertion with JSON diff output on failure
-- [ ] 0.3 Create `dashboard/panelkit/contracttest/nullpreserve.go` — walk `handler.SchemaAttribute()` to collect optional leaves; generate three sub-tests per field (prior null, prior known, prior nil)
-- [ ] 0.4 Create `dashboard/panelkit/contracttest/reflection.go` — `HasConfig`/`ClearConfig` post-condition assertions using `panelkit.HasConfig`
-- [ ] 0.5 Create `dashboard/panelkit/contracttest/schema.go` — structural assertions: outer attribute is Optional, Required leaves are present in fixture, `ValidatePanelConfig` rejects zeroed Required fields
-- [ ] 0.6 Create `dashboard/panelkit/contracttest/harness.go` — `Run(t, handler, config)` entry point orchestrating the above; `Config` struct with `FullAPIResponse string` and optional `SkipFields []string`
-- [ ] 0.7 Verify harness compiles and `contracttest.Run` fails with a clear error when given a no-op stub handler
+- [x] 0.1 Create `dashboard/panelkit/contracttest/parse.go` — raw JSON string → `kbapi.DashboardPanelItem` adapter
+- [x] 0.2 Create `dashboard/panelkit/contracttest/roundtrip.go` — `FromAPI → ToAPI` stability assertion with JSON diff output on failure
+- [x] 0.3 Create `dashboard/panelkit/contracttest/nullpreserve.go` — walk `handler.SchemaAttribute()` to collect optional leaves; generate three sub-tests per field (prior null, prior known, prior nil)
+- [x] 0.4 Create `dashboard/panelkit/contracttest/reflection.go` — `HasConfig`/`ClearConfig` post-condition assertions using `panelkit.HasConfig`
+- [x] 0.5 Create `dashboard/panelkit/contracttest/schema.go` — structural assertions: outer attribute is Optional, Required leaves are present in fixture, `ValidatePanelConfig` rejects zeroed Required fields
+- [x] 0.6 Create `dashboard/panelkit/contracttest/harness.go` — `Run(t, handler, config)` entry point orchestrating the above; `Config` struct with `FullAPIResponse string` and optional `SkipFields []string`
+- [x] 0.7 Verify harness compiles and `contracttest.Run` fails with a clear error when given a no-op stub handler
 
 ## 1. Infrastructure
 
-- [ ] 1.1 Create `dashboard/panel/iface/iface.go` with `Handler` and `PinnedHandler` interfaces
-- [ ] 1.2 Create `dashboard/panelkit/grid.go` with `GridFromAPI`, `GridToAPI`, `IDFromAPI`, `IDToAPI`
-- [ ] 1.3 Create `dashboard/panelkit/nullpreserve.go` with `PreserveString`, `PreserveBool`, `PreserveList`, `PreserveFloat64`
-- [ ] 1.4 Create `dashboard/panelkit/reflection.go` with `HasConfig`, `ClearConfig`, `SetConfig` using tfsdk tag matching
-- [ ] 1.5 Verify `panelkit` reflection panics at init if any registered handler has a block name with no matching tfsdk tag
-- [ ] 1.6 Create `dashboard/registry.go` with `panelHandlers` slice, `panelTypeToHandler` map, `panelConfigNames` derivation
-- [ ] 1.7 Create `dashboard/router.go` with `mapPanelFromAPI` and `panelModelToAPI` delegating to registry
+- [x] 1.1 Create `dashboard/panel/iface/iface.go` with `Handler` and `PinnedHandler` interfaces
+- [x] 1.2 Create `dashboard/panelkit/grid.go` with `GridFromAPI`, `GridToAPI`, `IDFromAPI`, `IDToAPI`
+- [x] 1.3 Create `dashboard/panelkit/nullpreserve.go` with `PreserveString`, `PreserveBool`, `PreserveList`, `PreserveFloat64`
+- [x] 1.4 Create `dashboard/panelkit/reflection.go` with `HasConfig`, `ClearConfig`, `SetConfig` using tfsdk tag matching
+- [x] 1.5 Verify `panelkit` reflection panics at init if any registered handler has a block name with no matching tfsdk tag
+- [x] 1.6 Create `dashboard/registry.go` with `panelHandlers` slice, `panelTypeToHandler` map, `panelConfigNames` derivation
+- [x] 1.7 Create `dashboard/router.go` with `mapPanelFromAPI` and `panelModelToAPI` delegating to registry
 
 ## 2. Migrate simple panels to Handler implementations
 
