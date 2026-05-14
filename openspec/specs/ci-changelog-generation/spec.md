@@ -51,26 +51,29 @@ Before updating `CHANGELOG.md`, deterministic repository-authored validation SHA
 - **THEN** changelog mutation SHALL fail before `CHANGELOG.md` is updated
 
 ### Requirement: Scheduled/manual mode updates the singleton generated changelog PR
-In scheduled or manually dispatched unreleased mode, after deterministic validation succeeds, the workflow SHALL rewrite only the `## [Unreleased]` section of `CHANGELOG.md` and SHALL push the result to the singleton branch named `generated-changelog`. The workflow SHALL use repository-authored GitHub Actions logic to look up an existing pull request from `generated-changelog` to `main`, create that pull request when none exists, and update the existing PR body when one already exists.
+In scheduled or manually dispatched unreleased mode, after deterministic validation succeeds, the workflow SHALL rewrite only the `## [Unreleased]` section of `CHANGELOG.md` and SHALL push the result to the singleton branch named `generated-changelog`. The workflow SHALL use repository-authored GitHub Actions logic to look up an existing pull request from `generated-changelog` to `main`, create that pull request when none exists, and update the existing PR body when one already exists. After pushing the changelog commit to `generated-changelog`, the workflow SHALL push an empty commit re-authenticated with the CI trigger token to trigger downstream CI.
 
 #### Scenario: Generated changelog branch PR is reused
 - **GIVEN** the singleton branch `generated-changelog` already has an open pull request to `main`
 - **WHEN** the scheduled/manual unreleased changelog generator runs again
 - **THEN** it SHALL update that same branch and refresh the existing pull request instead of opening a duplicate
+- **AND** it SHALL push an empty commit re-authenticated with `GH_AW_CI_TRIGGER_TOKEN` to trigger CI
 
 #### Scenario: Missing generated changelog PR is created
 - **GIVEN** the singleton branch `generated-changelog` has no open pull request to `main`
 - **WHEN** the scheduled/manual unreleased changelog generator produces an updated `CHANGELOG.md`
 - **THEN** the workflow SHALL create the pull request after pushing the branch update
+- **AND** it SHALL push an empty commit re-authenticated with `GH_AW_CI_TRIGGER_TOKEN` to trigger CI
 
 ### Requirement: Explicit release mode updates the targeted release section and removes Unreleased
-In explicit release mode, after deterministic validation succeeds, repository-authored helper logic SHALL update only the concrete `## [x.y.z] - <date>` section for the checked out release branch and SHALL push that change only to the targeted release branch. Manual release-mode execution MAY refresh release PR metadata when the corresponding pull request is known, but release-mode changelog generation SHALL NOT depend on `pull_request_target` event metadata or automatic pull-request triggers.
+In explicit release mode, after deterministic validation succeeds, repository-authored helper logic SHALL update only the concrete `## [x.y.z] - <date>` section for the checked out release branch and SHALL push that change only to the targeted release branch. After pushing the changelog commit to the release branch, the workflow SHALL push an empty commit re-authenticated with the CI trigger token to trigger downstream CI. Manual release-mode execution MAY refresh release PR metadata when the corresponding pull request is known, but release-mode changelog generation SHALL NOT depend on `pull_request_target` event metadata or automatic pull-request triggers.
 
 In release mode, when the rewriter mutates `CHANGELOG.md` to emit the new `## [x.y.z] - <date>` section, it SHALL also remove any existing `## [Unreleased]` section (header and body) from the file. This SHALL hold both on the first run against a release-preparation branch (when no `## [x.y.z]` heading exists yet) and on any re-run (when the `## [x.y.z]` heading is already present alongside a stale `## [Unreleased]` section). Release-mode mutation SHALL NOT preserve, duplicate, or insert content alongside the Unreleased section; the resulting `CHANGELOG.md` SHALL contain exactly one block representing the work shipped in the release, headed by `## [x.y.z] - <date>`.
 
 #### Scenario: Release mode updates only the targeted branch
 - **WHEN** the changelog generator runs in explicit release mode for a release-preparation branch
 - **THEN** it SHALL push changelog updates only to that targeted release branch
+- **AND** it SHALL push an empty commit re-authenticated with `GH_AW_CI_TRIGGER_TOKEN` to trigger CI
 
 #### Scenario: Release mode does not regenerate Unreleased on the release branch
 - **WHEN** the changelog generator runs in explicit release mode

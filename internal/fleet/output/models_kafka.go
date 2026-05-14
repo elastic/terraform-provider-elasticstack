@@ -529,6 +529,19 @@ func (model *outputModel) fromAPIKafkaModel(ctx context.Context, data *kbapi.Out
 		ssl:                  data.Ssl,
 	})
 
+	// Capture the configured password before re-initializing kafkaModel so that
+	// we can preserve it when Fleet omits/redacts it (it is stored as a secret
+	// reference and not returned in plain form).
+	configuredPassword := types.StringNull()
+	if typeutils.IsKnown(model.Kafka) {
+		var existing outputKafkaModel
+		existingDiags := model.Kafka.As(ctx, &existing, basetypes.ObjectAsOptions{})
+		diags.Append(existingDiags...)
+		if !existingDiags.HasError() {
+			configuredPassword = existing.Password
+		}
+	}
+
 	// Kafka-specific fields - initialize kafka nested object
 	kafkaModel := outputKafkaModel{}
 	kafkaModel.AuthType = types.StringValue(string(data.AuthType))
@@ -554,7 +567,17 @@ func (model *outputModel) fromAPIKafkaModel(ctx context.Context, data *kbapi.Out
 	kafkaModel.Timeout = types.Float32PointerValue(data.Timeout)
 	kafkaModel.Version = types.StringPointerValue(data.Version)
 	kafkaModel.Username = types.StringPointerValue(data.Username)
-	kafkaModel.Password = types.StringPointerValue(data.Password)
+	switch {
+	case data.Password != nil:
+		kafkaModel.Password = types.StringPointerValue(data.Password)
+	case typeutils.IsKnown(configuredPassword):
+		// Fleet redacts kafka.password in API responses (the value is stored
+		// in the secret store and only a reference comes back). Preserve the
+		// configured value so Terraform does not see an inconsistent change.
+		kafkaModel.Password = configuredPassword
+	default:
+		kafkaModel.Password = types.StringNull()
+	}
 	kafkaModel.Key = types.StringPointerValue(data.Key)
 
 	// Handle headers

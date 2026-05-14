@@ -1228,6 +1228,7 @@ jobs:
         env:
           TARGET_VERSION: ${{ steps.changelog_engine.outputs.target_version }}
           TARGET_BRANCH: ${{ steps.changelog_engine.outputs.target_branch }}
+          GH_AW_CI_TRIGGER_TOKEN: ${{ secrets.GH_AW_CI_TRIGGER_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -1240,6 +1241,15 @@ jobs:
           fi
           git commit -m "chore(changelog): update changelog for v${TARGET_VERSION}"
           git push origin HEAD:${TARGET_BRANCH}
+          if [ -n "${GH_AW_CI_TRIGGER_TOKEN}" ]; then
+            SERVER_URL="${GITHUB_SERVER_URL#https://}"
+            SERVER_URL="${SERVER_URL#http://}"
+            git remote set-url origin "https://x-access-token:${GH_AW_CI_TRIGGER_TOKEN}@${SERVER_URL}/${GITHUB_REPOSITORY}.git"
+            git commit --allow-empty -m "chore: trigger CI"
+            git push origin HEAD:${TARGET_BRANCH}
+          else
+            echo "::warning::GH_AW_CI_TRIGGER_TOKEN is not set; CI will not be triggered automatically"
+          fi
           echo "pushed=true" >> $GITHUB_OUTPUT
           echo "ran=true" >> $GITHUB_OUTPUT
 
@@ -1429,6 +1439,8 @@ jobs:
           steps.changelog_engine.outputs.mode == 'unreleased' &&
           steps.changelog_engine.outputs.has_prs == 'true' &&
           steps.changelog_engine.outputs.has_user_facing_changes == 'true'
+        env:
+          GH_AW_CI_TRIGGER_TOKEN: ${{ secrets.GH_AW_CI_TRIGGER_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -1440,6 +1452,15 @@ jobs:
           fi
           git commit -m "chore(changelog): update unreleased changelog section"
           git push origin HEAD:generated-changelog --force
+          if [ -n "${GH_AW_CI_TRIGGER_TOKEN}" ]; then
+            SERVER_URL="${GITHUB_SERVER_URL#https://}"
+            SERVER_URL="${SERVER_URL#http://}"
+            git remote set-url origin "https://x-access-token:${GH_AW_CI_TRIGGER_TOKEN}@${SERVER_URL}/${GITHUB_REPOSITORY}.git"
+            git commit --allow-empty -m "chore: trigger CI"
+            git push origin HEAD:generated-changelog --force
+          else
+            echo "::warning::GH_AW_CI_TRIGGER_TOKEN is not set; CI will not be triggered automatically"
+          fi
           echo "pushed=true" >> $GITHUB_OUTPUT
 
       - name: Look up existing generated-changelog PR (unreleased mode)
