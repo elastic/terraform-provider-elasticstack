@@ -54,7 +54,7 @@ func (c datatablePanelConfigConverter) populateFromAttributes(
 ) diag.Diagnostics {
 	var priorNo *models.DatatableNoESQLConfigModel
 	var priorEsql *models.DatatableESQLConfigModel
-	if b := lensByValueChartBlocksFromPanel(tfPanel); b != nil && b.DatatableConfig != nil {
+	if b := LensByValueChartBlocksFromPanel(tfPanel); b != nil && b.DatatableConfig != nil {
 		if b.DatatableConfig.NoESQL != nil {
 			cpy := *b.DatatableConfig.NoESQL
 			priorNo = &cpy

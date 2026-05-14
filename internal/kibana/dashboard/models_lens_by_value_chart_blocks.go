@@ -19,26 +19,6 @@ package dashboard
 
 import "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 
-// lensByValueChartBlocksFromPanel returns the typed Lens chart block wrapper for the panel's
-// active by-value path: either `vis_config.by_value` or `lens_dashboard_app_config.by_value`
-// (design D3/D10). Attributes remain at the by_value object root on both Terraform models.
-func lensByValueChartBlocksFromPanel(pm *models.PanelModel) *models.LensByValueChartBlocks {
-	if pm == nil {
-		return nil
-	}
-	if pm.VisConfig != nil && pm.VisConfig.ByValue != nil {
-		return &pm.VisConfig.ByValue.LensByValueChartBlocks
-	}
-	if pm.LensDashboardAppConfig != nil && pm.LensDashboardAppConfig.ByValue != nil {
-		blocks, ok := lensByValueChartBlocksForTypedLensApp(*pm.LensDashboardAppConfig.ByValue)
-		if !ok {
-			return nil
-		}
-		return blocks
-	}
-	return nil
-}
-
 func firstLensVisConverterForChartBlocks(blocks *models.LensByValueChartBlocks) (lensVisualizationConverter, bool) {
 	for _, c := range lensVisConverters {
 		if c.handlesTFConfigBlocks(blocks) {

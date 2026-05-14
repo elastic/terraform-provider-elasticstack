@@ -52,7 +52,7 @@ func (c regionMapPanelConfigConverter) populateFromAttributes(
 	attrs kbapi.KbnDashboardPanelTypeVisConfig0,
 ) diag.Diagnostics {
 	var prior *models.RegionMapConfigModel
-	if b := lensByValueChartBlocksFromPanel(tfPanel); b != nil && b.RegionMapConfig != nil {
+	if b := LensByValueChartBlocksFromPanel(tfPanel); b != nil && b.RegionMapConfig != nil {
 		cpy := *b.RegionMapConfig
 		prior = &cpy
 	}

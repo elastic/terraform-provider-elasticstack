@@ -56,8 +56,8 @@ func alignPanelStateFromPlan(ctx context.Context, plan, state *models.PanelModel
 	}
 
 	preservePlanJSONIfStateOmitsOptionalKeys(plan.ConfigJSON.Normalized, &state.ConfigJSON.Normalized, "filters", "query", "settings")
-	planBlocks := lensByValueChartBlocksFromPanel(plan)
-	stateBlocks := lensByValueChartBlocksFromPanel(state)
+	planBlocks := LensByValueChartBlocksFromPanel(plan)
+	stateBlocks := LensByValueChartBlocksFromPanel(state)
 	if planBlocks != nil && stateBlocks != nil {
 		alignDatatableStateFromPlan(planBlocks.DatatableConfig, stateBlocks.DatatableConfig)
 		alignGaugeStateFromPlan(ctx, planBlocks.GaugeConfig, stateBlocks.GaugeConfig)

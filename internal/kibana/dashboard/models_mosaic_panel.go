@@ -54,7 +54,7 @@ func (c mosaicPanelConfigConverter) populateFromAttributes(
 	attrs kbapi.KbnDashboardPanelTypeVisConfig0,
 ) diag.Diagnostics {
 	var prior *models.MosaicConfigModel
-	if b := lensByValueChartBlocksFromPanel(tfPanel); b != nil && b.MosaicConfig != nil {
+	if b := LensByValueChartBlocksFromPanel(tfPanel); b != nil && b.MosaicConfig != nil {
 		cpy := *b.MosaicConfig
 		prior = &cpy
 	}

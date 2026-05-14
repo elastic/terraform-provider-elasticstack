@@ -54,7 +54,7 @@ func (c treemapPanelConfigConverter) populateFromAttributes(
 	attrs kbapi.KbnDashboardPanelTypeVisConfig0,
 ) diag.Diagnostics {
 	var prior *models.TreemapConfigModel
-	if b := lensByValueChartBlocksFromPanel(tfPanel); b != nil && b.TreemapConfig != nil {
+	if b := LensByValueChartBlocksFromPanel(tfPanel); b != nil && b.TreemapConfig != nil {
 		cpy := *b.TreemapConfig
 		prior = &cpy
 	}

@@ -64,7 +64,7 @@ func (c legacyMetricPanelConfigConverter) populateFromAttributes(
 	}
 
 	var prior *models.LegacyMetricConfigModel
-	if b := lensByValueChartBlocksFromPanel(tfPanel); b != nil && b.LegacyMetricConfig != nil {
+	if b := LensByValueChartBlocksFromPanel(tfPanel); b != nil && b.LegacyMetricConfig != nil {
 		cpy := *b.LegacyMetricConfig
 		prior = &cpy
 	}

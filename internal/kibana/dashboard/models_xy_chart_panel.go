@@ -55,7 +55,7 @@ func (c xyChartPanelConfigConverter) populateFromAttributes(
 	attrs kbapi.KbnDashboardPanelTypeVisConfig0,
 ) diag.Diagnostics {
 	var prior *models.XYChartConfigModel
-	if b := lensByValueChartBlocksFromPanel(tfPanel); b != nil && b.XYChartConfig != nil {
+	if b := LensByValueChartBlocksFromPanel(tfPanel); b != nil && b.XYChartConfig != nil {
 		cpy := *b.XYChartConfig
 		prior = &cpy
 	}

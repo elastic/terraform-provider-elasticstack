@@ -109,6 +109,26 @@ func lensByValueChartBlocksForTypedLensApp(byValue models.LensDashboardAppByValu
 	return &blocks, true
 }
 
+// LensByValueChartBlocksFromPanel returns the typed Lens chart block wrapper for the panel's
+// active by-value path: either `vis_config.by_value` or `lens_dashboard_app_config.by_value`
+// (design D3/D10). Attributes remain at the by_value object root on both Terraform models.
+func LensByValueChartBlocksFromPanel(pm *models.PanelModel) *models.LensByValueChartBlocks {
+	if pm == nil {
+		return nil
+	}
+	if pm.VisConfig != nil && pm.VisConfig.ByValue != nil {
+		return &pm.VisConfig.ByValue.LensByValueChartBlocks
+	}
+	if pm.LensDashboardAppConfig != nil && pm.LensDashboardAppConfig.ByValue != nil {
+		blocks, ok := lensByValueChartBlocksForTypedLensApp(*pm.LensDashboardAppConfig.ByValue)
+		if !ok {
+			return nil
+		}
+		return blocks
+	}
+	return nil
+}
+
 // lensByValueModelFromChartBlocksAfterRead maps chart blocks populated by a vis converter into
 // lens_dashboard_app_config.by_value (typed block only; config_json left unset).
 func lensByValueModelFromChartBlocksAfterRead(blocks *models.LensByValueChartBlocks) (models.LensDashboardAppByValueModel, bool) {
@@ -277,7 +297,7 @@ func lensByValueToScratchVisPanel(by models.LensDashboardAppByValueModel) (model
 // firstLensVisConverterForPanel resolves the Lens converter for whichever typed chart sits under
 // vis_config.by_value or lens_dashboard_app_config.by_value on the panel.
 func firstLensVisConverterForPanel(pm models.PanelModel) (lensVisualizationConverter, bool) {
-	blocks := lensByValueChartBlocksFromPanel(&pm)
+	blocks := LensByValueChartBlocksFromPanel(&pm)
 	if blocks == nil {
 		return nil, false
 	}

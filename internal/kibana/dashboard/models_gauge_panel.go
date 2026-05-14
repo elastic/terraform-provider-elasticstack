@@ -54,7 +54,7 @@ func (c gaugePanelConfigConverter) populateFromAttributes(
 	attrs kbapi.KbnDashboardPanelTypeVisConfig0,
 ) diag.Diagnostics {
 	var prior *models.GaugeConfigModel
-	if b := lensByValueChartBlocksFromPanel(tfPanel); b != nil && b.GaugeConfig != nil {
+	if b := LensByValueChartBlocksFromPanel(tfPanel); b != nil && b.GaugeConfig != nil {
 		cpy := *b.GaugeConfig
 		prior = &cpy
 	}

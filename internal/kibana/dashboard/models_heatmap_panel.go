@@ -53,7 +53,7 @@ func (c heatmapPanelConfigConverter) populateFromAttributes(
 	attrs kbapi.KbnDashboardPanelTypeVisConfig0,
 ) diag.Diagnostics {
 	var prior *models.HeatmapConfigModel
-	if b := lensByValueChartBlocksFromPanel(tfPanel); b != nil && b.HeatmapConfig != nil {
+	if b := LensByValueChartBlocksFromPanel(tfPanel); b != nil && b.HeatmapConfig != nil {
 		cpy := *b.HeatmapConfig
 		prior = &cpy
 	}

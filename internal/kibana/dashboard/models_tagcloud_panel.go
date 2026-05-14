@@ -54,7 +54,7 @@ func (c tagcloudPanelConfigConverter) populateFromAttributes(
 	attrs kbapi.KbnDashboardPanelTypeVisConfig0,
 ) diag.Diagnostics {
 	var prior *models.TagcloudConfigModel
-	if b := lensByValueChartBlocksFromPanel(tfPanel); b != nil && b.TagcloudConfig != nil {
+	if b := LensByValueChartBlocksFromPanel(tfPanel); b != nil && b.TagcloudConfig != nil {
 		cpy := *b.TagcloudConfig
 		prior = &cpy
 	}

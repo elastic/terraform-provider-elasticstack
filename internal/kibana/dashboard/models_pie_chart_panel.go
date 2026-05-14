@@ -56,7 +56,7 @@ func (c pieChartPanelConfigConverter) populateFromAttributes(
 	// Disambiguate NoESQL vs ESQL using dataset type; regenerated clients can
 	// decode an empty no-ESQL query for ESQL payloads.
 	var prior *models.PieChartConfigModel
-	if b := lensByValueChartBlocksFromPanel(tfPanel); b != nil && b.PieChartConfig != nil {
+	if b := LensByValueChartBlocksFromPanel(tfPanel); b != nil && b.PieChartConfig != nil {
 		cpy := *b.PieChartConfig
 		prior = &cpy
 	}

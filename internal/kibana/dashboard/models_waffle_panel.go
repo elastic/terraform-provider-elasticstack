@@ -61,7 +61,7 @@ func (c wafflePanelConfigConverter) populateFromAttributes(
 	if seed != nil {
 		cpy := *seed
 		prior = &cpy
-	} else if b := lensByValueChartBlocksFromPanel(tfPanel); b != nil && b.WaffleConfig != nil {
+	} else if b := LensByValueChartBlocksFromPanel(tfPanel); b != nil && b.WaffleConfig != nil {
 		cpy := *b.WaffleConfig
 		prior = &cpy
 	}

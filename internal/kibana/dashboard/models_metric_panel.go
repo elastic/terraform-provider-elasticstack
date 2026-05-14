@@ -121,7 +121,7 @@ func (c metricChartPanelConfigConverter) populateFromAttributes(
 	// inside fromAPIVariant0 can still compare against plan values.
 	priorConfig := blocks.MetricChartConfig
 	if priorConfig == nil {
-		if b := lensByValueChartBlocksFromPanel(tfPanel); b != nil && b.MetricChartConfig != nil {
+		if b := LensByValueChartBlocksFromPanel(tfPanel); b != nil && b.MetricChartConfig != nil {
 			priorConfig = b.MetricChartConfig
 		}
 	}
