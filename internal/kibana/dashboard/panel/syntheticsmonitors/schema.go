@@ -18,6 +18,7 @@
 package syntheticsmonitors
 
 import (
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/syntheticscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
@@ -31,18 +32,22 @@ const panelType = "synthetics_monitors"
 
 // SchemaAttribute returns the synthetics_monitors_config SingleNestedAttribute definition.
 func SchemaAttribute() schema.Attribute {
-	filterItem := schema.NestedAttributeObject{
-		Attributes: map[string]schema.Attribute{
-			"label": schema.StringAttribute{
-				MarkdownDescription: "Display label for the filter option.",
-				Required:            true,
-			},
-			"value": schema.StringAttribute{
-				MarkdownDescription: "Value for the filter option.",
-				Required:            true,
-			},
+	attrs := panelkit.PanelPresentationAttributes()
+	attrs["view"] = schema.StringAttribute{
+		MarkdownDescription: "View mode for the panel. Valid values are `cardView` and `compactView`.",
+		Optional:            true,
+		Validators: []validator.String{
+			stringvalidator.OneOf("cardView", "compactView"),
 		},
 	}
+	attrs["filters"] = syntheticscommon.FilterAttribute(syntheticscommon.FilterAttributeOptions{
+		BlockMarkdownDescription: "Optional filter configuration for the Synthetics monitors panel. Omit to show all monitors.",
+		ProjectsDescription:      "Filter by project. Each entry has a `label` (display name) and a `value` (project ID).",
+		TagsDescription:          "Filter by tags. Each entry has a `label` (display name) and a `value` (tag).",
+		MonitorIDsDescription:    "Filter by monitor IDs. Each entry has a `label` (display name) and a `value` (monitor ID). The Kibana API accepts up to 5000 items.",
+		LocationsDescription:     "Filter by monitor locations. Each entry has a `label` (display name) and a `value` (location ID).",
+		MonitorTypesDescription:  "Filter by monitor types. Each entry has a `label` (display name) and a `value` (monitor type, e.g. `browser`, `http`, `tcp`, `icmp`).",
+	})
 
 	return schema.SingleNestedAttribute{
 		MarkdownDescription: panelkit.PanelConfigDescription(
@@ -51,63 +56,8 @@ func SchemaAttribute() schema.Attribute {
 			"synthetics_monitors_config",
 			panelkit.TypedSiblingPanelConfigBlockNames(),
 		),
-		Optional: true,
-		Attributes: map[string]schema.Attribute{
-			"title": schema.StringAttribute{
-				MarkdownDescription: "Display title shown in the panel header.",
-				Optional:            true,
-			},
-			"description": schema.StringAttribute{
-				MarkdownDescription: "Descriptive text for the panel.",
-				Optional:            true,
-			},
-			"hide_title": schema.BoolAttribute{
-				MarkdownDescription: "When true, suppresses the panel title in the dashboard.",
-				Optional:            true,
-			},
-			"hide_border": schema.BoolAttribute{
-				MarkdownDescription: "When true, suppresses the panel border in the dashboard.",
-				Optional:            true,
-			},
-			"view": schema.StringAttribute{
-				MarkdownDescription: "View mode for the panel. Valid values are `cardView` and `compactView`.",
-				Optional:            true,
-				Validators: []validator.String{
-					stringvalidator.OneOf("cardView", "compactView"),
-				},
-			},
-			"filters": schema.SingleNestedAttribute{
-				MarkdownDescription: "Optional filter configuration for the Synthetics monitors panel. Omit to show all monitors.",
-				Optional:            true,
-				Attributes: map[string]schema.Attribute{
-					"projects": schema.ListNestedAttribute{
-						MarkdownDescription: "Filter by project. Each entry has a `label` (display name) and a `value` (project ID).",
-						Optional:            true,
-						NestedObject:        filterItem,
-					},
-					"tags": schema.ListNestedAttribute{
-						MarkdownDescription: "Filter by tags. Each entry has a `label` (display name) and a `value` (tag).",
-						Optional:            true,
-						NestedObject:        filterItem,
-					},
-					"monitor_ids": schema.ListNestedAttribute{
-						MarkdownDescription: "Filter by monitor IDs. Each entry has a `label` (display name) and a `value` (monitor ID). The Kibana API accepts up to 5000 items.",
-						Optional:            true,
-						NestedObject:        filterItem,
-					},
-					"locations": schema.ListNestedAttribute{
-						MarkdownDescription: "Filter by monitor locations. Each entry has a `label` (display name) and a `value` (location ID).",
-						Optional:            true,
-						NestedObject:        filterItem,
-					},
-					"monitor_types": schema.ListNestedAttribute{
-						MarkdownDescription: "Filter by monitor types. Each entry has a `label` (display name) and a `value` (monitor type, e.g. `browser`, `http`, `tcp`, `icmp`).",
-						Optional:            true,
-						NestedObject:        filterItem,
-					},
-				},
-			},
-		},
+		Optional:   true,
+		Attributes: attrs,
 		Validators: []validator.Object{
 			objectvalidator.ConflictsWith(
 				panelkit.SiblingTypedPanelConfigConflictPathsExcept("synthetics_monitors_config", panelkit.TypedSiblingPanelConfigBlockNames())...,

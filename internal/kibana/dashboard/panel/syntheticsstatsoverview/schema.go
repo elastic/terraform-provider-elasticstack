@@ -18,6 +18,7 @@
 package syntheticsstatsoverview
 
 import (
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/syntheticscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
@@ -30,18 +31,16 @@ const panelType = "synthetics_stats_overview"
 
 // SchemaAttribute returns the synthetics_stats_overview_config SingleNestedAttribute definition.
 func SchemaAttribute() schema.Attribute {
-	filterItem := schema.NestedAttributeObject{
-		Attributes: map[string]schema.Attribute{
-			"label": schema.StringAttribute{
-				MarkdownDescription: "Display label for the filter option.",
-				Required:            true,
-			},
-			"value": schema.StringAttribute{
-				MarkdownDescription: "Value for the filter option.",
-				Required:            true,
-			},
-		},
-	}
+	attrs := panelkit.PanelPresentationAttributes()
+	attrs["drilldowns"] = panelkit.URLDrilldownListAttribute(
+		"Optional list of URL drilldown actions attached to the panel. The API allows up to 100 drilldowns per panel.",
+		panelkit.URLDrilldownOptions{},
+	)
+	attrs["filters"] = syntheticscommon.FilterAttribute(syntheticscommon.FilterAttributeOptions{
+		BlockMarkdownDescription: "Optional Synthetics monitor filter constraints. Each filter category " +
+			"accepts a list of `{ label, value }` objects. Omit the block or individual categories " +
+			"to apply no filtering for those dimensions.",
+	})
 
 	return schema.SingleNestedAttribute{
 		MarkdownDescription: panelkit.PanelConfigDescription(
@@ -51,62 +50,8 @@ func SchemaAttribute() schema.Attribute {
 			"synthetics_stats_overview_config",
 			panelkit.TypedSiblingPanelConfigBlockNames(),
 		),
-		Optional: true,
-		Attributes: map[string]schema.Attribute{
-			"title": schema.StringAttribute{
-				MarkdownDescription: "Display title shown in the panel header.",
-				Optional:            true,
-			},
-			"description": schema.StringAttribute{
-				MarkdownDescription: "Descriptive text for the panel.",
-				Optional:            true,
-			},
-			"hide_title": schema.BoolAttribute{
-				MarkdownDescription: "When true, suppresses the panel title in the dashboard.",
-				Optional:            true,
-			},
-			"hide_border": schema.BoolAttribute{
-				MarkdownDescription: "When true, suppresses the panel border in the dashboard.",
-				Optional:            true,
-			},
-			"drilldowns": panelkit.URLDrilldownListAttribute(
-				"Optional list of URL drilldown actions attached to the panel. The API allows up to 100 drilldowns per panel.",
-				panelkit.URLDrilldownOptions{},
-			),
-			"filters": schema.SingleNestedAttribute{
-				MarkdownDescription: "Optional Synthetics monitor filter constraints. Each filter category " +
-					"accepts a list of `{ label, value }` objects. Omit the block or individual categories " +
-					"to apply no filtering for those dimensions.",
-				Optional: true,
-				Attributes: map[string]schema.Attribute{
-					"projects": schema.ListNestedAttribute{
-						MarkdownDescription: "Filter by Synthetics project.",
-						Optional:            true,
-						NestedObject:        filterItem,
-					},
-					"tags": schema.ListNestedAttribute{
-						MarkdownDescription: "Filter by monitor tag.",
-						Optional:            true,
-						NestedObject:        filterItem,
-					},
-					"monitor_ids": schema.ListNestedAttribute{
-						MarkdownDescription: "Filter by monitor ID. The API accepts up to 5000 entries.",
-						Optional:            true,
-						NestedObject:        filterItem,
-					},
-					"locations": schema.ListNestedAttribute{
-						MarkdownDescription: "Filter by monitor location.",
-						Optional:            true,
-						NestedObject:        filterItem,
-					},
-					"monitor_types": schema.ListNestedAttribute{
-						MarkdownDescription: "Filter by monitor type (e.g. `browser`, `http`).",
-						Optional:            true,
-						NestedObject:        filterItem,
-					},
-				},
-			},
-		},
+		Optional:   true,
+		Attributes: attrs,
 		Validators: []validator.Object{
 			objectvalidator.ConflictsWith(
 				panelkit.SiblingTypedPanelConfigConflictPathsExcept("synthetics_stats_overview_config", panelkit.TypedSiblingPanelConfigBlockNames())...,
