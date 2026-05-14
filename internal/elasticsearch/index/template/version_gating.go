@@ -46,4 +46,3 @@ func validateIgnoreMissingComponentTemplatesVersion(plan Model, serverVersion *v
 	}
 	return diags
 }
-

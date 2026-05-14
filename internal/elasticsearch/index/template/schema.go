@@ -208,4 +208,3 @@ func templateLifecycleBlock() schema.SingleNestedBlock {
 		},
 	}
 }
-

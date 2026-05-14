@@ -254,4 +254,3 @@ func expandTemplateLifecycle(obj types.Object) *models.LifecycleSettings {
 	}
 	return &models.LifecycleSettings{DataRetention: drStr.ValueString()}
 }
-
