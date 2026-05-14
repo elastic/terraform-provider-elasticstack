@@ -85,4 +85,3 @@ func nestedAttributes() map[string]schema.Attribute {
 		},
 	}
 }
-

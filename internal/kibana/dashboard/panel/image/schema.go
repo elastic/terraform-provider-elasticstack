@@ -126,4 +126,3 @@ func nestedAttributes() map[string]schema.Attribute {
 	}
 	return attrs
 }
-

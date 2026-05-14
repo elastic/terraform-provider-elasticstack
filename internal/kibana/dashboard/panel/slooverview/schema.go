@@ -136,4 +136,3 @@ func groupsAttributes() map[string]schema.Attribute {
 	}
 	return attrs
 }
-

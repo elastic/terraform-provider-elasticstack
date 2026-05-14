@@ -633,12 +633,12 @@ Optional:
 
 - `alt_text` (String) Accessible alternate text for the image.
 - `background_color` (String) Background color behind the image (CSS color string).
-- `description` (String) Panel description shown by Kibana.
+- `description` (String) Optional panel description.
 - `drilldowns` (Attributes List) Optional drilldown actions for the image panel (max 100 entries). Each element sets exactly one of `dashboard_drilldown` or `url_drilldown`, matching the Kibana `kbn-dashboard-panel-type-image` `config.drilldowns` discriminated union. (see [below for nested schema](#nestedatt--panels--image_config--drilldowns))
 - `hide_border` (Boolean) When true, hides the panel border.
 - `hide_title` (Boolean) When true, hides the panel title.
 - `object_fit` (String) How the image is sized within its panel container. Omit to leave unset; the Kibana API defaults to `contain`. Unset values stay null in Terraform state when the API echoes that default (REQ-009).
-- `title` (String) Panel title shown by Kibana.
+- `title` (String) Optional panel title shown in the panel header.
 
 <a id="nestedatt--panels--image_config--src"></a>
 ### Nested Schema for `panels.image_config.src`
@@ -2160,9 +2160,9 @@ Required:
 Optional:
 
 - `description` (String) Optional panel description.
-- `hide_border` (Boolean) When true, suppresses the panel border.
-- `hide_title` (Boolean) When true, suppresses the panel title.
-- `title` (String) Optional panel title.
+- `hide_border` (Boolean) When true, hides the panel border.
+- `hide_title` (Boolean) When true, hides the panel title.
+- `title` (String) Optional panel title shown in the panel header.
 
 
 <a id="nestedatt--panels--markdown_config--by_value"></a>
@@ -2176,9 +2176,9 @@ Required:
 Optional:
 
 - `description` (String) Optional panel description.
-- `hide_border` (Boolean) When true, suppresses the panel border.
-- `hide_title` (Boolean) When true, suppresses the panel title.
-- `title` (String) Optional panel title.
+- `hide_border` (Boolean) When true, hides the panel border.
+- `hide_title` (Boolean) When true, hides the panel title.
+- `title` (String) Optional panel title shown in the panel header.
 
 <a id="nestedatt--panels--markdown_config--by_value--settings"></a>
 ### Nested Schema for `panels.markdown_config.by_value.settings`
@@ -2264,7 +2264,7 @@ Optional:
 - `drilldowns` (Attributes List) Optional URL drilldown links (at most 100). The embeddable fixes `trigger` to `on_open_panel_menu` and `type` to `url_drilldown` when writing to the Kibana API. (see [below for nested schema](#nestedatt--panels--slo_alerts_config--drilldowns))
 - `hide_border` (Boolean) When true, hides the panel border.
 - `hide_title` (Boolean) When true, hides the panel title.
-- `title` (String) Optional panel title.
+- `title` (String) Optional panel title shown in the panel header.
 
 <a id="nestedatt--panels--slo_alerts_config--slos"></a>
 ### Nested Schema for `panels.slo_alerts_config.slos`
@@ -2308,7 +2308,7 @@ Optional:
 - `hide_border` (Boolean) When true, hides the panel border.
 - `hide_title` (Boolean) When true, hides the panel title.
 - `slo_instance_id` (String) ID of the SLO instance. Set when the SLO uses `group_by`; identifies which instance to show. Omit to show all instances (API default `"*"`).
-- `title` (String) Optional panel title.
+- `title` (String) Optional panel title shown in the panel header.
 
 <a id="nestedatt--panels--slo_burn_rate_config--drilldowns"></a>
 ### Nested Schema for `panels.slo_burn_rate_config.drilldowns`
@@ -2334,12 +2334,12 @@ Required:
 
 Optional:
 
-- `description` (String) The description of the panel.
+- `description` (String) Optional panel description.
 - `drilldowns` (Attributes List) URL drilldowns to configure on the panel. (see [below for nested schema](#nestedatt--panels--slo_error_budget_config--drilldowns))
-- `hide_border` (Boolean) Hide the border of the panel.
-- `hide_title` (Boolean) Hide the title of the panel.
+- `hide_border` (Boolean) When true, hides the panel border.
+- `hide_title` (Boolean) When true, hides the panel title.
 - `slo_instance_id` (String) ID of the SLO instance. Set when the SLO uses group_by; identifies which instance to show. Defaults to `*` (all instances) when omitted.
-- `title` (String) The title displayed in the panel header.
+- `title` (String) Optional panel title shown in the panel header.
 
 <a id="nestedatt--panels--slo_error_budget_config--drilldowns"></a>
 ### Nested Schema for `panels.slo_error_budget_config.drilldowns`
@@ -2369,12 +2369,12 @@ Optional:
 
 Optional:
 
-- `description` (String) The description displayed on the panel.
+- `description` (String) Optional panel description.
 - `drilldowns` (Attributes List) URL drilldowns attached to the panel. The trigger (`on_open_panel_menu`) and type (`url_drilldown`) are set automatically. (see [below for nested schema](#nestedatt--panels--slo_overview_config--groups--drilldowns))
 - `group_filters` (Attributes) Optional filters for grouped SLO overview mode. (see [below for nested schema](#nestedatt--panels--slo_overview_config--groups--group_filters))
-- `hide_border` (Boolean) When true, the panel border is hidden.
-- `hide_title` (Boolean) When true, the panel title is hidden.
-- `title` (String) The title displayed on the panel.
+- `hide_border` (Boolean) When true, hides the panel border.
+- `hide_title` (Boolean) When true, hides the panel title.
+- `title` (String) Optional panel title shown in the panel header.
 
 <a id="nestedatt--panels--slo_overview_config--groups--drilldowns"></a>
 ### Nested Schema for `panels.slo_overview_config.groups.drilldowns`
@@ -2411,13 +2411,13 @@ Required:
 
 Optional:
 
-- `description` (String) The description displayed on the panel.
+- `description` (String) Optional panel description.
 - `drilldowns` (Attributes List) URL drilldowns attached to the panel. The trigger (`on_open_panel_menu`) and type (`url_drilldown`) are set automatically. (see [below for nested schema](#nestedatt--panels--slo_overview_config--single--drilldowns))
-- `hide_border` (Boolean) When true, the panel border is hidden.
-- `hide_title` (Boolean) When true, the panel title is hidden.
+- `hide_border` (Boolean) When true, hides the panel border.
+- `hide_title` (Boolean) When true, hides the panel title.
 - `remote_name` (String) The name of the remote cluster where the SLO is defined.
 - `slo_instance_id` (String) The SLO instance ID. Set when the SLO uses group_by; identifies which instance to display. Defaults to `*` (all instances) when omitted.
-- `title` (String) The title displayed on the panel.
+- `title` (String) Optional panel title shown in the panel header.
 
 <a id="nestedatt--panels--slo_overview_config--single--drilldowns"></a>
 ### Nested Schema for `panels.slo_overview_config.single.drilldowns`
@@ -2440,11 +2440,11 @@ Optional:
 
 Optional:
 
-- `description` (String) Descriptive text for the panel.
+- `description` (String) Optional panel description.
 - `filters` (Attributes) Optional filter configuration for the Synthetics monitors panel. Omit to show all monitors. (see [below for nested schema](#nestedatt--panels--synthetics_monitors_config--filters))
-- `hide_border` (Boolean) When true, suppresses the panel border in the dashboard.
-- `hide_title` (Boolean) When true, suppresses the panel title in the dashboard.
-- `title` (String) Display title shown in the panel header.
+- `hide_border` (Boolean) When true, hides the panel border.
+- `hide_title` (Boolean) When true, hides the panel title.
+- `title` (String) Optional panel title shown in the panel header.
 - `view` (String) View mode for the panel. Valid values are `cardView` and `compactView`.
 
 <a id="nestedatt--panels--synthetics_monitors_config--filters"></a>
@@ -2510,12 +2510,12 @@ Required:
 
 Optional:
 
-- `description` (String) Descriptive text for the panel.
+- `description` (String) Optional panel description.
 - `drilldowns` (Attributes List) Optional list of URL drilldown actions attached to the panel. The API allows up to 100 drilldowns per panel. (see [below for nested schema](#nestedatt--panels--synthetics_stats_overview_config--drilldowns))
 - `filters` (Attributes) Optional Synthetics monitor filter constraints. Each filter category accepts a list of `{ label, value }` objects. Omit the block or individual categories to apply no filtering for those dimensions. (see [below for nested schema](#nestedatt--panels--synthetics_stats_overview_config--filters))
-- `hide_border` (Boolean) When true, suppresses the panel border in the dashboard.
-- `hide_title` (Boolean) When true, suppresses the panel title in the dashboard.
-- `title` (String) Display title shown in the panel header.
+- `hide_border` (Boolean) When true, hides the panel border.
+- `hide_title` (Boolean) When true, hides the panel title.
+- `title` (String) Optional panel title shown in the panel header.
 
 <a id="nestedatt--panels--synthetics_stats_overview_config--drilldowns"></a>
 ### Nested Schema for `panels.synthetics_stats_overview_config.drilldowns`
@@ -5500,12 +5500,12 @@ Optional:
 
 - `alt_text` (String) Accessible alternate text for the image.
 - `background_color` (String) Background color behind the image (CSS color string).
-- `description` (String) Panel description shown by Kibana.
+- `description` (String) Optional panel description.
 - `drilldowns` (Attributes List) Optional drilldown actions for the image panel (max 100 entries). Each element sets exactly one of `dashboard_drilldown` or `url_drilldown`, matching the Kibana `kbn-dashboard-panel-type-image` `config.drilldowns` discriminated union. (see [below for nested schema](#nestedatt--sections--panels--image_config--drilldowns))
 - `hide_border` (Boolean) When true, hides the panel border.
 - `hide_title` (Boolean) When true, hides the panel title.
 - `object_fit` (String) How the image is sized within its panel container. Omit to leave unset; the Kibana API defaults to `contain`. Unset values stay null in Terraform state when the API echoes that default (REQ-009).
-- `title` (String) Panel title shown by Kibana.
+- `title` (String) Optional panel title shown in the panel header.
 
 <a id="nestedatt--sections--panels--image_config--src"></a>
 ### Nested Schema for `sections.panels.image_config.src`
@@ -7027,9 +7027,9 @@ Required:
 Optional:
 
 - `description` (String) Optional panel description.
-- `hide_border` (Boolean) When true, suppresses the panel border.
-- `hide_title` (Boolean) When true, suppresses the panel title.
-- `title` (String) Optional panel title.
+- `hide_border` (Boolean) When true, hides the panel border.
+- `hide_title` (Boolean) When true, hides the panel title.
+- `title` (String) Optional panel title shown in the panel header.
 
 
 <a id="nestedatt--sections--panels--markdown_config--by_value"></a>
@@ -7043,9 +7043,9 @@ Required:
 Optional:
 
 - `description` (String) Optional panel description.
-- `hide_border` (Boolean) When true, suppresses the panel border.
-- `hide_title` (Boolean) When true, suppresses the panel title.
-- `title` (String) Optional panel title.
+- `hide_border` (Boolean) When true, hides the panel border.
+- `hide_title` (Boolean) When true, hides the panel title.
+- `title` (String) Optional panel title shown in the panel header.
 
 <a id="nestedatt--sections--panels--markdown_config--by_value--settings"></a>
 ### Nested Schema for `sections.panels.markdown_config.by_value.settings`
@@ -7131,7 +7131,7 @@ Optional:
 - `drilldowns` (Attributes List) Optional URL drilldown links (at most 100). The embeddable fixes `trigger` to `on_open_panel_menu` and `type` to `url_drilldown` when writing to the Kibana API. (see [below for nested schema](#nestedatt--sections--panels--slo_alerts_config--drilldowns))
 - `hide_border` (Boolean) When true, hides the panel border.
 - `hide_title` (Boolean) When true, hides the panel title.
-- `title` (String) Optional panel title.
+- `title` (String) Optional panel title shown in the panel header.
 
 <a id="nestedatt--sections--panels--slo_alerts_config--slos"></a>
 ### Nested Schema for `sections.panels.slo_alerts_config.slos`
@@ -7175,7 +7175,7 @@ Optional:
 - `hide_border` (Boolean) When true, hides the panel border.
 - `hide_title` (Boolean) When true, hides the panel title.
 - `slo_instance_id` (String) ID of the SLO instance. Set when the SLO uses `group_by`; identifies which instance to show. Omit to show all instances (API default `"*"`).
-- `title` (String) Optional panel title.
+- `title` (String) Optional panel title shown in the panel header.
 
 <a id="nestedatt--sections--panels--slo_burn_rate_config--drilldowns"></a>
 ### Nested Schema for `sections.panels.slo_burn_rate_config.drilldowns`
@@ -7201,12 +7201,12 @@ Required:
 
 Optional:
 
-- `description` (String) The description of the panel.
+- `description` (String) Optional panel description.
 - `drilldowns` (Attributes List) URL drilldowns to configure on the panel. (see [below for nested schema](#nestedatt--sections--panels--slo_error_budget_config--drilldowns))
-- `hide_border` (Boolean) Hide the border of the panel.
-- `hide_title` (Boolean) Hide the title of the panel.
+- `hide_border` (Boolean) When true, hides the panel border.
+- `hide_title` (Boolean) When true, hides the panel title.
 - `slo_instance_id` (String) ID of the SLO instance. Set when the SLO uses group_by; identifies which instance to show. Defaults to `*` (all instances) when omitted.
-- `title` (String) The title displayed in the panel header.
+- `title` (String) Optional panel title shown in the panel header.
 
 <a id="nestedatt--sections--panels--slo_error_budget_config--drilldowns"></a>
 ### Nested Schema for `sections.panels.slo_error_budget_config.drilldowns`
@@ -7236,12 +7236,12 @@ Optional:
 
 Optional:
 
-- `description` (String) The description displayed on the panel.
+- `description` (String) Optional panel description.
 - `drilldowns` (Attributes List) URL drilldowns attached to the panel. The trigger (`on_open_panel_menu`) and type (`url_drilldown`) are set automatically. (see [below for nested schema](#nestedatt--sections--panels--slo_overview_config--groups--drilldowns))
 - `group_filters` (Attributes) Optional filters for grouped SLO overview mode. (see [below for nested schema](#nestedatt--sections--panels--slo_overview_config--groups--group_filters))
-- `hide_border` (Boolean) When true, the panel border is hidden.
-- `hide_title` (Boolean) When true, the panel title is hidden.
-- `title` (String) The title displayed on the panel.
+- `hide_border` (Boolean) When true, hides the panel border.
+- `hide_title` (Boolean) When true, hides the panel title.
+- `title` (String) Optional panel title shown in the panel header.
 
 <a id="nestedatt--sections--panels--slo_overview_config--groups--drilldowns"></a>
 ### Nested Schema for `sections.panels.slo_overview_config.groups.drilldowns`
@@ -7278,13 +7278,13 @@ Required:
 
 Optional:
 
-- `description` (String) The description displayed on the panel.
+- `description` (String) Optional panel description.
 - `drilldowns` (Attributes List) URL drilldowns attached to the panel. The trigger (`on_open_panel_menu`) and type (`url_drilldown`) are set automatically. (see [below for nested schema](#nestedatt--sections--panels--slo_overview_config--single--drilldowns))
-- `hide_border` (Boolean) When true, the panel border is hidden.
-- `hide_title` (Boolean) When true, the panel title is hidden.
+- `hide_border` (Boolean) When true, hides the panel border.
+- `hide_title` (Boolean) When true, hides the panel title.
 - `remote_name` (String) The name of the remote cluster where the SLO is defined.
 - `slo_instance_id` (String) The SLO instance ID. Set when the SLO uses group_by; identifies which instance to display. Defaults to `*` (all instances) when omitted.
-- `title` (String) The title displayed on the panel.
+- `title` (String) Optional panel title shown in the panel header.
 
 <a id="nestedatt--sections--panels--slo_overview_config--single--drilldowns"></a>
 ### Nested Schema for `sections.panels.slo_overview_config.single.drilldowns`
@@ -7307,11 +7307,11 @@ Optional:
 
 Optional:
 
-- `description` (String) Descriptive text for the panel.
+- `description` (String) Optional panel description.
 - `filters` (Attributes) Optional filter configuration for the Synthetics monitors panel. Omit to show all monitors. (see [below for nested schema](#nestedatt--sections--panels--synthetics_monitors_config--filters))
-- `hide_border` (Boolean) When true, suppresses the panel border in the dashboard.
-- `hide_title` (Boolean) When true, suppresses the panel title in the dashboard.
-- `title` (String) Display title shown in the panel header.
+- `hide_border` (Boolean) When true, hides the panel border.
+- `hide_title` (Boolean) When true, hides the panel title.
+- `title` (String) Optional panel title shown in the panel header.
 - `view` (String) View mode for the panel. Valid values are `cardView` and `compactView`.
 
 <a id="nestedatt--sections--panels--synthetics_monitors_config--filters"></a>
@@ -7377,12 +7377,12 @@ Required:
 
 Optional:
 
-- `description` (String) Descriptive text for the panel.
+- `description` (String) Optional panel description.
 - `drilldowns` (Attributes List) Optional list of URL drilldown actions attached to the panel. The API allows up to 100 drilldowns per panel. (see [below for nested schema](#nestedatt--sections--panels--synthetics_stats_overview_config--drilldowns))
 - `filters` (Attributes) Optional Synthetics monitor filter constraints. Each filter category accepts a list of `{ label, value }` objects. Omit the block or individual categories to apply no filtering for those dimensions. (see [below for nested schema](#nestedatt--sections--panels--synthetics_stats_overview_config--filters))
-- `hide_border` (Boolean) When true, suppresses the panel border in the dashboard.
-- `hide_title` (Boolean) When true, suppresses the panel title in the dashboard.
-- `title` (String) Display title shown in the panel header.
+- `hide_border` (Boolean) When true, hides the panel border.
+- `hide_title` (Boolean) When true, hides the panel title.
+- `title` (String) Optional panel title shown in the panel header.
 
 <a id="nestedatt--sections--panels--synthetics_stats_overview_config--drilldowns"></a>
 ### Nested Schema for `sections.panels.synthetics_stats_overview_config.drilldowns`
