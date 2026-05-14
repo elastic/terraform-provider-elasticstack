@@ -25,6 +25,17 @@ import (
 
 var convertersByType map[string]VizConverter
 
+// UnregisterVizConverter removes the converter registered for vizType and returns it (nil if none).
+// Intended for tests that need to simulate a missing chart implementation.
+func UnregisterVizConverter(vizType string) VizConverter {
+	if convertersByType == nil {
+		return nil
+	}
+	c := convertersByType[vizType]
+	delete(convertersByType, vizType)
+	return c
+}
+
 // Register adds a VizConverter keyed by VizType(). Later registration replaces an earlier one with the same VizType().
 func Register(c VizConverter) {
 	if convertersByType == nil {

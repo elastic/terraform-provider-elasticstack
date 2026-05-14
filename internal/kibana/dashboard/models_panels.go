@@ -32,21 +32,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-var lensVisConverters = []lensVisualizationConverter{
-	newXYChartPanelConfigConverter(),
-	newTreemapPanelConfigConverter(),
-	newMosaicPanelConfigConverter(),
-	newDatatablePanelConfigConverter(),
-	newTagcloudPanelConfigConverter(),
-	newHeatmapPanelConfigConverter(),
-	newRegionMapPanelConfigConverter(),
-	newLegacyMetricPanelConfigConverter(),
-	newGaugePanelConfigConverter(),
-	newMetricChartPanelConfigConverter(),
-	newPieChartPanelConfigConverter(),
-	newWafflePanelConfigConverter(),
-}
-
 func dashboardMapPanelsFromAPI(ctx context.Context, m *models.DashboardModel, apiPanels *kbapi.DashboardPanels) ([]models.PanelModel, []models.SectionModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if apiPanels == nil || len(*apiPanels) == 0 {
@@ -262,32 +247,10 @@ func dashboardMapPanelFromAPI(ctx context.Context, m *models.DashboardModel, tfP
 				diags.AddError("Invalid visualization panel configuration on read", err0.Error())
 				break
 			}
-			visType := detectLensVisType(config0)
-			if visType == "" {
-				diags.AddError(
-					"Unsupported visualization chart type",
-					"The `vis` panel config has a top-level chart discriminator but could not resolve a Lens chart kind from the union; use panel-level `config_json` until this shape is modeled.",
-				)
-				break
-			}
-			converter := lensVisConverterForType(visType)
-			if converter == nil {
-				diags.AddError(
-					"Unsupported visualization chart type",
-					fmt.Sprintf(
-						"The dashboard returned Lens visualization discriminator %q which this provider does not support as typed `vis_config.by_value`. "+
-							"Use panel-level `config_json` as the escape hatch to manage this panel until support is added.",
-						visType,
-					),
-				)
-				break
-			}
 			pm.VisConfig = &models.VisConfigModel{
 				ByValue: &models.VisByValueModel{},
 			}
-			seedWaffleLensByValueChartFromPriorPanel(&pm.VisConfig.ByValue.LensByValueChartBlocks, tfPanel)
-			d := converter.populateFromAttributes(ctx, m, tfPanel, &pm.VisConfig.ByValue.LensByValueChartBlocks, config0)
-			diags.Append(d...)
+			diags.Append(populateLensVisByValueFromTypedChartAPI(ctx, m, tfPanel, &pm.VisConfig.ByValue.LensByValueChartBlocks, config0, true)...)
 
 		default:
 			if visPrior != nil && visPrior.ByReference != nil {
@@ -298,28 +261,10 @@ func dashboardMapPanelFromAPI(ctx context.Context, m *models.DashboardModel, tfP
 			if err0 != nil {
 				break
 			}
-			visType := detectLensVisType(config0)
-			if visType == "" {
-				break
-			}
-			converter := lensVisConverterForType(visType)
-			if converter == nil {
-				diags.AddError(
-					"Unsupported visualization chart type",
-					fmt.Sprintf(
-						"The dashboard returned Lens visualization discriminator %q which this provider does not support as typed `vis_config.by_value`. "+
-							"Use panel-level `config_json` as the escape hatch to manage this panel until support is added.",
-						visType,
-					),
-				)
-				break
-			}
 			pm.VisConfig = &models.VisConfigModel{
 				ByValue: &models.VisByValueModel{},
 			}
-			seedWaffleLensByValueChartFromPriorPanel(&pm.VisConfig.ByValue.LensByValueChartBlocks, tfPanel)
-			d := converter.populateFromAttributes(ctx, m, tfPanel, &pm.VisConfig.ByValue.LensByValueChartBlocks, config0)
-			diags.Append(d...)
+			diags.Append(populateLensVisByValueFromTypedChartAPI(ctx, m, tfPanel, &pm.VisConfig.ByValue.LensByValueChartBlocks, config0, false)...)
 		}
 	case panelTypeLensDashboardApp:
 		ldPanel, err := panelItem.AsKbnDashboardPanelTypeLensDashboardApp()

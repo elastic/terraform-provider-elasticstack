@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -153,11 +154,9 @@ func Test_mapPanelFromAPI_vis_byValue_prefersAPIChartOverStalePriorXYBlock(t *te
 func Test_mapPanelFromAPI_vis_unsupportedChartDiagnostic(t *testing.T) {
 	ctx := context.Background()
 
-	original := lensVisConverters
-	lensVisConverters = nil // no converters match metric (or anything)
-	t.Cleanup(func() {
-		lensVisConverters = original
-	})
+	removed := lenscommon.UnregisterVizConverter("metric")
+	require.NotNil(t, removed)
+	t.Cleanup(func() { lenscommon.Register(removed) })
 
 	const apiPanelsJSON = `[
 		{

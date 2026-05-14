@@ -18,26 +18,10 @@
 package dashboard
 
 import (
-	"context"
-
-	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-type lensVisualizationConverter interface {
-	visType() string
-	handlesTFConfigBlocks(blocks *models.LensByValueChartBlocks) bool
-	populateFromAttributes(
-		ctx context.Context,
-		dashboard *models.DashboardModel,
-		tfPanel *models.PanelModel,
-		blocks *models.LensByValueChartBlocks,
-		attrs kbapi.KbnDashboardPanelTypeVisConfig0,
-	) diag.Diagnostics
-	buildAttributes(blocks *models.LensByValueChartBlocks, dashboard *models.DashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics)
-}
-
+// lensVisualizationBase is embedded by legacy per-chart panel converters until those structs are removed.
 type lensVisualizationBase struct {
 	visualizationType string
 	hasTFChartBlock   func(blocks *models.LensByValueChartBlocks) bool
@@ -52,100 +36,4 @@ func (c lensVisualizationBase) handlesTFConfigBlocks(blocks *models.LensByValueC
 		return false
 	}
 	return c.hasTFChartBlock(blocks)
-}
-
-func detectLensVisType(attrs kbapi.KbnDashboardPanelTypeVisConfig0) string {
-	if chart, err := attrs.AsXyChartNoESQL(); err == nil {
-		return string(chart.Type)
-	}
-	if chart, err := attrs.AsXyChartESQL(); err == nil {
-		return string(chart.Type)
-	}
-	if chart, err := attrs.AsTreemapNoESQL(); err == nil {
-		return string(chart.Type)
-	}
-	if chart, err := attrs.AsTreemapESQL(); err == nil {
-		return string(chart.Type)
-	}
-	if chart, err := attrs.AsMosaicNoESQL(); err == nil {
-		return string(chart.Type)
-	}
-	if chart, err := attrs.AsMosaicESQL(); err == nil {
-		return string(chart.Type)
-	}
-	if chart, err := attrs.AsDatatableNoESQL(); err == nil {
-		return string(chart.Type)
-	}
-	if chart, err := attrs.AsDatatableESQL(); err == nil {
-		return string(chart.Type)
-	}
-	if chart, err := attrs.AsTagcloudNoESQL(); err == nil {
-		return string(chart.Type)
-	}
-	if chart, err := attrs.AsTagcloudESQL(); err == nil {
-		return string(chart.Type)
-	}
-	if chart, err := attrs.AsHeatmapNoESQL(); err == nil {
-		return string(chart.Type)
-	}
-	if chart, err := attrs.AsHeatmapESQL(); err == nil {
-		return string(chart.Type)
-	}
-	if chart, err := attrs.AsRegionMapNoESQL(); err == nil {
-		return string(chart.Type)
-	}
-	if chart, err := attrs.AsRegionMapESQL(); err == nil {
-		return string(chart.Type)
-	}
-	if chart, err := attrs.AsLegacyMetricNoESQL(); err == nil {
-		return string(chart.Type)
-	}
-	if chart, err := attrs.AsMetricNoESQL(); err == nil {
-		return string(chart.Type)
-	}
-	if chart, err := attrs.AsMetricESQL(); err == nil {
-		return string(chart.Type)
-	}
-	if chart, err := attrs.AsPieNoESQL(); err == nil {
-		return string(chart.Type)
-	}
-	if chart, err := attrs.AsPieESQL(); err == nil {
-		return string(chart.Type)
-	}
-	if chart, err := attrs.AsGaugeNoESQL(); err == nil {
-		return string(chart.Type)
-	}
-	if chart, err := attrs.AsGaugeESQL(); err == nil {
-		return string(chart.Type)
-	}
-	if chart, err := attrs.AsWaffleNoESQL(); err == nil {
-		return string(chart.Type)
-	}
-	if chart, err := attrs.AsWaffleESQL(); err == nil {
-		return string(chart.Type)
-	}
-	return ""
-}
-
-// lensVisConverterForType returns the typed Lens converter for vis_config.by_value whose discriminator
-// matches strings produced by detectLensVisType, or nil when the provider does not model that chart kind.
-func lensVisConverterForType(visType string) lensVisualizationConverter {
-	if visType == "" {
-		return nil
-	}
-	for _, c := range lensVisConverters {
-		if c.visType() == visType {
-			return c
-		}
-	}
-	return nil
-}
-
-func firstLensVisConverterForChartBlocks(blocks *models.LensByValueChartBlocks) (lensVisualizationConverter, bool) {
-	for _, c := range lensVisConverters {
-		if c.handlesTFConfigBlocks(blocks) {
-			return c, true
-		}
-	}
-	return nil, false
 }

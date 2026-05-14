@@ -127,12 +127,12 @@ func visConfigToAPI(pm models.PanelModel, dashboard *models.DashboardModel, grid
 		return visByReferenceToAPI(*cfg.ByReference, grid, panelID)
 	case cfg.ByValue != nil:
 		blocks := &cfg.ByValue.LensByValueChartBlocks
-		conv, okConv := firstLensVisConverterForChartBlocks(blocks)
+		conv, okConv := lenscommon.FirstForBlocks(blocks)
 		if !okConv {
 			diags.AddError("Invalid `vis_config.by_value`", "The typed chart block could not be resolved to a Lens visualization converter.")
 			return kbapi.DashboardPanelItem{}, diags
 		}
-		config0, d := conv.buildAttributes(blocks, dashboard)
+		config0, d := conv.BuildAttributes(blocks, lensChartResolver(dashboard))
 		diags.Append(d...)
 		if d.HasError() {
 			return kbapi.DashboardPanelItem{}, diags
