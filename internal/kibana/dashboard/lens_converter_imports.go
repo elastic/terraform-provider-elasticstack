@@ -24,4 +24,5 @@ import (
 	_ "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/lenspie" // side-effect: register pie VizConverter with lenscommon (dashboard-lens-contract).
 	_ "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/lensregionmap" // side-effect: register region_map VizConverter with lenscommon (dashboard-lens-contract).
 	_ "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/lenstagcloud" // side-effect: register tagcloud VizConverter with lenscommon (dashboard-lens-contract).
+	_ "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/lenstreemap" // side-effect: register treemap VizConverter with lenscommon (dashboard-lens-contract).
 )
