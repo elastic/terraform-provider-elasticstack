@@ -47,11 +47,11 @@ Each converter must:
 
 ## 5. Refactor state alignment and defaults
 
-- [ ] 5.1 Refactor `alignPanelStateFromPlan` in `models_plan_state_alignment.go` to delegate lens chart alignment to `lenscommon.All()` converters
-- [ ] 5.2 Register XY chart slice aligner in `lensxy/converter.go` `init()`
-- [ ] 5.3 Remove explicit per-chart alignment calls from `alignPanelStateFromPlan`
-- [ ] 5.4 Refactor `populateLensAttributesDefaults` in `panel_config_defaults.go` to dispatch to `lenscommon.ForType(vizType).PopulateJSONDefaults()`
-- [ ] 5.5 Remove hard-coded lens chart type switches from `panel_config_defaults.go`
+- [x] 5.1 Refactor `alignPanelStateFromPlan` in `models_plan_state_alignment.go` to delegate lens chart alignment to `lenscommon.All()` converters
+- [x] 5.2 Register XY chart slice aligner in `lensxy/converter.go` `init()`
+- [x] 5.3 Remove explicit per-chart alignment calls from `alignPanelStateFromPlan`
+- [x] 5.4 Refactor `populateLensAttributesDefaults` in `panel_config_defaults.go` to dispatch to `lenscommon.ForType(vizType).PopulateJSONDefaults()`
+- [x] 5.5 Remove hard-coded lens chart type switches from `panel_config_defaults.go`
 
 ## 6. Verification
 
