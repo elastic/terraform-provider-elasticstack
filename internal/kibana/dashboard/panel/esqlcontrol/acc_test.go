@@ -15,13 +15,14 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package dashboard_test
+package esqlcontrol_test
 
 import (
 	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/dashboardacctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -31,7 +32,7 @@ import (
 func TestAccResourceDashboardESQLControl_with_config(t *testing.T) {
 	dashboardTitle := "Test Dashboard with ES|QL Control " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -111,7 +112,7 @@ func TestAccResourceDashboardESQLControl_with_config(t *testing.T) {
 func TestAccResourceDashboardESQLControl_empty_config(t *testing.T) {
 	dashboardTitle := "Test Dashboard with ES|QL Control " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -138,7 +139,7 @@ func TestAccResourceDashboardESQLControl_empty_config(t *testing.T) {
 func TestAccResourceDashboardESQLControl_no_config(t *testing.T) {
 	dashboardTitle := "Test Dashboard with ES|QL Control " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -159,7 +160,7 @@ func TestAccResourceDashboardESQLControl_no_config(t *testing.T) {
 func TestAccResourceDashboardESQLControlValuesFromQuery(t *testing.T) {
 	dashboardTitle := "Test Dashboard with ES|QL Control VALUES_FROM_QUERY " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -197,7 +198,7 @@ func TestAccResourceDashboardESQLControlValuesFromQuery(t *testing.T) {
 func TestAccResourceDashboardESQLControlDisplaySettings(t *testing.T) {
 	dashboardTitle := "Test Dashboard with ES|QL Control display_settings " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -231,7 +232,7 @@ func TestAccResourceDashboardESQLControlDisplaySettings(t *testing.T) {
 }
 
 func TestAccResourceDashboardESQLControlConfigJSONRejected(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -246,7 +247,7 @@ func TestAccResourceDashboardESQLControlConfigJSONRejected(t *testing.T) {
 }
 
 func TestAccResourceDashboardESQLControlInvalidConfig(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -265,7 +266,7 @@ func TestAccResourceDashboardESQLControlInvalidConfig(t *testing.T) {
 }
 
 func TestAccResourceDashboardESQLControlInvalidEnum(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },

@@ -15,12 +15,13 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package dashboard_test
+package sloalerts_test
 
 import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/dashboardacctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/slo"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/terraform-plugin-testing/config"
@@ -31,7 +32,7 @@ import (
 
 func skipDashboardOrKqlSLOUnsupported() func() (bool, error) {
 	return func() (bool, error) {
-		if skip, err := versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport)(); skip || err != nil {
+		if skip, err := versionutils.CheckIfVersionIsUnsupported(dashboardacctest.MinDashboardAPISupport)(); skip || err != nil {
 			return skip, err
 		}
 		return versionutils.CheckIfVersionMeetsConstraints(slo.SLOKqlAccTestConstraints)()

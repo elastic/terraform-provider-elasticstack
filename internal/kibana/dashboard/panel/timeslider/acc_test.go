@@ -15,13 +15,14 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package dashboard_test
+package timeslider_test
 
 import (
 	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/dashboardacctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -31,7 +32,7 @@ import (
 func TestAccResourceDashboardTimeSliderControl(t *testing.T) {
 	dashboardTitle := "Test Dashboard with Time Slider Control " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -116,7 +117,7 @@ func TestAccResourceDashboardTimeSliderControl(t *testing.T) {
 func TestAccResourceDashboardTimeSliderControlNoConfig(t *testing.T) {
 	dashboardTitle := "Test Dashboard with Time Slider Control No Config " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -140,7 +141,7 @@ func TestAccResourceDashboardTimeSliderControlNoConfig(t *testing.T) {
 }
 
 func TestAccResourceDashboardTimeSliderControlInvalidConfig(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },

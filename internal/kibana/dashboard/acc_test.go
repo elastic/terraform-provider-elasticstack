@@ -22,16 +22,18 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/dashboardacctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
-	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 )
 
-// Dashboard API is in technical preview and available from 9.4.x onwards
-var minDashboardAPISupport = version.Must(version.NewVersion("9.4.0-SNAPSHOT"))
+// Dashboard API is in technical preview and available from 9.4.x onwards.
+// The shared lower bound now lives in the dashboardacctest helper package so
+// per-panel acceptance tests (in panel/*) can use it without re-declaring it.
+var minDashboardAPISupport = dashboardacctest.MinDashboardAPISupport
 
 func TestAccResourceEmptyDashboard(t *testing.T) {
 	dashboardTitle := "Test Dashboard " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)

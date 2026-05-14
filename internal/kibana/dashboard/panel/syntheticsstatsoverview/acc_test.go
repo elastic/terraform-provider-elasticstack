@@ -15,13 +15,14 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package dashboard_test
+package syntheticsstatsoverview_test
 
 import (
 	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/dashboardacctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -33,7 +34,7 @@ import (
 func TestAccResourceDashboardSyntheticsStatsOverviewMinimal(t *testing.T) {
 	dashboardTitle := "Test Dashboard Synthetics Stats Overview Minimal " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -72,7 +73,7 @@ func TestAccResourceDashboardSyntheticsStatsOverviewMinimal(t *testing.T) {
 func TestAccResourceDashboardSyntheticsStatsOverviewDisplaySettings(t *testing.T) {
 	dashboardTitle := "Test Dashboard Synthetics Stats Overview Display " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -110,7 +111,7 @@ func TestAccResourceDashboardSyntheticsStatsOverviewDisplaySettings(t *testing.T
 func TestAccResourceDashboardSyntheticsStatsOverviewWithFilters(t *testing.T) {
 	dashboardTitle := "Test Dashboard Synthetics Stats Overview Filters " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -149,7 +150,7 @@ func TestAccResourceDashboardSyntheticsStatsOverviewWithFilters(t *testing.T) {
 func TestAccResourceDashboardSyntheticsStatsOverviewWithDrilldowns(t *testing.T) {
 	dashboardTitle := "Test Dashboard Synthetics Stats Overview Drilldowns " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -179,7 +180,7 @@ func TestAccResourceDashboardSyntheticsStatsOverviewWithDrilldowns(t *testing.T)
 
 // TestAccResourceDashboardSyntheticsStatsOverviewInvalidConfig tests validation errors.
 func TestAccResourceDashboardSyntheticsStatsOverviewInvalidConfig(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },

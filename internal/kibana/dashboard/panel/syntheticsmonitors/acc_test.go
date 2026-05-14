@@ -15,13 +15,14 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package dashboard_test
+package syntheticsmonitors_test
 
 import (
 	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/dashboardacctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -34,7 +35,7 @@ import (
 func TestAccResourceDashboardSyntheticsMonitors(t *testing.T) {
 	dashboardTitle := "Test Dashboard Synthetics Monitors " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -145,7 +146,7 @@ func TestAccResourceDashboardSyntheticsMonitors(t *testing.T) {
 // 3.7: config_json on a synthetics_monitors panel is rejected.
 // synthetics_monitors_config on a non-synthetics_monitors panel is rejected.
 func TestAccResourceDashboardSyntheticsMonitorsInvalidConfig(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },

@@ -15,13 +15,14 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package dashboard_test
+package sloburnrate_test
 
 import (
 	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/dashboardacctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -31,7 +32,7 @@ import (
 func TestAccResourceDashboardSloBurnRate(t *testing.T) {
 	dashboardTitle := "Test Dashboard SLO Burn Rate " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -87,7 +88,7 @@ func TestAccResourceDashboardSloBurnRate(t *testing.T) {
 func TestAccResourceDashboardSloBurnRateWithInstanceID(t *testing.T) {
 	dashboardTitle := "Test Dashboard SLO Burn Rate Instance " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -125,7 +126,7 @@ func TestAccResourceDashboardSloBurnRateWithInstanceID(t *testing.T) {
 func TestAccResourceDashboardSloBurnRateWithDrilldowns(t *testing.T) {
 	dashboardTitle := "Test Dashboard SLO Burn Rate Drilldowns " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -156,7 +157,7 @@ func TestAccResourceDashboardSloBurnRateWithDrilldowns(t *testing.T) {
 func TestAccResourceDashboardSloBurnRateDisplayOptions_with_display_options(t *testing.T) {
 	dashboardTitle := "Test Dashboard SLO Burn Rate Display " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -188,7 +189,7 @@ func TestAccResourceDashboardSloBurnRateDisplayOptions_with_display_options(t *t
 func TestAccResourceDashboardSloBurnRateDisplayOptions_display_options_updated(t *testing.T) {
 	dashboardTitle := "Test Dashboard SLO Burn Rate Display " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -221,7 +222,7 @@ func TestAccResourceDashboardSloBurnRateDisplayOptions_display_options_updated(t
 
 // Invalid duration is rejected at plan time.
 func TestAccResourceDashboardSloBurnRateInvalidDuration(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -239,7 +240,7 @@ func TestAccResourceDashboardSloBurnRateInvalidDuration(t *testing.T) {
 }
 
 func TestAccResourceDashboardSloBurnRateInvalidConfig(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },

@@ -15,12 +15,13 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package dashboard_test
+package image_test
 
 import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/dashboardacctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -34,7 +35,7 @@ import (
 func TestAccResourceDashboardImage_url_drilldowns_round_trip(t *testing.T) {
 	dashboardTitle := "Acc image url dd " + sdkacctest.RandStringFromCharSet(6, sdkacctest.CharSetAlphaNum)
 
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -84,7 +85,7 @@ func TestAccResourceDashboardImage_url_drilldowns_round_trip(t *testing.T) {
 func TestAccResourceDashboardImage_object_fit_explicit(t *testing.T) {
 	dashboardTitle := "Acc image fit " + sdkacctest.RandStringFromCharSet(6, sdkacctest.CharSetAlphaNum)
 
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -120,7 +121,7 @@ func TestAccResourceDashboardImage_object_fit_explicit(t *testing.T) {
 func TestAccResourceDashboardImage_file_src_round_trip(t *testing.T) {
 	dashboardTitle := "Acc image file " + sdkacctest.RandStringFromCharSet(6, sdkacctest.CharSetAlphaNum)
 
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
