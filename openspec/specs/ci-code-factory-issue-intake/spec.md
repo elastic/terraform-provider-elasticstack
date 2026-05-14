@@ -119,6 +119,8 @@ The workflow SHALL include a deterministic pre-activation step that removes the 
 ### Requirement: Implementation agent has structured access to Elastic documentation
 The `code-factory` workflow SHALL configure the Elastic docs MCP server as an HTTP MCP server in the workflow frontmatter so that the implementation agent can query Elastic documentation during issue investigation and implementation. The workflow frontmatter SHALL declare an `mcp-servers.elastic-docs` entry pointing to `https://www.elastic.co/docs/_mcp/`. The agent prompt SHALL instruct the agent to use the docs MCP tools (`search_docs`, `find_related_docs`, `get_document_by_url`) when investigating the API behavior, parameters, or constraints required to implement a `code-factory` issue.
 
+The agent prompt SHALL also describe the test environment with ports that are reachable from within the AWF sandbox, including `ELASTICSEARCH_ENDPOINTS` on an AWF-allowed port (such as `8080`) and `KIBANA_ENDPOINT` on an AWF-allowed port (such as `80`), and SHALL instruct the agent to run acceptance tests using those reachable endpoints.
+
 #### Scenario: Agent investigates API behavior before implementing a resource
 - **WHEN** a `code-factory` issue involves an Elastic API endpoint or feature whose full parameter set is not evident from the existing codebase
 - **THEN** the agent SHALL use the elastic-docs MCP `search_docs` tool to retrieve authoritative API documentation before writing implementation code
@@ -131,6 +133,10 @@ The `code-factory` workflow SHALL configure the Elastic docs MCP server as an HT
 #### Scenario: Maintainer inspects compiled workflow for docs MCP configuration
 - **WHEN** maintainers inspect the compiled `code-factory-issue.md` workflow
 - **THEN** the workflow frontmatter SHALL include `mcp-servers.elastic-docs` with `url: https://www.elastic.co/docs/_mcp/`
+
+#### Scenario: Agent runs acceptance tests against reachable stack endpoints
+- **WHEN** the implementation agent reaches the acceptance test verification step
+- **THEN** the agent SHALL connect to Elasticsearch at `http://host.docker.internal:8080` and Kibana at `http://host.docker.internal` for test execution
 
 ### Requirement: Workflow activates the implementation agent for valid internal dispatch requests
 The workflow SHALL support internal single-issue activation through `workflow_dispatch` when the dispatch provides valid current-repository issue identity and the run passes its dispatch-mode deterministic gates.
