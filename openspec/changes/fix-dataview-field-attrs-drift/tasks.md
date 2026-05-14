@@ -47,7 +47,7 @@
 
 ## 7. Requirements Update
 
-- [ ] 7.1 Update `openspec/specs/kibana-data-view/spec.md`:
+- [x] 7.1 Update `openspec/specs/kibana-data-view/spec.md`:
   - Remove `data_view.field_attrs` from the replacement list in REQ-006
   - Update REQ-009 to state that `field_attrs` changes are applied via a separate `UpdateFieldMetadata` call
   - Add REQ-015 (field_attrs semantic equality) as defined in the delta spec
