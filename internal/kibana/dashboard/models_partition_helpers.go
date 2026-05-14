@@ -18,13 +18,10 @@
 package dashboard
 
 import (
-	"encoding/json"
-
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -34,19 +31,7 @@ import (
 //
 //nolint:unparam // snapshotDefault is a parameter for API flexibility; callers use false for partition charts
 func mapOptionalBoolWithSnapshotDefault(current types.Bool, apiValue *bool, snapshotDefault bool) types.Bool {
-	switch {
-	case apiValue == nil:
-		if typeutils.IsKnown(current) {
-			return current
-		}
-		return types.BoolNull()
-	case typeutils.IsKnown(current) && *apiValue == snapshotDefault && current.ValueBool() != *apiValue:
-		return current
-	case !typeutils.IsKnown(current) && *apiValue == snapshotDefault:
-		return types.BoolNull()
-	default:
-		return types.BoolValue(*apiValue)
-	}
+	return lenscommon.MapOptionalBoolWithSnapshotDefault(current, apiValue, snapshotDefault)
 }
 
 // mapOptionalFloatWithSnapshotDefault maps an optional API float to a Terraform Float64,
@@ -54,19 +39,7 @@ func mapOptionalBoolWithSnapshotDefault(current types.Bool, apiValue *bool, snap
 //
 //nolint:unparam // snapshotDefault is a parameter for API flexibility; callers use 1 for partition charts
 func mapOptionalFloatWithSnapshotDefault(current types.Float64, apiValue *float32, snapshotDefault float64) types.Float64 {
-	switch {
-	case apiValue == nil:
-		if typeutils.IsKnown(current) {
-			return current
-		}
-		return types.Float64Null()
-	case typeutils.IsKnown(current) && float64(*apiValue) == snapshotDefault && current.ValueFloat64() != float64(*apiValue):
-		return current
-	case !typeutils.IsKnown(current) && float64(*apiValue) == snapshotDefault:
-		return types.Float64Null()
-	default:
-		return types.Float64Value(float64(*apiValue))
-	}
+	return lenscommon.MapOptionalFloatWithSnapshotDefault(current, apiValue, snapshotDefault)
 }
 
 // (treemap, mosaic, pie). Used by treemap, mosaic, and pie chart config models.
@@ -103,40 +76,9 @@ func partitionValueDisplayToValueDisplay(m *models.PartitionValueDisplay) kbapi.
 	return lenscommon.PartitionValueDisplayToAPI(m)
 }
 
-// stripTopLevelNullMapKeys removes keys whose value is nil so JSON state matches compact user configs.
-func stripTopLevelNullMapKeys(m map[string]any) {
-	if m == nil {
-		return
-	}
-	for k, v := range m {
-		if v == nil {
-			delete(m, k)
-		}
-	}
-}
-
 // newPartitionGroupByJSONFromAPI builds group_by / group_breakdown_by JSON for Terraform state from the API payload.
 // Kibana may add explicit null fields on read; dropping them avoids "inconsistent result after apply" for ES|QL treemaps/mosaics.
 // Terms defaults are not merged here (that would change round-trip panelsToAPI); JSONWithDefaultsValue still applies populatePartitionGroupByDefaults for semantic equality.
 func newPartitionGroupByJSONFromAPI(apiPayload any) (customtypes.JSONWithDefaultsValue[[]map[string]any], diag.Diagnostics) {
-	var diags diag.Diagnostics
-	raw, err := json.Marshal(apiPayload)
-	if err != nil {
-		diags.AddError("Failed to marshal group_by from API", err.Error())
-		return customtypes.JSONWithDefaultsValue[[]map[string]any]{}, diags
-	}
-	var items []map[string]any
-	if err := json.Unmarshal(raw, &items); err != nil {
-		diags.AddError("Failed to unmarshal group_by from API", err.Error())
-		return customtypes.JSONWithDefaultsValue[[]map[string]any]{}, diags
-	}
-	for i := range items {
-		stripTopLevelNullMapKeys(items[i])
-	}
-	out, err := json.Marshal(items)
-	if err != nil {
-		diags.AddError("Failed to marshal normalized group_by", err.Error())
-		return customtypes.JSONWithDefaultsValue[[]map[string]any]{}, diags
-	}
-	return customtypes.NewJSONWithDefaultsValue(string(out), populatePartitionGroupByDefaults), diags
+	return lenscommon.NewPartitionGroupByJSONFromAPI(apiPayload)
 }

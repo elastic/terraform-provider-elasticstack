@@ -20,7 +20,6 @@ package dashboard
 import (
 	"context"
 	"encoding/json"
-	"strconv"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
@@ -140,47 +139,7 @@ func (c wafflePanelConfigConverter) buildAttributes(blocks *models.LensByValueCh
 // normalizeKibanaLensNumberFormatJSONString trims Lens number-format defaults Kibana adds on read
 // (decimals: 2, compact: false) so state matches compact Terraform jsonencode like {"type":"number"}.
 func normalizeKibanaLensNumberFormatJSONString(jsonStr string) string {
-	var m map[string]any
-	if err := json.Unmarshal([]byte(jsonStr), &m); err != nil {
-		return jsonStr
-	}
-	typ, _ := m["type"].(string)
-	if typ != "number" {
-		return jsonStr
-	}
-	if jsonNumericEqualsLoose(m["decimals"], 2) {
-		delete(m, "decimals")
-	}
-	if b, ok := m["compact"].(bool); ok && !b {
-		delete(m, "compact")
-	}
-	sorted := lenscommon.SortJSONMapKeysRecursive(m)
-	out, err := json.Marshal(sorted)
-	if err != nil {
-		return jsonStr
-	}
-	return string(out)
-}
-
-func jsonNumericEqualsLoose(v any, want float64) bool {
-	switch x := v.(type) {
-	case float64:
-		return x == want
-	case float32:
-		return float64(x) == want
-	case int:
-		return float64(x) == want
-	case int64:
-		return float64(x) == want
-	case json.Number:
-		f, err := x.Float64()
-		return err == nil && f == want
-	case string:
-		f, err := strconv.ParseFloat(x, 64)
-		return err == nil && f == want
-	default:
-		return false
-	}
+	return lenscommon.NormalizeKibanaLensNumberFormatJSONString(jsonStr)
 }
 
 // mergeWaffleConfigFromPlanSeed restores optional fields Kibana omits or defaults on read
@@ -386,7 +345,7 @@ func waffleConfigFromAPIESQL(ctx context.Context, m *models.WaffleConfigModel, d
 					}
 					// Kibana may omit format on saved-object round-trip, leaving Format as an empty union.
 					if string(b) == jsonNullString || len(b) == 0 {
-						b = []byte(defaultNumberFormatJSON)
+						b = []byte(lenscommon.DefaultLensNumberFormatJSON)
 					}
 					return jsontypes.NewNormalizedValue(normalizeKibanaLensNumberFormatJSONString(string(b)))
 				}(),
@@ -418,7 +377,7 @@ func waffleConfigFromAPIESQL(ctx context.Context, m *models.WaffleConfigModel, d
 				continue
 			}
 			if string(formatBytes) == jsonNullString || len(formatBytes) == 0 {
-				formatBytes = []byte(defaultNumberFormatJSON)
+				formatBytes = []byte(lenscommon.DefaultLensNumberFormatJSON)
 			}
 			formatStr := normalizeKibanaLensNumberFormatJSONString(string(formatBytes))
 			eg := models.WaffleEsqlGroupBy{
@@ -772,7 +731,7 @@ func waffleConfigToAPIESQL(m *models.WaffleConfigModel, dashboard *models.Dashbo
 			}
 			gb[i].Column = eg.Column.ValueString()
 			gb[i].CollapseBy = kbapi.CollapseBy(eg.CollapseBy.ValueString())
-			formatSrc := defaultNumberFormatJSON
+			formatSrc := lenscommon.DefaultLensNumberFormatJSON
 			if typeutils.IsKnown(eg.FormatJSON) {
 				formatSrc = eg.FormatJSON.ValueString()
 			}

@@ -23,6 +23,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -380,7 +381,7 @@ func treemapConfigToAPITreemapESQL(m *models.TreemapConfigModel, dashboard *mode
 			diags.AddError("Failed to unmarshal esql group_by color_json", err.Error())
 			return api, diags
 		}
-		formatSrc := defaultNumberFormatJSON
+		formatSrc := lenscommon.DefaultLensNumberFormatJSON
 		if typeutils.IsKnown(eg.FormatJSON) {
 			formatSrc = eg.FormatJSON.ValueString()
 		}

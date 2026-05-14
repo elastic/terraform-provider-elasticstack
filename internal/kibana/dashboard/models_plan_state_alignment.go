@@ -55,7 +55,7 @@ func alignPanelStateFromPlan(ctx context.Context, plan, state *models.PanelModel
 		return
 	}
 
-	preservePlanJSONIfStateOmitsOptionalKeys(plan.ConfigJSON.Normalized, &state.ConfigJSON.Normalized, "filters", "query", "settings")
+	lenscommon.PreservePlanJSONIfStateOmitsOptionalKeys(plan.ConfigJSON.Normalized, &state.ConfigJSON.Normalized, "filters", "query", "settings")
 	planBlocks := LensByValueChartBlocksFromPanel(plan)
 	stateBlocks := LensByValueChartBlocksFromPanel(state)
 	if planBlocks != nil && stateBlocks != nil {
@@ -130,8 +130,8 @@ func alignMetricStateFromPlan(plan, state *models.MetricChartConfigModel) {
 		return
 	}
 	alignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
-	preservePlanJSONIfStateAddsOptionalKeys(plan.DataSourceJSON, &state.DataSourceJSON, "time_field")
-	preservePlanJSONIfStateAddsOptionalKeys(plan.BreakdownByJSON, &state.BreakdownByJSON, "rank_by")
+	lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(plan.DataSourceJSON, &state.DataSourceJSON, "time_field")
+	lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(plan.BreakdownByJSON, &state.BreakdownByJSON, "rank_by")
 	m := min(len(plan.Metrics), len(state.Metrics))
 	for i := range m {
 		preserveMetricChartMetricConfigFromPlan(plan.Metrics[i].ConfigJSON, &state.Metrics[i].ConfigJSON)
@@ -170,14 +170,14 @@ func alignTagcloudStateFromPlan(ctx context.Context, plan, state *models.Tagclou
 	}
 	alignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
 	preservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.MetricJSON, &state.MetricJSON)
-	preservePlanJSONIfStateAddsOptionalKeys(plan.TagByJSON.Normalized, &state.TagByJSON.Normalized, "rank_by", "color")
+	lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(plan.TagByJSON.Normalized, &state.TagByJSON.Normalized, "rank_by", "color")
 	preservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.TagByJSON, &state.TagByJSON)
 	if plan.EsqlMetric != nil && state.EsqlMetric != nil {
-		preserveNormalizedJSONSemanticEquality(plan.EsqlMetric.FormatJSON, &state.EsqlMetric.FormatJSON)
+		lenscommon.PreserveNormalizedJSONSemanticEquality(plan.EsqlMetric.FormatJSON, &state.EsqlMetric.FormatJSON)
 	}
 	if plan.EsqlTagBy != nil && state.EsqlTagBy != nil {
-		preserveNormalizedJSONSemanticEquality(plan.EsqlTagBy.FormatJSON, &state.EsqlTagBy.FormatJSON)
-		preserveNormalizedJSONSemanticEquality(plan.EsqlTagBy.ColorJSON, &state.EsqlTagBy.ColorJSON)
+		lenscommon.PreserveNormalizedJSONSemanticEquality(plan.EsqlTagBy.FormatJSON, &state.EsqlTagBy.FormatJSON)
+		lenscommon.PreserveNormalizedJSONSemanticEquality(plan.EsqlTagBy.ColorJSON, &state.EsqlTagBy.ColorJSON)
 	}
 }
 
@@ -247,8 +247,8 @@ func metricChartMetricConfigsEquivalent(plan, state customtypes.JSONWithDefaults
 		return false
 	}
 
-	planNormalized := normalizeXYPlanComparisonJSON(populateMetricChartMetricDefaults(planObj))
-	stateNormalized := normalizeXYPlanComparisonJSON(populateMetricChartMetricDefaults(stateObj))
+	planNormalized := lenscommon.NormalizeXYPlanComparisonJSON(populateMetricChartMetricDefaults(planObj))
+	stateNormalized := lenscommon.NormalizeXYPlanComparisonJSON(populateMetricChartMetricDefaults(stateObj))
 	return reflect.DeepEqual(planNormalized, stateNormalized)
 }
 
@@ -272,37 +272,9 @@ func preservePlanNormalizedJSONWithDefaultsIfSemanticallyEqual[T any](plan jsont
 		return
 	}
 
-	planNormalized := normalizeXYPlanComparisonJSON(defaults(planObj))
-	stateNormalized := normalizeXYPlanComparisonJSON(defaults(stateObj))
+	planNormalized := lenscommon.NormalizeXYPlanComparisonJSON(defaults(planObj))
+	stateNormalized := lenscommon.NormalizeXYPlanComparisonJSON(defaults(stateObj))
 	if reflect.DeepEqual(planNormalized, stateNormalized) {
-		*state = plan
-	}
-}
-
-func preservePlanJSONIfStateOmitsOptionalKeys(plan jsontypes.Normalized, state *jsontypes.Normalized, optionalKeys ...string) {
-	if !typeutils.IsKnown(plan) || !typeutils.IsKnown(*state) {
-		return
-	}
-
-	var planObj map[string]any
-	if err := json.Unmarshal([]byte(plan.ValueString()), &planObj); err != nil {
-		return
-	}
-	var stateObj map[string]any
-	if err := json.Unmarshal([]byte(state.ValueString()), &stateObj); err != nil {
-		return
-	}
-
-	for _, key := range optionalKeys {
-		if _, hasState := stateObj[key]; hasState {
-			continue
-		}
-		delete(planObj, key)
-	}
-
-	stateNormalized := normalizeXYPlanComparisonJSON(stateObj)
-	planNormalized := normalizeXYPlanComparisonJSON(planObj)
-	if reflect.DeepEqual(stateNormalized, planNormalized) {
 		*state = plan
 	}
 }
@@ -312,26 +284,7 @@ const gaugeEsqlTicksModeBandsDefault = "bands"
 // gaugeEsqlAutoColorSentinel is the normalized form of Kibana's default
 // `{"type":"auto"}` color payload, precomputed so `gaugeEsqlColorJSONIsAuto`
 // does not allocate a fresh map on every alignment pass.
-var gaugeEsqlAutoColorSentinel = normalizeXYPlanComparisonJSON(map[string]any{"type": "auto"})
-
-func preserveNormalizedJSONSemanticEquality(plan jsontypes.Normalized, state *jsontypes.Normalized) {
-	if !typeutils.IsKnown(plan) || !typeutils.IsKnown(*state) {
-		return
-	}
-
-	var planObj map[string]any
-	if err := json.Unmarshal([]byte(plan.ValueString()), &planObj); err != nil {
-		return
-	}
-	var stateObj map[string]any
-	if err := json.Unmarshal([]byte(state.ValueString()), &stateObj); err != nil {
-		return
-	}
-
-	if reflect.DeepEqual(normalizeXYPlanComparisonJSON(planObj), normalizeXYPlanComparisonJSON(stateObj)) {
-		*state = plan
-	}
-}
+var gaugeEsqlAutoColorSentinel = lenscommon.NormalizeXYPlanComparisonJSON(map[string]any{"type": "auto"})
 
 func alignGaugeEsqlMetricStateFromPlan(plan, state *models.GaugeEsqlMetric) {
 	if plan == nil || state == nil {
@@ -371,5 +324,5 @@ func gaugeEsqlColorJSONIsAuto(color jsontypes.Normalized) bool {
 	if err := json.Unmarshal([]byte(color.ValueString()), &m); err != nil {
 		return false
 	}
-	return reflect.DeepEqual(normalizeXYPlanComparisonJSON(m), gaugeEsqlAutoColorSentinel)
+	return reflect.DeepEqual(lenscommon.NormalizeXYPlanComparisonJSON(m), gaugeEsqlAutoColorSentinel)
 }

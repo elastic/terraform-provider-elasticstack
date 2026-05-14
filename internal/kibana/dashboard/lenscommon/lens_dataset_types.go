@@ -17,8 +17,24 @@
 
 package lenscommon
 
+import "encoding/json"
+
 // LensDatasetTypeESQL and LensDatasetTypeTable are JSON type discriminators for Lens ES|QL/table datasets.
 const (
 	LensDatasetTypeESQL  = "esql"
 	LensDatasetTypeTable = "table"
 )
+
+// LensDataSourceIsESQLOrTable reports whether a Lens chart data_source union JSON is ES|QL or table shaped.
+func LensDataSourceIsESQLOrTable(body []byte, err error) bool {
+	if err != nil {
+		return false
+	}
+	var ds struct {
+		Type string `json:"type"`
+	}
+	if err := json.Unmarshal(body, &ds); err != nil {
+		return false
+	}
+	return ds.Type == LensDatasetTypeESQL || ds.Type == LensDatasetTypeTable
+}

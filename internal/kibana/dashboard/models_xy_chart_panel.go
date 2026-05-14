@@ -21,10 +21,10 @@ import (
 	"context"
 	"encoding/json"
 	"math"
-	"reflect"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -1401,7 +1401,7 @@ func alignXYXAxisStateFromPlan(plan, state *models.XYAxisConfigModel) {
 	}
 	preserveKnownAxisTitleIfStateBlank(plan.Title, &state.Title)
 	preserveNullJSONIfStateMatches(plan.DomainJSON, &state.DomainJSON, `{"type":"fit","rounding":false}`)
-	preservePlanJSONIfStateAddsOptionalKeys(plan.DomainJSON, &state.DomainJSON, "rounding")
+	lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(plan.DomainJSON, &state.DomainJSON, "rounding")
 }
 
 func alignXYYAxisStateFromPlan(plan, state *models.YAxisConfigModel) {
@@ -1421,7 +1421,7 @@ func alignXYYAxisStateFromPlan(plan, state *models.YAxisConfigModel) {
 		state.Title = nil
 	}
 	preserveKnownAxisTitleIfStateBlank(plan.Title, &state.Title)
-	preservePlanJSONIfStateAddsOptionalKeys(plan.DomainJSON, &state.DomainJSON, "rounding")
+	lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(plan.DomainJSON, &state.DomainJSON, "rounding")
 }
 
 func alignXYY2AxisStateFromPlan(plan, state *models.YAxisConfigModel) {
@@ -1438,7 +1438,7 @@ func alignXYY2AxisStateFromPlan(plan, state *models.YAxisConfigModel) {
 		state.Title = nil
 	}
 	preserveKnownAxisTitleIfStateBlank(plan.Title, &state.Title)
-	preservePlanJSONIfStateAddsOptionalKeys(plan.DomainJSON, &state.DomainJSON, "rounding")
+	lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(plan.DomainJSON, &state.DomainJSON, "rounding")
 }
 
 func alignXYDecorationsStateFromPlan(plan, state *models.XYDecorationsModel) {
@@ -1478,15 +1478,15 @@ func alignXYLayerStateFromPlan(planLayers, stateLayers []models.XYLayerModel) {
 	for i := range n {
 		planLayer, stateLayer := planLayers[i], &stateLayers[i]
 		if planLayer.DataLayer != nil && stateLayer.DataLayer != nil {
-			preservePlanJSONIfStateAddsOptionalKeys(planLayer.DataLayer.DataSourceJSON, &stateLayer.DataLayer.DataSourceJSON, "time_field")
-			preservePlanJSONIfStateAddsOptionalKeys(planLayer.DataLayer.XJSON, &stateLayer.DataLayer.XJSON)
-			preservePlanJSONIfStateAddsOptionalKeys(planLayer.DataLayer.BreakdownByJSON, &stateLayer.DataLayer.BreakdownByJSON)
+			lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(planLayer.DataLayer.DataSourceJSON, &stateLayer.DataLayer.DataSourceJSON, "time_field")
+			lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(planLayer.DataLayer.XJSON, &stateLayer.DataLayer.XJSON)
+			lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(planLayer.DataLayer.BreakdownByJSON, &stateLayer.DataLayer.BreakdownByJSON)
 			preservePlanNormalizedJSONWithDefaultsIfSemanticallyEqual(planLayer.DataLayer.BreakdownByJSON, &stateLayer.DataLayer.BreakdownByJSON, populateLensGroupByDefaults)
 
 			m := min(len(stateLayer.DataLayer.Y), len(planLayer.DataLayer.Y))
 			for j := range m {
-				preservePlanJSONIfStateOmitsOptionalKeys(planLayer.DataLayer.Y[j].ConfigJSON, &stateLayer.DataLayer.Y[j].ConfigJSON, "color")
-				preservePlanJSONIfStateAddsOptionalKeys(planLayer.DataLayer.Y[j].ConfigJSON, &stateLayer.DataLayer.Y[j].ConfigJSON, "axis_id")
+				lenscommon.PreservePlanJSONIfStateOmitsOptionalKeys(planLayer.DataLayer.Y[j].ConfigJSON, &stateLayer.DataLayer.Y[j].ConfigJSON, "color")
+				lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(planLayer.DataLayer.Y[j].ConfigJSON, &stateLayer.DataLayer.Y[j].ConfigJSON, "axis_id")
 				preservePlanNormalizedJSONWithDefaultsIfSemanticallyEqual(planLayer.DataLayer.Y[j].ConfigJSON, &stateLayer.DataLayer.Y[j].ConfigJSON, populateLensMetricDefaults)
 			}
 		}
@@ -1495,10 +1495,10 @@ func alignXYLayerStateFromPlan(planLayers, stateLayers []models.XYLayerModel) {
 			continue
 		}
 
-		preservePlanJSONIfStateAddsOptionalKeys(planLayer.ReferenceLineLayer.DataSourceJSON, &stateLayer.ReferenceLineLayer.DataSourceJSON, "time_field")
+		lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(planLayer.ReferenceLineLayer.DataSourceJSON, &stateLayer.ReferenceLineLayer.DataSourceJSON, "time_field")
 		m := min(len(stateLayer.ReferenceLineLayer.Thresholds), len(planLayer.ReferenceLineLayer.Thresholds))
 		for j := range m {
-			preservePlanJSONIfStateAddsOptionalKeys(planLayer.ReferenceLineLayer.Thresholds[j].ValueJSON, &stateLayer.ReferenceLineLayer.Thresholds[j].ValueJSON, "axis_id", "color")
+			lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(planLayer.ReferenceLineLayer.Thresholds[j].ValueJSON, &stateLayer.ReferenceLineLayer.Thresholds[j].ValueJSON, "axis_id", "color")
 		}
 	}
 }
@@ -1583,64 +1583,6 @@ func preserveNullJSONIfStateMatches(plan jsontypes.Normalized, state *jsontypes.
 	expectedNormalized := jsontypes.NewNormalizedValue(expected)
 	if state.ValueString() == expectedNormalized.ValueString() {
 		*state = plan
-	}
-}
-
-func preservePlanJSONIfStateAddsOptionalKeys(plan jsontypes.Normalized, state *jsontypes.Normalized, optionalKeys ...string) {
-	if !typeutils.IsKnown(plan) || !typeutils.IsKnown(*state) {
-		return
-	}
-
-	var planObj map[string]any
-	if err := json.Unmarshal([]byte(plan.ValueString()), &planObj); err != nil {
-		return
-	}
-	var stateObj map[string]any
-	if err := json.Unmarshal([]byte(state.ValueString()), &stateObj); err != nil {
-		return
-	}
-
-	for _, key := range optionalKeys {
-		if _, hasPlan := planObj[key]; hasPlan {
-			continue
-		}
-		delete(stateObj, key)
-	}
-
-	stateNormalized := normalizeXYPlanComparisonJSON(stateObj)
-	planNormalized := normalizeXYPlanComparisonJSON(planObj)
-	if reflect.DeepEqual(stateNormalized, planNormalized) {
-		*state = plan
-	}
-}
-
-func normalizeXYPlanComparisonJSON(value any) any {
-	switch t := value.(type) {
-	case map[string]any:
-		out := make(map[string]any, len(t))
-		for key, value := range t {
-			out[key] = normalizeXYPlanComparisonJSON(value)
-		}
-		if formatValue, ok := out["format"]; ok {
-			if formatMap, ok := formatValue.(map[string]any); ok {
-				if formatBytes, err := json.Marshal(formatMap); err == nil {
-					normalizedFormat := normalizeKibanaLensNumberFormatJSONString(string(formatBytes))
-					var formatAny any
-					if json.Unmarshal([]byte(normalizedFormat), &formatAny) == nil {
-						out["format"] = normalizeXYPlanComparisonJSON(formatAny)
-					}
-				}
-			}
-		}
-		return out
-	case []any:
-		out := make([]any, len(t))
-		for i, elem := range t {
-			out[i] = normalizeXYPlanComparisonJSON(elem)
-		}
-		return out
-	default:
-		return value
 	}
 }
 

@@ -184,7 +184,7 @@ func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks, resolver
 	return pieChartConfigToAPI(&configModel, resolver)
 }
 
-func (converter) AlignStateFromPlan(ctx context.Context, plan, state *models.LensByValueChartBlocks) {
+func (converter) AlignStateFromPlan(_ context.Context, plan, state *models.LensByValueChartBlocks) {
 	alignPieStateFromPlan(plan, state)
 }
 

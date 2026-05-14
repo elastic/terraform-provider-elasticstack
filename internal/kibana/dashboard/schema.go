@@ -69,10 +69,6 @@ func panelConfigNames() []string {
 	return panelkit.TypedSiblingPanelConfigBlockNames()
 }
 
-func isFieldMetricOperation(operation string) bool {
-	return lenscommon.IsFieldMetricOperation(operation)
-}
-
 // populateLensMetricDefaults populates default values for Lens metric configuration (shared across XY, metric, pie, treemap, datatable, etc.).
 func populateLensMetricDefaults(model map[string]any) map[string]any {
 	return lenscommon.PopulateLensMetricDefaults(model)
@@ -1112,97 +1108,20 @@ func getWaffleLegendSchema() map[string]schema.Attribute {
 // getPartitionESQLMetricSchema returns the shared ES|QL metric schema used by waffle,
 // treemap, and mosaic.
 func getPartitionESQLMetricSchema() schema.NestedAttributeObject {
-	return schema.NestedAttributeObject{
-		Attributes: map[string]schema.Attribute{
-			"column": schema.StringAttribute{
-				MarkdownDescription: "ES|QL column name for the metric.",
-				Required:            true,
-			},
-			"label": schema.StringAttribute{
-				MarkdownDescription: "Optional label for the metric.",
-				Optional:            true,
-			},
-			"format_json": schema.StringAttribute{
-				MarkdownDescription: "Number or other format configuration as JSON (`formatType` union).",
-				CustomType:          jsontypes.NormalizedType{},
-				Required:            true,
-			},
-			"color": schema.SingleNestedAttribute{
-				MarkdownDescription: "Static color for the metric.",
-				Required:            true,
-				Attributes: map[string]schema.Attribute{
-					"type": schema.StringAttribute{
-						MarkdownDescription: "Color type; use `static` for partition chart ES|QL metrics.",
-						Required:            true,
-						Validators: []validator.String{
-							stringvalidator.OneOf("static"),
-						},
-					},
-					"color": schema.StringAttribute{
-						MarkdownDescription: "Color value (e.g. hex).",
-						Required:            true,
-					},
-				},
-			},
-		},
-	}
+	return lenscommon.PartitionESQLMetricNestedObject()
 }
 
 // getPartitionESQLGroupBySchema returns the shared ES|QL group-by schema used by waffle,
 // treemap, and mosaic.
 func getPartitionESQLGroupBySchema() schema.NestedAttributeObject {
-	return schema.NestedAttributeObject{
-		Attributes: map[string]schema.Attribute{
-			"column": schema.StringAttribute{
-				MarkdownDescription: "ES|QL column for the breakdown.",
-				Required:            true,
-			},
-			"collapse_by": schema.StringAttribute{
-				MarkdownDescription: "Collapse function when multiple rows map to the same bucket.",
-				Required:            true,
-				Validators: []validator.String{
-					stringvalidator.OneOf("avg", "max", "min", "sum"),
-				},
-			},
-			"color_json": schema.StringAttribute{
-				MarkdownDescription: "Color mapping as JSON (`colorMapping` union).",
-				CustomType:          jsontypes.NormalizedType{},
-				Required:            true,
-			},
-			"format_json": schema.StringAttribute{
-				MarkdownDescription: "Column format as JSON (e.g. `{\"type\":\"number\"}`). Defaults to numeric format when omitted.",
-				CustomType:          jsontypes.NormalizedType{},
-				Optional:            true,
-			},
-			"label": schema.StringAttribute{
-				MarkdownDescription: "Optional label for the group-by column.",
-				Optional:            true,
-			},
-		},
-	}
+	return lenscommon.PartitionESQLGroupByNestedObject()
 }
 
 // getMosaicESQLMetricSchema returns the ES|QL metric schema for mosaic.
 // Mosaic ES|QL uses a single metric without color, so this omits the color
 // block present in waffle/treemap.
 func getMosaicESQLMetricSchema() schema.NestedAttributeObject {
-	return schema.NestedAttributeObject{
-		Attributes: map[string]schema.Attribute{
-			"column": schema.StringAttribute{
-				MarkdownDescription: "ES|QL column name for the metric.",
-				Required:            true,
-			},
-			"label": schema.StringAttribute{
-				MarkdownDescription: "Optional label for the metric.",
-				Optional:            true,
-			},
-			"format_json": schema.StringAttribute{
-				MarkdownDescription: "Number or other format configuration as JSON (`formatType` union).",
-				CustomType:          jsontypes.NormalizedType{},
-				Required:            true,
-			},
-		},
-	}
+	return lenscommon.MosaicESQLMetricNestedObject()
 }
 
 // getTreemapSchema returns the schema for treemap chart configuration.
