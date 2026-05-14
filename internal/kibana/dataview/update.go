@@ -140,9 +140,14 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 	resp.Diagnostics.Append(diags...)
 }
 
+// clearedFieldAttrMetadataPayload is sent for fields removed from the plan so Kibana resets
+// customLabel/count; an empty JSON object is rejected with HTTP 400 on some stacks.
+func clearedFieldAttrMetadataPayload() map[string]any {
+	return map[string]any{"customLabel": nil, "count": nil}
+}
+
 // buildFieldAttrsMetadataDelta returns a JSON-shaped map for POST .../fields: keys are field names,
 // values are objects with camelCase keys matching kbapi.DataViewsFieldattrs (`customLabel`, `count`).
-// Removed fields use an empty object as a minimal clearing payload (REQ-016).
 func buildFieldAttrsMetadataDelta(planFA, stateFA map[string]fieldAttrModel) map[string]any {
 	delta := map[string]any{}
 
@@ -161,7 +166,7 @@ func buildFieldAttrsMetadataDelta(planFA, stateFA map[string]fieldAttrModel) map
 	}
 	for name := range stateFA {
 		if _, stillInPlan := planFA[name]; !stillInPlan {
-			delta[name] = map[string]any{}
+			delta[name] = clearedFieldAttrMetadataPayload()
 		}
 	}
 	return delta

@@ -88,13 +88,13 @@ func TestBuildFieldAttrsMetadataDelta(t *testing.T) {
 			},
 		},
 		{
-			name:   "removed field uses empty clearing payload",
+			name:   "removed field clears metadata with explicit null keys",
 			planFA: map[string]fieldAttrModel{},
 			stateFA: map[string]fieldAttrModel{
 				"f1": {CustomLabel: types.StringValue("Bye"), Count: types.Int64Null()},
 			},
 			want: map[string]any{
-				"f1": map[string]any{},
+				"f1": map[string]any{"customLabel": nil, "count": nil},
 			},
 		},
 		{
@@ -112,7 +112,7 @@ func TestBuildFieldAttrsMetadataDelta(t *testing.T) {
 			want: map[string]any{
 				"added":   map[string]any{"customLabel": "A"},
 				"changed": map[string]any{"customLabel": "C2"},
-				"removed": map[string]any{},
+				"removed": map[string]any{"customLabel": nil, "count": nil},
 			},
 		},
 		{
