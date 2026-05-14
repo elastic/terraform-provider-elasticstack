@@ -79,8 +79,8 @@
 
 ## 4. State alignment delegation
 
-- [ ] 4.1 Refactor `alignPanelStateFromPlan` to call `handler.AlignStateFromPlan` for registered handlers
-- [ ] 4.2 Move handler-specific alignment functions out of `models_plan_state_alignment.go` into panel packages (or delete if no-op)
+- [x] 4.1 Refactor `alignPanelStateFromPlan` to call `handler.AlignStateFromPlan` for registered handlers
+- [x] 4.2 Move handler-specific alignment functions out of `models_plan_state_alignment.go` into panel packages (or delete if no-op)
 
 ## 5. Config JSON defaulting
 

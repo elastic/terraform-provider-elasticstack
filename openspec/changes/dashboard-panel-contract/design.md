@@ -145,7 +145,6 @@ func mapPanelFromAPI(ctx context.Context, dashboard *models.DashboardModel, tfPa
 
     diags := handler.FromAPI(ctx, &pm, tfPanel, item)
     alignPanelStateFromPlan(ctx, tfPanel, &pm)
-    handler.AlignStateFromPlan(ctx, tfPanel, &pm)
     return pm, diags
 }
 
