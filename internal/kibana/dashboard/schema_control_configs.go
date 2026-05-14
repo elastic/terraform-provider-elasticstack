@@ -20,12 +20,10 @@ package dashboard
 import (
 	"strings"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/hashicorp/terraform-plugin-framework-validators/float32validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
-	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -72,27 +70,9 @@ func timeSliderControlConfigInnerAttributes() map[string]schema.Attribute {
 	}
 }
 
-func panelTimeSliderControlConfigSchema() schema.SingleNestedAttribute {
-	return schema.SingleNestedAttribute{
-		MarkdownDescription: panelConfigDescription(
-			"Configuration for a time slider control panel. Controls the visible time window within the dashboard's global time range.",
-			"time_slider_control_config",
-			panelConfigNames,
-		),
-		Optional:   true,
-		Attributes: timeSliderControlConfigInnerAttributes(),
-		Validators: []validator.Object{
-			objectvalidator.ConflictsWith(
-				siblingPanelConfigPathsExcept("time_slider_control_config", panelConfigNames)...,
-			),
-			validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeTimeSlider}),
-		},
-	}
-}
-
 func pinnedTimeSliderControlConfigSchema() schema.SingleNestedAttribute {
 	return schema.SingleNestedAttribute{
-		MarkdownDescription: panelConfigDescription(
+		MarkdownDescription: panelkit.PanelConfigDescription(
 			pinnedPlacementPreface()+"Configuration for a time slider control. Controls the visible time window within the dashboard's global time range.",
 			"time_slider_control_config",
 			pinnedPanelControlConfigNames,
@@ -173,28 +153,9 @@ func esqlControlConfigInnerAttributes() map[string]schema.Attribute {
 	}
 }
 
-func panelEsqlControlConfigSchema() schema.SingleNestedAttribute {
-	return schema.SingleNestedAttribute{
-		MarkdownDescription: panelConfigDescription(
-			"Configuration for an ES|QL control panel. Use this to manage ES|QL variable controls on a dashboard.",
-			"esql_control_config",
-			panelConfigNames,
-		),
-		Optional:   true,
-		Attributes: esqlControlConfigInnerAttributes(),
-		Validators: []validator.Object{
-			objectvalidator.ConflictsWith(
-				siblingPanelConfigPathsExcept("esql_control_config", panelConfigNames)...,
-			),
-			validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeEsqlControl}),
-			validators.RequiredIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeEsqlControl}),
-		},
-	}
-}
-
 func pinnedEsqlControlConfigSchema() schema.SingleNestedAttribute {
 	return schema.SingleNestedAttribute{
-		MarkdownDescription: panelConfigDescription(
+		MarkdownDescription: panelkit.PanelConfigDescription(
 			pinnedPlacementPreface()+"Configuration for an ES|QL control. Binds ES|QL variables for the dashboard.",
 			"esql_control_config",
 			pinnedPanelControlConfigNames,
@@ -303,28 +264,9 @@ func optionsListControlConfigInnerAttributes() map[string]schema.Attribute {
 	}
 }
 
-func panelOptionsListControlConfigSchema() schema.SingleNestedAttribute {
-	return schema.SingleNestedAttribute{
-		MarkdownDescription: panelConfigDescription(
-			"Configuration for an options list control panel. Provides a dropdown or multi-select filter based on a field in a data view.",
-			"options_list_control_config",
-			panelConfigNames,
-		),
-		Optional:   true,
-		Attributes: optionsListControlConfigInnerAttributes(),
-		Validators: []validator.Object{
-			objectvalidator.ConflictsWith(
-				siblingPanelConfigPathsExcept("options_list_control_config", panelConfigNames)...,
-			),
-			validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeOptionsListControl}),
-			validators.RequiredIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeOptionsListControl}),
-		},
-	}
-}
-
 func pinnedOptionsListControlConfigSchema() schema.SingleNestedAttribute {
 	return schema.SingleNestedAttribute{
-		MarkdownDescription: panelConfigDescription(
+		MarkdownDescription: panelkit.PanelConfigDescription(
 			pinnedPlacementPreface()+"Configuration for an options list control. Provides a dropdown or multi-select filter based on a field in a data view.",
 			"options_list_control_config",
 			pinnedPanelControlConfigNames,
@@ -372,28 +314,9 @@ func rangeSliderControlConfigInnerAttributes() map[string]schema.Attribute {
 	}
 }
 
-func panelRangeSliderControlConfigSchema() schema.SingleNestedAttribute {
-	return schema.SingleNestedAttribute{
-		MarkdownDescription: panelConfigDescription(
-			"Configuration for a range slider control panel. Provides a min/max range filter tied to a data view field.",
-			"range_slider_control_config",
-			panelConfigNames,
-		),
-		Optional:   true,
-		Attributes: rangeSliderControlConfigInnerAttributes(),
-		Validators: []validator.Object{
-			objectvalidator.ConflictsWith(
-				siblingPanelConfigPathsExcept("range_slider_control_config", panelConfigNames)...,
-			),
-			validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeRangeSlider}),
-			validators.RequiredIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeRangeSlider}),
-		},
-	}
-}
-
 func pinnedRangeSliderControlConfigSchema() schema.SingleNestedAttribute {
 	return schema.SingleNestedAttribute{
-		MarkdownDescription: panelConfigDescription(
+		MarkdownDescription: panelkit.PanelConfigDescription(
 			pinnedPlacementPreface()+"Configuration for a range slider control. Provides a min/max range filter tied to a data view field.",
 			"range_slider_control_config",
 			pinnedPanelControlConfigNames,

@@ -19,18 +19,15 @@ package dashboard
 
 import "github.com/hashicorp/terraform-plugin-framework/types"
 
-// Default values for optional booleans on drilldowns. K presets these when attributes are
-// omitted, so the provider nulls them back out during import when they match defaults.
+// Default values for optional booleans on drilldowns are represented as package-level constants in panel
+// packages where needed. K presets these when attributes are omitted; the provider nulls matching values
+// on import where appropriate.
+
 const (
-	// Kibana default for dashboard drilldown booleans (use_filters, use_time_range, open_in_new_tab).
-	drilldownDashboardBoolDefault = false
-	// Kibana defaults for URL drilldown booleans.
+	// Kibana defaults for URL drilldown booleans (panels that still live in legacy mapping).
 	drilldownURLEncodeURLDefault    = true
 	drilldownURLOpenInNewTabDefault = false
 )
-
-// panels that hardcode trigger and type. Currently kept for future use when more panel
-// types adopt the shared shape.
 
 // panelDrilldownBoolImportPreserving maps optional API booleans on import: nil or value equal to
 // the server-side default becomes null in Terraform state so practitioners can omit those

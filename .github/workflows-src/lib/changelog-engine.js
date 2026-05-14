@@ -14,6 +14,7 @@ module.exports = createChangelogEngine({
   selectPreviousTag: crc.selectPreviousTag,
   buildCompareRange: crc.buildCompareRange,
   rewriteChangelogSection: rew.rewriteChangelogSection,
+  rewriteLinkTable: rew.rewriteLinkTable,
   renderChangelogSection,
   execSyncDefault: execSync,
 });

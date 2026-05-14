@@ -15,6 +15,7 @@ const TAG_LIST_CMD =
  *   selectPreviousTag: Function,
  *   buildCompareRange: Function,
  *   rewriteChangelogSection: Function,
+ *   rewriteLinkTable: Function,
  *   renderChangelogSection: Function,
  *   execSyncDefault?: Function,
  * }} deps
@@ -25,6 +26,7 @@ function createChangelogEngine(deps) {
     selectPreviousTag,
     buildCompareRange,
     rewriteChangelogSection,
+    rewriteLinkTable,
     renderChangelogSection,
     execSyncDefault,
   } = deps;
@@ -166,7 +168,15 @@ function createChangelogEngine(deps) {
     }));
   }
 
-  function runChangelogRenderAndWrite({ core, prRecords, mode, targetVersion, changelogPath, fs }) {
+  function runChangelogRenderAndWrite({
+    core,
+    prRecords,
+    mode,
+    targetVersion,
+    previousTag = '',
+    changelogPath,
+    fs,
+  }) {
     validateModeAndTargetVersion(mode, targetVersion, core);
 
     const result = renderChangelogSection(prRecords);
@@ -207,9 +217,14 @@ function createChangelogEngine(deps) {
       mode,
       targetVersion
     );
+    const updatedChangelogWithLinks = rewriteLinkTable(
+      updatedChangelog,
+      targetVersion,
+      previousTag
+    );
 
     try {
-      fs.writeFileSync(changelogPath, updatedChangelog, 'utf8');
+      fs.writeFileSync(changelogPath, updatedChangelogWithLinks, 'utf8');
       if (core && typeof core.info === 'function') {
         core.info(`CHANGELOG.md updated with section: ${sectionHeader}`);
       }
@@ -286,6 +301,7 @@ function createChangelogEngine(deps) {
       prRecords,
       mode,
       targetVersion,
+      previousTag,
       changelogPath,
       fs,
     });

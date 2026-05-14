@@ -65,13 +65,7 @@ func PutTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 		DeferValidation(deferValidation).
 		Do(ctx)
 	if err != nil {
-		return diag.Diagnostics{
-			diag.Diagnostic{
-				Severity: diag.Error,
-				Summary:  fmt.Sprintf("Unable to create transform: %s", transform.Name),
-				Detail:   err.Error(),
-			},
-		}
+		return diagutil.SDKErrorDiag(fmt.Sprintf("Unable to create transform: %s", transform.Name), err.Error())
 	}
 
 	if enabled {
@@ -123,13 +117,10 @@ func GetTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 	}
 
 	if foundTransform == nil {
-		diags = append(diags, diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "Unable to find the transform in the cluster",
-			Detail:   fmt.Sprintf(`Unable to find "%s" transform in the cluster`, *name),
-		})
-
-		return nil, diags
+		return nil, diagutil.SDKErrorDiag(
+			"Unable to find the transform in the cluster",
+			fmt.Sprintf(`Unable to find "%s" transform in the cluster`, *name),
+		)
 	}
 
 	foundTransform.Name = *name
@@ -145,13 +136,7 @@ func GetTransformStats(ctx context.Context, apiClient *clients.ElasticsearchScop
 
 	statsRes, err := typedClient.Transform.GetTransformStats(*name).Do(ctx)
 	if err != nil {
-		return nil, diag.Diagnostics{
-			diag.Diagnostic{
-				Severity: diag.Error,
-				Summary:  fmt.Sprintf("Unable to get transform stats: %s", *name),
-				Detail:   err.Error(),
-			},
-		}
+		return nil, diagutil.SDKErrorDiag(fmt.Sprintf("Unable to get transform stats: %s", *name), err.Error())
 	}
 
 	var foundTransformStats *types.TransformStats
@@ -163,12 +148,10 @@ func GetTransformStats(ctx context.Context, apiClient *clients.ElasticsearchScop
 	}
 
 	if foundTransformStats == nil {
-		diags = append(diags, diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "Unable to find the transform stats in the cluster",
-			Detail:   fmt.Sprintf(`Unable to find "%s" transform stats in the cluster`, *name),
-		})
-		return nil, diags
+		return nil, diagutil.SDKErrorDiag(
+			"Unable to find the transform stats in the cluster",
+			fmt.Sprintf(`Unable to find "%s" transform stats in the cluster`, *name),
+		)
 	}
 
 	return foundTransformStats, diags
@@ -205,13 +188,7 @@ func UpdateTransform(
 		DeferValidation(deferValidation).
 		Do(ctx)
 	if err != nil {
-		return diag.Diagnostics{
-			diag.Diagnostic{
-				Severity: diag.Error,
-				Summary:  fmt.Sprintf("Unable to update transform: %s", transform.Name),
-				Detail:   err.Error(),
-			},
-		}
+		return diagutil.SDKErrorDiag(fmt.Sprintf("Unable to update transform: %s", transform.Name), err.Error())
 	}
 
 	if applyEnabled {
@@ -242,13 +219,7 @@ func DeleteTransform(ctx context.Context, apiClient *clients.ElasticsearchScoped
 		if IsNotFoundElasticsearchError(err) {
 			return diags
 		}
-		return diag.Diagnostics{
-			diag.Diagnostic{
-				Severity: diag.Error,
-				Summary:  fmt.Sprintf("Unable to delete transform: %s", *name),
-				Detail:   err.Error(),
-			},
-		}
+		return diagutil.SDKErrorDiag(fmt.Sprintf("Unable to delete transform: %s", *name), err.Error())
 	}
 
 	return diags
@@ -264,13 +235,7 @@ func startTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedC
 
 	_, err = typedClient.Transform.StartTransform(transformName).Timeout(formatDuration(timeout)).Do(ctx)
 	if err != nil {
-		return diag.Diagnostics{
-			diag.Diagnostic{
-				Severity: diag.Error,
-				Summary:  fmt.Sprintf("Unable to start transform: %s", transformName),
-				Detail:   err.Error(),
-			},
-		}
+		return diagutil.SDKErrorDiag(fmt.Sprintf("Unable to start transform: %s", transformName), err.Error())
 	}
 
 	return diags
@@ -286,13 +251,7 @@ func stopTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedCl
 
 	_, err = typedClient.Transform.StopTransform(transformName).Timeout(formatDuration(timeout)).Do(ctx)
 	if err != nil {
-		return diag.Diagnostics{
-			diag.Diagnostic{
-				Severity: diag.Error,
-				Summary:  fmt.Sprintf("Unable to stop transform: %s", transformName),
-				Detail:   err.Error(),
-			},
-		}
+		return diagutil.SDKErrorDiag(fmt.Sprintf("Unable to stop transform: %s", transformName), err.Error())
 	}
 
 	return diags

@@ -47,20 +47,17 @@ const ServerlessFlavor = "serverless"
 // Some Elasticsearch resources (for example ML calendar events) use a resource segment of the
 // form "<calendar_id>/<event_id>".
 func CompositeIDFromStr(id string) (*CompositeID, diag.Diagnostics) {
-	var diags diag.Diagnostics
 	parts := strings.SplitN(id, "/", 2)
 	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
-		diags = append(diags, diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "Wrong resource ID.",
-			Detail:   "Resource ID must have following format: <cluster_uuid>/<resource identifier>",
-		})
-		return nil, diags
+		return nil, diagutil.SDKErrorDiag(
+			"Wrong resource ID.",
+			"Resource ID must have following format: <cluster_uuid>/<resource identifier>",
+		)
 	}
 	return &CompositeID{
 		ClusterID:  parts[0],
 		ResourceID: parts[1],
-	}, diags
+	}, nil
 }
 
 // CompositeIDFromStrForElasticsearch is an alias for [CompositeIDFromStr] for call sites that

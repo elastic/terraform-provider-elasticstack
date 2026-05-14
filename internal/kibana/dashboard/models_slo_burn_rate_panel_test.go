@@ -22,6 +22,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/sloburnrate"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -77,7 +78,8 @@ func Test_buildSloBurnRateConfig_requiredFieldsOnly(t *testing.T) {
 		},
 	}
 	var panel kbapi.KbnDashboardPanelTypeSloBurnRate
-	buildSloBurnRateConfig(pm, &panel)
+	diags := sloburnrate.BuildConfig(pm, &panel)
+	require.False(t, diags.HasError())
 
 	assert.Equal(t, "my-slo-id", panel.Config.SloId)
 	assert.Equal(t, "72h", panel.Config.Duration)
@@ -102,7 +104,8 @@ func Test_buildSloBurnRateConfig_allOptionalFields(t *testing.T) {
 		},
 	}
 	var panel kbapi.KbnDashboardPanelTypeSloBurnRate
-	buildSloBurnRateConfig(pm, &panel)
+	diags := sloburnrate.BuildConfig(pm, &panel)
+	require.False(t, diags.HasError())
 
 	require.NotNil(t, panel.Config.SloInstanceId)
 	assert.Equal(t, "host-a", *panel.Config.SloInstanceId)
@@ -132,7 +135,8 @@ func Test_buildSloBurnRateConfig_withDrilldowns(t *testing.T) {
 		},
 	}
 	var panel kbapi.KbnDashboardPanelTypeSloBurnRate
-	buildSloBurnRateConfig(pm, &panel)
+	diags := sloburnrate.BuildConfig(pm, &panel)
+	require.False(t, diags.HasError())
 
 	require.NotNil(t, panel.Config.Drilldowns)
 	require.Len(t, *panel.Config.Drilldowns, 1)
@@ -161,7 +165,8 @@ func Test_buildSloBurnRateConfig_withDrilldowns_optionalBoolsSet(t *testing.T) {
 		},
 	}
 	var panel kbapi.KbnDashboardPanelTypeSloBurnRate
-	buildSloBurnRateConfig(pm, &panel)
+	diags := sloburnrate.BuildConfig(pm, &panel)
+	require.False(t, diags.HasError())
 
 	require.NotNil(t, panel.Config.Drilldowns)
 	d := (*panel.Config.Drilldowns)[0]
@@ -174,7 +179,8 @@ func Test_buildSloBurnRateConfig_withDrilldowns_optionalBoolsSet(t *testing.T) {
 func Test_buildSloBurnRateConfig_nilConfig(t *testing.T) {
 	pm := models.PanelModel{}
 	var panel kbapi.KbnDashboardPanelTypeSloBurnRate
-	buildSloBurnRateConfig(pm, &panel)
+	diags := sloburnrate.BuildConfig(pm, &panel)
+	require.False(t, diags.HasError())
 	// Should be empty/zero config — no panic.
 	assert.Empty(t, panel.Config.SloId)
 }
@@ -193,7 +199,8 @@ func Test_populateSloBurnRateFromAPI_import_allFields(t *testing.T) {
 		withHideTitle(true),
 		withHideBorder(false),
 	)
-	populateSloBurnRateFromAPI(pm, nil, apiCfg)
+	diags := sloburnrate.PopulateFromAPI(pm, nil, apiCfg)
+	require.False(t, diags.HasError())
 
 	require.NotNil(t, pm.SloBurnRateConfig)
 	cfg := pm.SloBurnRateConfig
@@ -210,7 +217,8 @@ func Test_populateSloBurnRateFromAPI_import_allFields(t *testing.T) {
 func Test_populateSloBurnRateFromAPI_import_requiredFieldsOnly(t *testing.T) {
 	pm := &models.PanelModel{}
 	apiCfg := makeSloBurnRateAPIConfig("slo-2", "5m")
-	populateSloBurnRateFromAPI(pm, nil, apiCfg)
+	diags := sloburnrate.PopulateFromAPI(pm, nil, apiCfg)
+	require.False(t, diags.HasError())
 
 	require.NotNil(t, pm.SloBurnRateConfig)
 	cfg := pm.SloBurnRateConfig
@@ -240,7 +248,8 @@ func Test_populateSloBurnRateFromAPI_sloInstanceID_nullPreservation(t *testing.T
 
 	// API returns "*" (all-instances sentinel)
 	apiCfg := makeSloBurnRateAPIConfig("slo-1", "72h", withSloInstanceID("*"))
-	populateSloBurnRateFromAPI(pm, tfPanel, apiCfg)
+	diags := sloburnrate.PopulateFromAPI(pm, tfPanel, apiCfg)
+	require.False(t, diags.HasError())
 
 	require.NotNil(t, pm.SloBurnRateConfig)
 	// Must remain null — not updated to "*"
@@ -262,7 +271,8 @@ func Test_populateSloBurnRateFromAPI_sloInstanceID_explicitValue_roundTrips(t *t
 	tfPanel := &models.PanelModel{SloBurnRateConfig: existing}
 
 	apiCfg := makeSloBurnRateAPIConfig("slo-1", "72h", withSloInstanceID("host-a"))
-	populateSloBurnRateFromAPI(pm, tfPanel, apiCfg)
+	diags := sloburnrate.PopulateFromAPI(pm, tfPanel, apiCfg)
+	require.False(t, diags.HasError())
 
 	assert.Equal(t, "host-a", pm.SloBurnRateConfig.SloInstanceID.ValueString())
 }
@@ -282,7 +292,8 @@ func Test_populateSloBurnRateFromAPI_sloInstanceID_explicitWildcard_roundTrips(t
 	tfPanel := &models.PanelModel{SloBurnRateConfig: existing}
 
 	apiCfg := makeSloBurnRateAPIConfig("slo-1", "72h", withSloInstanceID("*"))
-	populateSloBurnRateFromAPI(pm, tfPanel, apiCfg)
+	diags := sloburnrate.PopulateFromAPI(pm, tfPanel, apiCfg)
+	require.False(t, diags.HasError())
 
 	assert.Equal(t, "*", pm.SloBurnRateConfig.SloInstanceID.ValueString())
 }
@@ -293,7 +304,8 @@ func Test_populateSloBurnRateFromAPI_nilBlock_preservesNilIntent(t *testing.T) {
 	tfPanel := &models.PanelModel{} // no SloBurnRateConfig
 
 	apiCfg := makeSloBurnRateAPIConfig("slo-1", "72h")
-	populateSloBurnRateFromAPI(pm, tfPanel, apiCfg)
+	diags := sloburnrate.PopulateFromAPI(pm, tfPanel, apiCfg)
+	require.False(t, diags.HasError())
 
 	assert.Nil(t, pm.SloBurnRateConfig, "SloBurnRateConfig should remain nil when prior state had no config block")
 }
@@ -313,7 +325,8 @@ func Test_populateSloBurnRateFromAPI_requiredFieldsAlwaysUpdated(t *testing.T) {
 	tfPanel := &models.PanelModel{SloBurnRateConfig: existing}
 
 	apiCfg := makeSloBurnRateAPIConfig("new-slo", "24h")
-	populateSloBurnRateFromAPI(pm, tfPanel, apiCfg)
+	diags := sloburnrate.PopulateFromAPI(pm, tfPanel, apiCfg)
+	require.False(t, diags.HasError())
 
 	assert.Equal(t, "new-slo", pm.SloBurnRateConfig.SloID.ValueString())
 	assert.Equal(t, "24h", pm.SloBurnRateConfig.Duration.ValueString())
@@ -358,7 +371,8 @@ func Test_populateSloBurnRateFromAPI_drilldowns_optionalBoolNullPreservation(t *
 	apiCfg := makeSloBurnRateAPIConfig("slo-1", "6d")
 	apiCfg.Drilldowns = apiDrilldowns
 
-	populateSloBurnRateFromAPI(pm, tfPanel, apiCfg)
+	diags := sloburnrate.PopulateFromAPI(pm, tfPanel, apiCfg)
+	require.False(t, diags.HasError())
 
 	require.Len(t, pm.SloBurnRateConfig.Drilldowns, 1)
 	d := pm.SloBurnRateConfig.Drilldowns[0]
@@ -403,7 +417,8 @@ func Test_populateSloBurnRateFromAPI_drilldowns_optionalBoolsExplicit_roundTrip(
 	apiCfg := makeSloBurnRateAPIConfig("slo-1", "6d")
 	apiCfg.Drilldowns = apiDrilldowns
 
-	populateSloBurnRateFromAPI(pm, tfPanel, apiCfg)
+	diags := sloburnrate.PopulateFromAPI(pm, tfPanel, apiCfg)
+	require.False(t, diags.HasError())
 
 	require.Len(t, pm.SloBurnRateConfig.Drilldowns, 1)
 	d := pm.SloBurnRateConfig.Drilldowns[0]

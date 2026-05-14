@@ -265,6 +265,36 @@ jobs:
             }
             
             /**
+             * @param {string} content
+             * @param {string} targetVersion - Version without leading v.
+             * @param {string} previousTag - Previous tag with leading v.
+             * @returns {string}
+             */
+            function rewriteLinkTable(content, targetVersion, previousTag) {
+              if (!targetVersion || !previousTag) {
+                return content;
+              }
+            
+              const unreleasedLineRegex = /^\[Unreleased\]:[ \t]*(https?:\/\/.+\/compare\/).*$/m;
+              const unreleasedLineMatch = content.match(unreleasedLineRegex);
+              if (!unreleasedLineMatch) {
+                return content;
+              }
+            
+              const baseCompareUrl = unreleasedLineMatch[1];
+              const unreleasedLine = `[Unreleased]: ${baseCompareUrl}v${targetVersion}...HEAD`;
+              const releaseLine = `[${targetVersion}]: ${baseCompareUrl}${previousTag}...v${targetVersion}`;
+            
+              let updated = content.replace(unreleasedLineRegex, unreleasedLine);
+            
+              if (new RegExp(`^\\[${targetVersion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\]:`, 'm').test(updated)) {
+                return updated;
+              }
+            
+              return updated.replace(/^\[Unreleased\]:.*$/m, `${unreleasedLine}\n${releaseLine}`);
+            }
+            
+            /**
              * @param {string} content - Current CHANGELOG.md content.
              * @param {string} newSectionContent - Full replacement (header + body).
              * @param {'unreleased'|'release'} mode
@@ -339,6 +369,7 @@ jobs:
             if (typeof module !== 'undefined') {
               module.exports = {
                 findSectionEnd,
+                rewriteLinkTable,
                 rewriteChangelogSection,
               };
             }
@@ -849,6 +880,7 @@ jobs:
              *   selectPreviousTag: Function,
              *   buildCompareRange: Function,
              *   rewriteChangelogSection: Function,
+             *   rewriteLinkTable: Function,
              *   renderChangelogSection: Function,
              *   execSyncDefault?: Function,
              * }} deps
@@ -859,6 +891,7 @@ jobs:
                 selectPreviousTag,
                 buildCompareRange,
                 rewriteChangelogSection,
+                rewriteLinkTable,
                 renderChangelogSection,
                 execSyncDefault,
               } = deps;
@@ -1000,7 +1033,15 @@ jobs:
                 }));
               }
             
-              function runChangelogRenderAndWrite({ core, prRecords, mode, targetVersion, changelogPath, fs }) {
+              function runChangelogRenderAndWrite({
+                core,
+                prRecords,
+                mode,
+                targetVersion,
+                previousTag = '',
+                changelogPath,
+                fs,
+              }) {
                 validateModeAndTargetVersion(mode, targetVersion, core);
             
                 const result = renderChangelogSection(prRecords);
@@ -1041,9 +1082,14 @@ jobs:
                   mode,
                   targetVersion
                 );
+                const updatedChangelogWithLinks = rewriteLinkTable(
+                  updatedChangelog,
+                  targetVersion,
+                  previousTag
+                );
             
                 try {
-                  fs.writeFileSync(changelogPath, updatedChangelog, 'utf8');
+                  fs.writeFileSync(changelogPath, updatedChangelogWithLinks, 'utf8');
                   if (core && typeof core.info === 'function') {
                     core.info(`CHANGELOG.md updated with section: ${sectionHeader}`);
                   }
@@ -1120,6 +1166,7 @@ jobs:
                   prRecords,
                   mode,
                   targetVersion,
+                  previousTag,
                   changelogPath,
                   fs,
                 });
@@ -1165,6 +1212,7 @@ jobs:
               selectPreviousTag,
               buildCompareRange,
               rewriteChangelogSection,
+              rewriteLinkTable,
               renderChangelogSection,
               execSyncDefault: execSync,
             });
@@ -1234,6 +1282,7 @@ jobs:
                 prRecords,
                 mode,
                 targetVersion,
+                previousTag: ctx.previousTag,
                 changelogPath,
                 fs,
               });

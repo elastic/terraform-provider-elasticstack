@@ -27,6 +27,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
 )
@@ -85,6 +86,26 @@ func mustAPIPinnedItems(t *testing.T, dm *models.DashboardModel) *kbapi.Dashboar
 	items, diags := dashboardPinnedPanelsToAPICreateItems(dm)
 	require.False(t, diags.HasError(), "%s", diags)
 	return items
+}
+
+func Test_dashboardMapPinnedPanelsFromAPI_pinsHandlerErrorsToItemPath(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// options_list_control discriminator with non-object `config` fails inside the handler's As/unmarshal path;
+	// diagnostics must still attribute to pinned_panels[list index].
+	var raw kbapi.DashboardPinnedPanels_Item
+	require.NoError(t, json.Unmarshal([]byte(`{"type":"options_list_control","config":"not-an-object"}`), &raw))
+	api := []kbapi.DashboardPinnedPanels_Item{raw}
+
+	out, diags := dashboardMapPinnedPanelsFromAPI(ctx, nil, &api)
+	require.Nil(t, out)
+	require.True(t, diags.HasError())
+
+	dwp, ok := diags[0].(diag.DiagnosticWithPath)
+	require.True(t, ok, "expected attribute diagnostic with Path()")
+	want := path.Root("pinned_panels").AtListIndex(0)
+	require.Equal(t, want, dwp.Path())
 }
 
 func Test_dashboardModel_mapPinnedPanelsFromAPI_unsetVsEmptyAndDrift(t *testing.T) {

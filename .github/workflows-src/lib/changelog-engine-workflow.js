@@ -15,6 +15,7 @@ const _changelogEngine = createChangelogEngine({
   selectPreviousTag,
   buildCompareRange,
   rewriteChangelogSection,
+  rewriteLinkTable,
   renderChangelogSection,
   execSyncDefault: execSync,
 });

@@ -97,12 +97,10 @@ func GetLogstashPipeline(ctx context.Context, apiClient *clients.ElasticsearchSc
 		return &pipeline, diags
 	}
 
-	diags = append(diags, diag.Diagnostic{
-		Severity: diag.Error,
-		Summary:  "Unable to find logstash pipeline in the cluster",
-		Detail:   fmt.Sprintf(`Unable to find "%s" logstash pipeline in the cluster`, pipelineID),
-	})
-	return nil, diags
+	return nil, diagutil.SDKErrorDiag(
+		"Unable to find logstash pipeline in the cluster",
+		fmt.Sprintf(`Unable to find "%s" logstash pipeline in the cluster`, pipelineID),
+	)
 }
 
 func DeleteLogstashPipeline(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, pipelineID string) diag.Diagnostics {
@@ -118,12 +116,7 @@ func DeleteLogstashPipeline(ctx context.Context, apiClient *clients.Elasticsearc
 	// explicit in provider code makes the contract visible to maintainers.
 	res, err := typedClient.Logstash.DeletePipeline(pipelineID).Perform(ctx)
 	if err != nil {
-		diags = append(diags, diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "Unable to delete logstash pipeline",
-			Detail:   fmt.Sprintf("Failed with: %s", err.Error()),
-		})
-		return diags
+		return diagutil.SDKErrorDiag("Unable to delete logstash pipeline", fmt.Sprintf("Failed with: %s", err.Error()))
 	}
 	defer res.Body.Close()
 

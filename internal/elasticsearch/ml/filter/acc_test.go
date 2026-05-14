@@ -62,7 +62,10 @@ func TestAccResourceMLFilter(t *testing.T) {
 					resource.TestCheckResourceAttr(mlFilterResourceAddress, "filter_id", filterID),
 					resource.TestCheckResourceAttr(mlFilterResourceAddress, "description", "Safe domains filter"),
 					resource.TestCheckResourceAttr(mlFilterResourceAddress, "items.#", "2"),
-					resource.TestCheckResourceAttrSet(mlFilterResourceAddress, "id"),
+					resource.TestCheckTypeSetElemAttr(mlFilterResourceAddress, "items.*", "*.example.com"),
+					resource.TestCheckTypeSetElemAttr(mlFilterResourceAddress, "items.*", "trusted.org"),
+					resource.TestMatchResourceAttr(mlFilterResourceAddress, "id",
+						regexp.MustCompile(`^[A-Za-z0-9_-]{22}/`+regexp.QuoteMeta(filterID)+`$`)),
 				),
 			},
 			{
@@ -75,6 +78,9 @@ func TestAccResourceMLFilter(t *testing.T) {
 					resource.TestCheckResourceAttr(mlFilterResourceAddress, "filter_id", filterID),
 					resource.TestCheckResourceAttr(mlFilterResourceAddress, "description", "Updated safe domains filter"),
 					resource.TestCheckResourceAttr(mlFilterResourceAddress, "items.#", "3"),
+					resource.TestCheckTypeSetElemAttr(mlFilterResourceAddress, "items.*", "*.example.com"),
+					resource.TestCheckTypeSetElemAttr(mlFilterResourceAddress, "items.*", "trusted.org"),
+					resource.TestCheckTypeSetElemAttr(mlFilterResourceAddress, "items.*", "*.safe.net"),
 					resource.TestCheckResourceAttrSet(mlFilterResourceAddress, "id"),
 				),
 			},
@@ -105,6 +111,28 @@ func TestAccResourceMLFilterNoItems(t *testing.T) {
 	})
 }
 
+func TestAccResourceMLFilterNoDescription(t *testing.T) {
+	filterID := fmt.Sprintf("test-filter-nodesc-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"filter_id": config.StringVariable(filterID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(mlFilterResourceAddress, "filter_id", filterID),
+					resource.TestCheckNoResourceAttr(mlFilterResourceAddress, "description"),
+					resource.TestCheckResourceAttrSet(mlFilterResourceAddress, "id"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccResourceMLFilterImport(t *testing.T) {
 	filterID := fmt.Sprintf("test-filter-import-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 
@@ -120,6 +148,8 @@ func TestAccResourceMLFilterImport(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(mlFilterResourceAddress, "filter_id", filterID),
 					resource.TestCheckResourceAttr(mlFilterResourceAddress, "description", "Filter for import test"),
+					resource.TestCheckTypeSetElemAttr(mlFilterResourceAddress, "items.*", "item-one"),
+					resource.TestCheckTypeSetElemAttr(mlFilterResourceAddress, "items.*", "item-two"),
 				),
 			},
 			{

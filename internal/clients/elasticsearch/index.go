@@ -230,13 +230,8 @@ func GetComponentTemplate(ctx context.Context, apiClient *clients.ElasticsearchS
 		return nil, sdkdiag.FromErr(err)
 	}
 	if len(res.ComponentTemplates) != 1 {
-		return nil, sdkdiag.Diagnostics{
-			sdkdiag.Diagnostic{
-				Severity: sdkdiag.Error,
-				Summary:  "Wrong number of templates returned",
-				Detail:   fmt.Sprintf("Elasticsearch API returned %d when requested '%s' component template.", len(res.ComponentTemplates), templateName),
-			},
-		}
+		detail := fmt.Sprintf("Elasticsearch API returned %d when requested '%s' component template.", len(res.ComponentTemplates), templateName)
+		return nil, diagutil.SDKErrorDiag("Wrong number of templates returned", detail)
 	}
 	tpl := res.ComponentTemplates[0]
 	return &tpl, nil
@@ -766,13 +761,7 @@ func GetIngestPipeline(ctx context.Context, apiClient *clients.ElasticsearchScop
 	if pipeline, ok := res[name]; ok {
 		return &pipeline, nil
 	}
-	return nil, sdkdiag.Diagnostics{
-		sdkdiag.Diagnostic{
-			Severity: sdkdiag.Error,
-			Summary:  "Unable to find ingest pipeline",
-			Detail:   fmt.Sprintf(`Unable to find "%s" ingest pipeline in the cluster`, name),
-		},
-	}
+	return nil, diagutil.SDKErrorDiag("Unable to find ingest pipeline", fmt.Sprintf(`Unable to find "%s" ingest pipeline in the cluster`, name))
 }
 
 func DeleteIngestPipeline(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string) sdkdiag.Diagnostics {

@@ -29,6 +29,7 @@ import (
 	"github.com/elastic/go-elasticsearch/v8/typedapi/snapshot/getrepository"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 	sdkdiag "github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
@@ -229,12 +230,7 @@ func GetSnapshotRepository(ctx context.Context, apiClient *clients.Elasticsearch
 		}
 	}
 
-	diags = append(diags, sdkdiag.Diagnostic{
-		Severity: sdkdiag.Error,
-		Summary:  "Unable to find requested repository",
-		Detail:   fmt.Sprintf(`Repository "%s" is missing in the ES API response`, name),
-	})
-	return nil, diags
+	return nil, diagutil.SDKErrorDiag("Unable to find requested repository", fmt.Sprintf(`Repository "%s" is missing in the ES API response`, name))
 }
 
 func extractSnapshotRepositoryInfo(repo types.Repository) (*SnapshotRepositoryInfo, error) {
@@ -423,12 +419,7 @@ func GetSlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, s
 	if slm, ok := rawResp[slmName]; ok {
 		return &slm.Policy, diags
 	}
-	diags = append(diags, sdkdiag.Diagnostic{
-		Severity: sdkdiag.Error,
-		Summary:  "Unable to find the SLM policy in the response",
-		Detail:   fmt.Sprintf(`Unable to find "%s" policy in the ES API response.`, slmName),
-	})
-	return nil, diags
+	return nil, diagutil.SDKErrorDiag("Unable to find the SLM policy in the response", fmt.Sprintf(`Unable to find "%s" policy in the ES API response.`, slmName))
 }
 
 func DeleteSlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, slmName string) sdkdiag.Diagnostics {

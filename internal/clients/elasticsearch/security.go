@@ -30,6 +30,7 @@ import (
 	"github.com/elastic/go-elasticsearch/v8/typedapi/security/updatecrossclusterapikey"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
@@ -93,12 +94,10 @@ func GetUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, 
 		return &user, diags
 	}
 
-	diags = append(diags, diag.Diagnostic{
-		Severity: diag.Error,
-		Summary:  "Unable to find a user in the cluster",
-		Detail:   fmt.Sprintf(`Unable to find "%s" user in the cluster`, username),
-	})
-	return nil, diags
+	return nil, diagutil.SDKErrorDiag(
+		"Unable to find a user in the cluster",
+		fmt.Sprintf(`Unable to find "%s" user in the cluster`, username),
+	)
 }
 
 func DeleteUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, username string) fwdiag.Diagnostics {
@@ -220,21 +219,11 @@ func PutRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, 
 	if role.Global != nil {
 		globalJSON, err := json.Marshal(role.Global)
 		if err != nil {
-			diags = append(diags, diag.Diagnostic{
-				Severity: diag.Error,
-				Summary:  "Unable to marshal global privileges",
-				Detail:   err.Error(),
-			})
-			return diags
+			return diagutil.SDKErrorDiag("Unable to marshal global privileges", err.Error())
 		}
 		var global map[string]json.RawMessage
 		if err := json.Unmarshal(globalJSON, &global); err != nil {
-			diags = append(diags, diag.Diagnostic{
-				Severity: diag.Error,
-				Summary:  "Unable to convert global privileges",
-				Detail:   err.Error(),
-			})
-			return diags
+			return diagutil.SDKErrorDiag("Unable to convert global privileges", err.Error())
 		}
 		req.Global(global)
 	}
@@ -245,12 +234,7 @@ func PutRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, 
 
 	_, err = req.Do(ctx)
 	if err != nil {
-		diags = append(diags, diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "Unable to create or update a role",
-			Detail:   err.Error(),
-		})
-		return diags
+		return diagutil.SDKErrorDiag("Unable to create or update a role", err.Error())
 	}
 
 	return diags
@@ -275,12 +259,10 @@ func GetRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, 
 	if role, ok := res[rolename]; ok {
 		return &role, diags
 	}
-	diags = append(diags, diag.Diagnostic{
-		Severity: diag.Error,
-		Summary:  "Unable to find a role in the cluster",
-		Detail:   fmt.Sprintf(`Unable to find "%s" role in the cluster`, rolename),
-	})
-	return nil, diags
+	return nil, diagutil.SDKErrorDiag(
+		"Unable to find a role in the cluster",
+		fmt.Sprintf(`Unable to find "%s" role in the cluster`, rolename),
+	)
 }
 
 func DeleteRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, rolename string) diag.Diagnostics {
@@ -296,12 +278,7 @@ func DeleteRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClien
 		if IsNotFoundElasticsearchError(err) {
 			return diags
 		}
-		diags = append(diags, diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "Unable to delete a role",
-			Detail:   err.Error(),
-		})
-		return diags
+		return diagutil.SDKErrorDiag("Unable to delete a role", err.Error())
 	}
 
 	return diags
