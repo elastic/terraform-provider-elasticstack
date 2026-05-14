@@ -194,7 +194,7 @@ On create, the resource SHALL build a create request from Terraform state and se
 
 ### Requirement: Update request mapping and namespace reconciliation (REQ-009)
 
-On update, the resource SHALL build a Data Views update request from Terraform state using `title`, `name`, `time_field_name`, `source_filters`, `runtime_field_map`, `field_formats`, and `allow_no_index` when those values are set. The Data Views update request SHALL NOT send `override`, `data_view.id`, `data_view.field_attrs`, or `data_view.namespaces`. After a successful Data Views update, the provider SHALL compare prior and planned `data_view.namespaces`; when membership changed, it SHALL call Kibana's Spaces object-sharing API with the computed `spaces_to_add` and `spaces_to_remove` sets for the managed data view id before writing final state. After the namespace reconciliation step, the provider SHALL apply any `field_attrs` delta via a separate `UpdateFieldMetadata` call (see REQ-016).
+On update, the resource SHALL build a Data Views update request from Terraform state using `title`, `name`, `time_field_name`, `source_filters`, `runtime_field_map`, `field_formats`, and `allow_no_index` when those values are set. The Data Views update request SHALL NOT send `override`, `data_view.id`, `data_view.field_attrs`, or `data_view.namespaces`. The Data Views update request SHALL always send `source_filters`, `field_formats`, and `runtime_field_map` — defaulting null planned values to an empty collection — so Kibana clears any previously-stored values when the user removes them from configuration. After a successful Data Views update, the provider SHALL compare prior and planned `data_view.namespaces`; when membership changed, it SHALL call Kibana's Spaces object-sharing API with the computed `spaces_to_add` and `spaces_to_remove` sets for the managed data view id before writing final state. When either prior or planned `data_view.namespaces` is null or empty, the provider SHALL substitute the resource's own `space_id` for that side of the diff so removing an explicit namespaces list keeps the data view in its own space rather than detaching it from every space. After the namespace reconciliation step, the provider SHALL apply any `field_attrs` delta via a separate `UpdateFieldMetadata` call (see REQ-016).
 
 #### Scenario: Override is create-only
 
@@ -215,6 +215,21 @@ On update, the resource SHALL build a Data Views update request from Terraform s
 - WHEN update runs
 - THEN the provider SHALL NOT include `field_attrs` in the main data view update body
 - AND SHALL call the `UpdateFieldMetadata` endpoint with a delta payload covering changed and removed fields
+
+#### Scenario: Removed collection fields are cleared in place
+
+- GIVEN a managed data view with stored `source_filters`, `field_formats`, or `runtime_field_map`
+- WHEN the plan removes those attributes (planned value becomes null)
+- THEN the update request SHALL send each removed collection as an explicit empty value so Kibana clears the prior server-side data
+- AND the resulting state SHALL match the planned null value without triggering a "Provider produced inconsistent result after apply" error
+
+#### Scenario: Namespaces removed from configuration retains current space
+
+- GIVEN an existing managed data view shared into multiple namespaces and a plan that removes `data_view.namespaces` (planned value becomes null)
+- WHEN update runs
+- THEN the provider SHALL substitute `[space_id]` for the planned namespaces when computing the spaces diff
+- AND SHALL only remove the data view from namespaces other than its own `space_id`
+- AND the data view SHALL remain accessible in its own space after the update completes
 
 ### Requirement: Read behavior and missing resource handling (REQ-010)
 
