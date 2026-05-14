@@ -20,8 +20,11 @@ package dashboard
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/esqlcontrol"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/iface"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/image"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/markdown"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/optionslist"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/rangeslider"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/sloalerts"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/sloburnrate"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/sloerrorbudget"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/slooverview"
@@ -42,6 +45,9 @@ var panelHandlers = []iface.Handler{
 	optionslist.Handler{},
 	rangeslider.Handler{},
 	esqlcontrol.Handler{},
+	markdown.Handler{},
+	image.Handler{},
+	sloalerts.Handler{},
 }
 
 var panelTypeToHandler map[string]iface.Handler
@@ -57,6 +63,9 @@ func init() {
 	optionslist.SetPopulatePanelConfigJSONDefaults(populatePanelConfigJSONDefaults)
 	rangeslider.SetPopulatePanelConfigJSONDefaults(populatePanelConfigJSONDefaults)
 	esqlcontrol.SetPopulatePanelConfigJSONDefaults(populatePanelConfigJSONDefaults)
+	markdown.SetPopulatePanelConfigJSONDefaults(populatePanelConfigJSONDefaults)
+	sloalerts.SetPopulatePanelConfigJSONDefaults(populatePanelConfigJSONDefaults)
+	image.SetPopulatePanelConfigJSONDefaults(populatePanelConfigJSONDefaults)
 	panelTypeToHandler = make(map[string]iface.Handler, len(panelHandlers))
 	derivedPanelConfigNames = append(derivedPanelConfigNames, "config_json")
 	for _, h := range panelHandlers {

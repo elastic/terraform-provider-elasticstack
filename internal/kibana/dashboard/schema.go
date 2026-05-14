@@ -24,8 +24,11 @@ import (
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/esqlcontrol"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/image"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/markdown"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/optionslist"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/rangeslider"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/sloalerts"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/sloerrorbudget"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/slooverview"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/syntheticsmonitors"
@@ -588,42 +591,9 @@ func getPanelSchema() schema.NestedAttributeObject {
 					stringplanmodifier.UseNonNullStateForUnknown(),
 				},
 			},
-			"markdown_config": schema.SingleNestedAttribute{
-				MarkdownDescription: panelkit.PanelConfigDescription(
-					"Configuration for a `markdown` panel (the Kibana Dashboard API `kbn-dashboard-panel-type-markdown` shape). "+
-						"Set exactly one of `by_value` (inline `content` with required nested `settings`) or `by_reference` (existing library item via `ref_id`). "+
-						"Presentation fields (`description`, `hide_title`, `title`, `hide_border`) are supported in both branches.",
-					"markdown_config",
-					panelConfigNames,
-				),
-				Optional:   true,
-				Attributes: getMarkdownConfigSchema(),
-				Validators: []validator.Object{
-					objectvalidator.ConflictsWith(
-						panelkit.SiblingTypedPanelConfigConflictPathsExcept("markdown_config", panelConfigNames)...,
-					),
-					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeMarkdown}),
-					markdownConfigModeValidator{},
-				},
-			},
+			"markdown_config":            markdown.SchemaAttribute(),
 			"time_slider_control_config": timeslider.SchemaAttribute(),
-			"slo_alerts_config": schema.SingleNestedAttribute{
-				MarkdownDescription: panelkit.PanelConfigDescription(
-					"Configuration for an `slo_alerts` panel (`kbn-dashboard-panel-type-slo_alerts`). "+
-						"Required when `type` is `slo_alerts`.",
-					"slo_alerts_config",
-					panelConfigNames,
-				),
-				Optional:   true,
-				Attributes: getSloAlertsPanelConfigAttributes(),
-				Validators: []validator.Object{
-					objectvalidator.ConflictsWith(
-						panelkit.SiblingTypedPanelConfigConflictPathsExcept("slo_alerts_config", panelConfigNames)...,
-					),
-					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeSloAlerts}),
-					validators.RequiredIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeSloAlerts}),
-				},
-			},
+			"slo_alerts_config":          sloalerts.SchemaAttribute(),
 			"discover_session_config": schema.SingleNestedAttribute{
 				MarkdownDescription: panelkit.PanelConfigDescription(
 					"Configuration for a `discover_session` panel (`kbn-dashboard-panel-type-discover_session`). "+
@@ -707,23 +677,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 			"range_slider_control_config":      rangeslider.SchemaAttribute(),
 			"synthetics_stats_overview_config": syntheticsstatsoverview.SchemaAttribute(),
 			"synthetics_monitors_config":       syntheticsmonitors.SchemaAttribute(),
-			"image_config": schema.SingleNestedAttribute{
-				MarkdownDescription: panelkit.PanelConfigDescription(
-					"Configuration for an `image` panel (`kbn-dashboard-panel-type-image`). Required when `type` is `image`. "+
-						"References the Kibana Dashboard API image embeddable `config` shape.",
-					"image_config",
-					panelConfigNames,
-				),
-				Optional:   true,
-				Attributes: getImagePanelConfigAttributes(),
-				Validators: []validator.Object{
-					objectvalidator.ConflictsWith(
-						panelkit.SiblingTypedPanelConfigConflictPathsExcept("image_config", panelConfigNames)...,
-					),
-					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeImage}),
-					validators.RequiredIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeImage}),
-				},
-			},
+			"image_config":                     image.SchemaAttribute(),
 			"lens_dashboard_app_config": schema.SingleNestedAttribute{
 				MarkdownDescription: panelkit.PanelConfigDescription(
 					"Configuration for a `lens-dashboard-app` panel (the Kibana Dashboard API `lens-dashboard-app` panel type). "+
@@ -1191,103 +1145,6 @@ func (lensDashboardAppByValueSourceValidator) ValidateObject(_ context.Context, 
 		lensDashboardAppByValueSourceAttrNames,
 		"Set exactly one of `config_json` or one supported typed Lens chart block inside `by_value`.",
 		"Set exactly one of `config_json` or one supported typed Lens chart block inside `by_value` (more than one by-value source is set).",
-	)
-}
-
-// getMarkdownConfigSchema returns attributes for the markdown_config block.
-func getMarkdownConfigSchema() map[string]schema.Attribute {
-	return map[string]schema.Attribute{
-		"by_value": schema.SingleNestedAttribute{
-			MarkdownDescription: "Inline markdown: required `content` and nested `settings` (API `settings` object). " +
-				"Optional `description`, `hide_title`, `title`, and `hide_border`.",
-			Optional: true,
-			Attributes: map[string]schema.Attribute{
-				"content": schema.StringAttribute{
-					MarkdownDescription: "Markdown source for the panel body (API `content`).",
-					Required:            true,
-				},
-				"settings": schema.SingleNestedAttribute{
-					MarkdownDescription: "Required settings object for by-value markdown. " +
-						"`open_links_in_new_tab` is optional; when unset, Kibana applies its default (`true`).",
-					Required: true,
-					Attributes: map[string]schema.Attribute{
-						"open_links_in_new_tab": schema.BoolAttribute{
-							MarkdownDescription: "When true, links in the markdown open in a new tab. When omitted, Kibana defaults to true.",
-							Optional:            true,
-						},
-					},
-				},
-				"description": schema.StringAttribute{
-					MarkdownDescription: "Optional panel description.",
-					Optional:            true,
-				},
-				"hide_title": schema.BoolAttribute{
-					MarkdownDescription: "When true, suppresses the panel title.",
-					Optional:            true,
-				},
-				"title": schema.StringAttribute{
-					MarkdownDescription: "Optional panel title.",
-					Optional:            true,
-				},
-				"hide_border": schema.BoolAttribute{
-					MarkdownDescription: "When true, suppresses the panel border.",
-					Optional:            true,
-				},
-			},
-		},
-		"by_reference": schema.SingleNestedAttribute{
-			MarkdownDescription: "Reference an existing markdown library item via `ref_id`. " +
-				"Optional `description`, `hide_title`, `title`, and `hide_border`.",
-			Optional: true,
-			Attributes: map[string]schema.Attribute{
-				"ref_id": schema.StringAttribute{
-					MarkdownDescription: "Unique identifier of the markdown library item (API `ref_id`). The provider does not verify the item exists at plan time.",
-					Required:            true,
-				},
-				"description": schema.StringAttribute{
-					MarkdownDescription: "Optional panel description.",
-					Optional:            true,
-				},
-				"hide_title": schema.BoolAttribute{
-					MarkdownDescription: "When true, suppresses the panel title.",
-					Optional:            true,
-				},
-				"title": schema.StringAttribute{
-					MarkdownDescription: "Optional panel title.",
-					Optional:            true,
-				},
-				"hide_border": schema.BoolAttribute{
-					MarkdownDescription: "When true, suppresses the panel border.",
-					Optional:            true,
-				},
-			},
-		},
-	}
-}
-
-// markdownConfigModeValidator enforces that exactly one of by_value or by_reference is set.
-var _ validator.Object = markdownConfigModeValidator{}
-
-type markdownConfigModeValidator struct{}
-
-func (v markdownConfigModeValidator) Description(_ context.Context) string {
-	return "Ensures exactly one of `by_value` or `by_reference` is set inside `markdown_config`."
-}
-
-func (v markdownConfigModeValidator) MarkdownDescription(ctx context.Context) string {
-	return v.Description(ctx)
-}
-
-func (v markdownConfigModeValidator) ValidateObject(_ context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
-	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
-		return
-	}
-	validateExactlyOneNestedAttr(
-		req, resp,
-		"markdown_config",
-		modeAttrNames,
-		"Exactly one of `by_value` or `by_reference` must be set inside `markdown_config`.",
-		"Exactly one of `by_value` or `by_reference` must be set inside `markdown_config`, not both.",
 	)
 }
 

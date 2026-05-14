@@ -820,8 +820,8 @@ func Test_panelModel_toAPI_configJSONErrors(t *testing.T) {
 				Grid:       models.PanelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0)},
 				ConfigJSON: customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults),
 			},
-			errorSummary:  "Unsupported panel configuration",
-			errorContains: "No panel configuration block was provided",
+			errorSummary:  "Unsupported markdown panel configuration",
+			errorContains: "No `markdown_config` block or panel-level `config_json` was provided.",
 		},
 		{
 			name: "rejects invalid markdown config_json",

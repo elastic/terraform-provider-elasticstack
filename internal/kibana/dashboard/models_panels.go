@@ -220,79 +220,6 @@ func dashboardMapPanelFromAPI(ctx context.Context, m *models.DashboardModel, tfP
 	}
 
 	switch discriminator {
-	case panelTypeMarkdown:
-		markdownPanel, err := panelItem.AsKbnDashboardPanelTypeMarkdown()
-		if err != nil {
-			return models.PanelModel{}, diagutil.FrameworkDiagFromError(err)
-		}
-		setPanelGridFromAPI(&pm, markdownPanel.Grid.X, markdownPanel.Grid.Y, markdownPanel.Grid.W, markdownPanel.Grid.H)
-		pm.ID = types.StringPointerValue(markdownPanel.Id)
-		if !panelUsesConfigJSONOnly(tfPanel) {
-			rawConfig, rawErr := markdownPanel.Config.MarshalJSON()
-			branch := markdownConfigBranchUnknown
-			if rawErr != nil {
-				diags.AddWarning(
-					"Markdown panel configuration",
-					fmt.Sprintf(
-						"Could not marshal panel config for markdown branch classification: %v. Using union decode fallback.",
-						rawErr,
-					),
-				)
-			} else {
-				var err error
-				branch, err = classifyMarkdownConfigFromRoot(rawConfig)
-				if err != nil {
-					diags.AddWarning(
-						"Markdown panel configuration",
-						fmt.Sprintf(
-							"Could not parse panel config JSON for markdown branch classification: %v. Using union decode fallback.",
-							err,
-						),
-					)
-					branch = markdownConfigBranchUnknown
-				}
-			}
-
-			decodeMarkdownFails := func() {
-				diags.AddError(
-					"Invalid markdown panel config",
-					"Could not decode markdown panel config as by-value or by-reference.",
-				)
-			}
-
-			switch branch {
-			case markdownConfigBranchByReference:
-				if populateMarkdownFromAPIAttemptByReference(&pm, tfPanel, markdownPanel.Config, true) {
-					break
-				}
-				if !populateMarkdownFromAPIAttemptByValue(&pm, tfPanel, markdownPanel.Config, true) {
-					decodeMarkdownFails()
-				}
-			case markdownConfigBranchByValue:
-				if populateMarkdownFromAPIAttemptByValue(&pm, tfPanel, markdownPanel.Config, true) {
-					break
-				}
-				if !populateMarkdownFromAPIAttemptByReference(&pm, tfPanel, markdownPanel.Config, true) {
-					decodeMarkdownFails()
-				}
-			default:
-				if populateMarkdownFromAPIAttemptByValue(&pm, tfPanel, markdownPanel.Config, false) {
-					break
-				}
-				if !populateMarkdownFromAPIAttemptByReference(&pm, tfPanel, markdownPanel.Config, false) {
-					decodeMarkdownFails()
-				}
-			}
-		}
-		configBytes, err := markdownPanel.Config.MarshalJSON()
-		if err == nil {
-			configJSON := customtypes.NewJSONWithDefaultsValue(string(configBytes), populatePanelConfigJSONDefaults)
-			if tfPanel != nil {
-				configJSON = preservePriorJSONWithDefaultsIfEquivalent(ctx, tfPanel.ConfigJSON, configJSON, &diags)
-			}
-			pm.ConfigJSON = configJSON
-		}
-
 	case panelTypeVis:
 		visPanel, err := panelItem.AsKbnDashboardPanelTypeVis()
 		if err != nil {
@@ -305,7 +232,7 @@ func dashboardMapPanelFromAPI(ctx context.Context, m *models.DashboardModel, tfP
 		if err == nil {
 			configJSON := customtypes.NewJSONWithDefaultsValue(string(configBytes), populatePanelConfigJSONDefaults)
 			if tfPanel != nil {
-				configJSON = preservePriorJSONWithDefaultsIfEquivalent(ctx, tfPanel.ConfigJSON, configJSON, &diags)
+				configJSON = panelkit.PreservePriorJSONWithDefaultsIfEquivalent(ctx, tfPanel.ConfigJSON, configJSON, &diags)
 			}
 			pm.ConfigJSON = configJSON
 		}
@@ -405,24 +332,6 @@ func dashboardMapPanelFromAPI(ctx context.Context, m *models.DashboardModel, tfP
 		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
 		d := populateLensDashboardAppFromAPI(ctx, m, &pm, tfPanel, ldPanel)
 		diags.Append(d...)
-	case panelTypeImage:
-		imgPanel, err := panelItem.AsKbnDashboardPanelTypeImage()
-		if err != nil {
-			return models.PanelModel{}, diagutil.FrameworkDiagFromError(err)
-		}
-		setPanelGridFromAPI(&pm, imgPanel.Grid.X, imgPanel.Grid.Y, imgPanel.Grid.W, imgPanel.Grid.H)
-		pm.ID = types.StringPointerValue(imgPanel.Id)
-		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
-		populateImagePanelFromAPI(&pm, tfPanel, imgPanel)
-	case panelTypeSloAlerts:
-		saPanel, err := panelItem.AsKbnDashboardPanelTypeSloAlerts()
-		if err != nil {
-			return models.PanelModel{}, diagutil.FrameworkDiagFromError(err)
-		}
-		setPanelGridFromAPI(&pm, saPanel.Grid.X, saPanel.Grid.Y, saPanel.Grid.W, saPanel.Grid.H)
-		pm.ID = types.StringPointerValue(saPanel.Id)
-		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
-		populateSloAlertsPanelFromAPI(&pm, tfPanel, saPanel)
 	case panelTypeDiscoverSession:
 		dsPanel, err := panelItem.AsKbnDashboardPanelTypeDiscoverSession()
 		if err != nil {
@@ -556,7 +465,8 @@ func dashboardPanelsToAPI(ctx context.Context, m *models.DashboardModel) (*kbapi
 // on HasConfig(...) or legacy error branches instead.
 func panelDispatcherAllowsTypedConfigOmission(panelType string) bool {
 	switch panelType {
-	case panelTypeTimeSlider, panelTypeSyntheticsStatsOverview, panelTypeSyntheticsMonitors:
+	// Practitioner may omit `markdown_config` when managing the panel purely via panel-level `config_json`.
+	case panelTypeMarkdown, panelTypeTimeSlider, panelTypeSyntheticsStatsOverview, panelTypeSyntheticsMonitors:
 		return true
 	default:
 		return false
@@ -612,46 +522,6 @@ func panelToAPI(ctx context.Context, pm models.PanelModel, dashboard *models.Das
 	}
 
 	var panelItem kbapi.DashboardPanelItem
-	if pm.MarkdownConfig != nil {
-		switch {
-		case pm.MarkdownConfig.ByReference != nil:
-			config1 := buildMarkdownConfigByReference(pm)
-			var config kbapi.KbnDashboardPanelTypeMarkdown_Config
-			if err := config.FromKbnDashboardPanelTypeMarkdownConfig1(config1); err != nil {
-				return kbapi.DashboardPanelItem{}, diagutil.FrameworkDiagFromError(err)
-			}
-			markdownPanel := kbapi.KbnDashboardPanelTypeMarkdown{
-				Config: config,
-				Grid:   grid,
-				Id:     panelID,
-			}
-			if err := panelItem.FromKbnDashboardPanelTypeMarkdown(markdownPanel); err != nil {
-				diags.AddError("Failed to create markdown panel", err.Error())
-			}
-			return panelItem, diags
-		case pm.MarkdownConfig.ByValue != nil:
-			config0 := buildMarkdownConfig(pm)
-			var config kbapi.KbnDashboardPanelTypeMarkdown_Config
-			if err := config.FromKbnDashboardPanelTypeMarkdownConfig0(config0); err != nil {
-				return kbapi.DashboardPanelItem{}, diagutil.FrameworkDiagFromError(err)
-			}
-			markdownPanel := kbapi.KbnDashboardPanelTypeMarkdown{
-				Config: config,
-				Grid:   grid,
-				Id:     panelID,
-			}
-			if err := panelItem.FromKbnDashboardPanelTypeMarkdown(markdownPanel); err != nil {
-				diags.AddError("Failed to create markdown panel", err.Error())
-			}
-			return panelItem, diags
-		default:
-			diags.AddError(
-				"Invalid markdown_config",
-				"Set `markdown_config.by_value` or `markdown_config.by_reference` (exactly one).",
-			)
-			return kbapi.DashboardPanelItem{}, diags
-		}
-	}
 
 	lensGrid := lensDashboardAPIGrid{H: grid.H, W: grid.W, X: grid.X, Y: grid.Y}
 	if pm.LensDashboardAppConfig != nil {
@@ -676,14 +546,6 @@ func panelToAPI(ctx context.Context, pm models.PanelModel, dashboard *models.Das
 		return kbapi.DashboardPanelItem{}, diags
 	}
 
-	if pm.ImageConfig != nil {
-		return imagePanelToAPI(pm, grid, panelID)
-	}
-
-	if pm.SloAlertsConfig != nil {
-		return sloAlertsPanelToAPI(pm, grid, panelID)
-	}
-
 	if pm.DiscoverSessionConfig != nil {
 		return discoverSessionPanelToAPI(ctx, pm, grid, panelID, dashTR)
 	}
@@ -703,17 +565,17 @@ func panelToAPI(ctx context.Context, pm models.PanelModel, dashboard *models.Das
 		return kbapi.DashboardPanelItem{}, diags
 	}
 
-	if pm.Type.ValueString() == panelTypeSloAlerts {
+	if pm.Type.ValueString() == panelTypeSloBurnRate {
 		if typeutils.IsKnown(pm.ConfigJSON) && !pm.ConfigJSON.IsNull() {
 			diags.AddError(
 				"Unsupported panel type for config_json",
-				"Panel-level `config_json` is not supported for `slo_alerts` panels. Use `slo_alerts_config` instead.",
+				"Panel-level `config_json` is not supported for `slo_burn_rate` panels. Use `slo_burn_rate_config` instead.",
 			)
 			return kbapi.DashboardPanelItem{}, diags
 		}
 		diags.AddError(
-			"Missing SLO alerts panel configuration",
-			"SLO alerts panels require `slo_alerts_config`.",
+			"Missing SLO burn rate panel configuration",
+			"SLO burn rate panels require `slo_burn_rate_config`.",
 		)
 		return kbapi.DashboardPanelItem{}, diags
 	}
@@ -733,17 +595,17 @@ func panelToAPI(ctx context.Context, pm models.PanelModel, dashboard *models.Das
 		return kbapi.DashboardPanelItem{}, diags
 	}
 
-	if pm.Type.ValueString() == panelTypeSloBurnRate {
+	if pm.Type.ValueString() == panelTypeSloAlerts {
 		if typeutils.IsKnown(pm.ConfigJSON) && !pm.ConfigJSON.IsNull() {
 			diags.AddError(
 				"Unsupported panel type for config_json",
-				"Panel-level `config_json` is not supported for `slo_burn_rate` panels. Use `slo_burn_rate_config` instead.",
+				"Panel-level `config_json` is not supported for `slo_alerts` panels. Use `slo_alerts_config` instead.",
 			)
 			return kbapi.DashboardPanelItem{}, diags
 		}
 		diags.AddError(
-			"Missing SLO burn rate panel configuration",
-			"SLO burn rate panels require `slo_burn_rate_config`.",
+			"Missing SLO alerts panel configuration",
+			"SLO alerts panels require `slo_alerts_config`.",
 		)
 		return kbapi.DashboardPanelItem{}, diags
 	}
@@ -755,21 +617,6 @@ func panelToAPI(ctx context.Context, pm models.PanelModel, dashboard *models.Das
 	if typeutils.IsKnown(pm.ConfigJSON) {
 		configJSON := []byte(pm.ConfigJSON.ValueString())
 		switch pm.Type.ValueString() {
-		case panelTypeMarkdown:
-			var config kbapi.KbnDashboardPanelTypeMarkdown_Config
-			if err := config.UnmarshalJSON(configJSON); err != nil {
-				diags.AddError("Failed to unmarshal markdown panel config", err.Error())
-				return kbapi.DashboardPanelItem{}, diags
-			}
-			markdownPanel := kbapi.KbnDashboardPanelTypeMarkdown{
-				Config: config,
-				Grid:   grid,
-				Id:     panelID,
-			}
-			if err := panelItem.FromKbnDashboardPanelTypeMarkdown(markdownPanel); err != nil {
-				diags.AddError("Failed to create markdown panel", err.Error())
-			}
-			return panelItem, diags
 		case panelTypeVis:
 			var config kbapi.KbnDashboardPanelTypeVis_Config
 			if err := config.UnmarshalJSON(configJSON); err != nil {
@@ -800,16 +647,6 @@ func panelToAPI(ctx context.Context, pm models.PanelModel, dashboard *models.Das
 			diags.AddError(
 				"Unsupported panel type for config_json",
 				"The synthetics_stats_overview panel type must be managed through the typed synthetics_stats_overview_config block, not config_json.",
-			)
-		case panelTypeImage:
-			diags.AddError(
-				"Unsupported panel type for config_json",
-				"Panel-level `config_json` is not supported for `image` panels. Use `image_config` instead.",
-			)
-		case panelTypeSloAlerts:
-			diags.AddError(
-				"Unsupported panel type for config_json",
-				"Panel-level `config_json` is not supported for `slo_alerts` panels. Use `slo_alerts_config` instead.",
 			)
 		case panelTypeDiscoverSession:
 			diags.AddError(
@@ -873,7 +710,7 @@ func panelToAPI(ctx context.Context, pm models.PanelModel, dashboard *models.Das
 	case panelTypeMarkdown, panelTypeVis, panelTypeTimeSlider, panelTypeSloBurnRate,
 		panelTypeSloErrorBudget, panelTypeEsqlControl, panelTypeOptionsListControl,
 		panelTypeRangeSlider, panelTypeSyntheticsStatsOverview, panelTypeSyntheticsMonitors,
-		panelTypeLensDashboardApp, panelTypeSloOverview, panelTypeImage, panelTypeSloAlerts, panelTypeDiscoverSession:
+		panelTypeLensDashboardApp, panelTypeSloOverview, panelTypeDiscoverSession:
 		diags.AddError("Unsupported panel configuration", "No panel configuration block was provided.")
 	default:
 		diags.AddError(
