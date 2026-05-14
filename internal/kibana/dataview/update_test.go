@@ -138,13 +138,33 @@ func TestBuildFieldAttrsMetadataDelta(t *testing.T) {
 			},
 		},
 		{
-			name: "all-null entry still emits empty payload when added",
+			name: "all-null plan entry is skipped (no ambiguous empty payload)",
 			planFA: map[string]fieldAttrModel{
 				"f1": {CustomLabel: types.StringNull(), Count: types.Int64Null()},
 			},
 			stateFA: map[string]fieldAttrModel{},
+			want:    map[string]any{},
+		},
+		{
+			name:   "server-only count-only state entry is not cleared on removal",
+			planFA: map[string]fieldAttrModel{},
+			stateFA: map[string]fieldAttrModel{
+				"host.hostname": {CustomLabel: types.StringNull(), Count: types.Int64Value(5)},
+			},
+			want: map[string]any{},
+		},
+		{
+			name: "server-only count entry adjacent to user removal is not cleared",
+			planFA: map[string]fieldAttrModel{
+				"keep": {CustomLabel: types.StringValue("Keep"), Count: types.Int64Null()},
+			},
+			stateFA: map[string]fieldAttrModel{
+				"keep":          {CustomLabel: types.StringValue("Keep"), Count: types.Int64Null()},
+				"removed":       {CustomLabel: types.StringValue("Bye"), Count: types.Int64Null()},
+				"host.hostname": {CustomLabel: types.StringNull(), Count: types.Int64Value(5)},
+			},
 			want: map[string]any{
-				"f1": map[string]any{},
+				"removed": map[string]any{"customLabel": nil, "count": nil},
 			},
 		},
 	}
