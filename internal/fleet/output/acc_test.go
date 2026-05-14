@@ -631,6 +631,11 @@ func TestAccResourceOutputDefaultFlags(t *testing.T) {
 				),
 			},
 			{
+				// Kibana refuses to demote the cluster's only default output, so
+				// promote the preconfigured `fleet-default-output` first. That
+				// auto-demotes our test_output, after which Terraform's apply
+				// happily aligns state with the now-non-default config.
+				PreConfig:                promoteFleetDefaultOutput(t),
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
@@ -645,6 +650,40 @@ func TestAccResourceOutputDefaultFlags(t *testing.T) {
 			},
 		},
 	})
+}
+
+// promoteFleetDefaultOutput returns a PreConfig hook that promotes the
+// preconfigured `fleet-default-output` to be the cluster's default for
+// integrations and monitoring. This is required when a managed test output is
+// currently the default and we want to demote (or destroy) it: Kibana rejects
+// demotions/deletions of an output that would leave the cluster without a
+// default.
+func promoteFleetDefaultOutput(t *testing.T) func() {
+	return func() {
+		t.Helper()
+		client, err := clients.NewAcceptanceTestingKibanaScopedClient()
+		require.NoError(t, err)
+		kbClient, err := client.GetKibanaOapiClient()
+		require.NoError(t, err)
+
+		body := strings.NewReader(`{
+			"name": "default",
+			"type": "elasticsearch",
+			"hosts": ["http://localhost:9200"],
+			"is_default": true,
+			"is_default_monitoring": true
+		}`)
+		resp, err := kbClient.API.PutFleetOutputsOutputidWithBodyWithResponse(
+			t.Context(),
+			"fleet-default-output",
+			"application/json",
+			body,
+		)
+		require.NoError(t, err)
+		require.Equalf(t, 200, resp.StatusCode(),
+			"failed to promote fleet-default-output to default: status=%d body=%s",
+			resp.StatusCode(), string(resp.Body))
+	}
 }
 
 func TestAccResourceOutputKafkaUserPass(t *testing.T) {

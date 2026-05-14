@@ -14,9 +14,10 @@ resource "elasticstack_fleet_output" "test_output" {
   ]
 
   kafka = {
-    auth_type = "none"
-    topic     = "beats"
-    partition = "random"
+    auth_type       = "none"
+    connection_type = "plaintext"
+    topic           = "beats"
+    partition       = "random"
 
     random = {
       group_events = 1
