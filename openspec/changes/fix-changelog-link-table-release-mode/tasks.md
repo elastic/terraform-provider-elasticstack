@@ -1,7 +1,7 @@
 ## 1. Add `rewriteLinkTable` to `changelog-rewriter.js`
 
-- [ ] 1.1 Implement `rewriteLinkTable(content, targetVersion, previousTag)`: guard (no-op when either arg is empty), extract base URL from `[Unreleased]:` line via regex, update `[Unreleased]:` to `vNEW...HEAD`, insert `[NEW]: .../compare/vOLD...vNEW` after it (idempotent — skip if entry already exists)
-- [ ] 1.2 Export `rewriteLinkTable` from `changelog-rewriter.js`
+- [x] 1.1 Implement `rewriteLinkTable(content, targetVersion, previousTag)`: guard (no-op when either arg is empty), extract base URL from `[Unreleased]:` line via regex, update `[Unreleased]:` to `vNEW...HEAD`, insert `[NEW]: .../compare/vOLD...vNEW` after it (idempotent — skip if entry already exists)
+- [x] 1.2 Export `rewriteLinkTable` from `changelog-rewriter.js`
 
 ## 2. Wire `rewriteLinkTable` into the engine
 

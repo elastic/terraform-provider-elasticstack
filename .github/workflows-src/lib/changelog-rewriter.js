@@ -60,6 +60,35 @@ function spliceReleaseSectionRanges(lines, ranges, newSectionContent) {
 }
 
 /**
+ * @param {string} content
+ * @param {string} targetVersion - Version without leading v.
+ * @param {string} previousTag - Previous tag with leading v.
+ * @returns {string}
+ */
+function rewriteLinkTable(content, targetVersion, previousTag) {
+  if (!targetVersion || !previousTag) {
+    return content;
+  }
+
+  const unreleasedLineMatch = content.match(/^\[Unreleased\]:\s*(https?:\/\/.+\/compare\/).*/m);
+  if (!unreleasedLineMatch) {
+    return content;
+  }
+
+  const baseCompareUrl = unreleasedLineMatch[1];
+  const unreleasedLine = `[Unreleased]: ${baseCompareUrl}v${targetVersion}...HEAD`;
+  const releaseLine = `[${targetVersion}]: ${baseCompareUrl}${previousTag}...v${targetVersion}`;
+
+  let updated = content.replace(/^\[Unreleased\]:.*$/m, unreleasedLine);
+
+  if (new RegExp(`^\\[${targetVersion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\]:`, 'm').test(updated)) {
+    return updated;
+  }
+
+  return updated.replace(unreleasedLine, `${unreleasedLine}\n${releaseLine}`);
+}
+
+/**
  * @param {string} content - Current CHANGELOG.md content.
  * @param {string} newSectionContent - Full replacement (header + body).
  * @param {'unreleased'|'release'} mode
@@ -134,6 +163,7 @@ function rewriteChangelogSection(content, newSectionContent, mode, targetVersion
 if (typeof module !== 'undefined') {
   module.exports = {
     findSectionEnd,
+    rewriteLinkTable,
     rewriteChangelogSection,
   };
 }
