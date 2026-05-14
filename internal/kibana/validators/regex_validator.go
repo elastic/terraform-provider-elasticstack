@@ -18,19 +18,29 @@
 package validators
 
 import (
-	"regexp"
+	"context"
+
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
-func StringMatchesISO8601Regex(s string) (matched bool, err error) {
-	pattern := `(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d\.\d+([+-][0-2]\d:[0-5]\d|Z))` +
-		`|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))` +
-		`|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))`
-	return regexp.MatchString(pattern, s)
+type regexStringValidator struct {
+	description string
+	errSummary  string
+	errDetail   string
+	matchFn     func(string) (bool, error)
 }
 
-var StringIsISO8601 = regexStringValidator{
-	description: "a valid ISO8601 date and time formatted string",
-	errSummary:  "expected value to be a valid ISO8601 string",
-	errDetail:   "This value must be a valid ISO8601 date and time formatted string.",
-	matchFn:     StringMatchesISO8601Regex,
+func (v regexStringValidator) Description(_ context.Context) string { return v.description }
+
+func (v regexStringValidator) MarkdownDescription(ctx context.Context) string {
+	return v.Description(ctx)
+}
+
+func (v regexStringValidator) ValidateString(_ context.Context, req validator.StringRequest, resp *validator.StringResponse) {
+	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+		return
+	}
+	if matched, err := v.matchFn(req.ConfigValue.ValueString()); err != nil || !matched {
+		resp.Diagnostics.AddAttributeError(req.Path, v.errSummary, v.errDetail)
+	}
 }
