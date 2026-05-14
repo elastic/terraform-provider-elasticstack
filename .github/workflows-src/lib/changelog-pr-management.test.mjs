@@ -191,6 +191,48 @@ test('manageUnreleasedPR: addLabels failure warns and does not fail after creati
   assert.match(warnings[0], /Failed to apply no-changelog label to PR #7: boom/);
 });
 
+test('manageUnreleasedPR: addLabels failure warns and does not fail after updating existing PR', async () => {
+  const updateCalls = [];
+  const warnings = [];
+
+  const github = {
+    core: {
+      warning: (msg) => warnings.push(msg),
+    },
+    rest: {
+      pulls: {
+        list: async () => ({
+          data: [{ number: 42, html_url: 'https://github.com/org/repo/pull/42' }],
+        }),
+        update: async (args) => {
+          updateCalls.push(args);
+          return { data: {} };
+        },
+      },
+      issues: {
+        addLabels: async () => {
+          throw new Error('boom');
+        },
+      },
+    },
+  };
+
+  const result = await manageUnreleasedPR({
+    github,
+    owner: 'org',
+    repo: 'repo',
+    compareRange: 'v1.0.0...HEAD',
+  });
+
+  assert.equal(result.prAction, 'updated');
+  assert.equal(result.prNumber, 42);
+  assert.equal(result.prUrl, 'https://github.com/org/repo/pull/42');
+  assert.equal(updateCalls.length, 1, 'pulls.update should still succeed');
+  assert.equal(updateCalls[0].pull_number, 42);
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0], /Failed to apply no-changelog label to PR #42: boom/);
+});
+
 // ---------------------------------------------------------------------------
 // refreshReleasePR: prNumber present → pulls.update called
 // ---------------------------------------------------------------------------
