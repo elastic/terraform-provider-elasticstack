@@ -55,5 +55,5 @@ func TestApplyTypedCalendarToTFModel_nilDescription(t *testing.T) {
 	c := estypes.Calendar{CalendarId: "cal-1"}
 	var m TFModel
 	applyTypedCalendarToTFModel(&m, &c)
-	assert.Equal(t, "", m.Description.ValueString())
+	assert.Empty(t, m.Description.ValueString())
 }

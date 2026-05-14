@@ -257,7 +257,7 @@ func TestNewElasticsearchResource_Configure(t *testing.T) {
 	t.Run("nil_provider_data", func(t *testing.T) {
 		t.Parallel()
 		r := NewElasticsearchResource[testResourceModel](ComponentElasticsearch, "test_entity", getTestResourceSchema, testReadFuncFound, testDeleteFunc, testCreateFuncFound,
-		testUpdateFuncFound)
+			testUpdateFuncFound)
 		var resp resource.ConfigureResponse
 		r.Configure(ctx, resource.ConfigureRequest{ProviderData: nil}, &resp)
 		require.False(t, resp.Diagnostics.HasError())
@@ -266,7 +266,7 @@ func TestNewElasticsearchResource_Configure(t *testing.T) {
 	t.Run("valid_factory", func(t *testing.T) {
 		t.Parallel()
 		r := NewElasticsearchResource[testResourceModel](ComponentElasticsearch, "test_entity", getTestResourceSchema, testReadFuncFound, testDeleteFunc, testCreateFuncFound,
-		testUpdateFuncFound)
+			testUpdateFuncFound)
 		f := nonNilTestFactory()
 		var resp resource.ConfigureResponse
 		r.Configure(ctx, resource.ConfigureRequest{ProviderData: f}, &resp)
@@ -276,7 +276,7 @@ func TestNewElasticsearchResource_Configure(t *testing.T) {
 	t.Run("invalid_provider_data", func(t *testing.T) {
 		t.Parallel()
 		r := NewElasticsearchResource[testResourceModel](ComponentElasticsearch, "test_entity", getTestResourceSchema, testReadFuncFound, testDeleteFunc, testCreateFuncFound,
-		testUpdateFuncFound)
+			testUpdateFuncFound)
 		var resp resource.ConfigureResponse
 		r.Configure(ctx, resource.ConfigureRequest{ProviderData: "wrong-type"}, &resp)
 		require.True(t, resp.Diagnostics.HasError())
@@ -1130,9 +1130,14 @@ func TestNewElasticsearchResource_Write_shortCircuitEmptyWriteID(t *testing.T) {
 	ctx := context.Background()
 	factory := newTestConfiguredFactory(ctx, t)
 	writeCalled := false
-	writeFn := func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, _ testResourceModel) (testResourceModel, diag.Diagnostics) {
+	writeFn := func(
+		_ context.Context,
+		_ *clients.ElasticsearchScopedClient,
+		_ string,
+		plan testResourceModel,
+	) (testResourceModel, diag.Diagnostics) { //nolint:unparam // stub create callback; envelope tests only assert writeFn is not invoked
 		writeCalled = true
-		return testResourceModel{}, nil
+		return plan, nil
 	}
 	updateWriteFn := func(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, model testResourceModel, _ testResourceModel) (testResourceModel, diag.Diagnostics) {
 		return writeFn(ctx, client, resourceID, model)

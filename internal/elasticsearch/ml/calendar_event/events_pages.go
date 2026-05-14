@@ -87,7 +87,12 @@ func walkMLCalendarEventPages(ctx context.Context, typedClient *elasticsearch.Ty
 	return walkMLCalendarEventPagesWith(ctx, typedClientCalendarEventsFetcher{client: typedClient}, calendarID, fn)
 }
 
-func walkMLCalendarEventPagesWithWindow(ctx context.Context, typedClient *elasticsearch.TypedClient, calendarID, startRFC3339, endRFC3339 string, fn func([]calendarEventWire) (stop bool)) fwdiags.Diagnostics {
+func walkMLCalendarEventPagesWithWindow(
+	ctx context.Context,
+	typedClient *elasticsearch.TypedClient,
+	calendarID, startRFC3339, endRFC3339 string,
+	fn func([]calendarEventWire) (stop bool),
+) fwdiags.Diagnostics {
 	return walkMLCalendarEventPagesWith(ctx, typedClientCalendarEventsWindowFetcher{
 		client: typedClient,
 		start:  startRFC3339,
