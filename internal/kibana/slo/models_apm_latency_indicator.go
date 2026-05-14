@@ -92,7 +92,7 @@ func (m *tfModel) populateFromApmLatencyIndicator(apiIndicator kbapi.SLOsIndicat
 		TransactionType: types.StringValue(p.TransactionType),
 		TransactionName: types.StringValue(p.TransactionName),
 		Index:           types.StringValue(p.Index),
-		Filter:          stringOrNull(p.Filter),
+		Filter:          types.StringPointerValue(p.Filter),
 		Threshold:       types.Int64Value(int64(p.Threshold)),
 	}}
 

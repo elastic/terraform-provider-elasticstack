@@ -525,20 +525,6 @@ func (s tfSettings) toAPIModel() *kbapi.SLOsSettings {
 	return &settings
 }
 
-func stringOrNull(v *string) types.String {
-	if v == nil {
-		return types.StringNull()
-	}
-	return types.StringValue(*v)
-}
-
-func float64OrNull(v *float64) types.Float64 {
-	if v == nil {
-		return types.Float64Null()
-	}
-	return types.Float64Value(*v)
-}
-
 func (m tfModel) hasDataViewID() bool {
 	return (len(m.MetricCustomIndicator) == 1 && typeutils.IsKnown(m.MetricCustomIndicator[0].DataViewID) && m.MetricCustomIndicator[0].DataViewID.ValueString() != "") ||
 		(len(m.HistogramCustomIndicator) == 1 && typeutils.IsKnown(m.HistogramCustomIndicator[0].DataViewID) && m.HistogramCustomIndicator[0].DataViewID.ValueString() != "") ||
