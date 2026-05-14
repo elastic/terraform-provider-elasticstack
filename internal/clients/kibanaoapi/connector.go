@@ -313,37 +313,45 @@ func connectorConfigWithDefaults[T any](plan string, setDefaults func(*T)) (stri
 	return string(customJSON), nil
 }
 
-// remarshalConfigGenAi handles config for .gen-ai connectors.
-// The .gen-ai connector type has multiple possible config structures depending on the apiProvider
-// (GenaiOpenaiConfig, GenaiAzureConfig, GenaiOpenaiOtherConfig). This function unmarshals to the
-// appropriate type based on the apiProvider field. By unmarshaling to a typed struct and marshaling
-// back, unknown fields are automatically filtered out.
-func remarshalConfigGenAi(plan string) (string, error) {
-	// First, unmarshal to a map to check the apiProvider
+// parseGenAiAPIProvider extracts the apiProvider field from a Gen AI connector config JSON.
+func parseGenAiAPIProvider(plan string) (string, error) {
 	var configMap map[string]any
 	if err := json.Unmarshal([]byte(plan), &configMap); err != nil {
 		return "", err
 	}
-
 	apiProvider, ok := configMap["apiProvider"].(string)
 	if !ok {
-		// apiProvider is required for .gen-ai connectors
 		return "", errors.New("apiProvider is required for .gen-ai connector type")
 	}
+	return apiProvider, nil
+}
 
-	// Unmarshal to the appropriate specific type based on apiProvider.
-	// By unmarshaling (which ignores unknown fields) and then marshaling back,
-	// we automatically filter out any fields that aren't defined in the specific config type.
+// dispatchGenAiConfig is the single dispatch point for .gen-ai connectors.
+// It selects the appropriate per-provider handler based on the apiProvider field.
+// When setOtherDefaults is non-nil it is applied to the "Other" provider config;
+// otherwise the "Other" config is remarshed without modification.
+func dispatchGenAiConfig(plan string, setOtherDefaults func(*kbapi.GenaiOpenaiOtherConfig)) (string, error) {
+	apiProvider, err := parseGenAiAPIProvider(plan)
+	if err != nil {
+		return "", err
+	}
 	switch apiProvider {
 	case "OpenAI":
 		return remarshalConfig[kbapi.GenaiOpenaiConfig](plan)
 	case "Azure OpenAI":
 		return remarshalConfig[kbapi.GenaiAzureConfig](plan)
 	case "Other":
+		if setOtherDefaults != nil {
+			return connectorConfigWithDefaults(plan, setOtherDefaults)
+		}
 		return remarshalConfig[kbapi.GenaiOpenaiOtherConfig](plan)
 	default:
 		return "", fmt.Errorf("unsupported apiProvider %q for .gen-ai connector type, must be one of: OpenAI, Azure OpenAI, Other", apiProvider)
 	}
+}
+
+func remarshalConfigGenAi(plan string) (string, error) {
+	return dispatchGenAiConfig(plan, nil)
 }
 
 func connectorConfigWithDefaultsBedrock(plan string) (string, error) {
@@ -355,35 +363,11 @@ func connectorConfigWithDefaultsBedrock(plan string) (string, error) {
 }
 
 func connectorConfigWithDefaultsGenAi(plan string) (string, error) {
-	// First unmarshal to check the apiProvider
-	var configMap map[string]any
-	if err := json.Unmarshal([]byte(plan), &configMap); err != nil {
-		return "", err
-	}
-
-	apiProvider, ok := configMap["apiProvider"].(string)
-	if !ok {
-		// apiProvider is required for .gen-ai connectors
-		return "", errors.New("apiProvider is required for .gen-ai connector type")
-	}
-
-	// Apply defaults and filter fields based on the specific config type.
-	// By unmarshaling (which ignores unknown fields) and marshaling back,
-	// unknown fields are automatically filtered out.
-	switch apiProvider {
-	case "OpenAI":
-		return remarshalConfig[kbapi.GenaiOpenaiConfig](plan)
-	case "Azure OpenAI":
-		return remarshalConfig[kbapi.GenaiAzureConfig](plan)
-	case "Other":
-		return connectorConfigWithDefaults(plan, func(c *kbapi.GenaiOpenaiOtherConfig) {
-			if c.VerificationMode == nil {
-				c.VerificationMode = new(kbapi.GenaiOpenaiOtherConfigVerificationModeFull)
-			}
-		})
-	default:
-		return "", fmt.Errorf("unsupported apiProvider %q for .gen-ai connector type, must be one of: OpenAI, Azure OpenAI, Other", apiProvider)
-	}
+	return dispatchGenAiConfig(plan, func(c *kbapi.GenaiOpenaiOtherConfig) {
+		if c.VerificationMode == nil {
+			c.VerificationMode = new(kbapi.GenaiOpenaiOtherConfigVerificationModeFull)
+		}
+	})
 }
 
 func connectorConfigWithDefaultsCasesWebhook(plan string) (string, error) {

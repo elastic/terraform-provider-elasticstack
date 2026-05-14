@@ -96,6 +96,8 @@ func testAccRandomizedRuleName(prefix string) string {
 }
 
 func TestAccResourceSecurityDetectionRule_Query(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minResponseActionVersionSupport, versionutils.FlavorAny)
+
 	resourceName := securityDetectionRuleResourceName
 	createRuleName := testAccRandomizedRuleName("test-query-rule")
 	updatedRuleName := testAccRandomizedRuleName("test-query-rule-updated")
@@ -106,7 +108,6 @@ func TestAccResourceSecurityDetectionRule_Query(t *testing.T) {
 		CheckDestroy: testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -192,7 +193,6 @@ func TestAccResourceSecurityDetectionRule_Query(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
@@ -283,7 +283,6 @@ func TestAccResourceSecurityDetectionRule_Query(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("remove_filters"),
 				ConfigVariables: config.Variables{
@@ -300,7 +299,6 @@ func TestAccResourceSecurityDetectionRule_Query(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("remove_filters"),
 				ConfigVariables: config.Variables{
@@ -315,6 +313,8 @@ func TestAccResourceSecurityDetectionRule_Query(t *testing.T) {
 }
 
 func TestAccResourceSecurityDetectionRule_EQL(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minResponseActionVersionSupport, versionutils.FlavorAny)
+
 	resourceName := securityDetectionRuleResourceName
 	createRuleName := testAccRandomizedRuleName("test-eql-rule")
 	updatedRuleName := testAccRandomizedRuleName("test-eql-rule-updated")
@@ -324,7 +324,6 @@ func TestAccResourceSecurityDetectionRule_EQL(t *testing.T) {
 		CheckDestroy: testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -394,7 +393,6 @@ func TestAccResourceSecurityDetectionRule_EQL(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
@@ -469,6 +467,8 @@ func TestAccResourceSecurityDetectionRule_EQL(t *testing.T) {
 }
 
 func TestAccResourceSecurityDetectionRule_ESQL(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minResponseActionVersionSupport, versionutils.FlavorAny)
+
 	resourceName := securityDetectionRuleResourceName
 	createRuleName := testAccRandomizedRuleName("test-esql-rule")
 	updatedRuleName := testAccRandomizedRuleName("test-esql-rule-updated")
@@ -478,7 +478,6 @@ func TestAccResourceSecurityDetectionRule_ESQL(t *testing.T) {
 		CheckDestroy: testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -555,7 +554,6 @@ func TestAccResourceSecurityDetectionRule_ESQL(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
@@ -627,6 +625,8 @@ func TestAccResourceSecurityDetectionRule_ESQL(t *testing.T) {
 }
 
 func TestAccResourceSecurityDetectionRule_MachineLearning(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minResponseActionVersionSupport, versionutils.FlavorAny)
+
 	resourceName := securityDetectionRuleResourceName
 	createRuleName := testAccRandomizedRuleName("test-ml-rule")
 	updatedRuleName := testAccRandomizedRuleName("test-ml-rule-updated")
@@ -636,7 +636,6 @@ func TestAccResourceSecurityDetectionRule_MachineLearning(t *testing.T) {
 		CheckDestroy: testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -711,7 +710,6 @@ func TestAccResourceSecurityDetectionRule_MachineLearning(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
@@ -794,6 +792,8 @@ func TestAccResourceSecurityDetectionRule_MachineLearning(t *testing.T) {
 }
 
 func TestAccResourceSecurityDetectionRule_NewTerms(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minResponseActionVersionSupport, versionutils.FlavorAny)
+
 	resourceName := securityDetectionRuleResourceName
 	createRuleName := testAccRandomizedRuleName("test-new-terms-rule")
 	updatedRuleName := testAccRandomizedRuleName("test-new-terms-rule-updated")
@@ -803,7 +803,6 @@ func TestAccResourceSecurityDetectionRule_NewTerms(t *testing.T) {
 		CheckDestroy: testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -885,7 +884,6 @@ func TestAccResourceSecurityDetectionRule_NewTerms(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
@@ -946,6 +944,8 @@ func TestAccResourceSecurityDetectionRule_NewTerms(t *testing.T) {
 }
 
 func TestAccResourceSecurityDetectionRule_SavedQuery(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minResponseActionVersionSupport, versionutils.FlavorAny)
+
 	resourceName := securityDetectionRuleResourceName
 	createRuleName := testAccRandomizedRuleName("test-saved-query-rule")
 	updatedRuleName := testAccRandomizedRuleName("test-saved-query-rule-updated")
@@ -955,7 +955,6 @@ func TestAccResourceSecurityDetectionRule_SavedQuery(t *testing.T) {
 		CheckDestroy: testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -1034,7 +1033,6 @@ func TestAccResourceSecurityDetectionRule_SavedQuery(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
@@ -1119,6 +1117,8 @@ func TestAccResourceSecurityDetectionRule_SavedQuery(t *testing.T) {
 }
 
 func TestAccResourceSecurityDetectionRule_ThreatMatch(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minResponseActionVersionSupport, versionutils.FlavorAny)
+
 	resourceName := securityDetectionRuleResourceName
 	createRuleName := testAccRandomizedRuleName("test-threat-match-rule")
 	updatedRuleName := testAccRandomizedRuleName("test-threat-match-rule-updated")
@@ -1128,7 +1128,6 @@ func TestAccResourceSecurityDetectionRule_ThreatMatch(t *testing.T) {
 		CheckDestroy: testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -1215,7 +1214,6 @@ func TestAccResourceSecurityDetectionRule_ThreatMatch(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
@@ -1300,6 +1298,8 @@ func TestAccResourceSecurityDetectionRule_ThreatMatch(t *testing.T) {
 }
 
 func TestAccResourceSecurityDetectionRule_ThreatMatch_ThreatFilters(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minResponseActionVersionSupport, versionutils.FlavorAny)
+
 	resourceName := securityDetectionRuleResourceName
 	ruleID := "threat-filters-" + sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	reproRuleName := testAccRandomizedRuleName("test-threat-filters-repro")
@@ -1310,7 +1310,6 @@ func TestAccResourceSecurityDetectionRule_ThreatMatch_ThreatFilters(t *testing.T
 		CheckDestroy: testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("repro"),
 				ConfigVariables: config.Variables{
@@ -1340,7 +1339,6 @@ func TestAccResourceSecurityDetectionRule_ThreatMatch_ThreatFilters(t *testing.T
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty"),
 				ConfigVariables: config.Variables{
@@ -1356,7 +1354,6 @@ func TestAccResourceSecurityDetectionRule_ThreatMatch_ThreatFilters(t *testing.T
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty"),
 				ConfigVariables: config.Variables{
@@ -1371,6 +1368,8 @@ func TestAccResourceSecurityDetectionRule_ThreatMatch_ThreatFilters(t *testing.T
 }
 
 func TestAccResourceSecurityDetectionRule_Threshold(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minResponseActionVersionSupport, versionutils.FlavorAny)
+
 	resourceName := securityDetectionRuleResourceName
 	createRuleName := testAccRandomizedRuleName("test-threshold-rule")
 	updatedRuleName := testAccRandomizedRuleName("test-threshold-rule-updated")
@@ -1380,7 +1379,6 @@ func TestAccResourceSecurityDetectionRule_Threshold(t *testing.T) {
 		CheckDestroy: testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -1457,7 +1455,6 @@ func TestAccResourceSecurityDetectionRule_Threshold(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
@@ -1609,6 +1606,8 @@ func testAccCheckSecurityDetectionRuleDestroy(s *terraform.State) error {
 }
 
 func TestAccResourceSecurityDetectionRule_WithConnectorAction(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minResponseActionVersionSupport, versionutils.FlavorAny)
+
 	resourceName := securityDetectionRuleResourceName
 	connectorResourceName := "elasticstack_kibana_action_connector.test"
 	createRuleName := testAccRandomizedRuleName("test-rule-with-action")
@@ -1621,7 +1620,6 @@ func TestAccResourceSecurityDetectionRule_WithConnectorAction(t *testing.T) {
 		CheckDestroy: testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -1673,7 +1671,6 @@ func TestAccResourceSecurityDetectionRule_WithConnectorAction(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
@@ -1716,6 +1713,8 @@ func TestAccResourceSecurityDetectionRule_WithConnectorAction(t *testing.T) {
 }
 
 func TestAccResourceSecurityDetectionRule_BuildingBlockType(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minResponseActionVersionSupport, versionutils.FlavorAny)
+
 	resourceName := securityDetectionRuleResourceName
 	createRuleName := testAccRandomizedRuleName("test-building-block-rule")
 	updatedRuleName := testAccRandomizedRuleName("test-building-block-rule-updated")
@@ -1726,7 +1725,6 @@ func TestAccResourceSecurityDetectionRule_BuildingBlockType(t *testing.T) {
 		CheckDestroy: testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -1750,7 +1748,6 @@ func TestAccResourceSecurityDetectionRule_BuildingBlockType(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
@@ -1771,7 +1768,6 @@ func TestAccResourceSecurityDetectionRule_BuildingBlockType(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("removed"),
 				ConfigVariables: config.Variables{
@@ -1790,6 +1786,8 @@ func TestAccResourceSecurityDetectionRule_BuildingBlockType(t *testing.T) {
 }
 
 func TestAccResourceSecurityDetectionRule_QueryMinimal(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionSupport, versionutils.FlavorAny)
+
 	resourceName := securityDetectionRuleResourceName
 	createRuleName := testAccRandomizedRuleName("test-query-rule-minimal")
 	updatedRuleName := testAccRandomizedRuleName("test-query-rule-minimal-updated")
@@ -1799,7 +1797,6 @@ func TestAccResourceSecurityDetectionRule_QueryMinimal(t *testing.T) {
 		CheckDestroy: testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -1840,7 +1837,6 @@ func TestAccResourceSecurityDetectionRule_QueryMinimal(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
@@ -1886,6 +1882,8 @@ func TestAccResourceSecurityDetectionRule_QueryMinimal(t *testing.T) {
 }
 
 func TestAccResourceSecurityDetectionRule_QueryMinimalWithSpace(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionSupport, versionutils.FlavorAny)
+
 	resourceName := securityDetectionRuleResourceName
 	spaceResourceName := "elasticstack_kibana_space.test"
 	spaceID := fmt.Sprintf("test-space-%s", uuid.New().String()[:8])
@@ -1897,7 +1895,6 @@ func TestAccResourceSecurityDetectionRule_QueryMinimalWithSpace(t *testing.T) {
 		CheckDestroy: testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -1945,7 +1942,6 @@ func TestAccResourceSecurityDetectionRule_QueryMinimalWithSpace(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
@@ -1994,7 +1990,6 @@ func TestAccResourceSecurityDetectionRule_QueryMinimalWithSpace(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
@@ -2010,6 +2005,8 @@ func TestAccResourceSecurityDetectionRule_QueryMinimalWithSpace(t *testing.T) {
 }
 
 func TestAccResourceSecurityDetectionRule_EQLMinimal(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionSupport, versionutils.FlavorAny)
+
 	resourceName := securityDetectionRuleResourceName
 	createRuleName := testAccRandomizedRuleName("test-eql-rule-minimal")
 	updatedRuleName := testAccRandomizedRuleName("test-eql-rule-minimal-updated")
@@ -2019,7 +2016,6 @@ func TestAccResourceSecurityDetectionRule_EQLMinimal(t *testing.T) {
 		CheckDestroy: testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -2061,7 +2057,6 @@ func TestAccResourceSecurityDetectionRule_EQLMinimal(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
@@ -2080,6 +2075,8 @@ func TestAccResourceSecurityDetectionRule_EQLMinimal(t *testing.T) {
 }
 
 func TestAccResourceSecurityDetectionRule_ESQLMinimal(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionSupport, versionutils.FlavorAny)
+
 	resourceName := securityDetectionRuleResourceName
 	createRuleName := testAccRandomizedRuleName("test-esql-rule-minimal")
 	updatedRuleName := testAccRandomizedRuleName("test-esql-rule-minimal-updated")
@@ -2089,7 +2086,6 @@ func TestAccResourceSecurityDetectionRule_ESQLMinimal(t *testing.T) {
 		CheckDestroy: testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -2130,7 +2126,6 @@ func TestAccResourceSecurityDetectionRule_ESQLMinimal(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
@@ -2149,6 +2144,8 @@ func TestAccResourceSecurityDetectionRule_ESQLMinimal(t *testing.T) {
 }
 
 func TestAccResourceSecurityDetectionRule_MachineLearningMinimal(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionSupport, versionutils.FlavorAny)
+
 	resourceName := securityDetectionRuleResourceName
 	createRuleName := testAccRandomizedRuleName("test-ml-rule-minimal")
 	updatedRuleName := testAccRandomizedRuleName("test-ml-rule-minimal-updated")
@@ -2158,7 +2155,6 @@ func TestAccResourceSecurityDetectionRule_MachineLearningMinimal(t *testing.T) {
 		CheckDestroy: testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -2198,7 +2194,6 @@ func TestAccResourceSecurityDetectionRule_MachineLearningMinimal(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
@@ -2219,6 +2214,8 @@ func TestAccResourceSecurityDetectionRule_MachineLearningMinimal(t *testing.T) {
 }
 
 func TestAccResourceSecurityDetectionRule_NewTermsMinimal(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionSupport, versionutils.FlavorAny)
+
 	resourceName := securityDetectionRuleResourceName
 	createRuleName := testAccRandomizedRuleName("test-new-terms-rule-minimal")
 	updatedRuleName := testAccRandomizedRuleName("test-new-terms-rule-minimal-updated")
@@ -2228,7 +2225,6 @@ func TestAccResourceSecurityDetectionRule_NewTermsMinimal(t *testing.T) {
 		CheckDestroy: testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -2271,7 +2267,6 @@ func TestAccResourceSecurityDetectionRule_NewTermsMinimal(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
@@ -2292,6 +2287,8 @@ func TestAccResourceSecurityDetectionRule_NewTermsMinimal(t *testing.T) {
 }
 
 func TestAccResourceSecurityDetectionRule_SavedQueryMinimal(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionSupport, versionutils.FlavorAny)
+
 	resourceName := securityDetectionRuleResourceName
 	createRuleName := testAccRandomizedRuleName("test-saved-query-rule-minimal")
 	updatedRuleName := testAccRandomizedRuleName("test-saved-query-rule-minimal-updated")
@@ -2301,7 +2298,6 @@ func TestAccResourceSecurityDetectionRule_SavedQueryMinimal(t *testing.T) {
 		CheckDestroy: testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -2342,7 +2338,6 @@ func TestAccResourceSecurityDetectionRule_SavedQueryMinimal(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
@@ -2362,6 +2357,8 @@ func TestAccResourceSecurityDetectionRule_SavedQueryMinimal(t *testing.T) {
 }
 
 func TestAccResourceSecurityDetectionRule_ThreatMatchMinimal(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionSupport, versionutils.FlavorAny)
+
 	resourceName := securityDetectionRuleResourceName
 	createRuleName := testAccRandomizedRuleName("test-threat-match-rule-minimal")
 	updatedRuleName := testAccRandomizedRuleName("test-threat-match-rule-minimal-updated")
@@ -2371,7 +2368,6 @@ func TestAccResourceSecurityDetectionRule_ThreatMatchMinimal(t *testing.T) {
 		CheckDestroy: testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -2417,7 +2413,6 @@ func TestAccResourceSecurityDetectionRule_ThreatMatchMinimal(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
@@ -2439,6 +2434,8 @@ func TestAccResourceSecurityDetectionRule_ThreatMatchMinimal(t *testing.T) {
 }
 
 func TestAccResourceSecurityDetectionRule_ThresholdMinimal(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionSupport, versionutils.FlavorAny)
+
 	resourceName := securityDetectionRuleResourceName
 	createRuleName := testAccRandomizedRuleName("test-threshold-rule-minimal")
 	updatedRuleName := testAccRandomizedRuleName("test-threshold-rule-minimal-updated")
@@ -2448,7 +2445,6 @@ func TestAccResourceSecurityDetectionRule_ThresholdMinimal(t *testing.T) {
 		CheckDestroy: testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -2491,7 +2487,6 @@ func TestAccResourceSecurityDetectionRule_ThresholdMinimal(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
@@ -2512,6 +2507,8 @@ func TestAccResourceSecurityDetectionRule_ThresholdMinimal(t *testing.T) {
 }
 
 func TestAccResourceSecurityDetectionRule_QueryWithMitreThreat(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionSupport, versionutils.FlavorAny)
+
 	resourceName := securityDetectionRuleResourceName
 	createRuleName := testAccRandomizedRuleName("test-query-mitre-rule")
 	updatedRuleName := testAccRandomizedRuleName("test-query-mitre-rule-updated")
@@ -2521,7 +2518,6 @@ func TestAccResourceSecurityDetectionRule_QueryWithMitreThreat(t *testing.T) {
 		CheckDestroy: testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -2585,7 +2581,6 @@ func TestAccResourceSecurityDetectionRule_QueryWithMitreThreat(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
@@ -2655,6 +2650,8 @@ func TestAccResourceSecurityDetectionRule_QueryWithMitreThreat(t *testing.T) {
 // TestAccResourceSecurityDetectionRule_ValidateConfig tests the ValidateConfig method
 // to ensure proper validation of index vs data_view_id configuration
 func TestAccResourceSecurityDetectionRule_ValidateConfig(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionSupport, versionutils.FlavorAny)
+
 	indexOnlyRuleName := testAccRandomizedRuleName("test-validation-index-only")
 	dataviewOnlyRuleName := testAccRandomizedRuleName("test-validation-dataview-only")
 	bothRuleName := testAccRandomizedRuleName("test-validation-both")
@@ -2666,7 +2663,6 @@ func TestAccResourceSecurityDetectionRule_ValidateConfig(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Test 1: Valid config with only index (should succeed)
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("index_only"),
 				ConfigVariables: config.Variables{
@@ -2680,7 +2676,6 @@ func TestAccResourceSecurityDetectionRule_ValidateConfig(t *testing.T) {
 			},
 			// Test 2: Valid config with only data_view_id (should succeed)
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("dataview_only"),
 				ConfigVariables: config.Variables{
@@ -2694,7 +2689,6 @@ func TestAccResourceSecurityDetectionRule_ValidateConfig(t *testing.T) {
 			},
 			// Test 3: Invalid config with both index and data_view_id (should fail)
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("both"),
 				ConfigVariables: config.Variables{
@@ -2705,7 +2699,6 @@ func TestAccResourceSecurityDetectionRule_ValidateConfig(t *testing.T) {
 			},
 			// Test 4: Invalid config with neither index nor data_view_id (should fail)
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("neither"),
 				ConfigVariables: config.Variables{
@@ -2716,7 +2709,6 @@ func TestAccResourceSecurityDetectionRule_ValidateConfig(t *testing.T) {
 			},
 			// Test 5: ESQL rule type should skip validation (both index and data_view_id allowed to be unset)
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("esql_type"),
 				ConfigVariables: config.Variables{
@@ -2731,7 +2723,6 @@ func TestAccResourceSecurityDetectionRule_ValidateConfig(t *testing.T) {
 			},
 			// Test 6: Machine learning rule type should skip validation (both index and data_view_id allowed to be unset)
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("ml_type"),
 				ConfigVariables: config.Variables{
@@ -2752,6 +2743,8 @@ func TestAccResourceSecurityDetectionRule_ValidateConfig(t *testing.T) {
 var stateUpgradeParamsFromMapCreateConfig string
 
 func TestAccResourceSecurityDetectionRule_StateUpgradeParamsFromMap(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minResponseActionVersionSupport, versionutils.FlavorAny)
+
 	resourceName := securityDetectionRuleResourceName
 	connectorResourceName := "elasticstack_kibana_action_connector.test"
 	createRuleName := testAccRandomizedRuleName("test-state-upgrade-rule")
@@ -2764,7 +2757,6 @@ func TestAccResourceSecurityDetectionRule_StateUpgradeParamsFromMap(t *testing.T
 		Steps: []resource.TestStep{
 			{
 				// Create the detection rule with the last provider version where actions[*].params was a map(string).
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
 				ExternalProviders: map[string]resource.ExternalProvider{
 					"elasticstack": {
 						Source:            "elastic/elasticstack",
@@ -2787,7 +2779,6 @@ func TestAccResourceSecurityDetectionRule_StateUpgradeParamsFromMap(t *testing.T
 			{
 				// Re-apply with the current provider. The state upgrader converts params from map(string) to a
 				// JSON-encoded string, so we write params as a string in this config.
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("current"),
 				ConfigVariables: config.Variables{

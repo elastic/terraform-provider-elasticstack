@@ -34,13 +34,14 @@ import (
 func TestAccResourceDashboardSyntheticsMonitors(t *testing.T) {
 	dashboardTitle := "Test Dashboard Synthetics Monitors " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
+	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			// 3.1: Bare panel — no synthetics_monitors_config block.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("bare_panel"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
@@ -59,7 +60,6 @@ func TestAccResourceDashboardSyntheticsMonitors(t *testing.T) {
 			// 3.4: Plan stability — no changes after bare panel create.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("bare_panel"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
@@ -69,7 +69,6 @@ func TestAccResourceDashboardSyntheticsMonitors(t *testing.T) {
 			// Import bare panel.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("bare_panel"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
@@ -81,7 +80,6 @@ func TestAccResourceDashboardSyntheticsMonitors(t *testing.T) {
 			// 3.2: Panel with display settings and some filters (projects and tags).
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_some_filters"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
@@ -103,7 +101,6 @@ func TestAccResourceDashboardSyntheticsMonitors(t *testing.T) {
 			// 3.4: Plan stability after filters create.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_some_filters"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
@@ -113,7 +110,6 @@ func TestAccResourceDashboardSyntheticsMonitors(t *testing.T) {
 			// 3.3: Panel with all currently-supported filter dimensions.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("all_filter_dimensions"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
@@ -133,7 +129,6 @@ func TestAccResourceDashboardSyntheticsMonitors(t *testing.T) {
 			// Import with all filter dimensions.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("all_filter_dimensions"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
@@ -150,13 +145,14 @@ func TestAccResourceDashboardSyntheticsMonitors(t *testing.T) {
 // 3.7: config_json on a synthetics_monitors panel is rejected.
 // synthetics_monitors_config on a non-synthetics_monitors panel is rejected.
 func TestAccResourceDashboardSyntheticsMonitorsInvalidConfig(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			// synthetics_monitors_config on type=vis is rejected.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("invalid_panel_type"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable("unused"),
@@ -166,7 +162,6 @@ func TestAccResourceDashboardSyntheticsMonitorsInvalidConfig(t *testing.T) {
 			// config_json on type=synthetics_monitors is rejected.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("invalid_config_json"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable("unused"),

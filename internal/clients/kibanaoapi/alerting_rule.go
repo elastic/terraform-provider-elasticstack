@@ -22,21 +22,22 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 func CreateAlertingRule(ctx context.Context, client *Client, spaceID string, rule models.AlertingRule) (*models.AlertingRule, diag.Diagnostics) {
-	body := buildCreateRequestBody(rule)
+	body, err := buildCreateRequestBody(rule)
+	if err != nil {
+		return nil, diag.Diagnostics{diag.NewErrorDiagnostic("Unable to build alerting rule create request", err.Error())}
+	}
 
 	var req kbapi.PostAlertingRuleIdJSONRequestBody
-	err := req.FromAlertingRuleAPIBodyGeneric(body)
+	err = req.FromAlertingRuleAPIBodyGeneric(body)
 	if err != nil {
 		return nil, diag.Diagnostics{diag.NewErrorDiagnostic("Unable to build alerting rule create request", err.Error())}
 	}
@@ -53,13 +54,11 @@ func CreateAlertingRule(ctx context.Context, client *Client, spaceID string, rul
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		if resp.JSON200 == nil {
-			return nil, diag.Diagnostics{diag.NewErrorDiagnostic(
-				"Create rule returned an empty response",
-				fmt.Sprintf("Create rule returned an empty response with HTTP status code [%d].", resp.StatusCode()),
-			)}
+		unwrapped, diags := diagutil.UnwrapJSON200(resp.JSON200, "alerting rule")
+		if diags.HasError() {
+			return nil, diags
 		}
-		return ConvertResponseToModel(spaceID, resp.JSON200)
+		return ConvertResponseToModel(spaceID, unwrapped)
 	case http.StatusConflict:
 		return nil, diag.Diagnostics{diag.NewErrorDiagnostic(
 			"Rule ID conflict",
@@ -82,13 +81,11 @@ func GetAlertingRule(ctx context.Context, client *Client, spaceID string, ruleID
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		if resp.JSON200 == nil {
-			return nil, diag.Diagnostics{diag.NewErrorDiagnostic(
-				"Get rule returned an empty response",
-				fmt.Sprintf("Get rule returned an empty response with HTTP status code [%d].", resp.StatusCode()),
-			)}
+		unwrapped, diags := diagutil.UnwrapJSON200(resp.JSON200, "alerting rule")
+		if diags.HasError() {
+			return nil, diags
 		}
-		return ConvertResponseToModel(spaceID, resp.JSON200)
+		return ConvertResponseToModel(spaceID, unwrapped)
 	case http.StatusNotFound:
 		return nil, nil
 	default:
@@ -97,7 +94,10 @@ func GetAlertingRule(ctx context.Context, client *Client, spaceID string, ruleID
 }
 
 func UpdateAlertingRule(ctx context.Context, client *Client, spaceID string, rule models.AlertingRule) (*models.AlertingRule, diag.Diagnostics) {
-	body := buildUpdateRequestBody(rule)
+	body, err := buildUpdateRequestBody(rule)
+	if err != nil {
+		return nil, diag.Diagnostics{diag.NewErrorDiagnostic("Unable to build alerting rule update request", err.Error())}
+	}
 
 	resp, err := client.API.PutAlertingRuleIdWithResponse(
 		ctx,
@@ -111,38 +111,16 @@ func UpdateAlertingRule(ctx context.Context, client *Client, spaceID string, rul
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		if resp.JSON200 == nil {
-			return nil, diag.Diagnostics{diag.NewErrorDiagnostic(
-				"Update rule returned an empty response",
-				fmt.Sprintf("Update rule returned an empty response with HTTP status code [%d].", resp.StatusCode()),
-			)}
+		unwrapped, diags := diagutil.UnwrapJSON200(resp.JSON200, "alerting rule")
+		if diags.HasError() {
+			return nil, diags
 		}
 
-		var wasEnabled bool
-		if data, err := json.Marshal(resp.JSON200); err == nil {
-			var temp struct {
-				Enabled bool `json:"enabled"`
-			}
-			if err := json.Unmarshal(data, &temp); err == nil {
-				wasEnabled = temp.Enabled
-			}
+		if diags := reconcileRuleEnabled(ctx, client, spaceID, rule, unwrapped); diags.HasError() {
+			return nil, diags
 		}
 
-		shouldBeEnabled := rule.Enabled != nil && *rule.Enabled
-
-		if shouldBeEnabled && !wasEnabled {
-			if diags := EnableAlertingRule(ctx, client, spaceID, rule.RuleID); diags.HasError() {
-				return nil, diags
-			}
-		}
-
-		if !shouldBeEnabled && wasEnabled {
-			if diags := DisableAlertingRule(ctx, client, spaceID, rule.RuleID); diags.HasError() {
-				return nil, diags
-			}
-		}
-
-		returnedRule, convDiags := ConvertResponseToModel(spaceID, resp.JSON200)
+		returnedRule, convDiags := ConvertResponseToModel(spaceID, unwrapped)
 		if convDiags.HasError() {
 			return nil, convDiags
 		}
@@ -167,14 +145,7 @@ func DeleteAlertingRule(ctx context.Context, client *Client, spaceID string, rul
 		return diag.Diagnostics{diag.NewErrorDiagnostic("Unable to delete alerting rule", err.Error())}
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusNoContent, http.StatusOK:
-		return nil
-	case http.StatusNotFound:
-		return nil
-	default:
-		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusNoContent, http.StatusOK, http.StatusNotFound)
 }
 
 func EnableAlertingRule(ctx context.Context, client *Client, spaceID string, ruleID string) diag.Diagnostics {
@@ -187,12 +158,7 @@ func EnableAlertingRule(ctx context.Context, client *Client, spaceID string, rul
 		return diag.Diagnostics{diag.NewErrorDiagnostic("Unable to enable alerting rule", err.Error())}
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusNoContent, http.StatusOK:
-		return nil
-	default:
-		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusNoContent, http.StatusOK)
 }
 
 func DisableAlertingRule(ctx context.Context, client *Client, spaceID string, ruleID string) diag.Diagnostics {
@@ -207,562 +173,29 @@ func DisableAlertingRule(ctx context.Context, client *Client, spaceID string, ru
 		return diag.Diagnostics{diag.NewErrorDiagnostic("Unable to disable alerting rule", err.Error())}
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusNoContent, http.StatusOK:
-		return nil
-	default:
-		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusNoContent, http.StatusOK)
 }
 
-func ConvertResponseToModel(spaceID string, resp any) (*models.AlertingRule, diag.Diagnostics) {
-	if resp == nil {
-		return nil, nil
-	}
-
-	data, err := json.Marshal(resp)
-	if err != nil {
-		return nil, diag.Diagnostics{diag.NewErrorDiagnostic("Failed to marshal response", err.Error())}
-	}
-
-	var intermediate struct {
-		ID         string `json:"id"`
-		Name       string `json:"name"`
-		Consumer   string `json:"consumer"`
-		Enabled    bool   `json:"enabled"`
-		RuleTypeID string `json:"rule_type_id"`
-		Schedule   struct {
-			Interval string `json:"interval"`
-		} `json:"schedule"`
-		Params          map[string]any `json:"params"`
-		Tags            []string       `json:"tags"`
-		NotifyWhen      *string        `json:"notify_when"`
-		Throttle        *string        `json:"throttle"`
-		ScheduledTaskID *string        `json:"scheduled_task_id"`
-		ExecutionStatus struct {
-			LastExecutionDate string `json:"last_execution_date"`
-			Status            string `json:"status"`
-		} `json:"execution_status"`
-		AlertDelay *struct {
-			Active float32 `json:"active"`
-		} `json:"alert_delay"`
-		Flapping *struct {
-			Enabled               *bool   `json:"enabled,omitempty"`
-			LookBackWindow        float64 `json:"look_back_window"`
-			StatusChangeThreshold float64 `json:"status_change_threshold"`
-		} `json:"flapping"`
-		Actions []struct {
-			Group     *string        `json:"group"`
-			ID        string         `json:"id"`
-			Params    map[string]any `json:"params"`
-			Frequency *struct {
-				NotifyWhen string  `json:"notify_when"`
-				Summary    bool    `json:"summary"`
-				Throttle   *string `json:"throttle"`
-			} `json:"frequency"`
-			AlertsFilter *struct {
-				Query *struct {
-					Kql string `json:"kql"`
-				} `json:"query"`
-				Timeframe *struct {
-					Days  []int `json:"days"`
-					Hours struct {
-						Start string `json:"start"`
-						End   string `json:"end"`
-					} `json:"hours"`
-					Timezone string `json:"timezone"`
-				} `json:"timeframe"`
-			} `json:"alerts_filter"`
-		} `json:"actions"`
-	}
-
-	if err := json.Unmarshal(data, &intermediate); err != nil {
-		return nil, diag.Diagnostics{diag.NewErrorDiagnostic("Failed to unmarshal response", err.Error())}
-	}
-
-	if intermediate.ID == "" || intermediate.Name == "" || intermediate.Consumer == "" || intermediate.RuleTypeID == "" {
-		return nil, diag.Diagnostics{diag.NewErrorDiagnostic(
-			"Invalid rule response",
-			"Response is missing required fields (id, name, consumer, or rule_type_id)",
-		)}
-	}
-
-	actions := []models.AlertingRuleAction{}
-	for _, action := range intermediate.Actions {
-		a := models.AlertingRuleAction{
-			Group:  valueOrDefault(action.Group, "default"),
-			ID:     action.ID,
-			Params: action.Params,
+func reconcileRuleEnabled(ctx context.Context, client *Client, spaceID string, rule models.AlertingRule, unwrapped any) diag.Diagnostics {
+	var wasEnabled bool
+	if data, err := json.Marshal(unwrapped); err == nil {
+		var temp struct {
+			Enabled bool `json:"enabled"`
 		}
-
-		if action.Frequency != nil {
-			a.Frequency = &models.ActionFrequency{
-				Summary:    action.Frequency.Summary,
-				NotifyWhen: action.Frequency.NotifyWhen,
-				Throttle:   action.Frequency.Throttle,
-			}
-		}
-
-		if action.AlertsFilter != nil {
-			a.AlertsFilter = &models.ActionAlertsFilter{}
-
-			if action.AlertsFilter.Query != nil {
-				a.AlertsFilter.Kql = &action.AlertsFilter.Query.Kql
-			}
-
-			if action.AlertsFilter.Timeframe != nil {
-				days := make([]int32, len(action.AlertsFilter.Timeframe.Days))
-				for i, d := range action.AlertsFilter.Timeframe.Days {
-					days[i] = int32(d)
-				}
-				a.AlertsFilter.Timeframe = &models.AlertsFilterTimeframe{
-					Days:       days,
-					Timezone:   action.AlertsFilter.Timeframe.Timezone,
-					HoursStart: action.AlertsFilter.Timeframe.Hours.Start,
-					HoursEnd:   action.AlertsFilter.Timeframe.Hours.End,
-				}
-			}
-		}
-
-		actions = append(actions, a)
-	}
-
-	var alertDelay *float32
-	if intermediate.AlertDelay != nil {
-		alertDelay = &intermediate.AlertDelay.Active
-	}
-
-	var flapping *models.AlertingRuleFlapping
-	if intermediate.Flapping != nil {
-		flapping = &models.AlertingRuleFlapping{
-			LookBackWindow:        int64(intermediate.Flapping.LookBackWindow),
-			StatusChangeThreshold: int64(intermediate.Flapping.StatusChangeThreshold),
-			Enabled:               intermediate.Flapping.Enabled,
+		if err := json.Unmarshal(data, &temp); err == nil {
+			wasEnabled = temp.Enabled
 		}
 	}
 
-	var lastExecutionDate *time.Time
-	if intermediate.ExecutionStatus.LastExecutionDate != "" {
-		if parsed, err := time.Parse(time.RFC3339, intermediate.ExecutionStatus.LastExecutionDate); err == nil {
-			lastExecutionDate = &parsed
-		}
+	shouldBeEnabled := rule.Enabled != nil && *rule.Enabled
+
+	if shouldBeEnabled && !wasEnabled {
+		return EnableAlertingRule(ctx, client, spaceID, rule.RuleID)
 	}
 
-	var status *string
-	if intermediate.ExecutionStatus.Status != "" {
-		status = &intermediate.ExecutionStatus.Status
+	if !shouldBeEnabled && wasEnabled {
+		return DisableAlertingRule(ctx, client, spaceID, rule.RuleID)
 	}
 
-	return &models.AlertingRule{
-		RuleID:     intermediate.ID,
-		SpaceID:    spaceID,
-		Name:       intermediate.Name,
-		Consumer:   intermediate.Consumer,
-		NotifyWhen: intermediate.NotifyWhen,
-		Params:     intermediate.Params,
-		RuleTypeID: intermediate.RuleTypeID,
-		Schedule: models.AlertingRuleSchedule{
-			Interval: intermediate.Schedule.Interval,
-		},
-		Enabled:         &intermediate.Enabled,
-		Tags:            intermediate.Tags,
-		Throttle:        intermediate.Throttle,
-		ScheduledTaskID: intermediate.ScheduledTaskID,
-		ExecutionStatus: models.AlertingRuleExecutionStatus{
-			LastExecutionDate: lastExecutionDate,
-			Status:            status,
-		},
-		Actions:    actions,
-		AlertDelay: alertDelay,
-		Flapping:   flapping,
-	}, nil
-}
-
-func buildCreateRequestBody(rule models.AlertingRule) kbapi.AlertingRuleAPIBodyGeneric {
-	body := kbapi.AlertingRuleAPIBodyGeneric{
-		Consumer:   rule.Consumer,
-		Name:       rule.Name,
-		RuleTypeId: rule.RuleTypeID,
-		Schedule: struct {
-			Interval string `json:"interval"`
-		}{
-			Interval: rule.Schedule.Interval,
-		},
-	}
-
-	if rule.Params != nil {
-		params := kbapi.AlertingRuleAPIParams(typeutils.PointerInterfaceMapFromAnyMap(rule.Params))
-		body.Params = &params
-	}
-
-	if rule.Enabled != nil {
-		body.Enabled = rule.Enabled
-	}
-
-	if rule.NotifyWhen != nil && *rule.NotifyWhen != "" {
-		notifyWhen := kbapi.AlertingRuleAPIBodyGenericNotifyWhen(*rule.NotifyWhen)
-		body.NotifyWhen = &notifyWhen
-	}
-
-	if rule.Throttle != nil {
-		body.Throttle = rule.Throttle
-	}
-
-	if rule.Tags != nil {
-		tags := rule.Tags
-		body.Tags = &tags
-	}
-
-	if rule.AlertDelay != nil {
-		body.AlertDelay = &struct {
-			Active float32 `json:"active"`
-		}{
-			Active: *rule.AlertDelay,
-		}
-	}
-
-	if w := flappingWireFromModel(rule.Flapping); w != nil {
-		body.Flapping = w
-	}
-
-	if len(rule.Actions) > 0 {
-		actions := make([]struct {
-			AlertsFilter *struct {
-				Query *struct {
-					Dsl     *string `json:"dsl,omitempty"`
-					Filters []struct {
-						State *struct {
-							Store kbapi.AlertingRuleAPIBodyGenericActionsAlertsFilterQueryFiltersStateStore `json:"store"`
-						} `json:"$state,omitempty"`
-						Meta  map[string]*any  `json:"meta"`
-						Query *map[string]*any `json:"query,omitempty"`
-					} `json:"filters"`
-					Kql string `json:"kql"`
-				} `json:"query,omitempty"`
-				Timeframe *struct {
-					Days  []kbapi.AlertingRuleAPIBodyGenericActionsAlertsFilterTimeframeDays `json:"days"`
-					Hours struct {
-						End   string `json:"end"`
-						Start string `json:"start"`
-					} `json:"hours"`
-					Timezone string `json:"timezone"`
-				} `json:"timeframe,omitempty"`
-			} `json:"alerts_filter,omitempty"`
-			Frequency *struct {
-				NotifyWhen kbapi.AlertingRuleAPIBodyGenericActionsFrequencyNotifyWhen `json:"notify_when"`
-				Summary    bool                                                       `json:"summary"`
-				Throttle   *string                                                    `json:"throttle,omitempty"`
-			} `json:"frequency,omitempty"`
-			Group                   *string          `json:"group,omitempty"`
-			Id                      string           `json:"id"` //nolint:revive // var-naming: API struct field
-			Params                  *map[string]*any `json:"params,omitempty"`
-			UseAlertDataForTemplate *bool            `json:"use_alert_data_for_template,omitempty"`
-			Uuid                    *string          `json:"uuid,omitempty"` //nolint:revive // var-naming: API struct field
-		}, len(rule.Actions))
-
-		for i, action := range rule.Actions {
-			actions[i].Id = action.ID
-			if action.Group != "" {
-				group := action.Group
-				actions[i].Group = &group
-			}
-			if action.Params != nil {
-				params := typeutils.PointerInterfaceMapFromAnyMap(action.Params)
-				actions[i].Params = &params
-			}
-
-			if action.Frequency != nil {
-				actions[i].Frequency = &struct {
-					NotifyWhen kbapi.AlertingRuleAPIBodyGenericActionsFrequencyNotifyWhen `json:"notify_when"`
-					Summary    bool                                                       `json:"summary"`
-					Throttle   *string                                                    `json:"throttle,omitempty"`
-				}{
-					NotifyWhen: kbapi.AlertingRuleAPIBodyGenericActionsFrequencyNotifyWhen(action.Frequency.NotifyWhen),
-					Summary:    action.Frequency.Summary,
-					Throttle:   action.Frequency.Throttle,
-				}
-			}
-
-			if action.AlertsFilter != nil {
-				filter := &struct {
-					Query *struct {
-						Dsl     *string `json:"dsl,omitempty"`
-						Filters []struct {
-							State *struct {
-								Store kbapi.AlertingRuleAPIBodyGenericActionsAlertsFilterQueryFiltersStateStore `json:"store"`
-							} `json:"$state,omitempty"`
-							Meta  map[string]*any  `json:"meta"`
-							Query *map[string]*any `json:"query,omitempty"`
-						} `json:"filters"`
-						Kql string `json:"kql"`
-					} `json:"query,omitempty"`
-					Timeframe *struct {
-						Days  []kbapi.AlertingRuleAPIBodyGenericActionsAlertsFilterTimeframeDays `json:"days"`
-						Hours struct {
-							End   string `json:"end"`
-							Start string `json:"start"`
-						} `json:"hours"`
-						Timezone string `json:"timezone"`
-					} `json:"timeframe,omitempty"`
-				}{}
-
-				if action.AlertsFilter.Kql != nil {
-					filter.Query = &struct {
-						Dsl     *string `json:"dsl,omitempty"`
-						Filters []struct {
-							State *struct {
-								Store kbapi.AlertingRuleAPIBodyGenericActionsAlertsFilterQueryFiltersStateStore `json:"store"`
-							} `json:"$state,omitempty"`
-							Meta  map[string]*any  `json:"meta"`
-							Query *map[string]*any `json:"query,omitempty"`
-						} `json:"filters"`
-						Kql string `json:"kql"`
-					}{
-						Kql: *action.AlertsFilter.Kql,
-						Filters: []struct {
-							State *struct {
-								Store kbapi.AlertingRuleAPIBodyGenericActionsAlertsFilterQueryFiltersStateStore `json:"store"`
-							} `json:"$state,omitempty"`
-							Meta  map[string]*any  `json:"meta"`
-							Query *map[string]*any `json:"query,omitempty"`
-						}{},
-					}
-				}
-
-				if action.AlertsFilter.Timeframe != nil {
-					days := make([]kbapi.AlertingRuleAPIBodyGenericActionsAlertsFilterTimeframeDays, len(action.AlertsFilter.Timeframe.Days))
-					for j, d := range action.AlertsFilter.Timeframe.Days {
-						days[j] = kbapi.AlertingRuleAPIBodyGenericActionsAlertsFilterTimeframeDays(d)
-					}
-
-					filter.Timeframe = &struct {
-						Days  []kbapi.AlertingRuleAPIBodyGenericActionsAlertsFilterTimeframeDays `json:"days"`
-						Hours struct {
-							End   string `json:"end"`
-							Start string `json:"start"`
-						} `json:"hours"`
-						Timezone string `json:"timezone"`
-					}{
-						Days: days,
-						Hours: struct {
-							End   string `json:"end"`
-							Start string `json:"start"`
-						}{
-							Start: action.AlertsFilter.Timeframe.HoursStart,
-							End:   action.AlertsFilter.Timeframe.HoursEnd,
-						},
-						Timezone: action.AlertsFilter.Timeframe.Timezone,
-					}
-				}
-
-				actions[i].AlertsFilter = filter
-			}
-		}
-
-		body.Actions = &actions
-	}
-
-	return body
-}
-
-func buildUpdateRequestBody(rule models.AlertingRule) kbapi.PutAlertingRuleIdJSONRequestBody {
-	body := kbapi.PutAlertingRuleIdJSONRequestBody{
-		Name: rule.Name,
-		Schedule: struct {
-			Interval string `json:"interval"`
-		}{
-			Interval: rule.Schedule.Interval,
-		},
-	}
-
-	if rule.Params != nil {
-		params := typeutils.PointerInterfaceMapFromAnyMap(rule.Params)
-		body.Params = &params
-	}
-
-	if rule.NotifyWhen != nil && *rule.NotifyWhen != "" {
-		notifyWhen := kbapi.PutAlertingRuleIdJSONBodyNotifyWhen(*rule.NotifyWhen)
-		body.NotifyWhen = &notifyWhen
-	}
-
-	if rule.Throttle != nil {
-		body.Throttle = rule.Throttle
-	}
-
-	if rule.Tags != nil {
-		tags := rule.Tags
-		body.Tags = &tags
-	}
-
-	if rule.AlertDelay != nil {
-		body.AlertDelay = &struct {
-			Active float32 `json:"active"`
-		}{
-			Active: *rule.AlertDelay,
-		}
-	}
-
-	if w := flappingWireFromModel(rule.Flapping); w != nil {
-		body.Flapping = w
-	}
-
-	if len(rule.Actions) > 0 {
-		actions := make([]struct {
-			AlertsFilter *struct {
-				Query *struct {
-					Dsl     *string `json:"dsl,omitempty"`
-					Filters []struct {
-						State *struct {
-							Store kbapi.PutAlertingRuleIdJSONBodyActionsAlertsFilterQueryFiltersStateStore `json:"store"`
-						} `json:"$state,omitempty"`
-						Meta  map[string]*any  `json:"meta"`
-						Query *map[string]*any `json:"query,omitempty"`
-					} `json:"filters"`
-					Kql string `json:"kql"`
-				} `json:"query,omitempty"`
-				Timeframe *struct {
-					Days  []kbapi.PutAlertingRuleIdJSONBodyActionsAlertsFilterTimeframeDays `json:"days"`
-					Hours struct {
-						End   string `json:"end"`
-						Start string `json:"start"`
-					} `json:"hours"`
-					Timezone string `json:"timezone"`
-				} `json:"timeframe,omitempty"`
-			} `json:"alerts_filter,omitempty"`
-			Frequency *struct {
-				NotifyWhen kbapi.PutAlertingRuleIdJSONBodyActionsFrequencyNotifyWhen `json:"notify_when"`
-				Summary    bool                                                      `json:"summary"`
-				Throttle   *string                                                   `json:"throttle,omitempty"`
-			} `json:"frequency,omitempty"`
-			Group                   *string          `json:"group,omitempty"`
-			Id                      string           `json:"id"` //nolint:revive // var-naming: API struct field
-			Params                  *map[string]*any `json:"params,omitempty"`
-			UseAlertDataForTemplate *bool            `json:"use_alert_data_for_template,omitempty"`
-			Uuid                    *string          `json:"uuid,omitempty"` //nolint:revive // var-naming: API struct field
-		}, len(rule.Actions))
-
-		for i, action := range rule.Actions {
-			actions[i].Group = &action.Group
-			actions[i].Id = action.ID
-			if action.Params != nil {
-				params := typeutils.PointerInterfaceMapFromAnyMap(action.Params)
-				actions[i].Params = &params
-			}
-
-			if action.Frequency != nil {
-				actions[i].Frequency = &struct {
-					NotifyWhen kbapi.PutAlertingRuleIdJSONBodyActionsFrequencyNotifyWhen `json:"notify_when"`
-					Summary    bool                                                      `json:"summary"`
-					Throttle   *string                                                   `json:"throttle,omitempty"`
-				}{
-					NotifyWhen: kbapi.PutAlertingRuleIdJSONBodyActionsFrequencyNotifyWhen(action.Frequency.NotifyWhen),
-					Summary:    action.Frequency.Summary,
-					Throttle:   action.Frequency.Throttle,
-				}
-			}
-
-			if action.AlertsFilter != nil {
-				filter := &struct {
-					Query *struct {
-						Dsl     *string `json:"dsl,omitempty"`
-						Filters []struct {
-							State *struct {
-								Store kbapi.PutAlertingRuleIdJSONBodyActionsAlertsFilterQueryFiltersStateStore `json:"store"`
-							} `json:"$state,omitempty"`
-							Meta  map[string]*any  `json:"meta"`
-							Query *map[string]*any `json:"query,omitempty"`
-						} `json:"filters"`
-						Kql string `json:"kql"`
-					} `json:"query,omitempty"`
-					Timeframe *struct {
-						Days  []kbapi.PutAlertingRuleIdJSONBodyActionsAlertsFilterTimeframeDays `json:"days"`
-						Hours struct {
-							End   string `json:"end"`
-							Start string `json:"start"`
-						} `json:"hours"`
-						Timezone string `json:"timezone"`
-					} `json:"timeframe,omitempty"`
-				}{}
-
-				if action.AlertsFilter.Kql != nil {
-					filter.Query = &struct {
-						Dsl     *string `json:"dsl,omitempty"`
-						Filters []struct {
-							State *struct {
-								Store kbapi.PutAlertingRuleIdJSONBodyActionsAlertsFilterQueryFiltersStateStore `json:"store"`
-							} `json:"$state,omitempty"`
-							Meta  map[string]*any  `json:"meta"`
-							Query *map[string]*any `json:"query,omitempty"`
-						} `json:"filters"`
-						Kql string `json:"kql"`
-					}{
-						Kql: *action.AlertsFilter.Kql,
-						Filters: []struct {
-							State *struct {
-								Store kbapi.PutAlertingRuleIdJSONBodyActionsAlertsFilterQueryFiltersStateStore `json:"store"`
-							} `json:"$state,omitempty"`
-							Meta  map[string]*any  `json:"meta"`
-							Query *map[string]*any `json:"query,omitempty"`
-						}{},
-					}
-				}
-
-				if action.AlertsFilter.Timeframe != nil {
-					days := make([]kbapi.PutAlertingRuleIdJSONBodyActionsAlertsFilterTimeframeDays, len(action.AlertsFilter.Timeframe.Days))
-					for j, d := range action.AlertsFilter.Timeframe.Days {
-						days[j] = kbapi.PutAlertingRuleIdJSONBodyActionsAlertsFilterTimeframeDays(d)
-					}
-					filter.Timeframe = &struct {
-						Days  []kbapi.PutAlertingRuleIdJSONBodyActionsAlertsFilterTimeframeDays `json:"days"`
-						Hours struct {
-							End   string `json:"end"`
-							Start string `json:"start"`
-						} `json:"hours"`
-						Timezone string `json:"timezone"`
-					}{
-						Days: days,
-						Hours: struct {
-							End   string `json:"end"`
-							Start string `json:"start"`
-						}{
-							Start: action.AlertsFilter.Timeframe.HoursStart,
-							End:   action.AlertsFilter.Timeframe.HoursEnd,
-						},
-						Timezone: action.AlertsFilter.Timeframe.Timezone,
-					}
-				}
-
-				actions[i].AlertsFilter = filter
-			}
-		}
-		body.Actions = &actions
-	}
-
-	return body
-}
-
-// flappingWire is a type alias for the flapping JSON object on create/update alerting rule requests.
-// Using an alias (not a new defined type) keeps values assignable to both Post and Put Flapping fields in kbapi.
-type flappingWire = struct {
-	Enabled               *bool   `json:"enabled,omitempty"`
-	LookBackWindow        float32 `json:"look_back_window"`
-	StatusChangeThreshold float32 `json:"status_change_threshold"`
-}
-
-func flappingWireFromModel(f *models.AlertingRuleFlapping) *flappingWire {
-	if f == nil {
-		return nil
-	}
-	return &flappingWire{
-		Enabled:               f.Enabled,
-		LookBackWindow:        float32(f.LookBackWindow),
-		StatusChangeThreshold: float32(f.StatusChangeThreshold),
-	}
-}
-
-func valueOrDefault(val *string, def string) string {
-	if val != nil && *val != "" {
-		return *val
-	}
-	return def
+	return nil
 }

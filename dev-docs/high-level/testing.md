@@ -18,38 +18,57 @@ General workflow (all acceptance coverage, not only the examples harness):
 - The Elastic stack may already be running; check before starting a new environment (`curl -u $ELASTICSEARCH_USERNAME:$ELASTICSEARCH_PASSWORD $ELASTICSEARCH_ENDPOINTS`)
 - To start local stack services if needed (set `STACK_VERSION` when a specific version is required): `make docker-fleet`
 
+### Worktree stack isolation and ports
+
+When worktrunk creates a worktree, it brings up an **isolated Elastic Stack** (Elasticsearch + Kibana + Fleet) in Docker that is unique to that worktree. This avoids conflicts with the stack on `main` or in other branches.
+
+Port numbers are deterministically randomised per branch to prevent collisions:
+
+- **Elasticsearch**: `10000 + (branch | hash_port) % 5000`
+- **Kibana**: `15000 + ((branch ~ '-kb') | hash_port) % 5000`
+
+On `main` (or any checkout without worktrunk) ports fall back to the standard defaults (`9200` and `5601`) via the Makefile.
+
+### Environment variables (`.env`)
+
+In a worktrunk-created worktree, `.config/wt.toml` auto-generates `.env` with all common acceptance variables already set to the worktree's isolated ports:
+
+- `ELASTICSEARCH_PORT`
+- `KIBANA_PORT`
+- `ELASTICSEARCH_ENDPOINTS`
+- `ELASTICSEARCH_URL`
+- `ELASTICSEARCH_USERNAME`
+- `KIBANA_ENDPOINT`
+- `KIBANA_USERNAME`
+
+After exporting `.env` you can run acceptance tests directly:
+
+```bash
+source .env
+TF_ACC=1 go test -v -run TestAccResourceName ./path/to/package
+```
+
+On `main` a `.env` may or may not already exist—if it does, you can `source` it like in a worktree. Otherwise, manually export the default variables before running tests:
+
+```bash
+# On main without .env
+export ELASTICSEARCH_ENDPOINTS=http://localhost:9200
+export ELASTICSEARCH_USERNAME=elastic
+export ELASTICSEARCH_PASSWORD=password
+export KIBANA_ENDPOINT=http://localhost:5601
+TF_ACC=1 go test -v -run TestAccResourceName ./path/to/package
+```
+
 ### Examples PlanOnly harness (`TestAccExamples_planOnly`)
 
 `*.tf` files under `examples/resources/` and `examples/data-sources/` (except harness skip-lists) are planned in isolation by `TestAccExamples_planOnly` in `internal/acctest/`. For contributor expectations—self-contained modules, acceptance environment—see the **Example snippets** section in [`development-workflow.md`](./development-workflow.md).
 
 ```bash
+source .env  # worktree only
 TF_ACC=1 go test ./internal/acctest -run '^TestAccExamples_planOnly$' -count=1
-```
-
-### Required environment variables (common)
-
-Targeted acceptance test runs commonly require the following environment variables:
-
-- `ELASTICSEARCH_ENDPOINTS` (default: `http://localhost:9200`)
-- `ELASTICSEARCH_USERNAME` (default: `elastic`)
-- `ELASTICSEARCH_PASSWORD` (default: `password`)
-- `KIBANA_ENDPOINT` (default: `http://localhost:5601`)
-- `TF_ACC=1`
-
-In a worktrunk-created worktree, `.config/wt.toml` generates `.env` with all of the common acceptance variables above except `TF_ACC`, so after exporting `.env` you can usually run `TF_ACC=1 go test ...` directly.
-
-Example targeted run:
-
-```bash
-ELASTICSEARCH_ENDPOINTS=http://localhost:9200 \
-ELASTICSEARCH_USERNAME=elastic \
-ELASTICSEARCH_PASSWORD=password \
-KIBANA_ENDPOINT=http://localhost:5601 \
-TF_ACC=1 \
-go test -v -run TestAccResourceName ./path/to/package
 ```
 
 ### Acceptance test coverage expectations
 
-See “Testing” in [`coding-standards.md`](./coding-standards.md).
+See "Testing" in [`coding-standards.md`](./coding-standards.md).
 

@@ -33,7 +33,9 @@ func newPieChartPanelConfigConverter() pieChartPanelConfigConverter {
 	return pieChartPanelConfigConverter{
 		lensVisualizationBase: lensVisualizationBase{
 			visualizationType: string(kbapi.PieNoESQLTypePie),
-			hasTFPanelConfig:  func(pm panelModel) bool { return pm.PieChartConfig != nil },
+			hasTFChartBlock: func(blocks *lensByValueChartBlocks) bool {
+				return blocks != nil && blocks.PieChartConfig != nil
+			},
 		},
 	}
 }
@@ -42,28 +44,39 @@ type pieChartPanelConfigConverter struct {
 	lensVisualizationBase
 }
 
-func (c pieChartPanelConfigConverter) populateFromAttributes(_ context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
+func (c pieChartPanelConfigConverter) populateFromAttributes(
+	ctx context.Context,
+	dashboard *dashboardModel,
+	tfPanel *panelModel,
+	blocks *lensByValueChartBlocks,
+	attrs kbapi.KbnDashboardPanelTypeVisConfig0,
+) diag.Diagnostics {
 	// Populate the model.
 	//
 	// Disambiguate NoESQL vs ESQL using dataset type; regenerated clients can
 	// decode an empty no-ESQL query for ESQL payloads.
-	pm.PieChartConfig = &pieChartConfigModel{}
+	var prior *pieChartConfigModel
+	if b := lensByValueChartBlocksFromPanel(tfPanel); b != nil && b.PieChartConfig != nil {
+		cpy := *b.PieChartConfig
+		prior = &cpy
+	}
+	blocks.PieChartConfig = &pieChartConfigModel{}
 	if noESQL, err := attrs.AsPieNoESQL(); err == nil && !isPieNoESQLCandidateActuallyESQL(noESQL) {
-		return pm.PieChartConfig.fromAPINoESQL(noESQL)
+		return blocks.PieChartConfig.fromAPINoESQL(ctx, dashboard, prior, noESQL)
 	}
 	esql, err := attrs.AsPieESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	return pm.PieChartConfig.fromAPIESQL(esql)
+	return blocks.PieChartConfig.fromAPIESQL(ctx, dashboard, prior, esql)
 }
 
-func (c pieChartPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func (c pieChartPanelConfigConverter) buildAttributes(blocks *lensByValueChartBlocks, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	configModel := *pm.PieChartConfig
+	configModel := *blocks.PieChartConfig
 
 	// Convert the structured model to API schema
-	attrs, pieDiags := configModel.toAPI()
+	attrs, pieDiags := configModel.toAPI(dashboard)
 	diags.Append(pieDiags...)
 	if diags.HasError() {
 		return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
@@ -73,6 +86,7 @@ func (c pieChartPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnD
 }
 
 type pieChartConfigModel struct {
+	lensChartPresentationTFModel
 	Title               types.String           `tfsdk:"title"`
 	Description         types.String           `tfsdk:"description"`
 	DataSourceJSON      jsontypes.Normalized   `tfsdk:"data_source_json"`
@@ -88,11 +102,11 @@ type pieChartConfigModel struct {
 }
 
 type pieMetricModel struct {
-	Config customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config"`
+	Config customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config_json"`
 }
 
 type pieGroupByModel struct {
-	Config customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config"`
+	Config customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config_json"`
 }
 
 func isPieNoESQLCandidateActuallyESQL(apiChart kbapi.PieNoESQL) bool {
@@ -155,7 +169,7 @@ func (m *pieChartConfigModel) populateCommonFields(
 	return !diags.HasError()
 }
 
-func (m *pieChartConfigModel) fromAPINoESQL(apiChart kbapi.PieNoESQL) diag.Diagnostics {
+func (m *pieChartConfigModel) fromAPINoESQL(ctx context.Context, dashboard *dashboardModel, prior *pieChartConfigModel, apiChart kbapi.PieNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	var donutHole *string
@@ -214,10 +228,27 @@ func (m *pieChartConfigModel) fromAPINoESQL(apiChart kbapi.PieNoESQL) diag.Diagn
 		}
 	}
 
+	var priorLens *lensChartPresentationTFModel
+	if prior != nil {
+		p := prior.lensChartPresentationTFModel
+		priorLens = &p
+	}
+	ddWire, ddOmit, ddWireDiags := lensDrilldownsAPIToWire(apiChart.Drilldowns)
+	diags.Append(ddWireDiags...)
+	if ddWireDiags.HasError() {
+		return diags
+	}
+	pres, presDiags := lensChartPresentationReadsFor(ctx, dashboard, priorLens, apiChart.TimeRange, apiChart.HideTitle, apiChart.HideBorder, apiChart.References, ddWire, ddOmit)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return diags
+	}
+	m.lensChartPresentationTFModel = pres
+
 	return diags
 }
 
-func (m *pieChartConfigModel) fromAPIESQL(apiChart kbapi.PieESQL) diag.Diagnostics {
+func (m *pieChartConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashboardModel, prior *pieChartConfigModel, apiChart kbapi.PieESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	var donutHole *string
@@ -275,10 +306,27 @@ func (m *pieChartConfigModel) fromAPIESQL(apiChart kbapi.PieESQL) diag.Diagnosti
 		}
 	}
 
+	var priorLens *lensChartPresentationTFModel
+	if prior != nil {
+		p := prior.lensChartPresentationTFModel
+		priorLens = &p
+	}
+	ddWire, ddOmit, ddWireDiags := lensDrilldownsAPIToWire(apiChart.Drilldowns)
+	diags.Append(ddWireDiags...)
+	if ddWireDiags.HasError() {
+		return diags
+	}
+	pres, presDiags := lensChartPresentationReadsFor(ctx, dashboard, priorLens, apiChart.TimeRange, apiChart.HideTitle, apiChart.HideBorder, apiChart.References, ddWire, ddOmit)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return diags
+	}
+	m.lensChartPresentationTFModel = pres
+
 	return diags
 }
 
-func (m *pieChartConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func (m *pieChartConfigModel) toAPI(dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 
@@ -292,7 +340,6 @@ func (m *pieChartConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, di
 		// Required by the Dashboard API (Lens pie schema); omitting mode yields HTTP 400.
 		defaultMode := kbapi.ValueDisplayModePercentage
 		chart.Styling.Values = kbapi.ValueDisplay{Mode: &defaultMode}
-		chart.TimeRange = lensPanelTimeRange()
 
 		chart.Title = m.Title.ValueStringPointer()
 		chart.Description = m.Description.ValueStringPointer()
@@ -325,10 +372,13 @@ func (m *pieChartConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, di
 		}
 
 		// Dataset
-		if !m.DataSourceJSON.IsNull() {
-			if err := json.Unmarshal([]byte(m.DataSourceJSON.ValueString()), &chart.DataSource); err != nil {
-				diags.AddError("Failed to unmarshal pie_chart_config.data_source_json", err.Error())
-			}
+		if m.DataSourceJSON.IsNull() {
+			diags.AddError("Missing dataset", "pie_chart_config.data_source_json must be provided")
+			return attrs, diags
+		}
+		if err := json.Unmarshal([]byte(m.DataSourceJSON.ValueString()), &chart.DataSource); err != nil {
+			diags.AddError("Failed to unmarshal pie_chart_config.data_source_json", err.Error())
+			return attrs, diags
 		}
 
 		// Query
@@ -362,6 +412,30 @@ func (m *pieChartConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, di
 		// Always set type to pie as it's required by the schema
 		chart.Type = kbapi.PieNoESQLTypePie
 
+		writes, presDiags := lensChartPresentationWritesFor(dashboard, m.lensChartPresentationTFModel)
+		diags.Append(presDiags...)
+		if presDiags.HasError() {
+			return attrs, diags
+		}
+
+		chart.TimeRange = writes.TimeRange
+		if writes.HideTitle != nil {
+			chart.HideTitle = writes.HideTitle
+		}
+		if writes.HideBorder != nil {
+			chart.HideBorder = writes.HideBorder
+		}
+		if writes.References != nil {
+			chart.References = writes.References
+		}
+		if len(writes.DrilldownsRaw) > 0 {
+			items, ddDiags := decodeLensDrilldownSlice[kbapi.PieNoESQL_Drilldowns_Item](writes.DrilldownsRaw)
+			diags.Append(ddDiags...)
+			if !ddDiags.HasError() {
+				chart.Drilldowns = &items
+			}
+		}
+
 		if err := attrs.FromPieNoESQL(chart); err != nil {
 			diags.AddError("Failed to create PieNoESQL schema", err.Error())
 		}
@@ -370,7 +444,6 @@ func (m *pieChartConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, di
 
 		defaultMode := kbapi.ValueDisplayModePercentage
 		chart.Styling.Values = kbapi.ValueDisplay{Mode: &defaultMode}
-		chart.TimeRange = lensPanelTimeRange()
 
 		// Set basic properties
 		chart.Title = m.Title.ValueStringPointer()
@@ -404,10 +477,13 @@ func (m *pieChartConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, di
 		}
 
 		// Dataset
-		if !m.DataSourceJSON.IsNull() {
-			if err := json.Unmarshal([]byte(m.DataSourceJSON.ValueString()), &chart.DataSource); err != nil {
-				diags.AddError("Failed to unmarshal pie_chart_config.data_source_json", err.Error())
-			}
+		if m.DataSourceJSON.IsNull() {
+			diags.AddError("Missing dataset", "pie_chart_config.data_source_json must be provided")
+			return attrs, diags
+		}
+		if err := json.Unmarshal([]byte(m.DataSourceJSON.ValueString()), &chart.DataSource); err != nil {
+			diags.AddError("Failed to unmarshal pie_chart_config.data_source_json", err.Error())
+			return attrs, diags
 		}
 
 		// Filters
@@ -452,6 +528,30 @@ func (m *pieChartConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, di
 
 		// Always set type to pie as it's required by the schema
 		chart.Type = kbapi.PieESQLTypePie
+
+		writes, presDiags := lensChartPresentationWritesFor(dashboard, m.lensChartPresentationTFModel)
+		diags.Append(presDiags...)
+		if presDiags.HasError() {
+			return attrs, diags
+		}
+
+		chart.TimeRange = writes.TimeRange
+		if writes.HideTitle != nil {
+			chart.HideTitle = writes.HideTitle
+		}
+		if writes.HideBorder != nil {
+			chart.HideBorder = writes.HideBorder
+		}
+		if writes.References != nil {
+			chart.References = writes.References
+		}
+		if len(writes.DrilldownsRaw) > 0 {
+			items, ddDiags := decodeLensDrilldownSlice[kbapi.PieESQL_Drilldowns_Item](writes.DrilldownsRaw)
+			diags.Append(ddDiags...)
+			if !ddDiags.HasError() {
+				chart.Drilldowns = &items
+			}
+		}
 
 		if err := attrs.FromPieESQL(chart); err != nil {
 			diags.AddError("Failed to create PieESQL schema", err.Error())

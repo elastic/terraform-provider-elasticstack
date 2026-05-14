@@ -143,13 +143,31 @@ When `type="cross_cluster"`, the resource SHALL verify on create that the Elasti
 
 ### Requirement: JSON and access mapping (REQ-027-REQ-029)
 
-When `metadata`, `role_descriptors`, `access.search[].field_security`, or `access.search[].query` are configured, the resource SHALL parse them as JSON before building the Elasticsearch request, and SHALL return an error diagnostic if JSON decoding fails. When `role_descriptors` is present, the resource SHALL apply the provider's role-descriptor defaults before sending the request. When building a cross-cluster API key request, the resource SHALL omit `access` unless at least one `search` or `replication` entry is populated.
+The resource SHALL omit `role_descriptors` from the Elasticsearch request when the attribute
+is null or unknown, rather than attempting JSON parsing that fails. JSON
+parsing SHALL only be attempted when `role_descriptors` is a known, non-null value.
 
-#### Scenario: Invalid JSON input
+#### Scenario: Create without role_descriptors
 
-- GIVEN one of the JSON-backed attributes contains invalid JSON
-- WHEN create or update builds the Elasticsearch request
-- THEN the resource SHALL fail before sending the API request
+- GIVEN a configuration that sets only `name` (no `role_descriptors`)
+- WHEN Terraform applies the configuration for the first time
+- THEN the resource SHALL create the API key successfully without returning an error
+- AND the Elasticsearch create request SHALL NOT include a `role_descriptors` field
+- AND the resulting state SHALL contain a valid `id`, `key_id`, `api_key`, and `encoded`
+
+#### Scenario: Update without role_descriptors
+
+- GIVEN an API key resource whose configuration does not set `role_descriptors`
+- WHEN Terraform applies a plan that modifies another mutable attribute (e.g. `metadata`)
+- THEN the resource SHALL update the API key without returning an error
+- AND the Elasticsearch update request SHALL NOT include a `role_descriptors` field
+
+#### Scenario: Restriction validation skips when role_descriptors is absent
+
+- GIVEN a configuration that does not set `role_descriptors`
+- WHEN the provider validates whether any role descriptor contains a `restriction` block
+- THEN the validation SHALL return no error diagnostics
+- AND the provider SHALL NOT attempt to parse an Unknown or Null JSON value
 
 ### Requirement: Create writes sensitive outputs and then refreshes state (REQ-030-REQ-033)
 

@@ -25,22 +25,12 @@ import (
 
 // syntheticsStatsOverviewConfigModel is the Terraform model for the synthetics_stats_overview_config block.
 type syntheticsStatsOverviewConfigModel struct {
-	Title       types.String                            `tfsdk:"title"`
-	Description types.String                            `tfsdk:"description"`
-	HideTitle   types.Bool                              `tfsdk:"hide_title"`
-	HideBorder  types.Bool                              `tfsdk:"hide_border"`
-	Drilldowns  []syntheticsStatsOverviewDrilldownModel `tfsdk:"drilldowns"`
-	Filters     *syntheticsStatsOverviewFiltersModel    `tfsdk:"filters"`
-}
-
-// syntheticsStatsOverviewDrilldownModel holds one URL drilldown entry.
-// trigger and type are always hardcoded to "on_open_panel_menu" / "url_drilldown" — they
-// are not exposed to users (matching the slo_overview_config drilldowns approach).
-type syntheticsStatsOverviewDrilldownModel struct {
-	URL          types.String `tfsdk:"url"`
-	Label        types.String `tfsdk:"label"`
-	EncodeURL    types.Bool   `tfsdk:"encode_url"`
-	OpenInNewTab types.Bool   `tfsdk:"open_in_new_tab"`
+	Title       types.String                         `tfsdk:"title"`
+	Description types.String                         `tfsdk:"description"`
+	HideTitle   types.Bool                           `tfsdk:"hide_title"`
+	HideBorder  types.Bool                           `tfsdk:"hide_border"`
+	Drilldowns  []urlDrilldownModel                  `tfsdk:"drilldowns"`
+	Filters     *syntheticsStatsOverviewFiltersModel `tfsdk:"filters"`
 }
 
 // syntheticsStatsOverviewFiltersModel holds per-category Synthetics monitor filter constraints.
@@ -194,9 +184,6 @@ func populateSyntheticsStatsOverviewFromAPI(pm *panelModel, tfPanel *panelModel,
 	// If the API returned a completely empty config (all fields absent/nil), nil out the block
 	// regardless of prior state. This mirrors the import-path behaviour: an empty API config
 	// round-trips as null in state (REQ-033).
-	// Note: cfg.Filters == nil (strictly absent) is checked here rather than !syntheticsFiltersHasAnyEntry
-	// because a non-nil empty filters object still signals that Kibana acknowledged the filters field;
-	// in that case the block survives (filters are cleared by readSyntheticsStatsOverviewFiltersFromAPI).
 	if cfg.Title == nil && cfg.Description == nil && cfg.HideTitle == nil && cfg.HideBorder == nil &&
 		(cfg.Drilldowns == nil || len(*cfg.Drilldowns) == 0) && cfg.Filters == nil {
 		pm.SyntheticsStatsOverviewConfig = nil
@@ -259,22 +246,22 @@ func syntheticsFiltersHasAnyEntry(f *struct {
 // Optional bool fields (encode_url, open_in_new_tab) use null-preservation when prior state is available.
 func readSyntheticsStatsOverviewDrilldownsFromAPI(
 	apiPanel kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview,
-	priorDrilldowns []syntheticsStatsOverviewDrilldownModel,
-) []syntheticsStatsOverviewDrilldownModel {
+	priorDrilldowns []urlDrilldownModel,
+) []urlDrilldownModel {
 	apiDrilldowns := apiPanel.Config.Drilldowns
 	if apiDrilldowns == nil || len(*apiDrilldowns) == 0 {
 		return nil
 	}
 
-	result := make([]syntheticsStatsOverviewDrilldownModel, len(*apiDrilldowns))
+	result := make([]urlDrilldownModel, len(*apiDrilldowns))
 	for i, d := range *apiDrilldowns {
 		// trigger and type are not stored in state — they are always hardcoded constants.
-		result[i] = syntheticsStatsOverviewDrilldownModel{
+		result[i] = urlDrilldownModel{
 			URL:   types.StringValue(d.Url),
 			Label: types.StringValue(d.Label),
 		}
 
-		var prior *syntheticsStatsOverviewDrilldownModel
+		var prior *urlDrilldownModel
 		if i < len(priorDrilldowns) {
 			prior = &priorDrilldowns[i]
 		}

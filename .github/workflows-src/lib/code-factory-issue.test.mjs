@@ -477,7 +477,8 @@ test('code-factory-issue workflow template drives prompt from normalized outputs
   );
   assert.match(workflowTmpl, /needs\.pre_activation\.outputs\.issue_number/);
   assert.match(workflowTmpl, /needs\.pre_activation\.outputs\.issue_title/);
-  assert.match(workflowTmpl, /needs\.pre_activation\.outputs\.issue_body/);
+  assert.match(workflowTmpl, /\/tmp\/code-factory-context\/issue_body\.md/);
+  assert.match(workflowTmpl, /\/tmp\/code-factory-context\/issue_comments\.md/);
 });
 
 test('code-factory-issue workflow template keeps dispatch actorTrusted bypass', () => {

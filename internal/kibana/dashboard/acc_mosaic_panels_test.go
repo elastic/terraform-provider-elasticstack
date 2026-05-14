@@ -18,10 +18,10 @@
 package dashboard_test
 
 import (
-	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/acctest/checks"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -31,12 +31,13 @@ import (
 func TestAccResourceDashboardMosaic(t *testing.T) {
 	dashboardTitle := "Test Dashboard with Mosaic " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
+	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
@@ -50,41 +51,40 @@ func TestAccResourceDashboardMosaic(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.w", "24"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.x", "0"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.y", "0"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.mosaic_config.query.language", "kql"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.mosaic_config.query.expression", ""),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.mosaic_config.data_source_json"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.mosaic_config.group_by_json"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.mosaic_config.group_breakdown_by_json"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.mosaic_config.metrics_json"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.mosaic_config.legend.size", "m"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.mosaic_config.legend.nested", "true"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.mosaic_config.legend.visible", "auto"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.mosaic_config.legend.truncate_after_lines", "5"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.mosaic_config.value_display.mode", "percentage"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.mosaic_config.value_display.percent_decimals", "2"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.mosaic_config.query.language", "kql"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.mosaic_config.query.expression", ""),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.mosaic_config.data_source_json"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.mosaic_config.group_by_json"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.mosaic_config.group_breakdown_by_json"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.mosaic_config.metrics_json"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.mosaic_config.legend.size", "m"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.mosaic_config.legend.nested", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.mosaic_config.legend.visible", "auto"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.mosaic_config.legend.truncate_after_lines", "5"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.mosaic_config.value_display.mode", "percentage"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.mosaic_config.value_display.percent_decimals", "2"),
 				),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("complete"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.mosaic_config.ignore_global_filters", "true"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.mosaic_config.sampling", "0.5"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.mosaic_config.filters.#", "1"),
-					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.mosaic_config.filters.0.filter_json", regexp.MustCompile(`"field":"host.os.keyword"`)),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.mosaic_config.legend.size", "s"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.mosaic_config.legend.nested", "false"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.mosaic_config.legend.visible", "visible"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.mosaic_config.legend.truncate_after_lines", "10"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.mosaic_config.value_display.mode", "absolute"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.mosaic_config.data_source_json"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.mosaic_config.group_by_json"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.mosaic_config.group_breakdown_by_json"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.mosaic_config.metrics_json"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.mosaic_config.ignore_global_filters", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.mosaic_config.sampling", "0.5"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.mosaic_config.filters.#", "1"),
+					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.mosaic_config.filters.0.filter_json", `{"condition":{"field":"host.os.keyword","operator":"is","value":"linux"},"type":"condition"}`), //nolint:lll
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.mosaic_config.legend.size", "s"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.mosaic_config.legend.nested", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.mosaic_config.legend.visible", "visible"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.mosaic_config.legend.truncate_after_lines", "10"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.mosaic_config.value_display.mode", "absolute"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.mosaic_config.data_source_json"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.mosaic_config.group_by_json"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.mosaic_config.group_breakdown_by_json"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.mosaic_config.metrics_json"),
 				),
 			},
 			// { // ES|QL Mosaic panels are not working in the Kibana UI at the moment
@@ -95,21 +95,20 @@ func TestAccResourceDashboardMosaic(t *testing.T) {
 			// 		"dashboard_title": config.StringVariable(dashboardTitle),
 			// 	},
 			// 	Check: resource.ComposeTestCheckFunc(
-			// 		resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.mosaic_config.title", "ESQL Mosaic"),
-			// 		resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.mosaic_config.description", "Mosaic visualization using ES|QL"),
-			// 		resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.mosaic_config.ignore_global_filters", "true"),
-			// 		resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.mosaic_config.sampling", "0.5"),
-			// 		resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.mosaic_config.data_source_json", regexp.MustCompile(`"type"\s*:\s*"esql"`)),
-			// 		resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.mosaic_config.group_by_json"),
-			// 		resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.mosaic_config.group_breakdown_by_json"),
-			// 		resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.mosaic_config.metrics_json"),
-			// 		resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.mosaic_config.query.language"),
-			// 		resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.mosaic_config.query.expression"),
+			// 		resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.mosaic_config.title", "ESQL Mosaic"),
+			// 		resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.mosaic_config.description", "Mosaic visualization using ES|QL"),
+			// 		resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.mosaic_config.ignore_global_filters", "true"),
+			// 		resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.mosaic_config.sampling", "0.5"),
+			// 		resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.mosaic_config.data_source_json", regexp.MustCompile(`"type"\s*:\s*"esql"`)),
+			// 		resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.mosaic_config.group_by_json"),
+			// 		resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.mosaic_config.group_breakdown_by_json"),
+			// 		resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.mosaic_config.metrics_json"),
+			// 		resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.mosaic_config.query.language"),
+			// 		resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.mosaic_config.query.expression"),
 			// 	),
 			// },
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("complete"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
@@ -118,14 +117,14 @@ func TestAccResourceDashboardMosaic(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 				ImportStateVerifyIgnore: []string{
-					"panels.0.mosaic_config.title",
-					"panels.0.mosaic_config.description",
-					"panels.0.mosaic_config.metrics_json",
-					"panels.0.mosaic_config.group_by_json",
-					"panels.0.mosaic_config.group_breakdown_by_json",
-					"panels.0.mosaic_config.data_source_json",
-					"panels.0.mosaic_config.ignore_global_filters",
-					"panels.0.mosaic_config.sampling",
+					"panels.0.vis_config.by_value.mosaic_config.title",
+					"panels.0.vis_config.by_value.mosaic_config.description",
+					"panels.0.vis_config.by_value.mosaic_config.metrics_json",
+					"panels.0.vis_config.by_value.mosaic_config.group_by_json",
+					"panels.0.vis_config.by_value.mosaic_config.group_breakdown_by_json",
+					"panels.0.vis_config.by_value.mosaic_config.data_source_json",
+					"panels.0.vis_config.by_value.mosaic_config.ignore_global_filters",
+					"panels.0.vis_config.by_value.mosaic_config.sampling",
 				},
 			},
 		},

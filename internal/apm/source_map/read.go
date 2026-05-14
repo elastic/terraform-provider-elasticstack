@@ -21,6 +21,8 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -29,6 +31,8 @@ import (
 const (
 	readPageSize = 100
 )
+
+var minSourceMapPaginationVersion = version.Must(version.NewVersion("8.7.0"))
 
 func (r *resourceSourceMap) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state SourceMap
@@ -67,11 +71,24 @@ func (r *resourceSourceMap) read(ctx context.Context, state *SourceMap) (*Source
 		return nil, diags
 	}
 
+	supportsPagination, vDiags := scoped.EnforceVersionCheck(ctx, func(v *version.Version) bool {
+		return v.GreaterThanOrEqual(minSourceMapPaginationVersion)
+	})
+	diags.Append(diagutil.FrameworkDiagsFromSDK(vDiags)...)
+	if diags.HasError() {
+		return nil, diags
+	}
+
 	spaceID := state.SpaceID.ValueString()
 	targetID := state.ID.ValueString()
 
-	page := float32(1)
-	perPage := float32(readPageSize)
+	var currentPage float32 = 1
+	var page, perPage *float32
+	if supportsPagination {
+		pp := float32(readPageSize)
+		page = &currentPage
+		perPage = &pp
+	}
 
 	for {
 		artifacts, lDiags := kibanaoapi.ListSourceMaps(ctx, kibana, spaceID, page, perPage)
@@ -106,10 +123,10 @@ func (r *resourceSourceMap) read(ctx context.Context, state *SourceMap) (*Source
 			return &updated, diags
 		}
 
-		if len(artifacts) < readPageSize {
+		if !supportsPagination || len(artifacts) < readPageSize {
 			break
 		}
-		page++
+		currentPage++
 	}
 
 	return nil, diags

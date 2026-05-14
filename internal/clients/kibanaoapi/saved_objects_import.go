@@ -67,17 +67,16 @@ func ImportSavedObjects(ctx context.Context, client *Client, spaceID string, fil
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		if resp.JSON200 == nil {
-			return nil, diag.Diagnostics{
-				diag.NewErrorDiagnostic("Failed to parse import response", "API returned 200 but JSON200 is nil"),
-			}
+		unwrapped, unwrapDiags := diagutil.UnwrapJSON200(resp.JSON200, "saved objects import")
+		if unwrapDiags.HasError() {
+			return nil, unwrapDiags
 		}
 
 		result := &ImportSavedObjectsResult{
-			Success:        resp.JSON200.Success,
-			SuccessCount:   int64(resp.JSON200.SuccessCount),
-			Errors:         resp.JSON200.Errors,
-			SuccessResults: resp.JSON200.SuccessResults,
+			Success:        unwrapped.Success,
+			SuccessCount:   int64(unwrapped.SuccessCount),
+			Errors:         unwrapped.Errors,
+			SuccessResults: unwrapped.SuccessResults,
 		}
 		return result, nil
 

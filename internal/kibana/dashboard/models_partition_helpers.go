@@ -70,19 +70,19 @@ func mapOptionalFloatWithSnapshotDefault(current types.Float64, apiValue *float3
 // partitionLegendModel is the shared Terraform model for partition chart legends
 // (treemap, mosaic, pie). Used by treemap, mosaic, and pie chart config models.
 type partitionLegendModel struct {
-	Nested            types.Bool    `tfsdk:"nested"`
-	Size              types.String  `tfsdk:"size"`
-	TruncateAfterLine types.Float64 `tfsdk:"truncate_after_lines"`
-	Visible           types.String  `tfsdk:"visible"`
+	Nested            types.Bool   `tfsdk:"nested"`
+	Size              types.String `tfsdk:"size"`
+	TruncateAfterLine types.Int64  `tfsdk:"truncate_after_lines"`
+	Visible           types.String `tfsdk:"visible"`
 }
 
 func (m *partitionLegendModel) fromTreemapLegend(api kbapi.TreemapLegend) {
 	m.Nested = types.BoolPointerValue(api.Nested)
 	m.Size = types.StringValue(string(api.Size))
 	if api.TruncateAfterLines != nil {
-		m.TruncateAfterLine = types.Float64Value(float64(*api.TruncateAfterLines))
+		m.TruncateAfterLine = types.Int64Value(int64(*api.TruncateAfterLines))
 	} else {
-		m.TruncateAfterLine = types.Float64Null()
+		m.TruncateAfterLine = types.Int64Null()
 	}
 	if api.Visibility != nil {
 		m.Visible = types.StringValue(string(*api.Visibility))
@@ -95,9 +95,9 @@ func (m *partitionLegendModel) fromMosaicLegend(api kbapi.MosaicLegend) {
 	m.Nested = types.BoolPointerValue(api.Nested)
 	m.Size = types.StringValue(string(api.Size))
 	if api.TruncateAfterLines != nil {
-		m.TruncateAfterLine = types.Float64Value(float64(*api.TruncateAfterLines))
+		m.TruncateAfterLine = types.Int64Value(int64(*api.TruncateAfterLines))
 	} else {
-		m.TruncateAfterLine = types.Float64Null()
+		m.TruncateAfterLine = types.Int64Null()
 	}
 	if api.Visibility != nil {
 		m.Visible = types.StringValue(string(*api.Visibility))
@@ -112,7 +112,7 @@ func (m *partitionLegendModel) toTreemapLegend() kbapi.TreemapLegend {
 		legend.Nested = new(m.Nested.ValueBool())
 	}
 	if typeutils.IsKnown(m.TruncateAfterLine) {
-		legend.TruncateAfterLines = new(float32(m.TruncateAfterLine.ValueFloat64()))
+		legend.TruncateAfterLines = new(float32(m.TruncateAfterLine.ValueInt64()))
 	}
 	if typeutils.IsKnown(m.Visible) {
 		v := kbapi.TreemapLegendVisibility(m.Visible.ValueString())
@@ -127,7 +127,7 @@ func (m *partitionLegendModel) toMosaicLegend() kbapi.MosaicLegend {
 		legend.Nested = new(m.Nested.ValueBool())
 	}
 	if typeutils.IsKnown(m.TruncateAfterLine) {
-		legend.TruncateAfterLines = new(float32(m.TruncateAfterLine.ValueFloat64()))
+		legend.TruncateAfterLines = new(float32(m.TruncateAfterLine.ValueInt64()))
 	}
 	if typeutils.IsKnown(m.Visible) {
 		v := kbapi.MosaicLegendVisibility(m.Visible.ValueString())
@@ -144,9 +144,9 @@ func (m *partitionLegendModel) fromPieLegend(api kbapi.PieLegend) {
 		m.Size = types.StringValue(string(kbapi.LegendSizeAuto))
 	}
 	if api.TruncateAfterLines != nil {
-		m.TruncateAfterLine = types.Float64Value(float64(*api.TruncateAfterLines))
+		m.TruncateAfterLine = types.Int64Value(int64(*api.TruncateAfterLines))
 	} else {
-		m.TruncateAfterLine = types.Float64Null()
+		m.TruncateAfterLine = types.Int64Null()
 	}
 	if api.Visibility != nil {
 		m.Visible = types.StringValue(string(*api.Visibility))
@@ -162,7 +162,7 @@ func (m *partitionLegendModel) toPieLegend() kbapi.PieLegend {
 		legend.Nested = new(m.Nested.ValueBool())
 	}
 	if typeutils.IsKnown(m.TruncateAfterLine) {
-		legend.TruncateAfterLines = new(float32(m.TruncateAfterLine.ValueFloat64()))
+		legend.TruncateAfterLines = new(float32(m.TruncateAfterLine.ValueInt64()))
 	}
 	if typeutils.IsKnown(m.Visible) {
 		v := kbapi.PieLegendVisibility(m.Visible.ValueString())

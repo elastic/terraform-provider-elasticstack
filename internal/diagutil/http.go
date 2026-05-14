@@ -73,3 +73,17 @@ func HandleStatusResponse(statusCode int, body []byte, successCodes ...int) fwdi
 	}
 	return ReportUnknownHTTPError(statusCode, body)
 }
+
+// UnwrapJSON200 returns val when non-nil, or an error diagnostic when val is nil.
+// entityName is used in the error message (e.g. "list", "list item").
+func UnwrapJSON200[T any](val *T, entityName string) (*T, fwdiag.Diagnostics) {
+	if val == nil {
+		return nil, fwdiag.Diagnostics{
+			fwdiag.NewErrorDiagnostic(
+				"Failed to parse "+entityName+" response",
+				"API returned 200 but response body was nil",
+			),
+		}
+	}
+	return val, nil
+}

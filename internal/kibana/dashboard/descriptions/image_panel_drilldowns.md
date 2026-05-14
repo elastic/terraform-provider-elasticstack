@@ -1,0 +1,1 @@
+Optional drilldown actions for the image panel (max 100 entries). Each element sets exactly one of `dashboard_drilldown` or `url_drilldown`, matching the Kibana `kbn-dashboard-panel-type-image` `config.drilldowns` discriminated union.

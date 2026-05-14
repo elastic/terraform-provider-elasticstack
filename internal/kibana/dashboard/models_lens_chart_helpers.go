@@ -19,11 +19,15 @@ package dashboard
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // populateFiltersFromAPI converts a slice of kbapi.LensPanelFilters_Item into chartFilterJSONModel
@@ -97,6 +101,63 @@ func preservePriorJSONWithDefaultsIfEquivalent[T any](ctx context.Context, prior
 		return prior
 	}
 	return current
+}
+
+// lensDataSourceIsESQLOrTable reports whether a Lens chart's `data_source` union
+// JSON is the ES|QL ("esql") or table ("table") dataset shape. Both map to the
+// ES|QL API variant of a chart panel. Returns false on marshal/unmarshal error.
+func lensDataSourceIsESQLOrTable(body []byte, err error) bool {
+	if err != nil {
+		return false
+	}
+	var ds struct {
+		Type string `json:"type"`
+	}
+	if err := json.Unmarshal(body, &ds); err != nil {
+		return false
+	}
+	return ds.Type == legacyMetricDatasetTypeESQL || ds.Type == legacyMetricDatasetTypeTable
+}
+
+// lensESQLNumberFormatJSONFromAPI marshals a Lens ES|QL dimension `format` union
+// value to a normalized Terraform string. Empty or null JSON is replaced with the
+// default number-format payload so Terraform state matches what Kibana echoes.
+func lensESQLNumberFormatJSONFromAPI(format any, errLabel string, diags *diag.Diagnostics) (jsontypes.Normalized, bool) {
+	bytes, err := json.Marshal(format)
+	if err != nil {
+		diags.AddError("Failed to marshal "+errLabel, err.Error())
+		return jsontypes.Normalized{}, false
+	}
+	if len(bytes) == 0 || string(bytes) == jsonNullString {
+		bytes = []byte(defaultNumberFormatJSON)
+	}
+	return jsontypes.NewNormalizedValue(normalizeKibanaLensNumberFormatJSONString(string(bytes))), true
+}
+
+// lensQueryESQLMode returns whether a Lens chart's optional `query` object selects
+// ES|QL mode (i.e. `query` is omitted, or both `expression` and `language` are
+// null). ok is false when the configuration is still unknown and validation
+// should defer.
+func lensQueryESQLMode(ctx context.Context, config tfsdk.Config, attrPath path.Path, diags *diag.Diagnostics) (esqlMode bool, ok bool) {
+	var queryObj types.Object
+	diags.Append(config.GetAttribute(ctx, attrPath.AtName("query"), &queryObj)...)
+	if diags.HasError() {
+		return false, false
+	}
+	if queryObj.IsUnknown() {
+		return false, false
+	}
+	if queryObj.IsNull() {
+		return true, true
+	}
+
+	var lang, expr types.String
+	diags.Append(config.GetAttribute(ctx, attrPath.AtName("query").AtName("language"), &lang)...)
+	diags.Append(config.GetAttribute(ctx, attrPath.AtName("query").AtName("expression"), &expr)...)
+	if diags.HasError() {
+		return false, false
+	}
+	return lang.IsNull() && expr.IsNull(), true
 }
 
 func preservePriorNormalizedWithDefaultsIfEquivalent[T any](ctx context.Context, prior, current jsontypes.Normalized, defaults func(T) T, diags *diag.Diagnostics) jsontypes.Normalized {

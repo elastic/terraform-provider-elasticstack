@@ -32,21 +32,21 @@ data "elasticstack_elasticsearch_security_role" "role" {
 
 ### Optional
 
-- `elasticsearch_connection` (Block List, Max: 1) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
-- `run_as` (Set of String) A list of users that the owners of this role can impersonate.
+- `elasticsearch_connection` (Block List) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 
 ### Read-Only
 
-- `applications` (Set of Object) A list of application privilege entries. (see [below for nested schema](#nestedatt--applications))
+- `applications` (Attributes Set) A list of application privilege entries. (see [below for nested schema](#nestedatt--applications))
 - `cluster` (Set of String) A list of cluster privileges. These privileges define the cluster level actions that users with this role are able to execute.
 - `description` (String) The description of the role.
 - `global` (String) An object defining global privileges.
 - `id` (String) Internal identifier of the resource
-- `indices` (Set of Object) A list of indices permissions entries. (see [below for nested schema](#nestedatt--indices))
+- `indices` (Attributes Set) A list of indices permissions entries. (see [below for nested schema](#nestedatt--indices))
 - `metadata` (String) Optional meta-data.
-- `remote_indices` (Set of Object) A list of remote indices permissions entries.
+- `remote_indices` (Attributes Set) A list of remote indices permissions entries.
 
 Remote indices are effective for remote clusters configured with the API key based model. They have no effect for remote clusters configured with the certificate based model. (see [below for nested schema](#nestedatt--remote_indices))
+- `run_as` (Set of String) A list of users that the owners of this role can impersonate.
 
 <a id="nestedblock--elasticsearch_connection"></a>
 ### Nested Schema for `elasticsearch_connection`
@@ -74,9 +74,9 @@ Optional:
 
 Read-Only:
 
-- `application` (String)
-- `privileges` (Set of String)
-- `resources` (Set of String)
+- `application` (String) The name of the application to which this entry applies.
+- `privileges` (Set of String) A list of strings, where each element is the name of an application privilege or action.
+- `resources` (Set of String) A list resources to which the privileges are applied.
 
 
 <a id="nestedatt--indices"></a>
@@ -84,19 +84,21 @@ Read-Only:
 
 Read-Only:
 
-- `allow_restricted_indices` (Boolean)
-- `field_security` (List of Object) (see [below for nested schema](#nestedobjatt--indices--field_security))
-- `names` (Set of String)
-- `privileges` (Set of String)
-- `query` (String)
+- `allow_restricted_indices` (Boolean) Include matching restricted indices in names parameter.
 
-<a id="nestedobjatt--indices--field_security"></a>
+Usage is strongly discouraged as it can grant unrestricted operations on critical data, make the entire system unstable or leak sensitive information.
+- `field_security` (Attributes List) The document fields that the owners of the role have read access to. (see [below for nested schema](#nestedatt--indices--field_security))
+- `names` (Set of String) A list of indices (or index name patterns) to which the permissions in this entry apply.
+- `privileges` (Set of String) The index level privileges that the owners of the role have on the specified indices.
+- `query` (String) A search query that defines the documents the owners of the role have read access to.
+
+<a id="nestedatt--indices--field_security"></a>
 ### Nested Schema for `indices.field_security`
 
 Read-Only:
 
-- `except` (Set of String)
-- `grant` (Set of String)
+- `except` (Set of String) List of the fields to which the grants will not be applied.
+- `grant` (Set of String) List of the fields to grant the access to.
 
 
 
@@ -105,16 +107,16 @@ Read-Only:
 
 Read-Only:
 
-- `clusters` (Set of String)
-- `field_security` (List of Object) (see [below for nested schema](#nestedobjatt--remote_indices--field_security))
-- `names` (Set of String)
-- `privileges` (Set of String)
-- `query` (String)
+- `clusters` (Set of String) A list of cluster aliases to which the permissions in this entry apply.
+- `field_security` (Attributes List) The document fields that the owners of the role have read access to. (see [below for nested schema](#nestedatt--remote_indices--field_security))
+- `names` (Set of String) A list of indices (or index name patterns) to which the permissions in this entry apply.
+- `privileges` (Set of String) The index level privileges that the owners of the role have on the specified indices.
+- `query` (String) A search query that defines the documents the owners of the role have read access to.
 
-<a id="nestedobjatt--remote_indices--field_security"></a>
+<a id="nestedatt--remote_indices--field_security"></a>
 ### Nested Schema for `remote_indices.field_security`
 
 Read-Only:
 
-- `except` (Set of String)
-- `grant` (Set of String)
+- `except` (Set of String) List of the fields to which the grants will not be applied.
+- `grant` (Set of String) List of the fields to grant the access to.

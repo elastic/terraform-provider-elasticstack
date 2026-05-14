@@ -35,23 +35,36 @@ func alignDashboardStateFromPlanPanels(planPanels, statePanels []panelModel) {
 	alignXYChartStateFromPlanPanels(planPanels, statePanels)
 }
 
+func alignDashboardStateFromPlanPinnedPanels(ctx context.Context, planPins, statePins []pinnedPanelModel) {
+	n := min(len(planPins), len(statePins))
+	for i := range n {
+		plan := planPins[i].syntheticPanelModel()
+		state := statePins[i].syntheticPanelModel()
+		alignPanelStateFromPlan(ctx, &plan, &state)
+	}
+}
+
 func alignPanelStateFromPlan(ctx context.Context, plan, state *panelModel) {
 	if plan == nil || state == nil {
 		return
 	}
 
 	preservePlanJSONIfStateOmitsOptionalKeys(plan.ConfigJSON.Normalized, &state.ConfigJSON.Normalized, "filters", "query", "settings")
-	alignDatatableStateFromPlan(plan.DatatableConfig, state.DatatableConfig)
-	alignGaugeStateFromPlan(ctx, plan.GaugeConfig, state.GaugeConfig)
-	alignHeatmapStateFromPlan(ctx, plan.HeatmapConfig, state.HeatmapConfig)
-	alignLegacyMetricStateFromPlan(ctx, plan.LegacyMetricConfig, state.LegacyMetricConfig)
-	alignMetricStateFromPlan(plan.MetricChartConfig, state.MetricChartConfig)
-	alignMosaicStateFromPlan(plan.MosaicConfig, state.MosaicConfig)
-	alignPieStateFromPlan(plan.PieChartConfig, state.PieChartConfig)
-	alignRegionMapStateFromPlan(ctx, plan.RegionMapConfig, state.RegionMapConfig)
-	alignTagcloudStateFromPlan(ctx, plan.TagcloudConfig, state.TagcloudConfig)
-	alignTreemapStateFromPlan(plan.TreemapConfig, state.TreemapConfig)
-	alignWaffleStateFromPlan(ctx, plan.WaffleConfig, state.WaffleConfig)
+	planBlocks := lensByValueChartBlocksFromPanel(plan)
+	stateBlocks := lensByValueChartBlocksFromPanel(state)
+	if planBlocks != nil && stateBlocks != nil {
+		alignDatatableStateFromPlan(planBlocks.DatatableConfig, stateBlocks.DatatableConfig)
+		alignGaugeStateFromPlan(ctx, planBlocks.GaugeConfig, stateBlocks.GaugeConfig)
+		alignHeatmapStateFromPlan(ctx, planBlocks.HeatmapConfig, stateBlocks.HeatmapConfig)
+		alignLegacyMetricStateFromPlan(ctx, planBlocks.LegacyMetricConfig, stateBlocks.LegacyMetricConfig)
+		alignMetricStateFromPlan(planBlocks.MetricChartConfig, stateBlocks.MetricChartConfig)
+		alignMosaicStateFromPlan(planBlocks.MosaicConfig, stateBlocks.MosaicConfig)
+		alignPieStateFromPlan(planBlocks.PieChartConfig, stateBlocks.PieChartConfig)
+		alignRegionMapStateFromPlan(ctx, planBlocks.RegionMapConfig, stateBlocks.RegionMapConfig)
+		alignTagcloudStateFromPlan(ctx, planBlocks.TagcloudConfig, stateBlocks.TagcloudConfig)
+		alignTreemapStateFromPlan(planBlocks.TreemapConfig, stateBlocks.TreemapConfig)
+		alignWaffleStateFromPlan(ctx, planBlocks.WaffleConfig, stateBlocks.WaffleConfig)
+	}
 	alignEsqlControlStateFromPlan(plan.EsqlControlConfig, state.EsqlControlConfig)
 }
 
@@ -83,6 +96,9 @@ func alignGaugeStateFromPlan(ctx context.Context, plan, state *gaugeConfigModel)
 	}
 	alignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
 	preservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.MetricJSON, &state.MetricJSON)
+	if plan.EsqlMetric != nil && state.EsqlMetric != nil {
+		alignGaugeEsqlMetricStateFromPlan(plan.EsqlMetric, state.EsqlMetric)
+	}
 }
 
 func alignHeatmapStateFromPlan(ctx context.Context, plan, state *heatmapConfigModel) {
@@ -119,6 +135,10 @@ func alignMosaicStateFromPlan(plan, state *mosaicConfigModel) {
 		return
 	}
 	alignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
+	// Lens API commonly omits optional snapshot fields Kibana echoes as absent on read while the practitioner
+	// set them explicitly; mosaic fromAPI maps unknown "current" to null unless we replay plan here.
+	preserveKnownTfBoolIfStateNull(plan.IgnoreGlobalFilters, &state.IgnoreGlobalFilters)
+	preserveKnownTfFloat64IfStateNull(plan.Sampling, &state.Sampling)
 }
 
 func alignPieStateFromPlan(plan, state *pieChartConfigModel) {
@@ -144,6 +164,13 @@ func alignTagcloudStateFromPlan(ctx context.Context, plan, state *tagcloudConfig
 	preservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.MetricJSON, &state.MetricJSON)
 	preservePlanJSONIfStateAddsOptionalKeys(plan.TagByJSON.Normalized, &state.TagByJSON.Normalized, "rank_by", "color")
 	preservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.TagByJSON, &state.TagByJSON)
+	if plan.EsqlMetric != nil && state.EsqlMetric != nil {
+		preserveNormalizedJSONSemanticEquality(plan.EsqlMetric.FormatJSON, &state.EsqlMetric.FormatJSON)
+	}
+	if plan.EsqlTagBy != nil && state.EsqlTagBy != nil {
+		preserveNormalizedJSONSemanticEquality(plan.EsqlTagBy.FormatJSON, &state.EsqlTagBy.FormatJSON)
+		preserveNormalizedJSONSemanticEquality(plan.EsqlTagBy.ColorJSON, &state.EsqlTagBy.ColorJSON)
+	}
 }
 
 func alignTreemapStateFromPlan(plan, state *treemapConfigModel) {
@@ -151,6 +178,8 @@ func alignTreemapStateFromPlan(plan, state *treemapConfigModel) {
 		return
 	}
 	alignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
+	preserveKnownTfBoolIfStateNull(plan.IgnoreGlobalFilters, &state.IgnoreGlobalFilters)
+	preserveKnownTfFloat64IfStateNull(plan.Sampling, &state.Sampling)
 }
 
 func alignWaffleStateFromPlan(ctx context.Context, plan, state *waffleConfigModel) {
@@ -184,6 +213,18 @@ func alignTitleAndDescriptionFromPlan(planTitle, planDescription types.String, s
 
 func preserveKnownListIfStateNull(plan types.List, state *types.List) {
 	if typeutils.IsKnown(plan) && (state.IsNull() || state.IsUnknown()) {
+		*state = plan
+	}
+}
+
+func preserveKnownTfBoolIfStateNull(plan types.Bool, state *types.Bool) {
+	if typeutils.IsKnown(plan) && !plan.IsNull() && (!typeutils.IsKnown(*state) || state.IsNull()) {
+		*state = plan
+	}
+}
+
+func preserveKnownTfFloat64IfStateNull(plan types.Float64, state *types.Float64) {
+	if typeutils.IsKnown(plan) && !plan.IsNull() && (!typeutils.IsKnown(*state) || state.IsNull()) {
 		*state = plan
 	}
 }
@@ -271,4 +312,71 @@ func preservePlanJSONIfStateOmitsOptionalKeys(plan jsontypes.Normalized, state *
 	if reflect.DeepEqual(stateNormalized, planNormalized) {
 		*state = plan
 	}
+}
+
+const gaugeEsqlTicksModeBandsDefault = "bands"
+
+// gaugeEsqlAutoColorSentinel is the normalized form of Kibana's default
+// `{"type":"auto"}` color payload, precomputed so `gaugeEsqlColorJSONIsAuto`
+// does not allocate a fresh map on every alignment pass.
+var gaugeEsqlAutoColorSentinel = normalizeXYPlanComparisonJSON(map[string]any{"type": "auto"})
+
+func preserveNormalizedJSONSemanticEquality(plan jsontypes.Normalized, state *jsontypes.Normalized) {
+	if !typeutils.IsKnown(plan) || !typeutils.IsKnown(*state) {
+		return
+	}
+
+	var planObj map[string]any
+	if err := json.Unmarshal([]byte(plan.ValueString()), &planObj); err != nil {
+		return
+	}
+	var stateObj map[string]any
+	if err := json.Unmarshal([]byte(state.ValueString()), &stateObj); err != nil {
+		return
+	}
+
+	if reflect.DeepEqual(normalizeXYPlanComparisonJSON(planObj), normalizeXYPlanComparisonJSON(stateObj)) {
+		*state = plan
+	}
+}
+
+func alignGaugeEsqlMetricStateFromPlan(plan, state *gaugeEsqlMetric) {
+	if plan == nil || state == nil {
+		return
+	}
+	if plan.Title == nil && gaugeEsqlTitleMatchesKibanaDefaultVisible(state.Title) {
+		state.Title = nil
+	}
+	if plan.Ticks == nil && gaugeEsqlTicksMatchesKibanaDefaultBands(state.Ticks) {
+		state.Ticks = nil
+	}
+	if plan.ColorJSON.IsNull() && typeutils.IsKnown(state.ColorJSON) && gaugeEsqlColorJSONIsAuto(state.ColorJSON) {
+		state.ColorJSON = jsontypes.NewNormalizedNull()
+	}
+}
+
+func gaugeEsqlTitleMatchesKibanaDefaultVisible(title *gaugeEsqlTitle) bool {
+	if title == nil {
+		return false
+	}
+	textUnset := !typeutils.IsKnown(title.Text) || title.Text.IsNull()
+	visibleTrue := typeutils.IsKnown(title.Visible) && !title.Visible.IsNull() && title.Visible.ValueBool()
+	return textUnset && visibleTrue
+}
+
+func gaugeEsqlTicksMatchesKibanaDefaultBands(ticks *gaugeEsqlTicks) bool {
+	if ticks == nil {
+		return false
+	}
+	modeBands := typeutils.IsKnown(ticks.Mode) && ticks.Mode.ValueString() == gaugeEsqlTicksModeBandsDefault
+	visibleTrue := typeutils.IsKnown(ticks.Visible) && !ticks.Visible.IsNull() && ticks.Visible.ValueBool()
+	return modeBands && visibleTrue
+}
+
+func gaugeEsqlColorJSONIsAuto(color jsontypes.Normalized) bool {
+	var m map[string]any
+	if err := json.Unmarshal([]byte(color.ValueString()), &m); err != nil {
+		return false
+	}
+	return reflect.DeepEqual(normalizeXYPlanComparisonJSON(m), gaugeEsqlAutoColorSentinel)
 }

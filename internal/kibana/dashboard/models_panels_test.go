@@ -53,15 +53,18 @@ func buildLensMosaicPanelForTest(t *testing.T) panelModel {
 	require.NoError(t, attrs.FromMosaicNoESQL(api))
 
 	converter := newMosaicPanelConfigConverter()
-	pm := &panelModel{}
-	diags := converter.populateFromAttributes(context.Background(), pm, attrs)
+	visBv := visByValueModel{}
+	diags := converter.populateFromAttributes(context.Background(), nil, nil, &visBv.lensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
 
 	return panelModel{
-		Type:         types.StringValue("vis"),
-		ID:           types.StringValue("mosaic-1"),
-		Grid:         panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0), W: types.Int64Value(6), H: types.Int64Value(6)},
-		MosaicConfig: pm.MosaicConfig,
+		Type: types.StringValue("vis"),
+		ID:   types.StringValue("mosaic-1"),
+		Grid: panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0), W: types.Int64Value(6), H: types.Int64Value(6)},
+		VisConfig: &visConfigModel{
+			ByValue: &visBv,
+		},
+		ConfigJSON: customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults),
 	}
 }
 
@@ -84,15 +87,18 @@ func buildLensTreemapPanelForTest(t *testing.T) panelModel {
 	require.NoError(t, attrs.FromTreemapNoESQL(api))
 
 	converter := newTreemapPanelConfigConverter()
-	pm := &panelModel{}
-	diags := converter.populateFromAttributes(context.Background(), pm, attrs)
+	visBv := visByValueModel{}
+	diags := converter.populateFromAttributes(context.Background(), nil, nil, &visBv.lensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
 
 	return panelModel{
-		Type:          types.StringValue("vis"),
-		ID:            types.StringValue("treemap-1"),
-		Grid:          panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0), W: types.Int64Value(6), H: types.Int64Value(6)},
-		TreemapConfig: pm.TreemapConfig,
+		Type: types.StringValue("vis"),
+		ID:   types.StringValue("treemap-1"),
+		Grid: panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0), W: types.Int64Value(6), H: types.Int64Value(6)},
+		VisConfig: &visConfigModel{
+			ByValue: &visBv,
+		},
+		ConfigJSON: customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults),
 	}
 }
 
@@ -114,22 +120,46 @@ func buildLensWafflePanelForTest(t *testing.T) panelModel {
 	require.NoError(t, attrs.FromWaffleNoESQL(api))
 
 	converter := newWafflePanelConfigConverter()
-	pm := &panelModel{}
-	diags := converter.populateFromAttributes(context.Background(), pm, attrs)
+	visBv := visByValueModel{}
+	diags := converter.populateFromAttributes(context.Background(), nil, nil, &visBv.lensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
 
 	return panelModel{
-		Type:         types.StringValue("vis"),
-		ID:           types.StringValue("waffle-1"),
-		Grid:         panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0), W: types.Int64Value(8), H: types.Int64Value(10)},
-		WaffleConfig: pm.WaffleConfig,
+		Type: types.StringValue("vis"),
+		ID:   types.StringValue("waffle-1"),
+		Grid: panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0), W: types.Int64Value(8), H: types.Int64Value(10)},
+		VisConfig: &visConfigModel{
+			ByValue: &visBv,
+		},
+		ConfigJSON: customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults),
 	}
 }
 
-func Test_lensPanelTimeRange(t *testing.T) {
-	tr := lensPanelTimeRange()
-	assert.Equal(t, "now-15m", tr.From)
-	assert.Equal(t, "now", tr.To)
+func Test_resolveChartTimeRange_defaultWhenNoDashboard(t *testing.T) {
+	dash := &dashboardModel{
+		TimeRange: &timeRangeModel{
+			From: types.StringValue("now-7d"),
+			To:   types.StringValue("now"),
+		},
+	}
+
+	chartTR := &timeRangeModel{
+		From: types.StringValue("now-30d"),
+		To:   types.StringValue("now-1d"),
+	}
+
+	got := resolveChartTimeRange(dash, chartTR)
+	assert.Equal(t, "now-30d", got.From)
+	assert.Equal(t, "now-1d", got.To)
+
+	gotInherit := resolveChartTimeRange(dash, nil)
+	assert.Equal(t, "now-7d", gotInherit.From)
+	assert.Equal(t, "now", gotInherit.To)
+
+	// Scratch paths (no dashboard model) fall back to the legacy window when chart time is unset.
+	gotScratch := resolveChartTimeRange(nil, nil)
+	assert.Equal(t, "now-15m", gotScratch.From)
+	assert.Equal(t, "now", gotScratch.To)
 }
 
 func Test_mapPanelsFromAPI(t *testing.T) {
@@ -175,10 +205,16 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 					},
 					ID: types.StringValue("1"),
 					MarkdownConfig: &markdownConfigModel{
-						Title:       types.StringValue("My Panel"),
-						Content:     types.StringValue("some content"),
-						HideTitle:   types.BoolValue(true),
-						Description: types.StringNull(),
+						ByValue: &markdownConfigByValueModel{
+							Content:     types.StringValue("some content"),
+							Title:       types.StringValue("My Panel"),
+							HideTitle:   types.BoolValue(true),
+							Description: types.StringNull(),
+							HideBorder:  types.BoolNull(),
+							Settings: &markdownConfigSettingsModel{
+								OpenLinksInNewTab: types.BoolNull(),
+							},
+						},
 					},
 					ConfigJSON: customtypes.NewJSONWithDefaultsValue(`{
 						"title": "My Panel",
@@ -211,10 +247,16 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 					},
 					ID: types.StringNull(),
 					MarkdownConfig: &markdownConfigModel{
-						Title:       types.StringNull(),
-						Content:     types.StringValue(""),
-						HideTitle:   types.BoolNull(),
-						Description: types.StringNull(),
+						ByValue: &markdownConfigByValueModel{
+							Content:     types.StringValue(""),
+							Title:       types.StringNull(),
+							HideTitle:   types.BoolNull(),
+							Description: types.StringNull(),
+							HideBorder:  types.BoolNull(),
+							Settings: &markdownConfigSettingsModel{
+								OpenLinksInNewTab: types.BoolNull(),
+							},
+						},
 					},
 					ConfigJSON: customtypes.NewJSONWithDefaultsValue(`{"unknownField": "something"}`, populatePanelConfigJSONDefaults),
 				},
@@ -256,10 +298,16 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 							},
 							ID: types.StringNull(),
 							MarkdownConfig: &markdownConfigModel{
-								Title:       types.StringValue("Inner Panel"),
-								Content:     types.StringValue("Inner content"),
-								HideTitle:   types.BoolNull(),
-								Description: types.StringNull(),
+								ByValue: &markdownConfigByValueModel{
+									Content:     types.StringValue("Inner content"),
+									Title:       types.StringValue("Inner Panel"),
+									HideTitle:   types.BoolNull(),
+									Description: types.StringNull(),
+									HideBorder:  types.BoolNull(),
+									Settings: &markdownConfigSettingsModel{
+										OpenLinksInNewTab: types.BoolNull(),
+									},
+								},
 							},
 							ConfigJSON: customtypes.NewJSONWithDefaultsValue(`{ "title": "Inner Panel", "content": "Inner content" }`, populatePanelConfigJSONDefaults),
 						},
@@ -306,10 +354,16 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 					},
 					ID: types.StringValue("panel1"),
 					MarkdownConfig: &markdownConfigModel{
-						Title:       types.StringValue("Panel 1"),
-						Content:     types.StringValue("Panel 1 body"),
-						HideTitle:   types.BoolNull(),
-						Description: types.StringNull(),
+						ByValue: &markdownConfigByValueModel{
+							Content:     types.StringValue("Panel 1 body"),
+							Title:       types.StringValue("Panel 1"),
+							HideTitle:   types.BoolNull(),
+							Description: types.StringNull(),
+							HideBorder:  types.BoolNull(),
+							Settings: &markdownConfigSettingsModel{
+								OpenLinksInNewTab: types.BoolNull(),
+							},
+						},
 					},
 					ConfigJSON: customtypes.NewJSONWithDefaultsValue(`{ "title": "Panel 1", "content": "Panel 1 body" }`, populatePanelConfigJSONDefaults),
 				},
@@ -345,14 +399,48 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 							},
 							ID: types.StringNull(),
 							MarkdownConfig: &markdownConfigModel{
-								Title:       types.StringValue("Inner Panel"),
-								Content:     types.StringValue("Inner panel body"),
-								HideTitle:   types.BoolNull(),
-								Description: types.StringNull(),
+								ByValue: &markdownConfigByValueModel{
+									Content:     types.StringValue("Inner panel body"),
+									Title:       types.StringValue("Inner Panel"),
+									HideTitle:   types.BoolNull(),
+									Description: types.StringNull(),
+									HideBorder:  types.BoolNull(),
+									Settings: &markdownConfigSettingsModel{
+										OpenLinksInNewTab: types.BoolNull(),
+									},
+								},
 							},
 							ConfigJSON: customtypes.NewJSONWithDefaultsValue(`{ "title": "Inner Panel", "content": "Inner panel body" }`, populatePanelConfigJSONDefaults),
 						},
 					},
+				},
+			},
+		},
+		{
+			name: "unknown panel type preserves id, grid, and config",
+			apiPanelsJSON: `[
+				{
+					"grid": {"x": 0, "y": 1, "w": 48, "h": 15},
+					"id": "unknown-1",
+					"type": "custom_unknown_panel",
+					"config": {
+						"timeRange": {"from": "now-30d", "to": "now"},
+						"columns": ["_source"],
+						"sort": [{"@timestamp": "desc"}]
+					}
+				}
+			]`,
+			expectedPanels: []panelModel{
+				{
+					Type: types.StringValue("custom_unknown_panel"),
+					Grid: panelGridModel{
+						X: types.Int64Value(0),
+						Y: types.Int64Value(1),
+						W: types.Int64Value(48),
+						H: types.Int64Value(15),
+					},
+					ID:         types.StringValue("unknown-1"),
+					ConfigJSON: customtypes.NewJSONWithDefaultsValue(`{"timeRange":{"from":"now-30d","to":"now"},"columns":["_source"],"sort":[{"@timestamp":"desc"}]}`, populatePanelConfigJSONDefaults),
 				},
 			},
 		},
@@ -388,16 +476,8 @@ func assertPanelsEqual(t *testing.T, expected, actual panelModel) {
 	assert.Equal(t, expected.Grid, actual.Grid)
 	assert.Equal(t, expected.ID, actual.ID)
 	assert.Equal(t, expected.MarkdownConfig, actual.MarkdownConfig)
-	assert.Equal(t, expected.XYChartConfig, actual.XYChartConfig)
-	assert.Equal(t, expected.TreemapConfig, actual.TreemapConfig)
-	assert.Equal(t, expected.DatatableConfig, actual.DatatableConfig)
-	assert.Equal(t, expected.TagcloudConfig, actual.TagcloudConfig)
-	assert.Equal(t, expected.MetricChartConfig, actual.MetricChartConfig)
-	assert.Equal(t, expected.PieChartConfig, actual.PieChartConfig)
-	assert.Equal(t, expected.GaugeConfig, actual.GaugeConfig)
-	assert.Equal(t, expected.LegacyMetricConfig, actual.LegacyMetricConfig)
-	assert.Equal(t, expected.RegionMapConfig, actual.RegionMapConfig)
-	assert.Equal(t, expected.HeatmapConfig, actual.HeatmapConfig)
+	assert.Equal(t, expected.VisConfig, actual.VisConfig)
+	assert.Equal(t, expected.LensDashboardAppConfig, actual.LensDashboardAppConfig)
 	// ConfigJSON: use semantic equality (handles formatting differences)
 	ctx := context.Background()
 	eq, diags := expected.ConfigJSON.StringSemanticEquals(ctx, actual.ConfigJSON)
@@ -438,9 +518,14 @@ func Test_panelsToAPI(t *testing.T) {
 						},
 						ID: types.StringValue("1"),
 						MarkdownConfig: &markdownConfigModel{
-							Title:     types.StringValue("My Panel"),
-							Content:   types.StringValue("some content"),
-							HideTitle: types.BoolValue(true),
+							ByValue: &markdownConfigByValueModel{
+								Content:   types.StringValue("some content"),
+								Title:     types.StringValue("My Panel"),
+								HideTitle: types.BoolValue(true),
+								Settings: &markdownConfigSettingsModel{
+									OpenLinksInNewTab: types.BoolNull(),
+								},
+							},
 						},
 						ConfigJSON: customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults),
 					},
@@ -497,6 +582,10 @@ func Test_panelsToAPI(t *testing.T) {
 		{
 			name: "lens panel with treemap config",
 			model: dashboardModel{
+				TimeRange: &timeRangeModel{
+					From: types.StringValue("now-15m"),
+					To:   types.StringValue("now"),
+				},
 				Panels: []panelModel{
 					buildLensTreemapPanelForTest(t),
 				},
@@ -524,6 +613,10 @@ func Test_panelsToAPI(t *testing.T) {
 		{
 			name: "lens panel with mosaic config",
 			model: dashboardModel{
+				TimeRange: &timeRangeModel{
+					From: types.StringValue("now-15m"),
+					To:   types.StringValue("now"),
+				},
 				Panels: []panelModel{
 					buildLensMosaicPanelForTest(t),
 				},
@@ -556,6 +649,10 @@ func Test_panelsToAPI(t *testing.T) {
 		{
 			name: "lens panel with waffle config",
 			model: dashboardModel{
+				TimeRange: &timeRangeModel{
+					From: types.StringValue("now-15m"),
+					To:   types.StringValue("now"),
+				},
 				Panels: []panelModel{
 					buildLensWafflePanelForTest(t),
 				},
@@ -593,7 +690,13 @@ func Test_panelsToAPI(t *testing.T) {
 								Type: types.StringValue("markdown"),
 								Grid: panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0), W: types.Int64Value(5), H: types.Int64Value(5)},
 								MarkdownConfig: &markdownConfigModel{
-									Title: types.StringValue("Inner Text"),
+									ByValue: &markdownConfigByValueModel{
+										Content: types.StringValue(""),
+										Title:   types.StringValue("Inner Text"),
+										Settings: &markdownConfigSettingsModel{
+											OpenLinksInNewTab: types.BoolNull(),
+										},
+									},
 								},
 							},
 						},
@@ -612,11 +715,41 @@ func Test_panelsToAPI(t *testing.T) {
 				}
 			]`,
 		},
+		{
+			name: "unknown panel type replays config_json",
+			model: dashboardModel{
+				Panels: []panelModel{
+					{
+						Type: types.StringValue("custom_unknown_panel"),
+						Grid: panelGridModel{
+							X: types.Int64Value(0),
+							Y: types.Int64Value(1),
+							W: types.Int64Value(48),
+							H: types.Int64Value(15),
+						},
+						ID:         types.StringValue("unknown-1"),
+						ConfigJSON: customtypes.NewJSONWithDefaultsValue(`{"timeRange":{"from":"now-30d","to":"now"},"columns":["_source"],"sort":[{"@timestamp":"desc"}]}`, populatePanelConfigJSONDefaults),
+					},
+				},
+			},
+			expected: `[
+				{
+					"grid": {"x": 0, "y": 1, "w": 48, "h": 15},
+					"id": "unknown-1",
+					"type": "custom_unknown_panel",
+					"config": {
+						"timeRange": {"from": "now-30d", "to": "now"},
+						"columns": ["_source"],
+						"sort": [{"@timestamp": "desc"}]
+					}
+				}
+			]`,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, diags := tt.model.panelsToAPI()
+			result, diags := tt.model.panelsToAPI(context.Background())
 			require.False(t, diags.HasError())
 
 			jsonBytes, err := json.Marshal(result)
@@ -641,16 +774,6 @@ func Test_panelModel_toAPI_configJSONErrors(t *testing.T) {
 		errorContains string
 	}{
 		{
-			name: "rejects unsupported config_json panel type",
-			panel: panelModel{
-				Type:       types.StringValue("metric"),
-				Grid:       panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0)},
-				ConfigJSON: customtypes.NewJSONWithDefaultsValue(`{"content":"ignored"}`, populatePanelConfigJSONDefaults),
-			},
-			errorSummary:  "Unsupported panel type for config_json",
-			errorContains: "Only markdown and vis panel types are currently supported",
-		},
-		{
 			name: "rejects panel-level config_json for lens-dashboard-app (REQ-025 write path)",
 			panel: panelModel{
 				Type:       types.StringValue("lens-dashboard-app"),
@@ -659,6 +782,35 @@ func Test_panelModel_toAPI_configJSONErrors(t *testing.T) {
 			},
 			errorSummary:  "Unsupported panel type for config_json",
 			errorContains: "Panel-level `config_json` is not supported for `lens-dashboard-app`",
+		},
+		{
+			name: "rejects panel-level config_json for image",
+			panel: panelModel{
+				Type:       types.StringValue("image"),
+				Grid:       panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0)},
+				ConfigJSON: customtypes.NewJSONWithDefaultsValue(`{}`, populatePanelConfigJSONDefaults),
+			},
+			errorSummary:  "Unsupported panel type for config_json",
+			errorContains: "not supported for `image`",
+		},
+		{
+			name: "rejects panel-level config_json for slo_alerts",
+			panel: panelModel{
+				Type:       types.StringValue(panelTypeSloAlerts),
+				Grid:       panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0)},
+				ConfigJSON: customtypes.NewJSONWithDefaultsValue(`{}`, populatePanelConfigJSONDefaults),
+			},
+			errorSummary:  "Unsupported panel type for config_json",
+			errorContains: "not supported for `slo_alerts`",
+		},
+		{
+			name: "rejects missing slo_alerts_config",
+			panel: panelModel{
+				Type: types.StringValue(panelTypeSloAlerts),
+				Grid: panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0)},
+			},
+			errorSummary:  "Missing SLO alerts panel configuration",
+			errorContains: "require `slo_alerts_config`",
 		},
 		{
 			name: "rejects missing panel configuration",
@@ -691,6 +843,25 @@ func Test_panelModel_toAPI_configJSONErrors(t *testing.T) {
 			errorContains: "unexpected end of JSON input",
 		},
 		{
+			name: "rejects panel-level config_json for discover_session",
+			panel: panelModel{
+				Type:       types.StringValue(panelTypeDiscoverSession),
+				Grid:       panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0)},
+				ConfigJSON: customtypes.NewJSONWithDefaultsValue(`{}`, populatePanelConfigJSONDefaults),
+			},
+			errorSummary:  "Unsupported panel type for config_json",
+			errorContains: "not supported for `discover_session`",
+		},
+		{
+			name: "rejects missing discover_session_config",
+			panel: panelModel{
+				Type: types.StringValue(panelTypeDiscoverSession),
+				Grid: panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0)},
+			},
+			errorSummary:  "Missing discover_session panel configuration",
+			errorContains: "require `discover_session_config`",
+		},
+		{
 			name: "rejects missing slo burn rate config",
 			panel: panelModel{
 				Type: types.StringValue("slo_burn_rate"),
@@ -703,10 +874,66 @@ func Test_panelModel_toAPI_configJSONErrors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, diags := tt.panel.toAPI()
+			_, diags := tt.panel.toAPI(context.Background(), nil)
 			require.True(t, diags.HasError())
 			require.Equal(t, tt.errorSummary, diags[0].Summary())
 			require.Contains(t, diags[0].Detail(), tt.errorContains)
 		})
 	}
+}
+
+func Test_unknownPanelRoundTrip(t *testing.T) {
+	apiJSON := `[
+		{
+			"grid": {"x": 0, "y": 1, "w": 48, "h": 15},
+			"id": "unknown-1",
+			"type": "custom_unknown_panel",
+			"config": {
+				"timeRange": {"from": "now-30d", "to": "now"},
+				"columns": ["_source"],
+				"sort": [{"@timestamp": "desc"}]
+			}
+		}
+	]`
+
+	// Step 1: unmarshal API JSON
+	var apiPanels kbapi.DashboardPanels
+	require.NoError(t, json.Unmarshal([]byte(apiJSON), &apiPanels))
+
+	// Step 2: read into TF model
+	model := &dashboardModel{}
+	panels, sections, diags := model.mapPanelsFromAPI(t.Context(), &apiPanels)
+	require.False(t, diags.HasError())
+	require.Empty(t, sections)
+	require.Len(t, panels, 1)
+
+	// Step 3: reconstruct model with just these panels and write back to API
+	model.Panels = panels
+	result, diags := model.panelsToAPI(context.Background())
+	require.False(t, diags.HasError())
+
+	// Step 4: verify round-trip equality (semantic JSON comparison)
+	actualBytes, err := json.Marshal(result)
+	require.NoError(t, err)
+
+	var expectedAny, actualAny any
+	require.NoError(t, json.Unmarshal([]byte(apiJSON), &expectedAny))
+	require.NoError(t, json.Unmarshal(actualBytes, &actualAny))
+
+	assert.Equal(t, expectedAny, actualAny, "Round-trip should produce identical API JSON for unknown panel types")
+}
+
+func Test_unknownPanelToAPIErrorWithoutConfigJSON(t *testing.T) {
+	// When an unknown panel type is authored in config (not read from the API)
+	// and has no config_json, toAPI should produce an "unsupported panel type" error.
+	panel := panelModel{
+		Type:       types.StringValue("custom_unknown_panel"),
+		Grid:       panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0), W: types.Int64Value(48), H: types.Int64Value(15)},
+		ID:         types.StringNull(),
+		ConfigJSON: customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults),
+	}
+	_, diags := panel.toAPI(context.Background(), nil)
+	require.True(t, diags.HasError())
+	require.Equal(t, "Unsupported panel type", diags[0].Summary())
+	require.Contains(t, diags[0].Detail(), "not yet supported")
 }

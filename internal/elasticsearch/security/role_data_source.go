@@ -22,408 +22,577 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	esTypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
-	"github.com/hashicorp/go-version"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-var (
-	MinSupportedDescriptionVersion = version.Must(version.NewVersion("8.15.0"))
-)
+type roleDataSourceModel struct {
+	entitycore.ElasticsearchConnectionField
+	ID            types.String         `tfsdk:"id"`
+	Name          types.String         `tfsdk:"name"`
+	Description   types.String         `tfsdk:"description"`
+	Cluster       types.Set            `tfsdk:"cluster"`
+	RunAs         types.Set            `tfsdk:"run_as"`
+	Global        jsontypes.Normalized `tfsdk:"global"`
+	Metadata      jsontypes.Normalized `tfsdk:"metadata"`
+	Applications  types.Set            `tfsdk:"applications"`
+	Indices       types.Set            `tfsdk:"indices"`
+	RemoteIndices types.Set            `tfsdk:"remote_indices"`
+}
 
-func DataSourceRole() *schema.Resource {
-	roleSchema := map[string]*schema.Schema{
-		"id": {
-			Description: "Internal identifier of the resource",
-			Type:        schema.TypeString,
-			Computed:    true,
-		},
-		"name": {
-			Description: "The name of the role.",
-			Type:        schema.TypeString,
-			Required:    true,
-		},
-		"description": {
-			Description: "The description of the role.",
-			Type:        schema.TypeString,
-			Computed:    true,
-		},
-		"applications": {
-			Description: "A list of application privilege entries.",
-			Type:        schema.TypeSet,
-			Computed:    true,
-			Elem: &schema.Resource{
-				Schema: map[string]*schema.Schema{
-					"application": {
-						Description: "The name of the application to which this entry applies.",
-						Type:        schema.TypeString,
-						Computed:    true,
-					},
-					"privileges": {
-						Description: "A list of strings, where each element is the name of an application privilege or action.",
-						Type:        schema.TypeSet,
-						Elem: &schema.Schema{
-							Type: schema.TypeString,
+func NewRoleDataSource() datasource.DataSource {
+	return entitycore.NewElasticsearchDataSource[roleDataSourceModel](
+		entitycore.ComponentElasticsearch,
+		"security_role",
+		getDataSourceSchema,
+		readDataSource,
+	)
+}
+
+func getDataSourceSchema(_ context.Context) schema.Schema {
+	return schema.Schema{
+		MarkdownDescription: "Retrieves roles in the native realm. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-get-role.html",
+		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
+				MarkdownDescription: "Internal identifier of the resource",
+				Computed:            true,
+			},
+			"name": schema.StringAttribute{
+				MarkdownDescription: "The name of the role.",
+				Required:            true,
+			},
+			"description": schema.StringAttribute{
+				MarkdownDescription: "The description of the role.",
+				Computed:            true,
+			},
+			"cluster": schema.SetAttribute{
+				MarkdownDescription: "A list of cluster privileges. These privileges define the cluster level actions that users with this role are able to execute.",
+				ElementType:         types.StringType,
+				Computed:            true,
+			},
+			"run_as": schema.SetAttribute{
+				MarkdownDescription: "A list of users that the owners of this role can impersonate.",
+				ElementType:         types.StringType,
+				Computed:            true,
+			},
+			"global": schema.StringAttribute{
+				MarkdownDescription: "An object defining global privileges.",
+				Computed:            true,
+				CustomType:          jsontypes.NormalizedType{},
+			},
+			"metadata": schema.StringAttribute{
+				MarkdownDescription: "Optional meta-data.",
+				Computed:            true,
+				CustomType:          jsontypes.NormalizedType{},
+			},
+			"applications": schema.SetNestedAttribute{
+				MarkdownDescription: "A list of application privilege entries.",
+				Computed:            true,
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"application": schema.StringAttribute{
+							MarkdownDescription: "The name of the application to which this entry applies.",
+							Computed:            true,
 						},
-						Computed: true,
-					},
-					"resources": {
-						Description: "A list resources to which the privileges are applied.",
-						Type:        schema.TypeSet,
-						Elem: &schema.Schema{
-							Type: schema.TypeString,
+						"privileges": schema.SetAttribute{
+							MarkdownDescription: "A list of strings, where each element is the name of an application privilege or action.",
+							ElementType:         types.StringType,
+							Computed:            true,
 						},
-						Computed: true,
+						"resources": schema.SetAttribute{
+							MarkdownDescription: "A list resources to which the privileges are applied.",
+							ElementType:         types.StringType,
+							Computed:            true,
+						},
 					},
 				},
 			},
-		},
-		"global": {
-			Description: "An object defining global privileges.",
-			Type:        schema.TypeString,
-			Computed:    true,
-		},
-		"cluster": {
-			Description: "A list of cluster privileges. These privileges define the cluster level actions that users with this role are able to execute.",
-			Type:        schema.TypeSet,
-			Elem: &schema.Schema{
-				Type: schema.TypeString,
-			},
-			Computed: true,
-		},
-		"indices": {
-			Description: "A list of indices permissions entries.",
-			Type:        schema.TypeSet,
-			Computed:    true,
-			Elem: &schema.Resource{
-				Schema: map[string]*schema.Schema{
-					"field_security": {
-						Description: "The document fields that the owners of the role have read access to.",
-						Type:        schema.TypeList,
-						Computed:    true,
-						Elem: &schema.Resource{
-							Schema: map[string]*schema.Schema{
-								"grant": {
-									Description: "List of the fields to grant the access to.",
-									Type:        schema.TypeSet,
-									Computed:    true,
-									Elem: &schema.Schema{
-										Type: schema.TypeString,
+			"indices": schema.SetNestedAttribute{
+				MarkdownDescription: "A list of indices permissions entries.",
+				Computed:            true,
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"field_security": schema.ListNestedAttribute{
+							MarkdownDescription: "The document fields that the owners of the role have read access to.",
+							Computed:            true,
+							NestedObject: schema.NestedAttributeObject{
+								Attributes: map[string]schema.Attribute{
+									"grant": schema.SetAttribute{
+										MarkdownDescription: "List of the fields to grant the access to.",
+										ElementType:         types.StringType,
+										Computed:            true,
 									},
-								},
-								"except": {
-									Description: "List of the fields to which the grants will not be applied.",
-									Type:        schema.TypeSet,
-									Computed:    true,
-									Elem: &schema.Schema{
-										Type: schema.TypeString,
+									"except": schema.SetAttribute{
+										MarkdownDescription: "List of the fields to which the grants will not be applied.",
+										ElementType:         types.StringType,
+										Computed:            true,
 									},
 								},
 							},
 						},
-					},
-					"names": {
-						Description: "A list of indices (or index name patterns) to which the permissions in this entry apply.",
-						Type:        schema.TypeSet,
-						Computed:    true,
-						Elem: &schema.Schema{
-							Type: schema.TypeString,
+						"names": schema.SetAttribute{
+							MarkdownDescription: "A list of indices (or index name patterns) to which the permissions in this entry apply.",
+							ElementType:         types.StringType,
+							Computed:            true,
 						},
-					},
-					"privileges": {
-						Description: "The index level privileges that the owners of the role have on the specified indices.",
-						Type:        schema.TypeSet,
-						Computed:    true,
-						Elem: &schema.Schema{
-							Type: schema.TypeString,
+						"privileges": schema.SetAttribute{
+							MarkdownDescription: "The index level privileges that the owners of the role have on the specified indices.",
+							ElementType:         types.StringType,
+							Computed:            true,
 						},
-					},
-					"query": {
-						Description: "A search query that defines the documents the owners of the role have read access to.",
-						Type:        schema.TypeString,
-						Computed:    true,
-					},
-					"allow_restricted_indices": {
-						Description: roleAllowRestrictedIndicesDescription,
-						Type:        schema.TypeBool,
-						Computed:    true,
+						"query": schema.StringAttribute{
+							MarkdownDescription: "A search query that defines the documents the owners of the role have read access to.",
+							Computed:            true,
+							CustomType:          jsontypes.NormalizedType{},
+						},
+						"allow_restricted_indices": schema.BoolAttribute{
+							MarkdownDescription: roleAllowRestrictedIndicesDescription,
+							Computed:            true,
+						},
 					},
 				},
 			},
-		},
-		"remote_indices": {
-			Description: roleRemoteIndicesDescription,
-			Type:        schema.TypeSet,
-			Computed:    true,
-			Elem: &schema.Resource{
-				Schema: map[string]*schema.Schema{
-					"clusters": {
-						Description: "A list of cluster aliases to which the permissions in this entry apply.",
-						Type:        schema.TypeSet,
-						Computed:    true,
-						Elem: &schema.Schema{
-							Type: schema.TypeString,
+			"remote_indices": schema.SetNestedAttribute{
+				MarkdownDescription: roleRemoteIndicesDescription,
+				Computed:            true,
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"clusters": schema.SetAttribute{
+							MarkdownDescription: "A list of cluster aliases to which the permissions in this entry apply.",
+							ElementType:         types.StringType,
+							Computed:            true,
 						},
-					},
-					"field_security": {
-						Description: "The document fields that the owners of the role have read access to.",
-						Type:        schema.TypeList,
-						Computed:    true,
-						Elem: &schema.Resource{
-							Schema: map[string]*schema.Schema{
-								"grant": {
-									Description: "List of the fields to grant the access to.",
-									Type:        schema.TypeSet,
-									Computed:    true,
-									Elem: &schema.Schema{
-										Type: schema.TypeString,
+						"field_security": schema.ListNestedAttribute{
+							MarkdownDescription: "The document fields that the owners of the role have read access to.",
+							Computed:            true,
+							NestedObject: schema.NestedAttributeObject{
+								Attributes: map[string]schema.Attribute{
+									"grant": schema.SetAttribute{
+										MarkdownDescription: "List of the fields to grant the access to.",
+										ElementType:         types.StringType,
+										Computed:            true,
 									},
-								},
-								"except": {
-									Description: "List of the fields to which the grants will not be applied.",
-									Type:        schema.TypeSet,
-									Computed:    true,
-									Elem: &schema.Schema{
-										Type: schema.TypeString,
+									"except": schema.SetAttribute{
+										MarkdownDescription: "List of the fields to which the grants will not be applied.",
+										ElementType:         types.StringType,
+										Computed:            true,
 									},
 								},
 							},
 						},
-					},
-					"names": {
-						Description: "A list of indices (or index name patterns) to which the permissions in this entry apply.",
-						Type:        schema.TypeSet,
-						Computed:    true,
-						Elem: &schema.Schema{
-							Type: schema.TypeString,
+						"names": schema.SetAttribute{
+							MarkdownDescription: "A list of indices (or index name patterns) to which the permissions in this entry apply.",
+							ElementType:         types.StringType,
+							Computed:            true,
 						},
-					},
-					"privileges": {
-						Description: "The index level privileges that the owners of the role have on the specified indices.",
-						Type:        schema.TypeSet,
-						Computed:    true,
-						Elem: &schema.Schema{
-							Type: schema.TypeString,
+						"privileges": schema.SetAttribute{
+							MarkdownDescription: "The index level privileges that the owners of the role have on the specified indices.",
+							ElementType:         types.StringType,
+							Computed:            true,
 						},
-					},
-					"query": {
-						Description: "A search query that defines the documents the owners of the role have read access to.",
-						Type:        schema.TypeString,
-						Computed:    true,
+						"query": schema.StringAttribute{
+							MarkdownDescription: "A search query that defines the documents the owners of the role have read access to.",
+							Computed:            true,
+							CustomType:          jsontypes.NormalizedType{},
+						},
 					},
 				},
 			},
 		},
-		"metadata": {
-			Description: "Optional meta-data.",
-			Type:        schema.TypeString,
-			Computed:    true,
-		},
-		"run_as": {
-			Description: "A list of users that the owners of this role can impersonate.",
-			Type:        schema.TypeSet,
-			Optional:    true,
-			Elem: &schema.Schema{
-				Type: schema.TypeString,
-			},
-		},
-	}
-
-	schemautil.AddConnectionSchema(roleSchema)
-
-	return &schema.Resource{
-		Description: "Retrieves roles in the native realm. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-get-role.html",
-		ReadContext: dataSourceSecurityRoleRead,
-		Schema:      roleSchema,
 	}
 }
 
-func dataSourceSecurityRoleRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	factory, diags := clients.ConvertMetaToFactory(meta)
+func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedClient, config roleDataSourceModel) (roleDataSourceModel, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	roleName := config.Name.ValueString()
+
+	// Resolve the composite ID
+	id, sdkDiags := esClient.ID(ctx, roleName)
+	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
-		return diags
+		return config, diags
 	}
-	client, diags := factory.GetElasticsearchClientFromSDK(d)
+	config.ID = types.StringValue(id.String())
+
+	// Call GetRole (returns SDK v2 diagnostics)
+	role, sdkDiags := elasticsearch.GetRole(ctx, esClient, roleName)
+	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
-		return diags
+		return config, diags
 	}
 
-	roleID := d.Get("name").(string)
-	id, diags := client.ID(ctx, roleID)
+	// Not-found: return empty ID, keep name, no diagnostics
+	if role == nil {
+		config.ID = types.StringValue("")
+		config.Description = types.StringNull()
+		config.Cluster = types.SetNull(types.StringType)
+		config.RunAs = types.SetNull(types.StringType)
+		config.Global = jsontypes.NewNormalizedNull()
+		config.Metadata = jsontypes.NewNormalizedNull()
+		config.Applications = types.SetNull(types.ObjectType{AttrTypes: getApplicationDSAttrTypes()})
+		config.Indices = types.SetNull(types.ObjectType{AttrTypes: getIndexPermsDSAttrTypes()})
+		config.RemoteIndices = types.SetNull(types.ObjectType{AttrTypes: getRemoteIndexPermsDSAttrTypes()})
+		return config, diags
+	}
+
+	// Map API response to model
+	diags.Append(config.fromAPIModel(ctx, role)...)
 	if diags.HasError() {
-		return diags
-	}
-	d.SetId(id.String())
-
-	role, diags := elasticsearch.GetRole(ctx, client, roleID)
-	if role == nil && diags == nil {
-		tflog.Warn(ctx, fmt.Sprintf(`Role "%s" not found, removing from state`, roleID))
-		d.SetId("")
-		return diags
-	}
-	if diags.HasError() {
-		return diags
+		return config, diags
 	}
 
-	// set the fields
-	if err := d.Set("name", roleID); err != nil {
-		return diag.FromErr(err)
-	}
+	// Ensure name is set to the role name we looked up
+	config.Name = types.StringValue(roleName)
 
-	// Set the description if it exists
+	return config, diags
+}
+
+func (config *roleDataSourceModel) fromAPIModel(ctx context.Context, role *esTypes.Role) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	// Description
 	if role.Description != nil {
-		if err := d.Set("description", *role.Description); err != nil {
-			return diag.FromErr(err)
-		}
+		config.Description = types.StringValue(*role.Description)
+	} else {
+		config.Description = types.StringNull()
 	}
 
-	applications := flattenApplicationsData(role.Applications)
-	if err := d.Set("applications", applications); err != nil {
-		return diag.FromErr(err)
-	}
-
+	// Cluster
 	clusterStrings := make([]string, len(role.Cluster))
 	for i, cp := range role.Cluster {
 		clusterStrings[i] = cp.String()
 	}
-	if err := d.Set("cluster", clusterStrings); err != nil {
-		return diag.FromErr(err)
+	clusterSet, d := types.SetValueFrom(ctx, types.StringType, clusterStrings)
+	diags.Append(d...)
+	if diags.HasError() {
+		return diags
 	}
+	config.Cluster = clusterSet
 
+	// RunAs
+	runAsSet, d := types.SetValueFrom(ctx, types.StringType, typeutils.NonNilSlice(role.RunAs))
+	diags.Append(d...)
+	if diags.HasError() {
+		return diags
+	}
+	config.RunAs = runAsSet
+
+	// Global
 	if role.Global != nil {
-		global, err := json.Marshal(role.Global)
+		globalBytes, err := json.Marshal(role.Global)
 		if err != nil {
-			return diag.FromErr(err)
+			diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling global JSON: %s", err))
+			return diags
 		}
-		if err := d.Set("global", string(global)); err != nil {
-			return diag.FromErr(err)
-		}
+		config.Global = jsontypes.NewNormalizedValue(string(globalBytes))
+	} else {
+		config.Global = jsontypes.NewNormalizedNull()
 	}
 
-	indices := flattenIndicesData(role.Indices)
-	if err := d.Set("indices", indices); err != nil {
-		return diag.FromErr(err)
-	}
-	remoteIndices := flattenRemoteIndicesData(role.RemoteIndices)
-	if err := d.Set("remote_indices", remoteIndices); err != nil {
-		return diag.FromErr(err)
-	}
-
+	// Metadata
 	if role.Metadata != nil {
-		metadata, err := json.Marshal(role.Metadata)
+		metadataBytes, err := json.Marshal(role.Metadata)
 		if err != nil {
-			return diag.FromErr(err)
+			diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling metadata JSON: %s", err))
+			return diags
 		}
-		if err := d.Set("metadata", string(metadata)); err != nil {
-			return diag.FromErr(err)
-		}
+		config.Metadata = jsontypes.NewNormalizedValue(string(metadataBytes))
+	} else {
+		config.Metadata = jsontypes.NewNormalizedNull()
 	}
 
-	if err := d.Set("run_as", role.RunAs); err != nil {
-		return diag.FromErr(err)
+	// Applications
+	if len(role.Applications) > 0 {
+		appElements := make([]attr.Value, len(role.Applications))
+		for i, app := range role.Applications {
+			privSet, d := types.SetValueFrom(ctx, types.StringType, typeutils.NonNilSlice(app.Privileges))
+			diags.Append(d...)
+			if diags.HasError() {
+				return diags
+			}
+
+			resSet, d := types.SetValueFrom(ctx, types.StringType, typeutils.NonNilSlice(app.Resources))
+			diags.Append(d...)
+			if diags.HasError() {
+				return diags
+			}
+
+			appObj, d := types.ObjectValue(getApplicationDSAttrTypes(), map[string]attr.Value{
+				"application": types.StringValue(app.Application),
+				"privileges":  privSet,
+				"resources":   resSet,
+			})
+			diags.Append(d...)
+			if diags.HasError() {
+				return diags
+			}
+
+			appElements[i] = appObj
+		}
+
+		appSet, d := types.SetValue(types.ObjectType{AttrTypes: getApplicationDSAttrTypes()}, appElements)
+		diags.Append(d...)
+		if diags.HasError() {
+			return diags
+		}
+		config.Applications = appSet
+	} else {
+		config.Applications = types.SetNull(types.ObjectType{AttrTypes: getApplicationDSAttrTypes()})
+	}
+
+	// Indices
+	if len(role.Indices) > 0 {
+		indicesElements := make([]attr.Value, len(role.Indices))
+		for i, index := range role.Indices {
+			namesSet, d := types.SetValueFrom(ctx, types.StringType, typeutils.NonNilSlice(index.Names))
+			diags.Append(d...)
+			if diags.HasError() {
+				return diags
+			}
+
+			privileges := make([]string, len(index.Privileges))
+			for j, p := range index.Privileges {
+				privileges[j] = p.String()
+			}
+			privSet, d := types.SetValueFrom(ctx, types.StringType, privileges)
+			diags.Append(d...)
+			if diags.HasError() {
+				return diags
+			}
+
+			var queryVal jsontypes.Normalized
+			if index.Query != nil {
+				switch q := index.Query.(type) {
+				case string:
+					queryVal = jsontypes.NewNormalizedValue(q)
+				default:
+					b, err := json.Marshal(index.Query)
+					if err != nil {
+						diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling query: %s", err))
+						return diags
+					}
+					queryVal = jsontypes.NewNormalizedValue(string(b))
+				}
+			} else {
+				queryVal = jsontypes.NewNormalizedNull()
+			}
+
+			var allowRestrictedVal types.Bool
+			if index.AllowRestrictedIndices != nil {
+				allowRestrictedVal = types.BoolValue(*index.AllowRestrictedIndices)
+			} else {
+				allowRestrictedVal = types.BoolNull()
+			}
+
+			// Build field_security as a types.List with 0 or 1 elements (ListNestedAttribute)
+			var fieldSecList types.List
+			if index.FieldSecurity != nil {
+				grantSet, d := types.SetValueFrom(ctx, types.StringType, typeutils.NonNilSlice(index.FieldSecurity.Grant))
+				diags.Append(d...)
+				if diags.HasError() {
+					return diags
+				}
+
+				exceptSet, d := types.SetValueFrom(ctx, types.StringType, typeutils.NonNilSlice(index.FieldSecurity.Except))
+				diags.Append(d...)
+				if diags.HasError() {
+					return diags
+				}
+
+				fieldSecObj, d := types.ObjectValue(getFieldSecurityDSAttrTypes(), map[string]attr.Value{
+					"grant":  grantSet,
+					"except": exceptSet,
+				})
+				diags.Append(d...)
+				if diags.HasError() {
+					return diags
+				}
+
+				fieldSecList, d = types.ListValue(types.ObjectType{AttrTypes: getFieldSecurityDSAttrTypes()}, []attr.Value{fieldSecObj})
+				diags.Append(d...)
+				if diags.HasError() {
+					return diags
+				}
+			} else {
+				fieldSecList = types.ListValueMust(types.ObjectType{AttrTypes: getFieldSecurityDSAttrTypes()}, []attr.Value{})
+			}
+
+			indexObj, d := types.ObjectValue(getIndexPermsDSAttrTypes(), map[string]attr.Value{
+				"field_security":           fieldSecList,
+				"names":                    namesSet,
+				"privileges":               privSet,
+				"query":                    queryVal,
+				"allow_restricted_indices": allowRestrictedVal,
+			})
+			diags.Append(d...)
+			if diags.HasError() {
+				return diags
+			}
+
+			indicesElements[i] = indexObj
+		}
+
+		indicesSet, d := types.SetValue(types.ObjectType{AttrTypes: getIndexPermsDSAttrTypes()}, indicesElements)
+		diags.Append(d...)
+		if diags.HasError() {
+			return diags
+		}
+		config.Indices = indicesSet
+	} else {
+		config.Indices = types.SetNull(types.ObjectType{AttrTypes: getIndexPermsDSAttrTypes()})
+	}
+
+	// Remote Indices
+	if len(role.RemoteIndices) > 0 {
+		remoteIndicesElements := make([]attr.Value, len(role.RemoteIndices))
+		for i, remoteIndex := range role.RemoteIndices {
+			clustersSet, d := types.SetValueFrom(ctx, types.StringType, typeutils.NonNilSlice(remoteIndex.Clusters))
+			diags.Append(d...)
+			if diags.HasError() {
+				return diags
+			}
+
+			namesSet, d := types.SetValueFrom(ctx, types.StringType, typeutils.NonNilSlice(remoteIndex.Names))
+			diags.Append(d...)
+			if diags.HasError() {
+				return diags
+			}
+
+			privileges := make([]string, len(remoteIndex.Privileges))
+			for j, p := range remoteIndex.Privileges {
+				privileges[j] = p.String()
+			}
+			privSet, d := types.SetValueFrom(ctx, types.StringType, privileges)
+			diags.Append(d...)
+			if diags.HasError() {
+				return diags
+			}
+
+			var queryVal jsontypes.Normalized
+			if remoteIndex.Query != nil {
+				switch q := remoteIndex.Query.(type) {
+				case string:
+					queryVal = jsontypes.NewNormalizedValue(q)
+				default:
+					b, err := json.Marshal(remoteIndex.Query)
+					if err != nil {
+						diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling query: %s", err))
+						return diags
+					}
+					queryVal = jsontypes.NewNormalizedValue(string(b))
+				}
+			} else {
+				queryVal = jsontypes.NewNormalizedNull()
+			}
+
+			// Build field_security as a types.List with 0 or 1 elements (ListNestedAttribute)
+			var fieldSecList types.List
+			if remoteIndex.FieldSecurity != nil {
+				grantSet, d := types.SetValueFrom(ctx, types.StringType, typeutils.NonNilSlice(remoteIndex.FieldSecurity.Grant))
+				diags.Append(d...)
+				if diags.HasError() {
+					return diags
+				}
+
+				exceptSet, d := types.SetValueFrom(ctx, types.StringType, typeutils.NonNilSlice(remoteIndex.FieldSecurity.Except))
+				diags.Append(d...)
+				if diags.HasError() {
+					return diags
+				}
+
+				fieldSecObj, d := types.ObjectValue(getFieldSecurityDSAttrTypes(), map[string]attr.Value{
+					"grant":  grantSet,
+					"except": exceptSet,
+				})
+				diags.Append(d...)
+				if diags.HasError() {
+					return diags
+				}
+
+				fieldSecList, d = types.ListValue(types.ObjectType{AttrTypes: getFieldSecurityDSAttrTypes()}, []attr.Value{fieldSecObj})
+				diags.Append(d...)
+				if diags.HasError() {
+					return diags
+				}
+			} else {
+				fieldSecList = types.ListValueMust(types.ObjectType{AttrTypes: getFieldSecurityDSAttrTypes()}, []attr.Value{})
+			}
+
+			remoteIndexObj, d := types.ObjectValue(getRemoteIndexPermsDSAttrTypes(), map[string]attr.Value{
+				"clusters":       clustersSet,
+				"field_security": fieldSecList,
+				"names":          namesSet,
+				"privileges":     privSet,
+				"query":          queryVal,
+			})
+			diags.Append(d...)
+			if diags.HasError() {
+				return diags
+			}
+
+			remoteIndicesElements[i] = remoteIndexObj
+		}
+
+		remoteIndicesSet, d := types.SetValue(types.ObjectType{AttrTypes: getRemoteIndexPermsDSAttrTypes()}, remoteIndicesElements)
+		diags.Append(d...)
+		if diags.HasError() {
+			return diags
+		}
+		config.RemoteIndices = remoteIndicesSet
+	} else {
+		config.RemoteIndices = types.SetNull(types.ObjectType{AttrTypes: getRemoteIndexPermsDSAttrTypes()})
 	}
 
 	return diags
 }
 
-func flattenApplicationsData(apps []types.ApplicationPrivileges) []any {
-	if len(apps) > 0 {
-		oapps := make([]any, len(apps))
-		for i, app := range apps {
-			oa := make(map[string]any)
-			oa["application"] = app.Application
-			oa["privileges"] = app.Privileges
-			oa["resources"] = app.Resources
-			oapps[i] = oa
-		}
-		return oapps
+// Data source attribute type helpers (mirror data source schema structure)
+func getApplicationDSAttrTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"application": types.StringType,
+		"privileges":  types.SetType{ElemType: types.StringType},
+		"resources":   types.SetType{ElemType: types.StringType},
 	}
-	return make([]any, 0)
 }
 
-func flattenIndicesData(indices []types.IndicesPrivileges) []any {
-	oindx := make([]any, len(indices))
-
-	for i, index := range indices {
-		oi := make(map[string]any)
-		oi["names"] = index.Names
-
-		privileges := make([]string, len(index.Privileges))
-		for j, p := range index.Privileges {
-			privileges[j] = p.String()
-		}
-		oi["privileges"] = privileges
-
-		var queryStr *string
-		if index.Query != nil {
-			switch q := index.Query.(type) {
-			case string:
-				queryStr = &q
-			default:
-				b, err := json.Marshal(index.Query)
-				if err != nil {
-					b = []byte("null")
-				}
-				s := string(b)
-				queryStr = &s
-			}
-		}
-		oi["query"] = queryStr
-		oi["allow_restricted_indices"] = index.AllowRestrictedIndices
-
-		if index.FieldSecurity != nil {
-			fsec := make(map[string]any)
-			fsec["grant"] = index.FieldSecurity.Grant
-			fsec["except"] = index.FieldSecurity.Except
-			oi["field_security"] = []any{fsec}
-		}
-		oindx[i] = oi
+func getFieldSecurityDSAttrTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"grant":  types.SetType{ElemType: types.StringType},
+		"except": types.SetType{ElemType: types.StringType},
 	}
-	return oindx
 }
 
-func flattenRemoteIndicesData(remoteIndices []types.RemoteIndicesPrivileges) []any {
-	oRemoteIndx := make([]any, len(remoteIndices))
-
-	for i, remoteIndex := range remoteIndices {
-		oi := make(map[string]any)
-		oi["names"] = remoteIndex.Names
-		oi["clusters"] = remoteIndex.Clusters
-
-		privileges := make([]string, len(remoteIndex.Privileges))
-		for j, p := range remoteIndex.Privileges {
-			privileges[j] = p.String()
-		}
-		oi["privileges"] = privileges
-
-		var queryStr *string
-		if remoteIndex.Query != nil {
-			switch q := remoteIndex.Query.(type) {
-			case string:
-				queryStr = &q
-			default:
-				b, err := json.Marshal(remoteIndex.Query)
-				if err != nil {
-					b = []byte("null")
-				}
-				s := string(b)
-				queryStr = &s
-			}
-		}
-		oi["query"] = queryStr
-
-		if remoteIndex.FieldSecurity != nil {
-			fsec := make(map[string]any)
-			fsec["grant"] = remoteIndex.FieldSecurity.Grant
-			fsec["except"] = remoteIndex.FieldSecurity.Except
-			oi["field_security"] = []any{fsec}
-		}
-		oRemoteIndx[i] = oi
+func getIndexPermsDSAttrTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"field_security": types.ListType{
+			ElemType: types.ObjectType{AttrTypes: getFieldSecurityDSAttrTypes()},
+		},
+		"names":                    types.SetType{ElemType: types.StringType},
+		"privileges":               types.SetType{ElemType: types.StringType},
+		"query":                    jsontypes.NormalizedType{},
+		"allow_restricted_indices": types.BoolType,
 	}
-	return oRemoteIndx
+}
+
+func getRemoteIndexPermsDSAttrTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"clusters": types.SetType{ElemType: types.StringType},
+		"field_security": types.ListType{
+			ElemType: types.ObjectType{AttrTypes: getFieldSecurityDSAttrTypes()},
+		},
+		"names":      types.SetType{ElemType: types.StringType},
+		"privileges": types.SetType{ElemType: types.StringType},
+		"query":      jsontypes.NormalizedType{},
+	}
 }

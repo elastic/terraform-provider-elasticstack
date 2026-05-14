@@ -30,12 +30,13 @@ import (
 func TestAccResourceDashboardDatatableChart(t *testing.T) {
 	dashboardTitle := "Test Dashboard with Datatable " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
+	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
@@ -49,11 +50,11 @@ func TestAccResourceDashboardDatatableChart(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.w", "24"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.x", "0"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.y", "0"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.datatable_config.no_esql.title", "Sample Datatable"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.datatable_config.no_esql.description", "Test datatable visualization"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.datatable_config.no_esql.styling.density.mode", "compact"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.datatable_config.no_esql.metrics.#", "1"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.datatable_config.no_esql.styling.paging", "10"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.datatable_config.no_esql.title", "Sample Datatable"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.datatable_config.no_esql.description", "Test datatable visualization"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.datatable_config.no_esql.styling.density.mode", "compact"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.datatable_config.no_esql.metrics.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.datatable_config.no_esql.styling.paging", "10"),
 				),
 			},
 			// Skipping this case until the metric format is correctly described in the API spec
@@ -75,19 +76,18 @@ func TestAccResourceDashboardDatatableChart(t *testing.T) {
 			// 		resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.w", "24"),
 			// 		resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.x", "0"),
 			// 		resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.y", "0"),
-			// 		resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.datatable_config.esql.title", "count"),
-			// 		resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.datatable_config.esql.metrics.#", "2"),
-			// 		resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.datatable_config.esql.styling.density.mode", "default"),
-			// 		resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.datatable_config.esql.ignore_global_filters", "false"),
-			// 		resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.datatable_config.esql.sampling", "1"),
-			// 		resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.datatable_config.esql.data_source_json"),
-			// 		resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.datatable_config.esql.metrics.0.config_json"),
-			// 		resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.datatable_config.esql.metrics.1.config_json"),
+			// 		resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.datatable_config.esql.title", "count"),
+			// 		resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.datatable_config.esql.metrics.#", "2"),
+			// 		resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.datatable_config.esql.styling.density.mode", "default"),
+			// 		resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.datatable_config.esql.ignore_global_filters", "false"),
+			// 		resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.datatable_config.esql.sampling", "1"),
+			// 		resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.datatable_config.esql.data_source_json"),
+			// 		resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.datatable_config.esql.metrics.0.config_json"),
+			// 		resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.datatable_config.esql.metrics.1.config_json"),
 			// 	),
 			// },
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
@@ -96,11 +96,52 @@ func TestAccResourceDashboardDatatableChart(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 				ImportStateVerifyIgnore: []string{
-					"panels.0.datatable_config.no_esql.title",
-					"panels.0.datatable_config.no_esql.description",
-					"panels.0.datatable_config.no_esql.data_source_json",
-					"panels.0.datatable_config.no_esql.metrics.0.config_json",
+					"panels.0.vis_config.by_value.datatable_config.no_esql.title",
+					"panels.0.vis_config.by_value.datatable_config.no_esql.description",
+					"panels.0.vis_config.by_value.datatable_config.no_esql.data_source_json",
+					"panels.0.vis_config.by_value.datatable_config.no_esql.metrics.0.config_json",
 				},
+			},
+		},
+	})
+}
+
+func TestAccResourceDashboardDatatableChart_lensPresentationCrossCutting(t *testing.T) {
+	dashboardTitle := "Test Dashboard Datatable presentation " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("cross_cutting"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.datatable_config.no_esql.time_range.from", "now-30d"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.datatable_config.no_esql.time_range.to", "now-1d"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.datatable_config.no_esql.hide_title", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.datatable_config.no_esql.drilldowns.#", "1"),
+					resource.TestCheckResourceAttr(
+						"elasticstack_kibana_dashboard.test",
+						"panels.0.vis_config.by_value.datatable_config.no_esql.drilldowns.0.url_drilldown.url",
+						"https://example.com/{{event.field}}",
+					),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.datatable_config.no_esql.drilldowns.0.url_drilldown.label", "Open URL"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.datatable_config.no_esql.drilldowns.0.url_drilldown.trigger", "on_click_value"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("cross_cutting"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				PlanOnly: true,
 			},
 		},
 	})

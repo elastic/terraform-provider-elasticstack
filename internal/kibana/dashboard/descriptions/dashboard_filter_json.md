@@ -1,0 +1,1 @@
+One dashboard saved filter as normalized JSON. Must be a JSON object matching the Kibana dashboard filters union (for example `operator`-based filters, groups, DSL, or spatial shapes) described in the dashboards OpenAPI specification—same union as chart-level `filter_json`.

@@ -34,7 +34,8 @@ func Test_buildUpdateRequestBody_omitsFlappingWhenNil(t *testing.T) {
 		Params:     map[string]any{},
 		Flapping:   nil,
 	}
-	body := buildUpdateRequestBody(rule)
+	body, err := buildUpdateRequestBody(rule)
+	require.NoError(t, err)
 	raw, err := json.Marshal(body)
 	require.NoError(t, err)
 	require.NotContains(t, string(raw), `"flapping"`)
@@ -54,7 +55,8 @@ func Test_buildUpdateRequestBody_includesFlappingWhenSet(t *testing.T) {
 			Enabled:               &enabled,
 		},
 	}
-	body := buildUpdateRequestBody(rule)
+	body, err := buildUpdateRequestBody(rule)
+	require.NoError(t, err)
 	raw, err := json.Marshal(body)
 	require.NoError(t, err)
 	require.Contains(t, string(raw), `"flapping"`)

@@ -25,6 +25,23 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestUnwrapJSON200(t *testing.T) {
+	t.Run("returns value when non-nil", func(t *testing.T) {
+		val := "hello"
+		got, diags := UnwrapJSON200(&val, "thing")
+		require.False(t, diags.HasError())
+		assert.Equal(t, &val, got)
+	})
+
+	t.Run("returns error diagnostic when nil", func(t *testing.T) {
+		got, diags := UnwrapJSON200[string](nil, "list item")
+		assert.Nil(t, got)
+		require.True(t, diags.HasError())
+		assert.Equal(t, "Failed to parse list item response", diags[0].Summary())
+		assert.Equal(t, "API returned 200 but response body was nil", diags[0].Detail())
+	})
+}
+
 func TestHandleStatusResponse(t *testing.T) {
 	t.Run("returns nil for accepted status codes", func(t *testing.T) {
 		assert.False(t, HandleStatusResponse(http.StatusOK, nil, http.StatusOK, http.StatusNotFound).HasError())

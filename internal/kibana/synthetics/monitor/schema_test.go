@@ -434,3 +434,71 @@ func TestAlertConfigRoundTrip(t *testing.T) {
 	assert.False(t, diags.HasError())
 	assert.False(t, tfAlert.IsNull())
 }
+
+func TestUnionToInt64(t *testing.T) {
+	strVariant := func(s string) func() (string, error) {
+		return func() (string, error) { return s, nil }
+	}
+	floatVariant := func(n float32) func() (float32, error) {
+		return func() (float32, error) { return n, nil }
+	}
+	errVariant := func() (string, error) { return "", assert.AnError }
+	errFloatVariant := func() (float32, error) { return 0, assert.AnError }
+
+	tests := []struct {
+		name      string
+		asStr     func() (string, error)
+		asFloat   func() (float32, error)
+		fieldName string
+		want      int64
+		wantErr   bool
+	}{
+		{
+			name:      "string integer",
+			asStr:     strVariant("42"),
+			asFloat:   errFloatVariant,
+			fieldName: "timeout",
+			want:      42,
+		},
+		{
+			name:      "string empty",
+			asStr:     strVariant(""),
+			asFloat:   errFloatVariant,
+			fieldName: "timeout",
+			want:      0,
+		},
+		{
+			name:      "float whole number",
+			asStr:     errVariant,
+			asFloat:   floatVariant(30),
+			fieldName: "wait",
+			want:      30,
+		},
+		{
+			name:      "float fractional rejected",
+			asStr:     errVariant,
+			asFloat:   floatVariant(1.5),
+			fieldName: "timeout",
+			wantErr:   true,
+		},
+		{
+			name:      "both fail",
+			asStr:     errVariant,
+			asFloat:   errFloatVariant,
+			fieldName: "max_redirects",
+			wantErr:   true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := unionToInt64(tt.asStr, tt.asFloat, tt.fieldName)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, tt.want, got)
+			}
+		})
+	}
+}

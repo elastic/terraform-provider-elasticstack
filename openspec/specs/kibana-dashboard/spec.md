@@ -57,11 +57,24 @@ resource "elasticstack_kibana_dashboard" "example" {
     id = <optional, computed, string> # Terraform id aligned with API id; UseNonNullStateForUnknown
 
     markdown_config = <optional, object({
-      content     = <optional, string>
-      description = <optional, string>
-      hide_title  = <optional, bool>
-      title       = <optional, string>
-    })> # only with type = "markdown"; conflicts with all other config blocks
+      by_value = <optional, object({
+        content     = <required, string>
+        settings    = <required, object({
+          open_links_in_new_tab = <optional, bool>
+        })>
+        description = <optional, string>
+        hide_title  = <optional, bool>
+        title       = <optional, string>
+        hide_border = <optional, bool>
+      })>
+      by_reference = <optional, object({
+        ref_id      = <required, string>
+        description = <optional, string>
+        hide_title  = <optional, bool>
+        title       = <optional, string>
+        hide_border = <optional, bool>
+      })>
+    })> # only with type = "markdown"; exactly one of by_value or by_reference (REQ-012); conflicts with all other config blocks
 
     xy_chart_config = <optional, object({
       title       = <optional, string>
@@ -273,7 +286,7 @@ resource "elasticstack_kibana_dashboard" "example" {
         description     = <optional, string>
         hide_title      = <optional, bool>
         hide_border     = <optional, bool>
-        drilldowns_json = <optional, json string, normalized>
+        drilldowns      = <optional, list of structured drilldown items, see REQ-041>
         time_range = <required, object({
           from = <required, string>
           to   = <required, string>
@@ -514,7 +527,7 @@ When Kibana omits or defaults fields on read, the resource SHALL preserve prior 
 
 For panel reads, the provider SHALL seed each panel from prior practitioner intent before finalizing state: from the prior plan on the post-create and post-update read-back, and from prior state on refresh. After that seed, it SHALL apply panel-type-specific alignment so Kibana-injected defaults or omitted optional values do not overwrite practitioner intent. This alignment includes preserving configured titles and descriptions when the API returns blank values, preserving ES|QL control `esql_query`, `title`, and `available_options` when the API omits them, preserving raw `config_json` when the read-back only differs by omitted optional `filters` or `query` keys, and preserving semantically equivalent optional JSON defaults such as `rank_by` in metric and tagcloud configurations.
 
-The resource models only the currently supported Terraform subset of dashboard fields. Fields present in the Kibana dashboard API but not modeled by this resource, including `filters`, `pinned_panels`, and `project_routing`, are outside this resource contract and are not guaranteed to round-trip through Terraform updates.
+The resource models only the currently supported Terraform subset of dashboard fields. Fields present in the Kibana dashboard API but not modeled by this resource — for example top-level `project_routing` — are outside this resource contract (see REQ-037 for `filters` and REQ-038 for `pinned_panels`).
 
 #### Scenario: Options omitted in config
 
@@ -526,13 +539,21 @@ The resource models only the currently supported Terraform subset of dashboard f
 
 The resource SHALL support top-level `panels`, section-contained `panels`, and `sections` in the order returned by the API and the order given in configuration when building requests. For panel reads, it SHALL distinguish sections from top-level panels and map each panel's `type`, `grid`, optional **`id`**, and configuration. For typed panel mappings, the resource SHALL seed from prior state or plan so that optional panel attributes omitted by Kibana on read can be preserved. When a panel is managed through `config_json` only, the resource SHALL preserve that JSON-centric representation and SHALL NOT populate typed configuration blocks from the API for that panel.
 
-On write, panel-level `config_json` SHALL be supported only for `markdown` and `vis` panel types; using panel-level `config_json` with any other panel type, including `slo_burn_rate`, `slo_error_budget`, `esql_control`, and `lens-dashboard-app`, or omitting all panel configuration blocks, SHALL return an error diagnostic. The `esql_control` panel type SHALL be managed exclusively through the typed `esql_control_config` block. The `lens-dashboard-app` panel type SHALL be managed exclusively through the typed `lens_dashboard_app_config` block.
+On write, practitioner-authored panel-level `config_json` SHALL be supported only for `markdown` and `vis` panel types; using practitioner-authored panel-level `config_json` with any other panel type, including `slo_burn_rate`, `slo_error_budget`, `esql_control`, `lens-dashboard-app`, `image`, `slo_alerts`, and `discover_session`, or omitting all panel configuration blocks, SHALL return an error diagnostic. Exception: when a panel's `config_json` value was populated by the provider during a prior read to preserve an unknown panel type (see "Unknown panel-type preservation" below), the provider SHALL re-emit that preserved payload on write without error, because the value originates from the API rather than from the practitioner. The `esql_control` panel type SHALL be managed exclusively through the typed `esql_control_config` block. The `lens-dashboard-app` panel type SHALL be managed exclusively through the typed `lens_dashboard_app_config` block.
 
 `config_json` SHALL NOT be supported for `options_list_control` panels; the `options_list_control` panel type SHALL be managed exclusively through the typed `options_list_control_config` block; using `config_json` with `type = "options_list_control"` SHALL return an error diagnostic.
 
 `config_json` SHALL NOT be supported for `synthetics_monitors` panels; the `synthetics_monitors` panel type SHALL be managed exclusively through the typed `synthetics_monitors_config` block; using `config_json` with `type = "synthetics_monitors"` SHALL return an error diagnostic.
 
 `config_json` SHALL NOT be supported for `synthetics_stats_overview` panels; the write-path dispatcher SHALL return an error diagnostic if `config_json` is set on a panel with `type = "synthetics_stats_overview"`. The error message SHALL indicate that `config_json` is unsupported for the configured panel type.
+
+`config_json` SHALL NOT be supported for `image` panels; the `image` panel type SHALL be managed exclusively through the typed `image_config` block; using `config_json` with `type = "image"` SHALL return an error diagnostic.
+
+`config_json` SHALL NOT be supported for `slo_alerts` panels; the `slo_alerts` panel type SHALL be managed exclusively through the typed `slo_alerts_config` block; using `config_json` with `type = "slo_alerts"` SHALL return an error diagnostic.
+
+`config_json` SHALL NOT be supported for `discover_session` panels; the `discover_session` panel type SHALL be managed exclusively through the typed `discover_session_config` block; using `config_json` with `type = "discover_session"` SHALL return an error diagnostic.
+
+**Unknown panel-type preservation**: When the read path encounters a panel whose `type` does not match any typed configuration block, the resource SHALL preserve the panel's `id`, `grid`, `type`, and the panel's full raw API configuration payload in state. The preserved payload SHALL be stored in the panel's existing `config_json` attribute (which is `Optional: true, Computed: true`), reusing that attribute for storage rather than introducing a new private field. This is an intentional implementation decision: it avoids introducing a new unexposed attribute and leverages the existing semantic-equality normalization path already in place for `config_json`. The `config_json` value in state is provider-populated, not practitioner-authored. On subsequent writes, the resource SHALL re-emit the preserved payload verbatim through the `config_json` write codepath. If a configuration declares a panel whose `type` matches no typed block and no preserved payload exists in `config_json` state, the resource SHALL return the "unsupported panel type" error diagnostic, clarifying that the type is not yet supported and was not preserved from the API.
 
 **Panel and section identity**: The Terraform attributes **`panels[].id`** and **`sections[].id`** SHALL align directly with the generated Kibana API field **`id`** for panels and sections.
 
@@ -560,6 +581,42 @@ On write, panel-level `config_json` SHALL be supported only for `markdown` and `
 - WHEN the provider builds the API request on create or update
 - THEN it SHALL return an error diagnostic indicating that `config_json` is not supported for the configured panel type
 
+#### Scenario: config_json rejected for image panel type
+
+- GIVEN a panel with `type = "image"` configured through `config_json`
+- WHEN the provider builds the API request on create or update
+- THEN it SHALL return an error diagnostic stating that `config_json` is not supported for `image`
+
+#### Scenario: config_json rejected for slo_alerts panel type
+
+- GIVEN a panel with `type = "slo_alerts"` configured through `config_json`
+- WHEN the provider builds the API request on create or update
+- THEN it SHALL return an error diagnostic stating that `config_json` is not supported for `slo_alerts`
+
+#### Scenario: config_json rejected for discover_session panel type
+
+- GIVEN a panel with `type = "discover_session"` configured through `config_json`
+- WHEN the provider builds the API request on create or update
+- THEN it SHALL return an error diagnostic stating that `config_json` is not supported for `discover_session`
+
+#### Scenario: Unknown panel type preserved on read
+
+- GIVEN a dashboard managed by the resource that contains a panel whose `type` does not map to any typed configuration block in this resource (any panel type not yet modeled by the provider)
+- WHEN refresh, import, or post-apply read runs
+- THEN the resource SHALL store the panel's `id`, `grid`, `type`, and full raw API config payload in state without populating any typed config block, and a subsequent plan against unchanged configuration SHALL produce no diff
+
+#### Scenario: Unknown panel type round-trips on write
+
+- GIVEN state contains a panel with an unknown `type` and a preserved raw API payload from a prior read
+- WHEN create or update runs and the user has not modified the panel
+- THEN the provider SHALL re-emit the preserved payload verbatim in the API request body
+
+#### Scenario: Practitioner cannot author unknown panel types
+
+- GIVEN a Terraform configuration declaring `panels[].type = "<not-typed-and-no-prior-state>"` with no typed config block and no `config_json`
+- WHEN validate or plan runs
+- THEN the resource SHALL return an error diagnostic indicating the panel type is unsupported
+
 ### Requirement: Panel default normalization and XY-axis drift prevention (REQ-011)
 
 The resource SHALL normalize `config_json` and typed `vis` panel data with default-aware semantic equality so Kibana-injected defaults do not cause unnecessary drift. This normalization SHALL include panel-type-specific defaults such as missing empty `filters` arrays and visualization metric/grouping defaults used by the implementation. For XY chart panels, when `axis.x.scale` was unset in configuration and Kibana returns the implicit default `ordinal`, the resource SHALL preserve the unset Terraform value instead of forcing `ordinal` into state.
@@ -572,25 +629,75 @@ The resource SHALL normalize `config_json` and typed `vis` panel data with defau
 
 ### Requirement: Markdown panel behavior (REQ-012)
 
-For `type = "markdown"` panels, the resource SHALL accept `markdown_config` with the markdown panel fields `content`, `description`, `hide_title`, and `title`. On write, it SHALL send those fields when they are known. On read, it SHALL repopulate `markdown_config` from the API unless the panel is being managed through `config_json` only, in which case it SHALL preserve the JSON-only representation instead of filling typed markdown fields.
+For `type = "markdown"` panels, the resource SHALL accept a `markdown_config` block whose shape mirrors the API's by-value/by-reference union: `markdown_config = object({ by_value = object({ content, settings, description, hide_title, title, hide_border }), by_reference = object({ ref_id, description, hide_title, title, hide_border }) })`. Exactly one of `by_value` or `by_reference` SHALL be set; setting both or neither SHALL produce an error diagnostic at plan time.
 
-#### Scenario: Markdown panel managed through typed config
+The `by_value` block SHALL require `content` (string) and `settings` (nested object). The `settings` block SHALL accept `open_links_in_new_tab` (bool, optional; when unset, Kibana applies its default of `true`). The `by_value` block SHALL also accept optional `description`, `hide_title`, `title`, and `hide_border`.
 
-- GIVEN a `markdown` panel configured with `markdown_config`
+The `by_reference` block SHALL require `ref_id` (string) — the unique identifier of an existing markdown library item — and SHALL accept optional `description`, `hide_title`, `title`, and `hide_border`. The resource SHALL NOT validate that the library item exists at plan time; runtime errors from Kibana surface as today.
+
+On write, the resource SHALL build either the `KbnDashboardPanelTypeMarkdownConfig0` (by-value) or `KbnDashboardPanelTypeMarkdownConfig1` (by-reference) API payload according to which sub-block is set. On read, the resource SHALL detect which API branch was returned and populate the matching sub-block, leaving the other branch null. As REQ-010 already specifies, when a markdown panel is managed through `config_json` only, the resource SHALL preserve that JSON-only representation instead of populating typed `markdown_config` sub-blocks.
+
+#### Scenario: By-value markdown panel round-trip
+
+- GIVEN a panel with `type = "markdown"` and `markdown_config = { by_value = { content = "# hi", settings = { open_links_in_new_tab = false }, hide_border = true } }`
+- WHEN create runs and the post-apply read returns the same panel
+- THEN state SHALL contain the same `by_value` shape, `by_reference` SHALL be null, and a subsequent plan SHALL show no changes
+
+#### Scenario: By-reference markdown panel round-trip
+
+- GIVEN an existing markdown library item with id `md-lib-1` and a panel with `markdown_config = { by_reference = { ref_id = "md-lib-1", title = "shared note" } }`
+- WHEN create runs and the post-apply read returns the same panel
+- THEN state SHALL contain the same `by_reference` shape, `by_value` SHALL be null, and a subsequent plan SHALL show no changes
+
+#### Scenario: Both sub-blocks set
+
+- GIVEN a panel with both `markdown_config.by_value` and `markdown_config.by_reference` set
+- WHEN Terraform validates the configuration
+- THEN the resource SHALL return an error diagnostic indicating exactly one sub-block must be set
+
+#### Scenario: Neither sub-block set
+
+- GIVEN a panel with `markdown_config = {}` (no `by_value` and no `by_reference`)
+- WHEN Terraform validates the configuration
+- THEN the resource SHALL return an error diagnostic indicating exactly one sub-block must be set
+
+#### Scenario: open_links_in_new_tab unset preserves API default
+
+- GIVEN a `by_value` markdown panel whose `settings.open_links_in_new_tab` is unset
+- WHEN create runs and the API stores Kibana's default `true`
+- THEN state SHALL keep `settings.open_links_in_new_tab` null (REQ-009 null-preservation)
+
+#### Scenario: config_json continues to manage markdown panels
+
+- GIVEN a panel with `type = "markdown"` configured through `config_json` only
 - WHEN create, update, or read runs
-- THEN the provider SHALL map the markdown fields between Terraform and the dashboard API
+- THEN the resource SHALL preserve the JSON-only representation per REQ-010 and SHALL NOT populate typed `markdown_config` sub-blocks
 
 ### Requirement: XY chart panel behavior and typed `vis` `time_range` (REQ-013)
 
-For **typed** `vis` panels (those built through the provider’s typed `*_config` blocks and the shared typed visualization write path, not panels managed solely through raw `config_json`), the provider SHALL set `time_range` on `KbnDashboardPanelTypeVisConfig0` to the implementation’s fixed window from **`lensPanelTimeRange()`** when assembling the visualization payload. The Terraform schema does not expose that visualization-level `time_range` as a separate configurable attribute for those panels; it remains implementation-defined. REQ-025 governs raw `config_json` `vis` panels (no typed `lensPanelTimeRange()` injection on that path).
+For **typed** `vis` panels (those built through the provider's typed `*_config` blocks and the shared typed visualization write path, not panels managed solely through raw `config_json`), the resource SHALL expose `time_range` as an optional flat sibling attribute on every typed Lens chart block (`xy_chart_config`, `metric_chart_config`, `legacy_metric_config`, `gauge_config`, `heatmap_config`, `tagcloud_config`, `region_map_config`, `datatable_config`, `pie_chart_config`, `mosaic_config`, `treemap_config`, `waffle_config`). The attribute SHALL match the dashboard-level `time_range` shape: required `from` (string), required `to` (string), and optional `mode` enum (`absolute` | `relative`).
 
-For XY chart `vis` panels specifically, the resource SHALL require `axis`, `decorations`, `fitting`, `legend`, `query`, and at least one `layers` entry. The axis object SHALL use `x`, optional primary `y`, and optional `secondary_y`; `axis.x.domain_json` SHALL represent the X-axis domain, and each configured Y axis SHALL require `domain_json`. Each layer SHALL represent either a data layer or a reference-line layer, not both.
+When the chart-level `time_range` is null in configuration and state, the provider SHALL inherit the dashboard-level `time_range` when assembling the visualization payload, copying the dashboard-level `from`, `to`, and `mode` into the API request. The hardcoded `lensPanelTimeRange()` window (`now-15m..now`) SHALL NOT be used; it is removed in favor of inheritance.
 
-#### Scenario: Typed `vis` write includes visualization time_range
+When the chart-level `time_range` is set in configuration, the provider SHALL pass the configured values to the API verbatim, overriding the dashboard-level value for that panel only.
 
-- GIVEN a typed `vis` panel on create or update (for example XY, heatmap, pie, or treemap panels using their typed configuration blocks)
+For XY chart `vis` panels specifically, the resource SHALL require `axis`, `decorations`, `fitting`, `legend`, and at least one `layers` entry. The axis object SHALL use `x`, optional primary `y`, and optional `secondary_y`; `axis.x.domain_json` SHALL represent the X-axis domain, and each configured Y axis SHALL require `domain_json`. Each layer SHALL represent either a data layer or a reference-line layer, not both. **`query` SHALL be optional** on the XY chart schema so that ES|QL XY panels (which carry no `query` in the API) are valid without a dummy query block.
+
+REQ-025 governs raw `config_json` `vis` panels; the typed-vs-raw distinction is unchanged.
+
+#### Scenario: Typed `vis` write inherits dashboard time_range when chart time_range is null
+
+- GIVEN a typed `vis` panel on create or update whose chart-level `time_range` is null in configuration
+- AND the dashboard-level `time_range` is `{ from = "now-7d", to = "now" }`
 - WHEN the provider builds the visualization payload through the typed converter path
-- THEN it SHALL set `time_range` on `KbnDashboardPanelTypeVisConfig0` to the implementation’s fixed window for typed converters
+- THEN it SHALL set `time_range` on the API payload to `{ from = "now-7d", to = "now" }` copied from the dashboard-level value
+
+#### Scenario: Typed `vis` write uses configured chart-level time_range when set
+
+- GIVEN a typed `vis` panel on create or update whose chart-level `time_range` is set to `{ from = "now-30d", to = "now-1d" }` in configuration
+- AND the dashboard-level `time_range` is `{ from = "now-7d", to = "now" }`
+- WHEN the provider builds the visualization payload through the typed converter path
+- THEN it SHALL set `time_range` on the API payload to the chart-level value `{ from = "now-30d", to = "now-1d" }`
 
 #### Scenario: XY panel requires layers
 
@@ -598,9 +705,17 @@ For XY chart `vis` panels specifically, the resource SHALL require `axis`, `deco
 - WHEN Terraform validates the resource schema
 - THEN the configuration SHALL require at least one layer and the fixed XY sub-blocks needed by the schema
 
+#### Scenario: ES|QL XY panel omits query
+
+- GIVEN an XY chart panel configured for ES|QL mode (no usable query expression)
+- WHEN Terraform validates the resource schema
+- THEN the configuration SHALL be accepted without a `query` block
+
 ### Requirement: Treemap panel behavior (REQ-014)
 
 For treemap `vis` panels, the resource SHALL require `data_source_json`, `group_by_json`, `metrics_json`, and `legend`. It SHALL treat the panel as non-ES|QL when a real `query` is present, and in that mode `query` SHALL be required. It SHALL treat the panel as ES|QL when `query` is omitted or both `query.query` and `query.language` are null. For semantic equality and read-back reconciliation, treemap `group_by_json` and `metrics_json` SHALL normalize the partition defaults used by the implementation, including terms-style defaults such as `collapse_by`, `format`, `rank_by`, and `size`.
+
+When the panel is in ES|QL mode, the resource SHALL expose typed nested schemas for `esql_metrics` and `esql_group_by` matching the structure used by waffle `esql_metrics` and `esql_group_by`. These typed schemas SHALL be mutually exclusive with the non-ES|QL `metrics_json` and `group_by_json` fields respectively.
 
 #### Scenario: Treemap mode selection
 
@@ -608,15 +723,29 @@ For treemap `vis` panels, the resource SHALL require `data_source_json`, `group_
 - WHEN the provider converts it to or from the API model
 - THEN it SHALL treat the panel as ES|QL mode rather than non-ES|QL mode
 
+#### Scenario: Treemap ES|QL typed metrics round-trip
+
+- GIVEN a treemap panel in ES|QL mode with `esql_metrics` configured with at least one entry
+- WHEN the provider builds the API request and reads the panel back
+- THEN the typed `esql_metrics` entries SHALL round-trip without drift
+
 ### Requirement: Mosaic panel behavior (REQ-015)
 
 For mosaic `vis` panels, the resource SHALL require `data_source_json`, `group_by_json`, `group_breakdown_by_json`, `metrics_json`, and `legend`. It SHALL use the same ES|QL-vs-non-ES|QL query rule as treemap panels, and non-ES|QL mosaics SHALL require `query`. `metrics_json` SHALL represent exactly one metric in the Terraform model. On read-back, mosaic partition dimensions SHALL be normalized to drop API-emitted top-level null keys that would otherwise create drift.
+
+When the panel is in ES|QL mode, the resource SHALL expose typed nested schemas for `esql_metrics` and `esql_group_by` matching the structure used by waffle `esql_metrics` and `esql_group_by`. These typed schemas SHALL be mutually exclusive with the non-ES|QL `metrics_json` and `group_by_json` fields respectively.
 
 #### Scenario: Mosaic requires secondary breakdown
 
 - GIVEN a mosaic panel configuration
 - WHEN Terraform validates or the provider builds the API request
 - THEN the panel SHALL require `group_breakdown_by_json` in addition to `group_by_json`
+
+#### Scenario: Mosaic ES|QL typed metrics round-trip
+
+- GIVEN a mosaic panel in ES|QL mode with `esql_metrics` configured with exactly one entry
+- WHEN the provider builds the API request and reads the panel back
+- THEN the typed `esql_metrics` entries SHALL round-trip without drift
 
 ### Requirement: Datatable panel behavior (REQ-016)
 
@@ -630,7 +759,11 @@ For datatable `vis` panels, the resource SHALL support exactly one of the `no_es
 
 ### Requirement: Tagcloud panel behavior (REQ-017)
 
-For tagcloud `vis` panels, the resource SHALL support the non-ES|QL tagcloud shape implemented by the provider. It SHALL require `data_source_json`, `query`, `metric_json`, and `tag_by_json`, with optional `filters`, `ignore_global_filters`, `sampling`, `orientation`, and `font_size`. For semantic equality it SHALL normalize tagcloud metric defaults and the `terms`-operation defaults for `tag_by_json`, including the default `rank_by` value.
+For tagcloud `vis` panels, the resource SHALL support both non-ES|QL and ES|QL modes.
+
+Non-ES|QL mode requires a `query` block with non-null `expression` and `language`; in that mode the resource SHALL require `data_source_json`, `query`, `metric_json`, and `tag_by_json`, with optional `filters`, `ignore_global_filters`, `sampling`, `orientation`, and `font_size`. For semantic equality it SHALL normalize tagcloud metric defaults and the `terms`-operation defaults for `tag_by_json`, including the default `rank_by` value.
+
+ES|QL mode is selected when `query` is omitted or both `expression` and `language` are null; in ES|QL mode the resource SHALL require `data_source_json` and typed `esql_metric` and `esql_tag_by` blocks instead of `metric_json` and `tag_by_json`. The `query` attribute SHALL be Optional on the schema so that ES|QL configurations are valid. The `esql_metric` block SHALL contain required `column` (string) and `format_json` (normalized JSON for the format type), and optional `label` (string). The `esql_tag_by` block SHALL contain required `column` (string), `format_json` (normalized JSON), and `color_json` (normalized JSON for the color mapping), and optional `label` (string).
 
 #### Scenario: Tagcloud terms defaults
 
@@ -638,9 +771,17 @@ For tagcloud `vis` panels, the resource SHALL support the non-ES|QL tagcloud sha
 - WHEN state is compared or refreshed
 - THEN the provider SHALL treat the default `rank_by` as part of semantic equality
 
+#### Scenario: Tagcloud ES|QL round-trip
+
+- GIVEN a tagcloud panel in ES|QL mode with `esql_metric.column = "count"` and `esql_tag_by.column = "host"`
+- WHEN create runs and the post-apply read returns the same panel
+- THEN state SHALL contain the typed `esql_metric` and `esql_tag_by` blocks and `metric_json`/`tag_by_json` SHALL be null
+
 ### Requirement: Heatmap panel behavior (REQ-018)
 
-For heatmap `vis` panels, the resource SHALL require `data_source_json`, `axis`, `styling.cells`, `legend`, `metric_json`, and `x_axis_json`. **`legend.visibility` SHALL use the string values `visible` or `hidden`,** matching the API enum. It SHALL treat the panel as non-ES|QL when a real `query` is present, and in that mode `query` SHALL be required. It SHALL treat the panel as ES|QL when `query` is omitted or empty by the implementation's mode test. Heatmap metric normalization SHALL use the same metric-default behavior shared with the tagcloud implementation.
+For heatmap `vis` panels, the resource SHALL require `data_source_json`, `axis`, `styling.cells`, `legend`, `metric_json`, and `x_axis_json` (with optional `y_axis_json`). **`legend.visibility` SHALL use the string values `visible` or `hidden`,** matching the API enum. It SHALL treat the panel as non-ES|QL when a real `query` is present, and in that mode `query` SHALL be required. It SHALL treat the panel as ES|QL when `query` is omitted or empty by the implementation's mode test. Heatmap metric normalization SHALL use the same metric-default behavior shared with the tagcloud implementation.
+
+The resource SHALL retain `x_axis_json` and `y_axis_json` as raw JSON attributes for the X and Y breakdown dimensions; this change does not remove them in favor of the typed `axis` block. The typed `axis` block continues to represent visual axis configuration (labels, title, orientation), while `x_axis_json` / `y_axis_json` carry the breakdown operation JSON (e.g. `terms`, `date_histogram`).
 
 #### Scenario: Non-ES|QL heatmap requires query
 
@@ -658,11 +799,19 @@ For heatmap `vis` panels, the resource SHALL require `data_source_json`, `axis`,
 
 For waffle `vis` panels, the resource SHALL enforce mutually exclusive non-ES|QL and ES|QL modes. In non-ES|QL mode it SHALL require `query` and at least one `metrics` entry, and it MAY accept `group_by`. In ES|QL mode it SHALL require at least one `esql_metrics` entry, it MAY accept `esql_group_by`, and it SHALL reject `metrics` and `group_by`. On read-back, the provider SHALL preserve the waffle fields that Kibana may omit or materialize differently, including the implementation's merge behavior for `ignore_global_filters`, `sampling`, legend values, visibility, and value-display details. ES|QL number-format JSON for waffle metric formats SHALL normalize the default decimals and compact settings trimmed by the implementation.
 
+Non-ES|QL waffle metric and group-by entries SHALL use the attribute name **`config_json`** (not `config`) to align with the datatable and metric chart conventions. Each entry SHALL be a JSON string with defaults.
+
 #### Scenario: Waffle ES|QL validation
 
 - GIVEN a waffle panel in ES|QL mode
 - WHEN Terraform validates the resource schema
 - THEN the configuration SHALL require at least one `esql_metrics` entry and SHALL reject `metrics` or `group_by`
+
+#### Scenario: Waffle non-ES|QL uses config_json
+
+- GIVEN a waffle panel in non-ES|QL mode with `metrics = [{ config_json = jsonencode({ operation = "count" }) }]`
+- WHEN the provider builds the API request and reads the panel back
+- THEN the metrics SHALL round-trip using the `config_json` attribute name with no plan diff
 
 ### Requirement: Region map panel behavior (REQ-020)
 
@@ -676,13 +825,23 @@ For region-map `vis` panels, the resource SHALL require `data_source_json`, `met
 
 ### Requirement: Gauge panel behavior (REQ-021)
 
-For gauge `vis` panels, the resource SHALL support the non-ES|QL gauge shape implemented by the provider. It SHALL require `data_source_json`, `query`, and `metric_json`, and it MAY accept `shape_json`, `filters`, `ignore_global_filters`, and `sampling`. Gauge metric semantic equality SHALL include the implementation's defaults for `empty_as_null`, `hide_title`, and `ticks`.
+For gauge `vis` panels, the resource SHALL support both non-ES|QL and ES|QL modes.
+
+Non-ES|QL mode requires a `query` block with non-null `expression` and `language`; in that mode the resource SHALL require `data_source_json`, `query`, and `metric_json`, and it MAY accept `shape_json`, `filters`, `ignore_global_filters`, and `sampling`. Gauge metric semantic equality SHALL include the implementation's defaults for `empty_as_null`, `hide_title`, and `ticks`.
+
+ES|QL mode is selected when `query` is omitted or both `expression` and `language` are null; in ES|QL mode the resource SHALL require `data_source_json` and a typed `esql_metric` block instead of `metric_json`. The `query` attribute SHALL be Optional on the schema so that ES|QL configurations are valid. The `esql_metric` block SHALL contain required `column` (string) and `format_json` (normalized JSON for the format type), and optional `label` (string), `color_json` (normalized JSON for the gauge fill color), `subtitle` (string), `goal` (object: required `column` string, optional `label` string), `max` (object: required `column` string, optional `label` string), `min` (object: required `column` string, optional `label` string), `ticks` (object: optional `mode` string, optional `visible` bool), and `title` (object: optional `text` string, optional `visible` bool).
 
 #### Scenario: Gauge metric defaults
 
 - GIVEN a gauge metric configuration that omits the implementation's defaulted fields
 - WHEN the provider compares or refreshes state
 - THEN it SHALL normalize those defaults for semantic equality
+
+#### Scenario: Gauge ES|QL round-trip
+
+- GIVEN a gauge panel in ES|QL mode with `esql_metric.column = "revenue"` and `esql_metric.format_json` set to a number format
+- WHEN create runs and the post-apply read returns the same panel
+- THEN state SHALL contain the typed `esql_metric` block and `metric_json` SHALL be null
 
 ### Requirement: Metric chart panel behavior (REQ-022)
 
@@ -696,9 +855,13 @@ For metric-chart `vis` panels, the resource SHALL map the provider's two metric-
 
 ### Requirement: Pie chart panel behavior (REQ-023)
 
-For pie `vis` panels, the resource SHALL require at least one `metrics` entry and MAY accept `group_by`. It SHALL select the non-ES|QL branch when `query` is present and the ES|QL branch otherwise. When Kibana omits `ignore_global_filters` or `sampling` on read, the provider SHALL treat their default values as `false` and `1.0` respectively. Pie metric and group-by semantic equality SHALL normalize the implementation's pie metric defaults and visualization group-by defaults.
+For pie `vis` panels, the resource SHALL require `data_source_json`, at least one `metrics` entry, and MAY accept `group_by`. It SHALL select the non-ES|QL branch when `query` is present and the ES|QL branch otherwise. When Kibana omits `ignore_global_filters` or `sampling` on read, the provider SHALL treat their default values as `false` and `1.0` respectively. Pie metric and group-by semantic equality SHALL normalize the implementation's pie metric defaults and visualization group-by defaults.
 
-When `data_source_json` is set, it SHALL remain a normalized JSON string for the pie data source object. The resource SHALL expose an optional structured **`legend`** block matching treemap and mosaic legends (attributes `nested`, required `size`, optional `truncate_after_lines`, optional `visible`). The Terraform attribute `legend.visible` SHALL map to the API field `legend.visibility`. When the `legend` block is absent from practitioner configuration, the provider SHALL still build a valid API pie legend by supplying the implementation default legend size `auto`. The Terraform schema SHALL use an optional computed **`legend`** with a default object (typically size and visibility `auto`) so plan-time defaults align with typical Kibana read-back when the block is omitted.
+Pie chart attributes SHALL derive from the shared `lensChartBaseAttributes()` helper, so `ignore_global_filters` and `sampling` SHALL be `Optional: true, Computed: true` without explicit Terraform schema defaults. **`data_source_json` SHALL be Required** on `pie_chart_config` to align with all other typed Lens chart blocks.
+
+Pie metric and group-by entries SHALL use the attribute name **`config_json`** (not `config`) to align with the datatable and metric chart conventions.
+
+The resource SHALL expose an optional structured **`legend`** block matching treemap and mosaic legends (attributes `nested`, required `size`, optional `truncate_after_lines`, optional `visible`). The Terraform attribute `legend.visible` SHALL map to the API field `legend.visibility`. When the `legend` block is absent from practitioner configuration, the provider SHALL still build a valid API pie legend by supplying the implementation default legend size `auto`. The Terraform schema SHALL use an optional computed **`legend`** with a default object (typically size and visibility `auto`) so plan-time defaults align with typical Kibana read-back when the block is omitted.
 
 #### Scenario: Pie chart API defaults
 
@@ -706,11 +869,11 @@ When `data_source_json` is set, it SHALL remain a normalized JSON string for the
 - WHEN state is refreshed
 - THEN the provider SHALL reconcile those fields as `false` and `1.0`
 
-#### Scenario: Pie chart uses data_source_json
+#### Scenario: Pie chart requires data_source_json
 
-- GIVEN `pie_chart_config` with `data_source_json` set to a normalized JSON string for the pie data source
-- WHEN the provider builds the visualization attributes
-- THEN it SHALL decode `data_source_json` into the API pie data-source shape
+- GIVEN a `pie_chart_config` block with no `data_source_json` set
+- WHEN Terraform validates the resource schema
+- THEN the provider SHALL return an error diagnostic indicating that `data_source_json` is required
 
 #### Scenario: Pie chart uses structured legend
 
@@ -732,6 +895,12 @@ When `data_source_json` is set, it SHALL remain a normalized JSON string for the
 - WHEN the provider refreshes state
 - THEN it SHALL populate `pie_chart_config.legend`
 - AND it SHALL NOT populate `pie_chart_config.legend_json`
+
+#### Scenario: Pie chart config_json naming
+
+- GIVEN a pie panel with `metrics = [{ config_json = jsonencode({ operation = "count" }) }]`
+- WHEN the provider builds the API request and reads the panel back
+- THEN the metrics SHALL round-trip using the `config_json` attribute name with no plan diff
 
 ### Requirement: Legacy metric panel behavior (REQ-024)
 
@@ -1136,7 +1305,7 @@ The `synthetics_stats_overview_config` block SHALL expose the following optional
   - `label` (string): the human-readable label for the drilldown action.
   - `encode_url` (bool, optional): whether to URL-encode the drilldown target; defaults to `true` at the API level.
   - `open_in_new_tab` (bool, optional): whether to open the drilldown in a new browser tab; defaults to `true` at the API level.
-  - The API fields `trigger` and `type` each accept only one value (`on_open_panel_menu` and `url_drilldown` respectively). These SHALL be hardcoded in the write converter and SHALL NOT be exposed as user-configurable Terraform attributes (matching the established pattern for `slo_overview_config` and `slo_error_budget_config` drilldowns).
+  - The API fields `trigger` and `type` each accept only one value (`on_open_panel_menu` and `url_drilldown` respectively). These SHALL be hardcoded in the write converter and SHALL NOT be exposed as user-configurable Terraform attributes.
 - `filters` (nested block, optional): Synthetics-specific monitor filter constraints. Each filter category within the block is optional and accepts a `list(object({ label = string, value = string }))`:
   - `projects`: filter by Synthetics project.
   - `tags`: filter by monitor tag.
@@ -1201,7 +1370,7 @@ The provider SHALL seed `synthetics_monitors_config` from prior state or plan on
 
 **Shared filter model:**
 
-The filter structure used by `synthetics_monitors_config` (lists of `{ label, value }` pairs for each filter dimension) is identical to the filter structure used by `synthetics_stats_overview_config` (REQ-033). The implementation SHOULD share filter model types and converter functions between the two panel types to avoid duplication.
+The filter structure used by `synthetics_monitors_config` (lists of `{ label, value }` pairs for each filter dimension) is identical to the filter structure used by `synthetics_stats_overview_config` (REQ-033). Both panel types SHALL consume the same shared nested-block schema function for filter items, eliminating the current inline duplication.
 
 #### Scenario: Synthetics monitors panel with no config block
 
@@ -1252,7 +1421,7 @@ The filter structure used by `synthetics_monitors_config` (lists of `{ label, va
 
 ### Requirement: `lens-dashboard-app` panel behavior (REQ-035)
 
-For `type = "lens-dashboard-app"` panels, the resource SHALL accept `lens_dashboard_app_config` with exactly one of the `by_value` or `by_reference` sub-blocks set. Within `by_value`, practitioners SHALL configure exactly one by-value source: either `config_json` containing a JSON object that maps directly to the generated by-value `KbnDashboardPanelTypeLensDashboardApp.config` union, or one supported typed Lens chart block. Within `by_reference`, the `ref_id` and `time_range` attributes are required. The optional by-reference attributes `references_json`, `title`, `description`, `hide_title`, `hide_border`, and `drilldowns_json` MAY be set.
+For `type = "lens-dashboard-app"` panels, the resource SHALL accept `lens_dashboard_app_config` with exactly one of the `by_value` or `by_reference` sub-blocks set. Within `by_value`, practitioners SHALL configure exactly one by-value source: either `config_json` containing a JSON object that maps directly to the generated by-value `KbnDashboardPanelTypeLensDashboardApp.config` union, or one supported typed Lens chart block. Within `by_reference`, the `ref_id` and `time_range` attributes are required. The optional by-reference attributes `references_json`, `title`, `description`, `hide_title`, `hide_border`, and `drilldowns` MAY be set; `drilldowns` is the structured 3-way drilldowns shape defined in REQ-041.
 
 **On write (create and update):**
 
@@ -1266,7 +1435,7 @@ For by-reference panels, the resource SHALL set the API `config.ref_id` field fr
 
 The resource SHALL classify the API `config` JSON object in this order (relying on the raw object, not only generated union decode, which does not enforce a true oneOf on the wire): (1) **By-value:** if the object has a non-empty string at top-level `type` (the by-value Lens chart discriminator), the resource SHALL leave `by_reference` unset and populate `by_value` from the API read, including when `ref_id` and `time_range` are also present. When prior plan or state selected a supported typed by-value chart block and the API response can be represented by that same typed chart block, the resource SHALL repopulate that typed chart block. Otherwise, the resource SHALL populate `by_value.config_json` from the API read, including the practitioner string preservation rule in the next paragraph when plan or state includes a prior `by_value.config_json` object. (2) **By-reference:** otherwise, if the object omits that chart discriminator and has non-empty `ref_id` and a `time_range` with non-empty `from` and `to`, the resource SHALL populate `by_reference` and leave `by_value` unset. (3) **Neither (1) nor (2):** if prior plan or state had `by_reference`, the resource SHALL preserve that prior `by_reference` block per REQ-009 and SHALL NOT silently mode-flip to `by_value`. (4) Otherwise, the resource SHALL populate `by_value.config_json` from the API read (and the same preservation rule when applicable). Fields absent from the API response SHALL not be forced into state from the API response alone. Optional by-reference attributes SHALL also follow REQ-009 panel read seeding and alignment so prior practitioner intent is preserved when the API omits or differs on optional values.
 
-`by_value.config_json`, `by_reference.references_json`, and `by_reference.drilldowns_json` SHALL use semantic JSON equality for plan comparison. API-injected field ordering SHALL NOT create spurious plan diffs. For `by_value.config_json`, when a read of the Kibana `config` returns additional key paths and values the practitioner’s object did not set (Kibana default or enrichment) while every value path the practitioner’s `config_json` object sets is still present in the API object with the same value, the provider SHALL preserve the practitioner’s `by_value.config_json` string in state; the implementation may treat top-level `styling` as rewritable by Kibana, optional empty `filters` (including `null` or omission), a default KQL `query` (only `language` and/or `expression: ""` matching API omission), and related cases consistent with a non-destructive next write; if the response changes a value the user set, or the prior object cannot be read as a value-subset of the API in this sense, the provider SHALL use the read-back value to avoid a destructive next write. For ordered JSON arrays on that value-subset path, the API may only **append** after the practitioner’s last index; reordered or prepended content relative to the practitioner’s array is not treated as a safe enrichment match.
+`by_value.config_json` and `by_reference.references_json` SHALL use semantic JSON equality for plan comparison. API-injected field ordering SHALL NOT create spurious plan diffs. For `by_value.config_json`, when a read of the Kibana `config` returns additional key paths and values the practitioner’s object did not set (Kibana default or enrichment) while every value path the practitioner’s `config_json` object sets is still present in the API object with the same value, the provider SHALL preserve the practitioner’s `by_value.config_json` string in state; the implementation may treat top-level `styling` as rewritable by Kibana, optional empty `filters` (including `null` or omission), a default KQL `query` (only `language` and/or `expression: ""` matching API omission), and related cases consistent with a non-destructive next write; if the response changes a value the user set, or the prior object cannot be read as a value-subset of the API in this sense, the provider SHALL use the read-back value to avoid a destructive next write. For ordered JSON arrays on that value-subset path, the API may only **append** after the practitioner’s last index; reordered or prepended content relative to the practitioner’s array is not treated as a safe enrichment match.
 
 The `lens-dashboard-app` panel type is distinct from the existing `vis` Lens panel path. Typed by-value Lens chart blocks under `lens_dashboard_app_config.by_value` SHALL use the `lens-dashboard-app` panel discriminator and `KbnDashboardPanelTypeLensDashboardApp.config` by-value shape. Existing top-level typed Lens panel blocks such as `xy_chart_config` and `metric_chart_config` SHALL remain valid only for `type = "vis"` panels. Existing `type = "vis"` Lens panel behavior SHALL remain unchanged.
 
@@ -1304,14 +1473,14 @@ The `lens-dashboard-app` panel type is distinct from the existing `vis` Lens pan
 - AND the panel SHALL appear in state with that typed by-value chart block populated and `by_reference` as null
 - AND the provider SHALL NOT populate panel-level `config_json` for this panel in state
 
-#### Scenario: by-reference panel with required time_range and optional drilldowns_json
+#### Scenario: by-reference panel with required time_range and optional structured drilldowns
 
 - GIVEN a `lens-dashboard-app` panel in by-reference mode with:
   - `lens_dashboard_app_config.by_reference.ref_id = "panel_0"`
   - `lens_dashboard_app_config.by_reference.time_range.from = "now-7d"`
   - `lens_dashboard_app_config.by_reference.time_range.to = "now"`
   - `lens_dashboard_app_config.by_reference.time_range.mode = "relative"`
-  - `lens_dashboard_app_config.by_reference.drilldowns_json = "[{\"type\":\"url_drilldown\",\"trigger\":\"on_click_value\",\"label\":\"Open\",\"url\":\"https://example.com\"}]"`
+  - one `lens_dashboard_app_config.by_reference.drilldowns` entry with a `url` block (`label = "Open"`, `url = "https://example.com"`, `trigger = "on_click_value"`)
 - WHEN the resource is created or updated
 - THEN the provider SHALL include the `time_range` object and `drilldowns` array in the API payload
 - AND on read-back the provider SHALL repopulate both from the API response
@@ -1363,6 +1532,596 @@ The `lens-dashboard-app` panel type is distinct from the existing `vis` Lens pan
 - THEN the provider SHALL populate `by_value.config_json` in state
 - AND the provider SHALL NOT convert it to a typed by-value chart block
 
+### Requirement: Image panel behavior (REQ-040)
+
+When a panel entry sets `type = "image"`, the resource SHALL accept an `image_config` block and SHALL require that block to be present. The block SHALL require `src`, a nested object with mutually exclusive `file = object({ file_id = string })` and `url = object({ url = string })` sub-blocks; exactly one of `src.file` or `src.url` SHALL be set. `file_id` (when `file` is used) and `url` (when `url` is used) SHALL be required non-empty strings.
+
+The `image_config` block SHALL accept the optional attributes `alt_text` (string), `object_fit` (string, validator: one of `"fill"`, `"contain"`, `"cover"`, `"none"`; no Terraform-side default), `background_color` (string), `title` (string), `description` (string), `hide_title` (bool), and `hide_border` (bool). It SHALL also accept an optional `drilldowns` list (max 100 entries) where each entry contains exactly one of `dashboard_drilldown` or `url_drilldown` sub-blocks:
+
+- `dashboard_drilldown = object({ dashboard_id = string (required), label = string (required), trigger = string (validator: must be "on_click_image"), use_filters = optional bool, use_time_range = optional bool, open_in_new_tab = optional bool })`
+- `url_drilldown = object({ url = string (required), label = string (required), trigger = string (validator: one of "on_click_image", "on_open_panel_menu"), encode_url = optional bool, open_in_new_tab = optional bool })`
+
+The `image_config` block SHALL conflict with all other typed panel config blocks and with `config_json`. When `type = "image"`, `config_json` SHALL NOT be set on the same panel entry; if it is, the resource SHALL return an error diagnostic indicating `config_json` is not supported for `image`.
+
+On write, the resource SHALL build the `kbn-dashboard-panel-type-image` API payload from the `image_config` block. On read, the resource SHALL repopulate `image_config` from the API response and SHALL apply REQ-009 null-preservation to optional fields and to drilldown sub-fields with API defaults (`use_filters`, `use_time_range`, `open_in_new_tab`, `encode_url`, `object_fit`).
+
+#### Scenario: Image panel with file source round-trip
+
+- GIVEN a panel with `type = "image"` and `image_config = { src = { file = { file_id = "img-1" } }, alt_text = "diagram", object_fit = "cover" }`
+- WHEN create runs and the post-apply read returns the same panel
+- THEN state SHALL contain the same `image_config` shape, `src.url` SHALL be null, and a subsequent plan SHALL show no changes
+
+#### Scenario: Image panel with url source round-trip
+
+- GIVEN a panel with `type = "image"` and `image_config = { src = { url = { url = "https://example.com/logo.png" } } }`
+- WHEN create runs and the post-apply read returns the same panel
+- THEN state SHALL contain the same `image_config` shape with `src.file` null
+
+#### Scenario: src requires exactly one branch
+
+- GIVEN an `image_config` with both `src.file` and `src.url` set, or with neither set
+- WHEN Terraform validates the configuration
+- THEN the resource SHALL return an error diagnostic indicating exactly one of `src.file` or `src.url` must be set
+
+#### Scenario: Invalid object_fit rejected
+
+- GIVEN an `image_config` with `object_fit = "stretch"`
+- WHEN Terraform validates the configuration
+- THEN the resource SHALL return an error diagnostic indicating the value must be `"fill"`, `"contain"`, `"cover"`, or `"none"`
+
+#### Scenario: Drilldown discriminator validation
+
+- GIVEN a `drilldowns` entry with both `dashboard_drilldown` and `url_drilldown` set, or with neither set
+- WHEN Terraform validates the configuration
+- THEN the resource SHALL return an error diagnostic indicating exactly one drilldown sub-block must be set
+
+#### Scenario: Drilldown trigger validation
+
+- GIVEN a `dashboard_drilldown` with `trigger = "on_open_panel_menu"` (an `image` dashboard drilldown only supports `on_click_image`)
+- WHEN Terraform validates the configuration
+- THEN the resource SHALL return an error diagnostic indicating the trigger must be `"on_click_image"`
+
+#### Scenario: config_json rejected for image panel type
+
+- GIVEN a panel with `type = "image"` and `config_json` set
+- WHEN the provider builds the API request on create or update
+- THEN it SHALL return an error diagnostic stating that `config_json` is not supported for `image`
+
+#### Scenario: Drilldown defaults null-preserved on import
+
+- GIVEN an existing image panel with a dashboard drilldown whose `use_filters`, `use_time_range`, and `open_in_new_tab` come from Kibana defaults
+- WHEN the resource imports the dashboard
+- THEN those drilldown attributes SHALL remain null in state and a subsequent plan against a configuration that omits them SHALL show no changes
+
+### Requirement: SLO alerts panel behavior (REQ-041)
+
+When a panel entry sets `type = "slo_alerts"`, the resource SHALL accept an `slo_alerts_config` block and SHALL require that block to be present. The block SHALL accept the following attributes:
+
+- `slos` (list of `object({ slo_id = string (required), slo_instance_id = optional string })`) — **required**, max 100 entries. The resource SHALL validate at plan time that `slos` contains at least one entry (`len(slos) > 0`); empty `slos` SHALL return an error diagnostic. On read, `slo_instance_id` SHALL apply REQ-009 null-preservation: when prior state had it null, the resource SHALL keep it null even if Kibana returns its server-side default `"*"`.
+- `title` (string, optional)
+- `description` (string, optional)
+- `hide_title` (bool, optional)
+- `hide_border` (bool, optional)
+- `drilldowns` (list of the shared `url_drilldown` block, max 100 entries, optional). URL drilldown `trigger` is fixed at `"on_open_panel_menu"` for this panel; because `AllowedTriggers` collapses to that single value, the Terraform nested schema omits the `trigger` attribute (same pattern as `slo_burn_rate_config.drilldowns`). Practitioners configure `url`, `label`, and optional `encode_url` / `open_in_new_tab`; the model layer SHALL write `trigger = "on_open_panel_menu"` on the API payload. `encode_url` and `open_in_new_tab` are optional booleans subject to REQ-009 null-preservation.
+
+The shared `url_drilldown` block referenced here SHALL be the same nested-block schema consumed by `slo_burn_rate_config.drilldowns` and `slo_overview_config.drilldowns` (Go-level consolidation; behavior unchanged for existing SLO panels).
+
+The `slo_alerts_config` block SHALL conflict with all other typed panel config blocks and with `config_json`. When `type = "slo_alerts"`, `config_json` SHALL NOT be set on the same panel entry; if it is, the resource SHALL return an error diagnostic indicating `config_json` is not supported for `slo_alerts`.
+
+On write, the resource SHALL build the `kbn-dashboard-panel-type-slo_alerts` API payload from the `slo_alerts_config` block. On read, the resource SHALL repopulate `slo_alerts_config` from the API response.
+
+#### Scenario: Minimal slo_alerts panel round-trip
+
+- GIVEN a panel with `type = "slo_alerts"` and `slo_alerts_config = { slos = [{ slo_id = "slo-1" }] }`
+- WHEN create runs and the post-apply read returns the same panel
+- THEN state SHALL contain the same single SLO entry with `slo_instance_id` null and a subsequent plan SHALL show no changes
+
+#### Scenario: Empty slos rejected at plan time
+
+- GIVEN an `slo_alerts_config` with `slos = []`
+- WHEN Terraform validates the configuration
+- THEN the resource SHALL return an error diagnostic indicating `slos` must contain at least one entry
+
+#### Scenario: slo_instance_id null preservation
+
+- GIVEN an existing slo_alerts panel where Kibana stored `slo_instance_id = "*"` server-side and prior state had it null
+- WHEN the resource imports or refreshes the dashboard
+- THEN `slo_instance_id` SHALL remain null in state and a subsequent plan against a configuration that omits it SHALL show no changes
+
+#### Scenario: Drilldown round-trip
+
+- GIVEN `slo_alerts_config.drilldowns = [{ url = "https://kibana/...", label = "investigate" }]` (no `trigger` attribute in Terraform because the schema omits it when only one trigger is allowed)
+- WHEN create runs and the post-apply read returns the same drilldown
+- THEN state SHALL contain that drilldown with `encode_url` and `open_in_new_tab` null per REQ-009
+
+#### Scenario: Drilldown trigger fixed by model on write
+
+- GIVEN `slo_alerts_config.drilldowns = [{ url = "https://kibana/...", label = "investigate" }]`
+- WHEN create runs and the provider builds the dashboard API request
+- THEN each emitted URL drilldown object in the panel payload SHALL include `trigger = "on_open_panel_menu"`
+
+#### Scenario: config_json rejected for slo_alerts panel type
+
+- GIVEN a panel with `type = "slo_alerts"` and `config_json` set
+- WHEN the provider builds the API request on create or update
+- THEN it SHALL return an error diagnostic stating that `config_json` is not supported for `slo_alerts`
+
+### Requirement: Discover session panel behavior (REQ-042)
+
+When a panel entry sets `type = "discover_session"`, the resource SHALL accept a `discover_session_config` block and SHALL require that block to be present. The block SHALL expose two mutually exclusive sub-blocks mirroring the API's by-value/by-reference union; exactly one of `by_value` or `by_reference` SHALL be set.
+
+The `discover_session_config` block SHALL accept the typed envelope attributes `title` (string), `description` (string), `hide_title` (bool), `hide_border` (bool), and an optional `drilldowns` list of the shared `url_drilldown` block (max 100 entries). URL drilldown `trigger` is fixed at `"on_open_panel_menu"`; the nested schema omits the Terraform `trigger` attribute when only that trigger is allowed, and the model layer SHALL write `trigger = "on_open_panel_menu"` on the API payload.
+
+#### The `by_value` sub-block
+
+The `by_value` sub-block SHALL accept:
+
+- `time_range` — optional, shape `object({ from = string, to = string, mode? = string })`. When null, the model layer SHALL materialize the dashboard-root `time_range` into the API payload at write time so the API request always carries a value. Read-back SHALL apply REQ-009 null-preservation: when prior state had `time_range` null and the API echoes the dashboard-inherited value, state SHALL remain null.
+- `tab` — required `object`. The Discover API restricts inline tab configuration to one entry today; the resource exposes it as a single object. A future `tabs = list(...)` shape MAY be added additively if Kibana lifts the cardinality limit. The `tab` object SHALL contain two mutually exclusive sub-blocks `dsl` and `esql`; exactly one SHALL be set.
+
+The `tab.dsl` sub-block SHALL accept:
+
+- `column_order` (optional list of strings, max 100)
+- `column_settings` (optional map of `object({ width = optional number })`)
+- `sort` (optional list of `object({ name = string (required), direction = string (required, enum "asc"|"desc") })`, max 100)
+- `density` (optional string, enum `"compact"`/`"expanded"`/`"normal"`)
+- `header_row_height` (optional string, validator: a decimal integer in `"1".."5"` or the literal `"auto"`)
+- `row_height` (optional string, validator: a decimal integer in `"1".."20"` or the literal `"auto"`)
+- `rows_per_page` (optional number, `1..10000`)
+- `sample_size` (optional number, `10..10000`)
+- `view_mode` (optional string, enum `"documents"`/`"patterns"`/`"aggregated"`)
+- `query` (required, the existing typed `query` block: `expression` (required string) and optional `language` with validator `kql` or `lucene`, matching `getFilterSimple()` / dashboard filter query shape)
+- `data_source_json` (required string, JSON-encoded object conforming to the API `data_view_reference` or `data_view_spec` discriminator; the resource SHALL validate well-formed JSON at plan time and apply semantic JSON equality on read so key reorderings and Kibana-injected defaults do not produce diffs)
+- `filters` (optional list of `object({ filter_json = string })`, max 100). The `filter_json` element shape and normalization SHALL match the dashboard-level `filters` shape defined by REQ-037 (`dashboard-filters`).
+
+The `tab.esql` sub-block SHALL accept:
+
+- `column_order`, `column_settings`, `sort`, `density`, `header_row_height`, `row_height` — same shapes and validators as in `tab.dsl`
+- `data_source_json` (required string, JSON-encoded object conforming to the API `esqlDataSource` schema; same normalization semantics as for `tab.dsl.data_source_json`)
+
+#### The `by_reference` sub-block
+
+The `by_reference` sub-block SHALL accept:
+
+- `time_range` — optional, same shape and inheritance semantics as for `by_value`
+- `ref_id` — required string identifying the linked Discover session saved object
+- `selected_tab_id` — optional string and computed when omitted; the resource SHALL preserve a user-supplied value and SHALL populate it from the API response otherwise. **Acceptance-test gap:** acceptance tests that link a legacy `search` saved-object fixture cannot assert `selected_tab_id` end-to-end when that saved object type does not return `selected_tab_id` from the API; newer `discover-session` saved-object fixtures (when available) will close this gap.
+- `overrides` — optional `object` of typed scalars: `column_order`, `column_settings`, `sort`, `density`, `header_row_height`, `row_height`, `rows_per_page`, `sample_size` (same shapes and validators as their `tab.dsl` counterparts)
+
+The `by_reference` sub-block SHALL NOT include a `references` or `references_json` attribute in v1. Empirical verification on Kibana **9.4.0** (`openspec/changes/add-new-panels/design.md`, “Open questions”): creating a dashboard via `POST /api/dashboards` with a `discover_session` panel whose `config` contains only `ref_id` (and required envelope fields such as `time_range`) succeeds **without** any client-side references; a top-level dashboard `references` property is **rejected** by the Dashboard API (400 — additional properties not allowed). If a future Kibana version changes this contract, a follow-on change MAY add `references_json` or equivalent additively.
+
+#### Cross-cutting
+
+The `discover_session_config` block SHALL conflict with all other typed panel config blocks and with `config_json`. When `type = "discover_session"`, `config_json` SHALL NOT be set on the same panel entry; if it is, the resource SHALL return an error diagnostic indicating `config_json` is not supported for `discover_session`.
+
+On write, the resource SHALL build the `kbn-dashboard-panel-type-discover_session` API payload from the `discover_session_config` block, choosing the by-value or by-reference branch according to which sub-block is set and, within `by_value.tab`, choosing the DSL or ES|QL tab variant according to which sub-block is set. On read, the resource SHALL detect the API branch and populate the matching sub-block, leaving the other null.
+
+REQ-009 null-preservation SHALL apply to all optional fields, drilldown defaults, and panel-level `time_range`.
+
+#### Scenario: By-value DSL tab round-trip
+
+- GIVEN a panel with `discover_session_config = { by_value = { tab = { dsl = { query = { expression = "host.name : \"web-01\"", language = "kql" }, data_source_json = jsonencode({ type = "data_view_reference", ref_id = "logs-*" }), column_order = ["@timestamp", "message"] } } } }`
+- WHEN create runs and the post-apply read returns the same panel
+- THEN state SHALL contain the same `by_value.tab.dsl` shape, `by_value.tab.esql` SHALL be null, `by_reference` SHALL be null, and a subsequent plan SHALL show no changes
+
+#### Scenario: By-value ES|QL tab round-trip
+
+- GIVEN a panel with `discover_session_config = { by_value = { tab = { esql = { data_source_json = jsonencode({ type = "esql", query = "FROM logs-*" }) } } } }`
+- WHEN create runs and the post-apply read returns the same panel
+- THEN state SHALL contain `by_value.tab.esql` populated and `by_value.tab.dsl` null
+
+#### Scenario: By-reference panel round-trip
+
+- GIVEN an existing Discover session saved object with id `discover-1` and a panel with `discover_session_config = { by_reference = { ref_id = "discover-1", title = "saved errors" } }`
+- WHEN create runs and the post-apply read returns the same panel
+- THEN state SHALL contain the same `by_reference` shape with `selected_tab_id` populated from the API response and `by_value` SHALL be null
+
+#### Scenario: Exactly one of by_value or by_reference
+
+- GIVEN a panel with both `by_value` and `by_reference` set, or with neither set
+- WHEN Terraform validates the configuration
+- THEN the resource SHALL return an error diagnostic indicating exactly one of `by_value` or `by_reference` must be set
+
+#### Scenario: Exactly one of tab.dsl or tab.esql
+
+- GIVEN `by_value.tab` with both `dsl` and `esql` set, or with neither set
+- WHEN Terraform validates the configuration
+- THEN the resource SHALL return an error diagnostic indicating exactly one of `tab.dsl` or `tab.esql` must be set
+
+#### Scenario: Panel-level time_range inherits from dashboard
+
+- GIVEN a panel with `discover_session_config.by_value.time_range = null` and the dashboard root `time_range = { from = "now-15m", to = "now" }`
+- WHEN create runs
+- THEN the API request SHALL include `time_range = { from = "now-15m", to = "now" }` on the panel payload
+- AND the post-apply read SHALL preserve `discover_session_config.by_value.time_range` as null in state
+
+#### Scenario: Filter JSON shape matches dashboard-level filters
+
+- GIVEN a `tab.dsl.filters` entry whose `filter_json` value semantically equals a dashboard-level `filters` entry's `filter_json` value
+- WHEN refresh runs
+- THEN both filters SHALL round-trip with the same semantic JSON equality and no diff SHALL be produced for either
+
+#### Scenario: Invalid row_height rejected
+
+- GIVEN `tab.dsl.row_height = "25"` (above the API maximum of 20)
+- WHEN Terraform validates the configuration
+- THEN the resource SHALL return an error diagnostic indicating the value must be a decimal integer in `"1".."20"` or the literal `"auto"`
+
+#### Scenario: data_source_json normalization avoids spurious diffs
+
+- GIVEN a `tab.dsl.data_source_json` value whose key ordering or whitespace differs from the API response
+- WHEN refresh runs
+- THEN the provider SHALL not produce a diff for that field
+
+#### Scenario: Drilldown trigger fixed by model on write
+
+- GIVEN `discover_session_config.drilldowns = [{ url = "https://kibana/...", label = "investigate" }]`
+- WHEN create runs and the provider builds the dashboard API request
+- THEN each emitted URL drilldown object in the panel payload SHALL include `trigger = "on_open_panel_menu"`
+
+#### Scenario: selected_tab_id computed when omitted
+
+- GIVEN a `by_reference` panel without `selected_tab_id` in configuration
+- WHEN create runs and the API returns `selected_tab_id = "tab-uuid-1"` in the response
+- THEN state SHALL contain `selected_tab_id = "tab-uuid-1"` and a subsequent plan against the same configuration SHALL show no changes
+
+#### Scenario: config_json rejected for discover_session panel type
+
+- GIVEN a panel with `type = "discover_session"` and `config_json` set
+- WHEN the provider builds the API request on create or update
+- THEN it SHALL return an error diagnostic stating that `config_json` is not supported for `discover_session`
+
+### Requirement: Dashboard-level saved filters round-trip (REQ-037)
+
+The resource SHALL expose dashboard-level saved filters at the dashboard root as `filters = list(object({ filter_json = string }))`. Each `filter_json` value SHALL be a JSON-encoded object that conforms to the Kibana Dashboard API `kbn-as-code-filters-schema_*` discriminated union (or DSL/spatial filter shape) and SHALL be normalized for diff comparison using the same semantic JSON equality applied to per-panel `filter_json` values.
+
+On create and update, the resource SHALL include each filter's JSON object in the dashboard API request `filters` array in the order given in configuration. On read, the resource SHALL repopulate `filters` from the API response in the order returned. When `filters` is unset in configuration and the API returns either no `filters` field or an empty list, the resource SHALL keep the Terraform attribute unset (not coerce it to an empty list).
+
+#### Scenario: Saved filters round-trip across create and read
+
+- GIVEN `filters = [{ filter_json = jsonencode({ operator = "is", field = "host.name", value = "web-01" }) }]`
+- WHEN create runs and the post-apply read returns the same filter
+- THEN state SHALL contain a single `filters` entry whose `filter_json` is semantically equal to the configured JSON
+
+#### Scenario: Filter JSON normalization avoids spurious diffs
+
+- GIVEN a `filter_json` value whose key ordering or whitespace differs from the API response
+- WHEN refresh runs
+- THEN the provider SHALL not produce a diff for that filter
+
+#### Scenario: Unset filters preserved when API returns empty
+
+- GIVEN `filters` is unset in configuration
+- WHEN read runs and the API returns no `filters` field or `filters: []`
+- THEN the Terraform `filters` attribute SHALL remain unset rather than being set to an empty list
+
+#### Scenario: Multiple filters preserved in order
+
+- GIVEN `filters = [a, b, c]` with three distinct filter JSON values
+- WHEN create or update runs and the post-apply read returns the same three filters in the same order
+- THEN state SHALL contain those three filters in the same order
+
+### Requirement: Dashboard-level pinned controls round-trip (REQ-038)
+
+The resource SHALL expose dashboard-level pinned controls at the dashboard root as `pinned_panels = list(object({ type, options_list_control_config, range_slider_control_config, time_slider_control_config, esql_control_config }))`. Each entry SHALL declare exactly one of the four typed `*_control_config` blocks, and the chosen block SHALL match the entry's `type` value (for example `type = "options_list_control"` requires `options_list_control_config` and forbids the other three). `pinned_panels` entries SHALL NOT include a `grid` attribute, and the resource SHALL NOT populate one on read.
+
+The four `*_control_config` block schemas SHALL be identical to the schemas used for the same control types under `panels[]`; any future change to those typed schemas applies to both placements.
+
+On create and update, the resource SHALL include `pinned_panels` in the dashboard API request body in the order given in configuration. On read, the resource SHALL repopulate `pinned_panels` from the API `pinned_panels` array in the order returned. When `pinned_panels` is unset in configuration and the API returns an empty list (Kibana's default), the resource SHALL keep the Terraform attribute unset.
+
+#### Scenario: Pinned options-list control round-trip
+
+- GIVEN `pinned_panels = [{ type = "options_list_control", options_list_control_config = { ... } }]`
+- WHEN create runs and the post-apply read returns the same control
+- THEN state SHALL contain a single `pinned_panels` entry with the matching typed config and no `grid`
+
+#### Scenario: Mismatched type and config block
+
+- GIVEN a `pinned_panels` entry with `type = "range_slider_control"` and only `options_list_control_config` set
+- WHEN Terraform validates the configuration
+- THEN the resource SHALL return an error diagnostic indicating the typed block does not match `type`
+
+#### Scenario: Multiple typed config blocks set on one entry
+
+- GIVEN a `pinned_panels` entry with both `options_list_control_config` and `range_slider_control_config` set
+- WHEN Terraform validates the configuration
+- THEN the resource SHALL return an error diagnostic indicating exactly one typed block must be set
+
+#### Scenario: Empty pinned_panels preserved as unset
+
+- GIVEN `pinned_panels` is unset in configuration
+- WHEN read runs and the API returns `pinned_panels: []`
+- THEN the Terraform `pinned_panels` attribute SHALL remain unset
+
+### Requirement: Lens chart presentation fields on typed `vis` panels under `vis_config.by_value` (REQ-039)
+
+For every typed Lens chart block reachable at `panels[].vis_config.by_value` on `type = "vis"` panels (`xy_chart_config`, `metric_chart_config`, `legacy_metric_config`, `gauge_config`, `heatmap_config`, `tagcloud_config`, `region_map_config`, `datatable_config`, `pie_chart_config`, `mosaic_config`, `treemap_config`, `waffle_config`), the resource SHALL expose the following optional attributes on that chart block that mirror the corresponding fields on the Kibana chart-root API schemas:
+
+- `hide_title` (bool): when set, the API payload SHALL include `hide_title` on the chart root; when null in state, the payload SHALL omit it.
+- `hide_border` (bool): when set, the API payload SHALL include `hide_border` on the chart root; when null in state, the payload SHALL omit it.
+- `references_json` (normalized JSON string): when set, the API payload SHALL include `references` on the chart root as the parsed JSON array (`kbn-content-management-utils-referenceSchema[]`); when null in state, the payload SHALL omit it. Read-back SHALL normalize the returned `references` array into the canonical JSON form used by the resource.
+- `drilldowns` (typed list of variant sub-blocks per REQ-041): when set, the API payload SHALL include `drilldowns` on the chart root as a typed array conforming to the API discriminated union; when null in state, the payload SHALL omit it.
+
+On read-back, the provider SHALL populate each attribute from the API response when present, and SHALL preserve null in state when the API omits the field (consistent with REQ-009 null-preservation semantics).
+
+#### Scenario: hide_title round-trip
+
+- GIVEN a typed Lens chart panel with `hide_title = true` in configuration
+- WHEN the provider applies the configuration and reads it back
+- THEN the API payload SHALL include `hide_title: true` on the chart root
+- AND state SHALL show `hide_title = true`
+
+#### Scenario: hide_title null-preservation on read
+
+- GIVEN a typed Lens chart panel whose prior state has `hide_border = null`
+- AND the Kibana API response omits `hide_border` on the chart root
+- WHEN the provider reads the panel
+- THEN state SHALL preserve `hide_border = null`
+
+#### Scenario: references_json round-trip
+
+- GIVEN a typed Lens chart panel with `references_json = jsonencode([{ name = "foo", type = "index-pattern", id = "abc" }])` in configuration
+- WHEN the provider applies the configuration and reads it back
+- THEN the API payload SHALL include the parsed `references` array on the chart root
+- AND state SHALL show the normalized JSON form
+
+### Requirement: Chart-level `time_range` null-preservation and inheritance from dashboard (REQ-040)
+
+The resource SHALL preserve practitioner intent for the chart-level `time_range` block on every typed Lens chart reachable under `panels[].vis_config.by_value.<chart>_config` (for `type = "vis"`) and every typed Lens chart under `panels[].lens_dashboard_app_config.by_value.<chart>_config` (for `type = "lens-dashboard-app"`), using the same null-preservation pattern as REQ-009 for `time_range.mode`.
+
+When prior state has `time_range = null` on that chart block AND the API-returned chart-level `time_range` equals the dashboard-level `time_range` (compared by literal `from`, `to`, and `mode` string equality, treating both nulls as equal), the provider SHALL preserve null in state. Otherwise, the provider SHALL populate state with the API-returned chart-level `time_range`.
+
+The chart-level `time_range.mode` attribute SHALL follow the same null-preservation rule as the dashboard-level `time_range.mode` in REQ-009: when prior state has `mode = null` and the API response omits or returns no usable mode, state SHALL preserve null rather than overwriting with a default.
+
+#### Scenario: Chart time_range null-preserved when equal to dashboard
+
+- GIVEN a typed Lens chart panel (under `vis_config.by_value` or `lens_dashboard_app_config.by_value`) whose prior state has `time_range = null`
+- AND the dashboard-level `time_range` is `{ from = "now-7d", to = "now" }`
+- AND the Kibana API response returns `time_range = { from = "now-7d", to = "now" }` on that chart root
+- WHEN the provider reads the panel
+- THEN state SHALL preserve `time_range = null` on the chart panel
+
+#### Scenario: Chart time_range populated when not equal to dashboard
+
+- GIVEN a typed Lens chart panel (under `vis_config.by_value` or `lens_dashboard_app_config.by_value`) whose prior state has `time_range = null`
+- AND the dashboard-level `time_range` is `{ from = "now-7d", to = "now" }`
+- AND the Kibana API response returns `time_range = { from = "now-30d", to = "now-1d" }` on that chart root
+- WHEN the provider reads the panel
+- THEN state SHALL populate `time_range = { from = "now-30d", to = "now-1d" }` on the chart panel
+
+#### Scenario: Chart time_range mode null-preservation
+
+- GIVEN a typed Lens chart panel whose prior state has `time_range = { from = "now-7d", to = "now", mode = null }`
+- AND the Kibana API response omits `mode` on the chart-root `time_range`
+- WHEN the provider reads the panel
+- THEN state SHALL preserve `time_range.mode = null`
+
+### Requirement: Structured drilldown list and per-variant validation (REQ-041)
+
+The resource SHALL validate and serialize the `drilldowns` attribute whenever it is set on any of the following placements:
+
+- chart blocks under `panels[].vis_config.by_value.<chart>_config`,
+- chart blocks under `panels[].lens_dashboard_app_config.by_value.<chart>_config`,
+- `panels[].vis_config.by_reference`, or
+- `panels[].lens_dashboard_app_config.by_reference`.
+
+For each such list, each list item SHALL be an object containing three mutually-exclusive optional sub-blocks modeling the API discriminated union: `dashboard_drilldown`, `discover_drilldown`, and `url_drilldown`. Each list item SHALL set exactly one variant sub-block; setting zero or multiple variants SHALL produce a plan-time validation error that identifies the offending list item and lists the allowable variants.
+
+The Terraform attribute names SHALL match the implementations above (`dashboard_drilldown`, `discover_drilldown`, `url_drilldown` nested objects). Behavior and serialization rules SHALL be identical for embedded chart drilldowns and by-reference panel drilldowns.
+
+The `dashboard_drilldown` sub-block SHALL expose: required `dashboard_id` (string), required `label` (string), computed `trigger` (string, always `"on_apply_filter"`), optional `use_filters` (bool, default `true`), optional `use_time_range` (bool, default `true`), and optional `open_in_new_tab` (bool, default `false`).
+
+The `discover_drilldown` sub-block SHALL expose: required `label` (string), computed `trigger` (string, always `"on_apply_filter"`), and optional `open_in_new_tab` (bool, default `true`).
+
+The `url_drilldown` sub-block SHALL expose: required `url` (string), required `label` (string), required `trigger` (string) validated against the four API-allowed values (`on_click_row`, `on_click_value`, `on_open_panel_menu`, `on_select_range`), optional `encode_url` (bool, default `true`), and optional `open_in_new_tab` (bool, default `true`).
+
+The provider SHALL implement inter-variant exclusivity using the conditional validators in `internal/utils/validators/conditional.go` (sibling-path expression-based). Each variant sub-block SHALL be decorated with sibling-relative forbidden conditions ensuring the other two variants are unset when this one is set.
+
+The API write path SHALL serialize each list item according to the variant set: `dashboard_drilldown` items SHALL map to the API `dashboard_drilldown` object including `type: "dashboard_drilldown"`; `discover_drilldown` items SHALL map to the API `discover_drilldown` object including `type: "discover_drilldown"`; `url_drilldown` items SHALL map to the API `url_drilldown` object including `type: "url_drilldown"`. On read-back the provider SHALL detect the variant from the API `type` discriminator and populate the corresponding sub-block.
+
+#### Scenario: url_drilldown with valid trigger round-trip
+
+- GIVEN a typed Lens chart panel with a single `drilldowns` entry whose `url_drilldown` is set to `{ url = "https://example.com", label = "Open", trigger = "on_click_value" }`
+- WHEN the provider applies the configuration and reads it back
+- THEN the API payload SHALL include a `drilldowns` array of one element with `type = "url_drilldown"`, `url = "https://example.com"`, `label = "Open"`, `trigger = "on_click_value"`
+- AND state SHALL show the same configuration with `url_drilldown.trigger = "on_click_value"`
+
+#### Scenario: dashboard_drilldown computed trigger
+
+- GIVEN a typed Lens chart panel with a `drilldowns` entry whose `dashboard_drilldown` is set to `{ dashboard_id = "abc", label = "Drill" }` (trigger not set in config)
+- WHEN the provider applies the configuration and reads it back
+- THEN the API payload SHALL include `trigger = "on_apply_filter"` for that drilldown
+- AND state SHALL show `dashboard_drilldown.trigger = "on_apply_filter"` as the computed value
+
+#### Scenario: url_drilldown trigger invalid value rejected at plan
+
+- GIVEN a typed Lens chart panel with a `drilldowns` entry whose `url_drilldown.trigger = "on_invalid"`
+- WHEN Terraform validates the configuration at plan time
+- THEN validation SHALL produce an error attributed to that list item indicating the trigger value is not one of the allowed values (`on_click_row`, `on_click_value`, `on_open_panel_menu`, `on_select_range`)
+
+#### Scenario: Multiple drilldown variants set on one list item rejected at plan
+
+- GIVEN a typed Lens chart panel with a `drilldowns` list item that sets both `dashboard_drilldown` and `url_drilldown`
+- WHEN Terraform validates the configuration at plan time
+- THEN validation SHALL produce an error attributed to that list item indicating only one variant sub-block may be set
+
+#### Scenario: No drilldown variant set on a list item rejected at plan
+
+- GIVEN a typed Lens chart panel with a `drilldowns` list item that sets none of `dashboard_drilldown`, `discover_drilldown`, or `url_drilldown`
+- WHEN Terraform validates the configuration at plan time
+- THEN validation SHALL produce an error attributed to that list item indicating exactly one variant sub-block must be set
+
+#### Scenario: Setting computed trigger in configuration rejected
+
+- GIVEN a typed Lens chart panel with a `dashboard_drilldown` entry that explicitly sets `trigger = "on_apply_filter"` in configuration
+- WHEN Terraform validates the configuration at plan time
+- THEN validation SHALL produce an error indicating `trigger` is a computed-only attribute on the `dashboard_drilldown` and `discover_drilldown` variants
+
+### Requirement: `vis_config` block for `vis` panels (REQ-042)
+
+For `type = "vis"` panels, the resource SHALL accept a `vis_config` block with exactly one of `by_value` or `by_reference` sub-blocks set. `vis_config` SHALL be valid only on panels with `type = "vis"`, SHALL be mutually exclusive with all other panel-type configuration blocks, and SHALL be mutually exclusive with panel-level `config_json`.
+
+**`vis_config.by_value`** SHALL accept exactly one of the 12 supported typed Lens chart blocks: `xy_chart_config`, `metric_chart_config`, `legacy_metric_config`, `gauge_config`, `heatmap_config`, `tagcloud_config`, `region_map_config`, `datatable_config`, `pie_chart_config`, `mosaic_config`, `treemap_config`, or `waffle_config`. The internal shape and behavior of each chart block SHALL be unchanged except for nesting under `vis_config.by_value` (REQ-013 through REQ-024 continue to describe chart semantics, now reached via `vis_config.by_value.<block_name>`). `vis_config.by_value` SHALL NOT contain a nested `config_json` attribute; raw `vis` configuration SHALL be authored using panel-level `config_json` with `type = "vis"` instead.
+
+**`vis_config.by_reference`** SHALL accept:
+
+- `ref_id` (required string) — saved-object reference name; maps to the API `config.ref_id` field.
+- `references_json` (optional normalized JSON string) — array of `{ id, name, type }` saved-object references; maps to the API `config.references` array. A saved Lens visualization reference SHALL typically have a reference whose `name` matches `ref_id`, whose `type` is `lens`, and whose `id` is the saved object ID.
+- `time_range` (required object with `from`, `to`, optional `mode` ∈ `absolute`/`relative`) — required even though the API marks it optional, for parity with `lens_dashboard_app_config.by_reference.time_range`.
+- `title`, `description` (optional strings).
+- `hide_title`, `hide_border` (optional booleans).
+- `drilldowns` (optional list of structured drilldown blocks per REQ-041).
+
+**On write (create and update):**
+
+For `vis_config.by_value` panels, the resource SHALL convert the typed chart block into the matching generated by-value Lens chart schema and SHALL send the resulting object directly as the panel API `config`. The provider SHALL set the panel discriminator to `vis`.
+
+For `vis_config.by_reference` panels, the resource SHALL set the API `config.ref_id` from `by_reference.ref_id`, set the API `config.time_range` object from `by_reference.time_range`, and include `references`, `title`, `description`, `hide_title`, `hide_border`, and `drilldowns` only when their corresponding Terraform attributes are set. The provider SHALL set the panel discriminator to `vis`.
+
+**On read:**
+
+The resource SHALL classify the API `config` JSON object in this order: (1) **By-reference**: if the object omits the by-value chart discriminator (`type` at the top level of the chart config) and has non-empty `ref_id` and a `time_range` with non-empty `from` and `to`, the resource SHALL populate `by_reference` and leave `by_value` unset. (2) **By-value**: otherwise, if the object has a non-empty top-level chart `type`, the resource SHALL populate `by_value.<chart_block>` from the API read using the matching typed chart block. (3) When prior plan or state had `by_reference`, the resource SHALL preserve that prior `by_reference` block per REQ-009 and SHALL NOT silently mode-flip to `by_value`.
+
+#### Scenario: Creation of a typed by-value `vis` panel via `vis_config`
+
+- GIVEN a panel with `type = "vis"` and `vis_config.by_value.xy_chart_config = {...}`
+- WHEN the resource is created
+- THEN the provider SHALL convert the typed chart block into the API by-value chart schema and send it as the panel `config`
+- AND the panel SHALL appear in state with `vis_config.by_value.xy_chart_config` populated, all other by-value chart blocks null, and `vis_config.by_reference` null
+
+#### Scenario: Creation of a by-reference `vis` panel
+
+- GIVEN a panel with `type = "vis"` and:
+  - `vis_config.by_reference.ref_id = "panel_0"`
+  - `vis_config.by_reference.references_json = "[{\"id\":\"abc-123\",\"name\":\"panel_0\",\"type\":\"lens\"}]"`
+  - `vis_config.by_reference.time_range.from = "now-15m"`
+  - `vis_config.by_reference.time_range.to = "now"`
+- WHEN the resource is created
+- THEN the provider SHALL send a panel payload with `config.ref_id`, `config.references`, and `config.time_range` to the Kibana dashboard API with the panel discriminator set to `vis`
+- AND the panel SHALL appear in state with `vis_config.by_reference.ref_id = "panel_0"` and `vis_config.by_value` null
+
+#### Scenario: Both `vis_config` sub-blocks set simultaneously
+
+- GIVEN a `vis_config` block with both `by_value` and `by_reference` set
+- WHEN Terraform validates the configuration
+- THEN the configuration SHALL be rejected at plan time with a diagnostic indicating that `by_value` and `by_reference` are mutually exclusive
+
+#### Scenario: Neither `vis_config` sub-block set
+
+- GIVEN a `vis_config` block with neither `by_value` nor `by_reference` set
+- WHEN Terraform validates the configuration
+- THEN the configuration SHALL be rejected at plan time with a diagnostic indicating that exactly one of `by_value` or `by_reference` must be set
+
+#### Scenario: Multiple typed by-value chart blocks set simultaneously
+
+- GIVEN a `vis_config.by_value` block with two typed chart blocks set (for example `xy_chart_config` and `metric_chart_config`)
+- WHEN Terraform validates the configuration
+- THEN the configuration SHALL be rejected at plan time with a diagnostic indicating that exactly one chart block must be set
+
+#### Scenario: No chart block in `vis_config.by_value`
+
+- GIVEN a `vis_config.by_value` block with no typed chart block set
+- WHEN Terraform validates the configuration
+- THEN the configuration SHALL be rejected at plan time with a diagnostic indicating that exactly one chart block must be set
+
+#### Scenario: `vis_config` rejected for non-vis panel
+
+- GIVEN a panel with `type = "markdown"` and `vis_config` set
+- WHEN Terraform validates the resource schema
+- THEN the configuration SHALL be rejected before any dashboard API call
+
+#### Scenario: `vis_config` mutually exclusive with panel-level `config_json`
+
+- GIVEN a panel with `type = "vis"` that sets both `vis_config` and panel-level `config_json`
+- WHEN Terraform validates the configuration
+- THEN the configuration SHALL be rejected at plan time with a diagnostic indicating that `vis_config` and `config_json` are mutually exclusive
+
+#### Scenario: `time_range` required on `vis_config.by_reference`
+
+- GIVEN a `vis_config.by_reference` block without `time_range`
+- WHEN Terraform validates the configuration
+- THEN the configuration SHALL be rejected at plan time with a diagnostic indicating that `time_range` is required
+
+#### Scenario: Read-back detects by-reference mode
+
+- GIVEN a managed `vis` panel authored in by-reference mode
+- WHEN Kibana returns the panel `config` with `ref_id` and `time_range` and no top-level chart `type`
+- THEN the provider SHALL populate `vis_config.by_reference` in state and leave `vis_config.by_value` null
+- AND SHALL NOT create a spurious diff on the next plan
+
+#### Scenario: Read-back populates typed by-value chart block
+
+- GIVEN a managed `vis` panel authored with `vis_config.by_value.xy_chart_config`
+- WHEN Kibana returns the panel `config` with the matching XY chart shape
+- THEN the provider SHALL populate `vis_config.by_value.xy_chart_config` in state
+- AND SHALL leave the other 11 by-value chart blocks null
+- AND SHALL leave `vis_config.by_reference` null
+
+#### Scenario: Raw `vis` panel authored via panel-level `config_json`
+
+- GIVEN a panel with `type = "vis"` and panel-level `config_json = "<raw vis config JSON>"` and no `vis_config` block
+- WHEN the resource is created
+- THEN the provider SHALL unmarshal `config_json` and send the decoded JSON object directly as the panel API `config`
+- AND the panel SHALL appear in state with panel-level `config_json` populated and `vis_config` null
+
+### Requirement: Typed partition chart legends (REQ-043)
+
+Partition chart legends (treemap, mosaic, pie, waffle) SHALL expose `truncate_after_lines` as an `Int64` attribute in the Terraform schema. The API specifies `float32` for this field, but the value represents an integer count of lines before truncation. All partition chart legend schemas SHALL use `Int64` consistently.
+
+#### Scenario: Legend truncate_after_lines accepts integer values
+
+- GIVEN a treemap panel with `legend.truncate_after_lines = 5`
+- WHEN the provider builds the API request
+- THEN it SHALL encode the value as `5` in the API payload
+- AND read-back SHALL preserve the integer value without drift
+
+#### Scenario: Legend truncate_after_lines rejects fractional practitioner input
+
+- GIVEN a mosaic panel with `legend.truncate_after_lines = 5.5`
+- WHEN Terraform validates the resource schema
+- THEN the provider SHALL return an error diagnostic because the attribute type is `Int64`
+
+### Requirement: Waffle value_display reuse (REQ-044)
+
+Waffle `value_display` SHALL use the shared `getPartitionValueDisplaySchema()` helper, ensuring the same attribute names, types, and documentation text as treemap and mosaic `value_display`.
+
+#### Scenario: Waffle value_display shape matches treemap
+
+- GIVEN a waffle panel with `value_display = { mode = "percentage", percent_decimals = 2 }`
+- WHEN Terraform validates the configuration
+- THEN the validation SHALL pass and the attribute descriptions SHALL match those used by `treemap_config.value_display`
+
+### Requirement: SLO overview constant definition site (REQ-045)
+
+The `panelTypeSloOverview` constant SHALL be defined in `schema.go` alongside all other dashboard panel type constants. It SHALL NOT be defined in a panel-specific model file.
+
+#### Scenario: Constant location
+
+- GIVEN a code review of `schema.go`
+- WHEN the reviewer searches for `panelTypeSloOverview`
+- THEN the constant SHALL be found in `schema.go` together with `panelTypeSloAlerts`, `panelTypeSloBurnRate`, and other panel type constants
+### Requirement: Provider registration (REQ-040)
+
+The `elasticstack_kibana_dashboard` resource SHALL be registered through the provider's standard Plugin Framework resource set returned by `Provider.resources(...)` in `provider/plugin_framework.go`. It SHALL NOT be returned from `Provider.experimentalResources(...)`, and practitioners SHALL NOT be required to set `TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL=true` to use the resource.
+
+#### Scenario: Default provider surface includes the resource
+
+- **GIVEN** a released provider build (no `TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL` override)
+- **WHEN** Terraform requests the provider's resource set
+- **THEN** `elasticstack_kibana_dashboard` SHALL be present in the resources returned by `Provider.Resources(ctx)`
+
+#### Scenario: Experimental resource set excludes the dashboard resource
+
+- **GIVEN** the provider's experimental Plugin Framework resource set returned by `Provider.experimentalResources(ctx)`
+- **WHEN** that set is enumerated
+- **THEN** it SHALL NOT contain `dashboard.NewResource`
+
+#### Scenario: Practitioner does not need the experimental opt-in
+
+- **GIVEN** a Terraform configuration declaring `resource "elasticstack_kibana_dashboard" "example" { ... }`
+- **WHEN** Terraform plans or applies against a released provider build with `TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL` unset
+- **THEN** the provider SHALL recognize and operate the resource without requiring the environment variable
+
 ## Traceability
 
 | Area | Primary files |
@@ -1375,6 +2134,7 @@ The `lens-dashboard-app` panel type is distinct from the existing `vis` Lens pan
 | Panels / sections mapping | `internal/kibana/dashboard/models_panels.go` |
 | Visualization-specific panel converters | `internal/kibana/dashboard/models_*_panel.go` |
 | `lens-dashboard-app` panel / REQ-035 | `internal/kibana/dashboard/models_lens_dashboard_app_panel.go`, `internal/kibana/dashboard/models_lens_dashboard_app_converters.go`, `internal/kibana/dashboard/models_lens_dashboard_app_by_value_adapter.go`, `internal/kibana/dashboard/models_lens_dashboard_app_by_value_adapter_test.go` |
+| `viz` panel / `vis_config` / REQ-042 | `internal/kibana/dashboard/models_panels.go`, `internal/kibana/dashboard/models_lens_panel.go`, `internal/kibana/dashboard/schema.go` |
 | Drift normalization | `internal/kibana/dashboard/panel_config_defaults.go`, `internal/kibana/dashboard/models_plan_state_alignment.go`, `internal/kibana/dashboard/models_xy_chart_panel.go` |
 | Waffle validation | `internal/kibana/dashboard/waffle_config_validator.go` |
 | Dashboard API status handling | `internal/clients/kibanaoapi/dashboards.go` |

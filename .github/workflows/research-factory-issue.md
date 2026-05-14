@@ -4,8 +4,8 @@ name: Research Factory Issue Intake
 timeout-minutes: 35
 description: >-
   Reacts to trusted qualifying `research-factory` issue events or internal workflow dispatch
-  requests and delegates deep-research authoring to an agent that writes a single
-  implementation-research block into the triggering issue body.
+  requests and delegates deep-research authoring to an agent that creates or updates a single
+  implementation-research sticky comment on the triggering issue.
 on:
   issues:
     types: [opened, labeled]
@@ -96,6 +96,13 @@ on:
             factoryLabel,
             issueOpenedNotEligibleReason,
           }) {
+            if (eventName === 'issue_comment') {
+              return {
+                event_eligible: true,
+                event_eligible_reason: `Issue comment event qualifies because the slash_command trigger routes to issue_comment.`,
+              };
+            }
+          
             if (eventName !== 'issues') {
               return {
                 event_eligible: false,
@@ -608,6 +615,13 @@ on:
             factoryLabel,
             issueOpenedNotEligibleReason,
           }) {
+            if (eventName === 'issue_comment') {
+              return {
+                event_eligible: true,
+                event_eligible_reason: `Issue comment event qualifies because the slash_command trigger routes to issue_comment.`,
+              };
+            }
+          
             if (eventName !== 'issues') {
               return {
                 event_eligible: false,
@@ -1016,6 +1030,13 @@ on:
             factoryLabel,
             issueOpenedNotEligibleReason,
           }) {
+            if (eventName === 'issue_comment') {
+              return {
+                event_eligible: true,
+                event_eligible_reason: `Issue comment event qualifies because the slash_command trigger routes to issue_comment.`,
+              };
+            }
+          
             if (eventName !== 'issues') {
               return {
                 event_eligible: false,
@@ -1451,6 +1472,60 @@ on:
             }
           }
           
+    - name: Fetch prior research comment
+      id: fetch_prior_research_comment
+      if: >-
+        (
+          steps.determine_intake_mode.outputs.intake_mode == 'issue-event' &&
+          steps.qualify_trigger.outputs.event_eligible == 'true' &&
+          steps.check_actor_trust.outputs.actor_trusted == 'true'
+        ) || (
+          steps.determine_intake_mode.outputs.intake_mode == 'dispatch' &&
+          steps.validate_dispatch_inputs.outputs.event_eligible == 'true'
+        )
+      env:
+        INPUT_ISSUE_NUMBER: >-
+          ${{ steps.determine_intake_mode.outputs.intake_mode == 'issue-event'
+            && steps.capture_issue_context.outputs.issue_number
+            || steps.validate_dispatch_inputs.outputs.issue_number }}
+      uses: actions/github-script@v9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const { owner, repo } = context.repo;
+          const issueNumber = parseInt(process.env.INPUT_ISSUE_NUMBER, 10);
+          const marker = '<!-- gha-research-factory -->';
+          
+          if (!issueNumber || issueNumber <= 0) {
+            core.setOutput('prior_research_comment', '');
+            return;
+          }
+          
+          try {
+            const allComments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number: issueNumber,
+              per_page: 100,
+            });
+          
+            const matches = allComments.filter(
+              (c) => c.user?.login === 'github-actions[bot]' && c.body?.trimStart().startsWith(marker),
+            );
+          
+            if (matches.length > 0) {
+              const latest = matches[matches.length - 1];
+              core.setOutput('prior_research_comment', latest.body);
+              core.info(`Found prior research comment ${latest.id} for issue #${issueNumber}`);
+            } else {
+              core.setOutput('prior_research_comment', '');
+              core.info(`No prior research comment found for issue #${issueNumber}`);
+            }
+          } catch (err) {
+            core.setOutput('prior_research_comment', '');
+            core.warning(`Could not fetch prior research comment for issue #${issueNumber}: ${err.message}`);
+          }
+          
     - name: Remove trigger label
       id: remove_trigger_label
       if: >-
@@ -1550,6 +1625,7 @@ on:
         EVENT_ELIGIBLE_DISPATCH: ${{ steps.validate_dispatch_inputs.outputs.event_eligible }}
         EVENT_ELIGIBLE_REASON_DISPATCH: ${{ steps.validate_dispatch_inputs.outputs.event_eligible_reason }}
         ISSUE_COMMENTS: ${{ steps.fetch_issue_comments.outputs.issue_comments }}
+        PRIOR_RESEARCH_COMMENT: ${{ steps.fetch_prior_research_comment.outputs.prior_research_comment }}
         SOURCE_WORKFLOW: ${{ github.event.inputs.source_workflow }}
       run: |
         echo "intake_mode=${INTAKE_MODE}" >> "$GITHUB_OUTPUT"
@@ -1589,6 +1665,12 @@ on:
         {
           echo "issue_comments<<${EOF_DELIM}"
           printf '%s\n' "${ISSUE_COMMENTS}"
+          echo "${EOF_DELIM}"
+        } >> "$GITHUB_OUTPUT"
+
+        {
+          echo "prior_research_comment<<${EOF_DELIM}"
+          printf '%s\n' "${PRIOR_RESEARCH_COMMENT}"
           echo "${EOF_DELIM}"
         } >> "$GITHUB_OUTPUT"
       shell: bash
@@ -1659,6 +1741,13 @@ on:
             factoryLabel,
             issueOpenedNotEligibleReason,
           }) {
+            if (eventName === 'issue_comment') {
+              return {
+                event_eligible: true,
+                event_eligible_reason: `Issue comment event qualifies because the slash_command trigger routes to issue_comment.`,
+              };
+            }
+          
             if (eventName !== 'issues') {
               return {
                 event_eligible: false,
@@ -1983,11 +2072,118 @@ on:
       env:
         ISSUE_BODY: ${{ steps.normalize_context.outputs.issue_body }}
         ISSUE_COMMENTS: ${{ steps.normalize_context.outputs.issue_comments }}
-      run: |
-        mkdir -p /tmp/research-factory-context
-        printf '%s' "${ISSUE_BODY}" > /tmp/research-factory-context/issue_body.md
-        printf '%s' "${ISSUE_COMMENTS}" > /tmp/research-factory-context/issue_comments.md
-      shell: bash
+        PRIOR_RESEARCH_COMMENT: ${{ steps.normalize_context.outputs.prior_research_comment }}
+      uses: actions/github-script@v9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          /**
+           * HTML comment sanitisation, control/invisible-char removal, and research-comment lookup helpers.
+           */
+          
+          /**
+           * Removes all HTML comment sequences (<code>&lt;!--</code> through the next <code>--&gt;</code>).
+           * If an opening sequence has no closing counterpart, everything from the opener to the end of
+           * the string is removed.
+           *
+           * @param {string} text
+           * @returns {string}
+           */
+          function stripHtmlComments(text) {
+            if (typeof text !== 'string') return '';
+            return text.replace(/<!--[\s\S]*?(?:-->|$)/g, '');
+          }
+          
+          /**
+           * Removes non-printable ASCII control characters while preserving tab, newline,
+           * and carriage return. Also strips Unicode line/paragraph separators.
+           *
+           * Stripped ASCII:  \x00-\x08, \x0B, \x0C, \x0E-\x1F, \x7F
+           * Preserved:       \x09 (tab), \x0A (LF), \x0D (CR)
+           * Unicode:         \u2028, \u2029
+           *
+           * @param {string} text
+           * @returns {string}
+           */
+          function stripControlChars(text) {
+            if (typeof text !== 'string') return '';
+            return text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F\u2028\u2029]/g, '');
+          }
+          
+          /**
+           * Removes invisible Unicode characters that have no legitimate use in issue content:
+           * zero-width spaces/joiners, bidirectional marks, word/function/invisible operators,
+           * and the BOM (byte order mark).
+           *
+           * Ranges stripped:
+           *   \u200B-\u200F  — zero-width space, non-joiner, joiner, LTR mark, RTL mark
+           *   \u2060-\u2064  — word joiner, function application, invisible times/separator/plus
+           *   \uFEFF           — BOM / zero-width no-break space
+           *
+           * @param {string} text
+           * @returns {string}
+           */
+          function stripInvisibleUnicode(text) {
+            if (typeof text !== 'string') return '';
+            return text.replace(/[\u200B-\u200F\u2060-\u2064\uFEFF]/g, '');
+          }
+          
+          /**
+           * Composed sanitisation pipeline. Runs all three filters in sequence:
+           *
+           *   input → stripHtmlComments → stripControlChars → stripInvisibleUnicode → output
+           *
+           * Idempotent: applying twice produces the same result as applying once.
+           *
+           * @param {string} text
+           * @returns {string}
+           */
+          function sanitizeUserContent(text) {
+            if (typeof text !== 'string') return '';
+            return stripInvisibleUnicode(stripControlChars(stripHtmlComments(text)));
+          }
+          
+          /**
+           * Finds the most recently created matching research comment written by
+           * <code>github-actions[bot]</code> whose body starts with <code>marker</code>.
+           *
+           * @param {Array<{author: string, body: string}>} comments Ordered oldest-first.
+           * @param {string} marker
+           * @returns {{author: string, body: string} | null}
+           */
+          function findResearchComment(comments, marker) {
+            if (!Array.isArray(comments)) {
+              return null;
+            }
+            const matches = comments.filter(
+              (c) =>
+                c != null &&
+                typeof c.body === 'string' &&
+                (c.author ?? c.user?.login) === 'github-actions[bot]' &&
+                c.body.trimStart().startsWith(marker),
+            );
+            return matches.length > 0 ? matches[matches.length - 1] : null;
+          }
+          
+          if (typeof module !== 'undefined') {
+            module.exports = {
+              stripHtmlComments,
+              stripControlChars,
+              stripInvisibleUnicode,
+              sanitizeUserContent,
+              findResearchComment,
+            };
+          }
+          
+          const fs = require('fs');
+          const dir = '/tmp/research-factory-context';
+          
+          fs.mkdirSync(dir, { recursive: true });
+          fs.writeFileSync(`${dir}/issue_body.md`, sanitizeUserContent(process.env.ISSUE_BODY));
+          fs.writeFileSync(`${dir}/issue_comments.md`, sanitizeUserContent(process.env.ISSUE_COMMENTS));
+          fs.writeFileSync(`${dir}/prior_research_comment.md`, sanitizeUserContent(process.env.PRIOR_RESEARCH_COMMENT || ''));
+          core.info('Wrote sanitized issue context files to /tmp/research-factory-context/');
+          
     - name: Upload issue context artifact
       if: >
         steps.normalize_context.outputs.event_eligible == 'true' &&
@@ -1998,6 +2194,8 @@ on:
         name: research-factory-issue-context
         path: /tmp/research-factory-context/
         if-no-files-found: error
+env:
+  RESEARCH_FACTORY_ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue_number }}
 concurrency:
   group: research-factory-issue-${{ github.event.issue.number || inputs.issue_number }}
   cancel-in-progress: false
@@ -2056,10 +2254,112 @@ mcp-servers:
 checkout:
   fetch-depth: 0
 safe-outputs:
-  update-issue:
-    body:
-    target: triggering
-    max: 1
+  jobs:
+    update-research-comment:
+      description: Create or update the implementation-research sticky comment on the triggering issue
+      permissions:
+        contents: read
+        issues: write
+      runs-on: ubuntu-latest
+      output: "Research comment created or updated successfully."
+      inputs:
+        body:
+          description: Markdown body of the research comment (without the gha-research-factory marker)
+          required: true
+          type: string
+      steps:
+        - name: Create or update research comment
+          uses: actions/github-script@v9
+          env:
+            RESEARCH_FACTORY_ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue_number }}
+          with:
+            github-token: ${{ secrets.GITHUB_TOKEN }}
+            script: |
+              const fs = require('fs');
+              const { owner, repo } = context.repo;
+              const issueNumber = parseInt(process.env.RESEARCH_FACTORY_ISSUE_NUMBER, 10);
+              const marker = '<!-- gha-research-factory -->';
+              
+              const outputFile = process.env.GH_AW_AGENT_OUTPUT;
+              if (!outputFile) {
+                core.setFailed('update-research-comment: GH_AW_AGENT_OUTPUT environment variable is not set');
+                return;
+              }
+              
+              if (!issueNumber || issueNumber <= 0) {
+                core.setFailed('update-research-comment: invalid issue number.');
+                return;
+              }
+              
+              const fileContent = fs.readFileSync(outputFile, 'utf8');
+              const agentOutput = JSON.parse(fileContent);
+              const items = (agentOutput.items || []).filter(i => i.type === 'update_research_comment');
+              
+              if (items.length === 0) {
+                core.info('update-research-comment: no update_research_comment items in agent output; nothing to do.');
+                return;
+              }
+              
+              const item = items[0];
+              let body = item.body || '';
+              
+              // Prepend the marker automatically; the agent does not need to supply it.
+              if (body.startsWith(marker + '\n') || body.startsWith(marker + '\r\n')) {
+                // body already starts with marker; leave as-is
+              } else if (body.startsWith(marker)) {
+                // marker without newline; normalize
+                body = marker + '\n' + body.slice(marker.length);
+              } else {
+                body = marker + '\n' + body;
+              }
+              
+              // Find existing research comment by github-actions[bot]
+              let existingComment = null;
+              try {
+                const comments = await github.paginate(github.rest.issues.listComments, {
+                  owner,
+                  repo,
+                  issue_number: issueNumber,
+                  per_page: 100,
+                });
+                for (let i = comments.length - 1; i >= 0; i--) {
+                  const c = comments[i];
+                  if (c.user?.login === 'github-actions[bot]' && c.body?.trimStart().startsWith(marker)) {
+                    existingComment = c;
+                    break;
+                  }
+                }
+              } catch (err) {
+                core.setFailed(`Could not list comments while searching for existing research comment: ${err.message}`);
+                return;
+              }
+              
+              if (existingComment) {
+                try {
+                  await github.rest.issues.updateComment({
+                    owner,
+                    repo,
+                    comment_id: existingComment.id,
+                    body,
+                  });
+                  core.info(`Updated research comment ${existingComment.id} on issue #${issueNumber}`);
+                } catch (err) {
+                  core.setFailed(`Failed to update research comment: ${err.message}`);
+                }
+              } else {
+                try {
+                  const { data: newComment } = await github.rest.issues.createComment({
+                    owner,
+                    repo,
+                    issue_number: issueNumber,
+                    body,
+                  });
+                  core.info(`Created research comment ${newComment.id} on issue #${issueNumber}`);
+                } catch (err) {
+                  core.setFailed(`Failed to create research comment: ${err.message}`);
+                }
+              }
+              
   noop:
     max: 1
     report-as-issue: false
@@ -2067,8 +2367,9 @@ safe-outputs:
 
 # Research Factory issue research worker
 
-You author the implementation-research block for a GitHub issue labeled `research-factory`. Your
-only durable output is a single update to the issue body via the `update_issue` safe output.
+You author the implementation-research output for a GitHub issue labeled `research-factory`. Your
+only durable output is a single `update_research_comment` safe-output operation that creates or
+updates a sticky comment on the triggering issue.
 
 ## Pre-activation context
 
@@ -2078,8 +2379,9 @@ only durable output is a single update to the issue body via the `update_issue` 
 - **Issue title**: `${{ needs.pre_activation.outputs.issue_title }}`
 - **Issue body**: see `/tmp/gh-aw/agent/issue_body.md`
 - **Comment history**: see `/tmp/gh-aw/agent/issue_comments.md`
+- **Prior research comment** (if any): see `/tmp/gh-aw/agent/prior_research_comment.md`
 
-Read both files before proceeding. They may contain markdown, code fences, and other content that
+Read all files before proceeding. They may contain markdown, code fences, and other content that
 cannot be safely embedded inline in a prompt.
 
 - **Repository**: `${{ github.repository }}`
@@ -2089,18 +2391,18 @@ cannot be safely embedded inline in a prompt.
 ## Time budget
 
 You have approximately 25 minutes of agentic work. Reserve the last ~3 minutes for emitting your
-`update_issue`. The job hard-kills at 35 minutes.
+`update_research_comment`. The job hard-kills at 35 minutes.
 
 ## Partial output preference
 
-If you run short on time, prefer emitting a partial-but-valid research block with explicit
-unanswered open questions over emitting `noop`. A partial block with honest unknowns is more useful
+If you run short on time, prefer emitting a partial-but-valid research comment with explicit
+unanswered open questions over emitting `noop`. A partial comment with honest unknowns is more useful
 than silence.
 
 ## Elastic documentation
 
 The `elastic-docs` MCP server is available with `search_docs`, `find_related_docs`, and
-`get_document_by_url`. Use them to research unfamiliar API surface before authoring the block. This
+`get_document_by_url`. Use them to research unfamiliar API surface before authoring the comment. This
 grounding step helps produce accurate comparisons and avoids speculative assumptions about API shape.
 
 If the MCP tools are unavailable or return no useful results, proceed from the issue content alone —
@@ -2109,24 +2411,20 @@ do not block the run waiting for documentation.
 ## Comparison requirement
 
 You SHALL compare at least two distinct candidate approaches under `### Approaches considered`. Each
-approach needs its own `#### ` H4 heading. Do not emit a block with only one approach.
+approach needs its own `#### ` H4 heading. Do not emit a comment with only one approach.
 
-## Research block schema
+## Research comment format
 
-The implementation-research block is delimited by stable HTML-comment markers:
-
-- Opening marker: `<!-- implementation-research:start -->`
-- Closing marker: `<!-- implementation-research:end -->`
-
-Between the markers, the block MUST begin with an H2 heading, followed by these mandatory
-subsections in order (each a `### ` H3 heading):
+Your research output MUST conform to the `ci-research-factory-comment-format` capability. The
+workflow automatically prepends the marker `<!-- gha-research-factory -->`; you do not need to
+include it. Your comment body SHALL contain these mandatory sections in order:
 
 1. `## Implementation research` — H2 heading followed by a provenance header recording the run
 timestamp, the run link (`${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`), and
 this social-contract notice:
 
-   > Edits inside this block are read as input on the next run but are not preserved verbatim. For
-   > durable feedback, post a comment or edit content outside the block.
+   > Edits inside this comment are read as input on the next run but are not preserved verbatim. For
+   > durable feedback, post a comment or edit the issue body.
 
 2. `### Problem framing` — Restate the requested change in concrete terms.
 3. `### Approaches considered` — Two or more `#### ` H4 child headings, each describing a distinct
@@ -2141,20 +2439,30 @@ excludes.
 7. `### References` — A list of consulted sources, including elastic-docs URLs and repository paths
 inspected during research.
 
-Block must end with the closing marker: `<!-- implementation-research:end -->`
+After `### References`, include a `<details>` element with `<summary>🤖 Pipeline metadata</summary>`
+containing a fenced JSON block (language `json`) that conforms to the
+`ci-research-factory-comment-format` schema:
 
-## Body-rewrite contract
+- `schema_version` (string, required): e.g. `"1.0"`.
+- `recommendation` (object, required):
+  - `spine` (string, required): kebab-case identifier.
+  - `confidence` (string, optional): `"high"`, `"medium"`, or `"low"`.
+  - `approach_index` (number, required): zero-based index of the chosen approach.
+- `open_questions` (array, optional): each with `id`, `text`, and `blocking` boolean.
+- `affected_capabilities` (array of strings, optional).
+- `estimated_scope` (string): `"small"`, `"medium"`, `"large"`, or `"unknown"`.
+- `references` (array, optional): each with `type` and `url` or `path`.
 
-Emit exactly one `update_issue` operation with `operation: replace`. The new body SHALL preserve all
-content outside the `<!-- implementation-research:* -->` markers byte-for-byte from the pre-block
-original issue content. Strip any prior block before composing the new one. The new body SHALL
-contain exactly one block.
+Ensure the JSON metadata is internally consistent with the human-readable subsections above it.
+The `<details>` element SHALL be closed by default so that human readers do not see the JSON unless
+they expand it.
 
 ## Free-will semantics
 
-Edits a user has made inside the prior block are read as input but are not preserved verbatim.
-Synthesize the next block from: original issue content + chronological comment history + prior block
-contents (as draft input). Do not attempt to detect or diff what the user changed inside the block.
+Edits a user has made inside the prior research comment are read as input but are not preserved
+verbatim. Synthesize the next comment from: original issue content + chronological comment history +
+prior research comment contents (as draft input). Do not attempt to detect or diff what the user
+changed inside the prior comment.
 
 ## Guardrails
 
@@ -2162,7 +2470,7 @@ contents (as draft input). Do not attempt to detect or diff what the user change
 - **SHALL NOT** open pull requests.
 - **SHALL NOT** post free-form comments (`add-comment` is not enabled).
 - **SHALL NOT** add labels, including `change-factory` or `code-factory`.
-- **SHALL NOT** call `update_issue` more than once.
+- **SHALL NOT** call `update_research_comment` more than once.
 - **SHALL NOT** re-check intake gates (deterministic pre-activation already handled those).
 - If no meaningful research progress is possible (empty issue, no comments), emit `noop` with a brief
 explanation.

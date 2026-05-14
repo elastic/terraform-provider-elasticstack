@@ -3,8 +3,8 @@ name: Research Factory Issue Intake
 timeout-minutes: 35
 description: >-
   Reacts to trusted qualifying `research-factory` issue events or internal workflow dispatch
-  requests and delegates deep-research authoring to an agent that writes a single
-  implementation-research block into the triggering issue body.
+  requests and delegates deep-research authoring to an agent that creates or updates a single
+  implementation-research sticky comment on the triggering issue.
 on:
   issues:
     types: [opened, labeled]
@@ -97,6 +97,26 @@ on:
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         x-script-include: scripts/fetch_issue_comments.inline.js
+    - name: Fetch prior research comment
+      id: fetch_prior_research_comment
+      if: >-
+        (
+          steps.determine_intake_mode.outputs.intake_mode == 'issue-event' &&
+          steps.qualify_trigger.outputs.event_eligible == 'true' &&
+          steps.check_actor_trust.outputs.actor_trusted == 'true'
+        ) || (
+          steps.determine_intake_mode.outputs.intake_mode == 'dispatch' &&
+          steps.validate_dispatch_inputs.outputs.event_eligible == 'true'
+        )
+      env:
+        INPUT_ISSUE_NUMBER: >-
+          ${{ steps.determine_intake_mode.outputs.intake_mode == 'issue-event'
+            && steps.capture_issue_context.outputs.issue_number
+            || steps.validate_dispatch_inputs.outputs.issue_number }}
+      uses: actions/github-script@v9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        x-script-include: scripts/fetch_prior_research_comment.inline.js
     - name: Remove trigger label
       id: remove_trigger_label
       if: >-
@@ -127,6 +147,7 @@ on:
         EVENT_ELIGIBLE_DISPATCH: ${{ steps.validate_dispatch_inputs.outputs.event_eligible }}
         EVENT_ELIGIBLE_REASON_DISPATCH: ${{ steps.validate_dispatch_inputs.outputs.event_eligible_reason }}
         ISSUE_COMMENTS: ${{ steps.fetch_issue_comments.outputs.issue_comments }}
+        PRIOR_RESEARCH_COMMENT: ${{ steps.fetch_prior_research_comment.outputs.prior_research_comment }}
         SOURCE_WORKFLOW: ${{ github.event.inputs.source_workflow }}
       run: |
         echo "intake_mode=${INTAKE_MODE}" >> "$GITHUB_OUTPUT"
@@ -168,6 +189,12 @@ on:
           printf '%s\n' "${ISSUE_COMMENTS}"
           echo "${EOF_DELIM}"
         } >> "$GITHUB_OUTPUT"
+
+        {
+          echo "prior_research_comment<<${EOF_DELIM}"
+          printf '%s\n' "${PRIOR_RESEARCH_COMMENT}"
+          echo "${EOF_DELIM}"
+        } >> "$GITHUB_OUTPUT"
       shell: bash
     - name: Finalize gate reason
       id: finalize_gate
@@ -190,11 +217,11 @@ on:
       env:
         ISSUE_BODY: ${{ steps.normalize_context.outputs.issue_body }}
         ISSUE_COMMENTS: ${{ steps.normalize_context.outputs.issue_comments }}
-      run: |
-        mkdir -p /tmp/research-factory-context
-        printf '%s' "${ISSUE_BODY}" > /tmp/research-factory-context/issue_body.md
-        printf '%s' "${ISSUE_COMMENTS}" > /tmp/research-factory-context/issue_comments.md
-      shell: bash
+        PRIOR_RESEARCH_COMMENT: ${{ steps.normalize_context.outputs.prior_research_comment }}
+      uses: actions/github-script@v9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        x-script-include: scripts/write_context_files.inline.js
     - name: Upload issue context artifact
       if: >
         steps.normalize_context.outputs.event_eligible == 'true' &&
@@ -205,6 +232,8 @@ on:
         name: research-factory-issue-context
         path: /tmp/research-factory-context/
         if-no-files-found: error
+env:
+  RESEARCH_FACTORY_ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue_number }}
 concurrency:
   group: research-factory-issue-${{ github.event.issue.number || inputs.issue_number }}
   cancel-in-progress: false
@@ -263,10 +292,28 @@ mcp-servers:
 checkout:
   fetch-depth: 0
 safe-outputs:
-  update-issue:
-    body:
-    target: triggering
-    max: 1
+  jobs:
+    update-research-comment:
+      description: Create or update the implementation-research sticky comment on the triggering issue
+      permissions:
+        contents: read
+        issues: write
+      runs-on: ubuntu-latest
+      output: "Research comment created or updated successfully."
+      inputs:
+        body:
+          description: Markdown body of the research comment (without the gha-research-factory marker)
+          required: true
+          type: string
+      steps:
+        - name: Create or update research comment
+          uses: actions/github-script@v9
+          env:
+            RESEARCH_FACTORY_ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue_number }}
+          with:
+            github-token: ${{ secrets.GITHUB_TOKEN }}
+            script: |
+              //include: scripts/update_research_comment.job.js
   noop:
     max: 1
     report-as-issue: false
@@ -274,8 +321,9 @@ safe-outputs:
 
 # Research Factory issue research worker
 
-You author the implementation-research block for a GitHub issue labeled `research-factory`. Your
-only durable output is a single update to the issue body via the `update_issue` safe output.
+You author the implementation-research output for a GitHub issue labeled `research-factory`. Your
+only durable output is a single `update_research_comment` safe-output operation that creates or
+updates a sticky comment on the triggering issue.
 
 ## Pre-activation context
 
@@ -285,8 +333,9 @@ only durable output is a single update to the issue body via the `update_issue` 
 - **Issue title**: `${{ needs.pre_activation.outputs.issue_title }}`
 - **Issue body**: see `/tmp/gh-aw/agent/issue_body.md`
 - **Comment history**: see `/tmp/gh-aw/agent/issue_comments.md`
+- **Prior research comment** (if any): see `/tmp/gh-aw/agent/prior_research_comment.md`
 
-Read both files before proceeding. They may contain markdown, code fences, and other content that
+Read all files before proceeding. They may contain markdown, code fences, and other content that
 cannot be safely embedded inline in a prompt.
 
 - **Repository**: `${{ github.repository }}`
@@ -296,18 +345,18 @@ cannot be safely embedded inline in a prompt.
 ## Time budget
 
 You have approximately 25 minutes of agentic work. Reserve the last ~3 minutes for emitting your
-`update_issue`. The job hard-kills at 35 minutes.
+`update_research_comment`. The job hard-kills at 35 minutes.
 
 ## Partial output preference
 
-If you run short on time, prefer emitting a partial-but-valid research block with explicit
-unanswered open questions over emitting `noop`. A partial block with honest unknowns is more useful
+If you run short on time, prefer emitting a partial-but-valid research comment with explicit
+unanswered open questions over emitting `noop`. A partial comment with honest unknowns is more useful
 than silence.
 
 ## Elastic documentation
 
 The `elastic-docs` MCP server is available with `search_docs`, `find_related_docs`, and
-`get_document_by_url`. Use them to research unfamiliar API surface before authoring the block. This
+`get_document_by_url`. Use them to research unfamiliar API surface before authoring the comment. This
 grounding step helps produce accurate comparisons and avoids speculative assumptions about API shape.
 
 If the MCP tools are unavailable or return no useful results, proceed from the issue content alone —
@@ -316,24 +365,20 @@ do not block the run waiting for documentation.
 ## Comparison requirement
 
 You SHALL compare at least two distinct candidate approaches under `### Approaches considered`. Each
-approach needs its own `#### ` H4 heading. Do not emit a block with only one approach.
+approach needs its own `#### ` H4 heading. Do not emit a comment with only one approach.
 
-## Research block schema
+## Research comment format
 
-The implementation-research block is delimited by stable HTML-comment markers:
-
-- Opening marker: `<!-- implementation-research:start -->`
-- Closing marker: `<!-- implementation-research:end -->`
-
-Between the markers, the block MUST begin with an H2 heading, followed by these mandatory
-subsections in order (each a `### ` H3 heading):
+Your research output MUST conform to the `ci-research-factory-comment-format` capability. The
+workflow automatically prepends the marker `<!-- gha-research-factory -->`; you do not need to
+include it. Your comment body SHALL contain these mandatory sections in order:
 
 1. `## Implementation research` — H2 heading followed by a provenance header recording the run
 timestamp, the run link (`${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`), and
 this social-contract notice:
 
-   > Edits inside this block are read as input on the next run but are not preserved verbatim. For
-   > durable feedback, post a comment or edit content outside the block.
+   > Edits inside this comment are read as input on the next run but are not preserved verbatim. For
+   > durable feedback, post a comment or edit the issue body.
 
 2. `### Problem framing` — Restate the requested change in concrete terms.
 3. `### Approaches considered` — Two or more `#### ` H4 child headings, each describing a distinct
@@ -348,20 +393,30 @@ excludes.
 7. `### References` — A list of consulted sources, including elastic-docs URLs and repository paths
 inspected during research.
 
-Block must end with the closing marker: `<!-- implementation-research:end -->`
+After `### References`, include a `<details>` element with `<summary>🤖 Pipeline metadata</summary>`
+containing a fenced JSON block (language `json`) that conforms to the
+`ci-research-factory-comment-format` schema:
 
-## Body-rewrite contract
+- `schema_version` (string, required): e.g. `"1.0"`.
+- `recommendation` (object, required):
+  - `spine` (string, required): kebab-case identifier.
+  - `confidence` (string, optional): `"high"`, `"medium"`, or `"low"`.
+  - `approach_index` (number, required): zero-based index of the chosen approach.
+- `open_questions` (array, optional): each with `id`, `text`, and `blocking` boolean.
+- `affected_capabilities` (array of strings, optional).
+- `estimated_scope` (string): `"small"`, `"medium"`, `"large"`, or `"unknown"`.
+- `references` (array, optional): each with `type` and `url` or `path`.
 
-Emit exactly one `update_issue` operation with `operation: replace`. The new body SHALL preserve all
-content outside the `<!-- implementation-research:* -->` markers byte-for-byte from the pre-block
-original issue content. Strip any prior block before composing the new one. The new body SHALL
-contain exactly one block.
+Ensure the JSON metadata is internally consistent with the human-readable subsections above it.
+The `<details>` element SHALL be closed by default so that human readers do not see the JSON unless
+they expand it.
 
 ## Free-will semantics
 
-Edits a user has made inside the prior block are read as input but are not preserved verbatim.
-Synthesize the next block from: original issue content + chronological comment history + prior block
-contents (as draft input). Do not attempt to detect or diff what the user changed inside the block.
+Edits a user has made inside the prior research comment are read as input but are not preserved
+verbatim. Synthesize the next comment from: original issue content + chronological comment history +
+prior research comment contents (as draft input). Do not attempt to detect or diff what the user
+changed inside the prior comment.
 
 ## Guardrails
 
@@ -369,7 +424,7 @@ contents (as draft input). Do not attempt to detect or diff what the user change
 - **SHALL NOT** open pull requests.
 - **SHALL NOT** post free-form comments (`add-comment` is not enabled).
 - **SHALL NOT** add labels, including `change-factory` or `code-factory`.
-- **SHALL NOT** call `update_issue` more than once.
+- **SHALL NOT** call `update_research_comment` more than once.
 - **SHALL NOT** re-check intake gates (deterministic pre-activation already handled those).
 - If no meaningful research progress is possible (empty issue, no comments), emit `noop` with a brief
 explanation.

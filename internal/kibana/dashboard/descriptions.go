@@ -28,12 +28,6 @@ var referenceLineIconDescription string
 //go:embed descriptions/tagcloud_metric.md
 var tagcloudMetricDescription string
 
-//go:embed descriptions/heatmap_x_axis.md
-var heatmapXAxisDescription string
-
-//go:embed descriptions/heatmap_y_axis.md
-var heatmapYAxisDescription string
-
 //go:embed descriptions/region_map_region.md
 var regionMapRegionDescription string
 
@@ -51,3 +45,51 @@ var metricChartMetricConfigDescription string
 
 //go:embed descriptions/metric_chart_breakdown_by.md
 var metricChartBreakdownByDescription string
+
+//go:embed descriptions/dashboard_filters.md
+var dashboardFiltersDescription string
+
+//go:embed descriptions/dashboard_filter_json.md
+var dashboardFilterJSONDescription string
+
+//go:embed descriptions/image_panel_src.md
+var imagePanelSrcDescription string
+
+//go:embed descriptions/image_panel_drilldowns.md
+var imagePanelDrilldownsDescription string
+
+//go:embed descriptions/image_panel_url_drilldown_url.md
+var imagePanelURLDrilldownURLDescription string
+
+//go:embed descriptions/slo_alerts_panel_slos.md
+var sloAlertsPanelSlosDescription string
+
+//go:embed descriptions/slo_alerts_panel_drilldowns.md
+var sloAlertsPanelDrilldownsDescription string
+
+//go:embed descriptions/discover_session_panel_drilldowns.md
+var discoverSessionPanelDrilldownsDescription string
+
+//go:embed descriptions/discover_session_panel_by_value.md
+var discoverSessionPanelByValueDescription string
+
+//go:embed descriptions/discover_session_panel_by_reference.md
+var discoverSessionPanelByReferenceDescription string
+
+//go:embed descriptions/discover_session_panel_data_source_json.md
+var discoverSessionPanelDataSourceJSONDescription string
+
+//go:embed descriptions/discover_session_panel_dsl_filters.md
+var discoverSessionPanelDSLFiltersDescription string
+
+//go:embed descriptions/discover_session_panel_view_mode.md
+var discoverSessionPanelViewModeDescription string
+
+//go:embed descriptions/pinned_panels.md
+var pinnedPanelsDescription string
+
+//go:embed descriptions/pinned_panel_control_note.md
+var pinnedPanelControlNote string
+
+//go:embed descriptions/pinned_panel_type.md
+var pinnedPanelTypeDescription string

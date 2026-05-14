@@ -4,7 +4,7 @@
 TBD - created by archiving change worktrunk-config. Update Purpose after archive.
 ## Requirements
 ### Requirement: Worktree receives generated .env on creation
-When a new worktree is created, the `post-start` hook SHALL generate a `.env` file in the worktree root by copying `.env.template` and appending acceptance-test environment variables. The generated `.env` SHALL define `ELASTICSEARCH_PORT`, `KIBANA_PORT`, `ELASTICSEARCH_URL`, `ELASTICSEARCH_ENDPOINTS`, `ELASTICSEARCH_USERNAME`, `KIBANA_ENDPOINT`, and `KIBANA_USERNAME`. The port values SHALL be deterministically derived from the branch name and SHALL remain in the range 10000–19999. To guarantee that Elasticsearch and Kibana ports for the same worktree do not collide, `ELASTICSEARCH_PORT` SHALL be assigned from the subrange 10000–14999 and `KIBANA_PORT` SHALL be assigned from the subrange 15000–19999. The generated `.env` SHALL NOT define `TF_ACC`.
+When a new worktree is created, the blocking `pre-start` hook pipeline SHALL generate a `.env` file in the worktree root by copying `.env.template` and appending acceptance-test environment variables after `make setup` completes. The generated `.env` SHALL define `ELASTICSEARCH_PORT`, `KIBANA_PORT`, `ELASTICSEARCH_URL`, `ELASTICSEARCH_ENDPOINTS`, `ELASTICSEARCH_USERNAME`, `KIBANA_ENDPOINT`, and `KIBANA_USERNAME`. The port values SHALL be deterministically derived from the branch name and SHALL remain in the range 10000–19999. To guarantee that Elasticsearch and Kibana ports for the same worktree do not collide, `ELASTICSEARCH_PORT` SHALL be assigned from the subrange 10000–14999 and `KIBANA_PORT` SHALL be assigned from the subrange 15000–19999. The generated `.env` SHALL NOT define `TF_ACC`.
 
 #### Scenario: New worktree gets distinct ES and KB ports
 - **WHEN** a new worktree is created for branch `feature-x`
@@ -39,7 +39,7 @@ The `docker-compose.yml` file SHALL NOT contain any `container_name:` directives
 - **THEN** each worktree's named volumes (elasticsearch data, kibana data, fleet data) are distinct Docker volumes
 
 ### Requirement: make setup runs automatically on new worktree creation
-The `pre-start` hook SHALL run `make setup` when a new worktree is created. This hook is blocking — it completes before `post-start` runs.
+The `pre-start` hook pipeline SHALL run `make setup` when a new worktree is created. This pipeline is blocking, and the `.env` generation step SHALL run only after `make setup` completes successfully.
 
 #### Scenario: New worktree has Go dependencies and OpenSpec CLI ready
 - **WHEN** a new worktree is created

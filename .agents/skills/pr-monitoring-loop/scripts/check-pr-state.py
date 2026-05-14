@@ -774,6 +774,26 @@ def compute_payload(
     # commit-pinned data when available; fall back to gh pr checks otherwise.
     pinned_combined = pinned_check_runs + pinned_statuses
     canonical_checks = pinned_combined if pinned_combined else raw_pr_checks
+
+    # Deduplicate check runs by name, preferring the most recent one.
+    # This handles re-runs for the same commit where old runs remain in the API.
+    def deduplicate_checks(checks):
+        by_name = {}
+        for c in checks:
+            name = c.get("name")
+            if name is None:
+                continue
+            existing = by_name.get(name)
+            existing_ts = parse_iso((existing or {}).get("started_at")) if existing else None
+            candidate_ts = parse_iso(c.get("started_at"))
+            if existing is None or (
+                candidate_ts is not None
+                and (existing_ts is None or candidate_ts > existing_ts)
+            ):
+                by_name[name] = c
+        return list(by_name.values())
+
+    canonical_checks = deduplicate_checks(canonical_checks)
     failed_checks = [c for c in canonical_checks if c["derived"]["failed"]]
     pending_checks = [c for c in canonical_checks if c["derived"]["pending"]]
     passed_checks = [c for c in canonical_checks if c["derived"]["passed"]]

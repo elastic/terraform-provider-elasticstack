@@ -24,6 +24,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -55,6 +56,8 @@ func (r *serverHostResource) Schema(_ context.Context, _ resource.SchemaRequest,
 		"default": schema.BoolAttribute{
 			Description: "Set as default.",
 			Optional:    true,
+			Computed:    true,
+			Default:     booldefault.StaticBool(false),
 		},
 		"space_ids": schema.SetAttribute{
 			Description: spaceIDsDescription,

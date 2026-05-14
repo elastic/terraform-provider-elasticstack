@@ -1,6 +1,6 @@
 # `elasticstack_elasticsearch_cluster_settings` — Schema and Functional Requirements
 
-Resource implementation: `internal/elasticsearch/cluster/settings.go`
+Resource implementation: `internal/elasticsearch/cluster/settings/`
 
 ## Purpose
 
@@ -12,16 +12,16 @@ Manage cluster-wide settings in Elasticsearch via the Cluster Update Settings AP
 resource "elasticstack_elasticsearch_cluster_settings" "example" {
   id = <computed, string> # internal identifier: <cluster_uuid>/cluster-settings
 
-  persistent {           # optional, max 1 block
-    setting {            # required, set, min 1 item
+  persistent {           # optional, SingleNestedBlock
+    setting {            # required, SetNestedBlock, min 1 item
       name       = <required, string>       # setting key
       value      = <optional, string>       # scalar value (mutually exclusive with value_list)
       value_list = <optional, list(string)> # list value (mutually exclusive with value)
     }
   }
 
-  transient {            # optional, max 1 block
-    setting {            # required, set, min 1 item
+  transient {            # optional, SingleNestedBlock
+    setting {            # required, SetNestedBlock, min 1 item
       name       = <required, string>
       value      = <optional, string>
       value_list = <optional, list(string)>
@@ -138,20 +138,20 @@ Each `setting` block within `persistent` or `transient` MUST specify exactly one
 #### Scenario: Both value and value_list set
 
 - GIVEN a setting with both `value` and `value_list` non-empty
-- WHEN create or update runs
-- THEN the resource SHALL return an error diagnostic and SHALL NOT call the Cluster Update Settings API
+- WHEN the configuration is validated (plan or apply)
+- THEN the provider SHALL return an error diagnostic and SHALL NOT call the Cluster Update Settings API
 
 #### Scenario: Neither value nor value_list set
 
 - GIVEN a setting with an empty `value` and an empty `value_list`
-- WHEN create or update runs
-- THEN the resource SHALL return an error diagnostic and SHALL NOT call the Cluster Update Settings API
+- WHEN the configuration is validated (plan or apply)
+- THEN the provider SHALL return an error diagnostic and SHALL NOT call the Cluster Update Settings API
 
 #### Scenario: Duplicate setting names
 
 - GIVEN two `setting` blocks with the same `name` within one `persistent` or `transient` block
-- WHEN create or update runs
-- THEN the resource SHALL return an error diagnostic and SHALL NOT call the Cluster Update Settings API
+- WHEN the configuration is validated (plan or apply)
+- THEN the provider SHALL return an error diagnostic and SHALL NOT call the Cluster Update Settings API
 
 ### Requirement: State mapping (REQ-018–REQ-019)
 
@@ -170,7 +170,7 @@ On read, for each setting tracked in state, the resource SHALL read the value fr
 - THEN `setting.value_list` SHALL be set to that list in state
 
 ### Requirement: Typed client implementation for cluster settings
-The resource SHALL use the go-elasticsearch Typed API for cluster settings operations. `GetSettings` SHALL use `Cluster.GetSettings().Do(ctx)` with flat settings enabled. `PutSettings` SHALL use `Cluster.PutSettings().Do(ctx)`. Manual JSON decoding into `map[string]any` from raw response bodies SHALL be replaced with typed API response handling.
+The resource SHALL use the go-elasticsearch Typed API for cluster settings operations. `GetSettings` SHALL use `Cluster.GetSettings().Do(ctx)` with flat settings enabled. `PutSettings` SHALL use `Cluster.PutSettings().Do(ctx)`. The typed response maps (`Persistent`, `Transient`, `Defaults`) are unmarshaled via `json.RawMessage` to maintain the existing `map[string]any` contract; manual JSON decoding of raw HTTP response bodies SHALL NOT occur.
 
 #### Scenario: Typed API read with flat settings
 - GIVEN a successful Cluster Get Settings API call
@@ -186,7 +186,7 @@ The resource SHALL use the go-elasticsearch Typed API for cluster settings opera
 
 ### Requirement: Resource is implemented in Plugin Framework
 
-The `elasticstack_elasticsearch_cluster_settings` resource SHALL be implemented using the Terraform Plugin Framework instead of the Plugin SDK. It SHALL embed `*entitycore.ElasticsearchResource[tfModel]` and satisfy `resource.Resource`, `resource.ResourceWithConfigure`, and `resource.ResourceWithImportState`.
+The `elasticstack_elasticsearch_cluster_settings` resource SHALL be implemented using the Terraform Plugin Framework instead of the Plugin SDK. It SHALL embed `*entitycore.ElasticsearchResource[tfModel]` and satisfy `resource.Resource`, `resource.ResourceWithConfigure`, `resource.ResourceWithImportState`, `resource.ResourceWithUpgradeState`, and `resource.ResourceWithValidateConfig`.
 
 #### Scenario: Provider registrar uses PF resource
 
@@ -205,7 +205,7 @@ The cluster-settings model SHALL implement `GetID() types.String`, `GetResourceI
 
 ### Requirement: Schema factory returns blocks without connection injection
 
-The schema factory SHALL return a `schema.Schema` with `persistent` and `transient` as `ListNestedBlock` (max 1), each containing a `SetNestedAttribute` named `setting` (min 1). Each `setting` SHALL have `name` (required string), `value` (optional string), and `value_list` (optional list of strings). The factory SHALL NOT include the `elasticsearch_connection` block.
+The schema factory SHALL return a `schema.Schema` with `persistent` and `transient` as `SingleNestedBlock`, each containing a `SetNestedBlock` named `setting` (min 1). Each `setting` SHALL have `name` (required string), `value` (optional string), and `value_list` (optional list of strings). The factory SHALL NOT include the `elasticsearch_connection` block.
 
 #### Scenario: Schema shape preserved
 
@@ -232,7 +232,7 @@ The read callback SHALL call Elasticsearch Cluster Get Settings API with `flat_s
 
 ### Requirement: Create override builds flat settings map and PUTs
 
-The concrete `Create` method SHALL decode the plan model, expand `persistent` and `transient` blocks into flat settings maps, validate settings (duplicate names, value/value_list exclusivity), and call the Cluster Update Settings API. After a successful PUT, it SHALL derive the composite ID and persist state via the read callback.
+The concrete `Create` method SHALL decode the plan model, expand `persistent` and `transient` blocks into flat settings maps, and call the Cluster Update Settings API. After a successful PUT, it SHALL derive the composite ID and persist state via the read callback. Validation (duplicate names, value/value_list exclusivity, and non-empty category block) is enforced at plan time by schema validators and `ValidateConfig`.
 
 #### Scenario: Create with persistent and transient settings
 
@@ -269,8 +269,28 @@ Each `setting` block SHALL enforce that exactly one of `value` or `value_list` i
 #### Scenario: Invalid setting validation
 
 - **GIVEN** a `setting` with both `value` and `value_list` set
-- **WHEN** create or update runs
+- **WHEN** the configuration is validated (plan or apply)
 - **THEN** the provider SHALL return an error diagnostic
+
+### Requirement: Non-empty configuration validation
+
+The resource SHALL enforce that at least one of `persistent` or `transient` contains at least one `setting` block. An empty or null configuration for both categories SHALL produce an error diagnostic at plan time.
+
+#### Scenario: Both persistent and transient empty
+
+- **GIVEN** a resource with no `setting` blocks in `persistent` and `transient`
+- **WHEN** the configuration is validated (plan or apply)
+- **THEN** the provider SHALL return an error diagnostic
+
+### Requirement: State upgrade
+
+The resource SHALL implement `resource.ResourceWithUpgradeState` to migrate state written by the SDKv2-based implementation (schema version 0) to the Plugin Framework implementation (schema version 1). The upgrader SHALL unwrap list-of-one category blocks into `SingleNestedBlock` objects and normalise empty-string/`[]` values for the unused `value`/`value_list` alternative to null.
+
+#### Scenario: SDKv2 state upgrade
+
+- **GIVEN** Terraform state written by schema version 0
+- **WHEN** the resource is refreshed
+- **THEN** the state SHALL be transparently upgraded to schema version 1
 
 ### Requirement: Import preserved
 

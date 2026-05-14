@@ -1,8 +1,30 @@
+# Preserve environment and command-line variable values across .env inclusion.
+# The .env file (auto-created from .env.template) may contain defaults that
+# would otherwise silently override values set via workflow matrices or local shell.
+define _env_guard_save
+_$(1)_ORIGIN := $(origin $(1))
+_$(1)_VALUE  := $($(1))
+endef
+
+define _env_guard_restore
+ifneq ($(filter environment command line,$(_$(1)_ORIGIN)),)
+  override $(1) := $(_$(1)_VALUE)
+endif
+endef
+
+# Guard variables present in both .env.template and CI/local usage.
+_ENV_GUARD_VARS := STACK_VERSION FLEET_IMAGE ELASTICSEARCH_PASSWORD KIBANA_PASSWORD
+
+$(foreach v,$(_ENV_GUARD_VARS),$(eval $(call _env_guard_save,$v)))
+
 -include .env
+
+$(foreach v,$(_ENV_GUARD_VARS),$(eval $(call _env_guard_restore,$v)))
+
 .DEFAULT_GOAL = help
 SHELL := /bin/bash
 
-VERSION ?= 0.14.5
+VERSION ?= 0.15.0
 
 NAME = elasticstack
 BINARY = terraform-provider-${NAME}
@@ -117,7 +139,7 @@ docker-kibana: .env  ## Start Kibana node in docker container
 
 .PHONY: docker-fleet
 docker-fleet: .env ## Start Fleet node in docker container
-	@ export KIBANA_CONFIG_FILE=$$(if [ "$(STACK_VERSION)" = "9.4.0-SNAPSHOT" ]; then echo "kibana-9.4.snapshot.yml"; else echo "kibana.yml"; fi); \
+	@ export KIBANA_CONFIG_FILE=$$(if [ "$(STACK_VERSION)" = "9.4.0" ]; then echo "kibana-9.4.yml"; else echo "kibana.yml"; fi); \
 	docker compose -f $(COMPOSE_FILE) up --quiet-pull -d fleet
 
 .PHONY: set-kibana-password
@@ -204,7 +226,7 @@ install: build ## Install built provider into the local terraform cache
 
 .PHONY: tools
 tools: $(GOBIN)  ## Download golangci-lint locally if necessary.
-	@[[ -f $(GOBIN)/golangci-lint ]] || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/main/install.sh | sh -s -- -b $(GOBIN) v2.12.1
+	@[[ -f $(GOBIN)/golangci-lint ]] || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/main/install.sh | sh -s -- -b $(GOBIN) v2.12.2
 
 .PHONY: golangci-lint-custom
 golangci-lint-custom: tools

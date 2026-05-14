@@ -168,12 +168,5 @@ func DeleteSecurityRole(ctx context.Context, client *Client, name string) sdkdia
 		}
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK, http.StatusNoContent:
-		return nil
-	case http.StatusNotFound:
-		return nil
-	default:
-		return diagutil.SDKDiagsFromFramework(diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body))
-	}
+	return diagutil.SDKDiagsFromFramework(diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNoContent, http.StatusNotFound))
 }

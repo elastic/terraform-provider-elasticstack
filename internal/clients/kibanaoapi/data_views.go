@@ -48,14 +48,8 @@ func GetDataView(ctx context.Context, client *Client, spaceID string, viewID str
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return resp.JSON200, nil
-	case http.StatusNotFound:
-		return nil, nil
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return handleGetTypedResponse(resp.StatusCode(), resp.Body,
+		func() *kbapi.DataViewsDataViewResponseObject { return resp.JSON200 })
 }
 
 // CreateDataView creates a new data view.
@@ -65,12 +59,8 @@ func CreateDataView(ctx context.Context, client *Client, spaceID string, req kba
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return resp.JSON200, nil
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return handleMutateTypedResponse(resp.StatusCode(), resp.Body,
+		func() *kbapi.DataViewsDataViewResponseObject { return resp.JSON200 })
 }
 
 // UpdateDataView updates an existing data view.
@@ -80,12 +70,8 @@ func UpdateDataView(ctx context.Context, client *Client, spaceID string, viewID 
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return resp.JSON200, nil
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return handleMutateTypedResponse(resp.StatusCode(), resp.Body,
+		func() *kbapi.DataViewsDataViewResponseObject { return resp.JSON200 })
 }
 
 // DeleteDataView deletes an existing data view.
@@ -95,14 +81,7 @@ func DeleteDataView(ctx context.Context, client *Client, spaceID string, viewID 
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return nil
-	case http.StatusNotFound:
-		return nil
-	default:
-		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNotFound)
 }
 
 // GetDefaultDataView reads the default data view from the API.
@@ -135,10 +114,5 @@ func SetDefaultDataView(ctx context.Context, client *Client, spaceID string, req
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return nil
-	default:
-		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK)
 }

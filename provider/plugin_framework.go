@@ -47,7 +47,9 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/anomalydetectionjob"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed"
 	datafeedstate "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed_state"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/filter"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/jobstate"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security"
 	apikey "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/api_key"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/role"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/rolemapping"
@@ -180,6 +182,7 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		sourcemap.NewSourceMapResource,
 		importsavedobjects.NewResource,
 		alertingrule.NewResource,
+		dashboard.NewResource,
 		dataview.NewResource,
 		defaultdataview.NewResource,
 		parameter.NewResource,
@@ -221,6 +224,7 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		templateilmattachment.NewResource,
 		datafeed.NewDatafeedResource,
 		anomalydetectionjob.NewAnomalyDetectionJobResource,
+		filter.NewFilterResource,
 		security_detection_rule.NewSecurityDetectionRuleResource,
 		jobstate.NewMLJobStateResource,
 		datafeedstate.NewMLDatafeedStateResource,
@@ -240,7 +244,6 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 
 func (p *Provider) experimentalResources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
-		dashboard.NewResource,
 		streams.NewResource,
 	}
 }
@@ -260,6 +263,8 @@ func (p *Provider) dataSources(_ context.Context) []func() datasource.DataSource
 		integrationds.NewDataSource,
 		enrich.NewEnrichPolicyDataSource,
 		rolemapping.NewRoleMappingDataSource,
+		security.NewRoleDataSource,
+		security.NewUserDataSource,
 		outputds.NewDataSource,
 		ingest.NewProcessorAppendDataSource,
 		ingest.NewProcessorBytesDataSource,

@@ -35,7 +35,9 @@ func newXYChartPanelConfigConverter() xyChartPanelConfigConverter {
 	return xyChartPanelConfigConverter{
 		lensVisualizationBase: lensVisualizationBase{
 			visualizationType: string(kbapi.XyChartNoESQLTypeXy),
-			hasTFPanelConfig:  func(pm panelModel) bool { return pm.XYChartConfig != nil },
+			hasTFChartBlock: func(blocks *lensByValueChartBlocks) bool {
+				return blocks != nil && blocks.XYChartConfig != nil
+			},
 		},
 	}
 }
@@ -44,25 +46,36 @@ type xyChartPanelConfigConverter struct {
 	lensVisualizationBase
 }
 
-func (c xyChartPanelConfigConverter) populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
-	pm.XYChartConfig = &xyChartConfigModel{}
+func (c xyChartPanelConfigConverter) populateFromAttributes(
+	ctx context.Context,
+	dashboard *dashboardModel,
+	tfPanel *panelModel,
+	blocks *lensByValueChartBlocks,
+	attrs kbapi.KbnDashboardPanelTypeVisConfig0,
+) diag.Diagnostics {
+	var prior *xyChartConfigModel
+	if b := lensByValueChartBlocksFromPanel(tfPanel); b != nil && b.XYChartConfig != nil {
+		cpy := *b.XYChartConfig
+		prior = &cpy
+	}
+	blocks.XYChartConfig = &xyChartConfigModel{}
 	if xyChart, err := attrs.AsXyChartNoESQL(); err == nil {
-		return pm.XYChartConfig.fromAPINoESQL(ctx, xyChart)
+		return blocks.XYChartConfig.fromAPINoESQL(ctx, dashboard, prior, xyChart)
 	}
 	xyChart, err := attrs.AsXyChartESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	return pm.XYChartConfig.fromAPIESQL(ctx, xyChart)
+	return blocks.XYChartConfig.fromAPIESQL(ctx, dashboard, prior, xyChart)
 }
 
-func (c xyChartPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func (c xyChartPanelConfigConverter) buildAttributes(blocks *lensByValueChartBlocks, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
-	configModel := *pm.XYChartConfig
+	configModel := *blocks.XYChartConfig
 
 	if configModel.xyUsesESQL() {
-		chart, xyDiags := configModel.toAPIESQL()
+		chart, xyDiags := configModel.toAPIESQL(dashboard)
 		diags.Append(xyDiags...)
 		if diags.HasError() {
 			return attrs, diags
@@ -73,7 +86,7 @@ func (c xyChartPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDa
 		return attrs, diags
 	}
 
-	chart, xyDiags := configModel.toAPINoESQL()
+	chart, xyDiags := configModel.toAPINoESQL(dashboard)
 	diags.Append(xyDiags...)
 	if diags.HasError() {
 		return attrs, diags
@@ -85,6 +98,7 @@ func (c xyChartPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDa
 }
 
 type xyChartConfigModel struct {
+	lensChartPresentationTFModel
 	Title       types.String           `tfsdk:"title"`
 	Description types.String           `tfsdk:"description"`
 	Axis        *xyAxisModel           `tfsdk:"axis"`
@@ -655,9 +669,9 @@ func (m *xyDecorationsModel) readFromStyling(s kbapi.XyStyling) {
 	}
 	if s.Points.Visibility != nil {
 		switch *s.Points.Visibility {
-		case kbapi.Hidden:
+		case kbapi.XyStylingPointsVisibilityHidden:
 			m.PointVisibility = types.StringValue("never")
-		case kbapi.Visible:
+		case kbapi.XyStylingPointsVisibilityVisible:
 			m.PointVisibility = types.StringValue("always")
 		default:
 			m.PointVisibility = types.StringValue("auto")
@@ -707,13 +721,13 @@ func (m *xyDecorationsModel) writeToStyling(s *kbapi.XyStyling) {
 	if typeutils.IsKnown(m.PointVisibility) {
 		switch m.PointVisibility.ValueString() {
 		case "never":
-			v := kbapi.Hidden
+			v := kbapi.XyStylingPointsVisibilityHidden
 			s.Points.Visibility = &v
 		case "always":
-			v := kbapi.Visible
+			v := kbapi.XyStylingPointsVisibilityVisible
 			s.Points.Visibility = &v
 		default:
-			v := kbapi.Auto
+			v := kbapi.XyStylingPointsVisibilityAuto
 			s.Points.Visibility = &v
 		}
 	}
@@ -828,8 +842,8 @@ func (m *xyLegendModel) fromAPI(ctx context.Context, apiLegend kbapi.XyLegend) d
 		legendOutsideVertical.Placement != nil &&
 		*legendOutsideVertical.Placement == kbapi.XyLegendOutsideVerticalPlacementOutside &&
 		(legendOutsideVertical.Position == nil ||
-			*legendOutsideVertical.Position == kbapi.Left ||
-			*legendOutsideVertical.Position == kbapi.Right) &&
+			*legendOutsideVertical.Position == kbapi.XyLegendOutsideVerticalPositionLeft ||
+			*legendOutsideVertical.Position == kbapi.XyLegendOutsideVerticalPositionRight) &&
 		legendOutsideVertical.Size != "" {
 		m.Inside = types.BoolValue(false)
 		m.Visibility = typeutils.StringishPointerValue(legendOutsideVertical.Visibility)
@@ -1102,7 +1116,7 @@ func (m *xyChartConfigModel) stylingToAPI() kbapi.XyStyling {
 }
 
 // toAPINoESQL converts the XY chart config model to a non-ES|QL API payload.
-func (m *xyChartConfigModel) toAPINoESQL() (kbapi.XyChartNoESQL, diag.Diagnostics) {
+func (m *xyChartConfigModel) toAPINoESQL(dashboard *dashboardModel) (kbapi.XyChartNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	chart := kbapi.XyChartNoESQL{Type: kbapi.XyChartNoESQLTypeXy}
 
@@ -1120,7 +1134,6 @@ func (m *xyChartConfigModel) toAPINoESQL() (kbapi.XyChartNoESQL, diag.Diagnostic
 	}
 
 	chart.Styling = m.stylingToAPI()
-	chart.TimeRange = lensPanelTimeRange()
 
 	if len(m.Layers) > 0 {
 		layers := make([]kbapi.XyLayersNoESQL, 0, len(m.Layers))
@@ -1149,11 +1162,36 @@ func (m *xyChartConfigModel) toAPINoESQL() (kbapi.XyChartNoESQL, diag.Diagnostic
 	}
 
 	chart.Filters = buildFiltersForAPI(m.Filters, &diags)
+
+	writes, presDiags := lensChartPresentationWritesFor(dashboard, m.lensChartPresentationTFModel)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return chart, diags
+	}
+
+	chart.TimeRange = writes.TimeRange
+	if writes.HideTitle != nil {
+		chart.HideTitle = writes.HideTitle
+	}
+	if writes.HideBorder != nil {
+		chart.HideBorder = writes.HideBorder
+	}
+	if writes.References != nil {
+		chart.References = writes.References
+	}
+	if len(writes.DrilldownsRaw) > 0 {
+		items, ddDiags := decodeLensDrilldownSlice[kbapi.XyChartNoESQL_Drilldowns_Item](writes.DrilldownsRaw)
+		diags.Append(ddDiags...)
+		if !ddDiags.HasError() {
+			chart.Drilldowns = &items
+		}
+	}
+
 	return chart, diags
 }
 
 // toAPIESQL converts the XY chart config model to an ES|QL API payload.
-func (m *xyChartConfigModel) toAPIESQL() (kbapi.XyChartESQL, diag.Diagnostics) {
+func (m *xyChartConfigModel) toAPIESQL(dashboard *dashboardModel) (kbapi.XyChartESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	chart := kbapi.XyChartESQL{Type: kbapi.XyChartESQLTypeXy}
 
@@ -1171,7 +1209,6 @@ func (m *xyChartConfigModel) toAPIESQL() (kbapi.XyChartESQL, diag.Diagnostics) {
 	}
 
 	chart.Styling = m.stylingToAPI()
-	chart.TimeRange = lensPanelTimeRange()
 
 	if len(m.Layers) > 0 {
 		layers := make([]kbapi.XyLayerESQL, 0, len(m.Layers))
@@ -1196,17 +1233,45 @@ func (m *xyChartConfigModel) toAPIESQL() (kbapi.XyChartESQL, diag.Diagnostics) {
 	}
 
 	chart.Filters = buildFiltersForAPI(m.Filters, &diags)
+
+	writes, presDiags := lensChartPresentationWritesFor(dashboard, m.lensChartPresentationTFModel)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return chart, diags
+	}
+
+	chart.TimeRange = writes.TimeRange
+	if writes.HideTitle != nil {
+		chart.HideTitle = writes.HideTitle
+	}
+	if writes.HideBorder != nil {
+		chart.HideBorder = writes.HideBorder
+	}
+	if writes.References != nil {
+		chart.References = writes.References
+	}
+	if len(writes.DrilldownsRaw) > 0 {
+		items, ddDiags := decodeLensDrilldownSlice[kbapi.XyChartESQL_Drilldowns_Item](writes.DrilldownsRaw)
+		diags.Append(ddDiags...)
+		if !ddDiags.HasError() {
+			chart.Drilldowns = &items
+		}
+	}
+
 	return chart, diags
 }
 
-func (m *xyChartConfigModel) fromAPINoESQL(ctx context.Context, apiChart kbapi.XyChartNoESQL) diag.Diagnostics {
+func (m *xyChartConfigModel) fromAPINoESQL(ctx context.Context, dashboard *dashboardModel, prior *xyChartConfigModel, apiChart kbapi.XyChartNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	m.Title = types.StringPointerValue(apiChart.Title)
 	m.Description = types.StringPointerValue(apiChart.Description)
 
 	if len(apiChart.Layers) > 0 {
-		priorLayers := m.Layers
+		priorLayers := []xyLayerModel(nil)
+		if prior != nil {
+			priorLayers = prior.Layers
+		}
 		m.Layers = make([]xyLayerModel, 0, len(apiChart.Layers))
 		for i, apiLayer := range apiChart.Layers {
 			layer := xyLayerModel{}
@@ -1235,21 +1300,47 @@ func (m *xyChartConfigModel) fromAPINoESQL(ctx context.Context, apiChart kbapi.X
 	legendDiags := m.Legend.fromAPI(ctx, apiChart.Legend)
 	diags.Append(legendDiags...)
 
-	m.Query = &filterSimpleModel{}
-	m.Query.fromAPI(apiChart.Query)
+	// Preserve nil query when prior state omitted it (query is optional in schema).
+	if prior != nil && prior.Query == nil {
+		m.Query = nil
+	} else {
+		m.Query = &filterSimpleModel{}
+		m.Query.fromAPI(apiChart.Query)
+	}
 
 	m.Filters = populateFiltersFromAPI(apiChart.Filters, &diags)
+
+	var priorLens *lensChartPresentationTFModel
+	if prior != nil {
+		p := prior.lensChartPresentationTFModel
+		priorLens = &p
+	}
+	ddWire, ddOmit, ddWireDiags := lensDrilldownsAPIToWire(apiChart.Drilldowns)
+	diags.Append(ddWireDiags...)
+	if ddWireDiags.HasError() {
+		return diags
+	}
+	pres, presDiags := lensChartPresentationReadsFor(ctx, dashboard, priorLens, apiChart.TimeRange, apiChart.HideTitle, apiChart.HideBorder, apiChart.References, ddWire, ddOmit)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return diags
+	}
+	m.lensChartPresentationTFModel = pres
+
 	return diags
 }
 
-func (m *xyChartConfigModel) fromAPIESQL(ctx context.Context, apiChart kbapi.XyChartESQL) diag.Diagnostics {
+func (m *xyChartConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashboardModel, prior *xyChartConfigModel, apiChart kbapi.XyChartESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	m.Title = types.StringPointerValue(apiChart.Title)
 	m.Description = types.StringPointerValue(apiChart.Description)
 
 	if len(apiChart.Layers) > 0 {
-		priorLayers := m.Layers
+		priorLayers := []xyLayerModel(nil)
+		if prior != nil {
+			priorLayers = prior.Layers
+		}
 		m.Layers = make([]xyLayerModel, 0, len(apiChart.Layers))
 		for i, apiLayer := range apiChart.Layers {
 			layer := xyLayerModel{}
@@ -1281,6 +1372,24 @@ func (m *xyChartConfigModel) fromAPIESQL(ctx context.Context, apiChart kbapi.XyC
 	m.Query = nil
 
 	m.Filters = populateFiltersFromAPI(apiChart.Filters, &diags)
+
+	var priorLens *lensChartPresentationTFModel
+	if prior != nil {
+		p := prior.lensChartPresentationTFModel
+		priorLens = &p
+	}
+	ddWire, ddOmit, ddWireDiags := lensDrilldownsAPIToWire(apiChart.Drilldowns)
+	diags.Append(ddWireDiags...)
+	if ddWireDiags.HasError() {
+		return diags
+	}
+	pres, presDiags := lensChartPresentationReadsFor(ctx, dashboard, priorLens, apiChart.TimeRange, apiChart.HideTitle, apiChart.HideBorder, apiChart.References, ddWire, ddOmit)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return diags
+	}
+	m.lensChartPresentationTFModel = pres
+
 	return diags
 }
 
@@ -1289,12 +1398,23 @@ func (m *xyChartConfigModel) fromAPIESQL(ctx context.Context, apiChart kbapi.XyC
 func alignXYChartStateFromPlanPanels(planPanels, statePanels []panelModel) {
 	n := min(len(statePanels), len(planPanels))
 	for i := range n {
-		pp, sp := planPanels[i].XYChartConfig, statePanels[i].XYChartConfig
+		pp, sp := xyChartConfigFromLensOrVisPlanPanel(planPanels[i]), xyChartConfigFromLensOrVisPlanPanel(statePanels[i])
 		if pp == nil || sp == nil {
 			continue
 		}
 		alignXYChartStateFromPlan(pp, sp)
 	}
+}
+
+func xyChartConfigFromLensOrVisPlanPanel(pm panelModel) *xyChartConfigModel {
+	if pm.VisConfig != nil && pm.VisConfig.ByValue != nil && pm.VisConfig.ByValue.XYChartConfig != nil {
+		return pm.VisConfig.ByValue.XYChartConfig
+	}
+	if pm.LensDashboardAppConfig != nil && pm.LensDashboardAppConfig.ByValue != nil &&
+		pm.LensDashboardAppConfig.ByValue.XYChartConfig != nil {
+		return pm.LensDashboardAppConfig.ByValue.XYChartConfig
+	}
+	return nil
 }
 
 func alignXYChartStateFromPlan(plan, state *xyChartConfigModel) {
