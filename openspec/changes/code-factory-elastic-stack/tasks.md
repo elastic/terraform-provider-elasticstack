@@ -7,17 +7,17 @@
 
 ## 2. Workflow template changes
 
-- [ ] 2.1 Add `env` block to `Setup Elastic Stack` step in `.github/workflows-src/code-factory-issue/workflow.md.tmpl`:
+- [x] 2.1 Add `env` block to `Setup Elastic Stack` step in `.github/workflows-src/code-factory-issue/workflow.md.tmpl`:
   - `BIND_ADDRESS: "0.0.0.0"`
   - `ELASTICSEARCH_PORT: "8080"`
   - `KIBANA_PORT: "80"`
-- [ ] 2.2 Add `Stage Terraform for agent` step in `.github/workflows-src/code-factory-issue/workflow.md.tmpl`:
+- [x] 2.2 Add `Stage Terraform for agent` step in `.github/workflows-src/code-factory-issue/workflow.md.tmpl`:
   - Copy `$(which terraform)` to `.bin/terraform`
   - Ensure `.bin/` is in `PATH` or documented for the agent
-- [ ] 2.3 Update the `## Test environment` section in the agent prompt (`workflow.md.tmpl`):
+- [x] 2.3 Update the `## Test environment` section in the agent prompt (`workflow.md.tmpl`):
   - Change ES endpoint from `host.docker.internal:9200` to `host.docker.internal:8080`
   - Change KB endpoint from `host.docker.internal:5601` to `http://host.docker.internal` (port 80)
-- [ ] 2.4 Update the `## Verification tasks` section in the agent prompt (`workflow.md.tmpl`):
+- [x] 2.4 Update the `## Verification tasks` section in the agent prompt (`workflow.md.tmpl`):
   - Change acceptance test port references to `8080` and `80`
 
 ## 3. Compile and validate workflows
