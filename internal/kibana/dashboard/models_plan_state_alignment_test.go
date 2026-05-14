@@ -42,6 +42,7 @@ func Test_alignPanelStateFromPlan_preservesCommonPanelFields(t *testing.T) {
 			},
 		},
 		{
+			Type: types.StringValue("esql_control"),
 			EsqlControlConfig: &models.EsqlControlConfigModel{
 				EsqlQuery:        types.StringValue("FROM logs-* | KEEP host.name"),
 				Title:            types.StringValue("Fields Control"),
@@ -77,6 +78,7 @@ func Test_alignPanelStateFromPlan_preservesCommonPanelFields(t *testing.T) {
 			},
 		},
 		{
+			Type: types.StringValue("esql_control"),
 			EsqlControlConfig: &models.EsqlControlConfigModel{
 				EsqlQuery:        types.StringValue(""),
 				Title:            types.StringValue(""),
@@ -112,6 +114,78 @@ func Test_alignPanelStateFromPlan_preservesCommonPanelFields(t *testing.T) {
 	assert.Equal(t, planPanels[2].VisConfig.ByValue.TagcloudConfig.Title, statePanels[2].VisConfig.ByValue.TagcloudConfig.Title)
 	assert.Equal(t, planPanels[2].VisConfig.ByValue.TagcloudConfig.Description, statePanels[2].VisConfig.ByValue.TagcloudConfig.Description)
 	assert.Equal(t, planPanels[2].VisConfig.ByValue.TagcloudConfig.TagByJSON.ValueString(), statePanels[2].VisConfig.ByValue.TagcloudConfig.TagByJSON.ValueString())
+}
+
+func Test_alignPanelStateFromPlan_dispatchesRegisteredHandlers(t *testing.T) {
+	t.Parallel()
+	ctx := t.Context()
+
+	tests := []struct {
+		name string
+		run  func(t *testing.T)
+	}{
+		{
+			name: "esql_control_invokes_Handler_AlignStateFromPlan",
+			run: func(t *testing.T) {
+				t.Helper()
+				plan := models.PanelModel{
+					Type: types.StringValue("esql_control"),
+					EsqlControlConfig: &models.EsqlControlConfigModel{
+						EsqlQuery:        types.StringValue("FROM logs-*"),
+						Title:            types.StringValue("t"),
+						AvailableOptions: types.ListValueMust(types.StringType, []attr.Value{types.StringValue("a")}),
+					},
+				}
+				state := models.PanelModel{
+					Type: types.StringValue("esql_control"),
+					EsqlControlConfig: &models.EsqlControlConfigModel{
+						EsqlQuery:        types.StringValue(""),
+						Title:            types.StringValue(""),
+						AvailableOptions: types.ListNull(types.StringType),
+					},
+				}
+				alignPanelStateFromPlan(ctx, &plan, &state)
+				assert.Equal(t, plan.EsqlControlConfig.EsqlQuery, state.EsqlControlConfig.EsqlQuery)
+				assert.Equal(t, plan.EsqlControlConfig.Title, state.EsqlControlConfig.Title)
+				assert.Equal(t, plan.EsqlControlConfig.AvailableOptions, state.EsqlControlConfig.AvailableOptions)
+			},
+		},
+		{
+			name: "unregistered_discriminator_skips_handler_specific_alignment",
+			run: func(t *testing.T) {
+				t.Helper()
+				plan := models.PanelModel{
+					Type: types.StringValue("unknown_panel_xyz"),
+					EsqlControlConfig: &models.EsqlControlConfigModel{
+						EsqlQuery: types.StringValue("FROM logs-*"),
+						Title:     types.StringValue("would_align_if_registered"),
+					},
+				}
+				state := models.PanelModel{
+					Type: types.StringValue("unknown_panel_xyz"),
+					EsqlControlConfig: &models.EsqlControlConfigModel{
+						EsqlQuery: types.StringValue(""),
+						Title:     types.StringValue(""),
+					},
+				}
+				alignPanelStateFromPlan(ctx, &plan, &state)
+				assert.Empty(t, state.EsqlControlConfig.EsqlQuery.ValueString())
+				assert.Empty(t, state.EsqlControlConfig.Title.ValueString())
+			},
+		},
+		{
+			name: "registered_no_op_handler",
+			run: func(t *testing.T) {
+				t.Helper()
+				plan := models.PanelModel{Type: types.StringValue("slo_burn_rate")}
+				state := models.PanelModel{Type: types.StringValue("slo_burn_rate")}
+				alignPanelStateFromPlan(ctx, &plan, &state)
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, tt.run)
+	}
 }
 
 func Test_alignPanelStateFromPlan_preservesMosaicTreemapPartitionSnapshots(t *testing.T) {
