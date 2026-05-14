@@ -20,7 +20,6 @@ package calendar
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -55,12 +54,7 @@ func NewCalendarResource() resource.Resource {
 }
 
 func (r *calendarResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	compID, diags := clients.CompositeIDFromStrFw(req.ID)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("calendar_id"), compID.ResourceID)...)
+	// The Elasticsearch envelope Read parses `id` as `<cluster_uuid>/<calendar_id>` and passes
+	// `calendar_id` to readCalendar; a separate `calendar_id` attribute in import state is unnecessary.
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
