@@ -78,6 +78,8 @@ func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kb
 }
 
 func (Handler) ValidatePanelConfig(_ context.Context, panelTypeDiscriminator string, _ map[string]attr.Value, _ path.Path) diag.Diagnostics {
-	_ = panelTypeDiscriminator
+	if panelTypeDiscriminator != (Handler{}).PanelType() {
+		return nil
+	}
 	return nil
 }

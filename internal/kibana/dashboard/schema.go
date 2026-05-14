@@ -73,24 +73,7 @@ const (
 
 var sloBurnRateDurationRegex = regexp.MustCompile(`^\d+[mhd]$`)
 
-var panelConfigNames = []string{
-	"config_json",
-	"markdown_config",
-	"vis_config",
-	"lens_dashboard_app_config",
-	"esql_control_config",
-	"options_list_control_config",
-	"range_slider_control_config",
-	"time_slider_control_config",
-	"slo_alerts_config",
-	"slo_burn_rate_config",
-	"slo_overview_config",
-	"slo_error_budget_config",
-	"synthetics_monitors_config",
-	"synthetics_stats_overview_config",
-	"image_config",
-	"discover_session_config",
-}
+var panelConfigNames = panelkit.TypedSiblingPanelConfigBlockNames
 
 func isFieldMetricOperation(operation string) bool {
 	switch operation {
@@ -700,13 +683,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 					"drilldowns": schema.ListNestedAttribute{
 						MarkdownDescription: "Optional list of URL drilldowns attached to the panel.",
 						Optional:            true,
-						NestedObject: urlDrilldownNestedAttributeObject(URLDrilldownNestedOpts{
-							AllowedTriggers:                 []string{"on_open_panel_menu"},
-							URLMarkdownDescription:          "Templated URL for the drilldown.",
-							LabelMarkdownDescription:        "Display label shown in the drilldown menu.",
-							EncodeURLMarkdownDescription:    "When true, the URL is percent-encoded. Omit to use the API default.",
-							OpenInNewTabMarkdownDescription: "When true, the URL opens in a new browser tab. Omit to use the API default.",
-						}),
+						NestedObject:        panelkit.URLDrilldownSchema(panelkit.URLDrilldownOptions{}),
 					},
 				},
 				Validators: []validator.Object{
@@ -716,6 +693,9 @@ func getPanelSchema() schema.NestedAttributeObject {
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeSloBurnRate}),
 				},
 			},
+			// Migrated panel: SchemaAttribute() comes from the iface.Handler implementation.
+			// Section 3.3 of dashboard-panel-contract replaces these per-panel calls with a
+			// loop over registry.AllHandlers().
 			"slo_overview_config":              slooverview.SchemaAttribute(),
 			"slo_error_budget_config":          sloerrorbudget.SchemaAttribute(),
 			"esql_control_config":              panelEsqlControlConfigSchema(),

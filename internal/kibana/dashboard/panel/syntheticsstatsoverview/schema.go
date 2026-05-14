@@ -72,7 +72,7 @@ func SchemaAttribute() schema.Attribute {
 			"drilldowns": schema.ListNestedAttribute{
 				MarkdownDescription: "Optional list of URL drilldown actions attached to the panel. The API allows up to 100 drilldowns per panel.",
 				Optional:            true,
-				NestedObject:        panelkit.URLDrilldownSchema(),
+				NestedObject:        panelkit.URLDrilldownSchema(panelkit.URLDrilldownOptions{}),
 			},
 			"filters": schema.SingleNestedAttribute{
 				MarkdownDescription: "Optional Synthetics monitor filter constraints. Each filter category " +

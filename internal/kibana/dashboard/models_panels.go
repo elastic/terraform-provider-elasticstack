@@ -839,6 +839,10 @@ func panelToAPI(ctx context.Context, pm models.PanelModel, dashboard *models.Das
 		return panelItem, diags
 	}
 
+	// Practitioner-authored `config_json`: some typed panel discriminators enumerate explicit rejects (example:
+	// `slo_overview`, `synthetics_stats_overview`) while others historically fell through to the default branch's raw union
+	// reconstruction (examples: `slo_error_budget`, `synthetics_monitors`). That asymmetry existed before dashboard-panel-contract;
+	// Openspec dashboard-panel-contract section 5 retires this switch and normalizes behavior across handlers.
 	if typeutils.IsKnown(pm.ConfigJSON) {
 		configJSON := []byte(pm.ConfigJSON.ValueString())
 		switch pm.Type.ValueString() {

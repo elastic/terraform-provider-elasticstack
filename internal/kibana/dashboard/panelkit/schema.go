@@ -21,25 +21,58 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 )
 
-// URLDrilldownSchema returns the NestedAttributeObject for typed panel URL drilldown list elements
-// that fix trigger and type constants in the model layer (matching dashboard URLDrilldownNestedOpts).
-func URLDrilldownSchema() schema.NestedAttributeObject {
+// Default URL drilldown element descriptions (typed panels that fix trigger/type in the model layer).
+const (
+	urlDrilldownDefaultURLDescription          = "Templated URL for the drilldown."
+	urlDrilldownDefaultLabelDescription        = "Display label shown in the drilldown menu."
+	urlDrilldownDefaultEncodeURLDescription    = "When true, the URL is percent-encoded. Omit to use the API default."
+	urlDrilldownDefaultOpenInNewTabDescription = "When true, the URL opens in a new browser tab. Omit to use the API default."
+)
+
+// URLDrilldownOptions overrides MarkdownDescription on URL drilldown nested object attributes.
+// Trigger and type are not schema fields (fixed in the model layer).
+// Empty string in a field means use the default for that attribute (see Default URL drilldown constants).
+type URLDrilldownOptions struct {
+	URLMarkdownDescription          string
+	LabelMarkdownDescription        string
+	EncodeURLMarkdownDescription    string
+	OpenInNewTabMarkdownDescription string
+}
+
+// URLDrilldownSchema returns the NestedAttributeObject used inside a ListNestedAttribute `drilldowns`.
+func URLDrilldownSchema(opts URLDrilldownOptions) schema.NestedAttributeObject {
+	urlDesc := opts.URLMarkdownDescription
+	if urlDesc == "" {
+		urlDesc = urlDrilldownDefaultURLDescription
+	}
+	labelDesc := opts.LabelMarkdownDescription
+	if labelDesc == "" {
+		labelDesc = urlDrilldownDefaultLabelDescription
+	}
+	encodeDesc := opts.EncodeURLMarkdownDescription
+	if encodeDesc == "" {
+		encodeDesc = urlDrilldownDefaultEncodeURLDescription
+	}
+	openDesc := opts.OpenInNewTabMarkdownDescription
+	if openDesc == "" {
+		openDesc = urlDrilldownDefaultOpenInNewTabDescription
+	}
 	return schema.NestedAttributeObject{
 		Attributes: map[string]schema.Attribute{
 			"url": schema.StringAttribute{
-				MarkdownDescription: "Templated URL for the drilldown.",
+				MarkdownDescription: urlDesc,
 				Required:            true,
 			},
 			"label": schema.StringAttribute{
-				MarkdownDescription: "Display label shown in the drilldown menu.",
+				MarkdownDescription: labelDesc,
 				Required:            true,
 			},
 			"encode_url": schema.BoolAttribute{
-				MarkdownDescription: "When true, the URL is percent-encoded. Omit to use the API default.",
+				MarkdownDescription: encodeDesc,
 				Optional:            true,
 			},
 			"open_in_new_tab": schema.BoolAttribute{
-				MarkdownDescription: "When true, the URL opens in a new browser tab. Omit to use the API default.",
+				MarkdownDescription: openDesc,
 				Optional:            true,
 			},
 		},

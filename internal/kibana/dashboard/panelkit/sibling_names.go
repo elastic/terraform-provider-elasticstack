@@ -18,8 +18,8 @@
 package panelkit
 
 // TypedSiblingPanelConfigBlockNames lists panel-level typed config attribute names (`*_config`).
-// Mirrors internal/kibana/dashboard/schema.go `panelConfigNames`; kept centralized for
-// SiblingTypedPanelConfigConflictPathsExcept on migrated panel schemas (OpenSpec dashboard-panel-contract).
+// Until section 3.4 of dashboard-panel-contract migrates getPanelSchema to registry.ConfigNames(), this slice must remain
+// in sync with dashboard/schema.go panelConfigNames (currently an alias).
 var TypedSiblingPanelConfigBlockNames = []string{
 	"config_json",
 	"markdown_config",

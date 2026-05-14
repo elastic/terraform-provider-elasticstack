@@ -29,9 +29,11 @@ import (
 type Config struct {
 	FullAPIResponse string
 	SkipFields      []string
-	// OmitRequiredLeafPresence skips appendRequiredJSONPresenceIssues (required TF paths vs raw API fixture.config).
-	// Use for panels whose API discriminator shape does not nest the same segments as terraform (e.g. slo_overview
-	// exposes single-SLO attributes at config top level while terraform nests them under `single`).
+	// OmitRequiredLeafPresence disables the required-leaf-presence harness phase that checks every required Terraform leaf
+	// path against raw fixture.config navigation. Enable only when the panel's exported API JSON layout does not align with
+	// Terraform's nested paths (flat config keys vs nested single|groups, or optional filters/drilldown trees only present
+	// in schema) such that navigateStructByTFSegments cannot resolve the fixture shape to those paths yet. Each caller
+	// must document the specific JSON-vs-HCL divergence beside the literal; see todo in contracttest/tfreflect.go.
 	OmitRequiredLeafPresence bool
 }
 

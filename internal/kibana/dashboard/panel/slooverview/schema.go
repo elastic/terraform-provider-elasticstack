@@ -96,7 +96,12 @@ func sharedDisplayAttributes() map[string]schema.Attribute {
 		"drilldowns": schema.ListNestedAttribute{
 			MarkdownDescription: "URL drilldowns attached to the panel. The trigger (`on_open_panel_menu`) and type (`url_drilldown`) are set automatically.",
 			Optional:            true,
-			NestedObject:        panelkit.URLDrilldownSchema(),
+			NestedObject: panelkit.URLDrilldownSchema(panelkit.URLDrilldownOptions{
+				URLMarkdownDescription:          "The URL template for the drilldown. Variables are documented at https://www.elastic.co/docs/explore-analyze/dashboards/drilldowns#url-template-variable.",
+				LabelMarkdownDescription:        "The display label for the drilldown link.",
+				EncodeURLMarkdownDescription:    "When true, the URL is percent-encoded.",
+				OpenInNewTabMarkdownDescription: "When true, the drilldown URL opens in a new browser tab.",
+			}),
 		},
 	}
 }

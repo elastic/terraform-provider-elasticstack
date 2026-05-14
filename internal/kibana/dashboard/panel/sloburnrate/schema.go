@@ -74,7 +74,7 @@ func SchemaAttribute() schema.Attribute {
 			"drilldowns": schema.ListNestedAttribute{
 				MarkdownDescription: "Optional list of URL drilldowns attached to the panel.",
 				Optional:            true,
-				NestedObject:        panelkit.URLDrilldownSchema(),
+				NestedObject:        panelkit.URLDrilldownSchema(panelkit.URLDrilldownOptions{}),
 			},
 		},
 		Validators: []validator.Object{

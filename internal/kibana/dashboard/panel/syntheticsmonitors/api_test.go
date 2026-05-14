@@ -28,8 +28,8 @@ func TestContract(t *testing.T) {
 	t.Parallel()
 
 	contracttest.Run(t, syntheticsmonitors.Handler{}, contracttest.Config{
-		// Optional nested filters schema includes required leaf attributes per nested object; omit strict
-		// fixture-vs-schema leaf presence checks for baseline empty configs.
+		// Baseline fixture only sets config.title while Terraform nests optional filters with required inner `{label,value}` list
+		// rows that are absent in the sparse JSON; the navigator cannot treat missing optional subtrees as satisfying nested TF paths.
 		OmitRequiredLeafPresence: true,
 		FullAPIResponse: `{
 			"type": "synthetics_monitors",

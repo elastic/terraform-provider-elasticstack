@@ -15,6 +15,10 @@
 // specific language governing permissions and limitations
 // under the License.
 
+// TODO(dashboard-panel-contract): improve navigateStructByTFSegments so raw API fixture.config shapes that flatten
+// discriminated unions (for example slo_overview single/group fields under config.*) map to terraform single/groups nesting,
+// eliminating the need for Config.OmitRequiredLeafPresence on those panels.
+
 package contracttest
 
 import (

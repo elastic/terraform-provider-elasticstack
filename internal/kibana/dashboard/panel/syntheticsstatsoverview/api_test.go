@@ -28,6 +28,10 @@ func TestContract(t *testing.T) {
 	t.Parallel()
 
 	contracttest.Run(t, syntheticsstatsoverview.Handler{}, contracttest.Config{
+		// Baseline fixture exposes only sparse config fields (here `title`). Terraform nests optional drilldowns and structured
+		// filters requiring inner list elements (`label`, `value`) when those branches are exercised; fixture.config does not
+		// share that nested segment layout, so the harness cannot prove required Terraform leaves exist literal-for-literal under
+		// the raw fixture path.
 		OmitRequiredLeafPresence: true,
 		FullAPIResponse: `{
 			"type": "synthetics_stats_overview",

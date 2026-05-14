@@ -65,7 +65,12 @@ func SchemaAttribute() schema.Attribute {
 			"drilldowns": schema.ListNestedAttribute{
 				MarkdownDescription: "URL drilldowns to configure on the panel.",
 				Optional:            true,
-				NestedObject:        panelkit.URLDrilldownSchema(),
+				NestedObject: panelkit.URLDrilldownSchema(panelkit.URLDrilldownOptions{
+					URLMarkdownDescription:          "Templated URL. Variables documented at https://www.elastic.co/docs/explore-analyze/dashboards/drilldowns#url-template-variable",
+					LabelMarkdownDescription:        "The label displayed for the drilldown.",
+					EncodeURLMarkdownDescription:    "When true, the URL is escaped using percent encoding. Defaults to `true` when omitted.",
+					OpenInNewTabMarkdownDescription: "When true, the drilldown URL opens in a new browser tab. Defaults to `true` when omitted.",
+				}),
 			},
 		},
 		Validators: []validator.Object{
