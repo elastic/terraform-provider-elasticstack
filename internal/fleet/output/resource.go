@@ -37,7 +37,10 @@ var (
 	_ resource.ResourceWithUpgradeState = newOutputResource()
 )
 
-var MinVersionOutputKafka = version.Must(version.NewVersion("8.13.0"))
+var (
+	MinVersionOutputKafka               = version.Must(version.NewVersion("8.13.0"))
+	MinVersionOutputSSLVerificationMode = version.Must(version.NewVersion("8.10.0"))
+)
 
 type outputResource struct {
 	*entitycore.ResourceBase

@@ -83,6 +83,10 @@ func (model *outputModel) populateFromAPI(ctx context.Context, union *kbapi.Outp
 func (model outputModel) toAPICreateModel(ctx context.Context, client *clients.KibanaScopedClient) (kbapi.NewOutputUnion, diag.Diagnostics) {
 	outputType := model.Type.ValueString()
 
+	if diags := assertSSLVerificationModeSupport(ctx, client, model.Ssl); diags.HasError() {
+		return kbapi.NewOutputUnion{}, diags
+	}
+
 	switch outputType {
 	case "elasticsearch":
 		return model.toAPICreateElasticsearchModel(ctx)
@@ -105,6 +109,11 @@ func (model outputModel) toAPICreateModel(ctx context.Context, client *clients.K
 
 func (model outputModel) toAPIUpdateModel(ctx context.Context, client *clients.KibanaScopedClient) (union kbapi.UpdateOutputUnion, diags diag.Diagnostics) {
 	outputType := model.Type.ValueString()
+
+	if d := assertSSLVerificationModeSupport(ctx, client, model.Ssl); d.HasError() {
+		diags.Append(d...)
+		return
+	}
 
 	switch outputType {
 	case "elasticsearch":
@@ -220,6 +229,35 @@ func (model outputModel) buildCommonUpdateOutput(ctx context.Context, diags *dia
 		Name:                 model.Name.ValueStringPointer(),
 		Ssl:                  ssl.toAPI(),
 	}
+}
+
+func assertSSLVerificationModeSupport(ctx context.Context, client *clients.KibanaScopedClient, ssl types.Object) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	if !typeutils.IsKnown(ssl) {
+		return nil
+	}
+
+	sslModel := typeutils.ObjectTypeAs[outputSslModel](ctx, ssl, path.Root("ssl"), &diags)
+	if diags.HasError() || sslModel == nil {
+		return diags
+	}
+
+	if !typeutils.IsKnown(sslModel.VerificationMode) {
+		return nil
+	}
+
+	if supported, versionDiags := client.EnforceMinVersion(ctx, MinVersionOutputSSLVerificationMode); versionDiags.HasError() {
+		diags.Append(diagutil.FrameworkDiagsFromSDK(versionDiags)...)
+		return diags
+	} else if !supported {
+		diags.AddAttributeError(path.Root("ssl").AtName("verification_mode"),
+			"Unsupported version for ssl.verification_mode",
+			fmt.Sprintf("ssl.verification_mode requires server version %s or higher", MinVersionOutputSSLVerificationMode.String()))
+		return diags
+	}
+
+	return nil
 }
 
 func assertKafkaSupport(ctx context.Context, client *clients.KibanaScopedClient) diag.Diagnostics {

@@ -589,6 +589,7 @@ func TestAccResourceOutputElasticsearchWithFingerprint(t *testing.T) {
 
 func TestAccResourceOutputElasticsearchSSL(t *testing.T) {
 	policyName := sdkacctest.RandString(22)
+	versionutils.SkipIfUnsupported(t, output.MinVersionOutputSSLVerificationMode, versionutils.FlavorAny)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -596,7 +597,6 @@ func TestAccResourceOutputElasticsearchSSL(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -612,6 +612,7 @@ func TestAccResourceOutputElasticsearchSSL(t *testing.T) {
 
 func TestAccResourceOutputDefaultFlags(t *testing.T) {
 	policyName := sdkacctest.RandString(22)
+	versionutils.SkipIfUnsupported(t, minVersionOutput, versionutils.FlavorAny)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -619,7 +620,6 @@ func TestAccResourceOutputDefaultFlags(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -637,7 +637,6 @@ func TestAccResourceOutputDefaultFlags(t *testing.T) {
 				// happily aligns state with the now-non-default config.
 				PreConfig:                promoteFleetDefaultOutput(t),
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -688,6 +687,7 @@ func promoteFleetDefaultOutput(t *testing.T) func() {
 
 func TestAccResourceOutputKafkaUserPass(t *testing.T) {
 	policyName := sdkacctest.RandString(22)
+	versionutils.SkipIfUnsupported(t, output.MinVersionOutputKafka, versionutils.FlavorAny)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -695,7 +695,6 @@ func TestAccResourceOutputKafkaUserPass(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(output.MinVersionOutputKafka),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -713,6 +712,7 @@ func TestAccResourceOutputKafkaUserPass(t *testing.T) {
 
 func TestAccResourceOutputKafkaPartitions(t *testing.T) {
 	policyName := sdkacctest.RandString(22)
+	versionutils.SkipIfUnsupported(t, output.MinVersionOutputKafka, versionutils.FlavorAny)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -720,7 +720,6 @@ func TestAccResourceOutputKafkaPartitions(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(output.MinVersionOutputKafka),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -733,7 +732,6 @@ func TestAccResourceOutputKafkaPartitions(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(output.MinVersionOutputKafka),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),

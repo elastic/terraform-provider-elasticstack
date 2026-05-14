@@ -567,14 +567,15 @@ func (model *outputModel) fromAPIKafkaModel(ctx context.Context, data *kbapi.Out
 	kafkaModel.Timeout = types.Float32PointerValue(data.Timeout)
 	kafkaModel.Version = types.StringPointerValue(data.Version)
 	kafkaModel.Username = types.StringPointerValue(data.Username)
-	if data.Password != nil {
+	switch {
+	case data.Password != nil:
 		kafkaModel.Password = types.StringPointerValue(data.Password)
-	} else if typeutils.IsKnown(configuredPassword) {
+	case typeutils.IsKnown(configuredPassword):
 		// Fleet redacts kafka.password in API responses (the value is stored
 		// in the secret store and only a reference comes back). Preserve the
 		// configured value so Terraform does not see an inconsistent change.
 		kafkaModel.Password = configuredPassword
-	} else {
+	default:
 		kafkaModel.Password = types.StringNull()
 	}
 	kafkaModel.Key = types.StringPointerValue(data.Key)
