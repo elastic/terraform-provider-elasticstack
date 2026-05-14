@@ -18,18 +18,18 @@
 
 For each converter, create `dashboard/panel/lens{kind}/converter.go` with self-registration in `init()`:
 
-- [ ] 3.1 `lensxy/` — XY chart converter (`VizType: "xy"`)
-- [ ] 3.2 `lensgauge/` — Gauge converter (`VizType: "gauge"`)
-- [ ] 3.3 `lensmetric/` — Metric chart converter (`VizType: "metric"`)
-- [ ] 3.4 `lenslegacymetric/` — Legacy metric converter (`VizType: "legacy_metric"`)
-- [ ] 3.5 `lenspie/` — Pie chart converter (`VizType: "pie"`)
-- [ ] 3.6 `lenstreemap/` — Treemap converter (`VizType: "treemap"`)
-- [ ] 3.7 `lensmosaic/` — Mosaic converter (`VizType: "mosaic"`)
-- [ ] 3.8 `lensdatatable/` — Datatable converter (`VizType: "datatable"`)
-- [ ] 3.9 `lenstagcloud/` — Tagcloud converter (`VizType: "tagcloud"`)
-- [ ] 3.10 `lensheatmap/` — Heatmap converter (`VizType: "heatmap"`)
-- [ ] 3.11 `lensregionmap/` — Region map converter (`VizType: "region_map"`)
-- [ ] 3.12 `lenswaffle/` — Waffle converter (`VizType: "waffle"`)
+- [x] 3.1 `lensxy/` — XY chart converter (`VizType: "xy"`)
+- [x] 3.2 `lensgauge/` — Gauge converter (`VizType: "gauge"`)
+- [x] 3.3 `lensmetric/` — Metric chart converter (`VizType: "metric"`)
+- [x] 3.4 `lenslegacymetric/` — Legacy metric converter (`VizType: "legacy_metric"`)
+- [x] 3.5 `lenspie/` — Pie chart converter (`VizType: "pie"`)
+- [x] 3.6 `lenstreemap/` — Treemap converter (`VizType: "treemap"`)
+- [x] 3.7 `lensmosaic/` — Mosaic converter (`VizType: "mosaic"`)
+- [x] 3.8 `lensdatatable/` — Datatable converter (`VizType: "datatable"`)
+- [x] 3.9 `lenstagcloud/` — Tagcloud converter (`VizType: "tagcloud"`)
+- [x] 3.10 `lensheatmap/` — Heatmap converter (`VizType: "heatmap"`)
+- [x] 3.11 `lensregionmap/` — Region map converter (`VizType: "region_map"`)
+- [x] 3.12 `lenswaffle/` — Waffle converter (`VizType: "waffle"`)
 
 Each converter must:
 - Implement `lenscommon.VizConverter`
