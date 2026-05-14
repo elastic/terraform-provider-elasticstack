@@ -1,7 +1,7 @@
 ## 1. Update SLO ID validation
 
-- [ ] 1.1 Change `internal/kibana/slo/schema.go` so `slo_id` allows up to 48 characters and update the attribute description to document the new limit.
-- [ ] 1.2 Review nearby SLO schema comments or docs for stale 36-character wording and align them with the new limit.
+- [x] 1.1 Change `internal/kibana/slo/schema.go` so `slo_id` allows up to 48 characters and update the attribute description to document the new limit.
+- [x] 1.2 Review nearby SLO schema comments or docs for stale 36-character wording and align them with the new limit.
 
 ## 2. Add regression coverage
 
