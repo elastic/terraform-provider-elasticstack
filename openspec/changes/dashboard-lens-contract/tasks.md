@@ -55,8 +55,8 @@ Each converter must:
 
 ## 6. Verification
 
-- [ ] 6.1 `go build ./internal/kibana/dashboard/...` passes
-- [ ] 6.2 `go vet ./...` passes
-- [ ] 6.3 `go test ./internal/kibana/dashboard/...` passes
-- [ ] 6.4 All Lens chart acceptance tests pass (XY, gauge, metric, pie, treemap, mosaic, datatable, tagcloud, heatmap, region_map, legacy_metric, waffle)
-- [ ] 6.5 `make build` passes
+- [x] 6.1 `go build ./internal/kibana/dashboard/...` passes (verified locally during Sections 1–5)
+- [x] 6.2 `go vet ./...` passes (verified locally during Sections 4+5)
+- [x] 6.3 `go test ./internal/kibana/dashboard/...` passes (583 unit tests in `dashboard/` plus 64+ in `lenscommon/` + per-chart packages)
+- [ ] 6.4 All Lens chart acceptance tests pass (XY, gauge, metric, pie, treemap, mosaic, datatable, tagcloud, heatmap, region_map, legacy_metric, waffle) — to be verified by CI on the PR (no local Elastic stack reachable in this worktree)
+- [x] 6.5 `make build` passes (verified locally during Sections 1–5)
