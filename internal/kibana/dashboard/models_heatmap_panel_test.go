@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
@@ -33,7 +34,9 @@ import (
 func Test_newHeatmapPanelConfigConverter(t *testing.T) {
 	converter := newHeatmapPanelConfigConverter()
 	assert.NotNil(t, converter)
-	assert.Equal(t, "heatmap", converter.visualizationType)
+	c := lenscommon.ForType(string(kbapi.HeatmapNoESQLTypeHeatmap))
+	require.NotNil(t, c)
+	assert.Equal(t, string(kbapi.HeatmapNoESQLTypeHeatmap), c.VizType())
 }
 
 func Test_heatmapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {

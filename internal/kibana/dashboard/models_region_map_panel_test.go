@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
@@ -32,7 +33,9 @@ import (
 func Test_newRegionMapPanelConfigConverter(t *testing.T) {
 	converter := newRegionMapPanelConfigConverter()
 	assert.NotNil(t, converter)
-	assert.Equal(t, string(kbapi.RegionMapNoESQLTypeRegionMap), converter.visualizationType)
+	c := lenscommon.ForType(string(kbapi.RegionMapNoESQLTypeRegionMap))
+	require.NotNil(t, c)
+	assert.Equal(t, string(kbapi.RegionMapNoESQLTypeRegionMap), c.VizType())
 }
 
 func Test_regionMapConfigModel_fromAPI_toAPI(t *testing.T) {

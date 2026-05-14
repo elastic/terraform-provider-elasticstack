@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -118,7 +119,9 @@ func Test_mosaicPanelConfigConverter_populateFromAttributes_buildAttributes_roun
 func Test_newMosaicPanelConfigConverter(t *testing.T) {
 	converter := newMosaicPanelConfigConverter()
 	assert.NotNil(t, converter)
-	assert.Equal(t, "mosaic", converter.visualizationType)
+	c := lenscommon.ForType(string(kbapi.MosaicNoESQLTypeMosaic))
+	require.NotNil(t, c)
+	assert.Equal(t, string(kbapi.MosaicNoESQLTypeMosaic), c.VizType())
 }
 
 func Test_mosaicConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {

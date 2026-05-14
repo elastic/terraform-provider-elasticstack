@@ -30,20 +30,12 @@ import (
 )
 
 func newPieChartPanelConfigConverter() pieChartPanelConfigConverter {
-	return pieChartPanelConfigConverter{
-		lensVisualizationBase: lensVisualizationBase{
-			visualizationType: string(kbapi.PieNoESQLTypePie),
-			hasTFChartBlock: func(blocks *models.LensByValueChartBlocks) bool {
-				return blocks != nil && blocks.PieChartConfig != nil
-			},
-		},
-	}
+	return pieChartPanelConfigConverter{}
 }
 
-type pieChartPanelConfigConverter struct {
-	lensVisualizationBase
-}
+type pieChartPanelConfigConverter struct{}
 
+//nolint:unparam // legacy test helper; dashboard/tfPanel are often nil
 func (c pieChartPanelConfigConverter) populateFromAttributes(
 	ctx context.Context,
 	dashboard *models.DashboardModel,

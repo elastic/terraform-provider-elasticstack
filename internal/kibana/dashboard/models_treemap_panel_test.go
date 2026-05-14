@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
@@ -106,7 +107,9 @@ func Test_treemapPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 func Test_newTreemapPanelConfigConverter(t *testing.T) {
 	converter := newTreemapPanelConfigConverter()
 	assert.NotNil(t, converter)
-	assert.Equal(t, "treemap", converter.visualizationType)
+	c := lenscommon.ForType(string(kbapi.TreemapNoESQLTypeTreemap))
+	require.NotNil(t, c)
+	assert.Equal(t, string(kbapi.TreemapNoESQLTypeTreemap), c.VizType())
 }
 
 func Test_treemapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {

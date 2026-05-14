@@ -32,19 +32,10 @@ import (
 )
 
 func newTagcloudPanelConfigConverter() tagcloudPanelConfigConverter {
-	return tagcloudPanelConfigConverter{
-		lensVisualizationBase: lensVisualizationBase{
-			visualizationType: string(kbapi.TagcloudNoESQLTypeTagCloud),
-			hasTFChartBlock: func(blocks *models.LensByValueChartBlocks) bool {
-				return blocks != nil && blocks.TagcloudConfig != nil
-			},
-		},
-	}
+	return tagcloudPanelConfigConverter{}
 }
 
-type tagcloudPanelConfigConverter struct {
-	lensVisualizationBase
-}
+type tagcloudPanelConfigConverter struct{}
 
 func (c tagcloudPanelConfigConverter) populateFromAttributes(
 	ctx context.Context,

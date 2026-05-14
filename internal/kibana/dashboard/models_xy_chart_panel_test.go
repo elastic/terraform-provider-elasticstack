@@ -36,7 +36,9 @@ import (
 func Test_newXYChartPanelConfigConverter(t *testing.T) {
 	converter := newXYChartPanelConfigConverter()
 	assert.NotNil(t, converter)
-	assert.Equal(t, string(kbapi.XyChartNoESQLTypeXy), converter.visualizationType)
+	c := lenscommon.ForType(string(kbapi.XyChartNoESQLTypeXy))
+	require.NotNil(t, c)
+	assert.Equal(t, string(kbapi.XyChartNoESQLTypeXy), c.VizType())
 }
 
 func Test_xyAxisModel_fromAPI_toAPI(t *testing.T) {

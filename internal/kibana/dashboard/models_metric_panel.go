@@ -90,19 +90,10 @@ func stripMetricBreakdownByAPIFields(jsonStr string) string {
 }
 
 func newMetricChartPanelConfigConverter() metricChartPanelConfigConverter {
-	return metricChartPanelConfigConverter{
-		lensVisualizationBase: lensVisualizationBase{
-			visualizationType: string(kbapi.MetricNoESQLTypeMetric),
-			hasTFChartBlock: func(blocks *models.LensByValueChartBlocks) bool {
-				return blocks != nil && blocks.MetricChartConfig != nil
-			},
-		},
-	}
+	return metricChartPanelConfigConverter{}
 }
 
-type metricChartPanelConfigConverter struct {
-	lensVisualizationBase
-}
+type metricChartPanelConfigConverter struct{}
 
 func (c metricChartPanelConfigConverter) populateFromAttributes(
 	ctx context.Context,

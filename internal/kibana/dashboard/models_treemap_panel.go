@@ -33,20 +33,12 @@ import (
 )
 
 func newTreemapPanelConfigConverter() treemapPanelConfigConverter {
-	return treemapPanelConfigConverter{
-		lensVisualizationBase: lensVisualizationBase{
-			visualizationType: string(kbapi.TreemapNoESQLTypeTreemap),
-			hasTFChartBlock: func(blocks *models.LensByValueChartBlocks) bool {
-				return blocks != nil && blocks.TreemapConfig != nil
-			},
-		},
-	}
+	return treemapPanelConfigConverter{}
 }
 
-type treemapPanelConfigConverter struct {
-	lensVisualizationBase
-}
+type treemapPanelConfigConverter struct{}
 
+//nolint:unparam // legacy test helper; dashboard/tfPanel are often nil
 func (c treemapPanelConfigConverter) populateFromAttributes(
 	ctx context.Context,
 	dashboard *models.DashboardModel,

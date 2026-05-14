@@ -32,19 +32,10 @@ import (
 )
 
 func newHeatmapPanelConfigConverter() heatmapPanelConfigConverter {
-	return heatmapPanelConfigConverter{
-		lensVisualizationBase: lensVisualizationBase{
-			visualizationType: string(kbapi.HeatmapNoESQLTypeHeatmap),
-			hasTFChartBlock: func(blocks *models.LensByValueChartBlocks) bool {
-				return blocks != nil && blocks.HeatmapConfig != nil
-			},
-		},
-	}
+	return heatmapPanelConfigConverter{}
 }
 
-type heatmapPanelConfigConverter struct {
-	lensVisualizationBase
-}
+type heatmapPanelConfigConverter struct{}
 
 func (c heatmapPanelConfigConverter) populateFromAttributes(
 	ctx context.Context,

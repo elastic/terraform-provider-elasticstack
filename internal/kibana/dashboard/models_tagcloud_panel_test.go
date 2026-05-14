@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -65,7 +66,9 @@ func Test_tagcloudPanelConfigConverter_populateFromAttributes_buildAttributes_ro
 func Test_newTagcloudPanelConfigConverter(t *testing.T) {
 	converter := newTagcloudPanelConfigConverter()
 	assert.NotNil(t, converter)
-	assert.Equal(t, "tag_cloud", converter.visualizationType)
+	c := lenscommon.ForType(string(kbapi.TagcloudNoESQLTypeTagCloud))
+	require.NotNil(t, c)
+	assert.Equal(t, string(kbapi.TagcloudNoESQLTypeTagCloud), c.VizType())
 }
 
 func Test_tagcloudConfigModel_fromAPI_toAPI(t *testing.T) {

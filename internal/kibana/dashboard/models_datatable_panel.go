@@ -31,19 +31,10 @@ import (
 )
 
 func newDatatablePanelConfigConverter() datatablePanelConfigConverter {
-	return datatablePanelConfigConverter{
-		lensVisualizationBase: lensVisualizationBase{
-			visualizationType: string(kbapi.DatatableNoESQLTypeDataTable),
-			hasTFChartBlock: func(blocks *models.LensByValueChartBlocks) bool {
-				return blocks != nil && blocks.DatatableConfig != nil
-			},
-		},
-	}
+	return datatablePanelConfigConverter{}
 }
 
-type datatablePanelConfigConverter struct {
-	lensVisualizationBase
-}
+type datatablePanelConfigConverter struct{}
 
 func (c datatablePanelConfigConverter) populateFromAttributes(
 	ctx context.Context,

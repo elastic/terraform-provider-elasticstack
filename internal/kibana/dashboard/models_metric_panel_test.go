@@ -68,7 +68,9 @@ func Test_metricChartPanelConfigConverter_populateFromAttributes_buildAttributes
 func Test_newMetricChartPanelConfigConverter(t *testing.T) {
 	converter := newMetricChartPanelConfigConverter()
 	assert.NotNil(t, converter)
-	assert.Equal(t, string(kbapi.MetricNoESQLTypeMetric), converter.visualizationType)
+	c := lenscommon.ForType(string(kbapi.MetricNoESQLTypeMetric))
+	require.NotNil(t, c)
+	assert.Equal(t, string(kbapi.MetricNoESQLTypeMetric), c.VizType())
 }
 
 func Test_metricChartConfigModel_fromAPI_toAPI_variant0(t *testing.T) {

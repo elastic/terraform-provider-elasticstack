@@ -32,19 +32,10 @@ import (
 )
 
 func newGaugePanelConfigConverter() gaugePanelConfigConverter {
-	return gaugePanelConfigConverter{
-		lensVisualizationBase: lensVisualizationBase{
-			visualizationType: string(kbapi.GaugeNoESQLTypeGauge),
-			hasTFChartBlock: func(blocks *models.LensByValueChartBlocks) bool {
-				return blocks != nil && blocks.GaugeConfig != nil
-			},
-		},
-	}
+	return gaugePanelConfigConverter{}
 }
 
-type gaugePanelConfigConverter struct {
-	lensVisualizationBase
-}
+type gaugePanelConfigConverter struct{}
 
 func (c gaugePanelConfigConverter) populateFromAttributes(
 	ctx context.Context,

@@ -30,19 +30,10 @@ import (
 )
 
 func newRegionMapPanelConfigConverter() regionMapPanelConfigConverter {
-	return regionMapPanelConfigConverter{
-		lensVisualizationBase: lensVisualizationBase{
-			visualizationType: string(kbapi.RegionMapNoESQLTypeRegionMap),
-			hasTFChartBlock: func(blocks *models.LensByValueChartBlocks) bool {
-				return blocks != nil && blocks.RegionMapConfig != nil
-			},
-		},
-	}
+	return regionMapPanelConfigConverter{}
 }
 
-type regionMapPanelConfigConverter struct {
-	lensVisualizationBase
-}
+type regionMapPanelConfigConverter struct{}
 
 func (c regionMapPanelConfigConverter) populateFromAttributes(
 	ctx context.Context,

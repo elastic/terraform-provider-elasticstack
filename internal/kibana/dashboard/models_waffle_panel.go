@@ -47,20 +47,12 @@ func seedWaffleLensByValueChartFromPriorPanel(dest *models.LensByValueChartBlock
 }
 
 func newWafflePanelConfigConverter() wafflePanelConfigConverter {
-	return wafflePanelConfigConverter{
-		lensVisualizationBase: lensVisualizationBase{
-			visualizationType: string(kbapi.WaffleNoESQLTypeWaffle),
-			hasTFChartBlock: func(blocks *models.LensByValueChartBlocks) bool {
-				return blocks != nil && blocks.WaffleConfig != nil
-			},
-		},
-	}
+	return wafflePanelConfigConverter{}
 }
 
-type wafflePanelConfigConverter struct {
-	lensVisualizationBase
-}
+type wafflePanelConfigConverter struct{}
 
+//nolint:unparam // legacy test helper; dashboard/tfPanel are often nil
 func (c wafflePanelConfigConverter) populateFromAttributes(
 	ctx context.Context,
 	dashboard *models.DashboardModel,

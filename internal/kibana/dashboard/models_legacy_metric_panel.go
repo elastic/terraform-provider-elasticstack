@@ -37,19 +37,10 @@ const (
 )
 
 func newLegacyMetricPanelConfigConverter() legacyMetricPanelConfigConverter {
-	return legacyMetricPanelConfigConverter{
-		lensVisualizationBase: lensVisualizationBase{
-			visualizationType: string(kbapi.LegacyMetric),
-			hasTFChartBlock: func(blocks *models.LensByValueChartBlocks) bool {
-				return blocks != nil && blocks.LegacyMetricConfig != nil
-			},
-		},
-	}
+	return legacyMetricPanelConfigConverter{}
 }
 
-type legacyMetricPanelConfigConverter struct {
-	lensVisualizationBase
-}
+type legacyMetricPanelConfigConverter struct{}
 
 func (c legacyMetricPanelConfigConverter) populateFromAttributes(
 	ctx context.Context,

@@ -32,19 +32,10 @@ import (
 )
 
 func newXYChartPanelConfigConverter() xyChartPanelConfigConverter {
-	return xyChartPanelConfigConverter{
-		lensVisualizationBase: lensVisualizationBase{
-			visualizationType: string(kbapi.XyChartNoESQLTypeXy),
-			hasTFChartBlock: func(blocks *models.LensByValueChartBlocks) bool {
-				return blocks != nil && blocks.XYChartConfig != nil
-			},
-		},
-	}
+	return xyChartPanelConfigConverter{}
 }
 
-type xyChartPanelConfigConverter struct {
-	lensVisualizationBase
-}
+type xyChartPanelConfigConverter struct{}
 
 func (c xyChartPanelConfigConverter) populateFromAttributes(
 	ctx context.Context,

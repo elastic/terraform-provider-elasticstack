@@ -33,20 +33,12 @@ import (
 )
 
 func newMosaicPanelConfigConverter() mosaicPanelConfigConverter {
-	return mosaicPanelConfigConverter{
-		lensVisualizationBase: lensVisualizationBase{
-			visualizationType: string(kbapi.MosaicNoESQLTypeMosaic),
-			hasTFChartBlock: func(blocks *models.LensByValueChartBlocks) bool {
-				return blocks != nil && blocks.MosaicConfig != nil
-			},
-		},
-	}
+	return mosaicPanelConfigConverter{}
 }
 
-type mosaicPanelConfigConverter struct {
-	lensVisualizationBase
-}
+type mosaicPanelConfigConverter struct{}
 
+//nolint:unparam // legacy test helper; dashboard/tfPanel are often nil
 func (c mosaicPanelConfigConverter) populateFromAttributes(
 	ctx context.Context,
 	dashboard *models.DashboardModel,
