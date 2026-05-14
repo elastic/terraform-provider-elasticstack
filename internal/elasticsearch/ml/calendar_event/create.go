@@ -21,10 +21,13 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/ml/postcalendarevents"
+	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
@@ -64,41 +67,84 @@ func createCalendarEvent(ctx context.Context, client *clients.ElasticsearchScope
 		return plan, diags
 	}
 
-	postBody := struct {
-		Events []calendarEventWire `json:"events"`
-	}{Events: []calendarEventWire{planWire}}
-	body, err := json.Marshal(postBody)
-	if err != nil {
-		diags.AddError("Failed to marshal ML calendar event request", err.Error())
-		return plan, diags
-	}
+	var postWire []calendarEventWire
+	var postBodyBytes []byte
 
-	postHTTP, err := typedClient.Ml.PostCalendarEvents(calendarID).Raw(bytes.NewReader(body)).Perform(ctx)
-	if err != nil {
-		diags.AddError("Failed to create ML calendar event", fmt.Sprintf("Unable to create ML calendar event for calendar %s — %s", calendarID, err.Error()))
-		return plan, diags
-	}
-	defer postHTTP.Body.Close()
-	postBodyBytes, readErr := io.ReadAll(postHTTP.Body)
-	if readErr != nil {
-		diags.AddError("Failed to read ML calendar event response", readErr.Error())
-		return plan, diags
-	}
-	if postHTTP.StatusCode >= 300 {
-		diags.AddError("Failed to create ML calendar event", fmt.Sprintf("Unable to create ML calendar event for calendar %s — status %d: %s", calendarID, postHTTP.StatusCode, string(postBodyBytes)))
-		return plan, diags
+	if postCalendarEventWireNeedsRawPOSTBody(planWire) {
+		postBody := struct {
+			Events []calendarEventWire `json:"events"`
+		}{Events: []calendarEventWire{planWire}}
+		var marshalErr error
+		postBodyBytes, marshalErr = json.Marshal(postBody)
+		if marshalErr != nil {
+			diags.AddError("Failed to marshal ML calendar event request", marshalErr.Error())
+			return plan, diags
+		}
+
+		postHTTP, err := typedClient.Ml.PostCalendarEvents(calendarID).Raw(bytes.NewReader(postBodyBytes)).Perform(ctx)
+		if err != nil {
+			diags.AddError("Failed to create ML calendar event", fmt.Sprintf("Unable to create ML calendar event for calendar %s — %s", calendarID, err.Error()))
+			return plan, diags
+		}
+		defer postHTTP.Body.Close()
+		postBodyBytes, err = io.ReadAll(postHTTP.Body)
+		if err != nil {
+			diags.AddError("Failed to read ML calendar event response", err.Error())
+			return plan, diags
+		}
+		if postHTTP.StatusCode >= 300 {
+			diags.AddError("Failed to create ML calendar event", fmt.Sprintf("Unable to create ML calendar event for calendar %s — status %d: %s", calendarID, postHTTP.StatusCode, string(postBodyBytes)))
+			return plan, diags
+		}
+
+		var envelope struct {
+			Events []calendarEventWire `json:"events"`
+		}
+		if err := json.Unmarshal(postBodyBytes, &envelope); err != nil {
+			diags.AddError("Failed to decode ML calendar event response", fmt.Sprintf("Unable to decode post calendar events response for calendar %s — %s", calendarID, err.Error()))
+			return plan, diags
+		}
+		postWire = envelope.Events
+	} else {
+		ev, convDiags := calendarEventTypesFromWireForPOST(planWire)
+		diags.Append(convDiags...)
+		if diags.HasError() {
+			return plan, diags
+		}
+
+		req := postcalendarevents.NewRequest()
+		req.Events = []estypes.CalendarEvent{ev}
+
+		resp, err := typedClient.Ml.PostCalendarEvents(calendarID).Request(req).Do(ctx)
+		if err != nil {
+			var esErr *estypes.ElasticsearchError
+			if errors.As(err, &esErr) {
+				diags.AddError("Failed to create ML calendar event", fmt.Sprintf("Unable to create ML calendar event for calendar %s — %s", calendarID, esErr.Error()))
+				return plan, diags
+			}
+			diags.AddError("Failed to create ML calendar event", fmt.Sprintf("Unable to create ML calendar event for calendar %s — %s", calendarID, err.Error()))
+			return plan, diags
+		}
+
+		postWire = make([]calendarEventWire, 0, len(resp.Events))
+		for i := range resp.Events {
+			w, convErr := calendarEventWireFromTypesCalendarEvent(resp.Events[i])
+			if convErr != nil {
+				diags.AddError("Failed to decode ML calendar event response", convErr.Error())
+				return plan, diags
+			}
+			postWire = append(postWire, w)
+		}
+		var marshalErr error
+		postBodyBytes, marshalErr = json.Marshal(postWire)
+		if marshalErr != nil {
+			postBodyBytes = nil
+		}
 	}
 
 	var eventID string
-	var postWire struct {
-		Events []calendarEventWire `json:"events"`
-	}
-	if err := json.Unmarshal(postBodyBytes, &postWire); err != nil {
-		diags.AddError("Failed to decode ML calendar event response", fmt.Sprintf("Unable to decode post calendar events response for calendar %s — %s", calendarID, err.Error()))
-		return plan, diags
-	}
-	for i := range postWire.Events {
-		ev := postWire.Events[i]
+	for i := range postWire {
+		ev := postWire[i]
 		if calendarEventMatchesPlanWire(ev, planWire) {
 			if id := calendarEventWireEventID(&ev); id != "" {
 				eventID = id
@@ -106,8 +152,8 @@ func createCalendarEvent(ctx context.Context, client *clients.ElasticsearchScope
 			}
 		}
 	}
-	if eventID == "" && len(postWire.Events) == 1 {
-		eventID = calendarEventWireEventID(&postWire.Events[0])
+	if eventID == "" && len(postWire) == 1 {
+		eventID = calendarEventWireEventID(&postWire[0])
 	}
 
 	if eventID == "" {
@@ -146,16 +192,18 @@ func createCalendarEvent(ctx context.Context, client *clients.ElasticsearchScope
 			const maxPostRespDiag = 768
 			var detail strings.Builder
 			fmt.Fprintf(&detail, "Could not determine the new event ID from the API response or calendar events list. ")
-			fmt.Fprintf(&detail, "post response had %d event(s). ", len(postWire.Events))
-			for i := range postWire.Events {
-				fmt.Fprintf(&detail, "[%d] event_id=%q description=%q; ", i, calendarEventWireEventID(&postWire.Events[i]), postWire.Events[i].Description)
+			fmt.Fprintf(&detail, "post response had %d event(s). ", len(postWire))
+			for i := range postWire {
+				fmt.Fprintf(&detail, "[%d] event_id=%q description=%q; ", i, calendarEventWireEventID(&postWire[i]), postWire[i].Description)
 			}
 			fmt.Fprintf(&detail, "new-event candidates from list: %d. ", len(candidates))
-			ps := string(postBodyBytes)
-			if len(ps) > maxPostRespDiag {
-				ps = ps[:maxPostRespDiag] + "...(truncated)"
+			if len(postBodyBytes) > 0 {
+				ps := string(postBodyBytes)
+				if len(ps) > maxPostRespDiag {
+					ps = ps[:maxPostRespDiag] + "...(truncated)"
+				}
+				fmt.Fprintf(&detail, "post response excerpt: %s", ps)
 			}
-			fmt.Fprintf(&detail, "post response excerpt: %s", ps)
 			diags.AddError("Failed to identify created event", detail.String())
 			return plan, diags
 		}

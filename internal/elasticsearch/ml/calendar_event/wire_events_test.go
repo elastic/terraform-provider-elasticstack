@@ -148,3 +148,19 @@ func TestForceTimeShiftStringToJSONRaw(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "3600", string(raw))
 }
+
+func TestPostCalendarEventWireNeedsRawPOSTBody(t *testing.T) {
+	startMs := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC).UnixMilli()
+	endMs := time.Date(2026, 1, 2, 0, 0, 0, 0, time.UTC).UnixMilli()
+	base := calendarEventWire{
+		Description: "x",
+		StartTime:   millisJSONRaw(startMs),
+		EndTime:     millisJSONRaw(endMs),
+	}
+	assert.False(t, postCalendarEventWireNeedsRawPOSTBody(base))
+
+	withSkip := base
+	tr := true
+	withSkip.SkipResult = &tr
+	assert.True(t, postCalendarEventWireNeedsRawPOSTBody(withSkip))
+}

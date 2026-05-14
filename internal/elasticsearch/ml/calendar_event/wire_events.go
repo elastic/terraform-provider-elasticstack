@@ -23,12 +23,14 @@ import (
 	"strconv"
 	"strings"
 
+	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 // calendarEventWire is the JSON shape for ML calendar events (POST body and GET list responses).
-// The go-elasticsearch typed CalendarEvent struct does not yet include skip_result, skip_model_update,
-// or force_time_shift, so we decode list/post payloads with this type.
+// The go-elasticsearch typed types.CalendarEvent struct omits skip_result, skip_model_update, and
+// force_time_shift, so create uses postcalendarevents.Request only when those fields are absent;
+// otherwise it posts this wire JSON via Raw. List responses are still decoded with this type.
 //
 // https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-ml-post-calendar-events
 type calendarEventWire struct {
@@ -287,4 +289,40 @@ func calendarEventWireEventID(w *calendarEventWire) string {
 		return *w.EventID
 	}
 	return ""
+}
+
+// postCalendarEventWireNeedsRawPOSTBody reports whether the POST body must be sent as raw JSON.
+// go-elasticsearch types.CalendarEvent (and thus postcalendarevents.Request) omits skip_result,
+// skip_model_update, and force_time_shift, so those fields require the wire JSON path.
+func postCalendarEventWireNeedsRawPOSTBody(w calendarEventWire) bool {
+	if w.SkipResult != nil || w.SkipModelUpdate != nil {
+		return true
+	}
+	return len(w.ForceTimeShift) > 0
+}
+
+func calendarEventTypesFromWireForPOST(w calendarEventWire) (estypes.CalendarEvent, fwdiags.Diagnostics) {
+	var diags fwdiags.Diagnostics
+	startMs, endMs, ok := calendarEventWireTimesMillis(&w)
+	if !ok {
+		diags.AddError("Invalid event times", "Could not read start_time and end_time as epoch millis for the ML calendar event request")
+		return estypes.CalendarEvent{}, diags
+	}
+	return estypes.CalendarEvent{
+		Description: w.Description,
+		StartTime:   estypes.DateTime(startMs),
+		EndTime:     estypes.DateTime(endMs),
+	}, diags
+}
+
+func calendarEventWireFromTypesCalendarEvent(ev estypes.CalendarEvent) (calendarEventWire, error) {
+	b, err := json.Marshal(ev)
+	if err != nil {
+		return calendarEventWire{}, err
+	}
+	var w calendarEventWire
+	if err := json.Unmarshal(b, &w); err != nil {
+		return calendarEventWire{}, err
+	}
+	return w, nil
 }
