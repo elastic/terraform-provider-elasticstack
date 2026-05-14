@@ -20,7 +20,6 @@ package calendar_event
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -99,19 +98,8 @@ func (r *calendarEventResource) Create(ctx context.Context, req resource.CreateR
 }
 
 func (r *calendarEventResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	compID, diags := clients.CompositeIDFromStrForElasticsearchFw(req.ID)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	calendarID, eventID, splitDiags := splitCalendarEventResourcePath(compID.ResourceID)
-	resp.Diagnostics.Append(splitDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("calendar_id"), calendarID)...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("event_id"), eventID)...)
+	// The Elasticsearch envelope Read parses `id` as `<cluster_uuid>/<calendar_id>/<event_id>` (first slash
+	// separates cluster from resource path; the remainder is split again for calendar vs event).
+	// Separate `calendar_id` / `event_id` attributes are populated on refresh.
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
