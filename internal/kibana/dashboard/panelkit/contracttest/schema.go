@@ -55,9 +55,8 @@ func appendRequiredJSONPresenceIssues(handler iface.Handler, fixtureJSON string,
 		return
 	}
 	for _, rp := range lp.required {
-		camel := terraformPathToAPICamel(rp)
-		if _, ok := jsonNavigateMap(cfg, camel); !ok {
-			*issues = append(*issues, fmt.Sprintf("[Schema] required terraform path %#v absent from fixture.config under API segments %#v", rp, camel))
+		if !fixtureHasTerraformNestedKey(cfg, rp) {
+			*issues = append(*issues, fmt.Sprintf("[Schema] required terraform path %#v absent from fixture.config payload", rp))
 		}
 	}
 }
@@ -122,10 +121,9 @@ func flattenShallowRequired(lp leafPaths) []string {
 func attrsForShallowFixture(cfg map[string]any, shallowKeys []string) (map[string]attr.Value, error) {
 	attrs := make(map[string]attr.Value)
 	for _, k := range shallowKeys {
-		apiKey := tfAttrToAPICamel(k)
-		raw, ok := cfg[apiKey]
+		raw, ok := rawFixtureScalarAtConfig(cfg, k)
 		if !ok {
-			return nil, fmt.Errorf("missing TF attr %q fixture key %q in config payload", k, apiKey)
+			return nil, fmt.Errorf("missing TF attr %q in config payload", k)
 		}
 		nv, err := attrFromFixtureScalar(raw)
 		if err != nil {

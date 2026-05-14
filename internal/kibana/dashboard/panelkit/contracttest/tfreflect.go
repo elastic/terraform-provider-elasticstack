@@ -200,28 +200,48 @@ func setStructLeaf(pm *models.PanelModel, blockName string, segments []string, v
 	}
 }
 
-func jsonNavigateMap(root map[string]any, camelSegments []string) (any, bool) {
-	var cur any = root
-	for _, seg := range camelSegments {
-		m, ok := cur.(map[string]any)
-		if !ok {
-			return nil, false
-		}
-		next, exists := m[seg]
-		if !exists {
-			return nil, false
-		}
-		cur = next
-	}
-	return cur, true
+func fixtureHasTerraformNestedKey(cfg map[string]any, tfPath []string) bool {
+	_, ok := navigateFixtureConfigByTerraformPath(cfg, tfPath)
+	return ok
 }
 
-func terraformPathToAPICamel(parts []string) []string {
-	out := make([]string, len(parts))
-	for i, p := range parts {
-		out[i] = tfAttrToAPICamel(p)
+func navigateFixtureConfigByTerraformPath(cur any, tfPath []string) (any, bool) {
+	if len(tfPath) == 0 {
+		return cur, true
 	}
-	return out
+
+	if arr, ok := cur.([]any); ok && len(arr) > 0 {
+		if fm, ok := arr[0].(map[string]any); ok {
+			cur = fm
+		}
+	}
+
+	m, ok := cur.(map[string]any)
+	if !ok {
+		return nil, false
+	}
+
+	seg := tfPath[0]
+	var next any
+	for _, cand := range []string{tfAttrToAPICamel(seg), seg} {
+		if v, exists := m[cand]; exists {
+			next = v
+			break
+		}
+	}
+	if next == nil {
+		return nil, false
+	}
+	return navigateFixtureConfigByTerraformPath(next, tfPath[1:])
+}
+
+func rawFixtureScalarAtConfig(cfg map[string]any, tfAttrName string) (any, bool) {
+	for _, cand := range []string{tfAttrToAPICamel(tfAttrName), tfAttrName} {
+		if raw, exists := cfg[cand]; exists {
+			return raw, true
+		}
+	}
+	return nil, false
 }
 
 func parseFixtureRoot(fixtureJSON string) (map[string]any, error) {
