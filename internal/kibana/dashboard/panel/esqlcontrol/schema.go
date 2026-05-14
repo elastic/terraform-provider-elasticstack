@@ -19,10 +19,7 @@ package esqlcontrol
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
-	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -32,13 +29,11 @@ const panelType = "esql_control"
 
 // SchemaAttribute returns the dashboard panel esql_control_config block.
 func SchemaAttribute() schema.Attribute {
-	return schema.SingleNestedAttribute{
-		MarkdownDescription: panelkit.PanelConfigDescription(
-			"Configuration for an ES|QL control panel. Use this to manage ES|QL variable controls on a dashboard.",
-			"esql_control_config",
-			panelkit.TypedSiblingPanelConfigBlockNames(),
-		),
-		Optional: true,
+	return panelkit.PanelConfigBlock(panelkit.PanelConfigBlockOpts{
+		Description: "Configuration for an ES|QL control panel. Use this to manage ES|QL variable controls on a dashboard.",
+		BlockName:   "esql_control_config",
+		PanelType:   panelType,
+		Required:    true,
 		Attributes: map[string]schema.Attribute{
 			"selected_options": schema.ListAttribute{
 				MarkdownDescription: "List of currently selected option values for the control.",
@@ -107,12 +102,5 @@ func SchemaAttribute() schema.Attribute {
 				},
 			},
 		},
-		Validators: []validator.Object{
-			objectvalidator.ConflictsWith(
-				panelkit.SiblingTypedPanelConfigConflictPathsExcept("esql_control_config", panelkit.TypedSiblingPanelConfigBlockNames())...,
-			),
-			validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelType}),
-			validators.RequiredIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelType}),
-		},
-	}
+	})
 }

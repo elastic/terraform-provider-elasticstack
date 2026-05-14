@@ -19,10 +19,7 @@ package optionslist
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
-	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -32,13 +29,11 @@ const panelType = "options_list_control"
 
 // SchemaAttribute returns the dashboard panel options_list_control_config block.
 func SchemaAttribute() schema.Attribute {
-	return schema.SingleNestedAttribute{
-		MarkdownDescription: panelkit.PanelConfigDescription(
-			"Configuration for an options list control panel. Provides a dropdown or multi-select filter based on a field in a data view.",
-			"options_list_control_config",
-			panelkit.TypedSiblingPanelConfigBlockNames(),
-		),
-		Optional: true,
+	return panelkit.PanelConfigBlock(panelkit.PanelConfigBlockOpts{
+		Description: "Configuration for an options list control panel. Provides a dropdown or multi-select filter based on a field in a data view.",
+		BlockName:   "options_list_control_config",
+		PanelType:   panelType,
+		Required:    true,
 		Attributes: map[string]schema.Attribute{
 			"data_view_id": schema.StringAttribute{
 				MarkdownDescription: "The ID of the data view that the control is tied to.",
@@ -135,12 +130,5 @@ func SchemaAttribute() schema.Attribute {
 				},
 			},
 		},
-		Validators: []validator.Object{
-			objectvalidator.ConflictsWith(
-				panelkit.SiblingTypedPanelConfigConflictPathsExcept("options_list_control_config", panelkit.TypedSiblingPanelConfigBlockNames())...,
-			),
-			validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelType}),
-			validators.RequiredIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelType}),
-		},
-	}
+	})
 }

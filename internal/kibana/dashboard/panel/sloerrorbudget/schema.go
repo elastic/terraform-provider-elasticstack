@@ -19,11 +19,7 @@ package sloerrorbudget
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
-	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
 const panelType = "slo_error_budget"
@@ -49,19 +45,10 @@ func SchemaAttribute() schema.Attribute {
 		},
 	)
 
-	return schema.SingleNestedAttribute{
-		MarkdownDescription: panelkit.PanelConfigDescription(
-			"Configuration for an SLO error budget panel. Displays the burn chart of remaining error budget for a specific SLO.",
-			"slo_error_budget_config",
-			panelkit.TypedSiblingPanelConfigBlockNames(),
-		),
-		Optional:   true,
-		Attributes: attrs,
-		Validators: []validator.Object{
-			objectvalidator.ConflictsWith(
-				panelkit.SiblingTypedPanelConfigConflictPathsExcept("slo_error_budget_config", panelkit.TypedSiblingPanelConfigBlockNames())...,
-			),
-			validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelType}),
-		},
-	}
+	return panelkit.PanelConfigBlock(panelkit.PanelConfigBlockOpts{
+		Description: "Configuration for an SLO error budget panel. Displays the burn chart of remaining error budget for a specific SLO.",
+		BlockName:   "slo_error_budget_config",
+		PanelType:   panelType,
+		Attributes:  attrs,
+	})
 }

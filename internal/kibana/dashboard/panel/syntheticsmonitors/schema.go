@@ -20,10 +20,7 @@ package syntheticsmonitors
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/syntheticscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
-	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
@@ -49,20 +46,11 @@ func SchemaAttribute() schema.Attribute {
 		MonitorTypesDescription:  "Filter by monitor types. Each entry has a `label` (display name) and a `value` (monitor type, e.g. `browser`, `http`, `tcp`, `icmp`).",
 	})
 
-	return schema.SingleNestedAttribute{
-		MarkdownDescription: panelkit.PanelConfigDescription(
-			"Configuration for a Synthetics monitors panel. Displays a table of Elastic Synthetics monitors "+
-				"and their current status. All fields are optional — omit the block entirely for a bare panel with no filtering.",
-			"synthetics_monitors_config",
-			panelkit.TypedSiblingPanelConfigBlockNames(),
-		),
-		Optional:   true,
+	return panelkit.PanelConfigBlock(panelkit.PanelConfigBlockOpts{
+		Description: "Configuration for a Synthetics monitors panel. Displays a table of Elastic Synthetics monitors " +
+			"and their current status. All fields are optional — omit the block entirely for a bare panel with no filtering.",
+		BlockName:  "synthetics_monitors_config",
+		PanelType:  panelType,
 		Attributes: attrs,
-		Validators: []validator.Object{
-			objectvalidator.ConflictsWith(
-				panelkit.SiblingTypedPanelConfigConflictPathsExcept("synthetics_monitors_config", panelkit.TypedSiblingPanelConfigBlockNames())...,
-			),
-			validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelType}),
-		},
-	}
+	})
 }

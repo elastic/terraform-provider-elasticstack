@@ -20,11 +20,7 @@ package syntheticsstatsoverview
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/syntheticscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
-	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
 const panelType = "synthetics_stats_overview"
@@ -42,21 +38,12 @@ func SchemaAttribute() schema.Attribute {
 			"to apply no filtering for those dimensions.",
 	})
 
-	return schema.SingleNestedAttribute{
-		MarkdownDescription: panelkit.PanelConfigDescription(
-			"Configuration for a Synthetics stats overview panel. "+
-				"All fields are optional; an absent or empty block shows statistics "+
-				"for all monitors visible within the space.",
-			"synthetics_stats_overview_config",
-			panelkit.TypedSiblingPanelConfigBlockNames(),
-		),
-		Optional:   true,
+	return panelkit.PanelConfigBlock(panelkit.PanelConfigBlockOpts{
+		Description: "Configuration for a Synthetics stats overview panel. " +
+			"All fields are optional; an absent or empty block shows statistics " +
+			"for all monitors visible within the space.",
+		BlockName:  "synthetics_stats_overview_config",
+		PanelType:  panelType,
 		Attributes: attrs,
-		Validators: []validator.Object{
-			objectvalidator.ConflictsWith(
-				panelkit.SiblingTypedPanelConfigConflictPathsExcept("synthetics_stats_overview_config", panelkit.TypedSiblingPanelConfigBlockNames())...,
-			),
-			validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelType}),
-		},
-	}
+	})
 }

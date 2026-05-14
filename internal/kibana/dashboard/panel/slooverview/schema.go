@@ -19,7 +19,6 @@ package slooverview
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
@@ -34,19 +33,12 @@ const panelType = "slo_overview"
 
 // SchemaAttribute returns the slo_overview_config SingleNestedAttribute definition.
 func SchemaAttribute() schema.Attribute {
-	return schema.SingleNestedAttribute{
-		MarkdownDescription: panelkit.PanelConfigDescription(
-			"Configuration for an SLO overview panel. Use either `single` (for a single SLO) or `groups` (for grouped SLO overview).",
-			"slo_overview_config",
-			panelkit.TypedSiblingPanelConfigBlockNames(),
-		),
-		Optional:   true,
-		Attributes: nestedAttributes(),
-		Validators: []validator.Object{
-			objectvalidator.ConflictsWith(
-				panelkit.SiblingTypedPanelConfigConflictPathsExcept("slo_overview_config", panelkit.TypedSiblingPanelConfigBlockNames())...,
-			),
-			validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelType}),
+	return panelkit.PanelConfigBlock(panelkit.PanelConfigBlockOpts{
+		Description: "Configuration for an SLO overview panel. Use either `single` (for a single SLO) or `groups` (for grouped SLO overview).",
+		BlockName:   "slo_overview_config",
+		PanelType:   panelType,
+		Attributes:  nestedAttributes(),
+		ExtraValidators: []validator.Object{
 			panelkit.ExactlyOneOfNestedAttrsValidator(panelkit.ExactlyOneOfNestedAttrsOpts{
 				AttrNames:     []string{"single", "groups"},
 				Summary:       "Invalid slo_overview_config",
@@ -55,7 +47,7 @@ func SchemaAttribute() schema.Attribute {
 				Description:   "Ensures exactly one of `single` or `groups` is configured inside `slo_overview_config`.",
 			}),
 		},
-	}
+	})
 }
 
 func nestedAttributes() map[string]schema.Attribute {

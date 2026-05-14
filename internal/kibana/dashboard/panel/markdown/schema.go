@@ -19,9 +19,6 @@ package markdown
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
-	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
@@ -30,22 +27,14 @@ const panelConfigBlock = "markdown_config"
 
 // SchemaAttribute returns the markdown_config SingleNestedAttribute (lifted from dashboard/schema.go).
 func SchemaAttribute() schema.Attribute {
-	const panelMarkdown = "markdown"
-	return schema.SingleNestedAttribute{
-		MarkdownDescription: panelkit.PanelConfigDescription(
-			"Configuration for a `markdown` panel (the Kibana Dashboard API `kbn-dashboard-panel-type-markdown` shape). "+
-				"Set exactly one of `by_value` (inline `content` with required nested `settings`) or `by_reference` (existing library item via `ref_id`). "+
-				"Presentation fields (`description`, `hide_title`, `title`, `hide_border`) are supported in both branches.",
-			panelConfigBlock,
-			panelkit.TypedSiblingPanelConfigBlockNames(),
-		),
-		Optional:   true,
+	return panelkit.PanelConfigBlock(panelkit.PanelConfigBlockOpts{
+		Description: "Configuration for a `markdown` panel (the Kibana Dashboard API `kbn-dashboard-panel-type-markdown` shape). " +
+			"Set exactly one of `by_value` (inline `content` with required nested `settings`) or `by_reference` (existing library item via `ref_id`). " +
+			"Presentation fields (`description`, `hide_title`, `title`, `hide_border`) are supported in both branches.",
+		BlockName:  panelConfigBlock,
+		PanelType:  panelType,
 		Attributes: nestedAttributes(),
-		Validators: []validator.Object{
-			objectvalidator.ConflictsWith(
-				panelkit.SiblingTypedPanelConfigConflictPathsExcept(panelConfigBlock, panelkit.TypedSiblingPanelConfigBlockNames())...,
-			),
-			validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelMarkdown}),
+		ExtraValidators: []validator.Object{
 			panelkit.ExactlyOneOfNestedAttrsValidator(panelkit.ExactlyOneOfNestedAttrsOpts{
 				AttrNames:     []string{"by_value", "by_reference"},
 				Summary:       "Invalid " + panelConfigBlock,
@@ -54,7 +43,7 @@ func SchemaAttribute() schema.Attribute {
 				Description:   "Ensures exactly one of `by_value` or `by_reference` is set inside `markdown_config`.",
 			}),
 		},
-	}
+	})
 }
 
 func nestedAttributes() map[string]schema.Attribute {

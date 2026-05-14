@@ -21,11 +21,8 @@ import (
 	_ "embed"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
-	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
@@ -42,23 +39,14 @@ const panelConfigBlock = panelType + "_config"
 
 // SchemaAttribute returns slo_alerts_config.
 func SchemaAttribute() schema.Attribute {
-	return schema.SingleNestedAttribute{
-		MarkdownDescription: panelkit.PanelConfigDescription(
-			"Configuration for an `slo_alerts` panel (`kbn-dashboard-panel-type-slo_alerts`). "+
-				"Required when `type` is `slo_alerts`.",
-			panelConfigBlock,
-			panelkit.TypedSiblingPanelConfigBlockNames(),
-		),
-		Optional:   true,
+	return panelkit.PanelConfigBlock(panelkit.PanelConfigBlockOpts{
+		Description: "Configuration for an `slo_alerts` panel (`kbn-dashboard-panel-type-slo_alerts`). " +
+			"Required when `type` is `slo_alerts`.",
+		BlockName:  panelConfigBlock,
+		PanelType:  panelType,
+		Required:   true,
 		Attributes: nestedAttributes(),
-		Validators: []validator.Object{
-			objectvalidator.ConflictsWith(
-				panelkit.SiblingTypedPanelConfigConflictPathsExcept(panelConfigBlock, panelkit.TypedSiblingPanelConfigBlockNames())...,
-			),
-			validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelType}),
-			validators.RequiredIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelType}),
-		},
-	}
+	})
 }
 
 func nestedAttributes() map[string]schema.Attribute {

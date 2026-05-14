@@ -19,10 +19,7 @@ package timeslider
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-validators/float32validator"
-	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
@@ -31,13 +28,10 @@ const panelType = "time_slider_control"
 
 // SchemaAttribute returns the time_slider_control_config SingleNestedAttribute for dashboard panels.
 func SchemaAttribute() schema.Attribute {
-	return schema.SingleNestedAttribute{
-		MarkdownDescription: panelkit.PanelConfigDescription(
-			"Configuration for a time slider control panel. Controls the visible time window within the dashboard's global time range.",
-			"time_slider_control_config",
-			panelkit.TypedSiblingPanelConfigBlockNames(),
-		),
-		Optional: true,
+	return panelkit.PanelConfigBlock(panelkit.PanelConfigBlockOpts{
+		Description: "Configuration for a time slider control panel. Controls the visible time window within the dashboard's global time range.",
+		BlockName:   "time_slider_control_config",
+		PanelType:   panelType,
 		Attributes: map[string]schema.Attribute{
 			"start_percentage_of_time_range": schema.Float32Attribute{
 				MarkdownDescription: "Start of the visible time window as a fraction of the dashboard global range (0.0–1.0). " +
@@ -60,11 +54,5 @@ func SchemaAttribute() schema.Attribute {
 				Optional:            true,
 			},
 		},
-		Validators: []validator.Object{
-			objectvalidator.ConflictsWith(
-				panelkit.SiblingTypedPanelConfigConflictPathsExcept("time_slider_control_config", panelkit.TypedSiblingPanelConfigBlockNames())...,
-			),
-			validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelType}),
-		},
-	}
+	})
 }
