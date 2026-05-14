@@ -68,8 +68,14 @@ func (v FieldAttrsValue) MapSemanticEquals(ctx context.Context, priorValuable ba
 	}
 
 	if v.IsNull() {
-		if priorValue.IsNull() || priorValue.IsUnknown() {
+		// Only null↔null is equal here. An unknown prior value (e.g. early plan rounds with
+		// computed dependencies) is intentionally treated as a real change so the framework
+		// continues planning for it; mirrors InputsValue.MapSemanticEquals.
+		if priorValue.IsNull() {
 			return true, diags
+		}
+		if priorValue.IsUnknown() {
+			return false, diags
 		}
 		for _, priorAttr := range priorValue.Elements() {
 			priorOV, ok := priorAttr.(basetypes.ObjectValue)
