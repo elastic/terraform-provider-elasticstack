@@ -86,18 +86,14 @@ func nestedAttributes() map[string]schema.Attribute {
 			listvalidator.SizeAtMost(100),
 		},
 	}
-	attrs["drilldowns"] = schema.ListNestedAttribute{
-		MarkdownDescription: sloAlertsPanelDrilldownsDescription,
-		Optional:            true,
-		Validators: []validator.List{
-			listvalidator.SizeAtMost(100),
-		},
-		NestedObject: panelkit.URLDrilldownSchema(panelkit.URLDrilldownOptions{
+	attrs["drilldowns"] = panelkit.URLDrilldownListAttribute(
+		sloAlertsPanelDrilldownsDescription,
+		panelkit.URLDrilldownOptions{
 			URLMarkdownDescription:          "Templated URL for the drilldown.",
 			LabelMarkdownDescription:        "Display label shown in the drilldown menu.",
 			EncodeURLMarkdownDescription:    "When true, the URL is percent-encoded. Omit to use the API default.",
 			OpenInNewTabMarkdownDescription: "When true, the URL opens in a new browser tab. Omit to use the API default.",
-		}),
-	}
+		},
+	)
 	return attrs
 }

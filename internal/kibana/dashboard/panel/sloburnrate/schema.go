@@ -48,11 +48,10 @@ func SchemaAttribute() schema.Attribute {
 		MarkdownDescription: "ID of the SLO instance. Set when the SLO uses `group_by`; identifies which instance to show. Omit to show all instances (API default `\"*\"`).",
 		Optional:            true,
 	}
-	attrs["drilldowns"] = schema.ListNestedAttribute{
-		MarkdownDescription: "Optional list of URL drilldowns attached to the panel.",
-		Optional:            true,
-		NestedObject:        panelkit.URLDrilldownSchema(panelkit.URLDrilldownOptions{}),
-	}
+	attrs["drilldowns"] = panelkit.URLDrilldownListAttribute(
+		"Optional list of URL drilldowns attached to the panel.",
+		panelkit.URLDrilldownOptions{},
+	)
 
 	return schema.SingleNestedAttribute{
 		MarkdownDescription: panelkit.PanelConfigDescription(

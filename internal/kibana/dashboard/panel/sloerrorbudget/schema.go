@@ -39,16 +39,15 @@ func SchemaAttribute() schema.Attribute {
 		MarkdownDescription: "ID of the SLO instance. Set when the SLO uses group_by; identifies which instance to show. Defaults to `*` (all instances) when omitted.",
 		Optional:            true,
 	}
-	attrs["drilldowns"] = schema.ListNestedAttribute{
-		MarkdownDescription: "URL drilldowns to configure on the panel.",
-		Optional:            true,
-		NestedObject: panelkit.URLDrilldownSchema(panelkit.URLDrilldownOptions{
+	attrs["drilldowns"] = panelkit.URLDrilldownListAttribute(
+		"URL drilldowns to configure on the panel.",
+		panelkit.URLDrilldownOptions{
 			URLMarkdownDescription:          "Templated URL. Variables documented at https://www.elastic.co/docs/explore-analyze/dashboards/drilldowns#url-template-variable",
 			LabelMarkdownDescription:        "The label displayed for the drilldown.",
 			EncodeURLMarkdownDescription:    "When true, the URL is escaped using percent encoding. Defaults to `true` when omitted.",
 			OpenInNewTabMarkdownDescription: "When true, the drilldown URL opens in a new browser tab. Defaults to `true` when omitted.",
-		}),
-	}
+		},
+	)
 
 	return schema.SingleNestedAttribute{
 		MarkdownDescription: panelkit.PanelConfigDescription(

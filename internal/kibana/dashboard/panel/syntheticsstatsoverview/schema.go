@@ -69,11 +69,10 @@ func SchemaAttribute() schema.Attribute {
 				MarkdownDescription: "When true, suppresses the panel border in the dashboard.",
 				Optional:            true,
 			},
-			"drilldowns": schema.ListNestedAttribute{
-				MarkdownDescription: "Optional list of URL drilldown actions attached to the panel. The API allows up to 100 drilldowns per panel.",
-				Optional:            true,
-				NestedObject:        panelkit.URLDrilldownSchema(panelkit.URLDrilldownOptions{}),
-			},
+			"drilldowns": panelkit.URLDrilldownListAttribute(
+				"Optional list of URL drilldown actions attached to the panel. The API allows up to 100 drilldowns per panel.",
+				panelkit.URLDrilldownOptions{},
+			),
 			"filters": schema.SingleNestedAttribute{
 				MarkdownDescription: "Optional Synthetics monitor filter constraints. Each filter category " +
 					"accepts a list of `{ label, value }` objects. Omit the block or individual categories " +
