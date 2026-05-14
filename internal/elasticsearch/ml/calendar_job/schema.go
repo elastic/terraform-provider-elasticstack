@@ -66,8 +66,10 @@ func getSchema(_ context.Context) schema.Schema {
 				},
 			},
 			"job_id": schema.StringAttribute{
-				MarkdownDescription: "Anomaly detection **job identifier** or **job group name** to attach to the calendar, matching Elasticsearch `PUT .../jobs/{job_id}` (one value per resource; not a comma-separated list).",
-				Required:            true,
+				MarkdownDescription: "Anomaly detection **job identifier** or **job group name** to attach " +
+					"to the calendar, matching Elasticsearch `PUT .../jobs/{job_id}` (one value per resource; " +
+					"not a comma-separated list).",
+				Required: true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
