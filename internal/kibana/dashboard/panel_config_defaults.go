@@ -18,6 +18,7 @@
 package dashboard
 
 import (
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/iface"
 )
 
@@ -45,7 +46,6 @@ func populatePanelConfigJSONDefaultsWithHandlers(config map[string]any, handlers
 	}
 
 	// Lens visualization config_json normalization (opaque attributes.* structure).
-	// Deferred to dashboard-lens-contract: no migrated handler owns this classification yet.
 	if attrs, ok := config["attributes"].(map[string]any); ok {
 		config["attributes"] = populateLensAttributesDefaults(attrs)
 	}
@@ -53,220 +53,14 @@ func populatePanelConfigJSONDefaultsWithHandlers(config map[string]any, handlers
 	return config
 }
 
-// populateLensAttributesDefaults applies type-specific defaults to lens attributes.
-// Dispatches on attributes.type to reuse existing populate functions from schema.go.
+// populateLensAttributesDefaults applies type-specific defaults to lens attributes via registered VizConverters.
 func populateLensAttributesDefaults(attrs map[string]any) map[string]any {
 	if attrs == nil {
 		return attrs
 	}
-
 	visType, _ := attrs["type"].(string)
-	switch visType {
-	case "legacy_metric":
-		populateLegacyMetricAttributes(attrs)
-	case "tagcloud":
-		populateTagcloudAttributes(attrs)
-	case "gauge":
-		populateGaugeAttributes(attrs)
-	case "metric":
-		populateMetricChartAttributes(attrs)
-	case "pie":
-		populatePieChartAttributes(attrs)
-	case "region_map":
-		populateRegionMapAttributes(attrs)
-	case "heatmap":
-		populateHeatmapAttributes(attrs)
-	case "treemap":
-		populateTreemapAttributes(attrs)
-	case "mosaic":
-		populateMosaicAttributes(attrs)
-	case "waffle":
-		populatePieChartAttributes(attrs)
-	case "xy":
-		populateXYChartAttributes(attrs)
-	case "datatable":
-		populateDatatableAttributes(attrs)
-	default:
-		// Unknown type: no defaults applied
+	if c := lenscommon.ForType(visType); c != nil {
+		return c.PopulateJSONDefaults(attrs)
 	}
-
 	return attrs
-}
-
-func ensureLensFiltersDefault(attrs map[string]any) {
-	if _, exists := attrs["filters"]; !exists {
-		attrs["filters"] = []any{}
-	}
-}
-
-func populateLegacyMetricAttributes(attrs map[string]any) {
-	// Ensure filters: [] when absent (API may omit when empty)
-	ensureLensFiltersDefault(attrs)
-
-	// Apply metric defaults (show_array_values, empty_as_null, format)
-	if metric, ok := attrs["metric"].(map[string]any); ok {
-		attrs["metric"] = populateLegacyMetricMetricDefaults(metric)
-	}
-}
-
-func populateTagcloudAttributes(attrs map[string]any) {
-	ensureLensFiltersDefault(attrs)
-	if metric, ok := attrs["metric"].(map[string]any); ok {
-		attrs["metric"] = populateTagcloudMetricDefaults(metric)
-	}
-	if tagBy, ok := attrs["tag_by"].(map[string]any); ok {
-		attrs["tag_by"] = populateTagcloudTagByDefaults(tagBy)
-	}
-}
-
-func populateGaugeAttributes(attrs map[string]any) {
-	ensureLensFiltersDefault(attrs)
-	if metric, ok := attrs["metric"].(map[string]any); ok {
-		attrs["metric"] = populateGaugeMetricDefaults(metric)
-	}
-}
-
-func populateMetricChartAttributes(attrs map[string]any) {
-	ensureLensFiltersDefault(attrs)
-	if metrics, ok := attrs["metrics"].([]any); ok {
-		for i, m := range metrics {
-			if metricMap, ok := m.(map[string]any); ok {
-				metrics[i] = populateMetricChartMetricDefaults(metricMap)
-			}
-		}
-	}
-}
-
-func populatePieChartAttributes(attrs map[string]any) {
-	ensureLensFiltersDefault(attrs)
-	if metrics, ok := attrs["metrics"].([]any); ok {
-		for i, m := range metrics {
-			if metricMap, ok := m.(map[string]any); ok {
-				metrics[i] = populatePieChartMetricDefaults(metricMap)
-			}
-		}
-	}
-	if groupBy, ok := attrs["group_by"].([]any); ok {
-		for i, g := range groupBy {
-			if groupMap, ok := g.(map[string]any); ok {
-				groupBy[i] = populateLensGroupByDefaults(groupMap)
-			}
-		}
-	}
-}
-
-func populateRegionMapAttributes(attrs map[string]any) {
-	ensureLensFiltersDefault(attrs)
-	if metric, ok := attrs["metric"].(map[string]any); ok {
-		attrs["metric"] = populateRegionMapMetricDefaults(metric)
-	}
-}
-
-func populateHeatmapAttributes(attrs map[string]any) {
-	ensureLensFiltersDefault(attrs)
-	if metric, ok := attrs["metric"].(map[string]any); ok {
-		attrs["metric"] = populateTagcloudMetricDefaults(metric)
-	}
-}
-
-func populateTreemapAttributes(attrs map[string]any) {
-	ensureLensFiltersDefault(attrs)
-	if groupBy, ok := attrs["group_by"].([]any); ok {
-		groupByMaps := make([]map[string]any, 0, len(groupBy))
-		for _, g := range groupBy {
-			if m, ok := g.(map[string]any); ok {
-				groupByMaps = append(groupByMaps, m)
-			}
-		}
-
-		populated := populatePartitionGroupByDefaults(groupByMaps)
-		for i := range groupBy {
-			if i < len(populated) {
-				groupBy[i] = populated[i]
-			}
-		}
-	}
-	if metrics, ok := attrs["metrics"].([]any); ok {
-		metricsMaps := make([]map[string]any, 0, len(metrics))
-		for _, m := range metrics {
-			if mp, ok := m.(map[string]any); ok {
-				metricsMaps = append(metricsMaps, mp)
-			}
-		}
-		populated := populatePartitionMetricsDefaults(metricsMaps)
-		for i := range metrics {
-			if i < len(populated) {
-				metrics[i] = populated[i]
-			}
-		}
-	}
-}
-
-func populateMosaicAttributes(attrs map[string]any) {
-	populateTreemapAttributes(attrs)
-
-	if groupBreakdownBy, ok := attrs["group_breakdown_by"].([]any); ok {
-		groupBreakdownMaps := make([]map[string]any, 0, len(groupBreakdownBy))
-		for _, g := range groupBreakdownBy {
-			if m, ok := g.(map[string]any); ok {
-				groupBreakdownMaps = append(groupBreakdownMaps, m)
-			}
-		}
-
-		populated := populatePartitionGroupByDefaults(groupBreakdownMaps)
-		for i := range groupBreakdownBy {
-			if i < len(populated) {
-				groupBreakdownBy[i] = populated[i]
-			}
-		}
-	}
-}
-
-func populateXYChartAttributes(attrs map[string]any) {
-	ensureLensFiltersDefault(attrs)
-	// XY chart has layers: each layer can be a data layer (has "y" array) or reference line
-	if layers, ok := attrs["layers"].([]any); ok {
-		for _, layer := range layers {
-			layerMap, ok := layer.(map[string]any)
-			if !ok {
-				continue
-			}
-			// Data layers have "y" array of metric configs
-			if yArr, ok := layerMap["y"].([]any); ok {
-				for i, y := range yArr {
-					if yMap, ok := y.(map[string]any); ok {
-						yArr[i] = populateLensMetricDefaults(yMap)
-					}
-				}
-			}
-		}
-	}
-}
-
-func populateDatatableAttributes(attrs map[string]any) {
-	ensureLensFiltersDefault(attrs)
-	// Datatable metrics: each item is a metric config (operation, format, etc.)
-	if metrics, ok := attrs["metrics"].([]any); ok {
-		for i, m := range metrics {
-			if metricMap, ok := m.(map[string]any); ok {
-				metrics[i] = populateLensMetricDefaults(metricMap)
-			}
-		}
-	}
-	// Datatable rows: terms, date_histogram, etc. - apply group_by defaults for terms
-	if rows, ok := attrs["rows"].([]any); ok {
-		for i, r := range rows {
-			if rowMap, ok := r.(map[string]any); ok {
-				rows[i] = populateLensGroupByDefaults(rowMap)
-			}
-		}
-	}
-	// Datatable split_metrics_by: similar to group_by
-	if splitBy, ok := attrs["split_metrics_by"].([]any); ok {
-		for i, s := range splitBy {
-			if splitMap, ok := s.(map[string]any); ok {
-				splitBy[i] = populateLensGroupByDefaults(splitMap)
-			}
-		}
-	}
 }
