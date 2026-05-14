@@ -17,32 +17,37 @@
 
 package dashboard
 
+import (
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/iface"
+)
+
 // populatePanelConfigJSONDefaults normalizes panel config_json for semantic equality.
-// It dispatches to type-specific defaulting based on config structure (markdown vs lens)
-// so that user config and API read-back compare equal despite key reordering and
-// server-injected defaults (GitHub issue #1789).
+//
+// Typed panel handlers may claim opaque JSON blobs via ClassifyJSON;
+// PopulateJSONDefaults applies normalization for plan-time semantic equality (#1789).
+//
+// Lens-by-value panels still serialize as opaque "attributes"; that tree is unchanged
+// here until dashboard-lens-contract introduces a Lens handler claiming that shape.
 func populatePanelConfigJSONDefaults(config map[string]any) map[string]any {
+	return populatePanelConfigJSONDefaultsWithHandlers(config, AllHandlers())
+}
+
+func populatePanelConfigJSONDefaultsWithHandlers(config map[string]any, handlers []iface.Handler) map[string]any {
 	if config == nil {
 		return config
 	}
 
-	// Lens panels have an "attributes" object with type-specific structure
-	if attrs, ok := config["attributes"].(map[string]any); ok {
-		config["attributes"] = populateLensAttributesDefaults(attrs)
+	for _, h := range handlers {
+		if h.ClassifyJSON(config) {
+			config = h.PopulateJSONDefaults(config)
+			break
+		}
 	}
 
-	// Markdown panels have inline top-level fields.
-	if content, hasContent := config["content"]; hasContent {
-		if _, ok := content.(string); ok {
-			settings, _ := config["settings"].(map[string]any)
-			if settings == nil {
-				settings = map[string]any{}
-			}
-			if _, exists := settings["open_links_in_new_tab"]; !exists {
-				settings["open_links_in_new_tab"] = true
-			}
-			config["settings"] = settings
-		}
+	// Lens visualization config_json normalization (opaque attributes.* structure).
+	// Deferred to dashboard-lens-contract: no migrated handler owns this classification yet.
+	if attrs, ok := config["attributes"].(map[string]any); ok {
+		config["attributes"] = populateLensAttributesDefaults(attrs)
 	}
 
 	return config
