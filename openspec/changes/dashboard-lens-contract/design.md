@@ -29,6 +29,8 @@ package lenscommon
 
 type Resolver interface {
     ResolveChartTimeRange(chartLevel *models.TimeRangeModel) kbapi.KbnEsQueryServerTimeRangeSchema
+    // DashboardLensComparableTimeRange returns the dashboard-level time_range API literal used when comparing chart-root API time_range to Terraform prior-state during reads so inherited-from-dashboard ranges collapse to null in state when applicable (REQ-009-style preservation alongside REQ-038 chart semantics).
+    DashboardLensComparableTimeRange() (kbapi.KbnEsQueryServerTimeRangeSchema, bool)
 }
 
 type VizConverter interface {
