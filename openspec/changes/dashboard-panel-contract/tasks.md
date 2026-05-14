@@ -84,8 +84,8 @@
 
 ## 5. Config JSON defaulting
 
-- [ ] 5.1 Refactor `populatePanelConfigJSONDefaults` to dispatch to `handler.ClassifyJSON` and `handler.PopulateJSONDefaults`
-- [ ] 5.2 Remove hard-coded markdown and lens special-casing from `panel_config_defaults.go`
+- [x] 5.1 Refactor `populatePanelConfigJSONDefaults` to dispatch to `handler.ClassifyJSON` and `handler.PopulateJSONDefaults`
+- [x] 5.2 Remove hard-coded markdown special-casing from `panel_config_defaults.go` (Lens `attributes.*` defaulting unchanged; pending `dashboard-lens-contract`)
 
 ## 6. Verification
 
