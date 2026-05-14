@@ -63,6 +63,10 @@
     {
       "template": ".github/workflows-src/reproducer-factory-issue/workflow.md.tmpl",
       "output": ".github/workflows/reproducer-factory-issue.md"
+    },
+    {
+      "template": ".github/workflows-src/issue-classifier/workflow.md.tmpl",
+      "output": ".github/workflows/issue-classifier.md"
     }
   ]
 }

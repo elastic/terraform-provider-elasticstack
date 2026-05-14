@@ -19,7 +19,6 @@ package dashboard
 
 import (
 	"context"
-	"encoding/json"
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -27,26 +26,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
-
-func pinnedPanelSyntheticPanelModel(pp models.PinnedPanelModel) models.PanelModel {
-	return models.PanelModel{
-		Type:                     pp.Type,
-		TimeSliderControlConfig:  pp.TimeSliderControlConfig,
-		EsqlControlConfig:        pp.EsqlControlConfig,
-		OptionsListControlConfig: pp.OptionsListControlConfig,
-		RangeSliderControlConfig: pp.RangeSliderControlConfig,
-	}
-}
-
-func remapPinnedPanelJSON[A any, B any](in A, out *B) error {
-	b, err := json.Marshal(in)
-	if err != nil {
-		return err
-	}
-	return json.Unmarshal(b, out)
-}
 
 func pinnedPanelsDiagnosticsErrorsDetail(d diag.Diagnostics) string {
 	var parts []string
@@ -57,6 +37,21 @@ func pinnedPanelsDiagnosticsErrorsDetail(d diag.Diagnostics) string {
 		parts = append(parts, strings.TrimSpace(x.Summary()+": "+x.Detail()))
 	}
 	return strings.Join(parts, "; ")
+}
+
+// appendHandlerDiagnosticsWithPinnedItemPath rewrites handler-emitted diagnostics onto `itemPath` so list-index
+// context is preserved (iface.PinnedHandler implementations use diag.AddError/AddWarning without paths).
+func appendHandlerDiagnosticsWithPinnedItemPath(dst *diag.Diagnostics, itemPath path.Path, src diag.Diagnostics) {
+	for _, d := range src {
+		switch d.Severity() {
+		case diag.SeverityError:
+			dst.AddAttributeError(itemPath, d.Summary(), d.Detail())
+		case diag.SeverityWarning:
+			dst.AddAttributeWarning(itemPath, d.Summary(), d.Detail())
+		default:
+			dst.Append(diag.WithPath(itemPath, d))
+		}
+	}
 }
 
 func dashboardPinnedPanelsToAPICreateItems(m *models.DashboardModel) (*kbapi.DashboardPinnedPanels, diag.Diagnostics) {
@@ -80,88 +75,13 @@ func dashboardPinnedPanelsToAPICreateItems(m *models.DashboardModel) (*kbapi.Das
 
 func pinnedPanelToPinnedAPIItem(pp models.PinnedPanelModel, itemPath path.Path) (kbapi.DashboardPinnedPanels_Item, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	pm := pinnedPanelSyntheticPanelModel(pp)
+	if !typeutils.IsKnown(pp.Type) {
+		diags.AddAttributeError(itemPath, "Invalid pinned panel entry", "pinned panel `type` must be known.")
+		return kbapi.DashboardPinnedPanels_Item{}, diags
+	}
 
-	switch pm.Type.ValueString() {
-	case panelTypeOptionsListControl:
-		olPanel := kbapi.KbnDashboardPanelTypeOptionsListControl{
-			Grid: kbapi.KbnDashboardPanelGrid{X: 0, Y: 0},
-		}
-		buildOptionsListControlConfig(pm, &olPanel)
-		var group kbapi.KbnControlsSchemasControlsGroupSchemaOptionsListControl
-		if err := remapPinnedPanelJSON(olPanel, &group); err != nil {
-			diags.AddAttributeError(itemPath, "Failed to remap pinned options list control", err.Error())
-			return kbapi.DashboardPinnedPanels_Item{}, diags
-		}
-		var item kbapi.DashboardPinnedPanels_Item
-		if err := item.FromKbnControlsSchemasControlsGroupSchemaOptionsListControl(group); err != nil {
-			diags.AddAttributeError(itemPath, "Failed to build pinned options list control payload", err.Error())
-			return kbapi.DashboardPinnedPanels_Item{}, diags
-		}
-		return item, diags
-
-	case panelTypeRangeSlider:
-		rsPanel := kbapi.KbnDashboardPanelTypeRangeSliderControl{
-			Grid: kbapi.KbnDashboardPanelGrid{X: 0, Y: 0},
-		}
-		buildRangeSliderControlConfig(pm, &rsPanel)
-		var group kbapi.KbnControlsSchemasControlsGroupSchemaRangeSliderControl
-		if err := remapPinnedPanelJSON(rsPanel, &group); err != nil {
-			diags.AddAttributeError(itemPath, "Failed to remap pinned range slider control", err.Error())
-			return kbapi.DashboardPinnedPanels_Item{}, diags
-		}
-		var item kbapi.DashboardPinnedPanels_Item
-		if err := item.FromKbnControlsSchemasControlsGroupSchemaRangeSliderControl(group); err != nil {
-			diags.AddAttributeError(itemPath, "Failed to build pinned range slider control payload", err.Error())
-			return kbapi.DashboardPinnedPanels_Item{}, diags
-		}
-		return item, diags
-
-	case panelTypeTimeSlider:
-		tsPanel := kbapi.KbnDashboardPanelTypeTimeSliderControl{
-			Grid: kbapi.KbnDashboardPanelGrid{X: 0, Y: 0},
-			Config: struct {
-				EndPercentageOfTimeRange   *float32 `json:"end_percentage_of_time_range,omitempty"`
-				IsAnchored                 *bool    `json:"is_anchored,omitempty"`
-				StartPercentageOfTimeRange *float32 `json:"start_percentage_of_time_range,omitempty"`
-			}{},
-		}
-		buildTimeSliderControlConfig(pm, &tsPanel)
-		var group kbapi.KbnControlsSchemasControlsGroupSchemaTimeSliderControl
-		if err := remapPinnedPanelJSON(tsPanel, &group); err != nil {
-			diags.AddAttributeError(itemPath, "Failed to remap pinned time slider control", err.Error())
-			return kbapi.DashboardPinnedPanels_Item{}, diags
-		}
-		var item kbapi.DashboardPinnedPanels_Item
-		if err := item.FromKbnControlsSchemasControlsGroupSchemaTimeSliderControl(group); err != nil {
-			diags.AddAttributeError(itemPath, "Failed to build pinned time slider control payload", err.Error())
-			return kbapi.DashboardPinnedPanels_Item{}, diags
-		}
-		return item, diags
-
-	case panelTypeEsqlControl:
-		esqlPanel := kbapi.KbnDashboardPanelTypeEsqlControl{
-			Grid: kbapi.KbnDashboardPanelGrid{X: 0, Y: 0},
-		}
-		esqlDiags := buildEsqlControlConfig(pm, &esqlPanel)
-		if esqlDiags.HasError() {
-			diags.AddAttributeError(itemPath, "Invalid pinned ES|QL control configuration", pinnedPanelsDiagnosticsErrorsDetail(esqlDiags))
-			return kbapi.DashboardPinnedPanels_Item{}, diags
-		}
-		diags.Append(esqlDiags...)
-		var group kbapi.KbnControlsSchemasControlsGroupSchemaEsqlControl
-		if err := remapPinnedPanelJSON(esqlPanel, &group); err != nil {
-			diags.AddAttributeError(itemPath, "Failed to remap pinned ES|QL control", err.Error())
-			return kbapi.DashboardPinnedPanels_Item{}, diags
-		}
-		var item kbapi.DashboardPinnedPanels_Item
-		if err := item.FromKbnControlsSchemasControlsGroupSchemaEsqlControl(group); err != nil {
-			diags.AddAttributeError(itemPath, "Failed to build pinned ES|QL control payload", err.Error())
-			return kbapi.DashboardPinnedPanels_Item{}, diags
-		}
-		return item, diags
-
-	default:
+	h := LookupHandler(pp.Type.ValueString())
+	if h == nil || h.PinnedHandler() == nil {
 		diags.AddAttributeError(
 			itemPath,
 			"Unsupported pinned panel type",
@@ -169,49 +89,19 @@ func pinnedPanelToPinnedAPIItem(pp models.PinnedPanelModel, itemPath path.Path) 
 		)
 		return kbapi.DashboardPinnedPanels_Item{}, diags
 	}
-}
 
-// seedPinnedPanelModelForRead seeds a pinned panel model with the discriminator
-// from the API response, carrying prior TF state forward only when its `type`
-// matches. populateTf is non-nil only when the prior TF state can be reused for
-// drift preservation in populate*FromAPI helpers.
-func seedPinnedPanelModelForRead(tf *models.PinnedPanelModel, discriminator string) (ppm models.PinnedPanelModel, populateTf *models.PanelModel) {
-	if tf != nil {
-		ppm = *tf
+	ph := h.PinnedHandler()
+	item, itemDiags := ph.ToAPI(pp)
+	if itemDiags.HasError() {
+		summary := "Invalid pinned panel configuration"
+		if pp.Type.ValueString() == panelTypeEsqlControl {
+			summary = "Invalid pinned ES|QL control configuration"
+		}
+		diags.AddAttributeError(itemPath, summary, pinnedPanelsDiagnosticsErrorsDetail(itemDiags))
+		return kbapi.DashboardPinnedPanels_Item{}, diags
 	}
-	ppm.Type = types.StringValue(discriminator)
-
-	if tf != nil && typeutils.IsKnown(tf.Type) && tf.Type.ValueString() == discriminator {
-		pm := pinnedPanelSyntheticPanelModel(*tf)
-		populateTf = &pm
-	} else {
-		ppm.OptionsListControlConfig = nil
-		ppm.RangeSliderControlConfig = nil
-		ppm.TimeSliderControlConfig = nil
-		ppm.EsqlControlConfig = nil
-	}
-
-	return ppm, populateTf
-}
-
-// applyPinnedControlConfig copies the active control config from a synthetic
-// `models.PanelModel` into ppm, clears the other sibling config slots on ppm, and leaves
-// each pinned entry with only the block that matches the active discriminator.
-func pinnedPanelApplyPinnedControlConfig(pp *models.PinnedPanelModel, active string, pm *models.PanelModel) {
-	pp.OptionsListControlConfig = nil
-	pp.RangeSliderControlConfig = nil
-	pp.TimeSliderControlConfig = nil
-	pp.EsqlControlConfig = nil
-	switch active {
-	case panelTypeOptionsListControl:
-		pp.OptionsListControlConfig = pm.OptionsListControlConfig
-	case panelTypeRangeSlider:
-		pp.RangeSliderControlConfig = pm.RangeSliderControlConfig
-	case panelTypeTimeSlider:
-		pp.TimeSliderControlConfig = pm.TimeSliderControlConfig
-	case panelTypeEsqlControl:
-		pp.EsqlControlConfig = pm.EsqlControlConfig
-	}
+	appendHandlerDiagnosticsWithPinnedItemPath(&diags, itemPath, itemDiags)
+	return item, diags
 }
 
 func dashboardMapPinnedPanelsFromAPI(
@@ -243,88 +133,8 @@ func dashboardMapPinnedPanelsFromAPI(
 			return nil, diags
 		}
 
-		switch discriminator {
-		case panelTypeOptionsListControl:
-			group, err := raw.AsKbnControlsSchemasControlsGroupSchemaOptionsListControl()
-			if err != nil {
-				diags.AddAttributeError(itemPath, "Failed to parse pinned options list control", err.Error())
-				return nil, diags
-			}
-			var olPanel kbapi.KbnDashboardPanelTypeOptionsListControl
-			if err := remapPinnedPanelJSON(group, &olPanel); err != nil {
-				diags.AddAttributeError(itemPath, "Failed to remap pinned options list control from API", err.Error())
-				return nil, diags
-			}
-
-			ppm, populateTf := seedPinnedPanelModelForRead(tf, panelTypeOptionsListControl)
-
-			pm := pinnedPanelSyntheticPanelModel(ppm)
-			populateOptionsListControlFromAPI(&pm, populateTf, &olPanel)
-
-			pinnedPanelApplyPinnedControlConfig(&ppm, panelTypeOptionsListControl, &pm)
-			out = append(out, ppm)
-
-		case panelTypeRangeSlider:
-			group, err := raw.AsKbnControlsSchemasControlsGroupSchemaRangeSliderControl()
-			if err != nil {
-				diags.AddAttributeError(itemPath, "Failed to parse pinned range slider control", err.Error())
-				return nil, diags
-			}
-			var rsPanel kbapi.KbnDashboardPanelTypeRangeSliderControl
-			if err := remapPinnedPanelJSON(group, &rsPanel); err != nil {
-				diags.AddAttributeError(itemPath, "Failed to remap pinned range slider control from API", err.Error())
-				return nil, diags
-			}
-
-			ppm, populateTf := seedPinnedPanelModelForRead(tf, panelTypeRangeSlider)
-
-			pm := pinnedPanelSyntheticPanelModel(ppm)
-			populateRangeSliderControlFromAPI(ctx, &pm, populateTf, &rsPanel)
-
-			pinnedPanelApplyPinnedControlConfig(&ppm, panelTypeRangeSlider, &pm)
-			out = append(out, ppm)
-
-		case panelTypeTimeSlider:
-			group, err := raw.AsKbnControlsSchemasControlsGroupSchemaTimeSliderControl()
-			if err != nil {
-				diags.AddAttributeError(itemPath, "Failed to parse pinned time slider control", err.Error())
-				return nil, diags
-			}
-			var tsPanel kbapi.KbnDashboardPanelTypeTimeSliderControl
-			if err := remapPinnedPanelJSON(group, &tsPanel); err != nil {
-				diags.AddAttributeError(itemPath, "Failed to remap pinned time slider control from API", err.Error())
-				return nil, diags
-			}
-
-			ppm, populateTf := seedPinnedPanelModelForRead(tf, panelTypeTimeSlider)
-
-			pm := pinnedPanelSyntheticPanelModel(ppm)
-			populateTimeSliderControlFromAPI(&pm, populateTf, tsPanel.Config)
-
-			pinnedPanelApplyPinnedControlConfig(&ppm, panelTypeTimeSlider, &pm)
-			out = append(out, ppm)
-
-		case panelTypeEsqlControl:
-			group, err := raw.AsKbnControlsSchemasControlsGroupSchemaEsqlControl()
-			if err != nil {
-				diags.AddAttributeError(itemPath, "Failed to parse pinned ES|QL control", err.Error())
-				return nil, diags
-			}
-			var esqlPanel kbapi.KbnDashboardPanelTypeEsqlControl
-			if err := remapPinnedPanelJSON(group, &esqlPanel); err != nil {
-				diags.AddAttributeError(itemPath, "Failed to remap pinned ES|QL control from API", err.Error())
-				return nil, diags
-			}
-
-			ppm, populateTf := seedPinnedPanelModelForRead(tf, panelTypeEsqlControl)
-
-			pm := pinnedPanelSyntheticPanelModel(ppm)
-			populateEsqlControlFromAPI(&pm, populateTf, esqlPanel.Config)
-
-			pinnedPanelApplyPinnedControlConfig(&ppm, panelTypeEsqlControl, &pm)
-			out = append(out, ppm)
-
-		default:
+		h := LookupHandler(discriminator)
+		if h == nil || h.PinnedHandler() == nil {
 			diags.AddAttributeError(
 				itemPath,
 				"Unsupported pinned panel type",
@@ -332,6 +142,13 @@ func dashboardMapPinnedPanelsFromAPI(
 			)
 			return nil, diags
 		}
+
+		ppm, d := h.PinnedHandler().FromAPI(ctx, tf, raw)
+		appendHandlerDiagnosticsWithPinnedItemPath(&diags, itemPath, d)
+		if diags.HasError() {
+			return nil, diags
+		}
+		out = append(out, ppm)
 	}
 
 	return out, diags

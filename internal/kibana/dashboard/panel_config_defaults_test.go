@@ -24,6 +24,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/iface"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/markdown"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 )
 
@@ -102,9 +104,30 @@ func Test_populatePanelConfigJSONDefaults_markdown(t *testing.T) {
 		"content": "body",
 	}
 	result := populatePanelConfigJSONDefaults(input)
-	assert.Equal(t, input, result)
 	assert.Equal(t, "My Panel", result["title"])
 	assert.Equal(t, "body", result["content"])
+	settings := result["settings"].(map[string]any)
+	assert.Equal(t, true, settings["open_links_in_new_tab"])
+}
+
+type markdownPopulateSpy struct {
+	markdown.Handler
+	populateCalls int
+}
+
+func (s *markdownPopulateSpy) PopulateJSONDefaults(cfg map[string]any) map[string]any {
+	s.populateCalls++
+	return s.Handler.PopulateJSONDefaults(cfg)
+}
+
+func Test_populatePanelConfigJSONDefaultsWithHandlers_dispatchStopsAtFirstMatch(t *testing.T) {
+	spy := markdownPopulateSpy{}
+	handlers := []iface.Handler{&spy}
+	input := map[string]any{"title": "My Panel", "content": "body"}
+	result := populatePanelConfigJSONDefaultsWithHandlers(input, handlers)
+	require.Equal(t, 1, spy.populateCalls)
+	settings := result["settings"].(map[string]any)
+	assert.Equal(t, true, settings["open_links_in_new_tab"])
 }
 
 func Test_populatePanelConfigJSONDefaults_unknownLensType(t *testing.T) {
