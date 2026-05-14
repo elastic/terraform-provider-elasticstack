@@ -62,6 +62,7 @@ func TestAccResourceAgentBuilderWorkflow(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceID, "enabled", "true"),
 					resource.TestCheckResourceAttr(resourceID, "valid", "true"),
 					resource.TestCheckResourceAttrSet(resourceID, "configuration_yaml"),
+					resource.TestMatchResourceAttr(resourceID, "configuration_yaml", regexp.MustCompile(`name: Test Workflow`)),
 				),
 			},
 			{
@@ -167,6 +168,88 @@ func TestAccResourceAgentBuilderWorkflowSpace(t *testing.T) {
 	})
 }
 
+// TestAccResourceAgentBuilderWorkflowKibanaConnection exercises the kibana_connection block on
+// the workflow resource (Gap 1: no resource-level test for kibana_connection previously existed).
+func TestAccResourceAgentBuilderWorkflowKibanaConnection(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderAPIVersion, versionutils.FlavorAny)
+
+	workflowID := "workflow-" + uuid.New().String()
+	resourceID := "elasticstack_kibana_agentbuilder_workflow.test"
+
+	checks := []resource.TestCheckFunc{
+		resource.TestCheckResourceAttr(resourceID, "workflow_id", workflowID),
+		resource.TestCheckResourceAttr(resourceID, "space_id", "default"),
+		resource.TestCheckResourceAttr(resourceID, "kibana_connection.#", "1"),
+		resource.TestCheckResourceAttrSet(resourceID, "kibana_connection.0.endpoints.0"),
+		resource.TestCheckResourceAttr(resourceID, "kibana_connection.0.insecure", "false"),
+		resource.TestCheckResourceAttr(resourceID, "valid", "true"),
+	}
+	checks = append(checks, acctest.KibanaConnectionAuthChecks(resourceID)...)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheckWithExplicitKibanaEndpoint(t)
+			acctest.PreCheckWithWorkflowsEnabled(t, minKibanaAgentBuilderAPIVersion)
+		},
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: acctest.KibanaConnectionVariables(config.Variables{
+					"workflow_id": config.StringVariable(workflowID),
+				}),
+				Check: resource.ComposeAggregateTestCheckFunc(checks...),
+			},
+			{
+				// Import ignores kibana_connection (client-side-only, not stored in the API).
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: acctest.KibanaConnectionVariables(config.Variables{
+					"workflow_id": config.StringVariable(workflowID),
+				}),
+				ResourceName:            resourceID,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"kibana_connection"},
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					return s.RootModule().Resources[resourceID].Primary.ID, nil
+				},
+			},
+		},
+	})
+}
+
+// TestAccResourceAgentBuilderWorkflowNoDescription verifies that description is empty string when
+// the YAML configuration omits the description field (Gap 3).
+func TestAccResourceAgentBuilderWorkflowNoDescription(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderAPIVersion, versionutils.FlavorAny)
+
+	workflowID := "workflow-" + uuid.New().String()
+	resourceID := "elasticstack_kibana_agentbuilder_workflow.test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheckWithWorkflowsEnabled(t, minKibanaAgentBuilderAPIVersion) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"workflow_id": config.StringVariable(workflowID),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceID, "workflow_id", workflowID),
+					resource.TestCheckResourceAttr(resourceID, "description", ""),
+					resource.TestCheckResourceAttr(resourceID, "valid", "true"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceAgentBuilderWorkflowInvalidCreate verifies that creating a workflow with an
+// invalid configuration returns an error. Note: the API rejects invalid workflows at creation
+// time (valid=false is not a reachable post-create state), so valid=false cannot be tested
+// directly (Gap 4 — known limitation).
 func TestAccResourceAgentBuilderWorkflowInvalidCreate(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderAPIVersion, versionutils.FlavorAny)
 
