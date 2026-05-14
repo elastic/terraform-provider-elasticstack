@@ -48,13 +48,13 @@ func newMockElasticsearchServerForILM(t *testing.T, handler http.HandlerFunc) *h
 
 func newMockScopedClient(t *testing.T, srv *httptest.Server) *clients.ElasticsearchScopedClient {
 	t.Helper()
-	esClient, err := elasticsearch8.NewClient(elasticsearch8.Config{
+	esClient, err := elasticsearch8.NewTypedClient(elasticsearch8.Config{
 		Addresses: []string{srv.URL},
 		Username:  "elastic",
 		Password:  "changeme",
 	})
 	require.NoError(t, err)
-	return clients.NewElasticsearchScopedClientForTest(esClient.ToTyped(), []string{srv.URL})
+	return clients.NewElasticsearchScopedClientForTest(esClient, []string{srv.URL})
 }
 
 func TestGetIndicesWithILMPolicy(t *testing.T) {

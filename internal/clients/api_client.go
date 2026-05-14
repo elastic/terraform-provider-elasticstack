@@ -82,7 +82,7 @@ func (c *CompositeID) String() string {
 // ElasticsearchScopedClient) obtained through ProviderClientFactory or the
 // acceptance-testing helper constructors.
 type apiClient struct {
-	elasticsearch            *elasticsearch.Client
+	elasticsearch            *elasticsearch.TypedClient
 	elasticsearchClusterInfo *info.Response
 	kibanaOapi               *kibanaoapi.Client
 	fleet                    *fleet.Client
@@ -141,12 +141,12 @@ type MinVersionEnforceable interface {
 	EnforceMinVersion(ctx context.Context, minVersion *version.Version) (bool, diag.Diagnostics)
 }
 
-func buildEsClient(cfg config.Client) (*elasticsearch.Client, error) {
+func buildEsClient(cfg config.Client) (*elasticsearch.TypedClient, error) {
 	if cfg.Elasticsearch == nil {
 		return nil, nil
 	}
 
-	es, err := elasticsearch.NewClient(*cfg.Elasticsearch)
+	es, err := elasticsearch.NewTypedClient(*cfg.Elasticsearch)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create Elasticsearch client: %w", err)
 	}
