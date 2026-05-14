@@ -1,9 +1,9 @@
 ## 1. docker-compose.yml changes
 
-- [ ] 1.1 Update `elasticsearch` service `ports` to use `${BIND_ADDRESS:-127.0.0.1}:${ELASTICSEARCH_PORT}:9200`
-- [ ] 1.2 Update `kibana` service `ports` to use `${BIND_ADDRESS:-127.0.0.1}:${KIBANA_PORT}:5601`
-- [ ] 1.3 Verify `make docker-fleet` still works locally with default `BIND_ADDRESS` (localhost-only)
-- [ ] 1.4 Verify `make docker-fleet BIND_ADDRESS=0.0.0.0` binds to all interfaces
+- [x] 1.1 Update `elasticsearch` service `ports` to use `${BIND_ADDRESS:-127.0.0.1}:${ELASTICSEARCH_PORT}:9200`
+- [x] 1.2 Update `kibana` service `ports` to use `${BIND_ADDRESS:-127.0.0.1}:${KIBANA_PORT}:5601`
+- [x] 1.3 Verify `make docker-fleet` still works locally with default `BIND_ADDRESS` (localhost-only)
+- [x] 1.4 Verify `make docker-fleet BIND_ADDRESS=0.0.0.0` binds to all interfaces
 
 ## 2. Workflow template changes
 
