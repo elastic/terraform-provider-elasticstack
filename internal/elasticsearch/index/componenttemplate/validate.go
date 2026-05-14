@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package template
+package componenttemplate
 
 import (
 	"context"
@@ -24,7 +24,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
-// ValidateConfig enforces plan-time rules that cannot be expressed as block Required flags (REQ-038 / REQ-032 scenario).
+// ValidateConfig enforces plan-time rules that cannot be expressed as block Required flags.
+// Currently: when template.data_stream_options is set, the failure_store block is required.
 func (r *Resource) ValidateConfig(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
 	resp.Diagnostics.Append(datastreamoptions.ValidateRequiresFailureStore(ctx, req.Config)...)
 }

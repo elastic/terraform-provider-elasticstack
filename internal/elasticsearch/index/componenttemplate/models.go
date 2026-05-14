@@ -39,9 +39,10 @@ func (d Data) GetElasticsearchConnection() types.List { return d.ElasticsearchCo
 
 // TemplateModel is the inner shape of the template block.
 type TemplateModel struct {
-	Alias    types.Set                      `tfsdk:"alias"`
-	Mappings jsontypes.Normalized           `tfsdk:"mappings"`
-	Settings customtypes.IndexSettingsValue `tfsdk:"settings"`
+	Alias             types.Set                      `tfsdk:"alias"`
+	Mappings          jsontypes.Normalized           `tfsdk:"mappings"`
+	Settings          customtypes.IndexSettingsValue `tfsdk:"settings"`
+	DataStreamOptions types.Object                   `tfsdk:"data_stream_options"`
 }
 
 // AliasModel is the inner shape of a single alias block element.

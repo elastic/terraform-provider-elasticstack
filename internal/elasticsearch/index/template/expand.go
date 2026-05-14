@@ -25,6 +25,7 @@ import (
 
 	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -215,7 +216,7 @@ func expandTemplateBlock(ctx context.Context, obj types.Object) (*models.Templat
 			diags.AddError("Internal error", fmt.Sprintf("expected Object for data_stream_options, got %T", v))
 			return nil, diags
 		}
-		dso, d := expandDataStreamOptions(dsoObj)
+		dso, d := datastreamoptions.Expand(dsoObj)
 		diags.Append(d...)
 		if diags.HasError() {
 			return nil, diags
@@ -254,44 +255,3 @@ func expandTemplateLifecycle(obj types.Object) *models.LifecycleSettings {
 	return &models.LifecycleSettings{DataRetention: drStr.ValueString()}
 }
 
-func expandDataStreamOptions(obj types.Object) (*models.DataStreamOptions, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	if obj.IsNull() || obj.IsUnknown() {
-		return nil, diags
-	}
-	attrs := obj.Attributes()
-	fsVal, ok := attrs["failure_store"]
-	if !ok || fsVal.IsNull() || fsVal.IsUnknown() {
-		return nil, diags
-	}
-	fsObj, ok := fsVal.(types.Object)
-	if !ok {
-		diags.AddError("Internal error", fmt.Sprintf("expected Object for failure_store, got %T", fsVal))
-		return nil, diags
-	}
-	fsAttrs := fsObj.Attributes()
-	out := &models.DataStreamOptions{
-		FailureStore: &models.FailureStoreOptions{},
-	}
-	if en, ok := fsAttrs["enabled"]; ok && !en.IsNull() && !en.IsUnknown() {
-		if b, ok := en.(types.Bool); ok {
-			out.FailureStore.Enabled = b.ValueBool()
-		}
-	}
-	if lcVal, ok := fsAttrs["lifecycle"]; ok && !lcVal.IsNull() && !lcVal.IsUnknown() {
-		lcObj, ok := lcVal.(types.Object)
-		if !ok {
-			diags.AddError("Internal error", fmt.Sprintf("expected Object for failure_store.lifecycle, got %T", lcVal))
-			return nil, diags
-		}
-		lcAttrs := lcObj.Attributes()
-		if drAttr, ok := lcAttrs["data_retention"]; ok && !drAttr.IsNull() && !drAttr.IsUnknown() {
-			if drStr, ok := drAttr.(types.String); ok {
-				out.FailureStore.Lifecycle = &models.FailureStoreLifecycle{
-					DataRetention: drStr.ValueString(),
-				}
-			}
-		}
-	}
-	return out, diags
-}

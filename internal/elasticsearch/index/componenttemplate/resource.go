@@ -27,10 +27,11 @@ import (
 
 // Ensure provider defined types fully satisfy framework interfaces.
 var (
-	_ resource.Resource                 = newResource()
-	_ resource.ResourceWithConfigure    = newResource()
-	_ resource.ResourceWithImportState  = newResource()
-	_ resource.ResourceWithUpgradeState = newResource()
+	_ resource.Resource                   = newResource()
+	_ resource.ResourceWithConfigure      = newResource()
+	_ resource.ResourceWithImportState    = newResource()
+	_ resource.ResourceWithUpgradeState   = newResource()
+	_ resource.ResourceWithValidateConfig = newResource()
 )
 
 // Resource is the concrete resource type for elasticstack_elasticsearch_component_template.
@@ -66,5 +67,6 @@ func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequ
 func (r *Resource) UpgradeState(_ context.Context) map[int64]resource.StateUpgrader {
 	return map[int64]resource.StateUpgrader{
 		0: upgradeStateV0ToV1(),
+		1: upgradeStateV1ToV2(),
 	}
 }

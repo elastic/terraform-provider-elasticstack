@@ -21,6 +21,7 @@ import (
 	"context"
 
 	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -49,15 +50,16 @@ func aliasAttrTypes() map[string]attr.Type {
 // templateAttrTypes returns the attribute types for the template block object.
 func templateAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"alias":    types.SetType{ElemType: types.ObjectType{AttrTypes: aliasAttrTypes()}},
-		"mappings": jsontypes.NormalizedType{},
-		"settings": customtypes.IndexSettingsType{},
+		"alias":               types.SetType{ElemType: types.ObjectType{AttrTypes: aliasAttrTypes()}},
+		"mappings":            jsontypes.NormalizedType{},
+		"settings":            customtypes.IndexSettingsType{},
+		"data_stream_options": types.ObjectType{AttrTypes: datastreamoptions.AttrTypes()},
 	}
 }
 
 // getSchema returns the Plugin Framework schema for elasticstack_elasticsearch_component_template.
 // The elasticsearch_connection block is NOT included here; the envelope injects it.
-const schemaVersion int64 = 1
+const schemaVersion int64 = 2
 
 func getSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
@@ -165,6 +167,7 @@ func getSchema(_ context.Context) schema.Schema {
 							},
 						},
 					},
+					"data_stream_options": datastreamoptions.Block(),
 				},
 			},
 		},

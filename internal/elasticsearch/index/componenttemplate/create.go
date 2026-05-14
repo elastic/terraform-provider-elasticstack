@@ -23,6 +23,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -33,13 +34,23 @@ import (
 func createComponentTemplate(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, plan Data) (Data, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
+	serverVersion, sdkDiags := client.ServerVersion(ctx)
+	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	if diags.HasError() {
+		return plan, diags
+	}
+	diags.Append(datastreamoptions.EnforceMinServerVersion(plan.Template, serverVersion)...)
+	if diags.HasError() {
+		return plan, diags
+	}
+
 	componentTemplate, d := expandFromData(ctx, plan)
 	diags.Append(d...)
 	if diags.HasError() {
 		return plan, diags
 	}
 
-	sdkDiags := elasticsearch.PutComponentTemplate(ctx, client, &componentTemplate)
+	sdkDiags = elasticsearch.PutComponentTemplate(ctx, client, &componentTemplate)
 	if sdkDiags != nil {
 		diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 		if diags.HasError() {

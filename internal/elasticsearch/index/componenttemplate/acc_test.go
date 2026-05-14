@@ -25,7 +25,9 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -80,6 +82,61 @@ func TestAccResourceComponentTemplateAliasDetails(t *testing.T) {
 						},
 					),
 				),
+			},
+		},
+	})
+}
+
+func TestAccResourceComponentTemplateDataStreamOptions(t *testing.T) {
+	templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	versionutils.SkipIfUnsupported(t, index.MinSupportedDataStreamOptionsVersion, versionutils.FlavorAny)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceComponentTemplateDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(templateName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "name", templateName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "template.data_stream_options.failure_store.enabled", "true"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_enabled"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(templateName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "template.data_stream_options.failure_store.enabled", "false"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_lifecycle"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(templateName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "template.data_stream_options.failure_store.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "template.data_stream_options.failure_store.lifecycle.data_retention", "14d"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_lifecycle"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(templateName),
+				},
+				ImportState:       true,
+				ImportStateVerify: true,
+				ResourceName:      "elasticstack_elasticsearch_component_template.test",
 			},
 		},
 	})
