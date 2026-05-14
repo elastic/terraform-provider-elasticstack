@@ -25,7 +25,7 @@
 
 ## 4. API Wrapper
 
-- [ ] 4.1 In `internal/clients/kibanaoapi/data_views.go`, add `UpdateFieldMetadata(ctx context.Context, client *Client, spaceID string, viewID string, fields map[string]interface{}) diag.Diagnostics`. The implementation SHALL:
+- [x] 4.1 In `internal/clients/kibanaoapi/data_views.go`, add `UpdateFieldMetadata(ctx context.Context, client *Client, spaceID string, viewID string, fields map[string]interface{}) diag.Diagnostics`. The implementation SHALL:
   - Call `client.API.UpdateFieldsMetadataDefaultWithResponse(ctx, viewID, kbapi.UpdateFieldsMetadataDefaultJSONRequestBody{Fields: fields}, kibanautil.SpaceAwarePathRequestEditor(spaceID))`
   - Treat HTTP 200 as success
   - Return error diagnostics for transport errors and unexpected HTTP statuses
