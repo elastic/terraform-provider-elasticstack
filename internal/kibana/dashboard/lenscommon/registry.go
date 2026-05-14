@@ -1,0 +1,72 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package lenscommon
+
+import (
+	"sort"
+
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+)
+
+var convertersByType map[string]VizConverter
+
+// Register adds a VizConverter keyed by VizType(). Later registration replaces an earlier one with the same VizType().
+func Register(c VizConverter) {
+	if convertersByType == nil {
+		convertersByType = make(map[string]VizConverter)
+	}
+	convertersByType[c.VizType()] = c
+}
+
+// ForType returns the converter registered for vizType, or nil if none.
+func ForType(vizType string) VizConverter {
+	if convertersByType == nil {
+		return nil
+	}
+	return convertersByType[vizType]
+}
+
+// FirstForBlocks returns the first converter (in stable All() order) whose HandlesBlocks reports true.
+func FirstForBlocks(blocks *models.LensByValueChartBlocks) (VizConverter, bool) {
+	if blocks == nil {
+		return nil, false
+	}
+	for _, c := range All() {
+		if c.HandlesBlocks(blocks) {
+			return c, true
+		}
+	}
+	return nil, false
+}
+
+// All returns every registered converter sorted by VizType().
+func All() []VizConverter {
+	if len(convertersByType) == 0 {
+		return nil
+	}
+	keys := make([]string, 0, len(convertersByType))
+	for k := range convertersByType {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	out := make([]VizConverter, 0, len(keys))
+	for _, k := range keys {
+		out = append(out, convertersByType[k])
+	}
+	return out
+}
