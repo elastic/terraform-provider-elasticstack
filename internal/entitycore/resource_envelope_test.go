@@ -79,7 +79,12 @@ func testDeleteFunc(_ context.Context, _ *clients.ElasticsearchScopedClient, _ s
 	return nil
 }
 
-func testWriteFuncFound(_ context.Context, _ *clients.ElasticsearchScopedClient, resourceID string, model testResourceModel) (testResourceModel, diag.Diagnostics) {
+func testCreateFuncFound(_ context.Context, _ *clients.ElasticsearchScopedClient, resourceID string, model testResourceModel) (testResourceModel, diag.Diagnostics) {
+	model.ID = types.StringValue("cluster/" + resourceID)
+	return model, nil
+}
+
+func testUpdateFuncFound(_ context.Context, _ *clients.ElasticsearchScopedClient, resourceID string, model testResourceModel, _ testResourceModel) (testResourceModel, diag.Diagnostics) {
 	model.ID = types.StringValue("cluster/" + resourceID)
 	return model, nil
 }
@@ -163,8 +168,8 @@ func newResourceEnvelopeWithFactory(t *testing.T, factory *clients.ProviderClien
 		getTestResourceSchema,
 		testReadFuncFound,
 		testDeleteFunc,
-		testWriteFuncFound,
-		testWriteFuncFound,
+		testCreateFuncFound,
+		testUpdateFuncFound,
 	)
 	r.client = factory
 	return r
@@ -194,7 +199,8 @@ func makeTestResourceState(ctx context.Context, t *testing.T, id string) tfsdk.S
 
 func TestNewElasticsearchResource_typeAssertions(t *testing.T) {
 	t.Parallel()
-	r := NewElasticsearchResource[testResourceModel](ComponentElasticsearch, "test_entity", getTestResourceSchema, testReadFuncFound, testDeleteFunc, testWriteFuncFound, testWriteFuncFound)
+	r := NewElasticsearchResource[testResourceModel](ComponentElasticsearch, "test_entity", getTestResourceSchema, testReadFuncFound, testDeleteFunc, testCreateFuncFound,
+		testUpdateFuncFound)
 	require.NotNil(t, r)
 	require.Implements(t, (*resource.Resource)(nil), r)
 	require.Implements(t, (*resource.ResourceWithConfigure)(nil), r)
@@ -204,7 +210,8 @@ func TestNewElasticsearchResource_typeAssertions(t *testing.T) {
 
 func TestNewElasticsearchResource_Metadata(t *testing.T) {
 	t.Parallel()
-	r := NewElasticsearchResource[testResourceModel](ComponentElasticsearch, "test_entity", getTestResourceSchema, testReadFuncFound, testDeleteFunc, testWriteFuncFound, testWriteFuncFound)
+	r := NewElasticsearchResource[testResourceModel](ComponentElasticsearch, "test_entity", getTestResourceSchema, testReadFuncFound, testDeleteFunc, testCreateFuncFound,
+		testUpdateFuncFound)
 
 	var resp resource.MetadataResponse
 	r.Metadata(context.Background(), resource.MetadataRequest{ProviderTypeName: testProviderTypeName}, &resp)
@@ -214,7 +221,8 @@ func TestNewElasticsearchResource_Metadata(t *testing.T) {
 
 func TestNewElasticsearchResource_schemaInjection(t *testing.T) {
 	t.Parallel()
-	r := NewElasticsearchResource[testResourceModel](ComponentElasticsearch, "test_entity", getTestResourceSchema, testReadFuncFound, testDeleteFunc, testWriteFuncFound, testWriteFuncFound)
+	r := NewElasticsearchResource[testResourceModel](ComponentElasticsearch, "test_entity", getTestResourceSchema, testReadFuncFound, testDeleteFunc, testCreateFuncFound,
+		testUpdateFuncFound)
 
 	var resp resource.SchemaResponse
 	r.Schema(context.Background(), resource.SchemaRequest{}, &resp)
@@ -229,7 +237,8 @@ func TestNewElasticsearchResource_schemaDefensiveClone(t *testing.T) {
 	originalSchema := getTestResourceSchema(context.Background())
 	r := NewElasticsearchResource[testResourceModel](ComponentElasticsearch, "test_entity", func(_ context.Context) rschema.Schema {
 		return originalSchema
-	}, testReadFuncFound, testDeleteFunc, testWriteFuncFound, testWriteFuncFound)
+	}, testReadFuncFound, testDeleteFunc, testCreateFuncFound,
+		testUpdateFuncFound)
 
 	var resp1 resource.SchemaResponse
 	r.Schema(context.Background(), resource.SchemaRequest{}, &resp1)
@@ -247,7 +256,8 @@ func TestNewElasticsearchResource_Configure(t *testing.T) {
 
 	t.Run("nil_provider_data", func(t *testing.T) {
 		t.Parallel()
-		r := NewElasticsearchResource[testResourceModel](ComponentElasticsearch, "test_entity", getTestResourceSchema, testReadFuncFound, testDeleteFunc, testWriteFuncFound, testWriteFuncFound)
+		r := NewElasticsearchResource[testResourceModel](ComponentElasticsearch, "test_entity", getTestResourceSchema, testReadFuncFound, testDeleteFunc, testCreateFuncFound,
+		testUpdateFuncFound)
 		var resp resource.ConfigureResponse
 		r.Configure(ctx, resource.ConfigureRequest{ProviderData: nil}, &resp)
 		require.False(t, resp.Diagnostics.HasError())
@@ -255,7 +265,8 @@ func TestNewElasticsearchResource_Configure(t *testing.T) {
 
 	t.Run("valid_factory", func(t *testing.T) {
 		t.Parallel()
-		r := NewElasticsearchResource[testResourceModel](ComponentElasticsearch, "test_entity", getTestResourceSchema, testReadFuncFound, testDeleteFunc, testWriteFuncFound, testWriteFuncFound)
+		r := NewElasticsearchResource[testResourceModel](ComponentElasticsearch, "test_entity", getTestResourceSchema, testReadFuncFound, testDeleteFunc, testCreateFuncFound,
+		testUpdateFuncFound)
 		f := nonNilTestFactory()
 		var resp resource.ConfigureResponse
 		r.Configure(ctx, resource.ConfigureRequest{ProviderData: f}, &resp)
@@ -264,7 +275,8 @@ func TestNewElasticsearchResource_Configure(t *testing.T) {
 
 	t.Run("invalid_provider_data", func(t *testing.T) {
 		t.Parallel()
-		r := NewElasticsearchResource[testResourceModel](ComponentElasticsearch, "test_entity", getTestResourceSchema, testReadFuncFound, testDeleteFunc, testWriteFuncFound, testWriteFuncFound)
+		r := NewElasticsearchResource[testResourceModel](ComponentElasticsearch, "test_entity", getTestResourceSchema, testReadFuncFound, testDeleteFunc, testCreateFuncFound,
+		testUpdateFuncFound)
 		var resp resource.ConfigureResponse
 		r.Configure(ctx, resource.ConfigureRequest{ProviderData: "wrong-type"}, &resp)
 		require.True(t, resp.Diagnostics.HasError())
@@ -306,8 +318,8 @@ func TestNewElasticsearchResource_Read_notFound(t *testing.T) {
 			return testResourceModel{}, false, nil
 		},
 		testDeleteFunc,
-		testWriteFuncFound,
-		testWriteFuncFound,
+		testCreateFuncFound,
+		testUpdateFuncFound,
 	)
 	r.client = factory
 
@@ -336,8 +348,8 @@ func TestNewElasticsearchResource_Read_shortCircuitStateGetError(t *testing.T) {
 			return testResourceModel{}, false, nil
 		},
 		testDeleteFunc,
-		testWriteFuncFound,
-		testWriteFuncFound,
+		testCreateFuncFound,
+		testUpdateFuncFound,
 	)
 	r.client = factory
 
@@ -381,8 +393,8 @@ func TestNewElasticsearchResource_Read_shortCircuitCompositeIDError(t *testing.T
 			return testResourceModel{}, false, nil
 		},
 		testDeleteFunc,
-		testWriteFuncFound,
-		testWriteFuncFound,
+		testCreateFuncFound,
+		testUpdateFuncFound,
 	)
 	r.client = factory
 
@@ -412,8 +424,8 @@ func TestNewElasticsearchResource_Read_shortCircuitClientError(t *testing.T) {
 			return testResourceModel{}, false, nil
 		},
 		testDeleteFunc,
-		testWriteFuncFound,
-		testWriteFuncFound,
+		testCreateFuncFound,
+		testUpdateFuncFound,
 	)
 	r.client = factory
 
@@ -443,8 +455,8 @@ func TestNewElasticsearchResource_Read_shortCircuitReadFuncError(t *testing.T) {
 			return testResourceModel{}, false, diags
 		},
 		testDeleteFunc,
-		testWriteFuncFound,
-		testWriteFuncFound,
+		testCreateFuncFound,
+		testUpdateFuncFound,
 	)
 	r.client = factory
 
@@ -474,8 +486,8 @@ func TestNewElasticsearchResource_Delete_happyPath(t *testing.T) {
 			deleteCalled = true
 			return nil
 		},
-		testWriteFuncFound,
-		testWriteFuncFound,
+		testCreateFuncFound,
+		testUpdateFuncFound,
 	)
 	r.client = factory
 
@@ -504,8 +516,8 @@ func TestNewElasticsearchResource_Delete_shortCircuitStateGetError(t *testing.T)
 			deleteCalled = true
 			return nil
 		},
-		testWriteFuncFound,
-		testWriteFuncFound,
+		testCreateFuncFound,
+		testUpdateFuncFound,
 	)
 	r.client = factory
 
@@ -548,8 +560,8 @@ func TestNewElasticsearchResource_Delete_shortCircuitCompositeIDError(t *testing
 			deleteCalled = true
 			return nil
 		},
-		testWriteFuncFound,
-		testWriteFuncFound,
+		testCreateFuncFound,
+		testUpdateFuncFound,
 	)
 	r.client = factory
 
@@ -578,8 +590,8 @@ func TestNewElasticsearchResource_Delete_shortCircuitClientError(t *testing.T) {
 			deleteCalled = true
 			return nil
 		},
-		testWriteFuncFound,
-		testWriteFuncFound,
+		testCreateFuncFound,
+		testUpdateFuncFound,
 	)
 	r.client = factory
 
@@ -609,8 +621,8 @@ func TestNewElasticsearchResource_Delete_appendsDeleteFuncDiagnostics(t *testing
 			diags.AddError("delete error", "something went wrong")
 			return diags
 		},
-		testWriteFuncFound,
-		testWriteFuncFound,
+		testCreateFuncFound,
+		testUpdateFuncFound,
 	)
 	r.client = factory
 
@@ -648,8 +660,8 @@ func TestNewElasticsearchResource_Create_happyPath(t *testing.T) {
 		getTestResourceSchema,
 		testReadFuncDistinguishing,
 		testDeleteFunc,
-		testWriteFuncFound,
-		testWriteFuncFound,
+		testCreateFuncFound,
+		testUpdateFuncFound,
 	)
 	r.client = factory
 
@@ -684,7 +696,7 @@ func TestNewElasticsearchResource_Create_nilWriteCallback(t *testing.T) {
 		testReadFuncFound,
 		testDeleteFunc,
 		nilCreate,
-		testWriteFuncFound,
+		testUpdateFuncFound,
 	)
 	r.client = factory
 
@@ -717,7 +729,7 @@ func TestNewElasticsearchResource_write_nilCallbackPrecedesOtherWritePreludeErro
 			testReadFuncFound,
 			testDeleteFunc,
 			nilCreate,
-			testWriteFuncFound,
+			testUpdateFuncFound,
 		)
 		r.client = nonNilTestFactory()
 
@@ -743,7 +755,7 @@ func TestNewElasticsearchResource_write_nilCallbackPrecedesOtherWritePreludeErro
 			testReadFuncFound,
 			testDeleteFunc,
 			nilCreate,
-			testWriteFuncFound,
+			testUpdateFuncFound,
 		)
 		r.client = newTestConfiguredFactory(ctx, t)
 
@@ -774,7 +786,7 @@ func TestNewElasticsearchResource_write_nilCallbackPrecedesOtherWritePreludeErro
 			getTestResourceSchema,
 			testReadFuncFound,
 			testDeleteFunc,
-			testWriteFuncFound,
+			testCreateFuncFound,
 			nilUpdate,
 		)
 		r.client = nonNilTestFactory()
@@ -838,7 +850,7 @@ func TestNewElasticsearchResource_Create_shortCircuitUnknownWriteID(t *testing.T
 			createCalled = true
 			return testResourceModel{}, nil
 		},
-		testWriteFuncFound,
+		testUpdateFuncFound,
 	)
 	r.client = factory
 
@@ -875,7 +887,7 @@ func TestNewElasticsearchResource_Create_shortCircuitClientError(t *testing.T) {
 			createCalled = true
 			return testResourceModel{}, nil
 		},
-		testWriteFuncFound,
+		testUpdateFuncFound,
 	)
 	r.client = factory
 
@@ -907,7 +919,7 @@ func TestNewElasticsearchResource_Create_shortCircuitCallbackError(t *testing.T)
 			diags.AddError("create error", "something went wrong")
 			return testResourceModel{}, diags
 		},
-		testWriteFuncFound,
+		testUpdateFuncFound,
 	)
 	r.client = factory
 
@@ -937,8 +949,8 @@ func TestNewElasticsearchResource_Create_readAfterWriteHappyPath(t *testing.T) {
 			return model, true, nil
 		},
 		testDeleteFunc,
-		testWriteFuncFound,
-		testWriteFuncFound,
+		testCreateFuncFound,
+		testUpdateFuncFound,
 	)
 	r.client = factory
 
@@ -970,8 +982,8 @@ func TestNewElasticsearchResource_Create_notFoundAfterWrite(t *testing.T) {
 			return testResourceModel{}, false, nil
 		},
 		testDeleteFunc,
-		testWriteFuncFound,
-		testWriteFuncFound,
+		testCreateFuncFound,
+		testUpdateFuncFound,
 	)
 	r.client = factory
 
@@ -1003,8 +1015,8 @@ func TestNewElasticsearchResource_Create_readFuncError(t *testing.T) {
 			return testResourceModel{}, false, diags
 		},
 		testDeleteFunc,
-		testWriteFuncFound,
-		testWriteFuncFound,
+		testCreateFuncFound,
+		testUpdateFuncFound,
 	)
 	r.client = factory
 
@@ -1031,8 +1043,8 @@ func TestNewElasticsearchResource_Update_happyPath(t *testing.T) {
 		getTestResourceSchema,
 		testReadFuncDistinguishing,
 		testDeleteFunc,
-		testWriteFuncFound,
-		testWriteFuncFound,
+		testCreateFuncFound,
+		testUpdateFuncFound,
 	)
 	r.client = factory
 
@@ -1065,11 +1077,11 @@ func TestNewElasticsearchResource_Update_invokesUpdateCallbackNotCreate(t *testi
 		testDeleteFunc,
 		func(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, model testResourceModel) (testResourceModel, diag.Diagnostics) {
 			createCalled = true
-			return testWriteFuncFound(ctx, client, resourceID, model)
+			return testCreateFuncFound(ctx, client, resourceID, model)
 		},
-		func(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, model testResourceModel) (testResourceModel, diag.Diagnostics) {
+		func(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, model testResourceModel, prior testResourceModel) (testResourceModel, diag.Diagnostics) {
 			updateCalled = true
-			return testWriteFuncFound(ctx, client, resourceID, model)
+			return testUpdateFuncFound(ctx, client, resourceID, model, prior)
 		},
 	)
 	r.client = factory
@@ -1097,7 +1109,7 @@ func TestNewElasticsearchResource_Update_nilWriteCallback(t *testing.T) {
 		getTestResourceSchema,
 		testReadFuncFound,
 		testDeleteFunc,
-		testWriteFuncFound,
+		testCreateFuncFound,
 		nilUpdate,
 	)
 	r.client = factory
@@ -1122,6 +1134,9 @@ func TestNewElasticsearchResource_Write_shortCircuitEmptyWriteID(t *testing.T) {
 		writeCalled = true
 		return testResourceModel{}, nil
 	}
+	updateWriteFn := func(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, model testResourceModel, _ testResourceModel) (testResourceModel, diag.Diagnostics) {
+		return writeFn(ctx, client, resourceID, model)
+	}
 	r := NewElasticsearchResource[testResourceModel](
 		ComponentElasticsearch,
 		"test_entity",
@@ -1129,7 +1144,7 @@ func TestNewElasticsearchResource_Write_shortCircuitEmptyWriteID(t *testing.T) {
 		testReadFuncFound,
 		testDeleteFunc,
 		writeFn,
-		writeFn,
+		updateWriteFn,
 	)
 	r.client = factory
 
@@ -1174,8 +1189,8 @@ func TestNewElasticsearchResource_Update_shortCircuitUnknownWriteID(t *testing.T
 		getTestResourceSchema,
 		testReadFuncFound,
 		testDeleteFunc,
-		testWriteFuncFound,
-		func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, _ testResourceModel) (testResourceModel, diag.Diagnostics) {
+		testCreateFuncFound,
+		func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, _ testResourceModel, _ testResourceModel) (testResourceModel, diag.Diagnostics) {
 			updateCalled = true
 			return testResourceModel{}, nil
 		},
@@ -1211,8 +1226,8 @@ func TestNewElasticsearchResource_Update_shortCircuitClientError(t *testing.T) {
 		getTestResourceSchema,
 		testReadFuncFound,
 		testDeleteFunc,
-		testWriteFuncFound,
-		func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, _ testResourceModel) (testResourceModel, diag.Diagnostics) {
+		testCreateFuncFound,
+		func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, _ testResourceModel, _ testResourceModel) (testResourceModel, diag.Diagnostics) {
 			updateCalled = true
 			return testResourceModel{}, nil
 		},
@@ -1241,8 +1256,8 @@ func TestNewElasticsearchResource_Update_shortCircuitCallbackError(t *testing.T)
 		getTestResourceSchema,
 		testReadFuncFound,
 		testDeleteFunc,
-		testWriteFuncFound,
-		func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, _ testResourceModel) (testResourceModel, diag.Diagnostics) {
+		testCreateFuncFound,
+		func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, _ testResourceModel, _ testResourceModel) (testResourceModel, diag.Diagnostics) {
 			var diags diag.Diagnostics
 			diags.AddError("update error", "something went wrong")
 			return testResourceModel{}, diags
@@ -1277,8 +1292,8 @@ func TestNewElasticsearchResource_Update_readAfterWriteHappyPath(t *testing.T) {
 			return model, true, nil
 		},
 		testDeleteFunc,
-		testWriteFuncFound,
-		testWriteFuncFound,
+		testCreateFuncFound,
+		testUpdateFuncFound,
 	)
 	r.client = factory
 
@@ -1309,8 +1324,8 @@ func TestNewElasticsearchResource_Update_notFoundAfterWrite(t *testing.T) {
 			return testResourceModel{}, false, nil
 		},
 		testDeleteFunc,
-		testWriteFuncFound,
-		testWriteFuncFound,
+		testCreateFuncFound,
+		testUpdateFuncFound,
 	)
 	r.client = factory
 
@@ -1343,8 +1358,8 @@ func TestNewElasticsearchResource_Update_readFuncError(t *testing.T) {
 			return testResourceModel{}, false, diags
 		},
 		testDeleteFunc,
-		testWriteFuncFound,
-		testWriteFuncFound,
+		testCreateFuncFound,
+		testUpdateFuncFound,
 	)
 	r.client = factory
 
@@ -1400,8 +1415,8 @@ func TestNewElasticsearchResource_CreateAndUpdate_concreteOverridesWin(t *testin
 			getTestResourceSchema,
 			testReadFuncFound,
 			testDeleteFunc,
-			testWriteFuncFound,
-			testWriteFuncFound,
+			testCreateFuncFound,
+			testUpdateFuncFound,
 		),
 	}
 

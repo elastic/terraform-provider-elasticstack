@@ -45,7 +45,7 @@ func newScriptResource() *scriptResource {
 			readScript,
 			deleteScript,
 			writeScript,
-			writeScript,
+			writeScriptUpdate,
 		),
 	}
 }

@@ -45,7 +45,7 @@ func newDataStreamResource() *dataStreamResource {
 			readDataStream,
 			deleteDataStream,
 			createDataStream,
-			createDataStream,
+			updateDataStream,
 		),
 	}
 }

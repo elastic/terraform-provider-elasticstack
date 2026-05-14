@@ -91,3 +91,7 @@ func writeRole(ctx context.Context, client *clients.ElasticsearchScopedClient, r
 	data.ID = types.StringValue(id.String())
 	return data, diags
 }
+
+func writeRoleUpdate(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, data Data, _ Data) (Data, diag.Diagnostics) {
+	return writeRole(ctx, client, resourceID, data)
+}

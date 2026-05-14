@@ -28,7 +28,7 @@ import (
 
 // updateComponentTemplate is the envelope update callback. PUT semantics are
 // identical to create for component templates.
-func updateComponentTemplate(ctx context.Context, client *clients.ElasticsearchScopedClient, _ string, plan Data) (Data, diag.Diagnostics) {
+func updateComponentTemplate(ctx context.Context, client *clients.ElasticsearchScopedClient, _ string, plan Data, _ Data) (Data, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	componentTemplate, d := expandFromData(ctx, plan)

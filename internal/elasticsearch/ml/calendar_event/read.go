@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
@@ -45,6 +46,21 @@ func parseCalendarEventFullCompositeID(id string) (calendarID, eventID string, d
 	return splitCalendarEventResourcePath(parts[1])
 }
 
+func calendarEventReadWindowRFC3339(state CalendarEventTFModel) (start string, end string, ok bool) {
+	if state.StartTime.IsNull() || state.StartTime.IsUnknown() || state.EndTime.IsNull() || state.EndTime.IsUnknown() {
+		return "", "", false
+	}
+	st, d := state.StartTime.ValueRFC3339Time()
+	if d.HasError() {
+		return "", "", false
+	}
+	et, d := state.EndTime.ValueRFC3339Time()
+	if d.HasError() {
+		return "", "", false
+	}
+	return st.UTC().Format(time.RFC3339), et.UTC().Format(time.RFC3339), true
+}
+
 func readCalendarEvent(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state CalendarEventTFModel) (CalendarEventTFModel, bool, fwdiags.Diagnostics) {
 	var diags fwdiags.Diagnostics
 
@@ -62,28 +78,50 @@ func readCalendarEvent(ctx context.Context, client *clients.ElasticsearchScopedC
 		return state, false, diags
 	}
 
-	var found bool
-	pageDiags := walkMLCalendarEventPages(ctx, typedClient, calendarID, func(events []calendarEventWire) bool {
-		for _, event := range events {
-			if calendarEventWireEventID(&event) != eventID {
-				continue
-			}
-			apiModel, convDiags := wireEventToAPIModel(&event)
-			diags.Append(convDiags...)
-			if diags.HasError() {
+	tryWalk := func(startRFC3339, endRFC3339 string) (matched bool, walkDiags fwdiags.Diagnostics) {
+		var inner fwdiags.Diagnostics
+		walk := func(events []calendarEventWire) bool {
+			for _, event := range events {
+				if calendarEventWireEventID(&event) != eventID {
+					continue
+				}
+				apiModel, convDiags := wireEventToAPIModel(&event)
+				inner.Append(convDiags...)
+				if inner.HasError() {
+					return true
+				}
+				inner.Append(state.fromAPIModel(ctx, apiModel)...)
+				if inner.HasError() {
+					return true
+				}
+				matched = true
+				tflog.Debug(ctx, fmt.Sprintf("Successfully read ML calendar event %s from calendar: %s", eventID, calendarID))
 				return true
 			}
-			diags.Append(state.fromAPIModel(ctx, apiModel)...)
-			if diags.HasError() {
-				return true
-			}
-			found = true
-			tflog.Debug(ctx, fmt.Sprintf("Successfully read ML calendar event %s from calendar: %s", eventID, calendarID))
-			return true
+			return false
 		}
-		return false
-	})
-	diags.Append(pageDiags...)
+		if startRFC3339 != "" && endRFC3339 != "" {
+			inner.Append(walkMLCalendarEventPagesWithWindow(ctx, typedClient, calendarID, startRFC3339, endRFC3339, walk)...)
+		} else {
+			inner.Append(walkMLCalendarEventPages(ctx, typedClient, calendarID, walk)...)
+		}
+		return matched, inner
+	}
+
+	windowStart, windowEnd, haveWindow := calendarEventReadWindowRFC3339(state)
+	if haveWindow {
+		found, wdiags := tryWalk(windowStart, windowEnd)
+		diags.Append(wdiags...)
+		if diags.HasError() {
+			return state, false, diags
+		}
+		if found {
+			return state, true, diags
+		}
+	}
+
+	found, wdiags := tryWalk("", "")
+	diags.Append(wdiags...)
 	if diags.HasError() {
 		return state, false, diags
 	}

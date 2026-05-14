@@ -29,7 +29,7 @@ import (
 // updateILM is the envelope update callback. It expands the plan into a Policy, applies
 // version-gating, and PUTs the ILM policy. The ILM PUT is idempotent for both create and
 // update. The envelope invokes readILM after this returns and sets state from the read result.
-func updateILM(ctx context.Context, client *clients.ElasticsearchScopedClient, _ string, plan tfModel) (tfModel, diag.Diagnostics) {
+func updateILM(ctx context.Context, client *clients.ElasticsearchScopedClient, _ string, plan tfModel, _ tfModel) (tfModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	sv, sdkDiags := client.ServerVersion(ctx)

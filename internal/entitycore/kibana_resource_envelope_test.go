@@ -774,10 +774,10 @@ func TestNewKibanaResource_Read_happyPath_fallback(t *testing.T) {
 }
 
 // =============================================================================
-// Additional: multi-slash ID falls back through composite parse
+// Additional: multi-slash ID parses as composite (first slash only)
 // =============================================================================
 
-func TestNewKibanaResource_Read_multiSlashIDFallback(t *testing.T) {
+func TestNewKibanaResource_Read_multiSlashCompositeID(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	factory := newTestConfiguredFactory(ctx, t)
@@ -823,8 +823,9 @@ func TestNewKibanaResource_Read_multiSlashIDFallback(t *testing.T) {
 
 	require.False(t, resp.Diagnostics.HasError())
 	require.True(t, readCalled, "readFunc should be called")
-	require.Equal(t, "fallback-name", receivedResourceID, "fallback should use GetResourceID")
-	require.Equal(t, "fallback-space", receivedSpaceID, "fallback should use GetSpaceID")
+	// Composite IDs split only on the first slash, so the resource segment may contain slashes.
+	require.Equal(t, "b/c", receivedResourceID, "resource segment is everything after the first slash")
+	require.Equal(t, "a", receivedSpaceID, "space segment is everything before the first slash")
 }
 
 // =============================================================================

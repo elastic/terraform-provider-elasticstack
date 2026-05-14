@@ -18,166 +18,42 @@
 package calendar
 
 import (
-	"context"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-framework/types"
+	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	fwtypes "github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestTFModel_toAPICreateModel(t *testing.T) {
-	ctx := context.Background()
-
-	tests := []struct {
-		name           string
-		model          TFModel
-		expectedAPI    *CreateAPIModel
-		expectedJobIDs []string
-	}{
-		{
-			name: "with description and job_ids",
-			model: TFModel{
-				Description: types.StringValue("test calendar"),
-				JobIDs:      mustStringSet(ctx, t, []string{"job1", "job2"}),
-			},
-			expectedAPI: &CreateAPIModel{
-				Description: "test calendar",
-				JobIDs:      []string{"job1", "job2"},
-			},
-		},
-		{
-			name: "with description only",
-			model: TFModel{
-				Description: types.StringValue("just a description"),
-				JobIDs:      types.SetNull(types.StringType),
-			},
-			expectedAPI: &CreateAPIModel{
-				Description: "just a description",
-				JobIDs:      nil,
-			},
-		},
-		{
-			name: "with null description and null job_ids",
-			model: TFModel{
-				Description: types.StringNull(),
-				JobIDs:      types.SetNull(types.StringType),
-			},
-			expectedAPI: &CreateAPIModel{
-				Description: "",
-				JobIDs:      nil,
-			},
-		},
-		{
-			name: "with empty job_ids set",
-			model: TFModel{
-				Description: types.StringValue("empty jobs"),
-				JobIDs:      mustStringSet(ctx, t, []string{}),
-			},
-			expectedAPI: &CreateAPIModel{
-				Description: "empty jobs",
-				JobIDs:      []string{},
-			},
-		},
+func TestNewPutCalendarRequestFromTFModel(t *testing.T) {
+	desc := "hello"
+	m := TFModel{
+		CalendarID:  fwtypes.StringValue("cal-1"),
+		Description: fwtypes.StringValue(desc),
 	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result, diags := tt.model.toAPICreateModel(ctx)
-			require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags)
-			assert.Equal(t, tt.expectedAPI.Description, result.Description)
-			assert.Equal(t, tt.expectedAPI.JobIDs, result.JobIDs)
-		})
-	}
+	req := newPutCalendarRequestFromTFModel(m)
+	require.NotNil(t, req.Description)
+	assert.Equal(t, desc, *req.Description)
 }
 
-func TestTFModel_fromAPIModel(t *testing.T) {
-	ctx := context.Background()
-
-	tests := []struct {
-		name               string
-		initialJobIDs      types.Set
-		apiModel           *APIModel
-		expectedCalendarID string
-		expectedDesc       types.String
-		expectJobIDsNull   bool
-		expectedJobIDs     []string
-	}{
-		{
-			name:          "full API response",
-			initialJobIDs: mustStringSet(ctx, t, []string{"old-job"}),
-			apiModel: &APIModel{
-				CalendarID:  "my-calendar",
-				Description: "A test calendar",
-				JobIDs:      []string{"job1", "job2"},
-			},
-			expectedCalendarID: "my-calendar",
-			expectedDesc:       types.StringValue("A test calendar"),
-			expectedJobIDs:     []string{"job1", "job2"},
-		},
-		{
-			name:          "empty description from API preserved as empty string",
-			initialJobIDs: types.SetNull(types.StringType),
-			apiModel: &APIModel{
-				CalendarID:  "my-calendar",
-				Description: "",
-				JobIDs:      []string{},
-			},
-			expectedCalendarID: "my-calendar",
-			expectedDesc:       types.StringValue(""),
-			expectJobIDsNull:   true,
-		},
-		{
-			name:          "empty job_ids from API with non-null TF state becomes empty set",
-			initialJobIDs: mustStringSet(ctx, t, []string{}),
-			apiModel: &APIModel{
-				CalendarID: "my-calendar",
-				JobIDs:     []string{},
-			},
-			expectedCalendarID: "my-calendar",
-			expectedDesc:       types.StringValue(""),
-			expectedJobIDs:     []string{},
-		},
-		{
-			name:          "empty job_ids from API with null TF state stays null",
-			initialJobIDs: types.SetNull(types.StringType),
-			apiModel: &APIModel{
-				CalendarID: "my-calendar",
-				JobIDs:     []string{},
-			},
-			expectedCalendarID: "my-calendar",
-			expectedDesc:       types.StringValue(""),
-			expectJobIDsNull:   true,
-		},
+func TestApplyTypedCalendarToTFModel(t *testing.T) {
+	d := "from API"
+	c := estypes.Calendar{
+		CalendarId:  "cal-1",
+		Description: &d,
 	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			model := &TFModel{
-				JobIDs: tt.initialJobIDs,
-			}
-
-			diags := model.fromAPIModel(ctx, tt.apiModel)
-			require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags)
-
-			assert.Equal(t, tt.expectedCalendarID, model.CalendarID.ValueString())
-			assert.Equal(t, tt.expectedDesc, model.Description)
-
-			if tt.expectJobIDsNull {
-				assert.True(t, model.JobIDs.IsNull(), "expected JobIDs to be null")
-			} else {
-				var jobIDs []string
-				diags = model.JobIDs.ElementsAs(ctx, &jobIDs, false)
-				require.False(t, diags.HasError())
-				assert.ElementsMatch(t, tt.expectedJobIDs, jobIDs)
-			}
-		})
-	}
+	var m TFModel
+	m.ID = fwtypes.StringValue("cluster/cal-1")
+	applyTypedCalendarToTFModel(&m, &c)
+	assert.Equal(t, "cal-1", m.CalendarID.ValueString())
+	assert.Equal(t, d, m.Description.ValueString())
+	assert.Equal(t, "cluster/cal-1", m.ID.ValueString(), "ID should be left to caller/read envelope")
 }
 
-func mustStringSet(ctx context.Context, t *testing.T, vals []string) types.Set {
-	t.Helper()
-	s, diags := types.SetValueFrom(ctx, types.StringType, vals)
-	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags)
-	return s
+func TestApplyTypedCalendarToTFModel_nilDescription(t *testing.T) {
+	c := estypes.Calendar{CalendarId: "cal-1"}
+	var m TFModel
+	applyTypedCalendarToTFModel(&m, &c)
+	assert.Equal(t, "", m.Description.ValueString())
 }

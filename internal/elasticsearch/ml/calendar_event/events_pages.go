@@ -40,7 +40,27 @@ type typedClientCalendarEventsFetcher struct {
 }
 
 func (f typedClientCalendarEventsFetcher) FetchMLCalendarEventsPage(ctx context.Context, calendarID string, from, size int) ([]calendarEventWire, error) {
-	res, err := f.client.Ml.GetCalendarEvents(calendarID).From(from).Size(size).Perform(ctx)
+	return fetchMLCalendarEventsPage(ctx, f.client, calendarID, from, size, "", "")
+}
+
+type typedClientCalendarEventsWindowFetcher struct {
+	client     *elasticsearch.TypedClient
+	start, end string
+}
+
+func (f typedClientCalendarEventsWindowFetcher) FetchMLCalendarEventsPage(ctx context.Context, calendarID string, from, size int) ([]calendarEventWire, error) {
+	return fetchMLCalendarEventsPage(ctx, f.client, calendarID, from, size, f.start, f.end)
+}
+
+func fetchMLCalendarEventsPage(ctx context.Context, client *elasticsearch.TypedClient, calendarID string, from, size int, startRFC3339, endRFC3339 string) ([]calendarEventWire, error) {
+	q := client.Ml.GetCalendarEvents(calendarID).From(from).Size(size)
+	if startRFC3339 != "" {
+		q = q.Start(startRFC3339)
+	}
+	if endRFC3339 != "" {
+		q = q.End(endRFC3339)
+	}
+	res, err := q.Perform(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -65,6 +85,14 @@ func (f typedClientCalendarEventsFetcher) FetchMLCalendarEventsPage(ctx context.
 // an error occurs, or there are no more events.
 func walkMLCalendarEventPages(ctx context.Context, typedClient *elasticsearch.TypedClient, calendarID string, fn func([]calendarEventWire) (stop bool)) fwdiags.Diagnostics {
 	return walkMLCalendarEventPagesWith(ctx, typedClientCalendarEventsFetcher{client: typedClient}, calendarID, fn)
+}
+
+func walkMLCalendarEventPagesWithWindow(ctx context.Context, typedClient *elasticsearch.TypedClient, calendarID, startRFC3339, endRFC3339 string, fn func([]calendarEventWire) (stop bool)) fwdiags.Diagnostics {
+	return walkMLCalendarEventPagesWith(ctx, typedClientCalendarEventsWindowFetcher{
+		client: typedClient,
+		start:  startRFC3339,
+		end:    endRFC3339,
+	}, calendarID, fn)
 }
 
 func walkMLCalendarEventPagesWith(ctx context.Context, fetcher mlCalendarEventsPageFetcher, calendarID string, fn func([]calendarEventWire) (stop bool)) fwdiags.Diagnostics {

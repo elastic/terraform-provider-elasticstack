@@ -18,78 +18,39 @@
 package calendar
 
 import (
-	"context"
-
-	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/ml/putcalendar"
+	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	fwtypes "github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 type TFModel struct {
-	ID                      types.String `tfsdk:"id"`
-	ElasticsearchConnection types.List   `tfsdk:"elasticsearch_connection"`
-	CalendarID              types.String `tfsdk:"calendar_id"`
-	Description             types.String `tfsdk:"description"`
-	JobIDs                  types.Set    `tfsdk:"job_ids"`
+	ID                      fwtypes.String `tfsdk:"id"`
+	ElasticsearchConnection fwtypes.List   `tfsdk:"elasticsearch_connection"`
+	CalendarID              fwtypes.String `tfsdk:"calendar_id"`
+	Description             fwtypes.String `tfsdk:"description"`
 }
 
 // GetID implements entitycore.ElasticsearchResourceModel.
-func (m TFModel) GetID() types.String { return m.ID }
+func (m TFModel) GetID() fwtypes.String { return m.ID }
 
 // GetResourceID implements entitycore.ElasticsearchResourceModel.
-func (m TFModel) GetResourceID() types.String { return m.CalendarID }
+func (m TFModel) GetResourceID() fwtypes.String { return m.CalendarID }
 
 // GetElasticsearchConnection implements entitycore.ElasticsearchResourceModel.
-func (m TFModel) GetElasticsearchConnection() types.List { return m.ElasticsearchConnection }
+func (m TFModel) GetElasticsearchConnection() fwtypes.List { return m.ElasticsearchConnection }
 
-type CreateAPIModel struct {
-	JobIDs      []string `json:"job_ids,omitempty"`
-	Description string   `json:"description,omitempty"`
+func newPutCalendarRequestFromTFModel(m TFModel) *putcalendar.Request {
+	desc := m.Description.ValueString()
+	return &putcalendar.Request{
+		Description: &desc,
+	}
 }
 
-type APIModel struct {
-	CalendarID  string   `json:"calendar_id"`
-	Description string   `json:"description,omitempty"`
-	JobIDs      []string `json:"job_ids"`
-}
-
-func (m *TFModel) toAPICreateModel(ctx context.Context) (*CreateAPIModel, fwdiags.Diagnostics) {
-	var diags fwdiags.Diagnostics
-
-	apiModel := &CreateAPIModel{
-		Description: m.Description.ValueString(),
-	}
-
-	if !m.JobIDs.IsNull() && !m.JobIDs.IsUnknown() {
-		var jobIDs []string
-		d := m.JobIDs.ElementsAs(ctx, &jobIDs, false)
-		diags.Append(d...)
-		apiModel.JobIDs = jobIDs
-	}
-
-	return apiModel, diags
-}
-
-func (m *TFModel) fromAPIModel(ctx context.Context, apiModel *APIModel) fwdiags.Diagnostics {
-	var diags fwdiags.Diagnostics
-
-	m.CalendarID = types.StringValue(apiModel.CalendarID)
-
-	// Preserve empty string so `description = ""` does not drift to null after refresh.
-	m.Description = types.StringValue(apiModel.Description)
-
-	if len(apiModel.JobIDs) == 0 && m.JobIDs.IsNull() {
-		return diags
-	}
-
-	if len(apiModel.JobIDs) == 0 {
-		emptySet, d := types.SetValueFrom(ctx, types.StringType, []string{})
-		diags.Append(d...)
-		m.JobIDs = emptySet
+func applyTypedCalendarToTFModel(m *TFModel, c *estypes.Calendar) {
+	m.CalendarID = fwtypes.StringValue(c.CalendarId)
+	if c.Description != nil {
+		m.Description = fwtypes.StringValue(*c.Description)
 	} else {
-		jobIDsSet, d := types.SetValueFrom(ctx, types.StringType, apiModel.JobIDs)
-		diags.Append(d...)
-		m.JobIDs = jobIDsSet
+		m.Description = fwtypes.StringValue("")
 	}
-
-	return diags
 }

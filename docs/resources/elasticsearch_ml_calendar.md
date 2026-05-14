@@ -3,12 +3,14 @@
 page_title: "elasticstack_elasticsearch_ml_calendar Resource - terraform-provider-elasticstack"
 subcategory: "Ml"
 description: |-
-  Manages Machine Learning calendars. See the ML Calendar API documentation https://www.elastic.co/guide/en/elasticsearch/reference/current/ml-put-calendar.html for more details.
+  Manages Machine Learning calendars (the calendar definition only). To attach anomaly detection jobs to a calendar, use `elasticstack_elasticsearch_ml_calendar_job`. See the ML put calendar API https://www.elastic.co/guide/en/elasticsearch/reference/current/ml-put-calendar.html for more details. **Import** id format: `<cluster_uuid>/<calendar_id>` (the same value as the computed `id` attribute).
 ---
 
 # elasticstack_elasticsearch_ml_calendar (Resource)
 
-Manages Machine Learning calendars. See the [ML Calendar API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/ml-put-calendar.html) for more details.
+Manages Machine Learning calendars (the calendar definition only). To attach anomaly detection jobs to a calendar, use `elasticstack_elasticsearch_ml_calendar_job`. See the [ML put calendar API](https://www.elastic.co/guide/en/elasticsearch/reference/current/ml-put-calendar.html) for more details.
+
+**Import** id format: `<cluster_uuid>/<calendar_id>` (the same value as the computed `id` attribute).
 
 
 
@@ -23,7 +25,6 @@ Manages Machine Learning calendars. See the [ML Calendar API documentation](http
 
 - `description` (String) A description of the calendar.
 - `elasticsearch_connection` (Block List) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
-- `job_ids` (Set of String) A list of anomaly detection job identifiers.
 
 ### Read-Only
 

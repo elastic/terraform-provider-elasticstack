@@ -57,7 +57,7 @@ func newEnrichPolicyResource() *enrichPolicyResource {
 			readEnrichPolicy,
 			deleteEnrichPolicy,
 			upsertEnrichPolicy,
-			upsertEnrichPolicy,
+			upsertEnrichPolicyUpdate,
 		),
 	}
 }

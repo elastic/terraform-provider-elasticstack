@@ -45,7 +45,7 @@ func newSystemUserResource() *systemUserResource {
 			readSystemUser,
 			deleteSystemUser,
 			writeSystemUser,
-			writeSystemUser,
+			writeSystemUserUpdate,
 		),
 	}
 }

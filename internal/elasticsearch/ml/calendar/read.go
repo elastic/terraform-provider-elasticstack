@@ -28,20 +28,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func calendarTypedToAPIModel(c *types.Calendar) *APIModel {
-	api := &APIModel{
-		CalendarID: c.CalendarId,
-		JobIDs:     c.JobIds,
-	}
-	if api.JobIDs == nil {
-		api.JobIDs = []string{}
-	}
-	if c.Description != nil {
-		api.Description = *c.Description
-	}
-	return api
-}
-
 func readCalendar(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state TFModel) (TFModel, bool, fwdiags.Diagnostics) {
 	var diags fwdiags.Diagnostics
 
@@ -73,10 +59,7 @@ func readCalendar(ctx context.Context, client *clients.ElasticsearchScopedClient
 		return state, false, nil
 	}
 
-	diags.Append(state.fromAPIModel(ctx, calendarTypedToAPIModel(&res.Calendars[0]))...)
-	if diags.HasError() {
-		return state, false, diags
-	}
+	applyTypedCalendarToTFModel(&state, &res.Calendars[0])
 
 	tflog.Debug(ctx, fmt.Sprintf("Successfully read ML calendar: %s", calendarID))
 	return state, true, diags

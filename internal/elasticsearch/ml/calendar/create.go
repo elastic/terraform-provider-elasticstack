@@ -18,9 +18,7 @@
 package calendar
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -35,12 +33,6 @@ func createCalendar(ctx context.Context, client *clients.ElasticsearchScopedClie
 
 	calendarID := resourceID
 
-	apiModel, convDiags := plan.toAPICreateModel(ctx)
-	diags.Append(convDiags...)
-	if diags.HasError() {
-		return plan, diags
-	}
-
 	tflog.Debug(ctx, fmt.Sprintf("Creating ML calendar: %s", calendarID))
 
 	typedClient, err := client.GetESClient()
@@ -49,13 +41,7 @@ func createCalendar(ctx context.Context, client *clients.ElasticsearchScopedClie
 		return plan, diags
 	}
 
-	body, err := json.Marshal(apiModel)
-	if err != nil {
-		diags.AddError("Failed to marshal calendar configuration", err.Error())
-		return plan, diags
-	}
-
-	_, err = typedClient.Ml.PutCalendar(calendarID).Raw(bytes.NewReader(body)).Do(ctx)
+	_, err = typedClient.Ml.PutCalendar(calendarID).Request(newPutCalendarRequestFromTFModel(plan)).Do(ctx)
 	if err != nil {
 		diags.AddError("Failed to create ML calendar", fmt.Sprintf("Unable to create ML calendar: %s — %s", calendarID, err.Error()))
 		return plan, diags

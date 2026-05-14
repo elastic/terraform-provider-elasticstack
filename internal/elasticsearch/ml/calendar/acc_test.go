@@ -32,8 +32,6 @@ import (
 
 func TestAccResourceMLCalendar(t *testing.T) {
 	calendarID := fmt.Sprintf("test-calendar-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
-	jobID := fmt.Sprintf("test-cal-job-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
-	jobID2 := fmt.Sprintf("test-cal-job2-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -43,12 +41,10 @@ func TestAccResourceMLCalendar(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"calendar_id": config.StringVariable(calendarID),
-					"job_id":      config.StringVariable(jobID),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_calendar.test", "calendar_id", calendarID),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_calendar.test", "description", "Test calendar"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_calendar.test", "job_ids.#", "1"),
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_ml_calendar.test", "id"),
 				),
 			},
@@ -57,13 +53,10 @@ func TestAccResourceMLCalendar(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"calendar_id": config.StringVariable(calendarID),
-					"job_id":      config.StringVariable(jobID),
-					"job_id_2":    config.StringVariable(jobID2),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_calendar.test", "calendar_id", calendarID),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_calendar.test", "description", "Test calendar"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_calendar.test", "job_ids.#", "2"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_calendar.test", "description", "Updated calendar description"),
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_ml_calendar.test", "id"),
 				),
 			},
@@ -86,7 +79,6 @@ func TestAccResourceMLCalendarNoJobs(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_calendar.test", "calendar_id", calendarID),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_calendar.test", "description", "Calendar with no jobs"),
-					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_ml_calendar.test", "job_ids.#"),
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_ml_calendar.test", "id"),
 				),
 			},

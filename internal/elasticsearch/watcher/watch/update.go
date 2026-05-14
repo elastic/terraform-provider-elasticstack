@@ -27,7 +27,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func updateWatch(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, plan Data) (Data, diag.Diagnostics) {
+func updateWatch(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, plan Data, _ Data) (Data, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	put, modelDiags := plan.toPutModel(ctx)

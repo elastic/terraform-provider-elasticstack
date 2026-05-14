@@ -25,7 +25,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func updateAlias(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, plan tfModel) (tfModel, diag.Diagnostics) {
+func updateAlias(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, plan tfModel, _ tfModel) (tfModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	diags.Append(plan.Validate(ctx)...)

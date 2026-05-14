@@ -34,7 +34,8 @@ import (
 func getSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: "Manages scheduled events for a Machine Learning calendar. " +
-			"See the [ML post calendar events API](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-ml-post-calendar-events) for more details.",
+			"See the [ML post calendar events API](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-ml-post-calendar-events) for more details. " +
+			"**Import** id format: `<cluster_uuid>/<calendar_id>/<event_id>` (the same value as the computed `id` attribute).",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Internal composite identifier of the resource.",

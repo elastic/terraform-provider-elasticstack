@@ -48,7 +48,7 @@ func newRoleResource() *roleResource {
 			readRole,
 			deleteRole,
 			writeRole,
-			writeRole,
+			writeRoleUpdate,
 		),
 	}
 }

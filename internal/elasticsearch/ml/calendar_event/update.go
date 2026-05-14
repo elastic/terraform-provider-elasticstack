@@ -28,6 +28,6 @@ import (
 // update API (attribute changes use RequiresReplace), but the Elasticsearch envelope still
 // invokes Update when only nested blocks such as elasticsearch_connection change. Returning
 // the plan unchanged lets read refresh state without failing the apply.
-func updateCalendarEventNoOp(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, plan CalendarEventTFModel) (CalendarEventTFModel, diag.Diagnostics) {
+func updateCalendarEventNoOp(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, plan CalendarEventTFModel, _ CalendarEventTFModel) (CalendarEventTFModel, diag.Diagnostics) {
 	return plan, nil
 }

@@ -19,135 +19,42 @@ package calendar
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
-	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-// Update overrides the envelope callback because diffing job_ids requires comparing plan with state.
-func (r *calendarResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	if r.Client() == nil {
-		resp.Diagnostics.AddError("Client not configured", "Provider client is not configured")
-		return
-	}
+func updateCalendar(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, plan TFModel, prior TFModel) (TFModel, fwdiags.Diagnostics) {
+	var diags fwdiags.Diagnostics
 
-	var plan TFModel
-	diags := req.Plan.Get(ctx, &plan)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	calendarID := resourceID
+	if calendarID == "" {
+		diags.AddError("Invalid resource ID", "calendar_id cannot be empty")
+		return plan, diags
 	}
-
-	var state TFModel
-	diags = req.State.Get(ctx, &state)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	calendarID := state.CalendarID.ValueString()
 
 	tflog.Debug(ctx, fmt.Sprintf("Updating ML calendar: %s", calendarID))
 
-	client, connDiags := r.Client().GetElasticsearchClient(ctx, plan.GetElasticsearchConnection())
-	resp.Diagnostics.Append(connDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	typedClient, err := client.GetESClient()
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to get Elasticsearch client", err.Error())
-		return
+		diags.AddError("Failed to get Elasticsearch client", err.Error())
+		return plan, diags
 	}
 
-	res, err := typedClient.Ml.GetCalendars().CalendarId(calendarID).Do(ctx)
+	putModel := plan
+	if !typeutils.IsKnown(plan.Description) && typeutils.IsKnown(prior.Description) {
+		putModel.Description = prior.Description
+	}
+
+	_, err = typedClient.Ml.PutCalendar(calendarID).Request(newPutCalendarRequestFromTFModel(putModel)).Do(ctx)
 	if err != nil {
-		var esErr *types.ElasticsearchError
-		if errors.As(err, &esErr) && esErr.Status == 404 {
-			resp.Diagnostics.AddError("Calendar not found", fmt.Sprintf("Calendar %s not found during update", calendarID))
-			return
-		}
-		resp.Diagnostics.AddError("Failed to get current ML calendar", err.Error())
-		return
+		diags.AddError("Failed to update ML calendar", fmt.Sprintf("Unable to update ML calendar: %s — %s", calendarID, err.Error()))
+		return plan, diags
 	}
-
-	if len(res.Calendars) == 0 {
-		resp.Diagnostics.AddError("Calendar not found", fmt.Sprintf("Calendar %s not found during update", calendarID))
-		return
-	}
-
-	currentCalendar := calendarTypedToAPIModel(&res.Calendars[0])
-
-	currentJobIDSet := make(map[string]struct{})
-	for _, id := range currentCalendar.JobIDs {
-		currentJobIDSet[id] = struct{}{}
-	}
-
-	var planJobIDs []string
-	switch {
-	case !plan.JobIDs.IsNull() && !plan.JobIDs.IsUnknown():
-		d := plan.JobIDs.ElementsAs(ctx, &planJobIDs, false)
-		resp.Diagnostics.Append(d...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-	case plan.JobIDs.IsUnknown():
-		// Unknown must not be interpreted as an empty set (that would delete every job).
-		if !state.JobIDs.IsNull() && !state.JobIDs.IsUnknown() {
-			d := state.JobIDs.ElementsAs(ctx, &planJobIDs, false)
-			resp.Diagnostics.Append(d...)
-			if resp.Diagnostics.HasError() {
-				return
-			}
-		} else {
-			resp.Diagnostics.AddError(
-				"Invalid ML calendar update plan",
-				"`job_ids` is unknown at apply time and prior state has no `job_ids` to fall back on; refusing to update to avoid removing every job from the calendar.",
-			)
-			return
-		}
-	}
-
-	planJobIDSet := make(map[string]struct{})
-	for _, id := range planJobIDs {
-		planJobIDSet[id] = struct{}{}
-	}
-
-	for _, jobID := range planJobIDs {
-		if _, exists := currentJobIDSet[jobID]; !exists {
-			_, err := typedClient.Ml.PutCalendarJob(calendarID, jobID).Do(ctx)
-			if err != nil {
-				resp.Diagnostics.AddError("Failed to add job to calendar", fmt.Sprintf("Failed to add job %s to calendar %s: %s", jobID, calendarID, err.Error()))
-				return
-			}
-		}
-	}
-
-	for _, jobID := range currentCalendar.JobIDs {
-		if _, exists := planJobIDSet[jobID]; !exists {
-			_, err := typedClient.Ml.DeleteCalendarJob(calendarID, jobID).Do(ctx)
-			if err != nil {
-				resp.Diagnostics.AddError("Failed to remove job from calendar", fmt.Sprintf("Failed to remove job %s from calendar %s: %s", jobID, calendarID, err.Error()))
-				return
-			}
-		}
-	}
-
-	readModel, found, readDiags := readCalendar(ctx, client, calendarID, plan)
-	resp.Diagnostics.Append(readDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	if !found {
-		resp.State.RemoveResource(ctx)
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &readModel)...)
 
 	tflog.Debug(ctx, fmt.Sprintf("Successfully updated ML calendar: %s", calendarID))
+	return plan, diags
 }

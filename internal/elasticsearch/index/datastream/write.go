@@ -48,3 +48,7 @@ func createDataStream(ctx context.Context, client *clients.ElasticsearchScopedCl
 	data.ID = types.StringValue(id.String())
 	return data, diags
 }
+
+func updateDataStream(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, data Data, _ Data) (Data, diag.Diagnostics) {
+	return createDataStream(ctx, client, resourceID, data)
+}

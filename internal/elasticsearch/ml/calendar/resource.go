@@ -37,7 +37,6 @@ type calendarResource struct {
 }
 
 func newCalendarResource() *calendarResource {
-	_, updateFn := entitycore.PlaceholderElasticsearchWriteCallbacks[TFModel]()
 	return &calendarResource{
 		ElasticsearchResource: entitycore.NewElasticsearchResource(
 			entitycore.ComponentElasticsearch,
@@ -46,7 +45,7 @@ func newCalendarResource() *calendarResource {
 			readCalendar,
 			deleteCalendar,
 			createCalendar,
-			updateFn,
+			updateCalendar,
 		),
 	}
 }

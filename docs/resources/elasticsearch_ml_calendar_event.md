@@ -3,12 +3,14 @@
 page_title: "elasticstack_elasticsearch_ml_calendar_event Resource - terraform-provider-elasticstack"
 subcategory: "Ml"
 description: |-
-  Manages scheduled events for a Machine Learning calendar. See the ML post calendar events API https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-ml-post-calendar-events for more details.
+  Manages scheduled events for a Machine Learning calendar. See the ML post calendar events API https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-ml-post-calendar-events for more details. **Import** id format: `<cluster_uuid>/<calendar_id>/<event_id>` (the same value as the computed `id` attribute).
 ---
 
 # elasticstack_elasticsearch_ml_calendar_event (Resource)
 
 Manages scheduled events for a Machine Learning calendar. See the [ML post calendar events API](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-ml-post-calendar-events) for more details.
+
+**Import** id format: `<cluster_uuid>/<calendar_id>/<event_id>` (the same value as the computed `id` attribute).
 
 
 

@@ -45,7 +45,7 @@ func newSlmResource() *slmResource {
 			readSlm,
 			deleteSlm,
 			writeSlm,
-			writeSlm,
+			writeSlmUpdate,
 		),
 	}
 }

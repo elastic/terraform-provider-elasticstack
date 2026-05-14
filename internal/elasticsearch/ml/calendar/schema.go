@@ -27,13 +27,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func getSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
-		MarkdownDescription: "Manages Machine Learning calendars. " +
-			"See the [ML Calendar API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/ml-put-calendar.html) for more details.",
+		MarkdownDescription: "Manages Machine Learning calendars (the calendar definition only). " +
+			"To attach anomaly detection jobs to a calendar, use `elasticstack_elasticsearch_ml_calendar_job`. " +
+			"See the [ML put calendar API](https://www.elastic.co/guide/en/elasticsearch/reference/current/ml-put-calendar.html) for more details. " +
+			"**Import** id format: `<cluster_uuid>/<calendar_id>` (the same value as the computed `id` attribute).",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Internal identifier of the resource.",
@@ -63,14 +64,6 @@ func getSchema(_ context.Context) schema.Schema {
 				Optional:            true,
 				Computed:            true,
 				Default:             stringdefault.StaticString(""),
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
-			},
-			"job_ids": schema.SetAttribute{
-				MarkdownDescription: "A list of anomaly detection job identifiers.",
-				Optional:            true,
-				ElementType:         types.StringType,
 			},
 		},
 	}

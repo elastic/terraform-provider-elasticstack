@@ -74,3 +74,7 @@ func writeScript(ctx context.Context, client *clients.ElasticsearchScopedClient,
 	data.ID = types.StringValue(id.String())
 	return data, diags
 }
+
+func writeScriptUpdate(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, data Data, _ Data) (Data, diag.Diagnostics) {
+	return writeScript(ctx, client, resourceID, data)
+}

@@ -47,7 +47,7 @@ func newSnapshotRepositoryResource() *snapshotRepositoryResource {
 			readSnapshotRepository,
 			deleteSnapshotRepository,
 			writeSnapshotRepository,
-			writeSnapshotRepository,
+			writeSnapshotRepositoryUpdate,
 		),
 	}
 }

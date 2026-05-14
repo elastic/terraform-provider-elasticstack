@@ -19,7 +19,9 @@ package calendar_event
 
 import (
 	"testing"
+	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -81,5 +83,28 @@ func TestParseCalendarEventFullCompositeID(t *testing.T) {
 		require.False(t, diags.HasError())
 		assert.Equal(t, "my-cal", cal)
 		assert.Equal(t, "evt/with/slashes", evt)
+	})
+}
+
+func TestCalendarEventReadWindowRFC3339(t *testing.T) {
+	t.Run("unknown times", func(t *testing.T) {
+		var m CalendarEventTFModel
+		m.StartTime = timetypes.NewRFC3339Unknown()
+		m.EndTime = timetypes.NewRFC3339ValueMust(time.Date(2026, 1, 2, 0, 0, 0, 0, time.UTC).Format(time.RFC3339))
+		_, _, ok := calendarEventReadWindowRFC3339(m)
+		assert.False(t, ok)
+	})
+
+	t.Run("known window", func(t *testing.T) {
+		start := time.Date(2026, 6, 1, 0, 0, 0, 0, time.FixedZone("ACST", 9*3600))
+		end := time.Date(2026, 6, 1, 6, 0, 0, 0, time.FixedZone("ACST", 9*3600))
+		m := CalendarEventTFModel{
+			StartTime: timetypes.NewRFC3339TimeValue(start),
+			EndTime:   timetypes.NewRFC3339TimeValue(end),
+		}
+		ws, we, ok := calendarEventReadWindowRFC3339(m)
+		require.True(t, ok)
+		assert.Equal(t, start.UTC().Format(time.RFC3339), ws)
+		assert.Equal(t, end.UTC().Format(time.RFC3339), we)
 	})
 }
