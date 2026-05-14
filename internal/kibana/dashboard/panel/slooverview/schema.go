@@ -80,34 +80,18 @@ func nestedAttributes() map[string]schema.Attribute {
 }
 
 func sharedDisplayAttributes() map[string]schema.Attribute {
-	return map[string]schema.Attribute{
-		"title": schema.StringAttribute{
-			MarkdownDescription: "The title displayed on the panel.",
-			Optional:            true,
-		},
-		"description": schema.StringAttribute{
-			MarkdownDescription: "The description displayed on the panel.",
-			Optional:            true,
-		},
-		"hide_title": schema.BoolAttribute{
-			MarkdownDescription: "When true, the panel title is hidden.",
-			Optional:            true,
-		},
-		"hide_border": schema.BoolAttribute{
-			MarkdownDescription: "When true, the panel border is hidden.",
-			Optional:            true,
-		},
-		"drilldowns": schema.ListNestedAttribute{
-			MarkdownDescription: "URL drilldowns attached to the panel. The trigger (`on_open_panel_menu`) and type (`url_drilldown`) are set automatically.",
-			Optional:            true,
-			NestedObject: panelkit.URLDrilldownSchema(panelkit.URLDrilldownOptions{
-				URLMarkdownDescription:          "The URL template for the drilldown. Variables are documented at https://www.elastic.co/docs/explore-analyze/dashboards/drilldowns#url-template-variable.",
-				LabelMarkdownDescription:        "The display label for the drilldown link.",
-				EncodeURLMarkdownDescription:    "When true, the URL is percent-encoded.",
-				OpenInNewTabMarkdownDescription: "When true, the drilldown URL opens in a new browser tab.",
-			}),
-		},
+	attrs := panelkit.PanelPresentationAttributes()
+	attrs["drilldowns"] = schema.ListNestedAttribute{
+		MarkdownDescription: "URL drilldowns attached to the panel. The trigger (`on_open_panel_menu`) and type (`url_drilldown`) are set automatically.",
+		Optional:            true,
+		NestedObject: panelkit.URLDrilldownSchema(panelkit.URLDrilldownOptions{
+			URLMarkdownDescription:          "The URL template for the drilldown. Variables are documented at https://www.elastic.co/docs/explore-analyze/dashboards/drilldowns#url-template-variable.",
+			LabelMarkdownDescription:        "The display label for the drilldown link.",
+			EncodeURLMarkdownDescription:    "When true, the URL is percent-encoded.",
+			OpenInNewTabMarkdownDescription: "When true, the drilldown URL opens in a new browser tab.",
+		}),
 	}
+	return attrs
 }
 
 func singleAttributes() map[string]schema.Attribute {

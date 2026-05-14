@@ -58,71 +58,41 @@ func SchemaAttribute() schema.Attribute {
 }
 
 func nestedAttributes() map[string]schema.Attribute {
+	byValueAttrs := panelkit.PanelPresentationAttributes()
+	byValueAttrs["content"] = schema.StringAttribute{
+		MarkdownDescription: "Markdown source for the panel body (API `content`).",
+		Required:            true,
+	}
+	byValueAttrs["settings"] = schema.SingleNestedAttribute{
+		MarkdownDescription: "Required settings object for by-value markdown. " +
+			"`open_links_in_new_tab` is optional; when unset, Kibana applies its default (`true`).",
+		Required: true,
+		Attributes: map[string]schema.Attribute{
+			"open_links_in_new_tab": schema.BoolAttribute{
+				MarkdownDescription: "When true, links in the markdown open in a new tab. When omitted, Kibana defaults to true.",
+				Optional:            true,
+			},
+		},
+	}
+
+	byReferenceAttrs := panelkit.PanelPresentationAttributes()
+	byReferenceAttrs["ref_id"] = schema.StringAttribute{
+		MarkdownDescription: "Unique identifier of the markdown library item (API `ref_id`). The provider does not verify the item exists at plan time.",
+		Required:            true,
+	}
+
 	return map[string]schema.Attribute{
 		"by_value": schema.SingleNestedAttribute{
 			MarkdownDescription: "Inline markdown: required `content` and nested `settings` (API `settings` object). " +
 				"Optional `description`, `hide_title`, `title`, and `hide_border`.",
-			Optional: true,
-			Attributes: map[string]schema.Attribute{
-				"content": schema.StringAttribute{
-					MarkdownDescription: "Markdown source for the panel body (API `content`).",
-					Required:            true,
-				},
-				"settings": schema.SingleNestedAttribute{
-					MarkdownDescription: "Required settings object for by-value markdown. " +
-						"`open_links_in_new_tab` is optional; when unset, Kibana applies its default (`true`).",
-					Required: true,
-					Attributes: map[string]schema.Attribute{
-						"open_links_in_new_tab": schema.BoolAttribute{
-							MarkdownDescription: "When true, links in the markdown open in a new tab. When omitted, Kibana defaults to true.",
-							Optional:            true,
-						},
-					},
-				},
-				"description": schema.StringAttribute{
-					MarkdownDescription: "Optional panel description.",
-					Optional:            true,
-				},
-				"hide_title": schema.BoolAttribute{
-					MarkdownDescription: "When true, suppresses the panel title.",
-					Optional:            true,
-				},
-				"title": schema.StringAttribute{
-					MarkdownDescription: "Optional panel title.",
-					Optional:            true,
-				},
-				"hide_border": schema.BoolAttribute{
-					MarkdownDescription: "When true, suppresses the panel border.",
-					Optional:            true,
-				},
-			},
+			Optional:   true,
+			Attributes: byValueAttrs,
 		},
 		"by_reference": schema.SingleNestedAttribute{
 			MarkdownDescription: "Reference an existing markdown library item via `ref_id`. " +
 				"Optional `description`, `hide_title`, `title`, and `hide_border`.",
-			Optional: true,
-			Attributes: map[string]schema.Attribute{
-				"ref_id": schema.StringAttribute{
-					MarkdownDescription: "Unique identifier of the markdown library item (API `ref_id`). The provider does not verify the item exists at plan time.",
-					Required:            true,
-				},
-				"description": schema.StringAttribute{
-					MarkdownDescription: "Optional panel description.",
-					Optional:            true,
-				},
-				"hide_title": schema.BoolAttribute{
-					MarkdownDescription: "When true, suppresses the panel title.",
-					Optional:            true,
-				},
-				"title": schema.StringAttribute{
-					MarkdownDescription: "Optional panel title.",
-					Optional:            true,
-				},
-				"hide_border": schema.BoolAttribute{
-					MarkdownDescription: "When true, suppresses the panel border.",
-					Optional:            true,
-				},
-			},
+			Optional:   true,
+			Attributes: byReferenceAttrs,
 		},
 	}
 }

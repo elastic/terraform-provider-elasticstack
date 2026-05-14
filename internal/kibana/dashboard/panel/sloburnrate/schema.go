@@ -29,54 +29,39 @@ import (
 
 // SchemaAttribute returns the slo_burn_rate_config SingleNestedAttribute definition.
 func SchemaAttribute() schema.Attribute {
+	attrs := panelkit.PanelPresentationAttributes()
+	attrs["slo_id"] = schema.StringAttribute{
+		MarkdownDescription: "The ID of the SLO to display the burn rate for.",
+		Required:            true,
+	}
+	attrs["duration"] = schema.StringAttribute{
+		MarkdownDescription: "Duration for the burn rate chart in the format `[value][unit]`, where unit is `m` (minutes), `h` (hours), or `d` (days). For example: `5m`, `3h`, `6d`.",
+		Required:            true,
+		Validators: []validator.String{
+			stringvalidator.RegexMatches(
+				sloBurnRateDurationRegexp,
+				"must match the pattern `^\\d+[mhd]$` (a positive integer followed by m, h, or d)",
+			),
+		},
+	}
+	attrs["slo_instance_id"] = schema.StringAttribute{
+		MarkdownDescription: "ID of the SLO instance. Set when the SLO uses `group_by`; identifies which instance to show. Omit to show all instances (API default `\"*\"`).",
+		Optional:            true,
+	}
+	attrs["drilldowns"] = schema.ListNestedAttribute{
+		MarkdownDescription: "Optional list of URL drilldowns attached to the panel.",
+		Optional:            true,
+		NestedObject:        panelkit.URLDrilldownSchema(panelkit.URLDrilldownOptions{}),
+	}
+
 	return schema.SingleNestedAttribute{
 		MarkdownDescription: panelkit.PanelConfigDescription(
 			"Configuration for an SLO burn rate panel. Use this for panels that visualize the burn rate of an SLO over a configurable look-back window.",
 			"slo_burn_rate_config",
 			panelkit.TypedSiblingPanelConfigBlockNames(),
 		),
-		Optional: true,
-		Attributes: map[string]schema.Attribute{
-			"slo_id": schema.StringAttribute{
-				MarkdownDescription: "The ID of the SLO to display the burn rate for.",
-				Required:            true,
-			},
-			"duration": schema.StringAttribute{
-				MarkdownDescription: "Duration for the burn rate chart in the format `[value][unit]`, where unit is `m` (minutes), `h` (hours), or `d` (days). For example: `5m`, `3h`, `6d`.",
-				Required:            true,
-				Validators: []validator.String{
-					stringvalidator.RegexMatches(
-						sloBurnRateDurationRegexp,
-						"must match the pattern `^\\d+[mhd]$` (a positive integer followed by m, h, or d)",
-					),
-				},
-			},
-			"slo_instance_id": schema.StringAttribute{
-				MarkdownDescription: "ID of the SLO instance. Set when the SLO uses `group_by`; identifies which instance to show. Omit to show all instances (API default `\"*\"`).",
-				Optional:            true,
-			},
-			"title": schema.StringAttribute{
-				MarkdownDescription: "Optional panel title.",
-				Optional:            true,
-			},
-			"description": schema.StringAttribute{
-				MarkdownDescription: "Optional panel description.",
-				Optional:            true,
-			},
-			"hide_title": schema.BoolAttribute{
-				MarkdownDescription: "When true, hides the panel title.",
-				Optional:            true,
-			},
-			"hide_border": schema.BoolAttribute{
-				MarkdownDescription: "When true, hides the panel border.",
-				Optional:            true,
-			},
-			"drilldowns": schema.ListNestedAttribute{
-				MarkdownDescription: "Optional list of URL drilldowns attached to the panel.",
-				Optional:            true,
-				NestedObject:        panelkit.URLDrilldownSchema(panelkit.URLDrilldownOptions{}),
-			},
-		},
+		Optional:   true,
+		Attributes: attrs,
 		Validators: []validator.Object{
 			objectvalidator.ConflictsWith(
 				panelkit.SiblingTypedPanelConfigConflictPathsExcept("slo_burn_rate_config", panelkit.TypedSiblingPanelConfigBlockNames())...,

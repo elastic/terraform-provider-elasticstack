@@ -63,95 +63,79 @@ func SchemaAttribute() schema.Attribute {
 }
 
 func nestedAttributes() map[string]schema.Attribute {
-	return map[string]schema.Attribute{
-		"src": schema.SingleNestedAttribute{
-			MarkdownDescription: imagePanelSrcDescription,
-			Required:            true,
-			Attributes: map[string]schema.Attribute{
-				"file": schema.SingleNestedAttribute{
-					MarkdownDescription: "Use an uploaded file as the image source. Mutually exclusive with `url` inside `src`.",
-					Optional:            true,
-					Attributes: map[string]schema.Attribute{
-						"file_id": schema.StringAttribute{
-							MarkdownDescription: "Kibana file identifier for the uploaded image.",
-							Required:            true,
-							Validators: []validator.String{
-								stringvalidator.LengthAtLeast(1),
-							},
-						},
-					},
-				},
-				"url": schema.SingleNestedAttribute{
-					MarkdownDescription: "Use an external URL as the image source. Mutually exclusive with `file` inside `src`.",
-					Optional:            true,
-					Attributes: map[string]schema.Attribute{
-						"url": schema.StringAttribute{
-							MarkdownDescription: "HTTPS or HTTP URL of the image.",
-							Required:            true,
-							Validators: []validator.String{
-								stringvalidator.LengthAtLeast(1),
-							},
+	attrs := panelkit.PanelPresentationAttributes()
+	attrs["src"] = schema.SingleNestedAttribute{
+		MarkdownDescription: imagePanelSrcDescription,
+		Required:            true,
+		Attributes: map[string]schema.Attribute{
+			"file": schema.SingleNestedAttribute{
+				MarkdownDescription: "Use an uploaded file as the image source. Mutually exclusive with `url` inside `src`.",
+				Optional:            true,
+				Attributes: map[string]schema.Attribute{
+					"file_id": schema.StringAttribute{
+						MarkdownDescription: "Kibana file identifier for the uploaded image.",
+						Required:            true,
+						Validators: []validator.String{
+							stringvalidator.LengthAtLeast(1),
 						},
 					},
 				},
 			},
-			Validators: []validator.Object{
-				panelkit.ExactlyOneOfNestedAttrsValidator(panelkit.ExactlyOneOfNestedAttrsOpts{
-					AttrNames:     []string{"file", "url"},
-					Summary:       "Invalid image_config.src",
-					MissingDetail: "Exactly one of `file` or `url` must be set inside `src`.",
-					TooManyDetail: "Exactly one of `file` or `url` must be set inside `src`, not both.",
-					Description:   "Ensures exactly one of `file` or `url` is set inside `image_config.src`.",
-				}),
-			},
-		},
-		"alt_text": schema.StringAttribute{
-			MarkdownDescription: "Accessible alternate text for the image.",
-			Optional:            true,
-		},
-		"object_fit": schema.StringAttribute{
-			MarkdownDescription: "How the image is sized within its panel container. Omit to leave unset; the Kibana API defaults to `contain`. " +
-				"Unset values stay null in Terraform state when the API echoes that default (REQ-009).",
-			Optional: true,
-			Validators: []validator.String{
-				stringvalidator.OneOf("fill", "contain", "cover", "none"),
-			},
-		},
-		"background_color": schema.StringAttribute{
-			MarkdownDescription: "Background color behind the image (CSS color string).",
-			Optional:            true,
-		},
-		"title": schema.StringAttribute{
-			MarkdownDescription: "Panel title shown by Kibana.",
-			Optional:            true,
-		},
-		"description": schema.StringAttribute{
-			MarkdownDescription: "Panel description shown by Kibana.",
-			Optional:            true,
-		},
-		"hide_title": schema.BoolAttribute{
-			MarkdownDescription: "When true, hides the panel title.",
-			Optional:            true,
-		},
-		"hide_border": schema.BoolAttribute{
-			MarkdownDescription: "When true, hides the panel border.",
-			Optional:            true,
-		},
-		"drilldowns": schema.ListNestedAttribute{
-			MarkdownDescription: imagePanelDrilldownsDescription,
-			Optional:            true,
-			Validators: []validator.List{
-				listvalidator.SizeAtMost(100),
-			},
-			NestedObject: panelkit.ImageDrilldownSchema(panelkit.ImageDrilldownOptions{
-				DashboardMarkdownDescriptions: panelkit.ImageDashboardDrilldownDescriptions{},
-				URLDrilldownMarkdown: panelkit.ImageURLDrilldownOptions{
-					URLMarkdownDescription:          imagePanelURLDrilldownURLDescription,
-					EncodeURLMarkdownDescription:    "When true, the URL is percent-encoded. Omit to use the API default; unset stays null when the API echoes the default (REQ-009).",
-					OpenInNewTabMarkdownDescription: "When true, opens in a new browser tab. Omit to use the API default; unset stays null when the API echoes the default (REQ-009).",
+			"url": schema.SingleNestedAttribute{
+				MarkdownDescription: "Use an external URL as the image source. Mutually exclusive with `file` inside `src`.",
+				Optional:            true,
+				Attributes: map[string]schema.Attribute{
+					"url": schema.StringAttribute{
+						MarkdownDescription: "HTTPS or HTTP URL of the image.",
+						Required:            true,
+						Validators: []validator.String{
+							stringvalidator.LengthAtLeast(1),
+						},
+					},
 				},
+			},
+		},
+		Validators: []validator.Object{
+			panelkit.ExactlyOneOfNestedAttrsValidator(panelkit.ExactlyOneOfNestedAttrsOpts{
+				AttrNames:     []string{"file", "url"},
+				Summary:       "Invalid image_config.src",
+				MissingDetail: "Exactly one of `file` or `url` must be set inside `src`.",
+				TooManyDetail: "Exactly one of `file` or `url` must be set inside `src`, not both.",
+				Description:   "Ensures exactly one of `file` or `url` is set inside `image_config.src`.",
 			}),
 		},
 	}
+	attrs["alt_text"] = schema.StringAttribute{
+		MarkdownDescription: "Accessible alternate text for the image.",
+		Optional:            true,
+	}
+	attrs["object_fit"] = schema.StringAttribute{
+		MarkdownDescription: "How the image is sized within its panel container. Omit to leave unset; the Kibana API defaults to `contain`. " +
+			"Unset values stay null in Terraform state when the API echoes that default (REQ-009).",
+		Optional: true,
+		Validators: []validator.String{
+			stringvalidator.OneOf("fill", "contain", "cover", "none"),
+		},
+	}
+	attrs["background_color"] = schema.StringAttribute{
+		MarkdownDescription: "Background color behind the image (CSS color string).",
+		Optional:            true,
+	}
+	attrs["drilldowns"] = schema.ListNestedAttribute{
+		MarkdownDescription: imagePanelDrilldownsDescription,
+		Optional:            true,
+		Validators: []validator.List{
+			listvalidator.SizeAtMost(100),
+		},
+		NestedObject: panelkit.ImageDrilldownSchema(panelkit.ImageDrilldownOptions{
+			DashboardMarkdownDescriptions: panelkit.ImageDashboardDrilldownDescriptions{},
+			URLDrilldownMarkdown: panelkit.ImageURLDrilldownOptions{
+				URLMarkdownDescription:          imagePanelURLDrilldownURLDescription,
+				EncodeURLMarkdownDescription:    "When true, the URL is percent-encoded. Omit to use the API default; unset stays null when the API echoes the default (REQ-009).",
+				OpenInNewTabMarkdownDescription: "When true, opens in a new browser tab. Omit to use the API default; unset stays null when the API echoes the default (REQ-009).",
+			},
+		}),
+	}
+	return attrs
 }
 

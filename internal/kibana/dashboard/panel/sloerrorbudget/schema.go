@@ -30,49 +30,34 @@ const panelType = "slo_error_budget"
 
 // SchemaAttribute returns the slo_error_budget_config SingleNestedAttribute definition.
 func SchemaAttribute() schema.Attribute {
+	attrs := panelkit.PanelPresentationAttributes()
+	attrs["slo_id"] = schema.StringAttribute{
+		MarkdownDescription: "The ID of the SLO to display the error budget for.",
+		Required:            true,
+	}
+	attrs["slo_instance_id"] = schema.StringAttribute{
+		MarkdownDescription: "ID of the SLO instance. Set when the SLO uses group_by; identifies which instance to show. Defaults to `*` (all instances) when omitted.",
+		Optional:            true,
+	}
+	attrs["drilldowns"] = schema.ListNestedAttribute{
+		MarkdownDescription: "URL drilldowns to configure on the panel.",
+		Optional:            true,
+		NestedObject: panelkit.URLDrilldownSchema(panelkit.URLDrilldownOptions{
+			URLMarkdownDescription:          "Templated URL. Variables documented at https://www.elastic.co/docs/explore-analyze/dashboards/drilldowns#url-template-variable",
+			LabelMarkdownDescription:        "The label displayed for the drilldown.",
+			EncodeURLMarkdownDescription:    "When true, the URL is escaped using percent encoding. Defaults to `true` when omitted.",
+			OpenInNewTabMarkdownDescription: "When true, the drilldown URL opens in a new browser tab. Defaults to `true` when omitted.",
+		}),
+	}
+
 	return schema.SingleNestedAttribute{
 		MarkdownDescription: panelkit.PanelConfigDescription(
 			"Configuration for an SLO error budget panel. Displays the burn chart of remaining error budget for a specific SLO.",
 			"slo_error_budget_config",
 			panelkit.TypedSiblingPanelConfigBlockNames(),
 		),
-		Optional: true,
-		Attributes: map[string]schema.Attribute{
-			"slo_id": schema.StringAttribute{
-				MarkdownDescription: "The ID of the SLO to display the error budget for.",
-				Required:            true,
-			},
-			"slo_instance_id": schema.StringAttribute{
-				MarkdownDescription: "ID of the SLO instance. Set when the SLO uses group_by; identifies which instance to show. Defaults to `*` (all instances) when omitted.",
-				Optional:            true,
-			},
-			"title": schema.StringAttribute{
-				MarkdownDescription: "The title displayed in the panel header.",
-				Optional:            true,
-			},
-			"description": schema.StringAttribute{
-				MarkdownDescription: "The description of the panel.",
-				Optional:            true,
-			},
-			"hide_title": schema.BoolAttribute{
-				MarkdownDescription: "Hide the title of the panel.",
-				Optional:            true,
-			},
-			"hide_border": schema.BoolAttribute{
-				MarkdownDescription: "Hide the border of the panel.",
-				Optional:            true,
-			},
-			"drilldowns": schema.ListNestedAttribute{
-				MarkdownDescription: "URL drilldowns to configure on the panel.",
-				Optional:            true,
-				NestedObject: panelkit.URLDrilldownSchema(panelkit.URLDrilldownOptions{
-					URLMarkdownDescription:          "Templated URL. Variables documented at https://www.elastic.co/docs/explore-analyze/dashboards/drilldowns#url-template-variable",
-					LabelMarkdownDescription:        "The label displayed for the drilldown.",
-					EncodeURLMarkdownDescription:    "When true, the URL is escaped using percent encoding. Defaults to `true` when omitted.",
-					OpenInNewTabMarkdownDescription: "When true, the drilldown URL opens in a new browser tab. Defaults to `true` when omitted.",
-				}),
-			},
-		},
+		Optional:   true,
+		Attributes: attrs,
 		Validators: []validator.Object{
 			objectvalidator.ConflictsWith(
 				panelkit.SiblingTypedPanelConfigConflictPathsExcept("slo_error_budget_config", panelkit.TypedSiblingPanelConfigBlockNames())...,
