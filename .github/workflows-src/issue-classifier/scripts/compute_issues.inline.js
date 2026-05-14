@@ -15,11 +15,10 @@ if (context.eventName === 'issues') {
   mode = 'scheduled';
 }
 
-// Preserve the original trigger for output reporting
+// Preserve original trigger name; dispatch-without-input falls through to scheduled logic
 const originalMode = mode;
 
 if (mode === 'event') {
-  // Fix 2: null-guard on context.payload.issue
   const issue = context.payload.issue;
   if (!issue) {
     core.setFailed('issues event payload missing issue object');
@@ -42,7 +41,6 @@ if (mode === 'event') {
   const inputIssueNumber = context.payload.inputs?.issue_number;
 
   if (inputIssueNumber) {
-    // Fix 1: parseInt with radix 10 and validation
     const issueNum = parseInt(inputIssueNumber, 10);
     if (!Number.isInteger(issueNum) || issueNum <= 0) {
       core.setFailed(`Invalid issue_number input: "${inputIssueNumber}"`);
@@ -74,7 +72,6 @@ if (mode === 'event') {
 }
 
 if (mode === 'scheduled') {
-  // Fix 3: single listForRepo call instead of paginate (only need up to 5 issues)
   const { data: allIssues } = await github.rest.issues.listForRepo({
     owner,
     repo,
@@ -100,7 +97,6 @@ if (mode === 'scheduled') {
   }
 }
 
-// Fix 4 & 5: use originalMode for output, defensive fallbacks on all outputs
 core.setOutput('mode', originalMode ?? mode);
 core.setOutput('issues_json', issues_json ?? '[]');
 core.setOutput('issue_count', String(issue_count ?? 0));
