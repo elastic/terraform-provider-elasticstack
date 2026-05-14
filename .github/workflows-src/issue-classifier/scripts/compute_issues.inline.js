@@ -40,7 +40,7 @@ if (mode === 'event') {
 } else if (mode === 'dispatch') {
   const inputIssueNumber = context.payload.inputs?.issue_number;
 
-  if (inputIssueNumber) {
+  if (inputIssueNumber != null && inputIssueNumber !== '') {
     const issueNum = parseInt(inputIssueNumber, 10);
     if (!Number.isInteger(issueNum) || issueNum <= 0) {
       core.setFailed(`Invalid issue_number input: "${inputIssueNumber}"`);
@@ -72,7 +72,7 @@ if (mode === 'event') {
 }
 
 if (mode === 'scheduled') {
-  const { data: allIssues } = await github.rest.issues.listForRepo({
+  const allIssues = await github.paginate(github.rest.issues.listForRepo, {
     owner,
     repo,
     state: 'open',

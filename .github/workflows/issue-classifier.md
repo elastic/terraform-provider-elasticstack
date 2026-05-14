@@ -63,7 +63,7 @@ on:
           } else if (mode === 'dispatch') {
             const inputIssueNumber = context.payload.inputs?.issue_number;
           
-            if (inputIssueNumber) {
+            if (inputIssueNumber != null && inputIssueNumber !== '') {
               const issueNum = parseInt(inputIssueNumber, 10);
               if (!Number.isInteger(issueNum) || issueNum <= 0) {
                 core.setFailed(`Invalid issue_number input: "${inputIssueNumber}"`);
@@ -95,7 +95,7 @@ on:
           }
           
           if (mode === 'scheduled') {
-            const { data: allIssues } = await github.rest.issues.listForRepo({
+            const allIssues = await github.paginate(github.rest.issues.listForRepo, {
               owner,
               repo,
               state: 'open',
@@ -149,7 +149,6 @@ safe-outputs:
     max: 5
     target: "*"
     hide-older-comments: true
-    allowed-reasons: [outdated]
     footer: false
   noop:
     max: 1
