@@ -17,27 +17,12 @@
 
 package lenscommon
 
-const (
-	lensPieChartTypeNumber  = "number"
-	lensPieChartTypePercent = "percent"
-	lensDashboardAverage    = "average"
-)
-
-func isLegacyMetricFieldMetricOperation(operation string) bool {
-	switch operation {
-	case "count", "unique_count", "min", "max", lensDashboardAverage, "median", "standard_deviation", "sum", "last_value", "percentile", "percentile_rank":
-		return true
-	default:
-		return false
-	}
-}
-
 // PopulateLegacyMetricMetricDefaults populates default values for legacy metric metric_json maps.
 func PopulateLegacyMetricMetricDefaults(model map[string]any) map[string]any {
 	if model == nil {
 		return model
 	}
-	if operation, ok := model["operation"].(string); ok && isLegacyMetricFieldMetricOperation(operation) {
+	if operation, ok := model["operation"].(string); ok && IsFieldMetricOperation(operation) {
 		if _, exists := model["show_array_values"]; !exists {
 			model["show_array_values"] = false
 		}
@@ -50,7 +35,7 @@ func PopulateLegacyMetricMetricDefaults(model map[string]any) map[string]any {
 	if ok {
 		if formatType, ok := format["type"].(string); ok {
 			switch formatType {
-			case lensPieChartTypeNumber, lensPieChartTypePercent:
+			case pieChartTypeNumber, pieChartTypePercent:
 				if _, exists := format["decimals"]; !exists {
 					format["decimals"] = float64(2)
 				}

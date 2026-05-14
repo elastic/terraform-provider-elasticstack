@@ -46,9 +46,6 @@ import (
 const (
 	dashboardValueAuto               = "auto"
 	dashboardValueAverage            = "average"
-	pieChartTypeNumber               = "number"
-	pieChartTypePercent              = "percent"
-	operationTerms                   = "terms"
 	panelTypeImage                   = "image"
 	panelTypeMarkdown                = "markdown"
 	panelTypeVis                     = "vis"
@@ -73,179 +70,28 @@ func panelConfigNames() []string {
 }
 
 func isFieldMetricOperation(operation string) bool {
-	switch operation {
-	case "count", "unique_count", "min", "max", dashboardValueAverage, "median", "standard_deviation", "sum", "last_value", "percentile", "percentile_rank":
-		return true
-	default:
-		return false
-	}
+	return lenscommon.IsFieldMetricOperation(operation)
 }
 
 // populateLensMetricDefaults populates default values for Lens metric configuration (shared across XY, metric, pie, treemap, datatable, etc.).
 func populateLensMetricDefaults(model map[string]any) map[string]any {
-	if model == nil {
-		return model
-	}
-
-	// Set defaults for format
-	if format, ok := model["format"].(map[string]any); ok {
-		// Kibana has used both `type` and `id` as discriminators for number/percent format across
-		// different visualizations/versions. Support both, and support both top-level params as well
-		// as nested `params`.
-		formatType, _ := format["type"].(string)
-		formatID, _ := format["id"].(string)
-		isNumberish := formatType == pieChartTypeNumber || formatType == pieChartTypePercent || formatID == pieChartTypeNumber || formatID == pieChartTypePercent
-
-		if isNumberish {
-			// If a nested params map exists, prefer setting defaults there.
-			if params, ok := format["params"].(map[string]any); ok {
-				if _, exists := params["compact"]; !exists {
-					params["compact"] = false
-				}
-				if _, exists := params["decimals"]; !exists {
-					params["decimals"] = float64(2)
-				}
-				format["params"] = params
-			} else {
-				if _, exists := format["compact"]; !exists {
-					format["compact"] = false
-				}
-				if _, exists := format["decimals"]; !exists {
-					format["decimals"] = float64(2)
-				}
-			}
-		}
-	}
-
-	// Set defaults for all metric types
-	if _, exists := model["empty_as_null"]; !exists {
-		model["empty_as_null"] = false
-	}
-	if _, exists := model["fit"]; !exists {
-		model["fit"] = false
-	}
-	if _, exists := model["color"]; !exists {
-		model["color"] = map[string]any{"type": "auto"}
-	}
-
-	metricType, _ := model["type"].(string)
-
-	// Primary metrics have value/labels alignment defaults.
-	if metricType == "primary" {
-		if _, exists := model["value"]; !exists {
-			model["value"] = map[string]any{"alignment": "right"}
-		} else if v, ok := model["value"].(map[string]any); ok {
-			if _, exists := v["alignment"]; !exists {
-				v["alignment"] = "right"
-			}
-		}
-		if _, exists := model["labels"]; !exists {
-			model["labels"] = map[string]any{"alignment": "left"}
-		} else if l, ok := model["labels"].(map[string]any); ok {
-			if _, exists := l["alignment"]; !exists {
-				l["alignment"] = "left"
-			}
-		}
-	}
-
-	// Secondary metrics have placement and value alignment defaults.
-	if metricType == "secondary" {
-		if _, exists := model["placement"]; !exists {
-			model["placement"] = "before"
-		}
-		if _, exists := model["value"]; !exists {
-			model["value"] = map[string]any{"alignment": "right"}
-		} else if v, ok := model["value"].(map[string]any); ok {
-			if _, exists := v["alignment"]; !exists {
-				v["alignment"] = "right"
-			}
-		}
-	}
-
-	return model
+	return lenscommon.PopulateLensMetricDefaults(model)
 }
 
 func populateMetricChartMetricDefaults(model map[string]any) map[string]any {
-	_, hadColor := model["color"]
-	model = populateLensMetricDefaults(model)
-	if model == nil {
-		return model
-	}
-
-	if metricType, _ := model["type"].(string); metricType == "secondary" && !hadColor {
-		model["color"] = map[string]any{"type": "none"}
-	}
-
-	return model
+	return lenscommon.PopulateMetricChartMetricDefaults(model)
 }
 
 // populatePartitionGroupByDefaults populates default values for partition chart group_by/group_breakdown_by configurations.
 // Used by treemap and mosaic. Kibana may add default fields (e.g. rank_by, size) on read, so we normalize both sides.
 func populatePartitionGroupByDefaults(model []map[string]any) []map[string]any {
-	if model == nil {
-		return model
-	}
-
-	for _, item := range model {
-		if item == nil {
-			continue
-		}
-		operation, _ := item["operation"].(string)
-		if operation == "value" {
-			continue
-		}
-		if operation != operationTerms {
-			continue
-		}
-		// termsOperation requires collapse_by and format per API schema.
-		if _, exists := item["collapse_by"]; !exists {
-			item["collapse_by"] = "avg"
-		}
-		if _, exists := item["format"]; !exists {
-			item["format"] = map[string]any{
-				"type":     "number",
-				"decimals": float64(2),
-			}
-		}
-		if _, exists := item["rank_by"]; !exists {
-			item["rank_by"] = map[string]any{
-				"type":      "column",
-				"metric":    float64(0),
-				"direction": "desc",
-			}
-		}
-		// Treemap defaults to a size of 5 for terms.
-		if _, exists := item["size"]; !exists {
-			item["size"] = float64(5)
-		}
-	}
-
-	return model
+	return lenscommon.PopulatePartitionGroupByDefaults(model)
 }
 
 // populatePartitionMetricsDefaults populates default values for partition chart metrics.
 // Used by treemap and mosaic. Mirrors the defaulting behavior used by other Lens metric operations.
 func populatePartitionMetricsDefaults(model []map[string]any) []map[string]any {
-	if model == nil {
-		return model
-	}
-
-	for i := range model {
-		model[i] = populateTagcloudMetricDefaults(model[i])
-
-		// ES|QL treemap metrics may omit format on write, but Kibana may return it as null.
-		// Normalize both sides so semantic equality doesn't drift.
-		if model[i] == nil {
-			continue
-		}
-		if operation, ok := model[i]["operation"].(string); ok && operation == "value" {
-			if _, exists := model[i]["format"]; !exists {
-				model[i]["format"] = nil
-			}
-		}
-	}
-
-	return model
+	return lenscommon.PopulatePartitionMetricsDefaults(model)
 }
 
 // populateLegacyMetricMetricDefaults populates default values for legacy metric operations
@@ -255,43 +101,12 @@ func populateLegacyMetricMetricDefaults(model map[string]any) map[string]any {
 
 // populateGaugeMetricDefaults populates default values for gauge metric configuration
 func populateGaugeMetricDefaults(model map[string]any) map[string]any {
-	if model == nil {
-		return model
-	}
-
-	if _, exists := model["empty_as_null"]; !exists {
-		model["empty_as_null"] = false
-	}
-	if _, exists := model["title"]; !exists {
-		model["title"] = map[string]any{"visible": true}
-	}
-	if _, exists := model["ticks"]; !exists {
-		model["ticks"] = map[string]any{"visible": true, "mode": "bands"}
-	}
-	if _, exists := model["color"]; !exists {
-		model["color"] = map[string]any{"type": "auto"}
-	}
-
-	return model
+	return lenscommon.PopulateGaugeMetricDefaults(model)
 }
 
 // populateRegionMapMetricDefaults populates default values for region map metric configuration
 func populateRegionMapMetricDefaults(model map[string]any) map[string]any {
-	if model == nil {
-		return model
-	}
-	if operation, ok := model["operation"].(string); ok && isFieldMetricOperation(operation) {
-		if _, exists := model["empty_as_null"]; !exists {
-			model["empty_as_null"] = false
-		}
-		if _, exists := model["show_metric_label"]; !exists {
-			model["show_metric_label"] = true
-		}
-		if _, exists := model["color"]; !exists {
-			model["color"] = map[string]any{"type": "auto"}
-		}
-	}
-	return model
+	return lenscommon.PopulateRegionMapMetricDefaults(model)
 }
 
 func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
@@ -1878,52 +1693,12 @@ func getMetricChart(includePresentation bool) map[string]schema.Attribute {
 
 // populatePieChartMetricDefaults populates default values for pie chart metric configuration
 func populatePieChartMetricDefaults(model map[string]any) map[string]any {
-	if model == nil {
-		return model
-	}
-
-	if _, exists := model["empty_as_null"]; !exists {
-		model["empty_as_null"] = false
-	}
-	if _, exists := model["color"]; !exists {
-		model["color"] = map[string]any{"type": "auto"}
-	}
-
-	// Set defaults for format
-	if format, ok := model["format"].(map[string]any); ok {
-		if format["type"] == pieChartTypeNumber {
-			if _, exists := format["compact"]; !exists {
-				format["compact"] = false
-			}
-			if _, exists := format["decimals"]; !exists {
-				format["decimals"] = float64(2)
-			}
-		}
-	}
-
-	return model
+	return lenscommon.PopulatePieChartMetricDefaults(model)
 }
 
 // populateLensGroupByDefaults populates default values for Lens dimension/group-by configuration (shared across pie, treemap, datatable, etc.).
 func populateLensGroupByDefaults(model map[string]any) map[string]any {
-	if model == nil {
-		return model
-	}
-
-	if operation, ok := model["operation"].(string); ok && operation == operationTerms {
-		if _, exists := model["size"]; !exists {
-			model["size"] = float64(5)
-		}
-		if _, exists := model["rank_by"]; !exists {
-			model["rank_by"] = map[string]any{
-				"direction": "desc",
-				"metric":    float64(0),
-				"type":      "column",
-			}
-		}
-	}
-
-	return model
+	return lenscommon.PopulateLensGroupByDefaults(model)
 }
 
 // pieChartLegendDefaultObject is the schema default when the legend block is omitted from config,
