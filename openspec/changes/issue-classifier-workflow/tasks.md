@@ -4,8 +4,8 @@
 
 ## 2. Workflow source file
 
-- [ ] 2.1 Create `.github/workflows-src/issue-classifier/workflow.md.tmpl` with YAML frontmatter: triggers (`issues: [opened]`, `schedule: daily`, `workflow_dispatch` with optional `issue_number`), engine config (`llm-gateway/claude-sonnet-4-6`, `--effort high`), permissions (`issues: read`), safe-outputs (`add-labels`, `add-comment`, `noop`), network (`defaults`, `elastic.litellm-prod.ai`), and pre-activation step referencing `compute_issues.inline.js`
-- [ ] 2.2 Write the agent prompt body (markdown section of `workflow.md.tmpl`): classification rubric for all four categories with clear criteria and examples, per-issue loop instructions, `add_labels` call format (both `triaged` + `needs-*`), `add_comment` template with `<!-- gha-issue-classifier -->` marker and warm explanatory tone, and `noop` condition
+- [x] 2.1 Create `.github/workflows-src/issue-classifier/workflow.md.tmpl` with YAML frontmatter: triggers (`issues: [opened]`, `schedule: daily`, `workflow_dispatch` with optional `issue_number`), engine config (`llm-gateway/claude-sonnet-4-6`, `--effort high`), permissions (`issues: read`), safe-outputs (`add-labels`, `add-comment`, `noop`), network (`defaults`, `elastic.litellm-prod.ai`), and pre-activation step referencing `compute_issues.inline.js`
+- [x] 2.2 Write the agent prompt body (markdown section of `workflow.md.tmpl`): classification rubric for all four categories with clear criteria and examples, per-issue loop instructions, `add_labels` call format (both `triaged` + `needs-*`), `add_comment` template with `<!-- gha-issue-classifier -->` marker and warm explanatory tone, and `noop` condition
 
 ## 3. Compile and validate
 
