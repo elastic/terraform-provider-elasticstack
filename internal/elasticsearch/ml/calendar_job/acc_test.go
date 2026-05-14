@@ -25,6 +25,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/ml/putjob"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/hashicorp/terraform-plugin-testing/config"
@@ -63,6 +65,63 @@ func setupAccMLCalendar(t *testing.T, calendarID string) {
 	})
 }
 
+// setupAccMLJobWithGroup creates an ML anomaly detection job via the Elasticsearch API with the
+// given job ID and assigns it to the named job group (PutJob groups). Elasticsearch only
+// materializes a group when at least one job references it; this supports calendar tests
+// that attach the calendar to the group name with PutCalendarJob.
+func setupAccMLJobWithGroup(t *testing.T, jobID, groupName string) {
+	t.Helper()
+	ctx := context.Background()
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+	if err != nil {
+		t.Fatalf("acceptance elasticsearch client: %v", err)
+	}
+	es, err := client.GetESClient()
+	if err != nil {
+		t.Fatalf("get elasticsearch client: %v", err)
+	}
+
+	detectorFunction := "count"
+	timeField := "@timestamp"
+	timeFormat := "epoch_ms"
+
+	if _, err := es.Ml.PutJob(jobID).Request(&putjob.Request{
+		Groups: []string{groupName},
+		AnalysisConfig: types.AnalysisConfig{
+			BucketSpan: types.Duration("15m"),
+			Detectors: []types.Detector{
+				{Function: &detectorFunction},
+			},
+		},
+		DataDescription: types.DataDescription{
+			TimeField:  &timeField,
+			TimeFormat: &timeFormat,
+		},
+	}).Do(ctx); err != nil {
+		t.Fatalf("put ML job %q with group %q: %v", jobID, groupName, err)
+	}
+
+	t.Cleanup(func() {
+		ctx := context.Background()
+		c, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+		if err != nil {
+			t.Logf("cleanup ML job %q: client: %v", jobID, err)
+			return
+		}
+		es2, err := c.GetESClient()
+		if err != nil {
+			t.Logf("cleanup ML job %q: GetESClient: %v", jobID, err)
+			return
+		}
+		if _, err := es2.Ml.CloseJob(jobID).Force(true).AllowNoMatch(true).Do(ctx); err != nil {
+			t.Logf("cleanup CloseJob %q: %v", jobID, err)
+		}
+		if _, err := es2.Ml.DeleteJob(jobID).Force(true).Do(ctx); err != nil {
+			t.Logf("cleanup DeleteJob %q: %v", jobID, err)
+		}
+	})
+}
+
 func testAccMLCalendarJobCompositeIDRegexp(calendarID, jobID string) *regexp.Regexp {
 	return regexp.MustCompile(`^[^/]+/` + regexp.QuoteMeta(calendarID+"|"+jobID) + `$`)
 }
@@ -78,6 +137,52 @@ func testAccMLCalendarJobESEndpoints() []string {
 		}
 	}
 	return out
+}
+
+func TestAccResourceMLCalendarJob_withJobGroup(t *testing.T) {
+	calendarID := fmt.Sprintf("test-cal-job-grp-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	groupName := fmt.Sprintf("test-acc-ml-grp-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	jobID := fmt.Sprintf("test-acc-ml-grpjob-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+
+	vars := config.Variables{
+		"calendar_id": config.StringVariable(calendarID),
+		"group_name":  config.StringVariable(groupName),
+	}
+	const addr = mlCalendarJobResourceAddr
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			setupAccMLCalendar(t, calendarID)
+			setupAccMLJobWithGroup(t, jobID, groupName)
+		},
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "calendar_id", calendarID),
+					resource.TestCheckResourceAttr(addr, "job_id", groupName),
+					resource.TestCheckResourceAttrSet(addr, "id"),
+					resource.TestMatchResourceAttr(addr, "id", testAccMLCalendarJobCompositeIDRegexp(calendarID, groupName)),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars,
+				ResourceName:             addr,
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ImportStateVerifyIgnore:  []string{"elasticsearch_connection"},
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					rs := s.RootModule().Resources[addr]
+					return rs.Primary.ID, nil
+				},
+			},
+		},
+	})
 }
 
 func TestAccResourceMLCalendarJob_basic(t *testing.T) {
