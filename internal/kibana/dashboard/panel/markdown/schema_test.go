@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package dashboard
+package markdown
 
 import (
 	"context"
@@ -28,10 +28,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func Test_markdownConfigModeValidator(t *testing.T) {
+func Test_configModeValidator(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	v := markdownConfigModeValidator{}
+	v := configModeValidator{}
 
 	settingsAttrs := map[string]attr.Type{
 		"open_links_in_new_tab": types.BoolType,
