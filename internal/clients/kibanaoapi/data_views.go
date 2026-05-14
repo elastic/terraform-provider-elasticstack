@@ -77,7 +77,7 @@ func UpdateDataView(ctx context.Context, client *Client, spaceID string, viewID 
 
 // UpdateFieldMetadata writes field metadata (e.g. custom_label) for a data view via
 // POST /api/data_views/data_view/{viewId}/fields. It applies space-aware path routing.
-func UpdateFieldMetadata(ctx context.Context, client *Client, spaceID string, viewID string, fields map[string]interface{}) diag.Diagnostics {
+func UpdateFieldMetadata(ctx context.Context, client *Client, spaceID string, viewID string, fields map[string]any) diag.Diagnostics {
 	resp, err := client.API.UpdateFieldsMetadataDefaultWithResponse(
 		ctx,
 		viewID,

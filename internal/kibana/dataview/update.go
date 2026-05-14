@@ -19,6 +19,7 @@ package dataview
 
 import (
 	"context"
+	"fmt"
 
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -113,9 +114,14 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 				if resp.Diagnostics.HasError() {
 					return
 				}
-				if refreshed != nil {
-					dataView = refreshed
+				if refreshed == nil {
+					resp.Diagnostics.AddError(
+						"Data view disappeared after field_attrs update",
+						fmt.Sprintf("UpdateFieldMetadata succeeded for data view %q in space %q, but the subsequent GetDataView returned no data (likely 404). Refusing to write stale state.", viewID, spaceID),
+					)
+					return
 				}
+				dataView = refreshed
 			}
 		}
 	}
@@ -137,13 +143,13 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 // buildFieldAttrsMetadataDelta returns a JSON-shaped map for POST .../fields: keys are field names,
 // values are objects with camelCase keys matching kbapi.DataViewsFieldattrs (`customLabel`, `count`).
 // Removed fields use an empty object as a minimal clearing payload (REQ-016).
-func buildFieldAttrsMetadataDelta(planFA, stateFA map[string]fieldAttrModel) map[string]interface{} {
-	delta := map[string]interface{}{}
+func buildFieldAttrsMetadataDelta(planFA, stateFA map[string]fieldAttrModel) map[string]any {
+	delta := map[string]any{}
 
 	for name, planEntry := range planFA {
 		stateEntry, exists := stateFA[name]
 		if !exists || !planEntry.CustomLabel.Equal(stateEntry.CustomLabel) || !planEntry.Count.Equal(stateEntry.Count) {
-			payload := map[string]interface{}{}
+			payload := map[string]any{}
 			if !planEntry.CustomLabel.IsNull() {
 				payload["customLabel"] = planEntry.CustomLabel.ValueString()
 			}
@@ -155,7 +161,7 @@ func buildFieldAttrsMetadataDelta(planFA, stateFA map[string]fieldAttrModel) map
 	}
 	for name := range stateFA {
 		if _, stillInPlan := planFA[name]; !stillInPlan {
-			delta[name] = map[string]interface{}{}
+			delta[name] = map[string]any{}
 		}
 	}
 	return delta
