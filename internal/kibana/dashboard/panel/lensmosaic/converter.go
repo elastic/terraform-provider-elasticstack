@@ -26,13 +26,8 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
-	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
-	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
 func init() {
@@ -49,24 +44,8 @@ func (converter) HandlesBlocks(blocks *models.LensByValueChartBlocks) bool {
 	return blocks != nil && blocks.MosaicConfig != nil
 }
 
-func partitionChartBaseAttrsWithPresentation() map[string]schema.Attribute {
-	attrs := maps.Clone(lenscommon.LensChartBaseAttributes())
-	attrs["data_source_json"] = schema.StringAttribute{
-		MarkdownDescription: "Dataset configuration as JSON. For non-ES|QL, this specifies the data view or index; for ES|QL, this specifies the ES|QL query dataset.",
-		CustomType:          jsontypes.NormalizedType{},
-		Required:            true,
-	}
-	attrs["query"] = schema.SingleNestedAttribute{
-		MarkdownDescription: "Query configuration for filtering data. Required for non-ES|QL partition charts.",
-		Optional:            true,
-		Attributes:          lenscommon.LensChartFilterSimpleAttributes(),
-	}
-	maps.Copy(attrs, lenscommon.LensChartPresentationAttributes())
-	return attrs
-}
-
 func (converter) SchemaAttribute() schema.Attribute {
-	base := partitionChartBaseAttrsWithPresentation()
+	attrs := lenscommon.PartitionChartBaseAttributes(true)
 	mosaicSpecific := map[string]schema.Attribute{
 		"group_by_json": schema.StringAttribute{
 			MarkdownDescription: "Array of primary breakdown dimensions as JSON (minimum 1). " +
@@ -74,9 +53,7 @@ func (converter) SchemaAttribute() schema.Attribute {
 				"for ES|QL, each item is the column/operation/color configuration.",
 			CustomType: customtypes.NewJSONWithDefaultsType(lenscommon.PopulatePartitionGroupByDefaults),
 			Optional:   true,
-			Validators: []validator.String{
-				stringvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("esql_group_by")),
-			},
+			Validators: lenscommon.MutuallyExclusiveStringValidator("esql_group_by"),
 		},
 		"group_breakdown_by_json": schema.StringAttribute{
 			MarkdownDescription: "Array of secondary breakdown dimensions as JSON (minimum 1). " +
@@ -92,9 +69,7 @@ func (converter) SchemaAttribute() schema.Attribute {
 				"for ES|QL, each item is the column/operation/color/format configuration.",
 			CustomType: customtypes.NewJSONWithDefaultsType(lenscommon.PopulatePartitionMetricsDefaults),
 			Optional:   true,
-			Validators: []validator.String{
-				stringvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("esql_metrics")),
-			},
+			Validators: lenscommon.MutuallyExclusiveStringValidator("esql_metrics"),
 		},
 		"legend": schema.SingleNestedAttribute{
 			MarkdownDescription: "Legend configuration for the mosaic chart.",
@@ -110,27 +85,17 @@ func (converter) SchemaAttribute() schema.Attribute {
 			MarkdownDescription: "Metric columns for ES|QL mosaics (exactly 1). Mutually exclusive with `metrics_json`.",
 			Optional:            true,
 			NestedObject:        lenscommon.MosaicESQLMetricNestedObject(),
-			Validators: []validator.List{
-				listvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("metrics_json")),
-			},
+			Validators:          lenscommon.MutuallyExclusiveListValidator("metrics_json"),
 		},
 		"esql_group_by": schema.ListNestedAttribute{
 			MarkdownDescription: "Breakdown columns for ES|QL mosaics. Mutually exclusive with `group_by_json`.",
 			Optional:            true,
 			NestedObject:        lenscommon.PartitionESQLGroupByNestedObject(),
-			Validators: []validator.List{
-				listvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("group_by_json")),
-			},
+			Validators:          lenscommon.MutuallyExclusiveListValidator("group_by_json"),
 		},
 	}
-	maps.Copy(base, mosaicSpecific)
-	return schema.SingleNestedAttribute{
-		MarkdownDescription: "Typed Lens visualization inside `vis_config.by_value`. " +
-			"Mutually exclusive with the other chart blocks in the same `by_value` block. " +
-			"Shares the attribute shape with `lens_dashboard_app_config.by_value.mosaic_config`.",
-		Optional:   true,
-		Attributes: base,
-	}
+	maps.Copy(attrs, mosaicSpecific)
+	return lenscommon.ByValueChartNestedAttribute("mosaic_config", attrs)
 }
 
 func (converter) PopulateFromAttributes(ctx context.Context, resolver lenscommon.Resolver, blocks *models.LensByValueChartBlocks, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {

@@ -25,13 +25,9 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
-	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
 func init() {
@@ -69,25 +65,17 @@ func gaugeRefAttr(desc string) schema.SingleNestedAttribute {
 }
 
 func (converter) SchemaAttribute() schema.Attribute {
-	attrs := maps.Clone(lenscommon.LensChartBaseAttributes())
-	attrs["data_source_json"] = schema.StringAttribute{
-		MarkdownDescription: "Dataset configuration as JSON. For standard layers, this specifies the data view and query.",
-		CustomType:          jsontypes.NormalizedType{},
-		Required:            true,
-	}
-	attrs["query"] = schema.SingleNestedAttribute{
-		MarkdownDescription: "Query configuration for filtering data. Required for non-ES|QL gauges; omit for ES|QL mode.",
-		Optional:            true,
-		Attributes:          lenscommon.LensChartFilterSimpleAttributes(),
-	}
-	attrs["metric_json"] = schema.StringAttribute{
-		MarkdownDescription: gaugeMetricMarkdown + " Required for non-ES|QL gauges; mutually exclusive with `esql_metric`.",
-		CustomType:          customtypes.NewJSONWithDefaultsType(lenscommon.PopulateGaugeMetricDefaults),
-		Optional:            true,
-		Validators: []validator.String{
-			stringvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("esql_metric")),
-		},
-	}
+	attrs := lenscommon.LensChartBaseAttributes()
+	attrs["data_source_json"] = lenscommon.DataSourceJSONAttribute(
+		"Dataset configuration as JSON. For standard layers, this specifies the data view and query.",
+	)
+	attrs["query"] = lenscommon.QueryAttribute(
+		"Query configuration for filtering data. Required for non-ES|QL gauges; omit for ES|QL mode.",
+	)
+	attrs["metric_json"] = lenscommon.MetricJSONAttribute(
+		gaugeMetricMarkdown+" Required for non-ES|QL gauges; mutually exclusive with `esql_metric`.",
+		lenscommon.PopulateGaugeMetricDefaults, false, "esql_metric",
+	)
 	attrs["esql_metric"] = schema.SingleNestedAttribute{
 		MarkdownDescription: "Typed metric column for ES|QL gauges. Mutually exclusive with `metric_json`.",
 		Optional:            true,
@@ -159,13 +147,7 @@ func (converter) SchemaAttribute() schema.Attribute {
 		},
 	}
 	maps.Copy(attrs, lenscommon.LensChartPresentationAttributes())
-	return schema.SingleNestedAttribute{
-		MarkdownDescription: "Typed Lens visualization inside `vis_config.by_value`. " +
-			"Mutually exclusive with the other chart blocks in the same `by_value` block. " +
-			"Shares the attribute shape with `lens_dashboard_app_config.by_value.gauge_config`.",
-		Optional:   true,
-		Attributes: attrs,
-	}
+	return lenscommon.ByValueChartNestedAttribute("gauge_config", attrs)
 }
 
 func (converter) PopulateFromAttributes(ctx context.Context, resolver lenscommon.Resolver, blocks *models.LensByValueChartBlocks, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {

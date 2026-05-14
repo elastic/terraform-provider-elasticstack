@@ -21,7 +21,6 @@ import (
 	"maps"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -30,16 +29,12 @@ import (
 
 func heatmapSchemaAttrs(includePresentation bool) map[string]schema.Attribute {
 	attrs := lenscommon.LensChartBaseAttributes()
-	attrs["data_source_json"] = schema.StringAttribute{
-		MarkdownDescription: "Dataset configuration as JSON. For standard heatmaps, this specifies the data view or index; for ES|QL, this specifies the ES|QL query dataset.",
-		CustomType:          jsontypes.NormalizedType{},
-		Required:            true,
-	}
-	attrs["query"] = schema.SingleNestedAttribute{
-		MarkdownDescription: "Query configuration for filtering data. Required for non-ES|QL heatmaps.",
-		Optional:            true,
-		Attributes:          lenscommon.LensChartFilterSimpleAttributes(),
-	}
+	attrs["data_source_json"] = lenscommon.DataSourceJSONAttribute(
+		"Dataset configuration as JSON. For standard heatmaps, this specifies the data view or index; for ES|QL, this specifies the ES|QL query dataset.",
+	)
+	attrs["query"] = lenscommon.QueryAttribute(
+		"Query configuration for filtering data. Required for non-ES|QL heatmaps.",
+	)
 	attrs["axis"] = schema.SingleNestedAttribute{
 		MarkdownDescription: "Axis configuration for X and Y axes.",
 		Required:            true,
@@ -60,11 +55,10 @@ func heatmapSchemaAttrs(includePresentation bool) map[string]schema.Attribute {
 		CustomType:          jsontypes.NormalizedType{},
 		Optional:            true,
 	}
-	attrs["metric_json"] = schema.StringAttribute{
-		MarkdownDescription: "Metric configuration as JSON. For non-ES|QL, this can be a field metric, pipeline metric, or formula. For ES|QL, this is the metric column/operation/color configuration.",
-		CustomType:          customtypes.NewJSONWithDefaultsType(lenscommon.PopulateTagcloudMetricDefaults),
-		Required:            true,
-	}
+	attrs["metric_json"] = lenscommon.MetricJSONAttribute(
+		"Metric configuration as JSON. For non-ES|QL, this can be a field metric, pipeline metric, or formula. For ES|QL, this is the metric column/operation/color configuration.",
+		lenscommon.PopulateTagcloudMetricDefaults, true, "",
+	)
 	attrs["styling"] = schema.SingleNestedAttribute{
 		MarkdownDescription: "Heatmap styling configuration.",
 		Required:            true,
@@ -105,20 +99,7 @@ func heatmapAxesSchemaAttrs() map[string]schema.Attribute {
 						},
 					},
 				},
-				"title": schema.SingleNestedAttribute{
-					MarkdownDescription: "X-axis title configuration.",
-					Optional:            true,
-					Attributes: map[string]schema.Attribute{
-						"value": schema.StringAttribute{
-							MarkdownDescription: "Axis title text.",
-							Optional:            true,
-						},
-						"visible": schema.BoolAttribute{
-							MarkdownDescription: "Whether to show the title.",
-							Optional:            true,
-						},
-					},
-				},
+				"title": lenscommon.AxisTitleAttribute(false),
 			},
 		},
 		"y": schema.SingleNestedAttribute{
@@ -135,20 +116,7 @@ func heatmapAxesSchemaAttrs() map[string]schema.Attribute {
 						},
 					},
 				},
-				"title": schema.SingleNestedAttribute{
-					MarkdownDescription: "Y-axis title configuration.",
-					Optional:            true,
-					Attributes: map[string]schema.Attribute{
-						"value": schema.StringAttribute{
-							MarkdownDescription: "Axis title text.",
-							Optional:            true,
-						},
-						"visible": schema.BoolAttribute{
-							MarkdownDescription: "Whether to show the title.",
-							Optional:            true,
-						},
-					},
-				},
+				"title": lenscommon.AxisTitleAttribute(false),
 			},
 		},
 	}

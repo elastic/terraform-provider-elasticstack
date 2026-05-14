@@ -20,48 +20,21 @@ package lenswaffle
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func alignWaffleStateFromPlan(ctx context.Context, plan, state *models.WaffleConfigModel) {
 	if plan == nil || state == nil {
 		return
 	}
-	alignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
+	lenscommon.AlignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
 	m := min(len(plan.Metrics), len(state.Metrics))
 	for i := range m {
-		preservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.Metrics[i].Config, &state.Metrics[i].Config)
+		lenscommon.PreservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.Metrics[i].Config, &state.Metrics[i].Config)
 	}
 	g := min(len(plan.GroupBy), len(state.GroupBy))
 	for i := range g {
-		preservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.GroupBy[i].Config, &state.GroupBy[i].Config)
-	}
-}
-
-func preservePlanJSONWithDefaultsIfSemanticallyEqual[T any](ctx context.Context, plan customtypes.JSONWithDefaultsValue[T], state *customtypes.JSONWithDefaultsValue[T]) {
-	if !typeutils.IsKnown(plan) || !typeutils.IsKnown(*state) {
-		return
-	}
-
-	eq, diags := plan.StringSemanticEquals(ctx, *state)
-	if !diags.HasError() && eq {
-		*state = plan
-	}
-}
-
-func alignTitleAndDescriptionFromPlan(planTitle, planDescription types.String, stateTitle, stateDescription *types.String) {
-	preserveKnownStringIfStateBlank(planTitle, stateTitle)
-	preserveKnownStringIfStateBlank(planDescription, stateDescription)
-}
-
-func preserveKnownStringIfStateBlank(plan types.String, state *types.String) {
-	if !typeutils.IsKnown(plan) {
-		return
-	}
-	if state.IsNull() || state.IsUnknown() || state.ValueString() == "" {
-		*state = plan
+		lenscommon.PreservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.GroupBy[i].Config, &state.GroupBy[i].Config)
 	}
 }

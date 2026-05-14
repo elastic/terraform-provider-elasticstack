@@ -212,7 +212,15 @@ func PopulateGaugeMetricDefaults(model map[string]any) map[string]any {
 }
 
 // PopulateRegionMapMetricDefaults populates region_map metric_json defaults.
+// Behaviorally identical to PopulateTagcloudMetricDefaults; kept as a distinct symbol so the
+// JSONWithDefaultsType identity stays per-chart in case the defaults diverge.
 func PopulateRegionMapMetricDefaults(model map[string]any) map[string]any {
+	return populateFieldMetricLensDefaults(model)
+}
+
+// populateFieldMetricLensDefaults applies the standard "field metric" Lens defaults
+// (empty_as_null=false, show_metric_label=true, color=auto) when the model represents a field metric.
+func populateFieldMetricLensDefaults(model map[string]any) map[string]any {
 	if model == nil {
 		return model
 	}
@@ -280,21 +288,46 @@ func PopulateLensGroupByDefaults(model map[string]any) map[string]any {
 }
 
 // PopulateTagcloudMetricDefaults populates tagcloud metric defaults.
+// Behaviorally identical to PopulateRegionMapMetricDefaults; kept as a distinct symbol so the
+// JSONWithDefaultsType identity stays per-chart in case the defaults diverge.
 func PopulateTagcloudMetricDefaults(model map[string]any) map[string]any {
+	return populateFieldMetricLensDefaults(model)
+}
+
+// PopulateLegacyMetricMetricDefaults populates default values for legacy metric metric_json maps.
+func PopulateLegacyMetricMetricDefaults(model map[string]any) map[string]any {
 	if model == nil {
 		return model
 	}
 	if operation, ok := model["operation"].(string); ok && IsFieldMetricOperation(operation) {
+		if _, exists := model["show_array_values"]; !exists {
+			model["show_array_values"] = false
+		}
 		if _, exists := model["empty_as_null"]; !exists {
 			model["empty_as_null"] = false
 		}
-		if _, exists := model["show_metric_label"]; !exists {
-			model["show_metric_label"] = true
-		}
-		if _, exists := model["color"]; !exists {
-			model["color"] = map[string]any{"type": "auto"}
-		}
 	}
+
+	format, ok := model["format"].(map[string]any)
+	if ok {
+		if formatType, ok := format["type"].(string); ok {
+			switch formatType {
+			case pieChartTypeNumber, pieChartTypePercent:
+				if _, exists := format["decimals"]; !exists {
+					format["decimals"] = float64(2)
+				}
+				if _, exists := format["compact"]; !exists {
+					format["compact"] = false
+				}
+			case "bytes", "bits":
+				if _, exists := format["decimals"]; !exists {
+					format["decimals"] = float64(2)
+				}
+			}
+		}
+		model["format"] = format
+	}
+
 	return model
 }
 

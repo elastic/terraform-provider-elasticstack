@@ -24,10 +24,8 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func alignGaugeStateFromPlan(ctx context.Context, plan, state *models.LensByValueChartBlocks) {
@@ -41,35 +39,10 @@ func alignGaugeConfigStateFromPlan(ctx context.Context, plan, state *models.Gaug
 	if plan == nil || state == nil {
 		return
 	}
-	alignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
-	preservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.MetricJSON, &state.MetricJSON)
+	lenscommon.AlignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
+	lenscommon.PreservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.MetricJSON, &state.MetricJSON)
 	if plan.EsqlMetric != nil && state.EsqlMetric != nil {
 		alignGaugeEsqlMetricStateFromPlan(plan.EsqlMetric, state.EsqlMetric)
-	}
-}
-
-func alignTitleAndDescriptionFromPlan(planTitle, planDescription types.String, stateTitle, stateDescription *types.String) {
-	preserveKnownStringIfStateBlank(planTitle, stateTitle)
-	preserveKnownStringIfStateBlank(planDescription, stateDescription)
-}
-
-func preserveKnownStringIfStateBlank(plan types.String, state *types.String) {
-	if !typeutils.IsKnown(plan) {
-		return
-	}
-	if state.IsNull() || state.IsUnknown() || state.ValueString() == "" {
-		*state = plan
-	}
-}
-
-func preservePlanJSONWithDefaultsIfSemanticallyEqual(ctx context.Context, plan customtypes.JSONWithDefaultsValue[map[string]any], state *customtypes.JSONWithDefaultsValue[map[string]any]) {
-	if !typeutils.IsKnown(plan) || !typeutils.IsKnown(*state) {
-		return
-	}
-
-	eq, diags := plan.StringSemanticEquals(ctx, *state)
-	if !diags.HasError() && eq {
-		*state = plan
 	}
 }
 

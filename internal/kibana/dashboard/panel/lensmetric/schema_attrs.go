@@ -21,11 +21,9 @@ import (
 	"maps"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
 // Copied from dashboard/descriptions/*.md (Go embed disallows ".." paths outside the package dir).
@@ -46,33 +44,17 @@ const (
 )
 
 func metricChartSchemaAttrs(includePresentation bool) map[string]schema.Attribute {
-	attrs := maps.Clone(lenscommon.LensChartBaseAttributes())
-	attrs["data_source_json"] = schema.StringAttribute{
-		MarkdownDescription: metricChartDatasetDescription,
-		CustomType:          jsontypes.NormalizedType{},
-		Required:            true,
-	}
-	attrs["query"] = schema.SingleNestedAttribute{
-		MarkdownDescription: "Query configuration for filtering data. Required for non-ES|QL datasets.",
-		Optional:            true,
-		Attributes:          lenscommon.LensChartFilterSimpleAttributes(),
-	}
-	attrs["metrics"] = schema.ListNestedAttribute{
-		MarkdownDescription: metricChartMetricsDescription,
-		Required:            true,
-		Validators: []validator.List{
-			listvalidator.SizeAtMost(2),
-		},
-		NestedObject: schema.NestedAttributeObject{
-			Attributes: map[string]schema.Attribute{
-				"config_json": schema.StringAttribute{
-					MarkdownDescription: metricChartMetricConfigDescription,
-					CustomType:          customtypes.NewJSONWithDefaultsType(lenscommon.PopulateMetricChartMetricDefaults),
-					Required:            true,
-				},
-			},
-		},
-	}
+	attrs := lenscommon.LensChartBaseAttributes()
+	attrs["data_source_json"] = lenscommon.DataSourceJSONAttribute(metricChartDatasetDescription)
+	attrs["query"] = lenscommon.QueryAttribute(
+		"Query configuration for filtering data. Required for non-ES|QL datasets.",
+	)
+	attrs["metrics"] = lenscommon.JSONConfigItemList(
+		metricChartMetricsDescription,
+		metricChartMetricConfigDescription,
+		lenscommon.PopulateMetricChartMetricDefaults, true,
+		listvalidator.SizeAtMost(2),
+	)
 	attrs["breakdown_by_json"] = schema.StringAttribute{
 		MarkdownDescription: metricChartBreakdownByDescription,
 		CustomType:          jsontypes.NormalizedType{},

@@ -18,11 +18,7 @@
 package lenswaffle
 
 import (
-	"maps"
-
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -30,27 +26,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func partitionChartBaseAttrs(includePresentation bool) map[string]schema.Attribute {
-	attrs := lenscommon.LensChartBaseAttributes()
-	attrs["data_source_json"] = schema.StringAttribute{
-		MarkdownDescription: "Dataset configuration as JSON. For non-ES|QL, this specifies the data view or index; for ES|QL, this specifies the ES|QL query dataset.",
-		CustomType:          jsontypes.NormalizedType{},
-		Required:            true,
-	}
-	attrs["query"] = schema.SingleNestedAttribute{
-		MarkdownDescription: "Query configuration for filtering data. Required for non-ES|QL partition charts.",
-		Optional:            true,
-		Attributes:          lenscommon.LensChartFilterSimpleAttributes(),
-	}
-	if includePresentation {
-		maps.Copy(attrs, lenscommon.LensChartPresentationAttributes())
-	}
-	return attrs
-}
-
-// getWaffleSchema returns schema for waffle (grid) Lens chart configuration.
+// waffleSchemaAttrs returns schema for waffle (grid) Lens chart configuration.
 func waffleSchemaAttrs(includePresentation bool) map[string]schema.Attribute {
-	attrs := partitionChartBaseAttrs(includePresentation)
+	attrs := lenscommon.PartitionChartBaseAttributes(includePresentation)
 	attrs["legend"] = schema.SingleNestedAttribute{
 		MarkdownDescription: "Legend configuration for the waffle chart.",
 		Required:            true,
@@ -61,46 +39,31 @@ func waffleSchemaAttrs(includePresentation bool) map[string]schema.Attribute {
 		Optional:            true,
 		Attributes:          lenscommon.PartitionValueDisplaySchemaAttributes(),
 	}
-	attrs["metrics"] = schema.ListNestedAttribute{
-		MarkdownDescription: "Metric configurations for non-ES|QL waffles (minimum 1). Each `config_json` is a JSON object (e.g. count, sum, or formula) matching the Kibana Lens waffle schema.",
-		Optional:            true,
-		NestedObject: schema.NestedAttributeObject{
-			Attributes: map[string]schema.Attribute{
-				"config_json": schema.StringAttribute{
-					MarkdownDescription: "Metric operation as JSON.",
-					CustomType:          customtypes.NewJSONWithDefaultsType(lenscommon.PopulatePieChartMetricDefaults),
-					Required:            true,
-				},
-			},
-		},
-	}
-	attrs["group_by"] = schema.ListNestedAttribute{
-		MarkdownDescription: "Breakdown dimensions for non-ES|QL waffles. Each `config_json` is a JSON object (terms, date_histogram, etc.) matching the Kibana Lens waffle schema.",
-		Optional:            true,
-		NestedObject: schema.NestedAttributeObject{
-			Attributes: map[string]schema.Attribute{
-				"config_json": schema.StringAttribute{
-					MarkdownDescription: "Group-by operation as JSON.",
-					CustomType:          customtypes.NewJSONWithDefaultsType(lenscommon.PopulateLensGroupByDefaults),
-					Required:            true,
-				},
-			},
-		},
-	}
+	attrs["metrics"] = lenscommon.JSONConfigItemList(
+		"Metric configurations for non-ES|QL waffles (minimum 1). Each `config_json` is a JSON object (e.g. count, sum, or formula) matching the Kibana Lens waffle schema.",
+		"Metric operation as JSON.",
+		lenscommon.PopulatePieChartMetricDefaults, false,
+	)
+	attrs["group_by"] = lenscommon.JSONConfigItemList(
+		"Breakdown dimensions for non-ES|QL waffles. Each `config_json` is a JSON object (terms, date_histogram, etc.) matching the Kibana Lens waffle schema.",
+		"Group-by operation as JSON.",
+		lenscommon.PopulateLensGroupByDefaults, false,
+	)
 	attrs["esql_metrics"] = schema.ListNestedAttribute{
 		MarkdownDescription: "Metric columns for ES|QL waffles (minimum 1). Mutually exclusive with `metrics`.",
 		Optional:            true,
-		NestedObject:        partitionESQLMetricNested(),
+		NestedObject:        lenscommon.PartitionESQLMetricNestedObject(),
 	}
 	attrs["esql_group_by"] = schema.ListNestedAttribute{
 		MarkdownDescription: "Breakdown columns for ES|QL waffles. Mutually exclusive with `group_by`.",
 		Optional:            true,
-		NestedObject:        partitionESQLGroupByNested(),
+		NestedObject:        lenscommon.PartitionESQLGroupByNestedObject(),
 	}
 	return attrs
 }
 
-// getWaffleLegendSchema returns schema for waffle legend (distinct from XY/heatmap legend).
+// waffleLegendSchemaAttrs returns the waffle-specific legend schema (distinct from the partition
+// legend used by pie/treemap/mosaic because waffle adds `values` and omits `nested`).
 func waffleLegendSchemaAttrs() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"size": schema.StringAttribute{
@@ -130,16 +93,4 @@ func waffleLegendSchemaAttrs() map[string]schema.Attribute {
 			},
 		},
 	}
-}
-
-// getPartitionESQLMetricSchema returns the shared ES|QL metric schema used by waffle,
-// treemap, and mosaic.
-func partitionESQLMetricNested() schema.NestedAttributeObject {
-	return lenscommon.PartitionESQLMetricNestedObject()
-}
-
-// getPartitionESQLGroupBySchema returns the shared ES|QL group-by schema used by waffle,
-// treemap, and mosaic.
-func partitionESQLGroupByNested() schema.NestedAttributeObject {
-	return lenscommon.PartitionESQLGroupByNestedObject()
 }

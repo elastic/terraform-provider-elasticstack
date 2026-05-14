@@ -29,7 +29,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
@@ -53,17 +52,13 @@ const tagcloudMetricMarkdown = "Metric configuration as JSON. Can be a field met
 	"cumulative sum, counter rate), or a formula operation."
 
 func (converter) SchemaAttribute() schema.Attribute {
-	attrs := maps.Clone(lenscommon.LensChartBaseAttributes())
-	attrs["data_source_json"] = schema.StringAttribute{
-		MarkdownDescription: "Dataset configuration as JSON. For standard layers, this specifies the data view and query.",
-		CustomType:          jsontypes.NormalizedType{},
-		Required:            true,
-	}
-	attrs["query"] = schema.SingleNestedAttribute{
-		MarkdownDescription: "Query configuration for filtering data. Required for non-ES|QL tagclouds; omit for ES|QL mode.",
-		Optional:            true,
-		Attributes:          lenscommon.LensChartFilterSimpleAttributes(),
-	}
+	attrs := lenscommon.LensChartBaseAttributes()
+	attrs["data_source_json"] = lenscommon.DataSourceJSONAttribute(
+		"Dataset configuration as JSON. For standard layers, this specifies the data view and query.",
+	)
+	attrs["query"] = lenscommon.QueryAttribute(
+		"Query configuration for filtering data. Required for non-ES|QL tagclouds; omit for ES|QL mode.",
+	)
 	attrs["orientation"] = schema.StringAttribute{
 		MarkdownDescription: "Orientation of the tagcloud. Valid values: 'horizontal', 'vertical', 'angled'.",
 		Optional:            true,
@@ -85,22 +80,16 @@ func (converter) SchemaAttribute() schema.Attribute {
 			},
 		},
 	}
-	attrs["metric_json"] = schema.StringAttribute{
-		MarkdownDescription: tagcloudMetricMarkdown + " Required for non-ES|QL tagclouds; mutually exclusive with `esql_metric`.",
-		CustomType:          customtypes.NewJSONWithDefaultsType(lenscommon.PopulateTagcloudMetricDefaults),
-		Optional:            true,
-		Validators: []validator.String{
-			stringvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("esql_metric")),
-		},
-	}
+	attrs["metric_json"] = lenscommon.MetricJSONAttribute(
+		tagcloudMetricMarkdown+" Required for non-ES|QL tagclouds; mutually exclusive with `esql_metric`.",
+		lenscommon.PopulateTagcloudMetricDefaults, false, "esql_metric",
+	)
 	attrs["tag_by_json"] = schema.StringAttribute{
 		MarkdownDescription: "Tag grouping configuration as JSON. Can be a date histogram, terms, histogram, range, or filters operation. " +
 			"This determines how tags are grouped and displayed. Required for non-ES|QL tagclouds; mutually exclusive with `esql_tag_by`.",
 		CustomType: customtypes.NewJSONWithDefaultsType(lenscommon.PopulateTagcloudTagByDefaults),
 		Optional:   true,
-		Validators: []validator.String{
-			stringvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("esql_tag_by")),
-		},
+		Validators: lenscommon.MutuallyExclusiveStringValidator("esql_tag_by"),
 	}
 	attrs["esql_metric"] = schema.SingleNestedAttribute{
 		MarkdownDescription: "Typed metric column for ES|QL tagclouds. Mutually exclusive with `metric_json`.",
@@ -145,19 +134,8 @@ func (converter) SchemaAttribute() schema.Attribute {
 			},
 		},
 	}
-	attrs["filters"] = schema.ListNestedAttribute{
-		MarkdownDescription: "Additional filters to apply to the chart data (maximum 100).",
-		Optional:            true,
-		NestedObject:        lenscommon.LensChartFilterNestedObject(),
-	}
 	maps.Copy(attrs, lenscommon.LensChartPresentationAttributes())
-	return schema.SingleNestedAttribute{
-		MarkdownDescription: "Typed Lens visualization inside `vis_config.by_value`. " +
-			"Mutually exclusive with the other chart blocks in the same `by_value` block. " +
-			"Shares the attribute shape with `lens_dashboard_app_config.by_value.tagcloud_config`.",
-		Optional:   true,
-		Attributes: attrs,
-	}
+	return lenscommon.ByValueChartNestedAttribute("tagcloud_config", attrs)
 }
 
 func (converter) PopulateFromAttributes(ctx context.Context, resolver lenscommon.Resolver, blocks *models.LensByValueChartBlocks, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {

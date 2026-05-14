@@ -25,7 +25,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -46,22 +45,17 @@ func (converter) HandlesBlocks(blocks *models.LensByValueChartBlocks) bool {
 }
 
 func (converter) SchemaAttribute() schema.Attribute {
-	attrs := maps.Clone(lenscommon.LensChartBaseAttributes())
-	attrs["data_source_json"] = schema.StringAttribute{
-		MarkdownDescription: "Dataset configuration as JSON. For ES|QL, this specifies the ES|QL query. For standard layers, this specifies the data view and query.",
-		CustomType:          jsontypes.NormalizedType{},
-		Required:            true,
-	}
-	attrs["query"] = schema.SingleNestedAttribute{
-		MarkdownDescription: "Query configuration for filtering data. Required for non-ES|QL region map configurations.",
-		Optional:            true,
-		Attributes:          lenscommon.LensChartFilterSimpleAttributes(),
-	}
-	attrs["metric_json"] = schema.StringAttribute{
-		MarkdownDescription: "Metric configuration as JSON. For ES|QL, this defines the metric column and format. For standard mode, this defines the metric operation or formula.",
-		CustomType:          customtypes.NewJSONWithDefaultsType(lenscommon.PopulateRegionMapMetricDefaults),
-		Required:            true,
-	}
+	attrs := lenscommon.LensChartBaseAttributes()
+	attrs["data_source_json"] = lenscommon.DataSourceJSONAttribute(
+		"Dataset configuration as JSON. For ES|QL, this specifies the ES|QL query. For standard layers, this specifies the data view and query.",
+	)
+	attrs["query"] = lenscommon.QueryAttribute(
+		"Query configuration for filtering data. Required for non-ES|QL region map configurations.",
+	)
+	attrs["metric_json"] = lenscommon.MetricJSONAttribute(
+		"Metric configuration as JSON. For ES|QL, this defines the metric column and format. For standard mode, this defines the metric operation or formula.",
+		lenscommon.PopulateRegionMapMetricDefaults, true, "",
+	)
 	attrs["region_json"] = schema.StringAttribute{
 		MarkdownDescription: "Region configuration as JSON. For ES|QL, this defines the region column and EMS join. " +
 			"For standard mode, this defines the bucket operation (terms, histogram, range, filters) and optional EMS settings.",
@@ -69,13 +63,7 @@ func (converter) SchemaAttribute() schema.Attribute {
 		Required:   true,
 	}
 	maps.Copy(attrs, lenscommon.LensChartPresentationAttributes())
-	return schema.SingleNestedAttribute{
-		MarkdownDescription: "Typed Lens visualization inside `vis_config.by_value`. " +
-			"Mutually exclusive with the other chart blocks in the same `by_value` block. " +
-			"Shares the attribute shape with `lens_dashboard_app_config.by_value.region_map_config`.",
-		Optional:   true,
-		Attributes: attrs,
-	}
+	return lenscommon.ByValueChartNestedAttribute("region_map_config", attrs)
 }
 
 func (converter) PopulateFromAttributes(ctx context.Context, resolver lenscommon.Resolver, blocks *models.LensByValueChartBlocks, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {

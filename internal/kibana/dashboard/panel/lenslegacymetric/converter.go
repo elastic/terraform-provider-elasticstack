@@ -25,8 +25,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 )
@@ -46,31 +44,19 @@ func (converter) HandlesBlocks(blocks *models.LensByValueChartBlocks) bool {
 }
 
 func (converter) SchemaAttribute() schema.Attribute {
-	attrs := maps.Clone(lenscommon.LensChartBaseAttributes())
-	attrs["data_source_json"] = schema.StringAttribute{
-		MarkdownDescription: "Dataset configuration as JSON. Use `dataView` or `index` for standard data sources, and `esql` or `table` for ES|QL sources.",
-		CustomType:          jsontypes.NormalizedType{},
-		Required:            true,
-	}
-	attrs["metric_json"] = schema.StringAttribute{
-		MarkdownDescription: "Metric configuration as JSON. For standard datasets, use a metric operation or formula. For ES|QL datasets, include format, operation, column, and color configuration.",
-		CustomType:          customtypes.NewJSONWithDefaultsType(lenscommon.PopulateLegacyMetricMetricDefaults),
-		Required:            true,
-	}
-	attrs["query"] = schema.SingleNestedAttribute{
-		MarkdownDescription: "Query configuration for filtering data. Required for non-ES|QL datasets.",
-		Optional:            true,
-		Attributes:          lenscommon.LensChartFilterSimpleAttributes(),
-	}
+	attrs := lenscommon.LensChartBaseAttributes()
+	attrs["data_source_json"] = lenscommon.DataSourceJSONAttribute(
+		"Dataset configuration as JSON. Use `dataView` or `index` for standard data sources, and `esql` or `table` for ES|QL sources.",
+	)
+	attrs["metric_json"] = lenscommon.MetricJSONAttribute(
+		"Metric configuration as JSON. For standard datasets, use a metric operation or formula. For ES|QL datasets, include format, operation, column, and color configuration.",
+		lenscommon.PopulateLegacyMetricMetricDefaults, true, "",
+	)
+	attrs["query"] = lenscommon.QueryAttribute(
+		"Query configuration for filtering data. Required for non-ES|QL datasets.",
+	)
 	maps.Copy(attrs, lenscommon.LensChartPresentationAttributes())
-
-	return schema.SingleNestedAttribute{
-		MarkdownDescription: "Typed Lens visualization inside `vis_config.by_value`. " +
-			"Mutually exclusive with the other chart blocks in the same `by_value` block. " +
-			"Shares the attribute shape with `lens_dashboard_app_config.by_value.legacy_metric_config`.",
-		Optional:   true,
-		Attributes: attrs,
-	}
+	return lenscommon.ByValueChartNestedAttribute("legacy_metric_config", attrs)
 }
 
 func (converter) PopulateFromAttributes(ctx context.Context, resolver lenscommon.Resolver, blocks *models.LensByValueChartBlocks, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {

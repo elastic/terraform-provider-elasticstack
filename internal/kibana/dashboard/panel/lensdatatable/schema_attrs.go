@@ -22,9 +22,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
-	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
@@ -37,72 +35,63 @@ func getDatatableSchema(includePresentation bool) map[string]schema.Attribute {
 			MarkdownDescription: "Datatable configuration for standard (non-ES|QL) queries.",
 			Optional:            true,
 			Attributes:          getDatatableNoESQLSchema(includePresentation),
-			Validators: []validator.Object{
-				objectvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("esql")),
-			},
+			Validators:          lenscommon.MutuallyExclusiveObjectValidator("esql"),
 		},
 		"esql": schema.SingleNestedAttribute{
 			MarkdownDescription: "Datatable configuration for ES|QL queries.",
 			Optional:            true,
 			Attributes:          getDatatableESQLSchema(includePresentation),
-			Validators: []validator.Object{
-				objectvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("no_esql")),
-			},
+			Validators:          lenscommon.MutuallyExclusiveObjectValidator("no_esql"),
 		},
 	}
 }
 
+// datatableJSONConfigList returns the datatable-specific list-of-`{ config_json }` shape.
+// Each datatable JSON column is a normalized JSON string (no defaults populator), so it has its
+// own helper here instead of using lenscommon.JSONConfigItemList which expects a defaults populator.
+func datatableJSONConfigList(markdown, configMarkdown string, required bool) schema.Attribute {
+	attr := schema.ListNestedAttribute{
+		MarkdownDescription: markdown,
+		NestedObject: schema.NestedAttributeObject{
+			Attributes: map[string]schema.Attribute{
+				"config_json": schema.StringAttribute{
+					MarkdownDescription: configMarkdown,
+					CustomType:          jsontypes.NormalizedType{},
+					Required:            true,
+				},
+			},
+		},
+	}
+	if required {
+		attr.Required = true
+	} else {
+		attr.Optional = true
+	}
+	return attr
+}
+
 func getDatatableNoESQLSchema(includePresentation bool) map[string]schema.Attribute {
 	attrs := lenscommon.LensChartBaseAttributes()
-	attrs["data_source_json"] = schema.StringAttribute{
-		MarkdownDescription: "Dataset configuration as JSON. For standard datatables, this specifies the data view and query.",
-		CustomType:          jsontypes.NormalizedType{},
-		Required:            true,
-	}
+	attrs["data_source_json"] = lenscommon.DataSourceJSONAttribute(
+		"Dataset configuration as JSON. For standard datatables, this specifies the data view and query.",
+	)
 	attrs["query"] = schema.SingleNestedAttribute{
 		MarkdownDescription: "Query configuration for filtering data.",
 		Required:            true,
 		Attributes:          lenscommon.LensChartFilterSimpleAttributes(),
 	}
-	attrs["metrics"] = schema.ListNestedAttribute{
-		MarkdownDescription: "Array of metric configurations as JSON. Each entry defines a datatable metric column.",
-		Required:            true,
-		NestedObject: schema.NestedAttributeObject{
-			Attributes: map[string]schema.Attribute{
-				"config_json": schema.StringAttribute{
-					MarkdownDescription: "Metric configuration as JSON.",
-					CustomType:          jsontypes.NormalizedType{},
-					Required:            true,
-				},
-			},
-		},
-	}
-	attrs["rows"] = schema.ListNestedAttribute{
-		MarkdownDescription: "Array of row configurations as JSON. Each entry defines a row split operation.",
-		Optional:            true,
-		NestedObject: schema.NestedAttributeObject{
-			Attributes: map[string]schema.Attribute{
-				"config_json": schema.StringAttribute{
-					MarkdownDescription: "Row configuration as JSON.",
-					CustomType:          jsontypes.NormalizedType{},
-					Required:            true,
-				},
-			},
-		},
-	}
-	attrs["split_metrics_by"] = schema.ListNestedAttribute{
-		MarkdownDescription: "Array of split-metrics configurations as JSON. Each entry defines a split operation for metric columns.",
-		Optional:            true,
-		NestedObject: schema.NestedAttributeObject{
-			Attributes: map[string]schema.Attribute{
-				"config_json": schema.StringAttribute{
-					MarkdownDescription: "Split metrics configuration as JSON.",
-					CustomType:          jsontypes.NormalizedType{},
-					Required:            true,
-				},
-			},
-		},
-	}
+	attrs["metrics"] = datatableJSONConfigList(
+		"Array of metric configurations as JSON. Each entry defines a datatable metric column.",
+		"Metric configuration as JSON.", true,
+	)
+	attrs["rows"] = datatableJSONConfigList(
+		"Array of row configurations as JSON. Each entry defines a row split operation.",
+		"Row configuration as JSON.", false,
+	)
+	attrs["split_metrics_by"] = datatableJSONConfigList(
+		"Array of split-metrics configurations as JSON. Each entry defines a split operation for metric columns.",
+		"Split metrics configuration as JSON.", false,
+	)
 	attrs["styling"] = schema.SingleNestedAttribute{
 		MarkdownDescription: "Datatable styling and display configuration.",
 		Required:            true,
@@ -116,50 +105,21 @@ func getDatatableNoESQLSchema(includePresentation bool) map[string]schema.Attrib
 
 func getDatatableESQLSchema(includePresentation bool) map[string]schema.Attribute {
 	attrs := lenscommon.LensChartBaseAttributes()
-	attrs["data_source_json"] = schema.StringAttribute{
-		MarkdownDescription: "Dataset configuration as JSON. For ES|QL, this specifies the ES|QL query.",
-		CustomType:          jsontypes.NormalizedType{},
-		Required:            true,
-	}
-	attrs["metrics"] = schema.ListNestedAttribute{
-		MarkdownDescription: "Array of metric configurations as JSON. Each entry defines a datatable metric column.",
-		Required:            true,
-		NestedObject: schema.NestedAttributeObject{
-			Attributes: map[string]schema.Attribute{
-				"config_json": schema.StringAttribute{
-					MarkdownDescription: "Metric configuration as JSON.",
-					CustomType:          jsontypes.NormalizedType{},
-					Required:            true,
-				},
-			},
-		},
-	}
-	attrs["rows"] = schema.ListNestedAttribute{
-		MarkdownDescription: "Array of row configurations as JSON. Each entry defines a row split operation.",
-		Optional:            true,
-		NestedObject: schema.NestedAttributeObject{
-			Attributes: map[string]schema.Attribute{
-				"config_json": schema.StringAttribute{
-					MarkdownDescription: "Row configuration as JSON.",
-					CustomType:          jsontypes.NormalizedType{},
-					Required:            true,
-				},
-			},
-		},
-	}
-	attrs["split_metrics_by"] = schema.ListNestedAttribute{
-		MarkdownDescription: "Array of split-metrics configurations as JSON. Each entry defines a split operation for metric columns.",
-		Optional:            true,
-		NestedObject: schema.NestedAttributeObject{
-			Attributes: map[string]schema.Attribute{
-				"config_json": schema.StringAttribute{
-					MarkdownDescription: "Split metrics configuration as JSON.",
-					CustomType:          jsontypes.NormalizedType{},
-					Required:            true,
-				},
-			},
-		},
-	}
+	attrs["data_source_json"] = lenscommon.DataSourceJSONAttribute(
+		"Dataset configuration as JSON. For ES|QL, this specifies the ES|QL query.",
+	)
+	attrs["metrics"] = datatableJSONConfigList(
+		"Array of metric configurations as JSON. Each entry defines a datatable metric column.",
+		"Metric configuration as JSON.", true,
+	)
+	attrs["rows"] = datatableJSONConfigList(
+		"Array of row configurations as JSON. Each entry defines a row split operation.",
+		"Row configuration as JSON.", false,
+	)
+	attrs["split_metrics_by"] = datatableJSONConfigList(
+		"Array of split-metrics configurations as JSON. Each entry defines a split operation for metric columns.",
+		"Split metrics configuration as JSON.", false,
+	)
 	attrs["styling"] = schema.SingleNestedAttribute{
 		MarkdownDescription: "Datatable styling and display configuration.",
 		Required:            true,

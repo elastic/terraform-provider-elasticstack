@@ -25,8 +25,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -69,12 +67,10 @@ func pieChartLegendDefaultObject() types.Object {
 }
 
 func (converter) SchemaAttribute() schema.Attribute {
-	attrs := maps.Clone(lenscommon.LensChartBaseAttributes())
-	attrs["data_source_json"] = schema.StringAttribute{
-		MarkdownDescription: "Dataset configuration as JSON. For standard layers, this specifies the data view and query.",
-		CustomType:          jsontypes.NormalizedType{},
-		Required:            true,
-	}
+	attrs := lenscommon.LensChartBaseAttributes()
+	attrs["data_source_json"] = lenscommon.DataSourceJSONAttribute(
+		"Dataset configuration as JSON. For standard layers, this specifies the data view and query.",
+	)
 	attrs["donut_hole"] = schema.StringAttribute{
 		MarkdownDescription: "Donut hole size: none (pie), s, m, or l.",
 		Optional:            true,
@@ -99,56 +95,21 @@ func (converter) SchemaAttribute() schema.Attribute {
 		Default:    objectdefault.StaticValue(pieChartLegendDefaultObject()),
 		Attributes: lenscommon.PartitionLegendSchemaAttributes(),
 	}
-	attrs["query"] = schema.SingleNestedAttribute{
-		MarkdownDescription: "Query configuration for filtering data.",
-		Optional:            true,
-		Attributes:          lenscommon.LensChartFilterSimpleAttributes(),
-	}
-	attrs["filters"] = schema.ListNestedAttribute{
-		MarkdownDescription: "Additional filters to apply to the chart data (maximum 100).",
-		Optional:            true,
-		NestedObject:        lenscommon.LensChartFilterNestedObject(),
-	}
-	attrs["metrics"] = schema.ListNestedAttribute{
-		MarkdownDescription: "Array of metric configurations (minimum 1).",
-		Required:            true,
-		NestedObject: schema.NestedAttributeObject{
-			Attributes: map[string]schema.Attribute{
-				"config_json": schema.StringAttribute{
-					MarkdownDescription: "Metric configuration as JSON.",
-					CustomType:          customtypes.NewJSONWithDefaultsType(lenscommon.PopulatePieChartMetricDefaults),
-					Required:            true,
-				},
-			},
-		},
-		Validators: []validator.List{
-			listvalidator.SizeAtLeast(1),
-		},
-	}
-	attrs["group_by"] = schema.ListNestedAttribute{
-		MarkdownDescription: "Array of breakdown dimensions (minimum 1).",
-		Optional:            true,
-		Validators: []validator.List{
-			listvalidator.SizeAtLeast(1),
-		},
-		NestedObject: schema.NestedAttributeObject{
-			Attributes: map[string]schema.Attribute{
-				"config_json": schema.StringAttribute{
-					MarkdownDescription: "Group by configuration as JSON.",
-					CustomType:          customtypes.NewJSONWithDefaultsType(lenscommon.PopulateLensGroupByDefaults),
-					Required:            true,
-				},
-			},
-		},
-	}
+	attrs["query"] = lenscommon.QueryAttribute("Query configuration for filtering data.")
+	attrs["metrics"] = lenscommon.JSONConfigItemList(
+		"Array of metric configurations (minimum 1).",
+		"Metric configuration as JSON.",
+		lenscommon.PopulatePieChartMetricDefaults, true,
+		listvalidator.SizeAtLeast(1),
+	)
+	attrs["group_by"] = lenscommon.JSONConfigItemList(
+		"Array of breakdown dimensions (minimum 1).",
+		"Group by configuration as JSON.",
+		lenscommon.PopulateLensGroupByDefaults, false,
+		listvalidator.SizeAtLeast(1),
+	)
 	maps.Copy(attrs, lenscommon.LensChartPresentationAttributes())
-	return schema.SingleNestedAttribute{
-		MarkdownDescription: "Typed Lens visualization inside `vis_config.by_value`. " +
-			"Mutually exclusive with the other chart blocks in the same `by_value` block. " +
-			"Shares the attribute shape with `lens_dashboard_app_config.by_value.pie_chart_config`.",
-		Optional:   true,
-		Attributes: attrs,
-	}
+	return lenscommon.ByValueChartNestedAttribute("pie_chart_config", attrs)
 }
 
 func (converter) PopulateFromAttributes(ctx context.Context, resolver lenscommon.Resolver, blocks *models.LensByValueChartBlocks, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {

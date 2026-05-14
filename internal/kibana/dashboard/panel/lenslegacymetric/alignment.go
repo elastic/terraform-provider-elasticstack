@@ -20,10 +20,8 @@ package lenslegacymetric
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // alignLegacyMetricStateFromPlan is the canonical legacy_metric alignment invoked via VizConverter.AlignStateFromPlan.
@@ -38,31 +36,6 @@ func alignLegacyMetricConfigStateFromPlan(ctx context.Context, plan, state *mode
 	if plan == nil || state == nil {
 		return
 	}
-	alignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
-	preservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.MetricJSON, &state.MetricJSON)
-}
-
-func alignTitleAndDescriptionFromPlan(planTitle, planDescription types.String, stateTitle, stateDescription *types.String) {
-	preserveKnownStringIfStateBlank(planTitle, stateTitle)
-	preserveKnownStringIfStateBlank(planDescription, stateDescription)
-}
-
-func preserveKnownStringIfStateBlank(plan types.String, state *types.String) {
-	if !typeutils.IsKnown(plan) {
-		return
-	}
-	if state.IsNull() || state.IsUnknown() || state.ValueString() == "" {
-		*state = plan
-	}
-}
-
-func preservePlanJSONWithDefaultsIfSemanticallyEqual(ctx context.Context, plan customtypes.JSONWithDefaultsValue[map[string]any], state *customtypes.JSONWithDefaultsValue[map[string]any]) {
-	if !typeutils.IsKnown(plan) || !typeutils.IsKnown(*state) {
-		return
-	}
-
-	eq, diags := plan.StringSemanticEquals(ctx, *state)
-	if !diags.HasError() && eq {
-		*state = plan
-	}
+	lenscommon.AlignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
+	lenscommon.PreservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.MetricJSON, &state.MetricJSON)
 }

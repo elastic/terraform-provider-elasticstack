@@ -18,9 +18,8 @@
 package lensdatatable
 
 import (
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func alignDatatableStateFromPlan(plan, state *models.DatatableConfigModel) {
@@ -35,26 +34,12 @@ func alignDatatableNoESQLStateFromPlan(plan, state *models.DatatableNoESQLConfig
 	if plan == nil || state == nil {
 		return
 	}
-	alignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
+	lenscommon.AlignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
 }
 
 func alignDatatableESQLStateFromPlan(plan, state *models.DatatableESQLConfigModel) {
 	if plan == nil || state == nil {
 		return
 	}
-	alignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
-}
-
-func alignTitleAndDescriptionFromPlan(planTitle, planDescription types.String, stateTitle, stateDescription *types.String) {
-	preserveKnownStringIfStateBlank(planTitle, stateTitle)
-	preserveKnownStringIfStateBlank(planDescription, stateDescription)
-}
-
-func preserveKnownStringIfStateBlank(plan types.String, state *types.String) {
-	if !typeutils.IsKnown(plan) {
-		return
-	}
-	if state.IsNull() || state.IsUnknown() || state.ValueString() == "" {
-		*state = plan
-	}
+	lenscommon.AlignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
 }

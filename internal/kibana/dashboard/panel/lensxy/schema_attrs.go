@@ -23,9 +23,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
-	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -46,21 +44,7 @@ func xyAxisSchemaAttrs() map[string]schema.Attribute {
 			MarkdownDescription: "X-axis (horizontal) configuration.",
 			Optional:            true,
 			Attributes: map[string]schema.Attribute{
-				"title": schema.SingleNestedAttribute{
-					MarkdownDescription: "Axis title configuration.",
-					Optional:            true,
-					Attributes: map[string]schema.Attribute{
-						"value": schema.StringAttribute{
-							MarkdownDescription: "Axis title text.",
-							Optional:            true,
-						},
-						"visible": schema.BoolAttribute{
-							MarkdownDescription: "Whether to show the title.",
-							Optional:            true,
-							Computed:            true,
-						},
-					},
-				},
+				"title": lenscommon.AxisTitleAttribute(true),
 				"ticks": schema.BoolAttribute{
 					MarkdownDescription: "Whether to show tick marks on the axis.",
 					Optional:            true,
@@ -110,21 +94,7 @@ func xyAxisSchemaAttrs() map[string]schema.Attribute {
 // getYAxisAttributes returns common Y-axis attributes
 func xyYAxisAttributes() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
-		"title": schema.SingleNestedAttribute{
-			MarkdownDescription: "Axis title configuration.",
-			Optional:            true,
-			Attributes: map[string]schema.Attribute{
-				"value": schema.StringAttribute{
-					MarkdownDescription: "Axis title text.",
-					Optional:            true,
-				},
-				"visible": schema.BoolAttribute{
-					MarkdownDescription: "Whether to show the title.",
-					Optional:            true,
-					Computed:            true,
-				},
-			},
-		},
+		"title": lenscommon.AxisTitleAttribute(true),
 		"ticks": schema.BoolAttribute{
 			MarkdownDescription: "Whether to show tick marks on the axis.",
 			Optional:            true,
@@ -317,11 +287,7 @@ func xyChartConfigSchemaAttrs(includePresentation bool) map[string]schema.Attrib
 			Required:            true,
 			Attributes:          xyLegendSchemaAttrs(),
 		},
-		"query": schema.SingleNestedAttribute{
-			MarkdownDescription: "Query configuration for filtering data.",
-			Optional:            true,
-			Attributes:          lenscommon.LensChartFilterSimpleAttributes(),
-		},
+		"query": lenscommon.QueryAttribute("Query configuration for filtering data."),
 		"filters": schema.ListNestedAttribute{
 			MarkdownDescription: "Additional filters to apply to the chart data (maximum 100).",
 			Optional:            true,
@@ -346,17 +312,13 @@ func xyLayerSchemaNestedObject() schema.NestedAttributeObject {
 				MarkdownDescription: "Configuration for data layers (area, line, bar charts). Mutually exclusive with `reference_line_layer`.",
 				Optional:            true,
 				Attributes:          xyDataLayerAttributes(),
-				Validators: []validator.Object{
-					objectvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("reference_line_layer")),
-				},
+				Validators:          lenscommon.MutuallyExclusiveObjectValidator("reference_line_layer"),
 			},
 			"reference_line_layer": schema.SingleNestedAttribute{
 				MarkdownDescription: "Configuration for reference line layers. Mutually exclusive with `data_layer`.",
 				Optional:            true,
 				Attributes:          xyReferenceLineLayerAttributes(),
-				Validators: []validator.Object{
-					objectvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("data_layer")),
-				},
+				Validators:          lenscommon.MutuallyExclusiveObjectValidator("data_layer"),
 			},
 		},
 	}
@@ -365,11 +327,9 @@ func xyLayerSchemaNestedObject() schema.NestedAttributeObject {
 // getDataLayerAttributes returns attributes for data layers (standard and ES|QL)
 func xyDataLayerAttributes() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
-		"data_source_json": schema.StringAttribute{
-			MarkdownDescription: "Dataset configuration as JSON. For ES|QL layers, this specifies the ES|QL query. For standard layers, this specifies the data view and query.",
-			CustomType:          jsontypes.NormalizedType{},
-			Required:            true,
-		},
+		"data_source_json": lenscommon.DataSourceJSONAttribute(
+			"Dataset configuration as JSON. For ES|QL layers, this specifies the ES|QL query. For standard layers, this specifies the data view and query.",
+		),
 		"ignore_global_filters": schema.BoolAttribute{
 			MarkdownDescription: "If true, ignore global filters when fetching data for this layer. Default is false.",
 			Optional:            true,
@@ -409,11 +369,9 @@ func xyDataLayerAttributes() map[string]schema.Attribute {
 // getReferenceLineLayerAttributes returns attributes for reference line layers
 func xyReferenceLineLayerAttributes() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
-		"data_source_json": schema.StringAttribute{
-			MarkdownDescription: "Dataset configuration as JSON. For ES|QL layers, this specifies the ES|QL query. For standard layers, this specifies the data view and query.",
-			CustomType:          jsontypes.NormalizedType{},
-			Required:            true,
-		},
+		"data_source_json": lenscommon.DataSourceJSONAttribute(
+			"Dataset configuration as JSON. For ES|QL layers, this specifies the ES|QL query. For standard layers, this specifies the data view and query.",
+		),
 		"ignore_global_filters": schema.BoolAttribute{
 			MarkdownDescription: "If true, ignore global filters when fetching data for this layer. Default is false.",
 			Optional:            true,

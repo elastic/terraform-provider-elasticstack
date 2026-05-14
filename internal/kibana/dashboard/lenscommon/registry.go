@@ -23,7 +23,10 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 )
 
-var convertersByType map[string]VizConverter
+var (
+	convertersByType map[string]VizConverter
+	sortedConverters []VizConverter // cached sorted snapshot returned by All; rebuilt on (Un)Register
+)
 
 // UnregisterVizConverter removes the converter registered for vizType and returns it (nil if none).
 // Intended for tests that need to simulate a missing chart implementation.
@@ -33,15 +36,34 @@ func UnregisterVizConverter(vizType string) VizConverter {
 	}
 	c := convertersByType[vizType]
 	delete(convertersByType, vizType)
+	rebuildSortedConverters()
 	return c
 }
 
 // Register adds a VizConverter keyed by VizType(). Later registration replaces an earlier one with the same VizType().
 func Register(c VizConverter) {
 	if convertersByType == nil {
-		convertersByType = make(map[string]VizConverter)
+		convertersByType = make(map[string]VizConverter, 16)
 	}
 	convertersByType[c.VizType()] = c
+	rebuildSortedConverters()
+}
+
+func rebuildSortedConverters() {
+	if len(convertersByType) == 0 {
+		sortedConverters = nil
+		return
+	}
+	keys := make([]string, 0, len(convertersByType))
+	for k := range convertersByType {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	out := make([]VizConverter, 0, len(keys))
+	for _, k := range keys {
+		out = append(out, convertersByType[k])
+	}
+	sortedConverters = out
 }
 
 // canonicalVizTypeForOpaqueAttrs maps shorthand or legacy strings sometimes found in opaque
@@ -87,18 +109,7 @@ func FirstForBlocks(blocks *models.LensByValueChartBlocks) (VizConverter, bool) 
 }
 
 // All returns every registered converter sorted by VizType().
+// The returned slice is a cached snapshot rebuilt on Register/Unregister; callers must not mutate it.
 func All() []VizConverter {
-	if len(convertersByType) == 0 {
-		return nil
-	}
-	keys := make([]string, 0, len(convertersByType))
-	for k := range convertersByType {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	out := make([]VizConverter, 0, len(keys))
-	for _, k := range keys {
-		out = append(out, convertersByType[k])
-	}
-	return out
+	return sortedConverters
 }

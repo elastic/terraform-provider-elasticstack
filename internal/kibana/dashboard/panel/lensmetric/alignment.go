@@ -21,15 +21,13 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func alignMetricStateFromPlan(plan, state *models.MetricChartConfigModel) {
 	if plan == nil || state == nil {
 		return
 	}
-	alignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
+	lenscommon.AlignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
 	lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(plan.DataSourceJSON, &state.DataSourceJSON, "time_field")
 	lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(plan.BreakdownByJSON, &state.BreakdownByJSON, "rank_by")
 	m := min(len(plan.Metrics), len(state.Metrics))
@@ -40,20 +38,6 @@ func alignMetricStateFromPlan(plan, state *models.MetricChartConfigModel) {
 
 func preserveMetricChartMetricConfigFromPlan(plan customtypes.JSONWithDefaultsValue[map[string]any], state *customtypes.JSONWithDefaultsValue[map[string]any]) {
 	if lenscommon.MetricChartMetricConfigsEquivalent(plan, *state) {
-		*state = plan
-	}
-}
-
-func alignTitleAndDescriptionFromPlan(planTitle, planDescription types.String, stateTitle, stateDescription *types.String) {
-	preserveKnownStringIfStateBlank(planTitle, stateTitle)
-	preserveKnownStringIfStateBlank(planDescription, stateDescription)
-}
-
-func preserveKnownStringIfStateBlank(plan types.String, state *types.String) {
-	if !typeutils.IsKnown(plan) {
-		return
-	}
-	if state.IsNull() || state.IsUnknown() || state.ValueString() == "" {
 		*state = plan
 	}
 }

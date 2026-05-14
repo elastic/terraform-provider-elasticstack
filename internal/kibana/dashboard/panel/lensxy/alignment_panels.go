@@ -26,11 +26,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func alignTitleAndDescriptionFromPlan(planTitle, planDescription types.String, stateTitle, stateDescription *types.String) {
-	preserveKnownStringIfStateBlank(planTitle, stateTitle)
-	preserveKnownStringIfStateBlank(planDescription, stateDescription)
-}
-
 // alignXYChartStateFromPlanPanels preserves practitioner intent for XY charts when Kibana
 // injects implicit defaults on read or omits configured fields from the response.
 func AlignXYChartStateFromPlanPanels(planPanels, statePanels []models.PanelModel) {
@@ -60,7 +55,7 @@ func alignXYChartStateFromPlan(plan, state *models.XYChartConfigModel) {
 		return
 	}
 
-	alignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
+	lenscommon.AlignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
 
 	alignXYAxisStateFromPlan(plan.Axis, state.Axis)
 	alignXYDecorationsStateFromPlan(plan.Decorations, state.Decorations)
@@ -209,15 +204,6 @@ func alignXYLayerStateFromPlan(planLayers, stateLayers []models.XYLayerModel) {
 	}
 }
 
-func preserveKnownStringIfStateBlank(plan types.String, state *types.String) {
-	if !typeutils.IsKnown(plan) {
-		return
-	}
-	if state.IsNull() || state.IsUnknown() || state.ValueString() == "" {
-		*state = plan
-	}
-}
-
 func preserveKnownAxisTitleIfStateBlank(plan *models.AxisTitleModel, state **models.AxisTitleModel) {
 	if plan == nil {
 		return
@@ -227,7 +213,7 @@ func preserveKnownAxisTitleIfStateBlank(plan *models.AxisTitleModel, state **mod
 		return
 	}
 
-	preserveKnownStringIfStateBlank(plan.Value, &(*state).Value)
+	lenscommon.PreserveKnownStringIfStateBlank(plan.Value, &(*state).Value)
 	preserveKnownBoolIfStateNull(plan.Visible, &(*state).Visible)
 }
 

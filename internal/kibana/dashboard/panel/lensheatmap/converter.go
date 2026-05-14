@@ -43,13 +43,7 @@ func (converter) HandlesBlocks(blocks *models.LensByValueChartBlocks) bool {
 }
 
 func (converter) SchemaAttribute() schema.Attribute {
-	return schema.SingleNestedAttribute{
-		MarkdownDescription: "Typed Lens visualization inside `vis_config.by_value`. " +
-			"Mutually exclusive with the other chart blocks in the same `by_value` block. " +
-			"Shares the attribute shape with `lens_dashboard_app_config.by_value.heatmap_config`.",
-		Optional:   true,
-		Attributes: heatmapSchemaAttrs(true),
-	}
+	return lenscommon.ByValueChartNestedAttribute("heatmap_config", heatmapSchemaAttrs(true))
 }
 
 func (converter) PopulateFromAttributes(ctx context.Context, resolver lenscommon.Resolver, blocks *models.LensByValueChartBlocks, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
