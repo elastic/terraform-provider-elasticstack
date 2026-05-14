@@ -188,13 +188,13 @@ func clonePanelBaselineWithNullLeaf(baseline *models.PanelModel, block string, l
 	panelkit.EnsureMutableTypedConfig(p, block)
 	switch sch.(type) {
 	case schema.StringAttribute:
-		_ = setStructLeaf(p, block, leaf, types.StringNull())
+		setStructLeaf(p, block, leaf, types.StringNull())
 	case schema.BoolAttribute:
-		_ = setStructLeaf(p, block, leaf, types.BoolNull())
+		setStructLeaf(p, block, leaf, types.BoolNull())
 	case schema.Float64Attribute:
-		_ = setStructLeaf(p, block, leaf, types.Float64Null())
+		setStructLeaf(p, block, leaf, types.Float64Null())
 	case schema.Int64Attribute:
-		_ = setStructLeaf(p, block, leaf, types.Int64Null())
+		setStructLeaf(p, block, leaf, types.Int64Null())
 	case schema.ListNestedAttribute, schema.ListAttribute, schema.MapAttribute:
 		if ok := reflectZeroModelLeaf(p, block, leaf); !ok {
 			return nil
@@ -218,22 +218,22 @@ func clonePanelStaleScalarLeaf(baseline *models.PanelModel, block string, leaf [
 	}
 	switch sch.(type) {
 	case schema.StringAttribute:
-		_ = setStructLeaf(p, block, leaf, types.StringValue("stale-prior-contracttest"))
+		setStructLeaf(p, block, leaf, types.StringValue("stale-prior-contracttest"))
 		return p
 	case schema.BoolAttribute:
 		if b, ok := attrFromReflectLeaf(bl); ok {
 			if bv, ok := b.(types.Bool); ok && typeKnownBoolLike(bv) {
-				_ = setStructLeaf(p, block, leaf, invertBoolTf(bv))
+				setStructLeaf(p, block, leaf, invertBoolTf(bv))
 				return p
 			}
 		}
-		_ = setStructLeaf(p, block, leaf, types.BoolValue(true))
+		setStructLeaf(p, block, leaf, types.BoolValue(true))
 		return p
 	case schema.Float64Attribute:
-		_ = setStructLeaf(p, block, leaf, types.Float64Value(-9.87654321))
+		setStructLeaf(p, block, leaf, types.Float64Value(-9.87654321))
 		return p
 	case schema.Int64Attribute:
-		_ = setStructLeaf(p, block, leaf, types.Int64Value(99988777))
+		setStructLeaf(p, block, leaf, types.Int64Value(99988777))
 		return p
 	default:
 		return nil

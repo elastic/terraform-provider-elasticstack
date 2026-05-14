@@ -21,6 +21,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"sort"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/iface"
@@ -37,7 +38,7 @@ func appendOuterSchemaIssues(handler iface.Handler, issues *[]string) {
 		*issues = append(*issues, "[Schema] SchemaAttribute must be a SingleNestedAttribute")
 		return
 	}
-	if !(sn.Optional && !sn.Required && !sn.Computed) {
+	if !sn.Optional || sn.Required || sn.Computed {
 		*issues = append(*issues, "[Schema] outer SingleNested must be Optional=true, Required=false, Computed=false")
 	}
 }
@@ -62,7 +63,7 @@ func appendRequiredJSONPresenceIssues(handler iface.Handler, fixtureJSON string,
 }
 
 // appendValidateRequiredZeroIssues validates each shallow required attribute independently (one key per ValidatePanelConfig call).
-func appendValidateRequiredZeroIssues(handler iface.Handler, fixtureJSON string, issues *[]string) {
+func appendValidateRequiredZeroIssues(ctx context.Context, handler iface.Handler, fixtureJSON string, issues *[]string) {
 	sn, ok := handler.SchemaAttribute().(schema.SingleNestedAttribute)
 	if !ok {
 		return
@@ -85,7 +86,6 @@ func appendValidateRequiredZeroIssues(handler iface.Handler, fixtureJSON string,
 		return
 	}
 
-	ctx := context.Background()
 	rootPath := path.Root("panels").AtMapKey("stub")
 
 	for _, target := range shallowKeys {
@@ -105,9 +105,7 @@ func appendValidateRequiredZeroIssues(handler iface.Handler, fixtureJSON string,
 
 func shallowCloneAttrs(in map[string]attr.Value) map[string]attr.Value {
 	out := make(map[string]attr.Value, len(in))
-	for k, v := range in {
-		out[k] = v
-	}
+	maps.Copy(out, in)
 	return out
 }
 

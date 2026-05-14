@@ -157,31 +157,31 @@ func reflectZeroModelLeaf(pm *models.PanelModel, block string, segments []string
 	return true
 }
 
-func setStructLeaf(pm *models.PanelModel, blockName string, segments []string, val attr.Value) bool {
+func setStructLeaf(pm *models.PanelModel, blockName string, segments []string, val attr.Value) {
 	rt := reflect.ValueOf(pm).Elem()
 	idx, ok := fieldIndexByTfsdk(rt.Type(), blockName)
 	if !ok {
-		return false
+		return
 	}
 	ptrField := rt.Field(idx)
 	if ptrField.Kind() != reflect.Pointer || !ptrField.CanSet() {
-		return false
+		return
 	}
 	if ptrField.IsNil() {
 		ptrField.Set(reflect.New(ptrField.Type().Elem()))
 	}
 	parentStruct, navigated := allocPathParents(ptrField, segments)
 	if !navigated {
-		return false
+		return
 	}
 	leafSeg := segments[len(segments)-1]
 	fidx, ok := fieldIndexByTfsdk(parentStruct.Type(), leafSeg)
 	if !ok {
-		return false
+		return
 	}
 	dest := parentStruct.Field(fidx)
 	if !dest.CanSet() {
-		return false
+		return
 	}
 
 	switch vv := val.(type) {
@@ -196,39 +196,7 @@ func setStructLeaf(pm *models.PanelModel, blockName string, segments []string, v
 	default:
 		if reflect.TypeOf(val).AssignableTo(dest.Type()) {
 			dest.Set(reflect.ValueOf(val))
-			return true
 		}
-		return false
-	}
-	return true
-}
-
-func readAttrLeaf(pm *models.PanelModel, blockName string, segments []string) (attr.Value, bool) {
-	if pm == nil {
-		return nil, false
-	}
-	rt := reflect.ValueOf(pm).Elem()
-	idx, ok := fieldIndexByTfsdk(rt.Type(), blockName)
-	if !ok {
-		return nil, false
-	}
-	fv := rt.Field(idx)
-	got, navigated := navigateStructByTFSegments(fv, segments)
-	if !navigated || !got.IsValid() {
-		return nil, false
-	}
-
-	switch x := got.Interface().(type) {
-	case types.String:
-		return x, true
-	case types.Bool:
-		return x, true
-	case types.Float64:
-		return x, true
-	case types.Int64:
-		return x, true
-	default:
-		return nil, false
 	}
 }
 
@@ -302,21 +270,6 @@ func deletePath(root any, dotted []string) {
 		deletePath(cur[idx], dotted[1:])
 	default:
 		return
-	}
-}
-
-func stringifyAttr(v attr.Value) string {
-	switch t := v.(type) {
-	case types.String:
-		return fmt.Sprintf("String(null=%v,unknown=%v,val=%q)", t.IsNull(), t.IsUnknown(), t.ValueString())
-	case types.Bool:
-		return fmt.Sprintf("Bool(null=%v,unknown=%v,val=%t)", t.IsNull(), t.IsUnknown(), t.ValueBool())
-	case types.Float64:
-		return fmt.Sprintf("Float64(null=%v,unknown=%v)", t.IsNull(), t.IsUnknown())
-	case types.Int64:
-		return fmt.Sprintf("Int64(null=%v,unknown=%v)", t.IsNull(), t.IsUnknown())
-	default:
-		return fmt.Sprintf("%#v", v)
 	}
 }
 

@@ -54,7 +54,7 @@ func runChecks(ctx context.Context, handler iface.Handler, cfg Config) []string 
 	appendOuterSchemaIssues(handler, &issues)
 	appendRequiredJSONPresenceIssues(handler, cfg.FullAPIResponse, &issues)
 	if panelkit.HasPanelConfigBlock(block) {
-		appendValidateRequiredZeroIssues(handler, cfg.FullAPIResponse, &issues)
+		appendValidateRequiredZeroIssues(ctx, handler, cfg.FullAPIResponse, &issues)
 	}
 
 	appendRoundtripIssues(ctx, handler, cfg.FullAPIResponse, cfg.SkipFields, &issues)

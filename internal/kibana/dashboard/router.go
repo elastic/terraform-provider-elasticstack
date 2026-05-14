@@ -31,6 +31,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+//nolint:unused // wired by section 2 of dashboard-panel-contract OpenSpec change
 func mapPanelFromAPIViaRegistry(ctx context.Context, dashboard *models.DashboardModel, tfPanel *models.PanelModel, item kbapi.DashboardPanelItem) (models.PanelModel, diag.Diagnostics) {
 	_ = dashboard
 	var pm models.PanelModel
@@ -57,6 +58,7 @@ func mapPanelFromAPIViaRegistry(ctx context.Context, dashboard *models.Dashboard
 	return pm, diags
 }
 
+//nolint:unused // wired by section 2 of dashboard-panel-contract OpenSpec change
 func panelModelToAPIViaRegistry(ctx context.Context, pm models.PanelModel, dashboard *models.DashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	for _, h := range AllHandlers() {
@@ -70,6 +72,7 @@ func panelModelToAPIViaRegistry(ctx context.Context, pm models.PanelModel, dashb
 	return panelToAPI(ctx, pm, dashboard)
 }
 
+//nolint:unused // wired by section 2 of dashboard-panel-contract OpenSpec change
 func fillUnknownDashboardPanelFromAPI(ctx context.Context, tfPanel *models.PanelModel, pm *models.PanelModel, panelItem kbapi.DashboardPanelItem) {
 	pm.ID = types.StringNull()
 	pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)

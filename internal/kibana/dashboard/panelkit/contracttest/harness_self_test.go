@@ -255,7 +255,7 @@ func (sloBurnHarnessBase) PinnedHandler() iface.PinnedHandler { return nil }
 
 type brokenSLOBurnReflect struct{ sloBurnHarnessBase }
 
-func (brokenSLOBurnReflect) FromAPI(_ context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
+func (brokenSLOBurnReflect) FromAPI(_ context.Context, pm *models.PanelModel, _ *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
 	apiPanel, err := item.AsKbnDashboardPanelTypeSloBurnRate()
 	if err != nil {
 		var d diag.Diagnostics
@@ -282,7 +282,7 @@ func (brokenSLOBurnReflect) ToAPI(models.PanelModel, *models.DashboardModel) (kb
 
 type brokenSLOBurnRoundTrip struct{ sloBurnHarnessBase }
 
-func (h brokenSLOBurnRoundTrip) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
+func (h brokenSLOBurnRoundTrip) FromAPI(_ context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
 	return h.sloFromAPI(pm, prior, item, nil)
 }
 
@@ -299,12 +299,12 @@ func (brokenSLOBurnRoundTrip) ToAPI(pm models.PanelModel, _ *models.DashboardMod
 
 type brokenSLOBurnSchema struct{ sloBurnHarnessBase }
 
-func (h brokenSLOBurnSchema) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
+func (h brokenSLOBurnSchema) FromAPI(_ context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
 	return h.sloFromAPI(pm, prior, item, nil)
 }
 
 func (h brokenSLOBurnSchema) ToAPI(pm models.PanelModel, _ *models.DashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
-	return h.sloBurnHarnessBase.sloToAPI(pm)
+	return h.sloToAPI(pm)
 }
 
 func (brokenSLOBurnSchema) ValidatePanelConfig(_ context.Context, _ string, _ map[string]attr.Value, _ path.Path) diag.Diagnostics {
@@ -313,14 +313,14 @@ func (brokenSLOBurnSchema) ValidatePanelConfig(_ context.Context, _ string, _ ma
 
 type brokenSLOBurnNullPreserve struct{ sloBurnHarnessBase }
 
-func (h brokenSLOBurnNullPreserve) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
+func (h brokenSLOBurnNullPreserve) FromAPI(_ context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
 	return h.sloFromAPI(pm, prior, item, func(cfg *models.SloBurnRateConfigModel, api kbapi.SloBurnRateEmbeddable) {
 		cfg.Title = types.StringPointerValue(api.Title)
 	})
 }
 
 func (h brokenSLOBurnNullPreserve) ToAPI(pm models.PanelModel, _ *models.DashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
-	return h.sloBurnHarnessBase.sloToAPI(pm)
+	return h.sloToAPI(pm)
 }
 
 const sloBurnHarnessFixtureJSON = `{
