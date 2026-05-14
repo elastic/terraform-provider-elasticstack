@@ -623,7 +623,7 @@ func TestAccResourceSloValidation(t *testing.T) {
 					"name":   config.StringVariable("short"),
 					"slo_id": config.StringVariable("sh"),
 				},
-				ExpectError: regexp.MustCompile(`Attribute slo_id string length must be between 8 and 36, got: 2`),
+				ExpectError: regexp.MustCompile(`Attribute slo_id string length must be between 8 and 48, got: 2`),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -632,7 +632,7 @@ func TestAccResourceSloValidation(t *testing.T) {
 					"name":   config.StringVariable("toolongid"),
 					"slo_id": config.StringVariable("this-id-is-way-too-long-and-exceeds-the-48-character-limit-for-slo-ids"),
 				},
-				ExpectError: regexp.MustCompile(`Attribute slo_id string length must be between 8 and 36, got: 70`),
+				ExpectError: regexp.MustCompile(`Attribute slo_id string length must be between 8 and 48, got: 70`),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
