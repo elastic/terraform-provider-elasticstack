@@ -88,7 +88,7 @@ func TestBuildFieldAttrsMetadataDelta(t *testing.T) {
 			},
 		},
 		{
-			name: "removed field uses empty clearing payload",
+			name:   "removed field uses empty clearing payload",
 			planFA: map[string]fieldAttrModel{},
 			stateFA: map[string]fieldAttrModel{
 				"f1": {CustomLabel: types.StringValue("Bye"), Count: types.Int64Null()},
