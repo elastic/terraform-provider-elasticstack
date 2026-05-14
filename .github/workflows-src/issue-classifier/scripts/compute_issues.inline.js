@@ -15,8 +15,17 @@ if (context.eventName === 'issues') {
   mode = 'scheduled';
 }
 
+// Preserve the original trigger for output reporting
+const originalMode = mode;
+
 if (mode === 'event') {
+  // Fix 2: null-guard on context.payload.issue
   const issue = context.payload.issue;
+  if (!issue) {
+    core.setFailed('issues event payload missing issue object');
+    return;
+  }
+
   const labels = (issue.labels ?? []).map(l => l.name);
   const isTriaged = labels.includes('triaged');
 
@@ -33,10 +42,17 @@ if (mode === 'event') {
   const inputIssueNumber = context.payload.inputs?.issue_number;
 
   if (inputIssueNumber) {
+    // Fix 1: parseInt with radix 10 and validation
+    const issueNum = parseInt(inputIssueNumber, 10);
+    if (!Number.isInteger(issueNum) || issueNum <= 0) {
+      core.setFailed(`Invalid issue_number input: "${inputIssueNumber}"`);
+      return;
+    }
+
     const { data: issue } = await github.rest.issues.get({
       owner,
       repo,
-      issue_number: parseInt(inputIssueNumber),
+      issue_number: issueNum,
     });
 
     const labels = (issue.labels ?? []).map(l => l.name);
@@ -58,7 +74,8 @@ if (mode === 'event') {
 }
 
 if (mode === 'scheduled') {
-  const allIssues = await github.paginate(github.rest.issues.listForRepo, {
+  // Fix 3: single listForRepo call instead of paginate (only need up to 5 issues)
+  const { data: allIssues } = await github.rest.issues.listForRepo({
     owner,
     repo,
     state: 'open',
@@ -83,10 +100,11 @@ if (mode === 'scheduled') {
   }
 }
 
-core.setOutput('mode', mode);
-core.setOutput('issues_json', issues_json);
-core.setOutput('issue_count', String(issue_count));
-core.setOutput('gate_reason', gate_reason);
-core.info(`Mode: ${mode}`);
+// Fix 4 & 5: use originalMode for output, defensive fallbacks on all outputs
+core.setOutput('mode', originalMode ?? mode);
+core.setOutput('issues_json', issues_json ?? '[]');
+core.setOutput('issue_count', String(issue_count ?? 0));
+core.setOutput('gate_reason', gate_reason ?? '');
+core.info(`Mode: ${originalMode ?? mode}`);
 core.info(`Gate reason: ${gate_reason}`);
 core.info(`Issue count: ${issue_count}`);
