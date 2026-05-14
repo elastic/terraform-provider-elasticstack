@@ -35,14 +35,14 @@
 - [x] 2.10 Repeat 2.1–2.6 for `synthetics_monitors` (include `contracttest.Run` in `api_test.go`)
 
 ### Control panels
-- [ ] 2.11 Create `panel/timeslider/` with Handler and PinnedHandler
-- [ ] 2.12 Create `panel/optionslist/` with Handler and PinnedHandler
-- [ ] 2.13 Create `panel/rangeslider/` with Handler and PinnedHandler
-- [ ] 2.14 Create `panel/esqlcontrol/` with Handler and PinnedHandler
-- [ ] 2.15 Remove control panel cases from `models_panels.go` and `toAPI()` cascade
-- [ ] 2.16 Register all 4 control handlers in `registry.go`
-- [ ] 2.17 Migrate `pinned_panels_mapping.go` to delegate to `handler.PinnedHandler()` for controls
-- [ ] 2.18 Remove hard-coded control cases from `pinned_panels_mapping.go`
+- [x] 2.11 Create `panel/timeslider/` with Handler and PinnedHandler
+- [x] 2.12 Create `panel/optionslist/` with Handler and PinnedHandler
+- [x] 2.13 Create `panel/rangeslider/` with Handler and PinnedHandler
+- [x] 2.14 Create `panel/esqlcontrol/` with Handler and PinnedHandler
+- [x] 2.15 Remove control panel cases from `models_panels.go` and `toAPI()` cascade
+- [x] 2.16 Register all 4 control handlers in `registry.go`
+- [x] 2.17 Migrate `pinned_panels_mapping.go` to delegate to `handler.PinnedHandler()` for controls
+- [x] 2.18 Remove hard-coded control cases from `pinned_panels_mapping.go`
 
 ### Markdown panel
 - [ ] 2.19 Create `panel/markdown/api.go` with Handler supporting both typed config and config_json paths
