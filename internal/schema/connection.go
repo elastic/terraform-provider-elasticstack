@@ -41,6 +41,7 @@ func KibanaConnectionNullList() types.List {
 			"bearer_token": types.StringType,
 			"ca_certs":     types.ListType{ElemType: types.StringType},
 			"endpoints":    types.ListType{ElemType: types.StringType},
+			"headers":      types.MapType{ElemType: types.StringType},
 			"insecure":     types.BoolType,
 			"password":     types.StringType,
 			"username":     types.StringType,
@@ -218,6 +219,12 @@ func GetKbFWConnectionBlock() fwschema.Block {
 				"ca_certs": fwschema.ListAttribute{
 					MarkdownDescription: "A list of paths to CA certificates to validate the certificate presented by the Kibana server.",
 					Optional:            true,
+					ElementType:         types.StringType,
+				},
+				"headers": fwschema.MapAttribute{
+					MarkdownDescription: "A map of headers to be sent with each request to Kibana.",
+					Optional:            true,
+					Sensitive:           true,
 					ElementType:         types.StringType,
 				},
 				"insecure": fwschema.BoolAttribute{
@@ -500,6 +507,15 @@ func getKibanaConnectionSchema(keyName string) *schema.Schema {
 					Description: "A list of paths to CA certificates to validate the certificate presented by the Kibana server.",
 					Type:        schema.TypeList,
 					Optional:    true,
+					Elem: &schema.Schema{
+						Type: schema.TypeString,
+					},
+				},
+				"headers": {
+					Description: "A map of headers to be sent with each request to Kibana.",
+					Type:        schema.TypeMap,
+					Optional:    true,
+					Sensitive:   true,
 					Elem: &schema.Schema{
 						Type: schema.TypeString,
 					},

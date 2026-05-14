@@ -48,6 +48,7 @@ type KibanaConnection struct {
 	APIKey      types.String `tfsdk:"api_key"`
 	BearerToken types.String `tfsdk:"bearer_token"`
 	Endpoints   types.List   `tfsdk:"endpoints"`
+	Headers     types.Map    `tfsdk:"headers"`
 	Insecure    types.Bool   `tfsdk:"insecure"`
 	CACerts     types.List   `tfsdk:"ca_certs"`
 }

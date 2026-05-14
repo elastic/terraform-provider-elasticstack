@@ -25,6 +25,7 @@ import (
 
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	sdkdiags "github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -142,6 +143,14 @@ func newKibanaOapiConfigFromSDK(d *schema.ResourceData, base baseConfig) (kibana
 				config.Insecure = true
 			}
 		}
+
+		if headers, ok := kibConfig["headers"]; ok && len(headers.(map[string]any)) > 0 {
+			headersMap := headers.(map[string]any)
+			config.Headers = make(map[string]string, len(headersMap))
+			for header, value := range headersMap {
+				config.Headers[strings.TrimSpace(header)] = strings.TrimSpace(value.(string))
+			}
+		}
 	}
 
 	return config.withEnvironmentOverrides(), nil
@@ -182,6 +191,14 @@ func newKibanaOapiConfigFromFramework(ctx context.Context, cfg ProviderConfigura
 		}
 
 		config.Insecure = kibConfig.Insecure.ValueBool()
+
+		for header, value := range kibConfig.Headers.Elements() {
+			strValue := value.(basetypes.StringValue)
+			if config.Headers == nil {
+				config.Headers = make(map[string]string)
+			}
+			config.Headers[strings.TrimSpace(header)] = strings.TrimSpace(strValue.ValueString())
+		}
 	}
 
 	return config.withEnvironmentOverrides(), nil
@@ -297,6 +314,14 @@ func newKibanaOapiConfigFromSDKResource(d *schema.ResourceData, base baseConfig)
 				config.Insecure = true
 			}
 		}
+
+		if headers, ok := kibConfig["headers"]; ok && len(headers.(map[string]any)) > 0 {
+			headersMap := headers.(map[string]any)
+			config.Headers = make(map[string]string, len(headersMap))
+			for header, value := range headersMap {
+				config.Headers[strings.TrimSpace(header)] = strings.TrimSpace(value.(string))
+			}
+		}
 	}
 
 	return config.withEnvironmentOverrides(), nil
@@ -322,5 +347,13 @@ func (k kibanaOapiConfig) withEnvironmentOverrides() kibanaOapiConfig {
 }
 
 func (k kibanaOapiConfig) toFleetConfig() fleetConfig {
-	return fleetConfig(k)
+	return fleetConfig{
+		URL:         k.URL,
+		Username:    k.Username,
+		Password:    k.Password,
+		APIKey:      k.APIKey,
+		BearerToken: k.BearerToken,
+		Insecure:    k.Insecure,
+		CACerts:     k.CACerts,
+	}
 }

@@ -37,6 +37,7 @@ type Config struct {
 	Password    string
 	APIKey      string
 	BearerToken string
+	Headers     map[string]string
 	Insecure    bool
 	CACerts     []string
 }
@@ -109,6 +110,10 @@ func (t *transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	default:
 		// https://www.elastic.co/guide/en/kibana/current/api.html#api-request-headers
 		req.Header.Add("kbn-xsrf", "true")
+	}
+
+	for header, value := range t.Headers {
+		req.Header.Set(header, value)
 	}
 
 	if t.Username != "" {
