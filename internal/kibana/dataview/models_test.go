@@ -260,6 +260,42 @@ func TestPopulateFromAPI(t *testing.T) {
 			},
 		},
 		{
+			name: "field_attrs_omitted_strips_cleared_explicit_null_entries",
+			existingModel: dataViewModel{
+				ID:      types.StringValue("existing-space-id/view-id"),
+				SpaceID: types.StringValue("existing-space-id"),
+				DataView: typeutils.ObjectValueFrom(ctx, &innerModel{
+					ID:              types.StringValue("view-id"),
+					SourceFilters:   types.ListNull(types.StringType),
+					FieldAttributes: NewFieldAttrsNull(getFieldAttrElemType()),
+					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType()),
+					FieldFormats:    types.MapNull(getFieldFormatElemType()),
+					Namespaces:      types.ListNull(types.StringType),
+				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
+			},
+			response: kbapi.DataViewsDataViewResponseObject{
+				DataView: &kbapi.DataViewsDataViewResponseObjectInner{
+					Id: new("view-id"),
+					FieldAttrs: &map[string]kbapi.DataViewsFieldattrs{
+						// Kibana echoes cleared field metadata using explicit JSON null keys.
+						"host.hostname": {},
+					},
+				},
+			},
+			expectedModel: dataViewModel{
+				ID:      types.StringValue("existing-space-id/view-id"),
+				SpaceID: types.StringValue("existing-space-id"),
+				DataView: typeutils.ObjectValueFrom(ctx, &innerModel{
+					ID:              types.StringValue("view-id"),
+					SourceFilters:   types.ListNull(types.StringType),
+					FieldAttributes: NewFieldAttrsNull(getFieldAttrElemType()),
+					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType()),
+					FieldFormats:    types.MapNull(getFieldFormatElemType()),
+					Namespaces:      types.ListNull(types.StringType),
+				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
+			},
+		},
+		{
 			name: "field_attrs_custom_label_omits_server_count_when_count_unset_in_plan",
 			existingModel: dataViewModel{
 				ID:      types.StringValue("existing-space-id/view-id"),

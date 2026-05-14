@@ -68,6 +68,11 @@ func reconcileIncomingFieldAttrsWithTerraformPlan(ctx context.Context, planned F
 
 		priorVal, plannedField := plannedElems[fieldName]
 		if !plannedField {
+			// Kibana may echo cleared fields as explicit null keys; omit them so removed keys
+			// do not reappear in state (REQ-015; TestAccResourceDataViewFieldAttrs).
+			if incomingM.CustomLabel.IsNull() && incomingM.Count.IsNull() {
+				continue
+			}
 			out[fieldName] = av
 			continue
 		}
@@ -113,6 +118,10 @@ func reconcileIncomingFieldAttrsWithTerraformPlan(ctx context.Context, planned F
 // field_attrs snapshot when Terraform state still has the attribute omitted (null). Otherwise
 // plan-time MapSemanticEquals is never invoked for a null-config attribute and refresh shows drift
 // (REQ-015; see TestAccResourceDataViewFieldAttrs).
+//
+// It also drops explicit {customLabel: null, count: null} entries left after metadata clears,
+// which would otherwise break apply with "inconsistent result after apply" when field_attrs is
+// planned null.
 func stripServerCountOnlyWhenFieldAttrsUnset(ctx context.Context, existing FieldAttrsValue, incoming types.Map, diags *diag.Diagnostics) types.Map {
 	if !existing.IsNull() {
 		return incoming
@@ -137,6 +146,9 @@ func stripServerCountOnlyWhenFieldAttrsUnset(ctx context.Context, existing Field
 			return incoming
 		}
 
+		if m.CustomLabel.IsNull() && m.Count.IsNull() {
+			continue
+		}
 		if m.CustomLabel.IsNull() && !m.Count.IsNull() {
 			continue
 		}
