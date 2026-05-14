@@ -774,17 +774,10 @@ func TestNewKibanaResource_Read_happyPath_fallback(t *testing.T) {
 }
 
 // =============================================================================
-// Additional: multi-slash state id and shared composite ID parsing
+// Additional: multi-slash ID falls back through composite parse
 // =============================================================================
-//
-// The Kibana envelope resolves identity with clients.CompositeIDFromStrFw, which
-// follows clients.CompositeIDFromStr: split on the first "/" only so the resource
-// segment may contain further slashes (needed for nested Elasticsearch resource ids
-// such as ML calendar events). That differs from historical "exactly two path segments"
-// parsing, so an id like "a/b/c" is composite (cluster "a", resource "b/c") rather
-// than falling back to GetResourceID / GetSpaceID. See the package comment on
-// CompositeIDFromStr in internal/clients/api_client.go.
-func TestNewKibanaResource_Read_multiSlashCompositeID(t *testing.T) {
+
+func TestNewKibanaResource_Read_multiSlashIDFallback(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	factory := newTestConfiguredFactory(ctx, t)
@@ -830,8 +823,8 @@ func TestNewKibanaResource_Read_multiSlashCompositeID(t *testing.T) {
 
 	require.False(t, resp.Diagnostics.HasError())
 	require.True(t, readCalled, "readFunc should be called")
-	require.Equal(t, "b/c", receivedResourceID, "resource segment is everything after the first slash")
-	require.Equal(t, "a", receivedSpaceID, "space segment is everything before the first slash")
+	require.Equal(t, "fallback-name", receivedResourceID, "fallback should use GetResourceID")
+	require.Equal(t, "fallback-space", receivedSpaceID, "fallback should use GetSpaceID")
 }
 
 // =============================================================================

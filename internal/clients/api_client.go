@@ -41,16 +41,32 @@ type CompositeID struct {
 
 const ServerlessFlavor = "serverless"
 
-// CompositeIDFromStr parses an ID as <cluster_uuid>/<resource_identifier> by splitting only on
-// the first slash, so resource_identifier may contain additional slashes. IDs with exactly one
-// slash (no nested slash in the resource segment) behave the same as the historical parser.
-// Some Elasticsearch resources (for example ML calendar events) use a resource segment of the
-// form "<calendar_id>/<event_id>".
+// CompositeIDFromStr parses an ID as <cluster_uuid>/<resource_identifier> using the historical
+// rule: the id must split into exactly two path segments (no additional unescaped slashes in the
+// overall id). This is used for Kibana and other call sites that must preserve legacy behavior.
+func CompositeIDFromStr(id string) (*CompositeID, diag.Diagnostics) {
+	idParts := strings.Split(id, "/")
+	if len(idParts) != 2 {
+		return nil, diagutil.SDKErrorDiag(
+			"Wrong resource ID.",
+			"Resource ID must have following format: <cluster_uuid>/<resource identifier>",
+		)
+	}
+	return &CompositeID{
+		ClusterID:  idParts[0],
+		ResourceID: idParts[1],
+	}, nil
+}
+
+// CompositeIDFromStrForElasticsearch parses Elasticsearch composite state ids for
+// [entitycore.ElasticsearchResource] Read/Delete. It splits only on the first "/", so
+// resource_identifier may contain additional slashes (for example ML calendar events
+// "<calendar_id>/<event_id>" after the cluster segment).
 //
 // For backward compatibility, an ID with an empty cluster segment and a non-empty resource
-// segment (for example "/<synthetics_monitor_id>" from legacy CompositeID.String formatting) is
-// accepted; an empty resource segment (including a trailing slash) is rejected.
-func CompositeIDFromStr(id string) (*CompositeID, diag.Diagnostics) {
+// segment (for example "/<synthetics_monitor_id>" from legacy [CompositeID.String] formatting) is
+// accepted; an empty resource segment (including a trailing slash after the cluster) is rejected.
+func CompositeIDFromStrForElasticsearch(id string) (*CompositeID, diag.Diagnostics) {
 	parts := strings.SplitN(id, "/", 2)
 	if len(parts) != 2 || parts[1] == "" {
 		return nil, diagutil.SDKErrorDiag(
@@ -58,9 +74,6 @@ func CompositeIDFromStr(id string) (*CompositeID, diag.Diagnostics) {
 			"Resource ID must have following format: <cluster_uuid>/<resource identifier>",
 		)
 	}
-	// Legacy Kibana synthetics (and similar) IDs were persisted as "/<resource_identifier>" when the
-	// "cluster" segment was empty, which fmt.Sprintf produced from CompositeID.String(). Accept a
-	// missing first segment only when the resource segment is non-empty; reject "cluster/" etc.
 	if parts[0] == "" {
 		return &CompositeID{
 			ClusterID:  "",
@@ -71,12 +84,6 @@ func CompositeIDFromStr(id string) (*CompositeID, diag.Diagnostics) {
 		ClusterID:  parts[0],
 		ResourceID: parts[1],
 	}, nil
-}
-
-// CompositeIDFromStrForElasticsearch is an alias for [CompositeIDFromStr] for call sites that
-// want an explicit Elasticsearch-oriented name.
-func CompositeIDFromStrForElasticsearch(id string) (*CompositeID, diag.Diagnostics) {
-	return CompositeIDFromStr(id)
 }
 
 func CompositeIDFromStrFw(id string) (*CompositeID, fwdiags.Diagnostics) {
