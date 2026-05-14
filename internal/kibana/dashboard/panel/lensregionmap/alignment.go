@@ -26,7 +26,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// Section 5 will delegate alignPanelStateFromPlan; this duplicates dashboard.alignRegionMapStateFromPlan until then.
+// alignRegionMapStateFromPlan is the canonical region_map alignment invoked via VizConverter.AlignStateFromPlan.
 func alignRegionMapStateFromPlan(ctx context.Context, plan, state *models.LensByValueChartBlocks) {
 	if plan == nil || state == nil {
 		return

@@ -19,7 +19,7 @@ package lenstagcloud
 
 import "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 
-// populateTagcloudLensAttributes duplicates dashboard.populateTagcloudAttributes until Section 5 routes via converters.
+// populateTagcloudLensAttributes is the canonical opaque-attribute JSON defaulting for VizConverter.PopulateJSONDefaults.
 func populateTagcloudLensAttributes(attrs map[string]any) map[string]any {
 	if attrs == nil {
 		return attrs

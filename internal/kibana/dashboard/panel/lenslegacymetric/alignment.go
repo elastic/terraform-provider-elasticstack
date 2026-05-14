@@ -26,7 +26,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// Section 5 will centralize alignPanelStateFromPlan dispatch; this duplicates dashboard.alignLegacyMetricStateFromPlan until then.
+// alignLegacyMetricStateFromPlan is the canonical legacy_metric alignment invoked via VizConverter.AlignStateFromPlan.
 func alignLegacyMetricStateFromPlan(ctx context.Context, plan, state *models.LensByValueChartBlocks) {
 	if plan == nil || state == nil {
 		return

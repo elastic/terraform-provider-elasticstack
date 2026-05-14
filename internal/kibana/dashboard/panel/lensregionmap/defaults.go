@@ -19,7 +19,7 @@ package lensregionmap
 
 import "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 
-// populateRegionMapLensAttributes duplicates dashboard.populateRegionMapAttributes until Section 5 routes via converters.
+// populateRegionMapLensAttributes is the canonical opaque-attribute JSON defaulting for VizConverter.PopulateJSONDefaults.
 func populateRegionMapLensAttributes(attrs map[string]any) map[string]any {
 	if attrs == nil {
 		return attrs

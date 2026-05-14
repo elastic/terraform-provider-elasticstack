@@ -19,7 +19,7 @@ package lenspie
 
 import "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 
-// populatePieLensAttributes duplicates dashboard.populatePieChartAttributes until Section 5 routes via converters.
+// populatePieLensAttributes is the canonical opaque-attribute JSON defaulting for VizConverter.PopulateJSONDefaults.
 func populatePieLensAttributes(attrs map[string]any) map[string]any {
 	if attrs == nil {
 		return attrs

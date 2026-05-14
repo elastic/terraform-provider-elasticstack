@@ -23,7 +23,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// Section 5 will delegate alignPanelStateFromPlan; this duplicates dashboard.alignPieStateFromPlan until then.
+// alignPieStateFromPlan is the canonical pie alignment invoked via VizConverter.AlignStateFromPlan.
 func alignPieStateFromPlan(plan, state *models.LensByValueChartBlocks) {
 	if plan == nil || state == nil {
 		return

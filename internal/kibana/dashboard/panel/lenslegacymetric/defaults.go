@@ -21,7 +21,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 )
 
-// populateLegacyMetricLensAttributes duplicates dashboard.populateLegacyMetricAttributes until Section 5 routes JSON defaults through the converter registry.
+// populateLegacyMetricLensAttributes is the canonical opaque-attribute JSON defaulting for VizConverter.PopulateJSONDefaults.
 func populateLegacyMetricLensAttributes(attrs map[string]any) map[string]any {
 	if attrs == nil {
 		return attrs
