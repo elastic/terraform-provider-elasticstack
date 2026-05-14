@@ -37,10 +37,11 @@ const (
 
 func getSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
-		MarkdownDescription: "Assigns a single anomaly detection job to an ML calendar using " +
+		MarkdownDescription: "Assigns a single anomaly detection **job or job group** to an ML calendar using " +
 			"`PUT _ml/calendars/{calendar_id}/jobs/{job_id}` (and removes it on destroy). " +
-			"The computed `id` is `<cluster_uuid>/<calendar_id>|<job_id>` (a pipe separates calendar and job because the composite ID only allows one slash). " +
-			"See the Elasticsearch REST API reference for the ML put calendar job operation for details.",
+			"The `job_id` value is the same path parameter Elasticsearch accepts: a job identifier or a job group name (see the Elasticsearch REST API operation `ml.put_calendar_job`). " +
+			"This resource models **one** identifier per instance (comma-separated lists in the API are not valid for the Terraform `job_id` attribute). " +
+			"The computed `id` is `<cluster_uuid>/<calendar_id>|<job_id>` (a pipe separates calendar and job because the composite ID only allows one slash).",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Internal composite identifier of the resource.",
@@ -65,7 +66,7 @@ func getSchema(_ context.Context) schema.Schema {
 				},
 			},
 			"job_id": schema.StringAttribute{
-				MarkdownDescription: "Identifier of the anomaly detection job to attach to the calendar.",
+				MarkdownDescription: "Anomaly detection **job identifier** or **job group name** to attach to the calendar, matching Elasticsearch `PUT .../jobs/{job_id}` (one value per resource; not a comma-separated list).",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
