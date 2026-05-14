@@ -9,10 +9,10 @@
 
 ## 2. Migrate LensByValueChartBlocks to models
 
-- [ ] 2.1 Move `lensByValueChartBlocks` struct from `dashboard/models_lens_by_value_chart_blocks.go` to `models/lens.go` as exported `LensByValueChartBlocks`
-- [ ] 2.2 Update all references across dashboard package to use `models.LensByValueChartBlocks`
-- [ ] 2.3 Move `lensByValueChartBlocksFromPanel` and related helpers to `panelkit/` or delete if superseded by reflection
-- [ ] 2.4 Delete `dashboard/models_lens_by_value_chart_blocks.go`
+- [x] 2.1 Move `lensByValueChartBlocks` struct from `dashboard/models_lens_by_value_chart_blocks.go` to `models/lens.go` as exported `LensByValueChartBlocks`
+- [x] 2.2 Update all references across dashboard package to use `models.LensByValueChartBlocks`
+- [x] 2.3 Move `lensByValueChartBlocksFromPanel` and related helpers to `panelkit/` or delete if superseded by reflection
+- [x] 2.4 Delete `dashboard/models_lens_by_value_chart_blocks.go`
 
 ## 3. Migrate converters (12 total)
 
