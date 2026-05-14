@@ -23,6 +23,7 @@ import (
 
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -81,16 +82,16 @@ func flattenTemplateBlock(ctx context.Context, tpl *estypes.ClusterComponentTemp
 	t := tpl.ComponentTemplate.Template
 
 	// Mappings
-	var mappings jsontypes.Normalized
+	var mappings esindex.MappingsValue
 	if t.Mappings != nil {
 		b, err := json.Marshal(t.Mappings)
 		if err != nil {
 			diags.AddError("Failed to marshal template.mappings", err.Error())
 			return types.ObjectNull(templateAttrTypes()), diags
 		}
-		mappings = jsontypes.NewNormalizedValue(string(b))
+		mappings = esindex.NewMappingsValue(string(b))
 	} else {
-		mappings = jsontypes.NewNormalizedNull()
+		mappings = esindex.NewMappingsNull()
 	}
 
 	// Settings

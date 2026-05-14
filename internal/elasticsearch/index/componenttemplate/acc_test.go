@@ -53,6 +53,25 @@ func TestAccResourceComponentTemplate(t *testing.T) {
 	})
 }
 
+func TestAccResourceComponentTemplateNestedObjectMappings(t *testing.T) {
+	templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceComponentTemplateDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(templateName)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "name", templateName),
+				),
+			},
+		},
+	})
+}
+
 func TestAccResourceComponentTemplateAliasDetails(t *testing.T) {
 	templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 

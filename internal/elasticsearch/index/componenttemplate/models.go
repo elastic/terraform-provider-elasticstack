@@ -18,6 +18,7 @@
 package componenttemplate
 
 import (
+	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -40,7 +41,7 @@ func (d Data) GetElasticsearchConnection() types.List { return d.ElasticsearchCo
 // TemplateModel is the inner shape of the template block.
 type TemplateModel struct {
 	Alias    types.Set                      `tfsdk:"alias"`
-	Mappings jsontypes.Normalized           `tfsdk:"mappings"`
+	Mappings esindex.MappingsValue          `tfsdk:"mappings"`
 	Settings customtypes.IndexSettingsValue `tfsdk:"settings"`
 }
 
