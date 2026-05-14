@@ -650,6 +650,16 @@ func TestAccResourceAnomalyDetectionJobVariableSourcedDetectors(t *testing.T) {
 					resource.TestCheckResourceAttrSet(addr, "id"),
 				),
 			},
+			// Plan-after-apply must not regress: re-plan with the same variable-sourced config
+			// must not produce a Value Conversion Error on the read path.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"job_id": config.StringVariable(jobID)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.function", "count"),
+				),
+			},
 		},
 	})
 }
