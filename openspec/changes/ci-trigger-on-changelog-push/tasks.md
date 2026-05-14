@@ -9,7 +9,7 @@
 
 ## 3. Recompile and verify
 
-- [ ] 3.1 Run `go run ./scripts/compile-workflow-sources/main.go` to regenerate both compiled workflow YAML files
-- [ ] 3.2 Verify the compiled `.github/workflows/changelog-generation.yml` contains the CI trigger logic in both push steps
-- [ ] 3.3 Verify the compiled `.github/workflows/prep-release.yml` contains the CI trigger logic in its push step
-- [ ] 3.4 Run `make build` to confirm the project still compiles cleanly
+- [x] 3.1 Run `go run ./scripts/compile-workflow-sources/main.go` to regenerate both compiled workflow YAML files
+- [x] 3.2 Verify the compiled `.github/workflows/changelog-generation.yml` contains the CI trigger logic in both push steps
+- [x] 3.3 Verify the compiled `.github/workflows/prep-release.yml` contains the CI trigger logic in its push step
+- [x] 3.4 Run `make build` to confirm the project still compiles cleanly
