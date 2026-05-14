@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -331,8 +332,8 @@ func Test_discoverSession_rowHeightStringValidator(t *testing.T) {
 }
 
 func Test_discoverSessionDSLTabToAPI_invalidDataSourceJSON(t *testing.T) {
-	m := discoverSessionDSLTabModel{
-		Query: &filterSimpleModel{
+	m := models.DiscoverSessionDSLTabModel{
+		Query: &models.FilterSimpleModel{
 			Language:   types.StringValue("kql"),
 			Expression: types.StringValue("*"),
 		},
@@ -373,26 +374,26 @@ func Test_discoverSession_viewMode_invalidRejectedBySchemaValidators(t *testing.
 func Test_discoverSession_byValue_dsl_roundTrip(t *testing.T) {
 	ctx := context.Background()
 	rawFilter := `{"condition":{"field":"host.name","operator":"is","value":"web"},"type":"condition"}`
-	pm := panelModel{
-		DiscoverSessionConfig: &discoverSessionPanelConfigModel{
-			ByValue: &discoverSessionPanelByValueModel{
-				TimeRange: &timeRangeModel{
+	pm := models.PanelModel{
+		DiscoverSessionConfig: &models.DiscoverSessionPanelConfigModel{
+			ByValue: &models.DiscoverSessionPanelByValueModel{
+				TimeRange: &models.TimeRangeModel{
 					From: types.StringValue("now-30m"),
 					To:   types.StringValue("now"),
 					Mode: types.StringNull(),
 				},
-				Tab: discoverSessionTabModel{
-					DSL: &discoverSessionDSLTabModel{
+				Tab: models.DiscoverSessionTabModel{
+					DSL: &models.DiscoverSessionDSLTabModel{
 						ColumnOrder: types.ListValueMust(types.StringType, []attr.Value{
 							types.StringValue("@timestamp"),
 							types.StringValue("message"),
 						}),
-						Query: &filterSimpleModel{
+						Query: &models.FilterSimpleModel{
 							Language:   types.StringValue("kql"),
 							Expression: types.StringValue(`host.name : "web-01"`),
 						},
 						DataSourceJSON: jsontypes.NewNormalizedValue(`{"id":"logs-*","type":"data_view_reference"}`),
-						Filters: []chartFilterJSONModel{
+						Filters: []models.ChartFilterJSONModel{
 							{FilterJSON: jsontypes.NewNormalizedValue(rawFilter)},
 						},
 					},
@@ -435,16 +436,16 @@ func Test_discoverSession_byValue_dsl_roundTrip(t *testing.T) {
 
 func Test_discoverSession_byValue_esql_roundTrip(t *testing.T) {
 	ctx := context.Background()
-	pm := panelModel{
-		DiscoverSessionConfig: &discoverSessionPanelConfigModel{
-			ByValue: &discoverSessionPanelByValueModel{
-				TimeRange: &timeRangeModel{
+	pm := models.PanelModel{
+		DiscoverSessionConfig: &models.DiscoverSessionPanelConfigModel{
+			ByValue: &models.DiscoverSessionPanelByValueModel{
+				TimeRange: &models.TimeRangeModel{
 					From: types.StringValue("now-30m"),
 					To:   types.StringValue("now"),
 					Mode: types.StringNull(),
 				},
-				Tab: discoverSessionTabModel{
-					ESQL: &discoverSessionESQLTabModel{
+				Tab: models.DiscoverSessionTabModel{
+					ESQL: &models.DiscoverSessionESQLTabModel{
 						DataSourceJSON: jsontypes.NewNormalizedValue(`{"query":"FROM logs-*","type":"esql"}`),
 					},
 				},
@@ -471,12 +472,12 @@ func Test_discoverSession_byValue_esql_roundTrip(t *testing.T) {
 }
 
 func Test_discoverSession_byReference_preservesPractitionerSelectedTabID(t *testing.T) {
-	pm := panelModel{
-		DiscoverSessionConfig: &discoverSessionPanelConfigModel{
-			ByReference: &discoverSessionPanelByRefModel{
+	pm := models.PanelModel{
+		DiscoverSessionConfig: &models.DiscoverSessionPanelConfigModel{
+			ByReference: &models.DiscoverSessionPanelByRefModel{
 				RefID:         types.StringValue("discover-1"),
 				SelectedTabID: types.StringValue("user-tab"),
-				TimeRange: &timeRangeModel{
+				TimeRange: &models.TimeRangeModel{
 					From: types.StringValue("now-30m"),
 					To:   types.StringValue("now"),
 					Mode: types.StringNull(),
@@ -506,12 +507,12 @@ func Test_discoverSession_byReference_preservesPractitionerSelectedTabID(t *test
 }
 
 func Test_discoverSession_byReference_selectedTabID_fromAPI_thenStable(t *testing.T) {
-	pm := panelModel{
-		DiscoverSessionConfig: &discoverSessionPanelConfigModel{
-			ByReference: &discoverSessionPanelByRefModel{
+	pm := models.PanelModel{
+		DiscoverSessionConfig: &models.DiscoverSessionPanelConfigModel{
+			ByReference: &models.DiscoverSessionPanelByRefModel{
 				RefID:         types.StringValue("discover-1"),
 				SelectedTabID: types.StringNull(),
-				TimeRange: &timeRangeModel{
+				TimeRange: &models.TimeRangeModel{
 					From: types.StringValue("now-30m"),
 					To:   types.StringValue("now"),
 					Mode: types.StringNull(),
@@ -548,16 +549,16 @@ func Test_populateDiscoverSessionPanelFromAPI_branchMismatch_repopulates(t *test
 	ctx := context.Background()
 
 	t.Run("API by_reference replaces prior by_value", func(t *testing.T) {
-		shared := &discoverSessionPanelConfigModel{
-			ByValue: &discoverSessionPanelByValueModel{
-				TimeRange: &timeRangeModel{
+		shared := &models.DiscoverSessionPanelConfigModel{
+			ByValue: &models.DiscoverSessionPanelByValueModel{
+				TimeRange: &models.TimeRangeModel{
 					From: types.StringValue("now-30m"),
 					To:   types.StringValue("now"),
 					Mode: types.StringNull(),
 				},
-				Tab: discoverSessionTabModel{
-					DSL: &discoverSessionDSLTabModel{
-						Query: &filterSimpleModel{
+				Tab: models.DiscoverSessionTabModel{
+					DSL: &models.DiscoverSessionDSLTabModel{
+						Query: &models.FilterSimpleModel{
 							Language:   types.StringValue("kql"),
 							Expression: types.StringValue("*"),
 						},
@@ -566,8 +567,8 @@ func Test_populateDiscoverSessionPanelFromAPI_branchMismatch_repopulates(t *test
 				},
 			},
 		}
-		pm := panelModel{DiscoverSessionConfig: shared}
-		tfPanel := panelModel{DiscoverSessionConfig: shared}
+		pm := models.PanelModel{DiscoverSessionConfig: shared}
+		tfPanel := models.PanelModel{DiscoverSessionConfig: shared}
 
 		cfg1 := kbapi.KbnDashboardPanelTypeDiscoverSessionConfig1{
 			RefId:     "saved-session-99",
@@ -585,9 +586,9 @@ func Test_populateDiscoverSessionPanelFromAPI_branchMismatch_repopulates(t *test
 	})
 
 	t.Run("API by_value replaces prior by_reference", func(t *testing.T) {
-		shared := &discoverSessionPanelConfigModel{
-			ByReference: &discoverSessionPanelByRefModel{
-				TimeRange: &timeRangeModel{
+		shared := &models.DiscoverSessionPanelConfigModel{
+			ByReference: &models.DiscoverSessionPanelByRefModel{
+				TimeRange: &models.TimeRangeModel{
 					From: types.StringValue("now-30m"),
 					To:   types.StringValue("now"),
 					Mode: types.StringNull(),
@@ -595,8 +596,8 @@ func Test_populateDiscoverSessionPanelFromAPI_branchMismatch_repopulates(t *test
 				RefID: types.StringValue("old-ref-id"),
 			},
 		}
-		pm := panelModel{DiscoverSessionConfig: shared}
-		tfPanel := panelModel{DiscoverSessionConfig: shared}
+		pm := models.PanelModel{DiscoverSessionConfig: shared}
+		tfPanel := models.PanelModel{DiscoverSessionConfig: shared}
 
 		tabItem := kbapi.KbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_Item{}
 		dsl := kbapi.KbnDashboardPanelTypeDiscoverSessionConfig0Tabs0{
@@ -626,23 +627,23 @@ func Test_discoverSession_byReference_roundTrip(t *testing.T) {
 	ctx := context.Background()
 	grid := discoverSessionTestGrid()
 
-	pm := panelModel{
-		DiscoverSessionConfig: &discoverSessionPanelConfigModel{
+	pm := models.PanelModel{
+		DiscoverSessionConfig: &models.DiscoverSessionPanelConfigModel{
 			Title:       types.StringValue("Discover link"),
 			Description: types.StringValue("linked panel"),
-			ByReference: &discoverSessionPanelByRefModel{
-				TimeRange: &timeRangeModel{
+			ByReference: &models.DiscoverSessionPanelByRefModel{
+				TimeRange: &models.TimeRangeModel{
 					From: types.StringValue("now-1h"),
 					To:   types.StringValue("now"),
 					Mode: types.StringNull(),
 				},
 				RefID:         types.StringValue("saved-discover-abc"),
 				SelectedTabID: types.StringValue("tab-explicit"),
-				Overrides: &discoverSessionOverridesModel{
+				Overrides: &models.DiscoverSessionOverridesModel{
 					Density:     types.StringValue("compact"),
 					RowsPerPage: types.Int64Value(50),
 					SampleSize:  types.Int64Value(500),
-					Sort: []discoverSessionSortModel{
+					Sort: []models.DiscoverSessionSortModel{
 						{Name: types.StringValue("@timestamp"), Direction: types.StringValue("desc")},
 					},
 				},
@@ -688,19 +689,19 @@ func Test_discoverSession_byReference_roundTrip(t *testing.T) {
 }
 
 func Test_discoverSession_timeRange_inheritsDashboardAtWrite_keepsNullOnRead(t *testing.T) {
-	dashTR := &timeRangeModel{
+	dashTR := &models.TimeRangeModel{
 		From: types.StringValue("now-15m"),
 		To:   types.StringValue("now"),
 		Mode: types.StringNull(),
 	}
 
-	pm := panelModel{
-		DiscoverSessionConfig: &discoverSessionPanelConfigModel{
-			ByValue: &discoverSessionPanelByValueModel{
+	pm := models.PanelModel{
+		DiscoverSessionConfig: &models.DiscoverSessionPanelConfigModel{
+			ByValue: &models.DiscoverSessionPanelByValueModel{
 				TimeRange: nil,
-				Tab: discoverSessionTabModel{
-					DSL: &discoverSessionDSLTabModel{
-						Query: &filterSimpleModel{
+				Tab: models.DiscoverSessionTabModel{
+					DSL: &models.DiscoverSessionDSLTabModel{
+						Query: &models.FilterSimpleModel{
 							Language:   types.StringValue("kql"),
 							Expression: types.StringValue("*"),
 						},
@@ -769,7 +770,7 @@ func Test_populateDiscoverSessionPanelFromAPI_import_drilldownDefaults(t *testin
 		Grid:   discoverSessionTestGrid(),
 	}
 
-	var pm panelModel
+	var pm models.PanelModel
 	populateDiscoverSessionPanelFromAPI(context.Background(), &pm, nil, apiPanel)
 	require.Len(t, pm.DiscoverSessionConfig.Drilldowns, 1)
 	d := pm.DiscoverSessionConfig.Drilldowns[0]
@@ -788,7 +789,7 @@ func Test_populateDiscoverSessionPanelFromAPI_import_byReference_selectedTabID(t
 	require.NoError(t, u.FromKbnDashboardPanelTypeDiscoverSessionConfig1(cfg1))
 	apiPanel := kbapi.KbnDashboardPanelTypeDiscoverSession{Config: u, Type: kbapi.DiscoverSession, Grid: discoverSessionTestGrid()}
 
-	var pm panelModel
+	var pm models.PanelModel
 	populateDiscoverSessionPanelFromAPI(context.Background(), &pm, nil, apiPanel)
 	require.NotNil(t, pm.DiscoverSessionConfig.ByReference)
 	assert.Equal(t, "sel-tab", pm.DiscoverSessionConfig.ByReference.SelectedTabID.ValueString())

@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
@@ -28,41 +29,41 @@ import (
 )
 
 func Test_dashboardModel_queryToAPI_neitherTextNorJSON(t *testing.T) {
-	m := &dashboardModel{
-		Query: &dashboardQueryModel{
+	m := &models.DashboardModel{
+		Query: &models.DashboardQueryModel{
 			Language: types.StringValue("kql"),
 			Text:     types.StringNull(),
 			JSON:     jsontypes.NewNormalizedNull(),
 		},
 	}
-	_, diags := m.queryToAPI()
+	_, diags := dashboardQueryToAPI(m)
 	require.True(t, diags.HasError())
 	assert.Contains(t, diags[0].Summary(), "Invalid dashboard query")
 }
 
 func Test_dashboardModel_queryToAPI_jsonBranch(t *testing.T) {
-	m := &dashboardModel{
-		Query: &dashboardQueryModel{
+	m := &models.DashboardModel{
+		Query: &models.DashboardQueryModel{
 			Language: types.StringValue("kql"),
 			Text:     types.StringNull(),
 			JSON:     jsontypes.NewNormalizedValue(`{"match_all":{}}`),
 		},
 	}
-	q, diags := m.queryToAPI()
+	q, diags := dashboardQueryToAPI(m)
 	require.False(t, diags.HasError())
 	assert.Equal(t, kbapi.KbnAsCodeQueryLanguage("kql"), q.Language)
 	assert.JSONEq(t, `{"match_all":{}}`, q.Expression)
 }
 
 func Test_dashboardModel_queryToAPI_bothTextAndJSON(t *testing.T) {
-	m := &dashboardModel{
-		Query: &dashboardQueryModel{
+	m := &models.DashboardModel{
+		Query: &models.DashboardQueryModel{
 			Language: types.StringValue("kql"),
 			Text:     types.StringValue("response.code:200"),
 			JSON:     jsontypes.NewNormalizedValue(`{"match_all":{}}`),
 		},
 	}
-	_, diags := m.queryToAPI()
+	_, diags := dashboardQueryToAPI(m)
 	require.True(t, diags.HasError())
 	assert.Contains(t, diags[0].Summary(), "Invalid dashboard query")
 }

@@ -124,14 +124,14 @@ func newScopedElasticsearchClientFromFactory(t *testing.T, endpoint string) *Ela
 // acceptance test environments.
 func newMockScopedClient(t *testing.T, srv *httptest.Server) *ElasticsearchScopedClient {
 	t.Helper()
-	esClient, err := elasticsearch.NewClient(elasticsearch.Config{
+	esClient, err := elasticsearch.NewTypedClient(elasticsearch.Config{
 		Addresses: []string{srv.URL},
 		Username:  "elastic",
 		Password:  "changeme",
 		Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}, //nolint:gosec
 	})
 	require.NoError(t, err)
-	return &ElasticsearchScopedClient{typedClient: esClient.ToTyped(), esEndpoints: []string{srv.URL}}
+	return &ElasticsearchScopedClient{typedClient: esClient, esEndpoints: []string{srv.URL}}
 }
 
 // --- GetESClient ---
@@ -171,13 +171,13 @@ func TestElasticsearchScopedClient_GetESClient_EndpointPresentNoAuth(t *testing.
 	t.Parallel()
 	// Build a real ES client pointing at a dummy address but with no credentials.
 	// The accessor validates endpoint presence only, so it must not reject this.
-	esClient, err := elasticsearch.NewClient(elasticsearch.Config{
+	esClient, err := elasticsearch.NewTypedClient(elasticsearch.Config{
 		Addresses: []string{"http://elasticsearch.example.com:9200"},
 	})
 	require.NoError(t, err)
 
 	sc := &ElasticsearchScopedClient{
-		typedClient: esClient.ToTyped(),
+		typedClient: esClient,
 		esEndpoints: []string{"http://elasticsearch.example.com:9200"},
 	}
 	client, err := sc.GetESClient()
@@ -542,13 +542,13 @@ func TestGetElasticsearchClientFromSDK_NilFactory(t *testing.T) {
 func TestGetESClient_ReturnsNonNil(t *testing.T) {
 	t.Parallel()
 
-	esClient, err := elasticsearch.NewClient(elasticsearch.Config{Addresses: []string{"http://localhost:9200"}})
+	esClient, err := elasticsearch.NewTypedClient(elasticsearch.Config{Addresses: []string{"http://localhost:9200"}})
 	if err != nil {
 		t.Fatalf("failed to create elasticsearch client: %v", err)
 	}
 
 	scoped := &ElasticsearchScopedClient{
-		typedClient: esClient.ToTyped(),
+		typedClient: esClient,
 		esEndpoints: []string{"http://localhost:9200"},
 	}
 

@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -30,16 +31,16 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// populateFiltersFromAPI converts a slice of kbapi.LensPanelFilters_Item into chartFilterJSONModel
+// populateFiltersFromAPI converts a slice of kbapi.LensPanelFilters_Item into models.ChartFilterJSONModel
 // values, appending any errors to diags.
-func populateFiltersFromAPI(filters []kbapi.LensPanelFilters_Item, diags *diag.Diagnostics) []chartFilterJSONModel {
+func populateFiltersFromAPI(filters []kbapi.LensPanelFilters_Item, diags *diag.Diagnostics) []models.ChartFilterJSONModel {
 	if len(filters) == 0 {
 		return nil
 	}
-	result := make([]chartFilterJSONModel, 0, len(filters))
+	result := make([]models.ChartFilterJSONModel, 0, len(filters))
 	for _, f := range filters {
-		fm := chartFilterJSONModel{}
-		fd := fm.populateFromAPIItem(f)
+		fm := models.ChartFilterJSONModel{}
+		fd := chartFilterJSONPopulateFromAPIItem(&fm, f)
 		diags.Append(fd...)
 		if !fd.HasError() {
 			result = append(result, fm)
@@ -50,7 +51,7 @@ func populateFiltersFromAPI(filters []kbapi.LensPanelFilters_Item, diags *diag.D
 
 // buildFiltersForAPI converts the model filter slice into the kbapi type, appending errors to diags.
 // The returned slice is always non-nil (empty API payload is []kbapi.LensPanelFilters_Item{}).
-func buildFiltersForAPI(filters []chartFilterJSONModel, diags *diag.Diagnostics) []kbapi.LensPanelFilters_Item {
+func buildFiltersForAPI(filters []models.ChartFilterJSONModel, diags *diag.Diagnostics) []kbapi.LensPanelFilters_Item {
 	if len(filters) == 0 {
 		return []kbapi.LensPanelFilters_Item{}
 	}

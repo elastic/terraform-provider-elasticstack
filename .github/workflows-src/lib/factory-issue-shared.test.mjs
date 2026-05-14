@@ -203,6 +203,94 @@ test('factoryCheckDuplicatePR coalesces html_url for github-keywords mode when d
   assert.match(result.gate_reason, /\(unknown URL\)/);
 });
 
+test('factoryCheckDuplicatePR coalesces html_url for related-literal mode when duplicate html_url is missing', () => {
+  const result = factoryCheckDuplicatePR({
+    issueNumber: 42,
+    pullRequests: [{
+      number: 101,
+      state: 'open',
+      head_branch: 'reproducer-factory/issue-42',
+      labels: ['reproducer-factory'],
+      body: 'Related to #42',
+      html_url: undefined,
+    }],
+    branchPrefix: 'reproducer-factory/issue-',
+    prLabel: 'reproducer-factory',
+    duplicateLinkageMode: 'related-literal',
+  });
+  assert.equal(result.duplicate_pr_found, true);
+  assert.equal(result.duplicate_pr_url, null);
+  assert.match(result.gate_reason, /\(unknown URL\)/);
+});
+
+test('factoryCheckDuplicatePR related-literal matches Related to #42 but not Closes #42', () => {
+  const base = {
+    issueNumber: 42,
+    branchPrefix: 'reproducer-factory/issue-',
+    prLabel: 'reproducer-factory',
+    duplicateLinkageMode: 'related-literal',
+  };
+  const related = factoryCheckDuplicatePR({
+    ...base,
+    pullRequests: [{
+      number: 1,
+      state: 'open',
+      head_branch: 'reproducer-factory/issue-42',
+      labels: ['reproducer-factory'],
+      body: 'Related to #42',
+      html_url: 'https://example.com/pr/1',
+    }],
+  });
+  assert.equal(related.duplicate_pr_found, true);
+
+  const closes = factoryCheckDuplicatePR({
+    ...base,
+    pullRequests: [{
+      number: 2,
+      state: 'open',
+      head_branch: 'reproducer-factory/issue-42',
+      labels: ['reproducer-factory'],
+      body: 'Closes #42',
+      html_url: 'https://example.com/pr/2',
+    }],
+  });
+  assert.equal(closes.duplicate_pr_found, false);
+});
+
+test('factoryCheckDuplicatePR closes-literal matches Closes #42 but not Related to #42', () => {
+  const base = {
+    issueNumber: 42,
+    branchPrefix: 'code-factory/issue-',
+    prLabel: 'code-factory',
+    duplicateLinkageMode: 'closes-literal',
+  };
+  const closes = factoryCheckDuplicatePR({
+    ...base,
+    pullRequests: [{
+      number: 1,
+      state: 'open',
+      head_branch: 'code-factory/issue-42',
+      labels: ['code-factory'],
+      body: 'Closes #42',
+      html_url: 'https://example.com/pr/1',
+    }],
+  });
+  assert.equal(closes.duplicate_pr_found, true);
+
+  const related = factoryCheckDuplicatePR({
+    ...base,
+    pullRequests: [{
+      number: 2,
+      state: 'open',
+      head_branch: 'code-factory/issue-42',
+      labels: ['code-factory'],
+      body: 'Related to #42',
+      html_url: 'https://example.com/pr/2',
+    }],
+  });
+  assert.equal(related.duplicate_pr_found, false);
+});
+
 test('createFactoryIssueIntake: duplicateLinkageMode selects duplicate PR URL handling', () => {
   const code = createFactoryIssueIntake({
     branchPrefix: 'code-factory/issue-',

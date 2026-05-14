@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -31,85 +32,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
-
-type discoverSessionPanelConfigModel struct {
-	Title       types.String                      `tfsdk:"title"`
-	Description types.String                      `tfsdk:"description"`
-	HideTitle   types.Bool                        `tfsdk:"hide_title"`
-	HideBorder  types.Bool                        `tfsdk:"hide_border"`
-	Drilldowns  []discoverSessionPanelDrilldown   `tfsdk:"drilldowns"`
-	ByValue     *discoverSessionPanelByValueModel `tfsdk:"by_value"`
-	ByReference *discoverSessionPanelByRefModel   `tfsdk:"by_reference"`
-}
-
-type discoverSessionPanelDrilldown struct {
-	URL          types.String `tfsdk:"url"`
-	Label        types.String `tfsdk:"label"`
-	EncodeURL    types.Bool   `tfsdk:"encode_url"`
-	OpenInNewTab types.Bool   `tfsdk:"open_in_new_tab"`
-}
-
-type discoverSessionPanelByValueModel struct {
-	TimeRange *timeRangeModel         `tfsdk:"time_range"`
-	Tab       discoverSessionTabModel `tfsdk:"tab"`
-}
-
-type discoverSessionTabModel struct {
-	DSL  *discoverSessionDSLTabModel  `tfsdk:"dsl"`
-	ESQL *discoverSessionESQLTabModel `tfsdk:"esql"`
-}
-
-type discoverSessionDSLTabModel struct {
-	ColumnOrder     types.List                 `tfsdk:"column_order"`
-	ColumnSettings  types.Map                  `tfsdk:"column_settings"`
-	Sort            []discoverSessionSortModel `tfsdk:"sort"`
-	Density         types.String               `tfsdk:"density"`
-	HeaderRowHeight types.String               `tfsdk:"header_row_height"`
-	RowHeight       types.String               `tfsdk:"row_height"`
-	RowsPerPage     types.Int64                `tfsdk:"rows_per_page"`
-	SampleSize      types.Int64                `tfsdk:"sample_size"`
-	ViewMode        types.String               `tfsdk:"view_mode"`
-	Query           *filterSimpleModel         `tfsdk:"query"`
-	DataSourceJSON  jsontypes.Normalized       `tfsdk:"data_source_json"`
-	Filters         []chartFilterJSONModel     `tfsdk:"filters"`
-}
-
-type discoverSessionESQLTabModel struct {
-	ColumnOrder     types.List                 `tfsdk:"column_order"`
-	ColumnSettings  types.Map                  `tfsdk:"column_settings"`
-	Sort            []discoverSessionSortModel `tfsdk:"sort"`
-	Density         types.String               `tfsdk:"density"`
-	HeaderRowHeight types.String               `tfsdk:"header_row_height"`
-	RowHeight       types.String               `tfsdk:"row_height"`
-	DataSourceJSON  jsontypes.Normalized       `tfsdk:"data_source_json"`
-}
-
-type discoverSessionSortModel struct {
-	Name      types.String `tfsdk:"name"`
-	Direction types.String `tfsdk:"direction"`
-}
-
-type discoverSessionColumnSettingModel struct {
-	Width types.Float64 `tfsdk:"width"`
-}
-
-type discoverSessionPanelByRefModel struct {
-	TimeRange     *timeRangeModel                `tfsdk:"time_range"`
-	RefID         types.String                   `tfsdk:"ref_id"`
-	SelectedTabID types.String                   `tfsdk:"selected_tab_id"`
-	Overrides     *discoverSessionOverridesModel `tfsdk:"overrides"`
-}
-
-type discoverSessionOverridesModel struct {
-	ColumnOrder     types.List                 `tfsdk:"column_order"`
-	ColumnSettings  types.Map                  `tfsdk:"column_settings"`
-	Sort            []discoverSessionSortModel `tfsdk:"sort"`
-	Density         types.String               `tfsdk:"density"`
-	HeaderRowHeight types.String               `tfsdk:"header_row_height"`
-	RowHeight       types.String               `tfsdk:"row_height"`
-	RowsPerPage     types.Int64                `tfsdk:"rows_per_page"`
-	SampleSize      types.Int64                `tfsdk:"sample_size"`
-}
 
 func discoverSessionColumnSettingObjectType() types.ObjectType {
 	return types.ObjectType{
@@ -119,12 +41,12 @@ func discoverSessionColumnSettingObjectType() types.ObjectType {
 	}
 }
 
-func discoverSessionPanelToAPI(ctx context.Context, pm panelModel, grid struct {
+func discoverSessionPanelToAPI(ctx context.Context, pm models.PanelModel, grid struct {
 	H *float32 `json:"h,omitempty"`
 	W *float32 `json:"w,omitempty"`
 	X float32  `json:"x"`
 	Y float32  `json:"y"`
-}, panelID *string, dashTR *timeRangeModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
+}, panelID *string, dashTR *models.TimeRangeModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	cfg := pm.DiscoverSessionConfig
 	if cfg == nil {
@@ -174,7 +96,11 @@ func discoverSessionPanelToAPI(ctx context.Context, pm panelModel, grid struct {
 	return panelItem, diags
 }
 
-func discoverSessionByValueToAPI(ctx context.Context, cfg *discoverSessionPanelConfigModel, dashTR *timeRangeModel) (kbapi.KbnDashboardPanelTypeDiscoverSessionConfig0, diag.Diagnostics) {
+func discoverSessionByValueToAPI(
+	ctx context.Context,
+	cfg *models.DiscoverSessionPanelConfigModel,
+	dashTR *models.TimeRangeModel,
+) (kbapi.KbnDashboardPanelTypeDiscoverSessionConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	api := kbapi.KbnDashboardPanelTypeDiscoverSessionConfig0{}
 
@@ -195,7 +121,11 @@ func discoverSessionByValueToAPI(ctx context.Context, cfg *discoverSessionPanelC
 	return api, diags
 }
 
-func discoverSessionByReferenceToAPI(ctx context.Context, cfg *discoverSessionPanelConfigModel, dashTR *timeRangeModel) (kbapi.KbnDashboardPanelTypeDiscoverSessionConfig1, diag.Diagnostics) {
+func discoverSessionByReferenceToAPI(
+	ctx context.Context,
+	cfg *models.DiscoverSessionPanelConfigModel,
+	dashTR *models.TimeRangeModel,
+) (kbapi.KbnDashboardPanelTypeDiscoverSessionConfig1, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	api := kbapi.KbnDashboardPanelTypeDiscoverSessionConfig1{}
 
@@ -226,7 +156,7 @@ func discoverSessionByReferenceToAPI(ctx context.Context, cfg *discoverSessionPa
 	return api, diags
 }
 
-func discoverSessionApplyEnvelopeToConfig0(cfg *discoverSessionPanelConfigModel, api *kbapi.KbnDashboardPanelTypeDiscoverSessionConfig0) {
+func discoverSessionApplyEnvelopeToConfig0(cfg *models.DiscoverSessionPanelConfigModel, api *kbapi.KbnDashboardPanelTypeDiscoverSessionConfig0) {
 	if typeutils.IsKnown(cfg.Title) {
 		api.Title = cfg.Title.ValueStringPointer()
 	}
@@ -264,7 +194,7 @@ func discoverSessionApplyEnvelopeToConfig0(cfg *discoverSessionPanelConfigModel,
 	}
 }
 
-func discoverSessionApplyEnvelopeToConfig1(cfg *discoverSessionPanelConfigModel, api *kbapi.KbnDashboardPanelTypeDiscoverSessionConfig1) {
+func discoverSessionApplyEnvelopeToConfig1(cfg *models.DiscoverSessionPanelConfigModel, api *kbapi.KbnDashboardPanelTypeDiscoverSessionConfig1) {
 	if typeutils.IsKnown(cfg.Title) {
 		api.Title = cfg.Title.ValueStringPointer()
 	}
@@ -302,7 +232,7 @@ func discoverSessionApplyEnvelopeToConfig1(cfg *discoverSessionPanelConfigModel,
 	}
 }
 
-func discoverSessionResolveTimeRange(panelTR *timeRangeModel, dashTR *timeRangeModel) (kbapi.KbnEsQueryServerTimeRangeSchema, diag.Diagnostics) {
+func discoverSessionResolveTimeRange(panelTR *models.TimeRangeModel, dashTR *models.TimeRangeModel) (kbapi.KbnEsQueryServerTimeRangeSchema, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	source := panelTR
 	if source == nil {
@@ -326,7 +256,7 @@ func discoverSessionResolveTimeRange(panelTR *timeRangeModel, dashTR *timeRangeM
 	return out, diags
 }
 
-func discoverSessionTabToAPI(ctx context.Context, tab discoverSessionTabModel) (kbapi.KbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_Item, diag.Diagnostics) {
+func discoverSessionTabToAPI(ctx context.Context, tab models.DiscoverSessionTabModel) (kbapi.KbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_Item, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var item kbapi.KbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_Item
 	switch {
@@ -354,7 +284,7 @@ func discoverSessionTabToAPI(ctx context.Context, tab discoverSessionTabModel) (
 	return item, diags
 }
 
-func discoverSessionDSLTabToAPI(ctx context.Context, m discoverSessionDSLTabModel) (kbapi.KbnDashboardPanelTypeDiscoverSessionConfig0Tabs0, diag.Diagnostics) {
+func discoverSessionDSLTabToAPI(ctx context.Context, m models.DiscoverSessionDSLTabModel) (kbapi.KbnDashboardPanelTypeDiscoverSessionConfig0Tabs0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	api := kbapi.KbnDashboardPanelTypeDiscoverSessionConfig0Tabs0{}
 
@@ -431,7 +361,7 @@ func discoverSessionDSLTabToAPI(ctx context.Context, m discoverSessionDSLTabMode
 	return api, diags
 }
 
-func discoverSessionESQLTabToAPI(ctx context.Context, m discoverSessionESQLTabModel) (kbapi.KbnDashboardPanelTypeDiscoverSessionConfig0Tabs1, diag.Diagnostics) {
+func discoverSessionESQLTabToAPI(ctx context.Context, m models.DiscoverSessionESQLTabModel) (kbapi.KbnDashboardPanelTypeDiscoverSessionConfig0Tabs1, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	api := kbapi.KbnDashboardPanelTypeDiscoverSessionConfig0Tabs1{}
 
@@ -476,7 +406,7 @@ func discoverSessionESQLTabToAPI(ctx context.Context, m discoverSessionESQLTabMo
 	return api, diags
 }
 
-func discoverSessionOverridesToAPI(ctx context.Context, m discoverSessionOverridesModel) (struct {
+func discoverSessionOverridesToAPI(ctx context.Context, m models.DiscoverSessionOverridesModel) (struct {
 	ColumnOrder    *[]string `json:"column_order,omitempty"`
 	ColumnSettings *map[string]struct {
 		Width *float32 `json:"width,omitempty"`
@@ -551,7 +481,7 @@ func discoverSessionOverridesToAPI(ctx context.Context, m discoverSessionOverrid
 	return api, diags
 }
 
-func discoverSessionSortToAPI0(sort []discoverSessionSortModel) []struct {
+func discoverSessionSortToAPI0(sort []models.DiscoverSessionSortModel) []struct {
 	Direction kbapi.KbnDashboardPanelTypeDiscoverSessionConfig0Tabs0SortDirection `json:"direction"`
 	Name      string                                                              `json:"name"`
 } {
@@ -566,7 +496,7 @@ func discoverSessionSortToAPI0(sort []discoverSessionSortModel) []struct {
 	return out
 }
 
-func discoverSessionSortToAPI1(sort []discoverSessionSortModel) []struct {
+func discoverSessionSortToAPI1(sort []models.DiscoverSessionSortModel) []struct {
 	Direction kbapi.KbnDashboardPanelTypeDiscoverSessionConfig0Tabs1SortDirection `json:"direction"`
 	Name      string                                                              `json:"name"`
 } {
@@ -581,7 +511,7 @@ func discoverSessionSortToAPI1(sort []discoverSessionSortModel) []struct {
 	return out
 }
 
-func discoverSessionOverridesSortToAPI(sort []discoverSessionSortModel) []struct {
+func discoverSessionOverridesSortToAPI(sort []models.DiscoverSessionSortModel) []struct {
 	Direction kbapi.KbnDashboardPanelTypeDiscoverSessionConfig1OverridesSortDirection `json:"direction"`
 	Name      string                                                                  `json:"name"`
 } {
@@ -596,7 +526,7 @@ func discoverSessionOverridesSortToAPI(sort []discoverSessionSortModel) []struct
 	return out
 }
 
-func discoverSessionQueryToKbnAsCode(m filterSimpleModel) kbapi.KbnAsCodeQuery {
+func discoverSessionQueryToKbnAsCode(m models.FilterSimpleModel) kbapi.KbnAsCodeQuery {
 	q := kbapi.KbnAsCodeQuery{
 		Expression: m.Expression.ValueString(),
 	}
@@ -614,7 +544,7 @@ func discoverSessionColumnSettingsToAPI(ctx context.Context, m types.Map, diags 
 	if !typeutils.IsKnown(m) || m.IsNull() {
 		return nil
 	}
-	raw := typeutils.MapTypeAs[discoverSessionColumnSettingModel](ctx, m, path.Empty(), diags)
+	raw := typeutils.MapTypeAs[models.DiscoverSessionColumnSettingModel](ctx, m, path.Empty(), diags)
 	if diags.HasError() {
 		return nil
 	}
@@ -824,7 +754,7 @@ func discoverSessionAPIConfigLooksByReference(apiCfg kbapi.KbnDashboardPanelType
 
 // discoverSessionPriorTFBranchMismatchesAPI reports out-of-band branch changes (e.g. Kibana flipped
 // inline vs linked). Prior Terraform state used exclusively one branch while the API payload uses the other.
-func discoverSessionPriorTFBranchMismatchesAPI(apiLooksByRef bool, prior *discoverSessionPanelConfigModel) bool {
+func discoverSessionPriorTFBranchMismatchesAPI(apiLooksByRef bool, prior *models.DiscoverSessionPanelConfigModel) bool {
 	if prior == nil {
 		return false
 	}
@@ -839,7 +769,7 @@ func discoverSessionPriorTFBranchMismatchesAPI(apiLooksByRef bool, prior *discov
 	return false
 }
 
-func populateDiscoverSessionPanelFromAPI(ctx context.Context, pm *panelModel, tfPanel *panelModel, apiPanel kbapi.KbnDashboardPanelTypeDiscoverSession) {
+func populateDiscoverSessionPanelFromAPI(ctx context.Context, pm *models.PanelModel, tfPanel *models.PanelModel, apiPanel kbapi.KbnDashboardPanelTypeDiscoverSession) {
 	if tfPanel == nil {
 		pm.DiscoverSessionConfig = discoverSessionPanelConfigFromAPIImport(ctx, apiPanel)
 		return
@@ -887,7 +817,7 @@ func populateDiscoverSessionPanelFromAPI(ctx context.Context, pm *panelModel, tf
 	}
 }
 
-func discoverSessionPanelConfigFromAPIImport(ctx context.Context, apiPanel kbapi.KbnDashboardPanelTypeDiscoverSession) *discoverSessionPanelConfigModel {
+func discoverSessionPanelConfigFromAPIImport(ctx context.Context, apiPanel kbapi.KbnDashboardPanelTypeDiscoverSession) *models.DiscoverSessionPanelConfigModel {
 	if discoverSessionAPIConfigLooksByReference(apiPanel.Config) {
 		cfg1, err := apiPanel.Config.AsKbnDashboardPanelTypeDiscoverSessionConfig1()
 		if err == nil {
@@ -903,13 +833,13 @@ func discoverSessionPanelConfigFromAPIImport(ctx context.Context, apiPanel kbapi
 	return nil
 }
 
-func discoverSessionConfig0FromAPIImport(ctx context.Context, cfg0 kbapi.KbnDashboardPanelTypeDiscoverSessionConfig0) *discoverSessionPanelConfigModel {
-	cfg := &discoverSessionPanelConfigModel{
+func discoverSessionConfig0FromAPIImport(ctx context.Context, cfg0 kbapi.KbnDashboardPanelTypeDiscoverSessionConfig0) *models.DiscoverSessionPanelConfigModel {
+	cfg := &models.DiscoverSessionPanelConfigModel{
 		Title:       types.StringPointerValue(cfg0.Title),
 		Description: types.StringPointerValue(cfg0.Description),
 		HideTitle:   types.BoolPointerValue(cfg0.HideTitle),
 		HideBorder:  types.BoolPointerValue(cfg0.HideBorder),
-		ByValue: &discoverSessionPanelByValueModel{
+		ByValue: &models.DiscoverSessionPanelByValueModel{
 			TimeRange: discoverSessionTimeRangePtrFromAPI(cfg0.TimeRange),
 			Tab:       discoverSessionTabFromAPIConfig0(ctx, cfg0.Tabs),
 		},
@@ -918,13 +848,13 @@ func discoverSessionConfig0FromAPIImport(ctx context.Context, cfg0 kbapi.KbnDash
 	return cfg
 }
 
-func discoverSessionConfig1FromAPIImport(ctx context.Context, cfg1 kbapi.KbnDashboardPanelTypeDiscoverSessionConfig1) *discoverSessionPanelConfigModel {
-	cfg := &discoverSessionPanelConfigModel{
+func discoverSessionConfig1FromAPIImport(ctx context.Context, cfg1 kbapi.KbnDashboardPanelTypeDiscoverSessionConfig1) *models.DiscoverSessionPanelConfigModel {
+	cfg := &models.DiscoverSessionPanelConfigModel{
 		Title:       types.StringPointerValue(cfg1.Title),
 		Description: types.StringPointerValue(cfg1.Description),
 		HideTitle:   types.BoolPointerValue(cfg1.HideTitle),
 		HideBorder:  types.BoolPointerValue(cfg1.HideBorder),
-		ByReference: &discoverSessionPanelByRefModel{
+		ByReference: &models.DiscoverSessionPanelByRefModel{
 			TimeRange: discoverSessionTimeRangePtrFromAPI(cfg1.TimeRange),
 			RefID:     types.StringValue(cfg1.RefId),
 		},
@@ -941,8 +871,8 @@ func discoverSessionConfig1FromAPIImport(ctx context.Context, cfg1 kbapi.KbnDash
 	return cfg
 }
 
-func discoverSessionTimeRangePtrFromAPI(api kbapi.KbnEsQueryServerTimeRangeSchema) *timeRangeModel {
-	tr := &timeRangeModel{
+func discoverSessionTimeRangePtrFromAPI(api kbapi.KbnEsQueryServerTimeRangeSchema) *models.TimeRangeModel {
+	tr := &models.TimeRangeModel{
 		From: types.StringValue(api.From),
 		To:   types.StringValue(api.To),
 	}
@@ -954,22 +884,22 @@ func discoverSessionTimeRangePtrFromAPI(api kbapi.KbnEsQueryServerTimeRangeSchem
 	return tr
 }
 
-func discoverSessionTabFromAPIConfig0(ctx context.Context, tabs []kbapi.KbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_Item) discoverSessionTabModel {
+func discoverSessionTabFromAPIConfig0(ctx context.Context, tabs []kbapi.KbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_Item) models.DiscoverSessionTabModel {
 	if len(tabs) == 0 {
-		return discoverSessionTabModel{}
+		return models.DiscoverSessionTabModel{}
 	}
 	tab := tabs[0]
 	if dsl, err := tab.AsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0(); err == nil {
-		return discoverSessionTabModel{DSL: discoverSessionDSLTabFromAPI(ctx, dsl)}
+		return models.DiscoverSessionTabModel{DSL: discoverSessionDSLTabFromAPI(ctx, dsl)}
 	}
 	if esql, err := tab.AsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1(); err == nil {
-		return discoverSessionTabModel{ESQL: discoverSessionESQLTabFromAPI(ctx, esql)}
+		return models.DiscoverSessionTabModel{ESQL: discoverSessionESQLTabFromAPI(ctx, esql)}
 	}
-	return discoverSessionTabModel{}
+	return models.DiscoverSessionTabModel{}
 }
 
-func discoverSessionDSLTabFromAPI(ctx context.Context, api kbapi.KbnDashboardPanelTypeDiscoverSessionConfig0Tabs0) *discoverSessionDSLTabModel {
-	m := &discoverSessionDSLTabModel{}
+func discoverSessionDSLTabFromAPI(ctx context.Context, api kbapi.KbnDashboardPanelTypeDiscoverSessionConfig0Tabs0) *models.DiscoverSessionDSLTabModel {
+	m := &models.DiscoverSessionDSLTabModel{}
 	var diags diag.Diagnostics
 
 	if api.ColumnOrder != nil && len(*api.ColumnOrder) > 0 {
@@ -1017,10 +947,10 @@ func discoverSessionDSLTabFromAPI(ctx context.Context, api kbapi.KbnDashboardPan
 	}
 
 	if api.Filters != nil && len(*api.Filters) > 0 {
-		filters := make([]chartFilterJSONModel, 0, len(*api.Filters))
+		filters := make([]models.ChartFilterJSONModel, 0, len(*api.Filters))
 		for _, item := range *api.Filters {
-			fm := chartFilterJSONModel{}
-			diags.Append(fm.populateFromAPIItem(item)...)
+			fm := models.ChartFilterJSONModel{}
+			diags.Append(chartFilterJSONPopulateFromAPIItem(&fm, item)...)
 			filters = append(filters, fm)
 		}
 		m.Filters = filters
@@ -1029,8 +959,8 @@ func discoverSessionDSLTabFromAPI(ctx context.Context, api kbapi.KbnDashboardPan
 	return m
 }
 
-func discoverSessionESQLTabFromAPI(ctx context.Context, api kbapi.KbnDashboardPanelTypeDiscoverSessionConfig0Tabs1) *discoverSessionESQLTabModel {
-	m := &discoverSessionESQLTabModel{}
+func discoverSessionESQLTabFromAPI(ctx context.Context, api kbapi.KbnDashboardPanelTypeDiscoverSessionConfig0Tabs1) *models.DiscoverSessionESQLTabModel {
+	m := &models.DiscoverSessionESQLTabModel{}
 	var diags diag.Diagnostics
 
 	if api.ColumnOrder != nil && len(*api.ColumnOrder) > 0 {
@@ -1060,8 +990,8 @@ func discoverSessionESQLTabFromAPI(ctx context.Context, api kbapi.KbnDashboardPa
 	return m
 }
 
-func discoverSessionQueryFromKbnAsCode(q kbapi.KbnAsCodeQuery) filterSimpleModel {
-	return filterSimpleModel{
+func discoverSessionQueryFromKbnAsCode(q kbapi.KbnAsCodeQuery) models.FilterSimpleModel {
+	return models.FilterSimpleModel{
 		Expression: types.StringValue(q.Expression),
 		Language:   types.StringValue(string(q.Language)),
 	}
@@ -1070,8 +1000,8 @@ func discoverSessionQueryFromKbnAsCode(q kbapi.KbnAsCodeQuery) filterSimpleModel
 func discoverSessionSortSliceFromAPI0(api []struct {
 	Direction kbapi.KbnDashboardPanelTypeDiscoverSessionConfig0Tabs0SortDirection `json:"direction"`
 	Name      string                                                              `json:"name"`
-}) []discoverSessionSortModel {
-	out := make([]discoverSessionSortModel, len(api))
+}) []models.DiscoverSessionSortModel {
+	out := make([]models.DiscoverSessionSortModel, len(api))
 	for i, s := range api {
 		out[i].Name = types.StringValue(s.Name)
 		out[i].Direction = types.StringValue(string(s.Direction))
@@ -1082,8 +1012,8 @@ func discoverSessionSortSliceFromAPI0(api []struct {
 func discoverSessionSortSliceFromAPI1(api []struct {
 	Direction kbapi.KbnDashboardPanelTypeDiscoverSessionConfig0Tabs1SortDirection `json:"direction"`
 	Name      string                                                              `json:"name"`
-}) []discoverSessionSortModel {
-	out := make([]discoverSessionSortModel, len(api))
+}) []models.DiscoverSessionSortModel {
+	out := make([]models.DiscoverSessionSortModel, len(api))
 	for i, s := range api {
 		out[i].Name = types.StringValue(s.Name)
 		out[i].Direction = types.StringValue(string(s.Direction))
@@ -1105,8 +1035,8 @@ func discoverSessionOverridesFromAPI(ctx context.Context, api struct {
 		Direction kbapi.KbnDashboardPanelTypeDiscoverSessionConfig1OverridesSortDirection `json:"direction"`
 		Name      string                                                                  `json:"name"`
 	} `json:"sort,omitempty"`
-}) *discoverSessionOverridesModel {
-	m := &discoverSessionOverridesModel{}
+}) *models.DiscoverSessionOverridesModel {
+	m := &models.DiscoverSessionOverridesModel{}
 	var diags diag.Diagnostics
 
 	if api.ColumnOrder != nil && len(*api.ColumnOrder) > 0 {
@@ -1116,7 +1046,7 @@ func discoverSessionOverridesFromAPI(ctx context.Context, api struct {
 	m.ColumnSettings = discoverSessionColumnSettingsFromAPI(ctx, api.ColumnSettings, &diags)
 
 	if api.Sort != nil {
-		out := make([]discoverSessionSortModel, len(*api.Sort))
+		out := make([]models.DiscoverSessionSortModel, len(*api.Sort))
 		for i, s := range *api.Sort {
 			out[i].Name = types.StringValue(s.Name)
 			out[i].Direction = types.StringValue(string(s.Direction))
@@ -1153,7 +1083,7 @@ func discoverSessionColumnSettingsFromAPI(ctx context.Context, api *map[string]s
 	if api == nil || len(*api) == 0 {
 		return types.MapNull(discoverSessionColumnSettingObjectType())
 	}
-	elems := make(map[string]discoverSessionColumnSettingModel, len(*api))
+	elems := make(map[string]models.DiscoverSessionColumnSettingModel, len(*api))
 	for k, v := range *api {
 		var width types.Float64
 		if v.Width != nil {
@@ -1161,7 +1091,7 @@ func discoverSessionColumnSettingsFromAPI(ctx context.Context, api *map[string]s
 		} else {
 			width = types.Float64Null()
 		}
-		elems[k] = discoverSessionColumnSettingModel{Width: width}
+		elems[k] = models.DiscoverSessionColumnSettingModel{Width: width}
 	}
 	return typeutils.MapValueFrom(ctx, elems, discoverSessionColumnSettingObjectType(), path.Empty(), diags)
 }
@@ -1253,16 +1183,16 @@ func readDiscoverSessionDrilldownsFromConfig0(
 		Type         kbapi.KbnDashboardPanelTypeDiscoverSessionConfig0DrilldownsType    `json:"type"`
 		Url          string                                                             `json:"url"` //nolint:revive
 	},
-	prior []discoverSessionPanelDrilldown,
-) []discoverSessionPanelDrilldown {
+	prior []models.DiscoverSessionPanelDrilldown,
+) []models.DiscoverSessionPanelDrilldown {
 	if api == nil || len(*api) == 0 {
 		return nil
 	}
-	out := make([]discoverSessionPanelDrilldown, len(*api))
+	out := make([]models.DiscoverSessionPanelDrilldown, len(*api))
 	for i, d := range *api {
 		out[i].URL = types.StringValue(d.Url)
 		out[i].Label = types.StringValue(d.Label)
-		var p *discoverSessionPanelDrilldown
+		var p *models.DiscoverSessionPanelDrilldown
 		if i < len(prior) {
 			p = &prior[i]
 		}
@@ -1300,16 +1230,16 @@ func readDiscoverSessionDrilldownsFromConfig1(
 		Type         kbapi.KbnDashboardPanelTypeDiscoverSessionConfig1DrilldownsType    `json:"type"`
 		Url          string                                                             `json:"url"` //nolint:revive
 	},
-	prior []discoverSessionPanelDrilldown,
-) []discoverSessionPanelDrilldown {
+	prior []models.DiscoverSessionPanelDrilldown,
+) []models.DiscoverSessionPanelDrilldown {
 	if api == nil || len(*api) == 0 {
 		return nil
 	}
-	out := make([]discoverSessionPanelDrilldown, len(*api))
+	out := make([]models.DiscoverSessionPanelDrilldown, len(*api))
 	for i, d := range *api {
 		out[i].URL = types.StringValue(d.Url)
 		out[i].Label = types.StringValue(d.Label)
-		var p *discoverSessionPanelDrilldown
+		var p *models.DiscoverSessionPanelDrilldown
 		if i < len(prior) {
 			p = &prior[i]
 		}
@@ -1338,7 +1268,7 @@ func readDiscoverSessionDrilldownsFromConfig1(
 	return out
 }
 
-func discoverSessionMergeConfig0FromAPI(ctx context.Context, existing *discoverSessionPanelConfigModel, tfPanel *panelModel, cfg0 kbapi.KbnDashboardPanelTypeDiscoverSessionConfig0) {
+func discoverSessionMergeConfig0FromAPI(ctx context.Context, existing *models.DiscoverSessionPanelConfigModel, tfPanel *models.PanelModel, cfg0 kbapi.KbnDashboardPanelTypeDiscoverSessionConfig0) {
 	prior := tfPanel.DiscoverSessionConfig
 	if prior == nil || prior.ByValue == nil {
 		return
@@ -1371,7 +1301,7 @@ func discoverSessionMergeConfig0FromAPI(ctx context.Context, existing *discoverS
 	}
 }
 
-func discoverSessionMergeConfig1FromAPI(ctx context.Context, existing *discoverSessionPanelConfigModel, tfPanel *panelModel, cfg1 kbapi.KbnDashboardPanelTypeDiscoverSessionConfig1) {
+func discoverSessionMergeConfig1FromAPI(ctx context.Context, existing *models.DiscoverSessionPanelConfigModel, tfPanel *models.PanelModel, cfg1 kbapi.KbnDashboardPanelTypeDiscoverSessionConfig1) {
 	prior := tfPanel.DiscoverSessionConfig
 	if prior == nil || prior.ByReference == nil {
 		return
@@ -1416,8 +1346,8 @@ func discoverSessionMergeConfig1FromAPI(ctx context.Context, existing *discoverS
 	}
 }
 
-func discoverSessionMergeTimeRangeModel(prior *timeRangeModel, api kbapi.KbnEsQueryServerTimeRangeSchema) *timeRangeModel {
-	tr := &timeRangeModel{
+func discoverSessionMergeTimeRangeModel(prior *models.TimeRangeModel, api kbapi.KbnEsQueryServerTimeRangeSchema) *models.TimeRangeModel {
+	tr := &models.TimeRangeModel{
 		From: types.StringValue(api.From),
 		To:   types.StringValue(api.To),
 	}
@@ -1432,7 +1362,12 @@ func discoverSessionMergeTimeRangeModel(prior *timeRangeModel, api kbapi.KbnEsQu
 	return tr
 }
 
-func discoverSessionMergeTabFromAPI(ctx context.Context, existing *discoverSessionTabModel, prior discoverSessionTabModel, tab kbapi.KbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_Item) {
+func discoverSessionMergeTabFromAPI(
+	ctx context.Context,
+	existing *models.DiscoverSessionTabModel,
+	prior models.DiscoverSessionTabModel,
+	tab kbapi.KbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_Item,
+) {
 	if dsl, err := tab.AsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0(); err == nil && existing.DSL != nil && prior.DSL != nil {
 		discoverSessionMergeDSLTabFromAPI(ctx, existing.DSL, *prior.DSL, dsl)
 		return
@@ -1442,7 +1377,12 @@ func discoverSessionMergeTabFromAPI(ctx context.Context, existing *discoverSessi
 	}
 }
 
-func discoverSessionMergeDSLTabFromAPI(ctx context.Context, existing *discoverSessionDSLTabModel, prior discoverSessionDSLTabModel, api kbapi.KbnDashboardPanelTypeDiscoverSessionConfig0Tabs0) {
+func discoverSessionMergeDSLTabFromAPI(
+	ctx context.Context,
+	existing *models.DiscoverSessionDSLTabModel,
+	prior models.DiscoverSessionDSLTabModel,
+	api kbapi.KbnDashboardPanelTypeDiscoverSessionConfig0Tabs0,
+) {
 	var diags diag.Diagnostics
 
 	if typeutils.IsKnown(prior.ColumnOrder) && api.ColumnOrder != nil {
@@ -1496,17 +1436,22 @@ func discoverSessionMergeDSLTabFromAPI(ctx context.Context, existing *discoverSe
 	}
 
 	if len(prior.Filters) > 0 && api.Filters != nil {
-		filters := make([]chartFilterJSONModel, 0, len(*api.Filters))
+		filters := make([]models.ChartFilterJSONModel, 0, len(*api.Filters))
 		for _, item := range *api.Filters {
-			fm := chartFilterJSONModel{}
-			diags.Append(fm.populateFromAPIItem(item)...)
+			fm := models.ChartFilterJSONModel{}
+			diags.Append(chartFilterJSONPopulateFromAPIItem(&fm, item)...)
 			filters = append(filters, fm)
 		}
 		existing.Filters = filters
 	}
 }
 
-func discoverSessionMergeESQLTabFromAPI(ctx context.Context, existing *discoverSessionESQLTabModel, prior discoverSessionESQLTabModel, api kbapi.KbnDashboardPanelTypeDiscoverSessionConfig0Tabs1) {
+func discoverSessionMergeESQLTabFromAPI(
+	ctx context.Context,
+	existing *models.DiscoverSessionESQLTabModel,
+	prior models.DiscoverSessionESQLTabModel,
+	api kbapi.KbnDashboardPanelTypeDiscoverSessionConfig0Tabs1,
+) {
 	var diags diag.Diagnostics
 
 	if typeutils.IsKnown(prior.ColumnOrder) && api.ColumnOrder != nil {
@@ -1542,7 +1487,7 @@ func discoverSessionMergeESQLTabFromAPI(ctx context.Context, existing *discoverS
 	}
 }
 
-func discoverSessionMergeOverridesFromAPI(ctx context.Context, existing *discoverSessionOverridesModel, prior *discoverSessionOverridesModel, api struct {
+func discoverSessionMergeOverridesFromAPI(ctx context.Context, existing *models.DiscoverSessionOverridesModel, prior *models.DiscoverSessionOverridesModel, api struct {
 	ColumnOrder    *[]string `json:"column_order,omitempty"`
 	ColumnSettings *map[string]struct {
 		Width *float32 `json:"width,omitempty"`
@@ -1568,7 +1513,7 @@ func discoverSessionMergeOverridesFromAPI(ctx context.Context, existing *discove
 	}
 
 	if api.Sort != nil && prior != nil && len(prior.Sort) > 0 {
-		out := make([]discoverSessionSortModel, len(*api.Sort))
+		out := make([]models.DiscoverSessionSortModel, len(*api.Sort))
 		for i, s := range *api.Sort {
 			out[i].Name = types.StringValue(s.Name)
 			out[i].Direction = types.StringValue(string(s.Direction))

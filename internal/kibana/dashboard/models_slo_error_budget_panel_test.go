@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -90,8 +91,8 @@ func withSloDrilldown(url, label string, encodeURL, openInNewTab *bool) func(*kb
 // ---- buildSloErrorBudgetConfig ----
 
 func Test_buildSloErrorBudgetConfig_minimal(t *testing.T) {
-	pm := panelModel{
-		SloErrorBudgetConfig: &sloErrorBudgetConfigModel{
+	pm := models.PanelModel{
+		SloErrorBudgetConfig: &models.SloErrorBudgetConfigModel{
 			SloID: types.StringValue("my-slo-id"),
 		},
 	}
@@ -107,8 +108,8 @@ func Test_buildSloErrorBudgetConfig_minimal(t *testing.T) {
 }
 
 func Test_buildSloErrorBudgetConfig_sebWithSloInstanceID(t *testing.T) {
-	pm := panelModel{
-		SloErrorBudgetConfig: &sloErrorBudgetConfigModel{
+	pm := models.PanelModel{
+		SloErrorBudgetConfig: &models.SloErrorBudgetConfigModel{
 			SloID:         types.StringValue("my-slo-id"),
 			SloInstanceID: types.StringValue("my-instance"),
 		},
@@ -120,8 +121,8 @@ func Test_buildSloErrorBudgetConfig_sebWithSloInstanceID(t *testing.T) {
 }
 
 func Test_buildSloErrorBudgetConfig_nullSloInstanceID(t *testing.T) {
-	pm := panelModel{
-		SloErrorBudgetConfig: &sloErrorBudgetConfigModel{
+	pm := models.PanelModel{
+		SloErrorBudgetConfig: &models.SloErrorBudgetConfigModel{
 			SloID:         types.StringValue("my-slo-id"),
 			SloInstanceID: types.StringNull(),
 		},
@@ -132,8 +133,8 @@ func Test_buildSloErrorBudgetConfig_nullSloInstanceID(t *testing.T) {
 }
 
 func Test_buildSloErrorBudgetConfig_withDisplayFields(t *testing.T) {
-	pm := panelModel{
-		SloErrorBudgetConfig: &sloErrorBudgetConfigModel{
+	pm := models.PanelModel{
+		SloErrorBudgetConfig: &models.SloErrorBudgetConfigModel{
 			SloID:       types.StringValue("my-slo-id"),
 			Title:       types.StringValue("My Title"),
 			Description: types.StringValue("My Description"),
@@ -154,10 +155,10 @@ func Test_buildSloErrorBudgetConfig_withDisplayFields(t *testing.T) {
 }
 
 func Test_buildSloErrorBudgetConfig_withDrilldowns(t *testing.T) {
-	pm := panelModel{
-		SloErrorBudgetConfig: &sloErrorBudgetConfigModel{
+	pm := models.PanelModel{
+		SloErrorBudgetConfig: &models.SloErrorBudgetConfigModel{
 			SloID: types.StringValue("my-slo-id"),
-			Drilldowns: []sloErrorBudgetDrilldownModel{
+			Drilldowns: []models.URLDrilldownModel{
 				{
 					URL:          types.StringValue("https://example.com"),
 					Label:        types.StringValue("Open in example"),
@@ -183,10 +184,10 @@ func Test_buildSloErrorBudgetConfig_withDrilldowns(t *testing.T) {
 }
 
 func Test_buildSloErrorBudgetConfig_drilldownsWithNullOptionalBools(t *testing.T) {
-	pm := panelModel{
-		SloErrorBudgetConfig: &sloErrorBudgetConfigModel{
+	pm := models.PanelModel{
+		SloErrorBudgetConfig: &models.SloErrorBudgetConfigModel{
 			SloID: types.StringValue("my-slo-id"),
-			Drilldowns: []sloErrorBudgetDrilldownModel{
+			Drilldowns: []models.URLDrilldownModel{
 				{
 					URL:          types.StringValue("https://example.com"),
 					Label:        types.StringValue("Go"),
@@ -207,13 +208,13 @@ func Test_buildSloErrorBudgetConfig_drilldownsWithNullOptionalBools(t *testing.T
 // ---- populateSloErrorBudgetFromAPI ----
 
 func Test_populateSloErrorBudgetFromAPI_minimal(t *testing.T) {
-	pm := &panelModel{
-		SloErrorBudgetConfig: &sloErrorBudgetConfigModel{
+	pm := &models.PanelModel{
+		SloErrorBudgetConfig: &models.SloErrorBudgetConfigModel{
 			SloID: types.StringValue(""),
 		},
 	}
-	tfPanel := &panelModel{
-		SloErrorBudgetConfig: &sloErrorBudgetConfigModel{
+	tfPanel := &models.PanelModel{
+		SloErrorBudgetConfig: &models.SloErrorBudgetConfigModel{
 			SloID: types.StringValue(""),
 		},
 	}
@@ -225,14 +226,14 @@ func Test_populateSloErrorBudgetFromAPI_minimal(t *testing.T) {
 
 func Test_populateSloErrorBudgetFromAPI_sloInstanceID_nullPreservation(t *testing.T) {
 	// Prior state had slo_instance_id == null; API returns "*". Should remain null.
-	pm := &panelModel{
-		SloErrorBudgetConfig: &sloErrorBudgetConfigModel{
+	pm := &models.PanelModel{
+		SloErrorBudgetConfig: &models.SloErrorBudgetConfigModel{
 			SloID:         types.StringValue(""),
 			SloInstanceID: types.StringNull(),
 		},
 	}
-	tfPanel := &panelModel{
-		SloErrorBudgetConfig: &sloErrorBudgetConfigModel{
+	tfPanel := &models.PanelModel{
+		SloErrorBudgetConfig: &models.SloErrorBudgetConfigModel{
 			SloID:         types.StringValue(""),
 			SloInstanceID: types.StringNull(),
 		},
@@ -245,14 +246,14 @@ func Test_populateSloErrorBudgetFromAPI_sloInstanceID_nullPreservation(t *testin
 
 func Test_populateSloErrorBudgetFromAPI_sloInstanceID_writtenWhenKnown(t *testing.T) {
 	// Prior state had slo_instance_id set; API returns a value. Should be updated.
-	pm := &panelModel{
-		SloErrorBudgetConfig: &sloErrorBudgetConfigModel{
+	pm := &models.PanelModel{
+		SloErrorBudgetConfig: &models.SloErrorBudgetConfigModel{
 			SloID:         types.StringValue(""),
 			SloInstanceID: types.StringValue("old-instance"),
 		},
 	}
-	tfPanel := &panelModel{
-		SloErrorBudgetConfig: &sloErrorBudgetConfigModel{
+	tfPanel := &models.PanelModel{
+		SloErrorBudgetConfig: &models.SloErrorBudgetConfigModel{
 			SloID:         types.StringValue(""),
 			SloInstanceID: types.StringValue("old-instance"),
 		},
@@ -264,7 +265,7 @@ func Test_populateSloErrorBudgetFromAPI_sloInstanceID_writtenWhenKnown(t *testin
 
 func Test_populateSloErrorBudgetFromAPI_import_populatesAll(t *testing.T) {
 	// tfPanel == nil means import. Should populate all API-returned fields.
-	pm := &panelModel{}
+	pm := &models.PanelModel{}
 	apiCfg := makeSloErrorBudgetAPIConfig(
 		sebWithSloInstanceID("my-instance"),
 		sebWithSloTitle("My Title"),
@@ -284,18 +285,18 @@ func Test_populateSloErrorBudgetFromAPI_import_populatesAll(t *testing.T) {
 
 func Test_populateSloErrorBudgetFromAPI_nilPriorBlock_preservesNil(t *testing.T) {
 	// Prior state had no config block (nil). Should not create one.
-	pm := &panelModel{}
-	tfPanel := &panelModel{} // SloErrorBudgetConfig is nil
+	pm := &models.PanelModel{}
+	tfPanel := &models.PanelModel{} // SloErrorBudgetConfig is nil
 	apiCfg := makeSloErrorBudgetAPIConfig()
 	populateSloErrorBudgetFromAPI(pm, tfPanel, apiCfg)
 	assert.Nil(t, pm.SloErrorBudgetConfig)
 }
 
 func Test_populateSloErrorBudgetFromAPI_drilldowns_roundTrip(t *testing.T) {
-	pm := &panelModel{
-		SloErrorBudgetConfig: &sloErrorBudgetConfigModel{
+	pm := &models.PanelModel{
+		SloErrorBudgetConfig: &models.SloErrorBudgetConfigModel{
 			SloID: types.StringValue(""),
-			Drilldowns: []sloErrorBudgetDrilldownModel{
+			Drilldowns: []models.URLDrilldownModel{
 				{
 					URL:          types.StringValue("https://example.com"),
 					Label:        types.StringValue("Go"),
@@ -305,10 +306,10 @@ func Test_populateSloErrorBudgetFromAPI_drilldowns_roundTrip(t *testing.T) {
 			},
 		},
 	}
-	tfPanel := &panelModel{
-		SloErrorBudgetConfig: &sloErrorBudgetConfigModel{
+	tfPanel := &models.PanelModel{
+		SloErrorBudgetConfig: &models.SloErrorBudgetConfigModel{
 			SloID: types.StringValue(""),
-			Drilldowns: []sloErrorBudgetDrilldownModel{
+			Drilldowns: []models.URLDrilldownModel{
 				{
 					URL:          types.StringValue("https://example.com"),
 					Label:        types.StringValue("Go"),
@@ -336,10 +337,10 @@ func Test_populateSloErrorBudgetFromAPI_drilldowns_roundTrip(t *testing.T) {
 
 func Test_populateSloErrorBudgetFromAPI_drilldowns_falseValueWritten(t *testing.T) {
 	// If API returns false for encode_url/open_in_new_tab (non-default), it should be written.
-	pm := &panelModel{
-		SloErrorBudgetConfig: &sloErrorBudgetConfigModel{
+	pm := &models.PanelModel{
+		SloErrorBudgetConfig: &models.SloErrorBudgetConfigModel{
 			SloID: types.StringValue(""),
-			Drilldowns: []sloErrorBudgetDrilldownModel{
+			Drilldowns: []models.URLDrilldownModel{
 				{
 					URL:          types.StringValue("https://example.com"),
 					Label:        types.StringValue("Go"),
@@ -349,10 +350,10 @@ func Test_populateSloErrorBudgetFromAPI_drilldowns_falseValueWritten(t *testing.
 			},
 		},
 	}
-	tfPanel := &panelModel{
-		SloErrorBudgetConfig: &sloErrorBudgetConfigModel{
+	tfPanel := &models.PanelModel{
+		SloErrorBudgetConfig: &models.SloErrorBudgetConfigModel{
 			SloID: types.StringValue(""),
-			Drilldowns: []sloErrorBudgetDrilldownModel{
+			Drilldowns: []models.URLDrilldownModel{
 				{
 					URL:          types.StringValue("https://example.com"),
 					Label:        types.StringValue("Go"),
@@ -377,10 +378,10 @@ func Test_populateSloErrorBudgetFromAPI_drilldowns_falseValueWritten(t *testing.
 
 func Test_populateSloErrorBudgetFromAPI_drilldowns_knownEncodeURLUpdated(t *testing.T) {
 	// If prior state had encode_url = true (explicitly set), API update should be written.
-	pm := &panelModel{
-		SloErrorBudgetConfig: &sloErrorBudgetConfigModel{
+	pm := &models.PanelModel{
+		SloErrorBudgetConfig: &models.SloErrorBudgetConfigModel{
 			SloID: types.StringValue(""),
-			Drilldowns: []sloErrorBudgetDrilldownModel{
+			Drilldowns: []models.URLDrilldownModel{
 				{
 					URL:          types.StringValue("https://example.com"),
 					Label:        types.StringValue("Go"),
@@ -390,10 +391,10 @@ func Test_populateSloErrorBudgetFromAPI_drilldowns_knownEncodeURLUpdated(t *test
 			},
 		},
 	}
-	tfPanel := &panelModel{
-		SloErrorBudgetConfig: &sloErrorBudgetConfigModel{
+	tfPanel := &models.PanelModel{
+		SloErrorBudgetConfig: &models.SloErrorBudgetConfigModel{
 			SloID: types.StringValue(""),
-			Drilldowns: []sloErrorBudgetDrilldownModel{
+			Drilldowns: []models.URLDrilldownModel{
 				{
 					URL:          types.StringValue("https://example.com"),
 					Label:        types.StringValue("Go"),

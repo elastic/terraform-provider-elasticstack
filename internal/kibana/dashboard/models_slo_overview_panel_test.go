@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
@@ -28,7 +29,7 @@ import (
 )
 
 func Test_sloSingleToAPI_basic(t *testing.T) {
-	m := &sloSingleConfigModel{
+	m := &models.SloOverviewSingleModel{
 		SloID:         types.StringValue("my-slo-id"),
 		SloInstanceID: types.StringValue("instance-1"),
 		RemoteName:    types.StringValue("remote"),
@@ -36,7 +37,7 @@ func Test_sloSingleToAPI_basic(t *testing.T) {
 		Description:   types.StringValue("A description"),
 		HideTitle:     types.BoolValue(true),
 		HideBorder:    types.BoolValue(false),
-		Drilldowns: []sloDrilldownModel{
+		Drilldowns: []models.URLDrilldownModel{
 			{
 				URL:          types.StringValue("https://example.com"),
 				Label:        types.StringValue("Open dashboard"),
@@ -71,7 +72,7 @@ func Test_sloSingleToAPI_basic(t *testing.T) {
 }
 
 func Test_sloSingleToAPI_no_optional_fields(t *testing.T) {
-	m := &sloSingleConfigModel{
+	m := &models.SloOverviewSingleModel{
 		SloID:         types.StringValue("only-slo-id"),
 		SloInstanceID: types.StringNull(),
 		RemoteName:    types.StringNull(),
@@ -93,12 +94,12 @@ func Test_sloSingleToAPI_no_optional_fields(t *testing.T) {
 }
 
 func Test_sloGroupsToAPI_with_group_filters(t *testing.T) {
-	m := &sloGroupsConfigModel{
+	m := &models.SloOverviewGroupsModel{
 		Title:       types.StringValue("Groups Overview"),
 		Description: types.StringNull(),
 		HideTitle:   types.BoolNull(),
 		HideBorder:  types.BoolNull(),
-		GroupFilters: &sloGroupFiltersModel{
+		GroupFilters: &models.SloGroupFiltersModel{
 			GroupBy:     types.StringValue("status"),
 			KQLQuery:    types.StringValue("slo.name: my-*"),
 			FiltersJSON: jsontypes.NewNormalizedNull(),
@@ -137,7 +138,7 @@ func Test_sloSingleFromAPI_roundtrip(t *testing.T) {
 		Type:   kbapi.SloOverview,
 	}
 
-	pm := &panelModel{}
+	pm := &models.PanelModel{}
 	diags := sloOverviewFromAPI(pm, nil, panel)
 	require.False(t, diags.HasError())
 
@@ -181,7 +182,7 @@ func Test_sloGroupsFromAPI_roundtrip(t *testing.T) {
 		Type: kbapi.SloOverview,
 	}
 
-	pm := &panelModel{}
+	pm := &models.PanelModel{}
 	diags := sloOverviewFromAPI(pm, nil, panel)
 	require.False(t, diags.HasError())
 
@@ -219,16 +220,16 @@ func Test_sloInstanceID_null_preservation(t *testing.T) {
 	}
 
 	// Prior state had slo_instance_id = null
-	tfPanel := &panelModel{
-		SloOverviewConfig: &sloOverviewConfigModel{
-			Single: &sloSingleConfigModel{
+	tfPanel := &models.PanelModel{
+		SloOverviewConfig: &models.SloOverviewConfigModel{
+			Single: &models.SloOverviewSingleModel{
 				SloID:         types.StringValue("slo-456"),
 				SloInstanceID: types.StringNull(), // null in prior state
 			},
 		},
 	}
 
-	pm := &panelModel{}
+	pm := &models.PanelModel{}
 	*pm = *tfPanel
 	diags := sloOverviewFromAPI(pm, tfPanel, panel)
 	require.False(t, diags.HasError())
@@ -262,16 +263,16 @@ func Test_sloInstanceID_explicit_value_preserved(t *testing.T) {
 		Type: kbapi.SloOverview,
 	}
 
-	tfPanel := &panelModel{
-		SloOverviewConfig: &sloOverviewConfigModel{
-			Single: &sloSingleConfigModel{
+	tfPanel := &models.PanelModel{
+		SloOverviewConfig: &models.SloOverviewConfigModel{
+			Single: &models.SloOverviewSingleModel{
 				SloID:         types.StringValue("slo-789"),
 				SloInstanceID: types.StringValue("instance-1"), // explicitly set
 			},
 		},
 	}
 
-	pm := &panelModel{}
+	pm := &models.PanelModel{}
 	*pm = *tfPanel
 	diags := sloOverviewFromAPI(pm, tfPanel, panel)
 	require.False(t, diags.HasError())
@@ -281,16 +282,16 @@ func Test_sloInstanceID_explicit_value_preserved(t *testing.T) {
 }
 
 func Test_sloOverviewToAPI_single(t *testing.T) {
-	pm := panelModel{
+	pm := models.PanelModel{
 		Type: types.StringValue(panelTypeSloOverview),
-		Grid: panelGridModel{
+		Grid: models.PanelGridModel{
 			X: types.Int64Value(0),
 			Y: types.Int64Value(0),
 			W: types.Int64Value(24),
 			H: types.Int64Value(10),
 		},
-		SloOverviewConfig: &sloOverviewConfigModel{
-			Single: &sloSingleConfigModel{
+		SloOverviewConfig: &models.SloOverviewConfigModel{
+			Single: &models.SloOverviewSingleModel{
 				SloID:         types.StringValue("test-slo"),
 				SloInstanceID: types.StringNull(),
 				RemoteName:    types.StringNull(),
@@ -324,21 +325,21 @@ func Test_sloOverviewToAPI_single(t *testing.T) {
 }
 
 func Test_sloOverviewToAPI_groups(t *testing.T) {
-	pm := panelModel{
+	pm := models.PanelModel{
 		Type: types.StringValue(panelTypeSloOverview),
-		Grid: panelGridModel{
+		Grid: models.PanelGridModel{
 			X: types.Int64Value(0),
 			Y: types.Int64Value(0),
 			W: types.Int64Value(24),
 			H: types.Int64Value(10),
 		},
-		SloOverviewConfig: &sloOverviewConfigModel{
-			Groups: &sloGroupsConfigModel{
+		SloOverviewConfig: &models.SloOverviewConfigModel{
+			Groups: &models.SloOverviewGroupsModel{
 				Title:       types.StringNull(),
 				Description: types.StringNull(),
 				HideTitle:   types.BoolNull(),
 				HideBorder:  types.BoolNull(),
-				GroupFilters: &sloGroupFiltersModel{
+				GroupFilters: &models.SloGroupFiltersModel{
 					GroupBy:     types.StringValue("slo.tags"),
 					KQLQuery:    types.StringNull(),
 					FiltersJSON: jsontypes.NewNormalizedNull(),

@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -65,7 +66,7 @@ func Test_populateEsqlControlFromAPI_import_populatesAllFields(t *testing.T) {
 		},
 	})
 
-	pm := &panelModel{}
+	pm := &models.PanelModel{}
 	populateEsqlControlFromAPI(pm, nil, cfg)
 
 	require.NotNil(t, pm.EsqlControlConfig)
@@ -84,16 +85,16 @@ func Test_populateEsqlControlFromAPI_import_populatesAllFields(t *testing.T) {
 
 // Test: when existing config block is nil, preserve nil intent.
 func Test_populateEsqlControlFromAPI_nilBlock_preservesNil(t *testing.T) {
-	pm := &panelModel{}
-	tfPanel := &panelModel{}
+	pm := &models.PanelModel{}
+	tfPanel := &models.PanelModel{}
 	populateEsqlControlFromAPI(pm, tfPanel, minimalEsqlAPIConfig(t))
 	assert.Nil(t, pm.EsqlControlConfig)
 }
 
 // Test: when config block exists, required fields are updated from API.
 func Test_populateEsqlControlFromAPI_existingBlock_requiredFieldsUpdated(t *testing.T) {
-	pm := &panelModel{
-		EsqlControlConfig: &esqlControlConfigModel{
+	pm := &models.PanelModel{
+		EsqlControlConfig: &models.EsqlControlConfigModel{
 			SelectedOptions:  stringsToList([]string{"old"}),
 			VariableName:     types.StringValue("old_var"),
 			VariableType:     types.StringValue("fields"),
@@ -102,7 +103,7 @@ func Test_populateEsqlControlFromAPI_existingBlock_requiredFieldsUpdated(t *test
 			AvailableOptions: types.ListNull(types.StringType),
 		},
 	}
-	tfPanel := &panelModel{EsqlControlConfig: pm.EsqlControlConfig}
+	tfPanel := &models.PanelModel{EsqlControlConfig: pm.EsqlControlConfig}
 	populateEsqlControlFromAPI(pm, tfPanel, minimalEsqlAPIConfig(t))
 
 	require.NotNil(t, pm.EsqlControlConfig)
@@ -115,8 +116,8 @@ func Test_populateEsqlControlFromAPI_existingBlock_requiredFieldsUpdated(t *test
 
 // Test: null-preservation — null optional fields in state are not overwritten by API values.
 func Test_populateEsqlControlFromAPI_nullOptionalFields_preserved(t *testing.T) {
-	pm := &panelModel{
-		EsqlControlConfig: &esqlControlConfigModel{
+	pm := &models.PanelModel{
+		EsqlControlConfig: &models.EsqlControlConfigModel{
 			SelectedOptions:  stringsToList([]string{}),
 			VariableName:     types.StringValue("my_var"),
 			VariableType:     types.StringValue("values"),
@@ -127,7 +128,7 @@ func Test_populateEsqlControlFromAPI_nullOptionalFields_preserved(t *testing.T) 
 			AvailableOptions: types.ListNull(types.StringType),
 		},
 	}
-	tfPanel := &panelModel{EsqlControlConfig: pm.EsqlControlConfig}
+	tfPanel := &models.PanelModel{EsqlControlConfig: pm.EsqlControlConfig}
 	cfg := mustWrapStaticEsqlConfig(t, kbapi.KbnControlsSchemasOptionsListEsqlControlSchemaStaticValues{
 		SelectedOptions: []string{"opt_a"},
 		VariableName:    "my_var",
@@ -145,8 +146,8 @@ func Test_populateEsqlControlFromAPI_nullOptionalFields_preserved(t *testing.T) 
 
 // Test: null display_settings block preserved when API returns display_settings.
 func Test_populateEsqlControlFromAPI_nilDisplaySettings_preserved(t *testing.T) {
-	pm := &panelModel{
-		EsqlControlConfig: &esqlControlConfigModel{
+	pm := &models.PanelModel{
+		EsqlControlConfig: &models.EsqlControlConfigModel{
 			SelectedOptions:  stringsToList([]string{}),
 			VariableName:     types.StringValue("v"),
 			VariableType:     types.StringValue("values"),
@@ -156,7 +157,7 @@ func Test_populateEsqlControlFromAPI_nilDisplaySettings_preserved(t *testing.T) 
 			DisplaySettings:  nil,
 		},
 	}
-	tfPanel := &panelModel{EsqlControlConfig: pm.EsqlControlConfig}
+	tfPanel := &models.PanelModel{EsqlControlConfig: pm.EsqlControlConfig}
 	cfg := mustWrapStaticEsqlConfig(t, kbapi.KbnControlsSchemasOptionsListEsqlControlSchemaStaticValues{
 		SelectedOptions: []string{"opt_a"},
 		VariableName:    "my_var",
@@ -176,21 +177,21 @@ func Test_populateEsqlControlFromAPI_nilDisplaySettings_preserved(t *testing.T) 
 
 // Test: display_settings null fields within existing block are preserved.
 func Test_populateEsqlControlFromAPI_displaySettings_nullFieldsPreserved(t *testing.T) {
-	pm := &panelModel{
-		EsqlControlConfig: &esqlControlConfigModel{
+	pm := &models.PanelModel{
+		EsqlControlConfig: &models.EsqlControlConfigModel{
 			SelectedOptions:  stringsToList([]string{}),
 			VariableName:     types.StringValue("v"),
 			VariableType:     types.StringValue("values"),
 			EsqlQuery:        types.StringValue("FROM logs-*"),
 			ControlType:      types.StringValue("STATIC_VALUES"),
 			AvailableOptions: types.ListNull(types.StringType),
-			DisplaySettings: &esqlControlDisplaySettingsModel{
+			DisplaySettings: &models.EsqlControlDisplaySettingsModel{
 				Placeholder:   types.StringNull(),
 				HideActionBar: types.BoolValue(true),
 			},
 		},
 	}
-	tfPanel := &panelModel{EsqlControlConfig: pm.EsqlControlConfig}
+	tfPanel := &models.PanelModel{EsqlControlConfig: pm.EsqlControlConfig}
 	cfg := mustWrapStaticEsqlConfig(t, kbapi.KbnControlsSchemasOptionsListEsqlControlSchemaStaticValues{
 		SelectedOptions: []string{"opt_a"},
 		VariableName:    "my_var",
@@ -218,8 +219,8 @@ func Test_populateEsqlControlFromAPI_displaySettings_nullFieldsPreserved(t *test
 
 // Test: buildEsqlControlConfig writes required fields to API struct.
 func Test_buildEsqlControlConfig_requiredFields(t *testing.T) {
-	pm := panelModel{
-		EsqlControlConfig: &esqlControlConfigModel{
+	pm := models.PanelModel{
+		EsqlControlConfig: &models.EsqlControlConfigModel{
 			SelectedOptions:  stringsToList([]string{"opt1", "opt2"}),
 			VariableName:     types.StringValue("my_var"),
 			VariableType:     types.StringValue("values"),
@@ -246,8 +247,8 @@ func Test_buildEsqlControlConfig_requiredFields(t *testing.T) {
 
 // Test: buildEsqlControlConfig writes optional fields when set.
 func Test_buildEsqlControlConfig_optionalFields(t *testing.T) {
-	pm := panelModel{
-		EsqlControlConfig: &esqlControlConfigModel{
+	pm := models.PanelModel{
+		EsqlControlConfig: &models.EsqlControlConfigModel{
 			SelectedOptions:  stringsToList([]string{}),
 			VariableName:     types.StringValue("v"),
 			VariableType:     types.StringValue("fields"),
@@ -256,7 +257,7 @@ func Test_buildEsqlControlConfig_optionalFields(t *testing.T) {
 			Title:            types.StringValue("My Control"),
 			SingleSelect:     types.BoolValue(true),
 			AvailableOptions: stringsToList([]string{"a"}),
-			DisplaySettings: &esqlControlDisplaySettingsModel{
+			DisplaySettings: &models.EsqlControlDisplaySettingsModel{
 				Placeholder:   types.StringValue("hint"),
 				HideActionBar: types.BoolValue(true),
 				HideExclude:   types.BoolNull(),
@@ -287,8 +288,8 @@ func Test_buildEsqlControlConfig_optionalFields(t *testing.T) {
 
 // Test: buildEsqlControlConfig omits nil optional fields.
 func Test_buildEsqlControlConfig_nullOptionalFields_omitted(t *testing.T) {
-	pm := panelModel{
-		EsqlControlConfig: &esqlControlConfigModel{
+	pm := models.PanelModel{
+		EsqlControlConfig: &models.EsqlControlConfigModel{
 			SelectedOptions:  stringsToList([]string{}),
 			VariableName:     types.StringValue("v"),
 			VariableType:     types.StringValue("values"),
@@ -313,7 +314,7 @@ func Test_buildEsqlControlConfig_nullOptionalFields_omitted(t *testing.T) {
 
 // Test: round-trip — set values, build to API, populate back, same values.
 func Test_esqlControl_roundTrip(t *testing.T) {
-	original := &esqlControlConfigModel{
+	original := &models.EsqlControlConfigModel{
 		SelectedOptions:  stringsToList([]string{"opt_a", "opt_b"}),
 		VariableName:     types.StringValue("my_var"),
 		VariableType:     types.StringValue("values"),
@@ -323,13 +324,13 @@ func Test_esqlControl_roundTrip(t *testing.T) {
 		SingleSelect:     types.BoolValue(false),
 		AvailableOptions: types.ListNull(types.StringType),
 	}
-	pm := panelModel{EsqlControlConfig: original}
+	pm := models.PanelModel{EsqlControlConfig: original}
 
 	esqlPanel := kbapi.KbnDashboardPanelTypeEsqlControl{}
 	diags := buildEsqlControlConfig(pm, &esqlPanel)
 	require.False(t, diags.HasError())
 
-	out := &panelModel{EsqlControlConfig: &esqlControlConfigModel{
+	out := &models.PanelModel{EsqlControlConfig: &models.EsqlControlConfigModel{
 		SelectedOptions:  original.SelectedOptions,
 		VariableName:     original.VariableName,
 		VariableType:     original.VariableType,
@@ -339,7 +340,7 @@ func Test_esqlControl_roundTrip(t *testing.T) {
 		SingleSelect:     original.SingleSelect,
 		AvailableOptions: original.AvailableOptions,
 	}}
-	tfPanel := &panelModel{EsqlControlConfig: out.EsqlControlConfig}
+	tfPanel := &models.PanelModel{EsqlControlConfig: out.EsqlControlConfig}
 	populateEsqlControlFromAPI(out, tfPanel, esqlPanel.Config)
 
 	require.NotNil(t, out.EsqlControlConfig)

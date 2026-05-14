@@ -23,22 +23,23 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func lensPresentationTestDashboard() *dashboardModel {
-	return &dashboardModel{
-		TimeRange: &timeRangeModel{
+func lensPresentationTestDashboard() *models.DashboardModel {
+	return &models.DashboardModel{
+		TimeRange: &models.TimeRangeModel{
 			From: types.StringValue("now-7d"),
 			To:   types.StringValue("now"),
 		},
 	}
 }
 
-func sampleDatatableNoESQLModel(t *testing.T) *datatableNoESQLConfigModel {
+func sampleDatatableNoESQLModel(t *testing.T) *models.DatatableNoESQLConfigModel {
 	t.Helper()
 
 	header := kbapi.DatatableDensity_Height_Header{}
@@ -75,13 +76,13 @@ func sampleDatatableNoESQLModel(t *testing.T) *datatableNoESQLConfigModel {
 	require.NoError(t, json.Unmarshal([]byte(`{"operation":"count"}`), &metric))
 	api.Metrics = append(api.Metrics, metric)
 
-	m := &datatableNoESQLConfigModel{}
-	diags := m.fromAPI(context.Background(), nil, nil, api)
+	m := &models.DatatableNoESQLConfigModel{}
+	diags := datatableNoESQLConfigFromAPI(context.Background(), m, nil, nil, api)
 	require.False(t, diags.HasError())
 	return m
 }
 
-func sampleMetricNoESQLModel(t *testing.T) *metricChartConfigModel {
+func sampleMetricNoESQLModel(t *testing.T) *models.MetricChartConfigModel {
 	t.Helper()
 
 	apiChart := kbapi.MetricNoESQL{
@@ -102,13 +103,13 @@ func sampleMetricNoESQLModel(t *testing.T) *metricChartConfigModel {
 	require.NoError(t, json.Unmarshal([]byte(`{"operation":"count"}`), &metric))
 	apiChart.Metrics = append(apiChart.Metrics, metric)
 
-	m := &metricChartConfigModel{}
-	diags := m.fromAPIVariant0(context.Background(), nil, nil, apiChart)
+	m := &models.MetricChartConfigModel{}
+	diags := metricChartConfigFromAPIVariant0(context.Background(), m, nil, nil, apiChart)
 	require.False(t, diags.HasError())
 	return m
 }
 
-func sampleGaugeNoESQLModel(t *testing.T) *gaugeConfigModel {
+func sampleGaugeNoESQLModel(t *testing.T) *models.GaugeConfigModel {
 	t.Helper()
 
 	api := kbapi.GaugeNoESQL{
@@ -118,13 +119,13 @@ func sampleGaugeNoESQLModel(t *testing.T) *gaugeConfigModel {
 	require.NoError(t, json.Unmarshal([]byte(`{"expression":"*","language":"kql"}`), &api.Query))
 	require.NoError(t, json.Unmarshal([]byte(`{"operation":"count"}`), &api.Metric))
 
-	m := &gaugeConfigModel{}
-	diags := m.fromAPI(context.Background(), nil, nil, api)
+	m := &models.GaugeConfigModel{}
+	diags := gaugeConfigFromAPI(context.Background(), m, nil, nil, api)
 	require.False(t, diags.HasError())
 	return m
 }
 
-func samplePieNoESQLModel(t *testing.T) *pieChartConfigModel {
+func samplePieNoESQLModel(t *testing.T) *models.PieChartConfigModel {
 	t.Helper()
 
 	mode := kbapi.ValueDisplayModePercentage
@@ -144,15 +145,15 @@ func samplePieNoESQLModel(t *testing.T) *pieChartConfigModel {
 	require.NoError(t, json.Unmarshal([]byte(`{"operation":"count"}`), &metric))
 	apiChart.Metrics = append(apiChart.Metrics, metric)
 
-	m := &pieChartConfigModel{}
-	diags := m.fromAPINoESQL(context.Background(), nil, nil, apiChart)
+	m := &models.PieChartConfigModel{}
+	diags := pieChartConfigFromAPINoESQL(context.Background(), m, nil, nil, apiChart)
 	require.False(t, diags.HasError())
 	return m
 }
 
-func urlDrilldownItem() lensDrilldownItemTFModel {
-	return lensDrilldownItemTFModel{
-		URLDrilldown: &lensURLDrilldownTFModel{
+func urlDrilldownItem() models.LensDrilldownItemTFModel {
+	return models.LensDrilldownItemTFModel{
+		URLDrilldown: &models.LensURLDrilldownTFModel{
 			URL:     types.StringValue("https://example.test/{{event.url}}"),
 			Label:   types.StringValue("Open"),
 			Trigger: types.StringValue("on_click_row"),
@@ -169,12 +170,12 @@ func runDatatableNoESQLLensChartPresentationComprehensive(t *testing.T) {
 		m := *base
 		m.TimeRange = nil
 
-		api, diags := m.toAPI(dash)
+		api, diags := datatableNoESQLConfigToAPI(&m, dash)
 		require.False(t, diags.HasError())
 		api.TimeRange = timeRangeModelToAPI(dash.TimeRange)
 
-		out := &datatableNoESQLConfigModel{}
-		diags = out.fromAPI(ctx, dash, &m, api)
+		out := &models.DatatableNoESQLConfigModel{}
+		diags = datatableNoESQLConfigFromAPI(ctx, out, dash, &m, api)
 		require.False(t, diags.HasError())
 		assert.Nil(t, out.TimeRange)
 	})
@@ -183,28 +184,28 @@ func runDatatableNoESQLLensChartPresentationComprehensive(t *testing.T) {
 		m := *base
 		m.HideTitle = types.BoolValue(true)
 
-		api, diags := m.toAPI(dash)
+		api, diags := datatableNoESQLConfigToAPI(&m, dash)
 		require.False(t, diags.HasError())
 		require.NotNil(t, api.HideTitle)
 		assert.True(t, *api.HideTitle)
 
-		out := &datatableNoESQLConfigModel{}
-		diags = out.fromAPI(ctx, dash, &m, api)
+		out := &models.DatatableNoESQLConfigModel{}
+		diags = datatableNoESQLConfigFromAPI(ctx, out, dash, &m, api)
 		require.False(t, diags.HasError())
 		assert.Equal(t, types.BoolValue(true), out.HideTitle)
 	})
 
 	t.Run("drilldown url round trip", func(t *testing.T) {
 		m := *base
-		m.Drilldowns = []lensDrilldownItemTFModel{urlDrilldownItem()}
+		m.Drilldowns = []models.LensDrilldownItemTFModel{urlDrilldownItem()}
 
-		api, diags := m.toAPI(dash)
+		api, diags := datatableNoESQLConfigToAPI(&m, dash)
 		require.False(t, diags.HasError())
 		require.NotNil(t, api.Drilldowns)
 		assert.GreaterOrEqual(t, len(*api.Drilldowns), 1)
 
-		out := &datatableNoESQLConfigModel{}
-		diags = out.fromAPI(ctx, dash, &m, api)
+		out := &models.DatatableNoESQLConfigModel{}
+		diags = datatableNoESQLConfigFromAPI(ctx, out, dash, &m, api)
 		require.False(t, diags.HasError())
 		require.Len(t, out.Drilldowns, 1)
 		require.NotNil(t, out.Drilldowns[0].URLDrilldown)
@@ -221,14 +222,14 @@ func runMetricNoESQLLensChartPresentationComprehensive(t *testing.T) {
 		m := *base
 		m.TimeRange = nil
 
-		attrs, diags := m.toAPI(dash)
+		attrs, diags := metricChartConfigToAPIVariant0(&m, dash)
 		require.False(t, diags.HasError())
 		api, err := attrs.AsMetricNoESQL()
 		require.NoError(t, err)
 		api.TimeRange = timeRangeModelToAPI(dash.TimeRange)
 
-		out := &metricChartConfigModel{}
-		diags = out.fromAPIVariant0(ctx, dash, &m, api)
+		out := &models.MetricChartConfigModel{}
+		diags = metricChartConfigFromAPIVariant0(ctx, out, dash, &m, api)
 		require.False(t, diags.HasError())
 		assert.Nil(t, out.TimeRange)
 	})
@@ -237,15 +238,15 @@ func runMetricNoESQLLensChartPresentationComprehensive(t *testing.T) {
 		m := *base
 		m.HideBorder = types.BoolValue(true)
 
-		attrs, diags := m.toAPI(dash)
+		attrs, diags := metricChartConfigToAPIVariant0(&m, dash)
 		require.False(t, diags.HasError())
 		api, err := attrs.AsMetricNoESQL()
 		require.NoError(t, err)
 		require.NotNil(t, api.HideBorder)
 		assert.True(t, *api.HideBorder)
 
-		out := &metricChartConfigModel{}
-		diags = out.fromAPIVariant0(ctx, dash, &m, api)
+		out := &models.MetricChartConfigModel{}
+		diags = metricChartConfigFromAPIVariant0(ctx, out, dash, &m, api)
 		require.False(t, diags.HasError())
 		assert.Equal(t, types.BoolValue(true), out.HideBorder)
 	})
@@ -260,14 +261,14 @@ func runGaugeNoESQLLensChartPresentationComprehensive(t *testing.T) {
 		m := *base
 		m.TimeRange = nil
 
-		attrs, diags := m.toAPI(dash)
+		attrs, diags := gaugeConfigToAPI(&m, dash)
 		require.False(t, diags.HasError())
 		api, err := attrs.AsGaugeNoESQL()
 		require.NoError(t, err)
 		api.TimeRange = timeRangeModelToAPI(dash.TimeRange)
 
-		out := &gaugeConfigModel{}
-		diags = out.fromAPI(ctx, dash, &m, api)
+		out := &models.GaugeConfigModel{}
+		diags = gaugeConfigFromAPI(ctx, out, dash, &m, api)
 		require.False(t, diags.HasError())
 		assert.Nil(t, out.TimeRange)
 	})
@@ -277,14 +278,14 @@ func runGaugeNoESQLLensChartPresentationComprehensive(t *testing.T) {
 		m := *base
 		m.ReferencesJSON = jsontypes.NewNormalizedValue(raw)
 
-		attrs, diags := m.toAPI(dash)
+		attrs, diags := gaugeConfigToAPI(&m, dash)
 		require.False(t, diags.HasError())
 		api, err := attrs.AsGaugeNoESQL()
 		require.NoError(t, err)
 		require.NotNil(t, api.References)
 
-		out := &gaugeConfigModel{}
-		diags = out.fromAPI(ctx, dash, &m, api)
+		out := &models.GaugeConfigModel{}
+		diags = gaugeConfigFromAPI(ctx, out, dash, &m, api)
 		require.False(t, diags.HasError())
 		assert.JSONEq(t, raw, out.ReferencesJSON.ValueString())
 	})
@@ -297,22 +298,22 @@ func runPieNoESQLLensChartPresentationComprehensive(t *testing.T) {
 
 	t.Run("discover drilldown round trip", func(t *testing.T) {
 		m := *base
-		m.Drilldowns = []lensDrilldownItemTFModel{
+		m.Drilldowns = []models.LensDrilldownItemTFModel{
 			{
-				DiscoverDrilldown: &lensDiscoverDrilldownTFModel{
+				DiscoverDrilldown: &models.LensDiscoverDrilldownTFModel{
 					Label: types.StringValue("Discover drilldown"),
 				},
 			},
 		}
 
-		attrs, diags := m.toAPI(dash)
+		attrs, diags := pieChartConfigToAPI(&m, dash)
 		require.False(t, diags.HasError())
 		api, err := attrs.AsPieNoESQL()
 		require.NoError(t, err)
 		require.NotNil(t, api.Drilldowns)
 
-		out := &pieChartConfigModel{}
-		diags = out.fromAPINoESQL(ctx, dash, &m, api)
+		out := &models.PieChartConfigModel{}
+		diags = pieChartConfigFromAPINoESQL(ctx, out, dash, &m, api)
 		require.False(t, diags.HasError())
 		require.Len(t, out.Drilldowns, 1)
 		require.NotNil(t, out.Drilldowns[0].DiscoverDrilldown)

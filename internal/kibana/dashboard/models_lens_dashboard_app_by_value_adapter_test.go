@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -31,16 +32,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func lensAppByValueModelFromPopulatedVisByValue(t *testing.T, vb *visByValueModel) lensDashboardAppByValueModel {
+func lensAppByValueModelFromPopulatedVisByValue(t *testing.T, vb *models.VisByValueModel) models.LensDashboardAppByValueModel {
 	t.Helper()
-	out, ok := lensByValueModelFromChartBlocksAfterRead(&vb.lensByValueChartBlocks)
+	out, ok := lensByValueModelFromChartBlocksAfterRead(&vb.LensByValueChartBlocks)
 	require.True(t, ok)
 	return out
 }
 
 // testMetricByValueFromRoundTrip builds a lens-dashboard-app by_value metric typed model from a vis
-// populate path (API union -> populateFromAttributes), stripped to metricChartLensByValueTFModel fields.
-func testMetricByValueFromRoundTrip(t *testing.T) lensDashboardAppByValueModel {
+// populate path (API union -> populateFromAttributes), stripped to models.MetricChartLensByValueTFModel fields.
+func testMetricByValueFromRoundTrip(t *testing.T) models.LensDashboardAppByValueModel {
 	t.Helper()
 	ctx := context.Background()
 	titleM := "M"
@@ -56,8 +57,8 @@ func testMetricByValueFromRoundTrip(t *testing.T) lensDashboardAppByValueModel {
 	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 	require.NoError(t, attrs.FromMetricNoESQL(apiChart))
 	converter := newMetricChartPanelConfigConverter()
-	visBlocks := visByValueModel{}
-	require.False(t, converter.populateFromAttributes(ctx, nil, nil, &visBlocks.lensByValueChartBlocks, attrs).HasError())
+	visBlocks := models.VisByValueModel{}
+	require.False(t, converter.populateFromAttributes(ctx, nil, nil, &visBlocks.LensByValueChartBlocks, attrs).HasError())
 	return lensAppByValueModelFromPopulatedVisByValue(t, &visBlocks)
 }
 
@@ -96,9 +97,9 @@ func testPieByValueConfigBytes(t *testing.T) []byte {
 	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 	require.NoError(t, attrs.FromPieNoESQL(apiChart))
 	converter := newPieChartPanelConfigConverter()
-	visBlocks := visByValueModel{}
-	require.False(t, converter.populateFromAttributes(ctx, nil, nil, &visBlocks.lensByValueChartBlocks, attrs).HasError())
-	vis0, d := converter.buildAttributes(&visBlocks.lensByValueChartBlocks, nil)
+	visBlocks := models.VisByValueModel{}
+	require.False(t, converter.populateFromAttributes(ctx, nil, nil, &visBlocks.LensByValueChartBlocks, attrs).HasError())
+	vis0, d := converter.buildAttributes(&visBlocks.LensByValueChartBlocks, nil)
 	require.False(t, d.HasError())
 	b, err := vis0.MarshalJSON()
 	require.NoError(t, err)
@@ -107,48 +108,49 @@ func testPieByValueConfigBytes(t *testing.T) []byte {
 
 // testWaffleByValueModel builds a `waffle_config` by_value source using the same
 // data as `buildLensWafflePanelForTest`.
-func testWaffleByValueModel(t *testing.T) lensDashboardAppByValueModel {
+func testWaffleByValueModel(t *testing.T) models.LensDashboardAppByValueModel {
 	t.Helper()
 	pm := buildLensWafflePanelForTest(t)
 	require.NotNil(t, pm.VisConfig)
 	require.NotNil(t, pm.VisConfig.ByValue)
-	out, ok := lensByValueModelFromChartBlocksAfterRead(&pm.VisConfig.ByValue.lensByValueChartBlocks)
+	out, ok := lensByValueModelFromChartBlocksAfterRead(&pm.VisConfig.ByValue.LensByValueChartBlocks)
 	require.True(t, ok)
 	return out
 }
 
 // testXyByValueModel builds an `xy_chart_config` by_value source (no-ESQL).
-func testXyByValueModel(t *testing.T) lensDashboardAppByValueModel {
+func testXyByValueModel(t *testing.T) models.LensDashboardAppByValueModel {
 	t.Helper()
 	ctx := context.Background()
-	xy, diags := (&xyChartConfigModel{
+	cfg := &models.XYChartConfigModel{
 		Title:       types.StringValue("X"),
-		Axis:        &xyAxisModel{X: &xyAxisConfigModel{}, Y: &yAxisConfigModel{}},
-		Decorations: &xyDecorationsModel{},
-		Fitting:     &xyFittingModel{Type: types.StringValue("none")},
-		Layers: []xyLayerModel{{
+		Axis:        &models.XYAxisModel{X: &models.XYAxisConfigModel{}, Y: &models.YAxisConfigModel{}},
+		Decorations: &models.XYDecorationsModel{},
+		Fitting:     &models.XYFittingModel{Type: types.StringValue("none")},
+		Layers: []models.XYLayerModel{{
 			Type: types.StringValue("area"),
-			DataLayer: &dataLayerModel{
+			DataLayer: &models.DataLayerModel{
 				DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"dataView","id":"logs-*"}`),
-				Y: []yMetricModel{
+				Y: []models.YMetricModel{
 					{ConfigJSON: jsontypes.NewNormalizedValue(`{"operation":"count","color":"#68BC00","axis":"left"}`)},
 				},
 			},
 		}},
-		Legend: &xyLegendModel{Visibility: types.StringValue("visible"), Inside: types.BoolValue(false)},
-		Query:  &filterSimpleModel{Expression: types.StringValue("*"), Language: types.StringValue("kql")},
-	}).toAPINoESQL(nil)
+		Legend: &models.XYLegendModel{Visibility: types.StringValue("visible"), Inside: types.BoolValue(false)},
+		Query:  &models.FilterSimpleModel{Expression: types.StringValue("*"), Language: types.StringValue("kql")},
+	}
+	xy, diags := xyChartConfigToAPINoESQL(cfg, nil)
 	require.False(t, diags.HasError())
 	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 	require.NoError(t, attrs.FromXyChartNoESQL(xy))
 	conv := newXYChartPanelConfigConverter()
-	visBlocks := visByValueModel{}
-	require.False(t, conv.populateFromAttributes(ctx, nil, nil, &visBlocks.lensByValueChartBlocks, attrs).HasError())
+	visBlocks := models.VisByValueModel{}
+	require.False(t, conv.populateFromAttributes(ctx, nil, nil, &visBlocks.LensByValueChartBlocks, attrs).HasError())
 	return lensAppByValueModelFromPopulatedVisByValue(t, &visBlocks)
 }
 
 // testPieByValueModel builds a `pie_chart_config` by_value source.
-func testPieByValueModel(t *testing.T) lensDashboardAppByValueModel {
+func testPieByValueModel(t *testing.T) models.LensDashboardAppByValueModel {
 	t.Helper()
 	ctx := context.Background()
 	title := "P"
@@ -180,8 +182,8 @@ func testPieByValueModel(t *testing.T) lensDashboardAppByValueModel {
 	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 	require.NoError(t, attrs.FromPieNoESQL(apiChart))
 	conv := newPieChartPanelConfigConverter()
-	visBlocks := visByValueModel{}
-	require.False(t, conv.populateFromAttributes(ctx, nil, nil, &visBlocks.lensByValueChartBlocks, attrs).HasError())
+	visBlocks := models.VisByValueModel{}
+	require.False(t, conv.populateFromAttributes(ctx, nil, nil, &visBlocks.LensByValueChartBlocks, attrs).HasError())
 	return lensAppByValueModelFromPopulatedVisByValue(t, &visBlocks)
 }
 
@@ -210,9 +212,9 @@ func Test_visConfig0ToLensAppConfig0_jsonBridge_metric(t *testing.T) {
 
 func Test_lensByValueToScratchVisPanel_roundTripFields(t *testing.T) {
 	t.Parallel()
-	by := lensDashboardAppByValueModel{
+	by := models.LensDashboardAppByValueModel{
 		ConfigJSON:        jsontypes.NewNormalizedNull(),
-		MetricChartConfig: &metricChartLensByValueTFModel{},
+		MetricChartConfig: &models.MetricChartLensByValueTFModel{},
 	}
 	pm, ok := lensByValueToScratchVisPanel(by)
 	require.True(t, ok)
@@ -252,9 +254,9 @@ func Test_lensDashboardAppByValueToAPI_typedMetric_producesLensDashboardAppByVal
 	require.False(t, hasAttrs, "by-value inline chart must not use a vis-style attributes wrapper at config root")
 }
 
-// testMetricEsqlByValueModel and peers build `lensDashboardAppByValueModel` from ES|QL
+// testMetricEsqlByValueModel and peers build `models.LensDashboardAppByValueModel` from ES|QL
 // vis0 wire shapes so `lensDashboardAppByValueToAPI` exercises the same adapter as practitioners.
-func testMetricEsqlByValueModel(t *testing.T) lensDashboardAppByValueModel {
+func testMetricEsqlByValueModel(t *testing.T) models.LensDashboardAppByValueModel {
 	t.Helper()
 	ctx := context.Background()
 	metricEsql := kbapi.MetricESQL{
@@ -268,12 +270,12 @@ func testMetricEsqlByValueModel(t *testing.T) lensDashboardAppByValueModel {
 	var vis0 kbapi.KbnDashboardPanelTypeVisConfig0
 	require.NoError(t, vis0.FromMetricESQL(metricEsql))
 	conv := newMetricChartPanelConfigConverter()
-	visBlocks := visByValueModel{}
-	require.False(t, conv.populateFromAttributes(ctx, nil, nil, &visBlocks.lensByValueChartBlocks, vis0).HasError())
+	visBlocks := models.VisByValueModel{}
+	require.False(t, conv.populateFromAttributes(ctx, nil, nil, &visBlocks.LensByValueChartBlocks, vis0).HasError())
 	return lensAppByValueModelFromPopulatedVisByValue(t, &visBlocks)
 }
 
-func testXyEsqlByValueModel(t *testing.T) lensDashboardAppByValueModel {
+func testXyEsqlByValueModel(t *testing.T) models.LensDashboardAppByValueModel {
 	t.Helper()
 	ctx := context.Background()
 	xyEsql := mustUnmarshalXyChartESQL(t, `{
@@ -302,12 +304,12 @@ func testXyEsqlByValueModel(t *testing.T) lensDashboardAppByValueModel {
 	var vis0 kbapi.KbnDashboardPanelTypeVisConfig0
 	require.NoError(t, vis0.FromXyChartESQL(xyEsql))
 	conv := newXYChartPanelConfigConverter()
-	visBlocks := visByValueModel{}
-	require.False(t, conv.populateFromAttributes(ctx, nil, nil, &visBlocks.lensByValueChartBlocks, vis0).HasError())
+	visBlocks := models.VisByValueModel{}
+	require.False(t, conv.populateFromAttributes(ctx, nil, nil, &visBlocks.LensByValueChartBlocks, vis0).HasError())
 	return lensAppByValueModelFromPopulatedVisByValue(t, &visBlocks)
 }
 
-func testPieEsqlByValueModel(t *testing.T) lensDashboardAppByValueModel {
+func testPieEsqlByValueModel(t *testing.T) models.LensDashboardAppByValueModel {
 	t.Helper()
 	ctx := context.Background()
 	pieEsql := mustUnmarshalPieESQL(t, `{
@@ -321,18 +323,18 @@ func testPieEsqlByValueModel(t *testing.T) lensDashboardAppByValueModel {
 	var vis0 kbapi.KbnDashboardPanelTypeVisConfig0
 	require.NoError(t, vis0.FromPieESQL(pieEsql))
 	conv := newPieChartPanelConfigConverter()
-	visBlocks := visByValueModel{}
-	require.False(t, conv.populateFromAttributes(ctx, nil, nil, &visBlocks.lensByValueChartBlocks, vis0).HasError())
+	visBlocks := models.VisByValueModel{}
+	require.False(t, conv.populateFromAttributes(ctx, nil, nil, &visBlocks.LensByValueChartBlocks, vis0).HasError())
 	return lensAppByValueModelFromPopulatedVisByValue(t, &visBlocks)
 }
 
-func testWaffleEsqlByValueModel(t *testing.T) lensDashboardAppByValueModel {
+func testWaffleEsqlByValueModel(t *testing.T) models.LensDashboardAppByValueModel {
 	t.Helper()
 	ctx := context.Background()
 	vis0 := mustWaffleESQLVis0(t)
 	conv := newWafflePanelConfigConverter()
-	visBlocks := visByValueModel{}
-	require.False(t, conv.populateFromAttributes(ctx, nil, nil, &visBlocks.lensByValueChartBlocks, vis0).HasError())
+	visBlocks := models.VisByValueModel{}
+	require.False(t, conv.populateFromAttributes(ctx, nil, nil, &visBlocks.LensByValueChartBlocks, vis0).HasError())
 	return lensAppByValueModelFromPopulatedVisByValue(t, &visBlocks)
 }
 
@@ -345,7 +347,7 @@ func Test_lensDashboardAppByValueToAPI_typedESQL_adapter_metric_xy_pie_waffle(t 
 	grid := lensDashboardAPIGrid{X: 0, Y: 0, W: float32ptr(24), H: float32ptr(12)}
 	cases := []struct {
 		name string
-		by   func(t *testing.T) lensDashboardAppByValueModel
+		by   func(t *testing.T) models.LensDashboardAppByValueModel
 		chk  func(t *testing.T, cfg kbapi.KbnDashboardPanelTypeLensDashboardAppConfig0)
 	}{
 		{
@@ -413,7 +415,7 @@ func Test_lensDashboardAppByValueToAPI_typedNoESQL_adapter_xy_pie_waffle(t *test
 	grid := lensDashboardAPIGrid{X: 0, Y: 0, W: float32ptr(24), H: float32ptr(12)}
 	cases := []struct {
 		name string
-		by   func(t *testing.T) lensDashboardAppByValueModel
+		by   func(t *testing.T) models.LensDashboardAppByValueModel
 		chk  func(t *testing.T, cfg kbapi.KbnDashboardPanelTypeLensDashboardAppConfig0)
 	}{
 		{
@@ -473,8 +475,8 @@ func Test_populateLensDashboardAppByValueFromAPI_typedRead_repopulatesTypedBlock
 	configBytes, err := ld.Config.MarshalJSON()
 	require.NoError(t, err)
 
-	prior := &lensDashboardAppConfigModel{ByValue: &by}
-	var pm panelModel
+	prior := &models.LensDashboardAppConfigModel{ByValue: &by}
+	var pm models.PanelModel
 	d := populateLensDashboardAppByValueFromAPI(ctx, nil, prior, configBytes, &pm)
 	require.False(t, d.HasError())
 	require.NotNil(t, pm.LensDashboardAppConfig)
@@ -494,8 +496,8 @@ func Test_populateLensDashboardAppByValueFromAPI_typedRead_mismatchedChartFallsB
 	ctx := context.Background()
 	by := testMetricByValueFromRoundTrip(t)
 	pieBytes := testPieByValueConfigBytes(t)
-	prior := &lensDashboardAppConfigModel{ByValue: &by}
-	var pm panelModel
+	prior := &models.LensDashboardAppConfigModel{ByValue: &by}
+	var pm models.PanelModel
 	d := populateLensDashboardAppByValueFromAPI(ctx, nil, prior, pieBytes, &pm)
 	require.False(t, d.HasError())
 	require.NotNil(t, pm.LensDashboardAppConfig)
@@ -514,9 +516,9 @@ func Test_typedByValueReadFallback_noErrorDiagnostics(t *testing.T) {
 	ctx := context.Background()
 	by := testMetricByValueFromRoundTrip(t)
 	pieBytes := testPieByValueConfigBytes(t)
-	prior := &lensDashboardAppConfigModel{ByValue: &by}
+	prior := &models.LensDashboardAppConfigModel{ByValue: &by}
 	var d diag.Diagnostics
-	var pm panelModel
+	var pm models.PanelModel
 	ok := tryPopulateTypedLensByValueFromAPI(ctx, nil, prior, pieBytes, &pm, &d)
 	require.False(t, ok)
 	require.False(t, d.HasError(), "tryPopulate must not add errors when falling back to config_json read")
@@ -526,21 +528,21 @@ func Test_typedByValueReadFallback_noErrorDiagnostics(t *testing.T) {
 
 func Test_lensByValueAdapter_schemaTypedBlocksHaveScratchMapping(t *testing.T) {
 	t.Parallel()
-	raw := []lensByValueChartBlocks{
-		{XYChartConfig: &xyChartConfigModel{}},
-		{TreemapConfig: &treemapConfigModel{}},
-		{MosaicConfig: &mosaicConfigModel{}},
-		{DatatableConfig: &datatableConfigModel{}},
-		{TagcloudConfig: &tagcloudConfigModel{}},
-		{HeatmapConfig: &heatmapConfigModel{}},
-		{WaffleConfig: &waffleConfigModel{}},
-		{RegionMapConfig: &regionMapConfigModel{}},
-		{GaugeConfig: &gaugeConfigModel{}},
-		{MetricChartConfig: &metricChartConfigModel{}},
-		{PieChartConfig: &pieChartConfigModel{}},
-		{LegacyMetricConfig: &legacyMetricConfigModel{}},
+	raw := []models.LensByValueChartBlocks{
+		{XYChartConfig: &models.XYChartConfigModel{}},
+		{TreemapConfig: &models.TreemapConfigModel{}},
+		{MosaicConfig: &models.MosaicConfigModel{}},
+		{DatatableConfig: &models.DatatableConfigModel{}},
+		{TagcloudConfig: &models.TagcloudConfigModel{}},
+		{HeatmapConfig: &models.HeatmapConfigModel{}},
+		{WaffleConfig: &models.WaffleConfigModel{}},
+		{RegionMapConfig: &models.RegionMapConfigModel{}},
+		{GaugeConfig: &models.GaugeConfigModel{}},
+		{MetricChartConfig: &models.MetricChartConfigModel{}},
+		{PieChartConfig: &models.PieChartConfigModel{}},
+		{LegacyMetricConfig: &models.LegacyMetricConfigModel{}},
 	}
-	cases := make([]lensDashboardAppByValueModel, 0, len(raw))
+	cases := make([]models.LensDashboardAppByValueModel, 0, len(raw))
 	for i := range raw {
 		by, ok := lensByValueModelFromChartBlocksAfterRead(&raw[i])
 		require.Truef(t, ok, "block set %d should map to a single typed lens by_value model", i)

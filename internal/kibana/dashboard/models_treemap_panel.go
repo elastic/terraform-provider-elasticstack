@@ -23,6 +23,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -34,7 +35,7 @@ func newTreemapPanelConfigConverter() treemapPanelConfigConverter {
 	return treemapPanelConfigConverter{
 		lensVisualizationBase: lensVisualizationBase{
 			visualizationType: string(kbapi.TreemapNoESQLTypeTreemap),
-			hasTFChartBlock: func(blocks *lensByValueChartBlocks) bool {
+			hasTFChartBlock: func(blocks *models.LensByValueChartBlocks) bool {
 				return blocks != nil && blocks.TreemapConfig != nil
 			},
 		},
@@ -47,34 +48,34 @@ type treemapPanelConfigConverter struct {
 
 func (c treemapPanelConfigConverter) populateFromAttributes(
 	ctx context.Context,
-	dashboard *dashboardModel,
-	tfPanel *panelModel,
-	blocks *lensByValueChartBlocks,
+	dashboard *models.DashboardModel,
+	tfPanel *models.PanelModel,
+	blocks *models.LensByValueChartBlocks,
 	attrs kbapi.KbnDashboardPanelTypeVisConfig0,
 ) diag.Diagnostics {
-	var prior *treemapConfigModel
+	var prior *models.TreemapConfigModel
 	if b := lensByValueChartBlocksFromPanel(tfPanel); b != nil && b.TreemapConfig != nil {
 		cpy := *b.TreemapConfig
 		prior = &cpy
 	}
-	blocks.TreemapConfig = &treemapConfigModel{}
+	blocks.TreemapConfig = &models.TreemapConfigModel{}
 
 	if noESQL, err := attrs.AsTreemapNoESQL(); err == nil && !isTreemapNoESQLCandidateActuallyESQL(noESQL) {
-		return blocks.TreemapConfig.fromAPINoESQL(ctx, dashboard, prior, noESQL)
+		return treemapConfigFromAPINoESQL(ctx, blocks.TreemapConfig, dashboard, prior, noESQL)
 	}
 
 	treemapESQL, err := attrs.AsTreemapESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	return blocks.TreemapConfig.fromAPIESQL(ctx, dashboard, prior, treemapESQL)
+	return treemapConfigFromAPIESQL(ctx, blocks.TreemapConfig, dashboard, prior, treemapESQL)
 }
 
-func (c treemapPanelConfigConverter) buildAttributes(blocks *lensByValueChartBlocks, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func (c treemapPanelConfigConverter) buildAttributes(blocks *models.LensByValueChartBlocks, dashboard *models.DashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	configModel := *blocks.TreemapConfig
 
-	attrs, treemapDiags := configModel.toAPI(dashboard)
+	attrs, treemapDiags := treemapConfigToAPI(&configModel, dashboard)
 	diags.Append(treemapDiags...)
 	return attrs, diags
 }
@@ -93,44 +94,7 @@ func isTreemapNoESQLCandidateActuallyESQL(api kbapi.TreemapNoESQL) bool {
 	return ds.Type == legacyMetricDatasetTypeESQL || ds.Type == legacyMetricDatasetTypeTable
 }
 
-type treemapConfigModel struct {
-	lensChartPresentationTFModel
-	Title               types.String                                        `tfsdk:"title"`
-	Description         types.String                                        `tfsdk:"description"`
-	DataSourceJSON      jsontypes.Normalized                                `tfsdk:"data_source_json"`
-	IgnoreGlobalFilters types.Bool                                          `tfsdk:"ignore_global_filters"`
-	Sampling            types.Float64                                       `tfsdk:"sampling"`
-	Query               *filterSimpleModel                                  `tfsdk:"query"`
-	Filters             []chartFilterJSONModel                              `tfsdk:"filters"`
-	GroupBy             customtypes.JSONWithDefaultsValue[[]map[string]any] `tfsdk:"group_by_json"`
-	Metrics             customtypes.JSONWithDefaultsValue[[]map[string]any] `tfsdk:"metrics_json"`
-	Legend              *partitionLegendModel                               `tfsdk:"legend"`
-	ValueDisplay        *partitionValueDisplay                              `tfsdk:"value_display"`
-	EsqlMetrics         []treemapEsqlMetric                                 `tfsdk:"esql_metrics"`
-	EsqlGroupBy         []treemapEsqlGroupBy                                `tfsdk:"esql_group_by"`
-}
-
-type treemapEsqlMetric struct {
-	Column     types.String            `tfsdk:"column"`
-	Label      types.String            `tfsdk:"label"`
-	FormatJSON jsontypes.Normalized    `tfsdk:"format_json"`
-	Color      *treemapEsqlMetricColor `tfsdk:"color"`
-}
-
-type treemapEsqlMetricColor struct {
-	Type  types.String `tfsdk:"type"`
-	Color types.String `tfsdk:"color"`
-}
-
-type treemapEsqlGroupBy struct {
-	Column     types.String         `tfsdk:"column"`
-	CollapseBy types.String         `tfsdk:"collapse_by"`
-	ColorJSON  jsontypes.Normalized `tfsdk:"color_json"`
-	FormatJSON jsontypes.Normalized `tfsdk:"format_json"`
-	Label      types.String         `tfsdk:"label"`
-}
-
-func (m *treemapConfigModel) fromAPINoESQL(ctx context.Context, dashboard *dashboardModel, prior *treemapConfigModel, api kbapi.TreemapNoESQL) diag.Diagnostics {
+func treemapConfigFromAPINoESQL(ctx context.Context, m *models.TreemapConfigModel, dashboard *models.DashboardModel, prior *models.TreemapConfigModel, api kbapi.TreemapNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	m.Title = types.StringPointerValue(api.Title)
@@ -162,8 +126,8 @@ func (m *treemapConfigModel) fromAPINoESQL(ctx context.Context, dashboard *dashb
 	}
 	m.Metrics = customtypes.NewJSONWithDefaultsValue(string(metricsBytes), populatePartitionMetricsDefaults)
 
-	m.Query = &filterSimpleModel{}
-	m.Query.fromAPI(api.Query)
+	m.Query = &models.FilterSimpleModel{}
+	filterSimpleFromAPI(m.Query, api.Query)
 
 	if len(api.Filters) > 0 {
 		m.Filters = populateFiltersFromAPI(api.Filters, &diags)
@@ -171,19 +135,19 @@ func (m *treemapConfigModel) fromAPINoESQL(ctx context.Context, dashboard *dashb
 		m.Filters = nil
 	}
 
-	m.Legend = &partitionLegendModel{}
-	m.Legend.fromTreemapLegend(api.Legend)
+	m.Legend = &models.PartitionLegendModel{}
+	partitionLegendFromTreemapLegend(m.Legend, api.Legend)
 
 	if api.Styling.Values.Mode != nil || api.Styling.Values.PercentDecimals != nil {
-		m.ValueDisplay = &partitionValueDisplay{}
-		m.ValueDisplay.fromValueDisplay(api.Styling.Values)
+		m.ValueDisplay = &models.PartitionValueDisplay{}
+		partitionValueDisplayFromValueDisplay(m.ValueDisplay, api.Styling.Values)
 	} else {
 		m.ValueDisplay = nil
 	}
 
-	var priorLens *lensChartPresentationTFModel
+	var priorLens *models.LensChartPresentationTFModel
 	if prior != nil {
-		p := prior.lensChartPresentationTFModel
+		p := prior.LensChartPresentationTFModel
 		priorLens = &p
 	}
 	ddWire, ddOmit, ddWireDiags := lensDrilldownsAPIToWire(api.Drilldowns)
@@ -196,14 +160,14 @@ func (m *treemapConfigModel) fromAPINoESQL(ctx context.Context, dashboard *dashb
 	if presDiags.HasError() {
 		return diags
 	}
-	m.lensChartPresentationTFModel = pres
+	m.LensChartPresentationTFModel = pres
 	m.EsqlMetrics = nil
 	m.EsqlGroupBy = nil
 
 	return diags
 }
 
-func (m *treemapConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashboardModel, prior *treemapConfigModel, api kbapi.TreemapESQL) diag.Diagnostics {
+func treemapConfigFromAPIESQL(ctx context.Context, m *models.TreemapConfigModel, dashboard *models.DashboardModel, prior *models.TreemapConfigModel, api kbapi.TreemapESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// ES|QL charts don't have a query block. Clear it to avoid carrying over
@@ -226,7 +190,7 @@ func (m *treemapConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashboa
 	m.Metrics = customtypes.NewJSONWithDefaultsNull(populatePartitionMetricsDefaults)
 
 	if len(api.Metrics) > 0 {
-		m.EsqlMetrics = make([]treemapEsqlMetric, len(api.Metrics))
+		m.EsqlMetrics = make([]models.TreemapEsqlMetric, len(api.Metrics))
 		for i, met := range api.Metrics {
 			m.EsqlMetrics[i].Column = types.StringValue(met.Column)
 			if met.Label != nil {
@@ -242,7 +206,7 @@ func (m *treemapConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashboa
 			if met.Color != nil {
 				staticColor, colorErr := met.Color.AsStaticColor()
 				if colorErr == nil {
-					m.EsqlMetrics[i].Color = &treemapEsqlMetricColor{
+					m.EsqlMetrics[i].Color = &models.TreemapEsqlMetricColor{
 						Type:  types.StringValue(string(staticColor.Type)),
 						Color: types.StringValue(staticColor.Color),
 					}
@@ -252,7 +216,7 @@ func (m *treemapConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashboa
 	}
 
 	if api.GroupBy != nil && len(*api.GroupBy) > 0 {
-		m.EsqlGroupBy = make([]treemapEsqlGroupBy, len(*api.GroupBy))
+		m.EsqlGroupBy = make([]models.TreemapEsqlGroupBy, len(*api.GroupBy))
 		for i, gb := range *api.GroupBy {
 			m.EsqlGroupBy[i].Column = types.StringValue(gb.Column)
 			m.EsqlGroupBy[i].CollapseBy = types.StringValue(string(gb.CollapseBy))
@@ -282,19 +246,19 @@ func (m *treemapConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashboa
 		m.Filters = nil
 	}
 
-	m.Legend = &partitionLegendModel{}
-	m.Legend.fromTreemapLegend(api.Legend)
+	m.Legend = &models.PartitionLegendModel{}
+	partitionLegendFromTreemapLegend(m.Legend, api.Legend)
 
 	if api.Styling.Values.Mode != nil || api.Styling.Values.PercentDecimals != nil {
-		m.ValueDisplay = &partitionValueDisplay{}
-		m.ValueDisplay.fromValueDisplay(api.Styling.Values)
+		m.ValueDisplay = &models.PartitionValueDisplay{}
+		partitionValueDisplayFromValueDisplay(m.ValueDisplay, api.Styling.Values)
 	} else {
 		m.ValueDisplay = nil
 	}
 
-	var priorLens *lensChartPresentationTFModel
+	var priorLens *models.LensChartPresentationTFModel
 	if prior != nil {
-		p := prior.lensChartPresentationTFModel
+		p := prior.LensChartPresentationTFModel
 		priorLens = &p
 	}
 	ddWire, ddOmit, ddWireDiags := lensDrilldownsAPIToWire(api.Drilldowns)
@@ -307,12 +271,12 @@ func (m *treemapConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashboa
 	if presDiags.HasError() {
 		return diags
 	}
-	m.lensChartPresentationTFModel = pres
+	m.LensChartPresentationTFModel = pres
 
 	return diags
 }
 
-func (m *treemapConfigModel) toAPI(dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func treemapConfigToAPI(m *models.TreemapConfigModel, dashboard *models.DashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 	var diags diag.Diagnostics
 
@@ -320,8 +284,8 @@ func (m *treemapConfigModel) toAPI(dashboard *dashboardModel) (kbapi.KbnDashboar
 		return attrs, diags
 	}
 
-	if m.usesESQL() {
-		esql, esqlDiags := m.toAPITreemapESQL(dashboard)
+	if treemapConfigUsesESQL(m) {
+		esql, esqlDiags := treemapConfigToAPITreemapESQL(m, dashboard)
 		diags.Append(esqlDiags...)
 		if diags.HasError() {
 			return attrs, diags
@@ -332,7 +296,7 @@ func (m *treemapConfigModel) toAPI(dashboard *dashboardModel) (kbapi.KbnDashboar
 		return attrs, diags
 	}
 
-	noESQL, noESQLDiags := m.toAPINoESQL(dashboard)
+	noESQL, noESQLDiags := treemapConfigToAPINoESQL(m, dashboard)
 	diags.Append(noESQLDiags...)
 	if diags.HasError() {
 		return attrs, diags
@@ -344,7 +308,7 @@ func (m *treemapConfigModel) toAPI(dashboard *dashboardModel) (kbapi.KbnDashboar
 	return attrs, diags
 }
 
-func (m *treemapConfigModel) toAPITreemapESQL(dashboard *dashboardModel) (kbapi.TreemapESQL, diag.Diagnostics) {
+func treemapConfigToAPITreemapESQL(m *models.TreemapConfigModel, dashboard *models.DashboardModel) (kbapi.TreemapESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var api kbapi.TreemapESQL
 	api.Type = kbapi.TreemapESQLTypeTreemap
@@ -431,7 +395,7 @@ func (m *treemapConfigModel) toAPITreemapESQL(dashboard *dashboardModel) (kbapi.
 	}
 	api.GroupBy = &groupBy
 
-	api.Legend = m.Legend.toTreemapLegend()
+	api.Legend = partitionLegendToTreemapLegend(m.Legend)
 
 	if typeutils.IsKnown(m.Title) {
 		api.Title = new(m.Title.ValueString())
@@ -449,13 +413,13 @@ func (m *treemapConfigModel) toAPITreemapESQL(dashboard *dashboardModel) (kbapi.
 	api.Filters = buildFiltersForAPI(m.Filters, &diags)
 
 	if m.ValueDisplay != nil {
-		api.Styling.Values = m.ValueDisplay.toValueDisplay()
+		api.Styling.Values = partitionValueDisplayToValueDisplay(m.ValueDisplay)
 	} else {
 		defaultMode := kbapi.ValueDisplayModePercentage
 		api.Styling.Values = kbapi.ValueDisplay{Mode: &defaultMode}
 	}
 
-	writes, presDiags := lensChartPresentationWritesFor(dashboard, m.lensChartPresentationTFModel)
+	writes, presDiags := lensChartPresentationWritesFor(dashboard, m.LensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return api, diags
@@ -482,7 +446,7 @@ func (m *treemapConfigModel) toAPITreemapESQL(dashboard *dashboardModel) (kbapi.
 	return api, diags
 }
 
-func (m *treemapConfigModel) usesESQL() bool {
+func treemapConfigUsesESQL(m *models.TreemapConfigModel) bool {
 	if m == nil {
 		return false
 	}
@@ -492,7 +456,7 @@ func (m *treemapConfigModel) usesESQL() bool {
 	return m.Query.Expression.IsNull() && m.Query.Language.IsNull()
 }
 
-func (m *treemapConfigModel) toAPINoESQL(dashboard *dashboardModel) (kbapi.TreemapNoESQL, diag.Diagnostics) {
+func treemapConfigToAPINoESQL(m *models.TreemapConfigModel, dashboard *models.DashboardModel) (kbapi.TreemapNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	api := kbapi.TreemapNoESQL{
 		Type: kbapi.TreemapNoESQLTypeTreemap,
@@ -554,7 +518,7 @@ func (m *treemapConfigModel) toAPINoESQL(dashboard *dashboardModel) (kbapi.Treem
 		diags.AddError("Missing query", "treemap_config.query is required for non-ES|QL treemap charts")
 		return api, diags
 	}
-	api.Query = m.Query.toAPI()
+	api.Query = filterSimpleToAPI(m.Query)
 
 	api.Filters = buildFiltersForAPI(m.Filters, &diags)
 
@@ -562,13 +526,13 @@ func (m *treemapConfigModel) toAPINoESQL(dashboard *dashboardModel) (kbapi.Treem
 		diags.AddError("Missing legend", "treemap_config.legend must be provided")
 		return api, diags
 	}
-	api.Legend = m.Legend.toTreemapLegend()
+	api.Legend = partitionLegendToTreemapLegend(m.Legend)
 
 	if m.ValueDisplay != nil {
-		api.Styling.Values = m.ValueDisplay.toValueDisplay()
+		api.Styling.Values = partitionValueDisplayToValueDisplay(m.ValueDisplay)
 	}
 
-	writes, presDiags := lensChartPresentationWritesFor(dashboard, m.lensChartPresentationTFModel)
+	writes, presDiags := lensChartPresentationWritesFor(dashboard, m.LensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return api, diags

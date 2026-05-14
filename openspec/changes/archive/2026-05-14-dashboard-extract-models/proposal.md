@@ -32,7 +32,7 @@ None.
 - `internal/kibana/dashboard/models/` — new directory, all model structs moved here
 - Every existing `models_*.go` in `dashboard/` — model structs removed, conversion logic temporarily updated to reference `models.PanelModel`, etc.
 - `create.go`, `read.go`, `update.go`, `delete.go`, `resource.go` — `dashboardModel` → `models.DashboardModel`
-- `schema.go`, `panel_config_validator.go` — references updated
+- `schema.go`, `panel_config_validator.go`, `panel_config_defaults.go` — no edits were required: these layers define or validate schema shape and do not reference `tfsdk` model structs directly (contrast with conversion code in `models_*.go`).
 
 ### Tests
 

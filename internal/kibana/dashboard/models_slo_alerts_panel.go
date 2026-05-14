@@ -19,34 +19,13 @@ package dashboard
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// sloAlertsPanelConfigModel is the Terraform model for `slo_alerts_config`.
-type sloAlertsPanelConfigModel struct {
-	Slos        []sloAlertsPanelSloModel       `tfsdk:"slos"`
-	Title       types.String                   `tfsdk:"title"`
-	Description types.String                   `tfsdk:"description"`
-	HideTitle   types.Bool                     `tfsdk:"hide_title"`
-	HideBorder  types.Bool                     `tfsdk:"hide_border"`
-	Drilldowns  []sloAlertsPanelDrilldownModel `tfsdk:"drilldowns"`
-}
-
-type sloAlertsPanelSloModel struct {
-	SloID         types.String `tfsdk:"slo_id"`
-	SloInstanceID types.String `tfsdk:"slo_instance_id"`
-}
-
-type sloAlertsPanelDrilldownModel struct {
-	URL          types.String `tfsdk:"url"`
-	Label        types.String `tfsdk:"label"`
-	EncodeURL    types.Bool   `tfsdk:"encode_url"`
-	OpenInNewTab types.Bool   `tfsdk:"open_in_new_tab"`
-}
-
-func sloAlertsPanelToAPI(pm panelModel, grid struct {
+func sloAlertsPanelToAPI(pm models.PanelModel, grid struct {
 	H *float32 `json:"h,omitempty"`
 	W *float32 `json:"w,omitempty"`
 	X float32  `json:"x"`
@@ -126,7 +105,7 @@ func sloAlertsPanelToAPI(pm panelModel, grid struct {
 }
 
 // populateSloAlertsPanelFromAPI maps an API `slo_alerts` panel into Terraform state.
-func populateSloAlertsPanelFromAPI(pm *panelModel, tfPanel *panelModel, apiPanel kbapi.KbnDashboardPanelTypeSloAlerts) {
+func populateSloAlertsPanelFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiPanel kbapi.KbnDashboardPanelTypeSloAlerts) {
 	apiCfg := apiPanel.Config
 
 	if tfPanel == nil {
@@ -161,8 +140,8 @@ func populateSloAlertsPanelFromAPI(pm *panelModel, tfPanel *panelModel, apiPanel
 	existing.Drilldowns = readSloAlertsDrilldownsFromAPI(apiCfg.Drilldowns, existing.Drilldowns)
 }
 
-func sloAlertsPanelConfigFromAPIImport(apiCfg kbapi.SloAlertsEmbeddable) *sloAlertsPanelConfigModel {
-	cfg := &sloAlertsPanelConfigModel{
+func sloAlertsPanelConfigFromAPIImport(apiCfg kbapi.SloAlertsEmbeddable) *models.SloAlertsPanelConfigModel {
+	cfg := &models.SloAlertsPanelConfigModel{
 		Title:       types.StringPointerValue(apiCfg.Title),
 		Description: types.StringPointerValue(apiCfg.Description),
 		HideTitle:   types.BoolPointerValue(apiCfg.HideTitle),
@@ -180,13 +159,13 @@ func readSloAlertsSlosFromAPI(
 		SloId         string  `json:"slo_id"`                    //nolint:revive // kbapi JSON shape
 		SloInstanceId *string `json:"slo_instance_id,omitempty"` //nolint:revive // kbapi JSON shape
 	},
-	priorSlos []sloAlertsPanelSloModel,
-) []sloAlertsPanelSloModel {
-	out := make([]sloAlertsPanelSloModel, len(apiSlos))
+	priorSlos []models.SloAlertsPanelSloModel,
+) []models.SloAlertsPanelSloModel {
+	out := make([]models.SloAlertsPanelSloModel, len(apiSlos))
 	for i, apiSlo := range apiSlos {
 		out[i].SloID = types.StringValue(apiSlo.SloId)
 
-		var prior *sloAlertsPanelSloModel
+		var prior *models.SloAlertsPanelSloModel
 		if i < len(priorSlos) {
 			prior = &priorSlos[i]
 		}
@@ -217,18 +196,18 @@ func readSloAlertsDrilldownsFromAPI(
 		Type         kbapi.SloAlertsEmbeddableDrilldownsType    `json:"type"`
 		Url          string                                     `json:"url"` //nolint:revive
 	},
-	priorDrilldowns []sloAlertsPanelDrilldownModel,
-) []sloAlertsPanelDrilldownModel {
+	priorDrilldowns []models.URLDrilldownModel,
+) []models.URLDrilldownModel {
 	if apiDrilldowns == nil || len(*apiDrilldowns) == 0 {
 		return nil
 	}
 
-	out := make([]sloAlertsPanelDrilldownModel, len(*apiDrilldowns))
+	out := make([]models.URLDrilldownModel, len(*apiDrilldowns))
 	for i, d := range *apiDrilldowns {
 		out[i].URL = types.StringValue(d.Url)
 		out[i].Label = types.StringValue(d.Label)
 
-		var prior *sloAlertsPanelDrilldownModel
+		var prior *models.URLDrilldownModel
 		if i < len(priorDrilldowns) {
 			prior = &priorDrilldowns[i]
 		}

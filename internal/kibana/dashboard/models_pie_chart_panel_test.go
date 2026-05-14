@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -67,8 +68,8 @@ func Test_pieChartPanelConfigConverter_populateFromAttributes_buildAttributes_ro
 	require.NoError(t, attrs.FromPieNoESQL(apiChart))
 
 	converter := newPieChartPanelConfigConverter()
-	visBv := visByValueModel{}
-	diags := converter.populateFromAttributes(ctx, nil, nil, &visBv.lensByValueChartBlocks, attrs)
+	visBv := models.VisByValueModel{}
+	diags := converter.populateFromAttributes(ctx, nil, nil, &visBv.LensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
 	require.NotNil(t, visBv.PieChartConfig)
 	require.NotNil(t, visBv.PieChartConfig.Legend)
@@ -77,7 +78,7 @@ func Test_pieChartPanelConfigConverter_populateFromAttributes_buildAttributes_ro
 	assert.Equal(t, int64(3), visBv.PieChartConfig.Legend.TruncateAfterLine.ValueInt64())
 	assert.Equal(t, string(visibility), visBv.PieChartConfig.Legend.Visible.ValueString())
 
-	attrs2, diags := converter.buildAttributes(&visBv.lensByValueChartBlocks, nil)
+	attrs2, diags := converter.buildAttributes(&visBv.LensByValueChartBlocks, nil)
 	require.False(t, diags.HasError())
 
 	noESQL2, err := attrs2.AsPieNoESQL()
@@ -135,8 +136,8 @@ func Test_pieChartConfigModel_fromAPI_toAPI_PieNoESQL(t *testing.T) {
 		GroupBy:    new([]kbapi.PieNoESQL_GroupBy_Item{}),
 	}
 
-	model := &pieChartConfigModel{}
-	diags := model.fromAPINoESQL(context.Background(), nil, nil, apiChart)
+	model := &models.PieChartConfigModel{}
+	diags := pieChartConfigFromAPINoESQL(context.Background(), model, nil, nil, apiChart)
 	require.False(t, diags.HasError(), "fromAPINoESQL should not have errors")
 
 	// Verify fields
@@ -152,7 +153,7 @@ func Test_pieChartConfigModel_fromAPI_toAPI_PieNoESQL(t *testing.T) {
 	assert.Equal(t, string(visibility), model.Legend.Visible.ValueString())
 
 	// Test toAPI
-	resultAttrs, diags := model.toAPI(nil)
+	resultAttrs, diags := pieChartConfigToAPI(model, nil)
 	require.False(t, diags.HasError(), "toAPI should not have errors")
 
 	resultNoESQL, err := resultAttrs.AsPieNoESQL()
@@ -184,8 +185,8 @@ func Test_pieChartConfigModel_fromAPI_toAPI_PieESQL(t *testing.T) {
 	var apiESQL kbapi.PieESQL
 	require.NoError(t, json.Unmarshal([]byte(apiJSON), &apiESQL))
 
-	model := &pieChartConfigModel{}
-	diags := model.fromAPIESQL(context.Background(), nil, nil, apiESQL)
+	model := &models.PieChartConfigModel{}
+	diags := pieChartConfigFromAPIESQL(context.Background(), model, nil, nil, apiESQL)
 	require.False(t, diags.HasError())
 
 	assert.Equal(t, "ESQL Pie Chart", model.Title.ValueString())
@@ -196,7 +197,7 @@ func Test_pieChartConfigModel_fromAPI_toAPI_PieESQL(t *testing.T) {
 	assert.Equal(t, "auto", model.Legend.Size.ValueString())
 	assert.Equal(t, string(kbapi.PieLegendVisibilityVisible), model.Legend.Visible.ValueString())
 
-	resultAttrs, diags := model.toAPI(nil)
+	resultAttrs, diags := pieChartConfigToAPI(model, nil)
 	require.False(t, diags.HasError())
 
 	esql2, err := resultAttrs.AsPieESQL()
@@ -211,25 +212,25 @@ func Test_pieChartConfigModel_fromAPI_toAPI_PieESQL(t *testing.T) {
 }
 
 func Test_pieChartConfigModel_toAPI_withMetrics(t *testing.T) {
-	model := &pieChartConfigModel{
+	model := &models.PieChartConfigModel{
 		Title:          types.StringValue("Pie with metrics"),
 		Description:    types.StringValue("Test"),
 		DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"dataView","id":"logs-*"}`),
-		Legend: &partitionLegendModel{
+		Legend: &models.PartitionLegendModel{
 			Size:    types.StringValue("auto"),
 			Visible: types.StringValue("visible"),
 		},
-		Query: &filterSimpleModel{Expression: types.StringValue("*"), Language: types.StringValue("kql")},
-		Metrics: []pieMetricModel{
+		Query: &models.FilterSimpleModel{Expression: types.StringValue("*"), Language: types.StringValue("kql")},
+		Metrics: []models.PieMetricModel{
 			{Config: customtypes.NewJSONWithDefaultsValue[map[string]any](`{"operation":"count"}`, populatePieChartMetricDefaults)},
 			{Config: customtypes.NewJSONWithDefaultsValue[map[string]any](`{"operation":"sum","field":"bytes"}`, populatePieChartMetricDefaults)},
 		},
-		GroupBy: []pieGroupByModel{
+		GroupBy: []models.PieGroupByModel{
 			{Config: customtypes.NewJSONWithDefaultsValue(`{"operation":"terms","field":"host.name"}`, populateLensGroupByDefaults)},
 		},
 	}
 
-	attrs, diags := model.toAPI(nil)
+	attrs, diags := pieChartConfigToAPI(model, nil)
 	require.False(t, diags.HasError())
 
 	noESQL, err := attrs.AsPieNoESQL()
@@ -240,24 +241,24 @@ func Test_pieChartConfigModel_toAPI_withMetrics(t *testing.T) {
 }
 
 func Test_pieChartConfigModel_toAPI_withGroupBy(t *testing.T) {
-	model := &pieChartConfigModel{
+	model := &models.PieChartConfigModel{
 		Title:          types.StringValue("Pie with groupBy"),
 		DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"dataView","id":"logs-*"}`),
-		Legend: &partitionLegendModel{
+		Legend: &models.PartitionLegendModel{
 			Size:    types.StringValue("auto"),
 			Visible: types.StringValue("visible"),
 		},
-		Query: &filterSimpleModel{Expression: types.StringValue("*"), Language: types.StringValue("kql")},
-		Metrics: []pieMetricModel{
+		Query: &models.FilterSimpleModel{Expression: types.StringValue("*"), Language: types.StringValue("kql")},
+		Metrics: []models.PieMetricModel{
 			{Config: customtypes.NewJSONWithDefaultsValue[map[string]any](`{"operation":"count"}`, populatePieChartMetricDefaults)},
 		},
-		GroupBy: []pieGroupByModel{
+		GroupBy: []models.PieGroupByModel{
 			{Config: customtypes.NewJSONWithDefaultsValue(`{"operation":"terms","field":"host.name","size":10}`, populateLensGroupByDefaults)},
 			{Config: customtypes.NewJSONWithDefaultsValue(`{"operation":"terms","field":"service.name"}`, populateLensGroupByDefaults)},
 		},
 	}
 
-	attrs, diags := model.toAPI(nil)
+	attrs, diags := pieChartConfigToAPI(model, nil)
 	require.False(t, diags.HasError())
 
 	noESQL, err := attrs.AsPieNoESQL()
@@ -267,17 +268,17 @@ func Test_pieChartConfigModel_toAPI_withGroupBy(t *testing.T) {
 }
 
 func Test_pieChartConfigModel_toAPI_legendOmitted(t *testing.T) {
-	model := &pieChartConfigModel{
+	model := &models.PieChartConfigModel{
 		Title:          types.StringValue("Pie default legend"),
 		DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"dataView","id":"logs-*"}`),
-		Query:          &filterSimpleModel{Expression: types.StringValue("*"), Language: types.StringValue("kql")},
-		Metrics: []pieMetricModel{
+		Query:          &models.FilterSimpleModel{Expression: types.StringValue("*"), Language: types.StringValue("kql")},
+		Metrics: []models.PieMetricModel{
 			{Config: customtypes.NewJSONWithDefaultsValue[map[string]any](`{"operation":"count"}`, populatePieChartMetricDefaults)},
 		},
 		Legend: nil,
 	}
 
-	attrs, diags := model.toAPI(nil)
+	attrs, diags := pieChartConfigToAPI(model, nil)
 	require.False(t, diags.HasError())
 
 	noESQL, err := attrs.AsPieNoESQL()
@@ -286,13 +287,13 @@ func Test_pieChartConfigModel_toAPI_legendOmitted(t *testing.T) {
 }
 
 func Test_pieChartConfigModel_toAPI_legendOmitted_PieESQL(t *testing.T) {
-	model := &pieChartConfigModel{
+	model := &models.PieChartConfigModel{
 		Title: types.StringValue("ESQL pie default legend"),
 		DataSourceJSON: jsontypes.NewNormalizedValue(
 			`{"type":"esql","query":"FROM logs-* | LIMIT 10"}`,
 		),
 		Query: nil,
-		Metrics: []pieMetricModel{
+		Metrics: []models.PieMetricModel{
 			{
 				Config: customtypes.NewJSONWithDefaultsValue[map[string]any](
 					`{"operation":"value","column":"bytes","color":{"type":"static","color":"#54B399"},"format":{"type":"number"}}`,
@@ -300,7 +301,7 @@ func Test_pieChartConfigModel_toAPI_legendOmitted_PieESQL(t *testing.T) {
 				),
 			},
 		},
-		GroupBy: []pieGroupByModel{
+		GroupBy: []models.PieGroupByModel{
 			{
 				Config: customtypes.NewJSONWithDefaultsValue(
 					`{"operation":"value","column":"host.name","collapse_by":"avg","color":{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"color_code","value":"#D3DAE6"}}}`,
@@ -311,7 +312,7 @@ func Test_pieChartConfigModel_toAPI_legendOmitted_PieESQL(t *testing.T) {
 		Legend: nil,
 	}
 
-	attrs, diags := model.toAPI(nil)
+	attrs, diags := pieChartConfigToAPI(model, nil)
 	require.False(t, diags.HasError())
 
 	esql, err := attrs.AsPieESQL()
@@ -321,20 +322,20 @@ func Test_pieChartConfigModel_toAPI_legendOmitted_PieESQL(t *testing.T) {
 
 func Test_pieChartConfigModel_toAPI_dataSourceJSONRequired(t *testing.T) {
 	// data_source_json is Required on pie_chart_config; null should produce an error.
-	model := &pieChartConfigModel{
+	model := &models.PieChartConfigModel{
 		Title:          types.StringValue("Pie without data source"),
 		DataSourceJSON: jsontypes.NewNormalizedNull(),
-		Query:          &filterSimpleModel{Expression: types.StringValue("*"), Language: types.StringValue("kql")},
-		Metrics: []pieMetricModel{
+		Query:          &models.FilterSimpleModel{Expression: types.StringValue("*"), Language: types.StringValue("kql")},
+		Metrics: []models.PieMetricModel{
 			{Config: customtypes.NewJSONWithDefaultsValue[map[string]any](`{"operation":"count"}`, populatePieChartMetricDefaults)},
 		},
-		Legend: &partitionLegendModel{
+		Legend: &models.PartitionLegendModel{
 			Size:    types.StringValue("auto"),
 			Visible: types.StringValue("visible"),
 		},
 	}
 
-	_, diags := model.toAPI(nil)
+	_, diags := pieChartConfigToAPI(model, nil)
 	require.True(t, diags.HasError())
 	var found bool
 	for _, d := range diags.Errors() {
@@ -347,23 +348,23 @@ func Test_pieChartConfigModel_toAPI_dataSourceJSONRequired(t *testing.T) {
 
 func Test_pieChartConfigModel_config_json_metricRoundTrip(t *testing.T) {
 	// Verifies that pie metrics use config_json (not config) for round-trip.
-	model := &pieChartConfigModel{
+	model := &models.PieChartConfigModel{
 		Title:          types.StringValue("Pie config_json test"),
 		DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"dataView","id":"logs-*"}`),
-		Query:          &filterSimpleModel{Expression: types.StringValue("*"), Language: types.StringValue("kql")},
-		Metrics: []pieMetricModel{
+		Query:          &models.FilterSimpleModel{Expression: types.StringValue("*"), Language: types.StringValue("kql")},
+		Metrics: []models.PieMetricModel{
 			{Config: customtypes.NewJSONWithDefaultsValue[map[string]any](`{"operation":"count"}`, populatePieChartMetricDefaults)},
 		},
-		GroupBy: []pieGroupByModel{
+		GroupBy: []models.PieGroupByModel{
 			{Config: customtypes.NewJSONWithDefaultsValue(`{"operation":"terms","field":"host.name"}`, populateLensGroupByDefaults)},
 		},
-		Legend: &partitionLegendModel{
+		Legend: &models.PartitionLegendModel{
 			Size:    types.StringValue("auto"),
 			Visible: types.StringValue("visible"),
 		},
 	}
 
-	attrs, diags := model.toAPI(nil)
+	attrs, diags := pieChartConfigToAPI(model, nil)
 	require.False(t, diags.HasError())
 
 	noESQL, err := attrs.AsPieNoESQL()
@@ -373,8 +374,8 @@ func Test_pieChartConfigModel_config_json_metricRoundTrip(t *testing.T) {
 	require.Len(t, *noESQL.GroupBy, 1)
 
 	// Round-trip back
-	model2 := &pieChartConfigModel{}
-	diags = model2.fromAPINoESQL(context.Background(), nil, nil, noESQL)
+	model2 := &models.PieChartConfigModel{}
+	diags = pieChartConfigFromAPINoESQL(context.Background(), model2, nil, nil, noESQL)
 	require.False(t, diags.HasError())
 	require.Len(t, model2.Metrics, 1)
 	assert.False(t, model2.Metrics[0].Config.IsNull())

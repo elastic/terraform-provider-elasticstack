@@ -19,32 +19,14 @@ package dashboard
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// syntheticsStatsOverviewConfigModel is the Terraform model for the synthetics_stats_overview_config block.
-type syntheticsStatsOverviewConfigModel struct {
-	Title       types.String                         `tfsdk:"title"`
-	Description types.String                         `tfsdk:"description"`
-	HideTitle   types.Bool                           `tfsdk:"hide_title"`
-	HideBorder  types.Bool                           `tfsdk:"hide_border"`
-	Drilldowns  []urlDrilldownModel                  `tfsdk:"drilldowns"`
-	Filters     *syntheticsStatsOverviewFiltersModel `tfsdk:"filters"`
-}
-
-// syntheticsStatsOverviewFiltersModel holds per-category Synthetics monitor filter constraints.
-type syntheticsStatsOverviewFiltersModel struct {
-	Projects     []syntheticsFilterItemModel `tfsdk:"projects"`
-	Tags         []syntheticsFilterItemModel `tfsdk:"tags"`
-	MonitorIDs   []syntheticsFilterItemModel `tfsdk:"monitor_ids"`
-	Locations    []syntheticsFilterItemModel `tfsdk:"locations"`
-	MonitorTypes []syntheticsFilterItemModel `tfsdk:"monitor_types"`
-}
-
 // buildSyntheticsStatsOverviewConfig writes the TF model into the API panel struct.
 // When the config block is nil or entirely null, an empty config object is sent (valid: shows all monitors).
-func buildSyntheticsStatsOverviewConfig(pm panelModel, panel *kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview) {
+func buildSyntheticsStatsOverviewConfig(pm models.PanelModel, panel *kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview) {
 	cfg := pm.SyntheticsStatsOverviewConfig
 	if cfg == nil {
 		return
@@ -97,7 +79,7 @@ func buildSyntheticsStatsOverviewConfig(pm panelModel, panel *kbapi.KbnDashboard
 			Value string `json:"value"`
 		}
 
-		toAPIItems := func(items []syntheticsFilterItemModel) *[]apiFilterItem {
+		toAPIItems := func(items []models.SyntheticsFilterItemModel) *[]apiFilterItem {
 			if len(items) == 0 {
 				return nil
 			}
@@ -153,7 +135,7 @@ func buildSyntheticsStatsOverviewConfig(pm panelModel, panel *kbapi.KbnDashboard
 //
 // tfPanel is the prior TF state/plan panel, or nil on import. When nil, all API-returned
 // fields are populated unconditionally (no prior intent to preserve).
-func populateSyntheticsStatsOverviewFromAPI(pm *panelModel, tfPanel *panelModel, apiPanel kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview) {
+func populateSyntheticsStatsOverviewFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiPanel kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview) {
 	cfg := apiPanel.Config
 
 	// On import (tfPanel == nil), populate unconditionally when at least one API field is set.
@@ -163,7 +145,7 @@ func populateSyntheticsStatsOverviewFromAPI(pm *panelModel, tfPanel *panelModel,
 			// Empty config — keep block null.
 			return
 		}
-		pm.SyntheticsStatsOverviewConfig = &syntheticsStatsOverviewConfigModel{
+		pm.SyntheticsStatsOverviewConfig = &models.SyntheticsStatsOverviewConfigModel{
 			Title:       types.StringPointerValue(cfg.Title),
 			Description: types.StringPointerValue(cfg.Description),
 			HideTitle:   types.BoolPointerValue(cfg.HideTitle),
@@ -246,22 +228,22 @@ func syntheticsFiltersHasAnyEntry(f *struct {
 // Optional bool fields (encode_url, open_in_new_tab) use null-preservation when prior state is available.
 func readSyntheticsStatsOverviewDrilldownsFromAPI(
 	apiPanel kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview,
-	priorDrilldowns []urlDrilldownModel,
-) []urlDrilldownModel {
+	priorDrilldowns []models.URLDrilldownModel,
+) []models.URLDrilldownModel {
 	apiDrilldowns := apiPanel.Config.Drilldowns
 	if apiDrilldowns == nil || len(*apiDrilldowns) == 0 {
 		return nil
 	}
 
-	result := make([]urlDrilldownModel, len(*apiDrilldowns))
+	result := make([]models.URLDrilldownModel, len(*apiDrilldowns))
 	for i, d := range *apiDrilldowns {
 		// trigger and type are not stored in state — they are always hardcoded constants.
-		result[i] = urlDrilldownModel{
+		result[i] = models.URLDrilldownModel{
 			URL:   types.StringValue(d.Url),
 			Label: types.StringValue(d.Label),
 		}
 
-		var prior *urlDrilldownModel
+		var prior *models.URLDrilldownModel
 		if i < len(priorDrilldowns) {
 			prior = &priorDrilldowns[i]
 		}
@@ -295,8 +277,8 @@ func readSyntheticsStatsOverviewDrilldownsFromAPI(
 // priorFilters is the existing TF state (may be nil on import).
 func readSyntheticsStatsOverviewFiltersFromAPI(
 	apiPanel kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview,
-	priorFilters *syntheticsStatsOverviewFiltersModel,
-) *syntheticsStatsOverviewFiltersModel {
+	priorFilters *models.SyntheticsFiltersModel,
+) *models.SyntheticsFiltersModel {
 	apiFilters := apiPanel.Config.Filters
 
 	if apiFilters == nil {
@@ -314,13 +296,13 @@ func readSyntheticsStatsOverviewFiltersFromAPI(
 		Label string `json:"label"`
 		Value string `json:"value"`
 	}
-	fromAPIItems := func(items *[]apiFilterItem) []syntheticsFilterItemModel {
+	fromAPIItems := func(items *[]apiFilterItem) []models.SyntheticsFilterItemModel {
 		if items == nil || len(*items) == 0 {
 			return nil
 		}
-		out := make([]syntheticsFilterItemModel, len(*items))
+		out := make([]models.SyntheticsFilterItemModel, len(*items))
 		for i, it := range *items {
-			out[i] = syntheticsFilterItemModel{
+			out[i] = models.SyntheticsFilterItemModel{
 				Label: types.StringValue(it.Label),
 				Value: types.StringValue(it.Value),
 			}
@@ -328,7 +310,7 @@ func readSyntheticsStatsOverviewFiltersFromAPI(
 		return out
 	}
 
-	return &syntheticsStatsOverviewFiltersModel{
+	return &models.SyntheticsFiltersModel{
 		Projects:     fromAPIItems(apiFilters.Projects),
 		Tags:         fromAPIItems(apiFilters.Tags),
 		MonitorIDs:   fromAPIItems(apiFilters.MonitorIds),

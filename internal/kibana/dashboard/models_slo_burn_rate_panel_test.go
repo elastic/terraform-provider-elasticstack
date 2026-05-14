@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -64,8 +65,8 @@ func withHideBorder(v bool) func(*kbapi.SloBurnRateEmbeddable) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 func Test_buildSloBurnRateConfig_requiredFieldsOnly(t *testing.T) {
-	pm := panelModel{
-		SloBurnRateConfig: &sloBurnRateConfigModel{
+	pm := models.PanelModel{
+		SloBurnRateConfig: &models.SloBurnRateConfigModel{
 			SloID:         types.StringValue("my-slo-id"),
 			Duration:      types.StringValue("72h"),
 			SloInstanceID: types.StringNull(),
@@ -89,8 +90,8 @@ func Test_buildSloBurnRateConfig_requiredFieldsOnly(t *testing.T) {
 }
 
 func Test_buildSloBurnRateConfig_allOptionalFields(t *testing.T) {
-	pm := panelModel{
-		SloBurnRateConfig: &sloBurnRateConfigModel{
+	pm := models.PanelModel{
+		SloBurnRateConfig: &models.SloBurnRateConfigModel{
 			SloID:         types.StringValue("my-slo"),
 			Duration:      types.StringValue("5m"),
 			SloInstanceID: types.StringValue("host-a"),
@@ -116,11 +117,11 @@ func Test_buildSloBurnRateConfig_allOptionalFields(t *testing.T) {
 }
 
 func Test_buildSloBurnRateConfig_withDrilldowns(t *testing.T) {
-	pm := panelModel{
-		SloBurnRateConfig: &sloBurnRateConfigModel{
+	pm := models.PanelModel{
+		SloBurnRateConfig: &models.SloBurnRateConfigModel{
 			SloID:    types.StringValue("slo-1"),
 			Duration: types.StringValue("3h"),
-			Drilldowns: []sloBurnRateDrilldownModel{
+			Drilldowns: []models.URLDrilldownModel{
 				{
 					URL:          types.StringValue("https://example.com"),
 					Label:        types.StringValue("View details"),
@@ -145,11 +146,11 @@ func Test_buildSloBurnRateConfig_withDrilldowns(t *testing.T) {
 }
 
 func Test_buildSloBurnRateConfig_withDrilldowns_optionalBoolsSet(t *testing.T) {
-	pm := panelModel{
-		SloBurnRateConfig: &sloBurnRateConfigModel{
+	pm := models.PanelModel{
+		SloBurnRateConfig: &models.SloBurnRateConfigModel{
 			SloID:    types.StringValue("slo-1"),
 			Duration: types.StringValue("3h"),
-			Drilldowns: []sloBurnRateDrilldownModel{
+			Drilldowns: []models.URLDrilldownModel{
 				{
 					URL:          types.StringValue("https://example.com"),
 					Label:        types.StringValue("Link"),
@@ -171,7 +172,7 @@ func Test_buildSloBurnRateConfig_withDrilldowns_optionalBoolsSet(t *testing.T) {
 }
 
 func Test_buildSloBurnRateConfig_nilConfig(t *testing.T) {
-	pm := panelModel{}
+	pm := models.PanelModel{}
 	var panel kbapi.KbnDashboardPanelTypeSloBurnRate
 	buildSloBurnRateConfig(pm, &panel)
 	// Should be empty/zero config — no panic.
@@ -184,7 +185,7 @@ func Test_buildSloBurnRateConfig_nilConfig(t *testing.T) {
 
 // On import (tfPanel == nil), populate all fields from API.
 func Test_populateSloBurnRateFromAPI_import_allFields(t *testing.T) {
-	pm := &panelModel{}
+	pm := &models.PanelModel{}
 	apiCfg := makeSloBurnRateAPIConfig("slo-1", "72h",
 		withSloInstanceID("host-a"),
 		withTitle("My SLO"),
@@ -207,7 +208,7 @@ func Test_populateSloBurnRateFromAPI_import_allFields(t *testing.T) {
 
 // On import with minimal API response, optional fields are null.
 func Test_populateSloBurnRateFromAPI_import_requiredFieldsOnly(t *testing.T) {
-	pm := &panelModel{}
+	pm := &models.PanelModel{}
 	apiCfg := makeSloBurnRateAPIConfig("slo-2", "5m")
 	populateSloBurnRateFromAPI(pm, nil, apiCfg)
 
@@ -225,7 +226,7 @@ func Test_populateSloBurnRateFromAPI_import_requiredFieldsOnly(t *testing.T) {
 // Key: slo_instance_id null-preservation. tfPanel has no slo_instance_id (null), API returns "*".
 // Provider must keep null in state (not pollute with API sentinel).
 func Test_populateSloBurnRateFromAPI_sloInstanceID_nullPreservation(t *testing.T) {
-	existing := &sloBurnRateConfigModel{
+	existing := &models.SloBurnRateConfigModel{
 		SloID:         types.StringValue("slo-1"),
 		Duration:      types.StringValue("72h"),
 		SloInstanceID: types.StringNull(), // not configured by practitioner
@@ -234,8 +235,8 @@ func Test_populateSloBurnRateFromAPI_sloInstanceID_nullPreservation(t *testing.T
 		HideTitle:     types.BoolNull(),
 		HideBorder:    types.BoolNull(),
 	}
-	pm := &panelModel{SloBurnRateConfig: existing}
-	tfPanel := &panelModel{SloBurnRateConfig: existing}
+	pm := &models.PanelModel{SloBurnRateConfig: existing}
+	tfPanel := &models.PanelModel{SloBurnRateConfig: existing}
 
 	// API returns "*" (all-instances sentinel)
 	apiCfg := makeSloBurnRateAPIConfig("slo-1", "72h", withSloInstanceID("*"))
@@ -248,7 +249,7 @@ func Test_populateSloBurnRateFromAPI_sloInstanceID_nullPreservation(t *testing.T
 
 // When slo_instance_id is explicitly configured, round-trip normally.
 func Test_populateSloBurnRateFromAPI_sloInstanceID_explicitValue_roundTrips(t *testing.T) {
-	existing := &sloBurnRateConfigModel{
+	existing := &models.SloBurnRateConfigModel{
 		SloID:         types.StringValue("slo-1"),
 		Duration:      types.StringValue("72h"),
 		SloInstanceID: types.StringValue("host-a"),
@@ -257,8 +258,8 @@ func Test_populateSloBurnRateFromAPI_sloInstanceID_explicitValue_roundTrips(t *t
 		HideTitle:     types.BoolNull(),
 		HideBorder:    types.BoolNull(),
 	}
-	pm := &panelModel{SloBurnRateConfig: existing}
-	tfPanel := &panelModel{SloBurnRateConfig: existing}
+	pm := &models.PanelModel{SloBurnRateConfig: existing}
+	tfPanel := &models.PanelModel{SloBurnRateConfig: existing}
 
 	apiCfg := makeSloBurnRateAPIConfig("slo-1", "72h", withSloInstanceID("host-a"))
 	populateSloBurnRateFromAPI(pm, tfPanel, apiCfg)
@@ -268,7 +269,7 @@ func Test_populateSloBurnRateFromAPI_sloInstanceID_explicitValue_roundTrips(t *t
 
 // When slo_instance_id is explicitly configured to "*", round-trip it normally.
 func Test_populateSloBurnRateFromAPI_sloInstanceID_explicitWildcard_roundTrips(t *testing.T) {
-	existing := &sloBurnRateConfigModel{
+	existing := &models.SloBurnRateConfigModel{
 		SloID:         types.StringValue("slo-1"),
 		Duration:      types.StringValue("72h"),
 		SloInstanceID: types.StringValue("*"),
@@ -277,8 +278,8 @@ func Test_populateSloBurnRateFromAPI_sloInstanceID_explicitWildcard_roundTrips(t
 		HideTitle:     types.BoolNull(),
 		HideBorder:    types.BoolNull(),
 	}
-	pm := &panelModel{SloBurnRateConfig: existing}
-	tfPanel := &panelModel{SloBurnRateConfig: existing}
+	pm := &models.PanelModel{SloBurnRateConfig: existing}
+	tfPanel := &models.PanelModel{SloBurnRateConfig: existing}
 
 	apiCfg := makeSloBurnRateAPIConfig("slo-1", "72h", withSloInstanceID("*"))
 	populateSloBurnRateFromAPI(pm, tfPanel, apiCfg)
@@ -288,8 +289,8 @@ func Test_populateSloBurnRateFromAPI_sloInstanceID_explicitWildcard_roundTrips(t
 
 // When prior state has no config block (nil), preserve nil intent.
 func Test_populateSloBurnRateFromAPI_nilBlock_preservesNilIntent(t *testing.T) {
-	pm := &panelModel{}
-	tfPanel := &panelModel{} // no SloBurnRateConfig
+	pm := &models.PanelModel{}
+	tfPanel := &models.PanelModel{} // no SloBurnRateConfig
 
 	apiCfg := makeSloBurnRateAPIConfig("slo-1", "72h")
 	populateSloBurnRateFromAPI(pm, tfPanel, apiCfg)
@@ -299,7 +300,7 @@ func Test_populateSloBurnRateFromAPI_nilBlock_preservesNilIntent(t *testing.T) {
 
 // Required fields (slo_id, duration) are always updated from API response.
 func Test_populateSloBurnRateFromAPI_requiredFieldsAlwaysUpdated(t *testing.T) {
-	existing := &sloBurnRateConfigModel{
+	existing := &models.SloBurnRateConfigModel{
 		SloID:         types.StringValue("old-slo"),
 		Duration:      types.StringValue("1h"),
 		SloInstanceID: types.StringNull(),
@@ -308,8 +309,8 @@ func Test_populateSloBurnRateFromAPI_requiredFieldsAlwaysUpdated(t *testing.T) {
 		HideTitle:     types.BoolNull(),
 		HideBorder:    types.BoolNull(),
 	}
-	pm := &panelModel{SloBurnRateConfig: existing}
-	tfPanel := &panelModel{SloBurnRateConfig: existing}
+	pm := &models.PanelModel{SloBurnRateConfig: existing}
+	tfPanel := &models.PanelModel{SloBurnRateConfig: existing}
 
 	apiCfg := makeSloBurnRateAPIConfig("new-slo", "24h")
 	populateSloBurnRateFromAPI(pm, tfPanel, apiCfg)
@@ -321,10 +322,10 @@ func Test_populateSloBurnRateFromAPI_requiredFieldsAlwaysUpdated(t *testing.T) {
 // Drilldown optional bool null-preservation: if encode_url / open_in_new_tab were null in
 // prior state and API returns a value, preserve null.
 func Test_populateSloBurnRateFromAPI_drilldowns_optionalBoolNullPreservation(t *testing.T) {
-	existing := &sloBurnRateConfigModel{
+	existing := &models.SloBurnRateConfigModel{
 		SloID:    types.StringValue("slo-1"),
 		Duration: types.StringValue("6d"),
-		Drilldowns: []sloBurnRateDrilldownModel{
+		Drilldowns: []models.URLDrilldownModel{
 			{
 				URL:          types.StringValue("https://example.com"),
 				Label:        types.StringValue("View"),
@@ -333,8 +334,8 @@ func Test_populateSloBurnRateFromAPI_drilldowns_optionalBoolNullPreservation(t *
 			},
 		},
 	}
-	pm := &panelModel{SloBurnRateConfig: existing}
-	tfPanel := &panelModel{SloBurnRateConfig: existing}
+	pm := &models.PanelModel{SloBurnRateConfig: existing}
+	tfPanel := &models.PanelModel{SloBurnRateConfig: existing}
 
 	// API returns drilldown with encode_url and open_in_new_tab set to true
 	apiDrilldowns := &[]struct {
@@ -367,10 +368,10 @@ func Test_populateSloBurnRateFromAPI_drilldowns_optionalBoolNullPreservation(t *
 
 // When drilldown optional bools were explicitly set in prior state, round-trip from API.
 func Test_populateSloBurnRateFromAPI_drilldowns_optionalBoolsExplicit_roundTrip(t *testing.T) {
-	existing := &sloBurnRateConfigModel{
+	existing := &models.SloBurnRateConfigModel{
 		SloID:    types.StringValue("slo-1"),
 		Duration: types.StringValue("6d"),
-		Drilldowns: []sloBurnRateDrilldownModel{
+		Drilldowns: []models.URLDrilldownModel{
 			{
 				URL:          types.StringValue("https://example.com"),
 				Label:        types.StringValue("View"),
@@ -379,8 +380,8 @@ func Test_populateSloBurnRateFromAPI_drilldowns_optionalBoolsExplicit_roundTrip(
 			},
 		},
 	}
-	pm := &panelModel{SloBurnRateConfig: existing}
-	tfPanel := &panelModel{SloBurnRateConfig: existing}
+	pm := &models.PanelModel{SloBurnRateConfig: existing}
+	tfPanel := &models.PanelModel{SloBurnRateConfig: existing}
 
 	apiDrilldowns := &[]struct {
 		EncodeUrl    *bool                                        `json:"encode_url,omitempty"` //nolint:revive

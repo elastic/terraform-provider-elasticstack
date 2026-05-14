@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -31,7 +32,7 @@ import (
 // ─────────────────────────────────────────────────────────────────────────────
 
 func Test_buildSyntheticsStatsOverviewConfig_nilConfig(t *testing.T) {
-	pm := panelModel{}
+	pm := models.PanelModel{}
 	var panel kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview
 	buildSyntheticsStatsOverviewConfig(pm, &panel)
 	// Zero config — no panic, nothing set.
@@ -44,8 +45,8 @@ func Test_buildSyntheticsStatsOverviewConfig_nilConfig(t *testing.T) {
 }
 
 func Test_buildSyntheticsStatsOverviewConfig_emptyConfig(t *testing.T) {
-	pm := panelModel{
-		SyntheticsStatsOverviewConfig: &syntheticsStatsOverviewConfigModel{
+	pm := models.PanelModel{
+		SyntheticsStatsOverviewConfig: &models.SyntheticsStatsOverviewConfigModel{
 			Title:       types.StringNull(),
 			Description: types.StringNull(),
 			HideTitle:   types.BoolNull(),
@@ -66,8 +67,8 @@ func Test_buildSyntheticsStatsOverviewConfig_emptyConfig(t *testing.T) {
 }
 
 func Test_buildSyntheticsStatsOverviewConfig_displaySettings(t *testing.T) {
-	pm := panelModel{
-		SyntheticsStatsOverviewConfig: &syntheticsStatsOverviewConfigModel{
+	pm := models.PanelModel{
+		SyntheticsStatsOverviewConfig: &models.SyntheticsStatsOverviewConfigModel{
 			Title:       types.StringValue("My Panel"),
 			Description: types.StringValue("A description"),
 			HideTitle:   types.BoolValue(true),
@@ -88,10 +89,10 @@ func Test_buildSyntheticsStatsOverviewConfig_displaySettings(t *testing.T) {
 }
 
 func Test_buildSyntheticsStatsOverviewConfig_withDrilldowns(t *testing.T) {
-	pm := panelModel{
-		SyntheticsStatsOverviewConfig: &syntheticsStatsOverviewConfigModel{
+	pm := models.PanelModel{
+		SyntheticsStatsOverviewConfig: &models.SyntheticsStatsOverviewConfigModel{
 			Title: types.StringNull(),
-			Drilldowns: []urlDrilldownModel{
+			Drilldowns: []models.URLDrilldownModel{
 				{
 					URL:          types.StringValue("https://example.com/{{context.panel.title}}"),
 					Label:        types.StringValue("View details"),
@@ -117,9 +118,9 @@ func Test_buildSyntheticsStatsOverviewConfig_withDrilldowns(t *testing.T) {
 }
 
 func Test_buildSyntheticsStatsOverviewConfig_withDrilldowns_optionalBoolsSet(t *testing.T) {
-	pm := panelModel{
-		SyntheticsStatsOverviewConfig: &syntheticsStatsOverviewConfigModel{
-			Drilldowns: []urlDrilldownModel{
+	pm := models.PanelModel{
+		SyntheticsStatsOverviewConfig: &models.SyntheticsStatsOverviewConfigModel{
+			Drilldowns: []models.URLDrilldownModel{
 				{
 					URL:          types.StringValue("https://example.com"),
 					Label:        types.StringValue("Link"),
@@ -141,16 +142,16 @@ func Test_buildSyntheticsStatsOverviewConfig_withDrilldowns_optionalBoolsSet(t *
 }
 
 func Test_buildSyntheticsStatsOverviewConfig_withFilters(t *testing.T) {
-	pm := panelModel{
-		SyntheticsStatsOverviewConfig: &syntheticsStatsOverviewConfigModel{
-			Filters: &syntheticsStatsOverviewFiltersModel{
-				Projects: []syntheticsFilterItemModel{
+	pm := models.PanelModel{
+		SyntheticsStatsOverviewConfig: &models.SyntheticsStatsOverviewConfigModel{
+			Filters: &models.SyntheticsFiltersModel{
+				Projects: []models.SyntheticsFilterItemModel{
 					{Label: types.StringValue("My Project"), Value: types.StringValue("my-project")},
 				},
-				Tags: []syntheticsFilterItemModel{
+				Tags: []models.SyntheticsFilterItemModel{
 					{Label: types.StringValue("prod"), Value: types.StringValue("prod")},
 				},
-				MonitorTypes: []syntheticsFilterItemModel{
+				MonitorTypes: []models.SyntheticsFilterItemModel{
 					{Label: types.StringValue("HTTP"), Value: types.StringValue("http")},
 				},
 			},
@@ -174,9 +175,9 @@ func Test_buildSyntheticsStatsOverviewConfig_withFilters(t *testing.T) {
 
 func Test_buildSyntheticsStatsOverviewConfig_emptyFilters_notSent(t *testing.T) {
 	// A filters block with no entries should not produce a filters payload.
-	pm := panelModel{
-		SyntheticsStatsOverviewConfig: &syntheticsStatsOverviewConfigModel{
-			Filters: &syntheticsStatsOverviewFiltersModel{
+	pm := models.PanelModel{
+		SyntheticsStatsOverviewConfig: &models.SyntheticsStatsOverviewConfigModel{
+			Filters: &models.SyntheticsFiltersModel{
 				Projects: nil,
 				Tags:     nil,
 			},
@@ -198,7 +199,7 @@ func makeSyntheticsAPIConfig() kbapi.KbnDashboardPanelTypeSyntheticsStatsOvervie
 
 // Test: on import (tfPanel == nil) with empty config — block stays null.
 func Test_populateSyntheticsStatsOverviewFromAPI_import_emptyConfig_blockIsNull(t *testing.T) {
-	pm := &panelModel{}
+	pm := &models.PanelModel{}
 	panel := makeSyntheticsAPIConfig()
 	populateSyntheticsStatsOverviewFromAPI(pm, nil, panel)
 
@@ -207,7 +208,7 @@ func Test_populateSyntheticsStatsOverviewFromAPI_import_emptyConfig_blockIsNull(
 
 // Test: on import with fields set — block is populated.
 func Test_populateSyntheticsStatsOverviewFromAPI_import_withFields(t *testing.T) {
-	pm := &panelModel{}
+	pm := &models.PanelModel{}
 	panel := makeSyntheticsAPIConfig()
 	title := "My Panel"
 	panel.Config.Title = &title
@@ -230,8 +231,8 @@ func Test_populateSyntheticsStatsOverviewFromAPI_import_withFields(t *testing.T)
 
 // Test: prior state has no block (nil) — nil intent preserved.
 func Test_populateSyntheticsStatsOverviewFromAPI_nilBlock_preservesNilIntent(t *testing.T) {
-	pm := &panelModel{}
-	tfPanel := &panelModel{} // no SyntheticsStatsOverviewConfig
+	pm := &models.PanelModel{}
+	tfPanel := &models.PanelModel{} // no SyntheticsStatsOverviewConfig
 
 	panel := makeSyntheticsAPIConfig()
 	title := "Should not appear"
@@ -244,14 +245,14 @@ func Test_populateSyntheticsStatsOverviewFromAPI_nilBlock_preservesNilIntent(t *
 
 // Test: null-preservation for optional string fields.
 func Test_populateSyntheticsStatsOverviewFromAPI_nullPreservation_strings(t *testing.T) {
-	existing := &syntheticsStatsOverviewConfigModel{
+	existing := &models.SyntheticsStatsOverviewConfigModel{
 		Title:       types.StringNull(),
 		Description: types.StringNull(),
 		HideTitle:   types.BoolNull(),
 		HideBorder:  types.BoolNull(),
 	}
-	pm := &panelModel{SyntheticsStatsOverviewConfig: existing}
-	tfPanel := &panelModel{SyntheticsStatsOverviewConfig: existing}
+	pm := &models.PanelModel{SyntheticsStatsOverviewConfig: existing}
+	tfPanel := &models.PanelModel{SyntheticsStatsOverviewConfig: existing}
 
 	panel := makeSyntheticsAPIConfig()
 	title := "API title"
@@ -267,14 +268,14 @@ func Test_populateSyntheticsStatsOverviewFromAPI_nullPreservation_strings(t *tes
 
 // Test: when fields are explicitly set in prior state, round-trip them from API.
 func Test_populateSyntheticsStatsOverviewFromAPI_explicitFields_roundTrip(t *testing.T) {
-	existing := &syntheticsStatsOverviewConfigModel{
+	existing := &models.SyntheticsStatsOverviewConfigModel{
 		Title:       types.StringValue("Old Title"),
 		Description: types.StringValue("Old desc"),
 		HideTitle:   types.BoolValue(false),
 		HideBorder:  types.BoolValue(true),
 	}
-	pm := &panelModel{SyntheticsStatsOverviewConfig: existing}
-	tfPanel := &panelModel{SyntheticsStatsOverviewConfig: existing}
+	pm := &models.PanelModel{SyntheticsStatsOverviewConfig: existing}
+	tfPanel := &models.PanelModel{SyntheticsStatsOverviewConfig: existing}
 
 	panel := makeSyntheticsAPIConfig()
 	title := "New Title"
@@ -298,8 +299,8 @@ func Test_populateSyntheticsStatsOverviewFromAPI_explicitFields_roundTrip(t *tes
 
 // Test: drilldown optional bool null-preservation.
 func Test_populateSyntheticsStatsOverviewFromAPI_drilldowns_nullPreservation(t *testing.T) {
-	existing := &syntheticsStatsOverviewConfigModel{
-		Drilldowns: []urlDrilldownModel{
+	existing := &models.SyntheticsStatsOverviewConfigModel{
+		Drilldowns: []models.URLDrilldownModel{
 			{
 				URL:          types.StringValue("https://example.com"),
 				Label:        types.StringValue("View"),
@@ -308,8 +309,8 @@ func Test_populateSyntheticsStatsOverviewFromAPI_drilldowns_nullPreservation(t *
 			},
 		},
 	}
-	pm := &panelModel{SyntheticsStatsOverviewConfig: existing}
-	tfPanel := &panelModel{SyntheticsStatsOverviewConfig: existing}
+	pm := &models.PanelModel{SyntheticsStatsOverviewConfig: existing}
+	tfPanel := &models.PanelModel{SyntheticsStatsOverviewConfig: existing}
 
 	panel := makeSyntheticsAPIConfig()
 	encodeURL := true
@@ -343,7 +344,7 @@ func Test_populateSyntheticsStatsOverviewFromAPI_drilldowns_nullPreservation(t *
 
 // Test: empty API filters treated as absent block.
 func Test_populateSyntheticsStatsOverviewFromAPI_emptyFilters_treatedAsAbsent(t *testing.T) {
-	pm := &panelModel{}
+	pm := &models.PanelModel{}
 
 	panel := makeSyntheticsAPIConfig()
 	// Set title so import path fires, then provide empty filters.
@@ -380,7 +381,7 @@ func Test_populateSyntheticsStatsOverviewFromAPI_emptyFilters_treatedAsAbsent(t 
 
 // Test: import with filters populated.
 func Test_populateSyntheticsStatsOverviewFromAPI_import_withFilters(t *testing.T) {
-	pm := &panelModel{}
+	pm := &models.PanelModel{}
 
 	panel := makeSyntheticsAPIConfig()
 	projects := []struct {
@@ -426,16 +427,16 @@ func Test_populateSyntheticsStatsOverviewFromAPI_import_withFilters(t *testing.T
 // Test: on refresh (tfPanel != nil), when API returns completely empty config and block existed in prior state — block is nil'd.
 // This verifies that the refresh path matches the import path: empty API config round-trips as null in state.
 func Test_populateSyntheticsStatsOverviewFromAPI_refresh_emptyAPIConfig_nilsBlock(t *testing.T) {
-	existing := &syntheticsStatsOverviewConfigModel{
+	existing := &models.SyntheticsStatsOverviewConfigModel{
 		Title: types.StringValue("Old Title"),
-		Filters: &syntheticsStatsOverviewFiltersModel{
-			Projects: []syntheticsFilterItemModel{
+		Filters: &models.SyntheticsFiltersModel{
+			Projects: []models.SyntheticsFilterItemModel{
 				{Label: types.StringValue("My Project"), Value: types.StringValue("my-project")},
 			},
 		},
 	}
-	pm := &panelModel{SyntheticsStatsOverviewConfig: existing}
-	tfPanel := &panelModel{SyntheticsStatsOverviewConfig: existing}
+	pm := &models.PanelModel{SyntheticsStatsOverviewConfig: existing}
+	tfPanel := &models.PanelModel{SyntheticsStatsOverviewConfig: existing}
 
 	// API returns completely empty config (no title, no description, no drilldowns, no filters).
 	panel := makeSyntheticsAPIConfig()
@@ -450,15 +451,15 @@ func Test_populateSyntheticsStatsOverviewFromAPI_refresh_emptyAPIConfig_nilsBloc
 // This verifies that returning an explicit empty filters object is treated as absent even
 // when prior state had a populated filters block.
 func Test_populateSyntheticsStatsOverviewFromAPI_refresh_emptyFilters_clearsBlock(t *testing.T) {
-	existing := &syntheticsStatsOverviewConfigModel{
-		Filters: &syntheticsStatsOverviewFiltersModel{
-			Projects: []syntheticsFilterItemModel{
+	existing := &models.SyntheticsStatsOverviewConfigModel{
+		Filters: &models.SyntheticsFiltersModel{
+			Projects: []models.SyntheticsFilterItemModel{
 				{Label: types.StringValue("My Project"), Value: types.StringValue("my-project")},
 			},
 		},
 	}
-	pm := &panelModel{SyntheticsStatsOverviewConfig: existing}
-	tfPanel := &panelModel{SyntheticsStatsOverviewConfig: existing}
+	pm := &models.PanelModel{SyntheticsStatsOverviewConfig: existing}
+	tfPanel := &models.PanelModel{SyntheticsStatsOverviewConfig: existing}
 
 	panel := makeSyntheticsAPIConfig()
 	// API returns an explicit empty filters object (non-nil, no entries).
@@ -495,15 +496,15 @@ func Test_populateSyntheticsStatsOverviewFromAPI_refresh_emptyFilters_clearsBloc
 // Test: on refresh (tfPanel != nil), when ALL config fields are nil (including nil filters) — block is nil'd.
 // When the entire config is absent from the API response, it round-trips as null in state (REQ-033).
 func Test_populateSyntheticsStatsOverviewFromAPI_refresh_allNilConfig_nilsBlock(t *testing.T) {
-	existing := &syntheticsStatsOverviewConfigModel{
-		Filters: &syntheticsStatsOverviewFiltersModel{
-			Projects: []syntheticsFilterItemModel{
+	existing := &models.SyntheticsStatsOverviewConfigModel{
+		Filters: &models.SyntheticsFiltersModel{
+			Projects: []models.SyntheticsFilterItemModel{
 				{Label: types.StringValue("My Project"), Value: types.StringValue("my-project")},
 			},
 		},
 	}
-	pm := &panelModel{SyntheticsStatsOverviewConfig: existing}
-	tfPanel := &panelModel{SyntheticsStatsOverviewConfig: existing}
+	pm := &models.PanelModel{SyntheticsStatsOverviewConfig: existing}
+	tfPanel := &models.PanelModel{SyntheticsStatsOverviewConfig: existing}
 
 	panel := makeSyntheticsAPIConfig()
 	// API returns nil filters (field not present) AND all other config fields are also nil.
@@ -519,16 +520,16 @@ func Test_populateSyntheticsStatsOverviewFromAPI_refresh_allNilConfig_nilsBlock(
 // The nil-filters preservation guards against false drift when Kibana omits the filters field while returning other config.
 func Test_populateSyntheticsStatsOverviewFromAPI_refresh_nilFiltersWithOtherConfig_preservesPriorFilters(t *testing.T) {
 	title := "My Panel"
-	existing := &syntheticsStatsOverviewConfigModel{
+	existing := &models.SyntheticsStatsOverviewConfigModel{
 		Title: types.StringValue(title),
-		Filters: &syntheticsStatsOverviewFiltersModel{
-			Projects: []syntheticsFilterItemModel{
+		Filters: &models.SyntheticsFiltersModel{
+			Projects: []models.SyntheticsFilterItemModel{
 				{Label: types.StringValue("My Project"), Value: types.StringValue("my-project")},
 			},
 		},
 	}
-	pm := &panelModel{SyntheticsStatsOverviewConfig: existing}
-	tfPanel := &panelModel{SyntheticsStatsOverviewConfig: existing}
+	pm := &models.PanelModel{SyntheticsStatsOverviewConfig: existing}
+	tfPanel := &models.PanelModel{SyntheticsStatsOverviewConfig: existing}
 
 	panel := makeSyntheticsAPIConfig()
 	// API returns the title but omits the filters field (nil filters).

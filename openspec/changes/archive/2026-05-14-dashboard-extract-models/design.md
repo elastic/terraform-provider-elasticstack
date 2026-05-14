@@ -47,7 +47,7 @@ The shared `timeRangeModel` stays as `models.TimeRangeModel` because other packa
 - `dashboard.go` — `DashboardModel`, `DashboardQueryModel`, `RefreshIntervalModel`, `OptionsModel`, `AccessControlValue`, etc.
 - `slo_burn_rate.go` — `SloBurnRateConfigModel`, `SloBurnRateDrilldownModel`
 - `markdown.go` — `MarkdownConfigModel`, `MarkdownConfigByValueModel`, etc.
-- `lens.go` — `LensByValueChartBlocks`, `LensDashboardAppConfigModel`, `VizConfigModel`, etc.
+- `lens.go` — `LensByValueChartBlocks`, `LensDashboardAppConfigModel`, `VisConfigModel`, etc.
 - `lens_xy.go` — `XYChartConfigModel`, `XYLayerModel`, etc.
 - `lens_gauge.go` — `GaugeConfigModel`, etc.
 - And all remaining `*ConfigModel` structs
@@ -70,7 +70,7 @@ dashboard/models/
   image.go              — ImagePanelConfigModel, ImagePanelSrcModel, ImagePanelSrcFileModel, ImagePanelSrcURLModel, ImagePanelDrilldownModel, ImagePanelDashboardDrilldownModel, ImagePanelURLDrilldownModel
   slo_alerts.go         — SloAlertsPanelConfigModel, SloAlertsPanelSloModel, SloAlertsPanelDrilldownModel
   discover_session.go   — DiscoverSessionPanelConfigModel, DiscoverSessionPanelByValueModel, DiscoverSessionTabModel, DiscoverSessionDSLTabModel, DiscoverSessionESQLTabModel, DiscoverSessionPanelByRefModel, DiscoverSessionOverridesModel, DiscoverSessionSortModel, DiscoverSessionColumnSettingModel, DiscoverSessionPanelDrilldown
-  lens.go               — LensByValueChartBlocks, LensDashboardAppConfigModel, VizConfigModel, VizByValueModel, VizByReferenceModel
+  lens.go               — LensByValueChartBlocks, LensDashboardAppConfigModel, VisConfigModel, VisByValueModel, VisByReferenceModel
   lens_xy.go            — XYChartConfigModel, XYLayerModel, …
   lens_gauge.go         — GaugeConfigModel, GaugeStylingModel
   lens_metric.go        — MetricChartConfigModel, …

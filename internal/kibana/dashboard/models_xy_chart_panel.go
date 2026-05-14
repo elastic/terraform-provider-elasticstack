@@ -25,6 +25,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -35,7 +36,7 @@ func newXYChartPanelConfigConverter() xyChartPanelConfigConverter {
 	return xyChartPanelConfigConverter{
 		lensVisualizationBase: lensVisualizationBase{
 			visualizationType: string(kbapi.XyChartNoESQLTypeXy),
-			hasTFChartBlock: func(blocks *lensByValueChartBlocks) bool {
+			hasTFChartBlock: func(blocks *models.LensByValueChartBlocks) bool {
 				return blocks != nil && blocks.XYChartConfig != nil
 			},
 		},
@@ -48,34 +49,34 @@ type xyChartPanelConfigConverter struct {
 
 func (c xyChartPanelConfigConverter) populateFromAttributes(
 	ctx context.Context,
-	dashboard *dashboardModel,
-	tfPanel *panelModel,
-	blocks *lensByValueChartBlocks,
+	dashboard *models.DashboardModel,
+	tfPanel *models.PanelModel,
+	blocks *models.LensByValueChartBlocks,
 	attrs kbapi.KbnDashboardPanelTypeVisConfig0,
 ) diag.Diagnostics {
-	var prior *xyChartConfigModel
+	var prior *models.XYChartConfigModel
 	if b := lensByValueChartBlocksFromPanel(tfPanel); b != nil && b.XYChartConfig != nil {
 		cpy := *b.XYChartConfig
 		prior = &cpy
 	}
-	blocks.XYChartConfig = &xyChartConfigModel{}
+	blocks.XYChartConfig = &models.XYChartConfigModel{}
 	if xyChart, err := attrs.AsXyChartNoESQL(); err == nil {
-		return blocks.XYChartConfig.fromAPINoESQL(ctx, dashboard, prior, xyChart)
+		return xyChartConfigFromAPINoESQL(ctx, blocks.XYChartConfig, dashboard, prior, xyChart)
 	}
 	xyChart, err := attrs.AsXyChartESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	return blocks.XYChartConfig.fromAPIESQL(ctx, dashboard, prior, xyChart)
+	return xyChartConfigFromAPIESQL(ctx, blocks.XYChartConfig, dashboard, prior, xyChart)
 }
 
-func (c xyChartPanelConfigConverter) buildAttributes(blocks *lensByValueChartBlocks, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func (c xyChartPanelConfigConverter) buildAttributes(blocks *models.LensByValueChartBlocks, dashboard *models.DashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 	configModel := *blocks.XYChartConfig
 
-	if configModel.xyUsesESQL() {
-		chart, xyDiags := configModel.toAPIESQL(dashboard)
+	if xyChartConfigXyUsesESQL(&configModel) {
+		chart, xyDiags := xyChartConfigToAPIESQL(&configModel, dashboard)
 		diags.Append(xyDiags...)
 		if diags.HasError() {
 			return attrs, diags
@@ -86,7 +87,7 @@ func (c xyChartPanelConfigConverter) buildAttributes(blocks *lensByValueChartBlo
 		return attrs, diags
 	}
 
-	chart, xyDiags := configModel.toAPINoESQL(dashboard)
+	chart, xyDiags := xyChartConfigToAPINoESQL(&configModel, dashboard)
 	diags.Append(xyDiags...)
 	if diags.HasError() {
 		return attrs, diags
@@ -97,26 +98,7 @@ func (c xyChartPanelConfigConverter) buildAttributes(blocks *lensByValueChartBlo
 	return attrs, diags
 }
 
-type xyChartConfigModel struct {
-	lensChartPresentationTFModel
-	Title       types.String           `tfsdk:"title"`
-	Description types.String           `tfsdk:"description"`
-	Axis        *xyAxisModel           `tfsdk:"axis"`
-	Decorations *xyDecorationsModel    `tfsdk:"decorations"`
-	Fitting     *xyFittingModel        `tfsdk:"fitting"`
-	Layers      []xyLayerModel         `tfsdk:"layers"`
-	Legend      *xyLegendModel         `tfsdk:"legend"`
-	Query       *filterSimpleModel     `tfsdk:"query"`
-	Filters     []chartFilterJSONModel `tfsdk:"filters"`
-}
-
-type xyAxisModel struct {
-	X  *xyAxisConfigModel `tfsdk:"x"`
-	Y  *yAxisConfigModel  `tfsdk:"y"`
-	Y2 *yAxisConfigModel  `tfsdk:"y2"`
-}
-
-func (m *xyAxisModel) fromAPI(apiAxis kbapi.VisApiXyAxisConfig) diag.Diagnostics {
+func xyAxisFromAPI(m *models.XYAxisModel, apiAxis kbapi.VisApiXyAxisConfig) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	if apiAxis.X != nil {
@@ -130,28 +112,28 @@ func (m *xyAxisModel) fromAPI(apiAxis kbapi.VisApiXyAxisConfig) diag.Diagnostics
 			diags.AddError("Failed to decode XY chart X axis", err.Error())
 			return diags
 		}
-		m.X = &xyAxisConfigModel{}
-		xDiags := m.X.fromAPI(&xView)
+		m.X = &models.XYAxisConfigModel{}
+		xDiags := xyAxisConfigFromAPI(m.X, &xView)
 		diags.Append(xDiags...)
-		if m.X.isEmpty() {
+		if xyAxisConfigIsEmpty(m.X) {
 			m.X = nil
 		}
 	}
 
 	if apiAxis.Y != nil {
-		m.Y = &yAxisConfigModel{}
-		yDiags := m.Y.fromAPIY(apiAxis.Y)
+		m.Y = &models.YAxisConfigModel{}
+		yDiags := YAxisConfigFromAPIY(m.Y, apiAxis.Y)
 		diags.Append(yDiags...)
-		if m.Y.isEmpty() {
+		if YAxisConfigIsEmpty(m.Y) {
 			m.Y = nil
 		}
 	}
 
 	if apiAxis.Y2 != nil {
-		m.Y2 = &yAxisConfigModel{}
-		y2Diags := m.Y2.fromAPIY2(apiAxis.Y2)
+		m.Y2 = &models.YAxisConfigModel{}
+		y2Diags := YAxisConfigFromAPIY2(m.Y2, apiAxis.Y2)
 		diags.Append(y2Diags...)
-		if m.Y2.isEmpty() {
+		if YAxisConfigIsEmpty(m.Y2) {
 			m.Y2 = nil
 		}
 	}
@@ -159,7 +141,7 @@ func (m *xyAxisModel) fromAPI(apiAxis kbapi.VisApiXyAxisConfig) diag.Diagnostics
 	return diags
 }
 
-func (m *xyAxisModel) toAPI() (kbapi.VisApiXyAxisConfig, diag.Diagnostics) {
+func xyAxisToAPI(m *models.XYAxisModel) (kbapi.VisApiXyAxisConfig, diag.Diagnostics) {
 	if m == nil {
 		return kbapi.VisApiXyAxisConfig{}, nil
 	}
@@ -168,7 +150,7 @@ func (m *xyAxisModel) toAPI() (kbapi.VisApiXyAxisConfig, diag.Diagnostics) {
 	var axis kbapi.VisApiXyAxisConfig
 
 	if m.X != nil {
-		xAxis, xDiags := m.X.toAPI()
+		xAxis, xDiags := xyAxisConfigToAPI(m.X)
 		diags.Append(xDiags...)
 		if !xDiags.HasError() && xAxis != nil {
 			xb, err := json.Marshal(xAxis)
@@ -200,13 +182,13 @@ func (m *xyAxisModel) toAPI() (kbapi.VisApiXyAxisConfig, diag.Diagnostics) {
 	}
 
 	if m.Y != nil {
-		yAxis, yDiags := m.Y.toAPIY()
+		yAxis, yDiags := YAxisConfigToAPIY(m.Y)
 		diags.Append(yDiags...)
 		axis.Y = yAxis
 	}
 
 	if m.Y2 != nil {
-		y2Axis, y2Diags := m.Y2.toAPIY2()
+		y2Axis, y2Diags := YAxisConfigToAPIY2(m.Y2)
 		diags.Append(y2Diags...)
 		axis.Y2 = y2Axis
 	}
@@ -214,16 +196,7 @@ func (m *xyAxisModel) toAPI() (kbapi.VisApiXyAxisConfig, diag.Diagnostics) {
 	return axis, diags
 }
 
-type xyAxisConfigModel struct {
-	Title            *axisTitleModel      `tfsdk:"title"`
-	Ticks            types.Bool           `tfsdk:"ticks"`
-	Grid             types.Bool           `tfsdk:"grid"`
-	LabelOrientation types.String         `tfsdk:"label_orientation"`
-	Scale            types.String         `tfsdk:"scale"`
-	DomainJSON       jsontypes.Normalized `tfsdk:"domain_json"`
-}
-
-func (m *xyAxisConfigModel) isEmpty() bool {
+func xyAxisConfigIsEmpty(m *models.XYAxisConfigModel) bool {
 	if m == nil {
 		return true
 	}
@@ -251,7 +224,7 @@ type xyAxisConfigAPIModel = struct {
 	} `json:"title,omitempty"`
 }
 
-func (m *xyAxisConfigModel) fromAPI(apiAxis *xyAxisConfigAPIModel) diag.Diagnostics {
+func xyAxisConfigFromAPI(m *models.XYAxisConfigModel, apiAxis *xyAxisConfigAPIModel) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 	if apiAxis == nil {
 		return diags
@@ -275,8 +248,8 @@ func (m *xyAxisConfigModel) fromAPI(apiAxis *xyAxisConfigAPIModel) diag.Diagnost
 	m.Scale = typeutils.StringishPointerValue(apiAxis.Scale)
 
 	if apiAxis.Title != nil {
-		m.Title = &axisTitleModel{}
-		m.Title.fromAPI(apiAxis.Title)
+		m.Title = &models.AxisTitleModel{}
+		axisTitleFromAPI(m.Title, apiAxis.Title)
 	}
 
 	if apiAxis.Domain != nil {
@@ -289,7 +262,7 @@ func (m *xyAxisConfigModel) fromAPI(apiAxis *xyAxisConfigAPIModel) diag.Diagnost
 	return diags
 }
 
-func (m *xyAxisConfigModel) toAPI() (*xyAxisConfigAPIModel, diag.Diagnostics) {
+func xyAxisConfigToAPI(m *models.XYAxisConfigModel) (*xyAxisConfigAPIModel, diag.Diagnostics) {
 	if m == nil {
 		return nil, nil
 	}
@@ -317,7 +290,7 @@ func (m *xyAxisConfigModel) toAPI() (*xyAxisConfigAPIModel, diag.Diagnostics) {
 		xAxis.Scale = &scale
 	}
 	if m.Title != nil {
-		xAxis.Title = m.Title.toAPI()
+		xAxis.Title = axisTitleToAPI(m.Title)
 	}
 	if typeutils.IsKnown(m.DomainJSON) {
 		var domain kbapi.VisApiXyAxisConfig_X_Domain
@@ -331,16 +304,7 @@ func (m *xyAxisConfigModel) toAPI() (*xyAxisConfigAPIModel, diag.Diagnostics) {
 	return xAxis, diags
 }
 
-type yAxisConfigModel struct {
-	Title            *axisTitleModel      `tfsdk:"title"`
-	Ticks            types.Bool           `tfsdk:"ticks"`
-	Grid             types.Bool           `tfsdk:"grid"`
-	LabelOrientation types.String         `tfsdk:"label_orientation"`
-	Scale            types.String         `tfsdk:"scale"`
-	DomainJSON       jsontypes.Normalized `tfsdk:"domain_json"`
-}
-
-func (m *yAxisConfigModel) isEmpty() bool {
+func YAxisConfigIsEmpty(m *models.YAxisConfigModel) bool {
 	if m == nil {
 		return true
 	}
@@ -350,7 +314,7 @@ func (m *yAxisConfigModel) isEmpty() bool {
 	return axisTitleIsDefault(m.Title)
 }
 
-func (m *yAxisConfigModel) fromAPIY(apiAxis *struct {
+func YAxisConfigFromAPIY(m *models.YAxisConfigModel, apiAxis *struct {
 	Domain kbapi.VisApiXyAxisConfig_Y_Domain `json:"domain"`
 	Grid   *struct {
 		Visible bool `json:"visible"`
@@ -390,8 +354,8 @@ func (m *yAxisConfigModel) fromAPIY(apiAxis *struct {
 	m.Scale = typeutils.StringishPointerValue(apiAxis.Scale)
 
 	if apiAxis.Title != nil {
-		m.Title = &axisTitleModel{}
-		m.Title.fromAPI(apiAxis.Title)
+		m.Title = &models.AxisTitleModel{}
+		axisTitleFromAPI(m.Title, apiAxis.Title)
 	}
 
 	domainJSON, err := json.Marshal(apiAxis.Domain)
@@ -402,7 +366,7 @@ func (m *yAxisConfigModel) fromAPIY(apiAxis *struct {
 	return diags
 }
 
-func (m *yAxisConfigModel) toAPIY() (*struct {
+func YAxisConfigToAPIY(m *models.YAxisConfigModel) (*struct {
 	Domain kbapi.VisApiXyAxisConfig_Y_Domain `json:"domain"`
 	Grid   *struct {
 		Visible bool `json:"visible"`
@@ -462,7 +426,7 @@ func (m *yAxisConfigModel) toAPIY() (*struct {
 		yAxis.Scale = &scale
 	}
 	if m.Title != nil {
-		yAxis.Title = m.Title.toAPI()
+		yAxis.Title = axisTitleToAPI(m.Title)
 	}
 	if typeutils.IsKnown(m.DomainJSON) {
 		domainDiags := m.DomainJSON.Unmarshal(&yAxis.Domain)
@@ -472,7 +436,7 @@ func (m *yAxisConfigModel) toAPIY() (*struct {
 	return yAxis, diags
 }
 
-func (m *yAxisConfigModel) fromAPIY2(apiAxis *struct {
+func YAxisConfigFromAPIY2(m *models.YAxisConfigModel, apiAxis *struct {
 	Domain kbapi.VisApiXyAxisConfig_Y2_Domain `json:"domain"`
 	Grid   *struct {
 		Visible bool `json:"visible"`
@@ -512,8 +476,8 @@ func (m *yAxisConfigModel) fromAPIY2(apiAxis *struct {
 	m.Scale = typeutils.StringishPointerValue(apiAxis.Scale)
 
 	if apiAxis.Title != nil {
-		m.Title = &axisTitleModel{}
-		m.Title.fromAPI(apiAxis.Title)
+		m.Title = &models.AxisTitleModel{}
+		axisTitleFromAPI(m.Title, apiAxis.Title)
 	}
 
 	domainJSON, err := json.Marshal(apiAxis.Domain)
@@ -524,7 +488,7 @@ func (m *yAxisConfigModel) fromAPIY2(apiAxis *struct {
 	return diags
 }
 
-func (m *yAxisConfigModel) toAPIY2() (*struct {
+func YAxisConfigToAPIY2(m *models.YAxisConfigModel) (*struct {
 	Domain kbapi.VisApiXyAxisConfig_Y2_Domain `json:"domain"`
 	Grid   *struct {
 		Visible bool `json:"visible"`
@@ -584,7 +548,7 @@ func (m *yAxisConfigModel) toAPIY2() (*struct {
 		yAxis.Scale = &scale
 	}
 	if m.Title != nil {
-		yAxis.Title = m.Title.toAPI()
+		yAxis.Title = axisTitleToAPI(m.Title)
 	}
 	if typeutils.IsKnown(m.DomainJSON) {
 		domainDiags := m.DomainJSON.Unmarshal(&yAxis.Domain)
@@ -594,12 +558,7 @@ func (m *yAxisConfigModel) toAPIY2() (*struct {
 	return yAxis, diags
 }
 
-type axisTitleModel struct {
-	Value   types.String `tfsdk:"value"`
-	Visible types.Bool   `tfsdk:"visible"`
-}
-
-func axisTitleIsDefault(title *axisTitleModel) bool {
+func axisTitleIsDefault(title *models.AxisTitleModel) bool {
 	if title == nil {
 		return true
 	}
@@ -612,7 +571,7 @@ func axisTitleIsDefault(title *axisTitleModel) bool {
 	return true
 }
 
-func (m *axisTitleModel) fromAPI(apiTitle *struct {
+func axisTitleFromAPI(m *models.AxisTitleModel, apiTitle *struct {
 	Text    *string `json:"text,omitempty"`
 	Visible *bool   `json:"visible,omitempty"`
 }) {
@@ -623,7 +582,7 @@ func (m *axisTitleModel) fromAPI(apiTitle *struct {
 	m.Visible = types.BoolPointerValue(apiTitle.Visible)
 }
 
-func (m *axisTitleModel) toAPI() *struct {
+func axisTitleToAPI(m *models.AxisTitleModel) *struct {
 	Text    *string `json:"text,omitempty"`
 	Visible *bool   `json:"visible,omitempty"`
 } {
@@ -646,17 +605,7 @@ func (m *axisTitleModel) toAPI() *struct {
 	return title
 }
 
-type xyDecorationsModel struct {
-	ShowEndZones          types.Bool    `tfsdk:"show_end_zones"`
-	ShowCurrentTimeMarker types.Bool    `tfsdk:"show_current_time_marker"`
-	PointVisibility       types.String  `tfsdk:"point_visibility"`
-	LineInterpolation     types.String  `tfsdk:"line_interpolation"`
-	MinimumBarHeight      types.Int64   `tfsdk:"minimum_bar_height"`
-	ShowValueLabels       types.Bool    `tfsdk:"show_value_labels"`
-	FillOpacity           types.Float64 `tfsdk:"fill_opacity"`
-}
-
-func (m *xyDecorationsModel) readFromStyling(s kbapi.XyStyling) {
+func xyDecorationsReadFromStyling(m *models.XYDecorationsModel, s kbapi.XyStyling) {
 	if s.Overlays.PartialBuckets != nil && s.Overlays.PartialBuckets.Visible != nil {
 		m.ShowEndZones = types.BoolValue(*s.Overlays.PartialBuckets.Visible)
 	} else {
@@ -702,7 +651,7 @@ func (m *xyDecorationsModel) readFromStyling(s kbapi.XyStyling) {
 	}
 }
 
-func (m *xyDecorationsModel) writeToStyling(s *kbapi.XyStyling) {
+func xyDecorationsWriteToStyling(m *models.XYDecorationsModel, s *kbapi.XyStyling) {
 	if m == nil {
 		return
 	}
@@ -749,13 +698,7 @@ func (m *xyDecorationsModel) writeToStyling(s *kbapi.XyStyling) {
 	}
 }
 
-type xyFittingModel struct {
-	Type     types.String `tfsdk:"type"`
-	Dotted   types.Bool   `tfsdk:"dotted"`
-	EndValue types.String `tfsdk:"end_value"`
-}
-
-func (m *xyFittingModel) fromAPI(apiFitting kbapi.XyFitting) {
+func xyFittingFromAPI(m *models.XYFittingModel, apiFitting kbapi.XyFitting) {
 	m.Type = typeutils.StringishValue(apiFitting.Type)
 	m.Dotted = types.BoolPointerValue(apiFitting.Emphasize)
 	if apiFitting.Extend != nil {
@@ -765,7 +708,7 @@ func (m *xyFittingModel) fromAPI(apiFitting kbapi.XyFitting) {
 	}
 }
 
-func (m *xyFittingModel) toAPI() kbapi.XyFitting {
+func xyFittingToAPI(m *models.XYFittingModel) kbapi.XyFitting {
 	out := kbapi.XyFitting{Type: kbapi.XyFittingTypeNone}
 	if m == nil {
 		return out
@@ -783,18 +726,7 @@ func (m *xyFittingModel) toAPI() kbapi.XyFitting {
 	return out
 }
 
-type xyLegendModel struct {
-	Visibility         types.String `tfsdk:"visibility"`
-	Statistics         types.List   `tfsdk:"statistics"`
-	TruncateAfterLines types.Int64  `tfsdk:"truncate_after_lines"`
-	Inside             types.Bool   `tfsdk:"inside"`
-	Position           types.String `tfsdk:"position"`
-	Size               types.String `tfsdk:"size"`
-	Columns            types.Int64  `tfsdk:"columns"`
-	Alignment          types.String `tfsdk:"alignment"`
-}
-
-func (m *xyLegendModel) fromAPI(ctx context.Context, apiLegend kbapi.XyLegend) diag.Diagnostics {
+func xyLegendFromAPI(ctx context.Context, m *models.XYLegendModel, apiLegend kbapi.XyLegend) diag.Diagnostics {
 	var diags diag.Diagnostics
 	m.Position = types.StringNull()
 	m.Size = types.StringNull()
@@ -895,7 +827,7 @@ func (m *xyLegendModel) fromAPI(ctx context.Context, apiLegend kbapi.XyLegend) d
 	return diags
 }
 
-func (m *xyLegendModel) toAPI() (kbapi.XyLegend, diag.Diagnostics) {
+func xyLegendToAPI(m *models.XYLegendModel) (kbapi.XyLegend, diag.Diagnostics) {
 	if m == nil {
 		return kbapi.XyLegend{}, nil
 	}
@@ -1069,7 +1001,7 @@ func (m *xyLegendModel) toAPI() (kbapi.XyLegend, diag.Diagnostics) {
 	return result, diags
 }
 
-func (m *xyChartConfigModel) xyUsesESQL() bool {
+func xyChartConfigXyUsesESQL(m *models.XYChartConfigModel) bool {
 	if m == nil {
 		return false
 	}
@@ -1097,10 +1029,10 @@ func dataSourceJSONIsESQL(j jsontypes.Normalized) bool {
 	return probe.Type == "esql" || probe.Type == "table"
 }
 
-func (m *xyChartConfigModel) stylingToAPI() kbapi.XyStyling {
+func xyChartConfigStylingToAPI(m *models.XYChartConfigModel) kbapi.XyStyling {
 	fit := kbapi.XyFitting{Type: kbapi.XyFittingTypeNone}
 	if m.Fitting != nil {
-		fit = m.Fitting.toAPI()
+		fit = xyFittingToAPI(m.Fitting)
 	}
 	s := kbapi.XyStyling{
 		Areas:    kbapi.XyStylingAreas{},
@@ -1110,13 +1042,13 @@ func (m *xyChartConfigModel) stylingToAPI() kbapi.XyStyling {
 		Points:   kbapi.XyStylingPoints{},
 	}
 	if m.Decorations != nil {
-		m.Decorations.writeToStyling(&s)
+		xyDecorationsWriteToStyling(m.Decorations, &s)
 	}
 	return s
 }
 
 // toAPINoESQL converts the XY chart config model to a non-ES|QL API payload.
-func (m *xyChartConfigModel) toAPINoESQL(dashboard *dashboardModel) (kbapi.XyChartNoESQL, diag.Diagnostics) {
+func xyChartConfigToAPINoESQL(m *models.XYChartConfigModel, dashboard *models.DashboardModel) (kbapi.XyChartNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	chart := kbapi.XyChartNoESQL{Type: kbapi.XyChartNoESQLTypeXy}
 
@@ -1128,17 +1060,17 @@ func (m *xyChartConfigModel) toAPINoESQL(dashboard *dashboardModel) (kbapi.XyCha
 	}
 
 	if m.Axis != nil {
-		axis, axisDiags := m.Axis.toAPI()
+		axis, axisDiags := xyAxisToAPI(m.Axis)
 		diags.Append(axisDiags...)
 		chart.Axis = axis
 	}
 
-	chart.Styling = m.stylingToAPI()
+	chart.Styling = xyChartConfigStylingToAPI(m)
 
 	if len(m.Layers) > 0 {
 		layers := make([]kbapi.XyLayersNoESQL, 0, len(m.Layers))
 		for _, layer := range m.Layers {
-			apiLayer, layerDiags := layer.toAPILayersNoESQL()
+			apiLayer, layerDiags := xyLayerToAPILayersNoESQL(&layer)
 			diags.Append(layerDiags...)
 			if !layerDiags.HasError() {
 				layers = append(layers, apiLayer)
@@ -1150,7 +1082,7 @@ func (m *xyChartConfigModel) toAPINoESQL(dashboard *dashboardModel) (kbapi.XyCha
 	}
 
 	if m.Legend != nil {
-		legend, legendDiags := m.Legend.toAPI()
+		legend, legendDiags := xyLegendToAPI(m.Legend)
 		diags.Append(legendDiags...)
 		if !legendDiags.HasError() {
 			chart.Legend = legend
@@ -1158,12 +1090,12 @@ func (m *xyChartConfigModel) toAPINoESQL(dashboard *dashboardModel) (kbapi.XyCha
 	}
 
 	if m.Query != nil {
-		chart.Query = m.Query.toAPI()
+		chart.Query = filterSimpleToAPI(m.Query)
 	}
 
 	chart.Filters = buildFiltersForAPI(m.Filters, &diags)
 
-	writes, presDiags := lensChartPresentationWritesFor(dashboard, m.lensChartPresentationTFModel)
+	writes, presDiags := lensChartPresentationWritesFor(dashboard, m.LensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return chart, diags
@@ -1191,7 +1123,7 @@ func (m *xyChartConfigModel) toAPINoESQL(dashboard *dashboardModel) (kbapi.XyCha
 }
 
 // toAPIESQL converts the XY chart config model to an ES|QL API payload.
-func (m *xyChartConfigModel) toAPIESQL(dashboard *dashboardModel) (kbapi.XyChartESQL, diag.Diagnostics) {
+func xyChartConfigToAPIESQL(m *models.XYChartConfigModel, dashboard *models.DashboardModel) (kbapi.XyChartESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	chart := kbapi.XyChartESQL{Type: kbapi.XyChartESQLTypeXy}
 
@@ -1203,17 +1135,17 @@ func (m *xyChartConfigModel) toAPIESQL(dashboard *dashboardModel) (kbapi.XyChart
 	}
 
 	if m.Axis != nil {
-		axis, axisDiags := m.Axis.toAPI()
+		axis, axisDiags := xyAxisToAPI(m.Axis)
 		diags.Append(axisDiags...)
 		chart.Axis = axis
 	}
 
-	chart.Styling = m.stylingToAPI()
+	chart.Styling = xyChartConfigStylingToAPI(m)
 
 	if len(m.Layers) > 0 {
 		layers := make([]kbapi.XyLayerESQL, 0, len(m.Layers))
 		for _, layer := range m.Layers {
-			apiLayer, layerDiags := layer.toAPILayerESQL()
+			apiLayer, layerDiags := xyLayerToAPILayerESQL(&layer)
 			diags.Append(layerDiags...)
 			if !layerDiags.HasError() {
 				layers = append(layers, apiLayer)
@@ -1225,7 +1157,7 @@ func (m *xyChartConfigModel) toAPIESQL(dashboard *dashboardModel) (kbapi.XyChart
 	}
 
 	if m.Legend != nil {
-		legend, legendDiags := m.Legend.toAPI()
+		legend, legendDiags := xyLegendToAPI(m.Legend)
 		diags.Append(legendDiags...)
 		if !legendDiags.HasError() {
 			chart.Legend = legend
@@ -1234,7 +1166,7 @@ func (m *xyChartConfigModel) toAPIESQL(dashboard *dashboardModel) (kbapi.XyChart
 
 	chart.Filters = buildFiltersForAPI(m.Filters, &diags)
 
-	writes, presDiags := lensChartPresentationWritesFor(dashboard, m.lensChartPresentationTFModel)
+	writes, presDiags := lensChartPresentationWritesFor(dashboard, m.LensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return chart, diags
@@ -1261,24 +1193,24 @@ func (m *xyChartConfigModel) toAPIESQL(dashboard *dashboardModel) (kbapi.XyChart
 	return chart, diags
 }
 
-func (m *xyChartConfigModel) fromAPINoESQL(ctx context.Context, dashboard *dashboardModel, prior *xyChartConfigModel, apiChart kbapi.XyChartNoESQL) diag.Diagnostics {
+func xyChartConfigFromAPINoESQL(ctx context.Context, m *models.XYChartConfigModel, dashboard *models.DashboardModel, prior *models.XYChartConfigModel, apiChart kbapi.XyChartNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	m.Title = types.StringPointerValue(apiChart.Title)
 	m.Description = types.StringPointerValue(apiChart.Description)
 
 	if len(apiChart.Layers) > 0 {
-		priorLayers := []xyLayerModel(nil)
+		priorLayers := []models.XYLayerModel(nil)
 		if prior != nil {
 			priorLayers = prior.Layers
 		}
-		m.Layers = make([]xyLayerModel, 0, len(apiChart.Layers))
+		m.Layers = make([]models.XYLayerModel, 0, len(apiChart.Layers))
 		for i, apiLayer := range apiChart.Layers {
-			layer := xyLayerModel{}
+			layer := models.XYLayerModel{}
 			if i < len(priorLayers) {
 				layer = priorLayers[i]
 			}
-			layerDiags := layer.fromAPILayersNoESQL(ctx, apiLayer)
+			layerDiags := xyLayerFromAPILayersNoESQL(ctx, &layer, apiLayer)
 			diags.Append(layerDiags...)
 			if !layerDiags.HasError() {
 				m.Layers = append(m.Layers, layer)
@@ -1286,33 +1218,33 @@ func (m *xyChartConfigModel) fromAPINoESQL(ctx context.Context, dashboard *dashb
 		}
 	}
 
-	m.Axis = &xyAxisModel{}
-	axisDiags := m.Axis.fromAPI(apiChart.Axis)
+	m.Axis = &models.XYAxisModel{}
+	axisDiags := xyAxisFromAPI(m.Axis, apiChart.Axis)
 	diags.Append(axisDiags...)
 
-	m.Decorations = &xyDecorationsModel{}
-	m.Decorations.readFromStyling(apiChart.Styling)
+	m.Decorations = &models.XYDecorationsModel{}
+	xyDecorationsReadFromStyling(m.Decorations, apiChart.Styling)
 
-	m.Fitting = &xyFittingModel{}
-	m.Fitting.fromAPI(apiChart.Styling.Fitting)
+	m.Fitting = &models.XYFittingModel{}
+	xyFittingFromAPI(m.Fitting, apiChart.Styling.Fitting)
 
-	m.Legend = &xyLegendModel{}
-	legendDiags := m.Legend.fromAPI(ctx, apiChart.Legend)
+	m.Legend = &models.XYLegendModel{}
+	legendDiags := xyLegendFromAPI(ctx, m.Legend, apiChart.Legend)
 	diags.Append(legendDiags...)
 
 	// Preserve nil query when prior state omitted it (query is optional in schema).
 	if prior != nil && prior.Query == nil {
 		m.Query = nil
 	} else {
-		m.Query = &filterSimpleModel{}
-		m.Query.fromAPI(apiChart.Query)
+		m.Query = &models.FilterSimpleModel{}
+		filterSimpleFromAPI(m.Query, apiChart.Query)
 	}
 
 	m.Filters = populateFiltersFromAPI(apiChart.Filters, &diags)
 
-	var priorLens *lensChartPresentationTFModel
+	var priorLens *models.LensChartPresentationTFModel
 	if prior != nil {
-		p := prior.lensChartPresentationTFModel
+		p := prior.LensChartPresentationTFModel
 		priorLens = &p
 	}
 	ddWire, ddOmit, ddWireDiags := lensDrilldownsAPIToWire(apiChart.Drilldowns)
@@ -1325,29 +1257,29 @@ func (m *xyChartConfigModel) fromAPINoESQL(ctx context.Context, dashboard *dashb
 	if presDiags.HasError() {
 		return diags
 	}
-	m.lensChartPresentationTFModel = pres
+	m.LensChartPresentationTFModel = pres
 
 	return diags
 }
 
-func (m *xyChartConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashboardModel, prior *xyChartConfigModel, apiChart kbapi.XyChartESQL) diag.Diagnostics {
+func xyChartConfigFromAPIESQL(ctx context.Context, m *models.XYChartConfigModel, dashboard *models.DashboardModel, prior *models.XYChartConfigModel, apiChart kbapi.XyChartESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	m.Title = types.StringPointerValue(apiChart.Title)
 	m.Description = types.StringPointerValue(apiChart.Description)
 
 	if len(apiChart.Layers) > 0 {
-		priorLayers := []xyLayerModel(nil)
+		priorLayers := []models.XYLayerModel(nil)
 		if prior != nil {
 			priorLayers = prior.Layers
 		}
-		m.Layers = make([]xyLayerModel, 0, len(apiChart.Layers))
+		m.Layers = make([]models.XYLayerModel, 0, len(apiChart.Layers))
 		for i, apiLayer := range apiChart.Layers {
-			layer := xyLayerModel{}
+			layer := models.XYLayerModel{}
 			if i < len(priorLayers) {
 				layer = priorLayers[i]
 			}
-			layerDiags := layer.fromAPILayerESQL(ctx, apiLayer)
+			layerDiags := xyLayerFromAPILayerESQL(ctx, &layer, apiLayer)
 			diags.Append(layerDiags...)
 			if !layerDiags.HasError() {
 				m.Layers = append(m.Layers, layer)
@@ -1355,27 +1287,27 @@ func (m *xyChartConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashboa
 		}
 	}
 
-	m.Axis = &xyAxisModel{}
-	axisDiags := m.Axis.fromAPI(apiChart.Axis)
+	m.Axis = &models.XYAxisModel{}
+	axisDiags := xyAxisFromAPI(m.Axis, apiChart.Axis)
 	diags.Append(axisDiags...)
 
-	m.Decorations = &xyDecorationsModel{}
-	m.Decorations.readFromStyling(apiChart.Styling)
+	m.Decorations = &models.XYDecorationsModel{}
+	xyDecorationsReadFromStyling(m.Decorations, apiChart.Styling)
 
-	m.Fitting = &xyFittingModel{}
-	m.Fitting.fromAPI(apiChart.Styling.Fitting)
+	m.Fitting = &models.XYFittingModel{}
+	xyFittingFromAPI(m.Fitting, apiChart.Styling.Fitting)
 
-	m.Legend = &xyLegendModel{}
-	legendDiags := m.Legend.fromAPI(ctx, apiChart.Legend)
+	m.Legend = &models.XYLegendModel{}
+	legendDiags := xyLegendFromAPI(ctx, m.Legend, apiChart.Legend)
 	diags.Append(legendDiags...)
 
 	m.Query = nil
 
 	m.Filters = populateFiltersFromAPI(apiChart.Filters, &diags)
 
-	var priorLens *lensChartPresentationTFModel
+	var priorLens *models.LensChartPresentationTFModel
 	if prior != nil {
-		p := prior.lensChartPresentationTFModel
+		p := prior.LensChartPresentationTFModel
 		priorLens = &p
 	}
 	ddWire, ddOmit, ddWireDiags := lensDrilldownsAPIToWire(apiChart.Drilldowns)
@@ -1388,14 +1320,14 @@ func (m *xyChartConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashboa
 	if presDiags.HasError() {
 		return diags
 	}
-	m.lensChartPresentationTFModel = pres
+	m.LensChartPresentationTFModel = pres
 
 	return diags
 }
 
 // alignXYChartStateFromPlanPanels preserves practitioner intent for XY charts when Kibana
 // injects implicit defaults on read or omits configured fields from the response.
-func alignXYChartStateFromPlanPanels(planPanels, statePanels []panelModel) {
+func alignXYChartStateFromPlanPanels(planPanels, statePanels []models.PanelModel) {
 	n := min(len(statePanels), len(planPanels))
 	for i := range n {
 		pp, sp := xyChartConfigFromLensOrVisPlanPanel(planPanels[i]), xyChartConfigFromLensOrVisPlanPanel(statePanels[i])
@@ -1406,7 +1338,7 @@ func alignXYChartStateFromPlanPanels(planPanels, statePanels []panelModel) {
 	}
 }
 
-func xyChartConfigFromLensOrVisPlanPanel(pm panelModel) *xyChartConfigModel {
+func xyChartConfigFromLensOrVisPlanPanel(pm models.PanelModel) *models.XYChartConfigModel {
 	if pm.VisConfig != nil && pm.VisConfig.ByValue != nil && pm.VisConfig.ByValue.XYChartConfig != nil {
 		return pm.VisConfig.ByValue.XYChartConfig
 	}
@@ -1417,7 +1349,7 @@ func xyChartConfigFromLensOrVisPlanPanel(pm panelModel) *xyChartConfigModel {
 	return nil
 }
 
-func alignXYChartStateFromPlan(plan, state *xyChartConfigModel) {
+func alignXYChartStateFromPlan(plan, state *models.XYChartConfigModel) {
 	if plan == nil || state == nil {
 		return
 	}
@@ -1430,7 +1362,7 @@ func alignXYChartStateFromPlan(plan, state *xyChartConfigModel) {
 	alignXYLayerStateFromPlan(plan.Layers, state.Layers)
 }
 
-func alignXYAxisStateFromPlan(plan, state *xyAxisModel) {
+func alignXYAxisStateFromPlan(plan, state *models.XYAxisModel) {
 	if plan == nil || state == nil {
 		return
 	}
@@ -1450,7 +1382,7 @@ func alignXYAxisStateFromPlan(plan, state *xyAxisModel) {
 	alignXYY2AxisStateFromPlan(plan.Y2, state.Y2)
 }
 
-func alignXYXAxisStateFromPlan(plan, state *xyAxisConfigModel) {
+func alignXYXAxisStateFromPlan(plan, state *models.XYAxisConfigModel) {
 	if plan == nil || state == nil {
 		return
 	}
@@ -1472,7 +1404,7 @@ func alignXYXAxisStateFromPlan(plan, state *xyAxisConfigModel) {
 	preservePlanJSONIfStateAddsOptionalKeys(plan.DomainJSON, &state.DomainJSON, "rounding")
 }
 
-func alignXYYAxisStateFromPlan(plan, state *yAxisConfigModel) {
+func alignXYYAxisStateFromPlan(plan, state *models.YAxisConfigModel) {
 	if plan == nil || state == nil {
 		return
 	}
@@ -1492,7 +1424,7 @@ func alignXYYAxisStateFromPlan(plan, state *yAxisConfigModel) {
 	preservePlanJSONIfStateAddsOptionalKeys(plan.DomainJSON, &state.DomainJSON, "rounding")
 }
 
-func alignXYY2AxisStateFromPlan(plan, state *yAxisConfigModel) {
+func alignXYY2AxisStateFromPlan(plan, state *models.YAxisConfigModel) {
 	if plan == nil || state == nil {
 		return
 	}
@@ -1509,7 +1441,7 @@ func alignXYY2AxisStateFromPlan(plan, state *yAxisConfigModel) {
 	preservePlanJSONIfStateAddsOptionalKeys(plan.DomainJSON, &state.DomainJSON, "rounding")
 }
 
-func alignXYDecorationsStateFromPlan(plan, state *xyDecorationsModel) {
+func alignXYDecorationsStateFromPlan(plan, state *models.XYDecorationsModel) {
 	if plan == nil || state == nil {
 		return
 	}
@@ -1527,7 +1459,7 @@ func alignXYDecorationsStateFromPlan(plan, state *xyDecorationsModel) {
 	preserveKnownFloat64IfStateNull(plan.FillOpacity, &state.FillOpacity)
 }
 
-func alignXYLegendStateFromPlan(plan, state *xyLegendModel) {
+func alignXYLegendStateFromPlan(plan, state *models.XYLegendModel) {
 	if plan == nil || state == nil {
 		return
 	}
@@ -1541,7 +1473,7 @@ func alignXYLegendStateFromPlan(plan, state *xyLegendModel) {
 	preserveKnownStringIfStateNull(plan.Alignment, &state.Alignment)
 }
 
-func alignXYLayerStateFromPlan(planLayers, stateLayers []xyLayerModel) {
+func alignXYLayerStateFromPlan(planLayers, stateLayers []models.XYLayerModel) {
 	n := min(len(stateLayers), len(planLayers))
 	for i := range n {
 		planLayer, stateLayer := planLayers[i], &stateLayers[i]
@@ -1580,7 +1512,7 @@ func preserveKnownStringIfStateBlank(plan types.String, state *types.String) {
 	}
 }
 
-func preserveKnownAxisTitleIfStateBlank(plan *axisTitleModel, state **axisTitleModel) {
+func preserveKnownAxisTitleIfStateBlank(plan *models.AxisTitleModel, state **models.AxisTitleModel) {
 	if plan == nil {
 		return
 	}
@@ -1712,7 +1644,7 @@ func normalizeXYPlanComparisonJSON(value any) any {
 	}
 }
 
-func cloneAxisTitleModel(model *axisTitleModel) *axisTitleModel {
+func cloneAxisTitleModel(model *models.AxisTitleModel) *models.AxisTitleModel {
 	if model == nil {
 		return nil
 	}
@@ -1720,7 +1652,7 @@ func cloneAxisTitleModel(model *axisTitleModel) *axisTitleModel {
 	return &cloned
 }
 
-func cloneYAxisConfigModel(model *yAxisConfigModel) *yAxisConfigModel {
+func cloneYAxisConfigModel(model *models.YAxisConfigModel) *models.YAxisConfigModel {
 	if model == nil {
 		return nil
 	}

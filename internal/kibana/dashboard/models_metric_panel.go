@@ -23,6 +23,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -91,7 +92,7 @@ func newMetricChartPanelConfigConverter() metricChartPanelConfigConverter {
 	return metricChartPanelConfigConverter{
 		lensVisualizationBase: lensVisualizationBase{
 			visualizationType: string(kbapi.MetricNoESQLTypeMetric),
-			hasTFChartBlock: func(blocks *lensByValueChartBlocks) bool {
+			hasTFChartBlock: func(blocks *models.LensByValueChartBlocks) bool {
 				return blocks != nil && blocks.MetricChartConfig != nil
 			},
 		},
@@ -104,9 +105,9 @@ type metricChartPanelConfigConverter struct {
 
 func (c metricChartPanelConfigConverter) populateFromAttributes(
 	ctx context.Context,
-	dashboard *dashboardModel,
-	tfPanel *panelModel,
-	blocks *lensByValueChartBlocks,
+	dashboard *models.DashboardModel,
+	tfPanel *models.PanelModel,
+	blocks *models.LensByValueChartBlocks,
 	attrs kbapi.KbnDashboardPanelTypeVisConfig0,
 ) diag.Diagnostics {
 	// Populate the model.
@@ -114,7 +115,7 @@ func (c metricChartPanelConfigConverter) populateFromAttributes(
 	// Disambiguate variant 0 vs 1 using dataset type. The regenerated API can
 	// return an empty standard-query object, so query presence is not reliable.
 	//
-	// Always allocate a fresh metricChartConfigModel so that fromAPIVariant0/1
+	// Always allocate a fresh models.MetricChartConfigModel so that fromAPIVariant0/1
 	// does not mutate the plan's struct (blocks is seeded from the plan via panel
 	// read path). Seed the fresh struct with the prior metrics slice so the inline priorMetrics preservation
 	// inside fromAPIVariant0 can still compare against plan values.
@@ -124,26 +125,26 @@ func (c metricChartPanelConfigConverter) populateFromAttributes(
 			priorConfig = b.MetricChartConfig
 		}
 	}
-	blocks.MetricChartConfig = &metricChartConfigModel{}
+	blocks.MetricChartConfig = &models.MetricChartConfigModel{}
 	if priorConfig != nil {
 		blocks.MetricChartConfig.Metrics = priorConfig.Metrics
 	}
 	if variant0, err := attrs.AsMetricNoESQL(); err == nil && !isMetricNoESQLCandidateActuallyESQL(variant0) {
-		return blocks.MetricChartConfig.fromAPIVariant0(ctx, dashboard, priorConfig, variant0)
+		return metricChartConfigFromAPIVariant0(ctx, blocks.MetricChartConfig, dashboard, priorConfig, variant0)
 	}
 	variant1, err := attrs.AsMetricESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	return blocks.MetricChartConfig.fromAPIVariant1(ctx, dashboard, priorConfig, variant1)
+	return metricChartConfigFromAPIVariant1(ctx, blocks.MetricChartConfig, dashboard, priorConfig, variant1)
 }
 
-func (c metricChartPanelConfigConverter) buildAttributes(blocks *lensByValueChartBlocks, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func (c metricChartPanelConfigConverter) buildAttributes(blocks *models.LensByValueChartBlocks, dashboard *models.DashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	configModel := *blocks.MetricChartConfig
 
 	// Convert the structured model to API schema
-	attrs, metricDiags := configModel.toAPI(dashboard)
+	attrs, metricDiags := metricChartConfigToAPI(&configModel, dashboard)
 	diags.Append(metricDiags...)
 	if diags.HasError() {
 		return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
@@ -152,50 +153,26 @@ func (c metricChartPanelConfigConverter) buildAttributes(blocks *lensByValueChar
 	return attrs, diags
 }
 
-// metricChartCoreTFModel carries metric chart Terraform attributes that exist for both vis panels and
+// models.MetricChartCoreTFModel carries metric chart Terraform attributes that exist for both vis panels and
 // lens-dashboard-app typed by-value blocks (REQ-037 presentation siblings are modeled separately).
-type metricChartCoreTFModel struct {
-	Title               types.String           `tfsdk:"title"`
-	Description         types.String           `tfsdk:"description"`
-	DataSourceJSON      jsontypes.Normalized   `tfsdk:"data_source_json"`
-	IgnoreGlobalFilters types.Bool             `tfsdk:"ignore_global_filters"`
-	Sampling            types.Float64          `tfsdk:"sampling"`
-	Query               *filterSimpleModel     `tfsdk:"query"`
-	Filters             []chartFilterJSONModel `tfsdk:"filters"`
-	Metrics             []metricItemModel      `tfsdk:"metrics"`
-	BreakdownByJSON     jsontypes.Normalized   `tfsdk:"breakdown_by_json"`
-}
 
-type metricChartConfigModel struct {
-	lensChartPresentationTFModel
-	metricChartCoreTFModel
-}
-
-// metricChartLensByValueTFModel is the Terraform model for lens_dashboard_app_config.by_value.metric_chart_config.
 // Schema uses getMetricChart(false), so REQ-037 presentation siblings are omitted from the Terraform object even though
-// the vis conversion path temporarily expands this into metricChartConfigModel (with null presentation defaults).
-type metricChartLensByValueTFModel struct {
-	metricChartCoreTFModel
-}
+// the vis conversion path temporarily expands this into models.MetricChartConfigModel (with null presentation defaults).
 
-func (s *metricChartLensByValueTFModel) expandToVisMetricChart() *metricChartConfigModel {
+func metricChartLensByValueTFExpandToVisMetricChart(s *models.MetricChartLensByValueTFModel) *models.MetricChartConfigModel {
 	if s == nil {
 		return nil
 	}
-	out := &metricChartConfigModel{metricChartCoreTFModel: s.metricChartCoreTFModel}
-	out.lensChartPresentationTFModel = newNullLensChartPresentationTFModel()
+	out := &models.MetricChartConfigModel{MetricChartCoreTFModel: s.MetricChartCoreTFModel}
+	out.LensChartPresentationTFModel = newNullLensChartPresentationTFModel()
 	return out
 }
 
-func metricLensByValueFromVisFull(m *metricChartConfigModel) *metricChartLensByValueTFModel {
+func metricLensByValueFromVisFull(m *models.MetricChartConfigModel) *models.MetricChartLensByValueTFModel {
 	if m == nil {
 		return nil
 	}
-	return &metricChartLensByValueTFModel{metricChartCoreTFModel: m.metricChartCoreTFModel}
-}
-
-type metricItemModel struct {
-	ConfigJSON customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config_json"`
+	return &models.MetricChartLensByValueTFModel{MetricChartCoreTFModel: m.MetricChartCoreTFModel}
 }
 
 func isMetricNoESQLCandidateActuallyESQL(apiChart kbapi.MetricNoESQL) bool {
@@ -214,7 +191,7 @@ func isMetricNoESQLCandidateActuallyESQL(apiChart kbapi.MetricNoESQL) bool {
 	return dataset.Type == legacyMetricDatasetTypeESQL || dataset.Type == legacyMetricDatasetTypeTable
 }
 
-func (m *metricChartConfigModel) fromAPI(ctx context.Context, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
+func metricChartConfigFromAPI(ctx context.Context, m *models.MetricChartConfigModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// Try to get the metric chart variant 0 (non-ESQL) or 1 (ESQL)
@@ -226,22 +203,22 @@ func (m *metricChartConfigModel) fromAPI(ctx context.Context, attrs kbapi.KbnDas
 		if isMetricNoESQLCandidateActuallyESQL(variant0) {
 			variant1, err1 := attrs.AsMetricESQL()
 			if err1 == nil {
-				return m.fromAPIVariant1(ctx, nil, nil, variant1)
+				return metricChartConfigFromAPIVariant1(ctx, m, nil, nil, variant1)
 			}
 		}
-		return m.fromAPIVariant0(ctx, nil, nil, variant0)
+		return metricChartConfigFromAPIVariant0(ctx, m, nil, nil, variant0)
 	}
 
 	variant1, err := attrs.AsMetricESQL()
 	if err == nil {
-		return m.fromAPIVariant1(ctx, nil, nil, variant1)
+		return metricChartConfigFromAPIVariant1(ctx, m, nil, nil, variant1)
 	}
 
 	diags.AddError("Failed to parse metric chart schema", "Could not parse as either variant 0 or 1")
 	return diags
 }
 
-func (m *metricChartConfigModel) populateCommonFields(
+func metricChartConfigPopulateCommonFields(m *models.MetricChartConfigModel,
 	title, description *string,
 	ignoreGlobalFilters *bool,
 	sampling *float32,
@@ -267,21 +244,27 @@ func (m *metricChartConfigModel) populateCommonFields(
 	return !diags.HasError()
 }
 
-func (m *metricChartConfigModel) fromAPIVariant0(ctx context.Context, dashboard *dashboardModel, prior *metricChartConfigModel, apiChart kbapi.MetricNoESQL) diag.Diagnostics {
+func metricChartConfigFromAPIVariant0(
+	ctx context.Context,
+	m *models.MetricChartConfigModel,
+	dashboard *models.DashboardModel,
+	prior *models.MetricChartConfigModel,
+	apiChart kbapi.MetricNoESQL,
+) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 
 	datasetBytes, datasetErr := json.Marshal(apiChart.DataSource)
-	if !m.populateCommonFields(apiChart.Title, apiChart.Description, apiChart.IgnoreGlobalFilters, apiChart.Sampling, datasetBytes, datasetErr, apiChart.Filters, &diags) {
+	if !metricChartConfigPopulateCommonFields(m, apiChart.Title, apiChart.Description, apiChart.IgnoreGlobalFilters, apiChart.Sampling, datasetBytes, datasetErr, apiChart.Filters, &diags) {
 		return diags
 	}
 
-	m.Query = &filterSimpleModel{}
-	m.Query.fromAPI(apiChart.Query)
+	m.Query = &models.FilterSimpleModel{}
+	filterSimpleFromAPI(m.Query, apiChart.Query)
 
 	if len(apiChart.Metrics) > 0 {
 		priorMetrics := m.Metrics
-		m.Metrics = make([]metricItemModel, len(apiChart.Metrics))
+		m.Metrics = make([]models.MetricItemModel, len(apiChart.Metrics))
 		for i, metric := range apiChart.Metrics {
 			metricJSON, err := json.Marshal(metric)
 			if err != nil {
@@ -310,9 +293,9 @@ func (m *metricChartConfigModel) fromAPIVariant0(ctx context.Context, dashboard 
 		m.BreakdownByJSON = jsontypes.NewNormalizedNull()
 	}
 
-	var priorLens *lensChartPresentationTFModel
+	var priorLens *models.LensChartPresentationTFModel
 	if prior != nil {
-		p := prior.lensChartPresentationTFModel
+		p := prior.LensChartPresentationTFModel
 		priorLens = &p
 	}
 	ddWire, ddOmit, ddWireDiags := lensDrilldownsAPIToWire(apiChart.Drilldowns)
@@ -325,17 +308,23 @@ func (m *metricChartConfigModel) fromAPIVariant0(ctx context.Context, dashboard 
 	if presDiags.HasError() {
 		return diags
 	}
-	m.lensChartPresentationTFModel = pres
+	m.LensChartPresentationTFModel = pres
 
 	return diags
 }
 
-func (m *metricChartConfigModel) fromAPIVariant1(ctx context.Context, dashboard *dashboardModel, prior *metricChartConfigModel, apiChart kbapi.MetricESQL) diag.Diagnostics {
+func metricChartConfigFromAPIVariant1(
+	ctx context.Context,
+	m *models.MetricChartConfigModel,
+	dashboard *models.DashboardModel,
+	prior *models.MetricChartConfigModel,
+	apiChart kbapi.MetricESQL,
+) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 
 	datasetBytes, datasetErr := json.Marshal(apiChart.DataSource)
-	if !m.populateCommonFields(apiChart.Title, apiChart.Description, apiChart.IgnoreGlobalFilters, apiChart.Sampling, datasetBytes, datasetErr, apiChart.Filters, &diags) {
+	if !metricChartConfigPopulateCommonFields(m, apiChart.Title, apiChart.Description, apiChart.IgnoreGlobalFilters, apiChart.Sampling, datasetBytes, datasetErr, apiChart.Filters, &diags) {
 		return diags
 	}
 
@@ -343,7 +332,7 @@ func (m *metricChartConfigModel) fromAPIVariant1(ctx context.Context, dashboard 
 
 	if len(apiChart.Metrics) > 0 {
 		priorMetrics := m.Metrics
-		m.Metrics = make([]metricItemModel, len(apiChart.Metrics))
+		m.Metrics = make([]models.MetricItemModel, len(apiChart.Metrics))
 		for i, metric := range apiChart.Metrics {
 			metricJSON, err := json.Marshal(metric)
 			if err != nil {
@@ -372,9 +361,9 @@ func (m *metricChartConfigModel) fromAPIVariant1(ctx context.Context, dashboard 
 		m.BreakdownByJSON = jsontypes.NewNormalizedNull()
 	}
 
-	var priorLens *lensChartPresentationTFModel
+	var priorLens *models.LensChartPresentationTFModel
 	if prior != nil {
-		p := prior.lensChartPresentationTFModel
+		p := prior.LensChartPresentationTFModel
 		priorLens = &p
 	}
 	ddWire, ddOmit, ddWireDiags := lensDrilldownsAPIToWire(apiChart.Drilldowns)
@@ -387,22 +376,22 @@ func (m *metricChartConfigModel) fromAPIVariant1(ctx context.Context, dashboard 
 	if presDiags.HasError() {
 		return diags
 	}
-	m.lensChartPresentationTFModel = pres
+	m.LensChartPresentationTFModel = pres
 
 	return diags
 }
 
-func (m *metricChartConfigModel) toAPI(dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func metricChartConfigToAPI(m *models.MetricChartConfigModel, dashboard *models.DashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	// Determine which variant to use based on whether we have a query
 	// Variant 0 (non-ESQL) requires a query
 	// Variant 1 (ESQL) doesn't require a query
 	if m.Query != nil {
-		return m.toAPIVariant0(dashboard)
+		return metricChartConfigToAPIVariant0(m, dashboard)
 	}
-	return m.toAPIVariant1(dashboard)
+	return metricChartConfigToAPIVariant1(m, dashboard)
 }
 
-func (m *metricChartConfigModel) toAPIVariant0(dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func metricChartConfigToAPIVariant0(m *models.MetricChartConfigModel, dashboard *models.DashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 
@@ -438,7 +427,7 @@ func (m *metricChartConfigModel) toAPIVariant0(dashboard *dashboardModel) (kbapi
 
 	// Set query
 	if m.Query != nil {
-		variant0.Query = m.Query.toAPI()
+		variant0.Query = filterSimpleToAPI(m.Query)
 	}
 
 	// Set filters
@@ -470,7 +459,7 @@ func (m *metricChartConfigModel) toAPIVariant0(dashboard *dashboardModel) (kbapi
 		}
 	}
 
-	writes, presDiags := lensChartPresentationWritesFor(dashboard, m.lensChartPresentationTFModel)
+	writes, presDiags := lensChartPresentationWritesFor(dashboard, m.LensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
@@ -499,7 +488,7 @@ func (m *metricChartConfigModel) toAPIVariant0(dashboard *dashboardModel) (kbapi
 	return attrs, diags
 }
 
-func (m *metricChartConfigModel) toAPIVariant1(dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func metricChartConfigToAPIVariant1(m *models.MetricChartConfigModel, dashboard *models.DashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 
@@ -572,7 +561,7 @@ func (m *metricChartConfigModel) toAPIVariant1(dashboard *dashboardModel) (kbapi
 		}
 	}
 
-	writes, presDiags := lensChartPresentationWritesFor(dashboard, m.lensChartPresentationTFModel)
+	writes, presDiags := lensChartPresentationWritesFor(dashboard, m.LensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags

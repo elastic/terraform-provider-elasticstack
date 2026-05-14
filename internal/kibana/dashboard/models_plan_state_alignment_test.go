@@ -20,6 +20,7 @@ package dashboard
 import (
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -27,12 +28,12 @@ import (
 )
 
 func Test_alignPanelStateFromPlan_preservesCommonPanelFields(t *testing.T) {
-	planPanels := []panelModel{
+	planPanels := []models.PanelModel{
 		{
-			VisConfig: &visConfigModel{
-				ByValue: &visByValueModel{
-					lensByValueChartBlocks: lensByValueChartBlocks{
-						MosaicConfig: &mosaicConfigModel{
+			VisConfig: &models.VisConfigModel{
+				ByValue: &models.VisByValueModel{
+					LensByValueChartBlocks: models.LensByValueChartBlocks{
+						MosaicConfig: &models.MosaicConfigModel{
 							Title:       types.StringValue("Sample Mosaic"),
 							Description: types.StringValue("Test mosaic visualization"),
 						},
@@ -41,17 +42,17 @@ func Test_alignPanelStateFromPlan_preservesCommonPanelFields(t *testing.T) {
 			},
 		},
 		{
-			EsqlControlConfig: &esqlControlConfigModel{
+			EsqlControlConfig: &models.EsqlControlConfigModel{
 				EsqlQuery:        types.StringValue("FROM logs-* | KEEP host.name"),
 				Title:            types.StringValue("Fields Control"),
 				AvailableOptions: types.ListValueMust(types.StringType, []attr.Value{types.StringValue("option_a")}),
 			},
 		},
 		{
-			VisConfig: &visConfigModel{
-				ByValue: &visByValueModel{
-					lensByValueChartBlocks: lensByValueChartBlocks{
-						TagcloudConfig: &tagcloudConfigModel{
+			VisConfig: &models.VisConfigModel{
+				ByValue: &models.VisByValueModel{
+					LensByValueChartBlocks: models.LensByValueChartBlocks{
+						TagcloudConfig: &models.TagcloudConfigModel{
 							Title:       types.StringValue("Sample Tagcloud"),
 							Description: types.StringValue("Test tagcloud visualization"),
 							TagByJSON:   mustTagcloudJSON(`{"operation":"terms","fields":["host.name"],"limit":10}`),
@@ -62,12 +63,12 @@ func Test_alignPanelStateFromPlan_preservesCommonPanelFields(t *testing.T) {
 		},
 	}
 
-	statePanels := []panelModel{
+	statePanels := []models.PanelModel{
 		{
-			VisConfig: &visConfigModel{
-				ByValue: &visByValueModel{
-					lensByValueChartBlocks: lensByValueChartBlocks{
-						MosaicConfig: &mosaicConfigModel{
+			VisConfig: &models.VisConfigModel{
+				ByValue: &models.VisByValueModel{
+					LensByValueChartBlocks: models.LensByValueChartBlocks{
+						MosaicConfig: &models.MosaicConfigModel{
 							Title:       types.StringValue(""),
 							Description: types.StringValue(""),
 						},
@@ -76,17 +77,17 @@ func Test_alignPanelStateFromPlan_preservesCommonPanelFields(t *testing.T) {
 			},
 		},
 		{
-			EsqlControlConfig: &esqlControlConfigModel{
+			EsqlControlConfig: &models.EsqlControlConfigModel{
 				EsqlQuery:        types.StringValue(""),
 				Title:            types.StringValue(""),
 				AvailableOptions: types.ListNull(types.StringType),
 			},
 		},
 		{
-			VisConfig: &visConfigModel{
-				ByValue: &visByValueModel{
-					lensByValueChartBlocks: lensByValueChartBlocks{
-						TagcloudConfig: &tagcloudConfigModel{
+			VisConfig: &models.VisConfigModel{
+				ByValue: &models.VisByValueModel{
+					LensByValueChartBlocks: models.LensByValueChartBlocks{
+						TagcloudConfig: &models.TagcloudConfigModel{
 							Title:       types.StringValue(""),
 							Description: types.StringValue(""),
 							TagByJSON: mustTagcloudJSON(
@@ -114,17 +115,17 @@ func Test_alignPanelStateFromPlan_preservesCommonPanelFields(t *testing.T) {
 }
 
 func Test_alignPanelStateFromPlan_preservesMosaicTreemapPartitionSnapshots(t *testing.T) {
-	plan := panelModel{
-		VisConfig: &visConfigModel{
-			ByValue: &visByValueModel{
-				lensByValueChartBlocks: lensByValueChartBlocks{
-					MosaicConfig: &mosaicConfigModel{
+	plan := models.PanelModel{
+		VisConfig: &models.VisConfigModel{
+			ByValue: &models.VisByValueModel{
+				LensByValueChartBlocks: models.LensByValueChartBlocks{
+					MosaicConfig: &models.MosaicConfigModel{
 						Title:               types.StringValue("M"),
 						Description:         types.StringValue("d"),
 						IgnoreGlobalFilters: types.BoolValue(true),
 						Sampling:            types.Float64Value(0.5),
 					},
-					TreemapConfig: &treemapConfigModel{
+					TreemapConfig: &models.TreemapConfigModel{
 						Title:               types.StringValue("T"),
 						Description:         types.StringValue("d"),
 						IgnoreGlobalFilters: types.BoolValue(true),
@@ -134,17 +135,17 @@ func Test_alignPanelStateFromPlan_preservesMosaicTreemapPartitionSnapshots(t *te
 			},
 		},
 	}
-	state := panelModel{
-		VisConfig: &visConfigModel{
-			ByValue: &visByValueModel{
-				lensByValueChartBlocks: lensByValueChartBlocks{
-					MosaicConfig: &mosaicConfigModel{
+	state := models.PanelModel{
+		VisConfig: &models.VisConfigModel{
+			ByValue: &models.VisByValueModel{
+				LensByValueChartBlocks: models.LensByValueChartBlocks{
+					MosaicConfig: &models.MosaicConfigModel{
 						Title:               types.StringValue("M"),
 						Description:         types.StringValue("d"),
 						IgnoreGlobalFilters: types.BoolNull(),
 						Sampling:            types.Float64Null(),
 					},
-					TreemapConfig: &treemapConfigModel{
+					TreemapConfig: &models.TreemapConfigModel{
 						Title:               types.StringValue("T"),
 						Description:         types.StringValue("d"),
 						IgnoreGlobalFilters: types.BoolNull(),

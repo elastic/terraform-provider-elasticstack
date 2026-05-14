@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -39,8 +40,8 @@ func Test_dataLayerModel_fromAPINoESQL_toAPIXyLayerNoESQL(t *testing.T) {
 	var apiLayer kbapi.XyLayerNoESQL
 	require.NoError(t, json.Unmarshal([]byte(layerJSON), &apiLayer))
 
-	model := &dataLayerModel{}
-	diags := model.fromAPINoESQL(context.Background(), apiLayer)
+	model := &models.DataLayerModel{}
+	diags := dataLayerFromAPINoESQL(context.Background(), model, apiLayer)
 	require.False(t, diags.HasError())
 
 	assert.False(t, model.DataSourceJSON.IsNull())
@@ -49,7 +50,7 @@ func Test_dataLayerModel_fromAPINoESQL_toAPIXyLayerNoESQL(t *testing.T) {
 	assert.Len(t, model.Y, 1)
 	assert.False(t, model.Y[0].ConfigJSON.IsNull())
 
-	layer, diags := model.toAPIXyLayerNoESQL("area")
+	layer, diags := dataLayerToAPIXyLayerNoESQL(model, "area")
 	require.False(t, diags.HasError())
 	b, err := json.Marshal(layer)
 	require.NoError(t, err)
@@ -71,8 +72,8 @@ func Test_dataLayerModel_fromAPIESql_toAPIXyLayerESQL(t *testing.T) {
 	var apiLayer kbapi.XyLayerESQL
 	require.NoError(t, json.Unmarshal([]byte(layerJSON), &apiLayer))
 
-	model := &dataLayerModel{}
-	diags := model.fromAPIESql(context.Background(), apiLayer)
+	model := &models.DataLayerModel{}
+	diags := dataLayerFromAPIESql(context.Background(), model, apiLayer)
 	require.False(t, diags.HasError())
 
 	assert.False(t, model.DataSourceJSON.IsNull())
@@ -80,7 +81,7 @@ func Test_dataLayerModel_fromAPIESql_toAPIXyLayerESQL(t *testing.T) {
 	assert.InDelta(t, 1, model.Sampling.ValueFloat64(), 0.001)
 	assert.Len(t, model.Y, 1)
 
-	layer, diags := model.toAPIXyLayerESQL("area")
+	layer, diags := dataLayerToAPIXyLayerESQL(model, "area")
 	require.False(t, diags.HasError())
 	b, err := json.Marshal(layer)
 	require.NoError(t, err)
@@ -100,15 +101,15 @@ func Test_referenceLineLayerModel_fromAPINoESQL_toAPIXyReferenceLineLayerNoESQL(
 	var apiLayer kbapi.XyReferenceLineLayerNoESQL
 	require.NoError(t, json.Unmarshal([]byte(layerJSON), &apiLayer))
 
-	model := &referenceLineLayerModel{}
-	diags := model.fromAPINoESQL(apiLayer)
+	model := &models.ReferenceLineLayerModel{}
+	diags := referenceLineLayerFromAPINoESQL(model, apiLayer)
 	require.False(t, diags.HasError())
 
 	assert.False(t, model.DataSourceJSON.IsNull())
 	assert.Len(t, model.Thresholds, 1)
 	assert.False(t, model.Thresholds[0].ValueJSON.IsNull())
 
-	layer, diags := model.toAPIXyReferenceLineLayerNoESQL("reference_lines")
+	layer, diags := referenceLineLayerToAPIXyReferenceLineLayerNoESQL(model, "reference_lines")
 	require.False(t, diags.HasError())
 	b, err := json.Marshal(layer)
 	require.NoError(t, err)
@@ -136,8 +137,8 @@ func Test_referenceLineLayerModel_fromAPINoESQL_structured_thresholds(t *testing
 	var apiLayer kbapi.XyReferenceLineLayerNoESQL
 	require.NoError(t, json.Unmarshal([]byte(layerJSON), &apiLayer))
 
-	model := &referenceLineLayerModel{}
-	diags := model.fromAPINoESQL(apiLayer)
+	model := &models.ReferenceLineLayerModel{}
+	diags := referenceLineLayerFromAPINoESQL(model, apiLayer)
 	require.False(t, diags.HasError())
 
 	assert.False(t, model.DataSourceJSON.IsNull())
@@ -161,8 +162,8 @@ func Test_thresholdModel_fromAPIJSON_toAPI(t *testing.T) {
 		"text": "Threshold"
 	}`)
 
-	model := &thresholdModel{}
-	diags := model.fromAPIJSON(thresholdJSON)
+	model := &models.ThresholdModel{}
+	diags := thresholdFromAPIJSON(model, thresholdJSON)
 	require.False(t, diags.HasError())
 
 	assert.Equal(t, types.StringValue("left"), model.Axis)
@@ -174,7 +175,7 @@ func Test_thresholdModel_fromAPIJSON_toAPI(t *testing.T) {
 	assert.Equal(t, types.Float64Value(2), model.StrokeWidth)
 	assert.Equal(t, types.StringValue("Threshold"), model.Text)
 
-	thresholdMap, diags := model.toAPI()
+	thresholdMap, diags := thresholdToAPI(model)
 	require.False(t, diags.HasError())
 	assert.Equal(t, "left", thresholdMap["axis"])
 	assert.Equal(t, "bytes", thresholdMap["column"])
@@ -195,15 +196,15 @@ func Test_xyLayerModel_fromAPILayersNoESQL_toAPILayersNoESQL_referenceLine(t *te
 	var apiLayer kbapi.XyLayersNoESQL
 	require.NoError(t, apiLayer.UnmarshalJSON([]byte(layerJSON)))
 
-	model := &xyLayerModel{}
-	diags := model.fromAPILayersNoESQL(context.Background(), apiLayer)
+	model := &models.XYLayerModel{}
+	diags := xyLayerFromAPILayersNoESQL(context.Background(), model, apiLayer)
 	require.False(t, diags.HasError())
 
 	assert.Equal(t, types.StringValue("reference_lines"), model.Type)
 	require.NotNil(t, model.ReferenceLineLayer)
 	assert.Nil(t, model.DataLayer)
 
-	result, diags := model.toAPILayersNoESQL()
+	result, diags := xyLayerToAPILayersNoESQL(model)
 	require.False(t, diags.HasError())
 
 	resultJSON, err := result.MarshalJSON()
@@ -222,8 +223,8 @@ func Test_xyLayerModel_fromAPILayersNoESQL_toAPILayersNoESQL_dataLayer(t *testin
 	var apiLayer kbapi.XyLayersNoESQL
 	require.NoError(t, apiLayer.UnmarshalJSON([]byte(layerJSON)))
 
-	model := &xyLayerModel{}
-	diags := model.fromAPILayersNoESQL(context.Background(), apiLayer)
+	model := &models.XYLayerModel{}
+	diags := xyLayerFromAPILayersNoESQL(context.Background(), model, apiLayer)
 	require.False(t, diags.HasError())
 
 	assert.Equal(t, types.StringValue("area"), model.Type)
@@ -231,7 +232,7 @@ func Test_xyLayerModel_fromAPILayersNoESQL_toAPILayersNoESQL_dataLayer(t *testin
 	assert.Nil(t, model.ReferenceLineLayer)
 	assert.Len(t, model.DataLayer.Y, 1)
 
-	result, diags := model.toAPILayersNoESQL()
+	result, diags := xyLayerToAPILayersNoESQL(model)
 	require.False(t, diags.HasError())
 
 	resultJSON, err := result.MarshalJSON()

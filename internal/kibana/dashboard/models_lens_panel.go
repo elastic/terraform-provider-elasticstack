@@ -21,26 +21,33 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 type lensVisualizationConverter interface {
 	visType() string
-	handlesTFConfigBlocks(blocks *lensByValueChartBlocks) bool
-	populateFromAttributes(ctx context.Context, dashboard *dashboardModel, tfPanel *panelModel, blocks *lensByValueChartBlocks, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics
-	buildAttributes(blocks *lensByValueChartBlocks, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics)
+	handlesTFConfigBlocks(blocks *models.LensByValueChartBlocks) bool
+	populateFromAttributes(
+		ctx context.Context,
+		dashboard *models.DashboardModel,
+		tfPanel *models.PanelModel,
+		blocks *models.LensByValueChartBlocks,
+		attrs kbapi.KbnDashboardPanelTypeVisConfig0,
+	) diag.Diagnostics
+	buildAttributes(blocks *models.LensByValueChartBlocks, dashboard *models.DashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics)
 }
 
 type lensVisualizationBase struct {
 	visualizationType string
-	hasTFChartBlock   func(blocks *lensByValueChartBlocks) bool
+	hasTFChartBlock   func(blocks *models.LensByValueChartBlocks) bool
 }
 
 func (c lensVisualizationBase) visType() string {
 	return c.visualizationType
 }
 
-func (c lensVisualizationBase) handlesTFConfigBlocks(blocks *lensByValueChartBlocks) bool {
+func (c lensVisualizationBase) handlesTFConfigBlocks(blocks *models.LensByValueChartBlocks) bool {
 	if blocks == nil || c.hasTFChartBlock == nil {
 		return false
 	}

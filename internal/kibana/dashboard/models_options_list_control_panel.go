@@ -21,39 +21,11 @@ import (
 	"strconv"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
-
-type optionsListControlDisplaySettingsModel struct {
-	Placeholder   types.String `tfsdk:"placeholder"`
-	HideActionBar types.Bool   `tfsdk:"hide_action_bar"`
-	HideExclude   types.Bool   `tfsdk:"hide_exclude"`
-	HideExists    types.Bool   `tfsdk:"hide_exists"`
-	HideSort      types.Bool   `tfsdk:"hide_sort"`
-}
-
-type optionsListControlSortModel struct {
-	By        types.String `tfsdk:"by"`
-	Direction types.String `tfsdk:"direction"`
-}
-
-type optionsListControlConfigModel struct {
-	DataViewID        types.String                            `tfsdk:"data_view_id"`
-	FieldName         types.String                            `tfsdk:"field_name"`
-	Title             types.String                            `tfsdk:"title"`
-	UseGlobalFilters  types.Bool                              `tfsdk:"use_global_filters"`
-	IgnoreValidations types.Bool                              `tfsdk:"ignore_validations"`
-	SingleSelect      types.Bool                              `tfsdk:"single_select"`
-	Exclude           types.Bool                              `tfsdk:"exclude"`
-	ExistsSelected    types.Bool                              `tfsdk:"exists_selected"`
-	RunPastTimeout    types.Bool                              `tfsdk:"run_past_timeout"`
-	SearchTechnique   types.String                            `tfsdk:"search_technique"`
-	SelectedOptions   types.List                              `tfsdk:"selected_options"`
-	DisplaySettings   *optionsListControlDisplaySettingsModel `tfsdk:"display_settings"`
-	Sort              *optionsListControlSortModel            `tfsdk:"sort"`
-}
 
 // populateOptionsListControlFromAPI reads back an options list control config from the API
 // response and updates the panel model. Null-preservation semantics apply: if a field is
@@ -62,7 +34,7 @@ type optionsListControlConfigModel struct {
 // empty/absent config, we leave OptionsListControlConfig as nil.
 //
 // tfPanel is the prior TF state/plan panel, or nil on import.
-func populateOptionsListControlFromAPI(pm *panelModel, tfPanel *panelModel, ol *kbapi.KbnDashboardPanelTypeOptionsListControl) {
+func populateOptionsListControlFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, ol *kbapi.KbnDashboardPanelTypeOptionsListControl) {
 	if ol == nil {
 		return
 	}
@@ -75,7 +47,7 @@ func populateOptionsListControlFromAPI(pm *panelModel, tfPanel *panelModel, ol *
 		// defaults (e.g. use_global_filters, exclude, sort) are treated as optional and left
 		// null when absent from the user's configuration — matching the null-preservation
 		// behaviour used during normal apply reads.
-		pm.OptionsListControlConfig = &optionsListControlConfigModel{
+		pm.OptionsListControlConfig = &models.OptionsListControlConfigModel{
 			DataViewID:      types.StringValue(apiConfig.DataViewId),
 			FieldName:       types.StringValue(apiConfig.FieldName),
 			SelectedOptions: types.ListNull(types.StringType),
@@ -165,7 +137,7 @@ func populateOptionsListControlFromAPI(pm *panelModel, tfPanel *panelModel, ol *
 }
 
 // buildOptionsListControlConfig writes the TF model fields into the API panel struct.
-func buildOptionsListControlConfig(pm panelModel, olPanel *kbapi.KbnDashboardPanelTypeOptionsListControl) {
+func buildOptionsListControlConfig(pm models.PanelModel, olPanel *kbapi.KbnDashboardPanelTypeOptionsListControl) {
 	cfg := pm.OptionsListControlConfig
 	if cfg == nil {
 		return
@@ -268,11 +240,11 @@ func displaySettingsFromAPI(api *struct {
 	HideExists    *bool   `json:"hide_exists,omitempty"`
 	HideSort      *bool   `json:"hide_sort,omitempty"`
 	Placeholder   *string `json:"placeholder,omitempty"`
-}) *optionsListControlDisplaySettingsModel {
+}) *models.OptionsListControlDisplaySettingsModel {
 	if api == nil {
 		return nil
 	}
-	ds := &optionsListControlDisplaySettingsModel{}
+	ds := &models.OptionsListControlDisplaySettingsModel{}
 	if api.Placeholder != nil {
 		ds.Placeholder = types.StringValue(*api.Placeholder)
 	}

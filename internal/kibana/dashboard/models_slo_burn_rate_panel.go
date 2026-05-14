@@ -19,32 +19,13 @@ package dashboard
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// sloBurnRateConfigModel is the Terraform model for the slo_burn_rate_config block.
-type sloBurnRateConfigModel struct {
-	SloID         types.String                `tfsdk:"slo_id"`
-	Duration      types.String                `tfsdk:"duration"`
-	SloInstanceID types.String                `tfsdk:"slo_instance_id"`
-	Title         types.String                `tfsdk:"title"`
-	Description   types.String                `tfsdk:"description"`
-	HideTitle     types.Bool                  `tfsdk:"hide_title"`
-	HideBorder    types.Bool                  `tfsdk:"hide_border"`
-	Drilldowns    []sloBurnRateDrilldownModel `tfsdk:"drilldowns"`
-}
-
-// sloBurnRateDrilldownModel represents a single drilldown entry within slo_burn_rate_config.
-type sloBurnRateDrilldownModel struct {
-	URL          types.String `tfsdk:"url"`
-	Label        types.String `tfsdk:"label"`
-	EncodeURL    types.Bool   `tfsdk:"encode_url"`
-	OpenInNewTab types.Bool   `tfsdk:"open_in_new_tab"`
-}
-
 // buildSloBurnRateConfig writes the TF model fields into the API panel struct.
-func buildSloBurnRateConfig(pm panelModel, panel *kbapi.KbnDashboardPanelTypeSloBurnRate) {
+func buildSloBurnRateConfig(pm models.PanelModel, panel *kbapi.KbnDashboardPanelTypeSloBurnRate) {
 	cfg := pm.SloBurnRateConfig
 	if cfg == nil {
 		return
@@ -106,10 +87,10 @@ func buildSloBurnRateConfig(pm panelModel, panel *kbapi.KbnDashboardPanelTypeSlo
 //
 // tfPanel is the prior TF state/plan panel, or nil on import. When nil, all API-returned
 // fields are populated unconditionally (no prior intent to preserve).
-func populateSloBurnRateFromAPI(pm *panelModel, tfPanel *panelModel, apiConfig kbapi.SloBurnRateEmbeddable) {
+func populateSloBurnRateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiConfig kbapi.SloBurnRateEmbeddable) {
 	// On import (tfPanel == nil) populate from API unconditionally.
 	if tfPanel == nil {
-		cfg := &sloBurnRateConfigModel{
+		cfg := &models.SloBurnRateConfigModel{
 			SloID:    types.StringValue(apiConfig.SloId),
 			Duration: types.StringValue(apiConfig.Duration),
 		}
@@ -179,21 +160,21 @@ func readSloBurnRateDrilldownsFromAPI(
 		Type         kbapi.SloBurnRateEmbeddableDrilldownsType    `json:"type"`
 		Url          string                                       `json:"url"` //nolint:revive
 	},
-	priorDrilldowns []sloBurnRateDrilldownModel,
-) []sloBurnRateDrilldownModel {
+	priorDrilldowns []models.URLDrilldownModel,
+) []models.URLDrilldownModel {
 	if apiDrilldowns == nil || len(*apiDrilldowns) == 0 {
 		return nil
 	}
 
-	result := make([]sloBurnRateDrilldownModel, len(*apiDrilldowns))
+	result := make([]models.URLDrilldownModel, len(*apiDrilldowns))
 	for i, d := range *apiDrilldowns {
-		result[i] = sloBurnRateDrilldownModel{
+		result[i] = models.URLDrilldownModel{
 			URL:   types.StringValue(d.Url),
 			Label: types.StringValue(d.Label),
 		}
 
 		// Determine prior state for this drilldown (if it exists at this index).
-		var prior *sloBurnRateDrilldownModel
+		var prior *models.URLDrilldownModel
 		if i < len(priorDrilldowns) {
 			prior = &priorDrilldowns[i]
 		}

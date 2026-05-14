@@ -21,14 +21,15 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func Test_lensDrilldownItemToRawJSON_dashboard_and_defaults(t *testing.T) {
-	item := lensDrilldownItemTFModel{
-		DashboardDrilldown: &lensDashboardDrilldownTFModel{
+	item := models.LensDrilldownItemTFModel{
+		DashboardDrilldown: &models.LensDashboardDrilldownTFModel{
 			DashboardID:  types.StringValue("dash1"),
 			Label:        types.StringValue("Go to dash"),
 			UseFilters:   types.BoolValue(false),
@@ -51,8 +52,8 @@ func Test_lensDrilldownItemToRawJSON_dashboard_and_defaults(t *testing.T) {
 }
 
 func Test_lensDrilldownItemToRawJSON_discover_defaults(t *testing.T) {
-	item := lensDrilldownItemTFModel{
-		DiscoverDrilldown: &lensDiscoverDrilldownTFModel{
+	item := models.LensDrilldownItemTFModel{
+		DiscoverDrilldown: &models.LensDiscoverDrilldownTFModel{
 			Label:        types.StringValue("Open Discover"),
 			OpenInNewTab: types.BoolValue(false),
 		},
@@ -69,8 +70,8 @@ func Test_lensDrilldownItemToRawJSON_discover_defaults(t *testing.T) {
 }
 
 func Test_lensDrilldownItemToRawJSON_url_includes_trigger(t *testing.T) {
-	item := lensDrilldownItemTFModel{
-		URLDrilldown: &lensURLDrilldownTFModel{
+	item := models.LensDrilldownItemTFModel{
+		URLDrilldown: &models.LensURLDrilldownTFModel{
 			URL:          types.StringValue("https://example.test/{{event.url}}"),
 			Label:        types.StringValue("External"),
 			Trigger:      types.StringValue("on_click_row"),
@@ -125,30 +126,30 @@ func Test_lensDrilldownItemFromAPIJSON_dispatch_and_trigger_defaults(t *testing.
 
 func Test_lensDrilldownsToRawJSON_variantCountErrors(t *testing.T) {
 	t.Run("multiple variants set", func(t *testing.T) {
-		item := lensDrilldownItemTFModel{
-			DashboardDrilldown: &lensDashboardDrilldownTFModel{
+		item := models.LensDrilldownItemTFModel{
+			DashboardDrilldown: &models.LensDashboardDrilldownTFModel{
 				DashboardID: types.StringValue("d1"),
 				Label:       types.StringValue("x"),
 			},
-			URLDrilldown: &lensURLDrilldownTFModel{
+			URLDrilldown: &models.LensURLDrilldownTFModel{
 				URL:     types.StringValue("https://x"),
 				Label:   types.StringValue("y"),
 				Trigger: types.StringValue("on_click_row"),
 			},
 		}
-		_, diags := lensDrilldownsToRawJSON([]lensDrilldownItemTFModel{item})
+		_, diags := lensDrilldownsToRawJSON([]models.LensDrilldownItemTFModel{item})
 		require.True(t, diags.HasError())
 	})
 
 	t.Run("zero variants set", func(t *testing.T) {
-		_, diags := lensDrilldownsToRawJSON([]lensDrilldownItemTFModel{{}})
+		_, diags := lensDrilldownsToRawJSON([]models.LensDrilldownItemTFModel{{}})
 		require.True(t, diags.HasError())
 	})
 }
 
 func Test_lensDrilldownItem_wireRoundTrip_matchesTFModel(t *testing.T) {
-	orig := lensDrilldownItemTFModel{
-		DashboardDrilldown: &lensDashboardDrilldownTFModel{
+	orig := models.LensDrilldownItemTFModel{
+		DashboardDrilldown: &models.LensDashboardDrilldownTFModel{
 			DashboardID:  types.StringValue("dash-1"),
 			Label:        types.StringValue("Drill"),
 			Trigger:      types.StringValue(lensDrilldownTriggerOnApplyFilter),

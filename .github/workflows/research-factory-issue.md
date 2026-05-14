@@ -180,7 +180,7 @@ on:
           }
           
           /**
-           * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'github-keywords' }} params
+           * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords' }} params
            * @returns {{ duplicate_pr_found: boolean, duplicate_pr_url: string | null, gate_reason: string }}
            */
           function factoryCheckDuplicatePR({
@@ -192,9 +192,16 @@ on:
           }) {
             const expectedBranch = `${branchPrefix}${issueNumber}`;
             const expectedClosesExample = `Closes #${issueNumber}`;
-            const bodyPattern = duplicateLinkageMode === 'closes-literal'
-              ? new RegExp(`Closes #${issueNumber}(?![0-9])`)
-              : issueClosingReferencePattern(issueNumber);
+            const expectedRelatedExample = `Related to #${issueNumber}`;
+          
+            let bodyPattern;
+            if (duplicateLinkageMode === 'closes-literal') {
+              bodyPattern = new RegExp(`Closes #${issueNumber}(?![0-9])`);
+            } else if (duplicateLinkageMode === 'related-literal') {
+              bodyPattern = new RegExp(`\\bRelated to #${issueNumber}(?![0-9])`);
+            } else {
+              bodyPattern = issueClosingReferencePattern(issueNumber);
+            }
           
             const duplicate = (pullRequests || []).find(pr => (
               pr.state === 'open' &&
@@ -205,9 +212,14 @@ on:
           
             if (duplicate) {
               const url = duplicate.html_url ?? null;
-              const linkagePhrase = duplicateLinkageMode === 'closes-literal'
-                ? `canonical linkage '${expectedClosesExample}'`
-                : `issue-closing reference such as '${expectedClosesExample}'`;
+              let linkagePhrase;
+              if (duplicateLinkageMode === 'closes-literal') {
+                linkagePhrase = `canonical linkage '${expectedClosesExample}'`;
+              } else if (duplicateLinkageMode === 'related-literal') {
+                linkagePhrase = `literal linkage \`${expectedRelatedExample}\``;
+              } else {
+                linkagePhrase = `issue-closing reference such as '${expectedClosesExample}'`;
+              }
           
               return {
                 duplicate_pr_found: true,
@@ -216,9 +228,14 @@ on:
               };
             }
           
-            const linkageTail = duplicateLinkageMode === 'closes-literal'
-              ? `canonical linkage '${expectedClosesExample}'`
-              : `issue-closing reference such as '${expectedClosesExample}'`;
+            let linkageTail;
+            if (duplicateLinkageMode === 'closes-literal') {
+              linkageTail = `canonical linkage '${expectedClosesExample}'`;
+            } else if (duplicateLinkageMode === 'related-literal') {
+              linkageTail = `literal linkage \`${expectedRelatedExample}\``;
+            } else {
+              linkageTail = `issue-closing reference such as '${expectedClosesExample}'`;
+            }
           
             return {
               duplicate_pr_found: false,
@@ -300,7 +317,7 @@ on:
            *   branchPrefix: string,
            *   factoryLabel: string,
            *   issueOpenedNotEligibleReason: string,
-           *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',
+           *   duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords',
            * }} config
            */
           function createFactoryIssueIntake(config) {
@@ -353,7 +370,7 @@ on:
            *   branchPrefix: string,
            *   factoryLabel: string,
            *   issueOpenedNotEligibleReason: string,
-           *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',
+           *   duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords',
            *   issueBranchNameAliases?: string[],
            * }} config
            */
@@ -699,7 +716,7 @@ on:
           }
           
           /**
-           * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'github-keywords' }} params
+           * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords' }} params
            * @returns {{ duplicate_pr_found: boolean, duplicate_pr_url: string | null, gate_reason: string }}
            */
           function factoryCheckDuplicatePR({
@@ -711,9 +728,16 @@ on:
           }) {
             const expectedBranch = `${branchPrefix}${issueNumber}`;
             const expectedClosesExample = `Closes #${issueNumber}`;
-            const bodyPattern = duplicateLinkageMode === 'closes-literal'
-              ? new RegExp(`Closes #${issueNumber}(?![0-9])`)
-              : issueClosingReferencePattern(issueNumber);
+            const expectedRelatedExample = `Related to #${issueNumber}`;
+          
+            let bodyPattern;
+            if (duplicateLinkageMode === 'closes-literal') {
+              bodyPattern = new RegExp(`Closes #${issueNumber}(?![0-9])`);
+            } else if (duplicateLinkageMode === 'related-literal') {
+              bodyPattern = new RegExp(`\\bRelated to #${issueNumber}(?![0-9])`);
+            } else {
+              bodyPattern = issueClosingReferencePattern(issueNumber);
+            }
           
             const duplicate = (pullRequests || []).find(pr => (
               pr.state === 'open' &&
@@ -724,9 +748,14 @@ on:
           
             if (duplicate) {
               const url = duplicate.html_url ?? null;
-              const linkagePhrase = duplicateLinkageMode === 'closes-literal'
-                ? `canonical linkage '${expectedClosesExample}'`
-                : `issue-closing reference such as '${expectedClosesExample}'`;
+              let linkagePhrase;
+              if (duplicateLinkageMode === 'closes-literal') {
+                linkagePhrase = `canonical linkage '${expectedClosesExample}'`;
+              } else if (duplicateLinkageMode === 'related-literal') {
+                linkagePhrase = `literal linkage \`${expectedRelatedExample}\``;
+              } else {
+                linkagePhrase = `issue-closing reference such as '${expectedClosesExample}'`;
+              }
           
               return {
                 duplicate_pr_found: true,
@@ -735,9 +764,14 @@ on:
               };
             }
           
-            const linkageTail = duplicateLinkageMode === 'closes-literal'
-              ? `canonical linkage '${expectedClosesExample}'`
-              : `issue-closing reference such as '${expectedClosesExample}'`;
+            let linkageTail;
+            if (duplicateLinkageMode === 'closes-literal') {
+              linkageTail = `canonical linkage '${expectedClosesExample}'`;
+            } else if (duplicateLinkageMode === 'related-literal') {
+              linkageTail = `literal linkage \`${expectedRelatedExample}\``;
+            } else {
+              linkageTail = `issue-closing reference such as '${expectedClosesExample}'`;
+            }
           
             return {
               duplicate_pr_found: false,
@@ -819,7 +853,7 @@ on:
            *   branchPrefix: string,
            *   factoryLabel: string,
            *   issueOpenedNotEligibleReason: string,
-           *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',
+           *   duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords',
            * }} config
            */
           function createFactoryIssueIntake(config) {
@@ -872,7 +906,7 @@ on:
            *   branchPrefix: string,
            *   factoryLabel: string,
            *   issueOpenedNotEligibleReason: string,
-           *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',
+           *   duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords',
            *   issueBranchNameAliases?: string[],
            * }} config
            */
@@ -1114,7 +1148,7 @@ on:
           }
           
           /**
-           * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'github-keywords' }} params
+           * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords' }} params
            * @returns {{ duplicate_pr_found: boolean, duplicate_pr_url: string | null, gate_reason: string }}
            */
           function factoryCheckDuplicatePR({
@@ -1126,9 +1160,16 @@ on:
           }) {
             const expectedBranch = `${branchPrefix}${issueNumber}`;
             const expectedClosesExample = `Closes #${issueNumber}`;
-            const bodyPattern = duplicateLinkageMode === 'closes-literal'
-              ? new RegExp(`Closes #${issueNumber}(?![0-9])`)
-              : issueClosingReferencePattern(issueNumber);
+            const expectedRelatedExample = `Related to #${issueNumber}`;
+          
+            let bodyPattern;
+            if (duplicateLinkageMode === 'closes-literal') {
+              bodyPattern = new RegExp(`Closes #${issueNumber}(?![0-9])`);
+            } else if (duplicateLinkageMode === 'related-literal') {
+              bodyPattern = new RegExp(`\\bRelated to #${issueNumber}(?![0-9])`);
+            } else {
+              bodyPattern = issueClosingReferencePattern(issueNumber);
+            }
           
             const duplicate = (pullRequests || []).find(pr => (
               pr.state === 'open' &&
@@ -1139,9 +1180,14 @@ on:
           
             if (duplicate) {
               const url = duplicate.html_url ?? null;
-              const linkagePhrase = duplicateLinkageMode === 'closes-literal'
-                ? `canonical linkage '${expectedClosesExample}'`
-                : `issue-closing reference such as '${expectedClosesExample}'`;
+              let linkagePhrase;
+              if (duplicateLinkageMode === 'closes-literal') {
+                linkagePhrase = `canonical linkage '${expectedClosesExample}'`;
+              } else if (duplicateLinkageMode === 'related-literal') {
+                linkagePhrase = `literal linkage \`${expectedRelatedExample}\``;
+              } else {
+                linkagePhrase = `issue-closing reference such as '${expectedClosesExample}'`;
+              }
           
               return {
                 duplicate_pr_found: true,
@@ -1150,9 +1196,14 @@ on:
               };
             }
           
-            const linkageTail = duplicateLinkageMode === 'closes-literal'
-              ? `canonical linkage '${expectedClosesExample}'`
-              : `issue-closing reference such as '${expectedClosesExample}'`;
+            let linkageTail;
+            if (duplicateLinkageMode === 'closes-literal') {
+              linkageTail = `canonical linkage '${expectedClosesExample}'`;
+            } else if (duplicateLinkageMode === 'related-literal') {
+              linkageTail = `literal linkage \`${expectedRelatedExample}\``;
+            } else {
+              linkageTail = `issue-closing reference such as '${expectedClosesExample}'`;
+            }
           
             return {
               duplicate_pr_found: false,
@@ -1234,7 +1285,7 @@ on:
            *   branchPrefix: string,
            *   factoryLabel: string,
            *   issueOpenedNotEligibleReason: string,
-           *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',
+           *   duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords',
            * }} config
            */
           function createFactoryIssueIntake(config) {
@@ -1287,7 +1338,7 @@ on:
            *   branchPrefix: string,
            *   factoryLabel: string,
            *   issueOpenedNotEligibleReason: string,
-           *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',
+           *   duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords',
            *   issueBranchNameAliases?: string[],
            * }} config
            */
@@ -1825,7 +1876,7 @@ on:
           }
           
           /**
-           * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'github-keywords' }} params
+           * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords' }} params
            * @returns {{ duplicate_pr_found: boolean, duplicate_pr_url: string | null, gate_reason: string }}
            */
           function factoryCheckDuplicatePR({
@@ -1837,9 +1888,16 @@ on:
           }) {
             const expectedBranch = `${branchPrefix}${issueNumber}`;
             const expectedClosesExample = `Closes #${issueNumber}`;
-            const bodyPattern = duplicateLinkageMode === 'closes-literal'
-              ? new RegExp(`Closes #${issueNumber}(?![0-9])`)
-              : issueClosingReferencePattern(issueNumber);
+            const expectedRelatedExample = `Related to #${issueNumber}`;
+          
+            let bodyPattern;
+            if (duplicateLinkageMode === 'closes-literal') {
+              bodyPattern = new RegExp(`Closes #${issueNumber}(?![0-9])`);
+            } else if (duplicateLinkageMode === 'related-literal') {
+              bodyPattern = new RegExp(`\\bRelated to #${issueNumber}(?![0-9])`);
+            } else {
+              bodyPattern = issueClosingReferencePattern(issueNumber);
+            }
           
             const duplicate = (pullRequests || []).find(pr => (
               pr.state === 'open' &&
@@ -1850,9 +1908,14 @@ on:
           
             if (duplicate) {
               const url = duplicate.html_url ?? null;
-              const linkagePhrase = duplicateLinkageMode === 'closes-literal'
-                ? `canonical linkage '${expectedClosesExample}'`
-                : `issue-closing reference such as '${expectedClosesExample}'`;
+              let linkagePhrase;
+              if (duplicateLinkageMode === 'closes-literal') {
+                linkagePhrase = `canonical linkage '${expectedClosesExample}'`;
+              } else if (duplicateLinkageMode === 'related-literal') {
+                linkagePhrase = `literal linkage \`${expectedRelatedExample}\``;
+              } else {
+                linkagePhrase = `issue-closing reference such as '${expectedClosesExample}'`;
+              }
           
               return {
                 duplicate_pr_found: true,
@@ -1861,9 +1924,14 @@ on:
               };
             }
           
-            const linkageTail = duplicateLinkageMode === 'closes-literal'
-              ? `canonical linkage '${expectedClosesExample}'`
-              : `issue-closing reference such as '${expectedClosesExample}'`;
+            let linkageTail;
+            if (duplicateLinkageMode === 'closes-literal') {
+              linkageTail = `canonical linkage '${expectedClosesExample}'`;
+            } else if (duplicateLinkageMode === 'related-literal') {
+              linkageTail = `literal linkage \`${expectedRelatedExample}\``;
+            } else {
+              linkageTail = `issue-closing reference such as '${expectedClosesExample}'`;
+            }
           
             return {
               duplicate_pr_found: false,
@@ -1945,7 +2013,7 @@ on:
            *   branchPrefix: string,
            *   factoryLabel: string,
            *   issueOpenedNotEligibleReason: string,
-           *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',
+           *   duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords',
            * }} config
            */
           function createFactoryIssueIntake(config) {
@@ -1998,7 +2066,7 @@ on:
            *   branchPrefix: string,
            *   factoryLabel: string,
            *   issueOpenedNotEligibleReason: string,
-           *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',
+           *   duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords',
            *   issueBranchNameAliases?: string[],
            * }} config
            */

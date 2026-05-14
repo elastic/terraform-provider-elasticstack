@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"reflect"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -31,20 +32,20 @@ import (
 // alignDashboardStateFromPlanPanels preserves practitioner intent that depends on
 // the full top-level panel slice. Common per-panel alignment already happens
 // inside mapPanelFromAPI.
-func alignDashboardStateFromPlanPanels(planPanels, statePanels []panelModel) {
+func alignDashboardStateFromPlanPanels(planPanels, statePanels []models.PanelModel) {
 	alignXYChartStateFromPlanPanels(planPanels, statePanels)
 }
 
-func alignDashboardStateFromPlanPinnedPanels(ctx context.Context, planPins, statePins []pinnedPanelModel) {
+func alignDashboardStateFromPlanPinnedPanels(ctx context.Context, planPins, statePins []models.PinnedPanelModel) {
 	n := min(len(planPins), len(statePins))
 	for i := range n {
-		plan := planPins[i].syntheticPanelModel()
-		state := statePins[i].syntheticPanelModel()
+		plan := pinnedPanelSyntheticPanelModel(planPins[i])
+		state := pinnedPanelSyntheticPanelModel(statePins[i])
 		alignPanelStateFromPlan(ctx, &plan, &state)
 	}
 }
 
-func alignPanelStateFromPlan(ctx context.Context, plan, state *panelModel) {
+func alignPanelStateFromPlan(ctx context.Context, plan, state *models.PanelModel) {
 	if plan == nil || state == nil {
 		return
 	}
@@ -68,7 +69,7 @@ func alignPanelStateFromPlan(ctx context.Context, plan, state *panelModel) {
 	alignEsqlControlStateFromPlan(plan.EsqlControlConfig, state.EsqlControlConfig)
 }
 
-func alignDatatableStateFromPlan(plan, state *datatableConfigModel) {
+func alignDatatableStateFromPlan(plan, state *models.DatatableConfigModel) {
 	if plan == nil || state == nil {
 		return
 	}
@@ -76,21 +77,21 @@ func alignDatatableStateFromPlan(plan, state *datatableConfigModel) {
 	alignDatatableESQLStateFromPlan(plan.ESQL, state.ESQL)
 }
 
-func alignDatatableNoESQLStateFromPlan(plan, state *datatableNoESQLConfigModel) {
+func alignDatatableNoESQLStateFromPlan(plan, state *models.DatatableNoESQLConfigModel) {
 	if plan == nil || state == nil {
 		return
 	}
 	alignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
 }
 
-func alignDatatableESQLStateFromPlan(plan, state *datatableESQLConfigModel) {
+func alignDatatableESQLStateFromPlan(plan, state *models.DatatableESQLConfigModel) {
 	if plan == nil || state == nil {
 		return
 	}
 	alignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
 }
 
-func alignGaugeStateFromPlan(ctx context.Context, plan, state *gaugeConfigModel) {
+func alignGaugeStateFromPlan(ctx context.Context, plan, state *models.GaugeConfigModel) {
 	if plan == nil || state == nil {
 		return
 	}
@@ -101,7 +102,7 @@ func alignGaugeStateFromPlan(ctx context.Context, plan, state *gaugeConfigModel)
 	}
 }
 
-func alignHeatmapStateFromPlan(ctx context.Context, plan, state *heatmapConfigModel) {
+func alignHeatmapStateFromPlan(ctx context.Context, plan, state *models.HeatmapConfigModel) {
 	if plan == nil || state == nil {
 		return
 	}
@@ -109,7 +110,7 @@ func alignHeatmapStateFromPlan(ctx context.Context, plan, state *heatmapConfigMo
 	preservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.MetricJSON, &state.MetricJSON)
 }
 
-func alignLegacyMetricStateFromPlan(ctx context.Context, plan, state *legacyMetricConfigModel) {
+func alignLegacyMetricStateFromPlan(ctx context.Context, plan, state *models.LegacyMetricConfigModel) {
 	if plan == nil || state == nil {
 		return
 	}
@@ -117,7 +118,7 @@ func alignLegacyMetricStateFromPlan(ctx context.Context, plan, state *legacyMetr
 	preservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.MetricJSON, &state.MetricJSON)
 }
 
-func alignMetricStateFromPlan(plan, state *metricChartConfigModel) {
+func alignMetricStateFromPlan(plan, state *models.MetricChartConfigModel) {
 	if plan == nil || state == nil {
 		return
 	}
@@ -130,7 +131,7 @@ func alignMetricStateFromPlan(plan, state *metricChartConfigModel) {
 	}
 }
 
-func alignMosaicStateFromPlan(plan, state *mosaicConfigModel) {
+func alignMosaicStateFromPlan(plan, state *models.MosaicConfigModel) {
 	if plan == nil || state == nil {
 		return
 	}
@@ -141,14 +142,14 @@ func alignMosaicStateFromPlan(plan, state *mosaicConfigModel) {
 	preserveKnownTfFloat64IfStateNull(plan.Sampling, &state.Sampling)
 }
 
-func alignPieStateFromPlan(plan, state *pieChartConfigModel) {
+func alignPieStateFromPlan(plan, state *models.PieChartConfigModel) {
 	if plan == nil || state == nil {
 		return
 	}
 	alignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
 }
 
-func alignRegionMapStateFromPlan(ctx context.Context, plan, state *regionMapConfigModel) {
+func alignRegionMapStateFromPlan(ctx context.Context, plan, state *models.RegionMapConfigModel) {
 	if plan == nil || state == nil {
 		return
 	}
@@ -156,7 +157,7 @@ func alignRegionMapStateFromPlan(ctx context.Context, plan, state *regionMapConf
 	preservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.MetricJSON, &state.MetricJSON)
 }
 
-func alignTagcloudStateFromPlan(ctx context.Context, plan, state *tagcloudConfigModel) {
+func alignTagcloudStateFromPlan(ctx context.Context, plan, state *models.TagcloudConfigModel) {
 	if plan == nil || state == nil {
 		return
 	}
@@ -173,7 +174,7 @@ func alignTagcloudStateFromPlan(ctx context.Context, plan, state *tagcloudConfig
 	}
 }
 
-func alignTreemapStateFromPlan(plan, state *treemapConfigModel) {
+func alignTreemapStateFromPlan(plan, state *models.TreemapConfigModel) {
 	if plan == nil || state == nil {
 		return
 	}
@@ -182,7 +183,7 @@ func alignTreemapStateFromPlan(plan, state *treemapConfigModel) {
 	preserveKnownTfFloat64IfStateNull(plan.Sampling, &state.Sampling)
 }
 
-func alignWaffleStateFromPlan(ctx context.Context, plan, state *waffleConfigModel) {
+func alignWaffleStateFromPlan(ctx context.Context, plan, state *models.WaffleConfigModel) {
 	if plan == nil || state == nil {
 		return
 	}
@@ -197,7 +198,7 @@ func alignWaffleStateFromPlan(ctx context.Context, plan, state *waffleConfigMode
 	}
 }
 
-func alignEsqlControlStateFromPlan(plan, state *esqlControlConfigModel) {
+func alignEsqlControlStateFromPlan(plan, state *models.EsqlControlConfigModel) {
 	if plan == nil || state == nil {
 		return
 	}
@@ -340,7 +341,7 @@ func preserveNormalizedJSONSemanticEquality(plan jsontypes.Normalized, state *js
 	}
 }
 
-func alignGaugeEsqlMetricStateFromPlan(plan, state *gaugeEsqlMetric) {
+func alignGaugeEsqlMetricStateFromPlan(plan, state *models.GaugeEsqlMetric) {
 	if plan == nil || state == nil {
 		return
 	}
@@ -355,7 +356,7 @@ func alignGaugeEsqlMetricStateFromPlan(plan, state *gaugeEsqlMetric) {
 	}
 }
 
-func gaugeEsqlTitleMatchesKibanaDefaultVisible(title *gaugeEsqlTitle) bool {
+func gaugeEsqlTitleMatchesKibanaDefaultVisible(title *models.GaugeEsqlTitle) bool {
 	if title == nil {
 		return false
 	}
@@ -364,7 +365,7 @@ func gaugeEsqlTitleMatchesKibanaDefaultVisible(title *gaugeEsqlTitle) bool {
 	return textUnset && visibleTrue
 }
 
-func gaugeEsqlTicksMatchesKibanaDefaultBands(ticks *gaugeEsqlTicks) bool {
+func gaugeEsqlTicksMatchesKibanaDefaultBands(ticks *models.GaugeEsqlTicks) bool {
 	if ticks == nil {
 		return false
 	}

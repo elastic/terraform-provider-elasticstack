@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -42,7 +43,7 @@ func Test_populateMarkdownFromAPIByValue_mapsAllFields(t *testing.T) {
 	cfg.Settings.OpenLinksInNewTab = &openLinks
 	cfg.HideBorder = &hideFalse
 
-	pm := &panelModel{}
+	pm := &models.PanelModel{}
 	populateMarkdownFromAPIByValue(pm, nil, cfg)
 	require.NotNil(t, pm.MarkdownConfig)
 	require.NotNil(t, pm.MarkdownConfig.ByValue)
@@ -62,15 +63,15 @@ func Test_populateMarkdownFromAPIByValue_openLinksNullPreservedWhenAPIDefaultTru
 	cfg := kbapi.KbnDashboardPanelTypeMarkdownConfig0{Content: "hi"}
 	cfg.Settings.OpenLinksInNewTab = &apiTrue
 
-	tfPanel := &panelModel{
-		MarkdownConfig: &markdownConfigModel{
-			ByValue: &markdownConfigByValueModel{
+	tfPanel := &models.PanelModel{
+		MarkdownConfig: &models.MarkdownConfigModel{
+			ByValue: &models.MarkdownConfigByValueModel{
 				Content:  types.StringValue("hi"),
-				Settings: &markdownConfigSettingsModel{OpenLinksInNewTab: types.BoolNull()},
+				Settings: &models.MarkdownConfigSettingsModel{OpenLinksInNewTab: types.BoolNull()},
 			},
 		},
 	}
-	pm := &panelModel{}
+	pm := &models.PanelModel{}
 	populateMarkdownFromAPIByValue(pm, tfPanel, cfg)
 	require.NotNil(t, pm.MarkdownConfig.ByValue.Settings)
 	assert.True(t, pm.MarkdownConfig.ByValue.Settings.OpenLinksInNewTab.IsNull())
@@ -81,16 +82,16 @@ func Test_populateMarkdownFromAPIByValue_hideBorderNullPreservedWhenAPIEchoesFal
 	cfg := kbapi.KbnDashboardPanelTypeMarkdownConfig0{Content: "hi"}
 	cfg.HideBorder = &apiFalse
 
-	tfPanel := &panelModel{
-		MarkdownConfig: &markdownConfigModel{
-			ByValue: &markdownConfigByValueModel{
+	tfPanel := &models.PanelModel{
+		MarkdownConfig: &models.MarkdownConfigModel{
+			ByValue: &models.MarkdownConfigByValueModel{
 				Content:    types.StringValue("hi"),
 				HideBorder: types.BoolNull(),
-				Settings:   &markdownConfigSettingsModel{},
+				Settings:   &models.MarkdownConfigSettingsModel{},
 			},
 		},
 	}
-	pm := &panelModel{}
+	pm := &models.PanelModel{}
 	populateMarkdownFromAPIByValue(pm, tfPanel, cfg)
 	assert.True(t, pm.MarkdownConfig.ByValue.HideBorder.IsNull())
 }
@@ -100,16 +101,16 @@ func Test_populateMarkdownFromAPIByValue_hideBorderNullPreservedWhenAPIEchoesTru
 	cfg := kbapi.KbnDashboardPanelTypeMarkdownConfig0{Content: "hi"}
 	cfg.HideBorder = &apiTrue
 
-	tfPanel := &panelModel{
-		MarkdownConfig: &markdownConfigModel{
-			ByValue: &markdownConfigByValueModel{
+	tfPanel := &models.PanelModel{
+		MarkdownConfig: &models.MarkdownConfigModel{
+			ByValue: &models.MarkdownConfigByValueModel{
 				Content:    types.StringValue("hi"),
 				HideBorder: types.BoolNull(),
-				Settings:   &markdownConfigSettingsModel{},
+				Settings:   &models.MarkdownConfigSettingsModel{},
 			},
 		},
 	}
-	pm := &panelModel{}
+	pm := &models.PanelModel{}
 	populateMarkdownFromAPIByValue(pm, tfPanel, cfg)
 	assert.True(t, pm.MarkdownConfig.ByValue.HideBorder.IsNull())
 }
@@ -153,7 +154,7 @@ func Test_populateMarkdownFromAPIByReference_mapsPresentationFields(t *testing.T
 		Title:       &title,
 		HideBorder:  &border,
 	}
-	pm := &panelModel{}
+	pm := &models.PanelModel{}
 	populateMarkdownFromAPIByReference(pm, nil, cfg)
 	require.NotNil(t, pm.MarkdownConfig.ByReference)
 	require.Nil(t, pm.MarkdownConfig.ByValue)
@@ -170,23 +171,23 @@ func Test_populateMarkdownFromAPIByReference_hideBorderNullPreservedWhenAPIFalse
 	cfg := kbapi.KbnDashboardPanelTypeMarkdownConfig1{RefId: "r1"}
 	cfg.HideBorder = &apiFalse
 
-	tfPanel := &panelModel{
-		MarkdownConfig: &markdownConfigModel{
-			ByReference: &markdownConfigByReferenceModel{
+	tfPanel := &models.PanelModel{
+		MarkdownConfig: &models.MarkdownConfigModel{
+			ByReference: &models.MarkdownConfigByReferenceModel{
 				RefID:      types.StringValue("r1"),
 				HideBorder: types.BoolNull(),
 			},
 		},
 	}
-	pm := &panelModel{}
+	pm := &models.PanelModel{}
 	populateMarkdownFromAPIByReference(pm, tfPanel, cfg)
 	assert.True(t, pm.MarkdownConfig.ByReference.HideBorder.IsNull())
 }
 
 func Test_markdownByReferenceRoundTripViaUnion(t *testing.T) {
-	pm := panelModel{
-		MarkdownConfig: &markdownConfigModel{
-			ByReference: &markdownConfigByReferenceModel{
+	pm := models.PanelModel{
+		MarkdownConfig: &models.MarkdownConfigModel{
+			ByReference: &models.MarkdownConfigByReferenceModel{
 				RefID: types.StringValue("lib-md-1"),
 				Title: types.StringValue("shared"),
 			},
@@ -197,7 +198,7 @@ func Test_markdownByReferenceRoundTripViaUnion(t *testing.T) {
 	require.NoError(t, union.FromKbnDashboardPanelTypeMarkdownConfig1(cfg1))
 	decoded, err := union.AsKbnDashboardPanelTypeMarkdownConfig1()
 	require.NoError(t, err)
-	pm2 := &panelModel{}
+	pm2 := &models.PanelModel{}
 	populateMarkdownFromAPIByReference(pm2, nil, decoded)
 	require.NotNil(t, pm2.MarkdownConfig.ByReference)
 	assert.Equal(t, "lib-md-1", pm2.MarkdownConfig.ByReference.RefID.ValueString())
@@ -205,15 +206,15 @@ func Test_markdownByReferenceRoundTripViaUnion(t *testing.T) {
 }
 
 func Test_buildMarkdownConfig(t *testing.T) {
-	pm := panelModel{
-		MarkdownConfig: &markdownConfigModel{
-			ByValue: &markdownConfigByValueModel{
+	pm := models.PanelModel{
+		MarkdownConfig: &models.MarkdownConfigModel{
+			ByValue: &models.MarkdownConfigByValueModel{
 				Content:     types.StringValue("hello"),
 				Description: types.StringValue("desc"),
 				HideTitle:   types.BoolValue(false),
 				Title:       types.StringValue("panel title"),
 				HideBorder:  types.BoolValue(true),
-				Settings: &markdownConfigSettingsModel{
+				Settings: &models.MarkdownConfigSettingsModel{
 					OpenLinksInNewTab: types.BoolValue(true),
 				},
 			},
@@ -235,9 +236,9 @@ func Test_buildMarkdownConfig(t *testing.T) {
 }
 
 func Test_buildMarkdownConfigByReference(t *testing.T) {
-	pm := panelModel{
-		MarkdownConfig: &markdownConfigModel{
-			ByReference: &markdownConfigByReferenceModel{
+	pm := models.PanelModel{
+		MarkdownConfig: &models.MarkdownConfigModel{
+			ByReference: &models.MarkdownConfigByReferenceModel{
 				RefID:       types.StringValue("ref-99"),
 				Description: types.StringValue("d"),
 				HideTitle:   types.BoolValue(true),
@@ -259,13 +260,13 @@ func Test_buildMarkdownConfigByReference(t *testing.T) {
 }
 
 func Test_markdownConfigByValueRoundTripViaUnion(t *testing.T) {
-	pm := panelModel{
-		MarkdownConfig: &markdownConfigModel{
-			ByValue: &markdownConfigByValueModel{
+	pm := models.PanelModel{
+		MarkdownConfig: &models.MarkdownConfigModel{
+			ByValue: &models.MarkdownConfigByValueModel{
 				Content:    types.StringValue("round trip"),
 				HideTitle:  types.BoolValue(true),
 				HideBorder: types.BoolValue(false),
-				Settings: &markdownConfigSettingsModel{
+				Settings: &models.MarkdownConfigSettingsModel{
 					OpenLinksInNewTab: types.BoolValue(false),
 				},
 			},
@@ -279,7 +280,7 @@ func Test_markdownConfigByValueRoundTripViaUnion(t *testing.T) {
 	decoded, err := union.AsKbnDashboardPanelTypeMarkdownConfig0()
 	require.NoError(t, err)
 
-	pm2 := &panelModel{}
+	pm2 := &models.PanelModel{}
 	populateMarkdownFromAPIByValue(pm2, nil, decoded)
 	require.NotNil(t, pm2.MarkdownConfig)
 	require.NotNil(t, pm2.MarkdownConfig.ByValue)

@@ -23,23 +23,17 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// lensChartPresentationTFModel mirrors optional chart-root presentation fields on typed Lens configs.
-type lensChartPresentationTFModel struct {
-	TimeRange      *timeRangeModel            `tfsdk:"time_range"`
-	HideTitle      types.Bool                 `tfsdk:"hide_title"`
-	HideBorder     types.Bool                 `tfsdk:"hide_border"`
-	ReferencesJSON jsontypes.Normalized       `tfsdk:"references_json"`
-	Drilldowns     []lensDrilldownItemTFModel `tfsdk:"drilldowns"`
-}
+// models.LensChartPresentationTFModel mirrors optional chart-root presentation fields on typed Lens configs.
 
-func newNullLensChartPresentationTFModel() lensChartPresentationTFModel {
-	return lensChartPresentationTFModel{
+func newNullLensChartPresentationTFModel() models.LensChartPresentationTFModel {
+	return models.LensChartPresentationTFModel{
 		TimeRange:      nil,
 		HideTitle:      types.BoolNull(),
 		HideBorder:     types.BoolNull(),
@@ -57,7 +51,7 @@ type lensChartPresentationWrites struct {
 	DrilldownsRaw [][]byte
 }
 
-func lensChartPresentationWritesFor(dashboard *dashboardModel, in lensChartPresentationTFModel) (lensChartPresentationWrites, diag.Diagnostics) {
+func lensChartPresentationWritesFor(dashboard *models.DashboardModel, in models.LensChartPresentationTFModel) (lensChartPresentationWrites, diag.Diagnostics) {
 	var writes lensChartPresentationWrites
 	var diags diag.Diagnostics
 
@@ -122,39 +116,9 @@ func decodeLensDrilldownSlice[Item any](raw [][]byte) ([]Item, diag.Diagnostics)
 	return out, diags
 }
 
-// lensDrilldownItemTFModel is one drilldown entry; exactly one nested variant is set after validation.
-type lensDrilldownItemTFModel struct {
-	DashboardDrilldown *lensDashboardDrilldownTFModel `tfsdk:"dashboard_drilldown"`
-	DiscoverDrilldown  *lensDiscoverDrilldownTFModel  `tfsdk:"discover_drilldown"`
-	URLDrilldown       *lensURLDrilldownTFModel       `tfsdk:"url_drilldown"`
-}
-
-type lensDashboardDrilldownTFModel struct {
-	DashboardID  types.String `tfsdk:"dashboard_id"`
-	Label        types.String `tfsdk:"label"`
-	Trigger      types.String `tfsdk:"trigger"`
-	UseFilters   types.Bool   `tfsdk:"use_filters"`
-	UseTimeRange types.Bool   `tfsdk:"use_time_range"`
-	OpenInNewTab types.Bool   `tfsdk:"open_in_new_tab"`
-}
-
-type lensDiscoverDrilldownTFModel struct {
-	Label        types.String `tfsdk:"label"`
-	Trigger      types.String `tfsdk:"trigger"`
-	OpenInNewTab types.Bool   `tfsdk:"open_in_new_tab"`
-}
-
-type lensURLDrilldownTFModel struct {
-	URL          types.String `tfsdk:"url"`
-	Label        types.String `tfsdk:"label"`
-	Trigger      types.String `tfsdk:"trigger"`
-	EncodeURL    types.Bool   `tfsdk:"encode_url"`
-	OpenInNewTab types.Bool   `tfsdk:"open_in_new_tab"`
-}
-
 const lensDrilldownTriggerOnApplyFilter = "on_apply_filter"
 
-func lensDrilldownsToRawJSON(items []lensDrilldownItemTFModel) ([][]byte, diag.Diagnostics) {
+func lensDrilldownsToRawJSON(items []models.LensDrilldownItemTFModel) ([][]byte, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if len(items) == 0 {
 		return nil, diags
@@ -172,7 +136,7 @@ func lensDrilldownsToRawJSON(items []lensDrilldownItemTFModel) ([][]byte, diag.D
 	return out, diags
 }
 
-func lensDrilldownItemToRawJSON(item lensDrilldownItemTFModel, index int) ([]byte, diag.Diagnostics) {
+func lensDrilldownItemToRawJSON(item models.LensDrilldownItemTFModel, index int) ([]byte, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	path := fmt.Sprintf("drilldowns[%d]", index)
 
@@ -282,7 +246,7 @@ func lensTimeRangesAPILiteralEqual(a, b kbapi.KbnEsQueryServerTimeRangeSchema) b
 	return lensTimeRangeModeString(a.Mode) == lensTimeRangeModeString(b.Mode)
 }
 
-func dashboardLensComparableTimeRange(dashboard *dashboardModel) (kbapi.KbnEsQueryServerTimeRangeSchema, bool) {
+func dashboardLensComparableTimeRange(dashboard *models.DashboardModel) (kbapi.KbnEsQueryServerTimeRangeSchema, bool) {
 	if dashboard == nil || dashboard.TimeRange == nil {
 		return kbapi.KbnEsQueryServerTimeRangeSchema{}, false
 	}
@@ -290,7 +254,7 @@ func dashboardLensComparableTimeRange(dashboard *dashboardModel) (kbapi.KbnEsQue
 }
 
 // chartTimeRangeFromAPI maps a chart-root API time range into Terraform state with REQ-038/REQ-009 null-preservation semantics.
-func chartTimeRangeFromAPI(dashboard *dashboardModel, apiTimeRange kbapi.KbnEsQueryServerTimeRangeSchema, priorState *timeRangeModel) *timeRangeModel {
+func chartTimeRangeFromAPI(dashboard *models.DashboardModel, apiTimeRange kbapi.KbnEsQueryServerTimeRangeSchema, priorState *models.TimeRangeModel) *models.TimeRangeModel {
 	// unmarshals can yield a zero-valued time_range when the wire JSON omits the object.
 	// Treat that as "no chart-level time_range" so TF state preserves null while the write path still inherits dashboard time.
 	if apiTimeRange.From == "" && apiTimeRange.To == "" && (apiTimeRange.Mode == nil || lensTimeRangeModeString(apiTimeRange.Mode) == "") {
@@ -307,8 +271,8 @@ func chartTimeRangeFromAPI(dashboard *dashboardModel, apiTimeRange kbapi.KbnEsQu
 	return timeRangeModelFromAPIWithModePreservation(apiTimeRange, priorState)
 }
 
-func timeRangeModelFromAPIWithModePreservation(api kbapi.KbnEsQueryServerTimeRangeSchema, prior *timeRangeModel) *timeRangeModel {
-	out := &timeRangeModel{
+func timeRangeModelFromAPIWithModePreservation(api kbapi.KbnEsQueryServerTimeRangeSchema, prior *models.TimeRangeModel) *models.TimeRangeModel {
+	out := &models.TimeRangeModel{
 		From: types.StringValue(api.From),
 		To:   types.StringValue(api.To),
 	}
@@ -387,13 +351,13 @@ func lensDrilldownsAPIToWire[Item any](items *[]Item) (wire [][]byte, omitted bo
 }
 
 // drilldownsFromAPI decodes API drilldown payloads (JSON-encoded union items) into Terraform list items.
-func drilldownsFromAPI(wire [][]byte) ([]lensDrilldownItemTFModel, diag.Diagnostics) {
+func drilldownsFromAPI(wire [][]byte) ([]models.LensDrilldownItemTFModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if len(wire) == 0 {
 		return nil, diags
 	}
 
-	out := make([]lensDrilldownItemTFModel, 0, len(wire))
+	out := make([]models.LensDrilldownItemTFModel, 0, len(wire))
 	for i, b := range wire {
 		item, d := lensDrilldownItemFromAPIJSON(b, i)
 		diags.Append(d...)
@@ -406,7 +370,7 @@ func drilldownsFromAPI(wire [][]byte) ([]lensDrilldownItemTFModel, diag.Diagnost
 	return out, diags
 }
 
-func lensDrilldownItemFromAPIJSON(raw []byte, index int) (lensDrilldownItemTFModel, diag.Diagnostics) {
+func lensDrilldownItemFromAPIJSON(raw []byte, index int) (models.LensDrilldownItemTFModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	path := fmt.Sprintf("drilldowns[%d]", index)
 
@@ -415,7 +379,7 @@ func lensDrilldownItemFromAPIJSON(raw []byte, index int) (lensDrilldownItemTFMod
 	}
 	if err := json.Unmarshal(raw, &head); err != nil {
 		diags.AddError("Invalid "+path, err.Error())
-		return lensDrilldownItemTFModel{}, diags
+		return models.LensDrilldownItemTFModel{}, diags
 	}
 
 	switch head.Type {
@@ -431,7 +395,7 @@ func lensDrilldownItemFromAPIJSON(raw []byte, index int) (lensDrilldownItemTFMod
 		}
 		if err := json.Unmarshal(raw, &body); err != nil {
 			diags.AddError("Invalid "+path+".dashboard_drilldown", err.Error())
-			return lensDrilldownItemTFModel{}, diags
+			return models.LensDrilldownItemTFModel{}, diags
 		}
 
 		trigger := body.Trigger
@@ -439,8 +403,8 @@ func lensDrilldownItemFromAPIJSON(raw []byte, index int) (lensDrilldownItemTFMod
 			trigger = lensDrilldownTriggerOnApplyFilter
 		}
 
-		return lensDrilldownItemTFModel{
-			DashboardDrilldown: &lensDashboardDrilldownTFModel{
+		return models.LensDrilldownItemTFModel{
+			DashboardDrilldown: &models.LensDashboardDrilldownTFModel{
 				DashboardID:  types.StringValue(body.DashboardID),
 				Label:        types.StringValue(body.Label),
 				Trigger:      types.StringValue(trigger),
@@ -458,7 +422,7 @@ func lensDrilldownItemFromAPIJSON(raw []byte, index int) (lensDrilldownItemTFMod
 		}
 		if err := json.Unmarshal(raw, &body); err != nil {
 			diags.AddError("Invalid "+path+".discover_drilldown", err.Error())
-			return lensDrilldownItemTFModel{}, diags
+			return models.LensDrilldownItemTFModel{}, diags
 		}
 
 		trigger := body.Trigger
@@ -466,8 +430,8 @@ func lensDrilldownItemFromAPIJSON(raw []byte, index int) (lensDrilldownItemTFMod
 			trigger = lensDrilldownTriggerOnApplyFilter
 		}
 
-		return lensDrilldownItemTFModel{
-			DiscoverDrilldown: &lensDiscoverDrilldownTFModel{
+		return models.LensDrilldownItemTFModel{
+			DiscoverDrilldown: &models.LensDiscoverDrilldownTFModel{
 				Label:        types.StringValue(body.Label),
 				Trigger:      types.StringValue(trigger),
 				OpenInNewTab: types.BoolPointerValue(body.OpenInNewTab),
@@ -484,11 +448,11 @@ func lensDrilldownItemFromAPIJSON(raw []byte, index int) (lensDrilldownItemTFMod
 		}
 		if err := json.Unmarshal(raw, &body); err != nil {
 			diags.AddError("Invalid "+path+".url_drilldown", err.Error())
-			return lensDrilldownItemTFModel{}, diags
+			return models.LensDrilldownItemTFModel{}, diags
 		}
 
-		return lensDrilldownItemTFModel{
-			URLDrilldown: &lensURLDrilldownTFModel{
+		return models.LensDrilldownItemTFModel{
+			URLDrilldown: &models.LensURLDrilldownTFModel{
 				URL:          types.StringValue(body.URL),
 				Label:        types.StringValue(body.Label),
 				Trigger:      types.StringValue(body.Trigger),
@@ -499,29 +463,29 @@ func lensDrilldownItemFromAPIJSON(raw []byte, index int) (lensDrilldownItemTFMod
 
 	default:
 		diags.AddError("Invalid "+path, fmt.Sprintf("Unknown drilldown type %q", head.Type))
-		return lensDrilldownItemTFModel{}, diags
+		return models.LensDrilldownItemTFModel{}, diags
 	}
 }
 
 // lensChartPresentationReadsFor maps optional chart-root presentation API fields into Terraform state with REQ-009-style null preservation.
 func lensChartPresentationReadsFor(
 	ctx context.Context,
-	dashboard *dashboardModel,
-	prior *lensChartPresentationTFModel,
+	dashboard *models.DashboardModel,
+	prior *models.LensChartPresentationTFModel,
 	apiTimeRange kbapi.KbnEsQueryServerTimeRangeSchema,
 	hideTitle *bool,
 	hideBorder *bool,
 	refs *[]kbapi.KbnContentManagementUtilsReferenceSchema,
 	drilldownWire [][]byte,
 	drilldownsOmitted bool,
-) (lensChartPresentationTFModel, diag.Diagnostics) {
+) (models.LensChartPresentationTFModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	var priorTime *timeRangeModel
+	var priorTime *models.TimeRangeModel
 	var priorRefs jsontypes.Normalized
 	var priorHideTitle types.Bool
 	var priorHideBorder types.Bool
-	var priorDrills []lensDrilldownItemTFModel
+	var priorDrills []models.LensDrilldownItemTFModel
 
 	if prior != nil {
 		priorTime = prior.TimeRange
@@ -535,7 +499,7 @@ func lensChartPresentationReadsFor(
 		priorRefs = jsontypes.NewNormalizedNull()
 	}
 
-	var out lensChartPresentationTFModel
+	var out models.LensChartPresentationTFModel
 	out.TimeRange = chartTimeRangeFromAPI(dashboard, apiTimeRange, priorTime)
 	out.HideTitle = lensPresentationOptionalBoolRead(hideTitle, priorHideTitle)
 	out.HideBorder = lensPresentationOptionalBoolRead(hideBorder, priorHideBorder)
@@ -543,7 +507,7 @@ func lensChartPresentationReadsFor(
 	refNorm, refDiags := lensPresentationReferencesJSONRead(ctx, priorRefs, refs)
 	diags.Append(refDiags...)
 	if refDiags.HasError() {
-		return lensChartPresentationTFModel{}, diags
+		return models.LensChartPresentationTFModel{}, diags
 	}
 	out.ReferencesJSON = refNorm
 
@@ -551,7 +515,7 @@ func lensChartPresentationReadsFor(
 		items, ddDiags := drilldownsFromAPI(drilldownWire)
 		diags.Append(ddDiags...)
 		if ddDiags.HasError() {
-			return lensChartPresentationTFModel{}, diags
+			return models.LensChartPresentationTFModel{}, diags
 		}
 		out.Drilldowns = items
 	} else {

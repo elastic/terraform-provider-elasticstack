@@ -24,61 +24,12 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
-
-type panelModel struct {
-	Type                          types.String                                      `tfsdk:"type"`
-	Grid                          panelGridModel                                    `tfsdk:"grid"`
-	ID                            types.String                                      `tfsdk:"id"`
-	MarkdownConfig                *markdownConfigModel                              `tfsdk:"markdown_config"`
-	TimeSliderControlConfig       *timeSliderControlConfigModel                     `tfsdk:"time_slider_control_config"`
-	SloBurnRateConfig             *sloBurnRateConfigModel                           `tfsdk:"slo_burn_rate_config"`
-	SloOverviewConfig             *sloOverviewConfigModel                           `tfsdk:"slo_overview_config"`
-	SloErrorBudgetConfig          *sloErrorBudgetConfigModel                        `tfsdk:"slo_error_budget_config"`
-	EsqlControlConfig             *esqlControlConfigModel                           `tfsdk:"esql_control_config"`
-	OptionsListControlConfig      *optionsListControlConfigModel                    `tfsdk:"options_list_control_config"`
-	RangeSliderControlConfig      *rangeSliderControlConfigModel                    `tfsdk:"range_slider_control_config"`
-	SyntheticsStatsOverviewConfig *syntheticsStatsOverviewConfigModel               `tfsdk:"synthetics_stats_overview_config"`
-	SyntheticsMonitorsConfig      *syntheticsMonitorsConfigModel                    `tfsdk:"synthetics_monitors_config"`
-	LensDashboardAppConfig        *lensDashboardAppConfigModel                      `tfsdk:"lens_dashboard_app_config"`
-	VisConfig                     *visConfigModel                                   `tfsdk:"vis_config"`
-	ImageConfig                   *imagePanelConfigModel                            `tfsdk:"image_config"`
-	SloAlertsConfig               *sloAlertsPanelConfigModel                        `tfsdk:"slo_alerts_config"`
-	DiscoverSessionConfig         *discoverSessionPanelConfigModel                  `tfsdk:"discover_session_config"`
-	ConfigJSON                    customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config_json"`
-}
-
-// pinnedPanelModel is one dashboard pinned control bar entry (no grid placement).
-type pinnedPanelModel struct {
-	Type                     types.String                   `tfsdk:"type"`
-	TimeSliderControlConfig  *timeSliderControlConfigModel  `tfsdk:"time_slider_control_config"`
-	EsqlControlConfig        *esqlControlConfigModel        `tfsdk:"esql_control_config"`
-	OptionsListControlConfig *optionsListControlConfigModel `tfsdk:"options_list_control_config"`
-	RangeSliderControlConfig *rangeSliderControlConfigModel `tfsdk:"range_slider_control_config"`
-}
-
-type panelGridModel struct {
-	X types.Int64 `tfsdk:"x"`
-	Y types.Int64 `tfsdk:"y"`
-	W types.Int64 `tfsdk:"w"`
-	H types.Int64 `tfsdk:"h"`
-}
-
-type sectionModel struct {
-	Title     types.String     `tfsdk:"title"`
-	ID        types.String     `tfsdk:"id"`
-	Collapsed types.Bool       `tfsdk:"collapsed"`
-	Grid      sectionGridModel `tfsdk:"grid"`
-	Panels    []panelModel     `tfsdk:"panels"`
-}
-
-type sectionGridModel struct {
-	Y types.Int64 `tfsdk:"y"`
-}
 
 var lensVisConverters = []lensVisualizationConverter{
 	newXYChartPanelConfigConverter(),
@@ -95,25 +46,25 @@ var lensVisConverters = []lensVisualizationConverter{
 	newWafflePanelConfigConverter(),
 }
 
-func (m *dashboardModel) mapPanelsFromAPI(ctx context.Context, apiPanels *kbapi.DashboardPanels) ([]panelModel, []sectionModel, diag.Diagnostics) {
+func dashboardMapPanelsFromAPI(ctx context.Context, m *models.DashboardModel, apiPanels *kbapi.DashboardPanels) ([]models.PanelModel, []models.SectionModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if apiPanels == nil || len(*apiPanels) == 0 {
 		return nil, nil, diags
 	}
 
-	var panels []panelModel
-	var sections []sectionModel
+	var panels []models.PanelModel
+	var sections []models.SectionModel
 
 	for _, item := range *apiPanels {
 		// Try section first; this avoids treating section items as panels.
 		section, err := item.AsKbnDashboardSection()
 		if err == nil && section.Title != "" {
 			tfSectionIndex := len(sections)
-			var tfSection *sectionModel
+			var tfSection *models.SectionModel
 			if tfSectionIndex < len(m.Sections) {
 				tfSection = &m.Sections[tfSectionIndex]
 			}
-			sectionModel, d := m.mapSectionFromAPI(ctx, tfSection, section)
+			sectionModel, d := dashboardMapSectionFromAPI(ctx, m, tfSection, section)
 			diags.Append(d...)
 			if diags.HasError() {
 				return nil, nil, diags
@@ -125,12 +76,12 @@ func (m *dashboardModel) mapPanelsFromAPI(ctx context.Context, apiPanels *kbapi.
 		panelItem, err := item.AsDashboardPanelItem()
 		if err == nil {
 			tfPanelIndex := len(panels)
-			var tfPanel *panelModel
+			var tfPanel *models.PanelModel
 			if tfPanelIndex < len(m.Panels) {
 				tfPanel = &m.Panels[tfPanelIndex]
 			}
 
-			panel, d := m.mapPanelFromAPI(ctx, tfPanel, panelItem)
+			panel, d := dashboardMapPanelFromAPI(ctx, m, tfPanel, panelItem)
 			diags.Append(d...)
 			if diags.HasError() {
 				return nil, nil, diags
@@ -143,17 +94,17 @@ func (m *dashboardModel) mapPanelsFromAPI(ctx context.Context, apiPanels *kbapi.
 	return panels, sections, diags
 }
 
-func (m *dashboardModel) mapSectionFromAPI(ctx context.Context, tfSection *sectionModel, section kbapi.KbnDashboardSection) (sectionModel, diag.Diagnostics) {
+func dashboardMapSectionFromAPI(ctx context.Context, m *models.DashboardModel, tfSection *models.SectionModel, section kbapi.KbnDashboardSection) (models.SectionModel, diag.Diagnostics) {
 	collapsed := types.BoolPointerValue(section.Collapsed)
 	if tfSection != nil && !typeutils.IsKnown(tfSection.Collapsed) && section.Collapsed != nil && !*section.Collapsed {
 		collapsed = types.BoolNull()
 	}
 
-	sm := sectionModel{
+	sm := models.SectionModel{
 		Title:     types.StringValue(section.Title),
 		Collapsed: collapsed,
 		ID:        types.StringPointerValue(section.Id),
-		Grid: sectionGridModel{
+		Grid: models.SectionGridModel{
 			Y: types.Int64Value(int64(section.Grid.Y)),
 		},
 	}
@@ -161,18 +112,18 @@ func (m *dashboardModel) mapSectionFromAPI(ctx context.Context, tfSection *secti
 	// Map section panels
 	var diags diag.Diagnostics
 	if section.Panels != nil {
-		var innerPanels []panelModel
+		var innerPanels []models.PanelModel
 		for _, p := range *section.Panels {
 			tfPanelIndex := len(innerPanels)
-			var tfPanel *panelModel
+			var tfPanel *models.PanelModel
 			if tfSection != nil && tfPanelIndex < len(tfSection.Panels) {
 				tfPanel = &tfSection.Panels[tfPanelIndex]
 			}
 
-			pm, d := m.mapPanelFromAPI(ctx, tfPanel, p)
+			pm, d := dashboardMapPanelFromAPI(ctx, m, tfPanel, p)
 			diags.Append(d...)
 			if diags.HasError() {
-				return sectionModel{}, diags
+				return models.SectionModel{}, diags
 			}
 
 			innerPanels = append(innerPanels, pm)
@@ -182,8 +133,8 @@ func (m *dashboardModel) mapSectionFromAPI(ctx context.Context, tfSection *secti
 	return sm, diags
 }
 
-func setPanelGridFromAPI(pm *panelModel, x, y float32, w, h *float32) {
-	pm.Grid = panelGridModel{
+func setPanelGridFromAPI(pm *models.PanelModel, x, y float32, w, h *float32) {
+	pm.Grid = models.PanelGridModel{
 		X: types.Int64Value(int64(x)),
 		Y: types.Int64Value(int64(y)),
 	}
@@ -199,7 +150,7 @@ func setPanelGridFromAPI(pm *panelModel, x, y float32, w, h *float32) {
 	}
 }
 
-func panelHasTypedConfig(pm *panelModel) bool {
+func panelHasTypedConfig(pm *models.PanelModel) bool {
 	return pm.MarkdownConfig != nil ||
 		pm.TimeSliderControlConfig != nil ||
 		pm.SloBurnRateConfig != nil ||
@@ -217,14 +168,14 @@ func panelHasTypedConfig(pm *panelModel) bool {
 		pm.DiscoverSessionConfig != nil
 }
 
-func panelUsesConfigJSONOnly(pm *panelModel) bool {
+func panelUsesConfigJSONOnly(pm *models.PanelModel) bool {
 	if pm == nil || !typeutils.IsKnown(pm.ConfigJSON) {
 		return false
 	}
 	return !panelHasTypedConfig(pm)
 }
 
-func clearPanelConfigBlocks(pm *panelModel) {
+func clearPanelConfigBlocks(pm *models.PanelModel) {
 	pm.MarkdownConfig = nil
 	pm.TimeSliderControlConfig = nil
 	pm.SloBurnRateConfig = nil
@@ -242,20 +193,20 @@ func clearPanelConfigBlocks(pm *panelModel) {
 	pm.DiscoverSessionConfig = nil
 }
 
-func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelModel, panelItem kbapi.DashboardPanelItem) (panelModel, diag.Diagnostics) {
+func dashboardMapPanelFromAPI(ctx context.Context, m *models.DashboardModel, tfPanel *models.PanelModel, panelItem kbapi.DashboardPanelItem) (models.PanelModel, diag.Diagnostics) {
 	// Start from the existing TF model when available (plan or prior state).
 	//
 	// Kibana may omit optional attributes on reads even when they were provided on
 	// writes. Seeding from the existing model allows individual panel converters
 	// to preserve already-known values when the API response doesn't include them.
-	var pm panelModel
+	var pm models.PanelModel
 	if tfPanel != nil {
 		pm = *tfPanel
 	}
 
 	discriminator, err := panelItem.Discriminator()
 	if err != nil {
-		return panelModel{}, diagutil.FrameworkDiagFromError(err)
+		return models.PanelModel{}, diagutil.FrameworkDiagFromError(err)
 	}
 	pm.Type = types.StringValue(discriminator)
 
@@ -264,7 +215,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 	case panelTypeMarkdown:
 		markdownPanel, err := panelItem.AsKbnDashboardPanelTypeMarkdown()
 		if err != nil {
-			return panelModel{}, diagutil.FrameworkDiagFromError(err)
+			return models.PanelModel{}, diagutil.FrameworkDiagFromError(err)
 		}
 		setPanelGridFromAPI(&pm, markdownPanel.Grid.X, markdownPanel.Grid.Y, markdownPanel.Grid.W, markdownPanel.Grid.H)
 		pm.ID = types.StringPointerValue(markdownPanel.Id)
@@ -336,7 +287,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 	case panelTypeSloOverview:
 		sloPanel, err := panelItem.AsKbnDashboardPanelTypeSloOverview()
 		if err != nil {
-			return panelModel{}, diagutil.FrameworkDiagFromError(err)
+			return models.PanelModel{}, diagutil.FrameworkDiagFromError(err)
 		}
 		setPanelGridFromAPI(&pm, sloPanel.Grid.X, sloPanel.Grid.Y, sloPanel.Grid.W, sloPanel.Grid.H)
 		pm.ID = types.StringPointerValue(sloPanel.Id)
@@ -346,7 +297,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 	case panelTypeTimeSlider:
 		tsPanel, err := panelItem.AsKbnDashboardPanelTypeTimeSliderControl()
 		if err != nil {
-			return panelModel{}, diagutil.FrameworkDiagFromError(err)
+			return models.PanelModel{}, diagutil.FrameworkDiagFromError(err)
 		}
 		setPanelGridFromAPI(&pm, tsPanel.Grid.X, tsPanel.Grid.Y, tsPanel.Grid.W, tsPanel.Grid.H)
 		pm.ID = types.StringPointerValue(tsPanel.Id)
@@ -359,7 +310,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 	case panelTypeSloBurnRate:
 		sbrPanel, err := panelItem.AsKbnDashboardPanelTypeSloBurnRate()
 		if err != nil {
-			return panelModel{}, diagutil.FrameworkDiagFromError(err)
+			return models.PanelModel{}, diagutil.FrameworkDiagFromError(err)
 		}
 		setPanelGridFromAPI(&pm, sbrPanel.Grid.X, sbrPanel.Grid.Y, sbrPanel.Grid.W, sbrPanel.Grid.H)
 		pm.ID = types.StringPointerValue(sbrPanel.Id)
@@ -368,7 +319,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 	case panelTypeEsqlControl:
 		esqlPanel, err := panelItem.AsKbnDashboardPanelTypeEsqlControl()
 		if err != nil {
-			return panelModel{}, diagutil.FrameworkDiagFromError(err)
+			return models.PanelModel{}, diagutil.FrameworkDiagFromError(err)
 		}
 		setPanelGridFromAPI(&pm, esqlPanel.Grid.X, esqlPanel.Grid.Y, esqlPanel.Grid.W, esqlPanel.Grid.H)
 		pm.ID = types.StringPointerValue(esqlPanel.Id)
@@ -378,7 +329,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 	case panelTypeOptionsListControl:
 		olPanel, err := panelItem.AsKbnDashboardPanelTypeOptionsListControl()
 		if err != nil {
-			return panelModel{}, diagutil.FrameworkDiagFromError(err)
+			return models.PanelModel{}, diagutil.FrameworkDiagFromError(err)
 		}
 		setPanelGridFromAPI(&pm, olPanel.Grid.X, olPanel.Grid.Y, olPanel.Grid.W, olPanel.Grid.H)
 		pm.ID = types.StringPointerValue(olPanel.Id)
@@ -389,7 +340,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 	case panelTypeRangeSlider:
 		rsPanel, err := panelItem.AsKbnDashboardPanelTypeRangeSliderControl()
 		if err != nil {
-			return panelModel{}, diagutil.FrameworkDiagFromError(err)
+			return models.PanelModel{}, diagutil.FrameworkDiagFromError(err)
 		}
 		setPanelGridFromAPI(&pm, rsPanel.Grid.X, rsPanel.Grid.Y, rsPanel.Grid.W, rsPanel.Grid.H)
 		pm.ID = types.StringPointerValue(rsPanel.Id)
@@ -399,7 +350,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 	case panelTypeVis:
 		visPanel, err := panelItem.AsKbnDashboardPanelTypeVis()
 		if err != nil {
-			return panelModel{}, diagutil.FrameworkDiagFromError(err)
+			return models.PanelModel{}, diagutil.FrameworkDiagFromError(err)
 		}
 		setPanelGridFromAPI(&pm, visPanel.Grid.X, visPanel.Grid.Y, visPanel.Grid.W, visPanel.Grid.H)
 		pm.ID = types.StringPointerValue(visPanel.Id)
@@ -459,11 +410,11 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 				)
 				break
 			}
-			pm.VisConfig = &visConfigModel{
-				ByValue: &visByValueModel{},
+			pm.VisConfig = &models.VisConfigModel{
+				ByValue: &models.VisByValueModel{},
 			}
-			seedWaffleLensByValueChartFromPriorPanel(&pm.VisConfig.ByValue.lensByValueChartBlocks, tfPanel)
-			d := converter.populateFromAttributes(ctx, m, tfPanel, &pm.VisConfig.ByValue.lensByValueChartBlocks, config0)
+			seedWaffleLensByValueChartFromPriorPanel(&pm.VisConfig.ByValue.LensByValueChartBlocks, tfPanel)
+			d := converter.populateFromAttributes(ctx, m, tfPanel, &pm.VisConfig.ByValue.LensByValueChartBlocks, config0)
 			diags.Append(d...)
 
 		default:
@@ -491,17 +442,17 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 				)
 				break
 			}
-			pm.VisConfig = &visConfigModel{
-				ByValue: &visByValueModel{},
+			pm.VisConfig = &models.VisConfigModel{
+				ByValue: &models.VisByValueModel{},
 			}
-			seedWaffleLensByValueChartFromPriorPanel(&pm.VisConfig.ByValue.lensByValueChartBlocks, tfPanel)
-			d := converter.populateFromAttributes(ctx, m, tfPanel, &pm.VisConfig.ByValue.lensByValueChartBlocks, config0)
+			seedWaffleLensByValueChartFromPriorPanel(&pm.VisConfig.ByValue.LensByValueChartBlocks, tfPanel)
+			d := converter.populateFromAttributes(ctx, m, tfPanel, &pm.VisConfig.ByValue.LensByValueChartBlocks, config0)
 			diags.Append(d...)
 		}
 	case panelTypeSloErrorBudget:
 		sebPanel, err := panelItem.AsKbnDashboardPanelTypeSloErrorBudget()
 		if err != nil {
-			return panelModel{}, diagutil.FrameworkDiagFromError(err)
+			return models.PanelModel{}, diagutil.FrameworkDiagFromError(err)
 		}
 		setPanelGridFromAPI(&pm, sebPanel.Grid.X, sebPanel.Grid.Y, sebPanel.Grid.W, sebPanel.Grid.H)
 		pm.ID = types.StringPointerValue(sebPanel.Id)
@@ -510,7 +461,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 	case panelTypeSyntheticsStatsOverview:
 		ssoPanel, err := panelItem.AsKbnDashboardPanelTypeSyntheticsStatsOverview()
 		if err != nil {
-			return panelModel{}, diagutil.FrameworkDiagFromError(err)
+			return models.PanelModel{}, diagutil.FrameworkDiagFromError(err)
 		}
 		setPanelGridFromAPI(&pm, ssoPanel.Grid.X, ssoPanel.Grid.Y, ssoPanel.Grid.W, ssoPanel.Grid.H)
 		pm.ID = types.StringPointerValue(ssoPanel.Id)
@@ -519,7 +470,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 	case panelTypeSyntheticsMonitors:
 		smPanel, err := panelItem.AsKbnDashboardPanelTypeSyntheticsMonitors()
 		if err != nil {
-			return panelModel{}, diagutil.FrameworkDiagFromError(err)
+			return models.PanelModel{}, diagutil.FrameworkDiagFromError(err)
 		}
 		setPanelGridFromAPI(&pm, smPanel.Grid.X, smPanel.Grid.Y, smPanel.Grid.W, smPanel.Grid.H)
 		pm.ID = types.StringPointerValue(smPanel.Id)
@@ -528,7 +479,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 	case panelTypeLensDashboardApp:
 		ldPanel, err := panelItem.AsKbnDashboardPanelTypeLensDashboardApp()
 		if err != nil {
-			return panelModel{}, diagutil.FrameworkDiagFromError(err)
+			return models.PanelModel{}, diagutil.FrameworkDiagFromError(err)
 		}
 		setPanelGridFromAPI(&pm, ldPanel.Grid.X, ldPanel.Grid.Y, ldPanel.Grid.W, ldPanel.Grid.H)
 		pm.ID = types.StringPointerValue(ldPanel.Id)
@@ -538,7 +489,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 	case panelTypeImage:
 		imgPanel, err := panelItem.AsKbnDashboardPanelTypeImage()
 		if err != nil {
-			return panelModel{}, diagutil.FrameworkDiagFromError(err)
+			return models.PanelModel{}, diagutil.FrameworkDiagFromError(err)
 		}
 		setPanelGridFromAPI(&pm, imgPanel.Grid.X, imgPanel.Grid.Y, imgPanel.Grid.W, imgPanel.Grid.H)
 		pm.ID = types.StringPointerValue(imgPanel.Id)
@@ -547,7 +498,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 	case panelTypeSloAlerts:
 		saPanel, err := panelItem.AsKbnDashboardPanelTypeSloAlerts()
 		if err != nil {
-			return panelModel{}, diagutil.FrameworkDiagFromError(err)
+			return models.PanelModel{}, diagutil.FrameworkDiagFromError(err)
 		}
 		setPanelGridFromAPI(&pm, saPanel.Grid.X, saPanel.Grid.Y, saPanel.Grid.W, saPanel.Grid.H)
 		pm.ID = types.StringPointerValue(saPanel.Id)
@@ -556,7 +507,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 	case panelTypeDiscoverSession:
 		dsPanel, err := panelItem.AsKbnDashboardPanelTypeDiscoverSession()
 		if err != nil {
-			return panelModel{}, diagutil.FrameworkDiagFromError(err)
+			return models.PanelModel{}, diagutil.FrameworkDiagFromError(err)
 		}
 		setPanelGridFromAPI(&pm, dsPanel.Grid.X, dsPanel.Grid.Y, dsPanel.Grid.W, dsPanel.Grid.H)
 		pm.ID = types.StringPointerValue(dsPanel.Id)
@@ -566,7 +517,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 		// Round-trip stability for panel types without a typed config block.
 		pm.ID = types.StringNull()
 		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
-		pm.Grid = panelGridModel{}
+		pm.Grid = models.PanelGridModel{}
 		rawBytes, err := panelItem.MarshalJSON()
 		if err == nil {
 			var rawObj map[string]any
@@ -602,7 +553,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 	return pm, diags
 }
 
-func timeRangeModelToAPI(tr *timeRangeModel) kbapi.KbnEsQueryServerTimeRangeSchema {
+func timeRangeModelToAPI(tr *models.TimeRangeModel) kbapi.KbnEsQueryServerTimeRangeSchema {
 	if tr == nil {
 		return kbapi.KbnEsQueryServerTimeRangeSchema{}
 	}
@@ -620,17 +571,17 @@ func timeRangeModelToAPI(tr *timeRangeModel) kbapi.KbnEsQueryServerTimeRangeSche
 // resolveChartTimeRange returns the API time_range for a typed Lens chart root: chart-level when set,
 // otherwise copied from the dashboard-level time_range (both are required API inputs).
 //
-// Production dashboard writes (`panelsToAPI` / `panelModel.toAPI`) always pass the enclosing
-// `dashboardModel`, so null chart-level `time_range` inherits dashboard-level values (REQ-013).
+// Production dashboard writes (`dashboardPanelsToAPI` / `panelToAPI`) always pass the enclosing
+// `models.DashboardModel`, so null chart-level `time_range` inherits dashboard-level values (REQ-013).
 //
 // The `now-15m` / `now` fallback below applies when there is no chart-level override and either
-// no parent `dashboardModel` is in scope (e.g. isolated unit tests call `buildAttributes(..., nil)`),
+// no parent `models.DashboardModel` is in scope (e.g. isolated unit tests call `buildAttributes(..., nil)`),
 // or `dashboard != nil` but `dashboard.TimeRange == nil` (unusual in production: the dashboard
 // schema requires `time_range`). Optional tooling may also construct chart payloads without a parent
 // dashboard. The lens-dashboard-app typed `by_value` path threads the parent dashboard via
 // `lensDashboardAppToAPI` / `lensDashboardAppByValueToAPI` so it inherits like other typed charts;
 // it does not rely on this fallback during normal resource updates.
-func resolveChartTimeRange(dashboard *dashboardModel, chartLevel *timeRangeModel) kbapi.KbnEsQueryServerTimeRangeSchema {
+func resolveChartTimeRange(dashboard *models.DashboardModel, chartLevel *models.TimeRangeModel) kbapi.KbnEsQueryServerTimeRangeSchema {
 	if chartLevel != nil {
 		return timeRangeModelToAPI(chartLevel)
 	}
@@ -643,7 +594,7 @@ func resolveChartTimeRange(dashboard *dashboardModel, chartLevel *timeRangeModel
 	}
 }
 
-func (m *dashboardModel) panelsToAPI(ctx context.Context) (*kbapi.DashboardPanels, diag.Diagnostics) {
+func dashboardPanelsToAPI(ctx context.Context, m *models.DashboardModel) (*kbapi.DashboardPanels, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if m.Panels == nil && m.Sections == nil {
 		return nil, diags
@@ -653,7 +604,7 @@ func (m *dashboardModel) panelsToAPI(ctx context.Context) (*kbapi.DashboardPanel
 
 	// Process panels
 	for _, pm := range m.Panels {
-		panelItem, d := pm.toAPI(ctx, m)
+		panelItem, d := panelToAPI(ctx, pm, m)
 		diags.Append(d...)
 		if diags.HasError() {
 			return nil, diags
@@ -690,7 +641,7 @@ func (m *dashboardModel) panelsToAPI(ctx context.Context) (*kbapi.DashboardPanel
 			innerPanels := make([]kbapi.DashboardPanelItem, 0, len(sm.Panels))
 
 			for _, pm := range sm.Panels {
-				item, d := pm.toAPI(ctx, m)
+				item, d := panelToAPI(ctx, pm, m)
 				diags.Append(d...)
 				if diags.HasError() {
 					return nil, diags
@@ -712,10 +663,10 @@ func (m *dashboardModel) panelsToAPI(ctx context.Context) (*kbapi.DashboardPanel
 	return &apiPanels, diags
 }
 
-func (pm panelModel) toAPI(ctx context.Context, dashboard *dashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
+func panelToAPI(ctx context.Context, pm models.PanelModel, dashboard *models.DashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	var dashTR *timeRangeModel
+	var dashTR *models.TimeRangeModel
 	if dashboard != nil {
 		dashTR = dashboard.TimeRange
 	}

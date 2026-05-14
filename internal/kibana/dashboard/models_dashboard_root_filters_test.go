@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -38,7 +39,7 @@ func rootFiltersListNull() types.List {
 func rootFiltersListEmpty(ctx context.Context, t *testing.T) types.List {
 	t.Helper()
 	var diags diag.Diagnostics
-	l := typeutils.ListValueFrom(ctx, []chartFilterJSONModel{}, dashboardRootSavedFiltersElementType(), path.Root("filters"), &diags)
+	l := typeutils.ListValueFrom(ctx, []models.ChartFilterJSONModel{}, dashboardRootSavedFiltersElementType(), path.Root("filters"), &diags)
 	require.False(t, diags.HasError())
 	return l
 }
@@ -59,11 +60,11 @@ func canonicalJSONFromRaw(t *testing.T, rawJSON string) string {
 	return string(b)
 }
 
-func filterModelsFromRawJSON(t *testing.T, raw ...string) []chartFilterJSONModel {
+func filterModelsFromRawJSON(t *testing.T, raw ...string) []models.ChartFilterJSONModel {
 	t.Helper()
-	out := make([]chartFilterJSONModel, len(raw))
+	out := make([]models.ChartFilterJSONModel, len(raw))
 	for i, r := range raw {
-		out[i] = chartFilterJSONModel{FilterJSON: jsontypes.NewNormalizedValue(r)}
+		out[i] = models.ChartFilterJSONModel{FilterJSON: jsontypes.NewNormalizedValue(r)}
 	}
 	return out
 }
@@ -72,26 +73,26 @@ func Test_mapDashboardFiltersFromAPI_nullPreserved_whenAPINilOrEmpty(t *testing.
 	ctx := context.Background()
 
 	t.Run("API Filters nil", func(t *testing.T) {
-		m := &dashboardModel{Filters: rootFiltersListNull()}
+		m := &models.DashboardModel{Filters: rootFiltersListNull()}
 		var diags diag.Diagnostics
-		m.mapDashboardFiltersFromAPI(ctx, &kbapi.KbnDashboardData{Filters: nil}, &diags)
+		dashboardMapDashboardFiltersFromAPI(ctx, m, &kbapi.KbnDashboardData{Filters: nil}, &diags)
 		require.False(t, diags.HasError())
 		require.True(t, m.Filters.IsNull())
 	})
 
 	t.Run("API Filters pointer to empty slice", func(t *testing.T) {
-		m := &dashboardModel{Filters: rootFiltersListNull()}
+		m := &models.DashboardModel{Filters: rootFiltersListNull()}
 		empty := []kbapi.DashboardFilters_Item{}
 		var diags diag.Diagnostics
-		m.mapDashboardFiltersFromAPI(ctx, &kbapi.KbnDashboardData{Filters: &empty}, &diags)
+		dashboardMapDashboardFiltersFromAPI(ctx, m, &kbapi.KbnDashboardData{Filters: &empty}, &diags)
 		require.False(t, diags.HasError())
 		require.True(t, m.Filters.IsNull())
 	})
 
 	t.Run("known empty list stays empty when API nil", func(t *testing.T) {
-		m := &dashboardModel{Filters: rootFiltersListEmpty(ctx, t)}
+		m := &models.DashboardModel{Filters: rootFiltersListEmpty(ctx, t)}
 		var diags diag.Diagnostics
-		m.mapDashboardFiltersFromAPI(ctx, &kbapi.KbnDashboardData{Filters: nil}, &diags)
+		dashboardMapDashboardFiltersFromAPI(ctx, m, &kbapi.KbnDashboardData{Filters: nil}, &diags)
 		require.False(t, diags.HasError())
 		require.False(t, m.Filters.IsNull())
 		require.False(t, m.Filters.IsUnknown())
@@ -99,10 +100,10 @@ func Test_mapDashboardFiltersFromAPI_nullPreserved_whenAPINilOrEmpty(t *testing.
 	})
 
 	t.Run("known empty list stays empty when API empty slice", func(t *testing.T) {
-		m := &dashboardModel{Filters: rootFiltersListEmpty(ctx, t)}
+		m := &models.DashboardModel{Filters: rootFiltersListEmpty(ctx, t)}
 		empty := []kbapi.DashboardFilters_Item{}
 		var diags diag.Diagnostics
-		m.mapDashboardFiltersFromAPI(ctx, &kbapi.KbnDashboardData{Filters: &empty}, &diags)
+		dashboardMapDashboardFiltersFromAPI(ctx, m, &kbapi.KbnDashboardData{Filters: &empty}, &diags)
 		require.False(t, diags.HasError())
 		require.False(t, m.Filters.IsNull())
 		require.Empty(t, m.Filters.Elements())
@@ -120,12 +121,12 @@ func Test_mapDashboardFiltersFromAPI_orderPreserved(t *testing.T) {
 	for i, r := range raws {
 		items[i] = mustUnmarshalFilterItem(t, r)
 	}
-	m := &dashboardModel{Filters: rootFiltersListNull()}
+	m := &models.DashboardModel{Filters: rootFiltersListNull()}
 	var diags diag.Diagnostics
-	m.mapDashboardFiltersFromAPI(ctx, &kbapi.KbnDashboardData{Filters: &items}, &diags)
+	dashboardMapDashboardFiltersFromAPI(ctx, m, &kbapi.KbnDashboardData{Filters: &items}, &diags)
 	require.False(t, diags.HasError())
 
-	elems := typeutils.ListTypeAs[chartFilterJSONModel](ctx, m.Filters, path.Root("filters"), &diags)
+	elems := typeutils.ListTypeAs[models.ChartFilterJSONModel](ctx, m.Filters, path.Root("filters"), &diags)
 	require.False(t, diags.HasError())
 	require.Len(t, elems, len(raws))
 	for i, r := range raws {
@@ -137,12 +138,12 @@ func Test_mapDashboardFiltersFromAPI_normalizesKeyOrder(t *testing.T) {
 	ctx := context.Background()
 	reordered := `{"condition":{"value":"web-01","field":"host.name","operator":"is"},"type":"condition"}`
 	item := mustUnmarshalFilterItem(t, reordered)
-	m := &dashboardModel{Filters: rootFiltersListNull()}
+	m := &models.DashboardModel{Filters: rootFiltersListNull()}
 	var diags diag.Diagnostics
-	m.mapDashboardFiltersFromAPI(ctx, &kbapi.KbnDashboardData{Filters: &[]kbapi.DashboardFilters_Item{item}}, &diags)
+	dashboardMapDashboardFiltersFromAPI(ctx, m, &kbapi.KbnDashboardData{Filters: &[]kbapi.DashboardFilters_Item{item}}, &diags)
 	require.False(t, diags.HasError())
 
-	elems := typeutils.ListTypeAs[chartFilterJSONModel](ctx, m.Filters, path.Root("filters"), &diags)
+	elems := typeutils.ListTypeAs[models.ChartFilterJSONModel](ctx, m.Filters, path.Root("filters"), &diags)
 	require.False(t, diags.HasError())
 	require.Len(t, elems, 1)
 	want := canonicalJSONFromRaw(t, reordered)
@@ -159,19 +160,19 @@ func Test_dashboardModel_dashboardFiltersToCreateAPI_writeSemantics(t *testing.T
 	}
 
 	t.Run("null Filters omits request filters", func(t *testing.T) {
-		m := &dashboardModel{Filters: rootFiltersListNull()}
+		m := &models.DashboardModel{Filters: rootFiltersListNull()}
 		var diags diag.Diagnostics
 		var req kbapi.PostDashboardsJSONRequestBody
-		m.dashboardFiltersToCreateAPI(ctx, &req, &diags)
+		dashboardDashboardFiltersToCreateAPI(ctx, m, &req, &diags)
 		require.False(t, diags.HasError())
 		require.Nil(t, req.Filters)
 	})
 
 	t.Run("known empty sends non-nil empty slice", func(t *testing.T) {
-		m := &dashboardModel{Filters: rootFiltersListEmpty(ctx, t)}
+		m := &models.DashboardModel{Filters: rootFiltersListEmpty(ctx, t)}
 		var diags diag.Diagnostics
 		var req kbapi.PostDashboardsJSONRequestBody
-		m.dashboardFiltersToCreateAPI(ctx, &req, &diags)
+		dashboardDashboardFiltersToCreateAPI(ctx, m, &req, &diags)
 		require.False(t, diags.HasError())
 		require.NotNil(t, req.Filters)
 		require.Empty(t, *req.Filters)
@@ -180,12 +181,12 @@ func Test_dashboardModel_dashboardFiltersToCreateAPI_writeSemantics(t *testing.T
 	t.Run("order preserved and round-trips JSON", func(t *testing.T) {
 		elems := filterModelsFromRawJSON(t, raws...)
 		var diags diag.Diagnostics
-		m := &dashboardModel{
+		m := &models.DashboardModel{
 			Filters: typeutils.ListValueFrom(ctx, elems, dashboardRootSavedFiltersElementType(), path.Root("filters"), &diags),
 		}
 		require.False(t, diags.HasError())
 		var req kbapi.PostDashboardsJSONRequestBody
-		m.dashboardFiltersToCreateAPI(ctx, &req, &diags)
+		dashboardDashboardFiltersToCreateAPI(ctx, m, &req, &diags)
 		require.False(t, diags.HasError())
 		require.NotNil(t, req.Filters)
 		require.Len(t, *req.Filters, len(raws))
@@ -206,19 +207,19 @@ func Test_dashboardModel_dashboardFiltersToUpdateAPI_writeSemantics(t *testing.T
 	}
 
 	t.Run("null Filters omits request filters", func(t *testing.T) {
-		m := &dashboardModel{Filters: rootFiltersListNull()}
+		m := &models.DashboardModel{Filters: rootFiltersListNull()}
 		var diags diag.Diagnostics
 		var req kbapi.PutDashboardsIdJSONRequestBody
-		m.dashboardFiltersToUpdateAPI(ctx, &req, &diags)
+		dashboardDashboardFiltersToUpdateAPI(ctx, m, &req, &diags)
 		require.False(t, diags.HasError())
 		require.Nil(t, req.Filters)
 	})
 
 	t.Run("known empty sends non-nil empty slice", func(t *testing.T) {
-		m := &dashboardModel{Filters: rootFiltersListEmpty(ctx, t)}
+		m := &models.DashboardModel{Filters: rootFiltersListEmpty(ctx, t)}
 		var diags diag.Diagnostics
 		var req kbapi.PutDashboardsIdJSONRequestBody
-		m.dashboardFiltersToUpdateAPI(ctx, &req, &diags)
+		dashboardDashboardFiltersToUpdateAPI(ctx, m, &req, &diags)
 		require.False(t, diags.HasError())
 		require.NotNil(t, req.Filters)
 		require.Empty(t, *req.Filters)
@@ -227,12 +228,12 @@ func Test_dashboardModel_dashboardFiltersToUpdateAPI_writeSemantics(t *testing.T
 	t.Run("order preserved and round-trips JSON", func(t *testing.T) {
 		elems := filterModelsFromRawJSON(t, raws...)
 		var diags diag.Diagnostics
-		m := &dashboardModel{
+		m := &models.DashboardModel{
 			Filters: typeutils.ListValueFrom(ctx, elems, dashboardRootSavedFiltersElementType(), path.Root("filters"), &diags),
 		}
 		require.False(t, diags.HasError())
 		var req kbapi.PutDashboardsIdJSONRequestBody
-		m.dashboardFiltersToUpdateAPI(ctx, &req, &diags)
+		dashboardDashboardFiltersToUpdateAPI(ctx, m, &req, &diags)
 		require.False(t, diags.HasError())
 		require.NotNil(t, req.Filters)
 		require.Len(t, *req.Filters, len(raws))

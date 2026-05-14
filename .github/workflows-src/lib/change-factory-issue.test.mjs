@@ -40,7 +40,7 @@ function makePullRequest(overrides = {}) {
     state: 'open',
     head_branch: changeFactoryIssueBranchName(42),
     labels: ['change-factory'],
-    body: 'Proposes the OpenSpec change.\n\nCloses #42',
+    body: 'Proposes the OpenSpec change.\n\nRelated to #42',
     html_url: 'https://github.com/elastic/terraform-provider-elasticstack/pull/101',
     ...overrides,
   };
@@ -297,52 +297,49 @@ test('checkDuplicatePR ignores PRs missing issue-closing reference', () => {
   assert.equal(result.duplicate_pr_found, false);
 });
 
-test('checkDuplicatePR matches lowercase closes keyword', () => {
-  const result = checkDuplicatePR({
-    issueNumber: 42,
-    pullRequests: [makePullRequest({ body: 'See description.\n\ncloses #42' })],
-  });
-
-  assert.equal(result.duplicate_pr_found, true);
-});
-
-test('checkDuplicatePR ignores issue linkage with whitespace between # and the issue number', () => {
-  const result = checkDuplicatePR({
-    issueNumber: 42,
-    pullRequests: [makePullRequest({ body: 'See description.\n\ncloses # 42' })],
-  });
-
-  assert.equal(result.duplicate_pr_found, false);
-});
-
-test('checkDuplicatePR matches alternate GitHub closing keywords case-insensitively', () => {
+test('checkDuplicatePR does not match GitHub closing keywords (related-literal mode)', () => {
   for (const body of [
+    'See description.\n\ncloses #42',
     'FIXES #42',
     'Fixed #42',
     'Resolve #42',
     'RESOLVED #42',
+    'Closes #42',
   ]) {
     const result = checkDuplicatePR({
       issueNumber: 42,
       pullRequests: [makePullRequest({ body })],
     });
-    assert.equal(result.duplicate_pr_found, true, `expected match for body: ${body}`);
+    assert.equal(
+      result.duplicate_pr_found,
+      false,
+      `expected no match for closing-keyword body in related-literal mode: ${body}`,
+    );
   }
 });
 
-test('checkDuplicatePR does not match a PR whose body has Closes issue linkage followed by more digits', () => {
+test('checkDuplicatePR ignores issue linkage with whitespace between # and the issue number', () => {
   const result = checkDuplicatePR({
     issueNumber: 42,
-    pullRequests: [makePullRequest({ body: 'Proposes the change.\n\nCloses #420' })],
+    pullRequests: [makePullRequest({ body: 'See description.\n\nRelated to # 42' })],
   });
 
   assert.equal(result.duplicate_pr_found, false);
 });
 
-test('checkDuplicatePR matches when body has canonical Closes issue linkage at end of line', () => {
+test('checkDuplicatePR does not match a PR whose body has Related to linkage followed by more digits', () => {
   const result = checkDuplicatePR({
     issueNumber: 42,
-    pullRequests: [makePullRequest({ body: 'Proposes the change.\n\nCloses #42\n' })],
+    pullRequests: [makePullRequest({ body: 'Proposes the change.\n\nRelated to #420' })],
+  });
+
+  assert.equal(result.duplicate_pr_found, false);
+});
+
+test('checkDuplicatePR matches when body has canonical Related to linkage at end of line', () => {
+  const result = checkDuplicatePR({
+    issueNumber: 42,
+    pullRequests: [makePullRequest({ body: 'Proposes the change.\n\nRelated to #42\n' })],
   });
 
   assert.equal(result.duplicate_pr_found, true);
@@ -494,7 +491,7 @@ test('computeGateReason returns unknown reason when duplicatePrFound is null (st
 
 test('changeFactoryIssueBranchName stays aligned with workflow template prefix', () => {
   assert.equal(ISSUE_BRANCH_PREFIX, 'change-factory/issue-');
-  assert.equal(DUPLICATE_LINKAGE_MODE, 'github-keywords');
+  assert.equal(DUPLICATE_LINKAGE_MODE, 'related-literal');
   assert.equal(issueBranchName(42), 'change-factory/issue-42');
   assert.equal(changeFactoryIssueBranchName(42), 'change-factory/issue-42');
 
@@ -664,8 +661,13 @@ test('change-factory-issue agent prompt matches stable OpenSpec proposal contrac
 
   assert.match(
     prompt,
-    /Closes #\$\{\{\s*github\.event\.issue\.number\s*\}\}/,
-    'expected canonical PR Closes linkage expression',
+    /Related to #\$\{\{\s*github\.event\.issue\.number\s*\}\}/,
+    'expected canonical PR Related to linkage expression',
+  );
+  assert.doesNotMatch(
+    prompt,
+    /\bCloses #\$\{\{\s*github\.event\.issue\.number\s*\}\}/,
+    'change-factory PR body must not auto-close the source issue (no Closes #N)',
   );
   assert.match(prompt, /exactly one/, 'expected exactly-one change / PR guidance');
   assert.match(prompt, /second change directory/, 'expected no second change directory');

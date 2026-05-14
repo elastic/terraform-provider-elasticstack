@@ -19,31 +19,12 @@ package dashboard
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
-
-type esqlControlDisplaySettingsModel struct {
-	Placeholder   types.String `tfsdk:"placeholder"`
-	HideActionBar types.Bool   `tfsdk:"hide_action_bar"`
-	HideExclude   types.Bool   `tfsdk:"hide_exclude"`
-	HideExists    types.Bool   `tfsdk:"hide_exists"`
-	HideSort      types.Bool   `tfsdk:"hide_sort"`
-}
-
-type esqlControlConfigModel struct {
-	SelectedOptions  types.List                       `tfsdk:"selected_options"`
-	VariableName     types.String                     `tfsdk:"variable_name"`
-	VariableType     types.String                     `tfsdk:"variable_type"`
-	EsqlQuery        types.String                     `tfsdk:"esql_query"`
-	ControlType      types.String                     `tfsdk:"control_type"`
-	Title            types.String                     `tfsdk:"title"`
-	SingleSelect     types.Bool                       `tfsdk:"single_select"`
-	AvailableOptions types.List                       `tfsdk:"available_options"`
-	DisplaySettings  *esqlControlDisplaySettingsModel `tfsdk:"display_settings"`
-}
 
 type esqlControlDisplaySettingsAPI = struct {
 	HideActionBar *bool   `json:"hide_action_bar,omitempty"`
@@ -127,7 +108,7 @@ func listToStrings(list types.List) []string {
 //
 // tfPanel is the prior TF state/plan panel, or nil on import. When nil, the function
 // populates all API-returned fields unconditionally (no prior intent to preserve).
-func populateEsqlControlFromAPI(pm *panelModel, tfPanel *panelModel, apiConfig kbapi.KbnDashboardPanelTypeEsqlControl_Config) {
+func populateEsqlControlFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiConfig kbapi.KbnDashboardPanelTypeEsqlControl_Config) {
 	api := esqlControlAPIDataFromConfig(apiConfig)
 	if !api.ok {
 		return
@@ -140,7 +121,7 @@ func populateEsqlControlFromAPI(pm *panelModel, tfPanel *panelModel, apiConfig k
 		if api.SingleSelect != nil {
 			singleSelect = types.BoolValue(*api.SingleSelect)
 		}
-		existing = &esqlControlConfigModel{
+		existing = &models.EsqlControlConfigModel{
 			SelectedOptions:  stringsToList(api.SelectedOptions),
 			VariableName:     types.StringValue(api.VariableName),
 			VariableType:     types.StringValue(api.VariableType),
@@ -156,7 +137,7 @@ func populateEsqlControlFromAPI(pm *panelModel, tfPanel *panelModel, apiConfig k
 		}
 		if api.DisplaySettings != nil {
 			d := api.DisplaySettings
-			existing.DisplaySettings = &esqlControlDisplaySettingsModel{
+			existing.DisplaySettings = &models.EsqlControlDisplaySettingsModel{
 				Placeholder:   types.StringPointerValue(d.Placeholder),
 				HideActionBar: types.BoolPointerValue(d.HideActionBar),
 				HideExclude:   types.BoolPointerValue(d.HideExclude),
@@ -222,14 +203,14 @@ func populateEsqlControlFromAPI(pm *panelModel, tfPanel *panelModel, apiConfig k
 }
 
 // buildEsqlControlConfig writes the TF model fields into the API panel struct.
-func buildEsqlControlConfig(pm panelModel, esqlPanel *kbapi.KbnDashboardPanelTypeEsqlControl) diag.Diagnostics {
+func buildEsqlControlConfig(pm models.PanelModel, esqlPanel *kbapi.KbnDashboardPanelTypeEsqlControl) diag.Diagnostics {
 	var diags diag.Diagnostics
 	cfg := pm.EsqlControlConfig
 	if cfg == nil {
 		return diags
 	}
 
-	displayToAPI := func(ds *esqlControlDisplaySettingsModel) *esqlControlDisplaySettingsAPI {
+	displayToAPI := func(ds *models.EsqlControlDisplaySettingsModel) *esqlControlDisplaySettingsAPI {
 		if ds == nil {
 			return nil
 		}

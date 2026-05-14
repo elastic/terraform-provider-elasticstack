@@ -23,12 +23,13 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
 func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var stateModel dashboardModel
+	var stateModel models.DashboardModel
 
 	diags := req.State.Get(ctx, &stateModel)
 	resp.Diagnostics.Append(diags...)
@@ -64,7 +65,7 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 	resp.Diagnostics.Append(resp.State.Set(ctx, *readModel)...)
 }
 
-func (r *Resource) read(ctx context.Context, apiClient *clients.KibanaScopedClient, stateModel dashboardModel) (*dashboardModel, diag.Diagnostics) {
+func (r *Resource) read(ctx context.Context, apiClient *clients.KibanaScopedClient, stateModel models.DashboardModel) (*models.DashboardModel, diag.Diagnostics) {
 	// Parse composite ID
 	composite, diags := clients.CompositeIDFromStrFw(stateModel.ID.ValueString())
 	if diags.HasError() {
@@ -98,6 +99,6 @@ func (r *Resource) read(ctx context.Context, apiClient *clients.KibanaScopedClie
 		return nil, diags
 	}
 
-	diags.Append(stateModel.populateFromAPI(ctx, getResp, dashboardID, spaceID)...)
+	diags.Append(dashboardPopulateFromAPI(ctx, &stateModel, getResp, dashboardID, spaceID)...)
 	return &stateModel, diags
 }

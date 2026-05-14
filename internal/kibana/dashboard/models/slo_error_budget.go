@@ -15,26 +15,18 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package dashboard
+package models
 
 import (
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-type timeRangeModel struct {
-	From types.String `tfsdk:"from"`
-	To   types.String `tfsdk:"to"`
-	Mode types.String `tfsdk:"mode"`
-}
-
-type refreshIntervalModel struct {
-	Pause types.Bool  `tfsdk:"pause"`
-	Value types.Int64 `tfsdk:"value"`
-}
-
-type dashboardQueryModel struct {
-	Language types.String         `tfsdk:"language"`
-	Text     types.String         `tfsdk:"text"`
-	JSON     jsontypes.Normalized `tfsdk:"json"`
+type SloErrorBudgetConfigModel struct {
+	SloID         types.String        `tfsdk:"slo_id"`
+	SloInstanceID types.String        `tfsdk:"slo_instance_id"`
+	Title         types.String        `tfsdk:"title"`
+	Description   types.String        `tfsdk:"description"`
+	HideTitle     types.Bool          `tfsdk:"hide_title"`
+	HideBorder    types.Bool          `tfsdk:"hide_border"`
+	Drilldowns    []URLDrilldownModel `tfsdk:"drilldowns"`
 }

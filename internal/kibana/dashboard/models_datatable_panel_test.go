@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -58,8 +59,8 @@ func Test_datatableDensityModel_fromAPI_toAPI(t *testing.T) {
 		},
 	}
 
-	model := &datatableDensityModel{}
-	diags := model.fromAPI(api)
+	model := &models.DatatableDensityModel{}
+	diags := datatableDensityFromAPI(model, api)
 	require.False(t, diags.HasError())
 
 	assert.Equal(t, types.StringValue("compact"), model.Mode)
@@ -71,7 +72,7 @@ func Test_datatableDensityModel_fromAPI_toAPI(t *testing.T) {
 	assert.Equal(t, types.StringValue("custom"), model.Height.Value.Type)
 	assert.Equal(t, types.Float64Value(3), model.Height.Value.Lines)
 
-	roundTrip, diags := model.toAPI()
+	roundTrip, diags := datatableDensityToAPI(model)
 	require.False(t, diags.HasError())
 	assert.NotNil(t, roundTrip.Height)
 	assert.NotNil(t, roundTrip.Mode)
@@ -134,8 +135,8 @@ func Test_datatableNoESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 	paging := kbapi.DatatableStylingPaging(10)
 	api.Styling.Paging = &paging
 
-	model := &datatableNoESQLConfigModel{}
-	diags := model.fromAPI(context.Background(), nil, nil, api)
+	model := &models.DatatableNoESQLConfigModel{}
+	diags := datatableNoESQLConfigFromAPI(context.Background(), model, nil, nil, api)
 	require.False(t, diags.HasError())
 
 	assert.Equal(t, types.StringValue("Datatable NoESQL"), model.Title)
@@ -151,7 +152,7 @@ func Test_datatableNoESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 	require.NotNil(t, model.Styling)
 	assert.Equal(t, types.Int64Value(10), model.Styling.Paging)
 
-	apiRoundTrip, diags := model.toAPI(nil)
+	apiRoundTrip, diags := datatableNoESQLConfigToAPI(model, nil)
 	require.False(t, diags.HasError())
 	assert.Equal(t, kbapi.DatatableNoESQLTypeDataTable, apiRoundTrip.Type)
 	assert.NotNil(t, apiRoundTrip.Styling.Paging)
@@ -234,8 +235,8 @@ func Test_datatableESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 	paging := kbapi.DatatableStylingPaging(20)
 	api.Styling.Paging = &paging
 
-	model := &datatableESQLConfigModel{}
-	diags := model.fromAPI(context.Background(), nil, nil, api)
+	model := &models.DatatableESQLConfigModel{}
+	diags := datatableESQLConfigFromAPI(context.Background(), model, nil, nil, api)
 	require.False(t, diags.HasError())
 
 	assert.Equal(t, types.StringValue("Datatable ESQL"), model.Title)
@@ -249,7 +250,7 @@ func Test_datatableESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 	require.NotNil(t, model.Styling)
 	assert.Equal(t, types.Int64Value(20), model.Styling.Paging)
 
-	apiRoundTrip, diags := model.toAPI(nil)
+	apiRoundTrip, diags := datatableESQLConfigToAPI(model, nil)
 	require.False(t, diags.HasError())
 	assert.Equal(t, kbapi.DatatableESQLTypeDataTable, apiRoundTrip.Type)
 	assert.NotNil(t, apiRoundTrip.Styling.Paging)
@@ -289,12 +290,12 @@ func Test_datatablePanelConfigConverter_populateFromAttributes_buildAttributes_r
 	require.NoError(t, attrs.FromDatatableNoESQL(api))
 
 	converter := newDatatablePanelConfigConverter()
-	visBv := visByValueModel{}
-	diags := converter.populateFromAttributes(ctx, nil, nil, &visBv.lensByValueChartBlocks, attrs)
+	visBv := models.VisByValueModel{}
+	diags := converter.populateFromAttributes(ctx, nil, nil, &visBv.LensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
 	require.NotNil(t, visBv.DatatableConfig)
 
-	attrs2, diags := converter.buildAttributes(&visBv.lensByValueChartBlocks, nil)
+	attrs2, diags := converter.buildAttributes(&visBv.LensByValueChartBlocks, nil)
 	require.False(t, diags.HasError())
 
 	noESQL2, err := attrs2.AsDatatableNoESQL()
@@ -324,12 +325,12 @@ func Test_datatablePanelConfigConverter_populateFromAttributes_buildAttributes_r
 	require.NoError(t, attrs.FromDatatableESQL(api))
 
 	converter := newDatatablePanelConfigConverter()
-	visBv := visByValueModel{}
-	diags := converter.populateFromAttributes(ctx, nil, nil, &visBv.lensByValueChartBlocks, attrs)
+	visBv := models.VisByValueModel{}
+	diags := converter.populateFromAttributes(ctx, nil, nil, &visBv.LensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
 	require.NotNil(t, visBv.DatatableConfig)
 
-	attrs2, diags := converter.buildAttributes(&visBv.lensByValueChartBlocks, nil)
+	attrs2, diags := converter.buildAttributes(&visBv.LensByValueChartBlocks, nil)
 	require.False(t, diags.HasError())
 
 	esql2, err := attrs2.AsDatatableESQL()

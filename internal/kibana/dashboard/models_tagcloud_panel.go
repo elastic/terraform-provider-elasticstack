@@ -23,6 +23,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -34,7 +35,7 @@ func newTagcloudPanelConfigConverter() tagcloudPanelConfigConverter {
 	return tagcloudPanelConfigConverter{
 		lensVisualizationBase: lensVisualizationBase{
 			visualizationType: string(kbapi.TagcloudNoESQLTypeTagCloud),
-			hasTFChartBlock: func(blocks *lensByValueChartBlocks) bool {
+			hasTFChartBlock: func(blocks *models.LensByValueChartBlocks) bool {
 				return blocks != nil && blocks.TagcloudConfig != nil
 			},
 		},
@@ -47,77 +48,42 @@ type tagcloudPanelConfigConverter struct {
 
 func (c tagcloudPanelConfigConverter) populateFromAttributes(
 	ctx context.Context,
-	dashboard *dashboardModel,
-	tfPanel *panelModel,
-	blocks *lensByValueChartBlocks,
+	dashboard *models.DashboardModel,
+	tfPanel *models.PanelModel,
+	blocks *models.LensByValueChartBlocks,
 	attrs kbapi.KbnDashboardPanelTypeVisConfig0,
 ) diag.Diagnostics {
-	var prior *tagcloudConfigModel
+	var prior *models.TagcloudConfigModel
 	if b := lensByValueChartBlocksFromPanel(tfPanel); b != nil && b.TagcloudConfig != nil {
 		cpy := *b.TagcloudConfig
 		prior = &cpy
 	}
-	blocks.TagcloudConfig = &tagcloudConfigModel{}
+	blocks.TagcloudConfig = &models.TagcloudConfigModel{}
 
 	if noESQL, err := attrs.AsTagcloudNoESQL(); err == nil && !isTagcloudNoESQLCandidateActuallyESQL(noESQL) {
-		return blocks.TagcloudConfig.fromAPI(ctx, dashboard, prior, noESQL)
+		return tagcloudConfigFromAPI(ctx, blocks.TagcloudConfig, dashboard, prior, noESQL)
 	}
 
 	tagcloudESQL, err := attrs.AsTagcloudESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	return blocks.TagcloudConfig.fromAPIESQL(ctx, dashboard, prior, tagcloudESQL)
+	return tagcloudConfigFromAPIESQL(ctx, blocks.TagcloudConfig, dashboard, prior, tagcloudESQL)
 }
 
-func (c tagcloudPanelConfigConverter) buildAttributes(blocks *lensByValueChartBlocks, dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func (c tagcloudPanelConfigConverter) buildAttributes(blocks *models.LensByValueChartBlocks, dashboard *models.DashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	configModel := *blocks.TagcloudConfig
-	return configModel.toAPI(dashboard)
+	return tagcloudConfigToAPI(&configModel, dashboard)
 }
 
 func isTagcloudNoESQLCandidateActuallyESQL(api kbapi.TagcloudNoESQL) bool {
 	return lensDataSourceIsESQLOrTable(api.DataSource.MarshalJSON())
 }
 
-type tagcloudConfigModel struct {
-	lensChartPresentationTFModel
-	Title               types.String                                      `tfsdk:"title"`
-	Description         types.String                                      `tfsdk:"description"`
-	DataSourceJSON      jsontypes.Normalized                              `tfsdk:"data_source_json"`
-	IgnoreGlobalFilters types.Bool                                        `tfsdk:"ignore_global_filters"`
-	Sampling            types.Float64                                     `tfsdk:"sampling"`
-	Query               *filterSimpleModel                                `tfsdk:"query"`
-	Filters             []chartFilterJSONModel                            `tfsdk:"filters"`
-	Orientation         types.String                                      `tfsdk:"orientation"`
-	FontSize            *fontSizeModel                                    `tfsdk:"font_size"`
-	MetricJSON          customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"metric_json"`
-	TagByJSON           customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"tag_by_json"`
-	EsqlMetric          *tagcloudEsqlMetric                               `tfsdk:"esql_metric"`
-	EsqlTagBy           *tagcloudEsqlTagBy                                `tfsdk:"esql_tag_by"`
-}
-
-type tagcloudEsqlMetric struct {
-	Column     types.String         `tfsdk:"column"`
-	FormatJSON jsontypes.Normalized `tfsdk:"format_json"`
-	Label      types.String         `tfsdk:"label"`
-}
-
-type tagcloudEsqlTagBy struct {
-	Column     types.String         `tfsdk:"column"`
-	FormatJSON jsontypes.Normalized `tfsdk:"format_json"`
-	ColorJSON  jsontypes.Normalized `tfsdk:"color_json"`
-	Label      types.String         `tfsdk:"label"`
-}
-
-type fontSizeModel struct {
-	Min types.Float64 `tfsdk:"min"`
-	Max types.Float64 `tfsdk:"max"`
-}
-
 // applyStylingFromAPI populates the typed `orientation` and `font_size`
 // attributes from a TagcloudStyling payload. Used by both NoESQL and ES|QL
 // reads so the two paths stay in lockstep.
-func (m *tagcloudConfigModel) applyStylingFromAPI(s kbapi.TagcloudStyling) {
+func tagcloudConfigApplyStylingFromAPI(m *models.TagcloudConfigModel, s kbapi.TagcloudStyling) {
 	if s.Orientation != "" {
 		m.Orientation = types.StringValue(string(s.Orientation))
 	} else {
@@ -127,7 +93,7 @@ func (m *tagcloudConfigModel) applyStylingFromAPI(s kbapi.TagcloudStyling) {
 		m.FontSize = nil
 		return
 	}
-	m.FontSize = &fontSizeModel{}
+	m.FontSize = &models.FontSizeModel{}
 	if s.FontSize.Min != nil {
 		m.FontSize.Min = types.Float64Value(float64(*s.FontSize.Min))
 	} else {
@@ -140,7 +106,7 @@ func (m *tagcloudConfigModel) applyStylingFromAPI(s kbapi.TagcloudStyling) {
 	}
 }
 
-func (m *tagcloudConfigModel) usesESQL() bool {
+func tagcloudConfigUsesESQL(m *models.TagcloudConfigModel) bool {
 	if m == nil {
 		return false
 	}
@@ -150,7 +116,7 @@ func (m *tagcloudConfigModel) usesESQL() bool {
 	return m.Query.Expression.IsNull() && m.Query.Language.IsNull()
 }
 
-func (m *tagcloudConfigModel) fromAPI(ctx context.Context, dashboard *dashboardModel, prior *tagcloudConfigModel, api kbapi.TagcloudNoESQL) diag.Diagnostics {
+func tagcloudConfigFromAPI(ctx context.Context, m *models.TagcloudConfigModel, dashboard *models.DashboardModel, prior *models.TagcloudConfigModel, api kbapi.TagcloudNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 
@@ -171,12 +137,11 @@ func (m *tagcloudConfigModel) fromAPI(ctx context.Context, dashboard *dashboardM
 		m.Sampling = types.Float64Null()
 	}
 
-	m.Query = &filterSimpleModel{}
-	m.Query.fromAPI(api.Query)
+	m.Query = &models.FilterSimpleModel{}
+	filterSimpleFromAPI(m.Query, api.Query)
 
 	m.Filters = populateFiltersFromAPI(api.Filters, &diags)
-
-	m.applyStylingFromAPI(api.Styling)
+	tagcloudConfigApplyStylingFromAPI(m, api.Styling)
 
 	metricBytes, err := api.Metric.MarshalJSON()
 	mv, ok := marshalToJSONWithDefaults(metricBytes, err, "metric", populateTagcloudMetricDefaults, &diags)
@@ -195,9 +160,9 @@ func (m *tagcloudConfigModel) fromAPI(ctx context.Context, dashboard *dashboardM
 	m.EsqlMetric = nil
 	m.EsqlTagBy = nil
 
-	var priorLens *lensChartPresentationTFModel
+	var priorLens *models.LensChartPresentationTFModel
 	if prior != nil {
-		p := prior.lensChartPresentationTFModel
+		p := prior.LensChartPresentationTFModel
 		priorLens = &p
 	}
 	ddWire, ddOmit, ddWireDiags := lensDrilldownsAPIToWire(api.Drilldowns)
@@ -210,12 +175,12 @@ func (m *tagcloudConfigModel) fromAPI(ctx context.Context, dashboard *dashboardM
 	if presDiags.HasError() {
 		return diags
 	}
-	m.lensChartPresentationTFModel = pres
+	m.LensChartPresentationTFModel = pres
 
 	return diags
 }
 
-func (m *tagcloudConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashboardModel, prior *tagcloudConfigModel, api kbapi.TagcloudESQL) diag.Diagnostics {
+func tagcloudConfigFromAPIESQL(ctx context.Context, m *models.TagcloudConfigModel, dashboard *models.DashboardModel, prior *models.TagcloudConfigModel, api kbapi.TagcloudESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	m.Title = types.StringPointerValue(api.Title)
@@ -236,13 +201,12 @@ func (m *tagcloudConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashbo
 
 	m.Query = nil
 	m.Filters = populateFiltersFromAPI(api.Filters, &diags)
-
-	m.applyStylingFromAPI(api.Styling)
+	tagcloudConfigApplyStylingFromAPI(m, api.Styling)
 
 	m.MetricJSON = customtypes.NewJSONWithDefaultsNull(populateTagcloudMetricDefaults)
 	m.TagByJSON = customtypes.NewJSONWithDefaultsNull(populateTagcloudTagByDefaults)
 
-	em := &tagcloudEsqlMetric{
+	em := &models.TagcloudEsqlMetric{
 		Column: types.StringValue(api.Metric.Column),
 	}
 	metricFormat, ok := lensESQLNumberFormatJSONFromAPI(api.Metric.Format, "esql_metric.format_json", &diags)
@@ -257,7 +221,7 @@ func (m *tagcloudConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashbo
 	}
 	m.EsqlMetric = em
 
-	tb := &tagcloudEsqlTagBy{
+	tb := &models.TagcloudEsqlTagBy{
 		Column: types.StringValue(api.TagBy.Column),
 	}
 	tagByFormat, ok := lensESQLNumberFormatJSONFromAPI(api.TagBy.Format, "esql_tag_by.format_json", &diags)
@@ -278,9 +242,9 @@ func (m *tagcloudConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashbo
 	}
 	m.EsqlTagBy = tb
 
-	var priorLens *lensChartPresentationTFModel
+	var priorLens *models.LensChartPresentationTFModel
 	if prior != nil {
-		p := prior.lensChartPresentationTFModel
+		p := prior.LensChartPresentationTFModel
 		priorLens = &p
 	}
 	ddWire, ddOmit, ddWireDiags := lensDrilldownsAPIToWire(api.Drilldowns)
@@ -293,12 +257,12 @@ func (m *tagcloudConfigModel) fromAPIESQL(ctx context.Context, dashboard *dashbo
 	if presDiags.HasError() {
 		return diags
 	}
-	m.lensChartPresentationTFModel = pres
+	m.LensChartPresentationTFModel = pres
 
 	return diags
 }
 
-func (m *tagcloudConfigModel) toAPI(dashboard *dashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func tagcloudConfigToAPI(m *models.TagcloudConfigModel, dashboard *models.DashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 	var diags diag.Diagnostics
 
@@ -306,8 +270,8 @@ func (m *tagcloudConfigModel) toAPI(dashboard *dashboardModel) (kbapi.KbnDashboa
 		return attrs, diags
 	}
 
-	if m.usesESQL() {
-		esql, d := m.toAPIESQL(dashboard)
+	if tagcloudConfigUsesESQL(m) {
+		esql, d := tagcloudConfigToAPIESQL(m, dashboard)
 		diags.Append(d...)
 		if diags.HasError() {
 			return attrs, diags
@@ -318,7 +282,7 @@ func (m *tagcloudConfigModel) toAPI(dashboard *dashboardModel) (kbapi.KbnDashboa
 		return attrs, diags
 	}
 
-	noESQL, d := m.toAPINoESQL(dashboard)
+	noESQL, d := tagcloudConfigToAPINoESQL(m, dashboard)
 	diags.Append(d...)
 	if diags.HasError() {
 		return attrs, diags
@@ -329,7 +293,7 @@ func (m *tagcloudConfigModel) toAPI(dashboard *dashboardModel) (kbapi.KbnDashboa
 	return attrs, diags
 }
 
-func (m *tagcloudConfigModel) toAPINoESQL(dashboard *dashboardModel) (kbapi.TagcloudNoESQL, diag.Diagnostics) {
+func tagcloudConfigToAPINoESQL(m *models.TagcloudConfigModel, dashboard *models.DashboardModel) (kbapi.TagcloudNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var api kbapi.TagcloudNoESQL
 
@@ -363,7 +327,7 @@ func (m *tagcloudConfigModel) toAPINoESQL(dashboard *dashboardModel) (kbapi.Tagc
 		diags.AddError("Missing query", "tagcloud_config.query must be set for non-ES|QL tagclouds (or omit `query` entirely for ES|QL mode)")
 		return api, diags
 	}
-	api.Query = m.Query.toAPI()
+	api.Query = filterSimpleToAPI(m.Query)
 
 	api.Filters = buildFiltersForAPI(m.Filters, &diags)
 
@@ -405,7 +369,7 @@ func (m *tagcloudConfigModel) toAPINoESQL(dashboard *dashboardModel) (kbapi.Tagc
 		return api, diags
 	}
 
-	writes, presDiags := lensChartPresentationWritesFor(dashboard, m.lensChartPresentationTFModel)
+	writes, presDiags := lensChartPresentationWritesFor(dashboard, m.LensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return api, diags
@@ -432,7 +396,7 @@ func (m *tagcloudConfigModel) toAPINoESQL(dashboard *dashboardModel) (kbapi.Tagc
 	return api, diags
 }
 
-func (m *tagcloudConfigModel) toAPIESQL(dashboard *dashboardModel) (kbapi.TagcloudESQL, diag.Diagnostics) {
+func tagcloudConfigToAPIESQL(m *models.TagcloudConfigModel, dashboard *models.DashboardModel) (kbapi.TagcloudESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var api kbapi.TagcloudESQL
 	api.Type = kbapi.TagcloudESQLTypeTagCloud
@@ -513,7 +477,7 @@ func (m *tagcloudConfigModel) toAPIESQL(dashboard *dashboardModel) (kbapi.Tagclo
 		api.TagBy.Label = &s
 	}
 
-	writes, presDiags := lensChartPresentationWritesFor(dashboard, m.lensChartPresentationTFModel)
+	writes, presDiags := lensChartPresentationWritesFor(dashboard, m.LensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
 		return api, diags

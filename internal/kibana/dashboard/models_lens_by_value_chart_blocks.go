@@ -17,30 +17,17 @@
 
 package dashboard
 
-// lensByValueChartBlocks holds the shared typed Lens chart pointers for
-// vis_config.by_value and lens_dashboard_app_config.by_value (design D3/D10).
-// Embedded in both Terraform models so attributes stay at the by_value object root.
-type lensByValueChartBlocks struct {
-	XYChartConfig      *xyChartConfigModel      `tfsdk:"xy_chart_config"`
-	TreemapConfig      *treemapConfigModel      `tfsdk:"treemap_config"`
-	MosaicConfig       *mosaicConfigModel       `tfsdk:"mosaic_config"`
-	DatatableConfig    *datatableConfigModel    `tfsdk:"datatable_config"`
-	TagcloudConfig     *tagcloudConfigModel     `tfsdk:"tagcloud_config"`
-	HeatmapConfig      *heatmapConfigModel      `tfsdk:"heatmap_config"`
-	WaffleConfig       *waffleConfigModel       `tfsdk:"waffle_config"`
-	RegionMapConfig    *regionMapConfigModel    `tfsdk:"region_map_config"`
-	GaugeConfig        *gaugeConfigModel        `tfsdk:"gauge_config"`
-	MetricChartConfig  *metricChartConfigModel  `tfsdk:"metric_chart_config"`
-	PieChartConfig     *pieChartConfigModel     `tfsdk:"pie_chart_config"`
-	LegacyMetricConfig *legacyMetricConfigModel `tfsdk:"legacy_metric_config"`
-}
+import "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 
-func lensByValueChartBlocksFromPanel(pm *panelModel) *lensByValueChartBlocks {
+// lensByValueChartBlocksFromPanel returns the typed Lens chart block wrapper for the panel's
+// active by-value path: either `vis_config.by_value` or `lens_dashboard_app_config.by_value`
+// (design D3/D10). Attributes remain at the by_value object root on both Terraform models.
+func lensByValueChartBlocksFromPanel(pm *models.PanelModel) *models.LensByValueChartBlocks {
 	if pm == nil {
 		return nil
 	}
 	if pm.VisConfig != nil && pm.VisConfig.ByValue != nil {
-		return &pm.VisConfig.ByValue.lensByValueChartBlocks
+		return &pm.VisConfig.ByValue.LensByValueChartBlocks
 	}
 	if pm.LensDashboardAppConfig != nil && pm.LensDashboardAppConfig.ByValue != nil {
 		blocks, ok := lensByValueChartBlocksForTypedLensApp(*pm.LensDashboardAppConfig.ByValue)
@@ -52,7 +39,7 @@ func lensByValueChartBlocksFromPanel(pm *panelModel) *lensByValueChartBlocks {
 	return nil
 }
 
-func firstLensVisConverterForChartBlocks(blocks *lensByValueChartBlocks) (lensVisualizationConverter, bool) {
+func firstLensVisConverterForChartBlocks(blocks *models.LensByValueChartBlocks) (lensVisualizationConverter, bool) {
 	for _, c := range lensVisConverters {
 		if c.handlesTFConfigBlocks(blocks) {
 			return c, true
@@ -64,11 +51,11 @@ func firstLensVisConverterForChartBlocks(blocks *lensByValueChartBlocks) (lensVi
 // seedWaffleLensByValueChartFromPriorPanel assigns the waffle chart pointer from practitioner plan/state
 // into dest before vis read-mapping replaces blocks.WaffleConfig. The waffle converter keeps that pointer as
 // `seed` across `populateFromAttributes` so mergeWaffleConfigFromPlanSeed can reconcile Kibana read omissions.
-func seedWaffleLensByValueChartFromPriorPanel(dest *lensByValueChartBlocks, prior *panelModel) {
+func seedWaffleLensByValueChartFromPriorPanel(dest *models.LensByValueChartBlocks, prior *models.PanelModel) {
 	if dest == nil || prior == nil || prior.VisConfig == nil || prior.VisConfig.ByValue == nil {
 		return
 	}
-	src := &prior.VisConfig.ByValue.lensByValueChartBlocks
+	src := &prior.VisConfig.ByValue.LensByValueChartBlocks
 	if src.WaffleConfig != nil {
 		dest.WaffleConfig = src.WaffleConfig
 	}

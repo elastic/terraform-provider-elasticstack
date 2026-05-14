@@ -19,40 +19,18 @@ package dashboard
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// syntheticsMonitorsConfigModel is the Terraform model for the synthetics_monitors_config block.
 // All fields are optional; the block itself may be omitted for a bare panel with no filtering.
-type syntheticsMonitorsConfigModel struct {
-	Title       types.String                    `tfsdk:"title"`
-	Description types.String                    `tfsdk:"description"`
-	HideTitle   types.Bool                      `tfsdk:"hide_title"`
-	HideBorder  types.Bool                      `tfsdk:"hide_border"`
-	View        types.String                    `tfsdk:"view"`
-	Filters     *syntheticsMonitorsFiltersModel `tfsdk:"filters"`
-}
 
-// syntheticsMonitorsFiltersModel holds the optional filter dimensions for a
 // Synthetics monitors panel (projects, tags, monitor_ids, locations, monitor_types).
 // Each dimension is a list of { label, value } pairs.
-type syntheticsMonitorsFiltersModel struct {
-	Projects     []syntheticsFilterItemModel `tfsdk:"projects"`
-	Tags         []syntheticsFilterItemModel `tfsdk:"tags"`
-	MonitorIDs   []syntheticsFilterItemModel `tfsdk:"monitor_ids"`
-	Locations    []syntheticsFilterItemModel `tfsdk:"locations"`
-	MonitorTypes []syntheticsFilterItemModel `tfsdk:"monitor_types"`
-}
-
-// syntheticsFilterItemModel is a single { label, value } filter entry.
-type syntheticsFilterItemModel struct {
-	Label types.String `tfsdk:"label"`
-	Value types.String `tfsdk:"value"`
-}
 
 // buildSyntheticsMonitorsPanel converts the Terraform panel model to the Kibana API panel struct.
-func buildSyntheticsMonitorsPanel(pm panelModel, grid struct {
+func buildSyntheticsMonitorsPanel(pm models.PanelModel, grid struct {
 	H *float32 `json:"h,omitempty"`
 	W *float32 `json:"w,omitempty"`
 	X float32  `json:"x"`
@@ -197,7 +175,7 @@ func ensureSyntheticsAPIFilters(f *struct {
 }
 
 // toSyntheticsFilterItems converts a slice of TF filter items to the anonymous API struct slice.
-func toSyntheticsFilterItems(items []syntheticsFilterItemModel) []struct {
+func toSyntheticsFilterItems(items []models.SyntheticsFilterItemModel) []struct {
 	Label string `json:"label"`
 	Value string `json:"value"`
 } {
@@ -218,7 +196,7 @@ func toSyntheticsFilterItems(items []syntheticsFilterItemModel) []struct {
 //
 // apiPanel is the panel returned from the API. tfPanel is the prior TF state/plan panel, or nil
 // on import.
-func populateSyntheticsMonitorsFromAPI(pm *panelModel, tfPanel *panelModel, apiPanel kbapi.KbnDashboardPanelTypeSyntheticsMonitors) {
+func populateSyntheticsMonitorsFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiPanel kbapi.KbnDashboardPanelTypeSyntheticsMonitors) {
 	apiFilters := apiPanel.Config.Filters
 
 	// On import (tfPanel == nil), populate config from API unconditionally.
@@ -233,7 +211,7 @@ func populateSyntheticsMonitorsFromAPI(pm *panelModel, tfPanel *panelModel, apiP
 			// API returned no meaningful config — keep config block null on import.
 			return
 		}
-		pm.SyntheticsMonitorsConfig = &syntheticsMonitorsConfigModel{
+		pm.SyntheticsMonitorsConfig = &models.SyntheticsMonitorsConfigModel{
 			Title:       types.StringPointerValue(apiPanel.Config.Title),
 			Description: types.StringPointerValue(apiPanel.Config.Description),
 			HideTitle:   types.BoolPointerValue(apiPanel.Config.HideTitle),
@@ -310,7 +288,7 @@ func fromSyntheticsAPIFilters(apiFilters *struct {
 		Label string `json:"label"`
 		Value string `json:"value"`
 	} `json:"tags,omitempty"`
-}) *syntheticsMonitorsFiltersModel {
+}) *models.SyntheticsFiltersModel {
 	if apiFilters == nil {
 		return nil
 	}
@@ -326,7 +304,7 @@ func fromSyntheticsAPIFilters(apiFilters *struct {
 		return nil
 	}
 
-	return &syntheticsMonitorsFiltersModel{
+	return &models.SyntheticsFiltersModel{
 		Projects:     projects,
 		Tags:         tags,
 		MonitorIDs:   monitorIDs,
@@ -340,13 +318,13 @@ func fromSyntheticsAPIFilters(apiFilters *struct {
 func fromSyntheticsAPIItems(items *[]struct {
 	Label string `json:"label"`
 	Value string `json:"value"`
-}) []syntheticsFilterItemModel {
+}) []models.SyntheticsFilterItemModel {
 	if items == nil || len(*items) == 0 {
 		return nil
 	}
-	result := make([]syntheticsFilterItemModel, len(*items))
+	result := make([]models.SyntheticsFilterItemModel, len(*items))
 	for i, item := range *items {
-		result[i] = syntheticsFilterItemModel{
+		result[i] = models.SyntheticsFilterItemModel{
 			Label: types.StringValue(item.Label),
 			Value: types.StringValue(item.Value),
 		}

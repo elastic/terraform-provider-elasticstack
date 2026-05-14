@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
@@ -61,11 +62,11 @@ func Test_wafflePanelConfigConverter_populateFromAttributes_NoESQL_emptyQueryNoL
 	require.NoError(t, attrs.FromWaffleNoESQL(waffle))
 
 	converter := newWafflePanelConfigConverter()
-	visBv := visByValueModel{}
-	diags := converter.populateFromAttributes(ctx, nil, nil, &visBv.lensByValueChartBlocks, attrs)
+	visBv := models.VisByValueModel{}
+	diags := converter.populateFromAttributes(ctx, nil, nil, &visBv.LensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError(), "%s", diags)
 	require.NotNil(t, visBv.WaffleConfig)
-	assert.False(t, visBv.WaffleConfig.usesESQL())
+	assert.False(t, waffleConfigUsesESQL(visBv.WaffleConfig))
 	require.NotNil(t, visBv.WaffleConfig.Query)
 	assert.True(t, visBv.WaffleConfig.Query.Expression.IsNull() || visBv.WaffleConfig.Query.Expression.ValueString() == "")
 }
@@ -90,12 +91,12 @@ func Test_wafflePanelConfigConverter_populateFromAttributes_buildAttributes_roun
 	require.NoError(t, attrs.FromWaffleNoESQL(waffle))
 
 	converter := newWafflePanelConfigConverter()
-	visBv := visByValueModel{}
-	diags := converter.populateFromAttributes(ctx, nil, nil, &visBv.lensByValueChartBlocks, attrs)
+	visBv := models.VisByValueModel{}
+	diags := converter.populateFromAttributes(ctx, nil, nil, &visBv.LensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError(), "%s", diags)
 	require.NotNil(t, visBv.WaffleConfig)
 
-	attrs2, diags := converter.buildAttributes(&visBv.lensByValueChartBlocks, nil)
+	attrs2, diags := converter.buildAttributes(&visBv.LensByValueChartBlocks, nil)
 	require.False(t, diags.HasError(), "%s", diags)
 
 	noESQL2, err := attrs2.AsWaffleNoESQL()
@@ -158,13 +159,13 @@ func Test_wafflePanelConfigConverter_populateFromAttributes_buildAttributes_roun
 	require.NoError(t, attrs.FromWaffleESQL(waffle))
 
 	converter := newWafflePanelConfigConverter()
-	visBv := visByValueModel{}
-	diags := converter.populateFromAttributes(ctx, nil, nil, &visBv.lensByValueChartBlocks, attrs)
+	visBv := models.VisByValueModel{}
+	diags := converter.populateFromAttributes(ctx, nil, nil, &visBv.LensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError(), "%s", diags)
 	require.NotNil(t, visBv.WaffleConfig)
-	assert.True(t, visBv.WaffleConfig.usesESQL())
+	assert.True(t, waffleConfigUsesESQL(visBv.WaffleConfig))
 
-	attrs2, diags := converter.buildAttributes(&visBv.lensByValueChartBlocks, nil)
+	attrs2, diags := converter.buildAttributes(&visBv.LensByValueChartBlocks, nil)
 	require.False(t, diags.HasError(), "%s", diags)
 
 	esql2, err := attrs2.AsWaffleESQL()
@@ -178,43 +179,43 @@ func Test_wafflePanelConfigConverter_populateFromAttributes_buildAttributes_roun
 }
 
 func Test_waffleConfigModel_toAPI_NoESQL_errors(t *testing.T) {
-	m := &waffleConfigModel{
+	m := &models.WaffleConfigModel{
 		DataSourceJSON: jsontypes.NewNormalizedNull(),
-		Legend: &waffleLegendModel{
+		Legend: &models.WaffleLegendModel{
 			Size: types.StringValue("medium"),
 		},
-		Query: &filterSimpleModel{
+		Query: &models.FilterSimpleModel{
 			Language:   types.StringValue("kql"),
 			Expression: types.StringValue(""),
 		},
 	}
-	_, diags := m.toAPI(nil)
+	_, diags := waffleConfigToAPI(m, nil)
 	require.True(t, diags.HasError())
 
-	m2 := &waffleConfigModel{
+	m2 := &models.WaffleConfigModel{
 		DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"dataView","id":"x"}`),
-		Legend: &waffleLegendModel{
+		Legend: &models.WaffleLegendModel{
 			Size: types.StringValue("medium"),
 		},
-		Query: &filterSimpleModel{
+		Query: &models.FilterSimpleModel{
 			Language:   types.StringValue("kql"),
 			Expression: types.StringValue(""),
 		},
 		Metrics: nil,
 	}
-	_, diags2 := m2.toAPI(nil)
+	_, diags2 := waffleConfigToAPI(m2, nil)
 	require.True(t, diags2.HasError())
 }
 
 func Test_waffleConfigModel_toAPI_ESQL_errors(t *testing.T) {
-	m := &waffleConfigModel{
+	m := &models.WaffleConfigModel{
 		DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"esql","query":"FROM x | LIMIT 1"}`),
-		Legend: &waffleLegendModel{
+		Legend: &models.WaffleLegendModel{
 			Size: types.StringValue("medium"),
 		},
 		Query: nil,
 	}
-	_, diags := m.toAPI(nil)
+	_, diags := waffleConfigToAPI(m, nil)
 	require.True(t, diags.HasError())
 }
 
@@ -234,8 +235,8 @@ func Test_waffleConfigModel_config_json_metricRoundTrip(t *testing.T) {
 	var waffle kbapi.WaffleNoESQL
 	require.NoError(t, json.Unmarshal([]byte(apiJSON), &waffle))
 
-	model := &waffleConfigModel{}
-	diags := model.fromAPINoESQL(ctx, nil, nil, waffle)
+	model := &models.WaffleConfigModel{}
+	diags := waffleConfigFromAPINoESQL(ctx, model, nil, nil, waffle)
 	require.False(t, diags.HasError(), "%s", diags)
 
 	// Metrics should use config_json (the tfsdk tag on waffleDSLMetric.Config)
@@ -251,7 +252,7 @@ func Test_waffleConfigModel_config_json_metricRoundTrip(t *testing.T) {
 	assert.Contains(t, model.GroupBy[0].Config.ValueString(), "terms")
 
 	// Round-trip back to API
-	attrs, diags := model.toAPI(nil)
+	attrs, diags := waffleConfigToAPI(model, nil)
 	require.False(t, diags.HasError())
 	noESQL, err := attrs.AsWaffleNoESQL()
 	require.NoError(t, err)
@@ -271,12 +272,12 @@ func Test_waffleConfig_lensChartPresentation_hideTitleRoundTrip(t *testing.T) {
 	m := *pm.VisConfig.ByValue.WaffleConfig
 	m.HideTitle = types.BoolValue(true)
 
-	attrs, diags := m.toAPI(dash)
+	attrs, diags := waffleConfigToAPI(&m, dash)
 	require.False(t, diags.HasError())
 	api, err := attrs.AsWaffleNoESQL()
 	require.NoError(t, err)
 
-	got := &waffleConfigModel{}
-	require.False(t, got.fromAPINoESQL(ctx, dash, &m, api).HasError())
+	got := &models.WaffleConfigModel{}
+	require.False(t, waffleConfigFromAPINoESQL(ctx, got, dash, &m, api).HasError())
 	assert.Equal(t, types.BoolValue(true), got.HideTitle)
 }

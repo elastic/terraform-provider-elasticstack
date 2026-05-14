@@ -29,15 +29,8 @@ const (
 	drilldownURLOpenInNewTabDefault = false
 )
 
-// urlDrilldownModel is the shared Terraform model for URL-only drilldown lists used by
 // panels that hardcode trigger and type. Currently kept for future use when more panel
 // types adopt the shared shape.
-type urlDrilldownModel struct {
-	URL          types.String `tfsdk:"url"`
-	Label        types.String `tfsdk:"label"`
-	EncodeURL    types.Bool   `tfsdk:"encode_url"`
-	OpenInNewTab types.Bool   `tfsdk:"open_in_new_tab"`
-}
 
 // panelDrilldownBoolImportPreserving maps optional API booleans on import: nil or value equal to
 // the server-side default becomes null in Terraform state so practitioners can omit those

@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -32,10 +33,10 @@ import (
 )
 
 func Test_imagePanelToAPI_fileSrc(t *testing.T) {
-	pm := panelModel{
-		ImageConfig: &imagePanelConfigModel{
-			Src: imagePanelSrcModel{
-				File: &imagePanelSrcFileModel{FileID: types.StringValue("file-abc")},
+	pm := models.PanelModel{
+		ImageConfig: &models.ImagePanelConfigModel{
+			Src: models.ImagePanelSrcModel{
+				File: &models.ImagePanelSrcFileModel{FileID: types.StringValue("file-abc")},
 			},
 			AltText:   types.StringValue("diagram"),
 			ObjectFit: types.StringValue("cover"),
@@ -63,10 +64,10 @@ func Test_imagePanelToAPI_fileSrc(t *testing.T) {
 }
 
 func Test_imagePanelToAPI_urlSrc(t *testing.T) {
-	pm := panelModel{
-		ImageConfig: &imagePanelConfigModel{
-			Src: imagePanelSrcModel{
-				URL: &imagePanelSrcURLModel{URL: types.StringValue("https://example.com/x.png")},
+	pm := models.PanelModel{
+		ImageConfig: &models.ImagePanelConfigModel{
+			Src: models.ImagePanelSrcModel{
+				URL: &models.ImagePanelSrcURLModel{URL: types.StringValue("https://example.com/x.png")},
 			},
 		},
 	}
@@ -88,14 +89,14 @@ func Test_imagePanelToAPI_urlSrc(t *testing.T) {
 }
 
 func Test_imagePanelToAPI_drilldowns(t *testing.T) {
-	pm := panelModel{
-		ImageConfig: &imagePanelConfigModel{
-			Src: imagePanelSrcModel{
-				File: &imagePanelSrcFileModel{FileID: types.StringValue("f")},
+	pm := models.PanelModel{
+		ImageConfig: &models.ImagePanelConfigModel{
+			Src: models.ImagePanelSrcModel{
+				File: &models.ImagePanelSrcFileModel{FileID: types.StringValue("f")},
 			},
-			Drilldowns: []imagePanelDrilldownModel{
+			Drilldowns: []models.ImagePanelDrilldownModel{
 				{
-					DashboardDrilldown: &imagePanelDashboardDrilldownModel{
+					DashboardDrilldown: &models.ImagePanelDashboardDrilldownModel{
 						DashboardID: types.StringValue("dash-1"),
 						Label:       types.StringValue("Open dash"),
 						Trigger:     types.StringValue("on_click_image"),
@@ -103,7 +104,7 @@ func Test_imagePanelToAPI_drilldowns(t *testing.T) {
 					},
 				},
 				{
-					URLDrilldown: &imagePanelURLDrilldownModel{
+					URLDrilldown: &models.ImagePanelURLDrilldownModel{
 						URL:          types.StringValue("https://kibana/{{kibana.host}}/"),
 						Label:        types.StringValue("menu link"),
 						Trigger:      types.StringValue("on_open_panel_menu"),
@@ -181,16 +182,16 @@ func Test_populateImagePanelFromAPI_nullPreservation(t *testing.T) {
 	items := []kbapi.KbnDashboardPanelTypeImage_Config_Drilldowns_Item{dashItem, urlItem}
 	apiPanel.Config.Drilldowns = &items
 
-	prior := panelModel{
-		ImageConfig: &imagePanelConfigModel{
-			Src: imagePanelSrcModel{
-				File: &imagePanelSrcFileModel{FileID: types.StringValue("img-1")},
+	prior := models.PanelModel{
+		ImageConfig: &models.ImagePanelConfigModel{
+			Src: models.ImagePanelSrcModel{
+				File: &models.ImagePanelSrcFileModel{FileID: types.StringValue("img-1")},
 			},
 			Title:     types.StringNull(),
 			ObjectFit: types.StringNull(),
-			Drilldowns: []imagePanelDrilldownModel{
+			Drilldowns: []models.ImagePanelDrilldownModel{
 				{
-					DashboardDrilldown: &imagePanelDashboardDrilldownModel{
+					DashboardDrilldown: &models.ImagePanelDashboardDrilldownModel{
 						DashboardID:  types.StringValue("d1"),
 						Label:        types.StringValue("l"),
 						Trigger:      types.StringValue("on_click_image"),
@@ -200,7 +201,7 @@ func Test_populateImagePanelFromAPI_nullPreservation(t *testing.T) {
 					},
 				},
 				{
-					URLDrilldown: &imagePanelURLDrilldownModel{
+					URLDrilldown: &models.ImagePanelURLDrilldownModel{
 						URL:          types.StringValue("https://example.com"),
 						Label:        types.StringValue("u"),
 						Trigger:      types.StringValue("on_click_image"),
@@ -265,7 +266,7 @@ func Test_populateImagePanelFromAPI_import_drilldownDefaultsAndObjectFitNull(t *
 
 	apiPanel.Config.Drilldowns = &[]kbapi.KbnDashboardPanelTypeImage_Config_Drilldowns_Item{dashItem, urlItem}
 
-	pm := panelModel{}
+	pm := models.PanelModel{}
 	populateImagePanelFromAPI(&pm, nil, apiPanel)
 
 	cfg := pm.ImageConfig
@@ -406,7 +407,7 @@ func Test_populateImagePanelFromAPI_import_setsSrcBranches(t *testing.T) {
 	src := kbapi.KbnDashboardPanelTypeImageConfigImageConfigSrc0{Type: kbapi.File, FileId: "fid"}
 	require.NoError(t, apiPanel.Config.ImageConfig.Src.FromKbnDashboardPanelTypeImageConfigImageConfigSrc0(src))
 
-	pm := panelModel{}
+	pm := models.PanelModel{}
 	populateImagePanelFromAPI(&pm, nil, apiPanel)
 	require.NotNil(t, pm.ImageConfig)
 	assert.NotNil(t, pm.ImageConfig.Src.File)
