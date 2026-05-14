@@ -1,11 +1,11 @@
 ## 1. Create lenscommon package
 
-- [ ] 1.1 Create `dashboard/lenscommon/iface.go` with `VizConverter` and `Resolver` interfaces
-- [ ] 1.2 Create `dashboard/lenscommon/registry.go` with global converter map, `Register`, `ForType`, `FirstForBlocks`, `All`
-- [ ] 1.3 Create `dashboard/lenscommon/presentation.go` moving `lensChartPresentationReadsFor` and `lensChartPresentationWritesFor` from `dashboard/`
-- [ ] 1.4 Create `dashboard/lenscommon/drilldowns.go` moving shared drilldown conversion helpers
-- [ ] 1.5 Create `dashboard/lenscommon/by_reference.go` moving shared by_reference read/write logic
-- [ ] 1.6 Create `dashboard/lenscommon/slice_alignment.go` with `RegisterSliceAligner` and `ApplySliceAligners`
+- [x] 1.1 Create `dashboard/lenscommon/iface.go` with `VizConverter` and `Resolver` interfaces
+- [x] 1.2 Create `dashboard/lenscommon/registry.go` with global converter map, `Register`, `ForType`, `FirstForBlocks`, `All`
+- [x] 1.3 Create `dashboard/lenscommon/presentation.go` moving `lensChartPresentationReadsFor` and `lensChartPresentationWritesFor` from `dashboard/`
+- [x] 1.4 Create `dashboard/lenscommon/drilldowns.go` moving shared drilldown conversion helpers
+- [x] 1.5 Create `dashboard/lenscommon/by_reference.go` moving shared by_reference read/write logic
+- [x] 1.6 Create `dashboard/lenscommon/slice_alignment.go` with `RegisterSliceAligner` and `ApplySliceAligners`
 
 ## 2. Migrate LensByValueChartBlocks to models
 
