@@ -24,6 +24,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
@@ -261,10 +262,28 @@ func dashboardMapPanelFromAPI(ctx context.Context, m *models.DashboardModel, tfP
 			if err0 != nil {
 				break
 			}
+			visType := lenscommon.DetectVizType(config0)
+			if visType == "" {
+				break
+			}
+			conv := lenscommon.ForType(visType)
+			if conv == nil {
+				diags.AddError(
+					"Unsupported visualization chart type",
+					fmt.Sprintf(
+						"The dashboard returned Lens visualization discriminator %q which this provider does not support as typed `vis_config.by_value`. "+
+							"Use panel-level `config_json` as the escape hatch to manage this panel until support is added.",
+						visType,
+					),
+				)
+				break
+			}
 			pm.VisConfig = &models.VisConfigModel{
 				ByValue: &models.VisByValueModel{},
 			}
-			diags.Append(populateLensVisByValueFromTypedChartAPI(ctx, m, tfPanel, &pm.VisConfig.ByValue.LensByValueChartBlocks, config0, false)...)
+			seedWaffleLensByValueChartFromPriorPanel(&pm.VisConfig.ByValue.LensByValueChartBlocks, tfPanel)
+			seedLensChartPriorIntoBlocks(tfPanel, &pm.VisConfig.ByValue.LensByValueChartBlocks, visType)
+			diags.Append(conv.PopulateFromAttributes(ctx, lensChartResolver(m), &pm.VisConfig.ByValue.LensByValueChartBlocks, config0)...)
 		}
 	case panelTypeLensDashboardApp:
 		ldPanel, err := panelItem.AsKbnDashboardPanelTypeLensDashboardApp()
