@@ -8,5 +8,5 @@
 - [x] 2.2 Add a delta spec for `ci-change-factory-issue-intake` requiring `safe-outputs.create-pull-request.patch-format: am` in the authored workflow frontmatter and generated artifacts.
 
 ## 3. Validate
-- [ ] 3.1 Run `openspec validate --all`.
-- [ ] 3.2 Verify the generated workflow outputs reflect the `am` patch transport for both workflows.
+- [x] 3.1 Run `openspec validate --all`.
+- [x] 3.2 Verify the generated workflow outputs reflect the `am` patch transport for both workflows.
