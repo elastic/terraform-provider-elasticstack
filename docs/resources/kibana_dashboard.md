@@ -2522,13 +2522,13 @@ Optional:
 
 Required:
 
-- `label` (String)
-- `url` (String)
+- `label` (String) Display label shown in the drilldown menu.
+- `url` (String) Templated URL for the drilldown.
 
 Optional:
 
-- `encode_url` (Boolean)
-- `open_in_new_tab` (Boolean)
+- `encode_url` (Boolean) When true, the URL is percent-encoded. Omit to use the API default.
+- `open_in_new_tab` (Boolean) When true, the URL opens in a new browser tab. Omit to use the API default.
 
 
 <a id="nestedatt--panels--synthetics_stats_overview_config--filters"></a>
@@ -7389,13 +7389,13 @@ Optional:
 
 Required:
 
-- `label` (String)
-- `url` (String)
+- `label` (String) Display label shown in the drilldown menu.
+- `url` (String) Templated URL for the drilldown.
 
 Optional:
 
-- `encode_url` (Boolean)
-- `open_in_new_tab` (Boolean)
+- `encode_url` (Boolean) When true, the URL is percent-encoded. Omit to use the API default.
+- `open_in_new_tab` (Boolean) When true, the URL opens in a new browser tab. Omit to use the API default.
 
 
 <a id="nestedatt--sections--panels--synthetics_stats_overview_config--filters"></a>
