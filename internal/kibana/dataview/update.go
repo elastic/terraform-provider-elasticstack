@@ -72,10 +72,25 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 
 	if !resp.Diagnostics.HasError() {
 		var oldNS, newNS []string
-		diags = stateInner.Namespaces.ElementsAs(ctx, &oldNS, false)
-		resp.Diagnostics.Append(diags...)
-		diags = planInner.Namespaces.ElementsAs(ctx, &newNS, false)
-		resp.Diagnostics.Append(diags...)
+		if !stateInner.Namespaces.IsNull() && !stateInner.Namespaces.IsUnknown() {
+			diags = stateInner.Namespaces.ElementsAs(ctx, &oldNS, false)
+			resp.Diagnostics.Append(diags...)
+		}
+		if !planInner.Namespaces.IsNull() && !planInner.Namespaces.IsUnknown() {
+			diags = planInner.Namespaces.ElementsAs(ctx, &newNS, false)
+			resp.Diagnostics.Append(diags...)
+		}
+
+		// A null namespaces list is semantically equal to "[spaceID]" (the resource's
+		// own space; see populateFromAPI/handleNamespaces). Treat null the same here so
+		// removing an explicit namespaces list does not orphan the data view by removing
+		// it from every space (which would 404 every subsequent API call).
+		if len(oldNS) == 0 {
+			oldNS = []string{spaceID}
+		}
+		if len(newNS) == 0 {
+			newNS = []string{spaceID}
+		}
 
 		if !resp.Diagnostics.HasError() {
 			resp.Diagnostics.Append(
