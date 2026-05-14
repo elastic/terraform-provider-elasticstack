@@ -19,42 +19,15 @@ package calendar
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func updateCalendar(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, plan TFModel, prior TFModel) (TFModel, fwdiags.Diagnostics) {
-	var diags fwdiags.Diagnostics
-
-	calendarID := resourceID
-	if calendarID == "" {
-		diags.AddError("Invalid resource ID", "calendar_id cannot be empty")
-		return plan, diags
-	}
-
-	tflog.Debug(ctx, fmt.Sprintf("Updating ML calendar: %s", calendarID))
-
-	typedClient, err := client.GetESClient()
-	if err != nil {
-		diags.AddError("Failed to get Elasticsearch client", err.Error())
-		return plan, diags
-	}
-
-	putModel := plan
-	if !typeutils.IsKnown(plan.Description) && typeutils.IsKnown(prior.Description) {
-		putModel.Description = prior.Description
-	}
-
-	_, err = typedClient.Ml.PutCalendar(calendarID).Request(newPutCalendarRequestFromTFModel(putModel)).Do(ctx)
-	if err != nil {
-		diags.AddError("Failed to update ML calendar", fmt.Sprintf("Unable to update ML calendar: %s — %s", calendarID, err.Error()))
-		return plan, diags
-	}
-
-	tflog.Debug(ctx, fmt.Sprintf("Successfully updated ML calendar: %s", calendarID))
-	return plan, diags
+func updateCalendar(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, plan TFModel, _ TFModel) (TFModel, fwdiags.Diagnostics) {
+	// Calendar definition changes (notably `description`) use RequiresReplace on the schema so
+	// Terraform runs delete+create. ML put calendar is create-only on Elasticsearch 8.0.x, so an
+	// in-place PUT would return "calendar already exists". Job associations live on
+	// `elasticstack_elasticsearch_ml_calendar_job`.
+	return plan, nil
 }

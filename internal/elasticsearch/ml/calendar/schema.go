@@ -64,6 +64,11 @@ func getSchema(_ context.Context) schema.Schema {
 				Optional:            true,
 				Computed:            true,
 				Default:             stringdefault.StaticString(""),
+				PlanModifiers: []planmodifier.String{
+					// ML put calendar is create-only on older Elasticsearch versions; changing
+					// description is applied by replacing the resource (delete + create).
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 		},
 	}

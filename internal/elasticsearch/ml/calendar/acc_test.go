@@ -176,11 +176,13 @@ func TestAccResourceMLCalendar_importWrongIDFormat(t *testing.T) {
 				ConfigVariables:          importVars,
 				ResourceName:             "elasticstack_elasticsearch_ml_calendar.test",
 				ImportState:              true,
+				ImportStateKind:          resource.ImportBlockWithID,
 				// Default ImportStatePersist=false runs import in a temp working dir; the harness
 				// still replaces the main dir's config with provider stubs first, so post-test
 				// destroy would lose elasticsearch configuration. Persist keeps import on the
 				// main working dir so the full config (and env-based endpoints) remain for destroy.
 				ImportStatePersist: true,
+				ImportStateVerify:  false,
 				ImportStateId:      "not-a-valid-composite-id",
 				ExpectError:        regexp.MustCompile(`Wrong resource ID`),
 			},
