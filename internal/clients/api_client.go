@@ -42,21 +42,17 @@ type CompositeID struct {
 const ServerlessFlavor = "serverless"
 
 func CompositeIDFromStr(id string) (*CompositeID, diag.Diagnostics) {
-	var diags diag.Diagnostics
 	idParts := strings.Split(id, "/")
 	if len(idParts) != 2 {
-		diags = append(diags, diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "Wrong resource ID.",
-			Detail:   "Resource ID must have following format: <cluster_uuid>/<resource identifier>",
-		})
-		return nil, diags
+		return nil, diagutil.SDKErrorDiag(
+			"Wrong resource ID.",
+			"Resource ID must have following format: <cluster_uuid>/<resource identifier>",
+		)
 	}
 	return &CompositeID{
-			ClusterID:  idParts[0],
-			ResourceID: idParts[1],
-		},
-		diags
+		ClusterID:  idParts[0],
+		ResourceID: idParts[1],
+	}, nil
 }
 
 func CompositeIDFromStrFw(id string) (*CompositeID, fwdiags.Diagnostics) {

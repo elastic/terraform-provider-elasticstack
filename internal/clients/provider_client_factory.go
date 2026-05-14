@@ -22,6 +22,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -101,11 +102,10 @@ func (f *ProviderClientFactory) GetKibanaClient(ctx context.Context, kibanaConnL
 // Kibana-derived clients rebuilt from the scoped connection.
 func (f *ProviderClientFactory) GetKibanaClientFromSDK(d *schema.ResourceData) (*KibanaScopedClient, diag.Diagnostics) {
 	if f == nil || f.defaultClient == nil {
-		return nil, diag.Diagnostics{diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "Provider not configured",
-			Detail:   "Expected configured provider client factory. Please report this issue to the provider developers.",
-		}}
+		return nil, diagutil.SDKErrorDiag(
+			"Provider not configured",
+			"Expected configured provider client factory. Please report this issue to the provider developers.",
+		)
 	}
 
 	resourceConfig, diags := config.NewFromSDKKibanaResource(d, f.defaultClient.version)
@@ -206,11 +206,10 @@ func (f *ProviderClientFactory) GetElasticsearchClient(ctx context.Context, esCo
 // with the Elasticsearch client rebuilt from the scoped connection.
 func (f *ProviderClientFactory) GetElasticsearchClientFromSDK(d *schema.ResourceData) (*ElasticsearchScopedClient, diag.Diagnostics) {
 	if f == nil || f.defaultClient == nil {
-		return nil, diag.Diagnostics{diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "Provider not configured",
-			Detail:   "Expected configured provider client factory. Please report this issue to the provider developers.",
-		}}
+		return nil, diagutil.SDKErrorDiag(
+			"Provider not configured",
+			"Expected configured provider client factory. Please report this issue to the provider developers.",
+		)
 	}
 
 	resourceConfig, diags := config.NewFromSDKResource(d, f.defaultClient.version)
@@ -227,12 +226,11 @@ func (f *ProviderClientFactory) GetElasticsearchClientFromSDK(d *schema.Resource
 		return nil, diag.FromErr(err)
 	}
 	if esClient == nil {
-		return nil, diag.Diagnostics{diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "Elasticsearch client not configured",
-			Detail: "The elasticsearch_connection block did not produce a valid Elasticsearch client. " +
+		return nil, diagutil.SDKErrorDiag(
+			"Elasticsearch client not configured",
+			"The elasticsearch_connection block did not produce a valid Elasticsearch client. "+
 				"Ensure the connection block includes Elasticsearch endpoint configuration.",
-		}}
+		)
 	}
 
 	var esEndpoints []string
@@ -326,28 +324,18 @@ func NewKibanaScopedClientFromFactory(f *ProviderClientFactory) *KibanaScopedCli
 
 // ConvertMetaToFactory converts the SDK meta value into a *ProviderClientFactory.
 func ConvertMetaToFactory(meta any) (*ProviderClientFactory, diag.Diagnostics) {
-	if meta == nil {
-		return nil, diag.Diagnostics{diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "Unconfigured Client Factory",
-			Detail:   "Expected configured provider client factory, got nil. Report this issue to the provider developers.",
-		}}
-	}
-
 	factory, ok := meta.(*ProviderClientFactory)
-	if !ok {
-		return nil, diag.Diagnostics{diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "Unexpected meta type",
-			Detail:   fmt.Sprintf("Expected *ProviderClientFactory, got: %T. Please report this issue to the provider developers.", meta),
-		}}
+	if meta != nil && !ok {
+		return nil, diagutil.SDKErrorDiag(
+			"Unexpected meta type",
+			fmt.Sprintf("Expected *ProviderClientFactory, got: %T. Please report this issue to the provider developers.", meta),
+		)
 	}
 	if factory == nil {
-		return nil, diag.Diagnostics{diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "Unconfigured Client Factory",
-			Detail:   "Expected configured provider client factory, got nil. Report this issue to the provider developers.",
-		}}
+		return nil, diagutil.SDKErrorDiag(
+			"Unconfigured Client Factory",
+			"Expected configured provider client factory, got nil. Report this issue to the provider developers.",
+		)
 	}
 	return factory, nil
 }
