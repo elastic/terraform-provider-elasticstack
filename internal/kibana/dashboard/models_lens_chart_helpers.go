@@ -23,6 +23,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -89,19 +90,7 @@ func marshalToJSONWithDefaults[T any](bytes []byte, err error, fieldName string,
 }
 
 func preservePriorJSONWithDefaultsIfEquivalent[T any](ctx context.Context, prior, current customtypes.JSONWithDefaultsValue[T], diags *diag.Diagnostics) customtypes.JSONWithDefaultsValue[T] {
-	if prior.IsNull() || prior.IsUnknown() || current.IsNull() || current.IsUnknown() {
-		return current
-	}
-
-	eq, d := prior.StringSemanticEquals(ctx, current)
-	diags.Append(d...)
-	if d.HasError() {
-		return current
-	}
-	if eq {
-		return prior
-	}
-	return current
+	return panelkit.PreservePriorJSONWithDefaultsIfEquivalent(ctx, prior, current, diags)
 }
 
 // lensDataSourceIsESQLOrTable reports whether a Lens chart's `data_source` union

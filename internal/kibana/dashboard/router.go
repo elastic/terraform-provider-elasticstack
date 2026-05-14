@@ -64,7 +64,7 @@ func fillUnknownDashboardPanelFromAPI(ctx context.Context, tfPanel *models.Panel
 			configJSON := customtypes.NewJSONWithDefaultsValue(string(configBytes), populatePanelConfigJSONDefaults)
 			if tfPanel != nil {
 				var wrap diag.Diagnostics
-				configJSON = preservePriorJSONWithDefaultsIfEquivalent(ctx, tfPanel.ConfigJSON, configJSON, &wrap)
+				configJSON = panelkit.PreservePriorJSONWithDefaultsIfEquivalent(ctx, tfPanel.ConfigJSON, configJSON, &wrap)
 			}
 			pm.ConfigJSON = configJSON
 		}
