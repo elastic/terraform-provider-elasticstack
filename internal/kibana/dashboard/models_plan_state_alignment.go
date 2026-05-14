@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"reflect"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -33,7 +34,11 @@ import (
 // the full top-level panel slice. Common per-panel alignment already happens
 // inside mapPanelFromAPI.
 func alignDashboardStateFromPlanPanels(planPanels, statePanels []models.PanelModel) {
-	alignXYChartStateFromPlanPanels(planPanels, statePanels)
+	lenscommon.ApplySliceAligners(planPanels, statePanels)
+}
+
+func init() {
+	lenscommon.RegisterSliceAligner(alignXYChartStateFromPlanPanels)
 }
 
 func alignDashboardStateFromPlanPinnedPanels(ctx context.Context, planPins, statePins []models.PinnedPanelModel) {
