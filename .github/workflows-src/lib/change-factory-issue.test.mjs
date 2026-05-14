@@ -452,6 +452,7 @@ test('change-factory-issue workflow is compiled and exists', () => {
   assert.match(source, /change-factory/);
   assert.match(source, /issues/);
   assert.match(source, /compile-workflow-sources/);
+  assert.match(source, /patch-format: am/);
 });
 
 test('change-factory-issue lock file is compiled and exists', () => {
