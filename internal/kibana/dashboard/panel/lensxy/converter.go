@@ -77,12 +77,12 @@ func (converter) PopulateFromAttributes(ctx context.Context, resolver lenscommon
 }
 
 func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks, resolver lenscommon.Resolver) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 	var diags diag.Diagnostics
-	if blocks == nil || blocks.XYChartConfig == nil {
-		return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
+	if blocks == nil {
+		return attrs, diags
 	}
-	configModel := *blocks.XYChartConfig
-	return xyChartConfigToAPI(&configModel, resolver)
+	return xyChartConfigToAPI(blocks.XYChartConfig, resolver)
 }
 
 func (converter) AlignStateFromPlan(_ context.Context, plan, state *models.LensByValueChartBlocks) {

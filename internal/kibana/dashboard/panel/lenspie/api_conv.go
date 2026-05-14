@@ -248,6 +248,9 @@ func pieChartConfigFromAPIESQL(ctx context.Context, m *models.PieChartConfigMode
 func pieChartConfigToAPI(m *models.PieChartConfigModel, resolver lenscommon.Resolver) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+	if m == nil {
+		return attrs, diags
+	}
 
 	isNoESQL := m.Query != nil
 

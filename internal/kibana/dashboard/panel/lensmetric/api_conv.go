@@ -259,6 +259,11 @@ func metricChartConfigFromAPIVariant1(
 }
 
 func metricChartConfigToAPI(m *models.MetricChartConfigModel, resolver lenscommon.Resolver) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+	var diags diag.Diagnostics
+	if m == nil {
+		return attrs, diags
+	}
 	// Determine which variant to use based on whether we have a query
 	// Variant 0 (non-ESQL) requires a query
 	// Variant 1 (ESQL) doesn't require a query

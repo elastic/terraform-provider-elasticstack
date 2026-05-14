@@ -185,13 +185,12 @@ func (converter) PopulateFromAttributes(ctx context.Context, resolver lenscommon
 }
 
 func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks, resolver lenscommon.Resolver) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 	var diags diag.Diagnostics
-	if blocks == nil || blocks.TagcloudConfig == nil {
-		diags.AddError("Tagcloud config missing", "tagcloud_config block is required")
-		return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
+	if blocks == nil {
+		return attrs, diags
 	}
-	cfg := *blocks.TagcloudConfig
-	return tagcloudConfigToAPI(&cfg, resolver)
+	return tagcloudConfigToAPI(blocks.TagcloudConfig, resolver)
 }
 
 func (converter) AlignStateFromPlan(ctx context.Context, plan, state *models.LensByValueChartBlocks) {

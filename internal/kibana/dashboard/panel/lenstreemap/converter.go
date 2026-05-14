@@ -150,13 +150,12 @@ func (converter) PopulateFromAttributes(ctx context.Context, resolver lenscommon
 }
 
 func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks, resolver lenscommon.Resolver) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 	var diags diag.Diagnostics
-	if blocks == nil || blocks.TreemapConfig == nil {
-		diags.AddError("Treemap config missing", "treemap_config block is required")
-		return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
+	if blocks == nil {
+		return attrs, diags
 	}
-	cfg := *blocks.TreemapConfig
-	return treemapConfigToAPI(&cfg, resolver)
+	return treemapConfigToAPI(blocks.TreemapConfig, resolver)
 }
 
 func (converter) AlignStateFromPlan(_ context.Context, plan, state *models.LensByValueChartBlocks) {

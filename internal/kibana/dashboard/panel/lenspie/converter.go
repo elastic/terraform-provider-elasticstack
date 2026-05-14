@@ -176,13 +176,12 @@ func (converter) PopulateFromAttributes(ctx context.Context, resolver lenscommon
 }
 
 func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks, resolver lenscommon.Resolver) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 	var diags diag.Diagnostics
-	if blocks == nil || blocks.PieChartConfig == nil {
-		diags.AddError("Pie chart config missing", "pie_chart_config block is required")
-		return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
+	if blocks == nil {
+		return attrs, diags
 	}
-	configModel := *blocks.PieChartConfig
-	return pieChartConfigToAPI(&configModel, resolver)
+	return pieChartConfigToAPI(blocks.PieChartConfig, resolver)
 }
 
 func (converter) AlignStateFromPlan(_ context.Context, plan, state *models.LensByValueChartBlocks) {

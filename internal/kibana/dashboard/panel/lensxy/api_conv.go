@@ -1227,6 +1227,9 @@ func xyChartConfigFromAPIESQL(ctx context.Context, m *models.XYChartConfigModel,
 func xyChartConfigToAPI(m *models.XYChartConfigModel, resolver lenscommon.Resolver) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+	if m == nil {
+		return attrs, diags
+	}
 	configModel := *m
 
 	if xyChartConfigXyUsesESQL(&configModel) {

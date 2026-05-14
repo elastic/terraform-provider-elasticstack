@@ -79,12 +79,12 @@ func (converter) PopulateFromAttributes(ctx context.Context, resolver lenscommon
 }
 
 func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks, resolver lenscommon.Resolver) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 	var diags diag.Diagnostics
-	if blocks == nil || blocks.MetricChartConfig == nil {
-		return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
+	if blocks == nil {
+		return attrs, diags
 	}
-	configModel := *blocks.MetricChartConfig
-	attrs, metricDiags := metricChartConfigToAPI(&configModel, resolver)
+	attrs, metricDiags := metricChartConfigToAPI(blocks.MetricChartConfig, resolver)
 	diags.Append(metricDiags...)
 	return attrs, diags
 }

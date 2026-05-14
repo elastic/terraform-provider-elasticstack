@@ -96,11 +96,12 @@ func (converter) PopulateFromAttributes(ctx context.Context, resolver lenscommon
 }
 
 func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks, resolver lenscommon.Resolver) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
-	if blocks == nil || blocks.WaffleConfig == nil {
-		return kbapi.KbnDashboardPanelTypeVisConfig0{}, nil
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+	var diags diag.Diagnostics
+	if blocks == nil {
+		return attrs, diags
 	}
-	configModel := *blocks.WaffleConfig
-	return waffleConfigToAPI(&configModel, resolver)
+	return waffleConfigToAPI(blocks.WaffleConfig, resolver)
 }
 
 func (converter) AlignStateFromPlan(ctx context.Context, plan, state *models.LensByValueChartBlocks) {
