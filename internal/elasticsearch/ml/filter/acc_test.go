@@ -263,6 +263,10 @@ func TestAccResourceMLFilterImportFailures(t *testing.T) {
 	// Capture the cluster UUID segment of the composite import id while the resource is in state.
 	// The final import step must run with this address absent from state; otherwise Terraform core
 	// returns "Resource already managed by Terraform" before the provider can surface a read error.
+	//
+	// That last step must use ImportCommandWithID (default ImportStateKind): terraform-plugin-testing
+	// removes the resource from copied state before plannable import when stepNumber > 1, which
+	// fails after Destroy because the resource is no longer in state ("Invalid target address").
 	clusterUUID := make([]string, 1)
 
 	resource.Test(t, resource.TestCase{
@@ -325,10 +329,11 @@ func TestAccResourceMLFilterImportFailures(t *testing.T) {
 				ConfigVariables:          importVars,
 				ResourceName:             mlFilterResourceAddress,
 				ImportState:              true,
-				ImportStateKind:          resource.ImportBlockWithID,
-				ImportStateVerify:        false,
-				ImportStateId:            fmt.Sprintf("%s/nonexistent-filter-id-for-import-test", clusterUUID[0]),
-				ExpectError:              regexp.MustCompile(`Failed to get ML filter|Unable to get ML filter|Cannot import non-existent`),
+				// ImportCommandWithID: post-destroy state has no instance; plannable import would run
+				// state rm on an empty copy and fail (see comment on clusterUUID above).
+				ImportStateVerify: false,
+				ImportStateId:     fmt.Sprintf("%s/nonexistent-filter-id-for-import-test", clusterUUID[0]),
+				ExpectError:       regexp.MustCompile(`Failed to get ML filter|Unable to get ML filter|Cannot import non-existent`),
 			},
 		},
 	})
