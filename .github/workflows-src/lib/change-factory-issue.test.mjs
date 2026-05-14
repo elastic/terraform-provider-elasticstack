@@ -459,6 +459,7 @@ test('change-factory-issue lock file is compiled and exists', () => {
   assert.ok(lock.length > 0);
   assert.match(lock, /# gh-aw-metadata:/);
   assert.match(lock, /DO NOT EDIT/);
+  assert.match(lock, /"patch_format":"am"/);
 });
 
 test('computeGateReason returns unknown reason when actorTrusted is null (step skipped)', () => {
@@ -627,6 +628,10 @@ test('change-factory-issue workflow.md.tmpl wiring matches intake contract', () 
   assert.match(
     workflowTmpl,
     /create-pull-request:\s*\n\s*labels: \[change-factory, no-changelog\]\s*\n\s*max: 1/,
+  );
+  assert.match(
+    workflowTmpl,
+    /safe-outputs:\s*\n\s*create-pull-request:[\s\S]*?patch-format: am/,
   );
   assert.match(
     workflowTmpl,
