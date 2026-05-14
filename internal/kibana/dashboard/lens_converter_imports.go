@@ -19,5 +19,6 @@ package dashboard
 
 import (
 	_ "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/lenslegacymetric" // side-effect: register legacy_metric VizConverter with lenscommon (dashboard-lens-contract).
+	_ "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/lenspie" // side-effect: register pie VizConverter with lenscommon (dashboard-lens-contract).
 	_ "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/lensregionmap" // side-effect: register region_map VizConverter with lenscommon (dashboard-lens-contract).
 )
