@@ -16,14 +16,3 @@
 // under the License.
 
 package dashboard
-
-import "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
-
-func firstLensVisConverterForChartBlocks(blocks *models.LensByValueChartBlocks) (lensVisualizationConverter, bool) {
-	for _, c := range lensVisConverters {
-		if c.handlesTFConfigBlocks(blocks) {
-			return c, true
-		}
-	}
-	return nil, false
-}

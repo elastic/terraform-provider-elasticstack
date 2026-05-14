@@ -140,3 +140,12 @@ func lensVisConverterForType(visType string) lensVisualizationConverter {
 	}
 	return nil
 }
+
+func firstLensVisConverterForChartBlocks(blocks *models.LensByValueChartBlocks) (lensVisualizationConverter, bool) {
+	for _, c := range lensVisConverters {
+		if c.handlesTFConfigBlocks(blocks) {
+			return c, true
+		}
+	}
+	return nil, false
+}
