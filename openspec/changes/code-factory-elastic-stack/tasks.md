@@ -22,10 +22,10 @@
 
 ## 3. Compile and validate workflows
 
-- [ ] 3.1 Run `gh aw compile` (or project-specific compilation command) against `.github/workflows-src/code-factory-issue/workflow.md.tmpl`
-- [ ] 3.2 Verify the generated `.github/workflows/code-factory-issue.lock.yml` includes the env vars and updated prompt text
-- [ ] 3.3 Verify `make check-lint` passes
-- [ ] 3.4 Commit changes to branch `code-factory-elastic-stack`
+- [x] 3.1 Run `gh aw compile` (or project-specific compilation command) against `.github/workflows-src/code-factory-issue/workflow.md.tmpl`
+- [x] 3.2 Verify the generated `.github/workflows/code-factory-issue.lock.yml` includes the env vars and updated prompt text
+- [x] 3.3 Verify `make check-lint` passes
+- [x] 3.4 Commit changes to branch `code-factory-elastic-stack`
 
 ## 4. End-to-end validation
 

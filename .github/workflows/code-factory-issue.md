@@ -2287,7 +2287,23 @@ steps:
     uses: hashicorp/setup-terraform@v4
     with:
       terraform_wrapper: false
+  - name: Stage Terraform for agent
+    run: |
+      mkdir -p .bin
+      TF_BIN="$(command -v terraform)"
+      if [ -z "$TF_BIN" ]; then
+        echo "terraform binary not found in PATH" >&2
+        exit 1
+      fi
+      cp "$TF_BIN" .bin/terraform
+      chmod +x .bin/terraform
+      echo "$GITHUB_WORKSPACE/.bin" >> "$GITHUB_PATH"
+    shell: bash
   - name: Setup Elastic Stack
+    env:
+      BIND_ADDRESS: "0.0.0.0"
+      ELASTICSEARCH_PORT: "8080"
+      KIBANA_PORT: "80"
     run: make docker-fleet
   - name: Get dependencies
     run: make setup
@@ -2381,13 +2397,13 @@ Deterministic pre-activation has already decided that this intake is eligible, t
 
 ## Test environment
 
-The Elastic Stack is available in the agent environment. Run targeted acceptance tests with:
+The Elastic Stack is available in the agent environment. It is exposed on AWF-allowed host ports `8080` (Elasticsearch) and `80` (Kibana), reachable via `host.docker.internal` from the sandbox. Run targeted acceptance tests with:
 
 ```bash
-ELASTICSEARCH_ENDPOINTS=http://host.docker.internal:9200 \
+ELASTICSEARCH_ENDPOINTS=http://host.docker.internal:8080 \
 ELASTICSEARCH_USERNAME=elastic \
 ELASTICSEARCH_PASSWORD=password \
-KIBANA_ENDPOINT=http://host.docker.internal:5601 \
+KIBANA_ENDPOINT=http://host.docker.internal \
 TF_ACC=1 \
 go test -v -run TestAccResourceName ./path/to/package
 ```
@@ -2418,7 +2434,7 @@ Implement the triggering issue on branch `code-factory/issue-${{ needs.pre_activ
 - `make check-lint` must succeed.
 - `make build` must succeed.
 - Unit tests must pass with `go test -v ./...`.
-- Targeted acceptance tests must pass with `ELASTICSEARCH_ENDPOINTS=http://host.docker.internal:9200 ELASTICSEARCH_USERNAME=elastic ELASTICSEARCH_PASSWORD=password KIBANA_ENDPOINT=http://host.docker.internal:5601 TF_ACC=1 go test -v -run TestAccResourceName ./path/to/package`.
+- Targeted acceptance tests must pass with `ELASTICSEARCH_ENDPOINTS=http://host.docker.internal:8080 ELASTICSEARCH_USERNAME=elastic ELASTICSEARCH_PASSWORD=password KIBANA_ENDPOINT=http://host.docker.internal TF_ACC=1 go test -v -run TestAccResourceName ./path/to/package`.
 
 ## Pull request contract
 
