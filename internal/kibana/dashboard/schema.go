@@ -44,10 +44,11 @@ import (
 )
 
 const (
-	dashboardValueAuto               = "auto"
-	dashboardValueAverage            = "average"
-	panelTypeImage                   = "image"
-	panelTypeMarkdown                = "markdown"
+	dashboardValueAuto    = "auto"
+	dashboardValueAverage = "average"
+	panelTypeImage        = "image"
+	panelTypeMarkdown     = "markdown"
+	// panelTypeVis is Kibana's dashboard panel API discriminator for Lens-backed visualizations; Terraform typed configuration uses vis_config.
 	panelTypeVis                     = "vis"
 	panelTypeTimeSlider              = "time_slider_control"
 	panelTypeSloAlerts               = "slo_alerts"
@@ -64,7 +65,7 @@ const (
 )
 
 // panelConfigNames returns the full set of panel-level typed config attribute names used for mutual-exclusion
-// validators and documentation. Populated from the registry (plus unmigrated siblings) via panelkit wiring.
+// validators and documentation. Populated from handler registration via panelkit wiring.
 func panelConfigNames() []string {
 	return panelkit.TypedSiblingPanelConfigBlockNames()
 }

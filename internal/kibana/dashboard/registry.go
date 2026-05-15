@@ -76,9 +76,9 @@ func init() {
 		derivedPanelConfigNames = append(derivedPanelConfigNames, block)
 	}
 
-	typedSiblings := append([]string{}, derivedPanelConfigNames...)
-	typedSiblings = append(typedSiblings, []string{"vis_config", "lens_dashboard_app_config", "discover_session_config"}...)
-	panelkit.SetTypedSiblingPanelConfigBlockNames(typedSiblings)
+	// Handler registration already produces vis_config, lens_dashboard_app_config,
+	// and discover_session_config via PanelType()+"_config"; do not append duplicates.
+	panelkit.SetTypedSiblingPanelConfigBlockNames(append([]string(nil), derivedPanelConfigNames...))
 }
 
 func LookupHandler(panelType string) iface.Handler {
