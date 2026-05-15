@@ -20,13 +20,13 @@
 
 ## 3. Create discoversession handler
 
-- [ ] 3.1 Create `dashboard/panel/discoversession/api.go` with `Handler` implementing `iface.Handler` for panel type `"discover_session"`, block `"discover_session_config"`
-- [ ] 3.2 Implement `FromAPI`: classify config (by_value DSL tab, by_value ESQL tab, or by_reference); populate appropriate sub-model
-- [ ] 3.3 Implement `ToAPI`: branch on by_value tab type or by_reference; build API payload accordingly
-- [ ] 3.4 Create `dashboard/panel/discoversession/schema.go` with `discover_session_config` block including `by_value` (with `tab` DSL/ESQL dispatch) and `by_reference` (with overrides) sub-blocks
-- [ ] 3.5 Create `dashboard/panel/discoversession/model.go` with config classification helpers and tab-type detection
-- [ ] 3.6 Create `dashboard/panel/discoversession/api_test.go` covering by_value DSL path, by_value ESQL path, by_reference path, and null-preservation for optional fields
-- [ ] 3.7 Register `discoversession.Handler{}` in `dashboard/registry.go`
+- [x] 3.1 Create `dashboard/panel/discoversession/api.go` with `Handler` implementing `iface.Handler` for panel type `"discover_session"`, block `"discover_session_config"`
+- [x] 3.2 Implement `FromAPI`: classify config (by_value DSL tab, by_value ESQL tab, or by_reference); populate appropriate sub-model
+- [x] 3.3 Implement `ToAPI`: branch on by_value tab type or by_reference; build API payload accordingly
+- [x] 3.4 Create `dashboard/panel/discoversession/schema.go` with `discover_session_config` block including `by_value` (with `tab` DSL/ESQL dispatch) and `by_reference` (with overrides) sub-blocks
+- [x] 3.5 Create `dashboard/panel/discoversession/model.go` with config classification helpers and tab-type detection
+- [x] 3.6 Create `dashboard/panel/discoversession/api_test.go` covering by_value DSL path, by_value ESQL path, by_reference path, and null-preservation for optional fields
+- [x] 3.7 Register `discoversession.Handler{}` in `dashboard/registry.go`
 
 ## 4. vis → vis_config rename
 
