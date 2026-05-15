@@ -20,8 +20,6 @@ package lensmosaic
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func alignMosaicStateFromPlan(plan, state *models.LensByValueChartBlocks) {
@@ -36,18 +34,6 @@ func alignMosaicConfigStateFromPlan(plan, state *models.MosaicConfigModel) {
 		return
 	}
 	lenscommon.AlignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
-	preserveKnownTfBoolIfStateNull(plan.IgnoreGlobalFilters, &state.IgnoreGlobalFilters)
-	preserveKnownTfFloat64IfStateNull(plan.Sampling, &state.Sampling)
-}
-
-func preserveKnownTfBoolIfStateNull(plan types.Bool, state *types.Bool) {
-	if typeutils.IsKnown(plan) && !plan.IsNull() && (!typeutils.IsKnown(*state) || state.IsNull()) {
-		*state = plan
-	}
-}
-
-func preserveKnownTfFloat64IfStateNull(plan types.Float64, state *types.Float64) {
-	if typeutils.IsKnown(plan) && !plan.IsNull() && (!typeutils.IsKnown(*state) || state.IsNull()) {
-		*state = plan
-	}
+	lenscommon.PreserveKnownTfBoolIfStateNull(plan.IgnoreGlobalFilters, &state.IgnoreGlobalFilters)
+	lenscommon.PreserveKnownTfFloat64IfStateNull(plan.Sampling, &state.Sampling)
 }
