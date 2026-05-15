@@ -19,12 +19,14 @@ package calendar_job_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"regexp"
 	"strings"
 	"testing"
 
+	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/hashicorp/terraform-plugin-testing/config"
@@ -88,6 +90,38 @@ func importMLCalendarJobStateID(addr string) resource.ImportStateIdFunc {
 		}
 		return rs.Primary.ID, nil
 	}
+}
+
+// accCleanupMLAnomalyJobAfterTest registers a best-effort CloseJob + DeleteJob for jobID so
+// acceptance runs that expect an apply failure still tear down an ML job if Terraform cannot
+// complete destroy (mirrors patterns in other ML acc tests).
+func accCleanupMLAnomalyJobAfterTest(t *testing.T, jobID string) {
+	t.Helper()
+	t.Cleanup(func() {
+		ctx := context.Background()
+		client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+		if err != nil {
+			t.Logf("cleanup ML job %q: acceptance client: %v", jobID, err)
+			return
+		}
+		es, err := client.GetESClient()
+		if err != nil {
+			t.Logf("cleanup ML job %q: typed client: %v", jobID, err)
+			return
+		}
+		if _, err := es.Ml.CloseJob(jobID).Force(true).AllowNoMatch(true).Do(ctx); err != nil {
+			t.Logf("cleanup ML job %q: CloseJob: %v", jobID, err)
+		}
+		_, err = es.Ml.DeleteJob(jobID).Force(true).Do(ctx)
+		if err == nil {
+			return
+		}
+		var esErr *estypes.ElasticsearchError
+		if errors.As(err, &esErr) && esErr.Status == 404 {
+			return
+		}
+		t.Logf("cleanup ML job %q: DeleteJob: %v", jobID, err)
+	})
 }
 
 func TestAccResourceMLCalendarJob_withJobGroup(t *testing.T) {
@@ -423,6 +457,7 @@ func TestAccResourceMLCalendarJob_applyCalendarNotFound(t *testing.T) {
 	// "missing job" does not reliably fail apply. A calendar that was never created does.
 	missingCalendarID := fmt.Sprintf("test-cal-job-misscal-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	jobID := fmt.Sprintf("test-cal-job-misscal-ad-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	accCleanupMLAnomalyJobAfterTest(t, jobID)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
