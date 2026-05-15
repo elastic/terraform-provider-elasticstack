@@ -59,6 +59,9 @@ func readCalendarJob(ctx context.Context, client *clients.ElasticsearchScopedCli
 
 	res, err := typedClient.Ml.GetCalendars().CalendarId(calendarID).Do(ctx)
 	if err != nil {
+		// Missing calendar: typed client returns *types.ElasticsearchError with status 404
+		// (see go-elasticsearch typedapi/ml/getcalendars GetCalendars.Do). Treat as gone so
+		// refresh removes the assignment from state when the calendar is deleted out-of-band.
 		if elasticsearch.IsNotFoundElasticsearchError(err) {
 			return state, false, nil
 		}

@@ -29,6 +29,7 @@ import (
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -80,6 +81,16 @@ func testAccMLCalendarJobESEndpoints() []string {
 		}
 	}
 	return out
+}
+
+func testAccCheckMLCalendarJobAbsentFromState(addr string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		if _, ok := s.RootModule().Resources[addr]; ok {
+			return fmt.Errorf("expected %q to be absent from state after refresh (calendar deleted out-of-band); "+
+				"read must treat the missing calendar API error as not found so the resource can be dropped from state", addr)
+		}
+		return nil
+	}
 }
 
 func importMLCalendarJobStateID(addr string) resource.ImportStateIdFunc {
@@ -470,6 +481,83 @@ func TestAccResourceMLCalendarJob_applyCalendarNotFound(t *testing.T) {
 					"job_id":              config.StringVariable(jobID),
 				},
 				ExpectError: regexp.MustCompile(`(?i)failed to assign ml job|unable to assign job .* to calendar|resource_not_found|no such calendar|404`),
+			},
+		},
+	})
+}
+
+// TestAccMLCalendarJob_getCalendarsMissingErrorIsNotFound documents the error shape
+// returned by go-elasticsearch/v8 for ml.get_calendars when the calendar does not exist.
+// readCalendarJob relies on elasticsearch.IsNotFoundElasticsearchError for refresh-time
+// removal from state when the calendar is deleted out-of-band.
+func TestAccMLCalendarJob_getCalendarsMissingErrorIsNotFound(t *testing.T) {
+	t.Parallel()
+	acctest.PreCheck(t)
+
+	ctx := context.Background()
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+	if err != nil {
+		t.Fatalf("acceptance elasticsearch client: %v", err)
+	}
+	es, err := client.GetESClient()
+	if err != nil {
+		t.Fatalf("get elasticsearch client: %v", err)
+	}
+	calendarID := fmt.Sprintf("test-cal-job-nocal-%s", sdkacctest.RandStringFromCharSet(24, sdkacctest.CharSetAlphaNum))
+
+	_, err = es.Ml.GetCalendars().CalendarId(calendarID).Do(ctx)
+	if err == nil {
+		t.Fatal("expected error when requesting a non-existent ML calendar")
+	}
+	if !esclient.IsNotFoundElasticsearchError(err) {
+		t.Fatalf("missing calendar must classify as not-found for read drift handling; got [%T] %v", err, err)
+	}
+}
+
+func TestAccResourceMLCalendarJob_refreshRemovesAssignmentWhenCalendarDeleted(t *testing.T) {
+	calendarID := fmt.Sprintf("test-cal-job-refdel-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	jobID := fmt.Sprintf("test-cal-job-refdel-ad-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	accCleanupMLAnomalyJobAfterTest(t, jobID)
+
+	vars := config.Variables{
+		"calendar_id": config.StringVariable(calendarID),
+		"job_id":      config.StringVariable(jobID),
+	}
+	const addr = mlCalendarJobResourceAddr
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				PreConfig:                func() { setupAccMLCalendar(t, calendarID) },
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "calendar_id", calendarID),
+					resource.TestCheckResourceAttr(addr, "job_id", jobID),
+					resource.TestCheckResourceAttrSet(addr, "id"),
+				),
+			},
+			{
+				PreConfig: func() {
+					ctx := context.Background()
+					c, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+					if err != nil {
+						t.Fatalf("acceptance elasticsearch client: %v", err)
+					}
+					es, err := c.GetESClient()
+					if err != nil {
+						t.Fatalf("typed elasticsearch client: %v", err)
+					}
+					if _, err := es.Ml.DeleteCalendar(calendarID).Do(ctx); err != nil && !esclient.IsNotFoundElasticsearchError(err) {
+						t.Fatalf("delete ML calendar %q before refresh: %v", calendarID, err)
+					}
+				},
+				ProtoV6ProviderFactories: acctest.Providers,
+				RefreshState:             true,
+				ExpectNonEmptyPlan:       true,
+				Check:                    testAccCheckMLCalendarJobAbsentFromState(addr),
 			},
 		},
 	})

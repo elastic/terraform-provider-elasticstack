@@ -29,9 +29,20 @@ import (
 // error with HTTP status 404. Use this to treat a missing resource as a
 // successful no-op (e.g. idempotent deletes) or as a "not found" signal on
 // read operations.
+//
+// The typed go-elasticsearch/v8 client decodes most API error bodies into
+// *types.ElasticsearchError (see generated *Do methods). If a specific endpoint
+// ever returns a different error type, extend this helper and update any
+// live-stack regression test that asserts the shape for that call path.
 func IsNotFoundElasticsearchError(err error) bool {
+	if err == nil {
+		return false
+	}
 	var esErr *types.ElasticsearchError
-	return errors.As(err, &esErr) && esErr.Status == 404
+	if !errors.As(err, &esErr) || esErr == nil {
+		return false
+	}
+	return esErr.Status == 404
 }
 
 // durationToMsString formats a time.Duration as a millisecond string (e.g. "5000ms")

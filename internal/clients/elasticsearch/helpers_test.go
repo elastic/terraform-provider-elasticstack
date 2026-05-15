@@ -38,6 +38,11 @@ func TestIsNotFoundElasticsearchError(t *testing.T) {
 			expected: false,
 		},
 		{
+			name:     "nil *ElasticsearchError in chain returns false",
+			err:      fmt.Errorf("wrap: %w", (*types.ElasticsearchError)(nil)),
+			expected: false,
+		},
+		{
 			name:     "non-elasticsearch error returns false",
 			err:      errors.New("some other error"),
 			expected: false,
