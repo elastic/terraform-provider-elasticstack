@@ -19,11 +19,10 @@ package calendar_job
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
-	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
@@ -47,8 +46,7 @@ func deleteCalendarJob(ctx context.Context, client *clients.ElasticsearchScopedC
 
 	_, err = typedClient.Ml.DeleteCalendarJob(calendarID, jobID).Do(ctx)
 	if err != nil {
-		var esErr *estypes.ElasticsearchError
-		if errors.As(err, &esErr) && esErr.Status == 404 {
+		if elasticsearch.IsNotFoundElasticsearchError(err) {
 			tflog.Debug(ctx, fmt.Sprintf("ML calendar job assignment already removed: calendar=%s job=%s", calendarID, jobID))
 			return diags
 		}

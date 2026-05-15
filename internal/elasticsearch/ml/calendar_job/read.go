@@ -19,13 +19,12 @@ package calendar_job
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"slices"
 	"strings"
 
-	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -60,8 +59,7 @@ func readCalendarJob(ctx context.Context, client *clients.ElasticsearchScopedCli
 
 	res, err := typedClient.Ml.GetCalendars().CalendarId(calendarID).Do(ctx)
 	if err != nil {
-		var esErr *estypes.ElasticsearchError
-		if errors.As(err, &esErr) && esErr.Status == 404 {
+		if elasticsearch.IsNotFoundElasticsearchError(err) {
 			return state, false, nil
 		}
 		diags.AddError("Failed to get ML calendar", fmt.Sprintf("Unable to get ML calendar %q: %s", calendarID, err.Error()))

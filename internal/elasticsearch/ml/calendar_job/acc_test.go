@@ -39,8 +39,8 @@ const mlCalendarJobResourceAddr = "elasticstack_elasticsearch_ml_calendar_job.te
 // do not depend on the elasticstack_elasticsearch_ml_calendar resource (which may not
 // be present on all branches). The calendar is deleted in t.Cleanup after the test.
 //
-// Call only from resource.TestCase.PreCheck after acctest.PreCheck so no Elasticsearch
-// work runs when acceptance prerequisites are not satisfied.
+// Call from the first test step's PreConfig (after acctest.PreCheck in the test case's
+// PreCheck) so no Elasticsearch work runs when acceptance prerequisites are not satisfied.
 func setupAccMLCalendar(t *testing.T, calendarID string) {
 	t.Helper()
 	ctx := context.Background()
@@ -80,6 +80,16 @@ func testAccMLCalendarJobESEndpoints() []string {
 	return out
 }
 
+func importMLCalendarJobStateID(addr string) resource.ImportStateIdFunc {
+	return func(s *terraform.State) (string, error) {
+		rs, ok := s.RootModule().Resources[addr]
+		if !ok || rs == nil {
+			return "", fmt.Errorf("resource %q not found in state", addr)
+		}
+		return rs.Primary.ID, nil
+	}
+}
+
 func TestAccResourceMLCalendarJob_withJobGroup(t *testing.T) {
 	calendarID := fmt.Sprintf("test-cal-job-grp-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	groupName := fmt.Sprintf("test-acc-ml-grp-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
@@ -95,12 +105,10 @@ func TestAccResourceMLCalendarJob_withJobGroup(t *testing.T) {
 	}
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			acctest.PreCheck(t)
-			setupAccMLCalendar(t, calendarID)
-		},
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
+				PreConfig:                func() { setupAccMLCalendar(t, calendarID) },
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables:          vars,
@@ -122,10 +130,7 @@ func TestAccResourceMLCalendarJob_withJobGroup(t *testing.T) {
 				ImportState:              true,
 				ImportStateVerify:        true,
 				ImportStateVerifyIgnore:  []string{"elasticsearch_connection"},
-				ImportStateIdFunc: func(s *terraform.State) (string, error) {
-					rs := s.RootModule().Resources[addr]
-					return rs.Primary.ID, nil
-				},
+				ImportStateIdFunc:        importMLCalendarJobStateID(addr),
 			},
 		},
 	})
@@ -142,12 +147,10 @@ func TestAccResourceMLCalendarJob_basic(t *testing.T) {
 	const addr = mlCalendarJobResourceAddr
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			acctest.PreCheck(t)
-			setupAccMLCalendar(t, calendarID)
-		},
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
+				PreConfig:                func() { setupAccMLCalendar(t, calendarID) },
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables:          vars,
@@ -173,12 +176,10 @@ func TestAccResourceMLCalendarJob_import(t *testing.T) {
 	const addr = mlCalendarJobResourceAddr
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			acctest.PreCheck(t)
-			setupAccMLCalendar(t, calendarID)
-		},
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
+				PreConfig:                func() { setupAccMLCalendar(t, calendarID) },
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables:          vars,
@@ -197,10 +198,7 @@ func TestAccResourceMLCalendarJob_import(t *testing.T) {
 				ImportState:              true,
 				ImportStateVerify:        true,
 				ImportStateVerifyIgnore:  []string{"elasticsearch_connection"},
-				ImportStateIdFunc: func(s *terraform.State) (string, error) {
-					rs := s.RootModule().Resources[addr]
-					return rs.Primary.ID, nil
-				},
+				ImportStateIdFunc:        importMLCalendarJobStateID(addr),
 			},
 		},
 	})
@@ -214,13 +212,13 @@ func TestAccResourceMLCalendarJob_replaceCalendar(t *testing.T) {
 	const addr = mlCalendarJobResourceAddr
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			acctest.PreCheck(t)
-			setupAccMLCalendar(t, calendarID1)
-			setupAccMLCalendar(t, calendarID2)
-		},
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
+				PreConfig: func() {
+					setupAccMLCalendar(t, calendarID1)
+					setupAccMLCalendar(t, calendarID2)
+				},
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -258,12 +256,10 @@ func TestAccResourceMLCalendarJob_replaceJob(t *testing.T) {
 	const addr = mlCalendarJobResourceAddr
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			acctest.PreCheck(t)
-			setupAccMLCalendar(t, calendarID)
-		},
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
+				PreConfig:                func() { setupAccMLCalendar(t, calendarID) },
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -298,6 +294,10 @@ func TestAccResourceMLCalendarJob_replaceJob(t *testing.T) {
 }
 
 func TestAccResourceMLCalendarJob_explicitConnection(t *testing.T) {
+	// The provider still configures Elasticsearch from env (acctest.Providers); this test
+	// asserts the per-resource elasticsearch_connection block shape and credentials wiring.
+	// Fully isolating the resource-level client from the provider default would require a
+	// dedicated provider factory (see other explicit-connection tests in the repo).
 	endpoints := testAccMLCalendarJobESEndpoints()
 	if len(endpoints) == 0 {
 		t.Skip("ELASTICSEARCH_ENDPOINTS must be set to run this test")
@@ -313,12 +313,10 @@ func TestAccResourceMLCalendarJob_explicitConnection(t *testing.T) {
 	const addr = mlCalendarJobResourceAddr
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			acctest.PreCheck(t)
-			setupAccMLCalendar(t, calendarID)
-		},
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
+				PreConfig:                func() { setupAccMLCalendar(t, calendarID) },
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -354,10 +352,7 @@ func TestAccResourceMLCalendarJob_explicitConnection(t *testing.T) {
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"elasticsearch_connection"},
-				ImportStateIdFunc: func(s *terraform.State) (string, error) {
-					rs := s.RootModule().Resources[addr]
-					return rs.Primary.ID, nil
-				},
+				ImportStateIdFunc:       importMLCalendarJobStateID(addr),
 			},
 		},
 	})
@@ -376,7 +371,7 @@ func TestAccResourceMLCalendarJob_planInvalidCalendarID(t *testing.T) {
 					"calendar_id": config.StringVariable("INVALID_UPPERCASE_CAL"),
 					"job_id":      config.StringVariable(jobID),
 				},
-				ExpectError: regexp.MustCompile(`calendar_id|lowercase|must contain|Invalid Attribute Value Match`),
+				ExpectError: regexp.MustCompile(`(?s)(?:Invalid Attribute Value Match.*calendar_id|calendar_id.*Invalid Attribute Value Match).*must contain lowercase alphanumeric`),
 			},
 		},
 	})
@@ -397,7 +392,7 @@ func TestAccResourceMLCalendarJob_planInvalidJobID(t *testing.T) {
 					"job_id":         config.StringVariable(jobID),
 					"invalid_job_id": config.StringVariable("INVALID_UPPERCASE_JOB"),
 				},
-				ExpectError: regexp.MustCompile(`job_id|lowercase|must contain|Invalid Attribute Value Match`),
+				ExpectError: regexp.MustCompile(`(?s)(?:Invalid Attribute Value Match.*job_id|job_id.*Invalid Attribute Value Match).*must contain lowercase alphanumeric`),
 			},
 		},
 	})
@@ -417,7 +412,7 @@ func TestAccResourceMLCalendarJob_planCalendarIDTooLong(t *testing.T) {
 					"calendar_id": config.StringVariable(longCalendarID),
 					"job_id":      config.StringVariable(jobID),
 				},
-				ExpectError: regexp.MustCompile(`calendar_id|Invalid Attribute Value Length|between 1 and 64|string length`),
+				ExpectError: regexp.MustCompile(`(?s)Invalid Attribute Value Length.*calendar_id|calendar_id.*between 1 and 64`),
 			},
 		},
 	})
@@ -439,7 +434,7 @@ func TestAccResourceMLCalendarJob_applyCalendarNotFound(t *testing.T) {
 					"missing_calendar_id": config.StringVariable(missingCalendarID),
 					"job_id":              config.StringVariable(jobID),
 				},
-				ExpectError: regexp.MustCompile(`(?i)failed to assign|unable to assign|not.*found|resource_not_found|unknown.*calendar|no.*calendar`),
+				ExpectError: regexp.MustCompile(`(?i)failed to assign ml job|unable to assign job .* to calendar|resource_not_found|no such calendar|404`),
 			},
 		},
 	})

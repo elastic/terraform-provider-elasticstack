@@ -33,6 +33,7 @@ var (
 	_ resource.Resource                = (*calendarJobResource)(nil)
 	_ resource.ResourceWithConfigure   = (*calendarJobResource)(nil)
 	_ resource.ResourceWithImportState = (*calendarJobResource)(nil)
+	_ resource.ResourceWithModifyPlan  = (*calendarJobResource)(nil)
 )
 
 type calendarJobResource struct {

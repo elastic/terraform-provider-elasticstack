@@ -29,19 +29,20 @@ import (
 )
 
 const (
-	calendarIDAllowedCharsMessage = "must contain lowercase alphanumeric characters, hyphens, and underscores, " +
+	calendarIDAllowedCharsMessage = "must contain lowercase alphanumeric characters, dots, hyphens, and underscores, " +
 		"and must start and end with alphanumeric characters"
-	jobIDAllowedCharsMessage = "must contain lowercase alphanumeric characters (a-z and 0-9), hyphens, and underscores. " +
-		"It must start and end with alphanumeric characters"
+	jobIDAllowedCharsMessage = "must contain lowercase alphanumeric characters (a-z and 0-9), dots, hyphens, and underscores; " +
+		"it must start and end with alphanumeric characters (aligned with Elasticsearch ML job and calendar identifier rules)"
 )
 
 func getSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
-		MarkdownDescription: "Assigns a single anomaly detection **job or job group** to an ML calendar using " +
-			"`PUT _ml/calendars/{calendar_id}/jobs/{job_id}` (and removes it on destroy). " +
-			"The `job_id` value is the same path parameter Elasticsearch accepts: a job identifier or a job group name (see the Elasticsearch REST API operation `ml.put_calendar_job`). " +
-			"This resource models **one** identifier per instance (comma-separated lists in the API are not valid for the Terraform `job_id` attribute). " +
-			"The computed `id` is `<cluster_uuid>/<calendar_id>|<job_id>` (a pipe separates calendar and job because the composite ID only allows one slash).",
+		MarkdownDescription: "Assigns a single anomaly detection job or job group to an ML calendar using " +
+			"`PUT _ml/calendars/{calendar_id}/jobs/{job_id}` and removes that assignment on destroy. " +
+			"The `job_id` attribute is the same path parameter Elasticsearch accepts: a job identifier or a job group name (Elasticsearch operation `ml.put_calendar_job`). " +
+			"This resource models one identifier per instance (comma-separated lists in the API are not valid for the Terraform `job_id` attribute). " +
+			"The computed `id` is `<cluster_uuid>/<calendar_id>|<job_id>` (a pipe separates calendar and job because the composite ID only allows one slash). " +
+			"API reference: https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-ml-put-calendar-job",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Internal composite identifier of the resource.",
@@ -52,7 +53,7 @@ func getSchema(_ context.Context) schema.Schema {
 			},
 			"calendar_id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the ML calendar. Must contain lowercase alphanumeric characters " +
-					"(a-z and 0-9), hyphens, or underscores. Must start and end with an alphanumeric character.",
+					"(a-z and 0-9), dots, hyphens, or underscores. Must start and end with an alphanumeric character.",
 				Required: true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -60,7 +61,7 @@ func getSchema(_ context.Context) schema.Schema {
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(1, 64),
 					stringvalidator.RegexMatches(
-						regexp.MustCompile(`^[a-z0-9]([a-z0-9_-]*[a-z0-9])?$`),
+						regexp.MustCompile(`^[a-z0-9]([a-z0-9_.-]*[a-z0-9])?$`),
 						calendarIDAllowedCharsMessage,
 					),
 				},
@@ -76,7 +77,7 @@ func getSchema(_ context.Context) schema.Schema {
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(1, 64),
 					stringvalidator.RegexMatches(
-						regexp.MustCompile(`^[a-z0-9]([a-z0-9_-]*[a-z0-9])?$`),
+						regexp.MustCompile(`^[a-z0-9]([a-z0-9_.-]*[a-z0-9])?$`),
 						jobIDAllowedCharsMessage,
 					),
 				},
