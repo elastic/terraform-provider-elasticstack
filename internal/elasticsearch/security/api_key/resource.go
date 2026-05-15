@@ -46,9 +46,8 @@ var (
 )
 
 // Resource embeds ElasticsearchResource[tfModel] to inherit Configure, Metadata,
-// Schema, Delete, and the envelope's Create/Update (which are overridden below).
-// Create, Read, and Update are defined on the concrete type to preserve the
-// private-state cluster-version caching flow.
+// Schema, Read, Delete, and PostRead cluster-version caching.
+// Create and Update are defined on the concrete type.
 type Resource struct {
 	*entitycore.ElasticsearchResource[tfModel]
 }
@@ -61,11 +60,12 @@ func newResource() *Resource {
 	createPlaceholder, updatePlaceholder := entitycore.PlaceholderElasticsearchWriteCallbacks[tfModel]()
 	return &Resource{
 		ElasticsearchResource: entitycore.NewElasticsearchResource[tfModel]("security_api_key", entitycore.ElasticsearchResourceOptions[tfModel]{
-			Schema: schemaFactory,
-			Read:   readAPIKey,
-			Delete: deleteAPIKey,
-			Create: createPlaceholder,
-			Update: updatePlaceholder,
+			Schema:   schemaFactory,
+			Read:     readAPIKey,
+			Delete:   deleteAPIKey,
+			Create:   createPlaceholder,
+			Update:   updatePlaceholder,
+			PostRead: postReadPersistClusterVersion,
 		}),
 	}
 }
@@ -126,6 +126,24 @@ func saveClusterVersion(ctx context.Context, client *clients.ElasticsearchScoped
 
 	diags.Append(priv.SetKey(ctx, clusterVersionPrivateDataKey, data)...)
 	return diags
+}
+
+func postReadPersistClusterVersion(
+	ctx context.Context,
+	client *clients.ElasticsearchScopedClient,
+	_ tfModel,
+	privateState any,
+) diag.Diagnostics {
+	priv, ok := privateState.(privateData)
+	if !ok {
+		var diags diag.Diagnostics
+		diags.AddError(
+			"Elasticsearch envelope configuration error",
+			"security_api_key PostRead requires private state implementing GetKey and SetKey.",
+		)
+		return diags
+	}
+	return saveClusterVersion(ctx, client, priv)
 }
 
 // clusterVersionOfLastRead retrieves the cached Elasticsearch cluster version.

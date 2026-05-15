@@ -24,11 +24,9 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
-// readAPIKey is the package-level read callback shared with the envelope and
-// the concrete Read override.
+// readAPIKey is the envelope read callback for API key reads.
 func readAPIKey(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state tfModel) (tfModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
@@ -53,43 +51,4 @@ func readAPIKey(ctx context.Context, client *clients.ElasticsearchScopedClient, 
 	}
 
 	return state, true, diags
-}
-
-// Read overrides the envelope's Read to add private-state cluster-version caching.
-func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var stateModel tfModel
-	resp.Diagnostics.Append(req.State.Get(ctx, &stateModel)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	compID, diags := clients.CompositeIDFromStrFw(stateModel.GetID().ValueString())
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, connDiags := r.Client().GetElasticsearchClient(ctx, stateModel.GetElasticsearchConnection())
-	resp.Diagnostics.Append(connDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	finalModel, found, readDiags := readAPIKey(ctx, client, compID.ResourceID, stateModel)
-	resp.Diagnostics.Append(readDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if !found {
-		resp.State.RemoveResource(ctx)
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, finalModel)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	resp.Diagnostics.Append(saveClusterVersion(ctx, client, resp.Private)...)
 }
