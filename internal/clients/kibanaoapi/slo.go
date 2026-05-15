@@ -216,18 +216,27 @@ func applyResponseIndicator(s kbapi.SLOsSloWithSummaryResponse_Indicator, target
 	}
 }
 
+// responseIndicatorTo is the generic core for indicator conversion. T is the
+// value type and PT is its pointer, which must implement sloIndicatorTarget
+// (the From* methods have pointer receivers on the concrete kbapi types).
+func responseIndicatorTo[T any, PT interface {
+	*T
+	sloIndicatorTarget
+}](s kbapi.SLOsSloWithSummaryResponse_Indicator) (T, error) {
+	var ret T
+	return ret, applyResponseIndicator(s, PT(&ret))
+}
+
 // ResponseIndicatorToCreateIndicator converts the response indicator union type to the
 // create request indicator union type.
 func ResponseIndicatorToCreateIndicator(s kbapi.SLOsSloWithSummaryResponse_Indicator) (kbapi.SLOsCreateSloRequest_Indicator, error) {
-	var ret kbapi.SLOsCreateSloRequest_Indicator
-	return ret, applyResponseIndicator(s, &ret)
+	return responseIndicatorTo[kbapi.SLOsCreateSloRequest_Indicator, *kbapi.SLOsCreateSloRequest_Indicator](s)
 }
 
 // ResponseIndicatorToUpdateIndicator converts the response indicator union type to the
 // update request indicator union type.
 func ResponseIndicatorToUpdateIndicator(s kbapi.SLOsSloWithSummaryResponse_Indicator) (kbapi.SLOsUpdateSloRequest_Indicator, error) {
-	var ret kbapi.SLOsUpdateSloRequest_Indicator
-	return ret, applyResponseIndicator(s, &ret)
+	return responseIndicatorTo[kbapi.SLOsUpdateSloRequest_Indicator, *kbapi.SLOsUpdateSloRequest_Indicator](s)
 }
 
 // TransformGroupBy converts a slice of group-by field names to the kbapi union type.
