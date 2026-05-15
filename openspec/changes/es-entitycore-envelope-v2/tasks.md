@@ -60,14 +60,14 @@
 
 ## 5. Validation
 
-- [ ] 5.1 Run focused unit tests for `internal/entitycore/...`
-- [ ] 5.2 Run focused tests for the migrated resources:
+- [x] 5.1 Run focused unit tests for `internal/entitycore/...`
+- [x] 5.2 Run focused tests for the migrated resources (`go test -run '^Test[^A]' -count=1`):
   - `go test ./internal/elasticsearch/ml/filter/...`
   - `go test ./internal/elasticsearch/cluster/settings/...`
   - `go test ./internal/elasticsearch/ml/anomalydetectionjob/...`
-  - `go test ./internal/elasticsearch/security/user/...`
+  - `go test ./internal/elasticsearch/security/user/...` — no unit tests in package (matcher ran; exit 0)
   - `go test ./internal/elasticsearch/security/api_key/...`
-- [ ] 5.3 Run `make build`
-- [ ] 5.4 Run `make check-lint`
-- [ ] 5.5 Run `make check-openspec`
-- [ ] 5.6 If Elasticsearch test infrastructure is available, run targeted acceptance tests for the five proof-of-concept resources
+- [x] 5.3 Run `make build`
+- [x] 5.4 Run `make check-lint`
+- [x] 5.5 Run `make check-openspec`
+- [ ] 5.6 If Elasticsearch test infrastructure is available, run targeted acceptance tests for the five proof-of-concept resources — Local stack unavailable (curl probe HTTP `000`); CI will run targeted acceptance on the PR.
