@@ -231,8 +231,6 @@ func (r *ElasticsearchResource[T]) Create(ctx context.Context, req resource.Crea
 		config:       req.Config,
 		outState:     &resp.State,
 		privateState: resp.Private,
-		createOp:     r.createFunc,
-		updateOp:     nil,
 		isUpdate:     false,
 	})...)
 }
@@ -274,11 +272,8 @@ func (r *ElasticsearchResource[T]) Read(ctx context.Context, req resource.ReadRe
 		return
 	}
 
-	if r.readFunc == nil {
-		resp.Diagnostics.AddError(
-			"Elasticsearch envelope configuration error",
-			"The read callback passed via ElasticsearchResourceOptions must not be nil.",
-		)
+	if d := r.requireReadFunc(); d.HasError() {
+		resp.Diagnostics.Append(d...)
 		return
 	}
 
@@ -310,8 +305,6 @@ func (r *ElasticsearchResource[T]) Update(ctx context.Context, req resource.Upda
 		config:       req.Config,
 		outState:     &resp.State,
 		privateState: resp.Private,
-		createOp:     nil,
-		updateOp:     r.updateFunc,
 		isUpdate:     true,
 	})...)
 }
@@ -322,31 +315,30 @@ type writeInvocation[T ElasticsearchResourceModel] struct {
 	config       tfsdk.Config
 	outState     *tfsdk.State
 	privateState any
-	createOp     ElasticsearchCreateFunc[T]
-	updateOp     ElasticsearchUpdateFunc[T]
 	isUpdate     bool
+}
+
+func (r *ElasticsearchResource[T]) requireReadFunc() diag.Diagnostics {
+	var diags diag.Diagnostics
+	if r.readFunc == nil {
+		diags.AddError(
+			"Elasticsearch envelope configuration error",
+			"The read callback passed via ElasticsearchResourceOptions must not be nil.",
+		)
+	}
+	return diags
 }
 
 func (r *ElasticsearchResource[T]) runWrite(ctx context.Context, inv writeInvocation[T]) diag.Diagnostics {
 	var diags diag.Diagnostics
-	var nilWriteErrDetail string
-	var activeCreate ElasticsearchCreateFunc[T]
-	var activeUpdate ElasticsearchUpdateFunc[T]
-	if inv.isUpdate {
-		activeUpdate = inv.updateOp
-		if activeUpdate == nil {
-			nilWriteErrDetail = "The update callback passed via ElasticsearchResourceOptions must not be nil."
+	if (inv.isUpdate && r.updateFunc == nil) || (!inv.isUpdate && r.createFunc == nil) {
+		op := "create"
+		if inv.isUpdate {
+			op = "update"
 		}
-	} else {
-		activeCreate = inv.createOp
-		if activeCreate == nil {
-			nilWriteErrDetail = "The create callback passed via ElasticsearchResourceOptions must not be nil."
-		}
-	}
-	if nilWriteErrDetail != "" {
 		diags.AddError(
 			"Elasticsearch envelope configuration error",
-			nilWriteErrDetail,
+			fmt.Sprintf("The %s callback passed via ElasticsearchResourceOptions must not be nil.", op),
 		)
 		return diags
 	}
@@ -385,26 +377,22 @@ func (r *ElasticsearchResource[T]) runWrite(ctx context.Context, inv writeInvoca
 		return diags
 	}
 
-	if r.readFunc == nil {
-		diags.AddError(
-			"Elasticsearch envelope configuration error",
-			"The read callback passed via ElasticsearchResourceOptions must not be nil.",
-		)
-		return diags
+	if d := r.requireReadFunc(); d.HasError() {
+		return d
 	}
 
 	writeKey := writeID.ValueString()
 	var written ElasticsearchWriteResult[T]
 	var callDiags diag.Diagnostics
 	if inv.isUpdate {
-		written, callDiags = activeUpdate(ctx, client, ElasticsearchUpdateRequest[T]{
+		written, callDiags = r.updateFunc(ctx, client, ElasticsearchUpdateRequest[T]{
 			Plan:    planModel,
 			Prior:   priorModel,
 			Config:  inv.config,
 			WriteID: writeKey,
 		})
 	} else {
-		written, callDiags = activeCreate(ctx, client, ElasticsearchCreateRequest[T]{
+		written, callDiags = r.createFunc(ctx, client, ElasticsearchCreateRequest[T]{
 			Plan:    planModel,
 			Config:  inv.config,
 			WriteID: writeKey,

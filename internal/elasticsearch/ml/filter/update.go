@@ -48,17 +48,20 @@ func envelopeUpdateFilter(
 	}
 
 	getRes, err := typedClient.Ml.GetFilters().FilterId(filterID).Do(ctx)
-	if err != nil {
+	notFound := false
+	switch {
+	case err != nil:
 		var esErr *types.ElasticsearchError
 		if errors.As(err, &esErr) && esErr.Status == 404 {
-			diags.AddError("Filter not found", fmt.Sprintf("Filter %s not found during update", filterID))
+			notFound = true
+		} else {
+			diags.AddError("Failed to get current ML filter", err.Error())
 			return entitycore.ElasticsearchWriteResult[TFModel]{Model: plan}, diags
 		}
-		diags.AddError("Failed to get current ML filter", err.Error())
-		return entitycore.ElasticsearchWriteResult[TFModel]{Model: plan}, diags
+	case len(getRes.Filters) == 0:
+		notFound = true
 	}
-
-	if len(getRes.Filters) == 0 {
+	if notFound {
 		diags.AddError("Filter not found", fmt.Sprintf("Filter %s not found during update", filterID))
 		return entitycore.ElasticsearchWriteResult[TFModel]{Model: plan}, diags
 	}

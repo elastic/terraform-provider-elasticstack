@@ -65,6 +65,10 @@ Please report this warning to the provider developers.`,
 		return entitycore.ElasticsearchWriteResult[TFModel]{Model: plan}, diags
 	}
 
+	// Send the update as raw JSON so that all fields including
+	// categorization_examples_limit are included. The typed updatejob.Request
+	// uses types.AnalysisMemoryLimit which only models model_memory_limit,
+	// dropping categorization_examples_limit.
 	updateJSON, err := json.Marshal(updateBody)
 	if err != nil {
 		diags.AddError("Failed to marshal ML anomaly detection job update", err.Error())
