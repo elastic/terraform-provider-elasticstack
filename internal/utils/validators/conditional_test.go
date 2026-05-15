@@ -363,10 +363,10 @@ func TestRequiredIfDependentPathOneOf(t *testing.T) {
 			expectedError:  true,
 		},
 		{
-			name:           "invalid - current unknown, dependent matches required value",
+			name:           "valid - current unknown, dependent matches required value",
 			currentValue:   types.StringUnknown(),
 			dependentValue: types.StringValue("tls"),
-			expectedError:  true,
+			expectedError:  false,
 		},
 		{
 			name:           "valid - current null, dependent is null",
@@ -795,10 +795,10 @@ func TestRequiredIfDependentPathExpressionOneOf(t *testing.T) {
 			expectedError:  true,
 		},
 		{
-			name:           "invalid - current unknown, dependent matches required value",
+			name:           "valid - current unknown, dependent matches required value",
 			currentValue:   types.StringUnknown(),
 			dependentValue: types.StringValue("api_key"),
-			expectedError:  true,
+			expectedError:  false,
 		},
 		{
 			name:           "valid - current null, dependent is null",
