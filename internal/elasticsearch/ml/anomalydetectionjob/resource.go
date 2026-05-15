@@ -38,7 +38,11 @@ type anomalyDetectionJobResource struct {
 	*entitycore.ElasticsearchResource[TFModel]
 }
 
-func envelopeCreateAnomalyDetectionJob(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchCreateRequest[TFModel]) (entitycore.ElasticsearchWriteResult[TFModel], diag.Diagnostics) {
+func envelopeCreateAnomalyDetectionJob(
+	ctx context.Context,
+	client *clients.ElasticsearchScopedClient,
+	req entitycore.ElasticsearchCreateRequest[TFModel],
+) (entitycore.ElasticsearchWriteResult[TFModel], diag.Diagnostics) {
 	m, d := createAnomalyDetectionJob(ctx, client, req.WriteID, req.Plan)
 	return entitycore.ElasticsearchWriteResult[TFModel]{Model: m}, d
 }

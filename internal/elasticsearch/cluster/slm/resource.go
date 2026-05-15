@@ -38,12 +38,20 @@ type slmResource struct {
 	*entitycore.ElasticsearchResource[Data]
 }
 
-func envelopeWriteSlmCreate(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchCreateRequest[Data]) (entitycore.ElasticsearchWriteResult[Data], diag.Diagnostics) {
+func envelopeWriteSlmCreate(
+	ctx context.Context,
+	client *clients.ElasticsearchScopedClient,
+	req entitycore.ElasticsearchCreateRequest[Data],
+) (entitycore.ElasticsearchWriteResult[Data], diag.Diagnostics) {
 	m, d := writeSlm(ctx, client, req.WriteID, req.Plan)
 	return entitycore.ElasticsearchWriteResult[Data]{Model: m}, d
 }
 
-func envelopeWriteSlmUpdate(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchUpdateRequest[Data]) (entitycore.ElasticsearchWriteResult[Data], diag.Diagnostics) {
+func envelopeWriteSlmUpdate(
+	ctx context.Context,
+	client *clients.ElasticsearchScopedClient,
+	req entitycore.ElasticsearchUpdateRequest[Data],
+) (entitycore.ElasticsearchWriteResult[Data], diag.Diagnostics) {
 	m, d := writeSlm(ctx, client, req.WriteID, req.Plan)
 	return entitycore.ElasticsearchWriteResult[Data]{Model: m}, d
 }

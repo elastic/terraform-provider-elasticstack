@@ -38,12 +38,20 @@ type datafeedResource struct {
 	*entitycore.ElasticsearchResource[Datafeed]
 }
 
-func envelopeCreateDatafeed(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchCreateRequest[Datafeed]) (entitycore.ElasticsearchWriteResult[Datafeed], diag.Diagnostics) {
+func envelopeCreateDatafeed(
+	ctx context.Context,
+	client *clients.ElasticsearchScopedClient,
+	req entitycore.ElasticsearchCreateRequest[Datafeed],
+) (entitycore.ElasticsearchWriteResult[Datafeed], diag.Diagnostics) {
 	m, d := createDatafeed(ctx, client, req.WriteID, req.Plan)
 	return entitycore.ElasticsearchWriteResult[Datafeed]{Model: m}, d
 }
 
-func envelopeUpdateDatafeed(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchUpdateRequest[Datafeed]) (entitycore.ElasticsearchWriteResult[Datafeed], diag.Diagnostics) {
+func envelopeUpdateDatafeed(
+	ctx context.Context,
+	client *clients.ElasticsearchScopedClient,
+	req entitycore.ElasticsearchUpdateRequest[Datafeed],
+) (entitycore.ElasticsearchWriteResult[Datafeed], diag.Diagnostics) {
 	m, d := updateDatafeed(ctx, client, req.WriteID, req.Plan)
 	return entitycore.ElasticsearchWriteResult[Datafeed]{Model: m}, d
 }

@@ -43,12 +43,20 @@ type Resource struct {
 	*entitycore.ElasticsearchResource[tfModel]
 }
 
-func envelopeCreateILM(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchCreateRequest[tfModel]) (entitycore.ElasticsearchWriteResult[tfModel], diag.Diagnostics) {
+func envelopeCreateILM(
+	ctx context.Context,
+	client *clients.ElasticsearchScopedClient,
+	req entitycore.ElasticsearchCreateRequest[tfModel],
+) (entitycore.ElasticsearchWriteResult[tfModel], diag.Diagnostics) {
 	m, d := createILM(ctx, client, req.WriteID, req.Plan)
 	return entitycore.ElasticsearchWriteResult[tfModel]{Model: m}, d
 }
 
-func envelopeUpdateILM(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchUpdateRequest[tfModel]) (entitycore.ElasticsearchWriteResult[tfModel], diag.Diagnostics) {
+func envelopeUpdateILM(
+	ctx context.Context,
+	client *clients.ElasticsearchScopedClient,
+	req entitycore.ElasticsearchUpdateRequest[tfModel],
+) (entitycore.ElasticsearchWriteResult[tfModel], diag.Diagnostics) {
 	m, d := updateILM(ctx, client, req.WriteID, req.Plan)
 	return entitycore.ElasticsearchWriteResult[tfModel]{Model: m}, d
 }

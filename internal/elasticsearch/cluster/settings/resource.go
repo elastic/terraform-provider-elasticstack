@@ -41,14 +41,18 @@ var (
 )
 
 // clusterSettingsResource wraps the entitycore envelope. Create and Delete are
-// supplied as callbacks. Update is overridden because it requires both plan
-// and prior state to compute the null entries for removed settings, which the
-// envelope's update callback contract does not expose.
+// supplied as callbacks. Update remains overridden pending task 3.2 migration
+// to an envelope update callback that uses ElasticsearchUpdateRequest.Prior for
+// merge/null semantics when computing removed cluster settings keys.
 type clusterSettingsResource struct {
 	*entitycore.ElasticsearchResource[tfModel]
 }
 
-func envelopeCreateClusterSettings(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchCreateRequest[tfModel]) (entitycore.ElasticsearchWriteResult[tfModel], fwdiag.Diagnostics) {
+func envelopeCreateClusterSettings(
+	ctx context.Context,
+	client *clients.ElasticsearchScopedClient,
+	req entitycore.ElasticsearchCreateRequest[tfModel],
+) (entitycore.ElasticsearchWriteResult[tfModel], fwdiag.Diagnostics) {
 	m, d := createClusterSettings(ctx, client, req.WriteID, req.Plan)
 	return entitycore.ElasticsearchWriteResult[tfModel]{Model: m}, d
 }
@@ -99,7 +103,8 @@ func createClusterSettings(ctx context.Context, client *clients.ElasticsearchSco
 	return plan, diags
 }
 
-// Update overrides the envelope's Update to compare old and new settings,
+// Update overrides the envelope until task 3.2 migrates this logic into the
+// Elasticsearch envelope update callback: compare old and new settings,
 // null out removed keys, then PUT the merged settings map.
 func (r *clusterSettingsResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var plan, state tfModel

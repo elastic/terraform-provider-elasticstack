@@ -40,12 +40,20 @@ type Resource struct {
 	*entitycore.ElasticsearchResource[Data]
 }
 
-func envelopeCreateComponentTemplate(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchCreateRequest[Data]) (entitycore.ElasticsearchWriteResult[Data], diag.Diagnostics) {
+func envelopeCreateComponentTemplate(
+	ctx context.Context,
+	client *clients.ElasticsearchScopedClient,
+	req entitycore.ElasticsearchCreateRequest[Data],
+) (entitycore.ElasticsearchWriteResult[Data], diag.Diagnostics) {
 	m, d := createComponentTemplate(ctx, client, req.WriteID, req.Plan)
 	return entitycore.ElasticsearchWriteResult[Data]{Model: m}, d
 }
 
-func envelopeUpdateComponentTemplate(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchUpdateRequest[Data]) (entitycore.ElasticsearchWriteResult[Data], diag.Diagnostics) {
+func envelopeUpdateComponentTemplate(
+	ctx context.Context,
+	client *clients.ElasticsearchScopedClient,
+	req entitycore.ElasticsearchUpdateRequest[Data],
+) (entitycore.ElasticsearchWriteResult[Data], diag.Diagnostics) {
 	m, d := updateComponentTemplate(ctx, client, req.WriteID, req.Plan)
 	return entitycore.ElasticsearchWriteResult[Data]{Model: m}, d
 }

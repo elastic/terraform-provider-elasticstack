@@ -39,12 +39,20 @@ type aliasResource struct {
 	*entitycore.ElasticsearchResource[tfModel]
 }
 
-func envelopeCreateAlias(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchCreateRequest[tfModel]) (entitycore.ElasticsearchWriteResult[tfModel], diag.Diagnostics) {
+func envelopeCreateAlias(
+	ctx context.Context,
+	client *clients.ElasticsearchScopedClient,
+	req entitycore.ElasticsearchCreateRequest[tfModel],
+) (entitycore.ElasticsearchWriteResult[tfModel], diag.Diagnostics) {
 	m, d := createAlias(ctx, client, req.WriteID, req.Plan)
 	return entitycore.ElasticsearchWriteResult[tfModel]{Model: m}, d
 }
 
-func envelopeUpdateAlias(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchUpdateRequest[tfModel]) (entitycore.ElasticsearchWriteResult[tfModel], diag.Diagnostics) {
+func envelopeUpdateAlias(
+	ctx context.Context,
+	client *clients.ElasticsearchScopedClient,
+	req entitycore.ElasticsearchUpdateRequest[tfModel],
+) (entitycore.ElasticsearchWriteResult[tfModel], diag.Diagnostics) {
 	m, d := updateAlias(ctx, client, req.WriteID, req.Plan)
 	return entitycore.ElasticsearchWriteResult[tfModel]{Model: m}, d
 }

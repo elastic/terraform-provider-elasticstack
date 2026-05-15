@@ -38,12 +38,20 @@ type systemUserResource struct {
 	*entitycore.ElasticsearchResource[Data]
 }
 
-func envelopeWriteSystemUserCreate(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchCreateRequest[Data]) (entitycore.ElasticsearchWriteResult[Data], diag.Diagnostics) {
+func envelopeWriteSystemUserCreate(
+	ctx context.Context,
+	client *clients.ElasticsearchScopedClient,
+	req entitycore.ElasticsearchCreateRequest[Data],
+) (entitycore.ElasticsearchWriteResult[Data], diag.Diagnostics) {
 	m, d := writeSystemUser(ctx, client, req.WriteID, req.Plan)
 	return entitycore.ElasticsearchWriteResult[Data]{Model: m}, d
 }
 
-func envelopeWriteSystemUserUpdate(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchUpdateRequest[Data]) (entitycore.ElasticsearchWriteResult[Data], diag.Diagnostics) {
+func envelopeWriteSystemUserUpdate(
+	ctx context.Context,
+	client *clients.ElasticsearchScopedClient,
+	req entitycore.ElasticsearchUpdateRequest[Data],
+) (entitycore.ElasticsearchWriteResult[Data], diag.Diagnostics) {
 	m, d := writeSystemUser(ctx, client, req.WriteID, req.Plan)
 	return entitycore.ElasticsearchWriteResult[Data]{Model: m}, d
 }

@@ -40,12 +40,20 @@ type snapshotRepositoryResource struct {
 	*entitycore.ElasticsearchResource[Data]
 }
 
-func envelopeWriteSnapshotRepoCreate(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchCreateRequest[Data]) (entitycore.ElasticsearchWriteResult[Data], diag.Diagnostics) {
+func envelopeWriteSnapshotRepoCreate(
+	ctx context.Context,
+	client *clients.ElasticsearchScopedClient,
+	req entitycore.ElasticsearchCreateRequest[Data],
+) (entitycore.ElasticsearchWriteResult[Data], diag.Diagnostics) {
 	m, d := writeSnapshotRepository(ctx, client, req.WriteID, req.Plan)
 	return entitycore.ElasticsearchWriteResult[Data]{Model: m}, d
 }
 
-func envelopeWriteSnapshotRepoUpdate(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchUpdateRequest[Data]) (entitycore.ElasticsearchWriteResult[Data], diag.Diagnostics) {
+func envelopeWriteSnapshotRepoUpdate(
+	ctx context.Context,
+	client *clients.ElasticsearchScopedClient,
+	req entitycore.ElasticsearchUpdateRequest[Data],
+) (entitycore.ElasticsearchWriteResult[Data], diag.Diagnostics) {
 	m, d := writeSnapshotRepository(ctx, client, req.WriteID, req.Plan)
 	return entitycore.ElasticsearchWriteResult[Data]{Model: m}, d
 }

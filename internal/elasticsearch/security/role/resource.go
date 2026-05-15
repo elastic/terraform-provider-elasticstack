@@ -41,12 +41,20 @@ type roleResource struct {
 	*entitycore.ElasticsearchResource[Data]
 }
 
-func envelopeWriteRoleCreate(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchCreateRequest[Data]) (entitycore.ElasticsearchWriteResult[Data], diag.Diagnostics) {
+func envelopeWriteRoleCreate(
+	ctx context.Context,
+	client *clients.ElasticsearchScopedClient,
+	req entitycore.ElasticsearchCreateRequest[Data],
+) (entitycore.ElasticsearchWriteResult[Data], diag.Diagnostics) {
 	m, d := writeRole(ctx, client, req.WriteID, req.Plan)
 	return entitycore.ElasticsearchWriteResult[Data]{Model: m}, d
 }
 
-func envelopeWriteRoleUpdate(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchUpdateRequest[Data]) (entitycore.ElasticsearchWriteResult[Data], diag.Diagnostics) {
+func envelopeWriteRoleUpdate(
+	ctx context.Context,
+	client *clients.ElasticsearchScopedClient,
+	req entitycore.ElasticsearchUpdateRequest[Data],
+) (entitycore.ElasticsearchWriteResult[Data], diag.Diagnostics) {
 	m, d := writeRole(ctx, client, req.WriteID, req.Plan)
 	return entitycore.ElasticsearchWriteResult[Data]{Model: m}, d
 }

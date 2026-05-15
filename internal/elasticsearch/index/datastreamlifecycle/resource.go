@@ -40,12 +40,20 @@ type Resource struct {
 	*entitycore.ElasticsearchResource[tfModel]
 }
 
-func envelopeCreateDSL(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchCreateRequest[tfModel]) (entitycore.ElasticsearchWriteResult[tfModel], diag.Diagnostics) {
+func envelopeCreateDSL(
+	ctx context.Context,
+	client *clients.ElasticsearchScopedClient,
+	req entitycore.ElasticsearchCreateRequest[tfModel],
+) (entitycore.ElasticsearchWriteResult[tfModel], diag.Diagnostics) {
 	m, d := createDataStreamLifecycle(ctx, client, req.WriteID, req.Plan)
 	return entitycore.ElasticsearchWriteResult[tfModel]{Model: m}, d
 }
 
-func envelopeUpdateDSL(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchUpdateRequest[tfModel]) (entitycore.ElasticsearchWriteResult[tfModel], diag.Diagnostics) {
+func envelopeUpdateDSL(
+	ctx context.Context,
+	client *clients.ElasticsearchScopedClient,
+	req entitycore.ElasticsearchUpdateRequest[tfModel],
+) (entitycore.ElasticsearchWriteResult[tfModel], diag.Diagnostics) {
 	m, d := updateDataStreamLifecycle(ctx, client, req.WriteID, req.Plan)
 	return entitycore.ElasticsearchWriteResult[tfModel]{Model: m}, d
 }

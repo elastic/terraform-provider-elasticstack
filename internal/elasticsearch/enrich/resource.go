@@ -50,12 +50,20 @@ type enrichPolicyResource struct {
 	*entitycore.ElasticsearchResource[PolicyDataWithExecute]
 }
 
-func envelopeUpsertEnrichCreate(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchCreateRequest[PolicyDataWithExecute]) (entitycore.ElasticsearchWriteResult[PolicyDataWithExecute], diag.Diagnostics) {
+func envelopeUpsertEnrichCreate(
+	ctx context.Context,
+	client *clients.ElasticsearchScopedClient,
+	req entitycore.ElasticsearchCreateRequest[PolicyDataWithExecute],
+) (entitycore.ElasticsearchWriteResult[PolicyDataWithExecute], diag.Diagnostics) {
 	m, d := upsertEnrichPolicy(ctx, client, req.WriteID, req.Plan)
 	return entitycore.ElasticsearchWriteResult[PolicyDataWithExecute]{Model: m}, d
 }
 
-func envelopeUpsertEnrichUpdate(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchUpdateRequest[PolicyDataWithExecute]) (entitycore.ElasticsearchWriteResult[PolicyDataWithExecute], diag.Diagnostics) {
+func envelopeUpsertEnrichUpdate(
+	ctx context.Context,
+	client *clients.ElasticsearchScopedClient,
+	req entitycore.ElasticsearchUpdateRequest[PolicyDataWithExecute],
+) (entitycore.ElasticsearchWriteResult[PolicyDataWithExecute], diag.Diagnostics) {
 	m, d := upsertEnrichPolicy(ctx, client, req.WriteID, req.Plan)
 	return entitycore.ElasticsearchWriteResult[PolicyDataWithExecute]{Model: m}, d
 }
