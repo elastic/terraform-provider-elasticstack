@@ -78,7 +78,7 @@ type AnalysisConfigTFModel struct {
 	BucketSpan                 types.String                       `tfsdk:"bucket_span"`
 	CategorizationFieldName    types.String                       `tfsdk:"categorization_field_name"`
 	CategorizationFilters      types.List                         `tfsdk:"categorization_filters"`
-	Detectors                  []DetectorTFModel                  `tfsdk:"detectors"`
+	Detectors                  types.List                         `tfsdk:"detectors"`
 	Influencers                types.List                         `tfsdk:"influencers"`
 	Latency                    types.String                       `tfsdk:"latency"`
 	ModelPruneWindow           types.String                       `tfsdk:"model_prune_window"`
@@ -169,8 +169,13 @@ func (plan *TFModel) toAPIModel(ctx context.Context) (*APIModel, diag.Diagnostic
 	analysisConfig := plan.AnalysisConfig
 
 	// Convert detectors
-	apiDetectors := make([]DetectorAPIModel, len(analysisConfig.Detectors))
-	for i, detector := range analysisConfig.Detectors {
+	var detectorsTF []DetectorTFModel
+	diags.Append(analysisConfig.Detectors.ElementsAs(ctx, &detectorsTF, false)...)
+	if diags.HasError() {
+		return nil, diags
+	}
+	apiDetectors := make([]DetectorAPIModel, len(detectorsTF))
+	for i, detector := range detectorsTF {
 		apiDetectors[i] = DetectorAPIModel{
 			Function:            detector.Function.ValueString(),
 			FieldName:           detector.FieldName.ValueString(),
@@ -471,11 +476,18 @@ func (plan *TFModel) convertAnalysisConfigFromAPI(ctx context.Context, apiConfig
 
 	// Convert detectors
 	if len(apiConfig.Detectors) > 0 {
+		// Extract prior detectors from the incoming types.List for index-based access
+		var originalDetectors []DetectorTFModel
+		if typeutils.IsKnown(analysisConfigTF.Detectors) && !analysisConfigTF.Detectors.IsNull() {
+			d := analysisConfigTF.Detectors.ElementsAs(ctx, &originalDetectors, false)
+			diags.Append(d...)
+		}
+
 		detectorsTF := make([]DetectorTFModel, len(apiConfig.Detectors))
 		for i, detector := range apiConfig.Detectors {
 			var originalDetector DetectorTFModel
-			if len(analysisConfigTF.Detectors) > i {
-				originalDetector = analysisConfigTF.Detectors[i]
+			if len(originalDetectors) > i {
+				originalDetector = originalDetectors[i]
 			}
 
 			detectorsTF[i] = DetectorTFModel{
@@ -593,7 +605,11 @@ func (plan *TFModel) convertAnalysisConfigFromAPI(ctx context.Context, apiConfig
 				detectorsTF[i].CustomRules = typeutils.EnsureTypedList(ctx, detectorsTF[i].CustomRules, types.ObjectType{AttrTypes: getCustomRuleAttrTypes(ctx)})
 			}
 		}
-		analysisConfigTF.Detectors = detectorsTF
+		detectorsListVal, d := types.ListValueFrom(ctx,
+			types.ObjectType{AttrTypes: getDetectorAttrTypes(ctx)},
+			detectorsTF)
+		diags.Append(d...)
+		analysisConfigTF.Detectors = detectorsListVal
 	}
 
 	// Convert per_partition_categorization. ES may return defaults (enabled=false)
