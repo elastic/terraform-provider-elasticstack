@@ -35,6 +35,12 @@ const (
 		"it must start and end with alphanumeric characters (aligned with Elasticsearch ML job and calendar identifier rules)"
 )
 
+// mlCalendarOrJobPathIDRegexp matches Elasticsearch rules for ML calendar identifiers
+// and for anomaly detection job / job-group names used as path segments (lowercase
+// letters, digits, underscore, hyphen, dot; must start and end with alphanumeric).
+// Equivalent to: ^[a-z0-9](?:[a-z0-9_\-\.]*[a-z0-9])?$
+var mlCalendarOrJobPathIDRegexp = regexp.MustCompile(`^[a-z0-9](?:[a-z0-9_.-]*[a-z0-9])?$`)
+
 func getSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: "Assigns a single anomaly detection job or job group to an ML calendar using " +
@@ -61,7 +67,7 @@ func getSchema(_ context.Context) schema.Schema {
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(1, 64),
 					stringvalidator.RegexMatches(
-						regexp.MustCompile(`^[a-z0-9]([a-z0-9_.-]*[a-z0-9])?$`),
+						mlCalendarOrJobPathIDRegexp,
 						calendarIDAllowedCharsMessage,
 					),
 				},
@@ -77,7 +83,7 @@ func getSchema(_ context.Context) schema.Schema {
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(1, 64),
 					stringvalidator.RegexMatches(
-						regexp.MustCompile(`^[a-z0-9]([a-z0-9_.-]*[a-z0-9])?$`),
+						mlCalendarOrJobPathIDRegexp,
 						jobIDAllowedCharsMessage,
 					),
 				},
