@@ -26,6 +26,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/iface"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -34,6 +35,7 @@ import (
 )
 
 func dashboardMapPanelsFromAPI(ctx context.Context, m *models.DashboardModel, apiPanels *kbapi.DashboardPanels) ([]models.PanelModel, []models.SectionModel, diag.Diagnostics) {
+	ctx = iface.WithEnclosingDashboard(ctx, m)
 	var diags diag.Diagnostics
 	if apiPanels == nil || len(*apiPanels) == 0 {
 		return nil, nil, diags
