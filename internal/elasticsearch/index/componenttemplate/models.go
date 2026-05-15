@@ -44,4 +44,3 @@ type TemplateModel struct {
 	Mappings esindex.MappingsValue          `tfsdk:"mappings"`
 	Settings customtypes.IndexSettingsValue `tfsdk:"settings"`
 }
-
