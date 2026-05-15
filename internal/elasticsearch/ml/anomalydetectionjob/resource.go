@@ -48,14 +48,13 @@ func envelopeCreateAnomalyDetectionJob(
 }
 
 func newAnomalyDetectionJobResource() *anomalyDetectionJobResource {
-	_, updateFn := entitycore.PlaceholderElasticsearchWriteCallbacks[TFModel]()
 	return &anomalyDetectionJobResource{
 		ElasticsearchResource: entitycore.NewElasticsearchResource[TFModel]("ml_anomaly_detection_job", entitycore.ElasticsearchResourceOptions[TFModel]{
 			Schema: getSchema,
 			Read:   readAnomalyDetectionJob,
 			Delete: deleteAnomalyDetectionJob,
 			Create: envelopeCreateAnomalyDetectionJob,
-			Update: updateFn,
+			Update: envelopeUpdateAnomalyDetectionJob,
 		}),
 	}
 }
