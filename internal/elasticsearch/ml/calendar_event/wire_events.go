@@ -59,6 +59,7 @@ func rawJSONToAny(raw json.RawMessage) (any, error) {
 }
 
 // forceTimeShiftWireToStringPtr decodes API JSON (number or string) into a decimal string for Terraform state.
+// json.Unmarshal into any yields float64 for JSON numbers (not json.Number) unless a decoder with UseNumber is used.
 func forceTimeShiftWireToStringPtr(raw json.RawMessage) (*string, error) {
 	if len(raw) == 0 {
 		return nil, nil
@@ -74,17 +75,6 @@ func forceTimeShiftWireToStringPtr(raw json.RawMessage) (*string, error) {
 			return &s, nil
 		}
 		s := strconv.FormatFloat(v, 'f', -1, 64)
-		return &s, nil
-	case json.Number:
-		if i, err := v.Int64(); err == nil {
-			s := strconv.FormatInt(i, 10)
-			return &s, nil
-		}
-		f, err := v.Float64()
-		if err != nil {
-			return nil, err
-		}
-		s := strconv.FormatFloat(f, 'f', -1, 64)
 		return &s, nil
 	case string:
 		return &v, nil

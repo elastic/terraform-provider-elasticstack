@@ -53,7 +53,7 @@ func getSchema(_ context.Context) schema.Schema {
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(1, 64),
 					stringvalidator.RegexMatches(
-						regexp.MustCompile(`^[a-z0-9]([a-z0-9_-]*[a-z0-9])?$|^[a-z0-9]$`),
+						regexp.MustCompile(`^[a-z0-9]([a-z0-9_-]*[a-z0-9])?$`),
 						"must contain lowercase alphanumeric characters, hyphens, and underscores, "+
 							"and must start and end with alphanumeric characters",
 					),

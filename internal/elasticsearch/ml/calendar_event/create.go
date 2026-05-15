@@ -76,19 +76,6 @@ func createCalendarEvent(ctx context.Context, client *clients.ElasticsearchScope
 		return plan, diags
 	}
 
-	existingIDs := make(map[string]struct{})
-	diags.Append(walkMLCalendarEventPages(ctx, typedClient, calendarID, func(events []calendarEventWire) bool {
-		for _, e := range events {
-			if id := calendarEventWireEventID(&e); id != "" {
-				existingIDs[id] = struct{}{}
-			}
-		}
-		return false
-	})...)
-	if diags.HasError() {
-		return plan, diags
-	}
-
 	var postWire []calendarEventWire
 	var postBodyBytes []byte
 
@@ -178,15 +165,15 @@ func createCalendarEvent(ctx context.Context, client *clients.ElasticsearchScope
 	}
 
 	if eventID == "" {
-		var candidates []calendarEventWire
+		var matches []calendarEventWire
 		diags.Append(walkMLCalendarEventPages(ctx, typedClient, calendarID, func(events []calendarEventWire) bool {
 			for _, event := range events {
 				id := calendarEventWireEventID(&event)
 				if id == "" {
 					continue
 				}
-				if _, existed := existingIDs[id]; !existed {
-					candidates = append(candidates, event)
+				if calendarEventMatchesPlanWire(event, planWire) {
+					matches = append(matches, event)
 				}
 			}
 			return false
@@ -194,40 +181,39 @@ func createCalendarEvent(ctx context.Context, client *clients.ElasticsearchScope
 		if diags.HasError() {
 			return plan, diags
 		}
-
-		switch len(candidates) {
+		switch len(matches) {
+		case 1:
+			eventID = calendarEventWireEventID(&matches[0])
 		case 0:
 			break
-		case 1:
-			eventID = calendarEventWireEventID(&candidates[0])
 		default:
-			for i := range candidates {
-				if calendarEventMatchesPlanWire(candidates[i], planWire) {
-					eventID = calendarEventWireEventID(&candidates[i])
-					break
-				}
-			}
-		}
-
-		if eventID == "" {
-			const maxPostRespDiag = 768
-			var detail strings.Builder
-			fmt.Fprintf(&detail, "Could not determine the new event ID from the API response or calendar events list. ")
-			fmt.Fprintf(&detail, "post response had %d event(s). ", len(postWire))
-			for i := range postWire {
-				fmt.Fprintf(&detail, "[%d] event_id=%q description=%q; ", i, calendarEventWireEventID(&postWire[i]), postWire[i].Description)
-			}
-			fmt.Fprintf(&detail, "new-event candidates from list: %d. ", len(candidates))
-			if len(postBodyBytes) > 0 {
-				ps := string(postBodyBytes)
-				if len(ps) > maxPostRespDiag {
-					ps = ps[:maxPostRespDiag] + "...(truncated)"
-				}
-				fmt.Fprintf(&detail, "post response excerpt: %s", ps)
-			}
-			diags.AddError("Failed to identify created event", detail.String())
+			diags.AddError(
+				"Failed to identify created event",
+				fmt.Sprintf("Found %d calendar events matching this configuration after create; cannot determine which is the new event_id. "+
+					"If duplicate events exist, remove extras or use a unique description.", len(matches)),
+			)
 			return plan, diags
 		}
+	}
+
+	if eventID == "" {
+		const maxPostRespDiag = 768
+		var detail strings.Builder
+		fmt.Fprintf(&detail, "Could not determine the new event ID from the API response or calendar events list. ")
+		fmt.Fprintf(&detail, "post response had %d event(s). ", len(postWire))
+		for i := range postWire {
+			fmt.Fprintf(&detail, "[%d] event_id=%q description=%q; ", i, calendarEventWireEventID(&postWire[i]), postWire[i].Description)
+		}
+		fmt.Fprintf(&detail, "no calendar event in the cluster matched the planned description and time window after listing. ")
+		if len(postBodyBytes) > 0 {
+			ps := string(postBodyBytes)
+			if len(ps) > maxPostRespDiag {
+				ps = ps[:maxPostRespDiag] + "...(truncated)"
+			}
+			fmt.Fprintf(&detail, "post response excerpt: %s", ps)
+		}
+		diags.AddError("Failed to identify created event", detail.String())
+		return plan, diags
 	}
 
 	compID, sdkDiags := client.ID(ctx, calendarID+"/"+eventID)
