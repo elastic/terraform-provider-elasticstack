@@ -477,11 +477,12 @@ func TestAccResourceMLCalendarJob_applyCalendarNotFound(t *testing.T) {
 	})
 }
 
-// TestAccMLCalendarJob_getCalendarsMissingErrorIsNotFound documents the error shape
-// returned by go-elasticsearch/v8 for ml.get_calendars when the calendar does not exist.
-// readCalendarJob relies on elasticsearch.IsNotFoundElasticsearchError for refresh-time
-// removal from state when the calendar is deleted out-of-band.
-func TestAccMLCalendarJob_getCalendarsMissingErrorIsNotFound(t *testing.T) {
+// TestAccMLCalendarJob_getCalendarsMissingRepresentedAsNotFound documents how
+// Elasticsearch represents a missing calendar for ml.get_calendars: some versions
+// return *types.ElasticsearchError with HTTP 404; others return 200 with an empty
+// calendars list. readCalendarJob treats both as absent (404 via
+// IsNotFoundElasticsearchError, or len(calendars)==0).
+func TestAccMLCalendarJob_getCalendarsMissingRepresentedAsNotFound(t *testing.T) {
 	t.Parallel()
 	acctest.PreCheck(t)
 
@@ -496,12 +497,15 @@ func TestAccMLCalendarJob_getCalendarsMissingErrorIsNotFound(t *testing.T) {
 	}
 	calendarID := fmt.Sprintf("test-cal-job-nocal-%s", sdkacctest.RandStringFromCharSet(24, sdkacctest.CharSetAlphaNum))
 
-	_, err = es.Ml.GetCalendars().CalendarId(calendarID).Do(ctx)
-	if err == nil {
-		t.Fatal("expected error when requesting a non-existent ML calendar")
+	res, err := es.Ml.GetCalendars().CalendarId(calendarID).Do(ctx)
+	if err != nil {
+		if !esclient.IsNotFoundElasticsearchError(err) {
+			t.Fatalf("missing calendar error must be a 404 elasticsearch error when the API returns one; got [%T] %v", err, err)
+		}
+		return
 	}
-	if !esclient.IsNotFoundElasticsearchError(err) {
-		t.Fatalf("missing calendar must classify as not-found for read drift handling; got [%T] %v", err, err)
+	if len(res.Calendars) != 0 {
+		t.Fatalf("expected no calendars for missing id %q when the API returns 200, got %d", calendarID, len(res.Calendars))
 	}
 }
 
