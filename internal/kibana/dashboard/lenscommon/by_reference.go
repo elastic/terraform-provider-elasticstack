@@ -23,6 +23,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -179,7 +180,7 @@ func PopulateLensByReferenceTFModelFromLensAppConfig1(
 		}
 		if norm, ok := MarshalToNormalized(b, err, "references_json", &diags); ok {
 			if prior != nil {
-				norm = PreservePriorNormalizedWithDefaultsIfEquivalent(ctx, prior.ReferencesJSON, norm, defaultOpaqueRootJSON, &diags)
+				norm = panelkit.PreservePriorNormalizedWithDefaultsIfEquivalent(ctx, prior.ReferencesJSON, norm, defaultOpaqueRootJSON, &diags)
 			}
 			by.ReferencesJSON = norm
 		}

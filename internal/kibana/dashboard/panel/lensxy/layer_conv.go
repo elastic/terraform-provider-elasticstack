@@ -24,6 +24,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -159,7 +160,7 @@ func dataLayerFromAPINoESQL(ctx context.Context, m *models.DataLayerModel, apiLa
 		breakdownJSON, err := json.Marshal(apiLayer.BreakdownBy)
 		if err == nil {
 			breakdown := jsontypes.NewNormalizedValue(string(breakdownJSON))
-			m.BreakdownByJSON = lenscommon.PreservePriorNormalizedWithDefaultsIfEquivalent(ctx, m.BreakdownByJSON, breakdown, lenscommon.PopulateLensGroupByDefaults, &diags)
+			m.BreakdownByJSON = panelkit.PreservePriorNormalizedWithDefaultsIfEquivalent(ctx, m.BreakdownByJSON, breakdown, lenscommon.PopulateLensGroupByDefaults, &diags)
 		}
 	}
 
@@ -172,7 +173,7 @@ func dataLayerFromAPINoESQL(ctx context.Context, m *models.DataLayerModel, apiLa
 			if err == nil {
 				cfg := jsontypes.NewNormalizedValue(string(yJSON))
 				if i < len(priorY) {
-					cfg = lenscommon.PreservePriorNormalizedWithDefaultsIfEquivalent(ctx, priorY[i].ConfigJSON, cfg, lenscommon.PopulateLensMetricDefaults, &diags)
+					cfg = panelkit.PreservePriorNormalizedWithDefaultsIfEquivalent(ctx, priorY[i].ConfigJSON, cfg, lenscommon.PopulateLensMetricDefaults, &diags)
 				}
 				m.Y = append(m.Y, models.YMetricModel{
 					ConfigJSON: cfg,
@@ -214,7 +215,7 @@ func dataLayerFromAPIESql(ctx context.Context, m *models.DataLayerModel, apiLaye
 		breakdownJSON, err := json.Marshal(apiLayer.BreakdownBy)
 		if err == nil {
 			breakdown := jsontypes.NewNormalizedValue(string(breakdownJSON))
-			m.BreakdownByJSON = lenscommon.PreservePriorNormalizedWithDefaultsIfEquivalent(ctx, m.BreakdownByJSON, breakdown, lenscommon.PopulateLensGroupByDefaults, &diags)
+			m.BreakdownByJSON = panelkit.PreservePriorNormalizedWithDefaultsIfEquivalent(ctx, m.BreakdownByJSON, breakdown, lenscommon.PopulateLensGroupByDefaults, &diags)
 		}
 	}
 
@@ -227,7 +228,7 @@ func dataLayerFromAPIESql(ctx context.Context, m *models.DataLayerModel, apiLaye
 			if err == nil {
 				cfg := jsontypes.NewNormalizedValue(string(yJSON))
 				if i < len(priorY) {
-					cfg = lenscommon.PreservePriorNormalizedWithDefaultsIfEquivalent(ctx, priorY[i].ConfigJSON, cfg, lenscommon.PopulateLensMetricDefaults, &diags)
+					cfg = panelkit.PreservePriorNormalizedWithDefaultsIfEquivalent(ctx, priorY[i].ConfigJSON, cfg, lenscommon.PopulateLensMetricDefaults, &diags)
 				}
 				m.Y = append(m.Y, models.YMetricModel{
 					ConfigJSON: cfg,

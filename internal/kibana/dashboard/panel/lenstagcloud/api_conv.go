@@ -24,6 +24,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -103,14 +104,14 @@ func tagcloudConfigFromAPI(ctx context.Context, m *models.TagcloudConfigModel, r
 	if !ok {
 		return diags
 	}
-	m.MetricJSON = lenscommon.PreservePriorJSONWithDefaultsIfEquivalent(ctx, m.MetricJSON, mv, &diags)
+	m.MetricJSON = panelkit.PreservePriorJSONWithDefaultsIfEquivalent(ctx, m.MetricJSON, mv, &diags)
 
 	tagByBytes, err := api.TagBy.MarshalJSON()
 	tv, ok := lenscommon.MarshalToJSONWithDefaults(tagByBytes, err, "tag_by", lenscommon.PopulateTagcloudTagByDefaults, &diags)
 	if !ok {
 		return diags
 	}
-	m.TagByJSON = lenscommon.PreservePriorJSONWithDefaultsIfEquivalent(ctx, m.TagByJSON, tv, &diags)
+	m.TagByJSON = panelkit.PreservePriorJSONWithDefaultsIfEquivalent(ctx, m.TagByJSON, tv, &diags)
 
 	m.EsqlMetric = nil
 	m.EsqlTagBy = nil

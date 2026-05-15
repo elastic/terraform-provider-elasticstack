@@ -24,6 +24,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -91,7 +92,7 @@ func regionMapConfigFromAPINoESQL(
 	if !ok {
 		return diags
 	}
-	m.MetricJSON = lenscommon.PreservePriorJSONWithDefaultsIfEquivalent(ctx, m.MetricJSON, mv, &diags)
+	m.MetricJSON = panelkit.PreservePriorJSONWithDefaultsIfEquivalent(ctx, m.MetricJSON, mv, &diags)
 
 	regionBytes, err := api.Region.MarshalJSON()
 	rv, ok := lenscommon.MarshalToNormalized(regionBytes, err, "region", &diags)
@@ -135,7 +136,7 @@ func regionMapConfigFromAPIESQL(ctx context.Context, m *models.RegionMapConfigMo
 	if !ok {
 		return diags
 	}
-	m.MetricJSON = lenscommon.PreservePriorJSONWithDefaultsIfEquivalent(ctx, m.MetricJSON, mv, &diags)
+	m.MetricJSON = panelkit.PreservePriorJSONWithDefaultsIfEquivalent(ctx, m.MetricJSON, mv, &diags)
 
 	regionBytes, err := json.Marshal(api.Region)
 	rv, ok := lenscommon.MarshalToNormalized(regionBytes, err, "region", &diags)

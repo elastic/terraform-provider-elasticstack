@@ -23,6 +23,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -48,9 +49,9 @@ func marshalToNormalized(bytes []byte, err error, fieldName string, diags *diag.
 	return lenscommon.MarshalToNormalized(bytes, err, fieldName, diags)
 }
 
-// preservePriorNormalizedWithDefaultsIfEquivalent delegates to lenscommon.PreservePriorNormalizedWithDefaultsIfEquivalent.
+// preservePriorNormalizedWithDefaultsIfEquivalent delegates to panelkit.PreservePriorNormalizedWithDefaultsIfEquivalent.
 func preservePriorNormalizedWithDefaultsIfEquivalent[T any](ctx context.Context, prior, current jsontypes.Normalized, defaults func(T) T, diags *diag.Diagnostics) jsontypes.Normalized {
-	return lenscommon.PreservePriorNormalizedWithDefaultsIfEquivalent(ctx, prior, current, defaults, diags)
+	return panelkit.PreservePriorNormalizedWithDefaultsIfEquivalent(ctx, prior, current, defaults, diags)
 }
 
 // marshalToJSONWithDefaults stores the already-marshaled bytes as a JSONWithDefaultsValue,
@@ -60,7 +61,7 @@ func marshalToJSONWithDefaults[T any](bytes []byte, err error, fieldName string,
 }
 
 func preservePriorJSONWithDefaultsIfEquivalent[T any](ctx context.Context, prior, current customtypes.JSONWithDefaultsValue[T], diags *diag.Diagnostics) customtypes.JSONWithDefaultsValue[T] {
-	return lenscommon.PreservePriorJSONWithDefaultsIfEquivalent(ctx, prior, current, diags)
+	return panelkit.PreservePriorJSONWithDefaultsIfEquivalent(ctx, prior, current, diags)
 }
 
 // lensESQLNumberFormatJSONFromAPI marshals a Lens ES|QL dimension `format` union

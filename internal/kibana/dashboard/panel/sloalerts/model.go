@@ -20,6 +20,7 @@ package sloalerts
 import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -120,18 +121,10 @@ func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiPanel
 
 	existing.Slos = readSlosFromAPI(*apiCfg.Slos, existing.Slos)
 
-	if typeutils.IsKnown(existing.Title) {
-		existing.Title = types.StringPointerValue(apiCfg.Title)
-	}
-	if typeutils.IsKnown(existing.Description) {
-		existing.Description = types.StringPointerValue(apiCfg.Description)
-	}
-	if typeutils.IsKnown(existing.HideTitle) {
-		existing.HideTitle = types.BoolPointerValue(apiCfg.HideTitle)
-	}
-	if typeutils.IsKnown(existing.HideBorder) {
-		existing.HideBorder = types.BoolPointerValue(apiCfg.HideBorder)
-	}
+	existing.Title = panelkit.PreserveString(existing.Title, apiCfg.Title)
+	existing.Description = panelkit.PreserveString(existing.Description, apiCfg.Description)
+	existing.HideTitle = panelkit.PreserveBool(existing.HideTitle, apiCfg.HideTitle)
+	existing.HideBorder = panelkit.PreserveBool(existing.HideBorder, apiCfg.HideBorder)
 
 	existing.Drilldowns = readDrilldownsFromAPI(apiCfg.Drilldowns, existing.Drilldowns)
 }

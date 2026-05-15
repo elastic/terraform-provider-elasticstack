@@ -18,9 +18,6 @@
 package lenscommon
 
 import (
-	"context"
-
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
@@ -33,9 +30,4 @@ func MarshalToJSONWithDefaults[T any](bytes []byte, err error, fieldName string,
 		return customtypes.JSONWithDefaultsValue[T]{}, false
 	}
 	return customtypes.NewJSONWithDefaultsValue(string(bytes), defaults), true
-}
-
-// PreservePriorJSONWithDefaultsIfEquivalent returns prior when semantic equality holds for JSON-with-defaults values.
-func PreservePriorJSONWithDefaultsIfEquivalent[T any](ctx context.Context, prior, current customtypes.JSONWithDefaultsValue[T], diags *diag.Diagnostics) customtypes.JSONWithDefaultsValue[T] {
-	return panelkit.PreservePriorJSONWithDefaultsIfEquivalent(ctx, prior, current, diags)
 }

@@ -24,6 +24,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -107,7 +108,7 @@ func heatmapConfigFromAPINoESQL(ctx context.Context, m *models.HeatmapConfigMode
 	if !ok {
 		return diags
 	}
-	m.MetricJSON = lenscommon.PreservePriorJSONWithDefaultsIfEquivalent(ctx, m.MetricJSON, mv, &diags)
+	m.MetricJSON = panelkit.PreservePriorJSONWithDefaultsIfEquivalent(ctx, m.MetricJSON, mv, &diags)
 
 	xAxisBytes, err := api.X.MarshalJSON()
 	xv, ok := lenscommon.MarshalToNormalized(xAxisBytes, err, "x_axis", &diags)
@@ -164,7 +165,7 @@ func heatmapConfigFromAPIESQL(ctx context.Context, m *models.HeatmapConfigModel,
 	if !ok {
 		return diags
 	}
-	m.MetricJSON = lenscommon.PreservePriorJSONWithDefaultsIfEquivalent(ctx, m.MetricJSON, mv, &diags)
+	m.MetricJSON = panelkit.PreservePriorJSONWithDefaultsIfEquivalent(ctx, m.MetricJSON, mv, &diags)
 
 	xAxisBytes, err := json.Marshal(api.X)
 	if err != nil {
