@@ -6,7 +6,7 @@ The entitycore resource envelope centralizes common Terraform Plugin Framework b
 ## Requirements
 ### Requirement: Envelope constructor produces shared Elasticsearch resource behavior
 
-The system SHALL provide a generic constructor `NewElasticsearchResource[T]()` that returns an envelope owning shared Elasticsearch resource behavior. The Elasticsearch envelope constructor SHALL take the Terraform type-name suffix and an options struct (`ElasticsearchResourceOptions[T]`), not a component enum and a positional callback list. The envelope SHALL provide Metadata, Schema, Create, Read, Update, Delete, and Configure behavior, and SHALL satisfy `resource.Resource`. Concrete resources SHALL embed the envelope and may choose to implement additional Plugin Framework interfaces such as ImportState or state upgrade support.
+The system SHALL provide a generic constructor `NewElasticsearchResource[T]()` that returns an envelope owning shared Elasticsearch resource behavior. The Elasticsearch envelope constructor SHALL take the Terraform type-name suffix and an options struct, not a component enum and a positional callback list. The envelope SHALL provide Metadata, Schema, Create, Read, Update, Delete, and Configure behavior, and SHALL satisfy `resource.Resource`. Concrete resources SHALL embed the envelope and may choose to implement additional Plugin Framework interfaces such as ImportState or state upgrade support.
 
 #### Scenario: Constructor returns complete resource envelope
 
@@ -18,16 +18,6 @@ The system SHALL provide a generic constructor `NewElasticsearchResource[T]()` t
 ### Requirement: Envelope owns Configure and Metadata
 
 The system SHALL implement `Configure` and `Metadata` on the Elasticsearch envelope using the same provider-data conversion and type-name composition rules as `ResourceBase`, with the Elasticsearch namespace segment implied by the envelope rather than passed by the caller. The configured `*clients.ProviderClientFactory` SHALL be reachable from the envelope's Read, Create, Update, and Delete preludes.
-
-#### Scenario: Configure stores the provider client factory
-
-- **WHEN** `Configure` receives provider data that converts successfully to `*clients.ProviderClientFactory`
-- **THEN** the envelope SHALL retain that factory for use by subsequent Read, Create, Update, and Delete calls
-
-#### Scenario: Configure does not store a client after diagnostic failure
-
-- **WHEN** `Configure` has appended the conversion diagnostics and the response has error-level diagnostics
-- **THEN** the envelope SHALL not assign a factory from that conversion, and SHALL leave unchanged any factory previously stored by an earlier successful `Configure` call
 
 #### Scenario: Metadata builds the Terraform type name
 
@@ -64,37 +54,6 @@ The system SHALL implement `Read` by deserializing the prior state into the gene
 - **THEN** the diagnostics SHALL be appended to `resp.Diagnostics`
 - **AND** the concrete read function SHALL NOT be invoked
 
-#### Scenario: Successful read sets state from returned model
-
-- **WHEN** the concrete read function returns `(model, true, nil)` (entity found, no errors)
-- **THEN** `resp.State.Set` SHALL be called with the returned model `T`
-
-#### Scenario: Not-found read removes resource from state
-
-- **WHEN** the concrete read function returns `(_, false, nil)` (entity missing, no errors)
-- **THEN** `resp.State.RemoveResource` SHALL be called
-- **AND** `resp.State.Set` SHALL NOT be called
-
-#### Scenario: Read function error short-circuits state mutation
-
-- **WHEN** the concrete read function returns error diagnostics
-- **THEN** the diagnostics SHALL be appended to `resp.Diagnostics`
-- **AND** neither `resp.State.Set` nor `resp.State.RemoveResource` SHALL be called
-
-#### Scenario: Composite ID parse failure short-circuits read
-
-- **WHEN** read identity resolution falls back to composite ID parsing and `CompositeIDFromStrFw` returns error diagnostics
-- **THEN** the diagnostics SHALL be appended to `resp.Diagnostics`
-- **AND** the concrete read function SHALL NOT be invoked
-- **AND** state SHALL remain untouched
-
-#### Scenario: Client resolution failure short-circuits read
-
-- **WHEN** `GetElasticsearchClient` returns error diagnostics
-- **THEN** the diagnostics SHALL be appended to `resp.Diagnostics`
-- **AND** the concrete read function SHALL NOT be invoked
-- **AND** state SHALL remain untouched
-
 ### Requirement: Envelope owns the Create and Update preludes
 
 The system SHALL implement `Create` and `Update` on `NewElasticsearchResource[T]` by deserializing the relevant framework inputs, deriving the write resource ID from the model, resolving the scoped Elasticsearch client from the model's connection block via `GetElasticsearchClient`, enforcing any optional version requirements declared by the planned model, invoking the corresponding concrete callback with a structured request object, and then invoking `readFunc` with the model returned by the callback. State SHALL be set from the model returned by `readFunc`, not directly from the concrete callback.
@@ -102,8 +61,6 @@ The system SHALL implement `Create` and `Update` on `NewElasticsearchResource[T]
 Create callbacks SHALL receive `ElasticsearchCreateRequest[T]` containing `Plan`, `Config`, and `WriteID`.
 
 Update callbacks SHALL receive `ElasticsearchUpdateRequest[T]` containing `Plan`, `Prior`, `Config`, and `WriteID`.
-
-Create and update callbacks SHALL return `ElasticsearchWriteResult[T]` carrying the written model used for read-after-write identity resolution.
 
 #### Scenario: Update callback receives prior state and config
 
@@ -127,90 +84,16 @@ Create and update callbacks SHALL return `ElasticsearchWriteResult[T]` carrying 
 - **THEN** the diagnostics SHALL be appended to the response
 - **AND** the concrete create or update callback SHALL NOT be invoked
 
-#### Scenario: Successful create sets state from read result
-
-- **WHEN** the create callback returns `(ElasticsearchWriteResult[T]{Model: writtenModel}, nil)` with no errors and `readFunc` returns `(stateModel, true, nil)`
-- **THEN** `resp.State.Set` SHALL be called with `stateModel` (the model returned by `readFunc`)
-- **AND** response diagnostics SHALL contain no errors
-
-#### Scenario: Successful update sets state from read result
-
-- **WHEN** the update callback returns `(ElasticsearchWriteResult[T]{Model: writtenModel}, nil)` with no errors and `readFunc` returns `(stateModel, true, nil)`
-- **THEN** `resp.State.Set` SHALL be called with `stateModel` (the model returned by `readFunc`)
-- **AND** response diagnostics SHALL contain no errors
-
-#### Scenario: Resource not found after create produces error
-
-- **WHEN** the create callback succeeds and `readFunc` returns `(_, false, nil)`
-- **THEN** an error diagnostic SHALL be appended to `resp.Diagnostics` identifying the resource type using the envelope's component and resource name
-- **AND** state SHALL remain untouched (neither `resp.State.Set` nor `resp.State.RemoveResource` SHALL be called)
-
-#### Scenario: Resource not found after update produces error
-
-- **WHEN** the update callback succeeds and `readFunc` returns `(_, false, nil)`
-- **THEN** an error diagnostic SHALL be appended to `resp.Diagnostics` identifying the resource type using the envelope's component and resource name
-- **AND** state SHALL remain untouched (neither `resp.State.Set` nor `resp.State.RemoveResource` SHALL be called)
-
-#### Scenario: readFunc error after create short-circuits state mutation
-
-- **WHEN** the create callback succeeds and `readFunc` returns error diagnostics
-- **THEN** the diagnostics SHALL be appended to `resp.Diagnostics`
-- **AND** `resp.State.Set` SHALL NOT be called
-
-#### Scenario: readFunc error after update short-circuits state mutation
-
-- **WHEN** the update callback succeeds and `readFunc` returns error diagnostics
-- **THEN** the diagnostics SHALL be appended to `resp.Diagnostics`
-- **AND** `resp.State.Set` SHALL NOT be called
-
-#### Scenario: Create function error short-circuits state mutation
-
-- **WHEN** the create callback returns error diagnostics
-- **THEN** the diagnostics SHALL be appended to `resp.Diagnostics`
-- **AND** `readFunc` SHALL NOT be invoked
-- **AND** `resp.State.Set` SHALL NOT be called
-
-#### Scenario: Update function error short-circuits state mutation
-
-- **WHEN** the update callback returns error diagnostics
-- **THEN** the diagnostics SHALL be appended to `resp.Diagnostics`
-- **AND** `readFunc` SHALL NOT be invoked
-- **AND** `resp.State.Set` SHALL NOT be called
-
-#### Scenario: Client resolution failure short-circuits create
-
-- **WHEN** `GetElasticsearchClient` returns error diagnostics during `Create`
-- **THEN** the diagnostics SHALL be appended to `resp.Diagnostics`
-- **AND** the create callback SHALL NOT be invoked
-- **AND** state SHALL remain untouched
-
-#### Scenario: Client resolution failure short-circuits update
-
-- **WHEN** `GetElasticsearchClient` returns error diagnostics during `Update`
-- **THEN** the diagnostics SHALL be appended to `resp.Diagnostics`
-- **AND** the update callback SHALL NOT be invoked
-- **AND** state SHALL remain untouched
-
-#### Scenario: Create and update may use distinct callbacks
-
-- **WHEN** a concrete Elasticsearch resource wires different create and update implementations in `ElasticsearchResourceOptions[T]`
-- **THEN** each SHALL be invoked according to the Terraform operation without requiring method overrides on the embedding struct
-
 ### Requirement: Envelope supports post-read side effects
 
 The system SHALL allow Elasticsearch envelope users to provide an optional post-read hook. After a successful read flow that sets Terraform state, the envelope SHALL invoke the post-read hook with the scoped client, the model persisted to state, and the framework private-state handle.
 
 The hook SHALL NOT run when the entity is not found, when `readFunc` returns error diagnostics, or when state persistence fails.
 
-#### Scenario: Post-read hook receives private state after read
+#### Scenario: Post-read hook persists private state after read
 
 - **WHEN** `readFunc` returns `(model, true, nil)` and `resp.State.Set` succeeds
 - **THEN** the envelope SHALL invoke the configured post-read hook with the persisted model and `resp.Private`
-
-#### Scenario: Post-read hook runs after read-after-write state set
-
-- **WHEN** a create or update completes successfully, `readFunc` returns `(stateModel, true, nil)`, and `resp.State.Set` succeeds
-- **THEN** the envelope SHALL invoke the configured post-read hook with `stateModel` and the write response private state
 
 ### Requirement: Shared version requirement type is envelope-neutral
 
