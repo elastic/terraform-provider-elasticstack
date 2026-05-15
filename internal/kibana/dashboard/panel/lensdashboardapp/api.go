@@ -87,10 +87,10 @@ func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kb
 		return kbapi.DashboardPanelItem{}, diags
 	}
 	switch {
-	case cfg.ByReference != nil:
-		return lensDashboardAppByReferenceToAPI(*cfg.ByReference, grid, panelID)
 	case cfg.ByValue != nil:
 		return lensDashboardAppByValueToAPI(*cfg.ByValue, grid, panelID, dashboard)
+	case cfg.ByReference != nil:
+		return lensDashboardAppByReferenceToAPI(*cfg.ByReference, grid, panelID)
 	default:
 		var diags diag.Diagnostics
 		diags.AddError("Invalid `lens_dashboard_app_config`", "Exactly one of `by_value` or `by_reference` must be set inside `lens_dashboard_app_config`.")
