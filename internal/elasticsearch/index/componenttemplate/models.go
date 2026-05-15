@@ -44,14 +44,3 @@ type TemplateModel struct {
 	Mappings esindex.MappingsValue          `tfsdk:"mappings"`
 	Settings customtypes.IndexSettingsValue `tfsdk:"settings"`
 }
-
-// AliasModel is the inner shape of a single alias block element.
-type AliasModel struct {
-	Name          types.String         `tfsdk:"name"`
-	Filter        jsontypes.Normalized `tfsdk:"filter"`
-	IndexRouting  types.String         `tfsdk:"index_routing"`
-	IsHidden      types.Bool           `tfsdk:"is_hidden"`
-	IsWriteIndex  types.Bool           `tfsdk:"is_write_index"`
-	Routing       types.String         `tfsdk:"routing"`
-	SearchRouting types.String         `tfsdk:"search_routing"`
-}

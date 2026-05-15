@@ -123,7 +123,7 @@ func expandAliasSet(ctx context.Context, set types.Set) (map[string]models.Index
 		return nil, diags
 	}
 
-	var elems []AliasModel
+	var elems []aliasutil.AliasModel
 	diags.Append(set.ElementsAs(ctx, &elems, false)...)
 	if diags.HasError() {
 		return nil, diags
@@ -131,24 +131,11 @@ func expandAliasSet(ctx context.Context, set types.Set) (map[string]models.Index
 
 	aliases := make(map[string]models.IndexAlias, len(elems))
 	for _, am := range elems {
-		ia, d := expandAliasElement(am)
+		ia, d := aliasutil.ExpandAliasElement(am)
 		if d.HasError() {
 			return nil, d
 		}
 		aliases[am.Name.ValueString()] = ia
 	}
 	return aliases, diags
-}
-
-// expandAliasElement converts a single AliasModel to a models.IndexAlias.
-func expandAliasElement(am AliasModel) (models.IndexAlias, diag.Diagnostics) {
-	return aliasutil.ExpandAliasFields(aliasutil.AliasFields{
-		Name:          am.Name,
-		Filter:        am.Filter,
-		IndexRouting:  am.IndexRouting,
-		SearchRouting: am.SearchRouting,
-		Routing:       am.Routing,
-		IsHidden:      am.IsHidden,
-		IsWriteIndex:  am.IsWriteIndex,
-	})
 }
