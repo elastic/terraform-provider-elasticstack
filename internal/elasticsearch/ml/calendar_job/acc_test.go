@@ -339,10 +339,18 @@ func TestAccResourceMLCalendarJob_replaceJob(t *testing.T) {
 }
 
 func TestAccResourceMLCalendarJob_explicitConnection(t *testing.T) {
-	// The provider still configures Elasticsearch from env (acctest.Providers); this test
-	// asserts the per-resource elasticsearch_connection block shape and credentials wiring.
-	// Fully isolating the resource-level client from the provider default would require a
-	// dedicated provider factory (see other explicit-connection tests in the repo).
+	// The default provider is configured with invalid Elasticsearch endpoints and
+	// credentials (see testdata/.../calendar_job.tf). The ML job uses aliased
+	// provider.elasticstack.setup with elasticsearch {} so it still reaches the
+	// cluster. The calendar_job resource must use its elasticsearch_connection
+	// block; if it incorrectly used the default provider client, apply would fail.
+	//
+	// ImportState uses an empty connection list and the provider default client,
+	// so import is not part of this test (see TestAccResourceMLCalendarJob_import).
+	//
+	// ELASTICSEARCH_* env vars may still override some client fields during
+	// acceptance runs (internal/clients/config); the invalid default provider still
+	// documents intent and catches mis-wiring when env does not override.
 	endpoints := testAccMLCalendarJobESEndpoints()
 	if len(endpoints) == 0 {
 		t.Skip("ELASTICSEARCH_ENDPOINTS must be set to run this test")
@@ -381,23 +389,6 @@ func TestAccResourceMLCalendarJob_explicitConnection(t *testing.T) {
 					resource.TestCheckResourceAttr(addr, "elasticsearch_connection.0.insecure", "true"),
 					resource.TestMatchResourceAttr(addr, "id", testAccMLCalendarJobCompositeIDRegexp(calendarID, jobID)),
 				),
-			},
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
-				ConfigVariables: config.Variables{
-					"calendar_id": config.StringVariable(calendarID),
-					"job_id":      config.StringVariable(jobID),
-					"endpoints":   config.ListVariable(endpointVars...),
-					"api_key":     config.StringVariable(os.Getenv("ELASTICSEARCH_API_KEY")),
-					"username":    config.StringVariable(os.Getenv("ELASTICSEARCH_USERNAME")),
-					"password":    config.StringVariable(os.Getenv("ELASTICSEARCH_PASSWORD")),
-				},
-				ResourceName:            addr,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"elasticsearch_connection"},
-				ImportStateIdFunc:       importMLCalendarJobStateID(addr),
 			},
 		},
 	})
