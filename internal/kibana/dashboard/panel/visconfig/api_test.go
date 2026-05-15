@@ -34,8 +34,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func ptrFloat32(v float32) *float32 { return &v }
-
 func mustVisPanelItem(t *testing.T, cfg0 kbapi.KbnDashboardPanelTypeVisConfig0) kbapi.DashboardPanelItem {
 	t.Helper()
 	var cfg kbapi.KbnDashboardPanelTypeVis_Config
@@ -49,7 +47,7 @@ func mustVisPanelItem(t *testing.T, cfg0 kbapi.KbnDashboardPanelTypeVisConfig0) 
 			W *float32 `json:"w,omitempty"`
 			X float32  `json:"x"`
 			Y float32  `json:"y"`
-		}{X: 0, Y: 0, W: ptrFloat32(w), H: ptrFloat32(h)},
+		}{X: 0, Y: 0, W: new(w), H: new(h)},
 		Id:   &id,
 		Type: kbapi.Vis,
 	}
@@ -181,5 +179,5 @@ func TestHandler_ToAPI_byValue_xy_roundTripGrid(t *testing.T) {
 	v, err := out.AsKbnDashboardPanelTypeVis()
 	require.NoError(t, err)
 	require.NotNil(t, v.Grid.W)
-	assert.Equal(t, float32(24), *v.Grid.W)
+	assert.InDelta(t, float64(24), float64(*v.Grid.W), 1e-6)
 }
