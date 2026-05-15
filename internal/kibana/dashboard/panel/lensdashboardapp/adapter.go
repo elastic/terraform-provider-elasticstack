@@ -26,34 +26,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
-
-func newNullLensChartPresentationTFModel() models.LensChartPresentationTFModel {
-	return models.LensChartPresentationTFModel{
-		TimeRange:      nil,
-		HideTitle:      types.BoolNull(),
-		HideBorder:     types.BoolNull(),
-		ReferencesJSON: jsontypes.NewNormalizedNull(),
-		Drilldowns:     nil,
-	}
-}
-
-func metricChartLensByValueTFExpandToVisMetricChart(s *models.MetricChartLensByValueTFModel) *models.MetricChartConfigModel {
-	if s == nil {
-		return nil
-	}
-	out := &models.MetricChartConfigModel{MetricChartCoreTFModel: s.MetricChartCoreTFModel}
-	out.LensChartPresentationTFModel = newNullLensChartPresentationTFModel()
-	return out
-}
-
-func metricLensByValueFromVisFull(m *models.MetricChartConfigModel) *models.MetricChartLensByValueTFModel {
-	if m == nil {
-		return nil
-	}
-	return &models.MetricChartLensByValueTFModel{MetricChartCoreTFModel: m.MetricChartCoreTFModel}
-}
 
 func lensByValueModelHasAnyTypedChartBlock(m *models.LensDashboardAppByValueModel) bool {
 	if m == nil {
@@ -117,7 +90,7 @@ func lensByValueChartBlocksForTypedLensApp(byValue models.LensDashboardAppByValu
 	}
 	if byValue.MetricChartConfig != nil {
 		set++
-		blocks.MetricChartConfig = metricChartLensByValueTFExpandToVisMetricChart(byValue.MetricChartConfig)
+		blocks.MetricChartConfig = byValue.MetricChartConfig
 	}
 	if byValue.PieChartConfig != nil {
 		set++
@@ -219,7 +192,7 @@ func LensByValueModelFromChartBlocksAfterRead(blocks *models.LensByValueChartBlo
 	}
 	if blocks.MetricChartConfig != nil {
 		set++
-		out.MetricChartConfig = metricLensByValueFromVisFull(blocks.MetricChartConfig)
+		out.MetricChartConfig = blocks.MetricChartConfig
 	}
 	if blocks.PieChartConfig != nil {
 		set++
