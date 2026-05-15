@@ -330,10 +330,8 @@ func TestAccResourceDataViewNamespaces(t *testing.T) {
 //
 // REQ-015 scenario 1 (server-side count does not drift plan): after the first apply we POST
 // field popularity for host.hostname via the Kibana HTTP API (same endpoint family as
-// UpdateFieldMetadata). When that succeeds, a PlanOnly step asserts an empty plan; when the
-// acceptance client or POST fails, we log and skip only that PlanOnly step so the rest of the
-// scenario still runs (typical stacks without injected counts are still covered by the final
-// PlanOnly on remove_label).
+// UpdateFieldMetadata) and then assert a PlanOnly step is empty. Failing to inject the count
+// fails the test, since suppressing that drift is exactly the behaviour we are exercising.
 func TestAccResourceDataViewFieldAttrs(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minFullDataviewSupport, versionutils.FlavorAny)
 
@@ -362,15 +360,8 @@ func TestAccResourceDataViewFieldAttrs(t *testing.T) {
 		return nil
 	}
 
-	var countInjectionOK bool
-	recordInjectionAttempt := func(s *terraform.State) error {
-		countInjectionOK = false
-		if err := testAccInjectHostHostnameFieldCount(t, s); err != nil {
-			t.Logf("field_attrs count injection skipped (REQ-015 scenario 1): %v", err)
-			return nil
-		}
-		countInjectionOK = true
-		return nil
+	injectHostHostnameCount := func(s *terraform.State) error {
+		return testAccInjectHostHostnameFieldCount(t, s)
 	}
 
 	resource.Test(t, resource.TestCase{
@@ -390,17 +381,14 @@ func TestAccResourceDataViewFieldAttrs(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("no_field_attrs"),
 				ConfigVariables:          vars,
-				Check:                    recordInjectionAttempt,
+				Check:                    injectHostHostnameCount,
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("no_field_attrs"),
 				ConfigVariables:          vars,
-				SkipFunc: func() (bool, error) {
-					return !countInjectionOK, nil
-				},
-				PlanOnly:           true,
-				ExpectNonEmptyPlan: false,
+				PlanOnly:                 true,
+				ExpectNonEmptyPlan:       false,
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
