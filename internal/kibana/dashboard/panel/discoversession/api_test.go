@@ -222,3 +222,105 @@ func TestHandler_optionalEnvelopeFieldsStayNull_afterRoundTrip(t *testing.T) {
 	assert.True(t, cfg.HideTitle.IsNull())
 	assert.True(t, cfg.HideBorder.IsNull())
 }
+
+func discoverSessionOverridesAttrTypesAllOptionalNull(t *testing.T) models.DiscoverSessionOverridesModel {
+	t.Helper()
+	colSettingsElem := types.ObjectType{AttrTypes: map[string]attr.Type{"width": types.Float64Type}}
+	return models.DiscoverSessionOverridesModel{
+		ColumnOrder:     types.ListNull(types.StringType),
+		ColumnSettings:  types.MapNull(colSettingsElem),
+		Sort:            nil,
+		Density:         types.StringNull(),
+		HeaderRowHeight: types.StringNull(),
+		RowHeight:       types.StringNull(),
+		RowsPerPage:     types.Int64Null(),
+		SampleSize:      types.Int64Null(),
+	}
+}
+
+// Parity with legacy discoverSessionMergeOverridesFromAPI / discoverSessionOverridesFromAPI:
+// practitioner leaves optional override attributes null; refresh keeps them null even when the API returns an overrides object.
+func TestHandler_byReference_overrides_optionalFieldsStayNull_afterRoundTrip(t *testing.T) {
+	ctx := iface.WithEnclosingDashboard(context.Background(), &models.DashboardModel{})
+	pm := panelModelBase()
+	pm.DiscoverSessionConfig = &models.DiscoverSessionPanelConfigModel{
+		ByReference: &models.DiscoverSessionPanelByRefModel{
+			TimeRange: &models.TimeRangeModel{
+				From: types.StringValue("now-30m"),
+				To:   types.StringValue("now"),
+				Mode: types.StringNull(),
+			},
+			RefID:         types.StringValue("saved-discover-ref"),
+			SelectedTabID: types.StringNull(),
+			Overrides: func() *models.DiscoverSessionOverridesModel {
+				o := discoverSessionOverridesAttrTypesAllOptionalNull(t)
+				return &o
+			}(),
+		},
+	}
+
+	item, diags := discoversession.Handler{}.ToAPI(pm, nil)
+	require.False(t, diags.HasError(), "%s", diags)
+
+	next := pm
+	d2 := discoversession.Handler{}.FromAPI(ctx, &next, &pm, item)
+	require.False(t, d2.HasError(), "%s", d2)
+
+	ov := next.DiscoverSessionConfig.ByReference.Overrides
+	require.NotNil(t, ov)
+	assert.True(t, ov.ColumnOrder.IsNull())
+	assert.True(t, ov.ColumnSettings.IsNull())
+	assert.Nil(t, ov.Sort)
+	assert.True(t, ov.Density.IsNull())
+	assert.True(t, ov.HeaderRowHeight.IsNull())
+	assert.True(t, ov.RowHeight.IsNull())
+	assert.True(t, ov.RowsPerPage.IsNull())
+	assert.True(t, ov.SampleSize.IsNull())
+}
+
+// Parity with readDiscoverSessionDrilldownsFromConfig0 when prior marks optional booleans as null:
+// URL drilldown defaults (encode true / open false) map to null in state when practitioner omitted them.
+func TestHandler_drilldownOptionalBoolsStayNull_afterRoundTrip(t *testing.T) {
+	ctx := iface.WithEnclosingDashboard(context.Background(), &models.DashboardModel{})
+	pm := panelModelBase()
+	pm.DiscoverSessionConfig = &models.DiscoverSessionPanelConfigModel{
+		Drilldowns: []models.DiscoverSessionPanelDrilldown{
+			{
+				URL:          types.StringValue("https://example.test/from-dashboard"),
+				Label:        types.StringValue("Example drill"),
+				EncodeURL:    types.BoolNull(),
+				OpenInNewTab: types.BoolNull(),
+			},
+		},
+		ByValue: &models.DiscoverSessionPanelByValueModel{
+			TimeRange: &models.TimeRangeModel{
+				From: types.StringValue("now-30m"),
+				To:   types.StringValue("now"),
+				Mode: types.StringNull(),
+			},
+			Tab: models.DiscoverSessionTabModel{
+				DSL: &models.DiscoverSessionDSLTabModel{
+					Query: &models.FilterSimpleModel{
+						Language:   types.StringValue("kql"),
+						Expression: types.StringValue("*"),
+					},
+					DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"data_view_reference","id":"logs-*"}`),
+				},
+			},
+		},
+	}
+
+	item, diags := discoversession.Handler{}.ToAPI(pm, nil)
+	require.False(t, diags.HasError(), "%s", diags)
+
+	next := pm
+	d2 := discoversession.Handler{}.FromAPI(ctx, &next, &pm, item)
+	require.False(t, d2.HasError(), "%s", d2)
+
+	require.Len(t, next.DiscoverSessionConfig.Drilldowns, 1)
+	dd := next.DiscoverSessionConfig.Drilldowns[0]
+	assert.Equal(t, "https://example.test/from-dashboard", dd.URL.ValueString())
+	assert.Equal(t, "Example drill", dd.Label.ValueString())
+	assert.True(t, dd.EncodeURL.IsNull(), "encode_url omitted in TF must stay null after merge (drilldownBoolImportPreserving / prior-null branch)")
+	assert.True(t, dd.OpenInNewTab.IsNull(), "open_in_new_tab omitted in TF must stay null after merge")
+}
