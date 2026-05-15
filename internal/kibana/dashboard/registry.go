@@ -20,6 +20,7 @@ package dashboard
 import (
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/discoversession"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/esqlcontrol"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/iface"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/image"
@@ -54,6 +55,7 @@ var panelHandlers = []iface.Handler{
 	sloalerts.Handler{},
 	lensdashboardapp.Handler{},
 	visconfig.Handler{},
+	discoversession.Handler{},
 }
 
 var panelTypeToHandler map[string]iface.Handler

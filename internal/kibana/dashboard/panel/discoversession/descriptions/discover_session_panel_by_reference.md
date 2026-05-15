@@ -1,0 +1,1 @@
+Reference an existing Discover session saved object via `ref_id`. Client-side `references` JSON is not modeled in v1 (see change design). Omit `selected_tab_id` to let Kibana pick the tab; after apply the resolved id is stored in state.
