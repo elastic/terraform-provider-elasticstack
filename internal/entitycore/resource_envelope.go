@@ -119,7 +119,8 @@ type ElasticsearchPostReadFunc[T ElasticsearchResourceModel] func(
 ) diag.Diagnostics
 
 // ElasticsearchResourceOptions configures [NewElasticsearchResource]. PostRead
-// is optional; all other callbacks must be non-nil.
+// is optional; Schema, Read, Delete, Create, and Update must be non-nil or the
+// envelope surfaces configuration diagnostics instead of invoking nil callbacks.
 type ElasticsearchResourceOptions[T ElasticsearchResourceModel] struct {
 	Schema   func(context.Context) rschema.Schema
 	Read     elasticsearchReadFunc[T]
@@ -178,8 +179,9 @@ func PlaceholderElasticsearchWriteCallbacks[T ElasticsearchResourceModel]() (Ela
 
 // NewElasticsearchResource returns an [*ElasticsearchResource] that owns
 // Schema, Create, Read, Update, and Delete for the Elasticsearch namespace.
-// Concrete resources supply callbacks in opts; required callbacks must be
-// non-nil or Create/Update surface configuration error diagnostics.
+// Concrete resources supply callbacks in opts; Schema, Read, Delete, Create,
+// and Update must be non-nil or the envelope surfaces configuration error
+// diagnostics instead of invoking nil callbacks.
 func NewElasticsearchResource[T ElasticsearchResourceModel](name string, opts ElasticsearchResourceOptions[T]) *ElasticsearchResource[T] {
 	return &ElasticsearchResource[T]{
 		ResourceBase:  NewResourceBase(ComponentElasticsearch, name),
@@ -235,23 +237,15 @@ func (r *ElasticsearchResource[T]) Create(ctx context.Context, req resource.Crea
 	})...)
 }
 
-// Read implements [resource.Resource] with the standard prelude: decode state,
-// resolve read identity, resolve scoped Elasticsearch client, enforce optional
-// version requirements, then delegate to the concrete readFunc.
+// Read implements [resource.Resource] with the standard prelude: deserialize
+// prior state into the generic model T, resolve read identity from the model
+// and/or composite ID, resolve the scoped Elasticsearch client, enforce optional
+// version requirements when the model reports requirement diagnostics with an
+// error severity (matching Kibana envelope semantics), then delegate to the
+// concrete readFunc.
 func (r *ElasticsearchResource[T]) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var model T
 	resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, diags := r.Client().GetElasticsearchClient(ctx, model.GetElasticsearchConnection())
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	resp.Diagnostics.Append(enforceVersionRequirements(ctx, client, &model)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -266,6 +260,17 @@ func (r *ElasticsearchResource[T]) Read(ctx context.Context, req resource.ReadRe
 			"Invalid resource identifier",
 			"The resolved read identity is empty; cannot read.",
 		)
+		return
+	}
+
+	client, diags := r.Client().GetElasticsearchClient(ctx, model.GetElasticsearchConnection())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if vDiags := enforceVersionRequirements(ctx, client, &model); vDiags.HasError() {
+		resp.Diagnostics.Append(vDiags...)
 		return
 	}
 
@@ -375,8 +380,8 @@ func (r *ElasticsearchResource[T]) runWrite(ctx context.Context, inv writeInvoca
 		return diags
 	}
 
-	diags.Append(enforceVersionRequirements(ctx, client, &planModel)...)
-	if diags.HasError() {
+	if vDiags := enforceVersionRequirements(ctx, client, &planModel); vDiags.HasError() {
+		diags.Append(vDiags...)
 		return diags
 	}
 
@@ -452,6 +457,14 @@ func (r *ElasticsearchResource[T]) runWrite(ctx context.Context, inv writeInvoca
 // Delete implements [resource.Resource] with the standard prelude, then
 // delegates to the concrete deleteFunc.
 func (r *ElasticsearchResource[T]) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	if r.deleteFunc == nil {
+		resp.Diagnostics.AddError(
+			"Elasticsearch envelope configuration error",
+			"The delete callback passed via ElasticsearchResourceOptions must not be nil.",
+		)
+		return
+	}
+
 	var model T
 	resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
 	if resp.Diagnostics.HasError() {
