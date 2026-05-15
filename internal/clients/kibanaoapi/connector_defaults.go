@@ -110,10 +110,10 @@ func ConnectorConfigWithDefaults(connectorTypeID, plan string) (string, error) {
 	return handler.defaults(plan)
 }
 
-// User can omit optonal fields in config JSON.
-// The func adds empty optional fields to the diff.
-// Otherwise plan command shows omitted fields as the diff,
-// because backend returns all fields.
+// Users can omit optional fields in the config JSON.
+// This helper remarshals the config so empty optional fields are included,
+// avoiding plan diffs when Kibana returns fields that were omitted from
+// the original configuration.
 func remarshalConfig[T any](plan string) (string, error) {
 	var config T
 	if err := json.Unmarshal([]byte(plan), &config); err != nil {
@@ -158,7 +158,7 @@ func parseGenAiAPIProvider(plan string) (string, error) {
 // dispatchGenAiConfig is the single dispatch point for .gen-ai connectors.
 // It selects the appropriate per-provider handler based on the apiProvider field.
 // When setOtherDefaults is non-nil it is applied to the "Other" provider config;
-// otherwise the "Other" config is remarshed without modification.
+// otherwise the "Other" config is remarshaled without modification.
 func dispatchGenAiConfig(plan string, setOtherDefaults func(*kbapi.GenaiOpenaiOtherConfig)) (string, error) {
 	apiProvider, err := parseGenAiAPIProvider(plan)
 	if err != nil {
