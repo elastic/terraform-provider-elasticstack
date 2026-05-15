@@ -40,16 +40,10 @@ type snapshotRepositoryResource struct {
 	*entitycore.ElasticsearchResource[Data]
 }
 
-func envelopeWriteSnapshotRepoCreate(
-	ctx context.Context,
-	client *clients.ElasticsearchScopedClient,
-	req entitycore.WriteRequest[Data],
-) (entitycore.WriteResult[Data], diag.Diagnostics) {
-	m, d := writeSnapshotRepository(ctx, client, req.WriteID, req.Plan)
-	return entitycore.WriteResult[Data]{Model: m}, d
-}
-
-func envelopeWriteSnapshotRepoUpdate(
+// envelopeWriteSnapshotRepo adapts writeSnapshotRepository into a WriteFunc
+// shared by Create and Update; the repository PUT API is idempotent so the
+// same callback serves both lifecycle methods.
+func envelopeWriteSnapshotRepo(
 	ctx context.Context,
 	client *clients.ElasticsearchScopedClient,
 	req entitycore.WriteRequest[Data],
@@ -64,8 +58,8 @@ func newSnapshotRepositoryResource() *snapshotRepositoryResource {
 			Schema: GetSchema,
 			Read:   readSnapshotRepository,
 			Delete: deleteSnapshotRepository,
-			Create: envelopeWriteSnapshotRepoCreate,
-			Update: envelopeWriteSnapshotRepoUpdate,
+			Create: envelopeWriteSnapshotRepo,
+			Update: envelopeWriteSnapshotRepo,
 		}),
 	}
 }

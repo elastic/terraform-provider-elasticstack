@@ -39,21 +39,19 @@ type aliasResource struct {
 	*entitycore.ElasticsearchResource[tfModel]
 }
 
-func envelopeCreateAlias(
+// envelopeWriteAlias dispatches to createAlias on Create (req.Prior == nil)
+// and updateAlias on Update; the two paths use different alias actions
+// (create vs add/remove reconciliation) so are kept as separate helpers.
+func envelopeWriteAlias(
 	ctx context.Context,
 	client *clients.ElasticsearchScopedClient,
 	req entitycore.WriteRequest[tfModel],
 ) (entitycore.WriteResult[tfModel], diag.Diagnostics) {
-	m, d := createAlias(ctx, client, req.WriteID, req.Plan)
-	return entitycore.WriteResult[tfModel]{Model: m}, d
-}
-
-func envelopeUpdateAlias(
-	ctx context.Context,
-	client *clients.ElasticsearchScopedClient,
-	req entitycore.WriteRequest[tfModel],
-) (entitycore.WriteResult[tfModel], diag.Diagnostics) {
-	m, d := updateAlias(ctx, client, req.WriteID, req.Plan)
+	write := createAlias
+	if req.Prior != nil {
+		write = updateAlias
+	}
+	m, d := write(ctx, client, req.WriteID, req.Plan)
 	return entitycore.WriteResult[tfModel]{Model: m}, d
 }
 
@@ -63,8 +61,8 @@ func newAliasResource() *aliasResource {
 			Schema: getSchemaFactory,
 			Read:   readAlias,
 			Delete: deleteAlias,
-			Create: envelopeCreateAlias,
-			Update: envelopeUpdateAlias,
+			Create: envelopeWriteAlias,
+			Update: envelopeWriteAlias,
 		}),
 	}
 }

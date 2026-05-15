@@ -43,21 +43,19 @@ type Resource struct {
 	*entitycore.ElasticsearchResource[tfModel]
 }
 
-func envelopeCreateILM(
+// envelopeWriteILM dispatches to createILM on Create (req.Prior == nil) and
+// updateILM on Update; the two paths share version-gating and policy expansion
+// but differ in whether a composite ID is stamped onto the returned model.
+func envelopeWriteILM(
 	ctx context.Context,
 	client *clients.ElasticsearchScopedClient,
 	req entitycore.WriteRequest[tfModel],
 ) (entitycore.WriteResult[tfModel], diag.Diagnostics) {
-	m, d := createILM(ctx, client, req.WriteID, req.Plan)
-	return entitycore.WriteResult[tfModel]{Model: m}, d
-}
-
-func envelopeUpdateILM(
-	ctx context.Context,
-	client *clients.ElasticsearchScopedClient,
-	req entitycore.WriteRequest[tfModel],
-) (entitycore.WriteResult[tfModel], diag.Diagnostics) {
-	m, d := updateILM(ctx, client, req.WriteID, req.Plan)
+	write := createILM
+	if req.Prior != nil {
+		write = updateILM
+	}
+	m, d := write(ctx, client, req.WriteID, req.Plan)
 	return entitycore.WriteResult[tfModel]{Model: m}, d
 }
 
@@ -67,8 +65,8 @@ func newResource() *Resource {
 			Schema: ilmSchema,
 			Read:   readILM,
 			Delete: deleteILM,
-			Create: envelopeCreateILM,
-			Update: envelopeUpdateILM,
+			Create: envelopeWriteILM,
+			Update: envelopeWriteILM,
 		}),
 	}
 }

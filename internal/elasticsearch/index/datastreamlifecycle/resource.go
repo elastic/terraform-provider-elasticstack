@@ -40,21 +40,15 @@ type Resource struct {
 	*entitycore.ElasticsearchResource[tfModel]
 }
 
-func envelopeCreateDSL(
+// envelopeWriteDSL adapts writeDataStreamLifecycle into a WriteFunc shared
+// by Create and Update; the data stream lifecycle PUT API is idempotent so
+// the same callback serves both lifecycle methods.
+func envelopeWriteDSL(
 	ctx context.Context,
 	client *clients.ElasticsearchScopedClient,
 	req entitycore.WriteRequest[tfModel],
 ) (entitycore.WriteResult[tfModel], diag.Diagnostics) {
-	m, d := createDataStreamLifecycle(ctx, client, req.WriteID, req.Plan)
-	return entitycore.WriteResult[tfModel]{Model: m}, d
-}
-
-func envelopeUpdateDSL(
-	ctx context.Context,
-	client *clients.ElasticsearchScopedClient,
-	req entitycore.WriteRequest[tfModel],
-) (entitycore.WriteResult[tfModel], diag.Diagnostics) {
-	m, d := updateDataStreamLifecycle(ctx, client, req.WriteID, req.Plan)
+	m, d := writeDataStreamLifecycle(ctx, client, req.WriteID, req.Plan)
 	return entitycore.WriteResult[tfModel]{Model: m}, d
 }
 
@@ -64,8 +58,8 @@ func newResource() *Resource {
 			Schema: getSchemaFactory,
 			Read:   readDataStreamLifecycle,
 			Delete: deleteDataStreamLifecycle,
-			Create: envelopeCreateDSL,
-			Update: envelopeUpdateDSL,
+			Create: envelopeWriteDSL,
+			Update: envelopeWriteDSL,
 		}),
 	}
 }

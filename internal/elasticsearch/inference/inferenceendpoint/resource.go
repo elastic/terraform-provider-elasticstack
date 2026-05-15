@@ -37,21 +37,19 @@ type inferenceEndpointResource struct {
 	*entitycore.ElasticsearchResource[Data]
 }
 
-func envelopeCreateInferenceEndpoint(
+// envelopeWriteInferenceEndpoint dispatches to createInferenceEndpoint on
+// Create (req.Prior == nil) and updateInferenceEndpoint on Update; the two
+// paths use different APIs (Put vs Update) so are kept as separate helpers.
+func envelopeWriteInferenceEndpoint(
 	ctx context.Context,
 	client *clients.ElasticsearchScopedClient,
 	req entitycore.WriteRequest[Data],
 ) (entitycore.WriteResult[Data], diag.Diagnostics) {
-	m, d := createInferenceEndpoint(ctx, client, req.WriteID, req.Plan)
-	return entitycore.WriteResult[Data]{Model: m}, d
-}
-
-func envelopeUpdateInferenceEndpoint(
-	ctx context.Context,
-	client *clients.ElasticsearchScopedClient,
-	req entitycore.WriteRequest[Data],
-) (entitycore.WriteResult[Data], diag.Diagnostics) {
-	m, d := updateInferenceEndpoint(ctx, client, req.WriteID, req.Plan)
+	write := createInferenceEndpoint
+	if req.Prior != nil {
+		write = updateInferenceEndpoint
+	}
+	m, d := write(ctx, client, req.WriteID, req.Plan)
 	return entitycore.WriteResult[Data]{Model: m}, d
 }
 
@@ -61,8 +59,8 @@ func newInferenceEndpointResource() *inferenceEndpointResource {
 			Schema: getSchemaFactory,
 			Read:   readInferenceEndpoint,
 			Delete: deleteInferenceEndpoint,
-			Create: envelopeCreateInferenceEndpoint,
-			Update: envelopeUpdateInferenceEndpoint,
+			Create: envelopeWriteInferenceEndpoint,
+			Update: envelopeWriteInferenceEndpoint,
 		}),
 	}
 }

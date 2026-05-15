@@ -105,16 +105,10 @@ type pipelineResource struct {
 	*entitycore.ElasticsearchResource[Data]
 }
 
-func envelopeWriteIngestPipelineCreate(
-	ctx context.Context,
-	client *clients.ElasticsearchScopedClient,
-	req entitycore.WriteRequest[Data],
-) (entitycore.WriteResult[Data], diag.Diagnostics) {
-	m, d := writeIngestPipeline(ctx, client, req.WriteID, req.Plan)
-	return entitycore.WriteResult[Data]{Model: m}, d
-}
-
-func envelopeWriteIngestPipelineUpdate(
+// envelopeWriteIngestPipeline adapts writeIngestPipeline into a WriteFunc
+// shared by Create and Update; the ingest pipeline PUT API is idempotent so
+// the same callback serves both lifecycle methods.
+func envelopeWriteIngestPipeline(
 	ctx context.Context,
 	client *clients.ElasticsearchScopedClient,
 	req entitycore.WriteRequest[Data],
@@ -129,8 +123,8 @@ func newPipelineResource() *pipelineResource {
 			Schema: GetSchema,
 			Read:   readIngestPipeline,
 			Delete: deleteIngestPipeline,
-			Create: envelopeWriteIngestPipelineCreate,
-			Update: envelopeWriteIngestPipelineUpdate,
+			Create: envelopeWriteIngestPipeline,
+			Update: envelopeWriteIngestPipeline,
 		}),
 	}
 }

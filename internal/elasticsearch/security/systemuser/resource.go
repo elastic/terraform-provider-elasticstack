@@ -38,16 +38,10 @@ type systemUserResource struct {
 	*entitycore.ElasticsearchResource[Data]
 }
 
-func envelopeWriteSystemUserCreate(
-	ctx context.Context,
-	client *clients.ElasticsearchScopedClient,
-	req entitycore.WriteRequest[Data],
-) (entitycore.WriteResult[Data], diag.Diagnostics) {
-	m, d := writeSystemUser(ctx, client, req.WriteID, req.Plan)
-	return entitycore.WriteResult[Data]{Model: m}, d
-}
-
-func envelopeWriteSystemUserUpdate(
+// envelopeWriteSystemUser adapts writeSystemUser into a WriteFunc shared by
+// Create and Update; the system user PUT-password API is idempotent so the
+// same callback serves both lifecycle methods.
+func envelopeWriteSystemUser(
 	ctx context.Context,
 	client *clients.ElasticsearchScopedClient,
 	req entitycore.WriteRequest[Data],
@@ -62,8 +56,8 @@ func newSystemUserResource() *systemUserResource {
 			Schema: GetSchema,
 			Read:   readSystemUser,
 			Delete: deleteSystemUser,
-			Create: envelopeWriteSystemUserCreate,
-			Update: envelopeWriteSystemUserUpdate,
+			Create: envelopeWriteSystemUser,
+			Update: envelopeWriteSystemUser,
 		}),
 	}
 }

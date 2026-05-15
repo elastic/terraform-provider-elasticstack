@@ -38,16 +38,10 @@ type scriptResource struct {
 	*entitycore.ElasticsearchResource[Data]
 }
 
-func envelopeWriteScriptCreate(
-	ctx context.Context,
-	client *clients.ElasticsearchScopedClient,
-	req entitycore.WriteRequest[Data],
-) (entitycore.WriteResult[Data], diag.Diagnostics) {
-	m, d := writeScript(ctx, client, req.WriteID, req.Plan)
-	return entitycore.WriteResult[Data]{Model: m}, d
-}
-
-func envelopeWriteScriptUpdate(
+// envelopeWriteScript adapts writeScript into a WriteFunc shared by Create
+// and Update; the script PUT API is idempotent so the same callback serves
+// both lifecycle methods.
+func envelopeWriteScript(
 	ctx context.Context,
 	client *clients.ElasticsearchScopedClient,
 	req entitycore.WriteRequest[Data],
@@ -62,8 +56,8 @@ func newScriptResource() *scriptResource {
 			Schema: GetSchema,
 			Read:   readScript,
 			Delete: deleteScript,
-			Create: envelopeWriteScriptCreate,
-			Update: envelopeWriteScriptUpdate,
+			Create: envelopeWriteScript,
+			Update: envelopeWriteScript,
 		}),
 	}
 }

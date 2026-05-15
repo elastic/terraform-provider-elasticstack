@@ -37,21 +37,19 @@ type watchResource struct {
 	*entitycore.ElasticsearchResource[Data]
 }
 
-func envelopeCreateWatch(
+// envelopeWriteWatch dispatches to createWatch on Create (req.Prior == nil)
+// and updateWatch on Update; the two paths share PutWatch but differ in
+// composite ID handling on the returned model.
+func envelopeWriteWatch(
 	ctx context.Context,
 	client *clients.ElasticsearchScopedClient,
 	req entitycore.WriteRequest[Data],
 ) (entitycore.WriteResult[Data], diag.Diagnostics) {
-	m, d := createWatch(ctx, client, req.WriteID, req.Plan)
-	return entitycore.WriteResult[Data]{Model: m}, d
-}
-
-func envelopeUpdateWatch(
-	ctx context.Context,
-	client *clients.ElasticsearchScopedClient,
-	req entitycore.WriteRequest[Data],
-) (entitycore.WriteResult[Data], diag.Diagnostics) {
-	m, d := updateWatch(ctx, client, req.WriteID, req.Plan)
+	write := createWatch
+	if req.Prior != nil {
+		write = updateWatch
+	}
+	m, d := write(ctx, client, req.WriteID, req.Plan)
 	return entitycore.WriteResult[Data]{Model: m}, d
 }
 
@@ -61,8 +59,8 @@ func newWatchResource() *watchResource {
 			Schema: watchSchema,
 			Read:   readWatch,
 			Delete: deleteWatch,
-			Create: envelopeCreateWatch,
-			Update: envelopeUpdateWatch,
+			Create: envelopeWriteWatch,
+			Update: envelopeWriteWatch,
 		}),
 	}
 }

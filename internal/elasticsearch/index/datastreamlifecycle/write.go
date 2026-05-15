@@ -27,7 +27,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func createDataStreamLifecycle(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, plan tfModel) (tfModel, diag.Diagnostics) {
+// writeDataStreamLifecycle handles both Create and Update for the data
+// stream lifecycle resource. The PUT API is idempotent, so the same body
+// serves both lifecycle methods.
+func writeDataStreamLifecycle(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, plan tfModel) (tfModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	id, sdkDiags := client.ID(ctx, resourceID)

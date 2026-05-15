@@ -40,21 +40,20 @@ type Resource struct {
 	*entitycore.ElasticsearchResource[Data]
 }
 
-func envelopeCreateComponentTemplate(
+// envelopeWriteComponentTemplate dispatches to createComponentTemplate on
+// Create (req.Prior == nil) and updateComponentTemplate on Update; the two
+// paths share the PUT call but differ in whether a composite ID is stamped
+// onto the returned model.
+func envelopeWriteComponentTemplate(
 	ctx context.Context,
 	client *clients.ElasticsearchScopedClient,
 	req entitycore.WriteRequest[Data],
 ) (entitycore.WriteResult[Data], diag.Diagnostics) {
-	m, d := createComponentTemplate(ctx, client, req.WriteID, req.Plan)
-	return entitycore.WriteResult[Data]{Model: m}, d
-}
-
-func envelopeUpdateComponentTemplate(
-	ctx context.Context,
-	client *clients.ElasticsearchScopedClient,
-	req entitycore.WriteRequest[Data],
-) (entitycore.WriteResult[Data], diag.Diagnostics) {
-	m, d := updateComponentTemplate(ctx, client, req.WriteID, req.Plan)
+	write := createComponentTemplate
+	if req.Prior != nil {
+		write = updateComponentTemplate
+	}
+	m, d := write(ctx, client, req.WriteID, req.Plan)
 	return entitycore.WriteResult[Data]{Model: m}, d
 }
 
@@ -64,8 +63,8 @@ func newResource() *Resource {
 			Schema: getSchema,
 			Read:   readComponentTemplate,
 			Delete: deleteComponentTemplate,
-			Create: envelopeCreateComponentTemplate,
-			Update: envelopeUpdateComponentTemplate,
+			Create: envelopeWriteComponentTemplate,
+			Update: envelopeWriteComponentTemplate,
 		}),
 	}
 }

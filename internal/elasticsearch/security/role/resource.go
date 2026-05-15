@@ -41,16 +41,10 @@ type roleResource struct {
 	*entitycore.ElasticsearchResource[Data]
 }
 
-func envelopeWriteRoleCreate(
-	ctx context.Context,
-	client *clients.ElasticsearchScopedClient,
-	req entitycore.WriteRequest[Data],
-) (entitycore.WriteResult[Data], diag.Diagnostics) {
-	m, d := writeRole(ctx, client, req.WriteID, req.Plan)
-	return entitycore.WriteResult[Data]{Model: m}, d
-}
-
-func envelopeWriteRoleUpdate(
+// envelopeWriteRole adapts writeRole into a WriteFunc shared by Create and
+// Update; the role PUT API is idempotent so the same callback serves both
+// lifecycle methods.
+func envelopeWriteRole(
 	ctx context.Context,
 	client *clients.ElasticsearchScopedClient,
 	req entitycore.WriteRequest[Data],
@@ -65,8 +59,8 @@ func newRoleResource() *roleResource {
 			Schema: getSchemaFactory,
 			Read:   readRole,
 			Delete: deleteRole,
-			Create: envelopeWriteRoleCreate,
-			Update: envelopeWriteRoleUpdate,
+			Create: envelopeWriteRole,
+			Update: envelopeWriteRole,
 		}),
 	}
 }

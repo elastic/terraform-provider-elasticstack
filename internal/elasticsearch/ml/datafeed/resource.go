@@ -38,21 +38,19 @@ type datafeedResource struct {
 	*entitycore.ElasticsearchResource[Datafeed]
 }
 
-func envelopeCreateDatafeed(
+// envelopeWriteDatafeed dispatches to createDatafeed on Create (req.Prior ==
+// nil) and updateDatafeed on Update; the two paths use different ML APIs
+// (PutDatafeed vs UpdateDatafeed) so are kept as separate helpers.
+func envelopeWriteDatafeed(
 	ctx context.Context,
 	client *clients.ElasticsearchScopedClient,
 	req entitycore.WriteRequest[Datafeed],
 ) (entitycore.WriteResult[Datafeed], diag.Diagnostics) {
-	m, d := createDatafeed(ctx, client, req.WriteID, req.Plan)
-	return entitycore.WriteResult[Datafeed]{Model: m}, d
-}
-
-func envelopeUpdateDatafeed(
-	ctx context.Context,
-	client *clients.ElasticsearchScopedClient,
-	req entitycore.WriteRequest[Datafeed],
-) (entitycore.WriteResult[Datafeed], diag.Diagnostics) {
-	m, d := updateDatafeed(ctx, client, req.WriteID, req.Plan)
+	write := createDatafeed
+	if req.Prior != nil {
+		write = updateDatafeed
+	}
+	m, d := write(ctx, client, req.WriteID, req.Plan)
 	return entitycore.WriteResult[Datafeed]{Model: m}, d
 }
 
@@ -62,8 +60,8 @@ func newDatafeedResource() *datafeedResource {
 			Schema: getSchema,
 			Read:   readDatafeed,
 			Delete: deleteDatafeed,
-			Create: envelopeCreateDatafeed,
-			Update: envelopeUpdateDatafeed,
+			Create: envelopeWriteDatafeed,
+			Update: envelopeWriteDatafeed,
 		}),
 	}
 }

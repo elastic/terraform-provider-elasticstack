@@ -38,16 +38,10 @@ type logstashPipelineResource struct {
 	*entitycore.ElasticsearchResource[Data]
 }
 
-func envelopeWriteLogstashCreate(
-	ctx context.Context,
-	client *clients.ElasticsearchScopedClient,
-	req entitycore.WriteRequest[Data],
-) (entitycore.WriteResult[Data], diag.Diagnostics) {
-	m, d := writeLogstashPipeline(ctx, client, req.WriteID, req.Plan)
-	return entitycore.WriteResult[Data]{Model: m}, d
-}
-
-func envelopeWriteLogstashUpdate(
+// envelopeWriteLogstash adapts writeLogstashPipeline into a WriteFunc shared
+// by Create and Update; the Logstash pipeline PUT API is idempotent so the
+// same callback serves both lifecycle methods.
+func envelopeWriteLogstash(
 	ctx context.Context,
 	client *clients.ElasticsearchScopedClient,
 	req entitycore.WriteRequest[Data],
@@ -62,8 +56,8 @@ func newLogstashPipelineResource() *logstashPipelineResource {
 			Schema: GetSchema,
 			Read:   readLogstashPipeline,
 			Delete: deleteLogstashPipeline,
-			Create: envelopeWriteLogstashCreate,
-			Update: envelopeWriteLogstashUpdate,
+			Create: envelopeWriteLogstash,
+			Update: envelopeWriteLogstash,
 		}),
 	}
 }
