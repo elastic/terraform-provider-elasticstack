@@ -48,6 +48,8 @@ func getSchema(_ context.Context) schema.Schema {
 			"The `job_id` attribute is the same path parameter Elasticsearch accepts: a job identifier or a job group name (Elasticsearch operation `ml.put_calendar_job`). " +
 			"This resource models one identifier per instance (comma-separated lists in the API are not valid for the Terraform `job_id` attribute). " +
 			"The computed `id` is `<cluster_uuid>/<calendar_id>|<job_id>` (a pipe separates calendar and job because the composite ID only allows one slash). " +
+			"Import writes `calendar_id`, `job_id`, and `id` from the import ID only and does not call Elasticsearch to verify the assignment; " +
+			"the next refresh or apply may fail if the ID is wrong or the assignment does not exist. " +
 			"API reference: https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-ml-put-calendar-job",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
