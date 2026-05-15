@@ -1,12 +1,12 @@
 ## 1. Create visconfig handler
 
-- [ ] 1.1 Create `dashboard/panel/visconfig/api.go` with `Handler` implementing `iface.Handler` for panel type `"vis"`, block `"vis_config"`
-- [ ] 1.2 Implement `FromAPI`: classify config JSON (by_value chart, by_reference, or config_json-only), delegate chart population to `lenscommon` converter, use `lenscommon.ByReferenceFromAPI` for by_reference
-- [ ] 1.3 Implement `ToAPI`: delegate chart building to `lenscommon` converter for by_value, use `lenscommon.ByReferenceToAPI` for by_reference, handle config_json-only path
-- [ ] 1.4 Create `dashboard/panel/visconfig/schema.go` with `vis_config` block replacing old `viz_config` block
-- [ ] 1.5 Create `dashboard/panel/visconfig/model.go` with config classification helpers
-- [ ] 1.6 Create `dashboard/panel/visconfig/api_test.go` covering by_value (each chart kind), by_reference, config_json fallback
-- [ ] 1.7 Register `visconfig.Handler{}` in `dashboard/registry.go`
+- [x] 1.1 Create `dashboard/panel/visconfig/api.go` with `Handler` implementing `iface.Handler` for panel type `"vis"`, block `"vis_config"`
+- [x] 1.2 Implement `FromAPI`: classify config JSON (by_value chart, by_reference, or config_json-only), delegate chart population to `lenscommon` converter, use `lenscommon.ByReferenceFromAPI` for by_reference
+- [x] 1.3 Implement `ToAPI`: delegate chart building to `lenscommon` converter for by_value, use `lenscommon.ByReferenceToAPI` for by_reference, handle config_json-only path
+- [x] 1.4 Create `dashboard/panel/visconfig/schema.go` with `vis_config` block replacing old `viz_config` block
+- [x] 1.5 Create `dashboard/panel/visconfig/model.go` with config classification helpers
+- [x] 1.6 Create `dashboard/panel/visconfig/api_test.go` covering by_value (each chart kind), by_reference, config_json fallback
+- [x] 1.7 Register `visconfig.Handler{}` in `dashboard/registry.go`
 
 ## 2. Create lensdashboardapp handler
 

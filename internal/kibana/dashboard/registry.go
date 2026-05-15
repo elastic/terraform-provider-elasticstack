@@ -33,6 +33,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/syntheticsmonitors"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/syntheticsstatsoverview"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/timeslider"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/visconfig"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 )
 
@@ -50,6 +51,7 @@ var panelHandlers = []iface.Handler{
 	markdown.Handler{},
 	image.Handler{},
 	sloalerts.Handler{},
+	visconfig.Handler{},
 }
 
 var panelTypeToHandler map[string]iface.Handler
