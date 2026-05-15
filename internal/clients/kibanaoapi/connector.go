@@ -488,6 +488,20 @@ func connectorConfigWithDefaultsXmatters(plan string) (string, error) {
 	})
 }
 
+func unmarshalConnectorFields(configJSON, secretsJSON string, configDest, secretsDest *map[string]any) error {
+	if len(configJSON) > 0 {
+		if err := json.Unmarshal([]byte(configJSON), configDest); err != nil {
+			return fmt.Errorf("failed to unmarshal [config] attribute: %w", err)
+		}
+	}
+	if len(secretsJSON) > 0 {
+		if err := json.Unmarshal([]byte(secretsJSON), secretsDest); err != nil {
+			return fmt.Errorf("failed to unmarshal [secrets] attribute: %w", err)
+		}
+	}
+	return nil
+}
+
 func createConnectorRequestBody(connector models.KibanaActionConnector) (kbapi.PostActionsConnectorIdJSONRequestBody, error) {
 	req := kbapi.PostActionsConnectorIdJSONRequestBody{
 		ConnectorTypeId: connector.ConnectorTypeID,
@@ -496,16 +510,8 @@ func createConnectorRequestBody(connector models.KibanaActionConnector) (kbapi.P
 		Secrets:         &kbapi.CreateConnectorSecrets{},
 	}
 
-	if len(connector.ConfigJSON) > 0 {
-		if err := json.Unmarshal([]byte(connector.ConfigJSON), &req.Config.AdditionalProperties); err != nil {
-			return kbapi.PostActionsConnectorIdJSONRequestBody{}, fmt.Errorf("failed to unmarshal [config] attribute: %w", err)
-		}
-	}
-
-	if len(connector.SecretsJSON) > 0 {
-		if err := json.Unmarshal([]byte(connector.SecretsJSON), &req.Secrets.AdditionalProperties); err != nil {
-			return kbapi.PostActionsConnectorIdJSONRequestBody{}, fmt.Errorf("failed to unmarshal [secrets] attribute: %w", err)
-		}
+	if err := unmarshalConnectorFields(connector.ConfigJSON, connector.SecretsJSON, &req.Config.AdditionalProperties, &req.Secrets.AdditionalProperties); err != nil {
+		return kbapi.PostActionsConnectorIdJSONRequestBody{}, err
 	}
 
 	return req, nil
@@ -518,16 +524,8 @@ func updateConnectorRequestBody(connector models.KibanaActionConnector) (kbapi.P
 		Secrets: &kbapi.UpdateConnectorSecrets{},
 	}
 
-	if len(connector.ConfigJSON) > 0 {
-		if err := json.Unmarshal([]byte(connector.ConfigJSON), &req.Config.AdditionalProperties); err != nil {
-			return kbapi.PutActionsConnectorIdJSONRequestBody{}, fmt.Errorf("failed to unmarshal [config] attribute: %w", err)
-		}
-	}
-
-	if len(connector.SecretsJSON) > 0 {
-		if err := json.Unmarshal([]byte(connector.SecretsJSON), &req.Secrets.AdditionalProperties); err != nil {
-			return kbapi.PutActionsConnectorIdJSONRequestBody{}, fmt.Errorf("failed to unmarshal [secrets] attribute: %w", err)
-		}
+	if err := unmarshalConnectorFields(connector.ConfigJSON, connector.SecretsJSON, &req.Config.AdditionalProperties, &req.Secrets.AdditionalProperties); err != nil {
+		return kbapi.PutActionsConnectorIdJSONRequestBody{}, err
 	}
 
 	return req, nil

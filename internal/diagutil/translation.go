@@ -85,3 +85,15 @@ func FwDiagsAsError(diags fwdiag.Diagnostics) error {
 	}
 	return nil
 }
+
+// SDKErrorDiag returns a single-error SDK Diagnostics slice with the given
+// summary and detail. Use instead of inline sdkdiag.Diagnostic{...} struct literals.
+func SDKErrorDiag(summary, detail string) sdkdiag.Diagnostics {
+	return sdkdiag.Diagnostics{
+		sdkdiag.Diagnostic{
+			Severity: sdkdiag.Error,
+			Summary:  summary,
+			Detail:   detail,
+		},
+	}
+}

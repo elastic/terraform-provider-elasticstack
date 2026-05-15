@@ -52,21 +52,6 @@ var dashboardFiltersDescription string
 //go:embed descriptions/dashboard_filter_json.md
 var dashboardFilterJSONDescription string
 
-//go:embed descriptions/image_panel_src.md
-var imagePanelSrcDescription string
-
-//go:embed descriptions/image_panel_drilldowns.md
-var imagePanelDrilldownsDescription string
-
-//go:embed descriptions/image_panel_url_drilldown_url.md
-var imagePanelURLDrilldownURLDescription string
-
-//go:embed descriptions/slo_alerts_panel_slos.md
-var sloAlertsPanelSlosDescription string
-
-//go:embed descriptions/slo_alerts_panel_drilldowns.md
-var sloAlertsPanelDrilldownsDescription string
-
 //go:embed descriptions/discover_session_panel_drilldowns.md
 var discoverSessionPanelDrilldownsDescription string
 

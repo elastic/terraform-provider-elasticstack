@@ -339,23 +339,23 @@ Required:
 
 Optional:
 
-- `config_json` (String) The configuration of the panel as a JSON string. Practitioner-authored panel-level `config_json` is valid only when `type` is `markdown` or `vis`. Typed panel kinds such as `lens-dashboard-app`, `image`, `slo_alerts`, and `discover_session` use their dedicated blocks (`lens_dashboard_app_config`, `image_config`, `slo_alerts_config`, `discover_session_config`), not panel-level `config_json`. Mutually exclusive with `markdown_config`, `vis_config`, `lens_dashboard_app_config`, `esql_control_config`, `options_list_control_config`, `range_slider_control_config`, `time_slider_control_config`, `slo_alerts_config`, `slo_burn_rate_config`, `slo_overview_config`, `slo_error_budget_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `image_config`, `discover_session_config`.
-- `discover_session_config` (Attributes) Configuration for a `discover_session` panel (`kbn-dashboard-panel-type-discover_session`). Required when `type` is `discover_session`. Set exactly one of `by_value` or `by_reference`. Mutually exclusive with `config_json`, `markdown_config`, `vis_config`, `lens_dashboard_app_config`, `esql_control_config`, `options_list_control_config`, `range_slider_control_config`, `time_slider_control_config`, `slo_alerts_config`, `slo_burn_rate_config`, `slo_overview_config`, `slo_error_budget_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `image_config`. (see [below for nested schema](#nestedatt--panels--discover_session_config))
-- `esql_control_config` (Attributes) Configuration for an ES|QL control panel. Use this to manage ES|QL variable controls on a dashboard. Mutually exclusive with `config_json`, `markdown_config`, `vis_config`, `lens_dashboard_app_config`, `options_list_control_config`, `range_slider_control_config`, `time_slider_control_config`, `slo_alerts_config`, `slo_burn_rate_config`, `slo_overview_config`, `slo_error_budget_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `image_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--esql_control_config))
+- `config_json` (String) The configuration of the panel as a JSON string. Practitioner-authored panel-level `config_json` is valid only when `type` is `markdown` or `vis`. Typed panel kinds such as `lens-dashboard-app`, `image`, `slo_alerts`, and `discover_session` use their dedicated blocks (`lens_dashboard_app_config`, `image_config`, `slo_alerts_config`, `discover_session_config`), not panel-level `config_json`. Mutually exclusive with `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `lens_dashboard_app_config`, `discover_session_config`.
+- `discover_session_config` (Attributes) Configuration for a `discover_session` panel (`kbn-dashboard-panel-type-discover_session`). Required when `type` is `discover_session`. Set exactly one of `by_value` or `by_reference`. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `lens_dashboard_app_config`. (see [below for nested schema](#nestedatt--panels--discover_session_config))
+- `esql_control_config` (Attributes) Configuration for an ES|QL control panel. Use this to manage ES|QL variable controls on a dashboard. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--esql_control_config))
 - `id` (String) The identifier of the panel (API `id`).
-- `image_config` (Attributes) Configuration for an `image` panel (`kbn-dashboard-panel-type-image`). Required when `type` is `image`. References the Kibana Dashboard API image embeddable `config` shape. Mutually exclusive with `config_json`, `markdown_config`, `vis_config`, `lens_dashboard_app_config`, `esql_control_config`, `options_list_control_config`, `range_slider_control_config`, `time_slider_control_config`, `slo_alerts_config`, `slo_burn_rate_config`, `slo_overview_config`, `slo_error_budget_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--image_config))
-- `lens_dashboard_app_config` (Attributes) Configuration for a `lens-dashboard-app` panel (the Kibana Dashboard API `lens-dashboard-app` panel type). Required when `type` is `lens-dashboard-app`. Set exactly one of `by_value` or `by_reference`. With `by_value`, set exactly one of `config_json` or one supported typed Lens chart block. With `by_reference`, use `ref_id` and `references_json` to map the API `references` list. Supported typed by-value blocks are sent as the `lens-dashboard-app` API `config` and do not use `type = "vis"` panels. Mutually exclusive with `config_json`, `markdown_config`, `vis_config`, `esql_control_config`, `options_list_control_config`, `range_slider_control_config`, `time_slider_control_config`, `slo_alerts_config`, `slo_burn_rate_config`, `slo_overview_config`, `slo_error_budget_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `image_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config))
-- `markdown_config` (Attributes) Configuration for a `markdown` panel (the Kibana Dashboard API `kbn-dashboard-panel-type-markdown` shape). Set exactly one of `by_value` (inline `content` with required nested `settings`) or `by_reference` (existing library item via `ref_id`). Presentation fields (`description`, `hide_title`, `title`, `hide_border`) are supported in both branches. Mutually exclusive with `config_json`, `vis_config`, `lens_dashboard_app_config`, `esql_control_config`, `options_list_control_config`, `range_slider_control_config`, `time_slider_control_config`, `slo_alerts_config`, `slo_burn_rate_config`, `slo_overview_config`, `slo_error_budget_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `image_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--markdown_config))
-- `options_list_control_config` (Attributes) Configuration for an options list control panel. Provides a dropdown or multi-select filter based on a field in a data view. Mutually exclusive with `config_json`, `markdown_config`, `vis_config`, `lens_dashboard_app_config`, `esql_control_config`, `range_slider_control_config`, `time_slider_control_config`, `slo_alerts_config`, `slo_burn_rate_config`, `slo_overview_config`, `slo_error_budget_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `image_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--options_list_control_config))
-- `range_slider_control_config` (Attributes) Configuration for a range slider control panel. Provides a min/max range filter tied to a data view field. Mutually exclusive with `config_json`, `markdown_config`, `vis_config`, `lens_dashboard_app_config`, `esql_control_config`, `options_list_control_config`, `time_slider_control_config`, `slo_alerts_config`, `slo_burn_rate_config`, `slo_overview_config`, `slo_error_budget_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `image_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--range_slider_control_config))
-- `slo_alerts_config` (Attributes) Configuration for an `slo_alerts` panel (`kbn-dashboard-panel-type-slo_alerts`). Required when `type` is `slo_alerts`. Mutually exclusive with `config_json`, `markdown_config`, `vis_config`, `lens_dashboard_app_config`, `esql_control_config`, `options_list_control_config`, `range_slider_control_config`, `time_slider_control_config`, `slo_burn_rate_config`, `slo_overview_config`, `slo_error_budget_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `image_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--slo_alerts_config))
-- `slo_burn_rate_config` (Attributes) Configuration for an SLO burn rate panel. Use this for panels that visualize the burn rate of an SLO over a configurable look-back window. Mutually exclusive with `config_json`, `markdown_config`, `vis_config`, `lens_dashboard_app_config`, `esql_control_config`, `options_list_control_config`, `range_slider_control_config`, `time_slider_control_config`, `slo_alerts_config`, `slo_overview_config`, `slo_error_budget_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `image_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--slo_burn_rate_config))
-- `slo_error_budget_config` (Attributes) Configuration for an SLO error budget panel. Displays the burn chart of remaining error budget for a specific SLO. Mutually exclusive with `config_json`, `markdown_config`, `vis_config`, `lens_dashboard_app_config`, `esql_control_config`, `options_list_control_config`, `range_slider_control_config`, `time_slider_control_config`, `slo_alerts_config`, `slo_burn_rate_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `image_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--slo_error_budget_config))
-- `slo_overview_config` (Attributes) Configuration for an SLO overview panel. Use either `single` (for a single SLO) or `groups` (for grouped SLO overview). Mutually exclusive with `config_json`, `markdown_config`, `vis_config`, `lens_dashboard_app_config`, `esql_control_config`, `options_list_control_config`, `range_slider_control_config`, `time_slider_control_config`, `slo_alerts_config`, `slo_burn_rate_config`, `slo_error_budget_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `image_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--slo_overview_config))
-- `synthetics_monitors_config` (Attributes) Configuration for a Synthetics monitors panel. Displays a table of Elastic Synthetics monitors and their current status. All fields are optional — omit the block entirely for a bare panel with no filtering. Mutually exclusive with `config_json`, `markdown_config`, `vis_config`, `lens_dashboard_app_config`, `esql_control_config`, `options_list_control_config`, `range_slider_control_config`, `time_slider_control_config`, `slo_alerts_config`, `slo_burn_rate_config`, `slo_overview_config`, `slo_error_budget_config`, `synthetics_stats_overview_config`, `image_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--synthetics_monitors_config))
-- `synthetics_stats_overview_config` (Attributes) Configuration for a Synthetics stats overview panel. All fields are optional; an absent or empty block shows statistics for all monitors visible within the space. Mutually exclusive with `config_json`, `markdown_config`, `vis_config`, `lens_dashboard_app_config`, `esql_control_config`, `options_list_control_config`, `range_slider_control_config`, `time_slider_control_config`, `slo_alerts_config`, `slo_burn_rate_config`, `slo_overview_config`, `slo_error_budget_config`, `synthetics_monitors_config`, `image_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--synthetics_stats_overview_config))
-- `time_slider_control_config` (Attributes) Configuration for a time slider control panel. Controls the visible time window within the dashboard's global time range. Mutually exclusive with `config_json`, `markdown_config`, `vis_config`, `lens_dashboard_app_config`, `esql_control_config`, `options_list_control_config`, `range_slider_control_config`, `slo_alerts_config`, `slo_burn_rate_config`, `slo_overview_config`, `slo_error_budget_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `image_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--time_slider_control_config))
-- `vis_config` (Attributes) Configuration for a `vis` panel (`type = "vis"`). Typed alternative to `config_json`: set exactly one of `by_value` (exactly one of 12 Lens chart kinds) or `by_reference`. With `by_reference`, use structured `drilldowns` and required `time_range` like `lens_dashboard_app_config.by_reference`. Mutually exclusive with `config_json`, `markdown_config`, `lens_dashboard_app_config`, `esql_control_config`, `options_list_control_config`, `range_slider_control_config`, `time_slider_control_config`, `slo_alerts_config`, `slo_burn_rate_config`, `slo_overview_config`, `slo_error_budget_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `image_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--vis_config))
+- `image_config` (Attributes) Configuration for an `image` panel (`kbn-dashboard-panel-type-image`). Required when `type` is `image`. References the Kibana Dashboard API image embeddable `config` shape. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `slo_alerts_config`, `vis_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--image_config))
+- `lens_dashboard_app_config` (Attributes) Configuration for a `lens-dashboard-app` panel (the Kibana Dashboard API `lens-dashboard-app` panel type). Required when `type` is `lens-dashboard-app`. Set exactly one of `by_value` or `by_reference`. With `by_value`, set exactly one of `config_json` or one supported typed Lens chart block. With `by_reference`, use `ref_id` and `references_json` to map the API `references` list. Supported typed by-value blocks are sent as the `lens-dashboard-app` API `config` and do not use `type = "vis"` panels. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config))
+- `markdown_config` (Attributes) Configuration for a `markdown` panel (the Kibana Dashboard API `kbn-dashboard-panel-type-markdown` shape). Set exactly one of `by_value` (inline `content` with required nested `settings`) or `by_reference` (existing library item via `ref_id`). Presentation fields (`description`, `hide_title`, `title`, `hide_border`) are supported in both branches. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `image_config`, `slo_alerts_config`, `vis_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--markdown_config))
+- `options_list_control_config` (Attributes) Configuration for an options list control panel. Provides a dropdown or multi-select filter based on a field in a data view. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--options_list_control_config))
+- `range_slider_control_config` (Attributes) Configuration for a range slider control panel. Provides a min/max range filter tied to a data view field. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--range_slider_control_config))
+- `slo_alerts_config` (Attributes) Configuration for an `slo_alerts` panel (`kbn-dashboard-panel-type-slo_alerts`). Required when `type` is `slo_alerts`. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `vis_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--slo_alerts_config))
+- `slo_burn_rate_config` (Attributes) Configuration for an SLO burn rate panel. Use this for panels that visualize the burn rate of an SLO over a configurable look-back window. Mutually exclusive with `config_json`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--slo_burn_rate_config))
+- `slo_error_budget_config` (Attributes) Configuration for an SLO error budget panel. Displays the burn chart of remaining error budget for a specific SLO. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--slo_error_budget_config))
+- `slo_overview_config` (Attributes) Configuration for an SLO overview panel. Use either `single` (for a single SLO) or `groups` (for grouped SLO overview). Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--slo_overview_config))
+- `synthetics_monitors_config` (Attributes) Configuration for a Synthetics monitors panel. Displays a table of Elastic Synthetics monitors and their current status. All fields are optional — omit the block entirely for a bare panel with no filtering. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--synthetics_monitors_config))
+- `synthetics_stats_overview_config` (Attributes) Configuration for a Synthetics stats overview panel. All fields are optional; an absent or empty block shows statistics for all monitors visible within the space. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--synthetics_stats_overview_config))
+- `time_slider_control_config` (Attributes) Configuration for a time slider control panel. Controls the visible time window within the dashboard's global time range. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--time_slider_control_config))
+- `vis_config` (Attributes) Configuration for a `vis` panel (`type = "vis"`). Typed alternative to `config_json`: set exactly one of `by_value` (exactly one of 12 Lens chart kinds) or `by_reference`. With `by_reference`, use structured `drilldowns` and required `time_range` like `lens_dashboard_app_config.by_reference`. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--vis_config))
 
 <a id="nestedatt--panels--grid"></a>
 ### Nested Schema for `panels.grid`
@@ -633,12 +633,12 @@ Optional:
 
 - `alt_text` (String) Accessible alternate text for the image.
 - `background_color` (String) Background color behind the image (CSS color string).
-- `description` (String) Panel description shown by Kibana.
+- `description` (String) Optional panel description.
 - `drilldowns` (Attributes List) Optional drilldown actions for the image panel (max 100 entries). Each element sets exactly one of `dashboard_drilldown` or `url_drilldown`, matching the Kibana `kbn-dashboard-panel-type-image` `config.drilldowns` discriminated union. (see [below for nested schema](#nestedatt--panels--image_config--drilldowns))
 - `hide_border` (Boolean) When true, hides the panel border.
 - `hide_title` (Boolean) When true, hides the panel title.
 - `object_fit` (String) How the image is sized within its panel container. Omit to leave unset; the Kibana API defaults to `contain`. Unset values stay null in Terraform state when the API echoes that default (REQ-009).
-- `title` (String) Panel title shown by Kibana.
+- `title` (String) Optional panel title shown in the panel header.
 
 <a id="nestedatt--panels--image_config--src"></a>
 ### Nested Schema for `panels.image_config.src`
@@ -694,7 +694,7 @@ Optional:
 
 Required:
 
-- `label` (String) Display label for the drilldown.
+- `label` (String) Display label shown in the drilldown menu.
 - `trigger` (String) When this drilldown runs. Allowed values: `on_click_image`, `on_open_panel_menu` (Kibana image panel URL drilldown triggers).
 - `url` (String) Templated URL for the drilldown. Variables are documented in the [Kibana drilldown URL template variables](https://www.elastic.co/docs/explore-analyze/dashboards/drilldowns#url-template-variable) section of the Elastic docs.
 
@@ -2160,9 +2160,9 @@ Required:
 Optional:
 
 - `description` (String) Optional panel description.
-- `hide_border` (Boolean) When true, suppresses the panel border.
-- `hide_title` (Boolean) When true, suppresses the panel title.
-- `title` (String) Optional panel title.
+- `hide_border` (Boolean) When true, hides the panel border.
+- `hide_title` (Boolean) When true, hides the panel title.
+- `title` (String) Optional panel title shown in the panel header.
 
 
 <a id="nestedatt--panels--markdown_config--by_value"></a>
@@ -2176,9 +2176,9 @@ Required:
 Optional:
 
 - `description` (String) Optional panel description.
-- `hide_border` (Boolean) When true, suppresses the panel border.
-- `hide_title` (Boolean) When true, suppresses the panel title.
-- `title` (String) Optional panel title.
+- `hide_border` (Boolean) When true, hides the panel border.
+- `hide_title` (Boolean) When true, hides the panel title.
+- `title` (String) Optional panel title shown in the panel header.
 
 <a id="nestedatt--panels--markdown_config--by_value--settings"></a>
 ### Nested Schema for `panels.markdown_config.by_value.settings`
@@ -2264,7 +2264,7 @@ Optional:
 - `drilldowns` (Attributes List) Optional URL drilldown links (at most 100). The embeddable fixes `trigger` to `on_open_panel_menu` and `type` to `url_drilldown` when writing to the Kibana API. (see [below for nested schema](#nestedatt--panels--slo_alerts_config--drilldowns))
 - `hide_border` (Boolean) When true, hides the panel border.
 - `hide_title` (Boolean) When true, hides the panel title.
-- `title` (String) Optional panel title.
+- `title` (String) Optional panel title shown in the panel header.
 
 <a id="nestedatt--panels--slo_alerts_config--slos"></a>
 ### Nested Schema for `panels.slo_alerts_config.slos`
@@ -2308,7 +2308,7 @@ Optional:
 - `hide_border` (Boolean) When true, hides the panel border.
 - `hide_title` (Boolean) When true, hides the panel title.
 - `slo_instance_id` (String) ID of the SLO instance. Set when the SLO uses `group_by`; identifies which instance to show. Omit to show all instances (API default `"*"`).
-- `title` (String) Optional panel title.
+- `title` (String) Optional panel title shown in the panel header.
 
 <a id="nestedatt--panels--slo_burn_rate_config--drilldowns"></a>
 ### Nested Schema for `panels.slo_burn_rate_config.drilldowns`
@@ -2334,12 +2334,12 @@ Required:
 
 Optional:
 
-- `description` (String) The description of the panel.
+- `description` (String) Optional panel description.
 - `drilldowns` (Attributes List) URL drilldowns to configure on the panel. (see [below for nested schema](#nestedatt--panels--slo_error_budget_config--drilldowns))
-- `hide_border` (Boolean) Hide the border of the panel.
-- `hide_title` (Boolean) Hide the title of the panel.
+- `hide_border` (Boolean) When true, hides the panel border.
+- `hide_title` (Boolean) When true, hides the panel title.
 - `slo_instance_id` (String) ID of the SLO instance. Set when the SLO uses group_by; identifies which instance to show. Defaults to `*` (all instances) when omitted.
-- `title` (String) The title displayed in the panel header.
+- `title` (String) Optional panel title shown in the panel header.
 
 <a id="nestedatt--panels--slo_error_budget_config--drilldowns"></a>
 ### Nested Schema for `panels.slo_error_budget_config.drilldowns`
@@ -2369,12 +2369,12 @@ Optional:
 
 Optional:
 
-- `description` (String) The description displayed on the panel.
+- `description` (String) Optional panel description.
 - `drilldowns` (Attributes List) URL drilldowns attached to the panel. The trigger (`on_open_panel_menu`) and type (`url_drilldown`) are set automatically. (see [below for nested schema](#nestedatt--panels--slo_overview_config--groups--drilldowns))
 - `group_filters` (Attributes) Optional filters for grouped SLO overview mode. (see [below for nested schema](#nestedatt--panels--slo_overview_config--groups--group_filters))
-- `hide_border` (Boolean) When true, the panel border is hidden.
-- `hide_title` (Boolean) When true, the panel title is hidden.
-- `title` (String) The title displayed on the panel.
+- `hide_border` (Boolean) When true, hides the panel border.
+- `hide_title` (Boolean) When true, hides the panel title.
+- `title` (String) Optional panel title shown in the panel header.
 
 <a id="nestedatt--panels--slo_overview_config--groups--drilldowns"></a>
 ### Nested Schema for `panels.slo_overview_config.groups.drilldowns`
@@ -2411,13 +2411,13 @@ Required:
 
 Optional:
 
-- `description` (String) The description displayed on the panel.
+- `description` (String) Optional panel description.
 - `drilldowns` (Attributes List) URL drilldowns attached to the panel. The trigger (`on_open_panel_menu`) and type (`url_drilldown`) are set automatically. (see [below for nested schema](#nestedatt--panels--slo_overview_config--single--drilldowns))
-- `hide_border` (Boolean) When true, the panel border is hidden.
-- `hide_title` (Boolean) When true, the panel title is hidden.
+- `hide_border` (Boolean) When true, hides the panel border.
+- `hide_title` (Boolean) When true, hides the panel title.
 - `remote_name` (String) The name of the remote cluster where the SLO is defined.
 - `slo_instance_id` (String) The SLO instance ID. Set when the SLO uses group_by; identifies which instance to display. Defaults to `*` (all instances) when omitted.
-- `title` (String) The title displayed on the panel.
+- `title` (String) Optional panel title shown in the panel header.
 
 <a id="nestedatt--panels--slo_overview_config--single--drilldowns"></a>
 ### Nested Schema for `panels.slo_overview_config.single.drilldowns`
@@ -2440,11 +2440,11 @@ Optional:
 
 Optional:
 
-- `description` (String) Descriptive text for the panel.
+- `description` (String) Optional panel description.
 - `filters` (Attributes) Optional filter configuration for the Synthetics monitors panel. Omit to show all monitors. (see [below for nested schema](#nestedatt--panels--synthetics_monitors_config--filters))
-- `hide_border` (Boolean) When true, suppresses the panel border in the dashboard.
-- `hide_title` (Boolean) When true, suppresses the panel title in the dashboard.
-- `title` (String) Display title shown in the panel header.
+- `hide_border` (Boolean) When true, hides the panel border.
+- `hide_title` (Boolean) When true, hides the panel title.
+- `title` (String) Optional panel title shown in the panel header.
 - `view` (String) View mode for the panel. Valid values are `cardView` and `compactView`.
 
 <a id="nestedatt--panels--synthetics_monitors_config--filters"></a>
@@ -2510,25 +2510,25 @@ Required:
 
 Optional:
 
-- `description` (String) Descriptive text for the panel.
+- `description` (String) Optional panel description.
 - `drilldowns` (Attributes List) Optional list of URL drilldown actions attached to the panel. The API allows up to 100 drilldowns per panel. (see [below for nested schema](#nestedatt--panels--synthetics_stats_overview_config--drilldowns))
 - `filters` (Attributes) Optional Synthetics monitor filter constraints. Each filter category accepts a list of `{ label, value }` objects. Omit the block or individual categories to apply no filtering for those dimensions. (see [below for nested schema](#nestedatt--panels--synthetics_stats_overview_config--filters))
-- `hide_border` (Boolean) When true, suppresses the panel border in the dashboard.
-- `hide_title` (Boolean) When true, suppresses the panel title in the dashboard.
-- `title` (String) Display title shown in the panel header.
+- `hide_border` (Boolean) When true, hides the panel border.
+- `hide_title` (Boolean) When true, hides the panel title.
+- `title` (String) Optional panel title shown in the panel header.
 
 <a id="nestedatt--panels--synthetics_stats_overview_config--drilldowns"></a>
 ### Nested Schema for `panels.synthetics_stats_overview_config.drilldowns`
 
 Required:
 
-- `label` (String)
-- `url` (String)
+- `label` (String) Display label shown in the drilldown menu.
+- `url` (String) Templated URL for the drilldown.
 
 Optional:
 
-- `encode_url` (Boolean)
-- `open_in_new_tab` (Boolean)
+- `encode_url` (Boolean) When true, the URL is percent-encoded. Omit to use the API default.
+- `open_in_new_tab` (Boolean) When true, the URL opens in a new browser tab. Omit to use the API default.
 
 
 <a id="nestedatt--panels--synthetics_stats_overview_config--filters"></a>
@@ -5206,23 +5206,23 @@ Required:
 
 Optional:
 
-- `config_json` (String) The configuration of the panel as a JSON string. Practitioner-authored panel-level `config_json` is valid only when `type` is `markdown` or `vis`. Typed panel kinds such as `lens-dashboard-app`, `image`, `slo_alerts`, and `discover_session` use their dedicated blocks (`lens_dashboard_app_config`, `image_config`, `slo_alerts_config`, `discover_session_config`), not panel-level `config_json`. Mutually exclusive with `markdown_config`, `vis_config`, `lens_dashboard_app_config`, `esql_control_config`, `options_list_control_config`, `range_slider_control_config`, `time_slider_control_config`, `slo_alerts_config`, `slo_burn_rate_config`, `slo_overview_config`, `slo_error_budget_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `image_config`, `discover_session_config`.
-- `discover_session_config` (Attributes) Configuration for a `discover_session` panel (`kbn-dashboard-panel-type-discover_session`). Required when `type` is `discover_session`. Set exactly one of `by_value` or `by_reference`. Mutually exclusive with `config_json`, `markdown_config`, `vis_config`, `lens_dashboard_app_config`, `esql_control_config`, `options_list_control_config`, `range_slider_control_config`, `time_slider_control_config`, `slo_alerts_config`, `slo_burn_rate_config`, `slo_overview_config`, `slo_error_budget_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `image_config`. (see [below for nested schema](#nestedatt--sections--panels--discover_session_config))
-- `esql_control_config` (Attributes) Configuration for an ES|QL control panel. Use this to manage ES|QL variable controls on a dashboard. Mutually exclusive with `config_json`, `markdown_config`, `vis_config`, `lens_dashboard_app_config`, `options_list_control_config`, `range_slider_control_config`, `time_slider_control_config`, `slo_alerts_config`, `slo_burn_rate_config`, `slo_overview_config`, `slo_error_budget_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `image_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--esql_control_config))
+- `config_json` (String) The configuration of the panel as a JSON string. Practitioner-authored panel-level `config_json` is valid only when `type` is `markdown` or `vis`. Typed panel kinds such as `lens-dashboard-app`, `image`, `slo_alerts`, and `discover_session` use their dedicated blocks (`lens_dashboard_app_config`, `image_config`, `slo_alerts_config`, `discover_session_config`), not panel-level `config_json`. Mutually exclusive with `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `lens_dashboard_app_config`, `discover_session_config`.
+- `discover_session_config` (Attributes) Configuration for a `discover_session` panel (`kbn-dashboard-panel-type-discover_session`). Required when `type` is `discover_session`. Set exactly one of `by_value` or `by_reference`. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `lens_dashboard_app_config`. (see [below for nested schema](#nestedatt--sections--panels--discover_session_config))
+- `esql_control_config` (Attributes) Configuration for an ES|QL control panel. Use this to manage ES|QL variable controls on a dashboard. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--esql_control_config))
 - `id` (String) The identifier of the panel (API `id`).
-- `image_config` (Attributes) Configuration for an `image` panel (`kbn-dashboard-panel-type-image`). Required when `type` is `image`. References the Kibana Dashboard API image embeddable `config` shape. Mutually exclusive with `config_json`, `markdown_config`, `vis_config`, `lens_dashboard_app_config`, `esql_control_config`, `options_list_control_config`, `range_slider_control_config`, `time_slider_control_config`, `slo_alerts_config`, `slo_burn_rate_config`, `slo_overview_config`, `slo_error_budget_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--image_config))
-- `lens_dashboard_app_config` (Attributes) Configuration for a `lens-dashboard-app` panel (the Kibana Dashboard API `lens-dashboard-app` panel type). Required when `type` is `lens-dashboard-app`. Set exactly one of `by_value` or `by_reference`. With `by_value`, set exactly one of `config_json` or one supported typed Lens chart block. With `by_reference`, use `ref_id` and `references_json` to map the API `references` list. Supported typed by-value blocks are sent as the `lens-dashboard-app` API `config` and do not use `type = "vis"` panels. Mutually exclusive with `config_json`, `markdown_config`, `vis_config`, `esql_control_config`, `options_list_control_config`, `range_slider_control_config`, `time_slider_control_config`, `slo_alerts_config`, `slo_burn_rate_config`, `slo_overview_config`, `slo_error_budget_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `image_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config))
-- `markdown_config` (Attributes) Configuration for a `markdown` panel (the Kibana Dashboard API `kbn-dashboard-panel-type-markdown` shape). Set exactly one of `by_value` (inline `content` with required nested `settings`) or `by_reference` (existing library item via `ref_id`). Presentation fields (`description`, `hide_title`, `title`, `hide_border`) are supported in both branches. Mutually exclusive with `config_json`, `vis_config`, `lens_dashboard_app_config`, `esql_control_config`, `options_list_control_config`, `range_slider_control_config`, `time_slider_control_config`, `slo_alerts_config`, `slo_burn_rate_config`, `slo_overview_config`, `slo_error_budget_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `image_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--markdown_config))
-- `options_list_control_config` (Attributes) Configuration for an options list control panel. Provides a dropdown or multi-select filter based on a field in a data view. Mutually exclusive with `config_json`, `markdown_config`, `vis_config`, `lens_dashboard_app_config`, `esql_control_config`, `range_slider_control_config`, `time_slider_control_config`, `slo_alerts_config`, `slo_burn_rate_config`, `slo_overview_config`, `slo_error_budget_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `image_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--options_list_control_config))
-- `range_slider_control_config` (Attributes) Configuration for a range slider control panel. Provides a min/max range filter tied to a data view field. Mutually exclusive with `config_json`, `markdown_config`, `vis_config`, `lens_dashboard_app_config`, `esql_control_config`, `options_list_control_config`, `time_slider_control_config`, `slo_alerts_config`, `slo_burn_rate_config`, `slo_overview_config`, `slo_error_budget_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `image_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--range_slider_control_config))
-- `slo_alerts_config` (Attributes) Configuration for an `slo_alerts` panel (`kbn-dashboard-panel-type-slo_alerts`). Required when `type` is `slo_alerts`. Mutually exclusive with `config_json`, `markdown_config`, `vis_config`, `lens_dashboard_app_config`, `esql_control_config`, `options_list_control_config`, `range_slider_control_config`, `time_slider_control_config`, `slo_burn_rate_config`, `slo_overview_config`, `slo_error_budget_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `image_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--slo_alerts_config))
-- `slo_burn_rate_config` (Attributes) Configuration for an SLO burn rate panel. Use this for panels that visualize the burn rate of an SLO over a configurable look-back window. Mutually exclusive with `config_json`, `markdown_config`, `vis_config`, `lens_dashboard_app_config`, `esql_control_config`, `options_list_control_config`, `range_slider_control_config`, `time_slider_control_config`, `slo_alerts_config`, `slo_overview_config`, `slo_error_budget_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `image_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--slo_burn_rate_config))
-- `slo_error_budget_config` (Attributes) Configuration for an SLO error budget panel. Displays the burn chart of remaining error budget for a specific SLO. Mutually exclusive with `config_json`, `markdown_config`, `vis_config`, `lens_dashboard_app_config`, `esql_control_config`, `options_list_control_config`, `range_slider_control_config`, `time_slider_control_config`, `slo_alerts_config`, `slo_burn_rate_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `image_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--slo_error_budget_config))
-- `slo_overview_config` (Attributes) Configuration for an SLO overview panel. Use either `single` (for a single SLO) or `groups` (for grouped SLO overview). Mutually exclusive with `config_json`, `markdown_config`, `vis_config`, `lens_dashboard_app_config`, `esql_control_config`, `options_list_control_config`, `range_slider_control_config`, `time_slider_control_config`, `slo_alerts_config`, `slo_burn_rate_config`, `slo_error_budget_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `image_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--slo_overview_config))
-- `synthetics_monitors_config` (Attributes) Configuration for a Synthetics monitors panel. Displays a table of Elastic Synthetics monitors and their current status. All fields are optional — omit the block entirely for a bare panel with no filtering. Mutually exclusive with `config_json`, `markdown_config`, `vis_config`, `lens_dashboard_app_config`, `esql_control_config`, `options_list_control_config`, `range_slider_control_config`, `time_slider_control_config`, `slo_alerts_config`, `slo_burn_rate_config`, `slo_overview_config`, `slo_error_budget_config`, `synthetics_stats_overview_config`, `image_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--synthetics_monitors_config))
-- `synthetics_stats_overview_config` (Attributes) Configuration for a Synthetics stats overview panel. All fields are optional; an absent or empty block shows statistics for all monitors visible within the space. Mutually exclusive with `config_json`, `markdown_config`, `vis_config`, `lens_dashboard_app_config`, `esql_control_config`, `options_list_control_config`, `range_slider_control_config`, `time_slider_control_config`, `slo_alerts_config`, `slo_burn_rate_config`, `slo_overview_config`, `slo_error_budget_config`, `synthetics_monitors_config`, `image_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--synthetics_stats_overview_config))
-- `time_slider_control_config` (Attributes) Configuration for a time slider control panel. Controls the visible time window within the dashboard's global time range. Mutually exclusive with `config_json`, `markdown_config`, `vis_config`, `lens_dashboard_app_config`, `esql_control_config`, `options_list_control_config`, `range_slider_control_config`, `slo_alerts_config`, `slo_burn_rate_config`, `slo_overview_config`, `slo_error_budget_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `image_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--time_slider_control_config))
-- `vis_config` (Attributes) Configuration for a `vis` panel (`type = "vis"`). Typed alternative to `config_json`: set exactly one of `by_value` (exactly one of 12 Lens chart kinds) or `by_reference`. With `by_reference`, use structured `drilldowns` and required `time_range` like `lens_dashboard_app_config.by_reference`. Mutually exclusive with `config_json`, `markdown_config`, `lens_dashboard_app_config`, `esql_control_config`, `options_list_control_config`, `range_slider_control_config`, `time_slider_control_config`, `slo_alerts_config`, `slo_burn_rate_config`, `slo_overview_config`, `slo_error_budget_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `image_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--vis_config))
+- `image_config` (Attributes) Configuration for an `image` panel (`kbn-dashboard-panel-type-image`). Required when `type` is `image`. References the Kibana Dashboard API image embeddable `config` shape. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `slo_alerts_config`, `vis_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--image_config))
+- `lens_dashboard_app_config` (Attributes) Configuration for a `lens-dashboard-app` panel (the Kibana Dashboard API `lens-dashboard-app` panel type). Required when `type` is `lens-dashboard-app`. Set exactly one of `by_value` or `by_reference`. With `by_value`, set exactly one of `config_json` or one supported typed Lens chart block. With `by_reference`, use `ref_id` and `references_json` to map the API `references` list. Supported typed by-value blocks are sent as the `lens-dashboard-app` API `config` and do not use `type = "vis"` panels. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config))
+- `markdown_config` (Attributes) Configuration for a `markdown` panel (the Kibana Dashboard API `kbn-dashboard-panel-type-markdown` shape). Set exactly one of `by_value` (inline `content` with required nested `settings`) or `by_reference` (existing library item via `ref_id`). Presentation fields (`description`, `hide_title`, `title`, `hide_border`) are supported in both branches. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `image_config`, `slo_alerts_config`, `vis_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--markdown_config))
+- `options_list_control_config` (Attributes) Configuration for an options list control panel. Provides a dropdown or multi-select filter based on a field in a data view. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--options_list_control_config))
+- `range_slider_control_config` (Attributes) Configuration for a range slider control panel. Provides a min/max range filter tied to a data view field. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--range_slider_control_config))
+- `slo_alerts_config` (Attributes) Configuration for an `slo_alerts` panel (`kbn-dashboard-panel-type-slo_alerts`). Required when `type` is `slo_alerts`. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `vis_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--slo_alerts_config))
+- `slo_burn_rate_config` (Attributes) Configuration for an SLO burn rate panel. Use this for panels that visualize the burn rate of an SLO over a configurable look-back window. Mutually exclusive with `config_json`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--slo_burn_rate_config))
+- `slo_error_budget_config` (Attributes) Configuration for an SLO error budget panel. Displays the burn chart of remaining error budget for a specific SLO. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--slo_error_budget_config))
+- `slo_overview_config` (Attributes) Configuration for an SLO overview panel. Use either `single` (for a single SLO) or `groups` (for grouped SLO overview). Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--slo_overview_config))
+- `synthetics_monitors_config` (Attributes) Configuration for a Synthetics monitors panel. Displays a table of Elastic Synthetics monitors and their current status. All fields are optional — omit the block entirely for a bare panel with no filtering. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--synthetics_monitors_config))
+- `synthetics_stats_overview_config` (Attributes) Configuration for a Synthetics stats overview panel. All fields are optional; an absent or empty block shows statistics for all monitors visible within the space. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--synthetics_stats_overview_config))
+- `time_slider_control_config` (Attributes) Configuration for a time slider control panel. Controls the visible time window within the dashboard's global time range. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--time_slider_control_config))
+- `vis_config` (Attributes) Configuration for a `vis` panel (`type = "vis"`). Typed alternative to `config_json`: set exactly one of `by_value` (exactly one of 12 Lens chart kinds) or `by_reference`. With `by_reference`, use structured `drilldowns` and required `time_range` like `lens_dashboard_app_config.by_reference`. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--vis_config))
 
 <a id="nestedatt--sections--panels--grid"></a>
 ### Nested Schema for `sections.panels.grid`
@@ -5500,12 +5500,12 @@ Optional:
 
 - `alt_text` (String) Accessible alternate text for the image.
 - `background_color` (String) Background color behind the image (CSS color string).
-- `description` (String) Panel description shown by Kibana.
+- `description` (String) Optional panel description.
 - `drilldowns` (Attributes List) Optional drilldown actions for the image panel (max 100 entries). Each element sets exactly one of `dashboard_drilldown` or `url_drilldown`, matching the Kibana `kbn-dashboard-panel-type-image` `config.drilldowns` discriminated union. (see [below for nested schema](#nestedatt--sections--panels--image_config--drilldowns))
 - `hide_border` (Boolean) When true, hides the panel border.
 - `hide_title` (Boolean) When true, hides the panel title.
 - `object_fit` (String) How the image is sized within its panel container. Omit to leave unset; the Kibana API defaults to `contain`. Unset values stay null in Terraform state when the API echoes that default (REQ-009).
-- `title` (String) Panel title shown by Kibana.
+- `title` (String) Optional panel title shown in the panel header.
 
 <a id="nestedatt--sections--panels--image_config--src"></a>
 ### Nested Schema for `sections.panels.image_config.src`
@@ -5561,7 +5561,7 @@ Optional:
 
 Required:
 
-- `label` (String) Display label for the drilldown.
+- `label` (String) Display label shown in the drilldown menu.
 - `trigger` (String) When this drilldown runs. Allowed values: `on_click_image`, `on_open_panel_menu` (Kibana image panel URL drilldown triggers).
 - `url` (String) Templated URL for the drilldown. Variables are documented in the [Kibana drilldown URL template variables](https://www.elastic.co/docs/explore-analyze/dashboards/drilldowns#url-template-variable) section of the Elastic docs.
 
@@ -7027,9 +7027,9 @@ Required:
 Optional:
 
 - `description` (String) Optional panel description.
-- `hide_border` (Boolean) When true, suppresses the panel border.
-- `hide_title` (Boolean) When true, suppresses the panel title.
-- `title` (String) Optional panel title.
+- `hide_border` (Boolean) When true, hides the panel border.
+- `hide_title` (Boolean) When true, hides the panel title.
+- `title` (String) Optional panel title shown in the panel header.
 
 
 <a id="nestedatt--sections--panels--markdown_config--by_value"></a>
@@ -7043,9 +7043,9 @@ Required:
 Optional:
 
 - `description` (String) Optional panel description.
-- `hide_border` (Boolean) When true, suppresses the panel border.
-- `hide_title` (Boolean) When true, suppresses the panel title.
-- `title` (String) Optional panel title.
+- `hide_border` (Boolean) When true, hides the panel border.
+- `hide_title` (Boolean) When true, hides the panel title.
+- `title` (String) Optional panel title shown in the panel header.
 
 <a id="nestedatt--sections--panels--markdown_config--by_value--settings"></a>
 ### Nested Schema for `sections.panels.markdown_config.by_value.settings`
@@ -7131,7 +7131,7 @@ Optional:
 - `drilldowns` (Attributes List) Optional URL drilldown links (at most 100). The embeddable fixes `trigger` to `on_open_panel_menu` and `type` to `url_drilldown` when writing to the Kibana API. (see [below for nested schema](#nestedatt--sections--panels--slo_alerts_config--drilldowns))
 - `hide_border` (Boolean) When true, hides the panel border.
 - `hide_title` (Boolean) When true, hides the panel title.
-- `title` (String) Optional panel title.
+- `title` (String) Optional panel title shown in the panel header.
 
 <a id="nestedatt--sections--panels--slo_alerts_config--slos"></a>
 ### Nested Schema for `sections.panels.slo_alerts_config.slos`
@@ -7175,7 +7175,7 @@ Optional:
 - `hide_border` (Boolean) When true, hides the panel border.
 - `hide_title` (Boolean) When true, hides the panel title.
 - `slo_instance_id` (String) ID of the SLO instance. Set when the SLO uses `group_by`; identifies which instance to show. Omit to show all instances (API default `"*"`).
-- `title` (String) Optional panel title.
+- `title` (String) Optional panel title shown in the panel header.
 
 <a id="nestedatt--sections--panels--slo_burn_rate_config--drilldowns"></a>
 ### Nested Schema for `sections.panels.slo_burn_rate_config.drilldowns`
@@ -7201,12 +7201,12 @@ Required:
 
 Optional:
 
-- `description` (String) The description of the panel.
+- `description` (String) Optional panel description.
 - `drilldowns` (Attributes List) URL drilldowns to configure on the panel. (see [below for nested schema](#nestedatt--sections--panels--slo_error_budget_config--drilldowns))
-- `hide_border` (Boolean) Hide the border of the panel.
-- `hide_title` (Boolean) Hide the title of the panel.
+- `hide_border` (Boolean) When true, hides the panel border.
+- `hide_title` (Boolean) When true, hides the panel title.
 - `slo_instance_id` (String) ID of the SLO instance. Set when the SLO uses group_by; identifies which instance to show. Defaults to `*` (all instances) when omitted.
-- `title` (String) The title displayed in the panel header.
+- `title` (String) Optional panel title shown in the panel header.
 
 <a id="nestedatt--sections--panels--slo_error_budget_config--drilldowns"></a>
 ### Nested Schema for `sections.panels.slo_error_budget_config.drilldowns`
@@ -7236,12 +7236,12 @@ Optional:
 
 Optional:
 
-- `description` (String) The description displayed on the panel.
+- `description` (String) Optional panel description.
 - `drilldowns` (Attributes List) URL drilldowns attached to the panel. The trigger (`on_open_panel_menu`) and type (`url_drilldown`) are set automatically. (see [below for nested schema](#nestedatt--sections--panels--slo_overview_config--groups--drilldowns))
 - `group_filters` (Attributes) Optional filters for grouped SLO overview mode. (see [below for nested schema](#nestedatt--sections--panels--slo_overview_config--groups--group_filters))
-- `hide_border` (Boolean) When true, the panel border is hidden.
-- `hide_title` (Boolean) When true, the panel title is hidden.
-- `title` (String) The title displayed on the panel.
+- `hide_border` (Boolean) When true, hides the panel border.
+- `hide_title` (Boolean) When true, hides the panel title.
+- `title` (String) Optional panel title shown in the panel header.
 
 <a id="nestedatt--sections--panels--slo_overview_config--groups--drilldowns"></a>
 ### Nested Schema for `sections.panels.slo_overview_config.groups.drilldowns`
@@ -7278,13 +7278,13 @@ Required:
 
 Optional:
 
-- `description` (String) The description displayed on the panel.
+- `description` (String) Optional panel description.
 - `drilldowns` (Attributes List) URL drilldowns attached to the panel. The trigger (`on_open_panel_menu`) and type (`url_drilldown`) are set automatically. (see [below for nested schema](#nestedatt--sections--panels--slo_overview_config--single--drilldowns))
-- `hide_border` (Boolean) When true, the panel border is hidden.
-- `hide_title` (Boolean) When true, the panel title is hidden.
+- `hide_border` (Boolean) When true, hides the panel border.
+- `hide_title` (Boolean) When true, hides the panel title.
 - `remote_name` (String) The name of the remote cluster where the SLO is defined.
 - `slo_instance_id` (String) The SLO instance ID. Set when the SLO uses group_by; identifies which instance to display. Defaults to `*` (all instances) when omitted.
-- `title` (String) The title displayed on the panel.
+- `title` (String) Optional panel title shown in the panel header.
 
 <a id="nestedatt--sections--panels--slo_overview_config--single--drilldowns"></a>
 ### Nested Schema for `sections.panels.slo_overview_config.single.drilldowns`
@@ -7307,11 +7307,11 @@ Optional:
 
 Optional:
 
-- `description` (String) Descriptive text for the panel.
+- `description` (String) Optional panel description.
 - `filters` (Attributes) Optional filter configuration for the Synthetics monitors panel. Omit to show all monitors. (see [below for nested schema](#nestedatt--sections--panels--synthetics_monitors_config--filters))
-- `hide_border` (Boolean) When true, suppresses the panel border in the dashboard.
-- `hide_title` (Boolean) When true, suppresses the panel title in the dashboard.
-- `title` (String) Display title shown in the panel header.
+- `hide_border` (Boolean) When true, hides the panel border.
+- `hide_title` (Boolean) When true, hides the panel title.
+- `title` (String) Optional panel title shown in the panel header.
 - `view` (String) View mode for the panel. Valid values are `cardView` and `compactView`.
 
 <a id="nestedatt--sections--panels--synthetics_monitors_config--filters"></a>
@@ -7377,25 +7377,25 @@ Required:
 
 Optional:
 
-- `description` (String) Descriptive text for the panel.
+- `description` (String) Optional panel description.
 - `drilldowns` (Attributes List) Optional list of URL drilldown actions attached to the panel. The API allows up to 100 drilldowns per panel. (see [below for nested schema](#nestedatt--sections--panels--synthetics_stats_overview_config--drilldowns))
 - `filters` (Attributes) Optional Synthetics monitor filter constraints. Each filter category accepts a list of `{ label, value }` objects. Omit the block or individual categories to apply no filtering for those dimensions. (see [below for nested schema](#nestedatt--sections--panels--synthetics_stats_overview_config--filters))
-- `hide_border` (Boolean) When true, suppresses the panel border in the dashboard.
-- `hide_title` (Boolean) When true, suppresses the panel title in the dashboard.
-- `title` (String) Display title shown in the panel header.
+- `hide_border` (Boolean) When true, hides the panel border.
+- `hide_title` (Boolean) When true, hides the panel title.
+- `title` (String) Optional panel title shown in the panel header.
 
 <a id="nestedatt--sections--panels--synthetics_stats_overview_config--drilldowns"></a>
 ### Nested Schema for `sections.panels.synthetics_stats_overview_config.drilldowns`
 
 Required:
 
-- `label` (String)
-- `url` (String)
+- `label` (String) Display label shown in the drilldown menu.
+- `url` (String) Templated URL for the drilldown.
 
 Optional:
 
-- `encode_url` (Boolean)
-- `open_in_new_tab` (Boolean)
+- `encode_url` (Boolean) When true, the URL is percent-encoded. Omit to use the API default.
+- `open_in_new_tab` (Boolean) When true, the URL opens in a new browser tab. Omit to use the API default.
 
 
 <a id="nestedatt--sections--panels--synthetics_stats_overview_config--filters"></a>

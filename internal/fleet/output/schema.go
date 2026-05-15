@@ -33,6 +33,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/float32planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -214,6 +215,10 @@ func getSchema() schema.Schema {
 					"compression": schema.StringAttribute{
 						Description: "Compression type for Kafka output.",
 						Optional:    true,
+						Computed:    true,
+						PlanModifiers: []planmodifier.String{
+							stringplanmodifier.UseStateForUnknown(),
+						},
 						Validators: []validator.String{
 							stringvalidator.OneOf("gzip", "snappy", "lz4", "none"),
 						},
@@ -247,6 +252,10 @@ func getSchema() schema.Schema {
 					"partition": schema.StringAttribute{
 						Description: "Partition strategy for Kafka output.",
 						Optional:    true,
+						Computed:    true,
+						PlanModifiers: []planmodifier.String{
+							stringplanmodifier.UseStateForUnknown(),
+						},
 						Validators: []validator.String{
 							stringvalidator.OneOf("random", "round_robin", "hash"),
 						},
@@ -254,6 +263,10 @@ func getSchema() schema.Schema {
 					"required_acks": schema.Int64Attribute{
 						Description: "Number of acknowledgments required for Kafka output.",
 						Optional:    true,
+						Computed:    true,
+						PlanModifiers: []planmodifier.Int64{
+							int64planmodifier.UseStateForUnknown(),
+						},
 						Validators: []validator.Int64{
 							int64validator.OneOf(-1, 0, 1),
 						},
@@ -310,6 +323,10 @@ func getSchema() schema.Schema {
 					"hash": schema.SingleNestedAttribute{
 						Description: "Hash configuration for Kafka partition.",
 						Optional:    true,
+						Computed:    true,
+						PlanModifiers: []planmodifier.Object{
+							objectplanmodifier.UseStateForUnknown(),
+						},
 						Attributes: map[string]schema.Attribute{
 							"hash": schema.StringAttribute{
 								Description: "Hash field.",
@@ -324,6 +341,10 @@ func getSchema() schema.Schema {
 					"random": schema.SingleNestedAttribute{
 						Description: "Random configuration for Kafka partition.",
 						Optional:    true,
+						Computed:    true,
+						PlanModifiers: []planmodifier.Object{
+							objectplanmodifier.UseStateForUnknown(),
+						},
 						Attributes: map[string]schema.Attribute{
 							"group_events": schema.Float64Attribute{
 								Description: "Number of events to group.",
@@ -334,6 +355,10 @@ func getSchema() schema.Schema {
 					"round_robin": schema.SingleNestedAttribute{
 						Description: "Round robin configuration for Kafka partition.",
 						Optional:    true,
+						Computed:    true,
+						PlanModifiers: []planmodifier.Object{
+							objectplanmodifier.UseStateForUnknown(),
+						},
 						Attributes: map[string]schema.Attribute{
 							"group_events": schema.Float64Attribute{
 								Description: "Number of events to group.",

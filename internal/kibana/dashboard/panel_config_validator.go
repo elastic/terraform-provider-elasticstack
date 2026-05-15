@@ -34,20 +34,12 @@ var _ validator.Object = panelConfigValidator{}
 type panelConfigValidator struct{}
 
 func (panelConfigValidator) Description(_ context.Context) string {
-	return "Ensures markdown panels configure `markdown_config` or `config_json`, " +
-		"`vis` panels configure exactly one of `vis_config` or `config_json` (typed chart blocks belong under `vis_config.by_value`), " +
-		"`slo_burn_rate` panels configure `slo_burn_rate_config`, " +
-		"`time_slider_control` panels use `time_slider_control_config` or omit config, " +
-		"`image` panels configure `image_config`, " +
-		"`slo_alerts` panels configure `slo_alerts_config`, " +
-		"`discover_session` panels configure `discover_session_config`, " +
-		"`slo_overview` panels configure `slo_overview_config`, " +
-		"and `slo_error_budget` panels configure `slo_error_budget_config`. " +
-		"`lens-dashboard-app` is validated by per-attribute validators on `lens_dashboard_app_config` " +
-		"(e.g. type allowlist, required block, and conflicts with other panel config attributes); " +
-		"this panel-level check does not duplicate those rules. " +
-		"Practitioner-authored `config_json` for `time_slider_control` is rejected only by the `config_json` " +
-		"attribute validator (type allowlist) to avoid duplicate diagnostics."
+	return "Delegates panel-type validation to registered iface.Handler implementations and retains legacy checks " +
+		"for unmigrated dashboard panel kinds: `discover_session` (`discover_session_config`) " +
+		"and `vis` (exactly one of `vis_config` or panel `config_json`; typed Lens charts belong under `vis_config.by_value`). " +
+		"`lens-dashboard-app` relies on validators on `lens_dashboard_app_config`. " +
+		"Optional control panels omit typed config blocks; practitioner-authored panel `config_json` on unsupported types " +
+		"is enforced by the allowlist validator on `config_json` alone."
 }
 
 func (v panelConfigValidator) MarkdownDescription(ctx context.Context) string {
@@ -79,10 +71,7 @@ func panelConfigSelectionList() string {
 
 func panelConfigValidateDiags(
 	panelType string,
-	markdownConfig, configJSON, visConfig, sloBurnRateConfig, sloErrorBudgetConfig panelConfigValueState,
-	sloOverviewConfig panelConfigValueState,
-	imageConfig panelConfigValueState,
-	sloAlertsConfig panelConfigValueState,
+	configJSON, visConfig panelConfigValueState,
 	discoverSessionConfig panelConfigValueState,
 	attrPath *path.Path,
 ) diag.Diagnostics {
@@ -104,38 +93,6 @@ func panelConfigValidateDiags(
 			return diags
 		}
 		add("Missing discover_session panel configuration", "Discover session panels require `discover_session_config`.")
-	case panelTypeImage:
-		if imageConfig.Set {
-			return diags
-		}
-		if imageConfig.Unknown {
-			return diags
-		}
-		add("Missing image panel configuration", "Image panels require `image_config`.")
-	case panelTypeSloAlerts:
-		if sloAlertsConfig.Set {
-			return diags
-		}
-		if sloAlertsConfig.Unknown {
-			return diags
-		}
-		add("Missing SLO alerts panel configuration", "SLO alerts panels require `slo_alerts_config`.")
-	case panelTypeSloOverview:
-		if sloOverviewConfig.Set {
-			return diags
-		}
-		if sloOverviewConfig.Unknown {
-			return diags
-		}
-		add("Missing SLO overview panel configuration", "SLO overview panels require `slo_overview_config`.")
-	case panelTypeMarkdown:
-		if markdownConfig.Set || configJSON.Set {
-			return diags
-		}
-		if markdownConfig.Unknown || configJSON.Unknown {
-			return diags
-		}
-		add("Missing markdown panel configuration", "Markdown panels require either `markdown_config` or `config_json`.")
 	case panelTypeVis:
 		setCount := 0
 		hasUnknown := configJSON.Unknown || visConfig.Unknown
@@ -159,25 +116,12 @@ func panelConfigValidateDiags(
 			return diags
 		}
 		add("Invalid vis panel configuration", detail)
-	case panelTypeSloBurnRate:
-		if sloBurnRateConfig.Set {
-			return diags
-		}
-		if sloBurnRateConfig.Unknown {
-			return diags
-		}
-		add("Missing SLO burn rate panel configuration", "SLO burn rate panels require `slo_burn_rate_config`.")
-	case panelTypeSloErrorBudget:
-		if sloErrorBudgetConfig.Set || sloErrorBudgetConfig.Unknown {
-			return diags
-		}
-		add("Missing slo_error_budget panel configuration", "SLO error budget panels require `slo_error_budget_config`.")
 	}
 
 	return diags
 }
 
-func (v panelConfigValidator) ValidateObject(_ context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
+func (v panelConfigValidator) ValidateObject(ctx context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
 	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
 		return
 	}
@@ -194,16 +138,17 @@ func (v panelConfigValidator) ValidateObject(_ context.Context, req validator.Ob
 		return
 	}
 
+	panel := typeValue.ValueString()
+	if h := LookupHandler(panel); h != nil {
+		if diags := h.ValidatePanelConfig(ctx, attrs, req.Path); len(diags) > 0 {
+			resp.Diagnostics.Append(diags...)
+		}
+	}
+
 	resp.Diagnostics.Append(panelConfigValidateDiags(
-		typeValue.ValueString(),
-		panelConfigValueStateFromValue(attrs["markdown_config"]),
+		panel,
 		panelConfigValueStateFromValue(attrs["config_json"]),
 		panelConfigValueStateFromValue(attrs["vis_config"]),
-		panelConfigValueStateFromValue(attrs["slo_burn_rate_config"]),
-		panelConfigValueStateFromValue(attrs["slo_error_budget_config"]),
-		panelConfigValueStateFromValue(attrs["slo_overview_config"]),
-		panelConfigValueStateFromValue(attrs["image_config"]),
-		panelConfigValueStateFromValue(attrs["slo_alerts_config"]),
 		panelConfigValueStateFromValue(attrs["discover_session_config"]),
 		&req.Path,
 	)...)
@@ -222,19 +167,15 @@ func (v pinnedPanelControlValidator) MarkdownDescription(ctx context.Context) st
 	return v.Description(ctx)
 }
 
+// pinnedPanelExpectedTypedControlAttr resolves the typed `*_control_config` block name for a pinned
+// panel type by deferring to the registry. Returns ok=false for any panel type that is not registered
+// or that does not implement PinnedHandler (i.e. not a pinned-capable control).
 func pinnedPanelExpectedTypedControlAttr(panelType string) (attrName string, ok bool) {
-	switch panelType {
-	case panelTypeOptionsListControl:
-		return "options_list_control_config", true
-	case panelTypeRangeSlider:
-		return "range_slider_control_config", true
-	case panelTypeTimeSlider:
-		return "time_slider_control_config", true
-	case panelTypeEsqlControl:
-		return "esql_control_config", true
-	default:
+	h := LookupHandler(panelType)
+	if h == nil || h.PinnedHandler() == nil {
 		return "", false
 	}
+	return h.PanelType() + "_config", true
 }
 
 const pinnedPanelAllowedTypesDetail = "`options_list_control`, `range_slider_control`, `time_slider_control`, or `esql_control`"

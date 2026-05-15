@@ -92,26 +92,14 @@ func GetSecurityRole(ctx context.Context, client *Client, name string) (*Securit
 	params := &kbapi.GetSecurityRoleNameParams{}
 	resp, err := client.API.GetSecurityRoleNameWithResponse(ctx, name, params)
 	if err != nil {
-		return nil, sdkdiag.Diagnostics{
-			sdkdiag.Diagnostic{
-				Severity: sdkdiag.Error,
-				Summary:  "Failed to read Kibana security role",
-				Detail:   err.Error(),
-			},
-		}
+		return nil, diagutil.SDKErrorDiag("Failed to read Kibana security role", err.Error())
 	}
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
 		var role SecurityRole
 		if err := json.Unmarshal(resp.Body, &role); err != nil {
-			return nil, sdkdiag.Diagnostics{
-				sdkdiag.Diagnostic{
-					Severity: sdkdiag.Error,
-					Summary:  "Failed to parse Kibana security role response",
-					Detail:   fmt.Sprintf("JSON decode error: %s. Body: %s", err.Error(), string(resp.Body)),
-				},
-			}
+			return nil, diagutil.SDKErrorDiag("Failed to parse Kibana security role response", fmt.Sprintf("JSON decode error: %s. Body: %s", err.Error(), string(resp.Body)))
 		}
 		return &role, nil
 	case http.StatusNotFound:
@@ -127,24 +115,12 @@ func GetSecurityRole(ctx context.Context, client *Client, name string) (*Securit
 func PutSecurityRole(ctx context.Context, client *Client, name string, params kbapi.PutSecurityRoleNameParams, body SecurityRolePutBody) sdkdiag.Diagnostics {
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
-		return sdkdiag.Diagnostics{
-			sdkdiag.Diagnostic{
-				Severity: sdkdiag.Error,
-				Summary:  "Failed to serialize Kibana security role",
-				Detail:   err.Error(),
-			},
-		}
+		return diagutil.SDKErrorDiag("Failed to serialize Kibana security role", err.Error())
 	}
 
 	resp, err := client.API.PutSecurityRoleNameWithBodyWithResponse(ctx, name, &params, "application/json", bytes.NewReader(bodyBytes))
 	if err != nil {
-		return sdkdiag.Diagnostics{
-			sdkdiag.Diagnostic{
-				Severity: sdkdiag.Error,
-				Summary:  "Failed to write Kibana security role",
-				Detail:   err.Error(),
-			},
-		}
+		return diagutil.SDKErrorDiag("Failed to write Kibana security role", err.Error())
 	}
 
 	switch resp.StatusCode() {
@@ -159,13 +135,7 @@ func PutSecurityRole(ctx context.Context, client *Client, name string, params kb
 func DeleteSecurityRole(ctx context.Context, client *Client, name string) sdkdiag.Diagnostics {
 	resp, err := client.API.DeleteSecurityRoleNameWithResponse(ctx, name)
 	if err != nil {
-		return sdkdiag.Diagnostics{
-			sdkdiag.Diagnostic{
-				Severity: sdkdiag.Error,
-				Summary:  "Failed to delete Kibana security role",
-				Detail:   err.Error(),
-			},
-		}
+		return diagutil.SDKErrorDiag("Failed to delete Kibana security role", err.Error())
 	}
 
 	return diagutil.SDKDiagsFromFramework(diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNoContent, http.StatusNotFound))

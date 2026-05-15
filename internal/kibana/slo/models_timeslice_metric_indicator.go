@@ -167,7 +167,7 @@ func (m *tfModel) populateFromTimesliceMetricIndicator(apiIndicator kbapi.SLOsIn
 	ind := tfTimesliceMetricIndicator{
 		Index:          types.StringValue(p.Index),
 		TimestampField: types.StringValue(p.TimestampField),
-		Filter:         stringOrNull(p.Filter),
+		Filter:         types.StringPointerValue(p.Filter),
 		DataViewID:     types.StringNull(),
 	}
 	if p.DataViewId != nil {

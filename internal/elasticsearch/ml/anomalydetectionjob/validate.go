@@ -34,8 +34,16 @@ func validateConfigCustomRules(ctx context.Context, config *TFModel) diag.Diagno
 	}
 
 	ac := config.AnalysisConfig
-	for i := range ac.Detectors {
-		cr := ac.Detectors[i].CustomRules
+	if ac.Detectors.IsUnknown() || ac.Detectors.IsNull() {
+		return diags
+	}
+	var detectors []DetectorTFModel
+	diags.Append(ac.Detectors.ElementsAs(ctx, &detectors, false)...)
+	if diags.HasError() {
+		return diags
+	}
+	for i := range detectors {
+		cr := detectors[i].CustomRules
 		if cr.IsUnknown() || cr.IsNull() {
 			continue
 		}

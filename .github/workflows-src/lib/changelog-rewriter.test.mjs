@@ -3,7 +3,7 @@ import test from 'node:test';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
-const { findSectionEnd, rewriteChangelogSection } = require('./changelog-rewriter.js');
+const { findSectionEnd, rewriteLinkTable, rewriteChangelogSection } = require('./changelog-rewriter.js');
 
 test('findSectionEnd stops at next ## heading', () => {
   const lines = ['## [Unreleased]', 'a', '## [1.0.0] - x', 'tail'];
@@ -144,4 +144,78 @@ test('rewriteChangelogSection prepends unreleased when no Unreleased heading', (
   const newSection = '## [Unreleased]\n\n### Changes\n\n- y ([#3](u))';
   const out = rewriteChangelogSection(before, newSection, 'unreleased', '');
   assert.ok(out.startsWith('## [Unreleased]'));
+});
+
+test('rewriteLinkTable standard release updates Unreleased URL and inserts new version entry', () => {
+  const before = [
+    '# Changelog',
+    '',
+    '[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.14.5...HEAD',
+    '[0.14.5]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.14.4...v0.14.5',
+  ].join('\n');
+
+  const out = rewriteLinkTable(before, '0.15.0', 'v0.14.5');
+
+  assert.match(
+    out,
+    /^\[Unreleased\]: https:\/\/github.com\/elastic\/terraform-provider-elasticstack\/compare\/v0\.15\.0\.\.\.HEAD$/m,
+  );
+  assert.match(
+    out,
+    /^\[0\.15\.0\]: https:\/\/github.com\/elastic\/terraform-provider-elasticstack\/compare\/v0\.14\.5\.\.\.v0\.15\.0$/m,
+  );
+  assert.match(
+    out,
+    /\[Unreleased\]: https:\/\/github.com\/elastic\/terraform-provider-elasticstack\/compare\/v0\.15\.0\.\.\.HEAD\n\[0\.15\.0\]: https:\/\/github.com\/elastic\/terraform-provider-elasticstack\/compare\/v0\.14\.5\.\.\.v0\.15\.0\n\[0\.14\.5\]:/,
+  );
+});
+
+test('rewriteLinkTable is idempotent when release entry already exists', () => {
+  const before = [
+    '# Changelog',
+    '',
+    '[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.15.0...HEAD',
+    '[0.15.0]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.14.5...v0.15.0',
+    '[0.14.5]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.14.4...v0.14.5',
+  ].join('\n');
+
+  const out = rewriteLinkTable(before, '0.15.0', 'v0.14.5');
+
+  assert.equal(out.match(/^\[0\.15\.0\]:/gm)?.length ?? 0, 1);
+  assert.match(
+    out,
+    /^\[Unreleased\]: https:\/\/github.com\/elastic\/terraform-provider-elasticstack\/compare\/v0\.15\.0\.\.\.HEAD$/m,
+  );
+});
+
+test('rewriteLinkTable is a no-op when Unreleased link line is absent', () => {
+  const before = [
+    '# Changelog',
+    '',
+    '[0.14.5]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.14.4...v0.14.5',
+  ].join('\n');
+
+  assert.equal(rewriteLinkTable(before, '0.15.0', 'v0.14.5'), before);
+});
+
+test('rewriteLinkTable is a no-op when previousTag is empty', () => {
+  const before = [
+    '# Changelog',
+    '',
+    '[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.14.5...HEAD',
+    '[0.14.5]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.14.4...v0.14.5',
+  ].join('\n');
+
+  assert.equal(rewriteLinkTable(before, '0.15.0', ''), before);
+});
+
+test('rewriteLinkTable is a no-op when targetVersion is empty', () => {
+  const before = [
+    '# Changelog',
+    '',
+    '[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.14.5...HEAD',
+    '[0.14.5]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.14.4...v0.14.5',
+  ].join('\n');
+
+  assert.equal(rewriteLinkTable(before, '', 'v0.14.5'), before);
 });

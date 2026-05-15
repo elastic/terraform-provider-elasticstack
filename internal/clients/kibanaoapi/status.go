@@ -41,12 +41,7 @@ type kibanaStatusDTO struct {
 func GetKibanaStatus(ctx context.Context, client *kbapi.ClientWithResponses) (versionNumber string, buildFlavor string, diags sdkdiag.Diagnostics) {
 	resp, err := client.GetStatusWithResponse(ctx, &kbapi.GetStatusParams{})
 	if err != nil {
-		diags = append(diags, sdkdiag.Diagnostic{
-			Severity: sdkdiag.Error,
-			Summary:  "Failed to get Kibana status",
-			Detail:   err.Error(),
-		})
-		return "", "", diags
+		return "", "", diagutil.SDKErrorDiag("Failed to get Kibana status", err.Error())
 	}
 
 	if resp.StatusCode() != http.StatusOK {
@@ -56,21 +51,11 @@ func GetKibanaStatus(ctx context.Context, client *kbapi.ClientWithResponses) (ve
 
 	var dto kibanaStatusDTO
 	if err := json.Unmarshal(resp.Body, &dto); err != nil {
-		diags = append(diags, sdkdiag.Diagnostic{
-			Severity: sdkdiag.Error,
-			Summary:  "Failed to parse Kibana status response",
-			Detail:   err.Error(),
-		})
-		return "", "", diags
+		return "", "", diagutil.SDKErrorDiag("Failed to parse Kibana status response", err.Error())
 	}
 
 	if dto.Version.Number == "" {
-		diags = append(diags, sdkdiag.Diagnostic{
-			Severity: sdkdiag.Error,
-			Summary:  "Failed to get version from Kibana status",
-			Detail:   "The 'version.number' field was absent or empty in the Kibana status response.",
-		})
-		return "", "", diags
+		return "", "", diagutil.SDKErrorDiag("Failed to get version from Kibana status", "The 'version.number' field was absent or empty in the Kibana status response.")
 	}
 
 	flavor := ""

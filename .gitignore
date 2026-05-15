@@ -2,6 +2,7 @@ node_modules/
 
 # pr-monitoring-loop watcher state (per-PR seen IDs, last-poll timestamps)
 .agents/skills/pr-monitoring-loop/scripts/state/
+false
 
 *.dll
 *.exe

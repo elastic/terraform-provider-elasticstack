@@ -9,6 +9,39 @@
  *   - refreshReleasePR    — update the prep-release-* PR body with metadata
  */
 
+const NO_CHANGELOG_LABEL = 'no-changelog';
+
+function warn(core, message) {
+  if (core && typeof core.warning === 'function') {
+    core.warning(message);
+  }
+}
+
+/**
+ * Ensure the `no-changelog` label is applied to a PR.
+ *
+ * Labeling is best-effort: if the primary PR create/update already succeeded,
+ * a subsequent labeling failure should not fail the whole workflow.
+ *
+ * @param {{ github: object, core?: object, owner: string, repo: string, issue_number: number }} opts
+ * @returns {Promise<void>}
+ */
+async function addNoChangelogLabel({ github, core, owner, repo, issue_number }) {
+  try {
+    await github.rest.issues.addLabels({
+      owner,
+      repo,
+      issue_number,
+      labels: [NO_CHANGELOG_LABEL],
+    });
+  } catch (err) {
+    warn(
+      core,
+      `Failed to apply ${NO_CHANGELOG_LABEL} label to PR #${issue_number}: ${err.message || String(err)}`
+    );
+  }
+}
+
 /**
  * Build the PR body for the generated-changelog PR (unreleased mode).
  *
@@ -51,10 +84,10 @@ function buildReleasePRBody({ targetVersion, compareRange }) {
  * If found, updates its body and returns action='updated'.
  * If not found, creates a new PR and returns action='created'.
  *
- * @param {{ github: object, owner: string, repo: string, compareRange: string }} opts
+ * @param {{ github: object, core?: object, owner: string, repo: string, compareRange: string }} opts
  * @returns {Promise<{ prAction: string, prNumber: number, prUrl: string }>}
  */
-async function manageUnreleasedPR({ github, owner, repo, compareRange }) {
+async function manageUnreleasedPR({ github, core, owner, repo, compareRange }) {
   const prBody = buildUnreleasedPRBody({ compareRange });
 
   const { data: existingPRs } = await github.rest.pulls.list({
@@ -73,6 +106,13 @@ async function manageUnreleasedPR({ github, owner, repo, compareRange }) {
       pull_number: existingPR.number,
       body: prBody,
     });
+    await addNoChangelogLabel({
+      github,
+      owner,
+      repo,
+      core,
+      issue_number: existingPR.number,
+    });
     return {
       prAction: 'updated',
       prNumber: existingPR.number,
@@ -87,6 +127,13 @@ async function manageUnreleasedPR({ github, owner, repo, compareRange }) {
     body: prBody,
     head: 'generated-changelog',
     base: 'main',
+  });
+  await addNoChangelogLabel({
+    github,
+    owner,
+    repo,
+    core,
+    issue_number: newPR.number,
   });
   return {
     prAction: 'created',
@@ -146,6 +193,13 @@ async function refreshReleasePR({ github, core, owner, repo, prNumber, compareRa
     repo,
     pull_number: num,
     body: prBody,
+  });
+  await addNoChangelogLabel({
+    github,
+    core,
+    owner,
+    repo,
+    issue_number: num,
   });
   core.info(`Release PR #${num} metadata refreshed`);
 }

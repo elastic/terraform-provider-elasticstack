@@ -363,6 +363,7 @@ test('code-factory-issue workflow is compiled and exists', () => {
   assert.match(source, /code-factory/);
   assert.match(source, /issues/);
   assert.match(source, /compile-workflow-sources/);
+  assert.match(source, /patch-format: am/);
 });
 
 test('code-factory-issue lock file is compiled and exists', () => {
@@ -370,6 +371,7 @@ test('code-factory-issue lock file is compiled and exists', () => {
   assert.ok(lock.length > 0);
   assert.match(lock, /# gh-aw-metadata:/);
   assert.match(lock, /DO NOT EDIT/);
+  assert.match(lock, /"patch_format":"am"/);
 });
 
 test('computeGateReason returns unknown reason when actorTrusted is null (step skipped)', () => {
@@ -447,6 +449,10 @@ test('code-factory-issue workflow template enables status comments and remove-la
   assert.match(workflowTmpl, /x-script-include: scripts\/remove_trigger_label\.inline\.js/);
   assert.match(workflowTmpl, /issues:\s*write/);
   assert.match(workflowTmpl, /trigger_label_removed:/);
+  assert.match(
+    workflowTmpl,
+    /safe-outputs:\s*\n\s*create-pull-request:[\s\S]*?patch-format: am/,
+  );
 });
 
 test('code-factory-issue workflow template includes workflow_dispatch trigger', () => {

@@ -1719,5 +1719,20 @@ func fixSyntheticsMonitorModels(schema *Schema) {
 
 func fixSyntheticsMonitorParams(schema *Schema) {
 	getEndpoint := schema.MustGetPath("/api/synthetics/monitors").MustGetEndpoint("get")
-	getEndpoint.Set("parameters.12.schema", getEndpoint.MustGetMap("parameters.12.schema.oneOf.0"))
+	// Collapse query parameters whose oneOf union mixes a string-enum
+	// branch with an array-of-the-same-enum branch. oapi-codegen generates
+	// duplicate type names for the inner enum in that case (e.g. two
+	// declarations of GetSyntheticMonitorsParamsMonitorTypes1), which
+	// breaks the build. Picking the first oneOf branch (the scalar enum)
+	// matches the prior behaviour of these parameters and is what the
+	// rest of the generated client expected.
+	collapseToFirstOneOf := func(paramIndex int) {
+		key := fmt.Sprintf("parameters.%d.schema", paramIndex)
+		oneOfKey := fmt.Sprintf("%s.oneOf.0", key)
+		getEndpoint.Set(key, getEndpoint.MustGetMap(oneOfKey))
+	}
+
+	// monitorTypes (parameters.2) and useLogicalAndFor (parameters.12).
+	collapseToFirstOneOf(2)
+	collapseToFirstOneOf(12)
 }

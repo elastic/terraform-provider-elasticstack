@@ -2353,6 +2353,7 @@ safe-outputs:
   create-pull-request:
     labels: [code-factory]
     max: 1
+    patch-format: am
   noop:
     max: 1
     report-as-issue: false

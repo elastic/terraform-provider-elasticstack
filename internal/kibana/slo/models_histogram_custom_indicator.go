@@ -123,21 +123,21 @@ func (m *tfModel) populateFromHistogramCustomIndicator(apiIndicator kbapi.SLOsIn
 	ind := tfHistogramCustomIndicator{
 		Index:          types.StringValue(p.Index),
 		TimestampField: types.StringValue(p.TimestampField),
-		Filter:         stringOrNull(p.Filter),
+		Filter:         types.StringPointerValue(p.Filter),
 		DataViewID:     types.StringNull(),
 		Good: []tfHistogramRange{{
 			Field:       types.StringValue(p.Good.Field),
 			Aggregation: types.StringValue(string(p.Good.Aggregation)),
-			Filter:      stringOrNull(p.Good.Filter),
-			From:        float64OrNull(p.Good.From),
-			To:          float64OrNull(p.Good.To),
+			Filter:      types.StringPointerValue(p.Good.Filter),
+			From:        types.Float64PointerValue(p.Good.From),
+			To:          types.Float64PointerValue(p.Good.To),
 		}},
 		Total: []tfHistogramRange{{
 			Field:       types.StringValue(p.Total.Field),
 			Aggregation: types.StringValue(string(p.Total.Aggregation)),
-			Filter:      stringOrNull(p.Total.Filter),
-			From:        float64OrNull(p.Total.From),
-			To:          float64OrNull(p.Total.To),
+			Filter:      types.StringPointerValue(p.Total.Filter),
+			From:        types.Float64PointerValue(p.Total.From),
+			To:          types.Float64PointerValue(p.Total.To),
 		}},
 	}
 	if p.DataViewId != nil {

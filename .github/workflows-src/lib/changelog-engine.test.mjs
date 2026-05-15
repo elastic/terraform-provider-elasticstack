@@ -246,7 +246,18 @@ test('runChangelogRenderAndWrite release replaces Unreleased section with new ve
   const changelogPath = path.join(dir, 'CHANGELOG.md');
   writeFileSync(
     changelogPath,
-    ['# L', '', '## [Unreleased]', 'pending', '', '## [0.9.0]', 'z'].join('\n'),
+    [
+      '# L',
+      '',
+      '## [Unreleased]',
+      'pending',
+      '',
+      '## [0.9.0]',
+      'z',
+      '',
+      '[Unreleased]: https://github.com/o/r/compare/v0.9.0...HEAD',
+      '[0.9.0]: https://github.com/o/r/compare/v0.8.0...v0.9.0',
+    ].join('\n'),
     'utf8'
   );
   const fs = require('node:fs');
@@ -263,6 +274,7 @@ test('runChangelogRenderAndWrite release replaces Unreleased section with new ve
     prRecords,
     mode: 'release',
     targetVersion: '1.0.0',
+    previousTag: 'v0.9.0',
     changelogPath,
     fs,
   });
@@ -270,6 +282,8 @@ test('runChangelogRenderAndWrite release replaces Unreleased section with new ve
   const text = readFileSync(changelogPath, 'utf8');
   assert.ok(!text.includes('## [Unreleased]'));
   assert.ok(text.includes('ship'));
+  assert.ok(text.includes('[Unreleased]: https://github.com/o/r/compare/v1.0.0...HEAD'));
+  assert.ok(text.includes('[1.0.0]: https://github.com/o/r/compare/v0.9.0...v1.0.0'));
   const r = text.indexOf('## [1.0.0]');
   const old = text.indexOf('## [0.9.0]');
   assert.ok(r !== -1 && old !== -1 && r < old);
@@ -281,7 +295,18 @@ test('runChangelogRenderAndWrite release with zero PRs replaces Unreleased with 
   const changelogPath = path.join(dir, 'CHANGELOG.md');
   writeFileSync(
     changelogPath,
-    ['# L', '', '## [Unreleased]', 'pending', '', '## [0.9.0]', 'z'].join('\n'),
+    [
+      '# L',
+      '',
+      '## [Unreleased]',
+      'pending',
+      '',
+      '## [0.9.0]',
+      'z',
+      '',
+      '[Unreleased]: https://github.com/o/r/compare/v0.9.0...HEAD',
+      '[0.9.0]: https://github.com/o/r/compare/v0.8.0...v0.9.0',
+    ].join('\n'),
     'utf8'
   );
   const fs = require('node:fs');
@@ -290,6 +315,7 @@ test('runChangelogRenderAndWrite release with zero PRs replaces Unreleased with 
     prRecords: [],
     mode: 'release',
     targetVersion: '1.0.0',
+    previousTag: 'v0.9.0',
     changelogPath,
     fs,
   });
@@ -300,6 +326,8 @@ test('runChangelogRenderAndWrite release with zero PRs replaces Unreleased with 
   const text = readFileSync(changelogPath, 'utf8');
   assert.ok(!text.includes('## [Unreleased]'));
   assert.ok(!text.includes('pending'));
+  assert.ok(text.includes('[Unreleased]: https://github.com/o/r/compare/v1.0.0...HEAD'));
+  assert.ok(text.includes('[1.0.0]: https://github.com/o/r/compare/v0.9.0...v1.0.0'));
   const r = text.indexOf('## [1.0.0]');
   const old = text.indexOf('## [0.9.0]');
   assert.ok(r !== -1 && old !== -1 && r < old);
