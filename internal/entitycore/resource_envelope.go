@@ -65,53 +65,39 @@ type elasticsearchDeleteFunc[T ElasticsearchResourceModel] func(
 	T,
 ) diag.Diagnostics
 
-// ElasticsearchCreateRequest is passed to [ElasticsearchCreateFunc] after plan
-// decoding, write identity validation, client resolution, and optional version
-// checks.
-type ElasticsearchCreateRequest[T ElasticsearchResourceModel] struct {
+// WriteRequest is passed to [WriteFunc] after plan decoding, prior-state
+// decoding (Update only), write identity validation, client resolution, and
+// optional version checks. Prior is non-nil only for Update; Create receives
+// Prior == nil. The same WriteRequest type is shared by Create and Update so a
+// single function can serve both when the logic does not differ.
+type WriteRequest[T ElasticsearchResourceModel] struct {
 	Plan    T
+	Prior   *T
 	Config  tfsdk.Config
 	WriteID string
 }
 
-// ElasticsearchUpdateRequest is passed to [ElasticsearchUpdateFunc] after plan
-// and prior-state decoding, write identity validation, client resolution, and
-// optional version checks.
-type ElasticsearchUpdateRequest[T ElasticsearchResourceModel] struct {
-	Plan    T
-	Prior   T
-	Config  tfsdk.Config
-	WriteID string
-}
-
-// ElasticsearchWriteResult is returned by create/update callbacks; the
-// envelope read-after-write flow uses WriteResult.Model when resolving refresh
-// identity and calling readFunc.
-type ElasticsearchWriteResult[T ElasticsearchResourceModel] struct {
+// WriteResult is returned by write callbacks; the envelope read-after-write
+// flow uses Model when resolving refresh identity and calling readFunc.
+type WriteResult[T ElasticsearchResourceModel] struct {
 	Model T
 }
 
-// ElasticsearchCreateFunc performs the create after the envelope decodes the
-// plan and config, checks the write identity, resolves the scoped Elasticsearch
-// client, and evaluates optional version requirements.
-type ElasticsearchCreateFunc[T ElasticsearchResourceModel] func(
+// WriteFunc performs Create or Update after the envelope decodes the plan
+// (and prior state for Update), validates the write identity, resolves the
+// scoped Elasticsearch client, and evaluates optional version requirements.
+// Inspect req.Prior == nil to detect Create when sharing a single function for
+// both Create and Update.
+type WriteFunc[T ElasticsearchResourceModel] func(
 	context.Context,
 	*clients.ElasticsearchScopedClient,
-	ElasticsearchCreateRequest[T],
-) (ElasticsearchWriteResult[T], diag.Diagnostics)
+	WriteRequest[T],
+) (WriteResult[T], diag.Diagnostics)
 
-// ElasticsearchUpdateFunc performs the update with the same prelude as
-// [ElasticsearchCreateFunc], additionally decoding prior state into the request.
-type ElasticsearchUpdateFunc[T ElasticsearchResourceModel] func(
-	context.Context,
-	*clients.ElasticsearchScopedClient,
-	ElasticsearchUpdateRequest[T],
-) (ElasticsearchWriteResult[T], diag.Diagnostics)
-
-// ElasticsearchPostReadFunc runs after a successful read that persisted state,
-// including read-after-write refresh. It is optional. The privateState argument
-// is the framework response Private field (typically *internal/privatestate.ProviderData).
-type ElasticsearchPostReadFunc[T ElasticsearchResourceModel] func(
+// PostReadFunc runs after a successful read that persisted state, including
+// read-after-write refresh. It is optional. The privateState argument is the
+// framework response Private field (typically *internal/privatestate.ProviderData).
+type PostReadFunc[T ElasticsearchResourceModel] func(
 	ctx context.Context,
 	client *clients.ElasticsearchScopedClient,
 	model T,
@@ -121,13 +107,15 @@ type ElasticsearchPostReadFunc[T ElasticsearchResourceModel] func(
 // ElasticsearchResourceOptions configures [NewElasticsearchResource]. PostRead
 // is optional; Schema, Read, Delete, Create, and Update must be non-nil or the
 // envelope surfaces configuration diagnostics instead of invoking nil callbacks.
+// Create and Update share the [WriteFunc] type so callers may pass the same
+// function for both when the logic is identical.
 type ElasticsearchResourceOptions[T ElasticsearchResourceModel] struct {
 	Schema   func(context.Context) rschema.Schema
 	Read     elasticsearchReadFunc[T]
 	Delete   elasticsearchDeleteFunc[T]
-	Create   ElasticsearchCreateFunc[T]
-	Update   ElasticsearchUpdateFunc[T]
-	PostRead ElasticsearchPostReadFunc[T]
+	Create   WriteFunc[T]
+	Update   WriteFunc[T]
+	PostRead PostReadFunc[T]
 }
 
 // ElasticsearchResource implements [resource.Resource] and related interfaces
@@ -143,38 +131,31 @@ type ElasticsearchResource[T ElasticsearchResourceModel] struct {
 	schemaFactory func(context.Context) rschema.Schema
 	readFunc      elasticsearchReadFunc[T]
 	deleteFunc    elasticsearchDeleteFunc[T]
-	createFunc    ElasticsearchCreateFunc[T]
-	updateFunc    ElasticsearchUpdateFunc[T]
-	postReadFunc  ElasticsearchPostReadFunc[T]
+	createFunc    WriteFunc[T]
+	updateFunc    WriteFunc[T]
+	postReadFunc  PostReadFunc[T]
 }
 
-// PlaceholderElasticsearchWriteCallbacks returns create and update callbacks
-// that fail if invoked. Use when a concrete resource type still defines its own
-// Create and Update methods that override the envelope so Terraform never calls
-// these placeholders.
+// PlaceholderElasticsearchWriteCallback returns a write callback that fails if
+// invoked. Use it for both Create and Update when a concrete resource type
+// still defines its own Create and Update methods that shadow the envelope so
+// Terraform never calls the placeholder.
 const (
 	placeholderWriteCallbackSummary = "Elasticsearch envelope"
 	placeholderWriteCallbackDetail  = "Internal error: write callback placeholder was invoked; " +
 		"the concrete resource should override Create and Update or pass real callbacks via ElasticsearchResourceOptions."
 )
 
-func PlaceholderElasticsearchWriteCallbacks[T ElasticsearchResourceModel]() (ElasticsearchCreateFunc[T], ElasticsearchUpdateFunc[T]) {
-	fail := func() (ElasticsearchWriteResult[T], diag.Diagnostics) {
+func PlaceholderElasticsearchWriteCallback[T ElasticsearchResourceModel]() WriteFunc[T] {
+	return func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ WriteRequest[T]) (WriteResult[T], diag.Diagnostics) {
 		var diags diag.Diagnostics
 		diags.AddError(
 			placeholderWriteCallbackSummary,
 			placeholderWriteCallbackDetail,
 		)
 		var zero T
-		return ElasticsearchWriteResult[T]{Model: zero}, diags
+		return WriteResult[T]{Model: zero}, diags
 	}
-	createFn := func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ ElasticsearchCreateRequest[T]) (ElasticsearchWriteResult[T], diag.Diagnostics) {
-		return fail()
-	}
-	updateFn := func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ ElasticsearchUpdateRequest[T]) (ElasticsearchWriteResult[T], diag.Diagnostics) {
-		return fail()
-	}
-	return createFn, updateFn
 }
 
 // NewElasticsearchResource returns an [*ElasticsearchResource] that owns
@@ -349,12 +330,14 @@ func (r *ElasticsearchResource[T]) runWrite(ctx context.Context, inv writeInvoca
 		return diags
 	}
 
-	var priorModel T
+	var priorPtr *T
 	if inv.isUpdate && inv.priorState != nil {
+		var priorModel T
 		diags.Append(inv.priorState.Get(ctx, &priorModel)...)
 		if diags.HasError() {
 			return diags
 		}
+		priorPtr = &priorModel
 	}
 
 	writeID := planModel.GetResourceID()
@@ -381,23 +364,17 @@ func (r *ElasticsearchResource[T]) runWrite(ctx context.Context, inv writeInvoca
 		return d
 	}
 
-	writeKey := writeID.ValueString()
-	var written ElasticsearchWriteResult[T]
-	var callDiags diag.Diagnostics
+	writeFn := r.createFunc
 	if inv.isUpdate {
-		written, callDiags = r.updateFunc(ctx, client, ElasticsearchUpdateRequest[T]{
-			Plan:    planModel,
-			Prior:   priorModel,
-			Config:  inv.config,
-			WriteID: writeKey,
-		})
-	} else {
-		written, callDiags = r.createFunc(ctx, client, ElasticsearchCreateRequest[T]{
-			Plan:    planModel,
-			Config:  inv.config,
-			WriteID: writeKey,
-		})
+		writeFn = r.updateFunc
 	}
+	writeKey := writeID.ValueString()
+	written, callDiags := writeFn(ctx, client, WriteRequest[T]{
+		Plan:    planModel,
+		Prior:   priorPtr,
+		Config:  inv.config,
+		WriteID: writeKey,
+	})
 	diags.Append(callDiags...)
 	if diags.HasError() {
 		return diags

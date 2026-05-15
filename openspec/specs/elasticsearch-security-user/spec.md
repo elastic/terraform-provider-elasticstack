@@ -144,7 +144,7 @@ The resource SHALL use the provider's configured Elasticsearch client by default
 
 ### Requirement: Create and update behavior (REQ-010–REQ-012)
 
-Create and update SHALL be implemented via the Elasticsearch envelope create and update callbacks. The create callback SHALL receive `ElasticsearchCreateRequest[Data]` (`Plan`, `Config`, `WriteID`). The update callback SHALL receive `ElasticsearchUpdateRequest[Data]` (`Plan`, `Prior`, `Config`, `WriteID`). Each callback SHALL call the Put user API with the desired user definition and return `ElasticsearchWriteResult[Data]` so the envelope can read-after-write.
+Create and update SHALL be implemented via the Elasticsearch envelope, sharing a single `WriteFunc[Data]` for both operations. The callback SHALL receive `WriteRequest[Data]` (`Plan`, `Prior`, `Config`, `WriteID`) and SHALL distinguish create from update by inspecting `req.Prior == nil` (create) versus a non-nil pointer to the prior `Data` model (update). The callback SHALL call the Put user API with the desired user definition and return `WriteResult[Data]` so the envelope can read-after-write.
 
 Password handling SHALL use raw Terraform config from the request (`Config`) together with prior state (`Prior` on update) so write-only passwords (`password_wo`) and comparisons against prior plaintext/hash values behave correctly without relying solely on decoded plan models.
 

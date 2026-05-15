@@ -64,7 +64,7 @@
 //     optional post-read). The model must satisfy [ElasticsearchResourceModel];
 //     callbacks and options live on [ElasticsearchResourceOptions]. Resources that
 //     still override Create or Update may pass
-//     [PlaceholderElasticsearchWriteCallbacks] until their logic is migrated into
+//     [PlaceholderElasticsearchWriteCallback] until their logic is migrated into
 //     envelope callbacks. The envelope does not implement ImportState; concrete
 //     resources add that when needed. See type docs in resource_envelope.go for
 //     the full contract.

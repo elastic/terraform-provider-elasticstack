@@ -58,15 +58,21 @@ The system SHALL implement `Read` by deserializing the prior state into the gene
 
 The system SHALL implement `Create` and `Update` on `NewElasticsearchResource[T]` by deserializing the relevant framework inputs, deriving the write resource ID from the model, resolving the scoped Elasticsearch client from the model's connection block via `GetElasticsearchClient`, enforcing any optional version requirements declared by the planned model, invoking the corresponding concrete callback with a structured request object, and then invoking `readFunc` with the model returned by the callback. State SHALL be set from the model returned by `readFunc`, not directly from the concrete callback.
 
-Create callbacks SHALL receive `ElasticsearchCreateRequest[T]` containing `Plan`, `Config`, and `WriteID`.
+Create and update callbacks SHALL share the type `WriteFunc[T]` and receive a `WriteRequest[T]` containing `Plan`, `Prior`, `Config`, and `WriteID`. `Prior` SHALL be a `*T`: `nil` for create invocations and a non-nil pointer to the decoded prior state model for update invocations. Callbacks that distinguish create from update SHALL inspect `req.Prior == nil`.
 
-Update callbacks SHALL receive `ElasticsearchUpdateRequest[T]` containing `Plan`, `Prior`, `Config`, and `WriteID`.
+Create and update callbacks SHALL return `WriteResult[T]` carrying the written model used for read-after-write identity resolution.
+
+#### Scenario: Create callback receives nil Prior and config
+
+- **WHEN** `Create` runs for a resource whose callback fits the envelope contract
+- **THEN** the callback SHALL receive `WriteRequest[T]` with `Prior == nil`
+- **AND** the callback SHALL receive the planned model and the raw Terraform config in the request object
 
 #### Scenario: Update callback receives prior state and config
 
 - **WHEN** `Update` runs for a resource whose callback fits the envelope contract
-- **THEN** the callback SHALL receive both the planned model and the prior state model in `ElasticsearchUpdateRequest[T]`
-- **AND** the callback SHALL receive the raw Terraform config in the request object
+- **THEN** the callback SHALL receive `WriteRequest[T]` with `Prior` pointing at the decoded prior-state model
+- **AND** the callback SHALL receive both the planned model and the raw Terraform config in the request object
 
 #### Scenario: Read-after-write uses model-declared read identity when available
 
@@ -83,6 +89,12 @@ Update callbacks SHALL receive `ElasticsearchUpdateRequest[T]` containing `Plan`
 - **WHEN** the planned model implements `WithVersionRequirements` and requirement evaluation returns error diagnostics or an unsupported-version diagnostic
 - **THEN** the diagnostics SHALL be appended to the response
 - **AND** the concrete create or update callback SHALL NOT be invoked
+
+#### Scenario: Single WriteFunc may serve both Create and Update
+
+- **WHEN** a concrete Elasticsearch resource wires the same `WriteFunc[T]` value into both `Create` and `Update` slots of `ElasticsearchResourceOptions[T]`
+- **THEN** the envelope SHALL invoke that single function for both Terraform operations
+- **AND** the function SHALL distinguish create from update by inspecting `req.Prior == nil`
 
 ### Requirement: Envelope supports post-read side effects
 

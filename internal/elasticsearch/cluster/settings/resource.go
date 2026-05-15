@@ -48,10 +48,10 @@ type clusterSettingsResource struct {
 func envelopeCreateClusterSettings(
 	ctx context.Context,
 	client *clients.ElasticsearchScopedClient,
-	req entitycore.ElasticsearchCreateRequest[tfModel],
-) (entitycore.ElasticsearchWriteResult[tfModel], fwdiag.Diagnostics) {
+	req entitycore.WriteRequest[tfModel],
+) (entitycore.WriteResult[tfModel], fwdiag.Diagnostics) {
 	m, d := createClusterSettings(ctx, client, req.WriteID, req.Plan)
-	return entitycore.ElasticsearchWriteResult[tfModel]{Model: m}, d
+	return entitycore.WriteResult[tfModel]{Model: m}, d
 }
 
 func newClusterSettingsResource() *clusterSettingsResource {

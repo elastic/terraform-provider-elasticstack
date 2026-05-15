@@ -32,20 +32,19 @@ import (
 func envelopeUpdateAnomalyDetectionJob(
 	ctx context.Context,
 	client *clients.ElasticsearchScopedClient,
-	req entitycore.ElasticsearchUpdateRequest[TFModel],
-) (entitycore.ElasticsearchWriteResult[TFModel], diag.Diagnostics) {
+	req entitycore.WriteRequest[TFModel],
+) (entitycore.WriteResult[TFModel], diag.Diagnostics) {
 	var diags diag.Diagnostics
 	plan := req.Plan
-	prior := req.Prior
 	jobID := req.WriteID
 
 	tflog.Debug(ctx, fmt.Sprintf("Updating ML anomaly detection job: %s", jobID))
 
 	updateBody := &UpdateAPIModel{}
-	hasChanges, buildDiags := updateBody.BuildFromPlan(ctx, &plan, &prior)
+	hasChanges, buildDiags := updateBody.BuildFromPlan(ctx, &plan, req.Prior)
 	diags.Append(buildDiags...)
 	if diags.HasError() {
-		return entitycore.ElasticsearchWriteResult[TFModel]{Model: plan}, diags
+		return entitycore.WriteResult[TFModel]{Model: plan}, diags
 	}
 
 	if !hasChanges {
@@ -56,13 +55,13 @@ func envelopeUpdateAnomalyDetectionJob(
 Changes to non-updateable fields should force a recreation of the anomaly detection job.
 Please report this warning to the provider developers.`,
 		)
-		return entitycore.ElasticsearchWriteResult[TFModel]{Model: plan}, diags
+		return entitycore.WriteResult[TFModel]{Model: plan}, diags
 	}
 
 	typedClient, err := client.GetESClient()
 	if err != nil {
 		diags.AddError("Failed to get Elasticsearch client", err.Error())
-		return entitycore.ElasticsearchWriteResult[TFModel]{Model: plan}, diags
+		return entitycore.WriteResult[TFModel]{Model: plan}, diags
 	}
 
 	// Send the update as raw JSON so that all fields including
@@ -72,7 +71,7 @@ Please report this warning to the provider developers.`,
 	updateJSON, err := json.Marshal(updateBody)
 	if err != nil {
 		diags.AddError("Failed to marshal ML anomaly detection job update", err.Error())
-		return entitycore.ElasticsearchWriteResult[TFModel]{Model: plan}, diags
+		return entitycore.WriteResult[TFModel]{Model: plan}, diags
 	}
 	_, err = typedClient.Ml.UpdateJob(jobID).Raw(bytes.NewReader(updateJSON)).Do(ctx)
 	if err != nil {
@@ -80,9 +79,9 @@ Please report this warning to the provider developers.`,
 			"Failed to update ML anomaly detection job",
 			fmt.Sprintf("Unable to update ML anomaly detection job: %s — %s", jobID, err.Error()),
 		)
-		return entitycore.ElasticsearchWriteResult[TFModel]{Model: plan}, diags
+		return entitycore.WriteResult[TFModel]{Model: plan}, diags
 	}
 
 	tflog.Debug(ctx, fmt.Sprintf("Successfully updated ML anomaly detection job: %s", jobID))
-	return entitycore.ElasticsearchWriteResult[TFModel]{Model: plan}, diags
+	return entitycore.WriteResult[TFModel]{Model: plan}, diags
 }

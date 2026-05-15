@@ -29,7 +29,7 @@ import (
 
 // updateDatafeed updates the datafeed configuration. It stops the datafeed if
 // running, applies the update, restarts it, and sets the composite ID. It
-// satisfies the entitycore ElasticsearchUpdateFunc[Datafeed] signature.
+// satisfies the entitycore WriteFunc[Datafeed] signature.
 // The envelope handles read-after-write and state persistence.
 func updateDatafeed(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, plan Datafeed) (Datafeed, fwdiags.Diagnostics) {
 	var diags fwdiags.Diagnostics

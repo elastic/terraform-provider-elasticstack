@@ -31,22 +31,22 @@ import (
 func envelopeUpdateClusterSettings(
 	ctx context.Context,
 	client *clients.ElasticsearchScopedClient,
-	req entitycore.ElasticsearchUpdateRequest[tfModel],
-) (entitycore.ElasticsearchWriteResult[tfModel], fwdiag.Diagnostics) {
+	req entitycore.WriteRequest[tfModel],
+) (entitycore.WriteResult[tfModel], fwdiag.Diagnostics) {
 	var diags fwdiag.Diagnostics
 	plan := req.Plan
-	prior := req.Prior
+	prior := *req.Prior
 
 	oldSettings, g := getConfiguredSettings(ctx, prior)
 	diags.Append(g...)
 	if diags.HasError() {
-		return entitycore.ElasticsearchWriteResult[tfModel]{Model: plan}, diags
+		return entitycore.WriteResult[tfModel]{Model: plan}, diags
 	}
 
 	newSettings, g := getConfiguredSettings(ctx, plan)
 	diags.Append(g...)
 	if diags.HasError() {
-		return entitycore.ElasticsearchWriteResult[tfModel]{Model: plan}, diags
+		return entitycore.WriteResult[tfModel]{Model: plan}, diags
 	}
 
 	apiSettings := make(map[string]any)
@@ -65,9 +65,9 @@ func envelopeUpdateClusterSettings(
 
 	diags.Append(diagutil.FrameworkDiagsFromSDK(elasticsearch.PutSettings(ctx, client, apiSettings))...)
 	if diags.HasError() {
-		return entitycore.ElasticsearchWriteResult[tfModel]{Model: plan}, diags
+		return entitycore.WriteResult[tfModel]{Model: plan}, diags
 	}
 
 	plan.ID = prior.ID
-	return entitycore.ElasticsearchWriteResult[tfModel]{Model: plan}, diags
+	return entitycore.WriteResult[tfModel]{Model: plan}, diags
 }

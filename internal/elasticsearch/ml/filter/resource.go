@@ -46,10 +46,10 @@ type filterResource struct {
 func envelopeCreateFilter(
 	ctx context.Context,
 	client *clients.ElasticsearchScopedClient,
-	req entitycore.ElasticsearchCreateRequest[TFModel],
-) (entitycore.ElasticsearchWriteResult[TFModel], diag.Diagnostics) {
+	req entitycore.WriteRequest[TFModel],
+) (entitycore.WriteResult[TFModel], diag.Diagnostics) {
 	m, d := createFilter(ctx, client, req.WriteID, req.Plan)
-	return entitycore.ElasticsearchWriteResult[TFModel]{Model: m}, d
+	return entitycore.WriteResult[TFModel]{Model: m}, d
 }
 
 func newFilterResource() *filterResource {

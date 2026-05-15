@@ -45,14 +45,14 @@ type privateData interface {
 }
 
 func newResource() *Resource {
-	createFn, updateFn := entitycore.PlaceholderElasticsearchWriteCallbacks[tfModel]()
+	placeholder := entitycore.PlaceholderElasticsearchWriteCallback[tfModel]()
 	return &Resource{
 		ElasticsearchResource: entitycore.NewElasticsearchResource[tfModel]("index", entitycore.ElasticsearchResourceOptions[tfModel]{
 			Schema: getSchema,
 			Read:   readIndex,
 			Delete: deleteIndex,
-			Create: createFn,
-			Update: updateFn,
+			Create: placeholder,
+			Update: placeholder,
 		}),
 	}
 }

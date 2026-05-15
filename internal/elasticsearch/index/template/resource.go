@@ -35,14 +35,14 @@ type Resource struct {
 }
 
 func newResource() *Resource {
-	createFn, updateFn := entitycore.PlaceholderElasticsearchWriteCallbacks[Model]()
+	placeholder := entitycore.PlaceholderElasticsearchWriteCallback[Model]()
 	return &Resource{
 		ElasticsearchResource: entitycore.NewElasticsearchResource[Model]("index_template", entitycore.ElasticsearchResourceOptions[Model]{
 			Schema: resourceSchema,
 			Read:   readIndexTemplate,
 			Delete: deleteIndexTemplate,
-			Create: createFn,
-			Update: updateFn,
+			Create: placeholder,
+			Update: placeholder,
 		}),
 	}
 }

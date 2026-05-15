@@ -297,7 +297,7 @@ The resource SHALL provide a package-level `deleteAPIKey` function with signatur
 
 ### Requirement: Create and Update use placeholder callbacks with concrete overrides
 
-The resource SHALL pass `PlaceholderElasticsearchWriteCallbacks[tfModel]()` for create and update to `NewElasticsearchResource`. The concrete `Resource` type SHALL define its own `Create` and `Update` methods that shadow the envelope's, preserving the existing private-state, version-gating, and cross-cluster API key flows.
+The resource SHALL pass `PlaceholderElasticsearchWriteCallback[tfModel]()` (a single `WriteFunc[tfModel]` value) into both `Create` and `Update` slots of `ElasticsearchResourceOptions[tfModel]` when constructing the envelope. The concrete `Resource` type SHALL define its own `Create` and `Update` methods that shadow the envelope's, preserving the existing private-state, version-gating, and cross-cluster API key flows.
 
 #### Scenario: Create is handled by the concrete type
 

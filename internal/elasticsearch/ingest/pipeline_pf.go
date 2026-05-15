@@ -108,19 +108,19 @@ type pipelineResource struct {
 func envelopeWriteIngestPipelineCreate(
 	ctx context.Context,
 	client *clients.ElasticsearchScopedClient,
-	req entitycore.ElasticsearchCreateRequest[Data],
-) (entitycore.ElasticsearchWriteResult[Data], diag.Diagnostics) {
+	req entitycore.WriteRequest[Data],
+) (entitycore.WriteResult[Data], diag.Diagnostics) {
 	m, d := writeIngestPipeline(ctx, client, req.WriteID, req.Plan)
-	return entitycore.ElasticsearchWriteResult[Data]{Model: m}, d
+	return entitycore.WriteResult[Data]{Model: m}, d
 }
 
 func envelopeWriteIngestPipelineUpdate(
 	ctx context.Context,
 	client *clients.ElasticsearchScopedClient,
-	req entitycore.ElasticsearchUpdateRequest[Data],
-) (entitycore.ElasticsearchWriteResult[Data], diag.Diagnostics) {
+	req entitycore.WriteRequest[Data],
+) (entitycore.WriteResult[Data], diag.Diagnostics) {
 	m, d := writeIngestPipeline(ctx, client, req.WriteID, req.Plan)
-	return entitycore.ElasticsearchWriteResult[Data]{Model: m}, d
+	return entitycore.WriteResult[Data]{Model: m}, d
 }
 
 func newPipelineResource() *pipelineResource {

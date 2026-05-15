@@ -86,7 +86,7 @@ When the response has HTTP status 404, or when the `filters` array in the respon
 
 ### Requirement: API — Update (REQ-003)
 
-Update logic SHALL run inside the Elasticsearch resource envelope's update callback, which receives `ElasticsearchUpdateRequest[TFModel]` containing the planned model, prior state model, raw Terraform config (`Config`), and write identity (`WriteID`, the ML filter id).
+Update logic SHALL run inside the Elasticsearch resource envelope's update callback, which receives `WriteRequest[TFModel]` containing the planned model, a non-nil pointer to the prior state model in `Prior`, raw Terraform config (`Config`), and write identity (`WriteID`, the ML filter id).
 
 The callback SHALL call `GET _ml/filters/<filter_id>` to fetch the current remote state, compute the item diff, then call `PUT _ml/filters/<filter_id>/_update` with only the changed fields.
 

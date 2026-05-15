@@ -38,22 +38,16 @@ type dataStreamResource struct {
 	*entitycore.ElasticsearchResource[Data]
 }
 
-func envelopeCreateDataStream(
+// envelopeWriteDataStream handles both Create and Update via createDataStream,
+// which always issues PUT-on-create semantics (data streams have no separate
+// update path beyond re-creation against the index template).
+func envelopeWriteDataStream(
 	ctx context.Context,
 	client *clients.ElasticsearchScopedClient,
-	req entitycore.ElasticsearchCreateRequest[Data],
-) (entitycore.ElasticsearchWriteResult[Data], diag.Diagnostics) {
+	req entitycore.WriteRequest[Data],
+) (entitycore.WriteResult[Data], diag.Diagnostics) {
 	m, d := createDataStream(ctx, client, req.WriteID, req.Plan)
-	return entitycore.ElasticsearchWriteResult[Data]{Model: m}, d
-}
-
-func envelopeUpdateDataStream(
-	ctx context.Context,
-	client *clients.ElasticsearchScopedClient,
-	req entitycore.ElasticsearchUpdateRequest[Data],
-) (entitycore.ElasticsearchWriteResult[Data], diag.Diagnostics) {
-	m, d := createDataStream(ctx, client, req.WriteID, req.Plan)
-	return entitycore.ElasticsearchWriteResult[Data]{Model: m}, d
+	return entitycore.WriteResult[Data]{Model: m}, d
 }
 
 func newDataStreamResource() *dataStreamResource {
@@ -62,8 +56,8 @@ func newDataStreamResource() *dataStreamResource {
 			Schema: GetSchema,
 			Read:   readDataStream,
 			Delete: deleteDataStream,
-			Create: envelopeCreateDataStream,
-			Update: envelopeUpdateDataStream,
+			Create: envelopeWriteDataStream,
+			Update: envelopeWriteDataStream,
 		}),
 	}
 }

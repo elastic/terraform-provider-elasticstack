@@ -43,19 +43,19 @@ type snapshotRepositoryResource struct {
 func envelopeWriteSnapshotRepoCreate(
 	ctx context.Context,
 	client *clients.ElasticsearchScopedClient,
-	req entitycore.ElasticsearchCreateRequest[Data],
-) (entitycore.ElasticsearchWriteResult[Data], diag.Diagnostics) {
+	req entitycore.WriteRequest[Data],
+) (entitycore.WriteResult[Data], diag.Diagnostics) {
 	m, d := writeSnapshotRepository(ctx, client, req.WriteID, req.Plan)
-	return entitycore.ElasticsearchWriteResult[Data]{Model: m}, d
+	return entitycore.WriteResult[Data]{Model: m}, d
 }
 
 func envelopeWriteSnapshotRepoUpdate(
 	ctx context.Context,
 	client *clients.ElasticsearchScopedClient,
-	req entitycore.ElasticsearchUpdateRequest[Data],
-) (entitycore.ElasticsearchWriteResult[Data], diag.Diagnostics) {
+	req entitycore.WriteRequest[Data],
+) (entitycore.WriteResult[Data], diag.Diagnostics) {
 	m, d := writeSnapshotRepository(ctx, client, req.WriteID, req.Plan)
-	return entitycore.ElasticsearchWriteResult[Data]{Model: m}, d
+	return entitycore.WriteResult[Data]{Model: m}, d
 }
 
 func newSnapshotRepositoryResource() *snapshotRepositoryResource {

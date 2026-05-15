@@ -57,14 +57,14 @@ func schemaFactory(_ context.Context) rschema.Schema {
 }
 
 func newResource() *Resource {
-	createPlaceholder, updatePlaceholder := entitycore.PlaceholderElasticsearchWriteCallbacks[tfModel]()
+	placeholder := entitycore.PlaceholderElasticsearchWriteCallback[tfModel]()
 	return &Resource{
 		ElasticsearchResource: entitycore.NewElasticsearchResource[tfModel]("security_api_key", entitycore.ElasticsearchResourceOptions[tfModel]{
 			Schema:   schemaFactory,
 			Read:     readAPIKey,
 			Delete:   deleteAPIKey,
-			Create:   createPlaceholder,
-			Update:   updatePlaceholder,
+			Create:   placeholder,
+			Update:   placeholder,
 			PostRead: postReadPersistClusterVersion,
 		}),
 	}

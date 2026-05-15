@@ -29,7 +29,7 @@ import (
 )
 
 // createAnomalyDetectionJob creates the ML job and sets the composite ID on the
-// returned model. It satisfies the entitycore ElasticsearchCreateFunc[TFModel]
+// returned model. It satisfies the entitycore WriteFunc[TFModel]
 // signature. The envelope handles the read-after-write and state persistence.
 func createAnomalyDetectionJob(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, plan TFModel) (TFModel, fwdiags.Diagnostics) {
 	var diags fwdiags.Diagnostics

@@ -33,23 +33,15 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func envelopeCreateUser(
+// envelopeWriteUser handles both Create (req.Prior == nil) and Update
+// (req.Prior != nil) since applyUserPut already accepts a *Data prior.
+func envelopeWriteUser(
 	ctx context.Context,
 	client *clients.ElasticsearchScopedClient,
-	req entitycore.ElasticsearchCreateRequest[Data],
-) (entitycore.ElasticsearchWriteResult[Data], diag.Diagnostics) {
-	m, d := applyUserPut(ctx, client, req.Plan, nil, req.Config)
-	return entitycore.ElasticsearchWriteResult[Data]{Model: m}, d
-}
-
-func envelopeUpdateUser(
-	ctx context.Context,
-	client *clients.ElasticsearchScopedClient,
-	req entitycore.ElasticsearchUpdateRequest[Data],
-) (entitycore.ElasticsearchWriteResult[Data], diag.Diagnostics) {
-	prior := req.Prior
-	m, d := applyUserPut(ctx, client, req.Plan, &prior, req.Config)
-	return entitycore.ElasticsearchWriteResult[Data]{Model: m}, d
+	req entitycore.WriteRequest[Data],
+) (entitycore.WriteResult[Data], diag.Diagnostics) {
+	m, d := applyUserPut(ctx, client, req.Plan, req.Prior, req.Config)
+	return entitycore.WriteResult[Data]{Model: m}, d
 }
 
 func applyUserPut(

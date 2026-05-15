@@ -36,14 +36,14 @@ type mlDatafeedStateResource struct {
 }
 
 func newMLDatafeedStateResource() *mlDatafeedStateResource {
-	createFunc, updateFunc := entitycore.PlaceholderElasticsearchWriteCallbacks[MLDatafeedStateData]()
+	placeholder := entitycore.PlaceholderElasticsearchWriteCallback[MLDatafeedStateData]()
 	return &mlDatafeedStateResource{
 		ElasticsearchResource: entitycore.NewElasticsearchResource[MLDatafeedStateData]("ml_datafeed_state", entitycore.ElasticsearchResourceOptions[MLDatafeedStateData]{
 			Schema: GetSchema,
 			Read:   readMLDatafeedState,
 			Delete: deleteMLDatafeedState,
-			Create: createFunc,
-			Update: updateFunc,
+			Create: placeholder,
+			Update: placeholder,
 		}),
 	}
 }

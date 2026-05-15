@@ -36,14 +36,14 @@ type mlJobStateResource struct {
 }
 
 func newMLJobStateResource() *mlJobStateResource {
-	createFunc, updateFunc := entitycore.PlaceholderElasticsearchWriteCallbacks[MLJobStateData]()
+	placeholder := entitycore.PlaceholderElasticsearchWriteCallback[MLJobStateData]()
 	return &mlJobStateResource{
 		ElasticsearchResource: entitycore.NewElasticsearchResource[MLJobStateData]("ml_job_state", entitycore.ElasticsearchResourceOptions[MLJobStateData]{
 			Schema: GetSchema,
 			Read:   readMLJobState,
 			Delete: deleteMLJobState,
-			Create: createFunc,
-			Update: updateFunc,
+			Create: placeholder,
+			Update: placeholder,
 		}),
 	}
 }

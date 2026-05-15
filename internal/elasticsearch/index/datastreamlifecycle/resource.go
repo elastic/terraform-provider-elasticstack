@@ -43,19 +43,19 @@ type Resource struct {
 func envelopeCreateDSL(
 	ctx context.Context,
 	client *clients.ElasticsearchScopedClient,
-	req entitycore.ElasticsearchCreateRequest[tfModel],
-) (entitycore.ElasticsearchWriteResult[tfModel], diag.Diagnostics) {
+	req entitycore.WriteRequest[tfModel],
+) (entitycore.WriteResult[tfModel], diag.Diagnostics) {
 	m, d := createDataStreamLifecycle(ctx, client, req.WriteID, req.Plan)
-	return entitycore.ElasticsearchWriteResult[tfModel]{Model: m}, d
+	return entitycore.WriteResult[tfModel]{Model: m}, d
 }
 
 func envelopeUpdateDSL(
 	ctx context.Context,
 	client *clients.ElasticsearchScopedClient,
-	req entitycore.ElasticsearchUpdateRequest[tfModel],
-) (entitycore.ElasticsearchWriteResult[tfModel], diag.Diagnostics) {
+	req entitycore.WriteRequest[tfModel],
+) (entitycore.WriteResult[tfModel], diag.Diagnostics) {
 	m, d := updateDataStreamLifecycle(ctx, client, req.WriteID, req.Plan)
-	return entitycore.ElasticsearchWriteResult[tfModel]{Model: m}, d
+	return entitycore.WriteResult[tfModel]{Model: m}, d
 }
 
 func newResource() *Resource {

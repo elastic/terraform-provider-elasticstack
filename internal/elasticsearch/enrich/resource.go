@@ -53,19 +53,19 @@ type enrichPolicyResource struct {
 func envelopeUpsertEnrichCreate(
 	ctx context.Context,
 	client *clients.ElasticsearchScopedClient,
-	req entitycore.ElasticsearchCreateRequest[PolicyDataWithExecute],
-) (entitycore.ElasticsearchWriteResult[PolicyDataWithExecute], diag.Diagnostics) {
+	req entitycore.WriteRequest[PolicyDataWithExecute],
+) (entitycore.WriteResult[PolicyDataWithExecute], diag.Diagnostics) {
 	m, d := upsertEnrichPolicy(ctx, client, req.WriteID, req.Plan)
-	return entitycore.ElasticsearchWriteResult[PolicyDataWithExecute]{Model: m}, d
+	return entitycore.WriteResult[PolicyDataWithExecute]{Model: m}, d
 }
 
 func envelopeUpsertEnrichUpdate(
 	ctx context.Context,
 	client *clients.ElasticsearchScopedClient,
-	req entitycore.ElasticsearchUpdateRequest[PolicyDataWithExecute],
-) (entitycore.ElasticsearchWriteResult[PolicyDataWithExecute], diag.Diagnostics) {
+	req entitycore.WriteRequest[PolicyDataWithExecute],
+) (entitycore.WriteResult[PolicyDataWithExecute], diag.Diagnostics) {
 	m, d := upsertEnrichPolicy(ctx, client, req.WriteID, req.Plan)
-	return entitycore.ElasticsearchWriteResult[PolicyDataWithExecute]{Model: m}, d
+	return entitycore.WriteResult[PolicyDataWithExecute]{Model: m}, d
 }
 
 func newEnrichPolicyResource() *enrichPolicyResource {

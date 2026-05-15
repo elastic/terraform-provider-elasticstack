@@ -92,21 +92,21 @@ func defaultTestElasticsearchResourceOptions() ElasticsearchResourceOptions[test
 func testWriteFuncFoundCreate(
 	_ context.Context,
 	_ *clients.ElasticsearchScopedClient,
-	req ElasticsearchCreateRequest[testResourceModel],
-) (ElasticsearchWriteResult[testResourceModel], diag.Diagnostics) {
+	req WriteRequest[testResourceModel],
+) (WriteResult[testResourceModel], diag.Diagnostics) {
 	model := req.Plan
 	model.ID = types.StringValue("cluster/" + req.WriteID)
-	return ElasticsearchWriteResult[testResourceModel]{Model: model}, nil
+	return WriteResult[testResourceModel]{Model: model}, nil
 }
 
 func testWriteFuncFoundUpdate(
 	_ context.Context,
 	_ *clients.ElasticsearchScopedClient,
-	req ElasticsearchUpdateRequest[testResourceModel],
-) (ElasticsearchWriteResult[testResourceModel], diag.Diagnostics) {
+	req WriteRequest[testResourceModel],
+) (WriteResult[testResourceModel], diag.Diagnostics) {
 	model := req.Plan
 	model.ID = types.StringValue("cluster/" + req.WriteID)
-	return ElasticsearchWriteResult[testResourceModel]{Model: model}, nil
+	return WriteResult[testResourceModel]{Model: model}, nil
 }
 
 func testResourceObjectType() tftypes.Type {
@@ -677,7 +677,7 @@ func TestNewElasticsearchResource_Create_nilWriteCallback(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	factory := newTestConfiguredFactory(ctx, t)
-	var nilCreate ElasticsearchCreateFunc[testResourceModel]
+	var nilCreate WriteFunc[testResourceModel]
 	r := NewElasticsearchResource[testResourceModel]("test_entity", ElasticsearchResourceOptions[testResourceModel]{
 		Schema: getTestResourceSchema,
 		Read:   testReadFuncFound,
@@ -708,7 +708,7 @@ func TestNewElasticsearchResource_write_nilCallbackPrecedesOtherWritePreludeErro
 
 	t.Run("Create_precedesClientError", func(t *testing.T) {
 		t.Parallel()
-		var nilCreate ElasticsearchCreateFunc[testResourceModel]
+		var nilCreate WriteFunc[testResourceModel]
 		r := NewElasticsearchResource[testResourceModel]("test_entity", ElasticsearchResourceOptions[testResourceModel]{
 			Schema: getTestResourceSchema,
 			Read:   testReadFuncFound,
@@ -732,7 +732,7 @@ func TestNewElasticsearchResource_write_nilCallbackPrecedesOtherWritePreludeErro
 
 	t.Run("Create_precedesInvalidWriteID", func(t *testing.T) {
 		t.Parallel()
-		var nilCreate ElasticsearchCreateFunc[testResourceModel]
+		var nilCreate WriteFunc[testResourceModel]
 		r := NewElasticsearchResource[testResourceModel]("test_entity", ElasticsearchResourceOptions[testResourceModel]{
 			Schema: getTestResourceSchema,
 			Read:   testReadFuncFound,
@@ -762,7 +762,7 @@ func TestNewElasticsearchResource_write_nilCallbackPrecedesOtherWritePreludeErro
 
 	t.Run("Update_precedesClientError", func(t *testing.T) {
 		t.Parallel()
-		var nilUpdate ElasticsearchUpdateFunc[testResourceModel]
+		var nilUpdate WriteFunc[testResourceModel]
 		r := NewElasticsearchResource[testResourceModel]("test_entity", ElasticsearchResourceOptions[testResourceModel]{
 			Schema: getTestResourceSchema,
 			Read:   testReadFuncFound,
@@ -787,13 +787,13 @@ func TestNewElasticsearchResource_Create_placeholderCallbackError(t *testing.T) 
 	t.Parallel()
 	ctx := context.Background()
 	factory := newTestConfiguredFactory(ctx, t)
-	createFn, updateFn := PlaceholderElasticsearchWriteCallbacks[testResourceModel]()
+	placeholder := PlaceholderElasticsearchWriteCallback[testResourceModel]()
 	r := NewElasticsearchResource[testResourceModel]("test_entity", ElasticsearchResourceOptions[testResourceModel]{
 		Schema: getTestResourceSchema,
 		Read:   testReadFuncFound,
 		Delete: testDeleteFunc,
-		Create: createFn,
-		Update: updateFn,
+		Create: placeholder,
+		Update: placeholder,
 	})
 	r.client = factory
 
@@ -823,9 +823,9 @@ func TestNewElasticsearchResource_Create_shortCircuitUnknownWriteID(t *testing.T
 		Schema: getTestResourceSchema,
 		Read:   testReadFuncFound,
 		Delete: testDeleteFunc,
-		Create: func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ ElasticsearchCreateRequest[testResourceModel]) (ElasticsearchWriteResult[testResourceModel], diag.Diagnostics) {
+		Create: func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ WriteRequest[testResourceModel]) (WriteResult[testResourceModel], diag.Diagnostics) {
 			createCalled = true
-			return ElasticsearchWriteResult[testResourceModel]{Model: testResourceModel{}}, nil
+			return WriteResult[testResourceModel]{Model: testResourceModel{}}, nil
 		},
 		Update: testWriteFuncFoundUpdate,
 	})
@@ -858,9 +858,9 @@ func TestNewElasticsearchResource_Create_shortCircuitClientError(t *testing.T) {
 		Schema: getTestResourceSchema,
 		Read:   testReadFuncFound,
 		Delete: testDeleteFunc,
-		Create: func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ ElasticsearchCreateRequest[testResourceModel]) (ElasticsearchWriteResult[testResourceModel], diag.Diagnostics) {
+		Create: func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ WriteRequest[testResourceModel]) (WriteResult[testResourceModel], diag.Diagnostics) {
 			createCalled = true
-			return ElasticsearchWriteResult[testResourceModel]{Model: testResourceModel{}}, nil
+			return WriteResult[testResourceModel]{Model: testResourceModel{}}, nil
 		},
 		Update: testWriteFuncFoundUpdate,
 	})
@@ -887,10 +887,10 @@ func TestNewElasticsearchResource_Create_shortCircuitCallbackError(t *testing.T)
 		Schema: getTestResourceSchema,
 		Read:   testReadFuncFound,
 		Delete: testDeleteFunc,
-		Create: func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ ElasticsearchCreateRequest[testResourceModel]) (ElasticsearchWriteResult[testResourceModel], diag.Diagnostics) {
+		Create: func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ WriteRequest[testResourceModel]) (WriteResult[testResourceModel], diag.Diagnostics) {
 			var diags diag.Diagnostics
 			diags.AddError("create error", "something went wrong")
-			return ElasticsearchWriteResult[testResourceModel]{Model: testResourceModel{}}, diags
+			return WriteResult[testResourceModel]{Model: testResourceModel{}}, diags
 		},
 		Update: testWriteFuncFoundUpdate,
 	})
@@ -1038,11 +1038,11 @@ func TestNewElasticsearchResource_Update_invokesUpdateCallbackNotCreate(t *testi
 		Schema: getTestResourceSchema,
 		Read:   testReadFuncFound,
 		Delete: testDeleteFunc,
-		Create: func(ctx context.Context, client *clients.ElasticsearchScopedClient, req ElasticsearchCreateRequest[testResourceModel]) (ElasticsearchWriteResult[testResourceModel], diag.Diagnostics) {
+		Create: func(ctx context.Context, client *clients.ElasticsearchScopedClient, req WriteRequest[testResourceModel]) (WriteResult[testResourceModel], diag.Diagnostics) {
 			createCalled = true
 			return testWriteFuncFoundCreate(ctx, client, req)
 		},
-		Update: func(ctx context.Context, client *clients.ElasticsearchScopedClient, req ElasticsearchUpdateRequest[testResourceModel]) (ElasticsearchWriteResult[testResourceModel], diag.Diagnostics) {
+		Update: func(ctx context.Context, client *clients.ElasticsearchScopedClient, req WriteRequest[testResourceModel]) (WriteResult[testResourceModel], diag.Diagnostics) {
 			updateCalled = true
 			return testWriteFuncFoundUpdate(ctx, client, req)
 		},
@@ -1065,7 +1065,7 @@ func TestNewElasticsearchResource_Update_nilWriteCallback(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	factory := newTestConfiguredFactory(ctx, t)
-	var nilUpdate ElasticsearchUpdateFunc[testResourceModel]
+	var nilUpdate WriteFunc[testResourceModel]
 	r := NewElasticsearchResource[testResourceModel]("test_entity", ElasticsearchResourceOptions[testResourceModel]{
 		Schema: getTestResourceSchema,
 		Read:   testReadFuncFound,
@@ -1091,13 +1091,13 @@ func TestNewElasticsearchResource_Write_shortCircuitEmptyWriteID(t *testing.T) {
 	ctx := context.Background()
 	factory := newTestConfiguredFactory(ctx, t)
 	writeCalled := false
-	writeFnCreate := func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ ElasticsearchCreateRequest[testResourceModel]) (ElasticsearchWriteResult[testResourceModel], diag.Diagnostics) {
+	writeFnCreate := func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ WriteRequest[testResourceModel]) (WriteResult[testResourceModel], diag.Diagnostics) {
 		writeCalled = true
-		return ElasticsearchWriteResult[testResourceModel]{Model: testResourceModel{}}, nil
+		return WriteResult[testResourceModel]{Model: testResourceModel{}}, nil
 	}
-	writeFnUpdate := func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ ElasticsearchUpdateRequest[testResourceModel]) (ElasticsearchWriteResult[testResourceModel], diag.Diagnostics) {
+	writeFnUpdate := func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ WriteRequest[testResourceModel]) (WriteResult[testResourceModel], diag.Diagnostics) {
 		writeCalled = true
-		return ElasticsearchWriteResult[testResourceModel]{Model: testResourceModel{}}, nil
+		return WriteResult[testResourceModel]{Model: testResourceModel{}}, nil
 	}
 	r := NewElasticsearchResource[testResourceModel]("test_entity", ElasticsearchResourceOptions[testResourceModel]{
 		Schema: getTestResourceSchema,
@@ -1148,9 +1148,9 @@ func TestNewElasticsearchResource_Update_shortCircuitUnknownWriteID(t *testing.T
 		Read:   testReadFuncFound,
 		Delete: testDeleteFunc,
 		Create: testWriteFuncFoundCreate,
-		Update: func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ ElasticsearchUpdateRequest[testResourceModel]) (ElasticsearchWriteResult[testResourceModel], diag.Diagnostics) {
+		Update: func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ WriteRequest[testResourceModel]) (WriteResult[testResourceModel], diag.Diagnostics) {
 			updateCalled = true
-			return ElasticsearchWriteResult[testResourceModel]{Model: testResourceModel{}}, nil
+			return WriteResult[testResourceModel]{Model: testResourceModel{}}, nil
 		},
 	})
 	r.client = factory
@@ -1183,9 +1183,9 @@ func TestNewElasticsearchResource_Update_shortCircuitClientError(t *testing.T) {
 		Read:   testReadFuncFound,
 		Delete: testDeleteFunc,
 		Create: testWriteFuncFoundCreate,
-		Update: func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ ElasticsearchUpdateRequest[testResourceModel]) (ElasticsearchWriteResult[testResourceModel], diag.Diagnostics) {
+		Update: func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ WriteRequest[testResourceModel]) (WriteResult[testResourceModel], diag.Diagnostics) {
 			updateCalled = true
-			return ElasticsearchWriteResult[testResourceModel]{Model: testResourceModel{}}, nil
+			return WriteResult[testResourceModel]{Model: testResourceModel{}}, nil
 		},
 	})
 	r.client = factory
@@ -1211,10 +1211,10 @@ func TestNewElasticsearchResource_Update_shortCircuitCallbackError(t *testing.T)
 		Read:   testReadFuncFound,
 		Delete: testDeleteFunc,
 		Create: testWriteFuncFoundCreate,
-		Update: func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ ElasticsearchUpdateRequest[testResourceModel]) (ElasticsearchWriteResult[testResourceModel], diag.Diagnostics) {
+		Update: func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ WriteRequest[testResourceModel]) (WriteResult[testResourceModel], diag.Diagnostics) {
 			var diags diag.Diagnostics
 			diags.AddError("update error", "something went wrong")
-			return ElasticsearchWriteResult[testResourceModel]{Model: testResourceModel{}}, diags
+			return WriteResult[testResourceModel]{Model: testResourceModel{}}, diags
 		},
 	})
 	r.client = factory
@@ -1329,13 +1329,13 @@ func TestNewElasticsearchResource_Update_placeholderCallbackError(t *testing.T) 
 	t.Parallel()
 	ctx := context.Background()
 	factory := newTestConfiguredFactory(ctx, t)
-	createFn, updateFn := PlaceholderElasticsearchWriteCallbacks[testResourceModel]()
+	placeholder := PlaceholderElasticsearchWriteCallback[testResourceModel]()
 	r := NewElasticsearchResource[testResourceModel]("test_entity", ElasticsearchResourceOptions[testResourceModel]{
 		Schema: getTestResourceSchema,
 		Read:   testReadFuncFound,
 		Delete: testDeleteFunc,
-		Create: createFn,
-		Update: updateFn,
+		Create: placeholder,
+		Update: placeholder,
 	})
 	r.client = factory
 
@@ -1391,21 +1391,21 @@ func testDeleteReadOverride(_ context.Context, _ *clients.ElasticsearchScopedCli
 func testWriteReadOverrideCreate(
 	_ context.Context,
 	_ *clients.ElasticsearchScopedClient,
-	req ElasticsearchCreateRequest[readIDOverrideModel],
-) (ElasticsearchWriteResult[readIDOverrideModel], diag.Diagnostics) {
+	req WriteRequest[readIDOverrideModel],
+) (WriteResult[readIDOverrideModel], diag.Diagnostics) {
 	m := req.Plan
 	m.ID = types.StringValue("cluster/" + req.WriteID)
-	return ElasticsearchWriteResult[readIDOverrideModel]{Model: m}, nil
+	return WriteResult[readIDOverrideModel]{Model: m}, nil
 }
 
 func testWriteReadOverrideUpdate(
 	_ context.Context,
 	_ *clients.ElasticsearchScopedClient,
-	req ElasticsearchUpdateRequest[readIDOverrideModel],
-) (ElasticsearchWriteResult[readIDOverrideModel], diag.Diagnostics) {
+	req WriteRequest[readIDOverrideModel],
+) (WriteResult[readIDOverrideModel], diag.Diagnostics) {
 	m := req.Plan
 	m.ID = types.StringValue("cluster/" + req.WriteID)
-	return ElasticsearchWriteResult[readIDOverrideModel]{Model: m}, nil
+	return WriteResult[readIDOverrideModel]{Model: m}, nil
 }
 
 func TestNewElasticsearchResource_Read_usesReadResourceIDFromModel(t *testing.T) {
@@ -1494,15 +1494,15 @@ func TestNewElasticsearchResource_Read_shortCircuitsWhenVersionRequirementsDiag(
 		Delete: func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, _ versionReqDiagModel) diag.Diagnostics {
 			return nil
 		},
-		Create: func(_ context.Context, _ *clients.ElasticsearchScopedClient, req ElasticsearchCreateRequest[versionReqDiagModel]) (ElasticsearchWriteResult[versionReqDiagModel], diag.Diagnostics) {
+		Create: func(_ context.Context, _ *clients.ElasticsearchScopedClient, req WriteRequest[versionReqDiagModel]) (WriteResult[versionReqDiagModel], diag.Diagnostics) {
 			m := req.Plan
 			m.ID = types.StringValue("cluster/" + req.WriteID)
-			return ElasticsearchWriteResult[versionReqDiagModel]{Model: m}, nil
+			return WriteResult[versionReqDiagModel]{Model: m}, nil
 		},
-		Update: func(_ context.Context, _ *clients.ElasticsearchScopedClient, req ElasticsearchUpdateRequest[versionReqDiagModel]) (ElasticsearchWriteResult[versionReqDiagModel], diag.Diagnostics) {
+		Update: func(_ context.Context, _ *clients.ElasticsearchScopedClient, req WriteRequest[versionReqDiagModel]) (WriteResult[versionReqDiagModel], diag.Diagnostics) {
 			m := req.Plan
 			m.ID = types.StringValue("cluster/" + req.WriteID)
-			return ElasticsearchWriteResult[versionReqDiagModel]{Model: m}, nil
+			return WriteResult[versionReqDiagModel]{Model: m}, nil
 		},
 	})
 	r.client = factory
@@ -1531,14 +1531,14 @@ func TestNewElasticsearchResource_Create_shortCircuitsWhenVersionRequirementsDia
 		Delete: func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, _ versionReqDiagModel) diag.Diagnostics {
 			return nil
 		},
-		Create: func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ ElasticsearchCreateRequest[versionReqDiagModel]) (ElasticsearchWriteResult[versionReqDiagModel], diag.Diagnostics) {
+		Create: func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ WriteRequest[versionReqDiagModel]) (WriteResult[versionReqDiagModel], diag.Diagnostics) {
 			createCalled = true
 			var zero versionReqDiagModel
-			return ElasticsearchWriteResult[versionReqDiagModel]{Model: zero}, nil
+			return WriteResult[versionReqDiagModel]{Model: zero}, nil
 		},
-		Update: func(_ context.Context, _ *clients.ElasticsearchScopedClient, req ElasticsearchUpdateRequest[versionReqDiagModel]) (ElasticsearchWriteResult[versionReqDiagModel], diag.Diagnostics) {
+		Update: func(_ context.Context, _ *clients.ElasticsearchScopedClient, req WriteRequest[versionReqDiagModel]) (WriteResult[versionReqDiagModel], diag.Diagnostics) {
 			m := req.Plan
-			return ElasticsearchWriteResult[versionReqDiagModel]{Model: m}, nil
+			return WriteResult[versionReqDiagModel]{Model: m}, nil
 		},
 	})
 	r.client = factory
@@ -1630,19 +1630,19 @@ func TestNewElasticsearchResource_Update_shortCircuitsWhenVersionRequirementsDia
 	createFn := func(
 		_ context.Context,
 		_ *clients.ElasticsearchScopedClient,
-		_ ElasticsearchCreateRequest[versionReqDiagModel],
-	) (ElasticsearchWriteResult[versionReqDiagModel], diag.Diagnostics) {
+		_ WriteRequest[versionReqDiagModel],
+	) (WriteResult[versionReqDiagModel], diag.Diagnostics) {
 		var zero versionReqDiagModel
-		return ElasticsearchWriteResult[versionReqDiagModel]{Model: zero}, nil
+		return WriteResult[versionReqDiagModel]{Model: zero}, nil
 	}
 	updateFn := func(
 		_ context.Context,
 		_ *clients.ElasticsearchScopedClient,
-		_ ElasticsearchUpdateRequest[versionReqDiagModel],
-	) (ElasticsearchWriteResult[versionReqDiagModel], diag.Diagnostics) {
+		_ WriteRequest[versionReqDiagModel],
+	) (WriteResult[versionReqDiagModel], diag.Diagnostics) {
 		updateCalled = true
 		var zero versionReqDiagModel
-		return ElasticsearchWriteResult[versionReqDiagModel]{Model: zero}, nil
+		return WriteResult[versionReqDiagModel]{Model: zero}, nil
 	}
 	r := NewElasticsearchResource[versionReqDiagModel]("test_entity", ElasticsearchResourceOptions[versionReqDiagModel]{
 		Schema: getTestResourceSchema,
@@ -1680,17 +1680,18 @@ func TestNewElasticsearchResource_Update_callbackReceivesPlanPriorConfigAndWrite
 	updateFn := func(
 		_ context.Context,
 		_ *clients.ElasticsearchScopedClient,
-		req ElasticsearchUpdateRequest[testResourceModel],
-	) (ElasticsearchWriteResult[testResourceModel], diag.Diagnostics) {
+		req WriteRequest[testResourceModel],
+	) (WriteResult[testResourceModel], diag.Diagnostics) {
 		require.Equal(t, "user1", req.WriteID)
 		require.Equal(t, "user1", req.Plan.Name.ValueString())
+		require.NotNil(t, req.Prior, "Update SHALL receive a non-nil Prior pointer")
 		require.Equal(t, "cluster/user1", req.Prior.ID.ValueString())
 		require.True(t, req.Config.Raw.Equal(plan.Raw))
 		require.Equal(t, plan.Schema, req.Config.Schema)
 
 		model := req.Plan
 		model.ID = types.StringValue("cluster/" + req.WriteID)
-		return ElasticsearchWriteResult[testResourceModel]{Model: model}, nil
+		return WriteResult[testResourceModel]{Model: model}, nil
 	}
 
 	opts := defaultTestElasticsearchResourceOptions()
@@ -1704,6 +1705,93 @@ func TestNewElasticsearchResource_Update_callbackReceivesPlanPriorConfigAndWrite
 	r.Update(ctx, req, &resp)
 
 	require.False(t, resp.Diagnostics.HasError())
+}
+
+// TestNewElasticsearchResource_Create_callbackReceivesNilPrior verifies that
+// Create invokes the WriteFunc with req.Prior == nil so a single shared
+// WriteFunc[T] can dispatch on Prior == nil to detect the create branch.
+func TestNewElasticsearchResource_Create_callbackReceivesNilPrior(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+
+	createFn := func(
+		_ context.Context,
+		_ *clients.ElasticsearchScopedClient,
+		req WriteRequest[testResourceModel],
+	) (WriteResult[testResourceModel], diag.Diagnostics) {
+		require.Nil(t, req.Prior, "Create SHALL receive a nil Prior pointer")
+		require.Equal(t, "user1", req.WriteID)
+		require.Equal(t, "user1", req.Plan.Name.ValueString())
+		model := req.Plan
+		model.ID = types.StringValue("cluster/" + req.WriteID)
+		return WriteResult[testResourceModel]{Model: model}, nil
+	}
+
+	opts := defaultTestElasticsearchResourceOptions()
+	opts.Create = createFn
+	r := NewElasticsearchResource[testResourceModel]("test_entity", opts)
+	r.client = factory
+
+	plan := makeTestResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue))
+	objType := testResourceObjectType()
+	respState := tfsdk.State{
+		Raw:    tftypes.NewValue(objType, nil),
+		Schema: testResourceSchemaWithConnectionBlock(ctx),
+	}
+	resp := resource.CreateResponse{State: respState}
+	r.Create(ctx, resource.CreateRequest{Plan: plan}, &resp)
+
+	require.False(t, resp.Diagnostics.HasError())
+}
+
+// TestNewElasticsearchResource_SingleWriteFuncServesCreateAndUpdate verifies a
+// concrete resource may wire the same WriteFunc[T] into both Create and Update
+// slots, with the function distinguishing the two paths via req.Prior == nil.
+func TestNewElasticsearchResource_SingleWriteFuncServesCreateAndUpdate(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+
+	var sawCreate, sawUpdate bool
+	shared := func(
+		_ context.Context,
+		_ *clients.ElasticsearchScopedClient,
+		req WriteRequest[testResourceModel],
+	) (WriteResult[testResourceModel], diag.Diagnostics) {
+		if req.Prior == nil {
+			sawCreate = true
+		} else {
+			sawUpdate = true
+		}
+		model := req.Plan
+		model.ID = types.StringValue("cluster/" + req.WriteID)
+		return WriteResult[testResourceModel]{Model: model}, nil
+	}
+
+	opts := defaultTestElasticsearchResourceOptions()
+	opts.Create = shared
+	opts.Update = shared
+	r := NewElasticsearchResource[testResourceModel]("test_entity", opts)
+	r.client = factory
+
+	createPlan := makeTestResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue))
+	objType := testResourceObjectType()
+	createResp := resource.CreateResponse{State: tfsdk.State{
+		Raw:    tftypes.NewValue(objType, nil),
+		Schema: testResourceSchemaWithConnectionBlock(ctx),
+	}}
+	r.Create(ctx, resource.CreateRequest{Plan: createPlan}, &createResp)
+	require.False(t, createResp.Diagnostics.HasError())
+
+	updatePlan := makeTestResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, "cluster/user1"))
+	priorState := makeTestResourceState(ctx, t, "cluster/user1")
+	updateResp := resource.UpdateResponse{State: priorState}
+	r.Update(ctx, resource.UpdateRequest{Plan: updatePlan, State: priorState, Config: tfsdk.Config(updatePlan)}, &updateResp)
+	require.False(t, updateResp.Diagnostics.HasError())
+
+	require.True(t, sawCreate, "shared WriteFunc was not invoked from Create")
+	require.True(t, sawUpdate, "shared WriteFunc was not invoked from Update")
 }
 
 func TestNewElasticsearchResource_Read_skipsPostReadWhenReadFuncError(t *testing.T) {

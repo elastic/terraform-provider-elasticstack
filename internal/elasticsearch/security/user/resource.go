@@ -42,8 +42,8 @@ func newUserResource() *userResource {
 			Schema: GetSchema,
 			Read:   readUser,
 			Delete: deleteUser,
-			Create: envelopeCreateUser,
-			Update: envelopeUpdateUser,
+			Create: envelopeWriteUser,
+			Update: envelopeWriteUser,
 		}),
 	}
 }

@@ -32,8 +32,8 @@ import (
 func envelopeUpdateFilter(
 	ctx context.Context,
 	client *clients.ElasticsearchScopedClient,
-	req entitycore.ElasticsearchUpdateRequest[TFModel],
-) (entitycore.ElasticsearchWriteResult[TFModel], fwdiags.Diagnostics) {
+	req entitycore.WriteRequest[TFModel],
+) (entitycore.WriteResult[TFModel], fwdiags.Diagnostics) {
 	var diags fwdiags.Diagnostics
 	filterID := req.WriteID
 	plan := req.Plan
@@ -44,7 +44,7 @@ func envelopeUpdateFilter(
 	typedClient, err := client.GetESClient()
 	if err != nil {
 		diags.AddError("Failed to get Elasticsearch client", err.Error())
-		return entitycore.ElasticsearchWriteResult[TFModel]{Model: plan}, diags
+		return entitycore.WriteResult[TFModel]{Model: plan}, diags
 	}
 
 	getRes, err := typedClient.Ml.GetFilters().FilterId(filterID).Do(ctx)
@@ -56,14 +56,14 @@ func envelopeUpdateFilter(
 			notFound = true
 		} else {
 			diags.AddError("Failed to get current ML filter", err.Error())
-			return entitycore.ElasticsearchWriteResult[TFModel]{Model: plan}, diags
+			return entitycore.WriteResult[TFModel]{Model: plan}, diags
 		}
 	case len(getRes.Filters) == 0:
 		notFound = true
 	}
 	if notFound {
 		diags.AddError("Filter not found", fmt.Sprintf("Filter %s not found during update", filterID))
-		return entitycore.ElasticsearchWriteResult[TFModel]{Model: plan}, diags
+		return entitycore.WriteResult[TFModel]{Model: plan}, diags
 	}
 
 	current := getRes.Filters[0]
@@ -78,7 +78,7 @@ func envelopeUpdateFilter(
 		d := plan.Items.ElementsAs(ctx, &planItems, false)
 		diags.Append(d...)
 		if diags.HasError() {
-			return entitycore.ElasticsearchWriteResult[TFModel]{Model: plan}, diags
+			return entitycore.WriteResult[TFModel]{Model: plan}, diags
 		}
 	}
 
@@ -121,9 +121,9 @@ func envelopeUpdateFilter(
 			"Failed to update ML filter",
 			fmt.Sprintf("Unable to update ML filter: %s — %s", filterID, err.Error()),
 		)
-		return entitycore.ElasticsearchWriteResult[TFModel]{Model: plan}, diags
+		return entitycore.WriteResult[TFModel]{Model: plan}, diags
 	}
 
 	tflog.Debug(ctx, fmt.Sprintf("Successfully updated ML filter: %s", filterID))
-	return entitycore.ElasticsearchWriteResult[TFModel]{Model: plan}, diags
+	return entitycore.WriteResult[TFModel]{Model: plan}, diags
 }

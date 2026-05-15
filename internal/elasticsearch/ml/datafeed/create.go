@@ -28,7 +28,7 @@ import (
 )
 
 // createDatafeed creates the datafeed and sets the composite ID on the returned
-// model. It satisfies the entitycore ElasticsearchCreateFunc[Datafeed] signature.
+// model. It satisfies the entitycore WriteFunc[Datafeed] signature.
 // The envelope handles read-after-write and state persistence.
 func createDatafeed(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, plan Datafeed) (Datafeed, fwdiags.Diagnostics) {
 	var diags fwdiags.Diagnostics
