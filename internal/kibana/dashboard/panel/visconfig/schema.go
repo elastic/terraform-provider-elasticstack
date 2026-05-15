@@ -378,10 +378,10 @@ func SchemaAttribute() schema.Attribute {
 		Description: "Configuration for a `vis` panel (`type = \"vis\"`). " +
 			"Typed alternative to panel-level `config_json`: set exactly one of `by_value` (exactly one of 12 Lens chart kinds) or `by_reference`. " +
 			"With `by_reference`, use structured `drilldowns` and required `time_range` like `lens_dashboard_app_config.by_reference`.",
-		BlockName:   "vis_config",
-		PanelType:   panelType,
-		Required:    false,
-		Attributes:  innerSchemaAttributes(),
+		BlockName:  "vis_config",
+		PanelType:  panelType,
+		Required:   false,
+		Attributes: innerSchemaAttributes(),
 		ExtraValidators: []validator.Object{
 			visConfigModeValidator{},
 		},

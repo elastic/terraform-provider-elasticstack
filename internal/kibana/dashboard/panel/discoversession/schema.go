@@ -490,9 +490,9 @@ func SchemaAttribute() schema.Attribute {
 	return panelkit.PanelConfigBlock(panelkit.PanelConfigBlockOpts{
 		Description: "Configuration for a `discover_session` panel (`kbn-dashboard-panel-type-discover_session`). " +
 			"Set exactly one of `by_value` or `by_reference`.",
-		BlockName: "discover_session_config",
-		PanelType: panelType,
-		Required:  true,
+		BlockName:  "discover_session_config",
+		PanelType:  panelType,
+		Required:   true,
 		Attributes: discoverSessionSchemaInnerAttributes(),
 		ExtraValidators: []validator.Object{
 			discoverSessionConfigModeValidator{},
