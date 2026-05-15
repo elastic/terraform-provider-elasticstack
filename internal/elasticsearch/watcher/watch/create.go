@@ -23,30 +23,33 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func createWatch(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, plan Data) (Data, diag.Diagnostics) {
+func createWatch(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.WriteRequest[Data]) (entitycore.WriteResult[Data], diag.Diagnostics) {
 	var diags diag.Diagnostics
+	plan := req.Plan
+	resourceID := req.WriteID
 
 	put, modelDiags := plan.toPutModel(ctx)
 	diags.Append(modelDiags...)
 	if diags.HasError() {
-		return plan, diags
+		return entitycore.WriteResult[Data]{Model: plan}, diags
 	}
 
 	diags.Append(elasticsearch.PutWatch(ctx, client, put)...)
 	if diags.HasError() {
-		return plan, diags
+		return entitycore.WriteResult[Data]{Model: plan}, diags
 	}
 
 	id, sdkDiags := client.ID(ctx, resourceID)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
-		return plan, diags
+		return entitycore.WriteResult[Data]{Model: plan}, diags
 	}
 
 	plan.ID = types.StringValue(id.String())
-	return plan, diags
+	return entitycore.WriteResult[Data]{Model: plan}, diags
 }

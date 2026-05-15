@@ -331,6 +331,47 @@ func PopulateLegacyMetricMetricDefaults(model map[string]any) map[string]any {
 	return model
 }
 
+// PopulatePartitionLensAttributes populates shared defaults for partition-type Lens charts
+// (treemap, mosaic, and future variants): nil-guard, default empty filters, group_by defaults,
+// and metrics defaults. Returns attrs so callers can chain or return it directly.
+func PopulatePartitionLensAttributes(attrs map[string]any) map[string]any {
+	if attrs == nil {
+		return attrs
+	}
+	if _, exists := attrs["filters"]; !exists {
+		attrs["filters"] = []any{}
+	}
+	if groupBy, ok := attrs["group_by"].([]any); ok {
+		groupByMaps := make([]map[string]any, 0, len(groupBy))
+		for _, g := range groupBy {
+			if m, ok := g.(map[string]any); ok {
+				groupByMaps = append(groupByMaps, m)
+			}
+		}
+		populated := PopulatePartitionGroupByDefaults(groupByMaps)
+		for i := range groupBy {
+			if i < len(populated) {
+				groupBy[i] = populated[i]
+			}
+		}
+	}
+	if metrics, ok := attrs["metrics"].([]any); ok {
+		metricsMaps := make([]map[string]any, 0, len(metrics))
+		for _, m := range metrics {
+			if mp, ok := m.(map[string]any); ok {
+				metricsMaps = append(metricsMaps, mp)
+			}
+		}
+		populated := PopulatePartitionMetricsDefaults(metricsMaps)
+		for i := range metrics {
+			if i < len(populated) {
+				metrics[i] = populated[i]
+			}
+		}
+	}
+	return attrs
+}
+
 // PopulateTagcloudTagByDefaults populates tagcloud tag_by defaults.
 func PopulateTagcloudTagByDefaults(model map[string]any) map[string]any {
 	if model == nil {

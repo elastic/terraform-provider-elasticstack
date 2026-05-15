@@ -41,15 +41,13 @@ type roleResource struct {
 
 func newRoleResource() *roleResource {
 	return &roleResource{
-		ElasticsearchResource: entitycore.NewElasticsearchResource[Data](
-			entitycore.ComponentElasticsearch,
-			"security_role",
-			getSchemaFactory,
-			readRole,
-			deleteRole,
-			writeRole,
-			writeRole,
-		),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[Data]("security_role", entitycore.ElasticsearchResourceOptions[Data]{
+			Schema: getSchemaFactory,
+			Read:   readRole,
+			Delete: deleteRole,
+			Create: writeRole,
+			Update: writeRole,
+		}),
 	}
 }
 

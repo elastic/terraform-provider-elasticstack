@@ -22,24 +22,25 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func updateAlias(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, plan tfModel) (tfModel, diag.Diagnostics) {
+func updateAlias(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.WriteRequest[tfModel]) (entitycore.WriteResult[tfModel], diag.Diagnostics) {
 	var diags diag.Diagnostics
+	plan := req.Plan
+	aliasName := req.WriteID
 
 	diags.Append(plan.Validate(ctx)...)
 	if diags.HasError() {
-		return plan, diags
+		return entitycore.WriteResult[tfModel]{Model: plan}, diags
 	}
-
-	aliasName := resourceID
 
 	// Read current alias state from API to find which indices to remove
 	currentIndices, readDiags := elasticsearch.GetAlias(ctx, client, aliasName)
 	diags.Append(readDiags...)
 	if diags.HasError() {
-		return plan, diags
+		return entitycore.WriteResult[tfModel]{Model: plan}, diags
 	}
 
 	// Build current index map from API response
@@ -49,7 +50,7 @@ func updateAlias(ctx context.Context, client *clients.ElasticsearchScopedClient,
 			config, configDiags := aliasDefinitionToConfig(indexName, aliasDef)
 			diags.Append(configDiags...)
 			if diags.HasError() {
-				return plan, diags
+				return entitycore.WriteResult[tfModel]{Model: plan}, diags
 			}
 			currentIndexMap[indexName] = config
 		}
@@ -59,7 +60,7 @@ func updateAlias(ctx context.Context, client *clients.ElasticsearchScopedClient,
 	plannedConfigs, configDiags := plan.toAliasConfigs(ctx)
 	diags.Append(configDiags...)
 	if diags.HasError() {
-		return plan, diags
+		return entitycore.WriteResult[tfModel]{Model: plan}, diags
 	}
 
 	plannedIndexMap := make(map[string]IndexConfig)
@@ -104,9 +105,9 @@ func updateAlias(ctx context.Context, client *clients.ElasticsearchScopedClient,
 	if len(actions) > 0 {
 		diags.Append(elasticsearch.UpdateAliasesAtomic(ctx, client, actions)...)
 		if diags.HasError() {
-			return plan, diags
+			return entitycore.WriteResult[tfModel]{Model: plan}, diags
 		}
 	}
 
-	return plan, diags
+	return entitycore.WriteResult[tfModel]{Model: plan}, diags
 }

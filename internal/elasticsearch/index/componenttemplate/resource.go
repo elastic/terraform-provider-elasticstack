@@ -40,15 +40,13 @@ type Resource struct {
 
 func newResource() *Resource {
 	return &Resource{
-		ElasticsearchResource: entitycore.NewElasticsearchResource[Data](
-			entitycore.ComponentElasticsearch,
-			"component_template",
-			getSchema,
-			readComponentTemplate,
-			deleteComponentTemplate,
-			createComponentTemplate,
-			updateComponentTemplate,
-		),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[Data]("component_template", entitycore.ElasticsearchResourceOptions[Data]{
+			Schema: getSchema,
+			Read:   readComponentTemplate,
+			Delete: deleteComponentTemplate,
+			Create: createComponentTemplate,
+			Update: updateComponentTemplate,
+		}),
 	}
 }
 

@@ -23,32 +23,35 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-// updateILM is the envelope update callback. It expands the plan into a Policy, applies
-// version-gating, and PUTs the ILM policy. The ILM PUT is idempotent for both create and
-// update. The envelope invokes readILM after this returns and sets state from the read result.
-func updateILM(ctx context.Context, client *clients.ElasticsearchScopedClient, _ string, plan tfModel) (tfModel, diag.Diagnostics) {
+// updateILM is the envelope Update callback. It expands the plan into a
+// Policy, applies version-gating, and PUTs the ILM policy. The ILM PUT is
+// idempotent for both create and update. The envelope invokes readILM after
+// this returns and sets state from the read result.
+func updateILM(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.WriteRequest[tfModel]) (entitycore.WriteResult[tfModel], diag.Diagnostics) {
 	var diags diag.Diagnostics
+	plan := req.Plan
 
 	sv, sdkDiags := client.ServerVersion(ctx)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
-		return tfModel{}, diags
+		return entitycore.WriteResult[tfModel]{}, diags
 	}
 
 	policy, policyDiags := policyFromModel(ctx, &plan, sv)
 	diags.Append(policyDiags...)
 	if diags.HasError() {
-		return tfModel{}, diags
+		return entitycore.WriteResult[tfModel]{}, diags
 	}
 	policy.Name = plan.Name.ValueString()
 
 	diags.Append(elasticsearch.PutIlm(ctx, client, policy)...)
 	if diags.HasError() {
-		return tfModel{}, diags
+		return entitycore.WriteResult[tfModel]{}, diags
 	}
 
-	return plan, diags
+	return entitycore.WriteResult[tfModel]{Model: plan}, diags
 }

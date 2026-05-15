@@ -23,66 +23,62 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // updateDatafeed updates the datafeed configuration. It stops the datafeed if
-// running, applies the update, restarts it, and sets the composite ID. It
-// satisfies the entitycore ElasticsearchUpdateFunc[Datafeed] signature.
-// The envelope handles read-after-write and state persistence.
-func updateDatafeed(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, plan Datafeed) (Datafeed, fwdiags.Diagnostics) {
+// running, applies the update, restarts it, and sets the composite ID. The
+// envelope handles read-after-write and state persistence.
+func updateDatafeed(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.WriteRequest[Datafeed]) (entitycore.WriteResult[Datafeed], fwdiags.Diagnostics) {
 	var diags fwdiags.Diagnostics
+	plan := req.Plan
+	datafeedID := req.WriteID
 
-	datafeedID := resourceID
 	if datafeedID == "" {
 		diags.AddError("Invalid Configuration", "datafeed_id cannot be empty")
-		return plan, diags
+		return entitycore.WriteResult[Datafeed]{Model: plan}, diags
 	}
 
-	// Convert to API update model (raw JSON to preserve query form)
 	updateBody, convDiags := plan.toAPIUpdateModel(ctx)
 	diags.Append(convDiags...)
 	if diags.HasError() {
-		return plan, diags
+		return entitycore.WriteResult[Datafeed]{Model: plan}, diags
 	}
 
 	needsRestart, stopDiags := maybeStopDatafeed(ctx, client, datafeedID)
 	diags.Append(stopDiags...)
 	if diags.HasError() {
-		return plan, diags
+		return entitycore.WriteResult[Datafeed]{Model: plan}, diags
 	}
 
-	// Update the datafeed
 	updateDiags := elasticsearch.UpdateDatafeed(ctx, client, datafeedID, updateBody)
 	diags.Append(updateDiags...)
 	if diags.HasError() {
-		return plan, diags
+		return entitycore.WriteResult[Datafeed]{Model: plan}, diags
 	}
 
-	// Restart the datafeed if it was running
 	if needsRestart {
 		startDiags := elasticsearch.StartDatafeed(ctx, client, datafeedID, "", "", 0)
 		diags.Append(startDiags...)
 		if diags.HasError() {
-			return plan, diags
+			return entitycore.WriteResult[Datafeed]{Model: plan}, diags
 		}
 
-		// Wait for the datafeed to reach started state
 		_, waitDiags := WaitForDatafeedState(ctx, client, datafeedID, StateStarted)
 		diags.Append(waitDiags...)
 		if diags.HasError() {
-			return plan, diags
+			return entitycore.WriteResult[Datafeed]{Model: plan}, diags
 		}
 	}
 
-	// Set the composite ID so the envelope and readFunc can carry it through.
 	compID, sdkDiags := client.ID(ctx, datafeedID)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
-		return plan, diags
+		return entitycore.WriteResult[Datafeed]{Model: plan}, diags
 	}
 
 	plan.ID = types.StringValue(compID.String())
-	return plan, diags
+	return entitycore.WriteResult[Datafeed]{Model: plan}, diags
 }

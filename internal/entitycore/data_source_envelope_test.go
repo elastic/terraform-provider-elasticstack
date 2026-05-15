@@ -433,7 +433,7 @@ type modelWithVersionReqsDiagError struct {
 	ID types.String `tfsdk:"id"`
 }
 
-func (*modelWithVersionReqsDiagError) GetVersionRequirements() ([]DataSourceVersionRequirement, diag.Diagnostics) {
+func (*modelWithVersionReqsDiagError) GetVersionRequirements() ([]VersionRequirement, diag.Diagnostics) {
 	return nil, diag.Diagnostics{
 		diag.NewErrorDiagnostic("version requirements error", "injected GetVersionRequirements failure"),
 	}
@@ -457,9 +457,9 @@ type supportedVersionModel struct {
 	ID types.String `tfsdk:"id"`
 }
 
-func (*supportedVersionModel) GetVersionRequirements() ([]DataSourceVersionRequirement, diag.Diagnostics) {
+func (*supportedVersionModel) GetVersionRequirements() ([]VersionRequirement, diag.Diagnostics) {
 	minVer := goversion.Must(goversion.NewVersion("8.0.0"))
-	return []DataSourceVersionRequirement{{MinVersion: *minVer, ErrorMessage: "needs 8.0.0"}}, nil
+	return []VersionRequirement{{MinVersion: *minVer, ErrorMessage: "needs 8.0.0"}}, nil
 }
 
 func getSupportedVersionModelSchema(_ context.Context) dsschema.Schema {
@@ -480,9 +480,9 @@ type unsupportedVersionModel struct {
 	ID types.String `tfsdk:"id"`
 }
 
-func (*unsupportedVersionModel) GetVersionRequirements() ([]DataSourceVersionRequirement, diag.Diagnostics) {
+func (*unsupportedVersionModel) GetVersionRequirements() ([]VersionRequirement, diag.Diagnostics) {
 	minVer := goversion.Must(goversion.NewVersion("8.0.0"))
-	return []DataSourceVersionRequirement{{MinVersion: *minVer, ErrorMessage: "requires Kibana 8.0.0 or later"}}, nil
+	return []VersionRequirement{{MinVersion: *minVer, ErrorMessage: "requires Kibana 8.0.0 or later"}}, nil
 }
 
 // =============================================================================

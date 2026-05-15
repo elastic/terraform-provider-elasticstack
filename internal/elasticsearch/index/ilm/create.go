@@ -23,41 +23,43 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// createILM is the envelope create callback. It expands the plan into a Policy, applies
-// version-gating, PUTs the ILM policy, and returns the model with the composite ID set.
-// The envelope invokes readILM after this returns and sets state from the read result.
-func createILM(ctx context.Context, client *clients.ElasticsearchScopedClient, _ string, plan tfModel) (tfModel, diag.Diagnostics) {
+// createILM is the envelope Create callback. It expands the plan into a
+// Policy, applies version-gating, PUTs the ILM policy, and returns the model
+// with the composite ID set. The envelope invokes readILM after this returns
+// and sets state from the read result.
+func createILM(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.WriteRequest[tfModel]) (entitycore.WriteResult[tfModel], diag.Diagnostics) {
 	var diags diag.Diagnostics
+	plan := req.Plan
 
 	sv, sdkDiags := client.ServerVersion(ctx)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
-		return tfModel{}, diags
+		return entitycore.WriteResult[tfModel]{}, diags
 	}
 
 	policy, policyDiags := policyFromModel(ctx, &plan, sv)
 	diags.Append(policyDiags...)
 	if diags.HasError() {
-		return tfModel{}, diags
+		return entitycore.WriteResult[tfModel]{}, diags
 	}
 	policy.Name = plan.Name.ValueString()
 
 	diags.Append(elasticsearch.PutIlm(ctx, client, policy)...)
 	if diags.HasError() {
-		return tfModel{}, diags
+		return entitycore.WriteResult[tfModel]{}, diags
 	}
 
 	id, sdkDiags := client.ID(ctx, plan.Name.ValueString())
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
-		return tfModel{}, diags
+		return entitycore.WriteResult[tfModel]{}, diags
 	}
 
-	out := plan
-	out.ID = types.StringValue(id.String())
-	return out, diags
+	plan.ID = types.StringValue(id.String())
+	return entitycore.WriteResult[tfModel]{Model: plan}, diags
 }

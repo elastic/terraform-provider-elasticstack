@@ -46,9 +46,8 @@ var (
 )
 
 // Resource embeds ElasticsearchResource[tfModel] to inherit Configure, Metadata,
-// Schema, Delete, and the envelope's Create/Update (which are overridden below).
-// Create, Read, and Update are defined on the concrete type to preserve the
-// private-state cluster-version caching flow.
+// Schema, Read, Delete, and PostRead cluster-version caching.
+// Create and Update are defined on the concrete type.
 type Resource struct {
 	*entitycore.ElasticsearchResource[tfModel]
 }
@@ -58,17 +57,16 @@ func schemaFactory(_ context.Context) rschema.Schema {
 }
 
 func newResource() *Resource {
-	createPlaceholder, updatePlaceholder := entitycore.PlaceholderElasticsearchWriteCallbacks[tfModel]()
+	placeholder := entitycore.PlaceholderElasticsearchWriteCallback[tfModel]()
 	return &Resource{
-		ElasticsearchResource: entitycore.NewElasticsearchResource[tfModel](
-			entitycore.ComponentElasticsearch,
-			"security_api_key",
-			schemaFactory,
-			readAPIKey,
-			deleteAPIKey,
-			createPlaceholder,
-			updatePlaceholder,
-		),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[tfModel]("security_api_key", entitycore.ElasticsearchResourceOptions[tfModel]{
+			Schema:   schemaFactory,
+			Read:     readAPIKey,
+			Delete:   deleteAPIKey,
+			Create:   placeholder,
+			Update:   placeholder,
+			PostRead: postReadPersistClusterVersion,
+		}),
 	}
 }
 
@@ -76,30 +74,11 @@ func NewResource() resource.Resource {
 	return newResource()
 }
 
-// Equivalent to privatestate.ProviderData
+// privateData mirrors the GetKey/SetKey surface of *privatestate.ProviderData
+// so the envelope can hand a typed handle to PostRead without importing the
+// framework's internal package. See the framework docs for full key semantics.
 type privateData interface {
-	// GetKey returns the private state data associated with the given key.
-	//
-	// If the key is reserved for framework usage, an error diagnostic
-	// is returned. If the key is valid, but private state data is not found,
-	// nil is returned.
-	//
-	// The naming of keys only matters in context of a single resource,
-	// however care should be taken that any historical keys are not reused
-	// without accounting for older resource instances that may still have
-	// older data at the key.
 	GetKey(ctx context.Context, key string) ([]byte, diag.Diagnostics)
-
-	// SetKey sets the private state data at the given key.
-	//
-	// If the key is reserved for framework usage, an error diagnostic
-	// is returned. The data must be valid JSON and UTF-8 safe or an error
-	// diagnostic is returned.
-	//
-	// The naming of keys only matters in context of a single resource,
-	// however care should be taken that any historical keys are not reused
-	// without accounting for older resource instances that may still have
-	// older data at the key.
 	SetKey(ctx context.Context, key string, value []byte) diag.Diagnostics
 }
 
@@ -128,6 +107,24 @@ func saveClusterVersion(ctx context.Context, client *clients.ElasticsearchScoped
 
 	diags.Append(priv.SetKey(ctx, clusterVersionPrivateDataKey, data)...)
 	return diags
+}
+
+func postReadPersistClusterVersion(
+	ctx context.Context,
+	client *clients.ElasticsearchScopedClient,
+	_ tfModel,
+	privateState any,
+) diag.Diagnostics {
+	priv, ok := privateState.(privateData)
+	if !ok {
+		var diags diag.Diagnostics
+		diags.AddError(
+			"Elasticsearch envelope configuration error",
+			"security_api_key PostRead requires private state implementing GetKey and SetKey.",
+		)
+		return diags
+	}
+	return saveClusterVersion(ctx, client, priv)
 }
 
 // clusterVersionOfLastRead retrieves the cached Elasticsearch cluster version.

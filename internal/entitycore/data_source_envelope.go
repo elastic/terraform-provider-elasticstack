@@ -70,11 +70,10 @@ type ElasticsearchDataSourceModel interface {
 	GetElasticsearchConnection() types.List
 }
 
-// DataSourceVersionRequirement describes a minimum server version that a
-// Kibana data source model requires before the entity read function is
-// invoked.
-type DataSourceVersionRequirement struct {
-	// MinVersion is the minimum Kibana server version required.
+// VersionRequirement describes a minimum server version that an entity model
+// requires before the envelope invokes the concrete lifecycle callback.
+type VersionRequirement struct {
+	// MinVersion is the minimum server version required.
 	MinVersion version.Version
 	// ErrorMessage is the human-readable detail added to the
 	// "Unsupported server version" diagnostic when the server does not

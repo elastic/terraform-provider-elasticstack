@@ -37,15 +37,13 @@ type inferenceEndpointResource struct {
 
 func newInferenceEndpointResource() *inferenceEndpointResource {
 	return &inferenceEndpointResource{
-		ElasticsearchResource: entitycore.NewElasticsearchResource[Data](
-			entitycore.ComponentElasticsearch,
-			"inference_endpoint",
-			getSchemaFactory,
-			readInferenceEndpoint,
-			deleteInferenceEndpoint,
-			createInferenceEndpoint,
-			updateInferenceEndpoint,
-		),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[Data]("inference_endpoint", entitycore.ElasticsearchResourceOptions[Data]{
+			Schema: getSchemaFactory,
+			Read:   readInferenceEndpoint,
+			Delete: deleteInferenceEndpoint,
+			Create: createInferenceEndpoint,
+			Update: updateInferenceEndpoint,
+		}),
 	}
 }
 

@@ -72,8 +72,8 @@ var streamsMinVersion = version.Must(version.NewVersion("9.4.0-SNAPSHOT"))
 // entitycore.WithVersionRequirements interface, allowing the
 // generic Kibana resource envelope to enforce the requirement before invoking
 // lifecycle callbacks.
-func (m streamModel) GetVersionRequirements() ([]entitycore.DataSourceVersionRequirement, diag.Diagnostics) {
-	return []entitycore.DataSourceVersionRequirement{
+func (m streamModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+	return []entitycore.VersionRequirement{
 		{
 			MinVersion:   *streamsMinVersion,
 			ErrorMessage: fmt.Sprintf("Kibana Streams require Elastic Stack %s or later.", streamsMinVersion),

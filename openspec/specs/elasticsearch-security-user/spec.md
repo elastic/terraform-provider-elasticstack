@@ -144,13 +144,21 @@ The resource SHALL use the provider's configured Elasticsearch client by default
 
 ### Requirement: Create and update behavior (REQ-010–REQ-012)
 
-When creating or updating a user, the resource SHALL call the Put user API with the desired user definition and then read the user back to populate computed fields in state. If the user cannot be read immediately after a successful create/update, the resource SHALL return an error diagnostic indicating the user was not found after the operation. The resource SHALL only send a password field when it is known and has changed from the prior state (for `password` and `password_hash`) or when `password_wo_version` has changed (for `password_wo`).
+Create and update SHALL be implemented via the Elasticsearch envelope, sharing a single `WriteFunc[Data]` for both operations. The callback SHALL receive `WriteRequest[Data]` (`Plan`, `Prior`, `Config`, `WriteID`) and SHALL distinguish create from update by inspecting `req.Prior == nil` (create) versus a non-nil pointer to the prior `Data` model (update). The callback SHALL call the Put user API with the desired user definition and return `WriteResult[Data]` so the envelope can read-after-write.
+
+Password handling SHALL use raw Terraform config from the request (`Config`) together with prior state (`Prior` on update) so write-only passwords (`password_wo`) and comparisons against prior plaintext/hash values behave correctly without relying solely on decoded plan models.
+
+If the user cannot be read immediately after a successful callback (envelope read-after-write reports not found), the envelope SHALL surface an error diagnostic indicating the resource was not found after the operation.
+
+The resource SHALL only send a password field when it is known and has changed from the prior state (for `password` and `password_hash`) or when `password_wo_version` has changed (for `password_wo`), using `Config` and `Prior` as needed for those comparisons.
+
+Before returning from create or update, the callback SHALL set `model.ID` to the composite `<cluster_uuid>/<username>` string so read-after-write persists a model carrying the composite ID.
 
 #### Scenario: Post-apply read
 
-- GIVEN a successful Put user response
-- WHEN the provider refreshes state
-- THEN it SHALL read the user and populate state, or return an error if the user is missing
+- GIVEN a successful Put user response from the envelope callback
+- WHEN the envelope completes read-after-write
+- THEN state SHALL reflect the refreshed user, or return an error if the user is missing
 
 #### Scenario: Password change detection
 

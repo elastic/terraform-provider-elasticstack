@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 	"maps"
+	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
@@ -44,6 +45,12 @@ type ElasticsearchResourceModel interface {
 	GetElasticsearchConnection() types.List
 }
 
+// WithReadResourceID is an optional interface for models that need a stable read
+// identity distinct from the composite state ID segment used as the default.
+type WithReadResourceID interface {
+	GetReadResourceID() string
+}
+
 type elasticsearchReadFunc[T ElasticsearchResourceModel] func(
 	context.Context,
 	*clients.ElasticsearchScopedClient,
@@ -58,33 +65,58 @@ type elasticsearchDeleteFunc[T ElasticsearchResourceModel] func(
 	T,
 ) diag.Diagnostics
 
-// ElasticsearchCreateFunc performs the create after the envelope decodes the
-// plan, checks the write identity, resolves the scoped Elasticsearch client,
-// and passes the planned model. The callback should call the remote create
-// API, set the composite ID on the returned model when readFunc expects to
-// carry it through (e.g. via client.ID()), include any create-only field
-// values, and return the model. The envelope invokes readFunc after a
-// successful callback and sets state from the read result; the callback must
-// not call readFunc.
-type ElasticsearchCreateFunc[T ElasticsearchResourceModel] func(
-	context.Context,
-	*clients.ElasticsearchScopedClient,
-	string,
-	T,
-) (T, diag.Diagnostics)
+// WriteRequest is passed to [WriteFunc] after plan decoding, prior-state
+// decoding (Update only), write identity validation, client resolution, and
+// optional version checks. Prior is non-nil only for Update; Create receives
+// Prior == nil. The same WriteRequest type is shared by Create and Update so a
+// single function can serve both when the logic does not differ.
+type WriteRequest[T ElasticsearchResourceModel] struct {
+	Plan    T
+	Prior   *T
+	Config  tfsdk.Config
+	WriteID string
+}
 
-// ElasticsearchUpdateFunc performs the update with the same prelude as
-// [ElasticsearchCreateFunc]. The callback should call the remote update API,
-// set the composite ID on the returned model when readFunc expects to carry
-// it through, and return it. The envelope invokes readFunc after a successful
-// callback and sets state from the read result; the callback must not call
-// readFunc.
-type ElasticsearchUpdateFunc[T ElasticsearchResourceModel] func(
+// WriteResult is returned by write callbacks; the envelope read-after-write
+// flow uses Model when resolving refresh identity and calling readFunc.
+type WriteResult[T ElasticsearchResourceModel] struct {
+	Model T
+}
+
+// WriteFunc performs Create or Update after the envelope decodes the plan
+// (and prior state for Update), validates the write identity, resolves the
+// scoped Elasticsearch client, and evaluates optional version requirements.
+// Inspect req.Prior == nil to detect Create when sharing a single function for
+// both Create and Update.
+type WriteFunc[T ElasticsearchResourceModel] func(
 	context.Context,
 	*clients.ElasticsearchScopedClient,
-	string,
-	T,
-) (T, diag.Diagnostics)
+	WriteRequest[T],
+) (WriteResult[T], diag.Diagnostics)
+
+// PostReadFunc runs after a successful read that persisted state, including
+// read-after-write refresh. It is optional. The privateState argument is the
+// framework response Private field (typically *internal/privatestate.ProviderData).
+type PostReadFunc[T ElasticsearchResourceModel] func(
+	ctx context.Context,
+	client *clients.ElasticsearchScopedClient,
+	model T,
+	privateState any,
+) diag.Diagnostics
+
+// ElasticsearchResourceOptions configures [NewElasticsearchResource]. PostRead
+// is optional; Schema, Read, Delete, Create, and Update must be non-nil or the
+// envelope surfaces configuration diagnostics instead of invoking nil callbacks.
+// Create and Update share the [WriteFunc] type so callers may pass the same
+// function for both when the logic is identical.
+type ElasticsearchResourceOptions[T ElasticsearchResourceModel] struct {
+	Schema   func(context.Context) rschema.Schema
+	Read     elasticsearchReadFunc[T]
+	Delete   elasticsearchDeleteFunc[T]
+	Create   WriteFunc[T]
+	Update   WriteFunc[T]
+	PostRead PostReadFunc[T]
+}
 
 // ElasticsearchResource implements [resource.Resource] and related interfaces
 // for Elasticsearch-backed resources. It embeds [*ResourceBase] to reuse
@@ -99,55 +131,66 @@ type ElasticsearchResource[T ElasticsearchResourceModel] struct {
 	schemaFactory func(context.Context) rschema.Schema
 	readFunc      elasticsearchReadFunc[T]
 	deleteFunc    elasticsearchDeleteFunc[T]
-	createFunc    ElasticsearchCreateFunc[T]
-	updateFunc    ElasticsearchUpdateFunc[T]
+	createFunc    WriteFunc[T]
+	updateFunc    WriteFunc[T]
+	postReadFunc  PostReadFunc[T]
 }
 
-// PlaceholderElasticsearchWriteCallbacks returns create and update callbacks
-// that fail if invoked. Use when a concrete resource type still defines its own
-// Create and Update methods that override the envelope so Terraform never calls
-// these placeholders.
+// PlaceholderElasticsearchWriteCallback returns a write callback that fails if
+// invoked. Use it for both Create and Update when a concrete resource type
+// still defines its own Create and Update methods that shadow the envelope so
+// Terraform never calls the placeholder.
 const (
 	placeholderWriteCallbackSummary = "Elasticsearch envelope"
 	placeholderWriteCallbackDetail  = "Internal error: write callback placeholder was invoked; " +
-		"the concrete resource should override Create and Update or pass real callbacks to NewElasticsearchResource."
+		"the concrete resource should override Create and Update or pass real callbacks via ElasticsearchResourceOptions."
 )
 
-func PlaceholderElasticsearchWriteCallbacks[T ElasticsearchResourceModel]() (ElasticsearchCreateFunc[T], ElasticsearchUpdateFunc[T]) {
-	fn := func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, _ T) (T, diag.Diagnostics) {
+func PlaceholderElasticsearchWriteCallback[T ElasticsearchResourceModel]() WriteFunc[T] {
+	return func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ WriteRequest[T]) (WriteResult[T], diag.Diagnostics) {
 		var diags diag.Diagnostics
 		diags.AddError(
 			placeholderWriteCallbackSummary,
 			placeholderWriteCallbackDetail,
 		)
 		var zero T
-		return zero, diags
+		return WriteResult[T]{Model: zero}, diags
 	}
-	return fn, fn
 }
 
 // NewElasticsearchResource returns an [*ElasticsearchResource] that owns
-// Schema, Create, Read, Update, and Delete. Concrete resources supply a schema
-// factory (without elasticsearch_connection block), read, delete, create, and
-// update callbacks. All callbacks must be non-nil; otherwise Create or Update
-// surface a configuration error diagnostic instead of invoking the callback.
-func NewElasticsearchResource[T ElasticsearchResourceModel](
-	component Component,
-	name string,
-	schemaFactory func(context.Context) rschema.Schema,
-	readFunc elasticsearchReadFunc[T],
-	deleteFunc elasticsearchDeleteFunc[T],
-	createFunc ElasticsearchCreateFunc[T],
-	updateFunc ElasticsearchUpdateFunc[T],
-) *ElasticsearchResource[T] {
+// Schema, Create, Read, Update, and Delete for the Elasticsearch namespace.
+// Concrete resources supply callbacks in opts; Schema, Read, Delete, Create,
+// and Update must be non-nil or the envelope surfaces configuration error
+// diagnostics instead of invoking nil callbacks.
+func NewElasticsearchResource[T ElasticsearchResourceModel](name string, opts ElasticsearchResourceOptions[T]) *ElasticsearchResource[T] {
 	return &ElasticsearchResource[T]{
-		ResourceBase:  NewResourceBase(component, name),
-		schemaFactory: schemaFactory,
-		readFunc:      readFunc,
-		deleteFunc:    deleteFunc,
-		createFunc:    createFunc,
-		updateFunc:    updateFunc,
+		ResourceBase:  NewResourceBase(ComponentElasticsearch, name),
+		schemaFactory: opts.Schema,
+		readFunc:      opts.Read,
+		deleteFunc:    opts.Delete,
+		createFunc:    opts.Create,
+		updateFunc:    opts.Update,
+		postReadFunc:  opts.PostRead,
 	}
+}
+
+func resolveElasticsearchReadResourceID(model ElasticsearchResourceModel, writeFallback string) (string, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	if m, ok := any(model).(WithReadResourceID); ok {
+		if id := strings.TrimSpace(m.GetReadResourceID()); id != "" {
+			return id, diags
+		}
+	}
+	if writeFallback != "" {
+		return writeFallback, diags
+	}
+	compID, compDiags := clients.CompositeIDFromStrFw(model.GetID().ValueString())
+	diags.Append(compDiags...)
+	if diags.HasError() {
+		return "", diags
+	}
+	return compID.ResourceID, diags
 }
 
 // Schema implements [resource.Resource], injecting the elasticsearch_connection
@@ -162,16 +205,23 @@ func (r *ElasticsearchResource[T]) Schema(ctx context.Context, _ resource.Schema
 }
 
 // Create implements [resource.Resource]: decode plan, resolve client, invoke
-// the create callback, then persist the returned model.
+// the create callback, read-after-write, then persist state from readFunc.
 func (r *ElasticsearchResource[T]) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	resp.Diagnostics.Append(r.writeFromPlan(ctx, req.Plan, &resp.State, r.createFunc)...)
+	resp.Diagnostics.Append(r.runWrite(ctx, writeInvocation[T]{
+		plan:         req.Plan,
+		config:       req.Config,
+		outState:     &resp.State,
+		privateState: resp.Private,
+		isUpdate:     false,
+	})...)
 }
 
-// Read implements [resource.Resource] with the standard prelude: decode state,
-// parse composite ID, resolve scoped Elasticsearch client, then delegate to the
-// concrete readFunc. When readFunc reports found==true, the returned model is
-// persisted via resp.State.Set; when found==false, the resource is removed
-// from state.
+// Read implements [resource.Resource] with the standard prelude: deserialize
+// prior state into the generic model T, resolve read identity from the model
+// and/or composite ID, resolve the scoped Elasticsearch client, enforce optional
+// version requirements when the model reports requirement diagnostics with an
+// error severity (matching Kibana envelope semantics), then delegate to the
+// concrete readFunc.
 func (r *ElasticsearchResource[T]) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var model T
 	resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
@@ -179,9 +229,16 @@ func (r *ElasticsearchResource[T]) Read(ctx context.Context, req resource.ReadRe
 		return
 	}
 
-	compID, diags := clients.CompositeIDFromStrFw(model.GetID().ValueString())
-	resp.Diagnostics.Append(diags...)
+	resourceID, idDiags := resolveElasticsearchReadResourceID(model, "")
+	resp.Diagnostics.Append(idDiags...)
 	if resp.Diagnostics.HasError() {
+		return
+	}
+	if resourceID == "" {
+		resp.Diagnostics.AddError(
+			"Invalid resource identifier",
+			"The resolved read identity is empty; cannot read.",
+		)
 		return
 	}
 
@@ -191,46 +248,99 @@ func (r *ElasticsearchResource[T]) Read(ctx context.Context, req resource.ReadRe
 		return
 	}
 
-	resultModel, found, diags := r.readFunc(ctx, client, compID.ResourceID, model)
-	resp.Diagnostics.Append(diags...)
+	if vDiags := enforceVersionRequirements(ctx, client, &model); vDiags.HasError() {
+		resp.Diagnostics.Append(vDiags...)
+		return
+	}
+
+	if d := r.requireReadFunc(); d.HasError() {
+		resp.Diagnostics.Append(d...)
+		return
+	}
+
+	resultModel, found, callDiags := r.readFunc(ctx, client, resourceID, model)
+	resp.Diagnostics.Append(callDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	if found {
 		resp.Diagnostics.Append(resp.State.Set(ctx, &resultModel)...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		if r.postReadFunc != nil {
+			resp.Diagnostics.Append(r.postReadFunc(ctx, client, resultModel, resp.Private)...)
+		}
 	} else {
 		resp.State.RemoveResource(ctx)
 	}
 }
 
-// Update implements [resource.Resource] with the same prelude as Create.
+// Update implements [resource.Resource] with the same prelude as Create,
+// additionally decoding prior state for the update callback.
 func (r *ElasticsearchResource[T]) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	resp.Diagnostics.Append(r.writeFromPlan(ctx, req.Plan, &resp.State, r.updateFunc)...)
+	resp.Diagnostics.Append(r.runWrite(ctx, writeInvocation[T]{
+		plan:         req.Plan,
+		priorState:   &req.State,
+		config:       req.Config,
+		outState:     &resp.State,
+		privateState: resp.Private,
+		isUpdate:     true,
+	})...)
 }
 
-func (r *ElasticsearchResource[T]) writeFromPlan(
-	ctx context.Context,
-	plan tfsdk.Plan,
-	state *tfsdk.State,
-	op func(context.Context, *clients.ElasticsearchScopedClient, string, T) (T, diag.Diagnostics),
-) diag.Diagnostics {
-	var model T
+type writeInvocation[T ElasticsearchResourceModel] struct {
+	plan         tfsdk.Plan
+	priorState   *tfsdk.State
+	config       tfsdk.Config
+	outState     *tfsdk.State
+	privateState any
+	isUpdate     bool
+}
+
+func (r *ElasticsearchResource[T]) requireReadFunc() diag.Diagnostics {
 	var diags diag.Diagnostics
-	if op == nil {
+	if r.readFunc == nil {
 		diags.AddError(
 			"Elasticsearch envelope configuration error",
-			"The create or update callback passed to NewElasticsearchResource must not be nil.",
+			"The read callback passed via ElasticsearchResourceOptions must not be nil.",
+		)
+	}
+	return diags
+}
+
+func (r *ElasticsearchResource[T]) runWrite(ctx context.Context, inv writeInvocation[T]) diag.Diagnostics {
+	var diags diag.Diagnostics
+	if (inv.isUpdate && r.updateFunc == nil) || (!inv.isUpdate && r.createFunc == nil) {
+		op := "create"
+		if inv.isUpdate {
+			op = "update"
+		}
+		diags.AddError(
+			"Elasticsearch envelope configuration error",
+			fmt.Sprintf("The %s callback passed via ElasticsearchResourceOptions must not be nil.", op),
 		)
 		return diags
 	}
 
-	diags.Append(plan.Get(ctx, &model)...)
+	var planModel T
+	diags.Append(inv.plan.Get(ctx, &planModel)...)
 	if diags.HasError() {
 		return diags
 	}
 
-	writeID := model.GetResourceID()
+	var priorPtr *T
+	if inv.isUpdate && inv.priorState != nil {
+		var priorModel T
+		diags.Append(inv.priorState.Get(ctx, &priorModel)...)
+		if diags.HasError() {
+			return diags
+		}
+		priorPtr = &priorModel
+	}
+
+	writeID := planModel.GetResourceID()
 	if !typeutils.IsKnown(writeID) || writeID.ValueString() == "" {
 		diags.AddError(
 			"Invalid resource identifier",
@@ -239,27 +349,51 @@ func (r *ElasticsearchResource[T]) writeFromPlan(
 		return diags
 	}
 
-	client, connDiags := r.Client().GetElasticsearchClient(ctx, model.GetElasticsearchConnection())
+	client, connDiags := r.Client().GetElasticsearchClient(ctx, planModel.GetElasticsearchConnection())
 	diags.Append(connDiags...)
 	if diags.HasError() {
 		return diags
 	}
 
-	if r.readFunc == nil {
-		diags.AddError(
-			"Elasticsearch envelope configuration error",
-			"The read callback passed to NewElasticsearchResource must not be nil.",
-		)
+	if vDiags := enforceVersionRequirements(ctx, client, &planModel); vDiags.HasError() {
+		diags.Append(vDiags...)
 		return diags
 	}
 
-	writtenModel, callDiags := op(ctx, client, writeID.ValueString(), model)
+	if d := r.requireReadFunc(); d.HasError() {
+		return d
+	}
+
+	writeFn := r.createFunc
+	if inv.isUpdate {
+		writeFn = r.updateFunc
+	}
+	writeKey := writeID.ValueString()
+	written, callDiags := writeFn(ctx, client, WriteRequest[T]{
+		Plan:    planModel,
+		Prior:   priorPtr,
+		Config:  inv.config,
+		WriteID: writeKey,
+	})
 	diags.Append(callDiags...)
 	if diags.HasError() {
 		return diags
 	}
 
-	stateModel, found, readDiags := r.readFunc(ctx, client, writeID.ValueString(), writtenModel)
+	readResourceID, idDiags := resolveElasticsearchReadResourceID(written.Model, writeKey)
+	diags.Append(idDiags...)
+	if diags.HasError() {
+		return diags
+	}
+	if readResourceID == "" {
+		diags.AddError(
+			"Invalid resource identifier",
+			"The resolved read identity is empty after write; cannot refresh.",
+		)
+		return diags
+	}
+
+	stateModel, found, readDiags := r.readFunc(ctx, client, readResourceID, written.Model)
 	diags.Append(readDiags...)
 	if diags.HasError() {
 		return diags
@@ -268,18 +402,34 @@ func (r *ElasticsearchResource[T]) writeFromPlan(
 	if !found {
 		diags.AddError(
 			"Resource not found",
-			fmt.Sprintf("%s_%s %q was not found after write", r.component, r.resourceName, writeID.ValueString()),
+			fmt.Sprintf("%s_%s %q was not found after write", r.component, r.resourceName, writeKey),
 		)
 		return diags
 	}
 
-	diags.Append(state.Set(ctx, &stateModel)...)
+	diags.Append(inv.outState.Set(ctx, &stateModel)...)
+	if diags.HasError() {
+		return diags
+	}
+
+	if r.postReadFunc != nil {
+		diags.Append(r.postReadFunc(ctx, client, stateModel, inv.privateState)...)
+	}
+
 	return diags
 }
 
 // Delete implements [resource.Resource] with the standard prelude, then
 // delegates to the concrete deleteFunc.
 func (r *ElasticsearchResource[T]) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	if r.deleteFunc == nil {
+		resp.Diagnostics.AddError(
+			"Elasticsearch envelope configuration error",
+			"The delete callback passed via ElasticsearchResourceOptions must not be nil.",
+		)
+		return
+	}
+
 	var model T
 	resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
 	if resp.Diagnostics.HasError() {
