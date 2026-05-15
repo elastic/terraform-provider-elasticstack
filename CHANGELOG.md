@@ -1,3 +1,9 @@
+## [Unreleased]
+
+### Breaking changes
+
+- `elasticstack_kibana_dashboard`: the panel typed configuration block previously named `viz_config` is now `vis_config` to match the Kibana panel type discriminator (`"vis"`). Existing configurations using `viz_config` will fail validation; rename `viz_config` to `vis_config` (the inner attribute set is unchanged).
+
 ## [0.15.1] - 2026-05-15
 
 ### Changes
