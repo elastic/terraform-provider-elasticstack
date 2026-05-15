@@ -79,13 +79,31 @@ func testDeleteFunc(_ context.Context, _ *clients.ElasticsearchScopedClient, _ s
 	return nil
 }
 
-func testWriteFuncFoundCreate(_ context.Context, _ *clients.ElasticsearchScopedClient, req ElasticsearchCreateRequest[testResourceModel]) (ElasticsearchWriteResult[testResourceModel], diag.Diagnostics) {
+func defaultTestElasticsearchResourceOptions() ElasticsearchResourceOptions[testResourceModel] {
+	return ElasticsearchResourceOptions[testResourceModel]{
+		Schema: getTestResourceSchema,
+		Read:   testReadFuncFound,
+		Delete: testDeleteFunc,
+		Create: testWriteFuncFoundCreate,
+		Update: testWriteFuncFoundUpdate,
+	}
+}
+
+func testWriteFuncFoundCreate(
+	_ context.Context,
+	_ *clients.ElasticsearchScopedClient,
+	req ElasticsearchCreateRequest[testResourceModel],
+) (ElasticsearchWriteResult[testResourceModel], diag.Diagnostics) {
 	model := req.Plan
 	model.ID = types.StringValue("cluster/" + req.WriteID)
 	return ElasticsearchWriteResult[testResourceModel]{Model: model}, nil
 }
 
-func testWriteFuncFoundUpdate(_ context.Context, _ *clients.ElasticsearchScopedClient, req ElasticsearchUpdateRequest[testResourceModel]) (ElasticsearchWriteResult[testResourceModel], diag.Diagnostics) {
+func testWriteFuncFoundUpdate(
+	_ context.Context,
+	_ *clients.ElasticsearchScopedClient,
+	req ElasticsearchUpdateRequest[testResourceModel],
+) (ElasticsearchWriteResult[testResourceModel], diag.Diagnostics) {
 	model := req.Plan
 	model.ID = types.StringValue("cluster/" + req.WriteID)
 	return ElasticsearchWriteResult[testResourceModel]{Model: model}, nil
@@ -164,13 +182,7 @@ func newTestConfiguredFactory(ctx context.Context, t *testing.T) *clients.Provid
 
 func newResourceEnvelopeWithFactory(t *testing.T, factory *clients.ProviderClientFactory) *ElasticsearchResource[testResourceModel] {
 	t.Helper()
-	r := NewElasticsearchResource[testResourceModel]("test_entity", ElasticsearchResourceOptions[testResourceModel]{
-		Schema: getTestResourceSchema,
-		Read:   testReadFuncFound,
-		Delete: testDeleteFunc,
-		Create: testWriteFuncFoundCreate,
-		Update: testWriteFuncFoundUpdate,
-	})
+	r := NewElasticsearchResource[testResourceModel]("test_entity", defaultTestElasticsearchResourceOptions())
 	r.client = factory
 	return r
 }
@@ -199,7 +211,7 @@ func makeTestResourceState(ctx context.Context, t *testing.T, id string) tfsdk.S
 
 func TestNewElasticsearchResource_typeAssertions(t *testing.T) {
 	t.Parallel()
-	r := NewElasticsearchResource[testResourceModel]("test_entity", ElasticsearchResourceOptions[testResourceModel]{Schema: getTestResourceSchema, Read: testReadFuncFound, Delete: testDeleteFunc, Create: testWriteFuncFoundCreate, Update: testWriteFuncFoundUpdate})
+	r := NewElasticsearchResource[testResourceModel]("test_entity", defaultTestElasticsearchResourceOptions())
 	require.NotNil(t, r)
 	require.Implements(t, (*resource.Resource)(nil), r)
 	require.Implements(t, (*resource.ResourceWithConfigure)(nil), r)
@@ -209,7 +221,7 @@ func TestNewElasticsearchResource_typeAssertions(t *testing.T) {
 
 func TestNewElasticsearchResource_Metadata(t *testing.T) {
 	t.Parallel()
-	r := NewElasticsearchResource[testResourceModel]("test_entity", ElasticsearchResourceOptions[testResourceModel]{Schema: getTestResourceSchema, Read: testReadFuncFound, Delete: testDeleteFunc, Create: testWriteFuncFoundCreate, Update: testWriteFuncFoundUpdate})
+	r := NewElasticsearchResource[testResourceModel]("test_entity", defaultTestElasticsearchResourceOptions())
 
 	var resp resource.MetadataResponse
 	r.Metadata(context.Background(), resource.MetadataRequest{ProviderTypeName: testProviderTypeName}, &resp)
@@ -219,7 +231,7 @@ func TestNewElasticsearchResource_Metadata(t *testing.T) {
 
 func TestNewElasticsearchResource_schemaInjection(t *testing.T) {
 	t.Parallel()
-	r := NewElasticsearchResource[testResourceModel]("test_entity", ElasticsearchResourceOptions[testResourceModel]{Schema: getTestResourceSchema, Read: testReadFuncFound, Delete: testDeleteFunc, Create: testWriteFuncFoundCreate, Update: testWriteFuncFoundUpdate})
+	r := NewElasticsearchResource[testResourceModel]("test_entity", defaultTestElasticsearchResourceOptions())
 
 	var resp resource.SchemaResponse
 	r.Schema(context.Background(), resource.SchemaRequest{}, &resp)
@@ -258,7 +270,7 @@ func TestNewElasticsearchResource_Configure(t *testing.T) {
 
 	t.Run("nil_provider_data", func(t *testing.T) {
 		t.Parallel()
-		r := NewElasticsearchResource[testResourceModel]("test_entity", ElasticsearchResourceOptions[testResourceModel]{Schema: getTestResourceSchema, Read: testReadFuncFound, Delete: testDeleteFunc, Create: testWriteFuncFoundCreate, Update: testWriteFuncFoundUpdate})
+		r := NewElasticsearchResource[testResourceModel]("test_entity", defaultTestElasticsearchResourceOptions())
 		var resp resource.ConfigureResponse
 		r.Configure(ctx, resource.ConfigureRequest{ProviderData: nil}, &resp)
 		require.False(t, resp.Diagnostics.HasError())
@@ -266,7 +278,7 @@ func TestNewElasticsearchResource_Configure(t *testing.T) {
 
 	t.Run("valid_factory", func(t *testing.T) {
 		t.Parallel()
-		r := NewElasticsearchResource[testResourceModel]("test_entity", ElasticsearchResourceOptions[testResourceModel]{Schema: getTestResourceSchema, Read: testReadFuncFound, Delete: testDeleteFunc, Create: testWriteFuncFoundCreate, Update: testWriteFuncFoundUpdate})
+		r := NewElasticsearchResource[testResourceModel]("test_entity", defaultTestElasticsearchResourceOptions())
 		f := nonNilTestFactory()
 		var resp resource.ConfigureResponse
 		r.Configure(ctx, resource.ConfigureRequest{ProviderData: f}, &resp)
@@ -275,7 +287,7 @@ func TestNewElasticsearchResource_Configure(t *testing.T) {
 
 	t.Run("invalid_provider_data", func(t *testing.T) {
 		t.Parallel()
-		r := NewElasticsearchResource[testResourceModel]("test_entity", ElasticsearchResourceOptions[testResourceModel]{Schema: getTestResourceSchema, Read: testReadFuncFound, Delete: testDeleteFunc, Create: testWriteFuncFoundCreate, Update: testWriteFuncFoundUpdate})
+		r := NewElasticsearchResource[testResourceModel]("test_entity", defaultTestElasticsearchResourceOptions())
 		var resp resource.ConfigureResponse
 		r.Configure(ctx, resource.ConfigureRequest{ProviderData: "wrong-type"}, &resp)
 		require.True(t, resp.Diagnostics.HasError())
@@ -1376,13 +1388,21 @@ func testDeleteReadOverride(_ context.Context, _ *clients.ElasticsearchScopedCli
 	return nil
 }
 
-func testWriteReadOverrideCreate(_ context.Context, _ *clients.ElasticsearchScopedClient, req ElasticsearchCreateRequest[readIDOverrideModel]) (ElasticsearchWriteResult[readIDOverrideModel], diag.Diagnostics) {
+func testWriteReadOverrideCreate(
+	_ context.Context,
+	_ *clients.ElasticsearchScopedClient,
+	req ElasticsearchCreateRequest[readIDOverrideModel],
+) (ElasticsearchWriteResult[readIDOverrideModel], diag.Diagnostics) {
 	m := req.Plan
 	m.ID = types.StringValue("cluster/" + req.WriteID)
 	return ElasticsearchWriteResult[readIDOverrideModel]{Model: m}, nil
 }
 
-func testWriteReadOverrideUpdate(_ context.Context, _ *clients.ElasticsearchScopedClient, req ElasticsearchUpdateRequest[readIDOverrideModel]) (ElasticsearchWriteResult[readIDOverrideModel], diag.Diagnostics) {
+func testWriteReadOverrideUpdate(
+	_ context.Context,
+	_ *clients.ElasticsearchScopedClient,
+	req ElasticsearchUpdateRequest[readIDOverrideModel],
+) (ElasticsearchWriteResult[readIDOverrideModel], diag.Diagnostics) {
 	m := req.Plan
 	m.ID = types.StringValue("cluster/" + req.WriteID)
 	return ElasticsearchWriteResult[readIDOverrideModel]{Model: m}, nil
@@ -1592,4 +1612,312 @@ func TestNewElasticsearchResource_Read_skipsPostReadWhenNotFound(t *testing.T) {
 
 	require.False(t, resp.Diagnostics.HasError())
 	require.False(t, postCalled)
+}
+
+func TestNewElasticsearchResource_Update_shortCircuitsWhenVersionRequirementsDiag(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	updateCalled := false
+	readFn := func(
+		_ context.Context,
+		_ *clients.ElasticsearchScopedClient,
+		_ string,
+		model versionReqDiagModel,
+	) (versionReqDiagModel, bool, diag.Diagnostics) {
+		return model, true, nil
+	}
+	createFn := func(
+		_ context.Context,
+		_ *clients.ElasticsearchScopedClient,
+		_ ElasticsearchCreateRequest[versionReqDiagModel],
+	) (ElasticsearchWriteResult[versionReqDiagModel], diag.Diagnostics) {
+		var zero versionReqDiagModel
+		return ElasticsearchWriteResult[versionReqDiagModel]{Model: zero}, nil
+	}
+	updateFn := func(
+		_ context.Context,
+		_ *clients.ElasticsearchScopedClient,
+		_ ElasticsearchUpdateRequest[versionReqDiagModel],
+	) (ElasticsearchWriteResult[versionReqDiagModel], diag.Diagnostics) {
+		updateCalled = true
+		var zero versionReqDiagModel
+		return ElasticsearchWriteResult[versionReqDiagModel]{Model: zero}, nil
+	}
+	r := NewElasticsearchResource[versionReqDiagModel]("test_entity", ElasticsearchResourceOptions[versionReqDiagModel]{
+		Schema: getTestResourceSchema,
+		Read:   readFn,
+		Delete: func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, _ versionReqDiagModel) diag.Diagnostics {
+			return nil
+		},
+		Create: createFn,
+		Update: updateFn,
+	})
+	r.client = factory
+
+	plan := makeTestResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, "cluster/user1"))
+	prior := makeTestResourceState(ctx, t, "cluster/user1")
+	cfg := tfsdk.Config(plan)
+	resp := resource.UpdateResponse{State: prior}
+	req := resource.UpdateRequest{Plan: plan, State: prior, Config: cfg}
+
+	r.Update(ctx, req, &resp)
+
+	require.True(t, resp.Diagnostics.HasError())
+	require.Contains(t, resp.Diagnostics.Errors()[0].Summary(), "version lookup failed")
+	require.False(t, updateCalled)
+}
+
+func TestNewElasticsearchResource_Update_callbackReceivesPlanPriorConfigAndWriteID(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+
+	plan := makeTestResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, "cluster/user1"))
+	prior := makeTestResourceState(ctx, t, "cluster/user1")
+	cfg := tfsdk.Config(plan)
+
+	updateFn := func(
+		_ context.Context,
+		_ *clients.ElasticsearchScopedClient,
+		req ElasticsearchUpdateRequest[testResourceModel],
+	) (ElasticsearchWriteResult[testResourceModel], diag.Diagnostics) {
+		require.Equal(t, "user1", req.WriteID)
+		require.Equal(t, "user1", req.Plan.Name.ValueString())
+		require.Equal(t, "cluster/user1", req.Prior.ID.ValueString())
+		require.True(t, req.Config.Raw.Equal(plan.Raw))
+		require.Equal(t, plan.Schema, req.Config.Schema)
+
+		model := req.Plan
+		model.ID = types.StringValue("cluster/" + req.WriteID)
+		return ElasticsearchWriteResult[testResourceModel]{Model: model}, nil
+	}
+
+	opts := defaultTestElasticsearchResourceOptions()
+	opts.Update = updateFn
+	r := NewElasticsearchResource[testResourceModel]("test_entity", opts)
+	r.client = factory
+
+	resp := resource.UpdateResponse{State: prior}
+	req := resource.UpdateRequest{Plan: plan, State: prior, Config: cfg}
+
+	r.Update(ctx, req, &resp)
+
+	require.False(t, resp.Diagnostics.HasError())
+}
+
+func TestNewElasticsearchResource_Read_skipsPostReadWhenReadFuncError(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	postCalled := false
+	postRead := func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ testResourceModel, _ any) diag.Diagnostics {
+		postCalled = true
+		return nil
+	}
+	readFn := func(
+		_ context.Context,
+		_ *clients.ElasticsearchScopedClient,
+		_ string,
+		_ testResourceModel,
+	) (testResourceModel, bool, diag.Diagnostics) {
+		var d diag.Diagnostics
+		d.AddError("read failed", "boom")
+		return testResourceModel{}, false, d
+	}
+	r := NewElasticsearchResource[testResourceModel]("test_entity", ElasticsearchResourceOptions[testResourceModel]{
+		Schema:   getTestResourceSchema,
+		Read:     readFn,
+		Delete:   testDeleteFunc,
+		Create:   testWriteFuncFoundCreate,
+		Update:   testWriteFuncFoundUpdate,
+		PostRead: postRead,
+	})
+	r.client = factory
+
+	state := makeTestResourceState(ctx, t, "cluster/user1")
+	req := resource.ReadRequest{State: state}
+	resp := resource.ReadResponse{State: state}
+
+	r.Read(ctx, req, &resp)
+
+	require.True(t, resp.Diagnostics.HasError())
+	require.False(t, postCalled)
+}
+
+func TestNewElasticsearchResource_Read_skipsPostReadWhenStateSetFails(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	postCalled := false
+	postRead := func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ testResourceModel, _ any) diag.Diagnostics {
+		postCalled = true
+		return nil
+	}
+	r := NewElasticsearchResource[testResourceModel]("test_entity", ElasticsearchResourceOptions[testResourceModel]{
+		Schema:   getTestResourceSchema,
+		Read:     testReadFuncFound,
+		Delete:   testDeleteFunc,
+		Create:   testWriteFuncFoundCreate,
+		Update:   testWriteFuncFoundUpdate,
+		PostRead: postRead,
+	})
+	r.client = factory
+
+	goodState := makeTestResourceState(ctx, t, "cluster/user1")
+	req := resource.ReadRequest{State: goodState}
+	badOut := tfsdk.State{
+		Raw:    goodState.Raw,
+		Schema: getTestResourceSchema(context.Background()),
+	}
+	resp := resource.ReadResponse{State: badOut}
+
+	r.Read(ctx, req, &resp)
+
+	require.True(t, resp.Diagnostics.HasError())
+	require.False(t, postCalled)
+}
+
+func TestNewElasticsearchResource_Read_postReadReceivesFrameworkPrivateHandle(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+
+	var captured any
+	postRead := func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ testResourceModel, priv any) diag.Diagnostics {
+		captured = priv
+		return nil
+	}
+	r := NewElasticsearchResource[testResourceModel]("test_entity", ElasticsearchResourceOptions[testResourceModel]{
+		Schema:   getTestResourceSchema,
+		Read:     testReadFuncFound,
+		Delete:   testDeleteFunc,
+		Create:   testWriteFuncFoundCreate,
+		Update:   testWriteFuncFoundUpdate,
+		PostRead: postRead,
+	})
+	r.client = factory
+
+	state := makeTestResourceState(ctx, t, "cluster/user1")
+	req := resource.ReadRequest{State: state}
+	resp := resource.ReadResponse{State: state}
+
+	r.Read(ctx, req, &resp)
+
+	require.False(t, resp.Diagnostics.HasError())
+	require.Equal(t, resp.Private, captured)
+}
+
+func TestNewElasticsearchResource_Create_invokesPostReadAfterReadAfterWrite(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	postCalls := 0
+	postRead := func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ testResourceModel, _ any) diag.Diagnostics {
+		postCalls++
+		return nil
+	}
+	r := NewElasticsearchResource[testResourceModel]("test_entity", ElasticsearchResourceOptions[testResourceModel]{
+		Schema:   getTestResourceSchema,
+		Read:     testReadFuncDistinguishing,
+		Delete:   testDeleteFunc,
+		Create:   testWriteFuncFoundCreate,
+		Update:   testWriteFuncFoundUpdate,
+		PostRead: postRead,
+	})
+	r.client = factory
+
+	plan := makeTestResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue))
+	objType := testResourceObjectType()
+	respState := tfsdk.State{Raw: tftypes.NewValue(objType, nil), Schema: testResourceSchemaWithConnectionBlock(ctx)}
+	resp := resource.CreateResponse{State: respState}
+
+	r.Create(ctx, resource.CreateRequest{Plan: plan}, &resp)
+
+	require.False(t, resp.Diagnostics.HasError())
+	require.Equal(t, 1, postCalls)
+}
+
+func TestNewElasticsearchResource_Update_invokesPostReadAfterReadAfterWrite(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	postCalls := 0
+	postRead := func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ testResourceModel, _ any) diag.Diagnostics {
+		postCalls++
+		return nil
+	}
+	r := NewElasticsearchResource[testResourceModel]("test_entity", ElasticsearchResourceOptions[testResourceModel]{
+		Schema:   getTestResourceSchema,
+		Read:     testReadFuncDistinguishing,
+		Delete:   testDeleteFunc,
+		Create:   testWriteFuncFoundCreate,
+		Update:   testWriteFuncFoundUpdate,
+		PostRead: postRead,
+	})
+	r.client = factory
+
+	plan := makeTestResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, "cluster/user1"))
+	prior := makeTestResourceState(ctx, t, "cluster/user1")
+	resp := resource.UpdateResponse{State: prior}
+	req := resource.UpdateRequest{Plan: plan, State: prior}
+
+	r.Update(ctx, req, &resp)
+
+	require.False(t, resp.Diagnostics.HasError())
+	require.Equal(t, 1, postCalls)
+}
+
+func TestNewElasticsearchResource_Read_nilReadCallbackConfigurationError(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	opts := defaultTestElasticsearchResourceOptions()
+	opts.Read = nil
+	r := NewElasticsearchResource[testResourceModel]("test_entity", opts)
+	r.client = factory
+
+	state := makeTestResourceState(ctx, t, "cluster/user1")
+	resp := resource.ReadResponse{State: state}
+	r.Read(ctx, resource.ReadRequest{State: state}, &resp)
+
+	require.True(t, resp.Diagnostics.HasError())
+	require.Contains(t, resp.Diagnostics.Errors()[0].Summary(), "configuration error")
+}
+
+func TestNewElasticsearchResource_Create_nilReadCallbackConfigurationError(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	opts := defaultTestElasticsearchResourceOptions()
+	opts.Read = nil
+	r := NewElasticsearchResource[testResourceModel]("test_entity", opts)
+	r.client = factory
+
+	plan := makeTestResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue))
+	objType := testResourceObjectType()
+	respState := tfsdk.State{Raw: tftypes.NewValue(objType, nil), Schema: testResourceSchemaWithConnectionBlock(ctx)}
+	resp := resource.CreateResponse{State: respState}
+
+	r.Create(ctx, resource.CreateRequest{Plan: plan}, &resp)
+
+	require.True(t, resp.Diagnostics.HasError())
+	require.Contains(t, resp.Diagnostics.Errors()[0].Summary(), "configuration error")
+}
+
+func TestNewElasticsearchResource_Delete_nilDeleteCallbackConfigurationError(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	opts := defaultTestElasticsearchResourceOptions()
+	opts.Delete = nil
+	r := NewElasticsearchResource[testResourceModel]("test_entity", opts)
+	r.client = factory
+
+	state := makeTestResourceState(ctx, t, "cluster/user1")
+	resp := resource.DeleteResponse{State: state}
+	r.Delete(ctx, resource.DeleteRequest{State: state}, &resp)
+
+	require.True(t, resp.Diagnostics.HasError())
+	require.Contains(t, resp.Diagnostics.Errors()[0].Summary(), "configuration error")
 }
