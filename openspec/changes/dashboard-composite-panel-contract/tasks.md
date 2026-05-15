@@ -30,15 +30,15 @@
 
 ## 4. vis → vis_config rename
 
-- [ ] 4.1 Update `schema.go`: rename `viz_config` attribute to `vis_config` everywhere
-- [ ] 4.2 Update `models/lens.go`: rename `VizConfig` struct field to `VisConfig` with `tfsdk:"vis_config"`
-- [ ] 4.3 Update all references in dashboard package from `VizConfig` to `VisConfig`
-- [ ] 4.4 Update constant `panelTypeVis` comment/docs if needed
-- [ ] 4.5 Update `models_plan_state_alignment.go` references from `VizConfig` to `VisConfig`
-- [ ] 4.6 Update `panel_config_validator.go` references
-- [ ] 4.7 Update acceptance tests using `viz_config` to `vis_config`
-- [ ] 4.8 Update example Terraform files under `examples/resources/elasticstack_kibana_dashboard/`
-- [ ] 4.9 Update generated documentation
+- [x] 4.1 Update `schema.go`: rename `viz_config` attribute to `vis_config` everywhere
+- [x] 4.2 Update `models/lens.go`: rename `VizConfig` struct field to `VisConfig` with `tfsdk:"vis_config"`
+- [x] 4.3 Update all references in dashboard package from `VizConfig` to `VisConfig`
+- [x] 4.4 Update constant `panelTypeVis` comment/docs if needed
+- [x] 4.5 Update `models_plan_state_alignment.go` references from `VizConfig` to `VisConfig`
+- [x] 4.6 Update `panel_config_validator.go` references
+- [x] 4.7 Update acceptance tests using `viz_config` to `vis_config`
+- [x] 4.8 Update example Terraform files under `examples/resources/elasticstack_kibana_dashboard/`
+- [x] 4.9 Update generated documentation
 
 ## 5. Final cleanup of central files
 
