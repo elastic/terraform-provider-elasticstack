@@ -34,7 +34,7 @@ func Test_lensChartDrilldown_urlTrigger_oneOf(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
-	urlBlock := lensChartDrilldownListItemAttributes()["url_drilldown"].(schema.SingleNestedAttribute)
+	urlBlock := lenscommon.LensChartDrilldownListItemAttributes()["url_drilldown"].(schema.SingleNestedAttribute)
 	trigger, ok := urlBlock.Attributes["trigger"].(schema.StringAttribute)
 	require.True(t, ok)
 	require.NotEmpty(t, trigger.Validators)
@@ -54,7 +54,7 @@ func Test_lensChartDrilldown_urlTrigger_oneOf(t *testing.T) {
 func Test_lensChartDrilldown_dashboardTrigger_isComputedSchema(t *testing.T) {
 	t.Parallel()
 
-	dashBlock := lensChartDrilldownListItemAttributes()["dashboard_drilldown"].(schema.SingleNestedAttribute)
+	dashBlock := lenscommon.LensChartDrilldownListItemAttributes()["dashboard_drilldown"].(schema.SingleNestedAttribute)
 	trigger, ok := dashBlock.Attributes["trigger"].(schema.StringAttribute)
 	require.True(t, ok)
 	require.True(t, trigger.Computed, "dashboard_drilldown.trigger is computed from Kibana and must not be configurable")
@@ -64,7 +64,7 @@ func Test_drilldownListItemVariantsValidator_zeroVariants(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
-	attrs := lensChartDrilldownListItemAttributes()
+	attrs := lenscommon.LensChartDrilldownListItemAttributes()
 	itemTypes := map[string]attr.Type{
 		"dashboard_drilldown": attrs["dashboard_drilldown"].(schema.SingleNestedAttribute).GetType(),
 		"discover_drilldown":  attrs["discover_drilldown"].(schema.SingleNestedAttribute).GetType(),

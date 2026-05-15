@@ -30,7 +30,12 @@ import (
 func BuildConfig(pm models.PanelModel, panel *kbapi.KbnDashboardPanelTypeSloBurnRate) diag.Diagnostics {
 	cfg := pm.SloBurnRateConfig
 	if cfg == nil {
-		return nil
+		var diags diag.Diagnostics
+		diags.AddError(
+			"Missing SLO burn rate panel configuration",
+			"SLO burn rate panels require `slo_burn_rate_config`.",
+		)
+		return diags
 	}
 
 	embeddable := kbapi.SloBurnRateEmbeddable{

@@ -87,9 +87,11 @@ func populateDiscoverSessionPanelFromAPI(ctx context.Context, pm *models.PanelMo
 		if apiByRef {
 			cfg1, err := apiPanel.Config.AsKbnDashboardPanelTypeDiscoverSessionConfig1()
 			if err == nil {
-				if imported := discoverSessionConfig1FromAPIImport(ctx, cfg1); imported != nil {
+				imported, imDiags := discoverSessionConfig1FromAPIImport(ctx, cfg1)
+				if imported != nil {
 					*existing = *imported
 				}
+				return imDiags
 			}
 			return nil
 		}
@@ -123,7 +125,7 @@ func discoverSessionPanelConfigFromAPIImport(ctx context.Context, apiPanel kbapi
 	if discoverSessionAPIConfigLooksByReference(apiPanel.Config) {
 		cfg1, err := apiPanel.Config.AsKbnDashboardPanelTypeDiscoverSessionConfig1()
 		if err == nil {
-			return discoverSessionConfig1FromAPIImport(ctx, cfg1), nil
+			return discoverSessionConfig1FromAPIImport(ctx, cfg1)
 		}
 		return nil, nil
 	}
@@ -151,7 +153,8 @@ func discoverSessionConfig0FromAPIImport(ctx context.Context, cfg0 kbapi.KbnDash
 	return cfg, tabDiags
 }
 
-func discoverSessionConfig1FromAPIImport(ctx context.Context, cfg1 kbapi.KbnDashboardPanelTypeDiscoverSessionConfig1) *models.DiscoverSessionPanelConfigModel {
+func discoverSessionConfig1FromAPIImport(ctx context.Context, cfg1 kbapi.KbnDashboardPanelTypeDiscoverSessionConfig1) (*models.DiscoverSessionPanelConfigModel, diag.Diagnostics) {
+	var diags diag.Diagnostics
 	cfg := &models.DiscoverSessionPanelConfigModel{
 		Title:       types.StringPointerValue(cfg1.Title),
 		Description: types.StringPointerValue(cfg1.Description),
@@ -168,10 +171,12 @@ func discoverSessionConfig1FromAPIImport(ctx context.Context, cfg1 kbapi.KbnDash
 		cfg.ByReference.SelectedTabID = types.StringNull()
 	}
 	if cfg1.Overrides != nil {
-		cfg.ByReference.Overrides = discoverSessionOverridesFromAPI(ctx, *cfg1.Overrides)
+		var ovDiags diag.Diagnostics
+		cfg.ByReference.Overrides, ovDiags = discoverSessionOverridesFromAPI(ctx, *cfg1.Overrides)
+		diags.Append(ovDiags...)
 	}
 	cfg.Drilldowns = readDiscoverSessionDrilldownsFromConfig1(cfg1.Drilldowns, nil)
-	return cfg
+	return cfg, diags
 }
 
 func discoverSessionTimeRangePtrFromAPI(api kbapi.KbnEsQueryServerTimeRangeSchema) *models.TimeRangeModel {
@@ -340,7 +345,7 @@ func discoverSessionOverridesFromAPI(ctx context.Context, api struct {
 		Direction kbapi.KbnDashboardPanelTypeDiscoverSessionConfig1OverridesSortDirection `json:"direction"`
 		Name      string                                                                  `json:"name"`
 	} `json:"sort,omitempty"`
-}) *models.DiscoverSessionOverridesModel {
+}) (*models.DiscoverSessionOverridesModel, diag.Diagnostics) {
 	m := &models.DiscoverSessionOverridesModel{}
 	var diags diag.Diagnostics
 
@@ -379,7 +384,7 @@ func discoverSessionOverridesFromAPI(ctx context.Context, api struct {
 		m.SampleSize = types.Int64Null()
 	}
 
-	return m
+	return m, diags
 }
 
 func discoverSessionColumnSettingsFromAPI(ctx context.Context, api *map[string]struct {
@@ -573,7 +578,12 @@ func readDiscoverSessionDrilldownsFromConfig1(
 	return out
 }
 
-func discoverSessionMergeConfig0FromAPI(ctx context.Context, existing *models.DiscoverSessionPanelConfigModel, tfPanel *models.PanelModel, cfg0 kbapi.KbnDashboardPanelTypeDiscoverSessionConfig0) diag.Diagnostics {
+func discoverSessionMergeConfig0FromAPI(
+	ctx context.Context,
+	existing *models.DiscoverSessionPanelConfigModel,
+	tfPanel *models.PanelModel,
+	cfg0 kbapi.KbnDashboardPanelTypeDiscoverSessionConfig0,
+) diag.Diagnostics {
 	var diags diag.Diagnostics
 	prior := tfPanel.DiscoverSessionConfig
 	if prior == nil || prior.ByValue == nil {
@@ -608,7 +618,12 @@ func discoverSessionMergeConfig0FromAPI(ctx context.Context, existing *models.Di
 	return diags
 }
 
-func discoverSessionMergeConfig1FromAPI(ctx context.Context, existing *models.DiscoverSessionPanelConfigModel, tfPanel *models.PanelModel, cfg1 kbapi.KbnDashboardPanelTypeDiscoverSessionConfig1) diag.Diagnostics {
+func discoverSessionMergeConfig1FromAPI(
+	ctx context.Context,
+	existing *models.DiscoverSessionPanelConfigModel,
+	tfPanel *models.PanelModel,
+	cfg1 kbapi.KbnDashboardPanelTypeDiscoverSessionConfig1,
+) diag.Diagnostics {
 	var diags diag.Diagnostics
 	prior := tfPanel.DiscoverSessionConfig
 	if prior == nil || prior.ByReference == nil {

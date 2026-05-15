@@ -21,7 +21,6 @@ import (
 	"context"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -63,15 +62,10 @@ func waffleModeListStateFromSlice(n int) waffleModeListState {
 }
 
 // waffleConfigModeValidateDiags returns ES|QL vs non-ES|QL waffle field consistency diagnostics.
-// If attrPath is non-nil, errors are attribute-scoped (plan-time); if nil, plain errors (e.g. apply-time model conversion).
-func waffleConfigModeValidateDiags(esqlMode bool, metrics, groupBy, esqlMetrics, esqlGroupBy waffleModeListState, attrPath *path.Path) diag.Diagnostics {
+func waffleConfigModeValidateDiags(esqlMode bool, metrics, groupBy, esqlMetrics, esqlGroupBy waffleModeListState) diag.Diagnostics {
 	var diags diag.Diagnostics
 	add := func(summary, detail string) {
-		if attrPath != nil {
-			diags.AddAttributeError(*attrPath, summary, detail)
-		} else {
-			diags.AddError(summary, detail)
-		}
+		diags.AddError(summary, detail)
 	}
 	if esqlMode {
 		if (!metrics.Unknown && metrics.Count > 0) || (!groupBy.Unknown && groupBy.Count > 0) {
@@ -131,6 +125,5 @@ func (v waffleConfigModeValidator) ValidateObject(ctx context.Context, req valid
 		waffleModeListStateFromTF(groupBy),
 		waffleModeListStateFromTF(esqlMetrics),
 		waffleModeListStateFromTF(esqlGroupBy),
-		&req.Path,
 	)...)
 }

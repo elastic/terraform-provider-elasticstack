@@ -120,31 +120,6 @@ func dashboardMapSectionFromAPI(ctx context.Context, m *models.DashboardModel, t
 	return sm, diags
 }
 
-func panelHasTypedConfig(pm *models.PanelModel) bool {
-	return pm.MarkdownConfig != nil ||
-		pm.TimeSliderControlConfig != nil ||
-		pm.SloBurnRateConfig != nil ||
-		pm.SloOverviewConfig != nil ||
-		pm.SloErrorBudgetConfig != nil ||
-		pm.EsqlControlConfig != nil ||
-		pm.OptionsListControlConfig != nil ||
-		pm.RangeSliderControlConfig != nil ||
-		pm.SyntheticsStatsOverviewConfig != nil ||
-		pm.SyntheticsMonitorsConfig != nil ||
-		pm.LensDashboardAppConfig != nil ||
-		pm.VisConfig != nil ||
-		pm.ImageConfig != nil ||
-		pm.SloAlertsConfig != nil ||
-		pm.DiscoverSessionConfig != nil
-}
-
-func panelUsesConfigJSONOnly(pm *models.PanelModel) bool {
-	if pm == nil || !typeutils.IsKnown(pm.ConfigJSON) {
-		return false
-	}
-	return !panelHasTypedConfig(pm)
-}
-
 func clearPanelConfigBlocks(pm *models.PanelModel) {
 	pm.MarkdownConfig = nil
 	pm.TimeSliderControlConfig = nil
@@ -163,7 +138,7 @@ func clearPanelConfigBlocks(pm *models.PanelModel) {
 	pm.DiscoverSessionConfig = nil
 }
 
-func dashboardMapPanelFromAPI(ctx context.Context, m *models.DashboardModel, tfPanel *models.PanelModel, panelItem kbapi.DashboardPanelItem) (models.PanelModel, diag.Diagnostics) {
+func dashboardMapPanelFromAPI(ctx context.Context, _ *models.DashboardModel, tfPanel *models.PanelModel, panelItem kbapi.DashboardPanelItem) (models.PanelModel, diag.Diagnostics) {
 	// Start from the existing TF model when available (plan or prior state).
 	//
 	// Kibana may omit optional attributes on reads even when they were provided on

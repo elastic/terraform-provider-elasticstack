@@ -18,32 +18,31 @@
 package dashboard
 
 import (
-	"context"
-
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-// Backwards-compatible drilldown entry points (implementation is in lenscommon).
-
-func fromAPI(ctx context.Context, api *[]kbapi.KbnDashboardPanelTypeLensDashboardApp_Config_1_Drilldowns_Item) (models.DrilldownsModel, diag.Diagnostics) {
-	return lenscommon.LensDashboardAppDrilldownsFromAPI(ctx, api)
+type chartPresentationResolver struct {
+	dashboard *models.DashboardModel
 }
 
-func toAPI(items models.DrilldownsModel) (*[]kbapi.KbnDashboardPanelTypeLensDashboardApp_Config_1_Drilldowns_Item, diag.Diagnostics) {
-	return lenscommon.LensDashboardAppDrilldownsToAPI(items)
+// testLensChartResolver returns a Resolver with no enclosing dashboard (unit tests only).
+func testLensChartResolver() lenscommon.Resolver {
+	return &chartPresentationResolver{dashboard: nil}
 }
 
-func drilldownsFromVisByRefAPI(ctx context.Context, api *[]kbapi.KbnDashboardPanelTypeVis_Config_1_Drilldowns_Item) (models.DrilldownsModel, diag.Diagnostics) {
-	return lenscommon.DrilldownsFromVisByRefAPI(ctx, api)
+func (r *chartPresentationResolver) ResolveChartTimeRange(chartLevel *models.TimeRangeModel) kbapi.KbnEsQueryServerTimeRangeSchema {
+	return resolveChartTimeRange(r.dashboard, chartLevel)
 }
 
-func drilldownsToVisByRefAPI(items models.DrilldownsModel) (*[]kbapi.KbnDashboardPanelTypeVis_Config_1_Drilldowns_Item, diag.Diagnostics) {
-	return lenscommon.DrilldownsToVisByRefAPI(items)
+func (r *chartPresentationResolver) DashboardLensComparableTimeRange() (kbapi.KbnEsQueryServerTimeRangeSchema, bool) {
+	return dashboardLensComparableTimeRange(r.dashboard)
 }
 
-func explicitEmptyDrilldowns() models.DrilldownsModel {
-	return lenscommon.ExplicitEmptyDrilldowns()
+func dashboardLensComparableTimeRange(dashboard *models.DashboardModel) (kbapi.KbnEsQueryServerTimeRangeSchema, bool) {
+	if dashboard == nil || dashboard.TimeRange == nil {
+		return kbapi.KbnEsQueryServerTimeRangeSchema{}, false
+	}
+	return timeRangeModelToAPI(dashboard.TimeRange), true
 }

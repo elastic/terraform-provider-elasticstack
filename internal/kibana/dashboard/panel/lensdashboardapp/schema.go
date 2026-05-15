@@ -260,8 +260,8 @@ func byValueAttributes() map[string]schema.Attribute {
 	return out
 }
 
-// LensDashboardAppByValueSourceAttrNames lists mutually exclusive `by_value` sources (`config_json` plus typed chart blocks).
-func LensDashboardAppByValueSourceAttrNames() []string {
+// ByValueSourceAttrNames lists mutually exclusive `by_value` sources (`config_json` plus typed chart blocks).
+func ByValueSourceAttrNames() []string {
 	return lensByValueSourceAttrNames()
 }
 
@@ -392,9 +392,9 @@ func SchemaAttribute() schema.Attribute {
 			"With `by_value`, set exactly one of `config_json` or one supported typed Lens chart block. " +
 			"With `by_reference`, use `ref_id` and `references_json` to map the API `references` list. " +
 			"Supported typed by-value blocks are sent as the `lens-dashboard-app` API `config` and do not create `type = \"vis\"` panels.",
-		BlockName: "lens_dashboard_app_config",
-		PanelType: "lens-dashboard-app",
-		Required:  true,
+		BlockName:  "lens_dashboard_app_config",
+		PanelType:  "lens-dashboard-app",
+		Required:   true,
 		Attributes: innerSchemaAttributes(),
 		ExtraValidators: []validator.Object{
 			lensDashboardAppConfigModeValidator{},
