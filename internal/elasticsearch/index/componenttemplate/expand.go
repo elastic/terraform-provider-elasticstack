@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -111,6 +112,15 @@ func expandTemplateBlock(ctx context.Context, obj types.Object) (*models.Templat
 			return nil, diags
 		}
 		t.Aliases = aliases
+	}
+
+	if !tm.DataStreamOptions.IsNull() && !tm.DataStreamOptions.IsUnknown() {
+		dso, d2 := datastreamoptions.Expand(tm.DataStreamOptions)
+		diags.Append(d2...)
+		if diags.HasError() {
+			return nil, diags
+		}
+		t.DataStreamOptions = dso
 	}
 
 	return t, diags

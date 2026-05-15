@@ -21,6 +21,7 @@ import (
 	"context"
 
 	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -49,9 +50,10 @@ func aliasAttrTypes() map[string]attr.Type {
 // templateAttrTypes returns the attribute types for the template block object.
 func templateAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"alias":    types.SetType{ElemType: types.ObjectType{AttrTypes: aliasAttrTypes()}},
-		"mappings": esindex.MappingsType{},
-		"settings": customtypes.IndexSettingsType{},
+		"alias":               types.SetType{ElemType: types.ObjectType{AttrTypes: aliasAttrTypes()}},
+		"mappings":            esindex.MappingsType{},
+		"settings":            customtypes.IndexSettingsType{},
+		"data_stream_options": types.ObjectType{AttrTypes: datastreamoptions.AttrTypes()},
 	}
 }
 
@@ -165,6 +167,7 @@ func getSchema(_ context.Context) schema.Schema {
 							},
 						},
 					},
+					"data_stream_options": datastreamoptions.Block(),
 				},
 			},
 		},

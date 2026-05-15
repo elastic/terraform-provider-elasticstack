@@ -23,6 +23,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
@@ -33,13 +34,23 @@ func updateComponentTemplate(ctx context.Context, client *clients.ElasticsearchS
 	var diags diag.Diagnostics
 	plan := req.Plan
 
+	serverVersion, sdkDiags := client.ServerVersion(ctx)
+	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	if diags.HasError() {
+		return entitycore.WriteResult[Data]{Model: plan}, diags
+	}
+	diags.Append(datastreamoptions.EnforceMinServerVersion(plan.Template, serverVersion)...)
+	if diags.HasError() {
+		return entitycore.WriteResult[Data]{Model: plan}, diags
+	}
+
 	componentTemplate, d := expandFromData(ctx, plan)
 	diags.Append(d...)
 	if diags.HasError() {
 		return entitycore.WriteResult[Data]{Model: plan}, diags
 	}
 
-	sdkDiags := elasticsearch.PutComponentTemplate(ctx, client, &componentTemplate)
+	sdkDiags = elasticsearch.PutComponentTemplate(ctx, client, &componentTemplate)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
 		return entitycore.WriteResult[Data]{Model: plan}, diags

@@ -130,6 +130,9 @@ func ensureTemplateObjectKeysForV1(tmpl map[string]any) {
 	if _, ok := tmpl["settings"]; !ok {
 		tmpl["settings"] = nil
 	}
+	if _, ok := tmpl["data_stream_options"]; !ok {
+		tmpl["data_stream_options"] = nil
+	}
 }
 
 // normalizeTemplateAliasesInV1State collapses SDK-style echoed index_routing/search_routing (same

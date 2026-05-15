@@ -21,6 +21,7 @@ import (
 	"context"
 
 	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
@@ -141,7 +142,7 @@ func templateBlock() schema.SingleNestedBlock {
 		Blocks: map[string]schema.Block{
 			"alias":               templateAliasBlock(),
 			"lifecycle":           templateLifecycleBlock(),
-			"data_stream_options": templateDataStreamOptionsBlock(),
+			"data_stream_options": datastreamoptions.Block(),
 		},
 	}
 }
@@ -202,42 +203,6 @@ func templateLifecycleBlock() schema.SingleNestedBlock {
 		Attributes: map[string]schema.Attribute{
 			"data_retention": schema.StringAttribute{
 				MarkdownDescription: descLifecycleDataRetention,
-				Optional:            true,
-			},
-		},
-	}
-}
-
-func templateDataStreamOptionsBlock() schema.SingleNestedBlock {
-	return schema.SingleNestedBlock{
-		MarkdownDescription: descDataStreamOptionsBlock,
-		Blocks: map[string]schema.Block{
-			"failure_store": templateFailureStoreBlock(),
-		},
-	}
-}
-
-func templateFailureStoreBlock() schema.SingleNestedBlock {
-	return schema.SingleNestedBlock{
-		MarkdownDescription: descFailureStoreBlock,
-		Attributes: map[string]schema.Attribute{
-			"enabled": schema.BoolAttribute{
-				MarkdownDescription: descFailureStoreEnabled,
-				Optional:            true,
-			},
-		},
-		Blocks: map[string]schema.Block{
-			"lifecycle": templateFailureStoreLifecycleBlock(),
-		},
-	}
-}
-
-func templateFailureStoreLifecycleBlock() schema.SingleNestedBlock {
-	return schema.SingleNestedBlock{
-		MarkdownDescription: descFailureStoreLifecycleBlock,
-		Attributes: map[string]schema.Attribute{
-			"data_retention": schema.StringAttribute{
-				MarkdownDescription: descFailureStoreDataRetention,
 				Optional:            true,
 			},
 		},

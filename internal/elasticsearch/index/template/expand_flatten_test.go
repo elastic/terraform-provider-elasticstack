@@ -25,6 +25,7 @@ import (
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -184,14 +185,14 @@ func TestValidateDataStreamOptionsVersion(t *testing.T) {
 	old := version.Must(version.NewVersion("8.17.0"))
 	okVer := version.Must(version.NewVersion("9.2.0"))
 
-	fsObj, diags := types.ObjectValue(FailureStoreAttrTypes(), map[string]attr.Value{
+	fsObj, diags := types.ObjectValue(datastreamoptions.FailureStoreAttrTypes(), map[string]attr.Value{
 		"enabled":   types.BoolValue(true),
-		"lifecycle": types.ObjectNull(FailureStoreLifecycleAttrTypes()),
+		"lifecycle": types.ObjectNull(datastreamoptions.FailureStoreLifecycleAttrTypes()),
 	})
 	if diags.HasError() {
 		t.Fatal(diags)
 	}
-	dsoObj, diags := types.ObjectValue(DataStreamOptionsAttrTypes(), map[string]attr.Value{
+	dsoObj, diags := types.ObjectValue(datastreamoptions.AttrTypes(), map[string]attr.Value{
 		"failure_store": fsObj,
 	})
 	if diags.HasError() {
@@ -207,11 +208,10 @@ func TestValidateDataStreamOptionsVersion(t *testing.T) {
 	if diags.HasError() {
 		t.Fatal(diags)
 	}
-	plan := Model{Template: tplObj}
-	if diags := validateDataStreamOptionsVersion(plan, old); !diags.HasError() {
+	if diags := datastreamoptions.EnforceMinServerVersion(tplObj, old); !diags.HasError() {
 		t.Fatal("expected error on old cluster")
 	}
-	if diags := validateDataStreamOptionsVersion(plan, okVer); diags.HasError() {
+	if diags := datastreamoptions.EnforceMinServerVersion(tplObj, okVer); diags.HasError() {
 		t.Fatal(diags)
 	}
 	noDsoTpl, diags := types.ObjectValue(TemplateAttrTypes(), map[string]attr.Value{
@@ -219,13 +219,12 @@ func TestValidateDataStreamOptionsVersion(t *testing.T) {
 		"mappings":            esindex.NewMappingsNull(),
 		"settings":            customtypes.NewIndexSettingsNull(),
 		"lifecycle":           types.ObjectNull(LifecycleAttrTypes()),
-		"data_stream_options": types.ObjectNull(DataStreamOptionsAttrTypes()),
+		"data_stream_options": types.ObjectNull(datastreamoptions.AttrTypes()),
 	})
 	if diags.HasError() {
 		t.Fatal(diags)
 	}
-	planNo := Model{Template: noDsoTpl}
-	if diags := validateDataStreamOptionsVersion(planNo, old); diags.HasError() {
+	if diags := datastreamoptions.EnforceMinServerVersion(noDsoTpl, old); diags.HasError() {
 		t.Fatal(diags)
 	}
 }

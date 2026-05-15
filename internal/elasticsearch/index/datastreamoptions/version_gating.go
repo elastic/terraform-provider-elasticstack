@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package template
+package datastreamoptions
 
 import (
 	"fmt"
@@ -23,25 +23,36 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// validateIgnoreMissingComponentTemplatesVersion returns an error if ignore_missing_component_templates is non-empty
-// and the cluster is older than 8.7.0.
-func validateIgnoreMissingComponentTemplatesVersion(plan Model, serverVersion *version.Version) diag.Diagnostics {
+// EnforceMinServerVersion returns an error diagnostic when the template object
+// carries a configured data_stream_options block and the cluster is older than
+// index.MinSupportedDataStreamOptionsVersion. Shared by index templates and
+// component templates; both keep the data_stream_options child under template.
+func EnforceMinServerVersion(tmplObj types.Object, serverVersion *version.Version) diag.Diagnostics {
 	var diags diag.Diagnostics
 	if serverVersion == nil {
 		return diags
 	}
-	if plan.IgnoreMissingComponentTemplates.IsNull() || plan.IgnoreMissingComponentTemplates.IsUnknown() {
+	if tmplObj.IsNull() || tmplObj.IsUnknown() {
 		return diags
 	}
-	if len(plan.IgnoreMissingComponentTemplates.Elements()) == 0 {
+	dsoVal, ok := tmplObj.Attributes()["data_stream_options"]
+	if !ok {
 		return diags
 	}
-	if serverVersion.LessThan(index.MinSupportedIgnoreMissingComponentTemplateVersion) {
+	if dsoVal.IsNull() || dsoVal.IsUnknown() {
+		return diags
+	}
+	// Distinguish "block absent" from "block present"; unknown nested object still triggers gate when known non-null.
+	if _, ok := dsoVal.(types.Object); !ok {
+		return diags
+	}
+	if serverVersion.LessThan(index.MinSupportedDataStreamOptionsVersion) {
 		diags.AddError(
 			"Unsupported Elasticsearch version",
-			fmt.Sprintf("'ignore_missing_component_templates' is supported only for Elasticsearch v%s and above", index.MinSupportedIgnoreMissingComponentTemplateVersion.String()),
+			fmt.Sprintf("'data_stream_options' is supported only for Elasticsearch v%s and above", index.MinSupportedDataStreamOptionsVersion.String()),
 		)
 	}
 	return diags
