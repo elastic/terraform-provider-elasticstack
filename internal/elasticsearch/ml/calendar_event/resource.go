@@ -36,6 +36,10 @@ type calendarEventResource struct {
 	*entitycore.ElasticsearchResource[CalendarEventTFModel]
 }
 
+// newCalendarEventResource wires the envelope with placeholder create callbacks and a no-op update:
+// Create is implemented on [*calendarEventResource] because post-create event discovery does not
+// fit the generic envelope write path. Do not replace phCreate with a real createFunc without
+// migrating that logic.
 func newCalendarEventResource() *calendarEventResource {
 	phCreate, _ := entitycore.PlaceholderElasticsearchWriteCallbacks[CalendarEventTFModel]()
 	return &calendarEventResource{

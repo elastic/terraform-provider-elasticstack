@@ -34,6 +34,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// Envelope write-path tests use separate stub callbacks (testCreateFuncFound vs testUpdateFuncFound)
+// so nil-create and nil-update scenarios hit distinct code paths. This is intentional test-only
+// churn, not product behavior.
+
 // testResourceModel satisfies ElasticsearchResourceModel for envelope tests.
 type testResourceModel struct {
 	ID                      types.String `tfsdk:"id"`

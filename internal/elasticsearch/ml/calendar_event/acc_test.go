@@ -33,6 +33,9 @@ import (
 
 // mlCalendarEventOptionalSchedulingMinElasticsearch is the minimum Elasticsearch version for the
 // post calendar events API fields skip_result, skip_model_update, and force_time_shift (see ES #112837).
+// TestAccResourceMLCalendarEvent_optionalSchedulingFields calls SkipIfUnsupported against this
+// version so acceptance runs on stacks older than 8.16 skip that test; other calendar event acc
+// tests use only fields supported on the provider's minimum supported Elasticsearch version.
 var mlCalendarEventOptionalSchedulingMinElasticsearch = version.Must(version.NewVersion("8.16.0"))
 
 func TestAccResourceMLCalendarEvent(t *testing.T) {
