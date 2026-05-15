@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -31,95 +32,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-func Test_mosaicPanelConfigConverter_populateFromAttributes_buildAttributes_roundTrip_NoESQL(t *testing.T) {
-	ctx := context.Background()
-
-	groupBy := `[{"operation":"terms","collapse_by":"avg","fields":["host.name"],` +
-		`"format":{"type":"number","decimals":2},` +
-		`"color":{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"color_code","value":"#D3DAE6"}}}]`
-	groupBreakdownBy := `[{"operation":"terms","collapse_by":"avg","fields":["service.name"],` +
-		`"format":{"type":"number","decimals":2},` +
-		`"color":{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"color_code","value":"#D3DAE6"}}}]`
-	apiJSON := `{
-		"type": "mosaic",
-		"title": "Mosaic NoESQL Round-Trip",
-		"description": "Converter test",
-		"ignore_global_filters": true,
-		"sampling": 0.5,
-		"data_source": {"type":"dataView","id":"metrics-*"},
-		"query": {"language":"kql","query":"status:200"},
-		"legend": {"size": "medium"},
-		"metrics": [{"operation":"count"}],
-		"group_by": ` + groupBy + `,
-		"group_breakdown_by": ` + groupBreakdownBy + `
-	}`
-	var api kbapi.MosaicNoESQL
-	require.NoError(t, json.Unmarshal([]byte(apiJSON), &api))
-
-	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
-	require.NoError(t, attrs.FromMosaicNoESQL(api))
-
-	converter := newMosaicPanelConfigConverter()
-	visBv := models.VisByValueModel{}
-	diags := converter.populateFromAttributes(ctx, nil, nil, &visBv.LensByValueChartBlocks, attrs)
-	require.False(t, diags.HasError())
-	require.NotNil(t, visBv.MosaicConfig)
-
-	attrs2, diags := converter.buildAttributes(&visBv.LensByValueChartBlocks, nil)
-	require.False(t, diags.HasError())
-
-	noESQL2, err := attrs2.AsMosaicNoESQL()
-	require.NoError(t, err)
-	assert.Equal(t, "Mosaic NoESQL Round-Trip", *noESQL2.Title)
-	assert.Equal(t, kbapi.MosaicNoESQLTypeMosaic, noESQL2.Type)
-}
-
-func Test_mosaicPanelConfigConverter_populateFromAttributes_buildAttributes_roundTrip_ESQL(t *testing.T) {
-	ctx := context.Background()
-
-	groupBy := `[{"collapse_by":"avg","column":"host.name","operation":"value",` +
-		`"color":{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"color_code","value":"#D3DAE6"}}}]`
-	groupBreakdownBy := `[{"collapse_by":"avg","column":"service.name","operation":"value",` +
-		`"color":{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"color_code","value":"#D3DAE6"}}}]`
-	apiJSON := `{
-		"type": "mosaic",
-		"title": "Mosaic ESQL Round-Trip",
-		"description": "Converter test",
-		"ignore_global_filters": false,
-		"sampling": 1,
-		"data_source": {"type":"esql","query":"FROM metrics-* | LIMIT 10"},
-		"legend": {"size": "small"},
-		"metrics": [{"column":"bytes","operation":"value","format":{"type":"number","decimals":2}}],
-		"group_by": ` + groupBy + `,
-		"group_breakdown_by": ` + groupBreakdownBy + `
-	}`
-	var api kbapi.MosaicESQL
-	require.NoError(t, json.Unmarshal([]byte(apiJSON), &api))
-
-	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
-	require.NoError(t, attrs.FromMosaicESQL(api))
-
-	converter := newMosaicPanelConfigConverter()
-	visBv := models.VisByValueModel{}
-	diags := converter.populateFromAttributes(ctx, nil, nil, &visBv.LensByValueChartBlocks, attrs)
-	require.False(t, diags.HasError())
-	require.NotNil(t, visBv.MosaicConfig)
-
-	attrs2, diags := converter.buildAttributes(&visBv.LensByValueChartBlocks, nil)
-	require.False(t, diags.HasError())
-
-	esql2, err := attrs2.AsMosaicESQL()
-	require.NoError(t, err)
-	assert.Equal(t, "Mosaic ESQL Round-Trip", *esql2.Title)
-	assert.Equal(t, kbapi.MosaicESQLTypeMosaic, esql2.Type)
-}
-
-func Test_newMosaicPanelConfigConverter(t *testing.T) {
-	converter := newMosaicPanelConfigConverter()
-	assert.NotNil(t, converter)
-	assert.Equal(t, "mosaic", converter.visualizationType)
-}
 
 func Test_mosaicConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 	api := kbapi.MosaicNoESQL{
@@ -440,9 +352,10 @@ func Test_mosaicConfigModel_esqlTypedMetricsRoundTrip(t *testing.T) {
 	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 	require.NoError(t, attrs.FromMosaicESQL(api))
 
-	converter := newMosaicPanelConfigConverter()
+	c := lenscommon.ForType(string(kbapi.MosaicNoESQLTypeMosaic))
+	require.NotNil(t, c)
 	visBv := models.VisByValueModel{}
-	diags := converter.populateFromAttributes(context.Background(), nil, nil, &visBv.LensByValueChartBlocks, attrs)
+	diags := c.PopulateFromAttributes(context.Background(), lensChartResolver(nil), &visBv.LensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
 	require.NotNil(t, visBv.MosaicConfig)
 

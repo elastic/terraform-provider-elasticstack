@@ -20,78 +20,28 @@ package dashboard
 import (
 	"context"
 	"encoding/json"
-	"strconv"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func newWafflePanelConfigConverter() wafflePanelConfigConverter {
-	return wafflePanelConfigConverter{
-		lensVisualizationBase: lensVisualizationBase{
-			visualizationType: string(kbapi.WaffleNoESQLTypeWaffle),
-			hasTFChartBlock: func(blocks *models.LensByValueChartBlocks) bool {
-				return blocks != nil && blocks.WaffleConfig != nil
-			},
-		},
+// seedWaffleLensByValueChartFromPriorPanel assigns the waffle chart pointer from practitioner plan/state
+// into dest before vis read-mapping replaces blocks.WaffleConfig. The registered lenswaffle converter keeps that pointer as
+// `seed` across PopulateFromAttributes so mergeWaffleConfigFromPlanSeed (in lenswaffle) can reconcile Kibana read omissions.
+func seedWaffleLensByValueChartFromPriorPanel(dest *models.LensByValueChartBlocks, prior *models.PanelModel) {
+	if dest == nil || prior == nil || prior.VisConfig == nil || prior.VisConfig.ByValue == nil {
+		return
 	}
-}
-
-type wafflePanelConfigConverter struct {
-	lensVisualizationBase
-}
-
-func (c wafflePanelConfigConverter) populateFromAttributes(
-	ctx context.Context,
-	dashboard *models.DashboardModel,
-	tfPanel *models.PanelModel,
-	blocks *models.LensByValueChartBlocks,
-	attrs kbapi.KbnDashboardPanelTypeVisConfig0,
-) diag.Diagnostics {
-	seed := blocks.WaffleConfig
-
-	var prior *models.WaffleConfigModel
-	if seed != nil {
-		cpy := *seed
-		prior = &cpy
-	} else if b := lensByValueChartBlocksFromPanel(tfPanel); b != nil && b.WaffleConfig != nil {
-		cpy := *b.WaffleConfig
-		prior = &cpy
+	src := &prior.VisConfig.ByValue.LensByValueChartBlocks
+	if src.WaffleConfig != nil {
+		dest.WaffleConfig = src.WaffleConfig
 	}
-
-	raw, err := attrs.MarshalJSON()
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	esql, err := waffleChartJSONUsesESQLDataset(raw)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	blocks.WaffleConfig = &models.WaffleConfigModel{}
-	var diags diag.Diagnostics
-	if esql {
-		wESQL, err := attrs.AsWaffleESQL()
-		if err != nil {
-			return diagutil.FrameworkDiagFromError(err)
-		}
-		diags = waffleConfigFromAPIESQL(ctx, blocks.WaffleConfig, dashboard, prior, wESQL)
-	} else {
-		wNoESQL, err := attrs.AsWaffleNoESQL()
-		if err != nil {
-			return diagutil.FrameworkDiagFromError(err)
-		}
-		diags = waffleConfigFromAPINoESQL(ctx, blocks.WaffleConfig, dashboard, prior, wNoESQL)
-	}
-	mergeWaffleConfigFromPlanSeed(blocks.WaffleConfig, seed)
-	return diags
 }
 
 // waffleChartJSONUsesESQLDataset reports whether lens waffle JSON is the ES|QL variant by reading
@@ -115,88 +65,6 @@ func waffleChartJSONUsesESQLDataset(waffleChartJSON []byte) (bool, error) {
 		return true, nil
 	default:
 		return false, nil
-	}
-}
-
-func (c wafflePanelConfigConverter) buildAttributes(blocks *models.LensByValueChartBlocks, dashboard *models.DashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
-	configModel := *blocks.WaffleConfig
-	return waffleConfigToAPI(&configModel, dashboard)
-}
-
-// normalizeKibanaLensNumberFormatJSONString trims Lens number-format defaults Kibana adds on read
-// (decimals: 2, compact: false) so state matches compact Terraform jsonencode like {"type":"number"}.
-func normalizeKibanaLensNumberFormatJSONString(jsonStr string) string {
-	var m map[string]any
-	if err := json.Unmarshal([]byte(jsonStr), &m); err != nil {
-		return jsonStr
-	}
-	typ, _ := m["type"].(string)
-	if typ != "number" {
-		return jsonStr
-	}
-	if jsonNumericEqualsLoose(m["decimals"], 2) {
-		delete(m, "decimals")
-	}
-	if b, ok := m["compact"].(bool); ok && !b {
-		delete(m, "compact")
-	}
-	sorted := sortJSONMapKeysRecursive(m)
-	out, err := json.Marshal(sorted)
-	if err != nil {
-		return jsonStr
-	}
-	return string(out)
-}
-
-func jsonNumericEqualsLoose(v any, want float64) bool {
-	switch x := v.(type) {
-	case float64:
-		return x == want
-	case float32:
-		return float64(x) == want
-	case int:
-		return float64(x) == want
-	case int64:
-		return float64(x) == want
-	case json.Number:
-		f, err := x.Float64()
-		return err == nil && f == want
-	case string:
-		f, err := strconv.ParseFloat(x, 64)
-		return err == nil && f == want
-	default:
-		return false
-	}
-}
-
-// mergeWaffleConfigFromPlanSeed restores optional fields Kibana omits or defaults on read
-// so Refresh after Apply matches the Terraform plan (see mapPanelFromAPI seeding comment).
-func mergeWaffleConfigFromPlanSeed(cur, seed *models.WaffleConfigModel) {
-	if cur == nil || seed == nil {
-		return
-	}
-	if typeutils.IsKnown(seed.IgnoreGlobalFilters) {
-		if !typeutils.IsKnown(cur.IgnoreGlobalFilters) || cur.IgnoreGlobalFilters.IsNull() ||
-			cur.IgnoreGlobalFilters.ValueBool() != seed.IgnoreGlobalFilters.ValueBool() {
-			cur.IgnoreGlobalFilters = seed.IgnoreGlobalFilters
-		}
-	}
-	if typeutils.IsKnown(seed.Sampling) {
-		if !typeutils.IsKnown(cur.Sampling) || cur.Sampling.IsNull() ||
-			cur.Sampling.ValueFloat64() != seed.Sampling.ValueFloat64() {
-			cur.Sampling = seed.Sampling
-		}
-	}
-	if cur.Legend != nil && seed.Legend != nil {
-		if cur.Legend.Values.IsNull() && !seed.Legend.Values.IsNull() && !seed.Legend.Values.IsUnknown() {
-			cur.Legend.Values = seed.Legend.Values
-		}
-		if seed.Legend.Visible.IsNull() && typeutils.IsKnown(cur.Legend.Visible) {
-			cur.Legend.Visible = types.StringNull()
-		}
-	}
-	if seed.ValueDisplay == nil && cur.ValueDisplay != nil {
-		cur.ValueDisplay = nil
 	}
 }
 
@@ -292,137 +160,6 @@ func waffleConfigFromAPINoESQL(ctx context.Context, m *models.WaffleConfigModel,
 
 	m.EsqlMetrics = nil
 	m.EsqlGroupBy = nil
-
-	var priorLens *models.LensChartPresentationTFModel
-	if prior != nil {
-		p := prior.LensChartPresentationTFModel
-		priorLens = &p
-	}
-	ddWire, ddOmit, ddWireDiags := lensDrilldownsAPIToWire(api.Drilldowns)
-	diags.Append(ddWireDiags...)
-	if ddWireDiags.HasError() {
-		return diags
-	}
-	pres, presDiags := lensChartPresentationReadsFor(ctx, dashboard, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
-	diags.Append(presDiags...)
-	if presDiags.HasError() {
-		return diags
-	}
-	m.LensChartPresentationTFModel = pres
-
-	return diags
-}
-
-func waffleConfigFromAPIESQL(ctx context.Context, m *models.WaffleConfigModel, dashboard *models.DashboardModel, prior *models.WaffleConfigModel, api kbapi.WaffleESQL) diag.Diagnostics {
-	var diags diag.Diagnostics
-	_ = ctx
-
-	m.Title = types.StringPointerValue(api.Title)
-	m.Description = types.StringPointerValue(api.Description)
-	m.IgnoreGlobalFilters = types.BoolPointerValue(api.IgnoreGlobalFilters)
-
-	if api.Sampling != nil {
-		m.Sampling = types.Float64Value(float64(*api.Sampling))
-	} else {
-		m.Sampling = types.Float64Null()
-	}
-
-	datasetBytes, err := json.Marshal(api.DataSource)
-	dv, ok := marshalToNormalized(datasetBytes, err, "data_source_json", &diags)
-	if !ok {
-		return diags
-	}
-	m.DataSourceJSON = dv
-
-	m.Query = nil
-
-	m.Filters = populateFiltersFromAPI(api.Filters, &diags)
-
-	m.Legend = &models.WaffleLegendModel{}
-	waffleLegendFromAPI(ctx, m.Legend, api.Legend)
-
-	if api.Styling.Values.Mode != nil || api.Styling.Values.PercentDecimals != nil {
-		m.ValueDisplay = &models.WaffleValueDisplay{
-			Mode: typeutils.StringishPointerValue(api.Styling.Values.Mode),
-		}
-		if api.Styling.Values.PercentDecimals != nil {
-			m.ValueDisplay.PercentDecimals = types.Float64Value(float64(*api.Styling.Values.PercentDecimals))
-		} else {
-			m.ValueDisplay.PercentDecimals = types.Float64Null()
-		}
-	}
-
-	if len(api.Metrics) > 0 {
-		m.EsqlMetrics = make([]models.WaffleEsqlMetric, len(api.Metrics))
-		for i, met := range api.Metrics {
-			colorType := types.StringNull()
-			colorValue := types.StringNull()
-			if met.Color != nil {
-				if staticColor, colorErr := met.Color.AsStaticColor(); colorErr == nil {
-					colorType = types.StringValue(string(staticColor.Type))
-					colorValue = types.StringValue(staticColor.Color)
-				}
-			}
-			em := models.WaffleEsqlMetric{
-				Column: types.StringValue(met.Column),
-				FormatJSON: func() jsontypes.Normalized {
-					b, err := json.Marshal(met.Format)
-					if err != nil {
-						return jsontypes.NewNormalizedNull()
-					}
-					// Kibana may omit format on saved-object round-trip, leaving Format as an empty union.
-					if string(b) == jsonNullString || len(b) == 0 {
-						b = []byte(defaultNumberFormatJSON)
-					}
-					return jsontypes.NewNormalizedValue(normalizeKibanaLensNumberFormatJSONString(string(b)))
-				}(),
-				Color: &models.WaffleStaticColor{
-					Type:  colorType,
-					Color: colorValue,
-				},
-			}
-			if met.Label != nil {
-				em.Label = types.StringValue(*met.Label)
-			} else {
-				em.Label = types.StringNull()
-			}
-			m.EsqlMetrics[i] = em
-		}
-	}
-
-	if api.GroupBy != nil && len(*api.GroupBy) > 0 {
-		m.EsqlGroupBy = make([]models.WaffleEsqlGroupBy, len(*api.GroupBy))
-		for i, gb := range *api.GroupBy {
-			colorBytes, err := json.Marshal(gb.Color)
-			if err != nil {
-				diags.AddError("Failed to marshal esql group_by color", err.Error())
-				continue
-			}
-			formatBytes, err := json.Marshal(gb.Format)
-			if err != nil {
-				diags.AddError("Failed to marshal esql group_by format", err.Error())
-				continue
-			}
-			if string(formatBytes) == jsonNullString || len(formatBytes) == 0 {
-				formatBytes = []byte(defaultNumberFormatJSON)
-			}
-			formatStr := normalizeKibanaLensNumberFormatJSONString(string(formatBytes))
-			eg := models.WaffleEsqlGroupBy{
-				Column:     types.StringValue(gb.Column),
-				CollapseBy: types.StringValue(string(gb.CollapseBy)),
-				ColorJSON:  jsontypes.NewNormalizedValue(string(colorBytes)),
-				FormatJSON: jsontypes.NewNormalizedValue(formatStr),
-				Label:      types.StringNull(),
-			}
-			if gb.Label != nil {
-				eg.Label = types.StringValue(*gb.Label)
-			}
-			m.EsqlGroupBy[i] = eg
-		}
-	}
-
-	m.Metrics = nil
-	m.GroupBy = nil
 
 	var priorLens *models.LensChartPresentationTFModel
 	if prior != nil {
@@ -758,7 +495,7 @@ func waffleConfigToAPIESQL(m *models.WaffleConfigModel, dashboard *models.Dashbo
 			}
 			gb[i].Column = eg.Column.ValueString()
 			gb[i].CollapseBy = kbapi.CollapseBy(eg.CollapseBy.ValueString())
-			formatSrc := defaultNumberFormatJSON
+			formatSrc := lenscommon.DefaultLensNumberFormatJSON
 			if typeutils.IsKnown(eg.FormatJSON) {
 				formatSrc = eg.FormatJSON.ValueString()
 			}

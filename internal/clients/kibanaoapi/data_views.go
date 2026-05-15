@@ -22,6 +22,7 @@ import (
 	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
@@ -72,6 +73,22 @@ func UpdateDataView(ctx context.Context, client *Client, spaceID string, viewID 
 
 	return handleMutateTypedResponse(resp.StatusCode(), resp.Body,
 		func() *kbapi.DataViewsDataViewResponseObject { return resp.JSON200 })
+}
+
+// UpdateFieldMetadata writes field metadata (e.g. custom_label) for a data view via
+// POST /api/data_views/data_view/{viewId}/fields. It applies space-aware path routing.
+func UpdateFieldMetadata(ctx context.Context, client *Client, spaceID string, viewID string, fields map[string]any) diag.Diagnostics {
+	resp, err := client.API.UpdateFieldsMetadataDefaultWithResponse(
+		ctx,
+		viewID,
+		kbapi.UpdateFieldsMetadataDefaultJSONRequestBody{Fields: fields},
+		kibanautil.SpaceAwarePathRequestEditor(spaceID),
+	)
+	if err != nil {
+		return diagutil.FrameworkDiagFromError(err)
+	}
+
+	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK)
 }
 
 // DeleteDataView deletes an existing data view.

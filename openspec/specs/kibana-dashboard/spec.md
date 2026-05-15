@@ -2091,6 +2091,41 @@ Waffle `value_display` SHALL use the shared `getPartitionValueDisplaySchema()` h
 - WHEN Terraform validates the configuration
 - THEN the validation SHALL pass and the attribute descriptions SHALL match those used by `treemap_config.value_display`
 
+### Requirement: Registry-driven simple panel handler architecture preserves dashboard behavior (REQ-044A)
+
+The `elasticstack_kibana_dashboard` resource implementation SHALL support a registry-driven handler architecture for simple panel types while preserving the user-visible dashboard behavior defined elsewhere in this capability. A simple panel type is one whose typed configuration does not require internal Lens chart dispatch or by-value/by-reference composite branching.
+
+For each supported simple panel type, the implementation SHALL provide a dedicated handler responsible for that panel type's schema attribute construction, API-to-state mapping, state-to-API mapping, configuration validation, and any panel-specific state alignment. The registry SHALL be the authoritative source used to assemble simple panel schema attributes, route panel reads from API discriminator to handler, route typed panel writes from configured block to handler, and dispatch panel-specific validation.
+
+This architectural change SHALL preserve existing Terraform-facing behavior for the migrated simple panel types, including schema shape, validation outcomes, null-preservation behavior, pinned-panel behavior where applicable, and API round-tripping.
+
+#### Scenario: Simple panel read routing is resolved through the registry
+
+- GIVEN a dashboard API response containing a supported simple panel type
+- WHEN the provider reads the panel
+- THEN the provider SHALL resolve the panel type through the handler registry
+- AND the matching handler SHALL populate the Terraform panel state for that panel type
+
+#### Scenario: Simple panel write routing is resolved through the registry
+
+- GIVEN a Terraform panel configuration for a supported simple panel type
+- WHEN the provider builds the dashboard API request
+- THEN the provider SHALL resolve the configured typed panel block through the handler registry
+- AND the matching handler SHALL build the panel API payload
+
+#### Scenario: Migrated simple panels preserve prior Terraform behavior
+
+- GIVEN a dashboard that uses a migrated simple panel type
+- WHEN the provider plans, applies, reads, and refreshes that dashboard after the handler migration
+- THEN the panel SHALL preserve the same user-visible schema and runtime behavior as before the migration
+
+#### Scenario: Pinned control panels continue to round-trip through typed handlers
+
+- GIVEN a dashboard with pinned control panels of a migrated control type
+- WHEN the provider reads or writes the dashboard
+- THEN pinned panel conversion SHALL delegate through the migrated typed handler path
+- AND pinned panel Terraform behavior SHALL remain unchanged
+
 ### Requirement: SLO overview constant definition site (REQ-045)
 
 The `panelTypeSloOverview` constant SHALL be defined in `schema.go` alongside all other dashboard panel type constants. It SHALL NOT be defined in a panel-specific model file.
@@ -2141,6 +2176,34 @@ This extraction SHALL be mechanical only: it SHALL NOT change the Terraform sche
 - WHEN it references dashboard Terraform model structs
 - THEN those structs SHALL be imported from `internal/kibana/dashboard/models`
 - AND the extraction SHALL avoid introducing Go import cycles between the models package and dashboard logic packages
+
+### Requirement: Lens visualization converter registry preserves typed chart behavior (REQ-045)
+
+The `elasticstack_kibana_dashboard` resource implementation SHALL support a Lens visualization converter registry for typed Lens chart handling while preserving the Terraform-facing behavior of all supported Lens chart blocks. Each supported Lens chart kind SHALL be handled by a dedicated converter that participates in shared Lens chart read, write, defaulting, and state-alignment flows through a common registry.
+
+The registry SHALL be the authoritative source used to classify typed Lens by-value chart payloads, dispatch API-to-state conversion for supported Lens chart kinds, dispatch state-to-API conversion for supported Lens chart kinds, and apply Lens chart defaulting or state-alignment behavior that is specific to a chart kind.
+
+This architectural change SHALL NOT alter the user-visible schema or runtime behavior of existing supported Lens chart blocks under dashboard panel configurations.
+
+#### Scenario: Typed Lens chart read conversion is resolved through the converter registry
+
+- GIVEN a dashboard panel API payload for a supported by-value Lens chart kind
+- WHEN the provider reads that panel into Terraform state
+- THEN the provider SHALL resolve the chart kind through the Lens converter registry
+- AND the matching converter SHALL populate the corresponding typed Lens chart block in state
+
+#### Scenario: Typed Lens chart write conversion is resolved through the converter registry
+
+- GIVEN a Terraform configuration that selects a supported typed Lens chart block
+- WHEN the provider builds the dashboard API payload for that panel
+- THEN the provider SHALL resolve the configured chart block through the Lens converter registry
+- AND the matching converter SHALL build the corresponding by-value Lens chart payload
+
+#### Scenario: Lens chart behavior remains unchanged after converter extraction
+
+- GIVEN a dashboard using a supported typed Lens chart block
+- WHEN the provider plans, applies, reads, and refreshes that dashboard after the converter migration
+- THEN the typed Lens chart block SHALL preserve the same user-visible schema, validation behavior, defaulting behavior, null-preservation behavior, and API round-tripping as before the migration
 
 ## Traceability
 

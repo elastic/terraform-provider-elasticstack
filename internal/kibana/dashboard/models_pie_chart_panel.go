@@ -22,84 +22,11 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
-
-func newPieChartPanelConfigConverter() pieChartPanelConfigConverter {
-	return pieChartPanelConfigConverter{
-		lensVisualizationBase: lensVisualizationBase{
-			visualizationType: string(kbapi.PieNoESQLTypePie),
-			hasTFChartBlock: func(blocks *models.LensByValueChartBlocks) bool {
-				return blocks != nil && blocks.PieChartConfig != nil
-			},
-		},
-	}
-}
-
-type pieChartPanelConfigConverter struct {
-	lensVisualizationBase
-}
-
-func (c pieChartPanelConfigConverter) populateFromAttributes(
-	ctx context.Context,
-	dashboard *models.DashboardModel,
-	tfPanel *models.PanelModel,
-	blocks *models.LensByValueChartBlocks,
-	attrs kbapi.KbnDashboardPanelTypeVisConfig0,
-) diag.Diagnostics {
-	// Populate the model.
-	//
-	// Disambiguate NoESQL vs ESQL using dataset type; regenerated clients can
-	// decode an empty no-ESQL query for ESQL payloads.
-	var prior *models.PieChartConfigModel
-	if b := lensByValueChartBlocksFromPanel(tfPanel); b != nil && b.PieChartConfig != nil {
-		cpy := *b.PieChartConfig
-		prior = &cpy
-	}
-	blocks.PieChartConfig = &models.PieChartConfigModel{}
-	if noESQL, err := attrs.AsPieNoESQL(); err == nil && !isPieNoESQLCandidateActuallyESQL(noESQL) {
-		return pieChartConfigFromAPINoESQL(ctx, blocks.PieChartConfig, dashboard, prior, noESQL)
-	}
-	esql, err := attrs.AsPieESQL()
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	return pieChartConfigFromAPIESQL(ctx, blocks.PieChartConfig, dashboard, prior, esql)
-}
-
-func (c pieChartPanelConfigConverter) buildAttributes(blocks *models.LensByValueChartBlocks, dashboard *models.DashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	configModel := *blocks.PieChartConfig
-
-	// Convert the structured model to API schema
-	attrs, pieDiags := pieChartConfigToAPI(&configModel, dashboard)
-	diags.Append(pieDiags...)
-	if diags.HasError() {
-		return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
-	}
-
-	return attrs, diags
-}
-
-func isPieNoESQLCandidateActuallyESQL(apiChart kbapi.PieNoESQL) bool {
-	body, err := json.Marshal(apiChart.DataSource)
-	if err != nil {
-		return false
-	}
-
-	var dataset struct {
-		Type string `json:"type"`
-	}
-	if err := json.Unmarshal(body, &dataset); err != nil {
-		return false
-	}
-
-	return dataset.Type == legacyMetricDatasetTypeESQL || dataset.Type == legacyMetricDatasetTypeTable
-}
 
 func pieChartConfigPopulateCommonFields(m *models.PieChartConfigModel,
 	title, description *string,

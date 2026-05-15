@@ -630,6 +630,40 @@ func TestAccResourceAnomalyDetectionJobNullAndEmpty(t *testing.T) {
 	})
 }
 
+// Regression test for #2966: Value Conversion Error when analysis_config.detectors is sourced
+// from a Terraform variable of type list(object({...})). The root cause was Detectors being typed
+// []DetectorTFModel instead of types.List in AnalysisConfigTFModel.
+func TestAccResourceAnomalyDetectionJobVariableSourcedDetectors(t *testing.T) {
+	jobID := fmt.Sprintf("test-ad-var-det-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	addr := testResourceAddr
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"job_id": config.StringVariable(jobID)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "job_id", jobID),
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.function", "count"),
+					resource.TestCheckResourceAttrSet(addr, "id"),
+				),
+			},
+			// Plan-after-apply must not regress: re-plan with the same variable-sourced config
+			// must not produce a Value Conversion Error on the read path.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"job_id": config.StringVariable(jobID)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.function", "count"),
+				),
+			},
+		},
+	})
+}
+
 // TestAccResourceAnomalyDetectionJobExplicitConnection exercises the elasticsearch_connection block
 // (scoped Elasticsearch client) on the anomaly detection job resource directly.
 // It creates a job with an explicit connection using username/password (or api_key when available),

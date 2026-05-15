@@ -73,14 +73,14 @@ func getSchema(_ context.Context) schema.Schema {
 						Description: "The start date and time of the schedule, provided in ISO 8601 format and set to the UTC timezone. For example: `2025-03-12T12:00:00.000Z`.",
 						Required:    true,
 						Validators: []validator.String{
-							validators.StringIsISO8601{},
+							validators.StringIsISO8601,
 						},
 					},
 					"duration": schema.StringAttribute{
 						Description: durationDescription,
 						Required:    true,
 						Validators: []validator.String{
-							validators.StringIsAlertingDuration{},
+							validators.StringIsAlertingDuration,
 						},
 					},
 					"timezone": schema.StringAttribute{
@@ -96,14 +96,14 @@ func getSchema(_ context.Context) schema.Schema {
 								Description: "The end date and time of the schedule, provided in ISO 8601 format and set to the UTC timezone. For example: `2025-03-12T12:00:00.000Z`.",
 								Optional:    true,
 								Validators: []validator.String{
-									validators.StringIsISO8601{},
+									validators.StringIsISO8601,
 								},
 							},
 							"every": schema.StringAttribute{
 								Description: durationDescription,
 								Optional:    true,
 								Validators: []validator.String{
-									validators.StringIsMaintenanceWindowIntervalFrequency{},
+									validators.StringIsMaintenanceWindowIntervalFrequency,
 								},
 							},
 							"occurrences": schema.Int32Attribute{
@@ -119,7 +119,7 @@ func getSchema(_ context.Context) schema.Schema {
 								Optional:    true,
 								Validators: []validator.List{
 									listvalidator.ValueStringsAre(
-										validators.StringIsMaintenanceWindowOnWeekDay{},
+										validators.StringIsMaintenanceWindowOnWeekDay,
 									),
 								},
 							},

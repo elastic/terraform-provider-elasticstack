@@ -20,6 +20,7 @@ package sloburnrate
 import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -119,25 +120,13 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiConfig 
 	// slo_instance_id null-preservation: if state is null (practitioner omitted it), keep null
 	// regardless of what the API returns — the API echoes "*" for all-instances which has no
 	// meaningful TF representation.
-	if typeutils.IsKnown(existing.SloInstanceID) {
-		existing.SloInstanceID = types.StringPointerValue(apiConfig.SloInstanceId)
-	}
+	existing.SloInstanceID = panelkit.PreserveString(existing.SloInstanceID, apiConfig.SloInstanceId)
 
-	// Optional string fields: only update from API when they were already known in state.
-	if typeutils.IsKnown(existing.Title) {
-		existing.Title = types.StringPointerValue(apiConfig.Title)
-	}
-	if typeutils.IsKnown(existing.Description) {
-		existing.Description = types.StringPointerValue(apiConfig.Description)
-	}
-
-	// Optional bool fields: only update from API when they were already known in state.
-	if typeutils.IsKnown(existing.HideTitle) {
-		existing.HideTitle = types.BoolPointerValue(apiConfig.HideTitle)
-	}
-	if typeutils.IsKnown(existing.HideBorder) {
-		existing.HideBorder = types.BoolPointerValue(apiConfig.HideBorder)
-	}
+	// Optional fields: only update from API when they were already known in state.
+	existing.Title = panelkit.PreserveString(existing.Title, apiConfig.Title)
+	existing.Description = panelkit.PreserveString(existing.Description, apiConfig.Description)
+	existing.HideTitle = panelkit.PreserveBool(existing.HideTitle, apiConfig.HideTitle)
+	existing.HideBorder = panelkit.PreserveBool(existing.HideBorder, apiConfig.HideBorder)
 
 	existing.Drilldowns = readSloBurnRateDrilldownsFromAPI(apiConfig.Drilldowns, existing.Drilldowns)
 

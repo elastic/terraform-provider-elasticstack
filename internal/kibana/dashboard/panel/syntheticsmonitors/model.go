@@ -20,6 +20,7 @@ package syntheticsmonitors
 import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -198,18 +199,10 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiPanel k
 		return nil
 	}
 
-	if typeutils.IsKnown(existing.Title) {
-		existing.Title = types.StringPointerValue(apiPanel.Config.Title)
-	}
-	if typeutils.IsKnown(existing.Description) {
-		existing.Description = types.StringPointerValue(apiPanel.Config.Description)
-	}
-	if typeutils.IsKnown(existing.HideTitle) {
-		existing.HideTitle = types.BoolPointerValue(apiPanel.Config.HideTitle)
-	}
-	if typeutils.IsKnown(existing.HideBorder) {
-		existing.HideBorder = types.BoolPointerValue(apiPanel.Config.HideBorder)
-	}
+	existing.Title = panelkit.PreserveString(existing.Title, apiPanel.Config.Title)
+	existing.Description = panelkit.PreserveString(existing.Description, apiPanel.Config.Description)
+	existing.HideTitle = panelkit.PreserveBool(existing.HideTitle, apiPanel.Config.HideTitle)
+	existing.HideBorder = panelkit.PreserveBool(existing.HideBorder, apiPanel.Config.HideBorder)
 	if typeutils.IsKnown(existing.View) {
 		existing.View = syntheticsMonitorsViewValue(apiPanel.Config.View)
 	}

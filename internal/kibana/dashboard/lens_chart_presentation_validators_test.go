@@ -21,6 +21,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -78,7 +79,7 @@ func Test_drilldownListItemVariantsValidator_zeroVariants(t *testing.T) {
 	ov := types.ObjectValueMust(itemTypes, nullAll)
 
 	var resp validator.ObjectResponse
-	(drilldownListItemVariantsValidator{}).ValidateObject(ctx, validator.ObjectRequest{
+	(lenscommon.DrilldownListItemVariantsValidator{}).ValidateObject(ctx, validator.ObjectRequest{
 		Path:        path.Root("drilldowns").AtListIndex(0),
 		ConfigValue: ov,
 	}, &resp)

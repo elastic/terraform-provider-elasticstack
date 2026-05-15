@@ -126,6 +126,29 @@ When the agent completes a run without classifying any issues (all issues alread
 - **WHEN** the scheduled path runs and finds no untriaged issues
 - **THEN** the agent SHALL call `noop` with a reason explaining that no untriaged issues were found
 
+### Requirement: GitHub MCP access is scoped to issues with unapproved integrity floor
+
+The workflow MUST configure the GitHub MCP server with `toolsets: [issues]` and `min-integrity: unapproved`.
+
+**Toolset scope**: Only the `issues` toolset is needed; restricting to it limits the blast radius of any XPIA exploit.
+
+**Integrity floor**: The `issues: opened` trigger fires for any GitHub user, including first-time contributors. Without an explicit integrity setting, gh-aw's automatic lockdown raises the floor based on actor trust level, which blocks reading issue bodies from untrusted actors. Setting `min-integrity: unapproved` allows content from CONTRIBUTOR and FIRST_TIME_CONTRIBUTOR actors through the MCP guard while still blocking content from `blocked-users`. Issue bodies from authenticated GitHub users qualify at `unapproved` level by definition.
+
+The XPIA guardrails in the agent prompt are the primary trust boundary against adversarial issue content. The integrity filter controls the data flow channel only.
+
+#### Scenario: Agent reads issue body from a first-time contributor
+- **WHEN** a user with no prior contributions to the repository opens an issue
+- **THEN** the GitHub MCP guard SHALL allow the agent to retrieve that issue's body
+- **AND** the agent SHALL treat the content as untrusted per the prompt guardrails
+
+#### Scenario: Blocked user's issue content is withheld
+- **WHEN** a user in the `GH_AW_GITHUB_BLOCKED_USERS` repo variable opens an issue
+- **THEN** the GitHub MCP guard SHALL block the agent from reading that issue's content
+
+#### Scenario: GitHub toolsets are restricted to issues
+- **WHEN** the agent job runs
+- **THEN** only the `issues` GitHub MCP toolset SHALL be available to the agent
+
 ### Requirement: Safe-outputs configuration restricts label scope and comment volume
 
 The workflow safe-outputs configuration SHALL enforce the following bounds:

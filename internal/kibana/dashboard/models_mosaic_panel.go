@@ -22,7 +22,7 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -30,69 +30,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
-
-func newMosaicPanelConfigConverter() mosaicPanelConfigConverter {
-	return mosaicPanelConfigConverter{
-		lensVisualizationBase: lensVisualizationBase{
-			visualizationType: string(kbapi.MosaicNoESQLTypeMosaic),
-			hasTFChartBlock: func(blocks *models.LensByValueChartBlocks) bool {
-				return blocks != nil && blocks.MosaicConfig != nil
-			},
-		},
-	}
-}
-
-type mosaicPanelConfigConverter struct {
-	lensVisualizationBase
-}
-
-func (c mosaicPanelConfigConverter) populateFromAttributes(
-	ctx context.Context,
-	dashboard *models.DashboardModel,
-	tfPanel *models.PanelModel,
-	blocks *models.LensByValueChartBlocks,
-	attrs kbapi.KbnDashboardPanelTypeVisConfig0,
-) diag.Diagnostics {
-	var prior *models.MosaicConfigModel
-	if b := lensByValueChartBlocksFromPanel(tfPanel); b != nil && b.MosaicConfig != nil {
-		cpy := *b.MosaicConfig
-		prior = &cpy
-	}
-	blocks.MosaicConfig = &models.MosaicConfigModel{}
-
-	if noESQL, err := attrs.AsMosaicNoESQL(); err == nil && !isMosaicNoESQLCandidateActuallyESQL(noESQL) {
-		return mosaicConfigFromAPINoESQL(ctx, blocks.MosaicConfig, dashboard, prior, noESQL)
-	}
-
-	mosaicESQL, err := attrs.AsMosaicESQL()
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	return mosaicConfigFromAPIESQL(ctx, blocks.MosaicConfig, dashboard, prior, mosaicESQL)
-}
-
-func (c mosaicPanelConfigConverter) buildAttributes(blocks *models.LensByValueChartBlocks, dashboard *models.DashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	configModel := *blocks.MosaicConfig
-
-	attrs, mosaicDiags := mosaicConfigToAPI(&configModel, dashboard)
-	diags.Append(mosaicDiags...)
-	return attrs, diags
-}
-
-func isMosaicNoESQLCandidateActuallyESQL(api kbapi.MosaicNoESQL) bool {
-	body, err := api.DataSource.MarshalJSON()
-	if err != nil {
-		return false
-	}
-	var ds struct {
-		Type string `json:"type"`
-	}
-	if err := json.Unmarshal(body, &ds); err != nil {
-		return false
-	}
-	return ds.Type == legacyMetricDatasetTypeESQL || ds.Type == legacyMetricDatasetTypeTable
-}
 
 func mosaicConfigFromAPINoESQL(ctx context.Context, m *models.MosaicConfigModel, dashboard *models.DashboardModel, prior *models.MosaicConfigModel, api kbapi.MosaicNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
@@ -391,7 +328,7 @@ func mosaicConfigToAPIMosaicESQL(m *models.MosaicConfigModel, dashboard *models.
 			diags.AddError("Failed to unmarshal esql group_by color_json", err.Error())
 			return api, diags
 		}
-		formatSrc := defaultNumberFormatJSON
+		formatSrc := lenscommon.DefaultLensNumberFormatJSON
 		if typeutils.IsKnown(eg.FormatJSON) {
 			formatSrc = eg.FormatJSON.ValueString()
 		}

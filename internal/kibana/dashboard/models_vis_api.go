@@ -23,11 +23,9 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func configPriorForVisRead(tfPanel, pm *models.PanelModel) *models.VisConfigModel {
@@ -47,62 +45,23 @@ func populateVisByReferenceFromAPI(
 	pm *models.PanelModel,
 	cfg1 kbapi.KbnDashboardPanelTypeVisConfig1,
 ) diag.Diagnostics {
-	var diags diag.Diagnostics
-	tr := models.LensDashboardAppTimeRangeModel{
-		From: types.StringValue(cfg1.TimeRange.From),
-		To:   types.StringValue(cfg1.TimeRange.To),
-	}
-	switch {
-	case cfg1.TimeRange.Mode != nil:
-		tr.Mode = types.StringValue(string(*cfg1.TimeRange.Mode))
-	case prior != nil && prior.ByReference != nil && typeutils.IsKnown(prior.ByReference.TimeRange.Mode):
-		tr.Mode = prior.ByReference.TimeRange.Mode
-	default:
-		tr.Mode = types.StringNull()
-	}
-	by := models.LensDashboardAppByReferenceModel{
-		RefID:     types.StringValue(cfg1.RefId),
-		TimeRange: tr,
-	}
 	var priorBR *models.LensDashboardAppByReferenceModel
 	if prior != nil {
 		priorBR = prior.ByReference
 	}
-	by.Title = byReferenceOptionalStringFromAPI(cfg1.Title, priorBR, func(br *models.LensDashboardAppByReferenceModel) types.String { return br.Title })
-	by.Description = byReferenceOptionalStringFromAPI(cfg1.Description, priorBR, func(br *models.LensDashboardAppByReferenceModel) types.String { return br.Description })
-	by.HideTitle = byReferenceOptionalBoolFromAPI(cfg1.HideTitle, priorBR, func(br *models.LensDashboardAppByReferenceModel) types.Bool { return br.HideTitle })
-	by.HideBorder = byReferenceOptionalBoolFromAPI(cfg1.HideBorder, priorBR, func(br *models.LensDashboardAppByReferenceModel) types.Bool { return br.HideBorder })
 
-	switch {
-	case cfg1.References != nil:
-		b, err := json.Marshal(cfg1.References)
-		if err != nil {
-			return diagutil.FrameworkDiagFromError(err)
-		}
-		if norm, ok := marshalToNormalized(b, err, "references_json", &diags); ok {
-			if prior != nil && prior.ByReference != nil {
-				norm = preservePriorNormalizedWithDefaultsIfEquivalent(ctx, prior.ByReference.ReferencesJSON, norm, defaultOpaqueRootJSON, &diags)
-			}
-			by.ReferencesJSON = norm
-		}
-	case prior != nil && prior.ByReference != nil && typeutils.IsKnown(prior.ByReference.ReferencesJSON):
-		by.ReferencesJSON = prior.ByReference.ReferencesJSON
-	default:
-		by.ReferencesJSON = jsontypes.NewNormalizedNull()
+	var lensCfg kbapi.KbnDashboardPanelTypeLensDashboardAppConfig1
+	payload, err := json.Marshal(cfg1)
+	if err != nil {
+		return diagutil.FrameworkDiagFromError(err)
+	}
+	if err := json.Unmarshal(payload, &lensCfg); err != nil {
+		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch {
-	case cfg1.Drilldowns != nil:
-		items, drillDiags := drilldownsFromVisByRefAPI(ctx, cfg1.Drilldowns)
-		diags.Append(drillDiags...)
-		if drillDiags.HasError() {
-			return diags
-		}
-		by.Drilldowns = items
-	case prior != nil && prior.ByReference != nil && prior.ByReference.Drilldowns != nil:
-		by.Drilldowns = prior.ByReference.Drilldowns
-	default:
-		by.Drilldowns = nil
+	by, diags := lenscommon.PopulateLensByReferenceTFModelFromLensAppConfig1(ctx, lensCfg, priorBR)
+	if diags.HasError() {
+		return diags
 	}
 
 	brCopy := by
@@ -123,58 +82,15 @@ func visByReferenceToAPI(
 	panelID *string,
 ) (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	api1 := kbapi.KbnDashboardPanelTypeVisConfig1{
-		RefId: byRef.RefID.ValueString(),
-		TimeRange: kbapi.KbnEsQueryServerTimeRangeSchema{
-			From: byRef.TimeRange.From.ValueString(),
-			To:   byRef.TimeRange.To.ValueString(),
-		},
+	api1Lens, d := lenscommon.LensDashboardAppByReferenceModelToAPIConfig1(byRef, "vis_config.by_reference.references_json")
+	diags.Append(d...)
+	if d.HasError() {
+		return kbapi.DashboardPanelItem{}, diags
 	}
-	if typeutils.IsKnown(byRef.TimeRange.Mode) {
-		m := kbapi.KbnEsQueryServerTimeRangeSchemaMode(byRef.TimeRange.Mode.ValueString())
-		api1.TimeRange.Mode = &m
-	}
-	if typeutils.IsKnown(byRef.ReferencesJSON) {
-		refs, d := jsonBytesFromOptionalNormalizedArray(byRef.ReferencesJSON, "vis_config.by_reference.references_json")
-		diags.Append(d...)
-		if d.HasError() {
-			return kbapi.DashboardPanelItem{}, diags
-		}
-		if len(refs) > 0 {
-			var out []kbapi.KbnContentManagementUtilsReferenceSchema
-			if err := json.Unmarshal(refs, &out); err != nil {
-				diags.AddError("Invalid `vis_config.by_reference.references_json`", err.Error())
-				return kbapi.DashboardPanelItem{}, diags
-			}
-			if out == nil {
-				out = []kbapi.KbnContentManagementUtilsReferenceSchema{}
-			}
-			api1.References = &out
-		}
-	}
-	if typeutils.IsKnown(byRef.Title) {
-		t := byRef.Title.ValueString()
-		api1.Title = &t
-	}
-	if typeutils.IsKnown(byRef.Description) {
-		d := byRef.Description.ValueString()
-		api1.Description = &d
-	}
-	if typeutils.IsKnown(byRef.HideTitle) {
-		v := byRef.HideTitle.ValueBool()
-		api1.HideTitle = &v
-	}
-	if typeutils.IsKnown(byRef.HideBorder) {
-		v := byRef.HideBorder.ValueBool()
-		api1.HideBorder = &v
-	}
-	if byRef.Drilldowns != nil {
-		dd, ddDiags := drilldownsToVisByRefAPI(byRef.Drilldowns)
-		diags.Append(ddDiags...)
-		if ddDiags.HasError() {
-			return kbapi.DashboardPanelItem{}, diags
-		}
-		api1.Drilldowns = dd
+	api1, convDiags := lenscommon.VisByReferenceConfig1FromLens(api1Lens)
+	diags.Append(convDiags...)
+	if convDiags.HasError() {
+		return kbapi.DashboardPanelItem{}, diags
 	}
 	var config kbapi.KbnDashboardPanelTypeVis_Config
 	if err := config.FromKbnDashboardPanelTypeVisConfig1(api1); err != nil {
@@ -211,12 +127,12 @@ func visConfigToAPI(pm models.PanelModel, dashboard *models.DashboardModel, grid
 		return visByReferenceToAPI(*cfg.ByReference, grid, panelID)
 	case cfg.ByValue != nil:
 		blocks := &cfg.ByValue.LensByValueChartBlocks
-		conv, okConv := firstLensVisConverterForChartBlocks(blocks)
+		conv, okConv := lenscommon.FirstForBlocks(blocks)
 		if !okConv {
 			diags.AddError("Invalid `vis_config.by_value`", "The typed chart block could not be resolved to a Lens visualization converter.")
 			return kbapi.DashboardPanelItem{}, diags
 		}
-		config0, d := conv.buildAttributes(blocks, dashboard)
+		config0, d := conv.BuildAttributes(blocks, lensChartResolver(dashboard))
 		diags.Append(d...)
 		if d.HasError() {
 			return kbapi.DashboardPanelItem{}, diags

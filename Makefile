@@ -24,7 +24,7 @@ $(foreach v,$(_ENV_GUARD_VARS),$(eval $(call _env_guard_restore,$v)))
 .DEFAULT_GOAL = help
 SHELL := /bin/bash
 
-VERSION ?= 0.15.0
+VERSION ?= 0.15.1
 
 NAME = elasticstack
 BINARY = terraform-provider-${NAME}

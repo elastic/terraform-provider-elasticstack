@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -55,7 +56,7 @@ func canonicalJSONFromRaw(t *testing.T, rawJSON string) string {
 	t.Helper()
 	var root any
 	require.NoError(t, json.Unmarshal([]byte(rawJSON), &root))
-	b, err := json.Marshal(sortJSONMapKeysRecursive(root))
+	b, err := json.Marshal(lenscommon.SortJSONMapKeysRecursive(root))
 	require.NoError(t, err)
 	return string(b)
 }

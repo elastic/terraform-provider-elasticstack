@@ -31,6 +31,10 @@ engine:
     ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_LITELLM_PROXY_API_KEY }}
 permissions:
   issues: read
+tools:
+  github:
+    toolsets: [issues]
+    min-integrity: unapproved
 safe-outputs:
   add-labels:
     max: 5

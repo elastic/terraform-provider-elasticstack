@@ -61,7 +61,7 @@ func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item k
 	pm.Grid = panelkit.GridFromAPI(olPanel.Grid.X, olPanel.Grid.Y, olPanel.Grid.W, olPanel.Grid.H)
 	pm.ID = panelkit.IDFromAPI(olPanel.Id)
 	if configBytes, err := json.Marshal(olPanel.Config); err == nil {
-		pm.ConfigJSON = customtypes.NewJSONWithDefaultsValue(string(configBytes), jsonDefaultsFunc())
+		pm.ConfigJSON = customtypes.NewJSONWithDefaultsValue(string(configBytes), panelkit.PanelJSONDefaultsFunc())
 	}
 	PopulateFromAPI(pm, prior, &olPanel)
 	_ = ctx

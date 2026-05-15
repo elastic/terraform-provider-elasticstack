@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
@@ -33,6 +34,28 @@ func PreservePriorJSONWithDefaultsIfEquivalent[T any](ctx context.Context, prior
 	}
 
 	eq, d := prior.StringSemanticEquals(ctx, current)
+	diags.Append(d...)
+	if d.HasError() {
+		return current
+	}
+	if eq {
+		return prior
+	}
+	return current
+}
+
+// PreservePriorNormalizedWithDefaultsIfEquivalent returns prior when it is semantically equal to
+// current after applying defaults to both sides (JSON-with-defaults comparison over jsontypes.Normalized
+// payloads). Used on dashboard panel reads to avoid state churn when Kibana echoes defaults inside
+// fields the panel handler stores as plain normalized JSON.
+func PreservePriorNormalizedWithDefaultsIfEquivalent[T any](ctx context.Context, prior, current jsontypes.Normalized, defaults func(T) T, diags *diag.Diagnostics) jsontypes.Normalized {
+	if prior.IsNull() || prior.IsUnknown() || current.IsNull() || current.IsUnknown() {
+		return current
+	}
+
+	priorWithDefaults := customtypes.NewJSONWithDefaultsValue(prior.ValueString(), defaults)
+	currentWithDefaults := customtypes.NewJSONWithDefaultsValue(current.ValueString(), defaults)
+	eq, d := priorWithDefaults.StringSemanticEquals(ctx, currentWithDefaults)
 	diags.Append(d...)
 	if d.HasError() {
 		return current

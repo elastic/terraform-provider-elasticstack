@@ -1,0 +1,528 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package lensmosaic
+
+import (
+	"context"
+	"encoding/json"
+
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
+
+func isMosaicNoESQLCandidateActuallyESQL(api kbapi.MosaicNoESQL) bool {
+	body, err := api.DataSource.MarshalJSON()
+	if err != nil {
+		return false
+	}
+	var ds struct {
+		Type string `json:"type"`
+	}
+	if err := json.Unmarshal(body, &ds); err != nil {
+		return false
+	}
+	return ds.Type == lenscommon.LensDatasetTypeESQL || ds.Type == lenscommon.LensDatasetTypeTable
+}
+
+func mosaicConfigFromAPINoESQL(ctx context.Context, m *models.MosaicConfigModel, resolver lenscommon.Resolver, prior *models.MosaicConfigModel, api kbapi.MosaicNoESQL) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	m.Title = types.StringPointerValue(api.Title)
+	m.Description = types.StringPointerValue(api.Description)
+	m.IgnoreGlobalFilters = lenscommon.MapOptionalBoolWithSnapshotDefault(m.IgnoreGlobalFilters, api.IgnoreGlobalFilters, false)
+	m.Sampling = lenscommon.MapOptionalFloatWithSnapshotDefault(m.Sampling, api.Sampling, 1)
+
+	datasetBytes, err := api.DataSource.MarshalJSON()
+	dv, ok := lenscommon.MarshalToNormalized(datasetBytes, err, "data_source_json", &diags)
+	if !ok {
+		return diags
+	}
+	m.DataSourceJSON = dv
+
+	if api.GroupBy != nil {
+		gb, gbDiags := lenscommon.NewPartitionGroupByJSONFromAPI(api.GroupBy)
+		diags.Append(gbDiags...)
+		if !gbDiags.HasError() {
+			m.GroupBy = gb
+		}
+	} else {
+		m.GroupBy = customtypes.NewJSONWithDefaultsNull(lenscommon.PopulatePartitionGroupByDefaults)
+	}
+
+	if api.GroupBreakdownBy != nil {
+		gbb, gbbDiags := lenscommon.NewPartitionGroupByJSONFromAPI(api.GroupBreakdownBy)
+		diags.Append(gbbDiags...)
+		if !gbbDiags.HasError() {
+			m.GroupBreakdownBy = gbb
+		}
+	} else {
+		m.GroupBreakdownBy = customtypes.NewJSONWithDefaultsNull(lenscommon.PopulatePartitionGroupByDefaults)
+	}
+
+	metricBytes, err := api.Metric.MarshalJSON()
+	if err != nil {
+		diags.AddError("Failed to marshal metric", err.Error())
+		return diags
+	}
+	metricsWrapped, err := json.Marshal([]json.RawMessage{json.RawMessage(metricBytes)})
+	if err != nil {
+		diags.AddError("Failed to marshal metrics_json", err.Error())
+		return diags
+	}
+	m.Metrics = customtypes.NewJSONWithDefaultsValue(string(metricsWrapped), lenscommon.PopulatePartitionMetricsDefaults)
+
+	m.Query = &models.FilterSimpleModel{}
+	lenscommon.FilterSimpleFromAPI(m.Query, api.Query)
+
+	if len(api.Filters) > 0 {
+		m.Filters = lenscommon.PopulateFiltersFromAPI(api.Filters, &diags)
+	} else {
+		m.Filters = nil
+	}
+
+	m.Legend = &models.PartitionLegendModel{}
+	lenscommon.PartitionLegendFromMosaicLegend(m.Legend, api.Legend)
+
+	if api.Styling.Values.Mode != nil || api.Styling.Values.PercentDecimals != nil {
+		m.ValueDisplay = &models.PartitionValueDisplay{}
+		lenscommon.PartitionValueDisplayFromAPI(m.ValueDisplay, api.Styling.Values)
+	} else {
+		m.ValueDisplay = nil
+	}
+
+	var priorLens *models.LensChartPresentationTFModel
+	if prior != nil {
+		p := prior.LensChartPresentationTFModel
+		priorLens = &p
+	}
+	ddWire, ddOmit, ddWireDiags := lenscommon.LensDrilldownsAPIToWire(api.Drilldowns)
+	diags.Append(ddWireDiags...)
+	if ddWireDiags.HasError() {
+		return diags
+	}
+	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, resolver, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return diags
+	}
+	m.LensChartPresentationTFModel = pres
+	m.EsqlMetrics = nil
+	m.EsqlGroupBy = nil
+
+	return diags
+}
+
+func mosaicConfigFromAPIESQL(ctx context.Context, m *models.MosaicConfigModel, resolver lenscommon.Resolver, prior *models.MosaicConfigModel, api kbapi.MosaicESQL) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	m.Query = nil
+
+	m.Title = types.StringPointerValue(api.Title)
+	m.Description = types.StringPointerValue(api.Description)
+	m.IgnoreGlobalFilters = lenscommon.MapOptionalBoolWithSnapshotDefault(m.IgnoreGlobalFilters, api.IgnoreGlobalFilters, false)
+	m.Sampling = lenscommon.MapOptionalFloatWithSnapshotDefault(m.Sampling, api.Sampling, 1)
+
+	datasetBytes, err := json.Marshal(api.DataSource)
+	dv, ok := lenscommon.MarshalToNormalized(datasetBytes, err, "data_source_json", &diags)
+	if !ok {
+		return diags
+	}
+	m.DataSourceJSON = dv
+
+	m.GroupBy = customtypes.NewJSONWithDefaultsNull(lenscommon.PopulatePartitionGroupByDefaults)
+	m.Metrics = customtypes.NewJSONWithDefaultsNull(lenscommon.PopulatePartitionMetricsDefaults)
+
+	if api.GroupBreakdownBy != nil {
+		gbb, gbbDiags := lenscommon.NewPartitionGroupByJSONFromAPI(api.GroupBreakdownBy)
+		diags.Append(gbbDiags...)
+		if !gbbDiags.HasError() {
+			m.GroupBreakdownBy = gbb
+		}
+	} else {
+		m.GroupBreakdownBy = customtypes.NewJSONWithDefaultsNull(lenscommon.PopulatePartitionGroupByDefaults)
+	}
+
+	metricFormat, ok := lenscommon.LensESQLNumberFormatJSONFromAPI(api.Metric.Format, "esql_metrics.format_json", &diags)
+	if !ok {
+		return diags
+	}
+	m.EsqlMetrics = []models.MosaicEsqlMetric{
+		{
+			Column:     types.StringValue(api.Metric.Column),
+			FormatJSON: metricFormat,
+			Label:      types.StringNull(),
+		},
+	}
+	if api.Metric.Label != nil {
+		m.EsqlMetrics[0].Label = types.StringValue(*api.Metric.Label)
+	}
+
+	if api.GroupBy != nil && len(*api.GroupBy) > 0 {
+		m.EsqlGroupBy = make([]models.MosaicEsqlGroupBy, len(*api.GroupBy))
+		for i, gb := range *api.GroupBy {
+			m.EsqlGroupBy[i].Column = types.StringValue(gb.Column)
+			m.EsqlGroupBy[i].CollapseBy = types.StringValue(string(gb.CollapseBy))
+			colorBytes, err := json.Marshal(gb.Color)
+			if err != nil {
+				diags.AddError("Failed to marshal esql group_by color", err.Error())
+				continue
+			}
+			m.EsqlGroupBy[i].ColorJSON = jsontypes.NewNormalizedValue(string(colorBytes))
+			formatBytes, err := json.Marshal(gb.Format)
+			if err != nil {
+				diags.AddError("Failed to marshal esql group_by format", err.Error())
+				continue
+			}
+			m.EsqlGroupBy[i].FormatJSON = jsontypes.NewNormalizedValue(string(formatBytes))
+			if gb.Label != nil {
+				m.EsqlGroupBy[i].Label = types.StringValue(*gb.Label)
+			} else {
+				m.EsqlGroupBy[i].Label = types.StringNull()
+			}
+		}
+	}
+
+	if len(api.Filters) > 0 {
+		m.Filters = lenscommon.PopulateFiltersFromAPI(api.Filters, &diags)
+	} else {
+		m.Filters = nil
+	}
+
+	m.Legend = &models.PartitionLegendModel{}
+	lenscommon.PartitionLegendFromMosaicLegend(m.Legend, api.Legend)
+
+	if api.Styling.Values.Mode != nil || api.Styling.Values.PercentDecimals != nil {
+		m.ValueDisplay = &models.PartitionValueDisplay{}
+		lenscommon.PartitionValueDisplayFromAPI(m.ValueDisplay, api.Styling.Values)
+	} else {
+		m.ValueDisplay = nil
+	}
+
+	var priorLens *models.LensChartPresentationTFModel
+	if prior != nil {
+		p := prior.LensChartPresentationTFModel
+		priorLens = &p
+	}
+	ddWire, ddOmit, ddWireDiags := lenscommon.LensDrilldownsAPIToWire(api.Drilldowns)
+	diags.Append(ddWireDiags...)
+	if ddWireDiags.HasError() {
+		return diags
+	}
+	pres, presDiags := lenscommon.LensChartPresentationReadsFor(ctx, resolver, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return diags
+	}
+	m.LensChartPresentationTFModel = pres
+
+	return diags
+}
+
+func mosaicConfigToAPI(m *models.MosaicConfigModel, resolver lenscommon.Resolver) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+	var diags diag.Diagnostics
+
+	if m == nil {
+		return attrs, diags
+	}
+
+	if mosaicConfigUsesESQL(m) {
+		esql, esqlDiags := mosaicConfigToAPIMosaicESQL(m, resolver)
+		diags.Append(esqlDiags...)
+		if diags.HasError() {
+			return attrs, diags
+		}
+		if err := attrs.FromMosaicESQL(esql); err != nil {
+			diags.AddError("Failed to create mosaic ES|QL schema", err.Error())
+		}
+		return attrs, diags
+	}
+
+	noESQL, noESQLDiags := mosaicConfigToAPINoESQL(m, resolver)
+	diags.Append(noESQLDiags...)
+	if diags.HasError() {
+		return attrs, diags
+	}
+	if err := attrs.FromMosaicNoESQL(noESQL); err != nil {
+		diags.AddError("Failed to create mosaic schema", err.Error())
+	}
+
+	return attrs, diags
+}
+
+func mosaicConfigUsesESQL(m *models.MosaicConfigModel) bool {
+	if m == nil {
+		return false
+	}
+	if m.Query == nil {
+		return true
+	}
+	return m.Query.Expression.IsNull() && m.Query.Language.IsNull()
+}
+
+func mosaicConfigToAPIMosaicESQL(m *models.MosaicConfigModel, resolver lenscommon.Resolver) (kbapi.MosaicESQL, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	var api kbapi.MosaicESQL
+	api.Type = kbapi.MosaicESQLTypeMosaic
+
+	if m.DataSourceJSON.IsNull() {
+		diags.AddError("Missing data_source_json", "mosaic_config.data_source_json must be provided")
+		return api, diags
+	}
+	if err := json.Unmarshal([]byte(m.DataSourceJSON.ValueString()), &api.DataSource); err != nil {
+		diags.AddError("Failed to unmarshal data_source_json", err.Error())
+		return api, diags
+	}
+	if m.Legend == nil {
+		diags.AddError("Missing legend", "mosaic_config.legend must be provided")
+		return api, diags
+	}
+	api.Legend = lenscommon.PartitionLegendToMosaicLegend(m.Legend)
+
+	if m.GroupBreakdownBy.IsNull() {
+		diags.AddError("Missing group_breakdown_by_json", "mosaic_config.group_breakdown_by_json must be provided")
+		return api, diags
+	}
+	if err := json.Unmarshal([]byte(m.GroupBreakdownBy.ValueString()), &api.GroupBreakdownBy); err != nil {
+		diags.AddError("Failed to unmarshal group_breakdown_by", err.Error())
+		return api, diags
+	}
+
+	if len(m.EsqlMetrics) != 1 {
+		diags.AddError("Invalid esql_metrics", "mosaic_config.esql_metrics must contain exactly one item")
+		return api, diags
+	}
+	em := m.EsqlMetrics[0]
+	api.Metric.Column = em.Column.ValueString()
+	if typeutils.IsKnown(em.Label) {
+		l := em.Label.ValueString()
+		api.Metric.Label = &l
+	}
+	if err := json.Unmarshal([]byte(em.FormatJSON.ValueString()), &api.Metric.Format); err != nil {
+		diags.AddError("Failed to unmarshal esql metric format_json", err.Error())
+		return api, diags
+	}
+
+	if len(m.EsqlGroupBy) == 0 {
+		diags.AddError("Missing esql_group_by", "mosaic_config.esql_group_by must contain at least one item")
+		return api, diags
+	}
+	groupBy := make([]struct {
+		CollapseBy kbapi.CollapseBy   `json:"collapse_by"`
+		Color      kbapi.ColorMapping `json:"color"`
+		Column     string             `json:"column"`
+		Format     kbapi.FormatType   `json:"format"`
+		Label      *string            `json:"label,omitempty"`
+	}, len(m.EsqlGroupBy))
+	for i, eg := range m.EsqlGroupBy {
+		groupBy[i].Column = eg.Column.ValueString()
+		groupBy[i].CollapseBy = kbapi.CollapseBy(eg.CollapseBy.ValueString())
+		if err := json.Unmarshal([]byte(eg.ColorJSON.ValueString()), &groupBy[i].Color); err != nil {
+			diags.AddError("Failed to unmarshal esql group_by color_json", err.Error())
+			return api, diags
+		}
+		formatSrc := lenscommon.DefaultLensNumberFormatJSON
+		if typeutils.IsKnown(eg.FormatJSON) {
+			formatSrc = eg.FormatJSON.ValueString()
+		}
+		if err := json.Unmarshal([]byte(formatSrc), &groupBy[i].Format); err != nil {
+			diags.AddError("Failed to unmarshal esql group_by format_json", err.Error())
+			return api, diags
+		}
+		if typeutils.IsKnown(eg.Label) {
+			l := eg.Label.ValueString()
+			groupBy[i].Label = &l
+		}
+	}
+	api.GroupBy = &groupBy
+
+	if typeutils.IsKnown(m.Title) {
+		api.Title = new(m.Title.ValueString())
+	}
+	if typeutils.IsKnown(m.Description) {
+		api.Description = new(m.Description.ValueString())
+	}
+	if typeutils.IsKnown(m.IgnoreGlobalFilters) {
+		api.IgnoreGlobalFilters = new(m.IgnoreGlobalFilters.ValueBool())
+	}
+	if typeutils.IsKnown(m.Sampling) {
+		api.Sampling = new(float32(m.Sampling.ValueFloat64()))
+	}
+
+	api.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
+
+	if m.ValueDisplay != nil {
+		api.Styling.Values = lenscommon.PartitionValueDisplayToAPI(m.ValueDisplay)
+	} else {
+		defaultMode := kbapi.ValueDisplayModePercentage
+		api.Styling.Values = kbapi.ValueDisplay{Mode: &defaultMode}
+	}
+
+	writes, presDiags := lenscommon.LensChartPresentationWritesFor(resolver, m.LensChartPresentationTFModel)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return api, diags
+	}
+
+	api.TimeRange = writes.TimeRange
+	if writes.HideTitle != nil {
+		api.HideTitle = writes.HideTitle
+	}
+	if writes.HideBorder != nil {
+		api.HideBorder = writes.HideBorder
+	}
+	if writes.References != nil {
+		api.References = writes.References
+	}
+	if len(writes.DrilldownsRaw) > 0 {
+		items, ddDiags := lenscommon.DecodeLensDrilldownSlice[kbapi.MosaicESQL_Drilldowns_Item](writes.DrilldownsRaw)
+		diags.Append(ddDiags...)
+		if !ddDiags.HasError() {
+			api.Drilldowns = &items
+		}
+	}
+
+	return api, diags
+}
+
+func mosaicConfigToAPINoESQL(m *models.MosaicConfigModel, resolver lenscommon.Resolver) (kbapi.MosaicNoESQL, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	api := kbapi.MosaicNoESQL{
+		Type: kbapi.MosaicNoESQLTypeMosaic,
+	}
+
+	if typeutils.IsKnown(m.Title) {
+		api.Title = new(m.Title.ValueString())
+	}
+	if typeutils.IsKnown(m.Description) {
+		api.Description = new(m.Description.ValueString())
+	}
+	if typeutils.IsKnown(m.IgnoreGlobalFilters) {
+		api.IgnoreGlobalFilters = new(m.IgnoreGlobalFilters.ValueBool())
+	}
+	if typeutils.IsKnown(m.Sampling) {
+		api.Sampling = new(float32(m.Sampling.ValueFloat64()))
+	}
+
+	if m.DataSourceJSON.IsNull() {
+		diags.AddError("Missing data_source_json", "mosaic_config.data_source_json must be provided")
+		return api, diags
+	}
+	if err := json.Unmarshal([]byte(m.DataSourceJSON.ValueString()), &api.DataSource); err != nil {
+		diags.AddError("Failed to unmarshal data_source_json", err.Error())
+		return api, diags
+	}
+
+	if m.GroupBy.IsNull() {
+		diags.AddError("Missing group_by_json", "mosaic_config.group_by_json must be provided")
+		return api, diags
+	}
+	var groupBy []kbapi.MosaicNoESQL_GroupBy_Item
+	if err := json.Unmarshal([]byte(m.GroupBy.ValueString()), &groupBy); err != nil {
+		diags.AddError("Failed to unmarshal group_by", err.Error())
+		return api, diags
+	}
+	if len(groupBy) == 0 {
+		diags.AddError("Invalid group_by_json", "mosaic_config.group_by_json must contain at least one item")
+		return api, diags
+	}
+	api.GroupBy = &groupBy
+
+	if m.GroupBreakdownBy.IsNull() {
+		diags.AddError("Missing group_breakdown_by_json", "mosaic_config.group_breakdown_by_json must be provided")
+		return api, diags
+	}
+	var groupBreakdownBy []kbapi.MosaicNoESQL_GroupBreakdownBy_Item
+	if err := json.Unmarshal([]byte(m.GroupBreakdownBy.ValueString()), &groupBreakdownBy); err != nil {
+		diags.AddError("Failed to unmarshal group_breakdown_by", err.Error())
+		return api, diags
+	}
+	if len(groupBreakdownBy) == 0 {
+		diags.AddError("Invalid group_breakdown_by_json", "mosaic_config.group_breakdown_by_json must contain at least one item")
+		return api, diags
+	}
+	api.GroupBreakdownBy = &groupBreakdownBy
+
+	if m.Metrics.IsNull() {
+		diags.AddError("Missing metrics_json", "mosaic_config.metrics_json must be provided")
+		return api, diags
+	}
+	var rawMetrics []json.RawMessage
+	if err := json.Unmarshal([]byte(m.Metrics.ValueString()), &rawMetrics); err != nil {
+		diags.AddError("Failed to unmarshal metrics_json", err.Error())
+		return api, diags
+	}
+	if len(rawMetrics) != 1 {
+		diags.AddError("Invalid metrics_json", "mosaic_config.metrics_json must contain exactly one item")
+		return api, diags
+	}
+	if err := json.Unmarshal(rawMetrics[0], &api.Metric); err != nil {
+		diags.AddError("Failed to unmarshal metric", err.Error())
+		return api, diags
+	}
+
+	if m.Query == nil {
+		diags.AddError("Missing query", "mosaic_config.query is required for non-ES|QL mosaic charts")
+		return api, diags
+	}
+	api.Query = lenscommon.FilterSimpleToAPI(m.Query)
+
+	api.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
+
+	if m.Legend == nil {
+		diags.AddError("Missing legend", "mosaic_config.legend must be provided")
+		return api, diags
+	}
+	api.Legend = lenscommon.PartitionLegendToMosaicLegend(m.Legend)
+
+	if m.ValueDisplay != nil {
+		api.Styling.Values = lenscommon.PartitionValueDisplayToAPI(m.ValueDisplay)
+	}
+
+	writes, presDiags := lenscommon.LensChartPresentationWritesFor(resolver, m.LensChartPresentationTFModel)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return api, diags
+	}
+
+	api.TimeRange = writes.TimeRange
+	if writes.HideTitle != nil {
+		api.HideTitle = writes.HideTitle
+	}
+	if writes.HideBorder != nil {
+		api.HideBorder = writes.HideBorder
+	}
+	if writes.References != nil {
+		api.References = writes.References
+	}
+	if len(writes.DrilldownsRaw) > 0 {
+		items, ddDiags := lenscommon.DecodeLensDrilldownSlice[kbapi.MosaicNoESQL_Drilldowns_Item](writes.DrilldownsRaw)
+		diags.Append(ddDiags...)
+		if !ddDiags.HasError() {
+			api.Drilldowns = &items
+		}
+	}
+
+	return api, diags
+}

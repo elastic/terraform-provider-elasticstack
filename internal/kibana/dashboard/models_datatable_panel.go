@@ -22,117 +22,12 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
-
-func newDatatablePanelConfigConverter() datatablePanelConfigConverter {
-	return datatablePanelConfigConverter{
-		lensVisualizationBase: lensVisualizationBase{
-			visualizationType: string(kbapi.DatatableNoESQLTypeDataTable),
-			hasTFChartBlock: func(blocks *models.LensByValueChartBlocks) bool {
-				return blocks != nil && blocks.DatatableConfig != nil
-			},
-		},
-	}
-}
-
-type datatablePanelConfigConverter struct {
-	lensVisualizationBase
-}
-
-func (c datatablePanelConfigConverter) populateFromAttributes(
-	ctx context.Context,
-	dashboard *models.DashboardModel,
-	tfPanel *models.PanelModel,
-	blocks *models.LensByValueChartBlocks,
-	attrs kbapi.KbnDashboardPanelTypeVisConfig0,
-) diag.Diagnostics {
-	var priorNo *models.DatatableNoESQLConfigModel
-	var priorEsql *models.DatatableESQLConfigModel
-	if b := lensByValueChartBlocksFromPanel(tfPanel); b != nil && b.DatatableConfig != nil {
-		if b.DatatableConfig.NoESQL != nil {
-			cpy := *b.DatatableConfig.NoESQL
-			priorNo = &cpy
-		}
-		if b.DatatableConfig.ESQL != nil {
-			cpy := *b.DatatableConfig.ESQL
-			priorEsql = &cpy
-		}
-	}
-
-	blocks.DatatableConfig = &models.DatatableConfigModel{}
-
-	if datatableNoESQL, err := attrs.AsDatatableNoESQL(); err == nil && !isDatatableNoESQLCandidateActuallyESQL(datatableNoESQL) {
-		blocks.DatatableConfig.NoESQL = &models.DatatableNoESQLConfigModel{}
-		return datatableNoESQLConfigFromAPI(ctx, blocks.DatatableConfig.NoESQL, dashboard, priorNo, datatableNoESQL)
-	}
-	datatableESQL, err := attrs.AsDatatableESQL()
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	blocks.DatatableConfig.ESQL = &models.DatatableESQLConfigModel{}
-	return datatableESQLConfigFromAPI(ctx, blocks.DatatableConfig.ESQL, dashboard, priorEsql, datatableESQL)
-}
-
-func (c datatablePanelConfigConverter) buildAttributes(blocks *models.LensByValueChartBlocks, dashboard *models.DashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	if blocks.DatatableConfig == nil {
-		return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
-	}
-
-	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
-
-	switch {
-	case blocks.DatatableConfig.NoESQL != nil:
-		noESQL, noDiags := datatableNoESQLConfigToAPI(blocks.DatatableConfig.NoESQL, dashboard)
-		diags.Append(noDiags...)
-		if diags.HasError() {
-			return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
-		}
-
-		if err := attrs.FromDatatableNoESQL(noESQL); err != nil {
-			diags.AddError("Failed to convert datatable no-esql config", err.Error())
-			return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
-		}
-	case blocks.DatatableConfig.ESQL != nil:
-		esql, esqlDiags := datatableESQLConfigToAPI(blocks.DatatableConfig.ESQL, dashboard)
-		diags.Append(esqlDiags...)
-		if diags.HasError() {
-			return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
-		}
-
-		if err := attrs.FromDatatableESQL(esql); err != nil {
-			diags.AddError("Failed to convert datatable esql config", err.Error())
-			return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
-		}
-	default:
-		return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
-	}
-
-	return attrs, diags
-}
-
-func isDatatableNoESQLCandidateActuallyESQL(apiTable kbapi.DatatableNoESQL) bool {
-	body, err := json.Marshal(apiTable.DataSource)
-	if err != nil {
-		return false
-	}
-
-	var dataset struct {
-		Type string `json:"type"`
-	}
-	if err := json.Unmarshal(body, &dataset); err != nil {
-		return false
-	}
-
-	return dataset.Type == legacyMetricDatasetTypeESQL || dataset.Type == legacyMetricDatasetTypeTable
-}
 
 func datatableNoESQLConfigFromAPI(
 	ctx context.Context,

@@ -23,19 +23,15 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/lensxy"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-func Test_newXYChartPanelConfigConverter(t *testing.T) {
-	converter := newXYChartPanelConfigConverter()
-	assert.NotNil(t, converter)
-	assert.Equal(t, string(kbapi.XyChartNoESQLTypeXy), converter.visualizationType)
-}
 
 func Test_xyAxisModel_fromAPI_toAPI(t *testing.T) {
 	raw := []byte(`{
@@ -300,12 +296,12 @@ func Test_axisTitleModel_fromAPI_toAPI(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test fromAPI
 			model := &models.AxisTitleModel{}
-			axisTitleFromAPI(model, tt.apiTitle)
+			lenscommon.AxisTitleFromAPI(model, tt.apiTitle)
 			assert.Equal(t, tt.expected.Value, model.Value)
 			assert.Equal(t, tt.expected.Visible, model.Visible)
 
 			// Test toAPI
-			apiTitle := axisTitleToAPI(model)
+			apiTitle := lenscommon.AxisTitleToAPI(model)
 			assert.NotNil(t, apiTitle)
 		})
 	}
@@ -610,13 +606,14 @@ func Test_xyChartPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 	require.NoError(t, attrs.FromXyChartNoESQL(xyChart))
 
-	converter := newXYChartPanelConfigConverter()
+	c := lenscommon.ForType(string(kbapi.XyChartNoESQLTypeXy))
+	require.NotNil(t, c)
 	visBv := models.VisByValueModel{}
-	diags = converter.populateFromAttributes(ctx, nil, nil, &visBv.LensByValueChartBlocks, attrs)
+	diags = c.PopulateFromAttributes(ctx, lensChartResolver(nil), &visBv.LensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
 	require.NotNil(t, visBv.XYChartConfig)
 
-	attrs2, diags := converter.buildAttributes(&visBv.LensByValueChartBlocks, nil)
+	attrs2, diags := c.BuildAttributes(&visBv.LensByValueChartBlocks, lensChartResolver(nil))
 	require.False(t, diags.HasError())
 
 	chart2, err := attrs2.AsXyChartNoESQL()
@@ -1105,7 +1102,7 @@ func Test_yAxisConfigModel_toAPIY2_nil(t *testing.T) {
 
 func Test_axisTitleModel_toAPI_nil(t *testing.T) {
 	var model *models.AxisTitleModel
-	apiTitle := axisTitleToAPI(model)
+	apiTitle := lenscommon.AxisTitleToAPI(model)
 	assert.Nil(t, apiTitle)
 }
 
@@ -1299,7 +1296,7 @@ func Test_alignXYChartStateFromPlanPanels_preservesPractitionerIntent(t *testing
 		},
 	}
 
-	alignXYChartStateFromPlanPanels(planPanels, statePanels)
+	lensxy.AlignXYChartStateFromPlanPanels(planPanels, statePanels)
 
 	planXY := planPanels[0].VisConfig.ByValue.XYChartConfig
 	got := statePanels[0].VisConfig.ByValue.XYChartConfig

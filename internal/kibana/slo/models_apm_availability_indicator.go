@@ -78,7 +78,7 @@ func (m *tfModel) populateFromApmAvailabilityIndicator(apiIndicator kbapi.SLOsIn
 		TransactionType: types.StringValue(p.TransactionType),
 		TransactionName: types.StringValue(p.TransactionName),
 		Index:           types.StringValue(p.Index),
-		Filter:          stringOrNull(p.Filter),
+		Filter:          types.StringPointerValue(p.Filter),
 	}}
 
 	return diags

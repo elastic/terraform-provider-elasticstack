@@ -22,6 +22,7 @@ import (
 	"maps"
 	"strings"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
@@ -34,7 +35,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
@@ -46,9 +46,6 @@ import (
 const (
 	dashboardValueAuto               = "auto"
 	dashboardValueAverage            = "average"
-	pieChartTypeNumber               = "number"
-	pieChartTypePercent              = "percent"
-	operationTerms                   = "terms"
 	panelTypeImage                   = "image"
 	panelTypeMarkdown                = "markdown"
 	panelTypeVis                     = "vis"
@@ -72,258 +69,40 @@ func panelConfigNames() []string {
 	return panelkit.TypedSiblingPanelConfigBlockNames()
 }
 
-func isFieldMetricOperation(operation string) bool {
-	switch operation {
-	case "count", "unique_count", "min", "max", dashboardValueAverage, "median", "standard_deviation", "sum", "last_value", "percentile", "percentile_rank":
-		return true
-	default:
-		return false
-	}
-}
-
 // populateLensMetricDefaults populates default values for Lens metric configuration (shared across XY, metric, pie, treemap, datatable, etc.).
 func populateLensMetricDefaults(model map[string]any) map[string]any {
-	if model == nil {
-		return model
-	}
-
-	// Set defaults for format
-	if format, ok := model["format"].(map[string]any); ok {
-		// Kibana has used both `type` and `id` as discriminators for number/percent format across
-		// different visualizations/versions. Support both, and support both top-level params as well
-		// as nested `params`.
-		formatType, _ := format["type"].(string)
-		formatID, _ := format["id"].(string)
-		isNumberish := formatType == pieChartTypeNumber || formatType == pieChartTypePercent || formatID == pieChartTypeNumber || formatID == pieChartTypePercent
-
-		if isNumberish {
-			// If a nested params map exists, prefer setting defaults there.
-			if params, ok := format["params"].(map[string]any); ok {
-				if _, exists := params["compact"]; !exists {
-					params["compact"] = false
-				}
-				if _, exists := params["decimals"]; !exists {
-					params["decimals"] = float64(2)
-				}
-				format["params"] = params
-			} else {
-				if _, exists := format["compact"]; !exists {
-					format["compact"] = false
-				}
-				if _, exists := format["decimals"]; !exists {
-					format["decimals"] = float64(2)
-				}
-			}
-		}
-	}
-
-	// Set defaults for all metric types
-	if _, exists := model["empty_as_null"]; !exists {
-		model["empty_as_null"] = false
-	}
-	if _, exists := model["fit"]; !exists {
-		model["fit"] = false
-	}
-	if _, exists := model["color"]; !exists {
-		model["color"] = map[string]any{"type": "auto"}
-	}
-
-	metricType, _ := model["type"].(string)
-
-	// Primary metrics have value/labels alignment defaults.
-	if metricType == "primary" {
-		if _, exists := model["value"]; !exists {
-			model["value"] = map[string]any{"alignment": "right"}
-		} else if v, ok := model["value"].(map[string]any); ok {
-			if _, exists := v["alignment"]; !exists {
-				v["alignment"] = "right"
-			}
-		}
-		if _, exists := model["labels"]; !exists {
-			model["labels"] = map[string]any{"alignment": "left"}
-		} else if l, ok := model["labels"].(map[string]any); ok {
-			if _, exists := l["alignment"]; !exists {
-				l["alignment"] = "left"
-			}
-		}
-	}
-
-	// Secondary metrics have placement and value alignment defaults.
-	if metricType == "secondary" {
-		if _, exists := model["placement"]; !exists {
-			model["placement"] = "before"
-		}
-		if _, exists := model["value"]; !exists {
-			model["value"] = map[string]any{"alignment": "right"}
-		} else if v, ok := model["value"].(map[string]any); ok {
-			if _, exists := v["alignment"]; !exists {
-				v["alignment"] = "right"
-			}
-		}
-	}
-
-	return model
+	return lenscommon.PopulateLensMetricDefaults(model)
 }
 
 func populateMetricChartMetricDefaults(model map[string]any) map[string]any {
-	_, hadColor := model["color"]
-	model = populateLensMetricDefaults(model)
-	if model == nil {
-		return model
-	}
-
-	if metricType, _ := model["type"].(string); metricType == "secondary" && !hadColor {
-		model["color"] = map[string]any{"type": "none"}
-	}
-
-	return model
+	return lenscommon.PopulateMetricChartMetricDefaults(model)
 }
 
 // populatePartitionGroupByDefaults populates default values for partition chart group_by/group_breakdown_by configurations.
 // Used by treemap and mosaic. Kibana may add default fields (e.g. rank_by, size) on read, so we normalize both sides.
 func populatePartitionGroupByDefaults(model []map[string]any) []map[string]any {
-	if model == nil {
-		return model
-	}
-
-	for _, item := range model {
-		if item == nil {
-			continue
-		}
-		operation, _ := item["operation"].(string)
-		if operation == "value" {
-			continue
-		}
-		if operation != operationTerms {
-			continue
-		}
-		// termsOperation requires collapse_by and format per API schema.
-		if _, exists := item["collapse_by"]; !exists {
-			item["collapse_by"] = "avg"
-		}
-		if _, exists := item["format"]; !exists {
-			item["format"] = map[string]any{
-				"type":     "number",
-				"decimals": float64(2),
-			}
-		}
-		if _, exists := item["rank_by"]; !exists {
-			item["rank_by"] = map[string]any{
-				"type":      "column",
-				"metric":    float64(0),
-				"direction": "desc",
-			}
-		}
-		// Treemap defaults to a size of 5 for terms.
-		if _, exists := item["size"]; !exists {
-			item["size"] = float64(5)
-		}
-	}
-
-	return model
+	return lenscommon.PopulatePartitionGroupByDefaults(model)
 }
 
 // populatePartitionMetricsDefaults populates default values for partition chart metrics.
 // Used by treemap and mosaic. Mirrors the defaulting behavior used by other Lens metric operations.
 func populatePartitionMetricsDefaults(model []map[string]any) []map[string]any {
-	if model == nil {
-		return model
-	}
-
-	for i := range model {
-		model[i] = populateTagcloudMetricDefaults(model[i])
-
-		// ES|QL treemap metrics may omit format on write, but Kibana may return it as null.
-		// Normalize both sides so semantic equality doesn't drift.
-		if model[i] == nil {
-			continue
-		}
-		if operation, ok := model[i]["operation"].(string); ok && operation == "value" {
-			if _, exists := model[i]["format"]; !exists {
-				model[i]["format"] = nil
-			}
-		}
-	}
-
-	return model
+	return lenscommon.PopulatePartitionMetricsDefaults(model)
 }
 
 // populateLegacyMetricMetricDefaults populates default values for legacy metric operations
 func populateLegacyMetricMetricDefaults(model map[string]any) map[string]any {
-	if model == nil {
-		return model
-	}
-	if operation, ok := model["operation"].(string); ok && isFieldMetricOperation(operation) {
-		if _, exists := model["show_array_values"]; !exists {
-			model["show_array_values"] = false
-		}
-		if _, exists := model["empty_as_null"]; !exists {
-			model["empty_as_null"] = false
-		}
-	}
-
-	format, ok := model["format"].(map[string]any)
-	if ok {
-		if formatType, ok := format["type"].(string); ok {
-			switch formatType {
-			case pieChartTypeNumber, pieChartTypePercent:
-				if _, exists := format["decimals"]; !exists {
-					format["decimals"] = float64(2)
-				}
-				if _, exists := format["compact"]; !exists {
-					format["compact"] = false
-				}
-			case "bytes", "bits":
-				if _, exists := format["decimals"]; !exists {
-					format["decimals"] = float64(2)
-				}
-			}
-		}
-		model["format"] = format
-	}
-
-	return model
+	return lenscommon.PopulateLegacyMetricMetricDefaults(model)
 }
 
 // populateGaugeMetricDefaults populates default values for gauge metric configuration
 func populateGaugeMetricDefaults(model map[string]any) map[string]any {
-	if model == nil {
-		return model
-	}
-
-	if _, exists := model["empty_as_null"]; !exists {
-		model["empty_as_null"] = false
-	}
-	if _, exists := model["title"]; !exists {
-		model["title"] = map[string]any{"visible": true}
-	}
-	if _, exists := model["ticks"]; !exists {
-		model["ticks"] = map[string]any{"visible": true, "mode": "bands"}
-	}
-	if _, exists := model["color"]; !exists {
-		model["color"] = map[string]any{"type": "auto"}
-	}
-
-	return model
+	return lenscommon.PopulateGaugeMetricDefaults(model)
 }
 
 // populateRegionMapMetricDefaults populates default values for region map metric configuration
 func populateRegionMapMetricDefaults(model map[string]any) map[string]any {
-	if model == nil {
-		return model
-	}
-	if operation, ok := model["operation"].(string); ok && isFieldMetricOperation(operation) {
-		if _, exists := model["empty_as_null"]; !exists {
-			model["empty_as_null"] = false
-		}
-		if _, exists := model["show_metric_label"]; !exists {
-			model["show_metric_label"] = true
-		}
-		if _, exists := model["color"]; !exists {
-			model["color"] = map[string]any{"type": "auto"}
-		}
-	}
-	return model
+	return lenscommon.PopulateRegionMapMetricDefaults(model)
 }
 
 func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
@@ -1127,34 +906,12 @@ func (visByValueSourceValidator) ValidateObject(_ context.Context, req validator
 }
 
 func getFilterSimple() map[string]schema.Attribute {
-	return map[string]schema.Attribute{
-		"language": schema.StringAttribute{
-			MarkdownDescription: "Query language (default: 'kql').",
-			Optional:            true,
-			Computed:            true,
-			Validators: []validator.String{
-				stringvalidator.OneOf("kql", "lucene"),
-			},
-		},
-		"expression": schema.StringAttribute{
-			MarkdownDescription: "Filter expression string.",
-			Required:            true,
-		},
-	}
+	return lenscommon.LensChartFilterSimpleAttributes()
 }
 
 // getChartFilter returns the schema for a single chart-level filter (API-shaped JSON).
 func getChartFilter() schema.NestedAttributeObject {
-	return schema.NestedAttributeObject{
-		Attributes: map[string]schema.Attribute{
-			"filter_json": schema.StringAttribute{
-				MarkdownDescription: "Chart filter as normalized JSON. Must match the Kibana dashboard API for this chart: " +
-					"one of the filter union members (condition, group, DSL, or spatial) described in the dashboards OpenAPI specification.",
-				CustomType: jsontypes.NormalizedType{},
-				Required:   true,
-			},
-		},
-	}
+	return lenscommon.LensChartFilterNestedObject()
 }
 
 // getDashboardRootSavedFiltersNestedObject returns the nested object schema for one dashboard-level saved filter.
@@ -1227,263 +984,21 @@ func getHeatmapSchema(includePresentation bool) map[string]schema.Attribute {
 	return attrs
 }
 
-var (
-	_ validator.Object = drilldownListItemVariantsValidator{}
-
-	exprDrilldownDashboardDrilldown = path.MatchRelative().AtParent().AtName("dashboard_drilldown")
-	exprDrilldownDiscoverDrilldown  = path.MatchRelative().AtParent().AtName("discover_drilldown")
-	exprDrilldownURLDrilldown       = path.MatchRelative().AtParent().AtName("url_drilldown")
-)
-
-// drilldownListItemVariantsValidator rejects drilldown list items where none of the three variant blocks are set.
-// Pairwise mutual exclusion when multiple variants are set is enforced via
-// validators.ForbiddenIfDrilldownVariantSiblingNestedPresent on each variant block (REQ-039).
-type drilldownListItemVariantsValidator struct{}
-
-func (drilldownListItemVariantsValidator) Description(_ context.Context) string {
-	return "Requires at least one drilldown variant (`dashboard_drilldown`, `discover_drilldown`, or `url_drilldown`); multiple variants are rejected by sibling object validators."
-}
-
-func (v drilldownListItemVariantsValidator) MarkdownDescription(ctx context.Context) string {
-	return v.Description(ctx)
-}
-
-func (drilldownListItemVariantsValidator) ValidateObject(_ context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
-	if req.ConfigValue.IsUnknown() {
-		return
-	}
-	if req.ConfigValue.IsNull() {
-		resp.Diagnostics.AddAttributeError(
-			req.Path,
-			"Invalid drilldown",
-			"Set exactly one of `dashboard_drilldown`, `discover_drilldown`, or `url_drilldown`.",
-		)
-		return
-	}
-	attrs := req.ConfigValue.Attributes()
-	count := 0
-	for _, key := range []string{"dashboard_drilldown", "discover_drilldown", "url_drilldown"} {
-		val, okAttr := attrs[key]
-		if !okAttr || val.IsNull() || val.IsUnknown() {
-			continue
-		}
-		count++
-	}
-	if count == 0 {
-		resp.Diagnostics.AddAttributeError(
-			req.Path,
-			"Invalid drilldown",
-			"Set exactly one of `dashboard_drilldown`, `discover_drilldown`, or `url_drilldown`.",
-		)
-	}
-}
-
 // lensChartPresentationAttributes returns optional chart-root presentation fields shared by all typed Lens chart blocks:
 // `time_range` (inherits dashboard-level when null — see REQ-038), `hide_title`, `hide_border`, `references_json`, and `drilldowns`.
 func lensChartPresentationAttributes() map[string]schema.Attribute {
-	return map[string]schema.Attribute{
-		"time_range": schema.SingleNestedAttribute{
-			MarkdownDescription: "Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. " +
-				"When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read.",
-			Optional:   true,
-			Attributes: lensChartPresentationTimeRangeAttributes(),
-		},
-		"hide_title": schema.BoolAttribute{
-			MarkdownDescription: "When true, suppresses the chart title.",
-			Optional:            true,
-		},
-		"hide_border": schema.BoolAttribute{
-			MarkdownDescription: "When true, suppresses the chart panel border.",
-			Optional:            true,
-		},
-		"references_json": schema.StringAttribute{
-			MarkdownDescription: "Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.",
-			Optional:            true,
-			CustomType:          jsontypes.NormalizedType{},
-		},
-		"drilldowns": schema.ListNestedAttribute{
-			MarkdownDescription: "Optional drilldowns for this chart (max 100 per Kibana API). Each entry sets exactly one of `dashboard_drilldown`, `discover_drilldown`, or `url_drilldown`.",
-			Optional:            true,
-			NestedObject: schema.NestedAttributeObject{
-				Attributes: lensChartDrilldownListItemAttributes(),
-				Validators: []validator.Object{
-					drilldownListItemVariantsValidator{},
-				},
-			},
-			Validators: []validator.List{
-				listvalidator.SizeAtMost(100),
-			},
-		},
-	}
+	return lenscommon.LensChartPresentationAttributes()
 }
 
-func lensChartPresentationTimeRangeAttributes() map[string]schema.Attribute {
-	return map[string]schema.Attribute{
-		"from": schema.StringAttribute{
-			MarkdownDescription: "Start of the chart time range.",
-			Required:            true,
-		},
-		"to": schema.StringAttribute{
-			MarkdownDescription: "End of the chart time range.",
-			Required:            true,
-		},
-		"mode": schema.StringAttribute{
-			MarkdownDescription: "Optional time range mode. Valid values are `absolute` or `relative`. " +
-				"When the GET API omits `mode`, the provider preserves the prior chart `time_range.mode` from configuration or state " +
-				"(same pattern as REQ-009 on the dashboard `time_range`).",
-			Optional: true,
-			Validators: []validator.String{
-				stringvalidator.OneOf("absolute", "relative"),
-			},
-		},
-	}
-}
-
+// lensChartDrilldownListItemAttributes forwards to lenscommon for tests that assert nested drilldown schema wiring.
 func lensChartDrilldownListItemAttributes() map[string]schema.Attribute {
-	return map[string]schema.Attribute{
-		"dashboard_drilldown": schema.SingleNestedAttribute{
-			MarkdownDescription: "Navigate to another dashboard using current filters/time range.",
-			Optional:            true,
-			Attributes: map[string]schema.Attribute{
-				"dashboard_id": schema.StringAttribute{
-					MarkdownDescription: "Target dashboard id.",
-					Required:            true,
-				},
-				"label": schema.StringAttribute{
-					MarkdownDescription: "Human-readable drilldown label.",
-					Required:            true,
-				},
-				"trigger": schema.StringAttribute{
-					MarkdownDescription: "**Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.",
-					Computed:            true,
-					PlanModifiers: []planmodifier.String{
-						stringplanmodifier.UseStateForUnknown(),
-					},
-				},
-				"use_filters": schema.BoolAttribute{
-					MarkdownDescription: "When true, forwards filter context.",
-					Optional:            true,
-					Computed:            true,
-					Default:             booldefault.StaticBool(true),
-				},
-				"use_time_range": schema.BoolAttribute{
-					MarkdownDescription: "When true, forwards the time range.",
-					Optional:            true,
-					Computed:            true,
-					Default:             booldefault.StaticBool(true),
-				},
-				"open_in_new_tab": schema.BoolAttribute{
-					MarkdownDescription: "When true, opens the target dashboard in a new browser tab.",
-					Optional:            true,
-					Computed:            true,
-					Default:             booldefault.StaticBool(false),
-				},
-			},
-			Validators: []validator.Object{
-				validators.ForbiddenIfDrilldownVariantSiblingNestedPresent(exprDrilldownDiscoverDrilldown),
-				validators.ForbiddenIfDrilldownVariantSiblingNestedPresent(exprDrilldownURLDrilldown),
-			},
-		},
-		"discover_drilldown": schema.SingleNestedAttribute{
-			MarkdownDescription: "Open Discover with contextual filters.",
-			Optional:            true,
-			Attributes: map[string]schema.Attribute{
-				"label": schema.StringAttribute{
-					MarkdownDescription: "Human-readable drilldown label.",
-					Required:            true,
-				},
-				"trigger": schema.StringAttribute{
-					MarkdownDescription: "**Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.",
-					Computed:            true,
-					PlanModifiers: []planmodifier.String{
-						stringplanmodifier.UseStateForUnknown(),
-					},
-				},
-				"open_in_new_tab": schema.BoolAttribute{
-					MarkdownDescription: "When true, opens Discover in a new browser tab.",
-					Optional:            true,
-					Computed:            true,
-					Default:             booldefault.StaticBool(true),
-				},
-			},
-			Validators: []validator.Object{
-				validators.ForbiddenIfDrilldownVariantSiblingNestedPresent(exprDrilldownDashboardDrilldown),
-				validators.ForbiddenIfDrilldownVariantSiblingNestedPresent(exprDrilldownURLDrilldown),
-			},
-		},
-		"url_drilldown": schema.SingleNestedAttribute{
-			MarkdownDescription: "Open a URL drilldown configured with explicit trigger semantics.",
-			Optional:            true,
-			Attributes: map[string]schema.Attribute{
-				"url": schema.StringAttribute{
-					MarkdownDescription: "Destination URL.",
-					Required:            true,
-				},
-				"label": schema.StringAttribute{
-					MarkdownDescription: "Human-readable drilldown label.",
-					Required:            true,
-				},
-				"trigger": schema.StringAttribute{
-					MarkdownDescription: "Trigger that fires this drilldown.",
-					Required:            true,
-					Validators: []validator.String{
-						stringvalidator.OneOf(
-							"on_click_row",
-							"on_click_value",
-							"on_open_panel_menu",
-							"on_select_range",
-						),
-					},
-				},
-				"encode_url": schema.BoolAttribute{
-					MarkdownDescription: "When true, encodes interpolated URL parameters.",
-					Optional:            true,
-					Computed:            true,
-					Default:             booldefault.StaticBool(true),
-				},
-				"open_in_new_tab": schema.BoolAttribute{
-					MarkdownDescription: "When true, opens the URL in a new browser tab.",
-					Optional:            true,
-					Computed:            true,
-					Default:             booldefault.StaticBool(true),
-				},
-			},
-			Validators: []validator.Object{
-				validators.ForbiddenIfDrilldownVariantSiblingNestedPresent(exprDrilldownDashboardDrilldown),
-				validators.ForbiddenIfDrilldownVariantSiblingNestedPresent(exprDrilldownDiscoverDrilldown),
-			},
-		},
-	}
+	return lenscommon.LensChartDrilldownListItemAttributes()
 }
 
 // lensChartBaseAttributes returns attributes shared by most Lens chart panels:
 // title, description, sampling, ignore_global_filters, and filters.
 func lensChartBaseAttributes() map[string]schema.Attribute {
-	return map[string]schema.Attribute{
-		"title": schema.StringAttribute{
-			MarkdownDescription: "The title of the chart displayed in the panel.",
-			Optional:            true,
-		},
-		"description": schema.StringAttribute{
-			MarkdownDescription: "The description of the chart.",
-			Optional:            true,
-		},
-		"sampling": schema.Float64Attribute{
-			MarkdownDescription: "Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.",
-			Optional:            true,
-			Computed:            true,
-		},
-		"ignore_global_filters": schema.BoolAttribute{
-			MarkdownDescription: "If true, ignore global filters when fetching data for this chart. Default is false.",
-			Optional:            true,
-			Computed:            true,
-		},
-		"filters": schema.ListNestedAttribute{
-			MarkdownDescription: "Additional filters to apply to the chart data (maximum 100).",
-			Optional:            true,
-			NestedObject:        getChartFilter(),
-		},
-	}
+	return lenscommon.LensChartBaseAttributes()
 }
 
 // getPartitionChartBaseSchema returns base attributes shared by partition charts (treemap, mosaic).
@@ -1593,97 +1108,20 @@ func getWaffleLegendSchema() map[string]schema.Attribute {
 // getPartitionESQLMetricSchema returns the shared ES|QL metric schema used by waffle,
 // treemap, and mosaic.
 func getPartitionESQLMetricSchema() schema.NestedAttributeObject {
-	return schema.NestedAttributeObject{
-		Attributes: map[string]schema.Attribute{
-			"column": schema.StringAttribute{
-				MarkdownDescription: "ES|QL column name for the metric.",
-				Required:            true,
-			},
-			"label": schema.StringAttribute{
-				MarkdownDescription: "Optional label for the metric.",
-				Optional:            true,
-			},
-			"format_json": schema.StringAttribute{
-				MarkdownDescription: "Number or other format configuration as JSON (`formatType` union).",
-				CustomType:          jsontypes.NormalizedType{},
-				Required:            true,
-			},
-			"color": schema.SingleNestedAttribute{
-				MarkdownDescription: "Static color for the metric.",
-				Required:            true,
-				Attributes: map[string]schema.Attribute{
-					"type": schema.StringAttribute{
-						MarkdownDescription: "Color type; use `static` for partition chart ES|QL metrics.",
-						Required:            true,
-						Validators: []validator.String{
-							stringvalidator.OneOf("static"),
-						},
-					},
-					"color": schema.StringAttribute{
-						MarkdownDescription: "Color value (e.g. hex).",
-						Required:            true,
-					},
-				},
-			},
-		},
-	}
+	return lenscommon.PartitionESQLMetricNestedObject()
 }
 
 // getPartitionESQLGroupBySchema returns the shared ES|QL group-by schema used by waffle,
 // treemap, and mosaic.
 func getPartitionESQLGroupBySchema() schema.NestedAttributeObject {
-	return schema.NestedAttributeObject{
-		Attributes: map[string]schema.Attribute{
-			"column": schema.StringAttribute{
-				MarkdownDescription: "ES|QL column for the breakdown.",
-				Required:            true,
-			},
-			"collapse_by": schema.StringAttribute{
-				MarkdownDescription: "Collapse function when multiple rows map to the same bucket.",
-				Required:            true,
-				Validators: []validator.String{
-					stringvalidator.OneOf("avg", "max", "min", "sum"),
-				},
-			},
-			"color_json": schema.StringAttribute{
-				MarkdownDescription: "Color mapping as JSON (`colorMapping` union).",
-				CustomType:          jsontypes.NormalizedType{},
-				Required:            true,
-			},
-			"format_json": schema.StringAttribute{
-				MarkdownDescription: "Column format as JSON (e.g. `{\"type\":\"number\"}`). Defaults to numeric format when omitted.",
-				CustomType:          jsontypes.NormalizedType{},
-				Optional:            true,
-			},
-			"label": schema.StringAttribute{
-				MarkdownDescription: "Optional label for the group-by column.",
-				Optional:            true,
-			},
-		},
-	}
+	return lenscommon.PartitionESQLGroupByNestedObject()
 }
 
 // getMosaicESQLMetricSchema returns the ES|QL metric schema for mosaic.
 // Mosaic ES|QL uses a single metric without color, so this omits the color
 // block present in waffle/treemap.
 func getMosaicESQLMetricSchema() schema.NestedAttributeObject {
-	return schema.NestedAttributeObject{
-		Attributes: map[string]schema.Attribute{
-			"column": schema.StringAttribute{
-				MarkdownDescription: "ES|QL column name for the metric.",
-				Required:            true,
-			},
-			"label": schema.StringAttribute{
-				MarkdownDescription: "Optional label for the metric.",
-				Optional:            true,
-			},
-			"format_json": schema.StringAttribute{
-				MarkdownDescription: "Number or other format configuration as JSON (`formatType` union).",
-				CustomType:          jsontypes.NormalizedType{},
-				Required:            true,
-			},
-		},
-	}
+	return lenscommon.MosaicESQLMetricNestedObject()
 }
 
 // getTreemapSchema returns the schema for treemap chart configuration.
@@ -1805,46 +1243,11 @@ func getMosaicSchema(includePresentation bool) map[string]schema.Attribute {
 }
 
 func getPartitionLegendSchema() map[string]schema.Attribute {
-	return map[string]schema.Attribute{
-		"nested": schema.BoolAttribute{
-			MarkdownDescription: "Show nested legend with hierarchical breakdown levels.",
-			Optional:            true,
-		},
-		"size": schema.StringAttribute{
-			MarkdownDescription: "Legend size: auto, s, m, l, or xl.",
-			Required:            true,
-			Validators: []validator.String{
-				stringvalidator.OneOf("auto", "s", "m", "l", "xl"),
-			},
-		},
-		"truncate_after_lines": schema.Int64Attribute{
-			MarkdownDescription: "Maximum lines before truncating legend items (1-10).",
-			Optional:            true,
-		},
-		"visible": schema.StringAttribute{
-			MarkdownDescription: "Legend visibility: auto, visible, or hidden.",
-			Optional:            true,
-			Validators: []validator.String{
-				stringvalidator.OneOf("auto", "visible", "hidden"),
-			},
-		},
-	}
+	return lenscommon.PartitionLegendSchemaAttributes()
 }
 
 func getPartitionValueDisplaySchema() map[string]schema.Attribute {
-	return map[string]schema.Attribute{
-		"mode": schema.StringAttribute{
-			MarkdownDescription: "Value display mode: hidden, absolute, or percentage.",
-			Required:            true,
-			Validators: []validator.String{
-				stringvalidator.OneOf("hidden", "absolute", "percentage"),
-			},
-		},
-		"percent_decimals": schema.Float64Attribute{
-			MarkdownDescription: "Decimal places for percentage display (0-10).",
-			Optional:            true,
-		},
-	}
+	return lenscommon.PartitionValueDisplaySchemaAttributes()
 }
 
 // getHeatmapAxesSchema returns schema for heatmap axes configuration
@@ -2174,52 +1577,12 @@ func getMetricChart(includePresentation bool) map[string]schema.Attribute {
 
 // populatePieChartMetricDefaults populates default values for pie chart metric configuration
 func populatePieChartMetricDefaults(model map[string]any) map[string]any {
-	if model == nil {
-		return model
-	}
-
-	if _, exists := model["empty_as_null"]; !exists {
-		model["empty_as_null"] = false
-	}
-	if _, exists := model["color"]; !exists {
-		model["color"] = map[string]any{"type": "auto"}
-	}
-
-	// Set defaults for format
-	if format, ok := model["format"].(map[string]any); ok {
-		if format["type"] == pieChartTypeNumber {
-			if _, exists := format["compact"]; !exists {
-				format["compact"] = false
-			}
-			if _, exists := format["decimals"]; !exists {
-				format["decimals"] = float64(2)
-			}
-		}
-	}
-
-	return model
+	return lenscommon.PopulatePieChartMetricDefaults(model)
 }
 
 // populateLensGroupByDefaults populates default values for Lens dimension/group-by configuration (shared across pie, treemap, datatable, etc.).
 func populateLensGroupByDefaults(model map[string]any) map[string]any {
-	if model == nil {
-		return model
-	}
-
-	if operation, ok := model["operation"].(string); ok && operation == operationTerms {
-		if _, exists := model["size"]; !exists {
-			model["size"] = float64(5)
-		}
-		if _, exists := model["rank_by"]; !exists {
-			model["rank_by"] = map[string]any{
-				"direction": "desc",
-				"metric":    float64(0),
-				"type":      "column",
-			}
-		}
-	}
-
-	return model
+	return lenscommon.PopulateLensGroupByDefaults(model)
 }
 
 // pieChartLegendDefaultObject is the schema default when the legend block is omitted from config,

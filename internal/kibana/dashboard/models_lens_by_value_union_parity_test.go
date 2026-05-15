@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -207,10 +208,11 @@ func Test_eachExposedByValueSource_visAndLensUnionsJSONBridge(t *testing.T) {
 			func(t *testing.T) kbapi.KbnDashboardPanelTypeVisConfig0 {
 				t.Helper()
 				pm := buildLensWafflePanelForTest(t)
-				converter := newWafflePanelConfigConverter()
-				blocks := lensByValueChartBlocksFromPanel(&pm)
+				blocks := LensByValueChartBlocksFromPanel(&pm)
 				require.NotNil(t, blocks)
-				vis0, d := converter.buildAttributes(blocks, nil)
+				c := lenscommon.ForType(string(kbapi.WaffleNoESQLTypeWaffle))
+				require.NotNil(t, c)
+				vis0, d := c.BuildAttributes(blocks, lensChartResolver(nil))
 				require.False(t, d.HasError())
 				return vis0
 			},
@@ -332,9 +334,9 @@ func lensDashboardAppByValueMetricsTypedVis0(m models.LensDashboardAppByValueMod
 	require.True(t, ok)
 	conv, okc := firstLensVisConverterForPanel(pm)
 	require.True(t, okc)
-	blocks := lensByValueChartBlocksFromPanel(&pm)
+	blocks := LensByValueChartBlocksFromPanel(&pm)
 	require.NotNil(t, blocks)
-	vis, d := conv.buildAttributes(blocks, nil)
+	vis, d := conv.BuildAttributes(blocks, lensChartResolver(nil))
 	require.False(t, d.HasError())
 	return vis
 }

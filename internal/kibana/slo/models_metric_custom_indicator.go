@@ -193,7 +193,7 @@ func (m *tfModel) populateFromMetricCustomIndicator(apiIndicator kbapi.SLOsIndic
 	ind := tfMetricCustomIndicator{
 		Index:          types.StringValue(p.Index),
 		TimestampField: types.StringValue(p.TimestampField),
-		Filter:         stringOrNull(p.Filter),
+		Filter:         types.StringPointerValue(p.Filter),
 		DataViewID:     types.StringNull(),
 	}
 	if p.DataViewId != nil {
@@ -210,7 +210,7 @@ func (m *tfModel) populateFromMetricCustomIndicator(apiIndicator kbapi.SLOsIndic
 				Name:        types.StringValue(m1.Name),
 				Aggregation: types.StringValue(string(m1.Aggregation)),
 				Field:       types.StringNull(),
-				Filter:      stringOrNull(m1.Filter),
+				Filter:      types.StringPointerValue(m1.Filter),
 			})
 		} else {
 			m0, _ := mtr.AsSLOsIndicatorPropertiesCustomMetricParamsGoodMetrics0()
@@ -222,7 +222,7 @@ func (m *tfModel) populateFromMetricCustomIndicator(apiIndicator kbapi.SLOsIndic
 				Name:        types.StringValue(m0.Name),
 				Aggregation: types.StringValue(string(m0.Aggregation)),
 				Field:       types.StringValue(m0.Field),
-				Filter:      stringOrNull(m0.Filter),
+				Filter:      types.StringPointerValue(m0.Filter),
 			})
 		}
 	}
@@ -236,7 +236,7 @@ func (m *tfModel) populateFromMetricCustomIndicator(apiIndicator kbapi.SLOsIndic
 				Name:        types.StringValue(m1.Name),
 				Aggregation: types.StringValue(string(m1.Aggregation)),
 				Field:       types.StringNull(),
-				Filter:      stringOrNull(m1.Filter),
+				Filter:      types.StringPointerValue(m1.Filter),
 			})
 		} else {
 			m0, _ := mtr.AsSLOsIndicatorPropertiesCustomMetricParamsTotalMetrics0()
@@ -248,7 +248,7 @@ func (m *tfModel) populateFromMetricCustomIndicator(apiIndicator kbapi.SLOsIndic
 				Name:        types.StringValue(m0.Name),
 				Aggregation: types.StringValue(string(m0.Aggregation)),
 				Field:       types.StringValue(m0.Field),
-				Filter:      stringOrNull(m0.Filter),
+				Filter:      types.StringPointerValue(m0.Filter),
 			})
 		}
 	}

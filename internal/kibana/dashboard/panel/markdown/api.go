@@ -25,6 +25,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/iface"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -93,7 +94,7 @@ func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item k
 
 	configBytes, err := markdownPanel.Config.MarshalJSON()
 	if err == nil {
-		configJSON := newConfigJSON(panelJSONPopulateDefaults, string(configBytes))
+		configJSON := customtypes.NewJSONWithDefaultsValue(string(configBytes), panelkit.PanelJSONDefaultsFunc())
 		if prior != nil {
 			configJSON = panelkit.PreservePriorJSONWithDefaultsIfEquivalent(ctx, prior.ConfigJSON, configJSON, &diags)
 		}

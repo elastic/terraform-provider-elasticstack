@@ -22,7 +22,6 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -30,55 +29,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
-
-func newTagcloudPanelConfigConverter() tagcloudPanelConfigConverter {
-	return tagcloudPanelConfigConverter{
-		lensVisualizationBase: lensVisualizationBase{
-			visualizationType: string(kbapi.TagcloudNoESQLTypeTagCloud),
-			hasTFChartBlock: func(blocks *models.LensByValueChartBlocks) bool {
-				return blocks != nil && blocks.TagcloudConfig != nil
-			},
-		},
-	}
-}
-
-type tagcloudPanelConfigConverter struct {
-	lensVisualizationBase
-}
-
-func (c tagcloudPanelConfigConverter) populateFromAttributes(
-	ctx context.Context,
-	dashboard *models.DashboardModel,
-	tfPanel *models.PanelModel,
-	blocks *models.LensByValueChartBlocks,
-	attrs kbapi.KbnDashboardPanelTypeVisConfig0,
-) diag.Diagnostics {
-	var prior *models.TagcloudConfigModel
-	if b := lensByValueChartBlocksFromPanel(tfPanel); b != nil && b.TagcloudConfig != nil {
-		cpy := *b.TagcloudConfig
-		prior = &cpy
-	}
-	blocks.TagcloudConfig = &models.TagcloudConfigModel{}
-
-	if noESQL, err := attrs.AsTagcloudNoESQL(); err == nil && !isTagcloudNoESQLCandidateActuallyESQL(noESQL) {
-		return tagcloudConfigFromAPI(ctx, blocks.TagcloudConfig, dashboard, prior, noESQL)
-	}
-
-	tagcloudESQL, err := attrs.AsTagcloudESQL()
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	return tagcloudConfigFromAPIESQL(ctx, blocks.TagcloudConfig, dashboard, prior, tagcloudESQL)
-}
-
-func (c tagcloudPanelConfigConverter) buildAttributes(blocks *models.LensByValueChartBlocks, dashboard *models.DashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
-	configModel := *blocks.TagcloudConfig
-	return tagcloudConfigToAPI(&configModel, dashboard)
-}
-
-func isTagcloudNoESQLCandidateActuallyESQL(api kbapi.TagcloudNoESQL) bool {
-	return lensDataSourceIsESQLOrTable(api.DataSource.MarshalJSON())
-}
 
 // applyStylingFromAPI populates the typed `orientation` and `font_size`
 // attributes from a TagcloudStyling payload. Used by both NoESQL and ES|QL
