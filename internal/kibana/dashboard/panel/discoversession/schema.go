@@ -56,7 +56,6 @@ var discoverSessionPanelDSLFiltersDescription string
 //go:embed descriptions/discover_session_panel_view_mode.md
 var discoverSessionPanelViewModeDescription string
 
-const discoverSessionDrilldownMax = 100
 const discoverSessionFilterMax = 100
 const discoverSessionColumnOrderMax = 100
 
