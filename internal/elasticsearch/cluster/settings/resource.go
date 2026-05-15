@@ -19,7 +19,6 @@ package settings
 
 import (
 	"context"
-	"maps"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
@@ -40,10 +39,8 @@ var (
 	_ resource.ResourceWithValidateConfig = newClusterSettingsResource()
 )
 
-// clusterSettingsResource wraps the entitycore envelope. Create and Delete are
-// supplied as callbacks. Update remains overridden pending task 3.2 migration
-// to an envelope update callback that uses ElasticsearchUpdateRequest.Prior for
-// merge/null semantics when computing removed cluster settings keys.
+// clusterSettingsResource wraps the entitycore envelope for the singleton
+// cluster_settings resource.
 type clusterSettingsResource struct {
 	*entitycore.ElasticsearchResource[tfModel]
 }
@@ -58,15 +55,13 @@ func envelopeCreateClusterSettings(
 }
 
 func newClusterSettingsResource() *clusterSettingsResource {
-	_, updatePlaceholder := entitycore.PlaceholderElasticsearchWriteCallbacks[tfModel]()
-
 	return &clusterSettingsResource{
 		ElasticsearchResource: entitycore.NewElasticsearchResource[tfModel]("cluster_settings", entitycore.ElasticsearchResourceOptions[tfModel]{
 			Schema: getSchema,
 			Read:   readClusterSettings,
 			Delete: deleteClusterSettings,
 			Create: envelopeCreateClusterSettings,
-			Update: updatePlaceholder,
+			Update: envelopeUpdateClusterSettings,
 		}),
 	}
 }
@@ -101,73 +96,6 @@ func createClusterSettings(ctx context.Context, client *clients.ElasticsearchSco
 
 	plan.ID = types.StringValue(id.String())
 	return plan, diags
-}
-
-// Update overrides the envelope until task 3.2 migrates this logic into the
-// Elasticsearch envelope update callback: compare old and new settings,
-// null out removed keys, then PUT the merged settings map.
-func (r *clusterSettingsResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var plan, state tfModel
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, diags := r.Client().GetElasticsearchClient(ctx, plan.ElasticsearchConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	oldSettings, diags := getConfiguredSettings(ctx, state)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	newSettings, diags := getConfiguredSettings(ctx, plan)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Start from the new settings and add null entries for removed keys.
-	apiSettings := make(map[string]any)
-	maps.Copy(apiSettings, newSettings)
-	for _, category := range []string{"persistent", "transient"} {
-		oldCat, _ := oldSettings[category].(map[string]any)
-		newCat, _ := newSettings[category].(map[string]any)
-		if oldCat == nil {
-			oldCat = make(map[string]any)
-		}
-		if newCat == nil {
-			newCat = make(map[string]any)
-		}
-		updateRemovedSettings(category, oldCat, newCat, apiSettings)
-	}
-
-	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(elasticsearch.PutSettings(ctx, client, apiSettings))...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	plan.ID = state.ID
-
-	result, found, diags := readClusterSettings(ctx, client, resourceID, plan)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	if !found {
-		resp.Diagnostics.AddError(
-			"Resource not found after update",
-			"elasticstack_elasticsearch_cluster_settings was not found after update.",
-		)
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &result)...)
 }
 
 // ImportState implements resource.ResourceWithImportState as a passthrough on id.
