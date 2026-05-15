@@ -20,7 +20,9 @@ package slm
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -36,17 +38,25 @@ type slmResource struct {
 	*entitycore.ElasticsearchResource[Data]
 }
 
+func envelopeWriteSlmCreate(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchCreateRequest[Data]) (entitycore.ElasticsearchWriteResult[Data], diag.Diagnostics) {
+	m, d := writeSlm(ctx, client, req.WriteID, req.Plan)
+	return entitycore.ElasticsearchWriteResult[Data]{Model: m}, d
+}
+
+func envelopeWriteSlmUpdate(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchUpdateRequest[Data]) (entitycore.ElasticsearchWriteResult[Data], diag.Diagnostics) {
+	m, d := writeSlm(ctx, client, req.WriteID, req.Plan)
+	return entitycore.ElasticsearchWriteResult[Data]{Model: m}, d
+}
+
 func newSlmResource() *slmResource {
 	return &slmResource{
-		ElasticsearchResource: entitycore.NewElasticsearchResource[Data](
-			entitycore.ComponentElasticsearch,
-			"snapshot_lifecycle",
-			GetSchema,
-			readSlm,
-			deleteSlm,
-			writeSlm,
-			writeSlm,
-		),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[Data]("snapshot_lifecycle", entitycore.ElasticsearchResourceOptions[Data]{
+			Schema: GetSchema,
+			Read:   readSlm,
+			Delete: deleteSlm,
+			Create: envelopeWriteSlmCreate,
+			Update: envelopeWriteSlmUpdate,
+		}),
 	}
 }
 

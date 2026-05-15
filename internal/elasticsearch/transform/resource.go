@@ -46,15 +46,13 @@ type transformResource struct {
 func newTransformResource() *transformResource {
 	createFn, updateFn := entitycore.PlaceholderElasticsearchWriteCallbacks[tfModel]()
 	return &transformResource{
-		ElasticsearchResource: entitycore.NewElasticsearchResource[tfModel](
-			entitycore.ComponentElasticsearch,
-			"transform",
-			getSchema,
-			readTransform,
-			deleteTransform,
-			createFn,
-			updateFn,
-		),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[tfModel]("transform", entitycore.ElasticsearchResourceOptions[tfModel]{
+			Schema: getSchema,
+			Read:   readTransform,
+			Delete: deleteTransform,
+			Create: createFn,
+			Update: updateFn,
+		}),
 	}
 }
 

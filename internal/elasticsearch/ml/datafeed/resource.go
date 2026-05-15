@@ -23,6 +23,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -37,17 +38,25 @@ type datafeedResource struct {
 	*entitycore.ElasticsearchResource[Datafeed]
 }
 
+func envelopeCreateDatafeed(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchCreateRequest[Datafeed]) (entitycore.ElasticsearchWriteResult[Datafeed], diag.Diagnostics) {
+	m, d := createDatafeed(ctx, client, req.WriteID, req.Plan)
+	return entitycore.ElasticsearchWriteResult[Datafeed]{Model: m}, d
+}
+
+func envelopeUpdateDatafeed(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchUpdateRequest[Datafeed]) (entitycore.ElasticsearchWriteResult[Datafeed], diag.Diagnostics) {
+	m, d := updateDatafeed(ctx, client, req.WriteID, req.Plan)
+	return entitycore.ElasticsearchWriteResult[Datafeed]{Model: m}, d
+}
+
 func newDatafeedResource() *datafeedResource {
 	return &datafeedResource{
-		ElasticsearchResource: entitycore.NewElasticsearchResource(
-			entitycore.ComponentElasticsearch,
-			"ml_datafeed",
-			getSchema,
-			readDatafeed,
-			deleteDatafeed,
-			createDatafeed,
-			updateDatafeed,
-		),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[Datafeed]("ml_datafeed", entitycore.ElasticsearchResourceOptions[Datafeed]{
+			Schema: getSchema,
+			Read:   readDatafeed,
+			Delete: deleteDatafeed,
+			Create: envelopeCreateDatafeed,
+			Update: envelopeUpdateDatafeed,
+		}),
 	}
 }
 

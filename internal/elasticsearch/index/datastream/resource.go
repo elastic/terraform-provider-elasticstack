@@ -20,7 +20,9 @@ package datastream
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -36,17 +38,25 @@ type dataStreamResource struct {
 	*entitycore.ElasticsearchResource[Data]
 }
 
+func envelopeCreateDataStream(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchCreateRequest[Data]) (entitycore.ElasticsearchWriteResult[Data], diag.Diagnostics) {
+	m, d := createDataStream(ctx, client, req.WriteID, req.Plan)
+	return entitycore.ElasticsearchWriteResult[Data]{Model: m}, d
+}
+
+func envelopeUpdateDataStream(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchUpdateRequest[Data]) (entitycore.ElasticsearchWriteResult[Data], diag.Diagnostics) {
+	m, d := createDataStream(ctx, client, req.WriteID, req.Plan)
+	return entitycore.ElasticsearchWriteResult[Data]{Model: m}, d
+}
+
 func newDataStreamResource() *dataStreamResource {
 	return &dataStreamResource{
-		ElasticsearchResource: entitycore.NewElasticsearchResource[Data](
-			entitycore.ComponentElasticsearch,
-			"data_stream",
-			GetSchema,
-			readDataStream,
-			deleteDataStream,
-			createDataStream,
-			createDataStream,
-		),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[Data]("data_stream", entitycore.ElasticsearchResourceOptions[Data]{
+			Schema: GetSchema,
+			Read:   readDataStream,
+			Delete: deleteDataStream,
+			Create: envelopeCreateDataStream,
+			Update: envelopeUpdateDataStream,
+		}),
 	}
 }
 

@@ -34,7 +34,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces
@@ -48,17 +50,25 @@ type enrichPolicyResource struct {
 	*entitycore.ElasticsearchResource[PolicyDataWithExecute]
 }
 
+func envelopeUpsertEnrichCreate(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchCreateRequest[PolicyDataWithExecute]) (entitycore.ElasticsearchWriteResult[PolicyDataWithExecute], diag.Diagnostics) {
+	m, d := upsertEnrichPolicy(ctx, client, req.WriteID, req.Plan)
+	return entitycore.ElasticsearchWriteResult[PolicyDataWithExecute]{Model: m}, d
+}
+
+func envelopeUpsertEnrichUpdate(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchUpdateRequest[PolicyDataWithExecute]) (entitycore.ElasticsearchWriteResult[PolicyDataWithExecute], diag.Diagnostics) {
+	m, d := upsertEnrichPolicy(ctx, client, req.WriteID, req.Plan)
+	return entitycore.ElasticsearchWriteResult[PolicyDataWithExecute]{Model: m}, d
+}
+
 func newEnrichPolicyResource() *enrichPolicyResource {
 	return &enrichPolicyResource{
-		ElasticsearchResource: entitycore.NewElasticsearchResource[PolicyDataWithExecute](
-			entitycore.ComponentElasticsearch,
-			"enrich_policy",
-			getSchemaFactory,
-			readEnrichPolicy,
-			deleteEnrichPolicy,
-			upsertEnrichPolicy,
-			upsertEnrichPolicy,
-		),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[PolicyDataWithExecute]("enrich_policy", entitycore.ElasticsearchResourceOptions[PolicyDataWithExecute]{
+			Schema: getSchemaFactory,
+			Read:   readEnrichPolicy,
+			Delete: deleteEnrichPolicy,
+			Create: envelopeUpsertEnrichCreate,
+			Update: envelopeUpsertEnrichUpdate,
+		}),
 	}
 }
 

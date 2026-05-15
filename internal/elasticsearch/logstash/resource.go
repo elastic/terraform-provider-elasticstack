@@ -20,7 +20,9 @@ package logstash
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -36,17 +38,25 @@ type logstashPipelineResource struct {
 	*entitycore.ElasticsearchResource[Data]
 }
 
+func envelopeWriteLogstashCreate(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchCreateRequest[Data]) (entitycore.ElasticsearchWriteResult[Data], diag.Diagnostics) {
+	m, d := writeLogstashPipeline(ctx, client, req.WriteID, req.Plan)
+	return entitycore.ElasticsearchWriteResult[Data]{Model: m}, d
+}
+
+func envelopeWriteLogstashUpdate(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchUpdateRequest[Data]) (entitycore.ElasticsearchWriteResult[Data], diag.Diagnostics) {
+	m, d := writeLogstashPipeline(ctx, client, req.WriteID, req.Plan)
+	return entitycore.ElasticsearchWriteResult[Data]{Model: m}, d
+}
+
 func newLogstashPipelineResource() *logstashPipelineResource {
 	return &logstashPipelineResource{
-		ElasticsearchResource: entitycore.NewElasticsearchResource[Data](
-			entitycore.ComponentElasticsearch,
-			"logstash_pipeline",
-			GetSchema,
-			readLogstashPipeline,
-			deleteLogstashPipeline,
-			writeLogstashPipeline,
-			writeLogstashPipeline,
-		),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[Data]("logstash_pipeline", entitycore.ElasticsearchResourceOptions[Data]{
+			Schema: GetSchema,
+			Read:   readLogstashPipeline,
+			Delete: deleteLogstashPipeline,
+			Create: envelopeWriteLogstashCreate,
+			Update: envelopeWriteLogstashUpdate,
+		}),
 	}
 }
 

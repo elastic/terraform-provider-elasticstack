@@ -20,7 +20,9 @@ package componenttemplate
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -38,17 +40,25 @@ type Resource struct {
 	*entitycore.ElasticsearchResource[Data]
 }
 
+func envelopeCreateComponentTemplate(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchCreateRequest[Data]) (entitycore.ElasticsearchWriteResult[Data], diag.Diagnostics) {
+	m, d := createComponentTemplate(ctx, client, req.WriteID, req.Plan)
+	return entitycore.ElasticsearchWriteResult[Data]{Model: m}, d
+}
+
+func envelopeUpdateComponentTemplate(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchUpdateRequest[Data]) (entitycore.ElasticsearchWriteResult[Data], diag.Diagnostics) {
+	m, d := updateComponentTemplate(ctx, client, req.WriteID, req.Plan)
+	return entitycore.ElasticsearchWriteResult[Data]{Model: m}, d
+}
+
 func newResource() *Resource {
 	return &Resource{
-		ElasticsearchResource: entitycore.NewElasticsearchResource[Data](
-			entitycore.ComponentElasticsearch,
-			"component_template",
-			getSchema,
-			readComponentTemplate,
-			deleteComponentTemplate,
-			createComponentTemplate,
-			updateComponentTemplate,
-		),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[Data]("component_template", entitycore.ElasticsearchResourceOptions[Data]{
+			Schema: getSchema,
+			Read:   readComponentTemplate,
+			Delete: deleteComponentTemplate,
+			Create: envelopeCreateComponentTemplate,
+			Update: envelopeUpdateComponentTemplate,
+		}),
 	}
 }
 

@@ -64,8 +64,8 @@ type agentDataSourceModel struct {
 // entitycore.WithVersionRequirements interface, allowing the
 // generic Kibana data source envelope to enforce the requirement before invoking
 // the entity read callback.
-func (model agentDataSourceModel) GetVersionRequirements() ([]entitycore.DataSourceVersionRequirement, diag.Diagnostics) {
-	return []entitycore.DataSourceVersionRequirement{
+func (model agentDataSourceModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+	return []entitycore.VersionRequirement{
 		{
 			MinVersion:   *minKibanaAgentBuilderAPIVersion,
 			ErrorMessage: fmt.Sprintf("Agent Builder agents require Elastic Stack v%s or later.", minKibanaAgentBuilderAPIVersion),

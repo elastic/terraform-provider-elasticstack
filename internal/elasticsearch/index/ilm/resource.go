@@ -20,7 +20,9 @@ package ilm
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -41,17 +43,25 @@ type Resource struct {
 	*entitycore.ElasticsearchResource[tfModel]
 }
 
+func envelopeCreateILM(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchCreateRequest[tfModel]) (entitycore.ElasticsearchWriteResult[tfModel], diag.Diagnostics) {
+	m, d := createILM(ctx, client, req.WriteID, req.Plan)
+	return entitycore.ElasticsearchWriteResult[tfModel]{Model: m}, d
+}
+
+func envelopeUpdateILM(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchUpdateRequest[tfModel]) (entitycore.ElasticsearchWriteResult[tfModel], diag.Diagnostics) {
+	m, d := updateILM(ctx, client, req.WriteID, req.Plan)
+	return entitycore.ElasticsearchWriteResult[tfModel]{Model: m}, d
+}
+
 func newResource() *Resource {
 	return &Resource{
-		ElasticsearchResource: entitycore.NewElasticsearchResource[tfModel](
-			entitycore.ComponentElasticsearch,
-			"index_lifecycle",
-			ilmSchema,
-			readILM,
-			deleteILM,
-			createILM,
-			updateILM,
-		),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[tfModel]("index_lifecycle", entitycore.ElasticsearchResourceOptions[tfModel]{
+			Schema: ilmSchema,
+			Read:   readILM,
+			Delete: deleteILM,
+			Create: envelopeCreateILM,
+			Update: envelopeUpdateILM,
+		}),
 	}
 }
 

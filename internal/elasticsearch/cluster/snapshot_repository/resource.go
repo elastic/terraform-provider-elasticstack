@@ -20,7 +20,9 @@ package snapshot_repository
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -38,17 +40,25 @@ type snapshotRepositoryResource struct {
 	*entitycore.ElasticsearchResource[Data]
 }
 
+func envelopeWriteSnapshotRepoCreate(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchCreateRequest[Data]) (entitycore.ElasticsearchWriteResult[Data], diag.Diagnostics) {
+	m, d := writeSnapshotRepository(ctx, client, req.WriteID, req.Plan)
+	return entitycore.ElasticsearchWriteResult[Data]{Model: m}, d
+}
+
+func envelopeWriteSnapshotRepoUpdate(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchUpdateRequest[Data]) (entitycore.ElasticsearchWriteResult[Data], diag.Diagnostics) {
+	m, d := writeSnapshotRepository(ctx, client, req.WriteID, req.Plan)
+	return entitycore.ElasticsearchWriteResult[Data]{Model: m}, d
+}
+
 func newSnapshotRepositoryResource() *snapshotRepositoryResource {
 	return &snapshotRepositoryResource{
-		ElasticsearchResource: entitycore.NewElasticsearchResource[Data](
-			entitycore.ComponentElasticsearch,
-			"snapshot_repository",
-			GetSchema,
-			readSnapshotRepository,
-			deleteSnapshotRepository,
-			writeSnapshotRepository,
-			writeSnapshotRepository,
-		),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[Data]("snapshot_repository", entitycore.ElasticsearchResourceOptions[Data]{
+			Schema: GetSchema,
+			Read:   readSnapshotRepository,
+			Delete: deleteSnapshotRepository,
+			Create: envelopeWriteSnapshotRepoCreate,
+			Update: envelopeWriteSnapshotRepoUpdate,
+		}),
 	}
 }
 

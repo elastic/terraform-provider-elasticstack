@@ -39,15 +39,13 @@ type userResource struct {
 func newUserResource() *userResource {
 	createFn, updateFn := entitycore.PlaceholderElasticsearchWriteCallbacks[Data]()
 	return &userResource{
-		ElasticsearchResource: entitycore.NewElasticsearchResource[Data](
-			entitycore.ComponentElasticsearch,
-			"security_user",
-			GetSchema,
-			readUser,
-			deleteUser,
-			createFn,
-			updateFn,
-		),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[Data]("security_user", entitycore.ElasticsearchResourceOptions[Data]{
+			Schema: GetSchema,
+			Read:   readUser,
+			Delete: deleteUser,
+			Create: createFn,
+			Update: updateFn,
+		}),
 	}
 }
 

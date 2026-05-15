@@ -43,15 +43,13 @@ type Resource struct {
 func newResource() *Resource {
 	createFn, updateFn := entitycore.PlaceholderElasticsearchWriteCallbacks[tfModel]()
 	return &Resource{
-		ElasticsearchResource: entitycore.NewElasticsearchResource[tfModel](
-			entitycore.ComponentElasticsearch,
-			"index_template_ilm_attachment",
-			getSchema,
-			readILMAttachment,
-			deleteILMAttachment,
-			createFn,
-			updateFn,
-		),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[tfModel]("index_template_ilm_attachment", entitycore.ElasticsearchResourceOptions[tfModel]{
+			Schema: getSchema,
+			Read:   readILMAttachment,
+			Delete: deleteILMAttachment,
+			Create: createFn,
+			Update: updateFn,
+		}),
 	}
 }
 

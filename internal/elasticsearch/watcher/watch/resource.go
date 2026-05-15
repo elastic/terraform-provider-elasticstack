@@ -20,7 +20,9 @@ package watch
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -35,17 +37,25 @@ type watchResource struct {
 	*entitycore.ElasticsearchResource[Data]
 }
 
+func envelopeCreateWatch(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchCreateRequest[Data]) (entitycore.ElasticsearchWriteResult[Data], diag.Diagnostics) {
+	m, d := createWatch(ctx, client, req.WriteID, req.Plan)
+	return entitycore.ElasticsearchWriteResult[Data]{Model: m}, d
+}
+
+func envelopeUpdateWatch(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchUpdateRequest[Data]) (entitycore.ElasticsearchWriteResult[Data], diag.Diagnostics) {
+	m, d := updateWatch(ctx, client, req.WriteID, req.Plan)
+	return entitycore.ElasticsearchWriteResult[Data]{Model: m}, d
+}
+
 func newWatchResource() *watchResource {
 	return &watchResource{
-		ElasticsearchResource: entitycore.NewElasticsearchResource[Data](
-			entitycore.ComponentElasticsearch,
-			"watch",
-			watchSchema,
-			readWatch,
-			deleteWatch,
-			createWatch,
-			updateWatch,
-		),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[Data]("watch", entitycore.ElasticsearchResourceOptions[Data]{
+			Schema: watchSchema,
+			Read:   readWatch,
+			Delete: deleteWatch,
+			Create: envelopeCreateWatch,
+			Update: envelopeUpdateWatch,
+		}),
 	}
 }
 

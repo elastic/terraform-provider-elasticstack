@@ -1,21 +1,21 @@
 ## 1. Envelope API redesign
 
-- [ ] 1.1 Rename `DataSourceVersionRequirement` to `VersionRequirement` across `internal/entitycore`, its tests, Kibana model packages implementing `GetVersionRequirements()` (for example `internal/kibana/agentbuilderagent`, `internal/kibana/maintenance_window`, and `internal/kibana/streams`), and related spec references
-- [ ] 1.2 Add `ElasticsearchResourceOptions[T]` and change the constructor to `NewElasticsearchResource[T](name string, opts ElasticsearchResourceOptions[T])`
-- [ ] 1.3 Remove the `component` parameter from the Elasticsearch envelope and hard-code the Elasticsearch namespace for Metadata/type naming
-- [ ] 1.4 Add `ElasticsearchCreateRequest[T]`, `ElasticsearchUpdateRequest[T]`, and `ElasticsearchWriteResult[T]`
-- [ ] 1.5 Change Elasticsearch create/update callback types to use the new request/result structs
-- [ ] 1.6 Add optional `WithReadResourceID` support and centralize read identity resolution for ordinary `Read` and read-after-write
-- [ ] 1.7 Extend the Elasticsearch envelope to enforce `WithVersionRequirements` with the same Create/Read/Update semantics as Kibana
-- [ ] 1.7.1 Generalize `enforceVersionRequirements` (or add `enforceElasticsearchVersionRequirements`) so Elasticsearch envelopes can enforce version requirements using `*clients.ElasticsearchScopedClient`
-- [ ] 1.8 Add optional `PostRead` hook support to the Elasticsearch envelope, including passing `resp.Private` to the hook after a successful state set
-- [ ] 1.9 Update `internal/entitycore/resource_envelope_test.go` and related tests to cover the new constructor, callback requests, read identity resolution, version requirements, and post-read hook behavior
+- [x] 1.1 Rename `DataSourceVersionRequirement` to `VersionRequirement` across `internal/entitycore`, its tests, Kibana model packages implementing `GetVersionRequirements()` (for example `internal/kibana/agentbuilderagent`, `internal/kibana/maintenance_window`, and `internal/kibana/streams`), and related spec references
+- [x] 1.2 Add `ElasticsearchResourceOptions[T]` and change the constructor to `NewElasticsearchResource[T](name string, opts ElasticsearchResourceOptions[T])`
+- [x] 1.3 Remove the `component` parameter from the Elasticsearch envelope and hard-code the Elasticsearch namespace for Metadata/type naming
+- [x] 1.4 Add `ElasticsearchCreateRequest[T]`, `ElasticsearchUpdateRequest[T]`, and `ElasticsearchWriteResult[T]`
+- [x] 1.5 Change Elasticsearch create/update callback types to use the new request/result structs
+- [x] 1.6 Add optional `WithReadResourceID` support and centralize read identity resolution for ordinary `Read` and read-after-write
+- [x] 1.7 Extend the Elasticsearch envelope to enforce `WithVersionRequirements` with the same Create/Read/Update semantics as Kibana
+- [x] 1.7.1 Generalize `enforceVersionRequirements` (or add `enforceElasticsearchVersionRequirements`) so Elasticsearch envelopes can enforce version requirements using `*clients.ElasticsearchScopedClient`
+- [x] 1.8 Add optional `PostRead` hook support to the Elasticsearch envelope, including passing `resp.Private` to the hook after a successful state set
+- [x] 1.9 Update `internal/entitycore/resource_envelope_test.go` and related tests to cover the new constructor, callback requests, read identity resolution, version requirements, and post-read hook behavior
 
 ## 2. Mechanical call-site migration
 
-- [ ] 2.1 Update all Elasticsearch envelope constructor call sites to use `NewElasticsearchResource(name, opts)`
-- [ ] 2.2 Remove now-unneeded `entitycore.ComponentElasticsearch` arguments from Elasticsearch envelope call sites
-- [ ] 2.3 Run `make build` after the constructor migration to confirm all Elasticsearch resources compile against the new API
+- [x] 2.1 Update all Elasticsearch envelope constructor call sites to use `NewElasticsearchResource(name, opts)`
+- [x] 2.2 Remove now-unneeded `entitycore.ComponentElasticsearch` arguments from Elasticsearch envelope call sites
+- [x] 2.3 Run `make build` after the constructor migration to confirm all Elasticsearch resources compile against the new API
 
 ## 3. Proof-of-concept resource migrations
 

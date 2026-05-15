@@ -48,19 +48,22 @@ type clusterSettingsResource struct {
 	*entitycore.ElasticsearchResource[tfModel]
 }
 
+func envelopeCreateClusterSettings(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchCreateRequest[tfModel]) (entitycore.ElasticsearchWriteResult[tfModel], fwdiag.Diagnostics) {
+	m, d := createClusterSettings(ctx, client, req.WriteID, req.Plan)
+	return entitycore.ElasticsearchWriteResult[tfModel]{Model: m}, d
+}
+
 func newClusterSettingsResource() *clusterSettingsResource {
 	_, updatePlaceholder := entitycore.PlaceholderElasticsearchWriteCallbacks[tfModel]()
 
 	return &clusterSettingsResource{
-		ElasticsearchResource: entitycore.NewElasticsearchResource[tfModel](
-			entitycore.ComponentElasticsearch,
-			"cluster_settings",
-			getSchema,
-			readClusterSettings,
-			deleteClusterSettings,
-			createClusterSettings,
-			updatePlaceholder,
-		),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[tfModel]("cluster_settings", entitycore.ElasticsearchResourceOptions[tfModel]{
+			Schema: getSchema,
+			Read:   readClusterSettings,
+			Delete: deleteClusterSettings,
+			Create: envelopeCreateClusterSettings,
+			Update: updatePlaceholder,
+		}),
 	}
 }
 

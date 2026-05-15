@@ -20,7 +20,9 @@ package script
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -36,17 +38,25 @@ type scriptResource struct {
 	*entitycore.ElasticsearchResource[Data]
 }
 
+func envelopeWriteScriptCreate(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchCreateRequest[Data]) (entitycore.ElasticsearchWriteResult[Data], diag.Diagnostics) {
+	m, d := writeScript(ctx, client, req.WriteID, req.Plan)
+	return entitycore.ElasticsearchWriteResult[Data]{Model: m}, d
+}
+
+func envelopeWriteScriptUpdate(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchUpdateRequest[Data]) (entitycore.ElasticsearchWriteResult[Data], diag.Diagnostics) {
+	m, d := writeScript(ctx, client, req.WriteID, req.Plan)
+	return entitycore.ElasticsearchWriteResult[Data]{Model: m}, d
+}
+
 func newScriptResource() *scriptResource {
 	return &scriptResource{
-		ElasticsearchResource: entitycore.NewElasticsearchResource[Data](
-			entitycore.ComponentElasticsearch,
-			"script",
-			GetSchema,
-			readScript,
-			deleteScript,
-			writeScript,
-			writeScript,
-		),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[Data]("script", entitycore.ElasticsearchResourceOptions[Data]{
+			Schema: GetSchema,
+			Read:   readScript,
+			Delete: deleteScript,
+			Create: envelopeWriteScriptCreate,
+			Update: envelopeWriteScriptUpdate,
+		}),
 	}
 }
 

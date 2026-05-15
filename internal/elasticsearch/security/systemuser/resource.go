@@ -20,7 +20,9 @@ package systemuser
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -36,17 +38,25 @@ type systemUserResource struct {
 	*entitycore.ElasticsearchResource[Data]
 }
 
+func envelopeWriteSystemUserCreate(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchCreateRequest[Data]) (entitycore.ElasticsearchWriteResult[Data], diag.Diagnostics) {
+	m, d := writeSystemUser(ctx, client, req.WriteID, req.Plan)
+	return entitycore.ElasticsearchWriteResult[Data]{Model: m}, d
+}
+
+func envelopeWriteSystemUserUpdate(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchUpdateRequest[Data]) (entitycore.ElasticsearchWriteResult[Data], diag.Diagnostics) {
+	m, d := writeSystemUser(ctx, client, req.WriteID, req.Plan)
+	return entitycore.ElasticsearchWriteResult[Data]{Model: m}, d
+}
+
 func newSystemUserResource() *systemUserResource {
 	return &systemUserResource{
-		ElasticsearchResource: entitycore.NewElasticsearchResource[Data](
-			entitycore.ComponentElasticsearch,
-			"security_system_user",
-			GetSchema,
-			readSystemUser,
-			deleteSystemUser,
-			writeSystemUser,
-			writeSystemUser,
-		),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[Data]("security_system_user", entitycore.ElasticsearchResourceOptions[Data]{
+			Schema: GetSchema,
+			Read:   readSystemUser,
+			Delete: deleteSystemUser,
+			Create: envelopeWriteSystemUserCreate,
+			Update: envelopeWriteSystemUserUpdate,
+		}),
 	}
 }
 

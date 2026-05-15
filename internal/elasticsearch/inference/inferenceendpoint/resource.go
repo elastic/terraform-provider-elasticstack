@@ -20,7 +20,9 @@ package inferenceendpoint
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -35,17 +37,25 @@ type inferenceEndpointResource struct {
 	*entitycore.ElasticsearchResource[Data]
 }
 
+func envelopeCreateInferenceEndpoint(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchCreateRequest[Data]) (entitycore.ElasticsearchWriteResult[Data], diag.Diagnostics) {
+	m, d := createInferenceEndpoint(ctx, client, req.WriteID, req.Plan)
+	return entitycore.ElasticsearchWriteResult[Data]{Model: m}, d
+}
+
+func envelopeUpdateInferenceEndpoint(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchUpdateRequest[Data]) (entitycore.ElasticsearchWriteResult[Data], diag.Diagnostics) {
+	m, d := updateInferenceEndpoint(ctx, client, req.WriteID, req.Plan)
+	return entitycore.ElasticsearchWriteResult[Data]{Model: m}, d
+}
+
 func newInferenceEndpointResource() *inferenceEndpointResource {
 	return &inferenceEndpointResource{
-		ElasticsearchResource: entitycore.NewElasticsearchResource[Data](
-			entitycore.ComponentElasticsearch,
-			"inference_endpoint",
-			getSchemaFactory,
-			readInferenceEndpoint,
-			deleteInferenceEndpoint,
-			createInferenceEndpoint,
-			updateInferenceEndpoint,
-		),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[Data]("inference_endpoint", entitycore.ElasticsearchResourceOptions[Data]{
+			Schema: getSchemaFactory,
+			Read:   readInferenceEndpoint,
+			Delete: deleteInferenceEndpoint,
+			Create: envelopeCreateInferenceEndpoint,
+			Update: envelopeUpdateInferenceEndpoint,
+		}),
 	}
 }
 

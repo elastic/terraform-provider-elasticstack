@@ -20,7 +20,9 @@ package alias
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -37,17 +39,25 @@ type aliasResource struct {
 	*entitycore.ElasticsearchResource[tfModel]
 }
 
+func envelopeCreateAlias(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchCreateRequest[tfModel]) (entitycore.ElasticsearchWriteResult[tfModel], diag.Diagnostics) {
+	m, d := createAlias(ctx, client, req.WriteID, req.Plan)
+	return entitycore.ElasticsearchWriteResult[tfModel]{Model: m}, d
+}
+
+func envelopeUpdateAlias(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchUpdateRequest[tfModel]) (entitycore.ElasticsearchWriteResult[tfModel], diag.Diagnostics) {
+	m, d := updateAlias(ctx, client, req.WriteID, req.Plan)
+	return entitycore.ElasticsearchWriteResult[tfModel]{Model: m}, d
+}
+
 func newAliasResource() *aliasResource {
 	return &aliasResource{
-		ElasticsearchResource: entitycore.NewElasticsearchResource[tfModel](
-			entitycore.ComponentElasticsearch,
-			"index_alias",
-			getSchemaFactory,
-			readAlias,
-			deleteAlias,
-			createAlias,
-			updateAlias,
-		),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[tfModel]("index_alias", entitycore.ElasticsearchResourceOptions[tfModel]{
+			Schema: getSchemaFactory,
+			Read:   readAlias,
+			Delete: deleteAlias,
+			Create: envelopeCreateAlias,
+			Update: envelopeUpdateAlias,
+		}),
 	}
 }
 

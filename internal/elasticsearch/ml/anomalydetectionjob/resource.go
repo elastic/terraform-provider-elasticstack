@@ -22,6 +22,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -37,18 +38,21 @@ type anomalyDetectionJobResource struct {
 	*entitycore.ElasticsearchResource[TFModel]
 }
 
+func envelopeCreateAnomalyDetectionJob(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchCreateRequest[TFModel]) (entitycore.ElasticsearchWriteResult[TFModel], diag.Diagnostics) {
+	m, d := createAnomalyDetectionJob(ctx, client, req.WriteID, req.Plan)
+	return entitycore.ElasticsearchWriteResult[TFModel]{Model: m}, d
+}
+
 func newAnomalyDetectionJobResource() *anomalyDetectionJobResource {
 	_, updateFn := entitycore.PlaceholderElasticsearchWriteCallbacks[TFModel]()
 	return &anomalyDetectionJobResource{
-		ElasticsearchResource: entitycore.NewElasticsearchResource(
-			entitycore.ComponentElasticsearch,
-			"ml_anomaly_detection_job",
-			getSchema,
-			readAnomalyDetectionJob,
-			deleteAnomalyDetectionJob,
-			createAnomalyDetectionJob,
-			updateFn,
-		),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[TFModel]("ml_anomaly_detection_job", entitycore.ElasticsearchResourceOptions[TFModel]{
+			Schema: getSchema,
+			Read:   readAnomalyDetectionJob,
+			Delete: deleteAnomalyDetectionJob,
+			Create: envelopeCreateAnomalyDetectionJob,
+			Update: updateFn,
+		}),
 	}
 }
 

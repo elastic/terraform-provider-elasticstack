@@ -20,8 +20,10 @@ package datastreamlifecycle
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -38,17 +40,25 @@ type Resource struct {
 	*entitycore.ElasticsearchResource[tfModel]
 }
 
+func envelopeCreateDSL(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchCreateRequest[tfModel]) (entitycore.ElasticsearchWriteResult[tfModel], diag.Diagnostics) {
+	m, d := createDataStreamLifecycle(ctx, client, req.WriteID, req.Plan)
+	return entitycore.ElasticsearchWriteResult[tfModel]{Model: m}, d
+}
+
+func envelopeUpdateDSL(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchUpdateRequest[tfModel]) (entitycore.ElasticsearchWriteResult[tfModel], diag.Diagnostics) {
+	m, d := updateDataStreamLifecycle(ctx, client, req.WriteID, req.Plan)
+	return entitycore.ElasticsearchWriteResult[tfModel]{Model: m}, d
+}
+
 func newResource() *Resource {
 	return &Resource{
-		ElasticsearchResource: entitycore.NewElasticsearchResource[tfModel](
-			entitycore.ComponentElasticsearch,
-			"data_stream_lifecycle",
-			getSchemaFactory,
-			readDataStreamLifecycle,
-			deleteDataStreamLifecycle,
-			createDataStreamLifecycle,
-			updateDataStreamLifecycle,
-		),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[tfModel]("data_stream_lifecycle", entitycore.ElasticsearchResourceOptions[tfModel]{
+			Schema: getSchemaFactory,
+			Read:   readDataStreamLifecycle,
+			Delete: deleteDataStreamLifecycle,
+			Create: envelopeCreateDSL,
+			Update: envelopeUpdateDSL,
+		}),
 	}
 }
 

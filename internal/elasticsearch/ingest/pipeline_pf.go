@@ -105,17 +105,25 @@ type pipelineResource struct {
 	*entitycore.ElasticsearchResource[Data]
 }
 
+func envelopeWriteIngestPipelineCreate(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchCreateRequest[Data]) (entitycore.ElasticsearchWriteResult[Data], diag.Diagnostics) {
+	m, d := writeIngestPipeline(ctx, client, req.WriteID, req.Plan)
+	return entitycore.ElasticsearchWriteResult[Data]{Model: m}, d
+}
+
+func envelopeWriteIngestPipelineUpdate(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchUpdateRequest[Data]) (entitycore.ElasticsearchWriteResult[Data], diag.Diagnostics) {
+	m, d := writeIngestPipeline(ctx, client, req.WriteID, req.Plan)
+	return entitycore.ElasticsearchWriteResult[Data]{Model: m}, d
+}
+
 func newPipelineResource() *pipelineResource {
 	return &pipelineResource{
-		ElasticsearchResource: entitycore.NewElasticsearchResource[Data](
-			entitycore.ComponentElasticsearch,
-			"ingest_pipeline",
-			GetSchema,
-			readIngestPipeline,
-			deleteIngestPipeline,
-			writeIngestPipeline,
-			writeIngestPipeline,
-		),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[Data]("ingest_pipeline", entitycore.ElasticsearchResourceOptions[Data]{
+			Schema: GetSchema,
+			Read:   readIngestPipeline,
+			Delete: deleteIngestPipeline,
+			Create: envelopeWriteIngestPipelineCreate,
+			Update: envelopeWriteIngestPipelineUpdate,
+		}),
 	}
 }
 

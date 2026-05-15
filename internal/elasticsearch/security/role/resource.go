@@ -21,7 +21,9 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
@@ -39,17 +41,25 @@ type roleResource struct {
 	*entitycore.ElasticsearchResource[Data]
 }
 
+func envelopeWriteRoleCreate(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchCreateRequest[Data]) (entitycore.ElasticsearchWriteResult[Data], diag.Diagnostics) {
+	m, d := writeRole(ctx, client, req.WriteID, req.Plan)
+	return entitycore.ElasticsearchWriteResult[Data]{Model: m}, d
+}
+
+func envelopeWriteRoleUpdate(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.ElasticsearchUpdateRequest[Data]) (entitycore.ElasticsearchWriteResult[Data], diag.Diagnostics) {
+	m, d := writeRole(ctx, client, req.WriteID, req.Plan)
+	return entitycore.ElasticsearchWriteResult[Data]{Model: m}, d
+}
+
 func newRoleResource() *roleResource {
 	return &roleResource{
-		ElasticsearchResource: entitycore.NewElasticsearchResource[Data](
-			entitycore.ComponentElasticsearch,
-			"security_role",
-			getSchemaFactory,
-			readRole,
-			deleteRole,
-			writeRole,
-			writeRole,
-		),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[Data]("security_role", entitycore.ElasticsearchResourceOptions[Data]{
+			Schema: getSchemaFactory,
+			Read:   readRole,
+			Delete: deleteRole,
+			Create: envelopeWriteRoleCreate,
+			Update: envelopeWriteRoleUpdate,
+		}),
 	}
 }
 
