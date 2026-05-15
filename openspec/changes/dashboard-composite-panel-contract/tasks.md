@@ -68,6 +68,6 @@
 
 ## 7. Documentation
 
-- [ ] 7.1 Update resource documentation to reflect `vis_config` rename
-- [ ] 7.2 Update CHANGELOG with breaking change note: `viz_config` → `vis_config`
-- [ ] 7.3 Verify example configurations compile and match new schema
+- [x] 7.1 Update resource documentation to reflect `vis_config` rename
+- [x] 7.2 Update CHANGELOG with breaking change note: `viz_config` → `vis_config`
+- [x] 7.3 Verify example configurations compile and match new schema
