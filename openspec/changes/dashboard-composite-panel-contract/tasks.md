@@ -55,16 +55,16 @@
 
 ## 6. Verification
 
-- [ ] 6.1 `go build ./internal/kibana/dashboard/...` passes
-- [ ] 6.2 `go vet ./...` passes
-- [ ] 6.3 `go test ./internal/kibana/dashboard/...` passes (all unit tests)
+- [x] 6.1 `go build ./internal/kibana/dashboard/...` passes
+- [x] 6.2 `go vet ./...` passes
+- [x] 6.3 `go test ./internal/kibana/dashboard/...` passes (all unit tests)
 - [ ] 6.4 All dashboard acceptance tests pass, including:
   - vis/vis_config panels (all 12 chart kinds)
   - lens_dashboard_app panels (by_value and by_reference)
   - discover_session panels (by_value DSL, by_value ESQL, by_reference)
   - markdown, slo, synthetics, controls (regression check)
-- [ ] 6.5 `make build` passes
-- [ ] 6.6 No dead code: confirm via static analysis or manual review that no unreferenced functions remain
+- [x] 6.5 `make build` passes
+- [x] 6.6 No dead code: confirm via static analysis or manual review that no unreferenced functions remain
 
 ## 7. Documentation
 
