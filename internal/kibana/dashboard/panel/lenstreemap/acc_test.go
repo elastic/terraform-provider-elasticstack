@@ -15,13 +15,14 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package dashboard_test
+package lenstreemap_test
 
 import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest/checks"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/dashboardacctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -31,7 +32,7 @@ import (
 func TestAccResourceDashboardTreemap(t *testing.T) {
 	dashboardTitle := "Test Dashboard with Treemap " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -88,7 +89,7 @@ func TestAccResourceDashboardTreemap(t *testing.T) {
 			// { // ES|QL Treemap panels are currently rejected by Kibana because collapsed
 			//   // grouping dimensions cannot be combined with color mapping.
 			// 	ProtoV6ProviderFactories: acctest.Providers,
-			// 	SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+			// 	SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(dashboardacctest.MinDashboardAPISupport),
 			// 	ConfigDirectory:          acctest.NamedTestCaseDirectory("esql"),
 			// 	ConfigVariables: config.Variables{
 			// 		"dashboard_title": config.StringVariable(dashboardTitle),

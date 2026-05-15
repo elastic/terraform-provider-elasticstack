@@ -15,12 +15,13 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package dashboard_test
+package lensdatatable_test
 
 import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/dashboardacctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -30,7 +31,7 @@ import (
 func TestAccResourceDashboardDatatableChart(t *testing.T) {
 	dashboardTitle := "Test Dashboard with Datatable " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -62,7 +63,7 @@ func TestAccResourceDashboardDatatableChart(t *testing.T) {
 			//
 			// {
 			// 	ProtoV6ProviderFactories: acctest.Providers,
-			// 	SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+			// 	SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(dashboardacctest.MinDashboardAPISupport),
 			// 	ConfigDirectory:          acctest.NamedTestCaseDirectory("esql"),
 			// 	ConfigVariables: config.Variables{
 			// 		"dashboard_title": config.StringVariable(dashboardTitle + " ESQL"),
@@ -109,7 +110,7 @@ func TestAccResourceDashboardDatatableChart(t *testing.T) {
 func TestAccResourceDashboardDatatableChart_lensPresentationCrossCutting(t *testing.T) {
 	dashboardTitle := "Test Dashboard Datatable presentation " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
