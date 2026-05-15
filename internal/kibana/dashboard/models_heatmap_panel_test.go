@@ -30,12 +30,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func Test_newHeatmapPanelConfigConverter(t *testing.T) {
-	converter := newHeatmapPanelConfigConverter()
-	assert.NotNil(t, converter)
-	assert.Equal(t, "heatmap", converter.visualizationType)
-}
-
 func Test_heatmapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 	heatmap := kbapi.HeatmapNoESQL{
 		Type:                kbapi.HeatmapNoESQLTypeHeatmap,
@@ -202,96 +196,6 @@ func Test_heatmapConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, kbapi.HeatmapESQLTypeHeatmap, heatmapRoundTrip.Type)
 	assert.Equal(t, "bytes", heatmapRoundTrip.Metric.Column)
-}
-
-func Test_heatmapPanelConfigConverter_populateFromAttributes_buildAttributes_roundTrip_NoESQL(t *testing.T) {
-	ctx := context.Background()
-
-	heatmap := kbapi.HeatmapNoESQL{
-		Type:                kbapi.HeatmapNoESQLTypeHeatmap,
-		Title:               new("Heatmap NoESQL Round-Trip"),
-		Description:         new("Converter test"),
-		IgnoreGlobalFilters: new(true),
-		Sampling:            new(float32(0.5)),
-		Query: kbapi.FilterSimple{
-			Expression: "status:200",
-			Language:   new(kbapi.FilterSimpleLanguage("kql")),
-		},
-		Axis: kbapi.HeatmapAxes{
-			X: kbapi.HeatmapXAxis{},
-			Y: kbapi.HeatmapYAxis{},
-		},
-		Styling: kbapi.HeatmapStyling{
-			Cells: kbapi.HeatmapCells{},
-		},
-		Legend: kbapi.HeatmapLegend{
-			Size: kbapi.LegendSizeM,
-		},
-	}
-	require.NoError(t, json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &heatmap.DataSource))
-	require.NoError(t, json.Unmarshal([]byte(`{"operation":"count"}`), &heatmap.Metric))
-	require.NoError(t, json.Unmarshal([]byte(`{"operation":"filters","filters":[{"label":"All","filter":{"query":"*","language":"kql"}}]}`), &heatmap.X))
-
-	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
-	require.NoError(t, attrs.FromHeatmapNoESQL(heatmap))
-
-	converter := newHeatmapPanelConfigConverter()
-	visBv := models.VisByValueModel{}
-	diags := converter.populateFromAttributes(ctx, nil, nil, &visBv.LensByValueChartBlocks, attrs)
-	require.False(t, diags.HasError())
-	require.NotNil(t, visBv.HeatmapConfig)
-
-	attrs2, diags := converter.buildAttributes(&visBv.LensByValueChartBlocks, nil)
-	require.False(t, diags.HasError())
-
-	noESQL2, err := attrs2.AsHeatmapNoESQL()
-	require.NoError(t, err)
-	assert.Equal(t, "Heatmap NoESQL Round-Trip", *noESQL2.Title)
-	assert.Equal(t, kbapi.HeatmapNoESQLTypeHeatmap, noESQL2.Type)
-}
-
-func Test_heatmapPanelConfigConverter_populateFromAttributes_buildAttributes_roundTrip_ESQL(t *testing.T) {
-	ctx := context.Background()
-
-	const esqlRoundTripJSON = `{
-		"type": "heatmap",
-		"title": "Heatmap ESQL Round-Trip",
-		"description": "Converter test",
-		"ignore_global_filters": false,
-		"sampling": 1,
-		"axis": { "x": {}, "y": {} },
-		"styling": { "cells": {} },
-		"legend": { "size": "m" },
-		"data_source": {"type":"esql","query":"FROM logs-* | LIMIT 10"},
-		"metric": {
-			"color": {"type":"dynamic","range":"absolute","steps":[{"type":"from","from":0,"color":"#000000"}]},
-			"column": "bytes",
-			"format": {"type":"number"},
-			"operation": "value"
-		},
-		"x": {"column":"host","format":{"type":"number"},"operation":"value"},
-		"y": {"column":"service","format":{"type":"number"},"operation":"value"}
-	}`
-	var heatmap kbapi.HeatmapESQL
-	require.NoError(t, json.Unmarshal([]byte(esqlRoundTripJSON), &heatmap))
-
-	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
-	require.NoError(t, attrs.FromHeatmapESQL(heatmap))
-
-	converter := newHeatmapPanelConfigConverter()
-	visBv := models.VisByValueModel{}
-	diags := converter.populateFromAttributes(ctx, nil, nil, &visBv.LensByValueChartBlocks, attrs)
-	require.False(t, diags.HasError())
-	require.NotNil(t, visBv.HeatmapConfig)
-
-	attrs2, diags := converter.buildAttributes(&visBv.LensByValueChartBlocks, nil)
-	require.False(t, diags.HasError())
-
-	esql2, err := attrs2.AsHeatmapESQL()
-	require.NoError(t, err)
-	assert.Equal(t, "Heatmap ESQL Round-Trip", *esql2.Title)
-	assert.Equal(t, kbapi.HeatmapESQLTypeHeatmap, esql2.Type)
-	assert.Equal(t, "host", esql2.X.Column)
 }
 
 func Test_heatmapConfigModel_xAxisYAxisTFSDKFields(t *testing.T) {

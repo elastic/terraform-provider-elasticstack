@@ -20,6 +20,7 @@ package dashboard
 import (
 	"maps"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -30,47 +31,12 @@ import (
 
 // populateTagcloudMetricDefaults populates default values for tagcloud metric configuration
 func populateTagcloudMetricDefaults(model map[string]any) map[string]any {
-	if model == nil {
-		return model
-	}
-	// Set defaults for all field metric operations
-	if operation, ok := model["operation"].(string); ok && isFieldMetricOperation(operation) {
-		if _, exists := model["empty_as_null"]; !exists {
-			model["empty_as_null"] = false
-		}
-		if _, exists := model["show_metric_label"]; !exists {
-			model["show_metric_label"] = true
-		}
-		if _, exists := model["color"]; !exists {
-			model["color"] = map[string]any{"type": "auto"}
-		}
-	}
-	return model
+	return lenscommon.PopulateTagcloudMetricDefaults(model)
 }
 
 // populateTagcloudTagByDefaults populates default values for tagcloud tag_by configuration
 func populateTagcloudTagByDefaults(model map[string]any) map[string]any {
-	if model == nil {
-		return model
-	}
-	// Set defaults for terms operation
-	if operation, ok := model["operation"].(string); ok && operation == operationTerms {
-		if _, exists := model["rank_by"]; !exists {
-			model["rank_by"] = map[string]any{
-				"type":         "metric",
-				"metric_index": float64(0),
-				"direction":    "desc",
-			}
-		}
-		if _, exists := model["color"]; !exists {
-			model["color"] = map[string]any{
-				"mode":    "categorical",
-				"palette": "default",
-				"mapping": []any{},
-			}
-		}
-	}
-	return model
+	return lenscommon.PopulateTagcloudTagByDefaults(model)
 }
 
 // getTagcloudSchema returns the schema for tagcloud chart configuration.

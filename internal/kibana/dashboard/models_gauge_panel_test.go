@@ -30,12 +30,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func Test_newGaugePanelConfigConverter(t *testing.T) {
-	converter := newGaugePanelConfigConverter()
-	assert.NotNil(t, converter)
-	assert.Equal(t, string(kbapi.GaugeNoESQLTypeGauge), converter.visualizationType)
-}
-
 func Test_gaugeConfigModel_fromAPI_toAPI(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -167,40 +161,6 @@ func Test_gaugeConfigModel_fromAPI_toAPI(t *testing.T) {
 	}
 }
 
-func Test_gaugePanelConfigConverter_populateFromAttributes_buildAttributes_roundTrip(t *testing.T) {
-	ctx := context.Background()
-
-	api := kbapi.GaugeNoESQL{
-		Type:                kbapi.GaugeNoESQLTypeGauge,
-		Title:               new("Round-Trip Gauge"),
-		Description:         new("Converter round-trip test"),
-		IgnoreGlobalFilters: new(true),
-		Sampling:            new(float32(0.5)),
-	}
-	require.NoError(t, json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.DataSource))
-	require.NoError(t, json.Unmarshal([]byte(`{"expression":"status:active","language":"kql"}`), &api.Query))
-	require.NoError(t, json.Unmarshal([]byte(`{"operation":"count"}`), &api.Metric))
-
-	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
-	require.NoError(t, attrs.FromGaugeNoESQL(api))
-
-	converter := newGaugePanelConfigConverter()
-	visBv := models.VisByValueModel{}
-	diags := converter.populateFromAttributes(ctx, nil, nil, &visBv.LensByValueChartBlocks, attrs)
-	require.False(t, diags.HasError())
-	require.NotNil(t, visBv.GaugeConfig)
-
-	attrs2, diags := converter.buildAttributes(&visBv.LensByValueChartBlocks, nil)
-	require.False(t, diags.HasError())
-
-	gaugeNoESQL2, err := attrs2.AsGaugeNoESQL()
-	require.NoError(t, err)
-	assert.Equal(t, "Round-Trip Gauge", *gaugeNoESQL2.Title)
-	assert.Equal(t, "Converter round-trip test", *gaugeNoESQL2.Description)
-	assert.True(t, *gaugeNoESQL2.IgnoreGlobalFilters)
-	assert.InDelta(t, 0.5, *gaugeNoESQL2.Sampling, 0.001)
-}
-
 func Test_gaugeConfig_lensChartPresentation_comprehensive(t *testing.T) {
 	runGaugeNoESQLLensChartPresentationComprehensive(t)
 }
@@ -248,27 +208,6 @@ func Test_gaugeConfigModel_toAPIESQL_requiresEsqlMetric(t *testing.T) {
 	}
 	_, diags := gaugeConfigToAPIESQL(m, nil)
 	require.True(t, diags.HasError(), "expected error when esql_metric is missing")
-}
-
-func Test_gaugePanelConfigConverter_routesESQL(t *testing.T) {
-	ctx := context.Background()
-
-	api := kbapi.GaugeESQL{Type: kbapi.GaugeESQLTypeGauge}
-	require.NoError(t, json.Unmarshal([]byte(`{"type":"esql","query":"FROM metrics-* | STATS c = COUNT()"}`), &api.DataSource))
-	require.NoError(t, json.Unmarshal([]byte(`{"type":"number"}`), &api.Metric.Format))
-	api.Metric.Column = "c"
-
-	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
-	require.NoError(t, attrs.FromGaugeESQL(api))
-
-	converter := newGaugePanelConfigConverter()
-	visBv := models.VisByValueModel{}
-	diags := converter.populateFromAttributes(ctx, nil, nil, &visBv.LensByValueChartBlocks, attrs)
-	require.False(t, diags.HasError())
-	require.NotNil(t, visBv.GaugeConfig)
-	require.NotNil(t, visBv.GaugeConfig.EsqlMetric)
-	assert.Nil(t, visBv.GaugeConfig.Query)
-	assert.Equal(t, "c", visBv.GaugeConfig.EsqlMetric.Column.ValueString())
 }
 
 func Test_gaugeConfigModel_fromAPIESQL_toAPIESQL_roundTrip_populatedOptionalMetricFields(t *testing.T) {

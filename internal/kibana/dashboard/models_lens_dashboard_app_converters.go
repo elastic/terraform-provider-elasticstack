@@ -23,11 +23,11 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func defaultOpaqueRootJSON(v any) any { return v }
@@ -156,12 +156,12 @@ func lensDashboardAppByValueToAPI(
 ) (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if blocks, ok := lensByValueChartBlocksForTypedLensApp(byValue); ok {
-		conv, okConv := firstLensVisConverterForChartBlocks(blocks)
+		conv, okConv := lenscommon.FirstForBlocks(blocks)
 		if !okConv {
 			diags.AddError("Invalid `by_value` for lens-dashboard-app", "The typed by-value chart block could not be resolved to a Lens visualization converter.")
 			return kbapi.DashboardPanelItem{}, diags
 		}
-		vis0, d := conv.buildAttributes(blocks, parentDashboard)
+		vis0, d := conv.BuildAttributes(blocks, lensChartResolver(parentDashboard))
 		diags.Append(d...)
 		if d.HasError() {
 			return kbapi.DashboardPanelItem{}, diags
@@ -222,58 +222,10 @@ func lensDashboardAppByReferenceToAPI(
 	panelID *string,
 ) (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	api1 := kbapi.KbnDashboardPanelTypeLensDashboardAppConfig1{
-		RefId: byRef.RefID.ValueString(),
-		TimeRange: kbapi.KbnEsQueryServerTimeRangeSchema{
-			From: byRef.TimeRange.From.ValueString(),
-			To:   byRef.TimeRange.To.ValueString(),
-		},
-	}
-	if typeutils.IsKnown(byRef.TimeRange.Mode) {
-		m := kbapi.KbnEsQueryServerTimeRangeSchemaMode(byRef.TimeRange.Mode.ValueString())
-		api1.TimeRange.Mode = &m
-	}
-	if typeutils.IsKnown(byRef.ReferencesJSON) {
-		refs, d := jsonBytesFromOptionalNormalizedArray(byRef.ReferencesJSON, "by_reference.references_json")
-		diags.Append(d...)
-		if d.HasError() {
-			return kbapi.DashboardPanelItem{}, diags
-		}
-		if len(refs) > 0 {
-			var out []kbapi.KbnContentManagementUtilsReferenceSchema
-			if err := json.Unmarshal(refs, &out); err != nil {
-				diags.AddError("Invalid `by_reference.references_json` for lens-dashboard-app", err.Error())
-				return kbapi.DashboardPanelItem{}, diags
-			}
-			if out == nil {
-				out = []kbapi.KbnContentManagementUtilsReferenceSchema{}
-			}
-			api1.References = &out
-		}
-	}
-	if typeutils.IsKnown(byRef.Title) {
-		t := byRef.Title.ValueString()
-		api1.Title = &t
-	}
-	if typeutils.IsKnown(byRef.Description) {
-		d := byRef.Description.ValueString()
-		api1.Description = &d
-	}
-	if typeutils.IsKnown(byRef.HideTitle) {
-		v := byRef.HideTitle.ValueBool()
-		api1.HideTitle = &v
-	}
-	if typeutils.IsKnown(byRef.HideBorder) {
-		v := byRef.HideBorder.ValueBool()
-		api1.HideBorder = &v
-	}
-	if byRef.Drilldowns != nil {
-		dd, ddDiags := toAPI(byRef.Drilldowns)
-		diags.Append(ddDiags...)
-		if ddDiags.HasError() {
-			return kbapi.DashboardPanelItem{}, diags
-		}
-		api1.Drilldowns = dd
+	api1, d := lenscommon.LensDashboardAppByReferenceModelToAPIConfig1(byRef, "by_reference.references_json")
+	diags.Append(d...)
+	if d.HasError() {
+		return kbapi.DashboardPanelItem{}, diags
 	}
 	var config kbapi.KbnDashboardPanelTypeLensDashboardApp_Config
 	if err := config.FromKbnDashboardPanelTypeLensDashboardAppConfig1(api1); err != nil {
@@ -295,27 +247,6 @@ func lensDashboardAppByReferenceToAPI(
 		diags.AddError("Failed to create lens-dashboard-app panel", err.Error())
 	}
 	return panelItem, diags
-}
-
-func lensOptionalJSONBytes(n jsontypes.Normalized) []byte {
-	if !typeutils.IsKnown(n) {
-		return nil
-	}
-	return []byte(n.ValueString())
-}
-
-// jsonBytesFromOptionalNormalizedArray rejects JSON null and returns bytes for the array/object payload.
-func jsonBytesFromOptionalNormalizedArray(n jsontypes.Normalized, field string) ([]byte, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	b := lensOptionalJSONBytes(n)
-	if len(b) == 0 {
-		return b, diags
-	}
-	if s := string(b); s == "null" {
-		diags.AddError("Invalid JSON for "+field, "JSON `null` is not valid; omit the argument or use a JSON array.")
-		return nil, diags
-	}
-	return b, diags
 }
 
 // populateLensDashboardAppFromAPI maps an API lens-dashboard-app panel to the TF model in pm.
@@ -378,64 +309,14 @@ func populateLensDashboardAppByReferenceFromAPI(
 	pm *models.PanelModel,
 	cfg1 kbapi.KbnDashboardPanelTypeLensDashboardAppConfig1,
 ) diag.Diagnostics {
-	var diags diag.Diagnostics
-	tr := models.LensDashboardAppTimeRangeModel{
-		From: types.StringValue(cfg1.TimeRange.From),
-		To:   types.StringValue(cfg1.TimeRange.To),
-	}
-	switch {
-	case cfg1.TimeRange.Mode != nil:
-		tr.Mode = types.StringValue(string(*cfg1.TimeRange.Mode))
-	case prior != nil && prior.ByReference != nil && typeutils.IsKnown(prior.ByReference.TimeRange.Mode):
-		tr.Mode = prior.ByReference.TimeRange.Mode
-	default:
-		tr.Mode = types.StringNull()
-	}
-	by := models.LensDashboardAppByReferenceModel{
-		RefID:     types.StringValue(cfg1.RefId),
-		TimeRange: tr,
-	}
 	var priorBR *models.LensDashboardAppByReferenceModel
 	if prior != nil {
 		priorBR = prior.ByReference
 	}
-	by.Title = byReferenceOptionalStringFromAPI(cfg1.Title, priorBR, func(br *models.LensDashboardAppByReferenceModel) types.String { return br.Title })
-	by.Description = byReferenceOptionalStringFromAPI(cfg1.Description, priorBR, func(br *models.LensDashboardAppByReferenceModel) types.String { return br.Description })
-	by.HideTitle = byReferenceOptionalBoolFromAPI(cfg1.HideTitle, priorBR, func(br *models.LensDashboardAppByReferenceModel) types.Bool { return br.HideTitle })
-	by.HideBorder = byReferenceOptionalBoolFromAPI(cfg1.HideBorder, priorBR, func(br *models.LensDashboardAppByReferenceModel) types.Bool { return br.HideBorder })
-
-	switch {
-	case cfg1.References != nil:
-		b, err := json.Marshal(cfg1.References)
-		if err != nil {
-			return diagutil.FrameworkDiagFromError(err)
-		}
-		if norm, ok := marshalToNormalized(b, err, "references_json", &diags); ok {
-			if prior != nil && prior.ByReference != nil {
-				norm = preservePriorNormalizedWithDefaultsIfEquivalent(ctx, prior.ByReference.ReferencesJSON, norm, defaultOpaqueRootJSON, &diags)
-			}
-			by.ReferencesJSON = norm
-		}
-	case prior != nil && prior.ByReference != nil && typeutils.IsKnown(prior.ByReference.ReferencesJSON):
-		by.ReferencesJSON = prior.ByReference.ReferencesJSON
-	default:
-		by.ReferencesJSON = jsontypes.NewNormalizedNull()
+	by, diags := lenscommon.PopulateLensByReferenceTFModelFromLensAppConfig1(ctx, cfg1, priorBR)
+	if diags.HasError() {
+		return diags
 	}
-
-	switch {
-	case cfg1.Drilldowns != nil:
-		items, drillDiags := fromAPI(ctx, cfg1.Drilldowns)
-		diags.Append(drillDiags...)
-		if drillDiags.HasError() {
-			return diags
-		}
-		by.Drilldowns = items
-	case prior != nil && prior.ByReference != nil && prior.ByReference.Drilldowns != nil:
-		by.Drilldowns = prior.ByReference.Drilldowns
-	default:
-		by.Drilldowns = nil
-	}
-
 	pm.LensDashboardAppConfig = &models.LensDashboardAppConfigModel{
 		ByReference: &by,
 	}
@@ -650,39 +531,4 @@ func populateLensDashboardAppByValueFromAPI(
 		}
 	}
 	return diags
-}
-
-// byReferenceOptionalStringFromAPI returns the API value when present, falls back to the
-// known prior TF value, otherwise null. Shared by the lens-dashboard-app and vis by-reference
-// read paths since they share the same model (models.VisByReferenceModel = models.LensDashboardAppByReferenceModel).
-func byReferenceOptionalStringFromAPI(
-	api *string,
-	prior *models.LensDashboardAppByReferenceModel,
-	priorField func(*models.LensDashboardAppByReferenceModel) types.String,
-) types.String {
-	if api != nil {
-		return types.StringValue(*api)
-	}
-	if prior != nil {
-		if p := priorField(prior); typeutils.IsKnown(p) {
-			return p
-		}
-	}
-	return types.StringNull()
-}
-
-func byReferenceOptionalBoolFromAPI(
-	api *bool,
-	prior *models.LensDashboardAppByReferenceModel,
-	priorField func(*models.LensDashboardAppByReferenceModel) types.Bool,
-) types.Bool {
-	if api != nil {
-		return types.BoolValue(*api)
-	}
-	if prior != nil {
-		if p := priorField(prior); typeutils.IsKnown(p) {
-			return p
-		}
-	}
-	return types.BoolNull()
 }

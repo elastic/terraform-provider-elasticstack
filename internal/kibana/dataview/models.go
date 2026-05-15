@@ -19,16 +19,153 @@ package dataview
 
 import (
 	"context"
+	"fmt"
 	"maps"
 	"slices"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
+
+// reconcileIncomingFieldAttrsWithTerraformPlan maps Kibana API field_attrs into Terraform state in
+// a way consistent with planned optional attributes: when Terraform omits popularity `count` for a
+// field entry, omit the server-derived count instead of leaking it into apply state (fixes
+// inconsistent-result-after-apply when Kibana echoes injected counts alongside custom labels;
+// REQ-015; TestAccResourceDataViewFieldAttrs).
+//
+// When the entire field_attrs planned value is null, delegates to stripServerCountOnlyWhenFieldAttrsUnset.
+func reconcileIncomingFieldAttrsWithTerraformPlan(ctx context.Context, planned FieldAttrsValue, incoming types.Map, diags *diag.Diagnostics) types.Map {
+	if incoming.IsNull() || incoming.IsUnknown() {
+		return incoming
+	}
+	if planned.IsNull() {
+		return stripServerCountOnlyWhenFieldAttrsUnset(ctx, planned, incoming, diags)
+	}
+
+	elemObjType := getFieldAttrElemType()
+	plannedElems := planned.Elements()
+	out := make(map[string]attr.Value)
+
+	for fieldName, av := range incoming.Elements() {
+		ov, ok := av.(basetypes.ObjectValue)
+		if !ok {
+			diags.AddAttributeError(path.Root("data_view").AtName("field_attrs").AtMapKey(fieldName),
+				"Invalid field_attrs value", fmt.Sprintf("expected ObjectValue, got %T", av))
+			return incoming
+		}
+
+		var incomingM fieldAttrModel
+		diags.Append(ov.As(ctx, &incomingM, basetypes.ObjectAsOptions{})...)
+		if diags.HasError() {
+			return incoming
+		}
+
+		plannedAV, plannedField := plannedElems[fieldName]
+		if !plannedField {
+			// Kibana may echo cleared fields as explicit null keys; omit them so removed keys
+			// do not reappear in state.
+			if incomingM.CustomLabel.IsNull() && incomingM.Count.IsNull() {
+				continue
+			}
+			out[fieldName] = av
+			continue
+		}
+		plannedOV, ok := plannedAV.(basetypes.ObjectValue)
+		if !ok {
+			diags.AddAttributeError(path.Root("data_view").AtName("field_attrs").AtMapKey(fieldName),
+				"Invalid field_attrs value", fmt.Sprintf("expected ObjectValue, got %T", plannedAV))
+			return incoming
+		}
+
+		var plannedM fieldAttrModel
+		diags.Append(plannedOV.As(ctx, &plannedM, basetypes.ObjectAsOptions{})...)
+		if diags.HasError() {
+			return incoming
+		}
+
+		// Drop server-injected popularity counts when the plan omitted count for this field, so
+		// the post-apply state matches the planned shape (otherwise apply fails the framework's
+		// "inconsistent result after apply" check).
+		m := incomingM
+		if plannedM.Count.IsNull() && !incomingM.Count.IsNull() {
+			m.Count = types.Int64Null()
+		}
+
+		obj, d := types.ObjectValue(elemObjType.AttrTypes, map[string]attr.Value{
+			"custom_label": m.CustomLabel,
+			"count":        m.Count,
+		})
+		diags.Append(d...)
+		if diags.HasError() {
+			return incoming
+		}
+		out[fieldName] = obj
+	}
+
+	elemType := incoming.ElementType(ctx)
+	mv, d := types.MapValue(elemType, out)
+	diags.Append(d...)
+	if diags.HasError() {
+		return incoming
+	}
+	return mv
+}
+
+// stripServerCountOnlyWhenFieldAttrsUnset removes Kibana-populated popularity counts from the
+// field_attrs snapshot when Terraform state still has the attribute omitted (null). Otherwise
+// plan-time MapSemanticEquals is never invoked for a null-config attribute and refresh shows drift
+// (REQ-015; see TestAccResourceDataViewFieldAttrs).
+//
+// It also drops explicit {customLabel: null, count: null} entries left after metadata clears,
+// which would otherwise break apply with "inconsistent result after apply" when field_attrs is
+// planned null.
+func stripServerCountOnlyWhenFieldAttrsUnset(ctx context.Context, existing FieldAttrsValue, incoming types.Map, diags *diag.Diagnostics) types.Map {
+	if !existing.IsNull() {
+		return incoming
+	}
+	if incoming.IsNull() || incoming.IsUnknown() || len(incoming.Elements()) == 0 {
+		return incoming
+	}
+
+	elemType := incoming.ElementType(ctx)
+	out := make(map[string]attr.Value)
+	for fieldName, av := range incoming.Elements() {
+		ov, ok := av.(basetypes.ObjectValue)
+		if !ok {
+			diags.AddAttributeError(path.Root("data_view").AtName("field_attrs").AtMapKey(fieldName),
+				"Invalid field_attrs value", fmt.Sprintf("expected ObjectValue, got %T", av))
+			return incoming
+		}
+
+		var m fieldAttrModel
+		diags.Append(ov.As(ctx, &m, basetypes.ObjectAsOptions{})...)
+		if diags.HasError() {
+			return incoming
+		}
+
+		// When the plan omits field_attrs entirely, only retain entries Kibana attributes to a
+		// user-managed custom_label. Server-only popularity counts (custom_label null) and
+		// fully-null echoes are both dropped to avoid spurious refresh drift.
+		if m.CustomLabel.IsNull() {
+			continue
+		}
+		out[fieldName] = av
+	}
+
+	if len(out) == 0 {
+		return types.MapNull(elemType)
+	}
+
+	mv, d := types.MapValue(elemType, out)
+	diags.Append(d...)
+	return mv
+}
 
 func (model *dataViewModel) populateFromAPI(ctx context.Context, data *kbapi.DataViewsDataViewResponseObject, spaceID string) diag.Diagnostics {
 	if data == nil {
@@ -42,7 +179,7 @@ func (model *dataViewModel) populateFromAPI(ctx context.Context, data *kbapi.Dat
 		ResourceID: *data.DataView.Id,
 	}
 
-	// An existing null map should should be semantically equal to an empty map.
+	// An existing null map should be semantically equal to an empty map.
 	semanticEqualEmptyMap := func(existing types.Map, incoming types.Map) types.Map {
 		if !typeutils.IsKnown(existing) && len(incoming.Elements()) == 0 {
 			return types.MapNull(incoming.ElementType(ctx))
@@ -116,14 +253,19 @@ func (model *dataViewModel) populateFromAPI(ctx context.Context, data *kbapi.Dat
 						func(item kbapi.DataViewsSourcefilterItem, _ typeutils.ListMeta) string {
 							return item.Value
 						})),
-				FieldAttributes: semanticEqualEmptyMap(dvInner.FieldAttributes,
-					typeutils.MapToMapType(ctx, typeutils.Deref(item.FieldAttrs), getFieldAttrElemType(), meta.Path.AtName("field_attrs"), &diags,
+				FieldAttributes: func() FieldAttrsValue {
+					incoming := typeutils.MapToMapType(ctx, typeutils.Deref(item.FieldAttrs), getFieldAttrElemType(), meta.Path.AtName("field_attrs"), &diags,
 						func(item kbapi.DataViewsFieldattrs, _ typeutils.MapMeta) fieldAttrModel {
 							return fieldAttrModel{
 								CustomLabel: types.StringPointerValue(item.CustomLabel),
 								Count:       types.Int64PointerValue(typeutils.Itol(item.Count)),
 							}
-						})),
+						})
+					incoming = reconcileIncomingFieldAttrsWithTerraformPlan(ctx, dvInner.FieldAttributes, incoming, &diags)
+					return FieldAttrsValue{
+						MapValue: semanticEqualEmptyMap(dvInner.FieldAttributes.MapValue, incoming),
+					}
+				}(),
 				RuntimeFieldMap: semanticEqualEmptyMap(dvInner.RuntimeFieldMap,
 					typeutils.MapToMapType(ctx, typeutils.Deref(item.RuntimeFieldMap), getRuntimeFieldMapElemType(), meta.Path.AtName("runtime_field_map"), &diags,
 						func(item kbapi.DataViewsRuntimefieldmap, _ typeutils.MapMeta) runtimeFieldModel {
@@ -199,7 +341,7 @@ func (model dataViewModel) toAPICreateModel(ctx context.Context) (kbapi.DataView
 
 				return kbapi.DataViewsCreateDataViewRequestObjectInner{
 					AllowNoIndex: item.AllowNoIndex.ValueBoolPointer(),
-					FieldAttrs: typeutils.MapRef(typeutils.MapTypeToMap(ctx, item.FieldAttributes, meta.Path.AtName("field_attrs"), &diags,
+					FieldAttrs: typeutils.MapRef(typeutils.MapTypeToMap(ctx, item.FieldAttributes.MapValue, meta.Path.AtName("field_attrs"), &diags,
 						func(item fieldAttrModel, _ typeutils.MapMeta) kbapi.DataViewsFieldattrs {
 							return kbapi.DataViewsFieldattrs{
 								Count:       typeutils.Ltoi(item.Count.ValueInt64Pointer()),
@@ -231,15 +373,33 @@ func (model dataViewModel) toAPIUpdateModel(ctx context.Context) (kbapi.DataView
 	body := kbapi.DataViewsUpdateDataViewRequestObject{
 		DataView: typeutils.Deref(typeutils.ObjectTypeToStruct(ctx, model.DataView, path.Root("data_view"), &diags,
 			func(item innerModel, meta typeutils.ObjectMeta) kbapi.DataViewsUpdateDataViewRequestObjectInner {
+				// Kibana's PUT data view performs a partial merge: omitted fields keep their
+				// stored value. Always emit collection fields, defaulting null to empty, so
+				// in-place updates that drop a previously-set source_filters / field_formats /
+				// runtime_field_map actually clear the saved object server-side. Otherwise
+				// Terraform reports "Provider produced inconsistent result after apply" because
+				// the refreshed state still carries the prior values.
+				fieldFormats := convertFieldFormats(typeutils.MapTypeToMap(ctx, item.FieldFormats, meta.Path.AtName("field_formats"), &diags,
+					func(item fieldFormatModel, meta typeutils.MapMeta) kbapi.DataViewsFieldformat {
+						return convertFieldFormat(ctx, item, meta)
+					}))
+				if fieldFormats == nil {
+					fieldFormats = kbapi.DataViewsFieldformats{}
+				}
+				runtimeFieldMap := typeutils.MapTypeToMap(ctx, item.RuntimeFieldMap, meta.Path.AtName("runtime_field_map"), &diags, convertRuntimeFieldMap)
+				if runtimeFieldMap == nil {
+					runtimeFieldMap = map[string]kbapi.DataViewsRuntimefieldmap{}
+				}
+				sourceFilters := typeutils.ListTypeToSlice(ctx, item.SourceFilters, meta.Path.AtName("source_filters"), &diags, convertSourceFilter)
+				if sourceFilters == nil {
+					sourceFilters = []kbapi.DataViewsSourcefilterItem{}
+				}
 				return kbapi.DataViewsUpdateDataViewRequestObjectInner{
-					AllowNoIndex: item.AllowNoIndex.ValueBoolPointer(),
-					FieldFormats: typeutils.MapRef(convertFieldFormats(typeutils.MapTypeToMap(ctx, item.FieldFormats, meta.Path.AtName("field_formats"), &diags,
-						func(item fieldFormatModel, meta typeutils.MapMeta) kbapi.DataViewsFieldformat {
-							return convertFieldFormat(ctx, item, meta)
-						}))),
+					AllowNoIndex:    item.AllowNoIndex.ValueBoolPointer(),
+					FieldFormats:    &fieldFormats,
 					Name:            typeutils.ValueStringPointer(item.Name),
-					RuntimeFieldMap: typeutils.MapRef(typeutils.MapTypeToMap(ctx, item.RuntimeFieldMap, meta.Path.AtName("runtime_field_map"), &diags, convertRuntimeFieldMap)),
-					SourceFilters:   typeutils.SliceRef(typeutils.ListTypeToSlice(ctx, item.SourceFilters, meta.Path.AtName("source_filters"), &diags, convertSourceFilter)),
+					RuntimeFieldMap: &runtimeFieldMap,
+					SourceFilters:   &sourceFilters,
 					TimeFieldName:   typeutils.ValueStringPointer(item.TimeFieldName),
 					Title:           item.Title.ValueStringPointer(),
 				}
@@ -338,16 +498,16 @@ type dataViewModel struct {
 }
 
 type innerModel struct {
-	Title           types.String `tfsdk:"title"`
-	Name            types.String `tfsdk:"name"`
-	ID              types.String `tfsdk:"id"`
-	TimeFieldName   types.String `tfsdk:"time_field_name"`
-	SourceFilters   types.List   `tfsdk:"source_filters"`    // > string
-	FieldAttributes types.Map    `tfsdk:"field_attrs"`       // > fieldAttrModel
-	RuntimeFieldMap types.Map    `tfsdk:"runtime_field_map"` // > runtimeFieldModel
-	FieldFormats    types.Map    `tfsdk:"field_formats"`     // > fieldFormatModel
-	AllowNoIndex    types.Bool   `tfsdk:"allow_no_index"`
-	Namespaces      types.List   `tfsdk:"namespaces"` // > string
+	Title           types.String    `tfsdk:"title"`
+	Name            types.String    `tfsdk:"name"`
+	ID              types.String    `tfsdk:"id"`
+	TimeFieldName   types.String    `tfsdk:"time_field_name"`
+	SourceFilters   types.List      `tfsdk:"source_filters"`    // > string
+	FieldAttributes FieldAttrsValue `tfsdk:"field_attrs"`       // > fieldAttrModel (custom MapTypable)
+	RuntimeFieldMap types.Map       `tfsdk:"runtime_field_map"` // > runtimeFieldModel
+	FieldFormats    types.Map       `tfsdk:"field_formats"`     // > fieldFormatModel
+	AllowNoIndex    types.Bool      `tfsdk:"allow_no_index"`
+	Namespaces      types.List      `tfsdk:"namespaces"` // > string
 }
 
 type fieldAttrModel struct {

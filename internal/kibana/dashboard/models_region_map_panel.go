@@ -22,75 +22,11 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
-
-func newRegionMapPanelConfigConverter() regionMapPanelConfigConverter {
-	return regionMapPanelConfigConverter{
-		lensVisualizationBase: lensVisualizationBase{
-			visualizationType: string(kbapi.RegionMapNoESQLTypeRegionMap),
-			hasTFChartBlock: func(blocks *models.LensByValueChartBlocks) bool {
-				return blocks != nil && blocks.RegionMapConfig != nil
-			},
-		},
-	}
-}
-
-type regionMapPanelConfigConverter struct {
-	lensVisualizationBase
-}
-
-func (c regionMapPanelConfigConverter) populateFromAttributes(
-	ctx context.Context,
-	dashboard *models.DashboardModel,
-	tfPanel *models.PanelModel,
-	blocks *models.LensByValueChartBlocks,
-	attrs kbapi.KbnDashboardPanelTypeVisConfig0,
-) diag.Diagnostics {
-	var prior *models.RegionMapConfigModel
-	if b := lensByValueChartBlocksFromPanel(tfPanel); b != nil && b.RegionMapConfig != nil {
-		cpy := *b.RegionMapConfig
-		prior = &cpy
-	}
-	blocks.RegionMapConfig = &models.RegionMapConfigModel{}
-
-	if noESQL, err := attrs.AsRegionMapNoESQL(); err == nil && !isRegionMapNoESQLCandidateActuallyESQL(noESQL) {
-		return regionMapConfigFromAPINoESQL(ctx, blocks.RegionMapConfig, dashboard, prior, noESQL)
-	}
-
-	regionMapESQL, err := attrs.AsRegionMapESQL()
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	return regionMapConfigFromAPIESQL(ctx, blocks.RegionMapConfig, dashboard, prior, regionMapESQL)
-}
-
-func isRegionMapNoESQLCandidateActuallyESQL(api kbapi.RegionMapNoESQL) bool {
-	body, err := api.DataSource.MarshalJSON()
-	if err != nil {
-		return false
-	}
-	var ds struct {
-		Type string `json:"type"`
-	}
-	if err := json.Unmarshal(body, &ds); err != nil {
-		return false
-	}
-	return ds.Type == legacyMetricDatasetTypeESQL || ds.Type == legacyMetricDatasetTypeTable
-}
-
-func (c regionMapPanelConfigConverter) buildAttributes(blocks *models.LensByValueChartBlocks, dashboard *models.DashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	configModel := *blocks.RegionMapConfig
-
-	attrs, regionDiags := regionMapConfigToAPI(&configModel, dashboard)
-	diags.Append(regionDiags...)
-	return attrs, diags
-}
 
 func regionMapConfigPopulateCommonFields(m *models.RegionMapConfigModel,
 	title, description *string,

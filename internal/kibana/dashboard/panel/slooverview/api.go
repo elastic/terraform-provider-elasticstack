@@ -54,7 +54,7 @@ func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item k
 
 	pm.Grid = panelkit.GridFromAPI(apiPanel.Grid.X, apiPanel.Grid.Y, apiPanel.Grid.W, apiPanel.Grid.H)
 	pm.ID = panelkit.IDFromAPI(apiPanel.Id)
-	pm.ConfigJSON = panelConfigJSONNull()
+	pm.ConfigJSON = panelkit.PanelConfigJSONNull()
 	diags := PopulateFromAPI(pm, prior, apiPanel)
 	_ = ctx
 	return diags

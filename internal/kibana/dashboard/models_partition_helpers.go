@@ -18,12 +18,10 @@
 package dashboard
 
 import (
-	"encoding/json"
-
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -33,19 +31,7 @@ import (
 //
 //nolint:unparam // snapshotDefault is a parameter for API flexibility; callers use false for partition charts
 func mapOptionalBoolWithSnapshotDefault(current types.Bool, apiValue *bool, snapshotDefault bool) types.Bool {
-	switch {
-	case apiValue == nil:
-		if typeutils.IsKnown(current) {
-			return current
-		}
-		return types.BoolNull()
-	case typeutils.IsKnown(current) && *apiValue == snapshotDefault && current.ValueBool() != *apiValue:
-		return current
-	case !typeutils.IsKnown(current) && *apiValue == snapshotDefault:
-		return types.BoolNull()
-	default:
-		return types.BoolValue(*apiValue)
-	}
+	return lenscommon.MapOptionalBoolWithSnapshotDefault(current, apiValue, snapshotDefault)
 }
 
 // mapOptionalFloatWithSnapshotDefault maps an optional API float to a Terraform Float64,
@@ -53,173 +39,46 @@ func mapOptionalBoolWithSnapshotDefault(current types.Bool, apiValue *bool, snap
 //
 //nolint:unparam // snapshotDefault is a parameter for API flexibility; callers use 1 for partition charts
 func mapOptionalFloatWithSnapshotDefault(current types.Float64, apiValue *float32, snapshotDefault float64) types.Float64 {
-	switch {
-	case apiValue == nil:
-		if typeutils.IsKnown(current) {
-			return current
-		}
-		return types.Float64Null()
-	case typeutils.IsKnown(current) && float64(*apiValue) == snapshotDefault && current.ValueFloat64() != float64(*apiValue):
-		return current
-	case !typeutils.IsKnown(current) && float64(*apiValue) == snapshotDefault:
-		return types.Float64Null()
-	default:
-		return types.Float64Value(float64(*apiValue))
-	}
+	return lenscommon.MapOptionalFloatWithSnapshotDefault(current, apiValue, snapshotDefault)
 }
 
 // (treemap, mosaic, pie). Used by treemap, mosaic, and pie chart config models.
 
 func partitionLegendFromTreemapLegend(m *models.PartitionLegendModel, api kbapi.TreemapLegend) {
-	m.Nested = types.BoolPointerValue(api.Nested)
-	m.Size = types.StringValue(string(api.Size))
-	if api.TruncateAfterLines != nil {
-		m.TruncateAfterLine = types.Int64Value(int64(*api.TruncateAfterLines))
-	} else {
-		m.TruncateAfterLine = types.Int64Null()
-	}
-	if api.Visibility != nil {
-		m.Visible = types.StringValue(string(*api.Visibility))
-	} else {
-		m.Visible = types.StringNull()
-	}
+	lenscommon.PartitionLegendFromTreemapLegend(m, api)
 }
 
 func partitionLegendFromMosaicLegend(m *models.PartitionLegendModel, api kbapi.MosaicLegend) {
-	m.Nested = types.BoolPointerValue(api.Nested)
-	m.Size = types.StringValue(string(api.Size))
-	if api.TruncateAfterLines != nil {
-		m.TruncateAfterLine = types.Int64Value(int64(*api.TruncateAfterLines))
-	} else {
-		m.TruncateAfterLine = types.Int64Null()
-	}
-	if api.Visibility != nil {
-		m.Visible = types.StringValue(string(*api.Visibility))
-	} else {
-		m.Visible = types.StringNull()
-	}
+	lenscommon.PartitionLegendFromMosaicLegend(m, api)
 }
 
 func partitionLegendToTreemapLegend(m *models.PartitionLegendModel) kbapi.TreemapLegend {
-	legend := kbapi.TreemapLegend{Size: kbapi.LegendSize(m.Size.ValueString())}
-	if typeutils.IsKnown(m.Nested) {
-		legend.Nested = new(m.Nested.ValueBool())
-	}
-	if typeutils.IsKnown(m.TruncateAfterLine) {
-		legend.TruncateAfterLines = new(float32(m.TruncateAfterLine.ValueInt64()))
-	}
-	if typeutils.IsKnown(m.Visible) {
-		v := kbapi.TreemapLegendVisibility(m.Visible.ValueString())
-		legend.Visibility = &v
-	}
-	return legend
+	return lenscommon.PartitionLegendToTreemapLegend(m)
 }
 
 func partitionLegendToMosaicLegend(m *models.PartitionLegendModel) kbapi.MosaicLegend {
-	legend := kbapi.MosaicLegend{Size: kbapi.LegendSize(m.Size.ValueString())}
-	if typeutils.IsKnown(m.Nested) {
-		legend.Nested = new(m.Nested.ValueBool())
-	}
-	if typeutils.IsKnown(m.TruncateAfterLine) {
-		legend.TruncateAfterLines = new(float32(m.TruncateAfterLine.ValueInt64()))
-	}
-	if typeutils.IsKnown(m.Visible) {
-		v := kbapi.MosaicLegendVisibility(m.Visible.ValueString())
-		legend.Visibility = &v
-	}
-	return legend
+	return lenscommon.PartitionLegendToMosaicLegend(m)
 }
 
 func partitionLegendFromPieLegend(m *models.PartitionLegendModel, api kbapi.PieLegend) {
-	m.Nested = types.BoolPointerValue(api.Nested)
-	if api.Size != "" {
-		m.Size = types.StringValue(string(api.Size))
-	} else {
-		m.Size = types.StringValue(string(kbapi.LegendSizeAuto))
-	}
-	if api.TruncateAfterLines != nil {
-		m.TruncateAfterLine = types.Int64Value(int64(*api.TruncateAfterLines))
-	} else {
-		m.TruncateAfterLine = types.Int64Null()
-	}
-	if api.Visibility != nil {
-		m.Visible = types.StringValue(string(*api.Visibility))
-	} else {
-		// Align with pie_chart_config.legend schema default (visible = auto) when Kibana omits the field.
-		m.Visible = types.StringValue(string(kbapi.PieLegendVisibilityAuto))
-	}
+	lenscommon.PartitionLegendFromPieLegend(m, api)
 }
 
 func partitionLegendToPieLegend(m *models.PartitionLegendModel) kbapi.PieLegend {
-	legend := kbapi.PieLegend{Size: kbapi.LegendSize(m.Size.ValueString())}
-	if typeutils.IsKnown(m.Nested) {
-		legend.Nested = new(m.Nested.ValueBool())
-	}
-	if typeutils.IsKnown(m.TruncateAfterLine) {
-		legend.TruncateAfterLines = new(float32(m.TruncateAfterLine.ValueInt64()))
-	}
-	if typeutils.IsKnown(m.Visible) {
-		v := kbapi.PieLegendVisibility(m.Visible.ValueString())
-		legend.Visibility = &v
-	}
-	return legend
+	return lenscommon.PartitionLegendToPieLegend(m)
 }
 
 func partitionValueDisplayFromValueDisplay(m *models.PartitionValueDisplay, api kbapi.ValueDisplay) {
-	m.Mode = typeutils.StringishPointerValue(api.Mode)
-	if api.PercentDecimals != nil {
-		m.PercentDecimals = types.Float64Value(float64(*api.PercentDecimals))
-	} else {
-		m.PercentDecimals = types.Float64Null()
-	}
+	lenscommon.PartitionValueDisplayFromAPI(m, api)
 }
 
 func partitionValueDisplayToValueDisplay(m *models.PartitionValueDisplay) kbapi.ValueDisplay {
-	vd := kbapi.ValueDisplay{}
-	if typeutils.IsKnown(m.Mode) {
-		mode := kbapi.ValueDisplayMode(m.Mode.ValueString())
-		vd.Mode = &mode
-	}
-	if typeutils.IsKnown(m.PercentDecimals) {
-		vd.PercentDecimals = new(float32(m.PercentDecimals.ValueFloat64()))
-	}
-	return vd
-}
-
-// stripTopLevelNullMapKeys removes keys whose value is nil so JSON state matches compact user configs.
-func stripTopLevelNullMapKeys(m map[string]any) {
-	if m == nil {
-		return
-	}
-	for k, v := range m {
-		if v == nil {
-			delete(m, k)
-		}
-	}
+	return lenscommon.PartitionValueDisplayToAPI(m)
 }
 
 // newPartitionGroupByJSONFromAPI builds group_by / group_breakdown_by JSON for Terraform state from the API payload.
 // Kibana may add explicit null fields on read; dropping them avoids "inconsistent result after apply" for ES|QL treemaps/mosaics.
 // Terms defaults are not merged here (that would change round-trip panelsToAPI); JSONWithDefaultsValue still applies populatePartitionGroupByDefaults for semantic equality.
 func newPartitionGroupByJSONFromAPI(apiPayload any) (customtypes.JSONWithDefaultsValue[[]map[string]any], diag.Diagnostics) {
-	var diags diag.Diagnostics
-	raw, err := json.Marshal(apiPayload)
-	if err != nil {
-		diags.AddError("Failed to marshal group_by from API", err.Error())
-		return customtypes.JSONWithDefaultsValue[[]map[string]any]{}, diags
-	}
-	var items []map[string]any
-	if err := json.Unmarshal(raw, &items); err != nil {
-		diags.AddError("Failed to unmarshal group_by from API", err.Error())
-		return customtypes.JSONWithDefaultsValue[[]map[string]any]{}, diags
-	}
-	for i := range items {
-		stripTopLevelNullMapKeys(items[i])
-	}
-	out, err := json.Marshal(items)
-	if err != nil {
-		diags.AddError("Failed to marshal normalized group_by", err.Error())
-		return customtypes.JSONWithDefaultsValue[[]map[string]any]{}, diags
-	}
-	return customtypes.NewJSONWithDefaultsValue(string(out), populatePartitionGroupByDefaults), diags
+	return lenscommon.NewPartitionGroupByJSONFromAPI(apiPayload)
 }

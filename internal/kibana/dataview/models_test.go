@@ -32,6 +32,7 @@ import (
 func TestPopulateFromAPI(t *testing.T) {
 	ctx := context.Background()
 	var diags diag.Diagnostics
+	countFive := 5
 
 	tests := []struct {
 		name          string
@@ -46,7 +47,7 @@ func TestPopulateFromAPI(t *testing.T) {
 				SpaceID: types.StringValue("existing-space-id"),
 				DataView: typeutils.ObjectValueFrom(ctx, &innerModel{
 					SourceFilters:   types.ListNull(types.StringType),
-					FieldAttributes: types.MapNull(getFieldAttrElemType()),
+					FieldAttributes: NewFieldAttrsNull(getFieldAttrElemType()),
 					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType()),
 					FieldFormats:    types.MapNull(getFieldFormatElemType()),
 					Namespaces:      typeutils.ListValueFrom(ctx, []string{"existing-namespace"}, types.StringType, path.Root("data_view").AtName("namespaces"), &diags),
@@ -94,12 +95,14 @@ func TestPopulateFromAPI(t *testing.T) {
 					ID:            types.StringValue("id"),
 					TimeFieldName: types.StringValue("time_field_name"),
 					SourceFilters: typeutils.ListValueFrom(ctx, []string{"field1", "field2"}, types.StringType, path.Root("data_view").AtName("source_filters"), &diags),
-					FieldAttributes: typeutils.MapValueFrom(ctx, map[string]fieldAttrModel{
-						"field1": {
-							CustomLabel: types.StringValue("custom_label"),
-							Count:       types.Int64Value(10),
-						},
-					}, getFieldAttrElemType(), path.Root("data_view").AtName("field_attrs"), &diags),
+					FieldAttributes: FieldAttrsValue{
+						MapValue: typeutils.MapValueFrom(ctx, map[string]fieldAttrModel{
+							"field1": {
+								CustomLabel: types.StringValue("custom_label"),
+								Count:       types.Int64Value(10),
+							},
+						}, getFieldAttrElemType(), path.Root("data_view").AtName("field_attrs"), &diags),
+					},
 					RuntimeFieldMap: typeutils.MapValueFrom(ctx, map[string]runtimeFieldModel{
 						"runtime_field": {
 							Type:         types.StringValue("keyword"),
@@ -127,7 +130,7 @@ func TestPopulateFromAPI(t *testing.T) {
 					ID:              types.StringValue("id"),
 					Namespaces:      typeutils.ListValueFrom[string](ctx, nil, types.StringType, path.Root("data_view").AtName("namespaces"), &diags),
 					SourceFilters:   types.ListNull(types.StringType),
-					FieldAttributes: types.MapNull(getFieldAttrElemType()),
+					FieldAttributes: NewFieldAttrsNull(getFieldAttrElemType()),
 					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType()),
 					FieldFormats:    types.MapNull(getFieldFormatElemType()),
 				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
@@ -145,7 +148,7 @@ func TestPopulateFromAPI(t *testing.T) {
 					ID:              types.StringValue("id"),
 					Namespaces:      typeutils.ListValueFrom[string](ctx, nil, types.StringType, path.Root("data_view").AtName("namespaces"), &diags),
 					SourceFilters:   types.ListNull(types.StringType),
-					FieldAttributes: types.MapNull(getFieldAttrElemType()),
+					FieldAttributes: NewFieldAttrsNull(getFieldAttrElemType()),
 					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType()),
 					FieldFormats:    types.MapNull(getFieldFormatElemType()),
 				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
@@ -161,7 +164,7 @@ func TestPopulateFromAPI(t *testing.T) {
 					ID:              types.StringValue("dataview_id"),
 					Namespaces:      typeutils.ListValueFrom(ctx, []string{"space_id"}, types.StringType, path.Root("data_view").AtName("namespaces"), &diags),
 					SourceFilters:   types.ListNull(types.StringType),
-					FieldAttributes: types.MapNull(getFieldAttrElemType()),
+					FieldAttributes: NewFieldAttrsNull(getFieldAttrElemType()),
 					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType()),
 					FieldFormats:    types.MapNull(getFieldFormatElemType()),
 				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
@@ -179,7 +182,7 @@ func TestPopulateFromAPI(t *testing.T) {
 					ID:              types.StringValue("dataview_id"),
 					Namespaces:      typeutils.ListValueFrom(ctx, []string{"space_id"}, types.StringType, path.Root("data_view").AtName("namespaces"), &diags),
 					SourceFilters:   types.ListNull(types.StringType),
-					FieldAttributes: types.MapNull(getFieldAttrElemType()),
+					FieldAttributes: NewFieldAttrsNull(getFieldAttrElemType()),
 					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType()),
 					FieldFormats:    types.MapNull(getFieldFormatElemType()),
 				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
@@ -195,7 +198,7 @@ func TestPopulateFromAPI(t *testing.T) {
 					ID:              types.StringValue("placeholder"),
 					Namespaces:      typeutils.ListValueFrom(ctx, []string{"ns1", "ns2"}, types.StringType, path.Root("data_view").AtName("namespaces"), &diags),
 					SourceFilters:   types.ListNull(types.StringType),
-					FieldAttributes: types.MapNull(getFieldAttrElemType()),
+					FieldAttributes: NewFieldAttrsNull(getFieldAttrElemType()),
 					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType()),
 					FieldFormats:    types.MapNull(getFieldFormatElemType()),
 				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
@@ -213,9 +216,134 @@ func TestPopulateFromAPI(t *testing.T) {
 					ID:              types.StringValue("placeholder"),
 					Namespaces:      typeutils.ListValueFrom(ctx, []string{"ns1", "ns2"}, types.StringType, path.Root("data_view").AtName("namespaces"), &diags),
 					SourceFilters:   types.ListNull(types.StringType),
-					FieldAttributes: types.MapNull(getFieldAttrElemType()),
+					FieldAttributes: NewFieldAttrsNull(getFieldAttrElemType()),
 					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType()),
 					FieldFormats:    types.MapNull(getFieldFormatElemType()),
+				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
+			},
+		},
+		{
+			name: "field_attrs_omitted_strips_server_count_only",
+			existingModel: dataViewModel{
+				ID:      types.StringValue("existing-space-id/view-id"),
+				SpaceID: types.StringValue("existing-space-id"),
+				DataView: typeutils.ObjectValueFrom(ctx, &innerModel{
+					ID:              types.StringValue("view-id"),
+					SourceFilters:   types.ListNull(types.StringType),
+					FieldAttributes: NewFieldAttrsNull(getFieldAttrElemType()),
+					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType()),
+					FieldFormats:    types.MapNull(getFieldFormatElemType()),
+					Namespaces:      types.ListNull(types.StringType),
+				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
+			},
+			response: kbapi.DataViewsDataViewResponseObject{
+				DataView: &kbapi.DataViewsDataViewResponseObjectInner{
+					Id: new("view-id"),
+					FieldAttrs: &map[string]kbapi.DataViewsFieldattrs{
+						"host.hostname": {
+							Count: &countFive,
+						},
+					},
+				},
+			},
+			expectedModel: dataViewModel{
+				ID:      types.StringValue("existing-space-id/view-id"),
+				SpaceID: types.StringValue("existing-space-id"),
+				DataView: typeutils.ObjectValueFrom(ctx, &innerModel{
+					ID:              types.StringValue("view-id"),
+					SourceFilters:   types.ListNull(types.StringType),
+					FieldAttributes: NewFieldAttrsNull(getFieldAttrElemType()),
+					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType()),
+					FieldFormats:    types.MapNull(getFieldFormatElemType()),
+					Namespaces:      types.ListNull(types.StringType),
+				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
+			},
+		},
+		{
+			name: "field_attrs_omitted_strips_cleared_explicit_null_entries",
+			existingModel: dataViewModel{
+				ID:      types.StringValue("existing-space-id/view-id"),
+				SpaceID: types.StringValue("existing-space-id"),
+				DataView: typeutils.ObjectValueFrom(ctx, &innerModel{
+					ID:              types.StringValue("view-id"),
+					SourceFilters:   types.ListNull(types.StringType),
+					FieldAttributes: NewFieldAttrsNull(getFieldAttrElemType()),
+					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType()),
+					FieldFormats:    types.MapNull(getFieldFormatElemType()),
+					Namespaces:      types.ListNull(types.StringType),
+				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
+			},
+			response: kbapi.DataViewsDataViewResponseObject{
+				DataView: &kbapi.DataViewsDataViewResponseObjectInner{
+					Id: new("view-id"),
+					FieldAttrs: &map[string]kbapi.DataViewsFieldattrs{
+						// Kibana echoes cleared field metadata using explicit JSON null keys.
+						"host.hostname": {},
+					},
+				},
+			},
+			expectedModel: dataViewModel{
+				ID:      types.StringValue("existing-space-id/view-id"),
+				SpaceID: types.StringValue("existing-space-id"),
+				DataView: typeutils.ObjectValueFrom(ctx, &innerModel{
+					ID:              types.StringValue("view-id"),
+					SourceFilters:   types.ListNull(types.StringType),
+					FieldAttributes: NewFieldAttrsNull(getFieldAttrElemType()),
+					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType()),
+					FieldFormats:    types.MapNull(getFieldFormatElemType()),
+					Namespaces:      types.ListNull(types.StringType),
+				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
+			},
+		},
+		{
+			name: "field_attrs_custom_label_omits_server_count_when_count_unset_in_plan",
+			existingModel: dataViewModel{
+				ID:      types.StringValue("existing-space-id/view-id"),
+				SpaceID: types.StringValue("existing-space-id"),
+				DataView: typeutils.ObjectValueFrom(ctx, &innerModel{
+					ID:            types.StringValue("view-id"),
+					SourceFilters: types.ListNull(types.StringType),
+					FieldAttributes: FieldAttrsValue{
+						MapValue: typeutils.MapValueFrom(ctx, map[string]fieldAttrModel{
+							"host.hostname": {
+								CustomLabel: types.StringValue("Host"),
+								Count:       types.Int64Null(),
+							},
+						}, getFieldAttrElemType(), path.Root("data_view").AtName("field_attrs"), &diags),
+					},
+					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType()),
+					FieldFormats:    types.MapNull(getFieldFormatElemType()),
+					Namespaces:      types.ListNull(types.StringType),
+				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
+			},
+			response: kbapi.DataViewsDataViewResponseObject{
+				DataView: &kbapi.DataViewsDataViewResponseObjectInner{
+					Id: new("view-id"),
+					FieldAttrs: &map[string]kbapi.DataViewsFieldattrs{
+						"host.hostname": {
+							CustomLabel: new("Host"),
+							Count:       &countFive,
+						},
+					},
+				},
+			},
+			expectedModel: dataViewModel{
+				ID:      types.StringValue("existing-space-id/view-id"),
+				SpaceID: types.StringValue("existing-space-id"),
+				DataView: typeutils.ObjectValueFrom(ctx, &innerModel{
+					ID:            types.StringValue("view-id"),
+					SourceFilters: types.ListNull(types.StringType),
+					FieldAttributes: FieldAttrsValue{
+						MapValue: typeutils.MapValueFrom(ctx, map[string]fieldAttrModel{
+							"host.hostname": {
+								CustomLabel: types.StringValue("Host"),
+								Count:       types.Int64Null(),
+							},
+						}, getFieldAttrElemType(), path.Root("data_view").AtName("field_attrs"), &diags),
+					},
+					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType()),
+					FieldFormats:    types.MapNull(getFieldFormatElemType()),
+					Namespaces:      types.ListNull(types.StringType),
 				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
 			},
 		},
@@ -226,7 +354,6 @@ func TestPopulateFromAPI(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			diags := tt.existingModel.populateFromAPI(ctx, &tt.response, tt.existingModel.SpaceID.ValueString())
-
 			require.Equal(t, tt.expectedModel, tt.existingModel)
 			require.Empty(t, diags)
 		})
@@ -252,12 +379,14 @@ func TestToAPICreateModel(t *testing.T) {
 					ID:            types.StringValue("id"),
 					TimeFieldName: types.StringValue("time_field_name"),
 					SourceFilters: typeutils.ListValueFrom(ctx, []string{"field1", "field2"}, types.StringType, path.Root("data_view").AtName("source_filters"), &diags),
-					FieldAttributes: typeutils.MapValueFrom(ctx, map[string]fieldAttrModel{
-						"field1": {
-							CustomLabel: types.StringValue("custom_label"),
-							Count:       types.Int64Value(10),
-						},
-					}, getFieldAttrElemType(), path.Root("data_view").AtName("field_attrs"), &diags),
+					FieldAttributes: FieldAttrsValue{
+						MapValue: typeutils.MapValueFrom(ctx, map[string]fieldAttrModel{
+							"field1": {
+								CustomLabel: types.StringValue("custom_label"),
+								Count:       types.Int64Value(10),
+							},
+						}, getFieldAttrElemType(), path.Root("data_view").AtName("field_attrs"), &diags),
+					},
 					RuntimeFieldMap: typeutils.MapValueFrom(ctx, map[string]runtimeFieldModel{
 						"runtime_field": {
 							Type:         types.StringValue("keyword"),
@@ -531,7 +660,7 @@ func TestToAPICreateModel(t *testing.T) {
 					ID:              types.StringValue("id"),
 					TimeFieldName:   types.StringValue("time_field_name"),
 					SourceFilters:   types.ListNull(types.StringType),
-					FieldAttributes: types.MapNull(getFieldAttrElemType()),
+					FieldAttributes: NewFieldAttrsNull(getFieldAttrElemType()),
 					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType()),
 					FieldFormats:    types.MapNull(getFieldFormatElemType()),
 					AllowNoIndex:    types.BoolValue(true),
@@ -580,12 +709,14 @@ func TestToAPIUpdateModel(t *testing.T) {
 					ID:            types.StringValue("id"),
 					TimeFieldName: types.StringValue("time_field_name"),
 					SourceFilters: typeutils.ListValueFrom(ctx, []string{"field1", "field2"}, types.StringType, path.Root("data_view").AtName("source_filters"), &diags),
-					FieldAttributes: typeutils.MapValueFrom(ctx, map[string]fieldAttrModel{
-						"field1": {
-							CustomLabel: types.StringValue("custom_label"),
-							Count:       types.Int64Value(10),
-						},
-					}, getFieldAttrElemType(), path.Root("data_view").AtName("field_attrs"), &diags),
+					FieldAttributes: FieldAttrsValue{
+						MapValue: typeutils.MapValueFrom(ctx, map[string]fieldAttrModel{
+							"field1": {
+								CustomLabel: types.StringValue("custom_label"),
+								Count:       types.Int64Value(10),
+							},
+						}, getFieldAttrElemType(), path.Root("data_view").AtName("field_attrs"), &diags),
+					},
 					RuntimeFieldMap: typeutils.MapValueFrom(ctx, map[string]runtimeFieldModel{
 						"runtime_field": {
 							Type:         types.StringValue("keyword"),
@@ -849,7 +980,7 @@ func TestToAPIUpdateModel(t *testing.T) {
 					TimeFieldName:   types.StringValue("time_field_name"),
 					AllowNoIndex:    types.BoolValue(true),
 					SourceFilters:   types.ListNull(types.StringType),
-					FieldAttributes: types.MapNull(getFieldAttrElemType()),
+					FieldAttributes: NewFieldAttrsNull(getFieldAttrElemType()),
 					RuntimeFieldMap: types.MapNull(getRuntimeFieldMapElemType()),
 					FieldFormats:    types.MapNull(getFieldFormatElemType()),
 					Namespaces:      types.ListNull(types.StringType),
@@ -857,10 +988,14 @@ func TestToAPIUpdateModel(t *testing.T) {
 			},
 			expectedRequest: kbapi.DataViewsUpdateDataViewRequestObject{
 				DataView: kbapi.DataViewsUpdateDataViewRequestObjectInner{
-					AllowNoIndex:  new(true),
-					Name:          new("name"),
-					TimeFieldName: new("time_field_name"),
-					Title:         new("title"),
+					AllowNoIndex: new(true),
+					// Empty (not nil) so PUT actually clears prior server-side values.
+					FieldFormats:    &kbapi.DataViewsFieldformats{},
+					Name:            new("name"),
+					RuntimeFieldMap: &map[string]kbapi.DataViewsRuntimefieldmap{},
+					SourceFilters:   &[]kbapi.DataViewsSourcefilterItem{},
+					TimeFieldName:   new("time_field_name"),
+					Title:           new("title"),
 				},
 			},
 		},

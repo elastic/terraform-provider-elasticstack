@@ -20,6 +20,7 @@ package syntheticsstatsoverview
 import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -160,18 +161,10 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiPanel k
 		return nil
 	}
 
-	if typeutils.IsKnown(existing.Title) {
-		existing.Title = types.StringPointerValue(cfg.Title)
-	}
-	if typeutils.IsKnown(existing.Description) {
-		existing.Description = types.StringPointerValue(cfg.Description)
-	}
-	if typeutils.IsKnown(existing.HideTitle) {
-		existing.HideTitle = types.BoolPointerValue(cfg.HideTitle)
-	}
-	if typeutils.IsKnown(existing.HideBorder) {
-		existing.HideBorder = types.BoolPointerValue(cfg.HideBorder)
-	}
+	existing.Title = panelkit.PreserveString(existing.Title, cfg.Title)
+	existing.Description = panelkit.PreserveString(existing.Description, cfg.Description)
+	existing.HideTitle = panelkit.PreserveBool(existing.HideTitle, cfg.HideTitle)
+	existing.HideBorder = panelkit.PreserveBool(existing.HideBorder, cfg.HideBorder)
 
 	existing.Drilldowns = readSyntheticsStatsOverviewDrilldownsFromAPI(apiPanel, existing.Drilldowns)
 	existing.Filters = readSyntheticsStatsOverviewFiltersFromAPI(apiPanel, existing.Filters)

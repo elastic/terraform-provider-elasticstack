@@ -22,7 +22,6 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -35,55 +34,6 @@ const (
 	legacyMetricDatasetTypeESQL              = "esql"
 	legacyMetricDatasetTypeTable             = "table"
 )
-
-func newLegacyMetricPanelConfigConverter() legacyMetricPanelConfigConverter {
-	return legacyMetricPanelConfigConverter{
-		lensVisualizationBase: lensVisualizationBase{
-			visualizationType: string(kbapi.LegacyMetric),
-			hasTFChartBlock: func(blocks *models.LensByValueChartBlocks) bool {
-				return blocks != nil && blocks.LegacyMetricConfig != nil
-			},
-		},
-	}
-}
-
-type legacyMetricPanelConfigConverter struct {
-	lensVisualizationBase
-}
-
-func (c legacyMetricPanelConfigConverter) populateFromAttributes(
-	ctx context.Context,
-	dashboard *models.DashboardModel,
-	tfPanel *models.PanelModel,
-	blocks *models.LensByValueChartBlocks,
-	attrs kbapi.KbnDashboardPanelTypeVisConfig0,
-) diag.Diagnostics {
-	legacyMetric, err := attrs.AsLegacyMetricNoESQL()
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	var prior *models.LegacyMetricConfigModel
-	if b := lensByValueChartBlocksFromPanel(tfPanel); b != nil && b.LegacyMetricConfig != nil {
-		cpy := *b.LegacyMetricConfig
-		prior = &cpy
-	}
-	blocks.LegacyMetricConfig = &models.LegacyMetricConfigModel{}
-	return legacyMetricConfigFromAPINoESQL(ctx, blocks.LegacyMetricConfig, dashboard, prior, legacyMetric)
-}
-
-func (c legacyMetricPanelConfigConverter) buildAttributes(blocks *models.LensByValueChartBlocks, dashboard *models.DashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	configModel := *blocks.LegacyMetricConfig
-
-	attrs, legacyDiags := legacyMetricConfigToAPI(&configModel, dashboard)
-	diags.Append(legacyDiags...)
-	if diags.HasError() {
-		return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
-	}
-
-	return attrs, diags
-}
 
 func legacyMetricConfigPopulateCommonFields(m *models.LegacyMetricConfigModel,
 	title, description *string,

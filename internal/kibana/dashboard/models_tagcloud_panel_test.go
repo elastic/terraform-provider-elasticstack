@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -47,25 +48,20 @@ func Test_tagcloudPanelConfigConverter_populateFromAttributes_buildAttributes_ro
 	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 	require.NoError(t, attrs.FromTagcloudNoESQL(api))
 
-	converter := newTagcloudPanelConfigConverter()
+	c := lenscommon.ForType(string(kbapi.TagcloudNoESQLTypeTagCloud))
+	require.NotNil(t, c)
 	visBv := models.VisByValueModel{}
-	diags := converter.populateFromAttributes(ctx, nil, nil, &visBv.LensByValueChartBlocks, attrs)
+	diags := c.PopulateFromAttributes(ctx, lensChartResolver(nil), &visBv.LensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
 	require.NotNil(t, visBv.TagcloudConfig)
 
-	attrs2, diags := converter.buildAttributes(&visBv.LensByValueChartBlocks, nil)
+	attrs2, diags := c.BuildAttributes(&visBv.LensByValueChartBlocks, lensChartResolver(nil))
 	require.False(t, diags.HasError())
 
 	tagcloudNoESQL2, err := attrs2.AsTagcloudNoESQL()
 	require.NoError(t, err)
 	assert.Equal(t, "Round-Trip Tagcloud", *tagcloudNoESQL2.Title)
 	assert.Equal(t, "Converter round-trip test", *tagcloudNoESQL2.Description)
-}
-
-func Test_newTagcloudPanelConfigConverter(t *testing.T) {
-	converter := newTagcloudPanelConfigConverter()
-	assert.NotNil(t, converter)
-	assert.Equal(t, "tag_cloud", converter.visualizationType)
 }
 
 func Test_tagcloudConfigModel_fromAPI_toAPI(t *testing.T) {
@@ -460,9 +456,10 @@ func Test_tagcloudPanelConfigConverter_routesESQL(t *testing.T) {
 	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 	require.NoError(t, attrs.FromTagcloudESQL(api))
 
-	converter := newTagcloudPanelConfigConverter()
+	c := lenscommon.ForType(string(kbapi.TagcloudNoESQLTypeTagCloud))
+	require.NotNil(t, c)
 	visBv := models.VisByValueModel{}
-	diags := converter.populateFromAttributes(ctx, nil, nil, &visBv.LensByValueChartBlocks, attrs)
+	diags := c.PopulateFromAttributes(ctx, lensChartResolver(nil), &visBv.LensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
 	require.NotNil(t, visBv.TagcloudConfig)
 	require.NotNil(t, visBv.TagcloudConfig.EsqlMetric)

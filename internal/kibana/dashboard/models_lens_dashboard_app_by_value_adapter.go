@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -107,6 +108,26 @@ func lensByValueChartBlocksForTypedLensApp(byValue models.LensDashboardAppByValu
 		return nil, false
 	}
 	return &blocks, true
+}
+
+// LensByValueChartBlocksFromPanel returns the typed Lens chart block wrapper for the panel's
+// active by-value path: either `vis_config.by_value` or `lens_dashboard_app_config.by_value`
+// (design D3/D10). Attributes remain at the by_value object root on both Terraform models.
+func LensByValueChartBlocksFromPanel(pm *models.PanelModel) *models.LensByValueChartBlocks {
+	if pm == nil {
+		return nil
+	}
+	if pm.VisConfig != nil && pm.VisConfig.ByValue != nil {
+		return &pm.VisConfig.ByValue.LensByValueChartBlocks
+	}
+	if pm.LensDashboardAppConfig != nil && pm.LensDashboardAppConfig.ByValue != nil {
+		blocks, ok := lensByValueChartBlocksForTypedLensApp(*pm.LensDashboardAppConfig.ByValue)
+		if !ok {
+			return nil
+		}
+		return blocks
+	}
+	return nil
 }
 
 // lensByValueModelFromChartBlocksAfterRead maps chart blocks populated by a vis converter into
@@ -220,7 +241,7 @@ func tryPopulateTypedLensByValueFromAPI(
 	if !hasTyped {
 		return false
 	}
-	conv, ok := firstLensVisConverterForChartBlocks(priorBlocks)
+	conv, ok := lenscommon.FirstForBlocks(priorBlocks)
 	if !ok {
 		return false
 	}
@@ -228,7 +249,7 @@ func tryPopulateTypedLensByValueFromAPI(
 	if err := json.Unmarshal(configBytes, &vis0); err != nil {
 		return false
 	}
-	if conv.visType() != detectLensVisType(vis0) {
+	if conv.VizType() != lenscommon.DetectVizType(vis0) {
 		return false
 	}
 	var scratch models.LensByValueChartBlocks
@@ -241,7 +262,7 @@ func tryPopulateTypedLensByValueFromAPI(
 			},
 		}
 	}
-	d := conv.populateFromAttributes(ctx, dashboard, priorPanel, &scratch, vis0)
+	d := populateLensVisByValueFromTypedChartAPI(ctx, dashboard, priorPanel, &scratch, vis0, true)
 	if d.HasError() {
 		// Intentional: no error diagnostic here; caller falls back to by_value.config_json
 		// (REQ-035) without treating typed read as a user failure.
@@ -276,10 +297,10 @@ func lensByValueToScratchVisPanel(by models.LensDashboardAppByValueModel) (model
 
 // firstLensVisConverterForPanel resolves the Lens converter for whichever typed chart sits under
 // vis_config.by_value or lens_dashboard_app_config.by_value on the panel.
-func firstLensVisConverterForPanel(pm models.PanelModel) (lensVisualizationConverter, bool) {
-	blocks := lensByValueChartBlocksFromPanel(&pm)
+func firstLensVisConverterForPanel(pm models.PanelModel) (lenscommon.VizConverter, bool) {
+	blocks := LensByValueChartBlocksFromPanel(&pm)
 	if blocks == nil {
 		return nil, false
 	}
-	return firstLensVisConverterForChartBlocks(blocks)
+	return lenscommon.FirstForBlocks(blocks)
 }

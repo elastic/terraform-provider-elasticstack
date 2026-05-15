@@ -324,3 +324,109 @@ func TestAccResourceDataViewNamespaces(t *testing.T) {
 		},
 	})
 }
+
+// TestAccResourceDataViewFieldAttrs covers fix-dataview-field-attrs-drift task 6 (REQ-006 "No
+// replacement on field_attrs change", REQ-015 stability, REQ-016 in-place updates).
+//
+// REQ-015 scenario 1 (server-side count does not drift plan): after the first apply we POST
+// field popularity for host.hostname via the Kibana HTTP API (same endpoint family as
+// UpdateFieldMetadata) and then assert a PlanOnly step is empty. Failing to inject the count
+// fails the test, since suppressing that drift is exactly the behaviour we are exercising.
+func TestAccResourceDataViewFieldAttrs(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minFullDataviewSupport, versionutils.FlavorAny)
+
+	indexName := "fa-test-" + sdkacctest.RandStringFromCharSet(6, sdkacctest.CharSetAlphaNum)
+	vars := config.Variables{
+		"index_name": config.StringVariable(indexName),
+	}
+
+	var dataViewID string
+	captureID := func(s *terraform.State) error {
+		rs := s.RootModule().Resources[testAccFieldAttrsDataViewAddress]
+		if rs == nil {
+			return fmt.Errorf("%s not found in state", testAccFieldAttrsDataViewAddress)
+		}
+		dataViewID = rs.Primary.ID
+		return nil
+	}
+	checkIDUnchanged := func(s *terraform.State) error {
+		rs := s.RootModule().Resources[testAccFieldAttrsDataViewAddress]
+		if rs == nil {
+			return fmt.Errorf("%s not found in state", testAccFieldAttrsDataViewAddress)
+		}
+		if rs.Primary.ID != dataViewID {
+			return fmt.Errorf("data view was recreated: id changed from %s to %s", dataViewID, rs.Primary.ID)
+		}
+		return nil
+	}
+
+	injectHostHostnameCount := func(s *terraform.State) error {
+		return testAccInjectHostHostnameFieldCount(t, s)
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("no_field_attrs"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(testAccFieldAttrsDataViewAddress, "id"),
+					resource.TestCheckNoResourceAttr(testAccFieldAttrsDataViewAddress, "data_view.field_attrs.%"),
+					captureID,
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("no_field_attrs"),
+				ConfigVariables:          vars,
+				Check:                    injectHostHostnameCount,
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("no_field_attrs"),
+				ConfigVariables:          vars,
+				PlanOnly:                 true,
+				ExpectNonEmptyPlan:       false,
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("add_label"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					checkIDUnchanged,
+					testAccCheckFieldAttrsCustomLabel("host.hostname", "Host"),
+					testAccCheckFieldAttrsCustomLabelServerSide(t, "host.hostname", "Host"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("change_label"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					checkIDUnchanged,
+					testAccCheckFieldAttrsCustomLabel("host.hostname", "Hostname"),
+					testAccCheckFieldAttrsCustomLabelServerSide(t, "host.hostname", "Hostname"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("remove_label"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					checkIDUnchanged,
+					resource.TestCheckNoResourceAttr(testAccFieldAttrsDataViewAddress, "data_view.field_attrs.%"),
+					testAccCheckFieldAttrsCustomLabelServerSide(t, "host.hostname", ""),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("remove_label"),
+				ConfigVariables:          vars,
+				PlanOnly:                 true,
+				ExpectNonEmptyPlan:       false,
+			},
+		},
+	})
+}
