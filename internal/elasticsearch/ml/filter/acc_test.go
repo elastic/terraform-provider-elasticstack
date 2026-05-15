@@ -312,8 +312,8 @@ func TestAccResourceMLFilterImportFailures(t *testing.T) {
 				ImportStateKind:          resource.ImportBlockWithID,
 				ImportStateVerify:        false,
 				// Three path segments: invalid for clients.CompositeIDFromStr used by ImportState.
-				ImportStateId:            "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/extra/bad",
-				ExpectError:              regexp.MustCompile(`Wrong resource ID`),
+				ImportStateId: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/extra/bad",
+				ExpectError:   regexp.MustCompile(`Wrong resource ID`),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
