@@ -152,13 +152,13 @@ func expandTemplateBlock(ctx context.Context, obj types.Object) (*models.Templat
 				diags.AddError("Internal error", fmt.Sprintf("expected AliasObjectValue, got %T", el))
 				return nil, diags
 			}
-			var am AliasElementModel
+			var am aliasutil.AliasModel
 			diags.Append(aliasVal.As(ctx, &am, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true})...)
 			if diags.HasError() {
 				return nil, diags
 			}
 			name := am.Name.ValueString()
-			ia, d := expandAliasElement(am)
+			ia, d := aliasutil.ExpandAliasElement(am)
 			diags.Append(d...)
 			if diags.HasError() {
 				return nil, diags
@@ -225,18 +225,6 @@ func expandTemplateBlock(ctx context.Context, obj types.Object) (*models.Templat
 	}
 
 	return t, diags
-}
-
-func expandAliasElement(e AliasElementModel) (models.IndexAlias, diag.Diagnostics) {
-	return aliasutil.ExpandAliasFields(aliasutil.AliasFields{
-		Name:          e.Name,
-		Filter:        e.Filter,
-		IndexRouting:  e.IndexRouting,
-		SearchRouting: e.SearchRouting,
-		Routing:       e.Routing,
-		IsHidden:      e.IsHidden,
-		IsWriteIndex:  e.IsWriteIndex,
-	})
 }
 
 func expandTemplateLifecycle(obj types.Object) *models.LifecycleSettings {

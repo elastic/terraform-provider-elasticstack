@@ -24,6 +24,7 @@ import (
 
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/go-version"
@@ -247,7 +248,7 @@ func TestFlattenAliasElement_emptyFilterMapIsNull(t *testing.T) {
 	if !ok {
 		t.Fatalf("got %T", av)
 	}
-	var am AliasElementModel
+	var am aliasutil.AliasModel
 	diags = alias.As(ctx, &am, basetypes.ObjectAsOptions{})
 	if diags.HasError() {
 		t.Fatal(diags)
