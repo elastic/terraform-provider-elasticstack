@@ -567,10 +567,21 @@ func GetSchema() schema.Schema {
 							},
 						},
 						"type": schema.StringAttribute{
-							MarkdownDescription: "The type of exception container.",
-							Required:            true,
+							MarkdownDescription: "The type of exception container. Valid values are `detection`, `endpoint`, " +
+								"`endpoint_events`, `endpoint_host_isolation_exceptions`, `endpoint_blocklists`, " +
+								"`endpoint_trusted_apps`, `endpoint_trusted_devices`, and `rule_default`.",
+							Required: true,
 							Validators: []validator.String{
-								stringvalidator.OneOf("detection", "endpoint", "endpoint_events", "endpoint_host_isolation_exceptions", "endpoint_blocklists", "endpoint_trusted_apps"),
+								stringvalidator.OneOf(
+									"detection",
+									"endpoint",
+									"endpoint_events",
+									"endpoint_host_isolation_exceptions",
+									"endpoint_blocklists",
+									"endpoint_trusted_apps",
+									"endpoint_trusted_devices",
+									"rule_default",
+								),
 							},
 						},
 					},

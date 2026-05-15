@@ -285,7 +285,7 @@ Required:
 - `id` (String) The exception container ID.
 - `list_id` (String) The exception container's list ID.
 - `namespace_type` (String) The namespace type for the exception container.
-- `type` (String) The type of exception container.
+- `type` (String) The type of exception container. Valid values are `detection`, `endpoint`, `endpoint_events`, `endpoint_host_isolation_exceptions`, `endpoint_blocklists`, `endpoint_trusted_apps`, `endpoint_trusted_devices`, and `rule_default`.
 
 
 <a id="nestedblock--kibana_connection"></a>
