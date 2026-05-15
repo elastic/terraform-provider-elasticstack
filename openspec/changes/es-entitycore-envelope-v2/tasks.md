@@ -20,31 +20,31 @@
 ## 3. Proof-of-concept resource migrations
 
 ### 3.1 `elasticstack_elasticsearch_ml_filter`
-- [ ] 3.1.1 Replace the concrete `Update` override with an envelope update callback using `ElasticsearchUpdateRequest[TFModel]`
-- [ ] 3.1.2 Preserve existing diff semantics for `items` and `description`, including the current remote GET used to compute item add/remove diffs
-- [ ] 3.1.3 Update focused tests for the resource if needed
+- [x] 3.1.1 Replace the concrete `Update` override with an envelope update callback using `ElasticsearchUpdateRequest[TFModel]`
+- [x] 3.1.2 Preserve existing diff semantics for `items` and `description`, including the current remote GET used to compute item add/remove diffs
+- [x] 3.1.3 Update focused tests for the resource if needed
 
 ### 3.2 `elasticstack_elasticsearch_cluster_settings`
-- [ ] 3.2.1 Replace the concrete `Update` override with an envelope update callback using `ElasticsearchUpdateRequest[tfModel]`
-- [ ] 3.2.2 Preserve removed-setting nulling behavior and read-after-write refresh semantics
-- [ ] 3.2.3 Update focused tests for helper behavior and envelope integration if needed
+- [x] 3.2.1 Replace the concrete `Update` override with an envelope update callback using `ElasticsearchUpdateRequest[tfModel]`
+- [x] 3.2.2 Preserve removed-setting nulling behavior and read-after-write refresh semantics
+- [x] 3.2.3 Update focused tests for helper behavior and envelope integration if needed
 
 ### 3.3 `elasticstack_elasticsearch_ml_anomaly_detection_job`
-- [ ] 3.3.1 Replace the concrete `Update` override with an envelope update callback using `ElasticsearchUpdateRequest[TFModel]`
-- [ ] 3.3.2 Preserve partial-update body construction and no-updatable-change behavior
-- [ ] 3.3.3 Update focused tests for the resource if needed
+- [x] 3.3.1 Replace the concrete `Update` override with an envelope update callback using `ElasticsearchUpdateRequest[TFModel]`
+- [x] 3.3.2 Preserve partial-update body construction and no-updatable-change behavior
+- [x] 3.3.3 Update focused tests for the resource if needed
 
 ### 3.4 `elasticstack_elasticsearch_security_user`
-- [ ] 3.4.1 Replace the concrete `Create` override with an envelope create callback using `ElasticsearchCreateRequest[Data]`
-- [ ] 3.4.2 Replace the concrete `Update` override with an envelope update callback using `ElasticsearchUpdateRequest[Data]`
-- [ ] 3.4.3 Preserve write-only password handling and prior-state password change detection using `Config` and `Prior`
-- [ ] 3.4.4 Ensure the create/update callback sets `model.ID = types.StringValue(id.String())` before returning so envelope read-after-write persists a model carrying the composite ID
-- [ ] 3.4.5 Update focused tests for the resource if needed
+- [x] 3.4.1 Replace the concrete `Create` override with an envelope create callback using `ElasticsearchCreateRequest[Data]`
+- [x] 3.4.2 Replace the concrete `Update` override with an envelope update callback using `ElasticsearchUpdateRequest[Data]`
+- [x] 3.4.3 Preserve write-only password handling and prior-state password change detection using `Config` and `Prior`
+- [x] 3.4.4 Ensure the create/update callback sets `model.ID = types.StringValue(id.String())` before returning so envelope read-after-write persists a model carrying the composite ID
+- [x] 3.4.5 Update focused tests for the resource if needed
 
 ### 3.5 `elasticstack_elasticsearch_security_api_key`
-- [ ] 3.5.1 Replace the concrete `Read` override with the envelope read path plus `PostRead` hook
-- [ ] 3.5.2 Preserve cluster-version private-state persistence semantics after successful refresh
-- [ ] 3.5.3 Update focused tests for the resource if needed
+- [x] 3.5.1 Replace the concrete `Read` override with the envelope read path plus `PostRead` hook
+- [x] 3.5.2 Preserve cluster-version private-state persistence semantics after successful refresh
+- [x] 3.5.3 Update focused tests for the resource if needed
 
 ## 4. OpenSpec updates
 
