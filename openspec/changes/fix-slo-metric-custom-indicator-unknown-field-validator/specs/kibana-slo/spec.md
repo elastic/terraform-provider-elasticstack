@@ -1,6 +1,6 @@
 ## MODIFIED Requirements
 
-### Requirement: Conditional validator deferral for unknown attribute values (REQ-NEW-VALIDATOR-UNKNOWN)
+### Requirement: Conditional validator deferral for unknown attribute values (REQ-038)
 
 When `RequiredIfDependentPathExpressionOneOf` or `RequiredIfDependentPathOneOf` is evaluating whether a field is required, if the attribute being validated is **unknown** at config-validation time (i.e. `val.IsUnknown()` is true), the validator SHALL return without error and defer the required-field check to apply time. This preserves correctness under Terraform 1.14 and later, where attribute values sourced from `for_each` map entries (via `each.value.*` interpolation) are marked unknown during `ValidateResourceConfig` even when the source data is statically known.
 

@@ -16,16 +16,9 @@
 ## 2. Unit Test Fix
 
 - [ ] 2.1 In `internal/utils/validators/conditional_test.go`, find `TestRequiredIfDependentPathExpressionOneOf` (≈ line 762). Locate the test case named `"invalid - current unknown, dependent matches required value"` (≈ line 799) and change `expectedError: true` to `expectedError: false`.
-- [ ] 2.2 In `TestRequiredIfDependentPathOneOf`, add a parallel test case:
-  ```go
-  {
-      name:           "unknown value with matching dependent - no error",
-      currentValue:   types.StringUnknown(),
-      dependentValue: types.StringValue("<one of the allowed values used in that test>"),
-      expectedError:  false,
-  },
-  ```
-  (Adapt the `dependentValue` literal to match the allowed values used by `RequiredIfDependentPathOneOf` in that test suite.)
+- [ ] 2.2 In `TestRequiredIfDependentPathOneOf`, locate the existing test case for `"invalid - current unknown, dependent matches required value"` and update it instead of adding a duplicate case:
+  - change `expectedError: true` to `expectedError: false`
+  - rename the case to reflect the valid behavior, for example `"valid - current unknown, dependent matches required value"`
 - [ ] 2.3 Run `go test ./internal/utils/validators/...` to confirm all tests pass.
 
 ## 3. Requirements Update

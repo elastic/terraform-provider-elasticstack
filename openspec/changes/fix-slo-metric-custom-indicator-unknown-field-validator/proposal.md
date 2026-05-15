@@ -25,4 +25,4 @@ The identical pattern was fixed for ML anomaly detection detectors in PR #2981 b
 
 - `internal/utils/validators/conditional.go` — add unknown guard in `RequiredIfDependentPathExpressionOneOf.validateValue` (line ~541) and `RequiredIfDependentPathOneOf.validateValue` (line ~373)
 - `internal/utils/validators/conditional_test.go` — flip `expectedError` for the unknown test case in `TestRequiredIfDependentPathExpressionOneOf` (~line 799); add parallel unknown case to `TestRequiredIfDependentPathOneOf`
-- `openspec/specs/kibana-slo/spec.md` — no change; delta spec captures the behavioral update
+- `openspec/specs/kibana-slo/spec.md` — update the canonical spec to incorporate this delta and document that these validators defer the required-field check to apply time when the attribute value is unknown during config validation
