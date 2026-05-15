@@ -18,12 +18,14 @@
 package dashboard
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/lensdashboardapp"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
@@ -208,7 +210,7 @@ func Test_eachExposedByValueSource_visAndLensUnionsJSONBridge(t *testing.T) {
 			func(t *testing.T) kbapi.KbnDashboardPanelTypeVisConfig0 {
 				t.Helper()
 				pm := buildLensWafflePanelForTest(t)
-				blocks := LensByValueChartBlocksFromPanel(&pm)
+				blocks := lensdashboardapp.LensByValueChartBlocksFromPanel(&pm)
 				require.NotNil(t, blocks)
 				c := lenscommon.ForType(string(kbapi.WaffleNoESQLTypeWaffle))
 				require.NotNil(t, c)
@@ -301,7 +303,7 @@ func Test_eachExposedByValueSource_visAndLensUnionsJSONBridge(t *testing.T) {
 	}
 
 	want := 0
-	for _, n := range lensDashboardAppByValueSourceAttrNames {
+	for _, n := range lensdashboardapp.LensDashboardAppByValueSourceAttrNames() {
 		if n != "config_json" {
 			want++
 		}
@@ -317,7 +319,7 @@ func Test_eachExposedByValueSource_visAndLensUnionsJSONBridge(t *testing.T) {
 			require.NoError(t, json.Unmarshal(visWire, &visRoot))
 			require.Equal(t, tc.want, visRoot["type"], "vis union wire type")
 
-			lens0, err := visConfig0ToLensAppConfig0(vis0)
+			lens0, err := lensdashboardapp.VisConfig0ToLensAppConfig0(vis0)
 			require.NoError(t, err)
 			lensWire, err := json.Marshal(lens0)
 			require.NoError(t, err)
@@ -330,11 +332,11 @@ func Test_eachExposedByValueSource_visAndLensUnionsJSONBridge(t *testing.T) {
 
 func lensDashboardAppByValueMetricsTypedVis0(m models.LensDashboardAppByValueModel, t *testing.T) kbapi.KbnDashboardPanelTypeVisConfig0 {
 	t.Helper()
-	pm, ok := lensByValueToScratchVisPanel(m)
+	pm, ok := lensdashboardapp.LensByValueToScratchVisPanel(m)
 	require.True(t, ok)
-	conv, okc := firstLensVisConverterForPanel(pm)
+	conv, okc := lensdashboardapp.FirstLensVisConverterForPanel(pm)
 	require.True(t, okc)
-	blocks := LensByValueChartBlocksFromPanel(&pm)
+	blocks := lensdashboardapp.LensByValueChartBlocksFromPanel(&pm)
 	require.NotNil(t, blocks)
 	vis, d := conv.BuildAttributes(blocks, lensChartResolver(nil))
 	require.False(t, d.HasError())
@@ -438,7 +440,7 @@ func Test_visConfig0ToLensAppConfig0_jsonBridge_ESQL_families(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			vis0 := tc.arm(t)
-			lens0, err := visConfig0ToLensAppConfig0(vis0)
+			lens0, err := lensdashboardapp.VisConfig0ToLensAppConfig0(vis0)
 			require.NoError(t, err)
 			visB, _ := vis0.MarshalJSON()
 			lensB, _ := json.Marshal(lens0)
@@ -506,4 +508,75 @@ func mustWaffleESQLVis0(t *testing.T) kbapi.KbnDashboardPanelTypeVisConfig0 {
 	var vis kbapi.KbnDashboardPanelTypeVisConfig0
 	require.NoError(t, vis.FromWaffleESQL(waffle))
 	return vis
+}
+
+func lensAppByValueModelFromPopulatedVisByValue(t *testing.T, vb *models.VisByValueModel) models.LensDashboardAppByValueModel {
+	t.Helper()
+	out, ok := lensdashboardapp.LensByValueModelFromChartBlocksAfterRead(&vb.LensByValueChartBlocks)
+	require.True(t, ok)
+	return out
+}
+
+func testMetricByValueFromRoundTrip(t *testing.T) models.LensDashboardAppByValueModel {
+	t.Helper()
+	ctx := context.Background()
+	titleM := "M"
+	apiChart := kbapi.MetricNoESQL{
+		Type:  kbapi.MetricNoESQLTypeMetric,
+		Title: &titleM,
+		Query: kbapi.FilterSimple{
+			Expression: "",
+			Language:   new(kbapi.FilterSimpleLanguage("kql")),
+		},
+		Metrics: []kbapi.MetricNoESQL_Metrics_Item{},
+	}
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+	require.NoError(t, attrs.FromMetricNoESQL(apiChart))
+	c := lenscommon.ForType(string(kbapi.MetricNoESQLTypeMetric))
+	require.NotNil(t, c)
+	visBlocks := models.VisByValueModel{}
+	require.False(t, c.PopulateFromAttributes(ctx, lensChartResolver(nil), &visBlocks.LensByValueChartBlocks, attrs).HasError())
+	return lensAppByValueModelFromPopulatedVisByValue(t, &visBlocks)
+}
+
+func testPieByValueConfigBytes(t *testing.T) []byte {
+	t.Helper()
+	ctx := context.Background()
+	title := "P"
+	donutHole := kbapi.PieStylingDonutHoleS
+	labelPos := kbapi.PieStylingLabelsPositionInside
+	visibility := kbapi.PieLegendVisibilityVisible
+	nested := true
+	truncateLines := float32(3)
+	apiChart := kbapi.PieNoESQL{
+		Title: &title,
+		Styling: kbapi.PieStyling{
+			DonutHole: &donutHole,
+			Labels: &struct {
+				Position *kbapi.PieStylingLabelsPosition `json:"position,omitempty"`
+				Visible  *bool                           `json:"visible,omitempty"`
+			}{Position: &labelPos},
+		},
+		Legend: kbapi.PieLegend{
+			Size:               kbapi.LegendSizeAuto,
+			Nested:             &nested,
+			TruncateAfterLines: &truncateLines,
+			Visibility:         &visibility,
+		},
+		DataSource: kbapi.PieNoESQL_DataSource{},
+		Query:      kbapi.FilterSimple{Expression: "x", Language: new(kbapi.FilterSimpleLanguageKql)},
+		Metrics:    []kbapi.PieNoESQL_Metrics_Item{},
+		GroupBy:    new([]kbapi.PieNoESQL_GroupBy_Item{}),
+	}
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+	require.NoError(t, attrs.FromPieNoESQL(apiChart))
+	c := lenscommon.ForType(string(kbapi.PieNoESQLTypePie))
+	require.NotNil(t, c)
+	visBlocks := models.VisByValueModel{}
+	require.False(t, c.PopulateFromAttributes(ctx, lensChartResolver(nil), &visBlocks.LensByValueChartBlocks, attrs).HasError())
+	vis0, d := c.BuildAttributes(&visBlocks.LensByValueChartBlocks, lensChartResolver(nil))
+	require.False(t, d.HasError())
+	b, err := vis0.MarshalJSON()
+	require.NoError(t, err)
+	return b
 }

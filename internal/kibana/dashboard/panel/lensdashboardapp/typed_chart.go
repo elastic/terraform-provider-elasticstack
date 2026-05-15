@@ -93,7 +93,7 @@ func seedLensChartPriorIntoBlocks(tfPanel *models.PanelModel, dest *models.LensB
 	if dest == nil {
 		return
 	}
-	prior := lensByValueChartBlocksFromPanel(tfPanel)
+	prior := LensByValueChartBlocksFromPanel(tfPanel)
 	switch vizType {
 	case string(kbapi.XyChartNoESQLTypeXy):
 		if prior != nil && prior.XYChartConfig != nil {

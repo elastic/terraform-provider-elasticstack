@@ -31,19 +31,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// seedWaffleLensByValueChartFromPriorPanel assigns the waffle chart pointer from practitioner plan/state
-// into dest before vis read-mapping replaces blocks.WaffleConfig. The registered lenswaffle converter keeps that pointer as
-// `seed` across PopulateFromAttributes so mergeWaffleConfigFromPlanSeed (in lenswaffle) can reconcile Kibana read omissions.
-func seedWaffleLensByValueChartFromPriorPanel(dest *models.LensByValueChartBlocks, prior *models.PanelModel) {
-	if dest == nil || prior == nil || prior.VisConfig == nil || prior.VisConfig.ByValue == nil {
-		return
-	}
-	src := &prior.VisConfig.ByValue.LensByValueChartBlocks
-	if src.WaffleConfig != nil {
-		dest.WaffleConfig = src.WaffleConfig
-	}
-}
-
 // waffleChartJSONUsesESQLDataset reports whether lens waffle JSON is the ES|QL variant by reading
 // data_source.type. AsWaffleNoESQL / AsWaffleESQL both decode the same blob without a reliable
 // error distinction, so we inspect the raw panel JSON.

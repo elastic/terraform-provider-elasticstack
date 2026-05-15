@@ -97,7 +97,7 @@ func preservePriorLensByValueConfigJSON(
 	diags *diag.Diagnostics,
 ) jsontypes.Normalized {
 	after := panelkit.PreservePriorNormalizedWithDefaultsIfEquivalent(ctx, prior, fromAPI, defaultOpaqueRootJSON, diags)
-	embedded, err := jsonValuePriorEmbeddedInExpandedCurrent(prior.ValueString(), fromAPI.ValueString())
+	embedded, err := JSONValuePriorEmbeddedInExpandedCurrent(prior.ValueString(), fromAPI.ValueString())
 	if err != nil {
 		return after
 	}
@@ -107,7 +107,7 @@ func preservePriorLensByValueConfigJSON(
 	return after
 }
 
-func jsonValuePriorEmbeddedInExpandedCurrent(priorJSON, currentJSON string) (bool, error) {
+func JSONValuePriorEmbeddedInExpandedCurrent(priorJSON, currentJSON string) (bool, error) {
 	var priorObj map[string]any
 	if err := json.Unmarshal([]byte(priorJSON), &priorObj); err != nil {
 		return false, err

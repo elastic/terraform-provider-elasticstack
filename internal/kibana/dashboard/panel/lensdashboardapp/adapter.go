@@ -133,8 +133,8 @@ func lensByValueChartBlocksForTypedLensApp(byValue models.LensDashboardAppByValu
 	return &blocks, true
 }
 
-// lensByValueChartBlocksFromPanel returns active typed Lens chart blocks from either vis or lens-dashboard-app by_value.
-func lensByValueChartBlocksFromPanel(pm *models.PanelModel) *models.LensByValueChartBlocks {
+// LensByValueChartBlocksFromPanel returns active typed Lens chart blocks from either vis_config.by_value or lens_dashboard_app_config.by_value.
+func LensByValueChartBlocksFromPanel(pm *models.PanelModel) *models.LensByValueChartBlocks {
 	if pm == nil {
 		return nil
 	}
@@ -151,7 +151,29 @@ func lensByValueChartBlocksFromPanel(pm *models.PanelModel) *models.LensByValueC
 	return nil
 }
 
-func lensByValueModelFromChartBlocksAfterRead(blocks *models.LensByValueChartBlocks) (models.LensDashboardAppByValueModel, bool) {
+// LensByValueToScratchVisPanel maps a typed lens_dashboard_app.by_value chart to a synthetic vis panel Model that shares models.LensByValueChartBlocks (parity helpers/tests).
+func LensByValueToScratchVisPanel(by models.LensDashboardAppByValueModel) (models.PanelModel, bool) {
+	blocks, ok := lensByValueChartBlocksForTypedLensApp(by)
+	if !ok {
+		return models.PanelModel{}, false
+	}
+	return models.PanelModel{
+		VisConfig: &models.VisConfigModel{
+			ByValue: &models.VisByValueModel{LensByValueChartBlocks: *blocks},
+		},
+	}, true
+}
+
+// FirstLensVisConverterForPanel resolves the Lens converter for whichever typed chart sits under vis_config.by_value or lens_dashboard_app_config.by_value on the panel.
+func FirstLensVisConverterForPanel(pm models.PanelModel) (lenscommon.VizConverter, bool) {
+	blocks := LensByValueChartBlocksFromPanel(&pm)
+	if blocks == nil {
+		return nil, false
+	}
+	return lenscommon.FirstForBlocks(blocks)
+}
+
+func LensByValueModelFromChartBlocksAfterRead(blocks *models.LensByValueChartBlocks) (models.LensDashboardAppByValueModel, bool) {
 	if blocks == nil {
 		return models.LensDashboardAppByValueModel{}, false
 	}
@@ -280,7 +302,7 @@ func tryPopulateTypedLensByValueFromAPI(
 	if diags != nil {
 		diags.Append(d...)
 	}
-	by, ok2 := lensByValueModelFromChartBlocksAfterRead(&scratch)
+	by, ok2 := LensByValueModelFromChartBlocksAfterRead(&scratch)
 	if !ok2 {
 		return false
 	}
@@ -288,4 +310,9 @@ func tryPopulateTypedLensByValueFromAPI(
 		ByValue: &by,
 	}
 	return true
+}
+
+// VisConfig0ToLensAppConfig0 bridges KbnDashboardPanelTypeVisConfig0 to KbnDashboardPanelTypeLensDashboardAppConfig0 via JSON (parity tests).
+func VisConfig0ToLensAppConfig0(vis kbapi.KbnDashboardPanelTypeVisConfig0) (kbapi.KbnDashboardPanelTypeLensDashboardAppConfig0, error) {
+	return visConfig0ToLensAppConfig0(vis)
 }

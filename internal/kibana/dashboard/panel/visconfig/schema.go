@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -373,13 +374,16 @@ func innerSchemaAttributes() map[string]schema.Attribute {
 
 // SchemaAttribute returns the Terraform schema for the vis panel typed configuration block (`vis_config`).
 func SchemaAttribute() schema.Attribute {
-	return schema.SingleNestedAttribute{
-		MarkdownDescription: "Configuration for a `vis` panel (`type = \"vis\"`). " +
-			"Set exactly one of `by_value` (exactly one Lens chart kind) or `by_reference`.",
-		Optional:   true,
-		Attributes: innerSchemaAttributes(),
-		Validators: []validator.Object{
+	return panelkit.PanelConfigBlock(panelkit.PanelConfigBlockOpts{
+		Description: "Configuration for a `vis` panel (`type = \"vis\"`). " +
+			"Typed alternative to panel-level `config_json`: set exactly one of `by_value` (exactly one of 12 Lens chart kinds) or `by_reference`. " +
+			"With `by_reference`, use structured `drilldowns` and required `time_range` like `lens_dashboard_app_config.by_reference`.",
+		BlockName:   "vis_config",
+		PanelType:   panelType,
+		Required:    false,
+		Attributes:  innerSchemaAttributes(),
+		ExtraValidators: []validator.Object{
 			visConfigModeValidator{},
 		},
-	}
+	})
 }

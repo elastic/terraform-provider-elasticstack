@@ -25,6 +25,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/iface"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -49,8 +50,17 @@ func (Handler) PinnedHandler() iface.PinnedHandler { return nil }
 
 func (Handler) AlignStateFromPlan(context.Context, *models.PanelModel, *models.PanelModel) {}
 
-func (Handler) ValidatePanelConfig(context.Context, map[string]attr.Value, path.Path) diag.Diagnostics {
-	return nil
+func (Handler) ValidatePanelConfig(_ context.Context, attrs map[string]attr.Value, attrPath path.Path) diag.Diagnostics {
+	var diags diag.Diagnostics
+	block := attrs["discover_session_config"]
+	if panelkit.AttrConcreteSet(block) {
+		return diags
+	}
+	if panelkit.AttrUnknown(block) {
+		return diags
+	}
+	diags.AddAttributeError(attrPath, "Missing discover_session panel configuration", "Discover session panels require `discover_session_config`.")
+	return diags
 }
 
 // FromAPI maps a kbapi discover_session panel into Terraform panel models (parity with legacy populateDiscoverSessionPanelFromAPI).
@@ -64,12 +74,20 @@ func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item k
 	pm.ID = panelkit.IDFromAPI(dsPanel.Id)
 	pm.ConfigJSON = panelkit.PanelConfigJSONNull()
 
-	populateDiscoverSessionPanelFromAPI(ctx, pm, prior, dsPanel)
-	return nil
+	return populateDiscoverSessionPanelFromAPI(ctx, pm, prior, dsPanel)
 }
 
 // ToAPI serializes Terraform discover_session panel state into kbapi (parity with legacy discoverSessionPanelToAPI).
 func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
+	if typeutils.IsKnown(pm.ConfigJSON) && !pm.ConfigJSON.IsNull() {
+		var diags diag.Diagnostics
+		diags.AddError(
+			"Unsupported panel type for config_json",
+			"Panel-level `config_json` is not supported for `discover_session` panels. Use `discover_session_config` instead.",
+		)
+		return kbapi.DashboardPanelItem{}, diags
+	}
+
 	gridTF := panelkit.GridToAPI(pm.Grid)
 	grid := struct {
 		H *float32 `json:"h,omitempty"`

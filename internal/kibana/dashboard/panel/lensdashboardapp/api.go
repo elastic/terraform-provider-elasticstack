@@ -25,6 +25,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/iface"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -71,6 +72,16 @@ func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item k
 
 // ToAPI serializes Terraform lens-dashboard-app panel state into kbapi (parity with legacy lensDashboardAppToAPI).
 func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
+	if typeutils.IsKnown(pm.ConfigJSON) && !pm.ConfigJSON.IsNull() {
+		var diags diag.Diagnostics
+		diags.AddError(
+			"Unsupported panel type for config_json",
+			"Panel-level `config_json` is not supported for `lens-dashboard-app` panels. "+
+				"Use the `lens_dashboard_app_config` block with `by_value` or `by_reference` instead.",
+		)
+		return kbapi.DashboardPanelItem{}, diags
+	}
+
 	gridTF := panelkit.GridToAPI(pm.Grid)
 	grid := kbapi.KbnDashboardPanelGrid{
 		H: gridTF.H,

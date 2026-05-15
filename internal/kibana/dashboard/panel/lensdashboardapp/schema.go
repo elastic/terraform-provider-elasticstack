@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -259,6 +260,11 @@ func byValueAttributes() map[string]schema.Attribute {
 	return out
 }
 
+// LensDashboardAppByValueSourceAttrNames lists mutually exclusive `by_value` sources (`config_json` plus typed chart blocks).
+func LensDashboardAppByValueSourceAttrNames() []string {
+	return lensByValueSourceAttrNames()
+}
+
 func lensByValueSourceAttrNames() []string {
 	out := []string{"config_json"}
 	for _, c := range lenscommon.All() {
@@ -380,13 +386,18 @@ func innerSchemaAttributes() map[string]schema.Attribute {
 
 // SchemaAttribute returns the Terraform schema for `lens_dashboard_app_config`.
 func SchemaAttribute() schema.Attribute {
-	return schema.SingleNestedAttribute{
-		MarkdownDescription: "Configuration for a `lens-dashboard-app` panel (`type = \"lens-dashboard-app\"`). " +
-			"Set exactly one of `by_value` or `by_reference`.",
-		Optional:   true,
+	return panelkit.PanelConfigBlock(panelkit.PanelConfigBlockOpts{
+		Description: "Configuration for a `lens-dashboard-app` panel (the Kibana Dashboard API `lens-dashboard-app` panel type). " +
+			"Set exactly one of `by_value` or `by_reference`. " +
+			"With `by_value`, set exactly one of `config_json` or one supported typed Lens chart block. " +
+			"With `by_reference`, use `ref_id` and `references_json` to map the API `references` list. " +
+			"Supported typed by-value blocks are sent as the `lens-dashboard-app` API `config` and do not create `type = \"vis\"` panels.",
+		BlockName: "lens_dashboard_app_config",
+		PanelType: "lens-dashboard-app",
+		Required:  true,
 		Attributes: innerSchemaAttributes(),
-		Validators: []validator.Object{
+		ExtraValidators: []validator.Object{
 			lensDashboardAppConfigModeValidator{},
 		},
-	}
+	})
 }

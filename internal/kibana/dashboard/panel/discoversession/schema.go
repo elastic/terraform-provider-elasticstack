@@ -487,13 +487,15 @@ func discoverSessionSchemaInnerAttributes() map[string]schema.Attribute {
 
 // SchemaAttribute returns the Terraform schema for `discover_session_config`.
 func SchemaAttribute() schema.Attribute {
-	return schema.SingleNestedAttribute{
-		MarkdownDescription: "Configuration for a `discover_session` panel (`type = \"discover_session\"`). " +
+	return panelkit.PanelConfigBlock(panelkit.PanelConfigBlockOpts{
+		Description: "Configuration for a `discover_session` panel (`kbn-dashboard-panel-type-discover_session`). " +
 			"Set exactly one of `by_value` or `by_reference`.",
-		Optional:   true,
+		BlockName: "discover_session_config",
+		PanelType: panelType,
+		Required:  true,
 		Attributes: discoverSessionSchemaInnerAttributes(),
-		Validators: []validator.Object{
+		ExtraValidators: []validator.Object{
 			discoverSessionConfigModeValidator{},
 		},
-	}
+	})
 }

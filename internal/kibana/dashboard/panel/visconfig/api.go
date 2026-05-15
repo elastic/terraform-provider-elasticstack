@@ -29,6 +29,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/iface"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -51,9 +52,37 @@ func (Handler) PinnedHandler() iface.PinnedHandler { return nil }
 
 func (Handler) AlignStateFromPlan(context.Context, *models.PanelModel, *models.PanelModel) {}
 
-func (Handler) ValidatePanelConfig(context.Context, map[string]attr.Value, path.Path) diag.Diagnostics {
-	// Central panelConfigValidator still applies vis-specific selection rules until task 5 removes duplication.
-	return nil
+func (Handler) ValidatePanelConfig(_ context.Context, attrs map[string]attr.Value, attrPath path.Path) diag.Diagnostics {
+	var diags diag.Diagnostics
+	cfgJSON := attrs["config_json"]
+	visCfg := attrs["vis_config"]
+	configJSONSet := panelkit.AttrConcreteSet(cfgJSON)
+	configJSONUnk := panelkit.AttrUnknown(cfgJSON)
+	visSet := panelkit.AttrConcreteSet(visCfg)
+	visUnk := panelkit.AttrUnknown(visCfg)
+
+	setCount := 0
+	hasUnknown := configJSONUnk || visUnk
+	if configJSONSet {
+		setCount++
+	}
+	if visSet {
+		setCount++
+	}
+	if setCount == 1 {
+		return diags
+	}
+	if setCount == 0 && hasUnknown {
+		return diags
+	}
+
+	detail := fmt.Sprintf("Panels with `type = \"vis\"` require exactly one of %s.", "`vis_config`, panel-level `config_json`")
+	if setCount == 0 {
+		diags.AddAttributeError(attrPath, "Missing vis panel configuration", detail)
+		return diags
+	}
+	diags.AddAttributeError(attrPath, "Invalid vis panel configuration", detail)
+	return diags
 }
 
 // FromAPI maps a kbapi vis panel into Terraform panel models (mirrors legacy dashboard.models_panels vis branch).
@@ -151,6 +180,25 @@ func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kb
 	var diags diag.Diagnostics
 	cfg := pm.VisConfig
 	if cfg == nil {
+		if typeutils.IsKnown(pm.ConfigJSON) && !pm.ConfigJSON.IsNull() {
+			configJSON := []byte(pm.ConfigJSON.ValueString())
+			var config kbapi.KbnDashboardPanelTypeVis_Config
+			if err := config.UnmarshalJSON(configJSON); err != nil {
+				diags.AddError("Failed to unmarshal visualization panel config", err.Error())
+				return kbapi.DashboardPanelItem{}, diags
+			}
+			visPanel := kbapi.KbnDashboardPanelTypeVis{
+				Config: config,
+				Grid:   grid,
+				Id:     id,
+				Type:   kbapi.Vis,
+			}
+			var panelItem kbapi.DashboardPanelItem
+			if err := panelItem.FromKbnDashboardPanelTypeVis(visPanel); err != nil {
+				diags.AddError("Failed to create visualization panel", err.Error())
+			}
+			return panelItem, diags
+		}
 		diags.AddError("Missing `vis_config`", "The `vis_config` block is required for typed `vis` panels.")
 		return kbapi.DashboardPanelItem{}, diags
 	}
