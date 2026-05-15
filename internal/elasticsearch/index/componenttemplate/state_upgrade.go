@@ -53,7 +53,7 @@ func migrateComponentTemplateStateV0ToV1(_ context.Context, req resource.Upgrade
 	}
 
 	if tmpl, ok := stateMap["template"].(map[string]any); ok {
-		ensureTemplateObjectKeys(tmpl)
+		ensureTemplateObjectKeysForV1(tmpl)
 		normalizeTemplateAliasesInV1State(tmpl)
 	}
 
@@ -119,11 +119,7 @@ func jsonNumberish(v any) float64 {
 	}
 }
 
-// ensureTemplateObjectKeys fills keys the current Plugin Framework schema expects
-// on the template object so RawState JSON decodes after upgrade. Plugin SDK state
-// may omit optional empty blocks. Updated alongside any schema-additive change so
-// upgraders from any prior version produce decodable state.
-func ensureTemplateObjectKeys(tmpl map[string]any) {
+func ensureTemplateObjectKeysForV1(tmpl map[string]any) {
 	if _, ok := tmpl["alias"]; !ok {
 		// Empty nested sets are null in Terraform JSON state, not [].
 		tmpl["alias"] = nil
@@ -136,42 +132,6 @@ func ensureTemplateObjectKeys(tmpl map[string]any) {
 	}
 	if _, ok := tmpl["data_stream_options"]; !ok {
 		tmpl["data_stream_options"] = nil
-	}
-}
-
-func upgradeStateV1ToV2() resource.StateUpgrader {
-	return resource.StateUpgrader{
-		StateUpgrader: migrateComponentTemplateStateV1ToV2,
-	}
-}
-
-// migrateComponentTemplateStateV1ToV2 injects a null data_stream_options into
-// existing template objects so v1 state decodes against the v2 schema. The new
-// data_stream_options block is optional; existing resources must not show drift.
-func migrateComponentTemplateStateV1ToV2(_ context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
-	if req.RawState == nil || req.RawState.JSON == nil {
-		resp.Diagnostics.AddError("Invalid raw state", "Raw state or JSON is nil")
-		return
-	}
-
-	var stateMap map[string]any
-	if err := json.Unmarshal(req.RawState.JSON, &stateMap); err != nil {
-		resp.Diagnostics.AddError("State upgrade error", "Could not unmarshal prior state: "+err.Error())
-		return
-	}
-
-	if tmpl, ok := stateMap["template"].(map[string]any); ok {
-		ensureTemplateObjectKeys(tmpl)
-		stateMap["template"] = tmpl
-	}
-
-	stateJSON, err := json.Marshal(stateMap)
-	if err != nil {
-		resp.Diagnostics.AddError("State upgrade error", "Could not marshal new state: "+err.Error())
-		return
-	}
-	resp.DynamicValue = &tfprotov6.DynamicValue{
-		JSON: stateJSON,
 	}
 }
 

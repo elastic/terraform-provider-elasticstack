@@ -59,7 +59,7 @@ func templateAttrTypes() map[string]attr.Type {
 
 // getSchema returns the Plugin Framework schema for elasticstack_elasticsearch_component_template.
 // The elasticsearch_connection block is NOT included here; the envelope injects it.
-const schemaVersion int64 = 2
+const schemaVersion int64 = 1
 
 func getSchema(_ context.Context) schema.Schema {
 	return schema.Schema{

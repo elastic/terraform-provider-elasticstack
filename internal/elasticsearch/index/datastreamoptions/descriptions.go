@@ -31,9 +31,3 @@ const (
 
 	FailureStoreDataRetentionDescription = "The retention period for failure store documents (e.g. \"30d\")."
 )
-
-// Validation diagnostic strings for the require-failure_store rule.
-const (
-	ErrSummaryMissingFailureStore = "Missing required failure_store block"
-	ErrDetailMissingFailureStore  = "The `failure_store` block is required when `template.data_stream_options` is configured."
-)

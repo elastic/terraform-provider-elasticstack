@@ -18,7 +18,10 @@
 package datastreamoptions
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
 // Block returns the Plugin Framework SingleNestedBlock for the data_stream_options block.
@@ -28,6 +31,9 @@ func Block() schema.SingleNestedBlock {
 		MarkdownDescription: BlockDescription,
 		Blocks: map[string]schema.Block{
 			"failure_store": failureStoreBlock(),
+		},
+		Validators: []validator.Object{
+			objectvalidator.AlsoRequires(path.MatchRelative().AtName("failure_store")),
 		},
 	}
 }
