@@ -44,8 +44,8 @@ func newResource() *Resource {
 			Schema: getSchema,
 			Read:   readComponentTemplate,
 			Delete: deleteComponentTemplate,
-			Create: createComponentTemplate,
-			Update: updateComponentTemplate,
+			Create: writeComponentTemplate,
+			Update: writeComponentTemplate,
 		}),
 	}
 }

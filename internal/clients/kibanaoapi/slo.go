@@ -216,27 +216,18 @@ func applyResponseIndicator(s kbapi.SLOsSloWithSummaryResponse_Indicator, target
 	}
 }
 
-// responseIndicatorTo is the generic core for indicator conversion. T is the
-// value type and PT is its pointer, which must implement sloIndicatorTarget
-// (the From* methods have pointer receivers on the concrete kbapi types).
-func responseIndicatorTo[T any, PT interface {
-	*T
-	sloIndicatorTarget
-}](s kbapi.SLOsSloWithSummaryResponse_Indicator) (T, error) {
-	var ret T
-	return ret, applyResponseIndicator(s, PT(&ret))
-}
-
 // ResponseIndicatorToCreateIndicator converts the response indicator union type to the
 // create request indicator union type.
 func ResponseIndicatorToCreateIndicator(s kbapi.SLOsSloWithSummaryResponse_Indicator) (kbapi.SLOsCreateSloRequest_Indicator, error) {
-	return responseIndicatorTo[kbapi.SLOsCreateSloRequest_Indicator, *kbapi.SLOsCreateSloRequest_Indicator](s)
+	var ret kbapi.SLOsCreateSloRequest_Indicator
+	return ret, applyResponseIndicator(s, &ret)
 }
 
 // ResponseIndicatorToUpdateIndicator converts the response indicator union type to the
 // update request indicator union type.
 func ResponseIndicatorToUpdateIndicator(s kbapi.SLOsSloWithSummaryResponse_Indicator) (kbapi.SLOsUpdateSloRequest_Indicator, error) {
-	return responseIndicatorTo[kbapi.SLOsUpdateSloRequest_Indicator, *kbapi.SLOsUpdateSloRequest_Indicator](s)
+	var ret kbapi.SLOsUpdateSloRequest_Indicator
+	return ret, applyResponseIndicator(s, &ret)
 }
 
 // TransformGroupBy converts a slice of group-by field names to the kbapi union type.
@@ -265,12 +256,10 @@ func TransformGroupBy(groupBy []string, supportsGroupByList bool) *kbapi.SLOsGro
 
 // TransformGroupByFromResponse converts the kbapi GroupBy union back to a string slice.
 func TransformGroupByFromResponse(groupBy kbapi.SLOsGroupBy) []string {
-	// Try string first
 	if s, err := groupBy.AsSLOsGroupBy0(); err == nil {
 		return []string{s}
 	}
 
-	// Try array
 	if arr, err := groupBy.AsSLOsGroupBy1(); err == nil {
 		return arr
 	}

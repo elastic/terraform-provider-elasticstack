@@ -33,20 +33,20 @@ import (
 	sdkdiag "github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
-func CreateConnector(ctx context.Context, client *Client, connectorOld models.KibanaActionConnector) (string, fwdiag.Diagnostics) {
-	body, err := createConnectorRequestBody(connectorOld)
+func CreateConnector(ctx context.Context, client *Client, connector models.KibanaActionConnector) (string, fwdiag.Diagnostics) {
+	body, err := createConnectorRequestBody(connector)
 	if err != nil {
 		return "", fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Failed to create connector request body", err.Error())}
 	}
 
 	resp, err := client.API.PostActionsConnectorIdWithResponse(
-		ctx, connectorOld.SpaceID, connectorOld.ConnectorID, body,
+		ctx, connector.SpaceID, connector.ConnectorID, body,
 		// When there isn't an explicit connector ID the request path will include a trailing slash
 		// Kibana 8.7 and lower return a 404 for such request paths, whilst 8.8+ correctly handle then empty ID parameter
 		// This request editor ensures that the trailing slash is removed allowing all supported
 		// Stack versions to correctly create connectors without an explicit ID
 		func(_ context.Context, req *http.Request) error {
-			if connectorOld.ConnectorID == "" {
+			if connector.ConnectorID == "" {
 				req.URL.Path = strings.TrimRight(req.URL.Path, "/")
 			}
 			return nil
@@ -64,13 +64,13 @@ func CreateConnector(ctx context.Context, client *Client, connectorOld models.Ki
 	}
 }
 
-func UpdateConnector(ctx context.Context, client *Client, connectorOld models.KibanaActionConnector) (string, fwdiag.Diagnostics) {
-	body, err := updateConnectorRequestBody(connectorOld)
+func UpdateConnector(ctx context.Context, client *Client, connector models.KibanaActionConnector) (string, fwdiag.Diagnostics) {
+	body, err := updateConnectorRequestBody(connector)
 	if err != nil {
 		return "", fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Failed to create update request body", err.Error())}
 	}
 
-	resp, err := client.API.PutActionsConnectorIdWithResponse(ctx, connectorOld.SpaceID, connectorOld.ConnectorID, body)
+	resp, err := client.API.PutActionsConnectorIdWithResponse(ctx, connector.SpaceID, connector.ConnectorID, body)
 	if err != nil {
 		return "", fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Unable to update connector", err.Error())}
 	}
@@ -286,15 +286,7 @@ func ConnectorConfigWithDefaults(connectorTypeID, plan string) (string, error) {
 // Otherwise plan command shows omitted fields as the diff,
 // because backend returns all fields.
 func remarshalConfig[T any](plan string) (string, error) {
-	var config T
-	if err := json.Unmarshal([]byte(plan), &config); err != nil {
-		return "", err
-	}
-	customJSON, err := json.Marshal(config)
-	if err != nil {
-		return "", err
-	}
-	return string(customJSON), nil
+	return connectorConfigWithDefaults[T](plan, nil)
 }
 
 // connectorConfigWithDefaults is the generic helper shared by all per-connector
@@ -305,7 +297,9 @@ func connectorConfigWithDefaults[T any](plan string, setDefaults func(*T)) (stri
 	if err := json.Unmarshal([]byte(plan), &config); err != nil {
 		return "", err
 	}
-	setDefaults(&config)
+	if setDefaults != nil {
+		setDefaults(&config)
+	}
 	customJSON, err := json.Marshal(config)
 	if err != nil {
 		return "", err
