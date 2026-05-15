@@ -23,26 +23,29 @@ import (
 	esclients "github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
-func writeSnapshotRepository(ctx context.Context, client *esclients.ElasticsearchScopedClient, resourceID string, data Data) (Data, diag.Diagnostics) {
+// writeSnapshotRepository handles both Create and Update; the repository PUT
+// API is idempotent so the same callback serves both lifecycle methods.
+func writeSnapshotRepository(ctx context.Context, client *esclients.ElasticsearchScopedClient, req entitycore.WriteRequest[Data]) (entitycore.WriteResult[Data], diag.Diagnostics) {
 	var diags diag.Diagnostics
+	data := req.Plan
+	resourceID := req.WriteID
 
 	id, sdkDiags := client.ID(ctx, resourceID)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
-		var zero Data
-		return zero, diags
+		return entitycore.WriteResult[Data]{}, diags
 	}
 
 	repoType, settings, settingsDiags := extractSettings(ctx, data)
 	diags.Append(settingsDiags...)
 	if diags.HasError() {
-		var zero Data
-		return zero, diags
+		return entitycore.WriteResult[Data]{}, diags
 	}
 
 	verify := true
@@ -52,12 +55,11 @@ func writeSnapshotRepository(ctx context.Context, client *esclients.Elasticsearc
 
 	diags.Append(diagutil.FrameworkDiagsFromSDK(elasticsearch.PutSnapshotRepository(ctx, client, resourceID, repoType, settings, verify))...)
 	if diags.HasError() {
-		var zero Data
-		return zero, diags
+		return entitycore.WriteResult[Data]{}, diags
 	}
 
 	data.ID = types.StringValue(id.String())
-	return data, diags
+	return entitycore.WriteResult[Data]{Model: data}, diags
 }
 
 // extractSettings determines the repository type and builds the settings map.

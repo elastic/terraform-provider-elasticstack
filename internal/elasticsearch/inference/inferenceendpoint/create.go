@@ -24,41 +24,44 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func createInferenceEndpoint(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, data Data) (Data, diag.Diagnostics) {
+func createInferenceEndpoint(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.WriteRequest[Data]) (entitycore.WriteResult[Data], diag.Diagnostics) {
 	var diags diag.Diagnostics
+	data := req.Plan
+	resourceID := req.WriteID
 
 	id, sdkDiags := client.ID(ctx, resourceID)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
-		return data, diags
+		return entitycore.WriteResult[Data]{Model: data}, diags
 	}
 
 	supported, sdkDiags := client.EnforceMinVersion(ctx, MinSupportedVersion)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
-		return data, diags
+		return entitycore.WriteResult[Data]{Model: data}, diags
 	}
 	if !supported {
 		diags.AddError("Unsupported Feature", fmt.Sprintf("inference endpoints require Elasticsearch v%s or above", MinSupportedVersion.String()))
-		return data, diags
+		return entitycore.WriteResult[Data]{Model: data}, diags
 	}
 
 	endpoint, modelDiags := data.toAPIModel(ctx)
 	diags.Append(modelDiags...)
 	if diags.HasError() {
-		return data, diags
+		return entitycore.WriteResult[Data]{Model: data}, diags
 	}
 
 	diags.Append(elasticsearch.PutInferenceEndpoint(ctx, client, resourceID, data.TaskType.ValueString(), endpoint)...)
 	if diags.HasError() {
-		return data, diags
+		return entitycore.WriteResult[Data]{Model: data}, diags
 	}
 
 	data.ID = types.StringValue(id.String())
 
-	return data, diags
+	return entitycore.WriteResult[Data]{Model: data}, diags
 }

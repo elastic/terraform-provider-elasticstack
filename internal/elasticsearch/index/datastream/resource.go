@@ -20,9 +20,7 @@ package datastream
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -38,26 +36,14 @@ type dataStreamResource struct {
 	*entitycore.ElasticsearchResource[Data]
 }
 
-// envelopeWriteDataStream handles both Create and Update via createDataStream,
-// which always issues PUT-on-create semantics (data streams have no separate
-// update path beyond re-creation against the index template).
-func envelopeWriteDataStream(
-	ctx context.Context,
-	client *clients.ElasticsearchScopedClient,
-	req entitycore.WriteRequest[Data],
-) (entitycore.WriteResult[Data], diag.Diagnostics) {
-	m, d := createDataStream(ctx, client, req.WriteID, req.Plan)
-	return entitycore.WriteResult[Data]{Model: m}, d
-}
-
 func newDataStreamResource() *dataStreamResource {
 	return &dataStreamResource{
 		ElasticsearchResource: entitycore.NewElasticsearchResource[Data]("data_stream", entitycore.ElasticsearchResourceOptions[Data]{
 			Schema: GetSchema,
 			Read:   readDataStream,
 			Delete: deleteDataStream,
-			Create: envelopeWriteDataStream,
-			Update: envelopeWriteDataStream,
+			Create: writeDataStream,
+			Update: writeDataStream,
 		}),
 	}
 }

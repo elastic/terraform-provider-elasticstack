@@ -20,9 +20,7 @@ package componenttemplate
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -40,31 +38,14 @@ type Resource struct {
 	*entitycore.ElasticsearchResource[Data]
 }
 
-// envelopeWriteComponentTemplate dispatches to createComponentTemplate on
-// Create (req.Prior == nil) and updateComponentTemplate on Update; the two
-// paths share the PUT call but differ in whether a composite ID is stamped
-// onto the returned model.
-func envelopeWriteComponentTemplate(
-	ctx context.Context,
-	client *clients.ElasticsearchScopedClient,
-	req entitycore.WriteRequest[Data],
-) (entitycore.WriteResult[Data], diag.Diagnostics) {
-	write := createComponentTemplate
-	if req.Prior != nil {
-		write = updateComponentTemplate
-	}
-	m, d := write(ctx, client, req.WriteID, req.Plan)
-	return entitycore.WriteResult[Data]{Model: m}, d
-}
-
 func newResource() *Resource {
 	return &Resource{
 		ElasticsearchResource: entitycore.NewElasticsearchResource[Data]("component_template", entitycore.ElasticsearchResourceOptions[Data]{
 			Schema: getSchema,
 			Read:   readComponentTemplate,
 			Delete: deleteComponentTemplate,
-			Create: envelopeWriteComponentTemplate,
-			Update: envelopeWriteComponentTemplate,
+			Create: createComponentTemplate,
+			Update: updateComponentTemplate,
 		}),
 	}
 }

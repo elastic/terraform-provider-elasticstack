@@ -20,9 +20,7 @@ package logstash
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -38,26 +36,14 @@ type logstashPipelineResource struct {
 	*entitycore.ElasticsearchResource[Data]
 }
 
-// envelopeWriteLogstash adapts writeLogstashPipeline into a WriteFunc shared
-// by Create and Update; the Logstash pipeline PUT API is idempotent so the
-// same callback serves both lifecycle methods.
-func envelopeWriteLogstash(
-	ctx context.Context,
-	client *clients.ElasticsearchScopedClient,
-	req entitycore.WriteRequest[Data],
-) (entitycore.WriteResult[Data], diag.Diagnostics) {
-	m, d := writeLogstashPipeline(ctx, client, req.WriteID, req.Plan)
-	return entitycore.WriteResult[Data]{Model: m}, d
-}
-
 func newLogstashPipelineResource() *logstashPipelineResource {
 	return &logstashPipelineResource{
 		ElasticsearchResource: entitycore.NewElasticsearchResource[Data]("logstash_pipeline", entitycore.ElasticsearchResourceOptions[Data]{
 			Schema: GetSchema,
 			Read:   readLogstashPipeline,
 			Delete: deleteLogstashPipeline,
-			Create: envelopeWriteLogstash,
-			Update: envelopeWriteLogstash,
+			Create: writeLogstashPipeline,
+			Update: writeLogstashPipeline,
 		}),
 	}
 }

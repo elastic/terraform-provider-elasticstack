@@ -20,9 +20,7 @@ package ilm
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -43,30 +41,14 @@ type Resource struct {
 	*entitycore.ElasticsearchResource[tfModel]
 }
 
-// envelopeWriteILM dispatches to createILM on Create (req.Prior == nil) and
-// updateILM on Update; the two paths share version-gating and policy expansion
-// but differ in whether a composite ID is stamped onto the returned model.
-func envelopeWriteILM(
-	ctx context.Context,
-	client *clients.ElasticsearchScopedClient,
-	req entitycore.WriteRequest[tfModel],
-) (entitycore.WriteResult[tfModel], diag.Diagnostics) {
-	write := createILM
-	if req.Prior != nil {
-		write = updateILM
-	}
-	m, d := write(ctx, client, req.WriteID, req.Plan)
-	return entitycore.WriteResult[tfModel]{Model: m}, d
-}
-
 func newResource() *Resource {
 	return &Resource{
 		ElasticsearchResource: entitycore.NewElasticsearchResource[tfModel]("index_lifecycle", entitycore.ElasticsearchResourceOptions[tfModel]{
 			Schema: ilmSchema,
 			Read:   readILM,
 			Delete: deleteILM,
-			Create: envelopeWriteILM,
-			Update: envelopeWriteILM,
+			Create: createILM,
+			Update: updateILM,
 		}),
 	}
 }

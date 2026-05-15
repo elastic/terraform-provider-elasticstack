@@ -45,23 +45,14 @@ type clusterSettingsResource struct {
 	*entitycore.ElasticsearchResource[tfModel]
 }
 
-func envelopeCreateClusterSettings(
-	ctx context.Context,
-	client *clients.ElasticsearchScopedClient,
-	req entitycore.WriteRequest[tfModel],
-) (entitycore.WriteResult[tfModel], fwdiag.Diagnostics) {
-	m, d := createClusterSettings(ctx, client, req.WriteID, req.Plan)
-	return entitycore.WriteResult[tfModel]{Model: m}, d
-}
-
 func newClusterSettingsResource() *clusterSettingsResource {
 	return &clusterSettingsResource{
 		ElasticsearchResource: entitycore.NewElasticsearchResource[tfModel]("cluster_settings", entitycore.ElasticsearchResourceOptions[tfModel]{
 			Schema: getSchema,
 			Read:   readClusterSettings,
 			Delete: deleteClusterSettings,
-			Create: envelopeCreateClusterSettings,
-			Update: envelopeUpdateClusterSettings,
+			Create: createClusterSettings,
+			Update: updateClusterSettings,
 		}),
 	}
 }
@@ -71,31 +62,32 @@ func NewClusterSettingsResource() resource.Resource {
 	return newClusterSettingsResource()
 }
 
-// createClusterSettings implements the envelope's create callback: PUT the
+// createClusterSettings implements the envelope's Create callback: PUT the
 // configured settings and stamp the composite ID onto the returned model. The
 // envelope handles plan decoding, client resolution, and the read-after-write.
-func createClusterSettings(ctx context.Context, client *clients.ElasticsearchScopedClient, _ string, plan tfModel) (tfModel, fwdiag.Diagnostics) {
+func createClusterSettings(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.WriteRequest[tfModel]) (entitycore.WriteResult[tfModel], fwdiag.Diagnostics) {
 	var diags fwdiag.Diagnostics
+	plan := req.Plan
 
 	id, sdkDiags := client.ID(ctx, resourceID)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
-		return plan, diags
+		return entitycore.WriteResult[tfModel]{Model: plan}, diags
 	}
 
 	apiSettings, ds := getConfiguredSettings(ctx, plan)
 	diags.Append(ds...)
 	if diags.HasError() {
-		return plan, diags
+		return entitycore.WriteResult[tfModel]{Model: plan}, diags
 	}
 
 	diags.Append(diagutil.FrameworkDiagsFromSDK(elasticsearch.PutSettings(ctx, client, apiSettings))...)
 	if diags.HasError() {
-		return plan, diags
+		return entitycore.WriteResult[tfModel]{Model: plan}, diags
 	}
 
 	plan.ID = types.StringValue(id.String())
-	return plan, diags
+	return entitycore.WriteResult[tfModel]{Model: plan}, diags
 }
 
 // ImportState implements resource.ResourceWithImportState as a passthrough on id.

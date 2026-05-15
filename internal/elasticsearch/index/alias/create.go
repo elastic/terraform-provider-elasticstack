@@ -23,33 +23,32 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
-func createAlias(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, plan tfModel) (tfModel, diag.Diagnostics) {
+func createAlias(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.WriteRequest[tfModel]) (entitycore.WriteResult[tfModel], diag.Diagnostics) {
 	var diags diag.Diagnostics
+	plan := req.Plan
+	aliasName := req.WriteID
 
 	diags.Append(plan.Validate(ctx)...)
 	if diags.HasError() {
-		return plan, diags
+		return entitycore.WriteResult[tfModel]{Model: plan}, diags
 	}
 
-	aliasName := resourceID
-
-	// Set the ID using client.ID
 	id, sdkDiags := client.ID(ctx, aliasName)
 	if sdkDiags.HasError() {
 		diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-		return plan, diags
+		return entitycore.WriteResult[tfModel]{Model: plan}, diags
 	}
 	plan.ID = basetypes.NewStringValue(id.String())
 
-	// Get alias configurations from the plan
 	configs, configDiags := plan.toAliasConfigs(ctx)
 	diags.Append(configDiags...)
 	if diags.HasError() {
-		return plan, diags
+		return entitycore.WriteResult[tfModel]{Model: plan}, diags
 	}
 
 	// Convert to alias actions
@@ -69,11 +68,10 @@ func createAlias(ctx context.Context, client *clients.ElasticsearchScopedClient,
 		actions = append(actions, action)
 	}
 
-	// Create the alias atomically
 	diags.Append(elasticsearch.UpdateAliasesAtomic(ctx, client, actions)...)
 	if diags.HasError() {
-		return plan, diags
+		return entitycore.WriteResult[tfModel]{Model: plan}, diags
 	}
 
-	return plan, diags
+	return entitycore.WriteResult[tfModel]{Model: plan}, diags
 }

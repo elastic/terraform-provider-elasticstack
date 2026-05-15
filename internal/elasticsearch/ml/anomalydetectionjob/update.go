@@ -29,11 +29,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func envelopeUpdateAnomalyDetectionJob(
-	ctx context.Context,
-	client *clients.ElasticsearchScopedClient,
-	req entitycore.WriteRequest[TFModel],
-) (entitycore.WriteResult[TFModel], diag.Diagnostics) {
+func updateAnomalyDetectionJob(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.WriteRequest[TFModel]) (entitycore.WriteResult[TFModel], diag.Diagnostics) {
 	var diags diag.Diagnostics
 	plan := req.Plan
 	jobID := req.WriteID

@@ -24,6 +24,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -35,30 +36,30 @@ var (
 	MinSupportedDescriptionVersion   = version.Must(version.NewVersion("8.15.0"))
 )
 
-func writeRole(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, data Data) (Data, diag.Diagnostics) {
+// writeRole handles both Create and Update; the role PUT API is idempotent so
+// the same callback serves both lifecycle methods.
+func writeRole(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.WriteRequest[Data]) (entitycore.WriteResult[Data], diag.Diagnostics) {
 	var diags diag.Diagnostics
-	roleID := resourceID
+	data := req.Plan
+	roleID := req.WriteID
 
 	id, sdkDiags := client.ID(ctx, roleID)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
-		var zero Data
-		return zero, diags
+		return entitycore.WriteResult[Data]{}, diags
 	}
 
 	serverVersion, sdkDiags := client.ServerVersion(ctx)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
-		var zero Data
-		return zero, diags
+		return entitycore.WriteResult[Data]{}, diags
 	}
 
 	// Check version requirements
 	if typeutils.IsKnown(data.Description) {
 		if serverVersion.LessThan(MinSupportedDescriptionVersion) {
 			diags.AddError("Unsupported Feature", fmt.Sprintf("'description' is supported only for Elasticsearch v%s and above", MinSupportedDescriptionVersion.String()))
-			var zero Data
-			return zero, diags
+			return entitycore.WriteResult[Data]{}, diags
 		}
 	}
 
@@ -67,8 +68,7 @@ func writeRole(ctx context.Context, client *clients.ElasticsearchScopedClient, r
 		diags.Append(data.RemoteIndices.ElementsAs(ctx, &remoteIndicesList, false)...)
 		if len(remoteIndicesList) > 0 && serverVersion.LessThan(MinSupportedRemoteIndicesVersion) {
 			diags.AddError("Unsupported Feature", fmt.Sprintf("'remote_indices' is supported only for Elasticsearch v%s and above", MinSupportedRemoteIndicesVersion.String()))
-			var zero Data
-			return zero, diags
+			return entitycore.WriteResult[Data]{}, diags
 		}
 	}
 
@@ -76,18 +76,16 @@ func writeRole(ctx context.Context, client *clients.ElasticsearchScopedClient, r
 	role, modelDiags := data.toAPIModel(ctx)
 	diags.Append(modelDiags...)
 	if diags.HasError() {
-		var zero Data
-		return zero, diags
+		return entitycore.WriteResult[Data]{}, diags
 	}
 
 	// Put the role
 	sdkDiags = elasticsearch.PutRole(ctx, client, roleID, role)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
-		var zero Data
-		return zero, diags
+		return entitycore.WriteResult[Data]{}, diags
 	}
 
 	data.ID = types.StringValue(id.String())
-	return data, diags
+	return entitycore.WriteResult[Data]{Model: data}, diags
 }

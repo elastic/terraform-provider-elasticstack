@@ -23,6 +23,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -30,13 +31,15 @@ import (
 // writeDataStreamLifecycle handles both Create and Update for the data
 // stream lifecycle resource. The PUT API is idempotent, so the same body
 // serves both lifecycle methods.
-func writeDataStreamLifecycle(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, plan tfModel) (tfModel, diag.Diagnostics) {
+func writeDataStreamLifecycle(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.WriteRequest[tfModel]) (entitycore.WriteResult[tfModel], diag.Diagnostics) {
 	var diags diag.Diagnostics
+	plan := req.Plan
+	resourceID := req.WriteID
 
 	id, sdkDiags := client.ID(ctx, resourceID)
 	if sdkDiags.HasError() {
 		diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-		return plan, diags
+		return entitycore.WriteResult[tfModel]{Model: plan}, diags
 	}
 
 	plan.ID = types.StringValue(id.String())
@@ -44,13 +47,13 @@ func writeDataStreamLifecycle(ctx context.Context, client *clients.Elasticsearch
 	apiModel, d := plan.toAPIModel(ctx)
 	diags.Append(d...)
 	if diags.HasError() {
-		return plan, diags
+		return entitycore.WriteResult[tfModel]{Model: plan}, diags
 	}
 
 	diags.Append(elasticsearch.PutDataStreamLifecycle(ctx, client, resourceID, plan.ExpandWildcards.ValueString(), apiModel)...)
 	if diags.HasError() {
-		return plan, diags
+		return entitycore.WriteResult[tfModel]{Model: plan}, diags
 	}
 
-	return plan, diags
+	return entitycore.WriteResult[tfModel]{Model: plan}, diags
 }

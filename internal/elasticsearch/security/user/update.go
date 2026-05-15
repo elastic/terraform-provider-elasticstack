@@ -29,33 +29,19 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// envelopeWriteUser handles both Create (req.Prior == nil) and Update
-// (req.Prior != nil) since applyUserPut already accepts a *Data prior.
-func envelopeWriteUser(
-	ctx context.Context,
-	client *clients.ElasticsearchScopedClient,
-	req entitycore.WriteRequest[Data],
-) (entitycore.WriteResult[Data], diag.Diagnostics) {
-	m, d := applyUserPut(ctx, client, req.Plan, req.Prior, req.Config)
-	return entitycore.WriteResult[Data]{Model: m}, d
-}
-
-func applyUserPut(
-	ctx context.Context,
-	client *clients.ElasticsearchScopedClient,
-	plan Data,
-	prior *Data,
-	config tfsdk.Config,
-) (Data, diag.Diagnostics) {
+// writeUser handles both Create (req.Prior == nil) and Update (req.Prior !=
+// nil); the security user PUT API is idempotent and the prior is only used to
+// detect password rotation and pick the correct password source.
+func writeUser(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.WriteRequest[Data]) (entitycore.WriteResult[Data], diag.Diagnostics) {
 	var diags diag.Diagnostics
-	hasState := prior != nil
+	plan := req.Plan
+	hasState := req.Prior != nil
 	var stateData Data
 	if hasState {
-		stateData = *prior
+		stateData = *req.Prior
 	}
 
 	usernameID := plan.GetResourceID().ValueString()
@@ -63,7 +49,7 @@ func applyUserPut(
 	id, sdkDiags := client.ID(ctx, usernameID)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
-		return plan, diags
+		return entitycore.WriteResult[Data]{Model: plan}, diags
 	}
 
 	user := &estypes.User{
@@ -72,9 +58,9 @@ func applyUserPut(
 	}
 
 	var passwordWoFromConfig types.String
-	diags.Append(config.GetAttribute(ctx, path.Root("password_wo"), &passwordWoFromConfig)...)
+	diags.Append(req.Config.GetAttribute(ctx, path.Root("password_wo"), &passwordWoFromConfig)...)
 	if diags.HasError() {
-		return plan, diags
+		return entitycore.WriteResult[Data]{Model: plan}, diags
 	}
 
 	var password, passwordHash *string
@@ -102,7 +88,7 @@ func applyUserPut(
 	roles := make([]string, 0, len(plan.Roles.Elements()))
 	diags.Append(plan.Roles.ElementsAs(ctx, &roles, false)...)
 	if diags.HasError() {
-		return plan, diags
+		return entitycore.WriteResult[Data]{Model: plan}, diags
 	}
 	user.Roles = roles
 
@@ -111,14 +97,14 @@ func applyUserPut(
 		err := json.Unmarshal([]byte(plan.Metadata.ValueString()), &metadataMap)
 		if err != nil {
 			diags.AddError("Failed to decode metadata", err.Error())
-			return plan, diags
+			return entitycore.WriteResult[Data]{Model: plan}, diags
 		}
 		metadata := make(estypes.Metadata, len(metadataMap))
 		for k, v := range metadataMap {
 			b, err := json.Marshal(v)
 			if err != nil {
 				diags.AddError("Failed to marshal metadata", err.Error())
-				return plan, diags
+				return entitycore.WriteResult[Data]{Model: plan}, diags
 			}
 			metadata[k] = b
 		}
@@ -127,10 +113,10 @@ func applyUserPut(
 
 	diags.Append(elasticsearch.PutUser(ctx, client, user, password, passwordHash)...)
 	if diags.HasError() {
-		return plan, diags
+		return entitycore.WriteResult[Data]{Model: plan}, diags
 	}
 
 	plan.ID = types.StringValue(id.String())
 
-	return plan, diags
+	return entitycore.WriteResult[Data]{Model: plan}, diags
 }

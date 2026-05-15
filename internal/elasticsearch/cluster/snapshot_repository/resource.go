@@ -20,9 +20,7 @@ package snapshot_repository
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -40,26 +38,14 @@ type snapshotRepositoryResource struct {
 	*entitycore.ElasticsearchResource[Data]
 }
 
-// envelopeWriteSnapshotRepo adapts writeSnapshotRepository into a WriteFunc
-// shared by Create and Update; the repository PUT API is idempotent so the
-// same callback serves both lifecycle methods.
-func envelopeWriteSnapshotRepo(
-	ctx context.Context,
-	client *clients.ElasticsearchScopedClient,
-	req entitycore.WriteRequest[Data],
-) (entitycore.WriteResult[Data], diag.Diagnostics) {
-	m, d := writeSnapshotRepository(ctx, client, req.WriteID, req.Plan)
-	return entitycore.WriteResult[Data]{Model: m}, d
-}
-
 func newSnapshotRepositoryResource() *snapshotRepositoryResource {
 	return &snapshotRepositoryResource{
 		ElasticsearchResource: entitycore.NewElasticsearchResource[Data]("snapshot_repository", entitycore.ElasticsearchResourceOptions[Data]{
 			Schema: GetSchema,
 			Read:   readSnapshotRepository,
 			Delete: deleteSnapshotRepository,
-			Create: envelopeWriteSnapshotRepo,
-			Update: envelopeWriteSnapshotRepo,
+			Create: writeSnapshotRepository,
+			Update: writeSnapshotRepository,
 		}),
 	}
 }

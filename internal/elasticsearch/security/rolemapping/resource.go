@@ -20,9 +20,7 @@ package rolemapping
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -38,26 +36,14 @@ type roleMappingResource struct {
 	*entitycore.ElasticsearchResource[Data]
 }
 
-// envelopeWriteRoleMapping adapts writeRoleMapping into a WriteFunc shared by
-// Create and Update; the role mapping PUT API is idempotent so the same
-// callback serves both lifecycle methods.
-func envelopeWriteRoleMapping(
-	ctx context.Context,
-	client *clients.ElasticsearchScopedClient,
-	req entitycore.WriteRequest[Data],
-) (entitycore.WriteResult[Data], diag.Diagnostics) {
-	m, d := writeRoleMapping(ctx, client, req.WriteID, req.Plan)
-	return entitycore.WriteResult[Data]{Model: m}, d
-}
-
 func newRoleMappingResource() *roleMappingResource {
 	return &roleMappingResource{
 		ElasticsearchResource: entitycore.NewElasticsearchResource[Data]("security_role_mapping", entitycore.ElasticsearchResourceOptions[Data]{
 			Schema: GetSchema,
 			Read:   readRoleMappingResource,
 			Delete: deleteRoleMapping,
-			Create: envelopeWriteRoleMapping,
-			Update: envelopeWriteRoleMapping,
+			Create: writeRoleMapping,
+			Update: writeRoleMapping,
 		}),
 	}
 }

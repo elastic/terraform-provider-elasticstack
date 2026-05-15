@@ -21,9 +21,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
@@ -41,26 +39,14 @@ type roleResource struct {
 	*entitycore.ElasticsearchResource[Data]
 }
 
-// envelopeWriteRole adapts writeRole into a WriteFunc shared by Create and
-// Update; the role PUT API is idempotent so the same callback serves both
-// lifecycle methods.
-func envelopeWriteRole(
-	ctx context.Context,
-	client *clients.ElasticsearchScopedClient,
-	req entitycore.WriteRequest[Data],
-) (entitycore.WriteResult[Data], diag.Diagnostics) {
-	m, d := writeRole(ctx, client, req.WriteID, req.Plan)
-	return entitycore.WriteResult[Data]{Model: m}, d
-}
-
 func newRoleResource() *roleResource {
 	return &roleResource{
 		ElasticsearchResource: entitycore.NewElasticsearchResource[Data]("security_role", entitycore.ElasticsearchResourceOptions[Data]{
 			Schema: getSchemaFactory,
 			Read:   readRole,
 			Delete: deleteRole,
-			Create: envelopeWriteRole,
-			Update: envelopeWriteRole,
+			Create: writeRole,
+			Update: writeRole,
 		}),
 	}
 }

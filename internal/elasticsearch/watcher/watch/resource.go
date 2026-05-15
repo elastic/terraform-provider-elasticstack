@@ -20,9 +20,7 @@ package watch
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -37,30 +35,14 @@ type watchResource struct {
 	*entitycore.ElasticsearchResource[Data]
 }
 
-// envelopeWriteWatch dispatches to createWatch on Create (req.Prior == nil)
-// and updateWatch on Update; the two paths share PutWatch but differ in
-// composite ID handling on the returned model.
-func envelopeWriteWatch(
-	ctx context.Context,
-	client *clients.ElasticsearchScopedClient,
-	req entitycore.WriteRequest[Data],
-) (entitycore.WriteResult[Data], diag.Diagnostics) {
-	write := createWatch
-	if req.Prior != nil {
-		write = updateWatch
-	}
-	m, d := write(ctx, client, req.WriteID, req.Plan)
-	return entitycore.WriteResult[Data]{Model: m}, d
-}
-
 func newWatchResource() *watchResource {
 	return &watchResource{
 		ElasticsearchResource: entitycore.NewElasticsearchResource[Data]("watch", entitycore.ElasticsearchResourceOptions[Data]{
 			Schema: watchSchema,
 			Read:   readWatch,
 			Delete: deleteWatch,
-			Create: envelopeWriteWatch,
-			Update: envelopeWriteWatch,
+			Create: createWatch,
+			Update: updateWatch,
 		}),
 	}
 }

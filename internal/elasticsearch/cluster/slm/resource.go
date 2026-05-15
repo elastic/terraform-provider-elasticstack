@@ -20,9 +20,7 @@ package slm
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -38,26 +36,14 @@ type slmResource struct {
 	*entitycore.ElasticsearchResource[Data]
 }
 
-// envelopeWriteSlm adapts writeSlm into a WriteFunc shared by Create and
-// Update; the SLM policy PUT API is idempotent so the same callback serves
-// both lifecycle methods.
-func envelopeWriteSlm(
-	ctx context.Context,
-	client *clients.ElasticsearchScopedClient,
-	req entitycore.WriteRequest[Data],
-) (entitycore.WriteResult[Data], diag.Diagnostics) {
-	m, d := writeSlm(ctx, client, req.WriteID, req.Plan)
-	return entitycore.WriteResult[Data]{Model: m}, d
-}
-
 func newSlmResource() *slmResource {
 	return &slmResource{
 		ElasticsearchResource: entitycore.NewElasticsearchResource[Data]("snapshot_lifecycle", entitycore.ElasticsearchResourceOptions[Data]{
 			Schema: GetSchema,
 			Read:   readSlm,
 			Delete: deleteSlm,
-			Create: envelopeWriteSlm,
-			Update: envelopeWriteSlm,
+			Create: writeSlm,
+			Update: writeSlm,
 		}),
 	}
 }

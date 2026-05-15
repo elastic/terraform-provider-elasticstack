@@ -22,7 +22,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -43,23 +42,14 @@ type filterResource struct {
 	*entitycore.ElasticsearchResource[TFModel]
 }
 
-func envelopeCreateFilter(
-	ctx context.Context,
-	client *clients.ElasticsearchScopedClient,
-	req entitycore.WriteRequest[TFModel],
-) (entitycore.WriteResult[TFModel], diag.Diagnostics) {
-	m, d := createFilter(ctx, client, req.WriteID, req.Plan)
-	return entitycore.WriteResult[TFModel]{Model: m}, d
-}
-
 func newFilterResource() *filterResource {
 	return &filterResource{
 		ElasticsearchResource: entitycore.NewElasticsearchResource[TFModel]("ml_filter", entitycore.ElasticsearchResourceOptions[TFModel]{
 			Schema: getSchema,
 			Read:   readFilter,
 			Delete: deleteFilter,
-			Create: envelopeCreateFilter,
-			Update: envelopeUpdateFilter,
+			Create: createFilter,
+			Update: updateFilter,
 		}),
 	}
 }

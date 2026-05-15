@@ -105,26 +105,14 @@ type pipelineResource struct {
 	*entitycore.ElasticsearchResource[Data]
 }
 
-// envelopeWriteIngestPipeline adapts writeIngestPipeline into a WriteFunc
-// shared by Create and Update; the ingest pipeline PUT API is idempotent so
-// the same callback serves both lifecycle methods.
-func envelopeWriteIngestPipeline(
-	ctx context.Context,
-	client *clients.ElasticsearchScopedClient,
-	req entitycore.WriteRequest[Data],
-) (entitycore.WriteResult[Data], diag.Diagnostics) {
-	m, d := writeIngestPipeline(ctx, client, req.WriteID, req.Plan)
-	return entitycore.WriteResult[Data]{Model: m}, d
-}
-
 func newPipelineResource() *pipelineResource {
 	return &pipelineResource{
 		ElasticsearchResource: entitycore.NewElasticsearchResource[Data]("ingest_pipeline", entitycore.ElasticsearchResourceOptions[Data]{
 			Schema: GetSchema,
 			Read:   readIngestPipeline,
 			Delete: deleteIngestPipeline,
-			Create: envelopeWriteIngestPipeline,
-			Update: envelopeWriteIngestPipeline,
+			Create: writeIngestPipeline,
+			Update: writeIngestPipeline,
 		}),
 	}
 }
@@ -195,29 +183,33 @@ func deleteIngestPipeline(ctx context.Context, client *clients.ElasticsearchScop
 	return diagutil.FrameworkDiagsFromSDK(elasticsearch.DeleteIngestPipeline(ctx, client, resourceID))
 }
 
-func writeIngestPipeline(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, data Data) (Data, diag.Diagnostics) {
+// writeIngestPipeline handles both Create and Update; the ingest pipeline PUT
+// API is idempotent so the same callback serves both lifecycle methods.
+func writeIngestPipeline(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.WriteRequest[Data]) (entitycore.WriteResult[Data], diag.Diagnostics) {
 	var diags diag.Diagnostics
+	data := req.Plan
+	resourceID := req.WriteID
 
 	body, buildDiags := buildPipelineBody(ctx, data)
 	diags.Append(buildDiags...)
 	if diags.HasError() {
-		return data, diags
+		return entitycore.WriteResult[Data]{Model: data}, diags
 	}
 
 	apiDiags := elasticsearch.PutIngestPipeline(ctx, client, resourceID, body)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(apiDiags)...)
 	if diags.HasError() {
-		return data, diags
+		return entitycore.WriteResult[Data]{Model: data}, diags
 	}
 
 	compID, compDiags := client.ID(ctx, resourceID)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(compDiags)...)
 	if diags.HasError() {
-		return data, diags
+		return entitycore.WriteResult[Data]{Model: data}, diags
 	}
 	data.ID = types.StringValue(compID.String())
 
-	return data, diags
+	return entitycore.WriteResult[Data]{Model: data}, diags
 }
 
 func buildPipelineBody(ctx context.Context, data Data) (map[string]any, diag.Diagnostics) {

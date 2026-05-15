@@ -28,11 +28,10 @@ import (
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func envelopeUpdateClusterSettings(
-	ctx context.Context,
-	client *clients.ElasticsearchScopedClient,
-	req entitycore.WriteRequest[tfModel],
-) (entitycore.WriteResult[tfModel], fwdiag.Diagnostics) {
+// updateClusterSettings implements the envelope's Update callback. It diffs
+// the prior and planned settings to PUT both new values and explicit nulls for
+// removed keys, then carries the composite ID forward from the prior state.
+func updateClusterSettings(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.WriteRequest[tfModel]) (entitycore.WriteResult[tfModel], fwdiag.Diagnostics) {
 	var diags fwdiag.Diagnostics
 	plan := req.Plan
 	prior := *req.Prior

@@ -20,9 +20,7 @@ package inferenceendpoint
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -37,30 +35,14 @@ type inferenceEndpointResource struct {
 	*entitycore.ElasticsearchResource[Data]
 }
 
-// envelopeWriteInferenceEndpoint dispatches to createInferenceEndpoint on
-// Create (req.Prior == nil) and updateInferenceEndpoint on Update; the two
-// paths use different APIs (Put vs Update) so are kept as separate helpers.
-func envelopeWriteInferenceEndpoint(
-	ctx context.Context,
-	client *clients.ElasticsearchScopedClient,
-	req entitycore.WriteRequest[Data],
-) (entitycore.WriteResult[Data], diag.Diagnostics) {
-	write := createInferenceEndpoint
-	if req.Prior != nil {
-		write = updateInferenceEndpoint
-	}
-	m, d := write(ctx, client, req.WriteID, req.Plan)
-	return entitycore.WriteResult[Data]{Model: m}, d
-}
-
 func newInferenceEndpointResource() *inferenceEndpointResource {
 	return &inferenceEndpointResource{
 		ElasticsearchResource: entitycore.NewElasticsearchResource[Data]("inference_endpoint", entitycore.ElasticsearchResourceOptions[Data]{
 			Schema: getSchemaFactory,
 			Read:   readInferenceEndpoint,
 			Delete: deleteInferenceEndpoint,
-			Create: envelopeWriteInferenceEndpoint,
-			Update: envelopeWriteInferenceEndpoint,
+			Create: createInferenceEndpoint,
+			Update: updateInferenceEndpoint,
 		}),
 	}
 }

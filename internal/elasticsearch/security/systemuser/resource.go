@@ -20,9 +20,7 @@ package systemuser
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -38,26 +36,14 @@ type systemUserResource struct {
 	*entitycore.ElasticsearchResource[Data]
 }
 
-// envelopeWriteSystemUser adapts writeSystemUser into a WriteFunc shared by
-// Create and Update; the system user PUT-password API is idempotent so the
-// same callback serves both lifecycle methods.
-func envelopeWriteSystemUser(
-	ctx context.Context,
-	client *clients.ElasticsearchScopedClient,
-	req entitycore.WriteRequest[Data],
-) (entitycore.WriteResult[Data], diag.Diagnostics) {
-	m, d := writeSystemUser(ctx, client, req.WriteID, req.Plan)
-	return entitycore.WriteResult[Data]{Model: m}, d
-}
-
 func newSystemUserResource() *systemUserResource {
 	return &systemUserResource{
 		ElasticsearchResource: entitycore.NewElasticsearchResource[Data]("security_system_user", entitycore.ElasticsearchResourceOptions[Data]{
 			Schema: GetSchema,
 			Read:   readSystemUser,
 			Delete: deleteSystemUser,
-			Create: envelopeWriteSystemUser,
-			Update: envelopeWriteSystemUser,
+			Create: writeSystemUser,
+			Update: writeSystemUser,
 		}),
 	}
 }

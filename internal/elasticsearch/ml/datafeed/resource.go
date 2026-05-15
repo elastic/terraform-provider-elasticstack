@@ -23,7 +23,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -38,30 +37,14 @@ type datafeedResource struct {
 	*entitycore.ElasticsearchResource[Datafeed]
 }
 
-// envelopeWriteDatafeed dispatches to createDatafeed on Create (req.Prior ==
-// nil) and updateDatafeed on Update; the two paths use different ML APIs
-// (PutDatafeed vs UpdateDatafeed) so are kept as separate helpers.
-func envelopeWriteDatafeed(
-	ctx context.Context,
-	client *clients.ElasticsearchScopedClient,
-	req entitycore.WriteRequest[Datafeed],
-) (entitycore.WriteResult[Datafeed], diag.Diagnostics) {
-	write := createDatafeed
-	if req.Prior != nil {
-		write = updateDatafeed
-	}
-	m, d := write(ctx, client, req.WriteID, req.Plan)
-	return entitycore.WriteResult[Datafeed]{Model: m}, d
-}
-
 func newDatafeedResource() *datafeedResource {
 	return &datafeedResource{
 		ElasticsearchResource: entitycore.NewElasticsearchResource[Datafeed]("ml_datafeed", entitycore.ElasticsearchResourceOptions[Datafeed]{
 			Schema: getSchema,
 			Read:   readDatafeed,
 			Delete: deleteDatafeed,
-			Create: envelopeWriteDatafeed,
-			Update: envelopeWriteDatafeed,
+			Create: createDatafeed,
+			Update: updateDatafeed,
 		}),
 	}
 }

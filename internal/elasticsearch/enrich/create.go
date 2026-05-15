@@ -23,6 +23,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -30,23 +31,33 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func upsertEnrichPolicy(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, data PolicyDataWithExecute) (PolicyDataWithExecute, diag.Diagnostics) {
+// upsertEnrichPolicy handles both Create and Update; the enrich policy PUT API
+// is idempotent so the same callback serves both lifecycle methods. Note: the
+// schema marks every field RequiresReplace so Update only ever runs against an
+// unchanged plan in practice.
+func upsertEnrichPolicy(
+	ctx context.Context,
+	client *clients.ElasticsearchScopedClient,
+	req entitycore.WriteRequest[PolicyDataWithExecute],
+) (entitycore.WriteResult[PolicyDataWithExecute], diag.Diagnostics) {
 	var diags diag.Diagnostics
+	data := req.Plan
+	resourceID := req.WriteID
 
 	id, sdkDiags := client.ID(ctx, resourceID)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
-		return data, diags
+		return entitycore.WriteResult[PolicyDataWithExecute]{Model: data}, diags
 	}
 
 	indices := typeutils.SetTypeAs[string](ctx, data.Indices, path.Empty(), &diags)
 	if diags.HasError() {
-		return data, diags
+		return entitycore.WriteResult[PolicyDataWithExecute]{Model: data}, diags
 	}
 
 	enrichFields := typeutils.SetTypeAs[string](ctx, data.EnrichFields, path.Empty(), &diags)
 	if diags.HasError() {
-		return data, diags
+		return entitycore.WriteResult[PolicyDataWithExecute]{Model: data}, diags
 	}
 
 	policy := &models.EnrichPolicy{
@@ -63,18 +74,17 @@ func upsertEnrichPolicy(ctx context.Context, client *clients.ElasticsearchScoped
 
 	if sdkDiags := elasticsearch.PutEnrichPolicy(ctx, client, policy); sdkDiags.HasError() {
 		diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-		return data, diags
+		return entitycore.WriteResult[PolicyDataWithExecute]{Model: data}, diags
 	}
 
 	data.ID = types.StringValue(id.String())
 
-	// Execute policy if requested
 	if !data.Execute.IsNull() && !data.Execute.IsUnknown() && data.Execute.ValueBool() {
 		if sdkDiags := elasticsearch.ExecuteEnrichPolicy(ctx, client, resourceID); sdkDiags.HasError() {
 			diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-			return data, diags
+			return entitycore.WriteResult[PolicyDataWithExecute]{Model: data}, diags
 		}
 	}
 
-	return data, diags
+	return entitycore.WriteResult[PolicyDataWithExecute]{Model: data}, diags
 }

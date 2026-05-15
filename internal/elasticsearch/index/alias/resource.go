@@ -20,9 +20,7 @@ package alias
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -39,30 +37,14 @@ type aliasResource struct {
 	*entitycore.ElasticsearchResource[tfModel]
 }
 
-// envelopeWriteAlias dispatches to createAlias on Create (req.Prior == nil)
-// and updateAlias on Update; the two paths use different alias actions
-// (create vs add/remove reconciliation) so are kept as separate helpers.
-func envelopeWriteAlias(
-	ctx context.Context,
-	client *clients.ElasticsearchScopedClient,
-	req entitycore.WriteRequest[tfModel],
-) (entitycore.WriteResult[tfModel], diag.Diagnostics) {
-	write := createAlias
-	if req.Prior != nil {
-		write = updateAlias
-	}
-	m, d := write(ctx, client, req.WriteID, req.Plan)
-	return entitycore.WriteResult[tfModel]{Model: m}, d
-}
-
 func newAliasResource() *aliasResource {
 	return &aliasResource{
 		ElasticsearchResource: entitycore.NewElasticsearchResource[tfModel]("index_alias", entitycore.ElasticsearchResourceOptions[tfModel]{
 			Schema: getSchemaFactory,
 			Read:   readAlias,
 			Delete: deleteAlias,
-			Create: envelopeWriteAlias,
-			Update: envelopeWriteAlias,
+			Create: createAlias,
+			Update: updateAlias,
 		}),
 	}
 }

@@ -29,11 +29,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func envelopeUpdateFilter(
-	ctx context.Context,
-	client *clients.ElasticsearchScopedClient,
-	req entitycore.WriteRequest[TFModel],
-) (entitycore.WriteResult[TFModel], fwdiags.Diagnostics) {
+func updateFilter(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.WriteRequest[TFModel]) (entitycore.WriteResult[TFModel], fwdiags.Diagnostics) {
 	var diags fwdiags.Diagnostics
 	filterID := req.WriteID
 	plan := req.Plan

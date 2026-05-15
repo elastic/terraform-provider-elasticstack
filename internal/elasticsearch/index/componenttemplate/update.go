@@ -23,25 +23,27 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-// updateComponentTemplate is the envelope update callback. PUT semantics are
+// updateComponentTemplate is the envelope Update callback. PUT semantics are
 // identical to create for component templates.
-func updateComponentTemplate(ctx context.Context, client *clients.ElasticsearchScopedClient, _ string, plan Data) (Data, diag.Diagnostics) {
+func updateComponentTemplate(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.WriteRequest[Data]) (entitycore.WriteResult[Data], diag.Diagnostics) {
 	var diags diag.Diagnostics
+	plan := req.Plan
 
 	componentTemplate, d := expandFromData(ctx, plan)
 	diags.Append(d...)
 	if diags.HasError() {
-		return plan, diags
+		return entitycore.WriteResult[Data]{Model: plan}, diags
 	}
 
 	sdkDiags := elasticsearch.PutComponentTemplate(ctx, client, &componentTemplate)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
-		return plan, diags
+		return entitycore.WriteResult[Data]{Model: plan}, diags
 	}
 
-	return plan, diags
+	return entitycore.WriteResult[Data]{Model: plan}, diags
 }

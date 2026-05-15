@@ -20,9 +20,7 @@ package script
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -38,26 +36,14 @@ type scriptResource struct {
 	*entitycore.ElasticsearchResource[Data]
 }
 
-// envelopeWriteScript adapts writeScript into a WriteFunc shared by Create
-// and Update; the script PUT API is idempotent so the same callback serves
-// both lifecycle methods.
-func envelopeWriteScript(
-	ctx context.Context,
-	client *clients.ElasticsearchScopedClient,
-	req entitycore.WriteRequest[Data],
-) (entitycore.WriteResult[Data], diag.Diagnostics) {
-	m, d := writeScript(ctx, client, req.WriteID, req.Plan)
-	return entitycore.WriteResult[Data]{Model: m}, d
-}
-
 func newScriptResource() *scriptResource {
 	return &scriptResource{
 		ElasticsearchResource: entitycore.NewElasticsearchResource[Data]("script", entitycore.ElasticsearchResourceOptions[Data]{
 			Schema: GetSchema,
 			Read:   readScript,
 			Delete: deleteScript,
-			Create: envelopeWriteScript,
-			Update: envelopeWriteScript,
+			Create: writeScript,
+			Update: writeScript,
 		}),
 	}
 }

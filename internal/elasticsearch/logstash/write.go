@@ -25,20 +25,24 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func writeLogstashPipeline(ctx context.Context, client *clients.ElasticsearchScopedClient, pipelineID string, data Data) (Data, diag.Diagnostics) {
+// writeLogstashPipeline handles both Create and Update; the Logstash pipeline
+// PUT API is idempotent so the same callback serves both lifecycle methods.
+func writeLogstashPipeline(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.WriteRequest[Data]) (entitycore.WriteResult[Data], diag.Diagnostics) {
 	var diags diag.Diagnostics
+	data := req.Plan
+	pipelineID := req.WriteID
 
 	id, sdkDiags := client.ID(ctx, pipelineID)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
-		var zero Data
-		return zero, diags
+		return entitycore.WriteResult[Data]{}, diags
 	}
 
 	pipeline := models.LogstashPipeline{
@@ -63,8 +67,7 @@ func writeLogstashPipeline(ctx context.Context, client *clients.ElasticsearchSco
 	var pipelineMetadata map[string]any
 	if err := json.Unmarshal([]byte(metaStr), &pipelineMetadata); err != nil {
 		diags.AddError("Error parsing pipeline_metadata", err.Error())
-		var zero Data
-		return zero, diags
+		return entitycore.WriteResult[Data]{}, diags
 	}
 	pipeline.PipelineMetadata = pipelineMetadata
 
@@ -74,10 +77,9 @@ func writeLogstashPipeline(ctx context.Context, client *clients.ElasticsearchSco
 	sdkDiags = elasticsearch.PutLogstashPipeline(ctx, client, &pipeline)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
-		var zero Data
-		return zero, diags
+		return entitycore.WriteResult[Data]{}, diags
 	}
 
 	data.ID = types.StringValue(id.String())
-	return data, diags
+	return entitycore.WriteResult[Data]{Model: data}, diags
 }

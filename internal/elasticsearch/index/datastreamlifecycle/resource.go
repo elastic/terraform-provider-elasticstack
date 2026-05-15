@@ -20,10 +20,8 @@ package datastreamlifecycle
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/go-version"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -40,26 +38,14 @@ type Resource struct {
 	*entitycore.ElasticsearchResource[tfModel]
 }
 
-// envelopeWriteDSL adapts writeDataStreamLifecycle into a WriteFunc shared
-// by Create and Update; the data stream lifecycle PUT API is idempotent so
-// the same callback serves both lifecycle methods.
-func envelopeWriteDSL(
-	ctx context.Context,
-	client *clients.ElasticsearchScopedClient,
-	req entitycore.WriteRequest[tfModel],
-) (entitycore.WriteResult[tfModel], diag.Diagnostics) {
-	m, d := writeDataStreamLifecycle(ctx, client, req.WriteID, req.Plan)
-	return entitycore.WriteResult[tfModel]{Model: m}, d
-}
-
 func newResource() *Resource {
 	return &Resource{
 		ElasticsearchResource: entitycore.NewElasticsearchResource[tfModel]("data_stream_lifecycle", entitycore.ElasticsearchResourceOptions[tfModel]{
 			Schema: getSchemaFactory,
 			Read:   readDataStreamLifecycle,
 			Delete: deleteDataStreamLifecycle,
-			Create: envelopeWriteDSL,
-			Update: envelopeWriteDSL,
+			Create: writeDataStreamLifecycle,
+			Update: writeDataStreamLifecycle,
 		}),
 	}
 }
