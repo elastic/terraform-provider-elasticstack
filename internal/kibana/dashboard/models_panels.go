@@ -444,7 +444,8 @@ func panelToAPI(ctx context.Context, pm models.PanelModel, dashboard *models.Das
 	if typeutils.IsKnown(pm.Type) {
 		pt := pm.Type.ValueString()
 		if h := LookupHandler(pt); h != nil {
-			if panelkit.HasConfig(&pm, pt+"_config") || panelDispatcherAllowsTypedConfigOmission(pt) {
+			cfgBlock := h.PanelType() + "_config"
+			if panelkit.HasConfig(&pm, cfgBlock) || panelDispatcherAllowsTypedConfigOmission(pt) {
 				return h.ToAPI(pm, dashboard)
 			}
 		}

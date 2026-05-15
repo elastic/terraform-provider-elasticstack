@@ -10,13 +10,13 @@
 
 ## 2. Create lensdashboardapp handler
 
-- [ ] 2.1 Create `dashboard/panel/lensdashboardapp/api.go` with `Handler` implementing `iface.Handler` for panel type `"lens_dashboard_app"`
-- [ ] 2.2 Implement `FromAPI`: classify config JSON, delegate to `lenscommon` converter or `lenscommon.ByReferenceFromAPI`
-- [ ] 2.3 Implement `ToAPI`: delegate to `lenscommon` converter or `lenscommon.ByReferenceToAPI`
-- [ ] 2.4 Create `dashboard/panel/lensdashboardapp/schema.go` with `lens_dashboard_app_config` block
-- [ ] 2.5 Create `dashboard/panel/lensdashboardapp/model.go` with config classification helpers
-- [ ] 2.6 Create `dashboard/panel/lensdashboardapp/api_test.go` covering by_value and by_reference paths
-- [ ] 2.7 Register `lensdashboardapp.Handler{}` in `dashboard/registry.go`
+- [x] 2.1 Create `dashboard/panel/lensdashboardapp/api.go` with `Handler` implementing `iface.Handler` for panel type `"lens_dashboard_app"`
+- [x] 2.2 Implement `FromAPI`: classify config JSON, delegate to `lenscommon` converter or `lenscommon.ByReferenceFromAPI`
+- [x] 2.3 Implement `ToAPI`: delegate to `lenscommon` converter or `lenscommon.ByReferenceToAPI`
+- [x] 2.4 Create `dashboard/panel/lensdashboardapp/schema.go` with `lens_dashboard_app_config` block
+- [x] 2.5 Create `dashboard/panel/lensdashboardapp/model.go` with config classification helpers
+- [x] 2.6 Create `dashboard/panel/lensdashboardapp/api_test.go` covering by_value and by_reference paths
+- [x] 2.7 Register `lensdashboardapp.Handler{}` in `dashboard/registry.go`
 
 ## 3. Create discoversession handler
 

@@ -23,6 +23,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/esqlcontrol"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/iface"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/image"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/lensdashboardapp"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/markdown"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/optionslist"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/rangeslider"
@@ -51,6 +52,7 @@ var panelHandlers = []iface.Handler{
 	markdown.Handler{},
 	image.Handler{},
 	sloalerts.Handler{},
+	lensdashboardapp.Handler{},
 	visconfig.Handler{},
 }
 
@@ -77,7 +79,18 @@ func init() {
 	panelkit.SetTypedSiblingPanelConfigBlockNames(typedSiblings)
 }
 
-func LookupHandler(panelType string) iface.Handler { return panelTypeToHandler[panelType] }
+func LookupHandler(panelType string) iface.Handler {
+	if h := panelTypeToHandler[panelType]; h != nil {
+		return h
+	}
+	// Kibana API discriminators are not always identical to registry PanelType keys used for *_config naming.
+	switch panelType {
+	case "lens-dashboard-app":
+		return panelTypeToHandler["lens_dashboard_app"]
+	default:
+		return nil
+	}
+}
 
 func AllHandlers() []iface.Handler { return panelHandlers }
 
