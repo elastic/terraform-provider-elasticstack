@@ -2915,6 +2915,7 @@ safe-outputs:
   create-pull-request:
     labels: [reproducer-factory]
     max: 1
+    auto-close-issue: false
   noop:
     max: 1
     report-as-issue: false
