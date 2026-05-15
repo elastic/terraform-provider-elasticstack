@@ -220,3 +220,37 @@ func nz(s, def string) string {
 	}
 	return def
 }
+
+// TimeRangeAttributes returns inner schema attributes for panel/dashboard `time_range` objects:
+// required `from` and `to`, optional `mode` (`absolute` | `relative`).
+func TimeRangeAttributes() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"from": schema.StringAttribute{
+			MarkdownDescription: "Start of the time range (e.g., 'now-15m', '2023-01-01T00:00:00Z').",
+			Required:            true,
+		},
+		"to": schema.StringAttribute{
+			MarkdownDescription: "End of the time range (e.g., 'now', '2023-12-31T23:59:59Z').",
+			Required:            true,
+		},
+		"mode": schema.StringAttribute{
+			MarkdownDescription: "Optional time range mode. When set, must be `absolute` or `relative`.",
+			Optional:            true,
+			Validators: []validator.String{
+				stringvalidator.OneOf("absolute", "relative"),
+			},
+		},
+	}
+}
+
+// TimeRangeSchema returns an optional SingleNestedAttribute for panel-level time ranges, using TimeRangeAttributes.
+func TimeRangeSchema(markdownDescription string) schema.SingleNestedAttribute {
+	if markdownDescription == "" {
+		markdownDescription = "Optional panel time range (`from`, `to`, and optional `mode`)."
+	}
+	return schema.SingleNestedAttribute{
+		MarkdownDescription: markdownDescription,
+		Optional:            true,
+		Attributes:          TimeRangeAttributes(),
+	}
+}
