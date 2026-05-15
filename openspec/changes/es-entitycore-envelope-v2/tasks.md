@@ -48,13 +48,13 @@
 
 ## 4. OpenSpec updates
 
-- [ ] 4.1 Update `openspec/specs/entitycore-resource-envelope/spec.md` to describe the new Elasticsearch constructor, request/result callback API, `WithReadResourceID`, Elasticsearch version requirements, and `PostRead`
-- [ ] 4.2 Update `openspec/specs/elasticsearch-ml-filter/spec.md` to reflect migration to the richer envelope update callback
-- [ ] 4.3 Update `openspec/specs/elasticsearch-cluster-settings/spec.md` to reflect migration to the richer envelope update callback
-- [ ] 4.4 Update `openspec/specs/elasticsearch-ml-anomaly-detection-job/spec.md` to reflect migration to the richer envelope update callback
-- [ ] 4.5 Update `openspec/specs/elasticsearch-security-user/spec.md` to reflect migration to richer envelope create/update callbacks using config and prior state
-- [ ] 4.6 Update `openspec/specs/elasticsearch-security-api-key/spec.md` to reflect envelope-owned read plus post-read side effects
-- [ ] 4.7 Update `openspec/specs/entitycore-kibana-resource-envelope/spec.md` to reference `VersionRequirement` after the shared type rename
+- [x] 4.1 Update `openspec/specs/entitycore-resource-envelope/spec.md` to describe the new Elasticsearch constructor, request/result callback API, `WithReadResourceID`, Elasticsearch version requirements, and `PostRead`
+- [x] 4.2 Update `openspec/specs/elasticsearch-ml-filter/spec.md` to reflect migration to the richer envelope update callback
+- [x] 4.3 Update `openspec/specs/elasticsearch-cluster-settings/spec.md` to reflect migration to the richer envelope update callback
+- [x] 4.4 Update `openspec/specs/elasticsearch-ml-anomaly-detection-job/spec.md` to reflect migration to the richer envelope update callback
+- [x] 4.5 Update `openspec/specs/elasticsearch-security-user/spec.md` to reflect migration to richer envelope create/update callbacks using config and prior state
+- [x] 4.6 Update `openspec/specs/elasticsearch-security-api-key/spec.md` to reflect envelope-owned read plus post-read side effects
+- [x] 4.7 Update `openspec/specs/entitycore-kibana-resource-envelope/spec.md` to reference `VersionRequirement` after the shared type rename
 
 > **Note for 4.4:** REQ-016 wording must be updated to reflect that the envelope refresh runs after the update callback returns even when no Update Job API call was made (no-op updates), since envelope semantics no longer support skip-read on update.
 

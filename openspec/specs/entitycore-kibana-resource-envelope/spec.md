@@ -45,7 +45,8 @@ The system SHALL define a `KibanaResourceModel` interface with four value-receiv
 
 The system SHALL define a `WithVersionRequirements` optional interface that Kibana entity models may implement to declare minimum Kibana server version requirements. When a decoded model satisfies this interface, the generic Kibana resource envelope SHALL evaluate the requirements after scoped client resolution and before invoking the concrete lifecycle callback. The envelope SHALL enforce version requirements in Create, Read, and Update.
 
-The `WithVersionRequirements` interface SHALL reuse `DataSourceVersionRequirement` for the requirement type.
+The `WithVersionRequirements` interface SHALL use the shared `VersionRequirement` type (the same type returned by Elasticsearch envelope models that declare version requirements).
+
 
 #### Scenario: Model with version requirements short-circuits Create
 
