@@ -218,24 +218,8 @@ func lensByReferenceAttributes() map[string]schema.Attribute {
 		"time_range": schema.SingleNestedAttribute{
 			MarkdownDescription: "Required time range for the by-reference panel config " +
 				"(used by both `lens_dashboard_app_config.by_reference` and `vis_config.by_reference`).",
-			Required: true,
-			Attributes: map[string]schema.Attribute{
-				"from": schema.StringAttribute{
-					MarkdownDescription: "Range start, matching the Kibana time range `from` field.",
-					Required:            true,
-				},
-				"to": schema.StringAttribute{
-					MarkdownDescription: "Range end, matching the Kibana time range `to` field.",
-					Required:            true,
-				},
-				"mode": schema.StringAttribute{
-					MarkdownDescription: "Optional time range mode. When set, must be `absolute` or `relative`.",
-					Optional:            true,
-					Validators: []validator.String{
-						stringvalidator.OneOf("absolute", "relative"),
-					},
-				},
-			},
+			Required:   true,
+			Attributes: panelkit.TimeRangeAttributes(),
 		},
 	}
 }
@@ -243,11 +227,7 @@ func lensByReferenceAttributes() map[string]schema.Attribute {
 func byValueAttributes() map[string]schema.Attribute {
 	out := make(map[string]schema.Attribute)
 	for _, c := range lenscommon.All() {
-		key := terraformChartBlockKey(c.VizType())
-		if key == "" {
-			panic("visconfig: missing terraform chart block key for VizType " + c.VizType())
-		}
-		out[key] = c.SchemaAttribute()
+		out[chartBlockKeyOrPanic(c.VizType())] = c.SchemaAttribute()
 	}
 	return out
 }
@@ -256,101 +236,17 @@ func visByValueChartAttrNames() []string {
 	converters := lenscommon.All()
 	out := make([]string, 0, len(converters))
 	for _, c := range converters {
-		key := terraformChartBlockKey(c.VizType())
-		if key == "" {
-			panic("visconfig: missing terraform chart block key for VizType " + c.VizType())
-		}
-		out = append(out, key)
+		out = append(out, chartBlockKeyOrPanic(c.VizType()))
 	}
 	return out
 }
 
-var modeAttrNames = []string{"by_value", "by_reference"}
-
-var _ validator.Object = visConfigModeValidator{}
-
-type visConfigModeValidator struct{}
-
-func (visConfigModeValidator) Description(_ context.Context) string {
-	return "Ensures exactly one of `by_value` or `by_reference` is set inside `vis_config`."
-}
-
-func (v visConfigModeValidator) MarkdownDescription(ctx context.Context) string {
-	return v.Description(ctx)
-}
-
-func (visConfigModeValidator) ValidateObject(_ context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
-	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
-		return
+func chartBlockKeyOrPanic(vizType string) string {
+	key := lenscommon.TerraformChartBlockKey(vizType)
+	if key == "" {
+		panic("visconfig: missing terraform chart block key for VizType " + vizType)
 	}
-	validateExactlyOneNestedAttr(
-		req, resp,
-		"vis_config",
-		modeAttrNames,
-		"Exactly one of `by_value` or `by_reference` must be set inside `vis_config`.",
-		"Exactly one of `by_value` or `by_reference` must be set inside `vis_config`, not both.",
-	)
-}
-
-var _ validator.Object = visByValueSourceValidator{}
-
-type visByValueSourceValidator struct{}
-
-func (visByValueSourceValidator) Description(_ context.Context) string {
-	return "Ensures exactly one supported typed Lens chart block is set inside `vis_config.by_value`."
-}
-
-func (v visByValueSourceValidator) MarkdownDescription(ctx context.Context) string {
-	return v.Description(ctx)
-}
-
-func (visByValueSourceValidator) ValidateObject(_ context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
-	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
-		return
-	}
-	validateExactlyOneNestedAttr(
-		req, resp,
-		"vis_config.by_value",
-		visByValueChartAttrNames(),
-		"Set exactly one supported typed Lens chart block inside `vis_config.by_value`.",
-		"Set exactly one typed chart block inside `vis_config.by_value` (more than one by-value chart is set).",
-	)
-}
-
-func validateExactlyOneNestedAttr(
-	req validator.ObjectRequest,
-	resp *validator.ObjectResponse,
-	blockLabel string,
-	attrNames []string,
-	missingDetail string,
-	tooManyDetail string,
-) {
-	attrs := req.ConfigValue.Attributes()
-	count := 0
-	hasUnknown := false
-	for _, name := range attrNames {
-		av, ok := attrs[name]
-		if !ok || av == nil {
-			continue
-		}
-		switch {
-		case av.IsUnknown():
-			hasUnknown = true
-		case av.IsNull():
-		default:
-			count++
-		}
-	}
-	if count > 1 {
-		resp.Diagnostics.AddAttributeError(req.Path, "Invalid "+blockLabel, tooManyDetail)
-		return
-	}
-	if hasUnknown {
-		return
-	}
-	if count == 0 {
-		resp.Diagnostics.AddAttributeError(req.Path, "Invalid "+blockLabel, missingDetail)
-	}
+	return key
 }
 
 func innerSchemaAttributes() map[string]schema.Attribute {
@@ -361,7 +257,13 @@ func innerSchemaAttributes() map[string]schema.Attribute {
 			Optional:   true,
 			Attributes: byValueAttributes(),
 			Validators: []validator.Object{
-				visByValueSourceValidator{},
+				panelkit.ExactlyOneOfNestedAttrsValidator(panelkit.ExactlyOneOfNestedAttrsOpts{
+					AttrNames:     visByValueChartAttrNames(),
+					Summary:       "Invalid vis_config.by_value",
+					MissingDetail: "Set exactly one supported typed Lens chart block inside `vis_config.by_value`.",
+					TooManyDetail: "Set exactly one typed chart block inside `vis_config.by_value` (more than one by-value chart is set).",
+					Description:   "Ensures exactly one supported typed Lens chart block is set inside `vis_config.by_value`.",
+				}),
 			},
 		},
 		"by_reference": schema.SingleNestedAttribute{
@@ -383,7 +285,13 @@ func SchemaAttribute() schema.Attribute {
 		Required:   false,
 		Attributes: innerSchemaAttributes(),
 		ExtraValidators: []validator.Object{
-			visConfigModeValidator{},
+			panelkit.ExactlyOneOfNestedAttrsValidator(panelkit.ExactlyOneOfNestedAttrsOpts{
+				AttrNames:     []string{"by_value", "by_reference"},
+				Summary:       "Invalid vis_config",
+				MissingDetail: "Exactly one of `by_value` or `by_reference` must be set inside `vis_config`.",
+				TooManyDetail: "Exactly one of `by_value` or `by_reference` must be set inside `vis_config`, not both.",
+				Description:   "Ensures exactly one of `by_value` or `by_reference` is set inside `vis_config`.",
+			}),
 		},
 	})
 }

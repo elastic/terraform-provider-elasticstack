@@ -736,8 +736,8 @@ Optional:
 
 Required:
 
-- `from` (String) Range start, matching the Kibana time range `from` field.
-- `to` (String) Range end, matching the Kibana time range `to` field.
+- `from` (String) Start of the time range (e.g., 'now-15m', '2023-01-01T00:00:00Z').
+- `to` (String) End of the time range (e.g., 'now', '2023-12-31T23:59:59Z').
 
 Optional:
 
@@ -3641,8 +3641,8 @@ Optional:
 
 Required:
 
-- `from` (String) Range start, matching the Kibana time range `from` field.
-- `to` (String) Range end, matching the Kibana time range `to` field.
+- `from` (String) Start of the time range (e.g., 'now-15m', '2023-01-01T00:00:00Z').
+- `to` (String) End of the time range (e.g., 'now', '2023-12-31T23:59:59Z').
 
 Optional:
 
@@ -6613,8 +6613,8 @@ Optional:
 
 Required:
 
-- `from` (String) Range start, matching the Kibana time range `from` field.
-- `to` (String) Range end, matching the Kibana time range `to` field.
+- `from` (String) Start of the time range (e.g., 'now-15m', '2023-01-01T00:00:00Z').
+- `to` (String) End of the time range (e.g., 'now', '2023-12-31T23:59:59Z').
 
 Optional:
 
@@ -9518,8 +9518,8 @@ Optional:
 
 Required:
 
-- `from` (String) Range start, matching the Kibana time range `from` field.
-- `to` (String) Range end, matching the Kibana time range `to` field.
+- `from` (String) Start of the time range (e.g., 'now-15m', '2023-01-01T00:00:00Z').
+- `to` (String) End of the time range (e.g., 'now', '2023-12-31T23:59:59Z').
 
 Optional:
 

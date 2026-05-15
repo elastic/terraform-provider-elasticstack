@@ -59,7 +59,7 @@ func mustVisPanelItem(t *testing.T, cfg0 kbapi.KbnDashboardPanelTypeVisConfig0) 
 func TestTerraformChartBlockKey_coversAllConverters(t *testing.T) {
 	t.Parallel()
 	for _, c := range lenscommon.All() {
-		key := visconfig.TerraformChartBlockKey(c.VizType())
+		key := lenscommon.TerraformChartBlockKey(c.VizType())
 		require.NotEmpty(t, key, "missing terraform attribute key for viz type %q", c.VizType())
 	}
 }

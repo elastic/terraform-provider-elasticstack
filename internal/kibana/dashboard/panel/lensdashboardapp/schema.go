@@ -218,24 +218,8 @@ func lensByReferenceAttributes() map[string]schema.Attribute {
 		"time_range": schema.SingleNestedAttribute{
 			MarkdownDescription: "Required time range for the by-reference panel config " +
 				"(used by both `lens_dashboard_app_config.by_reference` and `vis_config.by_reference`).",
-			Required: true,
-			Attributes: map[string]schema.Attribute{
-				"from": schema.StringAttribute{
-					MarkdownDescription: "Range start, matching the Kibana time range `from` field.",
-					Required:            true,
-				},
-				"to": schema.StringAttribute{
-					MarkdownDescription: "Range end, matching the Kibana time range `to` field.",
-					Required:            true,
-				},
-				"mode": schema.StringAttribute{
-					MarkdownDescription: "Optional time range mode. When set, must be `absolute` or `relative`.",
-					Optional:            true,
-					Validators: []validator.String{
-						stringvalidator.OneOf("absolute", "relative"),
-					},
-				},
-			},
+			Required:   true,
+			Attributes: panelkit.TimeRangeAttributes(),
 		},
 	}
 }
@@ -251,11 +235,7 @@ func byValueAttributes() map[string]schema.Attribute {
 		},
 	}
 	for _, c := range lenscommon.All() {
-		key := terraformChartBlockKey(c.VizType())
-		if key == "" {
-			panic("lensdashboardapp: missing terraform chart block key for VizType " + c.VizType())
-		}
-		out[key] = c.SchemaAttribute()
+		out[chartBlockKeyOrPanic(c.VizType())] = c.SchemaAttribute()
 	}
 	return out
 }
@@ -268,101 +248,17 @@ func ByValueSourceAttrNames() []string {
 func lensByValueSourceAttrNames() []string {
 	out := []string{"config_json"}
 	for _, c := range lenscommon.All() {
-		key := terraformChartBlockKey(c.VizType())
-		if key == "" {
-			panic("lensdashboardapp: missing terraform chart block key for VizType " + c.VizType())
-		}
-		out = append(out, key)
+		out = append(out, chartBlockKeyOrPanic(c.VizType()))
 	}
 	return out
 }
 
-var modeAttrNames = []string{"by_value", "by_reference"}
-
-var _ validator.Object = lensDashboardAppConfigModeValidator{}
-
-type lensDashboardAppConfigModeValidator struct{}
-
-func (lensDashboardAppConfigModeValidator) Description(_ context.Context) string {
-	return "Ensures exactly one of `by_value` or `by_reference` is set inside `lens_dashboard_app_config`."
-}
-
-func (v lensDashboardAppConfigModeValidator) MarkdownDescription(ctx context.Context) string {
-	return v.Description(ctx)
-}
-
-func (lensDashboardAppConfigModeValidator) ValidateObject(_ context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
-	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
-		return
+func chartBlockKeyOrPanic(vizType string) string {
+	key := lenscommon.TerraformChartBlockKey(vizType)
+	if key == "" {
+		panic("lensdashboardapp: missing terraform chart block key for VizType " + vizType)
 	}
-	validateExactlyOneNestedAttr(
-		req, resp,
-		"lens_dashboard_app_config",
-		modeAttrNames,
-		"Exactly one of `by_value` or `by_reference` must be set inside `lens_dashboard_app_config`.",
-		"Exactly one of `by_value` or `by_reference` must be set inside `lens_dashboard_app_config`, not both.",
-	)
-}
-
-var _ validator.Object = lensDashboardAppByValueSourceValidator{}
-
-type lensDashboardAppByValueSourceValidator struct{}
-
-func (lensDashboardAppByValueSourceValidator) Description(_ context.Context) string {
-	return "Ensures exactly one of `config_json` or one supported typed Lens chart block is set inside `by_value`."
-}
-
-func (v lensDashboardAppByValueSourceValidator) MarkdownDescription(ctx context.Context) string {
-	return v.Description(ctx)
-}
-
-func (lensDashboardAppByValueSourceValidator) ValidateObject(_ context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
-	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
-		return
-	}
-	validateExactlyOneNestedAttr(
-		req, resp,
-		"lens_dashboard_app_config.by_value",
-		lensByValueSourceAttrNames(),
-		"Set exactly one of `config_json` or one supported typed Lens chart block inside `by_value`.",
-		"Set exactly one of `config_json` or one supported typed Lens chart block inside `by_value` (more than one by-value source is set).",
-	)
-}
-
-func validateExactlyOneNestedAttr(
-	req validator.ObjectRequest,
-	resp *validator.ObjectResponse,
-	blockLabel string,
-	attrNames []string,
-	missingDetail string,
-	tooManyDetail string,
-) {
-	attrs := req.ConfigValue.Attributes()
-	count := 0
-	hasUnknown := false
-	for _, name := range attrNames {
-		av, ok := attrs[name]
-		if !ok || av == nil {
-			continue
-		}
-		switch {
-		case av.IsUnknown():
-			hasUnknown = true
-		case av.IsNull():
-		default:
-			count++
-		}
-	}
-	if count > 1 {
-		resp.Diagnostics.AddAttributeError(req.Path, "Invalid "+blockLabel, tooManyDetail)
-		return
-	}
-	if hasUnknown {
-		return
-	}
-	if count == 0 {
-		resp.Diagnostics.AddAttributeError(req.Path, "Invalid "+blockLabel, missingDetail)
-	}
+	return key
 }
 
 func innerSchemaAttributes() map[string]schema.Attribute {
@@ -373,7 +269,13 @@ func innerSchemaAttributes() map[string]schema.Attribute {
 			Optional:   true,
 			Attributes: byValueAttributes(),
 			Validators: []validator.Object{
-				lensDashboardAppByValueSourceValidator{},
+				panelkit.ExactlyOneOfNestedAttrsValidator(panelkit.ExactlyOneOfNestedAttrsOpts{
+					AttrNames:     lensByValueSourceAttrNames(),
+					Summary:       "Invalid lens_dashboard_app_config.by_value",
+					MissingDetail: "Set exactly one of `config_json` or one supported typed Lens chart block inside `by_value`.",
+					TooManyDetail: "Set exactly one of `config_json` or one supported typed Lens chart block inside `by_value` (more than one by-value source is set).",
+					Description:   "Ensures exactly one of `config_json` or one supported typed Lens chart block is set inside `by_value`.",
+				}),
 			},
 		},
 		"by_reference": schema.SingleNestedAttribute{
@@ -397,7 +299,13 @@ func SchemaAttribute() schema.Attribute {
 		Required:   true,
 		Attributes: innerSchemaAttributes(),
 		ExtraValidators: []validator.Object{
-			lensDashboardAppConfigModeValidator{},
+			panelkit.ExactlyOneOfNestedAttrsValidator(panelkit.ExactlyOneOfNestedAttrsOpts{
+				AttrNames:     []string{"by_value", "by_reference"},
+				Summary:       "Invalid lens_dashboard_app_config",
+				MissingDetail: "Exactly one of `by_value` or `by_reference` must be set inside `lens_dashboard_app_config`.",
+				TooManyDetail: "Exactly one of `by_value` or `by_reference` must be set inside `lens_dashboard_app_config`, not both.",
+				Description:   "Ensures exactly one of `by_value` or `by_reference` is set inside `lens_dashboard_app_config`.",
+			}),
 		},
 	})
 }

@@ -86,39 +86,50 @@ func populateDiscoverSessionPanelFromAPI(ctx context.Context, pm *models.PanelMo
 		// Drift import: replace typed config from API so the next plan surfaces the branch change.
 		if apiByRef {
 			cfg1, err := apiPanel.Config.AsKbnDashboardPanelTypeDiscoverSessionConfig1()
-			if err == nil {
-				imported, imDiags := discoverSessionConfig1FromAPIImport(ctx, cfg1)
-				if imported != nil {
-					*existing = *imported
-				}
-				return imDiags
+			if err != nil {
+				return discoverSessionDecodeDiagnostics(err, "by-reference")
 			}
-			return nil
-		}
-		cfg0, err := apiPanel.Config.AsKbnDashboardPanelTypeDiscoverSessionConfig0()
-		if err == nil {
-			imported, tabDiags := discoverSessionConfig0FromAPIImport(ctx, cfg0)
+			imported, imDiags := discoverSessionConfig1FromAPIImport(ctx, cfg1)
 			if imported != nil {
 				*existing = *imported
 			}
-			return tabDiags
+			return imDiags
 		}
-		return nil
+		cfg0, err := apiPanel.Config.AsKbnDashboardPanelTypeDiscoverSessionConfig0()
+		if err != nil {
+			return discoverSessionDecodeDiagnostics(err, "by-value")
+		}
+		imported, tabDiags := discoverSessionConfig0FromAPIImport(ctx, cfg0)
+		if imported != nil {
+			*existing = *imported
+		}
+		return tabDiags
 	}
 
 	if apiByRef {
 		cfg1, err := apiPanel.Config.AsKbnDashboardPanelTypeDiscoverSessionConfig1()
-		if err == nil {
-			return discoverSessionMergeConfig1FromAPI(ctx, existing, tfPanel, cfg1)
+		if err != nil {
+			return discoverSessionDecodeDiagnostics(err, "by-reference")
 		}
-		return nil
+		return discoverSessionMergeConfig1FromAPI(ctx, existing, tfPanel, cfg1)
 	}
 
 	cfg0, err := apiPanel.Config.AsKbnDashboardPanelTypeDiscoverSessionConfig0()
-	if err == nil {
-		return discoverSessionMergeConfig0FromAPI(ctx, existing, tfPanel, cfg0)
+	if err != nil {
+		return discoverSessionDecodeDiagnostics(err, "by-value")
 	}
-	return nil
+	return discoverSessionMergeConfig0FromAPI(ctx, existing, tfPanel, cfg0)
+}
+
+// discoverSessionDecodeDiagnostics builds a diagnostic for failed kbapi union decoding so
+// callers do not silently lose state during read/refresh.
+func discoverSessionDecodeDiagnostics(err error, branch string) diag.Diagnostics {
+	var diags diag.Diagnostics
+	diags.AddError(
+		"Failed to decode discover_session API config",
+		"Could not decode the API discover_session "+branch+" config: "+err.Error(),
+	)
+	return diags
 }
 
 func discoverSessionPanelConfigFromAPIImport(ctx context.Context, apiPanel kbapi.KbnDashboardPanelTypeDiscoverSession) (*models.DiscoverSessionPanelConfigModel, diag.Diagnostics) {

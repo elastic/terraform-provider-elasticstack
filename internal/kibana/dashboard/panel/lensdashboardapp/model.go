@@ -18,7 +18,6 @@
 package lensdashboardapp
 
 import (
-	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 )
 
@@ -92,36 +91,4 @@ func configPriorForLensRead(tfPanel, pm *models.PanelModel) *models.LensDashboar
 		return pm.LensDashboardAppConfig
 	}
 	return nil
-}
-
-// terraformChartBlockKey maps kbapi chart discriminators to Terraform attribute names under by_value.
-func terraformChartBlockKey(vizType string) string {
-	switch vizType {
-	case string(kbapi.XyChartNoESQLTypeXy):
-		return "xy_chart_config"
-	case string(kbapi.DatatableNoESQLTypeDataTable):
-		return "datatable_config"
-	case string(kbapi.TagcloudNoESQLTypeTagCloud):
-		return "tagcloud_config"
-	case string(kbapi.RegionMapNoESQLTypeRegionMap):
-		return "region_map_config"
-	case string(kbapi.PieNoESQLTypePie):
-		return "pie_chart_config"
-	case string(kbapi.MetricNoESQLTypeMetric):
-		return "metric_chart_config"
-	case string(kbapi.LegacyMetric):
-		return "legacy_metric_config"
-	case string(kbapi.GaugeNoESQLTypeGauge):
-		return "gauge_config"
-	case string(kbapi.HeatmapNoESQLTypeHeatmap):
-		return "heatmap_config"
-	case string(kbapi.MosaicNoESQLTypeMosaic):
-		return "mosaic_config"
-	case string(kbapi.TreemapNoESQLTypeTreemap):
-		return "treemap_config"
-	case string(kbapi.WaffleNoESQLTypeWaffle):
-		return "waffle_config"
-	default:
-		return ""
-	}
 }

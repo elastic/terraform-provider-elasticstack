@@ -61,6 +61,12 @@ var panelHandlers = []iface.Handler{
 var panelTypeToHandler map[string]iface.Handler
 var derivedPanelConfigNames []string
 
+// panelTypeAliases maps Kibana API panel discriminators to registry PanelType keys
+// when the wire-format string differs from the snake_case key used for *_config naming.
+var panelTypeAliases = map[string]string{
+	"lens-dashboard-app": "lens_dashboard_app",
+}
+
 func init() {
 	panelkit.GlobalPanelJSONDefaults = populatePanelConfigJSONDefaults
 	panelTypeToHandler = make(map[string]iface.Handler, len(panelHandlers))
@@ -85,13 +91,10 @@ func LookupHandler(panelType string) iface.Handler {
 	if h := panelTypeToHandler[panelType]; h != nil {
 		return h
 	}
-	// Kibana API discriminators are not always identical to registry PanelType keys used for *_config naming.
-	switch panelType {
-	case "lens-dashboard-app":
-		return panelTypeToHandler["lens_dashboard_app"]
-	default:
-		return nil
+	if alias, ok := panelTypeAliases[panelType]; ok {
+		return panelTypeToHandler[alias]
 	}
+	return nil
 }
 
 func AllHandlers() []iface.Handler { return panelHandlers }

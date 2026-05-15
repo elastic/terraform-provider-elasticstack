@@ -73,7 +73,7 @@ func panelModelWithGrid() models.PanelModel {
 func TestTerraformChartBlockKey_coversAllConverters(t *testing.T) {
 	t.Parallel()
 	for _, c := range lenscommon.All() {
-		key := lensdashboardapp.TerraformChartBlockKey(c.VizType())
+		key := lenscommon.TerraformChartBlockKey(c.VizType())
 		require.NotEmpty(t, key, "missing terraform attribute key for viz type %q", c.VizType())
 	}
 }
