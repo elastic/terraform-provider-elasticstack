@@ -58,7 +58,7 @@
 - [x] 6.1 `go build ./internal/kibana/dashboard/...` passes
 - [x] 6.2 `go vet ./...` passes
 - [x] 6.3 `go test ./internal/kibana/dashboard/...` passes (all unit tests)
-- [ ] 6.4 All dashboard acceptance tests pass, including:
+- [x] 6.4 All dashboard acceptance tests pass, including:
   - vis/vis_config panels (all 12 chart kinds)
   - lens_dashboard_app panels (by_value and by_reference)
   - discover_session panels (by_value DSL, by_value ESQL, by_reference)
