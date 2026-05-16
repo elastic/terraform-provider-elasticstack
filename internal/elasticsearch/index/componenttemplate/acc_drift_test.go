@@ -57,6 +57,8 @@ func TestAccResourceComponentTemplateBooleanMappingNoDrift(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("apply"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(templateName)},
 				ResourceName:             "elasticstack_elasticsearch_component_template.test",
 				ImportState:              true,
 				ImportStateVerify:        true,
@@ -93,6 +95,8 @@ func TestAccResourceComponentTemplateNullSettingsNoDrift(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("apply"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(templateName)},
 				ResourceName:             "elasticstack_elasticsearch_component_template.test",
 				ImportState:              true,
 				ImportStateVerify:        true,
