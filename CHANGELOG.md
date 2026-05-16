@@ -1,3 +1,11 @@
+## [Unreleased]
+
+### Changes
+
+- Add `template.data_stream_options` block to `elasticstack_elasticsearch_component_template` to configure the failure store on data streams composed from this component. Requires Elasticsearch >= 9.1.0. ([#2963](https://github.com/elastic/terraform-provider-elasticstack/pull/2963))
+- Fix unknown-value handling in the required-if validator for custom SLO metric indicators. ([#3001](https://github.com/elastic/terraform-provider-elasticstack/pull/3001))
+- Suppress drift from Kibana field popularity counts on `elasticstack_kibana_data_view.field_attrs` and apply field metadata updates in place instead of replacing the data view. ([#2964](https://github.com/elastic/terraform-provider-elasticstack/pull/2964))
+
 ## [0.15.1] - 2026-05-15
 
 ### Changes
