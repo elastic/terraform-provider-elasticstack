@@ -21,6 +21,15 @@ on:
       with:
         go-version-file: go.mod
         cache: false
+    # NOTE: This ref must match the repo-memory tool config branch-name below.
+    - name: Checkout repo-memory branch
+      uses: actions/checkout@v6
+      with:
+        ref: memory/ci-deadcode-removal-rotation
+        path: gh-aw-repo-memory/ci-deadcode-removal-rotation
+        fetch-depth: 1
+        persist-credentials: false
+      continue-on-error: true
     - name: Export Go paths
       run: |
         echo "GOROOT=$(go env GOROOT)" >> "$GITHUB_ENV"
@@ -35,9 +44,8 @@ on:
       id: select_candidate
       run: |
         set -euo pipefail
-        mkdir -p /tmp/gh-aw/repo-memory/ci-deadcode-removal-rotation/memory/ci-deadcode-removal-rotation
         result=$(go run ./scripts/ci-deadcode-removal-rotation select \
-          --memory /tmp/gh-aw/repo-memory/ci-deadcode-removal-rotation/memory/ci-deadcode-removal-rotation/memory.json \
+          --memory gh-aw-repo-memory/ci-deadcode-removal-rotation/memory/ci-deadcode-removal-rotation/memory.json \
           --cooldown-days 14)
         echo "$result"
         found=$(echo "$result" | jq -r '.found')
@@ -59,10 +67,9 @@ on:
       id: summarize
       run: |
         set -euo pipefail
-        mkdir -p /tmp/gh-aw/repo-memory/ci-deadcode-removal-rotation/memory/ci-deadcode-removal-rotation
-        if [ -f /tmp/gh-aw/repo-memory/ci-deadcode-removal-rotation/memory/ci-deadcode-removal-rotation/memory.json ]; then
+        if [ -f gh-aw-repo-memory/ci-deadcode-removal-rotation/memory/ci-deadcode-removal-rotation/memory.json ]; then
           summary=$(go run ./scripts/ci-deadcode-removal-rotation summarize \
-            --memory /tmp/gh-aw/repo-memory/ci-deadcode-removal-rotation/memory/ci-deadcode-removal-rotation/memory.json \
+            --memory gh-aw-repo-memory/ci-deadcode-removal-rotation/memory/ci-deadcode-removal-rotation/memory.json \
             --days 30)
         else
           summary="No previous attempt memory."
@@ -87,6 +94,8 @@ tools:
   timeout: 600
   repo-memory:
     - id: ci-deadcode-removal-rotation
+      # NOTE: This branch name must match the repo-memory checkout step above.
+      branch-name: memory/ci-deadcode-removal-rotation
       file-glob: ["memory/ci-deadcode-removal-rotation/memory.json"]
       create-orphan: true
       max-file-size: 524288
@@ -162,7 +171,7 @@ ${{ needs.pre_activation.outputs.summary }}
        - Record the attempt as `invalid_candidate_acceptance_test` using:
          ```
          go run ./scripts/ci-deadcode-removal-rotation record \
-           --memory /tmp/gh-aw/repo-memory/ci-deadcode-removal-rotation/memory/ci-deadcode-removal-rotation/memory.json \
+           --memory gh-aw-repo-memory/ci-deadcode-removal-rotation/memory/ci-deadcode-removal-rotation/memory.json \
            --symbol "${{ needs.pre_activation.outputs.symbol }}" \
            --package "${{ needs.pre_activation.outputs.package }}" \
            --reason invalid_candidate_acceptance_test \
@@ -177,7 +186,7 @@ ${{ needs.pre_activation.outputs.summary }}
      - Record the attempt as `build_failed` (or `verification_timeout` on timeout):
        ```
        go run ./scripts/ci-deadcode-removal-rotation record \
-         --memory /tmp/gh-aw/repo-memory/ci-deadcode-removal-rotation/memory/ci-deadcode-removal-rotation/memory.json \
+         --memory gh-aw-repo-memory/ci-deadcode-removal-rotation/memory/ci-deadcode-removal-rotation/memory.json \
          --symbol "${{ needs.pre_activation.outputs.symbol }}" \
          --package "${{ needs.pre_activation.outputs.package }}" \
          --reason <reason>
@@ -199,7 +208,7 @@ ${{ needs.pre_activation.outputs.summary }}
 6. **Record success** after opening the PR:
    ```
    go run ./scripts/ci-deadcode-removal-rotation record \
-     --memory /tmp/gh-aw/repo-memory/ci-deadcode-removal-rotation/memory/ci-deadcode-removal-rotation/memory.json \
+     --memory gh-aw-repo-memory/ci-deadcode-removal-rotation/memory/ci-deadcode-removal-rotation/memory.json \
      --symbol "${{ needs.pre_activation.outputs.symbol }}" \
      --package "${{ needs.pre_activation.outputs.package }}" \
      --reason pr_created \
