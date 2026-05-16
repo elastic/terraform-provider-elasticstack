@@ -364,32 +364,7 @@ func unflattenDottedMap(flat map[string]any) map[string]any {
 // the stored value after import matches the value stored after the initial apply,
 // so ImportStateVerify does not fail due to "null" (string) vs null (JSON null).
 func normalizeSettingsScalars(v any) any {
-	switch val := v.(type) {
-	case map[string]any:
-		out := make(map[string]any, len(val))
-		for k, vv := range val {
-			out[k] = normalizeSettingsScalars(vv)
-		}
-		return out
-	case []any:
-		out := make([]any, len(val))
-		for i, vv := range val {
-			out[i] = normalizeSettingsScalars(vv)
-		}
-		return out
-	case string:
-		switch val {
-		case "true":
-			return true
-		case "false":
-			return false
-		case "null":
-			return nil
-		}
-		return val
-	default:
-		return v
-	}
+	return typeutils.NormalizeJSONScalar(v)
 }
 
 // NewIndexSettingsNull creates an IndexSettingsValue with a null value.

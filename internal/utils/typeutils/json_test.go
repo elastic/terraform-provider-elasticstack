@@ -24,6 +24,47 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestNormalizeJSONScalar(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		in   any
+		want any
+	}{
+		{name: "true string", in: "true", want: true},
+		{name: "false string", in: "false", want: false},
+		{name: "null string", in: "null", want: nil},
+		{name: "other string unchanged", in: "hello", want: "hello"},
+		{name: "bool passthrough", in: true, want: true},
+		{name: "float passthrough", in: float64(42), want: float64(42)},
+		{name: "nil passthrough", in: nil, want: nil},
+		{
+			name: "map with string-encoded scalars",
+			in:   map[string]any{"enabled": "true", "dynamic": "false", "meta": "null", "name": "foo"},
+			want: map[string]any{"enabled": true, "dynamic": false, "meta": nil, "name": "foo"},
+		},
+		{
+			name: "slice with mixed values",
+			in:   []any{"true", "false", "null", "bar", float64(1)},
+			want: []any{true, false, nil, "bar", float64(1)},
+		},
+		{
+			name: "nested map",
+			in:   map[string]any{"outer": map[string]any{"flag": "true"}},
+			want: map[string]any{"outer": map[string]any{"flag": true}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			got := typeutils.NormalizeJSONScalar(tt.in)
+			require.Equal(t, tt.want, got)
+		})
+	}
+}
+
 func TestJSONBytesEqual(t *testing.T) {
 	t.Parallel()
 

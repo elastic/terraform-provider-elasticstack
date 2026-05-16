@@ -24,6 +24,7 @@ import (
 	"reflect"
 	"strconv"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -207,15 +208,7 @@ func normalizeMappings(v any) any {
 		// JSON strings instead of booleans. Normalizing here ensures the stored
 		// value after import matches the value stored after the initial apply,
 		// so ImportStateVerify does not fail due to "false" vs false.
-		switch val {
-		case "true":
-			return true
-		case "false":
-			return false
-		case "null":
-			return nil
-		}
-		return val
+		return typeutils.NormalizeJSONScalar(val)
 	default:
 		return v
 	}
