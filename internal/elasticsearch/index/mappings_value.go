@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -233,41 +234,12 @@ func NewMappingsValue(value string) MappingsValue {
 // JSON value true (decoded as bool) must compare equal to the API-echoed "true"
 // (decoded as string), and vice-versa.
 //
-// Only plain scalar types (bool, json.Number, float64, string) are handled here.
+// Only plain scalar types (bool, float64, string) are handled here.
 // Structured types (map, slice) always return false so structural comparison is
 // not affected.
 func scalarSemanticEqual(a, b any) bool {
 	if reflect.DeepEqual(a, b) {
 		return true
-	}
-
-	// Canonicalise both sides to their string representation and compare.
-	// This is intentionally narrow: we only do this when at least one side is
-	// a non-string scalar (bool or number) so that two distinct strings are
-	// never considered equal via this path.
-	strOf := func(v any) (string, bool) {
-		switch x := v.(type) {
-		case bool:
-			if x {
-				return "true", true
-			}
-			return "false", true
-		case json.Number:
-			return x.String(), true
-		case float64:
-			// json.Unmarshal decodes numbers as float64 when UseNumber is not set.
-			return fmt.Sprintf("%g", x), true
-		case string:
-			return x, true
-		default:
-			return "", false
-		}
-	}
-
-	sa, aOk := strOf(a)
-	sb, bOk := strOf(b)
-	if !aOk || !bOk {
-		return false
 	}
 
 	// Require at least one side to be a non-string scalar so that two
@@ -278,7 +250,38 @@ func scalarSemanticEqual(a, b any) bool {
 		return false
 	}
 
-	return sa == sb
+	// One side is a non-string scalar. Determine whether a non-string scalar
+	// on one side matches a stringified equivalent on the other.
+	switch x := a.(type) {
+	case bool:
+		var apiStr string
+		if s, ok := b.(string); ok {
+			apiStr = s
+		} else {
+			return false
+		}
+		if x {
+			return apiStr == "true"
+		}
+		return apiStr == "false"
+	case float64:
+		// json.Unmarshal decodes numbers as float64 when UseNumber is not set.
+		// Compare numerically to avoid scientific-notation mismatches from %g.
+		apiStr, ok := b.(string)
+		if !ok {
+			return false
+		}
+		if sv, err := strconv.ParseFloat(apiStr, 64); err == nil {
+			return x == sv
+		}
+		return false
+	case string:
+		// a is a string, so b must be a non-string scalar (ensured by the
+		// guard above). Recurse with sides swapped so b's case is handled.
+		return scalarSemanticEqual(b, a)
+	default:
+		return false
+	}
 }
 
 // SemanticTextMappingType is the Elasticsearch mapping type string for semantic_text fields.
@@ -347,17 +350,6 @@ func fieldSemanticallyEqual(userFieldRaw, apiFieldRaw any) bool {
 	}
 	apiField, ok := apiFieldRaw.(map[string]any)
 	if !ok {
-		return false
-	}
-
-	userType, userHasType := userField["type"]
-	apiType, apiHasType := apiField["type"]
-
-	if userHasType && apiHasType {
-		if !reflect.DeepEqual(userType, apiType) {
-			return false
-		}
-	} else if userHasType || apiHasType {
 		return false
 	}
 

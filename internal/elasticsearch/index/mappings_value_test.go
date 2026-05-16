@@ -149,6 +149,18 @@ func TestMappingsSemanticallyEqual_scalarVsStringifiedScalar(t *testing.T) {
 			apiJSON:  `{"boost":"2"}`,
 			want:     false,
 		},
+		{
+			name:     "two distinct strings - not equal",
+			userJSON: `{"format":"strict_date"}`,
+			apiJSON:  `{"format":"epoch_millis"}`,
+			want:     false,
+		},
+		{
+			name:     "large number vs string - no scientific notation mismatch",
+			userJSON: `{"ignore_above":7000000}`,
+			apiJSON:  `{"ignore_above":"7000000"}`,
+			want:     true,
+		},
 	}
 
 	for _, tc := range tests {
