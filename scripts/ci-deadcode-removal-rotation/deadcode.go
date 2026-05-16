@@ -49,6 +49,7 @@ func (e deadcodeEntry) key() string {
 	return e.packagePath + "." + e.symbol
 }
 
+// runDeadcode invokes go tool deadcode and parses its output.
 func runDeadcode(testMode bool) ([]deadcodeEntry, error) {
 	args := []string{"tool", "deadcode"}
 	if testMode {
@@ -74,7 +75,12 @@ func runDeadcode(testMode bool) ([]deadcodeEntry, error) {
 	if testMode {
 		label = "deadcode -test"
 	}
-	fmt.Fprintf(os.Stderr, "%s completed in %v (exit=%v, stdout=%d bytes, stderr=%d bytes)\n", label, elapsed, cmd.ProcessState.ExitCode(), stdout.Len(), stderr.Len())
+
+	exitCode := -999
+	if cmd.ProcessState != nil {
+		exitCode = cmd.ProcessState.ExitCode()
+	}
+	fmt.Fprintf(os.Stderr, "%s completed in %v (exit=%d stdout=%d bytes stderr=%d bytes)\n", label, elapsed, exitCode, stdout.Len(), stderr.Len())
 
 	if stderr.Len() > 0 {
 		fmt.Fprintf(os.Stderr, "%s stderr:\n%s\n", label, stderr.String())
@@ -89,11 +95,13 @@ func runDeadcode(testMode bool) ([]deadcodeEntry, error) {
 		fmt.Fprintf(os.Stderr, "%s stdout (first 2KB):\n%s\n", label, truncateBytes(stdout.Bytes(), 2048))
 	}
 
-	if err != nil && len(entries) == 0 {
+	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
 			return nil, fmt.Errorf("deadcode timed out after %v: %w", deadcodeTimeout, err)
 		}
-		return nil, fmt.Errorf("deadcode failed: %w", err)
+		if len(entries) == 0 {
+			return nil, fmt.Errorf("deadcode failed: %w", err)
+		}
 	}
 	return entries, nil
 }

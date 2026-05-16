@@ -98,29 +98,18 @@ func cmdSelect(args []string, stdout, stderr io.Writer) error {
 		}
 	}
 
-	fmt.Fprintf(stderr, "running deadcode without tests...\n")
+	fmt.Fprintf(stderr, "running deadcode...\n")
 	withoutTests, err := runDeadcode(false)
 	if err != nil {
 		return fmt.Errorf("deadcode ./...: %w", err)
 	}
-	fmt.Fprintf(stderr, "found %d candidates without tests\n", len(withoutTests))
-
-	fmt.Fprintf(stderr, "running deadcode with tests...\n")
-	withTests, err := runDeadcode(true)
-	if err != nil {
-		return fmt.Errorf("deadcode -test ./...: %w", err)
-	}
-	fmt.Fprintf(stderr, "found %d candidates with tests\n", len(withTests))
+	fmt.Fprintf(stderr, "found %d candidates\n", len(withoutTests))
 
 	for i := range withoutTests {
 		withoutTests[i].packagePath = derivePackagePath(withoutTests[i].file, *modulePath)
 	}
-	for i := range withTests {
-		withTests[i].packagePath = derivePackagePath(withTests[i].file, *modulePath)
-	}
 
-	intersected := intersectCandidates(withoutTests, withTests)
-	fmt.Fprintf(stderr, "intersection size: %d\n", len(intersected))
+	intersected := withoutTests
 
 	mem, err := loadMemory(*memPath)
 	if err != nil {
