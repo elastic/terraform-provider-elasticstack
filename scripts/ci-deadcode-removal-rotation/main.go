@@ -254,5 +254,3 @@ func cmdSummarize(args []string, stdout, stderr io.Writer) error {
 	fmt.Fprintln(stdout, summary)
 	return nil
 }
-
-

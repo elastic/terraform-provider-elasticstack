@@ -61,3 +61,4 @@ coverage.out
 # Agent task artifacts
 /task*-*.md
 /progress.md
+ci-deadcode-removal-rotation
