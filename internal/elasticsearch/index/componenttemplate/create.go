@@ -30,9 +30,9 @@ import (
 )
 
 // writeComponentTemplate is the envelope Create/Update callback. It calls
-// PutComponentTemplate, sets the composite ID during create, and returns the
-// model. The envelope invokes readComponentTemplate after this callback to
-// refresh state.
+// PutComponentTemplate, sets the composite ID during create and update, and
+// returns the model. The envelope invokes readComponentTemplate after this
+// callback to refresh state.
 func writeComponentTemplate(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.WriteRequest[Data]) (entitycore.WriteResult[Data], diag.Diagnostics) {
 	var diags diag.Diagnostics
 	plan := req.Plan
