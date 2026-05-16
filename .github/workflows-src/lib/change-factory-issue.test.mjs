@@ -549,6 +549,7 @@ test('change-factory-issue workflow.md.tmpl wiring matches intake contract', () 
     'x-script-include: scripts/check_duplicate_pr.inline.js',
     'x-script-include: scripts/notify_duplicate_blocked.inline.js',
     'x-script-include: scripts/remove_trigger_label.inline.js',
+    'x-script-include: scripts/set_phase_label.inline.js',
     'x-script-include: scripts/finalize_gate.inline.js',
   ];
   let lastIdx = -1;

@@ -560,3 +560,11 @@ test('code-factory-issue check_actor_trust.inline.js uses actorTrustWhenSenderMi
   const source = readFileSync(path.join(codeFactoryScriptsDir, 'check_actor_trust.inline.js'), 'utf8');
   assert.match(source, /actorTrustWhenSenderMissing\(\)/);
 });
+
+test('code-factory-issue workflow template includes set_phase_label step after remove_trigger_label', () => {
+  const workflowTmpl = readFileSync(codeFactoryWorkflowTmplPath, 'utf8');
+  const removeIdx = workflowTmpl.indexOf('x-script-include: scripts/remove_trigger_label.inline.js');
+  const setIdx = workflowTmpl.indexOf('x-script-include: scripts/set_phase_label.inline.js');
+  assert.ok(removeIdx >= 0, 'expected remove_trigger_label script include');
+  assert.ok(setIdx > removeIdx, 'expected set_phase_label script include after remove_trigger_label');
+});

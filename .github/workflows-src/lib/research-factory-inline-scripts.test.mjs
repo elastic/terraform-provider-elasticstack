@@ -12,6 +12,7 @@ const nodeRequire = createRequire(import.meta.url);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const scriptsDir = path.resolve(__dirname, '../research-factory-issue/scripts');
+const researchFactoryWorkflowTmplPath = path.resolve(__dirname, '../research-factory-issue/workflow.md.tmpl');
 const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
 
 function expandIncludes(scriptPath) {
@@ -425,4 +426,12 @@ test('update_research_comment: null item fails', async () => {
   });
 
   assert.ok(core.failures.some((f) => f.includes('no item provided')));
+});
+
+test('research-factory-issue workflow template includes set_phase_label step after remove_trigger_label', () => {
+  const workflowTmpl = readFileSync(researchFactoryWorkflowTmplPath, 'utf8');
+  const removeIdx = workflowTmpl.indexOf('x-script-include: scripts/remove_trigger_label.inline.js');
+  const setIdx = workflowTmpl.indexOf('x-script-include: scripts/set_phase_label.inline.js');
+  assert.ok(removeIdx >= 0, 'expected remove_trigger_label script include');
+  assert.ok(setIdx > removeIdx, 'expected set_phase_label script include after remove_trigger_label');
 });
