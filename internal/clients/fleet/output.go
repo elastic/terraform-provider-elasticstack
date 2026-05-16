@@ -19,9 +19,9 @@ package fleet
 
 import (
 	"context"
-	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -34,14 +34,11 @@ func GetOutputs(ctx context.Context, client *Client, spaceID string) ([]kbapi.Ou
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return resp.JSON200.Items, nil
-	case http.StatusNotFound:
-		return nil, nil
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
+	result, diags := kibanaoapi.HandleGetTypedResponse(resp.StatusCode(), resp.Body, func() *[]kbapi.OutputUnion { return &resp.JSON200.Items })
+	if result == nil {
+		return nil, diags
 	}
+	return *result, diags
 }
 
 // GetOutput reads a specific output from the API.
@@ -51,14 +48,7 @@ func GetOutput(ctx context.Context, client *Client, id string, spaceID string) (
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return &resp.JSON200.Item, nil
-	case http.StatusNotFound:
-		return nil, nil
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return kibanaoapi.HandleGetTypedResponse(resp.StatusCode(), resp.Body, func() *kbapi.OutputUnion { return &resp.JSON200.Item })
 }
 
 // CreateOutput creates a new output.
@@ -69,12 +59,8 @@ func CreateOutput(ctx context.Context, client *Client, spaceID string, req kbapi
 			return nil, 0, diagutil.FrameworkDiagFromError(err)
 		}
 
-		switch resp.StatusCode() {
-		case http.StatusOK:
-			return &resp.JSON200.Item, resp.StatusCode(), nil
-		default:
-			return nil, resp.StatusCode(), diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-		}
+		result, diags := kibanaoapi.HandleMutateTypedResponse(resp.StatusCode(), resp.Body, func() *kbapi.OutputUnion { return &resp.JSON200.Item })
+		return result, resp.StatusCode(), diags
 	})
 }
 
@@ -86,12 +72,8 @@ func UpdateOutput(ctx context.Context, client *Client, id string, spaceID string
 			return nil, 0, diagutil.FrameworkDiagFromError(err)
 		}
 
-		switch resp.StatusCode() {
-		case http.StatusOK:
-			return &resp.JSON200.Item, resp.StatusCode(), nil
-		default:
-			return nil, resp.StatusCode(), diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-		}
+		result, diags := kibanaoapi.HandleMutateTypedResponse(resp.StatusCode(), resp.Body, func() *kbapi.OutputUnion { return &resp.JSON200.Item })
+		return result, resp.StatusCode(), diags
 	})
 }
 

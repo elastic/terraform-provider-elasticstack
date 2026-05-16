@@ -54,10 +54,10 @@ func handleMutateResponse[T any](statusCode int, body []byte) (*T, diag.Diagnost
 	}
 }
 
-// handleGetTypedResponse handles a read response for kbapi typed-struct responses.
+// HandleGetTypedResponse handles a read response for kbapi typed-struct responses.
 // The extract callback is called only on HTTP 200 and should return the pre-parsed
 // struct pointer from the response (e.g. resp.JSON200). Returns (nil, nil) on 404.
-func handleGetTypedResponse[T any](statusCode int, body []byte, extract func() *T) (*T, diag.Diagnostics) {
+func HandleGetTypedResponse[T any](statusCode int, body []byte, extract func() *T) (*T, diag.Diagnostics) {
 	switch statusCode {
 	case http.StatusOK:
 		result := extract()
@@ -77,10 +77,10 @@ func handleGetTypedResponse[T any](statusCode int, body []byte, extract func() *
 	}
 }
 
-// handleMutateTypedResponse handles a create/update response for kbapi typed-struct responses.
+// HandleMutateTypedResponse handles a create/update response for kbapi typed-struct responses.
 // The extract callback is called only on success status and should return the pre-parsed struct pointer.
 // Defaults to HTTP 200 when successCodes is omitted.
-func handleMutateTypedResponse[T any](statusCode int, body []byte, extract func() *T, successCodes ...int) (*T, diag.Diagnostics) {
+func HandleMutateTypedResponse[T any](statusCode int, body []byte, extract func() *T, successCodes ...int) (*T, diag.Diagnostics) {
 	if len(successCodes) == 0 {
 		successCodes = []int{http.StatusOK}
 	}

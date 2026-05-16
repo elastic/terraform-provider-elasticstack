@@ -42,7 +42,7 @@ func CreateMonitor(ctx context.Context, client *Client, spaceID string, req kbap
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	return handleMutateTypedResponse(resp.StatusCode(), resp.Body,
+	return HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
 		func() *kbapi.SyntheticsMonitor { return resp.JSON200 })
 }
 
@@ -57,7 +57,7 @@ func GetMonitor(ctx context.Context, client *Client, spaceID string, monitorID s
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	return handleGetTypedResponse(resp.StatusCode(), resp.Body,
+	return HandleGetTypedResponse(resp.StatusCode(), resp.Body,
 		func() *kbapi.SyntheticsMonitor { return resp.JSON200 })
 }
 

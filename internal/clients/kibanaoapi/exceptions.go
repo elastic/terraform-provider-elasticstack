@@ -33,7 +33,7 @@ func GetExceptionList(ctx context.Context, client *Client, spaceID string, param
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	return handleGetTypedResponse(resp.StatusCode(), resp.Body,
+	return HandleGetTypedResponse(resp.StatusCode(), resp.Body,
 		func() *kbapi.SecurityExceptionsAPIExceptionList { return resp.JSON200 })
 }
 
@@ -44,7 +44,7 @@ func CreateExceptionList(ctx context.Context, client *Client, spaceID string, bo
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	return handleMutateTypedResponse(resp.StatusCode(), resp.Body,
+	return HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
 		func() *kbapi.SecurityExceptionsAPIExceptionList { return resp.JSON200 })
 }
 
@@ -55,7 +55,7 @@ func UpdateExceptionList(ctx context.Context, client *Client, spaceID string, bo
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	return handleMutateTypedResponse(resp.StatusCode(), resp.Body,
+	return HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
 		func() *kbapi.SecurityExceptionsAPIExceptionList { return resp.JSON200 })
 }
 
@@ -76,7 +76,7 @@ func GetExceptionListItem(ctx context.Context, client *Client, spaceID string, p
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	return handleGetTypedResponse(resp.StatusCode(), resp.Body,
+	return HandleGetTypedResponse(resp.StatusCode(), resp.Body,
 		func() *kbapi.SecurityExceptionsAPIExceptionListItem { return resp.JSON200 })
 }
 
@@ -87,7 +87,7 @@ func CreateExceptionListItem(ctx context.Context, client *Client, spaceID string
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	return handleMutateTypedResponse(resp.StatusCode(), resp.Body,
+	return HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
 		func() *kbapi.SecurityExceptionsAPIExceptionListItem { return resp.JSON200 })
 }
 
@@ -98,7 +98,7 @@ func UpdateExceptionListItem(ctx context.Context, client *Client, spaceID string
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	return handleMutateTypedResponse(resp.StatusCode(), resp.Body,
+	return HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
 		func() *kbapi.SecurityExceptionsAPIExceptionListItem { return resp.JSON200 })
 }
 

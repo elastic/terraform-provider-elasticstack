@@ -54,7 +54,7 @@ func GetSpace(ctx context.Context, client *Client, id string) (*kbapi.SpaceRespo
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	return handleGetTypedResponse(resp.StatusCode(), resp.Body,
+	return HandleGetTypedResponse(resp.StatusCode(), resp.Body,
 		func() *kbapi.SpaceResponse { return resp.JSON200 })
 }
 
@@ -72,7 +72,7 @@ func CreateSpace(ctx context.Context, client *Client, body kbapi.PostSpacesSpace
 		return nil, sdkdiag.FromErr(err)
 	}
 
-	space, fwDiags := handleMutateTypedResponse(resp.StatusCode(), resp.Body,
+	space, fwDiags := HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
 		func() *kbapi.SpaceResponse { return resp.JSON200 })
 	return space, diagutil.SDKDiagsFromFramework(fwDiags)
 }
@@ -84,7 +84,7 @@ func UpdateSpace(ctx context.Context, client *Client, id string, body kbapi.PutS
 		return nil, sdkdiag.FromErr(err)
 	}
 
-	space, fwDiags := handleMutateTypedResponse(resp.StatusCode(), resp.Body,
+	space, fwDiags := HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
 		func() *kbapi.SpaceResponse { return resp.JSON200 })
 	return space, diagutil.SDKDiagsFromFramework(fwDiags)
 }
