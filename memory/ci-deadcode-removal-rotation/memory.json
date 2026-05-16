@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "cooldownDays": 14,
+  "attempts": [
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/analysis/acctestconfigdirlint.NewAnalyzer",
+      "package": "github.com/elastic/terraform-provider-elasticstack/analysis/acctestconfigdirlint",
+      "attemptedAt": "2026-05-16T13:14:55.073990994Z",
+      "reason": "tests_failed",
+      "context": {
+        "referenceFileCount": 2
+      }
+    }
+  ]
+}
