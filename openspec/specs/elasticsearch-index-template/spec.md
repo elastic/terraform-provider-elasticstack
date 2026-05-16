@@ -4,7 +4,7 @@ Resource implementation: `internal/elasticsearch/index/template.go`
 
 ## Purpose
 
-Define schema and behavior for the Elasticsearch index template resource: API usage, identity/import, connection, compatibility, mapping, and state refresh semantics including alias routing quirks.
+Define schema and behavior for the Elasticsearch index template resource: API usage, identity/import, connection, compatibility, mapping, state refresh semantics including alias routing quirks, and the preserved Plugin Framework/entitycore behavior that implements those semantics.
 
 ## Schema
 

@@ -4,7 +4,7 @@ Resource implementation: `internal/elasticsearch/index/ilm/`
 
 ## Purpose
 
-Manage Elasticsearch Index Lifecycle Management (ILM) policies through the Terraform Plugin Framework resource. The resource creates and updates policies, reads them back into Terraform state, deletes them by policy name, supports import by composite id, allows an optional resource-scoped Elasticsearch connection, and preserves compatibility with older Elasticsearch versions and older SDK-shaped state.
+Manage Elasticsearch Index Lifecycle Management (ILM) policies through the Terraform Plugin Framework resource. The resource creates and updates policies, reads them back into Terraform state, deletes them by policy name, supports import by composite id, allows an optional resource-scoped Elasticsearch connection, preserves compatibility with older Elasticsearch versions and older SDK-shaped state, and preserves the shared entitycore envelope behavior used by the implementation.
 
 ## Schema
 

@@ -4,7 +4,7 @@ Resource implementation: `internal/elasticsearch/index/templateilmattachment`
 
 ## Purpose
 
-Define schema and behavior for the Elasticsearch index template ILM attachment resource: attaches an ILM lifecycle policy to an index template by writing the `index.lifecycle.name` setting into the corresponding `@custom` component template while preserving all other existing template content.
+Define schema and behavior for the Elasticsearch index template ILM attachment resource: attaches an ILM lifecycle policy to an index template by writing the `index.lifecycle.name` setting into the corresponding `@custom` component template while preserving all other existing template content, including the shared Plugin Framework/entitycore behavior used by the implementation.
 
 ## Schema
 

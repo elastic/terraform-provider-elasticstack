@@ -79,9 +79,9 @@ The resource SHALL expose a computed `id` in the format `<cluster_uuid>/<templat
 - WHEN import completes
 - THEN the id SHALL be stored for subsequent operations
 
-### Requirement: Lifecycle and connection (REQ-009–REQ-011)
+### Requirement: Lifecycle, connection, and framework implementation (REQ-009–REQ-012)
 
-Changing `name` SHALL require replacement (`ForceNew`). By default, the resource SHALL use the provider-level Elasticsearch client. When `elasticsearch_connection` is configured, the resource SHALL construct and use a resource-scoped Elasticsearch client for all API calls.
+Changing `name` SHALL require replacement (`ForceNew`). By default, the resource SHALL use the provider-level Elasticsearch client. When `elasticsearch_connection` is configured, the resource SHALL construct and use a resource-scoped Elasticsearch client for all API calls. The resource SHALL be implemented on the Terraform Plugin Framework and SHALL preserve the existing Terraform type name, schema shape, and import behavior while using the shared Elasticsearch entitycore envelope behavior defined in `openspec/specs/entitycore-resource-envelope/spec.md`.
 
 #### Scenario: Resource-level client
 
@@ -89,7 +89,13 @@ Changing `name` SHALL require replacement (`ForceNew`). By default, the resource
 - WHEN API calls run
 - THEN they SHALL use the resource-scoped client
 
-### Requirement: Create, update, read, delete (REQ-012–REQ-016)
+#### Scenario: Framework implementation preserves schema shape
+
+- GIVEN the resource is served by the Plugin Framework implementation
+- WHEN Terraform loads the resource schema
+- THEN the schema SHALL continue to expose the same `elasticstack_elasticsearch_component_template` type name, `elasticsearch_connection` block, attributes, and import format
+
+### Requirement: Create, update, read, delete (REQ-013–REQ-017)
 
 On create/update, the resource SHALL construct a `models.ComponentTemplate` request body from Terraform state and submit it with the Put component template API. After a successful Put request, the resource SHALL set `id` and perform a read to refresh state. On read, the resource SHALL parse `id`, fetch the component template by name, and remove the resource from state when the template is not found. If the Get component template API returns a result count other than exactly one template, the read path SHALL return an error diagnostic. On delete, the resource SHALL parse `id` and delete the template identified by the parsed resource identifier.
 
@@ -99,7 +105,7 @@ On create/update, the resource SHALL construct a `models.ComponentTemplate` requ
 - WHEN read runs
 - THEN the provider SHALL return an error diagnostic
 
-### Requirement: JSON and alias mapping (REQ-017–REQ-021)
+### Requirement: JSON and alias mapping (REQ-018–REQ-022)
 
 `metadata` SHALL be validated as JSON by schema and parsed as JSON during create/update; if parsing fails, the resource SHALL return an error diagnostic and SHALL not call the Put API. `template.mappings` SHALL be validated as a JSON object by schema and `template.settings` SHALL use the provider's index settings custom type and both SHALL be parsed into objects during create/update. `template.alias.filter` SHALL be validated as a JSON object by schema and parsed into an object when non-empty during create/update. `template.alias` SHALL be mapped as a set keyed by alias name in API payload/state conversion. Alias routing and flag fields (`index_routing`, `is_hidden`, `is_write_index`, `routing`, `search_routing`) SHALL be copied directly between Terraform values and API model fields, with `index_routing`, `routing`, and `search_routing` defaulting to the empty string and `is_hidden` and `is_write_index` defaulting to `false` when omitted.
 
