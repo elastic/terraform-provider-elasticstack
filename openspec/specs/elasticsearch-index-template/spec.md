@@ -105,6 +105,11 @@ provider SHALL iterate over all returned requirements and call `client.EnforceMi
 regardless of the reported server version. As a result, `ignore_missing_component_templates` SHALL
 be usable on Serverless clusters without error.
 
+The entitycore envelope additionally calls `enforceVersionRequirements` during Read. As a result,
+`ignore_missing_component_templates` version enforcement also applies at refresh time (consistent
+with the `data_stream_options` gate documented in REQ-033 and the component template resource
+envelope).
+
 #### Scenario: Feature on stateful old cluster
 
 - GIVEN non-empty `ignore_missing_component_templates` and the cluster is stateful with ES < 8.7.0
@@ -117,6 +122,13 @@ be usable on Serverless clusters without error.
 - AND the target Elasticsearch cluster flavour is `"serverless"`
 - WHEN create or update runs
 - THEN the provider SHALL NOT return a version-gate error
+
+#### Scenario: Read-time enforcement
+
+- **GIVEN** non-empty `ignore_missing_component_templates` is present in Terraform state
+- **AND** the target Elasticsearch cluster is stateful with version below `8.7.0`
+- **WHEN** `terraform refresh` runs
+- **THEN** the provider SHALL return an error diagnostic (consistent with Write-time behavior)
 - AND it SHALL include `ignore_missing_component_templates` in the API request normally
 
 ### Requirement: Create, update, and read (REQ-013–REQ-016)
