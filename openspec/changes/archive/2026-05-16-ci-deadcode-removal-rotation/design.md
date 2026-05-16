@@ -19,6 +19,8 @@ This repository already uses GitHub Agentic Workflows, so the dead-code rotation
 - Start with the highest-confidence deadcode category: symbols dead both with and without tests.
 - Allow companion test deletion only when references are confined to one local non-acceptance test file.
 - Record candidate attempts in cooldown memory so the workflow does not thrash on the same symbol repeatedly.
+- Record deterministic attempt outcome reason codes so the workflow produces useful operational learning over time.
+- Provide maintainers a compact periodic summary of recent attempt outcomes and sticky areas.
 - Require human merge and allow humans to close incorrect PRs.
 
 **Non-Goals:**
@@ -26,6 +28,7 @@ This repository already uses GitHub Agentic Workflows, so the dead-code rotation
 - Building a fully general dead-code classifier for interface contracts, reflection, plugin entrypoints, or test intent.
 - Auto-merging cleanup PRs.
 - Reconciling long-lived workflow memory against merged PR state beyond simple cooldown behavior.
+- Automatically adapting selection policy based on historical outcomes.
 - Supporting multi-symbol cleanup batches in one run.
 
 ## Decisions
@@ -108,19 +111,34 @@ Alternatives considered:
 - Build only: rejected as too weak.
 - Full repository test suite before PR: rejected as too expensive for the scheduled loop.
 
-### 7. Memory is cooldown-only and records attempts regardless of outcome
+### 7. Memory is cooldown-only but records deterministic attempt outcome reasons
 
-The workflow will maintain cooldown memory for candidate attempts. Every attempted candidate updates memory regardless of whether the run ends in build failure, agent abort, or PR creation. Memory is used only to defer reselection for a configured window.
+The workflow will maintain cooldown memory for candidate attempts. Every attempted candidate updates memory regardless of whether the run ends in build failure, agent abort, invalid-candidate detection, or PR creation. Memory is still used only to defer reselection for a configured window, but each attempt record also stores a deterministic outcome reason code and small structured context such as package path or reference-file count.
 
 Why:
 - Cooldown-only memory avoids having to reconcile external PR state in the first iteration.
 - Recording attempts regardless of outcome prevents rapid reselection thrash.
-- The memory model stays simple and deterministic.
+- Deterministic reason codes turn failed or skipped attempts into actionable operational feedback without requiring fuzzy agent-authored explanations.
+- The memory model remains simple enough for v1 while becoming more useful for future tuning.
 
 Alternatives considered:
 - Permanent outcome tracking with PR-state reconciliation: rejected for v1 as unnecessary complexity.
+- Free-form agent-authored explanations in memory: rejected because deterministic reason codes are easier to aggregate and trust.
 
-### 8. Selection is deterministic and cooldown-aware without function-size weighting
+### 8. Periodic summaries expose recent workflow outcomes to maintainers
+
+The workflow will produce a compact maintainer-facing periodic summary of recent attempt outcomes using the deterministic reason codes stored in memory. The summary may be emitted as a markdown artifact every run and/or as a marker-based issue or comment updated on a slower cadence. It will include counts by reason code and the most common sticky packages or areas.
+
+Why:
+- It turns routine workflow exhaust into reusable operational knowledge.
+- It helps maintainers decide whether future refinements should focus on acceptance exclusion, distributed references, verification failures, or other recurring blockers.
+- It improves trust by making the workflow's non-PR outcomes visible instead of burying them in cooldown state.
+
+Alternatives considered:
+- No reporting beyond cooldown memory: rejected because it hides the reasons the workflow is not producing PRs.
+- Free-form narrative summaries: rejected for v1 because deterministic aggregation is cheaper and more trustworthy.
+
+### 9. Selection is deterministic and cooldown-aware without function-size weighting
 
 The pre-activation step will select exactly one cooldown-eligible candidate per run using a deterministic ordering based on candidate class and cooldown age, with a stable tie-breaker such as symbol identity or path order. The first iteration will not weight candidates by function size or span.
 
@@ -129,7 +147,7 @@ Why:
 - Deterministic selection makes runs reproducible.
 - The workflow naturally trends toward lower dead-code volume over time, so adding size-weighting complexity is not justified in the first iteration.
 
-### 9. Build/test failure or invalid-candidate detection records memory and stops the run
+### 10. Build/test failure or invalid-candidate detection records memory and stops the run
 
 If the agent cannot safely proceed, if verification fails, or if the candidate is discovered to be invalid during the backstop checks, the workflow records cooldown memory for that candidate and stops without opening a PR.
 
@@ -137,7 +155,7 @@ Why:
 - This keeps each run bounded and predictable.
 - It avoids cascading retries or fallback behaviors in the first iteration.
 
-### 10. Human review is the final safety layer
+### 11. Human review is the final safety layer
 
 Successful local verification leads to a PR, but not to automatic merge. Maintainers review and merge the PR manually. If CI passes but the cleanup is still semantically undesirable, a human may close the PR.
 
@@ -152,14 +170,15 @@ Why:
 - [Acceptance-test detection by filename misses some cases] -> Mitigation: add the agent backstop checking for `resource.Test` and `resource.ParallelTest` before any test deletion.
 - [Simple deterministic ordering may not always pick the highest-value cleanup first] -> Mitigation: accept this trade-off in v1 and revisit selection heuristics later if the workflow yield is poor.
 - [Cooldown memory accumulates stale entries] -> Mitigation: accept this in v1; add deterministic cleanup later only if it becomes operationally noisy.
+- [Outcome summaries could become noisy or too detailed] -> Mitigation: keep reason codes finite and deterministic, and keep maintainer-facing summaries compact and periodic.
 - [Some dead candidates that need broader test cleanup will not be removed] -> Mitigation: accept conservative false negatives in the first iteration.
 
 ## Migration Plan
 
 1. Add the authored GH AW workflow source and compiled workflow artifacts for the scheduled dead-code rotation.
-2. Add deterministic helper logic for dual `deadcode` execution, `gopls` reference classification, acceptance exclusion, cooldown memory, and single-candidate selection.
+2. Add deterministic helper logic for dual `deadcode` execution, `gopls` reference classification, acceptance exclusion, cooldown memory, deterministic outcome reason codes, periodic outcome summaries, and single-candidate selection.
 3. Add the agent prompt and workflow contract for conservative symbol removal, local test cleanup, invalid-candidate aborts, and verification.
-4. Document maintainer expectations for review, merge, and PR closure when the workflow proposes an incorrect cleanup.
+4. Document maintainer expectations for review, merge, PR closure, and interpretation of periodic outcome summaries.
 5. Roll out on a schedule with human merge only, then revisit scope expansion after observing several runs.
 
 ## Open Questions

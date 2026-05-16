@@ -9,7 +9,8 @@ The repository wants to remove unreachable Go code regularly without turning raw
 - Add deterministic pre-activation logic that selects one cooldown-eligible candidate, uses `gopls references` to classify local test references, and rejects acceptance-test-backed candidates before agent execution.
 - Instruct the agent to remove the target dead function and, only for prequalified local single-file non-acceptance test cases, remove tests referencing that symbol; otherwise the agent must leave tests untouched or abort if the candidate is invalid.
 - Require local verification before PR creation with `make build` (including lint) and unit tests for the impacted package.
-- Persist cooldown-only memory for attempted candidates so the workflow avoids retrying the same symbol too frequently.
+- Persist cooldown-only memory for attempted candidates so the workflow avoids retrying the same symbol too frequently, and record deterministic outcome reason codes for every attempt.
+- Add a maintainer-facing periodic summary of recent attempt outcomes so recurring skip and failure patterns can guide future workflow refinements.
 - Leave merge decisions to humans; maintainers may close incorrect PRs and use that operational feedback to tune the workflow later.
 
 ## Capabilities
@@ -24,6 +25,6 @@ The repository wants to remove unreachable Go code regularly without turning raw
 
 - New authored workflow source under `.github/workflows-src/` and compiled workflow artifacts under `.github/workflows/`
 - Deterministic helper logic or scripts for dual `deadcode` execution, `gopls` reference classification, cooldown memory, and candidate selection
-- A repository memory artifact or file for candidate cooldown tracking
-- Maintainer-facing documentation for workflow scope, verification expectations, and review/close semantics
+- A repository memory artifact or file for candidate cooldown tracking and deterministic attempt outcome classification
+- Maintainer-facing documentation for workflow scope, verification expectations, review/close semantics, and outcome-summary interpretation
 - Small recurring cleanup PRs that remove one dead-code candidate at a time

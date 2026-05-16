@@ -31,6 +31,7 @@ require (
 	github.com/google/go-github/v84 v84.0.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.1-0.20231216201459-8508981c8b6c // indirect
 	github.com/oklog/ulid/v2 v2.1.1 // indirect
+	golang.org/x/telemetry v0.0.0-20260508192327-42602be52be6 // indirect
 )
 
 require (
@@ -430,6 +431,7 @@ tool (
 	github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen
 	go.elastic.co/go-licence-detector
 	go.uber.org/mock/mockgen
+	golang.org/x/tools/cmd/deadcode
 	gotest.tools/gotestsum
 )
 

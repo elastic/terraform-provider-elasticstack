@@ -67,6 +67,10 @@
     {
       "template": ".github/workflows-src/issue-classifier/workflow.md.tmpl",
       "output": ".github/workflows/issue-classifier.md"
+    },
+    {
+      "template": ".github/workflows-src/ci-deadcode-removal-rotation/workflow.md.tmpl",
+      "output": ".github/workflows/ci-deadcode-removal-rotation.md"
     }
   ]
 }
