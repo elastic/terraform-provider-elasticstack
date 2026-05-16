@@ -177,6 +177,20 @@ func TestIndexSettingsValue_StringSemanticEquals(t *testing.T) {
 			newVal: NewIndexSettingsUnknown(),
 			equal:  false,
 		},
+		{
+			// JSON null in practitioner config must equal Elasticsearch echoing it as the string "null".
+			name:   "json null value equals ES echo as string null",
+			old:    NewIndexSettingsValue(`{"key": null}`),
+			newVal: NewIndexSettingsValue(`{"key": "null"}`),
+			equal:  true,
+		},
+		{
+			// JSON null must not compare equal to a genuinely different value.
+			name:   "json null value not equal to other string",
+			old:    NewIndexSettingsValue(`{"key": null}`),
+			newVal: NewIndexSettingsValue(`{"key": "other"}`),
+			equal:  false,
+		},
 	}
 
 	for _, tc := range tests {
