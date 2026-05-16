@@ -52,6 +52,12 @@
       "package": "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi",
       "attemptedAt": "2026-05-16T22:38:19.535374695Z",
       "reason": "pr_created"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi.GetDataViews",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi",
+      "attemptedAt": "2026-05-16T23:21:41.463320487Z",
+      "reason": "pr_created"
     }
   ]
 }
