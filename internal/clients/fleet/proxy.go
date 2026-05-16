@@ -19,7 +19,6 @@ package fleet
 
 import (
 	"context"
-	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
@@ -34,14 +33,7 @@ func GetProxy(ctx context.Context, client *Client, spaceID, proxyID string) (*kb
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return &resp.JSON200.Item, nil
-	case http.StatusNotFound:
-		return nil, nil
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return handleGetItem(resp.StatusCode(), resp.Body, func() *kbapi.FleetProxyItem { return &resp.JSON200.Item })
 }
 
 // CreateProxy creates a new Fleet proxy.
@@ -52,12 +44,7 @@ func CreateProxy(ctx context.Context, client *Client, spaceID string, body kbapi
 			return nil, 0, diagutil.FrameworkDiagFromError(err)
 		}
 
-		switch resp.StatusCode() {
-		case http.StatusOK:
-			return &resp.JSON200.Item, resp.StatusCode(), nil
-		default:
-			return nil, resp.StatusCode(), diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-		}
+		return handleMutateItem(resp.StatusCode(), resp.Body, func() *kbapi.FleetProxyItem { return &resp.JSON200.Item })
 	})
 }
 
@@ -69,12 +56,7 @@ func UpdateProxy(ctx context.Context, client *Client, spaceID, proxyID string, b
 			return nil, 0, diagutil.FrameworkDiagFromError(err)
 		}
 
-		switch resp.StatusCode() {
-		case http.StatusOK:
-			return &resp.JSON200.Item, resp.StatusCode(), nil
-		default:
-			return nil, resp.StatusCode(), diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-		}
+		return handleMutateItem(resp.StatusCode(), resp.Body, func() *kbapi.FleetProxyItem { return &resp.JSON200.Item })
 	})
 }
 

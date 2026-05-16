@@ -19,7 +19,6 @@ package fleet
 
 import (
 	"context"
-	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
@@ -34,14 +33,7 @@ func GetFleetServerHost(ctx context.Context, client *Client, id string, spaceID 
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return &resp.JSON200.Item, nil
-	case http.StatusNotFound:
-		return nil, nil
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return handleGetItem(resp.StatusCode(), resp.Body, func() *kbapi.ServerHost { return &resp.JSON200.Item })
 }
 
 // CreateFleetServerHost creates a new fleet server host.
@@ -52,12 +44,7 @@ func CreateFleetServerHost(ctx context.Context, client *Client, spaceID string, 
 			return nil, 0, diagutil.FrameworkDiagFromError(err)
 		}
 
-		switch resp.StatusCode() {
-		case http.StatusOK:
-			return &resp.JSON200.Item, resp.StatusCode(), nil
-		default:
-			return nil, resp.StatusCode(), diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-		}
+		return handleMutateItem(resp.StatusCode(), resp.Body, func() *kbapi.ServerHost { return &resp.JSON200.Item })
 	})
 }
 
@@ -69,12 +56,7 @@ func UpdateFleetServerHost(ctx context.Context, client *Client, id string, space
 			return nil, 0, diagutil.FrameworkDiagFromError(err)
 		}
 
-		switch resp.StatusCode() {
-		case http.StatusOK:
-			return &resp.JSON200.Item, resp.StatusCode(), nil
-		default:
-			return nil, resp.StatusCode(), diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-		}
+		return handleMutateItem(resp.StatusCode(), resp.Body, func() *kbapi.ServerHost { return &resp.JSON200.Item })
 	})
 }
 

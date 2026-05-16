@@ -19,7 +19,6 @@ package fleet
 
 import (
 	"context"
-	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
@@ -34,14 +33,7 @@ func GetAgentPolicy(ctx context.Context, client *Client, id string, spaceID stri
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return &resp.JSON200.Item, nil
-	case http.StatusNotFound:
-		return nil, nil
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return handleGetItem(resp.StatusCode(), resp.Body, func() *kbapi.AgentPolicy { return &resp.JSON200.Item })
 }
 
 // CreateAgentPolicy creates a new agent policy.
@@ -56,12 +48,7 @@ func CreateAgentPolicy(ctx context.Context, client *Client, req kbapi.PostFleetA
 			return nil, 0, diagutil.FrameworkDiagFromError(err)
 		}
 
-		switch resp.StatusCode() {
-		case http.StatusOK:
-			return &resp.JSON200.Item, resp.StatusCode(), nil
-		default:
-			return nil, resp.StatusCode(), diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-		}
+		return handleMutateItem(resp.StatusCode(), resp.Body, func() *kbapi.AgentPolicy { return &resp.JSON200.Item })
 	})
 }
 
@@ -73,12 +60,7 @@ func UpdateAgentPolicy(ctx context.Context, client *Client, id string, spaceID s
 			return nil, 0, diagutil.FrameworkDiagFromError(err)
 		}
 
-		switch resp.StatusCode() {
-		case http.StatusOK:
-			return &resp.JSON200.Item, resp.StatusCode(), nil
-		default:
-			return nil, resp.StatusCode(), diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-		}
+		return handleMutateItem(resp.StatusCode(), resp.Body, func() *kbapi.AgentPolicy { return &resp.JSON200.Item })
 	})
 }
 
