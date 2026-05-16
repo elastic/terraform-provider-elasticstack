@@ -115,15 +115,7 @@ func ConnectorConfigWithDefaults(connectorTypeID, plan string) (string, error) {
 // avoiding plan diffs when Kibana returns fields that were omitted from
 // the original configuration.
 func remarshalConfig[T any](plan string) (string, error) {
-	var config T
-	if err := json.Unmarshal([]byte(plan), &config); err != nil {
-		return "", err
-	}
-	customJSON, err := json.Marshal(config)
-	if err != nil {
-		return "", err
-	}
-	return string(customJSON), nil
+	return connectorConfigWithDefaults[T](plan, nil)
 }
 
 // connectorConfigWithDefaults is the generic helper shared by all per-connector
@@ -134,7 +126,9 @@ func connectorConfigWithDefaults[T any](plan string, setDefaults func(*T)) (stri
 	if err := json.Unmarshal([]byte(plan), &config); err != nil {
 		return "", err
 	}
-	setDefaults(&config)
+	if setDefaults != nil {
+		setDefaults(&config)
+	}
 	customJSON, err := json.Marshal(config)
 	if err != nil {
 		return "", err

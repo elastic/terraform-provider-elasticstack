@@ -1,6 +1,6 @@
 # `elasticstack_elasticsearch_component_template` — Schema and Functional Requirements
 
-Resource implementation: `internal/elasticsearch/index/componenttemplate`
+Resource implementation: `internal/elasticsearch/index/componenttemplate/`
 
 ## Purpose
 
