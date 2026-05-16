@@ -105,11 +105,6 @@ provider SHALL iterate over all returned requirements and call `client.EnforceMi
 regardless of the reported server version. As a result, `ignore_missing_component_templates` SHALL
 be usable on Serverless clusters without error.
 
-The entitycore envelope additionally calls `enforceVersionRequirements` during Read. As a result,
-`ignore_missing_component_templates` version enforcement also applies at refresh time (consistent
-with the `data_stream_options` gate documented in REQ-033 and the component template resource
-envelope).
-
 #### Scenario: Feature on stateful old cluster
 
 - GIVEN non-empty `ignore_missing_component_templates` and the cluster is stateful with ES < 8.7.0
@@ -122,14 +117,9 @@ envelope).
 - AND the target Elasticsearch cluster flavour is `"serverless"`
 - WHEN create or update runs
 - THEN the provider SHALL NOT return a version-gate error
-
-#### Scenario: Read-time enforcement
-
-- **GIVEN** non-empty `ignore_missing_component_templates` is present in Terraform state
-- **AND** the target Elasticsearch cluster is stateful with version below `8.7.0`
-- **WHEN** `terraform refresh` runs
-- **THEN** the provider SHALL return an error diagnostic (consistent with Write-time behavior)
 - AND it SHALL include `ignore_missing_component_templates` in the API request normally
+
+---
 
 ### Requirement: Create, update, and read (REQ-013–REQ-016)
 
@@ -284,34 +274,32 @@ template resource and Kibana resource envelopes).
 
 #### Scenario: Feature on unsupported stateful cluster version
 
-- **GIVEN** `data_stream_options` is configured
-- **AND** the connected Elasticsearch server is stateful with version below `9.1.0`
-- **WHEN** create or update runs
-- **THEN** the provider SHALL return an error diagnostic without calling the Put index template API
+- GIVEN `data_stream_options` is configured
+- AND the connected Elasticsearch server is stateful with version below `9.1.0`
+- WHEN create or update runs
+- THEN the provider SHALL return an error diagnostic without calling the Put index template API
 
 #### Scenario: Feature on Serverless cluster
 
-- **GIVEN** `data_stream_options` is configured
-- **AND** the connected Elasticsearch cluster flavour is `"serverless"`
-- **WHEN** create or update runs
-- **THEN** the provider SHALL NOT return a version-gate error
-- **AND** it SHALL include `data_stream_options` in the API request normally
+- GIVEN `data_stream_options` is configured
+- AND the connected Elasticsearch cluster flavour is `"serverless"`
+- WHEN create or update runs
+- THEN the provider SHALL NOT return a version-gate error
+- AND it SHALL include `data_stream_options` in the API request normally
 
 #### Scenario: Feature on supported stateful cluster version
 
-- **GIVEN** `data_stream_options` is configured
-- **AND** the connected Elasticsearch server version is `9.1.0` or above
-- **WHEN** create or update runs
-- **THEN** the provider SHALL include `data_stream_options` in the API request normally
+- GIVEN `data_stream_options` is configured
+- AND the connected Elasticsearch server version is `9.1.0` or above
+- WHEN create or update runs
+- THEN the provider SHALL include `data_stream_options` in the API request normally
 
 #### Scenario: Read-time enforcement
 
-- **GIVEN** `data_stream_options` is present in Terraform state
-- **AND** the target Elasticsearch cluster is stateful with version below `9.1.0`
-- **WHEN** `terraform refresh` runs
-- **THEN** the provider SHALL return an error diagnostic (consistent with Write-time behavior)
-
----
+- GIVEN `data_stream_options` is present in Terraform state
+- AND the target Elasticsearch cluster is stateful with version below `9.1.0`
+- WHEN `terraform refresh` runs
+- THEN the provider SHALL return an error diagnostic (consistent with Write-time behavior)
 
 ### Requirement: Create/update — expand `data_stream_options` into API request (REQ-034)
 
