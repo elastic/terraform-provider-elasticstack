@@ -10,6 +10,12 @@
       "context": {
         "referenceFileCount": 2
       }
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/clients.NewAcceptanceTestingElasticsearchScopedClient",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/clients",
+      "attemptedAt": "2026-05-16T13:40:23.744964749Z",
+      "reason": "build_failed"
     }
   ]
 }
