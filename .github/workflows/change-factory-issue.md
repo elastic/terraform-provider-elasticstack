@@ -2646,11 +2646,7 @@ on:
            * @param {{ github: object, context: object, issueNumber: number|undefined, phaseLabelName: string|undefined, core?: object }} opts
            * @returns {Promise<{ phase_label_set: boolean, phase_label_name: string, stale_labels_removed: string[], reason: string }>}
            */
-          async function setPhaseLabel({ github, context, issueNumber, phaseLabelName, core: coreParam }) {
-            // Use explicitly passed core, fall back to ambient global, or stub.
-            const _core =
-              coreParam ||
-              (typeof core !== 'undefined' ? core : undefined);
+          async function setPhaseLabel({ github, context, issueNumber, phaseLabelName, core }) {
           
             if (issueNumber === undefined || issueNumber === null) {
               return {
@@ -2690,19 +2686,23 @@ on:
           
             let staleLabels = [];
             try {
-              // Use paginate to fetch all labels reliably (no truncation concern).
-              const listLabels = github.paginate
-                ? github.paginate.bind(github)
-                : async (_method, params) => {
-                    const { data } = await github.rest.issues.listLabelsOnIssue(params);
-                    return data;
-                  };
-              const currentLabels = await listLabels(github.rest.issues.listLabelsOnIssue, {
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: issueNumber,
-                per_page: 100,
-              });
+              let currentLabels;
+              if (github.paginate) {
+                currentLabels = await github.paginate(github.rest.issues.listLabelsOnIssue, {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issueNumber,
+                  per_page: 100,
+                });
+              } else {
+                const { data } = await github.rest.issues.listLabelsOnIssue({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issueNumber,
+                  per_page: 100,
+                });
+                currentLabels = data;
+              }
           
               staleLabels = currentLabels
                 .map((l) => l.name)
@@ -2716,29 +2716,32 @@ on:
               };
             }
           
-            const removed = [];
-            const failed = [];
-            for (const staleLabel of staleLabels) {
-              try {
-                await github.rest.issues.removeLabel({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  issue_number: issueNumber,
-                  name: staleLabel,
-                });
-                removed.push(staleLabel);
-              } catch (err) {
-                if (err.status === 404) {
-                  // Label was already absent — treat as successfully removed.
-                  removed.push(staleLabel);
-                } else {
-                  failed.push({ label: staleLabel, message: err.message });
-                  if (_core && typeof _core.warning === 'function') {
-                    _core.warning(`Failed to remove stale label ${staleLabel} from issue #${issueNumber}: ${err.message}`);
+            const removalResults = await Promise.all(
+              staleLabels.map(async (staleLabel) => {
+                try {
+                  await github.rest.issues.removeLabel({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: issueNumber,
+                    name: staleLabel,
+                  });
+                  return { removed: true, label: staleLabel };
+                } catch (err) {
+                  if (err.status === 404) {
+                    return { removed: true, label: staleLabel };
                   }
+          
+                  if (core && typeof core.warning === 'function') {
+                    core.warning(`Failed to remove stale label ${staleLabel} from issue #${issueNumber}: ${err.message}`);
+                  }
+          
+                  return { removed: false, label: staleLabel, message: err.message };
                 }
-              }
-            }
+              }),
+            );
+          
+            const removed = removalResults.filter((result) => result.removed).map((result) => result.label);
+            const failed = removalResults.filter((result) => !result.removed);
           
             if (failed.length > 0) {
               const failedSummary = failed.map((f) => `${f.label}: ${f.message}`).join('; ');
@@ -2767,25 +2770,24 @@ on:
             module.exports = { setPhaseLabel };
           }
           
-          // Change-factory is issue-event only (no dispatch), but use the same
-          // INPUT_ISSUE_NUMBER-first pattern for consistency across all factories.
+          const PHASE_LABEL_NAME = 'phase-specification';
           const issueNumber = parseInt(process.env.INPUT_ISSUE_NUMBER, 10) || context.payload.issue?.number || undefined;
           const result = await setPhaseLabel({
             github,
             context,
             core,
             issueNumber,
-            phaseLabelName: 'phase-specification',
+            phaseLabelName: PHASE_LABEL_NAME,
           });
           
           core.setOutput('phase_label_set', result.phase_label_set ? 'true' : 'false');
           core.setOutput('phase_label_name', result.phase_label_name);
           
-          if (result.phase_label_set) {
-            core.info(`Set phase label ${result.phase_label_name} on issue #${issueNumber}. ${result.reason}`);
-          } else {
-            core.warning(`Phase label not set: ${result.reason}`);
-          }
+          const logMessage = result.phase_label_set
+            ? `Set phase label ${result.phase_label_name} on issue #${issueNumber}. ${result.reason}`
+            : `Phase label not set: ${result.reason}`;
+          
+          (result.phase_label_set ? core.info : core.warning)(logMessage);
           
     - name: Finalize gate reason
       id: finalize_gate
