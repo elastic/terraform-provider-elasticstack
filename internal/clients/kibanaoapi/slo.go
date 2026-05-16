@@ -126,22 +126,6 @@ func DeleteSlo(ctx context.Context, client *Client, spaceID string, sloID string
 	}
 }
 
-// FindSlos performs a paginated search for SLOs in the given space. The
-// optional params allow filtering by KQL query, pagination, and sorting.
-func FindSlos(ctx context.Context, client *Client, spaceID string, params *kbapi.FindSlosOpParams) (*kbapi.SLOsFindSloResponse, diag.Diagnostics) {
-	resp, err := client.API.FindSlosOpWithResponse(
-		ctx,
-		spaceID,
-		params,
-	)
-	if err != nil {
-		return nil, diag.Diagnostics{diag.NewErrorDiagnostic("Unable to find SLOs", err.Error())}
-	}
-
-	return handleMutateTypedResponse(resp.StatusCode(), resp.Body,
-		func() *kbapi.SLOsFindSloResponse { return resp.JSON200 })
-}
-
 // SloResponseToModel converts a kbapi SLO response into the internal models.Slo type.
 func SloResponseToModel(spaceID string, res *kbapi.SLOsSloWithSummaryResponse) *models.Slo {
 	if res == nil {
