@@ -143,6 +143,10 @@ func getSchema() schema.Schema {
 			"throttle": schema.StringAttribute{
 				Description: throttleRuleDescription,
 				Optional:    true,
+				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 				Validators: []validator.String{
 					validators.StringIsAlertingDuration,
 				},

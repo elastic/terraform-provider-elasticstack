@@ -879,7 +879,9 @@ func TestAccResourceAlertingRuleThrottle(t *testing.T) {
 					"rule_id": config.StringVariable(ruleID),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckNoResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "throttle"),
+					// Kibana preserves deprecated rule-level throttle on PUT even when
+					// removed from config; it cannot be cleared via the API.
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "throttle", "5m"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "notify_when", "onActiveAlert"),
 				),
 			},
