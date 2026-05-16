@@ -27,7 +27,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
-	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -157,34 +156,33 @@ func TestExpandTemplate_dataStreamAllowCustomRoutingOnlyWhenTrue(t *testing.T) {
 	}
 }
 
-func TestValidateIgnoreMissingComponentTemplatesVersion(t *testing.T) {
+func TestModel_GetVersionRequirements_ignoreMissing(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	old := version.Must(version.NewVersion("8.0.0"))
-	okVer := version.Must(version.NewVersion("8.8.0"))
-
 	ignoreList, diags := types.ListValueFrom(ctx, types.StringType, []attr.Value{types.StringValue("ct1")})
 	if diags.HasError() {
 		t.Fatal(diags)
 	}
 	plan := Model{IgnoreMissingComponentTemplates: ignoreList}
-	if diags := validateIgnoreMissingComponentTemplatesVersion(plan, old); !diags.HasError() {
-		t.Fatal("expected error on old cluster")
-	}
-	if diags := validateIgnoreMissingComponentTemplatesVersion(plan, okVer); diags.HasError() {
+	reqs, diags := plan.GetVersionRequirements()
+	if diags.HasError() {
 		t.Fatal(diags)
+	}
+	if len(reqs) != 1 {
+		t.Fatalf("expected 1 requirement, got %d", len(reqs))
 	}
 	emptyPlan := Model{IgnoreMissingComponentTemplates: types.ListNull(types.StringType)}
-	if diags := validateIgnoreMissingComponentTemplatesVersion(emptyPlan, old); diags.HasError() {
+	reqs, diags = emptyPlan.GetVersionRequirements()
+	if diags.HasError() {
 		t.Fatal(diags)
+	}
+	if len(reqs) != 0 {
+		t.Fatalf("expected 0 requirements, got %d", len(reqs))
 	}
 }
 
-func TestValidateDataStreamOptionsVersion(t *testing.T) {
+func TestModel_GetVersionRequirements_dataStreamOptions(t *testing.T) {
 	t.Parallel()
-	old := version.Must(version.NewVersion("8.17.0"))
-	okVer := version.Must(version.NewVersion("9.2.0"))
-
 	fsObj, diags := types.ObjectValue(datastreamoptions.FailureStoreAttrTypes(), map[string]attr.Value{
 		"enabled":   types.BoolValue(true),
 		"lifecycle": types.ObjectNull(datastreamoptions.FailureStoreLifecycleAttrTypes()),
@@ -208,11 +206,13 @@ func TestValidateDataStreamOptionsVersion(t *testing.T) {
 	if diags.HasError() {
 		t.Fatal(diags)
 	}
-	if diags := datastreamoptions.EnforceMinServerVersion(tplObj, old); !diags.HasError() {
-		t.Fatal("expected error on old cluster")
-	}
-	if diags := datastreamoptions.EnforceMinServerVersion(tplObj, okVer); diags.HasError() {
+	model := Model{Template: tplObj}
+	reqs, diags := model.GetVersionRequirements()
+	if diags.HasError() {
 		t.Fatal(diags)
+	}
+	if len(reqs) != 1 {
+		t.Fatalf("expected 1 requirement, got %d", len(reqs))
 	}
 	noDsoTpl, diags := types.ObjectValue(TemplateAttrTypes(), map[string]attr.Value{
 		"alias":               types.SetNull(NewAliasObjectType()),
@@ -224,8 +224,13 @@ func TestValidateDataStreamOptionsVersion(t *testing.T) {
 	if diags.HasError() {
 		t.Fatal(diags)
 	}
-	if diags := datastreamoptions.EnforceMinServerVersion(noDsoTpl, old); diags.HasError() {
+	modelNoDso := Model{Template: noDsoTpl}
+	reqs, diags = modelNoDso.GetVersionRequirements()
+	if diags.HasError() {
 		t.Fatal(diags)
+	}
+	if len(reqs) != 0 {
+		t.Fatalf("expected 0 requirements, got %d", len(reqs))
 	}
 }
 
