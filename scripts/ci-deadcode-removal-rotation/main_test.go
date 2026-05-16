@@ -112,23 +112,39 @@ func TestSelectOne_AllInCooldown(t *testing.T) {
 	assert.Nil(t, chosen)
 }
 
-func TestClassifyReferences_NoTests(t *testing.T) {
+func TestClassifyReferences_NoTests_NonTestRef(t *testing.T) {
 	t.Parallel()
-	eligible, testFile := classifyReferences([]string{"internal/pkg/foo.go"})
+	eligible, testFile := classifyReferences("internal/pkg/source.go", []string{"internal/pkg/foo.go"})
 	assert.False(t, eligible)
 	assert.Empty(t, testFile)
 }
 
-func TestClassifyReferences_SingleNonAccTest(t *testing.T) {
+func TestClassifyReferences_NoTests(t *testing.T) {
 	t.Parallel()
-	eligible, testFile := classifyReferences([]string{"internal/pkg/foo_test.go"})
+	// Zero references: pure dead code, always eligible.
+	eligible, testFile := classifyReferences("internal/pkg/source.go", []string{})
+	assert.True(t, eligible)
+	assert.Empty(t, testFile)
+}
+
+func TestClassifyReferences_SingleNonAccTest_SamePackage(t *testing.T) {
+	t.Parallel()
+	eligible, testFile := classifyReferences("internal/pkg/source.go", []string{"internal/pkg/foo_test.go"})
 	assert.True(t, eligible)
 	assert.Equal(t, "internal/pkg/foo_test.go", testFile)
 }
 
+func TestClassifyReferences_SingleNonAccTest_DifferentPackage(t *testing.T) {
+	t.Parallel()
+	// Test file is in a different directory/package — not a safe companion.
+	eligible, testFile := classifyReferences("internal/pkg/source.go", []string{"internal/other/foo_test.go"})
+	assert.False(t, eligible)
+	assert.Empty(t, testFile)
+}
+
 func TestClassifyReferences_SingleAccTest(t *testing.T) {
 	t.Parallel()
-	eligible, testFile := classifyReferences([]string{"internal/pkg/acc_foo_test.go"})
+	eligible, testFile := classifyReferences("internal/pkg/source.go", []string{"internal/pkg/acc_foo_test.go"})
 	assert.False(t, eligible)
 	assert.Empty(t, testFile)
 }
@@ -137,14 +153,14 @@ func TestClassifyReferences_MixedTestAndNonTest(t *testing.T) {
 	t.Parallel()
 	// A non-test file plus a test file means the symbol has references
 	// outside the companion test — not eligible for test cleanup.
-	eligible, testFile := classifyReferences([]string{"internal/pkg/foo.go", "internal/pkg/foo_test.go"})
+	eligible, testFile := classifyReferences("internal/pkg/source.go", []string{"internal/pkg/foo.go", "internal/pkg/foo_test.go"})
 	assert.False(t, eligible)
 	assert.Empty(t, testFile)
 }
 
 func TestClassifyReferences_MultipleTests(t *testing.T) {
 	t.Parallel()
-	eligible, testFile := classifyReferences([]string{"internal/pkg/foo_test.go", "internal/pkg/bar_test.go"})
+	eligible, testFile := classifyReferences("internal/pkg/source.go", []string{"internal/pkg/foo_test.go", "internal/pkg/bar_test.go"})
 	assert.False(t, eligible)
 	assert.Empty(t, testFile)
 }

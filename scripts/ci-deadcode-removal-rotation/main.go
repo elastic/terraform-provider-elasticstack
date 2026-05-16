@@ -136,21 +136,17 @@ func cmdSelect(args []string, stdout, stderr io.Writer) error {
 		}
 	}
 
-	chosen := selectOne(intersected, mem, now)
+	eligibleCandidates := selectEligible(intersected, mem, now)
 
 	result := Candidate{Found: false}
-	if chosen != nil {
-		result.Found = true
-		result.Symbol = chosen.key()
-		result.SymbolName = chosen.symbol
-		result.Package = chosen.packagePath
-		result.File = chosen.file
-		result.Line = chosen.line
-		result.Column = chosen.column
+	var chosen *deadcodeEntry
+	for i := range eligibleCandidates {
+		candidate := &eligibleCandidates[i]
+		fmt.Fprintf(stderr, "checking references for %s (%s:%d:%d)...\n", candidate.key(), candidate.file, candidate.line, candidate.column)
 
-		refFiles, err := runGoplsReferences(chosen.file, chosen.line, chosen.column)
+		refFiles, err := runGoplsReferences(candidate.file, candidate.line, candidate.column)
 		if err != nil {
-			return fmt.Errorf("gopls references: %w", err)
+			return fmt.Errorf("gopls references for %s: %w", candidate.key(), err)
 		}
 
 		cwd, err := os.Getwd()
@@ -165,12 +161,31 @@ func cmdSelect(args []string, stdout, stderr io.Writer) error {
 			}
 			relRefFiles = append(relRefFiles, rel)
 		}
-		result.ReferenceFiles = relRefFiles
 
-		eligible, testFile := classifyReferences(relRefFiles)
-		result.CompanionTestCleanupEligible = eligible
+		if hasExcludedReference(relRefFiles) {
+			fmt.Fprintf(stderr, "skipping %s: references found in test/analysis packages (%v)\n", candidate.key(), relRefFiles)
+			continue
+		}
+
+		eligible, testFile := classifyReferences(candidate.file, relRefFiles)
+		if !eligible {
+			fmt.Fprintf(stderr, "skipping %s: not eligible for removal (references: %v)\n", candidate.key(), relRefFiles)
+			continue
+		}
+
+		chosen = candidate
+		result.Found = true
+		result.Symbol = chosen.key()
+		result.SymbolName = chosen.symbol
+		result.Package = chosen.packagePath
+		result.File = chosen.file
+		result.Line = chosen.line
+		result.Column = chosen.column
+		result.ReferenceFiles = relRefFiles
+		result.CompanionTestCleanupEligible = testFile != ""
 		result.CompanionTestFile = testFile
 		result.ImpactedPackages = impactedPackages(*chosen, testFile)
+		break
 	}
 
 	data, err := json.MarshalIndent(result, "", "  ")

@@ -74,23 +74,55 @@ func relativePath(base, target string) (string, error) {
 	return rel, nil
 }
 
-func classifyReferences(refFiles []string) (eligible bool, testFile string) {
+// classifyReferences determines whether a candidate is safe to remove.
+//
+// A candidate is valid in two cases:
+//   - 0 total references: pure dead code.
+//   - All references come from exactly one *_test.go file that is in the SAME
+//     package directory as the source file, and that file is not a black-box
+//     acceptance test (acc_*_test.go).
+//
+// Anything else (non-test references, multiple test references, a single test
+// reference in a different directory, or an acceptance test file) makes the
+// candidate ineligible — the function is dead from the provider binary's
+// point of view but is still needed.
+func classifyReferences(srcFile string, refFiles []string) (eligible bool, testFile string) {
+	// Strip leading './' so directory comparisons work consistently.
+	srcFile = strings.TrimPrefix(srcFile, "./")
+
 	var testFiles []string
 	for _, f := range refFiles {
+		f = strings.TrimPrefix(f, "./")
 		if strings.HasSuffix(f, "_test.go") {
 			testFiles = append(testFiles, f)
 		}
 	}
-	// All reference files must be test files — if any non-test file references
-	// the symbol, the candidate is not eligible for companion test cleanup.
+
+	// Non-test references mean the symbol is still live from the provider's
+	// perspective (e.g. used via reflection/init). Skip it.
 	if len(testFiles) != len(refFiles) {
 		return false, ""
 	}
-	if len(testFiles) == 1 {
-		if strings.HasPrefix(filepath.Base(testFiles[0]), "acc_") {
-			return false, ""
-		}
-		return true, testFiles[0]
+
+	// No references at all — pure dead code.
+	if len(testFiles) == 0 {
+		return true, ""
 	}
-	return false, ""
+
+	// Multiple test files — removing just a companion test in one package
+	// would leave broken references in others.
+	if len(testFiles) > 1 {
+		return false, ""
+	}
+
+	// Exactly one test reference. It must be in the same package directory
+	// and not be an acceptance (black-box) test.
+	tf := strings.TrimPrefix(testFiles[0], "./")
+	if strings.HasPrefix(filepath.Base(tf), "acc_") {
+		return false, ""
+	}
+	if filepath.Dir(tf) != filepath.Dir(srcFile) {
+		return false, ""
+	}
+	return true, tf
 }

@@ -136,6 +136,19 @@ func isExcludedFile(file string) bool {
 	return false
 }
 
+// hasExcludedReference returns true if any of the reference files lives in a
+// known test/analysis package. A candidate whose only references are test-only
+// code should be skipped because deadcode (run without -test) legitimately
+// reports it dead, but removing it would break the test suite.
+func hasExcludedReference(refFiles []string) bool {
+	for _, f := range refFiles {
+		if isExcludedFile(f) {
+			return true
+		}
+	}
+	return false
+}
+
 func truncateBytes(b []byte, max int) string {
 	if len(b) <= max {
 		return string(b)
@@ -198,19 +211,25 @@ func intersectCandidates(a, b []deadcodeEntry) []deadcodeEntry {
 	return out
 }
 
-func selectOne(candidates []deadcodeEntry, mem *Memory, now time.Time) *deadcodeEntry {
+func selectEligible(candidates []deadcodeEntry, mem *Memory, now time.Time) []deadcodeEntry {
 	var eligible []deadcodeEntry
 	for _, c := range candidates {
 		if !isInCooldown(mem, c.key(), now) {
 			eligible = append(eligible, c)
 		}
 	}
-	if len(eligible) == 0 {
-		return nil
-	}
 	sort.Slice(eligible, func(i, j int) bool {
 		return eligible[i].key() < eligible[j].key()
 	})
+	return eligible
+}
+
+// selectOne is kept for backward compatibility.
+func selectOne(candidates []deadcodeEntry, mem *Memory, now time.Time) *deadcodeEntry {
+	eligible := selectEligible(candidates, mem, now)
+	if len(eligible) == 0 {
+		return nil
+	}
 	return &eligible[0]
 }
 
