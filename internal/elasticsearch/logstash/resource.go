@@ -38,15 +38,13 @@ type logstashPipelineResource struct {
 
 func newLogstashPipelineResource() *logstashPipelineResource {
 	return &logstashPipelineResource{
-		ElasticsearchResource: entitycore.NewElasticsearchResource[Data](
-			entitycore.ComponentElasticsearch,
-			"logstash_pipeline",
-			GetSchema,
-			readLogstashPipeline,
-			deleteLogstashPipeline,
-			writeLogstashPipeline,
-			writeLogstashPipeline,
-		),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[Data]("logstash_pipeline", entitycore.ElasticsearchResourceOptions[Data]{
+			Schema: GetSchema,
+			Read:   readLogstashPipeline,
+			Delete: deleteLogstashPipeline,
+			Create: writeLogstashPipeline,
+			Update: writeLogstashPipeline,
+		}),
 	}
 }
 

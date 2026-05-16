@@ -6,32 +6,22 @@ The entitycore resource envelope centralizes common Terraform Plugin Framework b
 ## Requirements
 ### Requirement: Envelope constructor produces shared Elasticsearch resource behavior
 
-The system SHALL provide a generic constructor `NewElasticsearchResource[T]()` that returns an envelope owning shared Elasticsearch resource behavior. The envelope SHALL provide Metadata, Schema, Create, Read, Update, Delete, and Configure behavior, and SHALL satisfy `resource.Resource`. Concrete resources SHALL embed the envelope and may choose to implement additional Plugin Framework interfaces such as ImportState or state upgrade support.
+The system SHALL provide a generic constructor `NewElasticsearchResource[T]()` that returns an envelope owning shared Elasticsearch resource behavior. The Elasticsearch envelope constructor SHALL take the Terraform type-name suffix and an options struct, not a component enum and a positional callback list. The envelope SHALL provide Metadata, Schema, Create, Read, Update, Delete, and Configure behavior, and SHALL satisfy `resource.Resource`. Concrete resources SHALL embed the envelope and may choose to implement additional Plugin Framework interfaces such as ImportState or state upgrade support.
 
 #### Scenario: Constructor returns complete resource envelope
 
-- **WHEN** `NewElasticsearchResource[T](component, name, schemaFactory, readFunc, deleteFunc, createFunc, updateFunc)` is called with non-nil callbacks
+- **WHEN** `NewElasticsearchResource[T]("security_user", opts)` is called with non-nil required callbacks in `opts`
 - **THEN** the returned value SHALL provide the shared Metadata, Schema, Create, Read, Update, Delete, and Configure methods
 - **AND** the returned value SHALL satisfy `resource.Resource`
 - **AND** concrete resources embedding the returned value SHALL NOT need thin Create or Update wrappers when their behavior fits the callback contract
 
 ### Requirement: Envelope owns Configure and Metadata
 
-The system SHALL implement `Configure` and `Metadata` on the envelope using the same provider-data conversion and type-name composition rules as `ResourceBase`. The configured `*clients.ProviderClientFactory` SHALL be reachable from the envelope's Read, Create, Update, and Delete preludes.
-
-#### Scenario: Configure stores the provider client factory
-
-- **WHEN** `Configure` receives provider data that converts successfully to `*clients.ProviderClientFactory`
-- **THEN** the envelope SHALL retain that factory for use by subsequent Read, Create, Update, and Delete calls
-
-#### Scenario: Configure does not store a client after diagnostic failure
-
-- **WHEN** `Configure` has appended the conversion diagnostics and the response has error-level diagnostics
-- **THEN** the envelope SHALL not assign a factory from that conversion, and SHALL leave unchanged any factory previously stored by an earlier successful `Configure` call
+The system SHALL implement `Configure` and `Metadata` on the Elasticsearch envelope using the same provider-data conversion and type-name composition rules as `ResourceBase`, with the Elasticsearch namespace segment implied by the envelope rather than passed by the caller. The configured `*clients.ProviderClientFactory` SHALL be reachable from the envelope's Read, Create, Update, and Delete preludes.
 
 #### Scenario: Metadata builds the Terraform type name
 
-- **WHEN** an envelope is constructed via `NewElasticsearchResource[T](ComponentElasticsearch, "security_user", …)`
+- **WHEN** an envelope is constructed via `NewElasticsearchResource[T]("security_user", opts)`
 - **THEN** its `Metadata` SHALL set the type name to `<provider_type_name>_elasticsearch_security_user`
 
 ### Requirement: Envelope injects elasticsearch_connection block into schema
@@ -46,111 +36,85 @@ The system SHALL inject the `elasticsearch_connection` block into the schema ret
 
 ### Requirement: Envelope owns the Read prelude
 
-The system SHALL implement `Read` by deserializing the prior state into the generic model `T`, parsing the composite ID with `clients.CompositeIDFromStrFw`, resolving the scoped Elasticsearch client from the model's connection block via `GetElasticsearchClient`, and invoking the concrete read function. The concrete read function SHALL be invoked with `(context, *clients.ElasticsearchScopedClient, resourceID string, T)` where `resourceID` is `compID.ResourceID`.
+The system SHALL implement `Read` by deserializing the prior state into the generic model `T`, resolving a stable read identity from the model and/or composite ID, resolving the scoped Elasticsearch client from the model's connection block via `GetElasticsearchClient`, enforcing any optional version requirements declared by the model, and invoking the concrete read function. The concrete read function SHALL continue to be invoked with `(context, *clients.ElasticsearchScopedClient, resourceID string, T)`.
 
-#### Scenario: Successful read sets state from returned model
+#### Scenario: Read uses model-declared read identity when available
 
-- **WHEN** the concrete read function returns `(model, true, nil)` (entity found, no errors)
-- **THEN** `resp.State.Set` SHALL be called with the returned model `T`
+- **WHEN** the decoded state model implements `WithReadResourceID` and returns a non-empty value
+- **THEN** the envelope SHALL use that value as the read identity for `readFunc`
 
-#### Scenario: Not-found read removes resource from state
+#### Scenario: Read falls back to composite ID resource segment
 
-- **WHEN** the concrete read function returns `(_, false, nil)` (entity missing, no errors)
-- **THEN** `resp.State.RemoveResource` SHALL be called
-- **AND** `resp.State.Set` SHALL NOT be called
+- **WHEN** the decoded state model does not implement `WithReadResourceID` or returns an empty read identity
+- **THEN** the envelope SHALL parse the composite `id` from state and use `compID.ResourceID` as the read identity for `readFunc`
 
-#### Scenario: Read function error short-circuits state mutation
+#### Scenario: Version requirements short-circuit read
 
-- **WHEN** the concrete read function returns error diagnostics
-- **THEN** the diagnostics SHALL be appended to `resp.Diagnostics`
-- **AND** neither `resp.State.Set` nor `resp.State.RemoveResource` SHALL be called
-
-#### Scenario: Composite ID parse failure short-circuits read
-
-- **WHEN** `CompositeIDFromStrFw` returns error diagnostics
+- **WHEN** the decoded state model implements `WithVersionRequirements` and requirement evaluation returns error diagnostics or an unsupported-version diagnostic
 - **THEN** the diagnostics SHALL be appended to `resp.Diagnostics`
 - **AND** the concrete read function SHALL NOT be invoked
-- **AND** state SHALL remain untouched
-
-#### Scenario: Client resolution failure short-circuits read
-
-- **WHEN** `GetElasticsearchClient` returns error diagnostics
-- **THEN** the diagnostics SHALL be appended to `resp.Diagnostics`
-- **AND** the concrete read function SHALL NOT be invoked
-- **AND** state SHALL remain untouched
 
 ### Requirement: Envelope owns the Create and Update preludes
 
-The system SHALL implement `Create` and `Update` on `NewElasticsearchResource[T]` by deserializing the planned model into `T`, deriving the write resource ID from the model, resolving the scoped Elasticsearch client from the model's connection block via `GetElasticsearchClient`, invoking the corresponding concrete callback, and then invoking `readFunc` with the model returned by the callback. The concrete create and update callbacks SHALL be invoked with `(context, *clients.ElasticsearchScopedClient, resourceID string, T)`. After a successful callback invocation, `readFunc` SHALL be invoked with `(context, *clients.ElasticsearchScopedClient, resourceID string, writtenModel)` where `writtenModel` is the model returned by the concrete callback. State SHALL be set from the model returned by `readFunc`, not directly from the concrete callback.
+The system SHALL implement `Create` and `Update` on `NewElasticsearchResource[T]` by deserializing the relevant framework inputs, deriving the write resource ID from the model, resolving the scoped Elasticsearch client from the model's connection block via `GetElasticsearchClient`, enforcing any optional version requirements declared by the planned model, invoking the corresponding concrete callback with a structured request object, and then invoking `readFunc` with the model returned by the callback. State SHALL be set from the model returned by `readFunc`, not directly from the concrete callback.
 
-#### Scenario: Successful create sets state from read result
+Create and update callbacks SHALL share the type `WriteFunc[T]` and receive a `WriteRequest[T]` containing `Plan`, `Prior`, `Config`, and `WriteID`. `Prior` SHALL be a `*T`: `nil` for create invocations and a non-nil pointer to the decoded prior state model for update invocations. Callbacks that distinguish create from update SHALL inspect `req.Prior == nil`.
 
-- **WHEN** the concrete create function returns `(writtenModel, nil)` and `readFunc` returns `(stateModel, true, nil)`
-- **THEN** `resp.State.Set` SHALL be called with `stateModel` (the model returned by `readFunc`)
-- **AND** response diagnostics SHALL contain no errors
+Create and update callbacks SHALL return `WriteResult[T]` carrying the written model used for read-after-write identity resolution.
 
-#### Scenario: Successful update sets state from read result
+#### Scenario: Create callback receives nil Prior and config
 
-- **WHEN** the concrete update function returns `(writtenModel, nil)` and `readFunc` returns `(stateModel, true, nil)`
-- **THEN** `resp.State.Set` SHALL be called with `stateModel` (the model returned by `readFunc`)
-- **AND** response diagnostics SHALL contain no errors
+- **WHEN** `Create` runs for a resource whose callback fits the envelope contract
+- **THEN** the callback SHALL receive `WriteRequest[T]` with `Prior == nil`
+- **AND** the callback SHALL receive the planned model and the raw Terraform config in the request object
 
-#### Scenario: Resource not found after create produces error
+#### Scenario: Update callback receives prior state and config
 
-- **WHEN** the concrete create function returns `(writtenModel, nil)` and `readFunc` returns `(_, false, nil)`
-- **THEN** an error diagnostic SHALL be appended to `resp.Diagnostics` identifying the resource type using the envelope's component and resource name
-- **AND** state SHALL remain untouched (neither `resp.State.Set` nor `resp.State.RemoveResource` SHALL be called)
+- **WHEN** `Update` runs for a resource whose callback fits the envelope contract
+- **THEN** the callback SHALL receive `WriteRequest[T]` with `Prior` pointing at the decoded prior-state model
+- **AND** the callback SHALL receive both the planned model and the raw Terraform config in the request object
 
-#### Scenario: Resource not found after update produces error
+#### Scenario: Read-after-write uses model-declared read identity when available
 
-- **WHEN** the concrete update function returns `(writtenModel, nil)` and `readFunc` returns `(_, false, nil)`
-- **THEN** an error diagnostic SHALL be appended to `resp.Diagnostics` identifying the resource type using the envelope's component and resource name
-- **AND** state SHALL remain untouched (neither `resp.State.Set` nor `resp.State.RemoveResource` SHALL be called)
+- **WHEN** a successful create or update callback returns a model implementing `WithReadResourceID` with a non-empty value
+- **THEN** the envelope SHALL use that read identity for the subsequent `readFunc` call instead of `WriteID`
 
-#### Scenario: readFunc error after create short-circuits state mutation
+#### Scenario: Read-after-write falls back to write identity
 
-- **WHEN** the concrete create function returns `(writtenModel, nil)` and `readFunc` returns error diagnostics
-- **THEN** the diagnostics SHALL be appended to `resp.Diagnostics`
-- **AND** `resp.State.Set` SHALL NOT be called
+- **WHEN** a successful create or update callback returns a model that does not implement `WithReadResourceID` or returns an empty value
+- **THEN** the envelope SHALL call `readFunc` using `WriteID`
 
-#### Scenario: readFunc error after update short-circuits state mutation
+#### Scenario: Version requirements short-circuit create or update
 
-- **WHEN** the concrete update function returns `(writtenModel, nil)` and `readFunc` returns error diagnostics
-- **THEN** the diagnostics SHALL be appended to `resp.Diagnostics`
-- **AND** `resp.State.Set` SHALL NOT be called
+- **WHEN** the planned model implements `WithVersionRequirements` and requirement evaluation returns error diagnostics or an unsupported-version diagnostic
+- **THEN** the diagnostics SHALL be appended to the response
+- **AND** the concrete create or update callback SHALL NOT be invoked
 
-#### Scenario: Create function error short-circuits state mutation
+#### Scenario: Single WriteFunc may serve both Create and Update
 
-- **WHEN** the concrete create function returns error diagnostics
-- **THEN** the diagnostics SHALL be appended to `resp.Diagnostics`
-- **AND** `readFunc` SHALL NOT be invoked
-- **AND** `resp.State.Set` SHALL NOT be called
+- **WHEN** a concrete Elasticsearch resource wires the same `WriteFunc[T]` value into both `Create` and `Update` slots of `ElasticsearchResourceOptions[T]`
+- **THEN** the envelope SHALL invoke that single function for both Terraform operations
+- **AND** the function SHALL distinguish create from update by inspecting `req.Prior == nil`
 
-#### Scenario: Update function error short-circuits state mutation
+### Requirement: Envelope supports post-read side effects
 
-- **WHEN** the concrete update function returns error diagnostics
-- **THEN** the diagnostics SHALL be appended to `resp.Diagnostics`
-- **AND** `readFunc` SHALL NOT be invoked
-- **AND** `resp.State.Set` SHALL NOT be called
+The system SHALL allow Elasticsearch envelope users to provide an optional post-read hook. After a successful read flow that sets Terraform state, the envelope SHALL invoke the post-read hook with the scoped client, the model persisted to state, and the framework private-state handle.
 
-#### Scenario: Client resolution failure short-circuits create
+The hook SHALL NOT run when the entity is not found, when `readFunc` returns error diagnostics, or when state persistence fails.
 
-- **WHEN** `GetElasticsearchClient` returns error diagnostics during `Create`
-- **THEN** the diagnostics SHALL be appended to `resp.Diagnostics`
-- **AND** the concrete create function SHALL NOT be invoked
-- **AND** state SHALL remain untouched
+#### Scenario: Post-read hook persists private state after read
 
-#### Scenario: Client resolution failure short-circuits update
+- **WHEN** `readFunc` returns `(model, true, nil)` and `resp.State.Set` succeeds
+- **THEN** the envelope SHALL invoke the configured post-read hook with the persisted model and `resp.Private`
 
-- **WHEN** `GetElasticsearchClient` returns error diagnostics during `Update`
-- **THEN** the diagnostics SHALL be appended to `resp.Diagnostics`
-- **AND** the concrete update function SHALL NOT be invoked
-- **AND** state SHALL remain untouched
+### Requirement: Shared version requirement type is envelope-neutral
 
-#### Scenario: Create and update may use the same callback
+The system SHALL define the shared requirement type as `VersionRequirement`, not `DataSourceVersionRequirement`, and the optional `WithVersionRequirements` interface SHALL return `[]VersionRequirement`.
 
-- **WHEN** a concrete Elasticsearch resource has identical create and update API behavior
-- **THEN** the resource SHALL be able to pass the same callback as both the create and update callback
+#### Scenario: Resource and data source envelopes use the same requirement type
+
+- **WHEN** a model implements `WithVersionRequirements`
+- **THEN** both Kibana and Elasticsearch envelopes SHALL accept the same `VersionRequirement` return type
 
 ### Requirement: Envelope owns the Delete prelude
 
@@ -216,26 +180,26 @@ The system SHALL define a type constraint `ElasticsearchResourceModel` requiring
 
 ### Requirement: Envelope preserves resource type names exactly
 
-The system SHALL allow concrete migrations to preserve their existing Terraform type name. Each migrated security resource SHALL initialize the envelope with the component namespace and literal name suffix that produce its current type name.
+The system SHALL allow concrete migrations to preserve their existing Terraform type name. Each migrated security resource SHALL initialize the envelope with the literal name suffix that produces its current type name.
 
 #### Scenario: Migrated user resource preserves its type name
 
-- **WHEN** the user resource is migrated to the envelope using component `elasticsearch` and name `security_user`
+- **WHEN** the user resource is migrated to the envelope using `NewElasticsearchResource[Data]("security_user", opts)`
 - **THEN** its Terraform type name SHALL remain `<provider_type_name>_elasticsearch_security_user`
 
 #### Scenario: Migrated system_user resource preserves its type name
 
-- **WHEN** the system user resource is migrated to the envelope using component `elasticsearch` and name `security_system_user`
+- **WHEN** the system user resource is migrated to the envelope using name suffix `security_system_user`
 - **THEN** its Terraform type name SHALL remain `<provider_type_name>_elasticsearch_security_system_user`
 
 #### Scenario: Migrated role resource preserves its type name
 
-- **WHEN** the role resource is migrated to the envelope using component `elasticsearch` and name `security_role`
+- **WHEN** the role resource is migrated to the envelope using name suffix `security_role`
 - **THEN** its Terraform type name SHALL remain `<provider_type_name>_elasticsearch_security_role`
 
 #### Scenario: Migrated role_mapping resource preserves its type name
 
-- **WHEN** the role mapping resource is migrated to the envelope using component `elasticsearch` and name `security_role_mapping`
+- **WHEN** the role mapping resource is migrated to the envelope using name suffix `security_role_mapping`
 - **THEN** its Terraform type name SHALL remain `<provider_type_name>_elasticsearch_security_role_mapping`
 
 ### Requirement: Envelope coexists with ResourceBase-only entities

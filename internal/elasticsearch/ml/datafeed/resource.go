@@ -39,15 +39,13 @@ type datafeedResource struct {
 
 func newDatafeedResource() *datafeedResource {
 	return &datafeedResource{
-		ElasticsearchResource: entitycore.NewElasticsearchResource(
-			entitycore.ComponentElasticsearch,
-			"ml_datafeed",
-			getSchema,
-			readDatafeed,
-			deleteDatafeed,
-			createDatafeed,
-			updateDatafeed,
-		),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[Datafeed]("ml_datafeed", entitycore.ElasticsearchResourceOptions[Datafeed]{
+			Schema: getSchema,
+			Read:   readDatafeed,
+			Delete: deleteDatafeed,
+			Create: createDatafeed,
+			Update: updateDatafeed,
+		}),
 	}
 }
 

@@ -22,118 +22,89 @@ import (
 	"encoding/json"
 
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *userResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	resp.Diagnostics.Append(r.update(ctx, req.Plan, req.Config, &resp.State)...)
-}
-
-func (r *userResource) update(ctx context.Context, plan tfsdk.Plan, config tfsdk.Config, state *tfsdk.State) diag.Diagnostics {
-	var planData Data
+// writeUser handles both Create (req.Prior == nil) and Update (req.Prior !=
+// nil); the security user PUT API is idempotent and the prior is only used to
+// detect password rotation and pick the correct password source.
+func writeUser(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.WriteRequest[Data]) (entitycore.WriteResult[Data], diag.Diagnostics) {
 	var diags diag.Diagnostics
-	diags.Append(plan.Get(ctx, &planData)...)
-	if diags.HasError() {
-		return diags
-	}
-
-	writeID := planData.GetResourceID()
-	if !typeutils.IsKnown(writeID) || writeID.ValueString() == "" {
-		diags.AddError(
-			"Invalid resource identifier",
-			"The resource write identity from configuration is unknown or empty; cannot create or update.",
-		)
-		return diags
-	}
-	usernameID := writeID.ValueString()
-
-	hasState := false
+	plan := req.Plan
+	hasState := req.Prior != nil
 	var stateData Data
-	if state != nil && !state.Raw.IsNull() {
-		hasState = true
-		diags.Append(state.Get(ctx, &stateData)...)
-		if diags.HasError() {
-			return diags
-		}
+	if hasState {
+		stateData = *req.Prior
 	}
 
-	client, connDiags := r.Client().GetElasticsearchClient(ctx, planData.ElasticsearchConnection)
-	diags.Append(connDiags...)
-	if diags.HasError() {
-		return diags
-	}
+	usernameID := plan.GetResourceID().ValueString()
 
 	id, sdkDiags := client.ID(ctx, usernameID)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
-		return diags
+		return entitycore.WriteResult[Data]{Model: plan}, diags
 	}
 
 	user := &estypes.User{
 		Username: usernameID,
-		Enabled:  planData.Enabled.ValueBool(),
+		Enabled:  plan.Enabled.ValueBool(),
 	}
 
-	// Handle password fields - only set password if it's in the plan AND (it's a create OR it has changed from state)
-	// Priority: password_wo > password > password_hash
-	// Read password_wo from config as per Terraform write-only attribute guidelines
 	var passwordWoFromConfig types.String
-	diags.Append(config.GetAttribute(ctx, path.Root("password_wo"), &passwordWoFromConfig)...)
+	diags.Append(req.Config.GetAttribute(ctx, path.Root("password_wo"), &passwordWoFromConfig)...)
 	if diags.HasError() {
-		return diags
+		return entitycore.WriteResult[Data]{Model: plan}, diags
 	}
 
 	var password, passwordHash *string
 	switch {
-	case typeutils.IsKnown(passwordWoFromConfig) && (!hasState || !planData.PasswordWoVersion.Equal(stateData.PasswordWoVersion)):
-		// Use write-only password - changes triggered by version change
+	case typeutils.IsKnown(passwordWoFromConfig) && (!hasState || !plan.PasswordWoVersion.Equal(stateData.PasswordWoVersion)):
 		pw := passwordWoFromConfig.ValueString()
 		password = &pw
-	case typeutils.IsKnown(planData.Password) && (!hasState || !planData.Password.Equal(stateData.Password)):
-		pw := planData.Password.ValueString()
+	case typeutils.IsKnown(plan.Password) && (!hasState || !plan.Password.Equal(stateData.Password)):
+		pw := plan.Password.ValueString()
 		password = &pw
-	case typeutils.IsKnown(planData.PasswordHash) && (!hasState || !planData.PasswordHash.Equal(stateData.PasswordHash)):
-		ph := planData.PasswordHash.ValueString()
+	case typeutils.IsKnown(plan.PasswordHash) && (!hasState || !plan.PasswordHash.Equal(stateData.PasswordHash)):
+		ph := plan.PasswordHash.ValueString()
 		passwordHash = &ph
 	}
 
-	if typeutils.IsKnown(planData.Email) {
-		email := planData.Email.ValueString()
+	if typeutils.IsKnown(plan.Email) {
+		email := plan.Email.ValueString()
 		user.Email = &email
 	}
-	if typeutils.IsKnown(planData.FullName) {
-		fullName := planData.FullName.ValueString()
+	if typeutils.IsKnown(plan.FullName) {
+		fullName := plan.FullName.ValueString()
 		user.FullName = &fullName
 	}
 
-	roles := make([]string, 0, len(planData.Roles.Elements()))
-	diags.Append(planData.Roles.ElementsAs(ctx, &roles, false)...)
+	roles := make([]string, 0, len(plan.Roles.Elements()))
+	diags.Append(plan.Roles.ElementsAs(ctx, &roles, false)...)
 	if diags.HasError() {
-		return diags
+		return entitycore.WriteResult[Data]{Model: plan}, diags
 	}
 	user.Roles = roles
 
-	if !planData.Metadata.IsNull() && !planData.Metadata.IsUnknown() {
+	if !plan.Metadata.IsNull() && !plan.Metadata.IsUnknown() {
 		var metadataMap map[string]any
-		err := json.Unmarshal([]byte(planData.Metadata.ValueString()), &metadataMap)
+		err := json.Unmarshal([]byte(plan.Metadata.ValueString()), &metadataMap)
 		if err != nil {
 			diags.AddError("Failed to decode metadata", err.Error())
-			return diags
+			return entitycore.WriteResult[Data]{Model: plan}, diags
 		}
 		metadata := make(estypes.Metadata, len(metadataMap))
 		for k, v := range metadataMap {
 			b, err := json.Marshal(v)
 			if err != nil {
 				diags.AddError("Failed to marshal metadata", err.Error())
-				return diags
+				return entitycore.WriteResult[Data]{Model: plan}, diags
 			}
 			metadata[k] = b
 		}
@@ -142,35 +113,10 @@ func (r *userResource) update(ctx context.Context, plan tfsdk.Plan, config tfsdk
 
 	diags.Append(elasticsearch.PutUser(ctx, client, user, password, passwordHash)...)
 	if diags.HasError() {
-		return diags
+		return entitycore.WriteResult[Data]{Model: plan}, diags
 	}
 
-	// Read the user back to get computed fields like metadata
-	readUser, sdkDiags := elasticsearch.GetUser(ctx, client, usernameID)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-	if diags.HasError() {
-		return diags
-	}
+	plan.ID = types.StringValue(id.String())
 
-	if readUser == nil {
-		diags.AddError("Failed to read user after update", "The user was not found after the update operation.")
-		return diags
-	}
-
-	planData.ID = types.StringValue(id.String())
-
-	// Set computed fields from the API response
-	if len(readUser.Metadata) > 0 {
-		metadata, err := json.Marshal(readUser.Metadata)
-		if err != nil {
-			diags.AddError("Failed to marshal metadata", err.Error())
-			return diags
-		}
-		planData.Metadata = jsontypes.NewNormalizedValue(string(metadata))
-	} else {
-		planData.Metadata = jsontypes.NewNormalizedNull()
-	}
-
-	diags.Append(state.Set(ctx, &planData)...)
-	return diags
+	return entitycore.WriteResult[Data]{Model: plan}, diags
 }

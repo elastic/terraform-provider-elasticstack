@@ -2631,6 +2631,149 @@ on:
             core.info(`Trigger label removal skipped: ${result.trigger_label_removed_reason}`);
           }
           
+    - name: Set phase label
+      id: set_phase_label
+      if: >-
+        steps.qualify_trigger.outputs.event_eligible == 'true' &&
+        steps.check_actor_trust.outputs.actor_trusted == 'true' &&
+        steps.check_duplicate_pr.outputs.duplicate_pr_found != 'true'
+      env:
+        INPUT_ISSUE_NUMBER: ${{ github.event.issue.number }}
+        PHASE_LABEL_NAME: phase-specification
+      uses: actions/github-script@v9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          /**
+           * Adds a phase label to an issue and removes all other phase-* labels.
+           * @param {{ github: object, context: object, issueNumber: number|undefined, phaseLabelName: string|undefined, core?: object }} opts
+           * @returns {Promise<{ phase_label_set: boolean, phase_label_name: string, stale_labels_removed: string[], reason: string }>}
+           */
+          async function setPhaseLabel({ github, context, issueNumber, phaseLabelName, core }) {
+          
+            if (issueNumber === undefined || issueNumber === null) {
+              return {
+                phase_label_set: false,
+                phase_label_name: phaseLabelName || '',
+                stale_labels_removed: [],
+                reason: 'No issue number provided',
+              };
+            }
+          
+            const label =
+              typeof phaseLabelName === 'string' && phaseLabelName.trim() !== '' ? phaseLabelName.trim() : null;
+            if (!label) {
+              return {
+                phase_label_set: false,
+                phase_label_name: '',
+                stale_labels_removed: [],
+                reason: 'No phase label name provided',
+              };
+            }
+          
+            try {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                labels: [label],
+              });
+            } catch (err) {
+              return {
+                phase_label_set: false,
+                phase_label_name: label,
+                stale_labels_removed: [],
+                reason: `Failed to add label: ${err.message}`,
+              };
+            }
+          
+            let staleLabels = [];
+            try {
+              let currentLabels;
+              if (github.paginate) {
+                currentLabels = await github.paginate(github.rest.issues.listLabelsOnIssue, {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issueNumber,
+                  per_page: 100,
+                });
+              } else {
+                const { data } = await github.rest.issues.listLabelsOnIssue({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issueNumber,
+                  per_page: 100,
+                });
+                currentLabels = data;
+              }
+          
+              staleLabels = currentLabels
+                .map((l) => l.name)
+                .filter((name) => name.startsWith('phase-') && name !== label);
+            } catch (err) {
+              return {
+                phase_label_set: true,
+                phase_label_name: label,
+                stale_labels_removed: [],
+                reason: `Added label ${label} but failed to list current labels: ${err.message}`,
+              };
+            }
+          
+            const removalResults = await Promise.all(
+              staleLabels.map(async (staleLabel) => {
+                try {
+                  await github.rest.issues.removeLabel({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: issueNumber,
+                    name: staleLabel,
+                  });
+                  return { removed: true, label: staleLabel };
+                } catch (err) {
+                  if (err.status === 404) {
+                    return { removed: true, label: staleLabel };
+                  }
+          
+                  if (core && typeof core.warning === 'function') {
+                    core.warning(`Failed to remove stale label ${staleLabel} from issue #${issueNumber}: ${err.message}`);
+                  }
+          
+                  return { removed: false, label: staleLabel, message: err.message };
+                }
+              }),
+            );
+          
+            const removed = removalResults.filter((result) => result.removed).map((result) => result.label);
+            const failed = removalResults.filter((result) => !result.removed);
+          
+            if (failed.length > 0) {
+              const failedSummary = failed.map((f) => `${f.label}: ${f.message}`).join('; ');
+              return {
+                phase_label_set: true,
+                phase_label_name: label,
+                stale_labels_removed: removed,
+                reason: `Added label ${label} but failed to remove some stale labels: ${failedSummary}`,
+              };
+            }
+          
+            const removalMsg =
+              staleLabels.length > 0
+                ? `Removed stale phase labels: ${staleLabels.join(', ')}`
+                : 'No stale phase labels to remove';
+          
+            return {
+              phase_label_set: true,
+              phase_label_name: label,
+              stale_labels_removed: removed,
+              reason: `Set phase label ${label}. ${removalMsg}`,
+            };
+          }
+          
+          if (typeof module !== 'undefined') {
+            module.exports = { setPhaseLabel };
+          }
+          
+        x-script-append: ../lib/set-phase-label-run.js
     - name: Finalize gate reason
       id: finalize_gate
       if: always()
@@ -3082,6 +3225,8 @@ jobs:
       duplicate_pr_url: ${{ steps.check_duplicate_pr.outputs.duplicate_pr_url }}
       trigger_label_removed: ${{ steps.remove_trigger_label.outputs.trigger_label_removed }}
       trigger_label_removed_reason: ${{ steps.remove_trigger_label.outputs.trigger_label_removed_reason }}
+      phase_label_set: ${{ steps.set_phase_label.outputs.phase_label_set }}
+      phase_label_name: ${{ steps.set_phase_label.outputs.phase_label_name }}
       gate_reason: ${{ steps.finalize_gate.outputs.gate_reason }}
 tools:
   github:
@@ -3099,6 +3244,7 @@ safe-outputs:
     labels: [change-factory, no-changelog]
     max: 1
     patch-format: am
+    auto-close-issue: false
   add-comment:
     max: 1
     target: triggering

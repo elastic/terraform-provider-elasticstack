@@ -35,17 +35,15 @@ type Resource struct {
 }
 
 func newResource() *Resource {
-	createFn, updateFn := entitycore.PlaceholderElasticsearchWriteCallbacks[Model]()
+	placeholder := entitycore.PlaceholderElasticsearchWriteCallback[Model]()
 	return &Resource{
-		ElasticsearchResource: entitycore.NewElasticsearchResource[Model](
-			entitycore.ComponentElasticsearch,
-			"index_template",
-			resourceSchema,
-			readIndexTemplate,
-			deleteIndexTemplate,
-			createFn,
-			updateFn,
-		),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[Model]("index_template", entitycore.ElasticsearchResourceOptions[Model]{
+			Schema: resourceSchema,
+			Read:   readIndexTemplate,
+			Delete: deleteIndexTemplate,
+			Create: placeholder,
+			Update: placeholder,
+		}),
 	}
 }
 
@@ -64,10 +62,9 @@ func (r *Resource) UpgradeState(_ context.Context) map[int64]resource.StateUpgra
 }
 
 var (
-	_ resource.Resource                   = &Resource{}
-	_ resource.ResourceWithConfigure      = &Resource{}
-	_ resource.ResourceWithImportState    = &Resource{}
-	_ resource.ResourceWithModifyPlan     = &Resource{}
-	_ resource.ResourceWithValidateConfig = &Resource{}
-	_ resource.ResourceWithUpgradeState   = &Resource{}
+	_ resource.Resource                 = &Resource{}
+	_ resource.ResourceWithConfigure    = &Resource{}
+	_ resource.ResourceWithImportState  = &Resource{}
+	_ resource.ResourceWithModifyPlan   = &Resource{}
+	_ resource.ResourceWithUpgradeState = &Resource{}
 )

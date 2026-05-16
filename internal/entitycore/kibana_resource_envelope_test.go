@@ -1764,7 +1764,7 @@ func (m testKibanaResourceModelWithVersionReqs) GetSpaceID() types.String    { r
 func (m testKibanaResourceModelWithVersionReqs) GetKibanaConnection() types.List {
 	return m.KibanaConnection
 }
-func (*testKibanaResourceModelWithVersionReqs) GetVersionRequirements() ([]DataSourceVersionRequirement, diag.Diagnostics) {
+func (*testKibanaResourceModelWithVersionReqs) GetVersionRequirements() ([]VersionRequirement, diag.Diagnostics) {
 	return nil, diag.Diagnostics{
 		diag.NewErrorDiagnostic("version requirements error", "injected GetVersionRequirements failure"),
 	}

@@ -20,39 +20,5 @@ package lenstreemap
 import "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 
 func populateTreemapLensAttributes(attrs map[string]any) map[string]any {
-	if attrs == nil {
-		return attrs
-	}
-	if _, exists := attrs["filters"]; !exists {
-		attrs["filters"] = []any{}
-	}
-	if groupBy, ok := attrs["group_by"].([]any); ok {
-		groupByMaps := make([]map[string]any, 0, len(groupBy))
-		for _, g := range groupBy {
-			if m, ok := g.(map[string]any); ok {
-				groupByMaps = append(groupByMaps, m)
-			}
-		}
-		populated := lenscommon.PopulatePartitionGroupByDefaults(groupByMaps)
-		for i := range groupBy {
-			if i < len(populated) {
-				groupBy[i] = populated[i]
-			}
-		}
-	}
-	if metrics, ok := attrs["metrics"].([]any); ok {
-		metricsMaps := make([]map[string]any, 0, len(metrics))
-		for _, m := range metrics {
-			if mp, ok := m.(map[string]any); ok {
-				metricsMaps = append(metricsMaps, mp)
-			}
-		}
-		populated := lenscommon.PopulatePartitionMetricsDefaults(metricsMaps)
-		for i := range metrics {
-			if i < len(populated) {
-				metrics[i] = populated[i]
-			}
-		}
-	}
-	return attrs
+	return lenscommon.PopulatePartitionLensAttributes(attrs)
 }

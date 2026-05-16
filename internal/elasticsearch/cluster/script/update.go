@@ -26,20 +26,23 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func writeScript(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, data Data) (Data, diag.Diagnostics) {
+// writeScript handles both Create and Update; the script PUT API is
+// idempotent so the same callback serves both lifecycle methods.
+func writeScript(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.WriteRequest[Data]) (entitycore.WriteResult[Data], diag.Diagnostics) {
 	var diags diag.Diagnostics
-	scriptID := resourceID
+	data := req.Plan
+	scriptID := req.WriteID
 
 	id, sdkDiags := client.ID(ctx, scriptID)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
-		var zero Data
-		return zero, diags
+		return entitycore.WriteResult[Data]{}, diags
 	}
 
 	script := estypes.StoredScript{
@@ -54,8 +57,7 @@ func writeScript(ctx context.Context, client *clients.ElasticsearchScopedClient,
 			err := json.Unmarshal([]byte(paramsStr), &params)
 			if err != nil {
 				diags.AddError("Error unmarshaling script params", err.Error())
-				var zero Data
-				return zero, diags
+				return entitycore.WriteResult[Data]{}, diags
 			}
 		}
 	}
@@ -67,10 +69,9 @@ func writeScript(ctx context.Context, client *clients.ElasticsearchScopedClient,
 
 	diags.Append(elasticsearch.PutScript(ctx, client, scriptID, scriptContext, &script, params)...)
 	if diags.HasError() {
-		var zero Data
-		return zero, diags
+		return entitycore.WriteResult[Data]{}, diags
 	}
 
 	data.ID = types.StringValue(id.String())
-	return data, diags
+	return entitycore.WriteResult[Data]{Model: data}, diags
 }

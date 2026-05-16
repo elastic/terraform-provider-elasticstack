@@ -20,6 +20,7 @@ package template
 import (
 	"context"
 	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	dschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -167,7 +168,7 @@ func dataSourceTemplateLifecycleBlock() dschema.SingleNestedBlock {
 
 func dataSourceTemplateDataStreamOptionsBlock() dschema.SingleNestedBlock {
 	return dschema.SingleNestedBlock{
-		MarkdownDescription: descDataStreamOptionsBlockDataSource,
+		MarkdownDescription: datastreamoptions.BlockDescriptionDataSource,
 		Blocks: map[string]dschema.Block{
 			"failure_store": dataSourceTemplateFailureStoreBlock(),
 		},
@@ -176,10 +177,10 @@ func dataSourceTemplateDataStreamOptionsBlock() dschema.SingleNestedBlock {
 
 func dataSourceTemplateFailureStoreBlock() dschema.SingleNestedBlock {
 	return dschema.SingleNestedBlock{
-		MarkdownDescription: descFailureStoreBlock,
+		MarkdownDescription: datastreamoptions.FailureStoreBlockDescription,
 		Attributes: map[string]dschema.Attribute{
 			"enabled": dschema.BoolAttribute{
-				MarkdownDescription: descFailureStoreEnabled,
+				MarkdownDescription: datastreamoptions.FailureStoreEnabledDescription,
 				Computed:            true,
 			},
 		},
@@ -191,10 +192,10 @@ func dataSourceTemplateFailureStoreBlock() dschema.SingleNestedBlock {
 
 func dataSourceTemplateFailureStoreLifecycleBlock() dschema.SingleNestedBlock {
 	return dschema.SingleNestedBlock{
-		MarkdownDescription: descFailureStoreLifecycleBlock,
+		MarkdownDescription: datastreamoptions.FailureStoreLifecycleBlockDescription,
 		Attributes: map[string]dschema.Attribute{
 			"data_retention": dschema.StringAttribute{
-				MarkdownDescription: descFailureStoreDataRetention,
+				MarkdownDescription: datastreamoptions.FailureStoreDataRetentionDescription,
 				Computed:            true,
 			},
 		},

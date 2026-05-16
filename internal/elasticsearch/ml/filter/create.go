@@ -23,19 +23,21 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func createFilter(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, plan TFModel) (TFModel, fwdiags.Diagnostics) {
+func createFilter(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.WriteRequest[TFModel]) (entitycore.WriteResult[TFModel], fwdiags.Diagnostics) {
 	var diags fwdiags.Diagnostics
+	plan := req.Plan
+	filterID := req.WriteID
 
-	filterID := resourceID
 	if filterID == "" {
 		diags.AddError("Invalid resource ID", "filter_id cannot be empty")
-		return plan, diags
+		return entitycore.WriteResult[TFModel]{Model: plan}, diags
 	}
 
 	tflog.Debug(ctx, fmt.Sprintf("Creating ML filter: %s", filterID))
@@ -43,7 +45,7 @@ func createFilter(ctx context.Context, client *clients.ElasticsearchScopedClient
 	typedClient, err := client.GetESClient()
 	if err != nil {
 		diags.AddError("Failed to get Elasticsearch client", err.Error())
-		return plan, diags
+		return entitycore.WriteResult[TFModel]{Model: plan}, diags
 	}
 
 	put := typedClient.Ml.PutFilter(filterID)
@@ -56,7 +58,7 @@ func createFilter(ctx context.Context, client *clients.ElasticsearchScopedClient
 		d := plan.Items.ElementsAs(ctx, &items, false)
 		diags.Append(d...)
 		if diags.HasError() {
-			return plan, diags
+			return entitycore.WriteResult[TFModel]{Model: plan}, diags
 		}
 		put = put.Items(items...)
 	}
@@ -64,17 +66,17 @@ func createFilter(ctx context.Context, client *clients.ElasticsearchScopedClient
 	_, err = put.Do(ctx)
 	if err != nil {
 		diags.AddError("Failed to create ML filter", fmt.Sprintf("Unable to create ML filter: %s — %s", filterID, err.Error()))
-		return plan, diags
+		return entitycore.WriteResult[TFModel]{Model: plan}, diags
 	}
 
 	compID, idDiags := client.ID(ctx, filterID)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(idDiags)...)
 	if diags.HasError() {
-		return plan, diags
+		return entitycore.WriteResult[TFModel]{Model: plan}, diags
 	}
 
 	plan.ID = types.StringValue(compID.String())
 
 	tflog.Debug(ctx, fmt.Sprintf("Successfully created ML filter: %s", filterID))
-	return plan, diags
+	return entitycore.WriteResult[TFModel]{Model: plan}, diags
 }

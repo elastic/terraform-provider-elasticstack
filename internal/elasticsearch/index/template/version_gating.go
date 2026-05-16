@@ -23,7 +23,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // validateIgnoreMissingComponentTemplatesVersion returns an error if ignore_missing_component_templates is non-empty
@@ -43,36 +42,6 @@ func validateIgnoreMissingComponentTemplatesVersion(plan Model, serverVersion *v
 		diags.AddError(
 			"Unsupported Elasticsearch version",
 			fmt.Sprintf("'ignore_missing_component_templates' is supported only for Elasticsearch v%s and above", index.MinSupportedIgnoreMissingComponentTemplateVersion.String()),
-		)
-	}
-	return diags
-}
-
-// validateDataStreamOptionsVersion returns an error if template.data_stream_options is configured and the cluster is older than 9.1.0.
-func validateDataStreamOptionsVersion(plan Model, serverVersion *version.Version) diag.Diagnostics {
-	var diags diag.Diagnostics
-	if serverVersion == nil {
-		return diags
-	}
-	if plan.Template.IsNull() || plan.Template.IsUnknown() {
-		return diags
-	}
-	attrs := plan.Template.Attributes()
-	dsoVal, ok := attrs["data_stream_options"]
-	if !ok {
-		return diags
-	}
-	if dsoVal.IsNull() || dsoVal.IsUnknown() {
-		return diags
-	}
-	// Distinguish "block absent" from "block present"; unknown nested object still triggers gate when known non-null.
-	if _, ok := dsoVal.(types.Object); !ok {
-		return diags
-	}
-	if serverVersion.LessThan(index.MinSupportedDataStreamOptionsVersion) {
-		diags.AddError(
-			"Unsupported Elasticsearch version",
-			fmt.Sprintf("'data_stream_options' is supported only for Elasticsearch v%s and above", index.MinSupportedDataStreamOptionsVersion.String()),
 		)
 	}
 	return diags

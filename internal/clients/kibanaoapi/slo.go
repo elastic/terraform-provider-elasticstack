@@ -256,12 +256,10 @@ func TransformGroupBy(groupBy []string, supportsGroupByList bool) *kbapi.SLOsGro
 
 // TransformGroupByFromResponse converts the kbapi GroupBy union back to a string slice.
 func TransformGroupByFromResponse(groupBy kbapi.SLOsGroupBy) []string {
-	// Try string first
 	if s, err := groupBy.AsSLOsGroupBy0(); err == nil {
 		return []string{s}
 	}
 
-	// Try array
 	if arr, err := groupBy.AsSLOsGroupBy1(); err == nil {
 		return arr
 	}

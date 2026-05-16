@@ -23,42 +23,41 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// createDatafeed creates the datafeed and sets the composite ID on the returned
-// model. It satisfies the entitycore ElasticsearchCreateFunc[Datafeed] signature.
-// The envelope handles read-after-write and state persistence.
-func createDatafeed(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, plan Datafeed) (Datafeed, fwdiags.Diagnostics) {
+// createDatafeed creates the datafeed and sets the composite ID on the
+// returned model. The envelope handles read-after-write and state persistence.
+func createDatafeed(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.WriteRequest[Datafeed]) (entitycore.WriteResult[Datafeed], fwdiags.Diagnostics) {
 	var diags fwdiags.Diagnostics
+	plan := req.Plan
+	datafeedID := req.WriteID
 
-	datafeedID := resourceID
 	if datafeedID == "" {
 		diags.AddError("Invalid Configuration", "datafeed_id cannot be empty")
-		return plan, diags
+		return entitycore.WriteResult[Datafeed]{Model: plan}, diags
 	}
 
-	// Convert to API create model (raw JSON to preserve query form)
 	createBody, convDiags := plan.toAPICreateModel(ctx)
 	diags.Append(convDiags...)
 	if diags.HasError() {
-		return plan, diags
+		return entitycore.WriteResult[Datafeed]{Model: plan}, diags
 	}
 
 	createDiags := elasticsearch.PutDatafeed(ctx, client, datafeedID, createBody)
 	diags.Append(createDiags...)
 	if diags.HasError() {
-		return plan, diags
+		return entitycore.WriteResult[Datafeed]{Model: plan}, diags
 	}
 
-	// Set the composite ID so the envelope and readFunc can carry it through.
 	compID, sdkDiags := client.ID(ctx, datafeedID)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
-		return plan, diags
+		return entitycore.WriteResult[Datafeed]{Model: plan}, diags
 	}
 
 	plan.ID = types.StringValue(compID.String())
-	return plan, diags
+	return entitycore.WriteResult[Datafeed]{Model: plan}, diags
 }

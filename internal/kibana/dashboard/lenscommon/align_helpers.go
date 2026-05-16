@@ -25,6 +25,22 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+// PreserveKnownTfBoolIfStateNull copies plan into *state when plan is known and non-null but
+// state is null or unknown. Used to preserve practitioner intent across chart config round-trips.
+func PreserveKnownTfBoolIfStateNull(plan types.Bool, state *types.Bool) {
+	if typeutils.IsKnown(plan) && !plan.IsNull() && (!typeutils.IsKnown(*state) || state.IsNull()) {
+		*state = plan
+	}
+}
+
+// PreserveKnownTfFloat64IfStateNull copies plan into *state when plan is known and non-null but
+// state is null or unknown. Used to preserve practitioner intent across chart config round-trips.
+func PreserveKnownTfFloat64IfStateNull(plan types.Float64, state *types.Float64) {
+	if typeutils.IsKnown(plan) && !plan.IsNull() && (!typeutils.IsKnown(*state) || state.IsNull()) {
+		*state = plan
+	}
+}
+
 // PreserveKnownStringIfStateBlank copies plan into *state when plan is known and state is null,
 // unknown, or empty. Used to preserve practitioner intent for chart titles and descriptions
 // that the API normalizes to empty values.

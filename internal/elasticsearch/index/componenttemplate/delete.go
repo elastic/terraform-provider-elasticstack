@@ -29,9 +29,6 @@ import (
 // deleteComponentTemplate is the envelope delete callback.
 func deleteComponentTemplate(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, _ Data) diag.Diagnostics {
 	var diags diag.Diagnostics
-	sdkDiags := elasticsearch.DeleteComponentTemplate(ctx, client, resourceID)
-	if sdkDiags != nil {
-		diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-	}
+	diags.Append(diagutil.FrameworkDiagsFromSDK(elasticsearch.DeleteComponentTemplate(ctx, client, resourceID))...)
 	return diags
 }

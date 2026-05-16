@@ -40,15 +40,13 @@ type snapshotRepositoryResource struct {
 
 func newSnapshotRepositoryResource() *snapshotRepositoryResource {
 	return &snapshotRepositoryResource{
-		ElasticsearchResource: entitycore.NewElasticsearchResource[Data](
-			entitycore.ComponentElasticsearch,
-			"snapshot_repository",
-			GetSchema,
-			readSnapshotRepository,
-			deleteSnapshotRepository,
-			writeSnapshotRepository,
-			writeSnapshotRepository,
-		),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[Data]("snapshot_repository", entitycore.ElasticsearchResourceOptions[Data]{
+			Schema: GetSchema,
+			Read:   readSnapshotRepository,
+			Delete: deleteSnapshotRepository,
+			Create: writeSnapshotRepository,
+			Update: writeSnapshotRepository,
+		}),
 	}
 }
 

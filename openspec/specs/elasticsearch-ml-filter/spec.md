@@ -86,13 +86,15 @@ When the response has HTTP status 404, or when the `filters` array in the respon
 
 ### Requirement: API — Update (REQ-003)
 
-The resource SHALL call `GET _ml/filters/<filter_id>` to fetch the current remote state, compute the item diff, then call `PUT _ml/filters/<filter_id>/_update` with only the changed fields.
+Update logic SHALL run inside the Elasticsearch resource envelope's update callback, which receives `WriteRequest[TFModel]` containing the planned model, a non-nil pointer to the prior state model in `Prior`, raw Terraform config (`Config`), and write identity (`WriteID`, the ML filter id).
+
+The callback SHALL call `GET _ml/filters/<filter_id>` to fetch the current remote state, compute the item diff, then call `PUT _ml/filters/<filter_id>/_update` with only the changed fields.
 
 Items are managed as a set diff: items in the plan but not on the server are sent as `add_items`; items on the server but not in the plan are sent as `remove_items`. Description is sent in the update request only when its plan value differs from the prior state value.
 
 If the filter is not found during the update fetch (404 or empty array), the resource SHALL surface a "Filter not found" error rather than silently re-creating.
 
-After a successful update, the resource SHALL read the filter back from the API and store the result in state.
+After the update callback returns successfully, the envelope SHALL read the filter back from the API via the shared read callback and persist state from that read result.
 
 #### Scenario: Update adds and removes items
 - GIVEN a filter exists with items `["a", "b"]`

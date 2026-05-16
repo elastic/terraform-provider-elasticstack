@@ -38,17 +38,14 @@ type anomalyDetectionJobResource struct {
 }
 
 func newAnomalyDetectionJobResource() *anomalyDetectionJobResource {
-	_, updateFn := entitycore.PlaceholderElasticsearchWriteCallbacks[TFModel]()
 	return &anomalyDetectionJobResource{
-		ElasticsearchResource: entitycore.NewElasticsearchResource(
-			entitycore.ComponentElasticsearch,
-			"ml_anomaly_detection_job",
-			getSchema,
-			readAnomalyDetectionJob,
-			deleteAnomalyDetectionJob,
-			createAnomalyDetectionJob,
-			updateFn,
-		),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[TFModel]("ml_anomaly_detection_job", entitycore.ElasticsearchResourceOptions[TFModel]{
+			Schema: getSchema,
+			Read:   readAnomalyDetectionJob,
+			Delete: deleteAnomalyDetectionJob,
+			Create: createAnomalyDetectionJob,
+			Update: updateAnomalyDetectionJob,
+		}),
 	}
 }
 

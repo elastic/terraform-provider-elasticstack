@@ -79,3 +79,16 @@ func ExpandAliasFields(f AliasFields) (models.IndexAlias, diag.Diagnostics) {
 
 	return ia, diags
 }
+
+// ExpandAliasElement converts an AliasModel to a models.IndexAlias.
+func ExpandAliasElement(am AliasModel) (models.IndexAlias, diag.Diagnostics) {
+	return ExpandAliasFields(AliasFields{
+		Name:          am.Name,
+		Filter:        am.Filter,
+		IndexRouting:  am.IndexRouting,
+		SearchRouting: am.SearchRouting,
+		Routing:       am.Routing,
+		IsHidden:      am.IsHidden,
+		IsWriteIndex:  am.IsWriteIndex,
+	})
+}

@@ -77,8 +77,8 @@ var maintenanceWindowMinVersion = version.Must(version.NewVersion("9.1.0"))
 // entitycore.WithVersionRequirements interface, allowing the
 // generic Kibana resource envelope to enforce the requirement before invoking
 // lifecycle callbacks.
-func (m Model) GetVersionRequirements() ([]entitycore.DataSourceVersionRequirement, diag.Diagnostics) {
-	return []entitycore.DataSourceVersionRequirement{
+func (m Model) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+	return []entitycore.VersionRequirement{
 		{
 			MinVersion:   *maintenanceWindowMinVersion,
 			ErrorMessage: fmt.Sprintf("Maintenance windows require Elastic Stack v%s or later.", maintenanceWindowMinVersion),

@@ -24,32 +24,33 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func writeSystemUser(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, data Data) (Data, diag.Diagnostics) {
+// writeSystemUser handles both Create and Update; the system user PUT-password
+// API is idempotent so the same callback serves both lifecycle methods.
+func writeSystemUser(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.WriteRequest[Data]) (entitycore.WriteResult[Data], diag.Diagnostics) {
 	var diags diag.Diagnostics
-	usernameID := resourceID
+	data := req.Plan
+	usernameID := req.WriteID
 
 	id, sdkDiags := client.ID(ctx, usernameID)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
-		var zero Data
-		return zero, diags
+		return entitycore.WriteResult[Data]{}, diags
 	}
 
 	user, sdkDiags := elasticsearch.GetUser(ctx, client, usernameID)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
-		var zero Data
-		return zero, diags
+		return entitycore.WriteResult[Data]{}, diags
 	}
 	if user == nil || !isSystemUser(user) {
 		diags.AddError("Not Found", fmt.Sprintf(`System user "%s" not found`, usernameID))
-		var zero Data
-		return zero, diags
+		return entitycore.WriteResult[Data]{}, diags
 	}
 
 	var password, passwordHash *string
@@ -62,8 +63,7 @@ func writeSystemUser(ctx context.Context, client *clients.ElasticsearchScopedCli
 	if password != nil || passwordHash != nil {
 		diags.Append(elasticsearch.ChangeUserPassword(ctx, client, usernameID, password, passwordHash)...)
 		if diags.HasError() {
-			var zero Data
-			return zero, diags
+			return entitycore.WriteResult[Data]{}, diags
 		}
 	}
 
@@ -74,11 +74,10 @@ func writeSystemUser(ctx context.Context, client *clients.ElasticsearchScopedCli
 			diags.Append(elasticsearch.DisableUser(ctx, client, usernameID)...)
 		}
 		if diags.HasError() {
-			var zero Data
-			return zero, diags
+			return entitycore.WriteResult[Data]{}, diags
 		}
 	}
 
 	data.ID = types.StringValue(id.String())
-	return data, diags
+	return entitycore.WriteResult[Data]{Model: data}, diags
 }
