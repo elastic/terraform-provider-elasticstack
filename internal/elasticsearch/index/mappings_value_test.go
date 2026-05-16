@@ -107,6 +107,109 @@ func TestNewIndexMappingsValue_collapsesMatchArrays(t *testing.T) {
 	assert.Equal(t, "string", rule["match_mapping_type"], "single-element array should be collapsed to plain string")
 }
 
+// TestMappingsSemanticallyEqual_scalarVsStringifiedScalar verifies that scalar
+// leaf values (bool, number) compare semantically equal to their stringified
+// equivalents that Elasticsearch may echo back.
+func TestMappingsSemanticallyEqual_scalarVsStringifiedScalar(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		userJSON string
+		apiJSON  string
+		want     bool
+	}{
+		{
+			name:     "bool true vs string true",
+			userJSON: `{"index":true}`,
+			apiJSON:  `{"index":"true"}`,
+			want:     true,
+		},
+		{
+			name:     "bool false vs string false",
+			userJSON: `{"index":false}`,
+			apiJSON:  `{"index":"false"}`,
+			want:     true,
+		},
+		{
+			name:     "number vs string number",
+			userJSON: `{"boost":42}`,
+			apiJSON:  `{"boost":"42"}`,
+			want:     true,
+		},
+		{
+			name:     "bool true vs string false - not equal",
+			userJSON: `{"index":true}`,
+			apiJSON:  `{"index":"false"}`,
+			want:     false,
+		},
+		{
+			name:     "number 1 vs string 2 - not equal",
+			userJSON: `{"boost":1}`,
+			apiJSON:  `{"boost":"2"}`,
+			want:     false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			var userMap, apiMap map[string]any
+			require.NoError(t, json.Unmarshal([]byte(tc.userJSON), &userMap))
+			require.NoError(t, json.Unmarshal([]byte(tc.apiJSON), &apiMap))
+
+			got := index.MappingsSemanticallyEqual(userMap, apiMap)
+			assert.Equal(t, tc.want, got, "MappingsSemanticallyEqual(%s, %s)", tc.userJSON, tc.apiJSON)
+		})
+	}
+}
+
+// TestMappingsSemanticallyEqual_scalarLeafInFieldDef verifies that scalar drift
+// inside nested field definitions (e.g. inside "properties") is also handled.
+func TestMappingsSemanticallyEqual_scalarLeafInFieldDef(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		userJSON string
+		apiJSON  string
+		want     bool
+	}{
+		{
+			name:     "bool leaf in field def - equal",
+			userJSON: `{"properties":{"myfield":{"type":"keyword","index":true}}}`,
+			apiJSON:  `{"properties":{"myfield":{"type":"keyword","index":"true"}}}`,
+			want:     true,
+		},
+		{
+			name:     "numeric leaf in field def - equal",
+			userJSON: `{"properties":{"myfield":{"type":"float","boost":1.5}}}`,
+			apiJSON:  `{"properties":{"myfield":{"type":"float","boost":"1.5"}}}`,
+			want:     true,
+		},
+		{
+			name:     "bool leaf in field def - not equal",
+			userJSON: `{"properties":{"myfield":{"type":"keyword","index":true}}}`,
+			apiJSON:  `{"properties":{"myfield":{"type":"keyword","index":"false"}}}`,
+			want:     false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			var userMap, apiMap map[string]any
+			require.NoError(t, json.Unmarshal([]byte(tc.userJSON), &userMap))
+			require.NoError(t, json.Unmarshal([]byte(tc.apiJSON), &apiMap))
+
+			got := index.MappingsSemanticallyEqual(userMap, apiMap)
+			assert.Equal(t, tc.want, got, "MappingsSemanticallyEqual(%s, %s)", tc.userJSON, tc.apiJSON)
+		})
+	}
+}
+
 // TestIndexMappingsValue_SemanticEquals verifies that the typed-client-injected
 // "type":"object" entries don't cause spurious drift between a config-derived
 // plan value (no "type":"object") and the API-read state value (with "type":"object").
