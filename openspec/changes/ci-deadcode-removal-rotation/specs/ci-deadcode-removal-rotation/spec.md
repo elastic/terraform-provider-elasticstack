@@ -94,16 +94,42 @@ The impacted package set SHALL always include the package containing the removed
 - **WHEN** the workflow removes a dead symbol and also removes eligible companion tests from a different package directory
 - **THEN** it SHALL run unit tests for both impacted package directories before opening a PR
 
-### Requirement: Cooldown memory records all attempted candidates regardless of outcome
-The workflow SHALL update cooldown memory for every attempted candidate regardless of whether the attempt ends in invalid-candidate detection, verification failure, or PR creation.
+### Requirement: Cooldown memory records all attempted candidates with deterministic outcome reasons
+The workflow SHALL update cooldown memory for every attempted candidate regardless of whether the attempt ends in invalid-candidate detection, verification failure, or PR creation, and each recorded attempt SHALL include a deterministic outcome reason code.
 
 #### Scenario: Successful verified attempt still updates cooldown memory
 - **WHEN** the workflow successfully verifies a cleanup and opens a PR
 - **THEN** it SHALL record cooldown memory for that attempted candidate
+- **AND** it SHALL persist a deterministic outcome reason code for that attempt
 
 #### Scenario: Failed attempt updates cooldown memory
 - **WHEN** the workflow stops because the candidate is invalid or verification fails
 - **THEN** it SHALL record cooldown memory for that attempted candidate
+- **AND** it SHALL persist a deterministic outcome reason code for that attempt
+
+### Requirement: Attempt outcome reason codes are finite and structured
+The workflow SHALL classify each attempted candidate using a finite deterministic set of reason codes rather than free-form narrative memory entries, and MAY include small structured context such as package path or reference-file count alongside the reason code.
+
+#### Scenario: Invalid acceptance-style candidate is recorded structurally
+- **WHEN** the workflow stops because the candidate is invalidated by acceptance-style test detection
+- **THEN** it SHALL record a deterministic reason code representing that outcome
+- **AND** it MAY record small structured context needed for later aggregation
+
+#### Scenario: Verification failure is recorded structurally
+- **WHEN** the workflow stops because build or impacted-package tests fail
+- **THEN** it SHALL record a deterministic reason code representing that outcome
+- **AND** it MAY record small structured context needed for later aggregation
+
+### Requirement: Workflow exposes periodic summaries of recent attempt outcomes
+The workflow SHALL expose a compact maintainer-facing summary of recent attempt outcomes using the deterministic reason codes stored in memory.
+
+#### Scenario: Summary aggregates reason-code counts
+- **WHEN** maintainers inspect the workflow's recent outcome summary
+- **THEN** the summary SHALL include aggregated counts of recent attempts grouped by deterministic reason code
+
+#### Scenario: Summary highlights sticky areas
+- **WHEN** maintainers inspect the workflow's recent outcome summary
+- **THEN** the summary SHALL identify the most common package paths or areas associated with recent non-PR outcomes
 
 ### Requirement: Human review remains the merge gate
 The workflow SHALL open PRs for successful verified cleanups, but SHALL NOT auto-merge them.
