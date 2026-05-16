@@ -4,7 +4,7 @@ const result = await setPhaseLabel({
   context,
   core,
   issueNumber,
-  phaseLabelName: PHASE_LABEL_NAME,
+  phaseLabelName: process.env.PHASE_LABEL_NAME,
 });
 
 core.setOutput('phase_label_set', result.phase_label_set ? 'true' : 'false');
