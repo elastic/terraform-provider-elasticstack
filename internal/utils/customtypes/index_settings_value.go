@@ -357,6 +357,41 @@ func unflattenDottedMap(flat map[string]any) map[string]any {
 	return root
 }
 
+// normalizeSettingsScalars recursively walks decoded settings JSON and converts
+// string-encoded JSON booleans and null back to their native types. Elasticsearch
+// echoes some settings values (e.g. _tier_preference: null) as JSON strings
+// ("null") instead of the native JSON literal null. Normalizing here ensures
+// the stored value after import matches the value stored after the initial apply,
+// so ImportStateVerify does not fail due to "null" (string) vs null (JSON null).
+func normalizeSettingsScalars(v any) any {
+	switch val := v.(type) {
+	case map[string]any:
+		out := make(map[string]any, len(val))
+		for k, vv := range val {
+			out[k] = normalizeSettingsScalars(vv)
+		}
+		return out
+	case []any:
+		out := make([]any, len(val))
+		for i, vv := range val {
+			out[i] = normalizeSettingsScalars(vv)
+		}
+		return out
+	case string:
+		switch val {
+		case "true":
+			return true
+		case "false":
+			return false
+		case "null":
+			return nil
+		}
+		return val
+	default:
+		return v
+	}
+}
+
 // NewIndexSettingsNull creates an IndexSettingsValue with a null value.
 func NewIndexSettingsNull() IndexSettingsValue {
 	return IndexSettingsValue{Normalized: jsontypes.NewNormalizedNull()}
@@ -367,7 +402,16 @@ func NewIndexSettingsUnknown() IndexSettingsValue {
 	return IndexSettingsValue{Normalized: jsontypes.NewNormalizedUnknown()}
 }
 
-// NewIndexSettingsValue creates an IndexSettingsValue with a known value.
+// NewIndexSettingsValue creates an IndexSettingsValue with a known value,
+// applying scalar normalization (converting string-encoded booleans and null
+// back to their native JSON types) before storing the value.
 func NewIndexSettingsValue(value string) IndexSettingsValue {
+	var m any
+	if err := json.Unmarshal([]byte(value), &m); err == nil {
+		m = normalizeSettingsScalars(m)
+		if nb, err := json.Marshal(m); err == nil {
+			value = string(nb)
+		}
+	}
 	return IndexSettingsValue{Normalized: jsontypes.NewNormalizedValue(value)}
 }

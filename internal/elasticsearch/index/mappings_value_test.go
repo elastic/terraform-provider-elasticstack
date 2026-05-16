@@ -107,6 +107,27 @@ func TestNewIndexMappingsValue_collapsesMatchArrays(t *testing.T) {
 	assert.Equal(t, "string", rule["match_mapping_type"], "single-element array should be collapsed to plain string")
 }
 
+// TestNewIndexMappingsValue_normalizesStringifiedScalars verifies that
+// string-encoded booleans ("true", "false") and null ("null") echoed by
+// Elasticsearch are converted back to their native JSON types during
+// construction. This ensures ImportStateVerify sees the same stored value
+// as the initial apply (e.g. dynamic: false vs dynamic: "false").
+func TestNewIndexMappingsValue_normalizesStringifiedScalars(t *testing.T) {
+	t.Parallel()
+
+	// Elasticsearch echoes dynamic: false as the JSON string "false" because
+	// DynamicMapping implements encoding.TextMarshaler.
+	input := `{"date_detection":true,"dynamic":"false","numeric_detection":true}`
+	v := index.NewMappingsValue(input)
+
+	var got map[string]any
+	require.NoError(t, json.Unmarshal([]byte(v.ValueString()), &got))
+
+	assert.Equal(t, false, got["dynamic"], `"false" string should be normalized to boolean false`)
+	assert.Equal(t, true, got["date_detection"], `true boolean should be preserved`)
+	assert.Equal(t, true, got["numeric_detection"], `true boolean should be preserved`)
+}
+
 // TestMappingsSemanticallyEqual_scalarVsStringifiedScalar verifies that scalar
 // leaf values (bool, number) compare semantically equal to their stringified
 // equivalents that Elasticsearch may echo back.

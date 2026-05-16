@@ -208,6 +208,23 @@ func TestIndexSettingsValue_StringSemanticEquals(t *testing.T) {
 	}
 }
 
+// TestNewIndexSettingsValue_normalizesStringifiedScalars verifies that
+// string-encoded booleans ("true", "false") and null ("null") echoed by
+// Elasticsearch are converted back to their native JSON types during
+// construction. This ensures ImportStateVerify sees the same stored value as
+// the initial apply (e.g. _tier_preference: null vs _tier_preference: "null").
+func TestNewIndexSettingsValue_normalizesStringifiedScalars(t *testing.T) {
+	t.Parallel()
+
+	// Elasticsearch echoes _tier_preference: null as the JSON string "null".
+	input := `{"index":{"number_of_shards":"1","routing":{"allocation":{"include":{"_tier_preference":"null"}}}}}`
+	v := NewIndexSettingsValue(input)
+
+	// The stored value should have native null, not the string "null".
+	require.Contains(t, v.ValueString(), `"_tier_preference":null`, `"null" string should be normalized to JSON null`)
+	require.NotContains(t, v.ValueString(), `"_tier_preference":"null"`, `string "null" should not appear after normalization`)
+}
+
 func TestIndexSettingsValue_StringSemanticEquals_wrongValuableType(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

@@ -163,6 +163,10 @@ func (v MappingsValue) StringSemanticEquals(ctx context.Context, newValuable bas
 //     Elasticsearch accepts as either a string or an array
 //     (match, match_mapping_type, path_match, path_unmatch, unmatch,
 //     unmatch_mapping_type).
+//   - Converts string-encoded JSON booleans and null back to their native types
+//     so that ImportState round-trips produce the same stored value as the
+//     original apply (Elasticsearch echoes some boolean fields such as
+//     dynamic as the JSON string "false" instead of the boolean false).
 func normalizeMappings(v any) any {
 	switch val := v.(type) {
 	case map[string]any:
@@ -197,6 +201,21 @@ func normalizeMappings(v any) any {
 			out[i] = normalizeMappings(vv)
 		}
 		return out
+	case string:
+		// Convert string-encoded JSON booleans and null back to their native
+		// types. Elasticsearch echoes some mapping fields (e.g. dynamic) as
+		// JSON strings instead of booleans. Normalizing here ensures the stored
+		// value after import matches the value stored after the initial apply,
+		// so ImportStateVerify does not fail due to "false" vs false.
+		switch val {
+		case "true":
+			return true
+		case "false":
+			return false
+		case "null":
+			return nil
+		}
+		return val
 	default:
 		return v
 	}
