@@ -150,5 +150,3 @@ func TestHandleMutateTypedResponse(t *testing.T) {
 		assert.Equal(t, "Failed to parse response", diags[0].Summary())
 	})
 }
-
-
