@@ -60,14 +60,6 @@ func CompositeIDFromStrFw(id string) (*CompositeID, fwdiags.Diagnostics) {
 	return composite, diagutil.FrameworkDiagsFromSDK(diags)
 }
 
-func ResourceIDFromStr(id string) (string, diag.Diagnostics) {
-	compID, diags := CompositeIDFromStr(id)
-	if diags.HasError() {
-		return "", diags
-	}
-	return compID.ResourceID, nil
-}
-
 func (c *CompositeID) String() string {
 	return fmt.Sprintf("%s/%s", c.ClusterID, c.ResourceID)
 }
