@@ -34,7 +34,7 @@ func GetAgentPolicy(ctx context.Context, client *Client, id string, spaceID stri
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	return kibanaoapi.HandleGetItem(resp.StatusCode(), resp.Body, func() *kbapi.AgentPolicy { return &resp.JSON200.Item })
+	return kibanaoapi.HandleGetTypedResponse(resp.StatusCode(), resp.Body, func() *kbapi.AgentPolicy { return &resp.JSON200.Item })
 }
 
 // CreateAgentPolicy creates a new agent policy.
@@ -49,7 +49,8 @@ func CreateAgentPolicy(ctx context.Context, client *Client, req kbapi.PostFleetA
 			return nil, 0, diagutil.FrameworkDiagFromError(err)
 		}
 
-		return kibanaoapi.HandleMutateItem(resp.StatusCode(), resp.Body, func() *kbapi.AgentPolicy { return &resp.JSON200.Item })
+		result, diags := kibanaoapi.HandleMutateTypedResponse(resp.StatusCode(), resp.Body, func() *kbapi.AgentPolicy { return &resp.JSON200.Item })
+		return result, resp.StatusCode(), diags
 	})
 }
 
@@ -61,7 +62,8 @@ func UpdateAgentPolicy(ctx context.Context, client *Client, id string, spaceID s
 			return nil, 0, diagutil.FrameworkDiagFromError(err)
 		}
 
-		return kibanaoapi.HandleMutateItem(resp.StatusCode(), resp.Body, func() *kbapi.AgentPolicy { return &resp.JSON200.Item })
+		result, diags := kibanaoapi.HandleMutateTypedResponse(resp.StatusCode(), resp.Body, func() *kbapi.AgentPolicy { return &resp.JSON200.Item })
+		return result, resp.StatusCode(), diags
 	})
 }
 

@@ -34,7 +34,7 @@ func GetFleetServerHost(ctx context.Context, client *Client, id string, spaceID 
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	return kibanaoapi.HandleGetItem(resp.StatusCode(), resp.Body, func() *kbapi.ServerHost { return &resp.JSON200.Item })
+	return kibanaoapi.HandleGetTypedResponse(resp.StatusCode(), resp.Body, func() *kbapi.ServerHost { return &resp.JSON200.Item })
 }
 
 // CreateFleetServerHost creates a new fleet server host.
@@ -45,7 +45,8 @@ func CreateFleetServerHost(ctx context.Context, client *Client, spaceID string, 
 			return nil, 0, diagutil.FrameworkDiagFromError(err)
 		}
 
-		return kibanaoapi.HandleMutateItem(resp.StatusCode(), resp.Body, func() *kbapi.ServerHost { return &resp.JSON200.Item })
+		result, diags := kibanaoapi.HandleMutateTypedResponse(resp.StatusCode(), resp.Body, func() *kbapi.ServerHost { return &resp.JSON200.Item })
+		return result, resp.StatusCode(), diags
 	})
 }
 
@@ -57,7 +58,8 @@ func UpdateFleetServerHost(ctx context.Context, client *Client, id string, space
 			return nil, 0, diagutil.FrameworkDiagFromError(err)
 		}
 
-		return kibanaoapi.HandleMutateItem(resp.StatusCode(), resp.Body, func() *kbapi.ServerHost { return &resp.JSON200.Item })
+		result, diags := kibanaoapi.HandleMutateTypedResponse(resp.StatusCode(), resp.Body, func() *kbapi.ServerHost { return &resp.JSON200.Item })
+		return result, resp.StatusCode(), diags
 	})
 }
 

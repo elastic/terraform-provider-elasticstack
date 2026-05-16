@@ -34,7 +34,7 @@ func GetAgentDownloadSource(ctx context.Context, client *Client, id string, spac
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	return kibanaoapi.HandleGetItem(resp.StatusCode(), resp.Body, func() *kbapi.GetFleetAgentDownloadSourcesSourceidResponse { return resp })
+	return kibanaoapi.HandleGetTypedResponse(resp.StatusCode(), resp.Body, func() *kbapi.GetFleetAgentDownloadSourcesSourceidResponse { return resp })
 }
 
 // CreateAgentDownloadSource creates a new agent binary download source.
@@ -50,7 +50,8 @@ func CreateAgentDownloadSource(
 			return nil, 0, diagutil.FrameworkDiagFromError(err)
 		}
 
-		return kibanaoapi.HandleMutateItem(resp.StatusCode(), resp.Body, func() *kbapi.PostFleetAgentDownloadSourcesResponse { return resp })
+		result, diags := kibanaoapi.HandleMutateTypedResponse(resp.StatusCode(), resp.Body, func() *kbapi.PostFleetAgentDownloadSourcesResponse { return resp })
+		return result, resp.StatusCode(), diags
 	})
 }
 
@@ -68,7 +69,8 @@ func UpdateAgentDownloadSource(
 			return nil, 0, diagutil.FrameworkDiagFromError(err)
 		}
 
-		return kibanaoapi.HandleMutateItem(resp.StatusCode(), resp.Body, func() *kbapi.PutFleetAgentDownloadSourcesSourceidResponse { return resp })
+		result, diags := kibanaoapi.HandleMutateTypedResponse(resp.StatusCode(), resp.Body, func() *kbapi.PutFleetAgentDownloadSourcesSourceidResponse { return resp })
+		return result, resp.StatusCode(), diags
 	})
 }
 
@@ -91,5 +93,5 @@ func ListAgentDownloadSources(ctx context.Context, client *Client, spaceID strin
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	return kibanaoapi.HandleGetItem(resp.StatusCode(), resp.Body, func() *kbapi.GetFleetAgentDownloadSourcesResponse { return resp })
+	return kibanaoapi.HandleGetTypedResponse(resp.StatusCode(), resp.Body, func() *kbapi.GetFleetAgentDownloadSourcesResponse { return resp })
 }

@@ -34,7 +34,7 @@ func GetProxy(ctx context.Context, client *Client, spaceID, proxyID string) (*kb
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	return kibanaoapi.HandleGetItem(resp.StatusCode(), resp.Body, func() *kbapi.FleetProxyItem { return &resp.JSON200.Item })
+	return kibanaoapi.HandleGetTypedResponse(resp.StatusCode(), resp.Body, func() *kbapi.FleetProxyItem { return &resp.JSON200.Item })
 }
 
 // CreateProxy creates a new Fleet proxy.
@@ -45,7 +45,8 @@ func CreateProxy(ctx context.Context, client *Client, spaceID string, body kbapi
 			return nil, 0, diagutil.FrameworkDiagFromError(err)
 		}
 
-		return kibanaoapi.HandleMutateItem(resp.StatusCode(), resp.Body, func() *kbapi.FleetProxyItem { return &resp.JSON200.Item })
+		result, diags := kibanaoapi.HandleMutateTypedResponse(resp.StatusCode(), resp.Body, func() *kbapi.FleetProxyItem { return &resp.JSON200.Item })
+		return result, resp.StatusCode(), diags
 	})
 }
 
@@ -57,7 +58,8 @@ func UpdateProxy(ctx context.Context, client *Client, spaceID, proxyID string, b
 			return nil, 0, diagutil.FrameworkDiagFromError(err)
 		}
 
-		return kibanaoapi.HandleMutateItem(resp.StatusCode(), resp.Body, func() *kbapi.FleetProxyItem { return &resp.JSON200.Item })
+		result, diags := kibanaoapi.HandleMutateTypedResponse(resp.StatusCode(), resp.Body, func() *kbapi.FleetProxyItem { return &resp.JSON200.Item })
+		return result, resp.StatusCode(), diags
 	})
 }
 

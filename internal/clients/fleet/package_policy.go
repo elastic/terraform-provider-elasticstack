@@ -38,7 +38,7 @@ func GetPackagePolicy(ctx context.Context, client *Client, id string, spaceID st
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	return kibanaoapi.HandleGetItem(resp.StatusCode(), resp.Body, func() *kbapi.PackagePolicy { return &resp.JSON200.Item })
+	return kibanaoapi.HandleGetTypedResponse(resp.StatusCode(), resp.Body, func() *kbapi.PackagePolicy { return &resp.JSON200.Item })
 }
 
 // GetDefendPackagePolicy reads a specific Elastic Defend package policy from
@@ -51,7 +51,7 @@ func GetDefendPackagePolicy(ctx context.Context, client *Client, id string, spac
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	return kibanaoapi.HandleGetItem(resp.StatusCode(), resp.Body, func() *kbapi.PackagePolicy { return &resp.JSON200.Item })
+	return kibanaoapi.HandleGetTypedResponse(resp.StatusCode(), resp.Body, func() *kbapi.PackagePolicy { return &resp.JSON200.Item })
 }
 
 // CreatePackagePolicy creates a new package policy.
@@ -66,7 +66,8 @@ func CreatePackagePolicy(ctx context.Context, client *Client, spaceID string, re
 			return nil, 0, diagutil.FrameworkDiagFromError(err)
 		}
 
-		return kibanaoapi.HandleMutateItem(resp.StatusCode(), resp.Body, func() *kbapi.PackagePolicy { return &resp.JSON200.Item })
+		result, diags := kibanaoapi.HandleMutateTypedResponse(resp.StatusCode(), resp.Body, func() *kbapi.PackagePolicy { return &resp.JSON200.Item })
+		return result, resp.StatusCode(), diags
 	})
 }
 
@@ -85,7 +86,8 @@ func CreateDefendPackagePolicy(ctx context.Context, client *Client, spaceID stri
 			return nil, 0, diagutil.FrameworkDiagFromError(err)
 		}
 
-		return kibanaoapi.HandleMutateItem(resp.StatusCode(), resp.Body, func() *kbapi.PackagePolicy { return &resp.JSON200.Item })
+		result, diags := kibanaoapi.HandleMutateTypedResponse(resp.StatusCode(), resp.Body, func() *kbapi.PackagePolicy { return &resp.JSON200.Item })
+		return result, resp.StatusCode(), diags
 	})
 }
 
@@ -101,7 +103,8 @@ func UpdatePackagePolicy(ctx context.Context, client *Client, id string, spaceID
 			return nil, 0, diagutil.FrameworkDiagFromError(err)
 		}
 
-		return kibanaoapi.HandleMutateItem(resp.StatusCode(), resp.Body, func() *kbapi.PackagePolicy { return &resp.JSON200.Item })
+		result, diags := kibanaoapi.HandleMutateTypedResponse(resp.StatusCode(), resp.Body, func() *kbapi.PackagePolicy { return &resp.JSON200.Item })
+		return result, resp.StatusCode(), diags
 	})
 }
 
@@ -121,7 +124,8 @@ func UpdateDefendPackagePolicy(ctx context.Context, client *Client, id string, s
 			return nil, 0, diagutil.FrameworkDiagFromError(err)
 		}
 
-		return kibanaoapi.HandleMutateItem(resp.StatusCode(), resp.Body, func() *kbapi.PackagePolicy { return &resp.JSON200.Item })
+		result, diags := kibanaoapi.HandleMutateTypedResponse(resp.StatusCode(), resp.Body, func() *kbapi.PackagePolicy { return &resp.JSON200.Item })
+		return result, resp.StatusCode(), diags
 	})
 }
 
