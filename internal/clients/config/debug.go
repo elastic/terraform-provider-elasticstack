@@ -34,6 +34,7 @@ const logRespMsg = `%s API Response for [%s] Details:
 %s
 -----------------------------------------------------`
 
+//nolint:staticcheck // Temporary lint suppression for interface compliance assertion.
 var _ elastictransport.Logger = &debugLogger{}
 
 type debugLogger struct {
