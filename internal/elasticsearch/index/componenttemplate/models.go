@@ -19,8 +19,11 @@ package componenttemplate
 
 import (
 	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -37,6 +40,14 @@ type Data struct {
 func (d Data) GetID() types.String                    { return d.ID }
 func (d Data) GetResourceID() types.String            { return d.Name }
 func (d Data) GetElasticsearchConnection() types.List { return d.ElasticsearchConnection }
+
+// GetVersionRequirements satisfies [entitycore.WithVersionRequirements].
+func (d Data) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+	if d.Template.IsNull() || d.Template.IsUnknown() {
+		return nil, nil
+	}
+	return datastreamoptions.GetVersionRequirements(d.Template)
+}
 
 // TemplateModel is the inner shape of the template block.
 type TemplateModel struct {
