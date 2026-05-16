@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -33,7 +34,7 @@ func GetProxy(ctx context.Context, client *Client, spaceID, proxyID string) (*kb
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	return handleGetItem(resp.StatusCode(), resp.Body, func() *kbapi.FleetProxyItem { return &resp.JSON200.Item })
+	return kibanaoapi.HandleGetItem(resp.StatusCode(), resp.Body, func() *kbapi.FleetProxyItem { return &resp.JSON200.Item })
 }
 
 // CreateProxy creates a new Fleet proxy.
@@ -44,7 +45,7 @@ func CreateProxy(ctx context.Context, client *Client, spaceID string, body kbapi
 			return nil, 0, diagutil.FrameworkDiagFromError(err)
 		}
 
-		return handleMutateItem(resp.StatusCode(), resp.Body, func() *kbapi.FleetProxyItem { return &resp.JSON200.Item })
+		return kibanaoapi.HandleMutateItem(resp.StatusCode(), resp.Body, func() *kbapi.FleetProxyItem { return &resp.JSON200.Item })
 	})
 }
 
@@ -56,7 +57,7 @@ func UpdateProxy(ctx context.Context, client *Client, spaceID, proxyID string, b
 			return nil, 0, diagutil.FrameworkDiagFromError(err)
 		}
 
-		return handleMutateItem(resp.StatusCode(), resp.Body, func() *kbapi.FleetProxyItem { return &resp.JSON200.Item })
+		return kibanaoapi.HandleMutateItem(resp.StatusCode(), resp.Body, func() *kbapi.FleetProxyItem { return &resp.JSON200.Item })
 	})
 }
 

@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -33,7 +34,7 @@ func GetFleetServerHost(ctx context.Context, client *Client, id string, spaceID 
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	return handleGetItem(resp.StatusCode(), resp.Body, func() *kbapi.ServerHost { return &resp.JSON200.Item })
+	return kibanaoapi.HandleGetItem(resp.StatusCode(), resp.Body, func() *kbapi.ServerHost { return &resp.JSON200.Item })
 }
 
 // CreateFleetServerHost creates a new fleet server host.
@@ -44,7 +45,7 @@ func CreateFleetServerHost(ctx context.Context, client *Client, spaceID string, 
 			return nil, 0, diagutil.FrameworkDiagFromError(err)
 		}
 
-		return handleMutateItem(resp.StatusCode(), resp.Body, func() *kbapi.ServerHost { return &resp.JSON200.Item })
+		return kibanaoapi.HandleMutateItem(resp.StatusCode(), resp.Body, func() *kbapi.ServerHost { return &resp.JSON200.Item })
 	})
 }
 
@@ -56,7 +57,7 @@ func UpdateFleetServerHost(ctx context.Context, client *Client, id string, space
 			return nil, 0, diagutil.FrameworkDiagFromError(err)
 		}
 
-		return handleMutateItem(resp.StatusCode(), resp.Body, func() *kbapi.ServerHost { return &resp.JSON200.Item })
+		return kibanaoapi.HandleMutateItem(resp.StatusCode(), resp.Body, func() *kbapi.ServerHost { return &resp.JSON200.Item })
 	})
 }
 

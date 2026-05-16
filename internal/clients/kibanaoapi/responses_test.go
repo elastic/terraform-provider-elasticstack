@@ -84,7 +84,7 @@ func TestHandleMutateResponse(t *testing.T) {
 func TestHandleGetTypedResponse(t *testing.T) {
 	t.Run("returns extracted value on 200", func(t *testing.T) {
 		model := testAgentBuilderModel{ID: "typed-id"}
-		result, diags := handleGetTypedResponse(http.StatusOK, nil, func() *testAgentBuilderModel { return &model })
+		result, diags := HandleGetTypedResponse(http.StatusOK, nil, func() *testAgentBuilderModel { return &model })
 
 		require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags)
 		require.NotNil(t, result)
@@ -92,14 +92,14 @@ func TestHandleGetTypedResponse(t *testing.T) {
 	})
 
 	t.Run("returns nil result on 404", func(t *testing.T) {
-		result, diags := handleGetTypedResponse(http.StatusNotFound, nil, func() *testAgentBuilderModel { return nil })
+		result, diags := HandleGetTypedResponse(http.StatusNotFound, nil, func() *testAgentBuilderModel { return nil })
 
 		require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags)
 		assert.Nil(t, result)
 	})
 
 	t.Run("returns diagnostics for unexpected status", func(t *testing.T) {
-		result, diags := handleGetTypedResponse(http.StatusInternalServerError, []byte(`{"error":"boom"}`), func() *testAgentBuilderModel { return nil })
+		result, diags := HandleGetTypedResponse(http.StatusInternalServerError, []byte(`{"error":"boom"}`), func() *testAgentBuilderModel { return nil })
 
 		require.True(t, diags.HasError())
 		assert.Nil(t, result)
@@ -107,7 +107,7 @@ func TestHandleGetTypedResponse(t *testing.T) {
 	})
 
 	t.Run("returns diagnostics when extracted value is nil on 200", func(t *testing.T) {
-		result, diags := handleGetTypedResponse(http.StatusOK, nil, func() *testAgentBuilderModel { return nil })
+		result, diags := HandleGetTypedResponse(http.StatusOK, nil, func() *testAgentBuilderModel { return nil })
 
 		require.True(t, diags.HasError())
 		assert.Nil(t, result)
@@ -118,7 +118,7 @@ func TestHandleGetTypedResponse(t *testing.T) {
 func TestHandleMutateTypedResponse(t *testing.T) {
 	t.Run("returns extracted value on 200", func(t *testing.T) {
 		model := testAgentBuilderModel{ID: "typed-id"}
-		result, diags := handleMutateTypedResponse(http.StatusOK, nil, func() *testAgentBuilderModel { return &model })
+		result, diags := HandleMutateTypedResponse(http.StatusOK, nil, func() *testAgentBuilderModel { return &model })
 
 		require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags)
 		require.NotNil(t, result)
@@ -126,7 +126,7 @@ func TestHandleMutateTypedResponse(t *testing.T) {
 	})
 
 	t.Run("returns diagnostics for unexpected status", func(t *testing.T) {
-		result, diags := handleMutateTypedResponse(http.StatusNotFound, []byte(`{"error":"missing"}`), func() *testAgentBuilderModel { return nil })
+		result, diags := HandleMutateTypedResponse(http.StatusNotFound, []byte(`{"error":"missing"}`), func() *testAgentBuilderModel { return nil })
 
 		require.True(t, diags.HasError())
 		assert.Nil(t, result)
@@ -135,7 +135,7 @@ func TestHandleMutateTypedResponse(t *testing.T) {
 
 	t.Run("returns extracted value on custom success status", func(t *testing.T) {
 		model := testAgentBuilderModel{ID: "typed-id"}
-		result, diags := handleMutateTypedResponse(http.StatusCreated, nil, func() *testAgentBuilderModel { return &model }, http.StatusOK, http.StatusCreated)
+		result, diags := HandleMutateTypedResponse(http.StatusCreated, nil, func() *testAgentBuilderModel { return &model }, http.StatusOK, http.StatusCreated)
 
 		require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags)
 		require.NotNil(t, result)
@@ -143,10 +143,80 @@ func TestHandleMutateTypedResponse(t *testing.T) {
 	})
 
 	t.Run("returns diagnostics when extracted value is nil on success", func(t *testing.T) {
-		result, diags := handleMutateTypedResponse(http.StatusOK, nil, func() *testAgentBuilderModel { return nil })
+		result, diags := HandleMutateTypedResponse(http.StatusOK, nil, func() *testAgentBuilderModel { return nil })
 
 		require.True(t, diags.HasError())
 		assert.Nil(t, result)
 		assert.Equal(t, "Failed to parse response", diags[0].Summary())
+	})
+}
+
+func TestHandleGetItem(t *testing.T) {
+	t.Run("returns extracted value on 200", func(t *testing.T) {
+		item := testAgentBuilderModel{ID: "test-id"}
+		result, diags := HandleGetItem(http.StatusOK, nil, func() *testAgentBuilderModel { return &item })
+
+		require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags)
+		require.NotNil(t, result)
+		assert.Equal(t, "test-id", result.ID)
+	})
+
+	t.Run("returns zero value on 404", func(t *testing.T) {
+		result, diags := HandleGetItem(http.StatusNotFound, nil, func() *testAgentBuilderModel { return nil })
+
+		require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags)
+		assert.Nil(t, result)
+	})
+
+	t.Run("returns diagnostics for unexpected status", func(t *testing.T) {
+		result, diags := HandleGetItem(http.StatusInternalServerError, []byte(`{"error":"boom"}`), func() *testAgentBuilderModel { return nil })
+
+		require.True(t, diags.HasError())
+		assert.Nil(t, result)
+		assert.Equal(t, "Unexpected status code from server: got HTTP 500", diags[0].Summary())
+	})
+
+	t.Run("works with slice types", func(t *testing.T) {
+		items := []testAgentBuilderModel{{ID: "a"}, {ID: "b"}}
+		result, diags := HandleGetItem(http.StatusOK, nil, func() []testAgentBuilderModel { return items })
+
+		require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags)
+		assert.Equal(t, items, result)
+	})
+
+	t.Run("returns nil slice on 404 for slice types", func(t *testing.T) {
+		result, diags := HandleGetItem(http.StatusNotFound, nil, func() []testAgentBuilderModel { return nil })
+
+		require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags)
+		assert.Nil(t, result)
+	})
+}
+
+func TestHandleMutateItem(t *testing.T) {
+	t.Run("returns extracted value and status code on 200", func(t *testing.T) {
+		item := testAgentBuilderModel{ID: "test-id"}
+		result, statusCode, diags := HandleMutateItem(http.StatusOK, nil, func() *testAgentBuilderModel { return &item })
+
+		require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags)
+		require.NotNil(t, result)
+		assert.Equal(t, "test-id", result.ID)
+		assert.Equal(t, http.StatusOK, statusCode)
+	})
+
+	t.Run("returns diagnostics and status code for unexpected status", func(t *testing.T) {
+		result, statusCode, diags := HandleMutateItem(http.StatusConflict, []byte(`{"error":"conflict"}`), func() *testAgentBuilderModel { return nil })
+
+		require.True(t, diags.HasError())
+		assert.Nil(t, result)
+		assert.Equal(t, http.StatusConflict, statusCode)
+		assert.Equal(t, "Unexpected status code from server: got HTTP 409", diags[0].Summary())
+	})
+
+	t.Run("returns diagnostics for internal server error", func(t *testing.T) {
+		result, statusCode, diags := HandleMutateItem(http.StatusInternalServerError, []byte(`{"error":"boom"}`), func() *testAgentBuilderModel { return nil })
+
+		require.True(t, diags.HasError())
+		assert.Nil(t, result)
+		assert.Equal(t, http.StatusInternalServerError, statusCode)
 	})
 }

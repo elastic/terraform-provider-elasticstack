@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -33,7 +34,7 @@ func GetAgentDownloadSource(ctx context.Context, client *Client, id string, spac
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	return handleGetItem(resp.StatusCode(), resp.Body, func() *kbapi.GetFleetAgentDownloadSourcesSourceidResponse { return resp })
+	return kibanaoapi.HandleGetItem(resp.StatusCode(), resp.Body, func() *kbapi.GetFleetAgentDownloadSourcesSourceidResponse { return resp })
 }
 
 // CreateAgentDownloadSource creates a new agent binary download source.
@@ -49,7 +50,7 @@ func CreateAgentDownloadSource(
 			return nil, 0, diagutil.FrameworkDiagFromError(err)
 		}
 
-		return handleMutateItem(resp.StatusCode(), resp.Body, func() *kbapi.PostFleetAgentDownloadSourcesResponse { return resp })
+		return kibanaoapi.HandleMutateItem(resp.StatusCode(), resp.Body, func() *kbapi.PostFleetAgentDownloadSourcesResponse { return resp })
 	})
 }
 
@@ -67,7 +68,7 @@ func UpdateAgentDownloadSource(
 			return nil, 0, diagutil.FrameworkDiagFromError(err)
 		}
 
-		return handleMutateItem(resp.StatusCode(), resp.Body, func() *kbapi.PutFleetAgentDownloadSourcesSourceidResponse { return resp })
+		return kibanaoapi.HandleMutateItem(resp.StatusCode(), resp.Body, func() *kbapi.PutFleetAgentDownloadSourcesSourceidResponse { return resp })
 	})
 }
 
@@ -90,5 +91,5 @@ func ListAgentDownloadSources(ctx context.Context, client *Client, spaceID strin
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	return handleGetItem(resp.StatusCode(), resp.Body, func() *kbapi.GetFleetAgentDownloadSourcesResponse { return resp })
+	return kibanaoapi.HandleGetItem(resp.StatusCode(), resp.Body, func() *kbapi.GetFleetAgentDownloadSourcesResponse { return resp })
 }

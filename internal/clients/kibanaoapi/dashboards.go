@@ -48,7 +48,7 @@ func GetDashboard(ctx context.Context, client *Client, spaceID string, dashboard
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	return handleGetTypedResponse(resp.StatusCode(), resp.Body,
+	return HandleGetTypedResponse(resp.StatusCode(), resp.Body,
 		func() *kbapi.GetDashboardsIdResponse { return resp })
 }
 
@@ -82,7 +82,7 @@ func UpdateDashboard(ctx context.Context, client *Client, spaceID string, dashbo
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	return handleMutateTypedResponse(resp.StatusCode(), resp.Body,
+	return HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
 		func() *kbapi.PutDashboardsIdResponse { return resp },
 		http.StatusOK, http.StatusCreated)
 }

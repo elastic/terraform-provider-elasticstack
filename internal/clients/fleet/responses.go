@@ -31,26 +31,4 @@ func handleDeleteResponse(statusCode int, body []byte) diag.Diagnostics {
 	return diagutil.HandleStatusResponse(statusCode, body, http.StatusOK, http.StatusNotFound)
 }
 
-// handleGetItem handles a fleet GET response: 200 → extract(), 404 → zero value, default → error.
-func handleGetItem[T any](statusCode int, body []byte, extract func() T) (T, diag.Diagnostics) {
-	switch statusCode {
-	case http.StatusOK:
-		return extract(), nil
-	case http.StatusNotFound:
-		var zero T
-		return zero, nil
-	default:
-		var zero T
-		return zero, diagutil.ReportUnknownHTTPError(statusCode, body)
-	}
-}
 
-// handleMutateItem handles a fleet create/update response inside ConflictRetry.
-// Returns (result, statusCode, diags) so ConflictRetry can inspect the status.
-func handleMutateItem[T any](statusCode int, body []byte, extract func() T) (T, int, diag.Diagnostics) {
-	if statusCode == http.StatusOK {
-		return extract(), statusCode, nil
-	}
-	var zero T
-	return zero, statusCode, diagutil.ReportUnknownHTTPError(statusCode, body)
-}

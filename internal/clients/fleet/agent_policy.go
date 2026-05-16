@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -33,7 +34,7 @@ func GetAgentPolicy(ctx context.Context, client *Client, id string, spaceID stri
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	return handleGetItem(resp.StatusCode(), resp.Body, func() *kbapi.AgentPolicy { return &resp.JSON200.Item })
+	return kibanaoapi.HandleGetItem(resp.StatusCode(), resp.Body, func() *kbapi.AgentPolicy { return &resp.JSON200.Item })
 }
 
 // CreateAgentPolicy creates a new agent policy.
@@ -48,7 +49,7 @@ func CreateAgentPolicy(ctx context.Context, client *Client, req kbapi.PostFleetA
 			return nil, 0, diagutil.FrameworkDiagFromError(err)
 		}
 
-		return handleMutateItem(resp.StatusCode(), resp.Body, func() *kbapi.AgentPolicy { return &resp.JSON200.Item })
+		return kibanaoapi.HandleMutateItem(resp.StatusCode(), resp.Body, func() *kbapi.AgentPolicy { return &resp.JSON200.Item })
 	})
 }
 
@@ -60,7 +61,7 @@ func UpdateAgentPolicy(ctx context.Context, client *Client, id string, spaceID s
 			return nil, 0, diagutil.FrameworkDiagFromError(err)
 		}
 
-		return handleMutateItem(resp.StatusCode(), resp.Body, func() *kbapi.AgentPolicy { return &resp.JSON200.Item })
+		return kibanaoapi.HandleMutateItem(resp.StatusCode(), resp.Body, func() *kbapi.AgentPolicy { return &resp.JSON200.Item })
 	})
 }
 

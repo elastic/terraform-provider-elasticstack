@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -33,7 +34,7 @@ func GetOutputs(ctx context.Context, client *Client, spaceID string) ([]kbapi.Ou
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	return handleGetItem(resp.StatusCode(), resp.Body, func() []kbapi.OutputUnion { return resp.JSON200.Items })
+	return kibanaoapi.HandleGetItem(resp.StatusCode(), resp.Body, func() []kbapi.OutputUnion { return resp.JSON200.Items })
 }
 
 // GetOutput reads a specific output from the API.
@@ -43,7 +44,7 @@ func GetOutput(ctx context.Context, client *Client, id string, spaceID string) (
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	return handleGetItem(resp.StatusCode(), resp.Body, func() *kbapi.OutputUnion { return &resp.JSON200.Item })
+	return kibanaoapi.HandleGetItem(resp.StatusCode(), resp.Body, func() *kbapi.OutputUnion { return &resp.JSON200.Item })
 }
 
 // CreateOutput creates a new output.
@@ -54,7 +55,7 @@ func CreateOutput(ctx context.Context, client *Client, spaceID string, req kbapi
 			return nil, 0, diagutil.FrameworkDiagFromError(err)
 		}
 
-		return handleMutateItem(resp.StatusCode(), resp.Body, func() *kbapi.OutputUnion { return &resp.JSON200.Item })
+		return kibanaoapi.HandleMutateItem(resp.StatusCode(), resp.Body, func() *kbapi.OutputUnion { return &resp.JSON200.Item })
 	})
 }
 
@@ -66,7 +67,7 @@ func UpdateOutput(ctx context.Context, client *Client, id string, spaceID string
 			return nil, 0, diagutil.FrameworkDiagFromError(err)
 		}
 
-		return handleMutateItem(resp.StatusCode(), resp.Body, func() *kbapi.OutputUnion { return &resp.JSON200.Item })
+		return kibanaoapi.HandleMutateItem(resp.StatusCode(), resp.Body, func() *kbapi.OutputUnion { return &resp.JSON200.Item })
 	})
 }
 

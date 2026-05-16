@@ -54,10 +54,36 @@ func handleMutateResponse[T any](statusCode int, body []byte) (*T, diag.Diagnost
 	}
 }
 
-// handleGetTypedResponse handles a read response for kbapi typed-struct responses.
+// HandleGetItem handles a GET response: 200 → extract(), 404 → zero value, default → error.
+// The extract callback is called only on HTTP 200 and should return the pre-parsed value.
+// Works with pointers, slices, and other value types.
+func HandleGetItem[T any](statusCode int, body []byte, extract func() T) (T, diag.Diagnostics) {
+	switch statusCode {
+	case http.StatusOK:
+		return extract(), nil
+	case http.StatusNotFound:
+		var zero T
+		return zero, nil
+	default:
+		var zero T
+		return zero, diagutil.ReportUnknownHTTPError(statusCode, body)
+	}
+}
+
+// HandleMutateItem handles a create/update response.
+// Returns (result, statusCode, diags) so callers such as ConflictRetry can inspect the status.
+func HandleMutateItem[T any](statusCode int, body []byte, extract func() T) (T, int, diag.Diagnostics) {
+	if statusCode == http.StatusOK {
+		return extract(), statusCode, nil
+	}
+	var zero T
+	return zero, statusCode, diagutil.ReportUnknownHTTPError(statusCode, body)
+}
+
+// HandleGetTypedResponse handles a read response for kbapi typed-struct responses.
 // The extract callback is called only on HTTP 200 and should return the pre-parsed
 // struct pointer from the response (e.g. resp.JSON200). Returns (nil, nil) on 404.
-func handleGetTypedResponse[T any](statusCode int, body []byte, extract func() *T) (*T, diag.Diagnostics) {
+func HandleGetTypedResponse[T any](statusCode int, body []byte, extract func() *T) (*T, diag.Diagnostics) {
 	switch statusCode {
 	case http.StatusOK:
 		result := extract()
@@ -77,10 +103,10 @@ func handleGetTypedResponse[T any](statusCode int, body []byte, extract func() *
 	}
 }
 
-// handleMutateTypedResponse handles a create/update response for kbapi typed-struct responses.
+// HandleMutateTypedResponse handles a create/update response for kbapi typed-struct responses.
 // The extract callback is called only on success status and should return the pre-parsed struct pointer.
 // Defaults to HTTP 200 when successCodes is omitted.
-func handleMutateTypedResponse[T any](statusCode int, body []byte, extract func() *T, successCodes ...int) (*T, diag.Diagnostics) {
+func HandleMutateTypedResponse[T any](statusCode int, body []byte, extract func() *T, successCodes ...int) (*T, diag.Diagnostics) {
 	if len(successCodes) == 0 {
 		successCodes = []int{http.StatusOK}
 	}

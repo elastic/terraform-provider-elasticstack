@@ -49,7 +49,7 @@ func GetDataView(ctx context.Context, client *Client, spaceID string, viewID str
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	return handleGetTypedResponse(resp.StatusCode(), resp.Body,
+	return HandleGetTypedResponse(resp.StatusCode(), resp.Body,
 		func() *kbapi.DataViewsDataViewResponseObject { return resp.JSON200 })
 }
 
@@ -60,7 +60,7 @@ func CreateDataView(ctx context.Context, client *Client, spaceID string, req kba
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	return handleMutateTypedResponse(resp.StatusCode(), resp.Body,
+	return HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
 		func() *kbapi.DataViewsDataViewResponseObject { return resp.JSON200 })
 }
 
@@ -71,7 +71,7 @@ func UpdateDataView(ctx context.Context, client *Client, spaceID string, viewID 
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	return handleMutateTypedResponse(resp.StatusCode(), resp.Body,
+	return HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
 		func() *kbapi.DataViewsDataViewResponseObject { return resp.JSON200 })
 }
 
