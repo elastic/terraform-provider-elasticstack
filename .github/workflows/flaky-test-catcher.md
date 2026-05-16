@@ -207,7 +207,7 @@ permissions:
 safe-outputs:
   create-issue:
     title-prefix: "[flaky-test] "
-    labels: [flaky-test]
+    labels: [flaky-test, triaged]
     max: 3
   noop:
     max: 1
