@@ -19,6 +19,7 @@ package slo
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -75,8 +76,8 @@ func (m tfModel) histogramCustomIndicatorToAPI() (bool, kbapi.SLOsSloWithSummary
 			} `json:"total"`
 		}{
 			Index:          ind.Index.ValueString(),
-			DataViewId:     stringPtr(ind.DataViewID),
-			Filter:         stringPtr(ind.Filter),
+			DataViewId:     typeutils.ValueStringPointer(ind.DataViewID),
+			Filter:         typeutils.ValueStringPointer(ind.Filter),
 			TimestampField: ind.TimestampField.ValueString(),
 			Good: struct {
 				Aggregation kbapi.SLOsIndicatorPropertiesHistogramParamsGoodAggregation `json:"aggregation"`
@@ -87,9 +88,9 @@ func (m tfModel) histogramCustomIndicatorToAPI() (bool, kbapi.SLOsSloWithSummary
 			}{
 				Field:       ind.Good[0].Field.ValueString(),
 				Aggregation: kbapi.SLOsIndicatorPropertiesHistogramParamsGoodAggregation(ind.Good[0].Aggregation.ValueString()),
-				Filter:      stringPtr(ind.Good[0].Filter),
-				From:        float64Ptr(ind.Good[0].From),
-				To:          float64Ptr(ind.Good[0].To),
+				Filter:      typeutils.ValueStringPointer(ind.Good[0].Filter),
+				From:        typeutils.Float64PointerValue(ind.Good[0].From),
+				To:          typeutils.Float64PointerValue(ind.Good[0].To),
 			},
 			Total: struct {
 				Aggregation kbapi.SLOsIndicatorPropertiesHistogramParamsTotalAggregation `json:"aggregation"`
@@ -100,9 +101,9 @@ func (m tfModel) histogramCustomIndicatorToAPI() (bool, kbapi.SLOsSloWithSummary
 			}{
 				Field:       ind.Total[0].Field.ValueString(),
 				Aggregation: kbapi.SLOsIndicatorPropertiesHistogramParamsTotalAggregation(ind.Total[0].Aggregation.ValueString()),
-				Filter:      stringPtr(ind.Total[0].Filter),
-				From:        float64Ptr(ind.Total[0].From),
-				To:          float64Ptr(ind.Total[0].To),
+				Filter:      typeutils.ValueStringPointer(ind.Total[0].Filter),
+				From:        typeutils.Float64PointerValue(ind.Total[0].From),
+				To:          typeutils.Float64PointerValue(ind.Total[0].To),
 			},
 		},
 	}
@@ -122,21 +123,21 @@ func (m *tfModel) populateFromHistogramCustomIndicator(apiIndicator kbapi.SLOsIn
 	ind := tfHistogramCustomIndicator{
 		Index:          types.StringValue(p.Index),
 		TimestampField: types.StringValue(p.TimestampField),
-		Filter:         stringOrNull(p.Filter),
+		Filter:         types.StringPointerValue(p.Filter),
 		DataViewID:     types.StringNull(),
 		Good: []tfHistogramRange{{
 			Field:       types.StringValue(p.Good.Field),
 			Aggregation: types.StringValue(string(p.Good.Aggregation)),
-			Filter:      stringOrNull(p.Good.Filter),
-			From:        float64OrNull(p.Good.From),
-			To:          float64OrNull(p.Good.To),
+			Filter:      types.StringPointerValue(p.Good.Filter),
+			From:        types.Float64PointerValue(p.Good.From),
+			To:          types.Float64PointerValue(p.Good.To),
 		}},
 		Total: []tfHistogramRange{{
 			Field:       types.StringValue(p.Total.Field),
 			Aggregation: types.StringValue(string(p.Total.Aggregation)),
-			Filter:      stringOrNull(p.Total.Filter),
-			From:        float64OrNull(p.Total.From),
-			To:          float64OrNull(p.Total.To),
+			Filter:      types.StringPointerValue(p.Total.Filter),
+			From:        types.Float64PointerValue(p.Total.From),
+			To:          types.Float64PointerValue(p.Total.To),
 		}},
 	}
 	if p.DataViewId != nil {

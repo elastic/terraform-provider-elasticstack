@@ -19,18 +19,19 @@ package clients
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"sync"
 
 	"github.com/elastic/go-elasticsearch/v8"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/core/info"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
+
+const elasticsearchClientNotConfiguredError = "elasticsearch client is not configured: set elasticsearch.endpoints, elasticsearch_connection.endpoints, or ELASTICSEARCH_ENDPOINTS"
 
 // ElasticsearchScopedClient is a typed client surface for Elasticsearch
 // operations. It exposes the underlying go-elasticsearch client plus all
@@ -41,19 +42,22 @@ import (
 // It deliberately does not expose Kibana or Fleet state so that all version and
 // identity checks always resolve against the scoped Elasticsearch connection.
 type ElasticsearchScopedClient struct {
-	elasticsearch            *elasticsearch.Client
-	elasticsearchClusterInfo *models.ClusterInfo
+	elasticsearchClusterInfo *info.Response
 	mu                       sync.Mutex
 	// esEndpoints holds the resolved Elasticsearch endpoint addresses captured
 	// after provider configuration, entity-local overrides, and environment
 	// overrides have been applied. It is used by accessor validation to
 	// distinguish missing endpoint configuration from unexpected nil states.
 	esEndpoints []string
+	typedClient *elasticsearch.TypedClient
 }
 
-// GetESClient returns the underlying go-elasticsearch client. It satisfies the
-// ESClient sink interface used by internal/clients/elasticsearch/ helpers.
-func (e *ElasticsearchScopedClient) GetESClient() (*elasticsearch.Client, error) {
+// GetESClient returns the strongly-typed Elasticsearch client.
+//
+// The client is built from the provider's configured Elasticsearch transport
+// and endpoints. A product check may run on the typed client's first request,
+// adding marginal latency on first use.
+func (e *ElasticsearchScopedClient) GetESClient() (*elasticsearch.TypedClient, error) {
 	hasEndpoint := false
 	for _, ep := range e.esEndpoints {
 		if ep != "" {
@@ -62,46 +66,36 @@ func (e *ElasticsearchScopedClient) GetESClient() (*elasticsearch.Client, error)
 		}
 	}
 	if !hasEndpoint {
-		return nil, errors.New("elasticsearch client is not configured: set elasticsearch.endpoints, elasticsearch_connection.endpoints, or ELASTICSEARCH_ENDPOINTS")
+		return nil, errors.New(elasticsearchClientNotConfiguredError)
 	}
-	if e.elasticsearch == nil {
+	if e.typedClient == nil {
 		return nil, errors.New("elasticsearch client not found")
 	}
-	return e.elasticsearch, nil
+	return e.typedClient, nil
 }
 
 // serverInfo fetches and caches the Elasticsearch cluster info.
 // It is safe for concurrent use: the mutex ensures only one goroutine fetches
 // the info from the server, and subsequent callers use the cached result.
-func (e *ElasticsearchScopedClient) serverInfo(ctx context.Context) (*models.ClusterInfo, diag.Diagnostics) {
+func (e *ElasticsearchScopedClient) serverInfo(ctx context.Context) (*info.Response, diag.Diagnostics) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
-
 	if e.elasticsearchClusterInfo != nil {
 		return e.elasticsearchClusterInfo, nil
 	}
 
-	esClient, err := e.GetESClient()
+	typedClient, err := e.GetESClient()
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
-	res, err := esClient.Info(esClient.Info.WithContext(ctx))
+	res, err := typedClient.Info().Do(ctx)
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
-	defer res.Body.Close()
-	if diags := diagutil.CheckError(res, "Unable to connect to the Elasticsearch cluster"); diags.HasError() {
-		return nil, diags
-	}
 
-	info := models.ClusterInfo{}
-	if err := json.NewDecoder(res.Body).Decode(&info); err != nil {
-		return nil, diag.FromErr(err)
-	}
-	// cache info
-	e.elasticsearchClusterInfo = &info
+	e.elasticsearchClusterInfo = res
 
-	return &info, nil
+	return res, nil
 }
 
 // ClusterID returns the UUID of the connected Elasticsearch cluster. It is
@@ -112,18 +106,15 @@ func (e *ElasticsearchScopedClient) ClusterID(ctx context.Context) (*string, dia
 		return nil, diags
 	}
 
-	if uuid := info.ClusterUUID; uuid != "" && uuid != "_na_" {
+	if uuid := info.ClusterUuid; uuid != "" && uuid != "_na_" {
 		tflog.Trace(ctx, fmt.Sprintf("cluster UUID: %s", uuid))
 		return &uuid, diags
 	}
 
-	diags = append(diags, diag.Diagnostic{
-		Severity: diag.Error,
-		Summary:  "Unable to get cluster UUID",
-		Detail: `Unable to get cluster UUID.
-		There might be a problem with permissions or cluster is still starting up and UUID has not been populated yet.`,
-	})
-	return nil, diags
+	return nil, append(diags, diagutil.SDKErrorDiag(
+		"Unable to get cluster UUID",
+		"Unable to get cluster UUID.\n\tThere might be a problem with permissions or cluster is still starting up and UUID has not been populated yet.",
+	)...)
 }
 
 // ID returns a CompositeID combining the cluster UUID and the given resourceID.
@@ -143,7 +134,7 @@ func (e *ElasticsearchScopedClient) ServerVersion(ctx context.Context) (*version
 		return nil, diags
 	}
 
-	rawVersion := info.Version.Number
+	rawVersion := info.Version.Int
 	serverVersion, err := version.NewVersion(rawVersion)
 	if err != nil {
 		return nil, diag.FromErr(err)
@@ -190,11 +181,14 @@ func (e *ElasticsearchScopedClient) EnforceMinVersion(ctx context.Context, minVe
 // from the Elasticsearch-related fields of an *apiClient. This is the canonical
 // adapter used by the factory and by NewAcceptanceTestingElasticsearchScopedClient.
 func elasticsearchScopedClientFromAPIClient(a *apiClient) *ElasticsearchScopedClient {
-	return &ElasticsearchScopedClient{
-		elasticsearch:            a.elasticsearch,
+	sc := &ElasticsearchScopedClient{
 		elasticsearchClusterInfo: a.elasticsearchClusterInfo,
 		esEndpoints:              a.esEndpoints,
 	}
+	if a.elasticsearch != nil {
+		sc.typedClient = a.elasticsearch
+	}
+	return sc
 }
 
 // NewAcceptanceTestingElasticsearchScopedClient builds an

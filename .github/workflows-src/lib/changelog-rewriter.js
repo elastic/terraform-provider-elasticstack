@@ -18,6 +18,78 @@ function findSectionEnd(lines, startIndex) {
 }
 
 /**
+ * @param {string[]} lines
+ * @param {{ start: number, end: number }[]} ranges - sorted ascending by start;
+ *    each end is exclusive. First range replaced by `newSectionContent`; others dropped.
+ * @param {string} newSectionContent
+ * @returns {string}
+ */
+function spliceReleaseSectionRanges(lines, ranges, newSectionContent) {
+  const first = ranges[0];
+
+  let before = lines.slice(0, first.start);
+  while (before.length > 0 && before[before.length - 1] === '') {
+    before.pop();
+  }
+
+  const parts = [...before];
+  if (parts.length > 0) parts.push('');
+  parts.push(newSectionContent);
+
+  let cursor = first.end;
+
+  for (let i = 1; i < ranges.length; i++) {
+    const r = ranges[i];
+    parts.push(...lines.slice(cursor, r.start));
+    cursor = r.end;
+  }
+
+  const after = lines.slice(cursor);
+
+  let afterStart = 0;
+  while (afterStart < after.length && after[afterStart] === '') {
+    afterStart++;
+  }
+
+  if (afterStart < after.length) {
+    parts.push('');
+    parts.push(...after.slice(afterStart));
+  }
+
+  return parts.join('\n');
+}
+
+/**
+ * @param {string} content
+ * @param {string} targetVersion - Version without leading v.
+ * @param {string} previousTag - Previous tag with leading v.
+ * @returns {string}
+ */
+function rewriteLinkTable(content, targetVersion, previousTag) {
+  if (!targetVersion || !previousTag) {
+    return content;
+  }
+
+  const unreleasedLineRegex = /^\[Unreleased\]:[ \t]*(https?:\/\/.+\/compare\/).*$/m;
+  const unreleasedLineMatch = content.match(unreleasedLineRegex);
+  if (!unreleasedLineMatch) {
+    return content;
+  }
+
+  const baseCompareUrl = unreleasedLineMatch[1];
+  const unreleasedLine = `[Unreleased]: ${baseCompareUrl}v${targetVersion}...HEAD`;
+  const releaseLine = `[${targetVersion}]: ${baseCompareUrl}${previousTag}...v${targetVersion}`;
+
+  let updated = content.replace(unreleasedLineRegex, unreleasedLine);
+
+  if (new RegExp(`^\\[${targetVersion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\]:`, 'm').test(updated)) {
+    return updated;
+  }
+
+  return updated.replace(/^\[Unreleased\]:.*$/m, `${unreleasedLine}\n${releaseLine}`);
+}
+
+/**
  * @param {string} content - Current CHANGELOG.md content.
  * @param {string} newSectionContent - Full replacement (header + body).
  * @param {'unreleased'|'release'} mode
@@ -35,17 +107,31 @@ function rewriteChangelogSection(content, newSectionContent, mode, targetVersion
     targetStart = lines.findIndex((line) => line.startsWith(`## [${targetVersion}]`));
   }
 
-  if (targetStart === -1) {
-    if (mode === 'release') {
-      const unreleasedStart = lines.findIndex((line) => /^## \[Unreleased\]/.test(line));
-      if (unreleasedStart !== -1) {
-        const insertAfter = findSectionEnd(lines, unreleasedStart);
-        const before = lines.slice(0, insertAfter);
-        const after = lines.slice(insertAfter);
-        return [...before, '', newSectionContent, ...after].join('\n');
-      }
+  if (mode === 'release') {
+    const unreleasedStart = lines.findIndex((line) => /^## \[Unreleased\]/.test(line));
+    const ranges = [];
+    if (unreleasedStart !== -1) {
+      ranges.push({
+        start: unreleasedStart,
+        end: findSectionEnd(lines, unreleasedStart),
+      });
+    }
+    if (targetStart !== -1) {
+      ranges.push({
+        start: targetStart,
+        end: findSectionEnd(lines, targetStart),
+      });
+    }
+    ranges.sort((a, b) => a.start - b.start);
+
+    if (ranges.length === 0) {
       return newSectionContent + '\n\n' + content;
     }
+
+    return spliceReleaseSectionRanges(lines, ranges, newSectionContent);
+  }
+
+  if (targetStart === -1) {
     return newSectionContent + '\n\n' + content;
   }
 
@@ -78,6 +164,7 @@ function rewriteChangelogSection(content, newSectionContent, mode, targetVersion
 if (typeof module !== 'undefined') {
   module.exports = {
     findSectionEnd,
+    rewriteLinkTable,
     rewriteChangelogSection,
   };
 }

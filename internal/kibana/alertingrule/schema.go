@@ -126,7 +126,7 @@ func getSchema() schema.Schema {
 				Description: "The check interval, which specifies how frequently the rule conditions are checked. The interval must be specified in seconds, minutes, hours or days.",
 				Required:    true,
 				Validators: []validator.String{
-					validators.StringIsAlertingDuration{},
+					validators.StringIsAlertingDuration,
 				},
 			},
 			"enabled": schema.BoolAttribute{
@@ -144,7 +144,7 @@ func getSchema() schema.Schema {
 				Description: throttleRuleDescription,
 				Optional:    true,
 				Validators: []validator.String{
-					validators.StringIsAlertingDuration{},
+					validators.StringIsAlertingDuration,
 				},
 			},
 			"scheduled_task_id": schema.StringAttribute{
@@ -252,7 +252,7 @@ func getSchema() schema.Schema {
 									Description: actionsFrequencyThrottleDescription,
 									Optional:    true,
 									Validators: []validator.String{
-										validators.StringIsAlertingDuration{},
+										validators.StringIsAlertingDuration,
 									},
 								},
 							},
@@ -295,14 +295,14 @@ func getSchema() schema.Schema {
 											Description: "Defines the range of time in a day that the action can run. The start of the time frame in 24-hour notation (hh:mm).",
 											Optional:    true,
 											Validators: []validator.String{
-												validators.StringIsHours{},
+												validators.StringIsHours,
 											},
 										},
 										"hours_end": schema.StringAttribute{
 											Description: "Defines the range of time in a day that the action can run. The end of the time frame in 24-hour notation (hh:mm).",
 											Optional:    true,
 											Validators: []validator.String{
-												validators.StringIsHours{},
+												validators.StringIsHours,
 											},
 										},
 									},

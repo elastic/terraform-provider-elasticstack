@@ -24,7 +24,9 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -81,6 +83,10 @@ func (model *outputModel) populateFromAPI(ctx context.Context, union *kbapi.Outp
 func (model outputModel) toAPICreateModel(ctx context.Context, client *clients.KibanaScopedClient) (kbapi.NewOutputUnion, diag.Diagnostics) {
 	outputType := model.Type.ValueString()
 
+	if diags := assertSSLVerificationModeSupport(ctx, client, model.Ssl); diags.HasError() {
+		return kbapi.NewOutputUnion{}, diags
+	}
+
 	switch outputType {
 	case "elasticsearch":
 		return model.toAPICreateElasticsearchModel(ctx)
@@ -103,6 +109,11 @@ func (model outputModel) toAPICreateModel(ctx context.Context, client *clients.K
 
 func (model outputModel) toAPIUpdateModel(ctx context.Context, client *clients.KibanaScopedClient) (union kbapi.UpdateOutputUnion, diags diag.Diagnostics) {
 	outputType := model.Type.ValueString()
+
+	if d := assertSSLVerificationModeSupport(ctx, client, model.Ssl); d.HasError() {
+		diags.Append(d...)
+		return
+	}
 
 	switch outputType {
 	case "elasticsearch":
@@ -129,6 +140,124 @@ func clearRemoteElasticsearchOnlyFields(model *outputModel) {
 	model.SyncIntegrations = types.BoolNull()
 	model.SyncUninstalledIntegrations = types.BoolNull()
 	model.WriteToLogsStreams = types.BoolNull()
+}
+
+type commonOutputReadData struct {
+	id                   *string
+	name                 string
+	outputType           string
+	hosts                []string
+	caSha256             *string
+	caTrustedFingerprint *string
+	isDefault            *bool
+	isDefaultMonitoring  *bool
+	configYaml           *string
+	ssl                  *kbapi.KibanaHTTPAPIsOutputSsl
+}
+
+func (model *outputModel) fromAPICommonFields(ctx context.Context, d commonOutputReadData) (diags diag.Diagnostics) {
+	model.ID = types.StringPointerValue(d.id)
+	model.OutputID = types.StringPointerValue(d.id)
+	model.Name = types.StringValue(d.name)
+	model.Type = types.StringValue(d.outputType)
+	model.Hosts = typeutils.SliceToListTypeString(ctx, d.hosts, path.Root("hosts"), &diags)
+	model.CaSha256 = types.StringPointerValue(d.caSha256)
+	model.CaTrustedFingerprint = typeutils.NonEmptyStringishPointerValue(d.caTrustedFingerprint)
+	model.DefaultIntegrations = types.BoolPointerValue(d.isDefault)
+	model.DefaultMonitoring = types.BoolPointerValue(d.isDefaultMonitoring)
+	model.ConfigYaml = types.StringPointerValue(d.configYaml)
+	if d.ssl != nil {
+		model.Ssl, diags = sslToObjectValue(ctx, d.ssl.Certificate, d.ssl.CertificateAuthorities, d.ssl.Key, d.ssl.VerificationMode)
+	} else {
+		model.Ssl, diags = sslToObjectValue(ctx, nil, nil, nil, nil)
+	}
+	if model.SpaceIDs.IsNull() || model.SpaceIDs.IsUnknown() {
+		model.SpaceIDs = types.SetNull(types.StringType)
+	}
+	return
+}
+
+type commonNewOutputBody struct {
+	CaSha256             *string
+	CaTrustedFingerprint *string
+	ConfigYaml           *string
+	Hosts                []string
+	ID                   *string
+	IsDefault            *bool
+	IsDefaultMonitoring  *bool
+	Name                 string
+	Ssl                  *kbapi.KibanaHTTPAPIsOutputSsl
+}
+
+func (model outputModel) buildCommonNewOutput(ctx context.Context, diags *diag.Diagnostics) commonNewOutputBody {
+	ssl, d := objectValueToSSL(ctx, model.Ssl)
+	diags.Append(d...)
+	return commonNewOutputBody{
+		CaSha256:             model.CaSha256.ValueStringPointer(),
+		CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
+		ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
+		Hosts:                typeutils.ListTypeToSliceString(ctx, model.Hosts, path.Root("hosts"), diags),
+		ID:                   model.OutputID.ValueStringPointer(),
+		IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
+		IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
+		Name:                 model.Name.ValueString(),
+		Ssl:                  ssl.toAPI(),
+	}
+}
+
+type commonUpdateOutputBody struct {
+	CaSha256             *string
+	CaTrustedFingerprint *string
+	ConfigYaml           *string
+	Hosts                *[]string
+	IsDefault            *bool
+	IsDefaultMonitoring  *bool
+	Name                 *string
+	Ssl                  *kbapi.KibanaHTTPAPIsOutputSsl
+}
+
+func (model outputModel) buildCommonUpdateOutput(ctx context.Context, diags *diag.Diagnostics) commonUpdateOutputBody {
+	ssl, d := objectValueToSSLUpdate(ctx, model.Ssl)
+	diags.Append(d...)
+	return commonUpdateOutputBody{
+		CaSha256:             model.CaSha256.ValueStringPointer(),
+		CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
+		ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
+		Hosts:                typeutils.SliceRef(typeutils.ListTypeToSliceString(ctx, model.Hosts, path.Root("hosts"), diags)),
+		IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
+		IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
+		Name:                 model.Name.ValueStringPointer(),
+		Ssl:                  ssl.toAPI(),
+	}
+}
+
+func assertSSLVerificationModeSupport(ctx context.Context, client *clients.KibanaScopedClient, ssl types.Object) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	if !typeutils.IsKnown(ssl) {
+		return nil
+	}
+
+	sslModel := typeutils.ObjectTypeAs[outputSslModel](ctx, ssl, path.Root("ssl"), &diags)
+	if diags.HasError() || sslModel == nil {
+		return diags
+	}
+
+	if !typeutils.IsKnown(sslModel.VerificationMode) {
+		return nil
+	}
+
+	if supported, versionDiags := client.EnforceMinVersion(ctx, MinVersionOutputSSLVerificationMode); versionDiags.HasError() {
+		diags.Append(diagutil.FrameworkDiagsFromSDK(versionDiags)...)
+		return diags
+	} else if !supported {
+		diags.AddAttributeError(path.Root("ssl").AtName("verification_mode"),
+			"Unsupported version for ssl.verification_mode",
+			fmt.Sprintf("ssl.verification_mode requires server version %s or higher", MinVersionOutputSSLVerificationMode.String()))
+		return diags
+	}
+
+	return nil
 }
 
 func assertKafkaSupport(ctx context.Context, client *clients.KibanaScopedClient) diag.Diagnostics {

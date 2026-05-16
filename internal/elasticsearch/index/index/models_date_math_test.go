@@ -21,7 +21,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -42,12 +42,7 @@ func TestPopulateFromAPI_PreservesConfiguredName(t *testing.T) {
 		ConcreteName: basetypes.NewStringNull(),
 	}
 
-	apiModel := models.Index{
-		Name:     concreteName,
-		Settings: map[string]any{},
-	}
-
-	diags := model.populateFromAPI(ctx, concreteName, apiModel)
+	diags := model.populateFromAPI(ctx, concreteName, estypes.IndexState{})
 	require.False(t, diags.HasError(), "unexpected error: %v", diags)
 
 	// The configured date math expression must be preserved.
@@ -70,12 +65,7 @@ func TestPopulateFromAPI_BackfillsNameWhenAbsent(t *testing.T) {
 		ConcreteName: basetypes.NewStringNull(),
 	}
 
-	apiModel := models.Index{
-		Name:     concreteName,
-		Settings: map[string]any{},
-	}
-
-	diags := model.populateFromAPI(ctx, concreteName, apiModel)
+	diags := model.populateFromAPI(ctx, concreteName, estypes.IndexState{})
 	require.False(t, diags.HasError(), "unexpected error: %v", diags)
 
 	// Both name and concrete_name should be set to the concrete index.
@@ -97,12 +87,7 @@ func TestPopulateFromAPI_StaticName(t *testing.T) {
 		ConcreteName: basetypes.NewStringNull(),
 	}
 
-	apiModel := models.Index{
-		Name:     staticName,
-		Settings: map[string]any{},
-	}
-
-	diags := model.populateFromAPI(ctx, staticName, apiModel)
+	diags := model.populateFromAPI(ctx, staticName, estypes.IndexState{})
 	require.False(t, diags.HasError(), "unexpected error: %v", diags)
 
 	assert.Equal(t, staticName, model.Name.ValueString())

@@ -20,66 +20,35 @@ package apikey
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
-func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var stateModel tfModel
-	resp.Diagnostics.Append(req.State.Get(ctx, &stateModel)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	finalModel, diags := r.read(ctx, stateModel)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if finalModel == nil {
-		resp.State.RemoveResource(ctx)
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, *finalModel)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	resp.Diagnostics.Append(r.saveClusterVersion(ctx, stateModel, resp.Private)...)
-}
-
-func (r *Resource) read(ctx context.Context, model tfModel) (*tfModel, diag.Diagnostics) {
+// readAPIKey is the envelope read callback for API key reads.
+func readAPIKey(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state tfModel) (tfModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	compID, diags := model.GetID()
-	if diags.HasError() {
-		return nil, diags
-	}
 
-	client, connDiags := r.Client().GetElasticsearchClient(ctx, model.ElasticsearchConnection)
-	diags.Append(connDiags...)
-	if diags.HasError() {
-		return nil, diags
-	}
-
-	apiKey, apiKeyDiags := elasticsearch.GetAPIKey(client, compID.ResourceID)
+	apiKey, apiKeyDiags := elasticsearch.GetAPIKey(ctx, client, resourceID)
 	diags.Append(apiKeyDiags...)
 	if diags.HasError() {
-		return nil, diags
+		return state, false, diags
 	}
 	if apiKey == nil {
-		return nil, diags
+		return state, false, diags
 	}
 
-	version, sdkDiags := client.ServerVersion(ctx)
+	ver, sdkDiags := client.ServerVersion(ctx)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
-		return nil, diags
+		return state, false, diags
 	}
 
-	diags.Append(model.populateFromAPI(*apiKey, version)...)
-	return &model, diags
+	diags.Append(state.populateFromAPI(apiKey, ver)...)
+	if diags.HasError() {
+		return state, false, diags
+	}
+
+	return state, true, diags
 }

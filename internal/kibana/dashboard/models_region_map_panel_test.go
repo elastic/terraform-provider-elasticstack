@@ -23,16 +23,12 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-func Test_newRegionMapPanelConfigConverter(t *testing.T) {
-	converter := newRegionMapPanelConfigConverter()
-	assert.NotNil(t, converter)
-	assert.Equal(t, string(kbapi.RegionMapNoESQLTypeRegionMap), converter.visualizationType)
-}
 
 func Test_regionMapConfigModel_fromAPI_toAPI(t *testing.T) {
 	tests := []struct {
@@ -106,13 +102,13 @@ func Test_regionMapConfigModel_fromAPI_toAPI(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			model := &regionMapConfigModel{}
+			model := &models.RegionMapConfigModel{}
 
 			if tt.apiNoESQL != nil {
-				diags := model.fromAPINoESQL(context.Background(), *tt.apiNoESQL)
+				diags := regionMapConfigFromAPINoESQL(context.Background(), model, nil, nil, *tt.apiNoESQL)
 				require.False(t, diags.HasError())
 			} else if tt.apiESQL != nil {
-				diags := model.fromAPIESQL(context.Background(), *tt.apiESQL)
+				diags := regionMapConfigFromAPIESQL(context.Background(), model, nil, nil, *tt.apiESQL)
 				require.False(t, diags.HasError())
 			}
 
@@ -128,7 +124,7 @@ func Test_regionMapConfigModel_fromAPI_toAPI(t *testing.T) {
 				assert.Nil(t, model.Query)
 			}
 
-			apiSchema, diags := model.toAPI()
+			apiSchema, diags := regionMapConfigToAPI(model, nil)
 			require.False(t, diags.HasError())
 
 			if tt.expectESQL {
@@ -170,13 +166,14 @@ func Test_regionMapPanelConfigConverter_populateFromAttributes_buildAttributes_r
 	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 	require.NoError(t, attrs.FromRegionMapNoESQL(api))
 
-	converter := newRegionMapPanelConfigConverter()
-	pm := &panelModel{}
-	diags := converter.populateFromAttributes(ctx, pm, attrs)
+	c := lenscommon.ForType(string(kbapi.RegionMapNoESQLTypeRegionMap))
+	require.NotNil(t, c)
+	visBv := models.VisByValueModel{}
+	diags := c.PopulateFromAttributes(ctx, lensChartResolver(nil), &visBv.LensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
-	require.NotNil(t, pm.RegionMapConfig)
+	require.NotNil(t, visBv.RegionMapConfig)
 
-	attrs2, diags := converter.buildAttributes(*pm)
+	attrs2, diags := c.BuildAttributes(&visBv.LensByValueChartBlocks, lensChartResolver(nil))
 	require.False(t, diags.HasError())
 
 	noESQL2, err := attrs2.AsRegionMapNoESQL()
@@ -202,17 +199,53 @@ func Test_regionMapPanelConfigConverter_populateFromAttributes_buildAttributes_r
 	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 	require.NoError(t, attrs.FromRegionMapESQL(api))
 
-	converter := newRegionMapPanelConfigConverter()
-	pm := &panelModel{}
-	diags := converter.populateFromAttributes(ctx, pm, attrs)
+	c := lenscommon.ForType(string(kbapi.RegionMapNoESQLTypeRegionMap))
+	require.NotNil(t, c)
+	visBv := models.VisByValueModel{}
+	diags := c.PopulateFromAttributes(ctx, lensChartResolver(nil), &visBv.LensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
-	require.NotNil(t, pm.RegionMapConfig)
+	require.NotNil(t, visBv.RegionMapConfig)
 
-	attrs2, diags := converter.buildAttributes(*pm)
+	attrs2, diags := c.BuildAttributes(&visBv.LensByValueChartBlocks, lensChartResolver(nil))
 	require.False(t, diags.HasError())
 
 	esql2, err := attrs2.AsRegionMapESQL()
 	require.NoError(t, err)
 	assert.Equal(t, "ESQL Region Map Round-Trip", *esql2.Title)
 	assert.Equal(t, kbapi.RegionMapESQLTypeRegionMap, esql2.Type)
+}
+
+func Test_regionMapConfig_lensChartPresentation_hideTitleRoundTrip(t *testing.T) {
+	ctx := context.Background()
+	dash := lensPresentationTestDashboard()
+
+	api := kbapi.RegionMapNoESQL{
+		Type:                kbapi.RegionMapNoESQLTypeRegionMap,
+		Title:               new("Thin Region Map"),
+		IgnoreGlobalFilters: new(false),
+		Sampling:            new(float32(1)),
+	}
+	lang := kbapi.FilterSimpleLanguage("kql")
+	api.Query = kbapi.FilterSimple{
+		Language:   &lang,
+		Expression: "*",
+	}
+	require.NoError(t, json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.DataSource))
+	require.NoError(t, json.Unmarshal([]byte(`{"operation":"count"}`), &api.Metric))
+	require.NoError(t, json.Unmarshal([]byte(`{"operation":"filters","filters":[{"filter":{"query":"*","language":"kql"},"label":"All"}]}`), &api.Region))
+
+	base := &models.RegionMapConfigModel{}
+	require.False(t, regionMapConfigFromAPINoESQL(ctx, base, nil, nil, api).HasError())
+
+	m := *base
+	m.HideTitle = types.BoolValue(true)
+
+	attrs, diags := regionMapConfigToAPI(&m, dash)
+	require.False(t, diags.HasError())
+	out, err := attrs.AsRegionMapNoESQL()
+	require.NoError(t, err)
+
+	got := &models.RegionMapConfigModel{}
+	require.False(t, regionMapConfigFromAPINoESQL(ctx, got, dash, &m, out).HasError())
+	assert.Equal(t, types.BoolValue(true), got.HideTitle)
 }

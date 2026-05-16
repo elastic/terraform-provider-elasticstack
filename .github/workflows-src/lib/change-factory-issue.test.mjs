@@ -10,6 +10,7 @@ const __dirname = path.dirname(__filename);
 const require = createRequire(import.meta.url);
 const {
   changeFactoryIssueBranchName,
+  issueBranchName,
   qualifyTriggerEvent,
   actorTrustWhenSenderMissing,
   checkActorTrust,
@@ -18,7 +19,7 @@ const {
   parseOptionalTriStateFromEnv,
   parseFinalizeGateEnv,
 } = require('./change-factory-issue.js');
-const { ISSUE_BRANCH_PREFIX } = require('../change-factory-issue/intake-constants.js');
+const { ISSUE_BRANCH_PREFIX, DUPLICATE_LINKAGE_MODE } = require('../change-factory-issue/intake-constants.js');
 
 const scriptsDir = path.resolve(__dirname, '../change-factory-issue/scripts');
 const workflowTemplatePath = path.resolve(__dirname, '../change-factory-issue/workflow.md.tmpl');
@@ -26,8 +27,10 @@ const workflowCompiledPath = path.resolve(__dirname, '../../workflows/change-fac
 const lockCompiledPath = path.resolve(__dirname, '../../workflows/change-factory-issue.lock.yml');
 const inlineScripts = [
   'qualify_trigger.inline.js',
+  'capture_command_text.inline.js',
   'check_actor_trust.inline.js',
   'check_duplicate_pr.inline.js',
+  'notify_duplicate_blocked.inline.js',
   'finalize_gate.inline.js',
 ];
 
@@ -37,24 +40,26 @@ function makePullRequest(overrides = {}) {
     state: 'open',
     head_branch: changeFactoryIssueBranchName(42),
     labels: ['change-factory'],
-    body: 'Proposes the OpenSpec change.\n\nCloses #42',
+    body: 'Proposes the OpenSpec change.\n\nRelated to #42',
     html_url: 'https://github.com/elastic/terraform-provider-elasticstack/pull/101',
     ...overrides,
   };
 }
 
-test('change-factory-issue exports align with shared createFactoryIssueIntake binding', () => {
-  const { createFactoryIssueIntake } = require('./factory-issue-shared.js');
+test('change-factory-issue exports align with shared createFactoryIssueModule binding', () => {
+  const { createFactoryIssueModule } = require('./factory-issue-shared.js');
   const {
     ISSUE_BRANCH_PREFIX: prefix,
     FACTORY_LABEL: label,
+    DUPLICATE_LINKAGE_MODE: duplicateLinkageMode,
     ISSUE_OPENED_NOT_ELIGIBLE_REASON: openedReason,
   } = require('../change-factory-issue/intake-constants.js');
-  const bound = createFactoryIssueIntake({
+  const bound = createFactoryIssueModule({
     branchPrefix: prefix,
     factoryLabel: label,
     issueOpenedNotEligibleReason: openedReason,
-    duplicateLinkageMode: 'github-keywords',
+    duplicateLinkageMode,
+    issueBranchNameAliases: ['changeFactoryIssueBranchName'],
   });
   const params = { eventName: 'issues', eventAction: 'labeled', labelName: 'change-factory', issueLabels: [] };
   assert.deepEqual(qualifyTriggerEvent(params), bound.qualifyTriggerEvent(params));
@@ -66,6 +71,7 @@ test('change-factory-issue exports align with shared createFactoryIssueIntake bi
     checkDuplicatePR({ issueNumber: 7, pullRequests: [] }),
     bound.checkDuplicatePR({ issueNumber: 7, pullRequests: [] }),
   );
+  assert.equal(changeFactoryIssueBranchName(7), bound.changeFactoryIssueBranchName(7));
 });
 
 test('qualifyTriggerEvent accepts issues.labeled with the change-factory label', () => {
@@ -291,52 +297,49 @@ test('checkDuplicatePR ignores PRs missing issue-closing reference', () => {
   assert.equal(result.duplicate_pr_found, false);
 });
 
-test('checkDuplicatePR matches lowercase closes keyword', () => {
-  const result = checkDuplicatePR({
-    issueNumber: 42,
-    pullRequests: [makePullRequest({ body: 'See description.\n\ncloses #42' })],
-  });
-
-  assert.equal(result.duplicate_pr_found, true);
-});
-
-test('checkDuplicatePR ignores issue linkage with whitespace between # and the issue number', () => {
-  const result = checkDuplicatePR({
-    issueNumber: 42,
-    pullRequests: [makePullRequest({ body: 'See description.\n\ncloses # 42' })],
-  });
-
-  assert.equal(result.duplicate_pr_found, false);
-});
-
-test('checkDuplicatePR matches alternate GitHub closing keywords case-insensitively', () => {
+test('checkDuplicatePR does not match GitHub closing keywords (related-literal mode)', () => {
   for (const body of [
+    'See description.\n\ncloses #42',
     'FIXES #42',
     'Fixed #42',
     'Resolve #42',
     'RESOLVED #42',
+    'Closes #42',
   ]) {
     const result = checkDuplicatePR({
       issueNumber: 42,
       pullRequests: [makePullRequest({ body })],
     });
-    assert.equal(result.duplicate_pr_found, true, `expected match for body: ${body}`);
+    assert.equal(
+      result.duplicate_pr_found,
+      false,
+      `expected no match for closing-keyword body in related-literal mode: ${body}`,
+    );
   }
 });
 
-test('checkDuplicatePR does not match a PR whose body has Closes issue linkage followed by more digits', () => {
+test('checkDuplicatePR ignores issue linkage with whitespace between # and the issue number', () => {
   const result = checkDuplicatePR({
     issueNumber: 42,
-    pullRequests: [makePullRequest({ body: 'Proposes the change.\n\nCloses #420' })],
+    pullRequests: [makePullRequest({ body: 'See description.\n\nRelated to # 42' })],
   });
 
   assert.equal(result.duplicate_pr_found, false);
 });
 
-test('checkDuplicatePR matches when body has canonical Closes issue linkage at end of line', () => {
+test('checkDuplicatePR does not match a PR whose body has Related to linkage followed by more digits', () => {
   const result = checkDuplicatePR({
     issueNumber: 42,
-    pullRequests: [makePullRequest({ body: 'Proposes the change.\n\nCloses #42\n' })],
+    pullRequests: [makePullRequest({ body: 'Proposes the change.\n\nRelated to #420' })],
+  });
+
+  assert.equal(result.duplicate_pr_found, false);
+});
+
+test('checkDuplicatePR matches when body has canonical Related to linkage at end of line', () => {
+  const result = checkDuplicatePR({
+    issueNumber: 42,
+    pullRequests: [makePullRequest({ body: 'Proposes the change.\n\nRelated to #42\n' })],
   });
 
   assert.equal(result.duplicate_pr_found, true);
@@ -449,6 +452,7 @@ test('change-factory-issue workflow is compiled and exists', () => {
   assert.match(source, /change-factory/);
   assert.match(source, /issues/);
   assert.match(source, /compile-workflow-sources/);
+  assert.match(source, /patch-format: am/);
 });
 
 test('change-factory-issue lock file is compiled and exists', () => {
@@ -456,6 +460,7 @@ test('change-factory-issue lock file is compiled and exists', () => {
   assert.ok(lock.length > 0);
   assert.match(lock, /# gh-aw-metadata:/);
   assert.match(lock, /DO NOT EDIT/);
+  assert.match(lock, /"patch_format":"am"/);
 });
 
 test('computeGateReason returns unknown reason when actorTrusted is null (step skipped)', () => {
@@ -488,6 +493,8 @@ test('computeGateReason returns unknown reason when duplicatePrFound is null (st
 
 test('changeFactoryIssueBranchName stays aligned with workflow template prefix', () => {
   assert.equal(ISSUE_BRANCH_PREFIX, 'change-factory/issue-');
+  assert.equal(DUPLICATE_LINKAGE_MODE, 'related-literal');
+  assert.equal(issueBranchName(42), 'change-factory/issue-42');
   assert.equal(changeFactoryIssueBranchName(42), 'change-factory/issue-42');
 
   const workflowTmpl = readFileSync(workflowTemplatePath, 'utf8');
@@ -501,7 +508,11 @@ test('changeFactoryIssueBranchName stays aligned with workflow template prefix',
 test('change-factory-issue workflow.md.tmpl wiring matches intake contract', () => {
   const workflowTmpl = readFileSync(workflowTemplatePath, 'utf8');
 
-  assert.match(workflowTmpl, /\non:\n  issues:\n    types: \[opened, labeled\]/);
+  assert.match(workflowTmpl, /\non:\n  issues:\n    types: \[labeled\]/);
+  assert.match(
+    workflowTmpl,
+    /slash_command:\n    name: change-factory\n    events: \[issue_comment\]/,
+  );
   assert.match(workflowTmpl, /status-comment:\s*true/);
   assert.match(workflowTmpl, /issues:\s*write/);
 
@@ -520,14 +531,26 @@ test('change-factory-issue workflow.md.tmpl wiring matches intake contract', () 
   );
   assert.match(
     workflowTmpl,
+    /- name: Capture command text\n      id: capture_command_text\n      if: steps\.qualify_trigger\.outputs\.event_eligible == 'true'/,
+  );
+  assert.match(
+    workflowTmpl,
     /- name: Check duplicate PR\n      id: check_duplicate_pr\n      if: >-\n        steps\.qualify_trigger\.outputs\.event_eligible == 'true' &&\n        steps\.check_actor_trust\.outputs\.actor_trusted == 'true'/,
+  );
+  assert.match(
+    workflowTmpl,
+    /- name: Notify duplicate blocked\n      id: notify_duplicate_blocked\n      if: >-\n        steps\.qualify_trigger\.outputs\.event_eligible == 'true' &&\n        steps\.check_actor_trust\.outputs\.actor_trusted == 'true' &&\n        steps\.check_duplicate_pr\.outputs\.duplicate_pr_found == 'true'/,
   );
 
   const scriptIncludes = [
     'x-script-include: scripts/qualify_trigger.inline.js',
+    'x-script-include: scripts/capture_command_text.inline.js',
     'x-script-include: scripts/check_actor_trust.inline.js',
     'x-script-include: scripts/check_duplicate_pr.inline.js',
+    'x-script-include: scripts/notify_duplicate_blocked.inline.js',
     'x-script-include: scripts/remove_trigger_label.inline.js',
+    'x-script-include: ../lib/set-phase-label.js',
+    'x-script-append: ../lib/set-phase-label-run.js',
     'x-script-include: scripts/finalize_gate.inline.js',
   ];
   let lastIdx = -1;
@@ -554,6 +577,16 @@ test('change-factory-issue workflow.md.tmpl wiring matches intake contract', () 
 
   assert.match(workflowTmpl, /trigger_label_removed:/);
   assert.match(workflowTmpl, /trigger_label_removed_reason:/);
+
+  assert.match(
+    workflowTmpl,
+    /human_direction: \$\{\{ steps\.capture_command_text\.outputs\.human_direction \}\}/,
+  );
+
+  assert.match(
+    workflowTmpl,
+    /DUPLICATE_PR_URL: \$\{\{ steps\.check_duplicate_pr\.outputs\.duplicate_pr_url \}\}/,
+  );
 
   assert.match(
     workflowTmpl,
@@ -601,6 +634,10 @@ test('change-factory-issue workflow.md.tmpl wiring matches intake contract', () 
   );
   assert.match(
     workflowTmpl,
+    /safe-outputs:\s*\n\s*create-pull-request:[\s\S]*?patch-format: am/,
+  );
+  assert.match(
+    workflowTmpl,
     /add-comment:\s*\n\s*max: 1\s*\n\s*target: triggering/,
   );
   assert.match(workflowTmpl, /noop:\s*\n\s*max: 1\s*\n\s*report-as-issue: false/);
@@ -632,8 +669,13 @@ test('change-factory-issue agent prompt matches stable OpenSpec proposal contrac
 
   assert.match(
     prompt,
-    /Closes #\$\{\{\s*github\.event\.issue\.number\s*\}\}/,
-    'expected canonical PR Closes linkage expression',
+    /Related to #\$\{\{\s*github\.event\.issue\.number\s*\}\}/,
+    'expected canonical PR Related to linkage expression',
+  );
+  assert.doesNotMatch(
+    prompt,
+    /\bCloses #\$\{\{\s*github\.event\.issue\.number\s*\}\}/,
+    'change-factory PR body must not auto-close the source issue (no Closes #N)',
   );
   assert.match(prompt, /exactly one/, 'expected exactly-one change / PR guidance');
   assert.match(prompt, /second change directory/, 'expected no second change directory');
@@ -732,16 +774,16 @@ test('change-factory-issue agent prompt matches stable OpenSpec proposal contrac
   assert.doesNotMatch(prompt, /\u2026|\u2014|\u2018|\u2019|\u201c|\u201d/, 'prompt must use ASCII punctuation');
 });
 
-test('check_duplicate_pr.inline.js resolves expected branch via changeFactoryIssueBranchName', () => {
+test('check_duplicate_pr.inline.js resolves expected branch via shared issueBranchName', () => {
   const source = readFileSync(path.join(scriptsDir, 'check_duplicate_pr.inline.js'), 'utf8');
-  assert.match(source, /const expectedBranch = changeFactoryIssueBranchName\(issueNumber\);/);
+  assert.match(source, /const expectedBranch = issueBranchName\(issueNumber\);/);
 });
 
 test('change-factory-issue inline scripts include shared intake helpers in dependency order', () => {
   const expectedHeader = [
     /^\/\/include: \.\.\/intake-constants\.js\n/,
     /^\/\/include: \.\.\/\.\.\/lib\/factory-issue-shared\.js\n/,
-    /^\/\/include: \.\.\/\.\.\/lib\/change-factory-issue\.gh\.js\n/,
+    /^\/\/include: \.\.\/\.\.\/lib\/factory-issue-module\.gh\.js\n/,
   ];
   for (const name of inlineScripts) {
     const source = readFileSync(path.join(scriptsDir, name), 'utf8');

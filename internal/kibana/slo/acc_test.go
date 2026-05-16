@@ -402,6 +402,8 @@ func TestAccResourceSloGroupBy(t *testing.T) {
 }
 
 func TestAccResourceSloPreventInitialBackfill(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, slo.SLOSupportsPreventInitialBackfillMinVersion, versionutils.FlavorAny)
+
 	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -409,7 +411,6 @@ func TestAccResourceSloPreventInitialBackfill(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(slo.SLOSupportsPreventInitialBackfillMinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("test"),
 				ConfigVariables: config.Variables{
 					"name": config.StringVariable(sloName),
@@ -425,6 +426,8 @@ func TestAccResourceSloPreventInitialBackfill(t *testing.T) {
 }
 
 func TestAccResourceSlo_timeslice_metric_indicator_basic(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, sloTimesliceMetricsMinVersion, versionutils.FlavorAny)
+
 	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -432,7 +435,6 @@ func TestAccResourceSlo_timeslice_metric_indicator_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("test"),
 				ConfigVariables: config.Variables{
 					"name": config.StringVariable(sloName),
@@ -454,6 +456,8 @@ func TestAccResourceSlo_timeslice_metric_indicator_basic(t *testing.T) {
 }
 
 func TestAccResourceSlo_timeslice_metric_indicator_percentile(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, sloTimesliceMetricsMinVersion, versionutils.FlavorAny)
+
 	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -461,7 +465,6 @@ func TestAccResourceSlo_timeslice_metric_indicator_percentile(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("test"),
 				ConfigVariables: config.Variables{
 					"name": config.StringVariable(sloName),
@@ -482,6 +485,8 @@ func TestAccResourceSlo_timeslice_metric_indicator_percentile(t *testing.T) {
 }
 
 func TestAccResourceSlo_timeslice_metric_indicator_doc_count(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, sloTimesliceMetricsMinVersion, versionutils.FlavorAny)
+
 	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -489,7 +494,6 @@ func TestAccResourceSlo_timeslice_metric_indicator_doc_count(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("test"),
 				ConfigVariables: config.Variables{
 					"name": config.StringVariable(sloName),
@@ -510,6 +514,8 @@ func TestAccResourceSlo_timeslice_metric_indicator_doc_count(t *testing.T) {
 }
 
 func TestAccResourceSlo_timeslice_metric_indicator_multiple_mixed_metrics(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, sloTimesliceMetricsMinVersion, versionutils.FlavorAny)
+
 	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -517,7 +523,6 @@ func TestAccResourceSlo_timeslice_metric_indicator_multiple_mixed_metrics(t *tes
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("test"),
 				ConfigVariables: config.Variables{
 					"name": config.StringVariable(sloName),
@@ -543,6 +548,8 @@ func TestAccResourceSlo_timeslice_metric_indicator_multiple_mixed_metrics(t *tes
 }
 
 func TestAccResourceSlo_metric_custom_indicator_doc_count(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, sloTimesliceMetricsMinVersion, versionutils.FlavorAny)
+
 	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -550,7 +557,6 @@ func TestAccResourceSlo_metric_custom_indicator_doc_count(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("test"),
 				ConfigVariables: config.Variables{
 					"name": config.StringVariable(sloName),
@@ -568,6 +574,25 @@ func TestAccResourceSlo_metric_custom_indicator_doc_count(t *testing.T) {
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.total.0.metrics.0.field"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.total.0.equation", "B"),
 				),
+			},
+		},
+	})
+}
+
+func TestAccResourceSlo_metric_custom_indicator_unknown_field_variable(t *testing.T) {
+	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("test"),
+				ConfigVariables: config.Variables{
+					"name":                config.StringVariable(sloName),
+					"metric_field_suffix": config.StringVariable("processed"),
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
 			},
 		},
 	})
@@ -617,7 +642,7 @@ func TestAccResourceSloValidation(t *testing.T) {
 					"name":   config.StringVariable("short"),
 					"slo_id": config.StringVariable("sh"),
 				},
-				ExpectError: regexp.MustCompile(`Attribute slo_id string length must be between 8 and 36, got: 2`),
+				ExpectError: regexp.MustCompile(`Attribute slo_id string length must be between 8 and 48, got: 2`),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -626,7 +651,7 @@ func TestAccResourceSloValidation(t *testing.T) {
 					"name":   config.StringVariable("toolongid"),
 					"slo_id": config.StringVariable("this-id-is-way-too-long-and-exceeds-the-48-character-limit-for-slo-ids"),
 				},
-				ExpectError: regexp.MustCompile(`Attribute slo_id string length must be between 8 and 36, got: 70`),
+				ExpectError: regexp.MustCompile(`Attribute slo_id string length must be between 8 and 48, got: 70`),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -653,6 +678,22 @@ func TestAccResourceSloValidation(t *testing.T) {
 					"name": config.StringVariable("tw-invalid"),
 				},
 				ExpectError: regexp.MustCompile(`(?s)time_window\[[0-9]\]\.type.*not_a_valid_type`),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("time_window_invalid_duration_rolling"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable("tw-dur-rolling"),
+				},
+				ExpectError: regexp.MustCompile(`(?s)Invalid Attribute Value Match.*duration`),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("time_window_invalid_duration_calendar"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable("tw-dur-calendar"),
+				},
+				ExpectError: regexp.MustCompile(`(?s)Invalid Attribute Value Match.*duration`),
 			},
 		},
 	})
@@ -780,6 +821,8 @@ func TestAccResourceSloFromSDK(t *testing.T) {
 	sloConstraints, err := version.NewConstraint(">=8.9.0,!=8.11.0,!=8.11.1,!=8.11.2,!=8.11.3,!=8.11.4")
 	require.NoError(t, err)
 
+	versionutils.SkipIfUnsupportedConstraints(t, sloConstraints, versionutils.FlavorAny)
+
 	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
@@ -794,8 +837,7 @@ func TestAccResourceSloFromSDK(t *testing.T) {
 						VersionConstraint: "0.13.1",
 					},
 				},
-				SkipFunc: versionutils.CheckIfVersionMeetsConstraints(sloConstraints),
-				Config:   sloFromSDKCreateConfig,
+				Config: sloFromSDKCreateConfig,
 				ConfigVariables: config.Variables{
 					"name": config.StringVariable(sloName),
 				},
@@ -809,7 +851,6 @@ func TestAccResourceSloFromSDK(t *testing.T) {
 			{
 				// Verify the current (Framework) implementation can read and manage the SDK-created state.
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(sloConstraints),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"name": config.StringVariable(sloName),
@@ -829,6 +870,8 @@ func TestAccResourceSloRangeFromZero(t *testing.T) {
 	constraints, err := version.NewConstraint(">=8.12.0")
 	require.NoError(t, err)
 
+	versionutils.SkipIfUnsupportedConstraints(t, constraints, versionutils.FlavorAny)
+
 	suffix := sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -836,7 +879,6 @@ func TestAccResourceSloRangeFromZero(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(constraints),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("test"),
 				ConfigVariables: config.Variables{
 					"suffix": config.StringVariable(suffix),
@@ -886,6 +928,8 @@ func TestAccResourceSloRangeFromZero(t *testing.T) {
 // (e.g. float64(float32(0.999)) = 0.9990000128746033), causing a "provider
 // produced inconsistent result after apply" error.
 func TestAccResourceSloFloatPrecision(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, sloTimesliceMetricsMinVersion, versionutils.FlavorAny)
+
 	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -893,7 +937,6 @@ func TestAccResourceSloFloatPrecision(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("test"),
 				ConfigVariables: config.Variables{
 					"name": config.StringVariable(sloName),
@@ -914,6 +957,8 @@ func TestAccResourceSloFloatPrecision(t *testing.T) {
 // float64(float32(0.001)) = 0.0010000000474974513, causing a "provider produced
 // inconsistent result after apply" error when those fields were float32 in the client.
 func TestAccResourceSloHistogramFloatPrecision(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, sloTimesliceMetricsMinVersion, versionutils.FlavorAny)
+
 	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -921,7 +966,6 @@ func TestAccResourceSloHistogramFloatPrecision(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("test"),
 				ConfigVariables: config.Variables{
 					"name": config.StringVariable(sloName),
@@ -930,6 +974,94 @@ func TestAccResourceSloHistogramFloatPrecision(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "histogram_custom_indicator.0.good.0.from", "0.001"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "histogram_custom_indicator.0.good.0.to", "1"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "objective.0.target", "0.999"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceSlo_long_slo_id(t *testing.T) {
+	// 48-character slo_id is only supported server-side from 8.16.0 onwards.
+	slo8_16Constraints, err := version.NewConstraint(">=8.16.0")
+	require.NoError(t, err)
+	versionutils.SkipIfUnsupportedConstraints(t, slo8_16Constraints, versionutils.FlavorAny)
+
+	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	longSloID := "my-slo-id-that-is-exactly-48-characters-long-now"
+	require.Len(t, longSloID, 48, "slo_id must be exactly 48 characters to test the boundary")
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceSloDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("test"),
+				ConfigVariables: config.Variables{
+					"name":   config.StringVariable(sloName),
+					"slo_id": config.StringVariable(longSloID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "name", sloName),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "slo_id", longSloID),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "description", "fully sick SLO"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "apm_latency_indicator.0.environment", "production"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "apm_latency_indicator.0.service", "my-service"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "apm_latency_indicator.0.transaction_type", "request"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "apm_latency_indicator.0.transaction_name", "GET /sup/dawg"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "apm_latency_indicator.0.index", "my-index-"+sloName),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "apm_latency_indicator.0.threshold", "500"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "time_window.0.duration", "7d"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "time_window.0.type", "rolling"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "budgeting_method", "timeslices"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "objective.0.target", "0.999"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "objective.0.timeslice_target", "0.95"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "objective.0.timeslice_window", "5m"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "space_id", "default"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceSlo_36_char_slo_id(t *testing.T) {
+	// 36-character slo_id is the historic server-side limit on versions before 8.16.0.
+	slo36CharConstraints, err := version.NewConstraint(">=8.9.0,!=8.11.0,!=8.11.1,!=8.11.2,!=8.11.3,!=8.11.4,<8.16.0")
+	require.NoError(t, err)
+	versionutils.SkipIfUnsupportedConstraints(t, slo36CharConstraints, versionutils.FlavorAny)
+
+	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	sloID36 := "slo-id-that-is-exactly-36-characters"
+	require.Len(t, sloID36, 36, "slo_id must be exactly 36 characters to test the boundary")
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceSloDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("test"),
+				ConfigVariables: config.Variables{
+					"name":   config.StringVariable(sloName),
+					"slo_id": config.StringVariable(sloID36),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "name", sloName),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "slo_id", sloID36),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "description", "fully sick SLO"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "apm_latency_indicator.0.environment", "production"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "apm_latency_indicator.0.service", "my-service"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "apm_latency_indicator.0.transaction_type", "request"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "apm_latency_indicator.0.transaction_name", "GET /sup/dawg"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "apm_latency_indicator.0.index", "my-index-"+sloName),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "apm_latency_indicator.0.threshold", "500"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "time_window.0.duration", "7d"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "time_window.0.type", "rolling"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "budgeting_method", "timeslices"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "objective.0.target", "0.999"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "objective.0.timeslice_target", "0.95"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "objective.0.timeslice_window", "5m"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "space_id", "default"),
 				),
 			},
 		},

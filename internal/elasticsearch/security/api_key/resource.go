@@ -21,11 +21,13 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	rschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces
@@ -43,13 +45,28 @@ var (
 	MinVersionWithCrossCluster         = version.Must(version.NewVersion("8.10.0")) // Cross-cluster API keys enabled in 8.10
 )
 
+// Resource embeds ElasticsearchResource[tfModel] to inherit Configure, Metadata,
+// Schema, Read, Delete, and PostRead cluster-version caching.
+// Create and Update are defined on the concrete type.
 type Resource struct {
-	*entitycore.ResourceBase
+	*entitycore.ElasticsearchResource[tfModel]
+}
+
+func schemaFactory(_ context.Context) rschema.Schema {
+	return getSchema(currentSchemaVersion)
 }
 
 func newResource() *Resource {
+	placeholder := entitycore.PlaceholderElasticsearchWriteCallback[tfModel]()
 	return &Resource{
-		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentElasticsearch, "security_api_key"),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[tfModel]("security_api_key", entitycore.ElasticsearchResourceOptions[tfModel]{
+			Schema:   schemaFactory,
+			Read:     readAPIKey,
+			Delete:   deleteAPIKey,
+			Create:   placeholder,
+			Update:   placeholder,
+			PostRead: postReadPersistClusterVersion,
+		}),
 	}
 }
 
@@ -57,30 +74,11 @@ func NewResource() resource.Resource {
 	return newResource()
 }
 
-// Equivalent to privatestate.ProviderData
+// privateData mirrors the GetKey/SetKey surface of *privatestate.ProviderData
+// so the envelope can hand a typed handle to PostRead without importing the
+// framework's internal package. See the framework docs for full key semantics.
 type privateData interface {
-	// GetKey returns the private state data associated with the given key.
-	//
-	// If the key is reserved for framework usage, an error diagnostic
-	// is returned. If the key is valid, but private state data is not found,
-	// nil is returned.
-	//
-	// The naming of keys only matters in context of a single resource,
-	// however care should be taken that any historical keys are not reused
-	// without accounting for older resource instances that may still have
-	// older data at the key.
 	GetKey(ctx context.Context, key string) ([]byte, diag.Diagnostics)
-
-	// SetKey sets the private state data at the given key.
-	//
-	// If the key is reserved for framework usage, an error diagnostic
-	// is returned. The data must be valid JSON and UTF-8 safe or an error
-	// diagnostic is returned.
-	//
-	// The naming of keys only matters in context of a single resource,
-	// however care should be taken that any historical keys are not reused
-	// without accounting for older resource instances that may still have
-	// older data at the key.
 	SetKey(ctx context.Context, key string, value []byte) diag.Diagnostics
 }
 
@@ -90,19 +88,18 @@ type clusterVersionPrivateData struct {
 	Version string
 }
 
-func (r *Resource) saveClusterVersion(ctx context.Context, model tfModel, priv privateData) diag.Diagnostics {
-	client, diags := r.Client().GetElasticsearchClient(ctx, model.ElasticsearchConnection)
-	if diags.HasError() {
-		return diags
-	}
+// saveClusterVersion persists the current Elasticsearch cluster version in
+// private state so it can be retrieved on subsequent plan computations.
+func saveClusterVersion(ctx context.Context, client *clients.ElasticsearchScopedClient, priv privateData) diag.Diagnostics {
+	var diags diag.Diagnostics
 
-	version, sdkDiags := client.ServerVersion(ctx)
+	ver, sdkDiags := client.ServerVersion(ctx)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
 		return diags
 	}
 
-	data, err := json.Marshal(clusterVersionPrivateData{Version: version.String()})
+	data, err := json.Marshal(clusterVersionPrivateData{Version: ver.String()})
 	if err != nil {
 		diags.AddError("failed to marshal cluster version data", err.Error())
 		return diags
@@ -112,7 +109,26 @@ func (r *Resource) saveClusterVersion(ctx context.Context, model tfModel, priv p
 	return diags
 }
 
-func (r *Resource) clusterVersionOfLastRead(ctx context.Context, priv privateData) (*version.Version, diag.Diagnostics) {
+func postReadPersistClusterVersion(
+	ctx context.Context,
+	client *clients.ElasticsearchScopedClient,
+	_ tfModel,
+	privateState any,
+) diag.Diagnostics {
+	priv, ok := privateState.(privateData)
+	if !ok {
+		var diags diag.Diagnostics
+		diags.AddError(
+			"Elasticsearch envelope configuration error",
+			"security_api_key PostRead requires private state implementing GetKey and SetKey.",
+		)
+		return diags
+	}
+	return saveClusterVersion(ctx, client, priv)
+}
+
+// clusterVersionOfLastRead retrieves the cached Elasticsearch cluster version.
+func clusterVersionOfLastRead(ctx context.Context, priv privateData) (*version.Version, diag.Diagnostics) {
 	versionBytes, diags := priv.GetKey(ctx, clusterVersionPrivateDataKey)
 	if diags.HasError() {
 		return nil, diags

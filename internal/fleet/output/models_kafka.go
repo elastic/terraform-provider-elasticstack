@@ -22,7 +22,6 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -442,7 +441,7 @@ func (model outputModel) toAPIUpdateKafkaModel(ctx context.Context) (kbapi.Updat
 		CaSha256:             model.CaSha256.ValueStringPointer(),
 		CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
 		ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
-		Hosts:                schemautil.SliceRef(typeutils.ListTypeToSliceString(ctx, model.Hosts, path.Root("hosts"), &diags)),
+		Hosts:                typeutils.SliceRef(typeutils.ListTypeToSliceString(ctx, model.Hosts, path.Root("hosts"), &diags)),
 		IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
 		IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
 		Name:                 model.Name.ValueString(),
@@ -517,20 +516,30 @@ func (model outputModel) toAPIUpdateKafkaModel(ctx context.Context) (kbapi.Updat
 }
 
 func (model *outputModel) fromAPIKafkaModel(ctx context.Context, data *kbapi.OutputKafka) (diags diag.Diagnostics) {
-	model.ID = types.StringPointerValue(data.Id)
-	model.OutputID = types.StringPointerValue(data.Id)
-	model.Name = types.StringValue(data.Name)
-	model.Type = types.StringValue(string(data.Type))
-	model.Hosts = typeutils.SliceToListTypeString(ctx, data.Hosts, path.Root("hosts"), &diags)
-	model.CaSha256 = types.StringPointerValue(data.CaSha256)
-	model.CaTrustedFingerprint = typeutils.NonEmptyStringishPointerValue(data.CaTrustedFingerprint)
-	model.DefaultIntegrations = types.BoolPointerValue(data.IsDefault)
-	model.DefaultMonitoring = types.BoolPointerValue(data.IsDefaultMonitoring)
-	model.ConfigYaml = types.StringPointerValue(data.ConfigYaml)
-	if data.Ssl != nil {
-		model.Ssl, diags = sslToObjectValue(ctx, data.Ssl.Certificate, data.Ssl.CertificateAuthorities, data.Ssl.Key, data.Ssl.VerificationMode)
-	} else {
-		model.Ssl, diags = sslToObjectValue(ctx, nil, nil, nil, nil)
+	diags = model.fromAPICommonFields(ctx, commonOutputReadData{
+		id:                   data.Id,
+		name:                 data.Name,
+		outputType:           string(data.Type),
+		hosts:                data.Hosts,
+		caSha256:             data.CaSha256,
+		caTrustedFingerprint: data.CaTrustedFingerprint,
+		isDefault:            data.IsDefault,
+		isDefaultMonitoring:  data.IsDefaultMonitoring,
+		configYaml:           data.ConfigYaml,
+		ssl:                  data.Ssl,
+	})
+
+	// Capture the configured password before re-initializing kafkaModel so that
+	// we can preserve it when Fleet omits/redacts it (it is stored as a secret
+	// reference and not returned in plain form).
+	configuredPassword := types.StringNull()
+	if typeutils.IsKnown(model.Kafka) {
+		var existing outputKafkaModel
+		existingDiags := model.Kafka.As(ctx, &existing, basetypes.ObjectAsOptions{})
+		diags.Append(existingDiags...)
+		if !existingDiags.HasError() {
+			configuredPassword = existing.Password
+		}
 	}
 
 	// Kafka-specific fields - initialize kafka nested object
@@ -558,7 +567,17 @@ func (model *outputModel) fromAPIKafkaModel(ctx context.Context, data *kbapi.Out
 	kafkaModel.Timeout = types.Float32PointerValue(data.Timeout)
 	kafkaModel.Version = types.StringPointerValue(data.Version)
 	kafkaModel.Username = types.StringPointerValue(data.Username)
-	kafkaModel.Password = types.StringPointerValue(data.Password)
+	switch {
+	case data.Password != nil:
+		kafkaModel.Password = types.StringPointerValue(data.Password)
+	case typeutils.IsKnown(configuredPassword):
+		// Fleet redacts kafka.password in API responses (the value is stored
+		// in the secret store and only a reference comes back). Preserve the
+		// configured value so Terraform does not see an inconsistent change.
+		kafkaModel.Password = configuredPassword
+	default:
+		kafkaModel.Password = types.StringNull()
+	}
 	kafkaModel.Key = types.StringPointerValue(data.Key)
 
 	// Handle headers
@@ -645,13 +664,6 @@ func (model *outputModel) fromAPIKafkaModel(ctx context.Context, data *kbapi.Out
 	kafkaObj, nd := types.ObjectValueFrom(ctx, getKafkaAttrTypes(), kafkaModel)
 	diags.Append(nd...)
 	model.Kafka = kafkaObj
-
-	// Note: SpaceIDs is not returned by the API for outputs
-	// If it's currently null/unknown, set to explicit null to satisfy Terraform's requirement
-	// If it has a value from plan, preserve it to avoid plan diffs
-	if model.SpaceIDs.IsNull() || model.SpaceIDs.IsUnknown() {
-		model.SpaceIDs = types.SetNull(types.StringType)
-	}
 
 	clearRemoteElasticsearchOnlyFields(model)
 

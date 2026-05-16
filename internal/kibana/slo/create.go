@@ -24,6 +24,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -122,7 +123,7 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 		Objective:       apiModel.Objective,
 		Settings:        apiModel.Settings,
 		GroupBy:         groupBy,
-		Tags:            kibanaoapi.TagsToPtr(apiModel.Tags),
+		Tags:            typeutils.SliceRef(apiModel.Tags),
 		Artifacts:       apiModel.Artifacts,
 	}
 

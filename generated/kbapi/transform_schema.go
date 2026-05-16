@@ -1105,16 +1105,26 @@ func fixSpaceResponseSchemas(schema *Schema) {
 
 func fixDashboardPanelItemRefs(schema *Schema) {
 	schema.Components.Move("schemas.kbn-dashboard-data.properties.panels.items.anyOf.0.anyOf", "schemas.kbn-dashboard-data.properties.panels.items.anyOf.0.oneOf")
-	schema.Components.Set("schemas.kbn-dashboard-data.properties.panels.items.anyOf.0.discriminator", Map{"propertyName": "type"})
+	schema.Components.Set(
+		"schemas.kbn-dashboard-data.properties.panels.items.anyOf.0.discriminator",
+		schema.Components.MustGetMap("schemas.kbn-dashboard-section.properties.panels.items.discriminator"),
+	)
 	schema.Components.CreateRef(schema, "dashboard_panel_item", "schemas.kbn-dashboard-section.properties.panels.items")
 	schema.Components.CreateRef(schema, "dashboard_panel_item", "schemas.kbn-dashboard-data.properties.panels.items.anyOf.0")
 	schema.Components.CreateRef(schema, "dashboard_panels", "schemas.kbn-dashboard-data.properties.panels")
+	schema.Components.CreateRef(schema, "dashboard_filters", "schemas.kbn-dashboard-data.properties.filters")
+	schema.Components.CreateRef(schema, "dashboard_pinned_panels", "schemas.kbn-dashboard-data.properties.pinned_panels")
 
 	dashboardIDPath := schema.MustGetPath("/api/dashboards/{id}")
 	dashboardIDPath.Put.Move("requestBody.content.application/json.schema.properties.panels.items.anyOf.0.anyOf", "requestBody.content.application/json.schema.properties.panels.items.anyOf.0.oneOf")
-	dashboardIDPath.Put.Set("requestBody.content.application/json.schema.properties.panels.items.anyOf.0.discriminator", Map{"propertyName": "type"})
+	dashboardIDPath.Put.Set(
+		"requestBody.content.application/json.schema.properties.panels.items.anyOf.0.discriminator",
+		schema.Components.MustGetMap("schemas.dashboard_panel_item.discriminator"),
+	)
 	dashboardIDPath.Put.CreateRef(schema, "dashboard_panel_item", "requestBody.content.application/json.schema.properties.panels.items.anyOf.0")
 	dashboardIDPath.Put.CreateRef(schema, "dashboard_panels", "requestBody.content.application/json.schema.properties.panels")
+	dashboardIDPath.Put.CreateRef(schema, "dashboard_filters", "requestBody.content.application/json.schema.properties.filters")
+	dashboardIDPath.Put.CreateRef(schema, "dashboard_pinned_panels", "requestBody.content.application/json.schema.properties.pinned_panels")
 
 	const panelTypePrefix = "kbn-dashboard-panel-type-"
 	panelOneOf := schema.Components.MustGetSlice("schemas.dashboard_panel_item.oneOf")
@@ -1239,6 +1249,45 @@ func transformFleetPaths(schema *Schema) {
 	hostsPath.Post.CreateRef(schema, "server_host", "responses.200.content.application/json.schema.properties.item")
 	hostPath.Get.CreateRef(schema, "server_host", "responses.200.content.application/json.schema.properties.item")
 	hostPath.Put.CreateRef(schema, "server_host", "responses.200.content.application/json.schema.properties.item")
+
+	// Proxies
+	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/models/fleet_proxy.ts
+	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/rest_spec/fleet_proxies.ts
+
+	proxiesPath := schema.MustGetPath("/api/fleet/proxies")
+	proxyPath := schema.MustGetPath("/api/fleet/proxies/{itemId}")
+
+	// Lift the response item into a reusable named component (mirrors
+	// server_host above). This gives us a single FleetProxyItem Go type
+	// instead of one anonymous struct per endpoint.
+	proxiesPath.Get.CreateRef(schema, "fleet_proxy_item", "responses.200.content.application/json.schema.properties.items.items")
+	proxiesPath.Post.CreateRef(schema, "fleet_proxy_item", "responses.200.content.application/json.schema.properties.item")
+	proxyPath.Get.CreateRef(schema, "fleet_proxy_item", "responses.200.content.application/json.schema.properties.item")
+	proxyPath.Put.CreateRef(schema, "fleet_proxy_item", "responses.200.content.application/json.schema.properties.item")
+
+	// proxy_headers values are a string|boolean|number union. oapi-codegen
+	// only emits the typed AsX/FromX/MergeX/Marshal/Unmarshal helpers on a
+	// union when each anyOf branch is itself a $ref to a named component;
+	// when the branches are primitive inline types it emits an unusable
+	// struct with an unexported `union json.RawMessage` field. Define
+	// trivial named components for each primitive branch and a
+	// fleet_proxy_header_value union that refs them, then point every
+	// proxy_headers.additionalProperties at that union.
+	schema.Components.Set("schemas.fleet_proxy_header_value_string", Map{"type": "string"})
+	schema.Components.Set("schemas.fleet_proxy_header_value_boolean", Map{"type": "boolean"})
+	schema.Components.Set("schemas.fleet_proxy_header_value_number", Map{"type": "number"})
+	schema.Components.Set("schemas.fleet_proxy_header_value", Map{
+		"anyOf": Slice{
+			Map{"$ref": "#/components/schemas/fleet_proxy_header_value_string"},
+			Map{"$ref": "#/components/schemas/fleet_proxy_header_value_boolean"},
+			Map{"$ref": "#/components/schemas/fleet_proxy_header_value_number"},
+		},
+	})
+
+	headerValueRef := Map{"$ref": "#/components/schemas/fleet_proxy_header_value"}
+	schema.Components.Set("schemas.fleet_proxy_item.properties.proxy_headers.additionalProperties", headerValueRef)
+	proxiesPath.Post.Set("requestBody.content.application/json.schema.properties.proxy_headers.additionalProperties", headerValueRef)
+	proxyPath.Put.Set("requestBody.content.application/json.schema.properties.proxy_headers.additionalProperties", headerValueRef)
 
 	// Outputs
 	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/models/output.ts
@@ -1670,5 +1719,20 @@ func fixSyntheticsMonitorModels(schema *Schema) {
 
 func fixSyntheticsMonitorParams(schema *Schema) {
 	getEndpoint := schema.MustGetPath("/api/synthetics/monitors").MustGetEndpoint("get")
-	getEndpoint.Set("parameters.12.schema", getEndpoint.MustGetMap("parameters.12.schema.oneOf.0"))
+	// Collapse query parameters whose oneOf union mixes a string-enum
+	// branch with an array-of-the-same-enum branch. oapi-codegen generates
+	// duplicate type names for the inner enum in that case (e.g. two
+	// declarations of GetSyntheticMonitorsParamsMonitorTypes1), which
+	// breaks the build. Picking the first oneOf branch (the scalar enum)
+	// matches the prior behaviour of these parameters and is what the
+	// rest of the generated client expected.
+	collapseToFirstOneOf := func(paramIndex int) {
+		key := fmt.Sprintf("parameters.%d.schema", paramIndex)
+		oneOfKey := fmt.Sprintf("%s.oneOf.0", key)
+		getEndpoint.Set(key, getEndpoint.MustGetMap(oneOfKey))
+	}
+
+	// monitorTypes (parameters.2) and useLogicalAndFor (parameters.12).
+	collapseToFirstOneOf(2)
+	collapseToFirstOneOf(12)
 }

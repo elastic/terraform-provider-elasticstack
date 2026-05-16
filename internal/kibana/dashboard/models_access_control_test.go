@@ -22,30 +22,31 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestAccessControlValue_toCreateAPI(t *testing.T) {
 	t.Run("nil receiver", func(t *testing.T) {
-		var m *AccessControlValue
-		apiModel := m.toCreateAPI()
+		var m *models.AccessControlValue
+		apiModel := accessControlValueToCreateAPI(m)
 		assert.Nil(t, apiModel.AccessMode)
 	})
 
 	t.Run("empty values", func(t *testing.T) {
-		m := &AccessControlValue{
+		m := &models.AccessControlValue{
 			AccessMode: types.StringNull(),
 		}
-		apiModel := m.toCreateAPI()
+		apiModel := accessControlValueToCreateAPI(m)
 		assert.Nil(t, apiModel.AccessMode)
 	})
 
 	t.Run("filled values", func(t *testing.T) {
-		m := &AccessControlValue{
+		m := &models.AccessControlValue{
 			AccessMode: types.StringValue("write_restricted"),
 		}
-		apiModel := m.toCreateAPI()
+		apiModel := accessControlValueToCreateAPI(m)
 		mode := kbapi.KbnDashboardAccessControlAccessMode("write_restricted")
 		assert.Equal(t, &mode, apiModel.AccessMode)
 	})
@@ -66,8 +67,8 @@ func TestNewAccessControlFromAPI(t *testing.T) {
 }
 
 func TestDashboardModel_populateFromAPI_clearsAccessControlWhenAccessModeMissing(t *testing.T) {
-	model := &dashboardModel{
-		AccessControl: &AccessControlValue{
+	model := &models.DashboardModel{
+		AccessControl: &models.AccessControlValue{
 			AccessMode: types.StringValue("write_restricted"),
 		},
 	}
@@ -95,7 +96,7 @@ func TestDashboardModel_populateFromAPI_clearsAccessControlWhenAccessModeMissing
 		},
 	}
 
-	diags := model.populateFromAPI(context.Background(), resp, "dashboard-id", "default")
+	diags := dashboardPopulateFromAPI(context.Background(), model, resp, "dashboard-id", "default")
 	assert.False(t, diags.HasError())
 	assert.Nil(t, model.AccessControl)
 }

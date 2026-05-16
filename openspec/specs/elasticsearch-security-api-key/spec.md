@@ -60,9 +60,7 @@ resource "elasticstack_elasticsearch_security_api_key" "example" {
   }
 }
 ```
-
 ## Requirements
-
 ### Requirement: API lifecycle uses Elasticsearch security APIs (REQ-001-REQ-006)
 
 The resource SHALL create regular API keys with the Elasticsearch Create API key API, create cross-cluster API keys with the Create cross-cluster API key API, read keys with the Get API key API, update regular API keys with the Update API key API, update cross-cluster API keys with the Update cross-cluster API key API, and delete keys by invalidating them with the Invalidate API key API.
@@ -145,43 +143,69 @@ When `type="cross_cluster"`, the resource SHALL verify on create that the Elasti
 
 ### Requirement: JSON and access mapping (REQ-027-REQ-029)
 
-When `metadata`, `role_descriptors`, `access.search[].field_security`, or `access.search[].query` are configured, the resource SHALL parse them as JSON before building the Elasticsearch request, and SHALL return an error diagnostic if JSON decoding fails. When `role_descriptors` is present, the resource SHALL apply the provider's role-descriptor defaults before sending the request. When building a cross-cluster API key request, the resource SHALL omit `access` unless at least one `search` or `replication` entry is populated.
+The resource SHALL omit `role_descriptors` from the Elasticsearch request when the attribute
+is null or unknown, rather than attempting JSON parsing that fails. JSON
+parsing SHALL only be attempted when `role_descriptors` is a known, non-null value.
 
-#### Scenario: Invalid JSON input
+#### Scenario: Create without role_descriptors
 
-- GIVEN one of the JSON-backed attributes contains invalid JSON
-- WHEN create or update builds the Elasticsearch request
-- THEN the resource SHALL fail before sending the API request
+- GIVEN a configuration that sets only `name` (no `role_descriptors`)
+- WHEN Terraform applies the configuration for the first time
+- THEN the resource SHALL create the API key successfully without returning an error
+- AND the Elasticsearch create request SHALL NOT include a `role_descriptors` field
+- AND the resulting state SHALL contain a valid `id`, `key_id`, `api_key`, and `encoded`
+
+#### Scenario: Update without role_descriptors
+
+- GIVEN an API key resource whose configuration does not set `role_descriptors`
+- WHEN Terraform applies a plan that modifies another mutable attribute (e.g. `metadata`)
+- THEN the resource SHALL update the API key without returning an error
+- AND the Elasticsearch update request SHALL NOT include a `role_descriptors` field
+
+#### Scenario: Restriction validation skips when role_descriptors is absent
+
+- GIVEN a configuration that does not set `role_descriptors`
+- WHEN the provider validates whether any role descriptor contains a `restriction` block
+- THEN the validation SHALL return no error diagnostics
+- AND the provider SHALL NOT attempt to parse an Unknown or Null JSON value
 
 ### Requirement: Create writes sensitive outputs and then refreshes state (REQ-030-REQ-033)
 
-On create, the resource SHALL select the regular or cross-cluster create API according to `type`, submit the request payload derived from the Terraform plan, set `id`, `key_id`, `api_key`, and `encoded` from the create response, and then read the created key back from Elasticsearch to populate the remaining state fields.
+On create, the concrete `Resource.Create` method (not the envelope write path) SHALL select the regular or cross-cluster create API according to `type`, submit the request payload derived from the Terraform plan, set `id`, `key_id`, `api_key`, and `encoded` from the create response, and then call `readAPIKey` directly to populate the remaining state fields before persisting via `resp.State.Set`. This create-time follow-up SHALL NOT invoke the envelope `PostRead` hook or persist cluster version to private state.
 
 #### Scenario: Successful create
 
 - GIVEN Elasticsearch accepts the create request
 - WHEN the provider finalizes state
-- THEN state SHALL include the composite `id`, the computed `key_id`, the sensitive credentials, and refreshed non-sensitive fields from a follow-up read
+- THEN state SHALL include the composite `id`, the computed `key_id`, the sensitive credentials, and refreshed non-sensitive fields from the concrete method's direct call to `readAPIKey`
 
 ### Requirement: Read refreshes state and preserves non-returned sensitive values (REQ-034-REQ-038)
 
-During refresh, the resource SHALL read the API key identified by the stored composite `id`. If Elasticsearch returns HTTP 404, the resource SHALL remove the resource from Terraform state. When a key is returned, the resource SHALL set `key_id`, `name`, `expiration_timestamp`, and `metadata` from the API response. The resource SHALL preserve prior-state values for `api_key` and `encoded`, because the Get API does not return them. After a successful refresh, the resource SHALL save the Elasticsearch cluster version in private state for later planning decisions.
+During Terraform `Read` (refresh), the envelope SHALL invoke the package-level read callback (`readAPIKey`) with the resolved API key identifier after standard prelude steps. If Elasticsearch returns HTTP 404, the envelope SHALL remove the resource from Terraform state. When a key is returned, `readAPIKey` SHALL set `key_id`, `name`, `expiration_timestamp`, and `metadata` from the API response. `readAPIKey` SHALL preserve prior-state values for `api_key` and `encoded`, because the Get API does not return them.
 
-#### Scenario: API key no longer exists
+During refresh only — after `resp.State.Set` succeeds for a found key on this path — the envelope SHALL invoke `PostRead`, which SHALL save the Elasticsearch cluster version in private state for later planning decisions.
 
-- GIVEN refresh runs for a key that has been removed from Elasticsearch
+#### Scenario: API key no longer exists on refresh
+
+- GIVEN Terraform `Read` runs for a key that has been removed from Elasticsearch
 - WHEN the Get API returns HTTP 404
-- THEN the resource SHALL remove itself from Terraform state
+- THEN the envelope SHALL remove the resource from Terraform state
+
+#### Scenario: Cluster version persisted via PostRead after successful refresh
+
+- GIVEN Terraform `Read` completes, `readAPIKey` succeeds, and the envelope persists refreshed state
+- WHEN `PostRead` runs for this resource type
+- THEN the current Elasticsearch cluster version SHALL be stored in private state via `saveClusterVersion`
 
 ### Requirement: Update only changes mutable API key fields (REQ-039-REQ-041)
 
-During update, the resource SHALL call the regular or cross-cluster update API according to `type`, SHALL identify the target API key by `key_id`, and SHALL omit immutable fields such as `id`, `name`, and `expiration` from the update request payload. After a successful update, the resource SHALL read the API key again and write the refreshed state.
+During update, the concrete `Resource.Update` method SHALL call the regular or cross-cluster update API according to `type`, SHALL identify the target API key by `key_id`, and SHALL omit immutable fields such as `id`, `name`, and `expiration` from the update request payload. After a successful update API call, it SHALL call `readAPIKey` directly and persist refreshed state via `resp.State.Set`. This update-time follow-up SHALL NOT invoke the envelope `PostRead` hook or persist cluster version to private state.
 
 #### Scenario: Update request payload
 
 - GIVEN Terraform updates a managed API key in place
 - WHEN the provider builds the update request
-- THEN it SHALL send only mutable fields and SHALL refresh state afterward
+- THEN it SHALL send only mutable fields and SHALL refresh state afterward via `readAPIKey` from the concrete update implementation (without `PostRead`)
 
 ### Requirement: Cross-cluster access changes force deferred role descriptor planning (REQ-042)
 
@@ -222,3 +246,118 @@ The resource documentation and example configuration SHALL include an API key ro
 - GIVEN the rotation acceptance test changes the `time_rotating` trigger input
 - WHEN Terraform reapplies the configuration
 - THEN the rotation id and the managed API key id SHALL both change
+
+### Requirement: Typed client implementation for security API key
+The `elasticstack_elasticsearch_security_api_key` resource SHALL create, read, update, and invalidate API keys using the go-elasticsearch Typed API (`elasticsearch.TypedClient.Security.CreateApiKey`, `Security.GetApiKey`, `Security.UpdateApiKey`, `Security.InvalidateApiKey`) instead of the raw `esapi` client. The typed API responses SHALL be used directly without manual JSON decoding into intermediate `models.APIKey*` types.
+
+#### Scenario: Typed API success for API key resource create
+- **GIVEN** a valid Elasticsearch connection
+- **WHEN** the resource creates a regular API key
+- **THEN** the provider SHALL call `Security.CreateApiKey` on the typed client
+- **AND** the response SHALL be returned as `*createapikey.Response`
+
+#### Scenario: Typed API success for cross-cluster API key create
+- **GIVEN** a valid Elasticsearch connection and `type = "cross_cluster"`
+- **WHEN** the resource creates a cross-cluster API key
+- **THEN** the provider SHALL call `Security.CreateCrossClusterApiKey` on the typed client
+- **AND** the response SHALL be returned as `*createcrossclusterapikey.Response`
+
+#### Scenario: Typed API success for API key read
+- **GIVEN** a valid Elasticsearch connection
+- **WHEN** the resource refreshes state
+- **THEN** the provider SHALL call `Security.GetApiKey` on the typed client
+- **AND** the response SHALL be used as `*types.ApiKey`
+
+### Requirement: Model satisfies entitycore resource envelope constraint
+
+The `tfModel` type SHALL declare value-receiver methods `GetID() types.String`, `GetResourceID() types.String`, and `GetElasticsearchConnection() types.List` so that it satisfies `entitycore.ElasticsearchResourceModel`.
+
+#### Scenario: Model usable as envelope type parameter
+
+- **WHEN** `entitycore.NewElasticsearchResource[tfModel]("security_api_key", opts)` is constructed with `readAPIKey`, `deleteAPIKey`, placeholders for create/update, and `PostRead: postReadPersistClusterVersion`
+- **THEN** compilation SHALL succeed because `tfModel` implements the required interface
+
+### Requirement: Read callback is package-level
+
+The resource SHALL provide a package-level `readAPIKey` function with signature `func(context.Context, *clients.ElasticsearchScopedClient, string, tfModel) (tfModel, bool, diag.Diagnostics)`. This function SHALL be passed as the `Read` callback in `entitycore.ElasticsearchResourceOptions[tfModel]`. The embedding `Resource` type SHALL NOT define its own `Read` method.
+
+#### Scenario: Envelope Read invokes readAPIKey
+
+- **WHEN** Terraform calls `Read` on the api_key resource
+- **THEN** the envelope prelude SHALL resolve client and identity and SHALL delegate to `readAPIKey`
+
+### Requirement: Delete callback is package-level
+
+The resource SHALL provide a package-level `deleteAPIKey` function with signature `func(context.Context, *clients.ElasticsearchScopedClient, string, tfModel) diag.Diagnostics`. This function SHALL be passed as the delete callback to `NewElasticsearchResource`.
+
+#### Scenario: Envelope delete invokes the callback
+
+- **WHEN** the envelope's `Delete` runs for an api_key resource
+- **THEN** it SHALL invoke `deleteAPIKey` after resolving the scoped client
+
+### Requirement: Create and Update use placeholder callbacks with concrete overrides
+
+The resource SHALL pass `PlaceholderElasticsearchWriteCallback[tfModel]()` (a single `WriteFunc[tfModel]` value) into both `Create` and `Update` slots of `ElasticsearchResourceOptions[tfModel]` when constructing the envelope. The concrete `Resource` type SHALL define its own `Create` and `Update` methods that shadow the envelope's, preserving the existing private-state, version-gating, and cross-cluster API key flows.
+
+#### Scenario: Create is handled by the concrete type
+
+- **WHEN** Terraform calls Create on the api_key resource
+- **THEN** the concrete `Resource.Create` SHALL run, not the envelope's
+- **AND** the private-state write and version-checking logic SHALL remain unchanged
+
+#### Scenario: Update is handled by the concrete type
+
+- **WHEN** Terraform calls Update on the api_key resource
+- **THEN** the concrete `Resource.Update` SHALL run, not the envelope's
+- **AND** the private-state read and version-gating logic SHALL remain unchanged
+
+### Requirement: PostRead persists cached cluster version on refresh only
+
+The resource SHALL supply `PostRead: postReadPersistClusterVersion` in `ElasticsearchResourceOptions[tfModel]`. After the envelope successfully persists Terraform state during `Read` (refresh) only, `PostRead` SHALL call `saveClusterVersion` so planning modifiers can read the cached Elasticsearch version from private state. Create and Update remain concrete methods that shadow the envelope; their direct calls to `readAPIKey` and `resp.State.Set` SHALL NOT invoke `PostRead`.
+
+#### Scenario: Successful Terraform Read triggers PostRead
+
+- **WHEN** Terraform `Read` runs, `readAPIKey` succeeds, and the envelope calls `resp.State.Set`
+- **THEN** `PostRead` SHALL persist the cluster version to private state
+
+#### Scenario: Create and Update refresh does not invoke PostRead
+
+- **WHEN** the concrete `Create` or `Update` method completes its API call and sets state after calling `readAPIKey`
+- **THEN** `PostRead` SHALL NOT run for that operation
+
+#### Scenario: Not-found refresh skips PostRead cluster-version persistence
+
+- **WHEN** Terraform `Read` runs and `readAPIKey` signals not found so state is removed
+- **THEN** `PostRead` SHALL NOT run for that operation
+
+### Requirement: Schema factory omits connection block
+
+The schema factory SHALL return a `schema.Schema` whose `Blocks` map does not contain `elasticsearch_connection`. The envelope SHALL inject the connection block before exposing the schema.
+
+#### Scenario: Schema exposed through envelope includes connection block
+
+- **WHEN** the envelope's `Schema` method is called
+- **THEN** the returned schema SHALL include the `elasticsearch_connection` block
+- **AND** the concrete factory SHALL not declare it
+
+### Requirement: Version-checking plan modifiers remain functional
+
+The `requiresReplaceIfUpdateNotSupported` plan modifier SHALL continue to read the cached cluster version from private state and require replacement when the cached version is lower than `8.4.0`. The `saveClusterVersion` helper SHALL remain invocable from the envelope `PostRead` hook.
+
+#### Scenario: Plan modifier reads cached version after refresh
+
+- **GIVEN** a successful read path has persisted a cluster version to private state via `PostRead`
+- **WHEN** a plan is computed that changes `metadata` or `role_descriptors`
+- **THEN** the plan modifier SHALL read the cached version from private state
+- **AND** it SHALL require replacement if the cached version is below `8.4.0`
+
+### Requirement: State upgrades remain on the concrete type
+
+The concrete `Resource` type SHALL continue to implement `ResourceWithUpgradeState`, providing state upgraders from schema version `0` to `1` and from `1` to `2`.
+
+#### Scenario: State upgrade registration
+
+- **WHEN** the concrete resource type is asserted as `resource.ResourceWithUpgradeState`
+- **THEN** the assertion SHALL succeed
+- **AND** the upgrade map SHALL contain the two defined upgraders
+

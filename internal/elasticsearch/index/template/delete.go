@@ -22,27 +22,10 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var state Model
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	compID, diags := clients.CompositeIDFromStrFw(state.ID.ValueString())
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, diags := r.Client().GetElasticsearchClient(ctx, state.ElasticsearchConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	resp.Diagnostics.Append(elasticsearch.DeleteIndexTemplate(ctx, client, compID.ResourceID)...)
+// deleteIndexTemplate is the envelope delete callback for the index template resource.
+func deleteIndexTemplate(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, _ Model) diag.Diagnostics {
+	return elasticsearch.DeleteIndexTemplate(ctx, client, resourceID)
 }

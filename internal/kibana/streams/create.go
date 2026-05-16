@@ -22,69 +22,38 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/hashicorp/go-version"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// minVersionStreams reflects the Kibana version where the stream.type discriminator
-// field was introduced (kibana#256682). Earlier versions of the Streams API
-// (9.2.x–9.3.x) reject requests containing this field.
-var minVersionStreams = version.Must(version.NewVersion("9.4.0-SNAPSHOT"))
-
-func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var planModel streamModel
-
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &planModel)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, diags := r.Client().GetKibanaClient(ctx, planModel.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+func createStream(ctx context.Context, client *clients.KibanaScopedClient, spaceID string, plan streamModel) (streamModel, diag.Diagnostics) {
+	var diags diag.Diagnostics
 
 	// Classic streams cannot be created via the API — they must be imported.
-	if planModel.ClassicConfig != nil {
-		resp.Diagnostics.AddError(
+	if plan.ClassicConfig != nil {
+		diags.AddError(
 			"Classic streams cannot be created",
 			"Classic streams are pre-existing Elasticsearch data streams adopted by Kibana Streams. "+
 				"Use `terraform import` to manage an existing classic stream instead of creating one.\n\n"+
 				fmt.Sprintf("To import: terraform import elasticstack_kibana_stream.<resource_name> '%s/%s'",
-					planModel.SpaceID.ValueString(), planModel.Name.ValueString()),
+					spaceID, plan.GetResourceID().ValueString()),
 		)
-		return
+		return streamModel{}, diags
 	}
 
-	supported, sdkDiags := client.EnforceMinVersion(ctx, minVersionStreams)
-	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	if !supported {
-		resp.Diagnostics.AddError(
-			"Unsupported server version",
-			fmt.Sprintf("Kibana Streams require Elastic Stack %s or later.", minVersionStreams),
-		)
-		return
-	}
-
-	spaceID := planModel.SpaceID.ValueString()
-	name := planModel.Name.ValueString()
+	name := plan.GetResourceID().ValueString()
 	compositeID := clients.CompositeID{ClusterID: spaceID, ResourceID: name}
-	planModel.ID = types.StringValue(compositeID.String())
+	plan.ID = types.StringValue(compositeID.String())
 
-	readModel := r.upsert(ctx, client, planModel, &resp.Diagnostics)
-	if resp.Diagnostics.HasError() {
-		return
+	readModel, upsertDiags := upsertStream(ctx, client, plan)
+	diags.Append(upsertDiags...)
+	if diags.HasError() {
+		return streamModel{}, diags
 	}
 	if readModel == nil {
-		resp.Diagnostics.AddError("Error reading stream after creation", "The stream was created but could not be read back.")
-		return
+		diags.AddError("Error reading stream after creation", "The stream was created but could not be read back.")
+		return streamModel{}, diags
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, *readModel)...)
+	return *readModel, diags
 }

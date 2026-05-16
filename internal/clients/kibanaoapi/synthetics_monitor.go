@@ -27,6 +27,7 @@ import (
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
@@ -35,7 +36,7 @@ import (
 func CreateMonitor(ctx context.Context, client *Client, spaceID string, req kbapi.SyntheticsMonitorRequest) (*kbapi.SyntheticsMonitor, diag.Diagnostics) {
 	resp, err := client.API.PostSyntheticMonitorsWithResponse(
 		ctx, req,
-		SpaceAwarePathRequestEditor(spaceID),
+		kibanautil.SpaceAwarePathRequestEditor(spaceID),
 	)
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
@@ -43,12 +44,9 @@ func CreateMonitor(ctx context.Context, client *Client, spaceID string, req kbap
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		if resp.JSON200 == nil {
-			return nil, diagutil.FrameworkDiagFromError(fmt.Errorf("empty monitor response body"))
-		}
-		return resp.JSON200, nil
+		return diagutil.UnwrapJSON200(resp.JSON200, "synthetics monitor")
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -57,7 +55,7 @@ func CreateMonitor(ctx context.Context, client *Client, spaceID string, req kbap
 func GetMonitor(ctx context.Context, client *Client, spaceID string, monitorID string) (*kbapi.SyntheticsMonitor, diag.Diagnostics) {
 	resp, err := client.API.GetSyntheticMonitorWithResponse(
 		ctx, monitorID,
-		SpaceAwarePathRequestEditor(spaceID),
+		kibanautil.SpaceAwarePathRequestEditor(spaceID),
 	)
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
@@ -65,14 +63,11 @@ func GetMonitor(ctx context.Context, client *Client, spaceID string, monitorID s
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		if resp.JSON200 == nil {
-			return nil, diagutil.FrameworkDiagFromError(fmt.Errorf("empty monitor response body"))
-		}
-		return resp.JSON200, nil
+		return diagutil.UnwrapJSON200(resp.JSON200, "synthetics monitor")
 	case http.StatusNotFound:
 		return nil, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -80,7 +75,7 @@ func GetMonitor(ctx context.Context, client *Client, spaceID string, monitorID s
 func UpdateMonitor(ctx context.Context, client *Client, spaceID string, monitorID string, req kbapi.SyntheticsMonitorRequest) (*kbapi.SyntheticsMonitor, diag.Diagnostics) {
 	resp, err := client.API.PutSyntheticMonitorWithResponse(
 		ctx, monitorID, req,
-		SpaceAwarePathRequestEditor(spaceID),
+		kibanautil.SpaceAwarePathRequestEditor(spaceID),
 	)
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
@@ -90,7 +85,7 @@ func UpdateMonitor(ctx context.Context, client *Client, spaceID string, monitorI
 	case http.StatusOK:
 		return GetMonitor(ctx, client, spaceID, monitorID)
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -113,7 +108,7 @@ func DeleteMonitor(ctx context.Context, client *Client, spaceID string, monitorI
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	path := BuildSpaceAwarePath(spaceID, "/api/synthetics/monitors")
+	path := kibanautil.BuildSpaceAwarePath(spaceID, "/api/synthetics/monitors")
 	url := strings.TrimRight(client.URL, "/") + path
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, url, bytes.NewReader(body))

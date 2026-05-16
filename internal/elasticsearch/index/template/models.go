@@ -18,6 +18,9 @@
 package template
 
 import (
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -26,7 +29,7 @@ import (
 
 // Model is the Terraform plan/state shape for the index template resource and data source.
 type Model struct {
-	ElasticsearchConnection         types.List           `tfsdk:"elasticsearch_connection"`
+	entitycore.ElasticsearchConnectionField
 	ID                              types.String         `tfsdk:"id"`
 	Name                            types.String         `tfsdk:"name"`
 	ComposedOf                      types.List           `tfsdk:"composed_of"`
@@ -39,6 +42,13 @@ type Model struct {
 	Template                        types.Object         `tfsdk:"template"`
 }
 
+// GetID satisfies [entitycore.ElasticsearchResourceModel].
+func (m Model) GetID() types.String { return m.ID }
+
+// GetResourceID satisfies [entitycore.ElasticsearchResourceModel].
+// For index templates the write identity is the template name.
+func (m Model) GetResourceID() types.String { return m.Name }
+
 // DataStreamModel is the inner shape of the data_stream block (for Object.As).
 type DataStreamModel struct {
 	Hidden             types.Bool `tfsdk:"hidden"`
@@ -50,7 +60,7 @@ type DataStreamModel struct {
 //nolint:revive // Name documents the template {} block; BlockModel alone is ambiguous in this package.
 type TemplateBlockModel struct {
 	Alias             types.Set                      `tfsdk:"alias"`
-	Mappings          jsontypes.Normalized           `tfsdk:"mappings"`
+	Mappings          index.MappingsValue            `tfsdk:"mappings"`
 	Settings          customtypes.IndexSettingsValue `tfsdk:"settings"`
 	Lifecycle         types.Object                   `tfsdk:"lifecycle"`
 	DataStreamOptions types.Object                   `tfsdk:"data_stream_options"`
@@ -58,22 +68,6 @@ type TemplateBlockModel struct {
 
 // LifecycleModel is the inner shape of template.lifecycle.
 type LifecycleModel struct {
-	DataRetention types.String `tfsdk:"data_retention"`
-}
-
-// DataStreamOptionsModel is the inner shape of template.data_stream_options.
-type DataStreamOptionsModel struct {
-	FailureStore types.Object `tfsdk:"failure_store"`
-}
-
-// FailureStoreModel is the inner shape of template.data_stream_options.failure_store.
-type FailureStoreModel struct {
-	Enabled   types.Bool   `tfsdk:"enabled"`
-	Lifecycle types.Object `tfsdk:"lifecycle"`
-}
-
-// FailureStoreLifecycleModel is the inner shape of failure_store.lifecycle.
-type FailureStoreLifecycleModel struct {
 	DataRetention types.String `tfsdk:"data_retention"`
 }
 
@@ -92,37 +86,15 @@ func LifecycleAttrTypes() map[string]attr.Type {
 	}
 }
 
-// FailureStoreLifecycleAttrTypes returns attribute types for failure_store.lifecycle.
-func FailureStoreLifecycleAttrTypes() map[string]attr.Type {
-	return map[string]attr.Type{
-		"data_retention": types.StringType,
-	}
-}
-
-// FailureStoreAttrTypes returns attribute types for failure_store.
-func FailureStoreAttrTypes() map[string]attr.Type {
-	return map[string]attr.Type{
-		"enabled":   types.BoolType,
-		"lifecycle": types.ObjectType{AttrTypes: FailureStoreLifecycleAttrTypes()},
-	}
-}
-
-// DataStreamOptionsAttrTypes returns attribute types for template.data_stream_options.
-func DataStreamOptionsAttrTypes() map[string]attr.Type {
-	return map[string]attr.Type{
-		"failure_store": types.ObjectType{AttrTypes: FailureStoreAttrTypes()},
-	}
-}
-
 // TemplateAttrTypes returns attribute types for the template block object.
 //
 //nolint:revive // Name matches OpenSpec task wording (template block attribute types).
 func TemplateAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
 		"alias":               types.SetType{ElemType: NewAliasObjectType()},
-		"mappings":            jsontypes.NormalizedType{},
+		"mappings":            index.MappingsType{},
 		"settings":            customtypes.IndexSettingsType{},
 		"lifecycle":           types.ObjectType{AttrTypes: LifecycleAttrTypes()},
-		"data_stream_options": types.ObjectType{AttrTypes: DataStreamOptionsAttrTypes()},
+		"data_stream_options": types.ObjectType{AttrTypes: datastreamoptions.AttrTypes()},
 	}
 }

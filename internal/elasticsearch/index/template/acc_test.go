@@ -18,6 +18,7 @@
 package template_test
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"regexp"
@@ -26,6 +27,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamlifecycle"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
@@ -270,19 +272,19 @@ func checkResourceIndexTemplateDestroy(s *terraform.State) error {
 		}
 		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
-		esClient, err := client.GetESClient()
+		typedClient, err := client.GetESClient()
 		if err != nil {
 			return err
 		}
-		req := esClient.Indices.GetIndexTemplate.WithName(compID.ResourceID)
-		res, err := esClient.Indices.GetIndexTemplate(req)
+		_, err = typedClient.Indices.GetIndexTemplate().Name(compID.ResourceID).Do(context.Background())
 		if err != nil {
+			if esclient.IsNotFoundElasticsearchError(err) {
+				continue
+			}
 			return err
 		}
 
-		if res.StatusCode != 404 {
-			return fmt.Errorf("Index template (%s) still exists", compID.ResourceID)
-		}
+		return fmt.Errorf("Index template (%s) still exists", compID.ResourceID)
 	}
 	return nil
 }
@@ -367,13 +369,14 @@ func TestAccResourceIndexTemplateMetadataAndMappings(t *testing.T) {
 func TestAccResourceIndexTemplateLifecycle(t *testing.T) {
 	templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
+	versionutils.SkipIfUnsupported(t, datastreamlifecycle.MinVersion, versionutils.FlavorAny)
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceIndexTemplateDestroy,
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"template_name":  config.StringVariable(templateName),
@@ -386,7 +389,6 @@ func TestAccResourceIndexTemplateLifecycle(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"template_name":  config.StringVariable(templateName),
@@ -404,13 +406,14 @@ func TestAccResourceIndexTemplateLifecycle(t *testing.T) {
 func TestAccResourceIndexTemplateDataStreamOptions(t *testing.T) {
 	templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
+	versionutils.SkipIfUnsupported(t, index.MinSupportedDataStreamOptionsVersion, versionutils.FlavorAny)
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceIndexTemplateDestroy,
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(index.MinSupportedDataStreamOptionsVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"template_name": config.StringVariable(templateName),
@@ -422,7 +425,6 @@ func TestAccResourceIndexTemplateDataStreamOptions(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(index.MinSupportedDataStreamOptionsVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_enabled"),
 				ConfigVariables: config.Variables{
 					"template_name": config.StringVariable(templateName),
@@ -433,7 +435,6 @@ func TestAccResourceIndexTemplateDataStreamOptions(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(index.MinSupportedDataStreamOptionsVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_lifecycle"),
 				ConfigVariables: config.Variables{
 					"template_name": config.StringVariable(templateName),
@@ -445,7 +446,6 @@ func TestAccResourceIndexTemplateDataStreamOptions(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(index.MinSupportedDataStreamOptionsVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_lifecycle"),
 				ConfigVariables: config.Variables{
 					"template_name": config.StringVariable(templateName),
@@ -591,13 +591,14 @@ func TestAccResourceIndexTemplateAliasDetails(t *testing.T) {
 func TestAccResourceIndexTemplateAliasLifecycleRemoval(t *testing.T) {
 	templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
+	versionutils.SkipIfUnsupported(t, datastreamlifecycle.MinVersion, versionutils.FlavorAny)
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceIndexTemplateDestroy,
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables:          config.Variables{"name": config.StringVariable(templateName)},
 				Check: resource.ComposeTestCheckFunc(
@@ -620,7 +621,6 @@ func TestAccResourceIndexTemplateAliasLifecycleRemoval(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables:          config.Variables{"name": config.StringVariable(templateName)},
 				Check: resource.ComposeTestCheckFunc(
@@ -678,13 +678,14 @@ func TestAccResourceIndexTemplateAliasRoutingFromRoutingOnly(t *testing.T) {
 func TestAccResourceIndexTemplateDataStreamCustomRouting(t *testing.T) {
 	templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
+	versionutils.SkipIfUnsupported(t, minSupportedAllowCustomRoutingVersion, versionutils.FlavorAny)
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceIndexTemplateDestroy,
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedAllowCustomRoutingVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"template_name":        config.StringVariable(templateName),
@@ -697,7 +698,6 @@ func TestAccResourceIndexTemplateDataStreamCustomRouting(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedAllowCustomRoutingVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"template_name":        config.StringVariable(templateName),
@@ -751,13 +751,14 @@ func TestAccResourceIndexTemplateEmptyTemplateBlock(t *testing.T) {
 func TestAccResourceIndexTemplateDataStreamEmptyObject(t *testing.T) {
 	templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
+	versionutils.SkipIfUnsupported(t, minSupportedAllowCustomRoutingVersion, versionutils.FlavorAny)
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceIndexTemplateDestroy,
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedAllowCustomRoutingVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"template_name":        config.StringVariable(templateName),
@@ -772,7 +773,6 @@ func TestAccResourceIndexTemplateDataStreamEmptyObject(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedAllowCustomRoutingVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"template_name": config.StringVariable(templateName),
@@ -790,13 +790,14 @@ func TestAccResourceIndexTemplateDataStreamEmptyObject(t *testing.T) {
 func TestAccResourceIndexTemplateEmptyCollections(t *testing.T) {
 	templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
+	versionutils.SkipIfUnsupported(t, index.MinSupportedIgnoreMissingComponentTemplateVersion, versionutils.FlavorAny)
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceIndexTemplateDestroy,
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(index.MinSupportedIgnoreMissingComponentTemplateVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"template_name":  config.StringVariable(templateName),
@@ -810,7 +811,6 @@ func TestAccResourceIndexTemplateEmptyCollections(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(index.MinSupportedIgnoreMissingComponentTemplateVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"template_name": config.StringVariable(templateName),
@@ -828,13 +828,14 @@ func TestAccResourceIndexTemplateEmptyCollections(t *testing.T) {
 func TestAccResourceIndexTemplateCollectionGrowth(t *testing.T) {
 	templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
+	versionutils.SkipIfUnsupported(t, index.MinSupportedIgnoreMissingComponentTemplateVersion, versionutils.FlavorAny)
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceIndexTemplateDestroy,
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(index.MinSupportedIgnoreMissingComponentTemplateVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"template_name": config.StringVariable(templateName),
@@ -847,7 +848,6 @@ func TestAccResourceIndexTemplateCollectionGrowth(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(index.MinSupportedIgnoreMissingComponentTemplateVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"template_name": config.StringVariable(templateName),
@@ -862,7 +862,6 @@ func TestAccResourceIndexTemplateCollectionGrowth(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(index.MinSupportedIgnoreMissingComponentTemplateVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("expand"),
 				ConfigVariables: config.Variables{
 					"template_name": config.StringVariable(templateName),

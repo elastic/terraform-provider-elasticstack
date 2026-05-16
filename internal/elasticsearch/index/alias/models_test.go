@@ -325,7 +325,7 @@ func TestTfModel_Validate(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	indexAttrTypes := getIndexAttrTypes()
+	indexAttrTypes := getIndexAttrTypes(context.Background())
 	indexObjectType := types.ObjectType{AttrTypes: indexAttrTypes}
 
 	indexModelForName := func(name types.String) indexModel {

@@ -18,91 +18,74 @@
 // Package entitycore provides a shared embedded core for Plugin Framework entities:
 // [ResourceBase] centralizes [resource.ResourceWithConfigure] Configure wiring, the Metadata method
 // required by [resource.Resource], and stores the configured [*clients.ProviderClientFactory]
-// for use via [ResourceBase.Client]. Data sources are covered by [DataSourceBase].
+// for use via [ResourceBase.Client]. Data sources use envelope generics.
 //
 // # Data source patterns
 //
-// There are two supported patterns for data sources:
+// Plugin Framework data sources use **envelope generics** — [NewKibanaDataSource] or
+// [NewElasticsearchDataSource] — which eliminate Read orchestration boilerplate.
+// The constructor owns config decode, scoped client resolution, and state persistence.
+// The concrete package provides only a schema factory (without connection blocks),
+// a model that embeds [KibanaConnectionField] or [ElasticsearchConnectionField], and
+// a pure read function that performs the entity-specific API call and model mapping.
 //
-//  1. **Struct-based embedding** — embed [*DataSourceBase] and implement [datasource.DataSource]
-//     directly. This is the right choice for data sources with complex Read logic
-//     (conditional early returns, custom state manipulation, or multiple API calls
-//     with branching) that don't fit a uniform pipeline.
+// Example envelope data source:
 //
-//  2. **Envelope generics** — use [NewKibanaDataSource] or [NewElasticsearchDataSource]
-//     to eliminate Read orchestration boilerplate. The constructor owns config decode,
-//     scoped client resolution, and state persistence. The concrete package provides
-//     only a schema factory (without connection blocks), a model that embeds
-//     [KibanaConnectionField] or [ElasticsearchConnectionField], and a pure read
-//     function that performs the entity-specific API call and model mapping.
+//	type myModel struct {
+//	    entitycore.KibanaConnectionField
+//	    ID types.String `tfsdk:"id"`
+//	}
 //
-//     Example envelope data source:
+//	func readMyEntity(ctx context.Context, client *clients.KibanaScopedClient, model myModel) (myModel, diag.Diagnostics) {
+//	    // API call and model population …
+//	    return model, nil
+//	}
 //
-//     type myModel struct {
-//     entitycore.KibanaConnectionField
-//     ID types.String `tfsdk:"id"`
-//     }
-//
-//     func readMyEntity(ctx context.Context, client *clients.KibanaScopedClient, model myModel) (myModel, diag.Diagnostics) {
-//     // API call and model population …
-//     return model, nil
-//     }
-//
-//     func NewDataSource() datasource.DataSource {
-//     return entitycore.NewKibanaDataSource[myModel](
-//     entitycore.ComponentKibana,
-//     "my_entity",
-//     getDataSourceSchema, // returns datasource.Schema without kibana_connection block
-//     readMyEntity,
-//     )
-//     }
+//	func NewDataSource() datasource.DataSource {
+//	    return entitycore.NewKibanaDataSource[myModel](
+//	        entitycore.ComponentKibana,
+//	        "my_entity",
+//	        getDataSourceSchema, // func(ctx context.Context) datasource.Schema, without kibana_connection block
+//	        readMyEntity,
+//	    )
+//	}
 //
 // # Resource patterns
 //
-// Resources have the same two patterns:
+// Resources have three patterns:
 //
 //  1. **Struct-based embedding** — embed [*ResourceBase] and implement [resource.Resource]
 //     directly. This is the right choice when Create and Update flows diverge
 //     significantly from a uniform shape.
 //
-//  2. **Envelope generics** — use [NewElasticsearchResource] to eliminate duplicated
-//     Read/Delete/Schema preludes for Elasticsearch-backed resources.
-//     The model must satisfy [ElasticsearchResourceModel] (value-receiver GetID and
-//     GetElasticsearchConnection). The concrete resource provides a schema factory
-//     (without elasticsearch_connection block), a read callback returning
-//     (T, bool, diag.Diagnostics), and a delete callback. The envelope injects the
-//     connection block, parses composite IDs, resolves the scoped client, and
-//     persists state. Concrete resources keep Create, Update, and ImportState;
-//     the envelope's default Create and Update return diagnostics so forgotten
-//     overrides fail loudly during runtime instead of silently no-oping.
+//  2. **Elasticsearch resource envelope** — use [NewElasticsearchResource] for
+//     Elasticsearch-backed CRUD resources whose lifecycle matches the envelope's
+//     shape (decode → client → version checks → callback → read-after-write →
+//     optional post-read). The model must satisfy [ElasticsearchResourceModel];
+//     callbacks and options live on [ElasticsearchResourceOptions]. Resources that
+//     still override Create or Update may pass
+//     [PlaceholderElasticsearchWriteCallback] until their logic is migrated into
+//     envelope callbacks. The envelope does not implement ImportState; concrete
+//     resources add that when needed. See type docs in resource_envelope.go for
+//     the full contract.
 //
-//     Example envelope resource:
-//
-//     type myResource struct {
-//     *entitycore.ElasticsearchResource[Data]
-//     }
-//
-//     func readMyEntity(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state Data) (Data, bool, diag.Diagnostics) {
-//     // API call and model population …
-//     return state, true, nil
-//     }
-//
-//     func deleteMyEntity(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state Data) diag.Diagnostics {
-//     // API call to delete …
-//     return nil
-//     }
-//
-//     func newMyResource() *myResource {
-//     return &myResource{
-//     ElasticsearchResource: entitycore.NewElasticsearchResource[Data](
-//     entitycore.ComponentElasticsearch,
-//     "my_entity",
-//     getResourceSchema, // returns resource.Schema without elasticsearch_connection block
-//     readMyEntity,
-//     deleteMyEntity,
-//     ),
-//     }
-//     }
+//  3. **Kibana resource envelope** — use [NewKibanaResource] for Kibana-backed
+//     resources whose Create, Read, Update, and Delete flows match a common shape.
+//     The model must satisfy [KibanaResourceModel] (value-receiver GetID for
+//     composite or plain state ID, GetResourceID for the write key such as name
+//     or API-assigned UUID, GetSpaceID for the Kibana space, and
+//     GetKibanaConnection). Supply a schema factory (without kibana_connection
+//     block), read and delete callbacks, and required create and update callbacks
+//     ([KibanaCreateFunc], [KibanaUpdateFunc]). The envelope injects the
+//     kibana_connection block, resolves resource identity via composite-ID-or-fallback
+//     for Read, Update, and Delete, validates spaceID for Create, resolves the
+//     scoped Kibana client, and owns state persistence. Create callbacks receive
+//     the plan model (and can call plan.GetResourceID() for user-ID resources);
+//     Update callbacks receive both plan and prior state. It does not implement
+//     ImportState; concrete resources add that when needed. Resources that override
+//     Create or Update may pass [PlaceholderKibanaWriteCallbacks] until their logic
+//     is migrated into envelope callbacks. Constructor shape and callback types are
+//     defined on [NewKibanaResource] in kibana_resource_envelope.go.
 //
 // Component is a typed Terraform resource type-name namespace segment (for example
 // "elasticsearch", "kibana"). It is not a client-resolution kind: the same API family

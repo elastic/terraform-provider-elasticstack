@@ -33,12 +33,18 @@ var (
 )
 
 type scriptResource struct {
-	*entitycore.ResourceBase
+	*entitycore.ElasticsearchResource[Data]
 }
 
 func newScriptResource() *scriptResource {
 	return &scriptResource{
-		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentElasticsearch, "script"),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[Data]("script", entitycore.ElasticsearchResourceOptions[Data]{
+			Schema: GetSchema,
+			Read:   readScript,
+			Delete: deleteScript,
+			Create: writeScript,
+			Update: writeScript,
+		}),
 	}
 }
 

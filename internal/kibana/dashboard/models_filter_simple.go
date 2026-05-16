@@ -19,35 +19,14 @@ package dashboard
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 )
 
-type filterSimpleModel struct {
-	Language   types.String `tfsdk:"language"`
-	Expression types.String `tfsdk:"expression"`
+func filterSimpleFromAPI(m *models.FilterSimpleModel, apiQuery kbapi.FilterSimple) {
+	lenscommon.FilterSimpleFromAPI(m, apiQuery)
 }
 
-func (m *filterSimpleModel) fromAPI(apiQuery kbapi.FilterSimple) {
-	m.Expression = types.StringValue(apiQuery.Expression)
-	if apiQuery.Language == nil {
-		m.Language = types.StringValue(string(kbapi.FilterSimpleLanguageKql))
-		return
-	}
-	m.Language = typeutils.StringishPointerValue(apiQuery.Language)
-}
-
-func (m *filterSimpleModel) toAPI() kbapi.FilterSimple {
-	if m == nil {
-		return kbapi.FilterSimple{}
-	}
-
-	query := kbapi.FilterSimple{
-		Expression: m.Expression.ValueString(),
-	}
-	if typeutils.IsKnown(m.Language) {
-		lang := kbapi.FilterSimpleLanguage(m.Language.ValueString())
-		query.Language = &lang
-	}
-	return query
+func filterSimpleToAPI(m *models.FilterSimpleModel) kbapi.FilterSimple {
+	return lenscommon.FilterSimpleToAPI(m)
 }

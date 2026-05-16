@@ -38,6 +38,9 @@ resource "elasticstack_elasticsearch_ml_anomaly_detection_job" "example" {
           operator   = <required, string>  # one of: gt, gte, lt, lte
           value      = <required, float64>
         }
+        scope = <optional, map of scope entries>  # map keys are analysis field names (e.g. by_field_name, over_field_name, partition_field_name); min 1 entry; no null keys; each entry has:
+          filter_id   = <required, string>  # minimum 1 char; references an existing ML filter
+          filter_type = <optional, string>  # one of: include, exclude
       }
     }
 
@@ -101,9 +104,7 @@ resource "elasticstack_elasticsearch_ml_anomaly_detection_job" "example" {
   }
 }
 ```
-
 ## Requirements
-
 ### Requirement: Anomaly Detection Job CRUD APIs (REQ-001–REQ-005)
 
 The resource SHALL use the Elasticsearch Put Anomaly Detection Job API to create jobs ([docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/ml-put-job.html)). The resource SHALL use the Elasticsearch Update Anomaly Detection Job API to update jobs ([docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/ml-update-job.html)). The resource SHALL use the Elasticsearch Get Anomaly Detection Jobs API to read job definitions ([docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/ml-get-job.html)). The resource SHALL use the Elasticsearch Close Anomaly Detection Job API before deleting a job ([docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/ml-close-job.html)). The resource SHALL use the Elasticsearch Delete Anomaly Detection Job API to delete jobs ([docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/ml-delete-job.html)). When Elasticsearch returns a non-success status for any API call (except 404 on read), the resource SHALL surface the API error as a Terraform diagnostic.
@@ -186,19 +187,23 @@ On create, the resource SHALL call the Put Anomaly Detection Job API with a JSON
 
 ### Requirement: Update — partial update with only mutable fields (REQ-016–REQ-018)
 
-On update, the resource SHALL only send the fields that have changed and that are permitted by the Elasticsearch Update Job API. The following fields MAY be updated in place: `description`, `groups`, `model_plot_config`, `analysis_limits` (specifically `model_memory_limit`), `allow_lazy_open`, `background_persist_interval`, `custom_settings`, `daily_model_snapshot_retention_after_days`, `model_snapshot_retention_days`, `renormalization_window_days`, and `results_retention_days`. When no updateable fields have changed, the resource SHALL log a warning and SHALL NOT call the Update Job API. After a successful Update Job API call, the resource SHALL call read to refresh state.
+On update, the envelope SHALL invoke the resource update callback with `WriteRequest[TFModel]` (where `req.Prior` is a non-nil pointer to the prior-state model), supplying planned and prior models plus raw Terraform config. The callback SHALL only send fields that have changed and that are permitted by the Elasticsearch Update Job API. The following fields MAY be updated in place: `description`, `groups`, `model_plot_config`, `analysis_limits` (specifically `model_memory_limit`), `allow_lazy_open`, `background_persist_interval`, `custom_settings`, `daily_model_snapshot_retention_after_days`, `model_snapshot_retention_days`, `renormalization_window_days`, and `results_retention_days`. When no updateable fields have changed, the callback SHALL log a warning and SHALL NOT call the Update Job API.
+
+After the update callback returns successfully — including the case where no Update Job API call was made because no updatable fields changed — the envelope SHALL refresh the resource by reading the job back from the API via the shared read callback and SHALL persist state from that read result.
 
 #### Scenario: No updateable fields changed
 
 - GIVEN an update where only non-updateable fields (e.g. analysis_config) have changed according to plan
 - WHEN update runs
 - THEN the resource SHALL not call the Update Job API and SHALL log a warning
+- AND the envelope SHALL still perform read-after-write to refresh state from the API
 
 #### Scenario: Updateable fields changed
 
 - GIVEN an update where description has changed
 - WHEN update runs
 - THEN the resource SHALL call the Update Job API with only the changed fields
+- AND the envelope SHALL refresh state via read-after-write afterward
 
 ### Requirement: Read — not found handling (REQ-019–REQ-020)
 
@@ -218,25 +223,29 @@ On read, when the Get Anomaly Detection Jobs API returns HTTP 404, the resource 
 
 ### Requirement: Delete — close before delete (REQ-021–REQ-022)
 
-On delete, the resource SHALL first attempt to close the job by calling the Close Anomaly Detection Job API. If the close call fails or returns a non-200/non-409 status (409 meaning the job is already closed), the resource SHALL log a warning and continue with deletion. The resource SHALL then call the Delete Anomaly Detection Job API. A non-success response from the Delete API SHALL be surfaced as an error diagnostic.
+On delete, the resource SHALL first attempt to close the job by calling the Close Anomaly Detection Job API with `force=true` and `allow_no_match=true`. If the close call fails, the resource SHALL log a warning and continue. After the Close Job API call returns (whether it succeeded or failed), the resource SHALL poll the job's state via the Get Job Stats API until the job reports `closed` state or is no longer found, before calling the Delete Job API. This polling SHALL be bounded by the Terraform operation context (i.e. the delete timeout). If polling fails, the resource SHALL log a warning and continue to deletion.
 
-#### Scenario: Close succeeds before delete
+The resource SHALL then call the Delete Anomaly Detection Job API. If the first delete attempt fails, the resource SHALL retry once with `force=true`. If the retry also fails, the error SHALL be surfaced as a Terraform diagnostic.
 
-- GIVEN an open anomaly detection job
-- WHEN delete runs
-- THEN the resource SHALL call Close Job before calling Delete Job
+#### Scenario: Normal delete succeeds
 
-#### Scenario: Close returns 409 (already closed)
+- **WHEN** the job is `closed` (or not found) before delete is called
+- **THEN** the resource SHALL call Delete Job and it SHALL succeed without `force`
 
-- GIVEN a closed anomaly detection job (close returns HTTP 409)
-- WHEN delete runs
-- THEN the resource SHALL treat 409 as success and proceed to delete
+#### Scenario: First delete fails — retry with force succeeds
 
-#### Scenario: Close fails with unexpected error
+- **WHEN** the initial Delete Job call fails (e.g. job is still open due to polling timeout)
+- **THEN** the resource SHALL retry Delete Job with `force=true` and treat a success response as the job being deleted
 
-- GIVEN a close call that fails with a transport error
-- WHEN delete runs
-- THEN the resource SHALL log a warning and SHALL still call Delete Job
+#### Scenario: Both delete attempts fail
+
+- **WHEN** both the initial Delete Job and the `force=true` retry fail
+- **THEN** the resource SHALL surface the retry error as a Terraform diagnostic
+
+#### Scenario: Delete called regardless of polling outcome
+
+- **WHEN** the polling wait fails for any reason
+- **THEN** the resource SHALL still call the Delete Job API (not skip it)
 
 ### Requirement: job_id validation (REQ-023)
 
@@ -250,7 +259,7 @@ The `job_id` attribute SHALL be validated to be between 1 and 64 characters, con
 
 ### Requirement: analysis_config.detectors validation (REQ-024)
 
-The `analysis_config.detectors` list SHALL contain at least one element. Each detector `function` SHALL be one of the enumerated values. Each detector `exclude_frequent` SHALL be one of: `all`, `none`, `by`, `over`. Each detector `custom_rules[*].actions` value SHALL be one of: `skip_result`, `skip_model_update`. Each detector `custom_rules[*].conditions[*].applies_to` SHALL be one of: `actual`, `typical`, `diff_from_typical`, `time`. Each detector `custom_rules[*].conditions[*].operator` SHALL be one of: `gt`, `gte`, `lt`, `lte`.
+The `analysis_config.detectors` list SHALL contain at least one element. Each detector `function` SHALL be one of the enumerated values. Each detector `exclude_frequent` SHALL be one of: `all`, `none`, `by`, `over`. Each detector `custom_rules[*].actions` value SHALL be one of: `skip_result`, `skip_model_update`. Each detector `custom_rules[*].conditions[*].applies_to` SHALL be one of: `actual`, `typical`, `diff_from_typical`, `time`. Each detector `custom_rules[*].conditions[*].operator` SHALL be one of: `gt`, `gte`, `lt`, `lte`. Each detector `custom_rules[*].scope` entry SHALL have a `filter_id` that is at least 1 character. Each detector `custom_rules[*].scope[*].filter_type` SHALL be one of: `include`, `exclude`. Each detector `custom_rules` entry SHALL have either a non-empty `scope` or at least one `conditions` entry; both may be set simultaneously. When both `scope` and `conditions` are unknown at plan time, the validation SHALL be skipped (to avoid false positives).
 
 #### Scenario: Empty detectors list rejected
 
@@ -260,7 +269,7 @@ The `analysis_config.detectors` list SHALL contain at least one element. Each de
 
 ### Requirement: Mapping — config to API model (REQ-025–REQ-026)
 
-On create and update, optional fields that are null or unknown SHALL be omitted from the API request body. On create, the resource SHALL serialize `analysis_config.detectors[*].custom_rules[*].actions` as a JSON array of strings and SHALL serialize `analysis_config.detectors[*].custom_rules[*].conditions[*]` as objects containing `applies_to`, `operator`, and `value`. The `custom_settings` field SHALL be validated as a JSON string and SHALL be decoded into a `map[string]any` for the API request. When `custom_settings` is not valid JSON, the resource SHALL return an error diagnostic and SHALL not call the API.
+On create and update, optional fields that are null or unknown SHALL be omitted from the API request body. On create, the resource SHALL serialize `analysis_config.detectors[*].custom_rules[*].actions` as a JSON array of strings and SHALL serialize `analysis_config.detectors[*].custom_rules[*].conditions[*]` as objects containing `applies_to`, `operator`, and `value`. The resource SHALL serialize `analysis_config.detectors[*].custom_rules[*].scope` as a JSON object mapping analysis field names to objects containing `filter_id` (required) and `filter_type` (omitted when not configured or empty). The `custom_settings` field SHALL be validated as a JSON string and SHALL be decoded into a `map[string]any` for the API request. When `custom_settings` is not valid JSON, the resource SHALL return an error diagnostic and SHALL not call the API.
 
 #### Scenario: Invalid custom_settings JSON
 
@@ -274,6 +283,18 @@ On create and update, optional fields that are null or unknown SHALL be omitted 
 - WHEN create builds the Put Job request body
 - THEN the request SHALL include those `custom_rules` entries with their configured values
 
+#### Scenario: Custom rules with scope are sent on create
+
+- GIVEN a detector with `custom_rules` containing `scope` entries
+- WHEN create builds the Put Job request body
+- THEN the request SHALL include the `scope` map with each entry containing `filter_id` and, when configured, `filter_type`
+
+#### Scenario: Custom rules scope with omitted filter_type
+
+- GIVEN a detector with `custom_rules` containing a `scope` entry where `filter_type` is not set
+- WHEN create or update builds the API request body
+- THEN the `filter_type` field SHALL be omitted from that scope entry's JSON object
+
 ### Requirement: Mapping — API response to state (REQ-027–REQ-031)
 
 On read, the resource SHALL set the following state attributes from the Get Jobs API response:
@@ -282,7 +303,7 @@ On read, the resource SHALL set the following state attributes from the Get Jobs
 - `analysis_config.bucket_span`, `categorization_field_name`, `latency`, `model_prune_window`, `multivariate_by_fields`, and `summary_count_field_name` from the corresponding `analysis_config` API fields.
 - `analysis_config.categorization_filters` SHALL use the API values when Elasticsearch returns a non-empty list. When Elasticsearch omits the list or returns it empty, the resource SHALL preserve the prior configured value so server-side normalization into `categorization_analyzer` does not create drift.
 - `analysis_config.influencers` SHALL use the API values when Elasticsearch returns a non-empty list. When Elasticsearch omits the list or returns it empty, the resource SHALL preserve the prior configured value, including an explicit empty list.
-- `analysis_config.detectors[*]` SHALL be set from the corresponding detector in the API response. When the prior detector configuration omitted `detector_description` and Elasticsearch returns an auto-generated description, the resource SHALL keep `detector_description` null in state instead of storing the generated value. `custom_rules[*].actions` and `custom_rules[*].conditions` SHALL be populated from the API response; when Elasticsearch omits an empty `actions` or `conditions` list, the resource SHALL preserve a previously configured empty list rather than converting it to null.
+- `analysis_config.detectors[*]` SHALL be set from the corresponding detector in the API response. When the prior detector configuration omitted `detector_description` and Elasticsearch returns an auto-generated description, the resource SHALL keep `detector_description` null in state instead of storing the generated value. `custom_rules[*].actions` and `custom_rules[*].conditions` SHALL be populated from the API response; when Elasticsearch omits an empty `actions` or `conditions` list, the resource SHALL preserve a previously configured empty list rather than converting it to null. `custom_rules[*].scope` SHALL be populated from the API response when non-empty; when Elasticsearch omits an empty `scope` map, the resource SHALL preserve the prior configured `scope` value rather than converting it to null. Within each scope entry, when the API returns an empty or absent `filter_type`, the resource SHALL store `filter_type` as null in state.
 - `analysis_config.per_partition_categorization` SHALL be populated only when the block was previously configured or when Elasticsearch reports `enabled = true`. When the block exists in prior state and Elasticsearch omits `stop_on_warn`, the resource SHALL preserve the prior `stop_on_warn` value.
 - Empty or nil string fields in the API response SHALL be stored as null in state (not as empty string), using `typeutils.NonEmptyStringishValue`.
 - `results_index_name` SHALL be stored after stripping a `custom-` prefix from the API response value.
@@ -324,6 +345,36 @@ On read, the resource SHALL set the following state attributes from the Get Jobs
 - WHEN create succeeds and read refreshes state
 - THEN the configured `actions` and `conditions` SHALL be present in state
 
+#### Scenario: Custom rule scope round-trip from API to state
+
+- GIVEN a detector with `custom_rules` containing `scope` entries referencing ML filters
+- WHEN create succeeds and read refreshes state
+- THEN the configured `scope` entries SHALL be present in state with correct `filter_id` and `filter_type` values
+
+#### Scenario: Custom rule scope with absent filter_type stored as null
+
+- GIVEN a detector with `custom_rules` containing `scope` entries where `filter_type` is not configured
+- WHEN read runs and the API omits `filter_type`
+- THEN `filter_type` SHALL be null in state (not empty string)
+
+#### Scenario: Custom rule with empty scope preserved from prior state
+
+- GIVEN a detector with `custom_rules` where the API returns an empty `scope` map
+- WHEN read runs and the prior state has a configured `scope` value
+- THEN the prior configured `scope` value SHALL be preserved in state
+
+#### Scenario: Custom rule with both scope and conditions accepted
+
+- GIVEN a detector with `custom_rules` containing both a non-empty `scope` and at least one `conditions` entry
+- WHEN create runs
+- THEN the provider SHALL send both `scope` and `conditions` to the Elasticsearch API and SHALL not reject the configuration
+
+#### Scenario: Custom rule with neither scope nor conditions rejected
+
+- GIVEN a detector with `custom_rules` containing an entry with no `scope` and no `conditions`
+- WHEN the configuration is validated
+- THEN the provider SHALL return a validation error indicating a rule must have either a non-empty `scope` or at least one condition
+
 #### Scenario: Disabled per-partition categorization preserves configured stop_on_warn
 
 - GIVEN configuration that sets `analysis_config.per_partition_categorization.enabled = false` and `stop_on_warn = false`
@@ -345,3 +396,87 @@ The following attributes SHALL use `UseStateForUnknown` plan modifier to preserv
 - GIVEN an existing job with a known id in state
 - WHEN a plan is generated without changing job_id
 - THEN `id` SHALL remain known (not unknown) in the plan
+
+### Requirement: `analysis_config.detectors` internal model type (REQ-033)
+
+The Go field `AnalysisConfigTFModel.Detectors` SHALL be typed `types.List` (not
+`[]DetectorTFModel`). The `types.List` type is the Plugin Framework-idiomatic holder
+for list attributes that can carry null/unknown state, consistent with
+`AnalysisConfigTFModel.CategorizationFilters` and `AnalysisConfigTFModel.Influencers`
+in the same struct.
+
+All code that reads `Detectors` as a Go slice SHALL use `ElementsAs(ctx,
+&detectorSlice, false)` to convert the `types.List` value. All code that writes
+`Detectors` from a `[]DetectorTFModel` slice SHALL use
+`types.ListValueFrom(ctx, types.ObjectType{AttrTypes: getDetectorAttrTypes(ctx)},
+slice)`.
+
+The Terraform schema declaration (`schema.ListNestedAttribute` for
+`analysis_config.detectors`) SHALL NOT change. This requirement applies only to the
+internal Go model field type.
+
+#### Scenario: Variable-sourced detectors plan succeeds
+
+- GIVEN a Terraform configuration that assigns `analysis_config.detectors` from a
+  `variable` of type `list(object({...}))` (including when the variable has a concrete
+  default value that Terraform marks as potentially-unknown at the config phase)
+- WHEN `terraform plan` runs
+- THEN the provider SHALL NOT return a `Value Conversion Error` and the plan SHALL
+  succeed
+
+#### Scenario: Hardcoded detectors continue to work
+
+- GIVEN a Terraform configuration with `analysis_config.detectors` defined as a
+  hardcoded list literal in the resource block
+- WHEN `terraform plan` and `terraform apply` run
+- THEN all existing create, update, read, and delete behaviors SHALL be preserved
+  without regression
+
+### Requirement: `ValidateConfig` plan-time unknown guard for detectors (REQ-034)
+
+The `ValidateConfig` implementation SHALL handle the case where
+`analysis_config.detectors` is unknown at plan time (for example, when the value flows
+from a module input or variable). Specifically:
+
+- When `Detectors.IsUnknown()` is true, validation of `custom_rules` SHALL be skipped
+  without returning an error diagnostic. Validation is deferred to apply time when all
+  values are concrete.
+- When `Detectors` is known and non-null, validation of `custom_rules` SHALL proceed as
+  before: each rule that has neither a non-empty `scope` nor at least one `conditions`
+  entry SHALL produce an attribute-level error diagnostic.
+
+#### Scenario: Unknown detectors skips custom_rules validation
+
+- GIVEN an `analysis_config.detectors` that is unknown at plan time
+- WHEN `ValidateConfig` runs
+- THEN no `Invalid detector "custom_rules" entry` error SHALL be emitted and the plan
+  SHALL proceed
+
+#### Scenario: Known detectors with empty custom_rules still fails validation
+
+- GIVEN a known `analysis_config.detectors` containing a custom rule with neither a
+  `scope` nor any `conditions`
+- WHEN `ValidateConfig` runs
+- THEN the resource SHALL return an error diagnostic identifying the offending custom
+  rule
+
+### Requirement: Acceptance test for variable-sourced detectors (REQ-035)
+
+The acceptance test suite SHALL include at least one test case for
+`elasticstack_elasticsearch_ml_anomaly_detection_job` that exercises assigning
+`analysis_config { detectors = var.detectors }` where `var.detectors` is a Terraform
+`variable` of type `list(object({...}))`. The test SHALL use the minimal repro shape
+from issue #2966 (`function` as required string; `field_name`, `by_field_name`,
+`detector_description` as optional string). The test SHALL assert that plan and apply
+complete without a `Value Conversion Error` and SHALL verify at least one detector
+attribute in state (e.g. `analysis_config.detectors.0.function`). The test SHALL be
+named consistently with the existing `TestAccResourceAnomalyDetectionJob*` convention.
+
+#### Scenario: Acceptance test — variable-sourced detectors plan and apply
+
+- GIVEN an acceptance test configuration that assigns `analysis_config.detectors` from
+  a Terraform `variable` with a concrete default
+- WHEN the acceptance test runs `terraform plan` and `terraform apply`
+- THEN the resource SHALL be created without a `Value Conversion Error` and state SHALL
+  reflect the expected detector function value
+

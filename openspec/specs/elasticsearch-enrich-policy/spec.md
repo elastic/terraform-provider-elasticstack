@@ -149,7 +149,18 @@ By default, the resource SHALL use the provider-level Elasticsearch client. When
 
 ### Requirement: Query mapping (REQ-013–REQ-015)
 
-When `query` is set in configuration, the resource SHALL send it as a parsed JSON object in the `query` field of the Put request body. When `query` is null or not configured, the resource SHALL omit the `query` field from the Put request body entirely. On read, when the API response includes a `query` field that is non-null and non-empty, the resource SHALL store it in state as a normalized JSON string; otherwise `query` SHALL be stored as null.
+When `query` is set in configuration, the resource SHALL send it as a parsed JSON object
+in the `query` field of the Put request body. When `query` is null or not configured, the
+resource SHALL omit the `query` field from the Put request body entirely. On read, when
+the API response includes a `query` field that is non-null and non-empty **and whose
+JSON-marshaled form is not the literal bytes `null`**, the resource SHALL store it in
+state as a normalized JSON string; otherwise `query` SHALL be stored as null.
+
+Specifically, when `json.Marshal` applied to the `*types.Query` value returned by the
+go-elasticsearch typed client produces the bytes `null` (which occurs when the client
+deserializes an explicit `"query": null` in the API response into a non-nil pointer to a
+zero-value struct), the provider SHALL treat this identically to an absent `query` field
+and SHALL store `null` in Terraform state.
 
 #### Scenario: Query sent as JSON object
 
@@ -168,6 +179,19 @@ When `query` is set in configuration, the resource SHALL send it as a parsed JSO
 - GIVEN the API response has no `query` field or a null query
 - WHEN read runs
 - THEN `query` in state SHALL be null
+
+#### Scenario: Marshaled-null query treated as absent
+
+- GIVEN the API response contains `"query": null` (explicit JSON null)
+- AND the go-elasticsearch typed client returns a non-nil `*types.Query` for this value
+- WHEN `json.Marshal` applied to that `*types.Query` produces the bytes `null`
+- THEN the provider SHALL store `query` as null in Terraform state (not the string `"null"`)
+
+#### Scenario: No-query policy is idempotent across applies
+
+- GIVEN an enrich policy was created with `query` omitted from configuration
+- WHEN `terraform apply` is run a second time with the same configuration
+- THEN Terraform SHALL plan no changes (no replacement, no update)
 
 ### Requirement: Policy type mapping (REQ-016)
 

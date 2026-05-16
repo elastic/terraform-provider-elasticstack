@@ -21,10 +21,16 @@ import (
 	"context"
 	"testing"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
 )
+
+func TestData_satisfiesElasticsearchResourceModelContract(t *testing.T) {
+	t.Parallel()
+	var _ entitycore.ElasticsearchResourceModel = Data{}
+}
 
 func TestFromAPIModel_PreservesEmptyStringDescriptionWhenAPIIsNull(t *testing.T) {
 	ctx := context.Background()
@@ -34,8 +40,7 @@ func TestFromAPIModel_PreservesEmptyStringDescriptionWhenAPIIsNull(t *testing.T)
 		Description: types.StringValue(""),
 	}
 
-	diags := d.fromAPIModel(ctx, &models.Role{
-		Name:        "role-a",
+	diags := d.fromAPIModel(ctx, &estypes.Role{
 		Description: nil,
 	})
 	require.False(t, diags.HasError(), "unexpected diags: %#v", diags)

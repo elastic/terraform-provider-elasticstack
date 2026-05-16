@@ -21,12 +21,13 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/stretchr/testify/assert"
 )
 
 func Test_partitionLegendModel_fromPieLegend_omittedVisibility(t *testing.T) {
-	var m partitionLegendModel
-	m.fromPieLegend(kbapi.PieLegend{Size: kbapi.LegendSizeAuto})
+	var m models.PartitionLegendModel
+	partitionLegendFromPieLegend(&m, kbapi.PieLegend{Size: kbapi.LegendSizeAuto})
 
 	assert.Equal(t, string(kbapi.LegendSizeAuto), m.Size.ValueString())
 	assert.Equal(t, string(kbapi.PieLegendVisibilityAuto), m.Visible.ValueString())

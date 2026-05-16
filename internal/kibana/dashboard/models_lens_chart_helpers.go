@@ -21,98 +21,78 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// populateFiltersFromAPI converts a slice of kbapi.LensPanelFilters_Item into chartFilterJSONModel
+// populateFiltersFromAPI converts a slice of kbapi.LensPanelFilters_Item into models.ChartFilterJSONModel
 // values, appending any errors to diags.
-func populateFiltersFromAPI(filters []kbapi.LensPanelFilters_Item, diags *diag.Diagnostics) []chartFilterJSONModel {
-	if len(filters) == 0 {
-		return nil
-	}
-	result := make([]chartFilterJSONModel, 0, len(filters))
-	for _, f := range filters {
-		fm := chartFilterJSONModel{}
-		fd := fm.populateFromAPIItem(f)
-		diags.Append(fd...)
-		if !fd.HasError() {
-			result = append(result, fm)
-		}
-	}
-	return result
+func populateFiltersFromAPI(filters []kbapi.LensPanelFilters_Item, diags *diag.Diagnostics) []models.ChartFilterJSONModel {
+	return lenscommon.PopulateFiltersFromAPI(filters, diags)
 }
 
 // buildFiltersForAPI converts the model filter slice into the kbapi type, appending errors to diags.
 // The returned slice is always non-nil (empty API payload is []kbapi.LensPanelFilters_Item{}).
-func buildFiltersForAPI(filters []chartFilterJSONModel, diags *diag.Diagnostics) []kbapi.LensPanelFilters_Item {
-	if len(filters) == 0 {
-		return []kbapi.LensPanelFilters_Item{}
-	}
-
-	items := make([]kbapi.LensPanelFilters_Item, 0, len(filters))
-	for _, f := range filters {
-		var item kbapi.LensPanelFilters_Item
-		fd := decodeChartFilterJSON(f.FilterJSON, &item)
-		diags.Append(fd...)
-		if !fd.HasError() {
-			items = append(items, item)
-		}
-	}
-	return items
+func buildFiltersForAPI(filters []models.ChartFilterJSONModel, diags *diag.Diagnostics) []kbapi.LensPanelFilters_Item {
+	return lenscommon.BuildFiltersForAPI(filters, diags)
 }
 
-// marshalToNormalized stores the already-marshaled bytes as a jsontypes.Normalized value,
-// or adds an error to diags and returns (zero, false) on failure.
+// marshalToNormalized delegates to lenscommon.MarshalToNormalized (canonical implementation).
 func marshalToNormalized(bytes []byte, err error, fieldName string, diags *diag.Diagnostics) (jsontypes.Normalized, bool) {
-	if err != nil {
-		diags.AddError("Failed to marshal "+fieldName, err.Error())
-		return jsontypes.Normalized{}, false
-	}
-	return jsontypes.NewNormalizedValue(string(bytes)), true
+	return lenscommon.MarshalToNormalized(bytes, err, fieldName, diags)
+}
+
+// preservePriorNormalizedWithDefaultsIfEquivalent delegates to panelkit.PreservePriorNormalizedWithDefaultsIfEquivalent.
+func preservePriorNormalizedWithDefaultsIfEquivalent[T any](ctx context.Context, prior, current jsontypes.Normalized, defaults func(T) T, diags *diag.Diagnostics) jsontypes.Normalized {
+	return panelkit.PreservePriorNormalizedWithDefaultsIfEquivalent(ctx, prior, current, defaults, diags)
 }
 
 // marshalToJSONWithDefaults stores the already-marshaled bytes as a JSONWithDefaultsValue,
 // or adds an error to diags and returns (zero, false) on failure.
 func marshalToJSONWithDefaults[T any](bytes []byte, err error, fieldName string, defaults func(T) T, diags *diag.Diagnostics) (customtypes.JSONWithDefaultsValue[T], bool) {
-	if err != nil {
-		diags.AddError("Failed to marshal "+fieldName, err.Error())
-		return customtypes.JSONWithDefaultsValue[T]{}, false
-	}
-	return customtypes.NewJSONWithDefaultsValue(string(bytes), defaults), true
+	return lenscommon.MarshalToJSONWithDefaults(bytes, err, fieldName, defaults, diags)
 }
 
 func preservePriorJSONWithDefaultsIfEquivalent[T any](ctx context.Context, prior, current customtypes.JSONWithDefaultsValue[T], diags *diag.Diagnostics) customtypes.JSONWithDefaultsValue[T] {
-	if prior.IsNull() || prior.IsUnknown() || current.IsNull() || current.IsUnknown() {
-		return current
-	}
-
-	eq, d := prior.StringSemanticEquals(ctx, current)
-	diags.Append(d...)
-	if d.HasError() {
-		return current
-	}
-	if eq {
-		return prior
-	}
-	return current
+	return panelkit.PreservePriorJSONWithDefaultsIfEquivalent(ctx, prior, current, diags)
 }
 
-func preservePriorNormalizedWithDefaultsIfEquivalent[T any](ctx context.Context, prior, current jsontypes.Normalized, defaults func(T) T, diags *diag.Diagnostics) jsontypes.Normalized {
-	if prior.IsNull() || prior.IsUnknown() || current.IsNull() || current.IsUnknown() {
-		return current
+// lensESQLNumberFormatJSONFromAPI marshals a Lens ES|QL dimension `format` union
+// value to a normalized Terraform string. Empty or null JSON is replaced with the
+// default number-format payload so Terraform state matches what Kibana echoes.
+func lensESQLNumberFormatJSONFromAPI(format any, errLabel string, diags *diag.Diagnostics) (jsontypes.Normalized, bool) {
+	return lenscommon.LensESQLNumberFormatJSONFromAPI(format, errLabel, diags)
+}
+
+// lensQueryESQLMode returns whether a Lens chart's optional `query` object selects
+// ES|QL mode (i.e. `query` is omitted, or both `expression` and `language` are
+// null). ok is false when the configuration is still unknown and validation
+// should defer.
+func lensQueryESQLMode(ctx context.Context, config tfsdk.Config, attrPath path.Path, diags *diag.Diagnostics) (esqlMode bool, ok bool) {
+	var queryObj types.Object
+	diags.Append(config.GetAttribute(ctx, attrPath.AtName("query"), &queryObj)...)
+	if diags.HasError() {
+		return false, false
+	}
+	if queryObj.IsUnknown() {
+		return false, false
+	}
+	if queryObj.IsNull() {
+		return true, true
 	}
 
-	priorWithDefaults := customtypes.NewJSONWithDefaultsValue(prior.ValueString(), defaults)
-	currentWithDefaults := customtypes.NewJSONWithDefaultsValue(current.ValueString(), defaults)
-	eq, d := priorWithDefaults.StringSemanticEquals(ctx, currentWithDefaults)
-	diags.Append(d...)
-	if d.HasError() {
-		return current
+	var lang, expr types.String
+	diags.Append(config.GetAttribute(ctx, attrPath.AtName("query").AtName("language"), &lang)...)
+	diags.Append(config.GetAttribute(ctx, attrPath.AtName("query").AtName("expression"), &expr)...)
+	if diags.HasError() {
+		return false, false
 	}
-	if eq {
-		return prior
-	}
-	return current
+	return lang.IsNull() && expr.IsNull(), true
 }

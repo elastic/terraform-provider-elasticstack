@@ -22,8 +22,12 @@ import (
 	"encoding/json"
 	"sort"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -34,7 +38,7 @@ import (
 // It does not set id or elasticsearch_connection; the caller merges those as needed.
 // Alias routing echo shapes vs practitioner config are aligned in applyTemplateAliasReconciliationFromReference
 // after read (managed resource only); the data source preserves the API shape.
-func (m *Model) fromAPIModel(ctx context.Context, name string, in *models.IndexTemplate) diag.Diagnostics {
+func (m *Model) fromAPIModel(ctx context.Context, name string, in *estypes.IndexTemplate) diag.Diagnostics {
 	var diags diag.Diagnostics
 	*m = Model{
 		Name: types.StringValue(name),
@@ -76,8 +80,8 @@ func (m *Model) fromAPIModel(ctx context.Context, name string, in *models.IndexT
 		m.IndexPatterns = sv
 	}
 
-	if in.Meta != nil {
-		b, err := json.Marshal(in.Meta)
+	if in.Meta_ != nil {
+		b, err := json.Marshal(in.Meta_)
 		if err != nil {
 			diags.AddError("Failed to marshal metadata", err.Error())
 			return diags
@@ -87,8 +91,8 @@ func (m *Model) fromAPIModel(ctx context.Context, name string, in *models.IndexT
 		m.Metadata = jsontypes.NewNormalizedNull()
 	}
 
-	m.Priority = int64FromIntPtr(in.Priority)
-	m.Version = int64FromIntPtr(in.Version)
+	m.Priority = int64FromInt64Ptr(in.Priority)
+	m.Version = int64FromInt64Ptr(in.Version)
 
 	var d diag.Diagnostics
 	m.DataStream, d = flattenDataStream(in.DataStream)
@@ -108,14 +112,14 @@ func stringSliceToAttrValues(elems []string) []attr.Value {
 	return vals
 }
 
-func int64FromIntPtr(p *int) types.Int64 {
+func int64FromInt64Ptr(p *int64) types.Int64 {
 	if p == nil {
 		return types.Int64Null()
 	}
-	return types.Int64Value(int64(*p))
+	return types.Int64Value(*p)
 }
 
-func flattenDataStream(ds *models.DataStreamSettings) (types.Object, diag.Diagnostics) {
+func flattenDataStream(ds *estypes.IndexTemplateDataStreamConfiguration) (types.Object, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if ds == nil {
 		return types.ObjectNull(DataStreamAttrTypes()), diags
@@ -138,7 +142,7 @@ func flattenDataStream(ds *models.DataStreamSettings) (types.Object, diag.Diagno
 	return obj, diags
 }
 
-func flattenTemplateBody(ctx context.Context, t *models.Template) (types.Object, diag.Diagnostics) {
+func flattenTemplateBody(ctx context.Context, t *estypes.IndexTemplateSummary) (types.Object, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if t == nil {
 		return types.ObjectNull(TemplateAttrTypes()), diags
@@ -155,7 +159,8 @@ func flattenTemplateBody(ctx context.Context, t *models.Template) (types.Object,
 		sort.Strings(names)
 		vals := make([]attr.Value, 0, len(names))
 		for _, name := range names {
-			av, d := flattenAliasElement(name, t.Aliases[name])
+			alias := t.Aliases[name]
+			av, d := flattenAliasElement(name, alias)
 			diags.Append(d...)
 			if diags.HasError() {
 				return types.ObjectUnknown(TemplateAttrTypes()), diags
@@ -170,16 +175,16 @@ func flattenTemplateBody(ctx context.Context, t *models.Template) (types.Object,
 		aliasSet = sv
 	}
 
-	var mappings jsontypes.Normalized
+	var mappings index.MappingsValue
 	if t.Mappings != nil {
 		b, err := json.Marshal(t.Mappings)
 		if err != nil {
 			diags.AddError("Failed to marshal template.mappings", err.Error())
 			return types.ObjectUnknown(TemplateAttrTypes()), diags
 		}
-		mappings = jsontypes.NewNormalizedValue(string(b))
+		mappings = index.NewMappingsValue(string(b))
 	} else {
-		mappings = jsontypes.NewNormalizedNull()
+		mappings = index.NewMappingsNull()
 	}
 
 	var settings customtypes.IndexSettingsValue
@@ -197,8 +202,10 @@ func flattenTemplateBody(ctx context.Context, t *models.Template) (types.Object,
 	var lcObj types.Object
 	if t.Lifecycle != nil {
 		dataRetention := types.StringNull()
-		if t.Lifecycle.DataRetention != "" {
-			dataRetention = types.StringValue(t.Lifecycle.DataRetention)
+		if t.Lifecycle.DataRetention != nil {
+			if dr, ok := t.Lifecycle.DataRetention.(string); ok && dr != "" {
+				dataRetention = types.StringValue(dr)
+			}
 		}
 		lcAttrs := map[string]attr.Value{
 			"data_retention": dataRetention,
@@ -216,13 +223,13 @@ func flattenTemplateBody(ctx context.Context, t *models.Template) (types.Object,
 	var dsoObj types.Object
 	if t.DataStreamOptions != nil && t.DataStreamOptions.FailureStore != nil {
 		var dsoDiags diag.Diagnostics
-		dsoObj, dsoDiags = flattenDataStreamOptions(t.DataStreamOptions)
+		dsoObj, dsoDiags = datastreamoptions.Flatten(t.DataStreamOptions)
 		diags.Append(dsoDiags...)
 		if diags.HasError() {
 			return types.ObjectUnknown(TemplateAttrTypes()), diags
 		}
 	} else {
-		dsoObj = types.ObjectNull(DataStreamOptionsAttrTypes())
+		dsoObj = types.ObjectNull(datastreamoptions.AttrTypes())
 	}
 
 	tplAttrs := map[string]attr.Value{
@@ -237,54 +244,33 @@ func flattenTemplateBody(ctx context.Context, t *models.Template) (types.Object,
 	return obj, diags
 }
 
-func flattenDataStreamOptions(dso *models.DataStreamOptions) (types.Object, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	fs := dso.FailureStore
-	fsAttrs := map[string]attr.Value{
-		"enabled":   types.BoolValue(fs.Enabled),
-		"lifecycle": types.ObjectNull(FailureStoreLifecycleAttrTypes()),
-	}
-	if fs.Lifecycle != nil {
-		lcAttrs := map[string]attr.Value{
-			"data_retention": types.StringValue(fs.Lifecycle.DataRetention),
-		}
-		lcObj, d := types.ObjectValue(FailureStoreLifecycleAttrTypes(), lcAttrs)
-		diags.Append(d...)
-		if diags.HasError() {
-			return types.ObjectUnknown(DataStreamOptionsAttrTypes()), diags
-		}
-		fsAttrs["lifecycle"] = lcObj
-	}
-	fsObj, d := types.ObjectValue(FailureStoreAttrTypes(), fsAttrs)
-	diags.Append(d...)
-	if diags.HasError() {
-		return types.ObjectUnknown(DataStreamOptionsAttrTypes()), diags
-	}
-	outer := map[string]attr.Value{
-		"failure_store": fsObj,
-	}
-	obj, d := types.ObjectValue(DataStreamOptionsAttrTypes(), outer)
-	diags.Append(d...)
-	return obj, diags
-}
-
-func flattenAliasElement(name string, a models.IndexAlias) (attr.Value, diag.Diagnostics) {
+func flattenAliasElement(name string, a estypes.Alias) (attr.Value, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	attrs := map[string]attr.Value{
 		"name":           types.StringValue(name),
-		"index_routing":  types.StringValue(a.IndexRouting),
-		"routing":        types.StringValue(a.Routing),
-		"search_routing": types.StringValue(a.SearchRouting),
-		"is_hidden":      types.BoolValue(a.IsHidden),
-		"is_write_index": types.BoolValue(a.IsWriteIndex),
+		"index_routing":  types.StringValue(typeutils.Deref(a.IndexRouting)),
+		"routing":        types.StringValue(typeutils.Deref(a.Routing)),
+		"search_routing": types.StringValue(typeutils.Deref(a.SearchRouting)),
+		"is_hidden":      types.BoolValue(typeutils.Deref(a.IsHidden)),
+		"is_write_index": types.BoolValue(typeutils.Deref(a.IsWriteIndex)),
 	}
-	if len(a.Filter) > 0 {
+	if a.Filter != nil {
 		b, err := json.Marshal(a.Filter)
 		if err != nil {
 			diags.AddError("Failed to marshal alias filter", err.Error())
 			return nil, diags
 		}
-		attrs["filter"] = jsontypes.NewNormalizedValue(string(b))
+		var filterMap map[string]any
+		if err := json.Unmarshal(b, &filterMap); err != nil {
+			diags.AddError("Failed to unmarshal alias filter", err.Error())
+			return nil, diags
+		}
+		normalized := elasticsearch.NormalizeQueryFilter(filterMap)
+		if nm, ok := normalized.(map[string]any); ok {
+			filterMap = nm
+		}
+		normalizedBytes, _ := json.Marshal(filterMap)
+		attrs["filter"] = jsontypes.NewNormalizedValue(string(normalizedBytes))
 	} else {
 		attrs["filter"] = jsontypes.NewNormalizedNull()
 	}

@@ -23,11 +23,11 @@ import (
 	"strings"
 
 	"github.com/elastic/go-elasticsearch/v8"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/core/info"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/go-version"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -42,21 +42,17 @@ type CompositeID struct {
 const ServerlessFlavor = "serverless"
 
 func CompositeIDFromStr(id string) (*CompositeID, diag.Diagnostics) {
-	var diags diag.Diagnostics
 	idParts := strings.Split(id, "/")
 	if len(idParts) != 2 {
-		diags = append(diags, diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "Wrong resource ID.",
-			Detail:   "Resource ID must have following format: <cluster_uuid>/<resource identifier>",
-		})
-		return nil, diags
+		return nil, diagutil.SDKErrorDiag(
+			"Wrong resource ID.",
+			"Resource ID must have following format: <cluster_uuid>/<resource identifier>",
+		)
 	}
 	return &CompositeID{
-			ClusterID:  idParts[0],
-			ResourceID: idParts[1],
-		},
-		diags
+		ClusterID:  idParts[0],
+		ResourceID: idParts[1],
+	}, nil
 }
 
 func CompositeIDFromStrFw(id string) (*CompositeID, fwdiags.Diagnostics) {
@@ -82,8 +78,8 @@ func (c *CompositeID) String() string {
 // ElasticsearchScopedClient) obtained through ProviderClientFactory or the
 // acceptance-testing helper constructors.
 type apiClient struct {
-	elasticsearch            *elasticsearch.Client
-	elasticsearchClusterInfo *models.ClusterInfo
+	elasticsearch            *elasticsearch.TypedClient
+	elasticsearchClusterInfo *info.Response
 	kibanaOapi               *kibanaoapi.Client
 	fleet                    *fleet.Client
 	version                  string
@@ -141,12 +137,12 @@ type MinVersionEnforceable interface {
 	EnforceMinVersion(ctx context.Context, minVersion *version.Version) (bool, diag.Diagnostics)
 }
 
-func buildEsClient(cfg config.Client) (*elasticsearch.Client, error) {
+func buildEsClient(cfg config.Client) (*elasticsearch.TypedClient, error) {
 	if cfg.Elasticsearch == nil {
 		return nil, nil
 	}
 
-	es, err := elasticsearch.NewClient(*cfg.Elasticsearch)
+	es, err := elasticsearch.NewTypedClient(*cfg.Elasticsearch)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create Elasticsearch client: %w", err)
 	}

@@ -628,14 +628,40 @@ At minimum, plan-time validation SHALL cover:
 
 ### Requirement: Validation — simple schema constraints aligned with the API (REQ-038)
 The provider SHALL validate simple SLO schema constraints at plan time to match the current generated SLO API contract and generated union types. The resource SHALL:
-- restrict `slo_id` to 8 through 36 characters and `[a-zA-Z0-9_-]+`
+- restrict `slo_id` to 8 through 48 characters and `[a-zA-Z0-9_-]+`
 - restrict `metric_custom_indicator.{good,total}.metrics[].aggregation` to `sum` or `doc_count`
 - restrict metric `name` fields that map to the generated metric unions to `^[A-Z]$`
 - restrict `time_window.type` to `rolling` or `calendarAligned`
 
+When `RequiredIfDependentPathExpressionOneOf` or `RequiredIfDependentPathOneOf` is evaluating whether a field is required, if the attribute being validated is unknown at config-validation time (that is, `val.IsUnknown()` is true), the validator SHALL return without error and defer the required-field check to apply time. This behavior applies to:
+- `metric_custom_indicator.good.metrics.field`
+- `metric_custom_indicator.total.metrics.field`
+- `histogram_custom_indicator.good.from`
+- `histogram_custom_indicator.good.to`
+- `histogram_custom_indicator.total.from`
+- `histogram_custom_indicator.total.to`
+
+#### Scenario: Unknown field in for_each resource does not raise a false-positive error
+- **GIVEN** an `elasticstack_kibana_slo` resource configured with `for_each`
+- **AND** `metric_custom_indicator.good.metrics.field` or `metric_custom_indicator.total.metrics.field` is set via `each.value.*` interpolation
+- **AND** Terraform marks the field value as unknown during `ValidateResourceConfig`
+- **WHEN** `RequiredIfDependentPathExpressionOneOf` runs
+- **THEN** the provider SHALL NOT emit an `Attribute ... must be set` diagnostic
+- **AND** validation SHALL be deferred to apply time
+
+#### Scenario: Known null field still raises the required-field error
+- **GIVEN** `metric_custom_indicator.good.metrics.field` is null or an empty string, not unknown
+- **AND** the sibling `aggregation` matches a value that makes `field` required
+- **WHEN** `RequiredIfDependentPathExpressionOneOf` runs
+- **THEN** the provider SHALL emit an `Attribute ... must be set` diagnostic
+
 #### Scenario: Oversized slo_id is rejected
-- **WHEN** `slo_id` is set to a value longer than 36 characters
+- **WHEN** `slo_id` is set to a value longer than 48 characters
 - **THEN** the provider SHALL return a plan-time validation error
+
+#### Scenario: 48-character slo_id is accepted
+- **WHEN** `slo_id` is set to a value that is exactly 48 characters long and matches `[a-zA-Z0-9_-]+`
+- **THEN** the provider SHALL accept the configuration without a plan-time validation error
 
 #### Scenario: Invalid custom metric aggregation is rejected
 - **WHEN** a `metric_custom_indicator` metric entry uses `aggregation = "avg"`

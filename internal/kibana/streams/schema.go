@@ -19,12 +19,9 @@ package streams
 
 import (
 	"context"
-
-	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
@@ -33,11 +30,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = getSchema()
-}
-
-func getSchema() schema.Schema {
+func getSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: "Manages Kibana [Streams](https://www.elastic.co/docs/api/doc/kibana/group/endpoint-streams). " +
 			"Streams is an experimental feature for managing data ingestion in Kibana. " +
@@ -125,10 +118,7 @@ func getSchema() schema.Schema {
 				NestedObject:        getStreamQuerySchema(),
 			},
 		},
-
-		Blocks: map[string]schema.Block{
-			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
-		}}
+	}
 }
 
 // getWiredConfigSchema returns the schema for wired stream configuration.

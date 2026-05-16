@@ -21,13 +21,13 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -36,38 +36,30 @@ var (
 	MinSupportedDescriptionVersion   = version.Must(version.NewVersion("8.15.0"))
 )
 
-func (r *roleResource) update(ctx context.Context, plan tfsdk.Plan, state *tfsdk.State) diag.Diagnostics {
-	var data Data
+// writeRole handles both Create and Update; the role PUT API is idempotent so
+// the same callback serves both lifecycle methods.
+func writeRole(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.WriteRequest[Data]) (entitycore.WriteResult[Data], diag.Diagnostics) {
 	var diags diag.Diagnostics
-	diags.Append(plan.Get(ctx, &data)...)
-	if diags.HasError() {
-		return diags
-	}
-
-	roleID := data.Name.ValueString()
-	client, clientDiags := r.Client().GetElasticsearchClient(ctx, data.ElasticsearchConnection)
-	diags.Append(clientDiags...)
-	if diags.HasError() {
-		return diags
-	}
+	data := req.Plan
+	roleID := req.WriteID
 
 	id, sdkDiags := client.ID(ctx, roleID)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
-		return diags
+		return entitycore.WriteResult[Data]{}, diags
 	}
 
 	serverVersion, sdkDiags := client.ServerVersion(ctx)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
-		return diags
+		return entitycore.WriteResult[Data]{}, diags
 	}
 
 	// Check version requirements
 	if typeutils.IsKnown(data.Description) {
 		if serverVersion.LessThan(MinSupportedDescriptionVersion) {
 			diags.AddError("Unsupported Feature", fmt.Sprintf("'description' is supported only for Elasticsearch v%s and above", MinSupportedDescriptionVersion.String()))
-			return diags
+			return entitycore.WriteResult[Data]{}, diags
 		}
 	}
 
@@ -76,7 +68,7 @@ func (r *roleResource) update(ctx context.Context, plan tfsdk.Plan, state *tfsdk
 		diags.Append(data.RemoteIndices.ElementsAs(ctx, &remoteIndicesList, false)...)
 		if len(remoteIndicesList) > 0 && serverVersion.LessThan(MinSupportedRemoteIndicesVersion) {
 			diags.AddError("Unsupported Feature", fmt.Sprintf("'remote_indices' is supported only for Elasticsearch v%s and above", MinSupportedRemoteIndicesVersion.String()))
-			return diags
+			return entitycore.WriteResult[Data]{}, diags
 		}
 	}
 
@@ -84,33 +76,16 @@ func (r *roleResource) update(ctx context.Context, plan tfsdk.Plan, state *tfsdk
 	role, modelDiags := data.toAPIModel(ctx)
 	diags.Append(modelDiags...)
 	if diags.HasError() {
-		return diags
+		return entitycore.WriteResult[Data]{}, diags
 	}
 
 	// Put the role
-	sdkDiags = elasticsearch.PutRole(ctx, client, role)
+	sdkDiags = elasticsearch.PutRole(ctx, client, roleID, role)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
-		return diags
+		return entitycore.WriteResult[Data]{}, diags
 	}
 
 	data.ID = types.StringValue(id.String())
-	readData, readDiags := readRoleForUpdate(ctx, r, data)
-	diags.Append(readDiags...)
-	if diags.HasError() {
-		return diags
-	}
-
-	if readData == nil {
-		diags.AddError("Not Found", fmt.Sprintf("Role %q was not found after update", roleID))
-		return diags
-	}
-
-	diags.Append(state.Set(ctx, readData)...)
-	return diags
-}
-
-func (r *roleResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	diags := r.update(ctx, req.Plan, &resp.State)
-	resp.Diagnostics.Append(diags...)
+	return entitycore.WriteResult[Data]{Model: data}, diags
 }

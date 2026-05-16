@@ -25,6 +25,18 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestModelGetters(t *testing.T) {
+	model := tfModel{
+		ID:                      types.StringValue("cluster-uuid/logs-system.syslog@custom"),
+		IndexTemplate:           types.StringValue("logs-system.syslog"),
+		LifecycleName:           types.StringValue("my-policy"),
+		ElasticsearchConnection: types.ListNull(types.ObjectType{}),
+	}
+	assert.Equal(t, types.StringValue("cluster-uuid/logs-system.syslog@custom"), model.GetID())
+	assert.Equal(t, types.StringValue("logs-system.syslog@custom"), model.GetResourceID())
+	assert.Equal(t, types.ListNull(types.ObjectType{}), model.GetElasticsearchConnection())
+}
+
 func TestGetComponentTemplateName(t *testing.T) {
 	model := tfModel{
 		IndexTemplate: types.StringValue("logs-system.syslog"),
@@ -37,60 +49,83 @@ func TestMergeILMSetting_EmptyExisting(t *testing.T) {
 	existing := map[string]any{}
 	result := mergeILMSetting(existing, "my-policy")
 
-	assert.Equal(t, "my-policy", result["index.lifecycle.name"])
+	indexSettings := result["index"].(map[string]any)
+	lifecycle := indexSettings["lifecycle"].(map[string]any)
+	assert.Equal(t, "my-policy", lifecycle["name"])
 	assert.Len(t, result, 1)
 }
 
 func TestMergeILMSetting_NilExisting(t *testing.T) {
 	result := mergeILMSetting(nil, "my-policy")
 
-	assert.Equal(t, "my-policy", result["index.lifecycle.name"])
+	indexSettings := result["index"].(map[string]any)
+	lifecycle := indexSettings["lifecycle"].(map[string]any)
+	assert.Equal(t, "my-policy", lifecycle["name"])
 	assert.Len(t, result, 1)
 }
 
 func TestMergeILMSetting_PreserveExisting(t *testing.T) {
 	existing := map[string]any{
-		"index.number_of_replicas": 2,
-		"index.refresh_interval":   "30s",
+		"index": map[string]any{
+			"number_of_replicas": 2,
+			"refresh_interval":   "30s",
+		},
 	}
 	result := mergeILMSetting(existing, "my-policy")
 
-	assert.Equal(t, "my-policy", result["index.lifecycle.name"])
-	assert.Equal(t, 2, result["index.number_of_replicas"])
-	assert.Equal(t, "30s", result["index.refresh_interval"])
-	assert.Len(t, result, 3)
+	indexSettings := result["index"].(map[string]any)
+	lifecycle := indexSettings["lifecycle"].(map[string]any)
+	assert.Equal(t, "my-policy", lifecycle["name"])
+	assert.Equal(t, 2, indexSettings["number_of_replicas"])
+	assert.Equal(t, "30s", indexSettings["refresh_interval"])
+	assert.Len(t, result, 1)
 }
 
 func TestMergeILMSetting_OverwriteExistingILM(t *testing.T) {
 	existing := map[string]any{
-		"index.lifecycle.name":     "old-policy",
-		"index.number_of_replicas": 2,
+		"index": map[string]any{
+			"lifecycle": map[string]any{
+				"name": "old-policy",
+			},
+			"number_of_replicas": 2,
+		},
 	}
 	result := mergeILMSetting(existing, "new-policy")
 
-	assert.Equal(t, "new-policy", result["index.lifecycle.name"])
-	assert.Equal(t, 2, result["index.number_of_replicas"])
-	assert.Len(t, result, 2)
+	indexSettings := result["index"].(map[string]any)
+	lifecycle := indexSettings["lifecycle"].(map[string]any)
+	assert.Equal(t, "new-policy", lifecycle["name"])
+	assert.Equal(t, 2, indexSettings["number_of_replicas"])
+	assert.Len(t, result, 1)
 }
 
 func TestRemoveILMSetting_RemovesOnlyILM(t *testing.T) {
 	settings := map[string]any{
-		"index.lifecycle.name":   "my-policy",
-		"index.number_of_shards": "1",
-		"index.refresh_interval": "30s",
+		"index": map[string]any{
+			"lifecycle": map[string]any{
+				"name": "my-policy",
+			},
+			"number_of_shards": "1",
+			"refresh_interval": "30s",
+		},
 	}
 	result := removeILMSetting(settings)
 
-	_, hasILM := result["index.lifecycle.name"]
+	indexSettings := result["index"].(map[string]any)
+	_, hasILM := indexSettings["lifecycle"]
 	assert.False(t, hasILM)
-	assert.Equal(t, "1", result["index.number_of_shards"])
-	assert.Equal(t, "30s", result["index.refresh_interval"])
-	assert.Len(t, result, 2)
+	assert.Equal(t, "1", indexSettings["number_of_shards"])
+	assert.Equal(t, "30s", indexSettings["refresh_interval"])
+	assert.Len(t, result, 1)
 }
 
 func TestRemoveILMSetting_EmptyAfterRemoval(t *testing.T) {
 	settings := map[string]any{
-		"index.lifecycle.name": "my-policy",
+		"index": map[string]any{
+			"lifecycle": map[string]any{
+				"name": "my-policy",
+			},
+		},
 	}
 	result := removeILMSetting(settings)
 
@@ -100,78 +135,6 @@ func TestRemoveILMSetting_EmptyAfterRemoval(t *testing.T) {
 func TestRemoveILMSetting_NilSettings(t *testing.T) {
 	result := removeILMSetting(nil)
 	assert.Nil(t, result)
-}
-
-func TestIsComponentTemplateEmpty(t *testing.T) {
-	tests := []struct {
-		name     string
-		template *models.Template
-		expected bool
-	}{
-		{
-			name:     "nil template",
-			template: nil,
-			expected: true,
-		},
-		{
-			name:     "empty template",
-			template: &models.Template{},
-			expected: true,
-		},
-		{
-			name: "empty settings map",
-			template: &models.Template{
-				Settings: map[string]any{},
-			},
-			expected: true,
-		},
-		{
-			name: "has settings",
-			template: &models.Template{
-				Settings: map[string]any{
-					"index.number_of_replicas": 2,
-				},
-			},
-			expected: false,
-		},
-		{
-			name: "has mappings",
-			template: &models.Template{
-				Mappings: map[string]any{
-					"properties": map[string]any{},
-				},
-			},
-			expected: false,
-		},
-		{
-			name: "has aliases",
-			template: &models.Template{
-				Aliases: map[string]models.IndexAlias{
-					"my-alias": {},
-				},
-			},
-			expected: false,
-		},
-		{
-			name: "has settings and mappings",
-			template: &models.Template{
-				Settings: map[string]any{
-					"index.number_of_replicas": 2,
-				},
-				Mappings: map[string]any{
-					"properties": map[string]any{},
-				},
-			},
-			expected: false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := isComponentTemplateEmpty(tt.template)
-			assert.Equal(t, tt.expected, result)
-		})
-	}
 }
 
 func TestExtractILMSetting(t *testing.T) {
@@ -210,8 +173,12 @@ func TestExtractILMSetting(t *testing.T) {
 			name: "has ILM setting",
 			template: &models.Template{
 				Settings: map[string]any{
-					"index.lifecycle.name":     "my-policy",
-					"index.number_of_replicas": 2,
+					"index": map[string]any{
+						"lifecycle": map[string]any{
+							"name": "my-policy",
+						},
+						"number_of_replicas": 2,
+					},
 				},
 			},
 			expected: "my-policy",
@@ -220,7 +187,11 @@ func TestExtractILMSetting(t *testing.T) {
 			name: "ILM setting is not a string",
 			template: &models.Template{
 				Settings: map[string]any{
-					"index.lifecycle.name": 123,
+					"index": map[string]any{
+						"lifecycle": map[string]any{
+							"name": 123,
+						},
+					},
 				},
 			},
 			expected: "",

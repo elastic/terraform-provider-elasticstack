@@ -43,12 +43,13 @@ var errFleetPackageNotFound = errors.New("fleet package not found")
 const integrationDataSourceResourceName = "data.elasticstack_fleet_integration.test"
 
 func TestAccDataSourceIntegration(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionIntegrationDataSource, versionutils.FlavorAny)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationDataSource),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet(integrationDataSourceResourceName, "id"),
@@ -61,13 +62,14 @@ func TestAccDataSourceIntegration(t *testing.T) {
 }
 
 func TestAccDataSourceIntegrationWithSpaceID(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionIntegrationDataSource, versionutils.FlavorAny)
+
 	spaceID := strings.ToLower("test-" + sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum))
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationDataSource),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables: config.Variables{
 					"space_name": config.StringVariable(spaceID),
@@ -85,12 +87,13 @@ func TestAccDataSourceIntegrationWithSpaceID(t *testing.T) {
 }
 
 func TestAccDataSourceIntegrationAlternateName(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionIntegrationDataSource, versionutils.FlavorAny)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationDataSource),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet(integrationDataSourceResourceName, "id"),
@@ -103,12 +106,13 @@ func TestAccDataSourceIntegrationAlternateName(t *testing.T) {
 }
 
 func TestAccDataSourceIntegrationWithPrerelease(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionIntegrationDataSource, versionutils.FlavorAny)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationDataSource),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet(integrationDataSourceResourceName, "id"),
@@ -123,6 +127,8 @@ func TestAccDataSourceIntegrationWithPrerelease(t *testing.T) {
 }
 
 func TestAccDataSourceIntegrationKibanaConnection(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionIntegrationDataSource, versionutils.FlavorAny)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			acctest.PreCheck(t)
@@ -131,7 +137,6 @@ func TestAccDataSourceIntegrationKibanaConnection(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationDataSource),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables:          acctest.KibanaConnectionVariables(),
 				Check: resource.ComposeTestCheckFunc(

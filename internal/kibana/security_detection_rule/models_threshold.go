@@ -23,12 +23,26 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-type ThresholdRuleProcessor struct{}
+type ThresholdRuleProcessor struct {
+	baseRuleProcessor[kbapi.SecurityDetectionsAPIThresholdRule]
+}
+
+func newThresholdRuleProcessor() ThresholdRuleProcessor {
+	return ThresholdRuleProcessor{
+		baseRuleProcessor: baseRuleProcessor[kbapi.SecurityDetectionsAPIThresholdRule]{
+			updateFn: func(ctx context.Context, v *kbapi.SecurityDetectionsAPIThresholdRule, d *Data) diag.Diagnostics {
+				return d.updateFromThresholdRule(ctx, v)
+			},
+			idFn: func(v kbapi.SecurityDetectionsAPIThresholdRule) string {
+				return v.Id.String()
+			},
+		},
+	}
+}
 
 func (th ThresholdRuleProcessor) HandlesRuleType(t string) bool {
 	return t == "threshold"
@@ -40,38 +54,6 @@ func (th ThresholdRuleProcessor) ToCreateProps(ctx context.Context, client clien
 
 func (th ThresholdRuleProcessor) ToUpdateProps(ctx context.Context, client clients.MinVersionEnforceable, d Data) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
 	return d.toThresholdRuleUpdateProps(ctx, client)
-}
-
-func (th ThresholdRuleProcessor) HandlesAPIRuleResponse(rule any) bool {
-	_, ok := rule.(kbapi.SecurityDetectionsAPIThresholdRule)
-	return ok
-}
-
-func (th ThresholdRuleProcessor) UpdateFromResponse(ctx context.Context, rule any, d *Data) diag.Diagnostics {
-	var diags diag.Diagnostics
-	value, ok := rule.(kbapi.SecurityDetectionsAPIThresholdRule)
-	if !ok {
-		diags.AddError(
-			"Error extracting rule ID",
-			"Could not extract rule ID from response",
-		)
-		return diags
-	}
-
-	return d.updateFromThresholdRule(ctx, &value)
-}
-
-func (th ThresholdRuleProcessor) ExtractID(response any) (string, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	value, ok := response.(kbapi.SecurityDetectionsAPIThresholdRule)
-	if !ok {
-		diags.AddError(
-			"Error extracting rule ID",
-			"Could not extract rule ID from response",
-		)
-		return "", diags
-	}
-	return value.Id.String(), diags
 }
 
 func (d Data) toThresholdRuleCreateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
@@ -161,13 +143,8 @@ func (d Data) toThresholdRuleUpdateProps(ctx context.Context, client clients.Min
 	var diags diag.Diagnostics
 	var updateProps kbapi.SecurityDetectionsAPIRuleUpdateProps
 
-	// Parse ID to get space_id and rule_id
-	compID, resourceIDDiags := clients.CompositeIDFromStrFw(d.ID.ValueString())
-	diags.Append(resourceIDDiags...)
-
-	uid, err := uuid.Parse(compID.ResourceID)
-	if err != nil {
-		diags.AddError("ID was not a valid UUID", err.Error())
+	uid, ok := d.parseResourceUUID(&diags)
+	if !ok {
 		return updateProps, diags
 	}
 
@@ -248,7 +225,7 @@ func (d Data) toThresholdRuleUpdateProps(ctx context.Context, client clients.Min
 	}
 
 	// Convert to union type
-	err = updateProps.FromSecurityDetectionsAPIThresholdRuleUpdateProps(thresholdRule)
+	err := updateProps.FromSecurityDetectionsAPIThresholdRuleUpdateProps(thresholdRule)
 	if err != nil {
 		diags.AddError(
 			"Error building update properties",
@@ -262,53 +239,58 @@ func (d Data) toThresholdRuleUpdateProps(ctx context.Context, client clients.Min
 func (d *Data) updateFromThresholdRule(ctx context.Context, rule *kbapi.SecurityDetectionsAPIThresholdRule) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	compID := clients.CompositeID{
-		ClusterID:  d.SpaceID.ValueString(),
-		ResourceID: rule.Id.String(),
-	}
-	d.ID = types.StringValue(compID.String())
-
-	d.RuleID = types.StringValue(rule.RuleId)
-	d.Name = types.StringValue(rule.Name)
-	d.Type = typeutils.StringishValue(rule.Type)
-
-	// Update common fields
-	diags.Append(d.updateTimelineIDFromAPI(ctx, rule.TimelineId)...)
-	diags.Append(d.updateTimelineTitleFromAPI(ctx, rule.TimelineTitle)...)
-	diags.Append(d.updateDataViewIDFromAPI(ctx, rule.DataViewId)...)
-	diags.Append(d.updateNamespaceFromAPI(ctx, rule.Namespace)...)
-	diags.Append(d.updateRuleNameOverrideFromAPI(ctx, rule.RuleNameOverride)...)
-	diags.Append(d.updateTimestampOverrideFromAPI(ctx, rule.TimestampOverride)...)
-	diags.Append(d.updateTimestampOverrideFallbackDisabledFromAPI(ctx, rule.TimestampOverrideFallbackDisabled)...)
+	// Threshold rules use a different AlertSuppression type, so we pass nil and handle it separately below.
+	diags.Append(d.updateCommonRuleFieldsFromAPI(ctx, commonAPIRuleFields{
+		ResourceID:                        rule.Id.String(),
+		RuleID:                            rule.RuleId,
+		Name:                              rule.Name,
+		Type:                              string(rule.Type),
+		Enabled:                           rule.Enabled,
+		From:                              rule.From,
+		To:                                rule.To,
+		Interval:                          rule.Interval,
+		Description:                       rule.Description,
+		RiskScore:                         int64(rule.RiskScore),
+		Severity:                          string(rule.Severity),
+		MaxSignals:                        int64(rule.MaxSignals),
+		Version:                           int64(rule.Version),
+		Revision:                          int64(rule.Revision),
+		CreatedAt:                         rule.CreatedAt,
+		CreatedBy:                         rule.CreatedBy,
+		UpdatedAt:                         rule.UpdatedAt,
+		UpdatedBy:                         rule.UpdatedBy,
+		TimelineID:                        rule.TimelineId,
+		TimelineTitle:                     rule.TimelineTitle,
+		DataViewID:                        rule.DataViewId,
+		Namespace:                         rule.Namespace,
+		RuleNameOverride:                  rule.RuleNameOverride,
+		TimestampOverride:                 rule.TimestampOverride,
+		TimestampOverrideFallbackDisabled: rule.TimestampOverrideFallbackDisabled,
+		BuildingBlockType:                 rule.BuildingBlockType,
+		License:                           rule.License,
+		Note:                              rule.Note,
+		Setup:                             rule.Setup,
+		Index:                             rule.Index,
+		Author:                            rule.Author,
+		Tags:                              rule.Tags,
+		FalsePositives:                    rule.FalsePositives,
+		References:                        rule.References,
+		Actions:                           rule.Actions,
+		ExceptionsList:                    rule.ExceptionsList,
+		RiskScoreMapping:                  rule.RiskScoreMapping,
+		InvestigationFields:               rule.InvestigationFields,
+		Threat:                            rule.Threat,
+		SeverityMapping:                   rule.SeverityMapping,
+		RelatedIntegrations:               rule.RelatedIntegrations,
+		RequiredFields:                    rule.RequiredFields,
+		AlertSuppression:                  nil, // handled below via updateThresholdAlertSuppressionFromAPI
+		ResponseActions:                   rule.ResponseActions,
+	})...)
 
 	d.Query = typeutils.StringishValue(rule.Query)
 	d.Language = typeutils.StringishValue(rule.Language)
-	d.Enabled = types.BoolValue(rule.Enabled)
 
-	// Update building block type
-	diags.Append(d.updateBuildingBlockTypeFromAPI(ctx, rule.BuildingBlockType)...)
-	d.From = types.StringValue(rule.From)
-	d.To = types.StringValue(rule.To)
-	d.Interval = types.StringValue(rule.Interval)
-	d.Description = types.StringValue(rule.Description)
-	d.RiskScore = types.Int64Value(int64(rule.RiskScore))
-	d.Severity = typeutils.StringishValue(rule.Severity)
-	d.MaxSignals = types.Int64Value(int64(rule.MaxSignals))
-	d.Version = types.Int64Value(int64(rule.Version))
-
-	// Update read-only fields
-	d.CreatedAt = types.StringValue(rule.CreatedAt.Format("2006-01-02T15:04:05.000Z"))
-	d.CreatedBy = types.StringValue(rule.CreatedBy)
-	d.UpdatedAt = types.StringValue(rule.UpdatedAt.Format("2006-01-02T15:04:05.000Z"))
-	d.UpdatedBy = types.StringValue(rule.UpdatedBy)
-	d.Revision = types.Int64Value(int64(rule.Revision))
-
-	// Update threat
-	threatDiags := d.updateThreatFromAPI(ctx, &rule.Threat)
-	diags.Append(threatDiags...)
-
-	// Update index patterns
-	diags.Append(d.updateIndexFromAPI(ctx, rule.Index)...)
+	diags.Append(d.updateFiltersFromAPI(ctx, rule.Filters)...)
 
 	// Threshold-specific fields
 	thresholdObj, thresholdDiags := convertThresholdToModel(ctx, rule.Threshold)
@@ -317,69 +299,14 @@ func (d *Data) updateFromThresholdRule(ctx context.Context, rule *kbapi.Security
 		d.Threshold = thresholdObj
 	}
 
-	// Optional saved query ID
 	if rule.SavedId != nil {
 		d.SavedID = types.StringValue(*rule.SavedId)
 	} else {
 		d.SavedID = types.StringNull()
 	}
 
-	// Update author
-	diags.Append(d.updateAuthorFromAPI(ctx, rule.Author)...)
-
-	// Update tags
-	diags.Append(d.updateTagsFromAPI(ctx, rule.Tags)...)
-
-	// Update false positives
-	diags.Append(d.updateFalsePositivesFromAPI(ctx, rule.FalsePositives)...)
-
-	// Update references
-	diags.Append(d.updateReferencesFromAPI(ctx, rule.References)...)
-
-	// Update optional string fields
-	diags.Append(d.updateLicenseFromAPI(ctx, rule.License)...)
-	diags.Append(d.updateNoteFromAPI(ctx, rule.Note)...)
-	diags.Append(d.updateSetupFromAPI(ctx, rule.Setup)...)
-
-	// Update actions
-	actionDiags := d.updateActionsFromAPI(ctx, rule.Actions)
-	diags.Append(actionDiags...)
-
-	// Update exceptions list
-	exceptionsListDiags := d.updateExceptionsListFromAPI(ctx, rule.ExceptionsList)
-	diags.Append(exceptionsListDiags...)
-
-	// Update risk score mapping
-	riskScoreMappingDiags := d.updateRiskScoreMappingFromAPI(ctx, rule.RiskScoreMapping)
-	diags.Append(riskScoreMappingDiags...)
-
-	// Update investigation fields
-	investigationFieldsDiags := d.updateInvestigationFieldsFromAPI(ctx, rule.InvestigationFields)
-	diags.Append(investigationFieldsDiags...)
-
-	// Update filters field
-	filtersDiags := d.updateFiltersFromAPI(ctx, rule.Filters)
-	diags.Append(filtersDiags...)
-
-	// Update severity mapping
-	severityMappingDiags := d.updateSeverityMappingFromAPI(ctx, &rule.SeverityMapping)
-	diags.Append(severityMappingDiags...)
-
-	// Update related integrations
-	relatedIntegrationsDiags := d.updateRelatedIntegrationsFromAPI(ctx, &rule.RelatedIntegrations)
-	diags.Append(relatedIntegrationsDiags...)
-
-	// Update required fields
-	requiredFieldsDiags := d.updateRequiredFieldsFromAPI(ctx, &rule.RequiredFields)
-	diags.Append(requiredFieldsDiags...)
-
-	// Update alert suppression
-	thresholdAlertSuppressionDiags := d.updateThresholdAlertSuppressionFromAPI(ctx, rule.AlertSuppression)
-	diags.Append(thresholdAlertSuppressionDiags...)
-
-	// Update response actions
-	responseActionsDiags := d.updateResponseActionsFromAPI(ctx, rule.ResponseActions)
-	diags.Append(responseActionsDiags...)
+	// Threshold uses a distinct alert suppression type that overwrites the null set by the common helper.
+	diags.Append(d.updateThresholdAlertSuppressionFromAPI(ctx, rule.AlertSuppression)...)
 
 	return diags
 }

@@ -26,6 +26,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/attr/xattr"
@@ -85,7 +86,7 @@ func (t IndexSettingsType) ValueFromTerraform(ctx context.Context, in tftypes.Va
 	return IndexSettingsValue{Normalized: norm}, nil
 }
 
-// IndexSettingsValue holds a JSON object string for index template settings with semantic equality matching DiffIndexSettingSuppress.
+// IndexSettingsValue holds a JSON object string for index template settings with semantic equality based on normalizeIndexSettings.
 type IndexSettingsValue struct {
 	jsontypes.Normalized
 }
@@ -189,8 +190,8 @@ func (v IndexSettingsValue) SemanticallyEqual(_ context.Context, other IndexSett
 	}
 
 	return reflect.DeepEqual(
-		normalizeIndexSettings(flattenMap(o)),
-		normalizeIndexSettings(flattenMap(n)),
+		normalizeIndexSettings(typeutils.FlattenMap(o)),
+		normalizeIndexSettings(typeutils.FlattenMap(n)),
 	), diags
 }
 
@@ -213,7 +214,13 @@ func normalizeIndexSettings(m map[string]any) map[string]any {
 		if !strings.HasPrefix(k, "index.") {
 			nk = "index." + k
 		}
-		e := entry{k, nk, fmt.Sprintf("%v", val)}
+		var s string
+		if val == nil {
+			s = "null"
+		} else {
+			s = fmt.Sprintf("%v", val)
+		}
+		e := entry{k, nk, s}
 		if strings.Contains(k, ".") {
 			dotted = append(dotted, e)
 		} else {
@@ -263,7 +270,7 @@ func CanonicalIndexSettingsJSON(raw string) (string, error) {
 	if !ok {
 		return "", fmt.Errorf("settings must be a JSON object")
 	}
-	flatNorm := normalizeIndexSettings(flattenMap(m))
+	flatNorm := normalizeIndexSettings(typeutils.FlattenMap(m))
 	nested := unflattenDottedMap(flatNorm)
 	b, err := marshalSettingsJSONSorted(nested)
 	if err != nil {
@@ -350,28 +357,14 @@ func unflattenDottedMap(flat map[string]any) map[string]any {
 	return root
 }
 
-// flattenMap flattens nested maps into dotted keys (port of tfsdkutils.flattenMap).
-// Map iteration order is undefined; conflicting keys are resolved deterministically later in
-// normalizeIndexSettings (nested / dotted sources win over flat siblings — see comment there).
-func flattenMap(m map[string]any) map[string]any {
-	out := make(map[string]any)
-
-	var flattener func(string, map[string]any, map[string]any)
-	flattener = func(k string, src, dst map[string]any) {
-		if len(k) > 0 {
-			k += "."
-		}
-		for key, val := range src {
-			switch inner := val.(type) {
-			case map[string]any:
-				flattener(k+key, inner, dst)
-			default:
-				dst[k+key] = val
-			}
-		}
-	}
-	flattener("", m, out)
-	return out
+// normalizeSettingsScalars recursively walks decoded settings JSON and converts
+// string-encoded JSON booleans and null back to their native types. Elasticsearch
+// echoes some settings values (e.g. _tier_preference: null) as JSON strings
+// ("null") instead of the native JSON literal null. Normalizing here ensures
+// the stored value after import matches the value stored after the initial apply,
+// so ImportStateVerify does not fail due to "null" (string) vs null (JSON null).
+func normalizeSettingsScalars(v any) any {
+	return typeutils.NormalizeJSONScalar(v)
 }
 
 // NewIndexSettingsNull creates an IndexSettingsValue with a null value.
@@ -384,7 +377,16 @@ func NewIndexSettingsUnknown() IndexSettingsValue {
 	return IndexSettingsValue{Normalized: jsontypes.NewNormalizedUnknown()}
 }
 
-// NewIndexSettingsValue creates an IndexSettingsValue with a known value.
+// NewIndexSettingsValue creates an IndexSettingsValue with a known value,
+// applying scalar normalization (converting string-encoded booleans and null
+// back to their native JSON types) before storing the value.
 func NewIndexSettingsValue(value string) IndexSettingsValue {
+	var m any
+	if err := json.Unmarshal([]byte(value), &m); err == nil {
+		m = normalizeSettingsScalars(m)
+		if nb, err := json.Marshal(m); err == nil {
+			value = string(nb)
+		}
+	}
 	return IndexSettingsValue{Normalized: jsontypes.NewNormalizedValue(value)}
 }

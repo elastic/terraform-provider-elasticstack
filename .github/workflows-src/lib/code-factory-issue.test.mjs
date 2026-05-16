@@ -18,7 +18,7 @@ const {
   parseOptionalTriStateFromEnv,
   parseFinalizeGateEnv,
 } = require('./code-factory-issue.js');
-const { ISSUE_BRANCH_PREFIX, FACTORY_LABEL } = require('../code-factory-issue/intake-constants.js');
+const { ISSUE_BRANCH_PREFIX, FACTORY_LABEL, DUPLICATE_LINKAGE_MODE } = require('../code-factory-issue/intake-constants.js');
 
 const workflowPath = path.resolve(__dirname, '../../workflows/code-factory-issue.md');
 const lockPath = path.resolve(__dirname, '../../workflows/code-factory-issue.lock.yml');
@@ -363,6 +363,7 @@ test('code-factory-issue workflow is compiled and exists', () => {
   assert.match(source, /code-factory/);
   assert.match(source, /issues/);
   assert.match(source, /compile-workflow-sources/);
+  assert.match(source, /patch-format: am/);
 });
 
 test('code-factory-issue lock file is compiled and exists', () => {
@@ -370,6 +371,7 @@ test('code-factory-issue lock file is compiled and exists', () => {
   assert.ok(lock.length > 0);
   assert.match(lock, /# gh-aw-metadata:/);
   assert.match(lock, /DO NOT EDIT/);
+  assert.match(lock, /"patch_format":"am"/);
 });
 
 test('computeGateReason returns unknown reason when actorTrusted is null (step skipped)', () => {
@@ -401,21 +403,23 @@ test('computeGateReason returns unknown reason when duplicatePrFound is null (st
 });
 
 test('issueBranchName matches deterministic branch naming', () => {
+  assert.equal(DUPLICATE_LINKAGE_MODE, 'closes-literal');
   assert.equal(issueBranchName(42), 'code-factory/issue-42');
 });
 
-test('code-factory-issue exports align with shared createFactoryIssueIntake binding', () => {
-  const { createFactoryIssueIntake } = require('./factory-issue-shared.js');
+test('code-factory-issue exports align with shared createFactoryIssueModule binding', () => {
+  const { createFactoryIssueModule } = require('./factory-issue-shared.js');
   const {
     ISSUE_BRANCH_PREFIX: prefix,
     FACTORY_LABEL: label,
+    DUPLICATE_LINKAGE_MODE: duplicateLinkageMode,
     ISSUE_OPENED_NOT_ELIGIBLE_REASON: openedReason,
   } = require('../code-factory-issue/intake-constants.js');
-  const bound = createFactoryIssueIntake({
+  const bound = createFactoryIssueModule({
     branchPrefix: prefix,
     factoryLabel: label,
     issueOpenedNotEligibleReason: openedReason,
-    duplicateLinkageMode: 'closes-literal',
+    duplicateLinkageMode,
   });
   const params = { eventName: 'issues', eventAction: 'labeled', labelName: 'code-factory', issueLabels: [] };
   assert.deepEqual(qualifyTriggerEvent(params), bound.qualifyTriggerEvent(params));
@@ -431,10 +435,10 @@ test('code-factory-issue exports align with shared createFactoryIssueIntake bind
 
 test('code-factory intake constants stay aligned with workflow template branch prefix', () => {
   const workflowTmpl = readFileSync(codeFactoryWorkflowTmplPath, 'utf8');
-  const branchExpr = `${ISSUE_BRANCH_PREFIX}\${{ github.event.issue.number }}`;
+  const branchExpr = `${ISSUE_BRANCH_PREFIX}\${{ needs.pre_activation.outputs.issue_number }}`;
   assert.ok(
     workflowTmpl.includes(branchExpr),
-    'workflow.md.tmpl must express branches with ISSUE_BRANCH_PREFIX + ${{ github.event.issue.number }}',
+    'workflow.md.tmpl must express branches with ISSUE_BRANCH_PREFIX + ${{ needs.pre_activation.outputs.issue_number }}',
   );
 });
 
@@ -445,13 +449,90 @@ test('code-factory-issue workflow template enables status comments and remove-la
   assert.match(workflowTmpl, /x-script-include: scripts\/remove_trigger_label\.inline\.js/);
   assert.match(workflowTmpl, /issues:\s*write/);
   assert.match(workflowTmpl, /trigger_label_removed:/);
+  assert.match(
+    workflowTmpl,
+    /safe-outputs:\s*\n\s*create-pull-request:[\s\S]*?patch-format: am/,
+  );
+});
+
+test('code-factory-issue workflow template includes workflow_dispatch trigger', () => {
+  const workflowTmpl = readFileSync(codeFactoryWorkflowTmplPath, 'utf8');
+  assert.match(workflowTmpl, /workflow_dispatch:/);
+  assert.match(workflowTmpl, /issue_number:/);
+  assert.match(workflowTmpl, /source_workflow:/);
+});
+
+test('code-factory-issue workflow template includes normalized context outputs', () => {
+  const workflowTmpl = readFileSync(codeFactoryWorkflowTmplPath, 'utf8');
+  assert.match(workflowTmpl, /intake_mode:/);
+  assert.match(workflowTmpl, /issue_number:/);
+  assert.match(workflowTmpl, /issue_title:/);
+  assert.match(workflowTmpl, /name: Normalize context/);
+  assert.match(workflowTmpl, /source_workflow:/);
+});
+
+test('code-factory-issue workflow template drives prompt from normalized outputs', () => {
+  const workflowTmpl = readFileSync(codeFactoryWorkflowTmplPath, 'utf8');
+  assert.ok(
+    !workflowTmpl.includes('${{ github.event.issue.number }}'),
+    'workflow.md.tmpl must not use raw github.event.issue.number in the agent prompt',
+  );
+  assert.ok(
+    !workflowTmpl.includes('${{ github.event.issue.title }}'),
+    'workflow.md.tmpl must not use raw github.event.issue.title in the agent prompt',
+  );
+  assert.match(workflowTmpl, /needs\.pre_activation\.outputs\.issue_number/);
+  assert.match(workflowTmpl, /needs\.pre_activation\.outputs\.issue_title/);
+  assert.match(workflowTmpl, /\/tmp\/code-factory-context\/issue_body\.md/);
+  assert.match(workflowTmpl, /\/tmp\/code-factory-context\/issue_comments\.md/);
+});
+
+test('code-factory-issue workflow template keeps dispatch actorTrusted bypass', () => {
+  const workflowTmpl = readFileSync(codeFactoryWorkflowTmplPath, 'utf8');
+  assert.match(workflowTmpl, /actor_trusted=true/);
+  assert.match(workflowTmpl, /Dispatch intake bypasses actor trust check/);
+});
+
+test('code-factory-issue workflow template includes dispatch validation and live issue fetch', () => {
+  const workflowTmpl = readFileSync(codeFactoryWorkflowTmplPath, 'utf8');
+  assert.match(workflowTmpl, /name: Validate dispatch inputs/);
+  assert.match(workflowTmpl, /x-script-include: scripts\/validate_dispatch_inputs\.inline\.js/);
+  assert.match(workflowTmpl, /name: Fetch live issue/);
+  assert.match(workflowTmpl, /x-script-include: scripts\/fetch_live_issue\.inline\.js/);
+  assert.match(workflowTmpl, /INPUT_ISSUE_NUMBER:/);
+});
+
+test('code-factory-issue workflow template guards agent job with issue_number non-empty', () => {
+  const workflowTmpl = readFileSync(codeFactoryWorkflowTmplPath, 'utf8');
+  assert.match(workflowTmpl, /needs\.pre_activation\.outputs\.issue_number != ''/);
+});
+
+test('code-factory-issue workflow template normalize_context uses env vars', () => {
+  const workflowTmpl = readFileSync(codeFactoryWorkflowTmplPath, 'utf8');
+  assert.match(workflowTmpl, /env:\s*\n\s+INTAKE_MODE:/);
+  assert.match(workflowTmpl, /ISSUE_BODY_EVENT:/);
+  assert.match(workflowTmpl, /EOF_DELIM=/);
+  assert.doesNotMatch(workflowTmpl, /GITHUB_OUTPUT_EOF/);
+});
+
+test('code-factory-issue validate_dispatch_inputs.inline.js includes dispatch helper', () => {
+  const source = readFileSync(path.join(codeFactoryScriptsDir, 'validate_dispatch_inputs.inline.js'), 'utf8');
+  assert.match(source, /code-factory-dispatch\.js/);
+  assert.match(source, /validateDispatchInputs/);
+});
+
+test('code-factory-issue check_duplicate_pr.inline.js branches on intake mode', () => {
+  const source = readFileSync(path.join(codeFactoryScriptsDir, 'check_duplicate_pr.inline.js'), 'utf8');
+  assert.match(source, /intakeMode/);
+  assert.match(source, /workflow_dispatch/);
+  assert.match(source, /context\.payload\.inputs\?\.issue_number/);
 });
 
 test('code-factory-issue inline scripts include intake constants before shared helpers', () => {
   const expectedHeader = [
     /^\/\/include: \.\.\/intake-constants\.js\n/,
     /^\/\/include: \.\.\/\.\.\/lib\/factory-issue-shared\.js\n/,
-    /^\/\/include: \.\.\/\.\.\/lib\/code-factory-issue\.gh\.js\n/,
+    /^\/\/include: \.\.\/\.\.\/lib\/factory-issue-module\.gh\.js\n/,
   ];
   for (const name of [
     'qualify_trigger.inline.js',
@@ -478,4 +559,14 @@ test('code-factory-issue finalize_gate.inline.js uses shared parseFinalizeGateEn
 test('code-factory-issue check_actor_trust.inline.js uses actorTrustWhenSenderMissing', () => {
   const source = readFileSync(path.join(codeFactoryScriptsDir, 'check_actor_trust.inline.js'), 'utf8');
   assert.match(source, /actorTrustWhenSenderMissing\(\)/);
+});
+
+test('code-factory-issue workflow template includes shared set-phase-label wiring after remove_trigger_label', () => {
+  const workflowTmpl = readFileSync(codeFactoryWorkflowTmplPath, 'utf8');
+  const removeIdx = workflowTmpl.indexOf('x-script-include: scripts/remove_trigger_label.inline.js');
+  const setIdx = workflowTmpl.indexOf('x-script-include: ../lib/set-phase-label.js');
+  const appendIdx = workflowTmpl.indexOf('x-script-append: ../lib/set-phase-label-run.js');
+  assert.ok(removeIdx >= 0, 'expected remove_trigger_label script include');
+  assert.ok(setIdx > removeIdx, 'expected shared set-phase-label include after remove_trigger_label');
+  assert.ok(appendIdx > setIdx, 'expected shared set-phase-label run append after include');
 });

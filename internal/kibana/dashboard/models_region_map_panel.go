@@ -22,77 +22,13 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func newRegionMapPanelConfigConverter() regionMapPanelConfigConverter {
-	return regionMapPanelConfigConverter{
-		lensVisualizationBase: lensVisualizationBase{
-			visualizationType: string(kbapi.RegionMapNoESQLTypeRegionMap),
-			hasTFPanelConfig:  func(pm panelModel) bool { return pm.RegionMapConfig != nil },
-		},
-	}
-}
-
-type regionMapPanelConfigConverter struct {
-	lensVisualizationBase
-}
-
-func (c regionMapPanelConfigConverter) populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
-	pm.RegionMapConfig = &regionMapConfigModel{}
-
-	if noESQL, err := attrs.AsRegionMapNoESQL(); err == nil && !isRegionMapNoESQLCandidateActuallyESQL(noESQL) {
-		return pm.RegionMapConfig.fromAPINoESQL(ctx, noESQL)
-	}
-
-	regionMapESQL, err := attrs.AsRegionMapESQL()
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	return pm.RegionMapConfig.fromAPIESQL(ctx, regionMapESQL)
-}
-
-func isRegionMapNoESQLCandidateActuallyESQL(api kbapi.RegionMapNoESQL) bool {
-	body, err := api.DataSource.MarshalJSON()
-	if err != nil {
-		return false
-	}
-	var ds struct {
-		Type string `json:"type"`
-	}
-	if err := json.Unmarshal(body, &ds); err != nil {
-		return false
-	}
-	return ds.Type == legacyMetricDatasetTypeESQL || ds.Type == legacyMetricDatasetTypeTable
-}
-
-func (c regionMapPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	configModel := *pm.RegionMapConfig
-
-	attrs, regionDiags := configModel.toAPI()
-	diags.Append(regionDiags...)
-	return attrs, diags
-}
-
-type regionMapConfigModel struct {
-	Title               types.String                                      `tfsdk:"title"`
-	Description         types.String                                      `tfsdk:"description"`
-	DataSourceJSON      jsontypes.Normalized                              `tfsdk:"data_source_json"`
-	IgnoreGlobalFilters types.Bool                                        `tfsdk:"ignore_global_filters"`
-	Sampling            types.Float64                                     `tfsdk:"sampling"`
-	Query               *filterSimpleModel                                `tfsdk:"query"`
-	Filters             []chartFilterJSONModel                            `tfsdk:"filters"`
-	MetricJSON          customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"metric_json"`
-	RegionJSON          jsontypes.Normalized                              `tfsdk:"region_json"`
-}
-
-func (m *regionMapConfigModel) populateCommonFields(
+func regionMapConfigPopulateCommonFields(m *models.RegionMapConfigModel,
 	title, description *string,
 	ignoreGlobalFilters *bool,
 	sampling *float32,
@@ -118,17 +54,23 @@ func (m *regionMapConfigModel) populateCommonFields(
 	return !diags.HasError()
 }
 
-func (m *regionMapConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.RegionMapNoESQL) diag.Diagnostics {
+func regionMapConfigFromAPINoESQL(
+	ctx context.Context,
+	m *models.RegionMapConfigModel,
+	dashboard *models.DashboardModel,
+	prior *models.RegionMapConfigModel,
+	api kbapi.RegionMapNoESQL,
+) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 
 	datasetBytes, datasetErr := api.DataSource.MarshalJSON()
-	if !m.populateCommonFields(api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling, datasetBytes, datasetErr, api.Filters, &diags) {
+	if !regionMapConfigPopulateCommonFields(m, api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling, datasetBytes, datasetErr, api.Filters, &diags) {
 		return diags
 	}
 
-	m.Query = &filterSimpleModel{}
-	m.Query.fromAPI(api.Query)
+	m.Query = &models.FilterSimpleModel{}
+	filterSimpleFromAPI(m.Query, api.Query)
 
 	metricBytes, err := api.Metric.MarshalJSON()
 	mv, ok := marshalToJSONWithDefaults(metricBytes, err, "metric", populateRegionMapMetricDefaults, &diags)
@@ -144,15 +86,32 @@ func (m *regionMapConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.Regi
 	}
 	m.RegionJSON = rv
 
+	var priorLens *models.LensChartPresentationTFModel
+	if prior != nil {
+		p := prior.LensChartPresentationTFModel
+		priorLens = &p
+	}
+	ddWire, ddOmit, ddWireDiags := lensDrilldownsAPIToWire(api.Drilldowns)
+	diags.Append(ddWireDiags...)
+	if ddWireDiags.HasError() {
+		return diags
+	}
+	pres, presDiags := lensChartPresentationReadsFor(ctx, dashboard, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return diags
+	}
+	m.LensChartPresentationTFModel = pres
+
 	return diags
 }
 
-func (m *regionMapConfigModel) fromAPIESQL(ctx context.Context, api kbapi.RegionMapESQL) diag.Diagnostics {
+func regionMapConfigFromAPIESQL(ctx context.Context, m *models.RegionMapConfigModel, dashboard *models.DashboardModel, prior *models.RegionMapConfigModel, api kbapi.RegionMapESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 
 	datasetBytes, datasetErr := json.Marshal(api.DataSource)
-	if !m.populateCommonFields(api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling, datasetBytes, datasetErr, api.Filters, &diags) {
+	if !regionMapConfigPopulateCommonFields(m, api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling, datasetBytes, datasetErr, api.Filters, &diags) {
 		return diags
 	}
 
@@ -172,10 +131,27 @@ func (m *regionMapConfigModel) fromAPIESQL(ctx context.Context, api kbapi.Region
 	}
 	m.RegionJSON = rv
 
+	var priorLens *models.LensChartPresentationTFModel
+	if prior != nil {
+		p := prior.LensChartPresentationTFModel
+		priorLens = &p
+	}
+	ddWire, ddOmit, ddWireDiags := lensDrilldownsAPIToWire(api.Drilldowns)
+	diags.Append(ddWireDiags...)
+	if ddWireDiags.HasError() {
+		return diags
+	}
+	pres, presDiags := lensChartPresentationReadsFor(ctx, dashboard, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return diags
+	}
+	m.LensChartPresentationTFModel = pres
+
 	return diags
 }
 
-func (m *regionMapConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func regionMapConfigToAPI(m *models.RegionMapConfigModel, dashboard *models.DashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 	var diags diag.Diagnostics
 
@@ -185,8 +161,7 @@ func (m *regionMapConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, d
 
 	if m.Query != nil && typeutils.IsKnown(m.Query.Expression) {
 		api := kbapi.RegionMapNoESQL{
-			Type:      kbapi.RegionMapNoESQLTypeRegionMap,
-			TimeRange: lensPanelTimeRange(),
+			Type: kbapi.RegionMapNoESQLTypeRegionMap,
 		}
 
 		if typeutils.IsKnown(m.Title) {
@@ -208,7 +183,7 @@ func (m *regionMapConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, d
 			sampling := float32(m.Sampling.ValueFloat64())
 			api.Sampling = &sampling
 		}
-		api.Query = m.Query.toAPI()
+		api.Query = filterSimpleToAPI(m.Query)
 
 		api.Filters = buildFiltersForAPI(m.Filters, &diags)
 
@@ -225,6 +200,30 @@ func (m *regionMapConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, d
 			}
 		}
 
+		writes, presDiags := lensChartPresentationWritesFor(dashboard, m.LensChartPresentationTFModel)
+		diags.Append(presDiags...)
+		if presDiags.HasError() {
+			return attrs, diags
+		}
+
+		api.TimeRange = writes.TimeRange
+		if writes.HideTitle != nil {
+			api.HideTitle = writes.HideTitle
+		}
+		if writes.HideBorder != nil {
+			api.HideBorder = writes.HideBorder
+		}
+		if writes.References != nil {
+			api.References = writes.References
+		}
+		if len(writes.DrilldownsRaw) > 0 {
+			items, ddDiags := decodeLensDrilldownSlice[kbapi.RegionMapNoESQL_Drilldowns_Item](writes.DrilldownsRaw)
+			diags.Append(ddDiags...)
+			if !ddDiags.HasError() {
+				api.Drilldowns = &items
+			}
+		}
+
 		if err := attrs.FromRegionMapNoESQL(api); err != nil {
 			diags.AddError("Failed to create region map schema", err.Error())
 		}
@@ -232,8 +231,7 @@ func (m *regionMapConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, d
 	}
 
 	api := kbapi.RegionMapESQL{
-		Type:      kbapi.RegionMapESQLTypeRegionMap,
-		TimeRange: lensPanelTimeRange(),
+		Type: kbapi.RegionMapESQLTypeRegionMap,
 	}
 
 	if typeutils.IsKnown(m.Title) {
@@ -268,6 +266,30 @@ func (m *regionMapConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, d
 		if err := json.Unmarshal([]byte(m.RegionJSON.ValueString()), &api.Region); err != nil {
 			diags.AddError("Failed to unmarshal region", err.Error())
 			return attrs, diags
+		}
+	}
+
+	writes, presDiags := lensChartPresentationWritesFor(dashboard, m.LensChartPresentationTFModel)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return attrs, diags
+	}
+
+	api.TimeRange = writes.TimeRange
+	if writes.HideTitle != nil {
+		api.HideTitle = writes.HideTitle
+	}
+	if writes.HideBorder != nil {
+		api.HideBorder = writes.HideBorder
+	}
+	if writes.References != nil {
+		api.References = writes.References
+	}
+	if len(writes.DrilldownsRaw) > 0 {
+		items, ddDiags := decodeLensDrilldownSlice[kbapi.RegionMapESQL_Drilldowns_Item](writes.DrilldownsRaw)
+		diags.Append(ddDiags...)
+		if !ddDiags.HasError() {
+			api.Drilldowns = &items
 		}
 	}
 

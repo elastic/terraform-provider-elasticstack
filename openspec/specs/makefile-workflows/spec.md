@@ -20,6 +20,7 @@ These are the primary **Make variables and conventions** intended for override o
 | `USE_TLS` | Select TLS vs non-TLS Docker Compose stack |
 | `TEST`, `TESTARGS` | Unit test package scope and extra `go test` arguments |
 | `ACCTEST_PARALLELISM`, `ACCTEST_PACKAGE_PARALLELISM`, `RERUN_FAILS`, `RERUN_FAILS_MAX_FAILURES`, `TESTARGS` | Acceptance in-package parallelism cap, cross-package parallelism, gotestsum rerun policy including the rerun failure cap, and extra test arguments (defaults use `?=`) |
+| `ACCTEST_TOTAL_SHARDS`, `ACCTEST_SHARD_INDEX` | Modulo-based package sharding: total number of shards and zero-based index of the shard to run (defaults: `1` and `0`, meaning all packages run as a single shard) |
 | `ACCTEST_TIMEOUT`, `ACCTEST_COUNT` | Acceptance timeout and test count (defaults in Makefile; override via `make VAR=value` as for other Make variables) |
 | `ELASTICSEARCH_USERNAME`, `ELASTICSEARCH_PASSWORD` | Credentials for local stack helpers and `testacc-vs-docker` |
 | `KIBANA_SYSTEM_USERNAME`, `KIBANA_SYSTEM_PASSWORD` | Kibana system user password setup against local Elasticsearch |
@@ -155,13 +156,15 @@ The `test` target SHALL run all repository unit-style test suites. It SHALL run 
 
 The `testacc` target SHALL enable Terraform acceptance testing for the module tree, using gotestsum with rerun-of-fails behavior, a configurable rerun max-failures cap, and tunable in-package and cross-package parallelism, timeout, and count via the acceptance-test variables. It SHALL invoke the repository-wide package scope `./...` and pass verbose Go test output through to the underlying test run. The `testacc-vs-docker` target SHALL run acceptance tests against a local Docker stack on default localhost ports with the configured Elasticsearch credentials.
 
-The `testacc` recipe SHALL set `go test`’s package-level parallelism (the `-p` flag) explicitly via a Makefile-defined variable rather than relying on the Go default of `GOMAXPROCS`. The variable SHALL be overridable by contributors and CI through the standard `make VAR=value` mechanism, and the in-package `t.Parallel()` cap (the `-parallel` flag) SHALL remain a separate, independently-overridable variable.
+The `testacc` recipe SHALL set `go test`'s package-level parallelism (the `-p` flag) explicitly via a Makefile-defined variable rather than relying on the Go default of `GOMAXPROCS`. The variable SHALL be overridable by contributors and CI through the standard `make VAR=value` mechanism, and the in-package `t.Parallel()` cap (the `-parallel` flag) SHALL remain a separate, independently-overridable variable.
+
+The `testacc` recipe SHALL support modulo-based package sharding via two independently-overridable Makefile variables: `ACCTEST_TOTAL_SHARDS` (total number of shards) and `ACCTEST_SHARD_INDEX` (zero-based index of the shard to run). When `ACCTEST_TOTAL_SHARDS=1` (the default), `testacc` SHALL run all packages identically to the unsharded behaviour — no packages are excluded. When `ACCTEST_TOTAL_SHARDS > 1`, `testacc` SHALL run only those packages whose zero-based position in the sorted `go list ./...` output satisfies `position % ACCTEST_TOTAL_SHARDS == ACCTEST_SHARD_INDEX`. The sorted package list SHALL be derived from `go list ./...` at recipe invocation time so that any package added to the module is automatically assigned to a shard without requiring a configuration change. The union of all shards (indices 0 through ACCTEST_TOTAL_SHARDS−1) SHALL cover every package in `go list ./...` exactly once.
 
 #### Scenario: Acceptance tests with defaults
 
 - GIVEN `make testacc`
 - WHEN the recipe runs
-- THEN `TF_ACC` SHALL be set for acceptance mode and tests SHALL run across `./...` with the Makefile’s timeout and parallelism defaults unless overridden
+- THEN `TF_ACC` SHALL be set for acceptance mode and tests SHALL run across `./...` with the Makefile's timeout and parallelism defaults unless overridden
 - AND gotestsum reruns SHALL honor both the configured rerun count and the configured max-failures cap
 - AND the underlying `go test` invocation SHALL include both an explicit `-p` value (cross-package parallelism) and an explicit `-parallel` value (in-package `t.Parallel()` cap), each taken from a distinct Makefile variable
 
@@ -171,6 +174,19 @@ The `testacc` recipe SHALL set `go test`’s package-level parallelism (the `-p`
 - WHEN the recipe runs
 - THEN the underlying `go test` invocation SHALL use the overridden value for `-p` without requiring any change to the recipe itself
 - AND the in-package `-parallel` value SHALL remain unchanged unless a separate, dedicated variable is also overridden
+
+#### Scenario: CI runs a specific shard
+
+- GIVEN `make testacc` invoked with `ACCTEST_TOTAL_SHARDS=2` and `ACCTEST_SHARD_INDEX=0`
+- WHEN the recipe runs
+- THEN only packages at even positions in the sorted `go list ./...` output SHALL be passed to gotestsum
+- AND packages at odd positions SHALL not be executed in this invocation
+
+#### Scenario: Shard coverage is complete
+
+- GIVEN `make testacc` run twice with `ACCTEST_TOTAL_SHARDS=2 ACCTEST_SHARD_INDEX=0` and `ACCTEST_TOTAL_SHARDS=2 ACCTEST_SHARD_INDEX=1`
+- WHEN both runs complete
+- THEN the union of packages executed SHALL equal the full output of `go list ./...` with no package appearing in both shards and no package omitted
 
 ### Requirement: Docker-wrapped acceptance tests (REQ-025–REQ-026)
 
@@ -184,17 +200,17 @@ The `docker-testacc` target SHALL ensure the Fleet-oriented stack is up, then ru
 
 ### Requirement: Docker stack services (REQ-027–REQ-029)
 
-The `docker-elasticsearch`, `docker-kibana`, and `docker-fleet` targets SHALL start the corresponding Compose services in the background. For **`STACK_VERSION=9.4.0-SNAPSHOT` only**, `docker-fleet` SHALL set the Kibana config file for Compose to **`kibana-9.4.snapshot.yml`**; for all other values of `STACK_VERSION`, it SHALL use **`kibana.yml`**.
+The `docker-elasticsearch`, `docker-kibana`, and `docker-fleet` targets SHALL start the corresponding Compose services in the background. For **`STACK_VERSION=9.4.0` only**, `docker-fleet` SHALL set the Kibana config file for Compose to **`kibana-9.4.yml`**; for all other values of `STACK_VERSION`, it SHALL use **`kibana.yml`**.
 
-#### Scenario: Fleet with 9.4.0-SNAPSHOT Kibana config
+#### Scenario: Fleet with 9.4.0 Kibana config
 
-- GIVEN `STACK_VERSION` is exactly `9.4.0-SNAPSHOT`
+- GIVEN `STACK_VERSION` is exactly `9.4.0`
 - WHEN `make docker-fleet` runs
-- THEN the environment passed to Compose SHALL select `kibana-9.4.snapshot.yml` for Kibana
+- THEN the environment passed to Compose SHALL select `kibana-9.4.yml` for Kibana
 
 #### Scenario: Fleet with default Kibana config
 
-- GIVEN `STACK_VERSION` is unset or not `9.4.0-SNAPSHOT`
+- GIVEN `STACK_VERSION` is unset or not `9.4.0`
 - WHEN `make docker-fleet` runs
 - THEN the environment passed to Compose SHALL select `kibana.yml` for Kibana
 

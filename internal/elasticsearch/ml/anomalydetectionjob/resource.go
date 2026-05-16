@@ -22,24 +22,30 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
 var (
-	_ resource.Resource                = newAnomalyDetectionJobResource()
-	_ resource.ResourceWithConfigure   = newAnomalyDetectionJobResource()
-	_ resource.ResourceWithImportState = newAnomalyDetectionJobResource()
+	_ resource.Resource                   = newAnomalyDetectionJobResource()
+	_ resource.ResourceWithConfigure      = newAnomalyDetectionJobResource()
+	_ resource.ResourceWithImportState    = newAnomalyDetectionJobResource()
+	_ resource.ResourceWithValidateConfig = newAnomalyDetectionJobResource()
 )
 
 type anomalyDetectionJobResource struct {
-	*entitycore.ResourceBase
+	*entitycore.ElasticsearchResource[TFModel]
 }
 
 func newAnomalyDetectionJobResource() *anomalyDetectionJobResource {
 	return &anomalyDetectionJobResource{
-		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentElasticsearch, "ml_anomaly_detection_job"),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[TFModel]("ml_anomaly_detection_job", entitycore.ElasticsearchResourceOptions[TFModel]{
+			Schema: getSchema,
+			Read:   readAnomalyDetectionJob,
+			Delete: deleteAnomalyDetectionJob,
+			Create: createAnomalyDetectionJob,
+			Update: updateAnomalyDetectionJob,
+		}),
 	}
 }
 
@@ -47,47 +53,14 @@ func NewAnomalyDetectionJobResource() resource.Resource {
 	return newAnomalyDetectionJobResource()
 }
 
-func (r *anomalyDetectionJobResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	r.create(ctx, req, resp)
-}
-
-func (r *anomalyDetectionJobResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var state TFModel
-	diags := req.State.Get(ctx, &state)
-	resp.Diagnostics.Append(diags...)
+// ValidateConfig rejects custom rules with no scope and no conditions when both are known at plan time.
+func (r *anomalyDetectionJobResource) ValidateConfig(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
+	var config TFModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	found, diags := r.read(ctx, &state)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if !found {
-		resp.State.RemoveResource(ctx)
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
-}
-
-func (r *anomalyDetectionJobResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	r.update(ctx, req, resp)
-}
-
-func (r *anomalyDetectionJobResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	r.delete(ctx, req, resp)
-}
-
-// resourceReady checks if the client is ready for API calls
-func (r *anomalyDetectionJobResource) resourceReady(diags *fwdiags.Diagnostics) bool {
-	if r.Client() == nil {
-		diags.AddError("Client not configured", "Provider client is not configured")
-		return false
-	}
-	return true
+	resp.Diagnostics.Append(validateConfigCustomRules(ctx, &config)...)
 }
 
 func (r *anomalyDetectionJobResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

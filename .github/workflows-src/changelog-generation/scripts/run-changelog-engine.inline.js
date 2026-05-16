@@ -54,6 +54,7 @@ if (shouldRenderChangelog) {
     prRecords,
     mode,
     targetVersion,
+    previousTag: ctx.previousTag,
     changelogPath,
     fs,
   });

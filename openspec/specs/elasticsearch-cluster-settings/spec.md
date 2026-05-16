@@ -1,6 +1,6 @@
 # `elasticstack_elasticsearch_cluster_settings` — Schema and Functional Requirements
 
-Resource implementation: `internal/elasticsearch/cluster/settings.go`
+Resource implementation: `internal/elasticsearch/cluster/settings/`
 
 ## Purpose
 
@@ -12,16 +12,16 @@ Manage cluster-wide settings in Elasticsearch via the Cluster Update Settings AP
 resource "elasticstack_elasticsearch_cluster_settings" "example" {
   id = <computed, string> # internal identifier: <cluster_uuid>/cluster-settings
 
-  persistent {           # optional, max 1 block
-    setting {            # required, set, min 1 item
+  persistent {           # optional, SingleNestedBlock
+    setting {            # required, SetNestedBlock, min 1 item
       name       = <required, string>       # setting key
       value      = <optional, string>       # scalar value (mutually exclusive with value_list)
       value_list = <optional, list(string)> # list value (mutually exclusive with value)
     }
   }
 
-  transient {            # optional, max 1 block
-    setting {            # required, set, min 1 item
+  transient {            # optional, SingleNestedBlock
+    setting {            # required, SetNestedBlock, min 1 item
       name       = <required, string>
       value      = <optional, string>
       value_list = <optional, list(string)>
@@ -46,9 +46,7 @@ resource "elasticstack_elasticsearch_cluster_settings" "example" {
   }
 }
 ```
-
 ## Requirements
-
 ### Requirement: Cluster settings APIs (REQ-001–REQ-003)
 
 The resource SHALL use the Elasticsearch Cluster Update Settings API to create, update, and delete cluster settings ([docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/cluster-update-settings.html)). The resource SHALL use the Elasticsearch Cluster Get Settings API with flat settings enabled (`flat_settings=true`) to read the current cluster settings. When Elasticsearch returns a non-success response for any API call, the resource SHALL surface the error to Terraform diagnostics and stop processing.
@@ -97,7 +95,7 @@ By default, the resource SHALL use the provider-level Elasticsearch client for a
 
 ### Requirement: Create and update (REQ-009–REQ-011)
 
-On create and update, the resource SHALL expand the configured `persistent` and `transient` blocks into a flat settings map and submit it to the Cluster Update Settings API. When the configuration is updated and a setting present in the previous state is absent from the new state, the resource SHALL include that setting name with a `null` value in the API request to explicitly remove it from the cluster. After a successful put, the resource SHALL set `id` and perform a read to refresh state.
+On create and update, the envelope SHALL invoke `WriteFunc[tfModel]` callbacks wired into the `Create` and `Update` slots of `ElasticsearchResourceOptions[tfModel]`. Each callback SHALL receive `WriteRequest[tfModel]` (`Plan`, `Prior`, `Config`, `WriteID`); on create `req.Prior` is `nil`, and on update `req.Prior` is a non-nil pointer to the prior-state model. Each callback SHALL expand the configured `persistent` and `transient` blocks into a flat settings map and submit them to the Cluster Update Settings API. When the configuration is updated and a setting present in the previous state is absent from the new plan, the update callback SHALL include that setting name with a `null` value in the API request to explicitly remove it from the cluster. After a successful put, the envelope SHALL perform read-after-write via the shared read callback to refresh state (including composite `id`).
 
 #### Scenario: Setting removed on update
 
@@ -140,20 +138,20 @@ Each `setting` block within `persistent` or `transient` MUST specify exactly one
 #### Scenario: Both value and value_list set
 
 - GIVEN a setting with both `value` and `value_list` non-empty
-- WHEN create or update runs
-- THEN the resource SHALL return an error diagnostic and SHALL NOT call the Cluster Update Settings API
+- WHEN the configuration is validated (plan or apply)
+- THEN the provider SHALL return an error diagnostic and SHALL NOT call the Cluster Update Settings API
 
 #### Scenario: Neither value nor value_list set
 
 - GIVEN a setting with an empty `value` and an empty `value_list`
-- WHEN create or update runs
-- THEN the resource SHALL return an error diagnostic and SHALL NOT call the Cluster Update Settings API
+- WHEN the configuration is validated (plan or apply)
+- THEN the provider SHALL return an error diagnostic and SHALL NOT call the Cluster Update Settings API
 
 #### Scenario: Duplicate setting names
 
 - GIVEN two `setting` blocks with the same `name` within one `persistent` or `transient` block
-- WHEN create or update runs
-- THEN the resource SHALL return an error diagnostic and SHALL NOT call the Cluster Update Settings API
+- WHEN the configuration is validated (plan or apply)
+- THEN the provider SHALL return an error diagnostic and SHALL NOT call the Cluster Update Settings API
 
 ### Requirement: State mapping (REQ-018–REQ-019)
 
@@ -170,3 +168,138 @@ On read, for each setting tracked in state, the resource SHALL read the value fr
 - GIVEN a transient setting with a list value in the API response
 - WHEN read runs
 - THEN `setting.value_list` SHALL be set to that list in state
+
+### Requirement: Typed client implementation for cluster settings
+The resource SHALL use the go-elasticsearch Typed API for cluster settings operations. `GetSettings` SHALL use `Cluster.GetSettings().Do(ctx)` with flat settings enabled. `PutSettings` SHALL use `Cluster.PutSettings().Do(ctx)`. The typed response maps (`Persistent`, `Transient`, `Defaults`) are unmarshaled via `json.RawMessage` to maintain the existing `map[string]any` contract; manual JSON decoding of raw HTTP response bodies SHALL NOT occur.
+
+#### Scenario: Typed API read with flat settings
+- GIVEN a successful Cluster Get Settings API call
+- WHEN the provider processes the response
+- THEN the typed API `getsettings.Response` SHALL provide `Persistent`, `Transient`, and `Defaults` as `map[string]json.RawMessage`
+- AND the provider SHALL unmarshal each `RawMessage` value to `any` to maintain the existing `map[string]any` contract with callers
+
+#### Scenario: Typed API write sends settings
+- GIVEN cluster settings to update
+- WHEN the provider calls the Cluster Put Settings API
+- THEN the request SHALL be built using typed API request builders
+- AND manual `json.Marshal` of a `map[string]any` into a raw request body SHALL NOT occur
+
+### Requirement: Resource is implemented in Plugin Framework
+
+The `elasticstack_elasticsearch_cluster_settings` resource SHALL be implemented using the Terraform Plugin Framework instead of the Plugin SDK. It SHALL embed `*entitycore.ElasticsearchResource[tfModel]` and satisfy `resource.Resource`, `resource.ResourceWithConfigure`, `resource.ResourceWithImportState`, `resource.ResourceWithUpgradeState`, and `resource.ResourceWithValidateConfig`.
+
+#### Scenario: Provider registrar uses PF resource
+
+- **WHEN** the provider builds its resource map
+- **THEN** `elasticstack_elasticsearch_cluster_settings` SHALL be a Plugin Framework resource
+- **AND** the SDK version SHALL no longer be registered
+
+### Requirement: Model satisfies envelope constraint
+
+The cluster-settings model SHALL implement `GetID() types.String`, `GetResourceID() types.String`, and `GetElasticsearchConnection() types.List`.
+
+#### Scenario: Model type assertion
+
+- **WHEN** `entitycore.NewElasticsearchResource[tfModel]("cluster_settings", opts)` is constructed with the cluster-settings schema and lifecycle callbacks
+- **THEN** compilation SHALL succeed
+
+### Requirement: Schema factory returns blocks without connection injection
+
+The schema factory SHALL return a `schema.Schema` with `persistent` and `transient` as `SingleNestedBlock`, each containing a `SetNestedBlock` named `setting` (min 1). Each `setting` SHALL have `name` (required string), `value` (optional string), and `value_list` (optional list of strings). The factory SHALL NOT include the `elasticsearch_connection` block.
+
+#### Scenario: Schema shape preserved
+
+- **WHEN** the envelope's `Schema` method returns the final schema
+- **THEN** it SHALL contain `persistent` and `transient` blocks
+- **AND** each SHALL contain a set of `setting` entries
+- **AND** it SHALL contain the injected `elasticsearch_connection` block
+
+### Requirement: Read callback populates settings from flat API response
+
+The read callback SHALL call Elasticsearch Cluster Get Settings API with `flat_settings=true`. For each setting name tracked in Terraform state under `persistent` or `transient`, it SHALL read the corresponding flat key from the API response and store it as either `value` (if the API returns a string) or `value_list` (if the API returns a list). Settings not present in the API response SHALL be omitted from the corresponding state block.
+
+#### Scenario: Scalar setting read back
+
+- **GIVEN** a flat settings response containing `"persistent": {"indices.recovery.max_bytes_per_sec": "40mb"}`
+- **WHEN** read runs for a resource tracking that key
+- **THEN** the state SHALL contain `value = "40mb"` for that setting
+
+#### Scenario: List setting read back
+
+- **GIVEN** a flat settings response containing `"persistent": {"search.remote.connect": ["true", "false"]}`
+- **WHEN** read runs for a resource tracking that key
+- **THEN** the state SHALL contain `value_list = ["true", "false"]` for that setting
+
+### Requirement: Envelope create callback builds flat settings map and PUTs
+
+The envelope create callback SHALL expand `persistent` and `transient` from `WriteRequest[tfModel].Plan` (with `req.Prior == nil`) into flat settings maps and call the Cluster Update Settings API. It SHALL derive the composite ID on the returned model before returning `WriteResult[tfModel]`. Validation (duplicate names, value/value_list exclusivity, and non-empty category block) is enforced at plan time by schema validators and `ValidateConfig`.
+
+#### Scenario: Create with persistent and transient settings
+
+- **GIVEN** a plan with both `persistent` and `transient` settings
+- **WHEN** create runs
+- **THEN** the Cluster Update Settings API SHALL receive both categories
+- **AND** the envelope read-after-write SHALL persist `id` as `<cluster_uuid>/cluster-settings`
+
+### Requirement: Envelope update callback nulls out removed settings
+
+The envelope update callback SHALL decode prior settings from `*WriteRequest[tfModel].Prior` (which is non-nil on update) and compare setting names against `Plan`. For each of `persistent` and `transient`, any setting name present in the prior model but absent from the new plan SHALL be included in the PUT request with a `null` value so Elasticsearch removes it.
+
+#### Scenario: Setting removed from configuration
+
+- **GIVEN** the old state contained `persistent` setting `cluster.max_shards_per_node`
+- **AND** the new plan does not contain that setting
+- **WHEN** update runs
+- **THEN** the PUT request SHALL include `"cluster.max_shards_per_node": null`
+
+### Requirement: Envelope delete callback removes all tracked settings
+
+The envelope delete callback SHALL derive all tracked setting names from the current state for both `persistent` and `transient`. It SHALL call the Cluster Update Settings API with each tracked name set to `null`.
+
+#### Scenario: Delete clears tracked settings
+
+- **GIVEN** a resource tracking three persistent settings and two transient settings
+- **WHEN** delete runs
+- **THEN** all five names SHALL be sent with `null` values
+
+### Requirement: Validation preserved
+
+Each `setting` block SHALL enforce that exactly one of `value` or `value_list` is non-empty. Duplicate `name` values within a single `persistent` or `transient` block SHALL produce an error diagnostic before any API call.
+
+#### Scenario: Invalid setting validation
+
+- **GIVEN** a `setting` with both `value` and `value_list` set
+- **WHEN** the configuration is validated (plan or apply)
+- **THEN** the provider SHALL return an error diagnostic
+
+### Requirement: Non-empty configuration validation
+
+The resource SHALL enforce that at least one of `persistent` or `transient` contains at least one `setting` block. An empty or null configuration for both categories SHALL produce an error diagnostic at plan time.
+
+#### Scenario: Both persistent and transient empty
+
+- **GIVEN** a resource with no `setting` blocks in `persistent` and `transient`
+- **WHEN** the configuration is validated (plan or apply)
+- **THEN** the provider SHALL return an error diagnostic
+
+### Requirement: State upgrade
+
+The resource SHALL implement `resource.ResourceWithUpgradeState` to migrate state written by the SDKv2-based implementation (schema version 0) to the Plugin Framework implementation (schema version 1). The upgrader SHALL unwrap list-of-one category blocks into `SingleNestedBlock` objects and normalise empty-string/`[]` values for the unused `value`/`value_list` alternative to null.
+
+#### Scenario: SDKv2 state upgrade
+
+- **GIVEN** Terraform state written by schema version 0
+- **WHEN** the resource is refreshed
+- **THEN** the state SHALL be transparently upgraded to schema version 1
+
+### Requirement: Import preserved
+
+The resource SHALL implement `ImportState` as a passthrough on the `id` attribute.
+
+#### Scenario: Import
+
+- **GIVEN** an import id of `<cluster_uuid>/cluster-settings`
+- **WHEN** import runs
+- **THEN** the `id` SHALL be stored in state
+- **AND** subsequent read SHALL refresh settings
+

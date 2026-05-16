@@ -21,11 +21,10 @@ import (
 	"context"
 
 	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
-	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
@@ -36,18 +35,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = resourceSchema()
-}
-
-func resourceSchema() schema.Schema {
+func resourceSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		Version:             schemaVersion,
 		MarkdownDescription: mdDescIndexTemplateResource,
 		Blocks: map[string]schema.Block{
-			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(),
-			"data_stream":              dataStreamBlock(),
-			"template":                 templateBlock(),
+			"data_stream": dataStreamBlock(),
+			"template":    templateBlock(),
 		},
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -134,7 +128,7 @@ func templateBlock() schema.SingleNestedBlock {
 			"mappings": schema.StringAttribute{
 				MarkdownDescription: descTemplateMappings,
 				Optional:            true,
-				CustomType:          jsontypes.NormalizedType{},
+				CustomType:          esindex.MappingsType{},
 				Validators: []validator.String{
 					esindex.StringIsJSONObject{},
 				},
@@ -148,7 +142,7 @@ func templateBlock() schema.SingleNestedBlock {
 		Blocks: map[string]schema.Block{
 			"alias":               templateAliasBlock(),
 			"lifecycle":           templateLifecycleBlock(),
-			"data_stream_options": templateDataStreamOptionsBlock(),
+			"data_stream_options": datastreamoptions.Block(),
 		},
 	}
 }
@@ -209,42 +203,6 @@ func templateLifecycleBlock() schema.SingleNestedBlock {
 		Attributes: map[string]schema.Attribute{
 			"data_retention": schema.StringAttribute{
 				MarkdownDescription: descLifecycleDataRetention,
-				Optional:            true,
-			},
-		},
-	}
-}
-
-func templateDataStreamOptionsBlock() schema.SingleNestedBlock {
-	return schema.SingleNestedBlock{
-		MarkdownDescription: descDataStreamOptionsBlock,
-		Blocks: map[string]schema.Block{
-			"failure_store": templateFailureStoreBlock(),
-		},
-	}
-}
-
-func templateFailureStoreBlock() schema.SingleNestedBlock {
-	return schema.SingleNestedBlock{
-		MarkdownDescription: descFailureStoreBlock,
-		Attributes: map[string]schema.Attribute{
-			"enabled": schema.BoolAttribute{
-				MarkdownDescription: descFailureStoreEnabled,
-				Optional:            true,
-			},
-		},
-		Blocks: map[string]schema.Block{
-			"lifecycle": templateFailureStoreLifecycleBlock(),
-		},
-	}
-}
-
-func templateFailureStoreLifecycleBlock() schema.SingleNestedBlock {
-	return schema.SingleNestedBlock{
-		MarkdownDescription: descFailureStoreLifecycleBlock,
-		Attributes: map[string]schema.Attribute{
-			"data_retention": schema.StringAttribute{
-				MarkdownDescription: descFailureStoreDataRetention,
 				Optional:            true,
 			},
 		},

@@ -18,14 +18,15 @@
 package role_test
 
 import (
+	"context"
 	_ "embed"
 	"fmt"
-	"io"
 	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/role"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
@@ -369,22 +370,13 @@ func mutateRoleOutOfBand(t *testing.T, roleName, body string) {
 	if err != nil {
 		t.Fatalf("failed to create acceptance testing client: %v", err)
 	}
-	esClient, err := client.GetESClient()
+	typedClient, err := client.GetESClient()
 	if err != nil {
-		t.Fatalf("failed to get Elasticsearch client: %v", err)
+		t.Fatalf("failed to get Elasticsearch typed client: %v", err)
 	}
-	res, err := esClient.Security.PutRole(
-		roleName,
-		strings.NewReader(body),
-		esClient.Security.PutRole.WithContext(t.Context()),
-	)
+	_, err = typedClient.Security.PutRole(roleName).Raw(strings.NewReader(body)).Do(t.Context())
 	if err != nil {
 		t.Fatalf("out-of-band PutRole failed: %v", err)
-	}
-	defer res.Body.Close()
-	if res.IsError() {
-		b, _ := io.ReadAll(res.Body)
-		t.Fatalf("out-of-band PutRole error: status %d: %s", res.StatusCode, b)
 	}
 }
 
@@ -400,19 +392,19 @@ func checkResourceSecurityRoleDestroy(s *terraform.State) error {
 		}
 		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
-		esClient, err := client.GetESClient()
+		typedClient, err := client.GetESClient()
 		if err != nil {
 			return err
 		}
-		req := esClient.Security.GetRole.WithName(compID.ResourceID)
-		res, err := esClient.Security.GetRole(req)
+		_, err = typedClient.Security.GetRole().Name(compID.ResourceID).Do(context.Background())
 		if err != nil {
+			if esclient.IsNotFoundElasticsearchError(err) {
+				continue
+			}
 			return err
 		}
 
-		if res.StatusCode != 404 {
-			return fmt.Errorf("role (%s) still exists", compID.ResourceID)
-		}
+		return fmt.Errorf("role (%s) still exists", compID.ResourceID)
 	}
 	return nil
 }

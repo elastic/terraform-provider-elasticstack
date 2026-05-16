@@ -18,11 +18,8 @@
 package templateilmattachment_test
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"regexp"
 	"strings"
@@ -48,17 +45,11 @@ const fleetSystemVersion = "1.18.0"
 const preservesTemplateIndexName = "logs-ilm-preserve"
 
 func TestAccResourceIndexTemplateIlmAttachment_fleet(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, templateilmattachment.MinVersion, versionutils.FlavorAny)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			acctest.PreCheck(t)
-			// Skip before installing Fleet package if version is unsupported (PreCheck runs before SkipFunc).
-			notSupported, err := versionutils.CheckIfVersionIsUnsupported(templateilmattachment.MinVersion)()
-			if err != nil {
-				t.Fatalf("checking version: %v", err)
-			}
-			if notSupported {
-				t.Skip("Elasticsearch version does not support this test")
-			}
 			// Install system package via Fleet API so it is available (avoids conflict with tcp/sysmon_linux tests).
 			client, err := clients.NewAcceptanceTestingKibanaScopedClient()
 			if err != nil {
@@ -78,7 +69,6 @@ func TestAccResourceIndexTemplateIlmAttachment_fleet(t *testing.T) {
 			// Create
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(templateilmattachment.MinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name":          config.StringVariable("test-fleet-policy-1"),
@@ -97,7 +87,6 @@ func TestAccResourceIndexTemplateIlmAttachment_fleet(t *testing.T) {
 			// Update
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(templateilmattachment.MinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name":          config.StringVariable("test-fleet-policy-2"),
@@ -113,7 +102,6 @@ func TestAccResourceIndexTemplateIlmAttachment_fleet(t *testing.T) {
 			// Update again
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(templateilmattachment.MinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name":          config.StringVariable("test-fleet-policy-3"),
@@ -129,7 +117,6 @@ func TestAccResourceIndexTemplateIlmAttachment_fleet(t *testing.T) {
 			// Import
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(templateilmattachment.MinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name":          config.StringVariable("test-fleet-policy-3"),
@@ -144,6 +131,8 @@ func TestAccResourceIndexTemplateIlmAttachment_fleet(t *testing.T) {
 }
 
 func TestAccResourceIndexTemplateIlmAttachment_connectionOverrideBasicAuth(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, templateilmattachment.MinVersion, versionutils.FlavorAny)
+
 	indexTemplate := fmt.Sprintf("logs-ilm-basic-%s", sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum))
 	policyName := fmt.Sprintf("test-ilm-basic-%s", sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum))
 	endpoint := primaryESEndpoint()
@@ -154,7 +143,6 @@ func TestAccResourceIndexTemplateIlmAttachment_connectionOverrideBasicAuth(t *te
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(templateilmattachment.MinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"endpoint":       config.StringVariable(endpoint),
@@ -182,6 +170,8 @@ func TestAccResourceIndexTemplateIlmAttachment_connectionOverrideBasicAuth(t *te
 }
 
 func TestAccResourceIndexTemplateIlmAttachment_connectionOverrideAPIKey(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, templateilmattachment.MinVersion, versionutils.FlavorAny)
+
 	indexTemplate := fmt.Sprintf("logs-ilm-apikey-%s", sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum))
 	policyName := fmt.Sprintf("test-ilm-apikey-%s", sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum))
 	endpoint := primaryESEndpoint()
@@ -192,7 +182,6 @@ func TestAccResourceIndexTemplateIlmAttachment_connectionOverrideAPIKey(t *testi
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(templateilmattachment.MinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"endpoint":       config.StringVariable(endpoint),
@@ -216,6 +205,8 @@ func TestAccResourceIndexTemplateIlmAttachment_connectionOverrideAPIKey(t *testi
 }
 
 func TestAccResourceIndexTemplateIlmAttachment_connectionOverrideBearerToken(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, templateilmattachment.MinVersion, versionutils.FlavorAny)
+
 	indexTemplate := fmt.Sprintf("logs-ilm-bearer-%s", sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum))
 	policyName := fmt.Sprintf("test-ilm-bearer-%s", sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum))
 	endpoint := primaryESEndpoint()
@@ -230,7 +221,6 @@ func TestAccResourceIndexTemplateIlmAttachment_connectionOverrideBearerToken(t *
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(templateilmattachment.MinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"bearer_token":   config.StringVariable(bearerToken),
@@ -270,23 +260,17 @@ func TestAccResourceIndexTemplateIlmAttachment_connectionValidationConflictingAu
 // the template in place. PreCheck creates the template with index.number_of_shards; our resource
 // adds ILM; after destroy the template must still exist without the ILM setting.
 func TestAccResourceIndexTemplateIlmAttachment_preservesTemplateOnDestroy(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, templateilmattachment.MinVersion, versionutils.FlavorAny)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			acctest.PreCheck(t)
-			notSupported, err := versionutils.CheckIfVersionIsUnsupported(templateilmattachment.MinVersion)()
-			if err != nil {
-				t.Fatalf("checking version: %v", err)
-			}
-			if notSupported {
-				t.Skip("Elasticsearch version does not support this test")
-			}
 			createPreservesTestComponentTemplate(t)
 		},
 		CheckDestroy: checkPreservesTemplateDestroy,
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(templateilmattachment.MinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"index_template": config.StringVariable(preservesTemplateIndexName),
@@ -347,35 +331,29 @@ func checkPreservesTemplateDestroy(s *terraform.State) error {
 			continue
 		}
 
-		tpl, sdkDiags := elasticsearch.GetComponentTemplate(ctx, client, name, true)
+		tpl, sdkDiags := elasticsearch.GetComponentTemplate(ctx, client, name)
 		if sdkDiags.HasError() {
 			return fmt.Errorf("failed to get component template: %v", sdkDiags)
 		}
 		if tpl == nil {
 			return fmt.Errorf("expected component template %s to still exist after destroy (only ILM should be removed)", name)
 		}
-		if tpl.ComponentTemplate.Template == nil {
+		if len(tpl.ComponentTemplate.Template.Settings) == 0 && tpl.ComponentTemplate.Template.Mappings == nil && len(tpl.ComponentTemplate.Template.Aliases) == 0 {
 			return fmt.Errorf("expected component template %s to still have a template section after destroy", name)
 		}
-		if tpl.ComponentTemplate.Template.Settings == nil {
+		indexSettings, hasIndex := tpl.ComponentTemplate.Template.Settings["index"]
+		if !hasIndex {
 			return fmt.Errorf("expected component template %s to still have settings after destroy (other settings should be preserved)", name)
 		}
-		if _, hasILM := tpl.ComponentTemplate.Template.Settings["index.lifecycle.name"]; hasILM {
+		if indexSettings.Lifecycle != nil && indexSettings.Lifecycle.Name != nil && *indexSettings.Lifecycle.Name != "" {
 			return fmt.Errorf("ILM setting still exists in component template %s", name)
 		}
 		// Verify the setting we created in PreCheck was preserved (only ILM should be removed)
-		switch n := tpl.ComponentTemplate.Template.Settings["index.number_of_shards"].(type) {
-		case string:
-			if n != "1" {
-				return fmt.Errorf("expected index.number_of_shards to be preserved as \"1\" after destroy, got %q", n)
-			}
-		case float64:
-			if n != 1 {
-				return fmt.Errorf("expected index.number_of_shards to be preserved as 1 after destroy, got %v", n)
-			}
-		default:
-			got := tpl.ComponentTemplate.Template.Settings["index.number_of_shards"]
-			return fmt.Errorf("expected index.number_of_shards to be preserved after destroy, got %v (type %T)", got, got)
+		if indexSettings.NumberOfShards == nil {
+			return fmt.Errorf("expected index.number_of_shards to be preserved after destroy, got nil")
+		}
+		if *indexSettings.NumberOfShards != "1" {
+			return fmt.Errorf("expected index.number_of_shards to be preserved as \"1\" after destroy, got %q", *indexSettings.NumberOfShards)
 		}
 
 		// Cleanup: remove the fixture template created in PreCheck
@@ -403,17 +381,16 @@ func checkResourceDestroy(s *terraform.State) error {
 			return fmt.Errorf("failed to parse resource ID: %v", sdkDiags)
 		}
 
-		tpl, sdkDiags := elasticsearch.GetComponentTemplate(context.Background(), client, compID.ResourceID, true)
+		tpl, sdkDiags := elasticsearch.GetComponentTemplate(context.Background(), client, compID.ResourceID)
 		if sdkDiags.HasError() {
 			return fmt.Errorf("failed to get component template: %v", sdkDiags)
 		}
 
 		// If the template still exists, check if ILM setting is removed
 		if tpl != nil {
-			if tpl.ComponentTemplate.Template != nil && tpl.ComponentTemplate.Template.Settings != nil {
-				if _, hasILM := tpl.ComponentTemplate.Template.Settings["index.lifecycle.name"]; hasILM {
-					return fmt.Errorf("ILM setting still exists in component template %s", compID.ResourceID)
-				}
+			indexSettings, hasIndex := tpl.ComponentTemplate.Template.Settings["index"]
+			if hasIndex && indexSettings.Lifecycle != nil && indexSettings.Lifecycle.Name != nil && *indexSettings.Lifecycle.Name != "" {
+				return fmt.Errorf("ILM setting still exists in component template %s", compID.ResourceID)
 			}
 		}
 	}
@@ -428,7 +405,7 @@ func checkComponentTemplateHasILM(name string, expectedPolicy string) resource.T
 			return err
 		}
 
-		tpl, sdkDiags := elasticsearch.GetComponentTemplate(context.Background(), client, name, true)
+		tpl, sdkDiags := elasticsearch.GetComponentTemplate(context.Background(), client, name)
 		if sdkDiags.HasError() {
 			return fmt.Errorf("failed to get component template: %v", sdkDiags)
 		}
@@ -437,19 +414,12 @@ func checkComponentTemplateHasILM(name string, expectedPolicy string) resource.T
 			return fmt.Errorf("component template %s does not exist", name)
 		}
 
-		if tpl.ComponentTemplate.Template == nil {
-			return fmt.Errorf("component template %s has no template section", name)
-		}
-
-		if tpl.ComponentTemplate.Template.Settings == nil {
-			return fmt.Errorf("component template %s has no settings", name)
-		}
-
-		actualPolicy, _ := tpl.ComponentTemplate.Template.Settings["index.lifecycle.name"].(string)
-		if actualPolicy == "" {
+		indexSettings, hasIndex := tpl.ComponentTemplate.Template.Settings["index"]
+		if !hasIndex || indexSettings.Lifecycle == nil || indexSettings.Lifecycle.Name == nil {
 			return fmt.Errorf("component template %s has no index.lifecycle.name setting", name)
 		}
 
+		actualPolicy := *indexSettings.Lifecycle.Name
 		if actualPolicy != expectedPolicy {
 			return fmt.Errorf("expected ILM policy %s, got %s", expectedPolicy, actualPolicy)
 		}
@@ -478,53 +448,7 @@ func primaryESEndpoint() string {
 
 func createESAccessToken(t *testing.T) string {
 	t.Helper()
-
-	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
-	if err != nil {
-		t.Fatalf("failed to create acceptance testing client: %v", err)
-	}
-	esClient, err := client.GetESClient()
-	if err != nil {
-		t.Fatalf("failed to get Elasticsearch client: %v", err)
-	}
-
-	payload, err := json.Marshal(map[string]string{
-		"grant_type": "password",
-		"username":   os.Getenv("ELASTICSEARCH_USERNAME"),
-		"password":   os.Getenv("ELASTICSEARCH_PASSWORD"),
-	})
-	if err != nil {
-		t.Fatalf("failed to marshal token request: %v", err)
-	}
-
-	resp, err := esClient.Security.GetToken(
-		bytes.NewReader(payload),
-		esClient.Security.GetToken.WithContext(context.Background()),
-	)
-	if err != nil {
-		t.Fatalf("failed to create Elasticsearch access token: %v", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.IsError() {
-		body, readErr := io.ReadAll(resp.Body)
-		if readErr != nil {
-			t.Fatalf("failed to create Elasticsearch access token: status %d (additionally failed to read error response: %v)", resp.StatusCode, readErr)
-		}
-		t.Fatalf("failed to create Elasticsearch access token: status %d: %s", resp.StatusCode, string(body))
-	}
-
-	var tokenResponse struct {
-		AccessToken string `json:"access_token"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&tokenResponse); err != nil {
-		t.Fatalf("failed to decode token response: %v", err)
-	}
-	if tokenResponse.AccessToken == "" {
-		t.Fatalf("token response did not include an access_token")
-	}
-
-	return tokenResponse.AccessToken
+	return acctest.CreateESAccessToken(t)
 }
 
 func checkResourceAttrExists(resourceName, attr string) resource.TestCheckFunc {

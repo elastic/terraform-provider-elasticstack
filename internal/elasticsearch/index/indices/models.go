@@ -24,9 +24,12 @@ import (
 	"reflect"
 	"strconv"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -100,10 +103,10 @@ func init() {
 }
 
 type tfModel struct {
-	ID                      types.String `tfsdk:"id"`
-	Target                  types.String `tfsdk:"target"`
-	ElasticsearchConnection types.List   `tfsdk:"elasticsearch_connection"`
-	Indices                 types.List   `tfsdk:"indices"`
+	entitycore.ElasticsearchConnectionField
+	ID      types.String `tfsdk:"id"`
+	Target  types.String `tfsdk:"target"`
+	Indices types.List   `tfsdk:"indices"`
 }
 
 type indexTfModel struct {
@@ -185,7 +188,7 @@ type aliasTfModel struct {
 	SearchRouting types.String         `tfsdk:"search_routing"`
 }
 
-func (model *indexTfModel) populateFromAPI(ctx context.Context, indexName string, apiModel models.Index) diag.Diagnostics {
+func (model *indexTfModel) populateFromAPI(ctx context.Context, indexName string, apiModel estypes.IndexState) diag.Diagnostics {
 	model.Name = types.StringValue(indexName)
 	model.SortField = types.SetValueMust(types.StringType, []attr.Value{})
 	model.SortOrder = types.ListValueMust(types.StringType, []attr.Value{})
@@ -211,7 +214,7 @@ func (model *indexTfModel) populateFromAPI(ctx context.Context, indexName string
 	return nil
 }
 
-func mappingsFromAPI(apiModel models.Index) (jsontypes.Normalized, diag.Diagnostics) {
+func mappingsFromAPI(apiModel estypes.IndexState) (jsontypes.Normalized, diag.Diagnostics) {
 	if apiModel.Mappings != nil {
 		mappingBytes, err := json.Marshal(apiModel.Mappings)
 		if err != nil {
@@ -226,7 +229,7 @@ func mappingsFromAPI(apiModel models.Index) (jsontypes.Normalized, diag.Diagnost
 	return jsontypes.NewNormalizedNull(), nil
 }
 
-func aliasesFromAPI(ctx context.Context, apiModel models.Index) (basetypes.SetValue, diag.Diagnostics) {
+func aliasesFromAPI(ctx context.Context, apiModel estypes.IndexState) (basetypes.SetValue, diag.Diagnostics) {
 	aliases := []aliasTfModel{}
 	for name, alias := range apiModel.Aliases {
 		tfAlias, diags := newAliasModelFromAPI(name, alias)
@@ -245,14 +248,14 @@ func aliasesFromAPI(ctx context.Context, apiModel models.Index) (basetypes.SetVa
 	return modelAliases, nil
 }
 
-func newAliasModelFromAPI(name string, apiModel models.IndexAlias) (aliasTfModel, diag.Diagnostics) {
+func newAliasModelFromAPI(name string, apiModel estypes.Alias) (aliasTfModel, diag.Diagnostics) {
 	tfAlias := aliasTfModel{
 		Name:          types.StringValue(name),
-		IndexRouting:  types.StringValue(apiModel.IndexRouting),
-		IsHidden:      types.BoolValue(apiModel.IsHidden),
-		IsWriteIndex:  types.BoolValue(apiModel.IsWriteIndex),
-		Routing:       types.StringValue(apiModel.Routing),
-		SearchRouting: types.StringValue(apiModel.SearchRouting),
+		IndexRouting:  types.StringValue(typeutils.Deref(apiModel.IndexRouting)),
+		IsHidden:      types.BoolValue(typeutils.Deref(apiModel.IsHidden)),
+		IsWriteIndex:  types.BoolValue(typeutils.Deref(apiModel.IsWriteIndex)),
+		Routing:       types.StringValue(typeutils.Deref(apiModel.Routing)),
+		SearchRouting: types.StringValue(typeutils.Deref(apiModel.SearchRouting)),
 	}
 
 	if apiModel.Filter != nil {
@@ -262,18 +265,43 @@ func newAliasModelFromAPI(name string, apiModel models.IndexAlias) (aliasTfModel
 				diag.NewErrorDiagnostic("failed to marshal alias filter", err.Error()),
 			}
 		}
-
-		tfAlias.Filter = jsontypes.NewNormalizedValue(string(filterBytes))
+		var filterMap map[string]any
+		if err := json.Unmarshal(filterBytes, &filterMap); err != nil {
+			return aliasTfModel{}, diag.Diagnostics{
+				diag.NewErrorDiagnostic("failed to unmarshal alias filter", err.Error()),
+			}
+		}
+		normalized := elasticsearch.NormalizeQueryFilter(filterMap)
+		if nm, ok := normalized.(map[string]any); ok {
+			filterMap = nm
+		}
+		normalizedBytes, _ := json.Marshal(filterMap)
+		tfAlias.Filter = jsontypes.NewNormalizedValue(string(normalizedBytes))
 	}
 
 	return tfAlias, nil
 }
 
-func setSettingsFromAPI(ctx context.Context, model *indexTfModel, apiModel models.Index) diag.Diagnostics {
+func setSettingsFromAPI(ctx context.Context, model *indexTfModel, apiModel estypes.IndexState) diag.Diagnostics {
+	var settingsMap map[string]any
+	if apiModel.Settings != nil {
+		settingsBytes, err := json.Marshal(apiModel.Settings)
+		if err != nil {
+			return diag.Diagnostics{
+				diag.NewErrorDiagnostic("failed to marshal index settings", err.Error()),
+			}
+		}
+		if err := json.Unmarshal(settingsBytes, &settingsMap); err != nil {
+			return diag.Diagnostics{
+				diag.NewErrorDiagnostic("failed to unmarshal index settings", err.Error()),
+			}
+		}
+	}
+
 	modelType := reflect.TypeFor[indexTfModel]()
 
 	for _, key := range allSettingsKeys {
-		settingsValue, ok := apiModel.Settings["index."+key]
+		settingsValue, ok := settingsMap["index."+key]
 		var tfValue attr.Value
 		if !ok {
 			continue
@@ -338,6 +366,11 @@ func setSettingsFromAPI(ctx context.Context, model *indexTfModel, apiModel model
 				}
 
 				settingsValue = int64(settingInt)
+			}
+
+			// json.Unmarshal stores numbers as float64 in map[string]any
+			if settingFloat, ok := settingsValue.(float64); ok {
+				settingsValue = int64(settingFloat)
 			}
 
 			settingInt, ok := settingsValue.(int64)
@@ -419,17 +452,21 @@ func setSettingsFromAPI(ctx context.Context, model *indexTfModel, apiModel model
 		}
 	}
 
-	settingsBytes, err := json.Marshal(apiModel.Settings)
-	if err != nil {
-		return diag.Diagnostics{
-			diag.NewErrorDiagnostic(
-				"failed to marshal raw settings",
-				err.Error(),
-			),
+	if apiModel.Settings != nil {
+		settingsBytes, err := json.Marshal(apiModel.Settings)
+		if err != nil {
+			return diag.Diagnostics{
+				diag.NewErrorDiagnostic(
+					"failed to marshal raw settings",
+					err.Error(),
+				),
+			}
 		}
-	}
 
-	model.SettingsRaw = jsontypes.NewNormalizedValue(string(settingsBytes))
+		model.SettingsRaw = jsontypes.NewNormalizedValue(string(settingsBytes))
+	} else {
+		model.SettingsRaw = jsontypes.NewNormalizedNull()
+	}
 
 	return nil
 }

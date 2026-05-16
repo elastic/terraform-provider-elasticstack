@@ -21,44 +21,38 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 )
 
-func (r *roleMappingResource) update(ctx context.Context, plan tfsdk.Plan, state *tfsdk.State) diag.Diagnostics {
-	var data Data
+// writeRoleMapping handles both Create and Update; the role mapping PUT API
+// is idempotent so the same callback serves both lifecycle methods.
+func writeRoleMapping(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.WriteRequest[Data]) (entitycore.WriteResult[Data], diag.Diagnostics) {
 	var diags diag.Diagnostics
-	diags.Append(plan.Get(ctx, &data)...)
-	if diags.HasError() {
-		return diags
-	}
-
-	roleMappingName := data.Name.ValueString()
-
-	client, frameworkDiags := r.Client().GetElasticsearchClient(ctx, data.ElasticsearchConnection)
-	diags.Append(frameworkDiags...)
-	if diags.HasError() {
-		return diags
-	}
+	data := req.Plan
+	roleMappingName := req.WriteID
 
 	// Parse rules JSON
-	var rules map[string]any
+	var rules types.RoleMappingRule
 	if err := json.Unmarshal([]byte(data.Rules.ValueString()), &rules); err != nil {
 		diags.AddError("Failed to parse rules JSON", err.Error())
-		return diags
+		return entitycore.WriteResult[Data]{}, diags
 	}
 
 	// Parse metadata JSON
-	metadata := json.RawMessage(data.Metadata.ValueString())
+	var metadata types.Metadata
+	if err := json.Unmarshal([]byte(data.Metadata.ValueString()), &metadata); err != nil {
+		diags.AddError("Failed to parse metadata JSON", err.Error())
+		return entitycore.WriteResult[Data]{}, diags
+	}
 
 	// Prepare role mapping
-	roleMapping := models.RoleMapping{
-		Name:     roleMappingName,
+	roleMapping := types.SecurityRoleMapping{
 		Enabled:  data.Enabled.ValueBool(),
 		Rules:    rules,
 		Metadata: metadata,
@@ -68,41 +62,25 @@ func (r *roleMappingResource) update(ctx context.Context, plan tfsdk.Plan, state
 	if typeutils.IsKnown(data.Roles) {
 		roleMapping.Roles = typeutils.SetTypeAs[string](ctx, data.Roles, path.Root("roles"), &diags)
 		if diags.HasError() {
-			return diags
+			return entitycore.WriteResult[Data]{}, diags
 		}
 	}
 
 	if typeutils.IsKnown(data.RoleTemplates) {
-		var roleTemplates []map[string]any
+		var roleTemplates []types.RoleTemplate
 		if err := json.Unmarshal([]byte(data.RoleTemplates.ValueString()), &roleTemplates); err != nil {
 			diags.AddError("Failed to parse role templates JSON", err.Error())
-			return diags
+			return entitycore.WriteResult[Data]{}, diags
 		}
 		roleMapping.RoleTemplates = roleTemplates
 	}
 
 	// Put role mapping
-	apiDiags := elasticsearch.PutRoleMapping(ctx, client, &roleMapping)
+	apiDiags := elasticsearch.PutRoleMapping(ctx, client, roleMappingName, &roleMapping)
 	diags.Append(apiDiags...)
 	if diags.HasError() {
-		return diags
+		return entitycore.WriteResult[Data]{}, diags
 	}
 
-	// Read the updated role mapping to ensure consistent result
-	readData, readDiags := readRoleMapping(ctx, data, roleMappingName, client)
-	diags.Append(readDiags...)
-	if diags.HasError() {
-		return diags
-	}
-
-	if readData != nil {
-		diags.Append(state.Set(ctx, readData)...)
-	}
-
-	return diags
-}
-
-func (r *roleMappingResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	diags := r.update(ctx, req.Plan, &resp.State)
-	resp.Diagnostics.Append(diags...)
+	return entitycore.WriteResult[Data]{Model: data}, diags
 }

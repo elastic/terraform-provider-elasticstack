@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/stretchr/testify/require"
 )
@@ -31,8 +32,8 @@ func Test_chartFilterJSONModel_roundTrip_xyChart(t *testing.T) {
 	var item kbapi.LensPanelFilters_Item
 	require.NoError(t, json.Unmarshal([]byte(raw), &item))
 
-	m := chartFilterJSONModel{}
-	diags := m.populateFromAPIItem(item)
+	m := models.ChartFilterJSONModel{}
+	diags := chartFilterJSONPopulateFromAPIItem(&m, item)
 	require.False(t, diags.HasError())
 
 	var out kbapi.LensPanelFilters_Item

@@ -20,7 +20,6 @@ package kibanaoapi
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -33,20 +32,20 @@ import (
 	sdkdiag "github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
-func CreateConnector(ctx context.Context, client *Client, connectorOld models.KibanaActionConnector) (string, fwdiag.Diagnostics) {
-	body, err := createConnectorRequestBody(connectorOld)
+func CreateConnector(ctx context.Context, client *Client, connector models.KibanaActionConnector) (string, fwdiag.Diagnostics) {
+	body, err := createConnectorRequestBody(connector)
 	if err != nil {
 		return "", fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Failed to create connector request body", err.Error())}
 	}
 
 	resp, err := client.API.PostActionsConnectorIdWithResponse(
-		ctx, connectorOld.SpaceID, connectorOld.ConnectorID, body,
+		ctx, connector.SpaceID, connector.ConnectorID, body,
 		// When there isn't an explicit connector ID the request path will include a trailing slash
 		// Kibana 8.7 and lower return a 404 for such request paths, whilst 8.8+ correctly handle then empty ID parameter
 		// This request editor ensures that the trailing slash is removed allowing all supported
 		// Stack versions to correctly create connectors without an explicit ID
 		func(_ context.Context, req *http.Request) error {
-			if connectorOld.ConnectorID == "" {
+			if connector.ConnectorID == "" {
 				req.URL.Path = strings.TrimRight(req.URL.Path, "/")
 			}
 			return nil
@@ -60,17 +59,17 @@ func CreateConnector(ctx context.Context, client *Client, connectorOld models.Ki
 	case http.StatusOK:
 		return resp.JSON200.Id, nil
 	default:
-		return "", reportUnknownError(resp.StatusCode(), resp.Body)
+		return "", diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
-func UpdateConnector(ctx context.Context, client *Client, connectorOld models.KibanaActionConnector) (string, fwdiag.Diagnostics) {
-	body, err := updateConnectorRequestBody(connectorOld)
+func UpdateConnector(ctx context.Context, client *Client, connector models.KibanaActionConnector) (string, fwdiag.Diagnostics) {
+	body, err := updateConnectorRequestBody(connector)
 	if err != nil {
 		return "", fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Failed to create update request body", err.Error())}
 	}
 
-	resp, err := client.API.PutActionsConnectorIdWithResponse(ctx, connectorOld.SpaceID, connectorOld.ConnectorID, body)
+	resp, err := client.API.PutActionsConnectorIdWithResponse(ctx, connector.SpaceID, connector.ConnectorID, body)
 	if err != nil {
 		return "", fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Unable to update connector", err.Error())}
 	}
@@ -79,7 +78,7 @@ func UpdateConnector(ctx context.Context, client *Client, connectorOld models.Ki
 	case http.StatusOK:
 		return resp.JSON200.Id, nil
 	default:
-		return "", reportUnknownError(resp.StatusCode(), resp.Body)
+		return "", diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -95,7 +94,7 @@ func GetConnector(ctx context.Context, client *Client, connectorID, spaceID stri
 	case http.StatusNotFound:
 		return nil, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -106,7 +105,7 @@ func SearchConnectors(ctx context.Context, client *Client, connectorName, spaceI
 	}
 
 	if resp.StatusCode() != http.StatusOK {
-		return nil, reportUnknownErrorSDK(resp.StatusCode(), resp.Body)
+		return nil, diagutil.SDKDiagsFromFramework(diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body))
 	}
 
 	foundConnectors := []*models.KibanaActionConnector{}
@@ -190,382 +189,24 @@ func DeleteConnector(ctx context.Context, client *Client, connectorID string, sp
 	}
 
 	if resp.StatusCode() != http.StatusOK && resp.StatusCode() != http.StatusNoContent {
-		return reportUnknownError(resp.StatusCode(), resp.Body)
+		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 
 	return nil
 }
 
-type connectorConfigHandler struct {
-	defaults        func(plan string) (string, error)
-	remarshalConfig func(config string) (string, error)
-}
-
-var connectorConfigHandlers = map[string]connectorConfigHandler{
-	".cases-webhook": {
-		defaults:        connectorConfigWithDefaultsCasesWebhook,
-		remarshalConfig: remarshalConfig[kbapi.CasesWebhookConfig],
-	},
-	".email": {
-		defaults:        connectorConfigWithDefaultsEmail,
-		remarshalConfig: remarshalConfig[kbapi.EmailConfig],
-	},
-	".bedrock": {
-		defaults:        connectorConfigWithDefaultsBedrock,
-		remarshalConfig: remarshalConfig[kbapi.BedrockConfig],
-	},
-	".gen-ai": {
-		defaults:        connectorConfigWithDefaultsGenAi,
-		remarshalConfig: remarshalConfigGenAi,
-	},
-	".gemini": {
-		remarshalConfig: remarshalConfig[kbapi.GeminiConfig],
-	},
-	".index": {
-		defaults:        connectorConfigWithDefaultsIndex,
-		remarshalConfig: remarshalConfig[kbapi.IndexConfig],
-	},
-	".jira": {
-		defaults:        connectorConfigWithDefaultsJira,
-		remarshalConfig: remarshalConfig[kbapi.JiraConfig],
-	},
-	".opsgenie": {
-		remarshalConfig: remarshalConfig[kbapi.OpsgenieConfig],
-	},
-	".pagerduty": {
-		defaults:        connectorConfigWithDefaultsPagerduty,
-		remarshalConfig: remarshalConfig[kbapi.PagerdutyConfig],
-	},
-	".resilient": {
-		remarshalConfig: remarshalConfig[kbapi.ResilientConfig],
-	},
-	".servicenow": {
-		defaults:        connectorConfigWithDefaultsServicenow,
-		remarshalConfig: remarshalConfig[kbapi.ServicenowConfig],
-	},
-	".servicenow-itom": {
-		defaults:        connectorConfigWithDefaultsServicenowItom,
-		remarshalConfig: remarshalConfig[kbapi.ServicenowItomConfig],
-	},
-	".servicenow-sir": {
-		defaults:        connectorConfigWithDefaultsServicenowSir,
-		remarshalConfig: remarshalConfig[kbapi.ServicenowConfig],
-	},
-	".slack_api": {
-		remarshalConfig: remarshalConfig[kbapi.SlackApiConfig],
-	},
-	".swimlane": {
-		defaults:        connectorConfigWithDefaultsSwimlane,
-		remarshalConfig: remarshalConfig[kbapi.SwimlaneConfig],
-	},
-	".tines": {
-		remarshalConfig: remarshalConfig[kbapi.TinesConfig],
-	},
-	".webhook": {
-		remarshalConfig: remarshalConfig[kbapi.WebhookConfig],
-	},
-	".xmatters": {
-		defaults:        connectorConfigWithDefaultsXmatters,
-		remarshalConfig: remarshalConfig[kbapi.XmattersConfig],
-	},
-}
-
-func ConnectorConfigWithDefaults(connectorTypeID, plan string) (string, error) {
-	handler, ok := connectorConfigHandlers[connectorTypeID]
-	if !ok {
-		return plan, errors.New("unknown connector type ID: " + connectorTypeID)
-	}
-
-	if handler.defaults == nil {
-		return plan, nil
-	}
-
-	return handler.defaults(plan)
-}
-
-// User can omit optonal fields in config JSON.
-// The func adds empty optional fields to the diff.
-// Otherwise plan command shows omitted fields as the diff,
-// because backend returns all fields.
-func remarshalConfig[T any](plan string) (string, error) {
-	var config T
-	if err := json.Unmarshal([]byte(plan), &config); err != nil {
-		return "", err
-	}
-	customJSON, err := json.Marshal(config)
-	if err != nil {
-		return "", err
-	}
-	return string(customJSON), nil
-}
-
-// remarshalConfigGenAi handles config for .gen-ai connectors.
-// The .gen-ai connector type has multiple possible config structures depending on the apiProvider
-// (GenaiOpenaiConfig, GenaiAzureConfig, GenaiOpenaiOtherConfig). This function unmarshals to the
-// appropriate type based on the apiProvider field. By unmarshaling to a typed struct and marshaling
-// back, unknown fields are automatically filtered out.
-func remarshalConfigGenAi(plan string) (string, error) {
-	// First, unmarshal to a map to check the apiProvider
-	var configMap map[string]any
-	if err := json.Unmarshal([]byte(plan), &configMap); err != nil {
-		return "", err
-	}
-
-	apiProvider, ok := configMap["apiProvider"].(string)
-	if !ok {
-		// apiProvider is required for .gen-ai connectors
-		return "", errors.New("apiProvider is required for .gen-ai connector type")
-	}
-
-	// Unmarshal to the appropriate specific type based on apiProvider.
-	// By unmarshaling (which ignores unknown fields) and then marshaling back,
-	// we automatically filter out any fields that aren't defined in the specific config type.
-	switch apiProvider {
-	case "OpenAI":
-		return remarshalConfig[kbapi.GenaiOpenaiConfig](plan)
-	case "Azure OpenAI":
-		return remarshalConfig[kbapi.GenaiAzureConfig](plan)
-	case "Other":
-		return remarshalConfig[kbapi.GenaiOpenaiOtherConfig](plan)
-	default:
-		return "", fmt.Errorf("unsupported apiProvider %q for .gen-ai connector type, must be one of: OpenAI, Azure OpenAI, Other", apiProvider)
-	}
-}
-
-func connectorConfigWithDefaultsBedrock(plan string) (string, error) {
-	var custom kbapi.BedrockConfig
-	if err := json.Unmarshal([]byte(plan), &custom); err != nil {
-		return "", err
-	}
-	if custom.DefaultModel == nil {
-		custom.DefaultModel = new("us.anthropic.claude-sonnet-4-5-20250929-v1:0")
-	}
-	customJSON, err := json.Marshal(custom)
-	if err != nil {
-		return "", err
-	}
-	return string(customJSON), nil
-}
-
-func connectorConfigWithDefaultsGenAi(plan string) (string, error) {
-	// First unmarshal to check the apiProvider
-	var configMap map[string]any
-	if err := json.Unmarshal([]byte(plan), &configMap); err != nil {
-		return "", err
-	}
-
-	apiProvider, ok := configMap["apiProvider"].(string)
-	if !ok {
-		// apiProvider is required for .gen-ai connectors
-		return "", errors.New("apiProvider is required for .gen-ai connector type")
-	}
-
-	// Apply defaults and filter fields based on the specific config type.
-	// By unmarshaling (which ignores unknown fields) and marshaling back,
-	// unknown fields are automatically filtered out.
-	switch apiProvider {
-	case "OpenAI":
-		// No defaults to apply for OpenAI
-		return remarshalConfig[kbapi.GenaiOpenaiConfig](plan)
-	case "Azure OpenAI":
-		// No defaults to apply for Azure
-		return remarshalConfig[kbapi.GenaiAzureConfig](plan)
-	case "Other":
-		var config kbapi.GenaiOpenaiOtherConfig
-		if err := json.Unmarshal([]byte(plan), &config); err != nil {
-			return "", err
+func unmarshalConnectorFields(configJSON, secretsJSON string, configDest, secretsDest *map[string]any) error {
+	if len(configJSON) > 0 {
+		if err := json.Unmarshal([]byte(configJSON), configDest); err != nil {
+			return fmt.Errorf("failed to unmarshal [config] attribute: %w", err)
 		}
-		// Apply verificationMode default for "Other" provider
-		if config.VerificationMode == nil {
-			config.VerificationMode = new(kbapi.GenaiOpenaiOtherConfigVerificationModeFull)
+	}
+	if len(secretsJSON) > 0 {
+		if err := json.Unmarshal([]byte(secretsJSON), secretsDest); err != nil {
+			return fmt.Errorf("failed to unmarshal [secrets] attribute: %w", err)
 		}
-		customJSON, err := json.Marshal(config)
-		if err != nil {
-			return "", err
-		}
-		return string(customJSON), nil
-	default:
-		return "", fmt.Errorf("unsupported apiProvider %q for .gen-ai connector type, must be one of: OpenAI, Azure OpenAI, Other", apiProvider)
 	}
-}
-
-func connectorConfigWithDefaultsCasesWebhook(plan string) (string, error) {
-	var custom kbapi.CasesWebhookConfig
-	if err := json.Unmarshal([]byte(plan), &custom); err != nil {
-		return "", err
-	}
-	if custom.AuthType == nil {
-		authType := kbapi.WebhookAuthenticationBasic
-		custom.AuthType = &authType
-	}
-	if custom.CreateIncidentMethod == nil {
-		custom.CreateIncidentMethod = new(kbapi.CasesWebhookConfigCreateIncidentMethodPost)
-	}
-	if custom.HasAuth == nil {
-		custom.HasAuth = new(true)
-	}
-	if custom.UpdateIncidentMethod == nil {
-		custom.UpdateIncidentMethod = new(kbapi.CasesWebhookConfigUpdateIncidentMethodPut)
-	}
-	if custom.CreateCommentMethod == nil {
-		custom.CreateCommentMethod = new(kbapi.CasesWebhookConfigCreateCommentMethodPut)
-	}
-	customJSON, err := json.Marshal(custom)
-	if err != nil {
-		return "", err
-	}
-	return string(customJSON), nil
-}
-
-func connectorConfigWithDefaultsEmail(plan string) (string, error) {
-	var custom kbapi.EmailConfig
-	if err := json.Unmarshal([]byte(plan), &custom); err != nil {
-		return "", err
-	}
-	if custom.HasAuth == nil {
-		custom.HasAuth = new(true)
-	}
-	if custom.Service == nil {
-		custom.Service = new(kbapi.EmailConfigService("other"))
-	}
-	customJSON, err := json.Marshal(custom)
-	if err != nil {
-		return "", err
-	}
-	return string(customJSON), nil
-}
-
-func connectorConfigWithDefaultsIndex(plan string) (string, error) {
-	var custom kbapi.IndexConfig
-	if err := json.Unmarshal([]byte(plan), &custom); err != nil {
-		return "", err
-	}
-	if custom.Refresh == nil {
-		custom.Refresh = new(false)
-	}
-	customJSON, err := json.Marshal(custom)
-	if err != nil {
-		return "", err
-	}
-	return string(customJSON), nil
-}
-
-func connectorConfigWithDefaultsJira(plan string) (string, error) {
-	return remarshalConfig[kbapi.JiraConfig](plan)
-}
-
-func connectorConfigWithDefaultsPagerduty(plan string) (string, error) {
-	return remarshalConfig[kbapi.PagerdutyConfig](plan)
-}
-
-func connectorConfigWithDefaultsServicenow(plan string) (string, error) {
-	var planConfig kbapi.ServicenowConfig
-	if err := json.Unmarshal([]byte(plan), &planConfig); err != nil {
-		return "", err
-	}
-	if planConfig.IsOAuth == nil {
-		planConfig.IsOAuth = new(false)
-	}
-	if planConfig.UsesTableApi == nil {
-		planConfig.UsesTableApi = new(true)
-	}
-	customJSON, err := json.Marshal(planConfig)
-	if err != nil {
-		return "", err
-	}
-	return string(customJSON), nil
-}
-
-func connectorConfigWithDefaultsServicenowItom(plan string) (string, error) {
-	var custom kbapi.ServicenowItomConfig
-	if err := json.Unmarshal([]byte(plan), &custom); err != nil {
-		return "", err
-	}
-	if custom.IsOAuth == nil {
-		custom.IsOAuth = new(false)
-	}
-	customJSON, err := json.Marshal(custom)
-	if err != nil {
-		return "", err
-	}
-	return string(customJSON), nil
-}
-
-func connectorConfigWithDefaultsServicenowSir(plan string) (string, error) {
-	return connectorConfigWithDefaultsServicenow(plan)
-}
-
-func connectorConfigWithDefaultsSwimlane(plan string) (string, error) {
-	var custom kbapi.SwimlaneConfig
-	if err := json.Unmarshal([]byte(plan), &custom); err != nil {
-		return "", err
-	}
-	if custom.Mappings == nil {
-		custom.Mappings = &struct {
-			AlertIdConfig *struct { //nolint:revive // var-naming: API struct field
-				FieldType string "json:\"fieldType\""
-				Id        string "json:\"id\"" //nolint:revive // var-naming: API struct field
-				Key       string "json:\"key\""
-				Name      string "json:\"name\""
-			} "json:\"alertIdConfig,omitempty\""
-			CaseIdConfig *struct { //nolint:revive // var-naming: API struct field
-				FieldType string "json:\"fieldType\""
-				Id        string "json:\"id\"" //nolint:revive // var-naming: API struct field
-				Key       string "json:\"key\""
-				Name      string "json:\"name\""
-			} "json:\"caseIdConfig,omitempty\""
-			CaseNameConfig *struct {
-				FieldType string "json:\"fieldType\""
-				Id        string "json:\"id\"" //nolint:revive // var-naming: API struct field
-				Key       string "json:\"key\""
-				Name      string "json:\"name\""
-			} "json:\"caseNameConfig,omitempty\""
-			CommentsConfig *struct {
-				FieldType string "json:\"fieldType\""
-				Id        string "json:\"id\"" //nolint:revive // var-naming: API struct field
-				Key       string "json:\"key\""
-				Name      string "json:\"name\""
-			} "json:\"commentsConfig,omitempty\""
-			DescriptionConfig *struct {
-				FieldType string "json:\"fieldType\""
-				Id        string "json:\"id\"" //nolint:revive // var-naming: API struct field
-				Key       string "json:\"key\""
-				Name      string "json:\"name\""
-			} "json:\"descriptionConfig,omitempty\""
-			RuleNameConfig *struct {
-				FieldType string "json:\"fieldType\""
-				Id        string "json:\"id\"" //nolint:revive // var-naming: API struct field
-				Key       string "json:\"key\""
-				Name      string "json:\"name\""
-			} "json:\"ruleNameConfig,omitempty\""
-			SeverityConfig *struct {
-				FieldType string "json:\"fieldType\""
-				Id        string "json:\"id\"" //nolint:revive // var-naming: API struct field
-				Key       string "json:\"key\""
-				Name      string "json:\"name\""
-			} "json:\"severityConfig,omitempty\""
-		}{}
-	}
-	customJSON, err := json.Marshal(custom)
-	if err != nil {
-		return "", err
-	}
-	return string(customJSON), nil
-}
-
-func connectorConfigWithDefaultsXmatters(plan string) (string, error) {
-	var custom kbapi.XmattersConfig
-	if err := json.Unmarshal([]byte(plan), &custom); err != nil {
-		return "", err
-	}
-	if custom.UsesBasic == nil {
-		custom.UsesBasic = new(true)
-	}
-	customJSON, err := json.Marshal(custom)
-	if err != nil {
-		return "", err
-	}
-	return string(customJSON), nil
+	return nil
 }
 
 func createConnectorRequestBody(connector models.KibanaActionConnector) (kbapi.PostActionsConnectorIdJSONRequestBody, error) {
@@ -576,16 +217,8 @@ func createConnectorRequestBody(connector models.KibanaActionConnector) (kbapi.P
 		Secrets:         &kbapi.CreateConnectorSecrets{},
 	}
 
-	if len(connector.ConfigJSON) > 0 {
-		if err := json.Unmarshal([]byte(connector.ConfigJSON), &req.Config.AdditionalProperties); err != nil {
-			return kbapi.PostActionsConnectorIdJSONRequestBody{}, fmt.Errorf("failed to unmarshal [config] attribute: %w", err)
-		}
-	}
-
-	if len(connector.SecretsJSON) > 0 {
-		if err := json.Unmarshal([]byte(connector.SecretsJSON), &req.Secrets.AdditionalProperties); err != nil {
-			return kbapi.PostActionsConnectorIdJSONRequestBody{}, fmt.Errorf("failed to unmarshal [secrets] attribute: %w", err)
-		}
+	if err := unmarshalConnectorFields(connector.ConfigJSON, connector.SecretsJSON, &req.Config.AdditionalProperties, &req.Secrets.AdditionalProperties); err != nil {
+		return kbapi.PostActionsConnectorIdJSONRequestBody{}, err
 	}
 
 	return req, nil
@@ -598,16 +231,8 @@ func updateConnectorRequestBody(connector models.KibanaActionConnector) (kbapi.P
 		Secrets: &kbapi.UpdateConnectorSecrets{},
 	}
 
-	if len(connector.ConfigJSON) > 0 {
-		if err := json.Unmarshal([]byte(connector.ConfigJSON), &req.Config.AdditionalProperties); err != nil {
-			return kbapi.PutActionsConnectorIdJSONRequestBody{}, fmt.Errorf("failed to unmarshal [config] attribute: %w", err)
-		}
-	}
-
-	if len(connector.SecretsJSON) > 0 {
-		if err := json.Unmarshal([]byte(connector.SecretsJSON), &req.Secrets.AdditionalProperties); err != nil {
-			return kbapi.PutActionsConnectorIdJSONRequestBody{}, fmt.Errorf("failed to unmarshal [secrets] attribute: %w", err)
-		}
+	if err := unmarshalConnectorFields(connector.ConfigJSON, connector.SecretsJSON, &req.Config.AdditionalProperties, &req.Secrets.AdditionalProperties); err != nil {
+		return kbapi.PutActionsConnectorIdJSONRequestBody{}, err
 	}
 
 	return req, nil

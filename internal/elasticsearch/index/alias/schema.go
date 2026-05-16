@@ -19,28 +19,20 @@ package alias
 
 import (
 	"context"
-
-	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 )
 
-func (r *aliasResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = getSchema()
-}
-
-func getSchema() schema.Schema {
+// getSchemaFactory returns the schema for the alias resource without the
+// elasticsearch_connection block; the envelope injects that block automatically.
+func getSchemaFactory(_ context.Context) schema.Schema {
 	return schema.Schema{
 		Description: "Manages an Elasticsearch alias. " +
 			"See the [alias documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-aliases.html) for more details.",
-		Blocks: map[string]schema.Block{
-			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(),
-		},
 
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -129,6 +121,6 @@ func getSchema() schema.Schema {
 	}
 }
 
-func getIndexAttrTypes() map[string]attr.Type {
-	return getSchema().Attributes["write_index"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+func getIndexAttrTypes(ctx context.Context) map[string]attr.Type {
+	return getSchemaFactory(ctx).Attributes["write_index"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }

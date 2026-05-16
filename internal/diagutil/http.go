@@ -21,29 +21,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"slices"
 
 	"github.com/elastic/go-elasticsearch/v8/esapi"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
-	sdkdiag "github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
-
-func CheckError(res *esapi.Response, errMsg string) sdkdiag.Diagnostics {
-	var diags sdkdiag.Diagnostics
-
-	if res.IsError() {
-		body, err := io.ReadAll(res.Body)
-		if err != nil {
-			return sdkdiag.FromErr(err)
-		}
-		diags = append(diags, sdkdiag.Diagnostic{
-			Severity: sdkdiag.Error,
-			Summary:  errMsg,
-			Detail:   fmt.Sprintf("Failed with: %s", body),
-		})
-		return diags
-	}
-	return diags
-}
 
 func CheckErrorFromFW(res *esapi.Response, errMsg string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
@@ -60,24 +42,6 @@ func CheckErrorFromFW(res *esapi.Response, errMsg string) fwdiag.Diagnostics {
 	return diags
 }
 
-func CheckHTTPError(res *http.Response, errMsg string) sdkdiag.Diagnostics {
-	var diags sdkdiag.Diagnostics
-
-	if res.StatusCode >= 400 {
-		body, err := io.ReadAll(res.Body)
-		if err != nil {
-			return sdkdiag.FromErr(err)
-		}
-		diags = append(diags, sdkdiag.Diagnostic{
-			Severity: sdkdiag.Error,
-			Summary:  errMsg,
-			Detail:   fmt.Sprintf("Failed with: %s", body),
-		})
-		return diags
-	}
-	return diags
-}
-
 func CheckHTTPErrorFromFW(res *http.Response, errMsg string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 
@@ -88,7 +52,38 @@ func CheckHTTPErrorFromFW(res *http.Response, errMsg string) fwdiag.Diagnostics 
 			return diags
 		}
 		diags.AddError(errMsg, fmt.Sprintf("Failed with: %s", body))
-		return diags
 	}
 	return diags
+}
+
+func ReportUnknownHTTPError(statusCode int, body []byte) fwdiag.Diagnostics {
+	return fwdiag.Diagnostics{
+		fwdiag.NewErrorDiagnostic(
+			fmt.Sprintf("Unexpected status code from server: got HTTP %d", statusCode),
+			string(body),
+		),
+	}
+}
+
+// HandleStatusResponse returns nil when statusCode is one of successCodes, and
+// an error diagnostic otherwise.
+func HandleStatusResponse(statusCode int, body []byte, successCodes ...int) fwdiag.Diagnostics {
+	if slices.Contains(successCodes, statusCode) {
+		return nil
+	}
+	return ReportUnknownHTTPError(statusCode, body)
+}
+
+// UnwrapJSON200 returns val when non-nil, or an error diagnostic when val is nil.
+// entityName is used in the error message (e.g. "list", "list item").
+func UnwrapJSON200[T any](val *T, entityName string) (*T, fwdiag.Diagnostics) {
+	if val == nil {
+		return nil, fwdiag.Diagnostics{
+			fwdiag.NewErrorDiagnostic(
+				"Failed to parse "+entityName+" response",
+				"API returned 200 but response body was nil",
+			),
+		}
+	}
+	return val, nil
 }

@@ -178,7 +178,8 @@ test('runChangelogRenderAndWrite hasUserFacingChanges is true when only breaking
       labels: [],
       body: [
         '## Changelog',
-        'Customer impact: none',
+        'Customer impact: breaking',
+        'Summary: A breaking change',
         '',
         '### Breaking changes',
         'A new required env var `FOO` must be set.',
@@ -193,7 +194,7 @@ test('runChangelogRenderAndWrite hasUserFacingChanges is true when only breaking
     changelogPath,
     fs,
   });
-  assert.equal(out.included.length, 0);
+  assert.equal(out.included.length, 1);
   assert.equal(out.hasPRs, true);
   assert.equal(out.hasUserFacingChanges, true);
   const text = readFileSync(changelogPath, 'utf8');
@@ -201,13 +202,62 @@ test('runChangelogRenderAndWrite hasUserFacingChanges is true when only breaking
   assert.ok(text.includes('FOO'));
 });
 
-test('runChangelogRenderAndWrite release inserts section after Unreleased', () => {
+// Regression: Customer impact: none + ### Breaking changes → excluded but still contributes breaking changes.
+test('runChangelogRenderAndWrite none PR with breaking changes is excluded and hasUserFacingChanges true', () => {
+  const core = mockCore();
+  const dir = mkdtempSync(path.join(os.tmpdir(), 'clog-'));
+  const changelogPath = path.join(dir, 'CHANGELOG.md');
+  writeFileSync(changelogPath, '# L\n\n## [Unreleased]\nold\n', 'utf8');
+  const fs = require('node:fs');
+  const prRecords = [
+    {
+      number: 8,
+      url: 'https://github.com/o/r/pull/8',
+      labels: [],
+      body: [
+        '## Changelog',
+        'Customer impact: none',
+        '',
+        '### Breaking changes',
+        'Internal schema change with no API surface impact.',
+      ].join('\n'),
+    },
+  ];
+  const out = runChangelogRenderAndWrite({
+    core,
+    prRecords,
+    mode: 'release',
+    targetVersion: '1.0.0',
+    changelogPath,
+    fs,
+  });
+  assert.equal(out.included.length, 0, 'none PR should not be in included');
+  assert.equal(out.excluded.length, 1);
+  assert.equal(out.hasPRs, true);
+  assert.equal(out.hasUserFacingChanges, true);
+  const text = readFileSync(changelogPath, 'utf8');
+  assert.ok(text.includes('### Breaking changes'));
+  assert.ok(text.includes('Internal schema change'));
+});
+
+test('runChangelogRenderAndWrite release replaces Unreleased section with new versioned section', () => {
   const core = mockCore();
   const dir = mkdtempSync(path.join(os.tmpdir(), 'clog-'));
   const changelogPath = path.join(dir, 'CHANGELOG.md');
   writeFileSync(
     changelogPath,
-    ['# L', '', '## [Unreleased]', 'pending', '', '## [0.9.0]', 'z'].join('\n'),
+    [
+      '# L',
+      '',
+      '## [Unreleased]',
+      'pending',
+      '',
+      '## [0.9.0]',
+      'z',
+      '',
+      '[Unreleased]: https://github.com/o/r/compare/v0.9.0...HEAD',
+      '[0.9.0]: https://github.com/o/r/compare/v0.8.0...v0.9.0',
+    ].join('\n'),
     'utf8'
   );
   const fs = require('node:fs');
@@ -224,24 +274,39 @@ test('runChangelogRenderAndWrite release inserts section after Unreleased', () =
     prRecords,
     mode: 'release',
     targetVersion: '1.0.0',
+    previousTag: 'v0.9.0',
     changelogPath,
     fs,
   });
   assert.match(out.sectionHeader, /^## \[1\.0\.0\] - \d{4}-\d{2}-\d{2}$/);
   const text = readFileSync(changelogPath, 'utf8');
-  const u = text.indexOf('## [Unreleased]');
+  assert.ok(!text.includes('## [Unreleased]'));
+  assert.ok(text.includes('ship'));
+  assert.ok(text.includes('[Unreleased]: https://github.com/o/r/compare/v1.0.0...HEAD'));
+  assert.ok(text.includes('[1.0.0]: https://github.com/o/r/compare/v0.9.0...v1.0.0'));
   const r = text.indexOf('## [1.0.0]');
   const old = text.indexOf('## [0.9.0]');
-  assert.ok(u !== -1 && r !== -1 && r > u && old > r);
+  assert.ok(r !== -1 && old !== -1 && r < old);
 });
 
-test('runChangelogRenderAndWrite release with zero PRs writes header-only section', () => {
+test('runChangelogRenderAndWrite release with zero PRs replaces Unreleased with header-only section', () => {
   const core = mockCore();
   const dir = mkdtempSync(path.join(os.tmpdir(), 'clog-'));
   const changelogPath = path.join(dir, 'CHANGELOG.md');
   writeFileSync(
     changelogPath,
-    ['# L', '', '## [Unreleased]', 'pending', '', '## [0.9.0]', 'z'].join('\n'),
+    [
+      '# L',
+      '',
+      '## [Unreleased]',
+      'pending',
+      '',
+      '## [0.9.0]',
+      'z',
+      '',
+      '[Unreleased]: https://github.com/o/r/compare/v0.9.0...HEAD',
+      '[0.9.0]: https://github.com/o/r/compare/v0.8.0...v0.9.0',
+    ].join('\n'),
     'utf8'
   );
   const fs = require('node:fs');
@@ -250,6 +315,7 @@ test('runChangelogRenderAndWrite release with zero PRs writes header-only sectio
     prRecords: [],
     mode: 'release',
     targetVersion: '1.0.0',
+    previousTag: 'v0.9.0',
     changelogPath,
     fs,
   });
@@ -258,11 +324,13 @@ test('runChangelogRenderAndWrite release with zero PRs writes header-only sectio
   assert.equal(out.hasUserFacingChanges, false);
   assert.equal(out.included.length, 0);
   const text = readFileSync(changelogPath, 'utf8');
-  const u = text.indexOf('## [Unreleased]');
+  assert.ok(!text.includes('## [Unreleased]'));
+  assert.ok(!text.includes('pending'));
+  assert.ok(text.includes('[Unreleased]: https://github.com/o/r/compare/v1.0.0...HEAD'));
+  assert.ok(text.includes('[1.0.0]: https://github.com/o/r/compare/v0.9.0...v1.0.0'));
   const r = text.indexOf('## [1.0.0]');
   const old = text.indexOf('## [0.9.0]');
-  assert.ok(u !== -1 && r !== -1 && r > u && old > r);
-  assert.ok(text.includes('## [1.0.0]'));
+  assert.ok(r !== -1 && old !== -1 && r < old);
 });
 
 test('runChangelogRenderAndWrite assembly failure calls setFailed and throws', () => {

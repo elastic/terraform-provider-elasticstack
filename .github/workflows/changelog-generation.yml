@@ -179,6 +179,78 @@ jobs:
             }
             
             /**
+             * @param {string[]} lines
+             * @param {{ start: number, end: number }[]} ranges - sorted ascending by start;
+             *    each end is exclusive. First range replaced by `newSectionContent`; others dropped.
+             * @param {string} newSectionContent
+             * @returns {string}
+             */
+            function spliceReleaseSectionRanges(lines, ranges, newSectionContent) {
+              const first = ranges[0];
+            
+              let before = lines.slice(0, first.start);
+              while (before.length > 0 && before[before.length - 1] === '') {
+                before.pop();
+              }
+            
+              const parts = [...before];
+              if (parts.length > 0) parts.push('');
+              parts.push(newSectionContent);
+            
+              let cursor = first.end;
+            
+              for (let i = 1; i < ranges.length; i++) {
+                const r = ranges[i];
+                parts.push(...lines.slice(cursor, r.start));
+                cursor = r.end;
+              }
+            
+              const after = lines.slice(cursor);
+            
+              let afterStart = 0;
+              while (afterStart < after.length && after[afterStart] === '') {
+                afterStart++;
+              }
+            
+              if (afterStart < after.length) {
+                parts.push('');
+                parts.push(...after.slice(afterStart));
+              }
+            
+              return parts.join('\n');
+            }
+            
+            /**
+             * @param {string} content
+             * @param {string} targetVersion - Version without leading v.
+             * @param {string} previousTag - Previous tag with leading v.
+             * @returns {string}
+             */
+            function rewriteLinkTable(content, targetVersion, previousTag) {
+              if (!targetVersion || !previousTag) {
+                return content;
+              }
+            
+              const unreleasedLineRegex = /^\[Unreleased\]:[ \t]*(https?:\/\/.+\/compare\/).*$/m;
+              const unreleasedLineMatch = content.match(unreleasedLineRegex);
+              if (!unreleasedLineMatch) {
+                return content;
+              }
+            
+              const baseCompareUrl = unreleasedLineMatch[1];
+              const unreleasedLine = `[Unreleased]: ${baseCompareUrl}v${targetVersion}...HEAD`;
+              const releaseLine = `[${targetVersion}]: ${baseCompareUrl}${previousTag}...v${targetVersion}`;
+            
+              let updated = content.replace(unreleasedLineRegex, unreleasedLine);
+            
+              if (new RegExp(`^\\[${targetVersion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\]:`, 'm').test(updated)) {
+                return updated;
+              }
+            
+              return updated.replace(/^\[Unreleased\]:.*$/m, `${unreleasedLine}\n${releaseLine}`);
+            }
+            
+            /**
              * @param {string} content - Current CHANGELOG.md content.
              * @param {string} newSectionContent - Full replacement (header + body).
              * @param {'unreleased'|'release'} mode
@@ -196,17 +268,31 @@ jobs:
                 targetStart = lines.findIndex((line) => line.startsWith(`## [${targetVersion}]`));
               }
             
-              if (targetStart === -1) {
-                if (mode === 'release') {
-                  const unreleasedStart = lines.findIndex((line) => /^## \[Unreleased\]/.test(line));
-                  if (unreleasedStart !== -1) {
-                    const insertAfter = findSectionEnd(lines, unreleasedStart);
-                    const before = lines.slice(0, insertAfter);
-                    const after = lines.slice(insertAfter);
-                    return [...before, '', newSectionContent, ...after].join('\n');
-                  }
+              if (mode === 'release') {
+                const unreleasedStart = lines.findIndex((line) => /^## \[Unreleased\]/.test(line));
+                const ranges = [];
+                if (unreleasedStart !== -1) {
+                  ranges.push({
+                    start: unreleasedStart,
+                    end: findSectionEnd(lines, unreleasedStart),
+                  });
+                }
+                if (targetStart !== -1) {
+                  ranges.push({
+                    start: targetStart,
+                    end: findSectionEnd(lines, targetStart),
+                  });
+                }
+                ranges.sort((a, b) => a.start - b.start);
+            
+                if (ranges.length === 0) {
                   return newSectionContent + '\n\n' + content;
                 }
+            
+                return spliceReleaseSectionRanges(lines, ranges, newSectionContent);
+              }
+            
+              if (targetStart === -1) {
                 return newSectionContent + '\n\n' + content;
               }
             
@@ -239,6 +325,7 @@ jobs:
             if (typeof module !== 'undefined') {
               module.exports = {
                 findSectionEnd,
+                rewriteLinkTable,
                 rewriteChangelogSection,
               };
             }
@@ -352,6 +439,9 @@ jobs:
                     fenceType = null;
                   } else if (fenceType === '~' && /^~~~/.test(line)) {
                     fenceType = null;
+                  }
+                  if (fenceType === null && /^\s*<!--\s*\/breaking-changes\s*-->\s*$/.test(line)) {
+                    break;
                   }
                   if (fenceType === null && /^#{2,3}\s/.test(line)) {
                     break;
@@ -467,12 +557,14 @@ jobs:
              * Validate a full parsed changelog section (including empty breaking-changes detection).
              *
              * @param {ReturnType<typeof parseChangelogSectionFull>|null} parsed
+             * @param {{ enforceBreakingImpactMatch?: boolean }} [options]
              * @returns {{ valid: boolean, errors: string[] }}
              */
-            function validateChangelogSectionFull(parsed) {
+            function validateChangelogSectionFull(parsed, options = {}) {
               const base = validateChangelogSection(parsed);
               if (!parsed) return base;
             
+              const { enforceBreakingImpactMatch = true } = options;
               const errors = [...base.errors];
             
               if (parsed.breakingChangesHeadingPresent && parsed.breakingChanges === null) {
@@ -481,6 +573,16 @@ jobs:
             
               if (parsed.customerImpact === 'breaking' && !parsed.breakingChangesHeadingPresent) {
                 errors.push('Customer impact: breaking requires a ### Breaking changes subsection');
+              }
+            
+              if (
+                enforceBreakingImpactMatch &&
+                parsed.breakingChangesHeadingPresent &&
+                parsed.customerImpact &&
+                VALID_CUSTOMER_IMPACTS.has(parsed.customerImpact) &&
+                parsed.customerImpact !== 'breaking'
+              ) {
+                errors.push('### Breaking changes section is only allowed when Customer impact: breaking; change to Customer impact: breaking or remove the ### Breaking changes heading.');
               }
             
               return { valid: errors.length === 0, errors };
@@ -618,7 +720,8 @@ jobs:
                 }
             
                 // Validate structural correctness (invalid customerImpact, empty breaking-changes heading, etc.)
-                const { valid, errors: validationErrors } = validateChangelogSectionFull(parsed);
+                // Release-time rendering skips the breaking-impact match check (enforced at PR time only).
+                const { valid, errors: validationErrors } = validateChangelogSectionFull(parsed, { enforceBreakingImpactMatch: false });
                 if (!valid) {
                   if (parsed.customerImpact === null) {
                     errors.push({
@@ -733,6 +836,7 @@ jobs:
              *   selectPreviousTag: Function,
              *   buildCompareRange: Function,
              *   rewriteChangelogSection: Function,
+             *   rewriteLinkTable: Function,
              *   renderChangelogSection: Function,
              *   execSyncDefault?: Function,
              * }} deps
@@ -743,6 +847,7 @@ jobs:
                 selectPreviousTag,
                 buildCompareRange,
                 rewriteChangelogSection,
+                rewriteLinkTable,
                 renderChangelogSection,
                 execSyncDefault,
               } = deps;
@@ -884,7 +989,15 @@ jobs:
                 }));
               }
             
-              function runChangelogRenderAndWrite({ core, prRecords, mode, targetVersion, changelogPath, fs }) {
+              function runChangelogRenderAndWrite({
+                core,
+                prRecords,
+                mode,
+                targetVersion,
+                previousTag = '',
+                changelogPath,
+                fs,
+              }) {
                 validateModeAndTargetVersion(mode, targetVersion, core);
             
                 const result = renderChangelogSection(prRecords);
@@ -925,9 +1038,14 @@ jobs:
                   mode,
                   targetVersion
                 );
+                const updatedChangelogWithLinks = rewriteLinkTable(
+                  updatedChangelog,
+                  targetVersion,
+                  previousTag
+                );
             
                 try {
-                  fs.writeFileSync(changelogPath, updatedChangelog, 'utf8');
+                  fs.writeFileSync(changelogPath, updatedChangelogWithLinks, 'utf8');
                   if (core && typeof core.info === 'function') {
                     core.info(`CHANGELOG.md updated with section: ${sectionHeader}`);
                   }
@@ -1004,6 +1122,7 @@ jobs:
                   prRecords,
                   mode,
                   targetVersion,
+                  previousTag,
                   changelogPath,
                   fs,
                 });
@@ -1049,6 +1168,7 @@ jobs:
               selectPreviousTag,
               buildCompareRange,
               rewriteChangelogSection,
+              rewriteLinkTable,
               renderChangelogSection,
               execSyncDefault: execSync,
             });
@@ -1118,6 +1238,7 @@ jobs:
                 prRecords,
                 mode,
                 targetVersion,
+                previousTag: ctx.previousTag,
                 changelogPath,
                 fs,
               });
@@ -1156,6 +1277,7 @@ jobs:
         env:
           TARGET_VERSION: ${{ steps.changelog_engine.outputs.target_version }}
           TARGET_BRANCH: ${{ steps.changelog_engine.outputs.target_branch }}
+          GH_AW_CI_TRIGGER_TOKEN: ${{ secrets.GH_AW_CI_TRIGGER_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -1168,6 +1290,15 @@ jobs:
           fi
           git commit -m "chore(changelog): update changelog for v${TARGET_VERSION}"
           git push origin HEAD:${TARGET_BRANCH}
+          if [ -n "${GH_AW_CI_TRIGGER_TOKEN}" ]; then
+            SERVER_URL="${GITHUB_SERVER_URL#https://}"
+            SERVER_URL="${SERVER_URL#http://}"
+            git remote set-url origin "https://x-access-token:${GH_AW_CI_TRIGGER_TOKEN}@${SERVER_URL}/${GITHUB_REPOSITORY}.git"
+            git commit --allow-empty -m "chore: trigger CI"
+            git push origin HEAD:${TARGET_BRANCH}
+          else
+            echo "::warning::GH_AW_CI_TRIGGER_TOKEN is not set; CI will not be triggered automatically"
+          fi
           echo "pushed=true" >> $GITHUB_OUTPUT
           echo "ran=true" >> $GITHUB_OUTPUT
 
@@ -1192,6 +1323,39 @@ jobs:
              *   - manageUnreleasedPR  — singleton `generated-changelog` → `main` PR
              *   - refreshReleasePR    — update the prep-release-* PR body with metadata
              */
+            
+            const NO_CHANGELOG_LABEL = 'no-changelog';
+            
+            function warn(core, message) {
+              if (core && typeof core.warning === 'function') {
+                core.warning(message);
+              }
+            }
+            
+            /**
+             * Ensure the `no-changelog` label is applied to a PR.
+             *
+             * Labeling is best-effort: if the primary PR create/update already succeeded,
+             * a subsequent labeling failure should not fail the whole workflow.
+             *
+             * @param {{ github: object, core?: object, owner: string, repo: string, issue_number: number }} opts
+             * @returns {Promise<void>}
+             */
+            async function addNoChangelogLabel({ github, core, owner, repo, issue_number }) {
+              try {
+                await github.rest.issues.addLabels({
+                  owner,
+                  repo,
+                  issue_number,
+                  labels: [NO_CHANGELOG_LABEL],
+                });
+              } catch (err) {
+                warn(
+                  core,
+                  `Failed to apply ${NO_CHANGELOG_LABEL} label to PR #${issue_number}: ${err.message || String(err)}`
+                );
+              }
+            }
             
             /**
              * Build the PR body for the generated-changelog PR (unreleased mode).
@@ -1235,10 +1399,10 @@ jobs:
              * If found, updates its body and returns action='updated'.
              * If not found, creates a new PR and returns action='created'.
              *
-             * @param {{ github: object, owner: string, repo: string, compareRange: string }} opts
+             * @param {{ github: object, core?: object, owner: string, repo: string, compareRange: string }} opts
              * @returns {Promise<{ prAction: string, prNumber: number, prUrl: string }>}
              */
-            async function manageUnreleasedPR({ github, owner, repo, compareRange }) {
+            async function manageUnreleasedPR({ github, core, owner, repo, compareRange }) {
               const prBody = buildUnreleasedPRBody({ compareRange });
             
               const { data: existingPRs } = await github.rest.pulls.list({
@@ -1257,6 +1421,13 @@ jobs:
                   pull_number: existingPR.number,
                   body: prBody,
                 });
+                await addNoChangelogLabel({
+                  github,
+                  owner,
+                  repo,
+                  core,
+                  issue_number: existingPR.number,
+                });
                 return {
                   prAction: 'updated',
                   prNumber: existingPR.number,
@@ -1271,6 +1442,13 @@ jobs:
                 body: prBody,
                 head: 'generated-changelog',
                 base: 'main',
+              });
+              await addNoChangelogLabel({
+                github,
+                owner,
+                repo,
+                core,
+                issue_number: newPR.number,
               });
               return {
                 prAction: 'created',
@@ -1330,6 +1508,13 @@ jobs:
                 repo,
                 pull_number: num,
                 body: prBody,
+              });
+              await addNoChangelogLabel({
+                github,
+                core,
+                owner,
+                repo,
+                issue_number: num,
               });
               core.info(`Release PR #${num} metadata refreshed`);
             }
@@ -1357,6 +1542,8 @@ jobs:
           steps.changelog_engine.outputs.mode == 'unreleased' &&
           steps.changelog_engine.outputs.has_prs == 'true' &&
           steps.changelog_engine.outputs.has_user_facing_changes == 'true'
+        env:
+          GH_AW_CI_TRIGGER_TOKEN: ${{ secrets.GH_AW_CI_TRIGGER_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -1368,6 +1555,15 @@ jobs:
           fi
           git commit -m "chore(changelog): update unreleased changelog section"
           git push origin HEAD:generated-changelog --force
+          if [ -n "${GH_AW_CI_TRIGGER_TOKEN}" ]; then
+            SERVER_URL="${GITHUB_SERVER_URL#https://}"
+            SERVER_URL="${SERVER_URL#http://}"
+            git remote set-url origin "https://x-access-token:${GH_AW_CI_TRIGGER_TOKEN}@${SERVER_URL}/${GITHUB_REPOSITORY}.git"
+            git commit --allow-empty -m "chore: trigger CI"
+            git push origin HEAD:generated-changelog --force
+          else
+            echo "::warning::GH_AW_CI_TRIGGER_TOKEN is not set; CI will not be triggered automatically"
+          fi
           echo "pushed=true" >> $GITHUB_OUTPUT
 
       - name: Look up existing generated-changelog PR (unreleased mode)
@@ -1390,6 +1586,39 @@ jobs:
              *   - manageUnreleasedPR  — singleton `generated-changelog` → `main` PR
              *   - refreshReleasePR    — update the prep-release-* PR body with metadata
              */
+            
+            const NO_CHANGELOG_LABEL = 'no-changelog';
+            
+            function warn(core, message) {
+              if (core && typeof core.warning === 'function') {
+                core.warning(message);
+              }
+            }
+            
+            /**
+             * Ensure the `no-changelog` label is applied to a PR.
+             *
+             * Labeling is best-effort: if the primary PR create/update already succeeded,
+             * a subsequent labeling failure should not fail the whole workflow.
+             *
+             * @param {{ github: object, core?: object, owner: string, repo: string, issue_number: number }} opts
+             * @returns {Promise<void>}
+             */
+            async function addNoChangelogLabel({ github, core, owner, repo, issue_number }) {
+              try {
+                await github.rest.issues.addLabels({
+                  owner,
+                  repo,
+                  issue_number,
+                  labels: [NO_CHANGELOG_LABEL],
+                });
+              } catch (err) {
+                warn(
+                  core,
+                  `Failed to apply ${NO_CHANGELOG_LABEL} label to PR #${issue_number}: ${err.message || String(err)}`
+                );
+              }
+            }
             
             /**
              * Build the PR body for the generated-changelog PR (unreleased mode).
@@ -1433,10 +1662,10 @@ jobs:
              * If found, updates its body and returns action='updated'.
              * If not found, creates a new PR and returns action='created'.
              *
-             * @param {{ github: object, owner: string, repo: string, compareRange: string }} opts
+             * @param {{ github: object, core?: object, owner: string, repo: string, compareRange: string }} opts
              * @returns {Promise<{ prAction: string, prNumber: number, prUrl: string }>}
              */
-            async function manageUnreleasedPR({ github, owner, repo, compareRange }) {
+            async function manageUnreleasedPR({ github, core, owner, repo, compareRange }) {
               const prBody = buildUnreleasedPRBody({ compareRange });
             
               const { data: existingPRs } = await github.rest.pulls.list({
@@ -1455,6 +1684,13 @@ jobs:
                   pull_number: existingPR.number,
                   body: prBody,
                 });
+                await addNoChangelogLabel({
+                  github,
+                  owner,
+                  repo,
+                  core,
+                  issue_number: existingPR.number,
+                });
                 return {
                   prAction: 'updated',
                   prNumber: existingPR.number,
@@ -1469,6 +1705,13 @@ jobs:
                 body: prBody,
                 head: 'generated-changelog',
                 base: 'main',
+              });
+              await addNoChangelogLabel({
+                github,
+                owner,
+                repo,
+                core,
+                issue_number: newPR.number,
               });
               return {
                 prAction: 'created',
@@ -1529,6 +1772,13 @@ jobs:
                 pull_number: num,
                 body: prBody,
               });
+              await addNoChangelogLabel({
+                github,
+                core,
+                owner,
+                repo,
+                issue_number: num,
+              });
               core.info(`Release PR #${num} metadata refreshed`);
             }
             
@@ -1545,7 +1795,7 @@ jobs:
             const { owner, repo } = context.repo;
             const compareRange = process.env.COMPARE_RANGE;
             
-            const result = await manageUnreleasedPR({ github, owner, repo, compareRange });
+            const result = await manageUnreleasedPR({ github, core, owner, repo, compareRange });
             core.setOutput('pr_action', result.prAction);
             core.setOutput('pr_number', String(result.prNumber));
             core.setOutput('pr_url', result.prUrl);

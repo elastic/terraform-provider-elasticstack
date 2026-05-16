@@ -21,6 +21,8 @@ import (
 	"context"
 	"testing"
 
+	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -39,18 +41,18 @@ func TestReconcilePlanWithPriorStateForSemanticDrift_settingsNestedPlanDottedSta
 
 	planTpl, diags := types.ObjectValue(TemplateAttrTypes(), map[string]attr.Value{
 		"alias":               emptyAlias,
-		"mappings":            jsontypes.NewNormalizedNull(),
+		"mappings":            esindex.NewMappingsNull(),
 		"settings":            planSettings,
 		"lifecycle":           types.ObjectNull(LifecycleAttrTypes()),
-		"data_stream_options": types.ObjectNull(DataStreamOptionsAttrTypes()),
+		"data_stream_options": types.ObjectNull(datastreamoptions.AttrTypes()),
 	})
 	require.False(t, diags.HasError(), "%v", diags)
 	stateTpl, diags := types.ObjectValue(TemplateAttrTypes(), map[string]attr.Value{
 		"alias":               emptyAlias,
-		"mappings":            jsontypes.NewNormalizedNull(),
+		"mappings":            esindex.NewMappingsNull(),
 		"settings":            stateSettings,
 		"lifecycle":           types.ObjectNull(LifecycleAttrTypes()),
-		"data_stream_options": types.ObjectNull(DataStreamOptionsAttrTypes()),
+		"data_stream_options": types.ObjectNull(datastreamoptions.AttrTypes()),
 	})
 	require.False(t, diags.HasError(), "%v", diags)
 
@@ -81,18 +83,18 @@ func TestApplyTemplateAliasReconciliationFromReference_routingOnlyVsSplitEcho(t 
 
 	refTpl, diags := types.ObjectValue(TemplateAttrTypes(), map[string]attr.Value{
 		"alias":               refSet,
-		"mappings":            jsontypes.NewNormalizedNull(),
+		"mappings":            esindex.NewMappingsNull(),
 		"settings":            customtypes.NewIndexSettingsValue(`{}`),
 		"lifecycle":           types.ObjectNull(LifecycleAttrTypes()),
-		"data_stream_options": types.ObjectNull(DataStreamOptionsAttrTypes()),
+		"data_stream_options": types.ObjectNull(datastreamoptions.AttrTypes()),
 	})
 	require.False(t, diags.HasError(), "%v", diags)
 	apiTpl, diags := types.ObjectValue(TemplateAttrTypes(), map[string]attr.Value{
 		"alias":               apiSet,
-		"mappings":            jsontypes.NewNormalizedNull(),
+		"mappings":            esindex.NewMappingsNull(),
 		"settings":            customtypes.NewIndexSettingsValue(`{}`),
 		"lifecycle":           types.ObjectNull(LifecycleAttrTypes()),
-		"data_stream_options": types.ObjectNull(DataStreamOptionsAttrTypes()),
+		"data_stream_options": types.ObjectNull(datastreamoptions.AttrTypes()),
 	})
 	require.False(t, diags.HasError(), "%v", diags)
 

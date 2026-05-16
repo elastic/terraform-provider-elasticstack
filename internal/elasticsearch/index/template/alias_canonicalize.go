@@ -20,6 +20,7 @@ package template
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -117,7 +118,7 @@ func canonicalizeTemplateAliasSetInModel(ctx context.Context, m *Model) diag.Dia
 
 func canonicalizeAliasObjectForState(ctx context.Context, v AliasObjectValue) (AliasObjectValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var m AliasElementModel
+	var m aliasutil.AliasModel
 	diags.Append(v.As(ctx, &m, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true})...)
 	if diags.HasError() {
 		return v, diags

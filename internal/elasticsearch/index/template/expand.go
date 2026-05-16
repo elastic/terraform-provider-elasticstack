@@ -23,9 +23,11 @@ import (
 	"fmt"
 	"strings"
 
+	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -87,7 +89,7 @@ func (m Model) toAPIModel(ctx context.Context) (*models.IndexTemplate, diag.Diag
 	}
 
 	if !m.Priority.IsNull() && !m.Priority.IsUnknown() {
-		p := int(m.Priority.ValueInt64())
+		p := m.Priority.ValueInt64()
 		out.Priority = &p
 	}
 
@@ -101,7 +103,7 @@ func (m Model) toAPIModel(ctx context.Context) (*models.IndexTemplate, diag.Diag
 	}
 
 	if !m.Version.IsNull() && !m.Version.IsUnknown() {
-		v := int(m.Version.ValueInt64())
+		v := m.Version.ValueInt64()
 		out.Version = &v
 	}
 
@@ -150,13 +152,13 @@ func expandTemplateBlock(ctx context.Context, obj types.Object) (*models.Templat
 				diags.AddError("Internal error", fmt.Sprintf("expected AliasObjectValue, got %T", el))
 				return nil, diags
 			}
-			var am AliasElementModel
+			var am aliasutil.AliasModel
 			diags.Append(aliasVal.As(ctx, &am, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true})...)
 			if diags.HasError() {
 				return nil, diags
 			}
 			name := am.Name.ValueString()
-			ia, d := expandAliasElement(am)
+			ia, d := aliasutil.ExpandAliasElement(am)
 			diags.Append(d...)
 			if diags.HasError() {
 				return nil, diags
@@ -166,9 +168,9 @@ func expandTemplateBlock(ctx context.Context, obj types.Object) (*models.Templat
 	}
 
 	if v, ok := attrs["mappings"]; ok && !v.IsNull() && !v.IsUnknown() {
-		norm, ok := v.(jsontypes.Normalized)
+		norm, ok := v.(esindex.MappingsValue)
 		if !ok {
-			diags.AddError("Internal error", fmt.Sprintf("expected jsontypes.Normalized for mappings, got %T", v))
+			diags.AddError("Internal error", fmt.Sprintf("expected index.MappingsValue for mappings, got %T", v))
 			return nil, diags
 		}
 		s := strings.TrimSpace(norm.ValueString())
@@ -214,7 +216,7 @@ func expandTemplateBlock(ctx context.Context, obj types.Object) (*models.Templat
 			diags.AddError("Internal error", fmt.Sprintf("expected Object for data_stream_options, got %T", v))
 			return nil, diags
 		}
-		dso, d := expandDataStreamOptions(dsoObj)
+		dso, d := datastreamoptions.Expand(dsoObj)
 		diags.Append(d...)
 		if diags.HasError() {
 			return nil, diags
@@ -223,42 +225,6 @@ func expandTemplateBlock(ctx context.Context, obj types.Object) (*models.Templat
 	}
 
 	return t, diags
-}
-
-func expandAliasElement(e AliasElementModel) (models.IndexAlias, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	ia := models.IndexAlias{Name: e.Name.ValueString()}
-
-	if !e.Filter.IsNull() && !e.Filter.IsUnknown() {
-		fs := strings.TrimSpace(e.Filter.ValueString())
-		if fs != "" {
-			filterMap := make(map[string]any)
-			if err := json.Unmarshal([]byte(fs), &filterMap); err != nil {
-				diags.AddError("Invalid alias filter JSON", err.Error())
-				return ia, diags
-			}
-			ia.Filter = filterMap
-		}
-	}
-
-	ia.IndexRouting = tfStringValue(e.IndexRouting)
-	ia.SearchRouting = tfStringValue(e.SearchRouting)
-	ia.Routing = tfStringValue(e.Routing)
-
-	if !e.IsHidden.IsNull() && !e.IsHidden.IsUnknown() {
-		ia.IsHidden = e.IsHidden.ValueBool()
-	}
-	if !e.IsWriteIndex.IsNull() && !e.IsWriteIndex.IsUnknown() {
-		ia.IsWriteIndex = e.IsWriteIndex.ValueBool()
-	}
-	return ia, diags
-}
-
-func tfStringValue(s types.String) string {
-	if s.IsNull() || s.IsUnknown() {
-		return ""
-	}
-	return s.ValueString()
 }
 
 func expandTemplateLifecycle(obj types.Object) *models.LifecycleSettings {
@@ -275,46 +241,4 @@ func expandTemplateLifecycle(obj types.Object) *models.LifecycleSettings {
 		return nil
 	}
 	return &models.LifecycleSettings{DataRetention: drStr.ValueString()}
-}
-
-func expandDataStreamOptions(obj types.Object) (*models.DataStreamOptions, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	if obj.IsNull() || obj.IsUnknown() {
-		return nil, diags
-	}
-	attrs := obj.Attributes()
-	fsVal, ok := attrs["failure_store"]
-	if !ok || fsVal.IsNull() || fsVal.IsUnknown() {
-		return nil, diags
-	}
-	fsObj, ok := fsVal.(types.Object)
-	if !ok {
-		diags.AddError("Internal error", fmt.Sprintf("expected Object for failure_store, got %T", fsVal))
-		return nil, diags
-	}
-	fsAttrs := fsObj.Attributes()
-	out := &models.DataStreamOptions{
-		FailureStore: &models.FailureStoreOptions{},
-	}
-	if en, ok := fsAttrs["enabled"]; ok && !en.IsNull() && !en.IsUnknown() {
-		if b, ok := en.(types.Bool); ok {
-			out.FailureStore.Enabled = b.ValueBool()
-		}
-	}
-	if lcVal, ok := fsAttrs["lifecycle"]; ok && !lcVal.IsNull() && !lcVal.IsUnknown() {
-		lcObj, ok := lcVal.(types.Object)
-		if !ok {
-			diags.AddError("Internal error", fmt.Sprintf("expected Object for failure_store.lifecycle, got %T", lcVal))
-			return nil, diags
-		}
-		lcAttrs := lcObj.Attributes()
-		if drAttr, ok := lcAttrs["data_retention"]; ok && !drAttr.IsNull() && !drAttr.IsUnknown() {
-			if drStr, ok := drAttr.(types.String); ok {
-				out.FailureStore.Lifecycle = &models.FailureStoreLifecycle{
-					DataRetention: drStr.ValueString(),
-				}
-			}
-		}
-	}
-	return out, diags
 }

@@ -1,0 +1,565 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package syntheticsstatsoverview
+
+import (
+	"testing"
+
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// buildSyntheticsStatsOverviewConfig (write converter) tests
+// ─────────────────────────────────────────────────────────────────────────────
+
+func Test_buildSyntheticsStatsOverviewConfig_nilConfig(t *testing.T) {
+	pm := models.PanelModel{}
+	var panel kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview
+	bdc := BuildConfig(pm, &panel)
+	require.False(t, bdc.HasError(), "%v", bdc)
+	// Zero config — no panic, nothing set.
+	assert.Nil(t, panel.Config.Title)
+	assert.Nil(t, panel.Config.Description)
+	assert.Nil(t, panel.Config.HideTitle)
+	assert.Nil(t, panel.Config.HideBorder)
+	assert.Nil(t, panel.Config.Drilldowns)
+	assert.Nil(t, panel.Config.Filters)
+}
+
+func Test_buildSyntheticsStatsOverviewConfig_emptyConfig(t *testing.T) {
+	pm := models.PanelModel{
+		SyntheticsStatsOverviewConfig: &models.SyntheticsStatsOverviewConfigModel{
+			Title:       types.StringNull(),
+			Description: types.StringNull(),
+			HideTitle:   types.BoolNull(),
+			HideBorder:  types.BoolNull(),
+			Drilldowns:  nil,
+			Filters:     nil,
+		},
+	}
+	var panel kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview
+	bdc := BuildConfig(pm, &panel)
+	require.False(t, bdc.HasError(), "%v", bdc)
+
+	assert.Nil(t, panel.Config.Title)
+	assert.Nil(t, panel.Config.Description)
+	assert.Nil(t, panel.Config.HideTitle)
+	assert.Nil(t, panel.Config.HideBorder)
+	assert.Nil(t, panel.Config.Drilldowns)
+	assert.Nil(t, panel.Config.Filters)
+}
+
+func Test_buildSyntheticsStatsOverviewConfig_displaySettings(t *testing.T) {
+	pm := models.PanelModel{
+		SyntheticsStatsOverviewConfig: &models.SyntheticsStatsOverviewConfigModel{
+			Title:       types.StringValue("My Panel"),
+			Description: types.StringValue("A description"),
+			HideTitle:   types.BoolValue(true),
+			HideBorder:  types.BoolValue(false),
+		},
+	}
+	var panel kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview
+	bdc := BuildConfig(pm, &panel)
+	require.False(t, bdc.HasError(), "%v", bdc)
+
+	require.NotNil(t, panel.Config.Title)
+	assert.Equal(t, "My Panel", *panel.Config.Title)
+	require.NotNil(t, panel.Config.Description)
+	assert.Equal(t, "A description", *panel.Config.Description)
+	require.NotNil(t, panel.Config.HideTitle)
+	assert.True(t, *panel.Config.HideTitle)
+	require.NotNil(t, panel.Config.HideBorder)
+	assert.False(t, *panel.Config.HideBorder)
+}
+
+func Test_buildSyntheticsStatsOverviewConfig_withDrilldowns(t *testing.T) {
+	pm := models.PanelModel{
+		SyntheticsStatsOverviewConfig: &models.SyntheticsStatsOverviewConfigModel{
+			Title: types.StringNull(),
+			Drilldowns: []models.URLDrilldownModel{
+				{
+					URL:          types.StringValue("https://example.com/{{context.panel.title}}"),
+					Label:        types.StringValue("View details"),
+					EncodeURL:    types.BoolNull(),
+					OpenInNewTab: types.BoolNull(),
+				},
+			},
+		},
+	}
+	var panel kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview
+	bdc := BuildConfig(pm, &panel)
+	require.False(t, bdc.HasError(), "%v", bdc)
+
+	require.NotNil(t, panel.Config.Drilldowns)
+	require.Len(t, *panel.Config.Drilldowns, 1)
+	ddr := (*panel.Config.Drilldowns)[0]
+	assert.Equal(t, "https://example.com/{{context.panel.title}}", ddr.Url)
+	assert.Equal(t, "View details", ddr.Label)
+	// trigger and type are always hardcoded constants.
+	assert.Equal(t, kbapi.KbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsTriggerOnOpenPanelMenu, ddr.Trigger)
+	assert.Equal(t, kbapi.KbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsTypeUrlDrilldown, ddr.Type)
+	assert.Nil(t, ddr.EncodeUrl)
+	assert.Nil(t, ddr.OpenInNewTab)
+}
+
+func Test_buildSyntheticsStatsOverviewConfig_withDrilldowns_optionalBoolsSet(t *testing.T) {
+	pm := models.PanelModel{
+		SyntheticsStatsOverviewConfig: &models.SyntheticsStatsOverviewConfigModel{
+			Drilldowns: []models.URLDrilldownModel{
+				{
+					URL:          types.StringValue("https://example.com"),
+					Label:        types.StringValue("Link"),
+					EncodeURL:    types.BoolValue(true),
+					OpenInNewTab: types.BoolValue(false),
+				},
+			},
+		},
+	}
+	var panel kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview
+	bdc := BuildConfig(pm, &panel)
+	require.False(t, bdc.HasError(), "%v", bdc)
+
+	require.NotNil(t, panel.Config.Drilldowns)
+	ddr := (*panel.Config.Drilldowns)[0]
+	require.NotNil(t, ddr.EncodeUrl)
+	assert.True(t, *ddr.EncodeUrl)
+	require.NotNil(t, ddr.OpenInNewTab)
+	assert.False(t, *ddr.OpenInNewTab)
+}
+
+func Test_buildSyntheticsStatsOverviewConfig_withFilters(t *testing.T) {
+	pm := models.PanelModel{
+		SyntheticsStatsOverviewConfig: &models.SyntheticsStatsOverviewConfigModel{
+			Filters: &models.SyntheticsFiltersModel{
+				Projects: []models.SyntheticsFilterItemModel{
+					{Label: types.StringValue("My Project"), Value: types.StringValue("my-project")},
+				},
+				Tags: []models.SyntheticsFilterItemModel{
+					{Label: types.StringValue("prod"), Value: types.StringValue("prod")},
+				},
+				MonitorTypes: []models.SyntheticsFilterItemModel{
+					{Label: types.StringValue("HTTP"), Value: types.StringValue("http")},
+				},
+			},
+		},
+	}
+	var panel kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview
+	bdc := BuildConfig(pm, &panel)
+	require.False(t, bdc.HasError(), "%v", bdc)
+
+	require.NotNil(t, panel.Config.Filters)
+	require.NotNil(t, panel.Config.Filters.Projects)
+	require.Len(t, *panel.Config.Filters.Projects, 1)
+	assert.Equal(t, "My Project", (*panel.Config.Filters.Projects)[0].Label)
+	assert.Equal(t, "my-project", (*panel.Config.Filters.Projects)[0].Value)
+	require.NotNil(t, panel.Config.Filters.Tags)
+	require.Len(t, *panel.Config.Filters.Tags, 1)
+	assert.Equal(t, "prod", (*panel.Config.Filters.Tags)[0].Value)
+	require.NotNil(t, panel.Config.Filters.MonitorTypes)
+	require.Len(t, *panel.Config.Filters.MonitorTypes, 1)
+	assert.Equal(t, "http", (*panel.Config.Filters.MonitorTypes)[0].Value)
+}
+
+func Test_buildSyntheticsStatsOverviewConfig_emptyFilters_notSent(t *testing.T) {
+	// A filters block with no entries should not produce a filters payload.
+	pm := models.PanelModel{
+		SyntheticsStatsOverviewConfig: &models.SyntheticsStatsOverviewConfigModel{
+			Filters: &models.SyntheticsFiltersModel{
+				Projects: nil,
+				Tags:     nil,
+			},
+		},
+	}
+	var panel kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview
+	bdc := BuildConfig(pm, &panel)
+	require.False(t, bdc.HasError(), "%v", bdc)
+	assert.Nil(t, panel.Config.Filters)
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// populateSyntheticsStatsOverviewFromAPI (read converter) tests
+// ─────────────────────────────────────────────────────────────────────────────
+
+// makeSyntheticsAPIConfig builds a minimal API config for test use.
+func makeSyntheticsAPIConfig() kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview {
+	return kbapi.KbnDashboardPanelTypeSyntheticsStatsOverview{}
+}
+
+// Test: on import (tfPanel == nil) with empty config — block stays null.
+func Test_populateSyntheticsStatsOverviewFromAPI_import_emptyConfig_blockIsNull(t *testing.T) {
+	pm := &models.PanelModel{}
+	panel := makeSyntheticsAPIConfig()
+	diag := PopulateFromAPI(pm, nil, panel)
+	require.False(t, diag.HasError(), "%v", diag)
+
+	assert.Nil(t, pm.SyntheticsStatsOverviewConfig, "block should be null when API config is empty on import")
+}
+
+// Test: on import with fields set — block is populated.
+func Test_populateSyntheticsStatsOverviewFromAPI_import_withFields(t *testing.T) {
+	pm := &models.PanelModel{}
+	panel := makeSyntheticsAPIConfig()
+	title := "My Panel"
+	panel.Config.Title = &title
+	desc := "My desc"
+	panel.Config.Description = &desc
+	hideTitle := true
+	panel.Config.HideTitle = &hideTitle
+	hideBorder := false
+	panel.Config.HideBorder = &hideBorder
+
+	diag := PopulateFromAPI(pm, nil, panel)
+	require.False(t, diag.HasError(), "%v", diag)
+
+	require.NotNil(t, pm.SyntheticsStatsOverviewConfig)
+	cfg := pm.SyntheticsStatsOverviewConfig
+	assert.Equal(t, "My Panel", cfg.Title.ValueString())
+	assert.Equal(t, "My desc", cfg.Description.ValueString())
+	assert.Equal(t, types.BoolValue(true), cfg.HideTitle)
+	assert.Equal(t, types.BoolValue(false), cfg.HideBorder)
+}
+
+// Test: prior state has no block (nil) — nil intent preserved.
+func Test_populateSyntheticsStatsOverviewFromAPI_nilBlock_preservesNilIntent(t *testing.T) {
+	pm := &models.PanelModel{}
+	tfPanel := &models.PanelModel{} // no SyntheticsStatsOverviewConfig
+
+	panel := makeSyntheticsAPIConfig()
+	title := "Should not appear"
+	panel.Config.Title = &title
+
+	diag := PopulateFromAPI(pm, tfPanel, panel)
+	require.False(t, diag.HasError(), "%v", diag)
+
+	assert.Nil(t, pm.SyntheticsStatsOverviewConfig, "block should remain nil when prior state had no config block")
+}
+
+// Test: null-preservation for optional string fields.
+func Test_populateSyntheticsStatsOverviewFromAPI_nullPreservation_strings(t *testing.T) {
+	existing := &models.SyntheticsStatsOverviewConfigModel{
+		Title:       types.StringNull(),
+		Description: types.StringNull(),
+		HideTitle:   types.BoolNull(),
+		HideBorder:  types.BoolNull(),
+	}
+	pm := &models.PanelModel{SyntheticsStatsOverviewConfig: existing}
+	tfPanel := &models.PanelModel{SyntheticsStatsOverviewConfig: existing}
+
+	panel := makeSyntheticsAPIConfig()
+	title := "API title"
+	panel.Config.Title = &title
+
+	diag := PopulateFromAPI(pm, tfPanel, panel)
+	require.False(t, diag.HasError(), "%v", diag)
+
+	require.NotNil(t, pm.SyntheticsStatsOverviewConfig)
+	// title was null in prior state — preserve null even though API returned a value.
+	assert.True(t, pm.SyntheticsStatsOverviewConfig.Title.IsNull(),
+		"title should stay null when not configured by practitioner")
+}
+
+// Test: when fields are explicitly set in prior state, round-trip them from API.
+func Test_populateSyntheticsStatsOverviewFromAPI_explicitFields_roundTrip(t *testing.T) {
+	existing := &models.SyntheticsStatsOverviewConfigModel{
+		Title:       types.StringValue("Old Title"),
+		Description: types.StringValue("Old desc"),
+		HideTitle:   types.BoolValue(false),
+		HideBorder:  types.BoolValue(true),
+	}
+	pm := &models.PanelModel{SyntheticsStatsOverviewConfig: existing}
+	tfPanel := &models.PanelModel{SyntheticsStatsOverviewConfig: existing}
+
+	panel := makeSyntheticsAPIConfig()
+	title := "New Title"
+	panel.Config.Title = &title
+	desc := "New desc"
+	panel.Config.Description = &desc
+	hideTitle := true
+	panel.Config.HideTitle = &hideTitle
+	hideBorder := false
+	panel.Config.HideBorder = &hideBorder
+
+	diag := PopulateFromAPI(pm, tfPanel, panel)
+	require.False(t, diag.HasError(), "%v", diag)
+
+	require.NotNil(t, pm.SyntheticsStatsOverviewConfig)
+	cfg := pm.SyntheticsStatsOverviewConfig
+	assert.Equal(t, "New Title", cfg.Title.ValueString())
+	assert.Equal(t, "New desc", cfg.Description.ValueString())
+	assert.Equal(t, types.BoolValue(true), cfg.HideTitle)
+	assert.Equal(t, types.BoolValue(false), cfg.HideBorder)
+}
+
+// Test: drilldown optional bool null-preservation.
+func Test_populateSyntheticsStatsOverviewFromAPI_drilldowns_nullPreservation(t *testing.T) {
+	existing := &models.SyntheticsStatsOverviewConfigModel{
+		Drilldowns: []models.URLDrilldownModel{
+			{
+				URL:          types.StringValue("https://example.com"),
+				Label:        types.StringValue("View"),
+				EncodeURL:    types.BoolNull(),
+				OpenInNewTab: types.BoolNull(),
+			},
+		},
+	}
+	pm := &models.PanelModel{SyntheticsStatsOverviewConfig: existing}
+	tfPanel := &models.PanelModel{SyntheticsStatsOverviewConfig: existing}
+
+	panel := makeSyntheticsAPIConfig()
+	encodeURL := true
+	openInNewTab := true
+	panel.Config.Drilldowns = &[]struct {
+		EncodeUrl    *bool                                                                     `json:"encode_url,omitempty"` //nolint:revive
+		Label        string                                                                    `json:"label"`
+		OpenInNewTab *bool                                                                     `json:"open_in_new_tab,omitempty"`
+		Trigger      kbapi.KbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsTrigger `json:"trigger"`
+		Type         kbapi.KbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsType    `json:"type"`
+		Url          string                                                                    `json:"url"` //nolint:revive
+	}{
+		{
+			Url:          "https://example.com",
+			Label:        "View",
+			Trigger:      kbapi.KbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsTriggerOnOpenPanelMenu,
+			Type:         kbapi.KbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsTypeUrlDrilldown,
+			EncodeUrl:    &encodeURL,
+			OpenInNewTab: &openInNewTab,
+		},
+	}
+
+	diag := PopulateFromAPI(pm, tfPanel, panel)
+	require.False(t, diag.HasError(), "%v", diag)
+
+	require.NotNil(t, pm.SyntheticsStatsOverviewConfig)
+	require.Len(t, pm.SyntheticsStatsOverviewConfig.Drilldowns, 1)
+	d := pm.SyntheticsStatsOverviewConfig.Drilldowns[0]
+	assert.True(t, d.EncodeURL.IsNull(), "encode_url should remain null when not configured by practitioner")
+	assert.True(t, d.OpenInNewTab.IsNull(), "open_in_new_tab should remain null when not configured by practitioner")
+}
+
+// Test: empty API filters treated as absent block.
+func Test_populateSyntheticsStatsOverviewFromAPI_emptyFilters_treatedAsAbsent(t *testing.T) {
+	pm := &models.PanelModel{}
+
+	panel := makeSyntheticsAPIConfig()
+	// Set title so import path fires, then provide empty filters.
+	title := "Panel"
+	panel.Config.Title = &title
+	panel.Config.Filters = &struct {
+		Locations *[]struct {
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"locations,omitempty"`
+		MonitorIds *[]struct { //nolint:revive
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"monitor_ids,omitempty"`
+		MonitorTypes *[]struct {
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"monitor_types,omitempty"`
+		Projects *[]struct {
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"projects,omitempty"`
+		Tags *[]struct {
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"tags,omitempty"`
+	}{} // all nil categories
+
+	diag := PopulateFromAPI(pm, nil, panel)
+	require.False(t, diag.HasError(), "%v", diag)
+
+	require.NotNil(t, pm.SyntheticsStatsOverviewConfig)
+	assert.Nil(t, pm.SyntheticsStatsOverviewConfig.Filters, "empty filters should not populate the filters block")
+}
+
+// Test: import with filters populated.
+func Test_populateSyntheticsStatsOverviewFromAPI_import_withFilters(t *testing.T) {
+	pm := &models.PanelModel{}
+
+	panel := makeSyntheticsAPIConfig()
+	projects := []struct {
+		Label string `json:"label"`
+		Value string `json:"value"`
+	}{
+		{Label: "My Project", Value: "my-project"},
+	}
+	panel.Config.Filters = &struct {
+		Locations *[]struct {
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"locations,omitempty"`
+		MonitorIds *[]struct { //nolint:revive
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"monitor_ids,omitempty"`
+		MonitorTypes *[]struct {
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"monitor_types,omitempty"`
+		Projects *[]struct {
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"projects,omitempty"`
+		Tags *[]struct {
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"tags,omitempty"`
+	}{
+		Projects: &projects,
+	}
+
+	diag := PopulateFromAPI(pm, nil, panel)
+	require.False(t, diag.HasError(), "%v", diag)
+
+	require.NotNil(t, pm.SyntheticsStatsOverviewConfig)
+	require.NotNil(t, pm.SyntheticsStatsOverviewConfig.Filters)
+	require.Len(t, pm.SyntheticsStatsOverviewConfig.Filters.Projects, 1)
+	assert.Equal(t, "My Project", pm.SyntheticsStatsOverviewConfig.Filters.Projects[0].Label.ValueString())
+	assert.Equal(t, "my-project", pm.SyntheticsStatsOverviewConfig.Filters.Projects[0].Value.ValueString())
+}
+
+// Test: on refresh (tfPanel != nil), when API returns completely empty config and block existed in prior state — block is nil'd.
+// This verifies that the refresh path matches the import path: empty API config round-trips as null in state.
+func Test_populateSyntheticsStatsOverviewFromAPI_refresh_emptyAPIConfig_nilsBlock(t *testing.T) {
+	existing := &models.SyntheticsStatsOverviewConfigModel{
+		Title: types.StringValue("Old Title"),
+		Filters: &models.SyntheticsFiltersModel{
+			Projects: []models.SyntheticsFilterItemModel{
+				{Label: types.StringValue("My Project"), Value: types.StringValue("my-project")},
+			},
+		},
+	}
+	pm := &models.PanelModel{SyntheticsStatsOverviewConfig: existing}
+	tfPanel := &models.PanelModel{SyntheticsStatsOverviewConfig: existing}
+
+	// API returns completely empty config (no title, no description, no drilldowns, no filters).
+	panel := makeSyntheticsAPIConfig()
+
+	diag := PopulateFromAPI(pm, tfPanel, panel)
+	require.False(t, diag.HasError(), "%v", diag)
+
+	assert.Nil(t, pm.SyntheticsStatsOverviewConfig,
+		"block should be nil when API returns empty config on refresh, matching import-path behaviour")
+}
+
+// Test: on refresh (tfPanel != nil), empty API filters object clears the filters block.
+// This verifies that returning an explicit empty filters object is treated as absent even
+// when prior state had a populated filters block.
+func Test_populateSyntheticsStatsOverviewFromAPI_refresh_emptyFilters_clearsBlock(t *testing.T) {
+	existing := &models.SyntheticsStatsOverviewConfigModel{
+		Filters: &models.SyntheticsFiltersModel{
+			Projects: []models.SyntheticsFilterItemModel{
+				{Label: types.StringValue("My Project"), Value: types.StringValue("my-project")},
+			},
+		},
+	}
+	pm := &models.PanelModel{SyntheticsStatsOverviewConfig: existing}
+	tfPanel := &models.PanelModel{SyntheticsStatsOverviewConfig: existing}
+
+	panel := makeSyntheticsAPIConfig()
+	// API returns an explicit empty filters object (non-nil, no entries).
+	panel.Config.Filters = &struct {
+		Locations *[]struct {
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"locations,omitempty"`
+		MonitorIds *[]struct { //nolint:revive
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"monitor_ids,omitempty"`
+		MonitorTypes *[]struct {
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"monitor_types,omitempty"`
+		Projects *[]struct {
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"projects,omitempty"`
+		Tags *[]struct {
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"tags,omitempty"`
+	}{} // all nil categories
+
+	diag := PopulateFromAPI(pm, tfPanel, panel)
+	require.False(t, diag.HasError(), "%v", diag)
+
+	require.NotNil(t, pm.SyntheticsStatsOverviewConfig)
+	assert.Nil(t, pm.SyntheticsStatsOverviewConfig.Filters,
+		"explicit empty filters object from API should clear the filters block in state")
+}
+
+// Test: on refresh (tfPanel != nil), when ALL config fields are nil (including nil filters) — block is nil'd.
+// When the entire config is absent from the API response, it round-trips as null in state (REQ-033).
+func Test_populateSyntheticsStatsOverviewFromAPI_refresh_allNilConfig_nilsBlock(t *testing.T) {
+	existing := &models.SyntheticsStatsOverviewConfigModel{
+		Filters: &models.SyntheticsFiltersModel{
+			Projects: []models.SyntheticsFilterItemModel{
+				{Label: types.StringValue("My Project"), Value: types.StringValue("my-project")},
+			},
+		},
+	}
+	pm := &models.PanelModel{SyntheticsStatsOverviewConfig: existing}
+	tfPanel := &models.PanelModel{SyntheticsStatsOverviewConfig: existing}
+
+	panel := makeSyntheticsAPIConfig()
+	// API returns nil filters (field not present) AND all other config fields are also nil.
+	panel.Config.Filters = nil
+
+	diag := PopulateFromAPI(pm, tfPanel, panel)
+	require.False(t, diag.HasError(), "%v", diag)
+
+	assert.Nil(t, pm.SyntheticsStatsOverviewConfig,
+		"block should be nil when API returns completely empty config (all fields nil) on refresh")
+}
+
+// Test: on refresh (tfPanel != nil), when API returns some config (title) but nil filters — block survives and prior filters are preserved.
+// The nil-filters preservation guards against false drift when Kibana omits the filters field while returning other config.
+func Test_populateSyntheticsStatsOverviewFromAPI_refresh_nilFiltersWithOtherConfig_preservesPriorFilters(t *testing.T) {
+	title := "My Panel"
+	existing := &models.SyntheticsStatsOverviewConfigModel{
+		Title: types.StringValue(title),
+		Filters: &models.SyntheticsFiltersModel{
+			Projects: []models.SyntheticsFilterItemModel{
+				{Label: types.StringValue("My Project"), Value: types.StringValue("my-project")},
+			},
+		},
+	}
+	pm := &models.PanelModel{SyntheticsStatsOverviewConfig: existing}
+	tfPanel := &models.PanelModel{SyntheticsStatsOverviewConfig: existing}
+
+	panel := makeSyntheticsAPIConfig()
+	// API returns the title but omits the filters field (nil filters).
+	panel.Config.Title = &title
+	panel.Config.Filters = nil
+
+	diag := PopulateFromAPI(pm, tfPanel, panel)
+	require.False(t, diag.HasError(), "%v", diag)
+
+	require.NotNil(t, pm.SyntheticsStatsOverviewConfig,
+		"block should survive when API returns other config fields even if filters field is absent")
+	require.NotNil(t, pm.SyntheticsStatsOverviewConfig.Filters,
+		"prior filters should be preserved when API omits filters field but returns other config")
+	require.Len(t, pm.SyntheticsStatsOverviewConfig.Filters.Projects, 1)
+}

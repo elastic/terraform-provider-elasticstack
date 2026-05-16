@@ -22,11 +22,9 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func (r *integrationPolicyResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -64,14 +62,10 @@ func (r *integrationPolicyResource) Create(ctx context.Context, req resource.Cre
 
 	// Determine space context for creating the package policy.
 	// The package policy must be created in the same space as the agent policy it references.
-	var spaceID string
-	if typeutils.IsKnown(planModel.SpaceIDs) {
-		// Explicit space_ids provided - use the first one
-		var tempDiags diag.Diagnostics
-		spaceIDs := typeutils.SetTypeAs[types.String](ctx, planModel.SpaceIDs, path.Root("space_ids"), &tempDiags)
-		if !tempDiags.HasError() && len(spaceIDs) > 0 {
-			spaceID = spaceIDs[0].ValueString()
-		}
+	spaceID, diags := fleetutils.SpaceIDFromSet(ctx, planModel.SpaceIDs)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
 	// Create package policy with appropriate space context

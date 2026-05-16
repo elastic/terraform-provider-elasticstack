@@ -37,12 +37,19 @@ var (
 
 // Resource defines the resource implementation.
 type Resource struct {
-	*entitycore.ResourceBase
+	*entitycore.ElasticsearchResource[tfModel]
 }
 
 func newResource() *Resource {
+	placeholder := entitycore.PlaceholderElasticsearchWriteCallback[tfModel]()
 	return &Resource{
-		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentElasticsearch, "index_template_ilm_attachment"),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[tfModel]("index_template_ilm_attachment", entitycore.ElasticsearchResourceOptions[tfModel]{
+			Schema: getSchema,
+			Read:   readILMAttachment,
+			Delete: deleteILMAttachment,
+			Create: placeholder,
+			Update: placeholder,
+		}),
 	}
 }
 

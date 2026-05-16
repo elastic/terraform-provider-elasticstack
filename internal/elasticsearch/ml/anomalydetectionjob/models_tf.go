@@ -26,6 +26,8 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	timeouts "github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -57,14 +59,26 @@ type TFModel struct {
 	JobType         types.String `tfsdk:"job_type"`
 	JobVersion      types.String `tfsdk:"job_version"`
 	ModelSnapshotID types.String `tfsdk:"model_snapshot_id"`
+
+	Timeouts timeouts.Value `tfsdk:"timeouts"`
 }
+
+// GetID implements entitycore.ElasticsearchResourceModel.
+func (plan TFModel) GetID() types.String { return plan.ID }
+
+// GetResourceID implements entitycore.ElasticsearchResourceModel.
+// Returns the plan-safe write identity (job_id).
+func (plan TFModel) GetResourceID() types.String { return plan.JobID }
+
+// GetElasticsearchConnection implements entitycore.ElasticsearchResourceModel.
+func (plan TFModel) GetElasticsearchConnection() types.List { return plan.ElasticsearchConnection }
 
 // AnalysisConfigTFModel represents the analysis configuration
 type AnalysisConfigTFModel struct {
 	BucketSpan                 types.String                       `tfsdk:"bucket_span"`
 	CategorizationFieldName    types.String                       `tfsdk:"categorization_field_name"`
 	CategorizationFilters      types.List                         `tfsdk:"categorization_filters"`
-	Detectors                  []DetectorTFModel                  `tfsdk:"detectors"`
+	Detectors                  types.List                         `tfsdk:"detectors"`
 	Influencers                types.List                         `tfsdk:"influencers"`
 	Latency                    types.String                       `tfsdk:"latency"`
 	ModelPruneWindow           types.String                       `tfsdk:"model_prune_window"`
@@ -90,6 +104,13 @@ type DetectorTFModel struct {
 type CustomRuleTFModel struct {
 	Actions    types.List `tfsdk:"actions"`
 	Conditions types.List `tfsdk:"conditions"`
+	Scope      types.Map  `tfsdk:"scope"`
+}
+
+// ScopeEntryTFModel is one value in custom_rules.scope (map keys are analysis field names).
+type ScopeEntryTFModel struct {
+	FilterID   types.String `tfsdk:"filter_id"`
+	FilterType types.String `tfsdk:"filter_type"`
 }
 
 // RuleConditionTFModel represents a rule condition
@@ -148,8 +169,13 @@ func (plan *TFModel) toAPIModel(ctx context.Context) (*APIModel, diag.Diagnostic
 	analysisConfig := plan.AnalysisConfig
 
 	// Convert detectors
-	apiDetectors := make([]DetectorAPIModel, len(analysisConfig.Detectors))
-	for i, detector := range analysisConfig.Detectors {
+	var detectorsTF []DetectorTFModel
+	diags.Append(analysisConfig.Detectors.ElementsAs(ctx, &detectorsTF, false)...)
+	if diags.HasError() {
+		return nil, diags
+	}
+	apiDetectors := make([]DetectorAPIModel, len(detectorsTF))
+	for i, detector := range detectorsTF {
 		apiDetectors[i] = DetectorAPIModel{
 			Function:            detector.Function.ValueString(),
 			FieldName:           detector.FieldName.ValueString(),
@@ -201,6 +227,23 @@ func (plan *TFModel) toAPIModel(ctx context.Context) (*APIModel, diag.Diagnostic
 						}
 					}
 					apiRules[j].Conditions = apiConditions
+				}
+
+				if typeutils.IsKnown(rule.Scope) && !rule.Scope.IsNull() {
+					var scopeEntries map[string]ScopeEntryTFModel
+					d := rule.Scope.ElementsAs(ctx, &scopeEntries, false)
+					diags.Append(d...)
+					if diags.HasError() {
+						return nil, diags
+					}
+					apiRules[j].Scope = make(map[string]FilterScopeAPIModel, len(scopeEntries))
+					for sk, ent := range scopeEntries {
+						fs := FilterScopeAPIModel{FilterID: ent.FilterID.ValueString()}
+						if typeutils.IsKnown(ent.FilterType) && ent.FilterType.ValueString() != "" {
+							fs.FilterType = ent.FilterType.ValueString()
+						}
+						apiRules[j].Scope[sk] = fs
+					}
 				}
 			}
 			apiDetectors[i].CustomRules = apiRules
@@ -433,11 +476,18 @@ func (plan *TFModel) convertAnalysisConfigFromAPI(ctx context.Context, apiConfig
 
 	// Convert detectors
 	if len(apiConfig.Detectors) > 0 {
+		// Extract prior detectors from the incoming types.List for index-based access
+		var originalDetectors []DetectorTFModel
+		if typeutils.IsKnown(analysisConfigTF.Detectors) && !analysisConfigTF.Detectors.IsNull() {
+			d := analysisConfigTF.Detectors.ElementsAs(ctx, &originalDetectors, false)
+			diags.Append(d...)
+		}
+
 		detectorsTF := make([]DetectorTFModel, len(apiConfig.Detectors))
 		for i, detector := range apiConfig.Detectors {
 			var originalDetector DetectorTFModel
-			if len(analysisConfigTF.Detectors) > i {
-				originalDetector = analysisConfigTF.Detectors[i]
+			if len(originalDetectors) > i {
+				originalDetector = originalDetectors[i]
 			}
 
 			detectorsTF[i] = DetectorTFModel{
@@ -472,7 +522,10 @@ func (plan *TFModel) convertAnalysisConfigFromAPI(ctx context.Context, apiConfig
 				d := originalDetector.CustomRules.ElementsAs(ctx, &originalCustomRules, false)
 				diags.Append(d...)
 			}
-			ruleConditionElemType := types.ObjectType{AttrTypes: getRuleConditionAttrTypes()}
+			ruleConditionElemType := types.ObjectType{AttrTypes: getRuleConditionAttrTypes(ctx)}
+			scopeMapType := getCustomRuleAttrTypes(ctx)["scope"].(types.MapType)
+			scopeValueElemType := scopeMapType.ElemType
+			scopeObjAttrTypes := scopeValueElemType.(types.ObjectType).AttrTypes
 
 			customRulesTF := make([]CustomRuleTFModel, len(detector.CustomRules))
 			for j, rule := range detector.CustomRules {
@@ -515,19 +568,48 @@ func (plan *TFModel) convertAnalysisConfigFromAPI(ctx context.Context, apiConfig
 				default:
 					customRulesTF[j].Conditions = types.ListNull(ruleConditionElemType)
 				}
+
+				// Convert scope
+				switch {
+				case len(rule.Scope) > 0:
+					objs := make(map[string]attr.Value, len(rule.Scope))
+					for sk, sv := range rule.Scope {
+						ftVal := types.StringNull()
+						if sv.FilterType != "" {
+							ftVal = types.StringValue(sv.FilterType)
+						}
+						ov, d := types.ObjectValueFrom(ctx, scopeObjAttrTypes, ScopeEntryTFModel{
+							FilterID:   types.StringValue(sv.FilterID),
+							FilterType: ftVal,
+						})
+						diags.Append(d...)
+						objs[sk] = ov
+					}
+					mv, d := types.MapValueFrom(ctx, scopeValueElemType, objs)
+					diags.Append(d...)
+					customRulesTF[j].Scope = mv
+				case j < len(originalCustomRules) && typeutils.IsKnown(originalCustomRules[j].Scope):
+					customRulesTF[j].Scope = originalCustomRules[j].Scope
+				default:
+					customRulesTF[j].Scope = types.MapNull(scopeValueElemType)
+				}
 			}
 
 			if len(customRulesTF) > 0 {
-				customRulesListValue, d := types.ListValueFrom(ctx, types.ObjectType{AttrTypes: getCustomRuleAttrTypes()}, customRulesTF)
+				customRulesListValue, d := types.ListValueFrom(ctx, types.ObjectType{AttrTypes: getCustomRuleAttrTypes(ctx)}, customRulesTF)
 				diags.Append(d...)
 				detectorsTF[i].CustomRules = customRulesListValue
 			} else if len(detector.CustomRules) == 0 {
 				// Preserve user's empty list vs null distinction
 				detectorsTF[i].CustomRules = originalDetector.CustomRules
-				detectorsTF[i].CustomRules = typeutils.EnsureTypedList(ctx, detectorsTF[i].CustomRules, types.ObjectType{AttrTypes: getCustomRuleAttrTypes()})
+				detectorsTF[i].CustomRules = typeutils.EnsureTypedList(ctx, detectorsTF[i].CustomRules, types.ObjectType{AttrTypes: getCustomRuleAttrTypes(ctx)})
 			}
 		}
-		analysisConfigTF.Detectors = detectorsTF
+		detectorsListVal, d := types.ListValueFrom(ctx,
+			types.ObjectType{AttrTypes: getDetectorAttrTypes(ctx)},
+			detectorsTF)
+		diags.Append(d...)
+		analysisConfigTF.Detectors = detectorsListVal
 	}
 
 	// Convert per_partition_categorization. ES may return defaults (enabled=false)
@@ -555,7 +637,7 @@ func (plan *TFModel) convertAnalysisConfigFromAPI(ctx context.Context, apiConfig
 
 func (plan *TFModel) convertDataDescriptionFromAPI(ctx context.Context, apiDataDescription *DataDescriptionAPIModel, diags *diag.Diagnostics) types.Object {
 	if apiDataDescription == nil {
-		return types.ObjectNull(getDataDescriptionAttrTypes())
+		return types.ObjectNull(getDataDescriptionAttrTypes(ctx))
 	}
 
 	dataDescriptionTF := DataDescriptionTFModel{
@@ -563,14 +645,14 @@ func (plan *TFModel) convertDataDescriptionFromAPI(ctx context.Context, apiDataD
 		TimeFormat: typeutils.NonEmptyStringishValue(apiDataDescription.TimeFormat),
 	}
 
-	dataDescriptionObjectValue, d := types.ObjectValueFrom(ctx, getDataDescriptionAttrTypes(), dataDescriptionTF)
+	dataDescriptionObjectValue, d := types.ObjectValueFrom(ctx, getDataDescriptionAttrTypes(ctx), dataDescriptionTF)
 	diags.Append(d...)
 	return dataDescriptionObjectValue
 }
 
 func (plan *TFModel) convertAnalysisLimitsFromAPI(ctx context.Context, apiLimits *AnalysisLimitsAPIModel, diags *diag.Diagnostics) types.Object {
 	if apiLimits == nil {
-		return types.ObjectNull(getAnalysisLimitsAttrTypes())
+		return types.ObjectNull(getAnalysisLimitsAttrTypes(ctx))
 	}
 
 	analysisLimitsTF := AnalysisLimitsTFModel{
@@ -583,14 +665,14 @@ func (plan *TFModel) convertAnalysisLimitsFromAPI(ctx context.Context, apiLimits
 		analysisLimitsTF.ModelMemoryLimit = customtypes.NewMemorySizeNull()
 	}
 
-	analysisLimitsObjectValue, d := types.ObjectValueFrom(ctx, getAnalysisLimitsAttrTypes(), analysisLimitsTF)
+	analysisLimitsObjectValue, d := types.ObjectValueFrom(ctx, getAnalysisLimitsAttrTypes(ctx), analysisLimitsTF)
 	diags.Append(d...)
 	return analysisLimitsObjectValue
 }
 
 func (plan *TFModel) convertModelPlotConfigFromAPI(ctx context.Context, apiModelPlotConfig *ModelPlotConfigAPIModel, diags *diag.Diagnostics) types.Object {
 	if apiModelPlotConfig == nil {
-		return types.ObjectNull(getModelPlotConfigAttrTypes())
+		return types.ObjectNull(getModelPlotConfigAttrTypes(ctx))
 	}
 
 	modelPlotConfigTF := ModelPlotConfigTFModel{
@@ -600,7 +682,7 @@ func (plan *TFModel) convertModelPlotConfigFromAPI(ctx context.Context, apiModel
 
 	modelPlotConfigTF.AnnotationsEnabled = types.BoolPointerValue(apiModelPlotConfig.AnnotationsEnabled)
 
-	modelPlotConfigObjectValue, d := types.ObjectValueFrom(ctx, getModelPlotConfigAttrTypes(), modelPlotConfigTF)
+	modelPlotConfigObjectValue, d := types.ObjectValueFrom(ctx, getModelPlotConfigAttrTypes(ctx), modelPlotConfigTF)
 	diags.Append(d...)
 	return modelPlotConfigObjectValue
 }

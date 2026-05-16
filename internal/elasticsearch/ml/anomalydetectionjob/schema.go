@@ -23,11 +23,12 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	timeouts "github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/mapvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
@@ -38,22 +39,20 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-
-	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 )
 
 const jobIDAllowedCharsMessage = "must contain lowercase alphanumeric characters (a-z and 0-9), hyphens, and underscores. " +
 	"It must start and end with alphanumeric characters"
 
-func (r *anomalyDetectionJobResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = GetSchema()
-}
-
-func GetSchema() schema.Schema {
+// getSchema returns the resource schema without the elasticsearch_connection
+// block, which is injected by the entitycore envelope.
+func getSchema(ctx context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: resourceDescription,
 		Blocks: map[string]schema.Block{
-			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(),
+			"timeouts": timeouts.Block(ctx, timeouts.Opts{
+				Delete: true,
+			}),
 		},
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -202,8 +201,11 @@ func GetSchema() schema.Schema {
 									},
 								},
 								"custom_rules": schema.ListNestedAttribute{
-									MarkdownDescription: "Custom rules enable you to customize the way detectors operate.",
-									Optional:            true,
+									MarkdownDescription: "Custom rules enable you to customize the way detectors operate. " +
+										"Each rule must either have a non-empty `scope` or at least one `conditions` entry. " +
+										"Multiple conditions are combined together with a logical AND. " +
+										"A non-empty `scope` and one or more `conditions` may both be set on the same rule; they are not mutually exclusive.",
+									Optional: true,
 									NestedObject: schema.NestedAttributeObject{
 										Attributes: map[string]schema.Attribute{
 											"actions": schema.ListAttribute{
@@ -217,8 +219,11 @@ func GetSchema() schema.Schema {
 												},
 											},
 											"conditions": schema.ListNestedAttribute{
-												MarkdownDescription: "An array of numeric conditions when the rule applies.",
-												Optional:            true,
+												MarkdownDescription: "An array of numeric conditions when the rule applies. " +
+													"If you specify more than one condition, Elasticsearch combines them together with a logical AND. " +
+													"A rule must either have a non-empty `scope` or at least one condition. " +
+													"You may set `scope` on the same rule.",
+												Optional: true,
 												NestedObject: schema.NestedAttributeObject{
 													Attributes: map[string]schema.Attribute{
 														"applies_to": schema.StringAttribute{
@@ -238,6 +243,37 @@ func GetSchema() schema.Schema {
 														"value": schema.Float64Attribute{
 															MarkdownDescription: "The value that is compared against the applies_to field using the operator.",
 															Required:            true,
+														},
+													},
+												},
+											},
+											"scope": schema.MapNestedAttribute{
+												MarkdownDescription: "Maps an analysis field name " +
+													"(typically matching `by_field_name`, `over_field_name`, or `partition_field_name` on the detector) " +
+													"to an ML filter reference. Each `filter_id` must identify an ML filter that already exists in the cluster " +
+													"(for example, created using the Elasticsearch ML filter APIs). " +
+													"A rule must either have a non-empty `scope` or at least one condition. " +
+													"You may set `conditions` on the same rule.",
+												Optional: true,
+												Validators: []validator.Map{
+													mapvalidator.SizeAtLeast(1),
+													mapvalidator.NoNullValues(),
+												},
+												NestedObject: schema.NestedAttributeObject{
+													Attributes: map[string]schema.Attribute{
+														"filter_id": schema.StringAttribute{
+															MarkdownDescription: "The ML filter identifier (`filter_id`) to apply.",
+															Required:            true,
+															Validators: []validator.String{
+																stringvalidator.LengthAtLeast(1),
+															},
+														},
+														"filter_type": schema.StringAttribute{
+															MarkdownDescription: "`include` applies the rule to values in the filter; `exclude` applies it to values not in the filter.",
+															Optional:            true,
+															Validators: []validator.String{
+																stringvalidator.OneOf("include", "exclude"),
+															},
 														},
 													},
 												},
@@ -409,7 +445,7 @@ func GetSchema() schema.Schema {
 				},
 			},
 			"results_index_name": schema.StringAttribute{
-				MarkdownDescription: "A text string that affects the name of the machine learning results index.",
+				MarkdownDescription: "A text string that affects the name of the machine learning results index. Do not start the value with `custom-`; Elasticsearch automatically adds this prefix.",
 				Optional:            true,
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
@@ -458,39 +494,39 @@ func GetSchema() schema.Schema {
 	}
 }
 
-func getAnalysisConfigAttrTypes() map[string]attr.Type {
-	return GetSchema().Attributes["analysis_config"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+func getAnalysisConfigAttrTypes(ctx context.Context) map[string]attr.Type {
+	return getSchema(ctx).Attributes["analysis_config"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
-func getDetectorAttrTypes() map[string]attr.Type {
-	analysisConfigAttrs := getAnalysisConfigAttrTypes()
+func getDetectorAttrTypes(ctx context.Context) map[string]attr.Type {
+	analysisConfigAttrs := getAnalysisConfigAttrTypes(ctx)
 	detectorsList := analysisConfigAttrs["detectors"].(types.ListType)
 	detectorsObj := detectorsList.ElemType.(types.ObjectType)
 	return detectorsObj.AttrTypes
 }
 
-func getCustomRuleAttrTypes() map[string]attr.Type {
-	detectorAttrs := getDetectorAttrTypes()
+func getCustomRuleAttrTypes(ctx context.Context) map[string]attr.Type {
+	detectorAttrs := getDetectorAttrTypes(ctx)
 	customRulesList := detectorAttrs["custom_rules"].(types.ListType)
 	customRulesObj := customRulesList.ElemType.(types.ObjectType)
 	return customRulesObj.AttrTypes
 }
 
-func getRuleConditionAttrTypes() map[string]attr.Type {
-	customRuleAttrs := getCustomRuleAttrTypes()
+func getRuleConditionAttrTypes(ctx context.Context) map[string]attr.Type {
+	customRuleAttrs := getCustomRuleAttrTypes(ctx)
 	conditionsList := customRuleAttrs["conditions"].(types.ListType)
 	conditionsObj := conditionsList.ElemType.(types.ObjectType)
 	return conditionsObj.AttrTypes
 }
 
-func getAnalysisLimitsAttrTypes() map[string]attr.Type {
-	return GetSchema().Attributes["analysis_limits"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+func getAnalysisLimitsAttrTypes(ctx context.Context) map[string]attr.Type {
+	return getSchema(ctx).Attributes["analysis_limits"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
-func getDataDescriptionAttrTypes() map[string]attr.Type {
-	return GetSchema().Attributes["data_description"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+func getDataDescriptionAttrTypes(ctx context.Context) map[string]attr.Type {
+	return getSchema(ctx).Attributes["data_description"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
-func getModelPlotConfigAttrTypes() map[string]attr.Type {
-	return GetSchema().Attributes["model_plot_config"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+func getModelPlotConfigAttrTypes(ctx context.Context) map[string]attr.Type {
+	return getSchema(ctx).Attributes["model_plot_config"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }

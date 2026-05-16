@@ -22,7 +22,6 @@ import (
 	"encoding/json"
 	"maps"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -43,7 +42,7 @@ func priorHasDeclaredToggle(_ context.Context, prior types.Object, toggle string
 	return !objV.IsNull() && !objV.IsUnknown()
 }
 
-func flattenPhase(ctx context.Context, phaseName string, p models.Phase, prior types.Object) (types.Object, diag.Diagnostics) {
+func flattenPhase(ctx context.Context, phaseName string, minAge string, actions map[string]map[string]any, prior types.Object) (types.Object, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	phase := make(map[string]any)
 
@@ -53,10 +52,10 @@ func flattenPhase(ctx context.Context, phaseName string, p models.Phase, prior t
 		}
 	}
 
-	if p.MinAge != "" {
-		phase["min_age"] = p.MinAge
+	if minAge != "" {
+		phase["min_age"] = minAge
 	}
-	for actionName, action := range p.Actions {
+	for actionName, action := range actions {
 		switch actionName {
 		case "readonly", "freeze", "unfollow":
 			phase[actionName] = []any{map[string]any{"enabled": true}}
@@ -86,15 +85,14 @@ func flattenPhase(ctx context.Context, phaseName string, p models.Phase, prior t
 			}
 			phase[actionName] = []any{allocateAction}
 		case "shrink":
-			shrinkAction := make(map[string]any, len(action)+1)
-			maps.Copy(shrinkAction, map[string]any(action))
+			shrinkAction := make(map[string]any, len(action))
+			maps.Copy(shrinkAction, action)
 			if _, ok := shrinkAction["allow_write_after_shrink"]; !ok {
 				shrinkAction["allow_write_after_shrink"] = false
 			}
 			phase[actionName] = []any{shrinkAction}
 		default:
-			// models.Action is a named map type; type assertions expect map[string]any.
-			phase[actionName] = []any{map[string]any(action)}
+			phase[actionName] = []any{action}
 		}
 	}
 

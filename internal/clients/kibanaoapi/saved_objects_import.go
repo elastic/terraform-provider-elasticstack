@@ -25,6 +25,7 @@ import (
 	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
@@ -59,24 +60,23 @@ func ImportSavedObjects(ctx context.Context, client *Client, spaceID string, fil
 
 	contentType := writer.FormDataContentType()
 
-	resp, err := client.API.PostSavedObjectsImportWithBodyWithResponse(ctx, &params, contentType, &buf, SpaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.PostSavedObjectsImportWithBodyWithResponse(ctx, &params, contentType, &buf, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		if resp.JSON200 == nil {
-			return nil, diag.Diagnostics{
-				diag.NewErrorDiagnostic("Failed to parse import response", "API returned 200 but JSON200 is nil"),
-			}
+		unwrapped, unwrapDiags := diagutil.UnwrapJSON200(resp.JSON200, "saved objects import")
+		if unwrapDiags.HasError() {
+			return nil, unwrapDiags
 		}
 
 		result := &ImportSavedObjectsResult{
-			Success:        resp.JSON200.Success,
-			SuccessCount:   int64(resp.JSON200.SuccessCount),
-			Errors:         resp.JSON200.Errors,
-			SuccessResults: resp.JSON200.SuccessResults,
+			Success:        unwrapped.Success,
+			SuccessCount:   int64(unwrapped.SuccessCount),
+			Errors:         unwrapped.Errors,
+			SuccessResults: unwrapped.SuccessResults,
 		}
 		return result, nil
 
@@ -89,9 +89,9 @@ func ImportSavedObjects(ctx context.Context, client *Client, spaceID string, fil
 				),
 			}
 		}
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }

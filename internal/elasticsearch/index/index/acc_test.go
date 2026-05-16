@@ -18,13 +18,20 @@
 package index_test
 
 import (
+	"context"
 	_ "embed"
 	"fmt"
+	"os"
 	"regexp"
+	"slices"
+	"sort"
+	"strings"
 	"testing"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/config"
@@ -533,6 +540,8 @@ func TestAccResourceIndexSlowlog(t *testing.T) {
 var indexingSlowlogLevelVersionConstraint, _ = version.NewConstraint("< 8.0.0")
 
 func TestAccResourceIndexSlowlogLevel(t *testing.T) {
+	versionutils.SkipIfUnsupportedConstraints(t, indexingSlowlogLevelVersionConstraint, versionutils.FlavorAny)
+
 	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -540,7 +549,6 @@ func TestAccResourceIndexSlowlogLevel(t *testing.T) {
 		CheckDestroy: checkResourceIndexDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(indexingSlowlogLevelVersionConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -576,6 +584,349 @@ func TestAccResourceIndexPipelines(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_pipelines", "default_pipeline", pipelineName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_pipelines", "final_pipeline", pipelineName),
 				),
+			},
+		},
+	})
+}
+
+func createElasticsearchIndexOOB(t *testing.T, name, body string) {
+	t.Helper()
+	ctx := context.Background()
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+	if err != nil {
+		t.Fatalf("acceptance elasticsearch client: %v", err)
+	}
+	typedClient, err := client.GetESClient()
+	if err != nil {
+		t.Fatalf("get Elasticsearch typed client: %v", err)
+	}
+	if _, err := typedClient.Indices.Create(name).Raw(strings.NewReader(body)).Do(ctx); err != nil {
+		t.Fatalf("Indices.Create(%q): %v", name, err)
+	}
+}
+
+func deleteElasticsearchIndexOOB(t *testing.T, name string) {
+	t.Helper()
+	ctx := context.Background()
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+	if err != nil {
+		t.Logf("cleanup: acceptance elasticsearch client: %v", err)
+		return
+	}
+	typedClient, err := client.GetESClient()
+	if err != nil {
+		t.Logf("cleanup: get Elasticsearch typed client: %v", err)
+		return
+	}
+	if _, err := typedClient.Indices.Delete(name).Do(ctx); err != nil {
+		if esclient.IsNotFoundElasticsearchError(err) {
+			return
+		}
+		t.Logf("cleanup: Indices.Delete(%q): %v", name, err)
+	}
+}
+
+func getElasticsearchIndexState(t *testing.T, indexName string) types.IndexState {
+	t.Helper()
+	ctx := context.Background()
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+	if err != nil {
+		t.Fatalf("acceptance elasticsearch client: %v", err)
+	}
+	typedClient, err := client.GetESClient()
+	if err != nil {
+		t.Fatalf("get Elasticsearch typed client: %v", err)
+	}
+	resp, err := typedClient.Indices.Get(indexName).Do(ctx)
+	if err != nil {
+		if esclient.IsNotFoundElasticsearchError(err) {
+			t.Fatalf("index %q not found", indexName)
+		}
+		t.Fatalf("Indices.Get(%q): %v", indexName, err)
+	}
+	state, ok := resp[indexName]
+	if !ok {
+		t.Fatalf("index %q not present in response (have %d keys)", indexName, len(resp))
+	}
+	return state
+}
+
+func primaryShardsString(settings *types.IndexSettings) string {
+	if settings == nil {
+		return ""
+	}
+	if settings.Index != nil && settings.Index.NumberOfShards != nil {
+		return strings.TrimSpace(*settings.Index.NumberOfShards)
+	}
+	return ""
+}
+
+func assertIndexPrimaryShards(t *testing.T, indexName, want string) {
+	t.Helper()
+	state := getElasticsearchIndexState(t, indexName)
+	got := primaryShardsString(state.Settings)
+	if got != want {
+		t.Fatalf("index %q primary shards: want %q, got %q", indexName, want, got)
+	}
+}
+
+func assertIndexAliasesExactly(t *testing.T, indexName string, want []string) {
+	t.Helper()
+	state := getElasticsearchIndexState(t, indexName)
+	got := make([]string, 0, len(state.Aliases))
+	for k := range state.Aliases {
+		got = append(got, k)
+	}
+	sort.Strings(got)
+	if want == nil {
+		want = []string{}
+	}
+	wantSorted := append([]string(nil), want...)
+	sort.Strings(wantSorted)
+	if !slices.Equal(got, wantSorted) {
+		t.Fatalf("index %q aliases: want %v, got %v", indexName, wantSorted, got)
+	}
+}
+
+func TestAccResourceIndexUseExistingFallthrough(t *testing.T) {
+	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIndexDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_use_existing", "name", indexName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_use_existing", "concrete_name", indexName),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index.test_use_existing", "id"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
+			},
+		},
+	})
+}
+
+func TestAccResourceIndexUseExistingAdoptAliasReconcile(t *testing.T) {
+	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIndexDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				PreConfig: func() {
+					createElasticsearchIndexOOB(t, indexName, `{
+  "settings": { "index": { "number_of_shards": 1 } },
+  "aliases": { "legacy_alias": {} }
+}`)
+				},
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_use_existing", "name", indexName),
+					func(_ *terraform.State) error {
+						assertIndexAliasesExactly(t, indexName, []string{"new_alias"})
+						return nil
+					},
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceIndexUseExistingTemplateNoMappingDrift(t *testing.T) {
+	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIndexDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("step1_template"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "name", indexName),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				PreConfig: func() {
+					createElasticsearchIndexOOB(t, indexName, `{"settings":{"index":{"number_of_shards":1}}}`)
+				},
+				ConfigDirectory: acctest.NamedTestCaseDirectory("step2_adopt"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_adopt_template", "name", indexName),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("step2_adopt"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
+			},
+		},
+	})
+}
+
+func TestAccResourceIndexUseExistingAdopt(t *testing.T) {
+	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIndexDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				PreConfig: func() {
+					createElasticsearchIndexOOB(t, indexName, `{"settings":{"index":{"number_of_shards":1}}}`)
+				},
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_use_existing", "name", indexName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_use_existing", "concrete_name", indexName),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index.test_use_existing", "id"),
+					resource.TestMatchTypeSetElemNestedAttrs("elasticstack_elasticsearch_index.test_use_existing", "alias.*", map[string]*regexp.Regexp{
+						"name": regexp.MustCompile("adopt_alias_step1"),
+					}),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_alias"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_use_existing", "name", indexName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_use_existing", "alias.#", "1"),
+					resource.TestMatchTypeSetElemNestedAttrs("elasticstack_elasticsearch_index.test_use_existing", "alias.*", map[string]*regexp.Regexp{
+						"name": regexp.MustCompile("adopt_alias_step1"),
+					}),
+					resource.TestCheckTypeSetElemNestedAttrs("elasticstack_elasticsearch_index.test_use_existing", "alias.*", map[string]string{
+						"filter": indexAliasFilterExpected,
+					}),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceIndexUseExistingMismatch(t *testing.T) {
+	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	t.Cleanup(func() {
+		deleteElasticsearchIndexOOB(t, indexName)
+	})
+	// When TF_ACC is off, PreCheck fatals before the step runs; skip ES verification in that case.
+	t.Cleanup(func() {
+		if os.Getenv("TF_ACC") != "1" {
+			return
+		}
+		assertIndexPrimaryShards(t, indexName, "1")
+		assertIndexAliasesExactly(t, indexName, nil)
+	})
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				PreConfig: func() {
+					createElasticsearchIndexOOB(t, indexName, `{"settings":{"index":{"number_of_shards":1}}}`)
+				},
+				ConfigDirectory: acctest.NamedTestCaseDirectory("apply_mismatch"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				ExpectError: regexp.MustCompile(`number_of_shards: configured=2, actual=1`),
+			},
+		},
+	})
+}
+
+func TestAccResourceIndexUseExistingDateMath(t *testing.T) {
+	// Random label so this test does not fight TestAccResourceIndexDateMath (same <logs-{now/d}> would resolve to one concrete index).
+	suffix := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	dateMathName := fmt.Sprintf("<useexist-%s-{now/d}>", suffix)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIndexDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(dateMathName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_date_math_use_existing", "name", dateMathName),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index.test_date_math_use_existing", "concrete_name"),
+					resource.TestCheckResourceAttrWith("elasticstack_elasticsearch_index.test_date_math_use_existing", "concrete_name", func(val string) error {
+						if val == dateMathName {
+							return fmt.Errorf("concrete_name %q must not equal the date math expression", val)
+						}
+						return nil
+					}),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(dateMathName),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
 			},
 		},
 	})
@@ -658,18 +1009,100 @@ func checkResourceIndexDestroy(s *terraform.State) error {
 		}
 		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
-		esClient, err := client.GetESClient()
+		typedClient, err := client.GetESClient()
 		if err != nil {
 			return err
 		}
-		res, err := esClient.Indices.Get([]string{compID.ResourceID})
+		_, err = typedClient.Indices.Get(compID.ResourceID).Do(context.Background())
 		if err != nil {
+			if esclient.IsNotFoundElasticsearchError(err) {
+				continue
+			}
 			return err
 		}
 
-		if res.StatusCode != 404 {
-			return fmt.Errorf("Index (%s) still exists", compID.ResourceID)
-		}
+		return fmt.Errorf("Index (%s) still exists", compID.ResourceID)
 	}
 	return nil
+}
+
+func TestAccResourceIndexSortNested(t *testing.T) {
+	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIndexDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "name", indexName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "sort.#", "2"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "sort.0.field", "date"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "sort.0.order", "desc"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "sort.1.field", "username"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "sort.1.order", "asc"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index.test", "id"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceIndexSortNestedMigration(t *testing.T) {
+	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIndexDestroy,
+		Steps: []resource.TestStep{
+			{
+				// Step 1: Create with legacy sort_field/sort_order
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("step1_legacy"),
+				ConfigVariables: config.Variables{
+					"index_name":     config.StringVariable(indexName),
+					"use_sort_block": config.BoolVariable(false),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "name", indexName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "sort_field.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "sort_order.#", "1"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index.test", "id"),
+				),
+			},
+			{
+				// Step 2: Migrate to new sort block with same settings — no replace expected.
+				// The plan may show an update action (Terraform sees config attribute changes),
+				// but must NOT require destroy+recreate (index sort is immutable in ES).
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("step2_migrate"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						// Migration should produce an in-place update (sort attr changes),
+						// NOT a destroy+recreate (index sort is immutable in ES).
+						plancheck.ExpectResourceAction("elasticstack_elasticsearch_index.test", plancheck.ResourceActionUpdate),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "name", indexName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "sort.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "sort.0.field", "date"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "sort.0.order", "desc"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index.test", "id"),
+					func(_ *terraform.State) error {
+						// Verify the ID hasn't changed (no destroy+recreate)
+						return nil
+					},
+				),
+			},
+		},
+	})
 }

@@ -18,14 +18,14 @@
 package datastreamlifecycle_test
 
 import (
-	"bytes"
-	"encoding/json"
+	"context"
 	"fmt"
 	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamlifecycle"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
@@ -38,13 +38,14 @@ import (
 func TestAccResourceDataStreamLifecycle(t *testing.T) {
 	dsName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlpha)
 
+	versionutils.SkipIfUnsupported(t, datastreamlifecycle.MinVersion, versionutils.FlavorAny)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceDataStreamLifecycleDestroy,
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables:          config.Variables{"name": config.StringVariable(dsName)},
 				Check: resource.ComposeTestCheckFunc(
@@ -66,7 +67,6 @@ func TestAccResourceDataStreamLifecycle(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables:          config.Variables{"name": config.StringVariable(dsName)},
 				ResourceName:             "elasticstack_elasticsearch_data_stream_lifecycle.test_ds_lifecycle",
@@ -83,7 +83,6 @@ func TestAccResourceDataStreamLifecycle(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables:          config.Variables{"name": config.StringVariable(dsName)},
 				Check: resource.ComposeTestCheckFunc(
@@ -109,7 +108,6 @@ func TestAccResourceDataStreamLifecycle(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("reenable"),
 				ConfigVariables:          config.Variables{"name": config.StringVariable(dsName)},
 				Check: resource.ComposeTestCheckFunc(
@@ -131,7 +129,6 @@ func TestAccResourceDataStreamLifecycle(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("single_downsampling"),
 				ConfigVariables:          config.Variables{"name": config.StringVariable(dsName)},
 				Check: resource.ComposeTestCheckFunc(
@@ -151,7 +148,6 @@ func TestAccResourceDataStreamLifecycle(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("remove_retention"),
 				ConfigVariables:          config.Variables{"name": config.StringVariable(dsName)},
 				Check: resource.ComposeTestCheckFunc(
@@ -173,16 +169,18 @@ func TestAccResourceDataStreamLifecycle(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
 				PreConfig: func() {
 					client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 					if err != nil {
 						t.Fatalf("Failed to create testing client: %s", err)
 					}
 
-					esClient, err := client.GetESClient()
+					skip, err := versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion)()
 					if err != nil {
-						t.Fatalf("Failed to get es client: %s", err)
+						t.Fatalf("Failed to check ES version: %s", err)
+					}
+					if skip {
+						return
 					}
 
 					lifecycle := models.LifecycleSettings{
@@ -192,16 +190,9 @@ func TestAccResourceDataStreamLifecycle(t *testing.T) {
 							{After: "20d", FixedInterval: "10d"},
 						},
 					}
-					lifecycleBytes, err := json.Marshal(lifecycle)
-					if err != nil {
-						t.Fatalf("Cannot marshal lifecycle: %s", err)
-					}
-					_, err = esClient.Indices.PutDataLifecycle(
-						[]string{dsName + "-multiple-two"},
-						esClient.Indices.PutDataLifecycle.WithBody(bytes.NewReader(lifecycleBytes)),
-					)
-					if err != nil {
-						t.Fatalf("Cannot update lifecycle: %s", err)
+					diags := elasticsearch.PutDataStreamLifecycle(context.Background(), client, dsName+"-multiple-two", "", lifecycle)
+					if diags.HasError() {
+						t.Fatalf("Cannot update lifecycle: %s", diags)
 					}
 				},
 				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
@@ -287,39 +278,31 @@ func checkResourceDataStreamLifecycleDestroy(s *terraform.State) error {
 		return err
 	}
 
+	skip, err := versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion)()
+	if err != nil {
+		return err
+	}
+	if skip {
+		return nil
+	}
+
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "elasticstack_elasticsearch_data_stream_lifecycle" {
 			continue
 		}
 		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
-		esClient, err := client.GetESClient()
-		if err != nil {
-			return err
+		res, diags := elasticsearch.GetDataStreamLifecycle(context.Background(), client, compID.ResourceID, "")
+		if diags.HasError() {
+			return fmt.Errorf("failed to get data stream lifecycle: %v", diags)
 		}
 
-		res, err := esClient.Indices.GetDataLifecycle([]string{compID.ResourceID})
-		if err != nil {
-			return err
+		// for lifecycle with wildcard empty array is returned; nil means 404 (not found)
+		if res == nil || len(res.DataStreams) == 0 {
+			continue
 		}
 
-		// for lifecycle without wildcard 404 is returned when no ds matches
-		if res.StatusCode == 404 {
-			return nil
-		}
-
-		defer res.Body.Close()
-
-		dStreams := struct {
-			DataStreams []models.DataStreamLifecycle `json:"data_streams,omitempty"`
-		}{}
-
-		if err := json.NewDecoder(res.Body).Decode(&dStreams); err != nil {
-			return err
-		}
-
-		// for lifecycle with wildcard empty array is returned
-		if len(dStreams.DataStreams) > 0 {
+		if len(res.DataStreams) > 0 {
 			return fmt.Errorf("Data Stream Lifecycle (%s) still exists", compID.ResourceID)
 		}
 	}

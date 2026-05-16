@@ -42,7 +42,7 @@ type downsamplingTfModel struct {
 	FixedInterval types.String `tfsdk:"fixed_interval"`
 }
 
-func (model tfModel) GetID() (*clients.CompositeID, diag.Diagnostics) {
+func (model tfModel) GetTFID() (*clients.CompositeID, diag.Diagnostics) {
 	compID, sdkDiags := clients.CompositeIDFromStr(model.ID.ValueString())
 	if sdkDiags.HasError() {
 		return nil, diagutil.FrameworkDiagsFromSDK(sdkDiags)
@@ -50,6 +50,10 @@ func (model tfModel) GetID() (*clients.CompositeID, diag.Diagnostics) {
 
 	return compID, nil
 }
+
+func (model tfModel) GetID() types.String                    { return model.ID }
+func (model tfModel) GetResourceID() types.String            { return model.Name }
+func (model tfModel) GetElasticsearchConnection() types.List { return model.ElasticsearchConnection }
 
 func (model tfModel) toAPIModel(ctx context.Context) (models.LifecycleSettings, diag.Diagnostics) {
 	var diags diag.Diagnostics
@@ -60,13 +64,12 @@ func (model tfModel) toAPIModel(ctx context.Context) (models.LifecycleSettings, 
 	}
 
 	if !model.Downsampling.IsNull() && !model.Downsampling.IsUnknown() && len(model.Downsampling.Elements()) > 0 {
-
 		downsampling := make([]downsamplingTfModel, len(model.Downsampling.Elements()))
-		if diags := model.Downsampling.ElementsAs(ctx, &downsampling, true); diags.HasError() {
-			return models.LifecycleSettings{}, diags
+		if d := model.Downsampling.ElementsAs(ctx, &downsampling, true); d.HasError() {
+			return models.LifecycleSettings{}, d
 		}
 
-		apiModel.Downsampling = make([]models.Downsampling, len(model.Downsampling.Elements()))
+		apiModel.Downsampling = make([]models.Downsampling, len(downsampling))
 		for i, ds := range downsampling {
 			apiModel.Downsampling[i] = models.Downsampling{
 				After:         ds.After.ValueString(),
@@ -86,23 +89,26 @@ func (model *tfModel) populateFromAPI(ctx context.Context, ds []models.DataStrea
 	}
 
 	for _, lf := range ds {
-		if lf.Lifecycle.DataRetention != actualRetention {
-			model.DataRetention = types.StringValue(lf.Lifecycle.DataRetention)
+		apiRetention := lf.Lifecycle.DataRetention
+		if apiRetention != actualRetention {
+			model.DataRetention = types.StringValue(apiRetention)
 		}
 		var updateDownsampling bool
-		if len(lf.Lifecycle.Downsampling) != len(actualDownsampling) {
+		apiDs := lf.Lifecycle.Downsampling
+		if len(apiDs) != len(actualDownsampling) {
 			updateDownsampling = true
 		} else {
-			for i, ds := range actualDownsampling {
-				if ds.After.ValueString() != lf.Lifecycle.Downsampling[i].After || ds.FixedInterval.ValueString() != lf.Lifecycle.Downsampling[i].FixedInterval {
+			for i, dstf := range actualDownsampling {
+				after := apiDs[i].After
+				fixedInterval := apiDs[i].FixedInterval
+				if dstf.After.ValueString() != after || dstf.FixedInterval.ValueString() != fixedInterval {
 					updateDownsampling = true
 					break
 				}
 			}
 		}
 		if updateDownsampling {
-			listValue, diags := convertDownsamplingToModel(ctx, lf.Lifecycle.Downsampling)
-			diags.Append(diags...)
+			listValue, diags := convertDownsamplingToModel(ctx, apiDs)
 			if diags.HasError() {
 				return diags
 			}
@@ -122,7 +128,5 @@ func convertDownsamplingToModel(ctx context.Context, apiDownsamplings []models.D
 		})
 	}
 
-	listValue, diags := types.ListValueFrom(ctx, downsamplingElementType(), downsamplings)
-
-	return listValue, diags
+	return types.ListValueFrom(ctx, downsamplingElementType(ctx), downsamplings)
 }

@@ -1,42 +1,17 @@
 'use strict';
 
-const { createFactoryIssueIntake, factoryActorTrustWhenSenderMissing, factoryParseOptionalTriStateFromEnv, factoryParseFinalizeGateEnv } = require('./factory-issue-shared.js');
+const { createFactoryIssueModule } = require('./factory-issue-shared.js');
 const {
   ISSUE_BRANCH_PREFIX,
   FACTORY_LABEL,
+  DUPLICATE_LINKAGE_MODE,
   ISSUE_OPENED_NOT_ELIGIBLE_REASON,
 } = require('../change-factory-issue/intake-constants.js');
 
-const intake = createFactoryIssueIntake({
+module.exports = createFactoryIssueModule({
   branchPrefix: ISSUE_BRANCH_PREFIX,
   factoryLabel: FACTORY_LABEL,
   issueOpenedNotEligibleReason: ISSUE_OPENED_NOT_ELIGIBLE_REASON,
-  duplicateLinkageMode: 'github-keywords',
+  duplicateLinkageMode: DUPLICATE_LINKAGE_MODE,
+  issueBranchNameAliases: ['changeFactoryIssueBranchName'],
 });
-
-function changeFactoryIssueBranchName(issueNumber) {
-  return intake.issueBranchName(issueNumber);
-}
-
-function actorTrustWhenSenderMissing() {
-  return factoryActorTrustWhenSenderMissing();
-}
-
-function parseOptionalTriStateFromEnv(raw) {
-  return factoryParseOptionalTriStateFromEnv(raw);
-}
-
-function parseFinalizeGateEnv(env) {
-  return factoryParseFinalizeGateEnv(env);
-}
-
-module.exports = {
-  qualifyTriggerEvent: intake.qualifyTriggerEvent,
-  checkActorTrust: intake.checkActorTrust,
-  checkDuplicatePR: intake.checkDuplicatePR,
-  computeGateReason: intake.computeGateReason,
-  changeFactoryIssueBranchName,
-  actorTrustWhenSenderMissing,
-  parseOptionalTriStateFromEnv,
-  parseFinalizeGateEnv,
-};

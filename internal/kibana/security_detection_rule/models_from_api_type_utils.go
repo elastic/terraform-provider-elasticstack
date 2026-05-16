@@ -22,8 +22,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -34,6 +36,123 @@ import (
 )
 
 // Utilities to convert various API types to Terraform model types
+
+// commonAPIRuleFields holds the common fields extracted from any API rule response.
+// Each updateFrom*Rule function populates this struct and calls updateCommonRuleFieldsFromAPI.
+// Fields not applicable to a rule type (e.g. DataViewId for ESQL/ML) should be left nil.
+type commonAPIRuleFields struct {
+	ResourceID  string // rule.Id.String() — used to build the composite ID
+	RuleID      string
+	Name        string
+	Type        string
+	Enabled     bool
+	From        string
+	To          string
+	Interval    string
+	Description string
+	RiskScore   int64
+	Severity    string
+	MaxSignals  int64
+	Version     int64
+	Revision    int64
+	CreatedAt   time.Time
+	CreatedBy   string
+	UpdatedAt   time.Time
+	UpdatedBy   string
+
+	TimelineID                        *kbapi.SecurityDetectionsAPITimelineTemplateId
+	TimelineTitle                     *kbapi.SecurityDetectionsAPITimelineTemplateTitle
+	DataViewID                        *kbapi.SecurityDetectionsAPIDataViewId // nil for ESQL/ML → sets DataViewID to null
+	Namespace                         *kbapi.SecurityDetectionsAPIAlertsIndexNamespace
+	RuleNameOverride                  *kbapi.SecurityDetectionsAPIRuleNameOverride
+	TimestampOverride                 *kbapi.SecurityDetectionsAPITimestampOverride
+	TimestampOverrideFallbackDisabled *kbapi.SecurityDetectionsAPITimestampOverrideFallbackDisabled
+	BuildingBlockType                 *kbapi.SecurityDetectionsAPIBuildingBlockType
+	License                           *kbapi.SecurityDetectionsAPIRuleLicense
+	Note                              *kbapi.SecurityDetectionsAPIInvestigationGuide
+
+	Index          *[]string // nil for ESQL/ML → sets Index to empty list
+	Author         []string
+	Tags           []string
+	FalsePositives []string
+	References     []string
+	Setup          kbapi.SecurityDetectionsAPISetupGuide
+
+	Actions             []kbapi.SecurityDetectionsAPIRuleAction
+	ExceptionsList      []kbapi.SecurityDetectionsAPIRuleExceptionList
+	RiskScoreMapping    kbapi.SecurityDetectionsAPIRiskScoreMapping
+	InvestigationFields *kbapi.SecurityDetectionsAPIInvestigationFields
+	Threat              kbapi.SecurityDetectionsAPIThreatArray
+	SeverityMapping     kbapi.SecurityDetectionsAPISeverityMapping
+	RelatedIntegrations kbapi.SecurityDetectionsAPIRelatedIntegrationArray
+	RequiredFields      kbapi.SecurityDetectionsAPIRequiredFieldArray
+	// AlertSuppression is nil for Threshold rules (which use a different API type handled separately).
+	AlertSuppression *kbapi.SecurityDetectionsAPIAlertSuppression
+	ResponseActions  *[]kbapi.SecurityDetectionsAPIResponseAction
+}
+
+// updateCommonRuleFieldsFromAPI populates the Data fields that are shared across all rule types.
+func (d *Data) updateCommonRuleFieldsFromAPI(ctx context.Context, fields commonAPIRuleFields) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	compID := clients.CompositeID{
+		ClusterID:  d.SpaceID.ValueString(),
+		ResourceID: fields.ResourceID,
+	}
+	d.ID = types.StringValue(compID.String())
+	d.RuleID = types.StringValue(fields.RuleID)
+	d.Name = types.StringValue(fields.Name)
+	d.Type = types.StringValue(fields.Type)
+	d.Enabled = types.BoolValue(fields.Enabled)
+	d.From = types.StringValue(fields.From)
+	d.To = types.StringValue(fields.To)
+	d.Interval = types.StringValue(fields.Interval)
+	d.Description = types.StringValue(fields.Description)
+	d.RiskScore = types.Int64Value(fields.RiskScore)
+	d.Severity = types.StringValue(fields.Severity)
+	d.MaxSignals = types.Int64Value(fields.MaxSignals)
+	d.Version = types.Int64Value(fields.Version)
+	d.CreatedAt = typeutils.TimeToStringValue(fields.CreatedAt)
+	d.CreatedBy = types.StringValue(fields.CreatedBy)
+	d.UpdatedAt = typeutils.TimeToStringValue(fields.UpdatedAt)
+	d.UpdatedBy = types.StringValue(fields.UpdatedBy)
+	d.Revision = types.Int64Value(fields.Revision)
+
+	d.TimelineID = typeutils.StringishPointerValue(fields.TimelineID)
+	d.TimelineTitle = typeutils.StringishPointerValue(fields.TimelineTitle)
+	d.DataViewID = typeutils.StringishPointerValue(fields.DataViewID)
+	d.Namespace = typeutils.StringishPointerValue(fields.Namespace)
+	d.RuleNameOverride = typeutils.StringishPointerValue(fields.RuleNameOverride)
+	d.TimestampOverride = typeutils.StringishPointerValue(fields.TimestampOverride)
+	if fields.TimestampOverrideFallbackDisabled != nil {
+		d.TimestampOverrideFallbackDisabled = types.BoolValue(*fields.TimestampOverrideFallbackDisabled)
+	} else {
+		d.TimestampOverrideFallbackDisabled = types.BoolNull()
+	}
+	d.BuildingBlockType = typeutils.StringishPointerValue(fields.BuildingBlockType)
+	d.License = typeutils.StringishPointerValue(fields.License)
+	d.Note = typeutils.StringishPointerValue(fields.Note)
+	d.Setup = typeutils.NonEmptyStringishValue(fields.Setup)
+
+	diags.Append(d.updateIndexFromAPI(ctx, fields.Index)...)
+	diags.Append(d.updateAuthorFromAPI(ctx, fields.Author)...)
+	diags.Append(d.updateTagsFromAPI(ctx, fields.Tags)...)
+	diags.Append(d.updateFalsePositivesFromAPI(ctx, fields.FalsePositives)...)
+	diags.Append(d.updateReferencesFromAPI(ctx, fields.References)...)
+
+	diags.Append(d.updateActionsFromAPI(ctx, fields.Actions)...)
+	diags.Append(d.updateExceptionsListFromAPI(ctx, fields.ExceptionsList)...)
+	diags.Append(d.updateRiskScoreMappingFromAPI(ctx, fields.RiskScoreMapping)...)
+	diags.Append(d.updateInvestigationFieldsFromAPI(ctx, fields.InvestigationFields)...)
+	diags.Append(d.updateThreatFromAPI(ctx, &fields.Threat)...)
+	diags.Append(d.updateSeverityMappingFromAPI(ctx, &fields.SeverityMapping)...)
+	diags.Append(d.updateRelatedIntegrationsFromAPI(ctx, &fields.RelatedIntegrations)...)
+	diags.Append(d.updateRequiredFieldsFromAPI(ctx, &fields.RequiredFields)...)
+	diags.Append(d.updateAlertSuppressionFromAPI(ctx, fields.AlertSuppression)...)
+	diags.Append(d.updateResponseActionsFromAPI(ctx, fields.ResponseActions)...)
+
+	return diags
+}
 
 // convertActionsToModel converts kbapi.SecurityDetectionsAPIRuleAction slice to Terraform model
 func convertActionsToModel(ctx context.Context, apiActions []kbapi.SecurityDetectionsAPIRuleAction) (types.List, diag.Diagnostics) {
@@ -377,24 +496,7 @@ func convertOsqueryResponseActionToModel(ctx context.Context, osqueryAction kbap
 	}
 
 	// Convert ECS mapping
-	if osqueryAction.Params.EcsMapping != nil {
-		ecsMappingAttrs := make(map[string]attr.Value)
-		for key, value := range *osqueryAction.Params.EcsMapping {
-			if value.Field != nil {
-				ecsMappingAttrs[key] = types.StringPointerValue(value.Field)
-			} else {
-				ecsMappingAttrs[key] = types.StringNull()
-			}
-		}
-		ecsMappingValue, ecsDiags := types.MapValue(types.StringType, ecsMappingAttrs)
-		if ecsDiags.HasError() {
-			diags.Append(ecsDiags...)
-		} else {
-			paramsModel.EcsMapping = ecsMappingValue
-		}
-	} else {
-		paramsModel.EcsMapping = types.MapNull(types.StringType)
-	}
+	paramsModel.EcsMapping = convertEcsMappingToModel(osqueryAction.Params.EcsMapping)
 
 	// Convert queries array
 	if osqueryAction.Params.Queries != nil {
@@ -426,24 +528,7 @@ func convertOsqueryResponseActionToModel(ctx context.Context, osqueryAction kbap
 			}
 
 			// Convert query ECS mapping
-			if apiQuery.EcsMapping != nil {
-				queryEcsMappingAttrs := make(map[string]attr.Value)
-				for key, value := range *apiQuery.EcsMapping {
-					if value.Field != nil {
-						queryEcsMappingAttrs[key] = types.StringPointerValue(value.Field)
-					} else {
-						queryEcsMappingAttrs[key] = types.StringNull()
-					}
-				}
-				queryEcsMappingValue, queryEcsDiags := types.MapValue(types.StringType, queryEcsMappingAttrs)
-				if queryEcsDiags.HasError() {
-					diags.Append(queryEcsDiags...)
-				} else {
-					query.EcsMapping = queryEcsMappingValue
-				}
-			} else {
-				query.EcsMapping = types.MapNull(types.StringType)
-			}
+			query.EcsMapping = convertEcsMappingToModel(apiQuery.EcsMapping)
 
 			queries = append(queries, query)
 		}
@@ -720,164 +805,6 @@ func (d *Data) updateReferencesFromAPI(ctx context.Context, references []string)
 		d.References = typeutils.ListValueFrom(ctx, references, types.StringType, path.Root("references"), &diags)
 	} else {
 		d.References = types.ListValueMust(types.StringType, []attr.Value{})
-	}
-
-	return diags
-}
-
-// Helper function to update data view ID from API response
-func (d *Data) updateDataViewIDFromAPI(ctx context.Context, dataViewID *kbapi.SecurityDetectionsAPIDataViewId) diag.Diagnostics {
-	diags := diag.Diagnostics{}
-	_ = ctx
-
-	if dataViewID != nil {
-		d.DataViewID = types.StringValue(*dataViewID)
-	} else {
-		d.DataViewID = types.StringNull()
-	}
-
-	return diags
-}
-
-// Helper function to update timeline ID from API response
-func (d *Data) updateTimelineIDFromAPI(ctx context.Context, timelineID *kbapi.SecurityDetectionsAPITimelineTemplateId) diag.Diagnostics {
-	diags := diag.Diagnostics{}
-	_ = ctx
-
-	if timelineID != nil {
-		d.TimelineID = types.StringValue(*timelineID)
-	} else {
-		d.TimelineID = types.StringNull()
-	}
-
-	return diags
-}
-
-// Helper function to update timeline title from API response
-func (d *Data) updateTimelineTitleFromAPI(ctx context.Context, timelineTitle *kbapi.SecurityDetectionsAPITimelineTemplateTitle) diag.Diagnostics {
-	diags := diag.Diagnostics{}
-	_ = ctx
-
-	if timelineTitle != nil {
-		d.TimelineTitle = types.StringValue(*timelineTitle)
-	} else {
-		d.TimelineTitle = types.StringNull()
-	}
-
-	return diags
-}
-
-// Helper function to update namespace from API response
-func (d *Data) updateNamespaceFromAPI(ctx context.Context, namespace *kbapi.SecurityDetectionsAPIAlertsIndexNamespace) diag.Diagnostics {
-	diags := diag.Diagnostics{}
-	_ = ctx
-
-	if namespace != nil {
-		d.Namespace = types.StringValue(*namespace)
-	} else {
-		d.Namespace = types.StringNull()
-	}
-
-	return diags
-}
-
-// Helper function to update rule name override from API response
-func (d *Data) updateRuleNameOverrideFromAPI(ctx context.Context, ruleNameOverride *kbapi.SecurityDetectionsAPIRuleNameOverride) diag.Diagnostics {
-	diags := diag.Diagnostics{}
-	_ = ctx
-
-	if ruleNameOverride != nil {
-		d.RuleNameOverride = types.StringValue(*ruleNameOverride)
-	} else {
-		d.RuleNameOverride = types.StringNull()
-	}
-
-	return diags
-}
-
-// Helper function to update timestamp override from API response
-func (d *Data) updateTimestampOverrideFromAPI(ctx context.Context, timestampOverride *kbapi.SecurityDetectionsAPITimestampOverride) diag.Diagnostics {
-	diags := diag.Diagnostics{}
-	_ = ctx
-
-	if timestampOverride != nil {
-		d.TimestampOverride = types.StringValue(*timestampOverride)
-	} else {
-		d.TimestampOverride = types.StringNull()
-	}
-
-	return diags
-}
-
-// Helper function to update timestamp override fallback disabled from API response
-func (d *Data) updateTimestampOverrideFallbackDisabledFromAPI(
-	ctx context.Context,
-	timestampOverrideFallbackDisabled *kbapi.SecurityDetectionsAPITimestampOverrideFallbackDisabled,
-) diag.Diagnostics {
-	diags := diag.Diagnostics{}
-	_ = ctx
-
-	if timestampOverrideFallbackDisabled != nil {
-		d.TimestampOverrideFallbackDisabled = types.BoolValue(*timestampOverrideFallbackDisabled)
-	} else {
-		d.TimestampOverrideFallbackDisabled = types.BoolNull()
-	}
-
-	return diags
-}
-
-// Helper function to update building block type from API response
-func (d *Data) updateBuildingBlockTypeFromAPI(ctx context.Context, buildingBlockType *kbapi.SecurityDetectionsAPIBuildingBlockType) diag.Diagnostics {
-	diags := diag.Diagnostics{}
-	_ = ctx
-
-	if buildingBlockType != nil {
-		d.BuildingBlockType = types.StringValue(*buildingBlockType)
-	} else {
-		d.BuildingBlockType = types.StringNull()
-	}
-
-	return diags
-}
-
-// Helper function to update license from API response
-func (d *Data) updateLicenseFromAPI(ctx context.Context, license *kbapi.SecurityDetectionsAPIRuleLicense) diag.Diagnostics {
-	diags := diag.Diagnostics{}
-	_ = ctx
-
-	if license != nil {
-		d.License = types.StringValue(*license)
-	} else {
-		d.License = types.StringNull()
-	}
-
-	return diags
-}
-
-// Helper function to update note from API response
-func (d *Data) updateNoteFromAPI(ctx context.Context, note *kbapi.SecurityDetectionsAPIInvestigationGuide) diag.Diagnostics {
-	diags := diag.Diagnostics{}
-	_ = ctx
-
-	if note != nil {
-		d.Note = types.StringValue(*note)
-	} else {
-		d.Note = types.StringNull()
-	}
-
-	return diags
-}
-
-// Helper function to update setup from API response
-func (d *Data) updateSetupFromAPI(ctx context.Context, setup kbapi.SecurityDetectionsAPISetupGuide) diag.Diagnostics {
-	diags := diag.Diagnostics{}
-	_ = ctx
-
-	// Handle setup field - if empty, set to null to maintain consistency with optional schema
-	if setup != "" {
-		d.Setup = types.StringValue(setup)
-	} else {
-		d.Setup = types.StringNull()
 	}
 
 	return diags
@@ -1164,6 +1091,23 @@ func (d *Data) updateThreatFromAPI(ctx context.Context, threat *kbapi.SecurityDe
 	}
 
 	return diags
+}
+
+// convertEcsMappingToModel converts a kbapi ECS mapping pointer to a types.Map.
+func convertEcsMappingToModel(ecsMapping *kbapi.SecurityDetectionsAPIEcsMapping) types.Map {
+	if ecsMapping == nil {
+		return types.MapNull(types.StringType)
+	}
+	attrs := make(map[string]attr.Value, len(*ecsMapping))
+	for key, value := range *ecsMapping {
+		if value.Field != nil {
+			attrs[key] = types.StringPointerValue(value.Field)
+		} else {
+			attrs[key] = types.StringNull()
+		}
+	}
+	result, _ := types.MapValue(types.StringType, attrs)
+	return result
 }
 
 // parseDurationFromAPI converts an API duration to customtypes.Duration

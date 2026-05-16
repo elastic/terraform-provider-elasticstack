@@ -24,7 +24,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-version"
@@ -62,12 +62,13 @@ func TestAccResourcePrebuiltRules(t *testing.T) {
 }
 
 func testAccResourcePrebuiltRules(t *testing.T, spaceID string) {
+	versionutils.SkipIfUnsupported(t, minVersionPrebuiltRules, versionutils.FlavorAny)
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionPrebuiltRules),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"space_id": config.StringVariable(spaceID),
@@ -84,7 +85,6 @@ func testAccResourcePrebuiltRules(t *testing.T, spaceID string) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionPrebuiltRules),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"space_id": config.StringVariable(spaceID),
@@ -97,7 +97,6 @@ func testAccResourcePrebuiltRules(t *testing.T, spaceID string) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionPrebuiltRules),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"space_id": config.StringVariable(spaceID),
@@ -136,7 +135,7 @@ func deleteSingleDetectionRule(t *testing.T, spaceID string) {
 	oapiClient, err := client.GetKibanaOapiClient()
 	require.NoError(t, err)
 
-	resp, err := oapiClient.API.FindRulesWithResponse(t.Context(), &kbapi.FindRulesParams{}, kibanaoapi.SpaceAwarePathRequestEditor(spaceID))
+	resp, err := oapiClient.API.FindRulesWithResponse(t.Context(), &kbapi.FindRulesParams{}, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	require.NoError(t, err)
 	require.Equal(t, 200, resp.StatusCode())
 

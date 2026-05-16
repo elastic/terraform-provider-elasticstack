@@ -22,7 +22,7 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
@@ -54,7 +54,7 @@ func newSecretStore(ctx context.Context, resp *kbapi.PackagePolicy, private priv
 
 	// Remove any saved secret refs not present in the API response.
 	refs := make(map[string]any)
-	for _, r := range schemautil.Deref(resp.SecretReferences) {
+	for _, r := range typeutils.Deref(resp.SecretReferences) {
 		refs[r.Id] = nil
 	}
 
@@ -129,15 +129,15 @@ func HandleRespSecrets(ctx context.Context, resp *kbapi.PackagePolicy, private p
 		}
 	}
 
-	handleVars(schemautil.Deref(resp.Vars))
+	handleVars(typeutils.Deref(resp.Vars))
 	respInputs, err := resp.Inputs.AsPackagePolicyMappedInputs()
 	if err != nil {
 		respInputs = kbapi.PackagePolicyMappedInputs{}
 	}
 	for inputID, input := range respInputs {
-		handleVars(schemautil.Deref(input.Vars))
-		for streamID, stream := range schemautil.Deref(input.Streams) {
-			handleVars(schemautil.Deref(stream.Vars))
+		handleVars(typeutils.Deref(input.Vars))
+		for streamID, stream := range typeutils.Deref(input.Streams) {
+			handleVars(typeutils.Deref(stream.Vars))
 			// write back modified stream
 			if input.Streams != nil {
 				(*input.Streams)[streamID] = stream
@@ -233,14 +233,14 @@ func HandleReqRespSecrets(ctx context.Context, req kbapi.PackagePolicyRequest, r
 		respMapped = kbapi.PackagePolicyMappedInputs{}
 	}
 
-	handleVars(schemautil.Deref(reqMapped.Vars), schemautil.Deref(resp.Vars))
-	for inputID, inputReq := range schemautil.Deref(reqMapped.Inputs) {
+	handleVars(typeutils.Deref(reqMapped.Vars), typeutils.Deref(resp.Vars))
+	for inputID, inputReq := range typeutils.Deref(reqMapped.Inputs) {
 		inputResp := respMapped[inputID]
-		handleVars(schemautil.Deref(inputReq.Vars), schemautil.Deref(inputResp.Vars))
-		streamsResp := schemautil.Deref(inputResp.Streams)
-		for streamID, streamReq := range schemautil.Deref(inputReq.Streams) {
+		handleVars(typeutils.Deref(inputReq.Vars), typeutils.Deref(inputResp.Vars))
+		streamsResp := typeutils.Deref(inputResp.Streams)
+		for streamID, streamReq := range typeutils.Deref(inputReq.Streams) {
 			streamResp := streamsResp[streamID]
-			handleVars(schemautil.Deref(streamReq.Vars), schemautil.Deref(streamResp.Vars))
+			handleVars(typeutils.Deref(streamReq.Vars), typeutils.Deref(streamResp.Vars))
 			// write back modified stream
 			if inputResp.Streams != nil {
 				(*inputResp.Streams)[streamID] = streamResp

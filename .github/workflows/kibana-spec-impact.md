@@ -53,7 +53,8 @@ on:
         if-no-files-found: error
 engine:
   id: claude
-  model: "llm-gateway/gpt-5.4"
+  model: "llm-gateway/gpt-5.5"
+  version: 2.1.98
   env:
     ANTHROPIC_BASE_URL: "https://elastic.litellm-prod.ai/"
     ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_LITELLM_PROXY_API_KEY }}

@@ -51,13 +51,13 @@ resource "elasticstack_elasticsearch_cluster_settings" "my_cluster_settings" {
 
 ### Optional
 
-- `elasticsearch_connection` (Block List, Max: 1) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
-- `persistent` (Block List, Max: 1) Settings will apply across restarts. (see [below for nested schema](#nestedblock--persistent))
-- `transient` (Block List, Max: 1) Settings do not survive a full cluster restart. (see [below for nested schema](#nestedblock--transient))
+- `elasticsearch_connection` (Block List) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `persistent` (Block, Optional) Persistent settings that survive a full cluster restart. (see [below for nested schema](#nestedblock--persistent))
+- `transient` (Block, Optional) Transient settings that are reset on cluster restart. (see [below for nested schema](#nestedblock--transient))
 
 ### Read-Only
 
-- `id` (String) Internal identifier of the resource
+- `id` (String) Internal identifier of the resource.
 
 <a id="nestedblock--elasticsearch_connection"></a>
 ### Nested Schema for `elasticsearch_connection`
@@ -83,9 +83,9 @@ Optional:
 <a id="nestedblock--persistent"></a>
 ### Nested Schema for `persistent`
 
-Required:
+Optional:
 
-- `setting` (Block Set, Min: 1) Defines the setting in the cluster. (see [below for nested schema](#nestedblock--persistent--setting))
+- `setting` (Block Set) Defines the settings in the cluster. (see [below for nested schema](#nestedblock--persistent--setting))
 
 <a id="nestedblock--persistent--setting"></a>
 ### Nested Schema for `persistent.setting`
@@ -104,9 +104,9 @@ Optional:
 <a id="nestedblock--transient"></a>
 ### Nested Schema for `transient`
 
-Required:
+Optional:
 
-- `setting` (Block Set, Min: 1) Defines the setting in the cluster. (see [below for nested schema](#nestedblock--transient--setting))
+- `setting` (Block Set) Defines the settings in the cluster. (see [below for nested schema](#nestedblock--transient--setting))
 
 <a id="nestedblock--transient--setting"></a>
 ### Nested Schema for `transient.setting`

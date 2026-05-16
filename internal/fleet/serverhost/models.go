@@ -21,7 +21,6 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -71,7 +70,7 @@ func (model serverHostModel) toAPICreateModel(ctx context.Context) (body kbapi.P
 
 func (model serverHostModel) toAPIUpdateModel(ctx context.Context) (body kbapi.PutFleetFleetServerHostsItemidJSONRequestBody, diags diag.Diagnostics) {
 	body = kbapi.PutFleetFleetServerHostsItemidJSONRequestBody{
-		HostUrls:  schemautil.SliceRef(typeutils.ListTypeToSliceString(ctx, model.Hosts, path.Root("hosts"), &diags)),
+		HostUrls:  typeutils.SliceRef(typeutils.ListTypeToSliceString(ctx, model.Hosts, path.Root("hosts"), &diags)),
 		IsDefault: model.Default.ValueBoolPointer(),
 		Name:      model.Name.ValueStringPointer(),
 	}

@@ -37,11 +37,12 @@ import (
 var minVersionOutput = version.Must(version.NewVersion("8.6.0"))
 
 func TestAccDataSourceOutputDefault(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionOutput, versionutils.FlavorAny)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("data"),
 				Check: resource.ComposeTestCheckFunc(
@@ -62,13 +63,14 @@ func TestAccDataSourceOutputDefault(t *testing.T) {
 }
 
 func TestAccDataSourceOutputCustomSpace(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionOutput, versionutils.FlavorAny)
+
 	spaceName := "test-" + sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -80,7 +82,6 @@ func TestAccDataSourceOutputCustomSpace(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("data"),
 				ConfigVariables: config.Variables{
@@ -111,11 +112,12 @@ func TestAccDataSourceOutputCustomSpace(t *testing.T) {
 }
 
 func TestAccDataSourceOutputMissingSpace(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionOutput, versionutils.FlavorAny)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("data"),
 				Check: resource.ComposeTestCheckFunc(
@@ -133,6 +135,8 @@ func TestAccDataSourceOutputMissingSpace(t *testing.T) {
 }
 
 func TestAccDataSourceOutputKibanaConnection(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionOutput, versionutils.FlavorAny)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			acctest.PreCheck(t)
@@ -140,7 +144,6 @@ func TestAccDataSourceOutputKibanaConnection(t *testing.T) {
 		},
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("data"),
 				ConfigVariables:          acctest.KibanaConnectionVariables(),

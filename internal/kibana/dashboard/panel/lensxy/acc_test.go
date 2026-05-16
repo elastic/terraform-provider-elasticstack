@@ -1,0 +1,517 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package lensxy_test
+
+import (
+	"testing"
+
+	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/acctest/checks"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/dashboardacctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
+	"github.com/hashicorp/terraform-plugin-testing/config"
+	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+)
+
+// TestAccResourceDashboardXYChartMinimalConfig is a regression test for
+// https://github.com/elastic/terraform-provider-elasticstack/issues/2355.
+// It applies an xy_chart_config that deliberately omits all optional attributes
+// that have Kibana-side defaults (e.g. legend.position, axis.y.scale,
+// decorations.fill_opacity, query.language, data_layer.sampling, …).
+// If the issue is not fixed the first apply step fails with
+// "Provider produced inconsistent result after apply".
+// The second plan-only step verifies no drift remains after a clean apply.
+func TestAccResourceDashboardXYChartMinimalConfig(t *testing.T) {
+	dashboardTitle := "Test Dashboard XY Chart Minimal " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("minimal"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.type", "vis"),
+				),
+			},
+			{
+				// Same config, plan only — must show no changes after a clean apply.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("minimal"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				PlanOnly: true,
+			},
+		},
+	})
+}
+
+const xyChartDataLayerBreakdownExpected = `{"collapse_by":"avg","color":{"mapping":[{"color":{"type":"color_code","value":"#54B399"},"values":["host-a"]}],"mode":"categorical","palette":"default","unassigned":{"type":"color_code","value":"#D3DAE6"}},"column":"host.name","format":{"type":"number"}}` //nolint:lll
+
+const xyChartPresentationReferencesExpected = `[{"id":"acc-ref-id","name":"acc-ref-name","type":"index-pattern"}]`
+
+func TestAccResourceDashboardXYChart_basic(t *testing.T) {
+	dashboardTitle := "Test Dashboard with XY Chart " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "title", dashboardTitle),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.type", "vis"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.h", "15"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.w", "24"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.x", "0"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.y", "0"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.title", "Sample XY Chart"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.description", "Test XY chart visualization"),
+					// Check axis fields
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.axis.x.title.value", "Timestamp"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.axis.x.title.visible", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.axis.y.scale", "linear"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.axis.y.title.value", "Count"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.axis.y.title.visible", "true"),
+					// Check decorations fields
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.decorations.fill_opacity", "0.3"),
+					// Check fitting
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.fitting.type", "none"),
+					// Check legend
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.legend.visibility", "visible"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.legend.position", "right"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.legend.inside", "false"),
+					// Check query
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.query.language", "kql"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.query.expression", ""),
+					// Check layers
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.layers.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.layers.0.type", "line"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.layers.0.data_layer.data_source_json"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.layers.0.data_layer.y.#", "1"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceDashboardXYChart_axis(t *testing.T) {
+	dashboardTitle := "Test Dashboard with XY Chart " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("axis"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.axis.x.ticks", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.axis.x.grid", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.axis.x.label_orientation", "angled"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.axis.x.domain_json"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.axis.y.ticks", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.axis.y.grid", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.axis.y.label_orientation", "horizontal"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.axis.y.domain_json"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.axis.y2.scale", "sqrt"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.axis.y2.title.value", "Rate"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.axis.y2.title.visible", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.axis.y2.ticks", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.axis.y2.grid", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.axis.y2.label_orientation", "vertical"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.axis.y2.domain_json"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceDashboardXYChart_decorations(t *testing.T) {
+	dashboardTitle := "Test Dashboard with XY Chart " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("decorations"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.decorations.line_interpolation", "smooth"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.decorations.minimum_bar_height", "2"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.decorations.fill_opacity", "0.3"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.decorations.show_value_labels", "false"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceDashboardXYChart_filters(t *testing.T) {
+	dashboardTitle := "Test Dashboard with XY Chart " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("filters"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.filters.#", "1"),
+					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.filters.0.filter_json", `{"condition":{"field":"log.level","operator":"is","value":"error"},"type":"condition"}`), //nolint:lll
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceDashboardXYChart_fitting(t *testing.T) {
+	dashboardTitle := "Test Dashboard with XY Chart " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("fitting"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.fitting.type", "linear"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.fitting.dotted", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.fitting.end_value", "nearest"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceDashboardXYChart_legend_outside(t *testing.T) {
+	dashboardTitle := "Test Dashboard with XY Chart " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("legend_outside"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.legend.inside", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.legend.position", "right"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.legend.size", "l"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.legend.truncate_after_lines", "3"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.legend.statistics.#", "2"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.legend.statistics.0", "avg"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.legend.statistics.1", "max"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceDashboardXYChart_legend_inside(t *testing.T) {
+	dashboardTitle := "Test Dashboard with XY Chart " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("legend_inside"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.legend.inside", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.legend.columns", "2"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.legend.alignment", "top_left"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.legend.truncate_after_lines", "2"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.legend.statistics.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.legend.statistics.0", "count"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceDashboardXYChart_layers(t *testing.T) {
+	dashboardTitle := "Test Dashboard with XY Chart " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("layers"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.layers.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.layers.0.data_layer.ignore_global_filters", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.layers.0.data_layer.sampling", "1"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.layers.0.data_layer.x_json"),
+					checks.TestCheckResourceAttrJSONSubset(
+						"elasticstack_kibana_dashboard.test",
+						"panels.0.vis_config.by_value.xy_chart_config.layers.0.data_layer.breakdown_by_json",
+						xyChartDataLayerBreakdownExpected,
+					),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.layers.0.data_layer.y.#", "1"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.layers.0.data_layer.y.0.config_json"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceDashboardXYChart_layers_reference(t *testing.T) {
+	dashboardTitle := "Test Dashboard with XY Chart " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("layers_reference"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.layers.#", "2"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.layers.1.type", "reference_lines"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.layers.1.reference_line_layer.data_source_json"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.layers.1.reference_line_layer.ignore_global_filters", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.layers.1.reference_line_layer.sampling", "0.5"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.layers.1.reference_line_layer.thresholds.#", "1"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.layers.1.reference_line_layer.thresholds.0.value_json"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("layers_reference"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				ResourceName:      "elasticstack_kibana_dashboard.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"panels.0.vis_config.by_value.xy_chart_config.title",
+					"panels.0.vis_config.by_value.xy_chart_config.axis.x.domain_json",
+					"panels.0.vis_config.by_value.xy_chart_config.axis.x.grid",
+					"panels.0.vis_config.by_value.xy_chart_config.axis.x.label_orientation",
+					"panels.0.vis_config.by_value.xy_chart_config.axis.x.ticks",
+					"panels.0.vis_config.by_value.xy_chart_config.axis.y.domain_json",
+					"panels.0.vis_config.by_value.xy_chart_config.axis.y.grid",
+					"panels.0.vis_config.by_value.xy_chart_config.axis.y.label_orientation",
+					"panels.0.vis_config.by_value.xy_chart_config.axis.y.ticks",
+					"panels.0.vis_config.by_value.xy_chart_config.decorations.fill_opacity",
+					"panels.0.vis_config.by_value.xy_chart_config.decorations.line_interpolation",
+					"panels.0.vis_config.by_value.xy_chart_config.decorations.point_visibility",
+					"panels.0.vis_config.by_value.xy_chart_config.decorations.show_current_time_marker",
+					"panels.0.vis_config.by_value.xy_chart_config.decorations.show_end_zones",
+					"panels.0.vis_config.by_value.xy_chart_config.legend.truncate_after_lines",
+					"panels.0.vis_config.by_value.xy_chart_config.layers.0.data_layer.data_source_json",
+					"panels.0.vis_config.by_value.xy_chart_config.layers.0.data_layer.y.0.config_json",
+					"panels.0.vis_config.by_value.xy_chart_config.layers.1.reference_line_layer.data_source_json",
+					"panels.0.vis_config.by_value.xy_chart_config.layers.1.reference_line_layer.thresholds.0.value_json",
+				},
+			},
+		},
+	})
+}
+
+func TestAccResourceDashboardXYChart_chartTimeRangeLifecycle(t *testing.T) {
+	dashboardTitle := "Test Dashboard XY chart time_range lifecycle " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("step_explicit"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "time_range.from", "now-7d"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "time_range.to", "now"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.time_range.from", "now-30d"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.time_range.to", "now-1d"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("step_inherit_null"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "time_range.from", "now-7d"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.time_range"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("step_explicit_90d"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.time_range.from", "now-90d"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.time_range.to", "now-7d"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("step_inherit_null_again"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.time_range"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("step_inherit_null_again"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				PlanOnly: true,
+			},
+		},
+	})
+}
+
+func TestAccResourceDashboardXYChart_lensPresentationFields(t *testing.T) {
+	dashboardTitle := "Test Dashboard XY presentation " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+	targetTitle := "Test Dashboard XY presentation target " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("presentation_step1_hide_title_true"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+					"target_title":    config.StringVariable(targetTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.hide_title", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.hide_border", "true"),
+					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.references_json", xyChartPresentationReferencesExpected),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.drilldowns.#", "3"),
+					resource.TestCheckResourceAttrPair(
+						"elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.drilldowns.0.dashboard_drilldown.dashboard_id",
+						"elasticstack_kibana_dashboard.target", "dashboard_id",
+					),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.drilldowns.0.dashboard_drilldown.label", "Go to target"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.drilldowns.0.dashboard_drilldown.trigger", "on_apply_filter"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.drilldowns.1.discover_drilldown.label", "Open Discover"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.drilldowns.1.discover_drilldown.trigger", "on_apply_filter"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.drilldowns.2.url_drilldown.url", "https://example.com/{{event.field}}"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.drilldowns.2.url_drilldown.label", "External"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.drilldowns.2.url_drilldown.trigger", "on_click_value"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("presentation_step2_hide_title_false"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+					"target_title":    config.StringVariable(targetTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.hide_title", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.hide_border", "true"),
+					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.references_json", xyChartPresentationReferencesExpected),
+					resource.TestCheckResourceAttrPair(
+						"elasticstack_kibana_dashboard.test", "panels.0.vis_config.by_value.xy_chart_config.drilldowns.0.dashboard_drilldown.dashboard_id",
+						"elasticstack_kibana_dashboard.target", "dashboard_id",
+					),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("presentation_step2_hide_title_false"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+					"target_title":    config.StringVariable(targetTitle),
+				},
+				PlanOnly: true,
+			},
+		},
+	})
+}

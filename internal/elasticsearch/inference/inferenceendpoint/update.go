@@ -19,65 +19,28 @@ package inferenceendpoint
 
 import (
 	"context"
-	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
-func (r *inferenceEndpointResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+func updateInferenceEndpoint(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.WriteRequest[Data]) (entitycore.WriteResult[Data], diag.Diagnostics) {
 	var diags diag.Diagnostics
-
-	var plan Data
-	diags.Append(req.Plan.Get(ctx, &plan)...)
-	if diags.HasError() {
-		resp.Diagnostics.Append(diags...)
-		return
-	}
-
-	var state Data
-	diags.Append(req.State.Get(ctx, &state)...)
-	if diags.HasError() {
-		resp.Diagnostics.Append(diags...)
-		return
-	}
-
-	client, clientDiags := r.Client().GetElasticsearchClient(ctx, plan.ElasticsearchConnection)
-	diags.Append(clientDiags...)
-	if diags.HasError() {
-		resp.Diagnostics.Append(diags...)
-		return
-	}
+	plan := req.Plan
+	resourceID := req.WriteID
 
 	update, modelDiags := plan.toUpdateModel(ctx)
 	diags.Append(modelDiags...)
 	if diags.HasError() {
-		resp.Diagnostics.Append(diags...)
-		return
+		return entitycore.WriteResult[Data]{Model: plan}, diags
 	}
 
-	updateDiags := elasticsearch.UpdateInferenceEndpoint(ctx, client, update)
-	diags.Append(updateDiags...)
+	diags.Append(elasticsearch.UpdateInferenceEndpoint(ctx, client, resourceID, plan.TaskType.ValueString(), update)...)
 	if diags.HasError() {
-		resp.Diagnostics.Append(diags...)
-		return
+		return entitycore.WriteResult[Data]{Model: plan}, diags
 	}
 
-	plan.ID = state.ID
-
-	readData, readDiags := r.read(ctx, plan)
-	diags.Append(readDiags...)
-	if diags.HasError() {
-		resp.Diagnostics.Append(diags...)
-		return
-	}
-
-	if readData == nil {
-		diags.AddError("Not Found", fmt.Sprintf("Inference endpoint %q was not found after update", plan.InferenceID.ValueString()))
-		resp.Diagnostics.Append(diags...)
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, readData)...)
+	return entitycore.WriteResult[Data]{Model: plan}, diags
 }

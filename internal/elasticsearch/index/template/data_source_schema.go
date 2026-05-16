@@ -19,26 +19,20 @@ package template
 
 import (
 	"context"
-
-	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
+	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
-	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	dschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (d *DataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
-	resp.Schema = dataSourceSchema()
-}
-
-func dataSourceSchema() dschema.Schema {
+func getDataSourceSchema(_ context.Context) dschema.Schema {
 	return dschema.Schema{
 		MarkdownDescription: mdDescIndexTemplateDataSource,
 		Blocks: map[string]dschema.Block{
-			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(),
-			"data_stream":              dataSourceDataStreamBlock(),
-			"template":                 dataSourceTemplateBlock(),
+			"data_stream": dataSourceDataStreamBlock(),
+			"template":    dataSourceTemplateBlock(),
 		},
 		Attributes: map[string]dschema.Attribute{
 			"id": dschema.StringAttribute{
@@ -104,7 +98,7 @@ func dataSourceTemplateBlock() dschema.SingleNestedBlock {
 			"mappings": dschema.StringAttribute{
 				MarkdownDescription: descTemplateMappings,
 				Computed:            true,
-				CustomType:          jsontypes.NormalizedType{},
+				CustomType:          esindex.MappingsType{},
 			},
 			"settings": dschema.StringAttribute{
 				MarkdownDescription: descTemplateSettings,
@@ -174,7 +168,7 @@ func dataSourceTemplateLifecycleBlock() dschema.SingleNestedBlock {
 
 func dataSourceTemplateDataStreamOptionsBlock() dschema.SingleNestedBlock {
 	return dschema.SingleNestedBlock{
-		MarkdownDescription: descDataStreamOptionsBlockDataSource,
+		MarkdownDescription: datastreamoptions.BlockDescriptionDataSource,
 		Blocks: map[string]dschema.Block{
 			"failure_store": dataSourceTemplateFailureStoreBlock(),
 		},
@@ -183,10 +177,10 @@ func dataSourceTemplateDataStreamOptionsBlock() dschema.SingleNestedBlock {
 
 func dataSourceTemplateFailureStoreBlock() dschema.SingleNestedBlock {
 	return dschema.SingleNestedBlock{
-		MarkdownDescription: descFailureStoreBlock,
+		MarkdownDescription: datastreamoptions.FailureStoreBlockDescription,
 		Attributes: map[string]dschema.Attribute{
 			"enabled": dschema.BoolAttribute{
-				MarkdownDescription: descFailureStoreEnabled,
+				MarkdownDescription: datastreamoptions.FailureStoreEnabledDescription,
 				Computed:            true,
 			},
 		},
@@ -198,10 +192,10 @@ func dataSourceTemplateFailureStoreBlock() dschema.SingleNestedBlock {
 
 func dataSourceTemplateFailureStoreLifecycleBlock() dschema.SingleNestedBlock {
 	return dschema.SingleNestedBlock{
-		MarkdownDescription: descFailureStoreLifecycleBlock,
+		MarkdownDescription: datastreamoptions.FailureStoreLifecycleBlockDescription,
 		Attributes: map[string]dschema.Attribute{
 			"data_retention": dschema.StringAttribute{
-				MarkdownDescription: descFailureStoreDataRetention,
+				MarkdownDescription: datastreamoptions.FailureStoreDataRetentionDescription,
 				Computed:            true,
 			},
 		},

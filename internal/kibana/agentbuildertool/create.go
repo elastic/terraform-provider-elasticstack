@@ -19,10 +19,9 @@ package agentbuildertool
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
@@ -41,15 +40,7 @@ func (r *ToolResource) Create(ctx context.Context, req resource.CreateRequest, r
 		return
 	}
 
-	supported, sdkDiags := client.EnforceMinVersion(ctx, minKibanaAgentBuilderAPIVersion)
-	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if !supported {
-		resp.Diagnostics.AddError("Unsupported server version",
-			fmt.Sprintf("Agent Builder tools require Elastic Stack v%s or later.", minKibanaAgentBuilderAPIVersion))
+	if !agentbuilder.EnforceVersion(ctx, client, minKibanaAgentBuilderAPIVersion, "tools", &resp.Diagnostics) {
 		return
 	}
 

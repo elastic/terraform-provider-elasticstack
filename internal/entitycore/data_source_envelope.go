@@ -23,7 +23,6 @@ import (
 	"maps"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -33,8 +32,8 @@ import (
 )
 
 // KibanaConnectionField is an embeddable struct that provides the
-// kibana_connection block field for data source models used with
-// [NewKibanaDataSource].
+// kibana_connection block field for Kibana entity models used with
+// [NewKibanaDataSource] or [NewKibanaResource].
 type KibanaConnectionField struct {
 	KibanaConnection types.List `tfsdk:"kibana_connection"`
 }
@@ -71,25 +70,15 @@ type ElasticsearchDataSourceModel interface {
 	GetElasticsearchConnection() types.List
 }
 
-// DataSourceVersionRequirement describes a minimum server version that a
-// Kibana data source model requires before the entity read function is
-// invoked.
-type DataSourceVersionRequirement struct {
-	// MinVersion is the minimum Kibana server version required.
+// VersionRequirement describes a minimum server version that an entity model
+// requires before the envelope invokes the concrete lifecycle callback.
+type VersionRequirement struct {
+	// MinVersion is the minimum server version required.
 	MinVersion version.Version
 	// ErrorMessage is the human-readable detail added to the
 	// "Unsupported server version" diagnostic when the server does not
 	// satisfy MinVersion.
 	ErrorMessage string
-}
-
-// KibanaDataSourceWithVersionRequirements is an optional interface that
-// Kibana data source models may implement to declare pre-read server version
-// requirements. When a decoded model satisfies this interface, the generic
-// Kibana data source envelope evaluates the requirements after scoped client
-// resolution and before invoking the concrete read function.
-type KibanaDataSourceWithVersionRequirements interface {
-	GetVersionRequirements() ([]DataSourceVersionRequirement, diag.Diagnostics)
 }
 
 // genericKibanaDataSource implements [datasource.DataSource] and
@@ -100,7 +89,7 @@ type genericKibanaDataSource[T KibanaDataSourceModel] struct {
 	component      Component
 	dataSourceName string
 	client         *clients.ProviderClientFactory
-	schemaFactory  func() dsschema.Schema
+	schemaFactory  func(context.Context) dsschema.Schema
 	readFunc       func(context.Context, *clients.KibanaScopedClient, T) (T, diag.Diagnostics)
 }
 
@@ -110,7 +99,7 @@ type genericElasticsearchDataSource[T ElasticsearchDataSourceModel] struct {
 	component      Component
 	dataSourceName string
 	client         *clients.ProviderClientFactory
-	schemaFactory  func() dsschema.Schema
+	schemaFactory  func(context.Context) dsschema.Schema
 	readFunc       func(context.Context, *clients.ElasticsearchScopedClient, T) (T, diag.Diagnostics)
 }
 
@@ -132,14 +121,14 @@ type genericElasticsearchDataSource[T ElasticsearchDataSourceModel] struct {
 //	    return entitycore.NewKibanaDataSource[myModel](
 //	        entitycore.ComponentKibana,
 //	        "my_entity",
-//	        getDataSourceSchema, // returns datasource.Schema without kibana_connection block
+//	        getDataSourceSchema, // func(ctx context.Context) datasource.Schema, without kibana_connection block
 //	        readMyEntity,
 //	    )
 //	}
 func NewKibanaDataSource[T KibanaDataSourceModel](
 	component Component,
 	name string,
-	schemaFactory func() dsschema.Schema,
+	schemaFactory func(context.Context) dsschema.Schema,
 	readFunc func(context.Context, *clients.KibanaScopedClient, T) (T, diag.Diagnostics),
 ) datasource.DataSource {
 	return &genericKibanaDataSource[T]{
@@ -159,7 +148,7 @@ func NewKibanaDataSource[T KibanaDataSourceModel](
 func NewElasticsearchDataSource[T ElasticsearchDataSourceModel](
 	component Component,
 	name string,
-	schemaFactory func() dsschema.Schema,
+	schemaFactory func(context.Context) dsschema.Schema,
 	readFunc func(context.Context, *clients.ElasticsearchScopedClient, T) (T, diag.Diagnostics),
 ) datasource.DataSource {
 	return &genericElasticsearchDataSource[T]{
@@ -201,8 +190,8 @@ func (d *genericElasticsearchDataSource[T]) Metadata(_ context.Context, req data
 }
 
 // Schema implements [datasource.DataSource], injecting the connection block.
-func (d *genericKibanaDataSource[T]) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
-	schema := d.schemaFactory()
+func (d *genericKibanaDataSource[T]) Schema(ctx context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+	schema := d.schemaFactory(ctx)
 	blocks := make(map[string]dsschema.Block, len(schema.Blocks)+1)
 	maps.Copy(blocks, schema.Blocks)
 	blocks["kibana_connection"] = providerschema.GetKbFWConnectionBlock()
@@ -211,8 +200,8 @@ func (d *genericKibanaDataSource[T]) Schema(_ context.Context, _ datasource.Sche
 }
 
 // Schema implements [datasource.DataSource], injecting the connection block.
-func (d *genericElasticsearchDataSource[T]) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
-	schema := d.schemaFactory()
+func (d *genericElasticsearchDataSource[T]) Schema(ctx context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+	schema := d.schemaFactory(ctx)
 	blocks := make(map[string]dsschema.Block, len(schema.Blocks)+1)
 	maps.Copy(blocks, schema.Blocks)
 	blocks["elasticsearch_connection"] = providerschema.GetEsFWConnectionBlock()
@@ -235,26 +224,9 @@ func (d *genericKibanaDataSource[T]) Read(ctx context.Context, req datasource.Re
 		return
 	}
 
-	// If the model implements the optional version-requirements interface,
-	// evaluate each requirement before invoking the entity read function.
-	if versionModel, ok := any(&model).(KibanaDataSourceWithVersionRequirements); ok {
-		reqs, vDiags := versionModel.GetVersionRequirements()
-		resp.Diagnostics.Append(vDiags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-
-		for _, vReq := range reqs {
-			supported, sdkDiags := client.EnforceMinVersion(ctx, &vReq.MinVersion)
-			resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-			if resp.Diagnostics.HasError() {
-				return
-			}
-			if !supported {
-				resp.Diagnostics.AddError("Unsupported server version", vReq.ErrorMessage)
-				return
-			}
-		}
+	resp.Diagnostics.Append(enforceVersionRequirements(ctx, client, &model)...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
 	result, diags := d.readFunc(ctx, client, model)

@@ -29,7 +29,7 @@ import (
 // Compile-time assertion: agentDataSourceModel implements the optional
 // version-requirements interface. This ensures the envelope will invoke
 // GetVersionRequirements for the agent data source.
-var _ entitycore.KibanaDataSourceWithVersionRequirements = (*agentDataSourceModel)(nil)
+var _ entitycore.WithVersionRequirements = (*agentDataSourceModel)(nil)
 
 // =============================================================================
 // Subtask 5.1 — NewDataSource() interface compliance

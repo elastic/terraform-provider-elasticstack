@@ -22,16 +22,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 )
 
-var (
-	_ datasource.DataSource              = &enrollmentTokensDataSource{}
-	_ datasource.DataSourceWithConfigure = &enrollmentTokensDataSource{}
-)
-
 // NewDataSource is a helper function to simplify the provider implementation.
 func NewDataSource() datasource.DataSource {
-	return &enrollmentTokensDataSource{DataSourceBase: entitycore.NewDataSourceBase(entitycore.ComponentFleet, "enrollment_tokens")}
-}
-
-type enrollmentTokensDataSource struct {
-	*entitycore.DataSourceBase
+	return entitycore.NewKibanaDataSource[enrollmentTokensModel](
+		entitycore.ComponentFleet,
+		"enrollment_tokens",
+		getDataSourceSchema,
+		readDataSource,
+	)
 }

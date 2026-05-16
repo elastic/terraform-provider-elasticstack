@@ -19,6 +19,9 @@ package transform
 
 import _ "embed"
 
+//go:embed transform.md
+var transformDescription string
+
 //go:embed descriptions/defer_validation.md
 var deferValidationDescription string
 

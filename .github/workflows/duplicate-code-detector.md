@@ -85,6 +85,9 @@ on:
           
           core.info(`Gate reason: ${result.gate_reason}`);
           
+checkout:
+  fetch-depth: 0
+
 permissions:
   contents: read
   issues: read
@@ -94,13 +97,16 @@ permissions:
 safe-outputs:
   create-issue:
     title-prefix: "[duplicate-code] "
-    labels: [duplicate-code, code-quality, automated-analysis]
+    labels: [duplicate-code, code-quality, automated-analysis, triaged]
     max: 3
 
 timeout-minutes: 15
 engine:
   id: claude
-  model: "llm-gateway/gpt-5.4"
+  model: "llm-gateway/claude-sonnet-4-6"
+  args:
+    - "--effort"
+    - "high"
   env:
     ANTHROPIC_BASE_URL: "https://elastic.litellm-prod.ai/"
     ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_LITELLM_PROXY_API_KEY }}

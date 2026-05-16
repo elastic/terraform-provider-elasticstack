@@ -139,7 +139,8 @@ function renderChangelogSection(mergedPRs) {
     }
 
     // Validate structural correctness (invalid customerImpact, empty breaking-changes heading, etc.)
-    const { valid, errors: validationErrors } = validateChangelogSectionFull(parsed);
+    // Release-time rendering skips the breaking-impact match check (enforced at PR time only).
+    const { valid, errors: validationErrors } = validateChangelogSectionFull(parsed, { enforceBreakingImpactMatch: false });
     if (!valid) {
       if (parsed.customerImpact === null) {
         errors.push({

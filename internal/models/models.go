@@ -24,83 +24,6 @@ import (
 	"time"
 )
 
-type BuildDate struct {
-	time.Time
-}
-
-func (b *BuildDate) UnmarshalJSON(dateBytes []byte) error {
-	dateStr := strings.Trim(string(dateBytes), "\"")
-	if dateStr == "null" {
-		b.Time = time.Time{}
-		return nil
-	}
-
-	t, err := time.Parse("2006-01-02T15:04:05Z07:00", dateStr)
-	if err != nil {
-		t, err = time.Parse("2006-01-02", dateStr)
-		if err != nil {
-			return err
-		}
-	}
-
-	b.Time = t
-	return nil
-}
-
-type ClusterInfo struct {
-	Name        string `json:"name"`
-	ClusterName string `json:"cluster_name"`
-	ClusterUUID string `json:"cluster_uuid"`
-	Version     struct {
-		Number                           string    `json:"number"`
-		BuildType                        string    `json:"build_type"`
-		BuildHash                        string    `json:"build_hash"`
-		BuildFlavor                      string    `json:"build_flavor"`
-		BuildDate                        BuildDate `json:"build_date"`
-		BuildSnapshot                    bool      `json:"build_snapshot"`
-		LuceneVersion                    string    `json:"lucene_version"`
-		MinimumWireCompatibilityVersion  string    `json:"minimum_wire_compatibility_version"`
-		MinimumIndexCompatibilityVersion string    `json:"minimum_index_compatibility_version"`
-	} `json:"version"`
-	Tagline string `json:"tagline"`
-}
-
-type User struct {
-	Username     string         `json:"-"`
-	FullName     string         `json:"full_name,omitempty"`
-	Email        string         `json:"email,omitempty"`
-	Roles        []string       `json:"roles"`
-	Password     *string        `json:"password,omitempty"`
-	PasswordHash *string        `json:"password_hash,omitempty"`
-	Metadata     map[string]any `json:"metadata,omitempty"`
-	Enabled      bool           `json:"enabled"`
-}
-
-func (u *User) IsSystemUser() bool {
-	if reserved := u.Metadata["_reserved"]; reserved != nil {
-		isReserved, ok := reserved.(bool)
-		return ok && isReserved
-	}
-	return false
-}
-
-type UserPassword struct {
-	Password     *string `json:"password,omitempty"`
-	PasswordHash *string `json:"password_hash,omitempty"`
-}
-
-type Role struct {
-	Name          string             `json:"-"`
-	Description   *string            `json:"description,omitempty"`
-	Applications  []Application      `json:"applications,omitempty"`
-	Global        map[string]any     `json:"global,omitempty"`
-	Cluster       []string           `json:"cluster,omitempty"`
-	Indices       []IndexPerms       `json:"indices,omitempty"`
-	RemoteIndices []RemoteIndexPerms `json:"remote_indices,omitempty"`
-	Metadata      map[string]any     `json:"metadata,omitempty"`
-	RunAs         []string           `json:"run_as,omitempty"`
-}
-
 type APIKeyRoleDescriptor struct {
 	Name          string             `json:"-"`
 	Applications  []Application      `json:"applications,omitempty"`
@@ -117,42 +40,6 @@ type Restriction struct {
 	Workflows []string `json:"workflows,omitempty"`
 }
 
-type RoleMapping struct {
-	Name          string           `json:"-"`
-	Enabled       bool             `json:"enabled"`
-	Roles         []string         `json:"roles,omitempty"`
-	RoleTemplates []map[string]any `json:"role_templates,omitempty"`
-	Rules         map[string]any   `json:"rules"`
-	Metadata      any              `json:"metadata"`
-}
-
-type APIKey struct {
-	ID               string                          `json:"-"`
-	Name             string                          `json:"name,omitempty"`
-	RolesDescriptors map[string]APIKeyRoleDescriptor `json:"role_descriptors,omitempty"`
-	Expiration       string                          `json:"expiration,omitempty"`
-	Metadata         map[string]any                  `json:"metadata,omitempty"`
-}
-
-type APIKeyCreateResponse struct {
-	ID         string `json:"id,omitempty"`
-	Name       string `json:"name"`
-	Key        string `json:"api_key,omitempty"`
-	EncodedKey string `json:"encoded,omitempty"`
-}
-
-type APIKeyResponse struct {
-	APIKey
-	Type             string                          `json:"type,omitempty"`
-	RolesDescriptors map[string]APIKeyRoleDescriptor `json:"role_descriptors,omitempty"`
-	Expiration       int64                           `json:"expiration,omitempty"`
-	ID               string                          `json:"id,omitempty"`
-	Key              string                          `json:"api_key,omitempty"`
-	EncodedKey       string                          `json:"encoded,omitempty"`
-	Invalidated      bool                            `json:"invalidated,omitempty"`
-	Access           *CrossClusterAPIKeyAccess       `json:"access,omitempty"`
-}
-
 type CrossClusterAPIKeyAccess struct {
 	Search      []CrossClusterAPIKeyAccessEntry `json:"search,omitempty"`
 	Replication []CrossClusterAPIKeyAccessEntry `json:"replication,omitempty"`
@@ -163,22 +50,6 @@ type CrossClusterAPIKeyAccessEntry struct {
 	FieldSecurity          *FieldSecurity `json:"field_security,omitempty"`
 	Query                  *string        `json:"query,omitempty"`
 	AllowRestrictedIndices *bool          `json:"allow_restricted_indices,omitempty"`
-}
-
-type CrossClusterAPIKey struct {
-	ID         string                    `json:"-"`
-	Name       string                    `json:"name,omitempty"`
-	Expiration string                    `json:"expiration,omitempty"`
-	Access     *CrossClusterAPIKeyAccess `json:"access,omitempty"`
-	Metadata   map[string]any            `json:"metadata,omitempty"`
-}
-
-type CrossClusterAPIKeyCreateResponse struct {
-	ID         string `json:"id,omitempty"`
-	Name       string `json:"name"`
-	Key        string `json:"api_key,omitempty"`
-	EncodedKey string `json:"encoded,omitempty"`
-	Expiration int64  `json:"expiration,omitempty"`
 }
 
 type IndexPerms struct {
@@ -214,9 +85,9 @@ type IndexTemplate struct {
 	DataStream                      *DataStreamSettings `json:"data_stream,omitempty"`
 	IndexPatterns                   []string            `json:"index_patterns"`
 	Meta                            map[string]any      `json:"_meta,omitempty"`
-	Priority                        *int                `json:"priority,omitempty"`
+	Priority                        *int64              `json:"priority,omitempty"`
 	Template                        *Template           `json:"template,omitempty"`
-	Version                         *int                `json:"version,omitempty"`
+	Version                         *int64              `json:"version,omitempty"`
 }
 
 type DataStreamSettings struct {
@@ -245,34 +116,16 @@ type Template struct {
 	DataStreamOptions *DataStreamOptions    `json:"data_stream_options,omitempty"`
 }
 
-type IndexTemplatesResponse struct {
-	IndexTemplates []IndexTemplateResponse `json:"index_templates"`
-}
-
-type IndexTemplateResponse struct {
-	Name          string        `json:"name"`
-	IndexTemplate IndexTemplate `json:"index_template"`
-}
-
 type ComponentTemplate struct {
 	Name     string         `json:"-"`
 	Meta     map[string]any `json:"_meta,omitempty"`
 	Template *Template      `json:"template,omitempty"`
-	Version  *int           `json:"version,omitempty"`
-}
-
-type ComponentTemplatesResponse struct {
-	ComponentTemplates []ComponentTemplateResponse `json:"component_templates"`
+	Version  *int64         `json:"version,omitempty"`
 }
 
 type ComponentTemplateResponse struct {
 	Name              string            `json:"name"`
 	ComponentTemplate ComponentTemplate `json:"component_template"`
-}
-
-type PolicyDefinition struct {
-	Policy   Policy `json:"policy"`
-	Modified string `json:"modified_date"`
 }
 
 type Policy struct {
@@ -287,38 +140,6 @@ type Phase struct {
 }
 
 type Action map[string]any
-
-type SnapshotRepository struct {
-	Name     string         `json:"-"`
-	Type     string         `json:"type"`
-	Settings map[string]any `json:"settings"`
-	Verify   bool           `json:"verify"`
-}
-
-type SnapshotPolicy struct {
-	ID         string                `json:"-"`
-	Config     *SnapshotPolicyConfig `json:"config,omitempty"`
-	Name       string                `json:"name"`
-	Repository string                `json:"repository"`
-	Retention  *SnapshortRetention   `json:"retention,omitempty"`
-	Schedule   string                `json:"schedule"`
-}
-
-type SnapshortRetention struct {
-	ExpireAfter *string `json:"expire_after,omitempty"`
-	MaxCount    *int    `json:"max_count,omitempty"`
-	MinCount    *int    `json:"min_count,omitempty"`
-}
-
-type SnapshotPolicyConfig struct {
-	ExpandWildcards    *string          `json:"expand_wildcards,omitempty"`
-	IgnoreUnavailable  *bool            `json:"ignore_unavailable,omitempty"`
-	IncludeGlobalState *bool            `json:"include_global_state,omitempty"`
-	Indices            StringSliceOrCSV `json:"indices,omitempty"`
-	FeatureStates      []string         `json:"feature_states,omitempty"`
-	Metadata           map[string]any   `json:"metadata,omitempty"`
-	Partial            *bool            `json:"partial,omitempty"`
-}
 
 type StringSliceOrCSV []string
 
@@ -375,37 +196,18 @@ type LifecycleSettings struct {
 	Downsampling  []Downsampling `json:"downsampling,omitempty"`
 }
 
-type Downsampling struct {
-	After         string `json:"after,omitempty"`
-	FixedInterval string `json:"fixed_interval,omitempty"`
-}
-
-type DataStream struct {
-	Name           string            `json:"name"`
-	TimestampField TimestampField    `json:"timestamp_field"`
-	Indices        []DataStreamIndex `json:"indices"`
-	Generation     uint64            `json:"generation"`
-	Meta           map[string]any    `json:"_meta"`
-	Status         string            `json:"status"`
-	Template       string            `json:"template"`
-	IlmPolicy      string            `json:"ilm_policy"`
-	Hidden         bool              `json:"hidden"`
-	System         bool              `json:"system"`
-	Replicated     bool              `json:"replicated"`
-}
-
-type DataStreamIndex struct {
-	IndexName string `json:"index_name"`
-	IndexUUID string `json:"index_uuid"`
+type DataStreamLifecycleResponse struct {
+	DataStreams []DataStreamLifecycle `json:"data_streams"`
 }
 
 type DataStreamLifecycle struct {
 	Name      string            `json:"name"`
-	Lifecycle LifecycleSettings `json:"lifecycle,omitzero"`
+	Lifecycle LifecycleSettings `json:"lifecycle"`
 }
 
-type TimestampField struct {
-	Name string `json:"name"`
+type Downsampling struct {
+	After         string `json:"after,omitempty"`
+	FixedInterval string `json:"fixed_interval,omitempty"`
 }
 
 type LogstashPipeline struct {
@@ -416,14 +218,6 @@ type LogstashPipeline struct {
 	PipelineMetadata map[string]any `json:"pipeline_metadata"`
 	PipelineSettings map[string]any `json:"pipeline_settings"`
 	Username         string         `json:"username"`
-}
-
-type Script struct {
-	ID       string         `json:"-"`
-	Language string         `json:"lang"`
-	Source   string         `json:"source"`
-	Params   map[string]any `json:"params"`
-	Context  string         `json:"-"`
 }
 
 type Watch struct {

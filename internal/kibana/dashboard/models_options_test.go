@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -29,7 +30,7 @@ import (
 func Test_dashboardModel_optionsToAPI(t *testing.T) {
 	tests := []struct {
 		name      string
-		options   *optionsModel
+		options   *models.OptionsModel
 		want      *kbapi.KbnDashboardOptions
 		wantDiags bool
 	}{
@@ -40,7 +41,7 @@ func Test_dashboardModel_optionsToAPI(t *testing.T) {
 		},
 		{
 			name: "converts all fields when set to true",
-			options: &optionsModel{
+			options: &models.OptionsModel{
 				HidePanelTitles:  types.BoolValue(true),
 				UseMargins:       types.BoolValue(true),
 				SyncColors:       types.BoolValue(true),
@@ -61,7 +62,7 @@ func Test_dashboardModel_optionsToAPI(t *testing.T) {
 		},
 		{
 			name: "converts all fields when set to false",
-			options: &optionsModel{
+			options: &models.OptionsModel{
 				HidePanelTitles: types.BoolValue(false),
 				UseMargins:      types.BoolValue(false),
 				SyncColors:      types.BoolValue(false),
@@ -78,7 +79,7 @@ func Test_dashboardModel_optionsToAPI(t *testing.T) {
 		},
 		{
 			name: "handles mixed null and set values",
-			options: &optionsModel{
+			options: &models.OptionsModel{
 				HidePanelTitles: types.BoolValue(true),
 				UseMargins:      types.BoolNull(),
 				SyncColors:      types.BoolValue(false),
@@ -95,7 +96,7 @@ func Test_dashboardModel_optionsToAPI(t *testing.T) {
 		},
 		{
 			name: "handles mixed unknown and set values",
-			options: &optionsModel{
+			options: &models.OptionsModel{
 				HidePanelTitles: types.BoolUnknown(),
 				UseMargins:      types.BoolValue(true),
 				SyncColors:      types.BoolUnknown(),
@@ -114,10 +115,10 @@ func Test_dashboardModel_optionsToAPI(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := &dashboardModel{
+			m := &models.DashboardModel{
 				Options: tt.options,
 			}
-			got, diags := m.optionsToAPI()
+			got, diags := dashboardOptionsToAPI(m)
 
 			if tt.wantDiags {
 				assert.True(t, diags.HasError(), "expected diagnostics but got none")
@@ -137,9 +138,9 @@ func Test_dashboardModel_optionsToAPI(t *testing.T) {
 func Test_dashboardModel_mapOptionsFromAPI(t *testing.T) {
 	tests := []struct {
 		name         string
-		stateOptions *optionsModel
+		stateOptions *models.OptionsModel
 		options      *kbapi.KbnDashboardOptions
-		want         *optionsModel
+		want         *models.OptionsModel
 	}{
 		{
 			name: "keeps options nil for API defaults when state omitted options",
@@ -156,7 +157,7 @@ func Test_dashboardModel_mapOptionsFromAPI(t *testing.T) {
 		},
 		{
 			name: "maps API defaults when state already has options",
-			stateOptions: &optionsModel{
+			stateOptions: &models.OptionsModel{
 				HidePanelTitles:  types.BoolValue(false),
 				UseMargins:       types.BoolValue(true),
 				SyncColors:       types.BoolValue(false),
@@ -174,7 +175,7 @@ func Test_dashboardModel_mapOptionsFromAPI(t *testing.T) {
 				AutoApplyFilters: new(true),
 				HidePanelBorders: new(false),
 			},
-			want: &optionsModel{
+			want: &models.OptionsModel{
 				HidePanelTitles:  types.BoolValue(false),
 				UseMargins:       types.BoolValue(true),
 				SyncColors:       types.BoolValue(false),
@@ -193,7 +194,7 @@ func Test_dashboardModel_mapOptionsFromAPI(t *testing.T) {
 				SyncTooltips:    new(true),
 				SyncCursor:      new(true),
 			},
-			want: &optionsModel{
+			want: &models.OptionsModel{
 				HidePanelTitles:  types.BoolValue(true),
 				UseMargins:       types.BoolValue(true),
 				SyncColors:       types.BoolValue(true),
@@ -212,7 +213,7 @@ func Test_dashboardModel_mapOptionsFromAPI(t *testing.T) {
 				SyncTooltips:    new(false),
 				SyncCursor:      new(false),
 			},
-			want: &optionsModel{
+			want: &models.OptionsModel{
 				HidePanelTitles:  types.BoolValue(false),
 				UseMargins:       types.BoolValue(false),
 				SyncColors:       types.BoolValue(false),
@@ -231,7 +232,7 @@ func Test_dashboardModel_mapOptionsFromAPI(t *testing.T) {
 				SyncTooltips:    nil,
 				SyncCursor:      new(true),
 			},
-			want: &optionsModel{
+			want: &models.OptionsModel{
 				HidePanelTitles:  types.BoolValue(true),
 				UseMargins:       types.BoolNull(),
 				SyncColors:       types.BoolValue(false),
@@ -250,7 +251,7 @@ func Test_dashboardModel_mapOptionsFromAPI(t *testing.T) {
 				SyncTooltips:    nil,
 				SyncCursor:      nil,
 			},
-			want: &optionsModel{
+			want: &models.OptionsModel{
 				HidePanelTitles:  types.BoolNull(),
 				UseMargins:       types.BoolNull(),
 				SyncColors:       types.BoolNull(),
@@ -263,7 +264,7 @@ func Test_dashboardModel_mapOptionsFromAPI(t *testing.T) {
 		{
 			name:    "handles empty struct",
 			options: &kbapi.KbnDashboardOptions{},
-			want: &optionsModel{
+			want: &models.OptionsModel{
 				HidePanelTitles:  types.BoolNull(),
 				UseMargins:       types.BoolNull(),
 				SyncColors:       types.BoolNull(),
@@ -277,14 +278,14 @@ func Test_dashboardModel_mapOptionsFromAPI(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := &dashboardModel{
+			m := &models.DashboardModel{
 				Options: tt.stateOptions,
 			}
 			apiOpts := kbapi.KbnDashboardOptions{}
 			if tt.options != nil {
 				apiOpts = *tt.options
 			}
-			got := m.mapOptionsFromAPI(apiOpts)
+			got := dashboardMapOptionsFromAPI(m, apiOpts)
 			assert.Equal(t, tt.want, got)
 		})
 	}
@@ -293,12 +294,12 @@ func Test_dashboardModel_mapOptionsFromAPI(t *testing.T) {
 func Test_optionsModel_toAPI(t *testing.T) {
 	tests := []struct {
 		name  string
-		model optionsModel
+		model models.OptionsModel
 		want  *kbapi.KbnDashboardOptions
 	}{
 		{
 			name: "converts all fields when set to true",
-			model: optionsModel{
+			model: models.OptionsModel{
 				HidePanelTitles: types.BoolValue(true),
 				UseMargins:      types.BoolValue(true),
 				SyncColors:      types.BoolValue(true),
@@ -315,7 +316,7 @@ func Test_optionsModel_toAPI(t *testing.T) {
 		},
 		{
 			name: "converts all fields when set to false",
-			model: optionsModel{
+			model: models.OptionsModel{
 				HidePanelTitles: types.BoolValue(false),
 				UseMargins:      types.BoolValue(false),
 				SyncColors:      types.BoolValue(false),
@@ -332,7 +333,7 @@ func Test_optionsModel_toAPI(t *testing.T) {
 		},
 		{
 			name: "handles mixed null and set values",
-			model: optionsModel{
+			model: models.OptionsModel{
 				HidePanelTitles: types.BoolValue(true),
 				UseMargins:      types.BoolNull(),
 				SyncColors:      types.BoolValue(false),
@@ -349,7 +350,7 @@ func Test_optionsModel_toAPI(t *testing.T) {
 		},
 		{
 			name: "handles mixed unknown and set values",
-			model: optionsModel{
+			model: models.OptionsModel{
 				HidePanelTitles: types.BoolUnknown(),
 				UseMargins:      types.BoolValue(true),
 				SyncColors:      types.BoolUnknown(),
@@ -366,7 +367,7 @@ func Test_optionsModel_toAPI(t *testing.T) {
 		},
 		{
 			name: "handles all null values",
-			model: optionsModel{
+			model: models.OptionsModel{
 				HidePanelTitles: types.BoolNull(),
 				UseMargins:      types.BoolNull(),
 				SyncColors:      types.BoolNull(),
@@ -383,7 +384,7 @@ func Test_optionsModel_toAPI(t *testing.T) {
 		},
 		{
 			name: "handles all unknown values",
-			model: optionsModel{
+			model: models.OptionsModel{
 				HidePanelTitles: types.BoolUnknown(),
 				UseMargins:      types.BoolUnknown(),
 				SyncColors:      types.BoolUnknown(),
@@ -400,7 +401,7 @@ func Test_optionsModel_toAPI(t *testing.T) {
 		},
 		{
 			name:  "handles zero-value model",
-			model: optionsModel{},
+			model: models.OptionsModel{},
 			want: &kbapi.KbnDashboardOptions{
 				HidePanelTitles: nil,
 				UseMargins:      nil,
@@ -411,7 +412,7 @@ func Test_optionsModel_toAPI(t *testing.T) {
 		},
 		{
 			name: "handles single field set",
-			model: optionsModel{
+			model: models.OptionsModel{
 				HidePanelTitles: types.BoolValue(true),
 				UseMargins:      types.BoolNull(),
 				SyncColors:      types.BoolNull(),
@@ -430,7 +431,7 @@ func Test_optionsModel_toAPI(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := tt.model.toAPI()
+			got := optionsToAPI(tt.model)
 			assert.Equal(t, tt.want, got)
 		})
 	}
@@ -440,11 +441,11 @@ func Test_optionsModel_roundTrip(t *testing.T) {
 	// Test round-trip conversion: model -> API -> model
 	tests := []struct {
 		name  string
-		model optionsModel
+		model models.OptionsModel
 	}{
 		{
 			name: "all true values",
-			model: optionsModel{
+			model: models.OptionsModel{
 				HidePanelTitles: types.BoolValue(true),
 				UseMargins:      types.BoolValue(true),
 				SyncColors:      types.BoolValue(true),
@@ -454,7 +455,7 @@ func Test_optionsModel_roundTrip(t *testing.T) {
 		},
 		{
 			name: "all false values",
-			model: optionsModel{
+			model: models.OptionsModel{
 				HidePanelTitles: types.BoolValue(false),
 				UseMargins:      types.BoolValue(false),
 				SyncColors:      types.BoolValue(false),
@@ -464,7 +465,7 @@ func Test_optionsModel_roundTrip(t *testing.T) {
 		},
 		{
 			name: "mixed values",
-			model: optionsModel{
+			model: models.OptionsModel{
 				HidePanelTitles: types.BoolValue(true),
 				UseMargins:      types.BoolValue(false),
 				SyncColors:      types.BoolValue(true),
@@ -477,12 +478,12 @@ func Test_optionsModel_roundTrip(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Convert to API model
-			apiModel := tt.model.toAPI()
+			apiModel := optionsToAPI(tt.model)
 			require.NotNil(t, apiModel)
 
 			// Convert back to Terraform model
-			dm := &dashboardModel{}
-			roundTripModel := dm.mapOptionsFromAPI(*apiModel)
+			dm := &models.DashboardModel{}
+			roundTripModel := dashboardMapOptionsFromAPI(dm, *apiModel)
 			require.NotNil(t, roundTripModel)
 
 			// Compare the original and round-trip models

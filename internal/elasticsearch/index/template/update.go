@@ -22,6 +22,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -60,7 +61,7 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 	}
 
 	resp.Diagnostics.Append(validateIgnoreMissingComponentTemplatesVersion(plan, serverVersion)...)
-	resp.Diagnostics.Append(validateDataStreamOptionsVersion(plan, serverVersion)...)
+	resp.Diagnostics.Append(datastreamoptions.EnforceMinServerVersion(plan.Template, serverVersion)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -78,7 +79,14 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 		return
 	}
 
-	refreshed, found, diags := readIndexTemplate(ctx, client, plan.Name.ValueString())
+	// Build a prior model carrying the existing ID and connection so readIndexTemplate can copy them.
+	// Use configuration (not plan) as the reconciliation reference: plan can carry unknown/Computed
+	// placeholders in nested set elements that then differ from non-refresh planning.
+	priorForRead := config
+	priorForRead.ID = prior.ID
+	priorForRead.ElasticsearchConnection = plan.ElasticsearchConnection
+
+	refreshed, found, diags := readIndexTemplate(ctx, client, plan.Name.ValueString(), priorForRead)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -88,18 +96,6 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 		resp.Diagnostics.AddError("Index template missing after update", plan.Name.ValueString())
 		return
 	}
-
-	resp.Diagnostics.Append(applyTemplateAliasReconciliationFromReference(ctx, &refreshed, &config)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	resp.Diagnostics.Append(canonicalizeTemplateAliasSetInModel(ctx, &refreshed)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	refreshed.ElasticsearchConnection = plan.ElasticsearchConnection
-	refreshed.ID = prior.ID
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &refreshed)...)
 }

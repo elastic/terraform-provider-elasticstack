@@ -18,19 +18,15 @@
 package enrich_test
 
 import (
-	"bytes"
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	_ "embed"
-	"encoding/json"
 	"encoding/pem"
 	"fmt"
-	"io"
 	"math/big"
-	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -40,6 +36,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -141,6 +138,13 @@ func TestAccResourceEnrichPolicyQueryOmitted(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "execute", "true"),
 					checkEnrichPolicyQueryNull("elasticstack_elasticsearch_enrich_policy.policy"),
 				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
+				PlanOnly:                 true,
+				ExpectNonEmptyPlan:       false,
 			},
 		},
 	})
@@ -1209,53 +1213,7 @@ func checkEnrichPolicyTestDataSourceAttrAbsent(attr string) resource.TestCheckFu
 
 func createEnrichPolicyESAccessToken(t *testing.T) string {
 	t.Helper()
-
-	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
-	if err != nil {
-		t.Fatalf("failed to create acceptance testing client: %v", err)
-	}
-	esClient, err := client.GetESClient()
-	if err != nil {
-		t.Fatalf("failed to get Elasticsearch client: %v", err)
-	}
-
-	payload, err := json.Marshal(map[string]string{
-		"grant_type": "password",
-		"username":   os.Getenv("ELASTICSEARCH_USERNAME"),
-		"password":   os.Getenv("ELASTICSEARCH_PASSWORD"),
-	})
-	if err != nil {
-		t.Fatalf("failed to marshal token request: %v", err)
-	}
-
-	resp, err := esClient.Security.GetToken(
-		bytes.NewReader(payload),
-		esClient.Security.GetToken.WithContext(context.Background()),
-	)
-	if err != nil {
-		t.Fatalf("failed to create Elasticsearch access token: %v", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.IsError() {
-		body, readErr := io.ReadAll(resp.Body)
-		if readErr != nil {
-			t.Fatalf("failed to create Elasticsearch access token: status %d (additionally failed to read error response: %v)", resp.StatusCode, readErr)
-		}
-		t.Fatalf("failed to create Elasticsearch access token: status %d: %s", resp.StatusCode, string(body))
-	}
-
-	var tokenResponse struct {
-		AccessToken string `json:"access_token"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&tokenResponse); err != nil {
-		t.Fatalf("failed to decode token response: %v", err)
-	}
-	if tokenResponse.AccessToken == "" {
-		t.Fatalf("token response did not include an access_token")
-	}
-
-	return tokenResponse.AccessToken
+	return acctest.CreateESAccessToken(t)
 }
 
 type enrichPolicyTLSMaterial struct {
@@ -1382,24 +1340,19 @@ func checkEnrichPolicyDestroyFW(name string) func(s *terraform.State) error {
 			if compID.ResourceID != name {
 				return fmt.Errorf("Found unexpectedly enrich policy: %s", compID.ResourceID)
 			}
-			esClient, err := client.GetESClient()
+			typedClient, err := client.GetESClient()
 			if err != nil {
 				return err
 			}
-			req := esClient.EnrichGetPolicy.WithName(compID.ResourceID)
-			res, err := esClient.EnrichGetPolicy(req)
+			res, err := typedClient.Enrich.GetPolicy().Name(compID.ResourceID).Do(context.Background())
 			if err != nil {
+				if esclient.IsNotFoundElasticsearchError(err) {
+					continue
+				}
 				return err
 			}
-			defer res.Body.Close()
-			if res.StatusCode == http.StatusFound {
-				var policiesResponse map[string]any
-				if err := json.NewDecoder(res.Body).Decode(&policiesResponse); err != nil {
-					return err
-				}
-				if len(policiesResponse["policies"].([]any)) != 0 {
-					return fmt.Errorf("Enrich policy (%s) still exists", compID.ResourceID)
-				}
+			if len(res.Policies) != 0 {
+				return fmt.Errorf("Enrich policy (%s) still exists", compID.ResourceID)
 			}
 		}
 		return nil
@@ -1413,20 +1366,19 @@ func checkEnrichPolicyIndexDoesNotExist(name string) resource.TestCheckFunc {
 			return err
 		}
 
-		esClient, err := client.GetESClient()
+		typedClient, err := client.GetESClient()
 		if err != nil {
 			return err
 		}
 
 		indexName := fmt.Sprintf(".enrich-%s", name)
-		res, err := esClient.Indices.Exists([]string{indexName})
+		exists, err := typedClient.Indices.Exists(indexName).Do(context.Background())
 		if err != nil {
 			return err
 		}
-		defer res.Body.Close()
 
-		if res.StatusCode != http.StatusNotFound {
-			return fmt.Errorf("Expected enrich index alias %s to be missing, got status %d", indexName, res.StatusCode)
+		if exists {
+			return fmt.Errorf("Expected enrich index alias %s to be missing, but it exists", indexName)
 		}
 
 		return nil
@@ -1441,8 +1393,12 @@ func checkEnrichPolicyQueryNull(resourceName string) resource.TestCheckFunc {
 		}
 
 		value, ok := rs.Primary.Attributes["query"]
-		if !ok || value == "" || value == "null" {
+		if !ok || value == "" {
 			return nil
+		}
+
+		if value == "null" {
+			return fmt.Errorf("Expected query to be null (TF null), got the string %q — the null-as-string bug is present", value)
 		}
 
 		return fmt.Errorf("Expected query to be null, got %q", value)

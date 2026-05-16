@@ -22,11 +22,12 @@ import (
 	"maps"
 	"reflect"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 )
 
-const semanticTextType = "semantic_text"
+const semanticTextType = index.SemanticTextMappingType
 
 // mappingDiffResult captures the outcome of comparing state and config mappings
 // for the purpose of detecting user-owned changes that require replacement.
@@ -105,11 +106,6 @@ func walkPropertiesForPlan(initialPath path.Path, stateProps, cfgProps map[strin
 				return result
 			}
 
-			// semantic_text special handling: not a replacement if model_settings differs.
-			// Semantic equality handles model_settings auto-populated by Elasticsearch.
-			if stateType == semanticTextType {
-				continue
-			}
 			continue
 		} else if stateHasType || cfgHasType {
 			result.RequiresReplace = true
@@ -235,117 +231,9 @@ func mergeProperties(stateProps, cfgProps map[string]any) map[string]any {
 	return merged
 }
 
-// mappingsSemanticallyEqual compares user-owned mappings against API mappings.
-// It returns true when the API value is a non-drifting superset of user intent,
-// meaning:
-//   - All user-owned properties exist in the API with matching types
-//   - Template-injected extras (extra properties, dynamic_templates, _meta, etc.) are allowed
-//   - semantic_text model_settings auto-populated by ES are allowed
+// mappingsSemanticallyEqual is retained here as a package-level helper so that
+// existing tests in this package can call it directly.  The implementation now
+// delegates to the shared customtypes helper.
 func mappingsSemanticallyEqual(userMappings, apiMappings map[string]any) bool {
-	if len(userMappings) == 0 && len(apiMappings) == 0 {
-		return true
-	}
-
-	for key, userVal := range userMappings {
-		apiVal, ok := apiMappings[key]
-		if !ok {
-			return false
-		}
-
-		if key == "properties" {
-			userProps, ok := userVal.(map[string]any)
-			if !ok {
-				return false
-			}
-			apiProps, ok := apiVal.(map[string]any)
-			if !ok {
-				return false
-			}
-			if !propertiesSemanticallyEqual(userProps, apiProps) {
-				return false
-			}
-			continue
-		}
-
-		if !reflect.DeepEqual(userVal, apiVal) {
-			return false
-		}
-	}
-
-	return true
-}
-
-// propertiesSemanticallyEqual recursively checks that all user-owned properties
-// exist in the API with semantically equal definitions.
-func propertiesSemanticallyEqual(userProps, apiProps map[string]any) bool {
-	for fieldName, userFieldRaw := range userProps {
-		apiFieldRaw, ok := apiProps[fieldName]
-		if !ok {
-			return false
-		}
-		if !fieldSemanticallyEqual(userFieldRaw, apiFieldRaw) {
-			return false
-		}
-	}
-	return true
-}
-
-// fieldSemanticallyEqual checks if two field definitions are semantically equal,
-// allowing for ES-auto-populated values such as semantic_text model_settings.
-func fieldSemanticallyEqual(userFieldRaw, apiFieldRaw any) bool {
-	userField, ok := userFieldRaw.(map[string]any)
-	if !ok {
-		return false
-	}
-	apiField, ok := apiFieldRaw.(map[string]any)
-	if !ok {
-		return false
-	}
-
-	// Determine the field type from user intent
-	userType, userHasType := userField["type"]
-	apiType, apiHasType := apiField["type"]
-
-	if userHasType && apiHasType {
-		if !reflect.DeepEqual(userType, apiType) {
-			return false
-		}
-	} else if userHasType || apiHasType {
-		return false
-	}
-
-	_, userHasModelSettings := userField["model_settings"]
-
-	for key, userVal := range userField {
-		// For semantic_text fields, allow API to have model_settings that the user didn't specify
-		if key == "model_settings" && userHasType && userType == semanticTextType && !userHasModelSettings {
-			continue
-		}
-
-		apiVal, ok := apiField[key]
-		if !ok {
-			return false
-		}
-
-		if key == "properties" {
-			userProps, ok := userVal.(map[string]any)
-			if !ok {
-				return false
-			}
-			apiProps, ok := apiVal.(map[string]any)
-			if !ok {
-				return false
-			}
-			if !propertiesSemanticallyEqual(userProps, apiProps) {
-				return false
-			}
-			continue
-		}
-
-		if !reflect.DeepEqual(userVal, apiVal) {
-			return false
-		}
-	}
-
-	return true
+	return index.MappingsSemanticallyEqual(userMappings, apiMappings)
 }

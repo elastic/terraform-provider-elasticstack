@@ -1,5 +1,9 @@
 node_modules/
 
+# pr-monitoring-loop watcher state (per-PR seen IDs, last-poll timestamps)
+.agents/skills/pr-monitoring-loop/scripts/state/
+false
+
 *.dll
 *.exe
 .DS_Store
@@ -29,7 +33,7 @@ website/node_modules
 *.iml
 *.vscode
 __debug_*
-
+__pycache__
 website/vendor
 
 # Test exclusions
@@ -48,3 +52,13 @@ certs
 
 # Custom linter performance measurement artifacts
 analysis/lint-perf-output/
+
+
+# Local env file (template is .env.template)
+.env
+coverage.out
+
+# Agent task artifacts
+/task*-*.md
+/progress.md
+ci-deadcode-removal-rotation

@@ -20,68 +20,49 @@ package enrich
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *enrichPolicyResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	diags := r.upsert(ctx, req.Plan, &resp.State)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-}
-
-func (r *enrichPolicyResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	diags := r.upsert(ctx, req.Plan, &resp.State)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-}
-
-func (r *enrichPolicyResource) upsert(ctx context.Context, plan tfsdk.Plan, state *tfsdk.State) diag.Diagnostics {
-	var data PolicyDataWithExecute
+// upsertEnrichPolicy handles both Create and Update; the enrich policy PUT API
+// is idempotent so the same callback serves both lifecycle methods. Note: the
+// schema marks every field RequiresReplace so Update only ever runs against an
+// unchanged plan in practice.
+func upsertEnrichPolicy(
+	ctx context.Context,
+	client *clients.ElasticsearchScopedClient,
+	req entitycore.WriteRequest[PolicyDataWithExecute],
+) (entitycore.WriteResult[PolicyDataWithExecute], diag.Diagnostics) {
 	var diags diag.Diagnostics
-	diags.Append(plan.Get(ctx, &data)...)
-	if diags.HasError() {
-		return diags
-	}
+	data := req.Plan
+	resourceID := req.WriteID
 
-	policyName := data.Name.ValueString()
-	client, connDiags := r.Client().GetElasticsearchClient(ctx, data.ElasticsearchConnection)
-	diags.Append(connDiags...)
-	if diags.HasError() {
-		return diags
-	}
-
-	id, sdkDiags := client.ID(ctx, policyName)
+	id, sdkDiags := client.ID(ctx, resourceID)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
-		return diags
+		return entitycore.WriteResult[PolicyDataWithExecute]{Model: data}, diags
 	}
 
-	// Convert framework types to model
 	indices := typeutils.SetTypeAs[string](ctx, data.Indices, path.Empty(), &diags)
 	if diags.HasError() {
-		return diags
+		return entitycore.WriteResult[PolicyDataWithExecute]{Model: data}, diags
 	}
 
 	enrichFields := typeutils.SetTypeAs[string](ctx, data.EnrichFields, path.Empty(), &diags)
 	if diags.HasError() {
-		return diags
+		return entitycore.WriteResult[PolicyDataWithExecute]{Model: data}, diags
 	}
 
 	policy := &models.EnrichPolicy{
 		Type:         data.PolicyType.ValueString(),
-		Name:         policyName,
+		Name:         resourceID,
 		Indices:      indices,
 		MatchField:   data.MatchField.ValueString(),
 		EnrichFields: enrichFields,
@@ -93,19 +74,17 @@ func (r *enrichPolicyResource) upsert(ctx context.Context, plan tfsdk.Plan, stat
 
 	if sdkDiags := elasticsearch.PutEnrichPolicy(ctx, client, policy); sdkDiags.HasError() {
 		diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-		return diags
+		return entitycore.WriteResult[PolicyDataWithExecute]{Model: data}, diags
 	}
 
 	data.ID = types.StringValue(id.String())
 
-	// Execute policy if requested
 	if !data.Execute.IsNull() && !data.Execute.IsUnknown() && data.Execute.ValueBool() {
-		if sdkDiags := elasticsearch.ExecuteEnrichPolicy(ctx, client, policyName); sdkDiags.HasError() {
+		if sdkDiags := elasticsearch.ExecuteEnrichPolicy(ctx, client, resourceID); sdkDiags.HasError() {
 			diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-			return diags
+			return entitycore.WriteResult[PolicyDataWithExecute]{Model: data}, diags
 		}
 	}
 
-	diags.Append(state.Set(ctx, &data)...)
-	return diags
+	return entitycore.WriteResult[PolicyDataWithExecute]{Model: data}, diags
 }

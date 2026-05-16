@@ -27,6 +27,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -77,10 +78,10 @@ func TestAccResourceScript(t *testing.T) {
 					client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 					require.NoError(t, err)
 
-					esClient, err := client.GetESClient()
+					typedClient, err := client.GetESClient()
 					require.NoError(t, err)
 
-					_, err = esClient.DeleteScript(scriptID)
+					_, err = typedClient.Core.DeleteScript(scriptID).Do(context.Background())
 					require.NoError(t, err)
 				},
 				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
@@ -304,18 +305,19 @@ func checkScriptDestroy(s *terraform.State) error {
 		}
 
 		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
-		esClient, err := client.GetESClient()
+		typedClient, err := client.GetESClient()
 		if err != nil {
 			return err
 		}
-		res, err := esClient.GetScript(compID.ResourceID)
+		_, err = typedClient.Core.GetScript(compID.ResourceID).Do(context.Background())
 		if err != nil {
+			if esclient.IsNotFoundElasticsearchError(err) {
+				continue
+			}
 			return err
 		}
 
-		if res.StatusCode != 404 {
-			return fmt.Errorf("script (%s) still exists", compID.ResourceID)
-		}
+		return fmt.Errorf("script (%s) still exists", compID.ResourceID)
 	}
 	return nil
 }

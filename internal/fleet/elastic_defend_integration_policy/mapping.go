@@ -61,10 +61,11 @@ func populateModelFromAPI(ctx context.Context, model *elasticDefendIntegrationPo
 	model.PolicyID = types.StringValue(policy.Id)
 	model.Name = types.StringValue(policy.Name)
 	model.Namespace = types.StringPointerValue(policy.Namespace)
-	// Treat empty string description as null (Kibana may return "" when not set)
-	if policy.Description != nil && *policy.Description == "" {
-		model.Description = types.StringNull()
-	} else {
+	// Kibana retains an existing description when the field is omitted from
+	// requests. When the user does not configure description (null), keep null
+	// regardless of what the API returns — matching the repo pattern that
+	// omitted fields are left unmanaged server-side.
+	if !model.Description.IsNull() {
 		model.Description = types.StringPointerValue(policy.Description)
 	}
 	model.Enabled = types.BoolValue(policy.Enabled)

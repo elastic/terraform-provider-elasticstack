@@ -17,13 +17,16 @@
 
 package spaces
 
-import "github.com/hashicorp/terraform-plugin-framework/types"
+import (
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
 
 // dataSourceModel maps the data source schema data.
 type dataSourceModel struct {
-	ID               types.String `tfsdk:"id"`
-	KibanaConnection types.List   `tfsdk:"kibana_connection"`
-	Spaces           []model      `tfsdk:"spaces"`
+	entitycore.KibanaConnectionField
+	ID     types.String `tfsdk:"id"`
+	Spaces []model      `tfsdk:"spaces"`
 }
 
 // model maps spaces schema data.

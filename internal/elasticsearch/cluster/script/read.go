@@ -19,70 +19,39 @@ package script
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func (r *scriptResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var data Data
-	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
+func readScript(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state Data) (Data, bool, diag.Diagnostics) {
+	readData, diags := readScriptPayload(ctx, client, resourceID, state)
+	if diags.HasError() {
+		return state, false, diags
 	}
-
-	compID, diags := clients.CompositeIDFromStrFw(data.ID.ValueString())
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	scriptID := compID.ResourceID
-
-	// Use the helper read function
-	readData, readDiags := r.read(ctx, scriptID, data)
-	resp.Diagnostics.Append(readDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Check if script was found
 	if readData.ScriptID.IsNull() {
-		tflog.Warn(ctx, fmt.Sprintf(`Script "%s" not found, removing from state`, compID.ResourceID))
-		resp.State.RemoveResource(ctx)
-		return
+		tflog.Warn(ctx, fmt.Sprintf(`Script "%s" not found`, resourceID))
+		return state, false, diags
 	}
 
-	// Preserve connection and ID from original state
-	readData.ElasticsearchConnection = data.ElasticsearchConnection
-	readData.ID = data.ID
-
-	// Preserve context from state as it's not returned by the API
-	readData.Context = data.Context
-
-	// Preserve params from state if API didn't return them
-	if readData.Params.IsNull() && !data.Params.IsNull() {
-		readData.Params = data.Params
+	readData.ElasticsearchConnection = state.ElasticsearchConnection
+	readData.ID = state.ID
+	readData.Context = state.Context
+	if readData.Params.IsNull() && !state.Params.IsNull() {
+		readData.Params = state.Params
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &readData)...)
+	return readData, true, diags
 }
 
-func (r *scriptResource) read(ctx context.Context, scriptID string, stateData Data) (Data, diag.Diagnostics) {
+func readScriptPayload(ctx context.Context, client *clients.ElasticsearchScopedClient, scriptID string, stateData Data) (Data, diag.Diagnostics) {
 	var data Data
 	var diags diag.Diagnostics
-
-	client, fwDiags := r.Client().GetElasticsearchClient(ctx, stateData.ElasticsearchConnection)
-	diags.Append(fwDiags...)
-	if diags.HasError() {
-		return data, diags
-	}
 
 	script, frameworkDiags := elasticsearch.GetScript(ctx, client, scriptID)
 	diags.Append(frameworkDiags...)
@@ -91,32 +60,22 @@ func (r *scriptResource) read(ctx context.Context, scriptID string, stateData Da
 	}
 
 	if script == nil {
-		// Script not found - return empty data with null ScriptId to signal not found
 		data.ScriptID = types.StringNull()
 		return data, diags
 	}
 
 	data.ScriptID = types.StringValue(scriptID)
-	data.Lang = types.StringValue(script.Language)
+	data.Lang = types.StringValue(script.Lang.Name)
+	if script.Lang.Name == "" {
+		data.Lang = types.StringValue(script.Lang.String())
+	}
 	data.Source = types.StringValue(script.Source)
 
-	// Handle params if returned by the API
-	if len(script.Params) > 0 {
-		paramsBytes, err := json.Marshal(script.Params)
-		if err != nil {
-			diags.AddError("Error marshaling script params", err.Error())
-			return data, diags
-		}
-		data.Params = jsontypes.NewNormalizedValue(string(paramsBytes))
-	} else {
+	if stateData.Params.IsNull() {
 		data.Params = jsontypes.NewNormalizedNull()
+	} else {
+		data.Params = stateData.Params
 	}
-	// Note: If params were set but API doesn't return them, they are preserved from state
-	// This maintains backwards compatibility
-
-	// Note: context is not returned by the Elasticsearch API (json:"-" in model)
-	// It's only used during script creation, so we preserve it from state
-	// This is consistent with the SDKv2 implementation
 
 	return data, diags
 }

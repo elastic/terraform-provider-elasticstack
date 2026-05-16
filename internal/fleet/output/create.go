@@ -21,11 +21,8 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/path"
+	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func (r *outputResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -56,13 +53,10 @@ func (r *outputResource) Create(ctx context.Context, req resource.CreateRequest,
 	}
 
 	// If space_ids is set, use space-aware CREATE request
-	var spaceID string
-	if !planModel.SpaceIDs.IsNull() && !planModel.SpaceIDs.IsUnknown() {
-		var tempDiags diag.Diagnostics
-		spaceIDs := typeutils.SetTypeAs[types.String](ctx, planModel.SpaceIDs, path.Root("space_ids"), &tempDiags)
-		if !tempDiags.HasError() && len(spaceIDs) > 0 {
-			spaceID = spaceIDs[0].ValueString()
-		}
+	spaceID, diags := fleetutils.SpaceIDFromSet(ctx, planModel.SpaceIDs)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
 	output, diags := fleet.CreateOutput(ctx, fleetClient, spaceID, body)

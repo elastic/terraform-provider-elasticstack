@@ -1,0 +1,92 @@
+variable "dashboard_title" {
+  type = string
+}
+
+resource "elasticstack_kibana_dashboard" "test" {
+  title       = var.dashboard_title
+  description = "Dashboard with Treemap Panel"
+  time_range = {
+    from = "now-15m"
+    to   = "now"
+  }
+  refresh_interval = {
+    pause = true
+    value = 0
+  }
+  query = {
+    language = "kql"
+    text     = ""
+  }
+  panels = [{
+    type = "vis"
+    grid = {
+      x = 0
+      y = 0
+      w = 24
+      h = 15
+    }
+
+    vis_config = {
+      by_value = {
+        treemap_config = {
+          title       = ""
+          description = ""
+
+          data_source_json = jsonencode({
+            type          = "data_view_spec"
+            index_pattern = "metrics-*"
+
+            time_field = "@timestamp"
+          })
+
+          query = {
+            language   = "kql"
+            expression = ""
+          }
+
+          group_by_json = jsonencode([
+            {
+              operation = "terms"
+              color = {
+                mode    = "categorical"
+                palette = "default"
+                mapping = []
+                unassigned = {
+                  type  = "color_code"
+                  value = "#D3DAE6"
+                }
+              }
+              fields = ["host.name"]
+              limit  = 5
+              rank_by = {
+                direction    = "desc"
+                metric_index = 0
+                type         = "metric"
+              }
+            }
+          ])
+
+          metrics_json = jsonencode([
+            {
+              operation = "count"
+            }
+          ])
+
+
+          legend = {
+            nested               = true
+            size                 = "m"
+            visible              = "auto"
+            truncate_after_lines = 5
+          }
+
+          value_display = {
+            mode             = "percentage"
+            percent_decimals = 2
+          }
+
+        }
+      }
+    }
+  }]
+}

@@ -365,10 +365,7 @@ func TestGetElasticsearchClient_EntityLocalMissingEndpoint(t *testing.T) {
 	client, err := scoped.GetESClient()
 	assert.Nil(t, client)
 	require.Error(t, err)
-	assert.Equal(t,
-		"elasticsearch client is not configured: set elasticsearch.endpoints, elasticsearch_connection.endpoints, or ELASTICSEARCH_ENDPOINTS",
-		err.Error(),
-	)
+	assert.Equal(t, elasticsearchClientNotConfiguredError, err.Error())
 }
 
 // --- Scenario 9: Entity-local kibana_connection with missing endpoint ---

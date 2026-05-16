@@ -4,7 +4,7 @@ Data source implementation: `internal/elasticsearch/ingest`
 
 ## Purpose
 
-Define the schema and runtime behavior for the `elasticstack_elasticsearch_ingest_processor_geoip` data source, which builds an Elasticsearch geoip ingest processor configuration and serializes it to JSON. This data source performs no API calls; it computes a JSON representation and a deterministic hash ID from the configured processor parameters. Note that the geoip processor does not expose the common processor fields (`description`, `if`, `ignore_failure`, `on_failure`, `tag`).
+Define the schema and runtime behavior for the `elasticstack_elasticsearch_ingest_processor_geoip` data source, which builds an Elasticsearch geoip ingest processor configuration and serializes it to JSON. This data source performs no API calls; it computes a JSON representation and a deterministic hash ID from the configured processor parameters. The geoip processor exposes the common processor fields (`description`, `if`, `ignore_failure`, `on_failure`, `tag`) as optional attributes.
 
 ## Schema
 
@@ -16,6 +16,13 @@ data "elasticstack_elasticsearch_ingest_processor_geoip" "example" {
   properties    = <optional, set(string)> # Properties to add to target_field; omitted when unset
   ignore_missing = <optional, bool>      # Silently exit if field does not exist; default false
   first_only    = <optional, bool>       # Return only first match when field is an array; default true
+
+  # Common processor fields
+  description   = <optional, string>     # Description of the processor; omitted when unset
+  if            = <optional, string>     # Condition for running the processor; omitted when unset
+  ignore_failure = <optional, bool>      # Ignore failures for the processor; default false
+  on_failure    = <optional, list(string)> # JSON strings for on_failure actions; omitted when unset
+  tag           = <optional, string>     # Identifier for the processor; omitted when unset
 
   # Computed outputs
   id   = <computed, string>  # Hash of the JSON output
@@ -95,12 +102,65 @@ When `properties` is configured with one or more values, the data source SHALL i
 - WHEN the data source is read
 - THEN the `json` output SHALL not include a `"properties"` key
 
-### Requirement: No common processor fields (REQ-008)
+### Requirement: Common processor fields (REQ-008)
 
-The geoip processor data source SHALL NOT expose `description`, `if`, `ignore_failure`, `on_failure`, or `tag` attributes. These common processor fields are not part of the geoip processor schema.
+The geoip processor data source SHALL expose `description`, `if`, `ignore_failure`, `on_failure`, and `tag` as optional attributes. When configured, each SHALL be included in the serialized JSON. When not configured, each SHALL be omitted from the JSON (except `ignore_failure`, which defaults to `false` and is always included).
 
-#### Scenario: No common fields in schema
+#### Scenario: Common fields in schema
 
 - GIVEN the data source schema definition
 - WHEN inspecting available attributes
-- THEN `description`, `if`, `ignore_failure`, `on_failure`, and `tag` SHALL NOT be valid attributes
+- THEN `description`, `if`, `ignore_failure`, `on_failure`, and `tag` SHALL be valid optional attributes
+
+#### Scenario: Common fields included in JSON when configured
+
+- GIVEN a configuration that sets `description = "geoip lookup"`, `if = "ctx.ip != null"`, `ignore_failure = true`, `on_failure = ['{"set":{"field":"error.message","value":"geoip failed"}}']`, and `tag = "geoip-tag"`
+- WHEN the data source is read
+- THEN `json` SHALL include `"description": "geoip lookup"`, `"if": "ctx.ip != null"`, `"ignore_failure": true`, `"on_failure": [{"set":{"field":"error.message","value":"geoip failed"}}]`, and `"tag": "geoip-tag"`
+
+#### Scenario: Common fields omitted when not configured
+
+- GIVEN a configuration that does not set `description`, `if`, `on_failure`, or `tag`
+- WHEN the data source is read
+- THEN `json` SHALL omit `"description"`, `"if"`, `"on_failure"`, and `"tag"` keys
+- AND `json` SHALL include `"ignore_failure": false`
+
+### Requirement: description field (REQ-009)
+
+The data source SHALL accept an optional `description` string attribute. When configured, it SHALL be included in the serialized JSON under the `"description"` key. When not configured, the key SHALL be omitted.
+
+#### Scenario: description configured
+
+- GIVEN `description = "Lookup geoip for client IP"`
+- WHEN the data source is read
+- THEN `json` SHALL include `"description": "Lookup geoip for client IP"`
+
+### Requirement: if field (REQ-010)
+
+The data source SHALL accept an optional `if` string attribute. When configured, it SHALL be included in the serialized JSON under the `"if"` key. When not configured, the key SHALL be omitted.
+
+#### Scenario: if configured
+
+- GIVEN `if = "ctx.ip != null"`
+- WHEN the data source is read
+- THEN `json` SHALL include `"if": "ctx.ip != null"`
+
+### Requirement: on_failure field (REQ-011)
+
+The data source SHALL accept an optional `on_failure` list of JSON string attributes. When configured with one or more elements, each element SHALL be parsed as JSON and included in the serialized JSON under the `"on_failure"` key as an array of objects. When not configured, the key SHALL be omitted.
+
+#### Scenario: on_failure configured
+
+- GIVEN `on_failure = ['{"set":{"field":"error.message","value":"geoip failed"}}']`
+- WHEN the data source is read
+- THEN `json` SHALL include `"on_failure": [{"set":{"field":"error.message","value":"geoip failed"}}]`
+
+### Requirement: tag field (REQ-012)
+
+The data source SHALL accept an optional `tag` string attribute. When configured, it SHALL be included in the serialized JSON under the `"tag"` key. When not configured, the key SHALL be omitted.
+
+#### Scenario: tag configured
+
+- GIVEN `tag = "geoip-lookup"`
+- WHEN the data source is read
+- THEN `json` SHALL include `"tag": "geoip-lookup"`

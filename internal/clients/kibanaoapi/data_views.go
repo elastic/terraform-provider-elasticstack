@@ -22,6 +22,7 @@ import (
 	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
@@ -37,7 +38,7 @@ func GetDataViews(ctx context.Context, client *Client, spaceID string) ([]kbapi.
 	case http.StatusOK:
 		return *resp.JSON200.DataView, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -48,14 +49,8 @@ func GetDataView(ctx context.Context, client *Client, spaceID string, viewID str
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return resp.JSON200, nil
-	case http.StatusNotFound:
-		return nil, nil
-	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
-	}
+	return handleGetTypedResponse(resp.StatusCode(), resp.Body,
+		func() *kbapi.DataViewsDataViewResponseObject { return resp.JSON200 })
 }
 
 // CreateDataView creates a new data view.
@@ -65,12 +60,8 @@ func CreateDataView(ctx context.Context, client *Client, spaceID string, req kba
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return resp.JSON200, nil
-	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
-	}
+	return handleMutateTypedResponse(resp.StatusCode(), resp.Body,
+		func() *kbapi.DataViewsDataViewResponseObject { return resp.JSON200 })
 }
 
 // UpdateDataView updates an existing data view.
@@ -80,12 +71,24 @@ func UpdateDataView(ctx context.Context, client *Client, spaceID string, viewID 
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return resp.JSON200, nil
-	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+	return handleMutateTypedResponse(resp.StatusCode(), resp.Body,
+		func() *kbapi.DataViewsDataViewResponseObject { return resp.JSON200 })
+}
+
+// UpdateFieldMetadata writes field metadata (e.g. custom_label) for a data view via
+// POST /api/data_views/data_view/{viewId}/fields. It applies space-aware path routing.
+func UpdateFieldMetadata(ctx context.Context, client *Client, spaceID string, viewID string, fields map[string]any) diag.Diagnostics {
+	resp, err := client.API.UpdateFieldsMetadataDefaultWithResponse(
+		ctx,
+		viewID,
+		kbapi.UpdateFieldsMetadataDefaultJSONRequestBody{Fields: fields},
+		kibanautil.SpaceAwarePathRequestEditor(spaceID),
+	)
+	if err != nil {
+		return diagutil.FrameworkDiagFromError(err)
 	}
+
+	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK)
 }
 
 // DeleteDataView deletes an existing data view.
@@ -95,14 +98,7 @@ func DeleteDataView(ctx context.Context, client *Client, spaceID string, viewID 
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return nil
-	case http.StatusNotFound:
-		return nil
-	default:
-		return reportUnknownError(resp.StatusCode(), resp.Body)
-	}
+	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNotFound)
 }
 
 // GetDefaultDataView reads the default data view from the API.
@@ -124,7 +120,7 @@ func GetDefaultDataView(ctx context.Context, client *Client, spaceID string) (*s
 		}
 		return nil, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -135,10 +131,5 @@ func SetDefaultDataView(ctx context.Context, client *Client, spaceID string, req
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return nil
-	default:
-		return reportUnknownError(resp.StatusCode(), resp.Body)
-	}
+	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK)
 }

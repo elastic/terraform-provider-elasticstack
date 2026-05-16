@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -136,15 +137,15 @@ func TestPopulateLensDashboardAppFromAPI_byValuePreservesPractitionerEnriched(t 
 	var cfgUnion kbapi.KbnDashboardPanelTypeLensDashboardApp_Config
 	require.NoError(t, cfgUnion.UnmarshalJSON([]byte(apiStr)))
 	api := kbapi.KbnDashboardPanelTypeLensDashboardApp{Config: cfgUnion}
-	tfPanel := &panelModel{
-		LensDashboardAppConfig: &lensDashboardAppConfigModel{
-			ByValue: &lensDashboardAppByValueModel{
+	tfPanel := &models.PanelModel{
+		LensDashboardAppConfig: &models.LensDashboardAppConfigModel{
+			ByValue: &models.LensDashboardAppByValueModel{
 				ConfigJSON: jsontypes.NewNormalizedValue(priorStr),
 			},
 		},
 	}
-	pm := &panelModel{}
-	diags := populateLensDashboardAppFromAPI(ctx, pm, tfPanel, api)
+	pm := &models.PanelModel{}
+	diags := populateLensDashboardAppFromAPI(ctx, nil, pm, tfPanel, api)
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm.LensDashboardAppConfig)
 	require.NotNil(t, pm.LensDashboardAppConfig.ByValue)
@@ -205,8 +206,9 @@ func TestClassifyLensDashboardAppConfigFromRoot(t *testing.T) {
 func TestLensDashboardAppByValueToAPI_UnknownConfigJSON(t *testing.T) {
 	t.Parallel()
 	_, diags := lensDashboardAppByValueToAPI(
-		lensDashboardAppByValueModel{},
+		models.LensDashboardAppByValueModel{},
 		lensDashboardAPIGrid{},
+		nil,
 		nil,
 	)
 	if !diags.HasError() {
@@ -221,8 +223,8 @@ func TestLensDashboardAppByValueToAPI_sendsConfigAsAPI(t *testing.T) {
 		`"data_source":{"type":"data_view_spec","index_pattern":"metrics-*","time_field":"@timestamp"},` +
 		`"filters":[],"metrics":[],"query":{"language":"kql","expression":""},` +
 		`"styling":{"icon":{"name":"heart"}},"time_range":{"from":"now-15m","to":"now"}}`
-	byValue := lensDashboardAppByValueModel{ConfigJSON: jsontypes.NewNormalizedValue(raw)}
-	item, diags := lensDashboardAppByValueToAPI(byValue, lensDashboardAPIGrid{X: 1, Y: 2, W: float32ptr(8), H: float32ptr(9)}, new("pid"))
+	byValue := models.LensDashboardAppByValueModel{ConfigJSON: jsontypes.NewNormalizedValue(raw)}
+	item, diags := lensDashboardAppByValueToAPI(byValue, lensDashboardAPIGrid{X: 1, Y: 2, W: float32ptr(8), H: float32ptr(9)}, new("pid"), nil)
 	require.False(t, diags.HasError())
 	ld, err := item.AsKbnDashboardPanelTypeLensDashboardApp()
 	require.NoError(t, err)
@@ -232,9 +234,9 @@ func TestLensDashboardAppByValueToAPI_sendsConfigAsAPI(t *testing.T) {
 	require.Equal(t, "t", back["title"])
 
 	// Read path: chart discriminator => by_value.config_json
-	pm := &panelModel{}
-	prior := &lensDashboardAppConfigModel{ByValue: &lensDashboardAppByValueModel{ConfigJSON: jsontypes.NewNormalizedValue(`{}`)}}
-	diags = populateLensDashboardAppFromAPI(ctx, pm, &panelModel{LensDashboardAppConfig: prior}, ld)
+	pm := &models.PanelModel{}
+	prior := &models.LensDashboardAppConfigModel{ByValue: &models.LensDashboardAppByValueModel{ConfigJSON: jsontypes.NewNormalizedValue(`{}`)}}
+	diags = populateLensDashboardAppFromAPI(ctx, nil, pm, &models.PanelModel{LensDashboardAppConfig: prior}, ld)
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm.LensDashboardAppConfig.ByValue)
 	var readRoot map[string]any
@@ -246,9 +248,9 @@ func TestLensDashboardAppByValueToAPI_sendsConfigAsAPI(t *testing.T) {
 func TestLensDashboardAppByReferenceToAPI_mapsFields(t *testing.T) {
 	t.Parallel()
 	mode := "relative"
-	byRef := lensDashboardAppByReferenceModel{
+	byRef := models.LensDashboardAppByReferenceModel{
 		RefID: types.StringValue("lensRef"),
-		TimeRange: lensDashboardAppTimeRangeModel{
+		TimeRange: models.LensDashboardAppTimeRangeModel{
 			From: types.StringValue("2024-01-01T00:00:00.000Z"),
 			To:   types.StringValue("2024-01-01T01:00:00.000Z"),
 			Mode: types.StringValue(mode),
@@ -258,7 +260,14 @@ func TestLensDashboardAppByReferenceToAPI_mapsFields(t *testing.T) {
 		Description:    types.StringValue("D"),
 		HideTitle:      types.BoolValue(true),
 		HideBorder:     types.BoolValue(false),
-		DrilldownsJSON: jsontypes.NewNormalizedValue(`[{"type":"dashboard_drilldown","trigger":"on_apply_filter","label":"x","dashboard_id":"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"}]`),
+		Drilldowns: models.DrilldownsModel{
+			{
+				Dashboard: &models.DrilldownDashboardBlockModel{
+					DashboardID: types.StringValue("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
+					Label:       types.StringValue("x"),
+				},
+			},
+		},
 	}
 	item, diags := lensDashboardAppByReferenceToAPI(byRef, lensDashboardAPIGrid{}, nil)
 	require.False(t, diags.HasError())
@@ -285,15 +294,16 @@ func TestLensDashboardAppByReferenceToAPI_mapsFields(t *testing.T) {
 	require.Len(t, *cfg1.Drilldowns, 1)
 }
 
-func TestLensDashboardAppByReferenceToAPI_emptyDrilldownsJSON_sendsEmptyArray(t *testing.T) {
+func TestLensDashboardAppByReferenceToAPI_emptyStructuredDrilldowns_sendsEmptyArray(t *testing.T) {
 	t.Parallel()
-	byRef := lensDashboardAppByReferenceModel{
+	// Mirrors Terraform `drilldowns = []`: framework reflects a known-empty nested list attribute as non-nil slice (len 0).
+	byRef := models.LensDashboardAppByReferenceModel{
 		RefID: types.StringValue("lensRef"),
-		TimeRange: lensDashboardAppTimeRangeModel{
+		TimeRange: models.LensDashboardAppTimeRangeModel{
 			From: types.StringValue("2024-01-01T00:00:00.000Z"),
 			To:   types.StringValue("2024-01-01T01:00:00.000Z"),
 		},
-		DrilldownsJSON: jsontypes.NewNormalizedValue(`[]`),
+		Drilldowns: explicitEmptyDrilldowns(),
 	}
 	item, diags := lensDashboardAppByReferenceToAPI(byRef, lensDashboardAPIGrid{}, nil)
 	require.False(t, diags.HasError())
@@ -309,11 +319,33 @@ func TestLensDashboardAppByReferenceToAPI_emptyDrilldownsJSON_sendsEmptyArray(t 
 	require.Equal(t, []any{}, wire["drilldowns"])
 }
 
+func TestLensDashboardAppByReferenceToAPI_omittedStructuredDrilldowns_nilSliceSkipsAPIField(t *testing.T) {
+	t.Parallel()
+	byRef := models.LensDashboardAppByReferenceModel{
+		RefID: types.StringValue("lensRef"),
+		TimeRange: models.LensDashboardAppTimeRangeModel{
+			From: types.StringValue("2024-01-01T00:00:00.000Z"),
+			To:   types.StringValue("2024-01-01T01:00:00.000Z"),
+		},
+	}
+	item, diags := lensDashboardAppByReferenceToAPI(byRef, lensDashboardAPIGrid{}, nil)
+	require.False(t, diags.HasError())
+	ld, err := item.AsKbnDashboardPanelTypeLensDashboardApp()
+	require.NoError(t, err)
+	cfg1, err := ld.Config.AsKbnDashboardPanelTypeLensDashboardAppConfig1()
+	require.NoError(t, err)
+	require.Nil(t, cfg1.Drilldowns)
+	var wire map[string]any
+	require.NoError(t, json.Unmarshal(mustJSON(t, ld.Config), &wire))
+	_, has := wire["drilldowns"]
+	require.False(t, has, "omitted drills should omit API drilldowns key/json field where possible")
+}
+
 func TestLensDashboardAppByReferenceToAPI_emptyReferencesJSON_sendsEmptyArray(t *testing.T) {
 	t.Parallel()
-	byRef := lensDashboardAppByReferenceModel{
+	byRef := models.LensDashboardAppByReferenceModel{
 		RefID: types.StringValue("lensRef"),
-		TimeRange: lensDashboardAppTimeRangeModel{
+		TimeRange: models.LensDashboardAppTimeRangeModel{
 			From: types.StringValue("2024-01-01T00:00:00.000Z"),
 			To:   types.StringValue("2024-01-01T01:00:00.000Z"),
 		},
@@ -327,10 +359,10 @@ func TestLensDashboardAppByReferenceToAPI_emptyReferencesJSON_sendsEmptyArray(t 
 	require.NoError(t, err)
 	require.NotNil(t, cfg1.References)
 	require.Empty(t, *cfg1.References)
-	var wire map[string]any
-	require.NoError(t, json.Unmarshal(mustJSON(t, ld.Config), &wire))
-	require.Contains(t, wire, "references")
-	require.Equal(t, []any{}, wire["references"])
+	var wireRefs map[string]any
+	require.NoError(t, json.Unmarshal(mustJSON(t, ld.Config), &wireRefs))
+	require.Contains(t, wireRefs, "references")
+	require.Equal(t, []any{}, wireRefs["references"])
 }
 
 func TestPopulateLensDashboardAppFromAPI_byReferencePath(t *testing.T) {
@@ -350,8 +382,8 @@ func TestPopulateLensDashboardAppFromAPI_byReferencePath(t *testing.T) {
 	var cfgUnion kbapi.KbnDashboardPanelTypeLensDashboardApp_Config
 	require.NoError(t, cfgUnion.FromKbnDashboardPanelTypeLensDashboardAppConfig1(cfg1))
 	api := kbapi.KbnDashboardPanelTypeLensDashboardApp{Config: cfgUnion}
-	pm := &panelModel{}
-	diags := populateLensDashboardAppFromAPI(ctx, pm, nil, api)
+	pm := &models.PanelModel{}
+	diags := populateLensDashboardAppFromAPI(ctx, nil, pm, nil, api)
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm.LensDashboardAppConfig.ByReference)
 	br := pm.LensDashboardAppConfig.ByReference
@@ -361,6 +393,74 @@ func TestPopulateLensDashboardAppFromAPI_byReferencePath(t *testing.T) {
 	require.Equal(t, "absolute", br.TimeRange.Mode.ValueString())
 	require.Equal(t, "T2", br.Title.ValueString())
 	require.Equal(t, "D2", br.Description.ValueString())
+	require.Nil(t, br.Drilldowns)
+}
+
+func TestPopulateLensDashboardAppFromAPI_byReference_keepsPriorDrilldownsWhenAPIOmits(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	priorWant := models.DrilldownsModel{
+		{
+			Dashboard: &models.DrilldownDashboardBlockModel{
+				DashboardID: types.StringValue("dddddddd-dddd-dddd-dddd-dddddddddddd"),
+				Label:       types.StringValue("kept-drill"),
+			},
+		},
+	}
+	tf := models.PanelModel{
+		LensDashboardAppConfig: &models.LensDashboardAppConfigModel{
+			ByReference: &models.LensDashboardAppByReferenceModel{
+				RefID:      types.StringValue("r1"),
+				TimeRange:  models.LensDashboardAppTimeRangeModel{From: types.StringValue("a"), To: types.StringValue("b")},
+				Drilldowns: priorWant,
+			},
+		},
+	}
+	pm := tf
+	apiWire := []byte(`{"ref_id":"r1","time_range":{"from":"a","to":"b"}}`)
+	var cfgUnion kbapi.KbnDashboardPanelTypeLensDashboardApp_Config
+	require.NoError(t, cfgUnion.UnmarshalJSON(apiWire))
+	api := kbapi.KbnDashboardPanelTypeLensDashboardApp{Config: cfgUnion}
+	diags := populateLensDashboardAppFromAPI(ctx, nil, &pm, &tf, api)
+	require.False(t, diags.HasError())
+	got := pm.LensDashboardAppConfig.ByReference.Drilldowns
+	require.Len(t, got, 1)
+	require.NotNil(t, got[0].Dashboard)
+	assertDashboardBlocksEqual(t, priorWant[0].Dashboard, got[0].Dashboard)
+}
+
+func TestLensDashboardAppByReferenceToAPI_discoverAndURLKinds(t *testing.T) {
+	t.Parallel()
+	byRef := models.LensDashboardAppByReferenceModel{
+		RefID: types.StringValue("lensRef"),
+		TimeRange: models.LensDashboardAppTimeRangeModel{
+			From: types.StringValue("2024-01-01T00:00:00.000Z"),
+			To:   types.StringValue("2024-01-01T01:00:00.000Z"),
+		},
+		Drilldowns: models.DrilldownsModel{
+			{
+				Discover: &models.DrilldownDiscoverBlockModel{
+					Label:        types.StringValue("Open Discover"),
+					OpenInNewTab: types.BoolValue(false),
+				},
+			},
+			{
+				URL: &models.DrilldownURLBlockModel{
+					URL:       types.StringValue("https://example.com/{{event.field}}"),
+					Label:     types.StringValue("Open URL"),
+					Trigger:   types.StringValue("on_click_value"),
+					EncodeURL: types.BoolValue(true),
+				},
+			},
+		},
+	}
+	item, diags := lensDashboardAppByReferenceToAPI(byRef, lensDashboardAPIGrid{}, nil)
+	require.False(t, diags.HasError())
+	ld, err := item.AsKbnDashboardPanelTypeLensDashboardApp()
+	require.NoError(t, err)
+	cfg1, err := ld.Config.AsKbnDashboardPanelTypeLensDashboardAppConfig1()
+	require.NoError(t, err)
+	require.Len(t, *cfg1.Drilldowns, 2)
 }
 
 func TestPopulateLensDashboardAppFromAPI_byReferenceRead_drilldowns(t *testing.T) {
@@ -375,23 +475,38 @@ func TestPopulateLensDashboardAppFromAPI_byReferenceRead_drilldowns(t *testing.T
 				"trigger": "on_apply_filter",
 				"label": "Drill label",
 				"dashboard_id": "dddddddd-dddd-dddd-dddd-dddddddddddd"
+			},
+			{
+				"type": "url_drilldown",
+				"url": "https://example.com/",
+				"label": "U",
+				"trigger": "on_click_value"
+			},
+			{
+				"type": "discover_drilldown",
+				"trigger": "on_apply_filter",
+				"label": "Discover me"
 			}
 		]
 	}`
 	var cfgUnion kbapi.KbnDashboardPanelTypeLensDashboardApp_Config
 	require.NoError(t, cfgUnion.UnmarshalJSON([]byte(wire)))
 	api := kbapi.KbnDashboardPanelTypeLensDashboardApp{Config: cfgUnion}
-	pm := &panelModel{}
-	diags := populateLensDashboardAppFromAPI(ctx, pm, nil, api)
+	pm := &models.PanelModel{}
+	diags := populateLensDashboardAppFromAPI(ctx, nil, pm, nil, api)
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm.LensDashboardAppConfig.ByReference)
-	dd := pm.LensDashboardAppConfig.ByReference.DrilldownsJSON
-	require.True(t, typeutils.IsKnown(dd))
-	s := dd.ValueString()
-	require.Contains(t, s, "dashboard_drilldown")
-	require.Contains(t, s, "on_apply_filter")
-	require.Contains(t, s, "Drill label")
-	require.Contains(t, s, "dddddddd-dddd-dddd-dddd-dddddddddddd")
+	dd := pm.LensDashboardAppConfig.ByReference.Drilldowns
+	require.Len(t, dd, 3)
+	require.NotNil(t, dd[0].Dashboard)
+	require.Equal(t, "dddddddd-dddd-dddd-dddd-dddddddddddd", dd[0].Dashboard.DashboardID.ValueString())
+	require.Equal(t, "Drill label", dd[0].Dashboard.Label.ValueString())
+	require.NotNil(t, dd[1].URL)
+	require.Equal(t, "https://example.com/", dd[1].URL.URL.ValueString())
+	require.Equal(t, "U", dd[1].URL.Label.ValueString())
+	require.Equal(t, "on_click_value", dd[1].URL.Trigger.ValueString())
+	require.NotNil(t, dd[2].Discover)
+	require.Equal(t, "Discover me", dd[2].Discover.Label.ValueString())
 }
 
 func TestPopulateLensDashboardAppFromAPI_byValueOnAmbiguousNoPrior(t *testing.T) {
@@ -401,8 +516,8 @@ func TestPopulateLensDashboardAppFromAPI_byValueOnAmbiguousNoPrior(t *testing.T)
 	var cfgUnion kbapi.KbnDashboardPanelTypeLensDashboardApp_Config
 	require.NoError(t, cfgUnion.UnmarshalJSON([]byte(`{"ref_id":"only"}`)))
 	api := kbapi.KbnDashboardPanelTypeLensDashboardApp{Config: cfgUnion}
-	pm := &panelModel{}
-	diags := populateLensDashboardAppFromAPI(ctx, pm, nil, api)
+	pm := &models.PanelModel{}
+	diags := populateLensDashboardAppFromAPI(ctx, nil, pm, nil, api)
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm.LensDashboardAppConfig.ByValue)
 	require.Contains(t, pm.LensDashboardAppConfig.ByValue.ConfigJSON.ValueString(), `"ref_id"`)
@@ -414,13 +529,13 @@ func TestPopulateLensDashboardAppFromAPI_ambiguousPreservesPriorByReference(t *t
 	var cfgUnion kbapi.KbnDashboardPanelTypeLensDashboardApp_Config
 	require.NoError(t, cfgUnion.UnmarshalJSON([]byte(`{"ref_id":"only"}`)))
 	api := kbapi.KbnDashboardPanelTypeLensDashboardApp{Config: cfgUnion}
-	prior := &lensDashboardAppConfigModel{
-		ByReference: &lensDashboardAppByReferenceModel{RefID: types.StringValue("kept")},
+	prior := &models.LensDashboardAppConfigModel{
+		ByReference: &models.LensDashboardAppByReferenceModel{RefID: types.StringValue("kept")},
 	}
-	tf := &panelModel{LensDashboardAppConfig: prior}
+	tf := &models.PanelModel{LensDashboardAppConfig: prior}
 	// Match `mapPanelFromAPI`: seed `pm` from the prior plan/state panel before converters run.
 	pm := *tf
-	diags := populateLensDashboardAppFromAPI(ctx, &pm, tf, api)
+	diags := populateLensDashboardAppFromAPI(ctx, nil, &pm, tf, api)
 	require.False(t, diags.HasError())
 	// Ambiguous API + prior by_reference: no rewrite from API; prior block stays in the seeded panel (REQ-009).
 	require.NotNil(t, pm.LensDashboardAppConfig)

@@ -42,8 +42,8 @@ test('duplicate-code detector workflow safe outputs and compiled lock keep dupli
   const source = workflowSource();
   const lock = lockSource();
   assert.match(source, /title-prefix:\s*"\[duplicate-code\] "/);
-  assert.match(source, /labels:\s*\[duplicate-code, code-quality, automated-analysis\]/);
+  assert.match(source, /labels:\s*\[duplicate-code, code-quality, automated-analysis, triaged\]/);
   assert.match(source, /max:\s*3/);
-  assert.match(lock, /"create_issue":\{"labels":\["duplicate-code","code-quality","automated-analysis"\],"max":3,"title_prefix":"\[duplicate-code\] "\}/);
+  assert.match(lock, /"create_issue":\{"labels":\["duplicate-code","code-quality","automated-analysis","triaged"\],"max":3,"title_prefix":"\[duplicate-code\] "\}/);
   assert.match(lock, /Maximum 3 issue\(s\) can be created\./);
 });

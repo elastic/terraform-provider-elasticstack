@@ -18,6 +18,7 @@
 package ilm_test
 
 import (
+	"context"
 	_ "embed"
 	"fmt"
 	"os"
@@ -26,6 +27,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/ilm"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
@@ -33,6 +35,7 @@ import (
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/stretchr/testify/require"
 )
 
 var downsampleNoTimeoutVersionLimit = version.Must(version.NewVersion("8.5.0"))
@@ -75,9 +78,10 @@ func TestAccResourceILM(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
 				},
-				ImportState:       true,
-				ImportStateVerify: true,
-				ResourceName:      "elasticstack_elasticsearch_index_lifecycle.test",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_destroy"},
+				ResourceName:            "elasticstack_elasticsearch_index_lifecycle.test",
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -248,19 +252,18 @@ func checkResourceILMDestroy(s *terraform.State) error {
 		}
 		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
-		esClient, err := client.GetESClient()
+		typedClient, err := client.GetESClient()
 		if err != nil {
 			return err
 		}
-		req := esClient.ILM.GetLifecycle.WithPolicy(compID.ResourceID)
-		res, err := esClient.ILM.GetLifecycle(req)
+		_, err = typedClient.Ilm.GetLifecycle().Policy(compID.ResourceID).Do(context.Background())
 		if err != nil {
+			if esclient.IsNotFoundElasticsearchError(err) {
+				continue
+			}
 			return err
 		}
-
-		if res.StatusCode != 404 {
-			return fmt.Errorf("ILM policy (%s) still exists", compID.ResourceID)
-		}
+		return fmt.Errorf("ILM policy (%s) still exists", compID.ResourceID)
 	}
 	return nil
 }
@@ -531,13 +534,14 @@ func TestAccResourceILMSearchableSnapshotPhases(t *testing.T) {
 func TestAccResourceILMHotActions(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
+	versionutils.SkipIfUnsupported(t, allowWriteAfterShrinkVersionLimit, versionutils.FlavorAny)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceILMDestroy,
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(allowWriteAfterShrinkVersionLimit),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("number_of_shards"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -555,7 +559,6 @@ func TestAccResourceILMHotActions(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(allowWriteAfterShrinkVersionLimit),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("max_primary_shard_size"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -578,13 +581,14 @@ func TestAccResourceILMHotActions(t *testing.T) {
 func TestAccResourceILMWarmDownsampleAndShrink(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
+	versionutils.SkipIfUnsupported(t, allowWriteAfterShrinkVersionLimit, versionutils.FlavorAny)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceILMDestroy,
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(allowWriteAfterShrinkVersionLimit),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -605,7 +609,6 @@ func TestAccResourceILMWarmDownsampleAndShrink(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(allowWriteAfterShrinkVersionLimit),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -631,13 +634,14 @@ func TestAccResourceILMWarmDownsampleAndShrink(t *testing.T) {
 func TestAccResourceILMColdAllocateAndDownsample(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
+	versionutils.SkipIfUnsupported(t, downsampleVersionLimit, versionutils.FlavorAny)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceILMDestroy,
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(downsampleVersionLimit),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -656,7 +660,6 @@ func TestAccResourceILMColdAllocateAndDownsample(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(downsampleVersionLimit),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -823,6 +826,8 @@ func TestAccResourceILM_warmMigrateDisabled(t *testing.T) {
 }
 
 func TestAccResourceILM_shrinkAllowWriteAfterShrink(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, allowWriteAfterShrinkVersionLimit, versionutils.FlavorAny)
+
 	policyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
@@ -831,7 +836,6 @@ func TestAccResourceILM_shrinkAllowWriteAfterShrink(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(allowWriteAfterShrinkVersionLimit),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("shrink_write"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -890,4 +894,66 @@ func checkILMDownsampleDefaultWaitTimeout(resourceName, attribute string) resour
 
 		return resource.TestCheckResourceAttr(resourceName, attribute, "1d")(s)
 	}
+}
+
+// TestAccResourceILM_deleteWithReferencedIndex validates that an ILM policy
+// with force_destroy = true can be destroyed even when a regular index still
+// references it via index.lifecycle.name.
+func TestAccResourceILM_deleteWithReferencedIndex(t *testing.T) {
+	policyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	indexName := "test-ilm-idx-" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceILMDestroy,
+		Steps: []resource.TestStep{
+			// Step 1: Create the ILM policy and a regular index.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+					"index_name":  config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_index", "name", indexName),
+				),
+			},
+			// Step 2: Assign the ILM policy to the index via the ES API.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+					"index_name":  config.StringVariable(indexName),
+				},
+				PreConfig: func() {
+					client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+					require.NoError(t, err)
+					ctx := context.Background()
+
+					diags := esclient.UpdateIndexSettings(ctx, client, indexName, map[string]any{
+						"index.lifecycle.name": policyName,
+					})
+					require.Empty(t, diags)
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "name", policyName),
+				),
+			},
+			// Step 3: Destroy the ILM policy (force_destroy clears references first).
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("destroy"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+					"index_name":  config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_index", "name", indexName),
+				),
+			},
+		},
+	})
 }

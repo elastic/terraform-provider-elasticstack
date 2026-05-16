@@ -19,7 +19,9 @@ package apikey
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -44,13 +46,29 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 		return
 	}
 
-	finalModel, diags := r.read(ctx, planModel)
-	resp.Diagnostics.Append(diags...)
+	compID, idDiags := clients.CompositeIDFromStrFw(planModel.GetID().ValueString())
+	resp.Diagnostics.Append(idDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, *finalModel)...)
+	esClient, clientDiags := r.Client().GetElasticsearchClient(ctx, planModel.GetElasticsearchConnection())
+	resp.Diagnostics.Append(clientDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	finalModel, found, readDiags := readAPIKey(ctx, esClient, compID.ResourceID, planModel)
+	resp.Diagnostics.Append(readDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if !found {
+		resp.Diagnostics.AddError("API Key Not Found After Update", fmt.Sprintf("API key %q was not found immediately after update.", compID.ResourceID))
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, finalModel)...)
 }
 
 func (r *Resource) updateCrossClusterAPIKey(ctx context.Context, planModel tfModel) diag.Diagnostics {
@@ -60,13 +78,13 @@ func (r *Resource) updateCrossClusterAPIKey(ctx context.Context, planModel tfMod
 	}
 
 	// Handle cross-cluster API key update
-	crossClusterModel, modelDiags := planModel.toCrossClusterAPIModel(ctx)
+	updateRequest, modelDiags := planModel.toUpdateCrossClusterAPIRequest(ctx)
 	diags.Append(modelDiags...)
 	if diags.HasError() {
 		return diags
 	}
 
-	diags.Append(elasticsearch.UpdateCrossClusterAPIKey(client, crossClusterModel)...)
+	diags.Append(elasticsearch.UpdateCrossClusterAPIKey(ctx, client, planModel.KeyID.ValueString(), updateRequest)...)
 	return diags
 }
 
@@ -76,13 +94,19 @@ func (r *Resource) updateAPIKey(ctx context.Context, planModel tfModel) diag.Dia
 		return diags
 	}
 
+	// Validate restriction support
+	diags.Append(r.validateRestrictionSupport(ctx, planModel)...)
+	if diags.HasError() {
+		return diags
+	}
+
 	// Handle regular API key update
-	apiModel, modelDiags := r.buildAPIModel(ctx, planModel)
+	updateRequest, modelDiags := planModel.toUpdateAPIRequest()
 	diags.Append(modelDiags...)
 	if diags.HasError() {
 		return diags
 	}
 
-	diags.Append(elasticsearch.UpdateAPIKey(client, apiModel)...)
+	diags.Append(elasticsearch.UpdateAPIKey(ctx, client, planModel.KeyID.ValueString(), updateRequest)...)
 	return diags
 }

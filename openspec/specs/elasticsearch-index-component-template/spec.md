@@ -1,10 +1,10 @@
 # `elasticstack_elasticsearch_component_template` — Schema and Functional Requirements
 
-Resource implementation: `internal/elasticsearch/index/component_template.go`
+Resource implementation: `internal/elasticsearch/index/componenttemplate/`
 
 ## Purpose
 
-Define schema and behavior for the Elasticsearch component template resource: API usage, identity/import, connection, mapping, and read-time alias routing preservation.
+Define schema and behavior for the Elasticsearch component template resource: API usage, identity/import, connection handling, template mapping, read-time alias routing preservation, `template.data_stream_options` mapping, version gating, and state upgrade behavior.
 
 ## Schema
 
@@ -39,18 +39,24 @@ resource "elasticstack_elasticsearch_component_template" "example" {
     alias {
       name           = <required, string>
       filter         = <optional, json string>
-      index_routing  = <optional, string>
-      is_hidden      = <optional, bool>
-      is_write_index = <optional, bool>
-      routing        = <optional, string>
-      search_routing = <optional, string>
+      index_routing  = <optional+computed, string, default "">
+      is_hidden      = <optional+computed, bool, default false>
+      is_write_index = <optional+computed, bool, default false>
+      routing        = <optional+computed, string, default "">
+      search_routing = <optional+computed, string, default "">
+    }
+    data_stream_options {
+      failure_store {
+        enabled = <optional, bool>
+        lifecycle {
+          data_retention = <optional, string>
+        }
+      }
     }
   }
 }
 ```
-
 ## Requirements
-
 ### Requirement: Component template CRUD APIs (REQ-001–REQ-004)
 
 The resource SHALL use the Elasticsearch Put component template API to create and update component templates ([docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-component-template.html)). The resource SHALL use the Elasticsearch Get component template API to read component templates ([docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-get-component-template.html)). The resource SHALL use the Elasticsearch Delete component template API to delete component templates ([docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-delete-component-template.html)). When Elasticsearch returns a non-success status for create, update, read, or delete requests (other than not found on read), the resource SHALL surface the API error to Terraform diagnostics.
@@ -71,9 +77,9 @@ The resource SHALL expose a computed `id` in the format `<cluster_uuid>/<templat
 - WHEN import completes
 - THEN the id SHALL be stored for subsequent operations
 
-### Requirement: Lifecycle and connection (REQ-009–REQ-011)
+### Requirement: Lifecycle, connection, and framework implementation (REQ-009–REQ-012)
 
-Changing `name` SHALL require replacement (`ForceNew`). By default, the resource SHALL use the provider-level Elasticsearch client. When `elasticsearch_connection` is configured, the resource SHALL construct and use a resource-scoped Elasticsearch client for all API calls.
+Changing `name` SHALL require replacement (`ForceNew`). By default, the resource SHALL use the provider-level Elasticsearch client. When `elasticsearch_connection` is configured, the resource SHALL construct and use a resource-scoped Elasticsearch client for all API calls. The resource SHALL be implemented on the Terraform Plugin Framework and SHALL preserve the existing Terraform type name, schema shape, and import behavior while using the shared Elasticsearch entitycore envelope behavior defined in `openspec/specs/entitycore-resource-envelope/spec.md`.
 
 #### Scenario: Resource-level client
 
@@ -81,7 +87,13 @@ Changing `name` SHALL require replacement (`ForceNew`). By default, the resource
 - WHEN API calls run
 - THEN they SHALL use the resource-scoped client
 
-### Requirement: Create, update, read, delete (REQ-012–REQ-016)
+#### Scenario: Framework implementation preserves schema shape
+
+- GIVEN the resource is served by the Plugin Framework implementation
+- WHEN Terraform loads the resource schema
+- THEN the schema SHALL continue to expose the same `elasticstack_elasticsearch_component_template` type name, `elasticsearch_connection` block, attributes, and import format
+
+### Requirement: Create, update, read, delete (REQ-013–REQ-017)
 
 On create/update, the resource SHALL construct a `models.ComponentTemplate` request body from Terraform state and submit it with the Put component template API. After a successful Put request, the resource SHALL set `id` and perform a read to refresh state. On read, the resource SHALL parse `id`, fetch the component template by name, and remove the resource from state when the template is not found. If the Get component template API returns a result count other than exactly one template, the read path SHALL return an error diagnostic. On delete, the resource SHALL parse `id` and delete the template identified by the parsed resource identifier.
 
@@ -91,9 +103,9 @@ On create/update, the resource SHALL construct a `models.ComponentTemplate` requ
 - WHEN read runs
 - THEN the provider SHALL return an error diagnostic
 
-### Requirement: JSON and alias mapping (REQ-017–REQ-021)
+### Requirement: JSON and alias mapping (REQ-018–REQ-022)
 
-`metadata` SHALL be validated as JSON by schema and parsed as JSON during create/update; if parsing fails, the resource SHALL return an error diagnostic and SHALL not call the Put API. `template.mappings` and `template.settings` SHALL be validated as JSON objects by schema and parsed into objects during create/update. `template.alias.filter` SHALL be validated as JSON by schema and parsed into an object when non-empty during create/update. `template.alias` SHALL be mapped as a set keyed by alias name in API payload/state conversion. Alias routing and flag fields (`index_routing`, `is_hidden`, `is_write_index`, `routing`, `search_routing`) SHALL be copied directly between Terraform values and API model fields.
+`metadata` SHALL be validated as JSON by schema and parsed as JSON during create/update; if parsing fails, the resource SHALL return an error diagnostic and SHALL not call the Put API. `template.mappings` SHALL be validated as a JSON object by schema and `template.settings` SHALL use the provider's index settings custom type and both SHALL be parsed into objects during create/update. `template.alias.filter` SHALL be validated as a JSON object by schema and parsed into an object when non-empty during create/update. `template.alias` SHALL be mapped as a set keyed by alias name in API payload/state conversion. Alias routing and flag fields (`index_routing`, `is_hidden`, `is_write_index`, `routing`, `search_routing`) SHALL be copied directly between Terraform values and API model fields, with `index_routing`, `routing`, and `search_routing` defaulting to the empty string and `is_hidden` and `is_write_index` defaulting to `false` when omitted.
 
 #### Scenario: Invalid mappings JSON
 
@@ -101,12 +113,56 @@ On create/update, the resource SHALL construct a `models.ComponentTemplate` requ
 - WHEN create/update runs
 - THEN the provider SHALL error before Put
 
-### Requirement: Read state mapping (REQ-022–REQ-025)
+### Requirement: Read state mapping (REQ-022–REQ-026)
 
 On read, the resource SHALL set `name` and `version` from the API response. On read, when API `metadata` is present, it SHALL be serialized into a JSON string and stored in state. On read, when API `template` is present, it SHALL be flattened into `template` state, including aliases, mappings, and settings. User-defined alias `routing` SHALL be preserved during read/refresh, because this field may be omitted by the API response and therefore SHALL not be overwritten from response data.
+
+For `template.mappings`, the resource SHALL treat Elasticsearch stringified scalar echoes as semantically equal to practitioner-authored scalar JSON values when the effective mapping value is otherwise unchanged. This equivalence SHALL apply to scalar leaf values such as booleans and numbers and SHALL suppress drift and post-apply consistency errors caused only by Elasticsearch returning a string form of the same scalar.
+
+For `template.settings`, the resource SHALL treat Elasticsearch stringified scalar echoes as semantically equal to practitioner-authored scalar JSON values when the effective setting value is otherwise unchanged. This equivalence SHALL include JSON `null`, so a practitioner-authored `null` setting value SHALL compare equal to an Elasticsearch `"null"` string echo.
 
 #### Scenario: Routing preserved on refresh
 
 - GIVEN user-configured alias `routing` and API omits routing fields
 - WHEN read runs
 - THEN user `routing` SHALL not be lost from state
+
+#### Scenario: Mappings boolean scalar echo is non-drifting
+
+- GIVEN `template.mappings` is configured with a scalar boolean value
+- AND Elasticsearch returns the same value as a JSON string scalar during refresh
+- WHEN apply completes or a later refresh runs
+- THEN the provider SHALL treat the mapping values as semantically equal
+- AND Terraform SHALL NOT report a provider inconsistent-result error or follow-up drift for that difference alone
+
+#### Scenario: Settings null scalar echo is non-drifting
+
+- GIVEN `template.settings` is configured with a JSON `null` scalar value
+- AND Elasticsearch returns the same value as the string scalar `"null"` during refresh
+- WHEN apply completes or a later refresh runs
+- THEN the provider SHALL treat the settings values as semantically equal
+- AND Terraform SHALL NOT report a provider inconsistent-result error or follow-up drift for that difference alone
+
+### Requirement: Data stream options support (REQ-027–REQ-031)
+
+The resource SHALL support an optional `template.data_stream_options` block with nested `failure_store` and `failure_store.lifecycle` blocks. During create and update, when `template.data_stream_options` is configured, the provider SHALL map `failure_store.enabled` and `failure_store.lifecycle.data_retention` into the Elasticsearch component template request body. During read, when Elasticsearch returns `data_stream_options.failure_store`, the provider SHALL flatten those values back into Terraform state. The `template.data_stream_options` block SHALL require `failure_store` when the block is present. The provider SHALL return an error diagnostic when `template.data_stream_options` is configured against an Elasticsearch version lower than `9.1.0`.
+
+#### Scenario: Unsupported server version
+
+- GIVEN `template.data_stream_options` is configured
+- AND the target Elasticsearch version is lower than `9.1.0`
+- WHEN create or update runs
+- THEN the provider SHALL return an error diagnostic
+- AND it SHALL not call the Put API
+
+### Requirement: State upgrade to schema version 1 (REQ-032–REQ-035)
+
+The resource SHALL define schema version `1` and provide an upgrade path from version `0`. During state upgrade from version `0`, the provider SHALL collapse legacy list-shaped `template` blocks to the Plugin Framework object-or-null representation. During that upgrade, the provider SHALL ensure the migrated `template` object contains explicit keys for `alias`, `mappings`, `settings`, and `data_stream_options`, using null when absent. During that upgrade, the provider SHALL normalize legacy alias state by converting SDK-style duplicated `index_routing` and `search_routing` values into the Plugin Framework routing-only representation and by converting empty-string alias `filter` values to null.
+
+#### Scenario: Upgrade legacy template state
+
+- GIVEN version `0` state containing list-shaped `template` data and legacy alias routing values
+- WHEN the provider upgrades state to schema version `1`
+- THEN the provider SHALL collapse `template` to object-or-null form
+- AND it SHALL preserve equivalent alias routing semantics without creating spurious diffs
+

@@ -25,6 +25,9 @@ var ingestPipelineOnFailureDescription string
 //go:embed descriptions/pipeline_processors.md
 var ingestPipelineProcessorsDescription string
 
+//go:embed processor_bytes_data_source.md
+var processorBytesDataSourceDescription string
+
 //go:embed descriptions/append_media_type.md
 var processorAppendMediaTypeDescription string
 
@@ -34,8 +37,26 @@ var processorAppendDataSourceDescription string
 //go:embed descriptions/circle_data_source.md
 var processorCircleDataSourceDescription string
 
+//go:embed processor_community_id_data_source.md
+var processorCommunityIDDataSourceDescription string
+
 //go:embed descriptions/community_id_seed.md
 var communityIDSeedDescription string
+
+//go:embed processor_convert_data_source.md
+var processorConvertDataSourceDescription string
+
+//go:embed processor_csv_data_source.md
+var processorCSVDataSourceDescription string
+
+//go:embed processor_date_data_source.md
+var processorDateDataSourceDescription string
+
+//go:embed processor_date_index_name_data_source.md
+var processorDateIndexNameDataSourceDescription string
+
+//go:embed processor_dissect_data_source.md
+var processorDissectDataSourceDescription string
 
 //go:embed descriptions/dot_expander_data_source.md
 var processorDotExpanderDataSourceDescription string
@@ -49,11 +70,20 @@ var processorEnrichDataSourceDescription string
 //go:embed descriptions/fail_data_source.md
 var processorFailDataSourceDescription string
 
+//go:embed processor_foreach_data_source.md
+var foreachDataSourceDescription string
+
 //go:embed descriptions/fingerprint_data_source.md
 var processorFingerprintDataSourceDescription string
 
+//go:embed processor_geoip_data_source.md
+var processorGeoIPDataSourceDescription string
+
 //go:embed descriptions/geoip_database_file.md
 var processorGeoIPDatabaseFileDescription string
+
+//go:embed processor_grok_data_source.md
+var processorGrokDataSourceDescription string
 
 //go:embed descriptions/gsub_data_source.md
 var processorGsubDataSourceDescription string
@@ -78,6 +108,9 @@ var processorKVDataSourceDescription string
 
 //go:embed descriptions/lowercase_data_source.md
 var processorLowercaseDataSourceDescription string
+
+//go:embed processor_network_direction_data_source.md
+var processorNetworkDirectionDataSourceDescription string
 
 //go:embed descriptions/pipeline_data_source.md
 var processorPipelineDataSourceDescription string

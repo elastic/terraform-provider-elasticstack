@@ -23,6 +23,7 @@ import (
 	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
@@ -43,17 +44,11 @@ func GetSlo(ctx context.Context, client *Client, spaceID string, sloID string) (
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		if resp.JSON200 == nil {
-			return nil, diag.Diagnostics{diag.NewErrorDiagnostic(
-				"Get SLO returned an empty response",
-				"Get SLO returned an empty response body with HTTP status 200.",
-			)}
-		}
-		return resp.JSON200, nil
+		return diagutil.UnwrapJSON200(resp.JSON200, "SLO")
 	case http.StatusNotFound:
 		return nil, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -63,7 +58,7 @@ func EnableSlo(ctx context.Context, client *Client, spaceID, sloID string) diag.
 	if err != nil {
 		return diag.Diagnostics{diag.NewErrorDiagnostic("Unable to enable SLO", err.Error())}
 	}
-	return checkSloEnableDisableResponse(resp.StatusCode(), resp.Body)
+	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNoContent)
 }
 
 // DisableSlo calls the Kibana API to disable an existing SLO.
@@ -72,16 +67,7 @@ func DisableSlo(ctx context.Context, client *Client, spaceID, sloID string) diag
 	if err != nil {
 		return diag.Diagnostics{diag.NewErrorDiagnostic("Unable to disable SLO", err.Error())}
 	}
-	return checkSloEnableDisableResponse(resp.StatusCode(), resp.Body)
-}
-
-func checkSloEnableDisableResponse(statusCode int, body []byte) diag.Diagnostics {
-	switch statusCode {
-	case http.StatusOK, http.StatusNoContent:
-		return nil
-	default:
-		return reportUnknownError(statusCode, body)
-	}
+	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNoContent)
 }
 
 // CreateSlo creates a new SLO in the given space and returns the created SLO's ID.
@@ -97,15 +83,9 @@ func CreateSlo(ctx context.Context, client *Client, spaceID string, req kbapi.SL
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		if resp.JSON200 == nil {
-			return nil, diag.Diagnostics{diag.NewErrorDiagnostic(
-				"Create SLO returned an empty response",
-				"Create SLO returned an empty response body with HTTP status 200.",
-			)}
-		}
-		return resp.JSON200, nil
+		return diagutil.UnwrapJSON200(resp.JSON200, "SLO")
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -130,7 +110,7 @@ func UpdateSlo(ctx context.Context, client *Client, spaceID string, sloID string
 			"The SLO with ID "+sloID+" was not found in space "+spaceID+".",
 		)}
 	default:
-		return reportUnknownError(resp.StatusCode(), resp.Body)
+		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -152,7 +132,7 @@ func DeleteSlo(ctx context.Context, client *Client, spaceID string, sloID string
 	case http.StatusNotFound:
 		return nil
 	default:
-		return reportUnknownError(resp.StatusCode(), resp.Body)
+		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -170,15 +150,9 @@ func FindSlos(ctx context.Context, client *Client, spaceID string, params *kbapi
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		if resp.JSON200 == nil {
-			return nil, diag.Diagnostics{diag.NewErrorDiagnostic(
-				"Find SLOs returned an empty response",
-				"Find SLOs returned an empty response body with HTTP status 200.",
-			)}
-		}
-		return resp.JSON200, nil
+		return diagutil.UnwrapJSON200(resp.JSON200, "SLOs")
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -205,60 +179,55 @@ func SloResponseToModel(spaceID string, res *kbapi.SLOsSloWithSummaryResponse) *
 	}
 }
 
-// ResponseIndicatorToCreateIndicator converts the response indicator union type to the
-// create request indicator union type using ValueByDiscriminator and a type switch.
-func ResponseIndicatorToCreateIndicator(s kbapi.SLOsSloWithSummaryResponse_Indicator) (kbapi.SLOsCreateSloRequest_Indicator, error) {
+// sloIndicatorTarget is implemented by both SLOsCreateSloRequest_Indicator and
+// SLOsUpdateSloRequest_Indicator, allowing a single switch to serve both.
+type sloIndicatorTarget interface {
+	FromSLOsIndicatorPropertiesApmAvailability(v kbapi.SLOsIndicatorPropertiesApmAvailability) error
+	FromSLOsIndicatorPropertiesApmLatency(v kbapi.SLOsIndicatorPropertiesApmLatency) error
+	FromSLOsIndicatorPropertiesCustomKql(v kbapi.SLOsIndicatorPropertiesCustomKql) error
+	FromSLOsIndicatorPropertiesCustomMetric(v kbapi.SLOsIndicatorPropertiesCustomMetric) error
+	FromSLOsIndicatorPropertiesHistogram(v kbapi.SLOsIndicatorPropertiesHistogram) error
+	FromSLOsIndicatorPropertiesTimesliceMetric(v kbapi.SLOsIndicatorPropertiesTimesliceMetric) error
+}
+
+// applyResponseIndicator resolves the discriminator from s and calls the
+// matching From* method on target. Adding a new indicator type requires
+// updating only this function.
+func applyResponseIndicator(s kbapi.SLOsSloWithSummaryResponse_Indicator, target sloIndicatorTarget) error {
 	v, err := s.ValueByDiscriminator()
 	if err != nil {
-		return kbapi.SLOsCreateSloRequest_Indicator{}, fmt.Errorf("unknown indicator type: %w", err)
+		return fmt.Errorf("unknown indicator type: %w", err)
 	}
-
-	var ret kbapi.SLOsCreateSloRequest_Indicator
 	switch ind := v.(type) {
 	case kbapi.SLOsIndicatorPropertiesApmAvailability:
-		err = ret.FromSLOsIndicatorPropertiesApmAvailability(ind)
+		return target.FromSLOsIndicatorPropertiesApmAvailability(ind)
 	case kbapi.SLOsIndicatorPropertiesApmLatency:
-		err = ret.FromSLOsIndicatorPropertiesApmLatency(ind)
+		return target.FromSLOsIndicatorPropertiesApmLatency(ind)
 	case kbapi.SLOsIndicatorPropertiesCustomKql:
-		err = ret.FromSLOsIndicatorPropertiesCustomKql(ind)
+		return target.FromSLOsIndicatorPropertiesCustomKql(ind)
 	case kbapi.SLOsIndicatorPropertiesCustomMetric:
-		err = ret.FromSLOsIndicatorPropertiesCustomMetric(ind)
+		return target.FromSLOsIndicatorPropertiesCustomMetric(ind)
 	case kbapi.SLOsIndicatorPropertiesHistogram:
-		err = ret.FromSLOsIndicatorPropertiesHistogram(ind)
+		return target.FromSLOsIndicatorPropertiesHistogram(ind)
 	case kbapi.SLOsIndicatorPropertiesTimesliceMetric:
-		err = ret.FromSLOsIndicatorPropertiesTimesliceMetric(ind)
+		return target.FromSLOsIndicatorPropertiesTimesliceMetric(ind)
 	default:
-		return ret, fmt.Errorf("unhandled indicator type: %T", v)
+		return fmt.Errorf("unhandled indicator type: %T", v)
 	}
-	return ret, err
+}
+
+// ResponseIndicatorToCreateIndicator converts the response indicator union type to the
+// create request indicator union type.
+func ResponseIndicatorToCreateIndicator(s kbapi.SLOsSloWithSummaryResponse_Indicator) (kbapi.SLOsCreateSloRequest_Indicator, error) {
+	var ret kbapi.SLOsCreateSloRequest_Indicator
+	return ret, applyResponseIndicator(s, &ret)
 }
 
 // ResponseIndicatorToUpdateIndicator converts the response indicator union type to the
-// update request indicator union type using ValueByDiscriminator and a type switch.
+// update request indicator union type.
 func ResponseIndicatorToUpdateIndicator(s kbapi.SLOsSloWithSummaryResponse_Indicator) (kbapi.SLOsUpdateSloRequest_Indicator, error) {
-	v, err := s.ValueByDiscriminator()
-	if err != nil {
-		return kbapi.SLOsUpdateSloRequest_Indicator{}, fmt.Errorf("unknown indicator type: %w", err)
-	}
-
 	var ret kbapi.SLOsUpdateSloRequest_Indicator
-	switch ind := v.(type) {
-	case kbapi.SLOsIndicatorPropertiesApmAvailability:
-		err = ret.FromSLOsIndicatorPropertiesApmAvailability(ind)
-	case kbapi.SLOsIndicatorPropertiesApmLatency:
-		err = ret.FromSLOsIndicatorPropertiesApmLatency(ind)
-	case kbapi.SLOsIndicatorPropertiesCustomKql:
-		err = ret.FromSLOsIndicatorPropertiesCustomKql(ind)
-	case kbapi.SLOsIndicatorPropertiesCustomMetric:
-		err = ret.FromSLOsIndicatorPropertiesCustomMetric(ind)
-	case kbapi.SLOsIndicatorPropertiesHistogram:
-		err = ret.FromSLOsIndicatorPropertiesHistogram(ind)
-	case kbapi.SLOsIndicatorPropertiesTimesliceMetric:
-		err = ret.FromSLOsIndicatorPropertiesTimesliceMetric(ind)
-	default:
-		return ret, fmt.Errorf("unhandled indicator type: %T", v)
-	}
-	return ret, err
+	return ret, applyResponseIndicator(s, &ret)
 }
 
 // TransformGroupBy converts a slice of group-by field names to the kbapi union type.
@@ -287,24 +256,13 @@ func TransformGroupBy(groupBy []string, supportsGroupByList bool) *kbapi.SLOsGro
 
 // TransformGroupByFromResponse converts the kbapi GroupBy union back to a string slice.
 func TransformGroupByFromResponse(groupBy kbapi.SLOsGroupBy) []string {
-	// Try string first
 	if s, err := groupBy.AsSLOsGroupBy0(); err == nil {
 		return []string{s}
 	}
 
-	// Try array
 	if arr, err := groupBy.AsSLOsGroupBy1(); err == nil {
 		return arr
 	}
 
 	return nil
-}
-
-// TagsToPtr returns nil for a nil slice or a pointer to the slice otherwise,
-// allowing the API to distinguish "not set" from "explicitly empty".
-func TagsToPtr(tags []string) *[]string {
-	if tags == nil {
-		return nil
-	}
-	return &tags
 }

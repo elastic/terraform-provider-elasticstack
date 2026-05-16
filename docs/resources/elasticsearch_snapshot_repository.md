@@ -45,13 +45,13 @@ resource "elasticstack_elasticsearch_snapshot_repository" "my_fs_repo" {
 
 ### Optional
 
-- `azure` (Block List, Max: 1) Support for using Azure Blob storage as a repository for Snapshot/Restore. See the [repository Azure plugin documentation](https://www.elastic.co/guide/en/elasticsearch/plugins/current/repository-azure.html) for more details. (see [below for nested schema](#nestedblock--azure))
-- `elasticsearch_connection` (Block List, Max: 1) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
-- `fs` (Block List, Max: 1) Shared filesystem repository. Repositories of this type use a shared filesystem to store snapshots. This filesystem must be accessible to all master and data nodes in the cluster. (see [below for nested schema](#nestedblock--fs))
-- `gcs` (Block List, Max: 1) Support for using the Google Cloud Storage service as a repository for Snapshot/Restore. See the [repository GCS plugin documentation](https://www.elastic.co/guide/en/elasticsearch/plugins/current/repository-gcs.html) for more details. (see [below for nested schema](#nestedblock--gcs))
-- `hdfs` (Block List, Max: 1) Support for using HDFS File System as a repository for Snapshot/Restore. See the [repository HDFS plugin documentation](https://www.elastic.co/guide/en/elasticsearch/plugins/current/repository-hdfs.html) for more details. (see [below for nested schema](#nestedblock--hdfs))
-- `s3` (Block List, Max: 1) Support for using AWS S3 as a repository for Snapshot/Restore. See the [repository S3 plugin documentation](https://www.elastic.co/guide/en/elasticsearch/plugins/current/repository-s3-repository.html) for more details. (see [below for nested schema](#nestedblock--s3))
-- `url` (Block List, Max: 1) URL repository. Repositories of this type are read-only for the cluster. This means the cluster can retrieve or restore snapshots from the repository but cannot write or create snapshots in it. (see [below for nested schema](#nestedblock--url))
+- `azure` (Block, Optional) Azure repository. Stores snapshots in Microsoft Azure Blob Storage. (see [below for nested schema](#nestedblock--azure))
+- `elasticsearch_connection` (Block List) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `fs` (Block, Optional) Shared filesystem repository. Repositories of this type use a shared filesystem to store snapshots. This filesystem must be accessible to all master and data nodes in the cluster. (see [below for nested schema](#nestedblock--fs))
+- `gcs` (Block, Optional) Google Cloud Storage repository. Stores snapshots in a Google Cloud Storage bucket. (see [below for nested schema](#nestedblock--gcs))
+- `hdfs` (Block, Optional) HDFS repository. Stores snapshots in Hadoop Distributed File System. (see [below for nested schema](#nestedblock--hdfs))
+- `s3` (Block, Optional) S3 repository. Stores snapshots in an Amazon S3 bucket. (see [below for nested schema](#nestedblock--s3))
+- `url` (Block, Optional) URL repository. Provides read-only access to a shared filesystem repository. (see [below for nested schema](#nestedblock--url))
 - `verify` (Boolean) If true, the request verifies the repository is functional on all master and data nodes in the cluster.
 
 ### Read-Only
@@ -61,17 +61,14 @@ resource "elasticstack_elasticsearch_snapshot_repository" "my_fs_repo" {
 <a id="nestedblock--azure"></a>
 ### Nested Schema for `azure`
 
-Required:
-
-- `container` (String) Container name. You must create the Azure container before creating the repository.
-
 Optional:
 
 - `base_path` (String) Specifies the path within the container to the repository data.
 - `chunk_size` (String) Maximum size of files in snapshots.
 - `client` (String) Azure named client to use.
 - `compress` (Boolean) If true, metadata files, such as index mappings and settings, are compressed in snapshots.
-- `location_mode` (String) Location mode. `primary_only` or `secondary_only`. See the [Azure storage redundancy documentation](https://docs.microsoft.com/en-us/azure/storage/common/storage-redundancy) for more details.
+- `container` (String) Container name. You must create the Azure container before creating the repository.
+- `location_mode` (String) Location mode for the Azure repository. `primary_only` or `secondary_only`. See the [Azure storage redundancy documentation](https://docs.microsoft.com/en-us/azure/storage/common/storage-redundancy) for more details.
 - `max_restore_bytes_per_sec` (String) Maximum snapshot restore rate per node.
 - `max_snapshot_bytes_per_sec` (String) Maximum snapshot creation rate per node.
 - `readonly` (Boolean) If true, the repository is read-only.
@@ -101,14 +98,11 @@ Optional:
 <a id="nestedblock--fs"></a>
 ### Nested Schema for `fs`
 
-Required:
-
-- `location` (String) Location of the shared filesystem used to store and retrieve snapshots.
-
 Optional:
 
 - `chunk_size` (String) Maximum size of files in snapshots.
 - `compress` (Boolean) If true, metadata files, such as index mappings and settings, are compressed in snapshots.
+- `location` (String) Location of the shared filesystem used to store and retrieve snapshots.
 - `max_number_of_snapshots` (Number) Maximum number of snapshots the repository can contain.
 - `max_restore_bytes_per_sec` (String) Maximum snapshot restore rate per node.
 - `max_snapshot_bytes_per_sec` (String) Maximum snapshot creation rate per node.
@@ -118,13 +112,10 @@ Optional:
 <a id="nestedblock--gcs"></a>
 ### Nested Schema for `gcs`
 
-Required:
-
-- `bucket` (String) The name of the bucket to be used for snapshots.
-
 Optional:
 
 - `base_path` (String) Specifies the path within the bucket to the repository data. Defaults to the root of the bucket.
+- `bucket` (String) The name of the bucket to be used for snapshots.
 - `chunk_size` (String) Maximum size of files in snapshots.
 - `client` (String) The name of the client to use to connect to Google Cloud Storage.
 - `compress` (Boolean) If true, metadata files, such as index mappings and settings, are compressed in snapshots.
@@ -136,11 +127,6 @@ Optional:
 <a id="nestedblock--hdfs"></a>
 ### Nested Schema for `hdfs`
 
-Required:
-
-- `path` (String) The file path within the filesystem where data is stored/loaded.
-- `uri` (String) The uri address for hdfs. ex: "hdfs://<host>:<port>/".
-
 Optional:
 
 - `chunk_size` (String) Maximum size of files in snapshots.
@@ -148,19 +134,18 @@ Optional:
 - `load_defaults` (Boolean) Whether to load the default Hadoop configuration or not.
 - `max_restore_bytes_per_sec` (String) Maximum snapshot restore rate per node.
 - `max_snapshot_bytes_per_sec` (String) Maximum snapshot creation rate per node.
+- `path` (String) The file path within the filesystem where data is stored/loaded.
 - `readonly` (Boolean) If true, the repository is read-only.
+- `uri` (String) The uri address for hdfs. ex: "hdfs://<host>:<port>/".
 
 
 <a id="nestedblock--s3"></a>
 ### Nested Schema for `s3`
 
-Required:
-
-- `bucket` (String) Name of the S3 bucket to use for snapshots.
-
 Optional:
 
 - `base_path` (String) Specifies the path to the repository data within its bucket.
+- `bucket` (String) Name of the S3 bucket to use for snapshots.
 - `buffer_size` (String) Minimum threshold below which the chunk is uploaded using a single request.
 - `canned_acl` (String) The S3 repository supports all S3 canned ACLs.
 - `chunk_size` (String) Maximum size of files in snapshots.
@@ -178,10 +163,6 @@ Optional:
 <a id="nestedblock--url"></a>
 ### Nested Schema for `url`
 
-Required:
-
-- `url` (String) URL location of the root of the shared filesystem repository.
-
 Optional:
 
 - `chunk_size` (String) Maximum size of files in snapshots.
@@ -192,6 +173,7 @@ Optional:
 - `max_restore_bytes_per_sec` (String) Maximum snapshot restore rate per node.
 - `max_snapshot_bytes_per_sec` (String) Maximum snapshot creation rate per node.
 - `readonly` (Boolean) If true, the repository is read-only.
+- `url` (String) URL location of the root of the shared filesystem repository.
 
 ## Import
 

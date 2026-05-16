@@ -20,6 +20,7 @@ package enrich
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -29,14 +30,14 @@ import (
 )
 
 type PolicyData struct {
-	ID                      types.String         `tfsdk:"id"`
-	ElasticsearchConnection types.List           `tfsdk:"elasticsearch_connection"`
-	Name                    types.String         `tfsdk:"name"`
-	PolicyType              types.String         `tfsdk:"policy_type"`
-	Indices                 types.Set            `tfsdk:"indices"`
-	MatchField              types.String         `tfsdk:"match_field"`
-	EnrichFields            types.Set            `tfsdk:"enrich_fields"`
-	Query                   jsontypes.Normalized `tfsdk:"query"`
+	entitycore.ElasticsearchConnectionField
+	ID           types.String         `tfsdk:"id"`
+	Name         types.String         `tfsdk:"name"`
+	PolicyType   types.String         `tfsdk:"policy_type"`
+	Indices      types.Set            `tfsdk:"indices"`
+	MatchField   types.String         `tfsdk:"match_field"`
+	EnrichFields types.Set            `tfsdk:"enrich_fields"`
+	Query        jsontypes.Normalized `tfsdk:"query"`
 }
 
 type PolicyDataWithExecute struct {
@@ -44,13 +45,18 @@ type PolicyDataWithExecute struct {
 	Execute types.Bool `tfsdk:"execute"`
 }
 
-// populateFromPolicy converts models.EnrichPolicy to PolicyData fields
+func (data PolicyDataWithExecute) GetID() types.String         { return data.ID }
+func (data PolicyDataWithExecute) GetResourceID() types.String { return data.Name }
+func (data PolicyDataWithExecute) GetElasticsearchConnection() types.List {
+	return data.ElasticsearchConnection
+}
+
 func (data *PolicyData) populateFromPolicy(ctx context.Context, policy *models.EnrichPolicy, diagnostics *diag.Diagnostics) {
 	data.Name = types.StringValue(policy.Name)
 	data.PolicyType = types.StringValue(policy.Type)
 	data.MatchField = types.StringValue(policy.MatchField)
 
-	if policy.Query != "" && policy.Query != "null" {
+	if policy.Query != "" {
 		data.Query = jsontypes.NewNormalizedValue(policy.Query)
 	} else {
 		data.Query = jsontypes.NewNormalizedNull()

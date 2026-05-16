@@ -21,9 +21,8 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -54,14 +53,10 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 	}
 
 	// Determine space from plan (first space_ids entry) for CREATE.
-	var spaceID string
-	if !plan.SpaceIDs.IsNull() && !plan.SpaceIDs.IsUnknown() {
-		var tempDiags diag.Diagnostics
-		spaceIDs := typeutils.SetTypeAs[types.String](ctx, plan.SpaceIDs, path.Root("space_ids"), &tempDiags)
-		resp.Diagnostics.Append(tempDiags...)
-		if !tempDiags.HasError() && len(spaceIDs) > 0 {
-			spaceID = spaceIDs[0].ValueString()
-		}
+	spaceID, diags := fleetutils.SpaceIDFromSet(ctx, plan.SpaceIDs)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
 	body := plan.toAPICreateModel(ctx)
@@ -72,12 +67,13 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 		return
 	}
 
-	if createResp.JSON200 == nil {
-		resp.Diagnostics.AddError("Unexpected API response", "Create agent download source response missing JSON200 body")
+	unwrapped, unwrapDiags := diagutil.UnwrapJSON200(createResp.JSON200, "agent download source")
+	resp.Diagnostics.Append(unwrapDiags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	item := createResp.JSON200.Item
+	item := unwrapped.Item
 
 	// Ensure we keep the operational space information consistent with how Read/Update/Delete will resolve it.
 	if plan.SpaceIDs.IsUnknown() {

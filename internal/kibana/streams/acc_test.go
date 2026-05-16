@@ -156,6 +156,9 @@ func prepareStreamsEnvironment(t *testing.T) {
 	// Kibana creates this automatically when OBSERVABILITY_STREAMS_ENABLE_WIRED_STREAM_VIEWS
 	// is enabled, but that creation is best-effort and silently swallowed on failure.
 	// Creating it here mirrors what Kibana's own integration tests do.
+	//
+	// TODO: no typed equivalent — the /_query/view API is not exposed by the
+	// go-elasticsearch typed client; raw HTTP via GetESClient() is required here.
 	if esAPIErr != nil {
 		t.Logf("prepareStreamsEnvironment: could not create ES client: %v", esAPIErr)
 	} else if esClient, esErr := esAPIClient.GetESClient(); esErr != nil {
@@ -218,8 +221,9 @@ func prepareStreamsEnvironment(t *testing.T) {
 }
 
 func TestAccResourceKibanaStreamWired(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionStreamsAcc, versionutils.FlavorAny)
+
 	suffix := sdkacctest.RandStringFromCharSet(6, sdkacctest.CharSetAlphaNum)
-	skipFn := versionutils.CheckIfVersionIsUnsupported(minVersionStreamsAcc)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() {
@@ -230,7 +234,6 @@ func TestAccResourceKibanaStreamWired(t *testing.T) {
 			// Step 1: create a minimal wired stream.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 skipFn,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"suffix": config.StringVariable(suffix),
@@ -249,7 +252,6 @@ func TestAccResourceKibanaStreamWired(t *testing.T) {
 			// Step 2: add a processing step — assert the step JSON value (not just count).
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 skipFn,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"suffix": config.StringVariable(suffix),
@@ -263,7 +265,6 @@ func TestAccResourceKibanaStreamWired(t *testing.T) {
 			// Step 3: full update — lifecycle, failure_store, index settings, attached query.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 skipFn,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_full"),
 				ConfigVariables: config.Variables{
 					"suffix": config.StringVariable(suffix),
@@ -281,7 +282,6 @@ func TestAccResourceKibanaStreamWired(t *testing.T) {
 			// Step 4: import from the fully-configured state.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 skipFn,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_full"),
 				ConfigVariables: config.Variables{
 					"suffix": config.StringVariable(suffix),

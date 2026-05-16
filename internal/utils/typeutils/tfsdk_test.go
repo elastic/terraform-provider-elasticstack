@@ -158,6 +158,54 @@ func TestValueStringPointer(t *testing.T) {
 	}
 }
 
+func TestNonEmptyStringPointerValue(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name  string
+		input types.String
+		want  *string
+	}{
+		{name: "converts unknown", input: types.StringUnknown(), want: nil},
+		{name: "converts null", input: types.StringNull(), want: nil},
+		{name: "converts empty", input: types.StringValue(""), want: nil},
+		{name: "converts value", input: types.StringValue("value"), want: func() *string { s := "value"; return &s }()},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var diags diag.Diagnostics
+			got := typeutils.NonEmptyStringPointerValue(tt.input)
+			require.Equal(t, tt.want, got)
+			require.Empty(t, diags)
+		})
+	}
+}
+
+func TestFloat64PointerValue(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name  string
+		input types.Float64
+		want  *float64
+	}{
+		{name: "converts unknown", input: types.Float64Unknown(), want: nil},
+		{name: "converts null", input: types.Float64Null(), want: nil},
+		{name: "converts zero", input: types.Float64Value(0), want: func() *float64 { f := 0.0; return &f }()},
+		{name: "converts value", input: types.Float64Value(3.14), want: func() *float64 { f := 3.14; return &f }()},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var diags diag.Diagnostics
+			got := typeutils.Float64PointerValue(tt.input)
+			require.Equal(t, tt.want, got)
+			require.Empty(t, diags)
+		})
+	}
+}
+
 // Maps
 
 func TestMapToNormalizedType(t *testing.T) {

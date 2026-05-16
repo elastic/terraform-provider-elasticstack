@@ -1,0 +1,78 @@
+variable "dashboard_title" {
+  type = string
+}
+
+resource "elasticstack_kibana_dashboard" "test" {
+  title       = var.dashboard_title
+  description = "Dashboard with Waffle Panel"
+  time_range = {
+    from = "now-15m"
+    to   = "now"
+  }
+  refresh_interval = {
+    pause = true
+    value = 0
+  }
+  query = {
+    language = "kql"
+    text     = ""
+  }
+  panels = [{
+    type = "vis"
+    grid = {
+      x = 0
+      y = 0
+      w = 24
+      h = 15
+    }
+    vis_config = {
+      by_value = {
+        waffle_config = {
+          title       = "Complete Waffle"
+          description = "Complete waffle visualization"
+          data_source_json = jsonencode({
+            type          = "data_view_spec"
+            index_pattern = "metrics-*"
+
+            time_field = "@timestamp"
+          })
+          query = {
+            language   = "kql"
+            expression = ""
+          }
+          filters = [
+            {
+              filter_json = jsonencode({
+                type = "condition"
+                condition = {
+                  field    = "host.os.keyword"
+                  operator = "is"
+                  value    = "linux"
+                }
+              })
+            }
+          ]
+          legend = {
+            size                 = "s"
+            visible              = "visible"
+            truncate_after_lines = 8
+            values               = ["absolute"]
+          }
+          value_display = {
+            mode             = "percentage"
+            percent_decimals = 1
+          }
+          metrics = [
+            {
+              config_json = jsonencode({
+                operation = "count"
+              })
+            }
+          ]
+          ignore_global_filters = true
+          sampling              = 0.5
+        }
+      }
+    }
+  }]
+}

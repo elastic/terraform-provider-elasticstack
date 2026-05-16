@@ -23,7 +23,6 @@ import (
 
 	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
-	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/planmodifiers"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -31,11 +30,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -48,15 +47,10 @@ const indexNameAllowedCharsMessage = "must contain lower case alphanumeric chara
 
 const dateMathIndexNameMessage = "must be a valid plain date math index name expression enclosed in angle brackets with at least one {…} section, e.g. <logs-{now/d}>"
 
-func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = getSchema()
-}
-
-func getSchema() schema.Schema {
+func getSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
-		Description: "Creates Elasticsearch indices. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html",
+		Description: resourceDescription,
 		Blocks: map[string]schema.Block{
-			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(),
 			"settings": schema.ListNestedBlock{
 				Description:        deprecatedSettingsBlockDescription,
 				DeprecationMessage: "Using settings makes it easier to misconfigure.  Use dedicated field for the each setting instead.",
@@ -243,21 +237,68 @@ func getSchema() schema.Schema {
 					stringvalidator.OneOf("false", "true", "checksum"),
 				},
 			},
-			"sort_field": schema.SetAttribute{
-				ElementType: types.StringType,
-				Description: "The field to sort shards in this index by.",
+			"sort": schema.ListNestedAttribute{
+				Description: "Sort configuration for documents within each shard segment. Replaces the deprecated sort_field and sort_order attributes.",
 				Optional:    true,
+				PlanModifiers: []planmodifier.List{
+					sortMigrationPlanModifier{},
+				},
+				Validators: []validator.List{
+					listvalidator.ConflictsWith(path.MatchRoot("sort_field"), path.MatchRoot("sort_order")),
+				},
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"field": schema.StringAttribute{
+							Description: "The index field to sort by.",
+							Required:    true,
+						},
+						"order": schema.StringAttribute{
+							Description: "The sort direction. Valid values: asc, desc.",
+							Optional:    true,
+							Validators: []validator.String{
+								stringvalidator.OneOf("asc", "desc"),
+							},
+						},
+						"missing": schema.StringAttribute{
+							Description: "How to treat documents missing the sort field. Valid values: _last, _first.",
+							Optional:    true,
+							Validators: []validator.String{
+								stringvalidator.OneOf("_last", "_first"),
+							},
+						},
+						"mode": schema.StringAttribute{
+							Description: "Which value to use when the sort field has multiple values. Valid values: min, max.",
+							Optional:    true,
+							Validators: []validator.String{
+								stringvalidator.OneOf("min", "max"),
+							},
+						},
+					},
+				},
+			},
+			"sort_field": schema.SetAttribute{
+				ElementType:        types.StringType,
+				Description:        "Deprecated: The field to sort documents within each shard segment by.",
+				Optional:           true,
+				DeprecationMessage: "Use the 'sort' attribute instead. 'sort_field' will be removed in a future major release.",
+				Validators: []validator.Set{
+					setvalidator.ConflictsWith(path.MatchRoot("sort")),
+				},
 				PlanModifiers: []planmodifier.Set{
-					setplanmodifier.RequiresReplace(),
+					legacySortFieldPlanModifier{},
 				},
 			},
 			// sort_order can't be set type since it can have dup strings like ["asc", "asc"]
 			"sort_order": schema.ListAttribute{
-				ElementType: types.StringType,
-				Description: "The direction to sort shards in. Accepts `asc`, `desc`.",
-				Optional:    true,
+				ElementType:        types.StringType,
+				Description:        "Deprecated: The direction to sort documents within each shard segment. Accepts `asc`, `desc`.",
+				Optional:           true,
+				DeprecationMessage: "Use the 'sort' attribute instead. 'sort_order' will be removed in a future major release.",
+				Validators: []validator.List{
+					listvalidator.ConflictsWith(path.MatchRoot("sort")),
+				},
 				PlanModifiers: []planmodifier.List{
-					listplanmodifier.RequiresReplace(),
+					legacySortOrderPlanModifier{},
 				},
 			},
 			"mapping_coerce": schema.BoolAttribute{
@@ -503,7 +544,7 @@ func getSchema() schema.Schema {
 				Description: mappingsDescription,
 				Optional:    true,
 				Computed:    true,
-				CustomType:  mappingsType{},
+				CustomType:  index.MappingsType{},
 				Validators: []validator.String{
 					index.StringIsJSONObject{},
 				},
@@ -525,6 +566,12 @@ func getSchema() schema.Schema {
 				PlanModifiers: []planmodifier.Bool{
 					planmodifiers.BoolUseDefaultIfUnknown(true),
 				},
+			},
+			"use_existing": schema.BoolAttribute{
+				Description: useExistingDescription,
+				Optional:    true,
+				Computed:    true,
+				Default:     booldefault.StaticBool(false),
 			},
 			"wait_for_active_shards": schema.StringAttribute{
 				Description: waitForActiveShardsDescription,
@@ -556,14 +603,14 @@ func getSchema() schema.Schema {
 	}
 }
 
-func aliasElementType() attr.Type {
-	return getSchema().Attributes["alias"].GetType().(attr.TypeWithElementType).ElementType()
+func aliasElementType(ctx context.Context) attr.Type {
+	return getSchema(ctx).Attributes["alias"].GetType().(attr.TypeWithElementType).ElementType()
 }
 
-func settingsElementType() attr.Type {
-	return getSchema().Blocks["settings"].Type().(attr.TypeWithElementType).ElementType()
+func settingsElementType(ctx context.Context) attr.Type {
+	return getSchema(ctx).Blocks["settings"].Type().(attr.TypeWithElementType).ElementType()
 }
 
-func settingElementType() attr.Type {
-	return getSchema().Blocks["settings"].GetNestedObject().GetBlocks()["setting"].Type().(attr.TypeWithElementType).ElementType()
+func settingElementType(ctx context.Context) attr.Type {
+	return getSchema(ctx).Blocks["settings"].GetNestedObject().GetBlocks()["setting"].Type().(attr.TypeWithElementType).ElementType()
 }

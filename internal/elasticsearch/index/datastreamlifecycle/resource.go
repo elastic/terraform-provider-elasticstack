@@ -35,12 +35,18 @@ var (
 )
 
 type Resource struct {
-	*entitycore.ResourceBase
+	*entitycore.ElasticsearchResource[tfModel]
 }
 
 func newResource() *Resource {
 	return &Resource{
-		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentElasticsearch, "data_stream_lifecycle"),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[tfModel]("data_stream_lifecycle", entitycore.ElasticsearchResourceOptions[tfModel]{
+			Schema: getSchemaFactory,
+			Read:   readDataStreamLifecycle,
+			Delete: deleteDataStreamLifecycle,
+			Create: writeDataStreamLifecycle,
+			Update: writeDataStreamLifecycle,
+		}),
 	}
 }
 

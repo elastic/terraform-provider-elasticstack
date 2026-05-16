@@ -47,6 +47,8 @@ const testAccAgentBuilderWorkflowResourceName = "elasticstack_kibana_agentbuilde
 const testAccAgentBuilderToolDataSourceName = "data.elasticstack_kibana_agentbuilder_tool.test"
 
 func TestAccResourceAgentBuilderToolEsql(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderAPIVersion, versionutils.FlavorAny)
+
 	toolID := "test-esql-tool-" + uuid.New().String()[:8]
 	resourceID := testAccAgentBuilderEsqlResourceName
 
@@ -54,7 +56,6 @@ func TestAccResourceAgentBuilderToolEsql(t *testing.T) {
 		PreCheck: func() { acctest.PreCheckWithWorkflowsEnabled(t, minKibanaAgentBuilderAPIVersion) },
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -73,7 +74,6 @@ func TestAccResourceAgentBuilderToolEsql(t *testing.T) {
 			},
 			{
 				// Import by composite id: <tool_id>/<space_id>
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -87,7 +87,6 @@ func TestAccResourceAgentBuilderToolEsql(t *testing.T) {
 				ImportStateVerify: true,
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
@@ -101,7 +100,6 @@ func TestAccResourceAgentBuilderToolEsql(t *testing.T) {
 			},
 			{
 				// Import after update to verify the post-update state round-trips (covers Configure + metadata after CRUD)
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
@@ -121,6 +119,8 @@ func TestAccResourceAgentBuilderToolEsql(t *testing.T) {
 // TestAccResourceAgentBuilderToolEsqlKibanaConnection exercises a scoped
 // kibana_connection block (Kibana client from r.Client) with import round-trip.
 func TestAccResourceAgentBuilderToolEsqlKibanaConnection(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderAPIVersion, versionutils.FlavorAny)
+
 	toolID := "test-kb-conn-tool-" + uuid.New().String()[:8]
 	resourceID := testAccAgentBuilderEsqlResourceName
 
@@ -131,7 +131,6 @@ func TestAccResourceAgentBuilderToolEsqlKibanaConnection(t *testing.T) {
 		},
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: acctest.KibanaConnectionVariables(config.Variables{
@@ -147,7 +146,6 @@ func TestAccResourceAgentBuilderToolEsqlKibanaConnection(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: acctest.KibanaConnectionVariables(config.Variables{
@@ -162,7 +160,6 @@ func TestAccResourceAgentBuilderToolEsqlKibanaConnection(t *testing.T) {
 				},
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: acctest.KibanaConnectionVariables(config.Variables{
@@ -177,7 +174,6 @@ func TestAccResourceAgentBuilderToolEsqlKibanaConnection(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: acctest.KibanaConnectionVariables(config.Variables{
@@ -196,6 +192,8 @@ func TestAccResourceAgentBuilderToolEsqlKibanaConnection(t *testing.T) {
 }
 
 func TestAccResourceAgentBuilderToolEsqlSpace(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderAPIVersion, versionutils.FlavorAny)
+
 	toolID := "test-esql-tool-" + uuid.New().String()[:8]
 	spaceID := fmt.Sprintf("test-space-%s", uuid.New().String()[:8])
 	resourceID := testAccAgentBuilderEsqlResourceName
@@ -205,7 +203,6 @@ func TestAccResourceAgentBuilderToolEsqlSpace(t *testing.T) {
 		PreCheck: func() { acctest.PreCheckWithWorkflowsEnabled(t, minKibanaAgentBuilderAPIVersion) },
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -221,7 +218,6 @@ func TestAccResourceAgentBuilderToolEsqlSpace(t *testing.T) {
 			},
 			{
 				// Import by composite id: <tool_id>/<space_id>
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -240,6 +236,8 @@ func TestAccResourceAgentBuilderToolEsqlSpace(t *testing.T) {
 }
 
 func TestAccResourceAgentBuilderToolWorkflow(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderWorkflowAPIVersion, versionutils.FlavorAny)
+
 	toolID := "test-workflow-tool-" + uuid.New().String()[:8]
 	resourceID := testAccAgentBuilderWorkflowResourceName
 
@@ -247,7 +245,6 @@ func TestAccResourceAgentBuilderToolWorkflow(t *testing.T) {
 		PreCheck: func() { acctest.PreCheckWithWorkflowsEnabled(t, minKibanaAgentBuilderAPIVersion) },
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderWorkflowAPIVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -263,7 +260,6 @@ func TestAccResourceAgentBuilderToolWorkflow(t *testing.T) {
 			},
 			{
 				// Import by composite id: <tool_id>/<space_id>
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderWorkflowAPIVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -277,7 +273,6 @@ func TestAccResourceAgentBuilderToolWorkflow(t *testing.T) {
 				ImportStateVerify: true,
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderWorkflowAPIVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
@@ -291,7 +286,6 @@ func TestAccResourceAgentBuilderToolWorkflow(t *testing.T) {
 			},
 			{
 				// Import after update (same pattern as TestAccResourceAgentBuilderToolEsql)
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderWorkflowAPIVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
@@ -312,6 +306,8 @@ func TestAccResourceAgentBuilderToolWorkflow(t *testing.T) {
 // TestAccResourceAgentBuilderToolWorkflow with entity-local kibana_connection
 // (9.4+ workflow tool API) and the ESQL kibana_connection import pattern.
 func TestAccResourceAgentBuilderToolWorkflowKibanaConnection(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderWorkflowAPIVersion, versionutils.FlavorAny)
+
 	toolID := "test-wf-kb-conn-" + uuid.New().String()[:8]
 	resourceID := testAccAgentBuilderWorkflowResourceName
 
@@ -322,7 +318,6 @@ func TestAccResourceAgentBuilderToolWorkflowKibanaConnection(t *testing.T) {
 		},
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderWorkflowAPIVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: acctest.KibanaConnectionVariables(config.Variables{
@@ -337,7 +332,6 @@ func TestAccResourceAgentBuilderToolWorkflowKibanaConnection(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderWorkflowAPIVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: acctest.KibanaConnectionVariables(config.Variables{
@@ -352,7 +346,6 @@ func TestAccResourceAgentBuilderToolWorkflowKibanaConnection(t *testing.T) {
 				},
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderWorkflowAPIVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: acctest.KibanaConnectionVariables(config.Variables{
@@ -367,7 +360,6 @@ func TestAccResourceAgentBuilderToolWorkflowKibanaConnection(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderWorkflowAPIVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: acctest.KibanaConnectionVariables(config.Variables{
@@ -386,6 +378,8 @@ func TestAccResourceAgentBuilderToolWorkflowKibanaConnection(t *testing.T) {
 }
 
 func TestAccDataSourceKibanaAgentBuilderTool(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderAPIVersion, versionutils.FlavorAny)
+
 	toolID := "test-tool-" + uuid.New().String()[:8]
 	dsID := testAccAgentBuilderToolDataSourceName
 
@@ -393,7 +387,6 @@ func TestAccDataSourceKibanaAgentBuilderTool(t *testing.T) {
 		PreCheck: func() { acctest.PreCheckWithWorkflowsEnabled(t, minKibanaAgentBuilderAPIVersion) },
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables: config.Variables{
@@ -425,6 +418,8 @@ func TestAccDataSourceKibanaAgentBuilderTool(t *testing.T) {
 }
 
 func TestAccDataSourceKibanaAgentBuilderToolWorkflow(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderWorkflowAPIVersion, versionutils.FlavorAny)
+
 	toolID := "test-workflow-tool-" + uuid.New().String()[:8]
 	dsID := testAccAgentBuilderToolDataSourceName
 
@@ -432,7 +427,6 @@ func TestAccDataSourceKibanaAgentBuilderToolWorkflow(t *testing.T) {
 		PreCheck: func() { acctest.PreCheckWithWorkflowsEnabled(t, minKibanaAgentBuilderAPIVersion) },
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderWorkflowAPIVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables: config.Variables{
@@ -462,13 +456,14 @@ func TestAccDataSourceKibanaAgentBuilderToolWorkflow(t *testing.T) {
 }
 
 func TestAccDataSourceKibanaAgentBuilderToolWorkflowUnsupportedVersion(t *testing.T) {
+	versionutils.SkipIfUnsupportedConstraints(t, below940Constraints, versionutils.FlavorAny)
+
 	toolID := "test-workflow-tool-" + uuid.New().String()[:8]
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheckWithWorkflowsEnabled(t, minKibanaAgentBuilderAPIVersion) },
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(below940Constraints),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read_workflow_unsupported"),
 				ConfigVariables: config.Variables{
@@ -481,6 +476,8 @@ func TestAccDataSourceKibanaAgentBuilderToolWorkflowUnsupportedVersion(t *testin
 }
 
 func TestAccDataSourceKibanaAgentBuilderToolSpace(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderAPIVersion, versionutils.FlavorAny)
+
 	toolID := "test-tool-" + uuid.New().String()[:8]
 	spaceID := fmt.Sprintf("test-space-%s", uuid.New().String()[:8])
 	dsID := testAccAgentBuilderToolDataSourceName
@@ -489,7 +486,6 @@ func TestAccDataSourceKibanaAgentBuilderToolSpace(t *testing.T) {
 		PreCheck: func() { acctest.PreCheckWithWorkflowsEnabled(t, minKibanaAgentBuilderAPIVersion) },
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables: config.Variables{
@@ -517,6 +513,8 @@ func TestAccDataSourceKibanaAgentBuilderToolSpace(t *testing.T) {
 // TestAccDataSourceKibanaAgentBuilderToolKibanaConnection exercises the data source
 // with an entity-local kibana_connection block, mirroring the resource-level connection tests.
 func TestAccDataSourceKibanaAgentBuilderToolKibanaConnection(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderAPIVersion, versionutils.FlavorAny)
+
 	toolID := "test-tool-ds-conn-" + uuid.New().String()[:8]
 	dsID := testAccAgentBuilderToolDataSourceName
 
@@ -527,7 +525,6 @@ func TestAccDataSourceKibanaAgentBuilderToolKibanaConnection(t *testing.T) {
 		},
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables: acctest.KibanaConnectionVariables(config.Variables{

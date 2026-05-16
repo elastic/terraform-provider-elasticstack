@@ -38,6 +38,8 @@ import (
 var minVersionFleetAgentDownloadSource = version.Must(version.NewVersion("8.13.0"))
 
 func TestAccResourceFleetAgentDownloadSource(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionFleetAgentDownloadSource, versionutils.FlavorAny)
+
 	random := sdkacctest.RandString(8)
 	var idBeforeReplacement string
 
@@ -47,7 +49,6 @@ func TestAccResourceFleetAgentDownloadSource(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionFleetAgentDownloadSource),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"suffix": config.StringVariable(random),
@@ -64,14 +65,13 @@ func TestAccResourceFleetAgentDownloadSource(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionFleetAgentDownloadSource),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"suffix": config.StringVariable(random),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "name", fmt.Sprintf("Updated Agent Download Source %s", random)),
-					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "default", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "default", "false"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "host", "https://artifacts.elastic.co/downloads/elastic-agent-updated"),
 					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_download_source.test", "proxy_id"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "source_id", fmt.Sprintf("agent-download-source-%s", random)),
@@ -81,7 +81,6 @@ func TestAccResourceFleetAgentDownloadSource(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionFleetAgentDownloadSource),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"suffix": config.StringVariable(random),
@@ -100,7 +99,6 @@ func TestAccResourceFleetAgentDownloadSource(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionFleetAgentDownloadSource),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"suffix": config.StringVariable(random),
@@ -119,7 +117,6 @@ func TestAccResourceFleetAgentDownloadSource(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionFleetAgentDownloadSource),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("omit_optionals"),
 				ConfigVariables: config.Variables{
 					"suffix": config.StringVariable(random),
@@ -138,7 +135,6 @@ func TestAccResourceFleetAgentDownloadSource(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionFleetAgentDownloadSource),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty_space_ids"),
 				ConfigVariables: config.Variables{
 					"suffix": config.StringVariable(random),
@@ -150,7 +146,6 @@ func TestAccResourceFleetAgentDownloadSource(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionFleetAgentDownloadSource),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("replace_source_id"),
 				ConfigVariables: config.Variables{
 					"suffix": config.StringVariable(random),
@@ -162,7 +157,6 @@ func TestAccResourceFleetAgentDownloadSource(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionFleetAgentDownloadSource),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("non_default_space"),
 				ConfigVariables: config.Variables{
 					"suffix":               config.StringVariable(random),

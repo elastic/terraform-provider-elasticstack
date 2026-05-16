@@ -45,8 +45,8 @@ type agentModel struct {
 }
 
 type agentDataSourceModel struct {
+	entitycore.KibanaConnectionField
 	ID                  types.String `tfsdk:"id"`
-	KibanaConnection    types.List   `tfsdk:"kibana_connection"`
 	AgentID             types.String `tfsdk:"agent_id"`
 	SpaceID             types.String `tfsdk:"space_id"`
 	IncludeDependencies types.Bool   `tfsdk:"include_dependencies"`
@@ -57,6 +57,20 @@ type agentDataSourceModel struct {
 	Labels              types.Set    `tfsdk:"labels"`
 	Tools               []toolModel  `tfsdk:"tools"`
 	Instructions        types.String `tfsdk:"instructions"`
+}
+
+// GetVersionRequirements returns the static minimum Kibana version requirements
+// for the Agent Builder agent data source. This satisfies the optional
+// entitycore.WithVersionRequirements interface, allowing the
+// generic Kibana data source envelope to enforce the requirement before invoking
+// the entity read callback.
+func (model agentDataSourceModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+	return []entitycore.VersionRequirement{
+		{
+			MinVersion:   *minKibanaAgentBuilderAPIVersion,
+			ErrorMessage: fmt.Sprintf("Agent Builder agents require Elastic Stack v%s or later.", minKibanaAgentBuilderAPIVersion),
+		},
+	}, nil
 }
 
 type toolModel struct {
@@ -70,26 +84,6 @@ type toolModel struct {
 	Configuration             types.String                    `tfsdk:"configuration"`
 	WorkflowID                types.String                    `tfsdk:"workflow_id"`
 	WorkflowConfigurationYaml customtypes.NormalizedYamlValue `tfsdk:"workflow_configuration_yaml"`
-}
-
-// GetKibanaConnection returns the kibana_connection block value, satisfying
-// the entitycore.KibanaDataSourceModel interface required by NewKibanaDataSource.
-func (model agentDataSourceModel) GetKibanaConnection() types.List {
-	return model.KibanaConnection
-}
-
-// GetVersionRequirements returns the static minimum Kibana version requirements
-// for the Agent Builder agent data source. This satisfies the optional
-// entitycore.KibanaDataSourceWithVersionRequirements interface, allowing the
-// generic Kibana data source envelope to enforce the requirement before invoking
-// the entity read callback.
-func (model agentDataSourceModel) GetVersionRequirements() ([]entitycore.DataSourceVersionRequirement, diag.Diagnostics) {
-	return []entitycore.DataSourceVersionRequirement{
-		{
-			MinVersion:   *minKibanaAgentBuilderAPIVersion,
-			ErrorMessage: fmt.Sprintf("Agent Builder agents require Elastic Stack v%s or later.", minKibanaAgentBuilderAPIVersion),
-		},
-	}, nil
 }
 
 func (model *agentDataSourceModel) populateFromAPI(ctx context.Context, spaceID string, data *models.Agent) diag.Diagnostics {
@@ -110,17 +104,8 @@ func (model *agentDataSourceModel) populateFromAPI(ctx context.Context, spaceID 
 		model.Description = types.StringNull()
 	}
 
-	if data.AvatarColor != nil && *data.AvatarColor != "" {
-		model.AvatarColor = types.StringValue(*data.AvatarColor)
-	} else {
-		model.AvatarColor = types.StringNull()
-	}
-
-	if data.AvatarSymbol != nil && *data.AvatarSymbol != "" {
-		model.AvatarSymbol = types.StringValue(*data.AvatarSymbol)
-	} else {
-		model.AvatarSymbol = types.StringNull()
-	}
+	model.AvatarColor = types.StringPointerValue(data.AvatarColor)
+	model.AvatarSymbol = types.StringPointerValue(data.AvatarSymbol)
 
 	cfg := data.Configuration
 
@@ -159,17 +144,8 @@ func (model *agentModel) populateFromAPI(ctx context.Context, spaceID string, da
 		model.Description = types.StringNull()
 	}
 
-	if data.AvatarColor != nil && *data.AvatarColor != "" {
-		model.AvatarColor = types.StringValue(*data.AvatarColor)
-	} else {
-		model.AvatarColor = types.StringNull()
-	}
-
-	if data.AvatarSymbol != nil && *data.AvatarSymbol != "" {
-		model.AvatarSymbol = types.StringValue(*data.AvatarSymbol)
-	} else {
-		model.AvatarSymbol = types.StringNull()
-	}
+	model.AvatarColor = types.StringPointerValue(data.AvatarColor)
+	model.AvatarSymbol = types.StringPointerValue(data.AvatarSymbol)
 
 	cfg := data.Configuration
 
@@ -264,6 +240,7 @@ func (model agentModel) toAPIUpdateModel(ctx context.Context) (kbapi.PutAgentBui
 	}
 
 	body.Configuration = &struct {
+		ConnectorIds              *[]string `json:"connector_ids,omitempty"` //nolint:revive
 		EnableElasticCapabilities *bool     `json:"enable_elastic_capabilities,omitempty"`
 		Instructions              *string   `json:"instructions,omitempty"`
 		PluginIds                 *[]string `json:"plugin_ids,omitempty"` //nolint:revive

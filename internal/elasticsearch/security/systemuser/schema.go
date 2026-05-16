@@ -18,6 +18,7 @@
 package systemuser
 
 import (
+	"context"
 	_ "embed"
 	"regexp"
 
@@ -33,7 +34,7 @@ import (
 //go:embed resource-description.md
 var systemUserResourceDescription string
 
-func GetSchema() schema.Schema {
+func GetSchema(_ context.Context) schema.Schema {
 	const usernameAllowedCharsError = "must contain alphanumeric characters (a-z, A-Z, 0-9), spaces, punctuation, and printable symbols " +
 		"in the Basic Latin (ASCII) block. Leading or trailing whitespace is not allowed"
 

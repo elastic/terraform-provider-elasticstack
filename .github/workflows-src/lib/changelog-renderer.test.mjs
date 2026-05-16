@@ -249,10 +249,11 @@ test('mixed batch renders correct combined output for fix, no-changelog, none, a
 // Customer impact: none with ### Breaking changes — excluded entry includes breakingChanges
 // ---------------------------------------------------------------------------
 
-test('Customer impact: none PR with Breaking changes block is excluded but carries breakingChanges', () => {
+test('Customer impact: breaking PR with Breaking changes block is included and breakingChanges rendered', () => {
   const body = [
     '## Changelog',
-    'Customer impact: none',
+    'Customer impact: breaking',
+    'Summary: An internal refactor removes an undocumented field',
     '',
     '### Breaking changes',
     'This internal refactor technically removes an undocumented field.',
@@ -268,15 +269,15 @@ test('Customer impact: none PR with Breaking changes block is excluded but carri
   const result = renderChangelogSection([pr]);
 
   assert.equal(result.success, true);
-  assert.equal(result.included.length, 0, 'PR should not be in included');
-  assert.equal(result.excluded.length, 1, 'PR should be in excluded');
-  assert.equal(result.excluded[0].reason, 'Customer impact: none');
+  assert.equal(result.included.length, 1, 'PR should be in included');
+  assert.equal(result.excluded.length, 0, 'PR should not be in excluded');
+  assert.equal(result.included[0].summary, 'An internal refactor removes an undocumented field');
   assert.ok(
-    result.excluded[0].breakingChanges !== undefined && result.excluded[0].breakingChanges !== null,
-    'excluded entry must carry breakingChanges when present',
+    result.included[0].breakingChanges !== undefined && result.included[0].breakingChanges !== null,
+    'included entry must carry breakingChanges when present',
   );
   assert.ok(
-    result.excluded[0].breakingChanges.includes('undocumented field'),
+    result.included[0].breakingChanges.includes('undocumented field'),
     'breakingChanges must contain the prose from the PR',
   );
   // Breaking changes from this PR are still rendered in the section body
@@ -302,6 +303,41 @@ test('Customer impact: none PR without Breaking changes block has no breakingCha
 // ---------------------------------------------------------------------------
 // normalizeBulletPrefix — no-space edge case
 // ---------------------------------------------------------------------------
+
+// Regression: Customer impact: none + ### Breaking changes still works at release time
+// because release-time rendering skips the breaking-impact match check.
+test('Customer impact: none PR with Breaking changes block is excluded and breakingChanges preserved', () => {
+  const body = [
+    '## Changelog',
+    'Customer impact: none',
+    '',
+    '### Breaking changes',
+    'This is a legacy internal change with breaking implications.',
+  ].join('\n');
+
+  const pr = makePR({
+    number: 56,
+    url: 'https://github.com/org/repo/pull/56',
+    body,
+  });
+
+  const result = renderChangelogSection([pr]);
+
+  assert.equal(result.success, true);
+  assert.equal(result.excluded.length, 1, 'PR should be in excluded');
+  assert.equal(result.excluded[0].reason, 'Customer impact: none');
+  assert.ok(
+    result.excluded[0].breakingChanges &&
+    result.excluded[0].breakingChanges.includes('legacy internal change'),
+    'excluded entry must carry breakingChanges when present',
+  );
+  // Breaking changes from none PRs are still rendered in the section body
+  assert.ok(result.sectionBody.includes('### Breaking changes'), 'sectionBody must still have ### Breaking changes');
+  assert.ok(
+    result.sectionBody.includes('legacy internal change'),
+    'sectionBody must include the breaking change prose',
+  );
+});
 
 test('normalizeBulletPrefix: normalizes bullet with no space after dash', () => {
   assert.equal(normalizeBulletPrefix('-fix bug'), '- fix bug');

@@ -49,6 +49,8 @@ var (
 var sdkCreateTestConfig string
 
 func TestAccResourceOutputElasticsearchFromSDK(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionOutput, versionutils.FlavorAny)
+
 	policyName := sdkacctest.RandString(22)
 
 	resource.Test(t, resource.TestCase{
@@ -62,8 +64,7 @@ func TestAccResourceOutputElasticsearchFromSDK(t *testing.T) {
 						VersionConstraint: "0.11.7",
 					},
 				},
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
-				Config:   sdkCreateTestConfig,
+				Config: sdkCreateTestConfig,
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
 				},
@@ -79,7 +80,6 @@ func TestAccResourceOutputElasticsearchFromSDK(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -99,6 +99,8 @@ func TestAccResourceOutputElasticsearchFromSDK(t *testing.T) {
 }
 
 func TestAccResourceOutputElasticsearch(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionOutput, versionutils.FlavorAny)
+
 	policyName := sdkacctest.RandString(22)
 
 	resource.Test(t, resource.TestCase{
@@ -107,7 +109,6 @@ func TestAccResourceOutputElasticsearch(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -124,7 +125,6 @@ func TestAccResourceOutputElasticsearch(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -141,7 +141,6 @@ func TestAccResourceOutputElasticsearch(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -158,6 +157,8 @@ func TestAccResourceOutputElasticsearch(t *testing.T) {
 var logstashSDKCreateTestConfig string
 
 func TestAccResourceOutputLogstashFromSDK(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionOutput, versionutils.FlavorAny)
+
 	policyName := sdkacctest.RandString(22)
 
 	resource.Test(t, resource.TestCase{
@@ -171,8 +172,7 @@ func TestAccResourceOutputLogstashFromSDK(t *testing.T) {
 						VersionConstraint: "0.11.7",
 					},
 				},
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
-				Config:   logstashSDKCreateTestConfig,
+				Config: logstashSDKCreateTestConfig,
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
 				},
@@ -191,7 +191,6 @@ func TestAccResourceOutputLogstashFromSDK(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -214,6 +213,8 @@ func TestAccResourceOutputLogstashFromSDK(t *testing.T) {
 }
 
 func TestAccResourceOutputLogstash(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionOutput, versionutils.FlavorAny)
+
 	policyName := sdkacctest.RandString(22)
 
 	resource.Test(t, resource.TestCase{
@@ -222,7 +223,6 @@ func TestAccResourceOutputLogstash(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -242,7 +242,6 @@ func TestAccResourceOutputLogstash(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -265,6 +264,8 @@ func TestAccResourceOutputLogstash(t *testing.T) {
 }
 
 func TestAccResourceOutputKafka(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, output.MinVersionOutputKafka, versionutils.FlavorAny)
+
 	policyName := sdkacctest.RandString(22)
 
 	resource.Test(t, resource.TestCase{
@@ -273,7 +274,6 @@ func TestAccResourceOutputKafka(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(output.MinVersionOutputKafka),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -299,7 +299,6 @@ func TestAccResourceOutputKafka(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(output.MinVersionOutputKafka),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -325,6 +324,8 @@ func TestAccResourceOutputKafka(t *testing.T) {
 }
 
 func TestAccResourceOutputKafkaComplex(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, output.MinVersionOutputKafka, versionutils.FlavorAny)
+
 	policyName := sdkacctest.RandString(22)
 
 	resource.Test(t, resource.TestCase{
@@ -333,7 +334,6 @@ func TestAccResourceOutputKafkaComplex(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(output.MinVersionOutputKafka),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -363,6 +363,8 @@ func TestAccResourceOutputKafkaComplex(t *testing.T) {
 }
 
 func TestAccResourceOutputRemoteElasticsearch(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionOutput, versionutils.FlavorAny)
+
 	client, err := clients.NewAcceptanceTestingKibanaScopedClient()
 	require.NoError(t, err)
 	kibanaOapiClient, err := client.GetKibanaOapiClient()
@@ -391,7 +393,6 @@ func TestAccResourceOutputRemoteElasticsearch(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name":   config.StringVariable(policyName),
@@ -410,7 +411,6 @@ func TestAccResourceOutputRemoteElasticsearch(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"policy_name":   config.StringVariable(policyName),
@@ -432,6 +432,8 @@ func TestAccResourceOutputRemoteElasticsearch(t *testing.T) {
 }
 
 func TestAccResourceOutputRemoteElasticsearchValidation(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionOutput, versionutils.FlavorAny)
+
 	policyName := sdkacctest.RandString(22)
 
 	resource.Test(t, resource.TestCase{
@@ -439,7 +441,6 @@ func TestAccResourceOutputRemoteElasticsearchValidation(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation-sync-integrations"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -448,7 +449,6 @@ func TestAccResourceOutputRemoteElasticsearchValidation(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation-sync-uninstalled-integrations"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -457,7 +457,6 @@ func TestAccResourceOutputRemoteElasticsearchValidation(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation-write-to-logs-streams"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -466,7 +465,6 @@ func TestAccResourceOutputRemoteElasticsearchValidation(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation-missing-service-token"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -475,7 +473,6 @@ func TestAccResourceOutputRemoteElasticsearchValidation(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation-service-token-on-elasticsearch"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -487,6 +484,8 @@ func TestAccResourceOutputRemoteElasticsearchValidation(t *testing.T) {
 }
 
 func TestAccResourceFleetOutput_importFromSpace(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionOutputSpaces, versionutils.FlavorAny)
+
 	policyName := sdkacctest.RandString(22)
 	spaceName := sdkacctest.RandString(22)
 	spaceID := fmt.Sprintf("fleet-output-test-%s", spaceName)
@@ -497,7 +496,6 @@ func TestAccResourceFleetOutput_importFromSpace(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutputSpaces),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -513,7 +511,6 @@ func TestAccResourceFleetOutput_importFromSpace(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutputSpaces),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -540,7 +537,6 @@ func TestAccResourceFleetOutput_importFromSpace(t *testing.T) {
 			// Scenario 2: plain ID import (no space prefix) - space_ids is not populated
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutputSpaces),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -561,6 +557,189 @@ func TestAccResourceFleetOutput_importFromSpace(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "type", "elasticsearch"),
 					resource.TestCheckNoResourceAttr("elasticstack_fleet_output.test_output", "space_ids.#"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceOutputElasticsearchWithFingerprint(t *testing.T) {
+	policyName := sdkacctest.RandString(22)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceOutputDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "type", "elasticsearch"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "ca_sha256", "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "ca_trusted_fingerprint", "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567891"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceOutputElasticsearchSSL(t *testing.T) {
+	policyName := sdkacctest.RandString(22)
+	versionutils.SkipIfUnsupported(t, output.MinVersionOutputSSLVerificationMode, versionutils.FlavorAny)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceOutputDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "type", "elasticsearch"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "ssl.verification_mode", "none"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceOutputDefaultFlags(t *testing.T) {
+	policyName := sdkacctest.RandString(22)
+	versionutils.SkipIfUnsupported(t, minVersionOutput, versionutils.FlavorAny)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceOutputDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "type", "elasticsearch"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "default_integrations", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "default_monitoring", "true"),
+				),
+			},
+			{
+				// Kibana refuses to demote the cluster's only default output, so
+				// promote the preconfigured `fleet-default-output` first. That
+				// auto-demotes our test_output, after which Terraform's apply
+				// happily aligns state with the now-non-default config.
+				PreConfig:                promoteFleetDefaultOutput(t),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "type", "elasticsearch"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "default_integrations", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "default_monitoring", "false"),
+				),
+			},
+		},
+	})
+}
+
+// promoteFleetDefaultOutput returns a PreConfig hook that promotes the
+// preconfigured `fleet-default-output` to be the cluster's default for
+// integrations and monitoring. This is required when a managed test output is
+// currently the default and we want to demote (or destroy) it: Kibana rejects
+// demotions/deletions of an output that would leave the cluster without a
+// default.
+func promoteFleetDefaultOutput(t *testing.T) func() {
+	return func() {
+		t.Helper()
+		client, err := clients.NewAcceptanceTestingKibanaScopedClient()
+		require.NoError(t, err)
+		kbClient, err := client.GetKibanaOapiClient()
+		require.NoError(t, err)
+
+		body := strings.NewReader(`{
+			"name": "default",
+			"type": "elasticsearch",
+			"hosts": ["http://localhost:9200"],
+			"is_default": true,
+			"is_default_monitoring": true
+		}`)
+		resp, err := kbClient.API.PutFleetOutputsOutputidWithBodyWithResponse(
+			t.Context(),
+			"fleet-default-output",
+			"application/json",
+			body,
+		)
+		require.NoError(t, err)
+		require.Equalf(t, 200, resp.StatusCode(),
+			"failed to promote fleet-default-output to default: status=%d body=%s",
+			resp.StatusCode(), string(resp.Body))
+	}
+}
+
+func TestAccResourceOutputKafkaUserPass(t *testing.T) {
+	policyName := sdkacctest.RandString(22)
+	versionutils.SkipIfUnsupported(t, output.MinVersionOutputKafka, versionutils.FlavorAny)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceOutputDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "type", "kafka"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "kafka.auth_type", "user_pass"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "kafka.username", "testuser"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "kafka.sasl.mechanism", "PLAIN"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceOutputKafkaPartitions(t *testing.T) {
+	policyName := sdkacctest.RandString(22)
+	versionutils.SkipIfUnsupported(t, output.MinVersionOutputKafka, versionutils.FlavorAny)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceOutputDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "type", "kafka"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "kafka.partition", "random"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "kafka.random.group_events", "1"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "type", "kafka"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "kafka.partition", "round_robin"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "kafka.round_robin.group_events", "1"),
 				),
 			},
 		},

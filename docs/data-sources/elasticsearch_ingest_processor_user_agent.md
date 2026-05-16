@@ -39,10 +39,15 @@ resource "elasticstack_elasticsearch_ingest_pipeline" "my_ingest_pipeline" {
 
 ### Optional
 
+- `description` (String) Description of the processor.
 - `extract_device_type` (Boolean) Extracts device type from the user agent string on a best-effort basis. Supported only starting from Elasticsearch version **8.0**
+- `if` (String) Conditionally execute the processor
+- `ignore_failure` (Boolean) Ignore failures for the processor.
 - `ignore_missing` (Boolean) If `true` and `field` does not exist or is `null`, the processor quietly exits without modifying the document.
+- `on_failure` (List of String) Handle failures for the processor.
 - `properties` (Set of String) Controls what properties are added to `target_field`.
 - `regex_file` (String) The name of the file in the `config/ingest-user-agent` directory containing the regular expressions for parsing the user agent string.
+- `tag` (String) Identifier for the processor.
 - `target_field` (String) The field that will be filled with the user agent details.
 
 ### Read-Only

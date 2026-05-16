@@ -14,7 +14,10 @@ on:
         ISSUE_SLOTS_CAP: "3"
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
-        x-script-include: scripts/compute_issue_slots.inline.js
+        x-script-include: ../lib/compute_issue_slots.inline.js
+
+checkout:
+  fetch-depth: 0
 
 permissions:
   contents: read
@@ -25,13 +28,16 @@ permissions:
 safe-outputs:
   create-issue:
     title-prefix: "[duplicate-code] "
-    labels: [duplicate-code, code-quality, automated-analysis]
+    labels: [duplicate-code, code-quality, automated-analysis, triaged]
     max: 3
 
 timeout-minutes: 15
 engine:
   id: claude
-  model: "llm-gateway/gpt-5.4"
+  model: "llm-gateway/claude-sonnet-4-6"
+  args:
+    - "--effort"
+    - "high"
   env:
     ANTHROPIC_BASE_URL: "https://elastic.litellm-prod.ai/"
     ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_LITELLM_PROXY_API_KEY }}

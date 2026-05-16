@@ -1,7 +1,30 @@
+# Preserve environment and command-line variable values across .env inclusion.
+# The .env file (auto-created from .env.template) may contain defaults that
+# would otherwise silently override values set via workflow matrices or local shell.
+define _env_guard_save
+_$(1)_ORIGIN := $(origin $(1))
+_$(1)_VALUE  := $($(1))
+endef
+
+define _env_guard_restore
+ifneq ($(filter environment command line,$(_$(1)_ORIGIN)),)
+  override $(1) := $(_$(1)_VALUE)
+endif
+endef
+
+# Guard variables present in both .env.template and CI/local usage.
+_ENV_GUARD_VARS := STACK_VERSION FLEET_IMAGE ELASTICSEARCH_PASSWORD KIBANA_PASSWORD
+
+$(foreach v,$(_ENV_GUARD_VARS),$(eval $(call _env_guard_save,$v)))
+
+-include .env
+
+$(foreach v,$(_ENV_GUARD_VARS),$(eval $(call _env_guard_restore,$v)))
+
 .DEFAULT_GOAL = help
 SHELL := /bin/bash
 
-VERSION ?= 0.14.5
+VERSION ?= 0.15.1
 
 NAME = elasticstack
 BINARY = terraform-provider-${NAME}
@@ -9,6 +32,8 @@ MARCH = "$$(go env GOOS)_$$(go env GOARCH)"
 
 ACCTEST_PARALLELISM ?= 10
 ACCTEST_PACKAGE_PARALLELISM ?= 6
+ACCTEST_TOTAL_SHARDS ?= 1
+ACCTEST_SHARD_INDEX ?= 0
 ACCTEST_TIMEOUT = 120m
 ACCTEST_COUNT = 1
 TEST ?= ./...
@@ -21,12 +46,22 @@ endif
 
 ELASTICSEARCH_USERNAME ?= elastic
 ELASTICSEARCH_PASSWORD ?= password
+ELASTICSEARCH_PORT ?= 9200
+KIBANA_PORT ?= 5601
+
+export ELASTICSEARCH_PORT KIBANA_PORT
+
+# Auto-create .env from template so docker-compose and Make targets work
+# when the repo is checked out without a committed .env (e.g. CI, fresh clone).
+# Worktrunk worktrees generate their own .env, so this only runs once.
+.env:
+	@test -f $@ || cp .env.template $@
 
 KIBANA_SYSTEM_USERNAME ?= kibana_system
 KIBANA_SYSTEM_PASSWORD ?= password
 KIBANA_API_KEY_NAME ?= kibana-api-key
 
-FLEET_NAME ?= terraform-elasticstack-fleet
+FLEET_NAME ?= fleet
 FLEET_ENDPOINT ?= https://$(FLEET_NAME):8220
 
 # Fleet Server image repository. Some older stack versions (notably 8.0.x, 8.1.x)
@@ -61,11 +96,11 @@ build: lint build-ci ## build the terraform provider
 # To run specific test (e.g. TestAccResourceActionConnector) execute `make testacc-vs-docker TESTARGS='-run ^TestAccResourceKibanaConnectorBedrock$$'`
 .PHONY: testacc-vs-docker
 testacc-vs-docker:
-	@ ELASTICSEARCH_ENDPOINTS=http://localhost:9200 KIBANA_ENDPOINT=http://localhost:5601 ELASTICSEARCH_USERNAME=$(ELASTICSEARCH_USERNAME) ELASTICSEARCH_PASSWORD=$(ELASTICSEARCH_PASSWORD) make testacc
+	@ ELASTICSEARCH_ENDPOINTS=http://localhost:$(ELASTICSEARCH_PORT) KIBANA_ENDPOINT=http://localhost:$(KIBANA_PORT) ELASTICSEARCH_USERNAME=$(ELASTICSEARCH_USERNAME) ELASTICSEARCH_PASSWORD=$(ELASTICSEARCH_PASSWORD) make testacc
 
 .PHONY: testacc
 testacc: ## Run acceptance tests
-	TF_ACC=1 go tool gotestsum --format testname --rerun-fails=$(RERUN_FAILS) --rerun-fails-max-failures=$(RERUN_FAILS_MAX_FAILURES) --packages="./..." -- -p $(ACCTEST_PACKAGE_PARALLELISM) -v -count $(ACCTEST_COUNT) -parallel $(ACCTEST_PARALLELISM) $(TESTARGS) -timeout $(ACCTEST_TIMEOUT)
+	TF_ACC=1 go tool gotestsum --format testname --rerun-fails=$(RERUN_FAILS) --rerun-fails-max-failures=$(RERUN_FAILS_MAX_FAILURES) --packages="$(shell go list ./... | sort | awk '(NR-1) % $(ACCTEST_TOTAL_SHARDS) == $(ACCTEST_SHARD_INDEX)')" -- -p $(ACCTEST_PACKAGE_PARALLELISM) -v -count $(ACCTEST_COUNT) -parallel $(ACCTEST_PARALLELISM) $(TESTARGS) -timeout $(ACCTEST_TIMEOUT)
 
 .PHONY: hook-test
 hook-test: ## Run hook JavaScript unit tests
@@ -75,7 +110,11 @@ hook-test: ## Run hook JavaScript unit tests
 test: workflow-test hook-test ## Run unit tests and JS tests
 	go test -v $(TEST) $(TESTARGS) -timeout=5m -parallel=4 -count=1
 
-CURL_OPTS = -sS --retry 5 --retry-all-errors -X POST -u $(ELASTICSEARCH_USERNAME):$(ELASTICSEARCH_PASSWORD) -H "Content-Type: application/json"
+CURL_BASE_OPTS = -sS --retry 5 --retry-all-errors -u $(ELASTICSEARCH_USERNAME):$(ELASTICSEARCH_PASSWORD) -H "Content-Type: application/json"
+CURL_OPTS = $(CURL_BASE_OPTS) -X POST
+FLEET_DEFAULT_DOWNLOAD_SOURCE_ID = terraform-acc-fleet-default-download-source
+FLEET_DEFAULT_DOWNLOAD_SOURCE_NAME = Terraform Acceptance Default Agent Download Source
+FLEET_DEFAULT_DOWNLOAD_SOURCE_HOST = https://artifacts.elastic.co/downloads/elastic-agent
 
 # To run specific test (e.g. TestAccResourceActionConnector) execute `make docker-testacc TESTARGS='-run ^TestAccResourceActionConnector$$'`
 # To enable tracing (or debugging), execute `make docker-testacc TF_LOG=TRACE`
@@ -91,52 +130,71 @@ docker-testacc-with-token: docker-fleet
 	docker compose -f $(COMPOSE_FILE) --profile token-acceptance-tests up --quiet-pull token-acceptance-tests;
 
 .PHONY: docker-elasticsearch
-docker-elasticsearch: ## Start Elasticsearch single node cluster in docker container
+docker-elasticsearch: .env ## Start Elasticsearch single node cluster in docker container
 	@ docker compose -f $(COMPOSE_FILE) up --quiet-pull -d elasticsearch
 
 .PHONY: docker-kibana
-docker-kibana:  ## Start Kibana node in docker container
+docker-kibana: .env  ## Start Kibana node in docker container
 	@ docker compose -f $(COMPOSE_FILE) up --quiet-pull -d kibana
 
 .PHONY: docker-fleet
-docker-fleet: ## Start Fleet node in docker container
-	@ export KIBANA_CONFIG_FILE=$$(if [ "$(STACK_VERSION)" = "9.4.0-SNAPSHOT" ]; then echo "kibana-9.4.snapshot.yml"; else echo "kibana.yml"; fi); \
+docker-fleet: .env ## Start Fleet node in docker container
+	@ export KIBANA_CONFIG_FILE=$$(if [ "$(STACK_VERSION)" = "9.4.0" ]; then echo "kibana-9.4.yml"; else echo "kibana.yml"; fi); \
 	docker compose -f $(COMPOSE_FILE) up --quiet-pull -d fleet
 
 .PHONY: set-kibana-password
-set-kibana-password: ## Sets the ES KIBANA_SYSTEM_USERNAME's password to KIBANA_SYSTEM_PASSWORD. This expects Elasticsearch to be available at localhost:9200
-	@ curl $(CURL_OPTS) http://localhost:9200/_security/user/$(KIBANA_SYSTEM_USERNAME)/_password -d '{"password":"$(KIBANA_SYSTEM_PASSWORD)"}'
+set-kibana-password: ## Sets the ES KIBANA_SYSTEM_USERNAME's password to KIBANA_SYSTEM_PASSWORD. This expects Elasticsearch to be available at localhost:9200 (set via ELASTICSEARCH_PORT env var)
+	@ curl $(CURL_OPTS) http://localhost:$(ELASTICSEARCH_PORT)/_security/user/$(KIBANA_SYSTEM_USERNAME)/_password -d '{"password":"$(KIBANA_SYSTEM_PASSWORD)"}'
 
 .PHONY: setup-synthetics
-setup-synthetics: ## Creates the synthetics policy required to run Synthetics. This expects Kibana to be available at localhost:5601
-	@ curl $(CURL_OPTS) -H "kbn-xsrf: true" http://localhost:5601/api/fleet/epm/packages/synthetics/1.2.2 -d '{"force": true}'
+setup-synthetics: ## Creates the synthetics policy required to run Synthetics. This expects Kibana to be available at localhost:5601 (set via KIBANA_PORT env var)
+	@ curl $(CURL_OPTS) -H "kbn-xsrf: true" http://localhost:$(KIBANA_PORT)/api/fleet/epm/packages/synthetics/1.2.2 -d '{"force": true}'
 
 .PHONY: create-es-api-key
-create-es-api-key: ## Creates and outputs a new API Key. This expects Elasticsearch to be available at localhost:9200
-	@ curl $(CURL_OPTS) http://localhost:9200/_security/api_key -d '{"name":"$(KIBANA_API_KEY_NAME)"}'
+create-es-api-key: ## Creates and outputs a new API Key. This expects Elasticsearch to be available at localhost:9200 (set via ELASTICSEARCH_PORT env var)
+	@ curl $(CURL_OPTS) http://localhost:$(ELASTICSEARCH_PORT)/_security/api_key -d '{"name":"$(KIBANA_API_KEY_NAME)"}'
 
 .PHONY: create-es-bearer-token
-create-es-bearer-token: ## Creates and outputs a new OAuth bearer token. This expects Elasticsearch to be available at localhost:9200
-	@ curl $(CURL_OPTS) http://localhost:9200/_security/oauth2/token -d '{"grant_type":"client_credentials"}'
+create-es-bearer-token: ## Creates and outputs a new OAuth bearer token. This expects Elasticsearch to be available at localhost:9200 (set via ELASTICSEARCH_PORT env var)
+	@ curl $(CURL_OPTS) http://localhost:$(ELASTICSEARCH_PORT)/_security/oauth2/token -d '{"grant_type":"client_credentials"}'
 
 .PHONY: setup-kibana-fleet
-setup-kibana-fleet: ## Creates the agent and integration policies required to run Fleet. This expects Kibana to be available at localhost:5601
-	curl $(CURL_OPTS) -H "kbn-xsrf: true" http://localhost:5601/api/fleet/fleet_server_hosts -d '{"name":"default","host_urls":["$(FLEET_ENDPOINT)"],"is_default":true}'
-	curl $(CURL_OPTS) -H "kbn-xsrf: true" http://localhost:5601/api/fleet/agent_policies -d '{"id":"fleet-server","name":"Fleet Server","namespace":"default","monitoring_enabled":["logs","metrics"]}'
-	curl $(CURL_OPTS) -H "kbn-xsrf: true" http://localhost:5601/api/fleet/package_policies -d '{"name":"fleet-server","namespace":"default","policy_id":"fleet-server","enabled":true,"inputs":[{"type":"fleet-server","enabled":true,"streams":[],"vars":{}}],"package":{"name":"fleet_server","version":"1.5.0"}}'
+setup-kibana-fleet: ## Creates the agent and integration policies required to run Fleet. This expects Kibana to be available at localhost:5601 (set via KIBANA_PORT env var)
+	curl $(CURL_OPTS) -H "kbn-xsrf: true" http://localhost:$(KIBANA_PORT)/api/fleet/fleet_server_hosts -d '{"name":"default","host_urls":["$(FLEET_ENDPOINT)"],"is_default":true}'
+	curl $(CURL_OPTS) -H "kbn-xsrf: true" http://localhost:$(KIBANA_PORT)/api/fleet/agent_policies -d '{"id":"fleet-server","name":"Fleet Server","namespace":"default","monitoring_enabled":["logs","metrics"]}'
+	curl $(CURL_OPTS) -H "kbn-xsrf: true" http://localhost:$(KIBANA_PORT)/api/fleet/package_policies -d '{"name":"fleet-server","namespace":"default","policy_id":"fleet-server","enabled":true,"inputs":[{"type":"fleet-server","enabled":true,"streams":[],"vars":{}}],"package":{"name":"fleet_server","version":"1.5.0"}}'
+	@ download_sources="$$(mktemp)"; \
+	trap 'rm -f "$$download_sources"' EXIT; \
+	status="$$(curl $(CURL_BASE_OPTS) -o "$$download_sources" -w '%{http_code}' -H "kbn-xsrf: true" http://localhost:$(KIBANA_PORT)/api/fleet/agent_download_sources)"; \
+	case "$$status" in \
+		2*) ;; \
+		404) exit 0 ;; \
+		*) echo "Unexpected response listing Kibana agent download sources: HTTP $$status" >&2; exit 1 ;; \
+	esac; \
+	if jq -e '.items[]? | select(.is_default == true and (.host // "") != "")' "$$download_sources" >/dev/null; then \
+		exit 0; \
+	fi; \
+	status="$$(curl $(CURL_OPTS) -o /dev/null -w '%{http_code}' -H "kbn-xsrf: true" http://localhost:$(KIBANA_PORT)/api/fleet/agent_download_sources -d '{"id":"$(FLEET_DEFAULT_DOWNLOAD_SOURCE_ID)","name":"$(FLEET_DEFAULT_DOWNLOAD_SOURCE_NAME)","host":"$(FLEET_DEFAULT_DOWNLOAD_SOURCE_HOST)","is_default":true}')"; \
+	case "$$status" in \
+		2*) ;; \
+		400|409) \
+			status="$$(curl $(CURL_BASE_OPTS) -X PUT -o /dev/null -w '%{http_code}' -H "kbn-xsrf: true" http://localhost:$(KIBANA_PORT)/api/fleet/agent_download_sources/$(FLEET_DEFAULT_DOWNLOAD_SOURCE_ID) -d '{"name":"$(FLEET_DEFAULT_DOWNLOAD_SOURCE_NAME)","host":"$(FLEET_DEFAULT_DOWNLOAD_SOURCE_HOST)","is_default":true}')"; \
+			case "$$status" in 2*) ;; *) echo "Unexpected response ensuring Kibana agent download source: HTTP $$status" >&2; exit 1 ;; esac ;; \
+		*) echo "Unexpected response creating Kibana agent download source: HTTP $$status" >&2; exit 1 ;; \
+	esac
 
 .PHONY: docker-clean
-docker-clean: ## Try to remove provisioned nodes and assigned network
+docker-clean: .env ## Try to remove provisioned nodes and assigned network
 	@ docker compose -f $(COMPOSE_FILE) --profile acceptance-tests down --volumes
 
 .PHONY: copy-kibana-ca
-copy-kibana-ca: ## Copy Kibana CA certificate to local machine
+copy-kibana-ca: .env ## Copy Kibana CA certificate to local machine
 	@ docker compose -f $(COMPOSE_FILE) cp kibana:/certs/rootCA.pem ./kibana-ca.pem
 
 .PHONY: docs-generate
 docs-generate: tools ## Generate documentation for the provider
 	@ terraform_version="$$(tr -d '[:space:]' < .terraform-version)"; \
-	go tool github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate --provider-name terraform-provider-elasticstack --tf-version "$$terraform_version"
+	TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL=false go tool github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate --provider-name terraform-provider-elasticstack --tf-version "$$terraform_version"
 
 .PHONY: workflow-generate
 workflow-generate: ## Generate workflow markdown sources
@@ -168,7 +226,7 @@ install: build ## Install built provider into the local terraform cache
 
 .PHONY: tools
 tools: $(GOBIN)  ## Download golangci-lint locally if necessary.
-	@[[ -f $(GOBIN)/golangci-lint ]] || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOBIN) v2.11.4
+	@[[ -f $(GOBIN)/golangci-lint ]] || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/main/install.sh | sh -s -- -b $(GOBIN) v2.12.2
 
 .PHONY: golangci-lint-custom
 golangci-lint-custom: tools

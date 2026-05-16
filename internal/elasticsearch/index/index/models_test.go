@@ -25,6 +25,7 @@ import (
 	fuzz "github.com/google/gofuzz"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -37,7 +38,7 @@ import (
 func Test_tfModel_toAPIModel(t *testing.T) {
 	validAliases, diags := basetypes.NewSetValueFrom(
 		context.Background(),
-		aliasElementType(),
+		aliasElementType(context.Background()),
 		[]aliasTfModel{
 			{Name: basetypes.NewStringValue("alias-0")},
 			{
@@ -55,7 +56,7 @@ func Test_tfModel_toAPIModel(t *testing.T) {
 
 	validSetting, diags := basetypes.NewSetValueFrom(
 		context.Background(),
-		settingElementType(),
+		settingElementType(context.Background()),
 		[]settingTfModel{
 			{Name: basetypes.NewStringValue("number_of_replicas"), Value: basetypes.NewStringValue("5")},
 		},
@@ -63,7 +64,7 @@ func Test_tfModel_toAPIModel(t *testing.T) {
 	require.Empty(t, diags)
 
 	validSettingsBlock, diags := basetypes.NewObjectValue(
-		map[string]attr.Type{"setting": basetypes.SetType{ElemType: settingElementType()}},
+		map[string]attr.Type{"setting": basetypes.SetType{ElemType: settingElementType(context.Background())}},
 		map[string]attr.Value{
 			"setting": validSetting,
 		},
@@ -71,7 +72,7 @@ func Test_tfModel_toAPIModel(t *testing.T) {
 	require.Empty(t, diags)
 
 	validSettings, diags := basetypes.NewListValue(
-		settingsElementType(),
+		settingsElementType(context.Background()),
 		[]attr.Value{validSettingsBlock},
 	)
 	require.Empty(t, diags)
@@ -137,7 +138,7 @@ func Test_tfModel_toAPIModel(t *testing.T) {
 			name: "should not populate mappings if null",
 			model: tfModel{
 				Name:     basetypes.NewStringValue("index-name"),
-				Mappings: newMappingsNull(),
+				Mappings: index.NewMappingsNull(),
 				Settings: basetypes.NewListNull(basetypes.ObjectType{}),
 			},
 			expectedAPIModel: models.Index{
@@ -149,7 +150,7 @@ func Test_tfModel_toAPIModel(t *testing.T) {
 			name: "should not populate mappings if unknown",
 			model: tfModel{
 				Name:     basetypes.NewStringValue("index-name"),
-				Mappings: newMappingsUnknown(),
+				Mappings: index.NewMappingsUnknown(),
 				Settings: basetypes.NewListNull(basetypes.ObjectType{}),
 			},
 			expectedAPIModel: models.Index{
@@ -161,7 +162,7 @@ func Test_tfModel_toAPIModel(t *testing.T) {
 			name: "should unmarshall mappings if provided",
 			model: tfModel{
 				Name:     basetypes.NewStringValue("index-name"),
-				Mappings: newMappingsValue(`{"a": "b"}`),
+				Mappings: index.NewMappingsValue(`{"a": "b"}`),
 				Settings: basetypes.NewListNull(basetypes.ObjectType{}),
 			},
 			expectedAPIModel: models.Index{
@@ -362,6 +363,138 @@ func Test_tfModel_toAPIModel(t *testing.T) {
 				require.Equal(t, tt.expectedDiags, diags)
 			}
 			require.Equal(t, tt.expectedAPIModel, apiModel)
+		})
+	}
+}
+
+// makeSortList builds a types.List of sort entries for use in tests.
+func makeSortList(t *testing.T, entries []map[string]string) basetypes.ListValue {
+	t.Helper()
+	ctx := context.Background()
+	elem := sortElementType(ctx)
+	attrTypes := elem.(basetypes.ObjectType).AttrTypes
+
+	objs := make([]attr.Value, 0, len(entries))
+	for _, e := range entries {
+		attrs := map[string]attr.Value{
+			"field":   basetypes.NewStringNull(),
+			"order":   basetypes.NewStringNull(),
+			"missing": basetypes.NewStringNull(),
+			"mode":    basetypes.NewStringNull(),
+		}
+		for k, v := range e {
+			attrs[k] = basetypes.NewStringValue(v)
+		}
+		obj, diags := basetypes.NewObjectValue(attrTypes, attrs)
+		require.Empty(t, diags)
+		objs = append(objs, obj)
+	}
+	list, diags := basetypes.NewListValue(elem, objs)
+	require.Empty(t, diags)
+	return list
+}
+
+func Test_tfModel_toIndexSettings_sort(t *testing.T) {
+	tests := []struct {
+		name        string
+		entries     []map[string]string
+		wantField   []string
+		wantOrder   []string
+		wantMissing []string // nil means key absent
+		wantMode    []string // nil means key absent
+	}{
+		{
+			name: "single entry, all null optional",
+			entries: []map[string]string{
+				{"field": "date"},
+			},
+			wantField: []string{"date"},
+			wantOrder: []string{"asc"},
+		},
+		{
+			name: "two entries, explicit order",
+			entries: []map[string]string{
+				{"field": "date", "order": "desc"},
+				{"field": "id", "order": "asc"},
+			},
+			wantField: []string{"date", "id"},
+			wantOrder: []string{"desc", "asc"},
+		},
+		{
+			name: "missing on first entry only — positional alignment",
+			entries: []map[string]string{
+				{"field": "date", "missing": "_first"},
+				{"field": "id"},
+			},
+			wantField:   []string{"date", "id"},
+			wantOrder:   []string{"asc", "asc"},
+			wantMissing: []string{"_first", ""},
+		},
+		{
+			name: "missing on second entry only — positional alignment",
+			entries: []map[string]string{
+				{"field": "date"},
+				{"field": "id", "missing": "_last"},
+			},
+			wantField:   []string{"date", "id"},
+			wantOrder:   []string{"asc", "asc"},
+			wantMissing: []string{"", "_last"},
+		},
+		{
+			name: "mode on first entry only — positional alignment",
+			entries: []map[string]string{
+				{"field": "price", "mode": "max"},
+				{"field": "date"},
+			},
+			wantField: []string{"price", "date"},
+			wantOrder: []string{"asc", "asc"},
+			wantMode:  []string{"max", ""},
+		},
+		{
+			name: "mode on second entry only — positional alignment",
+			entries: []map[string]string{
+				{"field": "price"},
+				{"field": "date", "mode": "min"},
+			},
+			wantField: []string{"price", "date"},
+			wantOrder: []string{"asc", "asc"},
+			wantMode:  []string{"", "min"},
+		},
+		{
+			name: "all optional fields present",
+			entries: []map[string]string{
+				{"field": "date", "order": "desc", "missing": "_first", "mode": "max"},
+				{"field": "id", "order": "asc", "missing": "_last", "mode": "min"},
+			},
+			wantField:   []string{"date", "id"},
+			wantOrder:   []string{"desc", "asc"},
+			wantMissing: []string{"_first", "_last"},
+			wantMode:    []string{"max", "min"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			model := tfModel{
+				Sort: makeSortList(t, tt.entries),
+			}
+			settings, diags := model.toIndexSettings(context.Background())
+			require.Empty(t, diags)
+
+			require.Equal(t, tt.wantField, settings["sort.field"], "sort.field")
+			require.Equal(t, tt.wantOrder, settings["sort.order"], "sort.order")
+
+			if tt.wantMissing != nil {
+				require.Equal(t, tt.wantMissing, settings["sort.missing"], "sort.missing")
+			} else {
+				require.Nil(t, settings["sort.missing"], "sort.missing should be absent")
+			}
+
+			if tt.wantMode != nil {
+				require.Equal(t, tt.wantMode, settings["sort.mode"], "sort.mode")
+			} else {
+				require.Nil(t, settings["sort.mode"], "sort.mode should be absent")
+			}
 		})
 	}
 }

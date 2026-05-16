@@ -23,6 +23,8 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -46,13 +48,14 @@ func Test_tagcloudPanelConfigConverter_populateFromAttributes_buildAttributes_ro
 	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
 	require.NoError(t, attrs.FromTagcloudNoESQL(api))
 
-	converter := newTagcloudPanelConfigConverter()
-	pm := &panelModel{}
-	diags := converter.populateFromAttributes(ctx, pm, attrs)
+	c := lenscommon.ForType(string(kbapi.TagcloudNoESQLTypeTagCloud))
+	require.NotNil(t, c)
+	visBv := models.VisByValueModel{}
+	diags := c.PopulateFromAttributes(ctx, lensChartResolver(nil), &visBv.LensByValueChartBlocks, attrs)
 	require.False(t, diags.HasError())
-	require.NotNil(t, pm.TagcloudConfig)
+	require.NotNil(t, visBv.TagcloudConfig)
 
-	attrs2, diags := converter.buildAttributes(*pm)
+	attrs2, diags := c.BuildAttributes(&visBv.LensByValueChartBlocks, lensChartResolver(nil))
 	require.False(t, diags.HasError())
 
 	tagcloudNoESQL2, err := attrs2.AsTagcloudNoESQL()
@@ -61,17 +64,11 @@ func Test_tagcloudPanelConfigConverter_populateFromAttributes_buildAttributes_ro
 	assert.Equal(t, "Converter round-trip test", *tagcloudNoESQL2.Description)
 }
 
-func Test_newTagcloudPanelConfigConverter(t *testing.T) {
-	converter := newTagcloudPanelConfigConverter()
-	assert.NotNil(t, converter)
-	assert.Equal(t, "tag_cloud", converter.visualizationType)
-}
-
 func Test_tagcloudConfigModel_fromAPI_toAPI(t *testing.T) {
 	tests := []struct {
 		name     string
 		api      kbapi.TagcloudNoESQL
-		expected *tagcloudConfigModel
+		expected *models.TagcloudConfigModel
 	}{
 		{
 			name: "full tagcloud config",
@@ -105,17 +102,17 @@ func Test_tagcloudConfigModel_fromAPI_toAPI(t *testing.T) {
 
 				return api
 			}(),
-			expected: &tagcloudConfigModel{
+			expected: &models.TagcloudConfigModel{
 				Title:               types.StringValue("Test Tagcloud"),
 				Description:         types.StringValue("A test tagcloud description"),
 				IgnoreGlobalFilters: types.BoolValue(true),
 				Sampling:            types.Float64Value(0.5),
-				Query: &filterSimpleModel{
+				Query: &models.FilterSimpleModel{
 					Language:   types.StringValue("kql"),
 					Expression: types.StringValue("status:active"),
 				},
 				Orientation: types.StringValue("horizontal"),
-				FontSize: &fontSizeModel{
+				FontSize: &models.FontSizeModel{
 					Min: types.Float64Value(18),
 					Max: types.Float64Value(72),
 				},
@@ -139,12 +136,12 @@ func Test_tagcloudConfigModel_fromAPI_toAPI(t *testing.T) {
 
 				return api
 			}(),
-			expected: &tagcloudConfigModel{
+			expected: &models.TagcloudConfigModel{
 				Title:               types.StringNull(),
 				Description:         types.StringNull(),
 				IgnoreGlobalFilters: types.BoolNull(),
 				Sampling:            types.Float64Null(),
-				Query: &filterSimpleModel{
+				Query: &models.FilterSimpleModel{
 					Language:   types.StringValue("kql"),
 					Expression: types.StringValue("*"),
 				},
@@ -157,8 +154,8 @@ func Test_tagcloudConfigModel_fromAPI_toAPI(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test fromAPI
-			model := &tagcloudConfigModel{}
-			diags := model.fromAPI(context.Background(), tt.api)
+			model := &models.TagcloudConfigModel{}
+			diags := tagcloudConfigFromAPI(context.Background(), model, nil, nil, tt.api)
 			require.False(t, diags.HasError(), "fromAPI should not return errors")
 
 			// Validate expected fields
@@ -195,8 +192,10 @@ func Test_tagcloudConfigModel_fromAPI_toAPI(t *testing.T) {
 			}
 
 			// Test toAPI round-trip
-			apiResult, diags := model.toAPI()
+			attrsResult, diags := tagcloudConfigToAPI(model, nil)
 			require.False(t, diags.HasError(), "toAPI should not return errors")
+			apiResult, err := attrsResult.AsTagcloudNoESQL()
+			require.NoError(t, err)
 
 			// Validate round-trip for basic fields
 			if tt.api.Title != nil {
@@ -291,13 +290,15 @@ func Test_fontSizeModel_roundTrip(t *testing.T) {
 			_ = json.Unmarshal([]byte(`{"operation":{"operation_type":"terms"},"field":"tags.keyword"}`), &api.TagBy)
 
 			// Convert to model
-			model := &tagcloudConfigModel{}
-			diags := model.fromAPI(context.Background(), api)
+			model := &models.TagcloudConfigModel{}
+			diags := tagcloudConfigFromAPI(context.Background(), model, nil, nil, api)
 			require.False(t, diags.HasError())
 
 			// Convert back to API
-			apiResult, diags := model.toAPI()
+			attrsResult, diags := tagcloudConfigToAPI(model, nil)
 			require.False(t, diags.HasError())
+			apiResult, err := attrsResult.AsTagcloudNoESQL()
+			require.NoError(t, err)
 
 			// Verify font size round-trip
 			if tt.apiFont.Min != nil {
@@ -355,18 +356,18 @@ func Test_tagcloudConfig_JSONFields(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			model := &tagcloudConfigModel{
+			model := &models.TagcloudConfigModel{
 				Title:          types.StringValue("Test"),
 				Description:    types.StringValue("Test description"),
 				DataSourceJSON: jsontypes.NewNormalizedValue(tt.datasetJSON),
-				Query: &filterSimpleModel{
+				Query: &models.FilterSimpleModel{
 					Expression: types.StringValue("*"),
 				},
 				MetricJSON: customtypes.NewJSONWithDefaultsValue[map[string]any](tt.metricJSON, populateTagcloudMetricDefaults),
 				TagByJSON:  customtypes.NewJSONWithDefaultsValue[map[string]any](tt.tagByJSON, populateTagcloudTagByDefaults),
 			}
 
-			_, diags := model.toAPI()
+			_, diags := tagcloudConfigToAPI(model, nil)
 			if tt.wantError {
 				assert.True(t, diags.HasError(), "Expected error for invalid JSON")
 			} else {
@@ -374,4 +375,120 @@ func Test_tagcloudConfig_JSONFields(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_tagcloudConfigModel_fromAPIESQL_toAPIESQL_roundTrip(t *testing.T) {
+	ctx := context.Background()
+
+	api := kbapi.TagcloudESQL{Type: kbapi.TagcloudESQLTypeTagCloud}
+	require.NoError(t, json.Unmarshal([]byte(`{"type":"esql","query":"FROM logs-* | STATS count = COUNT() BY host"}`), &api.DataSource))
+	require.NoError(t, json.Unmarshal([]byte(`{"type":"number"}`), &api.Metric.Format))
+	api.Metric.Column = "count"
+	require.NoError(t, json.Unmarshal([]byte(`{"type":"number"}`), &api.TagBy.Format))
+	require.NoError(t, json.Unmarshal([]byte(`{"mode":"categorical","palette":"default","mapping":[]}`), &api.TagBy.Color))
+	api.TagBy.Column = "host"
+
+	model := &models.TagcloudConfigModel{}
+	diags := tagcloudConfigFromAPIESQL(ctx, model, nil, nil, api)
+	require.False(t, diags.HasError(), "fromAPIESQL should not return errors: %v", diags)
+
+	assert.Nil(t, model.Query)
+	assert.True(t, tagcloudConfigUsesESQL(model))
+	assert.True(t, model.MetricJSON.IsNull())
+	assert.True(t, model.TagByJSON.IsNull())
+	require.NotNil(t, model.EsqlMetric)
+	require.NotNil(t, model.EsqlTagBy)
+	assert.Equal(t, "count", model.EsqlMetric.Column.ValueString())
+	assert.Equal(t, "host", model.EsqlTagBy.Column.ValueString())
+	assert.JSONEq(t, `{"type":"number"}`, model.EsqlMetric.FormatJSON.ValueString())
+	assert.JSONEq(t, `{"type":"number"}`, model.EsqlTagBy.FormatJSON.ValueString())
+	assert.JSONEq(t, `{"mode":"categorical","palette":"default","mapping":[]}`, model.EsqlTagBy.ColorJSON.ValueString())
+
+	attrs, diags := tagcloudConfigToAPI(model, nil)
+	require.False(t, diags.HasError(), "toAPI should not return errors: %v", diags)
+	out, err := attrs.AsTagcloudESQL()
+	require.NoError(t, err)
+	assert.Equal(t, kbapi.TagcloudESQLTypeTagCloud, out.Type)
+	assert.Equal(t, "count", out.Metric.Column)
+	assert.Equal(t, "host", out.TagBy.Column)
+}
+
+func Test_tagcloudConfigModel_toAPIESQL_requiresEsqlBlocks(t *testing.T) {
+	t.Run("missing_esql_metric", func(t *testing.T) {
+		m := &models.TagcloudConfigModel{
+			DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"esql","query":"FROM logs-*"}`),
+		}
+		_, diags := tagcloudConfigToAPIESQL(m, nil)
+		require.True(t, diags.HasError(), "expected error when esql_metric is missing")
+	})
+	t.Run("missing_esql_tag_by", func(t *testing.T) {
+		m := &models.TagcloudConfigModel{
+			DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"esql","query":"FROM logs-*"}`),
+			EsqlMetric: &models.TagcloudEsqlMetric{
+				Column:     types.StringValue("c"),
+				FormatJSON: jsontypes.NewNormalizedValue(`{"type":"number"}`),
+			},
+		}
+		_, diags := tagcloudConfigToAPIESQL(m, nil)
+		require.True(t, diags.HasError(), "expected error when esql_tag_by is missing")
+		found := false
+		for _, d := range diags {
+			if d.Summary() == "Missing esql_tag_by" {
+				found = true
+				break
+			}
+		}
+		require.True(t, found, "expected Missing esql_tag_by diagnostic, got %#v", diags)
+	})
+}
+
+func Test_tagcloudPanelConfigConverter_routesESQL(t *testing.T) {
+	ctx := context.Background()
+
+	api := kbapi.TagcloudESQL{Type: kbapi.TagcloudESQLTypeTagCloud}
+	require.NoError(t, json.Unmarshal([]byte(`{"type":"esql","query":"FROM logs-* | STATS c = COUNT() BY h"}`), &api.DataSource))
+	require.NoError(t, json.Unmarshal([]byte(`{"type":"number"}`), &api.Metric.Format))
+	api.Metric.Column = "c"
+	require.NoError(t, json.Unmarshal([]byte(`{"type":"number"}`), &api.TagBy.Format))
+	require.NoError(t, json.Unmarshal([]byte(`{"mode":"categorical","palette":"default","mapping":[]}`), &api.TagBy.Color))
+	api.TagBy.Column = "h"
+
+	var attrs kbapi.KbnDashboardPanelTypeVisConfig0
+	require.NoError(t, attrs.FromTagcloudESQL(api))
+
+	c := lenscommon.ForType(string(kbapi.TagcloudNoESQLTypeTagCloud))
+	require.NotNil(t, c)
+	visBv := models.VisByValueModel{}
+	diags := c.PopulateFromAttributes(ctx, lensChartResolver(nil), &visBv.LensByValueChartBlocks, attrs)
+	require.False(t, diags.HasError())
+	require.NotNil(t, visBv.TagcloudConfig)
+	require.NotNil(t, visBv.TagcloudConfig.EsqlMetric)
+	require.NotNil(t, visBv.TagcloudConfig.EsqlTagBy)
+	assert.Nil(t, visBv.TagcloudConfig.Query)
+}
+
+func Test_tagcloudConfig_lensChartPresentation_hideTitleRoundTrip(t *testing.T) {
+	ctx := context.Background()
+	dash := lensPresentationTestDashboard()
+
+	api := kbapi.TagcloudNoESQL{Type: "tagcloud"}
+	require.NoError(t, json.Unmarshal([]byte(`{"index":"test-index"}`), &api.DataSource))
+	require.NoError(t, json.Unmarshal([]byte(`{"expression":"*","language":"kql"}`), &api.Query))
+	require.NoError(t, json.Unmarshal([]byte(`{"operation":{"operation_type":"count"}}`), &api.Metric))
+	require.NoError(t, json.Unmarshal([]byte(`{"operation":{"operation_type":"terms"},"field":"tags.keyword"}`), &api.TagBy))
+
+	base := &models.TagcloudConfigModel{}
+	require.False(t, tagcloudConfigFromAPI(ctx, base, nil, nil, api).HasError())
+
+	m := *base
+	m.HideTitle = types.BoolValue(true)
+
+	attrs, diags := tagcloudConfigToAPI(&m, dash)
+	require.False(t, diags.HasError())
+	out, err := attrs.AsTagcloudNoESQL()
+	require.NoError(t, err)
+
+	got := &models.TagcloudConfigModel{}
+	require.False(t, tagcloudConfigFromAPI(ctx, got, dash, &m, out).HasError())
+	assert.Equal(t, types.BoolValue(true), got.HideTitle)
 }

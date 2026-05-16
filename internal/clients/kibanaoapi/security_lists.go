@@ -46,7 +46,7 @@ func CreateListIndex(ctx context.Context, client *Client, spaceID string) (bool,
 		// Data streams already exist ([docs](https://www.elastic.co/docs/api/doc/kibana/operation/operation-createlistindex#operation-createlistindex-409))
 		return true, nil
 	default:
-		return false, reportUnknownError(resp.StatusCode(), resp.Body)
+		return false, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -68,7 +68,7 @@ func ReadListIndex(ctx context.Context, client *Client, spaceID string) (listInd
 		// Data streams don't exist
 		return false, false, nil
 	default:
-		return false, false, reportUnknownError(resp.StatusCode(), resp.Body)
+		return false, false, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -80,14 +80,7 @@ func DeleteListIndex(ctx context.Context, client *Client, spaceID string) diag.D
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return nil
-	case http.StatusNotFound:
-		return nil
-	default:
-		return reportUnknownError(resp.StatusCode(), resp.Body)
-	}
+	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNotFound)
 }
 
 // GetList reads a security list from the API by ID
@@ -99,16 +92,11 @@ func GetList(ctx context.Context, client *Client, spaceID string, params *kbapi.
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		if resp.JSON200 == nil {
-			return nil, diag.Diagnostics{
-				diag.NewErrorDiagnostic("Failed to parse list response", "API returned 200 but JSON200 is nil"),
-			}
-		}
-		return resp.JSON200, nil
+		return diagutil.UnwrapJSON200(resp.JSON200, "list")
 	case http.StatusNotFound:
 		return nil, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -121,14 +109,9 @@ func CreateList(ctx context.Context, client *Client, spaceID string, body kbapi.
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		if resp.JSON200 == nil {
-			return nil, diag.Diagnostics{
-				diag.NewErrorDiagnostic("Failed to parse list response", "API returned 200 but JSON200 is nil"),
-			}
-		}
-		return resp.JSON200, nil
+		return diagutil.UnwrapJSON200(resp.JSON200, "list")
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -141,14 +124,9 @@ func UpdateList(ctx context.Context, client *Client, spaceID string, body kbapi.
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		if resp.JSON200 == nil {
-			return nil, diag.Diagnostics{
-				diag.NewErrorDiagnostic("Failed to parse list response", "API returned 200 but JSON200 is nil"),
-			}
-		}
-		return resp.JSON200, nil
+		return diagutil.UnwrapJSON200(resp.JSON200, "list")
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -159,14 +137,7 @@ func DeleteList(ctx context.Context, client *Client, spaceID string, params *kba
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return nil
-	case http.StatusNotFound:
-		return nil
-	default:
-		return reportUnknownError(resp.StatusCode(), resp.Body)
-	}
+	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNotFound)
 }
 
 // GetListItem reads a security list item from the API by ID or list_id and value
@@ -191,7 +162,7 @@ func GetListItem(ctx context.Context, client *Client, spaceID string, params *kb
 	case http.StatusNotFound:
 		return nil, nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -204,14 +175,9 @@ func CreateListItem(ctx context.Context, client *Client, spaceID string, body kb
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		if resp.JSON200 == nil {
-			return nil, diag.Diagnostics{
-				diag.NewErrorDiagnostic("Failed to parse list item response", "API returned 200 but JSON200 is nil"),
-			}
-		}
-		return resp.JSON200, nil
+		return diagutil.UnwrapJSON200(resp.JSON200, "list item")
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -224,14 +190,9 @@ func UpdateListItem(ctx context.Context, client *Client, spaceID string, body kb
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		if resp.JSON200 == nil {
-			return nil, diag.Diagnostics{
-				diag.NewErrorDiagnostic("Failed to parse list item response", "API returned 200 but JSON200 is nil"),
-			}
-		}
-		return resp.JSON200, nil
+		return diagutil.UnwrapJSON200(resp.JSON200, "list item")
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
@@ -242,12 +203,5 @@ func DeleteListItem(ctx context.Context, client *Client, spaceID string, params 
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return nil
-	case http.StatusNotFound:
-		return nil
-	default:
-		return reportUnknownError(resp.StatusCode(), resp.Body)
-	}
+	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNotFound)
 }

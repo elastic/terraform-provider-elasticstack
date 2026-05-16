@@ -77,15 +77,6 @@ func FrameworkDiagFromError(err error) fwdiag.Diagnostics {
 	}
 }
 
-func SdkDiagsAsError(diags sdkdiag.Diagnostics) error {
-	for _, diag := range diags {
-		if diag.Severity == sdkdiag.Error {
-			return fmt.Errorf("%s: %s", diag.Summary, diag.Detail)
-		}
-	}
-	return nil
-}
-
 func FwDiagsAsError(diags fwdiag.Diagnostics) error {
 	for _, diag := range diags {
 		if diag.Severity() == fwdiag.SeverityError {
@@ -93,4 +84,16 @@ func FwDiagsAsError(diags fwdiag.Diagnostics) error {
 		}
 	}
 	return nil
+}
+
+// SDKErrorDiag returns a single-error SDK Diagnostics slice with the given
+// summary and detail. Use instead of inline sdkdiag.Diagnostic{...} struct literals.
+func SDKErrorDiag(summary, detail string) sdkdiag.Diagnostics {
+	return sdkdiag.Diagnostics{
+		sdkdiag.Diagnostic{
+			Severity: sdkdiag.Error,
+			Summary:  summary,
+			Detail:   detail,
+		},
+	}
 }

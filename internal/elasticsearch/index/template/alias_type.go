@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -143,7 +144,7 @@ func (v AliasObjectValue) ObjectSemanticEquals(ctx context.Context, newValuable 
 		return false, diags
 	}
 
-	var a AliasElementModel
+	var a aliasutil.AliasModel
 	d := v.As(ctx, &a, basetypes.ObjectAsOptions{
 		UnhandledNullAsEmpty: true,
 	})
@@ -152,7 +153,7 @@ func (v AliasObjectValue) ObjectSemanticEquals(ctx context.Context, newValuable 
 		return false, diags
 	}
 
-	var b AliasElementModel
+	var b aliasutil.AliasModel
 	d = newValue.As(ctx, &b, basetypes.ObjectAsOptions{
 		UnhandledNullAsEmpty: true,
 	})
@@ -195,7 +196,7 @@ func (v AliasObjectValue) Equal(o attr.Value) bool {
 	return v.ObjectValue.Equal(other.ObjectValue)
 }
 
-func fillUnknownAliasModelFieldsFromOther(m, other AliasElementModel) AliasElementModel {
+func fillUnknownAliasModelFieldsFromOther(m, other aliasutil.AliasModel) aliasutil.AliasModel {
 	out := m
 	if m.IndexRouting.IsUnknown() {
 		out.IndexRouting = other.IndexRouting
@@ -220,7 +221,7 @@ func fillUnknownAliasModelFieldsFromOther(m, other AliasElementModel) AliasEleme
 
 // aliasElementModelsSemanticallyEqual is the directed comparison: prior is the configuration or older
 // state side; incoming is the API/refreshed side for the rules in design.md §2.
-func aliasElementModelsSemanticallyEqual(ctx context.Context, prior, incoming AliasElementModel) (bool, diag.Diagnostics) {
+func aliasElementModelsSemanticallyEqual(ctx context.Context, prior, incoming aliasutil.AliasModel) (bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	if !prior.Name.Equal(incoming.Name) ||
@@ -290,7 +291,7 @@ func aliasRoutingFieldStringsSemanticallyEqual(a, b types.String) bool {
 
 // aliasEsIndexRoutingEchoesPriorMainRouting handles GET responses where Elasticsearch omits routing and
 // sets index_routing to the configured generic routing value even when index_routing was distinct in the template.
-func aliasEsIndexRoutingEchoesPriorMainRouting(prior, incoming AliasElementModel) bool {
+func aliasEsIndexRoutingEchoesPriorMainRouting(prior, incoming aliasutil.AliasModel) bool {
 	if !incoming.Routing.IsNull() && incoming.Routing.ValueString() != "" {
 		return false
 	}
@@ -319,17 +320,6 @@ func aliasEsIndexRoutingEchoesPriorMainRouting(prior, incoming AliasElementModel
 		return false
 	}
 	return true
-}
-
-// AliasElementModel is the Terraform struct for one template alias (expand/flatten and semantic equality).
-type AliasElementModel struct {
-	Name          types.String         `tfsdk:"name"`
-	IndexRouting  types.String         `tfsdk:"index_routing"`
-	Routing       types.String         `tfsdk:"routing"`
-	SearchRouting types.String         `tfsdk:"search_routing"`
-	Filter        jsontypes.Normalized `tfsdk:"filter"`
-	IsHidden      types.Bool           `tfsdk:"is_hidden"`
-	IsWriteIndex  types.Bool           `tfsdk:"is_write_index"`
 }
 
 func aliasFiltersSemanticallyEqual(ctx context.Context, a, b jsontypes.Normalized) (bool, diag.Diagnostics) {

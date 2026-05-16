@@ -44,7 +44,7 @@ type testModel struct {
 	ID types.String `tfsdk:"id"`
 }
 
-func getTestSchema() dsschema.Schema {
+func getTestSchema(_ context.Context) dsschema.Schema {
 	return dsschema.Schema{
 		Attributes: map[string]dsschema.Attribute{
 			"id": dsschema.StringAttribute{
@@ -86,7 +86,7 @@ func TestNewElasticsearchDataSource_typeAssertions(t *testing.T) {
 	t.Parallel()
 	ds := NewElasticsearchDataSource[struct {
 		ElasticsearchConnectionField
-	}](ComponentElasticsearch, "test_entity", func() dsschema.Schema {
+	}](ComponentElasticsearch, "test_entity", func(_ context.Context) dsschema.Schema {
 		return dsschema.Schema{}
 	}, func(_ context.Context, _ *clients.ElasticsearchScopedClient, model struct {
 		ElasticsearchConnectionField
@@ -116,7 +116,7 @@ func TestNewElasticsearchDataSource_schemaInjection(t *testing.T) {
 	t.Parallel()
 	ds := NewElasticsearchDataSource[struct {
 		ElasticsearchConnectionField
-	}](ComponentElasticsearch, "test_entity", func() dsschema.Schema {
+	}](ComponentElasticsearch, "test_entity", func(_ context.Context) dsschema.Schema {
 		return dsschema.Schema{}
 	}, func(_ context.Context, _ *clients.ElasticsearchScopedClient, model struct {
 		ElasticsearchConnectionField
@@ -135,8 +135,8 @@ func TestNewElasticsearchDataSource_schemaInjection(t *testing.T) {
 
 func TestNewKibanaDataSource_schemaDefensiveClone(t *testing.T) {
 	t.Parallel()
-	originalSchema := getTestSchema()
-	ds := NewKibanaDataSource[testModel](ComponentKibana, "test_entity", func() dsschema.Schema {
+	originalSchema := getTestSchema(context.Background())
+	ds := NewKibanaDataSource[testModel](ComponentKibana, "test_entity", func(_ context.Context) dsschema.Schema {
 		return originalSchema
 	}, testReadFunc)
 
@@ -224,7 +224,7 @@ func TestNewKibanaDataSource_Read_unconfiguredFactory(t *testing.T) {
 		"kibana_connection": tftypes.NewValue(connBlockType, nil),
 	})
 
-	fullSchema := getTestSchema()
+	fullSchema := getTestSchema(context.Background())
 	fullSchema.Blocks = map[string]dsschema.Block{
 		"kibana_connection": providerschema.GetKbFWConnectionBlock(),
 	}
@@ -422,7 +422,7 @@ func buildReadRequestForSchema(schema dsschema.Schema) datasource.ReadRequest {
 // =============================================================================
 
 // modelNoVersionReqs is an alias for testModel to make test intent clearer.
-// It does NOT implement KibanaDataSourceWithVersionRequirements.
+// It does NOT implement WithVersionRequirements.
 // (reuses the existing testModel type)
 
 // modelWithVersionReqsDiagError always returns an error diagnostic from
@@ -433,13 +433,13 @@ type modelWithVersionReqsDiagError struct {
 	ID types.String `tfsdk:"id"`
 }
 
-func (*modelWithVersionReqsDiagError) GetVersionRequirements() ([]DataSourceVersionRequirement, diag.Diagnostics) {
+func (*modelWithVersionReqsDiagError) GetVersionRequirements() ([]VersionRequirement, diag.Diagnostics) {
 	return nil, diag.Diagnostics{
 		diag.NewErrorDiagnostic("version requirements error", "injected GetVersionRequirements failure"),
 	}
 }
 
-func getModelWithVersionReqsDiagErrorSchema() dsschema.Schema {
+func getModelWithVersionReqsDiagErrorSchema(_ context.Context) dsschema.Schema {
 	return dsschema.Schema{
 		Attributes: map[string]dsschema.Attribute{
 			"id": dsschema.StringAttribute{Computed: true},
@@ -457,12 +457,12 @@ type supportedVersionModel struct {
 	ID types.String `tfsdk:"id"`
 }
 
-func (*supportedVersionModel) GetVersionRequirements() ([]DataSourceVersionRequirement, diag.Diagnostics) {
+func (*supportedVersionModel) GetVersionRequirements() ([]VersionRequirement, diag.Diagnostics) {
 	minVer := goversion.Must(goversion.NewVersion("8.0.0"))
-	return []DataSourceVersionRequirement{{MinVersion: *minVer, ErrorMessage: "needs 8.0.0"}}, nil
+	return []VersionRequirement{{MinVersion: *minVer, ErrorMessage: "needs 8.0.0"}}, nil
 }
 
-func getSupportedVersionModelSchema() dsschema.Schema {
+func getSupportedVersionModelSchema(_ context.Context) dsschema.Schema {
 	return dsschema.Schema{
 		Attributes: map[string]dsschema.Attribute{
 			"id": dsschema.StringAttribute{Computed: true},
@@ -480,9 +480,9 @@ type unsupportedVersionModel struct {
 	ID types.String `tfsdk:"id"`
 }
 
-func (*unsupportedVersionModel) GetVersionRequirements() ([]DataSourceVersionRequirement, diag.Diagnostics) {
+func (*unsupportedVersionModel) GetVersionRequirements() ([]VersionRequirement, diag.Diagnostics) {
 	minVer := goversion.Must(goversion.NewVersion("8.0.0"))
-	return []DataSourceVersionRequirement{{MinVersion: *minVer, ErrorMessage: "requires Kibana 8.0.0 or later"}}, nil
+	return []VersionRequirement{{MinVersion: *minVer, ErrorMessage: "requires Kibana 8.0.0 or later"}}, nil
 }
 
 // =============================================================================
@@ -491,19 +491,19 @@ func (*unsupportedVersionModel) GetVersionRequirements() ([]DataSourceVersionReq
 
 // TestNewKibanaDataSource_noVersionReqs_typeAssertionFalse confirms that the
 // standard testModel (no version-requirements interface) does NOT satisfy
-// KibanaDataSourceWithVersionRequirements for either value or pointer forms,
+// WithVersionRequirements for either value or pointer forms,
 // so the envelope correctly skips the version-check branch.
 func TestNewKibanaDataSource_noVersionReqs_typeAssertionFalse(t *testing.T) {
 	t.Parallel()
 	var m testModel
-	_, ok := any(m).(KibanaDataSourceWithVersionRequirements)
-	require.False(t, ok, "value testModel must not satisfy KibanaDataSourceWithVersionRequirements")
-	_, ok = any(&m).(KibanaDataSourceWithVersionRequirements)
-	require.False(t, ok, "*testModel must not satisfy KibanaDataSourceWithVersionRequirements")
+	_, ok := any(m).(WithVersionRequirements)
+	require.False(t, ok, "value testModel must not satisfy WithVersionRequirements")
+	_, ok = any(&m).(WithVersionRequirements)
+	require.False(t, ok, "*testModel must not satisfy WithVersionRequirements")
 }
 
 // TestNewKibanaDataSource_Read_noVersionReqs_readFuncInvoked proves that when a
-// model does NOT implement KibanaDataSourceWithVersionRequirements the envelope
+// model does NOT implement WithVersionRequirements the envelope
 // calls readFunc and persists state normally.
 //
 // Scenario: Model without version requirements reads normally.
@@ -526,7 +526,7 @@ func TestNewKibanaDataSource_Read_noVersionReqs_readFuncInvoked(t *testing.T) {
 	factory := newKibanaFactoryMinimal(t)
 	configureDataSource(t, ds, factory)
 
-	schemaWithConn := getTestSchema()
+	schemaWithConn := getTestSchema(context.Background())
 	schemaWithConn.Blocks = map[string]dsschema.Block{
 		"kibana_connection": providerschema.GetKbFWConnectionBlock(),
 	}
@@ -557,18 +557,18 @@ func TestNewKibanaDataSource_Read_noVersionReqs_readFuncInvoked(t *testing.T) {
 // Subtask 2.2: model WITH version requirements
 // =============================================================================
 
-// TestKibanaDataSourceWithVersionRequirements_pointerAssertionTrue confirms that
+// TestWithVersionRequirements_dataSourcePointerAssertionTrue confirms that
 // a model implementing GetVersionRequirements on its pointer receiver satisfies
 // the interface after the any(&model) cast used inside the envelope.
-func TestKibanaDataSourceWithVersionRequirements_pointerAssertionTrue(t *testing.T) {
+func TestWithVersionRequirements_dataSourcePointerAssertionTrue(t *testing.T) {
 	t.Parallel()
 	var m modelWithVersionReqsDiagError
 	// Value form must NOT satisfy the interface (method on pointer receiver).
-	_, ok := any(m).(KibanaDataSourceWithVersionRequirements)
+	_, ok := any(m).(WithVersionRequirements)
 	require.False(t, ok, "value modelWithVersionReqsDiagError must not satisfy the interface")
 	// Pointer form MUST satisfy it — this matches any(&model) in the envelope.
-	_, ok = any(&m).(KibanaDataSourceWithVersionRequirements)
-	require.True(t, ok, "*modelWithVersionReqsDiagError must satisfy KibanaDataSourceWithVersionRequirements")
+	_, ok = any(&m).(WithVersionRequirements)
+	require.True(t, ok, "*modelWithVersionReqsDiagError must satisfy WithVersionRequirements")
 }
 
 // TestKibanaDataSource_Read_versionReqDiagsStopRead exercises the full Read
@@ -583,7 +583,7 @@ func TestKibanaDataSource_Read_versionReqDiagsStopRead(t *testing.T) {
 
 	readFuncCalled := false
 	ds := NewKibanaDataSource[modelWithVersionReqsDiagError](ComponentKibana, "diag_err_entity",
-		func() dsschema.Schema {
+		func(_ context.Context) dsschema.Schema {
 			return dsschema.Schema{
 				Attributes: map[string]dsschema.Attribute{
 					"id": dsschema.StringAttribute{Computed: true},
@@ -600,7 +600,7 @@ func TestKibanaDataSource_Read_versionReqDiagsStopRead(t *testing.T) {
 	factory := newKibanaFactoryMinimal(t)
 	configureDataSource(t, ds, factory)
 
-	schema := getModelWithVersionReqsDiagErrorSchema()
+	schema := getModelWithVersionReqsDiagErrorSchema(context.Background())
 	req := buildReadRequestForSchema(schema)
 
 	var resp datasource.ReadResponse
@@ -631,7 +631,7 @@ func TestKibanaDataSource_Read_supportedServer_invokesReadFunc(t *testing.T) {
 
 	readFuncCalled := false
 	ds := NewKibanaDataSource[supportedVersionModel](ComponentKibana, "supported_entity",
-		func() dsschema.Schema {
+		func(_ context.Context) dsschema.Schema {
 			return dsschema.Schema{
 				Attributes: map[string]dsschema.Attribute{
 					"id": dsschema.StringAttribute{Computed: true},
@@ -648,7 +648,7 @@ func TestKibanaDataSource_Read_supportedServer_invokesReadFunc(t *testing.T) {
 	factory := newKibanaFactoryForURL(t, srv.URL)
 	configureDataSource(t, ds, factory)
 
-	schema := getSupportedVersionModelSchema()
+	schema := getSupportedVersionModelSchema(context.Background())
 	req := buildReadRequestForSchema(schema)
 
 	var resp datasource.ReadResponse
@@ -679,7 +679,7 @@ func TestKibanaDataSource_Read_unsupportedServer_stopsBeforeReadFunc(t *testing.
 
 	readFuncCalled := false
 	ds := NewKibanaDataSource[unsupportedVersionModel](ComponentKibana, "unsupported_entity",
-		func() dsschema.Schema {
+		func(_ context.Context) dsschema.Schema {
 			return dsschema.Schema{
 				Attributes: map[string]dsschema.Attribute{
 					"id": dsschema.StringAttribute{Computed: true},
@@ -695,7 +695,7 @@ func TestKibanaDataSource_Read_unsupportedServer_stopsBeforeReadFunc(t *testing.
 	factory := newKibanaFactoryForURL(t, srv.URL)
 	configureDataSource(t, ds, factory)
 
-	schema := getSupportedVersionModelSchema()
+	schema := getSupportedVersionModelSchema(context.Background())
 	req := buildReadRequestForSchema(schema)
 
 	var resp datasource.ReadResponse

@@ -32,6 +32,13 @@ function factoryQualifyTriggerEvent({
   factoryLabel,
   issueOpenedNotEligibleReason,
 }) {
+  if (eventName === 'issue_comment') {
+    return {
+      event_eligible: true,
+      event_eligible_reason: `Issue comment event qualifies because the slash_command trigger routes to issue_comment.`,
+    };
+  }
+
   if (eventName !== 'issues') {
     return {
       event_eligible: false,
@@ -109,8 +116,8 @@ function factoryActorTrustWhenSenderMissing() {
 }
 
 /**
- * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'github-keywords' }} params
- * @returns {{ duplicate_pr_found: boolean, duplicate_pr_url: string | null | undefined, gate_reason: string }}
+ * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords' }} params
+ * @returns {{ duplicate_pr_found: boolean, duplicate_pr_url: string | null, gate_reason: string }}
  */
 function factoryCheckDuplicatePR({
   issueNumber,
@@ -121,9 +128,16 @@ function factoryCheckDuplicatePR({
 }) {
   const expectedBranch = `${branchPrefix}${issueNumber}`;
   const expectedClosesExample = `Closes #${issueNumber}`;
-  const bodyPattern = duplicateLinkageMode === 'closes-literal'
-    ? new RegExp(`Closes #${issueNumber}(?![0-9])`)
-    : issueClosingReferencePattern(issueNumber);
+  const expectedRelatedExample = `Related to #${issueNumber}`;
+
+  let bodyPattern;
+  if (duplicateLinkageMode === 'closes-literal') {
+    bodyPattern = new RegExp(`Closes #${issueNumber}(?![0-9])`);
+  } else if (duplicateLinkageMode === 'related-literal') {
+    bodyPattern = new RegExp(`\\bRelated to #${issueNumber}(?![0-9])`);
+  } else {
+    bodyPattern = issueClosingReferencePattern(issueNumber);
+  }
 
   const duplicate = (pullRequests || []).find(pr => (
     pr.state === 'open' &&
@@ -133,24 +147,31 @@ function factoryCheckDuplicatePR({
   ));
 
   if (duplicate) {
-    if (duplicateLinkageMode === 'closes-literal') {
-      return {
-        duplicate_pr_found: true,
-        duplicate_pr_url: duplicate.html_url,
-        gate_reason: `Found existing linked ${prLabel} PR #${duplicate.number} (${duplicate.html_url}) for issue #${issueNumber} on branch '${expectedBranch}' with canonical linkage '${expectedClosesExample}'.`,
-      };
-    }
     const url = duplicate.html_url ?? null;
+    let linkagePhrase;
+    if (duplicateLinkageMode === 'closes-literal') {
+      linkagePhrase = `canonical linkage '${expectedClosesExample}'`;
+    } else if (duplicateLinkageMode === 'related-literal') {
+      linkagePhrase = `literal linkage \`${expectedRelatedExample}\``;
+    } else {
+      linkagePhrase = `issue-closing reference such as '${expectedClosesExample}'`;
+    }
+
     return {
       duplicate_pr_found: true,
       duplicate_pr_url: url,
-      gate_reason: `Found existing linked ${prLabel} PR #${duplicate.number} (${url ?? '(unknown URL)'}) for issue #${issueNumber} on branch '${expectedBranch}' with issue-closing reference such as '${expectedClosesExample}'.`,
+      gate_reason: `Found existing linked ${prLabel} PR #${duplicate.number} (${url ?? '(unknown URL)'}) for issue #${issueNumber} on branch '${expectedBranch}' with ${linkagePhrase}.`,
     };
   }
 
-  const linkageTail = duplicateLinkageMode === 'closes-literal'
-    ? `canonical linkage '${expectedClosesExample}'`
-    : `issue-closing reference such as '${expectedClosesExample}'`;
+  let linkageTail;
+  if (duplicateLinkageMode === 'closes-literal') {
+    linkageTail = `canonical linkage '${expectedClosesExample}'`;
+  } else if (duplicateLinkageMode === 'related-literal') {
+    linkageTail = `literal linkage \`${expectedRelatedExample}\``;
+  } else {
+    linkageTail = `issue-closing reference such as '${expectedClosesExample}'`;
+  }
 
   return {
     duplicate_pr_found: false,
@@ -232,7 +253,7 @@ function factoryParseFinalizeGateEnv(env) {
  *   branchPrefix: string,
  *   factoryLabel: string,
  *   issueOpenedNotEligibleReason: string,
- *   duplicateLinkageMode: 'closes-literal' | 'github-keywords',
+ *   duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords',
  * }} config
  */
 function createFactoryIssueIntake(config) {
@@ -258,10 +279,6 @@ function createFactoryIssueIntake(config) {
     });
   }
 
-  function checkActorTrust(params) {
-    return factoryCheckActorTrust(params);
-  }
-
   function checkDuplicatePR(params) {
     return factoryCheckDuplicatePR({
       ...params,
@@ -278,10 +295,36 @@ function createFactoryIssueIntake(config) {
   return {
     issueBranchName,
     qualifyTriggerEvent,
-    checkActorTrust,
+    checkActorTrust: factoryCheckActorTrust,
     checkDuplicatePR,
     computeGateReason,
   };
+}
+
+/**
+ * @param {{
+ *   branchPrefix: string,
+ *   factoryLabel: string,
+ *   issueOpenedNotEligibleReason: string,
+ *   duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords',
+ *   issueBranchNameAliases?: string[],
+ * }} config
+ */
+function createFactoryIssueModule(config) {
+  const intake = createFactoryIssueIntake(config);
+  const issueBranchNameAliases = config.issueBranchNameAliases || [];
+  const factoryIssueModule = {
+    ...intake,
+    actorTrustWhenSenderMissing: factoryActorTrustWhenSenderMissing,
+    parseOptionalTriStateFromEnv: factoryParseOptionalTriStateFromEnv,
+    parseFinalizeGateEnv: factoryParseFinalizeGateEnv,
+  };
+
+  for (const alias of issueBranchNameAliases) {
+    factoryIssueModule[alias] = intake.issueBranchName;
+  }
+
+  return factoryIssueModule;
 }
 
 if (typeof module !== 'undefined') {
@@ -295,5 +338,6 @@ if (typeof module !== 'undefined') {
     factoryParseOptionalTriStateFromEnv,
     factoryParseFinalizeGateEnv,
     createFactoryIssueIntake,
+    createFactoryIssueModule,
   };
 }

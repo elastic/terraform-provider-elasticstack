@@ -32,12 +32,20 @@ var (
 )
 
 type Resource struct {
-	*entitycore.ResourceBase
+	*entitycore.KibanaResource[Model]
 }
 
 func newResource() *Resource {
 	return &Resource{
-		ResourceBase: entitycore.NewResourceBase(entitycore.ComponentKibana, "maintenance_window"),
+		KibanaResource: entitycore.NewKibanaResource[Model](
+			entitycore.ComponentKibana,
+			"maintenance_window",
+			getSchema,
+			readMaintenanceWindow,
+			deleteMaintenanceWindow,
+			createMaintenanceWindow,
+			updateMaintenanceWindow,
+		),
 	}
 }
 

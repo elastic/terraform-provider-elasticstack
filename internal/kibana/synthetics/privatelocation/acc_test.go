@@ -43,6 +43,8 @@ var (
 const accTestKibanaSpaceIDCharset = "abcdefghijklmnopqrstuvwxyz0123456789_-"
 
 func TestSyntheticPrivateLocationResource(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minKibanaPrivateLocationAPIVersion, versionutils.FlavorAny)
+
 	resourceID := "elasticstack_kibana_synthetics_private_location.test"
 	randomSuffix := sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
@@ -51,7 +53,6 @@ func TestSyntheticPrivateLocationResource(t *testing.T) {
 			// Create and Read testing
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaPrivateLocationAPIVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"suffix": config.StringVariable(randomSuffix),
@@ -70,7 +71,6 @@ func TestSyntheticPrivateLocationResource(t *testing.T) {
 			// ImportState testing
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaPrivateLocationAPIVersion),
 				ResourceName:             resourceID,
 				ImportState:              true,
 				ImportStateVerify:        true,
@@ -88,7 +88,6 @@ func TestSyntheticPrivateLocationResource(t *testing.T) {
 			// Update and Read testing
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaPrivateLocationAPIVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_with_geo"),
 				ConfigVariables: config.Variables{
 					"suffix": config.StringVariable(randomSuffix),
@@ -107,7 +106,6 @@ func TestSyntheticPrivateLocationResource(t *testing.T) {
 			// Update and Read testing
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaPrivateLocationAPIVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_no_optional"),
 				ConfigVariables: config.Variables{
 					"suffix": config.StringVariable(randomSuffix),
@@ -122,7 +120,6 @@ func TestSyntheticPrivateLocationResource(t *testing.T) {
 			// Update and Read testing
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaPrivateLocationAPIVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_tags_only"),
 				ConfigVariables: config.Variables{
 					"suffix": config.StringVariable(randomSuffix),
@@ -140,7 +137,6 @@ func TestSyntheticPrivateLocationResource(t *testing.T) {
 			// Update and Read testing
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaPrivateLocationAPIVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_geo_only"),
 				ConfigVariables: config.Variables{
 					"suffix": config.StringVariable(randomSuffix),
@@ -159,6 +155,8 @@ func TestSyntheticPrivateLocationResource(t *testing.T) {
 }
 
 func TestSyntheticPrivateLocationResource_nonDefaultSpace(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, privatelocation.MinVersionSpaceID, versionutils.FlavorAny)
+
 	resourceID := "elasticstack_kibana_synthetics_private_location.test"
 	randomSuffix := sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 	spaceID := sdkacctest.RandStringFromCharSet(12, accTestKibanaSpaceIDCharset)
@@ -167,9 +165,7 @@ func TestSyntheticPrivateLocationResource_nonDefaultSpace(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				// Non-default space_id for this resource requires 9.4.0-SNAPSHOT+ (see privatelocation.MinVersionSpaceID).
-				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(privatelocation.MinVersionSpaceID),
-				ConfigDirectory: acctest.NamedTestCaseDirectory("create_in_space"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_in_space"),
 				ConfigVariables: config.Variables{
 					"suffix":   config.StringVariable(randomSuffix),
 					"space_id": config.StringVariable(spaceID),
@@ -187,7 +183,6 @@ func TestSyntheticPrivateLocationResource_nonDefaultSpace(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(privatelocation.MinVersionSpaceID),
 				ResourceName:             resourceID,
 				ImportState:              true,
 				ImportStateVerify:        true,

@@ -22,10 +22,8 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -37,54 +35,7 @@ const (
 	legacyMetricDatasetTypeTable             = "table"
 )
 
-func newLegacyMetricPanelConfigConverter() legacyMetricPanelConfigConverter {
-	return legacyMetricPanelConfigConverter{
-		lensVisualizationBase: lensVisualizationBase{
-			visualizationType: string(kbapi.LegacyMetric),
-			hasTFPanelConfig:  func(pm panelModel) bool { return pm.LegacyMetricConfig != nil },
-		},
-	}
-}
-
-type legacyMetricPanelConfigConverter struct {
-	lensVisualizationBase
-}
-
-func (c legacyMetricPanelConfigConverter) populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelTypeVisConfig0) diag.Diagnostics {
-	legacyMetric, err := attrs.AsLegacyMetricNoESQL()
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	pm.LegacyMetricConfig = &legacyMetricConfigModel{}
-	return pm.LegacyMetricConfig.fromAPINoESQL(ctx, legacyMetric)
-}
-
-func (c legacyMetricPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	configModel := *pm.LegacyMetricConfig
-
-	attrs, legacyDiags := configModel.toAPI()
-	diags.Append(legacyDiags...)
-	if diags.HasError() {
-		return kbapi.KbnDashboardPanelTypeVisConfig0{}, diags
-	}
-
-	return attrs, diags
-}
-
-type legacyMetricConfigModel struct {
-	Title               types.String                                      `tfsdk:"title"`
-	Description         types.String                                      `tfsdk:"description"`
-	DataSourceJSON      jsontypes.Normalized                              `tfsdk:"data_source_json"`
-	IgnoreGlobalFilters types.Bool                                        `tfsdk:"ignore_global_filters"`
-	Sampling            types.Float64                                     `tfsdk:"sampling"`
-	Query               *filterSimpleModel                                `tfsdk:"query"`
-	Filters             []chartFilterJSONModel                            `tfsdk:"filters"`
-	MetricJSON          customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"metric_json"`
-}
-
-func (m *legacyMetricConfigModel) populateCommonFields(
+func legacyMetricConfigPopulateCommonFields(m *models.LegacyMetricConfigModel,
 	title, description *string,
 	ignoreGlobalFilters *bool,
 	sampling *float32,
@@ -110,17 +61,23 @@ func (m *legacyMetricConfigModel) populateCommonFields(
 	return !diags.HasError()
 }
 
-func (m *legacyMetricConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.LegacyMetricNoESQL) diag.Diagnostics {
+func legacyMetricConfigFromAPINoESQL(
+	ctx context.Context,
+	m *models.LegacyMetricConfigModel,
+	dashboard *models.DashboardModel,
+	prior *models.LegacyMetricConfigModel,
+	api kbapi.LegacyMetricNoESQL,
+) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 
 	datasetBytes, datasetErr := api.DataSource.MarshalJSON()
-	if !m.populateCommonFields(api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling, datasetBytes, datasetErr, api.Filters, &diags) {
+	if !legacyMetricConfigPopulateCommonFields(m, api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling, datasetBytes, datasetErr, api.Filters, &diags) {
 		return diags
 	}
 
-	m.Query = &filterSimpleModel{}
-	m.Query.fromAPI(api.Query)
+	m.Query = &models.FilterSimpleModel{}
+	filterSimpleFromAPI(m.Query, api.Query)
 
 	metricBytes, err := api.Metric.MarshalJSON()
 	mv, ok := marshalToJSONWithDefaults(metricBytes, err, "metric", populateLegacyMetricMetricDefaults, &diags)
@@ -129,9 +86,26 @@ func (m *legacyMetricConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.L
 	}
 	m.MetricJSON = preservePriorJSONWithDefaultsIfEquivalent(ctx, m.MetricJSON, mv, &diags)
 
+	var priorLens *models.LensChartPresentationTFModel
+	if prior != nil {
+		p := prior.LensChartPresentationTFModel
+		priorLens = &p
+	}
+	ddWire, ddOmit, ddWireDiags := lensDrilldownsAPIToWire(api.Drilldowns)
+	diags.Append(ddWireDiags...)
+	if ddWireDiags.HasError() {
+		return diags
+	}
+	pres, presDiags := lensChartPresentationReadsFor(ctx, dashboard, priorLens, api.TimeRange, api.HideTitle, api.HideBorder, api.References, ddWire, ddOmit)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return diags
+	}
+	m.LensChartPresentationTFModel = pres
+
 	return diags
 }
-func (m *legacyMetricConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+func legacyMetricConfigToAPI(m *models.LegacyMetricConfigModel, dashboard *models.DashboardModel) (kbapi.KbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var result kbapi.KbnDashboardPanelTypeVisConfig0
 
@@ -140,7 +114,7 @@ func (m *legacyMetricConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0
 		return result, diags
 	}
 
-	datasetType, typeDiags := m.datasetType()
+	datasetType, typeDiags := legacyMetricConfigDatasetType(m)
 	diags.Append(typeDiags...)
 	if diags.HasError() {
 		return result, diags
@@ -151,7 +125,6 @@ func (m *legacyMetricConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0
 		api := kbapi.LegacyMetricNoESQL{
 			Type: kbapi.LegacyMetric,
 		}
-		api.TimeRange = lensPanelTimeRange()
 
 		if typeutils.IsKnown(m.Title) {
 			api.Title = new(m.Title.ValueString())
@@ -170,7 +143,7 @@ func (m *legacyMetricConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0
 		api.Filters = buildFiltersForAPI(m.Filters, &diags)
 
 		if m.Query != nil {
-			api.Query = m.Query.toAPI()
+			api.Query = filterSimpleToAPI(m.Query)
 		} else {
 			diags.AddError("Missing legacy metric query", "Query is required for non-ESQL legacy metric charts")
 			return result, diags
@@ -192,6 +165,30 @@ func (m *legacyMetricConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0
 			return result, diags
 		}
 
+		writes, presDiags := lensChartPresentationWritesFor(dashboard, m.LensChartPresentationTFModel)
+		diags.Append(presDiags...)
+		if presDiags.HasError() {
+			return result, diags
+		}
+
+		api.TimeRange = writes.TimeRange
+		if writes.HideTitle != nil {
+			api.HideTitle = writes.HideTitle
+		}
+		if writes.HideBorder != nil {
+			api.HideBorder = writes.HideBorder
+		}
+		if writes.References != nil {
+			api.References = writes.References
+		}
+		if len(writes.DrilldownsRaw) > 0 {
+			items, ddDiags := decodeLensDrilldownSlice[kbapi.LegacyMetricNoESQL_Drilldowns_Item](writes.DrilldownsRaw)
+			diags.Append(ddDiags...)
+			if !ddDiags.HasError() {
+				api.Drilldowns = &items
+			}
+		}
+
 		if err := result.FromLegacyMetricNoESQL(api); err != nil {
 			diags.AddError("Failed to marshal legacy metric", err.Error())
 		}
@@ -202,7 +199,7 @@ func (m *legacyMetricConfigModel) toAPI() (kbapi.KbnDashboardPanelTypeVisConfig0
 	}
 }
 
-func (m *legacyMetricConfigModel) datasetType() (string, diag.Diagnostics) {
+func legacyMetricConfigDatasetType(m *models.LegacyMetricConfigModel) (string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	if !typeutils.IsKnown(m.DataSourceJSON) {

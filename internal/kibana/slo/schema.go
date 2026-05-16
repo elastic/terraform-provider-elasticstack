@@ -60,11 +60,11 @@ func getSchema() schema.Schema {
 				},
 			},
 			"slo_id": schema.StringAttribute{
-				Description: "An ID (8 to 36 characters) that contains only letters, numbers, hyphens, and underscores. If omitted, a UUIDv1 will be generated server-side.",
+				Description: "An ID (8 to 48 characters) that contains only letters, numbers, hyphens, and underscores. If omitted, a UUIDv1 will be generated server-side.",
 				Optional:    true,
 				Computed:    true,
 				Validators: []validator.String{
-					stringvalidator.LengthBetween(8, 36),
+					stringvalidator.LengthBetween(8, 48),
 					stringvalidator.RegexMatches(regexp.MustCompile(`^[a-zA-Z0-9_-]+$`), "must contain only letters, numbers, hyphens, and underscores"),
 				},
 				PlanModifiers: []planmodifier.String{
@@ -173,7 +173,21 @@ func getSchema() schema.Schema {
 				Validators:  []validator.List{listvalidator.SizeBetween(1, 1)},
 				NestedObject: schema.NestedBlockObject{
 					Attributes: map[string]schema.Attribute{
-						"duration": schema.StringAttribute{Required: true},
+						"duration": schema.StringAttribute{
+							Required: true,
+							Validators: []validator.String{
+								validators.OneOfWhenDependentPathExpressionEquals(
+									path.MatchRelative().AtParent().AtName("type"),
+									"rolling",
+									[]string{"7d", "30d", "90d"},
+								),
+								validators.OneOfWhenDependentPathExpressionEquals(
+									path.MatchRelative().AtParent().AtName("type"),
+									"calendarAligned",
+									[]string{"1w", "1M"},
+								),
+							},
+						},
 						"type": schema.StringAttribute{
 							Required: true,
 							Validators: []validator.String{

@@ -19,90 +19,70 @@ package anomalydetectionjob
 
 import (
 	"context"
-	"encoding/json"
+	"errors"
 	"fmt"
-	"net/http"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func (r *anomalyDetectionJobResource) read(ctx context.Context, job *TFModel) (bool, fwdiags.Diagnostics) {
+// readAnomalyDetectionJob fetches the job from Elasticsearch and populates the
+// TF model. It satisfies the entitycore elasticsearchReadFunc[TFModel] signature.
+func readAnomalyDetectionJob(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state TFModel) (TFModel, bool, fwdiags.Diagnostics) {
 	var diags fwdiags.Diagnostics
 
-	if !r.resourceReady(&diags) {
-		return false, diags
+	jobID := resourceID
+	if jobID == "" {
+		diags.AddError("Invalid resource ID", "job_id cannot be empty")
+		return state, false, diags
 	}
-
-	jobID := job.JobID.ValueString()
 	tflog.Debug(ctx, fmt.Sprintf("Reading ML anomaly detection job: %s", jobID))
 
-	client, connDiags := r.Client().GetElasticsearchClient(ctx, job.ElasticsearchConnection)
-	diags.Append(connDiags...)
-	if diags.HasError() {
-		return false, diags
-	}
-
-	esClient, err := client.GetESClient()
+	typedClient, err := client.GetESClient()
 	if err != nil {
 		diags.AddError("Failed to get Elasticsearch client", err.Error())
-		return false, diags
+		return state, false, diags
 	}
 
-	// Get the ML job
-	res, err := esClient.ML.GetJobs(esClient.ML.GetJobs.WithJobID(jobID), esClient.ML.GetJobs.WithContext(ctx))
+	// Get the ML job using the typed client
+	res, err := typedClient.Ml.GetJobs().JobId(jobID).AllowNoMatch(true).Do(ctx)
 	if err != nil {
-		diags.AddError("Failed to get ML anomaly detection job", err.Error())
-		return false, diags
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode == http.StatusNotFound {
-		return false, nil
-	}
-
-	getDiags := diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to get ML anomaly detection job: %s", jobID))
-	diags.Append(getDiags...)
-	if diags.HasError() {
-		return false, diags
-	}
-
-	// Parse the response
-	var response struct {
-		Jobs []APIModel `json:"jobs"`
-	}
-	if err := json.NewDecoder(res.Body).Decode(&response); err != nil {
-		diags.AddError("Failed to decode job response", err.Error())
-		return false, diags
-	}
-
-	if len(response.Jobs) == 0 {
-		return false, nil
-	}
-
-	if len(response.Jobs) > 1 {
-		jobIDs := []string{}
-		for _, job := range response.Jobs {
-			jobIDs = append(jobIDs, job.JobID)
+		var esErr *types.ElasticsearchError
+		if errors.As(err, &esErr) && esErr.Status == 404 {
+			return state, false, nil
 		}
+		diags.AddError("Failed to get ML anomaly detection job", fmt.Sprintf("Unable to get ML anomaly detection job: %s — %s", jobID, err.Error()))
+		return state, false, diags
+	}
 
+	if len(res.Jobs) == 0 {
+		return state, false, nil
+	}
+
+	if len(res.Jobs) > 1 {
+		jobIDs := make([]string, len(res.Jobs))
+		for i, j := range res.Jobs {
+			jobIDs[i] = j.JobId
+		}
 		diags.AddWarning(
 			"Getting jobs by ID returned multiple results",
 			fmt.Sprintf(
 				"Expected a single result when getting anomaly detection jobs by ID. However the API returned %d jobs with IDs %v",
-				len(response.Jobs),
+				len(res.Jobs),
 				jobIDs,
 			),
 		)
 	}
 
-	// Convert API response back to TF model
-	diags.Append(job.fromAPIModel(ctx, &response.Jobs[0])...)
+	// Convert the typed response to APIModel, then populate TF model
+	apiModel := fromTypedJob(&res.Jobs[0])
+	diags.Append(state.fromAPIModel(ctx, apiModel)...)
 	if diags.HasError() {
-		return false, diags
+		return state, false, diags
 	}
 
 	tflog.Debug(ctx, fmt.Sprintf("Successfully read ML anomaly detection job: %s", jobID))
-	return true, diags
+	return state, true, diags
 }

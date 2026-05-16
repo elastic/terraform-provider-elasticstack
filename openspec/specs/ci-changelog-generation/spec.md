@@ -51,28 +51,48 @@ Before updating `CHANGELOG.md`, deterministic repository-authored validation SHA
 - **THEN** changelog mutation SHALL fail before `CHANGELOG.md` is updated
 
 ### Requirement: Scheduled/manual mode updates the singleton generated changelog PR
-In scheduled or manually dispatched unreleased mode, after deterministic validation succeeds, the workflow SHALL rewrite only the `## [Unreleased]` section of `CHANGELOG.md` and SHALL push the result to the singleton branch named `generated-changelog`. The workflow SHALL use repository-authored GitHub Actions logic to look up an existing pull request from `generated-changelog` to `main`, create that pull request when none exists, and update the existing PR body when one already exists.
+In scheduled or manually dispatched unreleased mode, after deterministic validation succeeds, the workflow SHALL rewrite only the `## [Unreleased]` section of `CHANGELOG.md` and SHALL push the result to the singleton branch named `generated-changelog`. The workflow SHALL use repository-authored GitHub Actions logic to look up an existing pull request from `generated-changelog` to `main`, create that pull request when none exists, and update the existing PR body when one already exists. After pushing the changelog commit to `generated-changelog`, the workflow SHALL push an empty commit re-authenticated with the CI trigger token to trigger downstream CI.
 
 #### Scenario: Generated changelog branch PR is reused
 - **GIVEN** the singleton branch `generated-changelog` already has an open pull request to `main`
 - **WHEN** the scheduled/manual unreleased changelog generator runs again
 - **THEN** it SHALL update that same branch and refresh the existing pull request instead of opening a duplicate
+- **AND** it SHALL push an empty commit re-authenticated with `GH_AW_CI_TRIGGER_TOKEN` to trigger CI
 
 #### Scenario: Missing generated changelog PR is created
 - **GIVEN** the singleton branch `generated-changelog` has no open pull request to `main`
 - **WHEN** the scheduled/manual unreleased changelog generator produces an updated `CHANGELOG.md`
 - **THEN** the workflow SHALL create the pull request after pushing the branch update
+- **AND** it SHALL push an empty commit re-authenticated with `GH_AW_CI_TRIGGER_TOKEN` to trigger CI
 
-### Requirement: Explicit release mode updates only the targeted release section
-In explicit release mode, after deterministic validation succeeds, repository-authored helper logic SHALL update only the concrete `## [x.y.z] - <date>` section for the checked out release branch and SHALL push that change only to the targeted release branch. Manual release-mode execution MAY refresh release PR metadata when the corresponding pull request is known, but release-mode changelog generation SHALL NOT depend on `pull_request_target` event metadata or automatic pull-request triggers.
+### Requirement: Explicit release mode updates the targeted release section and removes Unreleased
+In explicit release mode, after deterministic validation succeeds, repository-authored helper logic SHALL update only the concrete `## [x.y.z] - <date>` section for the checked out release branch and SHALL push that change only to the targeted release branch. After pushing the changelog commit to the release branch, the workflow SHALL push an empty commit re-authenticated with the CI trigger token to trigger downstream CI. Manual release-mode execution MAY refresh release PR metadata when the corresponding pull request is known, but release-mode changelog generation SHALL NOT depend on `pull_request_target` event metadata or automatic pull-request triggers.
+
+In release mode, when the rewriter mutates `CHANGELOG.md` to emit the new `## [x.y.z] - <date>` section, it SHALL also remove any existing `## [Unreleased]` section (header and body) from the file. This SHALL hold both on the first run against a release-preparation branch (when no `## [x.y.z]` heading exists yet) and on any re-run (when the `## [x.y.z]` heading is already present alongside a stale `## [Unreleased]` section). Release-mode mutation SHALL NOT preserve, duplicate, or insert content alongside the Unreleased section; the resulting `CHANGELOG.md` SHALL contain exactly one block representing the work shipped in the release, headed by `## [x.y.z] - <date>`.
 
 #### Scenario: Release mode updates only the targeted branch
 - **WHEN** the changelog generator runs in explicit release mode for a release-preparation branch
 - **THEN** it SHALL push changelog updates only to that targeted release branch
+- **AND** it SHALL push an empty commit re-authenticated with `GH_AW_CI_TRIGGER_TOKEN` to trigger CI
 
-#### Scenario: Release mode does not rewrite Unreleased on the release branch
+#### Scenario: Release mode does not regenerate Unreleased on the release branch
 - **WHEN** the changelog generator runs in explicit release mode
-- **THEN** it SHALL regenerate the concrete release section needed for that branch without treating the branch as the singleton `Unreleased` maintenance branch
+- **THEN** it SHALL regenerate the concrete release section needed for that branch and SHALL NOT preserve or regenerate any `## [Unreleased]` section, without treating the branch as the singleton `Unreleased` maintenance branch
+
+#### Scenario: Release mode replaces the Unreleased section with the new versioned section
+- **GIVEN** `CHANGELOG.md` on a `prep-release-x.y.z` branch contains a `## [Unreleased]` section with body content and no `## [x.y.z]` heading
+- **WHEN** the changelog generator runs in explicit release mode for that branch
+- **THEN** the resulting `CHANGELOG.md` SHALL contain a single `## [x.y.z] - <date>` section in place of the previous `## [Unreleased]` section, with no `## [Unreleased]` heading remaining in the file
+
+#### Scenario: Release mode re-run collapses lingering Unreleased section
+- **GIVEN** `CHANGELOG.md` on a `prep-release-x.y.z` branch already contains a `## [x.y.z] - <date>` section and also contains a `## [Unreleased]` section
+- **WHEN** the changelog generator runs in explicit release mode again for that branch
+- **THEN** the resulting `CHANGELOG.md` SHALL contain a single regenerated `## [x.y.z] - <date>` section and SHALL NOT contain any `## [Unreleased]` heading
+
+#### Scenario: Release mode with no prior Unreleased section prepends the new section
+- **GIVEN** `CHANGELOG.md` contains no `## [Unreleased]` heading and no `## [x.y.z]` heading
+- **WHEN** the changelog generator runs in explicit release mode for version `x.y.z`
+- **THEN** the resulting `CHANGELOG.md` SHALL begin with the new `## [x.y.z] - <date>` section followed by the prior changelog content
 
 ### Requirement: Shared changelog engine reuses existing JavaScript helpers
 The shared changelog engine SHALL be implemented in JavaScript and SHALL run on the Node.js runtime already used by `actions/github-script` and the workflow-source helpers. It SHALL be built by extracting and composing the existing JavaScript modules under `.github/workflows-src/changelog-generation/scripts/` and `.github/workflows-src/lib/` rather than by reimplementing changelog parsing, rendering, or PR resolution in another language. The engine SHALL NOT be authored in Go and SHALL NOT introduce a parallel Go implementation of changelog generation.
@@ -128,4 +148,62 @@ The changelog generator SHALL apply only simple normalization needed to keep `CH
 
 - **WHEN** deterministic assembly renders PR-body changelog content into `CHANGELOG.md`
 - **THEN** it SHALL preserve the author-provided meaning while applying only the minimal formatting normalization required by repository changelog conventions
+
+### Requirement: Release mode updates the Markdown reference link table
+In release mode, after rewriting the `## [x.y.z] - <date>` section body, the changelog generator SHALL also update the Markdown reference link table at the bottom of `CHANGELOG.md`. Specifically it SHALL:
+
+1. Replace the `[Unreleased]:` compare URL from `…compare/vOLD…HEAD` to `…compare/vNEW…HEAD`.
+2. Insert a new `[x.y.z]: …compare/vOLD…vNEW` entry immediately after the updated `[Unreleased]:` line.
+
+This update SHALL be idempotent: if the `[x.y.z]:` entry already exists the generator SHALL NOT insert a duplicate. If no `[Unreleased]:` line is present in the file the generator SHALL leave the link table unchanged. If no previous semver tag exists (first-ever release) the generator SHALL leave the link table unchanged.
+
+The link table update SHALL NOT be applied in unreleased mode; only the `## [Unreleased]` section body is rewritten in that mode.
+
+#### Scenario: Release mode inserts new version entry and updates Unreleased link
+- **GIVEN** `CHANGELOG.md` contains a `[Unreleased]: …/compare/vOLD…HEAD` line in its link table
+- **WHEN** the changelog generator runs in release mode for version `NEW` with previous tag `vOLD`
+- **THEN** the resulting `CHANGELOG.md` SHALL contain `[Unreleased]: …/compare/vNEW…HEAD`
+- **AND** SHALL contain a new line `[NEW]: …/compare/vOLD…vNEW` immediately after it
+
+#### Scenario: Link table update is idempotent on re-run
+- **GIVEN** `CHANGELOG.md` already contains both `[Unreleased]: …/compare/vNEW…HEAD` and `[NEW]: …/compare/vOLD…vNEW`
+- **WHEN** the changelog generator runs in release mode again for the same version
+- **THEN** the resulting `CHANGELOG.md` SHALL contain exactly one `[NEW]:` entry (no duplicate)
+
+#### Scenario: No-op when Unreleased link line is absent
+- **GIVEN** `CHANGELOG.md` has no `[Unreleased]:` line in the link table
+- **WHEN** the changelog generator runs in release mode
+- **THEN** the link table SHALL be left unchanged
+
+#### Scenario: No-op when no previous tag exists
+- **GIVEN** no semver release tag exists in the repository
+- **WHEN** the changelog generator runs in release mode
+- **THEN** the link table SHALL be left unchanged
+
+#### Scenario: Unreleased mode does not touch the link table
+- **GIVEN** `CHANGELOG.md` contains a `[Unreleased]: …/compare/vOLD…HEAD` line
+- **WHEN** the changelog generator runs in unreleased mode
+- **THEN** the `[Unreleased]:` line in the link table SHALL remain unchanged
+
+### Requirement: Changelog-generation PRs are labelled `no-changelog`
+The changelog-generation workflow SHALL apply the `no-changelog` label to every PR it creates or manages, so that subsequent changelog runs do not attempt to parse those PRs as feature PRs and fail.
+
+Specifically:
+- When `manageUnreleasedPR` creates a new `generated-changelog` PR it SHALL add the `no-changelog` label immediately after creation.
+- When `manageUnreleasedPR` updates an existing `generated-changelog` PR it SHALL also ensure the `no-changelog` label is applied (idempotent — the GitHub API `addLabels` call is safe to repeat).
+- When `refreshReleasePR` locates and updates a release prep PR it SHALL apply the `no-changelog` label to that PR.
+
+#### Scenario: New generated-changelog PR receives no-changelog label
+- **WHEN** `manageUnreleasedPR` creates a new PR from `generated-changelog` to `main`
+- **THEN** the `no-changelog` label SHALL be applied to that PR before the function returns
+
+#### Scenario: Existing generated-changelog PR receives no-changelog label on update
+- **GIVEN** the `generated-changelog` PR already exists
+- **WHEN** `manageUnreleasedPR` updates the PR body on a subsequent run
+- **THEN** the `no-changelog` label SHALL be applied (or confirmed present) on that PR
+
+#### Scenario: Release prep PR receives no-changelog label
+- **GIVEN** an open PR exists for `prep-release-x.y.z` → `main`
+- **WHEN** `refreshReleasePR` locates and refreshes that PR
+- **THEN** the `no-changelog` label SHALL be applied to the PR
 

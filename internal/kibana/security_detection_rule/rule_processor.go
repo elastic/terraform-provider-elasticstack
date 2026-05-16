@@ -37,14 +37,14 @@ type ruleProcessor interface {
 
 func getRuleProcessors() []ruleProcessor {
 	return []ruleProcessor{
-		QueryRuleProcessor{},
-		EqlRuleProcessor{},
-		EsqlRuleProcessor{},
-		MachineLearningRuleProcessor{},
-		NewTermsRuleProcessor{},
-		SavedQueryRuleProcessor{},
-		ThreatMatchRuleProcessor{},
-		ThresholdRuleProcessor{},
+		newQueryRuleProcessor(),
+		newEqlRuleProcessor(),
+		newEsqlRuleProcessor(),
+		newMachineLearningRuleProcessor(),
+		newNewTermsRuleProcessor(),
+		newSavedQueryRuleProcessor(),
+		newThreatMatchRuleProcessor(),
+		newThresholdRuleProcessor(),
 	}
 }
 

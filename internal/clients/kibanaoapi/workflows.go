@@ -22,24 +22,26 @@ import (
 	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 // GetWorkflow reads a specific workflow from the API.
 func GetWorkflow(ctx context.Context, client *Client, spaceID string, workflowID string) (*models.Workflow, diag.Diagnostics) {
-	resp, err := client.API.GetWorkflowsWorkflowIdWithResponse(ctx, workflowID, SpaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.GetWorkflowsWorkflowIdWithResponse(ctx, workflowID, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
-		return nil, clientError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 	return handleGetResponse[models.Workflow](resp.StatusCode(), resp.Body)
 }
 
 // CreateWorkflow creates a new workflow.
 func CreateWorkflow(ctx context.Context, client *Client, spaceID string, req kbapi.PostWorkflowsWorkflowJSONRequestBody) (*models.Workflow, diag.Diagnostics) {
-	resp, err := client.API.PostWorkflowsWorkflowWithResponse(ctx, req, SpaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.PostWorkflowsWorkflowWithResponse(ctx, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
-		return nil, clientError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 	return handleMutateResponse[models.Workflow](resp.StatusCode(), resp.Body)
 }
@@ -47,18 +49,18 @@ func CreateWorkflow(ctx context.Context, client *Client, spaceID string, req kba
 // UpdateWorkflow updates an existing workflow.
 // The PUT response is partial (id, valid, enabled only); callers must GET afterwards for full state.
 func UpdateWorkflow(ctx context.Context, client *Client, spaceID string, workflowID string, req kbapi.PutWorkflowsWorkflowIdJSONRequestBody) diag.Diagnostics {
-	resp, err := client.API.PutWorkflowsWorkflowIdWithResponse(ctx, workflowID, req, SpaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.PutWorkflowsWorkflowIdWithResponse(ctx, workflowID, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
-		return clientError(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
-	return handleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK)
+	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK)
 }
 
 // DeleteWorkflow deletes an existing workflow.
 func DeleteWorkflow(ctx context.Context, client *Client, spaceID string, workflowID string) diag.Diagnostics {
-	resp, err := client.API.DeleteWorkflowsWorkflowIdWithResponse(ctx, workflowID, nil, SpaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.DeleteWorkflowsWorkflowIdWithResponse(ctx, workflowID, nil, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
-		return clientError(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
-	return handleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNotFound)
+	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNotFound)
 }
