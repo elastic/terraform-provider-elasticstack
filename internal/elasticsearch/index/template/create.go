@@ -22,7 +22,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -46,16 +45,21 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 		return
 	}
 
-	serverVersion, sdkDiags := client.ServerVersion(ctx)
-	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	vReqs, reqDiags := plan.GetVersionRequirements()
+	resp.Diagnostics.Append(reqDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	resp.Diagnostics.Append(validateIgnoreMissingComponentTemplatesVersion(plan, serverVersion)...)
-	resp.Diagnostics.Append(datastreamoptions.EnforceMinServerVersion(plan.Template, serverVersion)...)
-	if resp.Diagnostics.HasError() {
-		return
+	for _, req := range vReqs {
+		ok, sdkDiags := client.EnforceMinVersion(ctx, &req.MinVersion)
+		resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		if !ok {
+			resp.Diagnostics.AddError("Unsupported server version", req.ErrorMessage)
+			return
+		}
 	}
 
 	indexTemplate, diags := plan.toAPIModel(ctx)

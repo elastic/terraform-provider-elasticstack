@@ -18,12 +18,15 @@
 package template
 
 import (
+	"fmt"
+
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -48,6 +51,29 @@ func (m Model) GetID() types.String { return m.ID }
 // GetResourceID satisfies [entitycore.ElasticsearchResourceModel].
 // For index templates the write identity is the template name.
 func (m Model) GetResourceID() types.String { return m.Name }
+
+// GetVersionRequirements satisfies [entitycore.WithVersionRequirements].
+func (m Model) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+	var reqs []entitycore.VersionRequirement
+	var diags diag.Diagnostics
+
+	dsoReqs, dsoDiags := datastreamoptions.GetVersionRequirements(m.Template)
+	diags.Append(dsoDiags...)
+	if diags.HasError() {
+		return nil, diags
+	}
+	reqs = append(reqs, dsoReqs...)
+
+	if !m.IgnoreMissingComponentTemplates.IsNull() && !m.IgnoreMissingComponentTemplates.IsUnknown() &&
+		len(m.IgnoreMissingComponentTemplates.Elements()) > 0 {
+		reqs = append(reqs, entitycore.VersionRequirement{
+			MinVersion:   *index.MinSupportedIgnoreMissingComponentTemplateVersion,
+			ErrorMessage: fmt.Sprintf("'ignore_missing_component_templates' is supported only for Elasticsearch v%s and above", index.MinSupportedIgnoreMissingComponentTemplateVersion.String()),
+		})
+	}
+
+	return reqs, diags
+}
 
 // DataStreamModel is the inner shape of the data_stream block (for Object.As).
 type DataStreamModel struct {
