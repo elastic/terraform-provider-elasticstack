@@ -56,9 +56,7 @@ resource "elasticstack_elasticsearch_component_template" "example" {
   }
 }
 ```
-
 ## Requirements
-
 ### Requirement: Component template CRUD APIs (REQ-001–REQ-004)
 
 The resource SHALL use the Elasticsearch Put component template API to create and update component templates ([docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-component-template.html)). The resource SHALL use the Elasticsearch Get component template API to read component templates ([docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-get-component-template.html)). The resource SHALL use the Elasticsearch Delete component template API to delete component templates ([docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-delete-component-template.html)). When Elasticsearch returns a non-success status for create, update, read, or delete requests (other than not found on read), the resource SHALL surface the API error to Terraform diagnostics.
@@ -117,13 +115,33 @@ On create/update, the resource SHALL construct a `models.ComponentTemplate` requ
 
 ### Requirement: Read state mapping (REQ-022–REQ-026)
 
-On read, the resource SHALL set `name` and `version` from the API response. On read, when API `metadata` is present, it SHALL be serialized into a normalized JSON string and stored in state. On read, when API `template` is present, it SHALL be flattened into `template` state, including aliases, mappings, settings, and `data_stream_options`. When the API omits `template.data_stream_options` or `template.data_stream_options.failure_store`, the provider SHALL store `template.data_stream_options` as null in state. User-defined alias `routing` SHALL be preserved during read/refresh, because this field may be omitted by the API response and therefore SHALL not be overwritten from response data. Alias `filter` values read from the API SHALL be normalized before storing them in state.
+On read, the resource SHALL set `name` and `version` from the API response. On read, when API `metadata` is present, it SHALL be serialized into a JSON string and stored in state. On read, when API `template` is present, it SHALL be flattened into `template` state, including aliases, mappings, and settings. User-defined alias `routing` SHALL be preserved during read/refresh, because this field may be omitted by the API response and therefore SHALL not be overwritten from response data.
+
+For `template.mappings`, the resource SHALL treat Elasticsearch stringified scalar echoes as semantically equal to practitioner-authored scalar JSON values when the effective mapping value is otherwise unchanged. This equivalence SHALL apply to scalar leaf values such as booleans and numbers and SHALL suppress drift and post-apply consistency errors caused only by Elasticsearch returning a string form of the same scalar.
+
+For `template.settings`, the resource SHALL treat Elasticsearch stringified scalar echoes as semantically equal to practitioner-authored scalar JSON values when the effective setting value is otherwise unchanged. This equivalence SHALL include JSON `null`, so a practitioner-authored `null` setting value SHALL compare equal to an Elasticsearch `"null"` string echo.
 
 #### Scenario: Routing preserved on refresh
 
 - GIVEN user-configured alias `routing` and API omits routing fields
 - WHEN read runs
 - THEN user `routing` SHALL not be lost from state
+
+#### Scenario: Mappings boolean scalar echo is non-drifting
+
+- GIVEN `template.mappings` is configured with a scalar boolean value
+- AND Elasticsearch returns the same value as a JSON string scalar during refresh
+- WHEN apply completes or a later refresh runs
+- THEN the provider SHALL treat the mapping values as semantically equal
+- AND Terraform SHALL NOT report a provider inconsistent-result error or follow-up drift for that difference alone
+
+#### Scenario: Settings null scalar echo is non-drifting
+
+- GIVEN `template.settings` is configured with a JSON `null` scalar value
+- AND Elasticsearch returns the same value as the string scalar `"null"` during refresh
+- WHEN apply completes or a later refresh runs
+- THEN the provider SHALL treat the settings values as semantically equal
+- AND Terraform SHALL NOT report a provider inconsistent-result error or follow-up drift for that difference alone
 
 ### Requirement: Data stream options support (REQ-027–REQ-031)
 
@@ -147,3 +165,4 @@ The resource SHALL define schema version `1` and provide an upgrade path from ve
 - WHEN the provider upgrades state to schema version `1`
 - THEN the provider SHALL collapse `template` to object-or-null form
 - AND it SHALL preserve equivalent alias routing semantics without creating spurious diffs
+
