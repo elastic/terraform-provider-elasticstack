@@ -138,7 +138,7 @@ func TestIsInCooldown(t *testing.T) {
 func TestRecordAndTrim(t *testing.T) {
 	t.Parallel()
 	mem := &Memory{Attempts: make([]AttemptRecord, 0)}
-	for i := 0; i < maxAttempts+10; i++ {
+	for range maxAttempts + 10 {
 		recordAttempt(mem, "pkg.A", "pkg", ReasonBuildFailed, AttemptContext{})
 	}
 	assert.Len(t, mem.Attempts, maxAttempts)
@@ -260,4 +260,51 @@ func TestSaveMemoryAtomic(t *testing.T) {
 			t.Errorf("unexpected file left in dir: %s", e.Name())
 		}
 	}
+}
+
+func TestParseGoplsReferencesOutput(t *testing.T) {
+	t.Parallel()
+	input := `
+internal/pkg/foo.go:42:10
+internal/pkg/bar.go:100:5
+internal/pkg/foo.go:55:3
+:not-a-valid-line
+`
+	files, err := parseGoplsReferencesOutput(strings.NewReader(input))
+	require.NoError(t, err)
+	assert.Equal(t, []string{"internal/pkg/foo.go", "internal/pkg/bar.go"}, files)
+}
+
+func TestDerivePackagePath(t *testing.T) {
+	t.Parallel()
+	modulePath := "github.com/elastic/terraform-provider-elasticstack"
+	assert.Equal(t, modulePath+"/internal/pkg", derivePackagePath("internal/pkg/foo.go", modulePath))
+	assert.Equal(t, modulePath, derivePackagePath("foo.go", modulePath))
+}
+
+func TestImpactedPackages(t *testing.T) {
+	t.Parallel()
+
+	// Symbol in a sub-package, no companion test
+	entry := deadcodeEntry{file: "internal/pkg/foo.go", symbol: "Foo", packagePath: "pkg"}
+	pkgs := impactedPackages(entry, "")
+	assert.Equal(t, []string{"./internal/pkg"}, pkgs)
+
+	// Symbol in root package, no companion test — should yield "." not "./."
+	entryRoot := deadcodeEntry{file: "foo.go", symbol: "Foo", packagePath: "root"}
+	pkgsRoot := impactedPackages(entryRoot, "")
+	assert.Equal(t, []string{"."}, pkgsRoot)
+
+	// Symbol and companion test in same package
+	pkgsSame := impactedPackages(entry, "internal/pkg/foo_test.go")
+	assert.Equal(t, []string{"./internal/pkg"}, pkgsSame)
+
+	// Symbol and companion test in different packages
+	pkgsDiff := impactedPackages(entry, "internal/other/foo_test.go")
+	assert.Equal(t, []string{"./internal/other", "./internal/pkg"}, pkgsDiff)
+
+	// Companion test in root package
+	entrySub := deadcodeEntry{file: "internal/pkg/foo.go", symbol: "Foo", packagePath: "pkg"}
+	pkgsRootTest := impactedPackages(entrySub, "foo_test.go")
+	assert.Equal(t, []string{".", "./internal/pkg"}, pkgsRootTest)
 }

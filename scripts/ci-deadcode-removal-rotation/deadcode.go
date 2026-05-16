@@ -53,12 +53,14 @@ func runDeadcode(testMode bool) ([]deadcodeEntry, error) {
 	args = append(args, "./...")
 	cmd := exec.Command("go", args...)
 	out, err := cmd.CombinedOutput()
-	if err != nil {
-		if len(out) == 0 {
-			return nil, fmt.Errorf("deadcode failed: %w", err)
-		}
+	entries, parseErr := parseDeadcodeOutput(bytes.NewReader(out))
+	if parseErr != nil {
+		return nil, parseErr
 	}
-	return parseDeadcodeOutput(bytes.NewReader(out))
+	if err != nil && len(entries) == 0 {
+		return nil, fmt.Errorf("deadcode failed: %w", err)
+	}
+	return entries, nil
 }
 
 func parseDeadcodeOutput(r io.Reader) ([]deadcodeEntry, error) {
@@ -73,8 +75,14 @@ func parseDeadcodeOutput(r io.Reader) ([]deadcodeEntry, error) {
 		if len(m) != 5 {
 			continue
 		}
-		lineNum, _ := strconv.Atoi(m[2])
-		colNum, _ := strconv.Atoi(m[3])
+		lineNum, err := strconv.Atoi(m[2])
+		if err != nil {
+			return nil, fmt.Errorf("invalid line number %q: %w", m[2], err)
+		}
+		colNum, err := strconv.Atoi(m[3])
+		if err != nil {
+			return nil, fmt.Errorf("invalid column number %q: %w", m[3], err)
+		}
 		entries = append(entries, deadcodeEntry{
 			file:   m[1],
 			line:   lineNum,
@@ -142,11 +150,19 @@ type Candidate struct {
 func impactedPackages(entry deadcodeEntry, testFile string) []string {
 	pkgs := map[string]struct{}{}
 	dir := filepath.Dir(entry.file)
-	pkgs["./"+filepath.ToSlash(dir)] = struct{}{}
+	if dir == "." {
+		pkgs["."] = struct{}{}
+	} else {
+		pkgs["./"+filepath.ToSlash(dir)] = struct{}{}
+	}
 	if testFile != "" {
 		tdir := filepath.Dir(testFile)
 		if tdir != dir {
-			pkgs["./"+filepath.ToSlash(tdir)] = struct{}{}
+			if tdir == "." {
+				pkgs["."] = struct{}{}
+			} else {
+				pkgs["./"+filepath.ToSlash(tdir)] = struct{}{}
+			}
 		}
 	}
 	var out []string

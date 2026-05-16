@@ -27,7 +27,6 @@
 //	select    Run dual deadcode scans, intersect, filter cooldown, and select one candidate.
 //	record    Record an attempt in cooldown memory with a deterministic reason code.
 //	summarize Print a compact summary of recent attempt outcomes.
-//	verify    Run make build (with timeout) and unit tests for impacted packages.
 package main
 
 import (
@@ -37,7 +36,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
 	"time"
 )
 
@@ -59,8 +57,6 @@ func run(args []string, stdout, stderr io.Writer) error {
 		return cmdRecord(args[1:], stderr)
 	case "summarize":
 		return cmdSummarize(args[1:], stdout, stderr)
-	case "verify":
-		return cmdVerify(args[1:], stdout, stderr)
 	default:
 		return usageError(stderr)
 	}
@@ -73,7 +69,6 @@ func usageError(w io.Writer) error {
 	fmt.Fprintln(w, "  select    --memory <path> [--cooldown-days <n>] [--module-path <path>]")
 	fmt.Fprintln(w, "  record    --memory <path> --symbol <s> --package <p> --reason <r> [--context <json>]")
 	fmt.Fprintln(w, "  summarize --memory <path> [--days <n>]")
-	fmt.Fprintln(w, "  verify    --packages <list> [--build-timeout <duration>] [--test-timeout <duration>]")
 	return errors.New("unknown or missing command")
 }
 
@@ -259,30 +254,4 @@ func cmdSummarize(args []string, stdout, stderr io.Writer) error {
 	return nil
 }
 
-func cmdVerify(args []string, stdout, stderr io.Writer) error {
-	fs := flag.NewFlagSet("verify", flag.ContinueOnError)
-	fs.SetOutput(stderr)
-	packages := fs.String("packages", "", "space-separated impacted packages (required)")
-	buildTimeout := fs.Duration("build-timeout", 10*time.Minute, "timeout for make build")
-	testTimeout := fs.Duration("test-timeout", 10*time.Minute, "timeout for go test")
-	if err := fs.Parse(args); err != nil {
-		return err
-	}
-	if *packages == "" {
-		return errors.New("--packages is required")
-	}
-	pkgs := strings.Fields(*packages)
 
-	fmt.Fprintf(stderr, "verifying build (timeout %v)...\n", *buildTimeout)
-	if err := verifyBuild(*buildTimeout); err != nil {
-		return fmt.Errorf("build verification failed: %w", err)
-	}
-	fmt.Fprintln(stderr, "build OK")
-
-	fmt.Fprintf(stderr, "running unit tests for %v (timeout %v)...\n", pkgs, *testTimeout)
-	if err := verifyTests(pkgs, *testTimeout); err != nil {
-		return fmt.Errorf("test verification failed: %w", err)
-	}
-	fmt.Fprintln(stderr, "tests OK")
-	return nil
-}

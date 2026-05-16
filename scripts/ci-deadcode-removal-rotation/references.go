@@ -31,12 +31,14 @@ func runGoplsReferences(file string, line, col int) ([]string, error) {
 	pos := fmt.Sprintf("%s:%d:%d", file, line, col)
 	cmd := exec.Command("gopls", "references", pos)
 	out, err := cmd.CombinedOutput()
-	if err != nil {
-		if len(out) == 0 {
-			return nil, fmt.Errorf("gopls references failed: %w", err)
-		}
+	files, parseErr := parseGoplsReferencesOutput(bytes.NewReader(out))
+	if parseErr != nil {
+		return nil, parseErr
 	}
-	return parseGoplsReferencesOutput(bytes.NewReader(out))
+	if err != nil && len(files) == 0 {
+		return nil, fmt.Errorf("gopls references failed: %w", err)
+	}
+	return files, nil
 }
 
 func parseGoplsReferencesOutput(r io.Reader) ([]string, error) {

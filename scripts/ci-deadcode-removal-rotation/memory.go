@@ -62,10 +62,10 @@ type AttemptContext struct {
 }
 
 type AttemptRecord struct {
-	Symbol      string        `json:"symbol"`
-	Package     string        `json:"package"`
-	AttemptedAt time.Time     `json:"attemptedAt"`
-	Reason      AttemptReason `json:"reason"`
+	Symbol      string         `json:"symbol"`
+	Package     string         `json:"package"`
+	AttemptedAt time.Time      `json:"attemptedAt"`
+	Reason      AttemptReason  `json:"reason"`
 	Context     AttemptContext `json:"context,omitempty"`
 }
 
@@ -147,11 +147,11 @@ func recordAttempt(mem *Memory, symbol, pkg string, reason AttemptReason, ctx At
 	trimAttempts(mem, maxAttempts)
 }
 
-func trimAttempts(mem *Memory, max int) {
-	if len(mem.Attempts) <= max {
+func trimAttempts(mem *Memory, limit int) {
+	if len(mem.Attempts) <= limit {
 		return
 	}
-	mem.Attempts = mem.Attempts[len(mem.Attempts)-max:]
+	mem.Attempts = mem.Attempts[len(mem.Attempts)-limit:]
 }
 
 func validateReason(r string) (AttemptReason, error) {
