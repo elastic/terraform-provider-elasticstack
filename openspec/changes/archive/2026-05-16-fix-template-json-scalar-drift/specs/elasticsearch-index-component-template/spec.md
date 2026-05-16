@@ -1,6 +1,6 @@
 ## MODIFIED Requirements
 
-### Requirement: Read state mapping (REQ-022–REQ-025)
+### Requirement: Read state mapping (REQ-022–REQ-026)
 
 On read, the resource SHALL set `name` and `version` from the API response. On read, when API `metadata` is present, it SHALL be serialized into a JSON string and stored in state. On read, when API `template` is present, it SHALL be flattened into `template` state, including aliases, mappings, and settings. User-defined alias `routing` SHALL be preserved during read/refresh, because this field may be omitted by the API response and therefore SHALL not be overwritten from response data.
 
