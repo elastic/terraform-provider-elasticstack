@@ -27,6 +27,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -141,19 +142,14 @@ func isExcludedFile(file string) bool {
 // code should be skipped because deadcode (run without -test) legitimately
 // reports it dead, but removing it would break the test suite.
 func hasExcludedReference(refFiles []string) bool {
-	for _, f := range refFiles {
-		if isExcludedFile(f) {
-			return true
-		}
-	}
-	return false
+	return slices.ContainsFunc(refFiles, isExcludedFile)
 }
 
-func truncateBytes(b []byte, max int) string {
-	if len(b) <= max {
+func truncateBytes(b []byte, maxLen int) string {
+	if len(b) <= maxLen {
 		return string(b)
 	}
-	return string(b[:max]) + " [...truncated]"
+	return string(b[:maxLen]) + " [...truncated]"
 }
 
 func parseDeadcodeOutput(r io.Reader) ([]deadcodeEntry, error) {
