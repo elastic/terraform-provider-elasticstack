@@ -252,6 +252,43 @@ func TestCmdRecordInvalidReason(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestCmdRecordBatch(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	memPath := filepath.Join(dir, "memory.json")
+	input := `[{"symbol":"pkg.A","package":"pkg"},{"symbol":"pkg.B","package":"pkg"}]`
+	var stderr bytes.Buffer
+	err := cmdRecordBatch([]string{
+		"--memory", memPath,
+		"--reason", "invalid_candidate_references",
+	}, strings.NewReader(input), &stderr)
+	require.NoError(t, err)
+
+	mem, err := loadMemory(memPath)
+	require.NoError(t, err)
+	require.Len(t, mem.Attempts, 2)
+	assert.Equal(t, "pkg.A", mem.Attempts[0].Symbol)
+	assert.Equal(t, ReasonInvalidReferences, mem.Attempts[0].Reason)
+	assert.Equal(t, "pkg.B", mem.Attempts[1].Symbol)
+	assert.Equal(t, ReasonInvalidReferences, mem.Attempts[1].Reason)
+}
+
+func TestCmdRecordBatchEmpty(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	memPath := filepath.Join(dir, "memory.json")
+	var stderr bytes.Buffer
+	err := cmdRecordBatch([]string{
+		"--memory", memPath,
+		"--reason", "invalid_candidate_references",
+	}, strings.NewReader("[]"), &stderr)
+	require.NoError(t, err)
+
+	mem, err := loadMemory(memPath)
+	require.NoError(t, err)
+	require.Empty(t, mem.Attempts)
+}
+
 func TestCmdSummarize(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()

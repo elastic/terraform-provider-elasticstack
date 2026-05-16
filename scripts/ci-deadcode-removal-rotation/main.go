@@ -36,6 +36,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -55,6 +56,8 @@ func run(args []string, stdout, stderr io.Writer) error {
 		return cmdSelect(args[1:], stdout, stderr)
 	case "record":
 		return cmdRecord(args[1:], stderr)
+	case "record-batch":
+		return cmdRecordBatch(args[1:], os.Stdin, stderr)
 	case "summarize":
 		return cmdSummarize(args[1:], stdout, stderr)
 	default:
@@ -66,9 +69,10 @@ func usageError(w io.Writer) error {
 	fmt.Fprintln(w, "Usage: ci-deadcode-removal-rotation <command> [flags]")
 	fmt.Fprintln(w, "")
 	fmt.Fprintln(w, "Commands:")
-	fmt.Fprintln(w, "  select    --memory <path> [--cooldown-days <n>] [--module-path <path>]")
-	fmt.Fprintln(w, "  record    --memory <path> --symbol <s> --package <p> --reason <r> [--context <json>]")
-	fmt.Fprintln(w, "  summarize --memory <path> [--days <n>]")
+	fmt.Fprintln(w, "  select       --memory <path> [--cooldown-days <n>] [--module-path <path>]")
+	fmt.Fprintln(w, "  record       --memory <path> --symbol <s> --package <p> --reason <r> [--context <json>]")
+	fmt.Fprintln(w, "  record-batch --memory <path> --reason <r> (reads JSON array from stdin)")
+	fmt.Fprintln(w, "  summarize    --memory <path> [--days <n>]")
 	return errors.New("unknown or missing command")
 }
 
@@ -116,18 +120,24 @@ func cmdSelect(args []string, stdout, stderr io.Writer) error {
 
 	now := time.Now().UTC()
 	total := len(intersected)
-	inCooldown := 0
-	for _, c := range intersected {
-		if isInCooldown(mem, c.key(), now) {
-			inCooldown++
-		}
-	}
 
 	eligibleCandidates := selectEligible(intersected, mem, now)
 
+	cwd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("get working directory: %w", err)
+	}
+
 	result := Candidate{Found: false}
 	var chosen *deadcodeEntry
+	const maxReferenceChecks = 20
+	checks := 0
 	for i := range eligibleCandidates {
+		if checks >= maxReferenceChecks {
+			fmt.Fprintf(stderr, "stopping after %d reference checks\n", maxReferenceChecks)
+			break
+		}
+		checks++
 		candidate := &eligibleCandidates[i]
 		fmt.Fprintf(stderr, "checking references for %s (%s:%d:%d)...\n", candidate.key(), candidate.file, candidate.line, candidate.column)
 
@@ -136,13 +146,9 @@ func cmdSelect(args []string, stdout, stderr io.Writer) error {
 			return fmt.Errorf("gopls references for %s: %w", candidate.key(), err)
 		}
 
-		cwd, err := os.Getwd()
-		if err != nil {
-			return fmt.Errorf("get working directory: %w", err)
-		}
 		relRefFiles := make([]string, 0, len(refFiles))
 		for _, rf := range refFiles {
-			rel, err := relativePath(cwd, rf)
+			rel, err := filepath.Rel(cwd, rf)
 			if err != nil {
 				return fmt.Errorf("resolve reference path %s: %w", rf, err)
 			}
@@ -151,12 +157,22 @@ func cmdSelect(args []string, stdout, stderr io.Writer) error {
 
 		if hasExcludedReference(relRefFiles) {
 			fmt.Fprintf(stderr, "skipping %s: references found in test/analysis packages (%v)\n", candidate.key(), relRefFiles)
+			result.FilteredCandidates = append(result.FilteredCandidates, FilteredCandidate{
+				Symbol:  candidate.key(),
+				Package: candidate.packagePath,
+				Reason:  string(ReasonInvalidReferences),
+			})
 			continue
 		}
 
 		eligible, testFile := classifyReferences(candidate.file, relRefFiles)
 		if !eligible {
 			fmt.Fprintf(stderr, "skipping %s: not eligible for removal (references: %v)\n", candidate.key(), relRefFiles)
+			result.FilteredCandidates = append(result.FilteredCandidates, FilteredCandidate{
+				Symbol:  candidate.key(),
+				Package: candidate.packagePath,
+				Reason:  string(ReasonInvalidReferences),
+			})
 			continue
 		}
 
@@ -180,7 +196,7 @@ func cmdSelect(args []string, stdout, stderr io.Writer) error {
 		return fmt.Errorf("marshal result: %w", err)
 	}
 	fmt.Fprintln(stdout, string(data))
-	fmt.Fprintf(stderr, "total=%d in-cooldown=%d eligible=%d selected=%v\n", total, inCooldown, total-inCooldown, result.Found)
+	fmt.Fprintf(stderr, "total=%d eligible=%d selected=%v\n", total, len(eligibleCandidates), result.Found)
 	return nil
 }
 
@@ -233,6 +249,52 @@ func cmdRecord(args []string, stderr io.Writer) error {
 		return fmt.Errorf("save memory: %w", err)
 	}
 	fmt.Fprintf(stderr, "recorded %s (%s) as %s\n", *symbol, *pkg, reason)
+	return nil
+}
+
+func cmdRecordBatch(args []string, stdin io.Reader, stderr io.Writer) error {
+	fs := flag.NewFlagSet("record-batch", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+	memPath := fs.String("memory", "", "path to memory file (required)")
+	reasonStr := fs.String("reason", "", "attempt reason code (required)")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	if *memPath == "" {
+		return errors.New("--memory is required")
+	}
+	if *reasonStr == "" {
+		return errors.New("--reason is required")
+	}
+	reason, err := validateReason(*reasonStr)
+	if err != nil {
+		return err
+	}
+
+	var entries []struct {
+		Symbol  string `json:"symbol"`
+		Package string `json:"package"`
+	}
+	if err := json.NewDecoder(stdin).Decode(&entries); err != nil {
+		return fmt.Errorf("parse stdin: %w", err)
+	}
+
+	mem, err := loadMemory(*memPath)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return fmt.Errorf("load memory: %w", err)
+		}
+		mem = &Memory{Version: 1, CooldownDays: 14}
+	}
+
+	for _, e := range entries {
+		recordAttempt(mem, e.Symbol, e.Package, reason, AttemptContext{})
+	}
+
+	if err := saveMemory(*memPath, mem); err != nil {
+		return fmt.Errorf("save memory: %w", err)
+	}
+	fmt.Fprintf(stderr, "recorded %d attempts\n", len(entries))
 	return nil
 }
 

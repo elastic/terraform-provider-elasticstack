@@ -73,6 +73,8 @@ on:
           echo "reference_files=$(echo "$result" | jq -r '.reference_files | join(" ")')" >> "$GITHUB_OUTPUT"
           echo "reference_file_count=$(echo "$result" | jq -r '.reference_files | length')" >> "$GITHUB_OUTPUT"
         fi
+        filtered=$(echo "$result" | jq -c '.filtered_candidates // []')
+        echo "filtered_candidates=$filtered" >> "$GITHUB_OUTPUT"
     - name: Summarize recent outcomes
       id: summarize
       run: |
@@ -89,7 +91,7 @@ on:
         echo "EOF" >> "$GITHUB_OUTPUT"
 engine:
   id: claude
-  model: "llm-gateway/claude-sonnet-4-6"
+  model: "llm-gateway/DeepSeek-V4-Flash"
   args:
     - "--effort"
     - "high"
@@ -140,6 +142,7 @@ jobs:
       impacted_packages: ${{ steps.select_candidate.outputs.impacted_packages }}
       reference_files: ${{ steps.select_candidate.outputs.reference_files }}
       reference_file_count: ${{ steps.select_candidate.outputs.reference_file_count }}
+      filtered_candidates: ${{ steps.select_candidate.outputs.filtered_candidates }}
       summary: ${{ steps.summarize.outputs.summary }}
 ---
 
@@ -169,6 +172,24 @@ A deterministic pre-activation step has already selected the candidate and analy
 ${{ needs.pre_activation.outputs.summary }}
 ```
 
+## Pre-activation filtered candidates
+
+Before proceeding with the main task, record the following candidates that pre-activation filtered due to invalid or excluded references. This avoids repeating costly gopls analysis on future runs.
+
+```json
+${{ needs.pre_activation.outputs.filtered_candidates }}
+```
+
+Run:
+```bash
+echo '${{ needs.pre_activation.outputs.filtered_candidates }}' | jq '[.[] | {symbol, package}]' | \
+go run ./scripts/ci-deadcode-removal-rotation record-batch \
+  --memory /tmp/gh-aw/repo-memory/ci-deadcode-removal-rotation/memory/ci-deadcode-removal-rotation/memory.json \
+  --reason invalid_candidate_references
+```
+
+After recording the filtered candidates, proceed with the main task below.
+
 ## Task
 
 1. **Read the candidate file** (`${{ needs.pre_activation.outputs.file }}`) and locate the dead function at line `${{ needs.pre_activation.outputs.line }}`.
@@ -181,7 +202,7 @@ ${{ needs.pre_activation.outputs.summary }}
        - Record the attempt as `invalid_candidate_acceptance_test` using:
          ```
          go run ./scripts/ci-deadcode-removal-rotation record \
-           --memory gh-aw-repo-memory/ci-deadcode-removal-rotation/memory/ci-deadcode-removal-rotation/memory.json \
+           --memory /tmp/gh-aw/repo-memory/ci-deadcode-removal-rotation/memory/ci-deadcode-removal-rotation/memory.json \
            --symbol "${{ needs.pre_activation.outputs.symbol }}" \
            --package "${{ needs.pre_activation.outputs.package }}" \
            --reason invalid_candidate_acceptance_test \
@@ -196,7 +217,7 @@ ${{ needs.pre_activation.outputs.summary }}
      - Record the attempt as `build_failed` (or `verification_timeout` on timeout):
        ```
        go run ./scripts/ci-deadcode-removal-rotation record \
-         --memory gh-aw-repo-memory/ci-deadcode-removal-rotation/memory/ci-deadcode-removal-rotation/memory.json \
+         --memory /tmp/gh-aw/repo-memory/ci-deadcode-removal-rotation/memory/ci-deadcode-removal-rotation/memory.json \
          --symbol "${{ needs.pre_activation.outputs.symbol }}" \
          --package "${{ needs.pre_activation.outputs.package }}" \
          --reason <reason>
@@ -218,7 +239,7 @@ ${{ needs.pre_activation.outputs.summary }}
 6. **Record success** after opening the PR:
    ```
    go run ./scripts/ci-deadcode-removal-rotation record \
-     --memory gh-aw-repo-memory/ci-deadcode-removal-rotation/memory/ci-deadcode-removal-rotation/memory.json \
+     --memory /tmp/gh-aw/repo-memory/ci-deadcode-removal-rotation/memory/ci-deadcode-removal-rotation/memory.json \
      --symbol "${{ needs.pre_activation.outputs.symbol }}" \
      --package "${{ needs.pre_activation.outputs.package }}" \
      --reason pr_created \
