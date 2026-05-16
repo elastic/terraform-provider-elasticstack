@@ -214,7 +214,13 @@ func normalizeIndexSettings(m map[string]any) map[string]any {
 		if !strings.HasPrefix(k, "index.") {
 			nk = "index." + k
 		}
-		e := entry{k, nk, fmt.Sprintf("%v", val)}
+		var s string
+		if val == nil {
+			s = "null"
+		} else {
+			s = fmt.Sprintf("%v", val)
+		}
+		e := entry{k, nk, s}
 		if strings.Contains(k, ".") {
 			dotted = append(dotted, e)
 		} else {

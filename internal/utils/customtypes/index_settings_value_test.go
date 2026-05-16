@@ -50,6 +50,11 @@ func TestCanonicalIndexSettingsJSON(t *testing.T) {
 			in:   `{}`,
 			want: `{}`,
 		},
+		{
+			name: "null value stringified as null",
+			in:   `{"key": null}`,
+			want: `{"index":{"key":"null"}}`,
+		},
 	}
 
 	for _, tc := range tests {
