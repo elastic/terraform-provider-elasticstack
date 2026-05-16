@@ -227,6 +227,60 @@ func NewMappingsValue(value string) MappingsValue {
 
 // ---- semantic equality helpers -----------------------------------------------
 
+// scalarSemanticEqual returns true when two scalar leaf values are semantically
+// equal, accounting for the case where Elasticsearch echoes a non-string scalar
+// (bool, number) back as its stringified form. For example, the user-authored
+// JSON value true (decoded as bool) must compare equal to the API-echoed "true"
+// (decoded as string), and vice-versa.
+//
+// Only plain scalar types (bool, json.Number, float64, string) are handled here.
+// Structured types (map, slice) always return false so structural comparison is
+// not affected.
+func scalarSemanticEqual(a, b any) bool {
+	if reflect.DeepEqual(a, b) {
+		return true
+	}
+
+	// Canonicalise both sides to their string representation and compare.
+	// This is intentionally narrow: we only do this when at least one side is
+	// a non-string scalar (bool or number) so that two distinct strings are
+	// never considered equal via this path.
+	strOf := func(v any) (string, bool) {
+		switch x := v.(type) {
+		case bool:
+			if x {
+				return "true", true
+			}
+			return "false", true
+		case json.Number:
+			return x.String(), true
+		case float64:
+			// json.Unmarshal decodes numbers as float64 when UseNumber is not set.
+			return fmt.Sprintf("%g", x), true
+		case string:
+			return x, true
+		default:
+			return "", false
+		}
+	}
+
+	sa, aOk := strOf(a)
+	sb, bOk := strOf(b)
+	if !aOk || !bOk {
+		return false
+	}
+
+	// Require at least one side to be a non-string scalar so that two
+	// structurally different strings are never falsely equated.
+	_, aIsString := a.(string)
+	_, bIsString := b.(string)
+	if aIsString && bIsString {
+		return false
+	}
+
+	return sa == sb
+}
+
 // SemanticTextMappingType is the Elasticsearch mapping type string for semantic_text fields.
 const SemanticTextMappingType = "semantic_text"
 
@@ -261,7 +315,7 @@ func MappingsSemanticallyEqual(userMappings, apiMappings map[string]any) bool {
 			continue
 		}
 
-		if !reflect.DeepEqual(userVal, apiVal) {
+		if !scalarSemanticEqual(userVal, apiVal) {
 			return false
 		}
 	}
@@ -328,7 +382,7 @@ func fieldSemanticallyEqual(userFieldRaw, apiFieldRaw any) bool {
 			continue
 		}
 
-		if !reflect.DeepEqual(userVal, apiVal) {
+		if !scalarSemanticEqual(userVal, apiVal) {
 			return false
 		}
 	}
