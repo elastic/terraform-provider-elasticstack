@@ -66,14 +66,6 @@ func parseGoplsReferencesOutput(r io.Reader) ([]string, error) {
 	return files, nil
 }
 
-func relativePath(base, target string) (string, error) {
-	rel, err := filepath.Rel(base, target)
-	if err != nil {
-		return "", err
-	}
-	return rel, nil
-}
-
 // classifyReferences determines whether a candidate is safe to remove.
 //
 // A candidate is valid in two cases:
@@ -87,42 +79,33 @@ func relativePath(base, target string) (string, error) {
 // candidate ineligible — the function is dead from the provider binary's
 // point of view but is still needed.
 func classifyReferences(srcFile string, refFiles []string) (eligible bool, testFile string) {
-	// Strip leading './' so directory comparisons work consistently.
 	srcFile = strings.TrimPrefix(srcFile, "./")
 
-	var testFiles []string
+	testCount := 0
+	var singleTestFile string
 	for _, f := range refFiles {
 		f = strings.TrimPrefix(f, "./")
 		if strings.HasSuffix(f, "_test.go") {
-			testFiles = append(testFiles, f)
+			testCount++
+			singleTestFile = f
 		}
 	}
 
-	// Non-test references mean the symbol is still live from the provider's
-	// perspective (e.g. used via reflection/init). Skip it.
-	if len(testFiles) != len(refFiles) {
+	if testCount != len(refFiles) {
 		return false, ""
 	}
-
-	// No references at all — pure dead code.
-	if len(testFiles) == 0 {
+	if testCount == 0 {
 		return true, ""
 	}
-
-	// Multiple test files — removing just a companion test in one package
-	// would leave broken references in others.
-	if len(testFiles) > 1 {
+	if testCount > 1 {
 		return false, ""
 	}
 
-	// Exactly one test reference. It must be in the same package directory
-	// and not be an acceptance (black-box) test.
-	tf := strings.TrimPrefix(testFiles[0], "./")
-	if strings.HasPrefix(filepath.Base(tf), "acc_") {
+	if strings.HasPrefix(filepath.Base(singleTestFile), "acc_") {
 		return false, ""
 	}
-	if filepath.Dir(tf) != filepath.Dir(srcFile) {
+	if filepath.Dir(singleTestFile) != filepath.Dir(srcFile) {
 		return false, ""
 	}
-	return true, tf
+	return true, singleTestFile
 }

@@ -107,9 +107,6 @@ func runDeadcode(testMode bool) ([]deadcodeEntry, error) {
 	return entries, nil
 }
 
-// excludedFilePrefixes lists relative file-path prefixes whose deadcode
-// candidates should be ignored. These are test-only or dynamically-loaded
-// packages that always appear dead from the provider main entrypoint.
 var excludedFilePrefixes = []string{
 	"analysis/acctestconfigdirlint/",
 	"analysis/acctestconfigdirlintplugin/",
@@ -119,37 +116,22 @@ var excludedFilePrefixes = []string{
 }
 
 func filterExcluded(entries []deadcodeEntry) []deadcodeEntry {
-	var out []deadcodeEntry
-	for _, e := range entries {
-		if !isExcludedFile(e.file) {
-			out = append(out, e)
-		}
-	}
-	return out
+	return slices.DeleteFunc(entries, func(e deadcodeEntry) bool { return isExcludedFile(e.file) })
 }
 
 func isExcludedFile(file string) bool {
-	for _, p := range excludedFilePrefixes {
-		if strings.HasPrefix(file, p) {
-			return true
-		}
-	}
-	return false
+	return slices.ContainsFunc(excludedFilePrefixes, func(p string) bool { return strings.HasPrefix(file, p) })
 }
 
-// hasExcludedReference returns true if any of the reference files lives in a
-// known test/analysis package. A candidate whose only references are test-only
-// code should be skipped because deadcode (run without -test) legitimately
-// reports it dead, but removing it would break the test suite.
 func hasExcludedReference(refFiles []string) bool {
 	return slices.ContainsFunc(refFiles, isExcludedFile)
 }
 
-func truncateBytes(b []byte, maxBytes int) string {
-	if len(b) <= maxBytes {
+func truncateBytes(b []byte, limit int) string {
+	if len(b) <= limit {
 		return string(b)
 	}
-	return string(b[:maxBytes]) + " [...truncated]"
+	return string(b[:limit]) + " [...truncated]"
 }
 
 func parseDeadcodeOutput(r io.Reader) ([]deadcodeEntry, error) {
@@ -208,7 +190,7 @@ func intersectCandidates(a, b []deadcodeEntry) []deadcodeEntry {
 }
 
 func selectEligible(candidates []deadcodeEntry, mem *Memory, now time.Time) []deadcodeEntry {
-	var eligible []deadcodeEntry
+	eligible := make([]deadcodeEntry, 0, len(candidates))
 	for _, c := range candidates {
 		if !isInCooldown(mem, c.key(), now) {
 			eligible = append(eligible, c)
@@ -229,18 +211,25 @@ func selectOne(candidates []deadcodeEntry, mem *Memory, now time.Time) *deadcode
 	return &eligible[0]
 }
 
+type FilteredCandidate struct {
+	Symbol  string `json:"symbol"`
+	Package string `json:"package"`
+	Reason  string `json:"reason"`
+}
+
 type Candidate struct {
-	Symbol                       string   `json:"symbol"`
-	SymbolName                   string   `json:"symbol_name"`
-	Package                      string   `json:"package"`
-	File                         string   `json:"file"`
-	Line                         int      `json:"line"`
-	Column                       int      `json:"column"`
-	CompanionTestCleanupEligible bool     `json:"companion_test_cleanup_eligible"`
-	CompanionTestFile            string   `json:"companion_test_file"`
-	ReferenceFiles               []string `json:"reference_files"`
-	ImpactedPackages             []string `json:"impacted_packages"`
-	Found                        bool     `json:"found"`
+	Symbol                       string              `json:"symbol"`
+	SymbolName                   string              `json:"symbol_name"`
+	Package                      string              `json:"package"`
+	File                         string              `json:"file"`
+	Line                         int                 `json:"line"`
+	Column                       int                 `json:"column"`
+	CompanionTestCleanupEligible bool                `json:"companion_test_cleanup_eligible"`
+	CompanionTestFile            string              `json:"companion_test_file"`
+	ReferenceFiles               []string            `json:"reference_files"`
+	ImpactedPackages             []string            `json:"impacted_packages"`
+	Found                        bool                `json:"found"`
+	FilteredCandidates           []FilteredCandidate `json:"filtered_candidates"`
 }
 
 func impactedPackages(entry deadcodeEntry, testFile string) []string {
