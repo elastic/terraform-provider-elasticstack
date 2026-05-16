@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package dashboard
+package panelkit_test
 
 import (
 	"context"
@@ -24,14 +24,12 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
 )
 
-func structuredDrilldownItemAttrTypesForTest(t *testing.T) map[string]attr.Type {
-	t.Helper()
+func drilldownItemAttrTypes() map[string]attr.Type {
 	dashboardObject := types.ObjectType{
 		AttrTypes: map[string]attr.Type{
 			"dashboard_id":    types.StringType,
@@ -63,11 +61,11 @@ func structuredDrilldownItemAttrTypesForTest(t *testing.T) map[string]attr.Type 
 	}
 }
 
-func Test_drilldownItemModeValidator(t *testing.T) {
+func TestDrilldownItemModeValidator(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	attrTypes := structuredDrilldownItemAttrTypesForTest(t)
-	v := drilldownItemModeValidator{}
+	attrTypes := drilldownItemAttrTypes()
+	v := panelkit.DrilldownItemModeValidator{}
 
 	pathRoot := path.Root("drilldowns").AtListIndex(0)
 
@@ -142,37 +140,5 @@ func Test_drilldownItemModeValidator(t *testing.T) {
 			v.ValidateObject(ctx, validator.ObjectRequest{ConfigValue: obj, Path: pathRoot}, &resp)
 			require.False(t, resp.Diagnostics.HasError())
 		}
-	})
-}
-
-func Test_structuredDrilldown_urlTriggerStringValidator(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-	listAttr := panelkit.StructuredDrilldownsAttribute().(schema.ListNestedAttribute)
-	urlAttr, ok := listAttr.NestedObject.Attributes["url"].(schema.SingleNestedAttribute)
-	require.True(t, ok)
-	triggerAttr, ok := urlAttr.Attributes["trigger"].(schema.StringAttribute)
-	require.True(t, ok)
-	require.True(t, triggerAttr.Required)
-	require.NotEmpty(t, triggerAttr.Validators)
-
-	t.Run("rejects_invalid", func(t *testing.T) {
-		t.Parallel()
-		req := validator.StringRequest{Path: path.Root("trigger"), ConfigValue: types.StringValue("nope")}
-		var resp validator.StringResponse
-		for _, m := range triggerAttr.Validators {
-			m.ValidateString(ctx, req, &resp)
-		}
-		require.True(t, resp.Diagnostics.HasError())
-	})
-
-	t.Run("allows_known", func(t *testing.T) {
-		t.Parallel()
-		req := validator.StringRequest{Path: path.Root("trigger"), ConfigValue: types.StringValue("on_click_row")}
-		var resp validator.StringResponse
-		for _, m := range triggerAttr.Validators {
-			m.ValidateString(ctx, req, &resp)
-		}
-		require.False(t, resp.Diagnostics.HasError())
 	})
 }
