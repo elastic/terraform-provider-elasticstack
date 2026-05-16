@@ -234,8 +234,10 @@ func NewMappingsValue(value string) MappingsValue {
 // JSON value true (decoded as bool) must compare equal to the API-echoed "true"
 // (decoded as string), and vice-versa.
 //
-// Only plain scalar types (bool, float64, string) are handled here.
-// Structured types (map, slice) always return false so structural comparison is
+// Only plain scalar types (bool, float64, string) are handled here. For
+// identical structured values (map, slice) the reflect.DeepEqual fast path at
+// the top of this function returns true; non-identical structured values fall
+// through to the default case and return false, so structural comparison is
 // not affected.
 func scalarSemanticEqual(a, b any) bool {
 	if reflect.DeepEqual(a, b) {

@@ -14,7 +14,7 @@
 
 - [x] 3.1 Add focused component-template acceptance coverage for boolean-valued `template.mappings` that must remain non-drifting after apply
 - [x] 3.2 Add focused component-template acceptance coverage for `template.settings` containing JSON `null` values that must remain non-drifting after apply
-- [x] 3.3 If an Elasticsearch stack is available, run targeted acceptance tests for `internal/elasticsearch/index/componenttemplate/...`
+- [ ] 3.3 If an Elasticsearch stack is available, run targeted acceptance tests for `internal/elasticsearch/index/componenttemplate/...`
 
 ## 4. Requirements and final validation
 
