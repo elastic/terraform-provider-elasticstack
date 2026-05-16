@@ -20,8 +20,10 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
@@ -30,6 +32,8 @@ import (
 	"strings"
 	"time"
 )
+
+const deadcodeTimeout = 15 * time.Minute
 
 var deadcodeLinePattern = regexp.MustCompile(`^(.+):(\d+):(\d+): unreachable func: (.+)$`)
 
@@ -51,16 +55,54 @@ func runDeadcode(testMode bool) ([]deadcodeEntry, error) {
 		args = append(args, "-test")
 	}
 	args = append(args, "./...")
-	cmd := exec.Command("go", args...)
-	out, err := cmd.CombinedOutput()
-	entries, parseErr := parseDeadcodeOutput(bytes.NewReader(out))
+
+	ctx, cancel := context.WithTimeout(context.Background(), deadcodeTimeout)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "go", args...)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	start := time.Now()
+	err := cmd.Run()
+	elapsed := time.Since(start)
+
+	label := "deadcode"
+	if testMode {
+		label = "deadcode -test"
+	}
+	fmt.Fprintf(os.Stderr, "%s completed in %v (exit=%v, stdout=%d bytes, stderr=%d bytes)\n", label, elapsed, cmd.ProcessState.ExitCode(), stdout.Len(), stderr.Len())
+
+	if stderr.Len() > 0 {
+		fmt.Fprintf(os.Stderr, "%s stderr:\n%s\n", label, stderr.String())
+	}
+
+	entries, parseErr := parseDeadcodeOutput(bytes.NewReader(stdout.Bytes()))
 	if parseErr != nil {
 		return nil, parseErr
 	}
+
+	if len(entries) == 0 && stdout.Len() > 0 {
+		fmt.Fprintf(os.Stderr, "%s stdout (first 2KB):\n%s\n", label, truncateBytes(stdout.Bytes(), 2048))
+	}
+
 	if err != nil && len(entries) == 0 {
+		if ctx.Err() == context.DeadlineExceeded {
+			return nil, fmt.Errorf("deadcode timed out after %v: %w", deadcodeTimeout, err)
+		}
 		return nil, fmt.Errorf("deadcode failed: %w", err)
 	}
 	return entries, nil
+}
+
+func truncateBytes(b []byte, max int) string {
+	if len(b) <= max {
+		return string(b)
+	}
+	return string(b[:max]) + " [...truncated]"
 }
 
 func parseDeadcodeOutput(r io.Reader) ([]deadcodeEntry, error) {

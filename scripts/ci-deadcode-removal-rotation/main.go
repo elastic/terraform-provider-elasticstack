@@ -36,6 +36,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
+	"strings"
 	"time"
 )
 
@@ -83,6 +85,17 @@ func cmdSelect(args []string, stdout, stderr io.Writer) error {
 	}
 	if *memPath == "" {
 		return errors.New("--memory is required")
+	}
+
+	// Diagnostics: log Go environment to help debug version/cache/toolchain issues.
+	for _, cmd := range []string{"go version", "go env GOROOT GOPATH GOMODCACHE GOPROXY GOTOOLCHAIN GOOS GOARCH"} {
+		parts := strings.Fields(cmd)
+		out, err := exec.Command(parts[0], parts[1:]...).CombinedOutput()
+		if err != nil {
+			fmt.Fprintf(stderr, "diag %s: error: %v\n", cmd, err)
+		} else {
+			fmt.Fprintf(stderr, "diag %s: %s\n", cmd, strings.TrimSpace(string(out)))
+		}
 	}
 
 	fmt.Fprintf(stderr, "running deadcode without tests...\n")

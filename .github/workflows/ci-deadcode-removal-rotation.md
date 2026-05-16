@@ -40,6 +40,16 @@ on:
         if ! command -v gopls &> /dev/null; then
           go install golang.org/x/tools/gopls@latest
         fi
+    - name: Pre-download modules
+      run: |
+        set -euo pipefail
+        echo "go version: $(go version)"
+        echo "GOROOT=$(go env GOROOT)"
+        echo "GOPATH=$(go env GOPATH)"
+        echo "GOMODCACHE=$(go env GOMODCACHE)"
+        echo "GOPROXY=$(go env GOPROXY)"
+        echo "GOTOOLCHAIN=$(go env GOTOOLCHAIN)"
+        time go mod download
     - name: Select dead-code candidate
       id: select_candidate
       run: |
