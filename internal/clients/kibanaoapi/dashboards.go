@@ -63,12 +63,8 @@ func CreateDashboard(ctx context.Context, client *Client, spaceID string, req kb
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusCreated:
-		return resp, nil
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return handleMutateTypedResponse(resp.StatusCode(), resp.Body,
+		func() *kbapi.PostDashboardsResponse { return resp }, http.StatusCreated)
 }
 
 // UpdateDashboard updates an existing dashboard.

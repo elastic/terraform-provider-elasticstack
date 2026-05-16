@@ -42,14 +42,8 @@ func GetSlo(ctx context.Context, client *Client, spaceID string, sloID string) (
 		return nil, diag.Diagnostics{diag.NewErrorDiagnostic("Unable to get SLO", err.Error())}
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return diagutil.UnwrapJSON200(resp.JSON200, "SLO")
-	case http.StatusNotFound:
-		return nil, nil
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return handleGetTypedResponse(resp.StatusCode(), resp.Body,
+		func() *kbapi.SLOsSloWithSummaryResponse { return resp.JSON200 })
 }
 
 // EnableSlo calls the Kibana API to enable an existing SLO.
@@ -81,12 +75,8 @@ func CreateSlo(ctx context.Context, client *Client, spaceID string, req kbapi.SL
 		return nil, diag.Diagnostics{diag.NewErrorDiagnostic("Unable to create SLO", err.Error())}
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return diagutil.UnwrapJSON200(resp.JSON200, "SLO")
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return handleMutateTypedResponse(resp.StatusCode(), resp.Body,
+		func() *kbapi.SLOsCreateSloResponse { return resp.JSON200 })
 }
 
 // UpdateSlo updates an existing SLO by space and ID.
@@ -148,12 +138,8 @@ func FindSlos(ctx context.Context, client *Client, spaceID string, params *kbapi
 		return nil, diag.Diagnostics{diag.NewErrorDiagnostic("Unable to find SLOs", err.Error())}
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return diagutil.UnwrapJSON200(resp.JSON200, "SLOs")
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return handleMutateTypedResponse(resp.StatusCode(), resp.Body,
+		func() *kbapi.SLOsFindSloResponse { return resp.JSON200 })
 }
 
 // SloResponseToModel converts a kbapi SLO response into the internal models.Slo type.
