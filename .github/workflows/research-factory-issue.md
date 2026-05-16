@@ -1656,6 +1656,148 @@ on:
             core.info(`Trigger label removal skipped: ${result.trigger_label_removed_reason}`);
           }
           
+    - name: Set phase label
+      id: set_phase_label
+      if: >-
+        (
+          steps.determine_intake_mode.outputs.intake_mode == 'issue-event' &&
+          steps.qualify_trigger.outputs.event_eligible == 'true' &&
+          steps.check_actor_trust.outputs.actor_trusted == 'true'
+        ) || (
+          steps.determine_intake_mode.outputs.intake_mode == 'dispatch' &&
+          steps.validate_dispatch_inputs.outputs.event_eligible == 'true'
+        )
+      env:
+        INPUT_ISSUE_NUMBER: >-
+          ${{ steps.determine_intake_mode.outputs.intake_mode == 'issue-event'
+            && steps.capture_issue_context.outputs.issue_number
+            || steps.validate_dispatch_inputs.outputs.issue_number }}
+      uses: actions/github-script@v9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          /**
+           * Adds a phase label to an issue and removes all other phase-* labels.
+           * @param {{ github: object, context: object, issueNumber: number|undefined, phaseLabelName: string|undefined }} opts
+           * @returns {Promise<{ phase_label_set: boolean, phase_label_name: string, stale_labels_removed: string[], reason: string }>}
+           */
+          async function setPhaseLabel({ github, context, issueNumber, phaseLabelName }) {
+            if (issueNumber === undefined || issueNumber === null) {
+              return {
+                phase_label_set: false,
+                phase_label_name: phaseLabelName || '',
+                stale_labels_removed: [],
+                reason: 'No issue number provided',
+              };
+            }
+          
+            const label =
+              typeof phaseLabelName === 'string' && phaseLabelName.trim() !== '' ? phaseLabelName.trim() : null;
+            if (!label) {
+              return {
+                phase_label_set: false,
+                phase_label_name: '',
+                stale_labels_removed: [],
+                reason: 'No phase label name provided',
+              };
+            }
+          
+            try {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                labels: [label],
+              });
+            } catch (err) {
+              return {
+                phase_label_set: false,
+                phase_label_name: label,
+                stale_labels_removed: [],
+                reason: `Failed to add label: ${err.message}`,
+              };
+            }
+          
+            let staleLabels = [];
+            try {
+              const { data: currentLabels } = await github.rest.issues.listLabelsOnIssue({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                per_page: 100,
+              });
+          
+              staleLabels = currentLabels
+                .map((l) => l.name)
+                .filter((name) => name.startsWith('phase-') && name !== label);
+          
+              if (currentLabels.length === 100 && typeof core !== 'undefined' && typeof core.warning === 'function') {
+                core.warning(`Issue #${issueNumber} has 100 labels; stale phase label removal may be incomplete.`);
+              }
+            } catch (err) {
+              return {
+                phase_label_set: true,
+                phase_label_name: label,
+                stale_labels_removed: [],
+                reason: `Added label ${label} but failed to list current labels: ${err.message}`,
+              };
+            }
+          
+            for (const staleLabel of staleLabels) {
+              try {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issueNumber,
+                  name: staleLabel,
+                });
+              } catch (err) {
+                if (err.status !== 404) {
+                  return {
+                    phase_label_set: true,
+                    phase_label_name: label,
+                    stale_labels_removed: staleLabels.filter((l) => l !== staleLabel),
+                    reason: `Added label ${label} but failed to remove stale label ${staleLabel}: ${err.message}`,
+                  };
+                }
+                // 404 means label was already absent — treat as success
+              }
+            }
+          
+            const removalMsg =
+              staleLabels.length > 0
+                ? `Removed stale phase labels: ${staleLabels.join(', ')}`
+                : 'No stale phase labels to remove';
+          
+            return {
+              phase_label_set: true,
+              phase_label_name: label,
+              stale_labels_removed: staleLabels,
+              reason: `Set phase label ${label}. ${removalMsg}`,
+            };
+          }
+          
+          if (typeof module !== 'undefined') {
+            module.exports = { setPhaseLabel };
+          }
+          
+          const issueNumber = context.payload.issue?.number || parseInt(process.env.INPUT_ISSUE_NUMBER, 10) || undefined;
+          const result = await setPhaseLabel({
+            github,
+            context,
+            issueNumber,
+            phaseLabelName: 'phase-research',
+          });
+          
+          core.setOutput('phase_label_set', result.phase_label_set ? 'true' : 'false');
+          core.setOutput('phase_label_name', result.phase_label_name);
+          
+          if (result.phase_label_set) {
+            core.info(`Set phase label ${result.phase_label_name} on issue #${issueNumber}. ${result.reason}`);
+          } else {
+            core.info(`Phase label not set: ${result.reason}`);
+          }
+          
     - name: Normalize context
       id: normalize_context
       if: always()

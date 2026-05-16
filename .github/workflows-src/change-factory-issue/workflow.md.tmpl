@@ -120,6 +120,16 @@ on:
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         x-script-include: scripts/remove_trigger_label.inline.js
+    - name: Set phase label
+      id: set_phase_label
+      if: >-
+        steps.qualify_trigger.outputs.event_eligible == 'true' &&
+        steps.check_actor_trust.outputs.actor_trusted == 'true' &&
+        steps.check_duplicate_pr.outputs.duplicate_pr_found != 'true'
+      uses: actions/github-script@v9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        x-script-include: scripts/set_phase_label.inline.js
     - name: Finalize gate reason
       id: finalize_gate
       if: always()
@@ -181,6 +191,8 @@ jobs:
       duplicate_pr_url: ${{ steps.check_duplicate_pr.outputs.duplicate_pr_url }}
       trigger_label_removed: ${{ steps.remove_trigger_label.outputs.trigger_label_removed }}
       trigger_label_removed_reason: ${{ steps.remove_trigger_label.outputs.trigger_label_removed_reason }}
+      phase_label_set: ${{ steps.set_phase_label.outputs.phase_label_set }}
+      phase_label_name: ${{ steps.set_phase_label.outputs.phase_label_name }}
       gate_reason: ${{ steps.finalize_gate.outputs.gate_reason }}
 tools:
   github:
