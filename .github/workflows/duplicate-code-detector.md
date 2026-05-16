@@ -97,7 +97,7 @@ permissions:
 safe-outputs:
   create-issue:
     title-prefix: "[duplicate-code] "
-    labels: [duplicate-code, code-quality, automated-analysis]
+    labels: [duplicate-code, code-quality, automated-analysis, triaged]
     max: 3
 
 timeout-minutes: 15
