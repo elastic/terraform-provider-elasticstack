@@ -41,6 +41,8 @@ func (d Data) GetID() types.String                    { return d.ID }
 func (d Data) GetResourceID() types.String            { return d.Name }
 func (d Data) GetElasticsearchConnection() types.List { return d.ElasticsearchConnection }
 
+var _ entitycore.WithVersionRequirements = Data{}
+
 // GetVersionRequirements satisfies [entitycore.WithVersionRequirements].
 func (d Data) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	if d.Template.IsNull() || d.Template.IsUnknown() {

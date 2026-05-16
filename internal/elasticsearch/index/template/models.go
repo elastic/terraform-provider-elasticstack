@@ -52,6 +52,8 @@ func (m Model) GetID() types.String { return m.ID }
 // For index templates the write identity is the template name.
 func (m Model) GetResourceID() types.String { return m.Name }
 
+var _ entitycore.WithVersionRequirements = Model{}
+
 // GetVersionRequirements satisfies [entitycore.WithVersionRequirements].
 func (m Model) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	var reqs []entitycore.VersionRequirement

@@ -117,7 +117,13 @@ be usable on Serverless clusters without error.
 - AND the target Elasticsearch cluster flavour is `"serverless"`
 - WHEN create or update runs
 - THEN the provider SHALL NOT return a version-gate error
-- AND it SHALL include `ignore_missing_component_templates` in the API request normally
+
+#### Scenario: Read-time enforcement
+
+- **GIVEN** non-empty `ignore_missing_component_templates` is present in Terraform state
+- **AND** the target Elasticsearch cluster is stateful with version below `8.7.0`
+- **WHEN** `terraform refresh` runs
+- **THEN** the provider SHALL return an error diagnostic (consistent with Write-time behavior)
 
 ---
 
