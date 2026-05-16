@@ -86,7 +86,7 @@ func (t IndexSettingsType) ValueFromTerraform(ctx context.Context, in tftypes.Va
 	return IndexSettingsValue{Normalized: norm}, nil
 }
 
-// IndexSettingsValue holds a JSON object string for index template settings with semantic equality matching DiffIndexSettingSuppress.
+// IndexSettingsValue holds a JSON object string for index template settings with semantic equality based on normalizeIndexSettings.
 type IndexSettingsValue struct {
 	jsontypes.Normalized
 }

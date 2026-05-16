@@ -191,8 +191,7 @@ func checkResourceComponentTemplateDestroy(s *terraform.State) error {
 }
 
 // testAccCheckResourceAttrIndexSettingsSemantic asserts template.settings matches the expected
-// effective index settings JSON using the same rules as DiffIndexSettingSuppress /
-// IndexSettingsValue.SemanticallyEqual.
+// effective index settings JSON using the same rules as IndexSettingsValue.SemanticallyEqual.
 func testAccCheckResourceAttrIndexSettingsSemantic(addr, want string) resource.TestCheckFunc {
 	const attr = "template.settings"
 	return func(s *terraform.State) error {
