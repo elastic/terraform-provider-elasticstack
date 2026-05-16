@@ -62,10 +62,9 @@ func (r *Resource) UpgradeState(_ context.Context) map[int64]resource.StateUpgra
 }
 
 var (
-	_ resource.Resource                   = &Resource{}
-	_ resource.ResourceWithConfigure      = &Resource{}
-	_ resource.ResourceWithImportState    = &Resource{}
-	_ resource.ResourceWithModifyPlan     = &Resource{}
-	_ resource.ResourceWithValidateConfig = &Resource{}
-	_ resource.ResourceWithUpgradeState   = &Resource{}
+	_ resource.Resource                 = &Resource{}
+	_ resource.ResourceWithConfigure    = &Resource{}
+	_ resource.ResourceWithImportState  = &Resource{}
+	_ resource.ResourceWithModifyPlan   = &Resource{}
+	_ resource.ResourceWithUpgradeState = &Resource{}
 )

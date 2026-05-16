@@ -23,6 +23,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -36,6 +37,16 @@ func writeComponentTemplate(ctx context.Context, client *clients.ElasticsearchSc
 	var diags diag.Diagnostics
 	plan := req.Plan
 
+	serverVersion, sdkDiags := client.ServerVersion(ctx)
+	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	if diags.HasError() {
+		return entitycore.WriteResult[Data]{Model: plan}, diags
+	}
+	diags.Append(datastreamoptions.EnforceMinServerVersion(plan.Template, serverVersion)...)
+	if diags.HasError() {
+		return entitycore.WriteResult[Data]{Model: plan}, diags
+	}
+
 	componentTemplate, d := expandFromData(ctx, plan)
 	diags.Append(d...)
 	if diags.HasError() {
@@ -47,14 +58,12 @@ func writeComponentTemplate(ctx context.Context, client *clients.ElasticsearchSc
 		return entitycore.WriteResult[Data]{Model: plan}, diags
 	}
 
-	if req.Prior.GetID().IsNull() {
-		compositeID, idDiags := client.ID(ctx, req.WriteID)
-		diags.Append(diagutil.FrameworkDiagsFromSDK(idDiags)...)
-		if diags.HasError() {
-			return entitycore.WriteResult[Data]{Model: plan}, diags
-		}
-		plan.ID = types.StringValue(compositeID.String())
+	compositeID, idDiags := client.ID(ctx, req.WriteID)
+	diags.Append(diagutil.FrameworkDiagsFromSDK(idDiags)...)
+	if diags.HasError() {
+		return entitycore.WriteResult[Data]{Model: plan}, diags
 	}
+	plan.ID = types.StringValue(compositeID.String())
 
 	return entitycore.WriteResult[Data]{Model: plan}, diags
 }

@@ -19,6 +19,7 @@ package template
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -70,22 +71,6 @@ type LifecycleModel struct {
 	DataRetention types.String `tfsdk:"data_retention"`
 }
 
-// DataStreamOptionsModel is the inner shape of template.data_stream_options.
-type DataStreamOptionsModel struct {
-	FailureStore types.Object `tfsdk:"failure_store"`
-}
-
-// FailureStoreModel is the inner shape of template.data_stream_options.failure_store.
-type FailureStoreModel struct {
-	Enabled   types.Bool   `tfsdk:"enabled"`
-	Lifecycle types.Object `tfsdk:"lifecycle"`
-}
-
-// FailureStoreLifecycleModel is the inner shape of failure_store.lifecycle.
-type FailureStoreLifecycleModel struct {
-	DataRetention types.String `tfsdk:"data_retention"`
-}
-
 // DataStreamAttrTypes returns attribute types for the data_stream block object.
 func DataStreamAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
@@ -101,28 +86,6 @@ func LifecycleAttrTypes() map[string]attr.Type {
 	}
 }
 
-// FailureStoreLifecycleAttrTypes returns attribute types for failure_store.lifecycle.
-func FailureStoreLifecycleAttrTypes() map[string]attr.Type {
-	return map[string]attr.Type{
-		"data_retention": types.StringType,
-	}
-}
-
-// FailureStoreAttrTypes returns attribute types for failure_store.
-func FailureStoreAttrTypes() map[string]attr.Type {
-	return map[string]attr.Type{
-		"enabled":   types.BoolType,
-		"lifecycle": types.ObjectType{AttrTypes: FailureStoreLifecycleAttrTypes()},
-	}
-}
-
-// DataStreamOptionsAttrTypes returns attribute types for template.data_stream_options.
-func DataStreamOptionsAttrTypes() map[string]attr.Type {
-	return map[string]attr.Type{
-		"failure_store": types.ObjectType{AttrTypes: FailureStoreAttrTypes()},
-	}
-}
-
 // TemplateAttrTypes returns attribute types for the template block object.
 //
 //nolint:revive // Name matches OpenSpec task wording (template block attribute types).
@@ -132,6 +95,6 @@ func TemplateAttrTypes() map[string]attr.Type {
 		"mappings":            index.MappingsType{},
 		"settings":            customtypes.IndexSettingsType{},
 		"lifecycle":           types.ObjectType{AttrTypes: LifecycleAttrTypes()},
-		"data_stream_options": types.ObjectType{AttrTypes: DataStreamOptionsAttrTypes()},
+		"data_stream_options": types.ObjectType{AttrTypes: datastreamoptions.AttrTypes()},
 	}
 }

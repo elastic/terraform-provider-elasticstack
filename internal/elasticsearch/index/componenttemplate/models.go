@@ -40,18 +40,8 @@ func (d Data) GetElasticsearchConnection() types.List { return d.ElasticsearchCo
 
 // TemplateModel is the inner shape of the template block.
 type TemplateModel struct {
-	Alias    types.Set                      `tfsdk:"alias"`
-	Mappings esindex.MappingsValue          `tfsdk:"mappings"`
-	Settings customtypes.IndexSettingsValue `tfsdk:"settings"`
-}
-
-// AliasModel is the inner shape of a single alias block element.
-type AliasModel struct {
-	Name          types.String         `tfsdk:"name"`
-	Filter        jsontypes.Normalized `tfsdk:"filter"`
-	IndexRouting  types.String         `tfsdk:"index_routing"`
-	IsHidden      types.Bool           `tfsdk:"is_hidden"`
-	IsWriteIndex  types.Bool           `tfsdk:"is_write_index"`
-	Routing       types.String         `tfsdk:"routing"`
-	SearchRouting types.String         `tfsdk:"search_routing"`
+	Alias             types.Set                      `tfsdk:"alias"`
+	Mappings          esindex.MappingsValue          `tfsdk:"mappings"`
+	Settings          customtypes.IndexSettingsValue `tfsdk:"settings"`
+	DataStreamOptions types.Object                   `tfsdk:"data_stream_options"`
 }

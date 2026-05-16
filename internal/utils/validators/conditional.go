@@ -372,6 +372,9 @@ func RequiredIfDependentPathOneOf(dependentPath path.Path, allowedValues []strin
 		},
 		validateValue: func(dependentFieldHasAllowedValue bool, _ string, val attr.Value, p path.Path) diag.Diagnostics {
 			var diags diag.Diagnostics
+			if val == nil || val.IsUnknown() {
+				return diags
+			}
 			isEmpty := attrValueIsUnsetForConditionalValidation(val)
 
 			if !dependentFieldHasAllowedValue {
@@ -540,6 +543,9 @@ func RequiredIfDependentPathExpressionOneOf(dependentPathExpression path.Express
 		},
 		validateValue: func(dependentFieldHasAllowedValue bool, _ string, val attr.Value, p path.Path) diag.Diagnostics {
 			var diags diag.Diagnostics
+			if val == nil || val.IsUnknown() {
+				return diags
+			}
 			isEmpty := attrValueIsUnsetForConditionalValidation(val)
 
 			if !dependentFieldHasAllowedValue {

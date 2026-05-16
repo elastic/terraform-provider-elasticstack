@@ -4,7 +4,7 @@ Resource implementation: `internal/elasticsearch/index/componenttemplate/`
 
 ## Purpose
 
-Define schema and behavior for the Elasticsearch component template resource: API usage, identity/import, connection, mapping, and read-time alias routing preservation.
+Define schema and behavior for the Elasticsearch component template resource: API usage, identity/import, connection handling, template mapping, read-time alias routing preservation, `template.data_stream_options` mapping, version gating, and state upgrade behavior.
 
 ## Schema
 
@@ -39,11 +39,19 @@ resource "elasticstack_elasticsearch_component_template" "example" {
     alias {
       name           = <required, string>
       filter         = <optional, json string>
-      index_routing  = <optional, string>
-      is_hidden      = <optional, bool>
-      is_write_index = <optional, bool>
-      routing        = <optional, string>
-      search_routing = <optional, string>
+      index_routing  = <optional+computed, string, default "">
+      is_hidden      = <optional+computed, bool, default false>
+      is_write_index = <optional+computed, bool, default false>
+      routing        = <optional+computed, string, default "">
+      search_routing = <optional+computed, string, default "">
+    }
+    data_stream_options {
+      failure_store {
+        enabled = <optional, bool>
+        lifecycle {
+          data_retention = <optional, string>
+        }
+      }
     }
   }
 }
@@ -93,7 +101,7 @@ On create/update, the resource SHALL construct a `models.ComponentTemplate` requ
 
 ### Requirement: JSON and alias mapping (REQ-017–REQ-021)
 
-`metadata` SHALL be validated as JSON by schema and parsed as JSON during create/update; if parsing fails, the resource SHALL return an error diagnostic and SHALL not call the Put API. `template.mappings` and `template.settings` SHALL be validated as JSON objects by schema and parsed into objects during create/update. `template.alias.filter` SHALL be validated as JSON by schema and parsed into an object when non-empty during create/update. `template.alias` SHALL be mapped as a set keyed by alias name in API payload/state conversion. Alias routing and flag fields (`index_routing`, `is_hidden`, `is_write_index`, `routing`, `search_routing`) SHALL be copied directly between Terraform values and API model fields.
+`metadata` SHALL be validated as JSON by schema and parsed as JSON during create/update; if parsing fails, the resource SHALL return an error diagnostic and SHALL not call the Put API. `template.mappings` SHALL be validated as a JSON object by schema and `template.settings` SHALL use the provider's index settings custom type and both SHALL be parsed into objects during create/update. `template.alias.filter` SHALL be validated as a JSON object by schema and parsed into an object when non-empty during create/update. `template.alias` SHALL be mapped as a set keyed by alias name in API payload/state conversion. Alias routing and flag fields (`index_routing`, `is_hidden`, `is_write_index`, `routing`, `search_routing`) SHALL be copied directly between Terraform values and API model fields, with `index_routing`, `routing`, and `search_routing` defaulting to the empty string and `is_hidden` and `is_write_index` defaulting to `false` when omitted.
 
 #### Scenario: Invalid mappings JSON
 
@@ -101,12 +109,35 @@ On create/update, the resource SHALL construct a `models.ComponentTemplate` requ
 - WHEN create/update runs
 - THEN the provider SHALL error before Put
 
-### Requirement: Read state mapping (REQ-022–REQ-025)
+### Requirement: Read state mapping (REQ-022–REQ-026)
 
-On read, the resource SHALL set `name` and `version` from the API response. On read, when API `metadata` is present, it SHALL be serialized into a JSON string and stored in state. On read, when API `template` is present, it SHALL be flattened into `template` state, including aliases, mappings, and settings. User-defined alias `routing` SHALL be preserved during read/refresh, because this field may be omitted by the API response and therefore SHALL not be overwritten from response data.
+On read, the resource SHALL set `name` and `version` from the API response. On read, when API `metadata` is present, it SHALL be serialized into a normalized JSON string and stored in state. On read, when API `template` is present, it SHALL be flattened into `template` state, including aliases, mappings, settings, and `data_stream_options`. When the API omits `template.data_stream_options` or `template.data_stream_options.failure_store`, the provider SHALL store `template.data_stream_options` as null in state. User-defined alias `routing` SHALL be preserved during read/refresh, because this field may be omitted by the API response and therefore SHALL not be overwritten from response data. Alias `filter` values read from the API SHALL be normalized before storing them in state.
 
 #### Scenario: Routing preserved on refresh
 
 - GIVEN user-configured alias `routing` and API omits routing fields
 - WHEN read runs
 - THEN user `routing` SHALL not be lost from state
+
+### Requirement: Data stream options support (REQ-027–REQ-031)
+
+The resource SHALL support an optional `template.data_stream_options` block with nested `failure_store` and `failure_store.lifecycle` blocks. During create and update, when `template.data_stream_options` is configured, the provider SHALL map `failure_store.enabled` and `failure_store.lifecycle.data_retention` into the Elasticsearch component template request body. During read, when Elasticsearch returns `data_stream_options.failure_store`, the provider SHALL flatten those values back into Terraform state. The `template.data_stream_options` block SHALL require `failure_store` when the block is present. The provider SHALL return an error diagnostic when `template.data_stream_options` is configured against an Elasticsearch version lower than `9.1.0`.
+
+#### Scenario: Unsupported server version
+
+- GIVEN `template.data_stream_options` is configured
+- AND the target Elasticsearch version is lower than `9.1.0`
+- WHEN create or update runs
+- THEN the provider SHALL return an error diagnostic
+- AND it SHALL not call the Put API
+
+### Requirement: State upgrade to schema version 1 (REQ-032–REQ-035)
+
+The resource SHALL define schema version `1` and provide an upgrade path from version `0`. During state upgrade from version `0`, the provider SHALL collapse legacy list-shaped `template` blocks to the Plugin Framework object-or-null representation. During that upgrade, the provider SHALL ensure the migrated `template` object contains explicit keys for `alias`, `mappings`, `settings`, and `data_stream_options`, using null when absent. During that upgrade, the provider SHALL normalize legacy alias state by converting SDK-style duplicated `index_routing` and `search_routing` values into the Plugin Framework routing-only representation and by converting empty-string alias `filter` values to null.
+
+#### Scenario: Upgrade legacy template state
+
+- GIVEN version `0` state containing list-shaped `template` data and legacy alias routing values
+- WHEN the provider upgrades state to schema version `1`
+- THEN the provider SHALL collapse `template` to object-or-null form
+- AND it SHALL preserve equivalent alias routing semantics without creating spurious diffs
