@@ -171,3 +171,27 @@ test('setPhaseLabel returns failure when non-404 removeLabel fails', async () =>
   assert.ok(result.reason.includes('Internal Server Error'));
   assert.ok(result.reason.includes('phase-research'));
 });
+
+test('setPhaseLabel preserves phase_label_set true and empty stale_labels_removed when listLabelsOnIssue throws', async () => {
+  const mockGithub = {
+    rest: {
+      issues: {
+        addLabels: async () => ({}),
+        listLabelsOnIssue: async () => {
+          throw new Error('API rate limit exceeded');
+        },
+      },
+    },
+  };
+  const result = await setPhaseLabel({
+    github: mockGithub,
+    context: { repo: { owner: 'owner', repo: 'repo' } },
+    issueNumber: 42,
+    phaseLabelName: 'phase-research',
+  });
+  assert.equal(result.phase_label_set, true);
+  assert.equal(result.phase_label_name, 'phase-research');
+  assert.deepEqual(result.stale_labels_removed, []);
+  assert.ok(result.reason.includes('Added label phase-research but failed to list current labels'));
+  assert.ok(result.reason.includes('API rate limit exceeded'));
+});
