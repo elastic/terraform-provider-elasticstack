@@ -81,6 +81,11 @@ func classifyReferences(refFiles []string) (eligible bool, testFile string) {
 			testFiles = append(testFiles, f)
 		}
 	}
+	// All reference files must be test files — if any non-test file references
+	// the symbol, the candidate is not eligible for companion test cleanup.
+	if len(testFiles) != len(refFiles) {
+		return false, ""
+	}
 	if len(testFiles) == 1 {
 		if strings.HasPrefix(filepath.Base(testFiles[0]), "acc_") {
 			return false, ""

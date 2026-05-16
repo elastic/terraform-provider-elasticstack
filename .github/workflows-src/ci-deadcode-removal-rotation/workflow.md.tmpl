@@ -43,6 +43,7 @@ on:
         echo "found=$found" >> "$GITHUB_OUTPUT"
         if [ "$found" = "true" ]; then
           echo "symbol=$(echo "$result" | jq -r '.symbol')" >> "$GITHUB_OUTPUT"
+          echo "symbol_name=$(echo "$result" | jq -r '.symbol_name')" >> "$GITHUB_OUTPUT"
           echo "package=$(echo "$result" | jq -r '.package')" >> "$GITHUB_OUTPUT"
           echo "file=$(echo "$result" | jq -r '.file')" >> "$GITHUB_OUTPUT"
           echo "line=$(echo "$result" | jq -r '.line')" >> "$GITHUB_OUTPUT"
@@ -109,6 +110,7 @@ jobs:
     outputs:
       found: ${{ steps.select_candidate.outputs.found }}
       symbol: ${{ steps.select_candidate.outputs.symbol }}
+      symbol_name: ${{ steps.select_candidate.outputs.symbol_name }}
       package: ${{ steps.select_candidate.outputs.package }}
       file: ${{ steps.select_candidate.outputs.file }}
       line: ${{ steps.select_candidate.outputs.line }}
@@ -166,7 +168,7 @@ ${{ needs.pre_activation.outputs.summary }}
            --context '{"referenceFileCount":${{ needs.pre_activation.outputs.reference_file_count }},"testCleanupEligible":true}'
          ```
        - Then call `noop` with a concise reason.
-     - If the backstop passes, remove only the test functions that reference `${{ needs.pre_activation.outputs.symbol }}` (and their doc comments).
+     - If the backstop passes, remove only the test functions that reference `${{ needs.pre_activation.outputs.symbol_name }}` (and their doc comments).
    - If `${{ needs.pre_activation.outputs.companion_test_cleanup_eligible }}` is `false`:
      - Do **not** delete any tests. Only remove the dead symbol.
 4. **Verify** the cleanup before opening a PR:

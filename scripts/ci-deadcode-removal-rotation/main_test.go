@@ -116,6 +116,15 @@ func TestClassifyReferences_SingleAccTest(t *testing.T) {
 	assert.Empty(t, testFile)
 }
 
+func TestClassifyReferences_MixedTestAndNonTest(t *testing.T) {
+	t.Parallel()
+	// A non-test file plus a test file means the symbol has references
+	// outside the companion test — not eligible for test cleanup.
+	eligible, testFile := classifyReferences([]string{"internal/pkg/foo.go", "internal/pkg/foo_test.go"})
+	assert.False(t, eligible)
+	assert.Empty(t, testFile)
+}
+
 func TestClassifyReferences_MultipleTests(t *testing.T) {
 	t.Parallel()
 	eligible, testFile := classifyReferences([]string{"internal/pkg/foo_test.go", "internal/pkg/bar_test.go"})

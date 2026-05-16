@@ -204,7 +204,11 @@ func summarize(mem *Memory, days int) string {
 			pkgs = append(pkgs, p)
 		}
 		sort.Slice(pkgs, func(i, j int) bool {
-			return pkgCounts[pkgs[i]] > pkgCounts[pkgs[j]]
+			ci, cj := pkgCounts[pkgs[i]], pkgCounts[pkgs[j]]
+			if ci != cj {
+				return ci > cj
+			}
+			return pkgs[i] < pkgs[j]
 		})
 		for _, p := range pkgs {
 			lines = append(lines, fmt.Sprintf("- `%s`: %d", p, pkgCounts[p]))

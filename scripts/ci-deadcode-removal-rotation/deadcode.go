@@ -136,6 +136,7 @@ func selectOne(candidates []deadcodeEntry, mem *Memory, now time.Time) *deadcode
 
 type Candidate struct {
 	Symbol                       string   `json:"symbol"`
+	SymbolName                   string   `json:"symbol_name"`
 	Package                      string   `json:"package"`
 	File                         string   `json:"file"`
 	Line                         int      `json:"line"`

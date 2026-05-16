@@ -137,6 +137,7 @@ func cmdSelect(args []string, stdout, stderr io.Writer) error {
 	if chosen != nil {
 		result.Found = true
 		result.Symbol = chosen.key()
+		result.SymbolName = chosen.symbol
 		result.Package = chosen.packagePath
 		result.File = chosen.file
 		result.Line = chosen.line
