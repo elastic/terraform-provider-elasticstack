@@ -16,6 +16,12 @@
       "package": "github.com/elastic/terraform-provider-elasticstack/internal/clients",
       "attemptedAt": "2026-05-16T13:40:23.744964749Z",
       "reason": "build_failed"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/clients.ResourceIDFromStr",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/clients",
+      "attemptedAt": "2026-05-16T14:02:26.726668737Z",
+      "reason": "pr_created"
     }
   ]
 }
