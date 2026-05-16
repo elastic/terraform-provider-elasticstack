@@ -18,6 +18,6 @@
 
 ## 4. Requirements and final validation
 
-- [ ] 4.1 Verify the updated delta specs for `elasticsearch-index-component-template` and `elasticsearch-index-template` match the implemented behavior
-- [ ] 4.2 Run `make check-openspec` or `make check-lint` to validate OpenSpec artifacts
-- [ ] 4.3 Run `make build` to ensure the provider still compiles after the custom type and test updates
+- [x] 4.1 Verify the updated delta specs for `elasticsearch-index-component-template` and `elasticsearch-index-template` match the implemented behavior
+- [x] 4.2 Run `make check-openspec` or `make check-lint` to validate OpenSpec artifacts
+- [x] 4.3 Run `make build` to ensure the provider still compiles after the custom type and test updates
