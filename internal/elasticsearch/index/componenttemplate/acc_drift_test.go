@@ -27,10 +27,12 @@ import (
 )
 
 // TestAccResourceComponentTemplateBooleanMappingNoDrift verifies that a component template
-// whose template.mappings contains boolean scalar values (e.g. date_detection: true) does not
-// produce spurious plan changes after the initial apply. Elasticsearch echoes boolean values as
-// their JSON string equivalents ("true"/"false"); the mappings custom type must compare those
-// semantically equal to the original booleans to prevent drift (REQ-xxx).
+// whose template.mappings contains boolean scalar values does not produce spurious plan changes
+// after the initial apply. The regression trigger is dynamic: false — Elasticsearch echoes it as
+// the JSON string "false" (because DynamicMapping uses encoding.TextMarshaler), so the mappings
+// custom type must compare that semantically equal to the original boolean false to prevent drift
+// (REQ-022–REQ-025). date_detection and numeric_detection are included as additional stability
+// anchors but do not trigger the stringification regression themselves.
 func TestAccResourceComponentTemplateBooleanMappingNoDrift(t *testing.T) {
 	templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
@@ -52,6 +54,12 @@ func TestAccResourceComponentTemplateBooleanMappingNoDrift(t *testing.T) {
 				ConfigVariables:          config.Variables{"name": config.StringVariable(templateName)},
 				PlanOnly:                 true,
 				ExpectNonEmptyPlan:       false,
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ResourceName:             "elasticstack_elasticsearch_component_template.test",
+				ImportState:              true,
+				ImportStateVerify:        true,
 			},
 		},
 	})
@@ -82,6 +90,12 @@ func TestAccResourceComponentTemplateNullSettingsNoDrift(t *testing.T) {
 				ConfigVariables:          config.Variables{"name": config.StringVariable(templateName)},
 				PlanOnly:                 true,
 				ExpectNonEmptyPlan:       false,
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ResourceName:             "elasticstack_elasticsearch_component_template.test",
+				ImportState:              true,
+				ImportStateVerify:        true,
 			},
 		},
 	})

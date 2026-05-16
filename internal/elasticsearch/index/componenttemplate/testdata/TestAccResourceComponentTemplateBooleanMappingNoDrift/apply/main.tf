@@ -11,8 +11,8 @@ resource "elasticstack_elasticsearch_component_template" "test" {
 
   template {
     mappings = jsonencode({
-      date_detection  = true
-      dynamic         = false
+      date_detection    = true
+      dynamic           = false
       numeric_detection = true
     })
   }
