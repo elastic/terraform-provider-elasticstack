@@ -89,7 +89,7 @@ func GetList(ctx context.Context, client *Client, spaceID string, params *kbapi.
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	return handleGetTypedResponse(resp.StatusCode(), resp.Body,
+	return HandleGetTypedResponse(resp.StatusCode(), resp.Body,
 		func() *kbapi.SecurityListsAPIList { return resp.JSON200 })
 }
 
@@ -100,7 +100,7 @@ func CreateList(ctx context.Context, client *Client, spaceID string, body kbapi.
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	return handleMutateTypedResponse(resp.StatusCode(), resp.Body,
+	return HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
 		func() *kbapi.SecurityListsAPIList { return resp.JSON200 })
 }
 
@@ -111,7 +111,7 @@ func UpdateList(ctx context.Context, client *Client, spaceID string, body kbapi.
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	return handleMutateTypedResponse(resp.StatusCode(), resp.Body,
+	return HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
 		func() *kbapi.SecurityListsAPIList { return resp.JSON200 })
 }
 
@@ -144,7 +144,7 @@ func CreateListItem(ctx context.Context, client *Client, spaceID string, body kb
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	return handleMutateTypedResponse(resp.StatusCode(), resp.Body,
+	return HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
 		func() *kbapi.SecurityListsAPIListItem { return resp.JSON200 })
 }
 
@@ -155,7 +155,7 @@ func UpdateListItem(ctx context.Context, client *Client, spaceID string, body kb
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	return handleMutateTypedResponse(resp.StatusCode(), resp.Body,
+	return HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
 		func() *kbapi.SecurityListsAPIListItem { return resp.JSON200 })
 }
 

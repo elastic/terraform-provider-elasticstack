@@ -36,7 +36,7 @@ func CreatePrivateLocation(ctx context.Context, client *Client, spaceID string, 
 		return nil, diag.Diagnostics{diag.NewErrorDiagnostic("HTTP request failed creating private location", err.Error())}
 	}
 
-	return handleMutateTypedResponse(resp.StatusCode(), resp.Body,
+	return HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
 		func() *kbapi.SyntheticsGetPrivateLocation { return resp.JSON200 })
 }
 
@@ -52,7 +52,7 @@ func GetPrivateLocation(ctx context.Context, client *Client, spaceID string, loc
 		)}
 	}
 
-	return handleGetTypedResponse(resp.StatusCode(), resp.Body,
+	return HandleGetTypedResponse(resp.StatusCode(), resp.Body,
 		func() *kbapi.SyntheticsGetPrivateLocation { return resp.JSON200 })
 }
 

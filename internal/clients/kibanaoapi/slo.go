@@ -42,7 +42,7 @@ func GetSlo(ctx context.Context, client *Client, spaceID string, sloID string) (
 		return nil, diag.Diagnostics{diag.NewErrorDiagnostic("Unable to get SLO", err.Error())}
 	}
 
-	return handleGetTypedResponse(resp.StatusCode(), resp.Body,
+	return HandleGetTypedResponse(resp.StatusCode(), resp.Body,
 		func() *kbapi.SLOsSloWithSummaryResponse { return resp.JSON200 })
 }
 
@@ -75,7 +75,7 @@ func CreateSlo(ctx context.Context, client *Client, spaceID string, req kbapi.SL
 		return nil, diag.Diagnostics{diag.NewErrorDiagnostic("Unable to create SLO", err.Error())}
 	}
 
-	return handleMutateTypedResponse(resp.StatusCode(), resp.Body,
+	return HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
 		func() *kbapi.SLOsCreateSloResponse { return resp.JSON200 })
 }
 
