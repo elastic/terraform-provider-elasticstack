@@ -1,4 +1,4 @@
-# `ci-automated-issue-triaged-label` — Apply `triaged` label at issue creation in automated producer workflows
+# `issue-creation-triaged-label` — Apply `triaged` label at issue creation in automated producer workflows
 
 Workflow implementation: four `workflow.md.tmpl` source templates under
 `.github/workflows-src/<workflow>/`, each compiled into a paired `.lock.yml` under
@@ -19,13 +19,13 @@ Classifier from wasting a classification run on issues that require no routing d
 | Semantic Function Refactor | `.github/workflows-src/semantic-function-refactor/workflow.md.tmpl` | `.github/workflows/semantic-function-refactor.lock.yml` |
 | Flaky Test Catcher | `.github/workflows-src/flaky-test-catcher/workflow.md.tmpl` | `.github/workflows/flaky-test-catcher.lock.yml` |
 
-## MODIFIED Requirements
+## ADDED Requirements
 
 ### Requirement: `triaged` applied at issue creation time (REQ-001)
 
 Each of the four automated producer workflows SHALL include `triaged` in the
 `safe-outputs.create-issue.labels` list of its source template. The `triaged` label SHALL be
-applied atomically when the issue is created, before the Issue Classifier can scan the issue.
+applied as part of issue creation through that configuration.
 
 #### Scenario: Newly created automated issue bypasses classifier
 
