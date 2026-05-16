@@ -18,8 +18,6 @@
 package visconfig
 
 import (
-	"context"
-
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -45,7 +43,7 @@ func structuredDrilldownsAttribute() schema.Attribute {
 		Optional: true,
 		NestedObject: schema.NestedAttributeObject{
 			Validators: []validator.Object{
-				drilldownItemModeValidator{},
+				panelkit.DrilldownItemModeValidator{},
 			},
 			Attributes: map[string]schema.Attribute{
 				"dashboard": schema.SingleNestedAttribute{
@@ -123,67 +121,6 @@ func structuredDrilldownsAttribute() schema.Attribute {
 				},
 			},
 		},
-	}
-}
-
-var _ validator.Object = drilldownItemModeValidator{}
-
-type drilldownItemModeValidator struct{}
-
-func (drilldownItemModeValidator) Description(_ context.Context) string {
-	return "Ensures exactly one of `dashboard`, `discover`, or `url` is set inside each drilldown list item."
-}
-
-func (v drilldownItemModeValidator) MarkdownDescription(ctx context.Context) string {
-	return v.Description(ctx)
-}
-
-func (drilldownItemModeValidator) ValidateObject(_ context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
-	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
-		return
-	}
-	attrs := req.ConfigValue.Attributes()
-	setCount := func(name string) bool {
-		av, ok := attrs[name]
-		if !ok || av == nil {
-			return false
-		}
-		return !av.IsNull() && !av.IsUnknown()
-	}
-	dashboard := attrs["dashboard"]
-	discover := attrs["discover"]
-	url := attrs["url"]
-	hasUnknown :=
-		dashboard != nil && dashboard.IsUnknown() ||
-			discover != nil && discover.IsUnknown() ||
-			url != nil && url.IsUnknown()
-	if hasUnknown {
-		return
-	}
-	count := 0
-	if setCount("dashboard") {
-		count++
-	}
-	if setCount("discover") {
-		count++
-	}
-	if setCount("url") {
-		count++
-	}
-	if count == 0 {
-		resp.Diagnostics.AddAttributeError(
-			req.Path,
-			"Invalid drilldown entry",
-			"Set exactly one of `dashboard`, `discover`, or `url` on each drilldown list item.",
-		)
-		return
-	}
-	if count > 1 {
-		resp.Diagnostics.AddAttributeError(
-			req.Path,
-			"Invalid drilldown entry",
-			"`dashboard`, `discover`, and `url` are mutually exclusive; set exactly one per drilldown list item.",
-		)
 	}
 }
 
