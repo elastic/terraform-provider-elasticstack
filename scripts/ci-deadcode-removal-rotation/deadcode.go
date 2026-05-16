@@ -145,11 +145,11 @@ func hasExcludedReference(refFiles []string) bool {
 	return slices.ContainsFunc(refFiles, isExcludedFile)
 }
 
-func truncateBytes(b []byte, maxLen int) string {
-	if len(b) <= maxLen {
+func truncateBytes(b []byte, maxBytes int) string {
+	if len(b) <= maxBytes {
 		return string(b)
 	}
-	return string(b[:maxLen]) + " [...truncated]"
+	return string(b[:maxBytes]) + " [...truncated]"
 }
 
 func parseDeadcodeOutput(r io.Reader) ([]deadcodeEntry, error) {
