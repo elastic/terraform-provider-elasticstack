@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package dashboard_test
+package visconfig_test
 
 import (
 	"regexp"
@@ -23,6 +23,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest/checks"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/dashboardacctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -38,7 +39,7 @@ const (
 func TestAccResourceDashboardVisConfigByReference_minimal(t *testing.T) {
 	dashboardTitle := "Acc vis by-ref min " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 	br := visByRefPath
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -77,7 +78,7 @@ func TestAccResourceDashboardVisConfigByReference_minimal(t *testing.T) {
 func TestAccResourceDashboardVisConfigByReference_full(t *testing.T) {
 	dashboardTitle := "Acc vis by-ref full " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 	br := visByRefPath
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -133,7 +134,7 @@ func TestAccResourceDashboardVisConfigByReference_full(t *testing.T) {
 func TestAccResourceDashboardVisConfigByReference_dashboardDrilldown(t *testing.T) {
 	dashboardTitle := "Acc vis dd dash " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 	p := "panels.0.vis_config.by_reference.drilldowns.0.dashboard"
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -180,7 +181,7 @@ func TestAccResourceDashboardVisConfigByReference_dashboardDrilldown(t *testing.
 func TestAccResourceDashboardVisConfigByReference_discoverDrilldown(t *testing.T) {
 	dashboardTitle := "Acc vis dd disc " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 	p := "panels.0.vis_config.by_reference.drilldowns.0.discover"
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -224,7 +225,7 @@ func TestAccResourceDashboardVisConfigByReference_discoverDrilldown(t *testing.T
 func TestAccResourceDashboardVisConfigByReference_urlDrilldownExplicitTrigger(t *testing.T) {
 	dashboardTitle := "Acc vis dd urle " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 	p := "panels.0.vis_config.by_reference.drilldowns.0.url"
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -269,7 +270,7 @@ func TestAccResourceDashboardVisConfigByReference_urlDrilldownExplicitTrigger(t 
 func TestAccResourceDashboardVisConfigByReference_valueToReference_update(t *testing.T) {
 	dashboardTitle := "Acc vis val2ref " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 	br := visByRefPath
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -313,7 +314,7 @@ func TestAccResourceDashboardVisConfigByReference_valueToReference_update(t *tes
 func TestAccResourceDashboardVisConfigByReference_urlDrilldown_triggerRequired_planRejected(t *testing.T) {
 	dashboardTitle := "Acc vis dd trig req " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 	triggerRequired := regexp.MustCompile(`(?i)trigger`)
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -332,7 +333,7 @@ func TestAccResourceDashboardVisConfigByReference_urlDrilldown_triggerRequired_p
 func TestAccResourceDashboardVisConfigByReference_mixedDrilldowns(t *testing.T) {
 	dashboardTitle := "Acc vis dd mix " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 	dd := "panels.0.vis_config.by_reference.drilldowns"
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },

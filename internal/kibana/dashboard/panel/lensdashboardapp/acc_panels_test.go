@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package dashboard_test
+package lensdashboardapp_test
 
 import (
 	"regexp"
@@ -23,6 +23,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest/checks"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/dashboardacctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -33,12 +34,11 @@ import (
 // **By-value:** `TestAccResourceDashboardLensDashboardAppByValue` applies the same config twice;
 // the second step uses `plancheck.ExpectEmptyPlan()` to assert no post-refresh drift. The
 // provider keeps practitioner `by_value.config_json` when the API read is a safe value-superset
-// (REQ-035). Residual drift is still possible if Kibana rewrites a user-set value. See
-// `preservePriorLensByValueConfigJSON` in `models_lens_dashboard_app_converters.go` and `tasks.md` 6.2.
+// (REQ-035). Residual drift is still possible if Kibana rewrites a user-set value.
 
 func TestAccResourceDashboardLensDashboardAppByValue_basic(t *testing.T) {
 	dashboardTitle := "Acc lens app by-val " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -70,12 +70,12 @@ func TestAccResourceDashboardLensDashboardAppByValue_basic(t *testing.T) {
 
 // TestAccResourceDashboardLensDashboardAppByValueTypedMetric applies a typed by-value
 // `metric_chart_config` (not raw by_value.config_json) twice with an empty second plan, and
-// ensures after apply+read, panel-level `config_json` and by_value `config_json` are not set
-// (4.3/4.4). Import has no prior typed selection, so read-back may populate by_value
+// ensures after apply+read, panel-level `config_json` and by_value `config_json` are not set.
+// Import has no prior typed selection, so read-back may populate by_value
 // `config_json`; the import step only asserts panel `config_json` is still absent.
 func TestAccResourceDashboardLensDashboardAppByValueTypedMetric_basic(t *testing.T) {
 	dashboardTitle := "Acc lens app typed m " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -116,7 +116,7 @@ func TestAccResourceDashboardLensDashboardAppByValueTypedMetric_basic(t *testing
 
 func TestAccResourceDashboardLensDashboardAppByReference(t *testing.T) {
 	dashboardTitle := "Acc lens app by-ref " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -169,7 +169,7 @@ func TestAccResourceDashboardLensDashboardAppByReference(t *testing.T) {
 
 func TestAccResourceDashboardLensDashboardAppByReferenceAbsoluteTimeMode(t *testing.T) {
 	dashboardTitle := "Acc lens app abs " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -216,7 +216,7 @@ func TestAccResourceDashboardLensDashboardAppPlan(t *testing.T) {
 	panelConfigNotAllowed := regexp.MustCompile(`config_json|can only be set when|markdown|vis`)
 	configJSONWithLens := regexp.MustCompile(`Invalid Configuration|conflict`)
 
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },

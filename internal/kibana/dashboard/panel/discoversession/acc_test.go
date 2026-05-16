@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package dashboard_test
+package discoversession_test
 
 import (
 	"bytes"
@@ -28,6 +28,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/dashboardacctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -143,7 +144,7 @@ func deleteSearchSavedObjectForDiscoverRef(t *testing.T, id string) {
 func TestAccResourceDashboardDiscoverSession_by_value_dsl(t *testing.T) {
 	dashboardTitle := "Acc disc dsl " + sdkacctest.RandStringFromCharSet(6, sdkacctest.CharSetAlphaNum)
 
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -179,7 +180,7 @@ func TestAccResourceDashboardDiscoverSession_by_value_dsl(t *testing.T) {
 func TestAccResourceDashboardDiscoverSession_by_value_esql(t *testing.T) {
 	dashboardTitle := "Acc disc esql " + sdkacctest.RandStringFromCharSet(6, sdkacctest.CharSetAlphaNum)
 
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -215,7 +216,7 @@ func TestAccResourceDashboardDiscoverSession_by_reference(t *testing.T) {
 	dashboardTitle := "Acc disc ref " + sdkacctest.RandStringFromCharSet(6, sdkacctest.CharSetAlphaNum)
 	refID := "acc-disc-ref-" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },

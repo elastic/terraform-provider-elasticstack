@@ -15,13 +15,14 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package dashboard_test
+package lensdashboardapp_test
 
 import (
 	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/dashboardacctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -34,7 +35,7 @@ const lensAppByRefDashboard = "elasticstack_kibana_dashboard.test"
 func TestAccResourceDashboardLensDashboardAppByReference_dashboardDrilldown(t *testing.T) {
 	dashboardTitle := "Acc lens dd dash " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 	p := "panels.0.lens_dashboard_app_config.by_reference.drilldowns.0.dashboard"
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -82,7 +83,7 @@ func TestAccResourceDashboardLensDashboardAppByReference_dashboardDrilldown(t *t
 func TestAccResourceDashboardLensDashboardAppByReference_discoverDrilldown(t *testing.T) {
 	dashboardTitle := "Acc lens dd disc " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 	p := "panels.0.lens_dashboard_app_config.by_reference.drilldowns.0.discover"
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -127,7 +128,7 @@ func TestAccResourceDashboardLensDashboardAppByReference_discoverDrilldown(t *te
 func TestAccResourceDashboardLensDashboardAppByReference_urlDrilldownExplicitTrigger(t *testing.T) {
 	dashboardTitle := "Acc lens dd urle " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 	p := "panels.0.lens_dashboard_app_config.by_reference.drilldowns.0.url"
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -173,7 +174,7 @@ func TestAccResourceDashboardLensDashboardAppByReference_urlDrilldownExplicitTri
 func TestAccResourceDashboardLensDashboardAppByReference_urlDrilldown_triggerRequired_planRejected(t *testing.T) {
 	dashboardTitle := "Acc lens dd trig req " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 	triggerRequired := regexp.MustCompile(`(?i)trigger`)
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -192,7 +193,7 @@ func TestAccResourceDashboardLensDashboardAppByReference_urlDrilldown_triggerReq
 func TestAccResourceDashboardLensDashboardAppByReference_mixedDrilldowns(t *testing.T) {
 	dashboardTitle := "Acc lens dd mix " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 	dd := "panels.0.lens_dashboard_app_config.by_reference.drilldowns"
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
