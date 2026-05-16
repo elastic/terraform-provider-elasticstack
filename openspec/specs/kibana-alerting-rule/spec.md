@@ -25,7 +25,7 @@ resource "elasticstack_kibana_alerting_rule" "example" {
   notify_when = <optional, computed, string> # one of: onActionGroupChange | onActiveAlert | onThrottleInterval; REQ-041 plan modifier before UseStateForUnknown when action frequency is used
   enabled     = <optional, computed, bool>   # default true
   tags        = <optional, set(string)>
-  throttle    = <optional, string>             # alerting duration validator when set
+  throttle    = <optional, computed, string>   # alerting duration validator when set; UseStateForUnknown; Kibana preserves deprecated rule-level throttle once set — it cannot be cleared via the API
 
   # Version-gated / API-populated
   alert_delay = <optional, computed, int64> # UseStateForUnknown; server support validated vs stack version
@@ -319,11 +319,19 @@ When writing `params` to state after a read, the provider SHALL avoid **spurious
 
 From API to state: non-empty `tags` SHALL become a non-null set; an empty tag list SHALL become a null set. If the API returns a throttle value, state SHALL hold that string; otherwise `throttle` SHALL be null. An empty or absent `notify_when` from the API SHALL become null in state. If the response does not convey `enabled`, state SHALL treat the rule as enabled (`true`).
 
+Because Kibana preserves deprecated rule-level `throttle` on PUT even when it is omitted or sent as `null`, `throttle` is marked **computed** with `UseStateForUnknown()` in schema. When the practitioner removes `throttle` from configuration after previously setting it, the planned value falls back to the prior state value (the persisted API value), avoiding a provider inconsistency error.
+
 #### Scenario: Empty tags from API
 
 - GIVEN the API returns no tags
 - WHEN state is written
 - THEN `tags` SHALL be null (not an empty set)
+
+#### Scenario: Throttle preserved by Kibana after removal from config
+
+- GIVEN a rule was created with `throttle = "5m"` and the practitioner subsequently removes `throttle` from Terraform configuration
+- WHEN update runs
+- THEN the provider SHALL plan the prior known `throttle` value (via `UseStateForUnknown`) and the API SHALL continue to return that value, resulting in stable state with no inconsistency error
 
 ### Requirement: State mapping — execution metadata (REQ-025)
 
