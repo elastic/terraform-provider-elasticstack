@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strings"
 	"time"
 )
@@ -66,7 +66,7 @@ type AttemptRecord struct {
 	Package     string         `json:"package"`
 	AttemptedAt time.Time      `json:"attemptedAt"`
 	Reason      AttemptReason  `json:"reason"`
-	Context     AttemptContext `json:"context,omitempty"`
+	Context     AttemptContext `json:"context,omitzero"`
 }
 
 type Memory struct {
@@ -128,9 +128,9 @@ func isInCooldown(mem *Memory, symbol string, now time.Time) bool {
 		return false
 	}
 	cutoff := now.AddDate(0, 0, -mem.CooldownDays)
-	for i := len(mem.Attempts) - 1; i >= 0; i-- {
-		if mem.Attempts[i].Symbol == symbol {
-			return !mem.Attempts[i].AttemptedAt.Before(cutoff)
+	for _, a := range slices.Backward(mem.Attempts) {
+		if a.Symbol == symbol {
+			return !a.AttemptedAt.Before(cutoff)
 		}
 	}
 	return false
@@ -189,8 +189,8 @@ func summarize(mem *Memory, days int) string {
 	for r := range counts {
 		reasons = append(reasons, r)
 	}
-	sort.Slice(reasons, func(i, j int) bool {
-		return reasons[i] < reasons[j]
+	slices.SortFunc(reasons, func(a, b AttemptReason) int {
+		return strings.Compare(string(a), string(b))
 	})
 	for _, r := range reasons {
 		lines = append(lines, fmt.Sprintf("| %s | %d |", r, counts[r]))
@@ -203,12 +203,16 @@ func summarize(mem *Memory, days int) string {
 		for p := range pkgCounts {
 			pkgs = append(pkgs, p)
 		}
-		sort.Slice(pkgs, func(i, j int) bool {
-			ci, cj := pkgCounts[pkgs[i]], pkgCounts[pkgs[j]]
-			if ci != cj {
-				return ci > cj
+		slices.SortFunc(pkgs, func(a, b string) int {
+			ca, cb := pkgCounts[a], pkgCounts[b]
+			if ca != cb {
+				// Descending by count.
+				if ca > cb {
+					return -1
+				}
+				return 1
 			}
-			return pkgs[i] < pkgs[j]
+			return strings.Compare(a, b)
 		})
 		for _, p := range pkgs {
 			lines = append(lines, fmt.Sprintf("- `%s`: %d", p, pkgCounts[p]))
