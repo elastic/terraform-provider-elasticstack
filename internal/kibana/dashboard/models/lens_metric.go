@@ -43,7 +43,3 @@ type MetricChartConfigModel struct {
 	LensChartPresentationTFModel
 	MetricChartCoreTFModel
 }
-
-type MetricChartLensByValueTFModel struct {
-	MetricChartCoreTFModel
-}

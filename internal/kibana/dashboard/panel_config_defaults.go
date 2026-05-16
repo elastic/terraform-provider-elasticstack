@@ -22,13 +22,14 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/iface"
 )
 
-// populatePanelConfigJSONDefaults normalizes panel config_json for semantic equality.
+// populatePanelConfigJSONDefaults normalizes panel config_json for semantic equality (#1789).
 //
-// Typed panel handlers may claim opaque JSON blobs via ClassifyJSON;
-// PopulateJSONDefaults applies normalization for plan-time semantic equality (#1789).
-//
-// Lens-by-value panels still serialize as opaque "attributes"; that tree is unchanged
-// here until dashboard-lens-contract introduces a Lens handler claiming that shape.
+// Two normalization passes run in sequence:
+//  1. Registered panel handlers may claim a config via ClassifyJSON and apply
+//     panel-shape defaults via PopulateJSONDefaults.
+//  2. Lens-by-value config_json is still stored as opaque {"attributes": {...}};
+//     when the inner attributes carry a Lens chart "type", the matching VizConverter
+//     applies chart-shape defaults via populateLensAttributesDefaults.
 func populatePanelConfigJSONDefaults(config map[string]any) map[string]any {
 	return populatePanelConfigJSONDefaultsWithHandlers(config, AllHandlers())
 }

@@ -22,6 +22,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/lensdashboardapp"
 )
 
 // alignDashboardStateFromPlanPanels preserves practitioner intent that depends on
@@ -46,8 +47,8 @@ func alignPanelStateFromPlan(ctx context.Context, plan, state *models.PanelModel
 	}
 
 	lenscommon.PreservePlanJSONIfStateOmitsOptionalKeys(plan.ConfigJSON.Normalized, &state.ConfigJSON.Normalized, "filters", "query", "settings")
-	planBlocks := LensByValueChartBlocksFromPanel(plan)
-	stateBlocks := LensByValueChartBlocksFromPanel(state)
+	planBlocks := lensdashboardapp.LensByValueChartBlocksFromPanel(plan)
+	stateBlocks := lensdashboardapp.LensByValueChartBlocksFromPanel(state)
 	if planBlocks != nil && stateBlocks != nil {
 		for _, c := range lenscommon.All() {
 			c.AlignStateFromPlan(ctx, planBlocks, stateBlocks)

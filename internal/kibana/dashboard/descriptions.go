@@ -19,56 +19,11 @@ package dashboard
 
 import _ "embed"
 
-//go:embed descriptions/xy_layer_type.md
-var xyLayerTypeDescription string
-
-//go:embed descriptions/reference_line_icon.md
-var referenceLineIconDescription string
-
-//go:embed descriptions/tagcloud_metric.md
-var tagcloudMetricDescription string
-
-//go:embed descriptions/region_map_region.md
-var regionMapRegionDescription string
-
-//go:embed descriptions/gauge_metric.md
-var gaugeMetricDescription string
-
-//go:embed descriptions/metric_chart_dataset.md
-var metricChartDatasetDescription string
-
-//go:embed descriptions/metric_chart_metrics.md
-var metricChartMetricsDescription string
-
-//go:embed descriptions/metric_chart_metric_config.md
-var metricChartMetricConfigDescription string
-
-//go:embed descriptions/metric_chart_breakdown_by.md
-var metricChartBreakdownByDescription string
-
 //go:embed descriptions/dashboard_filters.md
 var dashboardFiltersDescription string
 
 //go:embed descriptions/dashboard_filter_json.md
 var dashboardFilterJSONDescription string
-
-//go:embed descriptions/discover_session_panel_drilldowns.md
-var discoverSessionPanelDrilldownsDescription string
-
-//go:embed descriptions/discover_session_panel_by_value.md
-var discoverSessionPanelByValueDescription string
-
-//go:embed descriptions/discover_session_panel_by_reference.md
-var discoverSessionPanelByReferenceDescription string
-
-//go:embed descriptions/discover_session_panel_data_source_json.md
-var discoverSessionPanelDataSourceJSONDescription string
-
-//go:embed descriptions/discover_session_panel_dsl_filters.md
-var discoverSessionPanelDSLFiltersDescription string
-
-//go:embed descriptions/discover_session_panel_view_mode.md
-var discoverSessionPanelViewModeDescription string
 
 //go:embed descriptions/pinned_panels.md
 var pinnedPanelsDescription string

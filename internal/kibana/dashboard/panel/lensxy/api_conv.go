@@ -947,7 +947,7 @@ func xyChartConfigStylingToAPI(m *models.XYChartConfigModel) kbapi.XyStyling {
 }
 
 // toAPINoESQL converts the XY chart config model to a non-ES|QL API payload.
-func xyChartConfigToAPINoESQL(m *models.XYChartConfigModel, resolver lenscommon.Resolver) (kbapi.XyChartNoESQL, diag.Diagnostics) {
+func XYChartConfigToAPINoESQL(m *models.XYChartConfigModel, resolver lenscommon.Resolver) (kbapi.XyChartNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	chart := kbapi.XyChartNoESQL{Type: kbapi.XyChartNoESQLTypeXy}
 
@@ -1245,7 +1245,7 @@ func xyChartConfigToAPI(m *models.XYChartConfigModel, resolver lenscommon.Resolv
 		return attrs, diags
 	}
 
-	chart, xyDiags := xyChartConfigToAPINoESQL(&configModel, resolver)
+	chart, xyDiags := XYChartConfigToAPINoESQL(&configModel, resolver)
 	diags.Append(xyDiags...)
 	if diags.HasError() {
 		return attrs, diags

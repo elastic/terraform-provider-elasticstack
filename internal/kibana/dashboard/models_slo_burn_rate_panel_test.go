@@ -180,8 +180,8 @@ func Test_buildSloBurnRateConfig_nilConfig(t *testing.T) {
 	pm := models.PanelModel{}
 	var panel kbapi.KbnDashboardPanelTypeSloBurnRate
 	diags := sloburnrate.BuildConfig(pm, &panel)
-	require.False(t, diags.HasError())
-	// Should be empty/zero config — no panic.
+	require.True(t, diags.HasError())
+	require.Contains(t, diags[0].Summary(), "Missing SLO burn rate panel configuration")
 	assert.Empty(t, panel.Config.SloId)
 }
 
