@@ -431,8 +431,8 @@ test('update_research_comment: null item fails', async () => {
 test('research-factory-issue workflow template includes shared set-phase-label wiring after remove_trigger_label', () => {
   const workflowTmpl = readFileSync(researchFactoryWorkflowTmplPath, 'utf8');
   const removeIdx = workflowTmpl.indexOf('x-script-include: scripts/remove_trigger_label.inline.js');
-  const setIdx = workflowTmpl.indexOf('x-script-include: ../../lib/set-phase-label.js');
-  const appendIdx = workflowTmpl.indexOf('x-script-append: ../../lib/set-phase-label-run.js');
+  const setIdx = workflowTmpl.indexOf('x-script-include: ../lib/set-phase-label.js');
+  const appendIdx = workflowTmpl.indexOf('x-script-append: ../lib/set-phase-label-run.js');
   assert.ok(removeIdx >= 0, 'expected remove_trigger_label script include');
   assert.ok(setIdx > removeIdx, 'expected shared set-phase-label include after remove_trigger_label');
   assert.ok(appendIdx > setIdx, 'expected shared set-phase-label run append after include');

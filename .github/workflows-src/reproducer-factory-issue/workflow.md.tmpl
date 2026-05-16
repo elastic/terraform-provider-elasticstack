@@ -160,17 +160,12 @@ on:
           ${{ steps.determine_intake_mode.outputs.intake_mode == 'issue-event'
             && steps.capture_issue_context.outputs.issue_number
             || steps.validate_dispatch_inputs.outputs.issue_number }}
-      uses: actions/github-script@v9
-      env:
-        INPUT_ISSUE_NUMBER: >-
-          ${{ steps.determine_intake_mode.outputs.intake_mode == 'issue-event'
-            && steps.capture_issue_context.outputs.issue_number
-            || steps.validate_dispatch_inputs.outputs.issue_number }}
         PHASE_LABEL_NAME: phase-reproduction
+      uses: actions/github-script@v9
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
-        x-script-include: ../../lib/set-phase-label.js
-        x-script-append: ../../lib/set-phase-label-run.js
+        x-script-include: ../lib/set-phase-label.js
+        x-script-append: ../lib/set-phase-label-run.js
     - name: Normalize context
       id: normalize_context
       if: always()
