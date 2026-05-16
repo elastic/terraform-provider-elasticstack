@@ -32,15 +32,20 @@ function createMockCore() {
   const outputs = {};
   const logs = [];
   const failures = [];
+  const warnings = [];
   return {
     outputs,
     logs,
     failures,
+    warnings,
     setOutput(key, value) {
       outputs[key] = value;
     },
     info(msg) {
       logs.push(msg);
+    },
+    warning(msg) {
+      warnings.push(msg);
     },
     setFailed(msg) {
       failures.push(msg);
@@ -123,4 +128,43 @@ test('code-factory set_phase_label.inline.js emits correct phase label outputs',
   });
   assert.equal(core.outputs.phase_label_set, 'true');
   assert.equal(core.outputs.phase_label_name, 'phase-coding');
+});
+
+test('inline scripts prefer INPUT_ISSUE_NUMBER over context.payload.issue.number', async () => {
+  const addedIssues = [];
+  const mockGithub = {
+    rest: {
+      issues: {
+        addLabels: async (args) => { addedIssues.push(args.issue_number); return {}; },
+        listLabelsOnIssue: async () => ({ data: [] }),
+      },
+    },
+  };
+  const scriptPath = path.resolve(__dirname, '../research-factory-issue/scripts/set_phase_label.inline.js');
+  await runInlineScript(scriptPath, {
+    context: { payload: { issue: { number: 99 } }, repo: { owner: 'elastic', repo: 'repo' } },
+    github: mockGithub,
+    core: createMockCore(),
+    env: { INPUT_ISSUE_NUMBER: '77' },
+  });
+  assert.equal(addedIssues[0], 77, 'Should use INPUT_ISSUE_NUMBER (77), not context.payload (99)');
+});
+
+test('inline scripts emit core.warning when phase label is not set', async () => {
+  const mockGithub = {
+    rest: {
+      issues: {
+        addLabels: async () => { throw new Error('Validation Failed'); },
+      },
+    },
+  };
+  const scriptPath = path.resolve(__dirname, '../research-factory-issue/scripts/set_phase_label.inline.js');
+  const { core } = await runInlineScript(scriptPath, {
+    context: { payload: { issue: { number: 42 } }, repo: { owner: 'elastic', repo: 'repo' } },
+    github: mockGithub,
+    core: createMockCore(),
+  });
+  assert.equal(core.outputs.phase_label_set, 'false');
+  assert.equal(core.warnings.length, 1);
+  assert.ok(core.warnings[0].includes('Phase label not set'));
 });

@@ -147,16 +147,26 @@ test('setPhaseLabel returns failure when addLabels fails', async () => {
   assert.ok(result.reason.includes('Validation Failed'));
 });
 
-test('setPhaseLabel returns failure when non-404 removeLabel fails', async () => {
+test('setPhaseLabel continues loop on non-404 removeLabel failures and reports all outcomes', async () => {
   const err = new Error('Internal Server Error');
   err.status = 500;
+  let callCount = 0;
   const mockGithub = {
     rest: {
       issues: {
-        addLabels: async () => ({}) ,
-        listLabelsOnIssue: async () => ({ data: [{ name: 'phase-research' }] }),
-        removeLabel: async () => {
-          throw err;
+        addLabels: async () => ({}),
+        listLabelsOnIssue: async () => ({
+          data: [
+            { name: 'phase-research' },
+            { name: 'phase-specification' },
+          ],
+        }),
+        removeLabel: async (args) => {
+          callCount++;
+          if (args.name === 'phase-research') {
+            throw err;
+          }
+          return {};
         },
       },
     },
@@ -170,6 +180,10 @@ test('setPhaseLabel returns failure when non-404 removeLabel fails', async () =>
   assert.equal(result.phase_label_set, true);
   assert.ok(result.reason.includes('Internal Server Error'));
   assert.ok(result.reason.includes('phase-research'));
+  // Both labels were attempted (continued past first failure)
+  assert.equal(callCount, 2);
+  // Successfully removed label is in stale_labels_removed
+  assert.deepEqual(result.stale_labels_removed, ['phase-specification']);
 });
 
 test('setPhaseLabel preserves phase_label_set true and empty stale_labels_removed when listLabelsOnIssue throws', async () => {
@@ -194,4 +208,56 @@ test('setPhaseLabel preserves phase_label_set true and empty stale_labels_remove
   assert.deepEqual(result.stale_labels_removed, []);
   assert.ok(result.reason.includes('Added label phase-research but failed to list current labels'));
   assert.ok(result.reason.includes('API rate limit exceeded'));
+});
+
+test('setPhaseLabel accepts core as explicit parameter and calls core.warning on removeLabel failure', async () => {
+  const err = new Error('Server Error');
+  err.status = 500;
+  const warnings = [];
+  const mockCore = { warning: (msg) => warnings.push(msg) };
+  const mockGithub = {
+    rest: {
+      issues: {
+        addLabels: async () => ({}),
+        listLabelsOnIssue: async () => ({ data: [{ name: 'phase-old' }] }),
+        removeLabel: async () => { throw err; },
+      },
+    },
+  };
+  const result = await setPhaseLabel({
+    github: mockGithub,
+    context: { repo: { owner: 'owner', repo: 'repo' } },
+    issueNumber: 42,
+    phaseLabelName: 'phase-new',
+    core: mockCore,
+  });
+  assert.equal(result.phase_label_set, true);
+  assert.equal(warnings.length, 1);
+  assert.ok(warnings[0].includes('phase-old'));
+  assert.ok(warnings[0].includes('Server Error'));
+});
+
+test('setPhaseLabel uses github.paginate when available', async () => {
+  let paginateCalled = false;
+  const mockGithub = {
+    rest: {
+      issues: {
+        addLabels: async () => ({}),
+        listLabelsOnIssue: async () => { throw new Error('should not be called directly'); },
+      },
+    },
+    paginate: async (_method, _params) => {
+      paginateCalled = true;
+      return [{ name: 'phase-research' }, { name: 'bug' }];
+    },
+  };
+  const result = await setPhaseLabel({
+    github: mockGithub,
+    context: { repo: { owner: 'owner', repo: 'repo' } },
+    issueNumber: 42,
+    phaseLabelName: 'phase-research',
+  });
+  assert.equal(paginateCalled, true);
+  assert.equal(result.phase_label_set, true);
+  assert.deepEqual(result.stale_labels_removed, []);
 });

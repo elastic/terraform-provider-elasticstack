@@ -2643,10 +2643,15 @@ on:
         script: |
           /**
            * Adds a phase label to an issue and removes all other phase-* labels.
-           * @param {{ github: object, context: object, issueNumber: number|undefined, phaseLabelName: string|undefined }} opts
+           * @param {{ github: object, context: object, issueNumber: number|undefined, phaseLabelName: string|undefined, core?: object }} opts
            * @returns {Promise<{ phase_label_set: boolean, phase_label_name: string, stale_labels_removed: string[], reason: string }>}
            */
-          async function setPhaseLabel({ github, context, issueNumber, phaseLabelName }) {
+          async function setPhaseLabel({ github, context, issueNumber, phaseLabelName, core: coreParam }) {
+            // Use explicitly passed core, fall back to ambient global, or stub.
+            const _core =
+              coreParam ||
+              (typeof core !== 'undefined' ? core : undefined);
+          
             if (issueNumber === undefined || issueNumber === null) {
               return {
                 phase_label_set: false,
@@ -2685,7 +2690,14 @@ on:
           
             let staleLabels = [];
             try {
-              const { data: currentLabels } = await github.rest.issues.listLabelsOnIssue({
+              // Use paginate to fetch all labels reliably (no truncation concern).
+              const listLabels = github.paginate
+                ? github.paginate.bind(github)
+                : async (_method, params) => {
+                    const { data } = await github.rest.issues.listLabelsOnIssue(params);
+                    return data;
+                  };
+              const currentLabels = await listLabels(github.rest.issues.listLabelsOnIssue, {
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: issueNumber,
@@ -2695,10 +2707,6 @@ on:
               staleLabels = currentLabels
                 .map((l) => l.name)
                 .filter((name) => name.startsWith('phase-') && name !== label);
-          
-              if (currentLabels.length === 100 && typeof core !== 'undefined' && typeof core.warning === 'function') {
-                core.warning(`Issue #${issueNumber} has 100 labels; stale phase label removal may be incomplete.`);
-              }
             } catch (err) {
               return {
                 phase_label_set: true,
@@ -2708,6 +2716,8 @@ on:
               };
             }
           
+            const removed = [];
+            const failed = [];
             for (const staleLabel of staleLabels) {
               try {
                 await github.rest.issues.removeLabel({
@@ -2716,17 +2726,28 @@ on:
                   issue_number: issueNumber,
                   name: staleLabel,
                 });
+                removed.push(staleLabel);
               } catch (err) {
-                if (err.status !== 404) {
-                  return {
-                    phase_label_set: true,
-                    phase_label_name: label,
-                    stale_labels_removed: staleLabels.filter((l) => l !== staleLabel),
-                    reason: `Added label ${label} but failed to remove stale label ${staleLabel}: ${err.message}`,
-                  };
+                if (err.status === 404) {
+                  // Label was already absent — treat as successfully removed.
+                  removed.push(staleLabel);
+                } else {
+                  failed.push({ label: staleLabel, message: err.message });
+                  if (_core && typeof _core.warning === 'function') {
+                    _core.warning(`Failed to remove stale label ${staleLabel} from issue #${issueNumber}: ${err.message}`);
+                  }
                 }
-                // 404 means label was already absent — treat as success
               }
+            }
+          
+            if (failed.length > 0) {
+              const failedSummary = failed.map((f) => `${f.label}: ${f.message}`).join('; ');
+              return {
+                phase_label_set: true,
+                phase_label_name: label,
+                stale_labels_removed: removed,
+                reason: `Added label ${label} but failed to remove some stale labels: ${failedSummary}`,
+              };
             }
           
             const removalMsg =
@@ -2737,7 +2758,7 @@ on:
             return {
               phase_label_set: true,
               phase_label_name: label,
-              stale_labels_removed: staleLabels,
+              stale_labels_removed: removed,
               reason: `Set phase label ${label}. ${removalMsg}`,
             };
           }
@@ -2746,10 +2767,13 @@ on:
             module.exports = { setPhaseLabel };
           }
           
-          const issueNumber = context.payload.issue?.number;
+          // Change-factory is issue-event only (no dispatch), but use the same
+          // INPUT_ISSUE_NUMBER-first pattern for consistency across all factories.
+          const issueNumber = parseInt(process.env.INPUT_ISSUE_NUMBER, 10) || context.payload.issue?.number || undefined;
           const result = await setPhaseLabel({
             github,
             context,
+            core,
             issueNumber,
             phaseLabelName: 'phase-specification',
           });
@@ -2760,7 +2784,7 @@ on:
           if (result.phase_label_set) {
             core.info(`Set phase label ${result.phase_label_name} on issue #${issueNumber}. ${result.reason}`);
           } else {
-            core.info(`Phase label not set: ${result.reason}`);
+            core.warning(`Phase label not set: ${result.reason}`);
           }
           
     - name: Finalize gate reason
