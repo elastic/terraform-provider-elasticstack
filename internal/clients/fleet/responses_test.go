@@ -25,10 +25,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type testFleetItem struct {
-	ID string
-}
-
 func TestHandleDeleteResponse(t *testing.T) {
 	t.Run("no error on 200", func(t *testing.T) {
 		diags := handleDeleteResponse(http.StatusOK, nil)
@@ -46,5 +42,3 @@ func TestHandleDeleteResponse(t *testing.T) {
 		assert.Equal(t, "Unexpected status code from server: got HTTP 500", diags[0].Summary())
 	})
 }
-
-

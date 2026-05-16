@@ -30,5 +30,3 @@ import (
 func handleDeleteResponse(statusCode int, body []byte) diag.Diagnostics {
 	return diagutil.HandleStatusResponse(statusCode, body, http.StatusOK, http.StatusNotFound)
 }
-
-

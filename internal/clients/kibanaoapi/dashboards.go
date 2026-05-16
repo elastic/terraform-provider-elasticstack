@@ -63,7 +63,7 @@ func CreateDashboard(ctx context.Context, client *Client, spaceID string, req kb
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	return handleMutateTypedResponse(resp.StatusCode(), resp.Body,
+	return HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
 		func() *kbapi.PostDashboardsResponse { return resp }, http.StatusCreated)
 }
 
