@@ -103,7 +103,10 @@ func cmdSelect(args []string, stdout, stderr io.Writer) error {
 	if err != nil {
 		return fmt.Errorf("deadcode ./...: %w", err)
 	}
-	fmt.Fprintf(stderr, "found %d candidates\n", len(withoutTests))
+	fmt.Fprintf(stderr, "found %d raw candidates\n", len(withoutTests))
+
+	withoutTests = filterExcluded(withoutTests)
+	fmt.Fprintf(stderr, "%d candidates after excluding known test/analysis packages\n", len(withoutTests))
 
 	for i := range withoutTests {
 		withoutTests[i].packagePath = derivePackagePath(withoutTests[i].file, *modulePath)

@@ -61,6 +61,23 @@ func TestIntersectCandidates(t *testing.T) {
 	assert.Equal(t, "Foo", result[0].symbol)
 }
 
+func TestFilterExcluded(t *testing.T) {
+	t.Parallel()
+	entries := []deadcodeEntry{
+		{file: "internal/acctest/foo.go", line: 1, column: 1, symbol: "Foo"},
+		{file: "internal/providerfwtest/bar.go", line: 1, column: 1, symbol: "Bar"},
+		{file: "analysis/acctestconfigdirlint/baz.go", line: 1, column: 1, symbol: "Baz"},
+		{file: "analysis/acctestconfigdirlintplugin/qux.go", line: 1, column: 1, symbol: "Qux"},
+		{file: "internal/kibana/dashboard/panelkit/contracttest/run.go", line: 1, column: 1, symbol: "Run"},
+		{file: "internal/clients/api.go", line: 1, column: 1, symbol: "RealDead"},
+		{file: "internal/kibana/dashboard/panel.go", line: 1, column: 1, symbol: "Panel"},
+	}
+	filtered := filterExcluded(entries)
+	require.Len(t, filtered, 2)
+	assert.Equal(t, "RealDead", filtered[0].symbol)
+	assert.Equal(t, "Panel", filtered[1].symbol)
+}
+
 func TestSelectOne_CooldownFiltering(t *testing.T) {
 	t.Parallel()
 	mem := &Memory{

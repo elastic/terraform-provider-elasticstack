@@ -106,6 +106,36 @@ func runDeadcode(testMode bool) ([]deadcodeEntry, error) {
 	return entries, nil
 }
 
+// excludedFilePrefixes lists relative file-path prefixes whose deadcode
+// candidates should be ignored. These are test-only or dynamically-loaded
+// packages that always appear dead from the provider main entrypoint.
+var excludedFilePrefixes = []string{
+	"analysis/acctestconfigdirlint/",
+	"analysis/acctestconfigdirlintplugin/",
+	"internal/acctest/",
+	"internal/providerfwtest/",
+	"internal/kibana/dashboard/panelkit/contracttest/",
+}
+
+func filterExcluded(entries []deadcodeEntry) []deadcodeEntry {
+	var out []deadcodeEntry
+	for _, e := range entries {
+		if !isExcludedFile(e.file) {
+			out = append(out, e)
+		}
+	}
+	return out
+}
+
+func isExcludedFile(file string) bool {
+	for _, p := range excludedFilePrefixes {
+		if strings.HasPrefix(file, p) {
+			return true
+		}
+	}
+	return false
+}
+
 func truncateBytes(b []byte, max int) string {
 	if len(b) <= max {
 		return string(b)
