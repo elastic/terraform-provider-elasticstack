@@ -22,7 +22,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -127,14 +126,8 @@ func GetIndicesWithILMPolicy(ctx context.Context, apiClient *clients.Elasticsear
 	if res.StatusCode == http.StatusNotFound {
 		return nil, nil
 	}
-	if res.StatusCode >= 300 {
-		body, _ := io.ReadAll(res.Body)
-		return nil, fwdiags.Diagnostics{
-			fwdiags.NewErrorDiagnostic(
-				"Unable to fetch ILM policy",
-				fmt.Sprintf("Elasticsearch returned status %d for GET /_ilm/policy/%s: %s", res.StatusCode, policyName, strings.TrimSpace(string(body))),
-			),
-		}
+	if d := diagutil.CheckHTTPErrorFromFW(res, "Unable to fetch ILM policy"); d.HasError() {
+		return nil, d
 	}
 
 	// The response is shaped as:
