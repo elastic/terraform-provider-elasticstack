@@ -49,7 +49,7 @@ No version gate is required. The `allow_auto_create` field on index templates is
 
 ### Requirement: Expand `allow_auto_create` into API request (REQ-044)
 
-On create and update, the provider SHALL convert the Terraform `allow_auto_create` attribute to the `allow_auto_create` field on the `models.IndexTemplate` request body when the attribute is non-null. When the attribute is null (not configured), the field SHALL be omitted from the request (`omitempty` serialization).
+On create and update, the provider SHALL convert the Terraform `allow_auto_create` attribute to the `allow_auto_create` field on the `models.IndexTemplate` request body only when the attribute is non-null and non-unknown. When the attribute is null (not configured) or unknown, the field SHALL be omitted from the request (`omitempty` serialization).
 
 #### Scenario: Round-trip create
 
