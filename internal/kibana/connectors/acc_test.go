@@ -43,8 +43,11 @@ var sdkIndexConnectorConfig string
 //go:embed testdata/TestAccResourceKibanaConnectorEmptyConfigFromSDK/main.tf
 var sdkSlackConnectorConfig string
 
-//go:embed testdata/TestAccConnectorsDataSourceFromSDK/create/main.tf
-var sdkConnectorDataSourceConfig string
+//go:embed testdata/TestAccConnectorsDataSourceFromSDK/index/create/main.tf
+var sdkConnectorDataSourceFromSDKIndexCreateConfig string
+
+//go:embed testdata/TestAccConnectorsDataSourceFromSDK/empty_config/create_empty_config/main.tf
+var sdkConnectorDataSourceFromSDKEmptyConfigCreateConfig string
 
 func TestAccResourceKibanaConnectorCasesWebhook(t *testing.T) {
 	minSupportedVersion := version.Must(version.NewSemver("8.4.0"))
@@ -620,34 +623,97 @@ func testAccConnectorsDataSourceFromSDKDataSourceChecks(connectorName string) re
 	)
 }
 
-func TestAccConnectorsDataSourceFromSDK(t *testing.T) {
-	connectorName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+func testAccConnectorsDataSourceFromSDKDataSourceChecksEmptyConfig(connectorName string) resource.TestCheckFunc {
+	return resource.ComposeTestCheckFunc(
+		resource.TestCheckResourceAttrPair(
+			"data.elasticstack_kibana_action_connector.test", "id",
+			"elasticstack_kibana_action_connector.test", "id",
+		),
+		resource.TestCheckResourceAttr("data.elasticstack_kibana_action_connector.test", "name", connectorName),
+		resource.TestCheckResourceAttr("data.elasticstack_kibana_action_connector.test", "space_id", "default"),
+		resource.TestCheckResourceAttr("data.elasticstack_kibana_action_connector.test", "connector_type_id", ".slack"),
+		resource.TestCheckResourceAttrPair(
+			"data.elasticstack_kibana_action_connector.test", "connector_id",
+			"elasticstack_kibana_action_connector.test", "connector_id",
+		),
+		resource.TestCheckResourceAttr("data.elasticstack_kibana_action_connector.test", "is_deprecated", "false"),
+		resource.TestCheckResourceAttr("data.elasticstack_kibana_action_connector.test", "is_missing_secrets", "false"),
+		resource.TestCheckResourceAttr("data.elasticstack_kibana_action_connector.test", "is_preconfigured", "false"),
+		resource.TestMatchResourceAttr("data.elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`^(\{\})?$`)),
+	)
+}
 
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { acctest.PreCheck(t) },
-		CheckDestroy: checkResourceKibanaConnectorDestroy,
-		Steps: []resource.TestStep{
-			{
-				ExternalProviders: map[string]resource.ExternalProvider{
-					"elasticstack": {
-						Source:            "elastic/elasticstack",
-						VersionConstraint: "0.15.1",
+func TestAccConnectorsDataSourceFromSDK(t *testing.T) {
+	testCases := []struct {
+		name          string
+		upgradeSubdir string
+		check         func(string) resource.TestCheckFunc
+	}{
+		{
+			name:          "index",
+			upgradeSubdir: "upgrade",
+			check:         testAccConnectorsDataSourceFromSDKDataSourceChecks,
+		},
+		{
+			name:          "empty_config",
+			upgradeSubdir: "upgrade_empty_config",
+			check:         testAccConnectorsDataSourceFromSDKDataSourceChecksEmptyConfig,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			connectorName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+			var sdkStep resource.TestStep
+			switch tc.name {
+			case "index":
+				sdkStep = resource.TestStep{
+					ExternalProviders: map[string]resource.ExternalProvider{
+						"elasticstack": {
+							Source:            "elastic/elasticstack",
+							VersionConstraint: "0.15.1",
+						},
+					},
+					Config: sdkConnectorDataSourceFromSDKIndexCreateConfig,
+					ConfigVariables: config.Variables{
+						"connector_name": config.StringVariable(connectorName),
+					},
+					Check: tc.check(connectorName),
+				}
+			case "empty_config":
+				sdkStep = resource.TestStep{
+					ExternalProviders: map[string]resource.ExternalProvider{
+						"elasticstack": {
+							Source:            "elastic/elasticstack",
+							VersionConstraint: "0.15.1",
+						},
+					},
+					Config: sdkConnectorDataSourceFromSDKEmptyConfigCreateConfig,
+					ConfigVariables: config.Variables{
+						"connector_name": config.StringVariable(connectorName),
+					},
+					Check: tc.check(connectorName),
+				}
+			default:
+				t.Fatalf("unknown test case: %s", tc.name)
+			}
+
+			resource.Test(t, resource.TestCase{
+				PreCheck:     func() { acctest.PreCheck(t) },
+				CheckDestroy: checkResourceKibanaConnectorDestroy,
+				Steps: []resource.TestStep{
+					sdkStep,
+					{
+						ProtoV6ProviderFactories: acctest.Providers,
+						ConfigDirectory:          acctest.NamedTestCaseDirectory(tc.upgradeSubdir),
+						ConfigVariables: config.Variables{
+							"connector_name": config.StringVariable(connectorName),
+						},
+						Check: tc.check(connectorName),
 					},
 				},
-				Config: sdkConnectorDataSourceConfig,
-				ConfigVariables: config.Variables{
-					"connector_name": config.StringVariable(connectorName),
-				},
-				Check: testAccConnectorsDataSourceFromSDKDataSourceChecks(connectorName),
-			},
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("upgrade"),
-				ConfigVariables: config.Variables{
-					"connector_name": config.StringVariable(connectorName),
-				},
-				Check: testAccConnectorsDataSourceFromSDKDataSourceChecks(connectorName),
-			},
-		},
-	})
+			})
+		})
+	}
 }
