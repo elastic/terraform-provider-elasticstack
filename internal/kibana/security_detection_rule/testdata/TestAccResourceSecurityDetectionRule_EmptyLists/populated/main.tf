@@ -25,7 +25,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   severity_mapping     = []
   risk_score_mapping   = []
   related_integrations = []
-  threat               = [
+  threat = [
     {
       framework = "MITRE ATT&CK"
       tactic = {
@@ -42,5 +42,5 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
       ]
     }
   ]
-  threat_mapping       = []
+  threat_mapping = []
 }
