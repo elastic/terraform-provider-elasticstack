@@ -51,6 +51,14 @@ func objectFromFieldSecurity(ctx context.Context, fs *map[string][]string) (type
 	if e, ok := (*fs)["except"]; ok {
 		excepts = e
 	}
+	// Normalize missing API keys to empty slices so optional sets match config that
+	// explicitly sets e.g. except = [] (Set known-empty vs Set null refresh mismatch).
+	if grants == nil {
+		grants = []string{}
+	}
+	if excepts == nil {
+		excepts = []string{}
+	}
 	grantSet, d := types.SetValueFrom(ctx, types.StringType, grants)
 	diags.Append(d...)
 	if diags.HasError() {
