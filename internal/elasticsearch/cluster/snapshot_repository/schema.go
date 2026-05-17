@@ -19,9 +19,13 @@ package snapshot_repository
 
 import (
 	"context"
+	"maps"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
@@ -29,13 +33,20 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
-	"maps"
 )
 
-// ensure the interface is satisfied at compile time
-var _ validator.Object = blockRequiredAttrValidator{}
-
 const schemaVersion int64 = 1
+
+// exactlyOneTypeBlock enforces that exactly one repository type block is set.
+// objectvalidator.ExactlyOneOf implicitly includes the attribute it is attached
+// to, so this is added to the fs block and lists the remaining sibling blocks.
+var exactlyOneTypeBlock = objectvalidator.ExactlyOneOf(
+	path.MatchRoot("url"),
+	path.MatchRoot("gcs"),
+	path.MatchRoot("azure"),
+	path.MatchRoot("s3"),
+	path.MatchRoot("hdfs"),
+)
 
 func GetSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
@@ -136,7 +147,8 @@ func fsBlock() schema.Block {
 			"This filesystem must be accessible to all master and data nodes in the cluster.",
 		Attributes: attrs,
 		Validators: []validator.Object{
-			requireBlockAttrs("location"),
+			exactlyOneTypeBlock,
+			objectvalidator.AlsoRequires(path.MatchRelative().AtName("location")),
 		},
 	}
 }
@@ -151,7 +163,7 @@ func urlBlock() schema.Block {
 				stringplanmodifier.RequiresReplace(),
 			},
 			Validators: []validator.String{
-				stringvalidator.RegexMatches(urlProtocolRegex, "Url following protocols supported: file, ftp, http, https, jar"),
+				validators.IsURI("file", "ftp", "http", "https", "jar"),
 			},
 		},
 		"http_max_retries": schema.Int64Attribute{
@@ -174,7 +186,7 @@ func urlBlock() schema.Block {
 		MarkdownDescription: "URL repository. Provides read-only access to a shared filesystem repository.",
 		Attributes:          attrs,
 		Validators: []validator.Object{
-			requireBlockAttrs("url"),
+			objectvalidator.AlsoRequires(path.MatchRelative().AtName("url")),
 		},
 	}
 }
@@ -205,7 +217,7 @@ func gcsBlock() schema.Block {
 		MarkdownDescription: "Google Cloud Storage repository. Stores snapshots in a Google Cloud Storage bucket.",
 		Attributes:          attrs,
 		Validators: []validator.Object{
-			requireBlockAttrs("bucket"),
+			objectvalidator.AlsoRequires(path.MatchRelative().AtName("bucket")),
 		},
 	}
 }
@@ -246,7 +258,7 @@ func azureBlock() schema.Block {
 		MarkdownDescription: "Azure repository. Stores snapshots in Microsoft Azure Blob Storage.",
 		Attributes:          attrs,
 		Validators: []validator.Object{
-			requireBlockAttrs("container"),
+			objectvalidator.AlsoRequires(path.MatchRelative().AtName("container")),
 		},
 	}
 }
@@ -266,7 +278,7 @@ func s3Block() schema.Block {
 			Optional:            true,
 			Computed:            true,
 			Validators: []validator.String{
-				s3EndpointValidator{},
+				validators.IsURI("http", "https"),
 			},
 		},
 		"client": schema.StringAttribute{
@@ -320,7 +332,7 @@ func s3Block() schema.Block {
 		MarkdownDescription: "S3 repository. Stores snapshots in an Amazon S3 bucket.",
 		Attributes:          attrs,
 		Validators: []validator.Object{
-			requireBlockAttrs("bucket"),
+			objectvalidator.AlsoRequires(path.MatchRelative().AtName("bucket")),
 		},
 	}
 }
@@ -354,7 +366,10 @@ func hdfsBlock() schema.Block {
 		MarkdownDescription: "HDFS repository. Stores snapshots in Hadoop Distributed File System.",
 		Attributes:          attrs,
 		Validators: []validator.Object{
-			requireBlockAttrs("uri", "path"),
+			objectvalidator.AlsoRequires(
+				path.MatchRelative().AtName("uri"),
+				path.MatchRelative().AtName("path"),
+			),
 		},
 	}
 }
