@@ -146,6 +146,18 @@ func TestUnitMetadataJSONRoundTrip(t *testing.T) {
 	assert.JSONEq(t, meta.ValueString(), norm.ValueString())
 }
 
+func TestUnitFlattenKibanaInvalidBaseReturnsError(t *testing.T) {
+	ctx := context.Background()
+	kcfg := []kibanaoapi.SecurityRoleKibana{
+		{
+			Base:   []byte(`{"unexpected":"shape"}`),
+			Spaces: ptrStrings([]string{"default"}),
+		},
+	}
+	_, diags := flattenKibana(ctx, kcfg)
+	require.True(t, diags.HasError(), "expected diagnostic for malformed kibana.base payload")
+}
+
 func ptrStrings(s []string) *[]string { return &s }
 
 func mustMarshalJSON(t *testing.T, v any) []byte {
