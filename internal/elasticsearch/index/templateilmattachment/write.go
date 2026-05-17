@@ -23,6 +23,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -96,4 +97,12 @@ func writeILMAttachment(ctx context.Context, client *clients.ElasticsearchScoped
 	}
 
 	return plan, diags
+}
+
+// writeILMAttachmentCallback adapts writeILMAttachment to the [entitycore.WriteFunc] contract.
+// req.Prior == nil indicates a Create invocation; non-nil indicates Update.
+func writeILMAttachmentCallback(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.WriteRequest[tfModel]) (entitycore.WriteResult[tfModel], diag.Diagnostics) {
+	isCreate := req.Prior == nil
+	updatedPlan, diags := writeILMAttachment(ctx, client, req.Plan.getComponentTemplateName(), req.Plan, isCreate)
+	return entitycore.WriteResult[tfModel]{Model: updatedPlan}, diags
 }
