@@ -88,6 +88,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/securityexceptionlist"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/securitylist"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/securitylistitem"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_role"
 	kibanaslo "github.com/elastic/terraform-provider-elasticstack/internal/kibana/slo"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/spaces"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/streams"
@@ -236,6 +237,7 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		securitylistdatastreams.NewResource,
 		securityexceptionlist.NewResource,
 		securityexceptionitem.NewResource,
+		security_role.NewResource,
 		slm.NewSlmResource,
 		snapshot_repository.NewSnapshotRepositoryResource,
 		transform.NewTransformResource,
@@ -255,6 +257,7 @@ func (p *Provider) dataSources(_ context.Context) []func() datasource.DataSource
 		indices.NewDataSource,
 		template.NewDataSource,
 		spaces.NewDataSource,
+		security_role.NewDataSource,
 		agentbuilderagent.NewDataSource,
 		agentbuildertool.NewDataSource,
 		agentbuilderworkflow.NewDataSource,
