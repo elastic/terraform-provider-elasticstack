@@ -117,14 +117,6 @@ type validateConfigExactlyOneType struct{}
 
 var typeBlockNames = []string{"fs", "url", "gcs", "azure", "s3", "hdfs"}
 
-func (v validateConfigExactlyOneType) Description(_ context.Context) string {
-	return "Exactly one repository type block must be set"
-}
-
-func (v validateConfigExactlyOneType) MarkdownDescription(_ context.Context) string {
-	return "Exactly one repository type block must be set"
-}
-
 func (v validateConfigExactlyOneType) ValidateResource(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
 	var data Data
 	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
