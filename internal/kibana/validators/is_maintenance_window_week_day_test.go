@@ -98,9 +98,9 @@ func TestStringMatchesOnWeekDay(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			matched, _ := StringMatchesOnWeekDayRegex(tt.onWeekDay)
+			matched := onWeekDayRegex.MatchString(tt.onWeekDay)
 			if matched != tt.matched {
-				t.Errorf("StringMatchesOnWeekDayRegex() failed match = %v, want %v", matched, tt.matched)
+				t.Errorf("onWeekDayRegex.MatchString() failed match = %v, want %v", matched, tt.matched)
 			}
 		})
 	}

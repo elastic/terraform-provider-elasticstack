@@ -29,10 +29,6 @@ var iso8601Regex = regexp.MustCompile(
 		`|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))`,
 )
 
-func StringMatchesISO8601Regex(s string) (matched bool, err error) {
-	return iso8601Regex.MatchString(s), nil
-}
-
 var StringIsISO8601 = stringvalidator.RegexMatches(
 	iso8601Regex,
 	"This value must be a valid ISO8601 date and time formatted string.",
