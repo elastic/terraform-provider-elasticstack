@@ -721,7 +721,10 @@ func reconcileNestedThreatLists(reference, target *Data) {
 
 	// Rebuild the target threat list with updated elements
 	if updated && len(targetThreats) > 0 {
-		rebuilt, _ := types.ListValueFrom(context.Background(), getThreatElementType(), targetThreats)
+		rebuilt, rebuildDiags := types.ListValueFrom(context.Background(), getThreatElementType(), targetThreats)
+		if rebuildDiags.HasError() {
+			return
+		}
 		target.Threat = rebuilt
 	}
 }
