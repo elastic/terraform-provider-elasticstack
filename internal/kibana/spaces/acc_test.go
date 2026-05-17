@@ -21,7 +21,6 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"path/filepath"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -114,14 +113,14 @@ func TestAccResourceSpace_importState(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          config.StaticDirectory(filepath.Join("testdata", "TestAccResourceSpace", "create")),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"space_id": config.StringVariable(spaceID),
 				},
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          config.StaticDirectory(filepath.Join("testdata", "TestAccResourceSpace", "create")),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"space_id": config.StringVariable(spaceID),
 				},
