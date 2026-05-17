@@ -163,9 +163,8 @@ func GetSnapshotRepository(ctx context.Context, apiClient *clients.Elasticsearch
 	if res.StatusCode == http.StatusNotFound {
 		return nil, nil
 	}
-	if res.StatusCode >= 300 {
-		bodyBytes, _ := io.ReadAll(res.Body)
-		return nil, sdkdiag.FromErr(fmt.Errorf("unexpected status code %d from snapshot repository API: %s", res.StatusCode, string(bodyBytes)))
+	if d := diagutil.SDKDiagsFromFramework(diagutil.CheckHTTPErrorFromFW(res, "Unable to get snapshot repository")); d.HasError() {
+		return nil, d
 	}
 
 	bodyBytes, err := io.ReadAll(res.Body)
@@ -389,6 +388,9 @@ func GetSlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, s
 	defer res.Body.Close()
 	if res.StatusCode == http.StatusNotFound {
 		return nil, nil
+	}
+	if d := diagutil.SDKDiagsFromFramework(diagutil.CheckHTTPErrorFromFW(res, fmt.Sprintf("Unable to get SLM policy: %s", slmName))); d.HasError() {
+		return nil, d
 	}
 	bodyBytes, err := io.ReadAll(res.Body)
 	if err != nil {

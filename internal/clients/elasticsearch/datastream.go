@@ -21,7 +21,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"io"
 	"net/http"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
@@ -139,19 +138,10 @@ func GetDataStreamLifecycle(
 	defer res.Body.Close()
 
 	if res.StatusCode == http.StatusNotFound {
-		_, _ = io.Copy(io.Discard, res.Body)
 		return nil, nil
 	}
-
-	if res.StatusCode >= http.StatusMultipleChoices {
-		errorResponse := types.NewElasticsearchError()
-		if err := json.NewDecoder(res.Body).Decode(errorResponse); err != nil {
-			return nil, diagutil.FrameworkDiagFromError(err)
-		}
-		if errorResponse.Status == 0 {
-			errorResponse.Status = res.StatusCode
-		}
-		return nil, diagutil.FrameworkDiagFromError(errorResponse)
+	if d := diagutil.CheckHTTPErrorFromFW(res, "Unable to get data stream lifecycle"); d.HasError() {
+		return nil, d
 	}
 
 	var response models.DataStreamLifecycleResponse
