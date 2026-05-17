@@ -633,6 +633,99 @@ func (d Data) parseResourceUUID(diags *diag.Diagnostics) (uuid.UUID, bool) {
 	return uid, true
 }
 
+// reconcileEmptyListsFromPlan copies explicit empty lists from reference (plan or
+// prior state) into target (post-read data) so that Optional-only list attributes
+// set to [] do not produce "Provider produced inconsistent result after apply".
+func reconcileEmptyListsFromPlan(reference, target *Data) {
+	// Top-level attributes
+	if isKnownEmptyList(reference.Actions) && target.Actions.IsNull() {
+		target.Actions = reference.Actions
+	}
+	if isKnownEmptyList(reference.ExceptionsList) && target.ExceptionsList.IsNull() {
+		target.ExceptionsList = reference.ExceptionsList
+	}
+	if isKnownEmptyList(reference.SeverityMapping) && target.SeverityMapping.IsNull() {
+		target.SeverityMapping = reference.SeverityMapping
+	}
+	if isKnownEmptyList(reference.RiskScoreMapping) && target.RiskScoreMapping.IsNull() {
+		target.RiskScoreMapping = reference.RiskScoreMapping
+	}
+	if isKnownEmptyList(reference.RelatedIntegrations) && target.RelatedIntegrations.IsNull() {
+		target.RelatedIntegrations = reference.RelatedIntegrations
+	}
+	if isKnownEmptyList(reference.Threat) && target.Threat.IsNull() {
+		target.Threat = reference.Threat
+	}
+	if isKnownEmptyList(reference.ThreatMapping) && target.ThreatMapping.IsNull() {
+		target.ThreatMapping = reference.ThreatMapping
+	}
+
+	// Nested threat technique / subtechnique reconciliation
+	reconcileNestedThreatLists(reference, target)
+}
+
+// isKnownEmptyList reports whether v is a known, non-null list with zero elements.
+func isKnownEmptyList(v types.List) bool {
+	return typeutils.IsKnown(v) && len(v.Elements()) == 0
+}
+
+// reconcileNestedThreatLists copies empty technique/subtechnique lists from
+// reference threat entries into target threat entries when the target value is
+// null, preserving null when the practitioner omitted the nested attribute.
+func reconcileNestedThreatLists(reference, target *Data) {
+	if !typeutils.IsKnown(reference.Threat) || !typeutils.IsKnown(target.Threat) {
+		return
+	}
+
+	var refThreats, targetThreats []ThreatModel
+	if diag := reference.Threat.ElementsAs(context.Background(), &refThreats, false); diag.HasError() {
+		return
+	}
+	if diag := target.Threat.ElementsAs(context.Background(), &targetThreats, false); diag.HasError() {
+		return
+	}
+	if len(refThreats) != len(targetThreats) {
+		return
+	}
+
+	updated := false
+	for i := range refThreats {
+		// Reconcile technique list
+		if isKnownEmptyList(refThreats[i].Technique) && targetThreats[i].Technique.IsNull() {
+			targetThreats[i].Technique = refThreats[i].Technique
+			updated = true
+		}
+
+		// Reconcile subtechnique lists inside each technique entry
+		if typeutils.IsKnown(refThreats[i].Technique) && typeutils.IsKnown(targetThreats[i].Technique) {
+			var refTechs, targetTechs []ThreatTechniqueModel
+			if diag := refThreats[i].Technique.ElementsAs(context.Background(), &refTechs, false); diag.HasError() {
+				continue
+			}
+			if diag := targetThreats[i].Technique.ElementsAs(context.Background(), &targetTechs, false); diag.HasError() {
+				continue
+			}
+			if len(refTechs) == len(targetTechs) {
+				for j := range refTechs {
+					if isKnownEmptyList(refTechs[j].Subtechnique) && targetTechs[j].Subtechnique.IsNull() {
+						targetTechs[j].Subtechnique = refTechs[j].Subtechnique
+						updated = true
+					}
+				}
+				// Rebuild technique list with updated subtechniques
+				rebuiltTechs, _ := types.ListValueFrom(context.Background(), getThreatTechniqueElementType(), targetTechs)
+				targetThreats[i].Technique = rebuiltTechs
+			}
+		}
+	}
+
+	// Rebuild the target threat list with updated elements
+	if updated && len(targetThreats) > 0 {
+		rebuilt, _ := types.ListValueFrom(context.Background(), getThreatElementType(), targetThreats)
+		target.Threat = rebuilt
+	}
+}
+
 // Helper function to initialize type-specific fields to default/null values
 func (d *Data) initializeTypeSpecificFieldsToDefaults() {
 	// EQL-specific fields
