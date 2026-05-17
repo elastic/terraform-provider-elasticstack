@@ -39,7 +39,7 @@ func GetSlo(ctx context.Context, client *Client, spaceID string, sloID string) (
 		&kbapi.GetSloOpParams{},
 	)
 	if err != nil {
-		return nil, diag.Diagnostics{diag.NewErrorDiagnostic("Unable to get SLO", err.Error())}
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	return HandleGetTypedResponse(resp.StatusCode(), resp.Body,
@@ -50,7 +50,7 @@ func GetSlo(ctx context.Context, client *Client, spaceID string, sloID string) (
 func EnableSlo(ctx context.Context, client *Client, spaceID, sloID string) diag.Diagnostics {
 	resp, err := client.API.EnableSloOpWithResponse(ctx, spaceID, sloID)
 	if err != nil {
-		return diag.Diagnostics{diag.NewErrorDiagnostic("Unable to enable SLO", err.Error())}
+		return diagutil.FrameworkDiagFromError(err)
 	}
 	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNoContent)
 }
@@ -59,7 +59,7 @@ func EnableSlo(ctx context.Context, client *Client, spaceID, sloID string) diag.
 func DisableSlo(ctx context.Context, client *Client, spaceID, sloID string) diag.Diagnostics {
 	resp, err := client.API.DisableSloOpWithResponse(ctx, spaceID, sloID)
 	if err != nil {
-		return diag.Diagnostics{diag.NewErrorDiagnostic("Unable to disable SLO", err.Error())}
+		return diagutil.FrameworkDiagFromError(err)
 	}
 	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNoContent)
 }
@@ -72,7 +72,7 @@ func CreateSlo(ctx context.Context, client *Client, spaceID string, req kbapi.SL
 		req,
 	)
 	if err != nil {
-		return nil, diag.Diagnostics{diag.NewErrorDiagnostic("Unable to create SLO", err.Error())}
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	return HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
@@ -88,20 +88,10 @@ func UpdateSlo(ctx context.Context, client *Client, spaceID string, sloID string
 		req,
 	)
 	if err != nil {
-		return diag.Diagnostics{diag.NewErrorDiagnostic("Unable to update SLO", err.Error())}
+		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return nil
-	case http.StatusNotFound:
-		return diag.Diagnostics{diag.NewErrorDiagnostic(
-			"SLO not found during update",
-			"The SLO with ID "+sloID+" was not found in space "+spaceID+".",
-		)}
-	default:
-		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK)
 }
 
 // DeleteSlo deletes an SLO by space and ID. A 404 response is treated as
@@ -113,17 +103,11 @@ func DeleteSlo(ctx context.Context, client *Client, spaceID string, sloID string
 		sloID,
 	)
 	if err != nil {
-		return diag.Diagnostics{diag.NewErrorDiagnostic("Unable to delete SLO", err.Error())}
+		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusNoContent, http.StatusOK:
-		return nil
-	case http.StatusNotFound:
-		return nil
-	default:
-		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body,
+		http.StatusNoContent, http.StatusOK, http.StatusNotFound)
 }
 
 // SloResponseToModel converts a kbapi SLO response into the internal models.Slo type.
