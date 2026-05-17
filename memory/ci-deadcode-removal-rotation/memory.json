@@ -70,6 +70,12 @@
       "package": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/snapshot_repository",
       "attemptedAt": "2026-05-17T04:18:44.862585551Z",
       "reason": "pr_created"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/snapshot_repository.validateConfigExactlyOneType.MarkdownDescription",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/snapshot_repository",
+      "attemptedAt": "2026-05-17T04:42:56.094892164Z",
+      "reason": "pr_created"
     }
   ]
 }
