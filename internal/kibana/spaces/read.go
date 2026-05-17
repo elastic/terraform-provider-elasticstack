@@ -111,6 +111,9 @@ func readSpaceResource(ctx context.Context, client *clients.KibanaScopedClient, 
 	}
 	updated.KibanaConnectionField = model.KibanaConnectionField
 	updated.ImageURL = model.ImageURL
+	if !model.DisabledFeatures.IsNull() && !model.DisabledFeatures.IsUnknown() {
+		updated.DisabledFeatures = model.DisabledFeatures
+	}
 	return updated, true, mapDiags
 }
 
@@ -148,5 +151,8 @@ func finalizeResourceModelFromAPIResponse(ctx context.Context, plan resourceMode
 	}
 	out.KibanaConnectionField = plan.KibanaConnectionField
 	out.ImageURL = plan.ImageURL
+	if !plan.DisabledFeatures.IsNull() && !plan.DisabledFeatures.IsUnknown() {
+		out.DisabledFeatures = plan.DisabledFeatures
+	}
 	return out, diags
 }
