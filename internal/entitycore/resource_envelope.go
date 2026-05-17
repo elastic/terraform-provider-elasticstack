@@ -65,11 +65,11 @@ type elasticsearchDeleteFunc[T ElasticsearchResourceModel] func(
 	T,
 ) diag.Diagnostics
 
-// WriteRequest is passed to [WriteFunc] after plan decoding, prior-state
-// decoding (Update only), config decoding, write identity validation, client
-// resolution, and optional version checks. Prior is non-nil only for Update;
-// Create receives Prior == nil. The same WriteRequest type is shared by Create
-// and Update so a single function can serve both when the logic does not differ.
+// WriteRequest is passed to [WriteFunc]. Config is the Terraform configuration
+// decoded into T by the envelope before the callback is invoked. Prior is non-nil
+// only for Update; Create receives Prior == nil. The same WriteRequest type is
+// shared by Create and Update so a single function can serve both when the logic
+// does not differ.
 type WriteRequest[T ElasticsearchResourceModel] struct {
 	Plan    T
 	Prior   *T
