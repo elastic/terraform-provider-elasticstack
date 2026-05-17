@@ -20,10 +20,8 @@ package entitycore
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	sdkdiag "github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
 // WithVersionRequirements is an optional interface that entity models may
@@ -38,7 +36,7 @@ type WithVersionRequirements interface {
 // minVersionClient is implemented by scoped API clients used by entity envelopes
 // for minimum server version checks.
 type minVersionClient interface {
-	EnforceMinVersion(ctx context.Context, minVersion *version.Version) (bool, sdkdiag.Diagnostics)
+	EnforceMinVersion(ctx context.Context, minVersion *version.Version) (bool, diag.Diagnostics)
 }
 
 // enforceVersionRequirements checks whether model implements
@@ -58,8 +56,8 @@ func enforceVersionRequirements(ctx context.Context, client minVersionClient, mo
 	}
 
 	for _, vReq := range reqs {
-		supported, sdkDiags := client.EnforceMinVersion(ctx, &vReq.MinVersion)
-		diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+		supported, vDiags := client.EnforceMinVersion(ctx, &vReq.MinVersion)
+		diags.Append(vDiags...)
 		if diags.HasError() {
 			return diags
 		}
