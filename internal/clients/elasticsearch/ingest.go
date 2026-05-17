@@ -26,54 +26,59 @@ import (
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	sdkdiag "github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func PutIngestPipeline(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string, pipeline map[string]any) sdkdiag.Diagnostics {
+func PutIngestPipeline(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string, pipeline map[string]any) fwdiag.Diagnostics {
 	pipelineBytes, err := json.Marshal(pipeline)
 	if err != nil {
-		return sdkdiag.FromErr(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 	typedClient, err := apiClient.GetESClient()
 	if err != nil {
-		return sdkdiag.FromErr(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 	_, err = typedClient.Ingest.PutPipeline(name).Raw(bytes.NewReader(pipelineBytes)).Do(ctx)
 	if err != nil {
-		return sdkdiag.FromErr(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 	return nil
 }
 
-func GetIngestPipeline(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string) (*types.IngestPipeline, sdkdiag.Diagnostics) {
+func GetIngestPipeline(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string) (*types.IngestPipeline, fwdiag.Diagnostics) {
 	typedClient, err := apiClient.GetESClient()
 	if err != nil {
-		return nil, sdkdiag.FromErr(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 	res, err := typedClient.Ingest.GetPipeline().Id(name).Do(ctx)
 	if err != nil {
 		if IsNotFoundElasticsearchError(err) {
 			return nil, nil
 		}
-		return nil, sdkdiag.FromErr(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 	if pipeline, ok := res[name]; ok {
 		return &pipeline, nil
 	}
-	return nil, diagutil.SDKErrorDiag("Unable to find ingest pipeline", fmt.Sprintf(`Unable to find "%s" ingest pipeline in the cluster`, name))
+	return nil, fwdiag.Diagnostics{
+		fwdiag.NewErrorDiagnostic(
+			"Unable to find ingest pipeline",
+			fmt.Sprintf(`Unable to find "%s" ingest pipeline in the cluster`, name),
+		),
+	}
 }
 
-func DeleteIngestPipeline(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string) sdkdiag.Diagnostics {
+func DeleteIngestPipeline(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string) fwdiag.Diagnostics {
 	typedClient, err := apiClient.GetESClient()
 	if err != nil {
-		return sdkdiag.FromErr(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 	_, err = typedClient.Ingest.DeletePipeline(name).Do(ctx)
 	if err != nil {
 		if IsNotFoundElasticsearchError(err) {
 			return nil
 		}
-		return sdkdiag.FromErr(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 	return nil
 }
