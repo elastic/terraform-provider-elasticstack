@@ -19,7 +19,7 @@ The root cause is a null-vs-empty mismatch: Terraform plans the value as `cty.Li
 
 - Add a `reconcileEmptyListsFromPlan` helper to `models.go` that copies explicit empty lists from a reference `Data` (plan or prior state) into the post-read `Data` for each of the seven top-level affected attributes.
 - Call `reconcileEmptyListsFromPlan` in `Create()`, `Read()`, and `Update()` after the `r.read()` call.
-- Fix `convertThreatToModel` to return `types.ListValueMust(...)` (empty list) instead of `types.ListNull(...)` for `technique` and `subtechnique` when the API returns a nil or zero-length slice inside an existing threat entry.
+- Extend the reconciliation logic for nested `threat[*].technique` and `threat[*].technique[*].subtechnique` so explicitly configured empty lists remain `[]` in state while omitted / `null` values remain `null`.
 - Add or extend acceptance test coverage to verify that `terraform apply` with all seven attributes set to `[]` succeeds and produces a consistent empty-list state.
 
 No schema changes (no `Computed: true` additions). This is a behaviour-only bug fix.
@@ -32,9 +32,9 @@ No schema changes (no `Computed: true` additions). This is a behaviour-only bug 
 
 ### Modified Capabilities
 
-- `kibana-security-detection-rule`: Add null-to-empty-list reconciliation for the seven nested list attributes so that `terraform apply` with `attribute = []` does not produce a "Provider produced inconsistent result after apply" error (REQ-100–REQ-103).
+- `kibana-security-detection-rule`: Add null-to-empty-list reconciliation for the seven nested list attributes, plus nested `threat` technique/subtechnique reconciliation that preserves null-vs-empty semantics, so `terraform apply` with `attribute = []` does not produce a "Provider produced inconsistent result after apply" error (REQ-033–REQ-036).
 
 ## Impact
 
 - **Specs**: Delta under `openspec/changes/fix-detection-rule-empty-list-null/specs/kibana-security-detection-rule/spec.md` until merged into canonical spec.
-- **Implementation** (future): `internal/kibana/security_detection_rule/models.go` (new helper), `create.go`, `read.go`, `update.go` (one helper call each), `models_from_api_type_utils.go` (fix `convertThreatToModel`), `acc_test.go` (new acceptance test step).
+- **Implementation** (future): `internal/kibana/security_detection_rule/models.go` (new/extended reconciliation helper), `create.go`, `read.go`, `update.go` (one helper call each), `models_from_api_type_utils.go` (nested threat mapping support), `acc_test.go` (new acceptance test step).

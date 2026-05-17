@@ -32,11 +32,11 @@ The `elasticstack_kibana_security_detection_rule` resource fails with "Provider 
 
 | Topic | Decision |
 |---|---|
-| Fix approach | Plan/prior-state reconciliation (Approach 1). Introduce `reconcileEmptyListsFromPlan(reference, target *Data)` in `models.go`. When `reference.X` is a known, non-null empty list and `target.X` is null, copy `reference.X` into `target.X`. |
+| Fix approach | Plan/prior-state reconciliation (Approach 1). Introduce `reconcileEmptyListsFromPlan(reference, target *Data)` in `models.go`. When `reference.X` is a known, non-null empty list and `target.X` is null, copy `reference.X` into `target.X`. Extend the same reconciliation to nested `threat[*].technique` / `subtechnique` paths by comparing the reference and target threat entries. |
 | Caller — Create | After `readData, diags := r.read(...)`, call `reconcileEmptyListsFromPlan(&data, readData)` where `data` holds the plan. |
 | Caller — Read | After `readData, diags := r.read(...)`, call `reconcileEmptyListsFromPlan(&data, readData)` where `data` holds the prior state from `req.State`. |
 | Caller — Update | After `readData, diags := r.read(...)`, call `reconcileEmptyListsFromPlan(&data, readData)` where `data` holds the plan from `req.Plan`. |
-| Nested `threat[*].technique` and `threat[*].technique[*].subtechnique` | Fix `convertThreatToModel` in `models_from_api_type_utils.go` to return `types.ListValueMust(getThreatTechniqueElementType(), []attr.Value{})` and `types.ListValueMust(getThreatSubtechniqueElementType(), []attr.Value{})` respectively when the API returns nil or zero-length slices inside an existing threat entry. This is safe because `technique` and `subtechnique` only appear within a concrete threat entry, so always returning empty list (not null) is consistent. The outer `Threat` attribute is handled by `reconcileEmptyListsFromPlan`. |
+| Nested `threat[*].technique` and `threat[*].technique[*].subtechnique` | Do **not** unconditionally normalize nil/empty API slices to `[]`. These nested lists are `Optional`-only, so omitted configuration still plans `null`. Instead, preserve the API-derived null by default and use reconciliation against the plan/prior state to copy `[]` only when the practitioner explicitly configured an empty list. |
 | Schema change | No schema change. `Computed: true` (Approach 2) is explicitly rejected: it relaxes the schema contract and hides potential misconfigurations. |
 | Affected attributes (reconciliation) | `Actions`, `ExceptionsList`, `SeverityMapping`, `RiskScoreMapping`, `RelatedIntegrations`, `Threat`, `ThreatMapping`. |
 
@@ -53,5 +53,5 @@ The `elasticstack_kibana_security_detection_rule` resource fails with "Provider 
 ## Open Questions
 
 1. Does `Update()` use `r.read()` to rebuild state after the update API call? (Confirmed from source: yes, `update.go` calls `r.read()` for the authoritative post-update read.)
-2. For `threat[*].technique[*].subtechnique` — if the practitioner explicitly sets `technique = []` on a threat entry that already has techniques in state, is there a perpetual diff beyond the null/empty issue? Should be covered by an acceptance test.
+2. The nested reconciliation should be covered by unit tests for both explicit `[]` and omitted / `null` configurations so the null-vs-empty invariant is preserved for `technique` and `subtechnique`.
 3. Are there other rule-type-specific list attributes (beyond the 7 reported) that exhibit the same null/empty bug? (Candidates: `required_fields`, `investigation_fields` — noted as out of scope per research.)

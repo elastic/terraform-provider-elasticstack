@@ -1,6 +1,6 @@
-## MODIFIED Requirements
+## ADDED Requirements
 
-### Requirement: Empty-list consistency for optional nested list attributes (REQ-100)
+### Requirement: Empty-list consistency for optional nested list attributes (REQ-033)
 
 When a practitioner explicitly configures any of the following `elasticstack_kibana_security_detection_rule` attributes as an empty list (`[]`), the provider SHALL return an empty list — not `null` — for that attribute in state after `Create`, `Read`, and `Update`. This preserves the Terraform Plugin Framework invariant for `Optional`-only list attributes: the provider MUST return the planned value unchanged when the planned value is a known, non-null empty list.
 
@@ -35,7 +35,7 @@ Affected attributes:
 - WHEN `terraform apply` runs
 - THEN the provider SHALL store `null` (not `[]`) for those attributes in state
 
-### Requirement: Empty-list consistency for nested `threat` sub-lists (REQ-101)
+### Requirement: Empty-list consistency for nested `threat` sub-lists (REQ-034)
 
 When a `threat` block is configured with one or more entries, and a practitioner explicitly configures `technique = []` for a threat entry, the provider SHALL return an empty list (`[]`) — not `null` — for `technique` in state. The same rule applies when a practitioner explicitly configures `subtechnique = []` within a technique entry.
 
@@ -67,7 +67,7 @@ If `technique` or `subtechnique` is absent from configuration or explicitly `nul
 - WHEN `terraform apply` runs
 - THEN the provider SHALL store `null` for `subtechnique` in state for that technique entry
 
-### Requirement: Reconciliation helper for plan/state alignment (REQ-102)
+### Requirement: Reconciliation helper for plan/state alignment (REQ-035)
 
 The provider SHALL implement a `reconcileEmptyListsFromPlan` function (or equivalent logic) in the `securitydetectionrule` package. For each of the seven affected attributes, this function SHALL: if the reference value (plan for Create/Update, prior state for Read) is a known, non-null empty list AND the post-read value is null, replace the post-read null with the reference empty list.
 
@@ -91,7 +91,7 @@ This function SHALL be called after each `r.read()` invocation in `Create`, `Rea
 - WHEN `reconcileEmptyListsFromPlan` is called
 - THEN `target.Actions` SHALL remain null
 
-### Requirement: Acceptance test — empty-list round-trip (REQ-103)
+### Requirement: Acceptance test — empty-list round-trip (REQ-036)
 
 The acceptance test suite SHALL include a test that exercises the empty-list scenario for all seven affected attributes in a single resource configuration. The test SHALL apply a configuration with all seven attributes set to `[]`, assert that `terraform apply` succeeds without "inconsistent result" diagnostics, assert that all seven attributes are stored as empty lists in state, and assert that a subsequent `terraform plan` produces an empty plan.
 
