@@ -143,8 +143,7 @@ on:
       uses: actions/github-script@v9
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
-        x-script-include: ../lib/set-phase-label.js
-        x-script-append: ../lib/set-phase-label-run.js
+        x-script-include: ../lib/set-phase-label.inline.js
     - name: Normalize context
       id: normalize_context
       if: always()
