@@ -25,43 +25,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
-func lensByReferenceAttributes() map[string]schema.Attribute {
-	return map[string]schema.Attribute{
-		"ref_id": schema.StringAttribute{
-			MarkdownDescription: "Reference name in the API `ref_id` field. When `references_json` is set, `ref_id` typically should match a `name` in that list so the link resolves as expected.",
-			Required:            true,
-		},
-		"references_json": schema.StringAttribute{
-			MarkdownDescription: "Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the API `references` list (for example wiring a `lens` saved object to `ref_id`).",
-			Optional:            true,
-			CustomType:          jsontypes.NormalizedType{},
-		},
-		"title": schema.StringAttribute{
-			MarkdownDescription: "Optional panel title.",
-			Optional:            true,
-		},
-		"description": schema.StringAttribute{
-			MarkdownDescription: "Optional panel description.",
-			Optional:            true,
-		},
-		"hide_title": schema.BoolAttribute{
-			MarkdownDescription: "When true, suppresses the panel title.",
-			Optional:            true,
-		},
-		"hide_border": schema.BoolAttribute{
-			MarkdownDescription: "When true, suppresses the panel border.",
-			Optional:            true,
-		},
-		"drilldowns": panelkit.StructuredDrilldownsAttribute(),
-		"time_range": schema.SingleNestedAttribute{
-			MarkdownDescription: "Required time range for the by-reference panel config " +
-				"(used by both `lens_dashboard_app_config.by_reference` and `vis_config.by_reference`).",
-			Required:   true,
-			Attributes: panelkit.TimeRangeAttributes(),
-		},
-	}
-}
-
 func byValueAttributes() map[string]schema.Attribute {
 	out := map[string]schema.Attribute{
 		"config_json": schema.StringAttribute{
@@ -119,7 +82,7 @@ func innerSchemaAttributes() map[string]schema.Attribute {
 		"by_reference": schema.SingleNestedAttribute{
 			MarkdownDescription: "By-reference `lens-dashboard-app` configuration: structured `drilldowns`, `ref_id`, optional `references_json`, and required `time_range`.",
 			Optional:            true,
-			Attributes:          lensByReferenceAttributes(),
+			Attributes:          panelkit.ByReferenceAttributes(),
 		},
 	}
 }
