@@ -19,6 +19,7 @@ package security_role
 
 import (
 	"context"
+	"maps"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 
@@ -147,9 +148,7 @@ func reconcileSingleBlockOptionalSets(
 	}
 	pAttrs := pObj.Attributes()
 	outAttrs := make(map[string]attr.Value, len(oObj.Attributes()))
-	for k, v := range oObj.Attributes() {
-		outAttrs[k] = v
-	}
+	maps.Copy(outAttrs, oObj.Attributes())
 	changed := false
 	for name := range nullToEmptyAttrNames {
 		oVal, ok := outAttrs[name].(types.Set)
