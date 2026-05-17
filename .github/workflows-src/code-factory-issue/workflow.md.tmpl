@@ -259,6 +259,9 @@ steps:
       echo "GOROOT=$(go env GOROOT)" >> "$GITHUB_ENV"
       echo "GOPATH=$(go env GOPATH)" >> "$GITHUB_ENV"
       echo "GOMODCACHE=$(go env GOMODCACHE)" >> "$GITHUB_ENV"
+      echo "TERRAFORM_BIN=$(which terraform)" >> "$GITHUB_ENV"
+      TERRAFORM_DIR=$(dirname "$(which terraform)")
+      echo "PATH=${TERRAFORM_DIR}:${PATH}" >> "$GITHUB_ENV"
   - name: Download issue context artifact
     uses: actions/download-artifact@v4
     with:
@@ -366,7 +369,9 @@ Deterministic pre-activation has already decided that this intake is eligible, t
 
 ## Test environment
 
-The Elastic Stack is available in the agent environment. Run targeted acceptance tests with:
+The Elastic Stack is provisioned in the agent environment but **acceptance tests are currently blocked by an AWF network policy issue** — `TF_ACC=1` tests will fail with connection errors. Do not run acceptance tests and do not treat their failure as a blocker. This is a known infrastructure issue being investigated separately.
+
+When the issue is resolved, targeted acceptance tests can be run with:
 
 ```bash
 ELASTICSEARCH_ENDPOINTS=http://host.docker.internal:9200 \
@@ -400,10 +405,14 @@ Implement the triggering issue on branch `code-factory/issue-${{ needs.pre_activ
 
 ## Verification tasks
 
-- `make check-lint` must succeed.
-- `make build` must succeed.
-- Unit tests must pass with `go test -v ./...`.
-- Targeted acceptance tests must pass with `ELASTICSEARCH_ENDPOINTS=http://host.docker.internal:9200 ELASTICSEARCH_USERNAME=elastic ELASTICSEARCH_PASSWORD=password KIBANA_ENDPOINT=http://host.docker.internal:5601 TF_ACC=1 go test -v -run TestAccResourceName ./path/to/package`.
+Run these steps **in order** before committing. Wait for each to complete fully.
+
+1. **Format code first — before committing**: `make fmt` must succeed and produce no diff.
+   This runs both `go fmt ./...` and `terraform fmt --recursive`. Both must pass cleanly.
+2. **Lint**: `make check-lint` must succeed.
+3. **Build**: `make build` must succeed. Wait for it to finish completely.
+4. **Unit tests**: `go test ./...` must pass.
+5. **Acceptance tests**: Do not run. They are blocked by a known AWF infrastructure issue and will fail with connection errors regardless of code correctness.
 
 ## Pull request contract
 
@@ -417,7 +426,8 @@ The linked pull request must:
 ## Guardrails
 
 - Do not re-check trigger eligibility, actor trust, or duplicate PR state; deterministic pre-activation already handled those checks.
-- Your changes must pass linting and testing locally before creating a pull request. `make build` must succeed, and targeted acceptance tests must pass.
+- Run `make fmt` **before** committing — unformatted code will fail CI. `make check-lint` and `make build` must also succeed.
+- Do not run acceptance tests (`TF_ACC=1`). They are blocked by a known AWF infrastructure issue.
 - Do not open a second pull request for the same issue.
 - Do not change the branch naming convention.
 - Do not open issues in this workflow.
