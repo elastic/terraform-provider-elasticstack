@@ -85,12 +85,12 @@ func (model tfModel) GetElasticsearchConnection() types.List {
 // GetReadResourceID satisfies entitycore.WithReadResourceID: the API key read
 // identity is the immutable key_id (not the user-supplied Name) because the
 // Elasticsearch Get/Update API key APIs are keyed by id.
-func (m tfModel) GetReadResourceID() string {
-	if typeutils.IsKnown(m.KeyID) && m.KeyID.ValueString() != "" {
-		return m.KeyID.ValueString()
+func (model tfModel) GetReadResourceID() string {
+	if typeutils.IsKnown(model.KeyID) && model.KeyID.ValueString() != "" {
+		return model.KeyID.ValueString()
 	}
-	if typeutils.IsKnown(m.ID) && m.ID.ValueString() != "" {
-		compID, diags := clients.CompositeIDFromStr(m.ID.ValueString())
+	if typeutils.IsKnown(model.ID) && model.ID.ValueString() != "" {
+		compID, diags := clients.CompositeIDFromStr(model.ID.ValueString())
 		if !diags.HasError() && compID != nil {
 			return compID.ResourceID
 		}
