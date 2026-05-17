@@ -65,14 +65,13 @@ func readRoleResource(ctx context.Context, client *clients.KibanaScopedClient, r
 func resourceModelFromAPI(ctx context.Context, role *kibanaoapi.SecurityRole, name string, prior resourceModel) (resourceModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	out := prior
-	out.KibanaConnection = prior.KibanaConnection
 	out.Name = types.StringValue(name)
 	out.ID = types.StringValue(name)
 
 	if role.Description != nil {
 		out.Description = types.StringValue(*role.Description)
 	} else {
-		out.Description = types.StringValue("")
+		out.Description = types.StringNull()
 	}
 
 	esSet, d := flattenElasticsearch(ctx, &role.Elasticsearch)

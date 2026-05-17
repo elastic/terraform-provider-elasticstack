@@ -258,7 +258,7 @@ func flattenKibanaFeatures(ctx context.Context, features *map[string][]string) (
 
 func flattenKibana(ctx context.Context, configs []kibanaoapi.SecurityRoleKibana) (types.Set, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	if configs == nil || len(configs) == 0 {
+	if len(configs) == 0 {
 		return types.SetValueMust(kibanaBlockObjectType(), []attr.Value{}), diags
 	}
 	elems := make([]attr.Value, len(configs))

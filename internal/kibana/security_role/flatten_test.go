@@ -112,9 +112,11 @@ func TestUnitFlattenExpandKibanaFeatureRoundTrip(t *testing.T) {
 	require.False(t, diags.HasError())
 	out, diags2 := expandKibana(ctx, set)
 	require.False(t, diags2.HasError())
-	require.Len(t, out, 1)
-	require.NotNil(t, out[0].Feature)
-	assert.ElementsMatch(t, (*out[0].Feature)["discover"], []string{"minimal_read", "url_create"})
+	b1, err := json.Marshal(kcfg)
+	require.NoError(t, err)
+	b2, err := json.Marshal(out)
+	require.NoError(t, err)
+	assert.JSONEq(t, string(b1), string(b2))
 }
 
 func TestUnitExpandElasticsearchOmitsEmptyClusterAndRunAs(t *testing.T) {

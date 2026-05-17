@@ -93,7 +93,7 @@ func (v configValidator) ValidateResource(ctx context.Context, req resource.Vali
 		if baseLen == 0 && featureLen == 0 {
 			resp.Diagnostics.AddError(
 				"Invalid kibana privileges",
-				"Either on of the `feature` or `base` privileges must be set for kibana role!",
+				"Either one of the `feature` or `base` privileges must be set for kibana role!",
 			)
 			return
 		}

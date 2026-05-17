@@ -319,7 +319,7 @@ func expandKibana(ctx context.Context, set types.Set) ([]kibanaoapi.SecurityRole
 		} else {
 			diags.AddError(
 				"Invalid kibana privileges",
-				"Either on of the `feature` or `base` privileges must be set for kibana role!",
+				"Either one of the `feature` or `base` privileges must be set for kibana role!",
 			)
 			return nil, diags
 		}
