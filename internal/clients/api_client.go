@@ -27,7 +27,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/go-version"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -41,13 +40,15 @@ type CompositeID struct {
 
 const ServerlessFlavor = "serverless"
 
-func CompositeIDFromStr(id string) (*CompositeID, diag.Diagnostics) {
+func CompositeIDFromStr(id string) (*CompositeID, fwdiags.Diagnostics) {
 	idParts := strings.Split(id, "/")
 	if len(idParts) != 2 {
-		return nil, diagutil.SDKErrorDiag(
-			"Wrong resource ID.",
-			"Resource ID must have following format: <cluster_uuid>/<resource identifier>",
-		)
+		return nil, fwdiags.Diagnostics{
+			fwdiags.NewErrorDiagnostic(
+				"Wrong resource ID.",
+				"Resource ID must have following format: <cluster_uuid>/<resource identifier>",
+			),
+		}
 	}
 	return &CompositeID{
 		ClusterID:  idParts[0],
@@ -55,9 +56,12 @@ func CompositeIDFromStr(id string) (*CompositeID, diag.Diagnostics) {
 	}, nil
 }
 
+// CompositeIDFromStrFw is an alias for CompositeIDFromStr, retained for
+// backward compatibility with existing callers.
+//
+// Deprecated: Call CompositeIDFromStr directly.
 func CompositeIDFromStrFw(id string) (*CompositeID, fwdiags.Diagnostics) {
-	composite, diags := CompositeIDFromStr(id)
-	return composite, diagutil.FrameworkDiagsFromSDK(diags)
+	return CompositeIDFromStr(id)
 }
 
 func (c *CompositeID) String() string {
@@ -126,7 +130,7 @@ func newAPIClientFromFramework(ctx context.Context, cfg config.ProviderConfigura
 }
 
 type MinVersionEnforceable interface {
-	EnforceMinVersion(ctx context.Context, minVersion *version.Version) (bool, diag.Diagnostics)
+	EnforceMinVersion(ctx context.Context, minVersion *version.Version) (bool, fwdiags.Diagnostics)
 }
 
 func buildEsClient(cfg config.Client) (*elasticsearch.TypedClient, error) {
