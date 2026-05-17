@@ -255,6 +255,7 @@ func (p *Provider) dataSources(_ context.Context) []func() datasource.DataSource
 		indices.NewDataSource,
 		template.NewDataSource,
 		spaces.NewDataSource,
+		connectors.NewDataSource,
 		agentbuilderagent.NewDataSource,
 		agentbuildertool.NewDataSource,
 		agentbuilderworkflow.NewDataSource,
