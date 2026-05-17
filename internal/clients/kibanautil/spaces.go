@@ -22,6 +22,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 )
 
 // BuildSpaceAwarePath constructs an API path with space awareness.
@@ -36,9 +37,19 @@ func BuildSpaceAwarePath(spaceID, basePath string) string {
 
 // SpaceAwarePathRequestEditor returns a RequestEditorFn that modifies the
 // request path for space awareness.
+// It inserts /s/{spaceID} immediately before the first /api/ segment,
+// preserving any base-path prefix that precedes it.
 func SpaceAwarePathRequestEditor(spaceID string) func(ctx context.Context, req *http.Request) error {
 	return func(_ context.Context, req *http.Request) error {
-		req.URL.Path = BuildSpaceAwarePath(spaceID, req.URL.Path)
+		if spaceID == "" || spaceID == "default" {
+			return nil
+		}
+		path := req.URL.Path
+		if idx := strings.Index(path, "/api/"); idx != -1 {
+			req.URL.Path = path[:idx] + "/s/" + spaceID + path[idx:]
+		} else {
+			req.URL.Path = "/s/" + spaceID + path
+		}
 		return nil
 	}
 }

@@ -94,6 +94,36 @@ func TestSpaceAwarePathRequestEditor(t *testing.T) {
 			initPath: "/api/dashboards/dashboard/abc",
 			wantPath: "/s/ops/api/dashboards/dashboard/abc",
 		},
+		{
+			name:     "base path with custom spaceID",
+			spaceID:  "ops",
+			initPath: "/kibana/api/alerting/rule/abc",
+			wantPath: "/kibana/s/ops/api/alerting/rule/abc",
+		},
+		{
+			name:     "base path with empty spaceID leaves path unchanged",
+			spaceID:  "",
+			initPath: "/kibana/api/alerting/rule/abc",
+			wantPath: "/kibana/api/alerting/rule/abc",
+		},
+		{
+			name:     "base path with default spaceID leaves path unchanged",
+			spaceID:  "default",
+			initPath: "/kibana/api/alerting/rule/abc",
+			wantPath: "/kibana/api/alerting/rule/abc",
+		},
+		{
+			name:     "nested base path with custom spaceID",
+			spaceID:  "ops",
+			initPath: "/nested/prefix/api/alerting/rule/abc",
+			wantPath: "/nested/prefix/s/ops/api/alerting/rule/abc",
+		},
+		{
+			name:     "no api anchor falls back to prepend at root",
+			spaceID:  "ops",
+			initPath: "/internal/observability/slos/_definitions",
+			wantPath: "/s/ops/internal/observability/slos/_definitions",
+		},
 	}
 
 	for _, tc := range tests {
