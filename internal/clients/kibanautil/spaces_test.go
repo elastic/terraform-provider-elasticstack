@@ -57,6 +57,24 @@ func TestBuildSpaceAwarePath(t *testing.T) {
 			basePath: "",
 			want:     "/s/my-space",
 		},
+		{
+			name:     "base path with custom spaceID inserts before api",
+			spaceID:  "my-space",
+			basePath: "/kibana/api/fleet/outputs",
+			want:     "/kibana/s/my-space/api/fleet/outputs",
+		},
+		{
+			name:     "nested base path with custom spaceID inserts before api",
+			spaceID:  "my-space",
+			basePath: "/nested/prefix/api/fleet/outputs",
+			want:     "/nested/prefix/s/my-space/api/fleet/outputs",
+		},
+		{
+			name:     "no api anchor falls back to prepend at root",
+			spaceID:  "my-space",
+			basePath: "/internal/observability/slos/_definitions",
+			want:     "/s/my-space/internal/observability/slos/_definitions",
+		},
 	}
 
 	for _, tc := range tests {
