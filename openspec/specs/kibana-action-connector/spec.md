@@ -1,7 +1,7 @@
 # `elasticstack_kibana_action_connector` — Schema and Functional Requirements
 
 Resource implementation: `internal/kibana/connectors`
-Data source implementation: `internal/kibana/connector_data_source.go`
+Data source implementation: `internal/kibana/connectors/data_source.go`
 
 ## Purpose
 
