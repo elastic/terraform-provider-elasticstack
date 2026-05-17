@@ -83,7 +83,11 @@ func readConnectorDataSource(ctx context.Context, client *clients.KibanaScopedCl
 	model.SpaceID = types.StringValue(connector.SpaceID)
 	model.Name = types.StringValue(connector.Name)
 	model.ConnectorTypeID = types.StringValue(connector.ConnectorTypeID)
-	model.Config = jsontypes.NewNormalizedValue(connector.ConfigJSON)
+	if connector.ConfigJSON != "" {
+		model.Config = jsontypes.NewNormalizedValue(connector.ConfigJSON)
+	} else {
+		model.Config = jsontypes.NewNormalizedNull()
+	}
 	model.IsDeprecated = types.BoolValue(connector.IsDeprecated)
 	model.IsMissingSecrets = types.BoolValue(connector.IsMissingSecrets)
 	model.IsPreconfigured = types.BoolValue(connector.IsPreconfigured)
