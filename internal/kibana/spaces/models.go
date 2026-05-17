@@ -56,8 +56,8 @@ type resourceModel struct {
 	Solution         types.String `tfsdk:"solution"`
 }
 
-func (m resourceModel) GetID() types.String         { return m.SpaceID }
-func (m resourceModel) GetResourceID() types.String { return m.SpaceID }
+func (m resourceModel) GetID() types.String         { return m.ID }
+func (m resourceModel) GetResourceID() types.String { return m.ID }
 func (m resourceModel) GetSpaceID() types.String    { return types.StringValue("default") }
 
 var spaceSolutionMinVersion = version.Must(version.NewVersion("8.16.0"))
