@@ -4,7 +4,6 @@
 // ownership. Elasticsearch B.V. licenses this file to you under
 // the Apache License, Version 2.0 (the "License"); you may
 // not use this file except in compliance with the License.
-//
 // You may obtain a copy of the License at
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -79,11 +78,12 @@ func TestUnitFlattenExpandRemoteIndicesRoundTrip(t *testing.T) {
 
 func TestUnitFlattenExpandKibanaBaseRoundTrip(t *testing.T) {
 	ctx := context.Background()
+	spaces := []string{"default"}
 	kcfg := []kibanaoapi.SecurityRoleKibana{
 		{
 			Base:    mustMarshalJSON(t, []string{"all"}),
 			Feature: nil,
-			Spaces:  ptrStrings([]string{"default"}),
+			Spaces:  &spaces,
 		},
 	}
 	set, diags := flattenKibana(ctx, kcfg)
@@ -102,10 +102,11 @@ func TestUnitFlattenExpandKibanaFeatureRoundTrip(t *testing.T) {
 	fm := map[string][]string{
 		"discover": {"minimal_read", "url_create"},
 	}
+	spaces := []string{"default"}
 	kcfg := []kibanaoapi.SecurityRoleKibana{
 		{
 			Feature: &fm,
-			Spaces:  ptrStrings([]string{"default"}),
+			Spaces:  &spaces,
 		},
 	}
 	set, diags := flattenKibana(ctx, kcfg)
@@ -123,8 +124,8 @@ func TestUnitExpandElasticsearchOmitsEmptyClusterAndRunAs(t *testing.T) {
 	ctx := context.Background()
 	es := kibanaoapi.SecurityRoleES{
 		Indices: &[]kibanaoapi.SecurityRoleESIndex{{
-			Names:       []string{"my-index"},
-			Privileges:  []string{"read"},
+			Names:         []string{"my-index"},
+			Privileges:    []string{"read"},
 			FieldSecurity: nil,
 		}},
 	}
@@ -150,17 +151,16 @@ func TestUnitMetadataJSONRoundTrip(t *testing.T) {
 
 func TestUnitFlattenKibanaInvalidBaseReturnsError(t *testing.T) {
 	ctx := context.Background()
+	spaces := []string{"default"}
 	kcfg := []kibanaoapi.SecurityRoleKibana{
 		{
 			Base:   []byte(`{"unexpected":"shape"}`),
-			Spaces: ptrStrings([]string{"default"}),
+			Spaces: &spaces,
 		},
 	}
 	_, diags := flattenKibana(ctx, kcfg)
 	require.True(t, diags.HasError(), "expected diagnostic for malformed kibana.base payload")
 }
-
-func ptrStrings(s []string) *[]string { return &s }
 
 func mustMarshalJSON(t *testing.T, v any) []byte {
 	t.Helper()

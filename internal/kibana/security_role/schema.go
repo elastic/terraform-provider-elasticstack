@@ -4,7 +4,6 @@
 // ownership. Elasticsearch B.V. licenses this file to you under
 // the Apache License, Version 2.0 (the "License"); you may
 // not use this file except in compliance with the License.
-//
 // You may obtain a copy of the License at
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -75,17 +74,17 @@ func indicesResourceBlock() schema.Block {
 			},
 			Attributes: map[string]schema.Attribute{
 				"names": schema.SetAttribute{
-					Description:  "A list of indices (or index name patterns) to which the permissions in this entry apply.",
-					Required:     true,
-					ElementType:  types.StringType,
+					Description: "A list of indices (or index name patterns) to which the permissions in this entry apply.",
+					Required:    true,
+					ElementType: types.StringType,
 					Validators: []validator.Set{
 						setvalidator.SizeAtLeast(1),
 					},
 				},
 				"privileges": schema.SetAttribute{
-					Description:  "The index level privileges that the owners of the role have on the specified indices.",
-					Required:     true,
-					ElementType:  types.StringType,
+					Description: "The index level privileges that the owners of the role have on the specified indices.",
+					Required:    true,
+					ElementType: types.StringType,
 					Validators: []validator.Set{
 						setvalidator.SizeAtLeast(1),
 					},
@@ -122,17 +121,17 @@ func remoteIndicesResourceBlock() schema.Block {
 					ElementType: types.StringType,
 				},
 				"names": schema.SetAttribute{
-					Description:  "A list of indices (or index name patterns) to which the permissions in this entry apply.",
-					Required:     true,
-					ElementType:  types.StringType,
+					Description: "A list of indices (or index name patterns) to which the permissions in this entry apply.",
+					Required:    true,
+					ElementType: types.StringType,
 					Validators: []validator.Set{
 						setvalidator.SizeAtLeast(1),
 					},
 				},
 				"privileges": schema.SetAttribute{
-					Description:  "The index level privileges that the owners of the role have on the specified indices.",
-					Required:     true,
-					ElementType:  types.StringType,
+					Description: "The index level privileges that the owners of the role have on the specified indices.",
+					Required:    true,
+					ElementType: types.StringType,
 					Validators: []validator.Set{
 						setvalidator.SizeAtLeast(1),
 					},
@@ -183,8 +182,8 @@ func getResourceSchema(_ context.Context) schema.Schema {
 						},
 						"base": schema.SetAttribute{
 							Description: "A base privilege. When specified, the base must be [\"all\"] or [\"read\"]. When the base privileges are specified, you are unable to use the \"feature\" section.",
-							Optional:      true,
-							ElementType:   types.StringType,
+							Optional:    true,
+							ElementType: types.StringType,
 							Validators: []validator.Set{
 								setvalidator.SizeAtMost(1),
 								setvalidator.ValueStringsAre(

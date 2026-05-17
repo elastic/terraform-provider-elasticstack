@@ -4,7 +4,6 @@
 // ownership. Elasticsearch B.V. licenses this file to you under
 // the Apache License, Version 2.0 (the "License"); you may
 // not use this file except in compliance with the License.
-//
 // You may obtain a copy of the License at
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -38,11 +37,11 @@ type esIndexPlan struct {
 }
 
 type esRemotePlan struct {
-	Clusters       types.Set            `tfsdk:"clusters"`
-	Names          types.Set            `tfsdk:"names"`
-	Privileges     types.Set            `tfsdk:"privileges"`
-	Query          jsontypes.Normalized `tfsdk:"query"`
-	FieldSecurity  types.List           `tfsdk:"field_security"`
+	Clusters      types.Set            `tfsdk:"clusters"`
+	Names         types.Set            `tfsdk:"names"`
+	Privileges    types.Set            `tfsdk:"privileges"`
+	Query         jsontypes.Normalized `tfsdk:"query"`
+	FieldSecurity types.List           `tfsdk:"field_security"`
 }
 
 type esBlockPlan struct {
@@ -276,14 +275,14 @@ func expandKibana(ctx context.Context, set types.Set) ([]kibanaoapi.SecurityRole
 		if !block.Feature.IsNull() && !block.Feature.IsUnknown() {
 			featureLen = len(block.Feature.Elements())
 		}
-		if baseLen > 0 && featureLen > 0 {
+		switch {
+		case baseLen > 0 && featureLen > 0:
 			diags.AddError(
 				"Invalid kibana privileges",
 				"Only one of the `feature` or `base` privileges allowed!",
 			)
 			return nil, diags
-		}
-		if baseLen > 0 {
+		case baseLen > 0:
 			var base []string
 			diags.Append(block.Base.ElementsAs(ctx, &base, false)...)
 			if diags.HasError() {
@@ -295,7 +294,7 @@ func expandKibana(ctx context.Context, set types.Set) ([]kibanaoapi.SecurityRole
 				return nil, diags
 			}
 			entry.Base = raw
-		} else if featureLen > 0 {
+		case featureLen > 0:
 			featureMap := map[string][]string{}
 			for _, fe := range block.Feature.Elements() {
 				fObj, ok := fe.(types.Object)
@@ -316,7 +315,7 @@ func expandKibana(ctx context.Context, set types.Set) ([]kibanaoapi.SecurityRole
 				featureMap[f.Name.ValueString()] = privs
 			}
 			entry.Feature = &featureMap
-		} else {
+		default:
 			diags.AddError(
 				"Invalid kibana privileges",
 				"Either one of the `feature` or `base` privileges must be set for kibana role!",
