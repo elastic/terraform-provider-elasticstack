@@ -21,10 +21,10 @@
 
 ## 4. index/templateilmattachment: Migrate Create and Update overrides
 
-- [ ] 4.1 Implement `GetVersionRequirements()` on `tfModel` in `internal/elasticsearch/index/templateilmattachment/` returning a single requirement for ES ≥ 8.2.0, satisfying `entitycore.WithVersionRequirements`
-- [ ] 4.2 Remove `func (r *Resource) Create` and `func (r *Resource) Update` method receivers from `internal/elasticsearch/index/templateilmattachment/create.go` and `update.go`
-- [ ] 4.3 Create a `writeILMAttachmentCallback` `WriteFunc[tfModel]` that calls the existing `writeILMAttachment` pure function; use `req.Prior == nil` to pass the `isCreate bool` argument
-- [ ] 4.4 Update `internal/elasticsearch/index/templateilmattachment/resource.go` to wire the new callback as both `Create` and `Update` (replacing the placeholders)
+- [x] 4.1 Implement `GetVersionRequirements()` on `tfModel` in `internal/elasticsearch/index/templateilmattachment/` returning a single requirement for ES ≥ 8.2.0, satisfying `entitycore.WithVersionRequirements`
+- [x] 4.2 Remove `func (r *Resource) Create` and `func (r *Resource) Update` method receivers from `internal/elasticsearch/index/templateilmattachment/create.go` and `update.go`
+- [x] 4.3 Create a `writeILMAttachmentCallback` `WriteFunc[tfModel]` that calls the existing `writeILMAttachment` pure function; use `req.Prior == nil` to pass the `isCreate bool` argument
+- [x] 4.4 Update `internal/elasticsearch/index/templateilmattachment/resource.go` to wire the new callback as both `Create` and `Update` (replacing the placeholders)
 
 ## 5. security/api_key: Migrate Update override
 
