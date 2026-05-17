@@ -27,6 +27,76 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestIsURL_ValidateString(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name        string
+		validator   validator.String
+		value       types.String
+		expectError bool
+	}{
+		{
+			name:        "valid https URL accepted",
+			validator:   IsURL("http", "https"),
+			value:       types.StringValue("https://s3.example.com"),
+			expectError: false,
+		},
+		{
+			name:        "valid http URL with port accepted",
+			validator:   IsURL("http", "https"),
+			value:       types.StringValue("http://s3.example.com:9000"),
+			expectError: false,
+		},
+		{
+			name:        "https:// with no host rejected",
+			validator:   IsURL("http", "https"),
+			value:       types.StringValue("https://"),
+			expectError: true,
+		},
+		{
+			name:        "http:example rejected (no authority)",
+			validator:   IsURL("http", "https"),
+			value:       types.StringValue("http:example"),
+			expectError: true,
+		},
+		{
+			name:        "disallowed scheme rejected before host check",
+			validator:   IsURL("http", "https"),
+			value:       types.StringValue("ftp://example.com"),
+			expectError: true,
+		},
+		{
+			name:        "null value skips validation",
+			validator:   IsURL("http", "https"),
+			value:       types.StringNull(),
+			expectError: false,
+		},
+		{
+			name:        "empty string skips validation",
+			validator:   IsURL("http", "https"),
+			value:       types.StringValue(""),
+			expectError: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			resp := &validator.StringResponse{}
+			tc.validator.ValidateString(context.Background(), validator.StringRequest{
+				Path:        path.Root("v"),
+				ConfigValue: tc.value,
+			}, resp)
+			if tc.expectError {
+				require.True(t, resp.Diagnostics.HasError(), "expected error")
+			} else {
+				require.False(t, resp.Diagnostics.HasError(), "unexpected error: %s", resp.Diagnostics)
+			}
+		})
+	}
+}
+
 func TestIsURI_ValidateString(t *testing.T) {
 	t.Parallel()
 

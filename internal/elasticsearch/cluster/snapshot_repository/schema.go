@@ -278,7 +278,7 @@ func s3Block() schema.Block {
 			Optional:            true,
 			Computed:            true,
 			Validators: []validator.String{
-				validators.IsURI("http", "https"),
+				validators.IsURL("http", "https"),
 			},
 		},
 		"client": schema.StringAttribute{

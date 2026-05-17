@@ -30,6 +30,7 @@ import (
 
 type uriValidator struct {
 	allowedSchemes []string
+	requireHost   bool
 }
 
 // IsURI returns a string validator that ensures the value is a parseable
@@ -41,6 +42,16 @@ func IsURI(allowedSchemes ...string) validator.String {
 		normalized[i] = strings.ToLower(s)
 	}
 	return uriValidator{allowedSchemes: normalized}
+}
+
+// IsURL is like IsURI but additionally requires a non-empty host, ensuring
+// values like "https://" or "http:example" are rejected.
+func IsURL(allowedSchemes ...string) validator.String {
+	normalized := make([]string, len(allowedSchemes))
+	for i, s := range allowedSchemes {
+		normalized[i] = strings.ToLower(s)
+	}
+	return uriValidator{allowedSchemes: normalized, requireHost: true}
 }
 
 func (v uriValidator) Description(_ context.Context) string {
@@ -79,6 +90,15 @@ func (v uriValidator) ValidateString(_ context.Context, req validator.StringRequ
 			req.Path,
 			"Invalid URI scheme",
 			fmt.Sprintf("%q uses scheme %q; allowed schemes are: %s.", val, parsed.Scheme, strings.Join(v.allowedSchemes, ", ")),
+		)
+		return
+	}
+
+	if v.requireHost && parsed.Host == "" {
+		resp.Diagnostics.AddAttributeError(
+			req.Path,
+			"Invalid URL",
+			fmt.Sprintf("%q must be a valid URL with a non-empty host.", val),
 		)
 	}
 }
