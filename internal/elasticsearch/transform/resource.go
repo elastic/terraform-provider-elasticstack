@@ -35,8 +35,9 @@ var (
 	_ resource.ResourceWithUpgradeState = newTransformResource()
 )
 
-// transformResource wraps the entitycore envelope; UpgradeState and ImportState
-// live on this concrete type.
+// transformResource wraps the entitycore envelope. Create and Update are
+// implemented via the shared writeTransform WriteFunc (no method receiver
+// overrides); UpgradeState and ImportState live on this concrete type.
 type transformResource struct {
 	*entitycore.ElasticsearchResource[tfModel]
 }
