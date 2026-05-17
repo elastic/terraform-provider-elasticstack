@@ -18,6 +18,7 @@
 package lensdashboardapp
 
 import (
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 )
 
@@ -38,7 +39,7 @@ func classifyLensDashboardAppConfigFromRoot(root map[string]any) lensConfigClass
 	switch {
 	case hasLensByValueChartTypeAtRoot(root):
 		return lensConfigClassByValueChart
-	case hasLensByReferenceShapeAtRoot(root):
+	case lenscommon.HasLensByReferenceShapeAtRoot(root):
 		return lensConfigClassByReference
 	default:
 		return lensConfigClassAmbiguous
@@ -55,31 +56,6 @@ func hasLensByValueChartTypeAtRoot(m map[string]any) bool {
 	}
 	s, ok := v.(string)
 	return ok && s != ""
-}
-
-func hasLensByReferenceShapeAtRoot(m map[string]any) bool {
-	if m == nil {
-		return false
-	}
-	ref, ok := m["ref_id"]
-	if !ok {
-		return false
-	}
-	refS, ok := ref.(string)
-	if !ok || refS == "" {
-		return false
-	}
-	trAny, ok := m["time_range"]
-	if !ok {
-		return false
-	}
-	tr, ok := trAny.(map[string]any)
-	if !ok {
-		return false
-	}
-	from, fOK := tr["from"].(string)
-	to, tOK := tr["to"].(string)
-	return fOK && tOK && from != "" && to != ""
 }
 
 // configPriorForLensRead returns the last known lens_dashboard_app_config from plan/state.

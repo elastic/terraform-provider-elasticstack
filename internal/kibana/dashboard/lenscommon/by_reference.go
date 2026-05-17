@@ -27,6 +27,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -140,6 +141,73 @@ func VisByReferenceConfig1FromLens(in kbapi.KbnDashboardPanelTypeLensDashboardAp
 		return kbapi.KbnDashboardPanelTypeVisConfig1{}, diags
 	}
 	return out, diags
+}
+
+// HasLensByReferenceShapeAtRoot reports whether m has the by-reference shape: a non-empty ref_id
+// and a time_range with non-empty from/to strings.
+func HasLensByReferenceShapeAtRoot(m map[string]any) bool {
+	if m == nil {
+		return false
+	}
+	ref, ok := m["ref_id"]
+	if !ok {
+		return false
+	}
+	refS, ok := ref.(string)
+	if !ok || refS == "" {
+		return false
+	}
+	trAny, ok := m["time_range"]
+	if !ok {
+		return false
+	}
+	tr, ok := trAny.(map[string]any)
+	if !ok {
+		return false
+	}
+	from, fOK := tr["from"].(string)
+	to, tOK := tr["to"].(string)
+	return fOK && tOK && from != "" && to != ""
+}
+
+// LensByReferenceAttributes returns the shared Terraform schema attribute map for a by-reference
+// lens panel config block (ref_id, references_json, title, description, hide_title, hide_border,
+// drilldowns, time_range). Used by both lens_dashboard_app_config and vis_config.
+func LensByReferenceAttributes() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"ref_id": schema.StringAttribute{
+			MarkdownDescription: "Reference name in the API `ref_id` field. When `references_json` is set, `ref_id` typically should match a `name` in that list so the link resolves as expected.",
+			Required:            true,
+		},
+		"references_json": schema.StringAttribute{
+			MarkdownDescription: "Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the API `references` list (for example wiring a `lens` saved object to `ref_id`).",
+			Optional:            true,
+			CustomType:          jsontypes.NormalizedType{},
+		},
+		"title": schema.StringAttribute{
+			MarkdownDescription: "Optional panel title.",
+			Optional:            true,
+		},
+		"description": schema.StringAttribute{
+			MarkdownDescription: "Optional panel description.",
+			Optional:            true,
+		},
+		"hide_title": schema.BoolAttribute{
+			MarkdownDescription: "When true, suppresses the panel title.",
+			Optional:            true,
+		},
+		"hide_border": schema.BoolAttribute{
+			MarkdownDescription: "When true, suppresses the panel border.",
+			Optional:            true,
+		},
+		"drilldowns": panelkit.StructuredDrilldownsAttribute(),
+		"time_range": schema.SingleNestedAttribute{
+			MarkdownDescription: "Required time range for the by-reference panel config " +
+				"(used by both `lens_dashboard_app_config.by_reference` and `vis_config.by_reference`).",
+			Required:   true,
+			Attributes: panelkit.TimeRangeAttributes(),
+		},
+	}
 }
 
 // PopulateLensByReferenceTFModelFromLensAppConfig1 maps API Config1 fields into the Terraform `by_reference` model with REQ-009 preservation semantics.
