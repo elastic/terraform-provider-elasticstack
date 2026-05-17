@@ -34,11 +34,17 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 		return
 	}
 
+	client, clientDiags := r.Client().GetElasticsearchClient(ctx, planModel.GetElasticsearchConnection())
+	resp.Diagnostics.Append(clientDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	if planModel.Type.ValueString() == "cross_cluster" {
-		updateDiags := r.updateCrossClusterAPIKey(ctx, planModel)
+		updateDiags := updateCrossClusterAPIKey(ctx, client, planModel)
 		resp.Diagnostics.Append(updateDiags...)
 	} else {
-		updateDiags := r.updateAPIKey(ctx, planModel)
+		updateDiags := updateAPIKey(ctx, client, planModel)
 		resp.Diagnostics.Append(updateDiags...)
 	}
 
@@ -52,13 +58,7 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 		return
 	}
 
-	esClient, clientDiags := r.Client().GetElasticsearchClient(ctx, planModel.GetElasticsearchConnection())
-	resp.Diagnostics.Append(clientDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	finalModel, found, readDiags := readAPIKey(ctx, esClient, compID.ResourceID, planModel)
+	finalModel, found, readDiags := readAPIKey(ctx, client, compID.ResourceID, planModel)
 	resp.Diagnostics.Append(readDiags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -71,13 +71,9 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 	resp.Diagnostics.Append(resp.State.Set(ctx, finalModel)...)
 }
 
-func (r *Resource) updateCrossClusterAPIKey(ctx context.Context, planModel tfModel) diag.Diagnostics {
-	client, diags := r.Client().GetElasticsearchClient(ctx, planModel.ElasticsearchConnection)
-	if diags.HasError() {
-		return diags
-	}
+func updateCrossClusterAPIKey(ctx context.Context, client *clients.ElasticsearchScopedClient, planModel tfModel) diag.Diagnostics {
+	var diags diag.Diagnostics
 
-	// Handle cross-cluster API key update
 	updateRequest, modelDiags := planModel.toUpdateCrossClusterAPIRequest(ctx)
 	diags.Append(modelDiags...)
 	if diags.HasError() {
@@ -88,19 +84,14 @@ func (r *Resource) updateCrossClusterAPIKey(ctx context.Context, planModel tfMod
 	return diags
 }
 
-func (r *Resource) updateAPIKey(ctx context.Context, planModel tfModel) diag.Diagnostics {
-	client, diags := r.Client().GetElasticsearchClient(ctx, planModel.ElasticsearchConnection)
+func updateAPIKey(ctx context.Context, client *clients.ElasticsearchScopedClient, planModel tfModel) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	diags.Append(validateRestrictionSupport(ctx, client, planModel)...)
 	if diags.HasError() {
 		return diags
 	}
 
-	// Validate restriction support
-	diags.Append(r.validateRestrictionSupport(ctx, planModel)...)
-	if diags.HasError() {
-		return diags
-	}
-
-	// Handle regular API key update
 	updateRequest, modelDiags := planModel.toUpdateAPIRequest()
 	diags.Append(modelDiags...)
 	if diags.HasError() {

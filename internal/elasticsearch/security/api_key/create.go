@@ -82,7 +82,7 @@ func (r Resource) Create(ctx context.Context, req resource.CreateRequest, resp *
 	resp.Diagnostics.Append(resp.State.Set(ctx, finalModel)...)
 }
 
-func (r Resource) validateRestrictionSupport(ctx context.Context, model tfModel) diag.Diagnostics {
+func validateRestrictionSupport(ctx context.Context, client *clients.ElasticsearchScopedClient, model tfModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	if !typeutils.IsKnown(model.RoleDescriptors) {
@@ -106,7 +106,7 @@ func (r Resource) validateRestrictionSupport(ctx context.Context, model tfModel)
 	}
 
 	if hasRestriction {
-		isSupported, supportDiags := r.doesCurrentVersionSupportRestrictionOnAPIKey(ctx, model)
+		isSupported, supportDiags := doesCurrentVersionSupportRestrictionOnAPIKey(ctx, client)
 		diags.Append(supportDiags...)
 		if diags.HasError() {
 			return diags
@@ -125,11 +125,8 @@ func (r Resource) validateRestrictionSupport(ctx context.Context, model tfModel)
 	return diags
 }
 
-func (r Resource) doesCurrentVersionSupportRestrictionOnAPIKey(ctx context.Context, model tfModel) (bool, diag.Diagnostics) {
-	client, diags := r.Client().GetElasticsearchClient(ctx, model.ElasticsearchConnection)
-	if diags.HasError() {
-		return false, diags
-	}
+func doesCurrentVersionSupportRestrictionOnAPIKey(ctx context.Context, client *clients.ElasticsearchScopedClient) (bool, diag.Diagnostics) {
+	var diags diag.Diagnostics
 
 	currentVersion, sdkDiags := client.ServerVersion(ctx)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
@@ -140,11 +137,8 @@ func (r Resource) doesCurrentVersionSupportRestrictionOnAPIKey(ctx context.Conte
 	return currentVersion.GreaterThanOrEqual(MinVersionWithRestriction), diags
 }
 
-func (r Resource) doesCurrentVersionSupportCrossClusterAPIKey(ctx context.Context, model tfModel) (bool, diag.Diagnostics) {
-	client, diags := r.Client().GetElasticsearchClient(ctx, model.ElasticsearchConnection)
-	if diags.HasError() {
-		return false, diags
-	}
+func doesCurrentVersionSupportCrossClusterAPIKey(ctx context.Context, client *clients.ElasticsearchScopedClient) (bool, diag.Diagnostics) {
+	var diags diag.Diagnostics
 
 	currentVersion, sdkDiags := client.ServerVersion(ctx)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
@@ -162,7 +156,7 @@ func (r *Resource) createCrossClusterAPIKey(ctx context.Context, planModel *tfMo
 	}
 
 	// Check if the current version supports cross-cluster API keys
-	isSupported, supportDiags := r.doesCurrentVersionSupportCrossClusterAPIKey(ctx, *planModel)
+	isSupported, supportDiags := doesCurrentVersionSupportCrossClusterAPIKey(ctx, client)
 	diags.Append(supportDiags...)
 	if diags.HasError() {
 		return diags
@@ -214,7 +208,7 @@ func (r *Resource) createAPIKey(ctx context.Context, planModel *tfModel) diag.Di
 	}
 
 	// Validate restriction support
-	diags.Append(r.validateRestrictionSupport(ctx, *planModel)...)
+	diags.Append(validateRestrictionSupport(ctx, client, *planModel)...)
 	if diags.HasError() {
 		return diags
 	}
