@@ -713,7 +713,10 @@ func reconcileNestedThreatLists(ctx context.Context, reference, target *Data) {
 					}
 				}
 				// Rebuild technique list with updated subtechniques
-				rebuiltTechs, _ := types.ListValueFrom(ctx, getThreatTechniqueElementType(), targetTechs)
+				rebuiltTechs, techDiags := types.ListValueFrom(ctx, getThreatTechniqueElementType(), targetTechs)
+				if techDiags.HasError() {
+					continue
+				}
 				targetThreats[i].Technique = rebuiltTechs
 			}
 		}

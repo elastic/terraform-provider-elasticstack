@@ -2353,6 +2353,22 @@ func TestReconcileEmptyListsFromPlan(t *testing.T) {
 			if !tt.expectSeverity.IsNull() {
 				require.Len(t, tt.target.SeverityMapping.Elements(), len(tt.expectSeverity.Elements()), "SeverityMapping length mismatch")
 			}
+			require.Equal(t, tt.reference.ExceptionsList.IsNull(), tt.target.ExceptionsList.IsNull(), "ExceptionsList null mismatch")
+			if !tt.reference.ExceptionsList.IsNull() {
+				require.Len(t, tt.target.ExceptionsList.Elements(), len(tt.reference.ExceptionsList.Elements()), "ExceptionsList length mismatch")
+			}
+			require.Equal(t, tt.reference.RiskScoreMapping.IsNull(), tt.target.RiskScoreMapping.IsNull(), "RiskScoreMapping null mismatch")
+			if !tt.reference.RiskScoreMapping.IsNull() {
+				require.Len(t, tt.target.RiskScoreMapping.Elements(), len(tt.reference.RiskScoreMapping.Elements()), "RiskScoreMapping length mismatch")
+			}
+			require.Equal(t, tt.reference.RelatedIntegrations.IsNull(), tt.target.RelatedIntegrations.IsNull(), "RelatedIntegrations null mismatch")
+			if !tt.reference.RelatedIntegrations.IsNull() {
+				require.Len(t, tt.target.RelatedIntegrations.Elements(), len(tt.reference.RelatedIntegrations.Elements()), "RelatedIntegrations length mismatch")
+			}
+			require.Equal(t, tt.reference.ThreatMapping.IsNull(), tt.target.ThreatMapping.IsNull(), "ThreatMapping null mismatch")
+			if !tt.reference.ThreatMapping.IsNull() {
+				require.Len(t, tt.target.ThreatMapping.Elements(), len(tt.reference.ThreatMapping.Elements()), "ThreatMapping length mismatch")
+			}
 		})
 	}
 }
