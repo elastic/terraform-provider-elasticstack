@@ -39,8 +39,7 @@ func writeIndexTemplate(ctx context.Context, client *clients.ElasticsearchScoped
 	indexTemplate, buildDiags := plan.toAPIModel(ctx)
 	diags.Append(buildDiags...)
 	if diags.HasError() {
-		var zero Model
-		return entitycore.WriteResult[Model]{Model: zero}, diags
+		return entitycore.WriteResult[Model]{}, diags
 	}
 
 	if req.Prior != nil {
@@ -49,8 +48,7 @@ func writeIndexTemplate(ctx context.Context, client *clients.ElasticsearchScoped
 
 	diags.Append(elasticsearch.PutIndexTemplate(ctx, client, indexTemplate)...)
 	if diags.HasError() {
-		var zero Model
-		return entitycore.WriteResult[Model]{Model: zero}, diags
+		return entitycore.WriteResult[Model]{}, diags
 	}
 
 	priorForRead := req.Config
@@ -60,8 +58,7 @@ func writeIndexTemplate(ctx context.Context, client *clients.ElasticsearchScoped
 		id, sdkDiags := client.ID(ctx, plan.Name.ValueString())
 		diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 		if diags.HasError() {
-			var zero Model
-			return entitycore.WriteResult[Model]{Model: zero}, diags
+			return entitycore.WriteResult[Model]{}, diags
 		}
 		priorForRead.ID = types.StringValue(id.String())
 	} else {

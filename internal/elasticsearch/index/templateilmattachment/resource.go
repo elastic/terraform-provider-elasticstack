@@ -46,8 +46,8 @@ func newResource() *Resource {
 			Schema: getSchema,
 			Read:   readILMAttachment,
 			Delete: deleteILMAttachment,
-			Create: writeILMAttachmentCallback,
-			Update: writeILMAttachmentCallback,
+			Create: writeILMAttachment,
+			Update: writeILMAttachment,
 		}),
 	}
 }

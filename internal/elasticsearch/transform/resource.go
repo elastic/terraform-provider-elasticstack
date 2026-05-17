@@ -48,7 +48,7 @@ func newTransformResource() *transformResource {
 			Schema: getSchema,
 			Read:   readTransform,
 			Delete: deleteTransform,
-			Create: writeTransform,
+			Create: createTransform,
 			Update: writeTransform,
 		}),
 	}

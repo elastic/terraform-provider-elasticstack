@@ -31,15 +31,20 @@ import (
 )
 
 // writeILMAttachment reads the existing component template, merges the ILM
-// lifecycle setting into its settings, and writes it back. The isCreate flag
-// controls whether an extra warning is emitted when the template already has
-// an ILM setting.
-func writeILMAttachment(ctx context.Context, client *clients.ElasticsearchScopedClient, componentTemplateName string, plan tfModel, isCreate bool) (tfModel, diag.Diagnostics) {
+// lifecycle setting into its settings, and writes it back. req.Prior == nil
+// indicates a Create invocation; non-nil indicates Update. The isCreate flag
+// derived from this controls whether an extra warning is emitted when the
+// template already has an ILM setting.
+func writeILMAttachment(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.WriteRequest[tfModel]) (entitycore.WriteResult[tfModel], diag.Diagnostics) {
+	plan := req.Plan
+	isCreate := req.Prior == nil
+	componentTemplateName := plan.getComponentTemplateName()
+
 	var diags diag.Diagnostics
 
 	existingRaw, sdkDiags := elasticsearch.GetComponentTemplate(ctx, client, componentTemplateName)
 	if sdkDiags.HasError() {
-		return plan, diagutil.FrameworkDiagsFromSDK(sdkDiags)
+		return entitycore.WriteResult[tfModel]{Model: plan}, diagutil.FrameworkDiagsFromSDK(sdkDiags)
 	}
 
 	existing := toModelComponentTemplateResponse(existingRaw)
@@ -85,24 +90,16 @@ func writeILMAttachment(ctx context.Context, client *clients.ElasticsearchScoped
 	)
 
 	if sdkDiags := elasticsearch.PutComponentTemplate(ctx, client, &componentTemplate); sdkDiags.HasError() {
-		return plan, diagutil.FrameworkDiagsFromSDK(sdkDiags)
+		return entitycore.WriteResult[tfModel]{Model: plan}, diagutil.FrameworkDiagsFromSDK(sdkDiags)
 	}
 
 	if isCreate {
 		id, sdkDiags := client.ID(ctx, componentTemplateName)
 		if sdkDiags.HasError() {
-			return plan, diagutil.FrameworkDiagsFromSDK(sdkDiags)
+			return entitycore.WriteResult[tfModel]{Model: plan}, diagutil.FrameworkDiagsFromSDK(sdkDiags)
 		}
 		plan.ID = types.StringValue(id.String())
 	}
 
-	return plan, diags
-}
-
-// writeILMAttachmentCallback adapts writeILMAttachment to the [entitycore.WriteFunc] contract.
-// req.Prior == nil indicates a Create invocation; non-nil indicates Update.
-func writeILMAttachmentCallback(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.WriteRequest[tfModel]) (entitycore.WriteResult[tfModel], diag.Diagnostics) {
-	isCreate := req.Prior == nil
-	updatedPlan, diags := writeILMAttachment(ctx, client, req.Plan.getComponentTemplateName(), req.Plan, isCreate)
-	return entitycore.WriteResult[tfModel]{Model: updatedPlan}, diags
+	return entitycore.WriteResult[tfModel]{Model: plan}, diags
 }

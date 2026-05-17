@@ -248,7 +248,7 @@ func (r *ElasticsearchResource[T]) Read(ctx context.Context, req resource.ReadRe
 		return
 	}
 
-	if vDiags := enforceVersionRequirements(ctx, client, &model); vDiags.HasError() {
+	if vDiags := EnforceVersionRequirements(ctx, client, &model); vDiags.HasError() {
 		resp.Diagnostics.Append(vDiags...)
 		return
 	}
@@ -355,7 +355,7 @@ func (r *ElasticsearchResource[T]) runWrite(ctx context.Context, inv writeInvoca
 		return diags
 	}
 
-	if vDiags := enforceVersionRequirements(ctx, client, &planModel); vDiags.HasError() {
+	if vDiags := EnforceVersionRequirements(ctx, client, &planModel); vDiags.HasError() {
 		diags.Append(vDiags...)
 		return diags
 	}

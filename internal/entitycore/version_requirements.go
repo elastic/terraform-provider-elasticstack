@@ -35,16 +35,18 @@ type WithVersionRequirements interface {
 	GetVersionRequirements() ([]VersionRequirement, diag.Diagnostics)
 }
 
-// minVersionClient is implemented by scoped API clients used by entity envelopes
+// MinVersionClient is implemented by scoped API clients used by entity envelopes
 // for minimum server version checks.
-type minVersionClient interface {
+type MinVersionClient interface {
 	EnforceMinVersion(ctx context.Context, minVersion *version.Version) (bool, sdkdiag.Diagnostics)
 }
 
-// enforceVersionRequirements checks whether model implements
-// WithVersionRequirements and, if so, evaluates each requirement against the
-// scoped client. It returns any diagnostics produced.
-func enforceVersionRequirements(ctx context.Context, client minVersionClient, model any) diag.Diagnostics {
+// EnforceVersionRequirements checks whether model implements
+// [WithVersionRequirements] and, if so, evaluates each requirement against the
+// scoped client. It returns any diagnostics produced. Entity envelopes call
+// this automatically; concrete resources whose Create/Update bypass the
+// envelope can invoke it directly to honor the model's declared requirements.
+func EnforceVersionRequirements(ctx context.Context, client MinVersionClient, model any) diag.Diagnostics {
 	var diags diag.Diagnostics
 	versionModel, ok := model.(WithVersionRequirements)
 	if !ok {

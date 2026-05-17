@@ -23,53 +23,35 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// createTransform calls Put Transform and optionally starts the transform when
-// enabled is true. It builds the composite ID and returns the updated model
-// ready for the envelope to persist via readTransform.
-func createTransform(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, model tfModel) (tfModel, fwdiag.Diagnostics) {
-	var diags fwdiag.Diagnostics
+// createTransform is the [entitycore.WriteFunc] wired as the resource Create
+// callback. It resolves the composite ID before issuing Put Transform so a
+// failure cannot leave an orphaned remote resource, then optionally starts the
+// transform when `enabled` is true.
+func createTransform(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.WriteRequest[tfModel]) (entitycore.WriteResult[tfModel], diag.Diagnostics) {
+	plan := req.Plan
 
-	// Resolve server version for version-gated fields.
-	serverVersion, sdkDiags := client.ServerVersion(ctx)
+	apiTransform, timeout, diags := buildTransformAPIRequest(ctx, client, plan)
+	if diags.HasError() {
+		return entitycore.WriteResult[tfModel]{Model: plan}, diags
+	}
+
+	id, sdkDiags := client.ID(ctx, plan.GetResourceID().ValueString())
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
-		return model, diags
+		return entitycore.WriteResult[tfModel]{Model: plan}, diags
 	}
 
-	// Convert PF model to API request.
-	apiTransform, convDiags := toAPIModel(ctx, model, serverVersion)
-	diags.Append(convDiags...)
-	if diags.HasError() {
-		return model, diags
-	}
-
-	timeout, parseDiags := model.Timeout.Parse()
-	diags.Append(parseDiags...)
-	if diags.HasError() {
-		return model, diags
-	}
-
-	deferValidation := model.DeferValidation.ValueBool()
-	enabled := model.Enabled.ValueBool()
-
-	// Resolve composite ID BEFORE creating the remote transform so a failure
-	// here cannot leave an orphaned remote resource.
-	id, sdkDiags := client.ID(ctx, resourceID)
+	sdkDiags = elasticsearch.PutTransform(ctx, client, apiTransform, plan.DeferValidation.ValueBool(), timeout, plan.Enabled.ValueBool())
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
-		return model, diags
+		return entitycore.WriteResult[tfModel]{Model: plan}, diags
 	}
 
-	sdkDiags = elasticsearch.PutTransform(ctx, client, apiTransform, deferValidation, timeout, enabled)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-	if diags.HasError() {
-		return model, diags
-	}
-
-	model.ID = types.StringValue(id.String())
-	return model, diags
+	plan.ID = types.StringValue(id.String())
+	return entitycore.WriteResult[tfModel]{Model: plan}, diags
 }

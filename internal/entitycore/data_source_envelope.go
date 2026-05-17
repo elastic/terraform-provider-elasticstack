@@ -224,7 +224,7 @@ func (d *genericKibanaDataSource[T]) Read(ctx context.Context, req datasource.Re
 		return
 	}
 
-	resp.Diagnostics.Append(enforceVersionRequirements(ctx, client, &model)...)
+	resp.Diagnostics.Append(EnforceVersionRequirements(ctx, client, &model)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

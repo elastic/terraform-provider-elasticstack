@@ -19,56 +19,62 @@ package transform
 
 import (
 	"context"
+	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
+// writeTransform is the [entitycore.WriteFunc] wired as the resource Update
+// callback. It calls Update Transform (which does not accept Pivot/Latest) and
+// reconciles the enabled-state delta against the prior state.
 func writeTransform(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.WriteRequest[tfModel]) (entitycore.WriteResult[tfModel], diag.Diagnostics) {
-	isCreate := req.Prior == nil
-	resourceID := req.Plan.GetResourceID().ValueString()
+	plan := req.Plan
 
-	if isCreate {
-		createdModel, createDiags := createTransform(ctx, client, resourceID, req.Plan)
-		return entitycore.WriteResult[tfModel]{Model: createdModel}, createDiags
+	apiTransform, timeout, diags := buildTransformAPIRequest(ctx, client, plan)
+	if diags.HasError() {
+		return entitycore.WriteResult[tfModel]{Model: plan}, diags
 	}
 
+	// Pivot and Latest are immutable for an existing transform; the Update
+	// Transform API rejects them.
+	apiTransform.Pivot = nil
+	apiTransform.Latest = nil
+
+	willBeEnabled := plan.Enabled.ValueBool()
+	enabledChanged := req.Prior.Enabled.ValueBool() != willBeEnabled
+
+	sdkDiags := elasticsearch.UpdateTransform(ctx, client, apiTransform, plan.DeferValidation.ValueBool(), timeout, willBeEnabled, enabledChanged)
+	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	return entitycore.WriteResult[tfModel]{Model: plan}, diags
+}
+
+// buildTransformAPIRequest performs the shared plan-to-API conversion and
+// timeout parsing used by both createTransform and writeTransform.
+func buildTransformAPIRequest(ctx context.Context, client *clients.ElasticsearchScopedClient, plan tfModel) (*models.Transform, time.Duration, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	serverVersion, sdkDiags := client.ServerVersion(ctx)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
-		return entitycore.WriteResult[tfModel]{Model: req.Plan}, diags
+		return nil, 0, diags
 	}
 
-	apiTransform, convDiags := toAPIModel(ctx, req.Plan, serverVersion)
+	apiTransform, convDiags := toAPIModel(ctx, plan, serverVersion)
 	diags.Append(convDiags...)
 	if diags.HasError() {
-		return entitycore.WriteResult[tfModel]{Model: req.Plan}, diags
+		return nil, 0, diags
 	}
-	apiTransform.Pivot = nil
-	apiTransform.Latest = nil
 
-	timeout, parseDiags := req.Plan.Timeout.Parse()
+	timeout, parseDiags := plan.Timeout.Parse()
 	diags.Append(parseDiags...)
 	if diags.HasError() {
-		return entitycore.WriteResult[tfModel]{Model: req.Plan}, diags
+		return nil, 0, diags
 	}
 
-	deferValidation := req.Plan.DeferValidation.ValueBool()
-
-	wasEnabled := req.Prior.Enabled.ValueBool()
-	willBeEnabled := req.Plan.Enabled.ValueBool()
-	enabledChanged := wasEnabled != willBeEnabled
-
-	sdkDiags = elasticsearch.UpdateTransform(ctx, client, apiTransform, deferValidation, timeout, willBeEnabled, enabledChanged)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-	if diags.HasError() {
-		return entitycore.WriteResult[tfModel]{Model: req.Plan}, diags
-	}
-
-	return entitycore.WriteResult[tfModel]{Model: req.Plan}, diags
+	return apiTransform, timeout, diags
 }

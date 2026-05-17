@@ -53,11 +53,6 @@ func updateCrossClusterAPIKey(ctx context.Context, client *clients.Elasticsearch
 func updateAPIKey(ctx context.Context, client *clients.ElasticsearchScopedClient, planModel tfModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	diags.Append(validateRestrictionSupport(ctx, client, planModel)...)
-	if diags.HasError() {
-		return diags
-	}
-
 	updateRequest, modelDiags := planModel.toUpdateAPIRequest()
 	diags.Append(modelDiags...)
 	if diags.HasError() {
