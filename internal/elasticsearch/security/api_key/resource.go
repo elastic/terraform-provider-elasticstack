@@ -46,8 +46,8 @@ var (
 )
 
 // Resource embeds ElasticsearchResource[tfModel] to inherit Configure, Metadata,
-// Schema, Read, Delete, and PostRead cluster-version caching.
-// Create and Update are defined on the concrete type.
+// Schema, Read, Update (via writeAPIKey), Delete, and PostRead cluster-version caching.
+// Create is defined on the concrete type to bypass the envelope write path.
 type Resource struct {
 	*entitycore.ElasticsearchResource[tfModel]
 }
@@ -64,7 +64,7 @@ func newResource() *Resource {
 			Read:     readAPIKey,
 			Delete:   deleteAPIKey,
 			Create:   placeholder,
-			Update:   placeholder,
+			Update:   writeAPIKey,
 			PostRead: postReadPersistClusterVersion,
 		}),
 	}
