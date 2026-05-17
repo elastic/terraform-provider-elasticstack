@@ -25,10 +25,6 @@ import (
 
 var alertingDurationRegex = regexp.MustCompile(`^[1-9][0-9]*(?:d|h|m|s)$`)
 
-func StringMatchesAlertingDurationRegex(s string) (matched bool, err error) {
-	return alertingDurationRegex.MatchString(s), nil
-}
-
 var StringIsAlertingDuration = stringvalidator.RegexMatches(
 	alertingDurationRegex,
 	"This value must be a valid alerting duration in seconds (s), minutes (m), hours (h), or days (d).",

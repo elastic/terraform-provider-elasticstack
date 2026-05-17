@@ -25,10 +25,6 @@ import (
 
 var onWeekDayRegex = regexp.MustCompile(`^(((\+|-)[1-5])?(MO|TU|WE|TH|FR|SA|SU))$`)
 
-func StringMatchesOnWeekDayRegex(s string) (matched bool, err error) {
-	return onWeekDayRegex.MatchString(s), nil
-}
-
 var StringIsMaintenanceWindowOnWeekDay = stringvalidator.RegexMatches(
 	onWeekDayRegex,
 	"This value must be a valid OnWeekDay. Accepted values are specific days of the week (`[MO,TU,WE,TH,FR,SA,SU]`) or nth day of month (`[+1MO, -3FR, +2WE, -4SA, -5SU]`).",

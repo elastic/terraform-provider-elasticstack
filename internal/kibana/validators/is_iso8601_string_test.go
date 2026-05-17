@@ -82,9 +82,9 @@ func TestStringMatchesISO8601(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			matched, _ := StringMatchesISO8601Regex(tt.date)
+			matched := iso8601Regex.MatchString(tt.date)
 			if matched != tt.matched {
-				t.Errorf("StringMatchesISO8601Regex() failed match = %v, want %v", matched, tt.matched)
+				t.Errorf("iso8601Regex.MatchString() failed match = %v, want %v", matched, tt.matched)
 			}
 		})
 	}
