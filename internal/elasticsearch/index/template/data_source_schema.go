@@ -71,6 +71,10 @@ func getDataSourceSchema(_ context.Context) dschema.Schema {
 				MarkdownDescription: descVersion,
 				Computed:            true,
 			},
+			"allow_auto_create": dschema.BoolAttribute{
+				MarkdownDescription: descAllowAutoCreate,
+				Computed:            true,
+			},
 		},
 	}
 }
