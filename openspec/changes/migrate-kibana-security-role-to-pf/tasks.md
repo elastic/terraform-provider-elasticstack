@@ -16,7 +16,7 @@
 
 - [x] 3.1 Create `internal/kibana/security_role/read.go` with `fetchRole(ctx, client *clients.KibanaScopedClient, name string) (*kbapi.SecurityRole, bool, diag.Diagnostics)` calling `kibanaoapi.GetSecurityRole()`; return `found=false` on 404/not-found
 - [x] 3.2 Add `readRoleResource` callback with entitycore resource signature: calls `fetchRole()`, maps response into `resourceModel` using flatten helpers, returns `found=false` to trigger state removal when role is absent
-- [x] 3.3 Add `readRoleDataSource` callback with entitycore data source signature: calls `fetchRole()` using `config.Name`, maps response into `dataSourceModel`; returns error diagnostic if not found
+- [x] 3.3 Add `readRoleDataSource` callback with entitycore data source signature: calls `fetchRole()` using `config.Name`, maps response into `dataSourceModel`; when the role is absent, clears computed attributes and returns without an error diagnostic (preserves pre-migration SDK / REQ-012 behavior so `terraform plan` shows nulls rather than failing)
 
 ## 4. Schema
 
@@ -68,4 +68,4 @@
 
 - [x] 10.1 `make build` passes
 - [x] 10.2 Unit tests pass: `go test ./internal/kibana/security_role/... -v -count=1`
-- [ ] 10.3 Acceptance tests pass: `go test ./internal/kibana/security_role/... -v -count=1 -run TestAcc`
+- [ ] 10.3 Acceptance tests pass: `go test ./internal/kibana/security_role/... -v -count=1 -run TestAcc` (validate in CI — no local Elastic stack in this worktree)
