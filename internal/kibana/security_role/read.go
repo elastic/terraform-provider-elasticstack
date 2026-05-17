@@ -20,6 +20,8 @@ package security_role
 import (
 	"context"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
@@ -58,6 +60,8 @@ func readRoleResource(ctx context.Context, client *clients.KibanaScopedClient, r
 	}
 	updated, d := resourceModelFromAPI(ctx, role, resourceID, prior)
 	diags.Append(d...)
+	updated, rd := reconcileSDKLegacyOptionalSets(updated, prior)
+	diags.Append(rd...)
 	return updated, true, diags
 }
 
@@ -94,6 +98,85 @@ func resourceModelFromAPI(ctx context.Context, role *kibanaoapi.SecurityRole, na
 	}
 
 	return out, diags
+}
+
+// reconcileSDKLegacyOptionalSets preserves Plugin SDK v2 state quirks: optional sets that were
+// stored as known-empty (elements length 0, non-null) stay that way after Read, matching
+// flatten's SetNull when the API omits the field. Without this, SDK→PF migrations show a
+// non-empty plan (PlanOnly upgrade tests).
+func reconcileSDKLegacyOptionalSets(out, prior resourceModel) (resourceModel, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	var d diag.Diagnostics
+	out.Elasticsearch, d = reconcileSingleBlockOptionalSets(
+		prior.Elasticsearch,
+		out.Elasticsearch,
+		elasticsearchBlockAttrTypes(),
+		elasticsearchBlockObjectType(),
+		map[string]struct{}{"run_as": {}},
+	)
+	diags.Append(d...)
+	out.Kibana, d = reconcileSingleBlockOptionalSets(
+		prior.Kibana,
+		out.Kibana,
+		kibanaBlockAttrTypes(),
+		kibanaBlockObjectType(),
+		map[string]struct{}{"base": {}},
+	)
+	diags.Append(d...)
+	return out, diags
+}
+
+func reconcileSingleBlockOptionalSets(
+	priorSet, outSet types.Set,
+	blockAttrTypes map[string]attr.Type,
+	blockObjType types.ObjectType,
+	nullToEmptyAttrNames map[string]struct{},
+) (types.Set, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	if priorSet.IsNull() || priorSet.IsUnknown() || outSet.IsNull() || outSet.IsUnknown() {
+		return outSet, diags
+	}
+	pElems, oElems := priorSet.Elements(), outSet.Elements()
+	if len(pElems) != 1 || len(oElems) != 1 {
+		return outSet, diags
+	}
+	pObj, pok := pElems[0].(types.Object)
+	oObj, ook := oElems[0].(types.Object)
+	if !pok || !ook {
+		return outSet, diags
+	}
+	pAttrs := pObj.Attributes()
+	outAttrs := make(map[string]attr.Value, len(oObj.Attributes()))
+	for k, v := range oObj.Attributes() {
+		outAttrs[k] = v
+	}
+	changed := false
+	for name := range nullToEmptyAttrNames {
+		oVal, ok := outAttrs[name].(types.Set)
+		if !ok || !oVal.IsNull() {
+			continue
+		}
+		pVal, ok := pAttrs[name].(types.Set)
+		if !ok || pVal.IsNull() || pVal.IsUnknown() || len(pVal.Elements()) != 0 {
+			continue
+		}
+		outAttrs[name] = pVal
+		changed = true
+	}
+	if !changed {
+		return outSet, diags
+	}
+	newObj, d := types.ObjectValue(blockAttrTypes, outAttrs)
+	diags.Append(d...)
+	if diags.HasError() {
+		return outSet, diags
+	}
+	newSet, d := types.SetValue(blockObjType, []attr.Value{newObj})
+	diags.Append(d...)
+	if diags.HasError() {
+		return outSet, diags
+	}
+	return newSet, diags
 }
 
 func readRoleDataSource(ctx context.Context, client *clients.KibanaScopedClient, config dataSourceModel) (dataSourceModel, diag.Diagnostics) {
