@@ -20,6 +20,13 @@
 - WHEN `SpaceAwarePathRequestEditor` is invoked
 - THEN `req.URL.Path` SHALL become `"/kibana/s/ops/api/alerting/rule/{id}"`
 
+#### Scenario: No `/api/` anchor — fallback prepend-at-root
+
+- GIVEN `space_id = "ops"`
+- AND `req.URL.Path = "/internal/observability/slos/_definitions"`
+- WHEN `SpaceAwarePathRequestEditor` is invoked
+- THEN `req.URL.Path` SHALL become `"/s/ops/internal/observability/slos/_definitions"`
+
 #### Scenario: Empty space — path unchanged
 
 - GIVEN any `req.URL.Path`

@@ -1,6 +1,6 @@
 ## Context
 
-The provider uses `SpaceAwarePathRequestEditor` (in `internal/clients/kibanautil/spaces.go`) as an `oapi-codegen` request editor to inject the Kibana space segment into API paths. Every `kibanaoapi` and `fleet` client call site passes this editor via `kbapi.WithRequestEditorFn`.
+The provider uses `SpaceAwarePathRequestEditor` (in `internal/clients/kibanautil/spaces.go`) as an `oapi-codegen` request editor to inject the Kibana space segment into API paths. The affected `kibanaoapi` and `fleet` call sites pass this editor via `kbapi.WithRequestEditorFn`; call sites that pass space as an explicit generated-client path parameter are not affected.
 
 The `kbapi` generated client (`generated/kbapi/kibana.gen.go`) constructs each operation URL by calling `serverURL.Parse(operationPath)`, where `serverURL` is the full Kibana URL including any base-path prefix (e.g. `https://host/kibana`). This means `req.URL.Path` already contains the base-path prefix when the request editor is invoked.
 
@@ -23,7 +23,7 @@ Current `SpaceAwarePathRequestEditor` delegates to `BuildSpaceAwarePath(spaceID,
 
 ### Decision 1: Anchor-based injection — insert `/s/{spaceID}` before the first `/api/` segment
 
-**Rationale:** The `/api/` segment is the stable anchor in every Kibana API path. A base-path prefix always appears before it; space and resource segments always appear after it. Splitting at `/api/` places the space segment in the correct position without knowing the actual base-path value.
+**Rationale:** The `/api/` segment is the stable anchor in every Kibana API path. A base-path prefix always appears before it; the injected space segment for this editor must appear immediately before that `/api/` anchor. Splitting at `/api/` places the space segment in the correct position without knowing the actual base-path value.
 
 **Behavior before / after with `server.basePath = /kibana`:**
 

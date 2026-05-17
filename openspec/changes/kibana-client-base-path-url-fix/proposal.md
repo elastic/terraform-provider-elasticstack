@@ -1,6 +1,6 @@
 ## Why
 
-When Kibana is deployed behind a reverse proxy with `server.basePath` set (for example `/kibana` at `https://elk-cluster.org/kibana`), every Kibana and Fleet resource managed by this provider generates an invalid API URL and receives a 404 ([#2804](https://github.com/elastic/terraform-provider-elasticstack/issues/2804)).
+When Kibana is deployed behind a reverse proxy with `server.basePath` set (for example `/kibana` at `https://elk-cluster.org/kibana`), non-default-space operations that use `SpaceAwarePathRequestEditor` generate an invalid API URL and receive a 404 ([#2804](https://github.com/elastic/terraform-provider-elasticstack/issues/2804)).
 
 **Concrete failure** with `space_id = "pd-core"` and `server.basePath = /kibana`:
 
@@ -33,11 +33,11 @@ Modify `SpaceAwarePathRequestEditor` in `internal/clients/kibanautil/spaces.go` 
 
 ### New Capabilities
 
-_(none)_
+- `kibana-space-aware-url-construction`: Define URL path construction behavior in `SpaceAwarePathRequestEditor` so that Kibana's `server.basePath` prefix is preserved ahead of the injected space segment.
 
 ### Modified Capabilities
 
-- `kibana-space-aware-url-construction`: Fix URL path construction in `SpaceAwarePathRequestEditor` so that Kibana's `server.basePath` prefix is preserved ahead of the injected space segment.
+_(none)_
 
 ## Impact
 

@@ -28,6 +28,7 @@
   - Path `/kibana/api/alerting/rule/abc` with space `default` → `/kibana/api/alerting/rule/abc` (unchanged)
   - Path `/api/alerting/rule/abc` with space `ops` → `/s/ops/api/alerting/rule/abc` (no regression)
   - Path `/nested/prefix/api/alerting/rule/abc` with space `ops` → `/nested/prefix/s/ops/api/alerting/rule/abc`
+  - Path `/internal/observability/slos/_definitions` with space `ops` → `/s/ops/internal/observability/slos/_definitions` (fallback when `/api/` anchor is absent)
 
 - [ ] 2.2 Run `go test ./internal/clients/kibanautil/...` and confirm all tests pass.
 
