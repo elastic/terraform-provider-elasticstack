@@ -47,38 +47,13 @@ func readDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, c
 	// Map response body to model
 	for _, space := range spaces {
 		spaceState := SpaceModel{
-			ID:   types.StringValue(space.Id),
-			Name: types.StringValue(space.Name),
-		}
-
-		if space.Description != nil {
-			spaceState.Description = types.StringValue(*space.Description)
-		} else {
-			spaceState.Description = types.StringValue("")
-		}
-
-		if space.Initials != nil {
-			spaceState.Initials = types.StringValue(*space.Initials)
-		} else {
-			spaceState.Initials = types.StringValue("")
-		}
-
-		if space.Color != nil {
-			spaceState.Color = types.StringValue(*space.Color)
-		} else {
-			spaceState.Color = types.StringValue("")
-		}
-
-		if space.ImageUrl != nil {
-			spaceState.ImageURL = types.StringValue(*space.ImageUrl)
-		} else {
-			spaceState.ImageURL = types.StringValue("")
-		}
-
-		if space.Solution != nil {
-			spaceState.Solution = types.StringValue(*space.Solution)
-		} else {
-			spaceState.Solution = types.StringValue("")
+			ID:          types.StringValue(space.Id),
+			Name:        types.StringValue(space.Name),
+			Description: types.StringPointerValue(space.Description),
+			Initials:    types.StringPointerValue(space.Initials),
+			Color:       types.StringPointerValue(space.Color),
+			ImageURL:    types.StringPointerValue(space.ImageUrl),
+			Solution:    types.StringPointerValue(space.Solution),
 		}
 
 		rawFeatures := []string{}
@@ -136,6 +111,9 @@ func readSpaceResource(ctx context.Context, client *clients.KibanaScopedClient, 
 	}
 	updated.KibanaConnectionField = model.KibanaConnectionField
 	updated.ImageURL = model.ImageURL
+	if !model.DisabledFeatures.IsNull() && !model.DisabledFeatures.IsUnknown() {
+		updated.DisabledFeatures = model.DisabledFeatures
+	}
 	return updated, true, mapDiags
 }
 
@@ -147,29 +125,10 @@ func mapSpaceResponseToResourceModel(ctx context.Context, space *kbapi.SpaceResp
 	m.SpaceID = types.StringValue(resourceID)
 	m.Name = types.StringValue(space.Name)
 
-	if space.Description != nil {
-		m.Description = types.StringValue(*space.Description)
-	} else {
-		m.Description = types.StringValue("")
-	}
-
-	if space.Initials != nil {
-		m.Initials = types.StringValue(*space.Initials)
-	} else {
-		m.Initials = types.StringValue("")
-	}
-
-	if space.Color != nil {
-		m.Color = types.StringValue(*space.Color)
-	} else {
-		m.Color = types.StringValue("")
-	}
-
-	if space.Solution != nil {
-		m.Solution = types.StringValue(*space.Solution)
-	} else {
-		m.Solution = types.StringValue("")
-	}
+	m.Description = types.StringPointerValue(space.Description)
+	m.Initials = types.StringPointerValue(space.Initials)
+	m.Color = types.StringPointerValue(space.Color)
+	m.Solution = types.StringPointerValue(space.Solution)
 
 	rawFeatures := []string{}
 	if space.DisabledFeatures != nil {
@@ -192,5 +151,8 @@ func finalizeResourceModelFromAPIResponse(ctx context.Context, plan resourceMode
 	}
 	out.KibanaConnectionField = plan.KibanaConnectionField
 	out.ImageURL = plan.ImageURL
+	if !plan.DisabledFeatures.IsNull() && !plan.DisabledFeatures.IsUnknown() {
+		out.DisabledFeatures = plan.DisabledFeatures
+	}
 	return out, diags
 }
