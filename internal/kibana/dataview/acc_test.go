@@ -46,6 +46,26 @@ var minFullDataviewSupport = version.Must(version.NewVersion("8.8.0"))
 func TestAccResourceDataView(t *testing.T) {
 	indexName := "my-index-" + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
+	var dataViewID string
+	captureID := func(s *terraform.State) error {
+		rs := s.RootModule().Resources["elasticstack_kibana_data_view.dv"]
+		if rs == nil {
+			return fmt.Errorf("elasticstack_kibana_data_view.dv not found in state")
+		}
+		dataViewID = rs.Primary.ID
+		return nil
+	}
+	checkIDUnchanged := func(s *terraform.State) error {
+		rs := s.RootModule().Resources["elasticstack_kibana_data_view.dv"]
+		if rs == nil {
+			return fmt.Errorf("elasticstack_kibana_data_view.dv not found in state")
+		}
+		if rs.Primary.ID != dataViewID {
+			return fmt.Errorf("data view was recreated: id changed from %s to %s", dataViewID, rs.Primary.ID)
+		}
+		return nil
+	}
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
@@ -76,6 +96,7 @@ func TestAccResourceDataView(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.field_formats.machine.ram.params.pattern", "0,0.[000] b"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.runtime_field_map.runtime_shape_name.script_source", "emit(doc['shape_name'].value)"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.field_attrs.ingest_failure.custom_label", "error.ingest_failure"),
+					captureID,
 				),
 			},
 			{
@@ -89,21 +110,41 @@ func TestAccResourceDataView(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_data_view.dv", "id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "override", "false"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.name", indexName),
-					resource.TestCheckNoResourceAttr("elasticstack_kibana_data_view.dv", "data_view.source_filters"),
-					resource.TestCheckNoResourceAttr("elasticstack_kibana_data_view.dv", "data_view.field_formats"),
-					resource.TestCheckNoResourceAttr("elasticstack_kibana_data_view.dv", "data_view.runtime_field_map"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.source_filters.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.field_formats.event_time.id", "date_nanos"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.runtime_field_map.runtime_shape_name.script_source", "emit(doc['shape_name'].value)"),
+					checkIDUnchanged,
 				),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minFullDataviewSupport),
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic_updated"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic_omitted"),
 				ConfigVariables: config.Variables{
 					"index_name": config.StringVariable(indexName),
 				},
-				ImportState:       true,
-				ImportStateVerify: true,
-				ResourceName:      "elasticstack_kibana_data_view.dv",
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_data_view.dv", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "override", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.name", indexName),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.source_filters.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.field_formats.event_time.id", "date_nanos"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.runtime_field_map.runtime_shape_name.script_source", "emit(doc['shape_name'].value)"),
+					checkIDUnchanged,
+				),
+			},
+			// Re-apply the same omitted config for import-state verification.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minFullDataviewSupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic_omitted"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"data_view.runtime_field_map", "data_view.field_formats", "data_view.source_filters"},
+				ResourceName:            "elasticstack_kibana_data_view.dv",
 			},
 		},
 	})
