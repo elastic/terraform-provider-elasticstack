@@ -82,6 +82,7 @@ const (
 
 	descVersion = "Version number used to manage index templates externally."
 
-	descAllowAutoCreate = "If true, index auto-creation is allowed for matching indices. If false, auto-creation is disabled. " +
+	descAllowAutoCreate = "If true, index auto-creation is allowed for matching indices. " +
+		"If false, auto-creation is disabled for matching indices. " +
 		"When unset, the cluster-level `action.auto_create_index` setting applies."
 )

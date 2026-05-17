@@ -745,6 +745,17 @@ func TestAccResourceIndexTemplateAllowAutoCreate(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"template_name":     config.StringVariable(templateName),
+					"allow_auto_create": config.BoolVariable(false),
+				},
+				ResourceName:      "elasticstack_elasticsearch_index_template.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("unset"),
 				ConfigVariables: config.Variables{
 					"template_name": config.StringVariable(templateName),
@@ -753,17 +764,6 @@ func TestAccResourceIndexTemplateAllowAutoCreate(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "name", templateName),
 					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_index_template.test", "allow_auto_create"),
 				),
-			},
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
-				ConfigVariables: config.Variables{
-					"template_name":     config.StringVariable(templateName),
-					"allow_auto_create": config.BoolVariable(true),
-				},
-				ResourceName:      "elasticstack_elasticsearch_index_template.test",
-				ImportState:       true,
-				ImportStateVerify: true,
 			},
 		},
 	})
