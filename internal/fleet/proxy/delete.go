@@ -19,10 +19,8 @@ package proxy
 
 import (
 	"context"
-	"fmt"
 
 	fleetclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
@@ -41,14 +39,8 @@ func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp 
 		return
 	}
 
-	supported, sdkDiags := client.EnforceMinVersion(ctx, minVersion)
-	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	resp.Diagnostics.Append(r.assertVersionSupported(ctx, client)...)
 	if resp.Diagnostics.HasError() {
-		return
-	}
-	if !supported {
-		resp.Diagnostics.AddError("Unsupported server version",
-			fmt.Sprintf("Fleet proxies require Elastic Stack v%s or later.", minVersion))
 		return
 	}
 
