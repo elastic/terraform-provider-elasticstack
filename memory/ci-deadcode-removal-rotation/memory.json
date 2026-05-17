@@ -58,6 +58,12 @@
       "package": "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi",
       "attemptedAt": "2026-05-16T23:21:41.463320487Z",
       "reason": "pr_created"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/diagutil.CheckErrorFromFW",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/diagutil",
+      "attemptedAt": "2026-05-17T01:25:25.671549483Z",
+      "reason": "pr_created"
     }
   ]
 }
