@@ -43,6 +43,9 @@ var sdkIndexConnectorConfig string
 //go:embed testdata/TestAccResourceKibanaConnectorEmptyConfigFromSDK/main.tf
 var sdkSlackConnectorConfig string
 
+//go:embed testdata/TestAccConnectorsDataSourceFromSDK/create/main.tf
+var sdkConnectorDataSourceConfig string
+
 func TestAccResourceKibanaConnectorCasesWebhook(t *testing.T) {
 	minSupportedVersion := version.Must(version.NewSemver("8.4.0"))
 
@@ -488,4 +491,147 @@ func TestAccResourceKibanaConnectorAI(t *testing.T) {
 			})
 		})
 	}
+}
+
+func TestAccConnectorsDataSource(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_kibana_action_connector.myconnector", "name", "myconnector"),
+					resource.TestCheckResourceAttr("data.elasticstack_kibana_action_connector.myconnector", "space_id", "default"),
+					resource.TestCheckResourceAttr("data.elasticstack_kibana_action_connector.myconnector", "connector_type_id", ".slack"),
+					resource.TestCheckResourceAttrPair(
+						"data.elasticstack_kibana_action_connector.myconnector", "connector_id",
+						"elasticstack_kibana_action_connector.slack", "connector_id",
+					),
+					resource.TestMatchResourceAttr("data.elasticstack_kibana_action_connector.myconnector", "config", regexp.MustCompile(`^(\{\})?$`)),
+					resource.TestCheckResourceAttr("data.elasticstack_kibana_action_connector.myconnector", "is_deprecated", "false"),
+					resource.TestCheckResourceAttr("data.elasticstack_kibana_action_connector.myconnector", "is_missing_secrets", "false"),
+					resource.TestCheckResourceAttr("data.elasticstack_kibana_action_connector.myconnector", "is_preconfigured", "false"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccConnectorsDataSource_customSpace(t *testing.T) {
+	spaceID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	connectorName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables: config.Variables{
+					"space_id":       config.StringVariable(spaceID),
+					"connector_name": config.StringVariable(connectorName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_kibana_action_connector.test", "space_id", spaceID),
+					resource.TestCheckResourceAttr("data.elasticstack_kibana_action_connector.test", "connector_type_id", ".index"),
+					resource.TestCheckResourceAttrPair(
+						"data.elasticstack_kibana_action_connector.test", "connector_id",
+						"elasticstack_kibana_action_connector.test", "connector_id",
+					),
+					resource.TestCheckResourceAttr("data.elasticstack_kibana_action_connector.test", "is_deprecated", "false"),
+					resource.TestCheckResourceAttr("data.elasticstack_kibana_action_connector.test", "is_missing_secrets", "false"),
+					resource.TestCheckResourceAttr("data.elasticstack_kibana_action_connector.test", "is_preconfigured", "false"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccConnectorsDataSource_duplicateName(t *testing.T) {
+	connectorName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("duplicate"),
+				ConfigVariables: config.Variables{
+					"connector_name": config.StringVariable(connectorName),
+				},
+				ExpectError: regexp.MustCompile(`multiple connectors found`),
+			},
+		},
+	})
+}
+
+func TestAccConnectorsDataSource_kibanaConnection(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			acctest.PreCheckWithExplicitKibanaEndpoint(t)
+		},
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("kibana_connection"),
+				ConfigVariables:          acctest.KibanaConnectionVariables(),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_kibana_action_connector.test", "name", "kbconn_connector"),
+					resource.TestCheckResourceAttr("data.elasticstack_kibana_action_connector.test", "connector_type_id", ".slack"),
+					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_action_connector.test", "connector_id"),
+					resource.TestCheckResourceAttr("data.elasticstack_kibana_action_connector.test", "kibana_connection.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_kibana_action_connector.test", "kibana_connection.0.endpoints.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_kibana_action_connector.test", "kibana_connection.0.insecure", "false"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccConnectorsDataSourceFromSDK(t *testing.T) {
+	connectorName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceKibanaConnectorDestroy,
+		Steps: []resource.TestStep{
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"elasticstack": {
+						Source:            "elastic/elasticstack",
+						VersionConstraint: "0.15.1",
+					},
+				},
+				Config: sdkConnectorDataSourceConfig,
+				ConfigVariables: config.Variables{
+					"connector_name": config.StringVariable(connectorName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_kibana_action_connector.test", "name", connectorName),
+					resource.TestCheckResourceAttr("data.elasticstack_kibana_action_connector.test", "connector_type_id", ".index"),
+					resource.TestCheckResourceAttrPair(
+						"data.elasticstack_kibana_action_connector.test", "connector_id",
+						"elasticstack_kibana_action_connector.test", "connector_id",
+					),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("upgrade"),
+				ConfigVariables: config.Variables{
+					"connector_name": config.StringVariable(connectorName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_kibana_action_connector.test", "name", connectorName),
+					resource.TestCheckResourceAttr("data.elasticstack_kibana_action_connector.test", "connector_type_id", ".index"),
+					resource.TestCheckResourceAttrPair(
+						"data.elasticstack_kibana_action_connector.test", "connector_id",
+						"elasticstack_kibana_action_connector.test", "connector_id",
+					),
+				),
+			},
+		},
+	})
 }
