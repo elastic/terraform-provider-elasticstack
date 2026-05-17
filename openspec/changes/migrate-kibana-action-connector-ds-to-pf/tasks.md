@@ -24,5 +24,5 @@
 
 ## 5. Verification
 
-- [x] 5.1 `make build` passes
+- [x] 5.1 `make build` passes (verified locally after review fixes)
 - [ ] 5.2 `go test ./internal/kibana/connectors/... -v -count=1 -run TestAcc` passes
