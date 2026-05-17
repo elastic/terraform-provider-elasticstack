@@ -119,7 +119,24 @@ func TestAccResourceDataView(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minFullDataviewSupport),
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic_updated"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic_omitted"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_data_view.dv", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "override", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.name", indexName),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.source_filters.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.field_formats.event_time.id", "date_nanos"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.runtime_field_map.runtime_shape_name.script_source", "emit(doc['shape_name'].value)"),
+					checkIDUnchanged,
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minFullDataviewSupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic_omitted"),
 				ConfigVariables: config.Variables{
 					"index_name": config.StringVariable(indexName),
 				},
