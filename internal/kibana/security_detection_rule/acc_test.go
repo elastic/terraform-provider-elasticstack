@@ -1583,6 +1583,40 @@ func TestAccResourceSecurityDetectionRule_EmptyLists(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("populated"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(ruleName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					// After update to populated threat, verify the threat entry exists
+					resource.TestCheckResourceAttr(resourceName, "threat.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "threat.0.technique.#", "1"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(ruleName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					// After update back to empty lists, verify all seven attributes are empty
+					resource.TestCheckResourceAttr(resourceName, "actions.#", "0"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.#", "0"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.#", "0"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "0"),
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.#", "0"),
+					resource.TestCheckResourceAttr(resourceName, "threat.#", "0"),
+					resource.TestCheckResourceAttr(resourceName, "threat_mapping.#", "0"),
+				),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectNonEmptyPlan(),
+					},
+				},
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"name": config.StringVariable(ruleName),
