@@ -19,9 +19,9 @@ package fleet
 
 import (
 	"context"
-	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -38,14 +38,7 @@ func GetPackagePolicy(ctx context.Context, client *Client, id string, spaceID st
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return &resp.JSON200.Item, nil
-	case http.StatusNotFound:
-		return nil, nil
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return kibanaoapi.HandleGetTypedResponse(resp.StatusCode(), resp.Body, func() *kbapi.PackagePolicy { return &resp.JSON200.Item })
 }
 
 // GetDefendPackagePolicy reads a specific Elastic Defend package policy from
@@ -58,14 +51,7 @@ func GetDefendPackagePolicy(ctx context.Context, client *Client, id string, spac
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return &resp.JSON200.Item, nil
-	case http.StatusNotFound:
-		return nil, nil
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return kibanaoapi.HandleGetTypedResponse(resp.StatusCode(), resp.Body, func() *kbapi.PackagePolicy { return &resp.JSON200.Item })
 }
 
 // CreatePackagePolicy creates a new package policy.
@@ -80,12 +66,8 @@ func CreatePackagePolicy(ctx context.Context, client *Client, spaceID string, re
 			return nil, 0, diagutil.FrameworkDiagFromError(err)
 		}
 
-		switch resp.StatusCode() {
-		case http.StatusOK:
-			return &resp.JSON200.Item, resp.StatusCode(), nil
-		default:
-			return nil, resp.StatusCode(), diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-		}
+		result, diags := kibanaoapi.HandleMutateTypedResponse(resp.StatusCode(), resp.Body, func() *kbapi.PackagePolicy { return &resp.JSON200.Item })
+		return result, resp.StatusCode(), diags
 	})
 }
 
@@ -104,12 +86,8 @@ func CreateDefendPackagePolicy(ctx context.Context, client *Client, spaceID stri
 			return nil, 0, diagutil.FrameworkDiagFromError(err)
 		}
 
-		switch resp.StatusCode() {
-		case http.StatusOK:
-			return &resp.JSON200.Item, resp.StatusCode(), nil
-		default:
-			return nil, resp.StatusCode(), diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-		}
+		result, diags := kibanaoapi.HandleMutateTypedResponse(resp.StatusCode(), resp.Body, func() *kbapi.PackagePolicy { return &resp.JSON200.Item })
+		return result, resp.StatusCode(), diags
 	})
 }
 
@@ -125,12 +103,8 @@ func UpdatePackagePolicy(ctx context.Context, client *Client, id string, spaceID
 			return nil, 0, diagutil.FrameworkDiagFromError(err)
 		}
 
-		switch resp.StatusCode() {
-		case http.StatusOK:
-			return &resp.JSON200.Item, resp.StatusCode(), nil
-		default:
-			return nil, resp.StatusCode(), diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-		}
+		result, diags := kibanaoapi.HandleMutateTypedResponse(resp.StatusCode(), resp.Body, func() *kbapi.PackagePolicy { return &resp.JSON200.Item })
+		return result, resp.StatusCode(), diags
 	})
 }
 
@@ -150,12 +124,8 @@ func UpdateDefendPackagePolicy(ctx context.Context, client *Client, id string, s
 			return nil, 0, diagutil.FrameworkDiagFromError(err)
 		}
 
-		switch resp.StatusCode() {
-		case http.StatusOK:
-			return &resp.JSON200.Item, resp.StatusCode(), nil
-		default:
-			return nil, resp.StatusCode(), diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-		}
+		result, diags := kibanaoapi.HandleMutateTypedResponse(resp.StatusCode(), resp.Body, func() *kbapi.PackagePolicy { return &resp.JSON200.Item })
+		return result, resp.StatusCode(), diags
 	})
 }
 

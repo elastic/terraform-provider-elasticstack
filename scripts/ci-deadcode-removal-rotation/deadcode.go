@@ -20,16 +20,21 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 )
+
+const deadcodeTimeout = 15 * time.Minute
 
 var deadcodeLinePattern = regexp.MustCompile(`^(.+):(\d+):(\d+): unreachable func: (.+)$`)
 
@@ -45,22 +50,88 @@ func (e deadcodeEntry) key() string {
 	return e.packagePath + "." + e.symbol
 }
 
+// runDeadcode invokes go tool deadcode and parses its output.
 func runDeadcode(testMode bool) ([]deadcodeEntry, error) {
 	args := []string{"tool", "deadcode"}
 	if testMode {
 		args = append(args, "-test")
 	}
 	args = append(args, "./...")
-	cmd := exec.Command("go", args...)
-	out, err := cmd.CombinedOutput()
-	entries, parseErr := parseDeadcodeOutput(bytes.NewReader(out))
+
+	ctx, cancel := context.WithTimeout(context.Background(), deadcodeTimeout)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "go", args...)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	start := time.Now()
+	err := cmd.Run()
+	elapsed := time.Since(start)
+
+	label := "deadcode"
+	if testMode {
+		label = "deadcode -test"
+	}
+
+	exitCode := -999
+	if cmd.ProcessState != nil {
+		exitCode = cmd.ProcessState.ExitCode()
+	}
+	fmt.Fprintf(os.Stderr, "%s completed in %v (exit=%d stdout=%d bytes stderr=%d bytes)\n", label, elapsed, exitCode, stdout.Len(), stderr.Len())
+
+	if stderr.Len() > 0 {
+		fmt.Fprintf(os.Stderr, "%s stderr:\n%s\n", label, stderr.String())
+	}
+
+	entries, parseErr := parseDeadcodeOutput(bytes.NewReader(stdout.Bytes()))
 	if parseErr != nil {
 		return nil, parseErr
 	}
-	if err != nil && len(entries) == 0 {
-		return nil, fmt.Errorf("deadcode failed: %w", err)
+
+	if len(entries) == 0 && stdout.Len() > 0 {
+		fmt.Fprintf(os.Stderr, "%s stdout (first 2KB):\n%s\n", label, truncateBytes(stdout.Bytes(), 2048))
+	}
+
+	if err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			return nil, fmt.Errorf("deadcode timed out after %v: %w", deadcodeTimeout, err)
+		}
+		if len(entries) == 0 {
+			return nil, fmt.Errorf("deadcode failed: %w", err)
+		}
 	}
 	return entries, nil
+}
+
+var excludedFilePrefixes = []string{
+	"analysis/acctestconfigdirlint/",
+	"analysis/acctestconfigdirlintplugin/",
+	"internal/acctest/",
+	"internal/providerfwtest/",
+	"internal/kibana/dashboard/panelkit/contracttest/",
+}
+
+func filterExcluded(entries []deadcodeEntry) []deadcodeEntry {
+	return slices.DeleteFunc(entries, func(e deadcodeEntry) bool { return isExcludedFile(e.file) })
+}
+
+func isExcludedFile(file string) bool {
+	return slices.ContainsFunc(excludedFilePrefixes, func(p string) bool { return strings.HasPrefix(file, p) })
+}
+
+func hasExcludedReference(refFiles []string) bool {
+	return slices.ContainsFunc(refFiles, isExcludedFile)
+}
+
+func truncateBytes(b []byte, limit int) string {
+	if len(b) <= limit {
+		return string(b)
+	}
+	return string(b[:limit]) + " [...truncated]"
 }
 
 func parseDeadcodeOutput(r io.Reader) ([]deadcodeEntry, error) {
@@ -118,34 +189,47 @@ func intersectCandidates(a, b []deadcodeEntry) []deadcodeEntry {
 	return out
 }
 
-func selectOne(candidates []deadcodeEntry, mem *Memory, now time.Time) *deadcodeEntry {
-	var eligible []deadcodeEntry
+func selectEligible(candidates []deadcodeEntry, mem *Memory, now time.Time) []deadcodeEntry {
+	eligible := make([]deadcodeEntry, 0, len(candidates))
 	for _, c := range candidates {
 		if !isInCooldown(mem, c.key(), now) {
 			eligible = append(eligible, c)
 		}
 	}
-	if len(eligible) == 0 {
-		return nil
-	}
 	sort.Slice(eligible, func(i, j int) bool {
 		return eligible[i].key() < eligible[j].key()
 	})
+	return eligible
+}
+
+// selectOne is kept for backward compatibility.
+func selectOne(candidates []deadcodeEntry, mem *Memory, now time.Time) *deadcodeEntry {
+	eligible := selectEligible(candidates, mem, now)
+	if len(eligible) == 0 {
+		return nil
+	}
 	return &eligible[0]
 }
 
+type FilteredCandidate struct {
+	Symbol  string `json:"symbol"`
+	Package string `json:"package"`
+	Reason  string `json:"reason"`
+}
+
 type Candidate struct {
-	Symbol                       string   `json:"symbol"`
-	SymbolName                   string   `json:"symbol_name"`
-	Package                      string   `json:"package"`
-	File                         string   `json:"file"`
-	Line                         int      `json:"line"`
-	Column                       int      `json:"column"`
-	CompanionTestCleanupEligible bool     `json:"companion_test_cleanup_eligible"`
-	CompanionTestFile            string   `json:"companion_test_file"`
-	ReferenceFiles               []string `json:"reference_files"`
-	ImpactedPackages             []string `json:"impacted_packages"`
-	Found                        bool     `json:"found"`
+	Symbol                       string              `json:"symbol"`
+	SymbolName                   string              `json:"symbol_name"`
+	Package                      string              `json:"package"`
+	File                         string              `json:"file"`
+	Line                         int                 `json:"line"`
+	Column                       int                 `json:"column"`
+	CompanionTestCleanupEligible bool                `json:"companion_test_cleanup_eligible"`
+	CompanionTestFile            string              `json:"companion_test_file"`
+	ReferenceFiles               []string            `json:"reference_files"`
+	ImpactedPackages             []string            `json:"impacted_packages"`
+	Found                        bool                `json:"found"`
+	FilteredCandidates           []FilteredCandidate `json:"filtered_candidates"`
 }
 
 func impactedPackages(entry deadcodeEntry, testFile string) []string {

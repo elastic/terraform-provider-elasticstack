@@ -19,6 +19,8 @@ package dashboard
 
 import (
 	"testing"
+
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/lensdashboardapp"
 )
 
 // Regression: strings shaped like plan vs. Kibana GET for by-value lens-dashboard-app
@@ -36,7 +38,7 @@ func TestJsonValuePriorEmbedded_terraformAndKibanaSample(t *testing.T) {
 		`"format":{"type":"number","decimals":2,"compact":false},"color":{"type":"auto"}}],` +
 		`"styling":{"primary":{"position":"bottom","labels":{"alignment":"left"},` +
 		`"value":{"sizing":"auto","alignment":"right"}}}}`
-	ok, err := jsonValuePriorEmbeddedInExpandedCurrent(prior, api)
+	ok, err := lensdashboardapp.JSONValuePriorEmbeddedInExpandedCurrent(prior, api)
 	if err != nil {
 		t.Fatalf("err: %v", err)
 	}

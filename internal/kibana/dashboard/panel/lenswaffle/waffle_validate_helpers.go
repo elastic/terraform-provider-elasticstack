@@ -19,7 +19,6 @@ package lenswaffle
 
 import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 )
 
 // waffleModeListState describes list lengths during waffle mode validation at apply time.
@@ -33,14 +32,10 @@ func waffleModeListStateFromSlice(n int) waffleModeListState {
 }
 
 // waffleConfigModeValidateDiags returns ES|QL vs non-ES|QL waffle field consistency diagnostics.
-func waffleConfigModeValidateDiags(esqlMode bool, metrics, groupBy, esqlMetrics, esqlGroupBy waffleModeListState, attrPath *path.Path) diag.Diagnostics {
+func waffleConfigModeValidateDiags(esqlMode bool, metrics, groupBy, esqlMetrics, esqlGroupBy waffleModeListState) diag.Diagnostics {
 	var diags diag.Diagnostics
 	add := func(summary, detail string) {
-		if attrPath != nil {
-			diags.AddAttributeError(*attrPath, summary, detail)
-		} else {
-			diags.AddError(summary, detail)
-		}
+		diags.AddError(summary, detail)
 	}
 	if esqlMode {
 		if (!metrics.Unknown && metrics.Count > 0) || (!groupBy.Unknown && groupBy.Count > 0) {

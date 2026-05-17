@@ -61,6 +61,23 @@ func TestIntersectCandidates(t *testing.T) {
 	assert.Equal(t, "Foo", result[0].symbol)
 }
 
+func TestFilterExcluded(t *testing.T) {
+	t.Parallel()
+	entries := []deadcodeEntry{
+		{file: "internal/acctest/foo.go", line: 1, column: 1, symbol: "Foo"},
+		{file: "internal/providerfwtest/bar.go", line: 1, column: 1, symbol: "Bar"},
+		{file: "analysis/acctestconfigdirlint/baz.go", line: 1, column: 1, symbol: "Baz"},
+		{file: "analysis/acctestconfigdirlintplugin/qux.go", line: 1, column: 1, symbol: "Qux"},
+		{file: "internal/kibana/dashboard/panelkit/contracttest/run.go", line: 1, column: 1, symbol: "Run"},
+		{file: "internal/clients/api.go", line: 1, column: 1, symbol: "RealDead"},
+		{file: "internal/kibana/dashboard/panel.go", line: 1, column: 1, symbol: "Panel"},
+	}
+	filtered := filterExcluded(entries)
+	require.Len(t, filtered, 2)
+	assert.Equal(t, "RealDead", filtered[0].symbol)
+	assert.Equal(t, "Panel", filtered[1].symbol)
+}
+
 func TestSelectOne_CooldownFiltering(t *testing.T) {
 	t.Parallel()
 	mem := &Memory{
@@ -95,23 +112,39 @@ func TestSelectOne_AllInCooldown(t *testing.T) {
 	assert.Nil(t, chosen)
 }
 
-func TestClassifyReferences_NoTests(t *testing.T) {
+func TestClassifyReferences_NoTests_NonTestRef(t *testing.T) {
 	t.Parallel()
-	eligible, testFile := classifyReferences([]string{"internal/pkg/foo.go"})
+	eligible, testFile := classifyReferences("internal/pkg/source.go", []string{"internal/pkg/foo.go"})
 	assert.False(t, eligible)
 	assert.Empty(t, testFile)
 }
 
-func TestClassifyReferences_SingleNonAccTest(t *testing.T) {
+func TestClassifyReferences_NoTests(t *testing.T) {
 	t.Parallel()
-	eligible, testFile := classifyReferences([]string{"internal/pkg/foo_test.go"})
+	// Zero references: pure dead code, always eligible.
+	eligible, testFile := classifyReferences("internal/pkg/source.go", []string{})
+	assert.True(t, eligible)
+	assert.Empty(t, testFile)
+}
+
+func TestClassifyReferences_SingleNonAccTest_SamePackage(t *testing.T) {
+	t.Parallel()
+	eligible, testFile := classifyReferences("internal/pkg/source.go", []string{"internal/pkg/foo_test.go"})
 	assert.True(t, eligible)
 	assert.Equal(t, "internal/pkg/foo_test.go", testFile)
 }
 
+func TestClassifyReferences_SingleNonAccTest_DifferentPackage(t *testing.T) {
+	t.Parallel()
+	// Test file is in a different directory/package — not a safe companion.
+	eligible, testFile := classifyReferences("internal/pkg/source.go", []string{"internal/other/foo_test.go"})
+	assert.False(t, eligible)
+	assert.Empty(t, testFile)
+}
+
 func TestClassifyReferences_SingleAccTest(t *testing.T) {
 	t.Parallel()
-	eligible, testFile := classifyReferences([]string{"internal/pkg/acc_foo_test.go"})
+	eligible, testFile := classifyReferences("internal/pkg/source.go", []string{"internal/pkg/acc_foo_test.go"})
 	assert.False(t, eligible)
 	assert.Empty(t, testFile)
 }
@@ -120,14 +153,14 @@ func TestClassifyReferences_MixedTestAndNonTest(t *testing.T) {
 	t.Parallel()
 	// A non-test file plus a test file means the symbol has references
 	// outside the companion test — not eligible for test cleanup.
-	eligible, testFile := classifyReferences([]string{"internal/pkg/foo.go", "internal/pkg/foo_test.go"})
+	eligible, testFile := classifyReferences("internal/pkg/source.go", []string{"internal/pkg/foo.go", "internal/pkg/foo_test.go"})
 	assert.False(t, eligible)
 	assert.Empty(t, testFile)
 }
 
 func TestClassifyReferences_MultipleTests(t *testing.T) {
 	t.Parallel()
-	eligible, testFile := classifyReferences([]string{"internal/pkg/foo_test.go", "internal/pkg/bar_test.go"})
+	eligible, testFile := classifyReferences("internal/pkg/source.go", []string{"internal/pkg/foo_test.go", "internal/pkg/bar_test.go"})
 	assert.False(t, eligible)
 	assert.Empty(t, testFile)
 }
@@ -217,6 +250,43 @@ func TestCmdRecordInvalidReason(t *testing.T) {
 		"--reason", "bogus",
 	}, &stderr)
 	assert.Error(t, err)
+}
+
+func TestCmdRecordBatch(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	memPath := filepath.Join(dir, "memory.json")
+	input := `[{"symbol":"pkg.A","package":"pkg"},{"symbol":"pkg.B","package":"pkg"}]`
+	var stderr bytes.Buffer
+	err := cmdRecordBatch([]string{
+		"--memory", memPath,
+		"--reason", "invalid_candidate_references",
+	}, strings.NewReader(input), &stderr)
+	require.NoError(t, err)
+
+	mem, err := loadMemory(memPath)
+	require.NoError(t, err)
+	require.Len(t, mem.Attempts, 2)
+	assert.Equal(t, "pkg.A", mem.Attempts[0].Symbol)
+	assert.Equal(t, ReasonInvalidReferences, mem.Attempts[0].Reason)
+	assert.Equal(t, "pkg.B", mem.Attempts[1].Symbol)
+	assert.Equal(t, ReasonInvalidReferences, mem.Attempts[1].Reason)
+}
+
+func TestCmdRecordBatchEmpty(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	memPath := filepath.Join(dir, "memory.json")
+	var stderr bytes.Buffer
+	err := cmdRecordBatch([]string{
+		"--memory", memPath,
+		"--reason", "invalid_candidate_references",
+	}, strings.NewReader("[]"), &stderr)
+	require.NoError(t, err)
+
+	mem, err := loadMemory(memPath)
+	require.NoError(t, err)
+	require.Empty(t, mem.Attempts)
 }
 
 func TestCmdSummarize(t *testing.T) {
