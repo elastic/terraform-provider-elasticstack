@@ -601,7 +601,10 @@ func TestAccConnectorsDataSource_kibanaConnection(t *testing.T) {
 
 func testAccConnectorsDataSourceFromSDKDataSourceChecks(connectorName string) resource.TestCheckFunc {
 	return resource.ComposeTestCheckFunc(
-		resource.TestCheckResourceAttrSet("data.elasticstack_kibana_action_connector.test", "id"),
+		resource.TestCheckResourceAttrPair(
+			"data.elasticstack_kibana_action_connector.test", "id",
+			"elasticstack_kibana_action_connector.test", "id",
+		),
 		resource.TestCheckResourceAttr("data.elasticstack_kibana_action_connector.test", "name", connectorName),
 		resource.TestCheckResourceAttr("data.elasticstack_kibana_action_connector.test", "space_id", "default"),
 		resource.TestCheckResourceAttr("data.elasticstack_kibana_action_connector.test", "connector_type_id", ".index"),
