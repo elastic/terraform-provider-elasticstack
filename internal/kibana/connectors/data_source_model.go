@@ -26,13 +26,13 @@ import (
 // connectorDataSourceModel maps the action connector data source schema.
 type connectorDataSourceModel struct {
 	entitycore.KibanaConnectionField
-	ID                types.String         `tfsdk:"id"`
-	SpaceID           types.String         `tfsdk:"space_id"`
-	Name              types.String         `tfsdk:"name"`
-	ConnectorTypeID   types.String         `tfsdk:"connector_type_id"`
-	ConnectorID       types.String         `tfsdk:"connector_id"`
-	Config            jsontypes.Normalized `tfsdk:"config"`
-	IsDeprecated      types.Bool           `tfsdk:"is_deprecated"`
-	IsMissingSecrets  types.Bool           `tfsdk:"is_missing_secrets"`
-	IsPreconfigured   types.Bool           `tfsdk:"is_preconfigured"`
+	ID               types.String         `tfsdk:"id"`
+	SpaceID          types.String         `tfsdk:"space_id"`
+	Name             types.String         `tfsdk:"name"`
+	ConnectorTypeID  types.String         `tfsdk:"connector_type_id"`
+	ConnectorID      types.String         `tfsdk:"connector_id"`
+	Config           jsontypes.Normalized `tfsdk:"config"`
+	IsDeprecated     types.Bool           `tfsdk:"is_deprecated"`
+	IsMissingSecrets types.Bool           `tfsdk:"is_missing_secrets"`
+	IsPreconfigured  types.Bool           `tfsdk:"is_preconfigured"`
 }
