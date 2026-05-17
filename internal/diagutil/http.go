@@ -23,7 +23,7 @@ import (
 	"net/http"
 	"slices"
 
-		fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
+	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 func CheckHTTPErrorFromFW(res *http.Response, errMsg string) fwdiag.Diagnostics {
