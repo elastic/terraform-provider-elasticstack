@@ -65,8 +65,16 @@ func (v configValidator) ValidateResource(ctx context.Context, req resource.Vali
 			return
 		}
 		attrs := obj.Attributes()
-		base := attrs["base"].(types.Set)
-		feature := attrs["feature"].(types.Set)
+		base, ok := attrs["base"].(types.Set)
+		if !ok {
+			resp.Diagnostics.AddError("Invalid kibana block", "internal: base attribute is not a set")
+			return
+		}
+		feature, ok := attrs["feature"].(types.Set)
+		if !ok {
+			resp.Diagnostics.AddError("Invalid kibana block", "internal: feature attribute is not a set")
+			return
+		}
 		baseLen := 0
 		if !base.IsNull() && !base.IsUnknown() {
 			baseLen = len(base.Elements())

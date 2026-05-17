@@ -40,8 +40,8 @@ type resourceModel struct {
 	Name          types.String         `tfsdk:"name"`
 	Description   types.String         `tfsdk:"description"`
 	Metadata      jsontypes.Normalized `tfsdk:"metadata"`
-	Elasticsearch types.Set          `tfsdk:"elasticsearch"`
-	Kibana        types.Set          `tfsdk:"kibana"`
+	Elasticsearch types.Set            `tfsdk:"elasticsearch"`
+	Kibana        types.Set            `tfsdk:"kibana"`
 }
 
 func (m resourceModel) GetID() types.String { return m.ID }
@@ -57,6 +57,10 @@ func (m resourceModel) GetSpaceID() types.String {
 	return types.StringValue("")
 }
 
+// IsUnscopedSpace reports that Kibana role APIs are not space-scoped.
+func (resourceModel) IsUnscopedSpace() bool { return true }
+
+var _ entitycore.KibanaUnscopedSpace = resourceModel{}
 var _ entitycore.WithVersionRequirements = resourceModel{}
 
 // GetVersionRequirements satisfies [entitycore.WithVersionRequirements].
@@ -111,6 +115,6 @@ type dataSourceModel struct {
 	Name          types.String         `tfsdk:"name"`
 	Description   types.String         `tfsdk:"description"`
 	Metadata      jsontypes.Normalized `tfsdk:"metadata"`
-	Elasticsearch types.Set          `tfsdk:"elasticsearch"`
-	Kibana        types.Set          `tfsdk:"kibana"`
+	Elasticsearch types.Set            `tfsdk:"elasticsearch"`
+	Kibana        types.Set            `tfsdk:"kibana"`
 }

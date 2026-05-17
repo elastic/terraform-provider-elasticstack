@@ -21,6 +21,7 @@ package security_role
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -265,7 +266,14 @@ func flattenKibana(ctx context.Context, configs []kibanaoapi.SecurityRoleKibana)
 		var baseSet types.Set
 		if len(cfg.Base) > 0 {
 			var base []string
-			if err := json.Unmarshal(cfg.Base, &base); err == nil && len(base) > 0 {
+			if err := json.Unmarshal(cfg.Base, &base); err != nil {
+				diags.AddError(
+					"Invalid kibana base privileges",
+					fmt.Sprintf("API returned a base payload that is not a JSON array of strings: %v", err),
+				)
+				return types.SetNull(kibanaBlockObjectType()), diags
+			}
+			if len(base) > 0 {
 				s, d := types.SetValueFrom(ctx, types.StringType, base)
 				diags.Append(d...)
 				if diags.HasError() {
