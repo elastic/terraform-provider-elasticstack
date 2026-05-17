@@ -1236,8 +1236,7 @@ func (v tfStatusConfigV0) toAPIAlertStatus() *kbapi.SyntheticsMonitorAlertStatus
 
 func (v tfModelV0) enforceVersionConstraints(ctx context.Context, client *clients.KibanaScopedClient) diag.Diagnostics {
 	if typeutils.IsKnown(v.Labels) {
-		isSupported, sdkDiags := client.EnforceMinVersion(ctx, MinLabelsVersion)
-		diags := diagutil.FrameworkDiagsFromSDK(sdkDiags)
+		isSupported, diags := client.EnforceMinVersion(ctx, MinLabelsVersion)
 		if diags.HasError() {
 			return diags
 		}

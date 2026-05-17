@@ -34,7 +34,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
-	v2Diag "github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/stretchr/testify/require"
 )
 
@@ -44,7 +43,7 @@ type mockAPIClient struct {
 	enforceResult bool
 }
 
-func (m mockAPIClient) EnforceMinVersion(_ context.Context, minVersion *version.Version) (bool, v2Diag.Diagnostics) {
+func (m mockAPIClient) EnforceMinVersion(_ context.Context, minVersion *version.Version) (bool, diag.Diagnostics) {
 	supported := m.serverVersion.GreaterThanOrEqual(minVersion)
 	return supported, nil
 }
@@ -1389,7 +1388,7 @@ func TestCompositeIDOperations(t *testing.T) {
 				ID: types.StringValue(tt.inputID),
 			}
 
-			compID, diags := clients.CompositeIDFromStrFw(data.ID.ValueString())
+			compID, diags := clients.CompositeIDFromStr(data.ID.ValueString())
 
 			if tt.shouldError {
 				require.NotEmpty(t, diags)

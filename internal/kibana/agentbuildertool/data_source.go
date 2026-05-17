@@ -23,7 +23,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -90,8 +89,8 @@ func getDataSourceSchema(_ context.Context) dsschema.Schema {
 func readToolDataSource(ctx context.Context, client *clients.KibanaScopedClient, config toolDataSourceModel) (toolDataSourceModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	supported, sdkDiags := client.EnforceMinVersion(ctx, minKibanaAgentBuilderAPIVersion)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	supported, verDiags := client.EnforceMinVersion(ctx, minKibanaAgentBuilderAPIVersion)
+	diags.Append(verDiags...)
 	if diags.HasError() {
 		return config, diags
 	}
@@ -114,7 +113,7 @@ func readToolDataSource(ctx context.Context, client *clients.KibanaScopedClient,
 	}
 
 	toolID := config.ID.ValueString()
-	if compID, compDiags := clients.CompositeIDFromStrFw(toolID); !compDiags.HasError() {
+	if compID, compDiags := clients.CompositeIDFromStr(toolID); !compDiags.HasError() {
 		toolID = compID.ResourceID
 		if !typeutils.IsKnown(config.SpaceID) {
 			spaceID = compID.ClusterID
@@ -139,8 +138,8 @@ func readToolDataSource(ctx context.Context, client *clients.KibanaScopedClient,
 	}
 
 	if config.IncludeWorkflow.ValueBool() {
-		supported, sdkDiags := client.EnforceMinVersion(ctx, minKibanaAgentBuilderWorkflowAPIVersion)
-		diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+		supported, verDiags := client.EnforceMinVersion(ctx, minKibanaAgentBuilderWorkflowAPIVersion)
+		diags.Append(verDiags...)
 		if diags.HasError() {
 			return config, diags
 		}

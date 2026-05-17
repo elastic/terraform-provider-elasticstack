@@ -22,10 +22,9 @@ import (
 
 	esclients "github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 func deleteSlm(ctx context.Context, client *esclients.ElasticsearchScopedClient, resourceID string, _ Data) diag.Diagnostics {
-	return diagutil.FrameworkDiagsFromSDK(elasticsearch.DeleteSlm(ctx, client, resourceID))
+	return elasticsearch.DeleteSlm(ctx, client, resourceID)
 }

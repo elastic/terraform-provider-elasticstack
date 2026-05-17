@@ -22,7 +22,6 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -93,8 +92,8 @@ type clusterVersionPrivateData struct {
 func saveClusterVersion(ctx context.Context, client *clients.ElasticsearchScopedClient, priv privateData) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	ver, sdkDiags := client.ServerVersion(ctx)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	ver, verDiags := client.ServerVersion(ctx)
+	diags.Append(verDiags...)
 	if diags.HasError() {
 		return diags
 	}

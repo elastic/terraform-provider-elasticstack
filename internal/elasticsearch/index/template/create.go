@@ -21,7 +21,6 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -51,8 +50,8 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 		return
 	}
 	for _, req := range vReqs {
-		ok, sdkDiags := client.EnforceMinVersion(ctx, &req.MinVersion)
-		resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+		ok, verDiags := client.EnforceMinVersion(ctx, &req.MinVersion)
+		resp.Diagnostics.Append(verDiags...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
@@ -73,8 +72,8 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 		return
 	}
 
-	id, sdkDiags := client.ID(ctx, plan.Name.ValueString())
-	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	id, idDiags := client.ID(ctx, plan.Name.ValueString())
+	resp.Diagnostics.Append(idDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

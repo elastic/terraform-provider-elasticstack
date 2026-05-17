@@ -23,7 +23,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/go-version"
@@ -43,14 +42,14 @@ func writeRole(ctx context.Context, client *clients.ElasticsearchScopedClient, r
 	data := req.Plan
 	roleID := req.WriteID
 
-	id, sdkDiags := client.ID(ctx, roleID)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	id, idDiags := client.ID(ctx, roleID)
+	diags.Append(idDiags...)
 	if diags.HasError() {
 		return entitycore.WriteResult[Data]{}, diags
 	}
 
-	serverVersion, sdkDiags := client.ServerVersion(ctx)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	serverVersion, verDiags := client.ServerVersion(ctx)
+	diags.Append(verDiags...)
 	if diags.HasError() {
 		return entitycore.WriteResult[Data]{}, diags
 	}
@@ -80,8 +79,7 @@ func writeRole(ctx context.Context, client *clients.ElasticsearchScopedClient, r
 	}
 
 	// Put the role
-	sdkDiags = elasticsearch.PutRole(ctx, client, roleID, role)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	diags.Append(elasticsearch.PutRole(ctx, client, roleID, role)...)
 	if diags.HasError() {
 		return entitycore.WriteResult[Data]{}, diags
 	}

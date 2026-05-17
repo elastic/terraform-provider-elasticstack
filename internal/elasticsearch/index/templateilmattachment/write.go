@@ -22,7 +22,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -36,9 +35,9 @@ import (
 func writeILMAttachment(ctx context.Context, client *clients.ElasticsearchScopedClient, componentTemplateName string, plan tfModel, isCreate bool) (tfModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	existingRaw, sdkDiags := elasticsearch.GetComponentTemplate(ctx, client, componentTemplateName)
-	if sdkDiags.HasError() {
-		return plan, diagutil.FrameworkDiagsFromSDK(sdkDiags)
+	existingRaw, getTplDiags := elasticsearch.GetComponentTemplate(ctx, client, componentTemplateName)
+	if getTplDiags.HasError() {
+		return plan, getTplDiags
 	}
 
 	existing := toModelComponentTemplateResponse(existingRaw)
@@ -83,14 +82,14 @@ func writeILMAttachment(ctx context.Context, client *clients.ElasticsearchScoped
 		plan.LifecycleName.ValueString(),
 	)
 
-	if sdkDiags := elasticsearch.PutComponentTemplate(ctx, client, &componentTemplate); sdkDiags.HasError() {
-		return plan, diagutil.FrameworkDiagsFromSDK(sdkDiags)
+	if putDiags := elasticsearch.PutComponentTemplate(ctx, client, &componentTemplate); putDiags.HasError() {
+		return plan, putDiags
 	}
 
 	if isCreate {
-		id, sdkDiags := client.ID(ctx, componentTemplateName)
-		if sdkDiags.HasError() {
-			return plan, diagutil.FrameworkDiagsFromSDK(sdkDiags)
+		id, idDiags := client.ID(ctx, componentTemplateName)
+		if idDiags.HasError() {
+			return plan, idDiags
 		}
 		plan.ID = types.StringValue(id.String())
 	}

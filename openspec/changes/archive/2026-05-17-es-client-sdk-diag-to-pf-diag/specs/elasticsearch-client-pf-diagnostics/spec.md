@@ -1,4 +1,4 @@
-## MODIFIED Requirements
+## ADDED Requirements
 
 ### Requirement: ES client functions return Plugin Framework diagnostics
 All public functions in `internal/clients/elasticsearch/` that previously returned `github.com/hashicorp/terraform-plugin-sdk/v2/diag.Diagnostics` SHALL return `github.com/hashicorp/terraform-plugin-framework/diag.Diagnostics` instead. No function in this package SHALL import or use `terraform-plugin-sdk/v2/diag` for return values.

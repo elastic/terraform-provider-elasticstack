@@ -22,18 +22,18 @@ import (
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/core/info"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	sdkdiag "github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func GetClusterInfo(ctx context.Context, apiClient *clients.ElasticsearchScopedClient) (*info.Response, sdkdiag.Diagnostics) {
-	var diags sdkdiag.Diagnostics
+func GetClusterInfo(ctx context.Context, apiClient *clients.ElasticsearchScopedClient) (*info.Response, fwdiag.Diagnostics) {
 	typedClient, err := apiClient.GetESClient()
 	if err != nil {
-		return nil, sdkdiag.FromErr(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 	res, err := typedClient.Core.Info().Do(ctx)
 	if err != nil {
-		return nil, sdkdiag.FromErr(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
-	return res, diags
+	return res, nil
 }

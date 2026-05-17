@@ -28,59 +28,58 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
-	sdkdiag "github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
-func PutComponentTemplate(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, template *models.ComponentTemplate) sdkdiag.Diagnostics {
+func PutComponentTemplate(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, template *models.ComponentTemplate) fwdiags.Diagnostics {
 	typedClient, err := apiClient.GetESClient()
 	if err != nil {
-		return sdkdiag.FromErr(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 
 	templateBytes, err := json.Marshal(template)
 	if err != nil {
-		return sdkdiag.FromErr(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 
 	_, err = typedClient.Cluster.PutComponentTemplate(template.Name).Raw(bytes.NewReader(templateBytes)).Do(ctx)
 	if err != nil {
-		return sdkdiag.FromErr(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 	return nil
 }
 
 // GetComponentTemplate returns a component template by name.
-func GetComponentTemplate(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, templateName string) (*types.ClusterComponentTemplate, sdkdiag.Diagnostics) {
+func GetComponentTemplate(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, templateName string) (*types.ClusterComponentTemplate, fwdiags.Diagnostics) {
 	typedClient, err := apiClient.GetESClient()
 	if err != nil {
-		return nil, sdkdiag.FromErr(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 	res, err := typedClient.Cluster.GetComponentTemplate().Name(templateName).Do(ctx)
 	if err != nil {
 		if IsNotFoundElasticsearchError(err) {
 			return nil, nil
 		}
-		return nil, sdkdiag.FromErr(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 	if len(res.ComponentTemplates) != 1 {
 		detail := fmt.Sprintf("Elasticsearch API returned %d when requested '%s' component template.", len(res.ComponentTemplates), templateName)
-		return nil, diagutil.SDKErrorDiag("Wrong number of templates returned", detail)
+		return nil, fwdiags.Diagnostics{fwdiags.NewErrorDiagnostic("Wrong number of templates returned", detail)}
 	}
 	tpl := res.ComponentTemplates[0]
 	return &tpl, nil
 }
 
-func DeleteComponentTemplate(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, templateName string) sdkdiag.Diagnostics {
+func DeleteComponentTemplate(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, templateName string) fwdiags.Diagnostics {
 	typedClient, err := apiClient.GetESClient()
 	if err != nil {
-		return sdkdiag.FromErr(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 	_, err = typedClient.Cluster.DeleteComponentTemplate(templateName).Do(ctx)
 	if err != nil {
 		if IsNotFoundElasticsearchError(err) {
 			return nil
 		}
-		return sdkdiag.FromErr(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 	return nil
 }

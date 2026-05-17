@@ -23,7 +23,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
@@ -32,8 +31,7 @@ func supportsSpaceAwareIntegration(ctx context.Context, client clients.MinVersio
 		return false, nil
 	}
 
-	supported, sdkDiags := client.EnforceMinVersion(ctx, MinVersionSpaceAwareIntegration)
-	return supported, diagutil.FrameworkDiagsFromSDK(sdkDiags)
+	return client.EnforceMinVersion(ctx, MinVersionSpaceAwareIntegration)
 }
 
 // fleetPackageInstalled determines whether Fleet reports a package as fully installed.

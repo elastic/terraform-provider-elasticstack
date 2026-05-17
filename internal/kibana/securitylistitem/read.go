@@ -48,7 +48,7 @@ func (r *securityListItemResource) Read(ctx context.Context, req resource.ReadRe
 	}
 
 	// Parse composite ID to get space_id and resource id
-	compID, compIDDiags := clients.CompositeIDFromStrFw(state.ID.ValueString())
+	compID, compIDDiags := clients.CompositeIDFromStr(state.ID.ValueString())
 
 	if !compIDDiags.HasError() {
 		state.SpaceID = types.StringValue(compID.ClusterID)

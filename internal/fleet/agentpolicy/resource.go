@@ -21,7 +21,6 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/hashicorp/go-version"
@@ -94,57 +93,57 @@ func NewResource() resource.Resource {
 func (r *agentPolicyResource) buildFeatures(ctx context.Context, apiClient *clients.KibanaScopedClient) (features, diag.Diagnostics) {
 	supportsGDT, diags := apiClient.EnforceMinVersion(ctx, MinVersionGlobalDataTags)
 	if diags.HasError() {
-		return features{}, diagutil.FrameworkDiagsFromSDK(diags)
+		return features{}, diags
 	}
 
 	supportsSupportsAgentless, diags := apiClient.EnforceMinVersion(ctx, MinSupportsAgentlessVersion)
 	if diags.HasError() {
-		return features{}, diagutil.FrameworkDiagsFromSDK(diags)
+		return features{}, diags
 	}
 
 	supportsInactivityTimeout, diags := apiClient.EnforceMinVersion(ctx, MinVersionInactivityTimeout)
 	if diags.HasError() {
-		return features{}, diagutil.FrameworkDiagsFromSDK(diags)
+		return features{}, diags
 	}
 
 	supportsUnenrollmentTimeout, diags := apiClient.EnforceMinVersion(ctx, MinVersionUnenrollmentTimeout)
 	if diags.HasError() {
-		return features{}, diagutil.FrameworkDiagsFromSDK(diags)
+		return features{}, diags
 	}
 
 	supportsSpaceIDs, diags := apiClient.EnforceMinVersion(ctx, MinVersionSpaceIDs)
 	if diags.HasError() {
-		return features{}, diagutil.FrameworkDiagsFromSDK(diags)
+		return features{}, diags
 	}
 
 	supportsRequiredVersions, diags := apiClient.EnforceMinVersion(ctx, MinVersionRequiredVersions)
 	if diags.HasError() {
-		return features{}, diagutil.FrameworkDiagsFromSDK(diags)
+		return features{}, diags
 	}
 
 	supportsAgentFeatures, diags := apiClient.EnforceMinVersion(ctx, MinVersionAgentFeatures)
 	if diags.HasError() {
-		return features{}, diagutil.FrameworkDiagsFromSDK(diags)
+		return features{}, diags
 	}
 
 	supportsAdvancedMonitoring, diags := apiClient.EnforceMinVersion(ctx, MinVersionAdvancedMonitoring)
 	if diags.HasError() {
-		return features{}, diagutil.FrameworkDiagsFromSDK(diags)
+		return features{}, diags
 	}
 
 	supportsAdvancedSettings, diags := apiClient.EnforceMinVersion(ctx, MinVersionAdvancedSettings)
 	if diags.HasError() {
-		return features{}, diagutil.FrameworkDiagsFromSDK(diags)
+		return features{}, diags
 	}
 
 	supportsTamperProtection, diags := apiClient.EnforceMinVersion(ctx, MinVersionTamperProtection)
 	if diags.HasError() {
-		return features{}, diagutil.FrameworkDiagsFromSDK(diags)
+		return features{}, diags
 	}
 
 	supportsMonitoringRuntimeExperimental, diags := apiClient.EnforceVersionCheck(ctx, MonitoringRuntimeExperimentalSupported)
 	if diags.HasError() {
-		return features{}, diagutil.FrameworkDiagsFromSDK(diags)
+		return features{}, diags
 	}
 
 	return features{

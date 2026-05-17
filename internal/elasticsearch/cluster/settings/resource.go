@@ -22,7 +22,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -69,8 +68,8 @@ func createClusterSettings(ctx context.Context, client *clients.ElasticsearchSco
 	var diags fwdiag.Diagnostics
 	plan := req.Plan
 
-	id, sdkDiags := client.ID(ctx, resourceID)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	id, idDiags := client.ID(ctx, resourceID)
+	diags.Append(idDiags...)
 	if diags.HasError() {
 		return entitycore.WriteResult[tfModel]{Model: plan}, diags
 	}
@@ -81,7 +80,7 @@ func createClusterSettings(ctx context.Context, client *clients.ElasticsearchSco
 		return entitycore.WriteResult[tfModel]{Model: plan}, diags
 	}
 
-	diags.Append(diagutil.FrameworkDiagsFromSDK(elasticsearch.PutSettings(ctx, client, apiSettings))...)
+	diags.Append(elasticsearch.PutSettings(ctx, client, apiSettings)...)
 	if diags.HasError() {
 		return entitycore.WriteResult[tfModel]{Model: plan}, diags
 	}

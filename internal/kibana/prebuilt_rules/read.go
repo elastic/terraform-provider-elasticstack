@@ -21,7 +21,6 @@ import (
 	"context"
 
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -40,8 +39,8 @@ func (r *PrebuiltRuleResource) Read(ctx context.Context, req resource.ReadReques
 		return
 	}
 
-	serverVersion, sdkDiags := apiClient.ServerVersion(ctx)
-	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	serverVersion, verDiags := apiClient.ServerVersion(ctx)
+	resp.Diagnostics.Append(verDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

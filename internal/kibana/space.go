@@ -24,6 +24,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	providerSchema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/go-version"
@@ -146,9 +147,9 @@ func resourceSpaceUpsert(ctx context.Context, d *schema.ResourceData, meta any) 
 
 	// Check version compatibility for solution field
 	if solution, ok := d.GetOk("solution"); ok && solution.(string) != "" {
-		serverVersion, diags := client.ServerVersion(ctx)
-		if diags.HasError() {
-			return diags
+		serverVersion, verFwDiags := client.ServerVersion(ctx)
+		if verFwDiags.HasError() {
+			return diagutil.SDKDiagsFromFramework(verFwDiags)
 		}
 
 		if !serverVersion.GreaterThanOrEqual(spaceSolutionMinVersion) {

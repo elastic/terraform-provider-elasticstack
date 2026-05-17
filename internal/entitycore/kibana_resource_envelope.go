@@ -171,7 +171,7 @@ func (r *KibanaResource[T]) Schema(ctx context.Context, _ resource.SchemaRequest
 // composite ID; on failure (nil result) it falls back to GetResourceID() and
 // GetSpaceID(). Any diagnostics from the composite parse are discarded.
 func (r *KibanaResource[T]) resolveResourceIdentity(model T) (resourceID string, spaceID string) {
-	compID, _ := clients.CompositeIDFromStrFw(model.GetID().ValueString())
+	compID, _ := clients.CompositeIDFromStr(model.GetID().ValueString())
 	if compID != nil {
 		return compID.ResourceID, compID.ClusterID
 	}

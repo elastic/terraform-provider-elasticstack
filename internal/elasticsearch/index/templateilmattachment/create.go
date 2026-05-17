@@ -21,7 +21,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
@@ -38,9 +37,9 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 		return
 	}
 
-	serverVersion, sdkDiags := client.ServerVersion(ctx)
-	if sdkDiags.HasError() {
-		resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	serverVersion, verDiags := client.ServerVersion(ctx)
+	if verDiags.HasError() {
+		resp.Diagnostics.Append(verDiags...)
 		return
 	}
 

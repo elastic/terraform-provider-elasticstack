@@ -24,7 +24,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -57,7 +56,7 @@ func (r Resource) Create(ctx context.Context, req resource.CreateRequest, resp *
 		return
 	}
 
-	compID, idDiags := clients.CompositeIDFromStrFw(planModel.GetID().ValueString())
+	compID, idDiags := clients.CompositeIDFromStr(planModel.GetID().ValueString())
 	resp.Diagnostics.Append(idDiags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -131,8 +130,8 @@ func (r Resource) doesCurrentVersionSupportRestrictionOnAPIKey(ctx context.Conte
 		return false, diags
 	}
 
-	currentVersion, sdkDiags := client.ServerVersion(ctx)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	currentVersion, verDiags := client.ServerVersion(ctx)
+	diags.Append(verDiags...)
 	if diags.HasError() {
 		return false, diags
 	}
@@ -146,8 +145,8 @@ func (r Resource) doesCurrentVersionSupportCrossClusterAPIKey(ctx context.Contex
 		return false, diags
 	}
 
-	currentVersion, sdkDiags := client.ServerVersion(ctx)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	currentVersion, verDiags := client.ServerVersion(ctx)
+	diags.Append(verDiags...)
 	if diags.HasError() {
 		return false, diags
 	}
@@ -196,8 +195,8 @@ func (r *Resource) createCrossClusterAPIKey(ctx context.Context, planModel *tfMo
 		return diags
 	}
 
-	id, sdkDiags := client.ID(ctx, putResponse.Id)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	id, idDiags := client.ID(ctx, putResponse.Id)
+	diags.Append(idDiags...)
 	if diags.HasError() {
 		return diags
 	}
@@ -238,8 +237,8 @@ func (r *Resource) createAPIKey(ctx context.Context, planModel *tfModel) diag.Di
 		return diags
 	}
 
-	id, sdkDiags := client.ID(ctx, putResponse.Id)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	id, idDiags := client.ID(ctx, putResponse.Id)
+	diags.Append(idDiags...)
 	if diags.HasError() {
 		return diags
 	}

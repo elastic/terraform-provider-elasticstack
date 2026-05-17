@@ -183,7 +183,7 @@ func TestAccImportedUserDoesNotResetPassword(t *testing.T) {
 					}
 					clusterID, diag := client.ClusterID(context.Background())
 					if diag.HasError() {
-						return "", fmt.Errorf("failed to get cluster uuid: %s", diag[0].Summary)
+						return "", fmt.Errorf("failed to get cluster uuid: %s", diag[0].Summary())
 					}
 
 					return fmt.Sprintf("%s/%s", *clusterID, username), nil

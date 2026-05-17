@@ -24,7 +24,6 @@ import (
 
 	esclients "github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -34,8 +33,8 @@ import (
 func readSlm(ctx context.Context, client *esclients.ElasticsearchScopedClient, resourceID string, state Data) (Data, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	slm, sdkDiags := elasticsearch.GetSlm(ctx, client, resourceID)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	slm, slmDiags := elasticsearch.GetSlm(ctx, client, resourceID)
+	diags.Append(slmDiags...)
 	if diags.HasError() {
 		return state, false, diags
 	}

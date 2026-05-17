@@ -22,7 +22,6 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -55,8 +54,8 @@ func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedCl
 		return config, diags
 	}
 
-	id, sdkDiags := esClient.ID(ctx, name)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	id, idDiags := esClient.ID(ctx, name)
+	diags.Append(idDiags...)
 	if diags.HasError() {
 		return config, diags
 	}
