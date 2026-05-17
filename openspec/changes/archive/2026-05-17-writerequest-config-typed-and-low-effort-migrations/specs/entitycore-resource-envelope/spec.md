@@ -1,6 +1,6 @@
 ## MODIFIED Requirements
 
-### Requirement: Envelope owns Create and Update preludes
+### Requirement: Envelope owns the Create and Update preludes
 
 The system SHALL implement `Create` and `Update` on `NewElasticsearchResource[T]` by deserializing the relevant framework inputs, deriving the write resource ID from the model, resolving the scoped Elasticsearch client from the model's connection block via `GetElasticsearchClient`, enforcing any optional version requirements declared by the planned model, invoking the corresponding concrete callback with a structured request object, and then invoking `readFunc` with the model returned by the callback. State SHALL be set from the model returned by `readFunc`, not directly from the concrete callback.
 
