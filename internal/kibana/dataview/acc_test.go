@@ -133,6 +133,7 @@ func TestAccResourceDataView(t *testing.T) {
 					checkIDUnchanged,
 				),
 			},
+			// Re-apply the same omitted config for import-state verification.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minFullDataviewSupport),
