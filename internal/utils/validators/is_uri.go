@@ -30,7 +30,7 @@ import (
 
 type uriValidator struct {
 	allowedSchemes []string
-	requireHost   bool
+	requireHost    bool
 }
 
 // IsURI returns a string validator that ensures the value is a parseable
