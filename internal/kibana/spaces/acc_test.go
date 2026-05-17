@@ -15,10 +15,11 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package kibana_test
+package spaces_test
 
 import (
 	"context"
+	_ "embed"
 	"fmt"
 	"testing"
 
@@ -189,3 +190,46 @@ var checkResourceSpaceDestroy = checks.KibanaResourceDestroyCheck(
 		return space != nil, nil
 	},
 )
+
+//go:embed testdata/TestAccSpaceResourceFromSDK/create/main.tf
+var spaceFromSDKCreateConfig string
+
+func TestAccSpaceResourceFromSDK(t *testing.T) {
+	spaceID := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceSpaceDestroy,
+		Steps: []resource.TestStep{
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"elasticstack": {
+						Source:            "elastic/elasticstack",
+						VersionConstraint: "0.15.1",
+					},
+				},
+				Config: spaceFromSDKCreateConfig,
+				ConfigVariables: config.Variables{
+					"space_id": config.StringVariable(spaceID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "space_id", spaceID),
+					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "name", fmt.Sprintf("SDK %s", spaceID)),
+					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "description", "Space created by the legacy SDK provider"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"space_id": config.StringVariable(spaceID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "space_id", spaceID),
+					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "name", fmt.Sprintf("SDK %s", spaceID)),
+					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "description", "Space created by the legacy SDK provider"),
+				),
+			},
+		},
+	})
+}
