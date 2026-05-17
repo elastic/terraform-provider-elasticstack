@@ -66,14 +66,14 @@ type elasticsearchDeleteFunc[T ElasticsearchResourceModel] func(
 ) diag.Diagnostics
 
 // WriteRequest is passed to [WriteFunc] after plan decoding, prior-state
-// decoding (Update only), write identity validation, client resolution, and
-// optional version checks. Prior is non-nil only for Update; Create receives
-// Prior == nil. The same WriteRequest type is shared by Create and Update so a
-// single function can serve both when the logic does not differ.
+// decoding (Update only), config decoding, write identity validation, client
+// resolution, and optional version checks. Prior is non-nil only for Update;
+// Create receives Prior == nil. The same WriteRequest type is shared by Create
+// and Update so a single function can serve both when the logic does not differ.
 type WriteRequest[T ElasticsearchResourceModel] struct {
 	Plan    T
 	Prior   *T
-	Config  tfsdk.Config
+	Config  T
 	WriteID string
 }
 
@@ -364,6 +364,12 @@ func (r *ElasticsearchResource[T]) runWrite(ctx context.Context, inv writeInvoca
 		return d
 	}
 
+	var configModel T
+	diags.Append(inv.config.Get(ctx, &configModel)...)
+	if diags.HasError() {
+		return diags
+	}
+
 	writeFn := r.createFunc
 	if inv.isUpdate {
 		writeFn = r.updateFunc
@@ -372,7 +378,7 @@ func (r *ElasticsearchResource[T]) runWrite(ctx context.Context, inv writeInvoca
 	written, callDiags := writeFn(ctx, client, WriteRequest[T]{
 		Plan:    planModel,
 		Prior:   priorPtr,
-		Config:  inv.config,
+		Config:  configModel,
 		WriteID: writeKey,
 	})
 	diags.Append(callDiags...)
