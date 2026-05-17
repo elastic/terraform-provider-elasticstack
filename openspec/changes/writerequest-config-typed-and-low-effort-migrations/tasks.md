@@ -15,9 +15,9 @@
 
 ## 3. index/template: Migrate Create and Update overrides
 
-- [ ] 3.1 Remove `func (r *Resource) Create` and `func (r *Resource) Update` method receivers from `internal/elasticsearch/index/template/create.go` and `update.go`
-- [ ] 3.2 Create a `writeIndexTemplate` `WriteFunc[Model]` in `internal/elasticsearch/index/template/write.go` (or equivalent) that uses `req.Config` as the `priorForRead` seed and contains the `allow_custom_routing` 8.x workaround using `req.Prior` vs `req.Config`
-- [ ] 3.3 Update `internal/elasticsearch/index/template/resource.go` to wire `writeIndexTemplate` as both `Create` and `Update` in `ElasticsearchResourceOptions` (replacing the placeholders)
+- [x] 3.1 Remove `func (r *Resource) Create` and `func (r *Resource) Update` method receivers from `internal/elasticsearch/index/template/create.go` and `update.go`
+- [x] 3.2 Create a `writeIndexTemplate` `WriteFunc[Model]` in `internal/elasticsearch/index/template/write.go` (or equivalent) that uses `req.Config` as the `priorForRead` seed and contains the `allow_custom_routing` 8.x workaround using `req.Prior` vs `req.Config`
+- [x] 3.3 Update `internal/elasticsearch/index/template/resource.go` to wire `writeIndexTemplate` as both `Create` and `Update` in `ElasticsearchResourceOptions` (replacing the placeholders)
 
 ## 4. index/templateilmattachment: Migrate Create and Update overrides
 
