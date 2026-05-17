@@ -2339,19 +2339,19 @@ func TestReconcileEmptyListsFromPlan(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			reconcileEmptyListsFromPlan(&tt.reference, &tt.target)
+			reconcileEmptyListsFromPlan(ctx, &tt.reference, &tt.target)
 
 			require.Equal(t, tt.expectActions.IsNull(), tt.target.Actions.IsNull(), "Actions null mismatch")
 			if !tt.expectActions.IsNull() {
-				require.Equal(t, len(tt.expectActions.Elements()), len(tt.target.Actions.Elements()), "Actions length mismatch")
+				require.Len(t, tt.target.Actions.Elements(), len(tt.expectActions.Elements()), "Actions length mismatch")
 			}
 			require.Equal(t, tt.expectThreat.IsNull(), tt.target.Threat.IsNull(), "Threat null mismatch")
 			if !tt.expectThreat.IsNull() {
-				require.Equal(t, len(tt.expectThreat.Elements()), len(tt.target.Threat.Elements()), "Threat length mismatch")
+				require.Len(t, tt.target.Threat.Elements(), len(tt.expectThreat.Elements()), "Threat length mismatch")
 			}
 			require.Equal(t, tt.expectSeverity.IsNull(), tt.target.SeverityMapping.IsNull(), "SeverityMapping null mismatch")
 			if !tt.expectSeverity.IsNull() {
-				require.Equal(t, len(tt.expectSeverity.Elements()), len(tt.target.SeverityMapping.Elements()), "SeverityMapping length mismatch")
+				require.Len(t, tt.target.SeverityMapping.Elements(), len(tt.expectSeverity.Elements()), "SeverityMapping length mismatch")
 			}
 		})
 	}
@@ -2380,7 +2380,12 @@ func TestReconcileNestedThreatLists(t *testing.T) {
 
 	buildTechniqueList := func(subtechnique types.List) types.List {
 		list, _ := types.ListValueFrom(ctx, getThreatTechniqueElementType(), []ThreatTechniqueModel{
-			{ID: types.StringValue("T1190"), Name: types.StringValue("Exploit Public-Facing Application"), Reference: types.StringValue("https://attack.mitre.org/techniques/T1190"), Subtechnique: subtechnique},
+			{
+				ID:           types.StringValue("T1190"),
+				Name:         types.StringValue("Exploit Public-Facing Application"),
+				Reference:    types.StringValue("https://attack.mitre.org/techniques/T1190"),
+				Subtechnique: subtechnique,
+			},
 		})
 		return list
 	}
@@ -2398,30 +2403,30 @@ func TestReconcileNestedThreatLists(t *testing.T) {
 		expectSubtechniqueNull bool
 	}{
 		{
-			name:      "explicitly empty technique list round-trips as []",
-			reference: Data{Threat: buildThreatList(emptyTechnique)},
-			target:    Data{Threat: buildThreatList(nullTechnique)},
+			name:                 "explicitly empty technique list round-trips as []",
+			reference:            Data{Threat: buildThreatList(emptyTechnique)},
+			target:               Data{Threat: buildThreatList(nullTechnique)},
 			expectTechniqueNull:  false,
 			expectTechniqueCount: 0,
 		},
 		{
-			name:      "omitted/null technique remains null",
-			reference: Data{Threat: buildThreatList(nullTechnique)},
-			target:    Data{Threat: buildThreatList(nullTechnique)},
+			name:                "omitted/null technique remains null",
+			reference:           Data{Threat: buildThreatList(nullTechnique)},
+			target:              Data{Threat: buildThreatList(nullTechnique)},
 			expectTechniqueNull: true,
 		},
 		{
-			name:      "explicitly empty subtechnique list round-trips as []",
-			reference: Data{Threat: buildThreatList(techniqueWithEmptySub)},
-			target:    Data{Threat: buildThreatList(techniqueWithNullSub)},
+			name:                   "explicitly empty subtechnique list round-trips as []",
+			reference:              Data{Threat: buildThreatList(techniqueWithEmptySub)},
+			target:                 Data{Threat: buildThreatList(techniqueWithNullSub)},
 			expectTechniqueNull:    false,
 			expectTechniqueCount:   1,
 			expectSubtechniqueNull: false,
 		},
 		{
-			name:      "omitted/null subtechnique remains null",
-			reference: Data{Threat: buildThreatList(techniqueWithNullSub)},
-			target:    Data{Threat: buildThreatList(techniqueWithNullSub)},
+			name:                   "omitted/null subtechnique remains null",
+			reference:              Data{Threat: buildThreatList(techniqueWithNullSub)},
+			target:                 Data{Threat: buildThreatList(techniqueWithNullSub)},
 			expectTechniqueNull:    false,
 			expectTechniqueCount:   1,
 			expectSubtechniqueNull: true,
@@ -2432,7 +2437,7 @@ func TestReconcileNestedThreatLists(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			reconcileEmptyListsFromPlan(&tt.reference, &tt.target)
+			reconcileEmptyListsFromPlan(ctx, &tt.reference, &tt.target)
 
 			var targetThreats []ThreatModel
 			errDiags := tt.target.Threat.ElementsAs(ctx, &targetThreats, false)
@@ -2456,7 +2461,7 @@ func TestReconcileNestedThreatLists(t *testing.T) {
 						require.True(t, targetTechs[0].Subtechnique.IsNull(), "expected subtechnique to be null")
 					} else {
 						require.False(t, targetTechs[0].Subtechnique.IsNull(), "expected subtechnique to be non-null")
-						require.Equal(t, 0, len(targetTechs[0].Subtechnique.Elements()), "expected subtechnique to be empty list")
+						require.Empty(t, targetTechs[0].Subtechnique.Elements(), "expected subtechnique to be empty list")
 					}
 				}
 			}

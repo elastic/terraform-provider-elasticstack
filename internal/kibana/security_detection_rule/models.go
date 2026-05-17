@@ -636,7 +636,7 @@ func (d Data) parseResourceUUID(diags *diag.Diagnostics) (uuid.UUID, bool) {
 // reconcileEmptyListsFromPlan copies explicit empty lists from reference (plan or
 // prior state) into target (post-read data) so that Optional-only list attributes
 // set to [] do not produce "Provider produced inconsistent result after apply".
-func reconcileEmptyListsFromPlan(reference, target *Data) {
+func reconcileEmptyListsFromPlan(ctx context.Context, reference, target *Data) {
 	// Top-level attributes
 	if isKnownEmptyList(reference.Actions) && target.Actions.IsNull() {
 		target.Actions = reference.Actions
@@ -661,7 +661,7 @@ func reconcileEmptyListsFromPlan(reference, target *Data) {
 	}
 
 	// Nested threat technique / subtechnique reconciliation
-	reconcileNestedThreatLists(reference, target)
+	reconcileNestedThreatLists(ctx, reference, target)
 }
 
 // isKnownEmptyList reports whether v is a known, non-null list with zero elements.
@@ -672,16 +672,16 @@ func isKnownEmptyList(v types.List) bool {
 // reconcileNestedThreatLists copies empty technique/subtechnique lists from
 // reference threat entries into target threat entries when the target value is
 // null, preserving null when the practitioner omitted the nested attribute.
-func reconcileNestedThreatLists(reference, target *Data) {
+func reconcileNestedThreatLists(ctx context.Context, reference, target *Data) {
 	if !typeutils.IsKnown(reference.Threat) || !typeutils.IsKnown(target.Threat) {
 		return
 	}
 
 	var refThreats, targetThreats []ThreatModel
-	if diag := reference.Threat.ElementsAs(context.Background(), &refThreats, false); diag.HasError() {
+	if diag := reference.Threat.ElementsAs(ctx, &refThreats, false); diag.HasError() {
 		return
 	}
-	if diag := target.Threat.ElementsAs(context.Background(), &targetThreats, false); diag.HasError() {
+	if diag := target.Threat.ElementsAs(ctx, &targetThreats, false); diag.HasError() {
 		return
 	}
 	if len(refThreats) != len(targetThreats) {
@@ -699,10 +699,10 @@ func reconcileNestedThreatLists(reference, target *Data) {
 		// Reconcile subtechnique lists inside each technique entry
 		if typeutils.IsKnown(refThreats[i].Technique) && typeutils.IsKnown(targetThreats[i].Technique) {
 			var refTechs, targetTechs []ThreatTechniqueModel
-			if diag := refThreats[i].Technique.ElementsAs(context.Background(), &refTechs, false); diag.HasError() {
+			if diag := refThreats[i].Technique.ElementsAs(ctx, &refTechs, false); diag.HasError() {
 				continue
 			}
-			if diag := targetThreats[i].Technique.ElementsAs(context.Background(), &targetTechs, false); diag.HasError() {
+			if diag := targetThreats[i].Technique.ElementsAs(ctx, &targetTechs, false); diag.HasError() {
 				continue
 			}
 			if len(refTechs) == len(targetTechs) {
@@ -713,7 +713,7 @@ func reconcileNestedThreatLists(reference, target *Data) {
 					}
 				}
 				// Rebuild technique list with updated subtechniques
-				rebuiltTechs, _ := types.ListValueFrom(context.Background(), getThreatTechniqueElementType(), targetTechs)
+				rebuiltTechs, _ := types.ListValueFrom(ctx, getThreatTechniqueElementType(), targetTechs)
 				targetThreats[i].Technique = rebuiltTechs
 			}
 		}
@@ -721,7 +721,7 @@ func reconcileNestedThreatLists(reference, target *Data) {
 
 	// Rebuild the target threat list with updated elements
 	if updated && len(targetThreats) > 0 {
-		rebuilt, rebuildDiags := types.ListValueFrom(context.Background(), getThreatElementType(), targetThreats)
+		rebuilt, rebuildDiags := types.ListValueFrom(ctx, getThreatElementType(), targetThreats)
 		if rebuildDiags.HasError() {
 			return
 		}
