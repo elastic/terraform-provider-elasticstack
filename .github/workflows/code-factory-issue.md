@@ -2437,6 +2437,10 @@ steps:
     with:
       go-version-file: go.mod
       cache: false
+  - name: Setup Terraform CLI
+    uses: hashicorp/setup-terraform@v4
+    with:
+      terraform_wrapper: false
   - name: Export Go paths for AWF chroot mode
     run: |
       echo "GOROOT=$(go env GOROOT)" >> "$GITHUB_ENV"
@@ -2454,10 +2458,6 @@ steps:
     uses: actions/setup-node@v6
     with:
       node-version-file: package.json
-  - name: Setup Terraform CLI
-    uses: hashicorp/setup-terraform@v4
-    with:
-      terraform_wrapper: false
   - name: Setup Elastic Stack
     run: make docker-fleet
   - name: Get dependencies
