@@ -72,7 +72,7 @@ func objectFromFieldSecurity(ctx context.Context, fs *map[string][]string) (type
 func flattenIndices(ctx context.Context, indices *[]kibanaoapi.SecurityRoleESIndex) (types.Set, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if indices == nil || len(*indices) == 0 {
-		return types.SetValueMust(types.ObjectType{AttrTypes: esIndexObjectAttrTypes()}, []attr.Value{}), diags
+		return types.SetNull(types.ObjectType{AttrTypes: esIndexObjectAttrTypes()}), diags
 	}
 	elems := make([]attr.Value, len(*indices))
 	for i, index := range *indices {
@@ -123,7 +123,7 @@ func flattenIndices(ctx context.Context, indices *[]kibanaoapi.SecurityRoleESInd
 func flattenRemoteIndices(ctx context.Context, indices *[]kibanaoapi.SecurityRoleESRemoteIndex) (types.Set, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if indices == nil || len(*indices) == 0 {
-		return types.SetValueMust(types.ObjectType{AttrTypes: esRemoteIndexObjectAttrTypes()}, []attr.Value{}), diags
+		return types.SetNull(types.ObjectType{AttrTypes: esRemoteIndexObjectAttrTypes()}), diags
 	}
 	elems := make([]attr.Value, len(*indices))
 	for i, index := range *indices {
@@ -231,7 +231,7 @@ func flattenElasticsearch(ctx context.Context, es *kibanaoapi.SecurityRoleES) (t
 func flattenKibanaFeatures(ctx context.Context, features *map[string][]string) (types.Set, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if features == nil || len(*features) == 0 {
-		return types.SetValueMust(types.ObjectType{AttrTypes: kibanaFeatureAttrTypes()}, []attr.Value{}), diags
+		return types.SetNull(types.ObjectType{AttrTypes: kibanaFeatureAttrTypes()}), diags
 	}
 	elems := make([]attr.Value, 0, len(*features))
 	for k, privs := range *features {
@@ -282,7 +282,7 @@ func flattenKibana(ctx context.Context, configs []kibanaoapi.SecurityRoleKibana)
 			}
 		}
 		if baseSet.IsNull() {
-			baseSet = types.SetValueMust(types.StringType, []attr.Value{})
+			baseSet = types.SetNull(types.StringType)
 		}
 		featureSet, d := flattenKibanaFeatures(ctx, cfg.Feature)
 		diags.Append(d...)
