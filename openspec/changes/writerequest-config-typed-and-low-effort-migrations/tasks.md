@@ -28,6 +28,8 @@
 
 ## 5. security/api_key: Migrate Update override
 
+> **Note:** After wiring Update through the envelope, `tfModel` implements `entitycore.WithReadResourceID` so read-after-write and Read resolve Elasticsearch API calls by `key_id` (not the user `name` used for `GetResourceID` / write identity).
+
 - [x] 5.1 Remove `func (r *Resource) Update` method receiver from `internal/elasticsearch/security/api_key/update.go`
 - [x] 5.2 Create a `writeAPIKey` `WriteFunc[tfModel]` that branches on `req.Plan.Type` to call `updateCrossClusterAPIKey` or `updateAPIKey`; the envelope read-after-write path calls `readAPIKey` and applies `PostRead` (returns `WriteResult` with plan model for read identity)
 - [x] 5.3 Update `internal/elasticsearch/security/api_key/resource.go` to wire the new callback as `Update` in `ElasticsearchResourceOptions` (replacing the placeholder); `Create` remains as a method receiver override

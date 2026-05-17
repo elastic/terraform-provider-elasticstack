@@ -26,7 +26,9 @@ import (
 	"github.com/elastic/go-elasticsearch/v8/typedapi/security/updateapikey"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/security/updatecrossclusterapikey"
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -79,6 +81,24 @@ func (model tfModel) GetResourceID() types.String {
 func (model tfModel) GetElasticsearchConnection() types.List {
 	return model.ElasticsearchConnection
 }
+
+// GetReadResourceID satisfies entitycore.WithReadResourceID: the API key read
+// identity is the immutable key_id (not the user-supplied Name) because the
+// Elasticsearch Get/Update API key APIs are keyed by id.
+func (m tfModel) GetReadResourceID() string {
+	if typeutils.IsKnown(m.KeyID) && m.KeyID.ValueString() != "" {
+		return m.KeyID.ValueString()
+	}
+	if typeutils.IsKnown(m.ID) && m.ID.ValueString() != "" {
+		compID, diags := clients.CompositeIDFromStr(m.ID.ValueString())
+		if !diags.HasError() && compID != nil {
+			return compID.ResourceID
+		}
+	}
+	return ""
+}
+
+var _ entitycore.WithReadResourceID = tfModel{}
 
 func (model tfModel) buildTypedRoleDescriptors() (map[string]estypes.RoleDescriptor, diag.Diagnostics) {
 	if !typeutils.IsKnown(model.RoleDescriptors) {
