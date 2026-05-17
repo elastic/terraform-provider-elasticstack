@@ -21,6 +21,7 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"path/filepath"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -68,6 +69,7 @@ func TestAccResourceSpace(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "description", "Updated space description"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_space.test_space", "disabled_features.*", "ingestManager"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_space.test_space", "disabled_features.*", "enterpriseSearch"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "initials", "AB"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "color", "#FFFFFF"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_space.test_space", "image_url"),
 				),
@@ -98,6 +100,34 @@ func TestAccResourceSpace(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "description", "Test Space"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "color", "#FFFFFF"),
 				),
+			},
+		},
+	})
+}
+
+func TestAccResourceSpace_importState(t *testing.T) {
+	spaceID := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceSpaceDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          config.StaticDirectory(filepath.Join("testdata", "TestAccResourceSpace", "create")),
+				ConfigVariables: config.Variables{
+					"space_id": config.StringVariable(spaceID),
+				},
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          config.StaticDirectory(filepath.Join("testdata", "TestAccResourceSpace", "create")),
+				ConfigVariables: config.Variables{
+					"space_id": config.StringVariable(spaceID),
+				},
+				ResourceName:      "elasticstack_kibana_space.test_space",
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
