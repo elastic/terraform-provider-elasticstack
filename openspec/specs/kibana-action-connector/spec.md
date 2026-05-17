@@ -55,6 +55,7 @@ data "elasticstack_kibana_action_connector" "example" {
   connector_type_id = <optional, string>
 
   # Computed outputs
+  id                  = <computed, string>  # <space_id>/<connector_id>
   connector_id        = <computed, string>
   config              = <computed, string>  # JSON string of connector configuration
   is_deprecated       = <computed, bool>
