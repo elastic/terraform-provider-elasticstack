@@ -1,9 +1,13 @@
 ## 1. Envelope: WriteRequest.Config field change
 
-- [ ] 1.1 Change `WriteRequest[T].Config` field type from `tfsdk.Config` to `T` in `internal/entitycore/resource_envelope.go`
-- [ ] 1.2 Change `writeInvocation.config` field type from `tfsdk.Config` to `T` in `internal/entitycore/resource_envelope.go`
-- [ ] 1.3 Update `runWrite` to decode config into `T` via `inv.config.Get(ctx, &configModel)` and pass `configModel` as `WriteRequest.Config`
-- [ ] 1.4 Update `resource_envelope_test.go` assertions that access `req.Config.Raw` / `req.Config.Schema` to use struct field access on the decoded model
+> **Note (task 1.2):** `writeInvocation.config` remains `tfsdk.Config` because Create/Update only receive the raw framework handle; `runWrite` decodes via `inv.config.Get(ctx, &configModel)` and passes the resulting `T` as `WriteRequest.Config`. The *typed* value is what write callbacks observe.
+
+> **Note (decode order):** Terraform configuration is decoded after `requireReadFunc` (and after version requirements): if the read callback is nil or config decoding fails, diagnostics match the prior short-circuit behavior without invoking the write callback.
+
+- [x] 1.1 Change `WriteRequest[T].Config` field type from `tfsdk.Config` to `T` in `internal/entitycore/resource_envelope.go`
+- [x] 1.2 Change `writeInvocation.config` field type from `tfsdk.Config` to `T` in `internal/entitycore/resource_envelope.go` _(interpreted as above: carrier stays `tfsdk.Config`; `WriteRequest.Config` is `T`)_
+- [x] 1.3 Update `runWrite` to decode config into `T` via `inv.config.Get(ctx, &configModel)` and pass `configModel` as `WriteRequest.Config`
+- [x] 1.4 Update `resource_envelope_test.go` assertions that access `req.Config.Raw` / `req.Config.Schema` to use struct field access on the decoded model
 
 ## 2. security/user: Update write callback
 
