@@ -23,24 +23,8 @@ import (
 	"net/http"
 	"slices"
 
-	"github.com/elastic/go-elasticsearch/v8/esapi"
-	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
+		fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 )
-
-func CheckErrorFromFW(res *esapi.Response, errMsg string) fwdiag.Diagnostics {
-	var diags fwdiag.Diagnostics
-
-	if res.IsError() {
-		body, err := io.ReadAll(res.Body)
-		if err != nil {
-			diags.AddError(errMsg, err.Error())
-			return diags
-		}
-		diags.AddError(errMsg, fmt.Sprintf("Failed with: %s", body))
-		return diags
-	}
-	return diags
-}
 
 func CheckHTTPErrorFromFW(res *http.Response, errMsg string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
