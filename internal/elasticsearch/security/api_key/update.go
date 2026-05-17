@@ -29,7 +29,7 @@ import (
 func writeAPIKey(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.WriteRequest[tfModel]) (entitycore.WriteResult[tfModel], diag.Diagnostics) {
 	planModel := req.Plan
 	var diags diag.Diagnostics
-	if planModel.Type.ValueString() == "cross_cluster" {
+	if planModel.Type.ValueString() == crossClusterAPIKeyType {
 		diags.Append(updateCrossClusterAPIKey(ctx, client, planModel)...)
 	} else {
 		diags.Append(updateAPIKey(ctx, client, planModel)...)

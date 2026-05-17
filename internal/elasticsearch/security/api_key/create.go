@@ -51,7 +51,7 @@ func (r Resource) Create(ctx context.Context, req resource.CreateRequest, resp *
 		return
 	}
 
-	if planModel.Type.ValueString() == "cross_cluster" {
+	if planModel.Type.ValueString() == crossClusterAPIKeyType {
 		resp.Diagnostics.Append(r.createCrossClusterAPIKey(ctx, client, &planModel)...)
 	} else {
 		resp.Diagnostics.Append(r.createAPIKey(ctx, client, &planModel)...)

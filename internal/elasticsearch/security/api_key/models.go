@@ -113,7 +113,7 @@ func (model tfModel) GetVersionRequirements() ([]entitycore.VersionRequirement, 
 	var diags diag.Diagnostics
 	var reqs []entitycore.VersionRequirement
 
-	if model.Type.ValueString() == "cross_cluster" {
+	if model.Type.ValueString() == crossClusterAPIKeyType {
 		reqs = append(reqs, entitycore.VersionRequirement{
 			MinVersion:   *MinVersionWithCrossCluster,
 			ErrorMessage: fmt.Sprintf("Cross-cluster API keys are only supported in Elasticsearch version %s and above.", MinVersionWithCrossCluster.String()),
