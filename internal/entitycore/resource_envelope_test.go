@@ -25,6 +25,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	rschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -1723,6 +1724,8 @@ func TestNewElasticsearchResource_Create_callbackReceivesNilPrior(t *testing.T) 
 		require.Nil(t, req.Prior, "Create SHALL receive a nil Prior pointer")
 		require.Equal(t, "user1", req.WriteID)
 		require.Equal(t, "user1", req.Plan.Name.ValueString())
+		require.Equal(t, "user1", req.Config.Name.ValueString())
+		require.True(t, req.Config.ElasticsearchConnection.IsNull())
 		model := req.Plan
 		model.ID = types.StringValue("cluster/" + req.WriteID)
 		return WriteResult[testResourceModel]{Model: model}, nil
@@ -2008,4 +2011,208 @@ func TestNewElasticsearchResource_Delete_nilDeleteCallbackConfigurationError(t *
 
 	require.True(t, resp.Diagnostics.HasError())
 	require.Contains(t, resp.Diagnostics.Errors()[0].Summary(), "configuration error")
+}
+
+// --- write-only Config vs Plan (dedicated model; not shared with default test schema)
+
+type writeOnlyTestResourceModel struct {
+	ID                      types.String `tfsdk:"id"`
+	Name                    types.String `tfsdk:"name"`
+	TokenWo                 types.String `tfsdk:"token_wo"`
+	ElasticsearchConnection types.List   `tfsdk:"elasticsearch_connection"`
+}
+
+func (m writeOnlyTestResourceModel) GetID() types.String { return m.ID }
+
+func (m writeOnlyTestResourceModel) GetResourceID() types.String { return m.Name }
+
+func (m writeOnlyTestResourceModel) GetElasticsearchConnection() types.List {
+	return m.ElasticsearchConnection
+}
+
+func getWriteOnlyTestResourceSchema(_ context.Context) rschema.Schema {
+	return rschema.Schema{
+		Attributes: map[string]rschema.Attribute{
+			"id": rschema.StringAttribute{
+				Computed: true,
+			},
+			"name": rschema.StringAttribute{
+				Optional: true,
+			},
+			"token_wo": rschema.StringAttribute{
+				Optional:  true,
+				WriteOnly: true,
+			},
+		},
+	}
+}
+
+func writeOnlyTestResourceSchemaWithConnection(ctx context.Context) rschema.Schema {
+	s := getWriteOnlyTestResourceSchema(ctx)
+	s.Blocks = map[string]rschema.Block{
+		"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(),
+	}
+	return s
+}
+
+func writeOnlyTestResourceObjectType() tftypes.Type {
+	return tftypes.Object{
+		AttributeTypes: map[string]tftypes.Type{
+			"id":                       tftypes.String,
+			"name":                     tftypes.String,
+			"token_wo":                 tftypes.String,
+			"elasticsearch_connection": elasticsearchConnectionBlockType(),
+		},
+	}
+}
+
+func writeOnlyTestReadFuncFound(
+	_ context.Context,
+	_ *clients.ElasticsearchScopedClient,
+	_ string,
+	model writeOnlyTestResourceModel,
+) (writeOnlyTestResourceModel, bool, diag.Diagnostics) {
+	return model, true, nil
+}
+
+func writeOnlyTestDeleteFunc(
+	_ context.Context,
+	_ *clients.ElasticsearchScopedClient,
+	_ string,
+	_ writeOnlyTestResourceModel,
+) diag.Diagnostics {
+	return nil
+}
+
+func TestNewElasticsearchResource_Create_writeOnlyInConfigNotInPlan(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+
+	createFn := func(
+		_ context.Context,
+		_ *clients.ElasticsearchScopedClient,
+		req WriteRequest[writeOnlyTestResourceModel],
+	) (WriteResult[writeOnlyTestResourceModel], diag.Diagnostics) {
+		require.True(t,
+			req.Plan.TokenWo.IsNull() || req.Plan.TokenWo.IsUnknown(),
+			"write-only attribute should not carry configured value on Plan at write time",
+		)
+		require.True(t, typeutils.IsKnown(req.Config.TokenWo), "decoded Config should carry write-only value")
+		require.Equal(t, "practitioner-secret", req.Config.TokenWo.ValueString())
+
+		model := req.Plan
+		model.ID = types.StringValue("cluster/" + req.WriteID)
+		return WriteResult[writeOnlyTestResourceModel]{Model: model}, nil
+	}
+
+	r := NewElasticsearchResource[writeOnlyTestResourceModel]("test_entity", ElasticsearchResourceOptions[writeOnlyTestResourceModel]{
+		Schema: writeOnlyTestResourceSchemaWithConnection,
+		Read:   writeOnlyTestReadFuncFound,
+		Delete: writeOnlyTestDeleteFunc,
+		Create: createFn,
+		Update: func(_ context.Context, _ *clients.ElasticsearchScopedClient, req WriteRequest[writeOnlyTestResourceModel]) (WriteResult[writeOnlyTestResourceModel], diag.Diagnostics) {
+			model := req.Plan
+			model.ID = types.StringValue("cluster/" + req.WriteID)
+			return WriteResult[writeOnlyTestResourceModel]{Model: model}, diag.Diagnostics{}
+		},
+	})
+	r.client = factory
+
+	schema := writeOnlyTestResourceSchemaWithConnection(ctx)
+	ot := writeOnlyTestResourceObjectType()
+	planRaw := tftypes.NewValue(ot, map[string]tftypes.Value{
+		"id":                       tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
+		"name":                     tftypes.NewValue(tftypes.String, "user1"),
+		"token_wo":                 tftypes.NewValue(tftypes.String, nil),
+		"elasticsearch_connection": tftypes.NewValue(elasticsearchConnectionBlockType(), nil),
+	})
+	configRaw := tftypes.NewValue(ot, map[string]tftypes.Value{
+		"id":                       tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
+		"name":                     tftypes.NewValue(tftypes.String, "user1"),
+		"token_wo":                 tftypes.NewValue(tftypes.String, "practitioner-secret"),
+		"elasticsearch_connection": tftypes.NewValue(elasticsearchConnectionBlockType(), nil),
+	})
+	plan := tfsdk.Plan{Raw: planRaw, Schema: schema}
+	config := tfsdk.Config{Raw: configRaw, Schema: schema}
+
+	resp := resource.CreateResponse{State: tfsdk.State{
+		Raw:    tftypes.NewValue(ot, nil),
+		Schema: schema,
+	}}
+	r.Create(ctx, resource.CreateRequest{Plan: plan, Config: config}, &resp)
+
+	require.False(t, resp.Diagnostics.HasError())
+}
+
+func TestNewElasticsearchResource_Create_shortCircuitConfigGetError(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	createCalled := false
+	r := NewElasticsearchResource[testResourceModel]("test_entity", ElasticsearchResourceOptions[testResourceModel]{
+		Schema: getTestResourceSchema,
+		Read:   testReadFuncFound,
+		Delete: testDeleteFunc,
+		Create: func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ WriteRequest[testResourceModel]) (WriteResult[testResourceModel], diag.Diagnostics) {
+			createCalled = true
+			return WriteResult[testResourceModel]{Model: testResourceModel{}}, nil
+		},
+		Update: testWriteFuncFoundUpdate,
+	})
+	r.client = factory
+
+	plan := makeTestResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue))
+	objType := testResourceObjectType()
+	objValue := tftypes.NewValue(objType, map[string]tftypes.Value{
+		"id":                       tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
+		"name":                     tftypes.NewValue(tftypes.String, "user1"),
+		"elasticsearch_connection": tftypes.NewValue(elasticsearchConnectionBlockType(), nil),
+	})
+	badSchema := getTestResourceSchema(ctx)
+	badConfig := tfsdk.Config{Raw: objValue, Schema: badSchema}
+
+	resp := resource.CreateResponse{State: tfsdk.State{
+		Raw:    tftypes.NewValue(objType, nil),
+		Schema: testResourceSchemaWithConnectionBlock(ctx),
+	}}
+	r.Create(ctx, resource.CreateRequest{Plan: plan, Config: badConfig}, &resp)
+
+	require.True(t, resp.Diagnostics.HasError())
+	require.False(t, createCalled, "createFunc should not be called when config decode fails")
+}
+
+func TestNewElasticsearchResource_Update_shortCircuitConfigGetError(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	updateCalled := false
+	r := NewElasticsearchResource[testResourceModel]("test_entity", ElasticsearchResourceOptions[testResourceModel]{
+		Schema: getTestResourceSchema,
+		Read:   testReadFuncFound,
+		Delete: testDeleteFunc,
+		Create: testWriteFuncFoundCreate,
+		Update: func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ WriteRequest[testResourceModel]) (WriteResult[testResourceModel], diag.Diagnostics) {
+			updateCalled = true
+			return WriteResult[testResourceModel]{Model: testResourceModel{}}, nil
+		},
+	})
+	r.client = factory
+
+	plan := makeTestResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, "cluster/user1"))
+	prior := makeTestResourceState(ctx, t, "cluster/user1")
+	objType := testResourceObjectType()
+	objValue := tftypes.NewValue(objType, map[string]tftypes.Value{
+		"id":                       tftypes.NewValue(tftypes.String, "cluster/user1"),
+		"name":                     tftypes.NewValue(tftypes.String, "user1"),
+		"elasticsearch_connection": tftypes.NewValue(elasticsearchConnectionBlockType(), nil),
+	})
+	badSchema := getTestResourceSchema(ctx)
+	badConfig := tfsdk.Config{Raw: objValue, Schema: badSchema}
+
+	resp := resource.UpdateResponse{State: prior}
+	r.Update(ctx, resource.UpdateRequest{Plan: plan, State: prior, Config: badConfig}, &resp)
+
+	require.True(t, resp.Diagnostics.HasError())
+	require.False(t, updateCalled, "updateFunc should not be called when config decode fails")
 }
