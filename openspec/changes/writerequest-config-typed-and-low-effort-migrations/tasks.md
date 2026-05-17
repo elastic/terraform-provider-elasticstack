@@ -36,9 +36,9 @@
 
 ## 6. transform: Migrate Create and Update overrides
 
-- [ ] 6.1 Remove `func (r *transformResource) Create` and `func (r *transformResource) Update` method receivers from `internal/elasticsearch/transform/resource.go`
-- [ ] 6.2 Create a `writeTransform` `WriteFunc[tfModel]` that uses `req.Prior == nil` to distinguish Create (Put Transform) from Update (Update Transform), and handles enabled-state delta start/stop by comparing `req.Plan.Enabled` vs `req.Prior.Enabled`
-- [ ] 6.3 Update `internal/elasticsearch/transform/resource.go` to wire `writeTransform` as both `Create` and `Update` in `ElasticsearchResourceOptions` (replacing the placeholders)
+- [x] 6.1 Remove `func (r *transformResource) Create` and `func (r *transformResource) Update` method receivers from `internal/elasticsearch/transform/resource.go`
+- [x] 6.2 Create a `writeTransform` `WriteFunc[tfModel]` that uses `req.Prior == nil` to distinguish Create (Put Transform) from Update (Update Transform), and handles enabled-state delta start/stop by comparing `req.Plan.Enabled` vs `req.Prior.Enabled`
+- [x] 6.3 Update `internal/elasticsearch/transform/resource.go` to wire `writeTransform` as both `Create` and `Update` in `ElasticsearchResourceOptions` (replacing the placeholders)
 
 ## 7. Validation
 
