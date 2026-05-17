@@ -620,7 +620,7 @@ func (d *Data) initializeAllFieldsToDefaults() {
 // parseResourceUUID extracts the UUID from the composite resource ID stored in d.ID.
 // Returns the parsed UUID and true on success, or the zero UUID and false on failure (with diags populated).
 func (d Data) parseResourceUUID(diags *diag.Diagnostics) (uuid.UUID, bool) {
-	compID, idDiags := clients.CompositeIDFromStrFw(d.ID.ValueString())
+	compID, idDiags := clients.CompositeIDFromStr(d.ID.ValueString())
 	diags.Append(idDiags...)
 	if diags.HasError() {
 		return uuid.UUID{}, false

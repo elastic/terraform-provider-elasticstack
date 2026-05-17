@@ -65,7 +65,7 @@ func (r *anomalyDetectionJobResource) ValidateConfig(ctx context.Context, req re
 
 func (r *anomalyDetectionJobResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	// Import is intentionally sparse: only IDs are set. Everything else is populated by Read().
-	compID, diags := clients.CompositeIDFromStrFw(req.ID)
+	compID, diags := clients.CompositeIDFromStr(req.ID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

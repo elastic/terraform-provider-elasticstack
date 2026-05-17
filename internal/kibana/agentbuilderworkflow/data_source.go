@@ -23,7 +23,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -62,8 +61,8 @@ func getDataSourceSchema(_ context.Context) dsschema.Schema {
 func readWorkflowDataSource(ctx context.Context, client *clients.KibanaScopedClient, config workflowDataSourceModel) (workflowDataSourceModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	supported, sdkDiags := client.EnforceMinVersion(ctx, minKibanaAgentBuilderAPIVersion)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	supported, verDiags := client.EnforceMinVersion(ctx, minKibanaAgentBuilderAPIVersion)
+	diags.Append(verDiags...)
 	if diags.HasError() {
 		return config, diags
 	}
@@ -86,7 +85,7 @@ func readWorkflowDataSource(ctx context.Context, client *clients.KibanaScopedCli
 	}
 
 	workflowID := config.ID.ValueString()
-	if compID, d := clients.CompositeIDFromStrFw(workflowID); !d.HasError() {
+	if compID, d := clients.CompositeIDFromStr(workflowID); !d.HasError() {
 		workflowID = compID.ResourceID
 		if !typeutils.IsKnown(config.SpaceID) {
 			spaceID = compID.ClusterID

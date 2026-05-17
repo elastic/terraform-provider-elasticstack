@@ -22,7 +22,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -42,13 +41,13 @@ func writeComponentTemplate(ctx context.Context, client *clients.ElasticsearchSc
 		return entitycore.WriteResult[Data]{Model: plan}, diags
 	}
 
-	diags.Append(diagutil.FrameworkDiagsFromSDK(elasticsearch.PutComponentTemplate(ctx, client, &componentTemplate))...)
+	diags.Append(elasticsearch.PutComponentTemplate(ctx, client, &componentTemplate)...)
 	if diags.HasError() {
 		return entitycore.WriteResult[Data]{Model: plan}, diags
 	}
 
 	compositeID, idDiags := client.ID(ctx, req.WriteID)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(idDiags)...)
+	diags.Append(idDiags...)
 	if diags.HasError() {
 		return entitycore.WriteResult[Data]{Model: plan}, diags
 	}

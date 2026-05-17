@@ -22,7 +22,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -128,8 +127,8 @@ func (r *transformResource) Update(ctx context.Context, req resource.UpdateReque
 	}
 
 	// Resolve server version for version-gated fields.
-	serverVersion, sdkDiags := client.ServerVersion(ctx)
-	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	serverVersion, verDiags := client.ServerVersion(ctx)
+	resp.Diagnostics.Append(verDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -158,8 +157,7 @@ func (r *transformResource) Update(ctx context.Context, req resource.UpdateReque
 	willBeEnabled := plan.Enabled.ValueBool()
 	enabledChanged := wasEnabled != willBeEnabled
 
-	sdkDiags = elasticsearch.UpdateTransform(ctx, client, apiTransform, deferValidation, timeout, willBeEnabled, enabledChanged)
-	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	resp.Diagnostics.Append(elasticsearch.UpdateTransform(ctx, client, apiTransform, deferValidation, timeout, willBeEnabled, enabledChanged)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -197,8 +195,8 @@ func (r *transformResource) UpgradeState(context.Context) map[int64]resource.Sta
 func (r *transformResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 
-	compID, sdkDiags := clients.CompositeIDFromStr(req.ID)
-	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	compID, compIDDiags := clients.CompositeIDFromStr(req.ID)
+	resp.Diagnostics.Append(compIDDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

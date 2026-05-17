@@ -46,7 +46,7 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 		return
 	}
 
-	compID, idDiags := clients.CompositeIDFromStrFw(planModel.GetID().ValueString())
+	compID, idDiags := clients.CompositeIDFromStr(planModel.GetID().ValueString())
 	resp.Diagnostics.Append(idDiags...)
 	if resp.Diagnostics.HasError() {
 		return

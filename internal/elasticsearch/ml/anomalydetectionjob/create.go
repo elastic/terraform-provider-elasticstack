@@ -22,7 +22,6 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -58,8 +57,8 @@ func createAnomalyDetectionJob(ctx context.Context, client *clients.Elasticsearc
 		return entitycore.WriteResult[TFModel]{Model: plan}, diags
 	}
 
-	compID, sdkDiags := client.ID(ctx, jobID)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	compID, idDiags := client.ID(ctx, jobID)
+	diags.Append(idDiags...)
 	if diags.HasError() {
 		return entitycore.WriteResult[TFModel]{Model: plan}, diags
 	}

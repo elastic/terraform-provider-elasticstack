@@ -185,7 +185,7 @@ func resolveElasticsearchReadResourceID(model ElasticsearchResourceModel, writeF
 	if writeFallback != "" {
 		return writeFallback, diags
 	}
-	compID, compDiags := clients.CompositeIDFromStrFw(model.GetID().ValueString())
+	compID, compDiags := clients.CompositeIDFromStr(model.GetID().ValueString())
 	diags.Append(compDiags...)
 	if diags.HasError() {
 		return "", diags
@@ -436,7 +436,7 @@ func (r *ElasticsearchResource[T]) Delete(ctx context.Context, req resource.Dele
 		return
 	}
 
-	compID, diags := clients.CompositeIDFromStrFw(model.GetID().ValueString())
+	compID, diags := clients.CompositeIDFromStr(model.GetID().ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

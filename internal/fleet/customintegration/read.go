@@ -22,7 +22,6 @@ import (
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	goversion "github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -54,7 +53,7 @@ func (r *customIntegrationResource) Read(ctx context.Context, req resource.ReadR
 	}
 
 	meetsMinVersion, verDiags := apiClient.EnforceMinVersion(ctx, minVersionCustomPackageGet)
-	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(verDiags)...)
+	resp.Diagnostics.Append(verDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

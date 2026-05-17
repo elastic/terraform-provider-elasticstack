@@ -21,7 +21,6 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -59,8 +58,8 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 		return
 	}
 	for _, req := range vReqs {
-		ok, sdkDiags := client.EnforceMinVersion(ctx, &req.MinVersion)
-		resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+		ok, verDiags := client.EnforceMinVersion(ctx, &req.MinVersion)
+		resp.Diagnostics.Append(verDiags...)
 		if resp.Diagnostics.HasError() {
 			return
 		}

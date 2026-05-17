@@ -24,7 +24,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -39,8 +38,8 @@ func writeLogstashPipeline(ctx context.Context, client *clients.ElasticsearchSco
 	data := req.Plan
 	pipelineID := req.WriteID
 
-	id, sdkDiags := client.ID(ctx, pipelineID)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	id, idDiags := client.ID(ctx, pipelineID)
+	diags.Append(idDiags...)
 	if diags.HasError() {
 		return entitycore.WriteResult[Data]{}, diags
 	}
@@ -74,8 +73,7 @@ func writeLogstashPipeline(ctx context.Context, client *clients.ElasticsearchSco
 	// Expand typed settings fields to flat API map.
 	pipeline.PipelineSettings = expandSettings(data)
 
-	sdkDiags = elasticsearch.PutLogstashPipeline(ctx, client, &pipeline)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	diags.Append(elasticsearch.PutLogstashPipeline(ctx, client, &pipeline)...)
 	if diags.HasError() {
 		return entitycore.WriteResult[Data]{}, diags
 	}

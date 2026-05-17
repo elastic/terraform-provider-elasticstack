@@ -22,7 +22,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
@@ -32,8 +31,8 @@ import (
 func readClusterSettings(ctx context.Context, client *clients.ElasticsearchScopedClient, _ string, state tfModel) (tfModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	clusterSettings, sdkDiags := elasticsearch.GetSettings(ctx, client)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	clusterSettings, getSettingsDiags := elasticsearch.GetSettings(ctx, client)
+	diags.Append(getSettingsDiags...)
 	if diags.HasError() {
 		return state, false, diags
 	}

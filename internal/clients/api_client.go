@@ -56,14 +56,6 @@ func CompositeIDFromStr(id string) (*CompositeID, fwdiags.Diagnostics) {
 	}, nil
 }
 
-// CompositeIDFromStrFw is an alias for CompositeIDFromStr, retained for
-// backward compatibility with existing callers.
-//
-// Deprecated: Call CompositeIDFromStr directly.
-func CompositeIDFromStrFw(id string) (*CompositeID, fwdiags.Diagnostics) {
-	return CompositeIDFromStr(id)
-}
-
 func (c *CompositeID) String() string {
 	return fmt.Sprintf("%s/%s", c.ClusterID, c.ResourceID)
 }

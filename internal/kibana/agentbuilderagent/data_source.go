@@ -24,7 +24,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
@@ -61,8 +60,8 @@ func NewDataSource() datasource.DataSource {
 func readAgentDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, config agentDataSourceModel) (agentDataSourceModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	serverVersion, sdkDiags := kbClient.ServerVersion(ctx)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	serverVersion, verDiags := kbClient.ServerVersion(ctx)
+	diags.Append(verDiags...)
 	if diags.HasError() {
 		return config, diags
 	}
@@ -91,7 +90,7 @@ func readAgentDataSource(ctx context.Context, kbClient *clients.KibanaScopedClie
 	}
 
 	agentID := config.AgentID.ValueString()
-	if compID, idDiags := clients.CompositeIDFromStrFw(agentID); !idDiags.HasError() {
+	if compID, idDiags := clients.CompositeIDFromStr(agentID); !idDiags.HasError() {
 		agentID = compID.ResourceID
 		if !typeutils.IsKnown(config.SpaceID) || config.SpaceID.ValueString() == "" {
 			spaceID = compID.ClusterID

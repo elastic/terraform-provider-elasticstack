@@ -23,7 +23,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -34,14 +33,14 @@ func createInferenceEndpoint(ctx context.Context, client *clients.ElasticsearchS
 	data := req.Plan
 	resourceID := req.WriteID
 
-	id, sdkDiags := client.ID(ctx, resourceID)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	id, idDiags := client.ID(ctx, resourceID)
+	diags.Append(idDiags...)
 	if diags.HasError() {
 		return entitycore.WriteResult[Data]{Model: data}, diags
 	}
 
-	supported, sdkDiags := client.EnforceMinVersion(ctx, MinSupportedVersion)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	supported, verDiags := client.EnforceMinVersion(ctx, MinSupportedVersion)
+	diags.Append(verDiags...)
 	if diags.HasError() {
 		return entitycore.WriteResult[Data]{Model: data}, diags
 	}

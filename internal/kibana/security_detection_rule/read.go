@@ -44,7 +44,7 @@ func (r *securityDetectionRuleResource) Read(ctx context.Context, req resource.R
 	}
 
 	// Parse ID to get space_id and rule_id
-	compID, diags := clients.CompositeIDFromStrFw(data.ID.ValueString())
+	compID, diags := clients.CompositeIDFromStr(data.ID.ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

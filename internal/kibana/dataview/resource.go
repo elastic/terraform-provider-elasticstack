@@ -49,7 +49,7 @@ func NewResource() resource.Resource {
 }
 
 func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	composite, diags := clients.CompositeIDFromStrFw(req.ID)
+	composite, diags := clients.CompositeIDFromStr(req.ID)
 	resp.Diagnostics.Append(diags...)
 	if diags.HasError() {
 		return

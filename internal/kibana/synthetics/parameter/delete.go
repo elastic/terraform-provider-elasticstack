@@ -22,7 +22,6 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -69,8 +68,8 @@ func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, r
 	// supported on Kibana >= 8.17.0; it returns 404 on 8.12.x–8.16.x.
 	// DELETE /api/synthetics/params with {"ids":[...]} body (DeleteSyntheticsParamsWithResponse)
 	// works on all supported versions (>= 8.12.0), so that is used for older versions.
-	kibanaVersion, sdkDiags := apiClient.ServerVersion(ctx)
-	response.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	kibanaVersion, verDiags := apiClient.ServerVersion(ctx)
+	response.Diagnostics.Append(verDiags...)
 	if response.Diagnostics.HasError() {
 		return
 	}

@@ -64,7 +64,7 @@ func (r *resourceSourceMap) Update(_ context.Context, _ resource.UpdateRequest, 
 //   - "<space_id>/<artifact_id>" — sets space_id and id from the two parts.
 //   - "<artifact_id>"           — sets id only; space_id is left unset (default space).
 func (r *resourceSourceMap) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	compID, diags := clients.CompositeIDFromStrFw(req.ID)
+	compID, diags := clients.CompositeIDFromStr(req.ID)
 	if diags.HasError() {
 		// Plain ID (no slash) — set id only, space_id remains unset.
 		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)

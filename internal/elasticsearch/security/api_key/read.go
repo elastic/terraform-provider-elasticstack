@@ -22,7 +22,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
@@ -39,8 +38,8 @@ func readAPIKey(ctx context.Context, client *clients.ElasticsearchScopedClient, 
 		return state, false, diags
 	}
 
-	ver, sdkDiags := client.ServerVersion(ctx)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	ver, verDiags := client.ServerVersion(ctx)
+	diags.Append(verDiags...)
 	if diags.HasError() {
 		return state, false, diags
 	}

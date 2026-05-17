@@ -66,7 +66,7 @@ func (s *SpaceImporter) ImportState(ctx context.Context, req resource.ImportStat
 	var spaceID string
 	var resourceID string
 
-	compID, _ := clients.CompositeIDFromStrFw(req.ID)
+	compID, _ := clients.CompositeIDFromStr(req.ID)
 	if compID == nil {
 		resourceID = req.ID
 	} else {

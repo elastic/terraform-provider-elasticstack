@@ -22,7 +22,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -45,8 +44,8 @@ func readMLDatafeedState(ctx context.Context, client *clients.ElasticsearchScope
 	state.State = types.StringValue(datafeedStats.State.String())
 
 	// Regenerate composite ID to ensure it's current
-	compID, sdkDiags := client.ID(ctx, resourceID)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	compID, idDiags := client.ID(ctx, resourceID)
+	diags.Append(idDiags...)
 	if diags.HasError() {
 		return state, false, diags
 	}

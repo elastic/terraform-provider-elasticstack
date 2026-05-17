@@ -22,7 +22,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -34,9 +33,9 @@ import (
 func deleteILMAttachment(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, _ tfModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	existingRaw, sdkDiags := elasticsearch.GetComponentTemplate(ctx, client, resourceID)
-	if sdkDiags.HasError() {
-		diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	existingRaw, getTplDiags := elasticsearch.GetComponentTemplate(ctx, client, resourceID)
+	if getTplDiags.HasError() {
+		diags.Append(getTplDiags...)
 		return diags
 	}
 
@@ -58,8 +57,8 @@ func deleteILMAttachment(ctx context.Context, client *clients.ElasticsearchScope
 		Meta:     existing.ComponentTemplate.Meta,
 		Version:  existing.ComponentTemplate.Version,
 	}
-	if sdkDiags := elasticsearch.PutComponentTemplate(ctx, client, &componentTemplate); sdkDiags.HasError() {
-		diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	if putDiags := elasticsearch.PutComponentTemplate(ctx, client, &componentTemplate); putDiags.HasError() {
+		diags.Append(putDiags...)
 	}
 	return diags
 }

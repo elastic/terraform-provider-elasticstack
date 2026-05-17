@@ -24,7 +24,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -128,8 +127,8 @@ func (r *pipelineResource) ImportState(ctx context.Context, req resource.ImportS
 func readIngestPipeline(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state Data) (Data, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	pipeline, apiDiags := elasticsearch.GetIngestPipeline(ctx, client, resourceID)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(apiDiags)...)
+	pipeline, getPipelineDiags := elasticsearch.GetIngestPipeline(ctx, client, resourceID)
+	diags.Append(getPipelineDiags...)
 	if diags.HasError() {
 		return state, false, diags
 	}
@@ -139,7 +138,7 @@ func readIngestPipeline(ctx context.Context, client *clients.ElasticsearchScoped
 	}
 
 	compID, compDiags := client.ID(ctx, resourceID)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(compDiags)...)
+	diags.Append(compDiags...)
 	if diags.HasError() {
 		return state, false, diags
 	}
@@ -180,7 +179,7 @@ func readIngestPipeline(ctx context.Context, client *clients.ElasticsearchScoped
 }
 
 func deleteIngestPipeline(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, _ Data) diag.Diagnostics {
-	return diagutil.FrameworkDiagsFromSDK(elasticsearch.DeleteIngestPipeline(ctx, client, resourceID))
+	return elasticsearch.DeleteIngestPipeline(ctx, client, resourceID)
 }
 
 // writeIngestPipeline handles both Create and Update; the ingest pipeline PUT
@@ -196,14 +195,13 @@ func writeIngestPipeline(ctx context.Context, client *clients.ElasticsearchScope
 		return entitycore.WriteResult[Data]{Model: data}, diags
 	}
 
-	apiDiags := elasticsearch.PutIngestPipeline(ctx, client, resourceID, body)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(apiDiags)...)
+	diags.Append(elasticsearch.PutIngestPipeline(ctx, client, resourceID, body)...)
 	if diags.HasError() {
 		return entitycore.WriteResult[Data]{Model: data}, diags
 	}
 
 	compID, compDiags := client.ID(ctx, resourceID)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(compDiags)...)
+	diags.Append(compDiags...)
 	if diags.HasError() {
 		return entitycore.WriteResult[Data]{Model: data}, diags
 	}

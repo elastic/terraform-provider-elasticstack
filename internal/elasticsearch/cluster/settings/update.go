@@ -23,7 +23,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 )
@@ -62,7 +61,7 @@ func updateClusterSettings(ctx context.Context, client *clients.ElasticsearchSco
 		updateRemovedSettings(category, oldCat, newCat, apiSettings)
 	}
 
-	diags.Append(diagutil.FrameworkDiagsFromSDK(elasticsearch.PutSettings(ctx, client, apiSettings))...)
+	diags.Append(elasticsearch.PutSettings(ctx, client, apiSettings)...)
 	if diags.HasError() {
 		return entitycore.WriteResult[tfModel]{Model: plan}, diags
 	}

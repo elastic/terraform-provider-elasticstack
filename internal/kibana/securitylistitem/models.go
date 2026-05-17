@@ -79,7 +79,7 @@ func (m *Model) toAPIUpdateModel(ctx context.Context) (*kbapi.UpdateListItemJSON
 	_ = ctx
 
 	// Parse composite ID to get resource_id
-	compID, compIDDiags := clients.CompositeIDFromStrFw(m.ID.ValueString())
+	compID, compIDDiags := clients.CompositeIDFromStr(m.ID.ValueString())
 	diags.Append(compIDDiags...)
 	if diags.HasError() {
 		return nil, diags

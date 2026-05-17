@@ -22,7 +22,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -34,8 +33,8 @@ func createTransform(ctx context.Context, client *clients.ElasticsearchScopedCli
 	var diags fwdiag.Diagnostics
 
 	// Resolve server version for version-gated fields.
-	serverVersion, sdkDiags := client.ServerVersion(ctx)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	serverVersion, verDiags := client.ServerVersion(ctx)
+	diags.Append(verDiags...)
 	if diags.HasError() {
 		return model, diags
 	}
@@ -58,14 +57,13 @@ func createTransform(ctx context.Context, client *clients.ElasticsearchScopedCli
 
 	// Resolve composite ID BEFORE creating the remote transform so a failure
 	// here cannot leave an orphaned remote resource.
-	id, sdkDiags := client.ID(ctx, resourceID)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	id, idDiags := client.ID(ctx, resourceID)
+	diags.Append(idDiags...)
 	if diags.HasError() {
 		return model, diags
 	}
 
-	sdkDiags = elasticsearch.PutTransform(ctx, client, apiTransform, deferValidation, timeout, enabled)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	diags.Append(elasticsearch.PutTransform(ctx, client, apiTransform, deferValidation, timeout, enabled)...)
 	if diags.HasError() {
 		return model, diags
 	}
