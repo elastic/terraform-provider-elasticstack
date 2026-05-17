@@ -1,0 +1,182 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package elasticsearch
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"io"
+	"net/http"
+
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/expandwildcard"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
+	sdkdiag "github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+)
+
+func PutDataStream(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, dataStreamName string) sdkdiag.Diagnostics {
+	typedClient, err := apiClient.GetESClient()
+	if err != nil {
+		return sdkdiag.FromErr(err)
+	}
+	_, err = typedClient.Indices.CreateDataStream(dataStreamName).Do(ctx)
+	if err != nil {
+		return sdkdiag.FromErr(err)
+	}
+	return nil
+}
+
+func GetDataStream(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, dataStreamName string) (*types.DataStream, sdkdiag.Diagnostics) {
+	typedClient, err := apiClient.GetESClient()
+	if err != nil {
+		return nil, sdkdiag.FromErr(err)
+	}
+	res, err := typedClient.Indices.GetDataStream().Name(dataStreamName).Do(ctx)
+	if err != nil {
+		if IsNotFoundElasticsearchError(err) {
+			return nil, nil
+		}
+		return nil, sdkdiag.FromErr(err)
+	}
+	if len(res.DataStreams) == 0 {
+		return nil, nil
+	}
+	ds := res.DataStreams[0]
+	return &ds, nil
+}
+
+func DeleteDataStream(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, dataStreamName string) sdkdiag.Diagnostics {
+	typedClient, err := apiClient.GetESClient()
+	if err != nil {
+		return sdkdiag.FromErr(err)
+	}
+	_, err = typedClient.Indices.DeleteDataStream(dataStreamName).Do(ctx)
+	if err != nil {
+		if IsNotFoundElasticsearchError(err) {
+			return nil
+		}
+		return sdkdiag.FromErr(err)
+	}
+	return nil
+}
+
+func PutDataStreamLifecycle(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, dataStreamName string, expandWildcards string, lifecycle models.LifecycleSettings) fwdiags.Diagnostics {
+	typedClient, err := apiClient.GetESClient()
+	if err != nil {
+		return diagutil.FrameworkDiagFromError(err)
+	}
+
+	reqBody := map[string]any{}
+	if lifecycle.DataRetention != "" {
+		reqBody["data_retention"] = lifecycle.DataRetention
+	}
+	reqBody["enabled"] = lifecycle.Enabled
+	if len(lifecycle.Downsampling) > 0 {
+		ds := make([]map[string]any, len(lifecycle.Downsampling))
+		for i, d := range lifecycle.Downsampling {
+			ds[i] = map[string]any{
+				"after":          d.After,
+				"fixed_interval": d.FixedInterval,
+			}
+		}
+		reqBody["downsampling"] = ds
+	}
+
+	bodyBytes, err := json.Marshal(reqBody)
+	if err != nil {
+		return diagutil.FrameworkDiagFromError(err)
+	}
+
+	builder := typedClient.Indices.PutDataLifecycle(dataStreamName).Raw(bytes.NewReader(bodyBytes))
+	if expandWildcards != "" {
+		builder = builder.ExpandWildcards(expandwildcard.ExpandWildcard{Name: expandWildcards})
+	}
+	_, err = builder.Do(ctx)
+	if err != nil {
+		return diagutil.FrameworkDiagFromError(err)
+	}
+	return nil
+}
+
+func GetDataStreamLifecycle(
+	ctx context.Context,
+	apiClient *clients.ElasticsearchScopedClient,
+	dataStreamName string,
+	expandWildcards string,
+) (*models.DataStreamLifecycleResponse, fwdiags.Diagnostics) {
+	typedClient, err := apiClient.GetESClient()
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+
+	call := typedClient.Indices.GetDataLifecycle(dataStreamName)
+	if expandWildcards != "" {
+		call = call.ExpandWildcards(expandwildcard.ExpandWildcard{Name: expandWildcards})
+	}
+	res, err := call.Perform(ctx)
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode == http.StatusNotFound {
+		_, _ = io.Copy(io.Discard, res.Body)
+		return nil, nil
+	}
+
+	if res.StatusCode >= http.StatusMultipleChoices {
+		errorResponse := types.NewElasticsearchError()
+		if err := json.NewDecoder(res.Body).Decode(errorResponse); err != nil {
+			return nil, diagutil.FrameworkDiagFromError(err)
+		}
+		if errorResponse.Status == 0 {
+			errorResponse.Status = res.StatusCode
+		}
+		return nil, diagutil.FrameworkDiagFromError(errorResponse)
+	}
+
+	var response models.DataStreamLifecycleResponse
+	if err := json.NewDecoder(res.Body).Decode(&response); err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+
+	return &response, nil
+}
+
+func DeleteDataStreamLifecycle(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, dataStreamName string, expandWildcards string) fwdiags.Diagnostics {
+	typedClient, err := apiClient.GetESClient()
+	if err != nil {
+		return diagutil.FrameworkDiagFromError(err)
+	}
+	builder := typedClient.Indices.DeleteDataLifecycle(dataStreamName)
+	if expandWildcards != "" {
+		builder = builder.ExpandWildcards(expandwildcard.ExpandWildcard{Name: expandWildcards})
+	}
+	_, err = builder.Do(ctx)
+	if err != nil {
+		if IsNotFoundElasticsearchError(err) {
+			return nil
+		}
+		return diagutil.FrameworkDiagFromError(err)
+	}
+	return nil
+}
