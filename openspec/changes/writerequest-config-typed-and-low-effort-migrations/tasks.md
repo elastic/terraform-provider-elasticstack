@@ -42,6 +42,6 @@
 
 ## 7. Validation
 
-- [ ] 7.1 Run `make build` and confirm no compilation errors
-- [ ] 7.2 Run `go test ./internal/entitycore/...` to confirm envelope unit tests pass
-- [ ] 7.3 Run `go test ./internal/elasticsearch/index/template/...` to confirm template unit tests pass (if any)
+- [x] 7.1 Run `make build` and confirm no compilation errors
+- [x] 7.2 Run `go test ./internal/entitycore/...` to confirm envelope unit tests pass
+- [x] 7.3 Run `go test ./internal/elasticsearch/index/template/...` to confirm template unit tests pass (if any)
