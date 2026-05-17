@@ -37,21 +37,35 @@ Affected attributes:
 
 ### Requirement: Empty-list consistency for nested `threat` sub-lists (REQ-101)
 
-When a `threat` block is configured with one or more entries, and a `technique` list within a threat entry is absent or empty in the Kibana API response, the provider SHALL return an empty list (`[]`) — not `null` — for `technique` in state. The same rule applies to `subtechnique` within a technique entry.
+When a `threat` block is configured with one or more entries, and a practitioner explicitly configures `technique = []` for a threat entry, the provider SHALL return an empty list (`[]`) — not `null` — for `technique` in state. The same rule applies when a practitioner explicitly configures `subtechnique = []` within a technique entry.
 
-#### Scenario: Threat entry with no techniques produces empty technique list
+If `technique` or `subtechnique` is absent from configuration or explicitly `null`, the provider SHALL preserve `null` for that attribute in state and SHALL NOT normalize it to `[]`.
 
-- GIVEN a resource configuration with one `threat` entry and `technique = []` (or technique absent)
+#### Scenario: Threat entry with explicitly empty techniques preserves empty list
+
+- GIVEN a resource configuration with one `threat` entry and `technique = []`
 - WHEN `terraform apply` runs
 - THEN the provider SHALL store `[]` for `technique` in state for that threat entry
 - AND the provider SHALL NOT produce a "Provider produced inconsistent result after apply" diagnostic
 
-#### Scenario: Technique entry with no subtechniques produces empty subtechnique list
+#### Scenario: Threat entry with omitted or null techniques preserves null
 
-- GIVEN a resource configuration with a threat entry containing a technique entry and `subtechnique = []` (or subtechnique absent)
+- GIVEN a resource configuration with one `threat` entry and `technique` absent or explicitly `null`
+- WHEN `terraform apply` runs
+- THEN the provider SHALL store `null` for `technique` in state for that threat entry
+
+#### Scenario: Technique entry with explicitly empty subtechniques preserves empty list
+
+- GIVEN a resource configuration with a threat entry containing a technique entry and `subtechnique = []`
 - WHEN `terraform apply` runs
 - THEN the provider SHALL store `[]` for `subtechnique` in state for that technique entry
 - AND the provider SHALL NOT produce a "Provider produced inconsistent result after apply" diagnostic
+
+#### Scenario: Technique entry with omitted or null subtechniques preserves null
+
+- GIVEN a resource configuration with a threat entry containing a technique entry and `subtechnique` absent or explicitly `null`
+- WHEN `terraform apply` runs
+- THEN the provider SHALL store `null` for `subtechnique` in state for that technique entry
 
 ### Requirement: Reconciliation helper for plan/state alignment (REQ-102)
 
