@@ -27,11 +27,10 @@ import (
 
 // Ensure provider defined types fully satisfy framework interfaces
 var (
-	_ resource.Resource                   = newSnapshotRepositoryResource()
-	_ resource.ResourceWithConfigure      = newSnapshotRepositoryResource()
-	_ resource.ResourceWithImportState    = newSnapshotRepositoryResource()
-	_ resource.ResourceWithValidateConfig = newSnapshotRepositoryResource()
-	_ resource.ResourceWithUpgradeState   = newSnapshotRepositoryResource()
+	_ resource.Resource                 = newSnapshotRepositoryResource()
+	_ resource.ResourceWithConfigure    = newSnapshotRepositoryResource()
+	_ resource.ResourceWithImportState  = newSnapshotRepositoryResource()
+	_ resource.ResourceWithUpgradeState = newSnapshotRepositoryResource()
 )
 
 type snapshotRepositoryResource struct {
@@ -56,10 +55,6 @@ func NewSnapshotRepositoryResource() resource.Resource {
 
 func (r *snapshotRepositoryResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
-}
-
-func (r *snapshotRepositoryResource) ValidateConfig(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
-	validateConfigExactlyOneType{}.ValidateResource(ctx, req, resp)
 }
 
 func (r *snapshotRepositoryResource) UpgradeState(context.Context) map[int64]resource.StateUpgrader {
