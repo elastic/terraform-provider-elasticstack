@@ -107,6 +107,10 @@ func (m Model) toAPIModel(ctx context.Context) (*models.IndexTemplate, diag.Diag
 		out.Version = &v
 	}
 
+	if !m.AllowAutoCreate.IsNull() && !m.AllowAutoCreate.IsUnknown() {
+		out.AllowAutoCreate = m.AllowAutoCreate.ValueBoolPointer()
+	}
+
 	return out, diags
 }
 

@@ -93,6 +93,7 @@ func (m *Model) fromAPIModel(ctx context.Context, name string, in *estypes.Index
 
 	m.Priority = int64FromInt64Ptr(in.Priority)
 	m.Version = int64FromInt64Ptr(in.Version)
+	m.AllowAutoCreate = boolFromBoolPtr(in.AllowAutoCreate)
 
 	var d diag.Diagnostics
 	m.DataStream, d = flattenDataStream(in.DataStream)
@@ -117,6 +118,13 @@ func int64FromInt64Ptr(p *int64) types.Int64 {
 		return types.Int64Null()
 	}
 	return types.Int64Value(*p)
+}
+
+func boolFromBoolPtr(p *bool) types.Bool {
+	if p == nil {
+		return types.BoolNull()
+	}
+	return types.BoolValue(*p)
 }
 
 func flattenDataStream(ds *estypes.IndexTemplateDataStreamConfiguration) (types.Object, diag.Diagnostics) {

@@ -22,7 +22,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -38,9 +37,9 @@ func createAlias(ctx context.Context, client *clients.ElasticsearchScopedClient,
 		return entitycore.WriteResult[tfModel]{Model: plan}, diags
 	}
 
-	id, sdkDiags := client.ID(ctx, aliasName)
-	if sdkDiags.HasError() {
-		diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	id, idDiags := client.ID(ctx, aliasName)
+	if idDiags.HasError() {
+		diags.Append(idDiags...)
 		return entitycore.WriteResult[tfModel]{Model: plan}, diags
 	}
 	plan.ID = basetypes.NewStringValue(id.String())

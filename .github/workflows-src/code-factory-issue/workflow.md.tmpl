@@ -143,8 +143,7 @@ on:
       uses: actions/github-script@v9
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
-        x-script-include: ../lib/set-phase-label.js
-        x-script-append: ../lib/set-phase-label-run.js
+        x-script-include: ../lib/set-phase-label.inline.js
     - name: Normalize context
       id: normalize_context
       if: always()
@@ -254,6 +253,10 @@ steps:
     with:
       go-version-file: go.mod
       cache: false
+  - name: Setup Terraform CLI
+    uses: hashicorp/setup-terraform@v4
+    with:
+      terraform_wrapper: false
   - name: Export Go paths for AWF chroot mode
     run: |
       echo "GOROOT=$(go env GOROOT)" >> "$GITHUB_ENV"
@@ -271,10 +274,6 @@ steps:
     uses: actions/setup-node@v6
     with:
       node-version-file: package.json
-  - name: Setup Terraform CLI
-    uses: hashicorp/setup-terraform@v4
-    with:
-      terraform_wrapper: false
   - name: Setup Elastic Stack
     run: make docker-fleet
   - name: Get dependencies

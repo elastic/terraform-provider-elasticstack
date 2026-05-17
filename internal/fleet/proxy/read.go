@@ -38,7 +38,7 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 	spaceID := stateModel.SpaceID.ValueString()
 	proxyID := stateModel.ProxyID.ValueString()
 	if proxyID == "" {
-		compositeID, diags := clients.CompositeIDFromStrFw(stateModel.ID.ValueString())
+		compositeID, diags := clients.CompositeIDFromStr(stateModel.ID.ValueString())
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
 			return

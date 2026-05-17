@@ -23,14 +23,14 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	sdkdiag "github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func PutSettings(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, settings map[string]any) sdkdiag.Diagnostics {
-	var diags sdkdiag.Diagnostics
+func PutSettings(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, settings map[string]any) fwdiag.Diagnostics {
 	typedClient, err := apiClient.GetESClient()
 	if err != nil {
-		return sdkdiag.FromErr(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 
 	req := typedClient.Cluster.PutSettings()
@@ -38,23 +38,23 @@ func PutSettings(ctx context.Context, apiClient *clients.ElasticsearchScopedClie
 	if persistent, ok := settings["persistent"].(map[string]any); ok {
 		raw, err := toRawMessageMap(persistent)
 		if err != nil {
-			return sdkdiag.FromErr(err)
+			return diagutil.FrameworkDiagFromError(err)
 		}
 		req.Persistent(raw)
 	}
 	if transient, ok := settings["transient"].(map[string]any); ok {
 		raw, err := toRawMessageMap(transient)
 		if err != nil {
-			return sdkdiag.FromErr(err)
+			return diagutil.FrameworkDiagFromError(err)
 		}
 		req.Transient(raw)
 	}
 
 	_, err = req.Do(ctx)
 	if err != nil {
-		return sdkdiag.FromErr(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
-	return diags
+	return nil
 }
 
 func toRawMessageMap(m map[string]any) (map[string]json.RawMessage, error) {
@@ -69,31 +69,30 @@ func toRawMessageMap(m map[string]any) (map[string]json.RawMessage, error) {
 	return result, nil
 }
 
-func GetSettings(ctx context.Context, apiClient *clients.ElasticsearchScopedClient) (map[string]any, sdkdiag.Diagnostics) {
-	var diags sdkdiag.Diagnostics
+func GetSettings(ctx context.Context, apiClient *clients.ElasticsearchScopedClient) (map[string]any, fwdiag.Diagnostics) {
 	typedClient, err := apiClient.GetESClient()
 	if err != nil {
-		return nil, sdkdiag.FromErr(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 	resp, err := typedClient.Cluster.GetSettings().FlatSettings(true).Do(ctx)
 	if err != nil {
-		return nil, sdkdiag.FromErr(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	result := make(map[string]any)
 	result["persistent"], err = flattenRawMessageMap(resp.Persistent)
 	if err != nil {
-		return nil, sdkdiag.FromErr(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 	result["transient"], err = flattenRawMessageMap(resp.Transient)
 	if err != nil {
-		return nil, sdkdiag.FromErr(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 	result["defaults"], err = flattenRawMessageMap(resp.Defaults)
 	if err != nil {
-		return nil, sdkdiag.FromErr(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
-	return result, diags
+	return result, nil
 }
 
 func flattenRawMessageMap(m map[string]json.RawMessage) (map[string]any, error) {

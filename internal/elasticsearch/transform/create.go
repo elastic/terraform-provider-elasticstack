@@ -22,7 +22,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -40,14 +39,13 @@ func createTransform(ctx context.Context, client *clients.ElasticsearchScopedCli
 		return entitycore.WriteResult[tfModel]{Model: plan}, diags
 	}
 
-	id, sdkDiags := client.ID(ctx, plan.GetResourceID().ValueString())
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	id, idDiags := client.ID(ctx, plan.GetResourceID().ValueString())
+	diags.Append(idDiags...)
 	if diags.HasError() {
 		return entitycore.WriteResult[tfModel]{Model: plan}, diags
 	}
 
-	sdkDiags = elasticsearch.PutTransform(ctx, client, apiTransform, plan.DeferValidation.ValueBool(), timeout, plan.Enabled.ValueBool())
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	diags.Append(elasticsearch.PutTransform(ctx, client, apiTransform, plan.DeferValidation.ValueBool(), timeout, plan.Enabled.ValueBool())...)
 	if diags.HasError() {
 		return entitycore.WriteResult[tfModel]{Model: plan}, diags
 	}

@@ -23,7 +23,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -48,8 +47,7 @@ func writeTransform(ctx context.Context, client *clients.ElasticsearchScopedClie
 	willBeEnabled := plan.Enabled.ValueBool()
 	enabledChanged := req.Prior.Enabled.ValueBool() != willBeEnabled
 
-	sdkDiags := elasticsearch.UpdateTransform(ctx, client, apiTransform, plan.DeferValidation.ValueBool(), timeout, willBeEnabled, enabledChanged)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	diags.Append(elasticsearch.UpdateTransform(ctx, client, apiTransform, plan.DeferValidation.ValueBool(), timeout, willBeEnabled, enabledChanged)...)
 	return entitycore.WriteResult[tfModel]{Model: plan}, diags
 }
 
@@ -58,8 +56,8 @@ func writeTransform(ctx context.Context, client *clients.ElasticsearchScopedClie
 func buildTransformAPIRequest(ctx context.Context, client *clients.ElasticsearchScopedClient, plan tfModel) (*models.Transform, time.Duration, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	serverVersion, sdkDiags := client.ServerVersion(ctx)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	serverVersion, verDiags := client.ServerVersion(ctx)
+	diags.Append(verDiags...)
 	if diags.HasError() {
 		return nil, 0, diags
 	}

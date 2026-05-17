@@ -51,7 +51,7 @@ func (r *securityListResource) Read(ctx context.Context, req resource.ReadReques
 	listID := state.ListID.ValueString()
 
 	// Try to parse as composite ID from state.ID
-	if compID, diags := clients.CompositeIDFromStrFw(state.ID.ValueString()); !diags.HasError() {
+	if compID, diags := clients.CompositeIDFromStr(state.ID.ValueString()); !diags.HasError() {
 		spaceID = compID.ClusterID
 		listID = compID.ResourceID
 		// Update space_id in state if it was parsed from composite ID

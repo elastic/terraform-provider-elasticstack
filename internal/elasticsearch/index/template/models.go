@@ -41,6 +41,7 @@ type Model struct {
 	Metadata                        jsontypes.Normalized `tfsdk:"metadata"`
 	Priority                        types.Int64          `tfsdk:"priority"`
 	Version                         types.Int64          `tfsdk:"version"`
+	AllowAutoCreate                 types.Bool           `tfsdk:"allow_auto_create"`
 	DataStream                      types.Object         `tfsdk:"data_stream"`
 	Template                        types.Object         `tfsdk:"template"`
 }

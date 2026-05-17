@@ -22,7 +22,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -52,8 +51,8 @@ func createDatafeed(ctx context.Context, client *clients.ElasticsearchScopedClie
 		return entitycore.WriteResult[Datafeed]{Model: plan}, diags
 	}
 
-	compID, sdkDiags := client.ID(ctx, datafeedID)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	compID, idDiags := client.ID(ctx, datafeedID)
+	diags.Append(idDiags...)
 	if diags.HasError() {
 		return entitycore.WriteResult[Datafeed]{Model: plan}, diags
 	}

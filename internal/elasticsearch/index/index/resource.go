@@ -69,7 +69,7 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 		return
 	}
 
-	compID, diags := clients.CompositeIDFromStrFw(stateModel.GetID().ValueString())
+	compID, diags := clients.CompositeIDFromStr(stateModel.GetID().ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

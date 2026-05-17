@@ -22,7 +22,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -37,13 +36,13 @@ func writeDataStream(ctx context.Context, client *clients.ElasticsearchScopedCli
 	data := req.Plan
 	resourceID := req.WriteID
 
-	id, sdkDiags := client.ID(ctx, resourceID)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	id, idDiags := client.ID(ctx, resourceID)
+	diags.Append(idDiags...)
 	if diags.HasError() {
 		return entitycore.WriteResult[Data]{}, diags
 	}
 
-	diags.Append(diagutil.FrameworkDiagsFromSDK(elasticsearch.PutDataStream(ctx, client, resourceID))...)
+	diags.Append(elasticsearch.PutDataStream(ctx, client, resourceID)...)
 	if diags.HasError() {
 		return entitycore.WriteResult[Data]{}, diags
 	}

@@ -1803,7 +1803,24 @@ on:
             module.exports = { setPhaseLabel };
           }
           
-        x-script-append: ../lib/set-phase-label-run.js
+          const issueNumber = parseInt(process.env.INPUT_ISSUE_NUMBER, 10) || context.payload.issue?.number || undefined;
+          const result = await setPhaseLabel({
+            github,
+            context,
+            core,
+            issueNumber,
+            phaseLabelName: process.env.PHASE_LABEL_NAME,
+          });
+          
+          core.setOutput('phase_label_set', result.phase_label_set ? 'true' : 'false');
+          core.setOutput('phase_label_name', result.phase_label_name);
+          
+          const logMessage = result.phase_label_set
+            ? `Set phase label ${result.phase_label_name} on issue #${issueNumber}. ${result.reason}`
+            : `Phase label not set: ${result.reason}`;
+          
+          (result.phase_label_set ? core.info : core.warning)(logMessage);
+          
     - name: Normalize context
       id: normalize_context
       if: always()
@@ -2420,6 +2437,10 @@ steps:
     with:
       go-version-file: go.mod
       cache: false
+  - name: Setup Terraform CLI
+    uses: hashicorp/setup-terraform@v4
+    with:
+      terraform_wrapper: false
   - name: Export Go paths for AWF chroot mode
     run: |
       echo "GOROOT=$(go env GOROOT)" >> "$GITHUB_ENV"
@@ -2437,10 +2458,6 @@ steps:
     uses: actions/setup-node@v6
     with:
       node-version-file: package.json
-  - name: Setup Terraform CLI
-    uses: hashicorp/setup-terraform@v4
-    with:
-      terraform_wrapper: false
   - name: Setup Elastic Stack
     run: make docker-fleet
   - name: Get dependencies

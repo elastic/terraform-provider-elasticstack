@@ -25,7 +25,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -352,15 +351,15 @@ func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedCl
 	var diags diag.Diagnostics
 	repoName := config.Name.ValueString()
 
-	id, sdkDiags := esClient.ID(ctx, repoName)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	id, idDiags := esClient.ID(ctx, repoName)
+	diags.Append(idDiags...)
 	if diags.HasError() {
 		return config, diags
 	}
 	config.ID = types.StringValue(id.String())
 
-	currentRepo, sdkDiags := elasticsearch.GetSnapshotRepository(ctx, esClient, repoName)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	currentRepo, repoDiags := elasticsearch.GetSnapshotRepository(ctx, esClient, repoName)
+	diags.Append(repoDiags...)
 	if diags.HasError() {
 		return config, diags
 	}

@@ -99,8 +99,8 @@ func (r *mlJobStateResource) update(ctx context.Context, plan tfsdk.Plan, state 
 		return diags
 	}
 
-	compID, sdkDiags := client.ID(ctx, jobID)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	compID, idDiags := client.ID(ctx, jobID)
+	diags.Append(idDiags...)
 	if diags.HasError() {
 		return diags
 	}

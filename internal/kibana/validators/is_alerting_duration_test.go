@@ -48,9 +48,9 @@ func TestStringMatchesAlertingDuration(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			matched, _ := StringMatchesAlertingDurationRegex(tt.duration)
+			matched := alertingDurationRegex.MatchString(tt.duration)
 			if matched != tt.matched {
-				t.Errorf("StringMatchesAlertingDurationRegex() failed match = %v, want %v", matched, tt.matched)
+				t.Errorf("alertingDurationRegex.MatchString() failed match = %v, want %v", matched, tt.matched)
 			}
 		})
 	}

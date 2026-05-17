@@ -29,7 +29,7 @@ import (
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	sdkdiag "github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 type SnapshotRepositoryInfo struct {
@@ -62,16 +62,15 @@ type SlmRetention struct {
 	MinCount    *int    `json:"min_count"`
 }
 
-func PutSnapshotRepository(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string, repoType string, settings map[string]any, verify bool) sdkdiag.Diagnostics {
-	var diags sdkdiag.Diagnostics
+func PutSnapshotRepository(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string, repoType string, settings map[string]any, verify bool) fwdiag.Diagnostics {
 	typedClient, err := apiClient.GetESClient()
 	if err != nil {
-		return sdkdiag.FromErr(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 
 	settingsBytes, err := json.Marshal(settings)
 	if err != nil {
-		return sdkdiag.FromErr(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 
 	var repo types.Repository
@@ -79,35 +78,35 @@ func PutSnapshotRepository(ctx context.Context, apiClient *clients.Elasticsearch
 	case "fs":
 		var s types.SharedFileSystemRepository
 		if err := json.Unmarshal(settingsBytes, &s.Settings); err != nil {
-			return sdkdiag.FromErr(err)
+			return diagutil.FrameworkDiagFromError(err)
 		}
 		s.Type = "fs"
 		repo = s
 	case "url":
 		var s types.ReadOnlyUrlRepository
 		if err := json.Unmarshal(settingsBytes, &s.Settings); err != nil {
-			return sdkdiag.FromErr(err)
+			return diagutil.FrameworkDiagFromError(err)
 		}
 		s.Type = "url"
 		repo = s
 	case "s3":
 		var s types.S3Repository
 		if err := json.Unmarshal(settingsBytes, &s.Settings); err != nil {
-			return sdkdiag.FromErr(err)
+			return diagutil.FrameworkDiagFromError(err)
 		}
 		s.Type = "s3"
 		repo = s
 	case "gcs":
 		var s types.GcsRepository
 		if err := json.Unmarshal(settingsBytes, &s.Settings); err != nil {
-			return sdkdiag.FromErr(err)
+			return diagutil.FrameworkDiagFromError(err)
 		}
 		s.Type = "gcs"
 		repo = s
 	case "azure":
 		var s types.AzureRepository
 		if err := json.Unmarshal(settingsBytes, &s.Settings); err != nil {
-			return sdkdiag.FromErr(err)
+			return diagutil.FrameworkDiagFromError(err)
 		}
 		s.Type = "azure"
 		repo = s
@@ -123,54 +122,54 @@ func PutSnapshotRepository(ctx context.Context, apiClient *clients.Elasticsearch
 		}
 		bodyBytes, err := json.Marshal(body)
 		if err != nil {
-			return sdkdiag.FromErr(err)
+			return diagutil.FrameworkDiagFromError(err)
 		}
 		req := typedClient.Snapshot.CreateRepository(name).Raw(bytes.NewReader(bodyBytes)).Verify(verify)
 		_, err = req.Do(ctx)
 		if err != nil {
-			return sdkdiag.FromErr(err)
+			return diagutil.FrameworkDiagFromError(err)
 		}
-		return diags
+		return nil
 	case "source":
 		var s types.SourceOnlyRepository
 		if err := json.Unmarshal(settingsBytes, &s.Settings); err != nil {
-			return sdkdiag.FromErr(err)
+			return diagutil.FrameworkDiagFromError(err)
 		}
 		s.Type = "source"
 		repo = s
 	default:
-		return sdkdiag.Errorf("unsupported snapshot repository type: %s", repoType)
+		return fwdiag.Diagnostics{
+			fwdiag.NewErrorDiagnostic(fmt.Sprintf("unsupported snapshot repository type: %s", repoType), ""),
+		}
 	}
 
 	_, err = typedClient.Snapshot.CreateRepository(name).Request(&repo).Verify(verify).Do(ctx)
 	if err != nil {
-		return sdkdiag.FromErr(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
-	return diags
+	return nil
 }
 
-func GetSnapshotRepository(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string) (*SnapshotRepositoryInfo, sdkdiag.Diagnostics) {
-	var diags sdkdiag.Diagnostics
+func GetSnapshotRepository(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string) (*SnapshotRepositoryInfo, fwdiag.Diagnostics) {
 	typedClient, err := apiClient.GetESClient()
 	if err != nil {
-		return nil, sdkdiag.FromErr(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 	res, err := typedClient.Snapshot.GetRepository().Repository(name).Perform(ctx)
 	if err != nil {
-		return nil, sdkdiag.FromErr(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 	defer res.Body.Close()
 	if res.StatusCode == http.StatusNotFound {
 		return nil, nil
 	}
-	if res.StatusCode >= 300 {
-		bodyBytes, _ := io.ReadAll(res.Body)
-		return nil, sdkdiag.FromErr(fmt.Errorf("unexpected status code %d from snapshot repository API: %s", res.StatusCode, string(bodyBytes)))
+	if d := diagutil.CheckHTTPErrorFromFW(res, "Unable to get snapshot repository"); d.HasError() {
+		return nil, d
 	}
 
 	bodyBytes, err := io.ReadAll(res.Body)
 	if err != nil {
-		return nil, sdkdiag.FromErr(fmt.Errorf("failed to read snapshot repository response: %w", err))
+		return nil, diagutil.FrameworkDiagFromError(fmt.Errorf("failed to read snapshot repository response: %w", err))
 	}
 
 	// Try typed parsing first for known types.
@@ -179,7 +178,7 @@ func GetSnapshotRepository(ctx context.Context, apiClient *clients.Elasticsearch
 		if repo, ok := typedResp[name]; ok {
 			info, err := extractSnapshotRepositoryInfo(repo)
 			if err != nil {
-				return nil, sdkdiag.FromErr(err)
+				return nil, diagutil.FrameworkDiagFromError(err)
 			}
 			info.Name = name
 
@@ -195,7 +194,7 @@ func GetSnapshotRepository(ctx context.Context, apiClient *clients.Elasticsearch
 				}
 			}
 
-			return info, diags
+			return info, nil
 		}
 	}
 
@@ -211,11 +210,16 @@ func GetSnapshotRepository(ctx context.Context, apiClient *clients.Elasticsearch
 				Name:     name,
 				Type:     repo.Type,
 				Settings: repo.Settings,
-			}, diags
+			}, nil
 		}
 	}
 
-	return nil, diagutil.SDKErrorDiag("Unable to find requested repository", fmt.Sprintf(`Repository "%s" is missing in the ES API response`, name))
+	return nil, fwdiag.Diagnostics{
+		fwdiag.NewErrorDiagnostic(
+			"Unable to find requested repository",
+			fmt.Sprintf(`Repository "%s" is missing in the ES API response`, name),
+		),
+	}
 }
 
 func extractSnapshotRepositoryInfo(repo types.Repository) (*SnapshotRepositoryInfo, error) {
@@ -280,27 +284,25 @@ func extractSnapshotRepositoryInfo(repo types.Repository) (*SnapshotRepositoryIn
 	}, nil
 }
 
-func DeleteSnapshotRepository(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string) sdkdiag.Diagnostics {
-	var diags sdkdiag.Diagnostics
+func DeleteSnapshotRepository(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string) fwdiag.Diagnostics {
 	typedClient, err := apiClient.GetESClient()
 	if err != nil {
-		return sdkdiag.FromErr(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 	_, err = typedClient.Snapshot.DeleteRepository(name).Do(ctx)
 	if err != nil {
 		if IsNotFoundElasticsearchError(err) {
-			return diags
+			return nil
 		}
-		return sdkdiag.FromErr(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
-	return diags
+	return nil
 }
 
-func PutSlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyID string, slm *SlmPolicy) sdkdiag.Diagnostics {
-	var diags sdkdiag.Diagnostics
+func PutSlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyID string, slm *SlmPolicy) fwdiag.Diagnostics {
 	typedClient, err := apiClient.GetESClient()
 	if err != nil {
-		return sdkdiag.FromErr(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 
 	req := typedClient.Slm.PutLifecycle(policyID)
@@ -331,7 +333,7 @@ func PutSlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, p
 			for k, v := range slm.Config.Metadata {
 				var val any
 				if err := json.Unmarshal(v, &val); err != nil {
-					return sdkdiag.FromErr(fmt.Errorf("failed to unmarshal metadata key %q: %w", k, err))
+					return diagutil.FrameworkDiagFromError(fmt.Errorf("failed to unmarshal metadata key %q: %w", k, err))
 				}
 				meta[k] = val
 			}
@@ -365,60 +367,66 @@ func PutSlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, p
 
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
-		return sdkdiag.FromErr(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 	req.Raw(bytes.NewReader(bodyBytes))
 
 	_, err = req.Do(ctx)
 	if err != nil {
-		return sdkdiag.FromErr(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
-	return diags
+	return nil
 }
 
-func GetSlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, slmName string) (*SlmPolicy, sdkdiag.Diagnostics) {
-	var diags sdkdiag.Diagnostics
+func GetSlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, slmName string) (*SlmPolicy, fwdiag.Diagnostics) {
 	typedClient, err := apiClient.GetESClient()
 	if err != nil {
-		return nil, sdkdiag.FromErr(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 	res, err := typedClient.Slm.GetLifecycle().PolicyId(slmName).Perform(ctx)
 	if err != nil {
-		return nil, sdkdiag.FromErr(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 	defer res.Body.Close()
 	if res.StatusCode == http.StatusNotFound {
 		return nil, nil
 	}
+	if d := diagutil.CheckHTTPErrorFromFW(res, fmt.Sprintf("Unable to get SLM policy: %s", slmName)); d.HasError() {
+		return nil, d
+	}
 	bodyBytes, err := io.ReadAll(res.Body)
 	if err != nil {
-		return nil, sdkdiag.FromErr(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	var rawResp map[string]struct {
 		Policy SlmPolicy `json:"policy"`
 	}
 	if err := json.Unmarshal(bodyBytes, &rawResp); err != nil {
-		return nil, sdkdiag.FromErr(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 	if slm, ok := rawResp[slmName]; ok {
-		return &slm.Policy, diags
+		return &slm.Policy, nil
 	}
-	return nil, diagutil.SDKErrorDiag("Unable to find the SLM policy in the response", fmt.Sprintf(`Unable to find "%s" policy in the ES API response.`, slmName))
+	return nil, fwdiag.Diagnostics{
+		fwdiag.NewErrorDiagnostic(
+			"Unable to find the SLM policy in the response",
+			fmt.Sprintf(`Unable to find "%s" policy in the ES API response.`, slmName),
+		),
+	}
 }
 
-func DeleteSlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, slmName string) sdkdiag.Diagnostics {
-	var diags sdkdiag.Diagnostics
+func DeleteSlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, slmName string) fwdiag.Diagnostics {
 	typedClient, err := apiClient.GetESClient()
 	if err != nil {
-		return sdkdiag.FromErr(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 	_, err = typedClient.Slm.DeleteLifecycle(slmName).Do(ctx)
 	if err != nil {
 		if IsNotFoundElasticsearchError(err) {
-			return diags
+			return nil
 		}
-		return sdkdiag.FromErr(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
-	return diags
+	return nil
 }

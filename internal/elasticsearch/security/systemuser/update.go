@@ -23,7 +23,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -37,14 +36,14 @@ func writeSystemUser(ctx context.Context, client *clients.ElasticsearchScopedCli
 	data := req.Plan
 	usernameID := req.WriteID
 
-	id, sdkDiags := client.ID(ctx, usernameID)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	id, idDiags := client.ID(ctx, usernameID)
+	diags.Append(idDiags...)
 	if diags.HasError() {
 		return entitycore.WriteResult[Data]{}, diags
 	}
 
-	user, sdkDiags := elasticsearch.GetUser(ctx, client, usernameID)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	user, userDiags := elasticsearch.GetUser(ctx, client, usernameID)
+	diags.Append(userDiags...)
 	if diags.HasError() {
 		return entitycore.WriteResult[Data]{}, diags
 	}

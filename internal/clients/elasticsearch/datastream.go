@@ -21,7 +21,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"io"
 	"net/http"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
@@ -30,32 +29,31 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
-	sdkdiag "github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
-func PutDataStream(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, dataStreamName string) sdkdiag.Diagnostics {
+func PutDataStream(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, dataStreamName string) fwdiags.Diagnostics {
 	typedClient, err := apiClient.GetESClient()
 	if err != nil {
-		return sdkdiag.FromErr(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 	_, err = typedClient.Indices.CreateDataStream(dataStreamName).Do(ctx)
 	if err != nil {
-		return sdkdiag.FromErr(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 	return nil
 }
 
-func GetDataStream(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, dataStreamName string) (*types.DataStream, sdkdiag.Diagnostics) {
+func GetDataStream(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, dataStreamName string) (*types.DataStream, fwdiags.Diagnostics) {
 	typedClient, err := apiClient.GetESClient()
 	if err != nil {
-		return nil, sdkdiag.FromErr(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 	res, err := typedClient.Indices.GetDataStream().Name(dataStreamName).Do(ctx)
 	if err != nil {
 		if IsNotFoundElasticsearchError(err) {
 			return nil, nil
 		}
-		return nil, sdkdiag.FromErr(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 	if len(res.DataStreams) == 0 {
 		return nil, nil
@@ -64,17 +62,17 @@ func GetDataStream(ctx context.Context, apiClient *clients.ElasticsearchScopedCl
 	return &ds, nil
 }
 
-func DeleteDataStream(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, dataStreamName string) sdkdiag.Diagnostics {
+func DeleteDataStream(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, dataStreamName string) fwdiags.Diagnostics {
 	typedClient, err := apiClient.GetESClient()
 	if err != nil {
-		return sdkdiag.FromErr(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 	_, err = typedClient.Indices.DeleteDataStream(dataStreamName).Do(ctx)
 	if err != nil {
 		if IsNotFoundElasticsearchError(err) {
 			return nil
 		}
-		return sdkdiag.FromErr(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 	return nil
 }
@@ -139,19 +137,10 @@ func GetDataStreamLifecycle(
 	defer res.Body.Close()
 
 	if res.StatusCode == http.StatusNotFound {
-		_, _ = io.Copy(io.Discard, res.Body)
 		return nil, nil
 	}
-
-	if res.StatusCode >= http.StatusMultipleChoices {
-		errorResponse := types.NewElasticsearchError()
-		if err := json.NewDecoder(res.Body).Decode(errorResponse); err != nil {
-			return nil, diagutil.FrameworkDiagFromError(err)
-		}
-		if errorResponse.Status == 0 {
-			errorResponse.Status = res.StatusCode
-		}
-		return nil, diagutil.FrameworkDiagFromError(errorResponse)
+	if d := diagutil.CheckHTTPErrorFromFW(res, "Unable to get data stream lifecycle"); d.HasError() {
+		return nil, d
 	}
 
 	var response models.DataStreamLifecycleResponse

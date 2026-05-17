@@ -24,7 +24,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -96,15 +95,15 @@ func readUserDataSource(ctx context.Context, esClient *clients.ElasticsearchScop
 
 	username := config.Username.ValueString()
 
-	id, sdkDiags := esClient.ID(ctx, username)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	id, idDiags := esClient.ID(ctx, username)
+	diags.Append(idDiags...)
 	if diags.HasError() {
 		return config, diags
 	}
 	config.ID = types.StringValue(id.String())
 
-	user, sdkDiags := elasticsearch.GetUser(ctx, esClient, username)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	user, userDiags := elasticsearch.GetUser(ctx, esClient, username)
+	diags.Append(userDiags...)
 	if diags.HasError() {
 		return config, diags
 	}

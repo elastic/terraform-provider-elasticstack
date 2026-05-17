@@ -28,6 +28,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	providerSchema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/tfsdkutils"
 	"github.com/hashicorp/go-version"
@@ -293,9 +294,9 @@ func resourceRoleUpsert(ctx context.Context, d *schema.ResourceData, meta any) d
 		return diags
 	}
 
-	serverVersion, diags := client.ServerVersion(ctx)
-	if diags.HasError() {
-		return diags
+	serverVersion, verFwDiags := client.ServerVersion(ctx)
+	if verFwDiags.HasError() {
+		return diagutil.SDKDiagsFromFramework(verFwDiags)
 	}
 
 	oapiClient, err := client.GetKibanaOapiClient()

@@ -97,6 +97,10 @@ func resourceSchema(_ context.Context) schema.Schema {
 				MarkdownDescription: descVersion,
 				Optional:            true,
 			},
+			"allow_auto_create": schema.BoolAttribute{
+				MarkdownDescription: descAllowAutoCreate,
+				Optional:            true,
+			},
 		},
 	}
 }

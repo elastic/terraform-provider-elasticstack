@@ -22,7 +22,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -36,8 +35,8 @@ func createILM(ctx context.Context, client *clients.ElasticsearchScopedClient, r
 	var diags diag.Diagnostics
 	plan := req.Plan
 
-	sv, sdkDiags := client.ServerVersion(ctx)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	sv, verDiags := client.ServerVersion(ctx)
+	diags.Append(verDiags...)
 	if diags.HasError() {
 		return entitycore.WriteResult[tfModel]{}, diags
 	}
@@ -54,8 +53,8 @@ func createILM(ctx context.Context, client *clients.ElasticsearchScopedClient, r
 		return entitycore.WriteResult[tfModel]{}, diags
 	}
 
-	id, sdkDiags := client.ID(ctx, plan.Name.ValueString())
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	id, idDiags := client.ID(ctx, plan.Name.ValueString())
+	diags.Append(idDiags...)
 	if diags.HasError() {
 		return entitycore.WriteResult[tfModel]{}, diags
 	}

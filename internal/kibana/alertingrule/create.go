@@ -21,7 +21,6 @@ import (
 	"context"
 
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
@@ -47,7 +46,7 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 	// Get server version to validate version-specific features
 	serverVersion, versionDiags := client.ServerVersion(ctx)
 	if versionDiags.HasError() {
-		resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(versionDiags)...)
+		resp.Diagnostics.Append(versionDiags...)
 		return
 	}
 
