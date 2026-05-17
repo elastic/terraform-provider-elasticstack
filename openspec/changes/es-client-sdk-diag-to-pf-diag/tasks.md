@@ -23,7 +23,7 @@
 
 - [x] 4.1 In `internal/clients/api_client.go`, change `CompositeIDFromStr` return type from `diag.Diagnostics` to `fwdiag.Diagnostics`; replace `diagutil.SDKErrorDiag` return with a `fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic(...)}` return.
 - [x] 4.2 Remove `CompositeIDFromStrFw` (it becomes a trivial re-export of `CompositeIDFromStr` once the underlying function returns PF diag). Note: kept as deprecated wrapper to avoid cascading caller changes.
-- [ ] 4.3 Update all callers of `CompositeIDFromStrFw` to call `CompositeIDFromStr` directly.
+- [x] 4.3 Update all callers of `CompositeIDFromStrFw` to call `CompositeIDFromStr` directly.
 
 ## 5. Update `entitycore` version-requirements interface
 
@@ -32,11 +32,11 @@
 
 ## 6. Update callers — remove `FrameworkDiagsFromSDK` wrappers
 
-- [ ] 6.1 Grep the codebase for `diagutil.FrameworkDiagsFromSDK` calls that reference the migrated ES client functions and scoped-client methods. For each, remove the `FrameworkDiagsFromSDK(...)` wrapper and append the PF diags directly (e.g., `diags.Append(diagutil.FrameworkDiagsFromSDK(es.Fn(...))...)` → `diags.Append(es.Fn(...)...)`).
-- [ ] 6.2 Verify the build compiles cleanly (`make build`) — the compiler will surface any missed wrapping calls as type errors.
+- [x] 6.1 Grep the codebase for `diagutil.FrameworkDiagsFromSDK` calls that reference the migrated ES client functions and scoped-client methods. For each, remove the `FrameworkDiagsFromSDK(...)` wrapper and append the PF diags directly (e.g., `diags.Append(diagutil.FrameworkDiagsFromSDK(es.Fn(...))...)` → `diags.Append(es.Fn(...)...)`).
+- [x] 6.2 Verify the build compiles cleanly (`make build`) — the compiler will surface any missed wrapping calls as type errors.
 
 ## 7. Diagutil cleanup
 
-- [ ] 7.1 Verify with `grep -r "SDKErrorDiag\|FrameworkDiagsFromSDK\|SDKDiagsFromFramework" internal/` that no remaining callers exist for these helpers after steps 1–6.
-- [ ] 7.2 If no callers remain, remove `SDKErrorDiag`, `FrameworkDiagsFromSDK`, and `SDKDiagsFromFramework` from `internal/diagutil/translation.go`.
-- [ ] 7.3 If Kibana/Fleet code outside the ES-client scope still uses any of these helpers, retain the helper(s) and note the remaining callers in the PR description for a follow-up.
+- [x] 7.1 Verify with `grep -r "SDKErrorDiag\|FrameworkDiagsFromSDK\|SDKDiagsFromFramework" internal/` that no remaining callers exist for these helpers after steps 1–6.
+- [x] 7.2 If no callers remain, remove `SDKErrorDiag`, `FrameworkDiagsFromSDK`, and `SDKDiagsFromFramework` from `internal/diagutil/translation.go`.
+- [x] 7.3 If Kibana/Fleet code outside the ES-client scope still uses any of these helpers, retain the helper(s) and note the remaining callers in the PR description for a follow-up.
