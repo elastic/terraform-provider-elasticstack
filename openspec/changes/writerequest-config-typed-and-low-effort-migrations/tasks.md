@@ -11,7 +11,7 @@
 
 ## 2. security/user: Update write callback
 
-- [ ] 2.1 Replace `req.Config.GetAttribute(ctx, path.Root("password_wo"), &passwordWoFromConfig)` in `internal/elasticsearch/security/user/update.go` with direct struct field access `req.Config.PasswordWo`
+- [x] 2.1 Replace `req.Config.GetAttribute(ctx, path.Root("password_wo"), &passwordWoFromConfig)` in `internal/elasticsearch/security/user/update.go` with direct struct field access `req.Config.PasswordWo` _(applied during Task 1 as a minimal compile fix when the field type changed)_
 
 ## 3. index/template: Migrate Create and Update overrides
 
