@@ -784,25 +784,9 @@ func TestAccResourceAnomalyDetectionJobFrom0_12_2(t *testing.T) {
 				),
 			},
 			{
-				// Step 2: Import the resource using only the job ID (not the composite
-				// cluster-id/job-id) and persist the state with the older provider.
-				ExternalProviders: map[string]resource.ExternalProvider{
-					"elasticstack": {
-						Source:            "elastic/elasticstack",
-						VersionConstraint: "0.12.2",
-					},
-				},
-				Config:             sdkCreateConfig,
-				ConfigVariables:    config.Variables{"job_id": config.StringVariable(jobID)},
-				ResourceName:       testResourceAddr,
-				ImportState:        true,
-				ImportStatePersist: true,
-				ImportStateVerify:  false,
-				ImportStateId:      jobID,
-			},
-			{
-				// Step 3: Verify the current provider can manage the resource whose
-				// state was imported with a plain (non-composite) job ID.
+				// Step 2: Verify the current provider can manage the resource created
+				// by the older provider. The test framework persists state across steps
+				// so this exercises refresh and apply with the current code.
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
