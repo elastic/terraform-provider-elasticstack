@@ -28,7 +28,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/google/go-github/v86/github"
+	"github.com/google/go-github/v87/github"
 )
 
 func testGitHubRESTClient(tb testing.TB, srv *httptest.Server) *github.Client {

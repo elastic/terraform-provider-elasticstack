@@ -40,7 +40,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/scripts/changelog/internal/githubx"
 	"github.com/elastic/terraform-provider-elasticstack/scripts/changelog/internal/prcheck"
 	"github.com/elastic/terraform-provider-elasticstack/scripts/changelog/internal/prmgmt"
-	"github.com/google/go-github/v86/github"
+	"github.com/google/go-github/v87/github"
 )
 
 func writeWorkflowWarning(msg string) {
