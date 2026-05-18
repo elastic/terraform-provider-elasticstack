@@ -97,6 +97,9 @@ func Run(ctx context.Context, opts Options) (Result, error) {
 			tags = nil
 			warnMsgs = append(warnMsgs, fmt.Sprintf("Failed to list git tags: %v", terr))
 		}
+		if len(tags) == 0 {
+			warnMsgs = append(warnMsgs, "No semver release tags found; compare range will cover full history")
+		}
 	}
 
 	tagPick := semver.SelectPreviousTag(tags, opts.Mode, opts.TargetVersion)

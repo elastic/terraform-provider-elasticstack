@@ -108,7 +108,30 @@ func TestRun_warnsWhenTagListFails(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(res.Warnings) != 1 || !strings.Contains(res.Warnings[0], "Failed to list git tags") {
+	if len(res.Warnings) != 2 ||
+		!strings.Contains(res.Warnings[0], "Failed to list git tags") ||
+		res.Warnings[1] != "No semver release tags found; compare range will cover full history" {
+		t.Fatalf("unexpected warnings: %#v", res.Warnings)
+	}
+}
+
+func TestRun_warnsWhenNoSemverTagsAfterSuccessfulList(t *testing.T) {
+	ctx := context.Background()
+	res, err := engine.Run(ctx, engine.Options{
+		Mode:          engine.ModeUnreleased,
+		Owner:         fixtureOwnerSlug,
+		Repo:          fixtureRepoSlug,
+		ChangelogPath: filepath.Join(t.TempDir(), "CHANGELOG.md"),
+		Now:           fixedNow(t, 1, 3),
+		FS:            engineOSFS{},
+		Git:           tagOnlyGit{tags: ""},
+		Gather:        fixedGather{recs: nil},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Warnings) != 1 ||
+		res.Warnings[0] != "No semver release tags found; compare range will cover full history" {
 		t.Fatalf("unexpected warnings: %#v", res.Warnings)
 	}
 }
