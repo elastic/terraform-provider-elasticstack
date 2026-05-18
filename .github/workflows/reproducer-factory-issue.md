@@ -26,6 +26,11 @@ on:
     issues: write
     pull-requests: read
   steps:
+    - name: Checkout repository
+      uses: actions/checkout@v6
+      with:
+        persist-credentials: false
+        fetch-depth: 1
     - name: Determine intake mode
       id: determine_intake_mode
       uses: actions/github-script@v9

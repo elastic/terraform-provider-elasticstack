@@ -18,6 +18,11 @@ on:
     issues: write
     pull-requests: read
   steps:
+    - name: Checkout repository
+      uses: actions/checkout@v6
+      with:
+        persist-credentials: false
+        fetch-depth: 1
     - name: Qualify trigger event
       id: qualify_trigger
       uses: actions/github-script@v9
