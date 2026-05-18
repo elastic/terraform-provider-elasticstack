@@ -1,10 +1,10 @@
 ## 1. Bootstrap Go module skeleton
 
-- [ ] 1.1 Create directory `scripts/changelog/` with `main.go` exposing a no-op subcommand router (`gather-evidence`, `run-engine`, `manage-unreleased-pr`, `refresh-release-pr`, `validate-pr-section`) that prints usage and exits non-zero on unknown subcommands.
-- [ ] 1.2 Create `scripts/changelog/internal/githubx/` with `client.go` (oauth2 + `go-github/v86` client construction following `scripts/auto-approve/main.go`), `event.go` (parse `$GITHUB_EVENT_PATH`), and `output.go` (write `$GITHUB_OUTPUT` with heredoc framing).
-- [ ] 1.3 Pin `github.com/google/go-github/v86` in `go.mod` to the same version `scripts/auto-approve/` uses; run `make vendor`.
-- [ ] 1.4 Add `go test ./scripts/changelog/...` to the existing `Workflows CI` test path (via `Makefile` `workflow-test` target or `go test ./scripts/...` umbrella).
-- [ ] 1.5 Verify `go build ./scripts/changelog` succeeds and `go test ./scripts/changelog/...` passes (empty pass).
+- [x] 1.1 Create directory `scripts/changelog/` with `main.go` exposing a no-op subcommand router (`gather-evidence`, `run-engine`, `manage-unreleased-pr`, `refresh-release-pr`, `validate-pr-section`) that prints usage and exits non-zero on unknown subcommands.
+- [x] 1.2 Create `scripts/changelog/internal/githubx/` with `client.go` (oauth2 + `go-github/v86` client construction following `scripts/auto-approve/main.go`), `event.go` (parse `$GITHUB_EVENT_PATH`), and `output.go` (write `$GITHUB_OUTPUT` with heredoc framing).
+- [x] 1.3 Pin `github.com/google/go-github/v86` in `go.mod` to the same version `scripts/auto-approve/` uses; run `make vendor`.
+- [x] 1.4 Add `go test ./scripts/changelog/...` to the existing `Workflows CI` test path (via `Makefile` `workflow-test` target or `go test ./scripts/...` umbrella).
+- [x] 1.5 Verify `go build ./scripts/changelog` succeeds and `go test ./scripts/changelog/...` passes (empty pass).
 
 ## 2. Implement shared section parser
 

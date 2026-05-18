@@ -203,6 +203,7 @@ workflow-generate: ## Generate workflow markdown sources
 .PHONY: workflow-test
 workflow-test: ## Run unit tests for workflow JavaScript modules
 	@ go test ./scripts/kibana-spec-impact/... -count=1
+	@ go test ./scripts/changelog/... -count=1
 	@ node --test .github/scripts/workflows/lib/*.test.mjs
 
 .PHONY: gen
