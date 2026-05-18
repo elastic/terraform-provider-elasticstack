@@ -11,6 +11,7 @@ provider "elasticstack" {
 resource "elasticstack_kibana_security_role" "test" {
   name        = var.role_name
   description = "Role description"
+  metadata    = jsonencode({ acc_resource = "meta_v1" })
   elasticsearch {
     cluster = ["create_snapshot"]
     indices {

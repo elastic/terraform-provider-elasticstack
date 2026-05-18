@@ -196,7 +196,18 @@ func (r *KibanaResource[T]) Create(ctx context.Context, req resource.CreateReque
 	}
 
 	spaceID := plan.GetSpaceID()
-	if !typeutils.IsKnown(spaceID) || spaceID.ValueString() == "" {
+	if !typeutils.IsKnown(spaceID) {
+		resp.Diagnostics.AddError(
+			"Invalid space identifier",
+			"The space identifier from configuration is unknown; cannot create.",
+		)
+		return
+	}
+	unscoped := false
+	if u, ok := any(plan).(KibanaUnscopedSpace); ok && u.IsUnscopedSpace() {
+		unscoped = true
+	}
+	if !unscoped && spaceID.ValueString() == "" {
 		resp.Diagnostics.AddError(
 			"Invalid space identifier",
 			"The space identifier from configuration is unknown or empty; cannot create.",

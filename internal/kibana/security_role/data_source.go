@@ -15,9 +15,19 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package kibana
+package security_role
 
-import _ "embed"
+import (
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
+)
 
-//go:embed descriptions/remote_indices_permissions.md
-var remoteIndicesPermissionsDescription string
+// NewDataSource exposes the security role data source for provider wiring.
+func NewDataSource() datasource.DataSource {
+	return entitycore.NewKibanaDataSource[dataSourceModel](
+		entitycore.ComponentKibana,
+		"security_role",
+		getDataSourceSchema,
+		readRoleDataSource,
+	)
+}
