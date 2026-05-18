@@ -1,8 +1,8 @@
 const { gateWorkflows } = require('../lib/gate-workflows.js');
 
 module.exports = async function ({ github, context, core }) {
-  const classifyResult = '${{ needs.classify.outputs.workflow_changes }}';
-  const testResult = '${{ needs.test.result }}';
+  const classifyResult = process.env.WORKFLOWS_GATE_CLASSIFY_RESULT ?? '';
+  const testResult = process.env.WORKFLOWS_GATE_TEST_RESULT ?? '';
 
   const result = gateWorkflows({ classifyResult, testResult });
 
