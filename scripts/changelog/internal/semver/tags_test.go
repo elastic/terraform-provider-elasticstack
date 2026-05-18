@@ -36,16 +36,16 @@ func (e execStub) Run(name string, args ...string) ([]byte, error) {
 	return e.out, e.err
 }
 
-const tagV290 = "v2.0.0"
+const tagV200 = "v2.0.0"
 const tagV190 = "v1.9.0"
 
 func TestListReleaseTags_ordersAndFilters(t *testing.T) {
-	raw := tagV290 + "\nv9.0.0-rc1\n" + tagV190 + "\n"
+	raw := tagV200 + "\nv9.0.0-rc1\n" + tagV190 + "\n"
 	got, err := semver.ListReleaseTags(execStub{out: []byte(raw)})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(got) != 2 || string(got[0]) != tagV290 || string(got[1]) != tagV190 {
+	if len(got) != 2 || string(got[0]) != tagV200 || string(got[1]) != tagV190 {
 		t.Fatalf("got %v", got)
 	}
 }

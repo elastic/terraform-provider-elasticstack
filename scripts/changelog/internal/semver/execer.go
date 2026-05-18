@@ -17,7 +17,7 @@
 
 package semver
 
-// Execer runs an external command and returns combined stdout (like exec.Command(...).Output()).
+// Execer runs an external command and returns its stdout bytes (matching exec.Command(...).Output(): stderr from the subprocess is not captured).
 // Concrete implementations live outside this package (e.g. internal/githubx).
 type Execer interface {
 	Run(name string, args ...string) ([]byte, error)
