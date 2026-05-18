@@ -47,13 +47,15 @@ func Test_gitMergedPRGatherer_dedupesByPRNumberAcrossCommits(t *testing.T) {
 
 		prJSON := []map[string]any{
 			{
-				"number":    10,
-				"state":     "closed",
-				"merged_at": "2025-01-01T00:00:00Z",
-				"title":     "T",
-				"html_url":  "https://example/pull/10",
-				"labels":    []map[string]string{{"name": "bug"}},
-				"body":      "## Changelog\nCustomer impact: fix\nSummary: fix it\n",
+				"number":           10,
+				"state":            "closed",
+				"merged_at":        "2025-01-01T00:00:00Z",
+				"title":            "T",
+				"html_url":         "https://example/pull/10",
+				"merge_commit_sha": "abcmerge001",
+				"user":             map[string]string{"login": "alice"},
+				"labels":           []map[string]string{{"name": "bug"}},
+				"body":             "## Changelog\nCustomer impact: fix\nSummary: fix it\n",
 			},
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -89,5 +91,14 @@ func Test_gitMergedPRGatherer_dedupesByPRNumberAcrossCommits(t *testing.T) {
 	}
 	if got[0].Number != 10 || got[0].Labels[0] != "bug" {
 		t.Fatalf("unexpected record: %+v", got[0])
+	}
+	if got[0].Title != "T" {
+		t.Fatalf("title: got %q want T", got[0].Title)
+	}
+	if got[0].MergeCommitSHA != "abcmerge001" {
+		t.Fatalf("merge_commit_sha: got %q want abcmerge001", got[0].MergeCommitSHA)
+	}
+	if got[0].AuthorLogin != "alice" {
+		t.Fatalf("AuthorLogin: got %q want alice", got[0].AuthorLogin)
 	}
 }
