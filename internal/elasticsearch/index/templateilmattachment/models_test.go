@@ -20,10 +20,23 @@ package templateilmattachment
 import (
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestTfModel_GetVersionRequirements(t *testing.T) {
+	t.Parallel()
+
+	var _ entitycore.WithVersionRequirements = tfModel{}
+
+	m := tfModel{}
+	reqs, diags := m.GetVersionRequirements()
+	assert.False(t, diags.HasError())
+	assert.Len(t, reqs, 1)
+	assert.True(t, reqs[0].MinVersion.Equal(MinVersion), "expected min version %s, got %s", MinVersion.String(), reqs[0].MinVersion.String())
+}
 
 func TestModelGetters(t *testing.T) {
 	model := tfModel{

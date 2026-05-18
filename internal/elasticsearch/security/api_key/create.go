@@ -24,6 +24,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -39,12 +40,21 @@ func (r Resource) Create(ctx context.Context, req resource.CreateRequest, resp *
 		return
 	}
 
-	if planModel.Type.ValueString() == "cross_cluster" {
-		createDiags := r.createCrossClusterAPIKey(ctx, &planModel)
-		resp.Diagnostics.Append(createDiags...)
+	client, clientDiags := r.Client().GetElasticsearchClient(ctx, planModel.ElasticsearchConnection)
+	resp.Diagnostics.Append(clientDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(entitycore.EnforceVersionRequirements(ctx, client, &planModel)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if planModel.Type.ValueString() == crossClusterAPIKeyType {
+		resp.Diagnostics.Append(r.createCrossClusterAPIKey(ctx, client, &planModel)...)
 	} else {
-		createDiags := r.createAPIKey(ctx, &planModel)
-		resp.Diagnostics.Append(createDiags...)
+		resp.Diagnostics.Append(r.createAPIKey(ctx, client, &planModel)...)
 	}
 
 	if resp.Diagnostics.HasError() {
@@ -62,13 +72,7 @@ func (r Resource) Create(ctx context.Context, req resource.CreateRequest, resp *
 		return
 	}
 
-	esClient, clientDiags := r.Client().GetElasticsearchClient(ctx, planModel.GetElasticsearchConnection())
-	resp.Diagnostics.Append(clientDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	finalModel, found, readDiags := readAPIKey(ctx, esClient, compID.ResourceID, planModel)
+	finalModel, found, readDiags := readAPIKey(ctx, client, compID.ResourceID, planModel)
 	resp.Diagnostics.Append(readDiags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -81,7 +85,7 @@ func (r Resource) Create(ctx context.Context, req resource.CreateRequest, resp *
 	resp.Diagnostics.Append(resp.State.Set(ctx, finalModel)...)
 }
 
-func (r Resource) validateRestrictionSupport(ctx context.Context, model tfModel) diag.Diagnostics {
+func validateRestrictionSupport(ctx context.Context, client *clients.ElasticsearchScopedClient, model tfModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	if !typeutils.IsKnown(model.RoleDescriptors) {
@@ -105,13 +109,13 @@ func (r Resource) validateRestrictionSupport(ctx context.Context, model tfModel)
 	}
 
 	if hasRestriction {
-		isSupported, supportDiags := r.doesCurrentVersionSupportRestrictionOnAPIKey(ctx, model)
-		diags.Append(supportDiags...)
+		currentVersion, verDiags := client.ServerVersion(ctx)
+		diags.Append(verDiags...)
 		if diags.HasError() {
 			return diags
 		}
 
-		if !isSupported {
+		if currentVersion.LessThan(MinVersionWithRestriction) {
 			diags.AddAttributeError(
 				path.Root("roles_descriptors"),
 				"Specifying `restriction` on an API key role description is not supported in this version of Elasticsearch",
@@ -122,21 +126,6 @@ func (r Resource) validateRestrictionSupport(ctx context.Context, model tfModel)
 	}
 
 	return diags
-}
-
-func (r Resource) doesCurrentVersionSupportRestrictionOnAPIKey(ctx context.Context, model tfModel) (bool, diag.Diagnostics) {
-	client, diags := r.Client().GetElasticsearchClient(ctx, model.ElasticsearchConnection)
-	if diags.HasError() {
-		return false, diags
-	}
-
-	currentVersion, verDiags := client.ServerVersion(ctx)
-	diags.Append(verDiags...)
-	if diags.HasError() {
-		return false, diags
-	}
-
-	return currentVersion.GreaterThanOrEqual(MinVersionWithRestriction), diags
 }
 
 func (r Resource) doesCurrentVersionSupportCrossClusterAPIKey(ctx context.Context, model tfModel) (bool, diag.Diagnostics) {
@@ -154,13 +143,9 @@ func (r Resource) doesCurrentVersionSupportCrossClusterAPIKey(ctx context.Contex
 	return currentVersion.GreaterThanOrEqual(MinVersionWithCrossCluster), diags
 }
 
-func (r *Resource) createCrossClusterAPIKey(ctx context.Context, planModel *tfModel) diag.Diagnostics {
-	client, diags := r.Client().GetElasticsearchClient(ctx, planModel.ElasticsearchConnection)
-	if diags.HasError() {
-		return diags
-	}
+func (r *Resource) createCrossClusterAPIKey(ctx context.Context, client *clients.ElasticsearchScopedClient, planModel *tfModel) diag.Diagnostics {
+	var diags diag.Diagnostics
 
-	// Check if the current version supports cross-cluster API keys
 	isSupported, supportDiags := r.doesCurrentVersionSupportCrossClusterAPIKey(ctx, *planModel)
 	diags.Append(supportDiags...)
 	if diags.HasError() {
@@ -176,7 +161,6 @@ func (r *Resource) createCrossClusterAPIKey(ctx context.Context, planModel *tfMo
 		return diags
 	}
 
-	// Handle cross-cluster API key creation
 	createRequest, modelDiags := planModel.toCrossClusterAPICreateRequest(ctx)
 	diags.Append(modelDiags...)
 	if diags.HasError() {
@@ -206,19 +190,14 @@ func (r *Resource) createCrossClusterAPIKey(ctx context.Context, planModel *tfMo
 	return diags
 }
 
-func (r *Resource) createAPIKey(ctx context.Context, planModel *tfModel) diag.Diagnostics {
-	client, diags := r.Client().GetElasticsearchClient(ctx, planModel.ElasticsearchConnection)
+func (r *Resource) createAPIKey(ctx context.Context, client *clients.ElasticsearchScopedClient, planModel *tfModel) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	diags.Append(validateRestrictionSupport(ctx, client, *planModel)...)
 	if diags.HasError() {
 		return diags
 	}
 
-	// Validate restriction support
-	diags.Append(r.validateRestrictionSupport(ctx, *planModel)...)
-	if diags.HasError() {
-		return diags
-	}
-
-	// Handle regular API key creation
 	createRequest, modelDiags := planModel.toAPICreateRequest()
 	diags.Append(modelDiags...)
 	if diags.HasError() {

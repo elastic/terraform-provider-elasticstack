@@ -20,88 +20,10 @@ package template
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
-
-func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var prior Model
-	resp.Diagnostics.Append(req.State.Get(ctx, &prior)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	var plan Model
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	var config Model
-	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, diags := r.Client().GetElasticsearchClient(ctx, plan.ElasticsearchConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	vReqs, reqDiags := plan.GetVersionRequirements()
-	resp.Diagnostics.Append(reqDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	for _, req := range vReqs {
-		ok, verDiags := client.EnforceMinVersion(ctx, &req.MinVersion)
-		resp.Diagnostics.Append(verDiags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-		if !ok {
-			resp.Diagnostics.AddError("Unsupported server version", req.ErrorMessage)
-			return
-		}
-	}
-
-	indexTemplate, diags := plan.toAPIModel(ctx)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	applyAllowCustomRouting8xWorkaround(ctx, prior, config, indexTemplate)
-
-	resp.Diagnostics.Append(elasticsearch.PutIndexTemplate(ctx, client, indexTemplate)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Build a prior model carrying the existing ID and connection so readIndexTemplate can copy them.
-	// Use configuration (not plan) as the reconciliation reference: plan can carry unknown/Computed
-	// placeholders in nested set elements that then differ from non-refresh planning.
-	priorForRead := config
-	priorForRead.ID = prior.ID
-	priorForRead.ElasticsearchConnection = plan.ElasticsearchConnection
-
-	refreshed, found, diags := readIndexTemplate(ctx, client, plan.Name.ValueString(), priorForRead)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	if !found {
-		tflog.Warn(ctx, "Index template missing after update readback", map[string]any{"template_name": plan.Name.ValueString()})
-		resp.Diagnostics.AddError("Index template missing after update", plan.Name.ValueString())
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &refreshed)...)
-}
 
 // applyAllowCustomRouting8xWorkaround mirrors resourceIndexTemplatePut in the SDK: when prior state had
 // allow_custom_routing=true and configuration does not explicitly set that attribute to true, re-send

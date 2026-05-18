@@ -26,23 +26,21 @@ import (
 )
 
 // Resource implements the elasticstack_elasticsearch_index_template resource.
-// It embeds *entitycore.ElasticsearchResource[Model] for schema injection, Read,
-// and Delete. Create and Update remain on the concrete type because they require
-// config-derived alias reconciliation, server-version gating, and the 8.x
-// allow_custom_routing workaround that cannot be expressed via the callback contract.
+// It embeds *entitycore.ElasticsearchResource[Model] for schema injection, Create,
+// Read, Update, and Delete. Create and Update use a shared WriteFunc (config-derived
+// read-after-write seeding and 8.x allow_custom_routing workaround).
 type Resource struct {
 	*entitycore.ElasticsearchResource[Model]
 }
 
 func newResource() *Resource {
-	placeholder := entitycore.PlaceholderElasticsearchWriteCallback[Model]()
 	return &Resource{
 		ElasticsearchResource: entitycore.NewElasticsearchResource[Model]("index_template", entitycore.ElasticsearchResourceOptions[Model]{
 			Schema: resourceSchema,
 			Read:   readIndexTemplate,
 			Delete: deleteIndexTemplate,
-			Create: placeholder,
-			Update: placeholder,
+			Create: writeIndexTemplate,
+			Update: writeIndexTemplate,
 		}),
 	}
 }

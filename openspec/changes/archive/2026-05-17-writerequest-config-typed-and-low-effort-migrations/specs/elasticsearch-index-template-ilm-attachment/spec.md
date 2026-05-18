@@ -2,7 +2,7 @@
 
 ### Requirement: Compatibility — minimum Elasticsearch version (REQ-011)
 
-On create and update, the resource SHALL enforce a minimum Elasticsearch server version of 8.2.0. If the server version is less than 8.2.0, the resource SHALL return an "Unsupported Elasticsearch Version" error diagnostic and SHALL NOT proceed to call the Put Component Template API.
+On create and update, the resource SHALL enforce a minimum Elasticsearch server version of 8.2.0. If the server version is less than 8.2.0, the resource SHALL return an "Unsupported server version" error diagnostic (summary, emitted by the entitycore envelope) whose detail explains that this resource requires Elasticsearch 8.2.0 or later, and SHALL NOT proceed to call the Put Component Template API.
 
 This requirement SHALL be satisfied by implementing `WithVersionRequirements` on the resource model (`GetVersionRequirements()` returning a single requirement for ES ≥ 8.2.0), delegating version enforcement to the entitycore envelope. The resource SHALL NOT call `client.ServerVersion()` directly in Create or Update.
 
@@ -11,7 +11,7 @@ The resource SHALL use the `WriteFunc[T]` callback contract via the entitycore e
 #### Scenario: Version below minimum
 
 - **WHEN** create or update runs against an Elasticsearch server with version below 8.2.0
-- **THEN** the provider SHALL return an "Unsupported Elasticsearch Version" error and SHALL NOT call the Put Component Template API
+- **THEN** the provider SHALL return an "Unsupported server version" error diagnostic (from the entitycore envelope) and SHALL NOT call the Put Component Template API
 
 #### Scenario: Version at minimum
 
