@@ -94,13 +94,13 @@
 
 ## 7. Update and prune tests
 
-- [ ] 7.1 Move `.github/workflows-src/lib/*.test.mjs` to `.github/scripts/workflows/lib/*.test.mjs`
-- [ ] 7.2 Update `require()` paths inside all moved `.test.mjs` files
-- [ ] 7.3 Delete `code-factory-inline-scripts.test.mjs` (tests `//include:` expansion, no longer applicable)
-- [ ] 7.4 Delete `research-factory-inline-scripts.test.mjs` (tests `//include:` expansion, no longer applicable)
-- [ ] 7.5 Delete compiler Go tests (deleted with compiler)
-- [ ] 7.6 Delete any test that asserts on `x-script-include` presence in templates
-- [ ] 7.7 Run `make workflow-test` and fix any failing tests
+- [x] 7.1 Move `.github/workflows-src/lib/*.test.mjs` to `.github/scripts/workflows/lib/*.test.mjs`
+- [x] 7.2 Update `require()` paths inside all moved `.test.mjs` files
+- [x] 7.3 Delete `code-factory-inline-scripts.test.mjs` (tests `//include:` expansion, no longer applicable)
+- [x] 7.4 Delete `research-factory-inline-scripts.test.mjs` (tests `//include:` expansion, no longer applicable)
+- [x] 7.5 Delete compiler Go tests (deleted with compiler)
+- [x] 7.6 Delete any test that asserts on `x-script-include` presence in templates
+- [x] 7.7 Run `make workflow-test` and fix any failing tests
 
 ## 8. Final validation
 
