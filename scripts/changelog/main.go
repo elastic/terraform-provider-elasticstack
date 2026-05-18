@@ -455,6 +455,8 @@ func cmdValidatePRSection(args []string, stderr io.Writer) error {
 	fs.SetOutput(stderr)
 	prNumberFlag := fs.Int("pr-number", 0,
 		"pull request number (defaults to pull_request.number from $GITHUB_EVENT_PATH when set)")
+	upsertCommentFlag := fs.Bool("upsert-comment", true,
+		"whether to upsert the github-actions verdict comment when GITHUB_TOKEN is available")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -507,11 +509,60 @@ func cmdValidatePRSection(args []string, stderr io.Writer) error {
 		}
 	}
 
+	if *upsertCommentFlag {
+		if err := upsertValidatePRComment(ctx, client, owner, repo, prNumber, verdict); err != nil {
+			return fmt.Errorf("validate-pr-section: verdict comment: %w", err)
+		}
+	}
+
 	if verdict.Status == prcheck.StatusFail {
 		return fmt.Errorf("validate-pr-section: changelog check failed:\n%s", strings.Join(verdict.Errors, "\n"))
 	}
 
 	return nil
+}
+
+func upsertValidatePRComment(ctx context.Context, client *github.Client, owner string, repo string, prNumber int, verdict prcheck.Verdict) error {
+	marker := prcheck.MarkerForPRCheck
+	raw, err := githubx.ListIssueComments(ctx, client, owner, repo, prNumber)
+	if err != nil {
+		return err
+	}
+	existing := prcheck.FindExistingComment(issueSummariesAsPRComments(raw), marker)
+
+	switch {
+	case verdict.NoChangelogSkip:
+		if existing != nil {
+			body := prcheck.BuildNoChangelogPassCommentBody(marker)
+			return githubx.UpdateIssueComment(ctx, client, owner, repo, existing.ID, body)
+		}
+	case verdict.Status == prcheck.StatusFail:
+		body := prcheck.BuildFailureCommentBody(marker, verdict.Errors)
+		if existing != nil {
+			return githubx.UpdateIssueComment(ctx, client, owner, repo, existing.ID, body)
+		}
+		return githubx.CreateIssueComment(ctx, client, owner, repo, prNumber, body)
+	case verdict.Status == prcheck.StatusPass:
+		if existing != nil {
+			body := prcheck.BuildPassCommentBody(marker)
+			return githubx.UpdateIssueComment(ctx, client, owner, repo, existing.ID, body)
+		}
+	default:
+		return fmt.Errorf("unexpected verdict %+v", verdict)
+	}
+	return nil
+}
+
+func issueSummariesAsPRComments(in []githubx.IssueComment) []prcheck.Comment {
+	out := make([]prcheck.Comment, len(in))
+	for i := range in {
+		out[i] = prcheck.Comment{
+			ID:        in[i].ID,
+			Body:      in[i].Body,
+			UserLogin: in[i].UserLogin,
+		}
+	}
+	return out
 }
 
 // pullRequestFetcher implements prcheck.PullRequestFetcher using go-github REST pull requests.
