@@ -15,9 +15,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
-// Package evidence builds PR evidence manifest JSON (buildEvidenceManifest in
-// .github/scripts/workflows/lib/changelog-pr-evidence.js) and the release artifact
-// plan (buildEvidenceArtifactPlan in .github/scripts/workflows/lib/changelog-evidence-manifest.js).
+// Package evidence builds PR evidence manifest JSON and the release artifact plan
+// (parity with the prior JavaScript evidence manifest helpers).
 package evidence
 
 import (
@@ -30,7 +29,7 @@ import (
 	"time"
 )
 
-// JS default artifact metadata from changelog-evidence-manifest.js (exported for callers/tests).
+// JS default artifact metadata from the legacy manifest helper (exported for callers/tests).
 const (
 	DefaultEvidenceArtifactName = "changelog-release-evidence"
 	// DefaultEvidenceArtifactPath mirrors DEFAULT_EVIDENCE_ARTIFACT_PATH in JS.

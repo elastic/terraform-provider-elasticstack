@@ -157,7 +157,7 @@ func extractChangelogSection(body string) (inner string, ok bool) {
 	return strings.Join(innerLines, "\n"), true
 }
 
-// ValidateChangelogSection mirrors validateChangelogSection from pr-changelog-parser.js.
+// ValidateChangelogSection mirrors the prior JavaScript validateChangelogSection helper.
 func ValidateChangelogSection(parsed *Section) (bool, []string) {
 	errs := validateChangelogSection(parsed)
 	return len(errs) == 0, errs
@@ -188,7 +188,7 @@ func validateChangelogSection(parsed *Section) []string {
 	return errs
 }
 
-// ValidateChangelogSectionFull mirrors validateChangelogSectionFull from pr-changelog-parser.js.
+// ValidateChangelogSectionFull mirrors validateChangelogSectionFull from that same legacy implementation.
 func ValidateChangelogSectionFull(parsed *Section, opts ValidateOpts) (bool, []string) {
 	base := validateChangelogSection(parsed)
 	if parsed == nil {

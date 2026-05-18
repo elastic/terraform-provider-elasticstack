@@ -26,12 +26,12 @@ import (
 
 var breakingEndMarkerRE = regexp.MustCompile(`^\s*<!--\s*/breaking-changes\s*-->\s*$`)
 
-// breakingHeadingAtLineStart mirrors /^###\s+Breaking changes/ used by pr-changelog-parser.js for heading detection.
+// breakingHeadingAtLineStart mirrors /^###\s+Breaking changes/ used by the legacy heading detector for PR bodies.
 var breakingHeadingAtLineStart = regexp.MustCompile(`^###\s+Breaking changes`)
 
 // ExtractBreakingChanges returns the markdown content under ### Breaking changes (heading line excluded),
 // or ("", false) when the heading is absent or only whitespace content remains after trimEnd.
-// Semantics match extractBreakingChanges in pr-changelog-parser.js (fences + end marker + ##/### boundaries).
+// Semantics match the legacy JavaScript breaking extractor (fences + end marker + ##/### boundaries).
 func ExtractBreakingChanges(changelogSection string) (string, bool) {
 	if changelogSection == "" {
 		return "", false
@@ -88,7 +88,7 @@ func ExtractBreakingChanges(changelogSection string) (string, bool) {
 	return string(trimmed), true
 }
 
-// isHashHeadingLevel2Or3 mirrors /^#{2,3}\s/.test(line) from pr-changelog-parser.js for breaking extractor boundaries.
+// isHashHeadingLevel2Or3 mirrors /^#{2,3}\s/.test(line) from the legacy breaking extractor boundaries.
 func isHashHeadingLevel2Or3(line []byte) bool {
 	i := 0
 	for i < len(line) && line[i] == '#' {

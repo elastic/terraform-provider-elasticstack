@@ -16,8 +16,7 @@
 // under the License.
 
 // Package prcheck validates pull request bodies against the repository's
-// "## Changelog" contract (parity with lib/pr-changelog-parser.js and
-// pr-changelog-check/check.js validation branch).
+// "## Changelog" contract (parity with the migrated JavaScript verifier workflow).
 //
 // Packages in prcheck MUST NOT read environment variables or touch the filesystem;
 // callers inject GitHub/network via PullRequestFetcher.

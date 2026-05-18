@@ -278,7 +278,7 @@ func evidenceFromMergedPR(pr section.MergedPR, filenames []string) PullRequestEv
 	)
 }
 
-// GatherOptions configures PR evidence aggregation (changelog/gather-pr-evidence.js parity).
+// GatherOptions configures PR evidence aggregation (legacy gather-evidence behavior).
 type GatherOptions struct {
 	Owner                    string
 	Repo                     string
@@ -291,11 +291,11 @@ type GatherOptions struct {
 	Now                      func() time.Time
 }
 
-// Gather lists merged PRs in the git range with per-PR files (.github/scripts/workflows/changelog/gather-pr-evidence.js).
-// Per-PR classification and manifest assembly follow buildEvidenceManifest / buildPullRequestEvidence
-// in .github/scripts/workflows/lib/changelog-pr-evidence.js.
+// Gather lists merged PRs in the git range with per-PR files. Per-PR classification and
+// manifest assembly mirror the prior JavaScript gather-evidence implementation.
 //
-// Returned warnings mirror core.warning from the JS runner (listing commits failed, listing PRs/files failed).
+// Returned warnings mirror severity from the legacy runner (listing commits failed,
+// listing PRs/files failed).
 func Gather(ctx context.Context, opts GatherOptions) (Manifest, []string, error) {
 	switch {
 	case strings.TrimSpace(opts.Owner) == "":

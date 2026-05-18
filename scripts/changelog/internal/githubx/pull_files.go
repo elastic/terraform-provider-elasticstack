@@ -26,7 +26,7 @@ import (
 const pullFilesPageSize = 100
 
 // ListPullRequestFilenames returns each changed file path for pullNumber (paginated).
-// Mirrors pulls.listFiles usage in changelog/gather-pr-evidence.js.
+// Mirrors pulls.listFiles usage in the changelog evidence gather path.
 func ListPullRequestFilenames(
 	ctx context.Context,
 	client *github.Client,

@@ -45,17 +45,17 @@ func FindExistingComment(comments []Comment, marker string) *Comment {
 	return nil
 }
 
-// BuildPassCommentBody matches pr-changelog-check.js buildPassCommentBody.
+// BuildPassCommentBody matches the legacy pass comment template verbatim.
 func BuildPassCommentBody(marker string) string {
 	return marker + "\n:white_check_mark: **PR Changelog Check passed** — the `## Changelog` section looks good."
 }
 
-// BuildNoChangelogPassCommentBody matches pr-changelog-check.js buildNoChangelogPassCommentBody.
+// BuildNoChangelogPassCommentBody matches the legacy no-changelog pass comment template verbatim.
 func BuildNoChangelogPassCommentBody(marker string) string {
 	return marker + "\n:white_check_mark: **PR Changelog Check passed** — `no-changelog` label is set."
 }
 
-// BuildFailureCommentBody matches pr-changelog-check.js buildFailureCommentBody (byte-compatible template).
+// BuildFailureCommentBody matches the legacy failure comment template (byte-compatible).
 func BuildFailureCommentBody(marker string, errs []string) string {
 	errLines := make([]string, len(errs))
 	for i, e := range errs {

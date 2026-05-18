@@ -55,7 +55,7 @@ func errorsAny(errs []string, pred func(string) bool) bool {
 	return slices.ContainsFunc(errs, pred)
 }
 
-// Small fixtures (verbatim trimStart parity with pr-changelog-parser.test.mjs).
+// Small fixtures (verbatim trimStart parity with historical parser tests).
 
 const bodyNoneNoSummary = `## Changelog
 
