@@ -510,59 +510,45 @@ func cmdValidatePRSection(args []string, stderr io.Writer) error {
 	}
 
 	if *upsertCommentFlag {
-		if err := upsertValidatePRComment(ctx, client, owner, repo, prNumber, verdict); err != nil {
+		if err := prcheck.UpsertVerdictIssueComment(ctx, ghIssueCommentsRESTAdapter{client: client}, owner, repo, prNumber, verdict); err != nil {
 			return fmt.Errorf("validate-pr-section: verdict comment: %w", err)
 		}
 	}
 
 	if verdict.Status == prcheck.StatusFail {
-		return fmt.Errorf("validate-pr-section: changelog check failed:\n%s", strings.Join(verdict.Errors, "\n"))
+		return fmt.Errorf("validate-pr-section: PR changelog check failed:\n%s", strings.Join(verdict.Errors, "\n"))
 	}
 
 	return nil
 }
 
-func upsertValidatePRComment(ctx context.Context, client *github.Client, owner string, repo string, prNumber int, verdict prcheck.Verdict) error {
-	marker := prcheck.MarkerForPRCheck
-	raw, err := githubx.ListIssueComments(ctx, client, owner, repo, prNumber)
+// ghIssueCommentsRESTAdapter exposes githubx helpers through prcheck.IssueCommentsREST.
+type ghIssueCommentsRESTAdapter struct {
+	client *github.Client
+}
+
+func (a ghIssueCommentsRESTAdapter) ListIssueComments(ctx context.Context, owner, repo string, issueNumber int) ([]prcheck.Comment, error) {
+	raw, err := githubx.ListIssueComments(ctx, a.client, owner, repo, issueNumber)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	existing := prcheck.FindExistingComment(issueSummariesAsPRComments(raw), marker)
-
-	switch {
-	case verdict.NoChangelogSkip:
-		if existing != nil {
-			body := prcheck.BuildNoChangelogPassCommentBody(marker)
-			return githubx.UpdateIssueComment(ctx, client, owner, repo, existing.ID, body)
+	out := make([]prcheck.Comment, len(raw))
+	for i := range raw {
+		out[i] = prcheck.Comment{
+			ID:        raw[i].ID,
+			Body:      raw[i].Body,
+			UserLogin: raw[i].UserLogin,
 		}
-	case verdict.Status == prcheck.StatusFail:
-		body := prcheck.BuildFailureCommentBody(marker, verdict.Errors)
-		if existing != nil {
-			return githubx.UpdateIssueComment(ctx, client, owner, repo, existing.ID, body)
-		}
-		return githubx.CreateIssueComment(ctx, client, owner, repo, prNumber, body)
-	case verdict.Status == prcheck.StatusPass:
-		if existing != nil {
-			body := prcheck.BuildPassCommentBody(marker)
-			return githubx.UpdateIssueComment(ctx, client, owner, repo, existing.ID, body)
-		}
-	default:
-		return fmt.Errorf("unexpected verdict %+v", verdict)
 	}
-	return nil
+	return out, nil
 }
 
-func issueSummariesAsPRComments(in []githubx.IssueComment) []prcheck.Comment {
-	out := make([]prcheck.Comment, len(in))
-	for i := range in {
-		out[i] = prcheck.Comment{
-			ID:        in[i].ID,
-			Body:      in[i].Body,
-			UserLogin: in[i].UserLogin,
-		}
-	}
-	return out
+func (a ghIssueCommentsRESTAdapter) CreateIssueComment(ctx context.Context, owner, repo string, issueNumber int, body string) error {
+	return githubx.CreateIssueComment(ctx, a.client, owner, repo, issueNumber, body)
+}
+
+func (a ghIssueCommentsRESTAdapter) UpdateIssueComment(ctx context.Context, owner, repo string, commentID int64, body string) error {
+	return githubx.UpdateIssueComment(ctx, a.client, owner, repo, commentID, body)
 }
 
 // pullRequestFetcher implements prcheck.PullRequestFetcher using go-github REST pull requests.
