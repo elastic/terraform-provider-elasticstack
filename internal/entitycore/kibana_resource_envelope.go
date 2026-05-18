@@ -221,7 +221,7 @@ func (r *KibanaResource[T]) Create(ctx context.Context, req resource.CreateReque
 		return
 	}
 
-	if vDiags := enforceVersionRequirements(ctx, client, &plan); vDiags.HasError() {
+	if vDiags := EnforceVersionRequirements(ctx, client, &plan); vDiags.HasError() {
 		resp.Diagnostics.Append(vDiags...)
 		return
 	}
@@ -270,7 +270,7 @@ func (r *KibanaResource[T]) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 
-	if vDiags := enforceVersionRequirements(ctx, client, &model); vDiags.HasError() {
+	if vDiags := EnforceVersionRequirements(ctx, client, &model); vDiags.HasError() {
 		resp.Diagnostics.Append(vDiags...)
 		return
 	}
@@ -327,7 +327,7 @@ func (r *KibanaResource[T]) Update(ctx context.Context, req resource.UpdateReque
 		return
 	}
 
-	if vDiags := enforceVersionRequirements(ctx, client, &plan); vDiags.HasError() {
+	if vDiags := EnforceVersionRequirements(ctx, client, &plan); vDiags.HasError() {
 		resp.Diagnostics.Append(vDiags...)
 		return
 	}

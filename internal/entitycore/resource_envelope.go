@@ -65,15 +65,15 @@ type elasticsearchDeleteFunc[T ElasticsearchResourceModel] func(
 	T,
 ) diag.Diagnostics
 
-// WriteRequest is passed to [WriteFunc] after plan decoding, prior-state
-// decoding (Update only), write identity validation, client resolution, and
-// optional version checks. Prior is non-nil only for Update; Create receives
-// Prior == nil. The same WriteRequest type is shared by Create and Update so a
-// single function can serve both when the logic does not differ.
+// WriteRequest is passed to [WriteFunc]. Config is the Terraform configuration
+// decoded into T by the envelope before the callback is invoked. Prior is non-nil
+// only for Update; Create receives Prior == nil. The same WriteRequest type is
+// shared by Create and Update so a single function can serve both when the logic
+// does not differ.
 type WriteRequest[T ElasticsearchResourceModel] struct {
 	Plan    T
 	Prior   *T
-	Config  tfsdk.Config
+	Config  T
 	WriteID string
 }
 
@@ -248,7 +248,7 @@ func (r *ElasticsearchResource[T]) Read(ctx context.Context, req resource.ReadRe
 		return
 	}
 
-	if vDiags := enforceVersionRequirements(ctx, client, &model); vDiags.HasError() {
+	if vDiags := EnforceVersionRequirements(ctx, client, &model); vDiags.HasError() {
 		resp.Diagnostics.Append(vDiags...)
 		return
 	}
@@ -355,13 +355,19 @@ func (r *ElasticsearchResource[T]) runWrite(ctx context.Context, inv writeInvoca
 		return diags
 	}
 
-	if vDiags := enforceVersionRequirements(ctx, client, &planModel); vDiags.HasError() {
+	if vDiags := EnforceVersionRequirements(ctx, client, &planModel); vDiags.HasError() {
 		diags.Append(vDiags...)
 		return diags
 	}
 
 	if d := r.requireReadFunc(); d.HasError() {
 		return d
+	}
+
+	var configModel T
+	diags.Append(inv.config.Get(ctx, &configModel)...)
+	if diags.HasError() {
+		return diags
 	}
 
 	writeFn := r.createFunc
@@ -372,7 +378,7 @@ func (r *ElasticsearchResource[T]) runWrite(ctx context.Context, inv writeInvoca
 	written, callDiags := writeFn(ctx, client, WriteRequest[T]{
 		Plan:    planModel,
 		Prior:   priorPtr,
-		Config:  inv.config,
+		Config:  configModel,
 		WriteID: writeKey,
 	})
 	diags.Append(callDiags...)

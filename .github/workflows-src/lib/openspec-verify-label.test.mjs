@@ -19,14 +19,18 @@ function lockSource() {
 }
 
 test('verify-label workflow installs Go from go.mod and exports Go paths for AWF', () => {
+  // Setup steps are injected via the shared setup-dev.md import; verify in the lock file.
+  const lock = lockSource();
+  assert.match(lock, /setup-go/);
+  assert.match(lock, /go-version-file: go\.mod/);
+  assert.match(lock, /Export Go and Terraform paths for AWF chroot mode/);
+  assert.match(lock, /GOROOT=\$\(go env GOROOT\)/);
+  assert.match(lock, /GOPATH=\$\(go env GOPATH\)/);
+  assert.match(lock, /GOMODCACHE=\$\(go env GOMODCACHE\)/);
+  // Network config remains in the source workflow.
   const source = workflowSource();
-  assert.match(source, /uses: actions\/setup-go@v6/);
-  assert.match(source, /go-version-file: go\.mod/);
-  assert.match(source, /Export Go paths for AWF chroot mode/);
-  assert.match(source, /GOROOT=\$\(go env GOROOT\)/);
-  assert.match(source, /GOPATH=\$\(go env GOPATH\)/);
-  assert.match(source, /GOMODCACHE=\$\(go env GOMODCACHE\)/);
   assert.match(source, /allowed: \[defaults, node, go, elastic\.litellm-prod\.ai\]/);
+  assert.match(source, /imports: \[shared\/setup-dev\.md\]/);
 });
 
 test('verify-label workflow routes Claude through LiteLLM with secret-backed API key', () => {
@@ -51,24 +55,27 @@ test('verify-label source workflow includes LiteLLM in allowed network domains',
 });
 
 test('verify-label workflow installs Node from package.json and omits runtimes.go', () => {
-  const source = workflowSource();
-  assert.match(source, /uses: actions\/setup-node@v6/);
-  assert.match(source, /node-version-file: package\.json/);
+  // Setup steps are injected via the shared setup-dev.md import; verify in the lock file.
+  const lock = lockSource();
+  assert.match(lock, /setup-node/);
+  assert.match(lock, /node-version-file: package\.json/);
   // The review workflow must not reintroduce a frontmatter go runtime pin.
+  const source = workflowSource();
   assert.doesNotMatch(source, /runtimes:\s*\n\s*go:/);
 });
 
 test('verify-label workflow provisions Terraform with wrapper disabled', () => {
-  const source = workflowSource();
-  assert.match(source, /uses: hashicorp\/setup-terraform@v4/);
-  assert.match(source, /terraform_wrapper: false/);
+  // Setup steps are injected via the shared setup-dev.md import; verify in the lock file.
+  const lock = lockSource();
+  assert.match(lock, /setup-terraform/);
+  assert.match(lock, /terraform_wrapper: false/);
 });
 
 test('verify-label workflow bootstraps the repo with make setup', () => {
-  const source = workflowSource();
-  // The step name and run command may have an if: condition in between, so just check both appear
-  assert.match(source, /name: Setup repository dependencies/);
-  assert.match(source, /run: make setup/);
+  // Setup steps are injected via the shared setup-dev.md import; verify in the lock file.
+  const lock = lockSource();
+  assert.match(lock, /name: Setup repository dependencies/);
+  assert.match(lock, /run: make setup/);
 });
 
 test('verify-label workflow uses pull_request_target with labeled type, not label_command', () => {
@@ -177,14 +184,17 @@ test('verify-label workflow states archive_push_allowed false does not force COM
 });
 
 test('verify-label workflow bootstrap steps run unconditionally (no verification_mode condition)', () => {
+  // Bootstrap steps must not have verification_mode conditions — they always run.
+  // Steps are injected via the shared setup-dev.md import; check the lock file for step names.
   const source = workflowSource();
-  // Bootstrap steps must not have verification_mode conditions — they always run
   assert.doesNotMatch(source, /verification_mode.*workspace/s);
-  // Bootstrap steps must still be present
-  assert.match(source, /Setup Go/);
-  assert.match(source, /Setup Node\.js/);
-  assert.match(source, /Setup Terraform CLI/);
-  assert.match(source, /Setup repository dependencies/);
+  assert.match(source, /imports: \[shared\/setup-dev\.md\]/);
+  // Step names appear in the compiled lock file, not in the source .md.
+  const lock = lockSource();
+  assert.match(lock, /name: Setup Go/);
+  assert.match(lock, /name: Setup Node\.js/);
+  assert.match(lock, /name: Setup Terraform CLI/);
+  assert.match(lock, /name: Setup repository dependencies/);
 });
 
 test('verify-label compiled lock pre_activation job has issues and pull-requests write permissions', () => {

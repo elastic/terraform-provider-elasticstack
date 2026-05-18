@@ -621,11 +621,7 @@ test('change-factory-issue workflow.md.tmpl wiring matches intake contract', () 
     /if: >-\s*\n\s*needs\.pre_activation\.outputs\.event_eligible == 'true' &&\s*\n\s*needs\.pre_activation\.outputs\.actor_trusted == 'true' &&\s*\n\s*needs\.pre_activation\.outputs\.duplicate_pr_found != 'true'/,
   );
 
-  assert.match(
-    workflowTmpl,
-    /- name: Setup Node\.js\n    uses: actions\/setup-node@v6\n    with:\n      node-version-file: package\.json/,
-  );
-  assert.match(workflowTmpl, /- name: Install npm dependencies\n    run: npm ci/);
+  assert.match(workflowTmpl, /imports: \[shared\/setup-dev\.md\]/);
 
   assert.match(
     workflowTmpl,
@@ -650,6 +646,8 @@ test('change-factory-issue workflow.md.tmpl wiring matches intake contract', () 
     'Setup Fleet',
     'hashicorp/setup-terraform',
     'actions/setup-go@v',
+    'actions/setup-node@v',
+    '- name: Install npm dependencies',
   ];
   for (const fragment of forbiddenFragments) {
     assert.ok(

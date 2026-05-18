@@ -1,4 +1,5 @@
 ---
+imports: [shared/setup-dev.md]
 name: Code Factory Issue Intake
 timeout-minutes: 65
 description: >-
@@ -248,51 +249,11 @@ if: >-
   needs.pre_activation.outputs.duplicate_pr_found != 'true' &&
   needs.pre_activation.outputs.issue_number != ''
 steps:
-  - name: Setup Go
-    uses: actions/setup-go@v6
-    with:
-      go-version-file: go.mod
-      cache: false
-  - name: Setup Terraform CLI
-    uses: hashicorp/setup-terraform@v4
-    with:
-      terraform_wrapper: false
-  - name: Export Go paths for AWF chroot mode
-    run: |
-      echo "GOROOT=$(go env GOROOT)" >> "$GITHUB_ENV"
-      echo "GOPATH=$(go env GOPATH)" >> "$GITHUB_ENV"
-      echo "GOMODCACHE=$(go env GOMODCACHE)" >> "$GITHUB_ENV"
-      echo "TERRAFORM_BIN=$(which terraform)" >> "$GITHUB_ENV"
-      TERRAFORM_DIR=$(dirname "$(which terraform)")
-      echo "PATH=${TERRAFORM_DIR}:${PATH}" >> "$GITHUB_ENV"
   - name: Download issue context artifact
     uses: actions/download-artifact@v4
     with:
       name: code-factory-issue-context
       path: /tmp/code-factory-context/
-  - name: Setup Node.js
-    uses: actions/setup-node@v6
-    with:
-      node-version-file: package.json
-  - name: Setup Elastic Stack
-    run: make docker-fleet
-  - name: Get dependencies
-    run: make setup
-  - name: Setup Kibana user
-    run: make set-kibana-password
-  - id: get-api-key
-    name: Get ES API key
-    run: |-
-      echo "apikey=$(make create-es-api-key | jq -r .encoded)" >> "$GITHUB_OUTPUT"
-  - id: setup-fleet
-    name: Setup Fleet
-    run: |-
-      make setup-kibana-fleet
-    env:
-      FLEET_NAME: "fleet"
-  - name: Docker compose logs
-    if: failure()
-    run: docker compose logs --no-color
 engine:
   id: claude
   model: "llm-gateway/claude-sonnet-4-6"

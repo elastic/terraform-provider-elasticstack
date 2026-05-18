@@ -33,19 +33,26 @@ function extractRepositoryToolchainSection(source) {
 }
 
 test('schema-coverage rotation workflow installs Go from go.mod and exports Go paths for AWF', () => {
+  // Setup steps are injected via the shared setup-dev.md import; verify in the lock file.
+  const lock = lockSource();
+  assert.match(lock, /setup-go/);
+  assert.match(lock, /go-version-file: go\.mod/);
+  assert.match(lock, /Export Go and Terraform paths for AWF chroot mode/);
+  assert.match(lock, /GOROOT=\$\(go env GOROOT\)/);
+  assert.match(lock, /GOPATH=\$\(go env GOPATH\)/);
+  assert.match(lock, /GOMODCACHE=\$\(go env GOMODCACHE\)/);
+  // Source workflow declares the import.
   const source = workflowSource();
-  assert.match(source, /uses: actions\/setup-go@v6/);
-  assert.match(source, /go-version-file: go\.mod/);
-  assert.match(source, /Export Go paths for AWF chroot mode/);
-  assert.match(source, /GOROOT=\$\(go env GOROOT\)/);
-  assert.match(source, /GOPATH=\$\(go env GOPATH\)/);
-  assert.match(source, /GOMODCACHE=\$\(go env GOMODCACHE\)/);
+  assert.match(source, /imports: \[shared\/setup-dev\.md\]/);
 });
 
 test('schema-coverage rotation workflow installs Node from package.json and allows bootstrap ecosystems', () => {
+  // Setup steps are injected via the shared setup-dev.md import; verify in the lock file.
+  const lock = lockSource();
+  assert.match(lock, /setup-node/);
+  assert.match(lock, /node-version-file: package\.json/);
+  // Network config remains in the source workflow.
   const source = workflowSource();
-  assert.match(source, /uses: actions\/setup-node@v6/);
-  assert.match(source, /node-version-file: package\.json/);
   assert.match(source, /allowed: \[defaults, node, go, elastic\.litellm-prod\.ai\]/);
 });
 
@@ -68,9 +75,10 @@ test('schema-coverage rotation source workflow configures engine env with base U
 });
 
 test('schema-coverage rotation workflow bootstraps the repo with make setup', () => {
-  const source = workflowSource();
-  assert.match(source, /name: Setup repository dependencies/);
-  assert.match(source, /run: make setup/);
+  // Setup steps are injected via the shared setup-dev.md import; verify in the lock file.
+  const lock = lockSource();
+  assert.match(lock, /name: Setup repository dependencies/);
+  assert.match(lock, /run: make setup/);
 });
 
 test('schema-coverage rotation prompt documents deterministic toolchain without self-install', () => {

@@ -32,9 +32,7 @@ resource "elasticstack_elasticsearch_index_template_ilm_attachment" "example" {
   }
 }
 ```
-
 ## Requirements
-
 ### Requirement: Component template CRUD APIs (REQ-001–REQ-003)
 
 The resource SHALL use the Elasticsearch Get Component Template API to read the `@custom` component template ([docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-get-component-template.html)), requesting flat settings (`flat_settings=true`). The resource SHALL use the Elasticsearch Put Component Template API to create and update the `@custom` component template ([docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-component-template-api.html)). On delete, the resource SHALL use the Put Component Template API to update the `@custom` component template with the ILM setting removed rather than deleting the component template itself. When Elasticsearch returns a non-success response (other than template-not-found on read), the resource SHALL surface the API error to Terraform diagnostics.
@@ -109,19 +107,27 @@ By default, the resource SHALL use the provider-level Elasticsearch client. When
 
 ### Requirement: Compatibility — minimum Elasticsearch version (REQ-011)
 
-On create and update, the resource SHALL check the Elasticsearch server version. If the server version is less than 8.2.0, the resource SHALL return an "Unsupported Elasticsearch Version" error diagnostic and SHALL NOT proceed to call the Put Component Template API.
+On create and update, the resource SHALL enforce a minimum Elasticsearch server version of 8.2.0. If the server version is less than 8.2.0, the resource SHALL return an "Unsupported server version" error diagnostic (summary, emitted by the entitycore envelope) whose detail explains that this resource requires Elasticsearch 8.2.0 or later, and SHALL NOT proceed to call the Put Component Template API.
+
+This requirement SHALL be satisfied by implementing `WithVersionRequirements` on the resource model (`GetVersionRequirements()` returning a single requirement for ES ≥ 8.2.0), delegating version enforcement to the entitycore envelope. The resource SHALL NOT call `client.ServerVersion()` directly in Create or Update.
+
+The resource SHALL use the `WriteFunc[T]` callback contract via the entitycore envelope for both Create and Update. The resource SHALL NOT override the envelope's `Create` or `Update` method receivers.
 
 #### Scenario: Version below minimum
 
-- GIVEN Elasticsearch version 8.1.x
-- WHEN create or update runs
-- THEN the provider SHALL return an "Unsupported Elasticsearch Version" error and not call the API
+- **WHEN** create or update runs against an Elasticsearch server with version below 8.2.0
+- **THEN** the provider SHALL return an "Unsupported server version" error diagnostic (from the entitycore envelope) and SHALL NOT call the Put Component Template API
 
 #### Scenario: Version at minimum
 
-- GIVEN Elasticsearch version 8.2.0 or later
-- WHEN create or update runs
-- THEN the provider SHALL proceed normally
+- **WHEN** create or update runs against an Elasticsearch server with version 8.2.0 or later
+- **THEN** the provider SHALL proceed normally
+
+#### Scenario: Version enforced by envelope, not by write callback
+
+- **WHEN** the resource model implements `WithVersionRequirements` returning ES ≥ 8.2.0
+- **THEN** the entitycore envelope SHALL enforce the version requirement during Create and Update before invoking the write callback
+- **AND** the write callback SHALL NOT contain any explicit server version check
 
 ### Requirement: Create (REQ-012–REQ-015)
 
@@ -190,3 +196,4 @@ The resource SHALL read and write the ILM policy using the flat key `index.lifec
 - GIVEN a component template with ILM configured
 - WHEN Get Component Template is called
 - THEN the request SHALL include `flat_settings=true` and the ILM value SHALL be read from the key `index.lifecycle.name`
+

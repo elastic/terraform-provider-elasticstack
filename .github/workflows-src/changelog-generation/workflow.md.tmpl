@@ -1,4 +1,5 @@
 ---
+imports: [shared/setup-dev.md]
 name: Changelog Generation
 description: >-
   Generates or updates CHANGELOG.md from merged pull requests. On schedule or workflow_dispatch,
@@ -56,22 +57,6 @@ steps:
       path: /tmp/gh-aw/agent
   - name: Verify evidence manifest path
     run: test -f /tmp/gh-aw/agent/evidence.json
-  - name: Setup Go
-    uses: actions/setup-go@v6
-    with:
-      go-version-file: go.mod
-      cache: false
-  - name: Export Go paths for AWF chroot mode
-    run: |
-      echo "GOROOT=$(go env GOROOT)" >> "$GITHUB_ENV"
-      echo "GOPATH=$(go env GOPATH)" >> "$GITHUB_ENV"
-      echo "GOMODCACHE=$(go env GOMODCACHE)" >> "$GITHUB_ENV"
-  - name: Setup Node.js
-    uses: actions/setup-node@v6
-    with:
-      node-version-file: package.json
-  - name: Setup repository dependencies
-    run: make setup
 engine:
   id: claude
   model: "llm-gateway/gpt-5.5"

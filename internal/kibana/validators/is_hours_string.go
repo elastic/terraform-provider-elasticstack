@@ -25,11 +25,6 @@ import (
 
 var hoursRegex = regexp.MustCompile(`^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$`)
 
-// StringMatchesHoursRegex checks if the string matches HH:mm format.
-func StringMatchesHoursRegex(s string) (matched bool, err error) {
-	return hoursRegex.MatchString(s), nil
-}
-
 // StringIsHours validates that a string is in HH:mm format.
 var StringIsHours = stringvalidator.RegexMatches(
 	hoursRegex,

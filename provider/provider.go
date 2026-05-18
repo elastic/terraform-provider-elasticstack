@@ -41,9 +41,7 @@ func New(version string) *schema.Provider {
 			kbKeyName:    providerSchema.GetKibanaConnectionSchema(),
 			fleetKeyName: providerSchema.GetFleetConnectionSchema(),
 		},
-		DataSourcesMap: map[string]*schema.Resource{
-			"elasticstack_kibana_action_connector": kibana.DataSourceConnector(),
-		},
+    DataSourcesMap: map[string]*schema.Resource{},
 		ResourcesMap: map[string]*schema.Resource{
 			"elasticstack_kibana_space": kibana.ResourceSpace(),
 		},
