@@ -71,21 +71,21 @@
 
 ## 5. Update `.github/workflows/*.md` files
 
-- [ ] 5.1 Remove generated header comments from all `.md` workflow files
-- [ ] 5.2 Replace all `x-script-include:` directives with `script:` blocks using `require('${{ github.workspace }}/.github/scripts/workflows/...')`
-- [ ] 5.3 Ensure `actions/checkout` step is present before any `actions/github-script` step that uses `require()` (already present for most `.md` workflows via `gh aw compile`, verify each)
-- [ ] 5.4 Update `openspec-verify-label.md`
-- [ ] 5.5 Update `change-factory-issue.md`
-- [ ] 5.6 Update `code-factory-issue.md`
-- [ ] 5.7 Update `research-factory-issue.md`
-- [ ] 5.8 Update `reproducer-factory-issue.md`
-- [ ] 5.9 Update `flaky-test-catcher.md`
-- [ ] 5.10 Update `issue-classifier.md`
-- [ ] 5.11 Update `schema-coverage-rotation.md`
-- [ ] 5.12 Update `duplicate-code-detector.md`
-- [ ] 5.13 Update `ci-deadcode-removal-rotation.md`
-- [ ] 5.14 Update `semantic-function-refactor.md`
-- [ ] 5.15 Update `kibana-spec-impact.md`
+- [x] 5.1 Remove generated header comments from all `.md` workflow files
+- [x] 5.2 Replace all `x-script-include:` directives with `script:` blocks using `require('${{ github.workspace }}/.github/scripts/workflows/...')`
+- [x] 5.3 Ensure `actions/checkout` step is present before any `actions/github-script` step that uses `require()` (already present for most `.md` workflows via `gh aw compile`, verify each)
+- [x] 5.4 Update `openspec-verify-label.md`
+- [x] 5.5 Update `change-factory-issue.md`
+- [x] 5.6 Update `code-factory-issue.md`
+- [x] 5.7 Update `research-factory-issue.md`
+- [x] 5.8 Update `reproducer-factory-issue.md`
+- [x] 5.9 Update `flaky-test-catcher.md`
+- [x] 5.10 Update `issue-classifier.md`
+- [x] 5.11 Update `schema-coverage-rotation.md`
+- [x] 5.12 Update `duplicate-code-detector.md`
+- [x] 5.13 Update `ci-deadcode-removal-rotation.md`
+- [x] 5.14 Update `semantic-function-refactor.md`
+- [x] 5.15 Update `kibana-spec-impact.md`
 
 ## 6. Regenerate `.lock.yml` files
 
