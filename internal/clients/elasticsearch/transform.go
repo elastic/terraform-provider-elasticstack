@@ -23,7 +23,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
@@ -32,15 +31,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 )
-
-// formatDuration converts duration to a string in the format accepted by
-// Elasticsearch, matching the legacy esapi behavior (milliseconds).
-func formatDuration(d time.Duration) string {
-	if d < time.Millisecond {
-		return strconv.FormatInt(int64(d), 10) + "nanos"
-	}
-	return strconv.FormatInt(int64(d)/int64(time.Millisecond), 10) + "ms"
-}
 
 // PutTransform creates or updates a transform.
 //
