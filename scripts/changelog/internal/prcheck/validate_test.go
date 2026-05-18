@@ -25,10 +25,8 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/scripts/changelog/internal/prcheck"
+	"github.com/elastic/terraform-provider-elasticstack/scripts/changelog/internal/section"
 )
-
-const ruleBreakingOnlyAllowedWhenBreakingImpactGo = "### Breaking changes section is only allowed when Customer impact: breaking; " +
-	"change to Customer impact: breaking or remove the ### Breaking changes heading."
 
 type stubFetcher struct {
 	pr  prcheck.PullRequest
@@ -231,7 +229,19 @@ func TestValidate_failures_and_bypass(t *testing.T) {
 			name:        "breaking heading forbidden when fix",
 			body:        "## Changelog\nCustomer impact: fix\nSummary: small fix\n\n### Breaking changes\noops\n",
 			wantStatus:  prcheck.StatusFail,
-			wantErrSubs: []string{ruleBreakingOnlyAllowedWhenBreakingImpactGo},
+			wantErrSubs: []string{section.RuleCBreakingOnlyWhenBreakingImpactMsg},
+		},
+		{
+			name:        "breaking heading forbidden when enhancement",
+			body:        "## Changelog\nCustomer impact: enhancement\nSummary: improved UI\n\n### Breaking changes\nshould not appear\n",
+			wantStatus:  prcheck.StatusFail,
+			wantErrSubs: []string{section.RuleCBreakingOnlyWhenBreakingImpactMsg},
+		},
+		{
+			name:        "breaking heading forbidden when none",
+			body:        "## Changelog\nCustomer impact: none\n\n### Breaking changes\nstray subsection\n",
+			wantStatus:  prcheck.StatusFail,
+			wantErrSubs: []string{section.RuleCBreakingOnlyWhenBreakingImpactMsg},
 		},
 		{
 			name:         "no-changelog label bypass ignores bad body",
