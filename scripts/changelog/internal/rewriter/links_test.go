@@ -80,7 +80,7 @@ func TestUpdateLinksIsIdempotentWhenReleaseEntryAlreadyExists(t *testing.T) {
 		t.Fatalf("expected idempotent rewrite; first != second")
 	}
 
-	releaseCount := regexp.MustCompile(`(?m)^\[0\.15\.0\]:`).FindAllIndex([]byte(second), -1)
+	releaseCount := regexp.MustCompile(`(?m)^\[0\.15\.0\]:`).FindAllIndex(second, -1)
 	if len(releaseCount) != 1 {
 		t.Fatalf("want exactly one [0.15.0] link line")
 	}
