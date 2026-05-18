@@ -89,8 +89,8 @@
 
 ## 6. Regenerate `.lock.yml` files
 
-- [ ] 6.1 Run `gh aw compile` for all `.md` workflows to regenerate `.lock.yml` files
-- [ ] 6.2 Verify no manual edits were made to `.lock.yml` files
+- [x] 6.1 Run `gh aw compile` for all `.md` workflows to regenerate `.lock.yml` files
+- [x] 6.2 Verify no manual edits were made to `.lock.yml` files
 
 ## 7. Update and prune tests
 
