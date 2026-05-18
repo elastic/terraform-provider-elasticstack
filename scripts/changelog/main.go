@@ -43,6 +43,19 @@ import (
 	"github.com/google/go-github/v86/github"
 )
 
+func writeWorkflowWarning(msg string) {
+	// Mirrors @actions/core.issueCommand(..., 'warning', ...) → stdout (::warning::$msg).
+	d := escapeGitHubWorkflowData(msg)
+	fmt.Fprintf(os.Stdout, "::warning::%s\n", d)
+}
+
+func escapeGitHubWorkflowData(msg string) string {
+	msg = strings.ReplaceAll(msg, "%", "%25")
+	msg = strings.ReplaceAll(msg, "\r", "%0D")
+	msg = strings.ReplaceAll(msg, "\n", "%0A")
+	return msg
+}
+
 const evidenceArtifactPerm fs.FileMode = 0o644
 
 func main() {
@@ -151,7 +164,7 @@ func cmdGatherEvidence(args []string, stderr io.Writer) error {
 	}
 
 	for _, w := range warns {
-		fmt.Fprintf(stderr, "WARNING: %s\n", w)
+		writeWorkflowWarning(w)
 	}
 
 	plan, err := evidence.BuildEvidenceArtifactPlan(evidence.ArtifactPlanRequest{
@@ -256,7 +269,7 @@ func cmdRunEngine(args []string, stderr io.Writer) error {
 	}
 
 	for _, w := range res.Warnings {
-		fmt.Fprintf(stderr, "WARNING: %s\n", w)
+		writeWorkflowWarning(w)
 	}
 
 	effectiveBranch := targetBranchOverride
@@ -356,7 +369,7 @@ func cmdManageUnreleasedPR(args []string, stderr io.Writer) error {
 	}
 
 	for _, w := range res.Warnings {
-		fmt.Fprintf(stderr, "WARNING: %s\n", w)
+		writeWorkflowWarning(w)
 	}
 
 	outPath := githubx.GitHubOutputPath()
@@ -440,7 +453,7 @@ func cmdRefreshReleasePR(args []string, stderr io.Writer) error {
 		fmt.Fprintf(stderr, "%s\n", res.Infos[0])
 	}
 	for _, w := range res.Warnings {
-		fmt.Fprintf(stderr, "WARNING: %s\n", w)
+		writeWorkflowWarning(w)
 	}
 	if len(res.Infos) > 1 {
 		fmt.Fprintf(stderr, "%s\n", res.Infos[1])
