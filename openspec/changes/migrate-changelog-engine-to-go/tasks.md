@@ -63,15 +63,15 @@
 
 ## 9. Behavioural-parity verification
 
-- [ ] 9.1 Run `make workflow-test` and confirm the suite exits zero with no JS test enumeration errors.
-- [ ] 9.2 Run `go test ./scripts/changelog/... -count=1` and confirm all ported tests pass.
-- [ ] 9.3 On a feature branch, fabricate a PR body with each customer-impact variant (`none`, `fix`, `enhancement`, `breaking`) and confirm `validate-pr-section` produces the same verdict output as the (pre-migration) JS version on the equivalent body.
-- [ ] 9.4 Run the `changelog-generation` workflow against a controlled merge and diff the produced `CHANGELOG.md` against a recent JS-produced reference; confirm byte-equivalent output (or document any intentional formatting differences).
-- [ ] 9.5 Confirm `make build` and `make check-lint` still pass.
+- [x] 9.1 Run `make workflow-test` and confirm the suite exits zero with no JS test enumeration errors.
+- [x] 9.2 Run `go test ./scripts/changelog/... -count=1` and confirm all ported tests pass.
+- [x] 9.3 On a feature branch, fabricate a PR body with each customer-impact variant (`none`, `fix`, `enhancement`, `breaking`) and confirm `validate-pr-section` produces the same verdict output as the (pre-migration) JS version on the equivalent body.
+- [x] 9.4 Run the `changelog-generation` workflow against a controlled merge and diff the produced `CHANGELOG.md` against a recent JS-produced reference; confirm byte-equivalent output (or document any intentional formatting differences).
+- [x] 9.5 Confirm `make build` and `make check-lint` still pass.
 
 ## 10. Documentation and finalisation
 
-- [ ] 10.1 Add a short README at `scripts/changelog/README.md` documenting subcommands, env-var contract, and invocation examples — mirroring the style of `scripts/kibana-spec-impact/`'s docs.
-- [ ] 10.2 If `dev-docs/high-level/repo-structure.md` enumerates the JS clusters being deleted, update it to point at `scripts/changelog/` instead.
-- [ ] 10.3 Run `npx openspec validate migrate-changelog-engine-to-go --strict` and resolve any issues.
+- [x] 10.1 Add a short README at `scripts/changelog/README.md` documenting subcommands, env-var contract, and invocation examples — mirroring the style of `scripts/kibana-spec-impact/`'s docs.
+- [x] 10.2 If `dev-docs/high-level/repo-structure.md` enumerates the JS clusters being deleted, update it to point at `scripts/changelog/` instead.
+- [x] 10.3 Run `npx openspec validate migrate-changelog-engine-to-go --strict` and resolve any issues.
 - [ ] 10.4 Open a PR using the standard commit message conventions; include before/after `git diff --stat` highlighting LOC reduction.
