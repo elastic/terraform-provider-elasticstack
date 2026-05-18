@@ -1,10 +1,10 @@
 const { gateProvider } = require('../lib/gate-provider.js');
 
 module.exports = async function ({ github, context, core }) {
-  const classifyResult = '${{ needs.classify.outputs.provider_changes }}';
-  const buildResult = '${{ needs.build.result }}';
-  const lintResult = '${{ needs.lint.result }}';
-  const testResult = '${{ needs.test.result }}';
+  const classifyResult = process.env.PROVIDER_GATE_CLASSIFY_RESULT ?? '';
+  const buildResult = process.env.PROVIDER_GATE_BUILD_RESULT ?? '';
+  const lintResult = process.env.PROVIDER_GATE_LINT_RESULT ?? '';
+  const testResult = process.env.PROVIDER_GATE_TEST_RESULT ?? '';
 
   const result = gateProvider({ classifyResult, buildResult, lintResult, testResult });
 
