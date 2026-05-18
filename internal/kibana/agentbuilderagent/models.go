@@ -181,7 +181,7 @@ func populateSet(ctx context.Context, src []string, dst *types.Set) diag.Diagnos
 	return nil
 }
 
-func (model agentModel) toAPICreateModel(ctx context.Context) (kbapi.PostAgentBuilderAgentsJSONRequestBody, diag.Diagnostics) {
+func (model agentModel) toAPICreateModel(ctx context.Context, supportsSkillIDs bool) (kbapi.PostAgentBuilderAgentsJSONRequestBody, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	body := kbapi.PostAgentBuilderAgentsJSONRequestBody{
@@ -206,10 +206,12 @@ func (model agentModel) toAPICreateModel(ctx context.Context) (kbapi.PostAgentBu
 		ToolIds []string `json:"tool_ids"` //nolint:revive
 	}{{ToolIds: toolIDs}}
 
-	skillIDs, d := setToStrings(ctx, model.SkillIDs)
-	diags.Append(d...)
-	if len(skillIDs) > 0 {
-		body.Configuration.SkillIds = &skillIDs
+	if supportsSkillIDs {
+		skillIDs, d := setToStrings(ctx, model.SkillIDs)
+		diags.Append(d...)
+		if len(skillIDs) > 0 {
+			body.Configuration.SkillIds = &skillIDs
+		}
 	}
 
 	labels, d := setToStrings(ctx, model.Labels)
@@ -221,7 +223,7 @@ func (model agentModel) toAPICreateModel(ctx context.Context) (kbapi.PostAgentBu
 	return body, diags
 }
 
-func (model agentModel) toAPIUpdateModel(ctx context.Context) (kbapi.PutAgentBuilderAgentsIdJSONRequestBody, diag.Diagnostics) {
+func (model agentModel) toAPIUpdateModel(ctx context.Context, supportsSkillIDs bool) (kbapi.PutAgentBuilderAgentsIdJSONRequestBody, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	name := model.Name.ValueString()
@@ -245,14 +247,19 @@ func (model agentModel) toAPIUpdateModel(ctx context.Context) (kbapi.PutAgentBui
 		ToolIds []string `json:"tool_ids"` //nolint:revive
 	}{{ToolIds: toolIDs}}
 
-	skillIDs, d := setToStrings(ctx, model.SkillIDs)
-	diags.Append(d...)
-	// Always send skill_ids on update (including empty) so cleared values are
-	// propagated to Kibana. The omitempty tag on the generated struct field
-	// omits the field only when the pointer is nil; a non-nil pointer to an
-	// empty slice serialises as [] and clears the value on the server.
-	if skillIDs == nil {
-		skillIDs = []string{}
+	// Always send skill_ids on update (including empty) when the server
+	// supports it so cleared values are propagated to Kibana. On 9.3.x the
+	// field is unknown and must be omitted entirely (nil pointer → omitempty
+	// drops it). A non-nil pointer to an empty slice serialises as [] and
+	// clears the value on 9.4+.
+	var skillIDsPtr *[]string
+	if supportsSkillIDs {
+		skillIDs, d := setToStrings(ctx, model.SkillIDs)
+		diags.Append(d...)
+		if skillIDs == nil {
+			skillIDs = []string{}
+		}
+		skillIDsPtr = &skillIDs
 	}
 
 	var instructions *string
@@ -273,7 +280,7 @@ func (model agentModel) toAPIUpdateModel(ctx context.Context) (kbapi.PutAgentBui
 	}{
 		Instructions: instructions,
 		Tools:        &tools,
-		SkillIds:     &skillIDs,
+		SkillIds:     skillIDsPtr,
 	}
 
 	labels, d := setToStrings(ctx, model.Labels)
