@@ -36,7 +36,8 @@ var level2HeadingAfterChangelogTerminator = regexp.MustCompile(`^##\s`)
 var customerImpactRE = regexp.MustCompile(`(?m)^Customer impact:\s*(.+)$`)
 var summaryRE = regexp.MustCompile(`(?m)^Summary:\s*(.+)$`)
 
-const ruleCBreakingOnlyWhenBreakingImpactMsg = "### Breaking changes section is only allowed when Customer impact: breaking; " +
+// RuleCBreakingOnlyWhenBreakingImpactMsg is the verbatim Rule C diagnostic from the PR changelog authoring spec.
+const RuleCBreakingOnlyWhenBreakingImpactMsg = "### Breaking changes section is only allowed when Customer impact: breaking; " +
 	"change to Customer impact: breaking or remove the ### Breaking changes heading."
 
 // Section is the canonical parsed representation of a PR body's ## Changelog section.
@@ -211,7 +212,7 @@ func ValidateChangelogSectionFull(parsed *Section, opts ValidateOpts) (bool, []s
 		ParsedImpactIsKnownContractValue(parsed.ImpactRaw) &&
 		parsed.ImpactRaw != impactLiteralBreaking {
 
-		errorsOut = append(errorsOut, ruleCBreakingOnlyWhenBreakingImpactMsg)
+		errorsOut = append(errorsOut, RuleCBreakingOnlyWhenBreakingImpactMsg)
 	}
 
 	return len(errorsOut) == 0, errorsOut

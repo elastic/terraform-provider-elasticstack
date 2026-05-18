@@ -578,7 +578,7 @@ func TestValidateFull_ruleC_verbatimMessageFromSpec(t *testing.T) {
 		t.Fatal("expected invalid")
 	}
 	var found bool
-	if slices.Contains(errs, ruleCBreakingOnlyWhenBreakingImpactMsg) {
+	if slices.Contains(errs, RuleCBreakingOnlyWhenBreakingImpactMsg) {
 		found = true
 	}
 	if !found {
