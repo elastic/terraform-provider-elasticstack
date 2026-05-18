@@ -143,4 +143,3 @@ func TestUpdateLinksIsNoOpWhenTargetVersionMissing(t *testing.T) {
 		t.Fatalf("want unchanged content")
 	}
 }
-
