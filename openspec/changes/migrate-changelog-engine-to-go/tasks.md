@@ -39,11 +39,11 @@
 
 ## 6. Implement PR management subcommands
 
-- [ ] 6.1 Implement `internal/prmgmt/release_context.go` reproducing `lib/changelog-release-context.js`.
-- [ ] 6.2 Implement `internal/prmgmt/manage_unreleased.go` reproducing the unreleased-PR portion of `lib/changelog-pr-management.js` (open/update PR on the `generated-changelog` branch).
-- [ ] 6.3 Implement `internal/prmgmt/refresh_release.go` reproducing the release-PR portion of `lib/changelog-pr-management.js`.
-- [ ] 6.4 Wire `manage-unreleased-pr` and `refresh-release-pr` subcommands in `main.go`.
-- [ ] 6.5 Port test cases from `lib/changelog-pr-management.test.mjs` and `lib/changelog-release-context.test.mjs` into `internal/prmgmt/*_test.go`.
+- [x] 6.1 Implement `internal/prmgmt/release_context.go` reproducing `lib/changelog-release-context.js`.
+- [x] 6.2 Implement `internal/prmgmt/manage_unreleased.go` reproducing the unreleased-PR portion of `lib/changelog-pr-management.js` (open/update PR on the `generated-changelog` branch).
+- [x] 6.3 Implement `internal/prmgmt/refresh_release.go` reproducing the release-PR portion of `lib/changelog-pr-management.js`.
+- [x] 6.4 Wire `manage-unreleased-pr` and `refresh-release-pr` subcommands in `main.go`.
+- [x] 6.5 Port test cases from `lib/changelog-pr-management.test.mjs` and `lib/changelog-release-context.test.mjs` into `internal/prmgmt/*_test.go`.
 
 ## 7. Implement PR-body validator
 
