@@ -26,6 +26,8 @@ import (
 const (
 	// EnvGitHubRepository is the actions-provided repo slug "owner/name".
 	EnvGitHubRepository = "GITHUB_REPOSITORY"
+	// EnvGitHubEventPath carries the workflow event payload JSON path.
+	EnvGitHubEventPath = "GITHUB_EVENT_PATH"
 	// EnvGitHubToken carries the bearer token used by REST calls.
 	EnvGitHubToken = "GITHUB_TOKEN"
 	// EnvGitHubOutput names the file path for step outputs.

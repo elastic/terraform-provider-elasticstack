@@ -60,3 +60,31 @@ func DecodeEvent[T any](data []byte) (T, error) {
 	}
 	return v, nil
 }
+
+type pullRequestEventPayload struct {
+	PullRequest *struct {
+		Number int `json:"number"`
+	} `json:"pull_request"`
+}
+
+// OptionalPullRequestNumberFromEventPath returns payload.pull_request.number when the
+// field is present. An empty path returns (0, nil). This mirrors optional chaining on
+// context.payload.pull_request?.number used by changelog workflow scripts.
+func OptionalPullRequestNumberFromEventPath(path string) (int, error) {
+	path = strings.TrimSpace(path)
+	if path == "" {
+		return 0, nil
+	}
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return 0, fmt.Errorf("read event payload: %w", err)
+	}
+	var p pullRequestEventPayload
+	if err := json.Unmarshal(raw, &p); err != nil {
+		return 0, fmt.Errorf("unmarshal event payload: %w", err)
+	}
+	if p.PullRequest == nil || p.PullRequest.Number <= 0 {
+		return 0, nil
+	}
+	return p.PullRequest.Number, nil
+}
