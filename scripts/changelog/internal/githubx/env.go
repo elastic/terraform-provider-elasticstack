@@ -38,6 +38,15 @@ const (
 	EnvTargetBranch = "TARGET_BRANCH"
 	// EnvChangelogPath overrides the CHANGELOG.md path.
 	EnvChangelogPath = "CHANGELOG_PATH"
+	// EnvPreviousTag is the tag spanning the changelog compare range baseline.
+	EnvPreviousTag = "PREVIOUS_TAG"
+	// EnvCompareRange is git rev-list range (e.g. v1.0.0..HEAD).
+	EnvCompareRange = "COMPARE_RANGE"
+	// EnvInput* mirror actions/core getInput env fallbacks used by github-script steps.
+	EnvInputPreviousTag   = "INPUT_PREVIOUS_TAG"
+	EnvInputCompareRange  = "INPUT_COMPARE_RANGE"
+	EnvInputMode          = "INPUT_MODE"
+	EnvInputTargetVersion = "INPUT_TARGET_VERSION"
 )
 
 // GitHubToken returns trimmed GITHUB_TOKEN (may be empty).

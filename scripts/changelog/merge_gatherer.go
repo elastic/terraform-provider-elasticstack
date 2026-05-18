@@ -49,6 +49,7 @@ func (g *gitMergedPRGatherer) GatherMergedPRs(
 	for _, sha := range shas {
 		prs, prErr := githubx.PullRequestsAssociatedWithCommit(ctx, g.client, owner, repo, sha)
 		if prErr != nil {
+			warnMsgs = append(warnMsgs, fmt.Sprintf("Failed to list PRs for commit %s: %v", sha, prErr))
 			continue
 		}
 
@@ -77,11 +78,18 @@ func (g *gitMergedPRGatherer) GatherMergedPRs(
 				labels = append(labels, l.GetName())
 			}
 		}
+		author := ""
+		if u := pr.GetUser(); u != nil {
+			author = u.GetLogin()
+		}
 		out = append(out, section.MergedPR{
-			Number: n,
-			URL:    pr.GetHTMLURL(),
-			Labels: labels,
-			Body:   pr.GetBody(),
+			Number:         n,
+			Title:          pr.GetTitle(),
+			URL:            pr.GetHTMLURL(),
+			Labels:         labels,
+			Body:           pr.GetBody(),
+			MergeCommitSHA: pr.GetMergeCommitSHA(),
+			AuthorLogin:    author,
 		})
 	}
 	return out, warnMsgs, nil

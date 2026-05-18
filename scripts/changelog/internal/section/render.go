@@ -41,10 +41,13 @@ type RenderOpts struct {
 }
 
 type MergedPR struct {
-	Number int
-	URL    string
-	Labels []string
-	Body   string
+	Number         int
+	Title          string
+	URL            string
+	Labels         []string
+	Body           string
+	MergeCommitSHA string
+	AuthorLogin    string
 }
 
 type AssemblyError struct {
