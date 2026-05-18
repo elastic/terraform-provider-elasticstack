@@ -18,7 +18,6 @@
 package rewriter
 
 import (
-	"errors"
 	"strings"
 	"testing"
 )
@@ -289,25 +288,19 @@ func TestRewriteSectionReleaseIdempotentDualRange(t *testing.T) {
 	}
 }
 
-func TestRewriteSectionRejectsEmbeddedH2HeadingInBody(t *testing.T) {
+func TestRewriteSectionAllowsEmbeddedH2InSectionBodyJSParity(t *testing.T) {
 	t.Parallel()
-	_, err := RewriteSection([]byte("# x"), SectionRewrite{
-		Header: "[Unreleased]",
-		Body:   "intro\n## illegal\n",
-	}, ModeUnreleased, "")
-	if !errors.Is(err, errSectionBodyContainsH2Heading) {
-		t.Fatalf("expected embedded H2 error, got %v", err)
-	}
-}
+	body := "\nintro\n## inside-body-like-js\n"
 
-func TestRewriteSectionRejectsLeadingH2HeadingInBody(t *testing.T) {
-	t.Parallel()
-	_, err := RewriteSection([]byte("# x"), SectionRewrite{
+	out, err := RewriteSection([]byte("# x\n\n## [Unreleased]\nold\n"), SectionRewrite{
 		Header: "[Unreleased]",
-		Body:   "## illegal\n",
+		Body:   body,
 	}, ModeUnreleased, "")
-	if !errors.Is(err, errSectionBodyContainsH2Heading) {
-		t.Fatalf("expected leading H2 error, got %v", err)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(out), "## inside-body-like-js") {
+		t.Fatalf("expected body content preserved; got:\n%s", out)
 	}
 }
 

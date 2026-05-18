@@ -18,7 +18,6 @@
 package rewriter
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 )
@@ -26,12 +25,6 @@ import (
 const (
 	unreleasedHeadingPrefix = "## [Unreleased]"
 	sectionHeadingPrefix    = "## "
-)
-
-// errSectionBodyContainsH2Heading is returned when Body includes a Markdown H2 heading
-// (“## …”), which RewriteSection forbids — the rewriter emits the canonical heading itself.
-var errSectionBodyContainsH2Heading = errors.New(
-	"rewriter: section body must not contain a level-2 markdown heading",
 )
 
 // RewriteMode selects which CHANGELOG section heading rewriteChangelogSection targets.
@@ -49,8 +42,7 @@ type SectionRewrite struct {
 	// Header is the literal heading without the leading "## ", e.g.
 	// "[Unreleased]" or "[1.2.3] - 2025-05-01".
 	Header string
-	// Body is the Markdown rendered under Header. It MUST NOT contain any "## …" headings;
-	// use "### …" subsections only. Embedding "## …" in Body makes RewriteSection return an error.
+	// Body is the Markdown rendered under Header (parity with changelog-rewriter.js: pasted verbatim).
 	Body string
 }
 
@@ -74,11 +66,8 @@ func FindSectionEnd(lines []string, startIndex int) int {
 // When mode is ModeRelease, targetVersion is the semver without a leading 'v';
 // otherwise it is ignored.
 //
-// RewriteSection returns an error when rewrite.Body introduces an H2 Markdown heading or mode is unrecognized.
+// RewriteSection returns an error when mode is unrecognized.
 func RewriteSection(content []byte, rewrite SectionRewrite, mode RewriteMode, targetVersion string) ([]byte, error) {
-	if err := validateSectionRewriteBody(rewrite.Body); err != nil {
-		return nil, err
-	}
 	newSectionContent := rewrite.fullSectionMarkdown()
 	lines := strings.Split(string(content), "\n")
 
@@ -103,17 +92,6 @@ func RewriteSection(content []byte, rewrite SectionRewrite, mode RewriteMode, ta
 
 	sectionEnd := FindSectionEnd(lines, targetStart)
 	return []byte(spliceSingleSection(lines, targetStart, sectionEnd, newSectionContent)), nil
-}
-
-func validateSectionRewriteBody(body string) error {
-	switch {
-	case strings.HasPrefix(body, "## "):
-		return errSectionBodyContainsH2Heading
-	case strings.Contains(body, "\n## "):
-		return errSectionBodyContainsH2Heading
-	default:
-		return nil
-	}
 }
 
 func unreleasedHeadingMatch(line string) bool {
