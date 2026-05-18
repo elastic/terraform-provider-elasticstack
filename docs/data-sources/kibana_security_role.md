@@ -38,7 +38,7 @@ data "elasticstack_kibana_security_role" "example" {
 
 ### Read-Only
 
-- `elasticsearch` (Attributes Set) Elasticsearch cluster and index privileges. (see [below for nested schema](#nestedatt--elasticsearch))
+- `elasticsearch` (Attributes) Elasticsearch cluster and index privileges. (see [below for nested schema](#nestedatt--elasticsearch))
 - `kibana` (Attributes Set) The list of objects that specify the Kibana privileges for the role. (see [below for nested schema](#nestedatt--kibana))
 
 <a id="nestedblock--kibana_connection"></a>
@@ -70,7 +70,7 @@ Read-Only:
 
 Read-Only:
 
-- `field_security` (Attributes List) The document fields that the owners of the role have read access to. (see [below for nested schema](#nestedatt--elasticsearch--indices--field_security))
+- `field_security` (Attributes) The document fields that the owners of the role have read access to. (see [below for nested schema](#nestedatt--elasticsearch--indices--field_security))
 - `names` (Set of String) A list of indices (or index name patterns) to which the permissions in this entry apply.
 - `privileges` (Set of String) The index level privileges that the owners of the role have on the specified indices.
 - `query` (String) A search query that defines the documents the owners of the role have read access to.
@@ -91,7 +91,7 @@ Read-Only:
 Read-Only:
 
 - `clusters` (Set of String) A list of cluster aliases to which the permissions in this entry apply.
-- `field_security` (Attributes List) The document fields that the owners of the role have read access to. (see [below for nested schema](#nestedatt--elasticsearch--remote_indices--field_security))
+- `field_security` (Attributes) The document fields that the owners of the role have read access to. (see [below for nested schema](#nestedatt--elasticsearch--remote_indices--field_security))
 - `names` (Set of String) A list of indices (or index name patterns) to which the permissions in this entry apply.
 - `privileges` (Set of String) The index level privileges that the owners of the role have on the specified indices.
 - `query` (String) A search query that defines the documents the owners of the role have read access to.

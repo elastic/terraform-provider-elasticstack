@@ -19,7 +19,6 @@ package provider
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana"
 	providerSchema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -41,8 +40,8 @@ func New(version string) *schema.Provider {
 			kbKeyName:    providerSchema.GetKibanaConnectionSchema(),
 			fleetKeyName: providerSchema.GetFleetConnectionSchema(),
 		},
-    DataSourcesMap: map[string]*schema.Resource{},
-    ResourcesMap:   map[string]*schema.Resource{},
+		DataSourcesMap: map[string]*schema.Resource{},
+		ResourcesMap:   map[string]*schema.Resource{},
 	}
 
 	p.ConfigureContextFunc = clients.NewAPIClientFuncFromSDK(version)

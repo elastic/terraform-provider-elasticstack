@@ -48,7 +48,7 @@ func createRole(ctx context.Context, client *clients.KibanaScopedClient, _ strin
 	if diags.HasError() {
 		return plan, diags
 	}
-	updated, _, rd := readRoleResource(ctx, client, roleName, "", plan)
+	updated, _, rd := readRoleResourceWithHint(ctx, client, roleName, plan, hintFromResourceModel(plan))
 	diags.Append(rd...)
 	return updated, diags
 }

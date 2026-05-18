@@ -24,42 +24,58 @@ import (
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
-type esIndexPlan struct {
-	Names         types.Set            `tfsdk:"names"`
-	Privileges    types.Set            `tfsdk:"privileges"`
-	Query         jsontypes.Normalized `tfsdk:"query"`
-	FieldSecurity types.Object         `tfsdk:"field_security"`
+// objAttrSet fetches a `types.Set` attribute from a decoded object. Returns
+// a null set of the supplied element type if the attribute is missing or has
+// an unexpected shape (the schema guarantees this won't happen at runtime).
+func objAttrSet(obj types.Object, name string, elemType attr.Type) types.Set {
+	if obj.IsNull() || obj.IsUnknown() {
+		return types.SetNull(elemType)
+	}
+	s, ok := obj.Attributes()[name].(types.Set)
+	if !ok {
+		return types.SetNull(elemType)
+	}
+	return s
 }
 
-type esRemotePlan struct {
-	Clusters      types.Set            `tfsdk:"clusters"`
-	Names         types.Set            `tfsdk:"names"`
-	Privileges    types.Set            `tfsdk:"privileges"`
-	Query         jsontypes.Normalized `tfsdk:"query"`
-	FieldSecurity types.Object         `tfsdk:"field_security"`
+// kibanaPrivilegeCounts returns the `base` / `feature` sets from a decoded
+// kibana block object and their element counts, treating null/unknown as 0.
+func kibanaPrivilegeCounts(obj types.Object) (base, feature types.Set, baseLen, featureLen int) {
+	base = objAttrSet(obj, "base", types.StringType)
+	feature = objAttrSet(obj, "feature", types.ObjectType{AttrTypes: kibanaFeatureAttrTypes()})
+	if !base.IsNull() && !base.IsUnknown() {
+		baseLen = len(base.Elements())
+	}
+	if !feature.IsNull() && !feature.IsUnknown() {
+		featureLen = len(feature.Elements())
+	}
+	return
 }
 
-type esBlockPlan struct {
-	Cluster       types.Set `tfsdk:"cluster"`
-	Indices       types.Set `tfsdk:"indices"`
-	RemoteIndices types.Set `tfsdk:"remote_indices"`
-	RunAs         types.Set `tfsdk:"run_as"`
-}
-
-type kibanaFeaturePlan struct {
-	Name       types.String `tfsdk:"name"`
-	Privileges types.Set    `tfsdk:"privileges"`
-}
-
-type kibanaBlockPlan struct {
-	Spaces  types.Set `tfsdk:"spaces"`
-	Base    types.Set `tfsdk:"base"`
-	Feature types.Set `tfsdk:"feature"`
+// validateKibanaPrivileges enforces the mutual-exclusion and at-least-one
+// rules for a kibana entry's `base` and `feature` privileges. Shared by the
+// resource-level config validator (validators.go) and the expand path so the
+// rule lives in exactly one place.
+func validateKibanaPrivileges(baseLen, featureLen int) diag.Diagnostics {
+	var diags diag.Diagnostics
+	switch {
+	case baseLen > 0 && featureLen > 0:
+		diags.AddError(
+			"Invalid kibana privileges",
+			"Only one of the `feature` or `base` privileges allowed!",
+		)
+	case baseLen == 0 && featureLen == 0:
+		diags.AddError(
+			"Invalid kibana privileges",
+			"Either one of the `feature` or `base` privileges must be set for kibana role!",
+		)
+	}
+	return diags
 }
 
 func expandFieldSecurity(ctx context.Context, obj types.Object) (map[string][]string, diag.Diagnostics) {
@@ -67,96 +83,108 @@ func expandFieldSecurity(ctx context.Context, obj types.Object) (map[string][]st
 	if obj.IsNull() || obj.IsUnknown() {
 		return map[string][]string{}, diags
 	}
-	var fs struct {
-		Grant  types.Set `tfsdk:"grant"`
-		Except types.Set `tfsdk:"except"`
-	}
-	diags.Append(obj.As(ctx, &fs, basetypes.ObjectAsOptions{})...)
-	if diags.HasError() {
-		return nil, diags
-	}
+	grant := objAttrSet(obj, "grant", types.StringType)
+	except := objAttrSet(obj, "except", types.StringType)
 	out := map[string][]string{}
-	if !fs.Grant.IsNull() && !fs.Grant.IsUnknown() && len(fs.Grant.Elements()) > 0 {
+	if !grant.IsNull() && !grant.IsUnknown() && len(grant.Elements()) > 0 {
 		var grants []string
-		diags.Append(fs.Grant.ElementsAs(ctx, &grants, false)...)
+		diags.Append(grant.ElementsAs(ctx, &grants, false)...)
 		out["grant"] = grants
 	}
-	if !fs.Except.IsNull() && !fs.Except.IsUnknown() && len(fs.Except.Elements()) > 0 {
+	if !except.IsNull() && !except.IsUnknown() && len(except.Elements()) > 0 {
 		var excepts []string
-		diags.Append(fs.Except.ElementsAs(ctx, &excepts, false)...)
+		diags.Append(except.ElementsAs(ctx, &excepts, false)...)
 		out["except"] = excepts
 	}
 	return out, diags
 }
 
-func expandIndexEntry(ctx context.Context, obj types.Object) (kibanaoapi.SecurityRoleESIndex, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	var row esIndexPlan
-	diags.Append(obj.As(ctx, &row, basetypes.ObjectAsOptions{})...)
+// expandedEntry captures the fields shared between `indices` and
+// `remote_indices` entries; `Clusters` is only populated for the remote
+// variant.
+type expandedEntry struct {
+	Names      []string
+	Clusters   []string
+	Privileges []string
+	Query      *string
+	FS         *map[string][]string
+}
+
+// expandEntryCommon reads names/privileges/query/field_security (and
+// optionally clusters) from a decoded entry object. Uses direct attribute
+// access rather than `obj.As` so the same code serves the `indices` and
+// `remote_indices` schemas, which differ only in the presence of `clusters`.
+func expandEntryCommon(ctx context.Context, obj types.Object, wantClusters bool) (expandedEntry, diag.Diagnostics) {
+	var (
+		diags diag.Diagnostics
+		out   expandedEntry
+	)
+	diags.Append(objAttrSet(obj, "names", types.StringType).ElementsAs(ctx, &out.Names, false)...)
+	diags.Append(objAttrSet(obj, "privileges", types.StringType).ElementsAs(ctx, &out.Privileges, false)...)
+	if wantClusters {
+		diags.Append(objAttrSet(obj, "clusters", types.StringType).ElementsAs(ctx, &out.Clusters, false)...)
+	}
 	if diags.HasError() {
-		return kibanaoapi.SecurityRoleESIndex{}, diags
+		return expandedEntry{}, diags
 	}
-	var names, privs []string
-	diags.Append(row.Names.ElementsAs(ctx, &names, false)...)
-	diags.Append(row.Privileges.ElementsAs(ctx, &privs, false)...)
-	if diags.HasError() {
-		return kibanaoapi.SecurityRoleESIndex{}, diags
+	if q, ok := obj.Attributes()["query"].(jsontypes.Normalized); ok && typeutils.IsKnown(q) && q.ValueString() != "" {
+		v := q.ValueString()
+		out.Query = &v
 	}
-	entry := kibanaoapi.SecurityRoleESIndex{
-		Names:      names,
-		Privileges: privs,
-	}
-	if typeutils.IsKnown(row.Query) && row.Query.ValueString() != "" {
-		q := row.Query.ValueString()
-		entry.Query = &q
-	}
-	if !row.FieldSecurity.IsNull() && !row.FieldSecurity.IsUnknown() {
-		fsMap, d := expandFieldSecurity(ctx, row.FieldSecurity)
+	if fs, ok := obj.Attributes()["field_security"].(types.Object); ok && !fs.IsNull() && !fs.IsUnknown() {
+		fsMap, d := expandFieldSecurity(ctx, fs)
 		diags.Append(d...)
 		if diags.HasError() {
-			return kibanaoapi.SecurityRoleESIndex{}, diags
+			return expandedEntry{}, diags
 		}
 		if len(fsMap) > 0 {
-			entry.FieldSecurity = &fsMap
+			out.FS = &fsMap
 		}
 	}
-	return entry, diags
+	return out, diags
+}
+
+func expandIndexEntry(ctx context.Context, obj types.Object) (kibanaoapi.SecurityRoleESIndex, diag.Diagnostics) {
+	e, diags := expandEntryCommon(ctx, obj, false)
+	if diags.HasError() {
+		return kibanaoapi.SecurityRoleESIndex{}, diags
+	}
+	return kibanaoapi.SecurityRoleESIndex{
+		Names:         e.Names,
+		Privileges:    e.Privileges,
+		Query:         e.Query,
+		FieldSecurity: e.FS,
+	}, diags
 }
 
 func expandRemoteEntry(ctx context.Context, obj types.Object) (kibanaoapi.SecurityRoleESRemoteIndex, diag.Diagnostics) {
+	e, diags := expandEntryCommon(ctx, obj, true)
+	if diags.HasError() {
+		return kibanaoapi.SecurityRoleESRemoteIndex{}, diags
+	}
+	return kibanaoapi.SecurityRoleESRemoteIndex{
+		Names:         e.Names,
+		Clusters:      e.Clusters,
+		Privileges:    e.Privileges,
+		Query:         e.Query,
+		FieldSecurity: e.FS,
+	}, diags
+}
+
+// expandStringSlicePtr extracts a `*[]string` from an optional set
+// attribute, returning nil when the set is null/unknown/empty so the API
+// body omits the key.
+func expandStringSlicePtr(ctx context.Context, s types.Set) (*[]string, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var row esRemotePlan
-	diags.Append(obj.As(ctx, &row, basetypes.ObjectAsOptions{})...)
+	if s.IsNull() || s.IsUnknown() || len(s.Elements()) == 0 {
+		return nil, diags
+	}
+	var out []string
+	diags.Append(s.ElementsAs(ctx, &out, false)...)
 	if diags.HasError() {
-		return kibanaoapi.SecurityRoleESRemoteIndex{}, diags
+		return nil, diags
 	}
-	var names, clusters, privs []string
-	diags.Append(row.Names.ElementsAs(ctx, &names, false)...)
-	diags.Append(row.Clusters.ElementsAs(ctx, &clusters, false)...)
-	diags.Append(row.Privileges.ElementsAs(ctx, &privs, false)...)
-	if diags.HasError() {
-		return kibanaoapi.SecurityRoleESRemoteIndex{}, diags
-	}
-	entry := kibanaoapi.SecurityRoleESRemoteIndex{
-		Names:      names,
-		Clusters:   clusters,
-		Privileges: privs,
-	}
-	if typeutils.IsKnown(row.Query) && row.Query.ValueString() != "" {
-		q := row.Query.ValueString()
-		entry.Query = &q
-	}
-	if !row.FieldSecurity.IsNull() && !row.FieldSecurity.IsUnknown() {
-		fsMap, d := expandFieldSecurity(ctx, row.FieldSecurity)
-		diags.Append(d...)
-		if diags.HasError() {
-			return kibanaoapi.SecurityRoleESRemoteIndex{}, diags
-		}
-		if len(fsMap) > 0 {
-			entry.FieldSecurity = &fsMap
-		}
-	}
-	return entry, diags
+	return &out, diags
 }
 
 func expandElasticsearch(ctx context.Context, obj types.Object) (kibanaoapi.SecurityRoleES, diag.Diagnostics) {
@@ -165,32 +193,26 @@ func expandElasticsearch(ctx context.Context, obj types.Object) (kibanaoapi.Secu
 	if obj.IsNull() || obj.IsUnknown() {
 		return out, diags
 	}
-	var block esBlockPlan
-	diags.Append(obj.As(ctx, &block, basetypes.ObjectAsOptions{})...)
+
+	cluster, d := expandStringSlicePtr(ctx, objAttrSet(obj, "cluster", types.StringType))
+	diags.Append(d...)
 	if diags.HasError() {
 		return out, diags
 	}
+	out.Cluster = cluster
 
-	if !block.Cluster.IsNull() && !block.Cluster.IsUnknown() && len(block.Cluster.Elements()) > 0 {
-		var cluster []string
-		diags.Append(block.Cluster.ElementsAs(ctx, &cluster, false)...)
-		if diags.HasError() {
-			return out, diags
-		}
-		out.Cluster = &cluster
+	runAs, d := expandStringSlicePtr(ctx, objAttrSet(obj, "run_as", types.StringType))
+	diags.Append(d...)
+	if diags.HasError() {
+		return out, diags
 	}
-	if !block.RunAs.IsNull() && !block.RunAs.IsUnknown() && len(block.RunAs.Elements()) > 0 {
-		var runs []string
-		diags.Append(block.RunAs.ElementsAs(ctx, &runs, false)...)
-		if diags.HasError() {
-			return out, diags
-		}
-		out.RunAs = &runs
-	}
-	if !block.Indices.IsNull() && !block.Indices.IsUnknown() && len(block.Indices.Elements()) > 0 {
-		idxElems := block.Indices.Elements()
-		indices := make([]kibanaoapi.SecurityRoleESIndex, len(idxElems))
-		for i, el := range idxElems {
+	out.RunAs = runAs
+
+	indicesSet := objAttrSet(obj, "indices", types.ObjectType{AttrTypes: esIndexResourceAttrTypes()})
+	if !indicesSet.IsNull() && !indicesSet.IsUnknown() && len(indicesSet.Elements()) > 0 {
+		elems := indicesSet.Elements()
+		indices := make([]kibanaoapi.SecurityRoleESIndex, len(elems))
+		for i, el := range elems {
 			idxObj, ok := el.(types.Object)
 			if !ok {
 				diags.AddError("Invalid indices entry", "unexpected element type")
@@ -205,10 +227,12 @@ func expandElasticsearch(ctx context.Context, obj types.Object) (kibanaoapi.Secu
 		}
 		out.Indices = &indices
 	}
-	if !block.RemoteIndices.IsNull() && !block.RemoteIndices.IsUnknown() && len(block.RemoteIndices.Elements()) > 0 {
-		riElems := block.RemoteIndices.Elements()
-		remote := make([]kibanaoapi.SecurityRoleESRemoteIndex, len(riElems))
-		for i, el := range riElems {
+
+	remoteSet := objAttrSet(obj, "remote_indices", types.ObjectType{AttrTypes: esRemoteIndexResourceAttrTypes()})
+	if !remoteSet.IsNull() && !remoteSet.IsUnknown() && len(remoteSet.Elements()) > 0 {
+		elems := remoteSet.Elements()
+		remote := make([]kibanaoapi.SecurityRoleESRemoteIndex, len(elems))
+		for i, el := range elems {
 			riObj, ok := el.(types.Object)
 			if !ok {
 				diags.AddError("Invalid remote_indices entry", "unexpected element type")
@@ -228,44 +252,32 @@ func expandElasticsearch(ctx context.Context, obj types.Object) (kibanaoapi.Secu
 
 func expandKibana(ctx context.Context, set types.Set) ([]kibanaoapi.SecurityRoleKibana, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	if set.IsNull() || set.IsUnknown() || len(set.Elements()) == 0 {
+	elems := set.Elements()
+	if set.IsNull() || set.IsUnknown() || len(elems) == 0 {
 		return nil, diags
 	}
-	var entries []kibanaoapi.SecurityRoleKibana
-	for _, el := range set.Elements() {
+	entries := make([]kibanaoapi.SecurityRoleKibana, 0, len(elems))
+	for _, el := range elems {
 		obj, ok := el.(types.Object)
 		if !ok {
 			diags.AddError("Invalid kibana block", "unexpected element type")
 			return nil, diags
 		}
-		var block kibanaBlockPlan
-		diags.Append(obj.As(ctx, &block, basetypes.ObjectAsOptions{})...)
+		base, feature, baseLen, featureLen := kibanaPrivilegeCounts(obj)
+		diags.Append(validateKibanaPrivileges(baseLen, featureLen)...)
 		if diags.HasError() {
 			return nil, diags
 		}
+
 		entry := kibanaoapi.SecurityRoleKibana{}
-		baseLen := 0
-		if !block.Base.IsNull() && !block.Base.IsUnknown() {
-			baseLen = len(block.Base.Elements())
-		}
-		featureLen := 0
-		if !block.Feature.IsNull() && !block.Feature.IsUnknown() {
-			featureLen = len(block.Feature.Elements())
-		}
 		switch {
-		case baseLen > 0 && featureLen > 0:
-			diags.AddError(
-				"Invalid kibana privileges",
-				"Only one of the `feature` or `base` privileges allowed!",
-			)
-			return nil, diags
 		case baseLen > 0:
-			var base []string
-			diags.Append(block.Base.ElementsAs(ctx, &base, false)...)
+			var basePrivs []string
+			diags.Append(base.ElementsAs(ctx, &basePrivs, false)...)
 			if diags.HasError() {
 				return nil, diags
 			}
-			raw, err := json.Marshal(base)
+			raw, err := json.Marshal(basePrivs)
 			if err != nil {
 				diags.AddError("Failed to serialize kibana base privileges", err.Error())
 				return nil, diags
@@ -273,40 +285,30 @@ func expandKibana(ctx context.Context, set types.Set) ([]kibanaoapi.SecurityRole
 			entry.Base = raw
 		case featureLen > 0:
 			featureMap := map[string][]string{}
-			for _, fe := range block.Feature.Elements() {
+			for _, fe := range feature.Elements() {
 				fObj, ok := fe.(types.Object)
 				if !ok {
 					diags.AddError("Invalid kibana feature block", "unexpected element type")
 					return nil, diags
 				}
-				var f kibanaFeaturePlan
-				diags.Append(fObj.As(ctx, &f, basetypes.ObjectAsOptions{})...)
-				if diags.HasError() {
-					return nil, diags
-				}
+				name, _ := fObj.Attributes()["name"].(types.String)
+				privsSet := objAttrSet(fObj, "privileges", types.StringType)
 				var privs []string
-				diags.Append(f.Privileges.ElementsAs(ctx, &privs, false)...)
+				diags.Append(privsSet.ElementsAs(ctx, &privs, false)...)
 				if diags.HasError() {
 					return nil, diags
 				}
-				featureMap[f.Name.ValueString()] = privs
+				featureMap[name.ValueString()] = privs
 			}
 			entry.Feature = &featureMap
-		default:
-			diags.AddError(
-				"Invalid kibana privileges",
-				"Either one of the `feature` or `base` privileges must be set for kibana role!",
-			)
+		}
+
+		spaces, d := expandStringSlicePtr(ctx, objAttrSet(obj, "spaces", types.StringType))
+		diags.Append(d...)
+		if diags.HasError() {
 			return nil, diags
 		}
-		if !block.Spaces.IsNull() && !block.Spaces.IsUnknown() && len(block.Spaces.Elements()) > 0 {
-			var spaces []string
-			diags.Append(block.Spaces.ElementsAs(ctx, &spaces, false)...)
-			if diags.HasError() {
-				return nil, diags
-			}
-			entry.Spaces = &spaces
-		}
+		entry.Spaces = spaces
 		entries = append(entries, entry)
 	}
 	return entries, diags

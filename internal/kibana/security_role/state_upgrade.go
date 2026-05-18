@@ -36,10 +36,11 @@ import (
 //     -> PF SingleNestedBlock. Unwrap (empty list -> null, one-element list ->
 //     the element).
 //
-// In addition, optional sets that SDKv2 persisted as `[]` (cluster, run_as,
-// base, field_security.grant, field_security.except) are normalised to null
-// so the migrated state matches what the PF flatten functions produce. This
-// avoids spurious set-element identity diffs on the first plan after upgrade.
+// In addition, the top-level optional sets that SDKv2 persisted as `[]`
+// (cluster, run_as, base, remote_indices) are normalised to null so the
+// migrated state matches what the PF flatten functions produce by default.
+// `field_security.grant`/`except` are intentionally left as-is: flatten's
+// hint-aware path round-trips either representation cleanly.
 func (r *Resource) UpgradeState(context.Context) map[int64]resource.StateUpgrader {
 	return map[int64]resource.StateUpgrader{
 		0: {

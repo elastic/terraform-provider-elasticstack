@@ -52,7 +52,7 @@ func updateRole(ctx context.Context, client *clients.KibanaScopedClient, resourc
 	if diags.HasError() {
 		return prior, diags
 	}
-	updated, _, rd := readRoleResource(ctx, client, roleName, "", prior)
+	updated, _, rd := readRoleResourceWithHint(ctx, client, roleName, prior, hintFromResourceModel(plan))
 	diags.Append(rd...)
 	return updated, diags
 }

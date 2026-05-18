@@ -63,37 +63,9 @@ func (v configValidator) ValidateResource(ctx context.Context, req resource.Vali
 			resp.Diagnostics.AddError("Invalid kibana block", "unexpected element type")
 			return
 		}
-		attrs := obj.Attributes()
-		base, ok := attrs["base"].(types.Set)
-		if !ok {
-			resp.Diagnostics.AddError("Invalid kibana block", "internal: base attribute is not a set")
-			return
-		}
-		feature, ok := attrs["feature"].(types.Set)
-		if !ok {
-			resp.Diagnostics.AddError("Invalid kibana block", "internal: feature attribute is not a set")
-			return
-		}
-		baseLen := 0
-		if !base.IsNull() && !base.IsUnknown() {
-			baseLen = len(base.Elements())
-		}
-		featureLen := 0
-		if !feature.IsNull() && !feature.IsUnknown() {
-			featureLen = len(feature.Elements())
-		}
-		if baseLen > 0 && featureLen > 0 {
-			resp.Diagnostics.AddError(
-				"Invalid kibana privileges",
-				"Only one of the `feature` or `base` privileges allowed!",
-			)
-			return
-		}
-		if baseLen == 0 && featureLen == 0 {
-			resp.Diagnostics.AddError(
-				"Invalid kibana privileges",
-				"Either one of the `feature` or `base` privileges must be set for kibana role!",
-			)
+		_, _, baseLen, featureLen := kibanaPrivilegeCounts(obj)
+		resp.Diagnostics.Append(validateKibanaPrivileges(baseLen, featureLen)...)
+		if resp.Diagnostics.HasError() {
 			return
 		}
 	}
