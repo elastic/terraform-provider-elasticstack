@@ -1,6 +1,6 @@
 ## MODIFIED Requirements
 
-### Requirement: Envelope owns the Read prelude (updated)
+### Requirement: Envelope owns the Read prelude
 
 The `ElasticsearchResource` envelope SHALL resolve the read identity using a lenient three-step fallback when the decoded state model does not implement `WithReadResourceID` (or `GetReadResourceID` returns empty) and no write fallback is supplied: (1) attempt to parse `model.GetID().ValueString()` as a composite ID with `clients.CompositeIDFromStr`; if successful (non-nil result), use `compID.ResourceID`; (2) otherwise fall back to `model.GetResourceID().ValueString()` if it is non-empty; (3) otherwise use the raw `model.GetID().ValueString()` string as the resource ID. The envelope SHALL NOT return an error diagnostic solely because the state `id` is not in composite format. If all three fallback steps resolve to an empty string the envelope SHALL return an error diagnostic with summary "Invalid resource identifier" and SHALL NOT invoke the concrete read function.
 
@@ -37,7 +37,7 @@ This replaces the "Read falls back to composite ID resource segment" scenario in
 - THEN the envelope SHALL parse the composite ID and invoke `readFunc` with `my-job-id` as the `resourceID` argument
 - AND behavior SHALL be unchanged from the prior implementation
 
-### Requirement: Envelope owns the Delete prelude (updated)
+### Requirement: Envelope owns the Delete prelude
 
 The `ElasticsearchResource` envelope SHALL implement `Delete` by deserializing the prior state into the generic model `T`, resolving the resource ID using the same lenient three-step fallback as the updated Read prelude (composite parse → `GetResourceID()` → raw ID), resolving the scoped Elasticsearch client from the model's connection block via `GetElasticsearchClient`, and invoking the concrete delete function with `(context, *clients.ElasticsearchScopedClient, resourceID string, T)`. The envelope SHALL NOT return an error diagnostic solely because the state `id` is not in composite format. If all three fallback steps produce an empty string the envelope SHALL return an error diagnostic and SHALL NOT invoke the concrete delete function.
 
