@@ -6,7 +6,7 @@
 // not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//	http://www.apache.org/licenses/LICENSE-2.0
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing,
 // software distributed under the License is distributed on an
@@ -69,14 +69,14 @@ func ListIssueComments(ctx context.Context, client *github.Client, owner, repo s
 
 // CreateIssueComment adds a comment to issueNumber.
 func CreateIssueComment(ctx context.Context, client *github.Client, owner, repo string, issueNumber int, body string) error {
-	in := &github.IssueComment{Body: github.String(body)}
+	in := &github.IssueComment{Body: github.Ptr(body)}
 	_, _, err := client.Issues.CreateComment(ctx, owner, repo, issueNumber, in)
 	return err
 }
 
 // UpdateIssueComment edits an existing issue comment's body.
 func UpdateIssueComment(ctx context.Context, client *github.Client, owner, repo string, commentID int64, body string) error {
-	edit := &github.IssueComment{Body: github.String(body)}
+	edit := &github.IssueComment{Body: github.Ptr(body)}
 	_, _, err := client.Issues.EditComment(ctx, owner, repo, commentID, edit)
 	return err
 }
