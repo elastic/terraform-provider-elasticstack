@@ -325,6 +325,57 @@ func TestRewriteSectionRejectsUnknownMode(t *testing.T) {
 	}
 }
 
+func TestRewriteSectionReleasePrependsToEmptyContent(t *testing.T) {
+	t.Parallel()
+	rewrite := SectionRewrite{
+		Header: "[1.0.0] - 2026-06-06",
+		Body:   "\n### Changes\n\n- only ([#1](https://example/1))",
+	}
+	out, err := RewriteSection(nil, rewrite, ModeRelease, "1.0.0")
+	if err != nil {
+		t.Fatalf("unexpected error %v", err)
+	}
+	want := "## [1.0.0] - 2026-06-06\n\n### Changes\n\n- only ([#1](https://example/1))\n\n"
+	if string(out) != want {
+		t.Fatalf("prepend to empty content:\ngot %q\nwant %q", string(out), want)
+	}
+}
+
+func TestRewriteSectionUnreleasedWithCRLFInput(t *testing.T) {
+	t.Parallel()
+	// Mirrors changelog-rewriter.js newline handling: Split("\n"); lines keep trailing '\r'.
+	// Replacement section text adds '\n'-only separators; unaffected tail sections keep their CR bytes.
+	before := "# Changelog\r\n\r\n## [Unreleased]\r\nold\r\n\r\n## [1.0.0]\r\nt\r\n"
+	rewrite := SectionRewrite{
+		Header: "[Unreleased]",
+		Body:   "\n### Changes\n\n- fresh ([#88](https://example/88))\n",
+	}
+	out, err := RewriteSection([]byte(before), rewrite, ModeUnreleased, "")
+	if err != nil {
+		t.Fatalf("unexpected error %v", err)
+	}
+	s := string(out)
+	if strings.Contains(s, "\nold\r") || strings.Contains(s, "\nold\n") {
+		t.Fatalf("unreleased stub line should be dropped")
+	}
+	if !strings.HasPrefix(s, "# Changelog\r\n") {
+		clip := s
+		if len(clip) > 72 {
+			clip = clip[:72]
+		}
+		t.Fatalf("title line CRLF survives split/join; got truncated prefix %#q", clip)
+	}
+	if !strings.Contains(s, "\n## [Unreleased]\n") {
+		t.Fatalf("rewritten unreleased heading should be LF-terminated (replacement text is LF-only)")
+	}
+	if !strings.Contains(s, "- fresh") {
+		t.Fatalf("expected replacement bullet fragment")
+	}
+	if !strings.Contains(s, "## [1.0.0]\r") {
+		t.Fatalf("downstream section heading should preserve CR suffix from unchanged lines")
+	}
+}
+
 func headingsWithPrefixLine(markdown string, headingPrefix string) int {
 	count := 0
 	for line := range strings.SplitSeq(markdown, "\n") {
