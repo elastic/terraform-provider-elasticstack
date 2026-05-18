@@ -32,10 +32,10 @@
 
 ## 5. Implement evidence gathering
 
-- [ ] 5.1 Implement `internal/evidence/gather.go` reproducing `lib/changelog-pr-evidence.js` and `changelog/gather-pr-evidence.js`: list PRs in a release range, parse each `## Changelog` section via `internal/section`, accumulate an evidence manifest.
-- [ ] 5.2 Implement `internal/evidence/manifest.go` reproducing the JSON manifest format from `lib/changelog-evidence-manifest.js`.
-- [ ] 5.3 Wire `gather-evidence` subcommand to `internal/evidence.Gather(...)`; emit the manifest path/payload via `$GITHUB_OUTPUT`.
-- [ ] 5.4 Port test cases from `lib/changelog-pr-evidence.test.mjs` and `lib/changelog-evidence-manifest.test.mjs` into `internal/evidence/*_test.go`.
+- [x] 5.1 Implement `internal/evidence/gather.go` reproducing `lib/changelog-pr-evidence.js` and `changelog/gather-pr-evidence.js`: list PRs in a release range, parse each `## Changelog` section via `internal/section`, accumulate an evidence manifest.
+- [x] 5.2 Implement `internal/evidence/manifest.go` reproducing the JSON manifest format from `lib/changelog-evidence-manifest.js`.
+- [x] 5.3 Wire `gather-evidence` subcommand to `internal/evidence.Gather(...)`; emit the manifest path/payload via `$GITHUB_OUTPUT`.
+- [x] 5.4 Port test cases from `lib/changelog-pr-evidence.test.mjs` and `lib/changelog-evidence-manifest.test.mjs` into `internal/evidence/*_test.go`.
 
 ## 6. Implement PR management subcommands
 
