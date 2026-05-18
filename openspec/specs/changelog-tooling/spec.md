@@ -112,7 +112,7 @@ When a subcommand needs to emit a value for a downstream workflow step (replacin
 #### Scenario: Multi-line output uses heredoc framing
 
 - **WHEN** a subcommand emits a multi-line value (e.g. an assembled PR comment body or JSON evidence blob)
-- **THEN** the output is written using the `<name>«EOF»\n<content>\n«EOF»\n` form with a unique end-of-file delimiter
+- **THEN** the output is written using GitHub Actions' multi-line style: `<name><<delimiter>`, newline, `<content>`, newline, `<delimiter>` (same token as closing marker), newline — with a delimiter token chosen like `EOF` as in `name<<EOF` / `EOF` lines
 
 #### Scenario: Output key names are preserved
 
