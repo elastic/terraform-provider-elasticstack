@@ -48,6 +48,7 @@ type spyListREST struct {
 	updateBodies []updateStub
 	labelCalls   []pullLabelCall
 	labelErr     error
+	updateErr    error
 }
 
 type pullLabelCall struct {
@@ -80,6 +81,9 @@ type updateStub struct {
 }
 
 func (s *spyListREST) UpdatePullRequestBody(_ context.Context, _, _ string, number int, body string) error {
+	if s.updateErr != nil {
+		return s.updateErr
+	}
 	s.updateBodies = append(s.updateBodies, updateStub{number: number, body: body})
 	return nil
 }
@@ -120,6 +124,11 @@ func TestRefreshReleasePR_prNumber_updatesBodyAndLabels(t *testing.T) {
 	if len(st.labelCalls) != 1 || st.labelCalls[0].issue != 55 || len(st.labelCalls[0].tags) != 1 {
 		t.Fatalf("labels %#v", st.labelCalls)
 	}
+	if len(res.Infos) != 2 ||
+		res.Infos[0] != "Refreshing release PR #55 metadata" ||
+		res.Infos[1] != "Release PR #55 metadata refreshed" {
+		t.Fatalf("unexpected infos %#v", res.Infos)
+	}
 }
 
 func TestRefreshReleasePR_labelFailureWarns_afterUpdate(t *testing.T) {
@@ -148,6 +157,11 @@ func TestRefreshReleasePR_labelFailureWarns_afterUpdate(t *testing.T) {
 	ok, rerr := regexp.MatchString(`Failed to apply no-changelog label to PR #55: label failed`, res.Warnings[0])
 	if rerr != nil || !ok {
 		t.Fatalf("unexpected warning %q", res.Warnings[0])
+	}
+	if len(res.Infos) != 2 ||
+		res.Infos[0] != "Refreshing release PR #55 metadata" ||
+		res.Infos[1] != "Release PR #55 metadata refreshed" {
+		t.Fatalf("unexpected infos %#v", res.Infos)
 	}
 }
 
@@ -243,6 +257,13 @@ func TestRefreshReleasePR_lookupByPrepRelease_updates(t *testing.T) {
 	if len(st.labelCalls) != 1 || st.labelCalls[0].issue != 77 {
 		t.Fatalf("labels %#v", st.labelCalls)
 	}
+	wantInfos := []string{
+		"Refreshing release PR #77 metadata",
+		"Release PR #77 metadata refreshed",
+	}
+	if len(res.Infos) != 2 || res.Infos[0] != wantInfos[0] || res.Infos[1] != wantInfos[1] {
+		t.Fatalf("infos %#v want %#v", res.Infos, wantInfos)
+	}
 }
 
 func TestRefreshReleasePR_noPrepPR_warnsSkipped(t *testing.T) {
@@ -272,5 +293,59 @@ func TestRefreshReleasePR_noPrepPR_warnsSkipped(t *testing.T) {
 	}
 	if len(res.Warnings) != 1 || !strings.Contains(res.Warnings[0], "Could not resolve") {
 		t.Fatalf("unexpected warnings %#v", res.Warnings)
+	}
+	if len(res.Infos) != 0 {
+		t.Fatalf("infos should be empty when skipped; got %#v", res.Infos)
+	}
+}
+
+func TestRefreshReleasePR_lookupPrepReleaseListError_returnsError(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	lookupErr := errors.New("github list exploded")
+	st := &spyListREST{
+		listFns: []func(context.Context, string, string, string, string) ([]prmgmt.PullRequestRef, error){
+			func(context.Context, string, string, string, string) ([]prmgmt.PullRequestRef, error) {
+				return nil, lookupErr
+			},
+		},
+	}
+
+	_, err := prmgmt.RefreshReleasePR(ctx, prmgmt.RefreshReleaseOptions{
+		Owner:         "org",
+		Repo:          "repo",
+		CompareRange:  "x..HEAD",
+		TargetVersion: "2.2.2",
+		GitHub:        st,
+		Now:           fixedClock(time.Date(2025, 1, 10, 0, 0, 0, 0, time.UTC)),
+	})
+	if err == nil || !strings.Contains(err.Error(), "list prep-release pull requests") {
+		t.Fatalf("got err=%v", err)
+	}
+	if !errors.Is(err, lookupErr) {
+		t.Fatalf("expected wrapped lookupErr, got %v", err)
+	}
+}
+
+func TestRefreshReleasePR_updateBodyError_returnsError(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	editingErr := errors.New("PATCH failed")
+	st := &spyListREST{updateErr: editingErr}
+
+	_, err := prmgmt.RefreshReleasePR(ctx, prmgmt.RefreshReleaseOptions{
+		Owner:         "o",
+		Repo:          "r",
+		PRNumber:      33,
+		CompareRange:  "a..b",
+		TargetVersion: "1.1.1",
+		GitHub:        st,
+		Now:           fixedClock(time.Date(2026, 1, 18, 0, 0, 0, 0, time.UTC)),
+	})
+	if err == nil || !strings.Contains(err.Error(), "update pull request body") {
+		t.Fatalf("got err=%v", err)
+	}
+	if !errors.Is(err, editingErr) {
+		t.Fatalf("expected wrapped editingErr, got %v", err)
 	}
 }

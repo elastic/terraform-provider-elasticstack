@@ -45,6 +45,7 @@ type RefreshReleaseOptions struct {
 // RefreshReleaseResult reports whether a PR body refresh ran.
 type RefreshReleaseResult struct {
 	Warnings []string
+	Infos    []string // core.info equivalents in JS order when Updated is true
 	Updated  bool
 	Number   int
 }
@@ -66,7 +67,6 @@ func FindOpenReleasePrepPRNumber(ctx context.Context, gh ChangelogWorkflowREST, 
 	if gh == nil {
 		return 0, fmt.Errorf("find release prep pr: github client required")
 	}
-	targetVersion = strings.TrimSpace(targetVersion)
 	if targetVersion == "" {
 		return 0, nil
 	}
@@ -127,6 +127,7 @@ func RefreshReleasePR(ctx context.Context, opts RefreshReleaseOptions) (RefreshR
 	generatedDate := now().UTC().Format("2006-01-02")
 	body := BuildReleasePRBody(opts.TargetVersion, opts.CompareRange, generatedDate)
 
+	infos := []string{fmt.Sprintf("Refreshing release PR #%d metadata", num)}
 	if err := opts.GitHub.UpdatePullRequestBody(ctx, opts.Owner, opts.Repo, num, body); err != nil {
 		return RefreshReleaseResult{}, fmt.Errorf("update pull request body: %w", err)
 	}
@@ -134,7 +135,9 @@ func RefreshReleasePR(ctx context.Context, opts RefreshReleaseOptions) (RefreshR
 	res := RefreshReleaseResult{
 		Updated: true,
 		Number:  num,
+		Infos:   infos,
 	}
 	appendNoChangelogLabelWarning(ctx, &res.Warnings, opts.GitHub, opts.Owner, opts.Repo, num)
+	res.Infos = append(res.Infos, fmt.Sprintf("Release PR #%d metadata refreshed", num))
 	return res, nil
 }

@@ -434,8 +434,14 @@ func cmdRefreshReleasePR(args []string, stderr io.Writer) error {
 		return fmt.Errorf("refresh-release-pr: %w", err)
 	}
 
+	if len(res.Infos) > 0 {
+		fmt.Fprintf(stderr, "%s\n", res.Infos[0])
+	}
 	for _, w := range res.Warnings {
 		fmt.Fprintf(stderr, "WARNING: %s\n", w)
+	}
+	if len(res.Infos) > 1 {
+		fmt.Fprintf(stderr, "%s\n", res.Infos[1])
 	}
 
 	return nil
