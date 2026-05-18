@@ -1,5 +1,7 @@
 ---
-imports: [shared/setup-dev.md]
+imports:
+  - shared/setup-dev.md
+  - shared/elastic-stack.md
 name: Code Factory Issue Intake
 timeout-minutes: 65
 description: >-
@@ -359,9 +361,7 @@ Deterministic pre-activation has already decided that this intake is eligible, t
 
 ## Test environment
 
-The Elastic Stack is provisioned in the agent environment but **acceptance tests are currently blocked by an AWF network policy issue** — `TF_ACC=1` tests will fail with connection errors. Do not run acceptance tests and do not treat their failure as a blocker. This is a known infrastructure issue being investigated separately.
-
-When the issue is resolved, targeted acceptance tests can be run with:
+The Elastic Stack is provisioned in the agent environment. You can run targeted acceptance tests with:
 
 ```bash
 ELASTICSEARCH_ENDPOINTS=http://host.docker.internal:9200 \

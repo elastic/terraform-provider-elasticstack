@@ -1,5 +1,7 @@
 ---
-imports: [shared/setup-dev.md]
+imports:
+  - shared/setup-dev.md
+  - shared/elastic-stack.md
 name: Reproducer Factory Issue Intake
 timeout-minutes: 65
 description: >-
