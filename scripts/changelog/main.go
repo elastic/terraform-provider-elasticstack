@@ -145,6 +145,10 @@ func cmdRunEngine(args []string, stderr io.Writer) error {
 		return err
 	}
 
+	for _, w := range res.Warnings {
+		fmt.Fprintf(stderr, "WARNING: %s\n", w)
+	}
+
 	effectiveBranch := targetBranchOverride
 	if effectiveBranch == "" {
 		effectiveBranch = res.TargetBranch
