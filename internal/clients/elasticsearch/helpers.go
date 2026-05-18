@@ -64,6 +64,18 @@ func durationToMsString(d time.Duration) string {
 	return strconv.FormatInt(d.Milliseconds(), 10) + "ms"
 }
 
+// formatDuration converts a time.Duration to an Elasticsearch timeout string.
+// Sub-millisecond values are expressed in nanoseconds (e.g. "500nanos"); all
+// other values are expressed in milliseconds (e.g. "5000ms"), matching the
+// legacy esapi behavior. Use durationToMsString when sub-ms precision is not
+// needed.
+func formatDuration(d time.Duration) string {
+	if d < time.Millisecond {
+		return strconv.FormatInt(int64(d), 10) + "nanos"
+	}
+	return strconv.FormatInt(int64(d)/int64(time.Millisecond), 10) + "ms"
+}
+
 // NormalizeQueryFilter recursively compacts expanded single-key query values
 // produced by the typed client back to their shorthand form.
 // For example: {"term":{"field":{"value":"x"}}} → {"term":{"field":"x"}}
