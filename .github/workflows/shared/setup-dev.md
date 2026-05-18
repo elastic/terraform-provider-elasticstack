@@ -1,3 +1,4 @@
+---
 steps:
   - name: Setup Go
     uses: actions/setup-go@v6
@@ -24,3 +25,8 @@ steps:
       node-version-file: package.json
   - name: Setup repository dependencies
     run: make setup
+---
+
+# Dev environment setup
+
+Shared setup component. Installs Go, Terraform CLI, and Node.js; exports chroot paths; and runs `make setup`.
