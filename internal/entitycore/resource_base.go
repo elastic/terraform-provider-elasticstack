@@ -22,6 +22,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
@@ -81,4 +82,49 @@ func (c *ResourceBase) Client() *clients.ProviderClientFactory {
 		return nil
 	}
 	return c.client
+}
+
+// DataSourceBase holds shared Plugin Framework data source wiring: typed naming
+// parts and the provider client factory from Configure. Embed *DataSourceBase in
+// concrete data sources to reuse Configure, Metadata, and Client.
+type DataSourceBase struct {
+	component      Component
+	dataSourceName string
+	client         *clients.ProviderClientFactory
+}
+
+// NewDataSourceBase returns a [DataSourceBase] for the given namespace segment
+// and literal data source name suffix. dataSourceName is not normalized; see
+// package documentation.
+func NewDataSourceBase(component Component, dataSourceName string) *DataSourceBase {
+	return &DataSourceBase{component: component, dataSourceName: dataSourceName}
+}
+
+// Configure implements [datasource.DataSourceWithConfigure], converting provider
+// data with [clients.ConvertProviderDataToFactory] and appending diagnostics. If
+// the response has error diagnostics, it returns without assigning a new factory,
+// leaving any prior successful client unchanged.
+func (d *DataSourceBase) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+	factory, diags := clients.ConvertProviderDataToFactory(req.ProviderData)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	d.client = factory
+}
+
+// Metadata implements the Metadata method of [datasource.DataSource], setting
+// the Terraform type name to "<providerTypeName>_<component>_<dataSourceName>".
+func (d *DataSourceBase) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+	resp.TypeName = fmt.Sprintf("%s_%s_%s", req.ProviderTypeName, d.component, d.dataSourceName)
+}
+
+// Client returns the client factory from the last successful Configure call,
+// or nil if none has been stored yet. A nil *DataSourceBase returns nil so
+// callers can surface diagnostics instead of panicking.
+func (d *DataSourceBase) Client() *clients.ProviderClientFactory {
+	if d == nil {
+		return nil
+	}
+	return d.client
 }
