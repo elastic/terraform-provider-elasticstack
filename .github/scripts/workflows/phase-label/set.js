@@ -1,4 +1,4 @@
-const { setPhaseLabel } = require('./phase-label.js');
+const { setPhaseLabel } = require('../lib/phase-label.js');
 
 module.exports = async function ({ github, context, core }) {
   const issueNumber = parseInt(process.env.INPUT_ISSUE_NUMBER, 10) || context.payload.issue?.number || undefined;

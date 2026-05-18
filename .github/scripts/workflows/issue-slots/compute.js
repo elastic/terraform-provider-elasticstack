@@ -1,4 +1,4 @@
-const { computeIssueSlots } = require('./issue-slots.js');
+const { computeIssueSlots } = require('../lib/issue-slots.js');
 
 module.exports = async function ({ github, context, core }) {
   const ISSUE_LABEL = process.env.ISSUE_SLOTS_LABEL;
@@ -15,7 +15,7 @@ module.exports = async function ({ github, context, core }) {
   });
 
   // GitHub issues API may return pull requests — exclude them
-  const openIssueCount = issues.filter(item => !item.pull_request).length;
+  const openIssueCount = issues.filter((item) => !item.pull_request).length;
 
   const result = computeIssueSlots({
     label: ISSUE_LABEL,
