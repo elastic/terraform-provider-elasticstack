@@ -8,12 +8,12 @@
 
 ## 2. Implement shared section parser
 
-- [ ] 2.1 Implement `internal/section/parse.go` with `Parse([]byte) (Section, error)` that reproduces the fenced-code-aware extraction from `lib/pr-changelog-parser.js` (`` ``` `` and `~~~` fences, `## ` terminator outside fences).
-- [ ] 2.2 Implement `internal/section/customer_impact.go` with the `{none, fix, enhancement, breaking}` enum, JSON marshalling, and a `RequiresSummary()` predicate.
-- [ ] 2.3 Implement `internal/section/breaking.go` to extract the optional `### Breaking changes` subsection verbatim.
-- [ ] 2.4 Implement `internal/section/render.go` with `Render(Section, RenderOpts) string` producing the `CHANGELOG.md`-entry shape currently emitted by `lib/changelog-renderer.js`.
-- [ ] 2.5 Port every test case from `lib/pr-changelog-parser.test.mjs` into `internal/section/parse_test.go` table tests + `testdata/` golden files.
-- [ ] 2.6 Port the renderer invariants from `lib/changelog-renderer.test.mjs` (and any sibling renderer test files) into `internal/section/render_test.go`.
+- [x] 2.1 Implement `internal/section/parse.go` with `Parse([]byte) (Section, error)` that reproduces the fenced-code-aware extraction from `lib/pr-changelog-parser.js` (`` ``` `` and `~~~` fences, `## ` terminator outside fences).
+- [x] 2.2 Implement `internal/section/customer_impact.go` with the `{none, fix, enhancement, breaking}` enum, JSON marshalling, and a `RequiresSummary()` predicate.
+- [x] 2.3 Implement `internal/section/breaking.go` to extract the optional `### Breaking changes` subsection verbatim.
+- [x] 2.4 Implement `internal/section/render.go` with `Render(Section, RenderOpts) string` producing the `CHANGELOG.md`-entry shape currently emitted by `lib/changelog-renderer.js`.
+- [x] 2.5 Port every test case from `lib/pr-changelog-parser.test.mjs` into `internal/section/parse_test.go` table tests + `testdata/` golden files.
+- [x] 2.6 Port the renderer invariants from `lib/changelog-renderer.test.mjs` (and any sibling renderer test files) into `internal/section/render_test.go`.
 
 ## 3. Implement CHANGELOG.md rewriter
 
