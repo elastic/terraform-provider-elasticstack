@@ -104,10 +104,10 @@
 
 ## 8. Final validation
 
-- [ ] 8.1 Run `make build` and ensure no Go compilation errors
-- [ ] 8.2 Run `grep -r "x-script-include" .github/workflows/` and confirm zero matches
-- [ ] 8.3 Run `grep -r "//include:" .github/scripts/workflows/` and confirm zero matches
-- [ ] 8.4 Run `grep -r "compile-workflow-sources" Makefile` and confirm zero matches (except possibly in comments)
-- [ ] 8.5 Verify `scripts/compile-workflow-sources/` does not exist
-- [ ] 8.6 Verify `.github/workflows-src/` does not exist
-- [ ] 8.7 Verify all `.github/workflows/*.yml` files lack generated-by headers referencing compile-workflow-sources
+- [x] 8.1 Run `make build` and ensure no Go compilation errors
+- [x] 8.2 Run `grep -r "x-script-include" .github/workflows/` and confirm zero matches
+- [x] 8.3 Run `grep -r "//include:" .github/scripts/workflows/` and confirm zero matches
+- [x] 8.4 Run `grep -r "compile-workflow-sources" Makefile` and confirm zero matches (except possibly in comments)
+- [x] 8.5 Verify `scripts/compile-workflow-sources/` does not exist
+- [x] 8.6 Verify `.github/workflows-src/` does not exist
+- [x] 8.7 Verify all `.github/workflows/*.yml` files lack generated-by headers referencing compile-workflow-sources
