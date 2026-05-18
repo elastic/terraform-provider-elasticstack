@@ -175,6 +175,7 @@ func NewElasticsearchResource[T ElasticsearchResourceModel](name string, opts El
 	}
 }
 
+//nolint:unparam // diag.Diagnostics is always nil in current paths but is part of the public signature used by callers.
 func resolveElasticsearchReadResourceID(model ElasticsearchResourceModel, writeFallback string) (string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if m, ok := any(model).(WithReadResourceID); ok {
@@ -198,7 +199,8 @@ func resolveElasticsearchReadResourceID(model ElasticsearchResourceModel, writeF
 		if id := strings.TrimSpace(model.GetID().ValueString()); id != "" {
 			return id, diags
 		}
-		diags.Append(compDiags...)
+		// All fallbacks exhausted. Return empty without the parse diagnostic
+		// so callers can report their own "Invalid resource identifier" error.
 		return "", diags
 	}
 	return compID.ResourceID, diags

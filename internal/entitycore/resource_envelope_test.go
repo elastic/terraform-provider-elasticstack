@@ -188,6 +188,7 @@ func newResourceEnvelopeWithFactory(t *testing.T, factory *clients.ProviderClien
 	return r
 }
 
+//nolint:unparam // id always receives "cluster/user1"; kept for consistency with similar test helpers in the file.
 func makeTestResourceState(ctx context.Context, t *testing.T, id string) tfsdk.State {
 	t.Helper()
 	connBlockType := elasticsearchConnectionBlockType()
@@ -386,6 +387,8 @@ func TestNewElasticsearchResource_Read_shortCircuitStateGetError(t *testing.T) {
 	require.False(t, readCalled, "readFunc should not be called when state.Get fails")
 }
 
+// TestNewElasticsearchResource_Read_happyPath_fallback verifies that Read falls
+// back to GetResourceID() when the state id is not a composite ID.
 func TestNewElasticsearchResource_Read_happyPath_fallback(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
@@ -406,7 +409,22 @@ func TestNewElasticsearchResource_Read_happyPath_fallback(t *testing.T) {
 	})
 	r.client = factory
 
-	state := makeTestResourceState(ctx, t, "invalid-no-slash")
+	// id and name are deliberately different so the test proves the envelope
+	// prefers GetResourceID (name) over the raw id string.
+	objType := tftypes.Object{
+		AttributeTypes: map[string]tftypes.Type{
+			"id":                       tftypes.String,
+			"name":                     tftypes.String,
+			"elasticsearch_connection": elasticsearchConnectionBlockType(),
+		},
+	}
+	objValue := tftypes.NewValue(objType, map[string]tftypes.Value{
+		"id":                       tftypes.NewValue(tftypes.String, "my-plain-id"),
+		"name":                     tftypes.NewValue(tftypes.String, "my-fallback-name"),
+		"elasticsearch_connection": tftypes.NewValue(elasticsearchConnectionBlockType(), nil),
+	})
+	state := tfsdk.State{Raw: objValue, Schema: testResourceSchemaWithConnectionBlock(ctx)}
+
 	req := resource.ReadRequest{State: state}
 	resp := resource.ReadResponse{State: state}
 
@@ -414,13 +432,11 @@ func TestNewElasticsearchResource_Read_happyPath_fallback(t *testing.T) {
 
 	require.False(t, resp.Diagnostics.HasError())
 	require.True(t, readCalled, "readFunc should be called")
-	require.Equal(t, "invalid-no-slash", receivedResourceID, "fallback should use GetResourceID")
+	require.Equal(t, "my-fallback-name", receivedResourceID, "fallback should use GetResourceID")
 }
 
-// =============================================================================
-// Subtask 2.x: Read fallback when GetResourceID is empty (uses raw ID)
-// =============================================================================
-
+// TestNewElasticsearchResource_Read_happyPath_fallbackRawID verifies that Read
+// falls back to the raw GetID() string when GetResourceID() is empty.
 func TestNewElasticsearchResource_Read_happyPath_fallbackRawID(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
@@ -615,7 +631,22 @@ func TestNewElasticsearchResource_Delete_happyPath_fallback(t *testing.T) {
 	})
 	r.client = factory
 
-	state := makeTestResourceState(ctx, t, "invalid-no-slash")
+	// id and name are deliberately different so the test proves the envelope
+	// prefers GetResourceID (name) over the raw id string.
+	objType := tftypes.Object{
+		AttributeTypes: map[string]tftypes.Type{
+			"id":                       tftypes.String,
+			"name":                     tftypes.String,
+			"elasticsearch_connection": elasticsearchConnectionBlockType(),
+		},
+	}
+	objValue := tftypes.NewValue(objType, map[string]tftypes.Value{
+		"id":                       tftypes.NewValue(tftypes.String, "my-plain-id"),
+		"name":                     tftypes.NewValue(tftypes.String, "my-fallback-name"),
+		"elasticsearch_connection": tftypes.NewValue(elasticsearchConnectionBlockType(), nil),
+	})
+	state := tfsdk.State{Raw: objValue, Schema: testResourceSchemaWithConnectionBlock(ctx)}
+
 	req := resource.DeleteRequest{State: state}
 	resp := resource.DeleteResponse{State: state}
 
@@ -623,7 +654,7 @@ func TestNewElasticsearchResource_Delete_happyPath_fallback(t *testing.T) {
 
 	require.False(t, resp.Diagnostics.HasError())
 	require.True(t, deleteCalled, "deleteFunc should be called")
-	require.Equal(t, "invalid-no-slash", receivedResourceID, "fallback should use GetResourceID")
+	require.Equal(t, "my-fallback-name", receivedResourceID, "fallback should use GetResourceID")
 }
 
 func TestNewElasticsearchResource_Delete_shortCircuitClientError(t *testing.T) {

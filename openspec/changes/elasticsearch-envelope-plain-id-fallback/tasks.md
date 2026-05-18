@@ -11,9 +11,10 @@
 
 ## 3. Acceptance test
 
-- [x] 3.1 Add `TestAccResourceAnomalyDetectionJobFrom0_12_2` in `internal/elasticsearch/ml/anomalydetectionjob/acc_test.go` (or a new `acc_plain_id_test.go` in that package). The test SHALL:
-  - Create an ML anomaly detection job using the current provider configuration.
-  - Simulate a v0.12.2-style import by constructing a state fixture that stores the plain `job_id` as both `id` and `job_id` attributes (as an older provider version would have), then running a plan/apply that switches to composite-ID state.
+- [x] 3.1 Add `TestAccResourceAnomalyDetectionJobFrom0_12_2` in `internal/elasticsearch/ml/anomalydetectionjob/acc_test.go`. The test SHALL:
+  - Create an ML anomaly detection job using provider `v0.12.2`.
+  - Import the resource with a plain `job_id` (not `cluster-id/job-id`) using the old provider, persisting the state.
+  - Switch to the current provider and apply the same config — confirming refresh, plan, and apply all succeed without "Wrong resource ID" diagnostics.
   - Assert that the provider successfully refreshes (`terraform plan`) and applies (`terraform apply`) without errors.
 - [x] 3.2 Add any required testdata directory and configuration files under `internal/elasticsearch/ml/anomalydetectionjob/testdata/TestAccResourceAnomalyDetectionJobFrom0_12_2/` if the test framework requires static `.tf` files.
 
