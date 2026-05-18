@@ -4,7 +4,6 @@
 // ownership. Elasticsearch B.V. licenses this file to you under
 // the Apache License, Version 2.0 (the "License"); you may
 // not use this file except in compliance with the License.
-//
 // You may obtain a copy of the License at
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -37,7 +36,7 @@ func ListCommitSHAs(exec semver.Execer, compareRange string) ([]string, error) {
 		return nil, err
 	}
 	var lines []string
-	for _, ln := range strings.Split(string(out), "\n") {
+	for ln := range strings.SplitSeq(string(out), "\n") {
 		s := strings.TrimSpace(ln)
 		if s != "" {
 			lines = append(lines, s)
