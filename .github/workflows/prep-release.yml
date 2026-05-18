@@ -117,18 +117,20 @@ jobs:
             echo "Makefile updated: VERSION set to ${TARGET_VERSION}"
           fi
 
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+          cache-dependency-path: go.sum
+
       - name: Run changelog engine (release mode)
         id: changelog_engine
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         env:
           MODE: release
           TARGET_VERSION: ${{ steps.version.outputs.TARGET_VERSION }}
           CHANGELOG_PATH: CHANGELOG.md
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const run = require('${{ github.workspace }}/.github/scripts/workflows/changelog/run-changelog-engine.js');
-            await run({ github, context, core });
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: go run ./scripts/changelog run-engine
       - name: Commit release preparation
         run: |
           TARGET_VERSION="${{ steps.version.outputs.TARGET_VERSION }}"

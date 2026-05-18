@@ -33,6 +33,7 @@ jobs:
       MODE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.mode || 'unreleased' }}
       TARGET_VERSION: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.target_version || '' }}
       TARGET_BRANCH: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.target_branch || '' }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Validate release inputs
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'release'
@@ -57,6 +58,8 @@ jobs:
             else
               echo "checkout_ref=prep-release-${INPUT_TARGET_VERSION}" >> "${GITHUB_OUTPUT}"
             fi
+          elif [ "${EVENT_NAME}" = "workflow_dispatch" ]; then
+            echo "checkout_ref=${DISPATCH_REF}" >> "${GITHUB_OUTPUT}"
           else
             echo "checkout_ref=${DEFAULT_BRANCH}" >> "${GITHUB_OUTPUT}"
           fi
@@ -65,6 +68,7 @@ jobs:
           INPUT_MODE: ${{ github.event.inputs.mode }}
           INPUT_TARGET_BRANCH: ${{ github.event.inputs.target_branch }}
           INPUT_TARGET_VERSION: ${{ github.event.inputs.target_version }}
+          DISPATCH_REF: ${{ github.ref_name }}
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
 
       - name: Checkout repository
@@ -75,16 +79,17 @@ jobs:
           fetch-tags: true
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+          cache-dependency-path: go.sum
+
       - name: Run changelog engine
         id: changelog_engine
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         env:
           CHANGELOG_PATH: CHANGELOG.md
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const run = require('${{ github.workspace }}/.github/scripts/workflows/changelog/run-changelog-engine.js');
-            await run({ github, context, core });
+        run: go run ./scripts/changelog run-engine
       - name: Commit changelog (release mode)
         id: commit_release
         if: steps.changelog_engine.outputs.mode == 'release'
@@ -120,15 +125,10 @@ jobs:
         if: >-
           steps.changelog_engine.outputs.mode == 'release' &&
           steps.commit_release.outputs.ran == 'true'
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         env:
           COMPARE_RANGE: ${{ steps.changelog_engine.outputs.compare_range }}
           TARGET_VERSION: ${{ steps.changelog_engine.outputs.target_version }}
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const refresh = require('${{ github.workspace }}/.github/scripts/workflows/changelog/refresh-release-pr.js');
-            await refresh({ github, context, core });
+        run: go run ./scripts/changelog refresh-release-pr
       - name: Push to generated-changelog branch (unreleased mode)
         id: push_unreleased
         if: >-
@@ -163,14 +163,9 @@ jobs:
         id: lookup_pr
         if: >-
           steps.push_unreleased.outputs.pushed == 'true'
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         env:
           COMPARE_RANGE: ${{ steps.changelog_engine.outputs.compare_range }}
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const manage = require('${{ github.workspace }}/.github/scripts/workflows/changelog/manage-unreleased-pr.js');
-            await manage({ github, context, core });
+        run: go run ./scripts/changelog manage-unreleased-pr
       - name: Report result (unreleased mode)
         if: >-
           steps.changelog_engine.outputs.mode == 'unreleased' &&
