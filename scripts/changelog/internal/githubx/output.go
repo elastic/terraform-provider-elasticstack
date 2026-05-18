@@ -70,16 +70,18 @@ func randomDelimiterToken() (string, error) {
 func appendToOutputFile(path, content string) error {
 	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	if err != nil {
-		return err
+		return fmt.Errorf("open github output %q: %w", path, err)
 	}
 	if _, err := f.WriteString(content); err != nil {
+		writeErr := fmt.Errorf("write github output %q: %w", path, err)
 		if closeErr := f.Close(); closeErr != nil {
-			return fmt.Errorf("write failed and close failed: %w", errors.Join(err, closeErr))
+			closeWrapped := fmt.Errorf("close github output %q: %w", path, closeErr)
+			return errors.Join(writeErr, closeWrapped)
 		}
-		return err
+		return writeErr
 	}
 	if err := f.Close(); err != nil {
-		return err
+		return fmt.Errorf("close github output %q: %w", path, err)
 	}
 	return nil
 }
