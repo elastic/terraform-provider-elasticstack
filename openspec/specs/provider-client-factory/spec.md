@@ -4,7 +4,7 @@
 TBD - created by archiving change typed-kibana-fleet-client-resolution. Update Purpose after archive.
 ## Requirements
 ### Requirement: Provider injects a client factory
-The provider SHALL inject a `*clients.ProviderClientFactory` into Plugin Framework `ProviderData` and SDK `meta` as the provider-scoped client-resolution surface for resources and data sources. Covered consumers SHALL resolve typed scoped clients through factory methods rather than converting provider data or meta back into a broad `*clients.APIClient`.
+The provider SHALL inject a `*clients.ProviderClientFactory` into Plugin Framework `ProviderData` and `ResourceData` as the provider-scoped client-resolution surface for resources and data sources. Covered consumers SHALL resolve typed scoped clients through factory methods rather than converting provider data or meta back into a broad `*clients.APIClient`.
 
 #### Scenario: Framework configure receives a factory
 - **WHEN** the Plugin Framework provider configures a resource or data source
@@ -13,10 +13,6 @@ The provider SHALL inject a `*clients.ProviderClientFactory` into Plugin Framewo
 #### Scenario: Framework consumer resolves typed client from factory
 - **WHEN** a covered Framework resource or data source needs Elasticsearch- or Kibana-derived operations
 - **THEN** it SHALL obtain a typed scoped client from `*clients.ProviderClientFactory` instead of converting provider data into a broad `*clients.APIClient`
-
-#### Scenario: SDK configure receives a factory
-- **WHEN** the SDK provider configures a resource or data source
-- **THEN** the configured `meta` value SHALL be a `*clients.ProviderClientFactory` rather than a ready-to-use broad `*clients.APIClient`
 
 ### Requirement: Factory supports phased migration
 During the Kibana/Fleet typed-client phase, the `*clients.ProviderClientFactory` SHALL provide typed Kibana/Fleet scoped-client resolution and SHALL also preserve explicit legacy Elasticsearch resolution methods so unconverted Elasticsearch entities continue to behave as they did before the factory migration.

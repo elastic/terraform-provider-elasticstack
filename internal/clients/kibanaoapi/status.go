@@ -24,7 +24,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	sdkdiag "github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 // kibanaStatusDTO is a minimal DTO for parsing the Kibana status response body.
@@ -38,24 +38,32 @@ type kibanaStatusDTO struct {
 // GetKibanaStatus calls the Kibana status API and returns the parsed version
 // number and build flavor. BuildFlavor is an empty string when absent (i.e. on
 // older stateful deployments that predate the serverless distinction).
-func GetKibanaStatus(ctx context.Context, client *kbapi.ClientWithResponses) (versionNumber string, buildFlavor string, diags sdkdiag.Diagnostics) {
+func GetKibanaStatus(ctx context.Context, client *kbapi.ClientWithResponses) (versionNumber string, buildFlavor string, diags fwdiag.Diagnostics) {
 	resp, err := client.GetStatusWithResponse(ctx, &kbapi.GetStatusParams{})
 	if err != nil {
-		return "", "", diagutil.SDKErrorDiag("Failed to get Kibana status", err.Error())
+		return "", "", fwdiag.Diagnostics{
+			fwdiag.NewErrorDiagnostic("Failed to get Kibana status", err.Error()),
+		}
 	}
 
 	if resp.StatusCode() != http.StatusOK {
-		diags = diagutil.SDKDiagsFromFramework(diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body))
-		return "", "", diags
+		return "", "", diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 
 	var dto kibanaStatusDTO
 	if err := json.Unmarshal(resp.Body, &dto); err != nil {
-		return "", "", diagutil.SDKErrorDiag("Failed to parse Kibana status response", err.Error())
+		return "", "", fwdiag.Diagnostics{
+			fwdiag.NewErrorDiagnostic("Failed to parse Kibana status response", err.Error()),
+		}
 	}
 
 	if dto.Version.Number == "" {
-		return "", "", diagutil.SDKErrorDiag("Failed to get version from Kibana status", "The 'version.number' field was absent or empty in the Kibana status response.")
+		return "", "", fwdiag.Diagnostics{
+			fwdiag.NewErrorDiagnostic(
+				"Failed to get version from Kibana status",
+				"The 'version.number' field was absent or empty in the Kibana status response.",
+			),
+		}
 	}
 
 	flavor := ""

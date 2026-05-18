@@ -23,7 +23,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -54,8 +53,8 @@ func readConnectorDataSource(ctx context.Context, client *clients.KibanaScopedCl
 		connectorType = model.ConnectorTypeID.ValueString()
 	}
 
-	foundConnectors, sdkDiags := kibanaoapi.SearchConnectors(ctx, oapiClient, connectorName, spaceID, connectorType)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	foundConnectors, searchDiags := kibanaoapi.SearchConnectors(ctx, oapiClient, connectorName, spaceID, connectorType)
+	diags.Append(searchDiags...)
 	if diags.HasError() {
 		return model, diags
 	}

@@ -38,12 +38,18 @@ The methods `serverInfo`, `ClusterID`, `ID`, `ServerVersion`, `ServerFlavor`, an
 - **THEN** `EnforceMinVersion` SHALL return `(true, nil)` unchanged in behavior
 
 ### Requirement: KibanaScopedClient methods return Plugin Framework diagnostics
-The methods `ServerVersion`, `ServerFlavor`, and `EnforceMinVersion` on `KibanaScopedClient` in `internal/clients/kibana_scoped_client.go` SHALL return `fwdiag.Diagnostics` instead of `diag.Diagnostics` (SDK).
+The methods `ServerVersion`, `ServerFlavor`, and `EnforceMinVersion` on `KibanaScopedClient` in `internal/clients/kibana_scoped_client.go` SHALL return `fwdiag.Diagnostics` instead of `diag.Diagnostics` (SDK). These methods SHALL consume PF diagnostics directly from `kibanaoapi.GetKibanaStatus` without bridging via `diagutil.FrameworkDiagsFromSDK`.
 
 #### Scenario: KibanaScopedClient.EnforceMinVersion returns PF diagnostics on error
 - **GIVEN** a call to `KibanaScopedClient.EnforceMinVersion` where Kibana is unreachable
 - **WHEN** `GetKibanaOapiClient` or `GetKibanaStatus` fails
 - **THEN** `EnforceMinVersion` SHALL return `(false, fwdiag.Diagnostics{...})` with a PF error diagnostic
+- **AND** it SHALL NOT call `diagutil.FrameworkDiagsFromSDK`
+
+#### Scenario: KibanaScopedClient.ServerVersion passes through PF diagnostics
+- **GIVEN** a call to `KibanaScopedClient.ServerVersion`
+- **WHEN** `kibanaoapi.GetKibanaStatus` returns PF diagnostics
+- **THEN** `ServerVersion` SHALL return those diagnostics directly without wrapping
 
 ### Requirement: CompositeIDFromStr returns Plugin Framework diagnostics
 `CompositeIDFromStr` in `internal/clients/api_client.go` SHALL return `(CompositeID, fwdiag.Diagnostics)` instead of `(CompositeID, sdkdiag.Diagnostics)`. The `CompositeIDFromStrFw` wrapper function SHALL be removed.
@@ -75,15 +81,15 @@ All call sites in `internal/elasticsearch/**` and other in-scope packages that p
 - **THEN** the caller SHALL use `diags.Append(elasticsearch.PutComponentTemplate(...)...)` with no intermediate bridging
 
 ### Requirement: Bridging helpers removed when unused
-`diagutil.SDKErrorDiag`, `diagutil.FrameworkDiagsFromSDK`, and `diagutil.SDKDiagsFromFramework` in `internal/diagutil/translation.go` SHALL be removed if and only if no callers of these functions remain in the codebase after all migrations in this change are applied.
+`diagutil.SDKErrorDiag`, `diagutil.FrameworkDiagsFromSDK`, and `diagutil.SDKDiagsFromFramework` in `internal/diagutil/translation.go` SHALL be removed. All callers of these functions SHALL be eliminated as part of this change.
 
-#### Scenario: Helpers are deleted when caller-free
-- **GIVEN** that all ES client functions and scoped-client methods have been migrated
-- **WHEN** a search for `SDKErrorDiag`, `FrameworkDiagsFromSDK`, and `SDKDiagsFromFramework` finds no remaining callers
-- **THEN** the three functions SHALL be deleted from `internal/diagutil/translation.go`
+#### Scenario: Helpers are deleted
+- **GIVEN** that all ES client functions, scoped-client methods, kibanaoapi functions, and provider factory methods have been migrated
+- **WHEN** inspecting `internal/diagutil/translation.go`
+- **THEN** `SDKErrorDiag`, `FrameworkDiagsFromSDK`, and `SDKDiagsFromFramework` SHALL NOT exist in the file
 
-#### Scenario: Helpers are retained when callers remain
-- **GIVEN** that Kibana or Fleet code outside the defined scope still references one of the bridging helpers
-- **WHEN** a search finds remaining callers after ES-scope migration
-- **THEN** those specific helpers SHALL be retained and remaining callers noted for a follow-up
+#### Scenario: diagutil has no SDK diag import
+- **GIVEN** the codebase after this change
+- **WHEN** inspecting `internal/diagutil/translation.go`
+- **THEN** it SHALL NOT import `github.com/hashicorp/terraform-plugin-sdk/v2/diag`
 

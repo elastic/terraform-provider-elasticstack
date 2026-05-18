@@ -22,7 +22,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -35,10 +34,9 @@ func fetchRole(ctx context.Context, client *clients.KibanaScopedClient, name str
 			diag.NewErrorDiagnostic("Unable to get Kibana OpenAPI client", err.Error()),
 		}
 	}
-	role, sdkDiags := kibanaoapi.GetSecurityRole(ctx, oapiClient, name)
-	fwDiags := diagutil.FrameworkDiagsFromSDK(sdkDiags)
-	if fwDiags.HasError() {
-		return nil, false, fwDiags
+	role, apiDiags := kibanaoapi.GetSecurityRole(ctx, oapiClient, name)
+	if apiDiags.HasError() {
+		return nil, false, apiDiags
 	}
 	if role == nil {
 		return nil, false, nil

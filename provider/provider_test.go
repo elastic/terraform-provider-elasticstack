@@ -18,6 +18,7 @@
 package provider_test
 
 import (
+	"context"
 	"os"
 	"testing"
 
@@ -27,6 +28,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/elastic/terraform-provider-elasticstack/provider"
 	"github.com/hashicorp/go-version"
+	fwprovider "github.com/hashicorp/terraform-plugin-framework/provider"
 	tfconfig "github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -35,8 +37,13 @@ import (
 var minVersionForFleet = version.Must(version.NewVersion("8.6.0"))
 
 func TestProvider(t *testing.T) {
-	if err := provider.New("dev").InternalValidate(); err != nil {
-		t.Fatalf("Failed to validate provider: %s", err)
+	ctx := context.Background()
+	p := provider.NewFrameworkProvider("dev")
+
+	var schemaResp fwprovider.SchemaResponse
+	p.Schema(ctx, fwprovider.SchemaRequest{}, &schemaResp)
+	if schemaResp.Diagnostics.HasError() {
+		t.Fatalf("provider schema diagnostics: %v", schemaResp.Diagnostics)
 	}
 }
 

@@ -91,8 +91,7 @@ func (k *KibanaScopedClient) ServerVersion(ctx context.Context) (*version.Versio
 		}
 	}
 
-	rawVersion, _, sdkDiags := kibanaoapi.GetKibanaStatus(ctx, oapiClient.API)
-	diags := diagutil.FrameworkDiagsFromSDK(sdkDiags)
+	rawVersion, _, diags := kibanaoapi.GetKibanaStatus(ctx, oapiClient.API)
 	if diags.HasError() {
 		return nil, diags
 	}
@@ -119,8 +118,7 @@ func (k *KibanaScopedClient) ServerFlavor(ctx context.Context) (string, fwdiag.D
 		}
 	}
 
-	_, flavor, sdkDiags := kibanaoapi.GetKibanaStatus(ctx, oapiClient.API)
-	diags := diagutil.FrameworkDiagsFromSDK(sdkDiags)
+	_, flavor, diags := kibanaoapi.GetKibanaStatus(ctx, oapiClient.API)
 	if diags.HasError() {
 		return "", diags
 	}
@@ -141,8 +139,7 @@ func (k *KibanaScopedClient) EnforceMinVersion(ctx context.Context, minVersion *
 		}
 	}
 
-	rawVersion, flavor, sdkDiags := kibanaoapi.GetKibanaStatus(ctx, oapiClient.API)
-	diags := diagutil.FrameworkDiagsFromSDK(sdkDiags)
+	rawVersion, flavor, diags := kibanaoapi.GetKibanaStatus(ctx, oapiClient.API)
 	if diags.HasError() {
 		return false, diags
 	}

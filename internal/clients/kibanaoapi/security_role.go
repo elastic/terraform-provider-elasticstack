@@ -26,7 +26,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	sdkdiag "github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 // SecurityRoleESIndex represents an index entry in the elasticsearch.indices section of a Kibana role.
@@ -88,55 +88,68 @@ type SecurityRolePutBody struct {
 // GetSecurityRole retrieves a Kibana security role by name.
 // Returns (nil, nil) when the role is not found (HTTP 404).
 // Returns (nil, diags) on error.
-func GetSecurityRole(ctx context.Context, client *Client, name string) (*SecurityRole, sdkdiag.Diagnostics) {
+func GetSecurityRole(ctx context.Context, client *Client, name string) (*SecurityRole, fwdiag.Diagnostics) {
 	params := &kbapi.GetSecurityRoleNameParams{}
 	resp, err := client.API.GetSecurityRoleNameWithResponse(ctx, name, params)
 	if err != nil {
-		return nil, diagutil.SDKErrorDiag("Failed to read Kibana security role", err.Error())
+		return nil, fwdiag.Diagnostics{
+			fwdiag.NewErrorDiagnostic("Failed to read Kibana security role", err.Error()),
+		}
 	}
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
 		var role SecurityRole
 		if err := json.Unmarshal(resp.Body, &role); err != nil {
-			return nil, diagutil.SDKErrorDiag("Failed to parse Kibana security role response", fmt.Sprintf("JSON decode error: %s. Body: %s", err.Error(), string(resp.Body)))
+			return nil, fwdiag.Diagnostics{
+				fwdiag.NewErrorDiagnostic(
+					"Failed to parse Kibana security role response",
+					fmt.Sprintf("JSON decode error: %s. Body: %s", err.Error(), string(resp.Body)),
+				),
+			}
 		}
 		return &role, nil
 	case http.StatusNotFound:
 		return nil, nil
 	default:
-		return nil, diagutil.SDKDiagsFromFramework(diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body))
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
 // PutSecurityRole creates or updates a Kibana security role using the supplied body.
 // It uses the WithBody variant so that the kbapi union type for kibana.base is bypassed
 // and the body is sent as-is.
-func PutSecurityRole(ctx context.Context, client *Client, name string, params kbapi.PutSecurityRoleNameParams, body SecurityRolePutBody) sdkdiag.Diagnostics {
+func PutSecurityRole(ctx context.Context, client *Client, name string, params kbapi.PutSecurityRoleNameParams, body SecurityRolePutBody) fwdiag.Diagnostics {
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
-		return diagutil.SDKErrorDiag("Failed to serialize Kibana security role", err.Error())
+		return fwdiag.Diagnostics{
+			fwdiag.NewErrorDiagnostic("Failed to serialize Kibana security role", err.Error()),
+		}
 	}
 
 	resp, err := client.API.PutSecurityRoleNameWithBodyWithResponse(ctx, name, &params, "application/json", bytes.NewReader(bodyBytes))
 	if err != nil {
-		return diagutil.SDKErrorDiag("Failed to write Kibana security role", err.Error())
+		return fwdiag.Diagnostics{
+			fwdiag.NewErrorDiagnostic("Failed to write Kibana security role", err.Error()),
+		}
 	}
 
 	switch resp.StatusCode() {
 	case http.StatusOK, http.StatusNoContent:
 		return nil
 	default:
-		return diagutil.SDKDiagsFromFramework(diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body))
+		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
 // DeleteSecurityRole deletes a Kibana security role by name.
-func DeleteSecurityRole(ctx context.Context, client *Client, name string) sdkdiag.Diagnostics {
+func DeleteSecurityRole(ctx context.Context, client *Client, name string) fwdiag.Diagnostics {
 	resp, err := client.API.DeleteSecurityRoleNameWithResponse(ctx, name)
 	if err != nil {
-		return diagutil.SDKErrorDiag("Failed to delete Kibana security role", err.Error())
+		return fwdiag.Diagnostics{
+			fwdiag.NewErrorDiagnostic("Failed to delete Kibana security role", err.Error()),
+		}
 	}
 
-	return diagutil.SDKDiagsFromFramework(diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNoContent, http.StatusNotFound))
+	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNoContent, http.StatusNotFound)
 }

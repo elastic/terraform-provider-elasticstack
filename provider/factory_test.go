@@ -18,7 +18,7 @@
 package provider_test
 
 import (
-	"context"
+	"fmt"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -27,19 +27,17 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-func TestMuxServer(t *testing.T) {
+func TestProtoV6ProviderServerFactory(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: map[string]func() (tfprotov6.ProviderServer, error){
 					"elasticstack": func() (tfprotov6.ProviderServer, error) {
-						version := "acceptance_test"
-						server, err := provider.ProtoV6ProviderServerFactory(context.Background(), version)
-						if err != nil {
-							return nil, err
+						server := provider.ProtoV6ProviderServerFactory("acceptance_test")()
+						if server == nil {
+							return nil, fmt.Errorf("provider server factory returned nil")
 						}
-
-						return server(), nil
+						return server, nil
 					},
 				},
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),

@@ -157,9 +157,9 @@ provider "elasticstack" {
 
 ### Optional
 
-- `elasticsearch` (Block List, Max: 1) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch))
-- `fleet` (Block List, Max: 1) Fleet connection configuration block. (see [below for nested schema](#nestedblock--fleet))
-- `kibana` (Block List, Max: 1) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana))
+- `elasticsearch` (Block List) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch))
+- `fleet` (Block List) Fleet connection configuration block. (see [below for nested schema](#nestedblock--fleet))
+- `kibana` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana))
 
 <a id="nestedblock--elasticsearch"></a>
 ### Nested Schema for `elasticsearch`

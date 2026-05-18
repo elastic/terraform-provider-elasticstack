@@ -23,7 +23,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
@@ -53,8 +52,9 @@ func updateSpace(ctx context.Context, client *clients.KibanaScopedClient, resour
 		body.Solution = sol
 	}
 
-	_, sdkDiags := kibanaoapi.UpdateSpace(ctx, oapiClient, resourceID, body)
-	diags := diagutil.FrameworkDiagsFromSDK(sdkDiags)
+	_, apiDiags := kibanaoapi.UpdateSpace(ctx, oapiClient, resourceID, body)
+	var diags diag.Diagnostics
+	diags.Append(apiDiags...)
 	if diags.HasError() {
 		return plan, diags
 	}

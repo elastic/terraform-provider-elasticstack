@@ -121,7 +121,7 @@ func Test_validateDataStreamOptionsVersion(t *testing.T) {
 			diags := validateDataStreamOptionsVersion(v, tt.templ)
 			if tt.wantErr {
 				require.True(t, diags.HasError(), "expected error diagnostic")
-				require.Contains(t, diags[0].Summary, tt.errContains)
+				require.Contains(t, diags[0].Summary(), tt.errContains)
 			} else {
 				require.False(t, diags.HasError(), "unexpected error: %v", diags)
 			}
