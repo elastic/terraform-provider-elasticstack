@@ -60,13 +60,13 @@
 - [x] 7.5 Update `internal/clients/kibanaoapi/status_test.go`: change assertions from `sdkdiag.Diagnostics` to `fwdiag.Diagnostics`
 - [x] 7.6 Update `internal/clients/kibanaoapi/security_role_test.go`: change assertions from `sdkdiag.Diagnostics` to `fwdiag.Diagnostics`
 - [x] 7.7 Search for any other test files referencing removed SDK functions and update/remove
-- [ ] 7.8 Verify `go test ./provider/... ./internal/clients/kibanaoapi/...` passes
+- [x] 7.8 Verify `go test ./provider/... ./internal/clients/kibanaoapi/...` passes
 
 ## 8. Final verification
 
 - [x] 8.1 Run `make build` at project root
-- [ ] 8.2 Run `make check-lint`
+- [x] 8.2 Run `make check-lint`
 - [x] 8.3 Search for remaining references to `terraform-plugin-sdk/v2/diag` in non-test production code; verify all are legitimate (e.g., only in test files or truly necessary)
 - [x] 8.4 Search for remaining references to `schema.ResourceData` in non-test production code; verify all are legitimate
-- [ ] 8.5 Run acceptance tests for affected kibana resources (`security_role`, `spaces`, `connectors`) against a running stack
+- [x] 8.5 Run acceptance tests for affected kibana resources (`security_role`, `spaces`, `connectors`) against a running stack
 - [x] 8.6 Verify `go mod tidy` produces a clean diff with no unexpected re-adds
