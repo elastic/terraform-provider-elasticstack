@@ -25,6 +25,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -37,6 +38,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/scripts/changelog/internal/engine"
 	"github.com/elastic/terraform-provider-elasticstack/scripts/changelog/internal/evidence"
 	"github.com/elastic/terraform-provider-elasticstack/scripts/changelog/internal/githubx"
+	"github.com/elastic/terraform-provider-elasticstack/scripts/changelog/internal/prcheck"
 	"github.com/elastic/terraform-provider-elasticstack/scripts/changelog/internal/prmgmt"
 	"github.com/google/go-github/v86/github"
 )
@@ -448,10 +450,99 @@ func cmdRefreshReleasePR(args []string, stderr io.Writer) error {
 }
 
 func cmdValidatePRSection(args []string, stderr io.Writer) error {
+	ctx := context.Background()
 	fs := flag.NewFlagSet("validate-pr-section", flag.ContinueOnError)
 	fs.SetOutput(stderr)
+	prNumberFlag := fs.Int("pr-number", 0,
+		"pull request number (defaults to pull_request.number from $GITHUB_EVENT_PATH when set)")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
-	return errors.New("not yet implemented: validate-pr-section")
+
+	prNumber := *prNumberFlag
+	if prNumber <= 0 {
+		n, perr := githubx.OptionalPullRequestNumberFromEventPath(os.Getenv(githubx.EnvGitHubEventPath))
+		if perr != nil {
+			return fmt.Errorf("validate-pr-section: parse event: %w", perr)
+		}
+		prNumber = n
+	}
+	if prNumber <= 0 {
+		return errors.New("validate-pr-section: missing pull request number (use --pr-number or a pull_request payload in GITHUB_EVENT_PATH)")
+	}
+
+	owner, repo, err := githubx.OwnerRepoFromEnv()
+	if err != nil {
+		return fmt.Errorf("validate-pr-section: github repository env: %w", err)
+	}
+
+	token := strings.TrimSpace(githubx.GitHubToken())
+	if token == "" {
+		return errors.New("validate-pr-section: missing GITHUB_TOKEN")
+	}
+
+	client, err := githubx.NewGitHubClient(ctx, token)
+	if err != nil {
+		return fmt.Errorf("validate-pr-section: github client: %w", err)
+	}
+
+	verdict, err := prcheck.Validate(ctx, prcheck.ValidateOptions{
+		Owner:   owner,
+		Repo:    repo,
+		Number:  prNumber,
+		Fetcher: &pullRequestFetcher{client: client},
+	})
+	if err != nil {
+		return fmt.Errorf("validate-pr-section: %w", err)
+	}
+
+	resultJSON, err := json.Marshal(verdict)
+	if err != nil {
+		return fmt.Errorf("validate-pr-section: marshal verdict: %w", err)
+	}
+
+	if outPath := githubx.GitHubOutputPath(); outPath != "" {
+		if err := githubx.AppendGitHubOutput(outPath, "result_json", string(resultJSON)); err != nil {
+			return fmt.Errorf("validate-pr-section: write GITHUB_OUTPUT result_json: %w", err)
+		}
+	}
+
+	if verdict.Status == prcheck.StatusFail {
+		return fmt.Errorf("validate-pr-section: changelog check failed:\n%s", strings.Join(verdict.Errors, "\n"))
+	}
+
+	return nil
+}
+
+// pullRequestFetcher implements prcheck.PullRequestFetcher using go-github REST pull requests.
+type pullRequestFetcher struct {
+	client *github.Client
+}
+
+func (f *pullRequestFetcher) GetPullRequest(ctx context.Context, owner, repo string, number int) (*prcheck.PullRequest, error) {
+	if f == nil || f.client == nil {
+		return nil, errors.New("pull request fetcher requires github client")
+	}
+	pr, _, err := f.client.PullRequests.Get(ctx, owner, repo, number)
+	if err != nil {
+		return nil, err
+	}
+	body := ""
+	if pr.Body != nil {
+		body = *pr.Body
+	}
+	labelNames := make([]string, 0, len(pr.Labels))
+	for _, l := range pr.Labels {
+		if l == nil {
+			continue
+		}
+		if n := strings.TrimSpace(l.GetName()); n != "" {
+			labelNames = append(labelNames, n)
+		}
+	}
+	return &prcheck.PullRequest{
+		Number: pr.GetNumber(),
+		Body:   body,
+		Labels: labelNames,
+	}, nil
 }

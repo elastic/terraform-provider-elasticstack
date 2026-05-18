@@ -47,9 +47,9 @@
 
 ## 7. Implement PR-body validator
 
-- [ ] 7.1 Implement `internal/prcheck/validate.go` reproducing `lib/pr-changelog-check.js` + `pr-changelog-check/check.js`: load PR body via go-github, parse via `internal/section`, apply `no-changelog` label suppression, format the verdict payload.
-- [ ] 7.2 Wire `validate-pr-section` subcommand in `main.go`; emit the `result_json` (or equivalent existing key) via `$GITHUB_OUTPUT` so downstream YAML expressions remain valid.
-- [ ] 7.3 Port test cases from `lib/pr-changelog-check.test.mjs` and any `pr-changelog-check/*.test.mjs` into `internal/prcheck/validate_test.go` table tests covering each customer-impact variant, missing/empty summary, and `no-changelog` suppression.
+- [x] 7.1 Implement `internal/prcheck/validate.go` reproducing `lib/pr-changelog-check.js` + `pr-changelog-check/check.js`: load PR body via go-github, parse via `internal/section`, apply `no-changelog` label suppression, format the verdict payload.
+- [x] 7.2 Wire `validate-pr-section` subcommand in `main.go`; emit the `result_json` (or equivalent existing key) via `$GITHUB_OUTPUT` so downstream YAML expressions remain valid.
+- [x] 7.3 Port test cases from `lib/pr-changelog-check.test.mjs` and any `pr-changelog-check/*.test.mjs` into `internal/prcheck/validate_test.go` table tests covering each customer-impact variant, missing/empty summary, and `no-changelog` suppression.
 
 ## 8. Switch workflows over and delete JS
 
