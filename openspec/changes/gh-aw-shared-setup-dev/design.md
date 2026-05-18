@@ -39,8 +39,8 @@ The current duplication matrix shows the same four tool installations across the
 ### 3. `make setup` subsumes `npm ci`
 **Rationale**: `change-factory-issue` and `research-factory-issue` ran `npm ci` directly. `make setup` includes `setup-openspec` which runs `npm ci`. Replacing `npm ci` with `make setup` is consistent and adds negligible overhead (Go tooling already installed by the shared step anyway).
 
-### 4. `shared/setup-dev.yml` lives inside `.github/workflows/shared/`
-**Rationale**: GH-AW resolves `shared/setup-dev.yml` from `.github/workflows/` when imported from `.github/workflows-src/*/workflow.md.tmpl`. The `shared/` convention aligns with GH-AW documentation examples. The file has no `on:` field so it is validated but never compiled into a standalone workflow.
+### 4. `shared/setup-dev.md` lives inside `.github/workflows/shared/`
+**Rationale**: GH-AW resolves `shared/setup-dev.md` from `.github/workflows/` when imported from `.github/workflows-src/*/workflow.md.tmpl`. The `shared/` convention aligns with GH-AW documentation examples. The file has no `on:` field so it is validated but never compiled into a standalone workflow.
 
 ### 5. Remove Elastic Stack steps entirely
 **Rationale**: The steps (`make docker-fleet`, `make set-kibana-password`, etc.) assume a Docker Compose environment where the agent can reach Elasticsearch/Kibana. In practice, agents run in a chroot with isolated networking. Removing them eliminates misleading infrastructure setup that the agent cannot use. If Elastic Stack access is needed later, it should be designed as a separate shared import that sets up network-accessible services correctly.
@@ -57,9 +57,9 @@ The current duplication matrix shows the same four tool installations across the
 
 ## Migration Plan
 
-1. Create `.github/workflows/shared/setup-dev.yml`
+1. Create `.github/workflows/shared/setup-dev.md`
 2. Modify each `.md.tmpl`:
-   - Add `imports: [shared/setup-dev.yml]` to frontmatter
+   - Add `imports: [shared/setup-dev.md]` to frontmatter
    - Delete all agent-phase setup steps (Go, TF, Node, chroot export, make setup, npm ci, Elastic Stack)
 3. Run `make compile-workflows` to regenerate `.md` files
 4. Run `gh aw compile` (or let CI do it) to regenerate `.lock.yml` files
