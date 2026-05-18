@@ -69,14 +69,16 @@ func ListIssueComments(ctx context.Context, client *github.Client, owner, repo s
 
 // CreateIssueComment adds a comment to issueNumber.
 func CreateIssueComment(ctx context.Context, client *github.Client, owner, repo string, issueNumber int, body string) error {
-	in := &github.IssueComment{Body: github.Ptr(body)}
+	bodyCopy := body
+	in := &github.IssueComment{Body: &bodyCopy}
 	_, _, err := client.Issues.CreateComment(ctx, owner, repo, issueNumber, in)
 	return err
 }
 
 // UpdateIssueComment edits an existing issue comment's body.
 func UpdateIssueComment(ctx context.Context, client *github.Client, owner, repo string, commentID int64, body string) error {
-	edit := &github.IssueComment{Body: github.Ptr(body)}
+	bodyCopy := body
+	edit := &github.IssueComment{Body: &bodyCopy}
 	_, _, err := client.Issues.EditComment(ctx, owner, repo, commentID, edit)
 	return err
 }
