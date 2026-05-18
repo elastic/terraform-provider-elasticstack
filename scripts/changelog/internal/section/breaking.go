@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"regexp"
 	"strings"
+	"unicode"
 )
 
 var breakingEndMarkerRE = regexp.MustCompile(`^\s*<!--\s*/breaking-changes\s*-->\s*$`)
@@ -52,13 +53,14 @@ func ExtractBreakingChanges(changelogSection string) (string, bool) {
 			continue
 		}
 
-		if fenceType == 0 && bytes.HasPrefix(line, []byte("```")) {
+		switch {
+		case fenceType == 0 && bytes.HasPrefix(line, []byte("```")):
 			fenceType = '`'
-		} else if fenceType == 0 && bytes.HasPrefix(line, []byte("~~~")) {
+		case fenceType == 0 && bytes.HasPrefix(line, []byte("~~~")):
 			fenceType = '~'
-		} else if fenceType == '`' && bytes.HasPrefix(line, []byte("```")) {
+		case fenceType == '`' && bytes.HasPrefix(line, []byte("```")):
 			fenceType = 0
-		} else if fenceType == '~' && bytes.HasPrefix(line, []byte("~~~")) {
+		case fenceType == '~' && bytes.HasPrefix(line, []byte("~~~")):
 			fenceType = 0
 		}
 
@@ -110,16 +112,12 @@ func isMarkdownSpaceASCII(c byte) bool {
 }
 
 func trimRightMarkdownWhitespace(b []byte) []byte {
-	out := bytes.TrimRightFunc(b, func(r rune) bool {
-		// Mirrors JS markdown-ish trimEnd for these bodies: treat common whitespace as trimmed.
-		return r == '\n' || r == '\r' || r == '\t' || r == '\f' || r == '\v' || r == ' '
-	})
-	return out
+	return bytes.TrimRightFunc(b, unicode.IsSpace)
 }
 
 // BreakingHeadingPresent reports whether changelogSection contains a ### Breaking changes heading line.
 func BreakingHeadingPresent(changelogSection string) bool {
-	for _, ls := range strings.Split(changelogSection, "\n") {
+	for ls := range strings.SplitSeq(changelogSection, "\n") {
 		line := strings.TrimSuffix(ls, "\r")
 		if breakingHeadingAtLineStart.MatchString(line) {
 			return true
