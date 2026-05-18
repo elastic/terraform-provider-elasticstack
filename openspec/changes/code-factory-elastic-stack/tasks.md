@@ -46,7 +46,29 @@
 
 - [ ] 7.1 Merge workflow infrastructure changes to `main` (required for `safe_outputs` on agent-created PRs)
 - [ ] 7.2 Trigger `reproducer-factory-issue` workflow via `workflow_dispatch` with a test issue number
-- [ ] 7.3 Verify the agent sandbox can `curl http://host.docker.internal:9200` and `curl http://host.docker.internal:5601`
+- [ ] 7.3 Verify the agent sandbox can `curl http://host.docker.internal:9201` and `curl http://host.docker.internal:5602` (proxy ports)
 - [ ] 7.4 Verify the agent sandbox can run `terraform --version`
 - [ ] 7.5 Verify acceptance tests (`TF_ACC=1`) can execute successfully against the stack
 - [ ] 7.6 If any step fails, capture logs and iterate
+
+## 8. Fix agent prompt port references and outdated "blocked" language
+
+- [x] 8.1 Update `code-factory-issue.md` agent prompt:
+  - Change test endpoints from `host.docker.internal:9200` to `host.docker.internal:9201`
+  - Change test endpoints from `host.docker.internal:5601` to `host.docker.internal:5602`
+  - Change verification task from "Do not run acceptance tests" to "Run targeted acceptance tests"
+  - Change guardrail from "Do not run acceptance tests" to "Run targeted acceptance tests"
+- [x] 8.2 Update `reproducer-factory-issue.md` agent prompt:
+  - Rewrite "Test environment" to say stack IS provisioned and tests CAN be run
+  - Change endpoints to proxy ports `9201` and `5602`
+  - Change task step 4 from "Do not run" to "Run the acceptance test"
+  - Update outcome-A description to say test was verified against live stack
+- [x] 8.3 Update `shared/elastic-stack.md` documentation to reference proxy ports
+
+## 9. Fix OpenSpec spec metadata
+
+- [x] 9.1 Change `ci-code-factory-elastic-stack-test-environment/spec.md` header from `## MODIFIED Requirements` to `## ADDED Requirements`
+- [x] 9.2 Fix port references in all spec scenarios to use proxy ports (`9201`, `5602`)
+- [x] 9.3 Add requirement for new capability spec delta directories
+- [x] 9.4 Fix `ci-code-factory-issue-intake/spec.md` port references to proxy ports
+- [x] 9.5 Update `proposal.md` to mention new capability spec delta directories

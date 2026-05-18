@@ -440,9 +440,20 @@ If you are running short on time, prefer emitting a **partial-but-valid** `updat
 
 ## Test environment
 
-The Elastic Stack is **not provisioned** in the agent environment — the provisioning steps (`make docker-fleet`, `make set-kibana-password`, `make create-es-api-key`, `make setup-kibana-fleet`) were intentionally removed because the AWF network policy blocks access from the agent's chroot sandbox. Do **not** attempt to run `TF_ACC=1` acceptance tests; they will fail with connection errors.
+The Elastic Stack is provisioned in the agent environment. Run targeted acceptance tests with:
 
-Route outcomes via static analysis alone (see the decision tree in **Task**).
+```bash
+ELASTICSEARCH_ENDPOINTS=http://host.docker.internal:9201 \
+ELASTICSEARCH_USERNAME=elastic \
+ELASTICSEARCH_PASSWORD=password \
+KIBANA_ENDPOINT=http://host.docker.internal:5602 \
+TF_ACC=1 \
+go test -v -run TestAccReproduceIssue${{ needs.pre_activation.outputs.issue_number }} ./path/to/package
+```
+
+The proxy services (`es-proxy` on 9201, `kb-proxy` on 5602) bridge to the actual
+stack. Use these proxy ports; direct ports 9200/5601 are blocked by the AWF
+firewall.
 
 ## Elastic documentation
 
@@ -457,10 +468,10 @@ Follow this decision tree end-to-end for **issue #${{ needs.pre_activation.outpu
 1. **Read** the issue title (`${{ needs.pre_activation.outputs.issue_title }}`), body, comment history, and prior reproducer comment (if present) thoroughly.
 2. **Identify resource scope** and choose the test file location using **Test file placement**.
 3. **Write** `TestAccReproduceIssue${{ needs.pre_activation.outputs.issue_number }}` using `resource.TestStep` with `ExpectError` or `ExpectNonEmptyPlan` (as appropriate) to assert the failure described in the issue.
-4. **Do not run** the acceptance test — tests are blocked by a known AWF network policy issue (see **Test environment**). Route by what you can determine from static analysis and issue evidence alone.
+4. **Run** the acceptance test against the live Elastic Stack (see **Test environment**). If the test passes with `ExpectError` or `ExpectNonEmptyPlan`, the failure is reproduced. If it fails for a different reason, iterate on the config. If it passes unexpectedly, consider outcome C.
 5. **Route by result:**
-   - **Strong static evidence of the bug** (e.g. code clearly shows the reported failure path, schema mis-match, missing attribute handling) → **Outcome A (reproduced)**
-     Emit `update-reproducer-comment` with the outcome-A body, then emit `create-pull-request` on branch `reproducer-factory/issue-${{ needs.pre_activation.outputs.issue_number }}`. The PR body **MUST** include `Related to #${{ needs.pre_activation.outputs.issue_number }}` (do **not** use `Closes`). Note in the comment that the test was not verified against a live stack due to AWF network policy.
+   - **Test reproduces the failure** (`ExpectError` or `ExpectNonEmptyPlan` passes against the live stack) → **Outcome A (reproduced)**
+     Emit `update-reproducer-comment` with the outcome-A body, then emit `create-pull-request` on branch `reproducer-factory/issue-${{ needs.pre_activation.outputs.issue_number }}`. The PR body **MUST** include `Related to #${{ needs.pre_activation.outputs.issue_number }}` (do **not** use `Closes`).
    - **Cannot build a credible test config or cannot determine from static analysis** → **Outcome B (cannot reproduce)**
      Emit `update-reproducer-comment` with the outcome-B body. **Do not** emit `create-pull-request`.
    - **Static analysis suggests the issue no longer applies** (e.g. recently merged fix, code path changed) → **Outcome C (appears fixed)**

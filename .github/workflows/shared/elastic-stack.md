@@ -48,5 +48,7 @@ steps:
 
 Starts Elasticsearch and Kibana (with Fleet) via Docker Compose, then configures
 credentials and an API key. Exposes the stack to the AWF agentic sandbox through
-socat proxy services so the agent can reach `host.docker.internal:9200` and
-`host.docker.internal:5601`.
+socat proxy services so the agent can reach the stack via
+`host.docker.internal:9201` (Elasticsearch) and `host.docker.internal:5602`
+(Kibana). The proxies listen on AWF-allowed ports and forward to the actual
+stack ports (9200/5601) on the Docker host..

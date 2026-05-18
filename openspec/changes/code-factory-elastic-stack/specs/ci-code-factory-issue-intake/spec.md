@@ -32,16 +32,16 @@ The `code-factory` workflow SHALL configure the Elastic docs MCP server as an HT
 - **THEN** the workflow frontmatter SHALL include `mcp-servers.elastic-docs` with `url: https://www.elastic.co/docs/_mcp/`
 
 ### Requirement: Implementation agent can run acceptance tests against the Elastic Stack
-The `code-factory` workflow SHALL import `shared/elastic-stack.md` so that the Elastic Stack (Elasticsearch and Kibana) is provisioned and reachable from within the AWF agentic sandbox. The agent prompt SHALL describe the test environment using the standard stack ports (`9200` for Elasticsearch, `5601` for Kibana) accessed via `host.docker.internal`, and SHALL instruct the agent that acceptance tests are runnable.
+The `code-factory` workflow SHALL import `shared/elastic-stack.md` so that the Elastic Stack (Elasticsearch and Kibana) is provisioned and reachable from within the AWF agentic sandbox. The agent prompt SHALL describe the test environment using the proxy ports (`9201` for Elasticsearch, `5602` for Kibana) accessed via `host.docker.internal`, and SHALL instruct the agent that acceptance tests are runnable.
 
 #### Scenario: Agent runs acceptance tests against the live stack
 - **WHEN** the implementation agent reaches the acceptance test verification step
-- **THEN** the agent SHALL connect to Elasticsearch at `http://host.docker.internal:9200` and Kibana at `http://host.docker.internal:5601` for test execution
+- **THEN** the agent SHALL connect to Elasticsearch at `http://host.docker.internal:9201` and Kibana at `http://host.docker.internal:5602` for test execution
 - **AND** `TF_ACC=1` acceptance tests SHALL be expected to pass when correctly implemented
 
 #### Scenario: Agent prompt reflects a reachable test environment
 - **WHEN** the implementation agent reads the test environment instructions in the agent prompt
-- **THEN** the prompt SHALL describe the Elastic Stack as provisioned and reachable via `host.docker.internal` on its standard ports
+- **THEN** the prompt SHALL describe the Elastic Stack as provisioned and reachable via `host.docker.internal` on its proxy ports (`9201` for Elasticsearch, `5602` for Kibana)
 - **AND** the prompt SHALL NOT state that acceptance tests are blocked by a network policy issue
 
 ### Requirement: Implementation agent can discover the Terraform CLI
