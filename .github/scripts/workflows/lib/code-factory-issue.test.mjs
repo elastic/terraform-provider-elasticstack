@@ -22,7 +22,6 @@ const { ISSUE_BRANCH_PREFIX, FACTORY_LABEL, DUPLICATE_LINKAGE_MODE } = require('
 
 const workflowPath = path.resolve(__dirname, '../../../workflows/code-factory-issue.md');
 const lockPath = path.resolve(__dirname, '../../../workflows/code-factory-issue.lock.yml');
-const codeFactoryScriptsDir = path.resolve(__dirname, '../code-factory');
 const factoryRunnersDir = path.resolve(__dirname, 'factory-runners');
 
 function makePullRequest(overrides = {}) {
