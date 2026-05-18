@@ -291,7 +291,9 @@ type GatherOptions struct {
 	Now                      func() time.Time
 }
 
-// Gather lists merged PRs in the git range with file lists, mirrors gather-pr-evidence.js + changelog-pr-evidence.js.
+// Gather lists merged PRs in the git range with per-PR files (.github/scripts/workflows/changelog/gather-pr-evidence.js).
+// Per-PR classification and manifest assembly follow buildEvidenceManifest / buildPullRequestEvidence
+// in .github/scripts/workflows/lib/changelog-pr-evidence.js.
 //
 // Returned warnings mirror core.warning from the JS runner (listing commits failed, listing PRs/files failed).
 func Gather(ctx context.Context, opts GatherOptions) (Manifest, []string, error) {

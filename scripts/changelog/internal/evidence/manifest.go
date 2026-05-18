@@ -15,9 +15,9 @@
 // specific language governing permissions and limitations
 // under the License.
 
-// Package evidence builds the changelog release PR evidence manifest
-// (.github/scripts/workflows/lib/changelog-pr-evidence.js +
-// changelog-evidence-manifest.js).
+// Package evidence builds PR evidence manifest JSON (buildEvidenceManifest in
+// .github/scripts/workflows/lib/changelog-pr-evidence.js) and the release artifact
+// plan (buildEvidenceArtifactPlan in .github/scripts/workflows/lib/changelog-evidence-manifest.js).
 package evidence
 
 import (
