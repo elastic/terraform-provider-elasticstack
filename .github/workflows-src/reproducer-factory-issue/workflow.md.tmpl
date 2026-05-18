@@ -374,7 +374,7 @@ safe-outputs:
 
 You reproduce **issue #${{ needs.pre_activation.outputs.issue_number }}** (`${{ needs.pre_activation.outputs.issue_title }}`) labeled `reproducer-factory`. The activation gates below reference this same issue number consistently — treat **`${{ needs.pre_activation.outputs.issue_number }}`** as the authoritative id for test naming, branch names, and `Related to #${{ needs.pre_activation.outputs.issue_number }}` linkage.
 
-Express the reported failure as a passing acceptance test (`ExpectError` or `ExpectNonEmptyPlan`), run it against the live Elastic Stack, and decide one of three outcomes: **reproduced**, **cannot reproduce**, or **appears fixed**. You **MUST** emit exactly one `update-reproducer-comment` safe output on every activation. You **MAY** emit `create-pull-request` **only** for outcome A (reproduced), after the reproducing test passes.
+Express the reported failure as an acceptance test (`ExpectError` or `ExpectNonEmptyPlan`) and decide one of three outcomes: **reproduced**, **cannot reproduce**, or **appears fixed**. You **MUST** emit exactly one `update-reproducer-comment` safe output on every activation. You **MAY** emit `create-pull-request` **only** for outcome A (reproduced).
 
 ## Pre-activation context
 
@@ -405,7 +405,9 @@ If you are running short on time, prefer emitting a **partial-but-valid** `updat
 
 ## Test environment
 
-The Elastic Stack is available in the agent environment. Run targeted acceptance tests with:
+The Elastic Stack is provisioned in the agent environment but **acceptance tests are currently blocked by an AWF network policy issue** — `TF_ACC=1` tests will fail with connection errors. Do not run acceptance tests and do not treat their failure as a blocker. This is a known infrastructure issue being investigated separately.
+
+When the issue is resolved, targeted acceptance tests can be run with:
 
 ```bash
 ELASTICSEARCH_ENDPOINTS=http://host.docker.internal:9200 \
@@ -431,14 +433,14 @@ Follow this decision tree end-to-end for **issue #${{ needs.pre_activation.outpu
 1. **Read** the issue title (`${{ needs.pre_activation.outputs.issue_title }}`), body, comment history, and prior reproducer comment (if present) thoroughly.
 2. **Identify resource scope** and choose the test file location using **Test file placement**.
 3. **Write** `TestAccReproduceIssue${{ needs.pre_activation.outputs.issue_number }}` using `resource.TestStep` with `ExpectError` or `ExpectNonEmptyPlan` (as appropriate) to assert the failure described in the issue.
-4. **Run** the test against the live Elastic Stack using the environment variables in **Test environment**. Iterate on the config if needed.
+4. **Do not run** the acceptance test — tests are blocked by a known AWF network policy issue (see **Test environment**). Route by what you can determine from static analysis and issue evidence alone.
 5. **Route by result:**
-   - **PASS** with the failure assertion in place → **Outcome A (reproduced)**  
-     Emit `update-reproducer-comment` with the outcome-A body, then emit `create-pull-request` on branch `reproducer-factory/issue-${{ needs.pre_activation.outputs.issue_number }}`. The PR body **MUST** include `Related to #${{ needs.pre_activation.outputs.issue_number }}` (do **not** use `Closes`).
-   - **FAIL** because you cannot build a credible config or the environment/test setup does not support demonstrating the issue after reasonable iteration → **Outcome B (cannot reproduce)**  
+   - **Strong static evidence of the bug** (e.g. code clearly shows the reported failure path, schema mis-match, missing attribute handling) → **Outcome A (reproduced)**
+     Emit `update-reproducer-comment` with the outcome-A body, then emit `create-pull-request` on branch `reproducer-factory/issue-${{ needs.pre_activation.outputs.issue_number }}`. The PR body **MUST** include `Related to #${{ needs.pre_activation.outputs.issue_number }}` (do **not** use `Closes`). Note in the comment that the test was not verified against a live stack due to AWF network policy.
+   - **Cannot build a credible test config or cannot determine from static analysis** → **Outcome B (cannot reproduce)**
      Emit `update-reproducer-comment` with the outcome-B body. **Do not** emit `create-pull-request`.
-   - **FAIL** specifically because the expected error never fired (`ExpectError` did not match, or the failure condition did not occur) → try running **without** `ExpectError` / failure assertion. If the test **passes cleanly**, treat as **Outcome C (appears fixed)**  
-     Emit `update-reproducer-comment` with the outcome-C body, including the test configuration (inline or fenced), test output showing no matching error, and any relevant recent git history. **Do not** emit `create-pull-request`.
+   - **Static analysis suggests the issue no longer applies** (e.g. recently merged fix, code path changed) → **Outcome C (appears fixed)**
+     Emit `update-reproducer-comment` with the outcome-C body, including the test configuration (inline or fenced), evidence from code/git history that the failure condition no longer applies. **Do not** emit `create-pull-request`.
 
 ## Test file placement
 
