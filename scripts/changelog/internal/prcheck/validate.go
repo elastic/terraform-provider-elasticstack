@@ -120,7 +120,7 @@ func Validate(ctx context.Context, opts ValidateOptions) (Verdict, error) {
 
 	pr, err := opts.Fetcher.GetPullRequest(ctx, opts.Owner, opts.Repo, opts.Number)
 	if err != nil {
-		return Verdict{}, err
+		return Verdict{}, fmt.Errorf("fetch pull request #%d: %w", opts.Number, err)
 	}
 
 	if slices.Contains(pr.Labels, label) {

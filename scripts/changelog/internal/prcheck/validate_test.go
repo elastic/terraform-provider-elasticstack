@@ -90,10 +90,14 @@ func TestValidate_options_and_fetch_errors(t *testing.T) {
 	t.Run("fetcher error", func(t *testing.T) {
 		t.Parallel()
 		o := baseOpts()
-		o.Fetcher = stubFetcher{err: errors.New("network down")}
+		sentinel := errors.New("network down")
+		o.Fetcher = stubFetcher{err: sentinel}
 		_, err := prcheck.Validate(ctx, o)
-		if err == nil || !strings.Contains(err.Error(), "network down") {
-			t.Fatalf("expected network error, got %#v", err)
+		if err == nil || !strings.Contains(err.Error(), "fetch pull request #1") || !strings.Contains(err.Error(), "network down") {
+			t.Fatalf("expected wrapped fetch error, got %#v", err)
+		}
+		if !errors.Is(err, sentinel) {
+			t.Fatalf("errors.Is sentinel: expected true, got err=%v", err)
 		}
 	})
 }
