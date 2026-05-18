@@ -73,6 +73,9 @@ type labelCall struct {
 
 type stubChangelogREST struct {
 	listResult []prmgmt.PullRequestRef
+	listErr    error
+	updateErr  error
+	createErr  error
 
 	updateCalls []pullUpdateCall
 	createCalls []pullCreateCall
@@ -82,15 +85,24 @@ type stubChangelogREST struct {
 }
 
 func (s *stubChangelogREST) ListOpenPullRequestsByHead(context.Context, string, string, string, string) ([]prmgmt.PullRequestRef, error) {
+	if s.listErr != nil {
+		return nil, s.listErr
+	}
 	return s.listResult, nil
 }
 
 func (s *stubChangelogREST) CreatePullRequest(_ context.Context, _, _ string, title, body, head, base string) (*prmgmt.PullRequestRef, error) {
+	if s.createErr != nil {
+		return nil, s.createErr
+	}
 	s.createCalls = append(s.createCalls, pullCreateCall{title: title, body: body, head: head, base: base})
 	return &prmgmt.PullRequestRef{Number: 7, URL: "https://github.com/org/repo/pull/7"}, nil
 }
 
 func (s *stubChangelogREST) UpdatePullRequestBody(_ context.Context, _, _ string, number int, body string) error {
+	if s.updateErr != nil {
+		return s.updateErr
+	}
 	s.updateCalls = append(s.updateCalls, pullUpdateCall{number: number, body: body})
 	return nil
 }
@@ -232,4 +244,64 @@ func TestManageUnreleasedPR_labelsFailAfterUpdate_warnsWithoutError(t *testing.T
 
 func fixedClock(ts time.Time) func() time.Time {
 	return func() time.Time { return ts }
+}
+
+func TestManageUnreleasedPR_listError_returnsError(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	listErr := errors.New("list failed")
+	st := &stubChangelogREST{listErr: listErr}
+
+	_, err := prmgmt.ManageUnreleasedPR(ctx, prmgmt.ManageUnreleasedOptions{
+		Owner: "o", Repo: "r", GitHub: st, Now: fixedClock(time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)),
+	})
+	if err == nil || !strings.Contains(err.Error(), "list open pull requests") {
+		t.Fatalf("got err=%v", err)
+	}
+	if !errors.Is(err, listErr) {
+		t.Fatalf("expected wrapped listErr, got %v", err)
+	}
+	if len(st.createCalls) != 0 || len(st.updateCalls) != 0 {
+		t.Fatalf("unexpected side effects %#v %#v", st.createCalls, st.updateCalls)
+	}
+}
+
+func TestManageUnreleasedPR_updateExistingError_returnsError(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	updErr := errors.New("update failed")
+	st := &stubChangelogREST{
+		listResult: []prmgmt.PullRequestRef{{Number: 1, URL: "u"}},
+		updateErr:  updErr,
+	}
+
+	_, err := prmgmt.ManageUnreleasedPR(ctx, prmgmt.ManageUnreleasedOptions{
+		Owner: "o", Repo: "r", GitHub: st, Now: fixedClock(time.Date(2020, 1, 2, 0, 0, 0, 0, time.UTC)),
+	})
+	if err == nil || !strings.Contains(err.Error(), "update pull request body") {
+		t.Fatalf("got err=%v", err)
+	}
+	if !errors.Is(err, updErr) {
+		t.Fatalf("expected wrapped updErr, got %v", err)
+	}
+}
+
+func TestManageUnreleasedPR_createError_returnsError(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	crErr := errors.New("create failed")
+	st := &stubChangelogREST{listResult: nil, createErr: crErr}
+
+	_, err := prmgmt.ManageUnreleasedPR(ctx, prmgmt.ManageUnreleasedOptions{
+		Owner: "o", Repo: "r", GitHub: st, Now: fixedClock(time.Date(2020, 1, 3, 0, 0, 0, 0, time.UTC)),
+	})
+	if err == nil || !strings.Contains(err.Error(), "create pull request") {
+		t.Fatalf("got err=%v", err)
+	}
+	if !errors.Is(err, crErr) {
+		t.Fatalf("expected wrapped crErr, got %v", err)
+	}
+	if len(st.createCalls) != 0 {
+		t.Fatalf("create should fail before recording success path")
+	}
 }
