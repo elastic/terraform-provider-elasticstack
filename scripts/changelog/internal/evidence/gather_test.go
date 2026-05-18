@@ -116,6 +116,9 @@ func TestSelectMergedPullRequests_orderAndDedup(t *testing.T) {
 	if len(got) != 1 || got[0].Number != 1 {
 		t.Fatalf("got %+v", got)
 	}
+	if got[0].Title != "first" {
+		t.Fatalf("first-wins title: got %q want first", got[0].Title)
+	}
 }
 
 func MergeCand(n int, state string, merged bool, title string) evidence.MergeCandidate {
@@ -171,6 +174,7 @@ type gatherStub struct {
 func (g *gatherStub) GatherMergedPRs(
 	ctx context.Context, owner, repo, compareRange string,
 ) ([]section.MergedPR, []string, error) {
+	_, _, _ = ctx, owner, repo
 	g.GotCompareRange = compareRange
 	if g.Err != nil {
 		return nil, append([]string(nil), g.Warn...), g.Err
@@ -327,15 +331,15 @@ func TestGather_orchestration(t *testing.T) {
 				o.CompareRange = ""
 				return o
 			}(),
-			wantGeneratedAt:  evidence.FormatGeneratedAtISO(fixedNow),
-			wantPRCount:      1,
+			wantGeneratedAt:   evidence.FormatGeneratedAtISO(fixedNow),
+			wantPRCount:       1,
 			wantUF:            1,
 			wantInternal:      0,
 			wantUncertain:     0,
 			wantTargetSection: "## [2.0.0] - 2026-05-01",
 			wantCompareInMan:  "HEAD",
-			assertStubHEAD:   true,
-			checkTitles:      []string{"Only"},
+			assertStubHEAD:    true,
+			checkTitles:       []string{"Only"},
 		},
 	}
 
