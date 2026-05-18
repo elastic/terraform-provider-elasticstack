@@ -53,13 +53,13 @@
 
 ## 8. Switch workflows over and delete JS
 
-- [ ] 8.1 Update `.github/workflows/changelog-generation.yml`: replace each `actions/github-script` step that calls a `lib/changelog-*` or `changelog/*` module with a `run: go run ./scripts/changelog <subcommand>` step; preserve `env:` keys for inputs; remove now-unused `actions/github-script` blocks.
-- [ ] 8.2 Update `.github/workflows/pr-changelog-check.yml`: replace its `actions/github-script` step with `run: go run ./scripts/changelog validate-pr-section`; preserve `env:` plumbing and output key names.
-- [ ] 8.3 Add `actions/setup-go` to each workflow above if not already present (re-using the version pin from `provider.yml`).
-- [ ] 8.4 Run `make workflow-generate` to regenerate any agentic `.lock.yml` files that referenced the deleted JS modules.
-- [ ] 8.5 Delete `.github/scripts/workflows/lib/changelog-*.js`, `.github/scripts/workflows/lib/changelog-*.test.mjs`, `.github/scripts/workflows/changelog/*.js`, `.github/scripts/workflows/lib/pr-changelog-*.js`, `.github/scripts/workflows/lib/pr-changelog-*.test.mjs`, and `.github/scripts/workflows/pr-changelog-check/*.js`.
-- [ ] 8.6 Remove the deleted `.test.mjs` paths from any explicit Makefile enumeration in `workflow-test`.
-- [ ] 8.7 Verify `git grep "lib/changelog-"` and `git grep "pr-changelog-check"` return no hits outside `openspec/` and `CHANGELOG.md` itself.
+- [x] 8.1 Update `.github/workflows/changelog-generation.yml`: replace each `actions/github-script` step that calls a `lib/changelog-*` or `changelog/*` module with a `run: go run ./scripts/changelog <subcommand>` step; preserve `env:` keys for inputs; remove now-unused `actions/github-script` blocks.
+- [x] 8.2 Update `.github/workflows/pr-changelog-check.yml`: replace its `actions/github-script` step with `run: go run ./scripts/changelog validate-pr-section`; preserve `env:` plumbing and output key names.
+- [x] 8.3 Add `actions/setup-go` to each workflow above if not already present (re-using the version pin from `provider.yml`).
+- [x] 8.4 Run `make workflow-generate` to regenerate any agentic `.lock.yml` files that referenced the deleted JS modules.
+- [x] 8.5 Delete `.github/scripts/workflows/lib/changelog-*.js`, `.github/scripts/workflows/lib/changelog-*.test.mjs`, `.github/scripts/workflows/changelog/*.js`, `.github/scripts/workflows/lib/pr-changelog-*.js`, `.github/scripts/workflows/lib/pr-changelog-*.test.mjs`, and `.github/scripts/workflows/pr-changelog-check/*.js`.
+- [x] 8.6 Remove the deleted `.test.mjs` paths from any explicit Makefile enumeration in `workflow-test`.
+- [x] 8.7 Verify `git grep "lib/changelog-"` and `git grep "pr-changelog-check"` return no hits outside `openspec/` and `CHANGELOG.md` itself.
 
 ## 9. Behavioural-parity verification
 
