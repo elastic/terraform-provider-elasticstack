@@ -1,4 +1,4 @@
-# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"20bd80192dc627ab7f0f60585bfb9ffa89ab4f49a3934f914a8edb5f9a3b825f","compiler_version":"v0.72.1","strict":true,"agent_id":"claude","agent_model":"llm-gateway/claude-sonnet-4-6"}
+# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"f0a62be9893f1bfd2a1b46904078befe69781e0fe154d0ced1760288d82db1b3","compiler_version":"v0.72.1","strict":true,"agent_id":"claude","agent_model":"llm-gateway/claude-sonnet-4-6"}
 # gh-aw-manifest: {"version":1,"secrets":["CLAUDE_LITELLM_PROXY_API_KEY","GH_AW_CI_TRIGGER_TOKEN","GH_AW_GITHUB_MCP_SERVER_TOKEN","GH_AW_GITHUB_TOKEN","GITHUB_TOKEN"],"actions":[{"repo":"actions/checkout","sha":"de0fac2e4500dabe0009e67214ff5f5447ce83dd","version":"v6.0.2"},{"repo":"actions/download-artifact","sha":"3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c","version":"v8.0.1"},{"repo":"actions/download-artifact","sha":"d3f86a106a0bac45b974a628896c90dbdf5c8093","version":"v4"},{"repo":"actions/github-script","sha":"3a2844b7e9c422d3c10d287c895573f7108da1b3","version":"v9"},{"repo":"actions/setup-go","sha":"4a3601121dd01d1626a1e23e37211e3254c1c06c","version":"v6"},{"repo":"actions/setup-node","sha":"48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e","version":"v6"},{"repo":"actions/upload-artifact","sha":"043fb46d1a93c77aae656e7c1c64a875d1fc6a0a","version":"v7.0.1"},{"repo":"actions/upload-artifact","sha":"ea165f8d65b6e75b540449e92b4886f43607fa02","version":"v4"},{"repo":"github/gh-aw-actions/setup","sha":"bc56a0cad2f450c562810785ef38649c04db812a","version":"v0.72.1"},{"repo":"hashicorp/setup-terraform","sha":"dfe3c3f87815947d99a8997f908cb6525fc44e9e","version":"v4"}],"containers":[{"image":"ghcr.io/github/gh-aw-firewall/agent:0.25.41"},{"image":"ghcr.io/github/gh-aw-firewall/api-proxy:0.25.41"},{"image":"ghcr.io/github/gh-aw-firewall/squid:0.25.41"},{"image":"ghcr.io/github/gh-aw-mcpg:v0.3.6","digest":"sha256:2bb8eef86006a4c5963c55616a9c51c32f27bfdecb023b8aa6f91f6718d9171c","pinned_image":"ghcr.io/github/gh-aw-mcpg:v0.3.6@sha256:2bb8eef86006a4c5963c55616a9c51c32f27bfdecb023b8aa6f91f6718d9171c"},{"image":"ghcr.io/github/github-mcp-server:v1.0.3","digest":"sha256:2ac27ef03461ef2b877031b838a7d1fd7f12b12d4ace7796d8cad91446d55959","pinned_image":"ghcr.io/github/github-mcp-server:v1.0.3@sha256:2ac27ef03461ef2b877031b838a7d1fd7f12b12d4ace7796d8cad91446d55959"},{"image":"node:lts-alpine","digest":"sha256:d1b3b4da11eefd5941e7f0b9cf17783fc99d9c6fc34884a665f40a06dbdfc94f","pinned_image":"node:lts-alpine@sha256:d1b3b4da11eefd5941e7f0b9cf17783fc99d9c6fc34884a665f40a06dbdfc94f"}]}
 #    ___                   _   _      
 #   / _ \                 | | (_)     
@@ -74,13 +74,17 @@ name: "Code Factory Issue Intake"
     # with:
       # github-token: ${{ secrets.GITHUB_TOKEN }}
       # script: "const mode = context.eventName === 'workflow_dispatch' ? 'dispatch' : 'issue-event';\ncore.setOutput('intake_mode', mode);\ncore.info(`Intake mode: ${mode}`);\n"
-  # - id: qualify_trigger
+  # - env:
+      # FACTORY_NAME: code-factory
+    # id: qualify_trigger
     # if: steps.determine_intake_mode.outputs.intake_mode == 'issue-event'
     # name: Qualify trigger event
     # uses: actions/github-script@v9
     # with:
       # github-token: ${{ secrets.GITHUB_TOKEN }}
-      # script: "/**\n * Code-factory issue intake configuration. Keep `ISSUE_BRANCH_PREFIX` aligned with\n * `workflow.md.tmpl` (`code-factory/issue-${{ github.event.issue.number }}`).\n */\n'use strict';\n\nconst ISSUE_BRANCH_PREFIX = 'code-factory/issue-';\nconst FACTORY_LABEL = 'code-factory';\nconst DUPLICATE_LINKAGE_MODE = 'closes-literal';\nconst ISSUE_OPENED_NOT_ELIGIBLE_REASON =\n  'Issue opened event does not qualify because the issue was created without the code-factory label.';\n\nif (typeof module !== 'undefined') {\n  module.exports = {\n    ISSUE_BRANCH_PREFIX,\n    FACTORY_LABEL,\n    DUPLICATE_LINKAGE_MODE,\n    ISSUE_OPENED_NOT_ELIGIBLE_REASON,\n  };\n}\n\n/**\n * Shared deterministic helpers for code-factory and change-factory issue intake workflows.\n * Workflow-specific configuration is passed via {@link createFactoryIssueIntake}.\n */\n\n/** GitHub-recognized issue-closing keywords (case-insensitive). See https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/using-keywords-in-issues-and-pull-requests */\nconst GITHUB_ISSUE_CLOSING_KEYWORDS = '(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)';\n\n/**\n * GitHub closing-keyword reference: `#` is immediately followed by the issue digits (no whitespace),\n * per GitHub keyword syntax. Case-insensitive keywords; `(?![0-9])` avoids matching `#42` inside `#420`.\n *\n * @param {number} issueNumber\n * @returns {RegExp}\n */\nfunction issueClosingReferencePattern(issueNumber) {\n  return new RegExp(\n    `\\\\b${GITHUB_ISSUE_CLOSING_KEYWORDS}\\\\s*#${issueNumber}(?![0-9])`,\n    'i',\n  );\n}\n\n/**\n * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels: string[] | null | undefined, factoryLabel: string, issueOpenedNotEligibleReason: string }} params\n * @returns {{ event_eligible: boolean, event_eligible_reason: string }}\n */\nfunction factoryQualifyTriggerEvent({\n  eventName,\n  eventAction,\n  labelName,\n  issueLabels,\n  factoryLabel,\n  issueOpenedNotEligibleReason,\n}) {\n  if (eventName === 'issue_comment') {\n    return {\n      event_eligible: true,\n      event_eligible_reason: `Issue comment event qualifies because the slash_command trigger routes to issue_comment.`,\n    };\n  }\n\n  if (eventName !== 'issues') {\n    return {\n      event_eligible: false,\n      event_eligible_reason: `Unsupported event '${eventName || '(empty)'}'; expected 'issues'.`,\n    };\n  }\n\n  if (eventAction === 'labeled') {\n    if (labelName === factoryLabel) {\n      return {\n        event_eligible: true,\n        event_eligible_reason: `Issue labeled event qualifies because the applied label is ${factoryLabel}.`,\n      };\n    }\n\n    return {\n      event_eligible: false,\n      event_eligible_reason: `Issue labeled event does not qualify because the applied label is '${labelName || '(empty)'}', not '${factoryLabel}'.`,\n    };\n  }\n\n  if (eventAction === 'opened') {\n    if (Array.isArray(issueLabels) && issueLabels.includes(factoryLabel)) {\n      return {\n        event_eligible: true,\n        event_eligible_reason: `Issue opened event qualifies because the issue already has the ${factoryLabel} label.`,\n      };\n    }\n\n    return {\n      event_eligible: false,\n      event_eligible_reason: issueOpenedNotEligibleReason,\n    };\n  }\n\n  return {\n    event_eligible: false,\n    event_eligible_reason: `Issue event action '${eventAction || '(empty)'}' is not eligible; expected 'opened' or 'labeled'.`,\n  };\n}\n\n/**\n * @param {{ sender: string, permission: string | null }} params\n * @returns {{ actor_trusted: boolean, actor_trusted_reason: string }}\n */\nfunction factoryCheckActorTrust({ sender, permission }) {\n  if (sender === 'github-actions[bot]') {\n    return {\n      actor_trusted: true,\n      actor_trusted_reason: 'Trigger actor github-actions[bot] is trusted without collaborator permission lookup.',\n    };\n  }\n\n  if (['write', 'maintain', 'admin'].includes(permission)) {\n    return {\n      actor_trusted: true,\n      actor_trusted_reason: `Trigger actor '${sender || '(empty)'}' is trusted with repository permission '${permission}'.`,\n    };\n  }\n\n  return {\n    actor_trusted: false,\n    actor_trusted_reason: `Trigger actor '${sender || '(empty)'}' is not trusted; repository permission '${permission || '(none)'}' does not meet the required write/maintain/admin policy.`,\n  };\n}\n\n/**\n * @returns {{ actor_trusted: boolean, actor_trusted_reason: string }}\n */\nfunction factoryActorTrustWhenSenderMissing() {\n  return {\n    actor_trusted: false,\n    actor_trusted_reason: 'Trigger actor could not be identified; sender login is missing from the event payload.',\n  };\n}\n\n/**\n * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords' }} params\n * @returns {{ duplicate_pr_found: boolean, duplicate_pr_url: string | null, gate_reason: string }}\n */\nfunction factoryCheckDuplicatePR({\n  issueNumber,\n  pullRequests,\n  branchPrefix,\n  prLabel,\n  duplicateLinkageMode,\n}) {\n  const expectedBranch = `${branchPrefix}${issueNumber}`;\n  const expectedClosesExample = `Closes #${issueNumber}`;\n  const expectedRelatedExample = `Related to #${issueNumber}`;\n\n  let bodyPattern;\n  if (duplicateLinkageMode === 'closes-literal') {\n    bodyPattern = new RegExp(`Closes #${issueNumber}(?![0-9])`);\n  } else if (duplicateLinkageMode === 'related-literal') {\n    bodyPattern = new RegExp(`\\\\bRelated to #${issueNumber}(?![0-9])`);\n  } else {\n    bodyPattern = issueClosingReferencePattern(issueNumber);\n  }\n\n  const duplicate = (pullRequests || []).find(pr => (\n    pr.state === 'open' &&\n    Array.isArray(pr.labels) && pr.labels.includes(prLabel) &&\n    pr.head_branch === expectedBranch &&\n    bodyPattern.test(String(pr.body || ''))\n  ));\n\n  if (duplicate) {\n    const url = duplicate.html_url ?? null;\n    let linkagePhrase;\n    if (duplicateLinkageMode === 'closes-literal') {\n      linkagePhrase = `canonical linkage '${expectedClosesExample}'`;\n    } else if (duplicateLinkageMode === 'related-literal') {\n      linkagePhrase = `literal linkage \\`${expectedRelatedExample}\\``;\n    } else {\n      linkagePhrase = `issue-closing reference such as '${expectedClosesExample}'`;\n    }\n\n    return {\n      duplicate_pr_found: true,\n      duplicate_pr_url: url,\n      gate_reason: `Found existing linked ${prLabel} PR #${duplicate.number} (${url ?? '(unknown URL)'}) for issue #${issueNumber} on branch '${expectedBranch}' with ${linkagePhrase}.`,\n    };\n  }\n\n  let linkageTail;\n  if (duplicateLinkageMode === 'closes-literal') {\n    linkageTail = `canonical linkage '${expectedClosesExample}'`;\n  } else if (duplicateLinkageMode === 'related-literal') {\n    linkageTail = `literal linkage \\`${expectedRelatedExample}\\``;\n  } else {\n    linkageTail = `issue-closing reference such as '${expectedClosesExample}'`;\n  }\n\n  return {\n    duplicate_pr_found: false,\n    duplicate_pr_url: null,\n    gate_reason: `No open linked ${prLabel} PR found for issue #${issueNumber}; expected label '${prLabel}', branch '${expectedBranch}', and ${linkageTail}.`,\n  };\n}\n\n/**\n * @param {{ eventEligible: boolean, eventEligibleReason: string, actorTrusted: boolean | null, actorTrustedReason: string | null, duplicatePrFound: boolean | null, duplicatePrUrl: string | null, duplicateCheckGateReason: string | null }} params\n * @param {string} factoryLabel\n * @returns {{ gate_reason: string }}\n */\nfunction factoryComputeGateReason({\n  eventEligible,\n  eventEligibleReason,\n  actorTrusted,\n  actorTrustedReason,\n  duplicatePrFound,\n  duplicatePrUrl,\n  duplicateCheckGateReason,\n}, factoryLabel) {\n  if (!eventEligible) {\n    return { gate_reason: eventEligibleReason };\n  }\n\n  if (actorTrusted === false) {\n    return { gate_reason: actorTrustedReason || 'Trigger actor is not trusted.' };\n  }\n\n  if (actorTrusted == null) {\n    return { gate_reason: 'Actor trust could not be determined; the trust check step did not produce an output.' };\n  }\n\n  if (duplicatePrFound === true) {\n    return {\n      gate_reason: duplicateCheckGateReason || `Found existing linked ${factoryLabel} PR: ${duplicatePrUrl || '(unknown URL)'}.`,\n    };\n  }\n\n  if (duplicatePrFound == null) {\n    return { gate_reason: 'Duplicate PR check did not complete; the check step did not produce an output.' };\n  }\n\n  return {\n    gate_reason: duplicateCheckGateReason || `All deterministic gates passed: event eligible, actor trusted, and no linked ${factoryLabel} PR found.`,\n  };\n}\n\n/**\n * @param {string | undefined} raw\n * @returns {boolean | null}\n */\nfunction factoryParseOptionalTriStateFromEnv(raw) {\n  if (raw == null || raw === '') {\n    return null;\n  }\n  return raw === 'true';\n}\n\n/**\n * @param {Record<string, string | undefined>} env\n */\nfunction factoryParseFinalizeGateEnv(env) {\n  const e = env || {};\n  return {\n    eventEligible: e.EVENT_ELIGIBLE === 'true',\n    eventEligibleReason: e.EVENT_ELIGIBLE_REASON ?? '',\n    actorTrusted: factoryParseOptionalTriStateFromEnv(e.ACTOR_TRUSTED),\n    actorTrustedReason: e.ACTOR_TRUSTED_REASON ?? null,\n    duplicatePrFound: factoryParseOptionalTriStateFromEnv(e.DUPLICATE_PR_FOUND),\n    duplicatePrUrl: e.DUPLICATE_PR_URL && e.DUPLICATE_PR_URL !== '' ? e.DUPLICATE_PR_URL : null,\n    duplicateCheckGateReason: e.DUPLICATE_GATE_REASON ?? null,\n  };\n}\n\n/**\n * @param {{\n *   branchPrefix: string,\n *   factoryLabel: string,\n *   issueOpenedNotEligibleReason: string,\n *   duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords',\n * }} config\n */\nfunction createFactoryIssueIntake(config) {\n  const {\n    branchPrefix,\n    factoryLabel,\n    issueOpenedNotEligibleReason,\n    duplicateLinkageMode,\n  } = config;\n\n  function issueBranchName(issueNumber) {\n    return `${branchPrefix}${issueNumber}`;\n  }\n\n  /**\n   * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels?: string[] | null | undefined }} params\n   */\n  function qualifyTriggerEvent(params) {\n    return factoryQualifyTriggerEvent({\n      ...params,\n      factoryLabel,\n      issueOpenedNotEligibleReason,\n    });\n  }\n\n  function checkDuplicatePR(params) {\n    return factoryCheckDuplicatePR({\n      ...params,\n      branchPrefix,\n      prLabel: factoryLabel,\n      duplicateLinkageMode,\n    });\n  }\n\n  function computeGateReason(params) {\n    return factoryComputeGateReason(params, factoryLabel);\n  }\n\n  return {\n    issueBranchName,\n    qualifyTriggerEvent,\n    checkActorTrust: factoryCheckActorTrust,\n    checkDuplicatePR,\n    computeGateReason,\n  };\n}\n\n/**\n * @param {{\n *   branchPrefix: string,\n *   factoryLabel: string,\n *   issueOpenedNotEligibleReason: string,\n *   duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords',\n *   issueBranchNameAliases?: string[],\n * }} config\n */\nfunction createFactoryIssueModule(config) {\n  const intake = createFactoryIssueIntake(config);\n  const issueBranchNameAliases = config.issueBranchNameAliases || [];\n  const factoryIssueModule = {\n    ...intake,\n    actorTrustWhenSenderMissing: factoryActorTrustWhenSenderMissing,\n    parseOptionalTriStateFromEnv: factoryParseOptionalTriStateFromEnv,\n    parseFinalizeGateEnv: factoryParseFinalizeGateEnv,\n  };\n\n  for (const alias of issueBranchNameAliases) {\n    factoryIssueModule[alias] = intake.issueBranchName;\n  }\n\n  return factoryIssueModule;\n}\n\nif (typeof module !== 'undefined') {\n  module.exports = {\n    issueClosingReferencePattern,\n    factoryQualifyTriggerEvent,\n    factoryCheckActorTrust,\n    factoryActorTrustWhenSenderMissing,\n    factoryCheckDuplicatePR,\n    factoryComputeGateReason,\n    factoryParseOptionalTriStateFromEnv,\n    factoryParseFinalizeGateEnv,\n    createFactoryIssueIntake,\n    createFactoryIssueModule,\n  };\n}\n\n// Concatenated by the workflow compiler; not executable standalone.\nconst factoryIssueModule = createFactoryIssueModule({\n  branchPrefix: ISSUE_BRANCH_PREFIX,\n  factoryLabel: FACTORY_LABEL,\n  issueOpenedNotEligibleReason: ISSUE_OPENED_NOT_ELIGIBLE_REASON,\n  duplicateLinkageMode: DUPLICATE_LINKAGE_MODE,\n});\n\nconst qualifyTriggerEvent = factoryIssueModule.qualifyTriggerEvent;\nconst checkActorTrust = factoryIssueModule.checkActorTrust;\nconst checkDuplicatePR = factoryIssueModule.checkDuplicatePR;\nconst computeGateReason = factoryIssueModule.computeGateReason;\nconst issueBranchName = factoryIssueModule.issueBranchName;\nconst actorTrustWhenSenderMissing = factoryIssueModule.actorTrustWhenSenderMissing;\nconst parseFinalizeGateEnv = factoryIssueModule.parseFinalizeGateEnv;\n\nconst eventName = context.eventName;\nconst eventAction = context.payload.action;\nconst labelName = context.payload.label?.name ?? '';\nconst issueLabels = (context.payload.issue?.labels ?? []).map(l => l.name);\n\nconst result = qualifyTriggerEvent({ eventName, eventAction, labelName, issueLabels });\n\ncore.setOutput('event_eligible', result.event_eligible ? 'true' : 'false');\ncore.setOutput('event_eligible_reason', result.event_eligible_reason);\n\nif (result.event_eligible) {\n  core.info(`Event eligible: ${result.event_eligible_reason}`);\n} else {\n  core.info(`Event not eligible: ${result.event_eligible_reason}`);\n}\n"
+      # script: |
+        # const fn = require('${{ github.workspace }}/.github/scripts/workflows/lib/factory-runners/qualify-trigger.js');
+        # await fn({ github, context, core });
   # - id: capture_issue_context
     # if: steps.determine_intake_mode.outputs.intake_mode == 'issue-event'
     # name: Capture issue context
@@ -97,7 +101,9 @@ name: "Code Factory Issue Intake"
     # uses: actions/github-script@v9
     # with:
       # github-token: ${{ secrets.GITHUB_TOKEN }}
-      # script: "/**\n * Dispatch-mode helpers for code-factory issue intake.\n */\n'use strict';\n\n/**\n * @param {{ dispatchIssueNumber: string, currentRepository: string }} params\n * @returns {{ event_eligible: boolean, event_eligible_reason: string, issue_number?: number }}\n */\nfunction validateDispatchInputs({ dispatchIssueNumber, currentRepository }) {\n  const num = parseInt(dispatchIssueNumber, 10);\n  if (\n    !dispatchIssueNumber ||\n    Number.isNaN(num) ||\n    num <= 0 ||\n    String(num) !== String(dispatchIssueNumber).trim()\n  ) {\n    return {\n      event_eligible: false,\n      event_eligible_reason: `Dispatch input issue_number '${dispatchIssueNumber || '(empty)'}' is not a valid positive integer.`,\n    };\n  }\n\n  return {\n    event_eligible: true,\n    event_eligible_reason: `Dispatch intake validated: issue #${num} in repository '${currentRepository}'.`,\n    issue_number: num,\n  };\n}\n\n/**\n * @param {{ eventName: string, payload: { issue?: { number?: number, title?: string, body?: string } } }} params\n * @returns {{ issue_number: number | null, issue_title: string, issue_body: string }}\n */\nfunction normalizeIssueEventContext({ eventName, payload }) {\n  if (eventName !== 'issues') {\n    return { issue_number: null, issue_title: '', issue_body: '' };\n  }\n  return {\n    issue_number: payload.issue?.number ?? null,\n    issue_title: payload.issue?.title ?? '',\n    issue_body: payload.issue?.body ?? '',\n  };\n}\n\nif (typeof module !== 'undefined') {\n  module.exports = {\n    validateDispatchInputs,\n    normalizeIssueEventContext,\n  };\n}\n\nconst currentRepository = `${context.repo.owner}/${context.repo.repo}`;\nconst dispatchIssueNumber = context.payload.inputs?.issue_number ?? '';\n\nconst result = validateDispatchInputs({\n  dispatchIssueNumber,\n  currentRepository,\n});\n\ncore.setOutput('event_eligible', result.event_eligible ? 'true' : 'false');\ncore.setOutput('event_eligible_reason', result.event_eligible_reason);\nif (result.issue_number != null) {\n  core.setOutput('issue_number', String(result.issue_number));\n}\n\nif (result.event_eligible) {\n  core.info(`Dispatch validated: ${result.event_eligible_reason}`);\n} else {\n  core.info(`Dispatch rejected: ${result.event_eligible_reason}`);\n}\n"
+      # script: |
+        # const fn = require('${{ github.workspace }}/.github/scripts/workflows/lib/factory-runners/validate-dispatch-inputs.js');
+        # await fn({ github, context, core });
   # - env:
       # INPUT_ISSUE_NUMBER: ${{ steps.validate_dispatch_inputs.outputs.issue_number }}
     # id: fetch_live_issue
@@ -106,14 +112,20 @@ name: "Code Factory Issue Intake"
     # uses: actions/github-script@v9
     # with:
       # github-token: ${{ secrets.GITHUB_TOKEN }}
-      # script: "const { owner, repo } = context.repo;\nconst issueNumber = parseInt(process.env.INPUT_ISSUE_NUMBER, 10);\n\nif (!issueNumber || issueNumber <= 0) {\n  core.setOutput('issue_number', '');\n  core.setOutput('issue_title', '');\n  core.setOutput('issue_body', '');\n  core.setOutput('fetch_error', 'Invalid issue number in dispatch inputs.');\n  core.setFailed('Cannot fetch live issue: invalid issue number.');\n} else {\n  try {\n    const { data } = await github.rest.issues.get({\n      owner,\n      repo,\n      issue_number: issueNumber,\n    });\n    core.setOutput('issue_number', String(data.number));\n    core.setOutput('issue_title', data.title ?? '');\n    core.setOutput('issue_body', data.body ?? '');\n    core.setOutput('fetch_error', '');\n    core.info(`Fetched live issue #${data.number}: ${data.title}`);\n  } catch (err) {\n    core.setOutput('issue_number', '');\n    core.setOutput('issue_title', '');\n    core.setOutput('issue_body', '');\n    core.setOutput('fetch_error', err.message);\n    core.setFailed(`Failed to fetch issue #${issueNumber}: ${err.message}`);\n  }\n}\n"
-  # - id: check_actor_trust
+      # script: |
+        # const fn = require('${{ github.workspace }}/.github/scripts/workflows/lib/factory-runners/fetch-live-issue.js');
+        # await fn({ github, context, core });
+  # - env:
+      # FACTORY_NAME: code-factory
+    # id: check_actor_trust
     # if: steps.determine_intake_mode.outputs.intake_mode == 'issue-event' && steps.qualify_trigger.outputs.event_eligible == 'true'
     # name: Check actor trust
     # uses: actions/github-script@v9
     # with:
       # github-token: ${{ secrets.GITHUB_TOKEN }}
-      # script: "/**\n * Code-factory issue intake configuration. Keep `ISSUE_BRANCH_PREFIX` aligned with\n * `workflow.md.tmpl` (`code-factory/issue-${{ github.event.issue.number }}`).\n */\n'use strict';\n\nconst ISSUE_BRANCH_PREFIX = 'code-factory/issue-';\nconst FACTORY_LABEL = 'code-factory';\nconst DUPLICATE_LINKAGE_MODE = 'closes-literal';\nconst ISSUE_OPENED_NOT_ELIGIBLE_REASON =\n  'Issue opened event does not qualify because the issue was created without the code-factory label.';\n\nif (typeof module !== 'undefined') {\n  module.exports = {\n    ISSUE_BRANCH_PREFIX,\n    FACTORY_LABEL,\n    DUPLICATE_LINKAGE_MODE,\n    ISSUE_OPENED_NOT_ELIGIBLE_REASON,\n  };\n}\n\n/**\n * Shared deterministic helpers for code-factory and change-factory issue intake workflows.\n * Workflow-specific configuration is passed via {@link createFactoryIssueIntake}.\n */\n\n/** GitHub-recognized issue-closing keywords (case-insensitive). See https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/using-keywords-in-issues-and-pull-requests */\nconst GITHUB_ISSUE_CLOSING_KEYWORDS = '(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)';\n\n/**\n * GitHub closing-keyword reference: `#` is immediately followed by the issue digits (no whitespace),\n * per GitHub keyword syntax. Case-insensitive keywords; `(?![0-9])` avoids matching `#42` inside `#420`.\n *\n * @param {number} issueNumber\n * @returns {RegExp}\n */\nfunction issueClosingReferencePattern(issueNumber) {\n  return new RegExp(\n    `\\\\b${GITHUB_ISSUE_CLOSING_KEYWORDS}\\\\s*#${issueNumber}(?![0-9])`,\n    'i',\n  );\n}\n\n/**\n * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels: string[] | null | undefined, factoryLabel: string, issueOpenedNotEligibleReason: string }} params\n * @returns {{ event_eligible: boolean, event_eligible_reason: string }}\n */\nfunction factoryQualifyTriggerEvent({\n  eventName,\n  eventAction,\n  labelName,\n  issueLabels,\n  factoryLabel,\n  issueOpenedNotEligibleReason,\n}) {\n  if (eventName === 'issue_comment') {\n    return {\n      event_eligible: true,\n      event_eligible_reason: `Issue comment event qualifies because the slash_command trigger routes to issue_comment.`,\n    };\n  }\n\n  if (eventName !== 'issues') {\n    return {\n      event_eligible: false,\n      event_eligible_reason: `Unsupported event '${eventName || '(empty)'}'; expected 'issues'.`,\n    };\n  }\n\n  if (eventAction === 'labeled') {\n    if (labelName === factoryLabel) {\n      return {\n        event_eligible: true,\n        event_eligible_reason: `Issue labeled event qualifies because the applied label is ${factoryLabel}.`,\n      };\n    }\n\n    return {\n      event_eligible: false,\n      event_eligible_reason: `Issue labeled event does not qualify because the applied label is '${labelName || '(empty)'}', not '${factoryLabel}'.`,\n    };\n  }\n\n  if (eventAction === 'opened') {\n    if (Array.isArray(issueLabels) && issueLabels.includes(factoryLabel)) {\n      return {\n        event_eligible: true,\n        event_eligible_reason: `Issue opened event qualifies because the issue already has the ${factoryLabel} label.`,\n      };\n    }\n\n    return {\n      event_eligible: false,\n      event_eligible_reason: issueOpenedNotEligibleReason,\n    };\n  }\n\n  return {\n    event_eligible: false,\n    event_eligible_reason: `Issue event action '${eventAction || '(empty)'}' is not eligible; expected 'opened' or 'labeled'.`,\n  };\n}\n\n/**\n * @param {{ sender: string, permission: string | null }} params\n * @returns {{ actor_trusted: boolean, actor_trusted_reason: string }}\n */\nfunction factoryCheckActorTrust({ sender, permission }) {\n  if (sender === 'github-actions[bot]') {\n    return {\n      actor_trusted: true,\n      actor_trusted_reason: 'Trigger actor github-actions[bot] is trusted without collaborator permission lookup.',\n    };\n  }\n\n  if (['write', 'maintain', 'admin'].includes(permission)) {\n    return {\n      actor_trusted: true,\n      actor_trusted_reason: `Trigger actor '${sender || '(empty)'}' is trusted with repository permission '${permission}'.`,\n    };\n  }\n\n  return {\n    actor_trusted: false,\n    actor_trusted_reason: `Trigger actor '${sender || '(empty)'}' is not trusted; repository permission '${permission || '(none)'}' does not meet the required write/maintain/admin policy.`,\n  };\n}\n\n/**\n * @returns {{ actor_trusted: boolean, actor_trusted_reason: string }}\n */\nfunction factoryActorTrustWhenSenderMissing() {\n  return {\n    actor_trusted: false,\n    actor_trusted_reason: 'Trigger actor could not be identified; sender login is missing from the event payload.',\n  };\n}\n\n/**\n * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords' }} params\n * @returns {{ duplicate_pr_found: boolean, duplicate_pr_url: string | null, gate_reason: string }}\n */\nfunction factoryCheckDuplicatePR({\n  issueNumber,\n  pullRequests,\n  branchPrefix,\n  prLabel,\n  duplicateLinkageMode,\n}) {\n  const expectedBranch = `${branchPrefix}${issueNumber}`;\n  const expectedClosesExample = `Closes #${issueNumber}`;\n  const expectedRelatedExample = `Related to #${issueNumber}`;\n\n  let bodyPattern;\n  if (duplicateLinkageMode === 'closes-literal') {\n    bodyPattern = new RegExp(`Closes #${issueNumber}(?![0-9])`);\n  } else if (duplicateLinkageMode === 'related-literal') {\n    bodyPattern = new RegExp(`\\\\bRelated to #${issueNumber}(?![0-9])`);\n  } else {\n    bodyPattern = issueClosingReferencePattern(issueNumber);\n  }\n\n  const duplicate = (pullRequests || []).find(pr => (\n    pr.state === 'open' &&\n    Array.isArray(pr.labels) && pr.labels.includes(prLabel) &&\n    pr.head_branch === expectedBranch &&\n    bodyPattern.test(String(pr.body || ''))\n  ));\n\n  if (duplicate) {\n    const url = duplicate.html_url ?? null;\n    let linkagePhrase;\n    if (duplicateLinkageMode === 'closes-literal') {\n      linkagePhrase = `canonical linkage '${expectedClosesExample}'`;\n    } else if (duplicateLinkageMode === 'related-literal') {\n      linkagePhrase = `literal linkage \\`${expectedRelatedExample}\\``;\n    } else {\n      linkagePhrase = `issue-closing reference such as '${expectedClosesExample}'`;\n    }\n\n    return {\n      duplicate_pr_found: true,\n      duplicate_pr_url: url,\n      gate_reason: `Found existing linked ${prLabel} PR #${duplicate.number} (${url ?? '(unknown URL)'}) for issue #${issueNumber} on branch '${expectedBranch}' with ${linkagePhrase}.`,\n    };\n  }\n\n  let linkageTail;\n  if (duplicateLinkageMode === 'closes-literal') {\n    linkageTail = `canonical linkage '${expectedClosesExample}'`;\n  } else if (duplicateLinkageMode === 'related-literal') {\n    linkageTail = `literal linkage \\`${expectedRelatedExample}\\``;\n  } else {\n    linkageTail = `issue-closing reference such as '${expectedClosesExample}'`;\n  }\n\n  return {\n    duplicate_pr_found: false,\n    duplicate_pr_url: null,\n    gate_reason: `No open linked ${prLabel} PR found for issue #${issueNumber}; expected label '${prLabel}', branch '${expectedBranch}', and ${linkageTail}.`,\n  };\n}\n\n/**\n * @param {{ eventEligible: boolean, eventEligibleReason: string, actorTrusted: boolean | null, actorTrustedReason: string | null, duplicatePrFound: boolean | null, duplicatePrUrl: string | null, duplicateCheckGateReason: string | null }} params\n * @param {string} factoryLabel\n * @returns {{ gate_reason: string }}\n */\nfunction factoryComputeGateReason({\n  eventEligible,\n  eventEligibleReason,\n  actorTrusted,\n  actorTrustedReason,\n  duplicatePrFound,\n  duplicatePrUrl,\n  duplicateCheckGateReason,\n}, factoryLabel) {\n  if (!eventEligible) {\n    return { gate_reason: eventEligibleReason };\n  }\n\n  if (actorTrusted === false) {\n    return { gate_reason: actorTrustedReason || 'Trigger actor is not trusted.' };\n  }\n\n  if (actorTrusted == null) {\n    return { gate_reason: 'Actor trust could not be determined; the trust check step did not produce an output.' };\n  }\n\n  if (duplicatePrFound === true) {\n    return {\n      gate_reason: duplicateCheckGateReason || `Found existing linked ${factoryLabel} PR: ${duplicatePrUrl || '(unknown URL)'}.`,\n    };\n  }\n\n  if (duplicatePrFound == null) {\n    return { gate_reason: 'Duplicate PR check did not complete; the check step did not produce an output.' };\n  }\n\n  return {\n    gate_reason: duplicateCheckGateReason || `All deterministic gates passed: event eligible, actor trusted, and no linked ${factoryLabel} PR found.`,\n  };\n}\n\n/**\n * @param {string | undefined} raw\n * @returns {boolean | null}\n */\nfunction factoryParseOptionalTriStateFromEnv(raw) {\n  if (raw == null || raw === '') {\n    return null;\n  }\n  return raw === 'true';\n}\n\n/**\n * @param {Record<string, string | undefined>} env\n */\nfunction factoryParseFinalizeGateEnv(env) {\n  const e = env || {};\n  return {\n    eventEligible: e.EVENT_ELIGIBLE === 'true',\n    eventEligibleReason: e.EVENT_ELIGIBLE_REASON ?? '',\n    actorTrusted: factoryParseOptionalTriStateFromEnv(e.ACTOR_TRUSTED),\n    actorTrustedReason: e.ACTOR_TRUSTED_REASON ?? null,\n    duplicatePrFound: factoryParseOptionalTriStateFromEnv(e.DUPLICATE_PR_FOUND),\n    duplicatePrUrl: e.DUPLICATE_PR_URL && e.DUPLICATE_PR_URL !== '' ? e.DUPLICATE_PR_URL : null,\n    duplicateCheckGateReason: e.DUPLICATE_GATE_REASON ?? null,\n  };\n}\n\n/**\n * @param {{\n *   branchPrefix: string,\n *   factoryLabel: string,\n *   issueOpenedNotEligibleReason: string,\n *   duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords',\n * }} config\n */\nfunction createFactoryIssueIntake(config) {\n  const {\n    branchPrefix,\n    factoryLabel,\n    issueOpenedNotEligibleReason,\n    duplicateLinkageMode,\n  } = config;\n\n  function issueBranchName(issueNumber) {\n    return `${branchPrefix}${issueNumber}`;\n  }\n\n  /**\n   * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels?: string[] | null | undefined }} params\n   */\n  function qualifyTriggerEvent(params) {\n    return factoryQualifyTriggerEvent({\n      ...params,\n      factoryLabel,\n      issueOpenedNotEligibleReason,\n    });\n  }\n\n  function checkDuplicatePR(params) {\n    return factoryCheckDuplicatePR({\n      ...params,\n      branchPrefix,\n      prLabel: factoryLabel,\n      duplicateLinkageMode,\n    });\n  }\n\n  function computeGateReason(params) {\n    return factoryComputeGateReason(params, factoryLabel);\n  }\n\n  return {\n    issueBranchName,\n    qualifyTriggerEvent,\n    checkActorTrust: factoryCheckActorTrust,\n    checkDuplicatePR,\n    computeGateReason,\n  };\n}\n\n/**\n * @param {{\n *   branchPrefix: string,\n *   factoryLabel: string,\n *   issueOpenedNotEligibleReason: string,\n *   duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords',\n *   issueBranchNameAliases?: string[],\n * }} config\n */\nfunction createFactoryIssueModule(config) {\n  const intake = createFactoryIssueIntake(config);\n  const issueBranchNameAliases = config.issueBranchNameAliases || [];\n  const factoryIssueModule = {\n    ...intake,\n    actorTrustWhenSenderMissing: factoryActorTrustWhenSenderMissing,\n    parseOptionalTriStateFromEnv: factoryParseOptionalTriStateFromEnv,\n    parseFinalizeGateEnv: factoryParseFinalizeGateEnv,\n  };\n\n  for (const alias of issueBranchNameAliases) {\n    factoryIssueModule[alias] = intake.issueBranchName;\n  }\n\n  return factoryIssueModule;\n}\n\nif (typeof module !== 'undefined') {\n  module.exports = {\n    issueClosingReferencePattern,\n    factoryQualifyTriggerEvent,\n    factoryCheckActorTrust,\n    factoryActorTrustWhenSenderMissing,\n    factoryCheckDuplicatePR,\n    factoryComputeGateReason,\n    factoryParseOptionalTriStateFromEnv,\n    factoryParseFinalizeGateEnv,\n    createFactoryIssueIntake,\n    createFactoryIssueModule,\n  };\n}\n\n// Concatenated by the workflow compiler; not executable standalone.\nconst factoryIssueModule = createFactoryIssueModule({\n  branchPrefix: ISSUE_BRANCH_PREFIX,\n  factoryLabel: FACTORY_LABEL,\n  issueOpenedNotEligibleReason: ISSUE_OPENED_NOT_ELIGIBLE_REASON,\n  duplicateLinkageMode: DUPLICATE_LINKAGE_MODE,\n});\n\nconst qualifyTriggerEvent = factoryIssueModule.qualifyTriggerEvent;\nconst checkActorTrust = factoryIssueModule.checkActorTrust;\nconst checkDuplicatePR = factoryIssueModule.checkDuplicatePR;\nconst computeGateReason = factoryIssueModule.computeGateReason;\nconst issueBranchName = factoryIssueModule.issueBranchName;\nconst actorTrustWhenSenderMissing = factoryIssueModule.actorTrustWhenSenderMissing;\nconst parseFinalizeGateEnv = factoryIssueModule.parseFinalizeGateEnv;\n\nconst { owner, repo } = context.repo;\nconst sender = context.payload.sender?.login ?? '';\n\nif (!sender) {\n  const missing = actorTrustWhenSenderMissing();\n  core.setOutput('actor_trusted', 'false');\n  core.setOutput('actor_trusted_reason', missing.actor_trusted_reason);\n  core.info('Actor not trusted: sender login is missing from the event payload.');\n} else {\n  let permission = null;\n  if (sender !== 'github-actions[bot]') {\n    const { data } = await github.rest.repos.getCollaboratorPermissionLevel({\n      owner,\n      repo,\n      username: sender,\n    });\n    permission = data.permission;\n  }\n\n  const result = checkActorTrust({ sender, permission });\n\n  core.setOutput('actor_trusted', result.actor_trusted ? 'true' : 'false');\n  core.setOutput('actor_trusted_reason', result.actor_trusted_reason);\n\n  if (result.actor_trusted) {\n    core.info(`Actor trusted: ${result.actor_trusted_reason}`);\n  } else {\n    core.info(`Actor not trusted: ${result.actor_trusted_reason}`);\n  }\n}\n"
+      # script: |
+        # const fn = require('${{ github.workspace }}/.github/scripts/workflows/lib/factory-runners/check-actor-trust.js');
+        # await fn({ github, context, core });
   # - env:
       # INPUT_ISSUE_NUMBER: |-
         # ${{ steps.determine_intake_mode.outputs.intake_mode == 'issue-event'
@@ -133,8 +145,12 @@ name: "Code Factory Issue Intake"
     # uses: actions/github-script@v9
     # with:
       # github-token: ${{ secrets.GITHUB_TOKEN }}
-      # script: "/**\n * Shared comment helpers for research-factory issue intake workflows.\n */\n\n/**\n * Fetches human-authored comments for an issue, paginated, with bot filtering and a hard cap.\n *\n * @param {{ github: object, owner: string, repo: string, issueNumber: number }} params\n * @returns {Promise<{ comments: Array<{author: string, createdAt: string, body: string}>, truncated: boolean }>}\n */\nasync function factoryFetchIssueComments({ github, owner, repo, issueNumber }) {\n  const MAX_COMMENTS = 200;\n  const allComments = await github.paginate(github.rest.issues.listComments, {\n    owner,\n    repo,\n    issue_number: issueNumber,\n    per_page: 100,\n  });\n\n  const humanComments = [];\n  let truncated = false;\n  for (const comment of allComments) {\n    if (comment.user?.login?.endsWith('[bot]')) {\n      continue;\n    }\n    if (humanComments.length >= MAX_COMMENTS) {\n      truncated = true;\n      break;\n    }\n    humanComments.push({\n      author: comment.user?.login ?? '',\n      createdAt: comment.created_at ?? '',\n      body: comment.body ?? '',\n    });\n  }\n\n  return {\n    comments: humanComments,\n    truncated,\n  };\n}\n\nconst COMMENT_CONTEXT_BUDGET = 50_000;\n/** Overhead reserved for truncation markers appended after the loop. */\nconst COMMENT_CONTEXT_MARKER_OVERHEAD = 200;\n\n/**\n * Serializes captured issue comments into a deterministic markdown string for agent prompts.\n *\n * @param {{ comments: Array<{author: string, createdAt: string, body: string}>, truncated: boolean }} params\n * @returns {string}\n */\nfunction serializeIssueComments({ comments, truncated }) {\n  if (!Array.isArray(comments) || comments.length === 0) {\n    return '';\n  }\n\n  const bodyBudget = COMMENT_CONTEXT_BUDGET - COMMENT_CONTEXT_MARKER_OVERHEAD;\n  let result = '';\n  let includedCount = 0;\n\n  for (const comment of comments) {\n    const header = `**@${comment.author || ''}** (${comment.createdAt || ''}):\\n\\n`;\n    const body = comment.body || '';\n    const footer = '\\n\\n---\\n';\n    const available = bodyBudget - result.length;\n\n    if (available <= 0) {\n      break;\n    }\n\n    const frameLength = header.length + footer.length;\n    if (frameLength > available) {\n      break;\n    }\n    const fullBlock = header + body + footer;\n    if (fullBlock.length <= available) {\n      result += fullBlock;\n    } else {\n      // Truncate this comment's body so the output stays within budget\n      const truncatedBody = body.slice(0, available - frameLength);\n      result += header + truncatedBody + footer;\n    }\n    includedCount++;\n  }\n\n  const remaining = comments.length - includedCount;\n  if (remaining > 0) {\n    result += `[... ${remaining} more comments truncated for context budget]\\n`;\n  }\n\n  if (truncated) {\n    result += '[... comment history truncated at 200 comments]\\n';\n  }\n\n  return result;\n}\n\nif (typeof module !== 'undefined') {\n  module.exports = {\n    factoryFetchIssueComments,\n    serializeIssueComments,\n    COMMENT_CONTEXT_BUDGET,\n  };\n}\n\nconst { owner, repo } = context.repo;\nconst issueNumber = parseInt(process.env.INPUT_ISSUE_NUMBER, 10);\n\nif (!issueNumber || issueNumber <= 0) {\n  core.setOutput('human_comments', '');\n  core.info('No issue number provided; skipping comment fetch.');\n} else {\n  const { comments, truncated } = await factoryFetchIssueComments({ github, owner, repo, issueNumber });\n  const serialized = serializeIssueComments({ comments, truncated });\n  core.setOutput('human_comments', serialized);\n  core.info(`Fetched and serialized ${comments.length} human comments for issue #${issueNumber}`);\n}\n"
-  # - id: check_duplicate_pr
+      # script: |
+        # const fn = require('${{ github.workspace }}/.github/scripts/workflows/code-factory/fetch-issue-comments.js');
+        # await fn({ github, context, core });
+  # - env:
+      # FACTORY_NAME: code-factory
+    # id: check_duplicate_pr
     # if: |-
       # (
         # steps.determine_intake_mode.outputs.intake_mode == 'issue-event' &&
@@ -148,14 +164,20 @@ name: "Code Factory Issue Intake"
     # uses: actions/github-script@v9
     # with:
       # github-token: ${{ secrets.GITHUB_TOKEN }}
-      # script: "/**\n * Code-factory issue intake configuration. Keep `ISSUE_BRANCH_PREFIX` aligned with\n * `workflow.md.tmpl` (`code-factory/issue-${{ github.event.issue.number }}`).\n */\n'use strict';\n\nconst ISSUE_BRANCH_PREFIX = 'code-factory/issue-';\nconst FACTORY_LABEL = 'code-factory';\nconst DUPLICATE_LINKAGE_MODE = 'closes-literal';\nconst ISSUE_OPENED_NOT_ELIGIBLE_REASON =\n  'Issue opened event does not qualify because the issue was created without the code-factory label.';\n\nif (typeof module !== 'undefined') {\n  module.exports = {\n    ISSUE_BRANCH_PREFIX,\n    FACTORY_LABEL,\n    DUPLICATE_LINKAGE_MODE,\n    ISSUE_OPENED_NOT_ELIGIBLE_REASON,\n  };\n}\n\n/**\n * Shared deterministic helpers for code-factory and change-factory issue intake workflows.\n * Workflow-specific configuration is passed via {@link createFactoryIssueIntake}.\n */\n\n/** GitHub-recognized issue-closing keywords (case-insensitive). See https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/using-keywords-in-issues-and-pull-requests */\nconst GITHUB_ISSUE_CLOSING_KEYWORDS = '(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)';\n\n/**\n * GitHub closing-keyword reference: `#` is immediately followed by the issue digits (no whitespace),\n * per GitHub keyword syntax. Case-insensitive keywords; `(?![0-9])` avoids matching `#42` inside `#420`.\n *\n * @param {number} issueNumber\n * @returns {RegExp}\n */\nfunction issueClosingReferencePattern(issueNumber) {\n  return new RegExp(\n    `\\\\b${GITHUB_ISSUE_CLOSING_KEYWORDS}\\\\s*#${issueNumber}(?![0-9])`,\n    'i',\n  );\n}\n\n/**\n * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels: string[] | null | undefined, factoryLabel: string, issueOpenedNotEligibleReason: string }} params\n * @returns {{ event_eligible: boolean, event_eligible_reason: string }}\n */\nfunction factoryQualifyTriggerEvent({\n  eventName,\n  eventAction,\n  labelName,\n  issueLabels,\n  factoryLabel,\n  issueOpenedNotEligibleReason,\n}) {\n  if (eventName === 'issue_comment') {\n    return {\n      event_eligible: true,\n      event_eligible_reason: `Issue comment event qualifies because the slash_command trigger routes to issue_comment.`,\n    };\n  }\n\n  if (eventName !== 'issues') {\n    return {\n      event_eligible: false,\n      event_eligible_reason: `Unsupported event '${eventName || '(empty)'}'; expected 'issues'.`,\n    };\n  }\n\n  if (eventAction === 'labeled') {\n    if (labelName === factoryLabel) {\n      return {\n        event_eligible: true,\n        event_eligible_reason: `Issue labeled event qualifies because the applied label is ${factoryLabel}.`,\n      };\n    }\n\n    return {\n      event_eligible: false,\n      event_eligible_reason: `Issue labeled event does not qualify because the applied label is '${labelName || '(empty)'}', not '${factoryLabel}'.`,\n    };\n  }\n\n  if (eventAction === 'opened') {\n    if (Array.isArray(issueLabels) && issueLabels.includes(factoryLabel)) {\n      return {\n        event_eligible: true,\n        event_eligible_reason: `Issue opened event qualifies because the issue already has the ${factoryLabel} label.`,\n      };\n    }\n\n    return {\n      event_eligible: false,\n      event_eligible_reason: issueOpenedNotEligibleReason,\n    };\n  }\n\n  return {\n    event_eligible: false,\n    event_eligible_reason: `Issue event action '${eventAction || '(empty)'}' is not eligible; expected 'opened' or 'labeled'.`,\n  };\n}\n\n/**\n * @param {{ sender: string, permission: string | null }} params\n * @returns {{ actor_trusted: boolean, actor_trusted_reason: string }}\n */\nfunction factoryCheckActorTrust({ sender, permission }) {\n  if (sender === 'github-actions[bot]') {\n    return {\n      actor_trusted: true,\n      actor_trusted_reason: 'Trigger actor github-actions[bot] is trusted without collaborator permission lookup.',\n    };\n  }\n\n  if (['write', 'maintain', 'admin'].includes(permission)) {\n    return {\n      actor_trusted: true,\n      actor_trusted_reason: `Trigger actor '${sender || '(empty)'}' is trusted with repository permission '${permission}'.`,\n    };\n  }\n\n  return {\n    actor_trusted: false,\n    actor_trusted_reason: `Trigger actor '${sender || '(empty)'}' is not trusted; repository permission '${permission || '(none)'}' does not meet the required write/maintain/admin policy.`,\n  };\n}\n\n/**\n * @returns {{ actor_trusted: boolean, actor_trusted_reason: string }}\n */\nfunction factoryActorTrustWhenSenderMissing() {\n  return {\n    actor_trusted: false,\n    actor_trusted_reason: 'Trigger actor could not be identified; sender login is missing from the event payload.',\n  };\n}\n\n/**\n * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords' }} params\n * @returns {{ duplicate_pr_found: boolean, duplicate_pr_url: string | null, gate_reason: string }}\n */\nfunction factoryCheckDuplicatePR({\n  issueNumber,\n  pullRequests,\n  branchPrefix,\n  prLabel,\n  duplicateLinkageMode,\n}) {\n  const expectedBranch = `${branchPrefix}${issueNumber}`;\n  const expectedClosesExample = `Closes #${issueNumber}`;\n  const expectedRelatedExample = `Related to #${issueNumber}`;\n\n  let bodyPattern;\n  if (duplicateLinkageMode === 'closes-literal') {\n    bodyPattern = new RegExp(`Closes #${issueNumber}(?![0-9])`);\n  } else if (duplicateLinkageMode === 'related-literal') {\n    bodyPattern = new RegExp(`\\\\bRelated to #${issueNumber}(?![0-9])`);\n  } else {\n    bodyPattern = issueClosingReferencePattern(issueNumber);\n  }\n\n  const duplicate = (pullRequests || []).find(pr => (\n    pr.state === 'open' &&\n    Array.isArray(pr.labels) && pr.labels.includes(prLabel) &&\n    pr.head_branch === expectedBranch &&\n    bodyPattern.test(String(pr.body || ''))\n  ));\n\n  if (duplicate) {\n    const url = duplicate.html_url ?? null;\n    let linkagePhrase;\n    if (duplicateLinkageMode === 'closes-literal') {\n      linkagePhrase = `canonical linkage '${expectedClosesExample}'`;\n    } else if (duplicateLinkageMode === 'related-literal') {\n      linkagePhrase = `literal linkage \\`${expectedRelatedExample}\\``;\n    } else {\n      linkagePhrase = `issue-closing reference such as '${expectedClosesExample}'`;\n    }\n\n    return {\n      duplicate_pr_found: true,\n      duplicate_pr_url: url,\n      gate_reason: `Found existing linked ${prLabel} PR #${duplicate.number} (${url ?? '(unknown URL)'}) for issue #${issueNumber} on branch '${expectedBranch}' with ${linkagePhrase}.`,\n    };\n  }\n\n  let linkageTail;\n  if (duplicateLinkageMode === 'closes-literal') {\n    linkageTail = `canonical linkage '${expectedClosesExample}'`;\n  } else if (duplicateLinkageMode === 'related-literal') {\n    linkageTail = `literal linkage \\`${expectedRelatedExample}\\``;\n  } else {\n    linkageTail = `issue-closing reference such as '${expectedClosesExample}'`;\n  }\n\n  return {\n    duplicate_pr_found: false,\n    duplicate_pr_url: null,\n    gate_reason: `No open linked ${prLabel} PR found for issue #${issueNumber}; expected label '${prLabel}', branch '${expectedBranch}', and ${linkageTail}.`,\n  };\n}\n\n/**\n * @param {{ eventEligible: boolean, eventEligibleReason: string, actorTrusted: boolean | null, actorTrustedReason: string | null, duplicatePrFound: boolean | null, duplicatePrUrl: string | null, duplicateCheckGateReason: string | null }} params\n * @param {string} factoryLabel\n * @returns {{ gate_reason: string }}\n */\nfunction factoryComputeGateReason({\n  eventEligible,\n  eventEligibleReason,\n  actorTrusted,\n  actorTrustedReason,\n  duplicatePrFound,\n  duplicatePrUrl,\n  duplicateCheckGateReason,\n}, factoryLabel) {\n  if (!eventEligible) {\n    return { gate_reason: eventEligibleReason };\n  }\n\n  if (actorTrusted === false) {\n    return { gate_reason: actorTrustedReason || 'Trigger actor is not trusted.' };\n  }\n\n  if (actorTrusted == null) {\n    return { gate_reason: 'Actor trust could not be determined; the trust check step did not produce an output.' };\n  }\n\n  if (duplicatePrFound === true) {\n    return {\n      gate_reason: duplicateCheckGateReason || `Found existing linked ${factoryLabel} PR: ${duplicatePrUrl || '(unknown URL)'}.`,\n    };\n  }\n\n  if (duplicatePrFound == null) {\n    return { gate_reason: 'Duplicate PR check did not complete; the check step did not produce an output.' };\n  }\n\n  return {\n    gate_reason: duplicateCheckGateReason || `All deterministic gates passed: event eligible, actor trusted, and no linked ${factoryLabel} PR found.`,\n  };\n}\n\n/**\n * @param {string | undefined} raw\n * @returns {boolean | null}\n */\nfunction factoryParseOptionalTriStateFromEnv(raw) {\n  if (raw == null || raw === '') {\n    return null;\n  }\n  return raw === 'true';\n}\n\n/**\n * @param {Record<string, string | undefined>} env\n */\nfunction factoryParseFinalizeGateEnv(env) {\n  const e = env || {};\n  return {\n    eventEligible: e.EVENT_ELIGIBLE === 'true',\n    eventEligibleReason: e.EVENT_ELIGIBLE_REASON ?? '',\n    actorTrusted: factoryParseOptionalTriStateFromEnv(e.ACTOR_TRUSTED),\n    actorTrustedReason: e.ACTOR_TRUSTED_REASON ?? null,\n    duplicatePrFound: factoryParseOptionalTriStateFromEnv(e.DUPLICATE_PR_FOUND),\n    duplicatePrUrl: e.DUPLICATE_PR_URL && e.DUPLICATE_PR_URL !== '' ? e.DUPLICATE_PR_URL : null,\n    duplicateCheckGateReason: e.DUPLICATE_GATE_REASON ?? null,\n  };\n}\n\n/**\n * @param {{\n *   branchPrefix: string,\n *   factoryLabel: string,\n *   issueOpenedNotEligibleReason: string,\n *   duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords',\n * }} config\n */\nfunction createFactoryIssueIntake(config) {\n  const {\n    branchPrefix,\n    factoryLabel,\n    issueOpenedNotEligibleReason,\n    duplicateLinkageMode,\n  } = config;\n\n  function issueBranchName(issueNumber) {\n    return `${branchPrefix}${issueNumber}`;\n  }\n\n  /**\n   * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels?: string[] | null | undefined }} params\n   */\n  function qualifyTriggerEvent(params) {\n    return factoryQualifyTriggerEvent({\n      ...params,\n      factoryLabel,\n      issueOpenedNotEligibleReason,\n    });\n  }\n\n  function checkDuplicatePR(params) {\n    return factoryCheckDuplicatePR({\n      ...params,\n      branchPrefix,\n      prLabel: factoryLabel,\n      duplicateLinkageMode,\n    });\n  }\n\n  function computeGateReason(params) {\n    return factoryComputeGateReason(params, factoryLabel);\n  }\n\n  return {\n    issueBranchName,\n    qualifyTriggerEvent,\n    checkActorTrust: factoryCheckActorTrust,\n    checkDuplicatePR,\n    computeGateReason,\n  };\n}\n\n/**\n * @param {{\n *   branchPrefix: string,\n *   factoryLabel: string,\n *   issueOpenedNotEligibleReason: string,\n *   duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords',\n *   issueBranchNameAliases?: string[],\n * }} config\n */\nfunction createFactoryIssueModule(config) {\n  const intake = createFactoryIssueIntake(config);\n  const issueBranchNameAliases = config.issueBranchNameAliases || [];\n  const factoryIssueModule = {\n    ...intake,\n    actorTrustWhenSenderMissing: factoryActorTrustWhenSenderMissing,\n    parseOptionalTriStateFromEnv: factoryParseOptionalTriStateFromEnv,\n    parseFinalizeGateEnv: factoryParseFinalizeGateEnv,\n  };\n\n  for (const alias of issueBranchNameAliases) {\n    factoryIssueModule[alias] = intake.issueBranchName;\n  }\n\n  return factoryIssueModule;\n}\n\nif (typeof module !== 'undefined') {\n  module.exports = {\n    issueClosingReferencePattern,\n    factoryQualifyTriggerEvent,\n    factoryCheckActorTrust,\n    factoryActorTrustWhenSenderMissing,\n    factoryCheckDuplicatePR,\n    factoryComputeGateReason,\n    factoryParseOptionalTriStateFromEnv,\n    factoryParseFinalizeGateEnv,\n    createFactoryIssueIntake,\n    createFactoryIssueModule,\n  };\n}\n\n// Concatenated by the workflow compiler; not executable standalone.\nconst factoryIssueModule = createFactoryIssueModule({\n  branchPrefix: ISSUE_BRANCH_PREFIX,\n  factoryLabel: FACTORY_LABEL,\n  issueOpenedNotEligibleReason: ISSUE_OPENED_NOT_ELIGIBLE_REASON,\n  duplicateLinkageMode: DUPLICATE_LINKAGE_MODE,\n});\n\nconst qualifyTriggerEvent = factoryIssueModule.qualifyTriggerEvent;\nconst checkActorTrust = factoryIssueModule.checkActorTrust;\nconst checkDuplicatePR = factoryIssueModule.checkDuplicatePR;\nconst computeGateReason = factoryIssueModule.computeGateReason;\nconst issueBranchName = factoryIssueModule.issueBranchName;\nconst actorTrustWhenSenderMissing = factoryIssueModule.actorTrustWhenSenderMissing;\nconst parseFinalizeGateEnv = factoryIssueModule.parseFinalizeGateEnv;\n\nconst { owner, repo } = context.repo;\nconst intakeMode = context.eventName === 'workflow_dispatch' ? 'dispatch' : 'issue-event';\nlet issueNumber;\n\nif (intakeMode === 'dispatch') {\n  issueNumber = parseInt(context.payload.inputs?.issue_number, 10) || null;\n} else {\n  issueNumber = context.payload.issue?.number || null;\n}\n\nif (!issueNumber) {\n  core.setOutput('duplicate_pr_found', 'false');\n  core.setOutput('duplicate_pr_url', '');\n  core.setOutput('gate_reason', 'No issue number available for duplicate PR check.');\n  core.info('Duplicate PR check skipped: issue number is not available.');\n  return;\n}\n\nconst expectedBranch = issueBranchName(issueNumber);\n\nconst pulls = await github.paginate(github.rest.pulls.list, {\n  owner,\n  repo,\n  state: 'open',\n  head: `${owner}:${expectedBranch}`,\n  per_page: 100,\n});\n\nconst pullRequests = pulls.map(pr => ({\n  number: pr.number,\n  state: pr.state,\n  head_branch: pr.head.ref,\n  labels: pr.labels.map(l => l.name),\n  body: pr.body ?? '',\n  html_url: pr.html_url,\n}));\n\nconst result = checkDuplicatePR({ issueNumber, pullRequests });\n\ncore.setOutput('duplicate_pr_found', result.duplicate_pr_found ? 'true' : 'false');\ncore.setOutput('duplicate_pr_url', result.duplicate_pr_url ?? '');\ncore.setOutput('gate_reason', result.gate_reason);\n\nif (result.duplicate_pr_found) {\n  core.info(`Duplicate PR found: ${result.gate_reason}`);\n} else {\n  core.info(`No duplicate PR: ${result.gate_reason}`);\n}\n"
-  # - id: remove_trigger_label
+      # script: |
+        # const fn = require('${{ github.workspace }}/.github/scripts/workflows/lib/factory-runners/check-duplicate-pr.js');
+        # await fn({ github, context, core });
+  # - env:
+      # FACTORY_NAME: code-factory
+    # id: remove_trigger_label
     # if: steps.determine_intake_mode.outputs.intake_mode == 'issue-event' && steps.qualify_trigger.outputs.event_eligible == 'true' && steps.check_actor_trust.outputs.actor_trusted == 'true' && steps.check_duplicate_pr.outputs.duplicate_pr_found != 'true'
     # name: Remove trigger label
     # uses: actions/github-script@v9
     # with:
       # github-token: ${{ secrets.GITHUB_TOKEN }}
-      # script: "/**\n * Removes a single label from an issue or pull request (GitHub issue API).\n * @param {{ github: object, context: object, issueNumber: number|undefined, labelName: string|undefined }} opts\n * @returns {Promise<{ trigger_label_removed: boolean, trigger_label_removed_reason: string }>}\n */\nasync function removeTriggerLabel({ github, context, issueNumber, labelName }) {\n  if (issueNumber === undefined || issueNumber === null) {\n    return {\n      trigger_label_removed: false,\n      trigger_label_removed_reason: 'No issue number in event payload',\n    };\n  }\n\n  const label =\n    typeof labelName === 'string' && labelName.trim() !== '' ? labelName.trim() : null;\n  if (!label) {\n    return {\n      trigger_label_removed: false,\n      trigger_label_removed_reason: 'No label name provided',\n    };\n  }\n\n  try {\n    await github.rest.issues.removeLabel({\n      owner: context.repo.owner,\n      repo: context.repo.repo,\n      issue_number: issueNumber,\n      name: label,\n    });\n    return {\n      trigger_label_removed: true,\n      trigger_label_removed_reason: `Removed label: ${label}`,\n    };\n  } catch (err) {\n    // GitHub returns 404 when the label does not exist on the issue; treat as success\n    if (err.status === 404) {\n      return {\n        trigger_label_removed: true,\n        trigger_label_removed_reason: `Label ${label} was not present (already removed or never applied)`,\n      };\n    }\n    return {\n      trigger_label_removed: false,\n      trigger_label_removed_reason: `Failed to remove label: ${err.message}`,\n    };\n  }\n}\n\nif (typeof module !== 'undefined') {\n  module.exports = { removeTriggerLabel };\n}\n\nconst issueNumber = context.payload.issue?.number;\nconst result = await removeTriggerLabel({\n  github,\n  context,\n  issueNumber,\n  labelName: 'code-factory',\n});\n\ncore.setOutput('trigger_label_removed', result.trigger_label_removed ? 'true' : 'false');\ncore.setOutput('trigger_label_removed_reason', result.trigger_label_removed_reason);\n\nif (result.trigger_label_removed) {\n  core.info(`Removed trigger label code-factory from issue #${issueNumber}`);\n} else {\n  core.info(`Trigger label removal skipped: ${result.trigger_label_removed_reason}`);\n}\n"
+      # script: |
+        # const fn = require('${{ github.workspace }}/.github/scripts/workflows/lib/factory-runners/remove-trigger-label.js');
+        # await fn({ github, context, core });
   # - env:
       # INPUT_ISSUE_NUMBER: |-
         # ${{ steps.determine_intake_mode.outputs.intake_mode == 'issue-event'
@@ -176,7 +198,9 @@ name: "Code Factory Issue Intake"
     # uses: actions/github-script@v9
     # with:
       # github-token: ${{ secrets.GITHUB_TOKEN }}
-      # script: "/**\n * Adds a phase label to an issue and removes all other phase-* labels.\n * @param {{ github: object, context: object, issueNumber: number|undefined, phaseLabelName: string|undefined, core?: object }} opts\n * @returns {Promise<{ phase_label_set: boolean, phase_label_name: string, stale_labels_removed: string[], reason: string }>}\n */\nasync function setPhaseLabel({ github, context, issueNumber, phaseLabelName, core }) {\n\n  if (issueNumber === undefined || issueNumber === null) {\n    return {\n      phase_label_set: false,\n      phase_label_name: phaseLabelName || '',\n      stale_labels_removed: [],\n      reason: 'No issue number provided',\n    };\n  }\n\n  const label =\n    typeof phaseLabelName === 'string' && phaseLabelName.trim() !== '' ? phaseLabelName.trim() : null;\n  if (!label) {\n    return {\n      phase_label_set: false,\n      phase_label_name: '',\n      stale_labels_removed: [],\n      reason: 'No phase label name provided',\n    };\n  }\n\n  try {\n    await github.rest.issues.addLabels({\n      owner: context.repo.owner,\n      repo: context.repo.repo,\n      issue_number: issueNumber,\n      labels: [label],\n    });\n  } catch (err) {\n    return {\n      phase_label_set: false,\n      phase_label_name: label,\n      stale_labels_removed: [],\n      reason: `Failed to add label: ${err.message}`,\n    };\n  }\n\n  let staleLabels = [];\n  try {\n    let currentLabels;\n    if (github.paginate) {\n      currentLabels = await github.paginate(github.rest.issues.listLabelsOnIssue, {\n        owner: context.repo.owner,\n        repo: context.repo.repo,\n        issue_number: issueNumber,\n        per_page: 100,\n      });\n    } else {\n      const { data } = await github.rest.issues.listLabelsOnIssue({\n        owner: context.repo.owner,\n        repo: context.repo.repo,\n        issue_number: issueNumber,\n        per_page: 100,\n      });\n      currentLabels = data;\n    }\n\n    staleLabels = currentLabels\n      .map((l) => l.name)\n      .filter((name) => name.startsWith('phase-') && name !== label);\n  } catch (err) {\n    return {\n      phase_label_set: true,\n      phase_label_name: label,\n      stale_labels_removed: [],\n      reason: `Added label ${label} but failed to list current labels: ${err.message}`,\n    };\n  }\n\n  const removalResults = await Promise.all(\n    staleLabels.map(async (staleLabel) => {\n      try {\n        await github.rest.issues.removeLabel({\n          owner: context.repo.owner,\n          repo: context.repo.repo,\n          issue_number: issueNumber,\n          name: staleLabel,\n        });\n        return { removed: true, label: staleLabel };\n      } catch (err) {\n        if (err.status === 404) {\n          return { removed: true, label: staleLabel };\n        }\n\n        if (core && typeof core.warning === 'function') {\n          core.warning(`Failed to remove stale label ${staleLabel} from issue #${issueNumber}: ${err.message}`);\n        }\n\n        return { removed: false, label: staleLabel, message: err.message };\n      }\n    }),\n  );\n\n  const removed = removalResults.filter((result) => result.removed).map((result) => result.label);\n  const failed = removalResults.filter((result) => !result.removed);\n\n  if (failed.length > 0) {\n    const failedSummary = failed.map((f) => `${f.label}: ${f.message}`).join('; ');\n    return {\n      phase_label_set: true,\n      phase_label_name: label,\n      stale_labels_removed: removed,\n      reason: `Added label ${label} but failed to remove some stale labels: ${failedSummary}`,\n    };\n  }\n\n  const removalMsg =\n    staleLabels.length > 0\n      ? `Removed stale phase labels: ${staleLabels.join(', ')}`\n      : 'No stale phase labels to remove';\n\n  return {\n    phase_label_set: true,\n    phase_label_name: label,\n    stale_labels_removed: removed,\n    reason: `Set phase label ${label}. ${removalMsg}`,\n  };\n}\n\nif (typeof module !== 'undefined') {\n  module.exports = { setPhaseLabel };\n}\n\nconst issueNumber = parseInt(process.env.INPUT_ISSUE_NUMBER, 10) || context.payload.issue?.number || undefined;\nconst result = await setPhaseLabel({\n  github,\n  context,\n  core,\n  issueNumber,\n  phaseLabelName: process.env.PHASE_LABEL_NAME,\n});\n\ncore.setOutput('phase_label_set', result.phase_label_set ? 'true' : 'false');\ncore.setOutput('phase_label_name', result.phase_label_name);\n\nconst logMessage = result.phase_label_set\n  ? `Set phase label ${result.phase_label_name} on issue #${issueNumber}. ${result.reason}`\n  : `Phase label not set: ${result.reason}`;\n\n(result.phase_label_set ? core.info : core.warning)(logMessage);\n"
+      # script: |
+        # const fn = require('${{ github.workspace }}/.github/scripts/workflows/phase-label/set.js');
+        # await fn({ github, context, core });
   # - env:
       # ACTOR_TRUSTED_EVENT: ${{ steps.check_actor_trust.outputs.actor_trusted }}
       # ACTOR_TRUSTED_REASON_EVENT: ${{ steps.check_actor_trust.outputs.actor_trusted_reason }}
@@ -202,6 +226,7 @@ name: "Code Factory Issue Intake"
     # run: "echo \"intake_mode=${INTAKE_MODE}\" >> \"$GITHUB_OUTPUT\"\nEOF_DELIM=\"EOF_$(cat /proc/sys/kernel/random/uuid 2>/dev/null || date +%s%N)\"\n\nif [ \"${INTAKE_MODE}\" = \"issue-event\" ]; then\n  echo \"issue_number=${ISSUE_NUMBER_EVENT}\" >> \"$GITHUB_OUTPUT\"\n  echo \"issue_title=${ISSUE_TITLE_EVENT}\" >> \"$GITHUB_OUTPUT\"\n  {\n    echo \"issue_body<<${EOF_DELIM}\"\n    printf '%s\\n' \"${ISSUE_BODY_EVENT}\"\n    echo \"${EOF_DELIM}\"\n  } >> \"$GITHUB_OUTPUT\"\n  echo \"event_eligible=${EVENT_ELIGIBLE_EVENT}\" >> \"$GITHUB_OUTPUT\"\n  echo \"event_eligible_reason=${EVENT_ELIGIBLE_REASON_EVENT}\" >> \"$GITHUB_OUTPUT\"\n  echo \"actor_trusted=${ACTOR_TRUSTED_EVENT}\" >> \"$GITHUB_OUTPUT\"\n  echo \"actor_trusted_reason=${ACTOR_TRUSTED_REASON_EVENT}\" >> \"$GITHUB_OUTPUT\"\n  echo \"trigger_label_removed=${TRIGGER_LABEL_REMOVED_EVENT}\" >> \"$GITHUB_OUTPUT\"\n  echo \"trigger_label_removed_reason=${TRIGGER_LABEL_REMOVED_REASON_EVENT}\" >> \"$GITHUB_OUTPUT\"\nelse\n  echo \"issue_number=${ISSUE_NUMBER_DISPATCH}\" >> \"$GITHUB_OUTPUT\"\n  echo \"issue_title=${ISSUE_TITLE_DISPATCH}\" >> \"$GITHUB_OUTPUT\"\n  {\n    echo \"issue_body<<${EOF_DELIM}\"\n    printf '%s\\n' \"${ISSUE_BODY_DISPATCH}\"\n    echo \"${EOF_DELIM}\"\n  } >> \"$GITHUB_OUTPUT\"\n  echo \"event_eligible=${EVENT_ELIGIBLE_DISPATCH}\" >> \"$GITHUB_OUTPUT\"\n  echo \"event_eligible_reason=${EVENT_ELIGIBLE_REASON_DISPATCH}\" >> \"$GITHUB_OUTPUT\"\n  echo \"actor_trusted=true\" >> \"$GITHUB_OUTPUT\"\n  echo \"actor_trusted_reason=Dispatch intake bypasses actor trust check.\" >> \"$GITHUB_OUTPUT\"\n  echo \"trigger_label_removed=false\" >> \"$GITHUB_OUTPUT\"\n  echo \"trigger_label_removed_reason=Trigger label removal is not required for dispatch intake.\" >> \"$GITHUB_OUTPUT\"\n  echo \"source_workflow=${SOURCE_WORKFLOW}\" >> \"$GITHUB_OUTPUT\"\nfi\n\necho \"duplicate_pr_found=${DUPLICATE_PR_FOUND}\" >> \"$GITHUB_OUTPUT\"\necho \"duplicate_pr_url=${DUPLICATE_PR_URL}\" >> \"$GITHUB_OUTPUT\"\n"
     # shell: bash
   # - env:
+      # FACTORY_NAME: code-factory
       # HUMAN_COMMENTS: ${{ steps.fetch_issue_comments.outputs.human_comments }}
       # ISSUE_BODY: ${{ steps.normalize_context.outputs.issue_body }}
     # id: sanitize_context
@@ -210,7 +235,9 @@ name: "Code Factory Issue Intake"
     # uses: actions/github-script@v9
     # with:
       # github-token: ${{ secrets.GITHUB_TOKEN }}
-      # script: "/**\n * HTML comment sanitisation, control/invisible-char removal, and research-comment lookup helpers.\n */\n\n/**\n * Removes all HTML comment sequences (<code>&lt;!--</code> through the next <code>--&gt;</code>).\n * If an opening sequence has no closing counterpart, everything from the opener to the end of\n * the string is removed.\n *\n * @param {string} text\n * @returns {string}\n */\nfunction stripHtmlComments(text) {\n  if (typeof text !== 'string') return '';\n  return text.replace(/<!--[\\s\\S]*?(?:-->|$)/g, '');\n}\n\n/**\n * Removes non-printable ASCII control characters while preserving tab, newline,\n * and carriage return. Also strips Unicode line/paragraph separators.\n *\n * Stripped ASCII:  \\x00-\\x08, \\x0B, \\x0C, \\x0E-\\x1F, \\x7F\n * Preserved:       \\x09 (tab), \\x0A (LF), \\x0D (CR)\n * Unicode:         \\u2028, \\u2029\n *\n * @param {string} text\n * @returns {string}\n */\nfunction stripControlChars(text) {\n  if (typeof text !== 'string') return '';\n  return text.replace(/[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F\\x7F\\u2028\\u2029]/g, '');\n}\n\n/**\n * Removes invisible Unicode characters that have no legitimate use in issue content:\n * zero-width spaces/joiners, bidirectional marks, word/function/invisible operators,\n * and the BOM (byte order mark).\n *\n * Ranges stripped:\n *   \\u200B-\\u200F  — zero-width space, non-joiner, joiner, LTR mark, RTL mark\n *   \\u2060-\\u2064  — word joiner, function application, invisible times/separator/plus\n *   \\uFEFF           — BOM / zero-width no-break space\n *\n * @param {string} text\n * @returns {string}\n */\nfunction stripInvisibleUnicode(text) {\n  if (typeof text !== 'string') return '';\n  return text.replace(/[\\u200B-\\u200F\\u2060-\\u2064\\uFEFF]/g, '');\n}\n\n/**\n * Composed sanitisation pipeline. Runs all three filters in sequence:\n *\n *   input → stripHtmlComments → stripControlChars → stripInvisibleUnicode → output\n *\n * Idempotent: applying twice produces the same result as applying once.\n *\n * @param {string} text\n * @returns {string}\n */\nfunction sanitizeUserContent(text) {\n  if (typeof text !== 'string') return '';\n  return stripInvisibleUnicode(stripControlChars(stripHtmlComments(text)));\n}\n\n/**\n * Finds the most recently created matching research comment written by\n * <code>github-actions[bot]</code> whose body starts with <code>marker</code>.\n *\n * @param {Array<{author: string, body: string}>} comments Ordered oldest-first.\n * @param {string} marker\n * @returns {{author: string, body: string} | null}\n */\nfunction findResearchComment(comments, marker) {\n  if (!Array.isArray(comments)) {\n    return null;\n  }\n  const matches = comments.filter(\n    (c) =>\n      c != null &&\n      typeof c.body === 'string' &&\n      (c.author ?? c.user?.login) === 'github-actions[bot]' &&\n      c.body.trimStart().startsWith(marker),\n  );\n  return matches.length > 0 ? matches[matches.length - 1] : null;\n}\n\nif (typeof module !== 'undefined') {\n  module.exports = {\n    stripHtmlComments,\n    stripControlChars,\n    stripInvisibleUnicode,\n    sanitizeUserContent,\n    findResearchComment,\n  };\n}\n\nconst fs = require('fs');\nconst crypto = require('crypto');\n\nconst body = process.env.ISSUE_BODY || '';\nconst comments = process.env.HUMAN_COMMENTS || '';\n\nconst sanitizedBody = sanitizeUserContent(body);\nconst sanitizedComments = sanitizeUserContent(comments);\n\nconst eofDelim1 = `EOF_${crypto.randomUUID().replace(/-/g, '')}`;\nconst output1 = `sanitized_issue_body<<${eofDelim1}\\n${sanitizedBody}\\n${eofDelim1}\\n`;\nfs.appendFileSync(process.env.GITHUB_OUTPUT, output1);\n\nconst eofDelim2 = `EOF_${crypto.randomUUID().replace(/-/g, '')}`;\nconst output2 = `sanitized_issue_comments<<${eofDelim2}\\n${sanitizedComments}\\n${eofDelim2}\\n`;\nfs.appendFileSync(process.env.GITHUB_OUTPUT, output2);\n\nconst dir = '/tmp/code-factory-context';\nfs.mkdirSync(dir, { recursive: true });\nfs.writeFileSync(`${dir}/issue_body.md`, sanitizedBody);\nfs.writeFileSync(`${dir}/issue_comments.md`, sanitizedComments);\ncore.info('Wrote sanitized issue context files to /tmp/code-factory-context/');\n"
+      # script: |
+        # const fn = require('${{ github.workspace }}/.github/scripts/workflows/lib/factory-runners/sanitize-context.js');
+        # await fn({ github, context, core });
   # - if: steps.normalize_context.outputs.event_eligible == 'true' && steps.normalize_context.outputs.actor_trusted == 'true' && steps.check_duplicate_pr.outputs.duplicate_pr_found != 'true'
     # name: Upload issue context artifact
     # uses: actions/upload-artifact@v4
@@ -226,13 +253,16 @@ name: "Code Factory Issue Intake"
       # DUPLICATE_PR_URL: ${{ steps.check_duplicate_pr.outputs.duplicate_pr_url }}
       # EVENT_ELIGIBLE: ${{ steps.normalize_context.outputs.event_eligible }}
       # EVENT_ELIGIBLE_REASON: ${{ steps.normalize_context.outputs.event_eligible_reason }}
+      # FACTORY_NAME: code-factory
     # id: finalize_gate
     # if: always()
     # name: Finalize gate reason
     # uses: actions/github-script@v9
     # with:
       # github-token: ${{ secrets.GITHUB_TOKEN }}
-      # script: "/**\n * Code-factory issue intake configuration. Keep `ISSUE_BRANCH_PREFIX` aligned with\n * `workflow.md.tmpl` (`code-factory/issue-${{ github.event.issue.number }}`).\n */\n'use strict';\n\nconst ISSUE_BRANCH_PREFIX = 'code-factory/issue-';\nconst FACTORY_LABEL = 'code-factory';\nconst DUPLICATE_LINKAGE_MODE = 'closes-literal';\nconst ISSUE_OPENED_NOT_ELIGIBLE_REASON =\n  'Issue opened event does not qualify because the issue was created without the code-factory label.';\n\nif (typeof module !== 'undefined') {\n  module.exports = {\n    ISSUE_BRANCH_PREFIX,\n    FACTORY_LABEL,\n    DUPLICATE_LINKAGE_MODE,\n    ISSUE_OPENED_NOT_ELIGIBLE_REASON,\n  };\n}\n\n/**\n * Shared deterministic helpers for code-factory and change-factory issue intake workflows.\n * Workflow-specific configuration is passed via {@link createFactoryIssueIntake}.\n */\n\n/** GitHub-recognized issue-closing keywords (case-insensitive). See https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/using-keywords-in-issues-and-pull-requests */\nconst GITHUB_ISSUE_CLOSING_KEYWORDS = '(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)';\n\n/**\n * GitHub closing-keyword reference: `#` is immediately followed by the issue digits (no whitespace),\n * per GitHub keyword syntax. Case-insensitive keywords; `(?![0-9])` avoids matching `#42` inside `#420`.\n *\n * @param {number} issueNumber\n * @returns {RegExp}\n */\nfunction issueClosingReferencePattern(issueNumber) {\n  return new RegExp(\n    `\\\\b${GITHUB_ISSUE_CLOSING_KEYWORDS}\\\\s*#${issueNumber}(?![0-9])`,\n    'i',\n  );\n}\n\n/**\n * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels: string[] | null | undefined, factoryLabel: string, issueOpenedNotEligibleReason: string }} params\n * @returns {{ event_eligible: boolean, event_eligible_reason: string }}\n */\nfunction factoryQualifyTriggerEvent({\n  eventName,\n  eventAction,\n  labelName,\n  issueLabels,\n  factoryLabel,\n  issueOpenedNotEligibleReason,\n}) {\n  if (eventName === 'issue_comment') {\n    return {\n      event_eligible: true,\n      event_eligible_reason: `Issue comment event qualifies because the slash_command trigger routes to issue_comment.`,\n    };\n  }\n\n  if (eventName !== 'issues') {\n    return {\n      event_eligible: false,\n      event_eligible_reason: `Unsupported event '${eventName || '(empty)'}'; expected 'issues'.`,\n    };\n  }\n\n  if (eventAction === 'labeled') {\n    if (labelName === factoryLabel) {\n      return {\n        event_eligible: true,\n        event_eligible_reason: `Issue labeled event qualifies because the applied label is ${factoryLabel}.`,\n      };\n    }\n\n    return {\n      event_eligible: false,\n      event_eligible_reason: `Issue labeled event does not qualify because the applied label is '${labelName || '(empty)'}', not '${factoryLabel}'.`,\n    };\n  }\n\n  if (eventAction === 'opened') {\n    if (Array.isArray(issueLabels) && issueLabels.includes(factoryLabel)) {\n      return {\n        event_eligible: true,\n        event_eligible_reason: `Issue opened event qualifies because the issue already has the ${factoryLabel} label.`,\n      };\n    }\n\n    return {\n      event_eligible: false,\n      event_eligible_reason: issueOpenedNotEligibleReason,\n    };\n  }\n\n  return {\n    event_eligible: false,\n    event_eligible_reason: `Issue event action '${eventAction || '(empty)'}' is not eligible; expected 'opened' or 'labeled'.`,\n  };\n}\n\n/**\n * @param {{ sender: string, permission: string | null }} params\n * @returns {{ actor_trusted: boolean, actor_trusted_reason: string }}\n */\nfunction factoryCheckActorTrust({ sender, permission }) {\n  if (sender === 'github-actions[bot]') {\n    return {\n      actor_trusted: true,\n      actor_trusted_reason: 'Trigger actor github-actions[bot] is trusted without collaborator permission lookup.',\n    };\n  }\n\n  if (['write', 'maintain', 'admin'].includes(permission)) {\n    return {\n      actor_trusted: true,\n      actor_trusted_reason: `Trigger actor '${sender || '(empty)'}' is trusted with repository permission '${permission}'.`,\n    };\n  }\n\n  return {\n    actor_trusted: false,\n    actor_trusted_reason: `Trigger actor '${sender || '(empty)'}' is not trusted; repository permission '${permission || '(none)'}' does not meet the required write/maintain/admin policy.`,\n  };\n}\n\n/**\n * @returns {{ actor_trusted: boolean, actor_trusted_reason: string }}\n */\nfunction factoryActorTrustWhenSenderMissing() {\n  return {\n    actor_trusted: false,\n    actor_trusted_reason: 'Trigger actor could not be identified; sender login is missing from the event payload.',\n  };\n}\n\n/**\n * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords' }} params\n * @returns {{ duplicate_pr_found: boolean, duplicate_pr_url: string | null, gate_reason: string }}\n */\nfunction factoryCheckDuplicatePR({\n  issueNumber,\n  pullRequests,\n  branchPrefix,\n  prLabel,\n  duplicateLinkageMode,\n}) {\n  const expectedBranch = `${branchPrefix}${issueNumber}`;\n  const expectedClosesExample = `Closes #${issueNumber}`;\n  const expectedRelatedExample = `Related to #${issueNumber}`;\n\n  let bodyPattern;\n  if (duplicateLinkageMode === 'closes-literal') {\n    bodyPattern = new RegExp(`Closes #${issueNumber}(?![0-9])`);\n  } else if (duplicateLinkageMode === 'related-literal') {\n    bodyPattern = new RegExp(`\\\\bRelated to #${issueNumber}(?![0-9])`);\n  } else {\n    bodyPattern = issueClosingReferencePattern(issueNumber);\n  }\n\n  const duplicate = (pullRequests || []).find(pr => (\n    pr.state === 'open' &&\n    Array.isArray(pr.labels) && pr.labels.includes(prLabel) &&\n    pr.head_branch === expectedBranch &&\n    bodyPattern.test(String(pr.body || ''))\n  ));\n\n  if (duplicate) {\n    const url = duplicate.html_url ?? null;\n    let linkagePhrase;\n    if (duplicateLinkageMode === 'closes-literal') {\n      linkagePhrase = `canonical linkage '${expectedClosesExample}'`;\n    } else if (duplicateLinkageMode === 'related-literal') {\n      linkagePhrase = `literal linkage \\`${expectedRelatedExample}\\``;\n    } else {\n      linkagePhrase = `issue-closing reference such as '${expectedClosesExample}'`;\n    }\n\n    return {\n      duplicate_pr_found: true,\n      duplicate_pr_url: url,\n      gate_reason: `Found existing linked ${prLabel} PR #${duplicate.number} (${url ?? '(unknown URL)'}) for issue #${issueNumber} on branch '${expectedBranch}' with ${linkagePhrase}.`,\n    };\n  }\n\n  let linkageTail;\n  if (duplicateLinkageMode === 'closes-literal') {\n    linkageTail = `canonical linkage '${expectedClosesExample}'`;\n  } else if (duplicateLinkageMode === 'related-literal') {\n    linkageTail = `literal linkage \\`${expectedRelatedExample}\\``;\n  } else {\n    linkageTail = `issue-closing reference such as '${expectedClosesExample}'`;\n  }\n\n  return {\n    duplicate_pr_found: false,\n    duplicate_pr_url: null,\n    gate_reason: `No open linked ${prLabel} PR found for issue #${issueNumber}; expected label '${prLabel}', branch '${expectedBranch}', and ${linkageTail}.`,\n  };\n}\n\n/**\n * @param {{ eventEligible: boolean, eventEligibleReason: string, actorTrusted: boolean | null, actorTrustedReason: string | null, duplicatePrFound: boolean | null, duplicatePrUrl: string | null, duplicateCheckGateReason: string | null }} params\n * @param {string} factoryLabel\n * @returns {{ gate_reason: string }}\n */\nfunction factoryComputeGateReason({\n  eventEligible,\n  eventEligibleReason,\n  actorTrusted,\n  actorTrustedReason,\n  duplicatePrFound,\n  duplicatePrUrl,\n  duplicateCheckGateReason,\n}, factoryLabel) {\n  if (!eventEligible) {\n    return { gate_reason: eventEligibleReason };\n  }\n\n  if (actorTrusted === false) {\n    return { gate_reason: actorTrustedReason || 'Trigger actor is not trusted.' };\n  }\n\n  if (actorTrusted == null) {\n    return { gate_reason: 'Actor trust could not be determined; the trust check step did not produce an output.' };\n  }\n\n  if (duplicatePrFound === true) {\n    return {\n      gate_reason: duplicateCheckGateReason || `Found existing linked ${factoryLabel} PR: ${duplicatePrUrl || '(unknown URL)'}.`,\n    };\n  }\n\n  if (duplicatePrFound == null) {\n    return { gate_reason: 'Duplicate PR check did not complete; the check step did not produce an output.' };\n  }\n\n  return {\n    gate_reason: duplicateCheckGateReason || `All deterministic gates passed: event eligible, actor trusted, and no linked ${factoryLabel} PR found.`,\n  };\n}\n\n/**\n * @param {string | undefined} raw\n * @returns {boolean | null}\n */\nfunction factoryParseOptionalTriStateFromEnv(raw) {\n  if (raw == null || raw === '') {\n    return null;\n  }\n  return raw === 'true';\n}\n\n/**\n * @param {Record<string, string | undefined>} env\n */\nfunction factoryParseFinalizeGateEnv(env) {\n  const e = env || {};\n  return {\n    eventEligible: e.EVENT_ELIGIBLE === 'true',\n    eventEligibleReason: e.EVENT_ELIGIBLE_REASON ?? '',\n    actorTrusted: factoryParseOptionalTriStateFromEnv(e.ACTOR_TRUSTED),\n    actorTrustedReason: e.ACTOR_TRUSTED_REASON ?? null,\n    duplicatePrFound: factoryParseOptionalTriStateFromEnv(e.DUPLICATE_PR_FOUND),\n    duplicatePrUrl: e.DUPLICATE_PR_URL && e.DUPLICATE_PR_URL !== '' ? e.DUPLICATE_PR_URL : null,\n    duplicateCheckGateReason: e.DUPLICATE_GATE_REASON ?? null,\n  };\n}\n\n/**\n * @param {{\n *   branchPrefix: string,\n *   factoryLabel: string,\n *   issueOpenedNotEligibleReason: string,\n *   duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords',\n * }} config\n */\nfunction createFactoryIssueIntake(config) {\n  const {\n    branchPrefix,\n    factoryLabel,\n    issueOpenedNotEligibleReason,\n    duplicateLinkageMode,\n  } = config;\n\n  function issueBranchName(issueNumber) {\n    return `${branchPrefix}${issueNumber}`;\n  }\n\n  /**\n   * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels?: string[] | null | undefined }} params\n   */\n  function qualifyTriggerEvent(params) {\n    return factoryQualifyTriggerEvent({\n      ...params,\n      factoryLabel,\n      issueOpenedNotEligibleReason,\n    });\n  }\n\n  function checkDuplicatePR(params) {\n    return factoryCheckDuplicatePR({\n      ...params,\n      branchPrefix,\n      prLabel: factoryLabel,\n      duplicateLinkageMode,\n    });\n  }\n\n  function computeGateReason(params) {\n    return factoryComputeGateReason(params, factoryLabel);\n  }\n\n  return {\n    issueBranchName,\n    qualifyTriggerEvent,\n    checkActorTrust: factoryCheckActorTrust,\n    checkDuplicatePR,\n    computeGateReason,\n  };\n}\n\n/**\n * @param {{\n *   branchPrefix: string,\n *   factoryLabel: string,\n *   issueOpenedNotEligibleReason: string,\n *   duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords',\n *   issueBranchNameAliases?: string[],\n * }} config\n */\nfunction createFactoryIssueModule(config) {\n  const intake = createFactoryIssueIntake(config);\n  const issueBranchNameAliases = config.issueBranchNameAliases || [];\n  const factoryIssueModule = {\n    ...intake,\n    actorTrustWhenSenderMissing: factoryActorTrustWhenSenderMissing,\n    parseOptionalTriStateFromEnv: factoryParseOptionalTriStateFromEnv,\n    parseFinalizeGateEnv: factoryParseFinalizeGateEnv,\n  };\n\n  for (const alias of issueBranchNameAliases) {\n    factoryIssueModule[alias] = intake.issueBranchName;\n  }\n\n  return factoryIssueModule;\n}\n\nif (typeof module !== 'undefined') {\n  module.exports = {\n    issueClosingReferencePattern,\n    factoryQualifyTriggerEvent,\n    factoryCheckActorTrust,\n    factoryActorTrustWhenSenderMissing,\n    factoryCheckDuplicatePR,\n    factoryComputeGateReason,\n    factoryParseOptionalTriStateFromEnv,\n    factoryParseFinalizeGateEnv,\n    createFactoryIssueIntake,\n    createFactoryIssueModule,\n  };\n}\n\n// Concatenated by the workflow compiler; not executable standalone.\nconst factoryIssueModule = createFactoryIssueModule({\n  branchPrefix: ISSUE_BRANCH_PREFIX,\n  factoryLabel: FACTORY_LABEL,\n  issueOpenedNotEligibleReason: ISSUE_OPENED_NOT_ELIGIBLE_REASON,\n  duplicateLinkageMode: DUPLICATE_LINKAGE_MODE,\n});\n\nconst qualifyTriggerEvent = factoryIssueModule.qualifyTriggerEvent;\nconst checkActorTrust = factoryIssueModule.checkActorTrust;\nconst checkDuplicatePR = factoryIssueModule.checkDuplicatePR;\nconst computeGateReason = factoryIssueModule.computeGateReason;\nconst issueBranchName = factoryIssueModule.issueBranchName;\nconst actorTrustWhenSenderMissing = factoryIssueModule.actorTrustWhenSenderMissing;\nconst parseFinalizeGateEnv = factoryIssueModule.parseFinalizeGateEnv;\n\nconst result = computeGateReason(parseFinalizeGateEnv(process.env));\n\ncore.setOutput('gate_reason', result.gate_reason);\ncore.info(`Gate reason: ${result.gate_reason}`);\n"
+      # script: |
+        # const fn = require('${{ github.workspace }}/.github/scripts/workflows/lib/factory-runners/finalize-gate.js');
+        # await fn({ github, context, core });
   workflow_dispatch:
     inputs:
       aw_context:
@@ -252,7 +282,7 @@ name: "Code Factory Issue Intake"
 permissions: {}
 
 concurrency:
-  group: "gh-aw-${{ github.workflow }}-${{ github.event.issue.number || github.event.pull_request.number || github.run_id }}"
+  group: "gh-aw-${{ github.workflow }}-${{ github.event.issue.number || github.run_id }}"
 
 run-name: "Code Factory Issue Intake"
 
@@ -411,23 +441,23 @@ jobs:
         run: |
           bash "${RUNNER_TEMP}/gh-aw/actions/create_prompt_first.sh"
           {
-          cat << 'GH_AW_PROMPT_c7ee9817c506bffb_EOF'
+          cat << 'GH_AW_PROMPT_7da93b2c8e398f0e_EOF'
           <system>
-          GH_AW_PROMPT_c7ee9817c506bffb_EOF
+          GH_AW_PROMPT_7da93b2c8e398f0e_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/xpia.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/temp_folder_prompt.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/markdown.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/safe_outputs_prompt.md"
-          cat << 'GH_AW_PROMPT_c7ee9817c506bffb_EOF'
+          cat << 'GH_AW_PROMPT_7da93b2c8e398f0e_EOF'
           <safe-output-tools>
           Tools: create_pull_request, missing_tool, missing_data, noop
-          GH_AW_PROMPT_c7ee9817c506bffb_EOF
+          GH_AW_PROMPT_7da93b2c8e398f0e_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/safe_outputs_create_pull_request.md"
-          cat << 'GH_AW_PROMPT_c7ee9817c506bffb_EOF'
+          cat << 'GH_AW_PROMPT_7da93b2c8e398f0e_EOF'
           </safe-output-tools>
-          GH_AW_PROMPT_c7ee9817c506bffb_EOF
+          GH_AW_PROMPT_7da93b2c8e398f0e_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/mcp_cli_tools_prompt.md"
-          cat << 'GH_AW_PROMPT_c7ee9817c506bffb_EOF'
+          cat << 'GH_AW_PROMPT_7da93b2c8e398f0e_EOF'
           <github-context>
           The following GitHub context information is available for this workflow:
           {{#if __GH_AW_GITHUB_ACTOR__ }}
@@ -459,16 +489,16 @@ jobs:
             - **Note**: If a branch you need is not in the list above and is not listed as an additional fetched ref, it has NOT been checked out. For private repositories you cannot fetch it without proper authentication. If the branch is required and not available, exit with an error and ask the user to add it to the `fetch:` option of the `checkout:` configuration (e.g., `fetch: ["refs/pulls/open/*"]` for all open PR refs, or `fetch: ["main", "feature/my-branch"]` for specific branches).
           </github-context>
           
-          GH_AW_PROMPT_c7ee9817c506bffb_EOF
+          GH_AW_PROMPT_7da93b2c8e398f0e_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/github_mcp_tools_with_safeoutputs_prompt.md"
           if [ "$GITHUB_EVENT_NAME" = "issue_comment" ] && [ -n "$GH_AW_IS_PR_COMMENT" ] || [ "$GITHUB_EVENT_NAME" = "pull_request_review_comment" ] || [ "$GITHUB_EVENT_NAME" = "pull_request_review" ]; then
             cat "${RUNNER_TEMP}/gh-aw/prompts/pr_context_prompt.md"
           fi
-          cat << 'GH_AW_PROMPT_c7ee9817c506bffb_EOF'
+          cat << 'GH_AW_PROMPT_7da93b2c8e398f0e_EOF'
           </system>
           {{#runtime-import .github/workflows/shared/setup-dev.md}}
           {{#runtime-import .github/workflows/code-factory-issue.md}}
-          GH_AW_PROMPT_c7ee9817c506bffb_EOF
+          GH_AW_PROMPT_7da93b2c8e398f0e_EOF
           } > "$GH_AW_PROMPT"
       - name: Interpolate variables and render templates
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
@@ -712,9 +742,9 @@ jobs:
           mkdir -p "${RUNNER_TEMP}/gh-aw/safeoutputs"
           mkdir -p /tmp/gh-aw/safeoutputs
           mkdir -p /tmp/gh-aw/mcp-logs/safeoutputs
-          cat > "${RUNNER_TEMP}/gh-aw/safeoutputs/config.json" << 'GH_AW_SAFE_OUTPUTS_CONFIG_63c37470a1c5c517_EOF'
+          cat > "${RUNNER_TEMP}/gh-aw/safeoutputs/config.json" << 'GH_AW_SAFE_OUTPUTS_CONFIG_76078a336bba7228_EOF'
           {"create_pull_request":{"labels":["code-factory"],"max":1,"max_patch_files":100,"max_patch_size":1024,"patch_format":"am","protect_top_level_dot_folders":true,"protected_files":["package.json","bun.lockb","bunfig.toml","deno.json","deno.jsonc","deno.lock","global.json","NuGet.Config","Directory.Packages.props","mix.exs","mix.lock","go.mod","go.sum","stack.yaml","stack.yaml.lock","pom.xml","build.gradle","build.gradle.kts","settings.gradle","settings.gradle.kts","gradle.properties","package-lock.json","yarn.lock","pnpm-lock.yaml","npm-shrinkwrap.json","requirements.txt","Pipfile","Pipfile.lock","pyproject.toml","setup.py","setup.cfg","Gemfile","Gemfile.lock","uv.lock","CODEOWNERS","DESIGN.md","README.md","CONTRIBUTING.md","CHANGELOG.md","SECURITY.md","CODE_OF_CONDUCT.md","CLAUDE.md","AGENTS.md"]},"create_report_incomplete_issue":{},"missing_data":{},"missing_tool":{},"noop":{"max":1,"report-as-issue":"false"},"report_incomplete":{}}
-          GH_AW_SAFE_OUTPUTS_CONFIG_63c37470a1c5c517_EOF
+          GH_AW_SAFE_OUTPUTS_CONFIG_76078a336bba7228_EOF
       - name: Generate Safe Outputs Tools
         env:
           GH_AW_TOOLS_META_JSON: |
@@ -921,7 +951,7 @@ jobs:
           export MCP_GATEWAY_DOCKER_COMMAND='docker run -i --rm --network host --add-host host.docker.internal:127.0.0.1 --user '"${MCP_GATEWAY_UID}"':'"${MCP_GATEWAY_GID}"' --group-add '"${DOCKER_SOCK_GID}"' -v /var/run/docker.sock:/var/run/docker.sock -e MCP_GATEWAY_PORT -e MCP_GATEWAY_DOMAIN -e MCP_GATEWAY_API_KEY -e MCP_GATEWAY_PAYLOAD_DIR -e MCP_GATEWAY_PAYLOAD_SIZE_THRESHOLD -e DEBUG -e MCP_GATEWAY_LOG_DIR -e GH_AW_MCP_LOG_DIR -e GH_AW_SAFE_OUTPUTS -e GH_AW_SAFE_OUTPUTS_CONFIG_PATH -e GH_AW_SAFE_OUTPUTS_TOOLS_PATH -e GH_AW_ASSETS_BRANCH -e GH_AW_ASSETS_MAX_SIZE_KB -e GH_AW_ASSETS_ALLOWED_EXTS -e DEFAULT_BRANCH -e GITHUB_MCP_SERVER_TOKEN -e GITHUB_MCP_GUARD_MIN_INTEGRITY -e GITHUB_MCP_GUARD_REPOS -e GITHUB_REPOSITORY -e GITHUB_SERVER_URL -e GITHUB_SHA -e GITHUB_WORKSPACE -e GITHUB_TOKEN -e GITHUB_RUN_ID -e GITHUB_RUN_NUMBER -e GITHUB_RUN_ATTEMPT -e GITHUB_JOB -e GITHUB_ACTION -e GITHUB_EVENT_NAME -e GITHUB_EVENT_PATH -e GITHUB_ACTOR -e GITHUB_ACTOR_ID -e GITHUB_TRIGGERING_ACTOR -e GITHUB_WORKFLOW -e GITHUB_WORKFLOW_REF -e GITHUB_WORKFLOW_SHA -e GITHUB_REF -e GITHUB_REF_NAME -e GITHUB_REF_TYPE -e GITHUB_HEAD_REF -e GITHUB_BASE_REF -e GH_AW_SAFE_OUTPUTS_PORT -e GH_AW_SAFE_OUTPUTS_API_KEY -v /tmp/gh-aw/mcp-payloads:/tmp/gh-aw/mcp-payloads:rw -v /opt:/opt:ro -v /tmp:/tmp:rw -v '"${GITHUB_WORKSPACE}"':'"${GITHUB_WORKSPACE}"':rw ghcr.io/github/gh-aw-mcpg:v0.3.6'
           
           GH_AW_NODE=$(which node 2>/dev/null || command -v node 2>/dev/null || echo node)
-          cat << GH_AW_MCP_CONFIG_0e3460c26af3b750_EOF | "$GH_AW_NODE" "${RUNNER_TEMP}/gh-aw/actions/start_mcp_gateway.cjs"
+          cat << GH_AW_MCP_CONFIG_1a324ec67c362bc7_EOF | "$GH_AW_NODE" "${RUNNER_TEMP}/gh-aw/actions/start_mcp_gateway.cjs"
           {
             "mcpServers": {
               "elastic-docs": {
@@ -975,7 +1005,7 @@ jobs:
               "payloadDir": "${MCP_GATEWAY_PAYLOAD_DIR}"
             }
           }
-          GH_AW_MCP_CONFIG_0e3460c26af3b750_EOF
+          GH_AW_MCP_CONFIG_1a324ec67c362bc7_EOF
       - name: Mount MCP servers as CLIs
         id: mount-mcp-clis
         continue-on-error: true
@@ -1683,405 +1713,13 @@ jobs:
         id: qualify_trigger
         if: steps.determine_intake_mode.outputs.intake_mode == 'issue-event'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
+        env:
+          FACTORY_NAME: code-factory
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            /**
-             * Code-factory issue intake configuration. Keep `ISSUE_BRANCH_PREFIX` aligned with
-             * `workflow.md.tmpl` (`code-factory/issue-${{ github.event.issue.number }}`).
-             */
-            'use strict';
-
-            const ISSUE_BRANCH_PREFIX = 'code-factory/issue-';
-            const FACTORY_LABEL = 'code-factory';
-            const DUPLICATE_LINKAGE_MODE = 'closes-literal';
-            const ISSUE_OPENED_NOT_ELIGIBLE_REASON =
-              'Issue opened event does not qualify because the issue was created without the code-factory label.';
-
-            if (typeof module !== 'undefined') {
-              module.exports = {
-                ISSUE_BRANCH_PREFIX,
-                FACTORY_LABEL,
-                DUPLICATE_LINKAGE_MODE,
-                ISSUE_OPENED_NOT_ELIGIBLE_REASON,
-              };
-            }
-
-            /**
-             * Shared deterministic helpers for code-factory and change-factory issue intake workflows.
-             * Workflow-specific configuration is passed via {@link createFactoryIssueIntake}.
-             */
-
-            /** GitHub-recognized issue-closing keywords (case-insensitive). See https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/using-keywords-in-issues-and-pull-requests */
-            const GITHUB_ISSUE_CLOSING_KEYWORDS = '(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)';
-
-            /**
-             * GitHub closing-keyword reference: `#` is immediately followed by the issue digits (no whitespace),
-             * per GitHub keyword syntax. Case-insensitive keywords; `(?![0-9])` avoids matching `#42` inside `#420`.
-             *
-             * @param {number} issueNumber
-             * @returns {RegExp}
-             */
-            function issueClosingReferencePattern(issueNumber) {
-              return new RegExp(
-                `\\b${GITHUB_ISSUE_CLOSING_KEYWORDS}\\s*#${issueNumber}(?![0-9])`,
-                'i',
-              );
-            }
-
-            /**
-             * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels: string[] | null | undefined, factoryLabel: string, issueOpenedNotEligibleReason: string }} params
-             * @returns {{ event_eligible: boolean, event_eligible_reason: string }}
-             */
-            function factoryQualifyTriggerEvent({
-              eventName,
-              eventAction,
-              labelName,
-              issueLabels,
-              factoryLabel,
-              issueOpenedNotEligibleReason,
-            }) {
-              if (eventName === 'issue_comment') {
-                return {
-                  event_eligible: true,
-                  event_eligible_reason: `Issue comment event qualifies because the slash_command trigger routes to issue_comment.`,
-                };
-              }
-
-              if (eventName !== 'issues') {
-                return {
-                  event_eligible: false,
-                  event_eligible_reason: `Unsupported event '${eventName || '(empty)'}'; expected 'issues'.`,
-                };
-              }
-
-              if (eventAction === 'labeled') {
-                if (labelName === factoryLabel) {
-                  return {
-                    event_eligible: true,
-                    event_eligible_reason: `Issue labeled event qualifies because the applied label is ${factoryLabel}.`,
-                  };
-                }
-
-                return {
-                  event_eligible: false,
-                  event_eligible_reason: `Issue labeled event does not qualify because the applied label is '${labelName || '(empty)'}', not '${factoryLabel}'.`,
-                };
-              }
-
-              if (eventAction === 'opened') {
-                if (Array.isArray(issueLabels) && issueLabels.includes(factoryLabel)) {
-                  return {
-                    event_eligible: true,
-                    event_eligible_reason: `Issue opened event qualifies because the issue already has the ${factoryLabel} label.`,
-                  };
-                }
-
-                return {
-                  event_eligible: false,
-                  event_eligible_reason: issueOpenedNotEligibleReason,
-                };
-              }
-
-              return {
-                event_eligible: false,
-                event_eligible_reason: `Issue event action '${eventAction || '(empty)'}' is not eligible; expected 'opened' or 'labeled'.`,
-              };
-            }
-
-            /**
-             * @param {{ sender: string, permission: string | null }} params
-             * @returns {{ actor_trusted: boolean, actor_trusted_reason: string }}
-             */
-            function factoryCheckActorTrust({ sender, permission }) {
-              if (sender === 'github-actions[bot]') {
-                return {
-                  actor_trusted: true,
-                  actor_trusted_reason: 'Trigger actor github-actions[bot] is trusted without collaborator permission lookup.',
-                };
-              }
-
-              if (['write', 'maintain', 'admin'].includes(permission)) {
-                return {
-                  actor_trusted: true,
-                  actor_trusted_reason: `Trigger actor '${sender || '(empty)'}' is trusted with repository permission '${permission}'.`,
-                };
-              }
-
-              return {
-                actor_trusted: false,
-                actor_trusted_reason: `Trigger actor '${sender || '(empty)'}' is not trusted; repository permission '${permission || '(none)'}' does not meet the required write/maintain/admin policy.`,
-              };
-            }
-
-            /**
-             * @returns {{ actor_trusted: boolean, actor_trusted_reason: string }}
-             */
-            function factoryActorTrustWhenSenderMissing() {
-              return {
-                actor_trusted: false,
-                actor_trusted_reason: 'Trigger actor could not be identified; sender login is missing from the event payload.',
-              };
-            }
-
-            /**
-             * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords' }} params
-             * @returns {{ duplicate_pr_found: boolean, duplicate_pr_url: string | null, gate_reason: string }}
-             */
-            function factoryCheckDuplicatePR({
-              issueNumber,
-              pullRequests,
-              branchPrefix,
-              prLabel,
-              duplicateLinkageMode,
-            }) {
-              const expectedBranch = `${branchPrefix}${issueNumber}`;
-              const expectedClosesExample = `Closes #${issueNumber}`;
-              const expectedRelatedExample = `Related to #${issueNumber}`;
-
-              let bodyPattern;
-              if (duplicateLinkageMode === 'closes-literal') {
-                bodyPattern = new RegExp(`Closes #${issueNumber}(?![0-9])`);
-              } else if (duplicateLinkageMode === 'related-literal') {
-                bodyPattern = new RegExp(`\\bRelated to #${issueNumber}(?![0-9])`);
-              } else {
-                bodyPattern = issueClosingReferencePattern(issueNumber);
-              }
-
-              const duplicate = (pullRequests || []).find(pr => (
-                pr.state === 'open' &&
-                Array.isArray(pr.labels) && pr.labels.includes(prLabel) &&
-                pr.head_branch === expectedBranch &&
-                bodyPattern.test(String(pr.body || ''))
-              ));
-
-              if (duplicate) {
-                const url = duplicate.html_url ?? null;
-                let linkagePhrase;
-                if (duplicateLinkageMode === 'closes-literal') {
-                  linkagePhrase = `canonical linkage '${expectedClosesExample}'`;
-                } else if (duplicateLinkageMode === 'related-literal') {
-                  linkagePhrase = `literal linkage \`${expectedRelatedExample}\``;
-                } else {
-                  linkagePhrase = `issue-closing reference such as '${expectedClosesExample}'`;
-                }
-
-                return {
-                  duplicate_pr_found: true,
-                  duplicate_pr_url: url,
-                  gate_reason: `Found existing linked ${prLabel} PR #${duplicate.number} (${url ?? '(unknown URL)'}) for issue #${issueNumber} on branch '${expectedBranch}' with ${linkagePhrase}.`,
-                };
-              }
-
-              let linkageTail;
-              if (duplicateLinkageMode === 'closes-literal') {
-                linkageTail = `canonical linkage '${expectedClosesExample}'`;
-              } else if (duplicateLinkageMode === 'related-literal') {
-                linkageTail = `literal linkage \`${expectedRelatedExample}\``;
-              } else {
-                linkageTail = `issue-closing reference such as '${expectedClosesExample}'`;
-              }
-
-              return {
-                duplicate_pr_found: false,
-                duplicate_pr_url: null,
-                gate_reason: `No open linked ${prLabel} PR found for issue #${issueNumber}; expected label '${prLabel}', branch '${expectedBranch}', and ${linkageTail}.`,
-              };
-            }
-
-            /**
-             * @param {{ eventEligible: boolean, eventEligibleReason: string, actorTrusted: boolean | null, actorTrustedReason: string | null, duplicatePrFound: boolean | null, duplicatePrUrl: string | null, duplicateCheckGateReason: string | null }} params
-             * @param {string} factoryLabel
-             * @returns {{ gate_reason: string }}
-             */
-            function factoryComputeGateReason({
-              eventEligible,
-              eventEligibleReason,
-              actorTrusted,
-              actorTrustedReason,
-              duplicatePrFound,
-              duplicatePrUrl,
-              duplicateCheckGateReason,
-            }, factoryLabel) {
-              if (!eventEligible) {
-                return { gate_reason: eventEligibleReason };
-              }
-
-              if (actorTrusted === false) {
-                return { gate_reason: actorTrustedReason || 'Trigger actor is not trusted.' };
-              }
-
-              if (actorTrusted == null) {
-                return { gate_reason: 'Actor trust could not be determined; the trust check step did not produce an output.' };
-              }
-
-              if (duplicatePrFound === true) {
-                return {
-                  gate_reason: duplicateCheckGateReason || `Found existing linked ${factoryLabel} PR: ${duplicatePrUrl || '(unknown URL)'}.`,
-                };
-              }
-
-              if (duplicatePrFound == null) {
-                return { gate_reason: 'Duplicate PR check did not complete; the check step did not produce an output.' };
-              }
-
-              return {
-                gate_reason: duplicateCheckGateReason || `All deterministic gates passed: event eligible, actor trusted, and no linked ${factoryLabel} PR found.`,
-              };
-            }
-
-            /**
-             * @param {string | undefined} raw
-             * @returns {boolean | null}
-             */
-            function factoryParseOptionalTriStateFromEnv(raw) {
-              if (raw == null || raw === '') {
-                return null;
-              }
-              return raw === 'true';
-            }
-
-            /**
-             * @param {Record<string, string | undefined>} env
-             */
-            function factoryParseFinalizeGateEnv(env) {
-              const e = env || {};
-              return {
-                eventEligible: e.EVENT_ELIGIBLE === 'true',
-                eventEligibleReason: e.EVENT_ELIGIBLE_REASON ?? '',
-                actorTrusted: factoryParseOptionalTriStateFromEnv(e.ACTOR_TRUSTED),
-                actorTrustedReason: e.ACTOR_TRUSTED_REASON ?? null,
-                duplicatePrFound: factoryParseOptionalTriStateFromEnv(e.DUPLICATE_PR_FOUND),
-                duplicatePrUrl: e.DUPLICATE_PR_URL && e.DUPLICATE_PR_URL !== '' ? e.DUPLICATE_PR_URL : null,
-                duplicateCheckGateReason: e.DUPLICATE_GATE_REASON ?? null,
-              };
-            }
-
-            /**
-             * @param {{
-             *   branchPrefix: string,
-             *   factoryLabel: string,
-             *   issueOpenedNotEligibleReason: string,
-             *   duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords',
-             * }} config
-             */
-            function createFactoryIssueIntake(config) {
-              const {
-                branchPrefix,
-                factoryLabel,
-                issueOpenedNotEligibleReason,
-                duplicateLinkageMode,
-              } = config;
-
-              function issueBranchName(issueNumber) {
-                return `${branchPrefix}${issueNumber}`;
-              }
-
-              /**
-               * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels?: string[] | null | undefined }} params
-               */
-              function qualifyTriggerEvent(params) {
-                return factoryQualifyTriggerEvent({
-                  ...params,
-                  factoryLabel,
-                  issueOpenedNotEligibleReason,
-                });
-              }
-
-              function checkDuplicatePR(params) {
-                return factoryCheckDuplicatePR({
-                  ...params,
-                  branchPrefix,
-                  prLabel: factoryLabel,
-                  duplicateLinkageMode,
-                });
-              }
-
-              function computeGateReason(params) {
-                return factoryComputeGateReason(params, factoryLabel);
-              }
-
-              return {
-                issueBranchName,
-                qualifyTriggerEvent,
-                checkActorTrust: factoryCheckActorTrust,
-                checkDuplicatePR,
-                computeGateReason,
-              };
-            }
-
-            /**
-             * @param {{
-             *   branchPrefix: string,
-             *   factoryLabel: string,
-             *   issueOpenedNotEligibleReason: string,
-             *   duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords',
-             *   issueBranchNameAliases?: string[],
-             * }} config
-             */
-            function createFactoryIssueModule(config) {
-              const intake = createFactoryIssueIntake(config);
-              const issueBranchNameAliases = config.issueBranchNameAliases || [];
-              const factoryIssueModule = {
-                ...intake,
-                actorTrustWhenSenderMissing: factoryActorTrustWhenSenderMissing,
-                parseOptionalTriStateFromEnv: factoryParseOptionalTriStateFromEnv,
-                parseFinalizeGateEnv: factoryParseFinalizeGateEnv,
-              };
-
-              for (const alias of issueBranchNameAliases) {
-                factoryIssueModule[alias] = intake.issueBranchName;
-              }
-
-              return factoryIssueModule;
-            }
-
-            if (typeof module !== 'undefined') {
-              module.exports = {
-                issueClosingReferencePattern,
-                factoryQualifyTriggerEvent,
-                factoryCheckActorTrust,
-                factoryActorTrustWhenSenderMissing,
-                factoryCheckDuplicatePR,
-                factoryComputeGateReason,
-                factoryParseOptionalTriStateFromEnv,
-                factoryParseFinalizeGateEnv,
-                createFactoryIssueIntake,
-                createFactoryIssueModule,
-              };
-            }
-
-            // Concatenated by the workflow compiler; not executable standalone.
-            const factoryIssueModule = createFactoryIssueModule({
-              branchPrefix: ISSUE_BRANCH_PREFIX,
-              factoryLabel: FACTORY_LABEL,
-              issueOpenedNotEligibleReason: ISSUE_OPENED_NOT_ELIGIBLE_REASON,
-              duplicateLinkageMode: DUPLICATE_LINKAGE_MODE,
-            });
-
-            const qualifyTriggerEvent = factoryIssueModule.qualifyTriggerEvent;
-            const checkActorTrust = factoryIssueModule.checkActorTrust;
-            const checkDuplicatePR = factoryIssueModule.checkDuplicatePR;
-            const computeGateReason = factoryIssueModule.computeGateReason;
-            const issueBranchName = factoryIssueModule.issueBranchName;
-            const actorTrustWhenSenderMissing = factoryIssueModule.actorTrustWhenSenderMissing;
-            const parseFinalizeGateEnv = factoryIssueModule.parseFinalizeGateEnv;
-
-            const eventName = context.eventName;
-            const eventAction = context.payload.action;
-            const labelName = context.payload.label?.name ?? '';
-            const issueLabels = (context.payload.issue?.labels ?? []).map(l => l.name);
-
-            const result = qualifyTriggerEvent({ eventName, eventAction, labelName, issueLabels });
-
-            core.setOutput('event_eligible', result.event_eligible ? 'true' : 'false');
-            core.setOutput('event_eligible_reason', result.event_eligible_reason);
-
-            if (result.event_eligible) {
-              core.info(`Event eligible: ${result.event_eligible_reason}`);
-            } else {
-              core.info(`Event not eligible: ${result.event_eligible_reason}`);
-            }
+            const fn = require('${{ github.workspace }}/.github/scripts/workflows/lib/factory-runners/qualify-trigger.js');
+            await fn({ github, context, core });
       - name: Capture issue context
         id: capture_issue_context
         if: steps.determine_intake_mode.outputs.intake_mode == 'issue-event'
@@ -2099,77 +1737,8 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            /**
-             * Dispatch-mode helpers for code-factory issue intake.
-             */
-            'use strict';
-
-            /**
-             * @param {{ dispatchIssueNumber: string, currentRepository: string }} params
-             * @returns {{ event_eligible: boolean, event_eligible_reason: string, issue_number?: number }}
-             */
-            function validateDispatchInputs({ dispatchIssueNumber, currentRepository }) {
-              const num = parseInt(dispatchIssueNumber, 10);
-              if (
-                !dispatchIssueNumber ||
-                Number.isNaN(num) ||
-                num <= 0 ||
-                String(num) !== String(dispatchIssueNumber).trim()
-              ) {
-                return {
-                  event_eligible: false,
-                  event_eligible_reason: `Dispatch input issue_number '${dispatchIssueNumber || '(empty)'}' is not a valid positive integer.`,
-                };
-              }
-
-              return {
-                event_eligible: true,
-                event_eligible_reason: `Dispatch intake validated: issue #${num} in repository '${currentRepository}'.`,
-                issue_number: num,
-              };
-            }
-
-            /**
-             * @param {{ eventName: string, payload: { issue?: { number?: number, title?: string, body?: string } } }} params
-             * @returns {{ issue_number: number | null, issue_title: string, issue_body: string }}
-             */
-            function normalizeIssueEventContext({ eventName, payload }) {
-              if (eventName !== 'issues') {
-                return { issue_number: null, issue_title: '', issue_body: '' };
-              }
-              return {
-                issue_number: payload.issue?.number ?? null,
-                issue_title: payload.issue?.title ?? '',
-                issue_body: payload.issue?.body ?? '',
-              };
-            }
-
-            if (typeof module !== 'undefined') {
-              module.exports = {
-                validateDispatchInputs,
-                normalizeIssueEventContext,
-              };
-            }
-
-            const currentRepository = `${context.repo.owner}/${context.repo.repo}`;
-            const dispatchIssueNumber = context.payload.inputs?.issue_number ?? '';
-
-            const result = validateDispatchInputs({
-              dispatchIssueNumber,
-              currentRepository,
-            });
-
-            core.setOutput('event_eligible', result.event_eligible ? 'true' : 'false');
-            core.setOutput('event_eligible_reason', result.event_eligible_reason);
-            if (result.issue_number != null) {
-              core.setOutput('issue_number', String(result.issue_number));
-            }
-
-            if (result.event_eligible) {
-              core.info(`Dispatch validated: ${result.event_eligible_reason}`);
-            } else {
-              core.info(`Dispatch rejected: ${result.event_eligible_reason}`);
-            }
+            const fn = require('${{ github.workspace }}/.github/scripts/workflows/lib/factory-runners/validate-dispatch-inputs.js');
+            await fn({ github, context, core });
       - name: Fetch live issue
         id: fetch_live_issue
         if: steps.determine_intake_mode.outputs.intake_mode == 'dispatch' && steps.validate_dispatch_inputs.outputs.event_eligible == 'true'
@@ -2179,453 +1748,19 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const { owner, repo } = context.repo;
-            const issueNumber = parseInt(process.env.INPUT_ISSUE_NUMBER, 10);
-
-            if (!issueNumber || issueNumber <= 0) {
-              core.setOutput('issue_number', '');
-              core.setOutput('issue_title', '');
-              core.setOutput('issue_body', '');
-              core.setOutput('fetch_error', 'Invalid issue number in dispatch inputs.');
-              core.setFailed('Cannot fetch live issue: invalid issue number.');
-            } else {
-              try {
-                const { data } = await github.rest.issues.get({
-                  owner,
-                  repo,
-                  issue_number: issueNumber,
-                });
-                core.setOutput('issue_number', String(data.number));
-                core.setOutput('issue_title', data.title ?? '');
-                core.setOutput('issue_body', data.body ?? '');
-                core.setOutput('fetch_error', '');
-                core.info(`Fetched live issue #${data.number}: ${data.title}`);
-              } catch (err) {
-                core.setOutput('issue_number', '');
-                core.setOutput('issue_title', '');
-                core.setOutput('issue_body', '');
-                core.setOutput('fetch_error', err.message);
-                core.setFailed(`Failed to fetch issue #${issueNumber}: ${err.message}`);
-              }
-            }
+            const fn = require('${{ github.workspace }}/.github/scripts/workflows/lib/factory-runners/fetch-live-issue.js');
+            await fn({ github, context, core });
       - name: Check actor trust
         id: check_actor_trust
         if: steps.determine_intake_mode.outputs.intake_mode == 'issue-event' && steps.qualify_trigger.outputs.event_eligible == 'true'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
+        env:
+          FACTORY_NAME: code-factory
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            /**
-             * Code-factory issue intake configuration. Keep `ISSUE_BRANCH_PREFIX` aligned with
-             * `workflow.md.tmpl` (`code-factory/issue-${{ github.event.issue.number }}`).
-             */
-            'use strict';
-
-            const ISSUE_BRANCH_PREFIX = 'code-factory/issue-';
-            const FACTORY_LABEL = 'code-factory';
-            const DUPLICATE_LINKAGE_MODE = 'closes-literal';
-            const ISSUE_OPENED_NOT_ELIGIBLE_REASON =
-              'Issue opened event does not qualify because the issue was created without the code-factory label.';
-
-            if (typeof module !== 'undefined') {
-              module.exports = {
-                ISSUE_BRANCH_PREFIX,
-                FACTORY_LABEL,
-                DUPLICATE_LINKAGE_MODE,
-                ISSUE_OPENED_NOT_ELIGIBLE_REASON,
-              };
-            }
-
-            /**
-             * Shared deterministic helpers for code-factory and change-factory issue intake workflows.
-             * Workflow-specific configuration is passed via {@link createFactoryIssueIntake}.
-             */
-
-            /** GitHub-recognized issue-closing keywords (case-insensitive). See https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/using-keywords-in-issues-and-pull-requests */
-            const GITHUB_ISSUE_CLOSING_KEYWORDS = '(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)';
-
-            /**
-             * GitHub closing-keyword reference: `#` is immediately followed by the issue digits (no whitespace),
-             * per GitHub keyword syntax. Case-insensitive keywords; `(?![0-9])` avoids matching `#42` inside `#420`.
-             *
-             * @param {number} issueNumber
-             * @returns {RegExp}
-             */
-            function issueClosingReferencePattern(issueNumber) {
-              return new RegExp(
-                `\\b${GITHUB_ISSUE_CLOSING_KEYWORDS}\\s*#${issueNumber}(?![0-9])`,
-                'i',
-              );
-            }
-
-            /**
-             * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels: string[] | null | undefined, factoryLabel: string, issueOpenedNotEligibleReason: string }} params
-             * @returns {{ event_eligible: boolean, event_eligible_reason: string }}
-             */
-            function factoryQualifyTriggerEvent({
-              eventName,
-              eventAction,
-              labelName,
-              issueLabels,
-              factoryLabel,
-              issueOpenedNotEligibleReason,
-            }) {
-              if (eventName === 'issue_comment') {
-                return {
-                  event_eligible: true,
-                  event_eligible_reason: `Issue comment event qualifies because the slash_command trigger routes to issue_comment.`,
-                };
-              }
-
-              if (eventName !== 'issues') {
-                return {
-                  event_eligible: false,
-                  event_eligible_reason: `Unsupported event '${eventName || '(empty)'}'; expected 'issues'.`,
-                };
-              }
-
-              if (eventAction === 'labeled') {
-                if (labelName === factoryLabel) {
-                  return {
-                    event_eligible: true,
-                    event_eligible_reason: `Issue labeled event qualifies because the applied label is ${factoryLabel}.`,
-                  };
-                }
-
-                return {
-                  event_eligible: false,
-                  event_eligible_reason: `Issue labeled event does not qualify because the applied label is '${labelName || '(empty)'}', not '${factoryLabel}'.`,
-                };
-              }
-
-              if (eventAction === 'opened') {
-                if (Array.isArray(issueLabels) && issueLabels.includes(factoryLabel)) {
-                  return {
-                    event_eligible: true,
-                    event_eligible_reason: `Issue opened event qualifies because the issue already has the ${factoryLabel} label.`,
-                  };
-                }
-
-                return {
-                  event_eligible: false,
-                  event_eligible_reason: issueOpenedNotEligibleReason,
-                };
-              }
-
-              return {
-                event_eligible: false,
-                event_eligible_reason: `Issue event action '${eventAction || '(empty)'}' is not eligible; expected 'opened' or 'labeled'.`,
-              };
-            }
-
-            /**
-             * @param {{ sender: string, permission: string | null }} params
-             * @returns {{ actor_trusted: boolean, actor_trusted_reason: string }}
-             */
-            function factoryCheckActorTrust({ sender, permission }) {
-              if (sender === 'github-actions[bot]') {
-                return {
-                  actor_trusted: true,
-                  actor_trusted_reason: 'Trigger actor github-actions[bot] is trusted without collaborator permission lookup.',
-                };
-              }
-
-              if (['write', 'maintain', 'admin'].includes(permission)) {
-                return {
-                  actor_trusted: true,
-                  actor_trusted_reason: `Trigger actor '${sender || '(empty)'}' is trusted with repository permission '${permission}'.`,
-                };
-              }
-
-              return {
-                actor_trusted: false,
-                actor_trusted_reason: `Trigger actor '${sender || '(empty)'}' is not trusted; repository permission '${permission || '(none)'}' does not meet the required write/maintain/admin policy.`,
-              };
-            }
-
-            /**
-             * @returns {{ actor_trusted: boolean, actor_trusted_reason: string }}
-             */
-            function factoryActorTrustWhenSenderMissing() {
-              return {
-                actor_trusted: false,
-                actor_trusted_reason: 'Trigger actor could not be identified; sender login is missing from the event payload.',
-              };
-            }
-
-            /**
-             * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords' }} params
-             * @returns {{ duplicate_pr_found: boolean, duplicate_pr_url: string | null, gate_reason: string }}
-             */
-            function factoryCheckDuplicatePR({
-              issueNumber,
-              pullRequests,
-              branchPrefix,
-              prLabel,
-              duplicateLinkageMode,
-            }) {
-              const expectedBranch = `${branchPrefix}${issueNumber}`;
-              const expectedClosesExample = `Closes #${issueNumber}`;
-              const expectedRelatedExample = `Related to #${issueNumber}`;
-
-              let bodyPattern;
-              if (duplicateLinkageMode === 'closes-literal') {
-                bodyPattern = new RegExp(`Closes #${issueNumber}(?![0-9])`);
-              } else if (duplicateLinkageMode === 'related-literal') {
-                bodyPattern = new RegExp(`\\bRelated to #${issueNumber}(?![0-9])`);
-              } else {
-                bodyPattern = issueClosingReferencePattern(issueNumber);
-              }
-
-              const duplicate = (pullRequests || []).find(pr => (
-                pr.state === 'open' &&
-                Array.isArray(pr.labels) && pr.labels.includes(prLabel) &&
-                pr.head_branch === expectedBranch &&
-                bodyPattern.test(String(pr.body || ''))
-              ));
-
-              if (duplicate) {
-                const url = duplicate.html_url ?? null;
-                let linkagePhrase;
-                if (duplicateLinkageMode === 'closes-literal') {
-                  linkagePhrase = `canonical linkage '${expectedClosesExample}'`;
-                } else if (duplicateLinkageMode === 'related-literal') {
-                  linkagePhrase = `literal linkage \`${expectedRelatedExample}\``;
-                } else {
-                  linkagePhrase = `issue-closing reference such as '${expectedClosesExample}'`;
-                }
-
-                return {
-                  duplicate_pr_found: true,
-                  duplicate_pr_url: url,
-                  gate_reason: `Found existing linked ${prLabel} PR #${duplicate.number} (${url ?? '(unknown URL)'}) for issue #${issueNumber} on branch '${expectedBranch}' with ${linkagePhrase}.`,
-                };
-              }
-
-              let linkageTail;
-              if (duplicateLinkageMode === 'closes-literal') {
-                linkageTail = `canonical linkage '${expectedClosesExample}'`;
-              } else if (duplicateLinkageMode === 'related-literal') {
-                linkageTail = `literal linkage \`${expectedRelatedExample}\``;
-              } else {
-                linkageTail = `issue-closing reference such as '${expectedClosesExample}'`;
-              }
-
-              return {
-                duplicate_pr_found: false,
-                duplicate_pr_url: null,
-                gate_reason: `No open linked ${prLabel} PR found for issue #${issueNumber}; expected label '${prLabel}', branch '${expectedBranch}', and ${linkageTail}.`,
-              };
-            }
-
-            /**
-             * @param {{ eventEligible: boolean, eventEligibleReason: string, actorTrusted: boolean | null, actorTrustedReason: string | null, duplicatePrFound: boolean | null, duplicatePrUrl: string | null, duplicateCheckGateReason: string | null }} params
-             * @param {string} factoryLabel
-             * @returns {{ gate_reason: string }}
-             */
-            function factoryComputeGateReason({
-              eventEligible,
-              eventEligibleReason,
-              actorTrusted,
-              actorTrustedReason,
-              duplicatePrFound,
-              duplicatePrUrl,
-              duplicateCheckGateReason,
-            }, factoryLabel) {
-              if (!eventEligible) {
-                return { gate_reason: eventEligibleReason };
-              }
-
-              if (actorTrusted === false) {
-                return { gate_reason: actorTrustedReason || 'Trigger actor is not trusted.' };
-              }
-
-              if (actorTrusted == null) {
-                return { gate_reason: 'Actor trust could not be determined; the trust check step did not produce an output.' };
-              }
-
-              if (duplicatePrFound === true) {
-                return {
-                  gate_reason: duplicateCheckGateReason || `Found existing linked ${factoryLabel} PR: ${duplicatePrUrl || '(unknown URL)'}.`,
-                };
-              }
-
-              if (duplicatePrFound == null) {
-                return { gate_reason: 'Duplicate PR check did not complete; the check step did not produce an output.' };
-              }
-
-              return {
-                gate_reason: duplicateCheckGateReason || `All deterministic gates passed: event eligible, actor trusted, and no linked ${factoryLabel} PR found.`,
-              };
-            }
-
-            /**
-             * @param {string | undefined} raw
-             * @returns {boolean | null}
-             */
-            function factoryParseOptionalTriStateFromEnv(raw) {
-              if (raw == null || raw === '') {
-                return null;
-              }
-              return raw === 'true';
-            }
-
-            /**
-             * @param {Record<string, string | undefined>} env
-             */
-            function factoryParseFinalizeGateEnv(env) {
-              const e = env || {};
-              return {
-                eventEligible: e.EVENT_ELIGIBLE === 'true',
-                eventEligibleReason: e.EVENT_ELIGIBLE_REASON ?? '',
-                actorTrusted: factoryParseOptionalTriStateFromEnv(e.ACTOR_TRUSTED),
-                actorTrustedReason: e.ACTOR_TRUSTED_REASON ?? null,
-                duplicatePrFound: factoryParseOptionalTriStateFromEnv(e.DUPLICATE_PR_FOUND),
-                duplicatePrUrl: e.DUPLICATE_PR_URL && e.DUPLICATE_PR_URL !== '' ? e.DUPLICATE_PR_URL : null,
-                duplicateCheckGateReason: e.DUPLICATE_GATE_REASON ?? null,
-              };
-            }
-
-            /**
-             * @param {{
-             *   branchPrefix: string,
-             *   factoryLabel: string,
-             *   issueOpenedNotEligibleReason: string,
-             *   duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords',
-             * }} config
-             */
-            function createFactoryIssueIntake(config) {
-              const {
-                branchPrefix,
-                factoryLabel,
-                issueOpenedNotEligibleReason,
-                duplicateLinkageMode,
-              } = config;
-
-              function issueBranchName(issueNumber) {
-                return `${branchPrefix}${issueNumber}`;
-              }
-
-              /**
-               * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels?: string[] | null | undefined }} params
-               */
-              function qualifyTriggerEvent(params) {
-                return factoryQualifyTriggerEvent({
-                  ...params,
-                  factoryLabel,
-                  issueOpenedNotEligibleReason,
-                });
-              }
-
-              function checkDuplicatePR(params) {
-                return factoryCheckDuplicatePR({
-                  ...params,
-                  branchPrefix,
-                  prLabel: factoryLabel,
-                  duplicateLinkageMode,
-                });
-              }
-
-              function computeGateReason(params) {
-                return factoryComputeGateReason(params, factoryLabel);
-              }
-
-              return {
-                issueBranchName,
-                qualifyTriggerEvent,
-                checkActorTrust: factoryCheckActorTrust,
-                checkDuplicatePR,
-                computeGateReason,
-              };
-            }
-
-            /**
-             * @param {{
-             *   branchPrefix: string,
-             *   factoryLabel: string,
-             *   issueOpenedNotEligibleReason: string,
-             *   duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords',
-             *   issueBranchNameAliases?: string[],
-             * }} config
-             */
-            function createFactoryIssueModule(config) {
-              const intake = createFactoryIssueIntake(config);
-              const issueBranchNameAliases = config.issueBranchNameAliases || [];
-              const factoryIssueModule = {
-                ...intake,
-                actorTrustWhenSenderMissing: factoryActorTrustWhenSenderMissing,
-                parseOptionalTriStateFromEnv: factoryParseOptionalTriStateFromEnv,
-                parseFinalizeGateEnv: factoryParseFinalizeGateEnv,
-              };
-
-              for (const alias of issueBranchNameAliases) {
-                factoryIssueModule[alias] = intake.issueBranchName;
-              }
-
-              return factoryIssueModule;
-            }
-
-            if (typeof module !== 'undefined') {
-              module.exports = {
-                issueClosingReferencePattern,
-                factoryQualifyTriggerEvent,
-                factoryCheckActorTrust,
-                factoryActorTrustWhenSenderMissing,
-                factoryCheckDuplicatePR,
-                factoryComputeGateReason,
-                factoryParseOptionalTriStateFromEnv,
-                factoryParseFinalizeGateEnv,
-                createFactoryIssueIntake,
-                createFactoryIssueModule,
-              };
-            }
-
-            // Concatenated by the workflow compiler; not executable standalone.
-            const factoryIssueModule = createFactoryIssueModule({
-              branchPrefix: ISSUE_BRANCH_PREFIX,
-              factoryLabel: FACTORY_LABEL,
-              issueOpenedNotEligibleReason: ISSUE_OPENED_NOT_ELIGIBLE_REASON,
-              duplicateLinkageMode: DUPLICATE_LINKAGE_MODE,
-            });
-
-            const qualifyTriggerEvent = factoryIssueModule.qualifyTriggerEvent;
-            const checkActorTrust = factoryIssueModule.checkActorTrust;
-            const checkDuplicatePR = factoryIssueModule.checkDuplicatePR;
-            const computeGateReason = factoryIssueModule.computeGateReason;
-            const issueBranchName = factoryIssueModule.issueBranchName;
-            const actorTrustWhenSenderMissing = factoryIssueModule.actorTrustWhenSenderMissing;
-            const parseFinalizeGateEnv = factoryIssueModule.parseFinalizeGateEnv;
-
-            const { owner, repo } = context.repo;
-            const sender = context.payload.sender?.login ?? '';
-
-            if (!sender) {
-              const missing = actorTrustWhenSenderMissing();
-              core.setOutput('actor_trusted', 'false');
-              core.setOutput('actor_trusted_reason', missing.actor_trusted_reason);
-              core.info('Actor not trusted: sender login is missing from the event payload.');
-            } else {
-              let permission = null;
-              if (sender !== 'github-actions[bot]') {
-                const { data } = await github.rest.repos.getCollaboratorPermissionLevel({
-                  owner,
-                  repo,
-                  username: sender,
-                });
-                permission = data.permission;
-              }
-
-              const result = checkActorTrust({ sender, permission });
-
-              core.setOutput('actor_trusted', result.actor_trusted ? 'true' : 'false');
-              core.setOutput('actor_trusted_reason', result.actor_trusted_reason);
-
-              if (result.actor_trusted) {
-                core.info(`Actor trusted: ${result.actor_trusted_reason}`);
-              } else {
-                core.info(`Actor not trusted: ${result.actor_trusted_reason}`);
-              }
-            }
+            const fn = require('${{ github.workspace }}/.github/scripts/workflows/lib/factory-runners/check-actor-trust.js');
+            await fn({ github, context, core });
       - name: Fetch issue comments
         id: fetch_issue_comments
         if: |-
@@ -2646,124 +1781,8 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            /**
-             * Shared comment helpers for research-factory issue intake workflows.
-             */
-
-            /**
-             * Fetches human-authored comments for an issue, paginated, with bot filtering and a hard cap.
-             *
-             * @param {{ github: object, owner: string, repo: string, issueNumber: number }} params
-             * @returns {Promise<{ comments: Array<{author: string, createdAt: string, body: string}>, truncated: boolean }>}
-             */
-            async function factoryFetchIssueComments({ github, owner, repo, issueNumber }) {
-              const MAX_COMMENTS = 200;
-              const allComments = await github.paginate(github.rest.issues.listComments, {
-                owner,
-                repo,
-                issue_number: issueNumber,
-                per_page: 100,
-              });
-
-              const humanComments = [];
-              let truncated = false;
-              for (const comment of allComments) {
-                if (comment.user?.login?.endsWith('[bot]')) {
-                  continue;
-                }
-                if (humanComments.length >= MAX_COMMENTS) {
-                  truncated = true;
-                  break;
-                }
-                humanComments.push({
-                  author: comment.user?.login ?? '',
-                  createdAt: comment.created_at ?? '',
-                  body: comment.body ?? '',
-                });
-              }
-
-              return {
-                comments: humanComments,
-                truncated,
-              };
-            }
-
-            const COMMENT_CONTEXT_BUDGET = 50_000;
-            /** Overhead reserved for truncation markers appended after the loop. */
-            const COMMENT_CONTEXT_MARKER_OVERHEAD = 200;
-
-            /**
-             * Serializes captured issue comments into a deterministic markdown string for agent prompts.
-             *
-             * @param {{ comments: Array<{author: string, createdAt: string, body: string}>, truncated: boolean }} params
-             * @returns {string}
-             */
-            function serializeIssueComments({ comments, truncated }) {
-              if (!Array.isArray(comments) || comments.length === 0) {
-                return '';
-              }
-
-              const bodyBudget = COMMENT_CONTEXT_BUDGET - COMMENT_CONTEXT_MARKER_OVERHEAD;
-              let result = '';
-              let includedCount = 0;
-
-              for (const comment of comments) {
-                const header = `**@${comment.author || ''}** (${comment.createdAt || ''}):\n\n`;
-                const body = comment.body || '';
-                const footer = '\n\n---\n';
-                const available = bodyBudget - result.length;
-
-                if (available <= 0) {
-                  break;
-                }
-
-                const frameLength = header.length + footer.length;
-                if (frameLength > available) {
-                  break;
-                }
-                const fullBlock = header + body + footer;
-                if (fullBlock.length <= available) {
-                  result += fullBlock;
-                } else {
-                  // Truncate this comment's body so the output stays within budget
-                  const truncatedBody = body.slice(0, available - frameLength);
-                  result += header + truncatedBody + footer;
-                }
-                includedCount++;
-              }
-
-              const remaining = comments.length - includedCount;
-              if (remaining > 0) {
-                result += `[... ${remaining} more comments truncated for context budget]\n`;
-              }
-
-              if (truncated) {
-                result += '[... comment history truncated at 200 comments]\n';
-              }
-
-              return result;
-            }
-
-            if (typeof module !== 'undefined') {
-              module.exports = {
-                factoryFetchIssueComments,
-                serializeIssueComments,
-                COMMENT_CONTEXT_BUDGET,
-              };
-            }
-
-            const { owner, repo } = context.repo;
-            const issueNumber = parseInt(process.env.INPUT_ISSUE_NUMBER, 10);
-
-            if (!issueNumber || issueNumber <= 0) {
-              core.setOutput('human_comments', '');
-              core.info('No issue number provided; skipping comment fetch.');
-            } else {
-              const { comments, truncated } = await factoryFetchIssueComments({ github, owner, repo, issueNumber });
-              const serialized = serializeIssueComments({ comments, truncated });
-              core.setOutput('human_comments', serialized);
-              core.info(`Fetched and serialized ${comments.length} human comments for issue #${issueNumber}`);
-            }
+            const fn = require('${{ github.workspace }}/.github/scripts/workflows/code-factory/fetch-issue-comments.js');
+            await fn({ github, context, core });
       - name: Check duplicate PR
         id: check_duplicate_pr
         if: |-
@@ -2776,513 +1795,24 @@ jobs:
             steps.validate_dispatch_inputs.outputs.event_eligible == 'true'
           )
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
+        env:
+          FACTORY_NAME: code-factory
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            /**
-             * Code-factory issue intake configuration. Keep `ISSUE_BRANCH_PREFIX` aligned with
-             * `workflow.md.tmpl` (`code-factory/issue-${{ github.event.issue.number }}`).
-             */
-            'use strict';
-
-            const ISSUE_BRANCH_PREFIX = 'code-factory/issue-';
-            const FACTORY_LABEL = 'code-factory';
-            const DUPLICATE_LINKAGE_MODE = 'closes-literal';
-            const ISSUE_OPENED_NOT_ELIGIBLE_REASON =
-              'Issue opened event does not qualify because the issue was created without the code-factory label.';
-
-            if (typeof module !== 'undefined') {
-              module.exports = {
-                ISSUE_BRANCH_PREFIX,
-                FACTORY_LABEL,
-                DUPLICATE_LINKAGE_MODE,
-                ISSUE_OPENED_NOT_ELIGIBLE_REASON,
-              };
-            }
-
-            /**
-             * Shared deterministic helpers for code-factory and change-factory issue intake workflows.
-             * Workflow-specific configuration is passed via {@link createFactoryIssueIntake}.
-             */
-
-            /** GitHub-recognized issue-closing keywords (case-insensitive). See https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/using-keywords-in-issues-and-pull-requests */
-            const GITHUB_ISSUE_CLOSING_KEYWORDS = '(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)';
-
-            /**
-             * GitHub closing-keyword reference: `#` is immediately followed by the issue digits (no whitespace),
-             * per GitHub keyword syntax. Case-insensitive keywords; `(?![0-9])` avoids matching `#42` inside `#420`.
-             *
-             * @param {number} issueNumber
-             * @returns {RegExp}
-             */
-            function issueClosingReferencePattern(issueNumber) {
-              return new RegExp(
-                `\\b${GITHUB_ISSUE_CLOSING_KEYWORDS}\\s*#${issueNumber}(?![0-9])`,
-                'i',
-              );
-            }
-
-            /**
-             * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels: string[] | null | undefined, factoryLabel: string, issueOpenedNotEligibleReason: string }} params
-             * @returns {{ event_eligible: boolean, event_eligible_reason: string }}
-             */
-            function factoryQualifyTriggerEvent({
-              eventName,
-              eventAction,
-              labelName,
-              issueLabels,
-              factoryLabel,
-              issueOpenedNotEligibleReason,
-            }) {
-              if (eventName === 'issue_comment') {
-                return {
-                  event_eligible: true,
-                  event_eligible_reason: `Issue comment event qualifies because the slash_command trigger routes to issue_comment.`,
-                };
-              }
-
-              if (eventName !== 'issues') {
-                return {
-                  event_eligible: false,
-                  event_eligible_reason: `Unsupported event '${eventName || '(empty)'}'; expected 'issues'.`,
-                };
-              }
-
-              if (eventAction === 'labeled') {
-                if (labelName === factoryLabel) {
-                  return {
-                    event_eligible: true,
-                    event_eligible_reason: `Issue labeled event qualifies because the applied label is ${factoryLabel}.`,
-                  };
-                }
-
-                return {
-                  event_eligible: false,
-                  event_eligible_reason: `Issue labeled event does not qualify because the applied label is '${labelName || '(empty)'}', not '${factoryLabel}'.`,
-                };
-              }
-
-              if (eventAction === 'opened') {
-                if (Array.isArray(issueLabels) && issueLabels.includes(factoryLabel)) {
-                  return {
-                    event_eligible: true,
-                    event_eligible_reason: `Issue opened event qualifies because the issue already has the ${factoryLabel} label.`,
-                  };
-                }
-
-                return {
-                  event_eligible: false,
-                  event_eligible_reason: issueOpenedNotEligibleReason,
-                };
-              }
-
-              return {
-                event_eligible: false,
-                event_eligible_reason: `Issue event action '${eventAction || '(empty)'}' is not eligible; expected 'opened' or 'labeled'.`,
-              };
-            }
-
-            /**
-             * @param {{ sender: string, permission: string | null }} params
-             * @returns {{ actor_trusted: boolean, actor_trusted_reason: string }}
-             */
-            function factoryCheckActorTrust({ sender, permission }) {
-              if (sender === 'github-actions[bot]') {
-                return {
-                  actor_trusted: true,
-                  actor_trusted_reason: 'Trigger actor github-actions[bot] is trusted without collaborator permission lookup.',
-                };
-              }
-
-              if (['write', 'maintain', 'admin'].includes(permission)) {
-                return {
-                  actor_trusted: true,
-                  actor_trusted_reason: `Trigger actor '${sender || '(empty)'}' is trusted with repository permission '${permission}'.`,
-                };
-              }
-
-              return {
-                actor_trusted: false,
-                actor_trusted_reason: `Trigger actor '${sender || '(empty)'}' is not trusted; repository permission '${permission || '(none)'}' does not meet the required write/maintain/admin policy.`,
-              };
-            }
-
-            /**
-             * @returns {{ actor_trusted: boolean, actor_trusted_reason: string }}
-             */
-            function factoryActorTrustWhenSenderMissing() {
-              return {
-                actor_trusted: false,
-                actor_trusted_reason: 'Trigger actor could not be identified; sender login is missing from the event payload.',
-              };
-            }
-
-            /**
-             * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords' }} params
-             * @returns {{ duplicate_pr_found: boolean, duplicate_pr_url: string | null, gate_reason: string }}
-             */
-            function factoryCheckDuplicatePR({
-              issueNumber,
-              pullRequests,
-              branchPrefix,
-              prLabel,
-              duplicateLinkageMode,
-            }) {
-              const expectedBranch = `${branchPrefix}${issueNumber}`;
-              const expectedClosesExample = `Closes #${issueNumber}`;
-              const expectedRelatedExample = `Related to #${issueNumber}`;
-
-              let bodyPattern;
-              if (duplicateLinkageMode === 'closes-literal') {
-                bodyPattern = new RegExp(`Closes #${issueNumber}(?![0-9])`);
-              } else if (duplicateLinkageMode === 'related-literal') {
-                bodyPattern = new RegExp(`\\bRelated to #${issueNumber}(?![0-9])`);
-              } else {
-                bodyPattern = issueClosingReferencePattern(issueNumber);
-              }
-
-              const duplicate = (pullRequests || []).find(pr => (
-                pr.state === 'open' &&
-                Array.isArray(pr.labels) && pr.labels.includes(prLabel) &&
-                pr.head_branch === expectedBranch &&
-                bodyPattern.test(String(pr.body || ''))
-              ));
-
-              if (duplicate) {
-                const url = duplicate.html_url ?? null;
-                let linkagePhrase;
-                if (duplicateLinkageMode === 'closes-literal') {
-                  linkagePhrase = `canonical linkage '${expectedClosesExample}'`;
-                } else if (duplicateLinkageMode === 'related-literal') {
-                  linkagePhrase = `literal linkage \`${expectedRelatedExample}\``;
-                } else {
-                  linkagePhrase = `issue-closing reference such as '${expectedClosesExample}'`;
-                }
-
-                return {
-                  duplicate_pr_found: true,
-                  duplicate_pr_url: url,
-                  gate_reason: `Found existing linked ${prLabel} PR #${duplicate.number} (${url ?? '(unknown URL)'}) for issue #${issueNumber} on branch '${expectedBranch}' with ${linkagePhrase}.`,
-                };
-              }
-
-              let linkageTail;
-              if (duplicateLinkageMode === 'closes-literal') {
-                linkageTail = `canonical linkage '${expectedClosesExample}'`;
-              } else if (duplicateLinkageMode === 'related-literal') {
-                linkageTail = `literal linkage \`${expectedRelatedExample}\``;
-              } else {
-                linkageTail = `issue-closing reference such as '${expectedClosesExample}'`;
-              }
-
-              return {
-                duplicate_pr_found: false,
-                duplicate_pr_url: null,
-                gate_reason: `No open linked ${prLabel} PR found for issue #${issueNumber}; expected label '${prLabel}', branch '${expectedBranch}', and ${linkageTail}.`,
-              };
-            }
-
-            /**
-             * @param {{ eventEligible: boolean, eventEligibleReason: string, actorTrusted: boolean | null, actorTrustedReason: string | null, duplicatePrFound: boolean | null, duplicatePrUrl: string | null, duplicateCheckGateReason: string | null }} params
-             * @param {string} factoryLabel
-             * @returns {{ gate_reason: string }}
-             */
-            function factoryComputeGateReason({
-              eventEligible,
-              eventEligibleReason,
-              actorTrusted,
-              actorTrustedReason,
-              duplicatePrFound,
-              duplicatePrUrl,
-              duplicateCheckGateReason,
-            }, factoryLabel) {
-              if (!eventEligible) {
-                return { gate_reason: eventEligibleReason };
-              }
-
-              if (actorTrusted === false) {
-                return { gate_reason: actorTrustedReason || 'Trigger actor is not trusted.' };
-              }
-
-              if (actorTrusted == null) {
-                return { gate_reason: 'Actor trust could not be determined; the trust check step did not produce an output.' };
-              }
-
-              if (duplicatePrFound === true) {
-                return {
-                  gate_reason: duplicateCheckGateReason || `Found existing linked ${factoryLabel} PR: ${duplicatePrUrl || '(unknown URL)'}.`,
-                };
-              }
-
-              if (duplicatePrFound == null) {
-                return { gate_reason: 'Duplicate PR check did not complete; the check step did not produce an output.' };
-              }
-
-              return {
-                gate_reason: duplicateCheckGateReason || `All deterministic gates passed: event eligible, actor trusted, and no linked ${factoryLabel} PR found.`,
-              };
-            }
-
-            /**
-             * @param {string | undefined} raw
-             * @returns {boolean | null}
-             */
-            function factoryParseOptionalTriStateFromEnv(raw) {
-              if (raw == null || raw === '') {
-                return null;
-              }
-              return raw === 'true';
-            }
-
-            /**
-             * @param {Record<string, string | undefined>} env
-             */
-            function factoryParseFinalizeGateEnv(env) {
-              const e = env || {};
-              return {
-                eventEligible: e.EVENT_ELIGIBLE === 'true',
-                eventEligibleReason: e.EVENT_ELIGIBLE_REASON ?? '',
-                actorTrusted: factoryParseOptionalTriStateFromEnv(e.ACTOR_TRUSTED),
-                actorTrustedReason: e.ACTOR_TRUSTED_REASON ?? null,
-                duplicatePrFound: factoryParseOptionalTriStateFromEnv(e.DUPLICATE_PR_FOUND),
-                duplicatePrUrl: e.DUPLICATE_PR_URL && e.DUPLICATE_PR_URL !== '' ? e.DUPLICATE_PR_URL : null,
-                duplicateCheckGateReason: e.DUPLICATE_GATE_REASON ?? null,
-              };
-            }
-
-            /**
-             * @param {{
-             *   branchPrefix: string,
-             *   factoryLabel: string,
-             *   issueOpenedNotEligibleReason: string,
-             *   duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords',
-             * }} config
-             */
-            function createFactoryIssueIntake(config) {
-              const {
-                branchPrefix,
-                factoryLabel,
-                issueOpenedNotEligibleReason,
-                duplicateLinkageMode,
-              } = config;
-
-              function issueBranchName(issueNumber) {
-                return `${branchPrefix}${issueNumber}`;
-              }
-
-              /**
-               * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels?: string[] | null | undefined }} params
-               */
-              function qualifyTriggerEvent(params) {
-                return factoryQualifyTriggerEvent({
-                  ...params,
-                  factoryLabel,
-                  issueOpenedNotEligibleReason,
-                });
-              }
-
-              function checkDuplicatePR(params) {
-                return factoryCheckDuplicatePR({
-                  ...params,
-                  branchPrefix,
-                  prLabel: factoryLabel,
-                  duplicateLinkageMode,
-                });
-              }
-
-              function computeGateReason(params) {
-                return factoryComputeGateReason(params, factoryLabel);
-              }
-
-              return {
-                issueBranchName,
-                qualifyTriggerEvent,
-                checkActorTrust: factoryCheckActorTrust,
-                checkDuplicatePR,
-                computeGateReason,
-              };
-            }
-
-            /**
-             * @param {{
-             *   branchPrefix: string,
-             *   factoryLabel: string,
-             *   issueOpenedNotEligibleReason: string,
-             *   duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords',
-             *   issueBranchNameAliases?: string[],
-             * }} config
-             */
-            function createFactoryIssueModule(config) {
-              const intake = createFactoryIssueIntake(config);
-              const issueBranchNameAliases = config.issueBranchNameAliases || [];
-              const factoryIssueModule = {
-                ...intake,
-                actorTrustWhenSenderMissing: factoryActorTrustWhenSenderMissing,
-                parseOptionalTriStateFromEnv: factoryParseOptionalTriStateFromEnv,
-                parseFinalizeGateEnv: factoryParseFinalizeGateEnv,
-              };
-
-              for (const alias of issueBranchNameAliases) {
-                factoryIssueModule[alias] = intake.issueBranchName;
-              }
-
-              return factoryIssueModule;
-            }
-
-            if (typeof module !== 'undefined') {
-              module.exports = {
-                issueClosingReferencePattern,
-                factoryQualifyTriggerEvent,
-                factoryCheckActorTrust,
-                factoryActorTrustWhenSenderMissing,
-                factoryCheckDuplicatePR,
-                factoryComputeGateReason,
-                factoryParseOptionalTriStateFromEnv,
-                factoryParseFinalizeGateEnv,
-                createFactoryIssueIntake,
-                createFactoryIssueModule,
-              };
-            }
-
-            // Concatenated by the workflow compiler; not executable standalone.
-            const factoryIssueModule = createFactoryIssueModule({
-              branchPrefix: ISSUE_BRANCH_PREFIX,
-              factoryLabel: FACTORY_LABEL,
-              issueOpenedNotEligibleReason: ISSUE_OPENED_NOT_ELIGIBLE_REASON,
-              duplicateLinkageMode: DUPLICATE_LINKAGE_MODE,
-            });
-
-            const qualifyTriggerEvent = factoryIssueModule.qualifyTriggerEvent;
-            const checkActorTrust = factoryIssueModule.checkActorTrust;
-            const checkDuplicatePR = factoryIssueModule.checkDuplicatePR;
-            const computeGateReason = factoryIssueModule.computeGateReason;
-            const issueBranchName = factoryIssueModule.issueBranchName;
-            const actorTrustWhenSenderMissing = factoryIssueModule.actorTrustWhenSenderMissing;
-            const parseFinalizeGateEnv = factoryIssueModule.parseFinalizeGateEnv;
-
-            const { owner, repo } = context.repo;
-            const intakeMode = context.eventName === 'workflow_dispatch' ? 'dispatch' : 'issue-event';
-            let issueNumber;
-
-            if (intakeMode === 'dispatch') {
-              issueNumber = parseInt(context.payload.inputs?.issue_number, 10) || null;
-            } else {
-              issueNumber = context.payload.issue?.number || null;
-            }
-
-            if (!issueNumber) {
-              core.setOutput('duplicate_pr_found', 'false');
-              core.setOutput('duplicate_pr_url', '');
-              core.setOutput('gate_reason', 'No issue number available for duplicate PR check.');
-              core.info('Duplicate PR check skipped: issue number is not available.');
-              return;
-            }
-
-            const expectedBranch = issueBranchName(issueNumber);
-
-            const pulls = await github.paginate(github.rest.pulls.list, {
-              owner,
-              repo,
-              state: 'open',
-              head: `${owner}:${expectedBranch}`,
-              per_page: 100,
-            });
-
-            const pullRequests = pulls.map(pr => ({
-              number: pr.number,
-              state: pr.state,
-              head_branch: pr.head.ref,
-              labels: pr.labels.map(l => l.name),
-              body: pr.body ?? '',
-              html_url: pr.html_url,
-            }));
-
-            const result = checkDuplicatePR({ issueNumber, pullRequests });
-
-            core.setOutput('duplicate_pr_found', result.duplicate_pr_found ? 'true' : 'false');
-            core.setOutput('duplicate_pr_url', result.duplicate_pr_url ?? '');
-            core.setOutput('gate_reason', result.gate_reason);
-
-            if (result.duplicate_pr_found) {
-              core.info(`Duplicate PR found: ${result.gate_reason}`);
-            } else {
-              core.info(`No duplicate PR: ${result.gate_reason}`);
-            }
+            const fn = require('${{ github.workspace }}/.github/scripts/workflows/lib/factory-runners/check-duplicate-pr.js');
+            await fn({ github, context, core });
       - name: Remove trigger label
         id: remove_trigger_label
         if: steps.determine_intake_mode.outputs.intake_mode == 'issue-event' && steps.qualify_trigger.outputs.event_eligible == 'true' && steps.check_actor_trust.outputs.actor_trusted == 'true' && steps.check_duplicate_pr.outputs.duplicate_pr_found != 'true'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
+        env:
+          FACTORY_NAME: code-factory
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            /**
-             * Removes a single label from an issue or pull request (GitHub issue API).
-             * @param {{ github: object, context: object, issueNumber: number|undefined, labelName: string|undefined }} opts
-             * @returns {Promise<{ trigger_label_removed: boolean, trigger_label_removed_reason: string }>}
-             */
-            async function removeTriggerLabel({ github, context, issueNumber, labelName }) {
-              if (issueNumber === undefined || issueNumber === null) {
-                return {
-                  trigger_label_removed: false,
-                  trigger_label_removed_reason: 'No issue number in event payload',
-                };
-              }
-
-              const label =
-                typeof labelName === 'string' && labelName.trim() !== '' ? labelName.trim() : null;
-              if (!label) {
-                return {
-                  trigger_label_removed: false,
-                  trigger_label_removed_reason: 'No label name provided',
-                };
-              }
-
-              try {
-                await github.rest.issues.removeLabel({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  issue_number: issueNumber,
-                  name: label,
-                });
-                return {
-                  trigger_label_removed: true,
-                  trigger_label_removed_reason: `Removed label: ${label}`,
-                };
-              } catch (err) {
-                // GitHub returns 404 when the label does not exist on the issue; treat as success
-                if (err.status === 404) {
-                  return {
-                    trigger_label_removed: true,
-                    trigger_label_removed_reason: `Label ${label} was not present (already removed or never applied)`,
-                  };
-                }
-                return {
-                  trigger_label_removed: false,
-                  trigger_label_removed_reason: `Failed to remove label: ${err.message}`,
-                };
-              }
-            }
-
-            if (typeof module !== 'undefined') {
-              module.exports = { removeTriggerLabel };
-            }
-
-            const issueNumber = context.payload.issue?.number;
-            const result = await removeTriggerLabel({
-              github,
-              context,
-              issueNumber,
-              labelName: 'code-factory',
-            });
-
-            core.setOutput('trigger_label_removed', result.trigger_label_removed ? 'true' : 'false');
-            core.setOutput('trigger_label_removed_reason', result.trigger_label_removed_reason);
-
-            if (result.trigger_label_removed) {
-              core.info(`Removed trigger label code-factory from issue #${issueNumber}`);
-            } else {
-              core.info(`Trigger label removal skipped: ${result.trigger_label_removed_reason}`);
-            }
+            const fn = require('${{ github.workspace }}/.github/scripts/workflows/lib/factory-runners/remove-trigger-label.js');
+            await fn({ github, context, core });
       - name: Set phase label
         id: set_phase_label
         if: |-
@@ -3304,152 +1834,8 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            /**
-             * Adds a phase label to an issue and removes all other phase-* labels.
-             * @param {{ github: object, context: object, issueNumber: number|undefined, phaseLabelName: string|undefined, core?: object }} opts
-             * @returns {Promise<{ phase_label_set: boolean, phase_label_name: string, stale_labels_removed: string[], reason: string }>}
-             */
-            async function setPhaseLabel({ github, context, issueNumber, phaseLabelName, core }) {
-
-              if (issueNumber === undefined || issueNumber === null) {
-                return {
-                  phase_label_set: false,
-                  phase_label_name: phaseLabelName || '',
-                  stale_labels_removed: [],
-                  reason: 'No issue number provided',
-                };
-              }
-
-              const label =
-                typeof phaseLabelName === 'string' && phaseLabelName.trim() !== '' ? phaseLabelName.trim() : null;
-              if (!label) {
-                return {
-                  phase_label_set: false,
-                  phase_label_name: '',
-                  stale_labels_removed: [],
-                  reason: 'No phase label name provided',
-                };
-              }
-
-              try {
-                await github.rest.issues.addLabels({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  issue_number: issueNumber,
-                  labels: [label],
-                });
-              } catch (err) {
-                return {
-                  phase_label_set: false,
-                  phase_label_name: label,
-                  stale_labels_removed: [],
-                  reason: `Failed to add label: ${err.message}`,
-                };
-              }
-
-              let staleLabels = [];
-              try {
-                let currentLabels;
-                if (github.paginate) {
-                  currentLabels = await github.paginate(github.rest.issues.listLabelsOnIssue, {
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    issue_number: issueNumber,
-                    per_page: 100,
-                  });
-                } else {
-                  const { data } = await github.rest.issues.listLabelsOnIssue({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    issue_number: issueNumber,
-                    per_page: 100,
-                  });
-                  currentLabels = data;
-                }
-
-                staleLabels = currentLabels
-                  .map((l) => l.name)
-                  .filter((name) => name.startsWith('phase-') && name !== label);
-              } catch (err) {
-                return {
-                  phase_label_set: true,
-                  phase_label_name: label,
-                  stale_labels_removed: [],
-                  reason: `Added label ${label} but failed to list current labels: ${err.message}`,
-                };
-              }
-
-              const removalResults = await Promise.all(
-                staleLabels.map(async (staleLabel) => {
-                  try {
-                    await github.rest.issues.removeLabel({
-                      owner: context.repo.owner,
-                      repo: context.repo.repo,
-                      issue_number: issueNumber,
-                      name: staleLabel,
-                    });
-                    return { removed: true, label: staleLabel };
-                  } catch (err) {
-                    if (err.status === 404) {
-                      return { removed: true, label: staleLabel };
-                    }
-
-                    if (core && typeof core.warning === 'function') {
-                      core.warning(`Failed to remove stale label ${staleLabel} from issue #${issueNumber}: ${err.message}`);
-                    }
-
-                    return { removed: false, label: staleLabel, message: err.message };
-                  }
-                }),
-              );
-
-              const removed = removalResults.filter((result) => result.removed).map((result) => result.label);
-              const failed = removalResults.filter((result) => !result.removed);
-
-              if (failed.length > 0) {
-                const failedSummary = failed.map((f) => `${f.label}: ${f.message}`).join('; ');
-                return {
-                  phase_label_set: true,
-                  phase_label_name: label,
-                  stale_labels_removed: removed,
-                  reason: `Added label ${label} but failed to remove some stale labels: ${failedSummary}`,
-                };
-              }
-
-              const removalMsg =
-                staleLabels.length > 0
-                  ? `Removed stale phase labels: ${staleLabels.join(', ')}`
-                  : 'No stale phase labels to remove';
-
-              return {
-                phase_label_set: true,
-                phase_label_name: label,
-                stale_labels_removed: removed,
-                reason: `Set phase label ${label}. ${removalMsg}`,
-              };
-            }
-
-            if (typeof module !== 'undefined') {
-              module.exports = { setPhaseLabel };
-            }
-
-            const issueNumber = parseInt(process.env.INPUT_ISSUE_NUMBER, 10) || context.payload.issue?.number || undefined;
-            const result = await setPhaseLabel({
-              github,
-              context,
-              core,
-              issueNumber,
-              phaseLabelName: process.env.PHASE_LABEL_NAME,
-            });
-
-            core.setOutput('phase_label_set', result.phase_label_set ? 'true' : 'false');
-            core.setOutput('phase_label_name', result.phase_label_name);
-
-            const logMessage = result.phase_label_set
-              ? `Set phase label ${result.phase_label_name} on issue #${issueNumber}. ${result.reason}`
-              : `Phase label not set: ${result.reason}`;
-
-            (result.phase_label_set ? core.info : core.warning)(logMessage);
+            const fn = require('${{ github.workspace }}/.github/scripts/workflows/phase-label/set.js');
+            await fn({ github, context, core });
       - name: Normalize context
         id: normalize_context
         if: always()
@@ -3515,131 +1901,14 @@ jobs:
         if: steps.normalize_context.outputs.event_eligible == 'true' && steps.normalize_context.outputs.actor_trusted == 'true' && steps.check_duplicate_pr.outputs.duplicate_pr_found != 'true'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         env:
+          FACTORY_NAME: code-factory
           HUMAN_COMMENTS: ${{ steps.fetch_issue_comments.outputs.human_comments }}
           ISSUE_BODY: ${{ steps.normalize_context.outputs.issue_body }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            /**
-             * HTML comment sanitisation, control/invisible-char removal, and research-comment lookup helpers.
-             */
-
-            /**
-             * Removes all HTML comment sequences (<code>&lt;!--</code> through the next <code>--&gt;</code>).
-             * If an opening sequence has no closing counterpart, everything from the opener to the end of
-             * the string is removed.
-             *
-             * @param {string} text
-             * @returns {string}
-             */
-            function stripHtmlComments(text) {
-              if (typeof text !== 'string') return '';
-              return text.replace(/<!--[\s\S]*?(?:-->|$)/g, '');
-            }
-
-            /**
-             * Removes non-printable ASCII control characters while preserving tab, newline,
-             * and carriage return. Also strips Unicode line/paragraph separators.
-             *
-             * Stripped ASCII:  \x00-\x08, \x0B, \x0C, \x0E-\x1F, \x7F
-             * Preserved:       \x09 (tab), \x0A (LF), \x0D (CR)
-             * Unicode:         \u2028, \u2029
-             *
-             * @param {string} text
-             * @returns {string}
-             */
-            function stripControlChars(text) {
-              if (typeof text !== 'string') return '';
-              return text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F\u2028\u2029]/g, '');
-            }
-
-            /**
-             * Removes invisible Unicode characters that have no legitimate use in issue content:
-             * zero-width spaces/joiners, bidirectional marks, word/function/invisible operators,
-             * and the BOM (byte order mark).
-             *
-             * Ranges stripped:
-             *   \u200B-\u200F  — zero-width space, non-joiner, joiner, LTR mark, RTL mark
-             *   \u2060-\u2064  — word joiner, function application, invisible times/separator/plus
-             *   \uFEFF           — BOM / zero-width no-break space
-             *
-             * @param {string} text
-             * @returns {string}
-             */
-            function stripInvisibleUnicode(text) {
-              if (typeof text !== 'string') return '';
-              return text.replace(/[\u200B-\u200F\u2060-\u2064\uFEFF]/g, '');
-            }
-
-            /**
-             * Composed sanitisation pipeline. Runs all three filters in sequence:
-             *
-             *   input → stripHtmlComments → stripControlChars → stripInvisibleUnicode → output
-             *
-             * Idempotent: applying twice produces the same result as applying once.
-             *
-             * @param {string} text
-             * @returns {string}
-             */
-            function sanitizeUserContent(text) {
-              if (typeof text !== 'string') return '';
-              return stripInvisibleUnicode(stripControlChars(stripHtmlComments(text)));
-            }
-
-            /**
-             * Finds the most recently created matching research comment written by
-             * <code>github-actions[bot]</code> whose body starts with <code>marker</code>.
-             *
-             * @param {Array<{author: string, body: string}>} comments Ordered oldest-first.
-             * @param {string} marker
-             * @returns {{author: string, body: string} | null}
-             */
-            function findResearchComment(comments, marker) {
-              if (!Array.isArray(comments)) {
-                return null;
-              }
-              const matches = comments.filter(
-                (c) =>
-                  c != null &&
-                  typeof c.body === 'string' &&
-                  (c.author ?? c.user?.login) === 'github-actions[bot]' &&
-                  c.body.trimStart().startsWith(marker),
-              );
-              return matches.length > 0 ? matches[matches.length - 1] : null;
-            }
-
-            if (typeof module !== 'undefined') {
-              module.exports = {
-                stripHtmlComments,
-                stripControlChars,
-                stripInvisibleUnicode,
-                sanitizeUserContent,
-                findResearchComment,
-              };
-            }
-
-            const fs = require('fs');
-            const crypto = require('crypto');
-
-            const body = process.env.ISSUE_BODY || '';
-            const comments = process.env.HUMAN_COMMENTS || '';
-
-            const sanitizedBody = sanitizeUserContent(body);
-            const sanitizedComments = sanitizeUserContent(comments);
-
-            const eofDelim1 = `EOF_${crypto.randomUUID().replace(/-/g, '')}`;
-            const output1 = `sanitized_issue_body<<${eofDelim1}\n${sanitizedBody}\n${eofDelim1}\n`;
-            fs.appendFileSync(process.env.GITHUB_OUTPUT, output1);
-
-            const eofDelim2 = `EOF_${crypto.randomUUID().replace(/-/g, '')}`;
-            const output2 = `sanitized_issue_comments<<${eofDelim2}\n${sanitizedComments}\n${eofDelim2}\n`;
-            fs.appendFileSync(process.env.GITHUB_OUTPUT, output2);
-
-            const dir = '/tmp/code-factory-context';
-            fs.mkdirSync(dir, { recursive: true });
-            fs.writeFileSync(`${dir}/issue_body.md`, sanitizedBody);
-            fs.writeFileSync(`${dir}/issue_comments.md`, sanitizedComments);
-            core.info('Wrote sanitized issue context files to /tmp/code-factory-context/');
+            const fn = require('${{ github.workspace }}/.github/scripts/workflows/lib/factory-runners/sanitize-context.js');
+            await fn({ github, context, core });
       - name: Upload issue context artifact
         if: steps.normalize_context.outputs.event_eligible == 'true' && steps.normalize_context.outputs.actor_trusted == 'true' && steps.check_duplicate_pr.outputs.duplicate_pr_found != 'true'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -3659,394 +1928,12 @@ jobs:
           DUPLICATE_PR_URL: ${{ steps.check_duplicate_pr.outputs.duplicate_pr_url }}
           EVENT_ELIGIBLE: ${{ steps.normalize_context.outputs.event_eligible }}
           EVENT_ELIGIBLE_REASON: ${{ steps.normalize_context.outputs.event_eligible_reason }}
+          FACTORY_NAME: code-factory
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            /**
-             * Code-factory issue intake configuration. Keep `ISSUE_BRANCH_PREFIX` aligned with
-             * `workflow.md.tmpl` (`code-factory/issue-${{ github.event.issue.number }}`).
-             */
-            'use strict';
-
-            const ISSUE_BRANCH_PREFIX = 'code-factory/issue-';
-            const FACTORY_LABEL = 'code-factory';
-            const DUPLICATE_LINKAGE_MODE = 'closes-literal';
-            const ISSUE_OPENED_NOT_ELIGIBLE_REASON =
-              'Issue opened event does not qualify because the issue was created without the code-factory label.';
-
-            if (typeof module !== 'undefined') {
-              module.exports = {
-                ISSUE_BRANCH_PREFIX,
-                FACTORY_LABEL,
-                DUPLICATE_LINKAGE_MODE,
-                ISSUE_OPENED_NOT_ELIGIBLE_REASON,
-              };
-            }
-
-            /**
-             * Shared deterministic helpers for code-factory and change-factory issue intake workflows.
-             * Workflow-specific configuration is passed via {@link createFactoryIssueIntake}.
-             */
-
-            /** GitHub-recognized issue-closing keywords (case-insensitive). See https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/using-keywords-in-issues-and-pull-requests */
-            const GITHUB_ISSUE_CLOSING_KEYWORDS = '(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)';
-
-            /**
-             * GitHub closing-keyword reference: `#` is immediately followed by the issue digits (no whitespace),
-             * per GitHub keyword syntax. Case-insensitive keywords; `(?![0-9])` avoids matching `#42` inside `#420`.
-             *
-             * @param {number} issueNumber
-             * @returns {RegExp}
-             */
-            function issueClosingReferencePattern(issueNumber) {
-              return new RegExp(
-                `\\b${GITHUB_ISSUE_CLOSING_KEYWORDS}\\s*#${issueNumber}(?![0-9])`,
-                'i',
-              );
-            }
-
-            /**
-             * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels: string[] | null | undefined, factoryLabel: string, issueOpenedNotEligibleReason: string }} params
-             * @returns {{ event_eligible: boolean, event_eligible_reason: string }}
-             */
-            function factoryQualifyTriggerEvent({
-              eventName,
-              eventAction,
-              labelName,
-              issueLabels,
-              factoryLabel,
-              issueOpenedNotEligibleReason,
-            }) {
-              if (eventName === 'issue_comment') {
-                return {
-                  event_eligible: true,
-                  event_eligible_reason: `Issue comment event qualifies because the slash_command trigger routes to issue_comment.`,
-                };
-              }
-
-              if (eventName !== 'issues') {
-                return {
-                  event_eligible: false,
-                  event_eligible_reason: `Unsupported event '${eventName || '(empty)'}'; expected 'issues'.`,
-                };
-              }
-
-              if (eventAction === 'labeled') {
-                if (labelName === factoryLabel) {
-                  return {
-                    event_eligible: true,
-                    event_eligible_reason: `Issue labeled event qualifies because the applied label is ${factoryLabel}.`,
-                  };
-                }
-
-                return {
-                  event_eligible: false,
-                  event_eligible_reason: `Issue labeled event does not qualify because the applied label is '${labelName || '(empty)'}', not '${factoryLabel}'.`,
-                };
-              }
-
-              if (eventAction === 'opened') {
-                if (Array.isArray(issueLabels) && issueLabels.includes(factoryLabel)) {
-                  return {
-                    event_eligible: true,
-                    event_eligible_reason: `Issue opened event qualifies because the issue already has the ${factoryLabel} label.`,
-                  };
-                }
-
-                return {
-                  event_eligible: false,
-                  event_eligible_reason: issueOpenedNotEligibleReason,
-                };
-              }
-
-              return {
-                event_eligible: false,
-                event_eligible_reason: `Issue event action '${eventAction || '(empty)'}' is not eligible; expected 'opened' or 'labeled'.`,
-              };
-            }
-
-            /**
-             * @param {{ sender: string, permission: string | null }} params
-             * @returns {{ actor_trusted: boolean, actor_trusted_reason: string }}
-             */
-            function factoryCheckActorTrust({ sender, permission }) {
-              if (sender === 'github-actions[bot]') {
-                return {
-                  actor_trusted: true,
-                  actor_trusted_reason: 'Trigger actor github-actions[bot] is trusted without collaborator permission lookup.',
-                };
-              }
-
-              if (['write', 'maintain', 'admin'].includes(permission)) {
-                return {
-                  actor_trusted: true,
-                  actor_trusted_reason: `Trigger actor '${sender || '(empty)'}' is trusted with repository permission '${permission}'.`,
-                };
-              }
-
-              return {
-                actor_trusted: false,
-                actor_trusted_reason: `Trigger actor '${sender || '(empty)'}' is not trusted; repository permission '${permission || '(none)'}' does not meet the required write/maintain/admin policy.`,
-              };
-            }
-
-            /**
-             * @returns {{ actor_trusted: boolean, actor_trusted_reason: string }}
-             */
-            function factoryActorTrustWhenSenderMissing() {
-              return {
-                actor_trusted: false,
-                actor_trusted_reason: 'Trigger actor could not be identified; sender login is missing from the event payload.',
-              };
-            }
-
-            /**
-             * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords' }} params
-             * @returns {{ duplicate_pr_found: boolean, duplicate_pr_url: string | null, gate_reason: string }}
-             */
-            function factoryCheckDuplicatePR({
-              issueNumber,
-              pullRequests,
-              branchPrefix,
-              prLabel,
-              duplicateLinkageMode,
-            }) {
-              const expectedBranch = `${branchPrefix}${issueNumber}`;
-              const expectedClosesExample = `Closes #${issueNumber}`;
-              const expectedRelatedExample = `Related to #${issueNumber}`;
-
-              let bodyPattern;
-              if (duplicateLinkageMode === 'closes-literal') {
-                bodyPattern = new RegExp(`Closes #${issueNumber}(?![0-9])`);
-              } else if (duplicateLinkageMode === 'related-literal') {
-                bodyPattern = new RegExp(`\\bRelated to #${issueNumber}(?![0-9])`);
-              } else {
-                bodyPattern = issueClosingReferencePattern(issueNumber);
-              }
-
-              const duplicate = (pullRequests || []).find(pr => (
-                pr.state === 'open' &&
-                Array.isArray(pr.labels) && pr.labels.includes(prLabel) &&
-                pr.head_branch === expectedBranch &&
-                bodyPattern.test(String(pr.body || ''))
-              ));
-
-              if (duplicate) {
-                const url = duplicate.html_url ?? null;
-                let linkagePhrase;
-                if (duplicateLinkageMode === 'closes-literal') {
-                  linkagePhrase = `canonical linkage '${expectedClosesExample}'`;
-                } else if (duplicateLinkageMode === 'related-literal') {
-                  linkagePhrase = `literal linkage \`${expectedRelatedExample}\``;
-                } else {
-                  linkagePhrase = `issue-closing reference such as '${expectedClosesExample}'`;
-                }
-
-                return {
-                  duplicate_pr_found: true,
-                  duplicate_pr_url: url,
-                  gate_reason: `Found existing linked ${prLabel} PR #${duplicate.number} (${url ?? '(unknown URL)'}) for issue #${issueNumber} on branch '${expectedBranch}' with ${linkagePhrase}.`,
-                };
-              }
-
-              let linkageTail;
-              if (duplicateLinkageMode === 'closes-literal') {
-                linkageTail = `canonical linkage '${expectedClosesExample}'`;
-              } else if (duplicateLinkageMode === 'related-literal') {
-                linkageTail = `literal linkage \`${expectedRelatedExample}\``;
-              } else {
-                linkageTail = `issue-closing reference such as '${expectedClosesExample}'`;
-              }
-
-              return {
-                duplicate_pr_found: false,
-                duplicate_pr_url: null,
-                gate_reason: `No open linked ${prLabel} PR found for issue #${issueNumber}; expected label '${prLabel}', branch '${expectedBranch}', and ${linkageTail}.`,
-              };
-            }
-
-            /**
-             * @param {{ eventEligible: boolean, eventEligibleReason: string, actorTrusted: boolean | null, actorTrustedReason: string | null, duplicatePrFound: boolean | null, duplicatePrUrl: string | null, duplicateCheckGateReason: string | null }} params
-             * @param {string} factoryLabel
-             * @returns {{ gate_reason: string }}
-             */
-            function factoryComputeGateReason({
-              eventEligible,
-              eventEligibleReason,
-              actorTrusted,
-              actorTrustedReason,
-              duplicatePrFound,
-              duplicatePrUrl,
-              duplicateCheckGateReason,
-            }, factoryLabel) {
-              if (!eventEligible) {
-                return { gate_reason: eventEligibleReason };
-              }
-
-              if (actorTrusted === false) {
-                return { gate_reason: actorTrustedReason || 'Trigger actor is not trusted.' };
-              }
-
-              if (actorTrusted == null) {
-                return { gate_reason: 'Actor trust could not be determined; the trust check step did not produce an output.' };
-              }
-
-              if (duplicatePrFound === true) {
-                return {
-                  gate_reason: duplicateCheckGateReason || `Found existing linked ${factoryLabel} PR: ${duplicatePrUrl || '(unknown URL)'}.`,
-                };
-              }
-
-              if (duplicatePrFound == null) {
-                return { gate_reason: 'Duplicate PR check did not complete; the check step did not produce an output.' };
-              }
-
-              return {
-                gate_reason: duplicateCheckGateReason || `All deterministic gates passed: event eligible, actor trusted, and no linked ${factoryLabel} PR found.`,
-              };
-            }
-
-            /**
-             * @param {string | undefined} raw
-             * @returns {boolean | null}
-             */
-            function factoryParseOptionalTriStateFromEnv(raw) {
-              if (raw == null || raw === '') {
-                return null;
-              }
-              return raw === 'true';
-            }
-
-            /**
-             * @param {Record<string, string | undefined>} env
-             */
-            function factoryParseFinalizeGateEnv(env) {
-              const e = env || {};
-              return {
-                eventEligible: e.EVENT_ELIGIBLE === 'true',
-                eventEligibleReason: e.EVENT_ELIGIBLE_REASON ?? '',
-                actorTrusted: factoryParseOptionalTriStateFromEnv(e.ACTOR_TRUSTED),
-                actorTrustedReason: e.ACTOR_TRUSTED_REASON ?? null,
-                duplicatePrFound: factoryParseOptionalTriStateFromEnv(e.DUPLICATE_PR_FOUND),
-                duplicatePrUrl: e.DUPLICATE_PR_URL && e.DUPLICATE_PR_URL !== '' ? e.DUPLICATE_PR_URL : null,
-                duplicateCheckGateReason: e.DUPLICATE_GATE_REASON ?? null,
-              };
-            }
-
-            /**
-             * @param {{
-             *   branchPrefix: string,
-             *   factoryLabel: string,
-             *   issueOpenedNotEligibleReason: string,
-             *   duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords',
-             * }} config
-             */
-            function createFactoryIssueIntake(config) {
-              const {
-                branchPrefix,
-                factoryLabel,
-                issueOpenedNotEligibleReason,
-                duplicateLinkageMode,
-              } = config;
-
-              function issueBranchName(issueNumber) {
-                return `${branchPrefix}${issueNumber}`;
-              }
-
-              /**
-               * @param {{ eventName: string, eventAction: string, labelName: string, issueLabels?: string[] | null | undefined }} params
-               */
-              function qualifyTriggerEvent(params) {
-                return factoryQualifyTriggerEvent({
-                  ...params,
-                  factoryLabel,
-                  issueOpenedNotEligibleReason,
-                });
-              }
-
-              function checkDuplicatePR(params) {
-                return factoryCheckDuplicatePR({
-                  ...params,
-                  branchPrefix,
-                  prLabel: factoryLabel,
-                  duplicateLinkageMode,
-                });
-              }
-
-              function computeGateReason(params) {
-                return factoryComputeGateReason(params, factoryLabel);
-              }
-
-              return {
-                issueBranchName,
-                qualifyTriggerEvent,
-                checkActorTrust: factoryCheckActorTrust,
-                checkDuplicatePR,
-                computeGateReason,
-              };
-            }
-
-            /**
-             * @param {{
-             *   branchPrefix: string,
-             *   factoryLabel: string,
-             *   issueOpenedNotEligibleReason: string,
-             *   duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords',
-             *   issueBranchNameAliases?: string[],
-             * }} config
-             */
-            function createFactoryIssueModule(config) {
-              const intake = createFactoryIssueIntake(config);
-              const issueBranchNameAliases = config.issueBranchNameAliases || [];
-              const factoryIssueModule = {
-                ...intake,
-                actorTrustWhenSenderMissing: factoryActorTrustWhenSenderMissing,
-                parseOptionalTriStateFromEnv: factoryParseOptionalTriStateFromEnv,
-                parseFinalizeGateEnv: factoryParseFinalizeGateEnv,
-              };
-
-              for (const alias of issueBranchNameAliases) {
-                factoryIssueModule[alias] = intake.issueBranchName;
-              }
-
-              return factoryIssueModule;
-            }
-
-            if (typeof module !== 'undefined') {
-              module.exports = {
-                issueClosingReferencePattern,
-                factoryQualifyTriggerEvent,
-                factoryCheckActorTrust,
-                factoryActorTrustWhenSenderMissing,
-                factoryCheckDuplicatePR,
-                factoryComputeGateReason,
-                factoryParseOptionalTriStateFromEnv,
-                factoryParseFinalizeGateEnv,
-                createFactoryIssueIntake,
-                createFactoryIssueModule,
-              };
-            }
-
-            // Concatenated by the workflow compiler; not executable standalone.
-            const factoryIssueModule = createFactoryIssueModule({
-              branchPrefix: ISSUE_BRANCH_PREFIX,
-              factoryLabel: FACTORY_LABEL,
-              issueOpenedNotEligibleReason: ISSUE_OPENED_NOT_ELIGIBLE_REASON,
-              duplicateLinkageMode: DUPLICATE_LINKAGE_MODE,
-            });
-
-            const qualifyTriggerEvent = factoryIssueModule.qualifyTriggerEvent;
-            const checkActorTrust = factoryIssueModule.checkActorTrust;
-            const checkDuplicatePR = factoryIssueModule.checkDuplicatePR;
-            const computeGateReason = factoryIssueModule.computeGateReason;
-            const issueBranchName = factoryIssueModule.issueBranchName;
-            const actorTrustWhenSenderMissing = factoryIssueModule.actorTrustWhenSenderMissing;
-            const parseFinalizeGateEnv = factoryIssueModule.parseFinalizeGateEnv;
-
-            const result = computeGateReason(parseFinalizeGateEnv(process.env));
-
-            core.setOutput('gate_reason', result.gate_reason);
-            core.info(`Gate reason: ${result.gate_reason}`);
+            const fn = require('${{ github.workspace }}/.github/scripts/workflows/lib/factory-runners/finalize-gate.js');
+            await fn({ github, context, core });
 
   safe_outputs:
     needs:
