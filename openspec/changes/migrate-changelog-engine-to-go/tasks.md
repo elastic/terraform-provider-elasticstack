@@ -74,4 +74,4 @@
 - [x] 10.1 Add a short README at `scripts/changelog/README.md` documenting subcommands, env-var contract, and invocation examples — mirroring the style of `scripts/kibana-spec-impact/`'s docs.
 - [x] 10.2 If `dev-docs/high-level/repo-structure.md` enumerates the JS clusters being deleted, update it to point at `scripts/changelog/` instead.
 - [x] 10.3 Run `npx openspec validate migrate-changelog-engine-to-go --strict` and resolve any issues.
-- [ ] 10.4 Open a PR using the standard commit message conventions; include before/after `git diff --stat` highlighting LOC reduction.
+- [x] 10.4 Open a PR using the standard commit message conventions; include before/after `git diff --stat` highlighting LOC reduction.
