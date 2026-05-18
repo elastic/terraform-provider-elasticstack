@@ -65,11 +65,12 @@ func (w *ChangelogWorkflowPullRequests) CreatePullRequest(ctx context.Context, o
 	if w.Client == nil {
 		return nil, fmt.Errorf("github client required")
 	}
+	titleCopy, headCopy, baseCopy, bodyCopy := title, head, base, body
 	newPR := &github.NewPullRequest{
-		Title: new(title),
-		Head:  new(head),
-		Base:  new(base),
-		Body:  new(body),
+		Title: &titleCopy,
+		Head:  &headCopy,
+		Base:  &baseCopy,
+		Body:  &bodyCopy,
 	}
 	pr, _, err := w.Client.PullRequests.Create(ctx, owner, repo, newPR)
 	if err != nil {
@@ -86,7 +87,8 @@ func (w *ChangelogWorkflowPullRequests) UpdatePullRequestBody(ctx context.Contex
 	if w.Client == nil {
 		return fmt.Errorf("github client required")
 	}
-	req := &github.PullRequest{Body: new(body)}
+	bodyCopy := body
+	req := &github.PullRequest{Body: &bodyCopy}
 	if _, _, err := w.Client.PullRequests.Edit(ctx, owner, repo, number, req); err != nil {
 		return fmt.Errorf("edit pull request body: %w", err)
 	}
