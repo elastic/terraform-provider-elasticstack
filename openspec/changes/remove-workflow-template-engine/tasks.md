@@ -26,9 +26,9 @@
 
 ## 2. Delete obsolete files and directories
 
-- [ ] 2.1 Delete `scripts/compile-workflow-sources/` (compiler source code and tests)
-- [ ] 2.2 Delete `.github/workflows-src/` entirely
-- [ ] 2.3 Delete `lib/factory-issue-module.gh.js` if it was copied (it is superseded by `factory-issue-shared.js`)
+- [x] 2.1 Delete `scripts/compile-workflow-sources/` (compiler source code and tests)
+- [x] 2.2 Delete `.github/workflows-src/` entirely
+- [x] 2.3 Delete `lib/factory-issue-module.gh.js` if it was copied (it is superseded by `factory-issue-shared.js`)
 
 ## 3. Update Makefile targets
 
