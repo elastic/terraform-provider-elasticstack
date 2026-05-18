@@ -16,6 +16,11 @@ on:
     pull-requests: write
     contents: read
   steps:
+    - name: Checkout repository
+      uses: actions/checkout@v6
+      with:
+        persist-credentials: false
+        fetch-depth: 1
     - name: Verify trigger label
       id: verify_label
       uses: actions/github-script@v9
