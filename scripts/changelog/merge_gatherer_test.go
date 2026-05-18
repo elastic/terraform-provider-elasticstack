@@ -4,7 +4,6 @@
 // ownership. Elasticsearch B.V. licenses this file to you under
 // the Apache License, Version 2.0 (the "License"); you may
 // not use this file except in compliance with the License.
-//
 // You may obtain a copy of the License at
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -75,11 +74,13 @@ func Test_gitMergedPRGatherer_dedupesByPRNumberAcrossCommits(t *testing.T) {
 
 	ctx := context.Background()
 	g := &gitMergedPRGatherer{client: client, execer: staticSHAGit{}}
-	got, err := g.GatherMergedPRs(ctx, "o", "r", "v1..HEAD")
+	got, warns, err := g.GatherMergedPRs(ctx, "o", "r", "v1..HEAD")
 	if err != nil {
 		t.Fatal(err)
 	}
-
+	if len(warns) != 0 {
+		t.Fatalf("unexpected warnings: %#v", warns)
+	}
 	if callCount != 2 {
 		t.Fatalf("expected 2 commit PR API calls, got %d", callCount)
 	}

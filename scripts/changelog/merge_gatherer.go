@@ -4,7 +4,6 @@
 // ownership. Elasticsearch B.V. licenses this file to you under
 // the Apache License, Version 2.0 (the "License"); you may
 // not use this file except in compliance with the License.
-//
 // You may obtain a copy of the License at
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -20,6 +19,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/google/go-github/v86/github"
 
@@ -35,10 +35,12 @@ type gitMergedPRGatherer struct {
 
 func (g *gitMergedPRGatherer) GatherMergedPRs(
 	ctx context.Context, owner, repo, compareRange string,
-) ([]section.MergedPR, error) {
+) ([]section.MergedPR, []string, error) {
 	shas, err := githubx.ListCommitSHAs(g.execer, compareRange)
+	warnMsgs := []string{}
 	if err != nil {
 		shas = nil
+		warnMsgs = append(warnMsgs, fmt.Sprintf("Failed to list commits in range: %v", err))
 	}
 
 	byNum := make(map[int]*github.PullRequest)
@@ -82,5 +84,5 @@ func (g *gitMergedPRGatherer) GatherMergedPRs(
 			Body:   pr.GetBody(),
 		})
 	}
-	return out, nil
+	return out, warnMsgs, nil
 }

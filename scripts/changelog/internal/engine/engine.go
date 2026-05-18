@@ -4,7 +4,6 @@
 // ownership. Elasticsearch B.V. licenses this file to you under
 // the Apache License, Version 2.0 (the "License"); you may
 // not use this file except in compliance with the License.
-//
 // You may obtain a copy of the License at
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -41,8 +40,9 @@ type FS interface {
 }
 
 // MergedPRGatherer lists merged Pull Requests reachable from the git compare range (mirrors JS engine).
+// The second return value is soft-failure warnings (mirrors core.warning in the JS engine).
 type MergedPRGatherer interface {
-	GatherMergedPRs(ctx context.Context, owner, repo, compareRange string) ([]section.MergedPR, error)
+	GatherMergedPRs(ctx context.Context, owner, repo, compareRange string) ([]section.MergedPR, []string, error)
 }
 
 // Options configures engine.Run — callers supply env-derived fields and adapters.
@@ -70,6 +70,7 @@ type Result struct {
 	Included               []section.IncludedPR
 	Excluded               []section.ExcludedPR
 	SkippedChangelogUpdate bool
+	Warnings               []string
 }
 
 // Run validates inputs, resolves compare context, gathers PRs, renders, and optionally rewrites CHANGELOG.md.
@@ -88,11 +89,13 @@ func Run(ctx context.Context, opts Options) (Result, error) {
 	}
 
 	var tags []semver.Tag
+	warnMsgs := []string{}
 	if opts.Git != nil {
-		var err error
-		tags, err = semver.ListReleaseTags(opts.Git)
-		if err != nil {
+		var terr error
+		tags, terr = semver.ListReleaseTags(opts.Git)
+		if terr != nil {
 			tags = nil
+			warnMsgs = append(warnMsgs, fmt.Sprintf("Failed to list git tags: %v", terr))
 		}
 	}
 
@@ -109,10 +112,11 @@ func Run(ctx context.Context, opts Options) (Result, error) {
 		return Result{}, fmt.Errorf("engine: unknown mode %q", opts.Mode)
 	}
 
-	records, err := opts.Gather.GatherMergedPRs(ctx, opts.Owner, opts.Repo, compareRange)
-	if err != nil {
-		return Result{}, fmt.Errorf("gather merged pull requests: %w", err)
+	records, gatherWarns, gerr := opts.Gather.GatherMergedPRs(ctx, opts.Owner, opts.Repo, compareRange)
+	if gerr != nil {
+		return Result{}, fmt.Errorf("gather merged pull requests: %w", gerr)
 	}
+	warnMsgs = append(warnMsgs, gatherWarns...)
 
 	hasPRs := len(records) > 0
 	renderChangelog := opts.Mode == ModeRelease || hasPRs
@@ -122,16 +126,17 @@ func Run(ctx context.Context, opts Options) (Result, error) {
 		tvOut = opts.TargetVersion
 	}
 
+	dupWarn := func() []string { return append([]string(nil), warnMsgs...) }
+
 	res := Result{
 		TargetVersionOutput:  tvOut,
 		PreviousTag:          tagPick.PreviousTag,
 		CompareRange:         compareRange,
 		TargetBranch:         targetBranch,
-		Included:             nil,
-		Excluded:             nil,
 		SectionHeader:        headerUnreleasedMarkdown,
 		HasPRs:               hasPRs,
 		HasUserFacingChanges: false,
+		Warnings:             dupWarn(),
 	}
 
 	if !renderChangelog {
@@ -145,6 +150,12 @@ func Run(ctx context.Context, opts Options) (Result, error) {
 	case readErr == nil:
 		currentStr = string(current)
 	case errors.Is(readErr, fs.ErrNotExist):
+		warnMsgs = append(warnMsgs, fmt.Sprintf(
+			"Could not read %s: %v. Will create a new file.",
+			opts.ChangelogPath,
+			readErr,
+		))
+		res.Warnings = dupWarn()
 	default:
 		return Result{}, fmt.Errorf("read changelog %s: %w", opts.ChangelogPath, readErr)
 	}
@@ -187,11 +198,12 @@ func Run(ctx context.Context, opts Options) (Result, error) {
 	}
 
 	if opts.Mode == ModeRelease && opts.TargetVersion != "" && tagPick.PreviousTag != "" {
-		updated, err = rewriter.UpdateLinks(updated, []rewriter.LinkEntry{
+		var lnErr error
+		updated, lnErr = rewriter.UpdateLinks(updated, []rewriter.LinkEntry{
 			{TargetVersion: opts.TargetVersion, PreviousTag: tagPick.PreviousTag},
 		})
-		if err != nil {
-			return Result{}, fmt.Errorf("update changelog compare links: %w", err)
+		if lnErr != nil {
+			return Result{}, fmt.Errorf("update changelog compare links: %w", lnErr)
 		}
 	}
 
@@ -202,6 +214,7 @@ func Run(ctx context.Context, opts Options) (Result, error) {
 	res.Included = renderOutcome.Included
 	res.Excluded = renderOutcome.Excluded
 	res.HasUserFacingChanges = strings.TrimSpace(renderOutcome.SectionBody) != ""
+	res.Warnings = dupWarn()
 
 	return res, nil
 }

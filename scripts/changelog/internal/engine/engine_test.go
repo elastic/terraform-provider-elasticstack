@@ -19,6 +19,7 @@ package engine_test
 
 import (
 	"context"
+	"errors"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -40,8 +41,8 @@ type fixedGather struct {
 	recs []section.MergedPR
 }
 
-func (f fixedGather) GatherMergedPRs(context.Context, string, string, string) ([]section.MergedPR, error) {
-	return f.recs, nil
+func (f fixedGather) GatherMergedPRs(context.Context, string, string, string) ([]section.MergedPR, []string, error) {
+	return f.recs, nil, nil
 }
 
 type tagOnlyGit struct {
@@ -54,6 +55,25 @@ func (g tagOnlyGit) Run(name string, args ...string) ([]byte, error) {
 		return []byte(g.tags), nil
 	}
 	return nil, nil
+}
+
+type failTagGit struct{}
+
+func (failTagGit) Run(string, ...string) ([]byte, error) {
+	return nil, errors.New("no git")
+}
+
+type changelogMissingWriteFS struct {
+	out *[]byte
+}
+
+func (changelogMissingWriteFS) ReadFile(string) ([]byte, error) {
+	return nil, fs.ErrNotExist
+}
+
+func (c changelogMissingWriteFS) WriteFile(_ string, data []byte, _ fs.FileMode) error {
+	*c.out = append([]byte(nil), data...)
+	return nil
 }
 
 func fixedNow(tb testing.TB, m time.Month, d int) func() time.Time {
@@ -71,6 +91,62 @@ func mustRun(ctx context.Context, tb testing.TB, opts engine.Options) engine.Res
 		tb.Fatal(err)
 	}
 	return res
+}
+
+func TestRun_warnsWhenTagListFails(t *testing.T) {
+	ctx := context.Background()
+	res, err := engine.Run(ctx, engine.Options{
+		Mode:          engine.ModeUnreleased,
+		Owner:         fixtureOwnerSlug,
+		Repo:          fixtureRepoSlug,
+		ChangelogPath: filepath.Join(t.TempDir(), "CHANGELOG.md"),
+		Now:           fixedNow(t, 1, 3),
+		FS:            engineOSFS{},
+		Git:           failTagGit{},
+		Gather:        fixedGather{recs: nil},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Warnings) != 1 || !strings.Contains(res.Warnings[0], "Failed to list git tags") {
+		t.Fatalf("unexpected warnings: %#v", res.Warnings)
+	}
+}
+
+func TestRun_warnsWhenChangelogMissing(t *testing.T) {
+	ctx := context.Background()
+	clPath := filepath.Join(t.TempDir(), "CHANGELOG.md")
+	var written []byte
+	res, err := engine.Run(ctx, engine.Options{
+		Mode:          engine.ModeUnreleased,
+		Owner:         fixtureOwnerSlug,
+		Repo:          fixtureRepoSlug,
+		ChangelogPath: clPath,
+		Now:           fixedNow(t, 10, 11),
+		FS:            changelogMissingWriteFS{out: &written},
+		Git:           tagOnlyGit{},
+		Gather: fixedGather{recs: []section.MergedPR{{
+			Number: 1,
+			URL:    "https://github.com/o/r/pull/1",
+			Labels: nil,
+			Body:   "## Changelog\nCustomer impact: fix\nSummary: x\n",
+		}}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, w := range res.Warnings {
+		if strings.Contains(w, clPath) && strings.Contains(w, "Will create a new file.") {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("expected changelog read warning, got %#v", res.Warnings)
+	}
+	if len(written) == 0 {
+		t.Fatal("expected changelog write")
+	}
 }
 
 func TestFormatAssemblyFailureMessage_listsReasons(t *testing.T) {
@@ -395,6 +471,111 @@ func TestRun_engineEndToEndFromFactoryTest(t *testing.T) {
 	text := string(slurp(t, changelogPath))
 	if !strings.Contains(text, "feat done") {
 		t.Fatalf("missing rendered body:\n%s", text)
+	}
+}
+
+type readAlwaysErrFS struct {
+	err error
+}
+
+func (r readAlwaysErrFS) ReadFile(string) ([]byte, error) {
+	return nil, r.err
+}
+
+func (readAlwaysErrFS) WriteFile(string, []byte, fs.FileMode) error {
+	return nil
+}
+
+type readOKWriteFailFS struct {
+	content []byte
+}
+
+func (r readOKWriteFailFS) ReadFile(string) ([]byte, error) {
+	return append([]byte(nil), r.content...), nil
+}
+
+func (readOKWriteFailFS) WriteFile(string, []byte, fs.FileMode) error {
+	return errors.New("write refused")
+}
+
+type errGather struct{}
+
+func (errGather) GatherMergedPRs(context.Context, string, string, string) ([]section.MergedPR, []string, error) {
+	return nil, nil, errors.New("gather failed")
+}
+
+func TestRun_returnsErrorOnReadAsideFromNotExist(t *testing.T) {
+	ctx := context.Background()
+	dir := t.TempDir()
+	cl := filepath.Join(dir, "CHANGELOG.md")
+	if err := os.WriteFile(cl, []byte("# x\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := engine.Run(ctx, engine.Options{
+		Mode:          engine.ModeUnreleased,
+		Owner:         fixtureOwnerSlug,
+		Repo:          fixtureRepoSlug,
+		ChangelogPath: cl,
+		Now:           fixedNow(t, 5, 5),
+		FS:            readAlwaysErrFS{err: errors.New("boom read")},
+		Git:           tagOnlyGit{},
+		Gather: fixedGather{recs: []section.MergedPR{{
+			Number: 1,
+			URL:    "https://github.com/o/r/pull/1",
+			Body:   "## Changelog\nCustomer impact: fix\nSummary: z\n",
+		}}},
+	})
+	if err == nil || !strings.Contains(err.Error(), "read changelog") {
+		t.Fatalf("expected read changelog error, got %v", err)
+	}
+}
+
+func TestRun_returnsErrorOnWriteFailure(t *testing.T) {
+	ctx := context.Background()
+	cl := filepath.Join(t.TempDir(), "CHANGELOG.md")
+	content := strings.Join([]string{
+		"# L", "", "## [Unreleased]", "old",
+	}, "\n")
+	_, err := engine.Run(ctx, engine.Options{
+		Mode:          engine.ModeUnreleased,
+		Owner:         fixtureOwnerSlug,
+		Repo:          fixtureRepoSlug,
+		ChangelogPath: cl,
+		Now:           fixedNow(t, 5, 6),
+		FS:            readOKWriteFailFS{content: []byte(content)},
+		Git:           tagOnlyGit{},
+		Gather: fixedGather{recs: []section.MergedPR{{
+			Number: 9,
+			URL:    "https://github.com/o/r/pull/9",
+			Body:   "## Changelog\nCustomer impact: enhancement\nSummary: y\n",
+		}}},
+	})
+	if err == nil || !strings.Contains(err.Error(), "failed to write") ||
+		!strings.Contains(err.Error(), "write refused") {
+		t.Fatalf("expected write failure, got %v", err)
+	}
+}
+
+func TestRun_returnsErrorWhenGatherFails(t *testing.T) {
+	ctx := context.Background()
+	dir := t.TempDir()
+	cl := filepath.Join(dir, "CHANGELOG.md")
+	if err := os.WriteFile(cl, []byte("# x\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	_, err := engine.Run(ctx, engine.Options{
+		Mode:          engine.ModeUnreleased,
+		Owner:         fixtureOwnerSlug,
+		Repo:          fixtureRepoSlug,
+		ChangelogPath: cl,
+		Now:           fixedNow(t, 5, 7),
+		FS:            engineOSFS{},
+		Git:           tagOnlyGit{},
+		Gather:        errGather{},
+	})
+	if err == nil || !strings.Contains(err.Error(), "gather merged pull requests") {
+		t.Fatalf("expected gather error, got %v", err)
 	}
 }
 
