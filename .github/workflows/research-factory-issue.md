@@ -38,10 +38,12 @@ on:
       id: qualify_trigger
       if: steps.determine_intake_mode.outputs.intake_mode == 'issue-event'
       uses: actions/github-script@v9
+      env:
+        FACTORY_NAME: research-factory
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
-          const fn = require('${{ github.workspace }}/.github/scripts/workflows/research-factory/qualify-trigger.js');
+          const fn = require('${{ github.workspace }}/.github/scripts/workflows/lib/factory-runners/qualify-trigger.js');
           await fn({ github, context, core });
     - name: Capture issue context
       id: capture_issue_context
@@ -60,7 +62,7 @@ on:
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
-          const fn = require('${{ github.workspace }}/.github/scripts/workflows/research-factory/validate-dispatch-inputs.js');
+          const fn = require('${{ github.workspace }}/.github/scripts/workflows/lib/factory-runners/validate-dispatch-inputs.js');
           await fn({ github, context, core });
     - name: Fetch live issue
       id: fetch_live_issue
@@ -73,7 +75,7 @@ on:
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
-          const fn = require('${{ github.workspace }}/.github/scripts/workflows/research-factory/fetch-live-issue.js');
+          const fn = require('${{ github.workspace }}/.github/scripts/workflows/lib/factory-runners/fetch-live-issue.js');
           await fn({ github, context, core });
     - name: Check actor trust
       id: check_actor_trust
@@ -81,10 +83,12 @@ on:
         steps.determine_intake_mode.outputs.intake_mode == 'issue-event' &&
         steps.qualify_trigger.outputs.event_eligible == 'true'
       uses: actions/github-script@v9
+      env:
+        FACTORY_NAME: research-factory
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
-          const fn = require('${{ github.workspace }}/.github/scripts/workflows/research-factory/check-actor-trust.js');
+          const fn = require('${{ github.workspace }}/.github/scripts/workflows/lib/factory-runners/check-actor-trust.js');
           await fn({ github, context, core });
     - name: Fetch issue comments
       id: fetch_issue_comments
@@ -106,7 +110,7 @@ on:
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
-          const fn = require('${{ github.workspace }}/.github/scripts/workflows/research-factory/fetch-issue-comments.js');
+          const fn = require('${{ github.workspace }}/.github/scripts/workflows/lib/factory-runners/fetch-issue-comments.js');
           await fn({ github, context, core });
     - name: Fetch prior research comment
       id: fetch_prior_research_comment
@@ -137,10 +141,12 @@ on:
         steps.qualify_trigger.outputs.event_eligible == 'true' &&
         steps.check_actor_trust.outputs.actor_trusted == 'true'
       uses: actions/github-script@v9
+      env:
+        FACTORY_NAME: research-factory
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
-          const fn = require('${{ github.workspace }}/.github/scripts/workflows/research-factory/remove-trigger-label.js');
+          const fn = require('${{ github.workspace }}/.github/scripts/workflows/lib/factory-runners/remove-trigger-label.js');
           await fn({ github, context, core });
     - name: Set phase label
       id: set_phase_label

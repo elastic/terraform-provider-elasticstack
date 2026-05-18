@@ -1,18 +1,8 @@
-const {
-  ISSUE_BRANCH_PREFIX,
-  FACTORY_LABEL,
-  DUPLICATE_LINKAGE_MODE,
-  ISSUE_OPENED_NOT_ELIGIBLE_REASON,
-} = require('../lib/intake/code-factory-constants.js');
-const { createFactoryIssueModule } = require('../lib/factory-issue-shared.js');
-const { checkDuplicatePR, issueBranchName } = createFactoryIssueModule({
-  branchPrefix: ISSUE_BRANCH_PREFIX,
-  factoryLabel: FACTORY_LABEL,
-  issueOpenedNotEligibleReason: ISSUE_OPENED_NOT_ELIGIBLE_REASON,
-  duplicateLinkageMode: DUPLICATE_LINKAGE_MODE,
-});
+const { getFactoryModule } = require('./_factory-context.js');
 
 module.exports = async function ({ github, context, core }) {
+
+  const { checkDuplicatePR, issueBranchName } = getFactoryModule();
 
   const { owner, repo } = context.repo;
   const intakeMode = context.eventName === 'workflow_dispatch' ? 'dispatch' : 'issue-event';

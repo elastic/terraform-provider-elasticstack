@@ -39,10 +39,12 @@ on:
       id: qualify_trigger
       if: steps.determine_intake_mode.outputs.intake_mode == 'issue-event'
       uses: actions/github-script@v9
+      env:
+        FACTORY_NAME: reproducer-factory
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
-          const fn = require('${{ github.workspace }}/.github/scripts/workflows/reproducer-factory/qualify-trigger.js');
+          const fn = require('${{ github.workspace }}/.github/scripts/workflows/lib/factory-runners/qualify-trigger.js');
           await fn({ github, context, core });
     - name: Capture issue context
       id: capture_issue_context
@@ -61,7 +63,7 @@ on:
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
-          const fn = require('${{ github.workspace }}/.github/scripts/workflows/reproducer-factory/validate-dispatch-inputs.js');
+          const fn = require('${{ github.workspace }}/.github/scripts/workflows/lib/factory-runners/validate-dispatch-inputs.js');
           await fn({ github, context, core });
     - name: Fetch live issue
       id: fetch_live_issue
@@ -74,7 +76,7 @@ on:
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
-          const fn = require('${{ github.workspace }}/.github/scripts/workflows/reproducer-factory/fetch-live-issue.js');
+          const fn = require('${{ github.workspace }}/.github/scripts/workflows/lib/factory-runners/fetch-live-issue.js');
           await fn({ github, context, core });
     - name: Check actor trust
       id: check_actor_trust
@@ -82,10 +84,12 @@ on:
         steps.determine_intake_mode.outputs.intake_mode == 'issue-event' &&
         steps.qualify_trigger.outputs.event_eligible == 'true'
       uses: actions/github-script@v9
+      env:
+        FACTORY_NAME: reproducer-factory
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
-          const fn = require('${{ github.workspace }}/.github/scripts/workflows/reproducer-factory/check-actor-trust.js');
+          const fn = require('${{ github.workspace }}/.github/scripts/workflows/lib/factory-runners/check-actor-trust.js');
           await fn({ github, context, core });
     - name: Fetch issue comments
       id: fetch_issue_comments
@@ -107,7 +111,7 @@ on:
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
-          const fn = require('${{ github.workspace }}/.github/scripts/workflows/reproducer-factory/fetch-issue-comments.js');
+          const fn = require('${{ github.workspace }}/.github/scripts/workflows/lib/factory-runners/fetch-issue-comments.js');
           await fn({ github, context, core });
     - name: Fetch prior reproducer comment
       id: fetch_prior_reproducer_comment
@@ -143,10 +147,12 @@ on:
           steps.validate_dispatch_inputs.outputs.event_eligible == 'true'
         )
       uses: actions/github-script@v9
+      env:
+        FACTORY_NAME: reproducer-factory
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
-          const fn = require('${{ github.workspace }}/.github/scripts/workflows/reproducer-factory/check-duplicate-pr.js');
+          const fn = require('${{ github.workspace }}/.github/scripts/workflows/lib/factory-runners/check-duplicate-pr.js');
           await fn({ github, context, core });
     - name: Remove trigger label
       id: remove_trigger_label
@@ -156,10 +162,12 @@ on:
         steps.check_actor_trust.outputs.actor_trusted == 'true' &&
         steps.check_duplicate_pr.outputs.duplicate_pr_found != 'true'
       uses: actions/github-script@v9
+      env:
+        FACTORY_NAME: reproducer-factory
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
-          const fn = require('${{ github.workspace }}/.github/scripts/workflows/reproducer-factory/remove-trigger-label.js');
+          const fn = require('${{ github.workspace }}/.github/scripts/workflows/lib/factory-runners/remove-trigger-label.js');
           await fn({ github, context, core });
     - name: Set phase label
       id: set_phase_label
@@ -291,6 +299,7 @@ on:
       if: always()
       uses: actions/github-script@v9
       env:
+        FACTORY_NAME: reproducer-factory
         EVENT_ELIGIBLE: ${{ steps.normalize_context.outputs.event_eligible }}
         EVENT_ELIGIBLE_REASON: ${{ steps.normalize_context.outputs.event_eligible_reason }}
         ACTOR_TRUSTED: ${{ steps.normalize_context.outputs.actor_trusted }}
@@ -301,7 +310,7 @@ on:
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
-          const fn = require('${{ github.workspace }}/.github/scripts/workflows/reproducer-factory/finalize-gate.js');
+          const fn = require('${{ github.workspace }}/.github/scripts/workflows/lib/factory-runners/finalize-gate.js');
           await fn({ github, context, core });
 env:
   REPRODUCER_FACTORY_ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue_number }}

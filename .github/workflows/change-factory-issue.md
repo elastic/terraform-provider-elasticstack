@@ -21,10 +21,12 @@ on:
     - name: Qualify trigger event
       id: qualify_trigger
       uses: actions/github-script@v9
+      env:
+        FACTORY_NAME: change-factory
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
-          const fn = require('${{ github.workspace }}/.github/scripts/workflows/change-factory/qualify-trigger.js');
+          const fn = require('${{ github.workspace }}/.github/scripts/workflows/lib/factory-runners/qualify-trigger.js');
           await fn({ github, context, core });
     - name: Capture command text
       id: capture_command_text
@@ -47,10 +49,12 @@ on:
       id: check_actor_trust
       if: steps.qualify_trigger.outputs.event_eligible == 'true'
       uses: actions/github-script@v9
+      env:
+        FACTORY_NAME: change-factory
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
-          const fn = require('${{ github.workspace }}/.github/scripts/workflows/change-factory/check-actor-trust.js');
+          const fn = require('${{ github.workspace }}/.github/scripts/workflows/lib/factory-runners/check-actor-trust.js');
           await fn({ github, context, core });
     - name: Fetch issue comments
       id: fetch_issue_comments
@@ -134,10 +138,12 @@ on:
         steps.check_actor_trust.outputs.actor_trusted == 'true' &&
         steps.check_duplicate_pr.outputs.duplicate_pr_found != 'true'
       uses: actions/github-script@v9
+      env:
+        FACTORY_NAME: change-factory
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
-          const fn = require('${{ github.workspace }}/.github/scripts/workflows/change-factory/remove-trigger-label.js');
+          const fn = require('${{ github.workspace }}/.github/scripts/workflows/lib/factory-runners/remove-trigger-label.js');
           await fn({ github, context, core });
     - name: Set phase label
       id: set_phase_label
@@ -159,6 +165,7 @@ on:
       if: always()
       uses: actions/github-script@v9
       env:
+        FACTORY_NAME: change-factory
         EVENT_ELIGIBLE: ${{ steps.qualify_trigger.outputs.event_eligible }}
         EVENT_ELIGIBLE_REASON: ${{ steps.qualify_trigger.outputs.event_eligible_reason }}
         ACTOR_TRUSTED: ${{ steps.check_actor_trust.outputs.actor_trusted }}
@@ -169,7 +176,7 @@ on:
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
-          const fn = require('${{ github.workspace }}/.github/scripts/workflows/change-factory/finalize-gate.js');
+          const fn = require('${{ github.workspace }}/.github/scripts/workflows/lib/factory-runners/finalize-gate.js');
           await fn({ github, context, core });
 if: >-
   needs.pre_activation.outputs.event_eligible == 'true' &&

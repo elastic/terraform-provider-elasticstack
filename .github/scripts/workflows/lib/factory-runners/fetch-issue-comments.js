@@ -1,4 +1,4 @@
-const { factoryFetchIssueComments, serializeIssueComments } = require('../lib/factory-issue-comments.js');
+const { factoryFetchIssueComments, serializeIssueComments } = require('../factory-issue-comments.js');
 
 module.exports = async function ({ github, context, core }) {
 

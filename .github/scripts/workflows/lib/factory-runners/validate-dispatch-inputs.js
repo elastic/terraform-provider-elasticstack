@@ -1,4 +1,4 @@
-const { validateDispatchInputs } = require('../lib/code-factory-dispatch.js');
+const { validateDispatchInputs } = require('../code-factory-dispatch.js');
 
 module.exports = async function ({ github, context, core }) {
 

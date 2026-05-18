@@ -1,18 +1,8 @@
-const {
-  ISSUE_BRANCH_PREFIX,
-  FACTORY_LABEL,
-  DUPLICATE_LINKAGE_MODE,
-  ISSUE_OPENED_NOT_ELIGIBLE_REASON,
-} = require('../lib/intake/research-factory-constants.js');
-const { createFactoryIssueModule } = require('../lib/factory-issue-shared.js');
-const { qualifyTriggerEvent } = createFactoryIssueModule({
-  branchPrefix: ISSUE_BRANCH_PREFIX,
-  factoryLabel: FACTORY_LABEL,
-  issueOpenedNotEligibleReason: ISSUE_OPENED_NOT_ELIGIBLE_REASON,
-  duplicateLinkageMode: DUPLICATE_LINKAGE_MODE,
-});
+const { getFactoryModule } = require('./_factory-context.js');
 
 module.exports = async function ({ github, context, core }) {
+
+  const { qualifyTriggerEvent } = getFactoryModule();
 
   const eventName = context.eventName;
   const eventAction = context.payload.action;

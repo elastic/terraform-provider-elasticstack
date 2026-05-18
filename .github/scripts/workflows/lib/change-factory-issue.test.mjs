@@ -22,6 +22,7 @@ const {
 const { ISSUE_BRANCH_PREFIX, DUPLICATE_LINKAGE_MODE } = require('./intake/change-factory-constants.js');
 
 const scriptsDir = path.resolve(__dirname, '../change-factory');
+const factoryRunnersDir = path.resolve(__dirname, 'factory-runners');
 const workflowSourcePath = path.resolve(__dirname, '../../../workflows/change-factory-issue.md');
 const lockCompiledPath = path.resolve(__dirname, '../../../workflows/change-factory-issue.lock.yml');
 
@@ -443,7 +444,7 @@ test('change-factory-issue workflow source exists and wires script modules', () 
   assert.match(source, /change-factory/);
   assert.match(source, /issues/);
   assert.doesNotMatch(source, /compile-workflow-sources/);
-  assert.match(source, /change-factory\/qualify-trigger\.js/);
+  assert.match(source, /lib\/factory-runners\/qualify-trigger\.js/);
   assert.match(source, /patch-format: am/);
 });
 
@@ -535,17 +536,17 @@ test('change-factory-issue workflow source wiring matches intake contract', () =
   );
 
   const moduleRequireFragments = [
-    '/change-factory/qualify-trigger.js',
+    '/lib/factory-runners/qualify-trigger.js',
     '/change-factory/capture-command-text.js',
-    '/change-factory/check-actor-trust.js',
+    '/lib/factory-runners/check-actor-trust.js',
     '/change-factory/fetch-issue-comments.js',
     '/change-factory/extract-research-comment.js',
     '/change-factory/check-duplicate-pr.js',
     '/change-factory/notify-duplicate-blocked.js',
     '/change-factory/sanitize-context.js',
-    '/change-factory/remove-trigger-label.js',
+    '/lib/factory-runners/remove-trigger-label.js',
     '/phase-label/set.js',
-    '/change-factory/finalize-gate.js',
+    '/lib/factory-runners/finalize-gate.js',
   ];
   let lastIdx = -1;
   for (const fragment of moduleRequireFragments) {
@@ -772,12 +773,12 @@ test('check-duplicate-pr.js resolves expected branch via shared issueBranchName'
 });
 
 test('change-factory finalize-gate.js uses shared parseFinalizeGateEnv path', () => {
-  const source = readFileSync(path.join(scriptsDir, 'finalize-gate.js'), 'utf8');
+  const source = readFileSync(path.join(factoryRunnersDir, 'finalize-gate.js'), 'utf8');
   assert.match(source, /computeGateReason\(parseFinalizeGateEnv\(process\.env\)\)/);
 });
 
 test('change-factory check-actor-trust.js uses actorTrustWhenSenderMissing', () => {
-  const source = readFileSync(path.join(scriptsDir, 'check-actor-trust.js'), 'utf8');
+  const source = readFileSync(path.join(factoryRunnersDir, 'check-actor-trust.js'), 'utf8');
   assert.match(source, /actorTrustWhenSenderMissing\(\)/);
 });
 

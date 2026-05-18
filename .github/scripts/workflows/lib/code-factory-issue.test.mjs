@@ -23,6 +23,7 @@ const { ISSUE_BRANCH_PREFIX, FACTORY_LABEL, DUPLICATE_LINKAGE_MODE } = require('
 const workflowPath = path.resolve(__dirname, '../../../workflows/code-factory-issue.md');
 const lockPath = path.resolve(__dirname, '../../../workflows/code-factory-issue.lock.yml');
 const codeFactoryScriptsDir = path.resolve(__dirname, '../code-factory');
+const factoryRunnersDir = path.resolve(__dirname, 'factory-runners');
 
 function makePullRequest(overrides = {}) {
   return {
@@ -362,7 +363,7 @@ test('code-factory-issue workflow source exists and wires script modules', () =>
   assert.match(source, /code-factory/);
   assert.match(source, /issues/);
   assert.doesNotMatch(source, /compile-workflow-sources/);
-  assert.match(source, /code-factory\/qualify-trigger\.js/);
+  assert.match(source, /lib\/factory-runners\/qualify-trigger\.js/);
   assert.match(source, /patch-format: am/);
 });
 
@@ -446,7 +447,7 @@ test('code-factory-issue workflow source enables status comments and remove-labe
   const workflowTmpl = readFileSync(workflowPath, 'utf8');
   assert.match(workflowTmpl, /status-comment:\s*true/);
   assert.match(workflowTmpl, /name: Remove trigger label/);
-  assert.match(workflowTmpl, /code-factory\/remove-trigger-label\.js/);
+  assert.match(workflowTmpl, /lib\/factory-runners\/remove-trigger-label\.js/);
   assert.match(workflowTmpl, /issues:\s*write/);
   assert.match(workflowTmpl, /trigger_label_removed:/);
   assert.match(
@@ -496,9 +497,9 @@ test('code-factory-issue workflow template keeps dispatch actorTrusted bypass', 
 test('code-factory-issue workflow source includes dispatch validation and live issue fetch', () => {
   const workflowTmpl = readFileSync(workflowPath, 'utf8');
   assert.match(workflowTmpl, /name: Validate dispatch inputs/);
-  assert.match(workflowTmpl, /code-factory\/validate-dispatch-inputs\.js/);
+  assert.match(workflowTmpl, /lib\/factory-runners\/validate-dispatch-inputs\.js/);
   assert.match(workflowTmpl, /name: Fetch live issue/);
-  assert.match(workflowTmpl, /code-factory\/fetch-live-issue\.js/);
+  assert.match(workflowTmpl, /lib\/factory-runners\/fetch-live-issue\.js/);
   assert.match(workflowTmpl, /INPUT_ISSUE_NUMBER:/);
 });
 
@@ -516,31 +517,31 @@ test('code-factory-issue workflow template normalize_context uses env vars', () 
 });
 
 test('code-factory validate-dispatch-inputs.js includes dispatch helper', () => {
-  const source = readFileSync(path.join(codeFactoryScriptsDir, 'validate-dispatch-inputs.js'), 'utf8');
+  const source = readFileSync(path.join(factoryRunnersDir, 'validate-dispatch-inputs.js'), 'utf8');
   assert.match(source, /code-factory-dispatch\.js/);
   assert.match(source, /validateDispatchInputs/);
 });
 
 test('code-factory check-duplicate-pr.js branches on intake mode', () => {
-  const source = readFileSync(path.join(codeFactoryScriptsDir, 'check-duplicate-pr.js'), 'utf8');
+  const source = readFileSync(path.join(factoryRunnersDir, 'check-duplicate-pr.js'), 'utf8');
   assert.match(source, /intakeMode/);
   assert.match(source, /workflow_dispatch/);
   assert.match(source, /context\.payload\.inputs\?\.issue_number/);
 });
 
 test('code-factory finalize-gate.js uses shared parseFinalizeGateEnv path', () => {
-  const source = readFileSync(path.join(codeFactoryScriptsDir, 'finalize-gate.js'), 'utf8');
+  const source = readFileSync(path.join(factoryRunnersDir, 'finalize-gate.js'), 'utf8');
   assert.match(source, /computeGateReason\(parseFinalizeGateEnv\(process\.env\)\)/);
 });
 
 test('code-factory check-actor-trust.js uses actorTrustWhenSenderMissing', () => {
-  const source = readFileSync(path.join(codeFactoryScriptsDir, 'check-actor-trust.js'), 'utf8');
+  const source = readFileSync(path.join(factoryRunnersDir, 'check-actor-trust.js'), 'utf8');
   assert.match(source, /actorTrustWhenSenderMissing\(\)/);
 });
 
 test('code-factory-issue workflow source orders remove-trigger-label before phase-label set module', () => {
   const workflowTmpl = readFileSync(workflowPath, 'utf8');
-  const removeIdx = workflowTmpl.indexOf('code-factory/remove-trigger-label.js');
+  const removeIdx = workflowTmpl.indexOf('lib/factory-runners/remove-trigger-label.js');
   const setIdx = workflowTmpl.indexOf('phase-label/set.js');
   assert.ok(removeIdx >= 0, 'expected remove-trigger-label module require');
   assert.ok(setIdx > removeIdx, 'expected phase-label set module after remove-trigger-label');
