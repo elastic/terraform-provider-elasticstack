@@ -238,6 +238,7 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		securityexceptionlist.NewResource,
 		securityexceptionitem.NewResource,
 		security_role.NewResource,
+		spaces.NewResource,
 		slm.NewSlmResource,
 		snapshot_repository.NewSnapshotRepositoryResource,
 		transform.NewTransformResource,

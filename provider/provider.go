@@ -42,9 +42,7 @@ func New(version string) *schema.Provider {
 			fleetKeyName: providerSchema.GetFleetConnectionSchema(),
 		},
     DataSourcesMap: map[string]*schema.Resource{},
-		ResourcesMap: map[string]*schema.Resource{
-			"elasticstack_kibana_space": kibana.ResourceSpace(),
-		},
+    ResourcesMap:   map[string]*schema.Resource{},
 	}
 
 	p.ConfigureContextFunc = clients.NewAPIClientFuncFromSDK(version)

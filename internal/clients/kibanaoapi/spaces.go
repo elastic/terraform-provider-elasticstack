@@ -58,13 +58,6 @@ func GetSpace(ctx context.Context, client *Client, id string) (*kbapi.SpaceRespo
 		func() *kbapi.SpaceResponse { return resp.JSON200 })
 }
 
-// GetSpaceSDK returns a single Kibana space by ID using SDK diagnostics.
-// Returns (nil, nil) when the space is not found (HTTP 404).
-func GetSpaceSDK(ctx context.Context, client *Client, id string) (*kbapi.SpaceResponse, sdkdiag.Diagnostics) {
-	space, fwDiags := GetSpace(ctx, client, id)
-	return space, diagutil.SDKDiagsFromFramework(fwDiags)
-}
-
 // CreateSpace creates a new Kibana space.
 func CreateSpace(ctx context.Context, client *Client, body kbapi.PostSpacesSpaceJSONRequestBody) (*kbapi.SpaceResponse, sdkdiag.Diagnostics) {
 	resp, err := client.API.PostSpacesSpaceWithResponse(ctx, body)
