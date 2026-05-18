@@ -6,7 +6,7 @@
 // not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//	http://www.apache.org/licenses/LICENSE-2.0
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing,
 // software distributed under the License is distributed on an
@@ -27,6 +27,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/elastic/terraform-provider-elasticstack/scripts/changelog/internal/section"
 )
@@ -90,10 +91,10 @@ type PullRequestFetcher interface {
 
 // ValidateOptions configures Validate (no environment access).
 type ValidateOptions struct {
-	Owner              string
-	Repo               string
-	Number             int
-	Fetcher            PullRequestFetcher
+	Owner            string
+	Repo             string
+	Number           int
+	Fetcher          PullRequestFetcher
 	NoChangelogLabel string
 }
 
@@ -122,13 +123,11 @@ func Validate(ctx context.Context, opts ValidateOptions) (Verdict, error) {
 		return Verdict{}, err
 	}
 
-	for _, l := range pr.Labels {
-		if l == label {
-			return Verdict{
-				Status:          StatusPass,
-				NoChangelogSkip: true,
-			}, nil
-		}
+	if slices.Contains(pr.Labels, label) {
+		return Verdict{
+			Status:          StatusPass,
+			NoChangelogSkip: true,
+		}, nil
 	}
 
 	sec, parseErr := section.Parse([]byte(pr.Body))

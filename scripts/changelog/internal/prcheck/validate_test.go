@@ -6,7 +6,7 @@
 // not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//	http://www.apache.org/licenses/LICENSE-2.0
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing,
 // software distributed under the License is distributed on an
@@ -27,15 +27,15 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/scripts/changelog/internal/prcheck"
 )
 
-// Must match scripts/changelog/internal/section/ruleCBreakingOnlyWhenBreakingImpactMsg (parity with validateChangelogSectionFull JS).
-const ruleBreakingOnlyAllowedWhenBreakingImpactGo = "### Breaking changes section is only allowed when Customer impact: breaking; change to Customer impact: breaking or remove the ### Breaking changes heading."
+const ruleBreakingOnlyAllowedWhenBreakingImpactGo = "### Breaking changes section is only allowed when Customer impact: breaking; " +
+	"change to Customer impact: breaking or remove the ### Breaking changes heading."
 
 type stubFetcher struct {
 	pr  prcheck.PullRequest
 	err error
 }
 
-func (s stubFetcher) GetPullRequest(ctx context.Context, owner, repo string, number int) (*prcheck.PullRequest, error) {
+func (s stubFetcher) GetPullRequest(_ context.Context, _, _ string, _ int) (*prcheck.PullRequest, error) {
 	if s.err != nil {
 		return nil, s.err
 	}
@@ -49,10 +49,10 @@ func TestValidate_options_and_fetch_errors(t *testing.T) {
 	ctx := context.Background()
 	baseOpts := func() prcheck.ValidateOptions {
 		return prcheck.ValidateOptions{
-			Owner:      "elastic",
-			Repo:       "terraform-provider-elasticstack",
-			Number:     1,
-			Fetcher:    stubFetcher{pr: prcheck.PullRequest{Body: "## Changelog\nCustomer impact: none\n"}},
+			Owner:            "elastic",
+			Repo:             "terraform-provider-elasticstack",
+			Number:           1,
+			Fetcher:          stubFetcher{pr: prcheck.PullRequest{Body: "## Changelog\nCustomer impact: none\n"}},
 			NoChangelogLabel: "",
 		}
 	}
@@ -150,13 +150,13 @@ func TestValidate_failures_and_bypass(t *testing.T) {
 	baseNum := 100
 
 	tests := []struct {
-		name          string
-		body          string
-		wantStatus    prcheck.Status
-		wantSkip      bool
-		wantErrSubs   []string
-		customLabels  []string
-		skipNoChLbl   bool
+		name         string
+		body         string
+		wantStatus   prcheck.Status
+		wantSkip     bool
+		wantErrSubs  []string
+		customLabels []string
+		skipNoChLbl  bool
 	}{
 		{
 			name:       "missing changelog heading",
@@ -224,9 +224,9 @@ func TestValidate_failures_and_bypass(t *testing.T) {
 			},
 		},
 		{
-			name:       "breaking heading forbidden when fix",
-			body:       "## Changelog\nCustomer impact: fix\nSummary: small fix\n\n### Breaking changes\noops\n",
-			wantStatus: prcheck.StatusFail,
+			name:        "breaking heading forbidden when fix",
+			body:        "## Changelog\nCustomer impact: fix\nSummary: small fix\n\n### Breaking changes\noops\n",
+			wantStatus:  prcheck.StatusFail,
 			wantErrSubs: []string{ruleBreakingOnlyAllowedWhenBreakingImpactGo},
 		},
 		{
@@ -237,12 +237,12 @@ func TestValidate_failures_and_bypass(t *testing.T) {
 			wantSkip:     true,
 		},
 		{
-			name:        "custom no-changelog label",
-			body:        "",
+			name:         "custom no-changelog label",
+			body:         "",
 			customLabels: []string{"changelog-not-needed"},
-			wantStatus:  prcheck.StatusPass,
-			wantSkip:    true,
-			skipNoChLbl: true,
+			wantStatus:   prcheck.StatusPass,
+			wantSkip:     true,
+			skipNoChLbl:  true,
 		},
 	}
 
