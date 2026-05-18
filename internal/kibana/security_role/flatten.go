@@ -180,6 +180,38 @@ func objectFromFieldSecurityResource(ctx context.Context, fs *map[string][]strin
 	return obj, diags
 }
 
+// buildIndexEntry assembles a single index or remote-index entry object.
+// clusters should be SetNull(StringType) for non-remote entries; for remote
+// entries pass the actual clusters set. Whether "clusters" is included in the
+// result is determined by attrTypes, so the same helper serves both variants.
+// normalizedQueryFromAPI and objectFromFieldSecurityResource are called here
+// so that logic lives in exactly one place for both index entry types.
+func buildIndexEntry(
+	ctx context.Context,
+	attrTypes map[string]attr.Type,
+	clusters, names, privs types.Set,
+	query *string,
+	fs *map[string][]string,
+	entryHint types.Object,
+) (types.Object, diag.Diagnostics) {
+	fieldObj, diags := objectFromFieldSecurityResource(ctx, fs, fieldSecurityHint(entryHint))
+	if diags.HasError() {
+		return types.ObjectNull(attrTypes), diags
+	}
+	objAttrs := map[string]attr.Value{
+		"names":          names,
+		"privileges":     privs,
+		"query":          normalizedQueryFromAPI(query),
+		"field_security": fieldObj,
+	}
+	if _, ok := attrTypes["clusters"]; ok {
+		objAttrs["clusters"] = clusters
+	}
+	obj, d := types.ObjectValue(attrTypes, objAttrs)
+	diags.Append(d...)
+	return obj, diags
+}
+
 // flattenIndicesResource builds the resource-side indices set: optional
 // `cluster`/`run_as`-like nested sets are null when absent, and field_security
 // is a single object (or null) rather than a list. `hint` is the plan/state
@@ -204,18 +236,7 @@ func flattenIndicesResource(ctx context.Context, indices *[]kibanaoapi.SecurityR
 		if diags.HasError() {
 			return types.SetNull(objType), diags
 		}
-		entryHint := hintIdx[setStringKey(namesSet)]
-		fieldObj, d := objectFromFieldSecurityResource(ctx, index.FieldSecurity, fieldSecurityHint(entryHint))
-		diags.Append(d...)
-		if diags.HasError() {
-			return types.SetNull(objType), diags
-		}
-		obj, d := types.ObjectValue(esIndexResourceAttrTypes(), map[string]attr.Value{
-			"names":          namesSet,
-			"privileges":     privSet,
-			"query":          normalizedQueryFromAPI(index.Query),
-			"field_security": fieldObj,
-		})
+		obj, d := buildIndexEntry(ctx, esIndexResourceAttrTypes(), types.SetNull(types.StringType), namesSet, privSet, index.Query, index.FieldSecurity, hintIdx[setStringKey(namesSet)])
 		diags.Append(d...)
 		if diags.HasError() {
 			return types.SetNull(objType), diags
@@ -252,18 +273,7 @@ func flattenRemoteIndicesResource(ctx context.Context, indices *[]kibanaoapi.Sec
 			return types.SetNull(objType), diags
 		}
 		entryHint := hintIdx[setStringKey(clustersSet)+"|"+setStringKey(namesSet)]
-		fieldObj, d := objectFromFieldSecurityResource(ctx, index.FieldSecurity, fieldSecurityHint(entryHint))
-		diags.Append(d...)
-		if diags.HasError() {
-			return types.SetNull(objType), diags
-		}
-		obj, d := types.ObjectValue(esRemoteIndexResourceAttrTypes(), map[string]attr.Value{
-			"clusters":       clustersSet,
-			"names":          namesSet,
-			"privileges":     privSet,
-			"query":          normalizedQueryFromAPI(index.Query),
-			"field_security": fieldObj,
-		})
+		obj, d := buildIndexEntry(ctx, esRemoteIndexResourceAttrTypes(), clustersSet, namesSet, privSet, index.Query, index.FieldSecurity, entryHint)
 		diags.Append(d...)
 		if diags.HasError() {
 			return types.SetNull(objType), diags
