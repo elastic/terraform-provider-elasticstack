@@ -177,7 +177,7 @@ func TestValidate_failures_and_bypass(t *testing.T) {
 			body:       "## Description\nnothing here",
 			wantStatus: prcheck.StatusFail,
 			wantErrSubs: []string{
-				"no ## Changelog section found in PR body",
+				"No ## Changelog section found in PR body",
 			},
 		},
 		{
@@ -185,7 +185,7 @@ func TestValidate_failures_and_bypass(t *testing.T) {
 			body:       "",
 			wantStatus: prcheck.StatusFail,
 			wantErrSubs: []string{
-				"no ## Changelog section found in PR body",
+				"No ## Changelog section found in PR body",
 			},
 		},
 		{

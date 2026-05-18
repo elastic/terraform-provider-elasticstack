@@ -26,7 +26,7 @@ import (
 // ErrNoChangelogSection is returned by Parse when the PR body lacks a "## Changelog" heading.
 var ErrNoChangelogSection = errors.New("no ## Changelog section found in PR body")
 
-const changelogSectionNotFoundValidateMsg = "no ## Changelog section found in PR body"
+const changelogSectionNotFoundValidateMsg = "No ## Changelog section found in PR body"
 
 var changelogHeadingStart = regexp.MustCompile(`^##\s+Changelog`)
 

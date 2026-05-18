@@ -526,9 +526,12 @@ func TestParse_tildeFenceGuardsChangelogTerminator(t *testing.T) {
 	}
 }
 
-func TestErrNoChangelogSection_textMatchesValidatorNotFoundConstant(t *testing.T) {
-	if ErrNoChangelogSection.Error() != changelogSectionNotFoundValidateMsg {
-		t.Fatalf("%q vs %q", ErrNoChangelogSection.Error(), changelogSectionNotFoundValidateMsg)
+func TestChangelogSectionNotFound_validateMessageMatchesJSVerifier(t *testing.T) {
+	if changelogSectionNotFoundValidateMsg != "No ## Changelog section found in PR body" {
+		t.Fatalf("%q", changelogSectionNotFoundValidateMsg)
+	}
+	if ErrNoChangelogSection.Error() == changelogSectionNotFoundValidateMsg {
+		t.Fatal("wrapped Go error follows ST1005; surface JS string only via validators")
 	}
 }
 
