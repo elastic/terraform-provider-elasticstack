@@ -1,0 +1,500 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { createRequire } from 'node:module';
+
+const require = createRequire(import.meta.url);
+
+const {
+  buildUnreleasedPRBody,
+  buildReleasePRBody,
+  manageUnreleasedPR,
+  findOpenReleasePrepPRNumber,
+  refreshReleasePR,
+} = require('./changelog-pr-management.js');
+
+// ---------------------------------------------------------------------------
+// buildUnreleasedPRBody
+// ---------------------------------------------------------------------------
+
+test('buildUnreleasedPRBody: body contains Generated: date', () => {
+  const body = buildUnreleasedPRBody({ compareRange: 'v1.0.0...HEAD' });
+  assert.match(body, /\*\*Generated:\*\* \d{4}-\d{2}-\d{2}/);
+});
+
+test('buildUnreleasedPRBody: body contains Compare range', () => {
+  const body = buildUnreleasedPRBody({ compareRange: 'v1.0.0...HEAD' });
+  assert.ok(body.includes('**Compare range:** `v1.0.0...HEAD`'), 'Compare range line not found');
+});
+
+test('buildUnreleasedPRBody: body contains Do not make manual edits notice', () => {
+  const body = buildUnreleasedPRBody({ compareRange: 'v1.0.0...HEAD' });
+  assert.ok(body.includes('Do not make manual edits to the `generated-changelog` branch.'), 'Warning notice not found');
+});
+
+// ---------------------------------------------------------------------------
+// buildReleasePRBody
+// ---------------------------------------------------------------------------
+
+test('buildReleasePRBody: body contains Generated: date', () => {
+  const body = buildReleasePRBody({ targetVersion: '2.0.0', compareRange: 'v1.0.0...v2.0.0' });
+  assert.match(body, /\*\*Generated:\*\* \d{4}-\d{2}-\d{2}/);
+});
+
+test('buildReleasePRBody: body contains Version:', () => {
+  const body = buildReleasePRBody({ targetVersion: '2.0.0', compareRange: 'v1.0.0...v2.0.0' });
+  assert.ok(body.includes('**Version:** `2.0.0`'), 'Version line not found');
+});
+
+test('buildReleasePRBody: body contains Compare range:', () => {
+  const body = buildReleasePRBody({ targetVersion: '2.0.0', compareRange: 'v1.0.0...v2.0.0' });
+  assert.ok(body.includes('**Compare range:** `v1.0.0...v2.0.0`'), 'Compare range line not found');
+});
+
+// ---------------------------------------------------------------------------
+// manageUnreleasedPR: existing PR → updated
+// ---------------------------------------------------------------------------
+
+test('manageUnreleasedPR: existing open PR → updates body, returns action=updated', async () => {
+  const updateCalls = [];
+  const createCalls = [];
+  const addLabelsCalls = [];
+
+  const github = {
+    rest: {
+      pulls: {
+        list: async () => ({
+          data: [{ number: 42, html_url: 'https://github.com/org/repo/pull/42' }],
+        }),
+        update: async (args) => {
+          updateCalls.push(args);
+          return { data: {} };
+        },
+        create: async (args) => {
+          createCalls.push(args);
+          return { data: { number: 99, html_url: 'https://github.com/org/repo/pull/99' } };
+        },
+      },
+      issues: {
+        addLabels: async (args) => {
+          addLabelsCalls.push(args);
+          return { data: {} };
+        },
+      },
+    },
+  };
+
+  const result = await manageUnreleasedPR({
+    github,
+    core: null,
+    owner: 'org',
+    repo: 'repo',
+    compareRange: 'v1.0.0...HEAD',
+  });
+
+  assert.equal(result.prAction, 'updated');
+  assert.equal(result.prNumber, 42);
+  assert.equal(result.prUrl, 'https://github.com/org/repo/pull/42');
+
+  assert.equal(updateCalls.length, 1, 'pulls.update should be called once');
+  assert.equal(updateCalls[0].pull_number, 42);
+  assert.ok(updateCalls[0].body.includes('Do not make manual edits'), 'body should include warning text');
+
+  assert.equal(createCalls.length, 0, 'pulls.create should not be called');
+  assert.equal(addLabelsCalls.length, 1, 'issues.addLabels should be called once');
+  assert.equal(addLabelsCalls[0].issue_number, 42);
+  assert.deepEqual(addLabelsCalls[0].labels, ['no-changelog']);
+});
+
+// ---------------------------------------------------------------------------
+// manageUnreleasedPR: no existing PR → created
+// ---------------------------------------------------------------------------
+
+test('manageUnreleasedPR: no existing PR → creates new PR, returns action=created with head=generated-changelog', async () => {
+  const createCalls = [];
+  const updateCalls = [];
+  const addLabelsCalls = [];
+
+  const github = {
+    rest: {
+      pulls: {
+        list: async () => ({ data: [] }),
+        update: async (args) => {
+          updateCalls.push(args);
+          return { data: {} };
+        },
+        create: async (args) => {
+          createCalls.push(args);
+          return { data: { number: 7, html_url: 'https://github.com/org/repo/pull/7' } };
+        },
+      },
+      issues: {
+        addLabels: async (args) => {
+          addLabelsCalls.push(args);
+          return { data: {} };
+        },
+      },
+    },
+  };
+
+  const result = await manageUnreleasedPR({
+    github,
+    core: null,
+    owner: 'org',
+    repo: 'repo',
+    compareRange: 'v0.9.0...HEAD',
+  });
+
+  assert.equal(result.prAction, 'created');
+  assert.equal(result.prNumber, 7);
+  assert.equal(result.prUrl, 'https://github.com/org/repo/pull/7');
+
+  assert.equal(createCalls.length, 1, 'pulls.create should be called once');
+  assert.equal(createCalls[0].head, 'generated-changelog');
+  assert.equal(createCalls[0].base, 'main');
+
+  assert.equal(updateCalls.length, 0, 'pulls.update should not be called');
+  assert.equal(addLabelsCalls.length, 1, 'issues.addLabels should be called once');
+  assert.equal(addLabelsCalls[0].issue_number, 7);
+  assert.deepEqual(addLabelsCalls[0].labels, ['no-changelog']);
+});
+
+test('manageUnreleasedPR: addLabels failure warns and does not fail after creating PR', async () => {
+  const warnings = [];
+
+  const github = {
+    core: {
+      warning: (msg) => warnings.push(msg),
+    },
+    rest: {
+      pulls: {
+        list: async () => ({ data: [] }),
+        create: async () => ({
+          data: { number: 7, html_url: 'https://github.com/org/repo/pull/7' },
+        }),
+      },
+      issues: {
+        addLabels: async () => {
+          throw new Error('boom');
+        },
+      },
+    },
+  };
+
+  const result = await manageUnreleasedPR({
+    github,
+    core: github.core,
+    owner: 'org',
+    repo: 'repo',
+    compareRange: 'v0.9.0...HEAD',
+  });
+
+  assert.equal(result.prAction, 'created');
+  assert.equal(result.prNumber, 7);
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0], /Failed to apply no-changelog label to PR #7: boom/);
+});
+
+test('manageUnreleasedPR: addLabels failure warns and does not fail after updating existing PR', async () => {
+  const updateCalls = [];
+  const warnings = [];
+
+  const github = {
+    core: {
+      warning: (msg) => warnings.push(msg),
+    },
+    rest: {
+      pulls: {
+        list: async () => ({
+          data: [{ number: 42, html_url: 'https://github.com/org/repo/pull/42' }],
+        }),
+        update: async (args) => {
+          updateCalls.push(args);
+          return { data: {} };
+        },
+      },
+      issues: {
+        addLabels: async () => {
+          throw new Error('boom');
+        },
+      },
+    },
+  };
+
+  const result = await manageUnreleasedPR({
+    github,
+    core: github.core,
+    owner: 'org',
+    repo: 'repo',
+    compareRange: 'v1.0.0...HEAD',
+  });
+
+  assert.equal(result.prAction, 'updated');
+  assert.equal(result.prNumber, 42);
+  assert.equal(result.prUrl, 'https://github.com/org/repo/pull/42');
+  assert.equal(updateCalls.length, 1, 'pulls.update should still succeed');
+  assert.equal(updateCalls[0].pull_number, 42);
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0], /Failed to apply no-changelog label to PR #42: boom/);
+});
+
+// ---------------------------------------------------------------------------
+// refreshReleasePR: prNumber present → pulls.update called
+// ---------------------------------------------------------------------------
+
+test('refreshReleasePR: prNumber present → calls pulls.update with correct body', async () => {
+  const updateCalls = [];
+  const addLabelsCalls = [];
+  const warnings = [];
+
+  const github = {
+    rest: {
+      pulls: {
+        update: async (args) => {
+          updateCalls.push(args);
+          return { data: {} };
+        },
+      },
+      issues: {
+        addLabels: async (args) => {
+          addLabelsCalls.push(args);
+          return { data: {} };
+        },
+      },
+    },
+  };
+
+  const core = {
+    info: () => {},
+    warning: (msg) => warnings.push(msg),
+  };
+
+  await refreshReleasePR({
+    github,
+    core,
+    owner: 'org',
+    repo: 'repo',
+    prNumber: 55,
+    compareRange: 'v1.0.0...v2.0.0',
+    targetVersion: '2.0.0',
+  });
+
+  assert.equal(updateCalls.length, 1, 'pulls.update should be called once');
+  assert.equal(updateCalls[0].pull_number, 55);
+  assert.ok(updateCalls[0].body.includes('**Version:** `2.0.0`'), 'body should include version');
+  assert.ok(updateCalls[0].body.includes('**Compare range:** `v1.0.0...v2.0.0`'), 'body should include compare range');
+  assert.match(updateCalls[0].body, /\*\*Generated:\*\* \d{4}-\d{2}-\d{2}/);
+  assert.equal(addLabelsCalls.length, 1, 'issues.addLabels should be called once');
+  assert.equal(addLabelsCalls[0].issue_number, 55);
+  assert.deepEqual(addLabelsCalls[0].labels, ['no-changelog']);
+
+  assert.equal(warnings.length, 0, 'no warnings should be emitted');
+});
+
+test('refreshReleasePR: addLabels failure warns and does not fail after updating PR', async () => {
+  const updateCalls = [];
+  const warnings = [];
+
+  const github = {
+    rest: {
+      pulls: {
+        update: async (args) => {
+          updateCalls.push(args);
+          return { data: {} };
+        },
+      },
+      issues: {
+        addLabels: async () => {
+          throw new Error('label failed');
+        },
+      },
+    },
+  };
+
+  const core = {
+    info: () => {},
+    warning: (msg) => warnings.push(msg),
+  };
+
+  await refreshReleasePR({
+    github,
+    core,
+    owner: 'org',
+    repo: 'repo',
+    prNumber: 55,
+    compareRange: 'v1.0.0...v2.0.0',
+    targetVersion: '2.0.0',
+  });
+
+  assert.equal(updateCalls.length, 1, 'pulls.update should still succeed');
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0], /Failed to apply no-changelog label to PR #55: label failed/);
+});
+
+// ---------------------------------------------------------------------------
+// findOpenReleasePrepPRNumber
+// ---------------------------------------------------------------------------
+
+test('findOpenReleasePrepPRNumber: returns first open PR number for prep-release-<version> head', async () => {
+  const listCalls = [];
+  const github = {
+    rest: {
+      pulls: {
+        list: async (args) => {
+          listCalls.push(args);
+          return {
+            data: [{ number: 88, html_url: 'https://github.com/org/repo/pull/88' }],
+          };
+        },
+      },
+    },
+  };
+
+  const num = await findOpenReleasePrepPRNumber({
+    github,
+    owner: 'org',
+    repo: 'repo',
+    targetVersion: '1.2.3',
+  });
+
+  assert.equal(num, 88);
+  assert.equal(listCalls.length, 1);
+  assert.equal(listCalls[0].head, 'org:prep-release-1.2.3');
+  assert.equal(listCalls[0].base, 'main');
+  assert.equal(listCalls[0].state, 'open');
+});
+
+test('findOpenReleasePrepPRNumber: empty targetVersion → null without API', async () => {
+  const listCalls = [];
+  const github = {
+    rest: {
+      pulls: {
+        list: async (args) => {
+          listCalls.push(args);
+          return { data: [] };
+        },
+      },
+    },
+  };
+
+  const num = await findOpenReleasePrepPRNumber({
+    github,
+    owner: 'org',
+    repo: 'repo',
+    targetVersion: '',
+  });
+
+  assert.equal(num, null);
+  assert.equal(listCalls.length, 0);
+});
+
+test('findOpenReleasePrepPRNumber: no matching PR → null', async () => {
+  const github = {
+    rest: {
+      pulls: {
+        list: async () => ({ data: [] }),
+      },
+    },
+  };
+
+  const num = await findOpenReleasePrepPRNumber({
+    github,
+    owner: 'org',
+    repo: 'repo',
+    targetVersion: '9.0.0',
+  });
+
+  assert.equal(num, null);
+});
+
+// ---------------------------------------------------------------------------
+// refreshReleasePR: prNumber absent → lookup by head, then pulls.update
+// ---------------------------------------------------------------------------
+
+test('refreshReleasePR: prNumber absent but prep-release PR exists → updates looked-up PR', async () => {
+  const updateCalls = [];
+  const addLabelsCalls = [];
+
+  const github = {
+    rest: {
+      pulls: {
+        list: async (args) => {
+          assert.equal(args.head, 'acme:prep-release-2.1.0');
+          assert.equal(args.base, 'main');
+          return { data: [{ number: 77 }] };
+        },
+        update: async (args) => {
+          updateCalls.push(args);
+          return { data: {} };
+        },
+      },
+      issues: {
+        addLabels: async (args) => {
+          addLabelsCalls.push(args);
+          return { data: {} };
+        },
+      },
+    },
+  };
+
+  const core = {
+    info: () => {},
+    warning: () => {
+      assert.fail('should not warn');
+    },
+  };
+
+  await refreshReleasePR({
+    github,
+    core,
+    owner: 'acme',
+    repo: 'repo',
+    prNumber: null,
+    compareRange: 'v1.0.0...v2.1.0',
+    targetVersion: '2.1.0',
+  });
+
+  assert.equal(updateCalls.length, 1);
+  assert.equal(updateCalls[0].pull_number, 77);
+  assert.equal(addLabelsCalls.length, 1, 'issues.addLabels should be called once');
+  assert.equal(addLabelsCalls[0].issue_number, 77);
+  assert.deepEqual(addLabelsCalls[0].labels, ['no-changelog']);
+});
+
+test('refreshReleasePR: prNumber absent and no prep-release PR → warning, no pulls.update', async () => {
+  const updateCalls = [];
+  const warnings = [];
+
+  const github = {
+    rest: {
+      pulls: {
+        list: async () => ({ data: [] }),
+        update: async (args) => {
+          updateCalls.push(args);
+          return { data: {} };
+        },
+      },
+    },
+  };
+
+  const core = {
+    info: () => {},
+    warning: (msg) => warnings.push(msg),
+  };
+
+  await refreshReleasePR({
+    github,
+    core,
+    owner: 'org',
+    repo: 'repo',
+    prNumber: null,
+    compareRange: 'v1.0.0...v2.0.0',
+    targetVersion: '2.0.0',
+  });
+
+  assert.equal(updateCalls.length, 0);
+  assert.equal(warnings.length, 1);
+  assert.ok(
+    warnings[0].includes('Could not resolve'),
+    'warning should mention resolution failure'
+  );
+});

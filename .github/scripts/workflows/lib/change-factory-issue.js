@@ -6,7 +6,7 @@ const {
   FACTORY_LABEL,
   DUPLICATE_LINKAGE_MODE,
   ISSUE_OPENED_NOT_ELIGIBLE_REASON,
-} = require('../change-factory-issue/intake-constants.js');
+} = require('./intake/change-factory-constants.js');
 
 module.exports = createFactoryIssueModule({
   branchPrefix: ISSUE_BRANCH_PREFIX,
