@@ -290,6 +290,17 @@ func TestGather_orchestration(t *testing.T) {
 			wantPRCount:     -1,
 		},
 		{
+			name: "validation_empty_owner",
+			opts: func() evidence.GatherOptions {
+				o := baseOpts(threePRStub(), listByPR(0, nil))
+				o.Owner = ""
+				return o
+			}(),
+			wantErr:         true,
+			wantErrContains: "owner must be non-empty",
+			wantPRCount:     -1,
+		},
+		{
 			name: "list_files_error_one_pr",
 			opts: func() evidence.GatherOptions {
 				st := threePRStub()
