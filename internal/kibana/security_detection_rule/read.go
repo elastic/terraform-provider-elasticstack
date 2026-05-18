@@ -64,6 +64,9 @@ func (r *securityDetectionRuleResource) Read(ctx context.Context, req resource.R
 		return
 	}
 
+	// Reconcile empty lists from prior state to preserve explicit [] configurations
+	reconcileEmptyListsFromPlan(ctx, &data, readData)
+
 	// Set the composite ID and state; preserve KibanaConnection from existing state
 	readData.ID = data.ID
 	readData.KibanaConnection = data.KibanaConnection

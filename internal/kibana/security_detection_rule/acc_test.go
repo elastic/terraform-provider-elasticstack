@@ -36,6 +36,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
@@ -1533,6 +1534,98 @@ func TestAccResourceSecurityDetectionRule_Threshold(t *testing.T) {
 					// Check updated alert suppression (threshold rules only support duration)
 					resource.TestCheckResourceAttr(resourceName, "alert_suppression.duration", "45h"),
 				),
+			},
+		},
+	})
+}
+
+func TestAccResourceSecurityDetectionRule_EmptyLists(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minResponseActionVersionSupport, versionutils.FlavorAny)
+
+	resourceName := securityDetectionRuleResourceName
+	ruleName := testAccRandomizedRuleName("test-empty-lists")
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: testAccCheckSecurityDetectionRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(ruleName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", ruleName),
+					resource.TestCheckResourceAttr(resourceName, "type", "query"),
+					resource.TestCheckResourceAttr(resourceName, "query", "*:*"),
+
+					// Assert all seven attributes are stored as empty lists, not null
+					resource.TestCheckResourceAttr(resourceName, "actions.#", "0"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.#", "0"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.#", "0"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "0"),
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.#", "0"),
+					resource.TestCheckResourceAttr(resourceName, "threat.#", "0"),
+					resource.TestCheckResourceAttr(resourceName, "threat_mapping.#", "0"),
+
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttrSet(resourceName, "rule_id"),
+				),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectNonEmptyPlan(),
+					},
+					PostApplyPreRefresh: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("populated"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(ruleName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					// After update to populated threat, verify the threat entry exists
+					resource.TestCheckResourceAttr(resourceName, "threat.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "threat.0.technique.#", "1"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(ruleName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					// After update back to empty lists, verify all seven attributes are empty
+					resource.TestCheckResourceAttr(resourceName, "actions.#", "0"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.#", "0"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.#", "0"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "0"),
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.#", "0"),
+					resource.TestCheckResourceAttr(resourceName, "threat.#", "0"),
+					resource.TestCheckResourceAttr(resourceName, "threat_mapping.#", "0"),
+				),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectNonEmptyPlan(),
+					},
+				},
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(ruleName),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
 			},
 		},
 	})
