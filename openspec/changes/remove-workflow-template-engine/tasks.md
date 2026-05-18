@@ -32,10 +32,10 @@
 
 ## 3. Update Makefile targets
 
-- [ ] 3.1 Remove `go run ./scripts/compile-workflow-sources` from `workflow-generate`; keep `gh aw compile`
-- [ ] 3.2 Remove `go test ./scripts/compile-workflow-sources` from `workflow-test`; update `node --test` path to `.github/scripts/workflows/lib/*.test.mjs`
-- [ ] 3.3 Remove `check-workflows` target entirely (or convert to a no-op / reminder)
-- [ ] 3.4 Verify `make workflow-test` passes after path updates
+- [x] 3.1 Remove `go run ./scripts/compile-workflow-sources` from `workflow-generate`; keep `gh aw compile`
+- [x] 3.2 Remove `go test ./scripts/compile-workflow-sources` from `workflow-test`; update `node --test` path to `.github/scripts/workflows/lib/*.test.mjs`
+- [x] 3.3 Remove `check-workflows` target entirely (or convert to a no-op / reminder)
+- [x] 3.4 Verify `make workflow-test` passes after path updates
 
 ## 4. Update `.github/workflows/*.yml` files
 
