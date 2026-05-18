@@ -14,11 +14,9 @@ steps:
       echo "GOROOT=$(go env GOROOT)" >> "$GITHUB_ENV"
       echo "GOPATH=$(go env GOPATH)" >> "$GITHUB_ENV"
       echo "GOMODCACHE=$(go env GOMODCACHE)" >> "$GITHUB_ENV"
-      if [ -x "$(which terraform)" ]; then
-        echo "TERRAFORM_BIN=$(which terraform)" >> "$GITHUB_ENV"
-        TERRAFORM_DIR=$(dirname "$(which terraform)")
-        echo "PATH=${TERRAFORM_DIR}:${PATH}" >> "$GITHUB_ENV"
-      fi
+      echo "TERRAFORM_BIN=$(which terraform)" >> "$GITHUB_ENV"
+      TERRAFORM_DIR=$(dirname "$(which terraform)")
+      echo "PATH=${TERRAFORM_DIR}:${PATH}" >> "$GITHUB_ENV"
   - name: Setup Node.js
     uses: actions/setup-node@v6
     with:

@@ -3088,20 +3088,9 @@ If you are running short on time, prefer emitting a **partial-but-valid** `updat
 
 ## Test environment
 
-The Elastic Stack is provisioned in the agent environment but **acceptance tests are currently blocked by an AWF network policy issue** — `TF_ACC=1` tests will fail with connection errors. Do not run acceptance tests and do not treat their failure as a blocker. This is a known infrastructure issue being investigated separately.
+The Elastic Stack is **not provisioned** in the agent environment — the provisioning steps (`make docker-fleet`, `make set-kibana-password`, `make create-es-api-key`, `make setup-kibana-fleet`) were intentionally removed because the AWF network policy blocks access from the agent's chroot sandbox. Do **not** attempt to run `TF_ACC=1` acceptance tests; they will fail with connection errors.
 
-When the issue is resolved, targeted acceptance tests can be run with:
-
-```bash
-ELASTICSEARCH_ENDPOINTS=http://host.docker.internal:9200 \
-ELASTICSEARCH_USERNAME=elastic \
-ELASTICSEARCH_PASSWORD=password \
-KIBANA_ENDPOINT=http://host.docker.internal:5601 \
-TF_ACC=1 \
-go test -v -run TestAccReproduceIssue${{ needs.pre_activation.outputs.issue_number }} ./path/to/package
-```
-
-Point `./path/to/package` at the directory that holds `TestAccReproduceIssue${{ needs.pre_activation.outputs.issue_number }}` (see **Test file placement**).
+Route outcomes via static analysis alone (see the decision tree in **Task**).
 
 ## Elastic documentation
 
