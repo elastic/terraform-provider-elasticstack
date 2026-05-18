@@ -4,7 +4,6 @@
 // ownership. Elasticsearch B.V. licenses this file to you under
 // the Apache License, Version 2.0 (the "License"); you may
 // not use this file except in compliance with the License.
-//
 // You may obtain a copy of the License at
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -37,13 +36,16 @@ func (e execStub) Run(name string, args ...string) ([]byte, error) {
 	return e.out, e.err
 }
 
+const tagV290 = "v2.0.0"
+const tagV190 = "v1.9.0"
+
 func TestListReleaseTags_ordersAndFilters(t *testing.T) {
-	raw := "v2.0.0\nv9.0.0-rc1\nv1.9.0\n"
+	raw := tagV290 + "\nv9.0.0-rc1\n" + tagV190 + "\n"
 	got, err := semver.ListReleaseTags(execStub{out: []byte(raw)})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(got) != 2 || string(got[0]) != "v2.0.0" || string(got[1]) != "v1.9.0" {
+	if len(got) != 2 || string(got[0]) != tagV290 || string(got[1]) != tagV190 {
 		t.Fatalf("got %v", got)
 	}
 }

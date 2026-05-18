@@ -4,7 +4,6 @@
 // ownership. Elasticsearch B.V. licenses this file to you under
 // the Apache License, Version 2.0 (the "License"); you may
 // not use this file except in compliance with the License.
-//
 // You may obtain a copy of the License at
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -57,14 +56,15 @@ func (g tagOnlyGit) Run(name string, args ...string) ([]byte, error) {
 	return nil, nil
 }
 
-func fixedUTC(t *testing.T, y int, m time.Month, d int) func() time.Time {
-	t.Helper()
+func fixedNow(tb testing.TB, m time.Month, d int) func() time.Time {
+	tb.Helper()
+	const y = 2026
 	return func() time.Time {
 		return time.Date(y, m, d, 12, 0, 0, 0, time.UTC)
 	}
 }
 
-func mustRun(tb testing.TB, ctx context.Context, opts engine.Options) engine.Result {
+func mustRun(ctx context.Context, tb testing.TB, opts engine.Options) engine.Result {
 	tb.Helper()
 	res, err := engine.Run(ctx, opts)
 	if err != nil {
@@ -95,7 +95,7 @@ func TestRunRenderAndWrite_setsHasUserFacingChanges(t *testing.T) {
 		Owner:         fixtureOwnerSlug,
 		Repo:          fixtureRepoSlug,
 		ChangelogPath: changelogPath,
-		Now:           fixedUTC(t, 2026, 5, 18),
+		Now:           fixedNow(t, 5, 18),
 		FS:            engineOSFS{},
 		Git:           tagOnlyGit{},
 		Gather: fixedGather{recs: []section.MergedPR{{
@@ -141,7 +141,7 @@ func TestRunRenderAndWrite_breakingOnlyImpact(t *testing.T) {
 		Owner:         fixtureOwnerSlug,
 		Repo:          fixtureRepoSlug,
 		ChangelogPath: changelogPath,
-		Now:           fixedUTC(t, 2026, 3, 10),
+		Now:           fixedNow(t, 3, 10),
 		FS:            engineOSFS{},
 		Git:           tagOnlyGit{},
 		Gather: fixedGather{recs: []section.MergedPR{{
@@ -183,7 +183,7 @@ func TestRunRenderAndWrite_breakingImpactNoneExcludedButRendered(t *testing.T) {
 		Owner:         fixtureOwnerSlug,
 		Repo:          fixtureRepoSlug,
 		ChangelogPath: changelogPath,
-		Now:           fixedUTC(t, 2026, 3, 10),
+		Now:           fixedNow(t, 3, 10),
 		FS:            engineOSFS{},
 		Git:           tagOnlyGit{},
 		Gather: fixedGather{recs: []section.MergedPR{{
@@ -225,7 +225,7 @@ func TestRunRenderAndWrite_releaseReplacesUnreleased(t *testing.T) {
 		Owner:         fixtureOwnerSlug,
 		Repo:          fixtureRepoSlug,
 		ChangelogPath: changelogPath,
-		Now:           fixedUTC(t, 2026, 2, 1),
+		Now:           fixedNow(t, 2, 1),
 		FS:            engineOSFS{},
 		Git:           tagOnlyGit{tags: "v0.9.0\n"}, // excludes nothing for 1.0.0; previous tag v0.9.0
 		Gather: fixedGather{recs: []section.MergedPR{{
@@ -277,7 +277,7 @@ func TestRunRenderAndWrite_releaseZeroPRsClearsLinks(t *testing.T) {
 		Owner:         fixtureOwnerSlug,
 		Repo:          fixtureRepoSlug,
 		ChangelogPath: changelogPath,
-		Now:           fixedUTC(t, 2026, 7, 4),
+		Now:           fixedNow(t, 7, 4),
 		FS:            engineOSFS{},
 		Git:           tagOnlyGit{tags: "v0.9.0\n"},
 		Gather:        fixedGather{recs: nil},
@@ -315,7 +315,7 @@ func TestRunRenderAndWrite_assemblyFails(t *testing.T) {
 		Owner:         fixtureOwnerSlug,
 		Repo:          fixtureRepoSlug,
 		ChangelogPath: changelogPath,
-		Now:           fixedUTC(t, 2026, 1, 1),
+		Now:           fixedNow(t, 1, 1),
 		FS:            engineOSFS{},
 		Git:           tagOnlyGit{},
 		Gather: fixedGather{recs: []section.MergedPR{{
@@ -345,7 +345,7 @@ func TestRun_skipUnreleasedWithNoPRs(t *testing.T) {
 		Owner:         fixtureOwnerSlug,
 		Repo:          fixtureRepoSlug,
 		ChangelogPath: changelogPath,
-		Now:           fixedUTC(t, 2026, 1, 2),
+		Now:           fixedNow(t, 1, 2),
 		FS:            engineOSFS{},
 		Git:           tagOnlyGit{},
 		Gather:        fixedGather{recs: nil},
@@ -372,12 +372,12 @@ func TestRun_engineEndToEndFromFactoryTest(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	res := mustRun(t, ctx, engine.Options{
+	res := mustRun(ctx, t, engine.Options{
 		Mode:          engine.ModeUnreleased,
 		Owner:         fixtureOwnerSlug,
 		Repo:          fixtureRepoSlug,
 		ChangelogPath: changelogPath,
-		Now:           fixedUTC(t, 2026, 4, 1),
+		Now:           fixedNow(t, 4, 1),
 		FS:            engineOSFS{},
 		Git:           tagOnlyGit{tags: "v0.1.0\n"},
 		Gather: fixedGather{recs: []section.MergedPR{{
