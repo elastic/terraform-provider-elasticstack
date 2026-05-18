@@ -139,6 +139,11 @@ func BuildEvidenceManifest(
 		modeNorm = modeUnreleased
 	}
 
+	prs := evidence
+	if prs == nil {
+		prs = []PullRequestEvidence{}
+	}
+
 	return Manifest{
 		GeneratedAt:       FormatGeneratedAtISO(generatedAt),
 		Mode:              modeNorm,
@@ -151,7 +156,7 @@ func BuildEvidenceManifest(
 		UserFacingCount:   uf,
 		InternalCount:     in,
 		UncertainCount:    un,
-		PullRequests:      evidence,
+		PullRequests:      prs,
 	}
 }
 
@@ -167,12 +172,22 @@ func validateManifestReceiver(manifest any) error {
 
 	v := reflect.ValueOf(manifest)
 	switch v.Kind() {
-	case reflect.Slice, reflect.Array:
-		return errors.New("manifest must be a non-null object")
-	case reflect.Pointer, reflect.Interface, reflect.Map:
+	case reflect.Map:
 		if v.IsNil() {
 			return errors.New("manifest must be a non-null object")
 		}
+	case reflect.Struct:
+	case reflect.Pointer:
+		if v.IsNil() {
+			return errors.New("manifest must be a non-null object")
+		}
+		switch v.Elem().Kind() {
+		case reflect.Map, reflect.Struct:
+		default:
+			return errors.New("manifest must be a non-null object")
+		}
+	default:
+		return errors.New("manifest must be a non-null object")
 	}
 	return nil
 }

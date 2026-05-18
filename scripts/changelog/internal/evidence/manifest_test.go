@@ -18,6 +18,7 @@
 package evidence_test
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 	"time"
@@ -38,6 +39,32 @@ func TestBuildEvidenceArtifactPlan_manifest_not_object(t *testing.T) {
 	_, err := evidence.BuildEvidenceArtifactPlan(evidence.ArtifactPlanRequest{Manifest: []any{}})
 	if err == nil || !strings.Contains(err.Error(), "manifest must be a non-null object") {
 		t.Fatalf("unexpected err: %v", err)
+	}
+}
+
+func TestBuildEvidenceArtifactPlan_manifest_scalar_rejected(t *testing.T) {
+	t.Parallel()
+	for _, m := range []any{"oops", float64(1), false} {
+		_, err := evidence.BuildEvidenceArtifactPlan(evidence.ArtifactPlanRequest{Manifest: m})
+		if err == nil || !strings.Contains(err.Error(), "manifest must be a non-null object") {
+			t.Fatalf("manifest %+v unexpected err: %v", m, err)
+		}
+	}
+}
+
+func TestBuildEvidenceManifest_nilEvidence_sliceMarshalsPullRequests(t *testing.T) {
+	t.Parallel()
+	genAt := time.Date(2026, 4, 17, 8, 0, 0, 0, time.UTC)
+	got := evidence.BuildEvidenceManifest("unreleased", "", "", "HEAD", nil, genAt)
+	raw, err := json.MarshalIndent(got, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(raw), `"pull_requests": null`) {
+		t.Fatalf("wanted empty JSON array not null:\n%s", raw)
+	}
+	if !strings.Contains(string(raw), `"pull_requests": []`) {
+		t.Fatalf(`missing \"pull_requests\": [] in JSON:\n%s`, raw)
 	}
 }
 
