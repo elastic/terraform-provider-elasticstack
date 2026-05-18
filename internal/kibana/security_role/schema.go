@@ -63,6 +63,32 @@ func fieldSecurityResourceBlock() schema.Block {
 	}
 }
 
+func commonIndexBlockAttrs() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"names": schema.SetAttribute{
+			Description: "A list of indices (or index name patterns) to which the permissions in this entry apply.",
+			Required:    true,
+			ElementType: types.StringType,
+			Validators: []validator.Set{
+				setvalidator.SizeAtLeast(1),
+			},
+		},
+		"privileges": schema.SetAttribute{
+			Description: "The index level privileges that the owners of the role have on the specified indices.",
+			Required:    true,
+			ElementType: types.StringType,
+			Validators: []validator.Set{
+				setvalidator.SizeAtLeast(1),
+			},
+		},
+		"query": schema.StringAttribute{
+			Description: "A search query that defines the documents the owners of the role have read access to.",
+			Optional:    true,
+			CustomType:  jsontypes.NormalizedType{},
+		},
+	}
+}
+
 func indicesResourceBlock() schema.Block {
 	return schema.SetNestedBlock{
 		Description: "A list of indices permissions entries.",
@@ -70,68 +96,25 @@ func indicesResourceBlock() schema.Block {
 			Blocks: map[string]schema.Block{
 				"field_security": fieldSecurityResourceBlock(),
 			},
-			Attributes: map[string]schema.Attribute{
-				"names": schema.SetAttribute{
-					Description: "A list of indices (or index name patterns) to which the permissions in this entry apply.",
-					Required:    true,
-					ElementType: types.StringType,
-					Validators: []validator.Set{
-						setvalidator.SizeAtLeast(1),
-					},
-				},
-				"privileges": schema.SetAttribute{
-					Description: "The index level privileges that the owners of the role have on the specified indices.",
-					Required:    true,
-					ElementType: types.StringType,
-					Validators: []validator.Set{
-						setvalidator.SizeAtLeast(1),
-					},
-				},
-				"query": schema.StringAttribute{
-					Description: "A search query that defines the documents the owners of the role have read access to.",
-					Optional:    true,
-					CustomType:  jsontypes.NormalizedType{},
-				},
-			},
+			Attributes: commonIndexBlockAttrs(),
 		},
 	}
 }
 
 func remoteIndicesResourceBlock() schema.Block {
+	attrs := commonIndexBlockAttrs()
+	attrs["clusters"] = schema.SetAttribute{
+		Description: "A list of cluster aliases to which the permissions in this entry apply.",
+		Required:    true,
+		ElementType: types.StringType,
+	}
 	return schema.SetNestedBlock{
 		Description: remoteIndicesPermissionsDescription,
 		NestedObject: schema.NestedBlockObject{
 			Blocks: map[string]schema.Block{
 				"field_security": fieldSecurityResourceBlock(),
 			},
-			Attributes: map[string]schema.Attribute{
-				"clusters": schema.SetAttribute{
-					Description: "A list of cluster aliases to which the permissions in this entry apply.",
-					Required:    true,
-					ElementType: types.StringType,
-				},
-				"names": schema.SetAttribute{
-					Description: "A list of indices (or index name patterns) to which the permissions in this entry apply.",
-					Required:    true,
-					ElementType: types.StringType,
-					Validators: []validator.Set{
-						setvalidator.SizeAtLeast(1),
-					},
-				},
-				"privileges": schema.SetAttribute{
-					Description: "The index level privileges that the owners of the role have on the specified indices.",
-					Required:    true,
-					ElementType: types.StringType,
-					Validators: []validator.Set{
-						setvalidator.SizeAtLeast(1),
-					},
-				},
-				"query": schema.StringAttribute{
-					Description: "A search query that defines the documents the owners of the role have read access to.",
-					Optional:    true,
-					CustomType:  jsontypes.NormalizedType{},
-				},
-			},
+			Attributes: attrs,
 		},
 	}
 }
