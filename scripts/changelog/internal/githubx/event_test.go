@@ -64,6 +64,54 @@ func TestLoadEvent_malformedJSONFile(t *testing.T) {
 	}
 }
 
+func TestOptionalPullRequestNumberFromEventPath_emptyPath(t *testing.T) {
+	t.Parallel()
+	n, err := githubx.OptionalPullRequestNumberFromEventPath("")
+	if err != nil || n != 0 {
+		t.Fatalf("got n=%d err=%v", n, err)
+	}
+}
+
+func TestOptionalPullRequestNumberFromEventPath_emptyObject(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	path := filepath.Join(dir, "event.json")
+	if err := os.WriteFile(path, []byte(`{}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	n, err := githubx.OptionalPullRequestNumberFromEventPath(path)
+	if err != nil || n != 0 {
+		t.Fatalf("got n=%d err=%v", n, err)
+	}
+}
+
+func TestOptionalPullRequestNumberFromEventPath_withPullNumber(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	path := filepath.Join(dir, "event.json")
+	payload := []byte(`{"pull_request":{"number":42}}`)
+	if err := os.WriteFile(path, payload, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	n, err := githubx.OptionalPullRequestNumberFromEventPath(path)
+	if err != nil || n != 42 {
+		t.Fatalf("got n=%d err=%v", n, err)
+	}
+}
+
+func TestOptionalPullRequestNumberFromEventPath_invalidJSON_file(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	path := filepath.Join(dir, "event.json")
+	if err := os.WriteFile(path, []byte("{"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	_, err := githubx.OptionalPullRequestNumberFromEventPath(path)
+	if err == nil || !strings.Contains(err.Error(), "unmarshal") {
+		t.Fatalf("expected unmarshal-related error, got %v", err)
+	}
+}
+
 func TestDecodeEvent_malformedJSON(t *testing.T) {
 	t.Parallel()
 	_, err := githubx.DecodeEvent[map[string]any]([]byte(`{`))
