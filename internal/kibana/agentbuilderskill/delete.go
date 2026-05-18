@@ -45,7 +45,7 @@ func (r *SkillResource) Delete(ctx context.Context, req resource.DeleteRequest, 
 		return
 	}
 
-	compID, idDiags := clients.CompositeIDFromStrFw(stateModel.ID.ValueString())
+	compID, idDiags := clients.CompositeIDFromStr(stateModel.ID.ValueString())
 	resp.Diagnostics.Append(idDiags...)
 	if resp.Diagnostics.HasError() {
 		return

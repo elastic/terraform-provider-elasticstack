@@ -133,7 +133,7 @@ func readSkillDataSource(ctx context.Context, kbClient *clients.KibanaScopedClie
 	}
 
 	skillID := config.SkillID.ValueString()
-	if compID, idDiags := clients.CompositeIDFromStrFw(skillID); !idDiags.HasError() {
+	if compID, idDiags := clients.CompositeIDFromStr(skillID); !idDiags.HasError() {
 		skillID = compID.ResourceID
 		if !spaceExplicit {
 			spaceID = compID.ClusterID
