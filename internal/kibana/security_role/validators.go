@@ -36,15 +36,15 @@ func (v configValidator) MarkdownDescription(_ context.Context) string {
 }
 
 func (v configValidator) ValidateResource(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
-	var es types.Set
+	var es types.Object
 	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("elasticsearch"), &es)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	if es.IsNull() || es.IsUnknown() || len(es.Elements()) != 1 {
+	if es.IsNull() {
 		resp.Diagnostics.AddError(
 			"Invalid elasticsearch configuration",
-			"Exactly one elasticsearch block is required.",
+			"The `elasticsearch` block is required.",
 		)
 		return
 	}

@@ -39,7 +39,7 @@ type resourceModel struct {
 	Name          types.String         `tfsdk:"name"`
 	Description   types.String         `tfsdk:"description"`
 	Metadata      jsontypes.Normalized `tfsdk:"metadata"`
-	Elasticsearch types.Set            `tfsdk:"elasticsearch"`
+	Elasticsearch types.Object         `tfsdk:"elasticsearch"`
 	Kibana        types.Set            `tfsdk:"kibana"`
 }
 
@@ -92,21 +92,12 @@ func (m resourceModel) requiresRemoteIndicesVersion() bool {
 	if m.Elasticsearch.IsNull() || m.Elasticsearch.IsUnknown() {
 		return false
 	}
-	for _, elem := range m.Elasticsearch.Elements() {
-		obj, ok := elem.(types.Object)
-		if !ok {
-			continue
-		}
-		attrs := obj.Attributes()
-		ri, ok := attrs["remote_indices"].(types.Set)
-		if !ok || ri.IsNull() || ri.IsUnknown() {
-			continue
-		}
-		if len(ri.Elements()) > 0 {
-			return true
-		}
+	attrs := m.Elasticsearch.Attributes()
+	ri, ok := attrs["remote_indices"].(types.Set)
+	if !ok || ri.IsNull() || ri.IsUnknown() {
+		return false
 	}
-	return false
+	return len(ri.Elements()) > 0
 }
 
 type dataSourceModel struct {
@@ -114,6 +105,6 @@ type dataSourceModel struct {
 	Name          types.String         `tfsdk:"name"`
 	Description   types.String         `tfsdk:"description"`
 	Metadata      jsontypes.Normalized `tfsdk:"metadata"`
-	Elasticsearch types.Set            `tfsdk:"elasticsearch"`
+	Elasticsearch types.Object         `tfsdk:"elasticsearch"`
 	Kibana        types.Set            `tfsdk:"kibana"`
 }

@@ -39,25 +39,25 @@ func normalizedQueryFromAPI(q *string) jsontypes.Normalized {
 	return jsontypes.NewNormalizedValue(*q)
 }
 
-func objectFromFieldSecurity(ctx context.Context, fs *map[string][]string) (types.Object, diag.Diagnostics) {
+// objectFromFieldSecurityResource builds the resource-side field_security
+// object. The Kibana API omits keys it has no value for (and never returns
+// them as `null`), but configs commonly set `except = []` or `grant = []`
+// explicitly. To keep Create→Read consistent for those configs we normalise
+// missing keys to known-empty sets rather than null. A nil API value yields
+// ObjectNull (field_security itself is a SingleNestedBlock, so absence is
+// represented as a null object).
+func objectFromFieldSecurityResource(ctx context.Context, fs *map[string][]string) (types.Object, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if fs == nil {
 		return types.ObjectNull(fieldSecurityAttrTypes()), diags
 	}
-	var grants, excepts []string
+	grants := []string{}
+	excepts := []string{}
 	if g, ok := (*fs)["grant"]; ok {
 		grants = g
 	}
 	if e, ok := (*fs)["except"]; ok {
 		excepts = e
-	}
-	// Normalize missing API keys to empty slices so optional sets match config that
-	// explicitly sets e.g. except = [] (Set known-empty vs Set null refresh mismatch).
-	if grants == nil {
-		grants = []string{}
-	}
-	if excepts == nil {
-		excepts = []string{}
 	}
 	grantSet, d := types.SetValueFrom(ctx, types.StringType, grants)
 	diags.Append(d...)
@@ -77,163 +77,137 @@ func objectFromFieldSecurity(ctx context.Context, fs *map[string][]string) (type
 	return obj, diags
 }
 
-func flattenIndices(ctx context.Context, indices *[]kibanaoapi.SecurityRoleESIndex) (types.Set, diag.Diagnostics) {
+// flattenIndicesResource builds the resource-side indices set: optional
+// `cluster`/`run_as`-like nested sets are null when absent, and field_security
+// is a single object (or null) rather than a list.
+func flattenIndicesResource(ctx context.Context, indices *[]kibanaoapi.SecurityRoleESIndex) (types.Set, diag.Diagnostics) {
 	var diags diag.Diagnostics
+	objType := types.ObjectType{AttrTypes: esIndexResourceAttrTypes()}
 	if indices == nil || len(*indices) == 0 {
-		return types.SetNull(types.ObjectType{AttrTypes: esIndexObjectAttrTypes()}), diags
+		return types.SetNull(objType), diags
 	}
 	elems := make([]attr.Value, len(*indices))
 	for i, index := range *indices {
 		namesSet, d := types.SetValueFrom(ctx, types.StringType, index.Names)
 		diags.Append(d...)
 		if diags.HasError() {
-			return types.SetNull(types.ObjectType{AttrTypes: esIndexObjectAttrTypes()}), diags
+			return types.SetNull(objType), diags
 		}
 		privSet, d := types.SetValueFrom(ctx, types.StringType, index.Privileges)
 		diags.Append(d...)
 		if diags.HasError() {
-			return types.SetNull(types.ObjectType{AttrTypes: esIndexObjectAttrTypes()}), diags
+			return types.SetNull(objType), diags
 		}
-		queryVal := normalizedQueryFromAPI(index.Query)
-		var fieldList types.List
-		if index.FieldSecurity != nil {
-			fieldObj, d := objectFromFieldSecurity(ctx, index.FieldSecurity)
-			diags.Append(d...)
-			if diags.HasError() {
-				return types.SetNull(types.ObjectType{AttrTypes: esIndexObjectAttrTypes()}), diags
-			}
-			var d2 diag.Diagnostics
-			fieldList, d2 = types.ListValue(fieldSecurityListType().ElementType(), []attr.Value{fieldObj})
-			diags.Append(d2...)
-			if diags.HasError() {
-				return types.SetNull(types.ObjectType{AttrTypes: esIndexObjectAttrTypes()}), diags
-			}
-		} else {
-			fieldList = types.ListValueMust(fieldSecurityListType().ElementType(), []attr.Value{})
+		fieldObj, d := objectFromFieldSecurityResource(ctx, index.FieldSecurity)
+		diags.Append(d...)
+		if diags.HasError() {
+			return types.SetNull(objType), diags
 		}
-		obj, d := types.ObjectValue(esIndexObjectAttrTypes(), map[string]attr.Value{
+		obj, d := types.ObjectValue(esIndexResourceAttrTypes(), map[string]attr.Value{
 			"names":          namesSet,
 			"privileges":     privSet,
-			"query":          queryVal,
-			"field_security": fieldList,
+			"query":          normalizedQueryFromAPI(index.Query),
+			"field_security": fieldObj,
 		})
 		diags.Append(d...)
 		if diags.HasError() {
-			return types.SetNull(types.ObjectType{AttrTypes: esIndexObjectAttrTypes()}), diags
+			return types.SetNull(objType), diags
 		}
 		elems[i] = obj
 	}
-	set, d := types.SetValue(types.ObjectType{AttrTypes: esIndexObjectAttrTypes()}, elems)
+	set, d := types.SetValue(objType, elems)
 	diags.Append(d...)
 	return set, diags
 }
 
-func flattenRemoteIndices(ctx context.Context, indices *[]kibanaoapi.SecurityRoleESRemoteIndex) (types.Set, diag.Diagnostics) {
+func flattenRemoteIndicesResource(ctx context.Context, indices *[]kibanaoapi.SecurityRoleESRemoteIndex) (types.Set, diag.Diagnostics) {
 	var diags diag.Diagnostics
+	objType := types.ObjectType{AttrTypes: esRemoteIndexResourceAttrTypes()}
 	if indices == nil || len(*indices) == 0 {
-		return types.SetNull(types.ObjectType{AttrTypes: esRemoteIndexObjectAttrTypes()}), diags
+		return types.SetNull(objType), diags
 	}
 	elems := make([]attr.Value, len(*indices))
 	for i, index := range *indices {
 		clustersSet, d := types.SetValueFrom(ctx, types.StringType, index.Clusters)
 		diags.Append(d...)
 		if diags.HasError() {
-			return types.SetNull(types.ObjectType{AttrTypes: esRemoteIndexObjectAttrTypes()}), diags
+			return types.SetNull(objType), diags
 		}
 		namesSet, d := types.SetValueFrom(ctx, types.StringType, index.Names)
 		diags.Append(d...)
 		if diags.HasError() {
-			return types.SetNull(types.ObjectType{AttrTypes: esRemoteIndexObjectAttrTypes()}), diags
+			return types.SetNull(objType), diags
 		}
 		privSet, d := types.SetValueFrom(ctx, types.StringType, index.Privileges)
 		diags.Append(d...)
 		if diags.HasError() {
-			return types.SetNull(types.ObjectType{AttrTypes: esRemoteIndexObjectAttrTypes()}), diags
+			return types.SetNull(objType), diags
 		}
-		queryVal := normalizedQueryFromAPI(index.Query)
-		var fieldList types.List
-		if index.FieldSecurity != nil {
-			fieldObj, d := objectFromFieldSecurity(ctx, index.FieldSecurity)
-			diags.Append(d...)
-			if diags.HasError() {
-				return types.SetNull(types.ObjectType{AttrTypes: esRemoteIndexObjectAttrTypes()}), diags
-			}
-			var d2 diag.Diagnostics
-			fieldList, d2 = types.ListValue(fieldSecurityListType().ElementType(), []attr.Value{fieldObj})
-			diags.Append(d2...)
-			if diags.HasError() {
-				return types.SetNull(types.ObjectType{AttrTypes: esRemoteIndexObjectAttrTypes()}), diags
-			}
-		} else {
-			fieldList = types.ListValueMust(fieldSecurityListType().ElementType(), []attr.Value{})
+		fieldObj, d := objectFromFieldSecurityResource(ctx, index.FieldSecurity)
+		diags.Append(d...)
+		if diags.HasError() {
+			return types.SetNull(objType), diags
 		}
-		obj, d := types.ObjectValue(esRemoteIndexObjectAttrTypes(), map[string]attr.Value{
+		obj, d := types.ObjectValue(esRemoteIndexResourceAttrTypes(), map[string]attr.Value{
 			"clusters":       clustersSet,
 			"names":          namesSet,
 			"privileges":     privSet,
-			"query":          queryVal,
-			"field_security": fieldList,
+			"query":          normalizedQueryFromAPI(index.Query),
+			"field_security": fieldObj,
 		})
 		diags.Append(d...)
 		if diags.HasError() {
-			return types.SetNull(types.ObjectType{AttrTypes: esRemoteIndexObjectAttrTypes()}), diags
+			return types.SetNull(objType), diags
 		}
 		elems[i] = obj
 	}
-	set, d := types.SetValue(types.ObjectType{AttrTypes: esRemoteIndexObjectAttrTypes()}, elems)
+	set, d := types.SetValue(objType, elems)
 	diags.Append(d...)
 	return set, diags
 }
 
-func flattenElasticsearch(ctx context.Context, es *kibanaoapi.SecurityRoleES) (types.Set, diag.Diagnostics) {
+// flattenElasticsearchObject is the resource-side flattener: returns a single
+// elasticsearch object (matching the SingleNestedBlock schema) with all
+// SDK-legacy optional sets normalised to null when the API omits them.
+func flattenElasticsearchObject(ctx context.Context, es *kibanaoapi.SecurityRoleES) (types.Object, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	attrs := map[string]attr.Value{
-		"indices":        types.SetNull(types.ObjectType{AttrTypes: esIndexObjectAttrTypes()}),
-		"remote_indices": types.SetNull(types.ObjectType{AttrTypes: esRemoteIndexObjectAttrTypes()}),
 		"cluster":        types.SetNull(types.StringType),
 		"run_as":         types.SetNull(types.StringType),
+		"indices":        types.SetNull(types.ObjectType{AttrTypes: esIndexResourceAttrTypes()}),
+		"remote_indices": types.SetNull(types.ObjectType{AttrTypes: esRemoteIndexResourceAttrTypes()}),
 	}
-
 	if es.Cluster != nil && len(*es.Cluster) > 0 {
 		s, d := types.SetValueFrom(ctx, types.StringType, *es.Cluster)
 		diags.Append(d...)
 		if diags.HasError() {
-			return types.SetNull(elasticsearchBlockObjectType()), diags
+			return types.ObjectNull(elasticsearchResourceAttrTypes()), diags
 		}
 		attrs["cluster"] = s
 	}
-
 	if es.RunAs != nil && len(*es.RunAs) > 0 {
 		s, d := types.SetValueFrom(ctx, types.StringType, *es.RunAs)
 		diags.Append(d...)
 		if diags.HasError() {
-			return types.SetNull(elasticsearchBlockObjectType()), diags
+			return types.ObjectNull(elasticsearchResourceAttrTypes()), diags
 		}
 		attrs["run_as"] = s
 	}
-
-	indicesSet, d := flattenIndices(ctx, es.Indices)
+	indicesSet, d := flattenIndicesResource(ctx, es.Indices)
 	diags.Append(d...)
 	if diags.HasError() {
-		return types.SetNull(elasticsearchBlockObjectType()), diags
+		return types.ObjectNull(elasticsearchResourceAttrTypes()), diags
 	}
 	attrs["indices"] = indicesSet
-
-	remoteSet, d := flattenRemoteIndices(ctx, es.RemoteIndices)
+	remoteSet, d := flattenRemoteIndicesResource(ctx, es.RemoteIndices)
 	diags.Append(d...)
 	if diags.HasError() {
-		return types.SetNull(elasticsearchBlockObjectType()), diags
+		return types.ObjectNull(elasticsearchResourceAttrTypes()), diags
 	}
 	attrs["remote_indices"] = remoteSet
-
-	obj, d := types.ObjectValue(elasticsearchBlockAttrTypes(), attrs)
+	obj, d := types.ObjectValue(elasticsearchResourceAttrTypes(), attrs)
 	diags.Append(d...)
-	if diags.HasError() {
-		return types.SetNull(elasticsearchBlockObjectType()), diags
-	}
-	blockSet, d := types.SetValue(elasticsearchBlockObjectType(), []attr.Value{obj})
-	diags.Append(d...)
-	return blockSet, diags
+	return obj, diags
 }
 
 func flattenKibanaFeatures(ctx context.Context, features *map[string][]string) (types.Set, diag.Diagnostics) {

@@ -42,9 +42,9 @@ func TestUnitFlattenExpandIndexFieldSecurityRoundTrip(t *testing.T) {
 			FieldSecurity: &fs,
 		}},
 	}
-	set, diags := flattenElasticsearch(ctx, &es)
+	obj, diags := flattenElasticsearchObject(ctx, &es)
 	require.False(t, diags.HasError())
-	out, diags2 := expandElasticsearch(ctx, set)
+	out, diags2 := expandElasticsearch(ctx, obj)
 	require.False(t, diags2.HasError())
 	b1, err := json.Marshal(es)
 	require.NoError(t, err)
@@ -65,9 +65,9 @@ func TestUnitFlattenExpandRemoteIndicesRoundTrip(t *testing.T) {
 			FieldSecurity: &fs,
 		}},
 	}
-	set, diags := flattenElasticsearch(ctx, &es)
+	obj, diags := flattenElasticsearchObject(ctx, &es)
 	require.False(t, diags.HasError())
-	out, diags2 := expandElasticsearch(ctx, set)
+	out, diags2 := expandElasticsearch(ctx, obj)
 	require.False(t, diags2.HasError())
 	b1, err := json.Marshal(es)
 	require.NoError(t, err)
@@ -129,9 +129,9 @@ func TestUnitExpandElasticsearchOmitsEmptyClusterAndRunAs(t *testing.T) {
 			FieldSecurity: nil,
 		}},
 	}
-	set, diags := flattenElasticsearch(ctx, &es)
+	obj, diags := flattenElasticsearchObject(ctx, &es)
 	require.False(t, diags.HasError())
-	out, diags2 := expandElasticsearch(ctx, set)
+	out, diags2 := expandElasticsearch(ctx, obj)
 	require.False(t, diags2.HasError())
 	assert.Nil(t, out.Cluster)
 	assert.Nil(t, out.RunAs)

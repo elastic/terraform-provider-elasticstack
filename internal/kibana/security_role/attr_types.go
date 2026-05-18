@@ -30,34 +30,34 @@ func fieldSecurityAttrTypes() map[string]attr.Type {
 	}
 }
 
-func fieldSecurityListType() types.ListType {
-	return types.ListType{ElemType: types.ObjectType{AttrTypes: fieldSecurityAttrTypes()}}
+func fieldSecurityObjectType() types.ObjectType {
+	return types.ObjectType{AttrTypes: fieldSecurityAttrTypes()}
 }
 
-func esIndexObjectAttrTypes() map[string]attr.Type {
+func esIndexResourceAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
 		"names":          types.SetType{ElemType: types.StringType},
 		"privileges":     types.SetType{ElemType: types.StringType},
 		"query":          jsontypes.NormalizedType{},
-		"field_security": fieldSecurityListType(),
+		"field_security": fieldSecurityObjectType(),
 	}
 }
 
-func esRemoteIndexObjectAttrTypes() map[string]attr.Type {
+func esRemoteIndexResourceAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
 		"clusters":       types.SetType{ElemType: types.StringType},
 		"names":          types.SetType{ElemType: types.StringType},
 		"privileges":     types.SetType{ElemType: types.StringType},
 		"query":          jsontypes.NormalizedType{},
-		"field_security": fieldSecurityListType(),
+		"field_security": fieldSecurityObjectType(),
 	}
 }
 
-func elasticsearchBlockAttrTypes() map[string]attr.Type {
+func elasticsearchResourceAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
 		"cluster":        types.SetType{ElemType: types.StringType},
-		"indices":        types.SetType{ElemType: types.ObjectType{AttrTypes: esIndexObjectAttrTypes()}},
-		"remote_indices": types.SetType{ElemType: types.ObjectType{AttrTypes: esRemoteIndexObjectAttrTypes()}},
+		"indices":        types.SetType{ElemType: types.ObjectType{AttrTypes: esIndexResourceAttrTypes()}},
+		"remote_indices": types.SetType{ElemType: types.ObjectType{AttrTypes: esRemoteIndexResourceAttrTypes()}},
 		"run_as":         types.SetType{ElemType: types.StringType},
 	}
 }
@@ -75,10 +75,6 @@ func kibanaBlockAttrTypes() map[string]attr.Type {
 		"base":    types.SetType{ElemType: types.StringType},
 		"feature": types.SetType{ElemType: types.ObjectType{AttrTypes: kibanaFeatureAttrTypes()}},
 	}
-}
-
-func elasticsearchBlockObjectType() types.ObjectType {
-	return types.ObjectType{AttrTypes: elasticsearchBlockAttrTypes()}
 }
 
 func kibanaBlockObjectType() types.ObjectType {

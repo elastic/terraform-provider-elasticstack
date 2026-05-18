@@ -30,6 +30,7 @@ var (
 	_ resource.ResourceWithConfigure        = newResource()
 	_ resource.ResourceWithImportState      = newResource()
 	_ resource.ResourceWithConfigValidators = newResource()
+	_ resource.ResourceWithUpgradeState     = newResource()
 )
 
 type Resource struct {

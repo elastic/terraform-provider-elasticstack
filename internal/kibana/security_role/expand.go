@@ -33,7 +33,7 @@ type esIndexPlan struct {
 	Names         types.Set            `tfsdk:"names"`
 	Privileges    types.Set            `tfsdk:"privileges"`
 	Query         jsontypes.Normalized `tfsdk:"query"`
-	FieldSecurity types.List           `tfsdk:"field_security"`
+	FieldSecurity types.Object         `tfsdk:"field_security"`
 }
 
 type esRemotePlan struct {
@@ -41,7 +41,7 @@ type esRemotePlan struct {
 	Names         types.Set            `tfsdk:"names"`
 	Privileges    types.Set            `tfsdk:"privileges"`
 	Query         jsontypes.Normalized `tfsdk:"query"`
-	FieldSecurity types.List           `tfsdk:"field_security"`
+	FieldSecurity types.Object         `tfsdk:"field_security"`
 }
 
 type esBlockPlan struct {
@@ -89,19 +89,6 @@ func expandFieldSecurity(ctx context.Context, obj types.Object) (map[string][]st
 	return out, diags
 }
 
-func expandFieldSecurityFromList(ctx context.Context, list types.List) (map[string][]string, diag.Diagnostics) {
-	if list.IsNull() || list.IsUnknown() || len(list.Elements()) == 0 {
-		return map[string][]string{}, nil
-	}
-	first, ok := list.Elements()[0].(types.Object)
-	if !ok {
-		var diags diag.Diagnostics
-		diags.AddError("Invalid field_security", "expected object element")
-		return nil, diags
-	}
-	return expandFieldSecurity(ctx, first)
-}
-
 func expandIndexEntry(ctx context.Context, obj types.Object) (kibanaoapi.SecurityRoleESIndex, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var row esIndexPlan
@@ -124,7 +111,7 @@ func expandIndexEntry(ctx context.Context, obj types.Object) (kibanaoapi.Securit
 		entry.Query = &q
 	}
 	if !row.FieldSecurity.IsNull() && !row.FieldSecurity.IsUnknown() {
-		fsMap, d := expandFieldSecurityFromList(ctx, row.FieldSecurity)
+		fsMap, d := expandFieldSecurity(ctx, row.FieldSecurity)
 		diags.Append(d...)
 		if diags.HasError() {
 			return kibanaoapi.SecurityRoleESIndex{}, diags
@@ -160,7 +147,7 @@ func expandRemoteEntry(ctx context.Context, obj types.Object) (kibanaoapi.Securi
 		entry.Query = &q
 	}
 	if !row.FieldSecurity.IsNull() && !row.FieldSecurity.IsUnknown() {
-		fsMap, d := expandFieldSecurityFromList(ctx, row.FieldSecurity)
+		fsMap, d := expandFieldSecurity(ctx, row.FieldSecurity)
 		diags.Append(d...)
 		if diags.HasError() {
 			return kibanaoapi.SecurityRoleESRemoteIndex{}, diags
@@ -172,20 +159,10 @@ func expandRemoteEntry(ctx context.Context, obj types.Object) (kibanaoapi.Securi
 	return entry, diags
 }
 
-func expandElasticsearch(ctx context.Context, set types.Set) (kibanaoapi.SecurityRoleES, diag.Diagnostics) {
+func expandElasticsearch(ctx context.Context, obj types.Object) (kibanaoapi.SecurityRoleES, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var out kibanaoapi.SecurityRoleES
-	if set.IsNull() || set.IsUnknown() || len(set.Elements()) == 0 {
-		return out, diags
-	}
-	elems := set.Elements()
-	if len(elems) != 1 {
-		diags.AddError("Invalid elasticsearch block", "expected exactly one elasticsearch block")
-		return out, diags
-	}
-	obj, ok := elems[0].(types.Object)
-	if !ok {
-		diags.AddError("Invalid elasticsearch block", "unexpected element type")
+	if obj.IsNull() || obj.IsUnknown() {
 		return out, diags
 	}
 	var block esBlockPlan

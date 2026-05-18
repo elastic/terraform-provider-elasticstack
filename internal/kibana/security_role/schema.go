@@ -23,7 +23,6 @@ import (
 	"regexp"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
-	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -57,20 +56,19 @@ func fieldSecurityResourceAttrs() map[string]schema.Attribute {
 	}
 }
 
+func fieldSecurityResourceBlock() schema.Block {
+	return schema.SingleNestedBlock{
+		Description: "The document fields that the owners of the role have read access to.",
+		Attributes:  fieldSecurityResourceAttrs(),
+	}
+}
+
 func indicesResourceBlock() schema.Block {
 	return schema.SetNestedBlock{
 		Description: "A list of indices permissions entries.",
 		NestedObject: schema.NestedBlockObject{
 			Blocks: map[string]schema.Block{
-				"field_security": schema.ListNestedBlock{
-					Description: "The document fields that the owners of the role have read access to.",
-					NestedObject: schema.NestedBlockObject{
-						Attributes: fieldSecurityResourceAttrs(),
-					},
-					Validators: []validator.List{
-						listvalidator.SizeAtMost(1),
-					},
-				},
+				"field_security": fieldSecurityResourceBlock(),
 			},
 			Attributes: map[string]schema.Attribute{
 				"names": schema.SetAttribute{
@@ -104,15 +102,7 @@ func remoteIndicesResourceBlock() schema.Block {
 		Description: remoteIndicesPermissionsDescription,
 		NestedObject: schema.NestedBlockObject{
 			Blocks: map[string]schema.Block{
-				"field_security": schema.ListNestedBlock{
-					Description: "The document fields that the owners of the role have read access to.",
-					NestedObject: schema.NestedBlockObject{
-						Attributes: fieldSecurityResourceAttrs(),
-					},
-					Validators: []validator.List{
-						listvalidator.SizeAtMost(1),
-					},
-				},
+				"field_security": fieldSecurityResourceBlock(),
 			},
 			Attributes: map[string]schema.Attribute{
 				"clusters": schema.SetAttribute{
@@ -148,27 +138,26 @@ func remoteIndicesResourceBlock() schema.Block {
 
 func getResourceSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
+		Version:             1,
 		MarkdownDescription: resourceDescription,
 		Blocks: map[string]schema.Block{
-			"elasticsearch": schema.SetNestedBlock{
+			"elasticsearch": schema.SingleNestedBlock{
 				Description: "Elasticsearch cluster and index privileges.",
-				NestedObject: schema.NestedBlockObject{
-					Attributes: map[string]schema.Attribute{
-						"cluster": schema.SetAttribute{
-							Description: "List of the cluster privileges.",
-							Optional:    true,
-							ElementType: types.StringType,
-						},
-						"run_as": schema.SetAttribute{
-							Description: "A list of usernames the owners of this role can impersonate.",
-							Optional:    true,
-							ElementType: types.StringType,
-						},
+				Attributes: map[string]schema.Attribute{
+					"cluster": schema.SetAttribute{
+						Description: "List of the cluster privileges.",
+						Optional:    true,
+						ElementType: types.StringType,
 					},
-					Blocks: map[string]schema.Block{
-						"indices":        indicesResourceBlock(),
-						"remote_indices": remoteIndicesResourceBlock(),
+					"run_as": schema.SetAttribute{
+						Description: "A list of usernames the owners of this role can impersonate.",
+						Optional:    true,
+						ElementType: types.StringType,
 					},
+				},
+				Blocks: map[string]schema.Block{
+					"indices":        indicesResourceBlock(),
+					"remote_indices": remoteIndicesResourceBlock(),
 				},
 			},
 			"kibana": schema.SetNestedBlock{
@@ -243,6 +232,9 @@ func getResourceSchema(_ context.Context) schema.Schema {
 				Optional:    true,
 				Computed:    true,
 				CustomType:  jsontypes.NormalizedType{},
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 		},
 	}

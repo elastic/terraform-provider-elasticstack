@@ -44,105 +44,99 @@ func getDataSourceSchema(_ context.Context) schema.Schema {
 				Computed:    true,
 				CustomType:  jsontypes.NormalizedType{},
 			},
-			"elasticsearch": schema.SetNestedAttribute{
+			"elasticsearch": schema.SingleNestedAttribute{
 				Description: "Elasticsearch cluster and index privileges.",
 				Computed:    true,
-				NestedObject: schema.NestedAttributeObject{
-					Attributes: map[string]schema.Attribute{
-						"cluster": schema.SetAttribute{
-							Description: "List of the cluster privileges.",
-							Computed:    true,
-							ElementType: types.StringType,
-						},
-						"run_as": schema.SetAttribute{
-							Description: "A list of usernames the owners of this role can impersonate.",
-							Computed:    true,
-							ElementType: types.StringType,
-						},
-						"indices": schema.SetNestedAttribute{
-							Description: "A list of indices permissions entries.",
-							Computed:    true,
-							NestedObject: schema.NestedAttributeObject{
-								Attributes: map[string]schema.Attribute{
-									"field_security": schema.ListNestedAttribute{
-										Description: "The document fields that the owners of the role have read access to.",
-										Computed:    true,
-										NestedObject: schema.NestedAttributeObject{
-											Attributes: map[string]schema.Attribute{
-												"grant": schema.SetAttribute{
-													Description: "List of the fields to grant the access to.",
-													Computed:    true,
-													ElementType: types.StringType,
-												},
-												"except": schema.SetAttribute{
-													Description: "List of the fields to which the grants will not be applied.",
-													Computed:    true,
-													ElementType: types.StringType,
-												},
-											},
+				Attributes: map[string]schema.Attribute{
+					"cluster": schema.SetAttribute{
+						Description: "List of the cluster privileges.",
+						Computed:    true,
+						ElementType: types.StringType,
+					},
+					"run_as": schema.SetAttribute{
+						Description: "A list of usernames the owners of this role can impersonate.",
+						Computed:    true,
+						ElementType: types.StringType,
+					},
+					"indices": schema.SetNestedAttribute{
+						Description: "A list of indices permissions entries.",
+						Computed:    true,
+						NestedObject: schema.NestedAttributeObject{
+							Attributes: map[string]schema.Attribute{
+								"field_security": schema.SingleNestedAttribute{
+									Description: "The document fields that the owners of the role have read access to.",
+									Computed:    true,
+									Attributes: map[string]schema.Attribute{
+										"grant": schema.SetAttribute{
+											Description: "List of the fields to grant the access to.",
+											Computed:    true,
+											ElementType: types.StringType,
+										},
+										"except": schema.SetAttribute{
+											Description: "List of the fields to which the grants will not be applied.",
+											Computed:    true,
+											ElementType: types.StringType,
 										},
 									},
-									"query": schema.StringAttribute{
-										Description: "A search query that defines the documents the owners of the role have read access to.",
-										Computed:    true,
-										CustomType:  jsontypes.NormalizedType{},
-									},
-									"names": schema.SetAttribute{
-										Description: "A list of indices (or index name patterns) to which the permissions in this entry apply.",
-										Computed:    true,
-										ElementType: types.StringType,
-									},
-									"privileges": schema.SetAttribute{
-										Description: "The index level privileges that the owners of the role have on the specified indices.",
-										Computed:    true,
-										ElementType: types.StringType,
-									},
+								},
+								"query": schema.StringAttribute{
+									Description: "A search query that defines the documents the owners of the role have read access to.",
+									Computed:    true,
+									CustomType:  jsontypes.NormalizedType{},
+								},
+								"names": schema.SetAttribute{
+									Description: "A list of indices (or index name patterns) to which the permissions in this entry apply.",
+									Computed:    true,
+									ElementType: types.StringType,
+								},
+								"privileges": schema.SetAttribute{
+									Description: "The index level privileges that the owners of the role have on the specified indices.",
+									Computed:    true,
+									ElementType: types.StringType,
 								},
 							},
 						},
-						"remote_indices": schema.SetNestedAttribute{
-							Description: remoteIndicesPermissionsDescription,
-							Computed:    true,
-							NestedObject: schema.NestedAttributeObject{
-								Attributes: map[string]schema.Attribute{
-									"clusters": schema.SetAttribute{
-										Description: "A list of cluster aliases to which the permissions in this entry apply.",
-										Computed:    true,
-										ElementType: types.StringType,
-									},
-									"field_security": schema.ListNestedAttribute{
-										Description: "The document fields that the owners of the role have read access to.",
-										Computed:    true,
-										NestedObject: schema.NestedAttributeObject{
-											Attributes: map[string]schema.Attribute{
-												"grant": schema.SetAttribute{
-													Description: "List of the fields to grant the access to.",
-													Computed:    true,
-													ElementType: types.StringType,
-												},
-												"except": schema.SetAttribute{
-													Description: "List of the fields to which the grants will not be applied.",
-													Computed:    true,
-													ElementType: types.StringType,
-												},
-											},
+					},
+					"remote_indices": schema.SetNestedAttribute{
+						Description: remoteIndicesPermissionsDescription,
+						Computed:    true,
+						NestedObject: schema.NestedAttributeObject{
+							Attributes: map[string]schema.Attribute{
+								"clusters": schema.SetAttribute{
+									Description: "A list of cluster aliases to which the permissions in this entry apply.",
+									Computed:    true,
+									ElementType: types.StringType,
+								},
+								"field_security": schema.SingleNestedAttribute{
+									Description: "The document fields that the owners of the role have read access to.",
+									Computed:    true,
+									Attributes: map[string]schema.Attribute{
+										"grant": schema.SetAttribute{
+											Description: "List of the fields to grant the access to.",
+											Computed:    true,
+											ElementType: types.StringType,
+										},
+										"except": schema.SetAttribute{
+											Description: "List of the fields to which the grants will not be applied.",
+											Computed:    true,
+											ElementType: types.StringType,
 										},
 									},
-									"query": schema.StringAttribute{
-										Description: "A search query that defines the documents the owners of the role have read access to.",
-										Computed:    true,
-										CustomType:  jsontypes.NormalizedType{},
-									},
-									"names": schema.SetAttribute{
-										Description: "A list of indices (or index name patterns) to which the permissions in this entry apply.",
-										Computed:    true,
-										ElementType: types.StringType,
-									},
-									"privileges": schema.SetAttribute{
-										Description: "The index level privileges that the owners of the role have on the specified indices.",
-										Computed:    true,
-										ElementType: types.StringType,
-									},
+								},
+								"query": schema.StringAttribute{
+									Description: "A search query that defines the documents the owners of the role have read access to.",
+									Computed:    true,
+									CustomType:  jsontypes.NormalizedType{},
+								},
+								"names": schema.SetAttribute{
+									Description: "A list of indices (or index name patterns) to which the permissions in this entry apply.",
+									Computed:    true,
+									ElementType: types.StringType,
+								},
+								"privileges": schema.SetAttribute{
+									Description: "The index level privileges that the owners of the role have on the specified indices.",
+									Computed:    true,
+									ElementType: types.StringType,
 								},
 							},
 						},
