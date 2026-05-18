@@ -54,3 +54,16 @@ func ListReleaseTags(execer Execer) ([]Tag, error) {
 	}
 	return tags, nil
 }
+
+// ParseSemverTagsFromRaw mirrors changelog-release-context.js parseSemverTags: split
+// newline-separated input and keep only strict vX.Y.Z tags.
+func ParseSemverTagsFromRaw(tagsRaw string) []Tag {
+	var tags []Tag
+	for line := range strings.SplitSeq(tagsRaw, "\n") {
+		t := strings.TrimSpace(line)
+		if semverTagPattern.MatchString(t) {
+			tags = append(tags, Tag(t))
+		}
+	}
+	return tags
+}
