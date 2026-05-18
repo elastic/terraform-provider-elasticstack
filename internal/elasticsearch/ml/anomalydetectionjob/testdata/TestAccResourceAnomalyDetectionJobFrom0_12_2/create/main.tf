@@ -1,3 +1,11 @@
+terraform {
+  required_providers {
+    elasticstack = {
+      source = "elastic/elasticstack"
+    }
+  }
+}
+
 variable "job_id" {
   description = "The job ID for the anomaly detection job"
   type        = string
