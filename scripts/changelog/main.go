@@ -37,6 +37,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/scripts/changelog/internal/engine"
 	"github.com/elastic/terraform-provider-elasticstack/scripts/changelog/internal/evidence"
 	"github.com/elastic/terraform-provider-elasticstack/scripts/changelog/internal/githubx"
+	"github.com/elastic/terraform-provider-elasticstack/scripts/changelog/internal/prmgmt"
 	"github.com/google/go-github/v86/github"
 )
 
@@ -317,21 +318,127 @@ func firstNonEmpty(values ...string) string {
 }
 
 func cmdManageUnreleasedPR(args []string, stderr io.Writer) error {
+	ctx := context.Background()
 	fs := flag.NewFlagSet("manage-unreleased-pr", flag.ContinueOnError)
 	fs.SetOutput(stderr)
+	compareFlag := fs.String("compare-range", "",
+		"git compare range for PR body metadata (defaults to $COMPARE_RANGE)")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
-	return errors.New("not yet implemented: manage-unreleased-pr")
+
+	compareRange := firstNonEmpty(*compareFlag,
+		os.Getenv(githubx.EnvCompareRange),
+		os.Getenv(githubx.EnvInputCompareRange),
+	)
+
+	owner, repo, err := githubx.OwnerRepoFromEnv()
+	if err != nil {
+		return fmt.Errorf("manage-unreleased-pr: github repository env: %w", err)
+	}
+
+	client, err := githubx.NewGitHubClient(ctx, githubx.GitHubToken())
+	if err != nil {
+		return fmt.Errorf("manage-unreleased-pr: github client: %w", err)
+	}
+
+	res, err := prmgmt.ManageUnreleasedPR(ctx, prmgmt.ManageUnreleasedOptions{
+		Owner:        owner,
+		Repo:         repo,
+		CompareRange: compareRange,
+		GitHub:       newChangelogRESTAdapter(client),
+		Now:          time.Now,
+	})
+	if err != nil {
+		return fmt.Errorf("manage-unreleased-pr: %w", err)
+	}
+
+	for _, w := range res.Warnings {
+		fmt.Fprintf(stderr, "WARNING: %s\n", w)
+	}
+
+	outPath := githubx.GitHubOutputPath()
+	if outPath != "" {
+		appendOut := func(name, value string) error {
+			if perr := githubx.AppendGitHubOutput(outPath, name, value); perr != nil {
+				return fmt.Errorf("GITHUB_OUTPUT (%s): %w", name, perr)
+			}
+			return nil
+		}
+		for _, kv := range []struct{ k, v string }{
+			{"pr_action", res.Action},
+			{"pr_number", fmt.Sprintf("%d", res.Number)},
+			{"pr_url", res.URL},
+		} {
+			if werr := appendOut(kv.k, kv.v); werr != nil {
+				return fmt.Errorf("manage-unreleased-pr: %w", werr)
+			}
+		}
+	}
+
+	return nil
 }
 
 func cmdRefreshReleasePR(args []string, stderr io.Writer) error {
+	ctx := context.Background()
 	fs := flag.NewFlagSet("refresh-release-pr", flag.ContinueOnError)
 	fs.SetOutput(stderr)
+	compareFlag := fs.String("compare-range", "",
+		"git compare range for PR body metadata (defaults to $COMPARE_RANGE)")
+	prNumberFlag := fs.Int("pr-number", 0,
+		"release prep pull request number (defaults to pull_request.number from $GITHUB_EVENT_PATH when set)")
+	targetVerFlag := fs.String("target-version", "",
+		"release semver X.Y.Z without v (defaults to $TARGET_VERSION)")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
-	return errors.New("not yet implemented: refresh-release-pr")
+
+	prNumber := *prNumberFlag
+	if prNumber <= 0 {
+		num, perr := githubx.OptionalPullRequestNumberFromEventPath(os.Getenv(githubx.EnvGitHubEventPath))
+		if perr != nil {
+			return fmt.Errorf("refresh-release-pr: parse event: %w", perr)
+		}
+		prNumber = num
+	}
+
+	compareRange := firstNonEmpty(*compareFlag,
+		os.Getenv(githubx.EnvCompareRange),
+		os.Getenv(githubx.EnvInputCompareRange),
+	)
+	targetVersion := firstNonEmpty(*targetVerFlag,
+		os.Getenv(githubx.EnvTargetVersion),
+		os.Getenv(githubx.EnvInputTargetVersion),
+	)
+
+	owner, repo, err := githubx.OwnerRepoFromEnv()
+	if err != nil {
+		return fmt.Errorf("refresh-release-pr: github repository env: %w", err)
+	}
+
+	client, err := githubx.NewGitHubClient(ctx, githubx.GitHubToken())
+	if err != nil {
+		return fmt.Errorf("refresh-release-pr: github client: %w", err)
+	}
+
+	res, err := prmgmt.RefreshReleasePR(ctx, prmgmt.RefreshReleaseOptions{
+		Owner:         owner,
+		Repo:          repo,
+		PRNumber:      prNumber,
+		CompareRange:  compareRange,
+		TargetVersion: targetVersion,
+		GitHub:        newChangelogRESTAdapter(client),
+		Now:           time.Now,
+	})
+	if err != nil {
+		return fmt.Errorf("refresh-release-pr: %w", err)
+	}
+
+	for _, w := range res.Warnings {
+		fmt.Fprintf(stderr, "WARNING: %s\n", w)
+	}
+
+	return nil
 }
 
 func cmdValidatePRSection(args []string, stderr io.Writer) error {
