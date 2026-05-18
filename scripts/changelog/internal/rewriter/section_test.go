@@ -18,6 +18,7 @@
 package rewriter
 
 import (
+	"errors"
 	"strings"
 	"testing"
 )
@@ -220,7 +221,7 @@ func TestRewriteSectionReleaseDedupes2857(t *testing.T) {
 func headingsAtLineStarts(s, bracketedVersion string) int {
 	want := "## " + bracketedVersion
 	count := 0
-	for _, line := range strings.Split(s, "\n") {
+	for line := range strings.SplitSeq(s, "\n") {
 		if strings.HasPrefix(line, want) {
 			count++
 		}
@@ -288,9 +289,45 @@ func TestRewriteSectionReleaseIdempotentDualRange(t *testing.T) {
 	}
 }
 
+func TestRewriteSectionRejectsEmbeddedH2HeadingInBody(t *testing.T) {
+	t.Parallel()
+	_, err := RewriteSection([]byte("# x"), SectionRewrite{
+		Header: "[Unreleased]",
+		Body:   "intro\n## illegal\n",
+	}, ModeUnreleased, "")
+	if !errors.Is(err, errSectionBodyContainsH2Heading) {
+		t.Fatalf("expected embedded H2 error, got %v", err)
+	}
+}
+
+func TestRewriteSectionRejectsLeadingH2HeadingInBody(t *testing.T) {
+	t.Parallel()
+	_, err := RewriteSection([]byte("# x"), SectionRewrite{
+		Header: "[Unreleased]",
+		Body:   "## illegal\n",
+	}, ModeUnreleased, "")
+	if !errors.Is(err, errSectionBodyContainsH2Heading) {
+		t.Fatalf("expected leading H2 error, got %v", err)
+	}
+}
+
+func TestRewriteSectionRejectsUnknownMode(t *testing.T) {
+	t.Parallel()
+	_, err := RewriteSection(nil, SectionRewrite{
+		Header: "[Unreleased]",
+		Body:   "ok body",
+	}, RewriteMode(99), "")
+	if err == nil {
+		t.Fatal("expected error for unknown mode")
+	}
+	if !strings.Contains(err.Error(), "unknown rewrite mode") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func headingsWithPrefixLine(markdown string, headingPrefix string) int {
 	count := 0
-	for _, line := range strings.Split(markdown, "\n") {
+	for line := range strings.SplitSeq(markdown, "\n") {
 		if strings.HasPrefix(line, headingPrefix) {
 			count++
 		}
@@ -308,9 +345,9 @@ func mustRewrite(tb testing.TB, content []byte, rewrite SectionRewrite, mode Rew
 }
 
 func firstLine(s string) string {
-	idx := strings.IndexByte(s, '\n')
-	if idx == -1 {
+	before, _, ok := strings.Cut(s, "\n")
+	if !ok {
 		return s
 	}
-	return s[:idx]
+	return before
 }
