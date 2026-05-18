@@ -40,34 +40,34 @@
 ## 4. Update `.github/workflows/*.yml` files
 
 ### 4.1 `provider.yml`
-- [ ] 4.1.1 Remove generated header comment
-- [ ] 4.1.2 Add `actions/checkout` step to the `classify` job before `actions/github-script`
-- [ ] 4.1.3 Replace `classify` inline `script:` with `require('${{ github.workspace }}/.github/scripts/workflows/provider/classify-changes.js')` call
-- [ ] 4.1.4 Add `actions/checkout` step to the `gate` job before `actions/github-script`
-- [ ] 4.1.5 Replace `gate` inline `script:` with `require('${{ github.workspace }}/.github/scripts/workflows/provider/gate.js')` call
+- [x] 4.1.1 Remove generated header comment
+- [x] 4.1.2 Add `actions/checkout` step to the `classify` job before `actions/github-script`
+- [x] 4.1.3 Replace `classify` inline `script:` with `require('${{ github.workspace }}/.github/scripts/workflows/provider/classify-changes.js')` call
+- [x] 4.1.4 Add `actions/checkout` step to the `gate` job before `actions/github-script`
+- [x] 4.1.5 Replace `gate` inline `script:` with `require('${{ github.workspace }}/.github/scripts/workflows/provider/gate.js')` call
 
 ### 4.2 `workflows.yml`
-- [ ] 4.2.1 Remove generated header comment
-- [ ] 4.2.2 Add `actions/checkout` step to the `classify` job
-- [ ] 4.2.3 Replace `classify` inline `script:` with `require()` call to `.github/scripts/workflows/workflows/classify-changes.js`
-- [ ] 4.2.4 Add `actions/checkout` step to the `gate` job
-- [ ] 4.2.5 Replace `gate` inline `script:` with `require()` call to `.github/scripts/workflows/workflows/gate.js`
+- [x] 4.2.1 Remove generated header comment
+- [x] 4.2.2 Add `actions/checkout` step to the `classify` job
+- [x] 4.2.3 Replace `classify` inline `script:` with `require()` call to `.github/scripts/workflows/workflows/classify-changes.js`
+- [x] 4.2.4 Add `actions/checkout` step to the `gate` job
+- [x] 4.2.5 Replace `gate` inline `script:` with `require()` call to `.github/scripts/workflows/workflows/gate.js`
 
 ### 4.3 `pr-changelog-check.yml`
-- [ ] 4.3.1 Remove generated header comment
-- [ ] 4.3.2 Add `actions/checkout` step to the job before `actions/github-script`
-- [ ] 4.3.3 Replace massive inline `script:` with `require()` call to `.github/scripts/workflows/pr-changelog-check/check.js`
+- [x] 4.3.1 Remove generated header comment
+- [x] 4.3.2 Add `actions/checkout` step to the job before `actions/github-script`
+- [x] 4.3.3 Replace massive inline `script:` with `require()` call to `.github/scripts/workflows/pr-changelog-check/check.js`
 
 ### 4.4 `changelog-generation.yml`
-- [ ] 4.4.1 Remove generated header comment
-- [ ] 4.4.2 Replace inline scripts with `require()` calls to `.github/scripts/workflows/changelog/` modules
+- [x] 4.4.1 Remove generated header comment
+- [x] 4.4.2 Replace inline scripts with `require()` calls to `.github/scripts/workflows/changelog/` modules
 
 ### 4.5 `prep-release.yml`
-- [ ] 4.5.1 Remove generated header comment
-- [ ] 4.5.2 Replace inline script with `require()` call to `.github/scripts/workflows/changelog/` module
+- [x] 4.5.1 Remove generated header comment
+- [x] 4.5.2 Replace inline script with `require()` call to `.github/scripts/workflows/changelog/` module
 
 ### 4.6 `openspec.yml`
-- [ ] 4.6.1 Remove generated header comment
+- [x] 4.6.1 Remove generated header comment
 
 ## 5. Update `.github/workflows/*.md` files
 
