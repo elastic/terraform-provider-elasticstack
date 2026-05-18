@@ -27,6 +27,8 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/scripts/changelog/internal/prcheck"
 )
 
+const recListCall = "list"
+
 type recorderREST struct {
 	listReply []prcheck.Comment
 	calls     []string
@@ -34,7 +36,7 @@ type recorderREST struct {
 }
 
 func (r *recorderREST) ListIssueComments(context.Context, string, string, int) ([]prcheck.Comment, error) {
-	r.calls = append(r.calls, "list")
+	r.calls = append(r.calls, recListCall)
 	if r.listErr != nil {
 		return nil, r.listErr
 	}
@@ -67,7 +69,7 @@ func TestUpsertVerdictIssueComment_noChangelog(t *testing.T) {
 		}); err != nil {
 			t.Fatal(err)
 		}
-		if len(rec.calls) != 2 || rec.calls[0] != "list" || !strings.HasPrefix(rec.calls[1], "update:7:") {
+		if len(rec.calls) != 2 || rec.calls[0] != recListCall || !strings.HasPrefix(rec.calls[1], "update:7:") {
 			t.Fatalf("calls=%q", rec.calls)
 		}
 		if body := strings.TrimPrefix(rec.calls[1], "update:7:"); body != wantBody {
@@ -83,7 +85,7 @@ func TestUpsertVerdictIssueComment_noChangelog(t *testing.T) {
 		}); err != nil {
 			t.Fatal(err)
 		}
-		if strings.Join(rec.calls, ",") != "list" {
+		if strings.Join(rec.calls, ",") != recListCall {
 			t.Fatalf("calls=%q", rec.calls)
 		}
 	})
@@ -106,8 +108,8 @@ func TestUpsertVerdictIssueComment_pass(t *testing.T) {
 		}
 		upd := ""
 		for _, c := range rec.calls {
-			if strings.HasPrefix(c, "update:9:") {
-				upd = strings.TrimPrefix(c, "update:9:")
+			if after, ok := strings.CutPrefix(c, "update:9:"); ok {
+				upd = after
 			}
 		}
 		if upd != wantPass {
@@ -121,7 +123,7 @@ func TestUpsertVerdictIssueComment_pass(t *testing.T) {
 		if err := prcheck.UpsertVerdictIssueComment(ctx, rec, "o", "r", 2, prcheck.Verdict{Status: prcheck.StatusPass}); err != nil {
 			t.Fatal(err)
 		}
-		if strings.Join(rec.calls, ",") != "list" {
+		if strings.Join(rec.calls, ",") != recListCall {
 			t.Fatalf("calls=%q", rec.calls)
 		}
 	})
@@ -141,8 +143,8 @@ func TestUpsertVerdictIssueComment_fail(t *testing.T) {
 		}
 		var gotBody string
 		for _, c := range rec.calls {
-			if strings.HasPrefix(c, "update:3:") {
-				gotBody = strings.TrimPrefix(c, "update:3:")
+			if after, ok := strings.CutPrefix(c, "update:3:"); ok {
+				gotBody = after
 			}
 		}
 		if gotBody != failBody {
@@ -158,8 +160,8 @@ func TestUpsertVerdictIssueComment_fail(t *testing.T) {
 		}
 		var cre string
 		for _, c := range rec.calls {
-			if strings.HasPrefix(c, "create:") {
-				cre = strings.TrimPrefix(c, "create:")
+			if after, ok := strings.CutPrefix(c, "create:"); ok {
+				cre = after
 			}
 		}
 		if cre != failBody {
