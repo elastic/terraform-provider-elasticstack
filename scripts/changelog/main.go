@@ -35,8 +35,12 @@ import (
 	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/scripts/changelog/internal/engine"
+	"github.com/elastic/terraform-provider-elasticstack/scripts/changelog/internal/evidence"
 	"github.com/elastic/terraform-provider-elasticstack/scripts/changelog/internal/githubx"
+	"github.com/google/go-github/v86/github"
 )
+
+const evidenceArtifactPerm fs.FileMode = 0o644
 
 func main() {
 	if err := run(os.Args[1:], os.Stderr); err != nil {
@@ -78,12 +82,115 @@ func usageError(w io.Writer) error {
 }
 
 func cmdGatherEvidence(args []string, stderr io.Writer) error {
-	fs := flag.NewFlagSet("gather-evidence", flag.ContinueOnError)
-	fs.SetOutput(stderr)
-	if err := fs.Parse(args); err != nil {
+	ctx := context.Background()
+	fsFlag := flag.NewFlagSet("gather-evidence", flag.ContinueOnError)
+	fsFlag.SetOutput(stderr)
+	modeFlag := fsFlag.String("mode", "",
+		"evidence mode: unreleased|release (defaults to $MODE or unreleased)")
+	targetVerFlag := fsFlag.String("target-version", "",
+		"semver X.Y.Z without leading v for release (defaults to $TARGET_VERSION)")
+	prevTagFlag := fsFlag.String("previous-tag", "",
+		"previous git tag string (defaults to $PREVIOUS_TAG)")
+	compareFlag := fsFlag.String("compare-range", "",
+		"git log range (defaults to $COMPARE_RANGE or HEAD)")
+	if err := fsFlag.Parse(args); err != nil {
 		return err
 	}
-	return errors.New("not yet implemented: gather-evidence")
+
+	mode := firstNonEmpty(*modeFlag,
+		os.Getenv(githubx.EnvMode),
+		os.Getenv(githubx.EnvInputMode),
+	)
+	if mode == "" {
+		mode = engine.ModeUnreleased
+	}
+
+	targetVersion := firstNonEmpty(*targetVerFlag,
+		os.Getenv(githubx.EnvTargetVersion),
+		os.Getenv(githubx.EnvInputTargetVersion),
+	)
+
+	previousTag := firstNonEmpty(*prevTagFlag,
+		os.Getenv(githubx.EnvPreviousTag),
+		os.Getenv(githubx.EnvInputPreviousTag),
+	)
+
+	compareRange := firstNonEmpty(*compareFlag,
+		os.Getenv(githubx.EnvCompareRange),
+		os.Getenv(githubx.EnvInputCompareRange),
+	)
+
+	owner, repo, err := githubx.OwnerRepoFromEnv()
+	if err != nil {
+		return fmt.Errorf("gather-evidence: github repository env: %w", err)
+	}
+
+	client, err := githubx.NewGitHubClient(ctx, githubx.GitHubToken())
+	if err != nil {
+		return fmt.Errorf("gather-evidence: github client: %w", err)
+	}
+
+	gather := &gitMergedPRGatherer{client: client, execer: githubx.ShellGit{}}
+
+	manifest, warns, gerr := evidence.Gather(ctx, evidence.GatherOptions{
+		Owner:                    owner,
+		Repo:                     repo,
+		CompareRange:             compareRange,
+		TargetVersion:            targetVersion,
+		PreviousTag:              previousTag,
+		Mode:                     mode,
+		PRGatherer:               gather,
+		ListPullRequestFilenames: githubxListFilesAdapter(client),
+		Now:                      time.Now,
+	})
+	if gerr != nil {
+		return fmt.Errorf("gather-evidence: %w", gerr)
+	}
+
+	for _, w := range warns {
+		fmt.Fprintf(stderr, "WARNING: %s\n", w)
+	}
+
+	plan, err := evidence.BuildEvidenceArtifactPlan(evidence.ArtifactPlanRequest{
+		Manifest: manifest,
+	})
+	if err != nil {
+		return fmt.Errorf("gather-evidence: build artifact plan: %w", err)
+	}
+
+	if err := os.MkdirAll(plan.Directory, 0o755); err != nil {
+		return fmt.Errorf("gather-evidence: mkdir %q: %w", plan.Directory, err)
+	}
+
+	if err := os.WriteFile(plan.ArtifactPath, []byte(plan.FormattedJSON), evidenceArtifactPerm); err != nil {
+		return fmt.Errorf("gather-evidence: write evidence file: %w", err)
+	}
+
+	hasEvidence := len(manifest.PullRequests) > 0
+
+	outPath := githubx.GitHubOutputPath()
+	if outPath != "" {
+		appendOut := func(name, value string) error {
+			if perr := githubx.AppendGitHubOutput(outPath, name, value); perr != nil {
+				return fmt.Errorf("GITHUB_OUTPUT (%s): %w", name, perr)
+			}
+			return nil
+		}
+		if werr := appendOut("evidence_file_path", plan.ArtifactPath); werr != nil {
+			return fmt.Errorf("gather-evidence: %w", werr)
+		}
+		if werr := appendOut("has_evidence", boolGitHubActionsString(hasEvidence)); werr != nil {
+			return fmt.Errorf("gather-evidence: %w", werr)
+		}
+	}
+
+	return nil
+}
+
+func githubxListFilesAdapter(client *github.Client) func(context.Context, string, string, int) ([]string, error) {
+	return func(ctx context.Context, owner, repo string, pullNumber int) ([]string, error) {
+		return githubx.ListPullRequestFilenames(ctx, client, owner, repo, pullNumber)
+	}
 }
 
 func cmdRunEngine(args []string, stderr io.Writer) error {
@@ -198,6 +305,15 @@ func boolGitHubActionsString(b bool) string {
 		return "true"
 	}
 	return "false"
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, v := range values {
+		if s := strings.TrimSpace(v); s != "" {
+			return s
+		}
+	}
+	return ""
 }
 
 func cmdManageUnreleasedPR(args []string, stderr io.Writer) error {
