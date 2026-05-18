@@ -28,6 +28,8 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/scripts/changelog/internal/section"
 )
 
+const validateOptsRepoOwnerGuardMsg = "owner and repo are required"
+
 type stubFetcher struct {
 	pr  prcheck.PullRequest
 	err error
@@ -70,8 +72,18 @@ func TestValidate_options_and_fetch_errors(t *testing.T) {
 		o := baseOpts()
 		o.Owner = ""
 		_, err := prcheck.Validate(ctx, o)
-		if err == nil || !strings.Contains(err.Error(), "owner") {
-			t.Fatalf("expected owner/repo error, got %#v", err)
+		if err == nil || err.Error() != validateOptsRepoOwnerGuardMsg {
+			t.Fatalf("expected %q, got %#v", validateOptsRepoOwnerGuardMsg, err)
+		}
+	})
+
+	t.Run("empty repo", func(t *testing.T) {
+		t.Parallel()
+		o := baseOpts()
+		o.Repo = ""
+		_, err := prcheck.Validate(ctx, o)
+		if err == nil || err.Error() != validateOptsRepoOwnerGuardMsg {
+			t.Fatalf("expected %q, got %#v", validateOptsRepoOwnerGuardMsg, err)
 		}
 	})
 
@@ -290,6 +302,33 @@ func TestValidate_failures_and_bypass(t *testing.T) {
 				if !strings.Contains(joined, sub) {
 					t.Fatalf("expected error containing %q, got %#v", sub, got.Errors)
 				}
+			}
+		})
+	}
+}
+
+func TestStatus_UnmarshalJSON_edges(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		payload string
+		wantErr string
+	}{
+		{name: "unknown literal", payload: `"unknown"`, wantErr: "prcheck: invalid status JSON value"},
+		{name: "number", payload: `123`, wantErr: "prcheck: status must be a JSON string"},
+		{name: "array", payload: `[]`, wantErr: "prcheck: status must be a JSON string"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			var st prcheck.Status
+			err := json.Unmarshal([]byte(tc.payload), &st)
+			if err == nil {
+				t.Fatal("expected error")
+			}
+			if !strings.Contains(err.Error(), tc.wantErr) {
+				t.Fatalf("got %v, want substring %q", err, tc.wantErr)
 			}
 		})
 	}
