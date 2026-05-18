@@ -23,12 +23,12 @@
 
 ## 4. Implement engine modes
 
-- [ ] 4.1 Implement `internal/semver/tags.go` with `ListReleaseTags(execer Execer) ([]Tag, error)` wrapping the `git tag --list "v[0-9]*..." --sort=-version:refname` command from `lib/changelog-engine-factory.js`.
-- [ ] 4.2 Implement `internal/semver/select.go` reproducing `selectPreviousTag` and `buildCompareRange` selection logic.
-- [ ] 4.3 Implement `internal/engine/engine.go` orchestrating the `unreleased` and `release` modes: validate inputs, list PRs in compare range, assemble per-PR sections via `internal/section`, write `CHANGELOG.md` via `internal/rewriter`.
-- [ ] 4.4 Implement `internal/engine/validate.go` reproducing `validateModeAndTargetVersion` (mode whitelist + semver target check).
-- [ ] 4.5 Wire `run-engine` subcommand in `main.go` to `internal/engine.Run(...)` with flags `--mode`, `--target-version`, plus env-derived repo context.
-- [ ] 4.6 Port test cases from `lib/changelog-engine.test.mjs`, `lib/changelog-engine-factory.test.mjs` (mode validation, semver selection, assembly failure messages) into `internal/engine/engine_test.go`.
+- [x] 4.1 Implement `internal/semver/tags.go` with `ListReleaseTags(execer Execer) ([]Tag, error)` wrapping the `git tag --list "v[0-9]*..." --sort=-version:refname` command from `lib/changelog-engine-factory.js`.
+- [x] 4.2 Implement `internal/semver/select.go` reproducing `selectPreviousTag` and `buildCompareRange` selection logic.
+- [x] 4.3 Implement `internal/engine/engine.go` orchestrating the `unreleased` and `release` modes: validate inputs, list PRs in compare range, assemble per-PR sections via `internal/section`, write `CHANGELOG.md` via `internal/rewriter`.
+- [x] 4.4 Implement `internal/engine/validate.go` reproducing `validateModeAndTargetVersion` (mode whitelist + semver target check).
+- [x] 4.5 Wire `run-engine` subcommand in `main.go` to `internal/engine.Run(...)` with flags `--mode`, `--target-version`, plus env-derived repo context.
+- [x] 4.6 Port test cases from `lib/changelog-engine.test.mjs`, `lib/changelog-engine-factory.test.mjs` (mode validation, semver selection, assembly failure messages) into `internal/engine/engine_test.go`.
 
 ## 5. Implement evidence gathering
 
