@@ -15,10 +15,11 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package agentbuilderagent
+package agentbuilderskill
 
 import (
 	"context"
+	"regexp"
 
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -31,24 +32,25 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *AgentResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *SkillResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = getSchema()
 }
 
 func getSchema() schema.Schema {
 	return schema.Schema{
-		MarkdownDescription: "Manages Kibana Agent Builder agents. See the [Agent Builder API documentation](https://www.elastic.co/docs/api/doc/kibana/group/endpoint-agent-builder) for more information.",
+		MarkdownDescription: "Manages Kibana Agent Builder skills. Skills are reusable markdown instructions that agents can reference. " +
+			"See the [Agent Builder API documentation](https://www.elastic.co/docs/api/doc/kibana/group/endpoint-agent-builder) for more information.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,
-				MarkdownDescription: "The composite ID of the agent: `<space_id>/<agent_id>`.",
+				MarkdownDescription: "The composite ID of the skill: `<space_id>/<skill_id>`.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"agent_id": schema.StringAttribute{
+			"skill_id": schema.StringAttribute{
 				Required:            true,
-				MarkdownDescription: "The agent ID.",
+				MarkdownDescription: "The skill ID. Required; the API does not auto-generate skill IDs.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -59,8 +61,8 @@ func getSchema() schema.Schema {
 			"space_id": schema.StringAttribute{
 				Computed:            true,
 				Optional:            true,
-				Default:             stringdefault.StaticString("default"),
-				MarkdownDescription: "An identifier for the space. If not provided, the default space is used.",
+				Default:             stringdefault.StaticString(defaultSpaceID),
+				MarkdownDescription: "An identifier for the Kibana space. If not provided, the default space is used.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 					stringplanmodifier.RequiresReplace(),
@@ -68,43 +70,50 @@ func getSchema() schema.Schema {
 			},
 			"name": schema.StringAttribute{
 				Required:            true,
-				MarkdownDescription: "The agent name.",
+				MarkdownDescription: "Human-readable name for the skill.",
 				Validators: []validator.String{
 					stringvalidator.LengthAtLeast(1),
 				},
 			},
 			"description": schema.StringAttribute{
-				Optional:            true,
-				MarkdownDescription: "The agent description.",
+				Required:            true,
+				MarkdownDescription: "Description of what the skill does.",
 			},
-			"avatar_color": schema.StringAttribute{
-				Optional:            true,
-				Computed:            true,
-				MarkdownDescription: "Hex color code for the agent avatar (e.g., `#BFDBFF`).",
+			"content": schema.StringAttribute{
+				Required:            true,
+				MarkdownDescription: "Skill instructions content as markdown.",
 			},
-			"avatar_symbol": schema.StringAttribute{
-				Optional:            true,
-				Computed:            true,
-				MarkdownDescription: "Symbol or initials for the agent avatar (e.g., `SI`).",
-			},
-			"labels": schema.SetAttribute{
+			"tool_ids": schema.SetAttribute{
 				ElementType:         types.StringType,
 				Optional:            true,
-				MarkdownDescription: "Set of labels for the agent.",
+				MarkdownDescription: "Set of tool IDs from the tool registry that this skill references.",
 			},
-			"tools": schema.SetAttribute{
-				ElementType:         types.StringType,
+			"referenced_content": schema.ListNestedAttribute{
 				Optional:            true,
-				MarkdownDescription: "Set of tool IDs that the agent can use.",
-			},
-			"skill_ids": schema.SetAttribute{
-				ElementType:         types.StringType,
-				Optional:            true,
-				MarkdownDescription: "Set of skill IDs to assign to the agent. Requires Elastic Stack 9.4.0 or later.",
-			},
-			"instructions": schema.StringAttribute{
-				Optional:            true,
-				MarkdownDescription: "Optional system instructions that define the agent behavior.",
+				MarkdownDescription: "Ordered list of referenced-content entries. Up to 100 entries; order is preserved.",
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"name": schema.StringAttribute{
+							Required:            true,
+							MarkdownDescription: "Name of the referenced content.",
+						},
+						"relative_path": schema.StringAttribute{
+							Required: true,
+							MarkdownDescription: "Relative path of the referenced content. Must start with `./` " +
+								"(e.g., `./runbooks/standard.md`). Sent to and received from the API as `relativePath`.",
+							Validators: []validator.String{
+								stringvalidator.RegexMatches(
+									regexp.MustCompile(`^\./`),
+									"relative_path must start with ./",
+								),
+							},
+						},
+						"content": schema.StringAttribute{
+							Required:            true,
+							MarkdownDescription: "Content of the reference.",
+						},
+					},
+				},
 			},
 		},
 		Blocks: map[string]schema.Block{

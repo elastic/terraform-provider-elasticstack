@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package agentbuilderagent
+package agentbuilderskill
 
 import (
 	"context"
@@ -26,34 +26,26 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
-func (r *AgentResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var planModel agentModel
+func (r *SkillResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var stateModel skillModel
 
-	diags := req.Plan.Get(ctx, &planModel)
+	diags := req.State.Get(ctx, &stateModel)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	client, diags := r.Client().GetKibanaClient(ctx, planModel.KibanaConnection)
+	client, diags := r.Client().GetKibanaClient(ctx, stateModel.KibanaConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	if !agentbuilder.EnforceVersion(ctx, client, minKibanaAgentBuilderAPIVersion, "agents", &resp.Diagnostics) {
+	if !agentbuilder.EnforceVersion(ctx, client, minKibanaAgentBuilderSkillsAPIVersion, "skills", &resp.Diagnostics) {
 		return
 	}
 
-	serverVersion, verDiags := client.ServerVersion(ctx)
-	resp.Diagnostics.Append(verDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	supportsSkillIDs := !serverVersion.LessThan(minVersionAdvancedAgentConfig)
-
-	compID, idDiags := clients.CompositeIDFromStr(planModel.ID.ValueString())
-
+	compID, idDiags := clients.CompositeIDFromStr(stateModel.ID.ValueString())
 	resp.Diagnostics.Append(idDiags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -65,30 +57,6 @@ func (r *AgentResource) Update(ctx context.Context, req resource.UpdateRequest, 
 		return
 	}
 
-	body, diags := planModel.toAPIUpdateModel(ctx, supportsSkillIDs)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	_, diags = kibanaoapi.UpdateAgent(ctx, oapiClient, compID.ClusterID, compID.ResourceID, body)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	agent, diags := kibanaoapi.GetAgent(ctx, oapiClient, compID.ClusterID, compID.ResourceID)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	diags = planModel.populateFromAPI(ctx, compID.ClusterID, agent)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	diags = resp.State.Set(ctx, planModel)
+	diags = kibanaoapi.DeleteSkill(ctx, oapiClient, compID.ClusterID, compID.ResourceID)
 	resp.Diagnostics.Append(diags...)
 }

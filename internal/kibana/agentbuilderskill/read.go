@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package agentbuilderagent
+package agentbuilderskill
 
 import (
 	"context"
@@ -24,40 +24,36 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *AgentResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var planModel agentModel
+func (r *SkillResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var stateModel skillModel
 
-	diags := req.Plan.Get(ctx, &planModel)
+	diags := req.State.Get(ctx, &stateModel)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	client, diags := r.Client().GetKibanaClient(ctx, planModel.KibanaConnection)
+	client, diags := r.Client().GetKibanaClient(ctx, stateModel.KibanaConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	if !agentbuilder.EnforceVersion(ctx, client, minKibanaAgentBuilderAPIVersion, "agents", &resp.Diagnostics) {
+	if !agentbuilder.EnforceVersion(ctx, client, minKibanaAgentBuilderSkillsAPIVersion, "skills", &resp.Diagnostics) {
 		return
 	}
 
-	serverVersion, verDiags := client.ServerVersion(ctx)
-	resp.Diagnostics.Append(verDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	supportsSkillIDs := !serverVersion.LessThan(minVersionAdvancedAgentConfig)
-
-	compID, idDiags := clients.CompositeIDFromStr(planModel.ID.ValueString())
-
+	compID, idDiags := clients.CompositeIDFromStr(stateModel.ID.ValueString())
 	resp.Diagnostics.Append(idDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	// Restore space_id from the composite ID so populateFromAPI can use it.
+	stateModel.SpaceID = types.StringValue(compID.ClusterID)
 
 	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
@@ -65,30 +61,23 @@ func (r *AgentResource) Update(ctx context.Context, req resource.UpdateRequest, 
 		return
 	}
 
-	body, diags := planModel.toAPIUpdateModel(ctx, supportsSkillIDs)
+	skill, diags := kibanaoapi.GetSkill(ctx, oapiClient, compID.ClusterID, compID.ResourceID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	_, diags = kibanaoapi.UpdateAgent(ctx, oapiClient, compID.ClusterID, compID.ResourceID, body)
+	if skill == nil {
+		resp.State.RemoveResource(ctx)
+		return
+	}
+
+	diags = stateModel.populateFromAPI(ctx, compID.ClusterID, skill)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	agent, diags := kibanaoapi.GetAgent(ctx, oapiClient, compID.ClusterID, compID.ResourceID)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	diags = planModel.populateFromAPI(ctx, compID.ClusterID, agent)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	diags = resp.State.Set(ctx, planModel)
+	diags = resp.State.Set(ctx, stateModel)
 	resp.Diagnostics.Append(diags...)
 }
