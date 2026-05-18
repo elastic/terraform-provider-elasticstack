@@ -15,10 +15,11 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package kibana_test
+package spaces_test
 
 import (
 	"context"
+	_ "embed"
 	"fmt"
 	"testing"
 
@@ -67,6 +68,7 @@ func TestAccResourceSpace(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "description", "Updated space description"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_space.test_space", "disabled_features.*", "ingestManager"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_space.test_space", "disabled_features.*", "enterpriseSearch"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "initials", "AB"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "color", "#FFFFFF"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_space.test_space", "image_url"),
 				),
@@ -97,6 +99,34 @@ func TestAccResourceSpace(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "description", "Test Space"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "color", "#FFFFFF"),
 				),
+			},
+		},
+	})
+}
+
+func TestAccResourceSpace_importState(t *testing.T) {
+	spaceID := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceSpaceDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"space_id": config.StringVariable(spaceID),
+				},
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"space_id": config.StringVariable(spaceID),
+				},
+				ResourceName:      "elasticstack_kibana_space.test_space",
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
@@ -189,3 +219,46 @@ var checkResourceSpaceDestroy = checks.KibanaResourceDestroyCheck(
 		return space != nil, nil
 	},
 )
+
+//go:embed testdata/TestAccSpaceResourceFromSDK/create/main.tf
+var spaceFromSDKCreateConfig string
+
+func TestAccSpaceResourceFromSDK(t *testing.T) {
+	spaceID := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceSpaceDestroy,
+		Steps: []resource.TestStep{
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"elasticstack": {
+						Source:            "elastic/elasticstack",
+						VersionConstraint: "0.15.1",
+					},
+				},
+				Config: spaceFromSDKCreateConfig,
+				ConfigVariables: config.Variables{
+					"space_id": config.StringVariable(spaceID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "space_id", spaceID),
+					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "name", fmt.Sprintf("SDK %s", spaceID)),
+					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "description", "Space created by the legacy SDK provider"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"space_id": config.StringVariable(spaceID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "space_id", spaceID),
+					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "name", fmt.Sprintf("SDK %s", spaceID)),
+					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "description", "Space created by the legacy SDK provider"),
+				),
+			},
+		},
+	})
+}
