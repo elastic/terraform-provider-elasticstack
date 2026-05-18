@@ -22,7 +22,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
@@ -33,6 +32,5 @@ func deleteSpace(ctx context.Context, client *clients.KibanaScopedClient, resour
 		diags.AddError("unable to get Kibana OpenAPI client", err.Error())
 		return diags
 	}
-	sdkDiags := kibanaoapi.DeleteSpace(ctx, oapiClient, resourceID)
-	return diagutil.FrameworkDiagsFromSDK(sdkDiags)
+	return kibanaoapi.DeleteSpace(ctx, oapiClient, resourceID)
 }

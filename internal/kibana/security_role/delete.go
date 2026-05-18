@@ -22,7 +22,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
@@ -33,6 +32,5 @@ func deleteRole(ctx context.Context, client *clients.KibanaScopedClient, resourc
 			diag.NewErrorDiagnostic("Unable to get Kibana OpenAPI client", err.Error()),
 		}
 	}
-	sdkDiags := kibanaoapi.DeleteSecurityRole(ctx, oapiClient, resourceID)
-	return diagutil.FrameworkDiagsFromSDK(sdkDiags)
+	return kibanaoapi.DeleteSecurityRole(ctx, oapiClient, resourceID)
 }

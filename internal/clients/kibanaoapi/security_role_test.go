@@ -73,7 +73,7 @@ func TestGetSecurityRole_200(t *testing.T) {
 	oapiClient := newTestKibanaOapiClient(t, server)
 	role, diags := kibanaoapi.GetSecurityRole(t.Context(), oapiClient, "test-role")
 
-	require.Nil(t, diags)
+	require.False(t, diags.HasError())
 	require.NotNil(t, role)
 	require.NotNil(t, role.Elasticsearch.Cluster)
 	assert.Equal(t, []string{"monitor"}, *role.Elasticsearch.Cluster)
@@ -88,7 +88,7 @@ func TestGetSecurityRole_404(t *testing.T) {
 	oapiClient := newTestKibanaOapiClient(t, server)
 	role, diags := kibanaoapi.GetSecurityRole(t.Context(), oapiClient, "missing-role")
 
-	assert.Nil(t, diags)
+	assert.False(t, diags.HasError())
 	assert.Nil(t, role)
 }
 
@@ -141,7 +141,7 @@ func TestPutSecurityRole_200(t *testing.T) {
 	}
 
 	diags := kibanaoapi.PutSecurityRole(t.Context(), oapiClient, "test-role", params, body)
-	assert.Nil(t, diags)
+	assert.False(t, diags.HasError())
 }
 
 func TestPutSecurityRole_WithBase_SerializesCorrectly(t *testing.T) {
@@ -169,7 +169,7 @@ func TestPutSecurityRole_WithBase_SerializesCorrectly(t *testing.T) {
 
 	params := kbapi.PutSecurityRoleNameParams{}
 	diags := kibanaoapi.PutSecurityRole(t.Context(), oapiClient, "test-role", params, body)
-	assert.Nil(t, diags)
+	assert.False(t, diags.HasError())
 	require.NoError(t, captureErr)
 
 	// Verify kibana.base is correctly serialized in the request body
@@ -210,7 +210,7 @@ func TestDeleteSecurityRole_200(t *testing.T) {
 
 	oapiClient := newTestKibanaOapiClient(t, server)
 	diags := kibanaoapi.DeleteSecurityRole(t.Context(), oapiClient, "test-role")
-	assert.Nil(t, diags)
+	assert.False(t, diags.HasError())
 }
 
 func TestDeleteSecurityRole_404(t *testing.T) {
@@ -221,7 +221,7 @@ func TestDeleteSecurityRole_404(t *testing.T) {
 
 	oapiClient := newTestKibanaOapiClient(t, server)
 	diags := kibanaoapi.DeleteSecurityRole(t.Context(), oapiClient, "missing-role")
-	assert.Nil(t, diags)
+	assert.False(t, diags.HasError())
 }
 
 func TestDeleteSecurityRole_Error(t *testing.T) {

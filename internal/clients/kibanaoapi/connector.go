@@ -29,7 +29,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	sdkdiag "github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
 func CreateConnector(ctx context.Context, client *Client, connector models.KibanaActionConnector) (string, fwdiag.Diagnostics) {
@@ -98,14 +97,16 @@ func GetConnector(ctx context.Context, client *Client, connectorID, spaceID stri
 	}
 }
 
-func SearchConnectors(ctx context.Context, client *Client, connectorName, spaceID, connectorTypeID string) ([]*models.KibanaActionConnector, sdkdiag.Diagnostics) {
+func SearchConnectors(ctx context.Context, client *Client, connectorName, spaceID, connectorTypeID string) ([]*models.KibanaActionConnector, fwdiag.Diagnostics) {
 	resp, err := client.API.GetActionsConnectorsWithResponse(ctx, spaceID)
 	if err != nil {
-		return nil, sdkdiag.Errorf("unable to get connectors: [%v]", err)
+		return nil, fwdiag.Diagnostics{
+			fwdiag.NewErrorDiagnostic("Unable to get connectors", err.Error()),
+		}
 	}
 
 	if resp.StatusCode() != http.StatusOK {
-		return nil, diagutil.SDKDiagsFromFramework(diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body))
+		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 
 	foundConnectors := []*models.KibanaActionConnector{}
@@ -120,7 +121,7 @@ func SearchConnectors(ctx context.Context, client *Client, connectorName, spaceI
 
 		c, fwDiags := ConnectorResponseToModel(spaceID, &connector)
 		if fwDiags.HasError() {
-			return nil, diagutil.SDKDiagsFromFramework(fwDiags)
+			return nil, fwDiags
 		}
 
 		foundConnectors = append(foundConnectors, c)

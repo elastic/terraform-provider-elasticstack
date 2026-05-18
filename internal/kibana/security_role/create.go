@@ -23,7 +23,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
@@ -43,8 +42,7 @@ func createRole(ctx context.Context, client *clients.KibanaScopedClient, _ strin
 	params := kbapi.PutSecurityRoleNameParams{
 		CreateOnly: &createOnly,
 	}
-	sdkDiags := kibanaoapi.PutSecurityRole(ctx, oapiClient, roleName, params, body)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	diags.Append(kibanaoapi.PutSecurityRole(ctx, oapiClient, roleName, params, body)...)
 	if diags.HasError() {
 		return plan, diags
 	}
