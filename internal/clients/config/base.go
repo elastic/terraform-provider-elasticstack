@@ -24,7 +24,6 @@ import (
 	"strconv"
 
 	"github.com/elastic/go-elasticsearch/v8"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 type baseConfig struct {
@@ -37,35 +36,6 @@ type baseConfig struct {
 }
 
 const PreferConfiguredKibanaEndpointEnvVar = "TF_ELASTICSTACK_PREFER_CONFIGURED_KIBANA_ENDPOINT"
-
-func newBaseConfigFromSDK(d *schema.ResourceData, version string, esKey string) baseConfig {
-	userAgent := buildUserAgent(version)
-	baseConfig := baseConfig{
-		UserAgent: userAgent,
-		Header:    http.Header{"User-Agent": []string{userAgent}},
-	}
-
-	if esConn, ok := d.GetOk(esKey); ok {
-		if resource := esConn.([]any)[0]; resource != nil {
-			config := resource.(map[string]any)
-
-			if bearerToken, ok := config["bearer_token"]; ok && bearerToken != "" {
-				baseConfig.BearerToken = bearerToken.(string)
-			} else if apiKey, ok := config["api_key"]; ok && apiKey != "" {
-				baseConfig.APIKey = apiKey.(string)
-			} else {
-				if username, ok := config["username"]; ok {
-					baseConfig.Username = username.(string)
-				}
-				if password, ok := config["password"]; ok {
-					baseConfig.Password = password.(string)
-				}
-			}
-		}
-	}
-
-	return baseConfig.withEnvironmentOverrides()
-}
 
 func newBaseConfigFromFramework(config ProviderConfiguration, version string) baseConfig {
 	userAgent := buildUserAgent(version)

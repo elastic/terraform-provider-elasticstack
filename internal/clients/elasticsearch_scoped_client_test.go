@@ -28,11 +28,9 @@ import (
 
 	elasticsearch "github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
-	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	goversion "github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -246,58 +244,6 @@ func TestGetElasticsearchClient_WithConnection(t *testing.T) {
 
 	esClient, err := scoped.GetESClient()
 	require.NoError(t, err, "GetESClient must return a valid client when connection is configured")
-	require.NotNil(t, esClient)
-}
-
-// --- GetElasticsearchClientFromSDK ---
-
-func TestGetElasticsearchClientFromSDK_AbsentBlock(t *testing.T) {
-	t.Parallel()
-	factory := newTestFactory(t)
-
-	rd := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
-		"elasticsearch_connection": providerschema.GetEsConnectionSchema("elasticsearch_connection", false),
-	}, map[string]any{})
-
-	scoped, diags := factory.GetElasticsearchClientFromSDK(rd)
-	require.False(t, diags.HasError())
-	require.NotNil(t, scoped)
-}
-
-func TestGetElasticsearchClientFromSDK_WithBlock(t *testing.T) {
-	srv := newMockElasticsearchServer("8.19.0")
-	defer srv.Close()
-
-	factory := newTestFactory(t)
-
-	rd := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
-		"elasticsearch_connection": providerschema.GetEsConnectionSchema("elasticsearch_connection", false),
-	}, map[string]any{
-		"elasticsearch_connection": []any{
-			map[string]any{
-				"username":                 "elastic",
-				"password":                 "changeme",
-				"api_key":                  "",
-				"bearer_token":             "",
-				"es_client_authentication": "",
-				"endpoints":                []any{srv.URL},
-				"insecure":                 true,
-				"ca_file":                  "",
-				"ca_data":                  "",
-				"cert_file":                "",
-				"key_file":                 "",
-				"cert_data":                "",
-				"key_data":                 "",
-			},
-		},
-	})
-
-	scoped, diags := factory.GetElasticsearchClientFromSDK(rd)
-	require.False(t, diags.HasError())
-	require.NotNil(t, scoped)
-
-	esClient, err := scoped.GetESClient()
-	require.NoError(t, err, "GetESClient must return a valid client")
 	require.NotNil(t, esClient)
 }
 
@@ -523,18 +469,6 @@ func TestGetElasticsearchClient_NilFactory(t *testing.T) {
 
 	_, diags = f.GetElasticsearchClient(ctx, emptyList)
 	assert.True(t, diags.HasError(), "GetElasticsearchClient on a nil factory must return an error diagnostic")
-}
-
-func TestGetElasticsearchClientFromSDK_NilFactory(t *testing.T) {
-	t.Parallel()
-	var f *ProviderClientFactory
-
-	rd := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
-		"elasticsearch_connection": providerschema.GetEsConnectionSchema("elasticsearch_connection", false),
-	}, map[string]any{})
-
-	_, diags := f.GetElasticsearchClientFromSDK(rd)
-	assert.True(t, diags.HasError(), "GetElasticsearchClientFromSDK on a nil factory must return an error diagnostic")
 }
 
 // --- GetESClient typed-client tests ---

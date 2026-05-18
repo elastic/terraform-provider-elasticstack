@@ -103,6 +103,10 @@ import (
 )
 
 const (
+	esKeyName    = "elasticsearch"
+	kbKeyName    = "kibana"
+	fleetKeyName = "fleet"
+
 	IncludeExperimentalEnvVar = "TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL"
 	AccTestVersion            = "acctest"
 	envVarEnabled             = "true"

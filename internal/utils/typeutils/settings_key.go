@@ -15,15 +15,12 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package tfsdkutils
+package typeutils
 
-import (
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+import "strings"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-)
-
-func DiffJSONSuppress(_, old, newValue string, _ *schema.ResourceData) bool {
-	result, _ := typeutils.JSONBytesEqual([]byte(old), []byte(newValue))
-	return result
+// ConvertSettingsKeyToTFFieldKey maps a dotted Elasticsearch settings key to the
+// Terraform attribute name used in flattened blocks (dots → underscores).
+func ConvertSettingsKeyToTFFieldKey(settingKey string) string {
+	return strings.ReplaceAll(settingKey, ".", "_")
 }
