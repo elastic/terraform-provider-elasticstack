@@ -261,18 +261,18 @@ func cloneStrPtr(p *string) *string {
 	if p == nil {
 		return nil
 	}
-	copyS := strings.TrimSpace(*p)
-	return &copyS
+	v := *p
+	return &v
 }
 
 func evidenceFromMergedPR(pr section.MergedPR, filenames []string) PullRequestEvidence {
 	labelCopy := append([]string{}, pr.Labels...)
 	return BuildPullRequestEvidence(
 		pr.Number,
-		strings.TrimSpace(pr.Title),
-		strings.TrimSpace(pr.URL),
-		strings.TrimSpace(pr.MergeCommitSHA),
-		strings.TrimSpace(pr.AuthorLogin),
+		pr.Title,
+		pr.URL,
+		pr.MergeCommitSHA,
+		pr.AuthorLogin,
 		labelCopy,
 		filenames,
 	)
