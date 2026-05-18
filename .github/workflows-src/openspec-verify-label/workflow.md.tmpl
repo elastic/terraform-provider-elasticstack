@@ -1,4 +1,5 @@
 ---
+imports: [shared/setup-dev.md]
 name: OpenSpec verify (label)
 description: >-
   When maintainers add the verify-openspec label to a pull request, verifies the PR against exactly
@@ -38,27 +39,7 @@ on:
 if: >-
   needs.pre_activation.outputs.label_verified == 'true' &&
   needs.pre_activation.outputs.selection_status == 'eligible'
-steps:
-  - name: Setup Go
-    uses: actions/setup-go@v6
-    with:
-      go-version-file: go.mod
-      cache: false
-  - name: Export Go paths for AWF chroot mode
-    run: |
-      echo "GOROOT=$(go env GOROOT)" >> "$GITHUB_ENV"
-      echo "GOPATH=$(go env GOPATH)" >> "$GITHUB_ENV"
-      echo "GOMODCACHE=$(go env GOMODCACHE)" >> "$GITHUB_ENV"
-  - name: Setup Node.js
-    uses: actions/setup-node@v6
-    with:
-      node-version-file: package.json
-  - name: Setup Terraform CLI
-    uses: hashicorp/setup-terraform@v4
-    with:
-      terraform_wrapper: false
-  - name: Setup repository dependencies
-    run: make setup
+steps: []
 engine:
   id: claude
   model: "llm-gateway/claude-opus-4-6"

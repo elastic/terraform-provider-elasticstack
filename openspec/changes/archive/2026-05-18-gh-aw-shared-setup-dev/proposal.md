@@ -4,11 +4,11 @@ Nine agentic workflows in `.github/workflows-src/` duplicate identical setup boi
 
 ## What Changes
 
-- **New**: Create `.github/workflows/shared/setup-dev.yml` — an opinionated, zero-option shared workflow that installs Go, Terraform, Node.js, exports GOROOT/GOPATH/GOMODCACHE/TERRAFORM_BIN to `$GITHUB_ENV`, and runs `make setup`.
+- **New**: Create `.github/workflows/shared/setup-dev.md` — an opinionated, zero-option shared workflow that installs Go, Terraform, Node.js, exports GOROOT/GOPATH/GOMODCACHE/TERRAFORM_BIN to `$GITHUB_ENV`, and runs `make setup`.
 - **Remove**: Delete the Elastic Stack setup scaffolding (`make docker-fleet`, `make set-kibana-password`, `make create-es-api-key`, `make setup-kibana-fleet`, `docker compose logs`) from `code-factory-issue` and `reproducer-factory-issue` workflows. These services are not accessible within the agent's chroot sandbox; they add dead weight.
 - **Remove**: Delete the `npm ci` step from `change-factory-issue` and `research-factory-issue`; `make setup` subsumes it.
 - **Remove**: Delete all inline dev-setup steps from the agent phase of `changelog-generation`, `kibana-spec-impact`, `schema-coverage-rotation`, `openspec-verify-label`, `ci-deadcode-removal-rotation` (agent phase only), `change-factory-issue`, `research-factory-issue`, `code-factory-issue`, and `reproducer-factory-issue`.
-- **Modify**: Add `imports: [shared/setup-dev.yml]` to the frontmatter of all 9 workflow `.md.tmpl` files.
+- **Modify**: Add `imports: [shared/setup-dev.md]` to the frontmatter of all 9 workflow `.md.tmpl` files.
 - **Modify**: Run the workflow compiler (`make compile-workflows`) to regenerate `.md` and `.lock.yml` files.
 
 ## Capabilities
@@ -22,7 +22,7 @@ Nine agentic workflows in `.github/workflows-src/` duplicate identical setup boi
 ## Impact
 
 - `.github/workflows-src/*/workflow.md.tmpl` — 9 templates modified (steps deleted, imports added)
-- `.github/workflows/shared/setup-dev.yml` — new shared file
+- `.github/workflows/shared/setup-dev.md` — new shared file
 - `.github/workflows/*.md` — regenerated via workflow compiler
 - `.github/workflows/*.lock.yml` — regenerated via `gh aw compile`
 - `code-factory-issue` and `reproducer-factory-issue` lose ~10 lines of non-functional Elastic Stack setup each

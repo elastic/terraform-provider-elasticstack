@@ -1,4 +1,5 @@
 ---
+imports: [shared/setup-dev.md]
 name: Dead-code Removal Rotation
 description: >-
   Scheduled dead-code cleanup workflow that rotates through highest-confidence
@@ -123,9 +124,7 @@ network:
   allowed: [defaults, node, go, elastic.litellm-prod.ai]
 if: >-
   needs.pre_activation.outputs.found == 'true'
-steps:
-  - name: Setup repository dependencies
-    run: make setup
+steps: []
 jobs:
   pre-activation:
     outputs:
