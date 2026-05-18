@@ -18,12 +18,16 @@
 package evidence_test
 
 import (
+	"context"
+	"errors"
 	"reflect"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/elastic/terraform-provider-elasticstack/scripts/changelog/internal/engine"
 	"github.com/elastic/terraform-provider-elasticstack/scripts/changelog/internal/evidence"
+	"github.com/elastic/terraform-provider-elasticstack/scripts/changelog/internal/section"
 )
 
 func TestClassifyPullRequestForChangelog_userFacingLabelWinsOverInternalDocs(t *testing.T) {
@@ -150,6 +154,267 @@ func TestBuildPullRequestEvidence_normalizedRow(t *testing.T) {
 
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("got %+v want %+v", got, want)
+	}
+}
+
+// pullFilesLister matches evidence.GatherOptions.ListPullRequestFilenames.
+type pullFilesLister func(context.Context, string, string, int) ([]string, error)
+
+// gatherStub implements engine.MergedPRGatherer for Gather orchestration tests.
+type gatherStub struct {
+	Recs            []section.MergedPR
+	Warn            []string
+	Err             error
+	GotCompareRange string
+}
+
+func (g *gatherStub) GatherMergedPRs(
+	ctx context.Context, owner, repo, compareRange string,
+) ([]section.MergedPR, []string, error) {
+	g.GotCompareRange = compareRange
+	if g.Err != nil {
+		return nil, append([]string(nil), g.Warn...), g.Err
+	}
+	out := append([]section.MergedPR(nil), g.Recs...)
+	return out, append([]string(nil), g.Warn...), nil
+}
+
+func TestGather_orchestration(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	fixedNow := time.Date(2026, 5, 1, 15, 30, 0, 123000000, time.UTC)
+	fixedNowFn := func() time.Time { return fixedNow }
+
+	baseOpts := func(stub engine.MergedPRGatherer, listFn pullFilesLister) evidence.GatherOptions {
+		return evidence.GatherOptions{
+			Owner:                    "elastic",
+			Repo:                     "repo",
+			CompareRange:             "v9..HEAD",
+			TargetVersion:            "2.0.0",
+			PreviousTag:              "v1.0.0",
+			Mode:                     "release",
+			PRGatherer:               stub,
+			ListPullRequestFilenames: listFn,
+			Now:                      fixedNowFn,
+		}
+	}
+
+	threePRStub := func() *gatherStub {
+		return &gatherStub{
+			Recs: []section.MergedPR{
+				{
+					Number: 101, Title: "UF", URL: "https://ex/101",
+					Labels: []string{"bug"}, Body: "",
+					MergeCommitSHA: "sha101", AuthorLogin: "a1",
+				},
+				{
+					Number: 102, Title: "In", URL: "https://ex/102",
+					Labels: []string{"internal"}, Body: "",
+					MergeCommitSHA: "sha102", AuthorLogin: "a2",
+				},
+				{
+					Number: 103, Title: "Un", URL: "https://ex/103",
+					Labels: []string{}, Body: "",
+					MergeCommitSHA: "sha103", AuthorLogin: "a3",
+				},
+			},
+		}
+	}
+
+	listByPR := func(errOnPR int, errVal error) pullFilesLister {
+		return func(_ context.Context, _, _ string, pr int) ([]string, error) {
+			if pr == errOnPR {
+				return nil, errVal
+			}
+			switch pr {
+			case 101:
+				return []string{"CHANGELOG.md"}, nil
+			case 102:
+				return []string{"README.md"}, nil
+			case 103:
+				return []string{"misc.txt"}, nil
+			default:
+				return nil, nil
+			}
+		}
+	}
+
+	tests := []struct {
+		name              string
+		opts              evidence.GatherOptions
+		wantErr           bool
+		wantErrContains   string
+		wantWarnSubstr    []string
+		wantGeneratedAt   string
+		wantPRCount       int
+		wantUF            int
+		wantInternal      int
+		wantUncertain     int
+		wantTargetSection string
+		wantCompareInMan  string
+		checkTitles       []string // len must match merged PR order when set
+		checkEmptyFilesPR int      // PR number expected to have nil/empty touched_files
+		assertStubHEAD    bool
+	}{
+		{
+			name: "success_three_prs_manifest_shape",
+			opts: func() evidence.GatherOptions {
+				st := threePRStub()
+				o := baseOpts(st, listByPR(0, nil))
+				o.CompareRange = "v9..HEAD"
+				return o
+			}(),
+			wantGeneratedAt:   evidence.FormatGeneratedAtISO(fixedNow),
+			wantPRCount:       3,
+			wantUF:            1,
+			wantInternal:      1,
+			wantUncertain:     1,
+			wantTargetSection: "## [2.0.0] - 2026-05-01",
+			wantCompareInMan:  "v9..HEAD",
+			checkTitles:       []string{"UF", "In", "Un"},
+		},
+		{
+			name: "pr_gatherer_error",
+			opts: func() evidence.GatherOptions {
+				st := &gatherStub{Err: errors.New("upstream")}
+				o := baseOpts(st, listByPR(0, nil))
+				return o
+			}(),
+			wantErr:         true,
+			wantErrContains: "gather merged pull requests",
+			wantWarnSubstr:  nil,
+			wantPRCount:     -1,
+		},
+		{
+			name: "list_files_error_one_pr",
+			opts: func() evidence.GatherOptions {
+				st := threePRStub()
+				o := baseOpts(st, listByPR(102, errors.New("rate limit")))
+				return o
+			}(),
+			wantGeneratedAt:   evidence.FormatGeneratedAtISO(fixedNow),
+			wantPRCount:       3,
+			wantUF:            1,
+			wantInternal:      1,
+			wantUncertain:     1,
+			wantTargetSection: "## [2.0.0] - 2026-05-01",
+			wantCompareInMan:  "v9..HEAD",
+			wantWarnSubstr:    []string{"Failed to list files for PR #102"},
+			checkEmptyFilesPR: 102,
+		},
+		{
+			name: "empty_pr_list",
+			opts: func() evidence.GatherOptions {
+				st := &gatherStub{Recs: nil}
+				o := baseOpts(st, listByPR(0, nil))
+				return o
+			}(),
+			wantGeneratedAt:   evidence.FormatGeneratedAtISO(fixedNow),
+			wantPRCount:       0,
+			wantUF:            0,
+			wantInternal:      0,
+			wantUncertain:     0,
+			wantTargetSection: "## [2.0.0] - 2026-05-01",
+			wantCompareInMan:  "v9..HEAD",
+		},
+		{
+			name: "default_compare_range_HEAD",
+			opts: func() evidence.GatherOptions {
+				st := &gatherStub{Recs: []section.MergedPR{
+					{Number: 1, Title: "Only", URL: "u", Labels: []string{"bug"}, MergeCommitSHA: "m", AuthorLogin: "u"},
+				}}
+				o := baseOpts(st, listByPR(0, nil))
+				o.CompareRange = ""
+				return o
+			}(),
+			wantGeneratedAt:  evidence.FormatGeneratedAtISO(fixedNow),
+			wantPRCount:      1,
+			wantUF:            1,
+			wantInternal:      0,
+			wantUncertain:     0,
+			wantTargetSection: "## [2.0.0] - 2026-05-01",
+			wantCompareInMan:  "HEAD",
+			assertStubHEAD:   true,
+			checkTitles:      []string{"Only"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			stub, _ := tt.opts.PRGatherer.(*gatherStub)
+
+			man, warns, err := evidence.Gather(ctx, tt.opts)
+			if tt.wantErr {
+				if err == nil || !strings.Contains(err.Error(), tt.wantErrContains) {
+					t.Fatalf("err: %v (want contains %q)", err, tt.wantErrContains)
+				}
+				if !reflect.DeepEqual(man, evidence.Manifest{}) {
+					t.Fatalf("want empty manifest on error, got %+v", man)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, sub := range tt.wantWarnSubstr {
+				found := false
+				for _, w := range warns {
+					if strings.Contains(w, sub) {
+						found = true
+						break
+					}
+				}
+				if !found {
+					t.Fatalf("missing warning containing %q in %#v", sub, warns)
+				}
+			}
+			if man.GeneratedAt != tt.wantGeneratedAt {
+				t.Fatalf("generated_at: got %q want %q", man.GeneratedAt, tt.wantGeneratedAt)
+			}
+			if man.TargetSection != tt.wantTargetSection {
+				t.Fatalf("target_section: got %q want %q", man.TargetSection, tt.wantTargetSection)
+			}
+			if man.CompareRange != tt.wantCompareInMan {
+				t.Fatalf("compare_range: got %q want %q", man.CompareRange, tt.wantCompareInMan)
+			}
+			if tt.wantPRCount >= 0 && man.PRCount != tt.wantPRCount {
+				t.Fatalf("pr_count: got %d want %d", man.PRCount, tt.wantPRCount)
+			}
+			if man.UserFacingCount != tt.wantUF {
+				t.Fatalf("user_facing_count: got %d want %d", man.UserFacingCount, tt.wantUF)
+			}
+			if man.InternalCount != tt.wantInternal {
+				t.Fatalf("internal_count: got %d want %d", man.InternalCount, tt.wantInternal)
+			}
+			if man.UncertainCount != tt.wantUncertain {
+				t.Fatalf("uncertain_count: got %d want %d", man.UncertainCount, tt.wantUncertain)
+			}
+			if len(tt.checkTitles) != 0 {
+				if len(man.PullRequests) != len(tt.checkTitles) {
+					t.Fatalf("pull_requests len %d want %d", len(man.PullRequests), len(tt.checkTitles))
+				}
+				for i, wantTitle := range tt.checkTitles {
+					if man.PullRequests[i].Title != wantTitle {
+						t.Fatalf("PR[%d].Title: got %q want %q", i, man.PullRequests[i].Title, wantTitle)
+					}
+				}
+			}
+			if tt.checkEmptyFilesPR != 0 {
+				for _, row := range man.PullRequests {
+					if row.Number == tt.checkEmptyFilesPR {
+						if len(row.TouchedFiles) != 0 {
+							t.Fatalf("PR %d touched_files: got %#v want empty", row.Number, row.TouchedFiles)
+						}
+						return
+					}
+				}
+				t.Fatalf("missing PR %d in manifest", tt.checkEmptyFilesPR)
+			}
+			if tt.assertStubHEAD && stub != nil && stub.GotCompareRange != "HEAD" {
+				t.Fatalf("gatherer compare range: got %q want HEAD", stub.GotCompareRange)
+			}
+		})
 	}
 }
 
