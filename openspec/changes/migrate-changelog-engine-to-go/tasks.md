@@ -17,9 +17,9 @@
 
 ## 3. Implement CHANGELOG.md rewriter
 
-- [ ] 3.1 Implement `internal/rewriter/section.go` reproducing `lib/changelog-rewriter.js`'s `rewriteChangelogSection` (replace `## [Unreleased]` or `## [x.y.z] - <date>` block in place, preserving surrounding sections).
-- [ ] 3.2 Implement `internal/rewriter/links.go` reproducing the link-table maintenance from `lib/changelog-rewriter.js` (preserve sort order, dedupe).
-- [ ] 3.3 Port `lib/changelog-rewriter.test.mjs` cases into `internal/rewriter/section_test.go` and `internal/rewriter/links_test.go`, including idempotence checks.
+- [x] 3.1 Implement `internal/rewriter/section.go` reproducing `lib/changelog-rewriter.js`'s `rewriteChangelogSection` (replace `## [Unreleased]` or `## [x.y.z] - <date>` block in place, preserving surrounding sections).
+- [x] 3.2 Implement `internal/rewriter/links.go` reproducing the link-table maintenance from `lib/changelog-rewriter.js` (preserve sort order, dedupe).
+- [x] 3.3 Port `lib/changelog-rewriter.test.mjs` cases into `internal/rewriter/section_test.go` and `internal/rewriter/links_test.go`, including idempotence checks.
 
 ## 4. Implement engine modes
 
