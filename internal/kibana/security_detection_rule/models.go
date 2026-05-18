@@ -636,35 +636,35 @@ func (d Data) parseResourceUUID(diags *diag.Diagnostics) (uuid.UUID, bool) {
 // reconcileEmptyListsFromPlan copies explicit empty lists from reference (plan or
 // prior state) into target (post-read data) so that Optional-only list attributes
 // set to [] do not produce "Provider produced inconsistent result after apply".
+//
+// Only these seven attributes are reconciled because they are Optional-only list
+// fields that the Kibana API omits when empty, causing the provider read path to
+// return null instead of the planned empty list. Other list fields (Author, Tags,
+// FalsePositives, References, etc.) are either handled by API defaults or were not
+// reported as affected by this issue.
 func reconcileEmptyListsFromPlan(ctx context.Context, reference, target *Data) {
-	// Top-level attributes
-	if isKnownEmptyList(reference.Actions) && target.Actions.IsNull() {
-		target.Actions = reference.Actions
+	reconcileList := func(ref, tgt *types.List) {
+		if isKnownEmptyList(*ref) && tgt.IsNull() {
+			*tgt = *ref
+		}
 	}
-	if isKnownEmptyList(reference.ExceptionsList) && target.ExceptionsList.IsNull() {
-		target.ExceptionsList = reference.ExceptionsList
-	}
-	if isKnownEmptyList(reference.SeverityMapping) && target.SeverityMapping.IsNull() {
-		target.SeverityMapping = reference.SeverityMapping
-	}
-	if isKnownEmptyList(reference.RiskScoreMapping) && target.RiskScoreMapping.IsNull() {
-		target.RiskScoreMapping = reference.RiskScoreMapping
-	}
-	if isKnownEmptyList(reference.RelatedIntegrations) && target.RelatedIntegrations.IsNull() {
-		target.RelatedIntegrations = reference.RelatedIntegrations
-	}
-	if isKnownEmptyList(reference.Threat) && target.Threat.IsNull() {
-		target.Threat = reference.Threat
-	}
-	if isKnownEmptyList(reference.ThreatMapping) && target.ThreatMapping.IsNull() {
-		target.ThreatMapping = reference.ThreatMapping
-	}
+
+	reconcileList(&reference.Actions, &target.Actions)
+	reconcileList(&reference.ExceptionsList, &target.ExceptionsList)
+	reconcileList(&reference.SeverityMapping, &target.SeverityMapping)
+	reconcileList(&reference.RiskScoreMapping, &target.RiskScoreMapping)
+	reconcileList(&reference.RelatedIntegrations, &target.RelatedIntegrations)
+	reconcileList(&reference.Threat, &target.Threat)
+	reconcileList(&reference.ThreatMapping, &target.ThreatMapping)
 
 	// Nested threat technique / subtechnique reconciliation
 	reconcileNestedThreatLists(ctx, reference, target)
 }
 
-// isKnownEmptyList reports whether v is a known, non-null list with zero elements.
+// isKnownEmptyList returns true when the practitioner explicitly configured the
+// list as []. We preserve this distinction so the provider does not silently
+// replace [] with null in state, which would violate the Plugin Framework invariant
+// that planned values must be returned unchanged.
 func isKnownEmptyList(v types.List) bool {
 	return typeutils.IsKnown(v) && len(v.Elements()) == 0
 }
@@ -691,13 +691,17 @@ func reconcileNestedThreatLists(ctx context.Context, reference, target *Data) {
 	updated := false
 	for i := range refThreats {
 		// Reconcile technique list
+		techniqueUpdated := false
 		if isKnownEmptyList(refThreats[i].Technique) && targetThreats[i].Technique.IsNull() {
 			targetThreats[i].Technique = refThreats[i].Technique
 			updated = true
+			techniqueUpdated = true
 		}
 
-		// Reconcile subtechnique lists inside each technique entry
-		if typeutils.IsKnown(refThreats[i].Technique) && typeutils.IsKnown(targetThreats[i].Technique) {
+		// Reconcile subtechnique lists inside each technique entry.
+		// Skip when the technique list itself was just reconciled above,
+		// because an empty technique list has no subtechnique entries to process.
+		if !techniqueUpdated && typeutils.IsKnown(refThreats[i].Technique) && typeutils.IsKnown(targetThreats[i].Technique) {
 			var refTechs, targetTechs []ThreatTechniqueModel
 			if diag := refThreats[i].Technique.ElementsAs(ctx, &refTechs, false); diag.HasError() {
 				continue
@@ -706,24 +710,28 @@ func reconcileNestedThreatLists(ctx context.Context, reference, target *Data) {
 				continue
 			}
 			if len(refTechs) == len(targetTechs) {
+				subUpdated := false
 				for j := range refTechs {
 					if isKnownEmptyList(refTechs[j].Subtechnique) && targetTechs[j].Subtechnique.IsNull() {
 						targetTechs[j].Subtechnique = refTechs[j].Subtechnique
 						updated = true
+						subUpdated = true
 					}
 				}
-				// Rebuild technique list with updated subtechniques
-				rebuiltTechs, techDiags := types.ListValueFrom(ctx, getThreatTechniqueElementType(), targetTechs)
-				if techDiags.HasError() {
-					continue
+				if subUpdated {
+					// Rebuild technique list with updated subtechniques
+					rebuiltTechs, techDiags := types.ListValueFrom(ctx, getThreatTechniqueElementType(), targetTechs)
+					if techDiags.HasError() {
+						continue
+					}
+					targetThreats[i].Technique = rebuiltTechs
 				}
-				targetThreats[i].Technique = rebuiltTechs
 			}
 		}
 	}
 
 	// Rebuild the target threat list with updated elements
-	if updated && len(targetThreats) > 0 {
+	if updated {
 		rebuilt, rebuildDiags := types.ListValueFrom(ctx, getThreatElementType(), targetThreats)
 		if rebuildDiags.HasError() {
 			return

@@ -2270,12 +2270,16 @@ func TestReconcileEmptyListsFromPlan(t *testing.T) {
 	emptyThreatMapping := types.ListValueMust(getThreatMappingElementType(), []attr.Value{})
 
 	tests := []struct {
-		name           string
-		reference      Data
-		target         Data
-		expectActions  types.List
-		expectThreat   types.List
-		expectSeverity types.List
+		name                      string
+		reference                 Data
+		target                    Data
+		expectActions             types.List
+		expectExceptionsList      types.List
+		expectSeverityMapping     types.List
+		expectRiskScoreMapping    types.List
+		expectRelatedIntegrations types.List
+		expectThreat              types.List
+		expectThreatMapping       types.List
 	}{
 		{
 			name: "null reference does not overwrite null target",
@@ -2331,9 +2335,13 @@ func TestReconcileEmptyListsFromPlan(t *testing.T) {
 				Threat:              types.ListNull(getThreatElementType()),
 				ThreatMapping:       types.ListNull(getThreatMappingElementType()),
 			},
-			expectActions:  emptyActions,
-			expectThreat:   emptyThreat,
-			expectSeverity: emptySeverityMapping,
+			expectActions:             emptyActions,
+			expectExceptionsList:      emptyExceptions,
+			expectSeverityMapping:     emptySeverityMapping,
+			expectRiskScoreMapping:    emptyRiskScoreMapping,
+			expectRelatedIntegrations: emptyRelatedIntegrations,
+			expectThreat:              emptyThreat,
+			expectThreatMapping:       emptyThreatMapping,
 		},
 	}
 
@@ -2341,34 +2349,20 @@ func TestReconcileEmptyListsFromPlan(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			reconcileEmptyListsFromPlan(ctx, &tt.reference, &tt.target)
 
-			require.Equal(t, tt.expectActions.IsNull(), tt.target.Actions.IsNull(), "Actions null mismatch")
-			if !tt.expectActions.IsNull() {
-				require.Len(t, tt.target.Actions.Elements(), len(tt.expectActions.Elements()), "Actions length mismatch")
+			assertList := func(expected, actual types.List, field string) {
+				require.Equal(t, expected.IsNull(), actual.IsNull(), "%s null mismatch", field)
+				if !expected.IsNull() {
+					require.Len(t, actual.Elements(), len(expected.Elements()), "%s length mismatch", field)
+				}
 			}
-			require.Equal(t, tt.expectThreat.IsNull(), tt.target.Threat.IsNull(), "Threat null mismatch")
-			if !tt.expectThreat.IsNull() {
-				require.Len(t, tt.target.Threat.Elements(), len(tt.expectThreat.Elements()), "Threat length mismatch")
-			}
-			require.Equal(t, tt.expectSeverity.IsNull(), tt.target.SeverityMapping.IsNull(), "SeverityMapping null mismatch")
-			if !tt.expectSeverity.IsNull() {
-				require.Len(t, tt.target.SeverityMapping.Elements(), len(tt.expectSeverity.Elements()), "SeverityMapping length mismatch")
-			}
-			require.Equal(t, tt.reference.ExceptionsList.IsNull(), tt.target.ExceptionsList.IsNull(), "ExceptionsList null mismatch")
-			if !tt.reference.ExceptionsList.IsNull() {
-				require.Len(t, tt.target.ExceptionsList.Elements(), len(tt.reference.ExceptionsList.Elements()), "ExceptionsList length mismatch")
-			}
-			require.Equal(t, tt.reference.RiskScoreMapping.IsNull(), tt.target.RiskScoreMapping.IsNull(), "RiskScoreMapping null mismatch")
-			if !tt.reference.RiskScoreMapping.IsNull() {
-				require.Len(t, tt.target.RiskScoreMapping.Elements(), len(tt.reference.RiskScoreMapping.Elements()), "RiskScoreMapping length mismatch")
-			}
-			require.Equal(t, tt.reference.RelatedIntegrations.IsNull(), tt.target.RelatedIntegrations.IsNull(), "RelatedIntegrations null mismatch")
-			if !tt.reference.RelatedIntegrations.IsNull() {
-				require.Len(t, tt.target.RelatedIntegrations.Elements(), len(tt.reference.RelatedIntegrations.Elements()), "RelatedIntegrations length mismatch")
-			}
-			require.Equal(t, tt.reference.ThreatMapping.IsNull(), tt.target.ThreatMapping.IsNull(), "ThreatMapping null mismatch")
-			if !tt.reference.ThreatMapping.IsNull() {
-				require.Len(t, tt.target.ThreatMapping.Elements(), len(tt.reference.ThreatMapping.Elements()), "ThreatMapping length mismatch")
-			}
+
+			assertList(tt.expectActions, tt.target.Actions, "Actions")
+			assertList(tt.expectExceptionsList, tt.target.ExceptionsList, "ExceptionsList")
+			assertList(tt.expectSeverityMapping, tt.target.SeverityMapping, "SeverityMapping")
+			assertList(tt.expectRiskScoreMapping, tt.target.RiskScoreMapping, "RiskScoreMapping")
+			assertList(tt.expectRelatedIntegrations, tt.target.RelatedIntegrations, "RelatedIntegrations")
+			assertList(tt.expectThreat, tt.target.Threat, "Threat")
+			assertList(tt.expectThreatMapping, tt.target.ThreatMapping, "ThreatMapping")
 		})
 	}
 }
@@ -2388,14 +2382,15 @@ func TestReconcileNestedThreatLists(t *testing.T) {
 	})
 
 	buildThreatList := func(technique types.List) types.List {
-		list, _ := types.ListValueFrom(ctx, getThreatElementType(), []ThreatModel{
+		list, diags := types.ListValueFrom(ctx, getThreatElementType(), []ThreatModel{
 			{Framework: types.StringValue("MITRE ATT&CK"), Tactic: tacticObj, Technique: technique},
 		})
+		require.Empty(t, diags)
 		return list
 	}
 
 	buildTechniqueList := func(subtechnique types.List) types.List {
-		list, _ := types.ListValueFrom(ctx, getThreatTechniqueElementType(), []ThreatTechniqueModel{
+		list, diags := types.ListValueFrom(ctx, getThreatTechniqueElementType(), []ThreatTechniqueModel{
 			{
 				ID:           types.StringValue("T1190"),
 				Name:         types.StringValue("Exploit Public-Facing Application"),
@@ -2403,6 +2398,7 @@ func TestReconcileNestedThreatLists(t *testing.T) {
 				Subtechnique: subtechnique,
 			},
 		})
+		require.Empty(t, diags)
 		return list
 	}
 
@@ -2453,7 +2449,7 @@ func TestReconcileNestedThreatLists(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			reconcileEmptyListsFromPlan(ctx, &tt.reference, &tt.target)
+			reconcileNestedThreatLists(ctx, &tt.reference, &tt.target)
 
 			var targetThreats []ThreatModel
 			errDiags := tt.target.Threat.ElementsAs(ctx, &targetThreats, false)
