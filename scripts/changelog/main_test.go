@@ -22,6 +22,19 @@ import (
 	"testing"
 )
 
+func TestRun_missingSubcommand(t *testing.T) {
+	t.Parallel()
+	var stderr strings.Builder
+	err := run([]string{}, &stderr)
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	out := stderr.String()
+	if !strings.Contains(out, "Usage: changelog") {
+		t.Fatalf("expected usage output, stderr:\n%s", out)
+	}
+}
+
 func TestRun_unknownSubcommand(t *testing.T) {
 	t.Parallel()
 	var stderr strings.Builder
