@@ -78,7 +78,7 @@ func RewriteSection(content []byte, rewrite SectionRewrite, mode RewriteMode, ta
 	}
 
 	if mode == ModeRelease {
-		return []byte(rewriteRelease(lines, newSectionContent, targetStart)), nil
+		return []byte(rewriteRelease(lines, newSectionContent, targetStart, string(content))), nil
 	}
 
 	if targetStart == -1 {
@@ -111,7 +111,7 @@ func indexOfLinePrefix(lines []string, prefix string) int {
 	return -1
 }
 
-func rewriteRelease(lines []string, newSectionContent string, targetStart int) string {
+func rewriteRelease(lines []string, newSectionContent string, targetStart int, original string) string {
 	unreleasedStart := indexOfHeading(lines, unreleasedHeadingMatch)
 	var ranges [][2]int
 	if unreleasedStart != -1 {
@@ -123,7 +123,7 @@ func rewriteRelease(lines []string, newSectionContent string, targetStart int) s
 	ranges = sortRangesByStart(ranges)
 
 	if len(ranges) == 0 {
-		return newSectionContent + "\n\n" + strings.Join(lines, "\n")
+		return newSectionContent + "\n\n" + original
 	}
 
 	return spliceReleaseSectionRanges(lines, ranges, newSectionContent)
