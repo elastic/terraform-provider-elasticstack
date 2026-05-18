@@ -530,7 +530,8 @@ test('code-factory check-duplicate-pr.js branches on intake mode', () => {
 
 test('code-factory finalize-gate.js uses shared parseFinalizeGateEnv path', () => {
   const source = readFileSync(path.join(factoryRunnersDir, 'finalize-gate.js'), 'utf8');
-  assert.match(source, /computeGateReason\(parseFinalizeGateEnv\(process\.env\)\)/);
+  assert.match(source, /parseFinalizeGateEnv\(process\.env\)/);
+  assert.match(source, /computeGateReason\(/);
 });
 
 test('code-factory check-actor-trust.js uses actorTrustWhenSenderMissing', () => {

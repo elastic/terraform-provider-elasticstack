@@ -325,13 +325,14 @@ jobs:
       - id: gate
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         env:
+          GATE_NAME: provider
           PROVIDER_GATE_CLASSIFY_RESULT: ${{ needs.classify.outputs.provider_changes }}
           PROVIDER_GATE_BUILD_RESULT: ${{ needs.build.result }}
           PROVIDER_GATE_LINT_RESULT: ${{ needs.lint.result }}
           PROVIDER_GATE_TEST_RESULT: ${{ needs.test.result }}
         with:
           script: |
-            const gate = require('${{ github.workspace }}/.github/scripts/workflows/provider/gate.js');
+            const gate = require('${{ github.workspace }}/.github/scripts/workflows/lib/runners/gate.js');
             await gate({ github, context, core });
 
   auto-approve:

@@ -21,7 +21,6 @@ const {
 } = require('./change-factory-issue.js');
 const { ISSUE_BRANCH_PREFIX, DUPLICATE_LINKAGE_MODE } = require('./intake/change-factory-constants.js');
 
-const scriptsDir = path.resolve(__dirname, '../change-factory');
 const factoryRunnersDir = path.resolve(__dirname, 'factory-runners');
 const workflowSourcePath = path.resolve(__dirname, '../../../workflows/change-factory-issue.md');
 const lockCompiledPath = path.resolve(__dirname, '../../../workflows/change-factory-issue.lock.yml');
@@ -541,9 +540,9 @@ test('change-factory-issue workflow source wiring matches intake contract', () =
     '/lib/factory-runners/check-actor-trust.js',
     '/change-factory/fetch-issue-comments.js',
     '/change-factory/extract-research-comment.js',
-    '/change-factory/check-duplicate-pr.js',
+    '/lib/factory-runners/check-duplicate-pr.js',
     '/change-factory/notify-duplicate-blocked.js',
-    '/change-factory/sanitize-context.js',
+    '/lib/factory-runners/sanitize-context.js',
     '/lib/factory-runners/remove-trigger-label.js',
     '/phase-label/set.js',
     '/lib/factory-runners/finalize-gate.js',
@@ -768,13 +767,14 @@ test('change-factory-issue agent prompt matches stable OpenSpec proposal contrac
 });
 
 test('check-duplicate-pr.js resolves expected branch via shared issueBranchName', () => {
-  const source = readFileSync(path.join(scriptsDir, 'check-duplicate-pr.js'), 'utf8');
+  const source = readFileSync(path.join(factoryRunnersDir, 'check-duplicate-pr.js'), 'utf8');
   assert.match(source, /const expectedBranch = issueBranchName\(issueNumber\);/);
 });
 
 test('change-factory finalize-gate.js uses shared parseFinalizeGateEnv path', () => {
   const source = readFileSync(path.join(factoryRunnersDir, 'finalize-gate.js'), 'utf8');
-  assert.match(source, /computeGateReason\(parseFinalizeGateEnv\(process\.env\)\)/);
+  assert.match(source, /parseFinalizeGateEnv\(process\.env\)/);
+  assert.match(source, /computeGateReason\(/);
 });
 
 test('change-factory check-actor-trust.js uses actorTrustWhenSenderMissing', () => {

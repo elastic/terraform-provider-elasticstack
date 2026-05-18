@@ -274,14 +274,15 @@ on:
         steps.check_duplicate_pr.outputs.duplicate_pr_found != 'true' &&
         steps.normalize_context.outputs.issue_number != ''
       env:
+        FACTORY_NAME: reproducer-factory
         ISSUE_BODY: ${{ steps.normalize_context.outputs.issue_body }}
         ISSUE_COMMENTS: ${{ steps.normalize_context.outputs.issue_comments }}
-        PRIOR_REPRODUCER_COMMENT: ${{ steps.normalize_context.outputs.prior_reproducer_comment }}
+        PRIOR_FACTORY_COMMENT: ${{ steps.normalize_context.outputs.prior_reproducer_comment }}
       uses: actions/github-script@v9
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
-          const fn = require('${{ github.workspace }}/.github/scripts/workflows/reproducer-factory/write-context-files.js');
+          const fn = require('${{ github.workspace }}/.github/scripts/workflows/lib/factory-runners/write-context-files.js');
           await fn({ github, context, core });
     - name: Upload issue context artifact
       if: >-

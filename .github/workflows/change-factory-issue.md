@@ -85,11 +85,13 @@ on:
       if: >-
         steps.qualify_trigger.outputs.event_eligible == 'true' &&
         steps.check_actor_trust.outputs.actor_trusted == 'true'
+      env:
+        FACTORY_NAME: change-factory
       uses: actions/github-script@v9
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
-          const fn = require('${{ github.workspace }}/.github/scripts/workflows/change-factory/check-duplicate-pr.js');
+          const fn = require('${{ github.workspace }}/.github/scripts/workflows/lib/factory-runners/check-duplicate-pr.js');
           await fn({ github, context, core });
     - name: Notify duplicate blocked
       id: notify_duplicate_blocked
@@ -113,13 +115,14 @@ on:
         steps.check_actor_trust.outputs.actor_trusted == 'true' &&
         steps.check_duplicate_pr.outputs.duplicate_pr_found != 'true'
       env:
+        FACTORY_NAME: change-factory
         ISSUE_BODY: ${{ steps.capture_issue_context.outputs.issue_body }}
         HUMAN_COMMENTS: ${{ steps.extract_research_comment.outputs.human_comments }}
       uses: actions/github-script@v9
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
-          const fn = require('${{ github.workspace }}/.github/scripts/workflows/change-factory/sanitize-context.js');
+          const fn = require('${{ github.workspace }}/.github/scripts/workflows/lib/factory-runners/sanitize-context.js');
           await fn({ github, context, core });
     - name: Upload issue context artifact
       if: >-

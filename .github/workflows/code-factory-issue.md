@@ -236,13 +236,14 @@ on:
         steps.normalize_context.outputs.actor_trusted == 'true' &&
         steps.check_duplicate_pr.outputs.duplicate_pr_found != 'true'
       env:
+        FACTORY_NAME: code-factory
         ISSUE_BODY: ${{ steps.normalize_context.outputs.issue_body }}
         HUMAN_COMMENTS: ${{ steps.fetch_issue_comments.outputs.human_comments }}
       uses: actions/github-script@v9
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
-          const fn = require('${{ github.workspace }}/.github/scripts/workflows/code-factory/sanitize-context.js');
+          const fn = require('${{ github.workspace }}/.github/scripts/workflows/lib/factory-runners/sanitize-context.js');
           await fn({ github, context, core });
     - name: Upload issue context artifact
       if: >-

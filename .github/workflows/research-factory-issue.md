@@ -245,6 +245,7 @@ on:
       if: always()
       uses: actions/github-script@v9
       env:
+        FACTORY_NAME: research-factory
         EVENT_ELIGIBLE: ${{ steps.normalize_context.outputs.event_eligible }}
         EVENT_ELIGIBLE_REASON: ${{ steps.normalize_context.outputs.event_eligible_reason }}
         ACTOR_TRUSTED: ${{ steps.normalize_context.outputs.actor_trusted }}
@@ -252,7 +253,7 @@ on:
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
-          const fn = require('${{ github.workspace }}/.github/scripts/workflows/research-factory/finalize-gate.js');
+          const fn = require('${{ github.workspace }}/.github/scripts/workflows/lib/factory-runners/finalize-gate.js');
           await fn({ github, context, core });
     - name: Write issue context to files
       id: write_context_files
@@ -261,14 +262,15 @@ on:
         steps.normalize_context.outputs.actor_trusted == 'true' &&
         steps.normalize_context.outputs.issue_number != ''
       env:
+        FACTORY_NAME: research-factory
         ISSUE_BODY: ${{ steps.normalize_context.outputs.issue_body }}
         ISSUE_COMMENTS: ${{ steps.normalize_context.outputs.issue_comments }}
-        PRIOR_RESEARCH_COMMENT: ${{ steps.normalize_context.outputs.prior_research_comment }}
+        PRIOR_FACTORY_COMMENT: ${{ steps.normalize_context.outputs.prior_research_comment }}
       uses: actions/github-script@v9
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
-          const fn = require('${{ github.workspace }}/.github/scripts/workflows/research-factory/write-context-files.js');
+          const fn = require('${{ github.workspace }}/.github/scripts/workflows/lib/factory-runners/write-context-files.js');
           await fn({ github, context, core });
     - name: Upload issue context artifact
       if: >
