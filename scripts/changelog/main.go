@@ -24,11 +24,18 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"flag"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
+	"strings"
+	"time"
+
+	"github.com/elastic/terraform-provider-elasticstack/scripts/changelog/internal/engine"
+	"github.com/elastic/terraform-provider-elasticstack/scripts/changelog/internal/githubx"
 )
 
 func main() {
@@ -80,12 +87,113 @@ func cmdGatherEvidence(args []string, stderr io.Writer) error {
 }
 
 func cmdRunEngine(args []string, stderr io.Writer) error {
-	fs := flag.NewFlagSet("run-engine", flag.ContinueOnError)
-	fs.SetOutput(stderr)
-	if err := fs.Parse(args); err != nil {
+	ctx := context.Background()
+	fsFlag := flag.NewFlagSet("run-engine", flag.ContinueOnError)
+	fsFlag.SetOutput(stderr)
+	modeFlag := fsFlag.String("mode", "",
+		"changelog mode: unreleased|release (defaults to $MODE or unreleased)")
+	targetVerFlag := fsFlag.String("target-version", "",
+		"semver X.Y.Z without leading v for release (defaults to $TARGET_VERSION)")
+	if err := fsFlag.Parse(args); err != nil {
 		return err
 	}
-	return errors.New("not yet implemented: run-engine")
+
+	mode := strings.TrimSpace(*modeFlag)
+	if mode == "" {
+		mode = strings.TrimSpace(os.Getenv(githubx.EnvMode))
+	}
+	if mode == "" {
+		mode = engine.ModeUnreleased
+	}
+
+	targetVersion := strings.TrimSpace(*targetVerFlag)
+	if targetVersion == "" {
+		targetVersion = strings.TrimSpace(os.Getenv(githubx.EnvTargetVersion))
+	}
+
+	changelogPath := strings.TrimSpace(os.Getenv(githubx.EnvChangelogPath))
+	if changelogPath == "" {
+		changelogPath = "CHANGELOG.md"
+	}
+
+	targetBranchOverride := strings.TrimSpace(os.Getenv(githubx.EnvTargetBranch))
+
+	owner, repo, err := githubx.OwnerRepoFromEnv()
+	if err != nil {
+		return fmt.Errorf("run-engine: github repository env: %w", err)
+	}
+
+	client, err := githubx.NewGitHubClient(ctx, githubx.GitHubToken())
+	if err != nil {
+		return err
+	}
+
+	gather := &gitMergedPRGatherer{client: client, execer: githubx.ShellGit{}}
+
+	res, err := engine.Run(ctx, engine.Options{
+		Mode:          mode,
+		TargetVersion: targetVersion,
+		Owner:         owner,
+		Repo:          repo,
+		ChangelogPath: changelogPath,
+		Now:           time.Now,
+		FS:            osChangelogFS{},
+		Git:           githubx.ShellGit{},
+		Gather:        gather,
+	})
+	if err != nil {
+		return err
+	}
+
+	effectiveBranch := targetBranchOverride
+	if effectiveBranch == "" {
+		effectiveBranch = res.TargetBranch
+	}
+
+	outPath := githubx.GitHubOutputPath()
+	if outPath != "" {
+		appendOut := func(name, value string) error {
+			if perr := githubx.AppendGitHubOutput(outPath, name, value); perr != nil {
+				return fmt.Errorf("GITHUB_OUTPUT (%s): %w", name, perr)
+			}
+			return nil
+		}
+		writes := [][2]string{
+			{"mode", mode},
+			{"target_version", res.TargetVersionOutput},
+			{"previous_tag", res.PreviousTag},
+			{"compare_range", res.CompareRange},
+			{"target_branch", effectiveBranch},
+			{"has_prs", boolGitHubActionsString(res.HasPRs)},
+			{"has_user_facing_changes", boolGitHubActionsString(res.HasUserFacingChanges)},
+			{"section_header", res.SectionHeader},
+		}
+		for _, kv := range writes {
+			if werr := appendOut(kv[0], kv[1]); werr != nil {
+				return werr
+			}
+		}
+	}
+
+	return nil
+}
+
+// osChangelogFS implements engine.FS backed by OS file operations.
+type osChangelogFS struct{}
+
+func (osChangelogFS) ReadFile(path string) ([]byte, error) {
+	return os.ReadFile(path)
+}
+
+func (osChangelogFS) WriteFile(path string, data []byte, perm fs.FileMode) error {
+	return os.WriteFile(path, data, perm)
+}
+
+func boolGitHubActionsString(b bool) string {
+	if b {
+		return "true"
+	}
+	return "false"
 }
 
 func cmdManageUnreleasedPR(args []string, stderr io.Writer) error {

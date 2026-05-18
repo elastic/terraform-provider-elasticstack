@@ -51,11 +51,11 @@ func TestRun_unknownSubcommand(t *testing.T) {
 	}
 }
 
-func TestRun_knownStub(t *testing.T) {
-	t.Parallel()
+func TestRun_runEngine_requiresGitHubRepository(t *testing.T) {
+	t.Setenv("GITHUB_REPOSITORY", "")
 	var stderr strings.Builder
 	err := run([]string{"run-engine"}, &stderr)
-	if err == nil || !strings.Contains(err.Error(), "not yet implemented") {
-		t.Fatalf("expected not-yet-implemented error, got %v", err)
+	if err == nil || !strings.Contains(err.Error(), "GITHUB_REPOSITORY") {
+		t.Fatalf("expected github repository env error, got %v / stderr=%q", err, stderr.String())
 	}
 }
