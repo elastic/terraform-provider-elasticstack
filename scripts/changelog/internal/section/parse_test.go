@@ -6,7 +6,7 @@
 // not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//	http://www.apache.org/licenses/LICENSE-2.0
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing,
 // software distributed under the License is distributed on an
@@ -21,6 +21,7 @@ import (
 	"embed"
 	"errors"
 	"path"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -51,12 +52,7 @@ func mustParse(tb testing.TB, body string) Section {
 }
 
 func errorsAny(errs []string, pred func(string) bool) bool {
-	for _, e := range errs {
-		if pred(e) {
-			return true
-		}
-	}
-	return false
+	return slices.ContainsFunc(errs, pred)
 }
 
 // Small fixtures (verbatim trimStart parity with pr-changelog-parser.test.mjs).
@@ -180,7 +176,7 @@ func TestParse_returnsErrorForEmptyString(t *testing.T) {
 func TestParse_parsesFixWithSummary(t *testing.T) {
 	body := fixtureBody(t, "parse_fix_with_summary.md")
 	sec := mustParse(t, body)
-	if sec.ImpactRaw != "fix" || sec.Summary != "Correct handling of empty API responses" {
+	if sec.ImpactRaw != impactLiteralFix || sec.Summary != "Correct handling of empty API responses" {
 		t.Fatalf("unexpected: %#v", sec)
 	}
 	if sec.BreakingChanges != "" {
@@ -323,7 +319,7 @@ func TestExtractBreakingChanges_fencedOnly(t *testing.T) {
 
 func TestParse_breakingHeadingOutsideChangelogIgnored(t *testing.T) {
 	sec := mustParse(t, fixtureBody(t, "parse_breaking_before_changelog.md"))
-	if sec.ImpactRaw != "fix" {
+	if sec.ImpactRaw != impactLiteralFix {
 		t.Fatal(sec.ImpactRaw)
 	}
 	if sec.BreakingChanges != "" {
@@ -436,7 +432,7 @@ func TestValidate_summaryEmptyLineInvalid(t *testing.T) {
 
 func TestParse_changelogLastSection(t *testing.T) {
 	sec := mustParse(t, trimStartFixture(bodyChangelogLastSection))
-	if sec.ImpactRaw != "fix" || sec.Summary != "Fix handling of nil pointer in cluster client" || sec.BreakingChanges != "" {
+	if sec.ImpactRaw != impactLiteralFix || sec.Summary != "Fix handling of nil pointer in cluster client" || sec.BreakingChanges != "" {
 		t.Fatalf("%+v", sec)
 	}
 }
@@ -503,7 +499,7 @@ func TestExtractBreakingChanges_markerBeforeChangelogHeadingIgnored(t *testing.T
 func TestParse_tildeFenceBreakingSubsection(t *testing.T) {
 	sec := mustParse(t, fixtureBody(t, "parse_tilde_fence_breaking.md"))
 	full := sec
-	if full.ImpactRaw != "fix" {
+	if full.ImpactRaw != impactLiteralFix {
 		t.Fatal(full.ImpactRaw)
 	}
 	br, ok := ExtractBreakingChanges(full.Raw)
@@ -515,7 +511,7 @@ func TestParse_tildeFenceBreakingSubsection(t *testing.T) {
 func TestParse_tildeFenceGuardsChangelogTerminator(t *testing.T) {
 	body := strings.Join([]string{
 		"## Changelog",
-		"Customer impact: fix",
+		"Customer impact: " + impactLiteralFix,
 		"Summary: Fix tilde fence edge case",
 		"",
 		"~~~",
@@ -525,14 +521,52 @@ func TestParse_tildeFenceGuardsChangelogTerminator(t *testing.T) {
 		"## Real next section",
 	}, "\n")
 	sec := mustParse(t, body)
-	if sec.ImpactRaw != "fix" || sec.Summary != "Fix tilde fence edge case" {
+	if sec.ImpactRaw != impactLiteralFix || sec.Summary != "Fix tilde fence edge case" {
 		t.Fatalf("%+v", sec)
+	}
+}
+
+func TestErrNoChangelogSection_textMatchesValidatorNotFoundConstant(t *testing.T) {
+	if ErrNoChangelogSection.Error() != changelogSectionNotFoundValidateMsg {
+		t.Fatalf("%q vs %q", ErrNoChangelogSection.Error(), changelogSectionNotFoundValidateMsg)
+	}
+}
+
+func TestExtractInnerChangelog_terminatesWhenLevel2WhitespaceIsBareCarriageReturn(t *testing.T) {
+	body := strings.Join([]string{
+		"## Changelog",
+		"Customer impact: " + impactLiteralFix,
+		"Summary: trimmed before terminator",
+		"",
+		"##\r",
+		"past-marker",
+	}, "\n")
+	sec := mustParse(t, body)
+	want := strings.Join([]string{
+		"Customer impact: " + impactLiteralFix,
+		"Summary: trimmed before terminator",
+		"",
+	}, "\n")
+	if sec.Raw != want {
+		t.Fatalf("raw=%q want=%q", sec.Raw, want)
+	}
+}
+
+func TestParse_impactPresent_distinctExplicitNoneVersusMissingField(t *testing.T) {
+	none := mustParse(t, "## Changelog\nCustomer impact: none\n")
+	if !none.ImpactPresent || none.CustomerImpact != ImpactNone || none.ImpactRaw != impactLiteralNone {
+		t.Fatalf("%+v", none)
+	}
+
+	missing := mustParse(t, "## Changelog\nSummary: orphaned summary\n")
+	if missing.ImpactPresent || missing.ImpactRaw != "" {
+		t.Fatalf("%+v", missing)
 	}
 }
 
 func TestValidate_returnsErrorWhenParsedNil_message(t *testing.T) {
 	_, errs := ValidateChangelogSection(nil)
-	if len(errs) != 1 || errs[0] != "No ## Changelog section found in PR body" {
+	if len(errs) != 1 || errs[0] != changelogSectionNotFoundValidateMsg {
 		t.Fatalf("got %#v", errs)
 	}
 }
@@ -544,11 +578,8 @@ func TestValidateFull_ruleC_verbatimMessageFromSpec(t *testing.T) {
 		t.Fatal("expected invalid")
 	}
 	var found bool
-	for _, e := range errs {
-		if e == ruleCBreakingOnlyWhenBreakingImpactMsg {
-			found = true
-			break
-		}
+	if slices.Contains(errs, ruleCBreakingOnlyWhenBreakingImpactMsg) {
+		found = true
 	}
 	if !found {
 		t.Fatalf("want exact rule C string, got %#v", errs)
@@ -586,7 +617,7 @@ func TestAuthoring_gateValidFixPasses(t *testing.T) {
 		"",
 		"## Changelog",
 		"",
-		"Customer impact: fix",
+		"Customer impact: " + impactLiteralFix,
 		"Summary: Correct handling of empty API responses",
 		"",
 	}, "\n")

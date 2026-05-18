@@ -24,7 +24,9 @@ import (
 )
 
 // ErrNoChangelogSection is returned by Parse when the PR body lacks a "## Changelog" heading.
-var ErrNoChangelogSection = errors.New("No ## Changelog section found in PR body")
+var ErrNoChangelogSection = errors.New("no ## Changelog section found in PR body")
+
+const changelogSectionNotFoundValidateMsg = "no ## Changelog section found in PR body"
 
 var changelogHeadingStart = regexp.MustCompile(`^##\s+Changelog`)
 
@@ -34,11 +36,14 @@ var level2HeadingAfterChangelogTerminator = regexp.MustCompile(`^##\s`)
 var customerImpactRE = regexp.MustCompile(`(?m)^Customer impact:\s*(.+)$`)
 var summaryRE = regexp.MustCompile(`(?m)^Summary:\s*(.+)$`)
 
-const ruleCBreakingOnlyWhenBreakingImpactMsg = "### Breaking changes section is only allowed when Customer impact: breaking; change to Customer impact: breaking or remove the ### Breaking changes heading."
+const ruleCBreakingOnlyWhenBreakingImpactMsg = "### Breaking changes section is only allowed when Customer impact: breaking; " +
+	"change to Customer impact: breaking or remove the ### Breaking changes heading."
 
 // Section is the canonical parsed representation of a PR body's ## Changelog section.
 type Section struct {
 	CustomerImpact CustomerImpact `json:"customer_impact"`
+
+	ImpactPresent bool `json:"impact_present,omitempty"`
 
 	// ImpactRaw mirrors parseChangelogSection's trimmed customerImpact string (empty means missing capture).
 	ImpactRaw string `json:"impact_raw,omitempty"`
@@ -85,6 +90,7 @@ func parseChangelogSection(body string) (Section, error) {
 
 	if matches := customerImpactRE.FindStringSubmatch(raw); matches != nil {
 		sec.ImpactRaw = strings.TrimSpace(matches[1])
+		sec.ImpactPresent = sec.ImpactRaw != ""
 		if v, okImpact := ParseCustomerImpact(sec.ImpactRaw); okImpact {
 			sec.CustomerImpact = v
 		}
@@ -125,17 +131,18 @@ func extractChangelogSection(body string) (inner string, ok bool) {
 			continue
 		}
 
-		if fenceType == 0 && strings.HasPrefix(line, "```") {
+		switch {
+		case fenceType == 0 && strings.HasPrefix(line, "```"):
 			fenceType = '`'
-		} else if fenceType == 0 && strings.HasPrefix(line, "~~~") {
+		case fenceType == 0 && strings.HasPrefix(line, "~~~"):
 			fenceType = '~'
-		} else if fenceType == '`' && strings.HasPrefix(line, "```") {
+		case fenceType == '`' && strings.HasPrefix(line, "```"):
 			fenceType = 0
-		} else if fenceType == '~' && strings.HasPrefix(line, "~~~") {
+		case fenceType == '~' && strings.HasPrefix(line, "~~~"):
 			fenceType = 0
 		}
 
-		if fenceType == 0 && level2HeadingAfterChangelogTerminator.MatchString(strings.TrimSuffix(line, "\r")) {
+		if fenceType == 0 && level2HeadingAfterChangelogTerminator.MatchString(line) {
 			break
 		}
 
@@ -158,7 +165,7 @@ func ValidateChangelogSection(parsed *Section) (bool, []string) {
 func validateChangelogSection(parsed *Section) []string {
 	errs := make([]string, 0)
 	if parsed == nil {
-		return []string{"No ## Changelog section found in PR body"}
+		return []string{changelogSectionNotFoundValidateMsg}
 	}
 
 	impact := parsed.ImpactRaw
@@ -173,7 +180,7 @@ func validateChangelogSection(parsed *Section) []string {
 	}
 
 	// Summary parity: treat missing Summary line OR whitespace-only capture as absent (requires summary whenever impact != none).
-	if impact != "none" && parsed.Summary == "" {
+	if impact != impactLiteralNone && parsed.Summary == "" {
 		errs = append(errs, `Missing required field: Summary (required when Customer impact is not "none")`)
 	}
 
@@ -194,7 +201,7 @@ func ValidateChangelogSectionFull(parsed *Section, opts ValidateOpts) (bool, []s
 		errorsOut = append(errorsOut, "### Breaking changes section is present but contains no content")
 	}
 
-	if parsed.ImpactRaw == "breaking" && !parsed.BreakingHeadingPresent {
+	if parsed.ImpactRaw == impactLiteralBreaking && !parsed.BreakingHeadingPresent {
 		errorsOut = append(errorsOut, "Customer impact: breaking requires a ### Breaking changes subsection")
 	}
 
@@ -202,7 +209,7 @@ func ValidateChangelogSectionFull(parsed *Section, opts ValidateOpts) (bool, []s
 		parsed.BreakingHeadingPresent &&
 		parsed.ImpactRaw != "" &&
 		ParsedImpactIsKnownContractValue(parsed.ImpactRaw) &&
-		parsed.ImpactRaw != "breaking" {
+		parsed.ImpactRaw != impactLiteralBreaking {
 
 		errorsOut = append(errorsOut, ruleCBreakingOnlyWhenBreakingImpactMsg)
 	}

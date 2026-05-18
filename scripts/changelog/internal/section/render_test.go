@@ -6,7 +6,7 @@
 // not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//	http://www.apache.org/licenses/LICENSE-2.0
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing,
 // software distributed under the License is distributed on an
@@ -20,6 +20,13 @@ package section
 import (
 	"strings"
 	"testing"
+)
+
+const (
+	testNormalizedFixBulletWant = "- fix bug"
+
+	// Fixtures repeat the changelog contract line verbatim for renderer parity assertions.
+	testPRBodyChangelogCustomerImpactNoneSuffix = "## Changelog\nCustomer impact: none\n"
 )
 
 func assertRendererSuccess(t *testing.T, res RenderResult) {
@@ -55,13 +62,13 @@ func TestRenderer_noneExcludedNoBullets(t *testing.T) {
 		Number: 7,
 		URL:    "https://github.com/org/repo/pull/7",
 		Labels: []string{},
-		Body:   "## Changelog\nCustomer impact: none\n",
+		Body:   testPRBodyChangelogCustomerImpactNoneSuffix,
 	}})
 	assertRendererSuccess(t, res)
 	if len(res.Included) != 0 || len(res.Excluded) != 1 {
 		t.Fatal(res)
 	}
-	if res.Excluded[0].Reason != "Customer impact: none" {
+	if res.Excluded[0].Reason != rendererExcludedImpactNoneReason {
 		t.Fatal(res.Excluded[0])
 	}
 	if res.SectionBody != "" {
@@ -190,7 +197,7 @@ func TestRenderer_mixedBatchCombinedOutput(t *testing.T) {
 			Number: 103,
 			URL:    "https://github.com/org/repo/pull/103",
 			Labels: []string{},
-			Body:   "## Changelog\nCustomer impact: none\n",
+			Body:   testPRBodyChangelogCustomerImpactNoneSuffix,
 		},
 		{
 			Number: 104,
@@ -211,7 +218,7 @@ func TestRenderer_mixedBatchCombinedOutput(t *testing.T) {
 	for _, e := range res.Excluded {
 		exMap[e.PRNumber] = e.Reason
 	}
-	if exMap[102] != "no-changelog label" || exMap[103] != "Customer impact: none" {
+	if exMap[102] != "no-changelog label" || exMap[103] != rendererExcludedImpactNoneReason {
 		t.Fatal(exMap)
 	}
 	sb := res.SectionBody
@@ -262,10 +269,10 @@ func TestRenderer_noneExcludedBreakingChangesUnset(t *testing.T) {
 		Number: 7,
 		URL:    "https://github.com/org/repo/pull/7",
 		Labels: []string{},
-		Body:   "## Changelog\nCustomer impact: none\n",
+		Body:   testPRBodyChangelogCustomerImpactNoneSuffix,
 	}})
 	assertRendererSuccess(t, res)
-	if len(res.Excluded) != 1 || res.Excluded[0].Reason != "Customer impact: none" {
+	if len(res.Excluded) != 1 || res.Excluded[0].Reason != rendererExcludedImpactNoneReason {
 		t.Fatal(res)
 	}
 	if res.Excluded[0].BreakingChanges != nil {
@@ -276,7 +283,7 @@ func TestRenderer_noneExcludedBreakingChangesUnset(t *testing.T) {
 func TestRenderer_noneWithBreakingRelaxMatchStillRendered(t *testing.T) {
 	body := strings.Join([]string{
 		"## Changelog",
-		"Customer impact: none",
+		"Customer impact: " + impactLiteralNone,
 		"",
 		"### Breaking changes",
 		"This is a legacy internal change with breaking implications.",
@@ -289,7 +296,7 @@ func TestRenderer_noneWithBreakingRelaxMatchStillRendered(t *testing.T) {
 		Body:   body,
 	}})
 	assertRendererSuccess(t, res)
-	if len(res.Excluded) != 1 || res.Excluded[0].Reason != "Customer impact: none" {
+	if len(res.Excluded) != 1 || res.Excluded[0].Reason != rendererExcludedImpactNoneReason {
 		t.Fatal(res)
 	}
 	if res.Excluded[0].BreakingChanges == nil ||
@@ -303,10 +310,11 @@ func TestRenderer_noneWithBreakingRelaxMatchStillRendered(t *testing.T) {
 }
 
 func TestNormalizeBulletPrefix_edgeCases(t *testing.T) {
-	if NormalizeBulletPrefix("-fix bug") != "- fix bug" ||
-		NormalizeBulletPrefix("- fix bug") != "- fix bug" ||
-		NormalizeBulletPrefix("* fix bug") != "- fix bug" ||
-		NormalizeBulletPrefix("+fix bug") != "- fix bug" {
+	want := testNormalizedFixBulletWant
+	if NormalizeBulletPrefix("-fix bug") != want ||
+		NormalizeBulletPrefix("- fix bug") != want ||
+		NormalizeBulletPrefix("* fix bug") != want ||
+		NormalizeBulletPrefix("+fix bug") != want {
 		t.Fatal("unexpected bullet normalization")
 	}
 }

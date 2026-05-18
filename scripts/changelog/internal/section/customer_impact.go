@@ -22,7 +22,16 @@ import (
 	"fmt"
 )
 
+const (
+	impactLiteralNone        = "none"
+	impactLiteralFix         = "fix"
+	impactLiteralEnhancement = "enhancement"
+	impactLiteralBreaking    = "breaking"
+)
+
 // CustomerImpact mirrors the changelog contract's discrete impact values.
+// Explicit "Customer impact omitted" differs from Customer impact: none; use ImpactPresent and/or ImpactRaw
+// alongside the enum (ImpactNone mirrors none but is ambiguous when ImpactPresent is false).
 type CustomerImpact int
 
 const (
@@ -33,27 +42,27 @@ const (
 )
 
 var customerImpactStrings = map[CustomerImpact]string{
-	ImpactNone:        "none",
-	ImpactFix:         "fix",
-	ImpactEnhancement: "enhancement",
-	ImpactBreaking:    "breaking",
+	ImpactNone:        impactLiteralNone,
+	ImpactFix:         impactLiteralFix,
+	ImpactEnhancement: impactLiteralEnhancement,
+	ImpactBreaking:    impactLiteralBreaking,
 }
 
 func customerImpactIDs() []string {
-	return []string{"none", "fix", "enhancement", "breaking"}
+	return []string{impactLiteralNone, impactLiteralFix, impactLiteralEnhancement, impactLiteralBreaking}
 }
 
 // ParseCustomerImpact maps a changelog line value to CustomerImpact when it is exactly one of
 // none|fix|enhancement|breaking (case-sensitive, per workflow contract parity with JS helpers).
 func ParseCustomerImpact(s string) (CustomerImpact, bool) {
 	switch s {
-	case "none":
+	case impactLiteralNone:
 		return ImpactNone, true
-	case "fix":
+	case impactLiteralFix:
 		return ImpactFix, true
-	case "enhancement":
+	case impactLiteralEnhancement:
 		return ImpactEnhancement, true
-	case "breaking":
+	case impactLiteralBreaking:
 		return ImpactBreaking, true
 	default:
 		return ImpactNone, false

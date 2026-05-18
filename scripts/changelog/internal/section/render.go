@@ -6,7 +6,7 @@
 // not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//	http://www.apache.org/licenses/LICENSE-2.0
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing,
 // software distributed under the License is distributed on an
@@ -20,10 +20,13 @@ package section
 import (
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 )
 
 const noChangelogLabel = "no-changelog"
+
+const rendererExcludedImpactNoneReason = "Customer impact: none"
 
 var bulletLeading = regexp.MustCompile(`^[-*+]\s*`)
 var leadingWhitespace = regexp.MustCompile(`^\s+`)
@@ -92,7 +95,7 @@ func BuildChangeBullet(summary string, prNumber int, prURL string) string {
 }
 
 func rendererTreatsImpactAsNone(impactRaw string) bool {
-	return strings.ToLower(strings.TrimSpace(impactRaw)) == "none"
+	return strings.ToLower(strings.TrimSpace(impactRaw)) == impactLiteralNone
 }
 
 func trimBreakingBlockEnd(s string) string {
@@ -194,7 +197,7 @@ func RenderChangelogSection(merged []MergedPR) RenderResult {
 			ex := ExcludedPR{
 				PRNumber: prNumber,
 				PRURL:    prURL,
-				Reason:   "Customer impact: none",
+				Reason:   rendererExcludedImpactNoneReason,
 			}
 			if hasBreakingMarkdown {
 				bc := breakingMarkdown
@@ -262,9 +265,7 @@ func renderMergedSectionBodies(breakingChangeBlocks []string, changeBullets []st
 
 	if len(changeBullets) > 0 {
 		sectionParts = append(sectionParts, "### Changes", "")
-		for _, bullet := range changeBullets {
-			sectionParts = append(sectionParts, bullet)
-		}
+		sectionParts = append(sectionParts, changeBullets...)
 		sectionParts = append(sectionParts, "")
 	}
 
@@ -279,10 +280,5 @@ func renderMergedSectionBodies(breakingChangeBlocks []string, changeBullets []st
 }
 
 func containsExactLabel(labels []string, want string) bool {
-	for _, l := range labels {
-		if l == want {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(labels, want)
 }
