@@ -175,6 +175,7 @@ func NewElasticsearchResource[T ElasticsearchResourceModel](name string, opts El
 	}
 }
 
+//nolint:unparam // diag.Diagnostics is always nil in current paths but is part of the public signature used by callers.
 func resolveElasticsearchReadResourceID(model ElasticsearchResourceModel, writeFallback string) (string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if m, ok := any(model).(WithReadResourceID); ok {
@@ -186,8 +187,20 @@ func resolveElasticsearchReadResourceID(model ElasticsearchResourceModel, writeF
 		return writeFallback, diags
 	}
 	compID, compDiags := clients.CompositeIDFromStr(model.GetID().ValueString())
-	diags.Append(compDiags...)
-	if diags.HasError() {
+	if compDiags.HasError() {
+		// Fall back to GetResourceID when the state ID is not a composite.
+		// This supports resources that were created by older provider versions
+		// or imported with a plain resource identifier.
+		if id := strings.TrimSpace(model.GetResourceID().ValueString()); id != "" {
+			return id, diags
+		}
+		// Third fallback: use the raw ID string itself, since some older
+		// provider versions stored the plain resource identifier as the state id.
+		if id := strings.TrimSpace(model.GetID().ValueString()); id != "" {
+			return id, diags
+		}
+		// All fallbacks exhausted. Return empty without the parse diagnostic
+		// so callers can report their own "Invalid resource identifier" error.
 		return "", diags
 	}
 	return compID.ResourceID, diags
@@ -442,9 +455,16 @@ func (r *ElasticsearchResource[T]) Delete(ctx context.Context, req resource.Dele
 		return
 	}
 
-	compID, diags := clients.CompositeIDFromStr(model.GetID().ValueString())
-	resp.Diagnostics.Append(diags...)
+	resourceID, idDiags := resolveElasticsearchReadResourceID(model, "")
+	resp.Diagnostics.Append(idDiags...)
 	if resp.Diagnostics.HasError() {
+		return
+	}
+	if resourceID == "" {
+		resp.Diagnostics.AddError(
+			"Invalid resource identifier",
+			"The resolved delete identity is empty; cannot delete.",
+		)
 		return
 	}
 
@@ -454,7 +474,7 @@ func (r *ElasticsearchResource[T]) Delete(ctx context.Context, req resource.Dele
 		return
 	}
 
-	resp.Diagnostics.Append(r.deleteFunc(ctx, client, compID.ResourceID, model)...)
+	resp.Diagnostics.Append(r.deleteFunc(ctx, client, resourceID, model)...)
 }
 
 var (

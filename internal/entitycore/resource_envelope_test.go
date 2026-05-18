@@ -188,6 +188,7 @@ func newResourceEnvelopeWithFactory(t *testing.T, factory *clients.ProviderClien
 	return r
 }
 
+//nolint:unparam // id always receives "cluster/user1"; kept for consistency with similar test helpers in the file.
 func makeTestResourceState(ctx context.Context, t *testing.T, id string) tfsdk.State {
 	t.Helper()
 	connBlockType := elasticsearchConnectionBlockType()
@@ -386,17 +387,21 @@ func TestNewElasticsearchResource_Read_shortCircuitStateGetError(t *testing.T) {
 	require.False(t, readCalled, "readFunc should not be called when state.Get fails")
 }
 
-func TestNewElasticsearchResource_Read_shortCircuitCompositeIDError(t *testing.T) {
+// TestNewElasticsearchResource_Read_happyPath_fallback verifies that Read falls
+// back to GetResourceID() when the state id is not a composite ID.
+func TestNewElasticsearchResource_Read_happyPath_fallback(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
 	factory := newTestConfiguredFactory(ctx, t)
 	readCalled := false
+	var receivedResourceID string
 	r := NewElasticsearchResource[testResourceModel]("test_entity", ElasticsearchResourceOptions[testResourceModel]{
 		Schema: getTestResourceSchema,
-		Read: func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, _ testResourceModel) (testResourceModel, bool, diag.Diagnostics) {
+		Read: func(_ context.Context, _ *clients.ElasticsearchScopedClient, resourceID string, model testResourceModel) (testResourceModel, bool, diag.Diagnostics) {
 			readCalled = true
-			return testResourceModel{}, false, nil
+			receivedResourceID = resourceID
+			return model, true, nil
 		},
 		Delete: testDeleteFunc,
 		Create: testWriteFuncFoundCreate,
@@ -404,14 +409,77 @@ func TestNewElasticsearchResource_Read_shortCircuitCompositeIDError(t *testing.T
 	})
 	r.client = factory
 
-	state := makeTestResourceState(ctx, t, "invalid-no-slash")
+	// id and name are deliberately different so the test proves the envelope
+	// prefers GetResourceID (name) over the raw id string.
+	objType := tftypes.Object{
+		AttributeTypes: map[string]tftypes.Type{
+			"id":                       tftypes.String,
+			"name":                     tftypes.String,
+			"elasticsearch_connection": elasticsearchConnectionBlockType(),
+		},
+	}
+	objValue := tftypes.NewValue(objType, map[string]tftypes.Value{
+		"id":                       tftypes.NewValue(tftypes.String, "my-plain-id"),
+		"name":                     tftypes.NewValue(tftypes.String, "my-fallback-name"),
+		"elasticsearch_connection": tftypes.NewValue(elasticsearchConnectionBlockType(), nil),
+	})
+	state := tfsdk.State{Raw: objValue, Schema: testResourceSchemaWithConnectionBlock(ctx)}
+
 	req := resource.ReadRequest{State: state}
 	resp := resource.ReadResponse{State: state}
 
 	r.Read(ctx, req, &resp)
 
-	require.True(t, resp.Diagnostics.HasError())
-	require.False(t, readCalled, "readFunc should not be called when composite ID parse fails")
+	require.False(t, resp.Diagnostics.HasError())
+	require.True(t, readCalled, "readFunc should be called")
+	require.Equal(t, "my-fallback-name", receivedResourceID, "fallback should use GetResourceID")
+}
+
+// TestNewElasticsearchResource_Read_happyPath_fallbackRawID verifies that Read
+// falls back to the raw GetID() string when GetResourceID() is empty.
+func TestNewElasticsearchResource_Read_happyPath_fallbackRawID(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	factory := newTestConfiguredFactory(ctx, t)
+	readCalled := false
+	var receivedResourceID string
+	r := NewElasticsearchResource[testResourceModel]("test_entity", ElasticsearchResourceOptions[testResourceModel]{
+		Schema: getTestResourceSchema,
+		Read: func(_ context.Context, _ *clients.ElasticsearchScopedClient, resourceID string, model testResourceModel) (testResourceModel, bool, diag.Diagnostics) {
+			readCalled = true
+			receivedResourceID = resourceID
+			return model, true, nil
+		},
+		Delete: testDeleteFunc,
+		Create: testWriteFuncFoundCreate,
+		Update: testWriteFuncFoundUpdate,
+	})
+	r.client = factory
+
+	// Use a model with id="my-plain-id" and name="" (empty GetResourceID)
+	objType := tftypes.Object{
+		AttributeTypes: map[string]tftypes.Type{
+			"id":                       tftypes.String,
+			"name":                     tftypes.String,
+			"elasticsearch_connection": elasticsearchConnectionBlockType(),
+		},
+	}
+	objValue := tftypes.NewValue(objType, map[string]tftypes.Value{
+		"id":                       tftypes.NewValue(tftypes.String, "my-plain-id"),
+		"name":                     tftypes.NewValue(tftypes.String, ""),
+		"elasticsearch_connection": tftypes.NewValue(elasticsearchConnectionBlockType(), nil),
+	})
+	state := tfsdk.State{Raw: objValue, Schema: testResourceSchemaWithConnectionBlock(ctx)}
+
+	req := resource.ReadRequest{State: state}
+	resp := resource.ReadResponse{State: state}
+
+	r.Read(ctx, req, &resp)
+
+	require.False(t, resp.Diagnostics.HasError())
+	require.True(t, readCalled, "readFunc should be called")
+	require.Equal(t, "my-plain-id", receivedResourceID, "fallback should use raw GetID")
 }
 
 func TestNewElasticsearchResource_Read_shortCircuitClientError(t *testing.T) {
@@ -543,17 +611,19 @@ func TestNewElasticsearchResource_Delete_shortCircuitStateGetError(t *testing.T)
 	require.False(t, deleteCalled, "deleteFunc should not be called when state.Get fails")
 }
 
-func TestNewElasticsearchResource_Delete_shortCircuitCompositeIDError(t *testing.T) {
+func TestNewElasticsearchResource_Delete_happyPath_fallback(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
 	factory := newTestConfiguredFactory(ctx, t)
 	deleteCalled := false
+	var receivedResourceID string
 	r := NewElasticsearchResource[testResourceModel]("test_entity", ElasticsearchResourceOptions[testResourceModel]{
 		Schema: getTestResourceSchema,
 		Read:   testReadFuncFound,
-		Delete: func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, _ testResourceModel) diag.Diagnostics {
+		Delete: func(_ context.Context, _ *clients.ElasticsearchScopedClient, resourceID string, _ testResourceModel) diag.Diagnostics {
 			deleteCalled = true
+			receivedResourceID = resourceID
 			return nil
 		},
 		Create: testWriteFuncFoundCreate,
@@ -561,14 +631,30 @@ func TestNewElasticsearchResource_Delete_shortCircuitCompositeIDError(t *testing
 	})
 	r.client = factory
 
-	state := makeTestResourceState(ctx, t, "invalid-no-slash")
+	// id and name are deliberately different so the test proves the envelope
+	// prefers GetResourceID (name) over the raw id string.
+	objType := tftypes.Object{
+		AttributeTypes: map[string]tftypes.Type{
+			"id":                       tftypes.String,
+			"name":                     tftypes.String,
+			"elasticsearch_connection": elasticsearchConnectionBlockType(),
+		},
+	}
+	objValue := tftypes.NewValue(objType, map[string]tftypes.Value{
+		"id":                       tftypes.NewValue(tftypes.String, "my-plain-id"),
+		"name":                     tftypes.NewValue(tftypes.String, "my-fallback-name"),
+		"elasticsearch_connection": tftypes.NewValue(elasticsearchConnectionBlockType(), nil),
+	})
+	state := tfsdk.State{Raw: objValue, Schema: testResourceSchemaWithConnectionBlock(ctx)}
+
 	req := resource.DeleteRequest{State: state}
 	resp := resource.DeleteResponse{State: state}
 
 	r.Delete(ctx, req, &resp)
 
-	require.True(t, resp.Diagnostics.HasError())
-	require.False(t, deleteCalled, "deleteFunc should not be called when composite ID parse fails")
+	require.False(t, resp.Diagnostics.HasError())
+	require.True(t, deleteCalled, "deleteFunc should be called")
+	require.Equal(t, "my-fallback-name", receivedResourceID, "fallback should use GetResourceID")
 }
 
 func TestNewElasticsearchResource_Delete_shortCircuitClientError(t *testing.T) {
