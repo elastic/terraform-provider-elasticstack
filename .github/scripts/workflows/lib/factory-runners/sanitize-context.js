@@ -1,10 +1,12 @@
-const { getFactoryName } = require('./_factory-context.js');
+const { getFactoryContextDir } = require('./_factory-context.js');
 const { sanitizeUserContent } = require('../sanitize-context.js');
 
 module.exports = async function ({ github, context, core }) {
 
   const fs = require('fs');
   const crypto = require('crypto');
+
+  const dir = getFactoryContextDir();
 
   const body = process.env.ISSUE_BODY || '';
   const comments = process.env.HUMAN_COMMENTS || '';
@@ -20,8 +22,6 @@ module.exports = async function ({ github, context, core }) {
   const output2 = `sanitized_issue_comments<<${eofDelim2}\n${sanitizedComments}\n${eofDelim2}\n`;
   fs.appendFileSync(process.env.GITHUB_OUTPUT, output2);
 
-  const factoryName = getFactoryName();
-  const dir = `/tmp/${factoryName}-context`;
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(`${dir}/issue_body.md`, sanitizedBody);
   fs.writeFileSync(`${dir}/issue_comments.md`, sanitizedComments);

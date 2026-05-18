@@ -1,11 +1,11 @@
-const { getFactoryName } = require('./_factory-context.js');
+const { getFactoryName, getFactoryContextDir } = require('./_factory-context.js');
 const { sanitizeUserContent } = require('../sanitize-context.js');
 
 module.exports = async function ({ github, context, core }) {
 
   const fs = require('fs');
   const factoryName = getFactoryName();
-  const dir = `/tmp/${factoryName}-context`;
+  const dir = getFactoryContextDir();
   const priorCommentFilename = `prior_${factoryName.replace(/-factory$/, '')}_comment.md`;
 
   fs.mkdirSync(dir, { recursive: true });

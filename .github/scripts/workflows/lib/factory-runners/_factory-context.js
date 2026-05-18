@@ -33,4 +33,8 @@ function getFactoryModule() {
   });
 }
 
-module.exports = { getFactoryName, getFactoryConstants, getFactoryModule };
+function getFactoryContextDir() {
+  return `/tmp/${getFactoryName()}-context`;
+}
+
+module.exports = { getFactoryName, getFactoryConstants, getFactoryModule, getFactoryContextDir };
