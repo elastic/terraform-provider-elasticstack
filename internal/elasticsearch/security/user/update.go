@@ -24,11 +24,9 @@ import (
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -46,8 +44,8 @@ func writeUser(ctx context.Context, client *clients.ElasticsearchScopedClient, r
 
 	usernameID := plan.GetResourceID().ValueString()
 
-	id, sdkDiags := client.ID(ctx, usernameID)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	id, idDiags := client.ID(ctx, usernameID)
+	diags.Append(idDiags...)
 	if diags.HasError() {
 		return entitycore.WriteResult[Data]{Model: plan}, diags
 	}
@@ -57,11 +55,7 @@ func writeUser(ctx context.Context, client *clients.ElasticsearchScopedClient, r
 		Enabled:  plan.Enabled.ValueBool(),
 	}
 
-	var passwordWoFromConfig types.String
-	diags.Append(req.Config.GetAttribute(ctx, path.Root("password_wo"), &passwordWoFromConfig)...)
-	if diags.HasError() {
-		return entitycore.WriteResult[Data]{Model: plan}, diags
-	}
+	passwordWoFromConfig := req.Config.PasswordWo
 
 	var password, passwordHash *string
 	switch {

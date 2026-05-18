@@ -23,7 +23,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -61,8 +60,8 @@ func versionAttrTypes() map[string]attr.Type {
 func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedClient, config dataSourceModel) (dataSourceModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	res, sdkDiags := elasticsearch.GetClusterInfo(ctx, esClient)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	res, clusterDiags := elasticsearch.GetClusterInfo(ctx, esClient)
+	diags.Append(clusterDiags...)
 	if diags.HasError() {
 		return config, diags
 	}

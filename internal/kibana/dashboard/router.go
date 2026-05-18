@@ -30,7 +30,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func fillUnknownDashboardPanelFromAPI(ctx context.Context, tfPanel *models.PanelModel, pm *models.PanelModel, panelItem kbapi.DashboardPanelItem) {
+func unknownPanelFromAPI(ctx context.Context, tfPanel *models.PanelModel, pm *models.PanelModel, panelItem kbapi.DashboardPanelItem) {
 	pm.ID = types.StringNull()
 	pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
 	pm.Grid = models.PanelGridModel{}

@@ -4,7 +4,7 @@ Resource implementation: `internal/elasticsearch/watcher/watch/`
 
 ## Purpose
 
-Define schema and behavior for the Elasticsearch Watcher resource: API usage, identity/import, connection, JSON mapping, and read-time state synchronization. Manages Elasticsearch watches via the Watcher API, enabling scheduled or event-driven automated actions.
+Define schema and behavior for the Elasticsearch Watcher resource: API usage, identity/import, connection, JSON mapping, read-time state synchronization, and the preserved Plugin Framework/entitycore behavior that implements those semantics. The resource manages Elasticsearch watches via the Watcher API, enabling scheduled or event-driven automated actions.
 
 ## Schema
 

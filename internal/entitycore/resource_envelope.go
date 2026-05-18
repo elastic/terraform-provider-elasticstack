@@ -65,15 +65,15 @@ type elasticsearchDeleteFunc[T ElasticsearchResourceModel] func(
 	T,
 ) diag.Diagnostics
 
-// WriteRequest is passed to [WriteFunc] after plan decoding, prior-state
-// decoding (Update only), write identity validation, client resolution, and
-// optional version checks. Prior is non-nil only for Update; Create receives
-// Prior == nil. The same WriteRequest type is shared by Create and Update so a
-// single function can serve both when the logic does not differ.
+// WriteRequest is passed to [WriteFunc]. Config is the Terraform configuration
+// decoded into T by the envelope before the callback is invoked. Prior is non-nil
+// only for Update; Create receives Prior == nil. The same WriteRequest type is
+// shared by Create and Update so a single function can serve both when the logic
+// does not differ.
 type WriteRequest[T ElasticsearchResourceModel] struct {
 	Plan    T
 	Prior   *T
-	Config  tfsdk.Config
+	Config  T
 	WriteID string
 }
 
@@ -175,6 +175,7 @@ func NewElasticsearchResource[T ElasticsearchResourceModel](name string, opts El
 	}
 }
 
+//nolint:unparam // diag.Diagnostics is always nil in current paths but is part of the public signature used by callers.
 func resolveElasticsearchReadResourceID(model ElasticsearchResourceModel, writeFallback string) (string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if m, ok := any(model).(WithReadResourceID); ok {
@@ -185,9 +186,21 @@ func resolveElasticsearchReadResourceID(model ElasticsearchResourceModel, writeF
 	if writeFallback != "" {
 		return writeFallback, diags
 	}
-	compID, compDiags := clients.CompositeIDFromStrFw(model.GetID().ValueString())
-	diags.Append(compDiags...)
-	if diags.HasError() {
+	compID, compDiags := clients.CompositeIDFromStr(model.GetID().ValueString())
+	if compDiags.HasError() {
+		// Fall back to GetResourceID when the state ID is not a composite.
+		// This supports resources that were created by older provider versions
+		// or imported with a plain resource identifier.
+		if id := strings.TrimSpace(model.GetResourceID().ValueString()); id != "" {
+			return id, diags
+		}
+		// Third fallback: use the raw ID string itself, since some older
+		// provider versions stored the plain resource identifier as the state id.
+		if id := strings.TrimSpace(model.GetID().ValueString()); id != "" {
+			return id, diags
+		}
+		// All fallbacks exhausted. Return empty without the parse diagnostic
+		// so callers can report their own "Invalid resource identifier" error.
 		return "", diags
 	}
 	return compID.ResourceID, diags
@@ -248,7 +261,7 @@ func (r *ElasticsearchResource[T]) Read(ctx context.Context, req resource.ReadRe
 		return
 	}
 
-	if vDiags := enforceVersionRequirements(ctx, client, &model); vDiags.HasError() {
+	if vDiags := EnforceVersionRequirements(ctx, client, &model); vDiags.HasError() {
 		resp.Diagnostics.Append(vDiags...)
 		return
 	}
@@ -355,13 +368,19 @@ func (r *ElasticsearchResource[T]) runWrite(ctx context.Context, inv writeInvoca
 		return diags
 	}
 
-	if vDiags := enforceVersionRequirements(ctx, client, &planModel); vDiags.HasError() {
+	if vDiags := EnforceVersionRequirements(ctx, client, &planModel); vDiags.HasError() {
 		diags.Append(vDiags...)
 		return diags
 	}
 
 	if d := r.requireReadFunc(); d.HasError() {
 		return d
+	}
+
+	var configModel T
+	diags.Append(inv.config.Get(ctx, &configModel)...)
+	if diags.HasError() {
+		return diags
 	}
 
 	writeFn := r.createFunc
@@ -372,7 +391,7 @@ func (r *ElasticsearchResource[T]) runWrite(ctx context.Context, inv writeInvoca
 	written, callDiags := writeFn(ctx, client, WriteRequest[T]{
 		Plan:    planModel,
 		Prior:   priorPtr,
-		Config:  inv.config,
+		Config:  configModel,
 		WriteID: writeKey,
 	})
 	diags.Append(callDiags...)
@@ -436,9 +455,16 @@ func (r *ElasticsearchResource[T]) Delete(ctx context.Context, req resource.Dele
 		return
 	}
 
-	compID, diags := clients.CompositeIDFromStrFw(model.GetID().ValueString())
-	resp.Diagnostics.Append(diags...)
+	resourceID, idDiags := resolveElasticsearchReadResourceID(model, "")
+	resp.Diagnostics.Append(idDiags...)
 	if resp.Diagnostics.HasError() {
+		return
+	}
+	if resourceID == "" {
+		resp.Diagnostics.AddError(
+			"Invalid resource identifier",
+			"The resolved delete identity is empty; cannot delete.",
+		)
 		return
 	}
 
@@ -448,7 +474,7 @@ func (r *ElasticsearchResource[T]) Delete(ctx context.Context, req resource.Dele
 		return
 	}
 
-	resp.Diagnostics.Append(r.deleteFunc(ctx, client, compID.ResourceID, model)...)
+	resp.Diagnostics.Append(r.deleteFunc(ctx, client, resourceID, model)...)
 }
 
 var (

@@ -22,7 +22,6 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -62,8 +61,8 @@ func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, respo
 	spaceID := effectiveSpaceID(state.SpaceID, compositeID)
 
 	if requiresSpaceIDMinVersion(spaceID) {
-		supported, sdkDiags := apiClient.EnforceMinVersion(ctx, MinVersionSpaceID)
-		response.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+		supported, verDiags := apiClient.EnforceMinVersion(ctx, MinVersionSpaceID)
+		response.Diagnostics.Append(verDiags...)
 		if response.Diagnostics.HasError() {
 			return
 		}

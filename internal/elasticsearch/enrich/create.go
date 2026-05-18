@@ -22,7 +22,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -44,8 +43,8 @@ func upsertEnrichPolicy(
 	data := req.Plan
 	resourceID := req.WriteID
 
-	id, sdkDiags := client.ID(ctx, resourceID)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	id, idDiags := client.ID(ctx, resourceID)
+	diags.Append(idDiags...)
 	if diags.HasError() {
 		return entitycore.WriteResult[PolicyDataWithExecute]{Model: data}, diags
 	}
@@ -72,16 +71,16 @@ func upsertEnrichPolicy(
 		policy.Query = data.Query.ValueString()
 	}
 
-	if sdkDiags := elasticsearch.PutEnrichPolicy(ctx, client, policy); sdkDiags.HasError() {
-		diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	if putDiags := elasticsearch.PutEnrichPolicy(ctx, client, policy); putDiags.HasError() {
+		diags.Append(putDiags...)
 		return entitycore.WriteResult[PolicyDataWithExecute]{Model: data}, diags
 	}
 
 	data.ID = types.StringValue(id.String())
 
 	if !data.Execute.IsNull() && !data.Execute.IsUnknown() && data.Execute.ValueBool() {
-		if sdkDiags := elasticsearch.ExecuteEnrichPolicy(ctx, client, resourceID); sdkDiags.HasError() {
-			diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+		if execDiags := elasticsearch.ExecuteEnrichPolicy(ctx, client, resourceID); execDiags.HasError() {
+			diags.Append(execDiags...)
 			return entitycore.WriteResult[PolicyDataWithExecute]{Model: data}, diags
 		}
 	}

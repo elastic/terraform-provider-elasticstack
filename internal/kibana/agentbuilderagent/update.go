@@ -46,6 +46,7 @@ func (r *AgentResource) Update(ctx context.Context, req resource.UpdateRequest, 
 		return
 	}
 
+
 	serverVersion, sdkDiags := client.ServerVersion(ctx)
 	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if resp.Diagnostics.HasError() {
@@ -53,7 +54,9 @@ func (r *AgentResource) Update(ctx context.Context, req resource.UpdateRequest, 
 	}
 	supportsSkillIDs := !serverVersion.LessThan(minVersionAdvancedAgentConfig)
 
-	compID, idDiags := clients.CompositeIDFromStrFw(planModel.ID.ValueString())
+
+	compID, idDiags := clients.CompositeIDFromStr(planModel.ID.ValueString())
+
 	resp.Diagnostics.Append(idDiags...)
 	if resp.Diagnostics.HasError() {
 		return

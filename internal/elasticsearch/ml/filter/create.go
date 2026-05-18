@@ -22,7 +22,6 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
@@ -70,7 +69,7 @@ func createFilter(ctx context.Context, client *clients.ElasticsearchScopedClient
 	}
 
 	compID, idDiags := client.ID(ctx, filterID)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(idDiags)...)
+	diags.Append(idDiags...)
 	if diags.HasError() {
 		return entitycore.WriteResult[TFModel]{Model: plan}, diags
 	}

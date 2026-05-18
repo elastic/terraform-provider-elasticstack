@@ -18,7 +18,6 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"log"
 
@@ -43,17 +42,14 @@ func main() {
 	flag.BoolVar(&debugMode, "debug", false, "set to true to run the provider with support for debuggers like delve")
 	flag.Parse()
 
-	serverFactory, err := provider.ProtoV6ProviderServerFactory(context.Background(), version)
-	if err != nil {
-		log.Fatal(err)
-	}
+	serverFactory := provider.ProtoV6ProviderServerFactory(version)
 
 	var serveOpts []tf6server.ServeOpt
 	if debugMode {
 		serveOpts = append(serveOpts, tf6server.WithManagedDebug())
 	}
 
-	err = tf6server.Serve(
+	err := tf6server.Serve(
 		"registry.terraform.io/elastic/elasticstack",
 		serverFactory,
 		serveOpts...,

@@ -20,13 +20,18 @@ package apikey
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"sort"
+	"strings"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/security/createapikey"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/security/createcrossclusterapikey"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/security/updateapikey"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/security/updatecrossclusterapikey"
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -78,6 +83,70 @@ func (model tfModel) GetResourceID() types.String {
 
 func (model tfModel) GetElasticsearchConnection() types.List {
 	return model.ElasticsearchConnection
+}
+
+// GetReadResourceID satisfies entitycore.WithReadResourceID: the API key read
+// identity is the immutable key_id (not the user-supplied Name) because the
+// Elasticsearch Get/Update API key APIs are keyed by id.
+func (model tfModel) GetReadResourceID() string {
+	if typeutils.IsKnown(model.KeyID) && model.KeyID.ValueString() != "" {
+		return model.KeyID.ValueString()
+	}
+	if typeutils.IsKnown(model.ID) && model.ID.ValueString() != "" {
+		compID, diags := clients.CompositeIDFromStr(model.ID.ValueString())
+		if !diags.HasError() && compID != nil {
+			return compID.ResourceID
+		}
+	}
+	return ""
+}
+
+var _ entitycore.WithReadResourceID = tfModel{}
+
+var _ entitycore.WithVersionRequirements = tfModel{}
+
+// GetVersionRequirements declares the conditional Elasticsearch version
+// requirements implied by the planned model: cross-cluster API keys require
+// MinVersionWithCrossCluster, and any role descriptor carrying a `restriction`
+// block requires MinVersionWithRestriction.
+func (model tfModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	var reqs []entitycore.VersionRequirement
+
+	if model.Type.ValueString() == crossClusterAPIKeyType {
+		reqs = append(reqs, entitycore.VersionRequirement{
+			MinVersion:   *MinVersionWithCrossCluster,
+			ErrorMessage: fmt.Sprintf("Cross-cluster API keys are only supported in Elasticsearch version %s and above.", MinVersionWithCrossCluster.String()),
+		})
+	}
+
+	if typeutils.IsKnown(model.RoleDescriptors) {
+		var roleDescriptors map[string]models.APIKeyRoleDescriptor
+		unmarshalDiags := model.RoleDescriptors.Unmarshal(&roleDescriptors)
+		if unmarshalDiags.HasError() {
+			diags.Append(unmarshalDiags...)
+			return reqs, diags
+		}
+
+		var keysWithRestrictions []string
+		for key, descriptor := range roleDescriptors {
+			if descriptor.Restriction != nil {
+				keysWithRestrictions = append(keysWithRestrictions, key)
+			}
+		}
+		if len(keysWithRestrictions) > 0 {
+			sort.Strings(keysWithRestrictions)
+			reqs = append(reqs, entitycore.VersionRequirement{
+				MinVersion: *MinVersionWithRestriction,
+				ErrorMessage: fmt.Sprintf(
+					"Specifying `restriction` on an API key role description is not supported in this version of Elasticsearch. Role descriptor(s) %s",
+					strings.Join(keysWithRestrictions, ", "),
+				),
+			})
+		}
+	}
+
+	return reqs, diags
 }
 
 func (model tfModel) buildTypedRoleDescriptors() (map[string]estypes.RoleDescriptor, diag.Diagnostics) {

@@ -30,7 +30,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	fwprovider "github.com/hashicorp/terraform-plugin-framework/provider"
 	fwresource "github.com/hashicorp/terraform-plugin-framework/resource"
-	sdkschema "github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 const (
@@ -43,21 +42,17 @@ type registeredProviderEntity struct {
 	name       string
 	entityKind string
 
-	sdkEntity    *sdkschema.Resource
 	frameworkRes fwresource.Resource
 	frameworkDS  datasource.DataSource
 }
 
 func TestProviderEntities_ConnectionSchemas(t *testing.T) {
 	ctx := context.Background()
-	sdkProvider := provider.New("dev")
 	frameworkProvider := provider.NewFrameworkProvider("dev")
 
-	registered := collectRegisteredProviderEntities(ctx, sdkProvider, frameworkProvider)
+	registered := collectRegisteredProviderEntities(ctx, frameworkProvider)
 	validated := make(map[string]struct{}, len(registered))
 
-	expectedSDKElasticsearch := providerschema.GetEsConnectionSchema(elasticsearchConnectionTestKey, false)
-	expectedSDKKibana := providerschema.GetKibanaEntityConnectionSchema()
 	expectedFrameworkElasticsearch := providerschema.GetEsFWConnectionBlock()
 	expectedFrameworkKibana := providerschema.GetKbFWConnectionBlock()
 
@@ -67,17 +62,9 @@ func TestProviderEntities_ConnectionSchemas(t *testing.T) {
 
 			switch expectedConnectionForEntity(entity) {
 			case elasticsearchConnectionTestKey:
-				if entity.sdkEntity != nil {
-					assertSDKConnectionSchemaMatches(t, entity, elasticsearchConnectionTestKey, expectedSDKElasticsearch)
-				} else {
-					assertFrameworkConnectionBlockMatches(ctx, t, entity, elasticsearchConnectionTestKey, expectedFrameworkElasticsearch)
-				}
+				assertFrameworkConnectionBlockMatches(ctx, t, entity, elasticsearchConnectionTestKey, expectedFrameworkElasticsearch)
 			case kibanaConnectionTestKey:
-				if entity.sdkEntity != nil {
-					assertSDKConnectionSchemaMatches(t, entity, kibanaConnectionTestKey, expectedSDKKibana)
-				} else {
-					assertFrameworkConnectionBlockMatches(ctx, t, entity, kibanaConnectionTestKey, expectedFrameworkKibana)
-				}
+				assertFrameworkConnectionBlockMatches(ctx, t, entity, kibanaConnectionTestKey, expectedFrameworkKibana)
 			default:
 				assertConnectionSchemaAbsent(ctx, t, entity, elasticsearchConnectionTestKey)
 				assertConnectionSchemaAbsent(ctx, t, entity, kibanaConnectionTestKey)
@@ -98,26 +85,8 @@ func TestProviderEntities_ConnectionSchemas(t *testing.T) {
 	})
 }
 
-func collectRegisteredProviderEntities(ctx context.Context, sdkProvider *sdkschema.Provider, frameworkProvider fwprovider.Provider) []registeredProviderEntity {
-	entities := make([]registeredProviderEntity, 0, len(sdkProvider.ResourcesMap)+len(sdkProvider.DataSourcesMap))
-
-	for _, name := range sortedSDKEntityNames(sdkProvider.ResourcesMap) {
-		entities = append(entities, registeredProviderEntity{
-			id:         fmt.Sprintf("sdk/resource/%s", name),
-			name:       name,
-			entityKind: "resource",
-			sdkEntity:  sdkProvider.ResourcesMap[name],
-		})
-	}
-
-	for _, name := range sortedSDKEntityNames(sdkProvider.DataSourcesMap) {
-		entities = append(entities, registeredProviderEntity{
-			id:         fmt.Sprintf("sdk/data_source/%s", name),
-			name:       name,
-			entityKind: "data_source",
-			sdkEntity:  sdkProvider.DataSourcesMap[name],
-		})
-	}
+func collectRegisteredProviderEntities(ctx context.Context, frameworkProvider fwprovider.Provider) []registeredProviderEntity {
+	entities := make([]registeredProviderEntity, 0)
 
 	for _, entity := range collectFrameworkResourceEntities(ctx, frameworkProvider, func(string) bool { return true }) {
 		entities = append(entities, registeredProviderEntity{
@@ -152,32 +121,10 @@ func expectedConnectionForEntity(entity registeredProviderEntity) string {
 	return kibanaConnectionTestKey
 }
 
-func assertSDKConnectionSchemaMatches(t *testing.T, entity registeredProviderEntity, blockKey string, expected *sdkschema.Schema) {
-	t.Helper()
-	if entity.sdkEntity == nil {
-		t.Fatalf("entity %q is not an SDK entity", entity.id)
-	}
-
-	actual, ok := entity.sdkEntity.Schema[blockKey]
-	if !ok {
-		t.Fatalf("entity %q is missing %q schema", entity.id, blockKey)
-	}
-	if !reflect.DeepEqual(actual, expected) {
-		t.Fatalf("entity %q %q schema does not exactly match helper definition", entity.id, blockKey)
-	}
-	if actual.Deprecated != "" {
-		t.Fatalf("entity %q %q schema has unexpected deprecation warning: %q", entity.id, blockKey, actual.Deprecated)
-	}
-}
-
 func assertConnectionSchemaAbsent(ctx context.Context, t *testing.T, entity registeredProviderEntity, blockKey string) {
 	t.Helper()
 
 	switch {
-	case entity.sdkEntity != nil:
-		if actual, ok := entity.sdkEntity.Schema[blockKey]; ok {
-			t.Fatalf("entity %q unexpectedly defines %q schema: %#v", entity.id, blockKey, actual)
-		}
 	case entity.frameworkRes != nil:
 		resp := fwresource.SchemaResponse{}
 		entity.frameworkRes.Schema(ctx, fwresource.SchemaRequest{}, &resp)

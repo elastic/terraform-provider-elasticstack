@@ -23,7 +23,6 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/go-version"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 )
@@ -32,8 +31,8 @@ import (
 // entities. It appends any diagnostics to diags and returns false if the check
 // fails or the version is not met.
 func EnforceVersion(ctx context.Context, client *clients.KibanaScopedClient, minVersion *version.Version, entityName string, diags *fwdiags.Diagnostics) bool {
-	supported, sdkDiags := client.EnforceMinVersion(ctx, minVersion)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	supported, versionDiags := client.EnforceMinVersion(ctx, minVersion)
+	diags.Append(versionDiags...)
 	if diags.HasError() {
 		return false
 	}

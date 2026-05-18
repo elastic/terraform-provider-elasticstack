@@ -116,19 +116,19 @@ type LensDashboardAppConfigModel struct {
 }
 
 type LensDashboardAppByValueModel struct {
-	ConfigJSON         jsontypes.Normalized           `tfsdk:"config_json"`
-	XYChartConfig      *XYChartConfigModel            `tfsdk:"xy_chart_config"`
-	TreemapConfig      *TreemapConfigModel            `tfsdk:"treemap_config"`
-	MosaicConfig       *MosaicConfigModel             `tfsdk:"mosaic_config"`
-	DatatableConfig    *DatatableConfigModel          `tfsdk:"datatable_config"`
-	TagcloudConfig     *TagcloudConfigModel           `tfsdk:"tagcloud_config"`
-	HeatmapConfig      *HeatmapConfigModel            `tfsdk:"heatmap_config"`
-	WaffleConfig       *WaffleConfigModel             `tfsdk:"waffle_config"`
-	RegionMapConfig    *RegionMapConfigModel          `tfsdk:"region_map_config"`
-	GaugeConfig        *GaugeConfigModel              `tfsdk:"gauge_config"`
-	MetricChartConfig  *MetricChartLensByValueTFModel `tfsdk:"metric_chart_config"`
-	PieChartConfig     *PieChartConfigModel           `tfsdk:"pie_chart_config"`
-	LegacyMetricConfig *LegacyMetricConfigModel       `tfsdk:"legacy_metric_config"`
+	ConfigJSON         jsontypes.Normalized     `tfsdk:"config_json"`
+	XYChartConfig      *XYChartConfigModel      `tfsdk:"xy_chart_config"`
+	TreemapConfig      *TreemapConfigModel      `tfsdk:"treemap_config"`
+	MosaicConfig       *MosaicConfigModel       `tfsdk:"mosaic_config"`
+	DatatableConfig    *DatatableConfigModel    `tfsdk:"datatable_config"`
+	TagcloudConfig     *TagcloudConfigModel     `tfsdk:"tagcloud_config"`
+	HeatmapConfig      *HeatmapConfigModel      `tfsdk:"heatmap_config"`
+	WaffleConfig       *WaffleConfigModel       `tfsdk:"waffle_config"`
+	RegionMapConfig    *RegionMapConfigModel    `tfsdk:"region_map_config"`
+	GaugeConfig        *GaugeConfigModel        `tfsdk:"gauge_config"`
+	MetricChartConfig  *MetricChartConfigModel  `tfsdk:"metric_chart_config"`
+	PieChartConfig     *PieChartConfigModel     `tfsdk:"pie_chart_config"`
+	LegacyMetricConfig *LegacyMetricConfigModel `tfsdk:"legacy_metric_config"`
 }
 
 type LensDashboardAppByReferenceModel struct {

@@ -19,65 +19,27 @@ package apikey
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
-func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var planModel tfModel
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &planModel)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if planModel.Type.ValueString() == "cross_cluster" {
-		updateDiags := r.updateCrossClusterAPIKey(ctx, planModel)
-		resp.Diagnostics.Append(updateDiags...)
+func writeAPIKey(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.WriteRequest[tfModel]) (entitycore.WriteResult[tfModel], diag.Diagnostics) {
+	planModel := req.Plan
+	var diags diag.Diagnostics
+	if planModel.Type.ValueString() == crossClusterAPIKeyType {
+		diags.Append(updateCrossClusterAPIKey(ctx, client, planModel)...)
 	} else {
-		updateDiags := r.updateAPIKey(ctx, planModel)
-		resp.Diagnostics.Append(updateDiags...)
+		diags.Append(updateAPIKey(ctx, client, planModel)...)
 	}
-
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	compID, idDiags := clients.CompositeIDFromStrFw(planModel.GetID().ValueString())
-	resp.Diagnostics.Append(idDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	esClient, clientDiags := r.Client().GetElasticsearchClient(ctx, planModel.GetElasticsearchConnection())
-	resp.Diagnostics.Append(clientDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	finalModel, found, readDiags := readAPIKey(ctx, esClient, compID.ResourceID, planModel)
-	resp.Diagnostics.Append(readDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	if !found {
-		resp.Diagnostics.AddError("API Key Not Found After Update", fmt.Sprintf("API key %q was not found immediately after update.", compID.ResourceID))
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, finalModel)...)
+	return entitycore.WriteResult[tfModel]{Model: planModel}, diags
 }
 
-func (r *Resource) updateCrossClusterAPIKey(ctx context.Context, planModel tfModel) diag.Diagnostics {
-	client, diags := r.Client().GetElasticsearchClient(ctx, planModel.ElasticsearchConnection)
-	if diags.HasError() {
-		return diags
-	}
+func updateCrossClusterAPIKey(ctx context.Context, client *clients.ElasticsearchScopedClient, planModel tfModel) diag.Diagnostics {
+	var diags diag.Diagnostics
 
-	// Handle cross-cluster API key update
 	updateRequest, modelDiags := planModel.toUpdateCrossClusterAPIRequest(ctx)
 	diags.Append(modelDiags...)
 	if diags.HasError() {
@@ -88,19 +50,14 @@ func (r *Resource) updateCrossClusterAPIKey(ctx context.Context, planModel tfMod
 	return diags
 }
 
-func (r *Resource) updateAPIKey(ctx context.Context, planModel tfModel) diag.Diagnostics {
-	client, diags := r.Client().GetElasticsearchClient(ctx, planModel.ElasticsearchConnection)
+func updateAPIKey(ctx context.Context, client *clients.ElasticsearchScopedClient, planModel tfModel) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	diags.Append(validateRestrictionSupport(ctx, client, planModel)...)
 	if diags.HasError() {
 		return diags
 	}
 
-	// Validate restriction support
-	diags.Append(r.validateRestrictionSupport(ctx, planModel)...)
-	if diags.HasError() {
-		return diags
-	}
-
-	// Handle regular API key update
 	updateRequest, modelDiags := planModel.toUpdateAPIRequest()
 	diags.Append(modelDiags...)
 	if diags.HasError() {

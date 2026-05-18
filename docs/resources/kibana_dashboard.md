@@ -339,23 +339,23 @@ Required:
 
 Optional:
 
-- `config_json` (String) The configuration of the panel as a JSON string. Practitioner-authored panel-level `config_json` is valid only when `type` is `markdown` or `vis`. Typed panel kinds such as `lens-dashboard-app`, `image`, `slo_alerts`, and `discover_session` use their dedicated blocks (`lens_dashboard_app_config`, `image_config`, `slo_alerts_config`, `discover_session_config`), not panel-level `config_json`. Mutually exclusive with `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `lens_dashboard_app_config`, `discover_session_config`.
-- `discover_session_config` (Attributes) Configuration for a `discover_session` panel (`kbn-dashboard-panel-type-discover_session`). Required when `type` is `discover_session`. Set exactly one of `by_value` or `by_reference`. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `lens_dashboard_app_config`. (see [below for nested schema](#nestedatt--panels--discover_session_config))
-- `esql_control_config` (Attributes) Configuration for an ES|QL control panel. Use this to manage ES|QL variable controls on a dashboard. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--esql_control_config))
+- `config_json` (String) The configuration of the panel as a JSON string. Practitioner-authored panel-level `config_json` is valid only when `type` is `markdown` or `vis`. Typed panel kinds such as `lens-dashboard-app`, `image`, `slo_alerts`, and `discover_session` use their dedicated blocks (`lens_dashboard_app_config`, `image_config`, `slo_alerts_config`, `discover_session_config`), not panel-level `config_json`. Mutually exclusive with `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `lens_dashboard_app_config`, `vis_config`, `discover_session_config`.
+- `discover_session_config` (Attributes) Configuration for a `discover_session` panel (`kbn-dashboard-panel-type-discover_session`). Set exactly one of `by_value` or `by_reference`. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `lens_dashboard_app_config`, `vis_config`. (see [below for nested schema](#nestedatt--panels--discover_session_config))
+- `esql_control_config` (Attributes) Configuration for an ES|QL control panel. Use this to manage ES|QL variable controls on a dashboard. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `lens_dashboard_app_config`, `vis_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--esql_control_config))
 - `id` (String) The identifier of the panel (API `id`).
-- `image_config` (Attributes) Configuration for an `image` panel (`kbn-dashboard-panel-type-image`). Required when `type` is `image`. References the Kibana Dashboard API image embeddable `config` shape. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `slo_alerts_config`, `vis_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--image_config))
-- `lens_dashboard_app_config` (Attributes) Configuration for a `lens-dashboard-app` panel (the Kibana Dashboard API `lens-dashboard-app` panel type). Required when `type` is `lens-dashboard-app`. Set exactly one of `by_value` or `by_reference`. With `by_value`, set exactly one of `config_json` or one supported typed Lens chart block. With `by_reference`, use `ref_id` and `references_json` to map the API `references` list. Supported typed by-value blocks are sent as the `lens-dashboard-app` API `config` and do not use `type = "vis"` panels. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config))
-- `markdown_config` (Attributes) Configuration for a `markdown` panel (the Kibana Dashboard API `kbn-dashboard-panel-type-markdown` shape). Set exactly one of `by_value` (inline `content` with required nested `settings`) or `by_reference` (existing library item via `ref_id`). Presentation fields (`description`, `hide_title`, `title`, `hide_border`) are supported in both branches. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `image_config`, `slo_alerts_config`, `vis_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--markdown_config))
-- `options_list_control_config` (Attributes) Configuration for an options list control panel. Provides a dropdown or multi-select filter based on a field in a data view. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--options_list_control_config))
-- `range_slider_control_config` (Attributes) Configuration for a range slider control panel. Provides a min/max range filter tied to a data view field. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--range_slider_control_config))
-- `slo_alerts_config` (Attributes) Configuration for an `slo_alerts` panel (`kbn-dashboard-panel-type-slo_alerts`). Required when `type` is `slo_alerts`. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `vis_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--slo_alerts_config))
-- `slo_burn_rate_config` (Attributes) Configuration for an SLO burn rate panel. Use this for panels that visualize the burn rate of an SLO over a configurable look-back window. Mutually exclusive with `config_json`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--slo_burn_rate_config))
-- `slo_error_budget_config` (Attributes) Configuration for an SLO error budget panel. Displays the burn chart of remaining error budget for a specific SLO. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--slo_error_budget_config))
-- `slo_overview_config` (Attributes) Configuration for an SLO overview panel. Use either `single` (for a single SLO) or `groups` (for grouped SLO overview). Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--slo_overview_config))
-- `synthetics_monitors_config` (Attributes) Configuration for a Synthetics monitors panel. Displays a table of Elastic Synthetics monitors and their current status. All fields are optional — omit the block entirely for a bare panel with no filtering. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--synthetics_monitors_config))
-- `synthetics_stats_overview_config` (Attributes) Configuration for a Synthetics stats overview panel. All fields are optional; an absent or empty block shows statistics for all monitors visible within the space. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--synthetics_stats_overview_config))
-- `time_slider_control_config` (Attributes) Configuration for a time slider control panel. Controls the visible time window within the dashboard's global time range. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--time_slider_control_config))
-- `vis_config` (Attributes) Configuration for a `vis` panel (`type = "vis"`). Typed alternative to `config_json`: set exactly one of `by_value` (exactly one of 12 Lens chart kinds) or `by_reference`. With `by_reference`, use structured `drilldowns` and required `time_range` like `lens_dashboard_app_config.by_reference`. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--vis_config))
+- `image_config` (Attributes) Configuration for an `image` panel (`kbn-dashboard-panel-type-image`). Required when `type` is `image`. References the Kibana Dashboard API image embeddable `config` shape. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `slo_alerts_config`, `lens_dashboard_app_config`, `vis_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--image_config))
+- `lens_dashboard_app_config` (Attributes) Configuration for a `lens-dashboard-app` panel (the Kibana Dashboard API `lens-dashboard-app` panel type). Set exactly one of `by_value` or `by_reference`. With `by_value`, set exactly one of `config_json` or one supported typed Lens chart block. With `by_reference`, use `ref_id` and `references_json` to map the API `references` list. Supported typed by-value blocks are sent as the `lens-dashboard-app` API `config` and do not create `type = "vis"` panels. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config))
+- `markdown_config` (Attributes) Configuration for a `markdown` panel (the Kibana Dashboard API `kbn-dashboard-panel-type-markdown` shape). Set exactly one of `by_value` (inline `content` with required nested `settings`) or `by_reference` (existing library item via `ref_id`). Presentation fields (`description`, `hide_title`, `title`, `hide_border`) are supported in both branches. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `image_config`, `slo_alerts_config`, `lens_dashboard_app_config`, `vis_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--markdown_config))
+- `options_list_control_config` (Attributes) Configuration for an options list control panel. Provides a dropdown or multi-select filter based on a field in a data view. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `lens_dashboard_app_config`, `vis_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--options_list_control_config))
+- `range_slider_control_config` (Attributes) Configuration for a range slider control panel. Provides a min/max range filter tied to a data view field. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `lens_dashboard_app_config`, `vis_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--range_slider_control_config))
+- `slo_alerts_config` (Attributes) Configuration for an `slo_alerts` panel (`kbn-dashboard-panel-type-slo_alerts`). Required when `type` is `slo_alerts`. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `lens_dashboard_app_config`, `vis_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--slo_alerts_config))
+- `slo_burn_rate_config` (Attributes) Configuration for an SLO burn rate panel. Use this for panels that visualize the burn rate of an SLO over a configurable look-back window. Mutually exclusive with `config_json`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `lens_dashboard_app_config`, `vis_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--slo_burn_rate_config))
+- `slo_error_budget_config` (Attributes) Configuration for an SLO error budget panel. Displays the burn chart of remaining error budget for a specific SLO. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `lens_dashboard_app_config`, `vis_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--slo_error_budget_config))
+- `slo_overview_config` (Attributes) Configuration for an SLO overview panel. Use either `single` (for a single SLO) or `groups` (for grouped SLO overview). Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `lens_dashboard_app_config`, `vis_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--slo_overview_config))
+- `synthetics_monitors_config` (Attributes) Configuration for a Synthetics monitors panel. Displays a table of Elastic Synthetics monitors and their current status. All fields are optional — omit the block entirely for a bare panel with no filtering. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `lens_dashboard_app_config`, `vis_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--synthetics_monitors_config))
+- `synthetics_stats_overview_config` (Attributes) Configuration for a Synthetics stats overview panel. All fields are optional; an absent or empty block shows statistics for all monitors visible within the space. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `lens_dashboard_app_config`, `vis_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--synthetics_stats_overview_config))
+- `time_slider_control_config` (Attributes) Configuration for a time slider control panel. Controls the visible time window within the dashboard's global time range. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `lens_dashboard_app_config`, `vis_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--time_slider_control_config))
+- `vis_config` (Attributes) Configuration for a `vis` panel (`type = "vis"`). Typed alternative to panel-level `config_json`: set exactly one of `by_value` (exactly one of 12 Lens chart kinds) or `by_reference`. With `by_reference`, use structured `drilldowns` and required `time_range` like `lens_dashboard_app_config.by_reference`. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--panels--vis_config))
 
 <a id="nestedatt--panels--grid"></a>
 ### Nested Schema for `panels.grid`
@@ -439,7 +439,7 @@ Required:
 
 Optional:
 
-- `mode` (String) Time range mode. Valid values are `absolute` or `relative`. When the GET API omits `mode`, the provider preserves the prior `time_range.mode` from configuration or state.
+- `mode` (String) Optional time range mode. When set, must be `absolute` or `relative`.
 
 
 
@@ -570,7 +570,7 @@ Required:
 
 Optional:
 
-- `mode` (String) Time range mode. Valid values are `absolute` or `relative`. When the GET API omits `mode`, the provider preserves the prior `time_range.mode` from configuration or state.
+- `mode` (String) Optional time range mode. When set, must be `absolute` or `relative`.
 
 
 
@@ -711,8 +711,8 @@ Optional:
 
 Optional:
 
-- `by_reference` (Attributes) By-reference `lens-dashboard-app` configuration: link a saved Lens visualization via `ref_id`, optional `references_json`, optional structured `drilldowns`, and required `time_range`. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_reference))
-- `by_value` (Attributes) Inline by-value `lens-dashboard-app` configuration. Set exactly one of `config_json` (raw JSON) or one supported typed Lens chart block, not both. Typed by-value blocks send the chart as the Kibana `lens-dashboard-app` API `config` and do not create a `type = "vis"` panel. On read, when state used a typed chart block and the API `config` can be round-tripped into that same block, the provider repopulates the typed block; otherwise the response is reflected in `config_json` instead. Distinct from panel-level `config_json` on the panel. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value))
+- `by_reference` (Attributes) By-reference `lens-dashboard-app` configuration: structured `drilldowns`, `ref_id`, optional `references_json`, and required `time_range`. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_reference))
+- `by_value` (Attributes) Inline by-value `lens-dashboard-app` configuration. Set exactly one of `config_json` (raw JSON) or one supported typed Lens chart block, not both. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value))
 
 <a id="nestedatt--panels--lens_dashboard_app_config--by_reference"></a>
 ### Nested Schema for `panels.lens_dashboard_app_config.by_reference`
@@ -736,8 +736,8 @@ Optional:
 
 Required:
 
-- `from` (String) Range start, matching the Kibana time range `from` field.
-- `to` (String) Range end, matching the Kibana time range `to` field.
+- `from` (String) Start of the time range (e.g., 'now-15m', '2023-01-01T00:00:00Z').
+- `to` (String) End of the time range (e.g., 'now', '2023-12-31T23:59:59Z').
 
 Optional:
 
@@ -803,18 +803,18 @@ Optional:
 Optional:
 
 - `config_json` (String) Optional raw normalized JSON for the by-value Lens chart `config` (full API shape, including chart `type` and `time_range` where the API requires them). Use as the single `by_value` source, or use one supported typed chart block instead (not both). Distinct from panel-level `config_json` on the panel.
-- `datatable_config` (Attributes) Typed Lens chart for a `lens-dashboard-app` by-value panel. The chart is sent as the Kibana `lens-dashboard-app` API `config` and does not create a `type = "vis"` panel. Attribute shape matches `vis_config.by_value.datatable_config` for `type = "vis"` panels. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--datatable_config))
-- `gauge_config` (Attributes) Typed Lens chart for a `lens-dashboard-app` by-value panel. The chart is sent as the Kibana `lens-dashboard-app` API `config` and does not create a `type = "vis"` panel. Attribute shape matches `vis_config.by_value.gauge_config` for `type = "vis"` panels. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--gauge_config))
-- `heatmap_config` (Attributes) Typed Lens chart for a `lens-dashboard-app` by-value panel. The chart is sent as the Kibana `lens-dashboard-app` API `config` and does not create a `type = "vis"` panel. Attribute shape matches `vis_config.by_value.heatmap_config` for `type = "vis"` panels. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--heatmap_config))
-- `legacy_metric_config` (Attributes) Typed Lens chart for a `lens-dashboard-app` by-value panel. The chart is sent as the Kibana `lens-dashboard-app` API `config` and does not create a `type = "vis"` panel. Attribute shape matches `vis_config.by_value.legacy_metric_config` for `type = "vis"` panels. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--legacy_metric_config))
-- `metric_chart_config` (Attributes) Typed Lens chart for a `lens-dashboard-app` by-value panel. The chart is sent as the Kibana `lens-dashboard-app` API `config` and does not create a `type = "vis"` panel. Attribute shape matches `vis_config.by_value.metric_chart_config` for `type = "vis"` panels. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--metric_chart_config))
-- `mosaic_config` (Attributes) Typed Lens chart for a `lens-dashboard-app` by-value panel. The chart is sent as the Kibana `lens-dashboard-app` API `config` and does not create a `type = "vis"` panel. Attribute shape matches `vis_config.by_value.mosaic_config` for `type = "vis"` panels. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--mosaic_config))
-- `pie_chart_config` (Attributes) Typed Lens chart for a `lens-dashboard-app` by-value panel. The chart is sent as the Kibana `lens-dashboard-app` API `config` and does not create a `type = "vis"` panel. Attribute shape matches `vis_config.by_value.pie_chart_config` for `type = "vis"` panels. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--pie_chart_config))
-- `region_map_config` (Attributes) Typed Lens chart for a `lens-dashboard-app` by-value panel. The chart is sent as the Kibana `lens-dashboard-app` API `config` and does not create a `type = "vis"` panel. Attribute shape matches `vis_config.by_value.region_map_config` for `type = "vis"` panels. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--region_map_config))
-- `tagcloud_config` (Attributes) Typed Lens chart for a `lens-dashboard-app` by-value panel. The chart is sent as the Kibana `lens-dashboard-app` API `config` and does not create a `type = "vis"` panel. Attribute shape matches `vis_config.by_value.tagcloud_config` for `type = "vis"` panels. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--tagcloud_config))
-- `treemap_config` (Attributes) Typed Lens chart for a `lens-dashboard-app` by-value panel. The chart is sent as the Kibana `lens-dashboard-app` API `config` and does not create a `type = "vis"` panel. Attribute shape matches `vis_config.by_value.treemap_config` for `type = "vis"` panels. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--treemap_config))
-- `waffle_config` (Attributes) Typed Lens chart for a `lens-dashboard-app` by-value panel. The chart is sent as the Kibana `lens-dashboard-app` API `config` and does not create a `type = "vis"` panel. Attribute shape matches `vis_config.by_value.waffle_config` for `type = "vis"` panels. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--waffle_config))
-- `xy_chart_config` (Attributes) Typed Lens chart for a `lens-dashboard-app` by-value panel. The chart is sent as the Kibana `lens-dashboard-app` API `config` and does not create a `type = "vis"` panel. Attribute shape matches `vis_config.by_value.xy_chart_config` for `type = "vis"` panels. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--xy_chart_config))
+- `datatable_config` (Attributes) Typed Lens visualization inside `vis_config.by_value`. Mutually exclusive with the other chart blocks in the same `by_value` block. Shares the attribute shape with `lens_dashboard_app_config.by_value.datatable_config`. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--datatable_config))
+- `gauge_config` (Attributes) Typed Lens visualization inside `vis_config.by_value`. Mutually exclusive with the other chart blocks in the same `by_value` block. Shares the attribute shape with `lens_dashboard_app_config.by_value.gauge_config`. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--gauge_config))
+- `heatmap_config` (Attributes) Typed Lens visualization inside `vis_config.by_value`. Mutually exclusive with the other chart blocks in the same `by_value` block. Shares the attribute shape with `lens_dashboard_app_config.by_value.heatmap_config`. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--heatmap_config))
+- `legacy_metric_config` (Attributes) Typed Lens visualization inside `vis_config.by_value`. Mutually exclusive with the other chart blocks in the same `by_value` block. Shares the attribute shape with `lens_dashboard_app_config.by_value.legacy_metric_config`. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--legacy_metric_config))
+- `metric_chart_config` (Attributes) Typed Lens visualization inside `vis_config.by_value`. Mutually exclusive with the other chart blocks in the same `by_value` block. Shares the attribute shape with `lens_dashboard_app_config.by_value.metric_chart_config`. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--metric_chart_config))
+- `mosaic_config` (Attributes) Typed Lens visualization inside `vis_config.by_value`. Mutually exclusive with the other chart blocks in the same `by_value` block. Shares the attribute shape with `lens_dashboard_app_config.by_value.mosaic_config`. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--mosaic_config))
+- `pie_chart_config` (Attributes) Typed Lens visualization inside `vis_config.by_value`. Mutually exclusive with the other chart blocks in the same `by_value` block. Shares the attribute shape with `lens_dashboard_app_config.by_value.pie_chart_config`. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--pie_chart_config))
+- `region_map_config` (Attributes) Typed Lens visualization inside `vis_config.by_value`. Mutually exclusive with the other chart blocks in the same `by_value` block. Shares the attribute shape with `lens_dashboard_app_config.by_value.region_map_config`. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--region_map_config))
+- `tagcloud_config` (Attributes) Typed Lens visualization inside `vis_config.by_value`. Mutually exclusive with the other chart blocks in the same `by_value` block. Shares the attribute shape with `lens_dashboard_app_config.by_value.tagcloud_config`. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--tagcloud_config))
+- `treemap_config` (Attributes) Typed Lens visualization inside `vis_config.by_value`. Mutually exclusive with the other chart blocks in the same `by_value` block. Shares the attribute shape with `lens_dashboard_app_config.by_value.treemap_config`. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--treemap_config))
+- `waffle_config` (Attributes) Typed Lens visualization inside `vis_config.by_value`. Mutually exclusive with the other chart blocks in the same `by_value` block. Shares the attribute shape with `lens_dashboard_app_config.by_value.waffle_config`. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--waffle_config))
+- `xy_chart_config` (Attributes) Typed Lens visualization inside `vis_config.by_value`. Mutually exclusive with the other chart blocks in the same `by_value` block. Shares the attribute shape with `lens_dashboard_app_config.by_value.xy_chart_config`. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--xy_chart_config))
 
 <a id="nestedatt--panels--lens_dashboard_app_config--by_value--datatable_config"></a>
 ### Nested Schema for `panels.lens_dashboard_app_config.by_value.datatable_config`
@@ -836,11 +836,16 @@ Required:
 Optional:
 
 - `description` (String) The description of the chart.
+- `drilldowns` (Attributes List) Optional drilldowns for this chart (max 100 per Kibana API). Each entry sets exactly one of `dashboard_drilldown`, `discover_drilldown`, or `url_drilldown`. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--datatable_config--esql--drilldowns))
 - `filters` (Attributes List) Additional filters to apply to the chart data (maximum 100). (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--datatable_config--esql--filters))
+- `hide_border` (Boolean) When true, suppresses the chart panel border.
+- `hide_title` (Boolean) When true, suppresses the chart title.
 - `ignore_global_filters` (Boolean) If true, ignore global filters when fetching data for this chart. Default is false.
+- `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.
 - `rows` (Attributes List) Array of row configurations as JSON. Each entry defines a row split operation. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--datatable_config--esql--rows))
 - `sampling` (Number) Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.
 - `split_metrics_by` (Attributes List) Array of split-metrics configurations as JSON. Each entry defines a split operation for metric columns. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--datatable_config--esql--split_metrics_by))
+- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--datatable_config--esql--time_range))
 - `title` (String) The title of the chart displayed in the panel.
 
 <a id="nestedatt--panels--lens_dashboard_app_config--by_value--datatable_config--esql--metrics"></a>
@@ -900,6 +905,66 @@ Optional:
 
 
 
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--datatable_config--esql--drilldowns"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.datatable_config.esql.drilldowns`
+
+Optional:
+
+- `dashboard_drilldown` (Attributes) Navigate to another dashboard using current filters/time range. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--datatable_config--esql--drilldowns--dashboard_drilldown))
+- `discover_drilldown` (Attributes) Open Discover with contextual filters. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--datatable_config--esql--drilldowns--discover_drilldown))
+- `url_drilldown` (Attributes) Open a URL drilldown configured with explicit trigger semantics. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--datatable_config--esql--drilldowns--url_drilldown))
+
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--datatable_config--esql--drilldowns--dashboard_drilldown"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.datatable_config.esql.drilldowns.dashboard_drilldown`
+
+Required:
+
+- `dashboard_id` (String) Target dashboard id.
+- `label` (String) Human-readable drilldown label.
+
+Optional:
+
+- `open_in_new_tab` (Boolean) When true, opens the target dashboard in a new browser tab.
+- `use_filters` (Boolean) When true, forwards filter context.
+- `use_time_range` (Boolean) When true, forwards the time range.
+
+Read-Only:
+
+- `trigger` (String) **Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.
+
+
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--datatable_config--esql--drilldowns--discover_drilldown"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.datatable_config.esql.drilldowns.discover_drilldown`
+
+Required:
+
+- `label` (String) Human-readable drilldown label.
+
+Optional:
+
+- `open_in_new_tab` (Boolean) When true, opens Discover in a new browser tab.
+
+Read-Only:
+
+- `trigger` (String) **Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.
+
+
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--datatable_config--esql--drilldowns--url_drilldown"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.datatable_config.esql.drilldowns.url_drilldown`
+
+Required:
+
+- `label` (String) Human-readable drilldown label.
+- `trigger` (String) Trigger that fires this drilldown.
+- `url` (String) Destination URL.
+
+Optional:
+
+- `encode_url` (Boolean) When true, encodes interpolated URL parameters.
+- `open_in_new_tab` (Boolean) When true, opens the URL in a new browser tab.
+
+
+
 <a id="nestedatt--panels--lens_dashboard_app_config--by_value--datatable_config--esql--filters"></a>
 ### Nested Schema for `panels.lens_dashboard_app_config.by_value.datatable_config.esql.filters`
 
@@ -924,6 +989,19 @@ Required:
 - `config_json` (String) Split metrics configuration as JSON.
 
 
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--datatable_config--esql--time_range"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.datatable_config.esql.time_range`
+
+Required:
+
+- `from` (String) Start of the chart time range.
+- `to` (String) End of the chart time range.
+
+Optional:
+
+- `mode` (String) Optional time range mode. Valid values are `absolute` or `relative`. When the GET API omits `mode`, the provider preserves the prior chart `time_range.mode` from configuration or state (same pattern as REQ-009 on the dashboard `time_range`).
+
+
 
 <a id="nestedatt--panels--lens_dashboard_app_config--by_value--datatable_config--no_esql"></a>
 ### Nested Schema for `panels.lens_dashboard_app_config.by_value.datatable_config.no_esql`
@@ -938,11 +1016,16 @@ Required:
 Optional:
 
 - `description` (String) The description of the chart.
+- `drilldowns` (Attributes List) Optional drilldowns for this chart (max 100 per Kibana API). Each entry sets exactly one of `dashboard_drilldown`, `discover_drilldown`, or `url_drilldown`. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--datatable_config--no_esql--drilldowns))
 - `filters` (Attributes List) Additional filters to apply to the chart data (maximum 100). (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--datatable_config--no_esql--filters))
+- `hide_border` (Boolean) When true, suppresses the chart panel border.
+- `hide_title` (Boolean) When true, suppresses the chart title.
 - `ignore_global_filters` (Boolean) If true, ignore global filters when fetching data for this chart. Default is false.
+- `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.
 - `rows` (Attributes List) Array of row configurations as JSON. Each entry defines a row split operation. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--datatable_config--no_esql--rows))
 - `sampling` (Number) Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.
 - `split_metrics_by` (Attributes List) Array of split-metrics configurations as JSON. Each entry defines a split operation for metric columns. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--datatable_config--no_esql--split_metrics_by))
+- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--datatable_config--no_esql--time_range))
 - `title` (String) The title of the chart displayed in the panel.
 
 <a id="nestedatt--panels--lens_dashboard_app_config--by_value--datatable_config--no_esql--metrics"></a>
@@ -1014,6 +1097,66 @@ Optional:
 
 
 
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--datatable_config--no_esql--drilldowns"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.datatable_config.no_esql.drilldowns`
+
+Optional:
+
+- `dashboard_drilldown` (Attributes) Navigate to another dashboard using current filters/time range. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--datatable_config--no_esql--drilldowns--dashboard_drilldown))
+- `discover_drilldown` (Attributes) Open Discover with contextual filters. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--datatable_config--no_esql--drilldowns--discover_drilldown))
+- `url_drilldown` (Attributes) Open a URL drilldown configured with explicit trigger semantics. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--datatable_config--no_esql--drilldowns--url_drilldown))
+
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--datatable_config--no_esql--drilldowns--dashboard_drilldown"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.datatable_config.no_esql.drilldowns.dashboard_drilldown`
+
+Required:
+
+- `dashboard_id` (String) Target dashboard id.
+- `label` (String) Human-readable drilldown label.
+
+Optional:
+
+- `open_in_new_tab` (Boolean) When true, opens the target dashboard in a new browser tab.
+- `use_filters` (Boolean) When true, forwards filter context.
+- `use_time_range` (Boolean) When true, forwards the time range.
+
+Read-Only:
+
+- `trigger` (String) **Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.
+
+
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--datatable_config--no_esql--drilldowns--discover_drilldown"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.datatable_config.no_esql.drilldowns.discover_drilldown`
+
+Required:
+
+- `label` (String) Human-readable drilldown label.
+
+Optional:
+
+- `open_in_new_tab` (Boolean) When true, opens Discover in a new browser tab.
+
+Read-Only:
+
+- `trigger` (String) **Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.
+
+
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--datatable_config--no_esql--drilldowns--url_drilldown"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.datatable_config.no_esql.drilldowns.url_drilldown`
+
+Required:
+
+- `label` (String) Human-readable drilldown label.
+- `trigger` (String) Trigger that fires this drilldown.
+- `url` (String) Destination URL.
+
+Optional:
+
+- `encode_url` (Boolean) When true, encodes interpolated URL parameters.
+- `open_in_new_tab` (Boolean) When true, opens the URL in a new browser tab.
+
+
+
 <a id="nestedatt--panels--lens_dashboard_app_config--by_value--datatable_config--no_esql--filters"></a>
 ### Nested Schema for `panels.lens_dashboard_app_config.by_value.datatable_config.no_esql.filters`
 
@@ -1038,6 +1181,19 @@ Required:
 - `config_json` (String) Split metrics configuration as JSON.
 
 
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--datatable_config--no_esql--time_range"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.datatable_config.no_esql.time_range`
+
+Required:
+
+- `from` (String) Start of the chart time range.
+- `to` (String) End of the chart time range.
+
+Optional:
+
+- `mode` (String) Optional time range mode. Valid values are `absolute` or `relative`. When the GET API omits `mode`, the provider preserves the prior chart `time_range.mode` from configuration or state (same pattern as REQ-009 on the dashboard `time_range`).
+
+
 
 
 <a id="nestedatt--panels--lens_dashboard_app_config--by_value--gauge_config"></a>
@@ -1051,13 +1207,17 @@ Required:
 Optional:
 
 - `description` (String) The description of the chart.
+- `drilldowns` (Attributes List) Optional drilldowns for this chart (max 100 per Kibana API). Each entry sets exactly one of `dashboard_drilldown`, `discover_drilldown`, or `url_drilldown`. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--gauge_config--drilldowns))
 - `esql_metric` (Attributes) Typed metric column for ES|QL gauges. Mutually exclusive with `metric_json`. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--gauge_config--esql_metric))
 - `filters` (Attributes List) Additional filters to apply to the chart data (maximum 100). (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--gauge_config--filters))
+- `hide_border` (Boolean) When true, suppresses the chart panel border.
+- `hide_title` (Boolean) When true, suppresses the chart title.
 - `ignore_global_filters` (Boolean) If true, ignore global filters when fetching data for this chart. Default is false.
-- `metric_json` (String) Metric configuration as JSON. Supports metric operations such as count, unique count, min, max, average, median, standard deviation, sum, last value, percentile, percentile ranks, or formula.
- Required for non-ES|QL gauges; mutually exclusive with `esql_metric`.
+- `metric_json` (String) Metric configuration as JSON. Supports metric operations such as count, unique count, min, max, average, median, standard deviation, sum, last value, percentile, percentile ranks, or formula. Required for non-ES|QL gauges; mutually exclusive with `esql_metric`.
 - `query` (Attributes) Query configuration for filtering data. Required for non-ES|QL gauges; omit for ES|QL mode. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--gauge_config--query))
+- `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.
 - `sampling` (Number) Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.
+- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--gauge_config--time_range))
 - `title` (String) The title of the chart displayed in the panel.
 
 <a id="nestedatt--panels--lens_dashboard_app_config--by_value--gauge_config--styling"></a>
@@ -1066,6 +1226,66 @@ Optional:
 Optional:
 
 - `shape_json` (String) Gauge shape configuration as JSON. Supports bullet and circular gauges.
+
+
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--gauge_config--drilldowns"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.gauge_config.drilldowns`
+
+Optional:
+
+- `dashboard_drilldown` (Attributes) Navigate to another dashboard using current filters/time range. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--gauge_config--drilldowns--dashboard_drilldown))
+- `discover_drilldown` (Attributes) Open Discover with contextual filters. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--gauge_config--drilldowns--discover_drilldown))
+- `url_drilldown` (Attributes) Open a URL drilldown configured with explicit trigger semantics. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--gauge_config--drilldowns--url_drilldown))
+
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--gauge_config--drilldowns--dashboard_drilldown"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.gauge_config.drilldowns.dashboard_drilldown`
+
+Required:
+
+- `dashboard_id` (String) Target dashboard id.
+- `label` (String) Human-readable drilldown label.
+
+Optional:
+
+- `open_in_new_tab` (Boolean) When true, opens the target dashboard in a new browser tab.
+- `use_filters` (Boolean) When true, forwards filter context.
+- `use_time_range` (Boolean) When true, forwards the time range.
+
+Read-Only:
+
+- `trigger` (String) **Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.
+
+
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--gauge_config--drilldowns--discover_drilldown"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.gauge_config.drilldowns.discover_drilldown`
+
+Required:
+
+- `label` (String) Human-readable drilldown label.
+
+Optional:
+
+- `open_in_new_tab` (Boolean) When true, opens Discover in a new browser tab.
+
+Read-Only:
+
+- `trigger` (String) **Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.
+
+
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--gauge_config--drilldowns--url_drilldown"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.gauge_config.drilldowns.url_drilldown`
+
+Required:
+
+- `label` (String) Human-readable drilldown label.
+- `trigger` (String) Trigger that fires this drilldown.
+- `url` (String) Destination URL.
+
+Optional:
+
+- `encode_url` (Boolean) When true, encodes interpolated URL parameters.
+- `open_in_new_tab` (Boolean) When true, opens the URL in a new browser tab.
+
 
 
 <a id="nestedatt--panels--lens_dashboard_app_config--by_value--gauge_config--esql_metric"></a>
@@ -1162,6 +1382,19 @@ Optional:
 - `language` (String) Query language (default: 'kql').
 
 
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--gauge_config--time_range"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.gauge_config.time_range`
+
+Required:
+
+- `from` (String) Start of the chart time range.
+- `to` (String) End of the chart time range.
+
+Optional:
+
+- `mode` (String) Optional time range mode. Valid values are `absolute` or `relative`. When the GET API omits `mode`, the provider preserves the prior chart `time_range.mode` from configuration or state (same pattern as REQ-009 on the dashboard `time_range`).
+
+
 
 <a id="nestedatt--panels--lens_dashboard_app_config--by_value--heatmap_config"></a>
 ### Nested Schema for `panels.lens_dashboard_app_config.by_value.heatmap_config`
@@ -1178,10 +1411,15 @@ Required:
 Optional:
 
 - `description` (String) The description of the chart.
+- `drilldowns` (Attributes List) Optional drilldowns for this chart (max 100 per Kibana API). Each entry sets exactly one of `dashboard_drilldown`, `discover_drilldown`, or `url_drilldown`. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--heatmap_config--drilldowns))
 - `filters` (Attributes List) Additional filters to apply to the chart data (maximum 100). (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--heatmap_config--filters))
+- `hide_border` (Boolean) When true, suppresses the chart panel border.
+- `hide_title` (Boolean) When true, suppresses the chart title.
 - `ignore_global_filters` (Boolean) If true, ignore global filters when fetching data for this chart. Default is false.
 - `query` (Attributes) Query configuration for filtering data. Required for non-ES|QL heatmaps. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--heatmap_config--query))
+- `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.
 - `sampling` (Number) Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.
+- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--heatmap_config--time_range))
 - `title` (String) The title of the chart displayed in the panel.
 - `y_axis_json` (String) Breakdown dimension configuration for the Y axis as JSON. When omitted, the heatmap renders without a Y breakdown.
 
@@ -1199,7 +1437,7 @@ Optional:
 Optional:
 
 - `labels` (Attributes) X-axis label configuration. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--heatmap_config--axis--x--labels))
-- `title` (Attributes) X-axis title configuration. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--heatmap_config--axis--x--title))
+- `title` (Attributes) Axis title configuration. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--heatmap_config--axis--x--title))
 
 <a id="nestedatt--panels--lens_dashboard_app_config--by_value--heatmap_config--axis--x--labels"></a>
 ### Nested Schema for `panels.lens_dashboard_app_config.by_value.heatmap_config.axis.x.labels`
@@ -1226,7 +1464,7 @@ Optional:
 Optional:
 
 - `labels` (Attributes) Y-axis label configuration. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--heatmap_config--axis--y--labels))
-- `title` (Attributes) Y-axis title configuration. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--heatmap_config--axis--y--title))
+- `title` (Attributes) Axis title configuration. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--heatmap_config--axis--y--title))
 
 <a id="nestedatt--panels--lens_dashboard_app_config--by_value--heatmap_config--axis--y--labels"></a>
 ### Nested Schema for `panels.lens_dashboard_app_config.by_value.heatmap_config.axis.y.labels`
@@ -1284,6 +1522,66 @@ Optional:
 
 
 
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--heatmap_config--drilldowns"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.heatmap_config.drilldowns`
+
+Optional:
+
+- `dashboard_drilldown` (Attributes) Navigate to another dashboard using current filters/time range. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--heatmap_config--drilldowns--dashboard_drilldown))
+- `discover_drilldown` (Attributes) Open Discover with contextual filters. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--heatmap_config--drilldowns--discover_drilldown))
+- `url_drilldown` (Attributes) Open a URL drilldown configured with explicit trigger semantics. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--heatmap_config--drilldowns--url_drilldown))
+
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--heatmap_config--drilldowns--dashboard_drilldown"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.heatmap_config.drilldowns.dashboard_drilldown`
+
+Required:
+
+- `dashboard_id` (String) Target dashboard id.
+- `label` (String) Human-readable drilldown label.
+
+Optional:
+
+- `open_in_new_tab` (Boolean) When true, opens the target dashboard in a new browser tab.
+- `use_filters` (Boolean) When true, forwards filter context.
+- `use_time_range` (Boolean) When true, forwards the time range.
+
+Read-Only:
+
+- `trigger` (String) **Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.
+
+
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--heatmap_config--drilldowns--discover_drilldown"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.heatmap_config.drilldowns.discover_drilldown`
+
+Required:
+
+- `label` (String) Human-readable drilldown label.
+
+Optional:
+
+- `open_in_new_tab` (Boolean) When true, opens Discover in a new browser tab.
+
+Read-Only:
+
+- `trigger` (String) **Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.
+
+
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--heatmap_config--drilldowns--url_drilldown"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.heatmap_config.drilldowns.url_drilldown`
+
+Required:
+
+- `label` (String) Human-readable drilldown label.
+- `trigger` (String) Trigger that fires this drilldown.
+- `url` (String) Destination URL.
+
+Optional:
+
+- `encode_url` (Boolean) When true, encodes interpolated URL parameters.
+- `open_in_new_tab` (Boolean) When true, opens the URL in a new browser tab.
+
+
+
 <a id="nestedatt--panels--lens_dashboard_app_config--by_value--heatmap_config--filters"></a>
 ### Nested Schema for `panels.lens_dashboard_app_config.by_value.heatmap_config.filters`
 
@@ -1304,6 +1602,19 @@ Optional:
 - `language` (String) Query language (default: 'kql').
 
 
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--heatmap_config--time_range"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.heatmap_config.time_range`
+
+Required:
+
+- `from` (String) Start of the chart time range.
+- `to` (String) End of the chart time range.
+
+Optional:
+
+- `mode` (String) Optional time range mode. Valid values are `absolute` or `relative`. When the GET API omits `mode`, the provider preserves the prior chart `time_range.mode` from configuration or state (same pattern as REQ-009 on the dashboard `time_range`).
+
+
 
 <a id="nestedatt--panels--lens_dashboard_app_config--by_value--legacy_metric_config"></a>
 ### Nested Schema for `panels.lens_dashboard_app_config.by_value.legacy_metric_config`
@@ -1316,11 +1627,76 @@ Required:
 Optional:
 
 - `description` (String) The description of the chart.
+- `drilldowns` (Attributes List) Optional drilldowns for this chart (max 100 per Kibana API). Each entry sets exactly one of `dashboard_drilldown`, `discover_drilldown`, or `url_drilldown`. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--legacy_metric_config--drilldowns))
 - `filters` (Attributes List) Additional filters to apply to the chart data (maximum 100). (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--legacy_metric_config--filters))
+- `hide_border` (Boolean) When true, suppresses the chart panel border.
+- `hide_title` (Boolean) When true, suppresses the chart title.
 - `ignore_global_filters` (Boolean) If true, ignore global filters when fetching data for this chart. Default is false.
 - `query` (Attributes) Query configuration for filtering data. Required for non-ES|QL datasets. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--legacy_metric_config--query))
+- `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.
 - `sampling` (Number) Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.
+- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--legacy_metric_config--time_range))
 - `title` (String) The title of the chart displayed in the panel.
+
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--legacy_metric_config--drilldowns"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.legacy_metric_config.drilldowns`
+
+Optional:
+
+- `dashboard_drilldown` (Attributes) Navigate to another dashboard using current filters/time range. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--legacy_metric_config--drilldowns--dashboard_drilldown))
+- `discover_drilldown` (Attributes) Open Discover with contextual filters. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--legacy_metric_config--drilldowns--discover_drilldown))
+- `url_drilldown` (Attributes) Open a URL drilldown configured with explicit trigger semantics. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--legacy_metric_config--drilldowns--url_drilldown))
+
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--legacy_metric_config--drilldowns--dashboard_drilldown"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.legacy_metric_config.drilldowns.dashboard_drilldown`
+
+Required:
+
+- `dashboard_id` (String) Target dashboard id.
+- `label` (String) Human-readable drilldown label.
+
+Optional:
+
+- `open_in_new_tab` (Boolean) When true, opens the target dashboard in a new browser tab.
+- `use_filters` (Boolean) When true, forwards filter context.
+- `use_time_range` (Boolean) When true, forwards the time range.
+
+Read-Only:
+
+- `trigger` (String) **Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.
+
+
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--legacy_metric_config--drilldowns--discover_drilldown"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.legacy_metric_config.drilldowns.discover_drilldown`
+
+Required:
+
+- `label` (String) Human-readable drilldown label.
+
+Optional:
+
+- `open_in_new_tab` (Boolean) When true, opens Discover in a new browser tab.
+
+Read-Only:
+
+- `trigger` (String) **Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.
+
+
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--legacy_metric_config--drilldowns--url_drilldown"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.legacy_metric_config.drilldowns.url_drilldown`
+
+Required:
+
+- `label` (String) Human-readable drilldown label.
+- `trigger` (String) Trigger that fires this drilldown.
+- `url` (String) Destination URL.
+
+Optional:
+
+- `encode_url` (Boolean) When true, encodes interpolated URL parameters.
+- `open_in_new_tab` (Boolean) When true, opens the URL in a new browser tab.
+
+
 
 <a id="nestedatt--panels--lens_dashboard_app_config--by_value--legacy_metric_config--filters"></a>
 ### Nested Schema for `panels.lens_dashboard_app_config.by_value.legacy_metric_config.filters`
@@ -1342,23 +1718,41 @@ Optional:
 - `language` (String) Query language (default: 'kql').
 
 
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--legacy_metric_config--time_range"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.legacy_metric_config.time_range`
+
+Required:
+
+- `from` (String) Start of the chart time range.
+- `to` (String) End of the chart time range.
+
+Optional:
+
+- `mode` (String) Optional time range mode. Valid values are `absolute` or `relative`. When the GET API omits `mode`, the provider preserves the prior chart `time_range.mode` from configuration or state (same pattern as REQ-009 on the dashboard `time_range`).
+
+
 
 <a id="nestedatt--panels--lens_dashboard_app_config--by_value--metric_chart_config"></a>
 ### Nested Schema for `panels.lens_dashboard_app_config.by_value.metric_chart_config`
 
 Required:
 
-- `data_source_json` (String) Dataset configuration as JSON. Can be a data view dataset (`type: 'dataview'`), index dataset (`type: 'index'`), ES|QL dataset (`type: 'esql'`), or table ES|QL dataset (`type: 'tableESQLDatasetType'`).
+- `data_source_json` (String) Dataset configuration as JSON. Can be a data view dataset (`type: 'dataview'`), index dataset (`type: 'index'`), ES|QL dataset (`type: 'esql'`), or table ES|QL dataset (`type: 'tableESQLDatasetType`).
 - `metrics` (Attributes List) Array of metrics to display (1-2 items). Each metric can be a primary metric (displays prominently) or secondary metric (displays as comparison). Metrics can use field operations (count, unique count, min, max, avg, median, std dev, sum, last value, percentile, percentile ranks), pipeline operations (differences, moving average, cumulative sum, counter rate), formula operations, or for ES|QL datasets, column-based value operations. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--metric_chart_config--metrics))
 
 Optional:
 
 - `breakdown_by_json` (String) Breakdown configuration as JSON. Groups metrics by a dimension. Can use operations like date histogram, terms, histogram, range, filters, or for ES|QL datasets, value operations with columns. Includes optional columns count and collapse_by configuration.
 - `description` (String) The description of the chart.
+- `drilldowns` (Attributes List) Optional drilldowns for this chart (max 100 per Kibana API). Each entry sets exactly one of `dashboard_drilldown`, `discover_drilldown`, or `url_drilldown`. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--metric_chart_config--drilldowns))
 - `filters` (Attributes List) Additional filters to apply to the chart data (maximum 100). (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--metric_chart_config--filters))
+- `hide_border` (Boolean) When true, suppresses the chart panel border.
+- `hide_title` (Boolean) When true, suppresses the chart title.
 - `ignore_global_filters` (Boolean) If true, ignore global filters when fetching data for this chart. Default is false.
 - `query` (Attributes) Query configuration for filtering data. Required for non-ES|QL datasets. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--metric_chart_config--query))
+- `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.
 - `sampling` (Number) Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.
+- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--metric_chart_config--time_range))
 - `title` (String) The title of the chart displayed in the panel.
 
 <a id="nestedatt--panels--lens_dashboard_app_config--by_value--metric_chart_config--metrics"></a>
@@ -1367,6 +1761,66 @@ Optional:
 Required:
 
 - `config_json` (String) Metric configuration as JSON. For primary metrics: includes type ('primary'), operation, format, alignments, icon, and optional fields like sub_label, fit, color, apply_color_to, and background_chart. For secondary metrics: includes type ('secondary'), operation, format, and optional fields like label, prefix, compare, and color.
+
+
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--metric_chart_config--drilldowns"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.metric_chart_config.drilldowns`
+
+Optional:
+
+- `dashboard_drilldown` (Attributes) Navigate to another dashboard using current filters/time range. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--metric_chart_config--drilldowns--dashboard_drilldown))
+- `discover_drilldown` (Attributes) Open Discover with contextual filters. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--metric_chart_config--drilldowns--discover_drilldown))
+- `url_drilldown` (Attributes) Open a URL drilldown configured with explicit trigger semantics. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--metric_chart_config--drilldowns--url_drilldown))
+
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--metric_chart_config--drilldowns--dashboard_drilldown"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.metric_chart_config.drilldowns.dashboard_drilldown`
+
+Required:
+
+- `dashboard_id` (String) Target dashboard id.
+- `label` (String) Human-readable drilldown label.
+
+Optional:
+
+- `open_in_new_tab` (Boolean) When true, opens the target dashboard in a new browser tab.
+- `use_filters` (Boolean) When true, forwards filter context.
+- `use_time_range` (Boolean) When true, forwards the time range.
+
+Read-Only:
+
+- `trigger` (String) **Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.
+
+
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--metric_chart_config--drilldowns--discover_drilldown"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.metric_chart_config.drilldowns.discover_drilldown`
+
+Required:
+
+- `label` (String) Human-readable drilldown label.
+
+Optional:
+
+- `open_in_new_tab` (Boolean) When true, opens Discover in a new browser tab.
+
+Read-Only:
+
+- `trigger` (String) **Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.
+
+
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--metric_chart_config--drilldowns--url_drilldown"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.metric_chart_config.drilldowns.url_drilldown`
+
+Required:
+
+- `label` (String) Human-readable drilldown label.
+- `trigger` (String) Trigger that fires this drilldown.
+- `url` (String) Destination URL.
+
+Optional:
+
+- `encode_url` (Boolean) When true, encodes interpolated URL parameters.
+- `open_in_new_tab` (Boolean) When true, opens the URL in a new browser tab.
+
 
 
 <a id="nestedatt--panels--lens_dashboard_app_config--by_value--metric_chart_config--filters"></a>
@@ -1389,6 +1843,19 @@ Optional:
 - `language` (String) Query language (default: 'kql').
 
 
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--metric_chart_config--time_range"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.metric_chart_config.time_range`
+
+Required:
+
+- `from` (String) Start of the chart time range.
+- `to` (String) End of the chart time range.
+
+Optional:
+
+- `mode` (String) Optional time range mode. Valid values are `absolute` or `relative`. When the GET API omits `mode`, the provider preserves the prior chart `time_range.mode` from configuration or state (same pattern as REQ-009 on the dashboard `time_range`).
+
+
 
 <a id="nestedatt--panels--lens_dashboard_app_config--by_value--mosaic_config"></a>
 ### Nested Schema for `panels.lens_dashboard_app_config.by_value.mosaic_config`
@@ -1402,14 +1869,19 @@ Required:
 Optional:
 
 - `description` (String) The description of the chart.
+- `drilldowns` (Attributes List) Optional drilldowns for this chart (max 100 per Kibana API). Each entry sets exactly one of `dashboard_drilldown`, `discover_drilldown`, or `url_drilldown`. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--mosaic_config--drilldowns))
 - `esql_group_by` (Attributes List) Breakdown columns for ES|QL mosaics. Mutually exclusive with `group_by_json`. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--mosaic_config--esql_group_by))
 - `esql_metrics` (Attributes List) Metric columns for ES|QL mosaics (exactly 1). Mutually exclusive with `metrics_json`. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--mosaic_config--esql_metrics))
 - `filters` (Attributes List) Additional filters to apply to the chart data (maximum 100). (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--mosaic_config--filters))
 - `group_by_json` (String) Array of primary breakdown dimensions as JSON (minimum 1). For non-ES|QL, each item can be date histogram, terms, histogram, range, or filters operations; for ES|QL, each item is the column/operation/color configuration.
+- `hide_border` (Boolean) When true, suppresses the chart panel border.
+- `hide_title` (Boolean) When true, suppresses the chart title.
 - `ignore_global_filters` (Boolean) If true, ignore global filters when fetching data for this chart. Default is false.
 - `metrics_json` (String) Array of metric configurations as JSON (exactly 1 required). For non-ES|QL, each item can be a field metric, pipeline metric, or formula; for ES|QL, each item is the column/operation/color/format configuration.
 - `query` (Attributes) Query configuration for filtering data. Required for non-ES|QL partition charts. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--mosaic_config--query))
+- `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.
 - `sampling` (Number) Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.
+- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--mosaic_config--time_range))
 - `title` (String) The title of the chart displayed in the panel.
 - `value_display` (Attributes) Configuration for displaying values in chart cells. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--mosaic_config--value_display))
 
@@ -1425,6 +1897,66 @@ Optional:
 - `nested` (Boolean) Show nested legend with hierarchical breakdown levels.
 - `truncate_after_lines` (Number) Maximum lines before truncating legend items (1-10).
 - `visible` (String) Legend visibility: auto, visible, or hidden.
+
+
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--mosaic_config--drilldowns"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.mosaic_config.drilldowns`
+
+Optional:
+
+- `dashboard_drilldown` (Attributes) Navigate to another dashboard using current filters/time range. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--mosaic_config--drilldowns--dashboard_drilldown))
+- `discover_drilldown` (Attributes) Open Discover with contextual filters. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--mosaic_config--drilldowns--discover_drilldown))
+- `url_drilldown` (Attributes) Open a URL drilldown configured with explicit trigger semantics. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--mosaic_config--drilldowns--url_drilldown))
+
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--mosaic_config--drilldowns--dashboard_drilldown"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.mosaic_config.drilldowns.dashboard_drilldown`
+
+Required:
+
+- `dashboard_id` (String) Target dashboard id.
+- `label` (String) Human-readable drilldown label.
+
+Optional:
+
+- `open_in_new_tab` (Boolean) When true, opens the target dashboard in a new browser tab.
+- `use_filters` (Boolean) When true, forwards filter context.
+- `use_time_range` (Boolean) When true, forwards the time range.
+
+Read-Only:
+
+- `trigger` (String) **Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.
+
+
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--mosaic_config--drilldowns--discover_drilldown"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.mosaic_config.drilldowns.discover_drilldown`
+
+Required:
+
+- `label` (String) Human-readable drilldown label.
+
+Optional:
+
+- `open_in_new_tab` (Boolean) When true, opens Discover in a new browser tab.
+
+Read-Only:
+
+- `trigger` (String) **Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.
+
+
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--mosaic_config--drilldowns--url_drilldown"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.mosaic_config.drilldowns.url_drilldown`
+
+Required:
+
+- `label` (String) Human-readable drilldown label.
+- `trigger` (String) Trigger that fires this drilldown.
+- `url` (String) Destination URL.
+
+Optional:
+
+- `encode_url` (Boolean) When true, encodes interpolated URL parameters.
+- `open_in_new_tab` (Boolean) When true, opens the URL in a new browser tab.
+
 
 
 <a id="nestedatt--panels--lens_dashboard_app_config--by_value--mosaic_config--esql_group_by"></a>
@@ -1475,6 +2007,19 @@ Optional:
 - `language` (String) Query language (default: 'kql').
 
 
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--mosaic_config--time_range"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.mosaic_config.time_range`
+
+Required:
+
+- `from` (String) Start of the chart time range.
+- `to` (String) End of the chart time range.
+
+Optional:
+
+- `mode` (String) Optional time range mode. Valid values are `absolute` or `relative`. When the GET API omits `mode`, the provider preserves the prior chart `time_range.mode` from configuration or state (same pattern as REQ-009 on the dashboard `time_range`).
+
+
 <a id="nestedatt--panels--lens_dashboard_app_config--by_value--mosaic_config--value_display"></a>
 ### Nested Schema for `panels.lens_dashboard_app_config.by_value.mosaic_config.value_display`
 
@@ -1500,13 +2045,18 @@ Optional:
 
 - `description` (String) The description of the chart.
 - `donut_hole` (String) Donut hole size: none (pie), s, m, or l.
+- `drilldowns` (Attributes List) Optional drilldowns for this chart (max 100 per Kibana API). Each entry sets exactly one of `dashboard_drilldown`, `discover_drilldown`, or `url_drilldown`. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--pie_chart_config--drilldowns))
 - `filters` (Attributes List) Additional filters to apply to the chart data (maximum 100). (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--pie_chart_config--filters))
 - `group_by` (Attributes List) Array of breakdown dimensions (minimum 1). (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--pie_chart_config--group_by))
+- `hide_border` (Boolean) When true, suppresses the chart panel border.
+- `hide_title` (Boolean) When true, suppresses the chart title.
 - `ignore_global_filters` (Boolean) If true, ignore global filters when fetching data for this chart. Default is false.
 - `label_position` (String) Position of slice labels: hidden, inside, or outside.
 - `legend` (Attributes) Optional legend configuration for the pie chart. Same shape as treemap and mosaic legends; Terraform `visible` maps to API `visibility`. When omitted, the schema default matches typical Kibana legend defaults (size and visibility `auto`) so apply/read stay consistent. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--pie_chart_config--legend))
 - `query` (Attributes) Query configuration for filtering data. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--pie_chart_config--query))
+- `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.
 - `sampling` (Number) Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.
+- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--pie_chart_config--time_range))
 - `title` (String) The title of the chart displayed in the panel.
 
 <a id="nestedatt--panels--lens_dashboard_app_config--by_value--pie_chart_config--metrics"></a>
@@ -1515,6 +2065,66 @@ Optional:
 Required:
 
 - `config_json` (String) Metric configuration as JSON.
+
+
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--pie_chart_config--drilldowns"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.pie_chart_config.drilldowns`
+
+Optional:
+
+- `dashboard_drilldown` (Attributes) Navigate to another dashboard using current filters/time range. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--pie_chart_config--drilldowns--dashboard_drilldown))
+- `discover_drilldown` (Attributes) Open Discover with contextual filters. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--pie_chart_config--drilldowns--discover_drilldown))
+- `url_drilldown` (Attributes) Open a URL drilldown configured with explicit trigger semantics. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--pie_chart_config--drilldowns--url_drilldown))
+
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--pie_chart_config--drilldowns--dashboard_drilldown"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.pie_chart_config.drilldowns.dashboard_drilldown`
+
+Required:
+
+- `dashboard_id` (String) Target dashboard id.
+- `label` (String) Human-readable drilldown label.
+
+Optional:
+
+- `open_in_new_tab` (Boolean) When true, opens the target dashboard in a new browser tab.
+- `use_filters` (Boolean) When true, forwards filter context.
+- `use_time_range` (Boolean) When true, forwards the time range.
+
+Read-Only:
+
+- `trigger` (String) **Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.
+
+
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--pie_chart_config--drilldowns--discover_drilldown"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.pie_chart_config.drilldowns.discover_drilldown`
+
+Required:
+
+- `label` (String) Human-readable drilldown label.
+
+Optional:
+
+- `open_in_new_tab` (Boolean) When true, opens Discover in a new browser tab.
+
+Read-Only:
+
+- `trigger` (String) **Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.
+
+
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--pie_chart_config--drilldowns--url_drilldown"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.pie_chart_config.drilldowns.url_drilldown`
+
+Required:
+
+- `label` (String) Human-readable drilldown label.
+- `trigger` (String) Trigger that fires this drilldown.
+- `url` (String) Destination URL.
+
+Optional:
+
+- `encode_url` (Boolean) When true, encodes interpolated URL parameters.
+- `open_in_new_tab` (Boolean) When true, opens the URL in a new browser tab.
+
 
 
 <a id="nestedatt--panels--lens_dashboard_app_config--by_value--pie_chart_config--filters"></a>
@@ -1559,6 +2169,19 @@ Optional:
 - `language` (String) Query language (default: 'kql').
 
 
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--pie_chart_config--time_range"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.pie_chart_config.time_range`
+
+Required:
+
+- `from` (String) Start of the chart time range.
+- `to` (String) End of the chart time range.
+
+Optional:
+
+- `mode` (String) Optional time range mode. Valid values are `absolute` or `relative`. When the GET API omits `mode`, the provider preserves the prior chart `time_range.mode` from configuration or state (same pattern as REQ-009 on the dashboard `time_range`).
+
+
 
 <a id="nestedatt--panels--lens_dashboard_app_config--by_value--region_map_config"></a>
 ### Nested Schema for `panels.lens_dashboard_app_config.by_value.region_map_config`
@@ -1572,11 +2195,76 @@ Required:
 Optional:
 
 - `description` (String) The description of the chart.
+- `drilldowns` (Attributes List) Optional drilldowns for this chart (max 100 per Kibana API). Each entry sets exactly one of `dashboard_drilldown`, `discover_drilldown`, or `url_drilldown`. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--region_map_config--drilldowns))
 - `filters` (Attributes List) Additional filters to apply to the chart data (maximum 100). (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--region_map_config--filters))
+- `hide_border` (Boolean) When true, suppresses the chart panel border.
+- `hide_title` (Boolean) When true, suppresses the chart title.
 - `ignore_global_filters` (Boolean) If true, ignore global filters when fetching data for this chart. Default is false.
 - `query` (Attributes) Query configuration for filtering data. Required for non-ES|QL region map configurations. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--region_map_config--query))
+- `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.
 - `sampling` (Number) Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.
+- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--region_map_config--time_range))
 - `title` (String) The title of the chart displayed in the panel.
+
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--region_map_config--drilldowns"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.region_map_config.drilldowns`
+
+Optional:
+
+- `dashboard_drilldown` (Attributes) Navigate to another dashboard using current filters/time range. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--region_map_config--drilldowns--dashboard_drilldown))
+- `discover_drilldown` (Attributes) Open Discover with contextual filters. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--region_map_config--drilldowns--discover_drilldown))
+- `url_drilldown` (Attributes) Open a URL drilldown configured with explicit trigger semantics. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--region_map_config--drilldowns--url_drilldown))
+
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--region_map_config--drilldowns--dashboard_drilldown"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.region_map_config.drilldowns.dashboard_drilldown`
+
+Required:
+
+- `dashboard_id` (String) Target dashboard id.
+- `label` (String) Human-readable drilldown label.
+
+Optional:
+
+- `open_in_new_tab` (Boolean) When true, opens the target dashboard in a new browser tab.
+- `use_filters` (Boolean) When true, forwards filter context.
+- `use_time_range` (Boolean) When true, forwards the time range.
+
+Read-Only:
+
+- `trigger` (String) **Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.
+
+
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--region_map_config--drilldowns--discover_drilldown"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.region_map_config.drilldowns.discover_drilldown`
+
+Required:
+
+- `label` (String) Human-readable drilldown label.
+
+Optional:
+
+- `open_in_new_tab` (Boolean) When true, opens Discover in a new browser tab.
+
+Read-Only:
+
+- `trigger` (String) **Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.
+
+
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--region_map_config--drilldowns--url_drilldown"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.region_map_config.drilldowns.url_drilldown`
+
+Required:
+
+- `label` (String) Human-readable drilldown label.
+- `trigger` (String) Trigger that fires this drilldown.
+- `url` (String) Destination URL.
+
+Optional:
+
+- `encode_url` (Boolean) When true, encodes interpolated URL parameters.
+- `open_in_new_tab` (Boolean) When true, opens the URL in a new browser tab.
+
+
 
 <a id="nestedatt--panels--lens_dashboard_app_config--by_value--region_map_config--filters"></a>
 ### Nested Schema for `panels.lens_dashboard_app_config.by_value.region_map_config.filters`
@@ -1598,6 +2286,19 @@ Optional:
 - `language` (String) Query language (default: 'kql').
 
 
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--region_map_config--time_range"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.region_map_config.time_range`
+
+Required:
+
+- `from` (String) Start of the chart time range.
+- `to` (String) End of the chart time range.
+
+Optional:
+
+- `mode` (String) Optional time range mode. Valid values are `absolute` or `relative`. When the GET API omits `mode`, the provider preserves the prior chart `time_range.mode` from configuration or state (same pattern as REQ-009 on the dashboard `time_range`).
+
+
 
 <a id="nestedatt--panels--lens_dashboard_app_config--by_value--tagcloud_config"></a>
 ### Nested Schema for `panels.lens_dashboard_app_config.by_value.tagcloud_config`
@@ -1609,18 +2310,82 @@ Required:
 Optional:
 
 - `description` (String) The description of the chart.
+- `drilldowns` (Attributes List) Optional drilldowns for this chart (max 100 per Kibana API). Each entry sets exactly one of `dashboard_drilldown`, `discover_drilldown`, or `url_drilldown`. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--tagcloud_config--drilldowns))
 - `esql_metric` (Attributes) Typed metric column for ES|QL tagclouds. Mutually exclusive with `metric_json`. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--tagcloud_config--esql_metric))
 - `esql_tag_by` (Attributes) Typed tag-by column for ES|QL tagclouds. Mutually exclusive with `tag_by_json`. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--tagcloud_config--esql_tag_by))
 - `filters` (Attributes List) Additional filters to apply to the chart data (maximum 100). (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--tagcloud_config--filters))
 - `font_size` (Attributes) Minimum and maximum font size for the tags. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--tagcloud_config--font_size))
+- `hide_border` (Boolean) When true, suppresses the chart panel border.
+- `hide_title` (Boolean) When true, suppresses the chart title.
 - `ignore_global_filters` (Boolean) If true, ignore global filters when fetching data for this chart. Default is false.
-- `metric_json` (String) Metric configuration as JSON. Can be a field metric operation (count, unique count, min, max, avg, median, std dev, sum, last value, percentile, percentile ranks), a pipeline operation (differences, moving average, cumulative sum, counter rate), or a formula operation.
- Required for non-ES|QL tagclouds; mutually exclusive with `esql_metric`.
+- `metric_json` (String) Metric configuration as JSON. Can be a field metric operation (count, unique count, min, max, avg, median, std dev, sum, last value, percentile, percentile ranks), a pipeline operation (differences, moving average, cumulative sum, counter rate), or a formula operation. Required for non-ES|QL tagclouds; mutually exclusive with `esql_metric`.
 - `orientation` (String) Orientation of the tagcloud. Valid values: 'horizontal', 'vertical', 'angled'.
 - `query` (Attributes) Query configuration for filtering data. Required for non-ES|QL tagclouds; omit for ES|QL mode. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--tagcloud_config--query))
+- `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.
 - `sampling` (Number) Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.
 - `tag_by_json` (String) Tag grouping configuration as JSON. Can be a date histogram, terms, histogram, range, or filters operation. This determines how tags are grouped and displayed. Required for non-ES|QL tagclouds; mutually exclusive with `esql_tag_by`.
+- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--tagcloud_config--time_range))
 - `title` (String) The title of the chart displayed in the panel.
+
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--tagcloud_config--drilldowns"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.tagcloud_config.drilldowns`
+
+Optional:
+
+- `dashboard_drilldown` (Attributes) Navigate to another dashboard using current filters/time range. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--tagcloud_config--drilldowns--dashboard_drilldown))
+- `discover_drilldown` (Attributes) Open Discover with contextual filters. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--tagcloud_config--drilldowns--discover_drilldown))
+- `url_drilldown` (Attributes) Open a URL drilldown configured with explicit trigger semantics. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--tagcloud_config--drilldowns--url_drilldown))
+
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--tagcloud_config--drilldowns--dashboard_drilldown"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.tagcloud_config.drilldowns.dashboard_drilldown`
+
+Required:
+
+- `dashboard_id` (String) Target dashboard id.
+- `label` (String) Human-readable drilldown label.
+
+Optional:
+
+- `open_in_new_tab` (Boolean) When true, opens the target dashboard in a new browser tab.
+- `use_filters` (Boolean) When true, forwards filter context.
+- `use_time_range` (Boolean) When true, forwards the time range.
+
+Read-Only:
+
+- `trigger` (String) **Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.
+
+
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--tagcloud_config--drilldowns--discover_drilldown"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.tagcloud_config.drilldowns.discover_drilldown`
+
+Required:
+
+- `label` (String) Human-readable drilldown label.
+
+Optional:
+
+- `open_in_new_tab` (Boolean) When true, opens Discover in a new browser tab.
+
+Read-Only:
+
+- `trigger` (String) **Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.
+
+
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--tagcloud_config--drilldowns--url_drilldown"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.tagcloud_config.drilldowns.url_drilldown`
+
+Required:
+
+- `label` (String) Human-readable drilldown label.
+- `trigger` (String) Trigger that fires this drilldown.
+- `url` (String) Destination URL.
+
+Optional:
+
+- `encode_url` (Boolean) When true, encodes interpolated URL parameters.
+- `open_in_new_tab` (Boolean) When true, opens the URL in a new browser tab.
+
+
 
 <a id="nestedatt--panels--lens_dashboard_app_config--by_value--tagcloud_config--esql_metric"></a>
 ### Nested Schema for `panels.lens_dashboard_app_config.by_value.tagcloud_config.esql_metric`
@@ -1678,6 +2443,19 @@ Optional:
 - `language` (String) Query language (default: 'kql').
 
 
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--tagcloud_config--time_range"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.tagcloud_config.time_range`
+
+Required:
+
+- `from` (String) Start of the chart time range.
+- `to` (String) End of the chart time range.
+
+Optional:
+
+- `mode` (String) Optional time range mode. Valid values are `absolute` or `relative`. When the GET API omits `mode`, the provider preserves the prior chart `time_range.mode` from configuration or state (same pattern as REQ-009 on the dashboard `time_range`).
+
+
 
 <a id="nestedatt--panels--lens_dashboard_app_config--by_value--treemap_config"></a>
 ### Nested Schema for `panels.lens_dashboard_app_config.by_value.treemap_config`
@@ -1690,14 +2468,19 @@ Required:
 Optional:
 
 - `description` (String) The description of the chart.
+- `drilldowns` (Attributes List) Optional drilldowns for this chart (max 100 per Kibana API). Each entry sets exactly one of `dashboard_drilldown`, `discover_drilldown`, or `url_drilldown`. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--treemap_config--drilldowns))
 - `esql_group_by` (Attributes List) Breakdown columns for ES|QL treemaps. Mutually exclusive with `group_by_json`. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--treemap_config--esql_group_by))
 - `esql_metrics` (Attributes List) Metric columns for ES|QL treemaps. Mutually exclusive with `metrics_json`. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--treemap_config--esql_metrics))
 - `filters` (Attributes List) Additional filters to apply to the chart data (maximum 100). (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--treemap_config--filters))
 - `group_by_json` (String) Array of breakdown dimensions as JSON (minimum 1). For non-ES|QL, each item can be date histogram, terms, histogram, range, or filters operations; for ES|QL, each item is the column/operation/color configuration.
+- `hide_border` (Boolean) When true, suppresses the chart panel border.
+- `hide_title` (Boolean) When true, suppresses the chart title.
 - `ignore_global_filters` (Boolean) If true, ignore global filters when fetching data for this chart. Default is false.
 - `metrics_json` (String) Array of metric configurations as JSON (minimum 1). For non-ES|QL, each item can be a field metric, pipeline metric, or formula; for ES|QL, each item is the column/operation/color/format configuration.
 - `query` (Attributes) Query configuration for filtering data. Required for non-ES|QL partition charts. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--treemap_config--query))
+- `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.
 - `sampling` (Number) Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.
+- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--treemap_config--time_range))
 - `title` (String) The title of the chart displayed in the panel.
 - `value_display` (Attributes) Configuration for displaying values in chart cells. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--treemap_config--value_display))
 
@@ -1713,6 +2496,66 @@ Optional:
 - `nested` (Boolean) Show nested legend with hierarchical breakdown levels.
 - `truncate_after_lines` (Number) Maximum lines before truncating legend items (1-10).
 - `visible` (String) Legend visibility: auto, visible, or hidden.
+
+
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--treemap_config--drilldowns"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.treemap_config.drilldowns`
+
+Optional:
+
+- `dashboard_drilldown` (Attributes) Navigate to another dashboard using current filters/time range. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--treemap_config--drilldowns--dashboard_drilldown))
+- `discover_drilldown` (Attributes) Open Discover with contextual filters. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--treemap_config--drilldowns--discover_drilldown))
+- `url_drilldown` (Attributes) Open a URL drilldown configured with explicit trigger semantics. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--treemap_config--drilldowns--url_drilldown))
+
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--treemap_config--drilldowns--dashboard_drilldown"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.treemap_config.drilldowns.dashboard_drilldown`
+
+Required:
+
+- `dashboard_id` (String) Target dashboard id.
+- `label` (String) Human-readable drilldown label.
+
+Optional:
+
+- `open_in_new_tab` (Boolean) When true, opens the target dashboard in a new browser tab.
+- `use_filters` (Boolean) When true, forwards filter context.
+- `use_time_range` (Boolean) When true, forwards the time range.
+
+Read-Only:
+
+- `trigger` (String) **Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.
+
+
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--treemap_config--drilldowns--discover_drilldown"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.treemap_config.drilldowns.discover_drilldown`
+
+Required:
+
+- `label` (String) Human-readable drilldown label.
+
+Optional:
+
+- `open_in_new_tab` (Boolean) When true, opens Discover in a new browser tab.
+
+Read-Only:
+
+- `trigger` (String) **Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.
+
+
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--treemap_config--drilldowns--url_drilldown"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.treemap_config.drilldowns.url_drilldown`
+
+Required:
+
+- `label` (String) Human-readable drilldown label.
+- `trigger` (String) Trigger that fires this drilldown.
+- `url` (String) Destination URL.
+
+Optional:
+
+- `encode_url` (Boolean) When true, encodes interpolated URL parameters.
+- `open_in_new_tab` (Boolean) When true, opens the URL in a new browser tab.
+
 
 
 <a id="nestedatt--panels--lens_dashboard_app_config--by_value--treemap_config--esql_group_by"></a>
@@ -1773,6 +2616,19 @@ Optional:
 - `language` (String) Query language (default: 'kql').
 
 
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--treemap_config--time_range"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.treemap_config.time_range`
+
+Required:
+
+- `from` (String) Start of the chart time range.
+- `to` (String) End of the chart time range.
+
+Optional:
+
+- `mode` (String) Optional time range mode. Valid values are `absolute` or `relative`. When the GET API omits `mode`, the provider preserves the prior chart `time_range.mode` from configuration or state (same pattern as REQ-009 on the dashboard `time_range`).
+
+
 <a id="nestedatt--panels--lens_dashboard_app_config--by_value--treemap_config--value_display"></a>
 ### Nested Schema for `panels.lens_dashboard_app_config.by_value.treemap_config.value_display`
 
@@ -1797,14 +2653,19 @@ Required:
 Optional:
 
 - `description` (String) The description of the chart.
+- `drilldowns` (Attributes List) Optional drilldowns for this chart (max 100 per Kibana API). Each entry sets exactly one of `dashboard_drilldown`, `discover_drilldown`, or `url_drilldown`. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--waffle_config--drilldowns))
 - `esql_group_by` (Attributes List) Breakdown columns for ES|QL waffles. Mutually exclusive with `group_by`. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--waffle_config--esql_group_by))
 - `esql_metrics` (Attributes List) Metric columns for ES|QL waffles (minimum 1). Mutually exclusive with `metrics`. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--waffle_config--esql_metrics))
 - `filters` (Attributes List) Additional filters to apply to the chart data (maximum 100). (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--waffle_config--filters))
 - `group_by` (Attributes List) Breakdown dimensions for non-ES|QL waffles. Each `config_json` is a JSON object (terms, date_histogram, etc.) matching the Kibana Lens waffle schema. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--waffle_config--group_by))
+- `hide_border` (Boolean) When true, suppresses the chart panel border.
+- `hide_title` (Boolean) When true, suppresses the chart title.
 - `ignore_global_filters` (Boolean) If true, ignore global filters when fetching data for this chart. Default is false.
 - `metrics` (Attributes List) Metric configurations for non-ES|QL waffles (minimum 1). Each `config_json` is a JSON object (e.g. count, sum, or formula) matching the Kibana Lens waffle schema. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--waffle_config--metrics))
 - `query` (Attributes) Query configuration for filtering data. Required for non-ES|QL partition charts. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--waffle_config--query))
+- `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.
 - `sampling` (Number) Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.
+- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--waffle_config--time_range))
 - `title` (String) The title of the chart displayed in the panel.
 - `value_display` (Attributes) Configuration for displaying values in chart cells. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--waffle_config--value_display))
 
@@ -1820,6 +2681,66 @@ Optional:
 - `truncate_after_lines` (Number) Maximum lines before truncating legend items (1-10).
 - `values` (List of String) Legend value display modes. For example `absolute` shows raw metric values in the legend.
 - `visible` (String) Legend visibility: auto, visible, or hidden.
+
+
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--waffle_config--drilldowns"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.waffle_config.drilldowns`
+
+Optional:
+
+- `dashboard_drilldown` (Attributes) Navigate to another dashboard using current filters/time range. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--waffle_config--drilldowns--dashboard_drilldown))
+- `discover_drilldown` (Attributes) Open Discover with contextual filters. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--waffle_config--drilldowns--discover_drilldown))
+- `url_drilldown` (Attributes) Open a URL drilldown configured with explicit trigger semantics. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--waffle_config--drilldowns--url_drilldown))
+
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--waffle_config--drilldowns--dashboard_drilldown"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.waffle_config.drilldowns.dashboard_drilldown`
+
+Required:
+
+- `dashboard_id` (String) Target dashboard id.
+- `label` (String) Human-readable drilldown label.
+
+Optional:
+
+- `open_in_new_tab` (Boolean) When true, opens the target dashboard in a new browser tab.
+- `use_filters` (Boolean) When true, forwards filter context.
+- `use_time_range` (Boolean) When true, forwards the time range.
+
+Read-Only:
+
+- `trigger` (String) **Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.
+
+
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--waffle_config--drilldowns--discover_drilldown"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.waffle_config.drilldowns.discover_drilldown`
+
+Required:
+
+- `label` (String) Human-readable drilldown label.
+
+Optional:
+
+- `open_in_new_tab` (Boolean) When true, opens Discover in a new browser tab.
+
+Read-Only:
+
+- `trigger` (String) **Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.
+
+
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--waffle_config--drilldowns--url_drilldown"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.waffle_config.drilldowns.url_drilldown`
+
+Required:
+
+- `label` (String) Human-readable drilldown label.
+- `trigger` (String) Trigger that fires this drilldown.
+- `url` (String) Destination URL.
+
+Optional:
+
+- `encode_url` (Boolean) When true, encodes interpolated URL parameters.
+- `open_in_new_tab` (Boolean) When true, opens the URL in a new browser tab.
+
 
 
 <a id="nestedatt--panels--lens_dashboard_app_config--by_value--waffle_config--esql_group_by"></a>
@@ -1896,6 +2817,19 @@ Optional:
 - `language` (String) Query language (default: 'kql').
 
 
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--waffle_config--time_range"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.waffle_config.time_range`
+
+Required:
+
+- `from` (String) Start of the chart time range.
+- `to` (String) End of the chart time range.
+
+Optional:
+
+- `mode` (String) Optional time range mode. Valid values are `absolute` or `relative`. When the GET API omits `mode`, the provider preserves the prior chart `time_range.mode` from configuration or state (same pattern as REQ-009 on the dashboard `time_range`).
+
+
 <a id="nestedatt--panels--lens_dashboard_app_config--by_value--waffle_config--value_display"></a>
 ### Nested Schema for `panels.lens_dashboard_app_config.by_value.waffle_config.value_display`
 
@@ -1923,8 +2857,13 @@ Required:
 Optional:
 
 - `description` (String) The description of the chart.
+- `drilldowns` (Attributes List) Optional drilldowns for this chart (max 100 per Kibana API). Each entry sets exactly one of `dashboard_drilldown`, `discover_drilldown`, or `url_drilldown`. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--xy_chart_config--drilldowns))
 - `filters` (Attributes List) Additional filters to apply to the chart data (maximum 100). (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--xy_chart_config--filters))
+- `hide_border` (Boolean) When true, suppresses the chart panel border.
+- `hide_title` (Boolean) When true, suppresses the chart title.
 - `query` (Attributes) Query configuration for filtering data. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--xy_chart_config--query))
+- `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.
+- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--xy_chart_config--time_range))
 - `title` (String) The title of the chart displayed in the panel.
 
 <a id="nestedatt--panels--lens_dashboard_app_config--by_value--xy_chart_config--axis"></a>
@@ -2119,6 +3058,66 @@ Optional:
 - `visibility` (String) Legend visibility (auto, visible, hidden).
 
 
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--xy_chart_config--drilldowns"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.xy_chart_config.drilldowns`
+
+Optional:
+
+- `dashboard_drilldown` (Attributes) Navigate to another dashboard using current filters/time range. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--xy_chart_config--drilldowns--dashboard_drilldown))
+- `discover_drilldown` (Attributes) Open Discover with contextual filters. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--xy_chart_config--drilldowns--discover_drilldown))
+- `url_drilldown` (Attributes) Open a URL drilldown configured with explicit trigger semantics. (see [below for nested schema](#nestedatt--panels--lens_dashboard_app_config--by_value--xy_chart_config--drilldowns--url_drilldown))
+
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--xy_chart_config--drilldowns--dashboard_drilldown"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.xy_chart_config.drilldowns.dashboard_drilldown`
+
+Required:
+
+- `dashboard_id` (String) Target dashboard id.
+- `label` (String) Human-readable drilldown label.
+
+Optional:
+
+- `open_in_new_tab` (Boolean) When true, opens the target dashboard in a new browser tab.
+- `use_filters` (Boolean) When true, forwards filter context.
+- `use_time_range` (Boolean) When true, forwards the time range.
+
+Read-Only:
+
+- `trigger` (String) **Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.
+
+
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--xy_chart_config--drilldowns--discover_drilldown"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.xy_chart_config.drilldowns.discover_drilldown`
+
+Required:
+
+- `label` (String) Human-readable drilldown label.
+
+Optional:
+
+- `open_in_new_tab` (Boolean) When true, opens Discover in a new browser tab.
+
+Read-Only:
+
+- `trigger` (String) **Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.
+
+
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--xy_chart_config--drilldowns--url_drilldown"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.xy_chart_config.drilldowns.url_drilldown`
+
+Required:
+
+- `label` (String) Human-readable drilldown label.
+- `trigger` (String) Trigger that fires this drilldown.
+- `url` (String) Destination URL.
+
+Optional:
+
+- `encode_url` (Boolean) When true, encodes interpolated URL parameters.
+- `open_in_new_tab` (Boolean) When true, opens the URL in a new browser tab.
+
+
+
 <a id="nestedatt--panels--lens_dashboard_app_config--by_value--xy_chart_config--filters"></a>
 ### Nested Schema for `panels.lens_dashboard_app_config.by_value.xy_chart_config.filters`
 
@@ -2137,6 +3136,19 @@ Required:
 Optional:
 
 - `language` (String) Query language (default: 'kql').
+
+
+<a id="nestedatt--panels--lens_dashboard_app_config--by_value--xy_chart_config--time_range"></a>
+### Nested Schema for `panels.lens_dashboard_app_config.by_value.xy_chart_config.time_range`
+
+Required:
+
+- `from` (String) Start of the chart time range.
+- `to` (String) End of the chart time range.
+
+Optional:
+
+- `mode` (String) Optional time range mode. Valid values are `absolute` or `relative`. When the GET API omits `mode`, the provider preserves the prior chart `time_range.mode` from configuration or state (same pattern as REQ-009 on the dashboard `time_range`).
 
 
 
@@ -2604,7 +3616,7 @@ Optional:
 
 Optional:
 
-- `by_reference` (Attributes) By-reference `vis` configuration: structured `drilldowns`, `ref_id`, optional `references_json`, and required `time_range`. Shares the attribute shape with `lens_dashboard_app_config.by_reference` via `getLensByReferenceAttributes()`. (see [below for nested schema](#nestedatt--panels--vis_config--by_reference))
+- `by_reference` (Attributes) By-reference `vis` configuration: structured `drilldowns`, `ref_id`, optional `references_json`, and required `time_range`. (see [below for nested schema](#nestedatt--panels--vis_config--by_reference))
 - `by_value` (Attributes) Inline by-value Lens visualization configuration for `type = "vis"` panels (`vis_config`). Exactly one typed chart kind must be set (no raw JSON here — use panel-level `config_json` for that). (see [below for nested schema](#nestedatt--panels--vis_config--by_value))
 
 <a id="nestedatt--panels--vis_config--by_reference"></a>
@@ -2629,8 +3641,8 @@ Optional:
 
 Required:
 
-- `from` (String) Range start, matching the Kibana time range `from` field.
-- `to` (String) Range end, matching the Kibana time range `to` field.
+- `from` (String) Start of the time range (e.g., 'now-15m', '2023-01-01T00:00:00Z').
+- `to` (String) End of the time range (e.g., 'now', '2023-12-31T23:59:59Z').
 
 Optional:
 
@@ -3105,8 +4117,7 @@ Optional:
 - `hide_border` (Boolean) When true, suppresses the chart panel border.
 - `hide_title` (Boolean) When true, suppresses the chart title.
 - `ignore_global_filters` (Boolean) If true, ignore global filters when fetching data for this chart. Default is false.
-- `metric_json` (String) Metric configuration as JSON. Supports metric operations such as count, unique count, min, max, average, median, standard deviation, sum, last value, percentile, percentile ranks, or formula.
- Required for non-ES|QL gauges; mutually exclusive with `esql_metric`.
+- `metric_json` (String) Metric configuration as JSON. Supports metric operations such as count, unique count, min, max, average, median, standard deviation, sum, last value, percentile, percentile ranks, or formula. Required for non-ES|QL gauges; mutually exclusive with `esql_metric`.
 - `query` (Attributes) Query configuration for filtering data. Required for non-ES|QL gauges; omit for ES|QL mode. (see [below for nested schema](#nestedatt--panels--vis_config--by_value--gauge_config--query))
 - `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.
 - `sampling` (Number) Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.
@@ -3330,7 +4341,7 @@ Optional:
 Optional:
 
 - `labels` (Attributes) X-axis label configuration. (see [below for nested schema](#nestedatt--panels--vis_config--by_value--heatmap_config--axis--x--labels))
-- `title` (Attributes) X-axis title configuration. (see [below for nested schema](#nestedatt--panels--vis_config--by_value--heatmap_config--axis--x--title))
+- `title` (Attributes) Axis title configuration. (see [below for nested schema](#nestedatt--panels--vis_config--by_value--heatmap_config--axis--x--title))
 
 <a id="nestedatt--panels--vis_config--by_value--heatmap_config--axis--x--labels"></a>
 ### Nested Schema for `panels.vis_config.by_value.heatmap_config.axis.x.labels`
@@ -3357,7 +4368,7 @@ Optional:
 Optional:
 
 - `labels` (Attributes) Y-axis label configuration. (see [below for nested schema](#nestedatt--panels--vis_config--by_value--heatmap_config--axis--y--labels))
-- `title` (Attributes) Y-axis title configuration. (see [below for nested schema](#nestedatt--panels--vis_config--by_value--heatmap_config--axis--y--title))
+- `title` (Attributes) Axis title configuration. (see [below for nested schema](#nestedatt--panels--vis_config--by_value--heatmap_config--axis--y--title))
 
 <a id="nestedatt--panels--vis_config--by_value--heatmap_config--axis--y--labels"></a>
 ### Nested Schema for `panels.vis_config.by_value.heatmap_config.axis.y.labels`
@@ -3630,7 +4641,7 @@ Optional:
 
 Required:
 
-- `data_source_json` (String) Dataset configuration as JSON. Can be a data view dataset (`type: 'dataview'`), index dataset (`type: 'index'`), ES|QL dataset (`type: 'esql'`), or table ES|QL dataset (`type: 'tableESQLDatasetType'`).
+- `data_source_json` (String) Dataset configuration as JSON. Can be a data view dataset (`type: 'dataview'`), index dataset (`type: 'index'`), ES|QL dataset (`type: 'esql'`), or table ES|QL dataset (`type: 'tableESQLDatasetType`).
 - `metrics` (Attributes List) Array of metrics to display (1-2 items). Each metric can be a primary metric (displays prominently) or secondary metric (displays as comparison). Metrics can use field operations (count, unique count, min, max, avg, median, std dev, sum, last value, percentile, percentile ranks), pipeline operations (differences, moving average, cumulative sum, counter rate), formula operations, or for ES|QL datasets, column-based value operations. (see [below for nested schema](#nestedatt--panels--vis_config--by_value--metric_chart_config--metrics))
 
 Optional:
@@ -4211,8 +5222,7 @@ Optional:
 - `hide_border` (Boolean) When true, suppresses the chart panel border.
 - `hide_title` (Boolean) When true, suppresses the chart title.
 - `ignore_global_filters` (Boolean) If true, ignore global filters when fetching data for this chart. Default is false.
-- `metric_json` (String) Metric configuration as JSON. Can be a field metric operation (count, unique count, min, max, avg, median, std dev, sum, last value, percentile, percentile ranks), a pipeline operation (differences, moving average, cumulative sum, counter rate), or a formula operation.
- Required for non-ES|QL tagclouds; mutually exclusive with `esql_metric`.
+- `metric_json` (String) Metric configuration as JSON. Can be a field metric operation (count, unique count, min, max, avg, median, std dev, sum, last value, percentile, percentile ranks), a pipeline operation (differences, moving average, cumulative sum, counter rate), or a formula operation. Required for non-ES|QL tagclouds; mutually exclusive with `esql_metric`.
 - `orientation` (String) Orientation of the tagcloud. Valid values: 'horizontal', 'vertical', 'angled'.
 - `query` (Attributes) Query configuration for filtering data. Required for non-ES|QL tagclouds; omit for ES|QL mode. (see [below for nested schema](#nestedatt--panels--vis_config--by_value--tagcloud_config--query))
 - `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.
@@ -5206,23 +6216,23 @@ Required:
 
 Optional:
 
-- `config_json` (String) The configuration of the panel as a JSON string. Practitioner-authored panel-level `config_json` is valid only when `type` is `markdown` or `vis`. Typed panel kinds such as `lens-dashboard-app`, `image`, `slo_alerts`, and `discover_session` use their dedicated blocks (`lens_dashboard_app_config`, `image_config`, `slo_alerts_config`, `discover_session_config`), not panel-level `config_json`. Mutually exclusive with `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `lens_dashboard_app_config`, `discover_session_config`.
-- `discover_session_config` (Attributes) Configuration for a `discover_session` panel (`kbn-dashboard-panel-type-discover_session`). Required when `type` is `discover_session`. Set exactly one of `by_value` or `by_reference`. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `lens_dashboard_app_config`. (see [below for nested schema](#nestedatt--sections--panels--discover_session_config))
-- `esql_control_config` (Attributes) Configuration for an ES|QL control panel. Use this to manage ES|QL variable controls on a dashboard. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--esql_control_config))
+- `config_json` (String) The configuration of the panel as a JSON string. Practitioner-authored panel-level `config_json` is valid only when `type` is `markdown` or `vis`. Typed panel kinds such as `lens-dashboard-app`, `image`, `slo_alerts`, and `discover_session` use their dedicated blocks (`lens_dashboard_app_config`, `image_config`, `slo_alerts_config`, `discover_session_config`), not panel-level `config_json`. Mutually exclusive with `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `lens_dashboard_app_config`, `vis_config`, `discover_session_config`.
+- `discover_session_config` (Attributes) Configuration for a `discover_session` panel (`kbn-dashboard-panel-type-discover_session`). Set exactly one of `by_value` or `by_reference`. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `lens_dashboard_app_config`, `vis_config`. (see [below for nested schema](#nestedatt--sections--panels--discover_session_config))
+- `esql_control_config` (Attributes) Configuration for an ES|QL control panel. Use this to manage ES|QL variable controls on a dashboard. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `lens_dashboard_app_config`, `vis_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--esql_control_config))
 - `id` (String) The identifier of the panel (API `id`).
-- `image_config` (Attributes) Configuration for an `image` panel (`kbn-dashboard-panel-type-image`). Required when `type` is `image`. References the Kibana Dashboard API image embeddable `config` shape. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `slo_alerts_config`, `vis_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--image_config))
-- `lens_dashboard_app_config` (Attributes) Configuration for a `lens-dashboard-app` panel (the Kibana Dashboard API `lens-dashboard-app` panel type). Required when `type` is `lens-dashboard-app`. Set exactly one of `by_value` or `by_reference`. With `by_value`, set exactly one of `config_json` or one supported typed Lens chart block. With `by_reference`, use `ref_id` and `references_json` to map the API `references` list. Supported typed by-value blocks are sent as the `lens-dashboard-app` API `config` and do not use `type = "vis"` panels. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config))
-- `markdown_config` (Attributes) Configuration for a `markdown` panel (the Kibana Dashboard API `kbn-dashboard-panel-type-markdown` shape). Set exactly one of `by_value` (inline `content` with required nested `settings`) or `by_reference` (existing library item via `ref_id`). Presentation fields (`description`, `hide_title`, `title`, `hide_border`) are supported in both branches. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `image_config`, `slo_alerts_config`, `vis_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--markdown_config))
-- `options_list_control_config` (Attributes) Configuration for an options list control panel. Provides a dropdown or multi-select filter based on a field in a data view. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--options_list_control_config))
-- `range_slider_control_config` (Attributes) Configuration for a range slider control panel. Provides a min/max range filter tied to a data view field. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--range_slider_control_config))
-- `slo_alerts_config` (Attributes) Configuration for an `slo_alerts` panel (`kbn-dashboard-panel-type-slo_alerts`). Required when `type` is `slo_alerts`. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `vis_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--slo_alerts_config))
-- `slo_burn_rate_config` (Attributes) Configuration for an SLO burn rate panel. Use this for panels that visualize the burn rate of an SLO over a configurable look-back window. Mutually exclusive with `config_json`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--slo_burn_rate_config))
-- `slo_error_budget_config` (Attributes) Configuration for an SLO error budget panel. Displays the burn chart of remaining error budget for a specific SLO. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--slo_error_budget_config))
-- `slo_overview_config` (Attributes) Configuration for an SLO overview panel. Use either `single` (for a single SLO) or `groups` (for grouped SLO overview). Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--slo_overview_config))
-- `synthetics_monitors_config` (Attributes) Configuration for a Synthetics monitors panel. Displays a table of Elastic Synthetics monitors and their current status. All fields are optional — omit the block entirely for a bare panel with no filtering. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--synthetics_monitors_config))
-- `synthetics_stats_overview_config` (Attributes) Configuration for a Synthetics stats overview panel. All fields are optional; an absent or empty block shows statistics for all monitors visible within the space. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--synthetics_stats_overview_config))
-- `time_slider_control_config` (Attributes) Configuration for a time slider control panel. Controls the visible time window within the dashboard's global time range. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--time_slider_control_config))
-- `vis_config` (Attributes) Configuration for a `vis` panel (`type = "vis"`). Typed alternative to `config_json`: set exactly one of `by_value` (exactly one of 12 Lens chart kinds) or `by_reference`. With `by_reference`, use structured `drilldowns` and required `time_range` like `lens_dashboard_app_config.by_reference`. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--vis_config))
+- `image_config` (Attributes) Configuration for an `image` panel (`kbn-dashboard-panel-type-image`). Required when `type` is `image`. References the Kibana Dashboard API image embeddable `config` shape. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `slo_alerts_config`, `lens_dashboard_app_config`, `vis_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--image_config))
+- `lens_dashboard_app_config` (Attributes) Configuration for a `lens-dashboard-app` panel (the Kibana Dashboard API `lens-dashboard-app` panel type). Set exactly one of `by_value` or `by_reference`. With `by_value`, set exactly one of `config_json` or one supported typed Lens chart block. With `by_reference`, use `ref_id` and `references_json` to map the API `references` list. Supported typed by-value blocks are sent as the `lens-dashboard-app` API `config` and do not create `type = "vis"` panels. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `vis_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config))
+- `markdown_config` (Attributes) Configuration for a `markdown` panel (the Kibana Dashboard API `kbn-dashboard-panel-type-markdown` shape). Set exactly one of `by_value` (inline `content` with required nested `settings`) or `by_reference` (existing library item via `ref_id`). Presentation fields (`description`, `hide_title`, `title`, `hide_border`) are supported in both branches. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `image_config`, `slo_alerts_config`, `lens_dashboard_app_config`, `vis_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--markdown_config))
+- `options_list_control_config` (Attributes) Configuration for an options list control panel. Provides a dropdown or multi-select filter based on a field in a data view. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `lens_dashboard_app_config`, `vis_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--options_list_control_config))
+- `range_slider_control_config` (Attributes) Configuration for a range slider control panel. Provides a min/max range filter tied to a data view field. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `lens_dashboard_app_config`, `vis_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--range_slider_control_config))
+- `slo_alerts_config` (Attributes) Configuration for an `slo_alerts` panel (`kbn-dashboard-panel-type-slo_alerts`). Required when `type` is `slo_alerts`. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `lens_dashboard_app_config`, `vis_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--slo_alerts_config))
+- `slo_burn_rate_config` (Attributes) Configuration for an SLO burn rate panel. Use this for panels that visualize the burn rate of an SLO over a configurable look-back window. Mutually exclusive with `config_json`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `lens_dashboard_app_config`, `vis_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--slo_burn_rate_config))
+- `slo_error_budget_config` (Attributes) Configuration for an SLO error budget panel. Displays the burn chart of remaining error budget for a specific SLO. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `lens_dashboard_app_config`, `vis_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--slo_error_budget_config))
+- `slo_overview_config` (Attributes) Configuration for an SLO overview panel. Use either `single` (for a single SLO) or `groups` (for grouped SLO overview). Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `lens_dashboard_app_config`, `vis_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--slo_overview_config))
+- `synthetics_monitors_config` (Attributes) Configuration for a Synthetics monitors panel. Displays a table of Elastic Synthetics monitors and their current status. All fields are optional — omit the block entirely for a bare panel with no filtering. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `lens_dashboard_app_config`, `vis_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--synthetics_monitors_config))
+- `synthetics_stats_overview_config` (Attributes) Configuration for a Synthetics stats overview panel. All fields are optional; an absent or empty block shows statistics for all monitors visible within the space. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `lens_dashboard_app_config`, `vis_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--synthetics_stats_overview_config))
+- `time_slider_control_config` (Attributes) Configuration for a time slider control panel. Controls the visible time window within the dashboard's global time range. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `lens_dashboard_app_config`, `vis_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--time_slider_control_config))
+- `vis_config` (Attributes) Configuration for a `vis` panel (`type = "vis"`). Typed alternative to panel-level `config_json`: set exactly one of `by_value` (exactly one of 12 Lens chart kinds) or `by_reference`. With `by_reference`, use structured `drilldowns` and required `time_range` like `lens_dashboard_app_config.by_reference`. Mutually exclusive with `config_json`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `image_config`, `slo_alerts_config`, `lens_dashboard_app_config`, `discover_session_config`. (see [below for nested schema](#nestedatt--sections--panels--vis_config))
 
 <a id="nestedatt--sections--panels--grid"></a>
 ### Nested Schema for `sections.panels.grid`
@@ -5306,7 +6316,7 @@ Required:
 
 Optional:
 
-- `mode` (String) Time range mode. Valid values are `absolute` or `relative`. When the GET API omits `mode`, the provider preserves the prior `time_range.mode` from configuration or state.
+- `mode` (String) Optional time range mode. When set, must be `absolute` or `relative`.
 
 
 
@@ -5437,7 +6447,7 @@ Required:
 
 Optional:
 
-- `mode` (String) Time range mode. Valid values are `absolute` or `relative`. When the GET API omits `mode`, the provider preserves the prior `time_range.mode` from configuration or state.
+- `mode` (String) Optional time range mode. When set, must be `absolute` or `relative`.
 
 
 
@@ -5578,8 +6588,8 @@ Optional:
 
 Optional:
 
-- `by_reference` (Attributes) By-reference `lens-dashboard-app` configuration: link a saved Lens visualization via `ref_id`, optional `references_json`, optional structured `drilldowns`, and required `time_range`. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_reference))
-- `by_value` (Attributes) Inline by-value `lens-dashboard-app` configuration. Set exactly one of `config_json` (raw JSON) or one supported typed Lens chart block, not both. Typed by-value blocks send the chart as the Kibana `lens-dashboard-app` API `config` and do not create a `type = "vis"` panel. On read, when state used a typed chart block and the API `config` can be round-tripped into that same block, the provider repopulates the typed block; otherwise the response is reflected in `config_json` instead. Distinct from panel-level `config_json` on the panel. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value))
+- `by_reference` (Attributes) By-reference `lens-dashboard-app` configuration: structured `drilldowns`, `ref_id`, optional `references_json`, and required `time_range`. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_reference))
+- `by_value` (Attributes) Inline by-value `lens-dashboard-app` configuration. Set exactly one of `config_json` (raw JSON) or one supported typed Lens chart block, not both. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value))
 
 <a id="nestedatt--sections--panels--lens_dashboard_app_config--by_reference"></a>
 ### Nested Schema for `sections.panels.lens_dashboard_app_config.by_reference`
@@ -5603,8 +6613,8 @@ Optional:
 
 Required:
 
-- `from` (String) Range start, matching the Kibana time range `from` field.
-- `to` (String) Range end, matching the Kibana time range `to` field.
+- `from` (String) Start of the time range (e.g., 'now-15m', '2023-01-01T00:00:00Z').
+- `to` (String) End of the time range (e.g., 'now', '2023-12-31T23:59:59Z').
 
 Optional:
 
@@ -5670,18 +6680,18 @@ Optional:
 Optional:
 
 - `config_json` (String) Optional raw normalized JSON for the by-value Lens chart `config` (full API shape, including chart `type` and `time_range` where the API requires them). Use as the single `by_value` source, or use one supported typed chart block instead (not both). Distinct from panel-level `config_json` on the panel.
-- `datatable_config` (Attributes) Typed Lens chart for a `lens-dashboard-app` by-value panel. The chart is sent as the Kibana `lens-dashboard-app` API `config` and does not create a `type = "vis"` panel. Attribute shape matches `vis_config.by_value.datatable_config` for `type = "vis"` panels. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--datatable_config))
-- `gauge_config` (Attributes) Typed Lens chart for a `lens-dashboard-app` by-value panel. The chart is sent as the Kibana `lens-dashboard-app` API `config` and does not create a `type = "vis"` panel. Attribute shape matches `vis_config.by_value.gauge_config` for `type = "vis"` panels. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--gauge_config))
-- `heatmap_config` (Attributes) Typed Lens chart for a `lens-dashboard-app` by-value panel. The chart is sent as the Kibana `lens-dashboard-app` API `config` and does not create a `type = "vis"` panel. Attribute shape matches `vis_config.by_value.heatmap_config` for `type = "vis"` panels. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--heatmap_config))
-- `legacy_metric_config` (Attributes) Typed Lens chart for a `lens-dashboard-app` by-value panel. The chart is sent as the Kibana `lens-dashboard-app` API `config` and does not create a `type = "vis"` panel. Attribute shape matches `vis_config.by_value.legacy_metric_config` for `type = "vis"` panels. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--legacy_metric_config))
-- `metric_chart_config` (Attributes) Typed Lens chart for a `lens-dashboard-app` by-value panel. The chart is sent as the Kibana `lens-dashboard-app` API `config` and does not create a `type = "vis"` panel. Attribute shape matches `vis_config.by_value.metric_chart_config` for `type = "vis"` panels. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--metric_chart_config))
-- `mosaic_config` (Attributes) Typed Lens chart for a `lens-dashboard-app` by-value panel. The chart is sent as the Kibana `lens-dashboard-app` API `config` and does not create a `type = "vis"` panel. Attribute shape matches `vis_config.by_value.mosaic_config` for `type = "vis"` panels. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--mosaic_config))
-- `pie_chart_config` (Attributes) Typed Lens chart for a `lens-dashboard-app` by-value panel. The chart is sent as the Kibana `lens-dashboard-app` API `config` and does not create a `type = "vis"` panel. Attribute shape matches `vis_config.by_value.pie_chart_config` for `type = "vis"` panels. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--pie_chart_config))
-- `region_map_config` (Attributes) Typed Lens chart for a `lens-dashboard-app` by-value panel. The chart is sent as the Kibana `lens-dashboard-app` API `config` and does not create a `type = "vis"` panel. Attribute shape matches `vis_config.by_value.region_map_config` for `type = "vis"` panels. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--region_map_config))
-- `tagcloud_config` (Attributes) Typed Lens chart for a `lens-dashboard-app` by-value panel. The chart is sent as the Kibana `lens-dashboard-app` API `config` and does not create a `type = "vis"` panel. Attribute shape matches `vis_config.by_value.tagcloud_config` for `type = "vis"` panels. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--tagcloud_config))
-- `treemap_config` (Attributes) Typed Lens chart for a `lens-dashboard-app` by-value panel. The chart is sent as the Kibana `lens-dashboard-app` API `config` and does not create a `type = "vis"` panel. Attribute shape matches `vis_config.by_value.treemap_config` for `type = "vis"` panels. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--treemap_config))
-- `waffle_config` (Attributes) Typed Lens chart for a `lens-dashboard-app` by-value panel. The chart is sent as the Kibana `lens-dashboard-app` API `config` and does not create a `type = "vis"` panel. Attribute shape matches `vis_config.by_value.waffle_config` for `type = "vis"` panels. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--waffle_config))
-- `xy_chart_config` (Attributes) Typed Lens chart for a `lens-dashboard-app` by-value panel. The chart is sent as the Kibana `lens-dashboard-app` API `config` and does not create a `type = "vis"` panel. Attribute shape matches `vis_config.by_value.xy_chart_config` for `type = "vis"` panels. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--xy_chart_config))
+- `datatable_config` (Attributes) Typed Lens visualization inside `vis_config.by_value`. Mutually exclusive with the other chart blocks in the same `by_value` block. Shares the attribute shape with `lens_dashboard_app_config.by_value.datatable_config`. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--datatable_config))
+- `gauge_config` (Attributes) Typed Lens visualization inside `vis_config.by_value`. Mutually exclusive with the other chart blocks in the same `by_value` block. Shares the attribute shape with `lens_dashboard_app_config.by_value.gauge_config`. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--gauge_config))
+- `heatmap_config` (Attributes) Typed Lens visualization inside `vis_config.by_value`. Mutually exclusive with the other chart blocks in the same `by_value` block. Shares the attribute shape with `lens_dashboard_app_config.by_value.heatmap_config`. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--heatmap_config))
+- `legacy_metric_config` (Attributes) Typed Lens visualization inside `vis_config.by_value`. Mutually exclusive with the other chart blocks in the same `by_value` block. Shares the attribute shape with `lens_dashboard_app_config.by_value.legacy_metric_config`. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--legacy_metric_config))
+- `metric_chart_config` (Attributes) Typed Lens visualization inside `vis_config.by_value`. Mutually exclusive with the other chart blocks in the same `by_value` block. Shares the attribute shape with `lens_dashboard_app_config.by_value.metric_chart_config`. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--metric_chart_config))
+- `mosaic_config` (Attributes) Typed Lens visualization inside `vis_config.by_value`. Mutually exclusive with the other chart blocks in the same `by_value` block. Shares the attribute shape with `lens_dashboard_app_config.by_value.mosaic_config`. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--mosaic_config))
+- `pie_chart_config` (Attributes) Typed Lens visualization inside `vis_config.by_value`. Mutually exclusive with the other chart blocks in the same `by_value` block. Shares the attribute shape with `lens_dashboard_app_config.by_value.pie_chart_config`. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--pie_chart_config))
+- `region_map_config` (Attributes) Typed Lens visualization inside `vis_config.by_value`. Mutually exclusive with the other chart blocks in the same `by_value` block. Shares the attribute shape with `lens_dashboard_app_config.by_value.region_map_config`. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--region_map_config))
+- `tagcloud_config` (Attributes) Typed Lens visualization inside `vis_config.by_value`. Mutually exclusive with the other chart blocks in the same `by_value` block. Shares the attribute shape with `lens_dashboard_app_config.by_value.tagcloud_config`. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--tagcloud_config))
+- `treemap_config` (Attributes) Typed Lens visualization inside `vis_config.by_value`. Mutually exclusive with the other chart blocks in the same `by_value` block. Shares the attribute shape with `lens_dashboard_app_config.by_value.treemap_config`. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--treemap_config))
+- `waffle_config` (Attributes) Typed Lens visualization inside `vis_config.by_value`. Mutually exclusive with the other chart blocks in the same `by_value` block. Shares the attribute shape with `lens_dashboard_app_config.by_value.waffle_config`. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--waffle_config))
+- `xy_chart_config` (Attributes) Typed Lens visualization inside `vis_config.by_value`. Mutually exclusive with the other chart blocks in the same `by_value` block. Shares the attribute shape with `lens_dashboard_app_config.by_value.xy_chart_config`. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--xy_chart_config))
 
 <a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--datatable_config"></a>
 ### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.datatable_config`
@@ -5703,11 +6713,16 @@ Required:
 Optional:
 
 - `description` (String) The description of the chart.
+- `drilldowns` (Attributes List) Optional drilldowns for this chart (max 100 per Kibana API). Each entry sets exactly one of `dashboard_drilldown`, `discover_drilldown`, or `url_drilldown`. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--datatable_config--esql--drilldowns))
 - `filters` (Attributes List) Additional filters to apply to the chart data (maximum 100). (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--datatable_config--esql--filters))
+- `hide_border` (Boolean) When true, suppresses the chart panel border.
+- `hide_title` (Boolean) When true, suppresses the chart title.
 - `ignore_global_filters` (Boolean) If true, ignore global filters when fetching data for this chart. Default is false.
+- `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.
 - `rows` (Attributes List) Array of row configurations as JSON. Each entry defines a row split operation. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--datatable_config--esql--rows))
 - `sampling` (Number) Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.
 - `split_metrics_by` (Attributes List) Array of split-metrics configurations as JSON. Each entry defines a split operation for metric columns. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--datatable_config--esql--split_metrics_by))
+- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--datatable_config--esql--time_range))
 - `title` (String) The title of the chart displayed in the panel.
 
 <a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--datatable_config--esql--metrics"></a>
@@ -5767,6 +6782,66 @@ Optional:
 
 
 
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--datatable_config--esql--drilldowns"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.datatable_config.esql.drilldowns`
+
+Optional:
+
+- `dashboard_drilldown` (Attributes) Navigate to another dashboard using current filters/time range. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--datatable_config--esql--drilldowns--dashboard_drilldown))
+- `discover_drilldown` (Attributes) Open Discover with contextual filters. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--datatable_config--esql--drilldowns--discover_drilldown))
+- `url_drilldown` (Attributes) Open a URL drilldown configured with explicit trigger semantics. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--datatable_config--esql--drilldowns--url_drilldown))
+
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--datatable_config--esql--drilldowns--dashboard_drilldown"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.datatable_config.esql.drilldowns.dashboard_drilldown`
+
+Required:
+
+- `dashboard_id` (String) Target dashboard id.
+- `label` (String) Human-readable drilldown label.
+
+Optional:
+
+- `open_in_new_tab` (Boolean) When true, opens the target dashboard in a new browser tab.
+- `use_filters` (Boolean) When true, forwards filter context.
+- `use_time_range` (Boolean) When true, forwards the time range.
+
+Read-Only:
+
+- `trigger` (String) **Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.
+
+
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--datatable_config--esql--drilldowns--discover_drilldown"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.datatable_config.esql.drilldowns.discover_drilldown`
+
+Required:
+
+- `label` (String) Human-readable drilldown label.
+
+Optional:
+
+- `open_in_new_tab` (Boolean) When true, opens Discover in a new browser tab.
+
+Read-Only:
+
+- `trigger` (String) **Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.
+
+
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--datatable_config--esql--drilldowns--url_drilldown"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.datatable_config.esql.drilldowns.url_drilldown`
+
+Required:
+
+- `label` (String) Human-readable drilldown label.
+- `trigger` (String) Trigger that fires this drilldown.
+- `url` (String) Destination URL.
+
+Optional:
+
+- `encode_url` (Boolean) When true, encodes interpolated URL parameters.
+- `open_in_new_tab` (Boolean) When true, opens the URL in a new browser tab.
+
+
+
 <a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--datatable_config--esql--filters"></a>
 ### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.datatable_config.esql.filters`
 
@@ -5791,6 +6866,19 @@ Required:
 - `config_json` (String) Split metrics configuration as JSON.
 
 
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--datatable_config--esql--time_range"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.datatable_config.esql.time_range`
+
+Required:
+
+- `from` (String) Start of the chart time range.
+- `to` (String) End of the chart time range.
+
+Optional:
+
+- `mode` (String) Optional time range mode. Valid values are `absolute` or `relative`. When the GET API omits `mode`, the provider preserves the prior chart `time_range.mode` from configuration or state (same pattern as REQ-009 on the dashboard `time_range`).
+
+
 
 <a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--datatable_config--no_esql"></a>
 ### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.datatable_config.no_esql`
@@ -5805,11 +6893,16 @@ Required:
 Optional:
 
 - `description` (String) The description of the chart.
+- `drilldowns` (Attributes List) Optional drilldowns for this chart (max 100 per Kibana API). Each entry sets exactly one of `dashboard_drilldown`, `discover_drilldown`, or `url_drilldown`. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--datatable_config--no_esql--drilldowns))
 - `filters` (Attributes List) Additional filters to apply to the chart data (maximum 100). (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--datatable_config--no_esql--filters))
+- `hide_border` (Boolean) When true, suppresses the chart panel border.
+- `hide_title` (Boolean) When true, suppresses the chart title.
 - `ignore_global_filters` (Boolean) If true, ignore global filters when fetching data for this chart. Default is false.
+- `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.
 - `rows` (Attributes List) Array of row configurations as JSON. Each entry defines a row split operation. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--datatable_config--no_esql--rows))
 - `sampling` (Number) Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.
 - `split_metrics_by` (Attributes List) Array of split-metrics configurations as JSON. Each entry defines a split operation for metric columns. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--datatable_config--no_esql--split_metrics_by))
+- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--datatable_config--no_esql--time_range))
 - `title` (String) The title of the chart displayed in the panel.
 
 <a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--datatable_config--no_esql--metrics"></a>
@@ -5881,6 +6974,66 @@ Optional:
 
 
 
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--datatable_config--no_esql--drilldowns"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.datatable_config.no_esql.drilldowns`
+
+Optional:
+
+- `dashboard_drilldown` (Attributes) Navigate to another dashboard using current filters/time range. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--datatable_config--no_esql--drilldowns--dashboard_drilldown))
+- `discover_drilldown` (Attributes) Open Discover with contextual filters. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--datatable_config--no_esql--drilldowns--discover_drilldown))
+- `url_drilldown` (Attributes) Open a URL drilldown configured with explicit trigger semantics. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--datatable_config--no_esql--drilldowns--url_drilldown))
+
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--datatable_config--no_esql--drilldowns--dashboard_drilldown"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.datatable_config.no_esql.drilldowns.dashboard_drilldown`
+
+Required:
+
+- `dashboard_id` (String) Target dashboard id.
+- `label` (String) Human-readable drilldown label.
+
+Optional:
+
+- `open_in_new_tab` (Boolean) When true, opens the target dashboard in a new browser tab.
+- `use_filters` (Boolean) When true, forwards filter context.
+- `use_time_range` (Boolean) When true, forwards the time range.
+
+Read-Only:
+
+- `trigger` (String) **Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.
+
+
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--datatable_config--no_esql--drilldowns--discover_drilldown"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.datatable_config.no_esql.drilldowns.discover_drilldown`
+
+Required:
+
+- `label` (String) Human-readable drilldown label.
+
+Optional:
+
+- `open_in_new_tab` (Boolean) When true, opens Discover in a new browser tab.
+
+Read-Only:
+
+- `trigger` (String) **Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.
+
+
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--datatable_config--no_esql--drilldowns--url_drilldown"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.datatable_config.no_esql.drilldowns.url_drilldown`
+
+Required:
+
+- `label` (String) Human-readable drilldown label.
+- `trigger` (String) Trigger that fires this drilldown.
+- `url` (String) Destination URL.
+
+Optional:
+
+- `encode_url` (Boolean) When true, encodes interpolated URL parameters.
+- `open_in_new_tab` (Boolean) When true, opens the URL in a new browser tab.
+
+
+
 <a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--datatable_config--no_esql--filters"></a>
 ### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.datatable_config.no_esql.filters`
 
@@ -5905,6 +7058,19 @@ Required:
 - `config_json` (String) Split metrics configuration as JSON.
 
 
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--datatable_config--no_esql--time_range"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.datatable_config.no_esql.time_range`
+
+Required:
+
+- `from` (String) Start of the chart time range.
+- `to` (String) End of the chart time range.
+
+Optional:
+
+- `mode` (String) Optional time range mode. Valid values are `absolute` or `relative`. When the GET API omits `mode`, the provider preserves the prior chart `time_range.mode` from configuration or state (same pattern as REQ-009 on the dashboard `time_range`).
+
+
 
 
 <a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--gauge_config"></a>
@@ -5918,13 +7084,17 @@ Required:
 Optional:
 
 - `description` (String) The description of the chart.
+- `drilldowns` (Attributes List) Optional drilldowns for this chart (max 100 per Kibana API). Each entry sets exactly one of `dashboard_drilldown`, `discover_drilldown`, or `url_drilldown`. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--gauge_config--drilldowns))
 - `esql_metric` (Attributes) Typed metric column for ES|QL gauges. Mutually exclusive with `metric_json`. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--gauge_config--esql_metric))
 - `filters` (Attributes List) Additional filters to apply to the chart data (maximum 100). (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--gauge_config--filters))
+- `hide_border` (Boolean) When true, suppresses the chart panel border.
+- `hide_title` (Boolean) When true, suppresses the chart title.
 - `ignore_global_filters` (Boolean) If true, ignore global filters when fetching data for this chart. Default is false.
-- `metric_json` (String) Metric configuration as JSON. Supports metric operations such as count, unique count, min, max, average, median, standard deviation, sum, last value, percentile, percentile ranks, or formula.
- Required for non-ES|QL gauges; mutually exclusive with `esql_metric`.
+- `metric_json` (String) Metric configuration as JSON. Supports metric operations such as count, unique count, min, max, average, median, standard deviation, sum, last value, percentile, percentile ranks, or formula. Required for non-ES|QL gauges; mutually exclusive with `esql_metric`.
 - `query` (Attributes) Query configuration for filtering data. Required for non-ES|QL gauges; omit for ES|QL mode. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--gauge_config--query))
+- `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.
 - `sampling` (Number) Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.
+- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--gauge_config--time_range))
 - `title` (String) The title of the chart displayed in the panel.
 
 <a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--gauge_config--styling"></a>
@@ -5933,6 +7103,66 @@ Optional:
 Optional:
 
 - `shape_json` (String) Gauge shape configuration as JSON. Supports bullet and circular gauges.
+
+
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--gauge_config--drilldowns"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.gauge_config.drilldowns`
+
+Optional:
+
+- `dashboard_drilldown` (Attributes) Navigate to another dashboard using current filters/time range. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--gauge_config--drilldowns--dashboard_drilldown))
+- `discover_drilldown` (Attributes) Open Discover with contextual filters. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--gauge_config--drilldowns--discover_drilldown))
+- `url_drilldown` (Attributes) Open a URL drilldown configured with explicit trigger semantics. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--gauge_config--drilldowns--url_drilldown))
+
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--gauge_config--drilldowns--dashboard_drilldown"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.gauge_config.drilldowns.dashboard_drilldown`
+
+Required:
+
+- `dashboard_id` (String) Target dashboard id.
+- `label` (String) Human-readable drilldown label.
+
+Optional:
+
+- `open_in_new_tab` (Boolean) When true, opens the target dashboard in a new browser tab.
+- `use_filters` (Boolean) When true, forwards filter context.
+- `use_time_range` (Boolean) When true, forwards the time range.
+
+Read-Only:
+
+- `trigger` (String) **Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.
+
+
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--gauge_config--drilldowns--discover_drilldown"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.gauge_config.drilldowns.discover_drilldown`
+
+Required:
+
+- `label` (String) Human-readable drilldown label.
+
+Optional:
+
+- `open_in_new_tab` (Boolean) When true, opens Discover in a new browser tab.
+
+Read-Only:
+
+- `trigger` (String) **Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.
+
+
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--gauge_config--drilldowns--url_drilldown"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.gauge_config.drilldowns.url_drilldown`
+
+Required:
+
+- `label` (String) Human-readable drilldown label.
+- `trigger` (String) Trigger that fires this drilldown.
+- `url` (String) Destination URL.
+
+Optional:
+
+- `encode_url` (Boolean) When true, encodes interpolated URL parameters.
+- `open_in_new_tab` (Boolean) When true, opens the URL in a new browser tab.
+
 
 
 <a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--gauge_config--esql_metric"></a>
@@ -6029,6 +7259,19 @@ Optional:
 - `language` (String) Query language (default: 'kql').
 
 
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--gauge_config--time_range"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.gauge_config.time_range`
+
+Required:
+
+- `from` (String) Start of the chart time range.
+- `to` (String) End of the chart time range.
+
+Optional:
+
+- `mode` (String) Optional time range mode. Valid values are `absolute` or `relative`. When the GET API omits `mode`, the provider preserves the prior chart `time_range.mode` from configuration or state (same pattern as REQ-009 on the dashboard `time_range`).
+
+
 
 <a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--heatmap_config"></a>
 ### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.heatmap_config`
@@ -6045,10 +7288,15 @@ Required:
 Optional:
 
 - `description` (String) The description of the chart.
+- `drilldowns` (Attributes List) Optional drilldowns for this chart (max 100 per Kibana API). Each entry sets exactly one of `dashboard_drilldown`, `discover_drilldown`, or `url_drilldown`. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--heatmap_config--drilldowns))
 - `filters` (Attributes List) Additional filters to apply to the chart data (maximum 100). (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--heatmap_config--filters))
+- `hide_border` (Boolean) When true, suppresses the chart panel border.
+- `hide_title` (Boolean) When true, suppresses the chart title.
 - `ignore_global_filters` (Boolean) If true, ignore global filters when fetching data for this chart. Default is false.
 - `query` (Attributes) Query configuration for filtering data. Required for non-ES|QL heatmaps. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--heatmap_config--query))
+- `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.
 - `sampling` (Number) Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.
+- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--heatmap_config--time_range))
 - `title` (String) The title of the chart displayed in the panel.
 - `y_axis_json` (String) Breakdown dimension configuration for the Y axis as JSON. When omitted, the heatmap renders without a Y breakdown.
 
@@ -6066,7 +7314,7 @@ Optional:
 Optional:
 
 - `labels` (Attributes) X-axis label configuration. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--heatmap_config--axis--x--labels))
-- `title` (Attributes) X-axis title configuration. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--heatmap_config--axis--x--title))
+- `title` (Attributes) Axis title configuration. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--heatmap_config--axis--x--title))
 
 <a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--heatmap_config--axis--x--labels"></a>
 ### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.heatmap_config.axis.x.labels`
@@ -6093,7 +7341,7 @@ Optional:
 Optional:
 
 - `labels` (Attributes) Y-axis label configuration. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--heatmap_config--axis--y--labels))
-- `title` (Attributes) Y-axis title configuration. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--heatmap_config--axis--y--title))
+- `title` (Attributes) Axis title configuration. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--heatmap_config--axis--y--title))
 
 <a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--heatmap_config--axis--y--labels"></a>
 ### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.heatmap_config.axis.y.labels`
@@ -6151,6 +7399,66 @@ Optional:
 
 
 
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--heatmap_config--drilldowns"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.heatmap_config.drilldowns`
+
+Optional:
+
+- `dashboard_drilldown` (Attributes) Navigate to another dashboard using current filters/time range. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--heatmap_config--drilldowns--dashboard_drilldown))
+- `discover_drilldown` (Attributes) Open Discover with contextual filters. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--heatmap_config--drilldowns--discover_drilldown))
+- `url_drilldown` (Attributes) Open a URL drilldown configured with explicit trigger semantics. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--heatmap_config--drilldowns--url_drilldown))
+
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--heatmap_config--drilldowns--dashboard_drilldown"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.heatmap_config.drilldowns.dashboard_drilldown`
+
+Required:
+
+- `dashboard_id` (String) Target dashboard id.
+- `label` (String) Human-readable drilldown label.
+
+Optional:
+
+- `open_in_new_tab` (Boolean) When true, opens the target dashboard in a new browser tab.
+- `use_filters` (Boolean) When true, forwards filter context.
+- `use_time_range` (Boolean) When true, forwards the time range.
+
+Read-Only:
+
+- `trigger` (String) **Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.
+
+
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--heatmap_config--drilldowns--discover_drilldown"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.heatmap_config.drilldowns.discover_drilldown`
+
+Required:
+
+- `label` (String) Human-readable drilldown label.
+
+Optional:
+
+- `open_in_new_tab` (Boolean) When true, opens Discover in a new browser tab.
+
+Read-Only:
+
+- `trigger` (String) **Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.
+
+
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--heatmap_config--drilldowns--url_drilldown"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.heatmap_config.drilldowns.url_drilldown`
+
+Required:
+
+- `label` (String) Human-readable drilldown label.
+- `trigger` (String) Trigger that fires this drilldown.
+- `url` (String) Destination URL.
+
+Optional:
+
+- `encode_url` (Boolean) When true, encodes interpolated URL parameters.
+- `open_in_new_tab` (Boolean) When true, opens the URL in a new browser tab.
+
+
+
 <a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--heatmap_config--filters"></a>
 ### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.heatmap_config.filters`
 
@@ -6171,6 +7479,19 @@ Optional:
 - `language` (String) Query language (default: 'kql').
 
 
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--heatmap_config--time_range"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.heatmap_config.time_range`
+
+Required:
+
+- `from` (String) Start of the chart time range.
+- `to` (String) End of the chart time range.
+
+Optional:
+
+- `mode` (String) Optional time range mode. Valid values are `absolute` or `relative`. When the GET API omits `mode`, the provider preserves the prior chart `time_range.mode` from configuration or state (same pattern as REQ-009 on the dashboard `time_range`).
+
+
 
 <a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--legacy_metric_config"></a>
 ### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.legacy_metric_config`
@@ -6183,11 +7504,76 @@ Required:
 Optional:
 
 - `description` (String) The description of the chart.
+- `drilldowns` (Attributes List) Optional drilldowns for this chart (max 100 per Kibana API). Each entry sets exactly one of `dashboard_drilldown`, `discover_drilldown`, or `url_drilldown`. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--legacy_metric_config--drilldowns))
 - `filters` (Attributes List) Additional filters to apply to the chart data (maximum 100). (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--legacy_metric_config--filters))
+- `hide_border` (Boolean) When true, suppresses the chart panel border.
+- `hide_title` (Boolean) When true, suppresses the chart title.
 - `ignore_global_filters` (Boolean) If true, ignore global filters when fetching data for this chart. Default is false.
 - `query` (Attributes) Query configuration for filtering data. Required for non-ES|QL datasets. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--legacy_metric_config--query))
+- `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.
 - `sampling` (Number) Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.
+- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--legacy_metric_config--time_range))
 - `title` (String) The title of the chart displayed in the panel.
+
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--legacy_metric_config--drilldowns"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.legacy_metric_config.drilldowns`
+
+Optional:
+
+- `dashboard_drilldown` (Attributes) Navigate to another dashboard using current filters/time range. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--legacy_metric_config--drilldowns--dashboard_drilldown))
+- `discover_drilldown` (Attributes) Open Discover with contextual filters. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--legacy_metric_config--drilldowns--discover_drilldown))
+- `url_drilldown` (Attributes) Open a URL drilldown configured with explicit trigger semantics. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--legacy_metric_config--drilldowns--url_drilldown))
+
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--legacy_metric_config--drilldowns--dashboard_drilldown"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.legacy_metric_config.drilldowns.dashboard_drilldown`
+
+Required:
+
+- `dashboard_id` (String) Target dashboard id.
+- `label` (String) Human-readable drilldown label.
+
+Optional:
+
+- `open_in_new_tab` (Boolean) When true, opens the target dashboard in a new browser tab.
+- `use_filters` (Boolean) When true, forwards filter context.
+- `use_time_range` (Boolean) When true, forwards the time range.
+
+Read-Only:
+
+- `trigger` (String) **Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.
+
+
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--legacy_metric_config--drilldowns--discover_drilldown"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.legacy_metric_config.drilldowns.discover_drilldown`
+
+Required:
+
+- `label` (String) Human-readable drilldown label.
+
+Optional:
+
+- `open_in_new_tab` (Boolean) When true, opens Discover in a new browser tab.
+
+Read-Only:
+
+- `trigger` (String) **Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.
+
+
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--legacy_metric_config--drilldowns--url_drilldown"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.legacy_metric_config.drilldowns.url_drilldown`
+
+Required:
+
+- `label` (String) Human-readable drilldown label.
+- `trigger` (String) Trigger that fires this drilldown.
+- `url` (String) Destination URL.
+
+Optional:
+
+- `encode_url` (Boolean) When true, encodes interpolated URL parameters.
+- `open_in_new_tab` (Boolean) When true, opens the URL in a new browser tab.
+
+
 
 <a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--legacy_metric_config--filters"></a>
 ### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.legacy_metric_config.filters`
@@ -6209,23 +7595,41 @@ Optional:
 - `language` (String) Query language (default: 'kql').
 
 
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--legacy_metric_config--time_range"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.legacy_metric_config.time_range`
+
+Required:
+
+- `from` (String) Start of the chart time range.
+- `to` (String) End of the chart time range.
+
+Optional:
+
+- `mode` (String) Optional time range mode. Valid values are `absolute` or `relative`. When the GET API omits `mode`, the provider preserves the prior chart `time_range.mode` from configuration or state (same pattern as REQ-009 on the dashboard `time_range`).
+
+
 
 <a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--metric_chart_config"></a>
 ### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.metric_chart_config`
 
 Required:
 
-- `data_source_json` (String) Dataset configuration as JSON. Can be a data view dataset (`type: 'dataview'`), index dataset (`type: 'index'`), ES|QL dataset (`type: 'esql'`), or table ES|QL dataset (`type: 'tableESQLDatasetType'`).
+- `data_source_json` (String) Dataset configuration as JSON. Can be a data view dataset (`type: 'dataview'`), index dataset (`type: 'index'`), ES|QL dataset (`type: 'esql'`), or table ES|QL dataset (`type: 'tableESQLDatasetType`).
 - `metrics` (Attributes List) Array of metrics to display (1-2 items). Each metric can be a primary metric (displays prominently) or secondary metric (displays as comparison). Metrics can use field operations (count, unique count, min, max, avg, median, std dev, sum, last value, percentile, percentile ranks), pipeline operations (differences, moving average, cumulative sum, counter rate), formula operations, or for ES|QL datasets, column-based value operations. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--metric_chart_config--metrics))
 
 Optional:
 
 - `breakdown_by_json` (String) Breakdown configuration as JSON. Groups metrics by a dimension. Can use operations like date histogram, terms, histogram, range, filters, or for ES|QL datasets, value operations with columns. Includes optional columns count and collapse_by configuration.
 - `description` (String) The description of the chart.
+- `drilldowns` (Attributes List) Optional drilldowns for this chart (max 100 per Kibana API). Each entry sets exactly one of `dashboard_drilldown`, `discover_drilldown`, or `url_drilldown`. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--metric_chart_config--drilldowns))
 - `filters` (Attributes List) Additional filters to apply to the chart data (maximum 100). (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--metric_chart_config--filters))
+- `hide_border` (Boolean) When true, suppresses the chart panel border.
+- `hide_title` (Boolean) When true, suppresses the chart title.
 - `ignore_global_filters` (Boolean) If true, ignore global filters when fetching data for this chart. Default is false.
 - `query` (Attributes) Query configuration for filtering data. Required for non-ES|QL datasets. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--metric_chart_config--query))
+- `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.
 - `sampling` (Number) Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.
+- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--metric_chart_config--time_range))
 - `title` (String) The title of the chart displayed in the panel.
 
 <a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--metric_chart_config--metrics"></a>
@@ -6234,6 +7638,66 @@ Optional:
 Required:
 
 - `config_json` (String) Metric configuration as JSON. For primary metrics: includes type ('primary'), operation, format, alignments, icon, and optional fields like sub_label, fit, color, apply_color_to, and background_chart. For secondary metrics: includes type ('secondary'), operation, format, and optional fields like label, prefix, compare, and color.
+
+
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--metric_chart_config--drilldowns"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.metric_chart_config.drilldowns`
+
+Optional:
+
+- `dashboard_drilldown` (Attributes) Navigate to another dashboard using current filters/time range. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--metric_chart_config--drilldowns--dashboard_drilldown))
+- `discover_drilldown` (Attributes) Open Discover with contextual filters. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--metric_chart_config--drilldowns--discover_drilldown))
+- `url_drilldown` (Attributes) Open a URL drilldown configured with explicit trigger semantics. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--metric_chart_config--drilldowns--url_drilldown))
+
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--metric_chart_config--drilldowns--dashboard_drilldown"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.metric_chart_config.drilldowns.dashboard_drilldown`
+
+Required:
+
+- `dashboard_id` (String) Target dashboard id.
+- `label` (String) Human-readable drilldown label.
+
+Optional:
+
+- `open_in_new_tab` (Boolean) When true, opens the target dashboard in a new browser tab.
+- `use_filters` (Boolean) When true, forwards filter context.
+- `use_time_range` (Boolean) When true, forwards the time range.
+
+Read-Only:
+
+- `trigger` (String) **Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.
+
+
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--metric_chart_config--drilldowns--discover_drilldown"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.metric_chart_config.drilldowns.discover_drilldown`
+
+Required:
+
+- `label` (String) Human-readable drilldown label.
+
+Optional:
+
+- `open_in_new_tab` (Boolean) When true, opens Discover in a new browser tab.
+
+Read-Only:
+
+- `trigger` (String) **Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.
+
+
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--metric_chart_config--drilldowns--url_drilldown"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.metric_chart_config.drilldowns.url_drilldown`
+
+Required:
+
+- `label` (String) Human-readable drilldown label.
+- `trigger` (String) Trigger that fires this drilldown.
+- `url` (String) Destination URL.
+
+Optional:
+
+- `encode_url` (Boolean) When true, encodes interpolated URL parameters.
+- `open_in_new_tab` (Boolean) When true, opens the URL in a new browser tab.
+
 
 
 <a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--metric_chart_config--filters"></a>
@@ -6256,6 +7720,19 @@ Optional:
 - `language` (String) Query language (default: 'kql').
 
 
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--metric_chart_config--time_range"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.metric_chart_config.time_range`
+
+Required:
+
+- `from` (String) Start of the chart time range.
+- `to` (String) End of the chart time range.
+
+Optional:
+
+- `mode` (String) Optional time range mode. Valid values are `absolute` or `relative`. When the GET API omits `mode`, the provider preserves the prior chart `time_range.mode` from configuration or state (same pattern as REQ-009 on the dashboard `time_range`).
+
+
 
 <a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--mosaic_config"></a>
 ### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.mosaic_config`
@@ -6269,14 +7746,19 @@ Required:
 Optional:
 
 - `description` (String) The description of the chart.
+- `drilldowns` (Attributes List) Optional drilldowns for this chart (max 100 per Kibana API). Each entry sets exactly one of `dashboard_drilldown`, `discover_drilldown`, or `url_drilldown`. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--mosaic_config--drilldowns))
 - `esql_group_by` (Attributes List) Breakdown columns for ES|QL mosaics. Mutually exclusive with `group_by_json`. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--mosaic_config--esql_group_by))
 - `esql_metrics` (Attributes List) Metric columns for ES|QL mosaics (exactly 1). Mutually exclusive with `metrics_json`. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--mosaic_config--esql_metrics))
 - `filters` (Attributes List) Additional filters to apply to the chart data (maximum 100). (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--mosaic_config--filters))
 - `group_by_json` (String) Array of primary breakdown dimensions as JSON (minimum 1). For non-ES|QL, each item can be date histogram, terms, histogram, range, or filters operations; for ES|QL, each item is the column/operation/color configuration.
+- `hide_border` (Boolean) When true, suppresses the chart panel border.
+- `hide_title` (Boolean) When true, suppresses the chart title.
 - `ignore_global_filters` (Boolean) If true, ignore global filters when fetching data for this chart. Default is false.
 - `metrics_json` (String) Array of metric configurations as JSON (exactly 1 required). For non-ES|QL, each item can be a field metric, pipeline metric, or formula; for ES|QL, each item is the column/operation/color/format configuration.
 - `query` (Attributes) Query configuration for filtering data. Required for non-ES|QL partition charts. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--mosaic_config--query))
+- `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.
 - `sampling` (Number) Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.
+- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--mosaic_config--time_range))
 - `title` (String) The title of the chart displayed in the panel.
 - `value_display` (Attributes) Configuration for displaying values in chart cells. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--mosaic_config--value_display))
 
@@ -6292,6 +7774,66 @@ Optional:
 - `nested` (Boolean) Show nested legend with hierarchical breakdown levels.
 - `truncate_after_lines` (Number) Maximum lines before truncating legend items (1-10).
 - `visible` (String) Legend visibility: auto, visible, or hidden.
+
+
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--mosaic_config--drilldowns"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.mosaic_config.drilldowns`
+
+Optional:
+
+- `dashboard_drilldown` (Attributes) Navigate to another dashboard using current filters/time range. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--mosaic_config--drilldowns--dashboard_drilldown))
+- `discover_drilldown` (Attributes) Open Discover with contextual filters. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--mosaic_config--drilldowns--discover_drilldown))
+- `url_drilldown` (Attributes) Open a URL drilldown configured with explicit trigger semantics. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--mosaic_config--drilldowns--url_drilldown))
+
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--mosaic_config--drilldowns--dashboard_drilldown"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.mosaic_config.drilldowns.dashboard_drilldown`
+
+Required:
+
+- `dashboard_id` (String) Target dashboard id.
+- `label` (String) Human-readable drilldown label.
+
+Optional:
+
+- `open_in_new_tab` (Boolean) When true, opens the target dashboard in a new browser tab.
+- `use_filters` (Boolean) When true, forwards filter context.
+- `use_time_range` (Boolean) When true, forwards the time range.
+
+Read-Only:
+
+- `trigger` (String) **Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.
+
+
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--mosaic_config--drilldowns--discover_drilldown"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.mosaic_config.drilldowns.discover_drilldown`
+
+Required:
+
+- `label` (String) Human-readable drilldown label.
+
+Optional:
+
+- `open_in_new_tab` (Boolean) When true, opens Discover in a new browser tab.
+
+Read-Only:
+
+- `trigger` (String) **Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.
+
+
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--mosaic_config--drilldowns--url_drilldown"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.mosaic_config.drilldowns.url_drilldown`
+
+Required:
+
+- `label` (String) Human-readable drilldown label.
+- `trigger` (String) Trigger that fires this drilldown.
+- `url` (String) Destination URL.
+
+Optional:
+
+- `encode_url` (Boolean) When true, encodes interpolated URL parameters.
+- `open_in_new_tab` (Boolean) When true, opens the URL in a new browser tab.
+
 
 
 <a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--mosaic_config--esql_group_by"></a>
@@ -6342,6 +7884,19 @@ Optional:
 - `language` (String) Query language (default: 'kql').
 
 
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--mosaic_config--time_range"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.mosaic_config.time_range`
+
+Required:
+
+- `from` (String) Start of the chart time range.
+- `to` (String) End of the chart time range.
+
+Optional:
+
+- `mode` (String) Optional time range mode. Valid values are `absolute` or `relative`. When the GET API omits `mode`, the provider preserves the prior chart `time_range.mode` from configuration or state (same pattern as REQ-009 on the dashboard `time_range`).
+
+
 <a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--mosaic_config--value_display"></a>
 ### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.mosaic_config.value_display`
 
@@ -6367,13 +7922,18 @@ Optional:
 
 - `description` (String) The description of the chart.
 - `donut_hole` (String) Donut hole size: none (pie), s, m, or l.
+- `drilldowns` (Attributes List) Optional drilldowns for this chart (max 100 per Kibana API). Each entry sets exactly one of `dashboard_drilldown`, `discover_drilldown`, or `url_drilldown`. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--pie_chart_config--drilldowns))
 - `filters` (Attributes List) Additional filters to apply to the chart data (maximum 100). (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--pie_chart_config--filters))
 - `group_by` (Attributes List) Array of breakdown dimensions (minimum 1). (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--pie_chart_config--group_by))
+- `hide_border` (Boolean) When true, suppresses the chart panel border.
+- `hide_title` (Boolean) When true, suppresses the chart title.
 - `ignore_global_filters` (Boolean) If true, ignore global filters when fetching data for this chart. Default is false.
 - `label_position` (String) Position of slice labels: hidden, inside, or outside.
 - `legend` (Attributes) Optional legend configuration for the pie chart. Same shape as treemap and mosaic legends; Terraform `visible` maps to API `visibility`. When omitted, the schema default matches typical Kibana legend defaults (size and visibility `auto`) so apply/read stay consistent. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--pie_chart_config--legend))
 - `query` (Attributes) Query configuration for filtering data. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--pie_chart_config--query))
+- `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.
 - `sampling` (Number) Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.
+- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--pie_chart_config--time_range))
 - `title` (String) The title of the chart displayed in the panel.
 
 <a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--pie_chart_config--metrics"></a>
@@ -6382,6 +7942,66 @@ Optional:
 Required:
 
 - `config_json` (String) Metric configuration as JSON.
+
+
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--pie_chart_config--drilldowns"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.pie_chart_config.drilldowns`
+
+Optional:
+
+- `dashboard_drilldown` (Attributes) Navigate to another dashboard using current filters/time range. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--pie_chart_config--drilldowns--dashboard_drilldown))
+- `discover_drilldown` (Attributes) Open Discover with contextual filters. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--pie_chart_config--drilldowns--discover_drilldown))
+- `url_drilldown` (Attributes) Open a URL drilldown configured with explicit trigger semantics. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--pie_chart_config--drilldowns--url_drilldown))
+
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--pie_chart_config--drilldowns--dashboard_drilldown"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.pie_chart_config.drilldowns.dashboard_drilldown`
+
+Required:
+
+- `dashboard_id` (String) Target dashboard id.
+- `label` (String) Human-readable drilldown label.
+
+Optional:
+
+- `open_in_new_tab` (Boolean) When true, opens the target dashboard in a new browser tab.
+- `use_filters` (Boolean) When true, forwards filter context.
+- `use_time_range` (Boolean) When true, forwards the time range.
+
+Read-Only:
+
+- `trigger` (String) **Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.
+
+
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--pie_chart_config--drilldowns--discover_drilldown"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.pie_chart_config.drilldowns.discover_drilldown`
+
+Required:
+
+- `label` (String) Human-readable drilldown label.
+
+Optional:
+
+- `open_in_new_tab` (Boolean) When true, opens Discover in a new browser tab.
+
+Read-Only:
+
+- `trigger` (String) **Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.
+
+
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--pie_chart_config--drilldowns--url_drilldown"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.pie_chart_config.drilldowns.url_drilldown`
+
+Required:
+
+- `label` (String) Human-readable drilldown label.
+- `trigger` (String) Trigger that fires this drilldown.
+- `url` (String) Destination URL.
+
+Optional:
+
+- `encode_url` (Boolean) When true, encodes interpolated URL parameters.
+- `open_in_new_tab` (Boolean) When true, opens the URL in a new browser tab.
+
 
 
 <a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--pie_chart_config--filters"></a>
@@ -6426,6 +8046,19 @@ Optional:
 - `language` (String) Query language (default: 'kql').
 
 
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--pie_chart_config--time_range"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.pie_chart_config.time_range`
+
+Required:
+
+- `from` (String) Start of the chart time range.
+- `to` (String) End of the chart time range.
+
+Optional:
+
+- `mode` (String) Optional time range mode. Valid values are `absolute` or `relative`. When the GET API omits `mode`, the provider preserves the prior chart `time_range.mode` from configuration or state (same pattern as REQ-009 on the dashboard `time_range`).
+
+
 
 <a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--region_map_config"></a>
 ### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.region_map_config`
@@ -6439,11 +8072,76 @@ Required:
 Optional:
 
 - `description` (String) The description of the chart.
+- `drilldowns` (Attributes List) Optional drilldowns for this chart (max 100 per Kibana API). Each entry sets exactly one of `dashboard_drilldown`, `discover_drilldown`, or `url_drilldown`. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--region_map_config--drilldowns))
 - `filters` (Attributes List) Additional filters to apply to the chart data (maximum 100). (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--region_map_config--filters))
+- `hide_border` (Boolean) When true, suppresses the chart panel border.
+- `hide_title` (Boolean) When true, suppresses the chart title.
 - `ignore_global_filters` (Boolean) If true, ignore global filters when fetching data for this chart. Default is false.
 - `query` (Attributes) Query configuration for filtering data. Required for non-ES|QL region map configurations. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--region_map_config--query))
+- `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.
 - `sampling` (Number) Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.
+- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--region_map_config--time_range))
 - `title` (String) The title of the chart displayed in the panel.
+
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--region_map_config--drilldowns"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.region_map_config.drilldowns`
+
+Optional:
+
+- `dashboard_drilldown` (Attributes) Navigate to another dashboard using current filters/time range. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--region_map_config--drilldowns--dashboard_drilldown))
+- `discover_drilldown` (Attributes) Open Discover with contextual filters. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--region_map_config--drilldowns--discover_drilldown))
+- `url_drilldown` (Attributes) Open a URL drilldown configured with explicit trigger semantics. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--region_map_config--drilldowns--url_drilldown))
+
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--region_map_config--drilldowns--dashboard_drilldown"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.region_map_config.drilldowns.dashboard_drilldown`
+
+Required:
+
+- `dashboard_id` (String) Target dashboard id.
+- `label` (String) Human-readable drilldown label.
+
+Optional:
+
+- `open_in_new_tab` (Boolean) When true, opens the target dashboard in a new browser tab.
+- `use_filters` (Boolean) When true, forwards filter context.
+- `use_time_range` (Boolean) When true, forwards the time range.
+
+Read-Only:
+
+- `trigger` (String) **Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.
+
+
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--region_map_config--drilldowns--discover_drilldown"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.region_map_config.drilldowns.discover_drilldown`
+
+Required:
+
+- `label` (String) Human-readable drilldown label.
+
+Optional:
+
+- `open_in_new_tab` (Boolean) When true, opens Discover in a new browser tab.
+
+Read-Only:
+
+- `trigger` (String) **Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.
+
+
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--region_map_config--drilldowns--url_drilldown"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.region_map_config.drilldowns.url_drilldown`
+
+Required:
+
+- `label` (String) Human-readable drilldown label.
+- `trigger` (String) Trigger that fires this drilldown.
+- `url` (String) Destination URL.
+
+Optional:
+
+- `encode_url` (Boolean) When true, encodes interpolated URL parameters.
+- `open_in_new_tab` (Boolean) When true, opens the URL in a new browser tab.
+
+
 
 <a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--region_map_config--filters"></a>
 ### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.region_map_config.filters`
@@ -6465,6 +8163,19 @@ Optional:
 - `language` (String) Query language (default: 'kql').
 
 
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--region_map_config--time_range"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.region_map_config.time_range`
+
+Required:
+
+- `from` (String) Start of the chart time range.
+- `to` (String) End of the chart time range.
+
+Optional:
+
+- `mode` (String) Optional time range mode. Valid values are `absolute` or `relative`. When the GET API omits `mode`, the provider preserves the prior chart `time_range.mode` from configuration or state (same pattern as REQ-009 on the dashboard `time_range`).
+
+
 
 <a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--tagcloud_config"></a>
 ### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.tagcloud_config`
@@ -6476,18 +8187,82 @@ Required:
 Optional:
 
 - `description` (String) The description of the chart.
+- `drilldowns` (Attributes List) Optional drilldowns for this chart (max 100 per Kibana API). Each entry sets exactly one of `dashboard_drilldown`, `discover_drilldown`, or `url_drilldown`. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--tagcloud_config--drilldowns))
 - `esql_metric` (Attributes) Typed metric column for ES|QL tagclouds. Mutually exclusive with `metric_json`. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--tagcloud_config--esql_metric))
 - `esql_tag_by` (Attributes) Typed tag-by column for ES|QL tagclouds. Mutually exclusive with `tag_by_json`. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--tagcloud_config--esql_tag_by))
 - `filters` (Attributes List) Additional filters to apply to the chart data (maximum 100). (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--tagcloud_config--filters))
 - `font_size` (Attributes) Minimum and maximum font size for the tags. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--tagcloud_config--font_size))
+- `hide_border` (Boolean) When true, suppresses the chart panel border.
+- `hide_title` (Boolean) When true, suppresses the chart title.
 - `ignore_global_filters` (Boolean) If true, ignore global filters when fetching data for this chart. Default is false.
-- `metric_json` (String) Metric configuration as JSON. Can be a field metric operation (count, unique count, min, max, avg, median, std dev, sum, last value, percentile, percentile ranks), a pipeline operation (differences, moving average, cumulative sum, counter rate), or a formula operation.
- Required for non-ES|QL tagclouds; mutually exclusive with `esql_metric`.
+- `metric_json` (String) Metric configuration as JSON. Can be a field metric operation (count, unique count, min, max, avg, median, std dev, sum, last value, percentile, percentile ranks), a pipeline operation (differences, moving average, cumulative sum, counter rate), or a formula operation. Required for non-ES|QL tagclouds; mutually exclusive with `esql_metric`.
 - `orientation` (String) Orientation of the tagcloud. Valid values: 'horizontal', 'vertical', 'angled'.
 - `query` (Attributes) Query configuration for filtering data. Required for non-ES|QL tagclouds; omit for ES|QL mode. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--tagcloud_config--query))
+- `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.
 - `sampling` (Number) Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.
 - `tag_by_json` (String) Tag grouping configuration as JSON. Can be a date histogram, terms, histogram, range, or filters operation. This determines how tags are grouped and displayed. Required for non-ES|QL tagclouds; mutually exclusive with `esql_tag_by`.
+- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--tagcloud_config--time_range))
 - `title` (String) The title of the chart displayed in the panel.
+
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--tagcloud_config--drilldowns"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.tagcloud_config.drilldowns`
+
+Optional:
+
+- `dashboard_drilldown` (Attributes) Navigate to another dashboard using current filters/time range. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--tagcloud_config--drilldowns--dashboard_drilldown))
+- `discover_drilldown` (Attributes) Open Discover with contextual filters. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--tagcloud_config--drilldowns--discover_drilldown))
+- `url_drilldown` (Attributes) Open a URL drilldown configured with explicit trigger semantics. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--tagcloud_config--drilldowns--url_drilldown))
+
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--tagcloud_config--drilldowns--dashboard_drilldown"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.tagcloud_config.drilldowns.dashboard_drilldown`
+
+Required:
+
+- `dashboard_id` (String) Target dashboard id.
+- `label` (String) Human-readable drilldown label.
+
+Optional:
+
+- `open_in_new_tab` (Boolean) When true, opens the target dashboard in a new browser tab.
+- `use_filters` (Boolean) When true, forwards filter context.
+- `use_time_range` (Boolean) When true, forwards the time range.
+
+Read-Only:
+
+- `trigger` (String) **Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.
+
+
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--tagcloud_config--drilldowns--discover_drilldown"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.tagcloud_config.drilldowns.discover_drilldown`
+
+Required:
+
+- `label` (String) Human-readable drilldown label.
+
+Optional:
+
+- `open_in_new_tab` (Boolean) When true, opens Discover in a new browser tab.
+
+Read-Only:
+
+- `trigger` (String) **Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.
+
+
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--tagcloud_config--drilldowns--url_drilldown"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.tagcloud_config.drilldowns.url_drilldown`
+
+Required:
+
+- `label` (String) Human-readable drilldown label.
+- `trigger` (String) Trigger that fires this drilldown.
+- `url` (String) Destination URL.
+
+Optional:
+
+- `encode_url` (Boolean) When true, encodes interpolated URL parameters.
+- `open_in_new_tab` (Boolean) When true, opens the URL in a new browser tab.
+
+
 
 <a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--tagcloud_config--esql_metric"></a>
 ### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.tagcloud_config.esql_metric`
@@ -6545,6 +8320,19 @@ Optional:
 - `language` (String) Query language (default: 'kql').
 
 
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--tagcloud_config--time_range"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.tagcloud_config.time_range`
+
+Required:
+
+- `from` (String) Start of the chart time range.
+- `to` (String) End of the chart time range.
+
+Optional:
+
+- `mode` (String) Optional time range mode. Valid values are `absolute` or `relative`. When the GET API omits `mode`, the provider preserves the prior chart `time_range.mode` from configuration or state (same pattern as REQ-009 on the dashboard `time_range`).
+
+
 
 <a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--treemap_config"></a>
 ### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.treemap_config`
@@ -6557,14 +8345,19 @@ Required:
 Optional:
 
 - `description` (String) The description of the chart.
+- `drilldowns` (Attributes List) Optional drilldowns for this chart (max 100 per Kibana API). Each entry sets exactly one of `dashboard_drilldown`, `discover_drilldown`, or `url_drilldown`. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--treemap_config--drilldowns))
 - `esql_group_by` (Attributes List) Breakdown columns for ES|QL treemaps. Mutually exclusive with `group_by_json`. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--treemap_config--esql_group_by))
 - `esql_metrics` (Attributes List) Metric columns for ES|QL treemaps. Mutually exclusive with `metrics_json`. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--treemap_config--esql_metrics))
 - `filters` (Attributes List) Additional filters to apply to the chart data (maximum 100). (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--treemap_config--filters))
 - `group_by_json` (String) Array of breakdown dimensions as JSON (minimum 1). For non-ES|QL, each item can be date histogram, terms, histogram, range, or filters operations; for ES|QL, each item is the column/operation/color configuration.
+- `hide_border` (Boolean) When true, suppresses the chart panel border.
+- `hide_title` (Boolean) When true, suppresses the chart title.
 - `ignore_global_filters` (Boolean) If true, ignore global filters when fetching data for this chart. Default is false.
 - `metrics_json` (String) Array of metric configurations as JSON (minimum 1). For non-ES|QL, each item can be a field metric, pipeline metric, or formula; for ES|QL, each item is the column/operation/color/format configuration.
 - `query` (Attributes) Query configuration for filtering data. Required for non-ES|QL partition charts. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--treemap_config--query))
+- `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.
 - `sampling` (Number) Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.
+- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--treemap_config--time_range))
 - `title` (String) The title of the chart displayed in the panel.
 - `value_display` (Attributes) Configuration for displaying values in chart cells. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--treemap_config--value_display))
 
@@ -6580,6 +8373,66 @@ Optional:
 - `nested` (Boolean) Show nested legend with hierarchical breakdown levels.
 - `truncate_after_lines` (Number) Maximum lines before truncating legend items (1-10).
 - `visible` (String) Legend visibility: auto, visible, or hidden.
+
+
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--treemap_config--drilldowns"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.treemap_config.drilldowns`
+
+Optional:
+
+- `dashboard_drilldown` (Attributes) Navigate to another dashboard using current filters/time range. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--treemap_config--drilldowns--dashboard_drilldown))
+- `discover_drilldown` (Attributes) Open Discover with contextual filters. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--treemap_config--drilldowns--discover_drilldown))
+- `url_drilldown` (Attributes) Open a URL drilldown configured with explicit trigger semantics. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--treemap_config--drilldowns--url_drilldown))
+
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--treemap_config--drilldowns--dashboard_drilldown"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.treemap_config.drilldowns.dashboard_drilldown`
+
+Required:
+
+- `dashboard_id` (String) Target dashboard id.
+- `label` (String) Human-readable drilldown label.
+
+Optional:
+
+- `open_in_new_tab` (Boolean) When true, opens the target dashboard in a new browser tab.
+- `use_filters` (Boolean) When true, forwards filter context.
+- `use_time_range` (Boolean) When true, forwards the time range.
+
+Read-Only:
+
+- `trigger` (String) **Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.
+
+
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--treemap_config--drilldowns--discover_drilldown"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.treemap_config.drilldowns.discover_drilldown`
+
+Required:
+
+- `label` (String) Human-readable drilldown label.
+
+Optional:
+
+- `open_in_new_tab` (Boolean) When true, opens Discover in a new browser tab.
+
+Read-Only:
+
+- `trigger` (String) **Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.
+
+
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--treemap_config--drilldowns--url_drilldown"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.treemap_config.drilldowns.url_drilldown`
+
+Required:
+
+- `label` (String) Human-readable drilldown label.
+- `trigger` (String) Trigger that fires this drilldown.
+- `url` (String) Destination URL.
+
+Optional:
+
+- `encode_url` (Boolean) When true, encodes interpolated URL parameters.
+- `open_in_new_tab` (Boolean) When true, opens the URL in a new browser tab.
+
 
 
 <a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--treemap_config--esql_group_by"></a>
@@ -6640,6 +8493,19 @@ Optional:
 - `language` (String) Query language (default: 'kql').
 
 
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--treemap_config--time_range"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.treemap_config.time_range`
+
+Required:
+
+- `from` (String) Start of the chart time range.
+- `to` (String) End of the chart time range.
+
+Optional:
+
+- `mode` (String) Optional time range mode. Valid values are `absolute` or `relative`. When the GET API omits `mode`, the provider preserves the prior chart `time_range.mode` from configuration or state (same pattern as REQ-009 on the dashboard `time_range`).
+
+
 <a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--treemap_config--value_display"></a>
 ### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.treemap_config.value_display`
 
@@ -6664,14 +8530,19 @@ Required:
 Optional:
 
 - `description` (String) The description of the chart.
+- `drilldowns` (Attributes List) Optional drilldowns for this chart (max 100 per Kibana API). Each entry sets exactly one of `dashboard_drilldown`, `discover_drilldown`, or `url_drilldown`. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--waffle_config--drilldowns))
 - `esql_group_by` (Attributes List) Breakdown columns for ES|QL waffles. Mutually exclusive with `group_by`. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--waffle_config--esql_group_by))
 - `esql_metrics` (Attributes List) Metric columns for ES|QL waffles (minimum 1). Mutually exclusive with `metrics`. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--waffle_config--esql_metrics))
 - `filters` (Attributes List) Additional filters to apply to the chart data (maximum 100). (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--waffle_config--filters))
 - `group_by` (Attributes List) Breakdown dimensions for non-ES|QL waffles. Each `config_json` is a JSON object (terms, date_histogram, etc.) matching the Kibana Lens waffle schema. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--waffle_config--group_by))
+- `hide_border` (Boolean) When true, suppresses the chart panel border.
+- `hide_title` (Boolean) When true, suppresses the chart title.
 - `ignore_global_filters` (Boolean) If true, ignore global filters when fetching data for this chart. Default is false.
 - `metrics` (Attributes List) Metric configurations for non-ES|QL waffles (minimum 1). Each `config_json` is a JSON object (e.g. count, sum, or formula) matching the Kibana Lens waffle schema. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--waffle_config--metrics))
 - `query` (Attributes) Query configuration for filtering data. Required for non-ES|QL partition charts. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--waffle_config--query))
+- `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.
 - `sampling` (Number) Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.
+- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--waffle_config--time_range))
 - `title` (String) The title of the chart displayed in the panel.
 - `value_display` (Attributes) Configuration for displaying values in chart cells. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--waffle_config--value_display))
 
@@ -6687,6 +8558,66 @@ Optional:
 - `truncate_after_lines` (Number) Maximum lines before truncating legend items (1-10).
 - `values` (List of String) Legend value display modes. For example `absolute` shows raw metric values in the legend.
 - `visible` (String) Legend visibility: auto, visible, or hidden.
+
+
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--waffle_config--drilldowns"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.waffle_config.drilldowns`
+
+Optional:
+
+- `dashboard_drilldown` (Attributes) Navigate to another dashboard using current filters/time range. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--waffle_config--drilldowns--dashboard_drilldown))
+- `discover_drilldown` (Attributes) Open Discover with contextual filters. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--waffle_config--drilldowns--discover_drilldown))
+- `url_drilldown` (Attributes) Open a URL drilldown configured with explicit trigger semantics. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--waffle_config--drilldowns--url_drilldown))
+
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--waffle_config--drilldowns--dashboard_drilldown"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.waffle_config.drilldowns.dashboard_drilldown`
+
+Required:
+
+- `dashboard_id` (String) Target dashboard id.
+- `label` (String) Human-readable drilldown label.
+
+Optional:
+
+- `open_in_new_tab` (Boolean) When true, opens the target dashboard in a new browser tab.
+- `use_filters` (Boolean) When true, forwards filter context.
+- `use_time_range` (Boolean) When true, forwards the time range.
+
+Read-Only:
+
+- `trigger` (String) **Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.
+
+
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--waffle_config--drilldowns--discover_drilldown"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.waffle_config.drilldowns.discover_drilldown`
+
+Required:
+
+- `label` (String) Human-readable drilldown label.
+
+Optional:
+
+- `open_in_new_tab` (Boolean) When true, opens Discover in a new browser tab.
+
+Read-Only:
+
+- `trigger` (String) **Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.
+
+
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--waffle_config--drilldowns--url_drilldown"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.waffle_config.drilldowns.url_drilldown`
+
+Required:
+
+- `label` (String) Human-readable drilldown label.
+- `trigger` (String) Trigger that fires this drilldown.
+- `url` (String) Destination URL.
+
+Optional:
+
+- `encode_url` (Boolean) When true, encodes interpolated URL parameters.
+- `open_in_new_tab` (Boolean) When true, opens the URL in a new browser tab.
+
 
 
 <a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--waffle_config--esql_group_by"></a>
@@ -6763,6 +8694,19 @@ Optional:
 - `language` (String) Query language (default: 'kql').
 
 
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--waffle_config--time_range"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.waffle_config.time_range`
+
+Required:
+
+- `from` (String) Start of the chart time range.
+- `to` (String) End of the chart time range.
+
+Optional:
+
+- `mode` (String) Optional time range mode. Valid values are `absolute` or `relative`. When the GET API omits `mode`, the provider preserves the prior chart `time_range.mode` from configuration or state (same pattern as REQ-009 on the dashboard `time_range`).
+
+
 <a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--waffle_config--value_display"></a>
 ### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.waffle_config.value_display`
 
@@ -6790,8 +8734,13 @@ Required:
 Optional:
 
 - `description` (String) The description of the chart.
+- `drilldowns` (Attributes List) Optional drilldowns for this chart (max 100 per Kibana API). Each entry sets exactly one of `dashboard_drilldown`, `discover_drilldown`, or `url_drilldown`. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--xy_chart_config--drilldowns))
 - `filters` (Attributes List) Additional filters to apply to the chart data (maximum 100). (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--xy_chart_config--filters))
+- `hide_border` (Boolean) When true, suppresses the chart panel border.
+- `hide_title` (Boolean) When true, suppresses the chart title.
 - `query` (Attributes) Query configuration for filtering data. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--xy_chart_config--query))
+- `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.
+- `time_range` (Attributes) Chart-level time selection (`from`, `to`, optional `mode`), same shape as the dashboard root `time_range`. When omitted (null), the provider inherits the dashboard-level `time_range` on write and preserves null in state when the API echoes the inherited value on read. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--xy_chart_config--time_range))
 - `title` (String) The title of the chart displayed in the panel.
 
 <a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--xy_chart_config--axis"></a>
@@ -6986,6 +8935,66 @@ Optional:
 - `visibility` (String) Legend visibility (auto, visible, hidden).
 
 
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--xy_chart_config--drilldowns"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.xy_chart_config.drilldowns`
+
+Optional:
+
+- `dashboard_drilldown` (Attributes) Navigate to another dashboard using current filters/time range. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--xy_chart_config--drilldowns--dashboard_drilldown))
+- `discover_drilldown` (Attributes) Open Discover with contextual filters. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--xy_chart_config--drilldowns--discover_drilldown))
+- `url_drilldown` (Attributes) Open a URL drilldown configured with explicit trigger semantics. (see [below for nested schema](#nestedatt--sections--panels--lens_dashboard_app_config--by_value--xy_chart_config--drilldowns--url_drilldown))
+
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--xy_chart_config--drilldowns--dashboard_drilldown"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.xy_chart_config.drilldowns.dashboard_drilldown`
+
+Required:
+
+- `dashboard_id` (String) Target dashboard id.
+- `label` (String) Human-readable drilldown label.
+
+Optional:
+
+- `open_in_new_tab` (Boolean) When true, opens the target dashboard in a new browser tab.
+- `use_filters` (Boolean) When true, forwards filter context.
+- `use_time_range` (Boolean) When true, forwards the time range.
+
+Read-Only:
+
+- `trigger` (String) **Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.
+
+
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--xy_chart_config--drilldowns--discover_drilldown"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.xy_chart_config.drilldowns.discover_drilldown`
+
+Required:
+
+- `label` (String) Human-readable drilldown label.
+
+Optional:
+
+- `open_in_new_tab` (Boolean) When true, opens Discover in a new browser tab.
+
+Read-Only:
+
+- `trigger` (String) **Computed** — Kibana fixes this to `on_apply_filter`; reflected in state after apply. Do not set in configuration.
+
+
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--xy_chart_config--drilldowns--url_drilldown"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.xy_chart_config.drilldowns.url_drilldown`
+
+Required:
+
+- `label` (String) Human-readable drilldown label.
+- `trigger` (String) Trigger that fires this drilldown.
+- `url` (String) Destination URL.
+
+Optional:
+
+- `encode_url` (Boolean) When true, encodes interpolated URL parameters.
+- `open_in_new_tab` (Boolean) When true, opens the URL in a new browser tab.
+
+
+
 <a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--xy_chart_config--filters"></a>
 ### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.xy_chart_config.filters`
 
@@ -7004,6 +9013,19 @@ Required:
 Optional:
 
 - `language` (String) Query language (default: 'kql').
+
+
+<a id="nestedatt--sections--panels--lens_dashboard_app_config--by_value--xy_chart_config--time_range"></a>
+### Nested Schema for `sections.panels.lens_dashboard_app_config.by_value.xy_chart_config.time_range`
+
+Required:
+
+- `from` (String) Start of the chart time range.
+- `to` (String) End of the chart time range.
+
+Optional:
+
+- `mode` (String) Optional time range mode. Valid values are `absolute` or `relative`. When the GET API omits `mode`, the provider preserves the prior chart `time_range.mode` from configuration or state (same pattern as REQ-009 on the dashboard `time_range`).
 
 
 
@@ -7471,7 +9493,7 @@ Optional:
 
 Optional:
 
-- `by_reference` (Attributes) By-reference `vis` configuration: structured `drilldowns`, `ref_id`, optional `references_json`, and required `time_range`. Shares the attribute shape with `lens_dashboard_app_config.by_reference` via `getLensByReferenceAttributes()`. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_reference))
+- `by_reference` (Attributes) By-reference `vis` configuration: structured `drilldowns`, `ref_id`, optional `references_json`, and required `time_range`. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_reference))
 - `by_value` (Attributes) Inline by-value Lens visualization configuration for `type = "vis"` panels (`vis_config`). Exactly one typed chart kind must be set (no raw JSON here — use panel-level `config_json` for that). (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value))
 
 <a id="nestedatt--sections--panels--vis_config--by_reference"></a>
@@ -7496,8 +9518,8 @@ Optional:
 
 Required:
 
-- `from` (String) Range start, matching the Kibana time range `from` field.
-- `to` (String) Range end, matching the Kibana time range `to` field.
+- `from` (String) Start of the time range (e.g., 'now-15m', '2023-01-01T00:00:00Z').
+- `to` (String) End of the time range (e.g., 'now', '2023-12-31T23:59:59Z').
 
 Optional:
 
@@ -7972,8 +9994,7 @@ Optional:
 - `hide_border` (Boolean) When true, suppresses the chart panel border.
 - `hide_title` (Boolean) When true, suppresses the chart title.
 - `ignore_global_filters` (Boolean) If true, ignore global filters when fetching data for this chart. Default is false.
-- `metric_json` (String) Metric configuration as JSON. Supports metric operations such as count, unique count, min, max, average, median, standard deviation, sum, last value, percentile, percentile ranks, or formula.
- Required for non-ES|QL gauges; mutually exclusive with `esql_metric`.
+- `metric_json` (String) Metric configuration as JSON. Supports metric operations such as count, unique count, min, max, average, median, standard deviation, sum, last value, percentile, percentile ranks, or formula. Required for non-ES|QL gauges; mutually exclusive with `esql_metric`.
 - `query` (Attributes) Query configuration for filtering data. Required for non-ES|QL gauges; omit for ES|QL mode. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value--gauge_config--query))
 - `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.
 - `sampling` (Number) Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.
@@ -8197,7 +10218,7 @@ Optional:
 Optional:
 
 - `labels` (Attributes) X-axis label configuration. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value--heatmap_config--axis--x--labels))
-- `title` (Attributes) X-axis title configuration. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value--heatmap_config--axis--x--title))
+- `title` (Attributes) Axis title configuration. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value--heatmap_config--axis--x--title))
 
 <a id="nestedatt--sections--panels--vis_config--by_value--heatmap_config--axis--x--labels"></a>
 ### Nested Schema for `sections.panels.vis_config.by_value.heatmap_config.axis.x.labels`
@@ -8224,7 +10245,7 @@ Optional:
 Optional:
 
 - `labels` (Attributes) Y-axis label configuration. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value--heatmap_config--axis--y--labels))
-- `title` (Attributes) Y-axis title configuration. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value--heatmap_config--axis--y--title))
+- `title` (Attributes) Axis title configuration. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value--heatmap_config--axis--y--title))
 
 <a id="nestedatt--sections--panels--vis_config--by_value--heatmap_config--axis--y--labels"></a>
 ### Nested Schema for `sections.panels.vis_config.by_value.heatmap_config.axis.y.labels`
@@ -8497,7 +10518,7 @@ Optional:
 
 Required:
 
-- `data_source_json` (String) Dataset configuration as JSON. Can be a data view dataset (`type: 'dataview'`), index dataset (`type: 'index'`), ES|QL dataset (`type: 'esql'`), or table ES|QL dataset (`type: 'tableESQLDatasetType'`).
+- `data_source_json` (String) Dataset configuration as JSON. Can be a data view dataset (`type: 'dataview'`), index dataset (`type: 'index'`), ES|QL dataset (`type: 'esql'`), or table ES|QL dataset (`type: 'tableESQLDatasetType`).
 - `metrics` (Attributes List) Array of metrics to display (1-2 items). Each metric can be a primary metric (displays prominently) or secondary metric (displays as comparison). Metrics can use field operations (count, unique count, min, max, avg, median, std dev, sum, last value, percentile, percentile ranks), pipeline operations (differences, moving average, cumulative sum, counter rate), formula operations, or for ES|QL datasets, column-based value operations. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value--metric_chart_config--metrics))
 
 Optional:
@@ -9078,8 +11099,7 @@ Optional:
 - `hide_border` (Boolean) When true, suppresses the chart panel border.
 - `hide_title` (Boolean) When true, suppresses the chart title.
 - `ignore_global_filters` (Boolean) If true, ignore global filters when fetching data for this chart. Default is false.
-- `metric_json` (String) Metric configuration as JSON. Can be a field metric operation (count, unique count, min, max, avg, median, std dev, sum, last value, percentile, percentile ranks), a pipeline operation (differences, moving average, cumulative sum, counter rate), or a formula operation.
- Required for non-ES|QL tagclouds; mutually exclusive with `esql_metric`.
+- `metric_json` (String) Metric configuration as JSON. Can be a field metric operation (count, unique count, min, max, avg, median, std dev, sum, last value, percentile, percentile ranks), a pipeline operation (differences, moving average, cumulative sum, counter rate), or a formula operation. Required for non-ES|QL tagclouds; mutually exclusive with `esql_metric`.
 - `orientation` (String) Orientation of the tagcloud. Valid values: 'horizontal', 'vertical', 'angled'.
 - `query` (Attributes) Query configuration for filtering data. Required for non-ES|QL tagclouds; omit for ES|QL mode. (see [below for nested schema](#nestedatt--sections--panels--vis_config--by_value--tagcloud_config--query))
 - `references_json` (String) Optional normalized JSON array of `{ id, name, type }` saved-object references, matching the chart root API `references` list.

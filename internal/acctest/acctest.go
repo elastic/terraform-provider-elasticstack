@@ -23,7 +23,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"path"
@@ -40,10 +39,7 @@ import (
 var Providers map[string]func() (tfprotov6.ProviderServer, error)
 
 func init() {
-	providerServerFactory, err := provider.ProtoV6ProviderServerFactory(context.Background(), provider.AccTestVersion)
-	if err != nil {
-		log.Fatal(err)
-	}
+	providerServerFactory := provider.ProtoV6ProviderServerFactory(provider.AccTestVersion)
 	Providers = map[string]func() (tfprotov6.ProviderServer, error){
 		"elasticstack": func() (tfprotov6.ProviderServer, error) {
 			server := providerServerFactory()

@@ -25,11 +25,9 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
-	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	goversion "github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -139,60 +137,6 @@ func TestGetKibanaClient_WithConnection(t *testing.T) {
 	require.NoError(t, err)
 }
 
-// --- ProviderClientFactory.GetKibanaClientFromSDK ---
-
-// TestGetKibanaClientFromSDK_AbsentBlock verifies that the factory returns a
-// provider-default scoped client when kibana_connection is absent.
-func TestGetKibanaClientFromSDK_AbsentBlock(t *testing.T) {
-	t.Parallel()
-	factory := newTestFactory(t)
-
-	rd := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
-		"kibana_connection": providerschema.GetKibanaEntityConnectionSchema(),
-	}, map[string]any{})
-
-	scoped, diags := factory.GetKibanaClientFromSDK(rd)
-	require.False(t, diags.HasError())
-	require.NotNil(t, scoped)
-
-	// Must expose a Kibana OpenAPI client.
-	_, err := scoped.GetKibanaOapiClient()
-	require.NoError(t, err)
-}
-
-// TestGetKibanaClientFromSDK_WithBlock verifies that when kibana_connection is
-// set the factory returns a new scoped client with rebuilt clients.
-func TestGetKibanaClientFromSDK_WithBlock(t *testing.T) {
-	t.Parallel()
-	factory := newTestFactory(t)
-
-	rd := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
-		"kibana_connection": providerschema.GetKibanaEntityConnectionSchema(),
-	}, map[string]any{
-		"kibana_connection": []any{
-			map[string]any{
-				"username":     "kibana-user",
-				"password":     "kibana-pass",
-				"endpoints":    []any{"http://kibana.example.com:5601"},
-				"ca_certs":     []any{},
-				"insecure":     false,
-				"api_key":      "",
-				"bearer_token": "",
-			},
-		},
-	})
-
-	scoped, diags := factory.GetKibanaClientFromSDK(rd)
-	require.False(t, diags.HasError())
-	require.NotNil(t, scoped)
-
-	_, err := scoped.GetKibanaOapiClient()
-	require.NoError(t, err)
-
-	_, err = scoped.GetFleetClient()
-	require.NoError(t, err)
-}
-
 // --- KibanaScopedClient version / flavor routing ---
 
 // newScopedClientFromFactory creates a *KibanaScopedClient via the factory
@@ -278,29 +222,6 @@ func TestKibanaScopedClient_ServerlessEnforceMinVersion(t *testing.T) {
 	ok, diags := scoped.EnforceMinVersion(context.Background(), ver)
 	require.False(t, diags.HasError())
 	assert.True(t, ok, "serverless must always satisfy any version gate")
-}
-
-// --- ConvertMetaToFactory ---
-
-func TestConvertMetaToFactory_NilMeta(t *testing.T) {
-	t.Parallel()
-	factory, diags := ConvertMetaToFactory(nil)
-	assert.True(t, diags.HasError(), "nil meta must return an error diagnostic")
-	assert.Nil(t, factory)
-}
-
-func TestConvertMetaToFactory_WrongType(t *testing.T) {
-	t.Parallel()
-	_, diags := ConvertMetaToFactory("unexpected-string")
-	assert.True(t, diags.HasError())
-}
-
-func TestConvertMetaToFactory_Valid(t *testing.T) {
-	t.Parallel()
-	f := newTestFactory(t)
-	result, diags := ConvertMetaToFactory(f)
-	require.False(t, diags.HasError())
-	assert.Same(t, f, result)
 }
 
 // --- NewKibanaScopedClientFromFactory ---

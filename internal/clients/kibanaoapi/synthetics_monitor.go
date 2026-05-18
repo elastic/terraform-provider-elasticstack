@@ -42,12 +42,8 @@ func CreateMonitor(ctx context.Context, client *Client, spaceID string, req kbap
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return diagutil.UnwrapJSON200(resp.JSON200, "synthetics monitor")
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
+		func() *kbapi.SyntheticsMonitor { return resp.JSON200 })
 }
 
 // GetMonitor reads a synthetics monitor by ID via GET /api/synthetics/monitors/{id}.
@@ -61,14 +57,8 @@ func GetMonitor(ctx context.Context, client *Client, spaceID string, monitorID s
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return diagutil.UnwrapJSON200(resp.JSON200, "synthetics monitor")
-	case http.StatusNotFound:
-		return nil, nil
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return HandleGetTypedResponse(resp.StatusCode(), resp.Body,
+		func() *kbapi.SyntheticsMonitor { return resp.JSON200 })
 }
 
 // UpdateMonitor updates a synthetics monitor via PUT /api/synthetics/monitors/{id}.

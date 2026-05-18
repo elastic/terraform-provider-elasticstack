@@ -22,10 +22,9 @@ import (
 
 	esclients "github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 func deleteSnapshotRepository(ctx context.Context, client *esclients.ElasticsearchScopedClient, resourceID string, _ Data) diag.Diagnostics {
-	return diagutil.FrameworkDiagsFromSDK(elasticsearch.DeleteSnapshotRepository(ctx, client, resourceID))
+	return elasticsearch.DeleteSnapshotRepository(ctx, client, resourceID)
 }

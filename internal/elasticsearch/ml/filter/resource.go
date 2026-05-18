@@ -62,7 +62,7 @@ func NewFilterResource() resource.Resource {
 // and filter_id so Destroy and Read use the same composite id shape as for
 // normally managed resources.
 func (r *filterResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	compID, diags := clients.CompositeIDFromStrFw(req.ID)
+	compID, diags := clients.CompositeIDFromStr(req.ID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

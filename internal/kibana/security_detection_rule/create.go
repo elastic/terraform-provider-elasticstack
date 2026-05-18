@@ -107,6 +107,7 @@ func (r *securityDetectionRuleResource) Create(ctx context.Context, req resource
 		return
 	}
 
+	reconcileEmptyListsFromPlan(ctx, &data, readData)
 	readData.KibanaConnection = data.KibanaConnection
 	resp.Diagnostics.Append(resp.State.Set(ctx, readData)...)
 }

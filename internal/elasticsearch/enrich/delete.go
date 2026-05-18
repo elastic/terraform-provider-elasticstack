@@ -22,10 +22,9 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 func deleteEnrichPolicy(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, _ PolicyDataWithExecute) diag.Diagnostics {
-	return diagutil.FrameworkDiagsFromSDK(elasticsearch.DeleteEnrichPolicy(ctx, client, resourceID))
+	return elasticsearch.DeleteEnrichPolicy(ctx, client, resourceID)
 }

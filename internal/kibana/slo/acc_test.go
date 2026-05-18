@@ -579,6 +579,25 @@ func TestAccResourceSlo_metric_custom_indicator_doc_count(t *testing.T) {
 	})
 }
 
+func TestAccResourceSlo_metric_custom_indicator_unknown_field_variable(t *testing.T) {
+	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("test"),
+				ConfigVariables: config.Variables{
+					"name":                config.StringVariable(sloName),
+					"metric_field_suffix": config.StringVariable("processed"),
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+		},
+	})
+}
+
 func TestAccResourceSloErrors(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },

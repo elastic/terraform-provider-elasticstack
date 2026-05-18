@@ -25,7 +25,6 @@ import (
 	esTypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -218,16 +217,16 @@ func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedCl
 	roleName := config.Name.ValueString()
 
 	// Resolve the composite ID
-	id, sdkDiags := esClient.ID(ctx, roleName)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	id, idDiags := esClient.ID(ctx, roleName)
+	diags.Append(idDiags...)
 	if diags.HasError() {
 		return config, diags
 	}
 	config.ID = types.StringValue(id.String())
 
-	// Call GetRole (returns SDK v2 diagnostics)
-	role, sdkDiags := elasticsearch.GetRole(ctx, esClient, roleName)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	// Call GetRole
+	role, roleDiags := elasticsearch.GetRole(ctx, esClient, roleName)
+	diags.Append(roleDiags...)
 	if diags.HasError() {
 		return config, diags
 	}

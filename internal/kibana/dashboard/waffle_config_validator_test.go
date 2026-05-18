@@ -34,7 +34,6 @@ func Test_waffleModeListStateFromTF_unknownSkipsCountRules(t *testing.T) {
 		waffleModeListStateFromSlice(0),
 		waffleModeListStateFromSlice(0),
 		waffleModeListStateFromSlice(0),
-		nil,
 	)
 	require.False(t, diags.HasError(), "unknown metrics must not trigger Missing metrics")
 
@@ -43,7 +42,6 @@ func Test_waffleModeListStateFromTF_unknownSkipsCountRules(t *testing.T) {
 		waffleModeListStateFromSlice(0),
 		st,
 		waffleModeListStateFromSlice(0),
-		nil,
 	)
 	require.False(t, diags2.HasError(), "unknown esql_metrics must not trigger Missing esql_metrics")
 }
@@ -54,7 +52,6 @@ func Test_waffleConfigModeValidateDiags_crossMode(t *testing.T) {
 		waffleModeListStateFromSlice(0),
 		waffleModeListStateFromSlice(1),
 		waffleModeListStateFromSlice(0),
-		nil,
 	)
 	require.True(t, diags.HasError())
 	require.Len(t, diags, 1)

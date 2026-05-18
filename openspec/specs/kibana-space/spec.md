@@ -1,6 +1,6 @@
 # `elasticstack_kibana_space` — Schema and Functional Requirements
 
-Resource implementation: `internal/kibana/space.go`
+Resource implementation: `internal/kibana/spaces/resource.go`
 
 ## Purpose
 

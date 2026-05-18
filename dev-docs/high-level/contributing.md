@@ -70,6 +70,17 @@ When you run `make docs-generate`, the command uses the Terraform CLI version pi
 
 See [`repo-structure.md`](./repo-structure.md).
 
+## Factory workflow labels (maintainers)
+
+The repository uses four persistent `phase-*` labels to track which pipeline stage an issue has reached. These labels must be created manually in the GitHub repository before the factory workflows can apply them:
+
+- `phase-research` — set by `research-factory`
+- `phase-reproduction` — set by `reproducer-factory`
+- `phase-specification` — set by `change-factory`
+- `phase-coding` — set by `code-factory`
+
+Exactly one `phase-*` label is present on an issue at any time after a factory workflow runs. The labels are not removed on issue closure.
+
 ## Releasing (maintainers)
 
 Releasing is implemented in CI pipeline. Release preparation is now automated — do not manually edit `VERSION` or `CHANGELOG.md` release sections.

@@ -42,19 +42,8 @@ func writeMemoryFile(t *testing.T, dir, content string) string {
 
 func currentProviderInventory() (map[string]struct{}, map[string]struct{}) {
 	fwProv := provider.NewFrameworkProvider("schema-coverage-rotation")
-	sdkProv := provider.New("schema-coverage-rotation")
 
-	sdkResources := make(map[string]struct{})
-	for name := range sdkProv.ResourcesMap {
-		sdkResources[name] = struct{}{}
-	}
-
-	sdkDataSources := make(map[string]struct{})
-	for name := range sdkProv.DataSourcesMap {
-		sdkDataSources[name] = struct{}{}
-	}
-
-	return discoverEntities(fwProv, sdkResources, sdkDataSources)
+	return discoverEntities(fwProv)
 }
 
 // TestCmdPrepareMissingMemoryFlag checks that --memory is required.

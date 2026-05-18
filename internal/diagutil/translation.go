@@ -21,52 +21,7 @@ import (
 	"fmt"
 
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
-	sdkdiag "github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
-
-func FrameworkDiagsFromSDK(sdkDiags sdkdiag.Diagnostics) fwdiag.Diagnostics {
-	var diags fwdiag.Diagnostics
-
-	for _, sdkDiag := range sdkDiags {
-		var fwDiag fwdiag.Diagnostic
-
-		if sdkDiag.Severity == sdkdiag.Error {
-			fwDiag = fwdiag.NewErrorDiagnostic(sdkDiag.Summary, sdkDiag.Detail)
-		} else {
-			fwDiag = fwdiag.NewWarningDiagnostic(sdkDiag.Summary, sdkDiag.Detail)
-		}
-
-		diags.Append(fwDiag)
-	}
-
-	return diags
-}
-
-func SDKDiagsFromFramework(fwDiags fwdiag.Diagnostics) sdkdiag.Diagnostics {
-	var diags sdkdiag.Diagnostics
-
-	for _, fwDiag := range fwDiags {
-		var sdkDiag sdkdiag.Diagnostic
-
-		if fwDiag.Severity() == fwdiag.SeverityError {
-			sdkDiag = sdkdiag.Diagnostic{
-				Severity: sdkdiag.Error,
-				Summary:  fwDiag.Summary(),
-				Detail:   fwDiag.Detail(),
-			}
-		} else {
-			sdkDiag = sdkdiag.Diagnostic{
-				Severity: sdkdiag.Warning,
-				Summary:  fwDiag.Summary(),
-				Detail:   fwDiag.Detail(),
-			}
-		}
-
-		diags = append(diags, sdkDiag)
-	}
-
-	return diags
-}
 
 func FrameworkDiagFromError(err error) fwdiag.Diagnostics {
 	if err == nil {
@@ -84,16 +39,4 @@ func FwDiagsAsError(diags fwdiag.Diagnostics) error {
 		}
 	}
 	return nil
-}
-
-// SDKErrorDiag returns a single-error SDK Diagnostics slice with the given
-// summary and detail. Use instead of inline sdkdiag.Diagnostic{...} struct literals.
-func SDKErrorDiag(summary, detail string) sdkdiag.Diagnostics {
-	return sdkdiag.Diagnostics{
-		sdkdiag.Diagnostic{
-			Severity: sdkdiag.Error,
-			Summary:  summary,
-			Detail:   detail,
-		},
-	}
 }

@@ -247,38 +247,38 @@ func TestGetConnectorByName(t *testing.T) {
 	require.NoError(t, err)
 
 	connector, diags := kibanaoapi.SearchConnectors(t.Context(), oapiClient, "my-connector", "default", "")
-	require.Nil(t, diags)
+	require.False(t, diags.HasError())
 	require.NotNil(t, connector)
 
 	mockResponses = append(mockResponses, getConnectorsResponse)
 	failConnector, diags := kibanaoapi.SearchConnectors(t.Context(), oapiClient, "failwhale", "default", "")
-	require.Nil(t, diags)
+	require.False(t, diags.HasError())
 	require.Empty(t, failConnector)
 
 	mockResponses = append(mockResponses, getConnectorsResponse)
 	dupConnector, diags := kibanaoapi.SearchConnectors(t.Context(), oapiClient, "doubledup-connector", "default", "")
-	require.Nil(t, diags)
+	require.False(t, diags.HasError())
 	require.Len(t, dupConnector, 2)
 
 	mockResponses = append(mockResponses, getConnectorsResponse)
 	wrongConnectorType, diags := kibanaoapi.SearchConnectors(t.Context(), oapiClient, "my-connector", "default", ".slack")
-	require.Nil(t, diags)
+	require.False(t, diags.HasError())
 	require.Empty(t, wrongConnectorType)
 
 	mockResponses = append(mockResponses, getConnectorsResponse)
 	successConnector, diags := kibanaoapi.SearchConnectors(t.Context(), oapiClient, "my-connector", "default", ".index")
-	require.Nil(t, diags)
+	require.False(t, diags.HasError())
 	require.Len(t, successConnector, 1)
 
 	mockResponses = append(mockResponses, emptyConnectorsResponse)
 	emptyConnector, diags := kibanaoapi.SearchConnectors(t.Context(), oapiClient, "my-connector", "default", "")
-	require.Nil(t, diags)
+	require.False(t, diags.HasError())
 	require.Empty(t, emptyConnector)
 
 	httpStatus = http.StatusBadGateway
 	mockResponses = append(mockResponses, emptyConnectorsResponse)
 	fail, diags := kibanaoapi.SearchConnectors(t.Context(), oapiClient, "my-connector", "default", "")
-	require.NotNil(t, diags)
+	require.True(t, diags.HasError())
 	require.Nil(t, fail)
 }
 
