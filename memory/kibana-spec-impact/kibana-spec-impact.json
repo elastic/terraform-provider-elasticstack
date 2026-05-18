@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "last_analyzed_target_sha": "65ece87d5819d85b04f977eef24ccc7a1ae114f3",
+  "last_analyzed_target_sha": "f764503867a03c9a30f938c3250f5dcc621990b2",
   "reported_fingerprints": {
     "sha256:1b830a86ef754a055f71a024c38355902714a1a3c4d6c3c5f22e0c182c54f138": {
       "entity_name": "elasticstack_kibana_dashboard",
