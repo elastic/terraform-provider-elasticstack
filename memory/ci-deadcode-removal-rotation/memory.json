@@ -76,6 +76,12 @@
       "package": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/snapshot_repository",
       "attemptedAt": "2026-05-17T04:42:56.094892164Z",
       "reason": "pr_created"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi.GetSpaceSDK",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi",
+      "attemptedAt": "2026-05-18T04:40:19.635332215Z",
+      "reason": "pr_created"
     }
   ]
 }
