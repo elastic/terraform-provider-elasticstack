@@ -35,7 +35,7 @@ type Comment struct {
 func FindExistingComment(comments []Comment, marker string) *Comment {
 	for i := range comments {
 		c := &comments[i]
-		if strings.TrimSpace(c.UserLogin) != githubActionsBotLogin {
+		if c.UserLogin != githubActionsBotLogin {
 			continue
 		}
 		if strings.Contains(c.Body, marker) {
