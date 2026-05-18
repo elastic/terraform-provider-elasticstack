@@ -23,10 +23,10 @@ steps:
       # Copy terraform into the workspace so the AWF chroot container can see it
       # (the chroot mounts $GITHUB_WORKSPACE but not the RUNNER_TEMP path where
       # hashicorp/setup-terraform installs the binary).
-      mkdir -p "$GITHUB_WORKSPACE/.bin"
-      cp "$TERRAFORM_BIN" "$GITHUB_WORKSPACE/.bin/terraform"
-      echo "TERRAFORM_BIN=$GITHUB_WORKSPACE/.bin/terraform" >> "$GITHUB_ENV"
-      echo "PATH=$GITHUB_WORKSPACE/.bin:$PATH" >> "$GITHUB_ENV"
+      mkdir -p "$GITHUB_WORKSPACE/bin"
+      cp "$TERRAFORM_BIN" "$GITHUB_WORKSPACE/bin/terraform"
+      echo "TERRAFORM_BIN=$GITHUB_WORKSPACE/bin/terraform" >> "$GITHUB_ENV"
+      echo "PATH=$GITHUB_WORKSPACE/bin:$PATH" >> "$GITHUB_ENV"
   - name: Setup Node.js
     uses: actions/setup-node@v6
     with:

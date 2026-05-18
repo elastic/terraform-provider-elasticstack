@@ -6,6 +6,11 @@ on:
   schedule:
     - cron: daily
   steps:
+    - name: Checkout repository
+      uses: actions/checkout@v6
+      with:
+        persist-credentials: false
+        fetch-depth: 1
     - name: Check CI failures
       id: check_ci_failures
       uses: actions/github-script@v9

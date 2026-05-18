@@ -11,7 +11,7 @@ Additionally, the stack setup logic and dev-tooling setup were duplicated (or mi
 ## What Changes
 
 - **`docker-compose.yml`**: Make bind addresses configurable via `${ELASTICSEARCH_BIND:-127.0.0.1}` and `${KIBANA_BIND:-127.0.0.1}` for the `elasticsearch` and `kibana` service ports, preserving the safe `localhost`-only default for local development.
-- **`.github/workflows/shared/setup-dev.md`**: Update the "Export Go and Terraform paths for AWF chroot mode" step to copy the Terraform binary from `RUNNER_TEMP` into `$GITHUB_WORKSPACE/.bin/terraform` and prepend that directory to `PATH`, so the agentic sandbox can discover it.
+- **`.github/workflows/shared/setup-dev.md`**: Update the "Export Go and Terraform paths for AWF chroot mode" step to copy the Terraform binary from `RUNNER_TEMP` into `$GITHUB_WORKSPACE/bin/terraform` and prepend that directory to `PATH`, so the agentic sandbox can discover it.
 - **`.github/workflows/shared/elastic-stack.md`** (new shared workflow): Extract reusable Elastic Stack infrastructure containing:
   - `services:` (`es-proxy` and `kb-proxy` using `backplane/socat-forward`) that bridge ports `9201→9200` and `5602→5601` to `host.docker.internal`.
   - `network:` additions (`terraform` ecosystem) so the AWF firewall allows Terraform registry downloads.

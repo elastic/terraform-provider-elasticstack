@@ -25,6 +25,11 @@ on:
     issues: write
     pull-requests: read
   steps:
+    - name: Checkout repository
+      uses: actions/checkout@v6
+      with:
+        persist-credentials: false
+        fetch-depth: 1
     - name: Determine intake mode
       id: determine_intake_mode
       uses: actions/github-script@v9
@@ -350,6 +355,8 @@ safe-outputs:
           required: true
           type: string
       steps:
+        - name: Checkout repository
+          uses: actions/checkout@v6
         - name: Create or update research comment
           uses: actions/github-script@v9
           env:

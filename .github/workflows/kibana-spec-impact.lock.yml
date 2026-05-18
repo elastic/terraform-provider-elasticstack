@@ -454,7 +454,7 @@ jobs:
         with:
           terraform_wrapper: false
       - name: Export Go and Terraform paths for AWF chroot mode
-        run: "echo \"GOROOT=$(go env GOROOT)\" >> \"$GITHUB_ENV\"\necho \"GOPATH=$(go env GOPATH)\" >> \"$GITHUB_ENV\"\necho \"GOMODCACHE=$(go env GOMODCACHE)\" >> \"$GITHUB_ENV\"\nTERRAFORM_BIN=$(which terraform)\n# Copy terraform into the workspace so the AWF chroot container can see it\n# (the chroot mounts $GITHUB_WORKSPACE but not the RUNNER_TEMP path where\n# hashicorp/setup-terraform installs the binary).\nmkdir -p \"$GITHUB_WORKSPACE/.bin\"\ncp \"$TERRAFORM_BIN\" \"$GITHUB_WORKSPACE/.bin/terraform\"\necho \"TERRAFORM_BIN=$GITHUB_WORKSPACE/.bin/terraform\" >> \"$GITHUB_ENV\"\necho \"PATH=$GITHUB_WORKSPACE/.bin:$PATH\" >> \"$GITHUB_ENV\"\n"
+        run: "echo \"GOROOT=$(go env GOROOT)\" >> \"$GITHUB_ENV\"\necho \"GOPATH=$(go env GOPATH)\" >> \"$GITHUB_ENV\"\necho \"GOMODCACHE=$(go env GOMODCACHE)\" >> \"$GITHUB_ENV\"\nTERRAFORM_BIN=$(which terraform)\n# Copy terraform into the workspace so the AWF chroot container can see it\n# (the chroot mounts $GITHUB_WORKSPACE but not the RUNNER_TEMP path where\n# hashicorp/setup-terraform installs the binary).\nmkdir -p \"$GITHUB_WORKSPACE/bin\"\ncp \"$TERRAFORM_BIN\" \"$GITHUB_WORKSPACE/bin/terraform\"\necho \"TERRAFORM_BIN=$GITHUB_WORKSPACE/bin/terraform\" >> \"$GITHUB_ENV\"\necho \"PATH=$GITHUB_WORKSPACE/bin:$PATH\" >> \"$GITHUB_ENV\"\n"
       - name: Setup Node.js
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:

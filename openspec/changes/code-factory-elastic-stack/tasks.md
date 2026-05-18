@@ -8,8 +8,8 @@
 ## 2. Shared workflow: setup-dev.md
 
 - [x] 2.1 Update the "Export Go and Terraform paths for AWF chroot mode" step in `.github/workflows/shared/setup-dev.md`:
-  - Copy `$(which terraform)` into `$GITHUB_WORKSPACE/.bin/terraform`
-  - Export `TERRAFORM_BIN=$GITHUB_WORKSPACE/.bin/terraform`
+  - Copy `$(which terraform)` into `$GITHUB_WORKSPACE/bin/terraform`
+  - Export `TERRAFORM_BIN=$GITHUB_WORKSPACE/bin/terraform`
   - Export `PATH=$GITHUB_WORKSPACE/.bin:$PATH`
 
 ## 3. Shared workflow: elastic-stack.md (new)
@@ -72,3 +72,14 @@
 - [x] 9.3 Add requirement for new capability spec delta directories
 - [x] 9.4 Fix `ci-code-factory-issue-intake/spec.md` port references to proxy ports
 - [x] 9.5 Update `proposal.md` to mention new capability spec delta directories
+
+## 10. Create missing OpenSpec spec delta directories for new capabilities
+
+- [x] 10.1 Create `openspec/changes/code-factory-elastic-stack/specs/ci-shared-elastic-stack/spec.md`
+  - Move shared Elastic Stack requirements (proxy services, Docker Compose bind address, shared stack setup, Terraform network policy)
+  - Status: ADDED
+- [x] 10.2 Create `openspec/changes/code-factory-elastic-stack/specs/ci-shared-setup-dev/spec.md`
+  - Move shared dev-setup requirements (Terraform binary staging, Go toolchain, Node.js, repo dependencies)
+  - Status: ADDED
+- [x] 10.3 Update `ci-code-factory-elastic-stack-test-environment/spec.md` to contain only code-factory-specific test environment requirements
+- [x] 10.4 Run `make check-openspec` to validate all specs

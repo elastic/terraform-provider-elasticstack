@@ -53,7 +53,7 @@ ports:
 
 ### Decision 3: Stage Terraform into the workspace, not the runtime PATH
 
-**Rationale:** The AWF container mounts the workspace (`${GITHUB_WORKSPACE}`) but not `/opt/hostedtoolcache` or `RUNNER_TEMP`. Copying Terraform into a `.bin/` directory inside the workspace guarantees the agent can find it.
+**Rationale:** The AWF container mounts the workspace (`${GITHUB_WORKSPACE}`) but not `/opt/hostedtoolcache` or `RUNNER_TEMP`. Copying Terraform into a `bin/` directory inside the workspace guarantees the agent can find it.
 
 **Alternative considered:** Install Terraform inside the AWF container at runtime. Rejected: the AWF container is a minimal sandbox without `apt`, `brew`, or internet access to download binaries.
 
@@ -72,7 +72,7 @@ ports:
 |------|------------|
 | GH AW `safe_outputs` rejects workflow file changes on branches that have them but `main` does not | The infrastructure changes must be merged to `main` before agent-created PRs on these branches will pass `safe_outputs` (`protect_top_level_dot_folders: true`). |
 | `host.docker.internal` may behave differently on non-Linux runners | The `--add-host` flag is only needed on Linux; Docker Desktop handles this automatically. The workflow only runs on GitHub-hosted `ubuntu-latest`. |
-| Terraform binary copied into workspace can be accidentally committed | The `.bin/` directory is created at runtime in CI and is outside the source tree; it is ephemeral on fresh checkouts. |
+| Terraform binary copied into workspace can be accidentally committed | The `bin/` directory is created at runtime in CI and is outside the source tree; it is ephemeral on fresh checkouts. |
 | Shared workflow file changes affect multiple workflows | This is intentional (DRY), but means shared-file edits must be validated against both consumers (`code-factory` and `reproducer-factory`). |
 
 ## Migration Plan
