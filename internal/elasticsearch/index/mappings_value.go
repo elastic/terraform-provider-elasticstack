@@ -433,5 +433,39 @@ func scriptSemanticallyEqual(userVal, apiVal any) bool {
 		source, ok := userMap["source"].(string)
 		return ok && apiStr == source
 	}
+	if userIsMap && apiIsMap {
+		return scriptObjectsSemanticallyEqual(userMap, apiMap)
+	}
 	return scalarSemanticEqual(userVal, apiVal)
+}
+
+// scriptObjectsSemanticallyEqual compares script objects by meaningful keys while
+// allowing extra API-only keys (e.g. stored script id).
+func scriptObjectsSemanticallyEqual(a, b map[string]any) bool {
+	aSource, aHasSource := a["source"]
+	bSource, bHasSource := b["source"]
+	if aHasSource || bHasSource {
+		if !aHasSource || !bHasSource {
+			return false
+		}
+		if !scalarSemanticEqual(aSource, bSource) {
+			return false
+		}
+	}
+
+	aLang, aHasLang := a["lang"]
+	bLang, bHasLang := b["lang"]
+	if aHasLang && bHasLang && !scalarSemanticEqual(aLang, bLang) {
+		return false
+	}
+
+	for _, key := range []string{"params", "options"} {
+		aVal, aHas := a[key]
+		bVal, bHas := b[key]
+		if aHas && bHas && !reflect.DeepEqual(aVal, bVal) {
+			return false
+		}
+	}
+
+	return true
 }
