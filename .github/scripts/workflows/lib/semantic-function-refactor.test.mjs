@@ -47,7 +47,7 @@ test('semantic-function-refactor workflow safe outputs and compiled lock keep se
   const source = workflowSource();
   const lock = lockSource();
   assert.match(source, /title-prefix:\s*"\[semantic-refactor\] "/);
-  assert.match(source, /labels:\s*\[semantic-refactor, refactoring, code-quality, automated-analysis, triaged\]/);
+  assert.match(source, /labels:\n\s*- semantic-refactor\n\s*- refactoring\n\s*- code-quality\n\s*- automated-analysis\n\s*- triaged/);
   assert.match(source, /max:\s*3/);
   assert.match(lock, /"create_issue":\{"labels":\["semantic-refactor","refactoring","code-quality","automated-analysis","triaged"\],"max":3,"title_prefix":"\[semantic-refactor\] "\}/);
   assert.match(lock, /Maximum 3 issue\(s\) can be created/);
@@ -55,7 +55,7 @@ test('semantic-function-refactor workflow safe outputs and compiled lock keep se
 
 test('semantic-function-refactor workflow routes Claude through LiteLLM with secret-backed API key', () => {
   const source = workflowSource();
-  assert.match(source, /engine:\s*\n\s*id:\s*claude/m);
+  assert.match(source, /engine:[\s\S]*?\n\s*id:\s*claude/);
   assert.match(source, /model: "?llm-gateway\/claude-sonnet-4-6"?/);
   assert.match(source, /ANTHROPIC_BASE_URL:\s*"?https:\/\/elastic\.litellm-prod\.ai"?/);
   assert.match(source, /ANTHROPIC_API_KEY:\s*\$\{\{\s*secrets\.CLAUDE_LITELLM_PROXY_API_KEY\s*\}\}/);
@@ -63,7 +63,7 @@ test('semantic-function-refactor workflow routes Claude through LiteLLM with sec
 
 test('semantic-function-refactor source workflow configures engine env with base URL and model', () => {
   const source = workflowSource();
-  assert.match(source, /engine:\s*\n\s*id:\s*claude/m);
+  assert.match(source, /engine:[\s\S]*?\n\s*id:\s*claude/);
   assert.match(source, /model: "?llm-gateway\/claude-sonnet-4-6"?/);
   assert.match(source, /ANTHROPIC_BASE_URL:\s*"?https:\/\/elastic\.litellm-prod\.ai\/?"?/);
   assert.match(source, /ANTHROPIC_API_KEY:\s*\$\{\{\s*secrets\.CLAUDE_LITELLM_PROXY_API_KEY\s*\}\}/);
@@ -71,7 +71,7 @@ test('semantic-function-refactor source workflow configures engine env with base
 
 test('semantic-function-refactor source workflow includes LiteLLM in allowed network domains', () => {
   const source = workflowSource();
-  assert.match(source, /allowed:.*elastic\.litellm-prod\.ai/);
+  assert.match(source, /allowed:[\s\S]*?elastic\.litellm-prod\.ai/);
 });
 
 test('workflow configures Serena MCP server for semantic Go analysis', () => {
