@@ -1,8 +1,8 @@
 ## 1. Add internal logging helpers
 
-- [ ] 1.1 Create `internal/debugutils/logging.go` with `IsDebugOrHigher()` implementation
-- [ ] 1.2 Add `IsSensitiveInSchema() bool` shared helper to `internal/debugutils/logging.go`
-- [ ] 1.3 Run `go test ./internal/debugutils/...` to ensure new file compiles
+- [x] 1.1 Create `internal/debugutils/logging.go` with `IsDebugOrHigher()` implementation
+- [x] 1.2 Add `IsSensitiveInSchema() bool` shared helper to `internal/debugutils/logging.go`
+- [x] 1.3 Run `go test ./internal/debugutils/...` to ensure new file compiles
 
 ## 2. Replace SDK v2 `logging.IsDebugOrHigher` imports
 
