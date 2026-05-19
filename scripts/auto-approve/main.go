@@ -157,7 +157,7 @@ func run(ctx context.Context) error {
 	return nil
 }
 
-func githubClient(ctx context.Context, token string) (*github.Client, error) {
+func githubClient(_ context.Context, token string) (*github.Client, error) {
 	return github.NewClient(github.WithAuthToken(token))
 }
 

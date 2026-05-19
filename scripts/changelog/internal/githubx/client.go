@@ -27,7 +27,7 @@ import (
 
 // NewGitHubClient returns a GitHub API client authenticated with token,
 // mirroring scripts/auto-approve/main.go.
-func NewGitHubClient(ctx context.Context, token string) (*github.Client, error) {
+func NewGitHubClient(_ context.Context, token string) (*github.Client, error) {
 	token = strings.TrimSpace(token)
 	if token == "" {
 		return nil, errors.New("missing GITHUB_TOKEN")
