@@ -1700,10 +1700,8 @@ func testAccCheckSecurityDetectionRuleDestroy(s *terraform.State) error {
 	return nil
 }
 
-var minSupportedAlertsFilterVersion = version.Must(version.NewVersion("8.9.0"))
-
 func TestAccResourceSecurityDetectionRule_AlertsFilter(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minSupportedAlertsFilterVersion, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, minResponseActionVersionSupport, versionutils.FlavorAny)
 
 	resourceName := securityDetectionRuleResourceName
 	ruleName := testAccRandomizedRuleName("test-rule-alerts-filter")
