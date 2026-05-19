@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -407,53 +408,39 @@ func checkStateMappingsTopLevelKeys(keys ...string) resource.TestCheckFunc {
 }
 
 func checkStateMappingsDynamic(expected bool) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		mappings, err := stateMappingsFromResource(s)
-		if err != nil {
-			return err
-		}
-		dynamic, ok := mappings["dynamic"]
-		if !ok {
-			return fmt.Errorf("state mappings missing dynamic key")
-		}
-		switch v := dynamic.(type) {
-		case bool:
-			if v != expected {
-				return fmt.Errorf("state mappings dynamic = %v, want %v", v, expected)
-			}
-		case string:
-			want := "false"
-			if expected {
-				want = "true"
-			}
-			if v != want {
-				return fmt.Errorf("state mappings dynamic = %q, want %q", v, want)
-			}
-		default:
-			return fmt.Errorf("state mappings dynamic has unexpected type %T", dynamic)
-		}
-		return nil
-	}
+	return checkStateMappingsBoolAt(expected, "dynamic")
 }
 
 func checkStateMappingsSourceEnabled(expected bool) resource.TestCheckFunc {
+	return checkStateMappingsBoolAt(expected, "_source", "enabled")
+}
+
+// checkStateMappingsBoolAt asserts that the value at the given nested path in
+// state mappings is the expected bool. Elasticsearch echoes some boolean
+// fields as JSON strings; both forms are accepted.
+func checkStateMappingsBoolAt(expected bool, path ...string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		mappings, err := stateMappingsFromResource(s)
 		if err != nil {
 			return err
 		}
-		source, ok := mappings["_source"].(map[string]any)
-		if !ok {
-			return fmt.Errorf("state mappings _source is not an object")
+		pathStr := strings.Join(path, ".")
+		node := any(mappings)
+		for i, key := range path {
+			m, ok := node.(map[string]any)
+			if !ok {
+				return fmt.Errorf("state mappings %q is not an object", strings.Join(path[:i], "."))
+			}
+			v, ok := m[key]
+			if !ok {
+				return fmt.Errorf("state mappings missing key %q", strings.Join(path[:i+1], "."))
+			}
+			node = v
 		}
-		enabled, ok := source["enabled"]
-		if !ok {
-			return fmt.Errorf("state mappings _source missing enabled")
-		}
-		switch v := enabled.(type) {
+		switch v := node.(type) {
 		case bool:
 			if v != expected {
-				return fmt.Errorf("state mappings _source.enabled = %v, want %v", v, expected)
+				return fmt.Errorf("state mappings %s = %v, want %v", pathStr, v, expected)
 			}
 		case string:
 			want := "false"
@@ -461,10 +448,10 @@ func checkStateMappingsSourceEnabled(expected bool) resource.TestCheckFunc {
 				want = "true"
 			}
 			if v != want {
-				return fmt.Errorf("state mappings _source.enabled = %q, want %q", v, want)
+				return fmt.Errorf("state mappings %s = %q, want %q", pathStr, v, want)
 			}
 		default:
-			return fmt.Errorf("state mappings _source.enabled has unexpected type %T", enabled)
+			return fmt.Errorf("state mappings %s has unexpected type %T", pathStr, node)
 		}
 		return nil
 	}

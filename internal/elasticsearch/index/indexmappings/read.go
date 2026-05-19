@@ -42,18 +42,22 @@ func readIndexMappings(ctx context.Context, client *clients.ElasticsearchScopedC
 
 	state.Index = types.StringValue(indexName)
 
-	mappingsValue, mapDiags := mappingsFromAPI(apiIndex.Mappings)
-	if mapDiags.HasError() {
-		return state, false, mapDiags
+	apiBytes, err := marshalAPIMappings(apiIndex.Mappings)
+	if err != nil {
+		return state, false, diag.Diagnostics{
+			diag.NewErrorDiagnostic("failed to marshal index mappings from API", err.Error()),
+		}
 	}
 
+	// Import / first read: no prior mask available, store the full API response.
+	// NewMappingsValue handles normalization; intersection is skipped.
 	if priorMappingsEmpty(state.Mappings) {
-		state.Mappings = mappingsValue
+		state.Mappings = index.NewMappingsValue(string(apiBytes))
 		return state, true, nil
 	}
 
 	var apiMap map[string]any
-	if err := json.Unmarshal([]byte(mappingsValue.ValueString()), &apiMap); err != nil {
+	if err := json.Unmarshal(apiBytes, &apiMap); err != nil {
 		return state, false, diag.Diagnostics{
 			diag.NewErrorDiagnostic("failed to unmarshal API mappings", err.Error()),
 		}
@@ -78,18 +82,11 @@ func readIndexMappings(ctx context.Context, client *clients.ElasticsearchScopedC
 	return state, true, nil
 }
 
-func mappingsFromAPI(apiMappings any) (index.MappingsValue, diag.Diagnostics) {
+func marshalAPIMappings(apiMappings any) ([]byte, error) {
 	if apiMappings == nil {
-		return index.NewMappingsValue("{}"), nil
+		return []byte("{}"), nil
 	}
-
-	mappingBytes, err := json.Marshal(apiMappings)
-	if err != nil {
-		return index.MappingsValue{}, diag.Diagnostics{
-			diag.NewErrorDiagnostic("failed to marshal index mappings from API", err.Error()),
-		}
-	}
-	return index.NewMappingsValue(string(mappingBytes)), nil
+	return json.Marshal(apiMappings)
 }
 
 func priorMappingsEmpty(mappings index.MappingsValue) bool {
