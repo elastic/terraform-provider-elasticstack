@@ -18,56 +18,55 @@
 package ingest_test
 
 import (
-	"fmt"
 	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
+	"github.com/hashicorp/go-version"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-// TestAccReproduceIssue3002 reproduces the drift reported in
-// https://github.com/elastic/terraform-provider-elasticstack/issues/3002
-// where a rename processor with override=true loses the override field after
-// apply because the typed go-elasticsearch client (types.RenameProcessor) does
-// not have an Override field and silently drops it on read.
+// renameProcessorOverrideMinVersion is the lowest Elasticsearch version that
+// accepts the `override` option on the rename ingest processor. Older versions
+// reject the field with a 400, so the regression test is skipped against them.
+var renameProcessorOverrideMinVersion = version.Must(version.NewVersion("8.13.0"))
+
+// TestAccReproduceIssue3002 is the regression test for
+// https://github.com/elastic/terraform-provider-elasticstack/issues/3002.
+//
+// Previously, a rename processor with `override = true` produced drift after
+// apply because the typed go-elasticsearch client (`types.RenameProcessor`)
+// has no `Override` field and silently dropped it during deserialization.
+// The provider now decodes ingest pipeline responses opaquely so unmodeled
+// processor fields survive the refresh.
 func TestAccReproduceIssue3002(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, renameProcessorOverrideMinVersion, versionutils.FlavorAny)
+
 	pipelineName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
-
-	config := fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_ingest_pipeline" "test" {
-  name = %q
-
-  processors = [
-    jsonencode({
-      rename = {
-        field        = "tmp_source_field"
-        target_field = "destination_field"
-        override     = true
-        ignore_missing = true
-      }
-    })
-  ]
-}
-`, pipelineName)
+	resourceName := "elasticstack_elasticsearch_ingest_pipeline.test"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
-			// The typed go-elasticsearch client (types.RenameProcessor) lacks an
-			// Override field. When Elasticsearch returns override=true, the field is
-			// silently dropped during deserialization, so the post-apply refresh
-			// produces a value that differs from the plan. Terraform rejects this with
-			// "Provider produced inconsistent result after apply".
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				Config:                   config,
-				ExpectError:              regexp.MustCompile(`(?s)Provider produced inconsistent result after apply.*override`),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("repro"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(pipelineName)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "processors.#", "1"),
+					// The opaque processor JSON must carry `override:true` back into state.
+					resource.TestMatchResourceAttr(resourceName, "processors.0", regexp.MustCompile(`"override"\s*:\s*true`)),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("repro"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(pipelineName)},
+				PlanOnly:                 true,
+				ExpectNonEmptyPlan:       false,
 			},
 		},
 	})
