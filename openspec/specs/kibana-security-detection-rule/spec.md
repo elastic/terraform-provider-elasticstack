@@ -576,7 +576,7 @@ The `filters` attribute uses a normalized JSON type (`jsontypes.NormalizedType`)
 
 ### Requirement: State upgrade — actions.params map(string) → JSON string (REQ-032)
 
-The resource schema SHALL be versioned at **1**. When Terraform reads prior state written by schema version **0** (where `actions[*].params` was stored as `map(string)`), the resource SHALL perform an in-place state upgrade to schema version 1 by JSON-encoding each entry's `params` map into a JSON-normalized string. The upgrade SHALL NOT require destroying and recreating the resource. The state upgrade logic SHALL be registered via `ResourceWithUpgradeState`.
+When Terraform reads prior state written by schema version **0** (where `actions[*].params` was stored as `map(string)`), the resource SHALL perform an in-place state upgrade to schema version **1** by JSON-encoding each entry's `params` map into a JSON-normalized string. The upgrade SHALL NOT require destroying and recreating the resource. The state upgrade logic SHALL be registered via `ResourceWithUpgradeState`. (Schema version **2** and the `alerts_filter` state upgrade are defined in REQ-084.)
 
 #### Scenario: Upgrade from v0 state with map params
 
@@ -594,11 +594,12 @@ The resource schema SHALL be versioned at **1**. When Terraform reads prior stat
 
 When a practitioner explicitly configures any of the following `elasticstack_kibana_security_detection_rule` attributes as an empty list (`[]`), the provider SHALL return an empty list — not `null` — for that attribute in state after `Create`, `Read`, and `Update`. This preserves the Terraform Plugin Framework invariant for `Optional`-only list attributes: the provider MUST return the planned value unchanged when the planned value is a known, non-null empty list.
 
+`actions` is a `ListNestedBlock` and cannot be set to `[]` in configuration; omitting `actions` yields `null` in state when no actions are configured.
+
 Affected attributes:
 
 | Attribute | Schema type |
 |---|---|
-| `actions` | `ListNestedAttribute` |
 | `exceptions_list` | `ListNestedAttribute` |
 | `severity_mapping` | `ListNestedAttribute` |
 | `risk_score_mapping` | `ListNestedAttribute` |
@@ -608,7 +609,7 @@ Affected attributes:
 
 #### Scenario: Apply with all affected attributes set to empty list
 
-- GIVEN a resource configuration with `actions = []`, `exceptions_list = []`, `severity_mapping = []`, `risk_score_mapping = []`, `related_integrations = []`, `threat = []`, and `threat_mapping = []`
+- GIVEN a resource configuration with `exceptions_list = []`, `severity_mapping = []`, `risk_score_mapping = []`, `related_integrations = []`, `threat = []`, and `threat_mapping = []` (and no `actions` blocks)
 - WHEN `terraform apply` runs
 - THEN the provider SHALL succeed without a "Provider produced inconsistent result after apply" diagnostic
 - AND each of the seven attributes SHALL be stored as an empty list (`[]`) in Terraform state
@@ -683,11 +684,11 @@ This function SHALL be called after each `r.read()` invocation in `Create`, `Rea
 
 ### Requirement: Acceptance test — empty-list round-trip (REQ-036)
 
-The acceptance test suite SHALL include a test that exercises the empty-list scenario for all seven affected attributes in a single resource configuration. The test SHALL apply a configuration with all seven attributes set to `[]`, assert that `terraform apply` succeeds without "inconsistent result" diagnostics, assert that all seven attributes are stored as empty lists in state, and assert that a subsequent `terraform plan` produces an empty plan.
+The acceptance test suite SHALL include a test that exercises the empty-list scenario for the six list attributes in REQ-033 in a single resource configuration (with `actions` omitted). The test SHALL apply a configuration with those attributes set to `[]`, assert that `terraform apply` succeeds without "inconsistent result" diagnostics, assert that those attributes are stored as empty lists in state, and assert that a subsequent `terraform plan` produces an empty plan.
 
 #### Scenario: Acceptance test apply with empty lists succeeds
 
-- GIVEN a resource configuration with `actions = []`, `exceptions_list = []`, `severity_mapping = []`, `risk_score_mapping = []`, `related_integrations = []`, `threat = []`, and `threat_mapping = []`
+- GIVEN a resource configuration with `exceptions_list = []`, `severity_mapping = []`, `risk_score_mapping = []`, `related_integrations = []`, `threat = []`, and `threat_mapping = []` (and no `actions` blocks)
 - WHEN the acceptance test runs `terraform apply`
 - THEN `terraform apply` SHALL succeed without any "Provider produced inconsistent result after apply" diagnostics
 - AND the test SHALL verify that each of the seven attributes is stored as an empty list in state

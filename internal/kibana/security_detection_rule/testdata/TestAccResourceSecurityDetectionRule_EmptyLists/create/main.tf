@@ -20,7 +20,6 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   interval    = "5m"
   index       = ["logs-*"]
 
-  actions              = []
   exceptions_list      = []
   severity_mapping     = []
   risk_score_mapping   = []
