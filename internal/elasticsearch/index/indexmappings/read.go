@@ -26,6 +26,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func readIndexMappings(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state tfModel) (tfModel, bool, diag.Diagnostics) {
@@ -38,6 +39,8 @@ func readIndexMappings(ctx context.Context, client *clients.ElasticsearchScopedC
 	if apiIndex == nil {
 		return state, false, nil
 	}
+
+	state.Index = types.StringValue(indexName)
 
 	mappingsValue, mapDiags := mappingsFromAPI(apiIndex.Mappings)
 	if mapDiags.HasError() {

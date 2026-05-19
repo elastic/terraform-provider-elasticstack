@@ -210,14 +210,28 @@ func TestAccResourceIndexMappings_import(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"index_name": config.StringVariable(indexName),
 				},
-				ResourceName:       mappingsResourceName,
-				ImportState:        true,
-				ImportStateIdFunc:  importStateIDForIndexName(indexName),
+				ResourceName:         mappingsResourceName,
+				ImportState:          true,
+				ImportStatePersist:   true,
+				ImportStateIdFunc:    importStateIDForIndexName(indexName),
 				// First import: no prior mappings resource in state for ImportStateVerify.
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestMatchResourceAttr(mappingsResourceName, "id", indexMappingsIDRegexp),
+					resource.TestCheckResourceAttr(mappingsResourceName, "index", indexName),
 					checkStateMappingsProperties([]string{"title", "body"}, nil),
 				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("full"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				ResourceName:            mappingsResourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateIdFunc:       importStateIDForIndexName(indexName),
+				ImportStateVerifyIgnore: []string{"id"},
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
