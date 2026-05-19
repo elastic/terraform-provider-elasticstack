@@ -32,6 +32,6 @@
 
 ## 6. Build and validate
 
-- [ ] 6.1 Run `make build` to confirm the provider builds cleanly
-- [ ] 6.2 Run `go vet ./...` to catch any static analysis issues
-- [ ] 6.3 Run `go test ./internal/...` to confirm unit tests pass
+- [x] 6.1 Run `make build` to confirm the provider builds cleanly
+- [x] 6.2 Run `go vet ./...` to catch any static analysis issues
+- [x] 6.3 Run `go test ./internal/...` to confirm unit tests pass
