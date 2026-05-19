@@ -21,7 +21,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/go-github/v86/github"
+	"github.com/google/go-github/v87/github"
 
 	"github.com/elastic/terraform-provider-elasticstack/scripts/changelog/internal/githubx"
 	"github.com/elastic/terraform-provider-elasticstack/scripts/changelog/internal/section"
