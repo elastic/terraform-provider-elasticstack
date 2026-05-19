@@ -11,8 +11,8 @@ description: >-
 on:
   issues:
     types: [opened, labeled]
-  skip-author-associations:
-    issues: [none, first_timer, first_time_contributor, contributor]
+  bots:
+    - github-actions[bot]
   workflow_dispatch:
     inputs:
       issue_number:
@@ -196,7 +196,7 @@ on:
           echo "event_eligible=${EVENT_ELIGIBLE_EVENT}" >> "$GITHUB_OUTPUT"
           echo "event_eligible_reason=${EVENT_ELIGIBLE_REASON_EVENT}" >> "$GITHUB_OUTPUT"
           echo "actor_trusted=true" >> "$GITHUB_OUTPUT"
-          echo "actor_trusted_reason=Native skip-author-associations gate guarantees trust." >> "$GITHUB_OUTPUT"
+          echo "actor_trusted_reason=Role-based gate guarantees trust for issue events." >> "$GITHUB_OUTPUT"
           echo "trigger_label_removed=${TRIGGER_LABEL_REMOVED_EVENT}" >> "$GITHUB_OUTPUT"
           echo "trigger_label_removed_reason=${TRIGGER_LABEL_REMOVED_REASON_EVENT}" >> "$GITHUB_OUTPUT"
         else

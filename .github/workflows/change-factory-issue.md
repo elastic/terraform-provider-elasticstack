@@ -9,9 +9,6 @@ description: >-
 on:
   issues:
     types: [labeled]
-  skip-author-associations:
-    issues: [none, first_timer, first_time_contributor, contributor]
-    issue_comment: [none, first_timer, first_time_contributor, contributor]
   slash_command:
     name: change-factory
     events: [issue_comment]
@@ -203,7 +200,7 @@ jobs:
       sanitized_issue_comments: ${{ steps.sanitize_context.outputs.sanitized_issue_comments }}
       research_comment_body: ${{ steps.extract_research_comment.outputs.research_comment_body }}
       actor_trusted: 'true'
-      actor_trusted_reason: Native skip-author-associations gate guarantees trust.
+      actor_trusted_reason: Role-based gate guarantees trust for issue events.
       duplicate_pr_found: ${{ steps.check_duplicate_pr.outputs.duplicate_pr_found }}
       duplicate_pr_url: ${{ steps.check_duplicate_pr.outputs.duplicate_pr_url }}
       trigger_label_removed: ${{ steps.remove_trigger_label.outputs.trigger_label_removed }}

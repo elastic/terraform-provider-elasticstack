@@ -526,7 +526,7 @@ test('change-factory-issue workflow source wiring matches intake contract', () =
   );
   assert.match(
     workflowTmpl,
-    /actor_trusted_reason: Native skip-author-associations gate guarantees trust\./,
+    /actor_trusted_reason: Role-based gate guarantees trust for issue events\./,
   );
   assert.match(
     workflowTmpl,
