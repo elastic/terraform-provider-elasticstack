@@ -25,10 +25,10 @@
 
 ## 5. Clean up go.mod
 
-- [ ] 5.1 Remove `github.com/hashicorp/terraform-plugin-sdk/v2` from the `require` block in `go.mod`
-- [ ] 5.2 Run `go mod tidy`
-- [ ] 5.3 Verify `go mod graph` no longer shows a direct edge to `terraform-plugin-sdk/v2`
-- [ ] 5.4 Verify `go mod why github.com/hashicorp/terraform-plugin-sdk/v2` reports it as an indirect dependency only
+- [x] 5.1 Remove `github.com/hashicorp/terraform-plugin-sdk/v2` from the `require` block in `go.mod`
+- [x] 5.2 Run `go mod tidy`
+- [x] 5.3 Verify `go mod graph` no longer shows a direct edge to `terraform-plugin-sdk/v2`
+- [x] 5.4 Verify `go mod why github.com/hashicorp/terraform-plugin-sdk/v2` reports it as an indirect dependency only
 
 ## 6. Build and validate
 
