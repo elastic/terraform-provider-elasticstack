@@ -9,6 +9,9 @@ description: >-
 on:
   issues:
     types: [labeled]
+  skip-author-associations:
+    issues: [none, first_timer, first_time_contributor, contributor]
+    issue_comment: [none, first_timer, first_time_contributor, contributor]
   slash_command:
     name: change-factory
     events: [issue_comment]
@@ -50,22 +53,10 @@ on:
         script: |
           core.setOutput('issue_title', context.payload.issue?.title ?? '');
           core.setOutput('issue_body', context.payload.issue?.body ?? '');
-    - name: Check actor trust
-      id: check_actor_trust
-      if: steps.qualify_trigger.outputs.event_eligible == 'true'
-      uses: actions/github-script@v9
-      env:
-        FACTORY_NAME: change-factory
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        script: |
-          const fn = require('${{ github.workspace }}/.github/scripts/workflows/lib/factory-runners/check-actor-trust.js');
-          await fn({ github, context, core });
     - name: Fetch issue comments
       id: fetch_issue_comments
       if: >-
-        steps.qualify_trigger.outputs.event_eligible == 'true' &&
-        steps.check_actor_trust.outputs.actor_trusted == 'true'
+        steps.qualify_trigger.outputs.event_eligible == 'true'
       uses: actions/github-script@v9
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -75,8 +66,7 @@ on:
     - name: Extract research comment
       id: extract_research_comment
       if: >-
-        steps.qualify_trigger.outputs.event_eligible == 'true' &&
-        steps.check_actor_trust.outputs.actor_trusted == 'true'
+        steps.qualify_trigger.outputs.event_eligible == 'true'
       env:
         INPUT_COMMENTS_JSON: ${{ steps.fetch_issue_comments.outputs.issue_comments_json }}
       uses: actions/github-script@v9
@@ -88,8 +78,7 @@ on:
     - name: Check duplicate PR
       id: check_duplicate_pr
       if: >-
-        steps.qualify_trigger.outputs.event_eligible == 'true' &&
-        steps.check_actor_trust.outputs.actor_trusted == 'true'
+        steps.qualify_trigger.outputs.event_eligible == 'true'
       env:
         FACTORY_NAME: change-factory
       uses: actions/github-script@v9
@@ -102,7 +91,6 @@ on:
       id: notify_duplicate_blocked
       if: >-
         steps.qualify_trigger.outputs.event_eligible == 'true' &&
-        steps.check_actor_trust.outputs.actor_trusted == 'true' &&
         steps.check_duplicate_pr.outputs.duplicate_pr_found == 'true'
       uses: actions/github-script@v9
       env:
@@ -117,7 +105,6 @@ on:
       id: sanitize_context
       if: >-
         steps.qualify_trigger.outputs.event_eligible == 'true' &&
-        steps.check_actor_trust.outputs.actor_trusted == 'true' &&
         steps.check_duplicate_pr.outputs.duplicate_pr_found != 'true'
       env:
         FACTORY_NAME: change-factory
@@ -132,7 +119,6 @@ on:
     - name: Upload issue context artifact
       if: >-
         steps.qualify_trigger.outputs.event_eligible == 'true' &&
-        steps.check_actor_trust.outputs.actor_trusted == 'true' &&
         steps.check_duplicate_pr.outputs.duplicate_pr_found != 'true'
       uses: actions/upload-artifact@v4
       with:
@@ -143,7 +129,6 @@ on:
       id: remove_trigger_label
       if: >-
         steps.qualify_trigger.outputs.event_eligible == 'true' &&
-        steps.check_actor_trust.outputs.actor_trusted == 'true' &&
         steps.check_duplicate_pr.outputs.duplicate_pr_found != 'true'
       uses: actions/github-script@v9
       env:
@@ -157,7 +142,6 @@ on:
       id: set_phase_label
       if: >-
         steps.qualify_trigger.outputs.event_eligible == 'true' &&
-        steps.check_actor_trust.outputs.actor_trusted == 'true' &&
         steps.check_duplicate_pr.outputs.duplicate_pr_found != 'true'
       env:
         INPUT_ISSUE_NUMBER: ${{ github.event.issue.number }}
@@ -176,8 +160,6 @@ on:
         FACTORY_NAME: change-factory
         EVENT_ELIGIBLE: ${{ steps.qualify_trigger.outputs.event_eligible }}
         EVENT_ELIGIBLE_REASON: ${{ steps.qualify_trigger.outputs.event_eligible_reason }}
-        ACTOR_TRUSTED: ${{ steps.check_actor_trust.outputs.actor_trusted }}
-        ACTOR_TRUSTED_REASON: ${{ steps.check_actor_trust.outputs.actor_trusted_reason }}
         DUPLICATE_PR_FOUND: ${{ steps.check_duplicate_pr.outputs.duplicate_pr_found }}
         DUPLICATE_PR_URL: ${{ steps.check_duplicate_pr.outputs.duplicate_pr_url }}
         DUPLICATE_GATE_REASON: ${{ steps.check_duplicate_pr.outputs.gate_reason }}
@@ -220,8 +202,8 @@ jobs:
       sanitized_issue_body: ${{ steps.sanitize_context.outputs.sanitized_issue_body }}
       sanitized_issue_comments: ${{ steps.sanitize_context.outputs.sanitized_issue_comments }}
       research_comment_body: ${{ steps.extract_research_comment.outputs.research_comment_body }}
-      actor_trusted: ${{ steps.check_actor_trust.outputs.actor_trusted }}
-      actor_trusted_reason: ${{ steps.check_actor_trust.outputs.actor_trusted_reason }}
+      actor_trusted: 'true'
+      actor_trusted_reason: Native skip-author-associations gate guarantees trust.
       duplicate_pr_found: ${{ steps.check_duplicate_pr.outputs.duplicate_pr_found }}
       duplicate_pr_url: ${{ steps.check_duplicate_pr.outputs.duplicate_pr_url }}
       trigger_label_removed: ${{ steps.remove_trigger_label.outputs.trigger_label_removed }}

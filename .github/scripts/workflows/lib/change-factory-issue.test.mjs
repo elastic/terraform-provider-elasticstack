@@ -12,8 +12,6 @@ const {
   changeFactoryIssueBranchName,
   issueBranchName,
   qualifyTriggerEvent,
-  actorTrustWhenSenderMissing,
-  checkActorTrust,
   checkDuplicatePR,
   computeGateReason,
   parseOptionalTriStateFromEnv,
@@ -54,10 +52,6 @@ test('change-factory-issue exports align with shared createFactoryIssueModule bi
   });
   const params = { eventName: 'issues', eventAction: 'labeled', labelName: 'change-factory', issueLabels: [] };
   assert.deepEqual(qualifyTriggerEvent(params), bound.qualifyTriggerEvent(params));
-  assert.deepEqual(
-    checkActorTrust({ sender: 'alice', permission: 'write' }),
-    bound.checkActorTrust({ sender: 'alice', permission: 'write' }),
-  );
   assert.deepEqual(
     checkDuplicatePR({ issueNumber: 7, pullRequests: [] }),
     bound.checkDuplicatePR({ issueNumber: 7, pullRequests: [] }),
@@ -170,69 +164,6 @@ test('qualifyTriggerEvent rejects unsupported issues actions such as closed', ()
 
   assert.equal(result.event_eligible, false);
   assert.match(result.event_eligible_reason, /not eligible/);
-});
-
-test('checkActorTrust trusts github-actions[bot] without collaborator permission', () => {
-  const result = checkActorTrust({ sender: 'github-actions[bot]', permission: null });
-
-  assert.equal(result.actor_trusted, true);
-  assert.match(result.actor_trusted_reason, /github-actions\[bot\]/);
-});
-
-test('checkActorTrust still trusts github-actions[bot] when a permission value is present', () => {
-  const result = checkActorTrust({ sender: 'github-actions[bot]', permission: 'read' });
-
-  assert.equal(result.actor_trusted, true);
-  assert.match(result.actor_trusted_reason, /github-actions\[bot\]/);
-});
-
-test('checkActorTrust trusts human senders with write permission', () => {
-  const result = checkActorTrust({ sender: 'alice', permission: 'write' });
-
-  assert.equal(result.actor_trusted, true);
-  assert.match(result.actor_trusted_reason, /permission 'write'/);
-});
-
-test('checkActorTrust trusts human senders with maintain permission', () => {
-  const result = checkActorTrust({ sender: 'alice', permission: 'maintain' });
-
-  assert.equal(result.actor_trusted, true);
-  assert.match(result.actor_trusted_reason, /permission 'maintain'/);
-});
-
-test('checkActorTrust trusts human senders with admin permission', () => {
-  const result = checkActorTrust({ sender: 'alice', permission: 'admin' });
-
-  assert.equal(result.actor_trusted, true);
-  assert.match(result.actor_trusted_reason, /permission 'admin'/);
-});
-
-test('checkActorTrust rejects human senders with read permission', () => {
-  const result = checkActorTrust({ sender: 'alice', permission: 'read' });
-
-  assert.equal(result.actor_trusted, false);
-  assert.match(result.actor_trusted_reason, /does not meet the required write\/maintain\/admin policy/);
-});
-
-test('checkActorTrust rejects human senders with none permission', () => {
-  const result = checkActorTrust({ sender: 'alice', permission: 'none' });
-
-  assert.equal(result.actor_trusted, false);
-  assert.match(result.actor_trusted_reason, /permission 'none'/);
-});
-
-test('checkActorTrust rejects human senders with null permission', () => {
-  const result = checkActorTrust({ sender: 'alice', permission: null });
-
-  assert.equal(result.actor_trusted, false);
-  assert.match(result.actor_trusted_reason, /permission '\(none\)'/);
-});
-
-test('actorTrustWhenSenderMissing matches check_actor_trust inline missing-sender path', () => {
-  const result = actorTrustWhenSenderMissing();
-
-  assert.equal(result.actor_trusted, false);
-  assert.match(result.actor_trusted_reason, /sender login is missing/);
 });
 
 test('checkDuplicatePR reports no duplicate when there are no open PRs', () => {
@@ -519,25 +450,20 @@ test('change-factory-issue workflow source wiring matches intake contract', () =
 
   assert.match(
     workflowTmpl,
-    /- name: Check actor trust\n      id: check_actor_trust\n      if: steps\.qualify_trigger\.outputs\.event_eligible == 'true'/,
-  );
-  assert.match(
-    workflowTmpl,
     /- name: Capture command text\n      id: capture_command_text\n      if: steps\.qualify_trigger\.outputs\.event_eligible == 'true'/,
   );
   assert.match(
     workflowTmpl,
-    /- name: Check duplicate PR\n      id: check_duplicate_pr\n      if: >-\n        steps\.qualify_trigger\.outputs\.event_eligible == 'true' &&\n        steps\.check_actor_trust\.outputs\.actor_trusted == 'true'/,
+    /- name: Check duplicate PR\n      id: check_duplicate_pr\n      if: >-\n        steps\.qualify_trigger\.outputs\.event_eligible == 'true'/,
   );
   assert.match(
     workflowTmpl,
-    /- name: Notify duplicate blocked\n      id: notify_duplicate_blocked\n      if: >-\n        steps\.qualify_trigger\.outputs\.event_eligible == 'true' &&\n        steps\.check_actor_trust\.outputs\.actor_trusted == 'true' &&\n        steps\.check_duplicate_pr\.outputs\.duplicate_pr_found == 'true'/,
+    /- name: Notify duplicate blocked\n      id: notify_duplicate_blocked\n      if: >-\n        steps\.qualify_trigger\.outputs\.event_eligible == 'true' &&\n        steps\.check_duplicate_pr\.outputs\.duplicate_pr_found == 'true'/,
   );
 
   const moduleRequireFragments = [
     '/lib/factory-runners/qualify-trigger.js',
     '/change-factory/capture-command-text.js',
-    '/lib/factory-runners/check-actor-trust.js',
     '/change-factory/fetch-issue-comments.js',
     '/change-factory/extract-research-comment.js',
     '/lib/factory-runners/check-duplicate-pr.js',
@@ -561,7 +487,7 @@ test('change-factory-issue workflow source wiring matches intake contract', () =
 
   assert.match(
     workflowTmpl,
-    /- name: Remove trigger label\n      id: remove_trigger_label\n      if: >-\n        steps\.qualify_trigger\.outputs\.event_eligible == 'true' &&\n        steps\.check_actor_trust\.outputs\.actor_trusted == 'true' &&\n        steps\.check_duplicate_pr\.outputs\.duplicate_pr_found != 'true'/,
+    /- name: Remove trigger label\n      id: remove_trigger_label\n      if: >-\n        steps\.qualify_trigger\.outputs\.event_eligible == 'true' &&\n        steps\.check_duplicate_pr\.outputs\.duplicate_pr_found != 'true'/,
   );
 
   assert.match(
@@ -596,11 +522,11 @@ test('change-factory-issue workflow source wiring matches intake contract', () =
   );
   assert.match(
     workflowTmpl,
-    /actor_trusted: \$\{\{ steps\.check_actor_trust\.outputs\.actor_trusted \}\}/,
+    /actor_trusted: 'true'/,
   );
   assert.match(
     workflowTmpl,
-    /actor_trusted_reason: \$\{\{ steps\.check_actor_trust\.outputs\.actor_trusted_reason \}\}/,
+    /actor_trusted_reason: Native skip-author-associations gate guarantees trust\./,
   );
   assert.match(
     workflowTmpl,
@@ -777,20 +703,13 @@ test('change-factory finalize-gate.js uses shared parseFinalizeGateEnv path', ()
   assert.match(source, /computeGateReason\(/);
 });
 
-test('change-factory check-actor-trust.js uses actorTrustWhenSenderMissing', () => {
-  const source = readFileSync(path.join(factoryRunnersDir, 'check-actor-trust.js'), 'utf8');
-  assert.match(source, /actorTrustWhenSenderMissing\(\)/);
-});
-
 test('change-factory-issue finalize helpers match shared implementation', () => {
   const {
     factoryParseFinalizeGateEnv,
     factoryParseOptionalTriStateFromEnv,
-    factoryActorTrustWhenSenderMissing,
   } = require('./factory-issue-shared.js');
   assert.deepEqual(parseFinalizeGateEnv({}), factoryParseFinalizeGateEnv({}));
   assert.equal(parseOptionalTriStateFromEnv('true'), factoryParseOptionalTriStateFromEnv('true'));
-  assert.deepEqual(actorTrustWhenSenderMissing(), factoryActorTrustWhenSenderMissing());
 });
 
 test('parseFinalizeGateEnv feeds computeGateReason for an all-pass path', () => {
