@@ -18,7 +18,6 @@
 package ingest_test
 
 import (
-	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -37,15 +36,16 @@ var renameProcessorOverrideMinVersion = version.Must(version.NewVersion("8.13.0"
 // TestAccReproduceIssue3002 is the regression test for
 // https://github.com/elastic/terraform-provider-elasticstack/issues/3002.
 //
-// Previously, a rename processor with `override = true` produced drift after
-// apply because the typed go-elasticsearch client (`types.RenameProcessor`)
-// has no `Override` field and silently dropped it during deserialization.
+// A rename processor with `override = true` previously produced drift after
+// apply because the typed go-elasticsearch client (types.RenameProcessor)
+// has no Override field and silently dropped it during deserialization.
 // The provider now decodes ingest pipeline responses opaquely so unmodeled
 // processor fields survive the refresh.
 func TestAccReproduceIssue3002(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, renameProcessorOverrideMinVersion, versionutils.FlavorAny)
 
 	pipelineName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	resourceName := "elasticstack_elasticsearch_ingest_pipeline.test"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -54,7 +54,18 @@ func TestAccReproduceIssue3002(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("repro"),
 				ConfigVariables:          config.Variables{"name": config.StringVariable(pipelineName)},
-				ExpectError:              regexp.MustCompile(`(?s)Provider produced inconsistent result after apply.*override`),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "processors.#", "1"),
+					// regression for issue #3002: unmodeled processor fields must survive refresh
+					CheckResourceJSON(resourceName, "processors.0", `{"rename":{"field":"tmp_source_field","target_field":"destination_field","override":true,"ignore_missing":true}}`),
+				),
+			},
+			{
+				// Second plan must be empty: a refresh must not introduce drift.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("repro"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(pipelineName)},
+				PlanOnly:                 true,
 			},
 		},
 	})
