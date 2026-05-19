@@ -43,7 +43,8 @@ func logLevel() string {
 }
 
 // IsDebugOrHigher reports whether TF_LOG is set to DEBUG or TRACE (case-insensitive).
-// Behavior matches terraform-plugin-sdk/v2/helper/logging.IsDebugOrHigher.
+// Unrecognized non-empty TF_LOG values are treated as TRACE, matching
+// terraform-plugin-sdk/v2/helper/logging.IsDebugOrHigher SDK compatibility behavior.
 func IsDebugOrHigher() bool {
 	level := logLevel()
 	return level == "DEBUG" || level == "TRACE"

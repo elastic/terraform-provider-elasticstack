@@ -18,16 +18,18 @@
 package debugutils
 
 import (
+	"os"
 	"testing"
 )
 
 func TestIsDebugOrHigher(t *testing.T) {
 	tests := []struct {
-		name  string
-		tfLog string
-		want  bool
+		name       string
+		tfLog      string
+		unsetTFLog bool
+		want       bool
 	}{
-		{name: "TF_LOG unset", tfLog: "", want: false},
+		{name: "TF_LOG unset", unsetTFLog: true, want: false},
 		{name: "TF_LOG empty", tfLog: "", want: false},
 		{name: "TF_LOG=DEBUG", tfLog: "DEBUG", want: true},
 		{name: "TF_LOG=debug", tfLog: "debug", want: true},
@@ -41,7 +43,19 @@ func TestIsDebugOrHigher(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Setenv(envLog, tt.tfLog)
+			if tt.unsetTFLog {
+				orig, had := os.LookupEnv(envLog)
+				t.Cleanup(func() {
+					if had {
+						_ = os.Setenv(envLog, orig)
+					} else {
+						_ = os.Unsetenv(envLog)
+					}
+				})
+				_ = os.Unsetenv(envLog)
+			} else {
+				t.Setenv(envLog, tt.tfLog)
+			}
 			if got := IsDebugOrHigher(); got != tt.want {
 				t.Errorf("IsDebugOrHigher() = %v, want %v", got, tt.want)
 			}
