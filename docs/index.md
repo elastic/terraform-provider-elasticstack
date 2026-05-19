@@ -39,7 +39,7 @@ terraform {
   required_providers {
     elasticstack = {
       source  = "elastic/elasticstack"
-      version = "~> 0.14"
+      version = "~> 0.15"
     }
   }
 }
@@ -138,7 +138,7 @@ terraform {
   required_providers {
     elasticstack = {
       source  = "elastic/elasticstack"
-      version = "~> 0.14"
+      version = "~> 0.15"
     }
   }
 }

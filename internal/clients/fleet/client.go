@@ -27,7 +27,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/debugutils"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
 )
 
 // Config is the configuration for the fleet client.
@@ -70,7 +69,7 @@ func NewClient(cfg Config) (*Client, error) {
 		},
 	}
 
-	if logging.IsDebugOrHigher() {
+	if debugutils.IsDebugOrHigher() {
 		roundTripper = debugutils.NewDebugTransport("Fleet", roundTripper)
 	}
 

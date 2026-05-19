@@ -1,140 +1,142 @@
 ---
-# Upstream baseline: `https://github.com/github/gh-aw/blob/main/.github/workflows/semantic-function-refactor.md`
-name: Semantic Function Refactor
-description: Analyzes Go source organization and identifies actionable semantic refactoring opportunities
 on:
-  workflow_dispatch:
   schedule:
-    - cron: daily
+  - cron: daily
   steps:
-    - name: Checkout repository
-      uses: actions/checkout@v6
-      with:
-        persist-credentials: false
-        fetch-depth: 1
-    - name: Compute issue slots
-      id: compute_issue_slots
-      uses: actions/github-script@v9
-      env:
-        ISSUE_SLOTS_LABEL: semantic-refactor
-        ISSUE_SLOTS_CAP: "3"
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        script: |
-          const fn = require('${{ github.workspace }}/.github/scripts/workflows/issue-slots/compute.js');
-          await fn({ github, context, core });
+  - name: Checkout repository
+    uses: actions/checkout@v6
+    with:
+      fetch-depth: 1
+      persist-credentials: false
+  - env:
+      ISSUE_SLOTS_CAP: "3"
+      ISSUE_SLOTS_LABEL: semantic-refactor
+    id: compute_issue_slots
+    name: Compute issue slots
+    uses: actions/github-script@v9
+    with:
+      github-token: ${{ secrets.GITHUB_TOKEN }}
+      script: |
+        const fn = require('${{ github.workspace }}/.github/scripts/workflows/issue-slots/compute.js');
+        await fn({ github, context, core });
+  workflow_dispatch: null
 permissions:
+  actions: read
   contents: read
   issues: read
   pull-requests: read
-  actions: read
-
+if: needs.pre_activation.outputs.issue_slots_available != '0'
+network:
+  allowed:
+  - defaults
+  - go
+  - elastic.litellm-prod.ai
 safe-outputs:
   create-issue:
-    title-prefix: "[semantic-refactor] "
-    labels: [semantic-refactor, refactoring, code-quality, automated-analysis, triaged]
+    labels:
+    - semantic-refactor
+    - refactoring
+    - code-quality
+    - automated-analysis
+    - triaged
     max: 3
+    title-prefix: "[semantic-refactor] "
   jobs:
     dispatch-code-factory:
+      description: Dispatch code-factory for each created issue
       needs: safe_outputs
-      description: "Dispatch code-factory for each created issue"
       permissions:
         actions: write
         contents: read
       runs-on: ubuntu-latest
       steps:
-        - name: Checkout repository
-          uses: actions/checkout@v6
-          with:
-            persist-credentials: false
-            sparse-checkout: .github/scripts/workflows/lib
-            sparse-checkout-cone-mode: true
-            fetch-depth: 1
-        - name: Download safe-outputs artifact
-          uses: actions/download-artifact@v8
-          with:
-            name: safe-outputs-items
-            path: /tmp/gh-aw/safe-outputs
-            if-no-files-found: warn
-        - name: Dispatch code-factory runs
-          env:
-            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-            GITHUB_REPOSITORY: ${{ github.repository }}
-            SOURCE_WORKFLOW: semantic-function-refactor
-          run: |
-            node .github/scripts/workflows/lib/producer-dispatch.js \
-              /tmp/gh-aw/safe-outputs/temporary-id-map.json \
-              "$SOURCE_WORKFLOW"
-
-tools:
-  repo-memory:
-    - id: semantic-function-refactor
-      file-glob: ["memory/semantic-function-refactor/serena-state.json"]
-      create-orphan: true
-      max-file-size: 524288
-      max-patch-size: 102400
-  bash:
-    - "find . -name '*.go' ! -name '*_test.go' -type f"
-    - "find . -type f -name '*.go' ! -name '*_test.go'"
-    - "find . -maxdepth 2 -ls"
-    - "wc -l ./**/*.go"
-    - "head -n * ./**/*.go"
-    - "grep -r '^func ' . --include='*.go'"
-    - "cat ./**/*.go"
-
-mcp-servers:
-  serena:
-    container: "ghcr.io/github/serena-mcp-server:latest"
-    args:
-      - "--network"
-      - "host"
-    entrypoint: "serena"
-    entrypointArgs:
-      - "start-mcp-server"
-      - "--context"
-      - "claude-code"
-      - "--project"
-      - "${{ github.workspace }}"
-    mounts:
-      - "${{ github.workspace }}:${{ github.workspace }}:rw"
-    allowed:
-      - "activate_project"
-      - "get_symbols_overview"
-      - "find_symbol"
-      - "search_for_pattern"
-      - "find_referencing_symbols"
-      - "read_file"
-      - "get_symbol_documentation"
-
-timeout-minutes: 15
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+          sparse-checkout: .github/scripts/workflows/lib
+          sparse-checkout-cone-mode: true
+      - name: Download safe-outputs artifact
+        uses: actions/download-artifact@v8
+        with:
+          if-no-files-found: warn
+          name: safe-outputs-items
+          path: /tmp/gh-aw/safe-outputs
+      - env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          SOURCE_WORKFLOW: semantic-function-refactor
+        name: Dispatch code-factory runs
+        run: |
+          node .github/scripts/workflows/lib/producer-dispatch.js \
+            /tmp/gh-aw/safe-outputs/temporary-id-map.json \
+            "$SOURCE_WORKFLOW"
 checkout:
   fetch-depth: 0
+description: Analyzes Go source organization and identifies actionable semantic refactoring opportunities
 engine:
-  id: claude
-  model: "llm-gateway/claude-sonnet-4-6"
   args:
-    - "--effort"
-    - "high"
+  - --effort
+  - high
   env:
-    ANTHROPIC_BASE_URL: "https://elastic.litellm-prod.ai/"
     ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_LITELLM_PROXY_API_KEY }}
-
-network:
-  allowed: [defaults, go, elastic.litellm-prod.ai]
-
-if: >-
-  needs.pre_activation.outputs.issue_slots_available != '0'
+    ANTHROPIC_BASE_URL: https://elastic.litellm-prod.ai/
+  id: claude
+  model: llm-gateway/claude-sonnet-4-6
 jobs:
   pre-activation:
     outputs:
-      open_issues: ${{ steps.compute_issue_slots.outputs.open_issues }}
-      issue_slots_available: ${{ steps.compute_issue_slots.outputs.issue_slots_available }}
       gate_reason: ${{ steps.compute_issue_slots.outputs.gate_reason }}
+      issue_slots_available: ${{ steps.compute_issue_slots.outputs.issue_slots_available }}
+      open_issues: ${{ steps.compute_issue_slots.outputs.open_issues }}
+mcp-servers:
+  serena:
+    allowed:
+    - activate_project
+    - get_symbols_overview
+    - find_symbol
+    - search_for_pattern
+    - find_referencing_symbols
+    - read_file
+    - get_symbol_documentation
+    args:
+    - --network
+    - host
+    container: "ghcr.io/github/serena-mcp-server:latest"
+    entrypoint: "serena"
+    entrypointArgs:
+    - start-mcp-server
+    - --context
+    - claude-code
+    - --project
+    - ${{ github.workspace }}
+    mounts:
+    - ${{ github.workspace }}:${{ github.workspace }}:rw
+name: Semantic Function Refactor
+timeout-minutes: 15
+tools:
+  bash:
+  - find . -name '*.go' ! -name '*_test.go' -type f
+  - find . -type f -name '*.go' ! -name '*_test.go'
+  - find . -maxdepth 2 -ls
+  - wc -l ./**/*.go
+  - head -n * ./**/*.go
+  - grep -r '^func ' . --include='*.go'
+  - cat ./**/*.go
+  repo-memory:
+  - create-orphan: true
+    file-glob:
+    - memory/semantic-function-refactor/serena-state.json
+    id: semantic-function-refactor
+    max-file-size: 524288
+    max-patch-size: 102400
 ---
-
 # Semantic Function Refactor
 
 Analyze Go source organization to identify actionable semantic refactoring opportunities: misplaced functions, duplicate or near-duplicate functions, scattered helpers, and extraction opportunities.
+
+Upstream baseline: `https://github.com/github/gh-aw/blob/main/.github/workflows/semantic-function-refactor.md`
 
 ## Pre-activation context
 

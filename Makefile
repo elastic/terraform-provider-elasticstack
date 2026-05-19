@@ -24,7 +24,7 @@ $(foreach v,$(_ENV_GUARD_VARS),$(eval $(call _env_guard_restore,$v)))
 .DEFAULT_GOAL = help
 SHELL := /bin/bash
 
-VERSION ?= 0.15.1
+VERSION ?= 0.15.2
 
 NAME = elasticstack
 BINARY = terraform-provider-${NAME}
@@ -201,8 +201,9 @@ workflow-generate: ## Generate workflow markdown sources
 	@ gh aw compile
 
 .PHONY: workflow-test
-workflow-test: ## Run unit tests for workflow JavaScript modules
+workflow-test: ## Run unit tests for workflow helpers (Go changelog + kibana-spec-impact, node workflow lib)
 	@ go test ./scripts/kibana-spec-impact/... -count=1
+	@ go test ./scripts/changelog/... -count=1
 	@ node --test .github/scripts/workflows/lib/*.test.mjs
 
 .PHONY: gen

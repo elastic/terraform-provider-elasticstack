@@ -717,3 +717,455 @@ func TestKibanaDataSource_Read_unsupportedServer_stopsBeforeReadFunc(t *testing.
 	require.True(t, foundUnsupported,
 		"must have an 'Unsupported server version' diagnostic; got: %v", resp.Diagnostics.Errors())
 }
+
+// =============================================================================
+// Elasticsearch data source: Configure and Metadata
+// =============================================================================
+
+func TestNewElasticsearchDataSource_Configure(t *testing.T) {
+	ctx := context.Background()
+	ds := NewElasticsearchDataSource[struct {
+		ElasticsearchConnectionField
+	}](ComponentElasticsearch, "test_entity", func(_ context.Context) dsschema.Schema {
+		return dsschema.Schema{}
+	}, func(_ context.Context, _ *clients.ElasticsearchScopedClient, model struct {
+		ElasticsearchConnectionField
+	}) (struct {
+		ElasticsearchConnectionField
+	}, diag.Diagnostics) {
+		return model, nil
+	})
+
+	t.Run("nil_provider_data", func(t *testing.T) {
+		t.Parallel()
+		var resp datasource.ConfigureResponse
+		ds.(datasource.DataSourceWithConfigure).Configure(ctx, datasource.ConfigureRequest{
+			ProviderData: nil,
+		}, &resp)
+		require.False(t, resp.Diagnostics.HasError())
+	})
+
+	t.Run("valid_factory", func(t *testing.T) {
+		t.Parallel()
+		f := nonNilTestFactory()
+		var resp datasource.ConfigureResponse
+		ds.(datasource.DataSourceWithConfigure).Configure(ctx, datasource.ConfigureRequest{
+			ProviderData: f,
+		}, &resp)
+		require.False(t, resp.Diagnostics.HasError())
+	})
+
+	t.Run("invalid_provider_data", func(t *testing.T) {
+		t.Parallel()
+		var resp datasource.ConfigureResponse
+		ds.(datasource.DataSourceWithConfigure).Configure(ctx, datasource.ConfigureRequest{
+			ProviderData: "wrong-type",
+		}, &resp)
+		require.True(t, resp.Diagnostics.HasError())
+	})
+}
+
+func TestNewElasticsearchDataSource_Metadata(t *testing.T) {
+	t.Parallel()
+	ds := NewElasticsearchDataSource[struct {
+		ElasticsearchConnectionField
+	}](ComponentElasticsearch, "test_entity", func(_ context.Context) dsschema.Schema {
+		return dsschema.Schema{}
+	}, func(_ context.Context, _ *clients.ElasticsearchScopedClient, model struct {
+		ElasticsearchConnectionField
+	}) (struct {
+		ElasticsearchConnectionField
+	}, diag.Diagnostics) {
+		return model, nil
+	})
+
+	var resp datasource.MetadataResponse
+	ds.Metadata(context.Background(), datasource.MetadataRequest{
+		ProviderTypeName: testProviderTypeName,
+	}, &resp)
+
+	require.Equal(t, "elasticstack_elasticsearch_test_entity", resp.TypeName)
+}
+
+// =============================================================================
+// Elasticsearch data source: version-requirement test infrastructure
+// =============================================================================
+
+// buildReadRequestForElasticsearchSchema constructs a datasource.ReadRequest
+// for the given schema (with elasticsearch_connection already injected). The
+// object value has a null elasticsearch_connection and null string id.
+func buildReadRequestForElasticsearchSchema(schema dsschema.Schema) datasource.ReadRequest {
+	connBlockType := elasticsearchConnectionBlockType()
+	attrTypes := map[string]tftypes.Type{
+		"elasticsearch_connection": connBlockType,
+	}
+	attrValues := map[string]tftypes.Value{
+		"elasticsearch_connection": tftypes.NewValue(connBlockType, nil),
+	}
+	for name := range schema.Attributes {
+		attrTypes[name] = tftypes.String
+		attrValues[name] = tftypes.NewValue(tftypes.String, nil)
+	}
+	objType := tftypes.Object{AttributeTypes: attrTypes}
+	objValue := tftypes.NewValue(objType, attrValues)
+	return datasource.ReadRequest{
+		Config: tfsdk.Config{Raw: objValue, Schema: schema},
+	}
+}
+
+// newMockElasticsearchStatusServer returns an httptest.Server that serves a
+// minimal Elasticsearch info JSON payload for GET /. The X-Elastic-Product
+// header is required by go-elasticsearch for its product-check validation.
+// The caller must close the returned server.
+func newMockElasticsearchStatusServer(versionStr string) *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet && r.URL.Path == "/" {
+			w.Header().Set("Content-Type", "application/json")
+			w.Header().Set("X-Elastic-Product", "Elasticsearch")
+			fmt.Fprintf(w, `{"cluster_uuid":"test-cluster","version":{"number":%q,"build_flavor":"default"}}`, versionStr)
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+}
+
+// newElasticsearchFactoryForURL builds a *clients.ProviderClientFactory whose
+// default Elasticsearch client points to esURL.
+//
+// It explicitly configures ProviderConfiguration.Elasticsearch with esURL so
+// that the ES client is actually built. It also sets ELASTICSEARCH_ENDPOINTS
+// via t.Setenv to the same value, preventing the CI env var (which may point
+// to a running cluster) from overriding the configured endpoint.
+//
+// NOTE: Uses t.Setenv; must NOT call t.Parallel in tests that use this helper.
+func newElasticsearchFactoryForURL(t *testing.T, esURL string) *clients.ProviderClientFactory {
+	t.Helper()
+	// Redirect the env var override to our mock server so that CI's
+	// ELASTICSEARCH_ENDPOINTS cannot override the configured URL.
+	t.Setenv("ELASTICSEARCH_ENDPOINTS", esURL)
+
+	ctx := context.Background()
+	cfg := config.ProviderConfiguration{
+		Elasticsearch: []config.ElasticsearchConnection{{
+			Username:               types.StringValue("elastic"),
+			Password:               types.StringValue("changeme"),
+			APIKey:                 types.StringValue(""),
+			BearerToken:            types.StringValue(""),
+			ESClientAuthentication: types.StringValue(""),
+			Endpoints: types.ListValueMust(types.StringType, []attr.Value{
+				types.StringValue(esURL),
+			}),
+			Headers:  types.MapValueMust(types.StringType, map[string]attr.Value{}),
+			Insecure: types.BoolValue(true),
+			CAFile:   types.StringValue(""),
+			CAData:   types.StringValue(""),
+			CertFile: types.StringValue(""),
+			KeyFile:  types.StringValue(""),
+			CertData: types.StringValue(""),
+			KeyData:  types.StringValue(""),
+		}},
+	}
+	factory, diags := clients.NewProviderClientFactoryFromFramework(ctx, cfg, "test-version")
+	require.False(t, diags.HasError(), "factory construction must not fail: %v", diags)
+	return factory
+}
+
+// newElasticsearchFactoryMinimal builds a *clients.ProviderClientFactory from
+// an empty ProviderConfiguration with no Elasticsearch endpoint. GetElasticsearchClient
+// will succeed (defaultClient non-nil) but any HTTP method on the resulting
+// scoped client will fail. This is sufficient for tests that short-circuit
+// before making HTTP calls.
+//
+// NOTE: Uses t.Setenv; must NOT call t.Parallel in tests that use this helper.
+func newElasticsearchFactoryMinimal(t *testing.T) *clients.ProviderClientFactory {
+	t.Helper()
+	t.Setenv("ELASTICSEARCH_ENDPOINTS", "")
+
+	ctx := context.Background()
+	factory, diags := clients.NewProviderClientFactoryFromFramework(ctx, config.ProviderConfiguration{}, "test-version")
+	require.False(t, diags.HasError(), "minimal factory construction must not fail: %v", diags)
+	return factory
+}
+
+// configureElasticsearchDataSource calls Configure on ds with the given factory
+// and asserts no errors.
+func configureElasticsearchDataSource(t *testing.T, ds datasource.DataSource, factory *clients.ProviderClientFactory) {
+	t.Helper()
+	var cfgResp datasource.ConfigureResponse
+	ds.(datasource.DataSourceWithConfigure).Configure(context.Background(), datasource.ConfigureRequest{
+		ProviderData: factory,
+	}, &cfgResp)
+	require.False(t, cfgResp.Diagnostics.HasError(), "Configure must not produce errors: %v", cfgResp.Diagnostics)
+}
+
+// =============================================================================
+// Elasticsearch data source: model types for version-requirement tests
+// =============================================================================
+
+// esModelWithVersionReqsDiagError always returns an error diagnostic from
+// GetVersionRequirements. This exercises the "version requirement diagnostics
+// stop read" scenario entirely through the Read path.
+type esModelWithVersionReqsDiagError struct {
+	ElasticsearchConnectionField
+	ID types.String `tfsdk:"id"`
+}
+
+func (*esModelWithVersionReqsDiagError) GetVersionRequirements() ([]VersionRequirement, diag.Diagnostics) {
+	return nil, diag.Diagnostics{
+		diag.NewErrorDiagnostic("es version requirements error", "injected ES GetVersionRequirements failure"),
+	}
+}
+
+func getESModelWithVersionReqsDiagErrorSchema(_ context.Context) dsschema.Schema {
+	return dsschema.Schema{
+		Attributes: map[string]dsschema.Attribute{
+			"id": dsschema.StringAttribute{Computed: true},
+		},
+		Blocks: map[string]dsschema.Block{
+			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(),
+		},
+	}
+}
+
+// esSupportedVersionModel has a minimum version that the mock server at 8.19.0
+// will satisfy.
+type esSupportedVersionModel struct {
+	ElasticsearchConnectionField
+	ID types.String `tfsdk:"id"`
+}
+
+func (*esSupportedVersionModel) GetVersionRequirements() ([]VersionRequirement, diag.Diagnostics) {
+	minVer := goversion.Must(goversion.NewVersion("8.0.0"))
+	return []VersionRequirement{{MinVersion: *minVer, ErrorMessage: "needs 8.0.0"}}, nil
+}
+
+func getESSupportedVersionModelSchema(_ context.Context) dsschema.Schema {
+	return dsschema.Schema{
+		Attributes: map[string]dsschema.Attribute{
+			"id": dsschema.StringAttribute{Computed: true},
+		},
+		Blocks: map[string]dsschema.Block{
+			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(),
+		},
+	}
+}
+
+// esUnsupportedVersionModel has a minimum version that the mock server at
+// 7.17.0 will NOT satisfy.
+type esUnsupportedVersionModel struct {
+	ElasticsearchConnectionField
+	ID types.String `tfsdk:"id"`
+}
+
+func (*esUnsupportedVersionModel) GetVersionRequirements() ([]VersionRequirement, diag.Diagnostics) {
+	minVer := goversion.Must(goversion.NewVersion("8.0.0"))
+	return []VersionRequirement{{MinVersion: *minVer, ErrorMessage: "requires Elasticsearch 8.0.0 or later"}}, nil
+}
+
+// =============================================================================
+// Elasticsearch data source: version-requirement tests
+// =============================================================================
+
+// TestNewElasticsearchDataSource_Read_noVersionReqs_readFuncInvoked proves that
+// when a model does NOT implement WithVersionRequirements the envelope calls
+// readFunc and persists state normally.
+//
+// NOTE: Uses t.Setenv via newElasticsearchFactoryMinimal; must NOT call t.Parallel.
+func TestNewElasticsearchDataSource_Read_noVersionReqs_readFuncInvoked(t *testing.T) {
+	ctx := context.Background()
+
+	type esNoReqsModel struct {
+		ElasticsearchConnectionField
+		ID types.String `tfsdk:"id"`
+	}
+
+	readFuncCalled := false
+	ds := NewElasticsearchDataSource[esNoReqsModel](ComponentElasticsearch, "test_entity",
+		func(_ context.Context) dsschema.Schema {
+			return dsschema.Schema{
+				Attributes: map[string]dsschema.Attribute{
+					"id": dsschema.StringAttribute{Computed: true},
+				},
+			}
+		},
+		func(_ context.Context, _ *clients.ElasticsearchScopedClient, model esNoReqsModel) (esNoReqsModel, diag.Diagnostics) {
+			readFuncCalled = true
+			model.ID = types.StringValue("es-no-version-reqs-result")
+			return model, nil
+		},
+	)
+
+	factory := newElasticsearchFactoryMinimal(t)
+	configureElasticsearchDataSource(t, ds, factory)
+
+	schemaWithConn := dsschema.Schema{
+		Attributes: map[string]dsschema.Attribute{
+			"id": dsschema.StringAttribute{Computed: true},
+		},
+		Blocks: map[string]dsschema.Block{
+			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(),
+		},
+	}
+	req := buildReadRequestForElasticsearchSchema(schemaWithConn)
+
+	var resp datasource.ReadResponse
+	resp.State = tfsdk.State{Schema: schemaWithConn}
+	ds.Read(ctx, req, &resp)
+
+	for _, d := range resp.Diagnostics {
+		require.NotEqual(t, "Provider not configured", d.Summary(),
+			"factory must be configured — test would give a false pass if factory has nil client")
+	}
+	require.True(t, readFuncCalled, "readFunc must be called when model has no version requirements")
+	require.False(t, resp.Diagnostics.HasError(), "Read must not produce errors: %v", resp.Diagnostics)
+
+	var result esNoReqsModel
+	diags := resp.State.Get(ctx, &result)
+	require.False(t, diags.HasError())
+	require.Equal(t, "es-no-version-reqs-result", result.ID.ValueString(),
+		"state must reflect the value set by readFunc")
+}
+
+// TestElasticsearchDataSource_Read_versionReqDiagsStopRead exercises the full
+// Read path when GetVersionRequirements returns error diagnostics. The envelope
+// must short-circuit before calling readFunc.
+//
+// NOTE: Uses t.Setenv via newElasticsearchFactoryMinimal; must NOT call t.Parallel.
+func TestElasticsearchDataSource_Read_versionReqDiagsStopRead(t *testing.T) {
+	ctx := context.Background()
+
+	readFuncCalled := false
+	ds := NewElasticsearchDataSource[esModelWithVersionReqsDiagError](ComponentElasticsearch, "diag_err_entity",
+		func(_ context.Context) dsschema.Schema {
+			return dsschema.Schema{
+				Attributes: map[string]dsschema.Attribute{
+					"id": dsschema.StringAttribute{Computed: true},
+				},
+			}
+		},
+		func(_ context.Context, _ *clients.ElasticsearchScopedClient, model esModelWithVersionReqsDiagError) (esModelWithVersionReqsDiagError, diag.Diagnostics) {
+			readFuncCalled = true
+			return model, nil
+		},
+	)
+
+	factory := newElasticsearchFactoryMinimal(t)
+	configureElasticsearchDataSource(t, ds, factory)
+
+	schema := getESModelWithVersionReqsDiagErrorSchema(context.Background())
+	req := buildReadRequestForElasticsearchSchema(schema)
+
+	var resp datasource.ReadResponse
+	ds.Read(ctx, req, &resp)
+
+	require.False(t, readFuncCalled, "readFunc must NOT be called when GetVersionRequirements returns error diags")
+	require.True(t, resp.Diagnostics.HasError(), "Read must propagate error from GetVersionRequirements")
+
+	summaries := make([]string, 0)
+	for _, e := range resp.Diagnostics.Errors() {
+		summaries = append(summaries, e.Summary())
+	}
+	require.Contains(t, summaries, "es version requirements error",
+		"diagnostic from GetVersionRequirements must be appended; got: %v", summaries)
+}
+
+// TestElasticsearchDataSource_Read_supportedServer_invokesReadFunc tests the
+// "Supported server invokes read function" scenario with an httptest
+// Elasticsearch server reporting a version that satisfies the minimum
+// requirement.
+//
+// NOTE: Uses t.Setenv via newElasticsearchFactoryForURL; must NOT call t.Parallel.
+func TestElasticsearchDataSource_Read_supportedServer_invokesReadFunc(t *testing.T) {
+	ctx := context.Background()
+
+	srv := newMockElasticsearchStatusServer("8.19.0")
+	defer srv.Close()
+
+	readFuncCalled := false
+	ds := NewElasticsearchDataSource[esSupportedVersionModel](ComponentElasticsearch, "supported_entity",
+		func(_ context.Context) dsschema.Schema {
+			return dsschema.Schema{
+				Attributes: map[string]dsschema.Attribute{
+					"id": dsschema.StringAttribute{Computed: true},
+				},
+			}
+		},
+		func(_ context.Context, _ *clients.ElasticsearchScopedClient, model esSupportedVersionModel) (esSupportedVersionModel, diag.Diagnostics) {
+			readFuncCalled = true
+			model.ID = types.StringValue("es-supported-result")
+			return model, nil
+		},
+	)
+
+	factory := newElasticsearchFactoryForURL(t, srv.URL)
+	configureElasticsearchDataSource(t, ds, factory)
+
+	schema := getESSupportedVersionModelSchema(context.Background())
+	req := buildReadRequestForElasticsearchSchema(schema)
+
+	var resp datasource.ReadResponse
+	resp.State = tfsdk.State{Schema: schema}
+	ds.Read(ctx, req, &resp)
+
+	require.False(t, resp.Diagnostics.HasError(),
+		"Read must succeed when server satisfies minimum version: %v", resp.Diagnostics)
+	require.True(t, readFuncCalled, "readFunc must be invoked when server satisfies minimum version")
+
+	var result esSupportedVersionModel
+	diags := resp.State.Get(ctx, &result)
+	require.False(t, diags.HasError())
+	require.Equal(t, "es-supported-result", result.ID.ValueString())
+}
+
+// TestElasticsearchDataSource_Read_unsupportedServer_stopsBeforeReadFunc tests
+// the "Unsupported server stops before read function" scenario with an httptest
+// Elasticsearch server reporting a version below the minimum requirement.
+//
+// NOTE: Uses t.Setenv via newElasticsearchFactoryForURL; must NOT call t.Parallel.
+func TestElasticsearchDataSource_Read_unsupportedServer_stopsBeforeReadFunc(t *testing.T) {
+	ctx := context.Background()
+
+	// Server reports 7.17.0, which is below the required 8.0.0.
+	srv := newMockElasticsearchStatusServer("7.17.0")
+	defer srv.Close()
+
+	readFuncCalled := false
+	ds := NewElasticsearchDataSource[esUnsupportedVersionModel](ComponentElasticsearch, "unsupported_entity",
+		func(_ context.Context) dsschema.Schema {
+			return dsschema.Schema{
+				Attributes: map[string]dsschema.Attribute{
+					"id": dsschema.StringAttribute{Computed: true},
+				},
+			}
+		},
+		func(_ context.Context, _ *clients.ElasticsearchScopedClient, model esUnsupportedVersionModel) (esUnsupportedVersionModel, diag.Diagnostics) {
+			readFuncCalled = true
+			return model, nil
+		},
+	)
+
+	factory := newElasticsearchFactoryForURL(t, srv.URL)
+	configureElasticsearchDataSource(t, ds, factory)
+
+	schema := getESSupportedVersionModelSchema(context.Background())
+	req := buildReadRequestForElasticsearchSchema(schema)
+
+	var resp datasource.ReadResponse
+	ds.Read(ctx, req, &resp)
+
+	require.False(t, readFuncCalled,
+		"readFunc must NOT be called when server is below minimum version")
+	require.True(t, resp.Diagnostics.HasError(),
+		"Read must produce an error diagnostic for unsupported server")
+
+	var foundUnsupported bool
+	for _, e := range resp.Diagnostics.Errors() {
+		if e.Summary() == "Unsupported server version" {
+			foundUnsupported = true
+			require.Contains(t, e.Detail(), "requires Elasticsearch 8.0.0 or later",
+				"Unsupported server version detail must contain the model error message")
+		}
+	}
+	require.True(t, foundUnsupported,
+		"must have an 'Unsupported server version' diagnostic; got: %v", resp.Diagnostics.Errors())
+}

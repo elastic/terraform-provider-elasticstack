@@ -1,5 +1,7 @@
 ---
-imports: [shared/setup-dev.md]
+imports:
+  - shared/setup-dev.md
+  - shared/elastic-stack.md
 name: Reproducer Factory Issue Intake
 timeout-minutes: 65
 description: >-
@@ -83,26 +85,12 @@ on:
         script: |
           const fn = require('${{ github.workspace }}/.github/scripts/workflows/lib/factory-runners/fetch-live-issue.js');
           await fn({ github, context, core });
-    - name: Check actor trust
-      id: check_actor_trust
-      if: >-
-        steps.determine_intake_mode.outputs.intake_mode == 'issue-event' &&
-        steps.qualify_trigger.outputs.event_eligible == 'true'
-      uses: actions/github-script@v9
-      env:
-        FACTORY_NAME: reproducer-factory
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        script: |
-          const fn = require('${{ github.workspace }}/.github/scripts/workflows/lib/factory-runners/check-actor-trust.js');
-          await fn({ github, context, core });
     - name: Fetch issue comments
       id: fetch_issue_comments
       if: >-
         (
           steps.determine_intake_mode.outputs.intake_mode == 'issue-event' &&
-          steps.qualify_trigger.outputs.event_eligible == 'true' &&
-          steps.check_actor_trust.outputs.actor_trusted == 'true'
+          steps.qualify_trigger.outputs.event_eligible == 'true'
         ) || (
           steps.determine_intake_mode.outputs.intake_mode == 'dispatch' &&
           steps.validate_dispatch_inputs.outputs.event_eligible == 'true'
@@ -123,8 +111,7 @@ on:
       if: >-
         (
           steps.determine_intake_mode.outputs.intake_mode == 'issue-event' &&
-          steps.qualify_trigger.outputs.event_eligible == 'true' &&
-          steps.check_actor_trust.outputs.actor_trusted == 'true'
+          steps.qualify_trigger.outputs.event_eligible == 'true'
         ) || (
           steps.determine_intake_mode.outputs.intake_mode == 'dispatch' &&
           steps.validate_dispatch_inputs.outputs.event_eligible == 'true'
@@ -145,8 +132,7 @@ on:
       if: >-
         (
           steps.determine_intake_mode.outputs.intake_mode == 'issue-event' &&
-          steps.qualify_trigger.outputs.event_eligible == 'true' &&
-          steps.check_actor_trust.outputs.actor_trusted == 'true'
+          steps.qualify_trigger.outputs.event_eligible == 'true'
         ) || (
           steps.determine_intake_mode.outputs.intake_mode == 'dispatch' &&
           steps.validate_dispatch_inputs.outputs.event_eligible == 'true'
@@ -164,7 +150,6 @@ on:
       if: >-
         steps.determine_intake_mode.outputs.intake_mode == 'issue-event' &&
         steps.qualify_trigger.outputs.event_eligible == 'true' &&
-        steps.check_actor_trust.outputs.actor_trusted == 'true' &&
         steps.check_duplicate_pr.outputs.duplicate_pr_found != 'true'
       uses: actions/github-script@v9
       env:
@@ -179,8 +164,7 @@ on:
       if: >-
         (
           steps.determine_intake_mode.outputs.intake_mode == 'issue-event' &&
-          steps.qualify_trigger.outputs.event_eligible == 'true' &&
-          steps.check_actor_trust.outputs.actor_trusted == 'true'
+          steps.qualify_trigger.outputs.event_eligible == 'true'
         ) || (
           steps.determine_intake_mode.outputs.intake_mode == 'dispatch' &&
           steps.validate_dispatch_inputs.outputs.event_eligible == 'true'
@@ -207,8 +191,6 @@ on:
         ISSUE_BODY_EVENT: ${{ steps.capture_issue_context.outputs.issue_body }}
         EVENT_ELIGIBLE_EVENT: ${{ steps.qualify_trigger.outputs.event_eligible }}
         EVENT_ELIGIBLE_REASON_EVENT: ${{ steps.qualify_trigger.outputs.event_eligible_reason }}
-        ACTOR_TRUSTED_EVENT: ${{ steps.check_actor_trust.outputs.actor_trusted }}
-        ACTOR_TRUSTED_REASON_EVENT: ${{ steps.check_actor_trust.outputs.actor_trusted_reason }}
         TRIGGER_LABEL_REMOVED_EVENT: ${{ steps.remove_trigger_label.outputs.trigger_label_removed }}
         TRIGGER_LABEL_REMOVED_REASON_EVENT: ${{ steps.remove_trigger_label.outputs.trigger_label_removed_reason }}
         ISSUE_NUMBER_DISPATCH: ${{ steps.fetch_live_issue.outputs.issue_number }}
@@ -235,8 +217,8 @@ on:
           } >> "$GITHUB_OUTPUT"
           echo "event_eligible=${EVENT_ELIGIBLE_EVENT}" >> "$GITHUB_OUTPUT"
           echo "event_eligible_reason=${EVENT_ELIGIBLE_REASON_EVENT}" >> "$GITHUB_OUTPUT"
-          echo "actor_trusted=${ACTOR_TRUSTED_EVENT}" >> "$GITHUB_OUTPUT"
-          echo "actor_trusted_reason=${ACTOR_TRUSTED_REASON_EVENT}" >> "$GITHUB_OUTPUT"
+          echo "actor_trusted=true" >> "$GITHUB_OUTPUT"
+          echo "actor_trusted_reason=Role-based gate guarantees trust for issue events." >> "$GITHUB_OUTPUT"
           echo "trigger_label_removed=${TRIGGER_LABEL_REMOVED_EVENT}" >> "$GITHUB_OUTPUT"
           echo "trigger_label_removed_reason=${TRIGGER_LABEL_REMOVED_REASON_EVENT}" >> "$GITHUB_OUTPUT"
         else
@@ -390,6 +372,11 @@ safe-outputs:
           required: true
           type: string
       steps:
+        - name: Checkout repository
+          uses: actions/checkout@v6
+          with:
+            persist-credentials: false
+            fetch-depth: 1
         - name: Create or update reproducer comment
           uses: actions/github-script@v9
           env:
@@ -443,9 +430,20 @@ If you are running short on time, prefer emitting a **partial-but-valid** `updat
 
 ## Test environment
 
-The Elastic Stack is **not provisioned** in the agent environment — the provisioning steps (`make docker-fleet`, `make set-kibana-password`, `make create-es-api-key`, `make setup-kibana-fleet`) were intentionally removed because the AWF network policy blocks access from the agent's chroot sandbox. Do **not** attempt to run `TF_ACC=1` acceptance tests; they will fail with connection errors.
+The Elastic Stack is provisioned in the agent environment. Run targeted acceptance tests with:
 
-Route outcomes via static analysis alone (see the decision tree in **Task**).
+```bash
+ELASTICSEARCH_ENDPOINTS=http://host.docker.internal:9201 \
+ELASTICSEARCH_USERNAME=elastic \
+ELASTICSEARCH_PASSWORD=password \
+KIBANA_ENDPOINT=http://host.docker.internal:5602 \
+TF_ACC=1 \
+go test -v -run TestAccReproduceIssue${{ needs.pre_activation.outputs.issue_number }} ./path/to/package
+```
+
+The proxy services (`es-proxy` on 9201, `kb-proxy` on 5602) bridge to the actual
+stack. Use these proxy ports; direct ports 9200/5601 are blocked by the AWF
+firewall.
 
 ## Elastic documentation
 
@@ -460,10 +458,10 @@ Follow this decision tree end-to-end for **issue #${{ needs.pre_activation.outpu
 1. **Read** the issue title (`${{ needs.pre_activation.outputs.issue_title }}`), body, comment history, and prior reproducer comment (if present) thoroughly.
 2. **Identify resource scope** and choose the test file location using **Test file placement**.
 3. **Write** `TestAccReproduceIssue${{ needs.pre_activation.outputs.issue_number }}` using `resource.TestStep` with `ExpectError` or `ExpectNonEmptyPlan` (as appropriate) to assert the failure described in the issue.
-4. **Do not run** the acceptance test — tests are blocked by a known AWF network policy issue (see **Test environment**). Route by what you can determine from static analysis and issue evidence alone.
+4. **Run** the acceptance test against the live Elastic Stack (see **Test environment**). If the test passes with `ExpectError` or `ExpectNonEmptyPlan`, the failure is reproduced. If it fails for a different reason, iterate on the config. If it passes unexpectedly, consider outcome C.
 5. **Route by result:**
-   - **Strong static evidence of the bug** (e.g. code clearly shows the reported failure path, schema mis-match, missing attribute handling) → **Outcome A (reproduced)**
-     Emit `update-reproducer-comment` with the outcome-A body, then emit `create-pull-request` on branch `reproducer-factory/issue-${{ needs.pre_activation.outputs.issue_number }}`. The PR body **MUST** include `Related to #${{ needs.pre_activation.outputs.issue_number }}` (do **not** use `Closes`). Note in the comment that the test was not verified against a live stack due to AWF network policy.
+   - **Test reproduces the failure** (`ExpectError` or `ExpectNonEmptyPlan` passes against the live stack) → **Outcome A (reproduced)**
+     Emit `update-reproducer-comment` with the outcome-A body, then emit `create-pull-request` on branch `reproducer-factory/issue-${{ needs.pre_activation.outputs.issue_number }}`. The PR body **MUST** include `Related to #${{ needs.pre_activation.outputs.issue_number }}` (do **not** use `Closes`).
    - **Cannot build a credible test config or cannot determine from static analysis** → **Outcome B (cannot reproduce)**
      Emit `update-reproducer-comment` with the outcome-B body. **Do not** emit `create-pull-request`.
    - **Static analysis suggests the issue no longer applies** (e.g. recently merged fix, code path changed) → **Outcome C (appears fixed)**

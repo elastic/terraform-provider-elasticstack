@@ -171,6 +171,37 @@ func expandRemoteEntry(ctx context.Context, obj types.Object) (kibanaoapi.Securi
 	}, diags
 }
 
+// expandObjectSet iterates over a set of typed objects, calling expandFn on
+// each element. Returns nil when the set is null, unknown, or empty so callers
+// can omit the pointer field from the API body unchanged.
+func expandObjectSet[T any](
+	ctx context.Context,
+	s types.Set,
+	expandFn func(context.Context, types.Object) (T, diag.Diagnostics),
+	errLabel string,
+) ([]T, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	if s.IsNull() || s.IsUnknown() || len(s.Elements()) == 0 {
+		return nil, diags
+	}
+	elems := s.Elements()
+	out := make([]T, len(elems))
+	for i, el := range elems {
+		obj, ok := el.(types.Object)
+		if !ok {
+			diags.AddError(errLabel, "unexpected element type")
+			return nil, diags
+		}
+		v, d := expandFn(ctx, obj)
+		diags.Append(d...)
+		if diags.HasError() {
+			return nil, diags
+		}
+		out[i] = v
+	}
+	return out, diags
+}
+
 // expandStringSlicePtr extracts a `*[]string` from an optional set
 // attribute, returning nil when the set is null/unknown/empty so the API
 // body omits the key.
@@ -209,42 +240,22 @@ func expandElasticsearch(ctx context.Context, obj types.Object) (kibanaoapi.Secu
 	out.RunAs = runAs
 
 	indicesSet := objAttrSet(obj, "indices", types.ObjectType{AttrTypes: esIndexResourceAttrTypes()})
-	if !indicesSet.IsNull() && !indicesSet.IsUnknown() && len(indicesSet.Elements()) > 0 {
-		elems := indicesSet.Elements()
-		indices := make([]kibanaoapi.SecurityRoleESIndex, len(elems))
-		for i, el := range elems {
-			idxObj, ok := el.(types.Object)
-			if !ok {
-				diags.AddError("Invalid indices entry", "unexpected element type")
-				return out, diags
-			}
-			idx, d := expandIndexEntry(ctx, idxObj)
-			diags.Append(d...)
-			if diags.HasError() {
-				return out, diags
-			}
-			indices[i] = idx
-		}
+	indices, d := expandObjectSet(ctx, indicesSet, expandIndexEntry, "Invalid indices entry")
+	diags.Append(d...)
+	if diags.HasError() {
+		return out, diags
+	}
+	if indices != nil {
 		out.Indices = &indices
 	}
 
 	remoteSet := objAttrSet(obj, "remote_indices", types.ObjectType{AttrTypes: esRemoteIndexResourceAttrTypes()})
-	if !remoteSet.IsNull() && !remoteSet.IsUnknown() && len(remoteSet.Elements()) > 0 {
-		elems := remoteSet.Elements()
-		remote := make([]kibanaoapi.SecurityRoleESRemoteIndex, len(elems))
-		for i, el := range elems {
-			riObj, ok := el.(types.Object)
-			if !ok {
-				diags.AddError("Invalid remote_indices entry", "unexpected element type")
-				return out, diags
-			}
-			ri, d := expandRemoteEntry(ctx, riObj)
-			diags.Append(d...)
-			if diags.HasError() {
-				return out, diags
-			}
-			remote[i] = ri
-		}
+	remote, d := expandObjectSet(ctx, remoteSet, expandRemoteEntry, "Invalid remote_indices entry")
+	diags.Append(d...)
+	if diags.HasError() {
+		return out, diags
+	}
+	if remote != nil {
 		out.RemoteIndices = &remote
 	}
 	return out, diags

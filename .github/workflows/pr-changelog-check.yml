@@ -20,9 +20,12 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           persist-credentials: false
-      - name: "Validate changelog section"
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
         with:
-          script: |
-            const check = require('${{ github.workspace }}/.github/scripts/workflows/pr-changelog-check/check.js');
-            await check({ github, context, core });
+          go-version-file: 'go.mod'
+          cache: true
+          cache-dependency-path: go.sum
+      - name: "Validate changelog section"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: go run ./scripts/changelog validate-pr-section
