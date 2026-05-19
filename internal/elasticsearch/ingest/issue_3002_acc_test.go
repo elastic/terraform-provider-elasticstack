@@ -56,10 +56,7 @@ func TestAccReproduceIssue3002(t *testing.T) {
 				ConfigVariables:          config.Variables{"name": config.StringVariable(pipelineName)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "processors.#", "1"),
-					// Assert that override = true is preserved in state after apply
-					// (regression: the typed go-elasticsearch client silently dropped
-					// unmodeled fields such as override, causing "Provider produced
-					// inconsistent result after apply" — issue #3002).
+					// regression for issue #3002: unmodeled processor fields must survive refresh
 					CheckResourceJSON(resourceName, "processors.0", `{"rename":{"field":"tmp_source_field","target_field":"destination_field","override":true,"ignore_missing":true}}`),
 				),
 			},
@@ -69,7 +66,6 @@ func TestAccReproduceIssue3002(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("repro"),
 				ConfigVariables:          config.Variables{"name": config.StringVariable(pipelineName)},
 				PlanOnly:                 true,
-				ExpectNonEmptyPlan:       false,
 			},
 		},
 	})

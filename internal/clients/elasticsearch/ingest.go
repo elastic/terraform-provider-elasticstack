@@ -46,21 +46,17 @@ func PutIngestPipeline(ctx context.Context, apiClient *clients.ElasticsearchScop
 	return nil
 }
 
-// GetIngestPipeline retrieves an ingest pipeline by name.
-//
-// We use .Perform() instead of .Do() because the typed client decodes the
-// response through types.IngestPipeline / []ProcessorContainer, which silently
-// drops any processor field not modeled by the go-elasticsearch typed structs.
-// For example, types.RenameProcessor has no Override field, so a pipeline with
-// override = true on a rename processor would lose that field during the
-// round-trip and produce "Provider produced inconsistent result after apply"
-// drift. Decoding into models.IngestPipeline (which stores processors as
-// []map[string]any) preserves all fields the API returns. See issue #3002.
 func GetIngestPipeline(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string) (*models.IngestPipeline, fwdiag.Diagnostics) {
 	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
+
+	// We use .Perform() instead of .Do() because the typed client decodes the
+	// response through []ProcessorContainer, silently dropping any processor
+	// field not modeled by the go-elasticsearch typed structs (e.g. Override on
+	// RenameProcessor). Decoding into models.IngestPipeline preserves all fields
+	// the API returns. See issue #3002.
 	res, err := typedClient.Ingest.GetPipeline().Id(name).Perform(ctx)
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
