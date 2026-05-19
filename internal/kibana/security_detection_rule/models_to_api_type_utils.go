@@ -556,19 +556,7 @@ func (d Data) actionsToAPI(ctx context.Context) ([]kbapi.SecurityDetectionsAPIRu
 				apiAction.Uuid = &uuidStr
 			}
 
-			if typeutils.IsKnown(action.AlertsFilter) {
-				alertsFilterStringMap := make(map[string]string)
-				alertsFilterDiags := action.AlertsFilter.ElementsAs(ctx, &alertsFilterStringMap, false)
-				if !alertsFilterDiags.HasError() {
-					alertsFilterMap := make(map[string]any)
-					for k, v := range alertsFilterStringMap {
-						alertsFilterMap[k] = v
-					}
-					apiAlertsFilter := kbapi.SecurityDetectionsAPIRuleActionAlertsFilter(alertsFilterMap)
-					apiAction.AlertsFilter = &apiAlertsFilter
-				}
-				meta.Diags.Append(alertsFilterDiags...)
-			}
+			apiAction.AlertsFilter = expandActionAlertsFilter(ctx, action.AlertsFilter, meta.Diags)
 
 			// Handle frequency using ObjectTypeToStruct
 			if typeutils.IsKnown(action.Frequency) {
