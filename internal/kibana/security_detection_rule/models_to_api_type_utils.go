@@ -521,11 +521,37 @@ func (d Data) responseActionsToAPI(ctx context.Context, client clients.MinVersio
 }
 
 // Helper function to process actions configuration for all rule types
-func (d Data) actionsToAPI(ctx context.Context) ([]kbapi.SecurityDetectionsAPIRuleAction, diag.Diagnostics) {
+func (d Data) actionsToAPI(ctx context.Context, client clients.MinVersionEnforceable) ([]kbapi.SecurityDetectionsAPIRuleAction, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	if !typeutils.IsKnown(d.Actions) || len(d.Actions.Elements()) == 0 {
 		return nil, diags
+	}
+
+	if client != nil {
+		var actions []ActionModel
+		diags.Append(d.Actions.ElementsAs(ctx, &actions, false)...)
+		if diags.HasError() {
+			return nil, diags
+		}
+		for i, action := range actions {
+			if !typeutils.IsKnown(action.AlertsFilter) || action.AlertsFilter.IsNull() {
+				continue
+			}
+			supported, versionDiags := client.EnforceMinVersion(ctx, MinVersionAlertsFilter)
+			diags.Append(versionDiags...)
+			if diags.HasError() {
+				return nil, diags
+			}
+			if !supported {
+				diags.AddAttributeError(
+					path.Root("actions").AtListIndex(i).AtName("alerts_filter"),
+					"actions.alerts_filter is only supported for Kibana v8.9 or higher",
+					"actions.alerts_filter is only supported for Kibana v8.9 or higher",
+				)
+				return nil, diags
+			}
+		}
 	}
 
 	apiActions := typeutils.ListTypeToSlice(ctx, d.Actions, path.Root("actions"), &diags,

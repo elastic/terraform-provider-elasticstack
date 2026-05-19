@@ -33,7 +33,10 @@ import (
 )
 
 // MinVersionResponseActions defines the minimum server version required for response actions
-var MinVersionResponseActions = version.Must(version.NewVersion("8.16.0"))
+var (
+	MinVersionResponseActions = version.Must(version.NewVersion("8.16.0"))
+	MinVersionAlertsFilter    = version.Must(version.NewVersion("8.9.0"))
+)
 
 type Data struct {
 	ID               types.String `tfsdk:"id"`
@@ -442,7 +445,7 @@ func (d Data) applyCommonRuleProps(
 	}
 
 	if props.Actions != nil && typeutils.IsKnown(d.Actions) {
-		actions, actionDiags := d.actionsToAPI(ctx)
+		actions, actionDiags := d.actionsToAPI(ctx, client)
 		diags.Append(actionDiags...)
 		if !actionDiags.HasError() && len(actions) > 0 {
 			*props.Actions = &actions
