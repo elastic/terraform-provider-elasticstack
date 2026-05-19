@@ -23,7 +23,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
@@ -36,7 +35,7 @@ func Test_connectorResponseToModel(t *testing.T) {
 	type testCase struct {
 		name          string
 		spaceID       string
-		response      *kbapi.ConnectorResponse
+		response      *kibanaoapi.ConnectorResponse
 		expectedModel *models.KibanaActionConnector
 		expectedError fwdiag.Diagnostics
 	}
@@ -51,7 +50,7 @@ func Test_connectorResponseToModel(t *testing.T) {
 		{
 			name:    "should map valid connector response to model",
 			spaceID: "default",
-			response: &kbapi.ConnectorResponse{
+			response: &kibanaoapi.ConnectorResponse{
 				Id:               "test-id",
 				ConnectorTypeId:  ".slack",
 				Name:             "test-connector",
@@ -79,7 +78,7 @@ func Test_connectorResponseToModel(t *testing.T) {
 		{
 			name:    "should handle empty config",
 			spaceID: "default",
-			response: &kbapi.ConnectorResponse{
+			response: &kibanaoapi.ConnectorResponse{
 				Id:               "empty-id",
 				ConnectorTypeId:  ".webhook",
 				Name:             "empty-connector",
@@ -103,7 +102,7 @@ func Test_connectorResponseToModel(t *testing.T) {
 		{
 			name:    "should handle missing optional fields",
 			spaceID: "default",
-			response: &kbapi.ConnectorResponse{
+			response: &kibanaoapi.ConnectorResponse{
 				Id:              "missing-fields",
 				ConnectorTypeId: ".webhook",
 				Name:            "missing-connector",
@@ -123,7 +122,7 @@ func Test_connectorResponseToModel(t *testing.T) {
 		{
 			name:    "should handle non-default spaceId",
 			spaceID: "custom-space",
-			response: &kbapi.ConnectorResponse{
+			response: &kibanaoapi.ConnectorResponse{
 				Id:               "custom-id",
 				ConnectorTypeId:  ".webhook",
 				Name:             "custom-connector",
