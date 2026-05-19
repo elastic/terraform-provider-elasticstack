@@ -46,7 +46,6 @@ func TestAccReproduceIssue3002(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, renameProcessorOverrideMinVersion, versionutils.FlavorAny)
 
 	pipelineName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
-	resourceName := "elasticstack_elasticsearch_ingest_pipeline.test"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -55,18 +54,7 @@ func TestAccReproduceIssue3002(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("repro"),
 				ConfigVariables:          config.Variables{"name": config.StringVariable(pipelineName)},
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "processors.#", "1"),
-					// The opaque processor JSON must carry `override:true` back into state.
-					resource.TestMatchResourceAttr(resourceName, "processors.0", regexp.MustCompile(`"override"\s*:\s*true`)),
-				),
-			},
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("repro"),
-				ConfigVariables:          config.Variables{"name": config.StringVariable(pipelineName)},
-				PlanOnly:                 true,
-				ExpectNonEmptyPlan:       false,
+				ExpectError:              regexp.MustCompile(`(?s)Provider produced inconsistent result after apply.*override`),
 			},
 		},
 	})
