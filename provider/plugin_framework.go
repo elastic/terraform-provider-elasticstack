@@ -33,6 +33,7 @@ import (
 	snapshot_repository "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/snapshot_repository"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/enrich"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/alias"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/indexmappings"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/componenttemplate"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastream"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamlifecycle"
@@ -226,6 +227,7 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		ingest.NewIngestPipelineResource,
 		rolemapping.NewRoleMappingResource,
 		alias.NewAliasResource,
+		indexmappings.NewIndexMappingsResource,
 		templateilmattachment.NewResource,
 		datafeed.NewDatafeedResource,
 		anomalydetectionjob.NewAnomalyDetectionJobResource,
