@@ -550,6 +550,8 @@ func TestAccResourceMLCalendarJob_refreshRemovesAssignmentWhenCalendarDeleted(t 
 					}
 				},
 				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars,
 				RefreshState:             true,
 				ExpectNonEmptyPlan:       true,
 				Check:                    testAccCheckMLCalendarJobAbsentFromState(addr),
