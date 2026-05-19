@@ -454,7 +454,7 @@ test('change-factory-issue workflow source wiring matches intake contract', () =
   );
   assert.match(
     workflowTmpl,
-    /- name: Check duplicate PR\n      id: check_duplicate_pr\n      if: steps\.qualify_trigger\.outputs\.event_eligible == 'true'/,
+    /- name: Check duplicate PR\n      id: check_duplicate_pr\n      if: >-\n        steps\.qualify_trigger\.outputs\.event_eligible == 'true'/,
   );
   assert.match(
     workflowTmpl,
