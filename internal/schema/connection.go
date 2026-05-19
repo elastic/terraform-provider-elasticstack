@@ -18,6 +18,9 @@
 package schema
 
 import (
+	"fmt"
+	"sync"
+
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -33,15 +36,16 @@ import (
 // list element type against the schema instead of encountering a zero-value.
 func KibanaConnectionNullList() types.List {
 	return types.ListNull(types.ObjectType{
-		AttrTypes: map[string]attr.Type{
-			"api_key":      types.StringType,
-			"bearer_token": types.StringType,
-			"ca_certs":     types.ListType{ElemType: types.StringType},
-			"endpoints":    types.ListType{ElemType: types.StringType},
-			"insecure":     types.BoolType,
-			"password":     types.StringType,
-			"username":     types.StringType,
-		},
+		AttrTypes: kibanaConnectionBlockObjectAttrTypes(),
+	})
+}
+
+// ElasticsearchConnectionNullList returns a properly-typed null list value for the
+// elasticsearch_connection block. Use when building state in ImportState so the
+// framework list element type matches the resource schema.
+func ElasticsearchConnectionNullList() types.List {
+	return types.ListNull(types.ObjectType{
+		AttrTypes: elasticsearchConnectionBlockObjectAttrTypes(),
 	})
 }
 
@@ -285,5 +289,90 @@ func GetFleetFWConnectionBlock() fwschema.Block {
 		Validators: []validator.List{
 			listvalidator.SizeAtMost(1),
 		},
+	}
+}
+
+var (
+	elasticsearchConnectionBlockObjectAttrTypesOnce sync.Once
+	elasticsearchConnectionBlockObjectAttrTypesVal  map[string]attr.Type
+
+	kibanaConnectionBlockObjectAttrTypesOnce sync.Once
+	kibanaConnectionBlockObjectAttrTypesVal  map[string]attr.Type
+)
+
+func elasticsearchConnectionBlockObjectAttrTypes() map[string]attr.Type {
+	elasticsearchConnectionBlockObjectAttrTypesOnce.Do(func() {
+		b := GetEsFWConnectionBlock()
+		lb, ok := b.(fwschema.ListNestedBlock)
+		if !ok {
+			panic("internal/schema: GetEsFWConnectionBlock must be a ListNestedBlock")
+		}
+		m, err := fwNestedBlockAttributesToAttrTypes(lb.NestedObject.Attributes)
+		if err != nil {
+			panic(fmt.Sprintf("internal/schema: elasticsearch_connection attr types: %v", err))
+		}
+		elasticsearchConnectionBlockObjectAttrTypesVal = m
+	})
+	return elasticsearchConnectionBlockObjectAttrTypesVal
+}
+
+func kibanaConnectionBlockObjectAttrTypes() map[string]attr.Type {
+	kibanaConnectionBlockObjectAttrTypesOnce.Do(func() {
+		b := GetKbFWConnectionBlock()
+		lb, ok := b.(fwschema.ListNestedBlock)
+		if !ok {
+			panic("internal/schema: GetKbFWConnectionBlock must be a ListNestedBlock")
+		}
+		m, err := fwNestedBlockAttributesToAttrTypes(lb.NestedObject.Attributes)
+		if err != nil {
+			panic(fmt.Sprintf("internal/schema: kibana_connection attr types: %v", err))
+		}
+		kibanaConnectionBlockObjectAttrTypesVal = m
+	})
+	return kibanaConnectionBlockObjectAttrTypesVal
+}
+
+func fwNestedBlockAttributesToAttrTypes(attrs map[string]fwschema.Attribute) (map[string]attr.Type, error) {
+	out := make(map[string]attr.Type, len(attrs))
+	for name, a := range attrs {
+		t, err := fwAttributeToAttrType(name, a)
+		if err != nil {
+			return nil, err
+		}
+		out[name] = t
+	}
+	return out, nil
+}
+
+func fwAttributeToAttrType(name string, a fwschema.Attribute) (attr.Type, error) {
+	switch a := a.(type) {
+	case fwschema.StringAttribute:
+		if a.CustomType != nil {
+			return a.CustomType, nil
+		}
+		return types.StringType, nil
+	case fwschema.BoolAttribute:
+		if a.CustomType != nil {
+			return a.CustomType, nil
+		}
+		return types.BoolType, nil
+	case fwschema.ListAttribute:
+		if a.CustomType != nil {
+			return a.CustomType, nil
+		}
+		if a.ElementType == nil {
+			return nil, fmt.Errorf("attribute %q: ListAttribute missing ElementType", name)
+		}
+		return types.ListType{ElemType: a.ElementType}, nil
+	case fwschema.MapAttribute:
+		if a.CustomType != nil {
+			return a.CustomType, nil
+		}
+		if a.ElementType == nil {
+			return nil, fmt.Errorf("attribute %q: MapAttribute missing ElementType", name)
+		}
+		return types.MapType{ElemType: a.ElementType}, nil
+	default:
+		return nil, fmt.Errorf("attribute %q: unsupported framework attribute type %T (extend fwAttributeToAttrType)", name, a)
 	}
 }

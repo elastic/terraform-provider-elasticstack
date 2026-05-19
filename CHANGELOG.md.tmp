@@ -1,37 +1,3 @@
-## [Unreleased]
-
-### Added
-
-- Add `elasticstack_elasticsearch_ml_calendar_job` resource to assign an anomaly detection job or job group to an ML calendar (`PUT _ml/calendars/{calendar_id}/jobs/{job_id}`) ([#2933](https://github.com/elastic/terraform-provider-elasticstack/pull/2933))
-  - Derive `ElasticsearchConnectionNullList` / `KibanaConnectionNullList` from Plugin Framework connection block schemas so import state matches resource types.
-
-## [0.15.2] - 2026-05-18
-
-### Changes
-
-- Fix Read and Delete failures on ElasticsearchResource when the state ID is a plain (non-composite) identifier, e.g. after import with only the resource name. ([#3084](https://github.com/elastic/terraform-provider-elasticstack/pull/3084))
-- Migrate `elasticstack_kibana_security_role` resource and data source implementation to Terraform Plugin Framework while preserving the existing schema and behavior. ([#3071](https://github.com/elastic/terraform-provider-elasticstack/pull/3071))
-- Migrate `elasticstack_kibana_space` to Plugin Framework while preserving the resource schema, defaults, and observable behavior. ([#3073](https://github.com/elastic/terraform-provider-elasticstack/pull/3073))
-- Fix "Provider produced inconsistent result after apply" when nested list attributes are set to empty lists in detection rules. ([#3074](https://github.com/elastic/terraform-provider-elasticstack/pull/3074))
-- Migrate `elasticstack_kibana_action_connector` data source to Terraform Plugin Framework; behavior is preserved for existing configurations. ([#3072](https://github.com/elastic/terraform-provider-elasticstack/pull/3072))
-- Add `allow_auto_create` optional attribute to the `elasticstack_elasticsearch_index_template` resource and data source ([#3059](https://github.com/elastic/terraform-provider-elasticstack/pull/3059))
-- Fix space-aware URL construction to correctly handle Kibana base path configurations ([#3053](https://github.com/elastic/terraform-provider-elasticstack/pull/3053))
-- Fix state consistency error when runtime_field_map is omitted from configuration after previously being set ([#2592](https://github.com/elastic/terraform-provider-elasticstack/pull/2592))
-- Fix serverless version gating for data_stream_options in elasticsearch_index_template and elasticsearch_index_component_template, and for  ignore_missing_component_templates in elasticsearch_index_template. ([#3023](https://github.com/elastic/terraform-provider-elasticstack/pull/3023))
-- Fix spurious plan drift for component/index templates using boolean scalar mappings or null settings after Elasticsearch echoes them as strings ([#3014](https://github.com/elastic/terraform-provider-elasticstack/pull/3014))
-- Add `template.data_stream_options` block to `elasticstack_elasticsearch_component_template` to configure the failure store on data streams composed from this component. Requires Elasticsearch >= 9.1.0. ([#2963](https://github.com/elastic/terraform-provider-elasticstack/pull/2963))
-- Fix unknown-value handling in the required-if validator for custom SLO metric indicators. ([#3001](https://github.com/elastic/terraform-provider-elasticstack/pull/3001))
-- Suppress drift from Kibana field popularity counts on `elasticstack_kibana_data_view.field_attrs` and apply field metadata updates in place instead of replacing the data view. ([#2964](https://github.com/elastic/terraform-provider-elasticstack/pull/2964))
-
-## [0.15.1] - 2026-05-15
-
-### Changes
-
-- Fix plan-time Value Conversion Error regression when analysis_config.detectors is sourced from a Terraform variable or module input ([#2981](https://github.com/elastic/terraform-provider-elasticstack/pull/2981))
-- Fix "Provider produced inconsistent result after apply" for ingest pipelines when processors use single-string fields that the typed client returns as arrays. ([#2979](https://github.com/elastic/terraform-provider-elasticstack/pull/2979))
-- increase supported Kibana SLO ID length from 36 to 48 characters ([#2973](https://github.com/elastic/terraform-provider-elasticstack/pull/2973))
-- Allow duplicate action group IDs in `kibana_alerting_rule`. This reverts an incorrect new validation from 0.15.0 ([#2969](https://github.com/elastic/terraform-provider-elasticstack/pull/2969))
-- Fix "Provider produced inconsistent result after apply" for component templates with nested object mappings. ([#2968](https://github.com/elastic/terraform-provider-elasticstack/pull/2968))
 
 ## [0.15.0] - 2026-05-13
 
