@@ -11,7 +11,7 @@ The concrete user need is a separate `elasticstack_elasticsearch_index_mappings`
 
 - **New resource `elasticstack_elasticsearch_index_mappings`**: A standalone resource in `internal/elasticsearch/index/indexmappings/` following the same sub-resource pattern used by `elasticstack_elasticsearch_index_alias` and `elasticstack_elasticsearch_data_stream_lifecycle`.
   - Create / Update → `PUT /{index}/_mapping`; errors immediately if the target index does not exist.
-  - Read → `GET /{index}/_mapping`; state is repopulated with only the user-declared subset (intersection of API response with config). Dynamic extras are silently dropped.
+  - Read → retrieves index metadata via `GetIndex`; state is repopulated with only the user-declared subset. The intersection mask comes from the **previously stored state** (not the current configuration), which is the data available to the read callback in the `entitycore` envelope. For each top-level key present in prior state, the value is retained; within `properties`, only field names present in the prior state's `properties` tree are retained recursively. Dynamic extras are silently dropped. On import (no prior mask), the full API response is stored initially.
   - Delete → **no-op**: field mappings cannot be removed without a full reindex; the resource is removed from state only with no API call.
   - The `mappings` attribute accepts a JSON string (using the existing `MappingsType` custom type from `internal/elasticsearch/index/mappings_value.go`) that covers all top-level mapping parameters (`properties`, `dynamic`, `_source`, `dynamic_templates`, `runtime`, etc.).
   - `index` attribute is required and forces resource replacement when changed.

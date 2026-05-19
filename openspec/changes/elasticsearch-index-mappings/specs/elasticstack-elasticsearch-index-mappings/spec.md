@@ -77,16 +77,21 @@ On update, the resource SHALL call `PUT /{index}/_mapping` with the new `mapping
 
 ### Requirement: Read — user-declared subset only (REQ-004)
 
-On read, the resource SHALL call `GET /{index}/_mapping` and reconstruct the stored `mappings` by retaining **only the top-level keys that are present in the previously stored state**. Top-level keys that exist in the API response but are absent from the stored state (dynamic extras added by Elasticsearch or other tools) SHALL be silently discarded.
+On read, the resource SHALL retrieve the index metadata via the existing `GetIndex` helper (which returns the `Mappings` payload from the index state) and reconstruct the stored `mappings` by retaining **only the top-level keys that are present in the previously stored state**. Top-level keys that exist in the API response but are absent from the stored state SHALL be silently discarded.
+
+For the `properties` top-level key, the filtering SHALL be **recursive**: only field names that appear in the previously stored `properties` tree SHALL be retained at every nesting level. Dynamically-added fields within `properties` that are absent from the stored state SHALL be silently discarded.
+
+If the previously stored `mappings` is empty (e.g. immediately after `terraform import` via `ImportStatePassthroughID`), the resource SHALL store the full API response as the initial mask. This allows users to narrow the declaration in subsequent configuration changes.
 
 The resource SHALL use `index.MappingsType{}` semantic equality so that equivalent JSON representations (different key ordering, different whitespace) do not produce a spurious diff.
 
 #### Scenario: Dynamic extras do not cause drift
 
-- GIVEN a resource that declares only `properties` in `mappings`
-- AND Elasticsearch adds dynamic fields to the index (e.g. via auto-mapping a document)
-- WHEN `terraform plan` runs after the dynamic fields are added
+- GIVEN a resource that declares only `properties` with two explicit fields (`title` and `body`)
+- AND Elasticsearch adds a dynamic field `tags` to the index (e.g. via auto-mapping a document)
+- WHEN `terraform plan` runs after the dynamic field is added
 - THEN the plan SHALL show no diff for the `mappings` attribute
+- AND the stored state SHALL continue to contain only `title` and `body` under `properties`
 
 #### Scenario: Not found on read removes from state
 
@@ -117,12 +122,16 @@ The resource description and documentation SHALL clearly state that `destroy` do
 
 The resource `id` SHALL follow the format `<cluster_uuid>/<index_name>`. The resource SHALL support `terraform import` using the same ID format via `resource.ImportStatePassthroughID`.
 
+Because `ImportStatePassthroughID` sets only the resource ID, the first Read after import encounters an empty `mappings` state. The resource SHALL handle this by storing the **full API mappings** as the initial state. Users are expected to adjust their Terraform configuration to the desired subset; the first apply after import will converge to that subset and subsequent reads will filter dynamically-added fields.
+
 #### Scenario: Import
 
-- GIVEN an existing index with known mappings
+- GIVEN an existing index with known mappings including fields `title` and `body`
 - WHEN the user runs `terraform import elasticstack_elasticsearch_index_mappings.example <cluster_uuid>/<index_name>`
-- THEN the resource SHALL be added to state with the declared `mappings` subset read from the API
-- AND a subsequent `terraform plan` SHALL show no diff if the declared `mappings` match what the API returns
+- THEN the resource SHALL be added to state with the full `mappings` from the API
+- AND a subsequent `terraform plan` with a narrowed config (e.g. only `title`) SHALL show a diff
+- AND `terraform apply` SHALL converge state to the declared subset
+- AND a later `terraform plan` SHALL show no diff if no new dynamic fields are added
 
 ---
 

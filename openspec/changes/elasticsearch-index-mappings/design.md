@@ -49,9 +49,9 @@ The user's workaround was to use the [restapi Provider](https://registry.terrafo
 
 ### Decision 7: Read intersects API response with user-declared keys
 
-**Rationale:** The resource must track only what the user declared. On read, the provider calls `GET /{index}/_mapping`, then reconstructs the stored mappings JSON by keeping only the top-level keys present in the config. Dynamic extras (fields added automatically by Elasticsearch or by other tools) are silently dropped. This is the mechanism that eliminates drift.
+**Rationale:** The resource must track only what the user declared. On read, the provider retrieves the index state (including the `Mappings` field), then reconstructs the stored mappings JSON by keeping only the top-level keys present in the previously-stored state. For the `properties` key, the intersection is recursive: only field names declared by the user at every nesting level are retained. Dynamic extras (fields added automatically by Elasticsearch or by other tools) are silently dropped. This is the mechanism that eliminates drift.
 
-**Implementation note:** The intersection must operate at the top-level key level (e.g. retain `properties` if the user declared `properties`, discard auto-generated fields within properties not declared by the user). The existing `MappingsSemanticallyEqual` helper handles semantic equivalence; the intersection logic must be implemented in the `read` step.
+**Implementation note:** The intersection operates at two levels: (1) top-level keys present in state are retained; (2) within `properties`, only field names present in the state's `properties` tree are retained recursively. The existing `MappingsSemanticallyEqual` helper handles semantic equivalence; the deep intersection logic must be implemented in the `read` step. On import (empty prior state), the full API response is stored as the initial mask.
 
 ## Risks / Trade-offs
 
@@ -59,7 +59,7 @@ The user's workaround was to use the [restapi Provider](https://registry.terrafo
 |------|------------|
 | Destroy is a no-op — users may be surprised that `terraform destroy` does not revert mappings | Document clearly in resource description and registry page. Analogous to the `elasticstack_elasticsearch_index` behavior for `aliases` sub-blocks. |
 | Silent conflict if both this resource and `elasticstack_elasticsearch_index` manage mappings on the same index | Left to user; ES itself merges mappings — no data loss. Document in description. |
-| Read intersection at the top-level key level may miss nested-field granularity | Acceptable for this scope. Users who need field-level granularity can use `properties` with only the fields they care about. |
+| Read intersection complexity for deeply-nested properties | The recursive intersection is limited to the `properties` tree; other top-level keys are retained entirely if declared. This matches the primary use case of dynamic field drift under `properties`. |
 
 ## Open questions
 

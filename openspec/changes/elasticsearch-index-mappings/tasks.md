@@ -1,7 +1,7 @@
 ## 1. New resource package scaffold
 
 - [ ] 1.1 Create package `internal/elasticsearch/index/indexmappings/` with files:
-  - `resource.go` — wire `entitycore.NewElasticsearchResource[tfModel]` with name `"elasticsearch_index_mappings"`; expose `NewIndexMappingsResource() resource.Resource`; implement `ImportState` via `resource.ImportStatePassthroughID`
+  - `resource.go` — wire `entitycore.NewElasticsearchResource[tfModel]` with name `"index_mappings"`; expose `NewIndexMappingsResource() resource.Resource`; implement `ImportState` via `resource.ImportStatePassthroughID`
   - `schema.go` — define `getSchemaFactory`; see task 2 for required attributes
   - `models.go` — define `tfModel` struct with `tfsdk` tags; implement `GetID`, `GetResourceID`, `GetElasticsearchConnection`
   - `create.go` — implement `createIndexMappings` (see task 3)
@@ -14,8 +14,10 @@
 - [ ] 2.1 Define the following attributes in `getSchemaFactory`:
   - `id` — computed string, `stringplanmodifier.UseStateForUnknown()`
   - `index` — required string, `stringplanmodifier.RequiresReplace()`, description: "Name of the target Elasticsearch index."
-  - `mappings` — required string with `CustomType: index.MappingsType{}`, no plan modifier, description: "JSON mappings object to manage on the index. All top-level keys (`properties`, `dynamic`, `_source`, `dynamic_templates`, `runtime`, etc.) are supported. Only the keys declared here are tracked; dynamic extras added by Elasticsearch are ignored."
+  - `mappings` — required string with `CustomType: index.MappingsType{}`, no plan modifier, description: "JSON mappings object to manage on the index. All top-level keys (`properties`, `dynamic`, `_source`, `dynamic_templates`, `runtime`, etc.) are supported. Only the keys and fields declared here are tracked; dynamic extras added by Elasticsearch are ignored. Destroying this resource does not remove mappings from the index (a no-op)."
 - [ ] 2.2 Confirm `elasticsearch_connection` block is injected by `entitycore.ElasticsearchResource` scaffold (not manually added)
+- [ ] 2.3 Set the resource schema `Description` to: "Manage a user-declared subset of index mappings on an existing Elasticsearch index. Destroy is a no-op — field mappings are not removed."
+
 
 ## 3. Create operation (`create.go`)
 
@@ -34,7 +36,10 @@
   - Extract the `Mappings` field from the `IndexState` response
   - Unmarshal the API response mappings JSON into a `map[string]any`
   - Unmarshal the current state `mappings` string into a `map[string]any`
-  - Build a new map containing only the top-level keys that are present in the state config
+  - If the state `mappings` is empty (e.g. after a passthrough import), store the full API response in `state.Mappings` and return `ReadResult{Model: state}`
+  - Otherwise, build a new map containing only the top-level keys that are present in the state config
+    - For the `properties` top-level key, recursively intersect: keep only field names present in the state's `properties`; discard dynamically-added fields at every nesting level
+    - For all other top-level keys, retain the entire value as-is
   - Re-marshal the intersection map to JSON and store as `state.Mappings`
   - Return `ReadResult{Model: state}` with diagnostics
 - [ ] 4.2 Ensure the read result uses `index.MappingsType{}` for semantic equality so unchanged mappings do not produce a diff
