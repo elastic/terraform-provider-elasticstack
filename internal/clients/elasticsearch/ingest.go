@@ -81,6 +81,7 @@ func GetIngestPipeline(ctx context.Context, apiClient *clients.ElasticsearchScop
 	}
 
 	if pipeline, ok := pipelines[name]; ok {
+		pipeline.Name = name
 		return &pipeline, nil
 	}
 	return nil, fwdiag.Diagnostics{
