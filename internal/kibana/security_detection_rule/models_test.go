@@ -837,7 +837,7 @@ func TestActionsToAPI(t *testing.T) {
 
 	require.Empty(t, diags)
 
-	actions, actionsDiags := data.actionsToAPI(ctx)
+	actions, actionsDiags := data.actionsToAPI(ctx, NewMockAPIClient())
 	require.Empty(t, actionsDiags)
 	require.Len(t, actions, 1)
 
@@ -910,14 +910,14 @@ func TestActionAlertsFilterRoundTrip(t *testing.T) {
 	var diags diag.Diagnostics
 
 	apiFilter := kbapi.SecurityDetectionsAPIRuleActionAlertsFilter{
-		"query": map[string]interface{}{
+		"query": map[string]any{
 			"kql":     `event.action : "test"`,
-			"filters": []interface{}{},
+			"filters": []any{},
 		},
-		"timeframe": map[string]interface{}{
-			"days":     []interface{}{float64(1), float64(2), float64(3)},
+		"timeframe": map[string]any{
+			"days":     []any{float64(1), float64(2), float64(3)},
 			"timezone": "UTC",
-			"hours": map[string]interface{}{
+			"hours": map[string]any{
 				"start": "08:00",
 				"end":   "17:00",
 			},
@@ -931,18 +931,39 @@ func TestActionAlertsFilterRoundTrip(t *testing.T) {
 	require.Empty(t, diags)
 	require.NotNil(t, expanded)
 
-	query, ok := (*expanded)["query"].(map[string]interface{})
+	query, ok := (*expanded)["query"].(map[string]any)
 	require.True(t, ok)
 	require.Equal(t, `event.action : "test"`, query["kql"])
-	require.Equal(t, []interface{}{}, query["filters"])
+	require.Equal(t, []any{}, query["filters"])
 
-	timeframe, ok := (*expanded)["timeframe"].(map[string]interface{})
+	timeframe, ok := (*expanded)["timeframe"].(map[string]any)
 	require.True(t, ok)
 	require.Equal(t, "UTC", timeframe["timezone"])
-	hours, ok := timeframe["hours"].(map[string]interface{})
+	hours, ok := timeframe["hours"].(map[string]any)
 	require.True(t, ok)
 	require.Equal(t, "08:00", hours["start"])
 	require.Equal(t, "17:00", hours["end"])
+}
+
+func TestFlattenActionAlertsFilterDefaultFiltersJSON(t *testing.T) {
+	ctx := context.Background()
+	var diags diag.Diagnostics
+
+	apiFilter := kbapi.SecurityDetectionsAPIRuleActionAlertsFilter{
+		"query": map[string]any{
+			"kql": `event.action : "test"`,
+		},
+	}
+
+	flat := flattenActionAlertsFilter(ctx, &apiFilter, &diags)
+	require.Empty(t, diags)
+
+	var filter ActionAlertsFilterModel
+	require.Empty(t, flat.As(ctx, &filter, basetypes.ObjectAsOptions{}))
+
+	var query ActionAlertsFilterQueryModel
+	require.Empty(t, filter.Query.As(ctx, &query, basetypes.ObjectAsOptions{}))
+	require.Equal(t, "[]", query.FiltersJSON.ValueString())
 }
 
 // TestSlackSubActionParamsRoundTrip verifies that nested objects in action params
@@ -997,7 +1018,7 @@ func TestSlackSubActionParamsRoundTrip(t *testing.T) {
 	}
 	require.Empty(t, diags)
 
-	apiResult, actionsDiags := data.actionsToAPI(ctx)
+	apiResult, actionsDiags := data.actionsToAPI(ctx, NewMockAPIClient())
 	require.Empty(t, actionsDiags)
 	require.Len(t, apiResult, 1)
 

@@ -42,7 +42,7 @@ func flattenActionAlertsFilter(ctx context.Context, apiFilter *kbapi.SecurityDet
 	}
 
 	if queryRaw, ok := filter["query"]; ok && queryRaw != nil {
-		queryMap, ok := queryRaw.(map[string]interface{})
+		queryMap, ok := queryRaw.(map[string]any)
 		if !ok {
 			diags.AddError("Error reading alerts_filter", fmt.Sprintf("query must be an object, got %T", queryRaw))
 			return types.ObjectNull(getAlertsFilterAttrTypes())
@@ -64,6 +64,8 @@ func flattenActionAlertsFilter(ctx context.Context, apiFilter *kbapi.SecurityDet
 				return types.ObjectNull(getAlertsFilterAttrTypes())
 			}
 			queryModel.FiltersJSON = jsontypes.NewNormalizedValue(string(jsonBytes))
+		} else {
+			queryModel.FiltersJSON = jsontypes.NewNormalizedValue("[]")
 		}
 
 		queryObj, d := types.ObjectValueFrom(ctx, getAlertsFilterQueryAttrTypes(), queryModel)
@@ -72,7 +74,7 @@ func flattenActionAlertsFilter(ctx context.Context, apiFilter *kbapi.SecurityDet
 	}
 
 	if timeframeRaw, ok := filter["timeframe"]; ok && timeframeRaw != nil {
-		timeframeMap, ok := timeframeRaw.(map[string]interface{})
+		timeframeMap, ok := timeframeRaw.(map[string]any)
 		if !ok {
 			diags.AddError("Error reading alerts_filter", fmt.Sprintf("timeframe must be an object, got %T", timeframeRaw))
 			return types.ObjectNull(getAlertsFilterAttrTypes())
@@ -96,14 +98,16 @@ func flattenActionAlertsFilter(ctx context.Context, apiFilter *kbapi.SecurityDet
 		}
 
 		if hoursRaw, ok := timeframeMap["hours"]; ok && hoursRaw != nil {
-			hoursMap, ok := hoursRaw.(map[string]interface{})
-			if ok {
-				if start, ok := hoursMap["start"].(string); ok {
-					timeframeModel.HoursStart = types.StringValue(start)
-				}
-				if end, ok := hoursMap["end"].(string); ok {
-					timeframeModel.HoursEnd = types.StringValue(end)
-				}
+			hoursMap, ok := hoursRaw.(map[string]any)
+			if !ok {
+				diags.AddError("Error reading alerts_filter", fmt.Sprintf("timeframe.hours must be an object, got %T", hoursRaw))
+				return types.ObjectNull(getAlertsFilterAttrTypes())
+			}
+			if start, ok := hoursMap["start"].(string); ok {
+				timeframeModel.HoursStart = types.StringValue(start)
+			}
+			if end, ok := hoursMap["end"].(string); ok {
+				timeframeModel.HoursEnd = types.StringValue(end)
 			}
 		}
 
@@ -120,7 +124,7 @@ func flattenActionAlertsFilter(ctx context.Context, apiFilter *kbapi.SecurityDet
 func alertsFilterDaysFromAPI(ctx context.Context, daysRaw any) (types.List, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	daysSlice, ok := daysRaw.([]interface{})
+	daysSlice, ok := daysRaw.([]any)
 	if !ok {
 		diags.AddError("Error reading alerts_filter timeframe days", fmt.Sprintf("days must be an array, got %T", daysRaw))
 		return types.ListNull(types.Int64Type), diags
@@ -135,6 +139,13 @@ func alertsFilterDaysFromAPI(ctx context.Context, daysRaw any) (types.List, diag
 			days = append(days, int64(v))
 		case int64:
 			days = append(days, v)
+		case json.Number:
+			day, err := v.Int64()
+			if err != nil {
+				diags.AddError("Error reading alerts_filter timeframe days", err.Error())
+				return types.ListNull(types.Int64Type), diags
+			}
+			days = append(days, day)
 		default:
 			diags.AddError("Error reading alerts_filter timeframe days", fmt.Sprintf("unexpected day value type %T", d))
 			return types.ListNull(types.Int64Type), diags
@@ -157,7 +168,7 @@ func expandActionAlertsFilter(ctx context.Context, alertsFilter types.Object, di
 		return nil
 	}
 
-	result := make(map[string]interface{})
+	result := make(map[string]any)
 
 	if typeutils.IsKnown(filterModel.Query) && !filterModel.Query.IsNull() {
 		var queryModel ActionAlertsFilterQueryModel
@@ -166,13 +177,13 @@ func expandActionAlertsFilter(ctx context.Context, alertsFilter types.Object, di
 			return nil
 		}
 
-		queryMap := make(map[string]interface{})
+		queryMap := make(map[string]any)
 
 		if typeutils.IsKnown(queryModel.Kql) {
 			queryMap["kql"] = queryModel.Kql.ValueString()
 		}
 
-		filtersSlice := []interface{}{}
+		filtersSlice := []any{}
 		if typeutils.IsKnown(queryModel.FiltersJSON) && queryModel.FiltersJSON.ValueString() != "" {
 			if err := json.Unmarshal([]byte(queryModel.FiltersJSON.ValueString()), &filtersSlice); err != nil {
 				diags.AddError("Error unmarshaling alerts_filter filters_json", err.Error())
@@ -193,7 +204,7 @@ func expandActionAlertsFilter(ctx context.Context, alertsFilter types.Object, di
 			return nil
 		}
 
-		timeframeMap := make(map[string]interface{})
+		timeframeMap := make(map[string]any)
 
 		if typeutils.IsKnown(tfModel.Days) {
 			var days []int64
@@ -212,7 +223,7 @@ func expandActionAlertsFilter(ctx context.Context, alertsFilter types.Object, di
 			timeframeMap["timezone"] = tfModel.Timezone.ValueString()
 		}
 
-		hoursMap := make(map[string]interface{})
+		hoursMap := make(map[string]any)
 		if typeutils.IsKnown(tfModel.HoursStart) {
 			hoursMap["start"] = tfModel.HoursStart.ValueString()
 		}
