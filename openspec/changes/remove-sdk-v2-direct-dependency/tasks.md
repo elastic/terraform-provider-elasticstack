@@ -6,11 +6,11 @@
 
 ## 2. Replace SDK v2 `logging.IsDebugOrHigher` imports
 
-- [ ] 2.1 Update `internal/clients/config/elasticsearch.go` to use `debugutils.IsDebugOrHigher()`
-- [ ] 2.2 Update `internal/clients/fleet/client.go` to use `debugutils.IsDebugOrHigher()`
-- [ ] 2.3 Update `internal/clients/kibanaoapi/client.go` to use `debugutils.IsDebugOrHigher()`
-- [ ] 2.4 Update `internal/fleet/integration_policy/schema.go` to use `debugutils.IsSensitiveInSchema()`
-- [ ] 2.5 Update `internal/fleet/integration_policy/schema_v2.go` to use `debugutils.IsSensitiveInSchema()`
+- [x] 2.1 Update `internal/clients/config/elasticsearch.go` to use `debugutils.IsDebugOrHigher()`
+- [x] 2.2 Update `internal/clients/fleet/client.go` to use `debugutils.IsDebugOrHigher()`
+- [x] 2.3 Update `internal/clients/kibanaoapi/client.go` to use `debugutils.IsDebugOrHigher()`
+- [x] 2.4 Update `internal/fleet/integration_policy/schema.go` to use `debugutils.IsSensitiveInSchema()`
+- [x] 2.5 Update `internal/fleet/integration_policy/schema_v2.go` to use `debugutils.IsSensitiveInSchema()`
 
 ## 3. Remove dead code
 
