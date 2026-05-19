@@ -178,10 +178,10 @@ func TestListAllPaginationHelpers(t *testing.T) {
 	server := httptest.NewServer(mux)
 	t.Cleanup(server.Close)
 
-	client := github.NewClient(server.Client())
-	baseURL, err := url.Parse(server.URL + "/")
+	u, err := url.Parse(server.URL + "/")
 	require.NoError(t, err)
-	client.BaseURL = baseURL
+	client, err := github.NewClient(github.WithTransport(&rewriteTransport{baseURL: u, base: http.DefaultTransport}))
+	require.NoError(t, err)
 
 	ctx := context.Background()
 
@@ -229,9 +229,9 @@ func TestRunSkipsWhenEventHasNoPR(t *testing.T) {
 	forceSetEnv(t, "GITHUB_EVENT_PATH", eventPath)
 
 	orig := newGitHubClient
-	newGitHubClient = func(context.Context, string) *github.Client {
+	newGitHubClient = func(context.Context, string) (*github.Client, error) {
 		t.Fatalf("github client should not be created for events without PR")
-		return nil
+		return nil, nil
 	}
 	t.Cleanup(func() { newGitHubClient = orig })
 
@@ -278,12 +278,12 @@ func TestRunApprovesWhenAllGatesPass(t *testing.T) {
 	t.Cleanup(server.Close)
 
 	orig := newGitHubClient
-	newGitHubClient = func(context.Context, string) *github.Client {
-		client := github.NewClient(server.Client())
-		baseURL, err := url.Parse(server.URL + "/")
+	newGitHubClient = func(context.Context, string) (*github.Client, error) {
+		u, err := url.Parse(server.URL + "/")
 		require.NoError(t, err)
-		client.BaseURL = baseURL
-		return client
+		client, err := github.NewClient(github.WithTransport(&rewriteTransport{baseURL: u, base: http.DefaultTransport}))
+		require.NoError(t, err)
+		return client, nil
 	}
 	t.Cleanup(func() { newGitHubClient = orig })
 
@@ -326,17 +326,29 @@ func TestRunDoesNotApproveWhenGateFails(t *testing.T) {
 	t.Cleanup(server.Close)
 
 	orig := newGitHubClient
-	newGitHubClient = func(context.Context, string) *github.Client {
-		client := github.NewClient(server.Client())
-		baseURL, err := url.Parse(server.URL + "/")
+	newGitHubClient = func(context.Context, string) (*github.Client, error) {
+		u, err := url.Parse(server.URL + "/")
 		require.NoError(t, err)
-		client.BaseURL = baseURL
-		return client
+		client, err := github.NewClient(github.WithTransport(&rewriteTransport{baseURL: u, base: http.DefaultTransport}))
+		require.NoError(t, err)
+		return client, nil
 	}
 	t.Cleanup(func() { newGitHubClient = orig })
 
 	require.NoError(t, run(context.Background()))
 	assert.False(t, reviewCreated, "did not expect approval review creation")
+}
+
+type rewriteTransport struct {
+	baseURL *url.URL
+	base    http.RoundTripper
+}
+
+func (t *rewriteTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	req = req.Clone(req.Context())
+	req.URL.Scheme = t.baseURL.Scheme
+	req.URL.Host = t.baseURL.Host
+	return t.base.RoundTrip(req)
 }
 
 func testServerBaseURL(r *http.Request) string {
@@ -349,7 +361,8 @@ func testServerBaseURL(r *http.Request) string {
 
 func TestGitHubClient(t *testing.T) {
 	t.Parallel()
-	client := githubClient(context.Background(), "token")
+	client, err := githubClient(context.Background(), "token")
+	require.NoError(t, err)
 	require.NotNil(t, client)
 	require.NotNil(t, client.Client())
 }

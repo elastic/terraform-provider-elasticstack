@@ -31,15 +31,28 @@ import (
 	"github.com/google/go-github/v87/github"
 )
 
+type rewriteTransport struct {
+	base *url.URL
+	rt   http.RoundTripper
+}
+
+func (t *rewriteTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	req = req.Clone(req.Context())
+	req.URL.Scheme = t.base.Scheme
+	req.URL.Host = t.base.Host
+	return t.rt.RoundTrip(req)
+}
+
 func testGitHubRESTClient(tb testing.TB, srv *httptest.Server) *github.Client {
 	tb.Helper()
 	u, err := url.Parse(srv.URL + "/")
 	if err != nil {
 		tb.Fatal(err)
 	}
-	c := github.NewClient(srv.Client())
-	c.BaseURL = u
-	c.UploadURL = u
+	c, err := github.NewClient(github.WithTransport(&rewriteTransport{base: u, rt: http.DefaultTransport}))
+	if err != nil {
+		tb.Fatal(err)
+	}
 	return c
 }
 

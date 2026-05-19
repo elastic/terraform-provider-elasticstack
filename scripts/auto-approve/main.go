@@ -26,7 +26,6 @@ import (
 	"strings"
 
 	"github.com/google/go-github/v87/github"
-	"golang.org/x/oauth2"
 )
 
 type eventPayload struct {
@@ -72,7 +71,10 @@ func run(ctx context.Context) error {
 		return nil
 	}
 
-	client := newGitHubClient(ctx, token)
+	client, err := newGitHubClient(ctx, token)
+	if err != nil {
+		return fmt.Errorf("create github client: %w", err)
+	}
 
 	pr, _, err := client.PullRequests.Get(ctx, owner, name, prNumber)
 	if err != nil {
@@ -155,10 +157,8 @@ func run(ctx context.Context) error {
 	return nil
 }
 
-func githubClient(ctx context.Context, token string) *github.Client {
-	tokenSource := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
-	httpClient := oauth2.NewClient(ctx, tokenSource)
-	return github.NewClient(httpClient)
+func githubClient(ctx context.Context, token string) (*github.Client, error) {
+	return github.NewClient(github.WithAuthToken(token))
 }
 
 func parseRepository(repo string) (string, string, error) {
