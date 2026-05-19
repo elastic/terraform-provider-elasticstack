@@ -52,23 +52,23 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   interval    = "5m"
   index       = ["logs-*"]
 
-  actions {
+  actions = [{
     action_type_id = ".cases-webhook"
     id             = elasticstack_kibana_action_connector.test.connector_id
     params = jsonencode({
       message = "Alert with alerts_filter"
     })
     group = "default"
-    frequency {
+    frequency = {
       notify_when = "onActiveAlert"
       summary     = true
       throttle    = "10m"
     }
-    alerts_filter {
-      query {
+    alerts_filter = {
+      query = {
         kql          = "event.action : \"test_case_a\""
         filters_json = jsonencode([])
       }
     }
-  }
+  }]
 }

@@ -534,10 +534,14 @@ func (d Data) actionsToAPI(ctx context.Context, client clients.MinVersionEnforce
 		if diags.HasError() {
 			return nil, diags
 		}
+		firstFilterIdx := -1
 		for i, action := range actions {
-			if !typeutils.IsKnown(action.AlertsFilter) || action.AlertsFilter.IsNull() {
-				continue
+			if typeutils.IsKnown(action.AlertsFilter) {
+				firstFilterIdx = i
+				break
 			}
+		}
+		if firstFilterIdx >= 0 {
 			supported, versionDiags := client.EnforceMinVersion(ctx, MinVersionAlertsFilter)
 			diags.Append(versionDiags...)
 			if diags.HasError() {
@@ -545,7 +549,7 @@ func (d Data) actionsToAPI(ctx context.Context, client clients.MinVersionEnforce
 			}
 			if !supported {
 				diags.AddAttributeError(
-					path.Root("actions").AtListIndex(i).AtName("alerts_filter"),
+					path.Root("actions").AtListIndex(firstFilterIdx).AtName("alerts_filter"),
 					"actions.alerts_filter is only supported for Kibana v8.9 or higher",
 					"actions.alerts_filter is only supported for Kibana v8.9 or higher",
 				)

@@ -52,29 +52,29 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   interval    = "5m"
   index       = ["logs-*"]
 
-  actions {
+  actions = [{
     action_type_id = ".cases-webhook"
     id             = elasticstack_kibana_action_connector.test.connector_id
     params = jsonencode({
       message = "Alert with alerts_filter timeframe"
     })
     group = "default"
-    frequency {
+    frequency = {
       notify_when = "onActiveAlert"
       summary     = true
       throttle    = "10m"
     }
-    alerts_filter {
-      query {
+    alerts_filter = {
+      query = {
         kql          = "event.action : \"test_case_b\""
         filters_json = jsonencode([])
       }
-      timeframe {
+      timeframe = {
         days        = [1, 2, 3, 4, 5]
         timezone    = "UTC"
         hours_start = "08:00"
         hours_end   = "17:00"
       }
     }
-  }
+  }]
 }

@@ -36,25 +36,21 @@ func TestMigrateAlertsFilterV1ToV2(t *testing.T) {
 	require.True(t, ok)
 
 	tests := []struct {
-		name        string
-		raw         map[string]any
-		wantErr     bool
-		wantFilter  bool
-		checkFilter func(t *testing.T, action map[string]any)
+		name    string
+		raw     map[string]any
+		wantErr bool
 	}{
 		{
 			name: "no actions key",
 			raw: map[string]any{
 				"name": "rule",
 			},
-			wantFilter: false,
 		},
 		{
 			name: "empty actions list",
 			raw: map[string]any{
 				"actions": []any{},
 			},
-			wantFilter: false,
 		},
 		{
 			name: "action without alerts_filter",
@@ -67,7 +63,6 @@ func TestMigrateAlertsFilterV1ToV2(t *testing.T) {
 					},
 				},
 			},
-			wantFilter: false,
 		},
 		{
 			name: "action with alerts_filter map removed",
@@ -82,12 +77,6 @@ func TestMigrateAlertsFilterV1ToV2(t *testing.T) {
 						},
 					},
 				},
-			},
-			wantFilter: false,
-			checkFilter: func(t *testing.T, action map[string]any) {
-				t.Helper()
-				_, ok := action["alerts_filter"]
-				require.False(t, ok)
 			},
 		},
 		{
@@ -131,13 +120,8 @@ func TestMigrateAlertsFilterV1ToV2(t *testing.T) {
 			}
 			action, ok := actions[0].(map[string]any)
 			require.True(t, ok)
-			if tc.checkFilter != nil {
-				tc.checkFilter(t, action)
-			}
-			if !tc.wantFilter {
-				_, hasFilter := action["alerts_filter"]
-				require.False(t, hasFilter)
-			}
+			_, hasFilter := action["alerts_filter"]
+			require.False(t, hasFilter, "alerts_filter should always be removed by the v1→v2 upgrader")
 		})
 	}
 }

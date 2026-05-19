@@ -31,17 +31,16 @@ import (
 )
 
 func flattenActionAlertsFilter(ctx context.Context, apiFilter *kbapi.SecurityDetectionsAPIRuleActionAlertsFilter, diags *diag.Diagnostics) types.Object {
-	if apiFilter == nil {
+	if apiFilter == nil || len(*apiFilter) == 0 {
 		return types.ObjectNull(getAlertsFilterAttrTypes())
 	}
 
-	filter := *apiFilter
 	filterModel := ActionAlertsFilterModel{
 		Query:     types.ObjectNull(getAlertsFilterQueryAttrTypes()),
 		Timeframe: types.ObjectNull(getAlertsFilterTimeframeAttrTypes()),
 	}
 
-	if queryRaw, ok := filter["query"]; ok && queryRaw != nil {
+	if queryRaw, ok := (*apiFilter)["query"]; ok && queryRaw != nil {
 		queryMap, ok := queryRaw.(map[string]any)
 		if !ok {
 			diags.AddError("Error reading alerts_filter", fmt.Sprintf("query must be an object, got %T", queryRaw))
@@ -73,7 +72,7 @@ func flattenActionAlertsFilter(ctx context.Context, apiFilter *kbapi.SecurityDet
 		filterModel.Query = queryObj
 	}
 
-	if timeframeRaw, ok := filter["timeframe"]; ok && timeframeRaw != nil {
+	if timeframeRaw, ok := (*apiFilter)["timeframe"]; ok && timeframeRaw != nil {
 		timeframeMap, ok := timeframeRaw.(map[string]any)
 		if !ok {
 			diags.AddError("Error reading alerts_filter", fmt.Sprintf("timeframe must be an object, got %T", timeframeRaw))
@@ -114,6 +113,10 @@ func flattenActionAlertsFilter(ctx context.Context, apiFilter *kbapi.SecurityDet
 		tfObj, d := types.ObjectValueFrom(ctx, getAlertsFilterTimeframeAttrTypes(), timeframeModel)
 		diags.Append(d...)
 		filterModel.Timeframe = tfObj
+	}
+
+	if filterModel.Query.IsNull() && filterModel.Timeframe.IsNull() {
+		return types.ObjectNull(getAlertsFilterAttrTypes())
 	}
 
 	filterObj, d := types.ObjectValueFrom(ctx, getAlertsFilterAttrTypes(), filterModel)
@@ -158,7 +161,7 @@ func alertsFilterDaysFromAPI(ctx context.Context, daysRaw any) (types.List, diag
 }
 
 func expandActionAlertsFilter(ctx context.Context, alertsFilter types.Object, diags *diag.Diagnostics) *kbapi.SecurityDetectionsAPIRuleActionAlertsFilter {
-	if !typeutils.IsKnown(alertsFilter) || alertsFilter.IsNull() {
+	if !typeutils.IsKnown(alertsFilter) {
 		return nil
 	}
 
@@ -170,7 +173,7 @@ func expandActionAlertsFilter(ctx context.Context, alertsFilter types.Object, di
 
 	result := make(map[string]any)
 
-	if typeutils.IsKnown(filterModel.Query) && !filterModel.Query.IsNull() {
+	if typeutils.IsKnown(filterModel.Query) {
 		var queryModel ActionAlertsFilterQueryModel
 		diags.Append(filterModel.Query.As(ctx, &queryModel, basetypes.ObjectAsOptions{})...)
 		if diags.HasError() {
@@ -197,7 +200,7 @@ func expandActionAlertsFilter(ctx context.Context, alertsFilter types.Object, di
 		}
 	}
 
-	if typeutils.IsKnown(filterModel.Timeframe) && !filterModel.Timeframe.IsNull() {
+	if typeutils.IsKnown(filterModel.Timeframe) {
 		var tfModel ActionAlertsFilterTimeframeModel
 		diags.Append(filterModel.Timeframe.As(ctx, &tfModel, basetypes.ObjectAsOptions{})...)
 		if diags.HasError() {

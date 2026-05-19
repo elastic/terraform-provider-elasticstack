@@ -35,9 +35,11 @@ func (r *securityDetectionRuleResource) UpgradeState(context.Context) map[int64]
 	}
 }
 
-// migrateParamsV0ToV1 converts each action's params from a JSON object
-// (map(string) in the old schema) to a JSON-encoded string (jsontypes.Normalized).
-func migrateParamsV0ToV1(_ context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
+// upgradeActions decodes the raw state, applies mutate to each action map, and
+// re-encodes only when at least one mutation occurred. mutate returns true when
+// the action was modified; it may also add diagnostics on resp to abort the
+// upgrade (the encoded state is left as the original input).
+func upgradeActions(req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse, mutate func(action map[string]any) bool) {
 	if req.RawState == nil || req.RawState.JSON == nil {
 		resp.Diagnostics.AddError("Invalid raw state", "Raw state or JSON is nil")
 		return
@@ -62,22 +64,12 @@ func migrateParamsV0ToV1(_ context.Context, req resource.UpgradeStateRequest, re
 		if !ok {
 			continue
 		}
-		params, ok := action["params"]
-		if !ok || params == nil {
-			continue
+		if mutate(action) {
+			modified = true
 		}
-		// In v0 state, params is a JSON object (map[string]any).
-		// In v1, params must be a JSON string.
-		if _, alreadyString := params.(string); alreadyString {
-			continue
-		}
-		jsonBytes, err := json.Marshal(params)
-		if err != nil {
-			resp.Diagnostics.AddError("Failed to marshal action params during state upgrade", err.Error())
+		if resp.Diagnostics.HasError() {
 			return
 		}
-		action["params"] = string(jsonBytes)
-		modified = true
 	}
 
 	if !modified {
@@ -92,47 +84,35 @@ func migrateParamsV0ToV1(_ context.Context, req resource.UpgradeStateRequest, re
 	resp.DynamicValue.JSON = stateJSON
 }
 
+// migrateParamsV0ToV1 converts each action's params from a JSON object
+// (map(string) in the old schema) to a JSON-encoded string (jsontypes.Normalized).
+func migrateParamsV0ToV1(_ context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
+	upgradeActions(req, resp, func(action map[string]any) bool {
+		params, ok := action["params"]
+		if !ok || params == nil {
+			return false
+		}
+		if _, alreadyString := params.(string); alreadyString {
+			return false
+		}
+		jsonBytes, err := json.Marshal(params)
+		if err != nil {
+			resp.Diagnostics.AddError("Failed to marshal action params during state upgrade", err.Error())
+			return false
+		}
+		action["params"] = string(jsonBytes)
+		return true
+	})
+}
+
 // migrateAlertsFilterV1ToV2 removes any stored alerts_filter map values from actions.
 // The prior MapAttribute implementation was non-functional and incompatible with the v2 object shape.
 func migrateAlertsFilterV1ToV2(_ context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
-	if req.RawState == nil || req.RawState.JSON == nil {
-		resp.Diagnostics.AddError("Invalid raw state", "Raw state or JSON is nil")
-		return
-	}
-
-	resp.DynamicValue = &tfprotov6.DynamicValue{JSON: req.RawState.JSON}
-
-	var stateMap map[string]any
-	if err := json.Unmarshal(req.RawState.JSON, &stateMap); err != nil {
-		resp.Diagnostics.AddError("Failed to unmarshal raw state", err.Error())
-		return
-	}
-
-	actions, ok := stateMap["actions"].([]any)
-	if !ok || len(actions) == 0 {
-		return
-	}
-
-	modified := false
-	for _, actionAny := range actions {
-		action, ok := actionAny.(map[string]any)
-		if !ok {
-			continue
+	upgradeActions(req, resp, func(action map[string]any) bool {
+		if _, hasFilter := action["alerts_filter"]; !hasFilter {
+			return false
 		}
-		if _, hasFilter := action["alerts_filter"]; hasFilter {
-			delete(action, "alerts_filter")
-			modified = true
-		}
-	}
-
-	if !modified {
-		return
-	}
-
-	stateJSON, err := json.Marshal(stateMap)
-	if err != nil {
-		resp.Diagnostics.AddError("Failed to marshal upgraded state", err.Error())
-		return
-	}
-	resp.DynamicValue.JSON = stateJSON
+		delete(action, "alerts_filter")
+		return true
+	})
 }

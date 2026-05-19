@@ -132,17 +132,17 @@ resource "elasticstack_kibana_security_detection_rule" "with_connector_action" {
 
   index = ["logs-*"]
 
-  actions {
+  actions = [{
     action_type_id = ".cases-webhook"
     id             = elasticstack_kibana_action_connector.case_webhook.connector_id
     group          = "default"
     params = jsonencode({
       message = "Alert: {{rule.name}}"
     })
-    frequency {
+    frequency = {
       notify_when = "onActiveAlert"
       summary     = false
       throttle    = "no_actions"
     }
-  }
+  }]
 }

@@ -162,19 +162,19 @@ resource "elasticstack_kibana_security_detection_rule" "example" {
   }
 
   # Actions
-  actions {                     # optional block list
+  actions = [{                  # optional list of objects
     action_type_id = <required, string>
     id             = <required, string>  # connector ID
     params         = <required, JSON-normalized string> # jsonencode() of the action params object
     group          = <optional, string>
     uuid           = <optional, computed, string>
 
-    alerts_filter {               # optional block
-      query {                     # optional block
+    alerts_filter = {             # optional nested attribute
+      query = {                   # optional nested attribute
         kql          = <optional, string>
         filters_json = <optional, computed, JSON-normalized string>  # jsonencode([]) for empty
       }
-      timeframe {                 # optional block
+      timeframe = {               # optional nested attribute
         days        = <optional, list(int64)>  # 1–7
         timezone    = <optional, string>
         hours_start = <optional, string>       # HH:MM
@@ -182,12 +182,12 @@ resource "elasticstack_kibana_security_detection_rule" "example" {
       }
     }
 
-    frequency {                 # optional+computed
+    frequency = {               # optional+computed nested attribute
       notify_when = <required, string> # one of: onActionGroupChange | onActiveAlert | onThrottleInterval
       summary     = <required, bool>
       throttle    = <required, string>
     }
-  }
+  }]
 
   # Response actions (requires server ≥ 8.16.0)
   response_actions {            # optional list
@@ -474,7 +474,7 @@ The `required_fields[*].ecs` attribute is computed by the Kibana backend. The pr
 
 ### Requirement: Mapping — actions from API (REQ-023)
 
-When reading actions from Kibana, each action SHALL be mapped to state with its `action_type_id`, `id`, `params` (as JSON-normalized string), `group`, `uuid`, structured `alerts_filter` block (when present), and `frequency` block. If the API returns no actions, the actions list in state SHALL be null. The `params` object returned by the API (`map[string]any`) SHALL be marshaled to a JSON-normalized string using `jsontypes.NewNormalizedValue()`. This preserves nested object structures that cannot be represented as `map(string)`. The `alertsFilter` API object SHALL be mapped to `alerts_filter.query` and `alerts_filter.timeframe` without producing Go map-literal strings in state.
+When reading actions from Kibana, each action SHALL be mapped to state with its `action_type_id`, `id`, `params` (as JSON-normalized string), `group`, `uuid`, structured `alerts_filter` attribute (when present), and `frequency` attribute. If the API returns no actions, the actions list in state SHALL be null. The `params` object returned by the API (`map[string]any`) SHALL be marshaled to a JSON-normalized string using `jsontypes.NewNormalizedValue()`. This preserves nested object structures that cannot be represented as `map(string)`. The `alertsFilter` API object SHALL be mapped to `alerts_filter.query` and `alerts_filter.timeframe` without producing Go map-literal strings in state.
 
 #### Scenario: Empty actions from API
 
@@ -594,12 +594,11 @@ When Terraform reads prior state written by schema version **0** (where `actions
 
 When a practitioner explicitly configures any of the following `elasticstack_kibana_security_detection_rule` attributes as an empty list (`[]`), the provider SHALL return an empty list — not `null` — for that attribute in state after `Create`, `Read`, and `Update`. This preserves the Terraform Plugin Framework invariant for `Optional`-only list attributes: the provider MUST return the planned value unchanged when the planned value is a known, non-null empty list.
 
-`actions` is a `ListNestedBlock` and cannot be set to `[]` in configuration; omitting `actions` yields `null` in state when no actions are configured.
-
 Affected attributes:
 
 | Attribute | Schema type |
 |---|---|
+| `actions` | `ListNestedAttribute` |
 | `exceptions_list` | `ListNestedAttribute` |
 | `severity_mapping` | `ListNestedAttribute` |
 | `risk_score_mapping` | `ListNestedAttribute` |
@@ -609,20 +608,20 @@ Affected attributes:
 
 #### Scenario: Apply with all affected attributes set to empty list
 
-- GIVEN a resource configuration with `exceptions_list = []`, `severity_mapping = []`, `risk_score_mapping = []`, `related_integrations = []`, `threat = []`, and `threat_mapping = []` (and no `actions` blocks)
+- GIVEN a resource configuration with `actions = []`, `exceptions_list = []`, `severity_mapping = []`, `risk_score_mapping = []`, `related_integrations = []`, `threat = []`, and `threat_mapping = []`
 - WHEN `terraform apply` runs
 - THEN the provider SHALL succeed without a "Provider produced inconsistent result after apply" diagnostic
-- AND each of the six attributes SHALL be stored as an empty list (`[]`) in Terraform state
+- AND each of the seven attributes SHALL be stored as an empty list (`[]`) in Terraform state
 
 #### Scenario: Subsequent plan shows no diff for empty-list attributes
 
-- GIVEN a successfully applied resource with any of the six attributes stored as `[]` in state
+- GIVEN a successfully applied resource with any of the seven attributes stored as `[]` in state
 - WHEN `terraform plan` runs without any configuration change
 - THEN the plan SHALL be empty (no changes) for those attributes
 
 #### Scenario: Null configuration is preserved
 
-- GIVEN a resource configuration where one or more of the six attributes is absent or explicitly `null`
+- GIVEN a resource configuration where one or more of the seven attributes is absent or explicitly `null`
 - WHEN `terraform apply` runs
 - THEN the provider SHALL store `null` (not `[]`) for those attributes in state
 
@@ -684,29 +683,29 @@ This function SHALL be called after each `r.read()` invocation in `Create`, `Rea
 
 ### Requirement: Acceptance test — empty-list round-trip (REQ-036)
 
-The acceptance test suite SHALL include a test that exercises the empty-list scenario for the six list attributes in REQ-033 in a single resource configuration (with `actions` omitted). The test SHALL apply a configuration with those attributes set to `[]`, assert that `terraform apply` succeeds without "inconsistent result" diagnostics, assert that those attributes are stored as empty lists in state, and assert that a subsequent `terraform plan` produces an empty plan.
+The acceptance test suite SHALL include a test that exercises the empty-list scenario for the seven list attributes in REQ-033 in a single resource configuration. The test SHALL apply a configuration with those attributes set to `[]`, assert that `terraform apply` succeeds without "inconsistent result" diagnostics, assert that those attributes are stored as empty lists in state, and assert that a subsequent `terraform plan` produces an empty plan.
 
 #### Scenario: Acceptance test apply with empty lists succeeds
 
-- GIVEN a resource configuration with `exceptions_list = []`, `severity_mapping = []`, `risk_score_mapping = []`, `related_integrations = []`, `threat = []`, and `threat_mapping = []` (and no `actions` blocks)
+- GIVEN a resource configuration with `actions = []`, `exceptions_list = []`, `severity_mapping = []`, `risk_score_mapping = []`, `related_integrations = []`, `threat = []`, and `threat_mapping = []`
 - WHEN the acceptance test runs `terraform apply`
 - THEN `terraform apply` SHALL succeed without any "Provider produced inconsistent result after apply" diagnostics
-- AND the test SHALL verify that each of the six attributes is stored as an empty list in state
+- AND the test SHALL verify that each of the seven attributes is stored as an empty list in state
 
 #### Scenario: No-op plan after empty-list apply
 
-- GIVEN a successfully applied rule with the six attributes stored as empty lists
+- GIVEN a successfully applied rule with the seven attributes stored as empty lists
 - WHEN the acceptance test runs a second `terraform plan`
 - THEN the plan SHALL be empty (no proposed changes)
 
-### Requirement: Schema — `actions.alerts_filter` structured block (REQ-080)
+### Requirement: Schema — `actions.alerts_filter` structured attribute (REQ-080)
 
-The `alerts_filter` attribute on `actions` SHALL be a `SingleNestedBlock` (not a `MapAttribute`). It SHALL contain:
+The `alerts_filter` attribute on `actions` SHALL be a `SingleNestedAttribute` (not a `MapAttribute`). It SHALL contain:
 
-- A `query` nested block (optional) with:
+- A `query` nested attribute (optional) with:
   - `kql` — optional string. Defines a KQL query filter that determines whether the action runs.
   - `filters_json` — optional + computed `jsontypes.Normalized` JSON string. Encodes the Kibana filter DSL array (same type as `params`). Use `jsonencode([])` for an empty filter list. Marked computed because the provider populates `[]` from the API when the user omits the attribute, keeping round-trip plans clean. Named `filters_json` to allow a future typed `filters` list attribute to be added without conflict.
-- A `timeframe` nested block (optional) with:
+- A `timeframe` nested attribute (optional) with:
   - `days` — optional list of int64 (values 1–7, where 1=Monday, 7=Sunday).
   - `timezone` — optional string. ISO time zone name (e.g., `"UTC"`, `"Europe/London"`).
   - `hours_start` — optional string. Start of active hours in 24-hour `HH:MM` notation.
@@ -722,23 +721,23 @@ The old `MapAttribute(string)` form of `alerts_filter` is removed.
 
 #### Scenario: alerts_filter with timeframe
 
-- GIVEN a detection rule action with `alerts_filter.query.kql` set and `alerts_filter.timeframe` block with all four attributes
+- GIVEN a detection rule action with `alerts_filter.query.kql` set and `alerts_filter.timeframe` with all four attributes
 - WHEN the resource is created or updated
 - THEN the Kibana API request SHALL include `alertsFilter.timeframe.days`, `alertsFilter.timeframe.timezone`, and `alertsFilter.timeframe.hours.start` / `alertsFilter.timeframe.hours.end`
 
 #### Scenario: no alerts_filter
 
-- GIVEN a detection rule action without an `alerts_filter` block
+- GIVEN a detection rule action without an `alerts_filter` attribute set
 - WHEN the resource is created or updated
 - THEN the Kibana API request SHALL omit `alertsFilter` for that action
 
 ### Requirement: Validation — `timeframe` attributes required together (REQ-081)
 
-When the `alerts_filter.timeframe` block is present, all four attributes (`days`, `timezone`, `hours_start`, `hours_end`) SHALL be required. The provider SHALL enforce this via `objectvalidator.AlsoRequires` (or equivalent). Omitting any one of the four attributes while the block is present SHALL be a validation error.
+When the `alerts_filter.timeframe` attribute is present, all four attributes (`days`, `timezone`, `hours_start`, `hours_end`) SHALL be required. The provider SHALL enforce this via `objectvalidator.AlsoRequires` (or equivalent). Omitting any one of the four attributes while `timeframe` is present SHALL be a validation error.
 
 #### Scenario: timeframe with missing timezone
 
-- GIVEN an `alerts_filter.timeframe` block with `days` and `hours_start` and `hours_end` set but `timezone` absent
+- GIVEN an `alerts_filter.timeframe` value with `days` and `hours_start` and `hours_end` set but `timezone` absent
 - WHEN Terraform validates the configuration
 - THEN the provider SHALL return a validation diagnostic for the missing attribute
 
@@ -763,8 +762,8 @@ When `alerts_filter` is configured, the provider SHALL serialize it to the Kiban
 }
 ```
 
-- `query` SHALL be included when the `query` block is present with at least one of `kql` or `filters_json` set.
-- `timeframe` SHALL be included when the `timeframe` block is present.
+- `query` SHALL be included when the `query` attribute is present with at least one of `kql` or `filters_json` set.
+- `timeframe` SHALL be included when the `timeframe` attribute is present.
 - `filters_json` SHALL be unmarshaled from a JSON string into a native array before serialization (not sent as a raw string).
 
 #### Scenario: filters_json marshaled correctly
@@ -825,7 +824,7 @@ The acceptance test suite for `elasticstack_kibana_security_detection_rule` SHAL
 
 #### Scenario: timeframe round-trip
 
-- GIVEN a detection rule with `alerts_filter.timeframe { days = [1,2,3,4,5], timezone = "UTC", hours_start = "08:00", hours_end = "17:00" }`
+- GIVEN a detection rule with `alerts_filter.timeframe = { days = [1,2,3,4,5], timezone = "UTC", hours_start = "08:00", hours_end = "17:00" }`
 - WHEN the resource is applied and refreshed
 - THEN all four timeframe attributes in state match configuration
 
@@ -835,15 +834,15 @@ Existing detection rule actions that do not include `alerts_filter` SHALL contin
 
 #### Scenario: action without alerts_filter creates successfully
 
-- GIVEN a detection rule action with `id`, `action_type_id`, and `params` set but no `alerts_filter` block
+- GIVEN a detection rule action with `id`, `action_type_id`, and `params` set but no `alerts_filter` attribute
 - WHEN the resource is created and then refreshed
 - THEN apply succeeds and `terraform plan` shows no diff for the action
 
-### Requirement: Documentation — `alerts_filter` block (REQ-087)
+### Requirement: Documentation — `alerts_filter` (REQ-087)
 
 The provider documentation for `elasticstack_kibana_security_detection_rule` SHALL document:
 
-- The `alerts_filter` nested block and its sub-attributes (`query.kql`, `query.filters_json`, `timeframe.*`).
+- The `alerts_filter` nested attribute and its sub-attributes (`query.kql`, `query.filters_json`, `timeframe.*`).
 - A usage example showing `jsonencode([])` for `filters_json`.
 - The `filters_json` attribute name rationale is not required in docs; clear examples suffice.
 

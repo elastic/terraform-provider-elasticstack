@@ -2,16 +2,11 @@
 
 ### Breaking changes
 
-#### `elasticstack_kibana_security_detection_rule` actions and `alerts_filter`
+#### `elasticstack_kibana_security_detection_rule` `actions.alerts_filter`
 
-- `actions` is now a nested **block** list (`actions { ... }`) instead of an attribute list (`actions = [{ ... }]`).
-- `actions.frequency` is now a nested **block** (`frequency { ... }`) instead of a nested attribute.
-- `actions.alerts_filter` is now a structured nested block with `query` (`kql`, `filters_json`) and optional `timeframe` (`days`, `timezone`, `hours_start`, `hours_end`), replacing the broken `map(string)` shape.
-
-Example migration:
+`actions.alerts_filter` is now a structured nested attribute with a `query` sub-attribute (`kql`, `filters_json`) and an optional `timeframe` sub-attribute (`days`, `timezone`, `hours_start`, `hours_end`), replacing the broken `map(string)` shape. The previous shape was non-functional, so any existing configuration must be rewritten:
 
 ```hcl
-# Before
 actions = [{
   action_type_id = ".slack"
   id             = elasticstack_kibana_action_connector.example.connector_id
@@ -21,31 +16,19 @@ actions = [{
     summary     = true
     throttle    = "10m"
   }
-}]
-
-# After
-actions {
-  action_type_id = ".slack"
-  id             = elasticstack_kibana_action_connector.example.connector_id
-  params         = jsonencode({ message = "Alert" })
-  frequency {
-    notify_when = "onActiveAlert"
-    summary     = true
-    throttle    = "10m"
-  }
-  alerts_filter {
-    query {
+  alerts_filter = {
+    query = {
       kql          = "event.action : \"test\""
       filters_json = jsonencode([])
     }
-    timeframe {
+    timeframe = {
       days        = [1, 2, 3, 4, 5]
       timezone    = "UTC"
       hours_start = "08:00"
       hours_end   = "17:00"
     }
   }
-}
+}]
 ```
 
 ## [0.15.2] - 2026-05-18
