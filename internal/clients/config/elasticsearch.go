@@ -27,9 +27,9 @@ import (
 	"strings"
 
 	"github.com/elastic/go-elasticsearch/v8"
+	"github.com/elastic/terraform-provider-elasticstack/internal/debugutils"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
 )
 
 type elasticsearchConfig struct {
@@ -115,7 +115,7 @@ func newElasticsearchConfigFromFramework(ctx context.Context, cfg ProviderConfig
 		}
 	}
 
-	if logging.IsDebugOrHigher() {
+	if debugutils.IsDebugOrHigher() {
 		config.config.EnableDebugLogger = true
 		config.config.Logger = &debugLogger{Name: "elasticsearch"}
 	}
