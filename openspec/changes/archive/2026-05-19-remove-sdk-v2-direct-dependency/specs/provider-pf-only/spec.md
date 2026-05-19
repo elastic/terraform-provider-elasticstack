@@ -1,4 +1,4 @@
-## MODIFIED Requirements
+## ADDED Requirements
 
 ### Requirement: SDK v2 direct dependency is removed
 The provider SHALL remove all direct `require` dependencies on `github.com/hashicorp/terraform-plugin-sdk/v2` from `go.mod` and SHALL NOT import any SDK v2 package directly in provider source or test code.
