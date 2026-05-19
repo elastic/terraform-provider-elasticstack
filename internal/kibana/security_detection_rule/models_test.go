@@ -966,6 +966,29 @@ func TestFlattenActionAlertsFilterDefaultFiltersJSON(t *testing.T) {
 	require.Equal(t, "[]", query.FiltersJSON.ValueString())
 }
 
+func TestActionAlertsFilterRoundTripKqlOnly(t *testing.T) {
+	ctx := context.Background()
+	var diags diag.Diagnostics
+
+	apiFilter := kbapi.SecurityDetectionsAPIRuleActionAlertsFilter{
+		"query": map[string]any{
+			"kql": `event.action : "test"`,
+		},
+	}
+
+	flat := flattenActionAlertsFilter(ctx, &apiFilter, &diags)
+	require.Empty(t, diags)
+
+	expanded := expandActionAlertsFilter(ctx, flat, &diags)
+	require.Empty(t, diags)
+	require.NotNil(t, expanded)
+
+	query, ok := (*expanded)["query"].(map[string]any)
+	require.True(t, ok)
+	require.Equal(t, `event.action : "test"`, query["kql"])
+	require.Equal(t, []any{}, query["filters"])
+}
+
 // TestSlackSubActionParamsRoundTrip verifies that nested objects in action params
 // (e.g. Slack's subActionParams) survive the API→TF→API round-trip via JSON encoding.
 func TestSlackSubActionParamsRoundTrip(t *testing.T) {

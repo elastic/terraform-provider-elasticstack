@@ -852,6 +852,7 @@ func GetSchema() schema.Schema {
 											CustomType:          jsontypes.NormalizedType{},
 											MarkdownDescription: "JSON-encoded array of Kibana filter DSL objects. Use `jsonencode([])` for an empty filter list.",
 											Optional:            true,
+											Computed:            true,
 										},
 									},
 								},
