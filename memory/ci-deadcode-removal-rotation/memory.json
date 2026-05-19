@@ -82,6 +82,12 @@
       "package": "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi",
       "attemptedAt": "2026-05-18T04:40:19.635332215Z",
       "reason": "pr_created"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/enrich.GetResourceSchema",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/enrich",
+      "attemptedAt": "2026-05-19T04:38:18.639320871Z",
+      "reason": "pr_created"
     }
   ]
 }
