@@ -1,3 +1,10 @@
+## [Unreleased]
+
+### Added
+
+- Add `elasticstack_elasticsearch_ml_calendar` and `elasticstack_elasticsearch_ml_calendar_event` resources for ML calendars and scheduled calendar events ([#1969](https://github.com/elastic/terraform-provider-elasticstack/pull/1969))
+  - Elasticsearch Plugin Framework envelope `Read`/`Delete` resolve composite state ids with a first-`/` split via `CompositeIDFromStrForElasticsearch`, so the resource segment may contain further slashes (for example ML calendar events). Global `CompositeIDFromStr` behavior for Kibana and other non-envelope callers matches previous releases.
+
 ## [0.15.2] - 2026-05-18
 
 ### Changes

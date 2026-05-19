@@ -38,6 +38,9 @@ type CompositeID struct {
 
 const ServerlessFlavor = "serverless"
 
+// CompositeIDFromStr parses an ID as <cluster_uuid>/<resource_identifier> using the historical
+// rule: the id must split into exactly two path segments (no additional unescaped slashes in the
+// overall id). This is used for Kibana and other call sites that must preserve legacy behavior.
 func CompositeIDFromStr(id string) (*CompositeID, fwdiags.Diagnostics) {
 	idParts := strings.Split(id, "/")
 	if len(idParts) != 2 {
@@ -51,6 +54,36 @@ func CompositeIDFromStr(id string) (*CompositeID, fwdiags.Diagnostics) {
 	return &CompositeID{
 		ClusterID:  idParts[0],
 		ResourceID: idParts[1],
+	}, nil
+}
+
+// CompositeIDFromStrForElasticsearch parses Elasticsearch composite state ids for
+// [entitycore.ElasticsearchResource] Read/Delete. It splits only on the first "/", so
+// resource_identifier may contain additional slashes (for example ML calendar events
+// "<calendar_id>/<event_id>" after the cluster segment).
+//
+// For backward compatibility, an ID with an empty cluster segment and a non-empty resource
+// segment (for example "/<synthetics_monitor_id>" from legacy [CompositeID.String] formatting) is
+// accepted; an empty resource segment (including a trailing slash after the cluster) is rejected.
+func CompositeIDFromStrForElasticsearch(id string) (*CompositeID, fwdiags.Diagnostics) {
+	parts := strings.SplitN(id, "/", 2)
+	if len(parts) != 2 || parts[1] == "" {
+		return nil, fwdiags.Diagnostics{
+			fwdiags.NewErrorDiagnostic(
+				"Wrong resource ID.",
+				"Resource ID must have following format: <cluster_uuid>/<resource identifier>",
+			),
+		}
+	}
+	if parts[0] == "" {
+		return &CompositeID{
+			ClusterID:  "",
+			ResourceID: parts[1],
+		}, nil
+	}
+	return &CompositeID{
+		ClusterID:  parts[0],
+		ResourceID: parts[1],
 	}, nil
 }
 

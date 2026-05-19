@@ -186,7 +186,7 @@ func resolveElasticsearchReadResourceID(model ElasticsearchResourceModel, writeF
 	if writeFallback != "" {
 		return writeFallback, diags
 	}
-	compID, compDiags := clients.CompositeIDFromStr(model.GetID().ValueString())
+	compID, compDiags := clients.CompositeIDFromStrForElasticsearch(model.GetID().ValueString())
 	if compDiags.HasError() {
 		// Fall back to GetResourceID when the state ID is not a composite.
 		// This supports resources that were created by older provider versions
