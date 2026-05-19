@@ -1563,8 +1563,7 @@ func TestAccResourceSecurityDetectionRule_EmptyLists(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "type", "query"),
 					resource.TestCheckResourceAttr(resourceName, "query", "*:*"),
 
-					// actions is a block list; omitting it yields null (not an empty list)
-					resource.TestCheckNoResourceAttr(resourceName, "actions"),
+					resource.TestCheckResourceAttr(resourceName, "actions.#", "0"),
 					resource.TestCheckResourceAttr(resourceName, "exceptions_list.#", "0"),
 					resource.TestCheckResourceAttr(resourceName, "severity_mapping.#", "0"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "0"),
@@ -1603,8 +1602,8 @@ func TestAccResourceSecurityDetectionRule_EmptyLists(t *testing.T) {
 					"name": config.StringVariable(ruleName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					// After update back to empty lists, verify list attributes are empty (actions omitted)
-					resource.TestCheckNoResourceAttr(resourceName, "actions"),
+					// After update back to empty lists, verify list attributes are empty
+					resource.TestCheckResourceAttr(resourceName, "actions.#", "0"),
 					resource.TestCheckResourceAttr(resourceName, "exceptions_list.#", "0"),
 					resource.TestCheckResourceAttr(resourceName, "severity_mapping.#", "0"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "0"),

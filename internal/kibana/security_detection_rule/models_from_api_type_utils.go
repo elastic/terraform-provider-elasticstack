@@ -159,7 +159,7 @@ func convertActionsToModel(ctx context.Context, apiActions []kbapi.SecurityDetec
 	var diags diag.Diagnostics
 
 	if len(apiActions) == 0 {
-		return types.ListNull(getActionElementType()), diags
+		return types.ListValueMust(getActionElementType(), []attr.Value{}), diags
 	}
 
 	actions := make([]ActionModel, 0)
@@ -843,7 +843,11 @@ func (d *Data) updateActionsFromAPI(ctx context.Context, actions []kbapi.Securit
 			d.Actions = actionsListValue
 		}
 	} else {
-		d.Actions = types.ListNull(getActionElementType())
+		actionsListValue, actionDiags := convertActionsToModel(ctx, []kbapi.SecurityDetectionsAPIRuleAction{})
+		diags.Append(actionDiags...)
+		if !actionDiags.HasError() {
+			d.Actions = actionsListValue
+		}
 	}
 
 	return diags
