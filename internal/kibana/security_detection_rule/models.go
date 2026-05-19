@@ -181,8 +181,25 @@ type ActionModel struct {
 	Params       jsontypes.Normalized `tfsdk:"params"`
 	Group        types.String         `tfsdk:"group"`
 	UUID         types.String         `tfsdk:"uuid"`
-	AlertsFilter types.Map            `tfsdk:"alerts_filter"`
+	AlertsFilter types.Object         `tfsdk:"alerts_filter"`
 	Frequency    types.Object         `tfsdk:"frequency"`
+}
+
+type ActionAlertsFilterModel struct {
+	Query     types.Object `tfsdk:"query"`
+	Timeframe types.Object `tfsdk:"timeframe"`
+}
+
+type ActionAlertsFilterQueryModel struct {
+	Kql         types.String         `tfsdk:"kql"`
+	FiltersJSON jsontypes.Normalized `tfsdk:"filters_json"`
+}
+
+type ActionAlertsFilterTimeframeModel struct {
+	Days       types.List   `tfsdk:"days"`
+	Timezone   types.String `tfsdk:"timezone"`
+	HoursStart types.String `tfsdk:"hours_start"`
+	HoursEnd   types.String `tfsdk:"hours_end"`
 }
 
 type ActionFrequencyModel struct {

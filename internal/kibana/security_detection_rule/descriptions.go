@@ -30,3 +30,9 @@ var missingFieldsStrategyMarkdownDescription string
 
 //go:embed descriptions/building_block_type.md
 var buildingBlockTypeMarkdownDescription string
+
+//go:embed descriptions/alerts_filter.md
+var alertsFilterMarkdownDescription string
+
+//go:embed descriptions/alerts_filter_timeframe_days.md
+var alertsFilterTimeframeDaysMarkdownDescription string
