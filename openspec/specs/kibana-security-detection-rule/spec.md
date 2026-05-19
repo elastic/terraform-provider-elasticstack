@@ -172,7 +172,7 @@ resource "elasticstack_kibana_security_detection_rule" "example" {
     alerts_filter {               # optional block
       query {                     # optional block
         kql          = <optional, string>
-        filters_json = <optional, JSON-normalized string>  # jsonencode([]) for empty
+        filters_json = <optional, computed, JSON-normalized string>  # jsonencode([]) for empty
       }
       timeframe {                 # optional block
         days        = <optional, list(int64)>  # 1–7
@@ -705,7 +705,7 @@ The `alerts_filter` attribute on `actions` SHALL be a `SingleNestedBlock` (not a
 
 - A `query` nested block (optional) with:
   - `kql` — optional string. Defines a KQL query filter that determines whether the action runs.
-  - `filters_json` — optional `jsontypes.Normalized` JSON string. Encodes the Kibana filter DSL array (same type as `params`). Use `jsonencode([])` for an empty filter list. Named `filters_json` to allow a future typed `filters` list attribute to be added without conflict.
+  - `filters_json` — optional + computed `jsontypes.Normalized` JSON string. Encodes the Kibana filter DSL array (same type as `params`). Use `jsonencode([])` for an empty filter list. Marked computed because the provider populates `[]` from the API when the user omits the attribute, keeping round-trip plans clean. Named `filters_json` to allow a future typed `filters` list attribute to be added without conflict.
 - A `timeframe` nested block (optional) with:
   - `days` — optional list of int64 (values 1–7, where 1=Monday, 7=Sunday).
   - `timezone` — optional string. ISO time zone name (e.g., `"UTC"`, `"Europe/London"`).
