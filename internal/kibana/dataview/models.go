@@ -237,7 +237,7 @@ func (model *dataViewModel) populateFromAPI(ctx context.Context, data *kbapi.Dat
 
 	model.ID = types.StringValue(resourceID.String())
 	model.DataView = typeutils.StructToObjectType(ctx, data.DataView, getDataViewAttrTypes(), path.Root("data_view"), &diags,
-		func(item kbapi.DataViewsDataViewResponseObjectInner, meta typeutils.ObjectMeta) innerModel {
+		func(item dataViewsDataViewResponseObjectInner, meta typeutils.ObjectMeta) innerModel {
 			dvInner := typeutils.ObjectTypeAs[innerModel](ctx, model.DataView, meta.Path, &diags)
 			if dvInner == nil {
 				dvInner = &innerModel{}
@@ -250,7 +250,7 @@ func (model *dataViewModel) populateFromAPI(ctx context.Context, data *kbapi.Dat
 				TimeFieldName: types.StringPointerValue(item.TimeFieldName),
 				SourceFilters: semanticEqualEmptySlice(dvInner.SourceFilters,
 					typeutils.SliceToListType(ctx, typeutils.Deref(item.SourceFilters), types.StringType, meta.Path.AtName("source_filters"), &diags,
-						func(item kbapi.DataViewsSourcefilterItem, _ typeutils.ListMeta) string {
+						func(item dataViewsSourcefilterItem, _ typeutils.ListMeta) string {
 							return item.Value
 						})),
 				FieldAttributes: func() FieldAttrsValue {
@@ -392,7 +392,7 @@ func (model dataViewModel) toAPIUpdateModel(ctx context.Context) (kbapi.DataView
 				}
 				sourceFilters := typeutils.ListTypeToSlice(ctx, item.SourceFilters, meta.Path.AtName("source_filters"), &diags, convertSourceFilter)
 				if sourceFilters == nil {
-					sourceFilters = []kbapi.DataViewsSourcefilterItem{}
+					sourceFilters = []dataViewsSourcefilterItem{}
 				}
 				return kbapi.DataViewsUpdateDataViewRequestObjectInner{
 					AllowNoIndex:    item.AllowNoIndex.ValueBoolPointer(),
@@ -465,14 +465,14 @@ func convertFieldFormat(ctx context.Context, item fieldFormatModel, meta typeuti
 func convertRuntimeFieldMap(item runtimeFieldModel, _ typeutils.MapMeta) kbapi.DataViewsRuntimefieldmap {
 	return kbapi.DataViewsRuntimefieldmap{
 		Type: item.Type.ValueString(),
-		Script: kbapi.DataViewsRuntimefieldmapScript{
+		Script: dataViewsRuntimefieldmapScript{
 			Source: item.ScriptSource.ValueStringPointer(),
 		},
 	}
 }
 
-func convertSourceFilter(item string, _ typeutils.ListMeta) kbapi.DataViewsSourcefilterItem {
-	return kbapi.DataViewsSourcefilterItem{Value: item}
+func convertSourceFilter(item string, _ typeutils.ListMeta) dataViewsSourcefilterItem {
+	return dataViewsSourcefilterItem{Value: item}
 }
 
 func (model dataViewModel) getViewIDAndSpaceID() (viewID string, spaceID string) {
@@ -487,6 +487,31 @@ func (model dataViewModel) getViewIDAndSpaceID() (viewID string, spaceID string)
 	}
 
 	return
+}
+
+// Type aliases for formerly-named structs that were inlined in the generated Kibana client.
+type dataViewsDataViewResponseObjectInner = struct {
+	AllowNoIndex    *kbapi.DataViewsAllownoindex               `json:"allowNoIndex,omitempty"`
+	FieldAttrs      *map[string]kbapi.DataViewsFieldattrs      `json:"fieldAttrs,omitempty"`
+	FieldFormats    *kbapi.DataViewsFieldformats               `json:"fieldFormats,omitempty"`
+	Fields          *map[string]interface{}                    `json:"fields,omitempty"`
+	Id              *string                                    `json:"id,omitempty"`
+	Name            *string                                    `json:"name,omitempty"`
+	Namespaces      *kbapi.DataViewsNamespaces                 `json:"namespaces,omitempty"`
+	RuntimeFieldMap *map[string]kbapi.DataViewsRuntimefieldmap `json:"runtimeFieldMap,omitempty"`
+	SourceFilters   *kbapi.DataViewsSourcefilters              `json:"sourceFilters,omitempty"`
+	TimeFieldName   *kbapi.DataViewsTimefieldname              `json:"timeFieldName,omitempty"`
+	Title           *kbapi.DataViewsTitle                      `json:"title,omitempty"`
+	TypeMeta        *kbapi.DataViewsTypemetaResponse           `json:"typeMeta,omitempty"`
+	Version         *string                                    `json:"version,omitempty"`
+}
+
+type dataViewsSourcefilterItem = struct {
+	Value string `json:"value"`
+}
+
+type dataViewsRuntimefieldmapScript = struct {
+	Source *string `json:"source,omitempty"`
 }
 
 type dataViewModel struct {

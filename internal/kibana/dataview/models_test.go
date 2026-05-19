@@ -54,7 +54,7 @@ func TestPopulateFromAPI(t *testing.T) {
 				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
 			},
 			response: kbapi.DataViewsDataViewResponseObject{
-				DataView: &kbapi.DataViewsDataViewResponseObjectInner{
+				DataView: &dataViewsDataViewResponseObjectInner{
 					Title:         new("title"),
 					Name:          new("name"),
 					Id:            new("id"),
@@ -79,7 +79,7 @@ func TestPopulateFromAPI(t *testing.T) {
 					RuntimeFieldMap: &map[string]kbapi.DataViewsRuntimefieldmap{
 						"runtime_field": {
 							Type: "keyword",
-							Script: kbapi.DataViewsRuntimefieldmapScript{
+							Script: dataViewsRuntimefieldmapScript{
 								Source: new("emit('hello')"),
 							},
 						},
@@ -136,7 +136,7 @@ func TestPopulateFromAPI(t *testing.T) {
 				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
 			},
 			response: kbapi.DataViewsDataViewResponseObject{
-				DataView: &kbapi.DataViewsDataViewResponseObjectInner{
+				DataView: &dataViewsDataViewResponseObjectInner{
 					Id:         new("id"),
 					Namespaces: &[]string{"default"},
 				},
@@ -170,7 +170,7 @@ func TestPopulateFromAPI(t *testing.T) {
 				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
 			},
 			response: kbapi.DataViewsDataViewResponseObject{
-				DataView: &kbapi.DataViewsDataViewResponseObjectInner{
+				DataView: &dataViewsDataViewResponseObjectInner{
 					Id:         new("dataview_id"),
 					Namespaces: &[]string{"space_id"},
 				},
@@ -204,7 +204,7 @@ func TestPopulateFromAPI(t *testing.T) {
 				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
 			},
 			response: kbapi.DataViewsDataViewResponseObject{
-				DataView: &kbapi.DataViewsDataViewResponseObjectInner{
+				DataView: &dataViewsDataViewResponseObjectInner{
 					Id:         new("placeholder"),
 					Namespaces: &[]string{"test", "ns1", "ns2"},
 				},
@@ -237,7 +237,7 @@ func TestPopulateFromAPI(t *testing.T) {
 				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
 			},
 			response: kbapi.DataViewsDataViewResponseObject{
-				DataView: &kbapi.DataViewsDataViewResponseObjectInner{
+				DataView: &dataViewsDataViewResponseObjectInner{
 					Id: new("view-id"),
 					FieldAttrs: &map[string]kbapi.DataViewsFieldattrs{
 						"host.hostname": {
@@ -274,7 +274,7 @@ func TestPopulateFromAPI(t *testing.T) {
 				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
 			},
 			response: kbapi.DataViewsDataViewResponseObject{
-				DataView: &kbapi.DataViewsDataViewResponseObjectInner{
+				DataView: &dataViewsDataViewResponseObjectInner{
 					Id: new("view-id"),
 					FieldAttrs: &map[string]kbapi.DataViewsFieldattrs{
 						// Kibana echoes cleared field metadata using explicit JSON null keys.
@@ -317,7 +317,7 @@ func TestPopulateFromAPI(t *testing.T) {
 				}, getDataViewAttrTypes(), path.Root("data_view"), &diags),
 			},
 			response: kbapi.DataViewsDataViewResponseObject{
-				DataView: &kbapi.DataViewsDataViewResponseObjectInner{
+				DataView: &dataViewsDataViewResponseObjectInner{
 					Id: new("view-id"),
 					FieldAttrs: &map[string]kbapi.DataViewsFieldattrs{
 						"host.hostname": {
@@ -635,12 +635,12 @@ func TestToAPICreateModel(t *testing.T) {
 					RuntimeFieldMap: &map[string]kbapi.DataViewsRuntimefieldmap{
 						"runtime_field": {
 							Type: "keyword",
-							Script: kbapi.DataViewsRuntimefieldmapScript{
+							Script: dataViewsRuntimefieldmapScript{
 								Source: new("emit(\"hello\")"),
 							},
 						},
 					},
-					SourceFilters: &[]kbapi.DataViewsSourcefilterItem{
+					SourceFilters: &[]dataViewsSourcefilterItem{
 						{Value: "field1"},
 						{Value: "field2"},
 					},
@@ -956,12 +956,12 @@ func TestToAPIUpdateModel(t *testing.T) {
 					RuntimeFieldMap: &map[string]kbapi.DataViewsRuntimefieldmap{
 						"runtime_field": {
 							Type: "keyword",
-							Script: kbapi.DataViewsRuntimefieldmapScript{
+							Script: dataViewsRuntimefieldmapScript{
 								Source: new("emit(\"hello\")"),
 							},
 						},
 					},
-					SourceFilters: &[]kbapi.DataViewsSourcefilterItem{
+					SourceFilters: &[]dataViewsSourcefilterItem{
 						{Value: "field1"},
 						{Value: "field2"},
 					},
@@ -993,7 +993,7 @@ func TestToAPIUpdateModel(t *testing.T) {
 					FieldFormats:    &kbapi.DataViewsFieldformats{},
 					Name:            new("name"),
 					RuntimeFieldMap: &map[string]kbapi.DataViewsRuntimefieldmap{},
-					SourceFilters:   &[]kbapi.DataViewsSourcefilterItem{},
+					SourceFilters:   &[]dataViewsSourcefilterItem{},
 					TimeFieldName:   new("time_field_name"),
 					Title:           new("title"),
 				},

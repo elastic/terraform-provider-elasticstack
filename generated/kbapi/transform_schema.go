@@ -799,13 +799,6 @@ func transformKibanaPaths(schema *Schema) {
 		}
 	}
 
-	// Data views
-	// https://github.com/elastic/kibana/blob/main/src/plugins/data_views/server/rest_api_routes/schema.ts
-
-	dataViewsPath := schema.MustGetPath("/s/{spaceId}/api/data_views")
-
-	dataViewsPath.Get.CreateRef(schema, "get_data_views_response_item", "responses.200.content.application/json.schema.properties.data_view.items")
-
 	sytheticsParamsPath := schema.MustGetPath("/api/synthetics/params")
 	sytheticsParamsPath.Post.CreateRef(schema, "create_param_response", "responses.200.content.application/json.schema")
 
@@ -884,10 +877,6 @@ func transformKibanaPaths(schema *Schema) {
 		"schemas.Synthetics_getPrivateLocation.properties.geo.properties.lon.format",
 		"double",
 	)
-
-	schema.Components.CreateRef(schema, "Data_views_data_view_response_object_inner", "schemas.Data_views_data_view_response_object.properties.data_view")
-	schema.Components.CreateRef(schema, "Data_views_sourcefilter_item", "schemas.Data_views_sourcefilters.items")
-	schema.Components.CreateRef(schema, "Data_views_runtimefieldmap_script", "schemas.Data_views_runtimefieldmap.properties.script")
 
 	schema.Components.Set("schemas.Data_views_fieldformats.additionalProperties", Map{
 		"$ref": "#/components/schemas/Data_views_fieldformat",
