@@ -48,9 +48,11 @@ func getSchemaFactory(_ context.Context) schema.Schema {
 				},
 			},
 			"mappings": schema.StringAttribute{
-				Description: "JSON mappings object to manage on the index. All top-level keys (`properties`, `dynamic`, `_source`, `dynamic_templates`, `runtime`, etc.) are supported. Only the keys and fields declared here are tracked; dynamic extras added by Elasticsearch are ignored. Destroying this resource does not remove mappings from the index (a no-op).",
-				Required:    true,
-				CustomType:  index.MappingsType{},
+				Description: "JSON mappings object to manage on the index. All top-level keys (`properties`, `dynamic`, `_source`, " +
+					"`dynamic_templates`, `runtime`, etc.) are supported. Only the keys and fields declared here are tracked; " +
+					"dynamic extras added by Elasticsearch are ignored. Destroying this resource does not remove mappings from the index (a no-op).",
+				Required:   true,
+				CustomType: index.MappingsType{},
 			},
 		},
 	}

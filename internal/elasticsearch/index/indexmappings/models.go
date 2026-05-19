@@ -23,10 +23,10 @@ import (
 )
 
 type tfModel struct {
-	ID                      types.String         `tfsdk:"id"`
-	Index                   types.String         `tfsdk:"index"`
-	Mappings                index.MappingsValue  `tfsdk:"mappings"`
-	ElasticsearchConnection types.List           `tfsdk:"elasticsearch_connection"`
+	ID                      types.String        `tfsdk:"id"`
+	Index                   types.String        `tfsdk:"index"`
+	Mappings                index.MappingsValue `tfsdk:"mappings"`
+	ElasticsearchConnection types.List          `tfsdk:"elasticsearch_connection"`
 }
 
 func (model tfModel) GetID() types.String                    { return model.ID }

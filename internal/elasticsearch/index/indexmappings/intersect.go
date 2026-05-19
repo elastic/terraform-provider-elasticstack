@@ -17,6 +17,8 @@
 
 package indexmappings
 
+import "maps"
+
 // intersectMappings retains only top-level keys present in state. Within properties,
 // only field names from the state's properties tree are kept at every nesting level.
 func intersectMappings(apiMappings, stateMappings map[string]any) map[string]any {
@@ -67,9 +69,7 @@ func intersectProperties(apiProps, stateProps map[string]any) map[string]any {
 			stateNestedMap, stateNestedOK := stateNested.(map[string]any)
 			if apiNestedOK && stateNestedOK {
 				out := make(map[string]any, len(apiMap))
-				for k, v := range apiMap {
-					out[k] = v
-				}
+				maps.Copy(out, apiMap)
 				if intersected := intersectProperties(apiNestedMap, stateNestedMap); len(intersected) > 0 {
 					out["properties"] = intersected
 				} else {
