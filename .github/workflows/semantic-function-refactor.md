@@ -103,8 +103,8 @@ mcp-servers:
     args:
     - --network
     - host
-    container: "ghcr.io/github/serena-mcp-server:latest"
-    entrypoint: "serena"
+    container: ghcr.io/github/serena-mcp-server:latest
+    entrypoint: serena
     entrypointArgs:
     - start-mcp-server
     - --context
@@ -117,12 +117,12 @@ name: Semantic Function Refactor
 timeout-minutes: 15
 tools:
   bash:
-  - find . -name '*.go' ! -name '*_test.go' -type f
-  - find . -type f -name '*.go' ! -name '*_test.go'
+  - find . -name "*.go" ! -name "*_test.go" -type f
+  - find . -type f -name "*.go" ! -name "*_test.go"
   - find . -maxdepth 2 -ls
   - wc -l ./**/*.go
   - head -n * ./**/*.go
-  - grep -r '^func ' . --include='*.go'
+  - grep -r "^func " . --include="*.go"
   - cat ./**/*.go
   repo-memory:
   - create-orphan: true

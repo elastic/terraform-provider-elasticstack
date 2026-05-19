@@ -78,8 +78,8 @@ test('workflow configures Serena MCP server for semantic Go analysis', () => {
   const source = workflowSource();
   const lock = lockSource();
   assert.match(source, /mcp-servers:/);
-  assert.match(source, /container:\s*"ghcr\.io\/github\/serena-mcp-server:latest"/);
-  assert.match(source, /entrypoint:\s*"serena"/);
+  assert.match(source, /container:\s*ghcr\.io\/github\/serena-mcp-server:latest/);
+  assert.match(source, /entrypoint:\s*serena/);
   assert.match(source, /allowed:/);
   assert.match(lock, /"serena":\s*\{/);
   assert.match(lock, /"container":\s*"ghcr\.io\/github\/serena-mcp-server:latest"/);
@@ -100,8 +100,8 @@ test('workflow configures bash tools for Go source navigation', () => {
   const source = workflowSource();
   assert.match(source, /tools:/);
   assert.match(source, /bash:/);
-  assert.match(source, /find \. -name '\*\.go' ! -name '\*_test\.go' -type f/);
-  assert.match(source, /grep -r '\^func ' \. --include='\*\.go'/);
+  assert.match(source, /find \. -name "\*\.go" ! -name "\*_test\.go" -type f/);
+  assert.match(source, /grep -r "\^func " \. --include="\*\.go"/);
 });
 
 test('compiled lock preserves LiteLLM model and allowed domains', () => {
