@@ -355,6 +355,12 @@ func propertiesSemanticallyEqual(userProps, apiProps map[string]any) bool {
 	return true
 }
 
+// FieldSemanticallyEqual checks if two mapping object values are semantically equal,
+// allowing for ES-auto-populated values such as semantic_text model_settings.
+func FieldSemanticallyEqual(userFieldRaw, apiFieldRaw any) bool {
+	return fieldSemanticallyEqual(userFieldRaw, apiFieldRaw)
+}
+
 // fieldSemanticallyEqual checks if two field definitions are semantically equal,
 // allowing for ES-auto-populated values such as semantic_text model_settings.
 func fieldSemanticallyEqual(userFieldRaw, apiFieldRaw any) bool {
@@ -388,10 +394,44 @@ func fieldSemanticallyEqual(userFieldRaw, apiFieldRaw any) bool {
 			continue
 		}
 
+		if key == "script" {
+			if scriptSemanticallyEqual(userVal, apiVal) {
+				continue
+			}
+			return false
+		}
+
+		if userMap, userIsMap := userVal.(map[string]any); userIsMap {
+			if apiMap, apiIsMap := apiVal.(map[string]any); apiIsMap {
+				if fieldSemanticallyEqual(userMap, apiMap) {
+					continue
+				}
+				return false
+			}
+		}
+
 		if !scalarSemanticEqual(userVal, apiVal) {
 			return false
 		}
 	}
 
 	return true
+}
+
+// scriptSemanticallyEqual allows a user-authored script string to match Elasticsearch's
+// expanded script object form returned by the API.
+func scriptSemanticallyEqual(userVal, apiVal any) bool {
+	userStr, userIsStr := userVal.(string)
+	apiMap, apiIsMap := apiVal.(map[string]any)
+	if userIsStr && apiIsMap {
+		source, ok := apiMap["source"].(string)
+		return ok && userStr == source
+	}
+	apiStr, apiIsStr := apiVal.(string)
+	userMap, userIsMap := userVal.(map[string]any)
+	if apiIsStr && userIsMap {
+		source, ok := userMap["source"].(string)
+		return ok && apiStr == source
+	}
+	return scalarSemanticEqual(userVal, apiVal)
 }

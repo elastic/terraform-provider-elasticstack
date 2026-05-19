@@ -61,6 +61,52 @@ func TestIntersectMappings_retainsOtherTopLevelKeys(t *testing.T) {
 	assert.Equal(t, false, got["dynamic"])
 }
 
+func TestIntersectMappings_retainsDeclaredKeyWhenAPIOmits(t *testing.T) {
+	api := map[string]any{
+		"properties": map[string]any{
+			"title": map[string]any{"type": "text"},
+		},
+	}
+	state := map[string]any{
+		"_source": map[string]any{
+			"enabled": true,
+		},
+		"properties": map[string]any{
+			"title": map[string]any{"type": "text"},
+		},
+	}
+
+	got := intersectMappings(api, state)
+	assert.Equal(t, true, got["_source"].(map[string]any)["enabled"])
+}
+
+func TestIntersectMappings_keepsDeclaredShapeWhenSemanticallyEqual(t *testing.T) {
+	api := map[string]any{
+		"runtime": map[string]any{
+			"day_of_week": map[string]any{
+				"type": "keyword",
+				"script": map[string]any{
+					"lang":   "painless",
+					"source": "emit(1)",
+				},
+			},
+		},
+	}
+	state := map[string]any{
+		"runtime": map[string]any{
+			"day_of_week": map[string]any{
+				"type":   "keyword",
+				"script": "emit(1)",
+			},
+		},
+	}
+
+	got := intersectMappings(api, state)
+	runtime := got["runtime"].(map[string]any)
+	field := runtime["day_of_week"].(map[string]any)
+	assert.Equal(t, "emit(1)", field["script"])
+}
+
 func TestIntersectProperties_nested(t *testing.T) {
 	api := map[string]any{
 		"author": map[string]any{

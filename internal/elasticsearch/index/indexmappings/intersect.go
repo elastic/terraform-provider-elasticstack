@@ -17,21 +17,26 @@
 
 package indexmappings
 
-import "maps"
+import (
+	"maps"
+
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
+)
 
 // intersectMappings retains only top-level keys present in state. Within properties,
 // only field names from the state's properties tree are kept at every nesting level.
 //
-// For other top-level keys the full API value (apiVal) is stored so state matches
-// Elasticsearch's canonical form. Plan drift for those keys is handled by
-// index.MappingsType semantic equality (MappingsSemanticallyEqual and
-// scalarSemanticEqual, including bool/string normalization in NewMappingsValue),
-// not by subset intersection at this layer.
+// For other top-level keys, when the API value is semantically equal to the
+// declared state (FieldSemanticallyEqual), the declared value is kept so
+// read-after-write matches the configuration shape. Otherwise the API value is
+// stored. Plan-time drift is still handled by index.MappingsType semantic equality.
 func intersectMappings(apiMappings, stateMappings map[string]any) map[string]any {
 	result := make(map[string]any, len(stateMappings))
 	for key, stateVal := range stateMappings {
 		apiVal, ok := apiMappings[key]
 		if !ok {
+			// Elasticsearch may omit top-level keys that match defaults; keep the declared value.
+			result[key] = stateVal
 			continue
 		}
 		if key == "properties" {
@@ -43,6 +48,10 @@ func intersectMappings(apiMappings, stateMappings map[string]any) map[string]any
 				}
 				continue
 			}
+		}
+		if index.FieldSemanticallyEqual(stateVal, apiVal) {
+			result[key] = stateVal
+			continue
 		}
 		result[key] = apiVal
 	}
