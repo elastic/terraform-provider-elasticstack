@@ -34,7 +34,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-const mappingsResourceName = "elasticstack_elasticsearch_index_mappings.test"
+const (
+	mappingsResourceName = "elasticstack_elasticsearch_index_mappings.test"
+	indexResourceName    = "elasticstack_elasticsearch_index.test"
+)
+
+var indexMappingsIDRegexp = regexp.MustCompile(`^[A-Za-z0-9_-]+/.+$`)
 
 func TestAccResourceIndexMappings_basic(t *testing.T) {
 	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
@@ -51,8 +56,8 @@ func TestAccResourceIndexMappings_basic(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(mappingsResourceName, "index", indexName),
-					resource.TestCheckResourceAttrSet(mappingsResourceName, "id"),
-					checkStateMappingsContainFields("title"),
+					resource.TestMatchResourceAttr(mappingsResourceName, "id", indexMappingsIDRegexp),
+					checkStateMappingsProperties([]string{"title"}, nil),
 				),
 			},
 			{
@@ -84,6 +89,9 @@ func TestAccResourceIndexMappings_update(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"index_name": config.StringVariable(indexName),
 				},
+				Check: resource.ComposeTestCheckFunc(
+					checkStateMappingsProperties([]string{"title"}, nil),
+				),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -97,7 +105,7 @@ func TestAccResourceIndexMappings_update(t *testing.T) {
 					},
 				},
 				Check: resource.ComposeTestCheckFunc(
-					checkStateMappingsContainFields("title", "body"),
+					checkStateMappingsProperties([]string{"title", "body"}, nil),
 				),
 			},
 			{
@@ -141,6 +149,9 @@ func TestAccResourceIndexMappings_drift(t *testing.T) {
 				},
 				PlanOnly:           true,
 				ExpectNonEmptyPlan: false,
+				Check: resource.ComposeTestCheckFunc(
+					checkStateMappingsProperties([]string{"title"}, []string{"tags"}),
+				),
 			},
 		},
 	})
@@ -161,7 +172,12 @@ func TestAccResourceIndexMappings_allTopLevelKeys(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(mappingsResourceName, "index", indexName),
-					resource.TestCheckResourceAttrSet(mappingsResourceName, "mappings"),
+					checkStateMappingsTopLevelKeys("dynamic", "_source", "dynamic_templates", "runtime", "properties"),
+					checkStateMappingsDynamic(false),
+					checkStateMappingsSourceEnabled(true),
+					checkStateMappingsRuntimeFields("day_of_week"),
+					checkStateMappingsDynamicTemplates(1),
+					checkStateMappingsProperties([]string{"title"}, nil),
 				),
 			},
 			{
@@ -172,6 +188,102 @@ func TestAccResourceIndexMappings_allTopLevelKeys(t *testing.T) {
 				},
 				PlanOnly:           true,
 				ExpectNonEmptyPlan: false,
+			},
+		},
+	})
+}
+
+func TestAccResourceIndexMappings_import(t *testing.T) {
+	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIndexMappingsDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("precondition"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("full"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				ResourceName:      mappingsResourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateIdFunc: importStateIDFromIndexResource,
+				Check: resource.ComposeTestCheckFunc(
+					checkStateMappingsProperties([]string{"title", "body"}, nil),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("narrow"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectNonEmptyPlan(),
+					},
+				},
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("narrow"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					checkStateMappingsProperties([]string{"title"}, []string{"body"}),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("narrow"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
+			},
+		},
+	})
+}
+
+func TestAccResourceIndexMappings_indexDeletedOutOfBand(t *testing.T) {
+	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIndexMappingsDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("apply"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("apply"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				PreConfig: func() {
+					deleteIndexOutOfBand(t, indexName)
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
 			},
 		},
 	})
@@ -223,21 +335,29 @@ func TestAccResourceIndexMappings_indexNotFound(t *testing.T) {
 	})
 }
 
-func checkStateMappingsContainFields(fields ...string) resource.TestCheckFunc {
+func stateMappingsFromResource(s *terraform.State) (map[string]any, error) {
+	rs, ok := s.RootModule().Resources[mappingsResourceName]
+	if !ok {
+		return nil, fmt.Errorf("resource %s not found in state", mappingsResourceName)
+	}
+
+	rawMappings, ok := rs.Primary.Attributes["mappings"]
+	if !ok {
+		return nil, fmt.Errorf("resource %s has no mappings attribute", mappingsResourceName)
+	}
+
+	var mappings map[string]any
+	if err := json.Unmarshal([]byte(rawMappings), &mappings); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal state mappings: %w", err)
+	}
+	return mappings, nil
+}
+
+func checkStateMappingsProperties(present, absent []string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[mappingsResourceName]
-		if !ok {
-			return fmt.Errorf("resource %s not found in state", mappingsResourceName)
-		}
-
-		rawMappings, ok := rs.Primary.Attributes["mappings"]
-		if !ok {
-			return fmt.Errorf("resource %s has no mappings attribute", mappingsResourceName)
-		}
-
-		var mappings map[string]any
-		if err := json.Unmarshal([]byte(rawMappings), &mappings); err != nil {
-			return fmt.Errorf("failed to unmarshal state mappings: %w", err)
+		mappings, err := stateMappingsFromResource(s)
+		if err != nil {
+			return err
 		}
 
 		properties, ok := mappings["properties"].(map[string]any)
@@ -245,12 +365,154 @@ func checkStateMappingsContainFields(fields ...string) resource.TestCheckFunc {
 			return fmt.Errorf("state mappings have no properties")
 		}
 
-		for _, field := range fields {
+		for _, field := range present {
 			if _, ok := properties[field]; !ok {
 				return fmt.Errorf("state mappings missing field %q", field)
 			}
 		}
+		for _, field := range absent {
+			if _, ok := properties[field]; ok {
+				return fmt.Errorf("state mappings unexpectedly contain field %q", field)
+			}
+		}
 		return nil
+	}
+}
+
+func checkStateMappingsTopLevelKeys(keys ...string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		mappings, err := stateMappingsFromResource(s)
+		if err != nil {
+			return err
+		}
+		for _, key := range keys {
+			if _, ok := mappings[key]; !ok {
+				return fmt.Errorf("state mappings missing top-level key %q", key)
+			}
+		}
+		return nil
+	}
+}
+
+func checkStateMappingsDynamic(expected bool) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		mappings, err := stateMappingsFromResource(s)
+		if err != nil {
+			return err
+		}
+		dynamic, ok := mappings["dynamic"]
+		if !ok {
+			return fmt.Errorf("state mappings missing dynamic key")
+		}
+		switch v := dynamic.(type) {
+		case bool:
+			if v != expected {
+				return fmt.Errorf("state mappings dynamic = %v, want %v", v, expected)
+			}
+		case string:
+			want := "false"
+			if expected {
+				want = "true"
+			}
+			if v != want {
+				return fmt.Errorf("state mappings dynamic = %q, want %q", v, want)
+			}
+		default:
+			return fmt.Errorf("state mappings dynamic has unexpected type %T", dynamic)
+		}
+		return nil
+	}
+}
+
+func checkStateMappingsSourceEnabled(expected bool) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		mappings, err := stateMappingsFromResource(s)
+		if err != nil {
+			return err
+		}
+		source, ok := mappings["_source"].(map[string]any)
+		if !ok {
+			return fmt.Errorf("state mappings _source is not an object")
+		}
+		enabled, ok := source["enabled"]
+		if !ok {
+			return fmt.Errorf("state mappings _source missing enabled")
+		}
+		switch v := enabled.(type) {
+		case bool:
+			if v != expected {
+				return fmt.Errorf("state mappings _source.enabled = %v, want %v", v, expected)
+			}
+		case string:
+			want := "false"
+			if expected {
+				want = "true"
+			}
+			if v != want {
+				return fmt.Errorf("state mappings _source.enabled = %q, want %q", v, want)
+			}
+		default:
+			return fmt.Errorf("state mappings _source.enabled has unexpected type %T", enabled)
+		}
+		return nil
+	}
+}
+
+func checkStateMappingsRuntimeFields(names ...string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		mappings, err := stateMappingsFromResource(s)
+		if err != nil {
+			return err
+		}
+		runtime, ok := mappings["runtime"].(map[string]any)
+		if !ok {
+			return fmt.Errorf("state mappings runtime is not an object")
+		}
+		for _, name := range names {
+			if _, ok := runtime[name]; !ok {
+				return fmt.Errorf("state mappings runtime missing field %q", name)
+			}
+		}
+		return nil
+	}
+}
+
+func checkStateMappingsDynamicTemplates(minCount int) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		mappings, err := stateMappingsFromResource(s)
+		if err != nil {
+			return err
+		}
+		templates, ok := mappings["dynamic_templates"].([]any)
+		if !ok {
+			return fmt.Errorf("state mappings dynamic_templates is not an array")
+		}
+		if len(templates) < minCount {
+			return fmt.Errorf("state mappings dynamic_templates length %d, want at least %d", len(templates), minCount)
+		}
+		return nil
+	}
+}
+
+func importStateIDFromIndexResource(s *terraform.State) (string, error) {
+	rs, ok := s.RootModule().Resources[indexResourceName]
+	if !ok {
+		return "", fmt.Errorf("resource %s not found in state", indexResourceName)
+	}
+	return rs.Primary.ID, nil
+}
+
+func deleteIndexOutOfBand(t *testing.T, indexName string) {
+	t.Helper()
+
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+	if err != nil {
+		t.Fatalf("failed to create Elasticsearch client: %s", err)
+	}
+
+	diags := esclient.DeleteIndex(context.Background(), client, indexName)
+	if diags.HasError() {
+		t.Fatalf("failed to delete index %q out of band: %v", indexName, diags)
 	}
 }
 
