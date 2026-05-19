@@ -22,10 +22,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 
-	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
@@ -45,19 +46,41 @@ func PutIngestPipeline(ctx context.Context, apiClient *clients.ElasticsearchScop
 	return nil
 }
 
-func GetIngestPipeline(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string) (*types.IngestPipeline, fwdiag.Diagnostics) {
+// GetIngestPipeline retrieves an ingest pipeline by name.
+//
+// We use .Perform() instead of .Do() because the typed client decodes the
+// response through types.IngestPipeline / []ProcessorContainer, which silently
+// drops any processor field not modeled by the go-elasticsearch typed structs.
+// For example, types.RenameProcessor has no Override field, so a pipeline with
+// override = true on a rename processor would lose that field during the
+// round-trip and produce "Provider produced inconsistent result after apply"
+// drift. Decoding into models.IngestPipeline (which stores processors as
+// []map[string]any) preserves all fields the API returns. See issue #3002.
+func GetIngestPipeline(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string) (*models.IngestPipeline, fwdiag.Diagnostics) {
 	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
-	res, err := typedClient.Ingest.GetPipeline().Id(name).Do(ctx)
+	res, err := typedClient.Ingest.GetPipeline().Id(name).Perform(ctx)
 	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return nil, nil
-		}
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
-	if pipeline, ok := res[name]; ok {
+	defer res.Body.Close()
+
+	if res.StatusCode == http.StatusNotFound {
+		return nil, nil
+	}
+
+	if d := diagutil.CheckHTTPErrorFromFW(res, "Unable to find ingest pipeline on cluster"); d.HasError() {
+		return nil, d
+	}
+
+	pipelines := make(map[string]models.IngestPipeline)
+	if err := json.NewDecoder(res.Body).Decode(&pipelines); err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+
+	if pipeline, ok := pipelines[name]; ok {
 		return &pipeline, nil
 	}
 	return nil, fwdiag.Diagnostics{
