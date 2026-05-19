@@ -62,20 +62,18 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
     }
   ]
 
-  actions = [
-    {
-      action_type_id = ".cases-webhook"
-      id             = elasticstack_kibana_action_connector.test.connector_id
-      params = jsonencode({
-        message = "CRITICAL EQL Alert: PowerShell process detected"
-      })
-      group = "default"
-      frequency = {
-        notify_when = "onActiveAlert"
-        summary     = true
-        throttle    = "10m"
-      }
+  actions {
+    action_type_id = ".cases-webhook"
+    id             = elasticstack_kibana_action_connector.test.connector_id
+    params = jsonencode({
+      message = "CRITICAL EQL Alert: PowerShell process detected"
+    })
+    group = "default"
+    frequency {
+      notify_when = "onActiveAlert"
+      summary     = true
+      throttle    = "10m"
     }
-  ]
+  }
 }
 

@@ -40,10 +40,10 @@ resource "elasticstack_kibana_action_connector" "test" {
 
 resource "elasticstack_kibana_security_detection_rule" "test" {
   name        = var.name
-  description = "Updated test security detection rule with connector action"
+  description = "Test security detection rule with alerts_filter"
   type        = "query"
-  severity    = "high"
-  risk_score  = 75
+  severity    = "medium"
+  risk_score  = 50
   enabled     = true
   query       = "user.name:*"
   language    = "kuery"
@@ -51,40 +51,24 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   to          = "now"
   interval    = "5m"
   index       = ["logs-*"]
-  namespace   = "updated-connector-action-namespace"
-
-  tags = ["test", "terraform"]
-
-  risk_score_mapping = [
-    {
-      field      = "user.privileged"
-      operator   = "equals"
-      value      = "true"
-      risk_score = 95
-    }
-  ]
 
   actions {
     action_type_id = ".cases-webhook"
     id             = elasticstack_kibana_action_connector.test.connector_id
     params = jsonencode({
-      message = "UPDATED CRITICAL Alert: Security event detected"
+      message = "Alert with alerts_filter"
     })
     group = "default"
     frequency {
       notify_when = "onActiveAlert"
       summary     = true
-      throttle    = "5m"
+      throttle    = "10m"
+    }
+    alerts_filter {
+      query {
+        kql          = "event.action : \"test_case_a\""
+        filters_json = jsonencode([])
+      }
     }
   }
-
-  exceptions_list = [
-    {
-      id             = "test-action-exception"
-      list_id        = "action-rule-exceptions"
-      namespace_type = "single"
-      type           = "detection"
-    }
-  ]
 }
-

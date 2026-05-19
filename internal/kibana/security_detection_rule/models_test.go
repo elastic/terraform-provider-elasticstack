@@ -825,10 +825,7 @@ func TestActionsToAPI(t *testing.T) {
 				Params:       jsontypes.NewNormalizedValue(`{"message":"Alert triggered","channel":"#security"}`),
 				Group:        types.StringValue("default"),
 				UUID:         types.StringNull(),
-				AlertsFilter: typeutils.MapValueFrom(ctx, map[string]attr.Value{
-					"status":   types.StringValue("open"),
-					"severity": types.StringValue("high"),
-				}, types.StringType, path.Root("actions").AtListIndex(0).AtName("alerts_filter"), &diags),
+				AlertsFilter: types.ObjectNull(getAlertsFilterAttrTypes()),
 				Frequency: typeutils.ObjectValueFrom(ctx, &ActionFrequencyModel{
 					NotifyWhen: types.StringValue("onActionGroupChange"),
 					Summary:    types.BoolValue(false),
@@ -908,6 +905,46 @@ func TestConvertActionsToModel(t *testing.T) {
 	require.JSONEq(t, `{"to":["admin@example.com"],"subject":"Security Alert","message":"Alert details here"}`, action.Params.ValueString())
 }
 
+func TestActionAlertsFilterRoundTrip(t *testing.T) {
+	ctx := context.Background()
+	var diags diag.Diagnostics
+
+	apiFilter := kbapi.SecurityDetectionsAPIRuleActionAlertsFilter{
+		"query": map[string]interface{}{
+			"kql":     `event.action : "test"`,
+			"filters": []interface{}{},
+		},
+		"timeframe": map[string]interface{}{
+			"days":     []interface{}{float64(1), float64(2), float64(3)},
+			"timezone": "UTC",
+			"hours": map[string]interface{}{
+				"start": "08:00",
+				"end":   "17:00",
+			},
+		},
+	}
+
+	flat := flattenActionAlertsFilter(ctx, &apiFilter, &diags)
+	require.Empty(t, diags)
+
+	expanded := expandActionAlertsFilter(ctx, flat, &diags)
+	require.Empty(t, diags)
+	require.NotNil(t, expanded)
+
+	query, ok := (*expanded)["query"].(map[string]interface{})
+	require.True(t, ok)
+	require.Equal(t, `event.action : "test"`, query["kql"])
+	require.Equal(t, []interface{}{}, query["filters"])
+
+	timeframe, ok := (*expanded)["timeframe"].(map[string]interface{})
+	require.True(t, ok)
+	require.Equal(t, "UTC", timeframe["timezone"])
+	hours, ok := timeframe["hours"].(map[string]interface{})
+	require.True(t, ok)
+	require.Equal(t, "08:00", hours["start"])
+	require.Equal(t, "17:00", hours["end"])
+}
+
 // TestSlackSubActionParamsRoundTrip verifies that nested objects in action params
 // (e.g. Slack's subActionParams) survive the API→TF→API round-trip via JSON encoding.
 func TestSlackSubActionParamsRoundTrip(t *testing.T) {
@@ -953,7 +990,7 @@ func TestSlackSubActionParamsRoundTrip(t *testing.T) {
 					`{"subAction":"postMessage","subActionParams":{"channelIds":["C123456"],"text":"Security alert fired"}}`,
 				),
 				UUID:         types.StringNull(),
-				AlertsFilter: types.MapNull(types.StringType),
+				AlertsFilter: types.ObjectNull(getAlertsFilterAttrTypes()),
 				Frequency:    types.ObjectNull(getActionFrequencyType()),
 			},
 		}, getActionElementType(), path.Root("actions"), &diags),

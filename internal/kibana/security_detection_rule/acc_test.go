@@ -1698,6 +1698,97 @@ func testAccCheckSecurityDetectionRuleDestroy(s *terraform.State) error {
 	return nil
 }
 
+var minSupportedAlertsFilterVersion = version.Must(version.NewVersion("8.9.0"))
+
+func TestAccResourceSecurityDetectionRule_AlertsFilter(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minSupportedAlertsFilterVersion, versionutils.FlavorAny)
+
+	resourceName := securityDetectionRuleResourceName
+	connectorResourceName := "elasticstack_kibana_action_connector.test"
+	ruleName := testAccRandomizedRuleName("test-rule-alerts-filter")
+	connectorName := testAccRandomizedRuleName("test-connector-alerts-filter")
+	connectorID := uuid.New().String()
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: testAccCheckSecurityDetectionRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"name":           config.StringVariable(ruleName),
+					"connector_name": config.StringVariable(connectorName),
+					"connector_id":   config.StringVariable(connectorID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(connectorResourceName, "connector_id", connectorID),
+					resource.TestCheckResourceAttr(resourceName, "actions.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "actions.0.alerts_filter.query.kql", `event.action : "test_case_a"`),
+					resource.TestCheckResourceAttr(resourceName, "actions.0.alerts_filter.query.filters_json", "[]"),
+				),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PostApplyPreRefresh: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"name":           config.StringVariable(ruleName),
+					"connector_name": config.StringVariable(connectorName),
+					"connector_id":   config.StringVariable(connectorID),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_kql"),
+				ConfigVariables: config.Variables{
+					"name":           config.StringVariable(ruleName),
+					"connector_name": config.StringVariable(connectorName),
+					"connector_id":   config.StringVariable(connectorID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "actions.0.alerts_filter.query.kql", `event.action : "test_case_b"`),
+					resource.TestCheckResourceAttr(resourceName, "actions.0.alerts_filter.query.filters_json", "[]"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("timeframe"),
+				ConfigVariables: config.Variables{
+					"name":           config.StringVariable(ruleName),
+					"connector_name": config.StringVariable(connectorName),
+					"connector_id":   config.StringVariable(connectorID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "actions.0.alerts_filter.timeframe.days.#", "5"),
+					resource.TestCheckResourceAttr(resourceName, "actions.0.alerts_filter.timeframe.days.0", "1"),
+					resource.TestCheckResourceAttr(resourceName, "actions.0.alerts_filter.timeframe.days.1", "2"),
+					resource.TestCheckResourceAttr(resourceName, "actions.0.alerts_filter.timeframe.days.2", "3"),
+					resource.TestCheckResourceAttr(resourceName, "actions.0.alerts_filter.timeframe.days.3", "4"),
+					resource.TestCheckResourceAttr(resourceName, "actions.0.alerts_filter.timeframe.days.4", "5"),
+					resource.TestCheckResourceAttr(resourceName, "actions.0.alerts_filter.timeframe.timezone", "UTC"),
+					resource.TestCheckResourceAttr(resourceName, "actions.0.alerts_filter.timeframe.hours_start", "08:00"),
+					resource.TestCheckResourceAttr(resourceName, "actions.0.alerts_filter.timeframe.hours_end", "17:00"),
+				),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PostApplyPreRefresh: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
+			},
+		},
+	})
+}
+
 func TestAccResourceSecurityDetectionRule_WithConnectorAction(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minResponseActionVersionSupport, versionutils.FlavorAny)
 
