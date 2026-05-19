@@ -14,9 +14,9 @@
 
 ## 3. Remove dead code
 
-- [ ] 3.1 Delete `internal/utils/typeutils/schema.go`
-- [ ] 3.2 Delete `internal/utils/typeutils/schema_test.go`
-- [ ] 3.3 Verify `go build ./...` still succeeds
+- [x] 3.1 Delete `internal/utils/typeutils/schema.go`
+- [x] 3.2 Delete `internal/utils/typeutils/schema_test.go`
+- [x] 3.3 Verify `go build ./...` still succeeds
 
 ## 4. Fix stray test import
 
