@@ -45,17 +45,15 @@ type privateData interface {
 }
 
 func newResource() *Resource {
-	createFn, updateFn := entitycore.PlaceholderElasticsearchWriteCallbacks[tfModel]()
+	placeholder := entitycore.PlaceholderElasticsearchWriteCallback[tfModel]()
 	return &Resource{
-		ElasticsearchResource: entitycore.NewElasticsearchResource[tfModel](
-			entitycore.ComponentElasticsearch,
-			"index",
-			getSchema,
-			readIndex,
-			deleteIndex,
-			createFn,
-			updateFn,
-		),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[tfModel]("index", entitycore.ElasticsearchResourceOptions[tfModel]{
+			Schema: getSchema,
+			Read:   readIndex,
+			Delete: deleteIndex,
+			Create: placeholder,
+			Update: placeholder,
+		}),
 	}
 }
 
@@ -71,7 +69,7 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 		return
 	}
 
-	compID, diags := clients.CompositeIDFromStrFw(stateModel.GetID().ValueString())
+	compID, diags := clients.CompositeIDFromStr(stateModel.GetID().ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

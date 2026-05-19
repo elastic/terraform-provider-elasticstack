@@ -27,11 +27,8 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/go-version"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 type CompositeID struct {
@@ -41,31 +38,20 @@ type CompositeID struct {
 
 const ServerlessFlavor = "serverless"
 
-func CompositeIDFromStr(id string) (*CompositeID, diag.Diagnostics) {
+func CompositeIDFromStr(id string) (*CompositeID, fwdiags.Diagnostics) {
 	idParts := strings.Split(id, "/")
 	if len(idParts) != 2 {
-		return nil, diagutil.SDKErrorDiag(
-			"Wrong resource ID.",
-			"Resource ID must have following format: <cluster_uuid>/<resource identifier>",
-		)
+		return nil, fwdiags.Diagnostics{
+			fwdiags.NewErrorDiagnostic(
+				"Wrong resource ID.",
+				"Resource ID must have following format: <cluster_uuid>/<resource identifier>",
+			),
+		}
 	}
 	return &CompositeID{
 		ClusterID:  idParts[0],
 		ResourceID: idParts[1],
 	}, nil
-}
-
-func CompositeIDFromStrFw(id string) (*CompositeID, fwdiags.Diagnostics) {
-	composite, diags := CompositeIDFromStr(id)
-	return composite, diagutil.FrameworkDiagsFromSDK(diags)
-}
-
-func ResourceIDFromStr(id string) (string, diag.Diagnostics) {
-	compID, diags := CompositeIDFromStr(id)
-	if diags.HasError() {
-		return "", diags
-	}
-	return compID.ResourceID, nil
 }
 
 func (c *CompositeID) String() string {
@@ -101,16 +87,6 @@ type apiClient struct {
 	fleetEndpoint string
 }
 
-func NewAPIClientFuncFromSDK(version string) func(context.Context, *schema.ResourceData) (any, diag.Diagnostics) {
-	return func(_ context.Context, d *schema.ResourceData) (any, diag.Diagnostics) {
-		client, diags := newAPIClientFromSDK(d, version)
-		if diags.HasError() {
-			return nil, diags
-		}
-		return NewProviderClientFactory(client), diags
-	}
-}
-
 func newAcceptanceTestingClient() (*apiClient, error) {
 	version := "tf-acceptance-testing"
 	cfg := config.NewFromEnv(version)
@@ -134,7 +110,7 @@ func newAPIClientFromFramework(ctx context.Context, cfg config.ProviderConfigura
 }
 
 type MinVersionEnforceable interface {
-	EnforceMinVersion(ctx context.Context, minVersion *version.Version) (bool, diag.Diagnostics)
+	EnforceMinVersion(ctx context.Context, minVersion *version.Version) (bool, fwdiags.Diagnostics)
 }
 
 func buildEsClient(cfg config.Client) (*elasticsearch.TypedClient, error) {
@@ -163,20 +139,6 @@ func buildFleetClient(cfg config.Client) (*fleet.Client, error) {
 	client, err := fleet.NewClient(*cfg.Fleet)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create Fleet client: %w", err)
-	}
-
-	return client, nil
-}
-
-func newAPIClientFromSDK(d *schema.ResourceData, version string) (*apiClient, diag.Diagnostics) {
-	cfg, diags := config.NewFromSDK(d, version)
-	if diags.HasError() {
-		return nil, diags
-	}
-
-	client, err := newAPIClientFromConfig(cfg, version)
-	if err != nil {
-		return nil, diag.FromErr(err)
 	}
 
 	return client, nil

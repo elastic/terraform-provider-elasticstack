@@ -88,6 +88,7 @@ type IndexTemplate struct {
 	Priority                        *int64              `json:"priority,omitempty"`
 	Template                        *Template           `json:"template,omitempty"`
 	Version                         *int64              `json:"version,omitempty"`
+	AllowAutoCreate                 *bool               `json:"allow_auto_create,omitempty"`
 }
 
 type DataStreamSettings struct {

@@ -21,12 +21,14 @@ import (
 	"context"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/discoversession"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/image"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/markdown"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/sloalerts"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/sloburnrate"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/sloerrorbudget"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/slooverview"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/visconfig"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -38,21 +40,12 @@ import (
 
 var testAttrPathPanel = path.Root("panel")
 
-// appendValidatePanelDiagnostics mirrors panelConfigValidator.ValidateObject semantics for isolated tests:
-// resolve the handler via the registry, run its panel validation, then run the legacy unmigrated-panel
-// checks (discover_session, vis).
+// appendValidatePanelDiagnostics mirrors panelConfigValidator.ValidateObject semantics for isolated tests.
 func appendValidatePanelDiagnostics(ctx context.Context, panel string, attrs map[string]attr.Value) diag.Diagnostics {
 	var diags diag.Diagnostics
 	if h := LookupHandler(panel); h != nil {
 		diags.Append(h.ValidatePanelConfig(ctx, attrs, testAttrPathPanel)...)
 	}
-	diags.Append(panelConfigValidateDiags(
-		panel,
-		panelConfigValueStateFromValue(attrs["config_json"]),
-		panelConfigValueStateFromValue(attrs["vis_config"]),
-		panelConfigValueStateFromValue(attrs["discover_session_config"]),
-		&testAttrPathPanel,
-	)...)
 	return diags
 }
 
@@ -90,50 +83,36 @@ func Test_markdownHandler_ValidatePanelConfig(t *testing.T) {
 	})
 }
 
-func Test_panelConfigValidateDiags_vis(t *testing.T) {
+func Test_visHandler_ValidatePanelConfig(t *testing.T) {
+	ctx := context.Background()
+	h := visconfig.Handler{}
+
 	t.Run("accepts config_json fallback", func(t *testing.T) {
-		diags := panelConfigValidateDiags(
-			"vis",
-			panelConfigValueState{Set: true},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			nil,
-		)
+		diags := h.ValidatePanelConfig(ctx, map[string]attr.Value{
+			"config_json": types.StringValue(`{}`),
+		}, testAttrPathPanel)
 		require.False(t, diags.HasError())
 	})
 
 	t.Run("accepts vis_config as sole vis configuration", func(t *testing.T) {
-		diags := panelConfigValidateDiags(
-			"vis",
-			panelConfigValueState{},
-			panelConfigValueState{Set: true},
-			panelConfigValueState{},
-			nil,
-		)
+		diags := h.ValidatePanelConfig(ctx, map[string]attr.Value{
+			"vis_config": types.BoolValue(true),
+		}, testAttrPathPanel)
 		require.False(t, diags.HasError())
 	})
 
 	t.Run("rejects missing config", func(t *testing.T) {
-		diags := panelConfigValidateDiags(
-			"vis",
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			nil,
-		)
+		diags := h.ValidatePanelConfig(ctx, map[string]attr.Value{}, testAttrPathPanel)
 		require.True(t, diags.HasError())
 		require.Len(t, diags, 1)
 		require.Equal(t, "Missing vis panel configuration", diags[0].Summary())
 	})
 
 	t.Run("rejects vis_config and config_json together", func(t *testing.T) {
-		diags := panelConfigValidateDiags(
-			"vis",
-			panelConfigValueState{Set: true},
-			panelConfigValueState{Set: true},
-			panelConfigValueState{},
-			nil,
-		)
+		diags := h.ValidatePanelConfig(ctx, map[string]attr.Value{
+			"config_json": types.StringValue(`{}`),
+			"vis_config":  types.BoolValue(true),
+		}, testAttrPathPanel)
 		require.True(t, diags.HasError())
 		require.Len(t, diags, 1)
 		require.Equal(t, "Invalid vis panel configuration", diags[0].Summary())
@@ -141,24 +120,16 @@ func Test_panelConfigValidateDiags_vis(t *testing.T) {
 	})
 
 	t.Run("defers when config_json is unknown", func(t *testing.T) {
-		diags := panelConfigValidateDiags(
-			"vis",
-			panelConfigValueState{Unknown: true},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			nil,
-		)
+		diags := h.ValidatePanelConfig(ctx, map[string]attr.Value{
+			"config_json": types.StringUnknown(),
+		}, testAttrPathPanel)
 		require.False(t, diags.HasError())
 	})
 
 	t.Run("defers when vis_config is unknown", func(t *testing.T) {
-		diags := panelConfigValidateDiags(
-			"vis",
-			panelConfigValueState{},
-			panelConfigValueState{Unknown: true},
-			panelConfigValueState{},
-			nil,
-		)
+		diags := h.ValidatePanelConfig(ctx, map[string]attr.Value{
+			"vis_config": types.BoolUnknown(),
+		}, testAttrPathPanel)
 		require.False(t, diags.HasError())
 	})
 }
@@ -178,36 +149,24 @@ func Test_registryDispatch_markdown_badConfig(t *testing.T) {
 }
 
 func Test_panelConfigValidateDiags_timeSlider(t *testing.T) {
+	ctx := context.Background()
+
 	t.Run("accepts no config blocks", func(t *testing.T) {
-		diags := panelConfigValidateDiags(
-			"time_slider_control",
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			nil,
-		)
+		diags := appendValidatePanelDiagnostics(ctx, "time_slider_control", map[string]attr.Value{})
 		require.False(t, diags.HasError())
 	})
 
 	t.Run("does not emit diagnostic for practitioner-authored config_json", func(t *testing.T) {
-		diags := panelConfigValidateDiags(
-			"time_slider_control",
-			panelConfigValueState{Set: true},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			nil,
-		)
+		diags := appendValidatePanelDiagnostics(ctx, "time_slider_control", map[string]attr.Value{
+			"config_json": types.StringValue(`{}`),
+		})
 		require.False(t, diags.HasError())
 	})
 
 	t.Run("accepts time_slider when config_json is unknown", func(t *testing.T) {
-		diags := panelConfigValidateDiags(
-			"time_slider_control",
-			panelConfigValueState{Unknown: true},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			nil,
-		)
+		diags := appendValidatePanelDiagnostics(ctx, "time_slider_control", map[string]attr.Value{
+			"config_json": types.StringUnknown(),
+		})
 		require.False(t, diags.HasError())
 	})
 }
@@ -326,36 +285,24 @@ func Test_getSloErrorBudgetSchema_drilldownsHardcodeAPIConstants(t *testing.T) {
 }
 
 func Test_panelConfigValidateDiags_optionsListControl(t *testing.T) {
+	ctx := context.Background()
+
 	t.Run("accepts no config blocks", func(t *testing.T) {
-		diags := panelConfigValidateDiags(
-			"options_list_control",
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			nil,
-		)
+		diags := appendValidatePanelDiagnostics(ctx, "options_list_control", map[string]attr.Value{})
 		require.False(t, diags.HasError())
 	})
 
 	t.Run("does not emit diagnostic for practitioner-authored config_json", func(t *testing.T) {
-		diags := panelConfigValidateDiags(
-			"options_list_control",
-			panelConfigValueState{Set: true},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			nil,
-		)
+		diags := appendValidatePanelDiagnostics(ctx, "options_list_control", map[string]attr.Value{
+			"config_json": types.StringValue(`{}`),
+		})
 		require.False(t, diags.HasError())
 	})
 
 	t.Run("accepts options_list_control when config_json is unknown", func(t *testing.T) {
-		diags := panelConfigValidateDiags(
-			"options_list_control",
-			panelConfigValueState{Unknown: true},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			nil,
-		)
+		diags := appendValidatePanelDiagnostics(ctx, "options_list_control", map[string]attr.Value{
+			"config_json": types.StringUnknown(),
+		})
 		require.False(t, diags.HasError())
 	})
 }
@@ -493,26 +440,18 @@ func Test_slo_alerts_ValidatePanelConfig(t *testing.T) {
 	})
 }
 
-func Test_panelConfigValidateDiags_discoverSession(t *testing.T) {
+func Test_discoverSessionHandler_ValidatePanelConfig(t *testing.T) {
+	ctx := context.Background()
+
 	t.Run("accepts discover_session_config", func(t *testing.T) {
-		diags := panelConfigValidateDiags(
-			panelTypeDiscoverSession,
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{Set: true},
-			nil,
-		)
+		diags := discoversession.Handler{}.ValidatePanelConfig(ctx, map[string]attr.Value{
+			"discover_session_config": types.BoolValue(true),
+		}, testAttrPathPanel)
 		require.False(t, diags.HasError())
 	})
 
 	t.Run("rejects missing discover_session_config", func(t *testing.T) {
-		diags := panelConfigValidateDiags(
-			panelTypeDiscoverSession,
-			panelConfigValueState{},
-			panelConfigValueState{},
-			panelConfigValueState{},
-			nil,
-		)
+		diags := discoversession.Handler{}.ValidatePanelConfig(ctx, map[string]attr.Value{}, testAttrPathPanel)
 		require.True(t, diags.HasError())
 		require.Len(t, diags, 1)
 		require.Equal(t, "Missing discover_session panel configuration", diags[0].Summary())

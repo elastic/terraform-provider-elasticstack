@@ -27,15 +27,13 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func PutLogstashPipeline(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, logstashPipeline *models.LogstashPipeline) diag.Diagnostics {
-	var diags diag.Diagnostics
-
+func PutLogstashPipeline(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, logstashPipeline *models.LogstashPipeline) fwdiag.Diagnostics {
 	typedClient, err := apiClient.GetESClient()
 	if err != nil {
-		return diag.FromErr(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 
 	// The typed client's types.LogstashPipeline.PipelineSettings only supports
@@ -45,28 +43,26 @@ func PutLogstashPipeline(ctx context.Context, apiClient *clients.ElasticsearchSc
 	// preserve all settings while still using the typed client for transport.
 	b, err := json.Marshal(logstashPipeline)
 	if err != nil {
-		return diag.FromErr(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 
 	res, err := typedClient.Logstash.PutPipeline(logstashPipeline.PipelineID).Raw(bytes.NewReader(b)).Perform(ctx)
 	if err != nil {
-		return diag.FromErr(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 	defer res.Body.Close()
 
-	if d := diagutil.SDKDiagsFromFramework(diagutil.CheckHTTPErrorFromFW(res, "Unable to create or update logstash pipeline")); d.HasError() {
+	if d := diagutil.CheckHTTPErrorFromFW(res, "Unable to create or update logstash pipeline"); d.HasError() {
 		return d
 	}
 
-	return diags
+	return nil
 }
 
-func GetLogstashPipeline(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, pipelineID string) (*models.LogstashPipeline, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
+func GetLogstashPipeline(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, pipelineID string) (*models.LogstashPipeline, fwdiag.Diagnostics) {
 	typedClient, err := apiClient.GetESClient()
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	// We use .Perform() instead of .Do() because types.LogstashPipeline only
@@ -75,7 +71,7 @@ func GetLogstashPipeline(ctx context.Context, apiClient *clients.ElasticsearchSc
 	// See the comment in PutLogstashPipeline for the same rationale.
 	res, err := typedClient.Logstash.GetPipeline().Id(pipelineID).Perform(ctx)
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 	defer res.Body.Close()
 
@@ -83,32 +79,32 @@ func GetLogstashPipeline(ctx context.Context, apiClient *clients.ElasticsearchSc
 		return nil, nil
 	}
 
-	if d := diagutil.SDKDiagsFromFramework(diagutil.CheckHTTPErrorFromFW(res, "Unable to find logstash pipeline on cluster.")); d.HasError() {
+	if d := diagutil.CheckHTTPErrorFromFW(res, "Unable to find logstash pipeline on cluster."); d.HasError() {
 		return nil, d
 	}
 
 	logstashPipeline := make(map[string]models.LogstashPipeline)
 	if err := json.NewDecoder(res.Body).Decode(&logstashPipeline); err != nil {
-		return nil, diag.FromErr(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	if pipeline, ok := logstashPipeline[pipelineID]; ok {
 		pipeline.PipelineID = pipelineID
-		return &pipeline, diags
+		return &pipeline, nil
 	}
 
-	return nil, diagutil.SDKErrorDiag(
-		"Unable to find logstash pipeline in the cluster",
-		fmt.Sprintf(`Unable to find "%s" logstash pipeline in the cluster`, pipelineID),
-	)
+	return nil, fwdiag.Diagnostics{
+		fwdiag.NewErrorDiagnostic(
+			"Unable to find logstash pipeline in the cluster",
+			fmt.Sprintf(`Unable to find "%s" logstash pipeline in the cluster`, pipelineID),
+		),
+	}
 }
 
-func DeleteLogstashPipeline(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, pipelineID string) diag.Diagnostics {
-	var diags diag.Diagnostics
-
+func DeleteLogstashPipeline(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, pipelineID string) fwdiag.Diagnostics {
 	typedClient, err := apiClient.GetESClient()
 	if err != nil {
-		return diag.FromErr(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 
 	// Use .Perform() for explicit 404 handling, consistent with GetLogstashPipeline.
@@ -116,17 +112,19 @@ func DeleteLogstashPipeline(ctx context.Context, apiClient *clients.Elasticsearc
 	// explicit in provider code makes the contract visible to maintainers.
 	res, err := typedClient.Logstash.DeletePipeline(pipelineID).Perform(ctx)
 	if err != nil {
-		return diagutil.SDKErrorDiag("Unable to delete logstash pipeline", fmt.Sprintf("Failed with: %s", err.Error()))
+		return fwdiag.Diagnostics{
+			fwdiag.NewErrorDiagnostic("Unable to delete logstash pipeline", fmt.Sprintf("Failed with: %s", err.Error())),
+		}
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode == http.StatusNotFound {
-		return diags
+		return nil
 	}
 
-	if d := diagutil.SDKDiagsFromFramework(diagutil.CheckHTTPErrorFromFW(res, "Unable to delete logstash pipeline")); d.HasError() {
+	if d := diagutil.CheckHTTPErrorFromFW(res, "Unable to delete logstash pipeline"); d.HasError() {
 		return d
 	}
 
-	return diags
+	return nil
 }

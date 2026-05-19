@@ -21,7 +21,6 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -39,15 +38,13 @@ type datafeedResource struct {
 
 func newDatafeedResource() *datafeedResource {
 	return &datafeedResource{
-		ElasticsearchResource: entitycore.NewElasticsearchResource(
-			entitycore.ComponentElasticsearch,
-			"ml_datafeed",
-			getSchema,
-			readDatafeed,
-			deleteDatafeed,
-			createDatafeed,
-			updateDatafeed,
-		),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[Datafeed]("ml_datafeed", entitycore.ElasticsearchResourceOptions[Datafeed]{
+			Schema: getSchema,
+			Read:   readDatafeed,
+			Delete: deleteDatafeed,
+			Create: createDatafeed,
+			Update: updateDatafeed,
+		}),
 	}
 }
 
@@ -58,8 +55,8 @@ func NewDatafeedResource() resource.Resource {
 func (r *datafeedResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 
-	compID, sdkDiags := clients.CompositeIDFromStr(req.ID)
-	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	compID, compIDDiags := clients.CompositeIDFromStr(req.ID)
+	resp.Diagnostics.Append(compIDDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

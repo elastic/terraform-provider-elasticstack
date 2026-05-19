@@ -370,6 +370,29 @@ func TestAccIndexTemplateDataSourceDataStream(t *testing.T) {
 	})
 }
 
+// TestAccIndexTemplateDataSourceAllowAutoCreate covers the allow_auto_create attribute on the data source.
+func TestAccIndexTemplateDataSourceAllowAutoCreate(t *testing.T) {
+	templateName := "test-ds-aac-" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"template_name":     config.StringVariable(templateName),
+					"allow_auto_create": config.BoolVariable(true),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "name", templateName),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "allow_auto_create", "true"),
+				),
+			},
+		},
+	})
+}
+
 // TestAccIndexTemplateDataSourceMetadataVersionID covers metadata, version, and the id attribute.
 func TestAccIndexTemplateDataSourceMetadataVersionID(t *testing.T) {
 	templateName := "test-ds-meta-" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)

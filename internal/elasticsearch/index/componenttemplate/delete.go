@@ -22,16 +22,10 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 // deleteComponentTemplate is the envelope delete callback.
 func deleteComponentTemplate(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, _ Data) diag.Diagnostics {
-	var diags diag.Diagnostics
-	sdkDiags := elasticsearch.DeleteComponentTemplate(ctx, client, resourceID)
-	if sdkDiags != nil {
-		diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-	}
-	return diags
+	return elasticsearch.DeleteComponentTemplate(ctx, client, resourceID)
 }

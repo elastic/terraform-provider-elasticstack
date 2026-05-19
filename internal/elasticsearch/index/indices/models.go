@@ -27,7 +27,6 @@ import (
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -307,7 +306,7 @@ func setSettingsFromAPI(ctx context.Context, model *indexTfModel, apiModel estyp
 			continue
 		}
 
-		tfFieldKey := schemautil.ConvertSettingsKeyToTFFieldKey(key)
+		tfFieldKey := typeutils.ConvertSettingsKeyToTFFieldKey(key)
 		value, ok := model.getFieldValueByTagValue(tfFieldKey, modelType)
 		if !ok {
 			return diag.Diagnostics{

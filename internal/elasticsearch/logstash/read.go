@@ -24,7 +24,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -34,8 +33,8 @@ import (
 func readLogstashPipeline(ctx context.Context, client *clients.ElasticsearchScopedClient, pipelineID string, state Data) (Data, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	pipeline, sdkDiags := elasticsearch.GetLogstashPipeline(ctx, client, pipelineID)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	pipeline, pipelineDiags := elasticsearch.GetLogstashPipeline(ctx, client, pipelineID)
+	diags.Append(pipelineDiags...)
 	if diags.HasError() {
 		return state, false, diags
 	}

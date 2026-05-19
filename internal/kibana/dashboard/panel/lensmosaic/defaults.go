@@ -20,7 +20,7 @@ package lensmosaic
 import "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 
 func populateMosaicLensAttributes(attrs map[string]any) map[string]any {
-	populateTreemapLensLike(attrs)
+	lenscommon.PopulatePartitionLensAttributes(attrs)
 
 	if groupBreakdownBy, ok := attrs["group_breakdown_by"].([]any); ok {
 		groupBreakdownMaps := make([]map[string]any, 0, len(groupBreakdownBy))
@@ -37,41 +37,4 @@ func populateMosaicLensAttributes(attrs map[string]any) map[string]any {
 		}
 	}
 	return attrs
-}
-
-func populateTreemapLensLike(attrs map[string]any) {
-	if attrs == nil {
-		return
-	}
-	if _, exists := attrs["filters"]; !exists {
-		attrs["filters"] = []any{}
-	}
-	if groupBy, ok := attrs["group_by"].([]any); ok {
-		groupByMaps := make([]map[string]any, 0, len(groupBy))
-		for _, g := range groupBy {
-			if m, ok := g.(map[string]any); ok {
-				groupByMaps = append(groupByMaps, m)
-			}
-		}
-		populated := lenscommon.PopulatePartitionGroupByDefaults(groupByMaps)
-		for i := range groupBy {
-			if i < len(populated) {
-				groupBy[i] = populated[i]
-			}
-		}
-	}
-	if metrics, ok := attrs["metrics"].([]any); ok {
-		metricsMaps := make([]map[string]any, 0, len(metrics))
-		for _, m := range metrics {
-			if mp, ok := m.(map[string]any); ok {
-				metricsMaps = append(metricsMaps, mp)
-			}
-		}
-		populated := lenscommon.PopulatePartitionMetricsDefaults(metricsMaps)
-		for i := range metrics {
-			if i < len(populated) {
-				metrics[i] = populated[i]
-			}
-		}
-	}
 }

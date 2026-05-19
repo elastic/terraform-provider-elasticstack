@@ -24,7 +24,6 @@ import (
 	esapiTypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -50,7 +49,7 @@ func readRoleMapping(ctx context.Context, stateData Data, roleMappingName string
 
 	// Set basic fields
 	compID, compDiags := client.ID(ctx, roleMappingName)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(compDiags)...)
+	diags.Append(compDiags...)
 	if diags.HasError() {
 		return nil, diags
 	}

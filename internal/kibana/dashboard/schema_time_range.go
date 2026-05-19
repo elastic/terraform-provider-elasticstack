@@ -18,31 +18,21 @@
 package dashboard
 
 import (
-	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
 // timeRangeSchemaAttributes returns the inner attributes for dashboard/panel `time_range` objects (`from`, `to`
 // required strings; optional `mode`). Matches the dashboard-root `time_range` shape.
 func timeRangeSchemaAttributes() map[string]schema.Attribute {
-	return map[string]schema.Attribute{
-		"from": schema.StringAttribute{
-			MarkdownDescription: "Start of the time range (e.g., 'now-15m', '2023-01-01T00:00:00Z').",
-			Required:            true,
-		},
-		"to": schema.StringAttribute{
-			MarkdownDescription: "End of the time range (e.g., 'now', '2023-12-31T23:59:59Z').",
-			Required:            true,
-		},
-		"mode": schema.StringAttribute{
-			MarkdownDescription: "Time range mode. Valid values are `absolute` or `relative`. When the GET API omits `mode`, the provider preserves the prior `time_range.mode` from configuration or state.",
-			Optional:            true,
-			Validators: []validator.String{
-				stringvalidator.OneOf("absolute", "relative"),
-			},
-		},
+	attrs := panelkit.TimeRangeAttributes()
+	// Preserve richer dashboard-root documentation for `mode` (GET omission preservation semantics).
+	if mode, ok := attrs["mode"].(schema.StringAttribute); ok {
+		mode.MarkdownDescription = "Time range mode. Valid values are `absolute` or `relative`. When the GET API omits `mode`, " +
+			"the provider preserves the prior `time_range.mode` from configuration or state."
+		attrs["mode"] = mode
 	}
+	return attrs
 }
 
 // timeRangeSingleNestedAttribute builds a SingleNestedAttribute wrapping timeRangeSchemaAttributes.

@@ -33,9 +33,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// jsonNullString is the JSON encoding of null; json.Marshal uses it for unset union/API fields.
-const jsonNullString = "null"
-
 // populateFromAPI populates the Terraform model from the API response
 func dashboardPopulateFromAPI(ctx context.Context, m *models.DashboardModel, resp *kbapi.GetDashboardsIdResponse, dashboardID string, spaceID string) diag.Diagnostics {
 	var diags diag.Diagnostics

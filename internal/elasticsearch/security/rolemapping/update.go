@@ -24,29 +24,31 @@ import (
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 )
 
-func writeRoleMapping(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, data Data) (Data, diag.Diagnostics) {
+// writeRoleMapping handles both Create and Update; the role mapping PUT API
+// is idempotent so the same callback serves both lifecycle methods.
+func writeRoleMapping(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.WriteRequest[Data]) (entitycore.WriteResult[Data], diag.Diagnostics) {
 	var diags diag.Diagnostics
-	roleMappingName := resourceID
+	data := req.Plan
+	roleMappingName := req.WriteID
 
 	// Parse rules JSON
 	var rules types.RoleMappingRule
 	if err := json.Unmarshal([]byte(data.Rules.ValueString()), &rules); err != nil {
 		diags.AddError("Failed to parse rules JSON", err.Error())
-		var zero Data
-		return zero, diags
+		return entitycore.WriteResult[Data]{}, diags
 	}
 
 	// Parse metadata JSON
 	var metadata types.Metadata
 	if err := json.Unmarshal([]byte(data.Metadata.ValueString()), &metadata); err != nil {
 		diags.AddError("Failed to parse metadata JSON", err.Error())
-		var zero Data
-		return zero, diags
+		return entitycore.WriteResult[Data]{}, diags
 	}
 
 	// Prepare role mapping
@@ -60,8 +62,7 @@ func writeRoleMapping(ctx context.Context, client *clients.ElasticsearchScopedCl
 	if typeutils.IsKnown(data.Roles) {
 		roleMapping.Roles = typeutils.SetTypeAs[string](ctx, data.Roles, path.Root("roles"), &diags)
 		if diags.HasError() {
-			var zero Data
-			return zero, diags
+			return entitycore.WriteResult[Data]{}, diags
 		}
 	}
 
@@ -69,8 +70,7 @@ func writeRoleMapping(ctx context.Context, client *clients.ElasticsearchScopedCl
 		var roleTemplates []types.RoleTemplate
 		if err := json.Unmarshal([]byte(data.RoleTemplates.ValueString()), &roleTemplates); err != nil {
 			diags.AddError("Failed to parse role templates JSON", err.Error())
-			var zero Data
-			return zero, diags
+			return entitycore.WriteResult[Data]{}, diags
 		}
 		roleMapping.RoleTemplates = roleTemplates
 	}
@@ -79,9 +79,8 @@ func writeRoleMapping(ctx context.Context, client *clients.ElasticsearchScopedCl
 	apiDiags := elasticsearch.PutRoleMapping(ctx, client, roleMappingName, &roleMapping)
 	diags.Append(apiDiags...)
 	if diags.HasError() {
-		var zero Data
-		return zero, diags
+		return entitycore.WriteResult[Data]{}, diags
 	}
 
-	return data, diags
+	return entitycore.WriteResult[Data]{Model: data}, diags
 }

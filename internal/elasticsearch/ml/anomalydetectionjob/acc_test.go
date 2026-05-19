@@ -757,6 +757,56 @@ func TestAccResourceAnomalyDetectionJobExplicitConnection(t *testing.T) {
 	})
 }
 
+//go:embed testdata/TestAccResourceAnomalyDetectionJobFrom0_12_2/create/main.tf
+var sdkCreateConfig string
+
+func TestAccResourceAnomalyDetectionJobFrom0_12_2(t *testing.T) {
+	jobID := fmt.Sprintf("test-ad-from-sdk-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				// Step 1: Create the job with an older provider version (v0.12.2).
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"elasticstack": {
+						Source:            "elastic/elasticstack",
+						VersionConstraint: "0.12.2",
+					},
+				},
+				Config: sdkCreateConfig,
+				ConfigVariables: config.Variables{
+					"job_id": config.StringVariable(jobID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(testResourceAddr, "job_id", jobID),
+					resource.TestCheckResourceAttr(testResourceAddr, "description", "Test anomaly detection job"),
+				),
+			},
+			{
+				// Step 2: Verify the current provider can manage the resource created
+				// by the older provider. The test framework persists state across steps
+				// so this exercises refresh and apply with the current code.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"job_id": config.StringVariable(jobID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(testResourceAddr, "job_id", jobID),
+					resource.TestCheckResourceAttr(testResourceAddr, "description", "Test anomaly detection job"),
+					resource.TestCheckResourceAttr(testResourceAddr, "analysis_config.bucket_span", "15m"),
+					resource.TestCheckResourceAttr(testResourceAddr, "analysis_config.detectors.0.function", "count"),
+					resource.TestCheckResourceAttr(testResourceAddr, "data_description.time_field", "@timestamp"),
+					resource.TestCheckResourceAttr(testResourceAddr, "data_description.time_format", "epoch_ms"),
+					resource.TestCheckResourceAttrSet(testResourceAddr, "create_time"),
+					resource.TestCheckResourceAttr(testResourceAddr, "job_type", "anomaly_detector"),
+				),
+			},
+		},
+	})
+}
+
 // setupAccMLFilterOutOfBand creates an ML filter via the Elasticsearch API so the acceptance
 // config can reference filter_id without using elasticstack_elasticsearch_ml_filter. The filter
 // is deleted after the test (Destroy runs before registered Cleanups).

@@ -20,6 +20,7 @@ package dashboard
 import (
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -240,7 +241,7 @@ func Test_alignPanelStateFromPlan_preservesMosaicTreemapPartitionSnapshots(t *te
 }
 
 func mustTagcloudJSON(v string) customtypes.JSONWithDefaultsValue[map[string]any] {
-	return customtypes.NewJSONWithDefaultsValue(v, populateTagcloudTagByDefaults)
+	return customtypes.NewJSONWithDefaultsValue(v, lenscommon.PopulateTagcloudTagByDefaults)
 }
 
 // Test_alignPanelStateFromPlan_pinnedPanel_xyChart_appliesAlignment verifies XY drift alignment runs through

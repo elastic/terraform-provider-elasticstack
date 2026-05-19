@@ -22,10 +22,9 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 func deleteLogstashPipeline(ctx context.Context, client *clients.ElasticsearchScopedClient, pipelineID string, _ Data) diag.Diagnostics {
-	return diagutil.FrameworkDiagsFromSDK(elasticsearch.DeleteLogstashPipeline(ctx, client, pipelineID))
+	return elasticsearch.DeleteLogstashPipeline(ctx, client, pipelineID)
 }

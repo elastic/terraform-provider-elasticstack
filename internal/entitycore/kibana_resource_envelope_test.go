@@ -98,6 +98,37 @@ func testKibanaUpdateFuncFound(
 	return plan, nil
 }
 
+// testKibanaResourceModelUnscoped opts into [KibanaUnscopedSpace] for envelope tests.
+type testKibanaResourceModelUnscoped struct {
+	testKibanaResourceModel
+}
+
+func (testKibanaResourceModelUnscoped) IsUnscopedSpace() bool { return true }
+
+func testKibanaCreateFuncUnscoped(_ context.Context, _ *clients.KibanaScopedClient, _ string, plan testKibanaResourceModelUnscoped) (testKibanaResourceModelUnscoped, diag.Diagnostics) {
+	plan.ID = types.StringValue(plan.GetResourceID().ValueString())
+	return plan, nil
+}
+
+func testKibanaReadFuncUnscoped(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ string, model testKibanaResourceModelUnscoped) (testKibanaResourceModelUnscoped, bool, diag.Diagnostics) {
+	return model, true, nil
+}
+
+func testKibanaDeleteFuncUnscoped(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ string, _ testKibanaResourceModelUnscoped) diag.Diagnostics {
+	return nil
+}
+
+func testKibanaUpdateFuncUnscoped(
+	_ context.Context,
+	_ *clients.KibanaScopedClient,
+	_ string,
+	_ string,
+	plan testKibanaResourceModelUnscoped,
+	_ testKibanaResourceModelUnscoped,
+) (testKibanaResourceModelUnscoped, diag.Diagnostics) {
+	return plan, nil
+}
+
 func testKibanaResourceObjectType() tftypes.Type {
 	return tftypes.Object{
 		AttributeTypes: map[string]tftypes.Type{
@@ -463,6 +494,50 @@ func TestNewKibanaResource_Create_shortCircuitSpaceIDEmpty(t *testing.T) {
 	require.True(t, resp.Diagnostics.HasError())
 	require.Contains(t, resp.Diagnostics.Errors()[0].Summary(), "Invalid space identifier")
 	require.False(t, createCalled, "create callback should not run when spaceID is empty")
+}
+
+func TestNewKibanaResource_Create_allowsEmptySpaceWhenUnscoped(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	createCalled := false
+	r := NewKibanaResource[testKibanaResourceModelUnscoped](
+		ComponentKibana,
+		"test_entity",
+		getTestKibanaResourceSchema,
+		testKibanaReadFuncUnscoped,
+		testKibanaDeleteFuncUnscoped,
+		func(_ context.Context, _ *clients.KibanaScopedClient, _ string, plan testKibanaResourceModelUnscoped) (testKibanaResourceModelUnscoped, diag.Diagnostics) {
+			createCalled = true
+			return testKibanaCreateFuncUnscoped(ctx, nil, "", plan)
+		},
+		testKibanaUpdateFuncUnscoped,
+	)
+	r.client = factory
+
+	objType := testKibanaResourceObjectType()
+	objValue := tftypes.NewValue(objType, map[string]tftypes.Value{
+		"id":                tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
+		"name":              tftypes.NewValue(tftypes.String, "my-resource"),
+		"space_id":          tftypes.NewValue(tftypes.String, ""),
+		"kibana_connection": tftypes.NewValue(kibanaConnectionBlockType(), nil),
+	})
+	plan := tfsdk.Plan{Raw: objValue, Schema: testKibanaResourceSchemaWithConnectionBlock(ctx)}
+	respState := tfsdk.State{
+		Raw:    tftypes.NewValue(objType, nil),
+		Schema: testKibanaResourceSchemaWithConnectionBlock(ctx),
+	}
+	req := resource.CreateRequest{Plan: plan}
+	resp := resource.CreateResponse{State: respState}
+
+	r.Create(ctx, req, &resp)
+
+	require.False(t, resp.Diagnostics.HasError())
+	require.True(t, createCalled, "create should run when spaceID is empty and model opts into KibanaUnscopedSpace")
+	var result testKibanaResourceModelUnscoped
+	diags := resp.State.Get(ctx, &result)
+	require.False(t, diags.HasError())
+	require.Equal(t, "my-resource", result.ID.ValueString())
 }
 
 func TestNewKibanaResource_Create_shortCircuitClientError(t *testing.T) {
@@ -1764,7 +1839,7 @@ func (m testKibanaResourceModelWithVersionReqs) GetSpaceID() types.String    { r
 func (m testKibanaResourceModelWithVersionReqs) GetKibanaConnection() types.List {
 	return m.KibanaConnection
 }
-func (*testKibanaResourceModelWithVersionReqs) GetVersionRequirements() ([]DataSourceVersionRequirement, diag.Diagnostics) {
+func (*testKibanaResourceModelWithVersionReqs) GetVersionRequirements() ([]VersionRequirement, diag.Diagnostics) {
 	return nil, diag.Diagnostics{
 		diag.NewErrorDiagnostic("version requirements error", "injected GetVersionRequirements failure"),
 	}

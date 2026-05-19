@@ -21,10 +21,56 @@ import (
 	"errors"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestFormatDuration(t *testing.T) {
+	tests := []struct {
+		name     string
+		d        time.Duration
+		expected string
+	}{
+		{
+			name:     "zero duration",
+			d:        0,
+			expected: "0nanos",
+		},
+		{
+			name:     "sub-millisecond duration returns nanos",
+			d:        500 * time.Nanosecond,
+			expected: "500nanos",
+		},
+		{
+			name:     "exactly one millisecond",
+			d:        time.Millisecond,
+			expected: "1ms",
+		},
+		{
+			name:     "whole milliseconds",
+			d:        5000 * time.Millisecond,
+			expected: "5000ms",
+		},
+		{
+			name:     "one second",
+			d:        time.Second,
+			expected: "1000ms",
+		},
+		{
+			name:     "one minute",
+			d:        time.Minute,
+			expected: "60000ms",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.expected, formatDuration(tc.d))
+		})
+	}
+}
 
 func TestIsNotFoundElasticsearchError(t *testing.T) {
 	tests := []struct {

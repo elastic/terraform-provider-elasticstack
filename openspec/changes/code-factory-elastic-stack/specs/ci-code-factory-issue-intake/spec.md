@@ -18,8 +18,6 @@ The workflow MAY subscribe to GitHub `issues.opened` and `issues.labeled` events
 ### Requirement: Implementation agent has structured access to Elastic documentation
 The `code-factory` workflow SHALL configure the Elastic docs MCP server as an HTTP MCP server in the workflow frontmatter so that the implementation agent can query Elastic documentation during issue investigation and implementation. The workflow frontmatter SHALL declare an `mcp-servers.elastic-docs` entry pointing to `https://www.elastic.co/docs/_mcp/`. The agent prompt SHALL instruct the agent to use the docs MCP tools (`search_docs`, `find_related_docs`, `get_document_by_url`) when investigating the API behavior, parameters, or constraints required to implement a `code-factory` issue.
 
-The agent prompt SHALL also describe the test environment with ports that are reachable from within the AWF sandbox, including `ELASTICSEARCH_ENDPOINTS` on an AWF-allowed port (such as `8080`) and `KIBANA_ENDPOINT` on an AWF-allowed port (such as `80`), and SHALL instruct the agent to run acceptance tests using those reachable endpoints.
-
 #### Scenario: Agent investigates API behavior before implementing a resource
 - **WHEN** a `code-factory` issue involves an Elastic API endpoint or feature whose full parameter set is not evident from the existing codebase
 - **THEN** the agent SHALL use the elastic-docs MCP `search_docs` tool to retrieve authoritative API documentation before writing implementation code
@@ -33,6 +31,22 @@ The agent prompt SHALL also describe the test environment with ports that are re
 - **WHEN** maintainers inspect the compiled `code-factory-issue.md` workflow
 - **THEN** the workflow frontmatter SHALL include `mcp-servers.elastic-docs` with `url: https://www.elastic.co/docs/_mcp/`
 
-#### Scenario: Agent runs acceptance tests against reachable stack endpoints
+### Requirement: Implementation agent can run acceptance tests against the Elastic Stack
+The `code-factory` workflow SHALL import `shared/elastic-stack.md` so that the Elastic Stack (Elasticsearch and Kibana) is provisioned and reachable from within the AWF agentic sandbox. The agent prompt SHALL describe the test environment using the proxy ports (`9201` for Elasticsearch, `5602` for Kibana) accessed via `host.docker.internal`, and SHALL instruct the agent that acceptance tests are runnable.
+
+#### Scenario: Agent runs acceptance tests against the live stack
 - **WHEN** the implementation agent reaches the acceptance test verification step
-- **THEN** the agent SHALL connect to Elasticsearch at `http://host.docker.internal:8080` and Kibana at `http://host.docker.internal` for test execution
+- **THEN** the agent SHALL connect to Elasticsearch at `http://host.docker.internal:9201` and Kibana at `http://host.docker.internal:5602` for test execution
+- **AND** `TF_ACC=1` acceptance tests SHALL be expected to pass when correctly implemented
+
+#### Scenario: Agent prompt reflects a reachable test environment
+- **WHEN** the implementation agent reads the test environment instructions in the agent prompt
+- **THEN** the prompt SHALL describe the Elastic Stack as provisioned and reachable via `host.docker.internal` on its proxy ports (`9201` for Elasticsearch, `5602` for Kibana)
+- **AND** the prompt SHALL NOT state that acceptance tests are blocked by a network policy issue
+
+### Requirement: Implementation agent can discover the Terraform CLI
+The `code-factory` workflow SHALL import `shared/setup-dev.md`, which stages the Terraform binary into the workspace so the agentic sandbox can execute it. The agent SHALL be able to run `terraform --version` and `terraform` subcommands during verification.
+
+#### Scenario: Agent discovers Terraform during verification
+- **WHEN** the implementation agent runs `terraform` as part of acceptance tests or provider validation
+- **THEN** the binary SHALL be discoverable within the agentic sandbox's PATH at a workspace-relative path

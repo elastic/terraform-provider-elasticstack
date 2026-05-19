@@ -25,7 +25,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	fleetpkg "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/hashicorp/go-version"
@@ -75,12 +74,12 @@ func (r *integrationPolicyResource) UpgradeState(context.Context) map[int64]reso
 func (r *integrationPolicyResource) buildFeatures(ctx context.Context, apiClient *clients.KibanaScopedClient) (features, diag.Diagnostics) {
 	supportsPolicyIDs, diags := apiClient.EnforceMinVersion(ctx, MinVersionPolicyIDs)
 	if diags.HasError() {
-		return features{}, diagutil.FrameworkDiagsFromSDK(diags)
+		return features{}, diags
 	}
 
 	supportsOutputID, outputIDDiags := apiClient.EnforceMinVersion(ctx, MinVersionOutputID)
 	if outputIDDiags.HasError() {
-		return features{}, diagutil.FrameworkDiagsFromSDK(outputIDDiags)
+		return features{}, outputIDDiags
 	}
 
 	return features{

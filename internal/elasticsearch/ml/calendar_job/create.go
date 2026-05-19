@@ -22,12 +22,15 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func createCalendarJob(ctx context.Context, client *clients.ElasticsearchScopedClient, _ string, plan TFModel) (TFModel, fwdiags.Diagnostics) {
+func createCalendarJob(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.WriteRequest[TFModel]) (entitycore.WriteResult[TFModel], fwdiags.Diagnostics) {
 	var diags fwdiags.Diagnostics
+	plan := req.Plan
 
 	calendarID := plan.CalendarID.ValueString()
 	jobID := plan.JobID.ValueString()
@@ -37,7 +40,7 @@ func createCalendarJob(ctx context.Context, client *clients.ElasticsearchScopedC
 	typedClient, err := client.GetESClient()
 	if err != nil {
 		diags.AddError("Failed to get Elasticsearch client", err.Error())
-		return plan, diags
+		return entitycore.WriteResult[TFModel]{Model: plan}, diags
 	}
 
 	if _, err := typedClient.Ml.PutCalendarJob(calendarID, jobID).Do(ctx); err != nil {
@@ -45,9 +48,17 @@ func createCalendarJob(ctx context.Context, client *clients.ElasticsearchScopedC
 			"Failed to assign ML job to calendar",
 			fmt.Sprintf("Unable to assign job %q to calendar %q: %s", jobID, calendarID, err.Error()),
 		)
-		return plan, diags
+		return entitycore.WriteResult[TFModel]{Model: plan}, diags
 	}
 
+	compID, idDiags := client.ID(ctx, calendarID+"|"+jobID)
+	diags.Append(idDiags...)
+	if diags.HasError() {
+		return entitycore.WriteResult[TFModel]{Model: plan}, diags
+	}
+
+	plan.ID = types.StringValue(compID.String())
+
 	tflog.Debug(ctx, fmt.Sprintf("Successfully assigned ML job to calendar: calendar=%s job=%s", calendarID, jobID))
-	return plan, diags
+	return entitycore.WriteResult[TFModel]{Model: plan}, diags
 }

@@ -34,7 +34,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
-	v2Diag "github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/stretchr/testify/require"
 )
 
@@ -44,7 +43,7 @@ type mockAPIClient struct {
 	enforceResult bool
 }
 
-func (m mockAPIClient) EnforceMinVersion(_ context.Context, minVersion *version.Version) (bool, v2Diag.Diagnostics) {
+func (m mockAPIClient) EnforceMinVersion(_ context.Context, minVersion *version.Version) (bool, diag.Diagnostics) {
 	supported := m.serverVersion.GreaterThanOrEqual(minVersion)
 	return supported, nil
 }
@@ -1389,7 +1388,7 @@ func TestCompositeIDOperations(t *testing.T) {
 				ID: types.StringValue(tt.inputID),
 			}
 
-			compID, diags := clients.CompositeIDFromStrFw(data.ID.ValueString())
+			compID, diags := clients.CompositeIDFromStr(data.ID.ValueString())
 
 			if tt.shouldError {
 				require.NotEmpty(t, diags)
@@ -2254,6 +2253,233 @@ func TestToUpdateProps(t *testing.T) {
 				singleField, err := thresholdRule.Threshold.Field.AsSecurityDetectionsAPIThresholdField0()
 				require.NoError(t, err)
 				require.Equal(t, "user.name", singleField)
+			}
+		})
+	}
+}
+
+func TestReconcileEmptyListsFromPlan(t *testing.T) {
+	ctx := context.Background()
+
+	emptyActions := types.ListValueMust(getActionElementType(), []attr.Value{})
+	emptyExceptions := types.ListValueMust(getExceptionsListElementType(), []attr.Value{})
+	emptySeverityMapping := types.ListValueMust(getSeverityMappingElementType(), []attr.Value{})
+	emptyRiskScoreMapping := types.ListValueMust(getRiskScoreMappingElementType(), []attr.Value{})
+	emptyRelatedIntegrations := types.ListValueMust(getRelatedIntegrationElementType(), []attr.Value{})
+	emptyThreat := types.ListValueMust(getThreatElementType(), []attr.Value{})
+	emptyThreatMapping := types.ListValueMust(getThreatMappingElementType(), []attr.Value{})
+
+	tests := []struct {
+		name           string
+		reference      Data
+		target         Data
+		expectActions  types.List
+		expectThreat   types.List
+		expectSeverity types.List
+	}{
+		{
+			name: "null reference does not overwrite null target",
+			reference: Data{
+				Actions: types.ListNull(getActionElementType()),
+			},
+			target: Data{
+				Actions: types.ListNull(getActionElementType()),
+			},
+			expectActions: types.ListNull(getActionElementType()),
+		},
+		{
+			name: "null target with empty-list reference is updated",
+			reference: Data{
+				Actions: emptyActions,
+			},
+			target: Data{
+				Actions: types.ListNull(getActionElementType()),
+			},
+			expectActions: emptyActions,
+		},
+		{
+			name: "non-empty target is not overwritten",
+			reference: Data{
+				Actions: emptyActions,
+			},
+			target: Data{
+				Actions: typeutils.ListValueFrom(ctx, []ActionModel{
+					{ActionTypeID: types.StringValue(".slack"), ID: types.StringValue("id-1")},
+				}, getActionElementType(), path.Root("actions"), &diag.Diagnostics{}),
+			},
+			expectActions: typeutils.ListValueFrom(ctx, []ActionModel{
+				{ActionTypeID: types.StringValue(".slack"), ID: types.StringValue("id-1")},
+			}, getActionElementType(), path.Root("actions"), &diag.Diagnostics{}),
+		},
+		{
+			name: "all seven attributes reconciled when empty",
+			reference: Data{
+				Actions:             emptyActions,
+				ExceptionsList:      emptyExceptions,
+				SeverityMapping:     emptySeverityMapping,
+				RiskScoreMapping:    emptyRiskScoreMapping,
+				RelatedIntegrations: emptyRelatedIntegrations,
+				Threat:              emptyThreat,
+				ThreatMapping:       emptyThreatMapping,
+			},
+			target: Data{
+				Actions:             types.ListNull(getActionElementType()),
+				ExceptionsList:      types.ListNull(getExceptionsListElementType()),
+				SeverityMapping:     types.ListNull(getSeverityMappingElementType()),
+				RiskScoreMapping:    types.ListNull(getRiskScoreMappingElementType()),
+				RelatedIntegrations: types.ListNull(getRelatedIntegrationElementType()),
+				Threat:              types.ListNull(getThreatElementType()),
+				ThreatMapping:       types.ListNull(getThreatMappingElementType()),
+			},
+			expectActions:  emptyActions,
+			expectThreat:   emptyThreat,
+			expectSeverity: emptySeverityMapping,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			reconcileEmptyListsFromPlan(ctx, &tt.reference, &tt.target)
+
+			require.Equal(t, tt.expectActions.IsNull(), tt.target.Actions.IsNull(), "Actions null mismatch")
+			if !tt.expectActions.IsNull() {
+				require.Len(t, tt.target.Actions.Elements(), len(tt.expectActions.Elements()), "Actions length mismatch")
+			}
+			require.Equal(t, tt.expectThreat.IsNull(), tt.target.Threat.IsNull(), "Threat null mismatch")
+			if !tt.expectThreat.IsNull() {
+				require.Len(t, tt.target.Threat.Elements(), len(tt.expectThreat.Elements()), "Threat length mismatch")
+			}
+			require.Equal(t, tt.expectSeverity.IsNull(), tt.target.SeverityMapping.IsNull(), "SeverityMapping null mismatch")
+			if !tt.expectSeverity.IsNull() {
+				require.Len(t, tt.target.SeverityMapping.Elements(), len(tt.expectSeverity.Elements()), "SeverityMapping length mismatch")
+			}
+			require.Equal(t, tt.reference.ExceptionsList.IsNull(), tt.target.ExceptionsList.IsNull(), "ExceptionsList null mismatch")
+			if !tt.reference.ExceptionsList.IsNull() {
+				require.Len(t, tt.target.ExceptionsList.Elements(), len(tt.reference.ExceptionsList.Elements()), "ExceptionsList length mismatch")
+			}
+			require.Equal(t, tt.reference.RiskScoreMapping.IsNull(), tt.target.RiskScoreMapping.IsNull(), "RiskScoreMapping null mismatch")
+			if !tt.reference.RiskScoreMapping.IsNull() {
+				require.Len(t, tt.target.RiskScoreMapping.Elements(), len(tt.reference.RiskScoreMapping.Elements()), "RiskScoreMapping length mismatch")
+			}
+			require.Equal(t, tt.reference.RelatedIntegrations.IsNull(), tt.target.RelatedIntegrations.IsNull(), "RelatedIntegrations null mismatch")
+			if !tt.reference.RelatedIntegrations.IsNull() {
+				require.Len(t, tt.target.RelatedIntegrations.Elements(), len(tt.reference.RelatedIntegrations.Elements()), "RelatedIntegrations length mismatch")
+			}
+			require.Equal(t, tt.reference.ThreatMapping.IsNull(), tt.target.ThreatMapping.IsNull(), "ThreatMapping null mismatch")
+			if !tt.reference.ThreatMapping.IsNull() {
+				require.Len(t, tt.target.ThreatMapping.Elements(), len(tt.reference.ThreatMapping.Elements()), "ThreatMapping length mismatch")
+			}
+		})
+	}
+}
+
+func TestReconcileNestedThreatLists(t *testing.T) {
+	ctx := context.Background()
+	var diags diag.Diagnostics
+
+	nullTechnique := types.ListNull(getThreatTechniqueElementType())
+	emptyTechnique := types.ListValueMust(getThreatTechniqueElementType(), []attr.Value{})
+
+	nullSubtechnique := types.ListNull(getThreatSubtechniqueElementType())
+	emptySubtechnique := types.ListValueMust(getThreatSubtechniqueElementType(), []attr.Value{})
+
+	tacticObj, _ := types.ObjectValueFrom(ctx, getThreatTacticType(), ThreatTacticModel{
+		ID: types.StringValue("TA0001"), Name: types.StringValue("Initial Access"), Reference: types.StringValue("https://attack.mitre.org/tactics/TA0001"),
+	})
+
+	buildThreatList := func(technique types.List) types.List {
+		list, _ := types.ListValueFrom(ctx, getThreatElementType(), []ThreatModel{
+			{Framework: types.StringValue("MITRE ATT&CK"), Tactic: tacticObj, Technique: technique},
+		})
+		return list
+	}
+
+	buildTechniqueList := func(subtechnique types.List) types.List {
+		list, _ := types.ListValueFrom(ctx, getThreatTechniqueElementType(), []ThreatTechniqueModel{
+			{
+				ID:           types.StringValue("T1190"),
+				Name:         types.StringValue("Exploit Public-Facing Application"),
+				Reference:    types.StringValue("https://attack.mitre.org/techniques/T1190"),
+				Subtechnique: subtechnique,
+			},
+		})
+		return list
+	}
+
+	// Pre-build a threat with technique containing a subtechnique
+	techniqueWithNullSub := buildTechniqueList(nullSubtechnique)
+	techniqueWithEmptySub := buildTechniqueList(emptySubtechnique)
+
+	tests := []struct {
+		name                   string
+		reference              Data
+		target                 Data
+		expectTechniqueNull    bool
+		expectTechniqueCount   int
+		expectSubtechniqueNull bool
+	}{
+		{
+			name:                 "explicitly empty technique list round-trips as []",
+			reference:            Data{Threat: buildThreatList(emptyTechnique)},
+			target:               Data{Threat: buildThreatList(nullTechnique)},
+			expectTechniqueNull:  false,
+			expectTechniqueCount: 0,
+		},
+		{
+			name:                "omitted/null technique remains null",
+			reference:           Data{Threat: buildThreatList(nullTechnique)},
+			target:              Data{Threat: buildThreatList(nullTechnique)},
+			expectTechniqueNull: true,
+		},
+		{
+			name:                   "explicitly empty subtechnique list round-trips as []",
+			reference:              Data{Threat: buildThreatList(techniqueWithEmptySub)},
+			target:                 Data{Threat: buildThreatList(techniqueWithNullSub)},
+			expectTechniqueNull:    false,
+			expectTechniqueCount:   1,
+			expectSubtechniqueNull: false,
+		},
+		{
+			name:                   "omitted/null subtechnique remains null",
+			reference:              Data{Threat: buildThreatList(techniqueWithNullSub)},
+			target:                 Data{Threat: buildThreatList(techniqueWithNullSub)},
+			expectTechniqueNull:    false,
+			expectTechniqueCount:   1,
+			expectSubtechniqueNull: true,
+		},
+	}
+
+	require.Empty(t, diags)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			reconcileEmptyListsFromPlan(ctx, &tt.reference, &tt.target)
+
+			var targetThreats []ThreatModel
+			errDiags := tt.target.Threat.ElementsAs(ctx, &targetThreats, false)
+			require.Empty(t, errDiags)
+			require.Len(t, targetThreats, 1)
+
+			if tt.expectTechniqueNull {
+				require.True(t, targetThreats[0].Technique.IsNull(), "expected technique to be null")
+			} else {
+				require.False(t, targetThreats[0].Technique.IsNull(), "expected technique to be non-null")
+			}
+
+			if !tt.expectTechniqueNull {
+				var targetTechs []ThreatTechniqueModel
+				errDiags := targetThreats[0].Technique.ElementsAs(ctx, &targetTechs, false)
+				require.Empty(t, errDiags)
+				require.Len(t, targetTechs, tt.expectTechniqueCount)
+
+				if tt.expectTechniqueCount > 0 {
+					if tt.expectSubtechniqueNull {
+						require.True(t, targetTechs[0].Subtechnique.IsNull(), "expected subtechnique to be null")
+					} else {
+						require.False(t, targetTechs[0].Subtechnique.IsNull(), "expected subtechnique to be non-null")
+						require.Empty(t, targetTechs[0].Subtechnique.Elements(), "expected subtechnique to be empty list")
+					}
+				}
 			}
 		})
 	}

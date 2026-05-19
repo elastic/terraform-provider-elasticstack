@@ -4,7 +4,7 @@ Workflow implementation: repository-authored template under `.github/workflows-s
 
 ## Purpose
 
-Define a deterministic workflow that maintains `CHANGELOG.md` from merged pull-request history using a shared JavaScript changelog engine. The workflow supports maintaining the full `## [Unreleased]` section on branch `generated-changelog`, and regenerating a concrete release section for release-preparation branches in explicit release mode.
+Define a deterministic workflow that maintains `CHANGELOG.md` from merged pull-request history using the shared Go changelog tool at `scripts/changelog/` (`run-engine` and related subcommands). The workflow supports maintaining the full `## [Unreleased]` section on branch `generated-changelog`, and regenerating a concrete release section for release-preparation branches in explicit release mode.
 ## Requirements
 ### Requirement: Workflow artifacts and operating modes
 The changelog generator SHALL be authored as a deterministic workflow template under `.github/workflows-src/` and SHALL generate a checked-in workflow YAML artifact under `.github/workflows/` via `scripts/compile-workflow-sources/main.go`. The workflow SHALL NOT require a GH AW markdown source or a compiled `.lock.yml`. The workflow SHALL support:
@@ -94,16 +94,21 @@ In release mode, when the rewriter mutates `CHANGELOG.md` to emit the new `## [x
 - **WHEN** the changelog generator runs in explicit release mode for version `x.y.z`
 - **THEN** the resulting `CHANGELOG.md` SHALL begin with the new `## [x.y.z] - <date>` section followed by the prior changelog content
 
-### Requirement: Shared changelog engine reuses existing JavaScript helpers
-The shared changelog engine SHALL be implemented in JavaScript and SHALL run on the Node.js runtime already used by `actions/github-script` and the workflow-source helpers. It SHALL be built by extracting and composing the existing JavaScript modules under `.github/workflows-src/changelog-generation/scripts/` and `.github/workflows-src/lib/` rather than by reimplementing changelog parsing, rendering, or PR resolution in another language. The engine SHALL NOT be authored in Go and SHALL NOT introduce a parallel Go implementation of changelog generation.
+### Requirement: Shared changelog engine is owned by the `scripts/changelog/` Go tool
 
-#### Scenario: Engine is implemented in JavaScript
-- **WHEN** the shared changelog engine is invoked from any workflow
-- **THEN** it SHALL execute as JavaScript on Node.js and SHALL reuse the existing repository-authored JS helpers for release-context resolution, merged-PR resolution, PR-body changelog parsing, and changelog rendering
+The shared changelog engine SHALL be implemented in Go and SHALL ship as the `scripts/changelog/` module documented by the `changelog-tooling` capability. Workflows SHALL invoke the engine by running `go run ./scripts/changelog <subcommand>` from a step that has already executed `actions/checkout` and `actions/setup-go`. The engine SHALL NOT be re-implemented as a parallel JavaScript or shell tool; the previous JavaScript tree under `.github/scripts/workflows/lib/changelog-*.js`, `.github/scripts/workflows/lib/pr-changelog-*.js`, `.github/scripts/workflows/changelog/*.js`, and `.github/scripts/workflows/pr-changelog-check/*.js` SHALL be removed when the Go tool reaches behavioural parity.
 
-#### Scenario: No Go implementation of the changelog engine
-- **WHEN** maintainers add or modify shared changelog engine logic
-- **THEN** that logic SHALL live in the existing JavaScript helper tree and SHALL NOT be added under `scripts/` as a Go program
+The engine SHALL preserve every externally observable behaviour required by this capability — modes, validation gates, GitHub-token usage, merged-PR resolution, `CHANGELOG.md` section format, and link-table maintenance — so callers and downstream consumers see identical output to the prior JavaScript implementation on the same inputs.
+
+#### Scenario: Engine is invoked via `go run ./scripts/changelog`
+
+- **WHEN** a workflow step needs to run the shared changelog engine
+- **THEN** it SHALL invoke `go run ./scripts/changelog <subcommand>` (after `actions/checkout` and `actions/setup-go`) rather than calling any `actions/github-script` JavaScript module under `.github/scripts/workflows/`
+
+#### Scenario: No parallel JavaScript engine remains after migration
+
+- **WHEN** the migration to `scripts/changelog/` has landed
+- **THEN** the repository SHALL contain no `.github/scripts/workflows/lib/changelog-*.js`, `.github/scripts/workflows/lib/pr-changelog-*.js`, `.github/scripts/workflows/changelog/*.js`, or `.github/scripts/workflows/pr-changelog-check/*.js` files; the `Makefile`'s `workflow-test` target SHALL NOT enumerate any deleted `.test.mjs` siblings for these clusters
 
 ### Requirement: Merged PR changelog metadata is gathered for deterministic assembly
 Before changelog rendering starts, a shared repository-authored changelog engine SHALL gather the merged pull requests in the authoritative release range and capture the metadata needed for rendering from those PRs by using the GitHub API with the workflow's repository token. For each merged PR, the engine SHALL capture at least the pull request number, URL, merge commit SHA, labels, and pull request body.

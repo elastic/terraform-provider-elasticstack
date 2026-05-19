@@ -20,18 +20,23 @@ package kibanautil
 
 import (
 	"context"
-	"fmt"
 	"net/http"
+	"strings"
 )
 
 // BuildSpaceAwarePath constructs an API path with space awareness.
-// If spaceID is empty or "default", returns the basePath unchanged.
-// Otherwise, prepends "/s/{spaceID}" to the basePath.
-func BuildSpaceAwarePath(spaceID, basePath string) string {
-	if spaceID != "" && spaceID != "default" {
-		return fmt.Sprintf("/s/%s%s", spaceID, basePath)
+// If spaceID is empty or "default", returns the path unchanged.
+// Otherwise, inserts "/s/{spaceID}" immediately before the first "/api/"
+// segment, preserving any base-path prefix that precedes it. When no "/api/"
+// anchor is found, it falls back to prepending "/s/{spaceID}" at the root.
+func BuildSpaceAwarePath(spaceID, path string) string {
+	if spaceID == "" || spaceID == "default" {
+		return path
 	}
-	return basePath
+	if idx := strings.Index(path, "/api/"); idx != -1 {
+		return path[:idx] + "/s/" + spaceID + path[idx:]
+	}
+	return "/s/" + spaceID + path
 }
 
 // SpaceAwarePathRequestEditor returns a RequestEditorFn that modifies the

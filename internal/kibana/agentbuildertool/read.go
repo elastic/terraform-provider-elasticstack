@@ -46,7 +46,7 @@ func (r *ToolResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		return
 	}
 
-	compID, idDiags := clients.CompositeIDFromStrFw(stateModel.ID.ValueString())
+	compID, idDiags := clients.CompositeIDFromStr(stateModel.ID.ValueString())
 	resp.Diagnostics.Append(idDiags...)
 	if resp.Diagnostics.HasError() {
 		return

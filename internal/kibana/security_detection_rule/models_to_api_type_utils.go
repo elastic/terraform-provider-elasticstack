@@ -26,7 +26,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -475,7 +474,7 @@ func (d Data) responseActionsToAPI(ctx context.Context, client clients.MinVersio
 
 	// Check version support for response actions
 	if supported, versionDiags := client.EnforceMinVersion(ctx, MinVersionResponseActions); versionDiags.HasError() {
-		diags.Append(diagutil.FrameworkDiagsFromSDK(versionDiags)...)
+		diags.Append(versionDiags...)
 		return nil, diags
 	} else if !supported {
 		// Version is not supported, return nil without error

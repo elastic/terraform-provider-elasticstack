@@ -406,7 +406,6 @@ func waffleConfigToAPI(m *models.WaffleConfigModel, resolver lenscommon.Resolver
 		waffleModeListStateFromSlice(len(m.GroupBy)),
 		waffleModeListStateFromSlice(len(m.EsqlMetrics)),
 		waffleModeListStateFromSlice(len(m.EsqlGroupBy)),
-		nil,
 	)...)
 	if diags.HasError() {
 		return attrs, diags

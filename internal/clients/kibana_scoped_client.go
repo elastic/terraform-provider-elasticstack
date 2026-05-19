@@ -23,8 +23,9 @@ import (
 
 	fleetclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/go-version"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 // KibanaScopedClient is a typed client surface for Kibana and Fleet operations.
@@ -77,23 +78,34 @@ func (k *KibanaScopedClient) GetFleetClient() (*fleetclient.Client, error) {
 	return k.fleet, nil
 }
 
-// ServerVersion returns the version of the Kibana server. Version is always
-// derived from the Kibana status API; there is no Elasticsearch fallback.
-func (k *KibanaScopedClient) ServerVersion(ctx context.Context) (*version.Version, diag.Diagnostics) {
+// getServerStatusRaw fetches the Kibana server status, returning the raw version
+// string and build flavor in a single HTTP call. It centralises GetKibanaOapiClient
+// setup and the GetKibanaStatus call so callers share one code path and one request.
+func (k *KibanaScopedClient) getServerStatusRaw(ctx context.Context) (rawVersion string, flavor string, diags fwdiag.Diagnostics) {
 	oapiClient, err := k.GetKibanaOapiClient()
 	if err != nil {
-		return nil, diag.Errorf("failed to get version from Kibana API: %s, "+
-			"please ensure a working 'kibana' endpoint is configured", err.Error())
+		diags.AddError(
+			"failed to get version from Kibana API",
+			err.Error()+", please ensure a working 'kibana' endpoint is configured",
+		)
+		return "", "", diags
 	}
 
-	rawVersion, _, diags := kibanaoapi.GetKibanaStatus(ctx, oapiClient.API)
+	rawVersion, flavor, diags = kibanaoapi.GetKibanaStatus(ctx, oapiClient.API)
+	return rawVersion, flavor, diags
+}
+
+// ServerVersion returns the version of the Kibana server. Version is always
+// derived from the Kibana status API; there is no Elasticsearch fallback.
+func (k *KibanaScopedClient) ServerVersion(ctx context.Context) (*version.Version, fwdiag.Diagnostics) {
+	rawVersion, _, diags := k.getServerStatusRaw(ctx)
 	if diags.HasError() {
 		return nil, diags
 	}
 
 	serverVersion, err := version.NewVersion(rawVersion)
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	return serverVersion, nil
@@ -102,14 +114,8 @@ func (k *KibanaScopedClient) ServerVersion(ctx context.Context) (*version.Versio
 // ServerFlavor returns the flavor (e.g. "serverless", "default") of the Kibana
 // server. Flavor is always derived from the Kibana status API.
 // Returns an empty string when build_flavor is absent (older stateful deployments).
-func (k *KibanaScopedClient) ServerFlavor(ctx context.Context) (string, diag.Diagnostics) {
-	oapiClient, err := k.GetKibanaOapiClient()
-	if err != nil {
-		return "", diag.Errorf("failed to get flavor from Kibana API: %s, "+
-			"please ensure a working 'kibana' endpoint is configured", err.Error())
-	}
-
-	_, flavor, diags := kibanaoapi.GetKibanaStatus(ctx, oapiClient.API)
+func (k *KibanaScopedClient) ServerFlavor(ctx context.Context) (string, fwdiag.Diagnostics) {
+	_, flavor, diags := k.getServerStatusRaw(ctx)
 	if diags.HasError() {
 		return "", diags
 	}
@@ -119,14 +125,8 @@ func (k *KibanaScopedClient) ServerFlavor(ctx context.Context) (string, diag.Dia
 
 // EnforceMinVersion returns true when the Kibana server version is greater than
 // or equal to minVersion, or when the server is running in serverless mode.
-func (k *KibanaScopedClient) EnforceMinVersion(ctx context.Context, minVersion *version.Version) (bool, diag.Diagnostics) {
-	oapiClient, err := k.GetKibanaOapiClient()
-	if err != nil {
-		return false, diag.Errorf("failed to get version from Kibana API: %s, "+
-			"please ensure a working 'kibana' endpoint is configured", err.Error())
-	}
-
-	rawVersion, flavor, diags := kibanaoapi.GetKibanaStatus(ctx, oapiClient.API)
+func (k *KibanaScopedClient) EnforceMinVersion(ctx context.Context, minVersion *version.Version) (bool, fwdiag.Diagnostics) {
+	rawVersion, flavor, diags := k.getServerStatusRaw(ctx)
 	if diags.HasError() {
 		return false, diags
 	}
@@ -137,7 +137,7 @@ func (k *KibanaScopedClient) EnforceMinVersion(ctx context.Context, minVersion *
 
 	serverVersion, err := version.NewVersion(rawVersion)
 	if err != nil {
-		return false, diag.FromErr(err)
+		return false, diagutil.FrameworkDiagFromError(err)
 	}
 
 	return serverVersion.GreaterThanOrEqual(minVersion), nil
@@ -145,18 +145,19 @@ func (k *KibanaScopedClient) EnforceMinVersion(ctx context.Context, minVersion *
 
 // EnforceVersionCheck returns true when the given version check function
 // returns true, or when the server is running in serverless mode.
-func (k *KibanaScopedClient) EnforceVersionCheck(ctx context.Context, check func(*version.Version) bool) (bool, diag.Diagnostics) {
-	flavor, diags := k.ServerFlavor(ctx)
+func (k *KibanaScopedClient) EnforceVersionCheck(ctx context.Context, check func(*version.Version) bool) (bool, fwdiag.Diagnostics) {
+	rawVersion, flavor, diags := k.getServerStatusRaw(ctx)
 	if diags.HasError() {
 		return false, diags
 	}
+
 	if flavor == ServerlessFlavor {
 		return true, nil
 	}
 
-	sv, diags := k.ServerVersion(ctx)
-	if diags.HasError() {
-		return false, diags
+	sv, err := version.NewVersion(rawVersion)
+	if err != nil {
+		return false, diagutil.FrameworkDiagFromError(err)
 	}
 
 	return check(sv), nil

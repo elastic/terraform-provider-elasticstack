@@ -21,10 +21,8 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -40,21 +38,15 @@ type calendarJobResource struct {
 	*entitycore.ElasticsearchResource[TFModel]
 }
 
-func updateCalendarJobNoOp(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, plan TFModel) (TFModel, diag.Diagnostics) {
-	return plan, nil
-}
-
 func newCalendarJobResource() *calendarJobResource {
 	return &calendarJobResource{
-		ElasticsearchResource: entitycore.NewElasticsearchResource(
-			entitycore.ComponentElasticsearch,
-			"ml_calendar_job",
-			getSchema,
-			readCalendarJob,
-			deleteCalendarJob,
-			createCalendarJob,
-			updateCalendarJobNoOp,
-		),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[TFModel]("ml_calendar_job", entitycore.ElasticsearchResourceOptions[TFModel]{
+			Schema: getSchema,
+			Read:   readCalendarJob,
+			Delete: deleteCalendarJob,
+			Create: createCalendarJob,
+			Update: updateCalendarJobNoOp,
+		}),
 	}
 }
 
@@ -64,7 +56,7 @@ func NewCalendarJobResource() resource.Resource {
 }
 
 func (r *calendarJobResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	compID, diags := clients.CompositeIDFromStrFw(req.ID)
+	compID, diags := clients.CompositeIDFromStr(req.ID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -88,7 +80,7 @@ func (r *calendarJobResource) ImportState(ctx context.Context, req resource.Impo
 	}
 
 	normalized, idDiags := client.ID(ctx, calendarID+"|"+jobID)
-	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(idDiags)...)
+	resp.Diagnostics.Append(idDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

@@ -25,7 +25,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -79,7 +78,7 @@ func readCalendarJob(ctx context.Context, client *clients.ElasticsearchScopedCli
 	}
 
 	compID, idDiags := client.ID(ctx, calendarID+"|"+jobID)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(idDiags)...)
+	diags.Append(idDiags...)
 	if diags.HasError() {
 		return state, false, diags
 	}

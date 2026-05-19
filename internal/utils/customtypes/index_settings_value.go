@@ -86,7 +86,7 @@ func (t IndexSettingsType) ValueFromTerraform(ctx context.Context, in tftypes.Va
 	return IndexSettingsValue{Normalized: norm}, nil
 }
 
-// IndexSettingsValue holds a JSON object string for index template settings with semantic equality matching DiffIndexSettingSuppress.
+// IndexSettingsValue holds a JSON object string for index template settings with semantic equality based on normalizeIndexSettings.
 type IndexSettingsValue struct {
 	jsontypes.Normalized
 }
@@ -214,7 +214,13 @@ func normalizeIndexSettings(m map[string]any) map[string]any {
 		if !strings.HasPrefix(k, "index.") {
 			nk = "index." + k
 		}
-		e := entry{k, nk, fmt.Sprintf("%v", val)}
+		var s string
+		if val == nil {
+			s = "null"
+		} else {
+			s = fmt.Sprintf("%v", val)
+		}
+		e := entry{k, nk, s}
 		if strings.Contains(k, ".") {
 			dotted = append(dotted, e)
 		} else {
@@ -351,6 +357,16 @@ func unflattenDottedMap(flat map[string]any) map[string]any {
 	return root
 }
 
+// normalizeSettingsScalars recursively walks decoded settings JSON and converts
+// string-encoded JSON booleans and null back to their native types. Elasticsearch
+// echoes some settings values (e.g. _tier_preference: null) as JSON strings
+// ("null") instead of the native JSON literal null. Normalizing here ensures
+// the stored value after import matches the value stored after the initial apply,
+// so ImportStateVerify does not fail due to "null" (string) vs null (JSON null).
+func normalizeSettingsScalars(v any) any {
+	return typeutils.NormalizeJSONScalar(v)
+}
+
 // NewIndexSettingsNull creates an IndexSettingsValue with a null value.
 func NewIndexSettingsNull() IndexSettingsValue {
 	return IndexSettingsValue{Normalized: jsontypes.NewNormalizedNull()}
@@ -361,7 +377,16 @@ func NewIndexSettingsUnknown() IndexSettingsValue {
 	return IndexSettingsValue{Normalized: jsontypes.NewNormalizedUnknown()}
 }
 
-// NewIndexSettingsValue creates an IndexSettingsValue with a known value.
+// NewIndexSettingsValue creates an IndexSettingsValue with a known value,
+// applying scalar normalization (converting string-encoded booleans and null
+// back to their native JSON types) before storing the value.
 func NewIndexSettingsValue(value string) IndexSettingsValue {
+	var m any
+	if err := json.Unmarshal([]byte(value), &m); err == nil {
+		m = normalizeSettingsScalars(m)
+		if nb, err := json.Marshal(m); err == nil {
+			value = string(nb)
+		}
+	}
 	return IndexSettingsValue{Normalized: jsontypes.NewNormalizedValue(value)}
 }

@@ -38,15 +38,13 @@ type slmResource struct {
 
 func newSlmResource() *slmResource {
 	return &slmResource{
-		ElasticsearchResource: entitycore.NewElasticsearchResource[Data](
-			entitycore.ComponentElasticsearch,
-			"snapshot_lifecycle",
-			GetSchema,
-			readSlm,
-			deleteSlm,
-			writeSlm,
-			writeSlm,
-		),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[Data]("snapshot_lifecycle", entitycore.ElasticsearchResourceOptions[Data]{
+			Schema: GetSchema,
+			Read:   readSlm,
+			Delete: deleteSlm,
+			Create: writeSlm,
+			Update: writeSlm,
+		}),
 	}
 }
 

@@ -102,8 +102,8 @@ func (r *mlDatafeedStateResource) update(ctx context.Context, plan tfsdk.Plan, s
 		return diags
 	}
 
-	compID, sdkDiags := client.ID(ctx, datafeedID)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	compID, idDiags := client.ID(ctx, datafeedID)
+	diags.Append(idDiags...)
 	if diags.HasError() {
 		return diags
 	}

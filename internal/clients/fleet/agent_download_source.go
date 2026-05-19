@@ -19,9 +19,9 @@ package fleet
 
 import (
 	"context"
-	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -34,14 +34,7 @@ func GetAgentDownloadSource(ctx context.Context, client *Client, id string, spac
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return resp, nil
-	case http.StatusNotFound:
-		return nil, nil
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return kibanaoapi.HandleGetTypedResponse(resp.StatusCode(), resp.Body, func() *kbapi.GetFleetAgentDownloadSourcesSourceidResponse { return resp })
 }
 
 // CreateAgentDownloadSource creates a new agent binary download source.
@@ -57,12 +50,8 @@ func CreateAgentDownloadSource(
 			return nil, 0, diagutil.FrameworkDiagFromError(err)
 		}
 
-		switch resp.StatusCode() {
-		case http.StatusOK:
-			return resp, resp.StatusCode(), nil
-		default:
-			return nil, resp.StatusCode(), diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-		}
+		result, diags := kibanaoapi.HandleMutateTypedResponse(resp.StatusCode(), resp.Body, func() *kbapi.PostFleetAgentDownloadSourcesResponse { return resp })
+		return result, resp.StatusCode(), diags
 	})
 }
 
@@ -80,12 +69,8 @@ func UpdateAgentDownloadSource(
 			return nil, 0, diagutil.FrameworkDiagFromError(err)
 		}
 
-		switch resp.StatusCode() {
-		case http.StatusOK:
-			return resp, resp.StatusCode(), nil
-		default:
-			return nil, resp.StatusCode(), diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-		}
+		result, diags := kibanaoapi.HandleMutateTypedResponse(resp.StatusCode(), resp.Body, func() *kbapi.PutFleetAgentDownloadSourcesSourceidResponse { return resp })
+		return result, resp.StatusCode(), diags
 	})
 }
 
@@ -108,10 +93,5 @@ func ListAgentDownloadSources(ctx context.Context, client *Client, spaceID strin
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return resp, nil
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return kibanaoapi.HandleGetTypedResponse(resp.StatusCode(), resp.Body, func() *kbapi.GetFleetAgentDownloadSourcesResponse { return resp })
 }

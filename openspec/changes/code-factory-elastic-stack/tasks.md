@@ -1,36 +1,85 @@
 ## 1. docker-compose.yml changes
 
-- [ ] 1.1 Update `elasticsearch` service `ports` to use `${BIND_ADDRESS:-127.0.0.1}:${ELASTICSEARCH_PORT}:9200`
-- [ ] 1.2 Update `kibana` service `ports` to use `${BIND_ADDRESS:-127.0.0.1}:${KIBANA_PORT}:5601`
-- [ ] 1.3 Verify `make docker-fleet` still works locally with default `BIND_ADDRESS` (localhost-only)
-- [ ] 1.4 Verify `make docker-fleet BIND_ADDRESS=0.0.0.0` binds to all interfaces
+- [x] 1.1 Update `elasticsearch` service `ports` to use `${ELASTICSEARCH_BIND:-127.0.0.1}:${ELASTICSEARCH_PORT}:9200`
+- [x] 1.2 Update `kibana` service `ports` to use `${KIBANA_BIND:-127.0.0.1}:${KIBANA_PORT}:5601`
+- [x] 1.3 Verify `make docker-fleet` still works locally with default bind addresses (localhost-only)
+- [x] 1.4 Verify `make docker-fleet` with `ELASTICSEARCH_BIND=0.0.0.0 KIBANA_BIND=0.0.0.0` binds to all interfaces
 
-## 2. Workflow template changes
+## 2. Shared workflow: setup-dev.md
 
-- [ ] 2.1 Add `env` block to `Setup Elastic Stack` step in `.github/workflows-src/code-factory-issue/workflow.md.tmpl`:
-  - `BIND_ADDRESS: "0.0.0.0"`
-  - `ELASTICSEARCH_PORT: "8080"`
-  - `KIBANA_PORT: "80"`
-- [ ] 2.2 Add `Stage Terraform for agent` step in `.github/workflows-src/code-factory-issue/workflow.md.tmpl`:
-  - Copy `$(which terraform)` to `.bin/terraform`
-  - Ensure `.bin/` is in `PATH` or documented for the agent
-- [ ] 2.3 Update the `## Test environment` section in the agent prompt (`workflow.md.tmpl`):
-  - Change ES endpoint from `host.docker.internal:9200` to `host.docker.internal:8080`
-  - Change KB endpoint from `host.docker.internal:5601` to `http://host.docker.internal` (port 80)
-- [ ] 2.4 Update the `## Verification tasks` section in the agent prompt (`workflow.md.tmpl`):
-  - Change acceptance test port references to `8080` and `80`
+- [x] 2.1 Update the "Export Go and Terraform paths for AWF chroot mode" step in `.github/workflows/shared/setup-dev.md`:
+  - Copy `$(which terraform)` into `$GITHUB_WORKSPACE/bin/terraform`
+  - Export `TERRAFORM_BIN=$GITHUB_WORKSPACE/bin/terraform`
+  - Export `PATH=$GITHUB_WORKSPACE/.bin:$PATH`
 
-## 3. Compile and validate workflows
+## 3. Shared workflow: elastic-stack.md (new)
 
-- [ ] 3.1 Run `gh aw compile` (or project-specific compilation command) against `.github/workflows-src/code-factory-issue/workflow.md.tmpl`
-- [ ] 3.2 Verify the generated `.github/workflows/code-factory-issue.lock.yml` includes the env vars and updated prompt text
-- [ ] 3.3 Verify `make check-lint` passes
-- [ ] 3.4 Commit changes to branch `code-factory-elastic-stack`
+- [x] 3.1 Create `.github/workflows/shared/elastic-stack.md` with frontmatter:
+  - `services:` containing `es-proxy` and `kb-proxy` using `backplane/socat-forward`
+  - `network:` allowed list including `terraform` ecosystem
+  - `steps:` for stack setup (`make docker-fleet`, `make set-kibana-password`, `make create-es-api-key`, `make setup-kibana-fleet`, `docker compose logs` on failure)
+- [x] 3.2 Ensure proxy services use `--add-host host.docker.internal:host-gateway`
+- [x] 3.3 Ensure proxy env vars (`LISTEN_PORT`, `DEST_PORT`, `DEST_HOST`) are passed via `options: >- -e ...`
 
-## 4. End-to-end validation
+## 4. Workflow template: code-factory-issue
 
-- [ ] 4.1 Trigger `code-factory-issue` workflow via `workflow_dispatch` with a test issue number
-- [ ] 4.2 Verify in the run logs that Elasticsearch binds to `0.0.0.0:8080` and Kibana to `0.0.0.0:80`
-- [ ] 4.3 Verify the agent sandbox can `curl http://host.docker.internal:8080` and `curl http://host.docker.internal`
-- [ ] 4.4 Verify the agent sandbox can run `terraform --version`
-- [ ] 4.5 If any step fails, capture logs and iterate
+- [x] 4.1 Update `imports:` to include `shared/elastic-stack.md`
+- [x] 4.2 Remove inline `network:` frontmatter key (now provided by shared file)
+- [x] 4.3 Update agent prompt `## Test environment` section to remove the "acceptance tests are currently blocked" warning
+
+## 5. Workflow template: reproducer-factory-issue
+
+- [x] 5.1 Add `imports: [shared/setup-dev.md, shared/elastic-stack.md]`
+- [x] 5.2 Remove inline dev-setup steps (`Setup Go`, `Export Go paths`, `Setup Node.js`, `Setup Terraform CLI`, `Export Go+Terraform paths`, `Get dependencies`)
+- [x] 5.3 Remove inline stack-setup steps (`Setup Elastic Stack`, `Setup Kibana user`, `Get ES API key`, `Setup Fleet`, `Docker compose logs`)
+- [x] 5.4 Remove inline `network:` and `services:` frontmatter keys (now provided by shared file)
+- [x] 5.5 Keep the `Download issue context artifact` inline step
+
+## 6. Compile and validate workflows
+
+- [x] 6.1 Run `make workflow-generate`
+- [x] 6.2 Verify both `.lock.yml` files contain the proxy services (`es-proxy`, `kb-proxy`) and `terraform` in allowed domains
+- [x] 6.3 Verify both `.lock.yml` files contain the stack setup steps in the agent job
+- [x] 6.4 Verify both `.lock.yml` files contain the Terraform workspace copy step
+
+## 7. End-to-end validation
+
+- [ ] 7.1 Merge workflow infrastructure changes to `main` (required for `safe_outputs` on agent-created PRs)
+- [ ] 7.2 Trigger `reproducer-factory-issue` workflow via `workflow_dispatch` with a test issue number
+- [ ] 7.3 Verify the agent sandbox can `curl http://host.docker.internal:9201` and `curl http://host.docker.internal:5602` (proxy ports)
+- [ ] 7.4 Verify the agent sandbox can run `terraform --version`
+- [ ] 7.5 Verify acceptance tests (`TF_ACC=1`) can execute successfully against the stack
+- [ ] 7.6 If any step fails, capture logs and iterate
+
+## 8. Fix agent prompt port references and outdated "blocked" language
+
+- [x] 8.1 Update `code-factory-issue.md` agent prompt:
+  - Change test endpoints from `host.docker.internal:9200` to `host.docker.internal:9201`
+  - Change test endpoints from `host.docker.internal:5601` to `host.docker.internal:5602`
+  - Change verification task from "Do not run acceptance tests" to "Run targeted acceptance tests"
+  - Change guardrail from "Do not run acceptance tests" to "Run targeted acceptance tests"
+- [x] 8.2 Update `reproducer-factory-issue.md` agent prompt:
+  - Rewrite "Test environment" to say stack IS provisioned and tests CAN be run
+  - Change endpoints to proxy ports `9201` and `5602`
+  - Change task step 4 from "Do not run" to "Run the acceptance test"
+  - Update outcome-A description to say test was verified against live stack
+- [x] 8.3 Update `shared/elastic-stack.md` documentation to reference proxy ports
+
+## 9. Fix OpenSpec spec metadata
+
+- [x] 9.1 Change `ci-code-factory-elastic-stack-test-environment/spec.md` header from `## MODIFIED Requirements` to `## ADDED Requirements`
+- [x] 9.2 Fix port references in all spec scenarios to use proxy ports (`9201`, `5602`)
+- [x] 9.3 Add requirement for new capability spec delta directories
+- [x] 9.4 Fix `ci-code-factory-issue-intake/spec.md` port references to proxy ports
+- [x] 9.5 Update `proposal.md` to mention new capability spec delta directories
+
+## 10. Create missing OpenSpec spec delta directories for new capabilities
+
+- [x] 10.1 Create `openspec/changes/code-factory-elastic-stack/specs/ci-shared-elastic-stack/spec.md`
+  - Move shared Elastic Stack requirements (proxy services, Docker Compose bind address, shared stack setup, Terraform network policy)
+  - Status: ADDED
+- [x] 10.2 Create `openspec/changes/code-factory-elastic-stack/specs/ci-shared-setup-dev/spec.md`
+  - Move shared dev-setup requirements (Terraform binary staging, Go toolchain, Node.js, repo dependencies)
+  - Status: ADDED
+- [x] 10.3 Update `ci-code-factory-elastic-stack-test-environment/spec.md` to contain only code-factory-specific test environment requirements
+- [x] 10.4 Run `make check-openspec` to validate all specs

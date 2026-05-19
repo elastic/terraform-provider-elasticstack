@@ -258,9 +258,8 @@ func mergeMemoryTimestamps(existing, incoming *time.Time) *time.Time {
 }
 
 // discoverEntities builds the canonical entity inventory from provider registrations.
-// It calls Resources() and DataSources() on the Plugin Framework provider, and
-// reads ResourcesMap/DataSourcesMap from the Plugin SDK provider.
-func discoverEntities(fwProv fwprovider.Provider, sdkResources map[string]struct{}, sdkDataSources map[string]struct{}) (resources map[string]struct{}, dataSources map[string]struct{}) {
+// It calls Resources() and DataSources() on the Plugin Framework provider.
+func discoverEntities(fwProv fwprovider.Provider) (resources map[string]struct{}, dataSources map[string]struct{}) {
 	resources = make(map[string]struct{})
 	dataSources = make(map[string]struct{})
 
@@ -283,16 +282,6 @@ func discoverEntities(fwProv fwprovider.Provider, sdkResources map[string]struct
 		if metaResp.TypeName != "" {
 			dataSources[metaResp.TypeName] = struct{}{}
 		}
-	}
-
-	// Plugin SDK resources.
-	for name := range sdkResources {
-		resources[name] = struct{}{}
-	}
-
-	// Plugin SDK data sources.
-	for name := range sdkDataSources {
-		dataSources[name] = struct{}{}
 	}
 
 	return resources, dataSources

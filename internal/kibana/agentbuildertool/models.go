@@ -58,36 +58,66 @@ type toolDataSourceModel struct {
 	WorkflowConfigurationYaml customtypes.NormalizedYamlValue `tfsdk:"workflow_configuration_yaml"`
 }
 
+// toolBaseData holds fields shared between toolDataSourceModel and toolModel
+// populated from the API response.
+type toolBaseData struct {
+	ID          types.String
+	ToolID      types.String
+	SpaceID     types.String
+	Type        types.String
+	Description types.String
+	Tags        types.Set
+}
+
+// populateToolBaseFromAPI extracts the fields common to both toolDataSourceModel
+// and toolModel from an API response, eliminating duplicated population logic.
+func populateToolBaseFromAPI(ctx context.Context, data *models.Tool, spaceID string) (toolBaseData, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	base := toolBaseData{
+		ID:      types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: data.ID}).String()),
+		ToolID:  types.StringValue(data.ID),
+		SpaceID: types.StringValue(spaceID),
+		Type:    types.StringValue(data.Type),
+	}
+
+	if data.Description != nil && *data.Description != "" {
+		base.Description = types.StringValue(*data.Description)
+	} else {
+		base.Description = types.StringNull()
+	}
+
+	diags.Append(populateSet(ctx, data.Tags, &base.Tags)...)
+	return base, diags
+}
+
+func populateSet(ctx context.Context, src []string, dst *types.Set) diag.Diagnostics {
+	if len(src) > 0 {
+		v, d := types.SetValueFrom(ctx, types.StringType, src)
+		*dst = v
+		return d
+	}
+	*dst = types.SetNull(types.StringType)
+	return nil
+}
+
 func (model *toolDataSourceModel) populateFromAPI(ctx context.Context, data *models.Tool) diag.Diagnostics {
 	if data == nil {
 		return nil
 	}
-
-	var diags diag.Diagnostics
 
 	spaceID := model.SpaceID.ValueString()
 	if spaceID == "" {
 		spaceID = defaultSpaceID
 	}
 
-	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: data.ID}).String())
-	model.ToolID = types.StringValue(data.ID)
-	model.SpaceID = types.StringValue(spaceID)
-	model.Type = types.StringValue(data.Type)
-
-	if data.Description != nil && *data.Description != "" {
-		model.Description = types.StringValue(*data.Description)
-	} else {
-		model.Description = types.StringNull()
-	}
-
-	if len(data.Tags) > 0 {
-		tags, d := types.SetValueFrom(ctx, types.StringType, data.Tags)
-		diags.Append(d...)
-		model.Tags = tags
-	} else {
-		model.Tags = types.SetNull(types.StringType)
-	}
+	base, diags := populateToolBaseFromAPI(ctx, data, spaceID)
+	model.ID = base.ID
+	model.ToolID = base.ToolID
+	model.SpaceID = base.SpaceID
+	model.Type = base.Type
+	model.Description = base.Description
+	model.Tags = base.Tags
 
 	model.ReadOnly = types.BoolValue(data.ReadOnly)
 
@@ -110,31 +140,18 @@ func (model *toolModel) populateFromAPI(ctx context.Context, data *models.Tool) 
 		return nil
 	}
 
-	var diags diag.Diagnostics
-
 	spaceID := model.SpaceID.ValueString()
 	if spaceID == "" {
 		spaceID = defaultSpaceID
 	}
 
-	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: data.ID}).String())
-	model.ToolID = types.StringValue(data.ID)
-	model.SpaceID = types.StringValue(spaceID)
-	model.Type = types.StringValue(data.Type)
-
-	if data.Description != nil && *data.Description != "" {
-		model.Description = types.StringValue(*data.Description)
-	} else {
-		model.Description = types.StringNull()
-	}
-
-	if len(data.Tags) > 0 {
-		tags, d := types.SetValueFrom(ctx, types.StringType, data.Tags)
-		diags.Append(d...)
-		model.Tags = tags
-	} else {
-		model.Tags = types.SetNull(types.StringType)
-	}
+	base, diags := populateToolBaseFromAPI(ctx, data, spaceID)
+	model.ID = base.ID
+	model.ToolID = base.ToolID
+	model.SpaceID = base.SpaceID
+	model.Type = base.Type
+	model.Description = base.Description
+	model.Tags = base.Tags
 
 	if data.Configuration != nil {
 		configJSON, err := json.Marshal(data.Configuration)

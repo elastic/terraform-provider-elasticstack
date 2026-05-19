@@ -38,15 +38,13 @@ type dataStreamResource struct {
 
 func newDataStreamResource() *dataStreamResource {
 	return &dataStreamResource{
-		ElasticsearchResource: entitycore.NewElasticsearchResource[Data](
-			entitycore.ComponentElasticsearch,
-			"data_stream",
-			GetSchema,
-			readDataStream,
-			deleteDataStream,
-			createDataStream,
-			createDataStream,
-		),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[Data]("data_stream", entitycore.ElasticsearchResourceOptions[Data]{
+			Schema: GetSchema,
+			Read:   readDataStream,
+			Delete: deleteDataStream,
+			Create: writeDataStream,
+			Update: writeDataStream,
+		}),
 	}
 }
 

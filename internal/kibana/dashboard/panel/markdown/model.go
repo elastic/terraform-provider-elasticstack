@@ -172,7 +172,8 @@ func PopulateTypedConfigFromAPI(pm *models.PanelModel, prior *models.PanelModel,
 	}
 }
 
-// panelUsesConfigJSONOnly must stay aligned with dashboard.panelUsesConfigJSONOnly (models_panels.go).
+// panelUsesConfigJSONOnly reports whether the practitioner omitted typed blocks and authored panel-level config_json only.
+// Must stay aligned with dashboard helpers used when merging markdown panels from API responses.
 func panelUsesConfigJSONOnly(pm *models.PanelModel) bool {
 	if pm == nil || !typeutils.IsKnown(pm.ConfigJSON) {
 		return false

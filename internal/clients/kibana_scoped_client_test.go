@@ -22,6 +22,7 @@ import (
 
 	fleetclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/hashicorp/go-version"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -178,4 +179,61 @@ func TestKibanaScopedClient_GetFleetClient_EndpointPresentNoAuth(t *testing.T) {
 	require.NoError(t, err,
 		"GetFleetClient must not fail when endpoint is present but auth fields are empty")
 	assert.NotNil(t, client)
+}
+
+// --- getServerStatusRaw error propagation ---
+
+// TestKibanaScopedClient_getServerStatusRaw_MissingEndpoint verifies that when
+// kibanaEndpoint is empty, getServerStatusRaw returns a populated Diagnostics error
+// rather than a nil-pointer panic or a silent empty result.
+func TestKibanaScopedClient_getServerStatusRaw_MissingEndpoint(t *testing.T) {
+	t.Parallel()
+	sc := newKibanaScopedClientNoEndpoint(t)
+	_, _, diags := sc.getServerStatusRaw(t.Context())
+	require.True(t, diags.HasError(), "getServerStatusRaw must return an error when kibana endpoint is not configured")
+}
+
+// TestKibanaScopedClient_ServerVersion_MissingEndpoint verifies that ServerVersion
+// propagates the error from getServerStatusRaw when the endpoint is not configured.
+func TestKibanaScopedClient_ServerVersion_MissingEndpoint(t *testing.T) {
+	t.Parallel()
+	sc := newKibanaScopedClientNoEndpoint(t)
+	v, diags := sc.ServerVersion(t.Context())
+	assert.Nil(t, v)
+	require.True(t, diags.HasError())
+}
+
+// TestKibanaScopedClient_ServerFlavor_MissingEndpoint verifies that ServerFlavor
+// propagates the error from getServerStatusRaw when the endpoint is not configured.
+func TestKibanaScopedClient_ServerFlavor_MissingEndpoint(t *testing.T) {
+	t.Parallel()
+	sc := newKibanaScopedClientNoEndpoint(t)
+	flavor, diags := sc.ServerFlavor(t.Context())
+	assert.Empty(t, flavor)
+	require.True(t, diags.HasError())
+}
+
+// TestKibanaScopedClient_EnforceMinVersion_MissingEndpoint verifies that
+// EnforceMinVersion propagates the error from getServerStatusRaw when the endpoint
+// is not configured.
+func TestKibanaScopedClient_EnforceMinVersion_MissingEndpoint(t *testing.T) {
+	t.Parallel()
+	sc := newKibanaScopedClientNoEndpoint(t)
+	minVer, err := version.NewVersion("8.0.0")
+	require.NoError(t, err)
+	ok, diags := sc.EnforceMinVersion(t.Context(), minVer)
+	assert.False(t, ok)
+	require.True(t, diags.HasError())
+}
+
+// TestKibanaScopedClient_EnforceVersionCheck_MissingEndpoint verifies that
+// EnforceVersionCheck propagates the error from getServerStatusRaw when the endpoint
+// is not configured — confirming it issues only one HTTP request attempt (via the
+// shared helper) before failing.
+func TestKibanaScopedClient_EnforceVersionCheck_MissingEndpoint(t *testing.T) {
+	t.Parallel()
+	sc := newKibanaScopedClientNoEndpoint(t)
+	ok, diags := sc.EnforceVersionCheck(t.Context(), func(_ *version.Version) bool { return true })
+	assert.False(t, ok)
+	require.True(t, diags.HasError())
 }

@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -94,7 +95,7 @@ func mergePlanAliasSetWithPriorState(ctx context.Context, planAliases, stateAlia
 		if !sOK || sAlias.IsNull() || sAlias.IsUnknown() {
 			continue
 		}
-		var sm AliasElementModel
+		var sm aliasutil.AliasModel
 		diags.Append(sAlias.As(ctx, &sm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true})...)
 		if diags.HasError() {
 			return planAliases, false, diags
@@ -115,7 +116,7 @@ func mergePlanAliasSetWithPriorState(ctx context.Context, planAliases, stateAlia
 			newElems[i] = pe
 			continue
 		}
-		var pm AliasElementModel
+		var pm aliasutil.AliasModel
 		diags.Append(pAlias.As(ctx, &pm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true})...)
 		if diags.HasError() {
 			return planAliases, false, diags
@@ -175,7 +176,7 @@ func mergeAliasSetPreferReferenceEncoding(ctx context.Context, apiSet, refSet at
 		if !refOK || refAlias.IsNull() || refAlias.IsUnknown() {
 			continue
 		}
-		var m AliasElementModel
+		var m aliasutil.AliasModel
 		diags.Append(refAlias.As(ctx, &m, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true})...)
 		if diags.HasError() {
 			return apiSet, false, diags
@@ -196,7 +197,7 @@ func mergeAliasSetPreferReferenceEncoding(ctx context.Context, apiSet, refSet at
 			newElems = append(newElems, ae)
 			continue
 		}
-		var am AliasElementModel
+		var am aliasutil.AliasModel
 		diags.Append(apiAlias.As(ctx, &am, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true})...)
 		if diags.HasError() {
 			return apiSet, false, diags
@@ -279,7 +280,7 @@ func projectConfigAliasMatchesOntoPlan(ctx context.Context, planAliases, configA
 			newElems[i] = pe
 			continue
 		}
-		var pm AliasElementModel
+		var pm aliasutil.AliasModel
 		diags.Append(pAlias.As(ctx, &pm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true})...)
 		if diags.HasError() {
 			return planAliases, false, diags
@@ -328,7 +329,7 @@ func aliasObjectsByName(ctx context.Context, set basetypes.SetValue) (map[string
 		if !ok || av.IsNull() || av.IsUnknown() {
 			continue
 		}
-		var m AliasElementModel
+		var m aliasutil.AliasModel
 		diags.Append(av.As(ctx, &m, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true})...)
 		if diags.HasError() {
 			return nil, diags

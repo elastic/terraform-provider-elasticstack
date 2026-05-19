@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/stretchr/testify/require"
 )
@@ -106,5 +107,74 @@ func TestResourceBase_Configure(t *testing.T) {
 		c.Configure(ctx, resource.ConfigureRequest{ProviderData: nilFactory}, &badResp)
 		require.True(t, badResp.Diagnostics.HasError())
 		require.Same(t, f, c.Client(), "client must stay the last successful assignment")
+	})
+}
+
+func TestDataSourceBase_Configure(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("nil_provider_data_stores_nil_client", func(t *testing.T) {
+		t.Parallel()
+		d := NewDataSourceBase(ComponentElasticsearch, "x")
+		var resp datasource.ConfigureResponse
+		d.Configure(ctx, datasource.ConfigureRequest{ProviderData: nil}, &resp)
+		require.False(t, resp.Diagnostics.HasError())
+		require.Nil(t, d.Client())
+	})
+
+	t.Run("valid_factory_stores_that_pointer", func(t *testing.T) {
+		t.Parallel()
+		d := NewDataSourceBase(ComponentElasticsearch, "x")
+		f := nonNilTestFactory()
+		var resp datasource.ConfigureResponse
+		d.Configure(ctx, datasource.ConfigureRequest{ProviderData: f}, &resp)
+		require.False(t, resp.Diagnostics.HasError())
+		require.Same(t, f, d.Client())
+	})
+
+	t.Run("success_then_untyped_nil_provider_data_replaces_with_nil_client", func(t *testing.T) {
+		t.Parallel()
+		d := NewDataSourceBase(ComponentElasticsearch, "x")
+		f := nonNilTestFactory()
+		var first datasource.ConfigureResponse
+		d.Configure(ctx, datasource.ConfigureRequest{ProviderData: f}, &first)
+		require.False(t, first.Diagnostics.HasError())
+		require.Same(t, f, d.Client())
+
+		var second datasource.ConfigureResponse
+		d.Configure(ctx, datasource.ConfigureRequest{ProviderData: nil}, &second)
+		require.False(t, second.Diagnostics.HasError())
+		require.Nil(t, d.Client())
+	})
+
+	t.Run("invalid_provider_data_leaves_prior_client", func(t *testing.T) {
+		t.Parallel()
+		d := NewDataSourceBase(ComponentElasticsearch, "x")
+		f := nonNilTestFactory()
+		var okResp datasource.ConfigureResponse
+		d.Configure(ctx, datasource.ConfigureRequest{ProviderData: f}, &okResp)
+		require.False(t, okResp.Diagnostics.HasError())
+		require.Same(t, f, d.Client())
+
+		var badResp datasource.ConfigureResponse
+		d.Configure(ctx, datasource.ConfigureRequest{ProviderData: "wrong-type"}, &badResp)
+		require.True(t, badResp.Diagnostics.HasError())
+		require.Same(t, f, d.Client(), "client must stay the last successful assignment")
+	})
+
+	t.Run("typed_nil_factory_pointer_leaves_prior_client", func(t *testing.T) {
+		t.Parallel()
+		d := NewDataSourceBase(ComponentElasticsearch, "x")
+		f := nonNilTestFactory()
+		var okResp datasource.ConfigureResponse
+		d.Configure(ctx, datasource.ConfigureRequest{ProviderData: f}, &okResp)
+		require.False(t, okResp.Diagnostics.HasError())
+		require.Same(t, f, d.Client())
+
+		var nilFactory *clients.ProviderClientFactory
+		var badResp datasource.ConfigureResponse
+		d.Configure(ctx, datasource.ConfigureRequest{ProviderData: nilFactory}, &badResp)
+		require.True(t, badResp.Diagnostics.HasError())
+		require.Same(t, f, d.Client(), "client must stay the last successful assignment")
 	})
 }
