@@ -355,6 +355,8 @@ safe-outputs:
           required: true
           type: string
       steps:
+        - name: Checkout repository
+          uses: actions/checkout@v6
         - name: Create or update research comment
           uses: actions/github-script@v9
           env:

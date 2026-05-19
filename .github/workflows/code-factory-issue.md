@@ -1,5 +1,7 @@
 ---
-imports: [shared/setup-dev.md]
+imports:
+  - shared/setup-dev.md
+  - shared/elastic-stack.md
 name: Code Factory Issue Intake
 timeout-minutes: 65
 description: >-
@@ -364,15 +366,13 @@ Deterministic pre-activation has already decided that this intake is eligible, t
 
 ## Test environment
 
-The Elastic Stack is provisioned in the agent environment but **acceptance tests are currently blocked by an AWF network policy issue** — `TF_ACC=1` tests will fail with connection errors. Do not run acceptance tests and do not treat their failure as a blocker. This is a known infrastructure issue being investigated separately.
-
-When the issue is resolved, targeted acceptance tests can be run with:
+The Elastic Stack is provisioned in the agent environment. You can run targeted acceptance tests with:
 
 ```bash
-ELASTICSEARCH_ENDPOINTS=http://host.docker.internal:9200 \
+ELASTICSEARCH_ENDPOINTS=http://host.docker.internal:9201 \
 ELASTICSEARCH_USERNAME=elastic \
 ELASTICSEARCH_PASSWORD=password \
-KIBANA_ENDPOINT=http://host.docker.internal:5601 \
+KIBANA_ENDPOINT=http://host.docker.internal:5602 \
 TF_ACC=1 \
 go test -v -run TestAccResourceName ./path/to/package
 ```
@@ -407,7 +407,7 @@ Run these steps **in order** before committing. Wait for each to complete fully.
 2. **Lint**: `make check-lint` must succeed.
 3. **Build**: `make build` must succeed. Wait for it to finish completely.
 4. **Unit tests**: `go test ./...` must pass.
-5. **Acceptance tests**: Do not run. They are blocked by a known AWF infrastructure issue and will fail with connection errors regardless of code correctness.
+5. **Acceptance tests**: Run targeted acceptance tests against the live Elastic Stack. Use the connection variables shown in **Test environment**. If tests fail, check whether the failure is related to your changes before proceeding.
 
 ## Pull request contract
 
@@ -422,7 +422,7 @@ The linked pull request must:
 
 - Do not re-check trigger eligibility, actor trust, or duplicate PR state; deterministic pre-activation already handled those checks.
 - Run `make fmt` **before** committing — unformatted code will fail CI. `make check-lint` and `make build` must also succeed.
-- Do not run acceptance tests (`TF_ACC=1`). They are blocked by a known AWF infrastructure issue.
+- Run targeted acceptance tests (`TF_ACC=1`) against the live Elastic Stack using the endpoints in **Test environment**.
 - Do not open a second pull request for the same issue.
 - Do not change the branch naming convention.
 - Do not open issues in this workflow.

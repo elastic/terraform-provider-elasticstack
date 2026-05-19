@@ -1,71 +1,91 @@
 ## Context
 
-The `code-factory` workflow runs an AWF (AI Workflow Framework) agent inside a sandboxed Docker container orchestrated by `awf`. The agent needs to run acceptance tests against an Elasticsearch and Kibana stack that is started via `make docker-fleet` (which uses Docker Compose) in the workflow steps that run on the GitHub Actions runner.
+The `code-factory` and `reproducer-factory` workflows run an AWF (AI Workflow Framework) agent inside a sandboxed Docker container. The agent needs to run acceptance tests against an Elasticsearch and Kibana stack started via `make docker-fleet` (Docker Compose) on the GitHub Actions runner.
 
-Two infrastructure problems prevent the agent from reaching the stack:
+Three infrastructure problems prevented the agent from reaching the stack and using Terraform:
 
-1. **AWF firewall port restriction**: The AWF sandbox only allows outbound host ports `80`, `443`, and `8080` via `--allow-host-ports`. Elasticsearch (9200) and Kibana (5601) are blocked.
-2. **Bind address isolation on Linux**: The `docker-compose.yml` explicitly binds ports to `127.0.0.1` (`127.0.0.1:9200:9200` and `127.0.0.1:5601:5601`). On Linux GitHub Actions runners, `host.docker.internal` resolves to the Docker bridge gateway (e.g. `172.17.0.1`), not loopback. Even if the AWF firewall allowed 9200/5601, the services would not accept connections from the bridge gateway because they only listen on `127.0.0.1`.
+1. **AWF firewall blocks ES/Kibana ports**: The AWF sandbox `--allow-host-ports` allowlist only covers `80`, `443`, and `8080` by default. Elasticsearch (9200) and Kibana (5601) are blocked from within the agent.
+2. **Bind address isolation on Linux**: `docker-compose.yml` explicitly binds ports to `127.0.0.1`. On Linux runners, `host.docker.internal` resolves to the Docker bridge gateway (e.g. `172.17.0.1`), not loopback. Even if the firewall allowed 9200/5601, the services would refuse connections from the bridge gateway.
+3. **Terraform binary not mounted**: `hashicorp/setup-terraform` installs to `RUNNER_TEMP` (`/opt/hostedtoolcache`), which is **not** mounted into the AWF container. The agent's runtime PATH searches directories that are empty inside the sandbox.
 
-A third problem: the Terraform binary installed by `hashicorp/setup-terraform` is placed in the GitHub Actions toolcache (`/opt/hostedtoolcache`), which is **not** mounted into the AWF agent container. The agent's PATH augmentation searches those directories but they are empty from the container's perspective.
+A fourth organisational problem: the dev-tooling setup and stack setup were either duplicated inline (`reproducer-factory`) or missing/outdated (`code-factory`), creating maintenance drift.
 
 ## Goals / Non-Goals
 
 **Goals:**
-- Make the Elastic Stack reachable from the `code-factory` agentic sandbox on Linux runners
+- Make the Elastic Stack reachable from both `code-factory` and `reproducer-factory` agentic sandboxes on Linux runners
 - Preserve the existing `localhost`-only security default for local developer runs of `docker-compose.yml`
-- Ensure the Terraform CLI is discoverable inside the agentic sandbox for acceptance tests
+- Ensure the Terraform CLI is discoverable inside both agentic sandboxes
+- Extract shared setup components so both workflows stay in sync
 - Keep the change minimal and self-contained (no provider code changes)
 
 **Non-Goals:**
-- Changing the AWF firewall allowlist (controlled by the `gh-aw` compiler, not repo-authored code)
+- Changing the AWF `--allow-host-ports` allowlist (requires a framework-level change at GitHub, out of scope)
+- Publishing a custom Docker image for the proxies
 - Rewriting the orchestration from Docker Compose to GH AW `services:`
 - Changing the `provider.yml` CI workflow or local `make` developer workflows
 - Adding new Terraform resources or data sources
 
 ## Decisions
 
-### Decision 1: Remap ES to port 8080 and Kibana to port 80 (instead of requesting firewall changes)
+### Decision 1: Use socat proxy `services` instead of remapping to ports 80/8080
 
-**Rationale:** The AWF `--allow-host-ports` flag is injected by the `gh-aw` compiler. There is no repo-authored frontmatter option to extend it. Adding `9200` and `5601` would require a framework-level change at GitHub, which is out of scope and uncertain timeline. Ports `80` and `8080` are already in the allowlist.
+**Rationale:** An earlier design remapped ES to port `8080` and Kibana to port `80` because those ports are in the AWF allowlist by default. This was rejected because:
+- Port `80` may conflict with other services and Kibana's 302 behaviour adds confusion.
+- The GH AW compiler detects `services:` definitions and opens those ports in the firewall automatically, so dedicated proxy ports (`9201` and `5602`) are cleaner and don't conflict.
+- `backplane/socat-forward` accepts configuration via env vars injected through `options`, avoiding the broken `command:` key that caused `invalid reference format` errors in GH AW validation.
+- `--add-host host.docker.internal:host-gateway` fixes Linux `host.docker.internal` resolution.
 
-**Alternative considered:** Use `services:` in the frontmatter. Rejected because Docker Compose gives us deterministic orchestration (`depends_on: condition: service_healthy`, named volumes, config file mounts) that would need to be reimplemented as explicit wait loops with `services:`.
+**Alternative considered:** Remap to `8080`/`80`. Rejected: conflicts, confusing redirects, and harder to debug.
 
-### Decision 2: Introduce a `BIND_ADDRESS` env var defaulting to `127.0.0.1`
+### Decision 2: Introduce `ELASTICSEARCH_BIND` and `KIBANA_BIND` env vars defaulting to `127.0.0.1`
 
-**Rationale:** Hard-coding `0.0.0.0` would open ports to the network on developer machines, which is a security regression. An env var with a safe default preserves local behavior while allowing CI to opt-in.
+**Rationale:** Hard-coding `0.0.0.0` would open ports on developer machines. Separate env vars (replacing a single `BIND_ADDRESS`) allow each service to be configured independently while preserving safe defaults.
 
-**Format:** `ports: ["${BIND_ADDRESS:-127.0.0.1}:${ELASTICSEARCH_PORT}:9200"]`
+**Format:**
+```yaml
+ports:
+  - ${ELASTICSEARCH_BIND:-127.0.0.1}:${ELASTICSEARCH_PORT}:9200
+  - ${KIBANA_BIND:-127.0.0.1}:${KIBANA_PORT}:5601
+```
 
-**Alternative considered:** Use a second compose file (`docker-compose.ci.yml`) or Docker host networking. Rejected: a second compose file fragments the setup and would need to keep both in sync. Host networking is not portable to Docker Desktop.
+**Alternative considered:** Use a second compose file (`docker-compose.ci.yml`). Rejected: fragments the setup and requires keeping both in sync.
 
 ### Decision 3: Stage Terraform into the workspace, not the runtime PATH
 
-**Rationale:** The AWF container mounts the workspace (`${GITHUB_WORKSPACE}`) but not `/opt/hostedtoolcache`. Copying Terraform into a `.bin/` directory inside the workspace guarantees the agent can find it without relying on implicit mount behavior that may change with AWF updates.
+**Rationale:** The AWF container mounts the workspace (`${GITHUB_WORKSPACE}`) but not `/opt/hostedtoolcache` or `RUNNER_TEMP`. Copying Terraform into a `bin/` directory inside the workspace guarantees the agent can find it.
 
-**Alternative considered:** Install Terraform inside the AWF container at runtime. Rejected: the AWF container is a minimal sandbox without `apt`, `brew`, or internet access to download binaries. The `hashicorp/setup-terraform` action already handles installation; we just need visibility.
+**Alternative considered:** Install Terraform inside the AWF container at runtime. Rejected: the AWF container is a minimal sandbox without `apt`, `brew`, or internet access to download binaries.
+
+### Decision 4: Extract shared workflow components
+
+**Rationale:** `reproducer-factory` had the correct stack setup inline, while `code-factory` lacked it entirely. The dev-tooling setup (`Setup Go`, `Setup Terraform`, etc.) was also duplicated. Extracting `shared/setup-dev.md` (dev tools) and `shared/elastic-stack.md` (stack infrastructure) means both workflows import the same definitions. Future fixes apply in one place.
+
+**Shared component contracts:**
+- `.github/workflows/shared/setup-dev.md` frontmatter provides `steps:` for Go, Terraform, Node.js, and `make setup`.
+- `.github/workflows/shared/elastic-stack.md` frontmatter provides `services:` (proxies), `network:` (allowed domains/ecosystems), and `steps:` for stack setup.
+- The GH AW compiler merges frontmatter keys (`steps`, `services`, `network`) from imported shared files into the consuming workflow.
 
 ## Risks / Trade-offs
 
 | Risk | Mitigation |
 |------|------------|
-| Port 80/8080 may already be in use on some runner configurations | Test in a `workflow_dispatch` run before relying on it; fallback is to use `80` only for Kibana since it returns 302s (stateless) and `8080` for ES since it handles high load |
-| Kibana returning 302 redirects from `/` could confuse health checks in the agent prompt | The agent prompt already specifies API paths like `/api/fleet/...`; Kibana's 302 on `/` is handled correctly by the provider tests |
-| `BIND_ADDRESS` env var is a new, untested convention in this repo | Documented in the workflow step and in the spec; other CI workflows (`provider.yml`) do not set it, so they keep the `127.0.0.1` behavior |
-| Terraform binary copied into workspace can be accidentally committed | Add `.bin/` to `.gitignore` if not already present; the file is created at runtime on fresh CI checkouts and the workspace is ephemeral |
+| GH AW `safe_outputs` rejects workflow file changes on branches that have them but `main` does not | The infrastructure changes must be merged to `main` before agent-created PRs on these branches will pass `safe_outputs` (`protect_top_level_dot_folders: true`). |
+| `host.docker.internal` may behave differently on non-Linux runners | The `--add-host` flag is only needed on Linux; Docker Desktop handles this automatically. The workflow only runs on GitHub-hosted `ubuntu-latest`. |
+| Terraform binary copied into workspace can be accidentally committed | The `bin/` directory is created at runtime in CI and is outside the source tree; it is ephemeral on fresh checkouts. |
+| Shared workflow file changes affect multiple workflows | This is intentional (DRY), but means shared-file edits must be validated against both consumers (`code-factory` and `reproducer-factory`). |
 
 ## Migration Plan
 
-1. Update `docker-compose.yml` with `BIND_ADDRESS` substitution
-2. Update `.github/workflows-src/code-factory-issue/workflow.md.tmpl` with:
-   - `env` vars on `Setup Elastic Stack` step
-   - `Stage Terraform for agent` step
-   - Updated agent prompt text (test environment URLs, verification task)
-3. Compile the workflow: `gh aw compile` (or equivalent project script)
-4. Run a `workflow_dispatch` test of `code-factory` with a dummy issue to verify the agent can reach the stack and run `terraform --version`
-5. Rollback: revert the commit; no stateful changes
+1. Update `docker-compose.yml` with `ELASTICSEARCH_BIND` and `KIBANA_BIND` substitution.
+2. Update `.github/workflows/shared/setup-dev.md` with workspace Terraform copy fix.
+3. Create `.github/workflows/shared/elastic-stack.md` with proxies, network rules, and stack steps.
+4. Update both workflow templates to import the shared files and remove inline equivalents.
+5. Run `make workflow-generate` and verify compilation succeeds.
+6. Merge the infrastructure changes to `main` (required for `safe_outputs` on future agent runs).
+7. Trigger a test run of `reproducer-factory-issue` via `workflow_dispatch` to verify the agent can reach the stack and run `terraform --version`.
 
 ## Open Questions
 
-- Should the `change-factory` workflow get the same treatment (it also needs to run tests)?
-- Does `gh aw compile` emit a diff that includes the `--allow-host-ports` lock value, confirming the framework has the right allowlist?
+- Should the `change-factory` or `research-factory` workflows also import `shared/elastic-stack.md`?
+- Should `shared/setup-dev.md` be imported by any other workflows currently duplicating its steps?
