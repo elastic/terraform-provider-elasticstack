@@ -158,19 +158,10 @@ func setToStrings(ctx context.Context, set types.Set) ([]string, diag.Diagnostic
 	return out, d
 }
 
-// postReferencedContentItem matches the anonymous struct used by
-// kbapi.PostAgentBuilderSkillsJSONBody.ReferencedContent.
-type postReferencedContentItem = struct {
-	Content      string `json:"content"`
-	Name         string `json:"name"`
-	RelativePath string `json:"relativePath"`
-}
-
-// putReferencedContentItem matches the anonymous struct used by
-// kbapi.PutAgentBuilderSkillsSkillidJSONBody.ReferencedContent. The shape is
-// identical to the POST variant, but the generated types use distinct anonymous
-// structs so we keep both aliases for clarity.
-type putReferencedContentItem = struct {
+// referencedContentItem matches the anonymous struct shape used by both
+// kbapi.PostAgentBuilderSkillsJSONBody and
+// kbapi.PutAgentBuilderSkillsSkillidJSONBody for referenced_content entries.
+type referencedContentItem = struct {
 	Content      string `json:"content"`
 	Name         string `json:"name"`
 	RelativePath string `json:"relativePath"`
@@ -193,9 +184,9 @@ func (model skillModel) toAPICreateModel(ctx context.Context) (kbapi.PostAgentBu
 	}
 
 	if len(model.ReferencedContent) > 0 {
-		entries := make([]postReferencedContentItem, 0, len(model.ReferencedContent))
+		entries := make([]referencedContentItem, 0, len(model.ReferencedContent))
 		for _, entry := range model.ReferencedContent {
-			entries = append(entries, postReferencedContentItem{
+			entries = append(entries, referencedContentItem{
 				Content:      entry.Content.ValueString(),
 				Name:         entry.Name.ValueString(),
 				RelativePath: entry.RelativePath.ValueString(),
@@ -230,9 +221,9 @@ func (model skillModel) toAPIUpdateModel(ctx context.Context) (kbapi.PutAgentBui
 	}
 	body.ToolIds = &toolIDs
 
-	entries := make([]putReferencedContentItem, 0, len(model.ReferencedContent))
+	entries := make([]referencedContentItem, 0, len(model.ReferencedContent))
 	for _, entry := range model.ReferencedContent {
-		entries = append(entries, putReferencedContentItem{
+		entries = append(entries, referencedContentItem{
 			Content:      entry.Content.ValueString(),
 			Name:         entry.Name.ValueString(),
 			RelativePath: entry.RelativePath.ValueString(),

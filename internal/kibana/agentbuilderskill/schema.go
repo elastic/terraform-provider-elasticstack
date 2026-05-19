@@ -39,7 +39,7 @@ func (r *SkillResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 func getSchema() schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: "Manages Kibana Agent Builder skills. Skills are reusable markdown instructions that agents can reference. " +
-			"See the [Agent Builder API documentation](https://www.elastic.co/docs/api/doc/kibana/group/endpoint-agent-builder) for more information.",
+			"See the [Agent Builder Skills API documentation](https://www.elastic.co/docs/api/doc/kibana/operation/operation-post-agent-builder-skills) for more information.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,

@@ -3,12 +3,12 @@
 page_title: "elasticstack_kibana_agentbuilder_skill Resource - terraform-provider-elasticstack"
 subcategory: "Kibana"
 description: |-
-  Manages Kibana Agent Builder skills. Skills are reusable markdown instructions that agents can reference. See the Agent Builder API documentation https://www.elastic.co/docs/api/doc/kibana/group/endpoint-agent-builder for more information.
+  Manages Kibana Agent Builder skills. Skills are reusable markdown instructions that agents can reference. See the Agent Builder Skills API documentation https://www.elastic.co/docs/api/doc/kibana/operation/operation-post-agent-builder-skills for more information.
 ---
 
 # elasticstack_kibana_agentbuilder_skill (Resource)
 
-Manages Kibana Agent Builder skills. Skills are reusable markdown instructions that agents can reference. See the [Agent Builder API documentation](https://www.elastic.co/docs/api/doc/kibana/group/endpoint-agent-builder) for more information.
+Manages Kibana Agent Builder skills. Skills are reusable markdown instructions that agents can reference. See the [Agent Builder Skills API documentation](https://www.elastic.co/docs/api/doc/kibana/operation/operation-post-agent-builder-skills) for more information.
 
 ## Example Usage
 

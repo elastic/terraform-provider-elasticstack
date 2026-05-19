@@ -44,12 +44,11 @@ func (r *AgentResource) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
-	serverVersion, verDiags := client.ServerVersion(ctx)
+	supportsSkillIDs, verDiags := client.EnforceMinVersion(ctx, minVersionAdvancedAgentConfig)
 	resp.Diagnostics.Append(verDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	supportsSkillIDs := !serverVersion.LessThan(minVersionAdvancedAgentConfig)
 
 	body, diags := planModel.toAPICreateModel(ctx, supportsSkillIDs)
 	resp.Diagnostics.Append(diags...)

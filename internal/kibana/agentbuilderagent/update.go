@@ -45,12 +45,11 @@ func (r *AgentResource) Update(ctx context.Context, req resource.UpdateRequest, 
 		return
 	}
 
-	serverVersion, verDiags := client.ServerVersion(ctx)
+	supportsSkillIDs, verDiags := client.EnforceMinVersion(ctx, minVersionAdvancedAgentConfig)
 	resp.Diagnostics.Append(verDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	supportsSkillIDs := !serverVersion.LessThan(minVersionAdvancedAgentConfig)
 
 	compID, idDiags := clients.CompositeIDFromStr(planModel.ID.ValueString())
 
