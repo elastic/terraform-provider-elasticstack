@@ -20,8 +20,8 @@
 
 ## 4. Fix stray test import
 
-- [ ] 4.1 Update `internal/elasticsearch/index/templateilmattachment/acc_test.go` to import `github.com/hashicorp/terraform-plugin-testing/helper/acctest` instead of SDK v2 version
-- [ ] 4.2 Verify the test file compiles (`go test -c ./internal/elasticsearch/index/templateilmattachment/...`)
+- [x] 4.1 Update `internal/elasticsearch/index/templateilmattachment/acc_test.go` to import `github.com/hashicorp/terraform-plugin-testing/helper/acctest` instead of SDK v2 version
+- [x] 4.2 Verify the test file compiles (`go test -c ./internal/elasticsearch/index/templateilmattachment/...`)
 
 ## 5. Clean up go.mod
 
