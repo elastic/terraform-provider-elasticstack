@@ -90,7 +90,10 @@ func checkResourceJSONAttrKey(key, expectedJSON string) resource.TestCheckFunc {
 var minVersionSupport = version.Must(version.NewVersion("8.11.0"))
 var minResponseActionVersionSupport = version.Must(version.NewVersion("8.16.0"))
 
-const securityDetectionRuleResourceName = "elasticstack_kibana_security_detection_rule.test"
+const (
+	securityDetectionRuleResourceName      = "elasticstack_kibana_security_detection_rule.test"
+	securityDetectionRuleConnectorResource = "elasticstack_kibana_action_connector.test"
+)
 
 func testAccRandomizedRuleName(prefix string) string {
 	return fmt.Sprintf("%s-%s", prefix, sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum))
@@ -1560,8 +1563,8 @@ func TestAccResourceSecurityDetectionRule_EmptyLists(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "type", "query"),
 					resource.TestCheckResourceAttr(resourceName, "query", "*:*"),
 
-					// Assert all seven attributes are stored as empty lists, not null
-					resource.TestCheckResourceAttr(resourceName, "actions.#", "0"),
+					// actions is a block list; omitting it yields null (not an empty list)
+					resource.TestCheckNoResourceAttr(resourceName, "actions"),
 					resource.TestCheckResourceAttr(resourceName, "exceptions_list.#", "0"),
 					resource.TestCheckResourceAttr(resourceName, "severity_mapping.#", "0"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "0"),
@@ -1600,8 +1603,8 @@ func TestAccResourceSecurityDetectionRule_EmptyLists(t *testing.T) {
 					"name": config.StringVariable(ruleName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					// After update back to empty lists, verify all seven attributes are empty
-					resource.TestCheckResourceAttr(resourceName, "actions.#", "0"),
+					// After update back to empty lists, verify list attributes are empty (actions omitted)
+					resource.TestCheckNoResourceAttr(resourceName, "actions"),
 					resource.TestCheckResourceAttr(resourceName, "exceptions_list.#", "0"),
 					resource.TestCheckResourceAttr(resourceName, "severity_mapping.#", "0"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "0"),
@@ -1704,7 +1707,6 @@ func TestAccResourceSecurityDetectionRule_AlertsFilter(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minSupportedAlertsFilterVersion, versionutils.FlavorAny)
 
 	resourceName := securityDetectionRuleResourceName
-	connectorResourceName := "elasticstack_kibana_action_connector.test"
 	ruleName := testAccRandomizedRuleName("test-rule-alerts-filter")
 	connectorName := testAccRandomizedRuleName("test-connector-alerts-filter")
 	connectorID := uuid.New().String()
@@ -1722,7 +1724,7 @@ func TestAccResourceSecurityDetectionRule_AlertsFilter(t *testing.T) {
 					"connector_id":   config.StringVariable(connectorID),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(connectorResourceName, "connector_id", connectorID),
+					resource.TestCheckResourceAttr(securityDetectionRuleConnectorResource, "connector_id", connectorID),
 					resource.TestCheckResourceAttr(resourceName, "actions.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "actions.0.alerts_filter.query.kql", `event.action : "test_case_a"`),
 					resource.TestCheckResourceAttr(resourceName, "actions.0.alerts_filter.query.filters_json", "[]"),
@@ -1759,6 +1761,11 @@ func TestAccResourceSecurityDetectionRule_AlertsFilter(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "actions.0.alerts_filter.query.kql", `event.action : "test_case_b"`),
 					resource.TestCheckResourceAttr(resourceName, "actions.0.alerts_filter.query.filters_json", "[]"),
 				),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PostApplyPreRefresh: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -1785,6 +1792,27 @@ func TestAccResourceSecurityDetectionRule_AlertsFilter(t *testing.T) {
 					},
 				},
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("non_empty_filters"),
+				ConfigVariables: config.Variables{
+					"name":           config.StringVariable(ruleName),
+					"connector_name": config.StringVariable(connectorName),
+					"connector_id":   config.StringVariable(connectorID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(
+						resourceName,
+						"actions.0.alerts_filter.query.filters_json",
+						`[{"meta":{"alias":null,"disabled":false,"negate":false}}]`,
+					),
+				),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PostApplyPreRefresh: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
+			},
 		},
 	})
 }
@@ -1793,7 +1821,6 @@ func TestAccResourceSecurityDetectionRule_WithConnectorAction(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minResponseActionVersionSupport, versionutils.FlavorAny)
 
 	resourceName := securityDetectionRuleResourceName
-	connectorResourceName := "elasticstack_kibana_action_connector.test"
 	createRuleName := testAccRandomizedRuleName("test-rule-with-action")
 	updatedRuleName := testAccRandomizedRuleName("test-rule-with-action-updated")
 	connectorName := testAccRandomizedRuleName("test-connector")
@@ -1813,11 +1840,11 @@ func TestAccResourceSecurityDetectionRule_WithConnectorAction(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					// Check connector attributes
-					resource.TestCheckResourceAttr(connectorResourceName, "name", connectorName),
-					resource.TestCheckResourceAttr(connectorResourceName, "connector_id", connectorID),
-					resource.TestCheckResourceAttr(connectorResourceName, "connector_type_id", ".cases-webhook"),
-					resource.TestCheckResourceAttrSet(connectorResourceName, "config"),
-					resource.TestCheckResourceAttrSet(connectorResourceName, "secrets"),
+					resource.TestCheckResourceAttr(securityDetectionRuleConnectorResource, "name", connectorName),
+					resource.TestCheckResourceAttr(securityDetectionRuleConnectorResource, "connector_id", connectorID),
+					resource.TestCheckResourceAttr(securityDetectionRuleConnectorResource, "connector_type_id", ".cases-webhook"),
+					resource.TestCheckResourceAttrSet(securityDetectionRuleConnectorResource, "config"),
+					resource.TestCheckResourceAttrSet(securityDetectionRuleConnectorResource, "secrets"),
 
 					// Check security detection rule attributes
 					resource.TestCheckResourceAttr(resourceName, "name", createRuleName),
@@ -1847,6 +1874,7 @@ func TestAccResourceSecurityDetectionRule_WithConnectorAction(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "actions.0.frequency.notify_when", "onActiveAlert"),
 					resource.TestCheckResourceAttr(resourceName, "actions.0.frequency.summary", "true"),
 					resource.TestCheckResourceAttr(resourceName, "actions.0.frequency.throttle", "10m"),
+					resource.TestCheckNoResourceAttr(resourceName, "actions.0.alerts_filter"),
 
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrSet(resourceName, "rule_id"),

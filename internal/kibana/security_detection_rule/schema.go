@@ -925,7 +925,6 @@ func GetSchema() schema.Schema {
 
 var (
 	attrTypesOnce                    sync.Once
-	cachedActionsTypes               map[string]attr.Type
 	cachedActionFrequencyTypes       map[string]attr.Type
 	cachedAlertsFilterTypes          map[string]attr.Type
 	cachedAlertsFilterQueryTypes     map[string]attr.Type
@@ -936,7 +935,6 @@ func initActionAttrTypes() {
 	s := GetSchema()
 
 	actionsBlock := s.Blocks["actions"].(schema.ListNestedBlock)
-	cachedActionsTypes = actionsBlock.NestedObject.Type().(attr.TypeWithAttributeTypes).AttributeTypes()
 
 	freqBlock := actionsBlock.NestedObject.Blocks["frequency"].(schema.SingleNestedBlock)
 	cachedActionFrequencyTypes = freqBlock.Type().(attr.TypeWithAttributeTypes).AttributeTypes()
