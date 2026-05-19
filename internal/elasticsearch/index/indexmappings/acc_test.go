@@ -34,10 +34,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-const (
-	mappingsResourceName = "elasticstack_elasticsearch_index_mappings.test"
-	indexResourceName    = "elasticstack_elasticsearch_index.test"
-)
+const mappingsResourceName = "elasticstack_elasticsearch_index_mappings.test"
 
 var indexMappingsIDRegexp = regexp.MustCompile(`^[A-Za-z0-9_-]+/.+$`)
 
@@ -213,11 +210,12 @@ func TestAccResourceIndexMappings_import(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"index_name": config.StringVariable(indexName),
 				},
-				ResourceName:      mappingsResourceName,
-				ImportState:       true,
-				ImportStateVerify: true,
-				ImportStateIdFunc: importStateIDFromIndexResource,
+				ResourceName:       mappingsResourceName,
+				ImportState:        true,
+				ImportStateIdFunc:  importStateIDForIndexName(indexName),
+				// First import: no prior mappings resource in state for ImportStateVerify.
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestMatchResourceAttr(mappingsResourceName, "id", indexMappingsIDRegexp),
 					checkStateMappingsProperties([]string{"title", "body"}, nil),
 				),
 			},
@@ -494,12 +492,19 @@ func checkStateMappingsDynamicTemplates(minCount int) resource.TestCheckFunc {
 	}
 }
 
-func importStateIDFromIndexResource(s *terraform.State) (string, error) {
-	rs, ok := s.RootModule().Resources[indexResourceName]
-	if !ok {
-		return "", fmt.Errorf("resource %s not found in state", indexResourceName)
+func importStateIDForIndexName(indexName string) resource.ImportStateIdFunc {
+	return func(_ *terraform.State) (string, error) {
+		client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+		if err != nil {
+			return "", err
+		}
+
+		id, diags := client.ID(context.Background(), indexName)
+		if diags.HasError() {
+			return "", fmt.Errorf("failed to build import ID for index %q: %v", indexName, diags)
+		}
+		return id.String(), nil
 	}
-	return rs.Primary.ID, nil
 }
 
 func deleteIndexOutOfBand(t *testing.T, indexName string) {
@@ -585,17 +590,25 @@ func checkResourceIndexMappingsDestroy(s *terraform.State) error {
 		return err
 	}
 
+	indexNames := make(map[string]struct{})
 	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "elasticstack_elasticsearch_index" {
-			continue
+		switch rs.Type {
+		case "elasticstack_elasticsearch_index":
+			compID, compDiags := clients.CompositeIDFromStr(rs.Primary.ID)
+			if compDiags.HasError() {
+				return fmt.Errorf("failed to parse composite ID %q: %v", rs.Primary.ID, compDiags)
+			}
+			indexNames[compID.ResourceID] = struct{}{}
+		case "elasticstack_elasticsearch_index_mappings":
+			compID, compDiags := clients.CompositeIDFromStr(rs.Primary.ID)
+			if compDiags.HasError() {
+				return fmt.Errorf("failed to parse composite ID %q: %v", rs.Primary.ID, compDiags)
+			}
+			indexNames[compID.ResourceID] = struct{}{}
 		}
+	}
 
-		compID, compDiags := clients.CompositeIDFromStr(rs.Primary.ID)
-		if compDiags.HasError() {
-			return fmt.Errorf("failed to parse composite ID %q: %v", rs.Primary.ID, compDiags)
-		}
-		indexName := compID.ResourceID
-
+	for indexName := range indexNames {
 		indexState, diags := esclient.GetIndex(context.Background(), client, indexName)
 		if diags.HasError() {
 			return fmt.Errorf("failed to get index %q: %v", indexName, diags)
