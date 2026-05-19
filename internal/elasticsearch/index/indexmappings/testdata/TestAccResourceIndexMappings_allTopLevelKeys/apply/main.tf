@@ -22,6 +22,16 @@ resource "elasticstack_elasticsearch_index_mappings" "test" {
     _source = {
       enabled = true
     }
+    dynamic_templates = [
+      {
+        strings_as_keywords = {
+          match_mapping_type = "string"
+          mapping = {
+            type = "keyword"
+          }
+        }
+      }
+    ]
     properties = {
       title = { type = "text" }
     }

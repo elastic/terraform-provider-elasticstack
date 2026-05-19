@@ -21,6 +21,12 @@ import "maps"
 
 // intersectMappings retains only top-level keys present in state. Within properties,
 // only field names from the state's properties tree are kept at every nesting level.
+//
+// For other top-level keys the full API value (apiVal) is stored so state matches
+// Elasticsearch's canonical form. Plan drift for those keys is handled by
+// index.MappingsType semantic equality (MappingsSemanticallyEqual and
+// scalarSemanticEqual, including bool/string normalization in NewMappingsValue),
+// not by subset intersection at this layer.
 func intersectMappings(apiMappings, stateMappings map[string]any) map[string]any {
 	result := make(map[string]any, len(stateMappings))
 	for key, stateVal := range stateMappings {
