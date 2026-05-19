@@ -6,10 +6,8 @@ const require = createRequire(import.meta.url);
 const {
   issueClosingReferencePattern,
   factoryQualifyTriggerEvent,
-  factoryCheckActorTrust,
   factoryParseOptionalTriStateFromEnv,
   factoryParseFinalizeGateEnv,
-  factoryActorTrustWhenSenderMissing,
   factoryCheckDuplicatePR,
   factoryComputeGateReason,
   createFactoryIssueIntake,
@@ -138,12 +136,6 @@ test('factoryQualifyTriggerEvent accepts issue_comment event', () => {
   assert.match(result.event_eligible_reason, /issue_comment/);
 });
 
-test('factoryCheckActorTrust trusts write permission', () => {
-  const result = factoryCheckActorTrust({ sender: 'alice', permission: 'write' });
-  assert.equal(result.actor_trusted, true);
-  assert.match(result.actor_trusted_reason, /permission 'write'/);
-});
-
 test('issueClosingReferencePattern matches GitHub closing keywords but not longer issue numbers', () => {
   const p = issueClosingReferencePattern(42);
   assert.equal(p.test('See fixes #42\n'), true);
@@ -155,12 +147,6 @@ test('issueClosingReferencePattern does not match whitespace between # and the i
   assert.equal(p.test('closes #123'), true);
   assert.equal(p.test('closes # 123'), false);
   assert.equal(p.test('Closes # 123'), false);
-});
-
-test('factoryActorTrustWhenSenderMissing matches stable contract', () => {
-  const result = factoryActorTrustWhenSenderMissing();
-  assert.equal(result.actor_trusted, false);
-  assert.match(result.actor_trusted_reason, /sender login is missing/);
 });
 
 test('factoryCheckDuplicatePR coalesces html_url for closes-literal mode when duplicate html_url is missing', () => {
@@ -481,7 +467,6 @@ test('createFactoryIssueModule binds shared exports and branch aliases', () => {
 
   assert.equal(mod.issueBranchName(42), 'demo-factory/issue-42');
   assert.equal(mod.demoFactoryIssueBranchName(42), 'demo-factory/issue-42');
-  assert.deepEqual(mod.actorTrustWhenSenderMissing(), factoryActorTrustWhenSenderMissing());
   assert.equal(mod.parseOptionalTriStateFromEnv('true'), true);
   assert.deepEqual(mod.parseFinalizeGateEnv({}), factoryParseFinalizeGateEnv({}));
 
