@@ -18,7 +18,6 @@
 package debugutils
 
 import (
-	"os"
 	"testing"
 )
 
@@ -44,15 +43,7 @@ func TestIsDebugOrHigher(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.unsetTFLog {
-				orig, had := os.LookupEnv(envLog)
-				t.Cleanup(func() {
-					if had {
-						_ = os.Setenv(envLog, orig)
-					} else {
-						_ = os.Unsetenv(envLog)
-					}
-				})
-				_ = os.Unsetenv(envLog)
+				t.Setenv(envLog, "")
 			} else {
 				t.Setenv(envLog, tt.tfLog)
 			}
