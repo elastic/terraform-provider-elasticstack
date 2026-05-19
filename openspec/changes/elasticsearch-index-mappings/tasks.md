@@ -79,7 +79,7 @@
 
 ## 10. Validation
 
-- [ ] 10.1 Run `make build` and confirm the provider compiles without errors
+- [x] 10.1 Run `make build` and confirm the provider compiles without errors
 - [ ] 10.2 Run targeted acceptance tests (`TF_ACC=1 go test ./internal/elasticsearch/index/indexmappings/... -run TestAccResourceIndexMappings -v`) against a live Elasticsearch cluster
-- [ ] 10.3 Run `make check-lint` to confirm no lint regressions
-- [ ] 10.4 Run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate elasticsearch-index-mappings --type change` to confirm spec is valid
+- [x] 10.3 Run `make check-lint` to confirm no lint regressions
+- [x] 10.4 Run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate elasticsearch-index-mappings --type change` to confirm spec is valid
