@@ -210,10 +210,10 @@ func TestAccResourceIndexMappings_import(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"index_name": config.StringVariable(indexName),
 				},
-				ResourceName:         mappingsResourceName,
-				ImportState:          true,
-				ImportStatePersist:   true,
-				ImportStateIdFunc:    importStateIDForIndexName(indexName),
+				ResourceName:       mappingsResourceName,
+				ImportState:        true,
+				ImportStatePersist: true,
+				ImportStateIdFunc:  importStateIDForIndexName(indexName),
 				// First import: no prior mappings resource in state for ImportStateVerify.
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestMatchResourceAttr(mappingsResourceName, "id", indexMappingsIDRegexp),
