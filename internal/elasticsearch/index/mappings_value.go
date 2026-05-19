@@ -22,7 +22,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"strconv"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -162,6 +164,10 @@ func (v MappingsValue) StringSemanticEquals(ctx context.Context, newValuable bas
 //     Elasticsearch accepts as either a string or an array
 //     (match, match_mapping_type, path_match, path_unmatch, unmatch,
 //     unmatch_mapping_type).
+//   - Converts string-encoded JSON booleans and null back to their native types
+//     so that ImportState round-trips produce the same stored value as the
+//     original apply (Elasticsearch echoes some boolean fields such as
+//     dynamic as the JSON string "false" instead of the boolean false).
 func normalizeMappings(v any) any {
 	switch val := v.(type) {
 	case map[string]any:
@@ -196,6 +202,13 @@ func normalizeMappings(v any) any {
 			out[i] = normalizeMappings(vv)
 		}
 		return out
+	case string:
+		// Convert string-encoded JSON booleans and null back to their native
+		// types. Elasticsearch echoes some mapping fields (e.g. dynamic) as
+		// JSON strings instead of booleans. Normalizing here ensures the stored
+		// value after import matches the value stored after the initial apply,
+		// so ImportStateVerify does not fail due to "false" vs false.
+		return typeutils.NormalizeJSONScalar(val)
 	default:
 		return v
 	}
@@ -226,6 +239,64 @@ func NewMappingsValue(value string) MappingsValue {
 }
 
 // ---- semantic equality helpers -----------------------------------------------
+
+// scalarSemanticEqual returns true when two scalar leaf values are semantically
+// equal, accounting for the case where Elasticsearch echoes a non-string scalar
+// (bool, number) back as its stringified form. For example, the user-authored
+// JSON value true (decoded as bool) must compare equal to the API-echoed "true"
+// (decoded as string), and vice-versa.
+//
+// Only plain scalar types (bool, float64, string) are handled here. For
+// identical structured values (map, slice) the reflect.DeepEqual fast path at
+// the top of this function returns true; non-identical structured values fall
+// through to the default case and return false, so structural comparison is
+// not affected.
+func scalarSemanticEqual(a, b any) bool {
+	if reflect.DeepEqual(a, b) {
+		return true
+	}
+
+	// Require at least one side to be a non-string scalar so that two
+	// structurally different strings are never falsely equated.
+	_, aIsString := a.(string)
+	_, bIsString := b.(string)
+	if aIsString && bIsString {
+		return false
+	}
+
+	// One side is a non-string scalar. Determine whether a non-string scalar
+	// on one side matches a stringified equivalent on the other.
+	switch x := a.(type) {
+	case bool:
+		var apiStr string
+		if s, ok := b.(string); ok {
+			apiStr = s
+		} else {
+			return false
+		}
+		if x {
+			return apiStr == "true"
+		}
+		return apiStr == "false"
+	case float64:
+		// json.Unmarshal decodes numbers as float64 when UseNumber is not set.
+		// Compare numerically to avoid scientific-notation mismatches from %g.
+		apiStr, ok := b.(string)
+		if !ok {
+			return false
+		}
+		if sv, err := strconv.ParseFloat(apiStr, 64); err == nil {
+			return x == sv
+		}
+		return false
+	case string:
+		// a is a string, so b must be a non-string scalar (ensured by the
+		// guard above). Recurse with sides swapped so b's case is handled.
+		return scalarSemanticEqual(b, a)
+	default:
+		return false
+	}
+}
 
 // SemanticTextMappingType is the Elasticsearch mapping type string for semantic_text fields.
 const SemanticTextMappingType = "semantic_text"
@@ -261,7 +332,7 @@ func MappingsSemanticallyEqual(userMappings, apiMappings map[string]any) bool {
 			continue
 		}
 
-		if !reflect.DeepEqual(userVal, apiVal) {
+		if !scalarSemanticEqual(userVal, apiVal) {
 			return false
 		}
 	}
@@ -296,17 +367,6 @@ func fieldSemanticallyEqual(userFieldRaw, apiFieldRaw any) bool {
 		return false
 	}
 
-	userType, userHasType := userField["type"]
-	apiType, apiHasType := apiField["type"]
-
-	if userHasType && apiHasType {
-		if !reflect.DeepEqual(userType, apiType) {
-			return false
-		}
-	} else if userHasType || apiHasType {
-		return false
-	}
-
 	for key, userVal := range userField {
 		apiVal, ok := apiField[key]
 		if !ok {
@@ -328,7 +388,7 @@ func fieldSemanticallyEqual(userFieldRaw, apiFieldRaw any) bool {
 			continue
 		}
 
-		if !reflect.DeepEqual(userVal, apiVal) {
+		if !scalarSemanticEqual(userVal, apiVal) {
 			return false
 		}
 	}

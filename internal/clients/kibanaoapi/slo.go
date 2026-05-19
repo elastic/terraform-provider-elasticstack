@@ -39,24 +39,18 @@ func GetSlo(ctx context.Context, client *Client, spaceID string, sloID string) (
 		&kbapi.GetSloOpParams{},
 	)
 	if err != nil {
-		return nil, diag.Diagnostics{diag.NewErrorDiagnostic("Unable to get SLO", err.Error())}
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return diagutil.UnwrapJSON200(resp.JSON200, "SLO")
-	case http.StatusNotFound:
-		return nil, nil
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return HandleGetTypedResponse(resp.StatusCode(), resp.Body,
+		func() *kbapi.SLOsSloWithSummaryResponse { return resp.JSON200 })
 }
 
 // EnableSlo calls the Kibana API to enable an existing SLO.
 func EnableSlo(ctx context.Context, client *Client, spaceID, sloID string) diag.Diagnostics {
 	resp, err := client.API.EnableSloOpWithResponse(ctx, spaceID, sloID)
 	if err != nil {
-		return diag.Diagnostics{diag.NewErrorDiagnostic("Unable to enable SLO", err.Error())}
+		return diagutil.FrameworkDiagFromError(err)
 	}
 	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNoContent)
 }
@@ -65,7 +59,7 @@ func EnableSlo(ctx context.Context, client *Client, spaceID, sloID string) diag.
 func DisableSlo(ctx context.Context, client *Client, spaceID, sloID string) diag.Diagnostics {
 	resp, err := client.API.DisableSloOpWithResponse(ctx, spaceID, sloID)
 	if err != nil {
-		return diag.Diagnostics{diag.NewErrorDiagnostic("Unable to disable SLO", err.Error())}
+		return diagutil.FrameworkDiagFromError(err)
 	}
 	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNoContent)
 }
@@ -78,15 +72,11 @@ func CreateSlo(ctx context.Context, client *Client, spaceID string, req kbapi.SL
 		req,
 	)
 	if err != nil {
-		return nil, diag.Diagnostics{diag.NewErrorDiagnostic("Unable to create SLO", err.Error())}
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return diagutil.UnwrapJSON200(resp.JSON200, "SLO")
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
+		func() *kbapi.SLOsCreateSloResponse { return resp.JSON200 })
 }
 
 // UpdateSlo updates an existing SLO by space and ID.
@@ -98,20 +88,10 @@ func UpdateSlo(ctx context.Context, client *Client, spaceID string, sloID string
 		req,
 	)
 	if err != nil {
-		return diag.Diagnostics{diag.NewErrorDiagnostic("Unable to update SLO", err.Error())}
+		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return nil
-	case http.StatusNotFound:
-		return diag.Diagnostics{diag.NewErrorDiagnostic(
-			"SLO not found during update",
-			"The SLO with ID "+sloID+" was not found in space "+spaceID+".",
-		)}
-	default:
-		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK)
 }
 
 // DeleteSlo deletes an SLO by space and ID. A 404 response is treated as
@@ -123,37 +103,11 @@ func DeleteSlo(ctx context.Context, client *Client, spaceID string, sloID string
 		sloID,
 	)
 	if err != nil {
-		return diag.Diagnostics{diag.NewErrorDiagnostic("Unable to delete SLO", err.Error())}
+		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusNoContent, http.StatusOK:
-		return nil
-	case http.StatusNotFound:
-		return nil
-	default:
-		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
-}
-
-// FindSlos performs a paginated search for SLOs in the given space. The
-// optional params allow filtering by KQL query, pagination, and sorting.
-func FindSlos(ctx context.Context, client *Client, spaceID string, params *kbapi.FindSlosOpParams) (*kbapi.SLOsFindSloResponse, diag.Diagnostics) {
-	resp, err := client.API.FindSlosOpWithResponse(
-		ctx,
-		spaceID,
-		params,
-	)
-	if err != nil {
-		return nil, diag.Diagnostics{diag.NewErrorDiagnostic("Unable to find SLOs", err.Error())}
-	}
-
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return diagutil.UnwrapJSON200(resp.JSON200, "SLOs")
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body,
+		http.StatusNoContent, http.StatusOK, http.StatusNotFound)
 }
 
 // SloResponseToModel converts a kbapi SLO response into the internal models.Slo type.
@@ -256,12 +210,10 @@ func TransformGroupBy(groupBy []string, supportsGroupByList bool) *kbapi.SLOsGro
 
 // TransformGroupByFromResponse converts the kbapi GroupBy union back to a string slice.
 func TransformGroupByFromResponse(groupBy kbapi.SLOsGroupBy) []string {
-	// Try string first
 	if s, err := groupBy.AsSLOsGroupBy0(); err == nil {
 		return []string{s}
 	}
 
-	// Try array
 	if arr, err := groupBy.AsSLOsGroupBy1(); err == nil {
 		return arr
 	}

@@ -795,7 +795,7 @@ func (m *ExceptionItemModel) setCommonProps(
 	if typeutils.IsKnown(m.ExpireTime) {
 		// Check version support for expire_time
 		if supported, versionDiags := client.EnforceMinVersion(ctx, MinVersionExpireTime); versionDiags.HasError() {
-			diags.Append(diagutil.FrameworkDiagsFromSDK(versionDiags)...)
+			diags.Append(versionDiags...)
 			return
 		} else if !supported {
 			diags.AddError("expire_time is unsupported",

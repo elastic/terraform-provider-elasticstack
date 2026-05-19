@@ -22,7 +22,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -30,15 +30,20 @@ import (
 )
 
 // writeILMAttachment reads the existing component template, merges the ILM
-// lifecycle setting into its settings, and writes it back. The isCreate flag
-// controls whether an extra warning is emitted when the template already has
-// an ILM setting.
-func writeILMAttachment(ctx context.Context, client *clients.ElasticsearchScopedClient, componentTemplateName string, plan tfModel, isCreate bool) (tfModel, diag.Diagnostics) {
+// lifecycle setting into its settings, and writes it back. req.Prior == nil
+// indicates a Create invocation; non-nil indicates Update. The isCreate flag
+// derived from this controls whether an extra warning is emitted when the
+// template already has an ILM setting.
+func writeILMAttachment(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.WriteRequest[tfModel]) (entitycore.WriteResult[tfModel], diag.Diagnostics) {
+	plan := req.Plan
+	isCreate := req.Prior == nil
+	componentTemplateName := plan.getComponentTemplateName()
+
 	var diags diag.Diagnostics
 
-	existingRaw, sdkDiags := elasticsearch.GetComponentTemplate(ctx, client, componentTemplateName)
-	if sdkDiags.HasError() {
-		return plan, diagutil.FrameworkDiagsFromSDK(sdkDiags)
+	existingRaw, getTplDiags := elasticsearch.GetComponentTemplate(ctx, client, componentTemplateName)
+	if getTplDiags.HasError() {
+		return entitycore.WriteResult[tfModel]{Model: plan}, getTplDiags
 	}
 
 	existing := toModelComponentTemplateResponse(existingRaw)
@@ -83,17 +88,17 @@ func writeILMAttachment(ctx context.Context, client *clients.ElasticsearchScoped
 		plan.LifecycleName.ValueString(),
 	)
 
-	if sdkDiags := elasticsearch.PutComponentTemplate(ctx, client, &componentTemplate); sdkDiags.HasError() {
-		return plan, diagutil.FrameworkDiagsFromSDK(sdkDiags)
+	if putDiags := elasticsearch.PutComponentTemplate(ctx, client, &componentTemplate); putDiags.HasError() {
+		return entitycore.WriteResult[tfModel]{Model: plan}, putDiags
 	}
 
 	if isCreate {
-		id, sdkDiags := client.ID(ctx, componentTemplateName)
-		if sdkDiags.HasError() {
-			return plan, diagutil.FrameworkDiagsFromSDK(sdkDiags)
+		id, idDiags := client.ID(ctx, componentTemplateName)
+		if idDiags.HasError() {
+			return entitycore.WriteResult[tfModel]{Model: plan}, idDiags
 		}
 		plan.ID = types.StringValue(id.String())
 	}
 
-	return plan, diags
+	return entitycore.WriteResult[tfModel]{Model: plan}, diags
 }

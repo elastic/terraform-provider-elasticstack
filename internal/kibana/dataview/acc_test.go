@@ -46,6 +46,26 @@ var minFullDataviewSupport = version.Must(version.NewVersion("8.8.0"))
 func TestAccResourceDataView(t *testing.T) {
 	indexName := "my-index-" + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
+	var dataViewID string
+	captureID := func(s *terraform.State) error {
+		rs := s.RootModule().Resources["elasticstack_kibana_data_view.dv"]
+		if rs == nil {
+			return fmt.Errorf("elasticstack_kibana_data_view.dv not found in state")
+		}
+		dataViewID = rs.Primary.ID
+		return nil
+	}
+	checkIDUnchanged := func(s *terraform.State) error {
+		rs := s.RootModule().Resources["elasticstack_kibana_data_view.dv"]
+		if rs == nil {
+			return fmt.Errorf("elasticstack_kibana_data_view.dv not found in state")
+		}
+		if rs.Primary.ID != dataViewID {
+			return fmt.Errorf("data view was recreated: id changed from %s to %s", dataViewID, rs.Primary.ID)
+		}
+		return nil
+	}
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
@@ -76,6 +96,7 @@ func TestAccResourceDataView(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.field_formats.machine.ram.params.pattern", "0,0.[000] b"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.runtime_field_map.runtime_shape_name.script_source", "emit(doc['shape_name'].value)"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.field_attrs.ingest_failure.custom_label", "error.ingest_failure"),
+					captureID,
 				),
 			},
 			{
@@ -89,21 +110,41 @@ func TestAccResourceDataView(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_data_view.dv", "id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "override", "false"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.name", indexName),
-					resource.TestCheckNoResourceAttr("elasticstack_kibana_data_view.dv", "data_view.source_filters"),
-					resource.TestCheckNoResourceAttr("elasticstack_kibana_data_view.dv", "data_view.field_formats"),
-					resource.TestCheckNoResourceAttr("elasticstack_kibana_data_view.dv", "data_view.runtime_field_map"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.source_filters.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.field_formats.event_time.id", "date_nanos"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.runtime_field_map.runtime_shape_name.script_source", "emit(doc['shape_name'].value)"),
+					checkIDUnchanged,
 				),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minFullDataviewSupport),
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic_updated"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic_omitted"),
 				ConfigVariables: config.Variables{
 					"index_name": config.StringVariable(indexName),
 				},
-				ImportState:       true,
-				ImportStateVerify: true,
-				ResourceName:      "elasticstack_kibana_data_view.dv",
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_data_view.dv", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "override", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.name", indexName),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.source_filters.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.field_formats.event_time.id", "date_nanos"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.runtime_field_map.runtime_shape_name.script_source", "emit(doc['shape_name'].value)"),
+					checkIDUnchanged,
+				),
+			},
+			// Re-apply the same omitted config for import-state verification.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minFullDataviewSupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic_omitted"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"data_view.runtime_field_map", "data_view.field_formats", "data_view.source_filters"},
+				ResourceName:            "elasticstack_kibana_data_view.dv",
 			},
 		},
 	})
@@ -320,6 +361,112 @@ func TestAccResourceDataViewNamespaces(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.ns_dv", "data_view.namespaces.#", "3"),
 					checkIDUnchanged,
 				),
+			},
+		},
+	})
+}
+
+// TestAccResourceDataViewFieldAttrs covers fix-dataview-field-attrs-drift task 6 (REQ-006 "No
+// replacement on field_attrs change", REQ-015 stability, REQ-016 in-place updates).
+//
+// REQ-015 scenario 1 (server-side count does not drift plan): after the first apply we POST
+// field popularity for host.hostname via the Kibana HTTP API (same endpoint family as
+// UpdateFieldMetadata) and then assert a PlanOnly step is empty. Failing to inject the count
+// fails the test, since suppressing that drift is exactly the behaviour we are exercising.
+func TestAccResourceDataViewFieldAttrs(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minFullDataviewSupport, versionutils.FlavorAny)
+
+	indexName := "fa-test-" + sdkacctest.RandStringFromCharSet(6, sdkacctest.CharSetAlphaNum)
+	vars := config.Variables{
+		"index_name": config.StringVariable(indexName),
+	}
+
+	var dataViewID string
+	captureID := func(s *terraform.State) error {
+		rs := s.RootModule().Resources[testAccFieldAttrsDataViewAddress]
+		if rs == nil {
+			return fmt.Errorf("%s not found in state", testAccFieldAttrsDataViewAddress)
+		}
+		dataViewID = rs.Primary.ID
+		return nil
+	}
+	checkIDUnchanged := func(s *terraform.State) error {
+		rs := s.RootModule().Resources[testAccFieldAttrsDataViewAddress]
+		if rs == nil {
+			return fmt.Errorf("%s not found in state", testAccFieldAttrsDataViewAddress)
+		}
+		if rs.Primary.ID != dataViewID {
+			return fmt.Errorf("data view was recreated: id changed from %s to %s", dataViewID, rs.Primary.ID)
+		}
+		return nil
+	}
+
+	injectHostHostnameCount := func(s *terraform.State) error {
+		return testAccInjectHostHostnameFieldCount(t, s)
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("no_field_attrs"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(testAccFieldAttrsDataViewAddress, "id"),
+					resource.TestCheckNoResourceAttr(testAccFieldAttrsDataViewAddress, "data_view.field_attrs.%"),
+					captureID,
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("no_field_attrs"),
+				ConfigVariables:          vars,
+				Check:                    injectHostHostnameCount,
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("no_field_attrs"),
+				ConfigVariables:          vars,
+				PlanOnly:                 true,
+				ExpectNonEmptyPlan:       false,
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("add_label"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					checkIDUnchanged,
+					testAccCheckFieldAttrsCustomLabel("host.hostname", "Host"),
+					testAccCheckFieldAttrsCustomLabelServerSide(t, "host.hostname", "Host"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("change_label"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					checkIDUnchanged,
+					testAccCheckFieldAttrsCustomLabel("host.hostname", "Hostname"),
+					testAccCheckFieldAttrsCustomLabelServerSide(t, "host.hostname", "Hostname"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("remove_label"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					checkIDUnchanged,
+					resource.TestCheckNoResourceAttr(testAccFieldAttrsDataViewAddress, "data_view.field_attrs.%"),
+					testAccCheckFieldAttrsCustomLabelServerSide(t, "host.hostname", ""),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("remove_label"),
+				ConfigVariables:          vars,
+				PlanOnly:                 true,
+				ExpectNonEmptyPlan:       false,
 			},
 		},
 	})

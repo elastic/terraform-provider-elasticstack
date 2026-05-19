@@ -76,7 +76,7 @@ func (r *securityDetectionRuleResource) Update(ctx context.Context, req resource
 	}
 
 	// Parse ID to get space_id and rule_id
-	compID, resourceIDDiags := clients.CompositeIDFromStrFw(data.ID.ValueString())
+	compID, resourceIDDiags := clients.CompositeIDFromStr(data.ID.ValueString())
 	resp.Diagnostics.Append(resourceIDDiags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -102,6 +102,7 @@ func (r *securityDetectionRuleResource) Update(ctx context.Context, req resource
 		return
 	}
 
+	reconcileEmptyListsFromPlan(ctx, &data, readData)
 	readData.KibanaConnection = data.KibanaConnection
 	resp.Diagnostics.Append(resp.State.Set(ctx, readData)...)
 }

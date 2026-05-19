@@ -23,64 +23,41 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-// Update overrides the envelope's Update because building the update body
-// requires comparing the plan with the prior Terraform state.
-func (r *anomalyDetectionJobResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	if r.Client() == nil {
-		resp.Diagnostics.AddError("Client not configured", "Provider client is not configured")
-		return
-	}
-
-	var plan TFModel
-	diags := req.Plan.Get(ctx, &plan)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	var state TFModel
-	diags = req.State.Get(ctx, &state)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	jobID := state.JobID.ValueString()
+func updateAnomalyDetectionJob(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.WriteRequest[TFModel]) (entitycore.WriteResult[TFModel], diag.Diagnostics) {
+	var diags diag.Diagnostics
+	plan := req.Plan
+	jobID := req.WriteID
 
 	tflog.Debug(ctx, fmt.Sprintf("Updating ML anomaly detection job: %s", jobID))
 
-	// Create update body with only updatable fields
 	updateBody := &UpdateAPIModel{}
-	hasChanges, diags := updateBody.BuildFromPlan(ctx, &plan, &state)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	hasChanges, buildDiags := updateBody.BuildFromPlan(ctx, &plan, req.Prior)
+	diags.Append(buildDiags...)
+	if diags.HasError() {
+		return entitycore.WriteResult[TFModel]{Model: plan}, diags
 	}
 
-	// Only proceed with update if there are changes
 	if !hasChanges {
 		tflog.Debug(ctx, fmt.Sprintf("No updates needed for ML anomaly detection job: %s", jobID))
-		resp.Diagnostics.AddWarning("No changes detected to updatable fields during an update operation", `
+		diags.AddWarning(
+			"No changes detected to updatable fields during an update operation",
+			`
 Changes to non-updateable fields should force a recreation of the anomaly detection job.
-Please report this warning to the provider developers.`)
-		resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
-		return
-	}
-
-	client, diags := r.Client().GetElasticsearchClient(ctx, plan.ElasticsearchConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+Please report this warning to the provider developers.`,
+		)
+		return entitycore.WriteResult[TFModel]{Model: plan}, diags
 	}
 
 	typedClient, err := client.GetESClient()
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to get Elasticsearch client", err.Error())
-		return
+		diags.AddError("Failed to get Elasticsearch client", err.Error())
+		return entitycore.WriteResult[TFModel]{Model: plan}, diags
 	}
 
 	// Send the update as raw JSON so that all fields including
@@ -89,28 +66,18 @@ Please report this warning to the provider developers.`)
 	// dropping categorization_examples_limit.
 	updateJSON, err := json.Marshal(updateBody)
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to marshal ML anomaly detection job update", err.Error())
-		return
+		diags.AddError("Failed to marshal ML anomaly detection job update", err.Error())
+		return entitycore.WriteResult[TFModel]{Model: plan}, diags
 	}
 	_, err = typedClient.Ml.UpdateJob(jobID).Raw(bytes.NewReader(updateJSON)).Do(ctx)
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to update ML anomaly detection job", fmt.Sprintf("Unable to update ML anomaly detection job: %s — %s", jobID, err.Error()))
-		return
+		diags.AddError(
+			"Failed to update ML anomaly detection job",
+			fmt.Sprintf("Unable to update ML anomaly detection job: %s — %s", jobID, err.Error()),
+		)
+		return entitycore.WriteResult[TFModel]{Model: plan}, diags
 	}
-
-	// Read back the updated job to get the current state
-	resultModel, found, readDiags := readAnomalyDetectionJob(ctx, client, jobID, plan)
-	resp.Diagnostics.Append(readDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	if !found {
-		resp.State.RemoveResource(ctx)
-		return
-	}
-
-	// Set the updated state
-	resp.Diagnostics.Append(resp.State.Set(ctx, &resultModel)...)
 
 	tflog.Debug(ctx, fmt.Sprintf("Successfully updated ML anomaly detection job: %s", jobID))
+	return entitycore.WriteResult[TFModel]{Model: plan}, diags
 }

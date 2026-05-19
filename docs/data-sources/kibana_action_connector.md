@@ -46,14 +46,14 @@ output "connector_id" {
 ### Optional
 
 - `connector_type_id` (String) The ID of the connector type, e.g. `.index`.
-- `kibana_connection` (Block List, Max: 1) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
+- `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
 - `space_id` (String) An identifier for the space. If space_id is not provided, the default space is used.
 
 ### Read-Only
 
 - `config` (String) The configuration for the connector. Configuration properties vary depending on the connector type.
 - `connector_id` (String) A UUID v1 or v4 randomly generated ID.
-- `id` (String) The ID of this resource.
+- `id` (String) Internal identifier of the resource.
 - `is_deprecated` (Boolean) Indicates whether the connector type is deprecated.
 - `is_missing_secrets` (Boolean) Indicates whether secrets are missing for the connector.
 - `is_preconfigured` (Boolean) Indicates whether it is a preconfigured connector.

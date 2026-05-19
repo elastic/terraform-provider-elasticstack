@@ -39,15 +39,13 @@ type aliasResource struct {
 
 func newAliasResource() *aliasResource {
 	return &aliasResource{
-		ElasticsearchResource: entitycore.NewElasticsearchResource[tfModel](
-			entitycore.ComponentElasticsearch,
-			"index_alias",
-			getSchemaFactory,
-			readAlias,
-			deleteAlias,
-			createAlias,
-			updateAlias,
-		),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[tfModel]("index_alias", entitycore.ElasticsearchResourceOptions[tfModel]{
+			Schema: getSchemaFactory,
+			Read:   readAlias,
+			Delete: deleteAlias,
+			Create: createAlias,
+			Update: updateAlias,
+		}),
 	}
 }
 

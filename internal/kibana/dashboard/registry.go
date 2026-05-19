@@ -20,9 +20,11 @@ package dashboard
 import (
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/discoversession"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/esqlcontrol"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/iface"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/image"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/lensdashboardapp"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/markdown"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/optionslist"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/rangeslider"
@@ -33,6 +35,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/syntheticsmonitors"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/syntheticsstatsoverview"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/timeslider"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/visconfig"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 )
 
@@ -50,24 +53,22 @@ var panelHandlers = []iface.Handler{
 	markdown.Handler{},
 	image.Handler{},
 	sloalerts.Handler{},
+	lensdashboardapp.Handler{},
+	visconfig.Handler{},
+	discoversession.Handler{},
 }
 
 var panelTypeToHandler map[string]iface.Handler
 var derivedPanelConfigNames []string
 
+// panelTypeAliases maps Kibana API panel discriminators to registry PanelType keys
+// when the wire-format string differs from the snake_case key used for *_config naming.
+var panelTypeAliases = map[string]string{
+	"lens-dashboard-app": "lens_dashboard_app",
+}
+
 func init() {
-	sloburnrate.SetPopulatePanelConfigJSONDefaults(populatePanelConfigJSONDefaults)
-	sloerrorbudget.SetPopulatePanelConfigJSONDefaults(populatePanelConfigJSONDefaults)
-	slooverview.SetPopulatePanelConfigJSONDefaults(populatePanelConfigJSONDefaults)
-	syntheticsmonitors.SetPopulatePanelConfigJSONDefaults(populatePanelConfigJSONDefaults)
-	syntheticsstatsoverview.SetPopulatePanelConfigJSONDefaults(populatePanelConfigJSONDefaults)
-	timeslider.SetPopulatePanelConfigJSONDefaults(populatePanelConfigJSONDefaults)
-	optionslist.SetPopulatePanelConfigJSONDefaults(populatePanelConfigJSONDefaults)
-	rangeslider.SetPopulatePanelConfigJSONDefaults(populatePanelConfigJSONDefaults)
-	esqlcontrol.SetPopulatePanelConfigJSONDefaults(populatePanelConfigJSONDefaults)
-	markdown.SetPopulatePanelConfigJSONDefaults(populatePanelConfigJSONDefaults)
-	sloalerts.SetPopulatePanelConfigJSONDefaults(populatePanelConfigJSONDefaults)
-	image.SetPopulatePanelConfigJSONDefaults(populatePanelConfigJSONDefaults)
+	panelkit.GlobalPanelJSONDefaults = populatePanelConfigJSONDefaults
 	panelTypeToHandler = make(map[string]iface.Handler, len(panelHandlers))
 	derivedPanelConfigNames = append(derivedPanelConfigNames, "config_json")
 	for _, h := range panelHandlers {
@@ -81,12 +82,20 @@ func init() {
 		derivedPanelConfigNames = append(derivedPanelConfigNames, block)
 	}
 
-	typedSiblings := append([]string{}, derivedPanelConfigNames...)
-	typedSiblings = append(typedSiblings, []string{"vis_config", "lens_dashboard_app_config", "discover_session_config"}...)
-	panelkit.SetTypedSiblingPanelConfigBlockNames(typedSiblings)
+	// Handler registration already produces vis_config, lens_dashboard_app_config,
+	// and discover_session_config via PanelType()+"_config"; do not append duplicates.
+	panelkit.SetTypedSiblingPanelConfigBlockNames(append([]string(nil), derivedPanelConfigNames...))
 }
 
-func LookupHandler(panelType string) iface.Handler { return panelTypeToHandler[panelType] }
+func LookupHandler(panelType string) iface.Handler {
+	if h := panelTypeToHandler[panelType]; h != nil {
+		return h
+	}
+	if alias, ok := panelTypeAliases[panelType]; ok {
+		return panelTypeToHandler[alias]
+	}
+	return nil
+}
 
 func AllHandlers() []iface.Handler { return panelHandlers }
 

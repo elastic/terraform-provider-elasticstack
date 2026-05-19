@@ -23,7 +23,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -248,7 +247,7 @@ func assertSSLVerificationModeSupport(ctx context.Context, client *clients.Kiban
 	}
 
 	if supported, versionDiags := client.EnforceMinVersion(ctx, MinVersionOutputSSLVerificationMode); versionDiags.HasError() {
-		diags.Append(diagutil.FrameworkDiagsFromSDK(versionDiags)...)
+		diags.Append(versionDiags...)
 		return diags
 	} else if !supported {
 		diags.AddAttributeError(path.Root("ssl").AtName("verification_mode"),
@@ -265,7 +264,7 @@ func assertKafkaSupport(ctx context.Context, client *clients.KibanaScopedClient)
 
 	// Check minimum version requirement for Kafka output type
 	if supported, versionDiags := client.EnforceMinVersion(ctx, MinVersionOutputKafka); versionDiags.HasError() {
-		diags.Append(diagutil.FrameworkDiagsFromSDK(versionDiags)...)
+		diags.Append(versionDiags...)
 		return diags
 	} else if !supported {
 		diags.AddError("Unsupported version for Kafka output",

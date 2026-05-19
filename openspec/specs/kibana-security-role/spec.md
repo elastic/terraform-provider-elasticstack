@@ -1,7 +1,7 @@
 # `elasticstack_kibana_security_role` — Schema and Functional Requirements
 
-Resource implementation: `internal/kibana`
-Data source implementation: `internal/kibana`
+Resource implementation: `internal/kibana/security_role`
+Data source implementation: `internal/kibana/security_role`
 
 ## Purpose
 

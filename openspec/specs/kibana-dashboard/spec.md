@@ -2091,6 +2091,41 @@ Waffle `value_display` SHALL use the shared `getPartitionValueDisplaySchema()` h
 - WHEN Terraform validates the configuration
 - THEN the validation SHALL pass and the attribute descriptions SHALL match those used by `treemap_config.value_display`
 
+### Requirement: Registry-driven simple panel handler architecture preserves dashboard behavior (REQ-044A)
+
+The `elasticstack_kibana_dashboard` resource implementation SHALL support a registry-driven handler architecture for simple panel types while preserving the user-visible dashboard behavior defined elsewhere in this capability. A simple panel type is one whose typed configuration does not require internal Lens chart dispatch or by-value/by-reference composite branching.
+
+For each supported simple panel type, the implementation SHALL provide a dedicated handler responsible for that panel type's schema attribute construction, API-to-state mapping, state-to-API mapping, configuration validation, and any panel-specific state alignment. The registry SHALL be the authoritative source used to assemble simple panel schema attributes, route panel reads from API discriminator to handler, route typed panel writes from configured block to handler, and dispatch panel-specific validation.
+
+This architectural change SHALL preserve existing Terraform-facing behavior for the migrated simple panel types, including schema shape, validation outcomes, null-preservation behavior, pinned-panel behavior where applicable, and API round-tripping.
+
+#### Scenario: Simple panel read routing is resolved through the registry
+
+- GIVEN a dashboard API response containing a supported simple panel type
+- WHEN the provider reads the panel
+- THEN the provider SHALL resolve the panel type through the handler registry
+- AND the matching handler SHALL populate the Terraform panel state for that panel type
+
+#### Scenario: Simple panel write routing is resolved through the registry
+
+- GIVEN a Terraform panel configuration for a supported simple panel type
+- WHEN the provider builds the dashboard API request
+- THEN the provider SHALL resolve the configured typed panel block through the handler registry
+- AND the matching handler SHALL build the panel API payload
+
+#### Scenario: Migrated simple panels preserve prior Terraform behavior
+
+- GIVEN a dashboard that uses a migrated simple panel type
+- WHEN the provider plans, applies, reads, and refreshes that dashboard after the handler migration
+- THEN the panel SHALL preserve the same user-visible schema and runtime behavior as before the migration
+
+#### Scenario: Pinned control panels continue to round-trip through typed handlers
+
+- GIVEN a dashboard with pinned control panels of a migrated control type
+- WHEN the provider reads or writes the dashboard
+- THEN pinned panel conversion SHALL delegate through the migrated typed handler path
+- AND pinned panel Terraform behavior SHALL remain unchanged
+
 ### Requirement: SLO overview constant definition site (REQ-045)
 
 The `panelTypeSloOverview` constant SHALL be defined in `schema.go` alongside all other dashboard panel type constants. It SHALL NOT be defined in a panel-specific model file.
@@ -2141,6 +2176,71 @@ This extraction SHALL be mechanical only: it SHALL NOT change the Terraform sche
 - WHEN it references dashboard Terraform model structs
 - THEN those structs SHALL be imported from `internal/kibana/dashboard/models`
 - AND the extraction SHALL avoid introducing Go import cycles between the models package and dashboard logic packages
+
+### Requirement: Lens visualization converter registry preserves typed chart behavior (REQ-045)
+
+The `elasticstack_kibana_dashboard` resource implementation SHALL support a Lens visualization converter registry for typed Lens chart handling while preserving the Terraform-facing behavior of all supported Lens chart blocks. Each supported Lens chart kind SHALL be handled by a dedicated converter that participates in shared Lens chart read, write, defaulting, and state-alignment flows through a common registry.
+
+The registry SHALL be the authoritative source used to classify typed Lens by-value chart payloads, dispatch API-to-state conversion for supported Lens chart kinds, dispatch state-to-API conversion for supported Lens chart kinds, and apply Lens chart defaulting or state-alignment behavior that is specific to a chart kind.
+
+This architectural change SHALL NOT alter the user-visible schema or runtime behavior of existing supported Lens chart blocks under dashboard panel configurations.
+
+#### Scenario: Typed Lens chart read conversion is resolved through the converter registry
+
+- GIVEN a dashboard panel API payload for a supported by-value Lens chart kind
+- WHEN the provider reads that panel into Terraform state
+- THEN the provider SHALL resolve the chart kind through the Lens converter registry
+- AND the matching converter SHALL populate the corresponding typed Lens chart block in state
+
+#### Scenario: Typed Lens chart write conversion is resolved through the converter registry
+
+- GIVEN a Terraform configuration that selects a supported typed Lens chart block
+- WHEN the provider builds the dashboard API payload for that panel
+- THEN the provider SHALL resolve the configured chart block through the Lens converter registry
+- AND the matching converter SHALL build the corresponding by-value Lens chart payload
+
+#### Scenario: Lens chart behavior remains unchanged after converter extraction
+
+- GIVEN a dashboard using a supported typed Lens chart block
+- WHEN the provider plans, applies, reads, and refreshes that dashboard after the converter migration
+- THEN the typed Lens chart block SHALL preserve the same user-visible schema, validation behavior, defaulting behavior, null-preservation behavior, and API round-tripping as before the migration
+
+### Requirement: Composite Lens panel handlers and `vis_config` naming (REQ-046)
+
+For composite Lens-backed dashboard panel types, the `elasticstack_kibana_dashboard` resource SHALL use dedicated typed handler implementations while preserving the behaviors already defined for those panel types, except where this requirement explicitly changes the Terraform schema name.
+
+For `type = "vis"` panels, the Terraform typed configuration block SHALL be named `vis_config`. The provider SHALL treat `vis_config` as the typed configuration entry point for `vis` panels and SHALL align routing and validation with the panel type discriminator `"vis"`.
+
+For the Lens dashboard app panel type, the Terraform typed configuration block SHALL remain `lens_dashboard_app_config` and SHALL continue to support its defined by-value and by-reference behavior.
+
+The handler architecture for these composite panel types SHALL consume the shared Lens converter registry for by-value Lens chart handling and shared by-reference conversion logic for by-reference handling.
+
+Except for the `viz_config` to `vis_config` rename, this architectural change SHALL preserve the previously defined Terraform-facing behavior for `vis` and `lens_dashboard_app` panels, including read/write semantics, validation, null-preservation, typed by-value chart handling, and by-reference handling.
+
+#### Scenario: `vis` panels use `vis_config` as the typed block name
+
+- GIVEN a dashboard panel with `type = "vis"`
+- WHEN Terraform validates or the provider processes the typed panel configuration
+- THEN the typed configuration block name SHALL be `vis_config`
+- AND routing and validation for that panel SHALL use the `"vis"` panel type contract
+
+#### Scenario: Composite by-value Lens chart handling uses shared registry dispatch
+
+- GIVEN a `vis` or `lens_dashboard_app` panel configured with a supported typed by-value Lens chart block
+- WHEN the provider reads or writes that panel
+- THEN the provider SHALL dispatch the by-value Lens chart conversion through the shared Lens converter registry
+
+#### Scenario: Composite by-reference handling remains behaviorally unchanged
+
+- GIVEN a `vis` or `lens_dashboard_app` panel configured in by-reference mode
+- WHEN the provider plans, applies, reads, and refreshes that panel after the composite handler migration
+- THEN the panel SHALL preserve the same by-reference behavior already defined for that panel type
+
+#### Scenario: `viz_config` is no longer the accepted typed block name
+
+- GIVEN a Terraform configuration that uses `viz_config` on a `type = "vis"` panel
+- WHEN Terraform validates the configuration against the updated schema
+- THEN the configuration SHALL be rejected because the typed block name is `vis_config`
 
 ## Traceability
 

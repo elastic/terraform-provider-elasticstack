@@ -6,32 +6,22 @@ The entitycore resource envelope centralizes common Terraform Plugin Framework b
 ## Requirements
 ### Requirement: Envelope constructor produces shared Elasticsearch resource behavior
 
-The system SHALL provide a generic constructor `NewElasticsearchResource[T]()` that returns an envelope owning shared Elasticsearch resource behavior. The envelope SHALL provide Metadata, Schema, Create, Read, Update, Delete, and Configure behavior, and SHALL satisfy `resource.Resource`. Concrete resources SHALL embed the envelope and may choose to implement additional Plugin Framework interfaces such as ImportState or state upgrade support.
+The system SHALL provide a generic constructor `NewElasticsearchResource[T]()` that returns an envelope owning shared Elasticsearch resource behavior. The Elasticsearch envelope constructor SHALL take the Terraform type-name suffix and an options struct, not a component enum and a positional callback list. The envelope SHALL provide Metadata, Schema, Create, Read, Update, Delete, and Configure behavior, and SHALL satisfy `resource.Resource`. Concrete resources SHALL embed the envelope and may choose to implement additional Plugin Framework interfaces such as ImportState or state upgrade support.
 
 #### Scenario: Constructor returns complete resource envelope
 
-- **WHEN** `NewElasticsearchResource[T](component, name, schemaFactory, readFunc, deleteFunc, createFunc, updateFunc)` is called with non-nil callbacks
+- **WHEN** `NewElasticsearchResource[T]("security_user", opts)` is called with non-nil required callbacks in `opts`
 - **THEN** the returned value SHALL provide the shared Metadata, Schema, Create, Read, Update, Delete, and Configure methods
 - **AND** the returned value SHALL satisfy `resource.Resource`
 - **AND** concrete resources embedding the returned value SHALL NOT need thin Create or Update wrappers when their behavior fits the callback contract
 
 ### Requirement: Envelope owns Configure and Metadata
 
-The system SHALL implement `Configure` and `Metadata` on the envelope using the same provider-data conversion and type-name composition rules as `ResourceBase`. The configured `*clients.ProviderClientFactory` SHALL be reachable from the envelope's Read, Create, Update, and Delete preludes.
-
-#### Scenario: Configure stores the provider client factory
-
-- **WHEN** `Configure` receives provider data that converts successfully to `*clients.ProviderClientFactory`
-- **THEN** the envelope SHALL retain that factory for use by subsequent Read, Create, Update, and Delete calls
-
-#### Scenario: Configure does not store a client after diagnostic failure
-
-- **WHEN** `Configure` has appended the conversion diagnostics and the response has error-level diagnostics
-- **THEN** the envelope SHALL not assign a factory from that conversion, and SHALL leave unchanged any factory previously stored by an earlier successful `Configure` call
+The system SHALL implement `Configure` and `Metadata` on the Elasticsearch envelope using the same provider-data conversion and type-name composition rules as `ResourceBase`, with the Elasticsearch namespace segment implied by the envelope rather than passed by the caller. The configured `*clients.ProviderClientFactory` SHALL be reachable from the envelope's Read, Create, Update, and Delete preludes.
 
 #### Scenario: Metadata builds the Terraform type name
 
-- **WHEN** an envelope is constructed via `NewElasticsearchResource[T](ComponentElasticsearch, "security_user", …)`
+- **WHEN** an envelope is constructed via `NewElasticsearchResource[T]("security_user", opts)`
 - **THEN** its `Metadata` SHALL set the type name to `<provider_type_name>_elasticsearch_security_user`
 
 ### Requirement: Envelope injects elasticsearch_connection block into schema
@@ -46,137 +36,122 @@ The system SHALL inject the `elasticsearch_connection` block into the schema ret
 
 ### Requirement: Envelope owns the Read prelude
 
-The system SHALL implement `Read` by deserializing the prior state into the generic model `T`, parsing the composite ID with `clients.CompositeIDFromStrFw`, resolving the scoped Elasticsearch client from the model's connection block via `GetElasticsearchClient`, and invoking the concrete read function. The concrete read function SHALL be invoked with `(context, *clients.ElasticsearchScopedClient, resourceID string, T)` where `resourceID` is `compID.ResourceID`.
+The `ElasticsearchResource` envelope SHALL resolve the read identity using a lenient three-step fallback when the decoded state model does not implement `WithReadResourceID` (or `GetReadResourceID` returns empty) and no write fallback is supplied: (1) attempt to parse `model.GetID().ValueString()` as a composite ID with `clients.CompositeIDFromStr`; if successful (non-nil result), use `compID.ResourceID`; (2) otherwise fall back to `model.GetResourceID().ValueString()` if it is non-empty; (3) otherwise use the raw `model.GetID().ValueString()` string as the resource ID. The envelope SHALL NOT return an error diagnostic solely because the state `id` is not in composite format. If all three fallback steps resolve to an empty string the envelope SHALL return an error diagnostic with summary "Invalid resource identifier" and SHALL NOT invoke the concrete read function.
 
-#### Scenario: Successful read sets state from returned model
+This replaces the "Read falls back to composite ID resource segment" scenario in the canonical spec, which previously stated that a non-composite ID always fails.
 
-- **WHEN** the concrete read function returns `(model, true, nil)` (entity found, no errors)
-- **THEN** `resp.State.Set` SHALL be called with the returned model `T`
+#### Scenario: Read succeeds with plain (non-composite) ID — GetResourceID available
 
-#### Scenario: Not-found read removes resource from state
+- GIVEN a state `id` attribute that is not in `<cluster_uuid>/<resource_id>` format (e.g. `my-job-id`)
+- AND `model.GetResourceID()` returns a non-empty string (e.g. `my-job-id`)
+- WHEN `Read` runs
+- THEN the envelope SHALL NOT return an error diagnostic for the ID format
+- AND the concrete `readFunc` SHALL be invoked with `my-job-id` as the `resourceID` argument
 
-- **WHEN** the concrete read function returns `(_, false, nil)` (entity missing, no errors)
-- **THEN** `resp.State.RemoveResource` SHALL be called
-- **AND** `resp.State.Set` SHALL NOT be called
+#### Scenario: Read succeeds with plain (non-composite) ID — GetResourceID empty
 
-#### Scenario: Read function error short-circuits state mutation
+- GIVEN a state `id` attribute that is not in `<cluster_uuid>/<resource_id>` format (e.g. `my-job-id`)
+- AND `model.GetResourceID()` returns an empty string
+- WHEN `Read` runs
+- THEN the envelope SHALL NOT return an error diagnostic for the ID format
+- AND the concrete `readFunc` SHALL be invoked with `my-job-id` (the raw ID string) as the `resourceID` argument
 
-- **WHEN** the concrete read function returns error diagnostics
-- **THEN** the diagnostics SHALL be appended to `resp.Diagnostics`
-- **AND** neither `resp.State.Set` nor `resp.State.RemoveResource` SHALL be called
+#### Scenario: Read still fails when all fallbacks produce empty string
 
-#### Scenario: Composite ID parse failure short-circuits read
+- GIVEN a state `id` attribute that is empty
+- AND `model.GetResourceID()` also returns an empty string
+- WHEN `Read` runs
+- THEN the envelope SHALL return an error diagnostic with summary "Invalid resource identifier"
+- AND the concrete `readFunc` SHALL NOT be invoked
 
-- **WHEN** `CompositeIDFromStrFw` returns error diagnostics
-- **THEN** the diagnostics SHALL be appended to `resp.Diagnostics`
-- **AND** the concrete read function SHALL NOT be invoked
-- **AND** state SHALL remain untouched
+#### Scenario: Read with composite ID continues to work
 
-#### Scenario: Client resolution failure short-circuits read
-
-- **WHEN** `GetElasticsearchClient` returns error diagnostics
-- **THEN** the diagnostics SHALL be appended to `resp.Diagnostics`
-- **AND** the concrete read function SHALL NOT be invoked
-- **AND** state SHALL remain untouched
+- GIVEN a state `id` attribute in `<cluster_uuid>/<resource_id>` format (e.g. `abc123/my-job-id`)
+- WHEN `Read` runs
+- THEN the envelope SHALL parse the composite ID and invoke `readFunc` with `my-job-id` as the `resourceID` argument
+- AND behavior SHALL be unchanged from the prior implementation
 
 ### Requirement: Envelope owns the Create and Update preludes
 
-The system SHALL implement `Create` and `Update` on `NewElasticsearchResource[T]` by deserializing the planned model into `T`, deriving the write resource ID from the model, resolving the scoped Elasticsearch client from the model's connection block via `GetElasticsearchClient`, invoking the corresponding concrete callback, and then invoking `readFunc` with the model returned by the callback. The concrete create and update callbacks SHALL be invoked with `(context, *clients.ElasticsearchScopedClient, resourceID string, T)`. After a successful callback invocation, `readFunc` SHALL be invoked with `(context, *clients.ElasticsearchScopedClient, resourceID string, writtenModel)` where `writtenModel` is the model returned by the concrete callback. State SHALL be set from the model returned by `readFunc`, not directly from the concrete callback.
+The system SHALL implement `Create` and `Update` on `NewElasticsearchResource[T]` by deserializing the relevant framework inputs, deriving the write resource ID from the model, resolving the scoped Elasticsearch client from the model's connection block via `GetElasticsearchClient`, enforcing any optional version requirements declared by the planned model, invoking the corresponding concrete callback with a structured request object, and then invoking `readFunc` with the model returned by the callback. State SHALL be set from the model returned by `readFunc`, not directly from the concrete callback.
 
-#### Scenario: Successful create sets state from read result
+Create and update callbacks SHALL share the type `WriteFunc[T]` and receive a `WriteRequest[T]` containing `Plan`, `Prior`, `Config`, and `WriteID`. `Prior` SHALL be a `*T`: `nil` for create invocations and a non-nil pointer to the decoded prior state model for update invocations. Callbacks that distinguish create from update SHALL inspect `req.Prior == nil`. `Config` SHALL be the Terraform configuration decoded into `T` by the envelope before the callback is invoked, in the same manner as `Plan` and `Prior`.
 
-- **WHEN** the concrete create function returns `(writtenModel, nil)` and `readFunc` returns `(stateModel, true, nil)`
-- **THEN** `resp.State.Set` SHALL be called with `stateModel` (the model returned by `readFunc`)
-- **AND** response diagnostics SHALL contain no errors
+Create and update callbacks SHALL return `WriteResult[T]` carrying the written model used for read-after-write identity resolution.
 
-#### Scenario: Successful update sets state from read result
+#### Scenario: Create callback receives nil Prior and decoded config
 
-- **WHEN** the concrete update function returns `(writtenModel, nil)` and `readFunc` returns `(stateModel, true, nil)`
-- **THEN** `resp.State.Set` SHALL be called with `stateModel` (the model returned by `readFunc`)
-- **AND** response diagnostics SHALL contain no errors
+- **WHEN** `Create` runs for a resource whose callback fits the envelope contract
+- **THEN** the callback SHALL receive `WriteRequest[T]` with `Prior == nil`
+- **AND** the callback SHALL receive the planned model in `Plan` and the Terraform configuration decoded into `T` in `Config`
 
-#### Scenario: Resource not found after create produces error
+#### Scenario: Update callback receives prior state and decoded config
 
-- **WHEN** the concrete create function returns `(writtenModel, nil)` and `readFunc` returns `(_, false, nil)`
-- **THEN** an error diagnostic SHALL be appended to `resp.Diagnostics` identifying the resource type using the envelope's component and resource name
-- **AND** state SHALL remain untouched (neither `resp.State.Set` nor `resp.State.RemoveResource` SHALL be called)
+- **WHEN** `Update` runs for a resource whose callback fits the envelope contract
+- **THEN** the callback SHALL receive `WriteRequest[T]` with `Prior` pointing at the decoded prior-state model
+- **AND** the callback SHALL receive both the planned model in `Plan` and the Terraform configuration decoded into `T` in `Config`
 
-#### Scenario: Resource not found after update produces error
+#### Scenario: Write-only attributes accessible via decoded Config
 
-- **WHEN** the concrete update function returns `(writtenModel, nil)` and `readFunc` returns `(_, false, nil)`
-- **THEN** an error diagnostic SHALL be appended to `resp.Diagnostics` identifying the resource type using the envelope's component and resource name
-- **AND** state SHALL remain untouched (neither `resp.State.Set` nor `resp.State.RemoveResource` SHALL be called)
+- **WHEN** a schema attribute is declared `WriteOnly: true`
+- **THEN** the decoded `Config T` value in `WriteRequest[T]` SHALL carry the practitioner-supplied value for that attribute
+- **AND** the decoded `Plan T` value SHALL NOT carry the practitioner-supplied value for that attribute, consistent with framework write-only semantics
 
-#### Scenario: readFunc error after create short-circuits state mutation
+### Requirement: Envelope supports post-read side effects
 
-- **WHEN** the concrete create function returns `(writtenModel, nil)` and `readFunc` returns error diagnostics
-- **THEN** the diagnostics SHALL be appended to `resp.Diagnostics`
-- **AND** `resp.State.Set` SHALL NOT be called
+The system SHALL allow Elasticsearch envelope users to provide an optional post-read hook. After a successful read flow that sets Terraform state, the envelope SHALL invoke the post-read hook with the scoped client, the model persisted to state, and the framework private-state handle.
 
-#### Scenario: readFunc error after update short-circuits state mutation
+The hook SHALL NOT run when the entity is not found, when `readFunc` returns error diagnostics, or when state persistence fails.
 
-- **WHEN** the concrete update function returns `(writtenModel, nil)` and `readFunc` returns error diagnostics
-- **THEN** the diagnostics SHALL be appended to `resp.Diagnostics`
-- **AND** `resp.State.Set` SHALL NOT be called
+#### Scenario: Post-read hook persists private state after read
 
-#### Scenario: Create function error short-circuits state mutation
+- **WHEN** `readFunc` returns `(model, true, nil)` and `resp.State.Set` succeeds
+- **THEN** the envelope SHALL invoke the configured post-read hook with the persisted model and `resp.Private`
 
-- **WHEN** the concrete create function returns error diagnostics
-- **THEN** the diagnostics SHALL be appended to `resp.Diagnostics`
-- **AND** `readFunc` SHALL NOT be invoked
-- **AND** `resp.State.Set` SHALL NOT be called
+### Requirement: Shared version requirement type is envelope-neutral
 
-#### Scenario: Update function error short-circuits state mutation
+The system SHALL define the shared requirement type as `VersionRequirement`, not `DataSourceVersionRequirement`, and the optional `WithVersionRequirements` interface SHALL return `[]VersionRequirement`.
 
-- **WHEN** the concrete update function returns error diagnostics
-- **THEN** the diagnostics SHALL be appended to `resp.Diagnostics`
-- **AND** `readFunc` SHALL NOT be invoked
-- **AND** `resp.State.Set` SHALL NOT be called
+#### Scenario: Resource and data source envelopes use the same requirement type
 
-#### Scenario: Client resolution failure short-circuits create
-
-- **WHEN** `GetElasticsearchClient` returns error diagnostics during `Create`
-- **THEN** the diagnostics SHALL be appended to `resp.Diagnostics`
-- **AND** the concrete create function SHALL NOT be invoked
-- **AND** state SHALL remain untouched
-
-#### Scenario: Client resolution failure short-circuits update
-
-- **WHEN** `GetElasticsearchClient` returns error diagnostics during `Update`
-- **THEN** the diagnostics SHALL be appended to `resp.Diagnostics`
-- **AND** the concrete update function SHALL NOT be invoked
-- **AND** state SHALL remain untouched
-
-#### Scenario: Create and update may use the same callback
-
-- **WHEN** a concrete Elasticsearch resource has identical create and update API behavior
-- **THEN** the resource SHALL be able to pass the same callback as both the create and update callback
+- **WHEN** a model implements `WithVersionRequirements`
+- **THEN** both Kibana and Elasticsearch envelopes SHALL accept the same `VersionRequirement` return type
 
 ### Requirement: Envelope owns the Delete prelude
 
-The system SHALL implement `Delete` by deserializing the prior state into the generic model `T`, parsing the composite ID with `clients.CompositeIDFromStrFw`, resolving the scoped Elasticsearch client from the model's connection block, and invoking the concrete delete function with `(context, *clients.ElasticsearchScopedClient, resourceID string, T)`.
+The `ElasticsearchResource` envelope SHALL implement `Delete` by deserializing the prior state into the generic model `T`, resolving the resource ID using the same lenient three-step fallback as the updated Read prelude (composite parse → `GetResourceID()` → raw ID), resolving the scoped Elasticsearch client from the model's connection block via `GetElasticsearchClient`, and invoking the concrete delete function with `(context, *clients.ElasticsearchScopedClient, resourceID string, T)`. The envelope SHALL NOT return an error diagnostic solely because the state `id` is not in composite format. If all three fallback steps produce an empty string the envelope SHALL return an error diagnostic and SHALL NOT invoke the concrete delete function.
 
-#### Scenario: Successful delete returns nil diagnostics
+This replaces the "Composite ID parse failure short-circuits delete" scenario in the canonical spec, which previously stated that a non-composite ID always fails.
 
-- **WHEN** the concrete delete function returns no diagnostics
-- **THEN** the response diagnostics SHALL contain no errors and Plugin Framework SHALL remove the resource from state per its standard contract
+#### Scenario: Delete succeeds with plain (non-composite) ID — GetResourceID available
 
-#### Scenario: Delete function error is appended to response diagnostics
+- GIVEN a state `id` attribute that is not in `<cluster_uuid>/<resource_id>` format (e.g. `my-job-id`)
+- AND `model.GetResourceID()` returns a non-empty string (e.g. `my-job-id`)
+- WHEN `Delete` runs
+- THEN the envelope SHALL NOT return an error diagnostic for the ID format
+- AND the concrete `deleteFunc` SHALL be invoked with `my-job-id` as the `resourceID` argument
 
-- **WHEN** the concrete delete function returns error diagnostics
-- **THEN** the diagnostics SHALL be appended to `resp.Diagnostics`
+#### Scenario: Delete succeeds with plain (non-composite) ID — GetResourceID empty
 
-#### Scenario: Composite ID parse failure short-circuits delete
+- GIVEN a state `id` attribute that is not in `<cluster_uuid>/<resource_id>` format (e.g. `my-job-id`)
+- AND `model.GetResourceID()` returns an empty string
+- WHEN `Delete` runs
+- THEN the envelope SHALL NOT return an error diagnostic for the ID format
+- AND the concrete `deleteFunc` SHALL be invoked with `my-job-id` (the raw ID string) as the `resourceID` argument
 
-- **WHEN** `CompositeIDFromStrFw` returns error diagnostics
-- **THEN** the diagnostics SHALL be appended to `resp.Diagnostics`
-- **AND** the concrete delete function SHALL NOT be invoked
+#### Scenario: Delete with composite ID continues to work
 
-#### Scenario: Client resolution failure short-circuits delete
+- GIVEN a state `id` attribute in `<cluster_uuid>/<resource_id>` format (e.g. `abc123/my-job-id`)
+- WHEN `Delete` runs
+- THEN the envelope SHALL parse the composite ID and invoke `deleteFunc` with `my-job-id` as the `resourceID` argument
+- AND behavior SHALL be unchanged from the prior implementation
 
-- **WHEN** `GetElasticsearchClient` returns error diagnostics
-- **THEN** the diagnostics SHALL be appended to `resp.Diagnostics`
-- **AND** the concrete delete function SHALL NOT be invoked
+#### Scenario: Client resolution failure still short-circuits delete
+
+- GIVEN `GetElasticsearchClient` returns error diagnostics
+- WHEN `Delete` runs
+- THEN the diagnostics SHALL be appended to `resp.Diagnostics`
+- AND the concrete delete function SHALL NOT be invoked
 
 ### Requirement: Envelope requires a non-nil delete callback
 
@@ -216,26 +191,26 @@ The system SHALL define a type constraint `ElasticsearchResourceModel` requiring
 
 ### Requirement: Envelope preserves resource type names exactly
 
-The system SHALL allow concrete migrations to preserve their existing Terraform type name. Each migrated security resource SHALL initialize the envelope with the component namespace and literal name suffix that produce its current type name.
+The system SHALL allow concrete migrations to preserve their existing Terraform type name. Each migrated security resource SHALL initialize the envelope with the literal name suffix that produces its current type name.
 
 #### Scenario: Migrated user resource preserves its type name
 
-- **WHEN** the user resource is migrated to the envelope using component `elasticsearch` and name `security_user`
+- **WHEN** the user resource is migrated to the envelope using `NewElasticsearchResource[Data]("security_user", opts)`
 - **THEN** its Terraform type name SHALL remain `<provider_type_name>_elasticsearch_security_user`
 
 #### Scenario: Migrated system_user resource preserves its type name
 
-- **WHEN** the system user resource is migrated to the envelope using component `elasticsearch` and name `security_system_user`
+- **WHEN** the system user resource is migrated to the envelope using name suffix `security_system_user`
 - **THEN** its Terraform type name SHALL remain `<provider_type_name>_elasticsearch_security_system_user`
 
 #### Scenario: Migrated role resource preserves its type name
 
-- **WHEN** the role resource is migrated to the envelope using component `elasticsearch` and name `security_role`
+- **WHEN** the role resource is migrated to the envelope using name suffix `security_role`
 - **THEN** its Terraform type name SHALL remain `<provider_type_name>_elasticsearch_security_role`
 
 #### Scenario: Migrated role_mapping resource preserves its type name
 
-- **WHEN** the role mapping resource is migrated to the envelope using component `elasticsearch` and name `security_role_mapping`
+- **WHEN** the role mapping resource is migrated to the envelope using name suffix `security_role_mapping`
 - **THEN** its Terraform type name SHALL remain `<provider_type_name>_elasticsearch_security_role_mapping`
 
 ### Requirement: Envelope coexists with ResourceBase-only entities
@@ -246,4 +221,16 @@ The system SHALL NOT change the behavior of resources that embed `*ResourceBase`
 
 - **WHEN** a resource that embeds `*ResourceBase` (without the envelope) is configured and used
 - **THEN** its Configure, Metadata, and Client behavior SHALL remain unchanged
+
+### Requirement: Acceptance test for plain-ID import compatibility (REQ-ES-ENV-001)
+
+The acceptance test suite for `elasticstack_elasticsearch_ml_anomaly_detection_job` SHALL include a test named `TestAccResourceAnomalyDetectionJobFrom0_12_2` that simulates a job originally stored with a plain `job_id` as the state `id` (as produced by provider ≤ 0.12.2) and verifies that the current provider can successfully refresh and apply using that state without returning a "Wrong resource ID" diagnostic.
+
+#### Scenario: Plain-ID state from old provider can be refreshed by current provider
+
+- GIVEN an existing anomaly detection job whose Terraform state stores `id = "<job_id>"` (plain, non-composite)
+- AND the current provider implements the lenient-ID fallback
+- WHEN `terraform plan` or `terraform apply` is run with the current provider
+- THEN the provider SHALL successfully read the job from Elasticsearch using the plain `job_id` as the resource identifier
+- AND the plan SHALL NOT include an error diagnostic about wrong resource ID format
 

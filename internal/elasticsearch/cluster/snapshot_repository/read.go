@@ -24,7 +24,6 @@ import (
 
 	esclients "github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -34,8 +33,8 @@ import (
 func readSnapshotRepository(ctx context.Context, client *esclients.ElasticsearchScopedClient, resourceID string, state Data) (Data, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	repo, sdkDiags := elasticsearch.GetSnapshotRepository(ctx, client, resourceID)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	repo, repoDiags := elasticsearch.GetSnapshotRepository(ctx, client, resourceID)
+	diags.Append(repoDiags...)
 	if diags.HasError() {
 		return state, false, diags
 	}

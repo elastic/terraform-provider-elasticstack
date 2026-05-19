@@ -87,6 +87,7 @@ import (
 	securityenablerule "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_enable_rule"
 	securityexceptionitem "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_exception_item"
 	securitylistdatastreams "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_list_data_streams"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_role"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/securityexceptionlist"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/securitylist"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/securitylistitem"
@@ -104,6 +105,10 @@ import (
 )
 
 const (
+	esKeyName    = "elasticsearch"
+	kbKeyName    = "kibana"
+	fleetKeyName = "fleet"
+
 	IncludeExperimentalEnvVar = "TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL"
 	AccTestVersion            = "acctest"
 	envVarEnabled             = "true"
@@ -240,6 +245,8 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		securitylistdatastreams.NewResource,
 		securityexceptionlist.NewResource,
 		securityexceptionitem.NewResource,
+		security_role.NewResource,
+		spaces.NewResource,
 		slm.NewSlmResource,
 		snapshot_repository.NewSnapshotRepositoryResource,
 		transform.NewTransformResource,
@@ -259,6 +266,8 @@ func (p *Provider) dataSources(_ context.Context) []func() datasource.DataSource
 		indices.NewDataSource,
 		template.NewDataSource,
 		spaces.NewDataSource,
+		security_role.NewDataSource,
+		connectors.NewDataSource,
 		agentbuilderagent.NewDataSource,
 		agentbuildertool.NewDataSource,
 		agentbuilderworkflow.NewDataSource,

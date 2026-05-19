@@ -64,8 +64,8 @@ type agentDataSourceModel struct {
 // entitycore.WithVersionRequirements interface, allowing the
 // generic Kibana data source envelope to enforce the requirement before invoking
 // the entity read callback.
-func (model agentDataSourceModel) GetVersionRequirements() ([]entitycore.DataSourceVersionRequirement, diag.Diagnostics) {
-	return []entitycore.DataSourceVersionRequirement{
+func (model agentDataSourceModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+	return []entitycore.VersionRequirement{
 		{
 			MinVersion:   *minKibanaAgentBuilderAPIVersion,
 			ErrorMessage: fmt.Sprintf("Agent Builder agents require Elastic Stack v%s or later.", minKibanaAgentBuilderAPIVersion),
@@ -86,43 +86,65 @@ type toolModel struct {
 	WorkflowConfigurationYaml customtypes.NormalizedYamlValue `tfsdk:"workflow_configuration_yaml"`
 }
 
+// agentBaseData holds fields shared between agentDataSourceModel and agentModel
+// populated from the API response.
+type agentBaseData struct {
+	ID           types.String
+	AgentID      types.String
+	SpaceID      types.String
+	Name         types.String
+	Description  types.String
+	AvatarColor  types.String
+	AvatarSymbol types.String
+	Instructions types.String
+	Labels       types.Set
+}
+
+// populateAgentBaseFromAPI extracts the fields common to both agentDataSourceModel
+// and agentModel from an API response, eliminating duplicated population logic.
+func populateAgentBaseFromAPI(ctx context.Context, spaceID string, data *models.Agent) (agentBaseData, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	base := agentBaseData{
+		ID:           types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: data.ID}).String()),
+		AgentID:      types.StringValue(data.ID),
+		SpaceID:      types.StringValue(spaceID),
+		Name:         types.StringValue(data.Name),
+		AvatarColor:  types.StringPointerValue(data.AvatarColor),
+		AvatarSymbol: types.StringPointerValue(data.AvatarSymbol),
+	}
+
+	if data.Description != nil && *data.Description != "" {
+		base.Description = types.StringValue(*data.Description)
+	} else {
+		base.Description = types.StringNull()
+	}
+
+	cfg := data.Configuration
+	if cfg.Instructions != nil && *cfg.Instructions != "" {
+		base.Instructions = types.StringValue(*cfg.Instructions)
+	} else {
+		base.Instructions = types.StringNull()
+	}
+
+	diags.Append(populateSet(ctx, data.Labels, &base.Labels)...)
+	return base, diags
+}
+
 func (model *agentDataSourceModel) populateFromAPI(ctx context.Context, spaceID string, data *models.Agent) diag.Diagnostics {
 	if data == nil {
 		return nil
 	}
-
-	var diags diag.Diagnostics
-
-	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: data.ID}).String())
-	model.AgentID = types.StringValue(data.ID)
-	model.SpaceID = types.StringValue(spaceID)
-	model.Name = types.StringValue(data.Name)
-
-	if data.Description != nil && *data.Description != "" {
-		model.Description = types.StringValue(*data.Description)
-	} else {
-		model.Description = types.StringNull()
-	}
-
-	model.AvatarColor = types.StringPointerValue(data.AvatarColor)
-	model.AvatarSymbol = types.StringPointerValue(data.AvatarSymbol)
-
-	cfg := data.Configuration
-
-	if cfg.Instructions != nil && *cfg.Instructions != "" {
-		model.Instructions = types.StringValue(*cfg.Instructions)
-	} else {
-		model.Instructions = types.StringNull()
-	}
-
-	if len(data.Labels) > 0 {
-		labels, d := types.SetValueFrom(ctx, types.StringType, data.Labels)
-		diags.Append(d...)
-		model.Labels = labels
-	} else {
-		model.Labels = types.SetNull(types.StringType)
-	}
-
+	base, diags := populateAgentBaseFromAPI(ctx, spaceID, data)
+	model.ID = base.ID
+	model.AgentID = base.AgentID
+	model.SpaceID = base.SpaceID
+	model.Name = base.Name
+	model.Description = base.Description
+	model.AvatarColor = base.AvatarColor
+	model.AvatarSymbol = base.AvatarSymbol
+	model.Instructions = base.Instructions
+	model.Labels = base.Labels
 	return diags
 }
 
@@ -130,39 +152,21 @@ func (model *agentModel) populateFromAPI(ctx context.Context, spaceID string, da
 	if data == nil {
 		return nil
 	}
-
-	var diags diag.Diagnostics
-
-	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: data.ID}).String())
-	model.AgentID = types.StringValue(data.ID)
-	model.SpaceID = types.StringValue(spaceID)
-	model.Name = types.StringValue(data.Name)
-
-	if data.Description != nil && *data.Description != "" {
-		model.Description = types.StringValue(*data.Description)
-	} else {
-		model.Description = types.StringNull()
-	}
-
-	model.AvatarColor = types.StringPointerValue(data.AvatarColor)
-	model.AvatarSymbol = types.StringPointerValue(data.AvatarSymbol)
-
-	cfg := data.Configuration
-
-	if cfg.Instructions != nil && *cfg.Instructions != "" {
-		model.Instructions = types.StringValue(*cfg.Instructions)
-	} else {
-		model.Instructions = types.StringNull()
-	}
-
-	diags.Append(populateSet(ctx, data.Labels, &model.Labels)...)
-
+	base, diags := populateAgentBaseFromAPI(ctx, spaceID, data)
+	model.ID = base.ID
+	model.AgentID = base.AgentID
+	model.SpaceID = base.SpaceID
+	model.Name = base.Name
+	model.Description = base.Description
+	model.AvatarColor = base.AvatarColor
+	model.AvatarSymbol = base.AvatarSymbol
+	model.Instructions = base.Instructions
+	model.Labels = base.Labels
 	var toolIDs []string
-	if len(cfg.Tools) > 0 {
-		toolIDs = cfg.Tools[0].ToolIDs
+	if len(data.Configuration.Tools) > 0 {
+		toolIDs = data.Configuration.Tools[0].ToolIDs
 	}
 	diags.Append(populateSet(ctx, toolIDs, &model.Tools)...)
-
 	return diags
 }
 

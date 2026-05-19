@@ -21,7 +21,6 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -43,9 +42,9 @@ type downsamplingTfModel struct {
 }
 
 func (model tfModel) GetTFID() (*clients.CompositeID, diag.Diagnostics) {
-	compID, sdkDiags := clients.CompositeIDFromStr(model.ID.ValueString())
-	if sdkDiags.HasError() {
-		return nil, diagutil.FrameworkDiagsFromSDK(sdkDiags)
+	compID, compIDDiags := clients.CompositeIDFromStr(model.ID.ValueString())
+	if compIDDiags.HasError() {
+		return nil, compIDDiags
 	}
 
 	return compID, nil

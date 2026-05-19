@@ -26,26 +26,22 @@ import (
 )
 
 // Resource implements the elasticstack_elasticsearch_index_template resource.
-// It embeds *entitycore.ElasticsearchResource[Model] for schema injection, Read,
-// and Delete. Create and Update remain on the concrete type because they require
-// config-derived alias reconciliation, server-version gating, and the 8.x
-// allow_custom_routing workaround that cannot be expressed via the callback contract.
+// It embeds *entitycore.ElasticsearchResource[Model] for schema injection, Create,
+// Read, Update, and Delete. Create and Update use a shared WriteFunc (config-derived
+// read-after-write seeding and 8.x allow_custom_routing workaround).
 type Resource struct {
 	*entitycore.ElasticsearchResource[Model]
 }
 
 func newResource() *Resource {
-	createFn, updateFn := entitycore.PlaceholderElasticsearchWriteCallbacks[Model]()
 	return &Resource{
-		ElasticsearchResource: entitycore.NewElasticsearchResource[Model](
-			entitycore.ComponentElasticsearch,
-			"index_template",
-			resourceSchema,
-			readIndexTemplate,
-			deleteIndexTemplate,
-			createFn,
-			updateFn,
-		),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[Model]("index_template", entitycore.ElasticsearchResourceOptions[Model]{
+			Schema: resourceSchema,
+			Read:   readIndexTemplate,
+			Delete: deleteIndexTemplate,
+			Create: writeIndexTemplate,
+			Update: writeIndexTemplate,
+		}),
 	}
 }
 
@@ -64,10 +60,9 @@ func (r *Resource) UpgradeState(_ context.Context) map[int64]resource.StateUpgra
 }
 
 var (
-	_ resource.Resource                   = &Resource{}
-	_ resource.ResourceWithConfigure      = &Resource{}
-	_ resource.ResourceWithImportState    = &Resource{}
-	_ resource.ResourceWithModifyPlan     = &Resource{}
-	_ resource.ResourceWithValidateConfig = &Resource{}
-	_ resource.ResourceWithUpgradeState   = &Resource{}
+	_ resource.Resource                 = &Resource{}
+	_ resource.ResourceWithConfigure    = &Resource{}
+	_ resource.ResourceWithImportState  = &Resource{}
+	_ resource.ResourceWithModifyPlan   = &Resource{}
+	_ resource.ResourceWithUpgradeState = &Resource{}
 )

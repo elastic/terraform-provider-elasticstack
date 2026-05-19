@@ -22,39 +22,39 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func createCalendar(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, plan TFModel) (TFModel, fwdiags.Diagnostics) {
+func createCalendar(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.WriteRequest[TFModel]) (entitycore.WriteResult[TFModel], fwdiags.Diagnostics) {
 	var diags fwdiags.Diagnostics
-
-	calendarID := resourceID
+	plan := req.Plan
+	calendarID := req.WriteID
 
 	tflog.Debug(ctx, fmt.Sprintf("Creating ML calendar: %s", calendarID))
 
 	typedClient, err := client.GetESClient()
 	if err != nil {
 		diags.AddError("Failed to get Elasticsearch client", err.Error())
-		return plan, diags
+		return entitycore.WriteResult[TFModel]{Model: plan}, diags
 	}
 
 	_, err = typedClient.Ml.PutCalendar(calendarID).Request(newPutCalendarRequestFromTFModel(plan)).Do(ctx)
 	if err != nil {
 		diags.AddError("Failed to create ML calendar", fmt.Sprintf("Unable to create ML calendar: %s — %s", calendarID, err.Error()))
-		return plan, diags
+		return entitycore.WriteResult[TFModel]{Model: plan}, diags
 	}
 
-	compID, sdkDiags := client.ID(ctx, calendarID)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	compID, idDiags := client.ID(ctx, calendarID)
+	diags.Append(idDiags...)
 	if diags.HasError() {
-		return plan, diags
+		return entitycore.WriteResult[TFModel]{Model: plan}, diags
 	}
 
 	plan.ID = types.StringValue(compID.String())
 
 	tflog.Debug(ctx, fmt.Sprintf("Successfully created ML calendar: %s", calendarID))
-	return plan, diags
+	return entitycore.WriteResult[TFModel]{Model: plan}, diags
 }

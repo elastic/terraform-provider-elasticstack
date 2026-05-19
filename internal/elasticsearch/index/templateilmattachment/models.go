@@ -19,10 +19,13 @@ package templateilmattachment
 
 import (
 	"encoding/json"
+	"fmt"
 
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -32,6 +35,8 @@ var _ interface {
 	GetResourceID() types.String
 	GetElasticsearchConnection() types.List
 } = tfModel{}
+
+var _ entitycore.WithVersionRequirements = tfModel{}
 
 // tfModel represents the Terraform state model for this resource.
 type tfModel struct {
@@ -59,6 +64,19 @@ func (m tfModel) GetResourceID() types.String {
 
 // GetElasticsearchConnection returns the Elasticsearch connection configuration.
 func (m tfModel) GetElasticsearchConnection() types.List { return m.ElasticsearchConnection }
+
+// GetVersionRequirements satisfies [entitycore.WithVersionRequirements] and enforces
+// the ES >= 8.2.0 minimum required by the Put Component Template API used by this resource.
+func (m tfModel) GetVersionRequirements() ([]entitycore.VersionRequirement, diag.Diagnostics) {
+	return []entitycore.VersionRequirement{{
+		MinVersion: *MinVersion,
+		ErrorMessage: fmt.Sprintf(
+			"This resource requires Elasticsearch %s or later. "+
+				"This resource is not supported on this Elasticsearch version.",
+			MinVersion,
+		),
+	}}, nil
+}
 
 // mergeILMSetting adds the ILM lifecycle.name setting to existing settings.
 func mergeILMSetting(existingSettings map[string]any, lifecycleName string) map[string]any {

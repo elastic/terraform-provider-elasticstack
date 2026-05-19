@@ -44,7 +44,7 @@ func (r *ExceptionItemResource) Read(ctx context.Context, req resource.ReadReque
 	}
 
 	// Parse composite ID to get space_id and resource_id
-	compID, compIDDiags := clients.CompositeIDFromStrFw(state.ID.ValueString())
+	compID, compIDDiags := clients.CompositeIDFromStr(state.ID.ValueString())
 	resp.Diagnostics.Append(compIDDiags...)
 	if resp.Diagnostics.HasError() {
 		return

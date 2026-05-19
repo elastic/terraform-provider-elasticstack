@@ -47,14 +47,6 @@ func (Handler) AlignStateFromPlan(ctx context.Context, plan, state *models.Panel
 	_, _, _ = ctx, plan, state
 }
 
-func jsonDefaultsFunc() customtypes.PopulateDefaultsFunc[map[string]any] {
-	fn := panelJSONPopulateDefaults
-	if fn == nil {
-		fn = func(m map[string]any) map[string]any { return m }
-	}
-	return fn
-}
-
 // FromAPI maps a dashboard time_slider_control panel union item onto pm (null-preserving).
 func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
 	tsPanel, err := item.AsKbnDashboardPanelTypeTimeSliderControl()
@@ -67,7 +59,7 @@ func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item k
 	pm.Grid = panelkit.GridFromAPI(tsPanel.Grid.X, tsPanel.Grid.Y, tsPanel.Grid.W, tsPanel.Grid.H)
 	pm.ID = panelkit.IDFromAPI(tsPanel.Id)
 	if configBytes, err := json.Marshal(tsPanel.Config); err == nil {
-		pm.ConfigJSON = customtypes.NewJSONWithDefaultsValue(string(configBytes), jsonDefaultsFunc())
+		pm.ConfigJSON = customtypes.NewJSONWithDefaultsValue(string(configBytes), panelkit.PanelJSONDefaultsFunc())
 	}
 	PopulateFromAPI(pm, prior, tsPanel.Config)
 	_ = ctx

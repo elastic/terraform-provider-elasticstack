@@ -26,7 +26,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/asyncutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -71,7 +70,7 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 	needsVersionCheck := typeutils.IsKnown(planModel.IgnoreMappingUpdateErrors) || typeutils.IsKnown(planModel.SkipDataStreamRollover)
 	if needsVersionCheck {
 		serverVersion, versionDiags := apiClient.ServerVersion(ctx)
-		respDiags.Append(diagutil.FrameworkDiagsFromSDK(versionDiags)...)
+		respDiags.Append(versionDiags...)
 		if respDiags.HasError() {
 			return
 		}

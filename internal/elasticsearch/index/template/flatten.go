@@ -25,6 +25,7 @@ import (
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -92,6 +93,7 @@ func (m *Model) fromAPIModel(ctx context.Context, name string, in *estypes.Index
 
 	m.Priority = int64FromInt64Ptr(in.Priority)
 	m.Version = int64FromInt64Ptr(in.Version)
+	m.AllowAutoCreate = boolFromBoolPtr(in.AllowAutoCreate)
 
 	var d diag.Diagnostics
 	m.DataStream, d = flattenDataStream(in.DataStream)
@@ -116,6 +118,13 @@ func int64FromInt64Ptr(p *int64) types.Int64 {
 		return types.Int64Null()
 	}
 	return types.Int64Value(*p)
+}
+
+func boolFromBoolPtr(p *bool) types.Bool {
+	if p == nil {
+		return types.BoolNull()
+	}
+	return types.BoolValue(*p)
 }
 
 func flattenDataStream(ds *estypes.IndexTemplateDataStreamConfiguration) (types.Object, diag.Diagnostics) {
@@ -222,13 +231,13 @@ func flattenTemplateBody(ctx context.Context, t *estypes.IndexTemplateSummary) (
 	var dsoObj types.Object
 	if t.DataStreamOptions != nil && t.DataStreamOptions.FailureStore != nil {
 		var dsoDiags diag.Diagnostics
-		dsoObj, dsoDiags = flattenDataStreamOptions(t.DataStreamOptions)
+		dsoObj, dsoDiags = datastreamoptions.Flatten(t.DataStreamOptions)
 		diags.Append(dsoDiags...)
 		if diags.HasError() {
 			return types.ObjectUnknown(TemplateAttrTypes()), diags
 		}
 	} else {
-		dsoObj = types.ObjectNull(DataStreamOptionsAttrTypes())
+		dsoObj = types.ObjectNull(datastreamoptions.AttrTypes())
 	}
 
 	tplAttrs := map[string]attr.Value{
@@ -239,43 +248,6 @@ func flattenTemplateBody(ctx context.Context, t *estypes.IndexTemplateSummary) (
 		"data_stream_options": dsoObj,
 	}
 	obj, d := types.ObjectValue(TemplateAttrTypes(), tplAttrs)
-	diags.Append(d...)
-	return obj, diags
-}
-
-func flattenDataStreamOptions(dso *estypes.DataStreamOptions) (types.Object, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	fs := dso.FailureStore
-	fsAttrs := map[string]attr.Value{
-		"enabled":   types.BoolValue(typeutils.Deref(fs.Enabled)),
-		"lifecycle": types.ObjectNull(FailureStoreLifecycleAttrTypes()),
-	}
-	if fs.Lifecycle != nil {
-		dataRetention := types.StringNull()
-		if fs.Lifecycle.DataRetention != nil {
-			if dr, ok := fs.Lifecycle.DataRetention.(string); ok && dr != "" {
-				dataRetention = types.StringValue(dr)
-			}
-		}
-		lcAttrs := map[string]attr.Value{
-			"data_retention": dataRetention,
-		}
-		lcObj, d := types.ObjectValue(FailureStoreLifecycleAttrTypes(), lcAttrs)
-		diags.Append(d...)
-		if diags.HasError() {
-			return types.ObjectUnknown(DataStreamOptionsAttrTypes()), diags
-		}
-		fsAttrs["lifecycle"] = lcObj
-	}
-	fsObj, d := types.ObjectValue(FailureStoreAttrTypes(), fsAttrs)
-	diags.Append(d...)
-	if diags.HasError() {
-		return types.ObjectUnknown(DataStreamOptionsAttrTypes()), diags
-	}
-	outer := map[string]attr.Value{
-		"failure_store": fsObj,
-	}
-	obj, d := types.ObjectValue(DataStreamOptionsAttrTypes(), outer)
 	diags.Append(d...)
 	return obj, diags
 }

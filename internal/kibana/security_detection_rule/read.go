@@ -44,7 +44,7 @@ func (r *securityDetectionRuleResource) Read(ctx context.Context, req resource.R
 	}
 
 	// Parse ID to get space_id and rule_id
-	compID, diags := clients.CompositeIDFromStrFw(data.ID.ValueString())
+	compID, diags := clients.CompositeIDFromStr(data.ID.ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -63,6 +63,9 @@ func (r *securityDetectionRuleResource) Read(ctx context.Context, req resource.R
 		resp.State.RemoveResource(ctx)
 		return
 	}
+
+	// Reconcile empty lists from prior state to preserve explicit [] configurations
+	reconcileEmptyListsFromPlan(ctx, &data, readData)
 
 	// Set the composite ID and state; preserve KibanaConnection from existing state
 	readData.ID = data.ID

@@ -1,4 +1,4 @@
-# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"e00d521926a218e5bb7d715f9f9eb89910d31e77e3c836b37b88be9f7a57398e","compiler_version":"v0.72.1","strict":true,"agent_id":"claude","agent_model":"llm-gateway/claude-sonnet-4-6"}
+# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"03a6b112d21aadb8a952979debcc07bef0529bae020c5e5523abca33f06aaf9d","compiler_version":"v0.72.1","strict":true,"agent_id":"claude","agent_model":"llm-gateway/claude-sonnet-4-6"}
 # gh-aw-manifest: {"version":1,"secrets":["CLAUDE_LITELLM_PROXY_API_KEY","GH_AW_GITHUB_MCP_SERVER_TOKEN","GH_AW_GITHUB_TOKEN","GITHUB_TOKEN"],"actions":[{"repo":"actions/checkout","sha":"de0fac2e4500dabe0009e67214ff5f5447ce83dd","version":"v6"},{"repo":"actions/download-artifact","sha":"3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c","version":"v8"},{"repo":"actions/github-script","sha":"3a2844b7e9c422d3c10d287c895573f7108da1b3","version":"v9"},{"repo":"actions/setup-node","sha":"48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e","version":"v6.4.0"},{"repo":"actions/upload-artifact","sha":"043fb46d1a93c77aae656e7c1c64a875d1fc6a0a","version":"v7.0.1"},{"repo":"github/gh-aw-actions/setup","sha":"bc56a0cad2f450c562810785ef38649c04db812a","version":"v0.72.1"}],"containers":[{"image":"ghcr.io/github/gh-aw-firewall/agent:0.25.41"},{"image":"ghcr.io/github/gh-aw-firewall/api-proxy:0.25.41"},{"image":"ghcr.io/github/gh-aw-firewall/squid:0.25.41"},{"image":"ghcr.io/github/gh-aw-mcpg:v0.3.6","digest":"sha256:2bb8eef86006a4c5963c55616a9c51c32f27bfdecb023b8aa6f91f6718d9171c","pinned_image":"ghcr.io/github/gh-aw-mcpg:v0.3.6@sha256:2bb8eef86006a4c5963c55616a9c51c32f27bfdecb023b8aa6f91f6718d9171c"},{"image":"ghcr.io/github/github-mcp-server:v1.0.3","digest":"sha256:2ac27ef03461ef2b877031b838a7d1fd7f12b12d4ace7796d8cad91446d55959","pinned_image":"ghcr.io/github/github-mcp-server:v1.0.3@sha256:2ac27ef03461ef2b877031b838a7d1fd7f12b12d4ace7796d8cad91446d55959"},{"image":"node:lts-alpine","digest":"sha256:d1b3b4da11eefd5941e7f0b9cf17783fc99d9c6fc34884a665f40a06dbdfc94f","pinned_image":"node:lts-alpine@sha256:d1b3b4da11eefd5941e7f0b9cf17783fc99d9c6fc34884a665f40a06dbdfc94f"}]}
 #    ___                   _   _      
 #   / _ \                 | | (_)     
@@ -55,189 +55,19 @@ name: "Flaky Test Catcher"
   - cron: "36 4 * * *"
     # Friendly format: daily (scattered)
   # steps: # Steps injected into pre-activation job
+  # - name: Checkout repository
+    # uses: actions/checkout@v6
+    # with:
+      # fetch-depth: 1
+      # persist-credentials: false
   # - id: check_ci_failures
     # name: Check CI failures
     # uses: actions/github-script@v9
     # with:
       # github-token: ${{ secrets.GITHUB_TOKEN }}
       # script: |
-        # /**
-         # * Computes issue slot availability for a labeled issue bucket.
-         # * @param {{ label: string, issueCap: number | string, openIssueCount: number }} params
-         # * @returns {{ open_issues: number, issue_slots_available: number, gate_reason: string }}
-         # */
-        # function computeIssueSlots({ label, issueCap, openIssueCount }) {
-          # const normalizedLabel = String(label).trim();
-          # const cap = Number(issueCap);
-        # 
-          # if (!normalizedLabel) {
-            # throw new Error('issue slot label must be a non-empty string');
-          # }
-        # 
-          # if (!Number.isInteger(cap) || cap < 0) {
-            # throw new Error(`issue cap must be a non-negative integer, got: ${issueCap}`);
-          # }
-        # 
-          # if (!Number.isInteger(openIssueCount) || openIssueCount < 0) {
-            # throw new Error(`open issue count must be a non-negative integer, got: ${openIssueCount}`);
-          # }
-        # 
-          # const slotsAvailable = Math.max(0, cap - openIssueCount);
-        # 
-          # let gateReason;
-          # if (slotsAvailable === 0) {
-            # gateReason = `Issue cap reached: ${openIssueCount} open ${normalizedLabel} issue(s), cap is ${cap}. Agent job will be skipped.`;
-          # } else {
-            # gateReason = `${slotsAvailable} slot(s) available: ${openIssueCount} open ${normalizedLabel} issue(s), cap is ${cap}.`;
-          # }
-        # 
-          # return {
-            # open_issues: openIssueCount,
-            # issue_slots_available: slotsAvailable,
-            # gate_reason: gateReason,
-          # };
-        # }
-        # 
-        # if (typeof module !== 'undefined') {
-          # module.exports = { computeIssueSlots };
-        # }
-        # 
-        # /**
-         # * Pure helper functions for the flaky-test-catcher workflow.
-         # * These are extracted from check_ci_failures.inline.js so they can be unit-tested.
-         # */
-        # 
-        # /**
-         # * Conclusions that represent meaningful completed runs for the purpose of
-         # * computing fail rates. Cancelled and skipped runs are excluded because they
-         # * don't reflect a real test outcome and would dilute the denominator.
-         # */
-        # const COUNTABLE_CONCLUSIONS = new Set(['success', 'failure', 'timed_out', 'neutral', 'action_required']);
-        # 
-        # /**
-         # * Classifies an array of workflow run objects into failed runs and total count.
-         # *
-         # * Only runs with countable conclusions (success, failure, timed_out, neutral,
-         # * action_required) are included in `totalRunCount`. Cancelled and skipped runs
-         # * are omitted from the total to avoid understating fail rates.
-         # *
-         # * Runs are pre-filtered by date via the GitHub API `created` parameter, so
-         # * this function does not re-filter by date.
-         # *
-         # * @param {Array<{ id: number, conclusion: string | null }>} runs - Workflow run objects
-         # * @returns {{ failedRunIds: number[], totalRunCount: number }}
-         # */
-        # function classifyRuns(runs) {
-          # const failedRunIds = [];
-          # let totalRunCount = 0;
-          # for (const run of runs) {
-            # if (COUNTABLE_CONCLUSIONS.has(run.conclusion)) {
-              # totalRunCount++;
-            # }
-            # if (run.conclusion === 'failure') {
-              # failedRunIds.push(run.id);
-            # }
-          # }
-          # return { failedRunIds, totalRunCount };
-        # }
-        # 
-        # /**
-         # * Filters a list of GitHub issues/PR items, returning only real issues.
-         # * The GitHub issues API may return pull requests; this removes them.
-         # *
-         # * @param {Array<{ pull_request?: object }>} items - Items from listForRepo
-         # * @returns {Array<{ pull_request?: object }>}
-         # */
-        # function filterIssues(items) {
-          # return items.filter(item => !item.pull_request);
-        # }
-        # 
-        # /**
-         # * Computes the gate decision for the flaky-test-catcher workflow.
-         # *
-         # * @param {number[]} failedRunIds - IDs of failed workflow runs
-         # * @param {{ open_issues: number, issue_slots_available: number, gate_reason: string }} issueSlots - Output from computeIssueSlots
-         # * @returns {{ has_ci_failures: string, gate_reason: string }}
-         # */
-        # function computeGate(failedRunIds, issueSlots) {
-          # const hasCiFailures = failedRunIds.length > 0;
-        # 
-          # if (!hasCiFailures) {
-            # return {
-              # has_ci_failures: 'false',
-              # gate_reason: `No CI failures detected on main in the last 3 days. Agent job will be skipped.`,
-            # };
-          # }
-        # 
-          # if (issueSlots.issue_slots_available === 0) {
-            # return {
-              # has_ci_failures: 'true',
-              # gate_reason: `CI failures detected (${failedRunIds.length} failed run(s)), but ${issueSlots.gate_reason}`,
-            # };
-          # }
-        # 
-          # return {
-            # has_ci_failures: 'true',
-            # gate_reason: `CI failures detected: ${failedRunIds.length} failed run(s) on main. ${issueSlots.gate_reason}`,
-          # };
-        # }
-        # 
-        # if (typeof module !== 'undefined') {
-          # module.exports = { classifyRuns, computeGate, filterIssues };
-        # }
-        # 
-        # const ISSUE_LABEL = 'flaky-test';
-        # const ISSUE_CAP = 3;
-        # 
-        # const { owner, repo } = context.repo;
-        # 
-        # // Calculate the cutoff date for the 3-day window
-        # const cutoffDate = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
-        # 
-        # // Query workflow runs for test.yml on main in the last 3 days.
-        # // The `created` filter uses a date (not datetime) prefix so we may get some
-        # // runs from just before the cutoff hour; that is acceptable.
-        # const allRuns = await github.paginate(github.rest.actions.listWorkflowRuns, {
-          # owner,
-          # repo,
-          # workflow_id: 'test.yml',
-          # branch: 'main',
-          # status: 'completed',
-          # created: `>=${cutoffDate.toISOString().split('T')[0]}`,
-          # per_page: 100,
-        # });
-        # 
-        # const { failedRunIds, totalRunCount } = classifyRuns(allRuns);
-        # 
-        # // Count open GitHub issues labelled `flaky-test`, excluding pull requests
-        # const issues = await github.paginate(github.rest.issues.listForRepo, {
-          # owner,
-          # repo,
-          # labels: ISSUE_LABEL,
-          # state: 'open',
-          # per_page: 100,
-        # });
-        # 
-        # const openIssueCount = filterIssues(issues).length;
-        # 
-        # const issueSlots = computeIssueSlots({
-          # label: ISSUE_LABEL,
-          # issueCap: ISSUE_CAP,
-          # openIssueCount,
-        # });
-        # 
-        # const gate = computeGate(failedRunIds, issueSlots);
-        # 
-        # core.setOutput('has_ci_failures', gate.has_ci_failures);
-        # core.setOutput('failed_run_ids', JSON.stringify(failedRunIds));
-        # core.setOutput('total_run_count', String(totalRunCount));
-        # core.setOutput('open_issues', String(issueSlots.open_issues));
-        # core.setOutput('issue_slots_available', String(issueSlots.issue_slots_available));
-        # core.setOutput('gate_reason', gate.gate_reason);
-        # 
-        # core.info(`Gate reason: ${gate.gate_reason}`);
-        # core.info(`Failed run IDs: ${JSON.stringify(failedRunIds)}`);
-        # core.info(`Total runs in window: ${totalRunCount}`);
+        # const fn = require('${{ github.workspace }}/.github/scripts/workflows/flaky-test-catcher/catch.js');
+        # await fn({ github, context, core });
   workflow_dispatch:
     inputs:
       aw_context:
@@ -249,8 +79,7 @@ name: "Flaky Test Catcher"
 permissions: {}
 
 concurrency:
-  group: "gh-aw-${{ github.workflow }}-${{ github.event.issue.number || github.event.pull_request.number || github.run_id }}"
-  cancel-in-progress: true
+  group: "gh-aw-${{ github.workflow }}"
 
 run-name: "Flaky Test Catcher"
 
@@ -381,20 +210,20 @@ jobs:
         run: |
           bash "${RUNNER_TEMP}/gh-aw/actions/create_prompt_first.sh"
           {
-          cat << 'GH_AW_PROMPT_96f6312ccd887630_EOF'
+          cat << 'GH_AW_PROMPT_3990a23794ea5111_EOF'
           <system>
-          GH_AW_PROMPT_96f6312ccd887630_EOF
+          GH_AW_PROMPT_3990a23794ea5111_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/xpia.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/temp_folder_prompt.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/markdown.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/safe_outputs_prompt.md"
-          cat << 'GH_AW_PROMPT_96f6312ccd887630_EOF'
+          cat << 'GH_AW_PROMPT_3990a23794ea5111_EOF'
           <safe-output-tools>
           Tools: create_issue(max:3), missing_tool, missing_data, noop, dispatch_code_factory
           </safe-output-tools>
-          GH_AW_PROMPT_96f6312ccd887630_EOF
+          GH_AW_PROMPT_3990a23794ea5111_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/mcp_cli_tools_prompt.md"
-          cat << 'GH_AW_PROMPT_96f6312ccd887630_EOF'
+          cat << 'GH_AW_PROMPT_3990a23794ea5111_EOF'
           <github-context>
           The following GitHub context information is available for this workflow:
           {{#if __GH_AW_GITHUB_ACTOR__ }}
@@ -426,12 +255,12 @@ jobs:
             - **Note**: If a branch you need is not in the list above and is not listed as an additional fetched ref, it has NOT been checked out. For private repositories you cannot fetch it without proper authentication. If the branch is required and not available, exit with an error and ask the user to add it to the `fetch:` option of the `checkout:` configuration (e.g., `fetch: ["refs/pulls/open/*"]` for all open PR refs, or `fetch: ["main", "feature/my-branch"]` for specific branches).
           </github-context>
           
-          GH_AW_PROMPT_96f6312ccd887630_EOF
+          GH_AW_PROMPT_3990a23794ea5111_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/github_mcp_tools_with_safeoutputs_prompt.md"
-          cat << 'GH_AW_PROMPT_96f6312ccd887630_EOF'
+          cat << 'GH_AW_PROMPT_3990a23794ea5111_EOF'
           </system>
           {{#runtime-import .github/workflows/flaky-test-catcher.md}}
-          GH_AW_PROMPT_96f6312ccd887630_EOF
+          GH_AW_PROMPT_3990a23794ea5111_EOF
           } > "$GH_AW_PROMPT"
       - name: Interpolate variables and render templates
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
@@ -533,6 +362,8 @@ jobs:
       actions: read
       contents: read
       issues: read
+    concurrency:
+      group: "gh-aw-claude-${{ github.workflow }}"
     env:
       DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
       GH_AW_ASSETS_ALLOWED_EXTS: ""
@@ -648,15 +479,15 @@ jobs:
           mkdir -p "${RUNNER_TEMP}/gh-aw/safeoutputs"
           mkdir -p /tmp/gh-aw/safeoutputs
           mkdir -p /tmp/gh-aw/mcp-logs/safeoutputs
-          cat > "${RUNNER_TEMP}/gh-aw/safeoutputs/config.json" << 'GH_AW_SAFE_OUTPUTS_CONFIG_0a86c13c914ca627_EOF'
-          {"create_issue":{"labels":["flaky-test"],"max":3,"title_prefix":"[flaky-test] "},"create_report_incomplete_issue":{},"dispatch-code-factory":{"description":"Dispatch code-factory for each created issue"},"missing_data":{},"missing_tool":{},"noop":{"max":1,"report-as-issue":"false"},"report_incomplete":{}}
-          GH_AW_SAFE_OUTPUTS_CONFIG_0a86c13c914ca627_EOF
+          cat > "${RUNNER_TEMP}/gh-aw/safeoutputs/config.json" << 'GH_AW_SAFE_OUTPUTS_CONFIG_a96ecd65fb97836b_EOF'
+          {"create_issue":{"labels":["flaky-test","triaged"],"max":3,"title_prefix":"[flaky-test] "},"create_report_incomplete_issue":{},"dispatch-code-factory":{"description":"Dispatch code-factory for each created issue"},"missing_data":{},"missing_tool":{},"noop":{"max":1,"report-as-issue":"false"},"report_incomplete":{}}
+          GH_AW_SAFE_OUTPUTS_CONFIG_a96ecd65fb97836b_EOF
       - name: Generate Safe Outputs Tools
         env:
           GH_AW_TOOLS_META_JSON: |
             {
               "description_suffixes": {
-                "create_issue": " CONSTRAINTS: Maximum 3 issue(s) can be created. Title will be prefixed with \"[flaky-test] \". Labels [\"flaky-test\"] will be automatically added."
+                "create_issue": " CONSTRAINTS: Maximum 3 issue(s) can be created. Title will be prefixed with \"[flaky-test] \". Labels [\"flaky-test\" \"triaged\"] will be automatically added."
               },
               "repo_params": {},
               "dynamic_tools": [
@@ -859,7 +690,7 @@ jobs:
           export MCP_GATEWAY_DOCKER_COMMAND='docker run -i --rm --network host --add-host host.docker.internal:127.0.0.1 --user '"${MCP_GATEWAY_UID}"':'"${MCP_GATEWAY_GID}"' --group-add '"${DOCKER_SOCK_GID}"' -v /var/run/docker.sock:/var/run/docker.sock -e MCP_GATEWAY_PORT -e MCP_GATEWAY_DOMAIN -e MCP_GATEWAY_API_KEY -e MCP_GATEWAY_PAYLOAD_DIR -e MCP_GATEWAY_PAYLOAD_SIZE_THRESHOLD -e DEBUG -e MCP_GATEWAY_LOG_DIR -e GH_AW_MCP_LOG_DIR -e GH_AW_SAFE_OUTPUTS -e GH_AW_SAFE_OUTPUTS_CONFIG_PATH -e GH_AW_SAFE_OUTPUTS_TOOLS_PATH -e GH_AW_ASSETS_BRANCH -e GH_AW_ASSETS_MAX_SIZE_KB -e GH_AW_ASSETS_ALLOWED_EXTS -e DEFAULT_BRANCH -e GITHUB_MCP_SERVER_TOKEN -e GITHUB_MCP_GUARD_MIN_INTEGRITY -e GITHUB_MCP_GUARD_REPOS -e GITHUB_REPOSITORY -e GITHUB_SERVER_URL -e GITHUB_SHA -e GITHUB_WORKSPACE -e GITHUB_TOKEN -e GITHUB_RUN_ID -e GITHUB_RUN_NUMBER -e GITHUB_RUN_ATTEMPT -e GITHUB_JOB -e GITHUB_ACTION -e GITHUB_EVENT_NAME -e GITHUB_EVENT_PATH -e GITHUB_ACTOR -e GITHUB_ACTOR_ID -e GITHUB_TRIGGERING_ACTOR -e GITHUB_WORKFLOW -e GITHUB_WORKFLOW_REF -e GITHUB_WORKFLOW_SHA -e GITHUB_REF -e GITHUB_REF_NAME -e GITHUB_REF_TYPE -e GITHUB_HEAD_REF -e GITHUB_BASE_REF -e GH_AW_SAFE_OUTPUTS_PORT -e GH_AW_SAFE_OUTPUTS_API_KEY -v /tmp/gh-aw/mcp-payloads:/tmp/gh-aw/mcp-payloads:rw -v /opt:/opt:ro -v /tmp:/tmp:rw -v '"${GITHUB_WORKSPACE}"':'"${GITHUB_WORKSPACE}"':rw ghcr.io/github/gh-aw-mcpg:v0.3.6'
           
           GH_AW_NODE=$(which node 2>/dev/null || command -v node 2>/dev/null || echo node)
-          cat << GH_AW_MCP_CONFIG_c77ad6a42d4f501c_EOF | "$GH_AW_NODE" "${RUNNER_TEMP}/gh-aw/actions/start_mcp_gateway.cjs"
+          cat << GH_AW_MCP_CONFIG_d190361eb81e3d9a_EOF | "$GH_AW_NODE" "${RUNNER_TEMP}/gh-aw/actions/start_mcp_gateway.cjs"
           {
             "mcpServers": {
               "github": {
@@ -899,7 +730,7 @@ jobs:
               "payloadDir": "${MCP_GATEWAY_PAYLOAD_DIR}"
             }
           }
-          GH_AW_MCP_CONFIG_c77ad6a42d4f501c_EOF
+          GH_AW_MCP_CONFIG_d190361eb81e3d9a_EOF
       - name: Mount MCP servers as CLIs
         id: mount-mcp-clis
         continue-on-error: true
@@ -1538,7 +1369,7 @@ jobs:
         with:
           fetch-depth: 1
           persist-credentials: false
-          sparse-checkout: .github/workflows-src/lib
+          sparse-checkout: .github/scripts/workflows/lib
           sparse-checkout-cone-mode: true
       - name: Download safe-outputs artifact
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
@@ -1550,7 +1381,7 @@ jobs:
           path: /tmp/gh-aw/safe-outputs
       - name: Dispatch code-factory runs
         run: |
-          node .github/workflows-src/lib/producer-dispatch.js \
+          node .github/scripts/workflows/lib/producer-dispatch.js \
             /tmp/gh-aw/safe-outputs/temporary-id-map.json \
             "$SOURCE_WORKFLOW"
         env:
@@ -1595,189 +1426,19 @@ jobs:
             setupGlobals(core, github, context, exec, io, getOctokit);
             const { main } = require('${{ runner.temp }}/gh-aw/actions/check_membership.cjs');
             await main();
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-depth: 1
+          persist-credentials: false
       - name: Check CI failures
         id: check_ci_failures
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            /**
-             * Computes issue slot availability for a labeled issue bucket.
-             * @param {{ label: string, issueCap: number | string, openIssueCount: number }} params
-             * @returns {{ open_issues: number, issue_slots_available: number, gate_reason: string }}
-             */
-            function computeIssueSlots({ label, issueCap, openIssueCount }) {
-              const normalizedLabel = String(label).trim();
-              const cap = Number(issueCap);
-
-              if (!normalizedLabel) {
-                throw new Error('issue slot label must be a non-empty string');
-              }
-
-              if (!Number.isInteger(cap) || cap < 0) {
-                throw new Error(`issue cap must be a non-negative integer, got: ${issueCap}`);
-              }
-
-              if (!Number.isInteger(openIssueCount) || openIssueCount < 0) {
-                throw new Error(`open issue count must be a non-negative integer, got: ${openIssueCount}`);
-              }
-
-              const slotsAvailable = Math.max(0, cap - openIssueCount);
-
-              let gateReason;
-              if (slotsAvailable === 0) {
-                gateReason = `Issue cap reached: ${openIssueCount} open ${normalizedLabel} issue(s), cap is ${cap}. Agent job will be skipped.`;
-              } else {
-                gateReason = `${slotsAvailable} slot(s) available: ${openIssueCount} open ${normalizedLabel} issue(s), cap is ${cap}.`;
-              }
-
-              return {
-                open_issues: openIssueCount,
-                issue_slots_available: slotsAvailable,
-                gate_reason: gateReason,
-              };
-            }
-
-            if (typeof module !== 'undefined') {
-              module.exports = { computeIssueSlots };
-            }
-
-            /**
-             * Pure helper functions for the flaky-test-catcher workflow.
-             * These are extracted from check_ci_failures.inline.js so they can be unit-tested.
-             */
-
-            /**
-             * Conclusions that represent meaningful completed runs for the purpose of
-             * computing fail rates. Cancelled and skipped runs are excluded because they
-             * don't reflect a real test outcome and would dilute the denominator.
-             */
-            const COUNTABLE_CONCLUSIONS = new Set(['success', 'failure', 'timed_out', 'neutral', 'action_required']);
-
-            /**
-             * Classifies an array of workflow run objects into failed runs and total count.
-             *
-             * Only runs with countable conclusions (success, failure, timed_out, neutral,
-             * action_required) are included in `totalRunCount`. Cancelled and skipped runs
-             * are omitted from the total to avoid understating fail rates.
-             *
-             * Runs are pre-filtered by date via the GitHub API `created` parameter, so
-             * this function does not re-filter by date.
-             *
-             * @param {Array<{ id: number, conclusion: string | null }>} runs - Workflow run objects
-             * @returns {{ failedRunIds: number[], totalRunCount: number }}
-             */
-            function classifyRuns(runs) {
-              const failedRunIds = [];
-              let totalRunCount = 0;
-              for (const run of runs) {
-                if (COUNTABLE_CONCLUSIONS.has(run.conclusion)) {
-                  totalRunCount++;
-                }
-                if (run.conclusion === 'failure') {
-                  failedRunIds.push(run.id);
-                }
-              }
-              return { failedRunIds, totalRunCount };
-            }
-
-            /**
-             * Filters a list of GitHub issues/PR items, returning only real issues.
-             * The GitHub issues API may return pull requests; this removes them.
-             *
-             * @param {Array<{ pull_request?: object }>} items - Items from listForRepo
-             * @returns {Array<{ pull_request?: object }>}
-             */
-            function filterIssues(items) {
-              return items.filter(item => !item.pull_request);
-            }
-
-            /**
-             * Computes the gate decision for the flaky-test-catcher workflow.
-             *
-             * @param {number[]} failedRunIds - IDs of failed workflow runs
-             * @param {{ open_issues: number, issue_slots_available: number, gate_reason: string }} issueSlots - Output from computeIssueSlots
-             * @returns {{ has_ci_failures: string, gate_reason: string }}
-             */
-            function computeGate(failedRunIds, issueSlots) {
-              const hasCiFailures = failedRunIds.length > 0;
-
-              if (!hasCiFailures) {
-                return {
-                  has_ci_failures: 'false',
-                  gate_reason: `No CI failures detected on main in the last 3 days. Agent job will be skipped.`,
-                };
-              }
-
-              if (issueSlots.issue_slots_available === 0) {
-                return {
-                  has_ci_failures: 'true',
-                  gate_reason: `CI failures detected (${failedRunIds.length} failed run(s)), but ${issueSlots.gate_reason}`,
-                };
-              }
-
-              return {
-                has_ci_failures: 'true',
-                gate_reason: `CI failures detected: ${failedRunIds.length} failed run(s) on main. ${issueSlots.gate_reason}`,
-              };
-            }
-
-            if (typeof module !== 'undefined') {
-              module.exports = { classifyRuns, computeGate, filterIssues };
-            }
-
-            const ISSUE_LABEL = 'flaky-test';
-            const ISSUE_CAP = 3;
-
-            const { owner, repo } = context.repo;
-
-            // Calculate the cutoff date for the 3-day window
-            const cutoffDate = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
-
-            // Query workflow runs for test.yml on main in the last 3 days.
-            // The `created` filter uses a date (not datetime) prefix so we may get some
-            // runs from just before the cutoff hour; that is acceptable.
-            const allRuns = await github.paginate(github.rest.actions.listWorkflowRuns, {
-              owner,
-              repo,
-              workflow_id: 'test.yml',
-              branch: 'main',
-              status: 'completed',
-              created: `>=${cutoffDate.toISOString().split('T')[0]}`,
-              per_page: 100,
-            });
-
-            const { failedRunIds, totalRunCount } = classifyRuns(allRuns);
-
-            // Count open GitHub issues labelled `flaky-test`, excluding pull requests
-            const issues = await github.paginate(github.rest.issues.listForRepo, {
-              owner,
-              repo,
-              labels: ISSUE_LABEL,
-              state: 'open',
-              per_page: 100,
-            });
-
-            const openIssueCount = filterIssues(issues).length;
-
-            const issueSlots = computeIssueSlots({
-              label: ISSUE_LABEL,
-              issueCap: ISSUE_CAP,
-              openIssueCount,
-            });
-
-            const gate = computeGate(failedRunIds, issueSlots);
-
-            core.setOutput('has_ci_failures', gate.has_ci_failures);
-            core.setOutput('failed_run_ids', JSON.stringify(failedRunIds));
-            core.setOutput('total_run_count', String(totalRunCount));
-            core.setOutput('open_issues', String(issueSlots.open_issues));
-            core.setOutput('issue_slots_available', String(issueSlots.issue_slots_available));
-            core.setOutput('gate_reason', gate.gate_reason);
-
-            core.info(`Gate reason: ${gate.gate_reason}`);
-            core.info(`Failed run IDs: ${JSON.stringify(failedRunIds)}`);
-            core.info(`Total runs in window: ${totalRunCount}`);
+            const fn = require('${{ github.workspace }}/.github/scripts/workflows/flaky-test-catcher/catch.js');
+            await fn({ github, context, core });
 
   safe_outputs:
     needs:
@@ -1852,7 +1513,7 @@ jobs:
           GITHUB_SERVER_URL: ${{ github.server_url }}
           GITHUB_API_URL: ${{ github.api_url }}
           GH_AW_SAFE_OUTPUT_JOBS: "{\"dispatch_code_factory\":\"\"}"
-          GH_AW_SAFE_OUTPUTS_HANDLER_CONFIG: "{\"create_issue\":{\"labels\":[\"flaky-test\"],\"max\":3,\"title_prefix\":\"[flaky-test] \"},\"create_report_incomplete_issue\":{},\"missing_data\":{},\"missing_tool\":{},\"noop\":{\"max\":1,\"report-as-issue\":\"false\"},\"report_incomplete\":{}}"
+          GH_AW_SAFE_OUTPUTS_HANDLER_CONFIG: "{\"create_issue\":{\"labels\":[\"flaky-test\",\"triaged\"],\"max\":3,\"title_prefix\":\"[flaky-test] \"},\"create_report_incomplete_issue\":{},\"missing_data\":{},\"missing_tool\":{},\"noop\":{\"max\":1,\"report-as-issue\":\"false\"},\"report_incomplete\":{}}"
         with:
           github-token: ${{ secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
           script: |

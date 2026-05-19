@@ -20,11 +20,13 @@ package dashboard
 import (
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_alignPanelStateFromPlan_preservesCommonPanelFields(t *testing.T) {
@@ -239,5 +241,50 @@ func Test_alignPanelStateFromPlan_preservesMosaicTreemapPartitionSnapshots(t *te
 }
 
 func mustTagcloudJSON(v string) customtypes.JSONWithDefaultsValue[map[string]any] {
-	return customtypes.NewJSONWithDefaultsValue(v, populateTagcloudTagByDefaults)
+	return customtypes.NewJSONWithDefaultsValue(v, lenscommon.PopulateTagcloudTagByDefaults)
+}
+
+// Test_alignPanelStateFromPlan_pinnedPanel_xyChart_appliesAlignment verifies XY drift alignment runs through
+// alignPanelStateFromPlan (the same helper alignDashboardStateFromPlanPinnedPanels delegates to once pinned panels
+// expose Lens vis blocks on their synthetic PanelModel surface).
+func Test_alignPanelStateFromPlan_pinnedPanel_xyChart_appliesAlignment(t *testing.T) {
+	t.Parallel()
+
+	plan := models.PanelModel{
+		VisConfig: &models.VisConfigModel{
+			ByValue: &models.VisByValueModel{
+				LensByValueChartBlocks: models.LensByValueChartBlocks{
+					XYChartConfig: &models.XYChartConfigModel{
+						Legend: &models.XYLegendModel{
+							Visibility: types.StringValue("visible"),
+							Inside:     types.BoolValue(false),
+							Position:   types.StringValue("right"),
+						},
+					},
+				},
+			},
+		},
+	}
+	state := models.PanelModel{
+		VisConfig: &models.VisConfigModel{
+			ByValue: &models.VisByValueModel{
+				LensByValueChartBlocks: models.LensByValueChartBlocks{
+					XYChartConfig: &models.XYChartConfigModel{
+						Legend: &models.XYLegendModel{
+							Visibility: types.StringValue("visible"),
+							Inside:     types.BoolNull(),
+							Position:   types.StringNull(),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	alignPanelStateFromPlan(t.Context(), &plan, &state)
+
+	got := state.VisConfig.ByValue.XYChartConfig.Legend
+	require.False(t, got.Inside.IsNull())
+	require.False(t, got.Inside.ValueBool())
+	require.Equal(t, "right", got.Position.ValueString())
 }

@@ -27,6 +27,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
@@ -104,9 +105,14 @@ func getSchema() schema.Schema {
 						Description: "List of field names you want to filter out in Discover.",
 						ElementType: types.StringType,
 						Optional:    true,
+						Computed:    true,
+						PlanModifiers: []planmodifier.List{
+							listplanmodifier.UseStateForUnknown(),
+						},
 					},
 					"field_attrs": schema.MapNestedAttribute{
 						Description: "Map of field attributes by field name.",
+						CustomType:  NewFieldAttrsType(getFieldAttrElemType()),
 						NestedObject: schema.NestedAttributeObject{
 							Attributes: map[string]schema.Attribute{
 								"custom_label": schema.StringAttribute{
@@ -120,13 +126,14 @@ func getSchema() schema.Schema {
 							},
 						},
 						Optional: true,
-						PlanModifiers: []planmodifier.Map{
-							mapplanmodifier.RequiresReplace(),
-						},
 					},
 					"runtime_field_map": schema.MapNestedAttribute{
 						Description: "Map of runtime field definitions by field name.",
 						Optional:    true,
+						Computed:    true,
+						PlanModifiers: []planmodifier.Map{
+							mapplanmodifier.UseStateForUnknown(),
+						},
 						NestedObject: schema.NestedAttributeObject{
 							Attributes: map[string]schema.Attribute{
 								"type": schema.StringAttribute{
@@ -143,6 +150,10 @@ func getSchema() schema.Schema {
 					"field_formats": schema.MapNestedAttribute{
 						Description: "Map of field formats by field name.",
 						Optional:    true,
+						Computed:    true,
+						PlanModifiers: []planmodifier.Map{
+							mapplanmodifier.UseStateForUnknown(),
+						},
 						NestedObject: schema.NestedAttributeObject{
 							Attributes: map[string]schema.Attribute{
 								"id": schema.StringAttribute{
@@ -289,8 +300,18 @@ func getDataViewAttrTypes() map[string]attr.Type {
 	return getSchema().Attributes["data_view"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
-func getFieldAttrElemType() attr.Type {
-	return getDataViewAttrTypes()["field_attrs"].(attr.TypeWithElementType).ElementType()
+// getFieldAttrElemType is intentionally hardcoded rather than derived from the schema (as
+// getRuntimeFieldMapElemType / getFieldFormatElemType are): the schema's field_attrs CustomType
+// is constructed by calling NewFieldAttrsType(getFieldAttrElemType()), so reading the type back
+// from the schema would recurse during package initialization. TestFieldAttrElemType_matchesSchema
+// guards against the resulting drift hazard if either side ever changes shape.
+func getFieldAttrElemType() types.ObjectType {
+	return types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"custom_label": types.StringType,
+			"count":        types.Int64Type,
+		},
+	}
 }
 
 func getRuntimeFieldMapElemType() attr.Type {

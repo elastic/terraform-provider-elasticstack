@@ -37,15 +37,13 @@ type watchResource struct {
 
 func newWatchResource() *watchResource {
 	return &watchResource{
-		ElasticsearchResource: entitycore.NewElasticsearchResource[Data](
-			entitycore.ComponentElasticsearch,
-			"watch",
-			watchSchema,
-			readWatch,
-			deleteWatch,
-			createWatch,
-			updateWatch,
-		),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[Data]("watch", entitycore.ElasticsearchResourceOptions[Data]{
+			Schema: watchSchema,
+			Read:   readWatch,
+			Delete: deleteWatch,
+			Create: createWatch,
+			Update: updateWatch,
+		}),
 	}
 }
 

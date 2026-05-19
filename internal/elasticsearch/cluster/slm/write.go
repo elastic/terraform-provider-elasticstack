@@ -25,19 +25,22 @@ import (
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	esclients "github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	fwtypes "github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func writeSlm(ctx context.Context, client *esclients.ElasticsearchScopedClient, resourceID string, data Data) (Data, diag.Diagnostics) {
+// writeSlm handles both Create and Update; the SLM policy PUT API is
+// idempotent so the same callback serves both lifecycle methods.
+func writeSlm(ctx context.Context, client *esclients.ElasticsearchScopedClient, req entitycore.WriteRequest[Data]) (entitycore.WriteResult[Data], diag.Diagnostics) {
 	var diags diag.Diagnostics
+	data := req.Plan
+	resourceID := req.WriteID
 
-	id, sdkDiags := client.ID(ctx, resourceID)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	id, idDiags := client.ID(ctx, resourceID)
+	diags.Append(idDiags...)
 	if diags.HasError() {
-		var zero Data
-		return zero, diags
+		return entitycore.WriteResult[Data]{}, diags
 	}
 
 	var slmPolicy elasticsearch.SlmPolicy
@@ -82,8 +85,7 @@ func writeSlm(ctx context.Context, client *esclients.ElasticsearchScopedClient, 
 		var indices []string
 		diags.Append(data.Indices.ElementsAs(ctx, &indices, false)...)
 		if diags.HasError() {
-			var zero Data
-			return zero, diags
+			return entitycore.WriteResult[Data]{}, diags
 		}
 		cfg.Indices = indices
 	}
@@ -93,8 +95,7 @@ func writeSlm(ctx context.Context, client *esclients.ElasticsearchScopedClient, 
 		var featureStates []string
 		diags.Append(data.FeatureStates.ElementsAs(ctx, &featureStates, false)...)
 		if diags.HasError() {
-			var zero Data
-			return zero, diags
+			return entitycore.WriteResult[Data]{}, diags
 		}
 		cfg.FeatureStates = featureStates
 	}
@@ -106,16 +107,14 @@ func writeSlm(ctx context.Context, client *esclients.ElasticsearchScopedClient, 
 			var metadata map[string]any
 			if err := json.NewDecoder(strings.NewReader(metaStr)).Decode(&metadata); err != nil {
 				diags.AddError("Failed to decode metadata", err.Error())
-				var zero Data
-				return zero, diags
+				return entitycore.WriteResult[Data]{}, diags
 			}
 			metaRaw := make(types.Metadata)
 			for k, val := range metadata {
 				raw, err := json.Marshal(val)
 				if err != nil {
 					diags.AddError("Failed to encode metadata value", err.Error())
-					var zero Data
-					return zero, diags
+					return entitycore.WriteResult[Data]{}, diags
 				}
 				metaRaw[k] = raw
 			}
@@ -125,12 +124,11 @@ func writeSlm(ctx context.Context, client *esclients.ElasticsearchScopedClient, 
 
 	slmPolicy.Config = &cfg
 
-	diags.Append(diagutil.FrameworkDiagsFromSDK(elasticsearch.PutSlm(ctx, client, resourceID, &slmPolicy))...)
+	diags.Append(elasticsearch.PutSlm(ctx, client, resourceID, &slmPolicy)...)
 	if diags.HasError() {
-		var zero Data
-		return zero, diags
+		return entitycore.WriteResult[Data]{}, diags
 	}
 
 	data.ID = fwtypes.StringValue(id.String())
-	return data, diags
+	return entitycore.WriteResult[Data]{Model: data}, diags
 }

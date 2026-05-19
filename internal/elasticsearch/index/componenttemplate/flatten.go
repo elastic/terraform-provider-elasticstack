@@ -24,6 +24,7 @@ import (
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -114,10 +115,24 @@ func flattenTemplateBlock(ctx context.Context, tpl *estypes.ClusterComponentTemp
 		return types.ObjectNull(templateAttrTypes()), diags
 	}
 
+	// Data stream options
+	var dsoObj types.Object
+	if t.DataStreamOptions != nil && t.DataStreamOptions.FailureStore != nil {
+		var dsoDiags diag.Diagnostics
+		dsoObj, dsoDiags = datastreamoptions.Flatten(t.DataStreamOptions)
+		diags.Append(dsoDiags...)
+		if diags.HasError() {
+			return types.ObjectNull(templateAttrTypes()), diags
+		}
+	} else {
+		dsoObj = types.ObjectNull(datastreamoptions.AttrTypes())
+	}
+
 	tplAttrs := map[string]attr.Value{
-		"alias":    aliasSet,
-		"mappings": mappings,
-		"settings": settings,
+		"alias":               aliasSet,
+		"mappings":            mappings,
+		"settings":            settings,
+		"data_stream_options": dsoObj,
 	}
 
 	obj, d := types.ObjectValue(templateAttrTypes(), tplAttrs)

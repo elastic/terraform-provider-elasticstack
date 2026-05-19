@@ -4,7 +4,7 @@ Resource implementation: `internal/elasticsearch/index/template.go`
 
 ## Purpose
 
-Define schema and behavior for the Elasticsearch index template resource: API usage, identity/import, connection, compatibility, mapping, and state refresh semantics including alias routing quirks.
+Define schema and behavior for the Elasticsearch index template resource: API usage, identity/import, connection, compatibility, mapping, state refresh semantics including alias routing quirks, and the preserved Plugin Framework/entitycore behavior that implements those semantics.
 
 ## Schema
 
@@ -93,23 +93,69 @@ Changing `name` SHALL require replacement (`ForceNew`). By default, the resource
 
 ### Requirement: Compatibility (REQ-012)
 
-When `ignore_missing_component_templates` is configured with one or more values, the resource SHALL require Elasticsearch version >= 8.7.0; otherwise it SHALL return an error diagnostic.
+When `ignore_missing_component_templates` is configured with one or more values, the resource SHALL
+require Elasticsearch version >= 8.7.0; otherwise it SHALL return an error diagnostic and SHALL not
+call the Put API.
 
-#### Scenario: Feature on old cluster
+This requirement is implemented via `template.Model.GetVersionRequirements()`, which returns an
+`entitycore.VersionRequirement` for `ignore_missing_component_templates` (minimum ES 8.7.0) when
+the attribute is non-null, non-unknown, and contains at least one element. On Create and Update, the
+provider SHALL iterate over all returned requirements and call `client.EnforceMinVersion` for each.
+`client.EnforceMinVersion` correctly handles Serverless clusters by short-circuiting to `true`
+regardless of the reported server version. As a result, `ignore_missing_component_templates` SHALL
+be usable on Serverless clusters without error.
 
-- GIVEN non-empty `ignore_missing_component_templates` and ES < 8.7.0
+#### Scenario: Feature on stateful old cluster
+
+- GIVEN non-empty `ignore_missing_component_templates` and the cluster is stateful with ES < 8.7.0
 - WHEN create or update runs
-- THEN the provider SHALL error
+- THEN the provider SHALL error and SHALL not call the Put API
+
+#### Scenario: Feature on Serverless cluster
+
+- GIVEN non-empty `ignore_missing_component_templates`
+- AND the target Elasticsearch cluster flavour is `"serverless"`
+- WHEN create or update runs
+- THEN the provider SHALL NOT return a version-gate error
+
+#### Scenario: Read-time enforcement
+
+- **GIVEN** non-empty `ignore_missing_component_templates` is present in Terraform state
+- **AND** the target Elasticsearch cluster is stateful with version below `8.7.0`
+- **WHEN** `terraform refresh` runs
+- **THEN** the provider SHALL return an error diagnostic (consistent with Write-time behavior)
+
+---
 
 ### Requirement: Create, update, and read (REQ-013–REQ-016)
 
-On create/update, the resource SHALL construct a `models.IndexTemplate` request body from Terraform state and submit it with the Put index template API. After a successful Put request, the resource SHALL set `id` and perform a read to refresh state. On read, the resource SHALL parse `id`, fetch the index template by name, and remove the resource from state when the template is not found. If the Get index template API returns a result count other than exactly one template, the read path SHALL return an error diagnostic.
+On create/update, the resource SHALL construct a `models.IndexTemplate` request body from the Terraform plan and submit it with the Put index template API. After a successful Put request, the resource SHALL set `id` and perform a read to refresh state, using the decoded Terraform configuration (not the plan) as the prior-state seed for read-after-write to avoid false drift from Unknown placeholders in computed set elements. On read, the resource SHALL parse `id`, fetch the index template by name, and remove the resource from state when the template is not found. If the Get index template API returns a result count other than exactly one template, the read path SHALL return an error diagnostic.
+
+The resource SHALL use the `WriteFunc[T]` callback contract via the entitycore envelope for both Create and Update. The resource SHALL NOT override the envelope's `Create` or `Update` method receivers.
+
+On update, when prior state had `data_stream.allow_custom_routing=true` and the configuration does not explicitly set `allow_custom_routing=true`, the resource SHALL include `allow_custom_routing=false` in the API request body (8.x workaround). The write callback SHALL determine this by comparing `req.Prior` (prior state) against `req.Config` (decoded configuration).
 
 #### Scenario: Template not found on refresh
 
-- GIVEN the template was deleted in Elasticsearch
-- WHEN read runs
-- THEN the resource SHALL be removed from state
+- **WHEN** read runs after the template was deleted in Elasticsearch
+- **THEN** the resource SHALL be removed from state
+
+#### Scenario: Read-after-write uses config as seed model
+
+- **WHEN** create or update runs and the Put index template API succeeds
+- **THEN** the resource SHALL seed the read-after-write call with the decoded Terraform configuration model (not the plan)
+- **AND** the refreshed state SHALL reflect the server-returned template without spurious Unknown-placeholder drift
+
+#### Scenario: allow_custom_routing 8.x workaround applied on update
+
+- **WHEN** update runs and prior state has `data_stream.allow_custom_routing=true`
+- **AND** the configuration does not explicitly set `allow_custom_routing=true`
+- **THEN** the API request SHALL include `allow_custom_routing=false` in the `data_stream` block
+
+#### Scenario: allow_custom_routing 8.x workaround not applied when config sets true
+
+- **WHEN** update runs and the configuration explicitly sets `data_stream.allow_custom_routing=true`
+- **THEN** the API request SHALL include `allow_custom_routing=true` and the workaround SHALL NOT override it
 
 ### Requirement: Delete (REQ-017)
 
@@ -125,6 +171,8 @@ On delete, the resource SHALL parse `id` and delete the template identified by t
 
 `metadata` SHALL be validated as JSON by schema and parsed as JSON during create/update; if parsing fails, the resource SHALL return an error diagnostic and SHALL not call the Put API. `template.mappings` and `template.settings` SHALL be validated as JSON objects by schema and parsed into objects during create/update. `template.alias.filter` SHALL be validated as JSON by schema and parsed into an object when non-empty during create/update. `template.alias` SHALL be mapped as a set keyed by alias name in API payload/state conversion. Set membership SHALL be determined by the alias element's semantic equality (see REQ-031); two alias values that differ only in API-derived `index_routing` or `search_routing` SHALL be treated as the same set member. Alias routing and flag fields SHALL be copied directly between Terraform values and API model fields. `template.lifecycle` SHALL be mapped as at most one lifecycle object with `data_retention`. `data_stream.hidden` SHALL be sent when present. `data_stream.allow_custom_routing` SHALL be sent only when `true`, except that on updates it SHALL also be sent when prior state had `allow_custom_routing=true` (8.x workaround behavior).
 
+For `template.mappings`, the shared custom type SHALL treat Elasticsearch stringified scalar echoes as semantically equal to practitioner-authored scalar JSON values when the effective mapping value is otherwise unchanged. This equivalence SHALL apply to scalar leaf values such as booleans and numbers and SHALL suppress drift caused only by Elasticsearch returning a string form of the same scalar.
+
 #### Scenario: Invalid metadata JSON
 
 - GIVEN invalid `metadata` JSON
@@ -136,6 +184,14 @@ On delete, the resource SHALL parse `id` and delete the template identified by t
 - GIVEN an alias configured with only `routing = "x"` (no `index_routing` or `search_routing` in config)
 - WHEN refresh populates `index_routing = "x"` and `search_routing = "x"` from the API
 - THEN the alias set in state SHALL contain exactly one element for that `name`
+
+#### Scenario: Mappings boolean scalar echo is non-drifting
+
+- GIVEN `template.mappings` is configured with a scalar boolean value
+- AND Elasticsearch returns the same value as a JSON string scalar during refresh
+- WHEN Terraform refreshes and plans the unchanged configuration
+- THEN the provider SHALL treat the mapping values as semantically equal
+- AND no diff SHALL be reported for that difference alone
 
 ### Requirement: Read state mapping (REQ-026–REQ-030)
 
@@ -225,23 +281,51 @@ resource "elasticstack_elasticsearch_index_template" "example" {
 
 ### Requirement: Compatibility — version gate for `data_stream_options` (REQ-033)
 
-When `data_stream_options` is configured and the Elasticsearch server version is below `9.1.0`, the provider SHALL return an error diagnostic and SHALL not call the Put index template API.
+The provider SHALL enforce a minimum Elasticsearch version of `9.1.0` for `data_stream_options` and
+SHALL return an error diagnostic (without calling the Put index template API) when the configured
+cluster is stateful and reports a version below `9.1.0`. On Serverless clusters, the provider SHALL
+treat the version requirement as satisfied regardless of the reported server version.
 
-#### Scenario: Feature on unsupported cluster version
+This requirement is implemented via `template.Model.GetVersionRequirements()`. The method delegates
+to `datastreamoptions.GetVersionRequirements(m.Template)` and returns a version requirement (minimum
+ES 9.1.0) when `data_stream_options` is configured and non-null. On Create and Update, the provider
+SHALL iterate over all requirements returned by `plan.GetVersionRequirements()` and call
+`client.EnforceMinVersion` for each — replacing the prior explicit `serverVersion` fetch and
+`EnforceMinServerVersion` call. The `serverVersion` variable SHALL be removed from Create and Update
+entirely; no other code in those methods requires it.
 
-- **GIVEN** `data_stream_options` is configured
-- **AND** the connected Elasticsearch server version is below `9.1.0`
-- **WHEN** create or update runs
-- **THEN** the provider SHALL return an error diagnostic without calling the Put index template API
+The entitycore envelope additionally calls `enforceVersionRequirements` during Read. As a result,
+`data_stream_options` version enforcement also applies at refresh time (consistent with the component
+template resource and Kibana resource envelopes).
 
-#### Scenario: Feature on supported cluster version
+#### Scenario: Feature on unsupported stateful cluster version
 
-- **GIVEN** `data_stream_options` is configured
-- **AND** the connected Elasticsearch server version is `9.1.0` or above
-- **WHEN** create or update runs
-- **THEN** the provider SHALL include `data_stream_options` in the API request normally
+- GIVEN `data_stream_options` is configured
+- AND the connected Elasticsearch server is stateful with version below `9.1.0`
+- WHEN create or update runs
+- THEN the provider SHALL return an error diagnostic without calling the Put index template API
 
----
+#### Scenario: Feature on Serverless cluster
+
+- GIVEN `data_stream_options` is configured
+- AND the connected Elasticsearch cluster flavour is `"serverless"`
+- WHEN create or update runs
+- THEN the provider SHALL NOT return a version-gate error
+- AND it SHALL include `data_stream_options` in the API request normally
+
+#### Scenario: Feature on supported stateful cluster version
+
+- GIVEN `data_stream_options` is configured
+- AND the connected Elasticsearch server version is `9.1.0` or above
+- WHEN create or update runs
+- THEN the provider SHALL include `data_stream_options` in the API request normally
+
+#### Scenario: Read-time enforcement
+
+- GIVEN `data_stream_options` is present in Terraform state
+- AND the target Elasticsearch cluster is stateful with version below `9.1.0`
+- WHEN `terraform refresh` runs
+- THEN the provider SHALL return an error diagnostic (consistent with Write-time behavior)
 
 ### Requirement: Create/update — expand `data_stream_options` into API request (REQ-034)
 
@@ -395,6 +479,8 @@ Plugin Framework `SingleNestedBlock` does not expose a `Required` flag. The prev
 
 `template.settings` SHALL be modeled with a custom Plugin Framework string type that implements `basetypes.StringValuableWithSemanticEquals`. The semantic equality comparator SHALL parse both sides as JSON, flatten nested objects to dotted keys, prefix any unprefixed keys with `index.`, stringify all values, and compare the resulting maps. Two `settings` strings SHALL be considered equal whenever they represent the same effective set of index settings, regardless of dotted-vs-nested key form or the presence of an `index.` prefix on individual keys.
 
+When Elasticsearch returns a stringified scalar echo for a setting value, the comparator SHALL treat that value as semantically equal to the practitioner-authored scalar JSON value when the effective setting is otherwise unchanged. This equivalence SHALL include JSON `null`, so a practitioner-authored `null` setting value SHALL compare equal to an Elasticsearch `"null"` string echo.
+
 #### Scenario: Dotted vs nested keys equivalent
 
 - GIVEN configured settings `{"index": {"number_of_shards": 1}}` and a refreshed value `{"index.number_of_shards": "1"}`
@@ -404,6 +490,13 @@ Plugin Framework `SingleNestedBlock` does not expose a `Required` flag. The prev
 #### Scenario: `index.` prefix normalization
 
 - GIVEN configured settings `{"refresh_interval": "1s"}` and a refreshed value `{"index.refresh_interval": "1s"}`
+- WHEN plan runs after refresh
+- THEN no diff SHALL be reported for `template.settings`
+
+#### Scenario: Null scalar echo is semantically equal
+
+- GIVEN configured settings include a JSON `null` scalar value
+- AND a refreshed value returns the same effective setting as the string scalar `"null"`
 - WHEN plan runs after refresh
 - THEN no diff SHALL be reported for `template.settings`
 
@@ -516,4 +609,110 @@ The test SHALL be skipped or guarded for stack versions below `9.1.0` only when 
 - WHEN Step 2 runs `terraform plan`
 - THEN the v0 → v1 upgrader SHALL collapse each of those values to its object/null shape
 - AND no diff SHALL be reported for any collapsed path
+
+### Requirement: Schema — `allow_auto_create` attribute (REQ-043)
+
+The `elasticstack_elasticsearch_index_template` resource SHALL expose an **optional** top-level attribute `allow_auto_create` of type boolean. When configured, `allow_auto_create` controls whether auto-creation of matching indices is allowed or denied at the template level, overriding the cluster-level `action.auto_create_index` setting.
+
+The `elasticstack_elasticsearch_index_template` data source SHALL expose a **computed** top-level attribute `allow_auto_create` of type boolean, populated from the API response on read.
+
+The attribute SHALL be placed at the same schema level as `priority`, `version`, and `composed_of`.
+
+**HCL shape (resource):**
+
+```hcl
+resource "elasticstack_elasticsearch_index_template" "example" {
+  name              = "my-template"
+  index_patterns    = ["my-index-*"]
+  allow_auto_create = true
+}
+```
+
+No version gate is required. The `allow_auto_create` field on index templates is available from Elasticsearch 7.11, which is below the provider's minimum supported version (7.17+).
+
+#### Scenario: `allow_auto_create` set to `true`
+
+- GIVEN a configuration with `allow_auto_create = true`
+- WHEN create or update runs
+- THEN the provider SHALL include `"allow_auto_create": true` in the PUT index template request body
+- AND state SHALL contain `allow_auto_create = true` after the read-back
+
+#### Scenario: `allow_auto_create` set to `false`
+
+- GIVEN a configuration with `allow_auto_create = false`
+- WHEN create or update runs
+- THEN the provider SHALL include `"allow_auto_create": false` in the PUT index template request body
+- AND state SHALL contain `allow_auto_create = false` after the read-back
+
+#### Scenario: `allow_auto_create` omitted
+
+- GIVEN a configuration where `allow_auto_create` is not set
+- WHEN create or update runs
+- THEN the provider SHALL NOT include `allow_auto_create` in the PUT index template request body
+- AND state SHALL contain `allow_auto_create = null`
+
+#### Scenario: Data source read populates `allow_auto_create`
+
+- GIVEN an index template in Elasticsearch with `allow_auto_create` set to `true`
+- WHEN the data source reads that template
+- THEN the data source state SHALL contain `allow_auto_create = true`
+
+### Requirement: Expand `allow_auto_create` into API request (REQ-044)
+
+On create and update, the provider SHALL convert the Terraform `allow_auto_create` attribute to the `allow_auto_create` field on the `models.IndexTemplate` request body only when the attribute is non-null and non-unknown. When the attribute is null (not configured) or unknown, the field SHALL be omitted from the request (`omitempty` serialization).
+
+#### Scenario: Round-trip create
+
+- GIVEN `allow_auto_create = true` configured
+- WHEN create runs and the template is read back
+- THEN state SHALL contain `allow_auto_create = true`
+
+#### Scenario: Update to explicit `false`
+
+- GIVEN an existing template with `allow_auto_create = true`
+- WHEN configuration changes `allow_auto_create` to `false` and apply runs
+- THEN the provider SHALL send `allow_auto_create: false` in the updated API request
+- AND state SHALL reflect `allow_auto_create = false` after read-back
+
+### Requirement: Flatten `allow_auto_create` from API response (REQ-045)
+
+On read, the provider SHALL map `estypes.IndexTemplate.AllowAutoCreate` from the GET index template API response into the `allow_auto_create` attribute in Terraform state. When the API response does not include `allow_auto_create` (field is nil), the provider SHALL set `allow_auto_create` to null in state.
+
+#### Scenario: API returns `allow_auto_create = true`
+
+- GIVEN the GET index template API returns `allow_auto_create: true`
+- WHEN read runs
+- THEN state SHALL contain `allow_auto_create = true`
+
+#### Scenario: API omits `allow_auto_create`
+
+- GIVEN the GET index template API does not include `allow_auto_create`
+- WHEN read runs
+- THEN state SHALL contain `allow_auto_create = null`
+
+### Requirement: Model — `AllowAutoCreate` field in `models.IndexTemplate` (REQ-046)
+
+The internal `models.IndexTemplate` struct SHALL include an `AllowAutoCreate *bool` field serialized as `"allow_auto_create,omitempty"`. When this field is nil, the JSON serialization SHALL omit the key entirely from the request body.
+
+#### Scenario: Nil field omitted from payload
+
+- GIVEN `allow_auto_create` is not configured (field is nil in `models.IndexTemplate`)
+- WHEN the struct is serialized to JSON for the PUT index template API
+- THEN the JSON payload SHALL NOT include the `allow_auto_create` key
+
+### Requirement: Acceptance tests — `allow_auto_create` coverage (REQ-047)
+
+Acceptance tests for `elasticstack_elasticsearch_index_template` SHALL include a test that covers:
+
+- Creating a template with `allow_auto_create = true` and verifying state after create.
+- Updating the template to `allow_auto_create = false` and verifying state after update.
+- Removing the attribute (null) and verifying no plan diff after apply.
+- Importing the resource and verifying `allow_auto_create` is populated correctly.
+
+#### Scenario: Acceptance test create and update
+
+- GIVEN an acceptance test that creates a template with `allow_auto_create = true`
+- WHEN the template is applied and state is read back
+- THEN state SHALL contain `allow_auto_create = true`
+- AND when the test updates to `allow_auto_create = false`, state SHALL contain `allow_auto_create = false`
 

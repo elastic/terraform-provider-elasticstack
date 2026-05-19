@@ -88,54 +88,70 @@ func (model *outputItemModel) populateFromAPI(ctx context.Context, union *kbapi.
 	return
 }
 
-func (model *outputItemModel) fromAPIElasticsearchModel(ctx context.Context, data *kbapi.OutputElasticsearch) (diags diag.Diagnostics) {
-	model.ID = types.StringPointerValue(data.Id)
-	model.Name = types.StringValue(data.Name)
-	model.Type = types.StringValue(string(data.Type))
-	model.Hosts = typeutils.SliceToListTypeString(ctx, data.Hosts, path.Root("hosts"), &diags)
-	model.CaSha256 = types.StringPointerValue(data.CaSha256)
-	model.CaTrustedFingerprint = typeutils.NonEmptyStringishPointerValue(data.CaTrustedFingerprint)
-	model.DefaultIntegrations = types.BoolPointerValue(data.IsDefault)
-	model.DefaultMonitoring = types.BoolPointerValue(data.IsDefaultMonitoring)
-	model.ConfigYaml = types.StringPointerValue(data.ConfigYaml)
+// outputAPICommonData holds the fields shared across all output API types so
+// that fromAPICommonFields can serve as the single point of change for the
+// common field mapping logic.
+type outputAPICommonData struct {
+	id                   *string
+	name                 string
+	outputType           string
+	hosts                []string
+	caSha256             *string
+	caTrustedFingerprint *string
+	isDefault            *bool
+	isDefaultMonitoring  *bool
+	configYaml           *string
+}
+
+func (model *outputItemModel) fromAPICommonFields(ctx context.Context, d outputAPICommonData) (diags diag.Diagnostics) {
+	model.ID = types.StringPointerValue(d.id)
+	model.Name = types.StringValue(d.name)
+	model.Type = types.StringValue(d.outputType)
+	model.Hosts = typeutils.SliceToListTypeString(ctx, d.hosts, path.Root("hosts"), &diags)
+	model.CaSha256 = types.StringPointerValue(d.caSha256)
+	model.CaTrustedFingerprint = typeutils.NonEmptyStringishPointerValue(d.caTrustedFingerprint)
+	model.DefaultIntegrations = types.BoolPointerValue(d.isDefault)
+	model.DefaultMonitoring = types.BoolPointerValue(d.isDefaultMonitoring)
+	model.ConfigYaml = types.StringPointerValue(d.configYaml)
 	return
+}
+
+func (model *outputItemModel) fromAPIElasticsearchModel(ctx context.Context, data *kbapi.OutputElasticsearch) (diags diag.Diagnostics) {
+	return model.fromAPICommonFields(ctx, outputAPICommonData{
+		id: data.Id, name: data.Name, outputType: string(data.Type),
+		hosts: data.Hosts, caSha256: data.CaSha256,
+		caTrustedFingerprint: data.CaTrustedFingerprint,
+		isDefault:            data.IsDefault, isDefaultMonitoring: data.IsDefaultMonitoring,
+		configYaml: data.ConfigYaml,
+	})
 }
 
 func (model *outputItemModel) fromAPIKafkaModel(ctx context.Context, data *kbapi.OutputKafka) (diags diag.Diagnostics) {
-	model.ID = types.StringPointerValue(data.Id)
-	model.Name = types.StringValue(data.Name)
-	model.Type = types.StringValue(string(data.Type))
-	model.Hosts = typeutils.SliceToListTypeString(ctx, data.Hosts, path.Root("hosts"), &diags)
-	model.CaSha256 = types.StringPointerValue(data.CaSha256)
-	model.CaTrustedFingerprint = typeutils.NonEmptyStringishPointerValue(data.CaTrustedFingerprint)
-	model.DefaultIntegrations = types.BoolPointerValue(data.IsDefault)
-	model.DefaultMonitoring = types.BoolPointerValue(data.IsDefaultMonitoring)
-	model.ConfigYaml = types.StringPointerValue(data.ConfigYaml)
-	return
+	return model.fromAPICommonFields(ctx, outputAPICommonData{
+		id: data.Id, name: data.Name, outputType: string(data.Type),
+		hosts: data.Hosts, caSha256: data.CaSha256,
+		caTrustedFingerprint: data.CaTrustedFingerprint,
+		isDefault:            data.IsDefault, isDefaultMonitoring: data.IsDefaultMonitoring,
+		configYaml: data.ConfigYaml,
+	})
 }
 
 func (model *outputItemModel) fromAPILogstashModel(ctx context.Context, data *kbapi.OutputLogstash) (diags diag.Diagnostics) {
-	model.ID = types.StringPointerValue(data.Id)
-	model.Name = types.StringValue(data.Name)
-	model.Type = types.StringValue(string(data.Type))
-	model.Hosts = typeutils.SliceToListTypeString(ctx, data.Hosts, path.Root("hosts"), &diags)
-	model.CaSha256 = types.StringPointerValue(data.CaSha256)
-	model.CaTrustedFingerprint = typeutils.NonEmptyStringishPointerValue(data.CaTrustedFingerprint)
-	model.DefaultIntegrations = types.BoolPointerValue(data.IsDefault)
-	model.DefaultMonitoring = types.BoolPointerValue(data.IsDefaultMonitoring)
-	model.ConfigYaml = types.StringPointerValue(data.ConfigYaml)
-	return
+	return model.fromAPICommonFields(ctx, outputAPICommonData{
+		id: data.Id, name: data.Name, outputType: string(data.Type),
+		hosts: data.Hosts, caSha256: data.CaSha256,
+		caTrustedFingerprint: data.CaTrustedFingerprint,
+		isDefault:            data.IsDefault, isDefaultMonitoring: data.IsDefaultMonitoring,
+		configYaml: data.ConfigYaml,
+	})
 }
 
 func (model *outputItemModel) fromAPIRemoteElasticsearchModel(ctx context.Context, data *kbapi.OutputRemoteElasticsearch) (diags diag.Diagnostics) {
-	model.ID = types.StringPointerValue(data.Id)
-	model.Name = types.StringValue(data.Name)
-	model.Type = types.StringValue(string(data.Type))
-	model.Hosts = typeutils.SliceToListTypeString(ctx, data.Hosts, path.Root("hosts"), &diags)
-	model.CaSha256 = types.StringPointerValue(data.CaSha256)
-	model.CaTrustedFingerprint = typeutils.NonEmptyStringishPointerValue(data.CaTrustedFingerprint)
-	model.DefaultIntegrations = types.BoolPointerValue(data.IsDefault)
-	model.DefaultMonitoring = types.BoolPointerValue(data.IsDefaultMonitoring)
-	model.ConfigYaml = types.StringPointerValue(data.ConfigYaml)
-	return
+	return model.fromAPICommonFields(ctx, outputAPICommonData{
+		id: data.Id, name: data.Name, outputType: string(data.Type),
+		hosts: data.Hosts, caSha256: data.CaSha256,
+		caTrustedFingerprint: data.CaTrustedFingerprint,
+		isDefault:            data.IsDefault, isDefaultMonitoring: data.IsDefaultMonitoring,
+		configYaml: data.ConfigYaml,
+	})
 }

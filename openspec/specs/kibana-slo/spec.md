@@ -633,6 +633,28 @@ The provider SHALL validate simple SLO schema constraints at plan time to match 
 - restrict metric `name` fields that map to the generated metric unions to `^[A-Z]$`
 - restrict `time_window.type` to `rolling` or `calendarAligned`
 
+When `RequiredIfDependentPathExpressionOneOf` or `RequiredIfDependentPathOneOf` is evaluating whether a field is required, if the attribute being validated is unknown at config-validation time (that is, `val.IsUnknown()` is true), the validator SHALL return without error and defer the required-field check to apply time. This behavior applies to:
+- `metric_custom_indicator.good.metrics.field`
+- `metric_custom_indicator.total.metrics.field`
+- `histogram_custom_indicator.good.from`
+- `histogram_custom_indicator.good.to`
+- `histogram_custom_indicator.total.from`
+- `histogram_custom_indicator.total.to`
+
+#### Scenario: Unknown field in for_each resource does not raise a false-positive error
+- **GIVEN** an `elasticstack_kibana_slo` resource configured with `for_each`
+- **AND** `metric_custom_indicator.good.metrics.field` or `metric_custom_indicator.total.metrics.field` is set via `each.value.*` interpolation
+- **AND** Terraform marks the field value as unknown during `ValidateResourceConfig`
+- **WHEN** `RequiredIfDependentPathExpressionOneOf` runs
+- **THEN** the provider SHALL NOT emit an `Attribute ... must be set` diagnostic
+- **AND** validation SHALL be deferred to apply time
+
+#### Scenario: Known null field still raises the required-field error
+- **GIVEN** `metric_custom_indicator.good.metrics.field` is null or an empty string, not unknown
+- **AND** the sibling `aggregation` matches a value that makes `field` required
+- **WHEN** `RequiredIfDependentPathExpressionOneOf` runs
+- **THEN** the provider SHALL emit an `Attribute ... must be set` diagnostic
+
 #### Scenario: Oversized slo_id is rejected
 - **WHEN** `slo_id` is set to a value longer than 48 characters
 - **THEN** the provider SHALL return a plan-time validation error

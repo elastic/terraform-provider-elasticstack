@@ -80,22 +80,9 @@ const (
 
 	descLifecycleDataRetention = "The retention period of the data indexed in this data stream."
 
-	descDataStreamOptionsBlock = "Options for data streams created by this template. Applied once at data stream creation time. Available only for Elasticsearch 9.1.0 and above."
-
-	descDataStreamOptionsBlockDataSource = "Options for data streams created by this template. Available only for Elasticsearch 9.1.0 and above."
-
-	descFailureStoreBlock = "Failure store configuration."
-
-	descFailureStoreEnabled = "If true, document redirection to the failure store is enabled for new matching data streams."
-
-	descFailureStoreLifecycleBlock = "Lifecycle configuration for the failure store."
-
-	descFailureStoreDataRetention = "The retention period for failure store documents (e.g. \"30d\")."
-
 	descVersion = "Version number used to manage index templates externally."
-)
 
-const (
-	errSummaryMissingFailureStore = "Missing required failure_store block"
-	errDetailMissingFailureStore  = "The `failure_store` block is required when `template.data_stream_options` is configured."
+	descAllowAutoCreate = "If true, index auto-creation is allowed for matching indices. " +
+		"If false, auto-creation is disabled for matching indices. " +
+		"When unset, the cluster-level `action.auto_create_index` setting applies."
 )

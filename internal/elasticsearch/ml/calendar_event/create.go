@@ -29,7 +29,6 @@ import (
 	"github.com/elastic/go-elasticsearch/v8/typedapi/ml/postcalendarevents"
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/go-version"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -53,7 +52,7 @@ func createCalendarEvent(ctx context.Context, client *clients.ElasticsearchScope
 
 	if postCalendarEventWireNeedsRawPOSTBody(planWire) {
 		sv, vdiags := client.ServerVersion(ctx)
-		diags.Append(diagutil.FrameworkDiagsFromSDK(vdiags)...)
+		diags.Append(vdiags...)
 		if diags.HasError() {
 			return plan, diags
 		}
@@ -216,8 +215,8 @@ func createCalendarEvent(ctx context.Context, client *clients.ElasticsearchScope
 		return plan, diags
 	}
 
-	compID, sdkDiags := client.ID(ctx, calendarID+"/"+eventID)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	compID, idDiags := client.ID(ctx, calendarID+"/"+eventID)
+	diags.Append(idDiags...)
 	if diags.HasError() {
 		return plan, diags
 	}

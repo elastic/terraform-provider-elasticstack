@@ -24,6 +24,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/iface"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -56,13 +57,22 @@ func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item k
 
 	pm.Grid = panelkit.GridFromAPI(imgPanel.Grid.X, imgPanel.Grid.Y, imgPanel.Grid.W, imgPanel.Grid.H)
 	pm.ID = panelkit.IDFromAPI(imgPanel.Id)
-	pm.ConfigJSON = panelConfigJSONNull()
+	pm.ConfigJSON = panelkit.PanelConfigJSONNull()
 	PopulateFromAPI(pm, prior, imgPanel)
 	_ = ctx
 	return nil
 }
 
 func (Handler) ToAPI(pm models.PanelModel, _ *models.DashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
+	if typeutils.IsKnown(pm.ConfigJSON) && !pm.ConfigJSON.IsNull() {
+		var diags diag.Diagnostics
+		diags.AddError(
+			"Unsupported panel type for config_json",
+			"Panel-level `config_json` is not supported for `image` panels. Use `image_config` instead.",
+		)
+		return kbapi.DashboardPanelItem{}, diags
+	}
+
 	var (
 		diags     diag.Diagnostics
 		panelItem kbapi.DashboardPanelItem

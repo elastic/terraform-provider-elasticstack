@@ -93,9 +93,9 @@ func TestStringMatchesHoursRegex(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			matched, _ := StringMatchesHoursRegex(tt.hours)
+			matched := hoursRegex.MatchString(tt.hours)
 			if matched != tt.matched {
-				t.Errorf("StringMatchesHoursRegex() failed match = %v, want %v", matched, tt.matched)
+				t.Errorf("hoursRegex.MatchString() failed match = %v, want %v", matched, tt.matched)
 			}
 		})
 	}

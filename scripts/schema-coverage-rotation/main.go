@@ -110,18 +110,8 @@ func cmdPrepare(args []string, stderr io.Writer) error {
 
 	// Discover entities from provider registrations.
 	fwProv := provider.NewFrameworkProvider("schema-coverage-rotation")
-	sdkProv := provider.New("schema-coverage-rotation")
 
-	sdkResources := make(map[string]struct{})
-	for name := range sdkProv.ResourcesMap {
-		sdkResources[name] = struct{}{}
-	}
-	sdkDataSources := make(map[string]struct{})
-	for name := range sdkProv.DataSourcesMap {
-		sdkDataSources[name] = struct{}{}
-	}
-
-	resources, dataSources := discoverEntities(fwProv, sdkResources, sdkDataSources)
+	resources, dataSources := discoverEntities(fwProv)
 	stats := reconcileMemory(mem, resources, dataSources)
 
 	if err := saveMemory(*memPath, mem); err != nil {

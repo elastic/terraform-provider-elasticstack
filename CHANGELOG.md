@@ -3,7 +3,25 @@
 ### Added
 
 - Add `elasticstack_elasticsearch_ml_calendar` and `elasticstack_elasticsearch_ml_calendar_event` resources for ML calendars and scheduled calendar events ([#1969](https://github.com/elastic/terraform-provider-elasticstack/pull/1969))
-  - Elasticsearch Plugin Framework envelope `Read`/`Delete` parse composite state ids with a first-`/` split via `CompositeIDFromStrForElasticsearch`, so the resource segment may contain further slashes (for example ML calendar events). Global `CompositeIDFromStr` / `CompositeIDFromStrFw` behavior for Kibana and other non-envelope callers matches previous releases.
+  - Elasticsearch Plugin Framework envelope `Read`/`Delete` resolve composite state ids with a first-`/` split via `CompositeIDFromStrForElasticsearch`, so the resource segment may contain further slashes (for example ML calendar events). Global `CompositeIDFromStr` behavior for Kibana and other non-envelope callers matches previous releases.
+
+## [0.15.2] - 2026-05-18
+
+### Changes
+
+- Fix Read and Delete failures on ElasticsearchResource when the state ID is a plain (non-composite) identifier, e.g. after import with only the resource name. ([#3084](https://github.com/elastic/terraform-provider-elasticstack/pull/3084))
+- Migrate `elasticstack_kibana_security_role` resource and data source implementation to Terraform Plugin Framework while preserving the existing schema and behavior. ([#3071](https://github.com/elastic/terraform-provider-elasticstack/pull/3071))
+- Migrate `elasticstack_kibana_space` to Plugin Framework while preserving the resource schema, defaults, and observable behavior. ([#3073](https://github.com/elastic/terraform-provider-elasticstack/pull/3073))
+- Fix "Provider produced inconsistent result after apply" when nested list attributes are set to empty lists in detection rules. ([#3074](https://github.com/elastic/terraform-provider-elasticstack/pull/3074))
+- Migrate `elasticstack_kibana_action_connector` data source to Terraform Plugin Framework; behavior is preserved for existing configurations. ([#3072](https://github.com/elastic/terraform-provider-elasticstack/pull/3072))
+- Add `allow_auto_create` optional attribute to the `elasticstack_elasticsearch_index_template` resource and data source ([#3059](https://github.com/elastic/terraform-provider-elasticstack/pull/3059))
+- Fix space-aware URL construction to correctly handle Kibana base path configurations ([#3053](https://github.com/elastic/terraform-provider-elasticstack/pull/3053))
+- Fix state consistency error when runtime_field_map is omitted from configuration after previously being set ([#2592](https://github.com/elastic/terraform-provider-elasticstack/pull/2592))
+- Fix serverless version gating for data_stream_options in elasticsearch_index_template and elasticsearch_index_component_template, and for  ignore_missing_component_templates in elasticsearch_index_template. ([#3023](https://github.com/elastic/terraform-provider-elasticstack/pull/3023))
+- Fix spurious plan drift for component/index templates using boolean scalar mappings or null settings after Elasticsearch echoes them as strings ([#3014](https://github.com/elastic/terraform-provider-elasticstack/pull/3014))
+- Add `template.data_stream_options` block to `elasticstack_elasticsearch_component_template` to configure the failure store on data streams composed from this component. Requires Elasticsearch >= 9.1.0. ([#2963](https://github.com/elastic/terraform-provider-elasticstack/pull/2963))
+- Fix unknown-value handling in the required-if validator for custom SLO metric indicators. ([#3001](https://github.com/elastic/terraform-provider-elasticstack/pull/3001))
+- Suppress drift from Kibana field popularity counts on `elasticstack_kibana_data_view.field_attrs` and apply field metadata updates in place instead of replacing the data view. ([#2964](https://github.com/elastic/terraform-provider-elasticstack/pull/2964))
 
 ## [0.15.1] - 2026-05-15
 
@@ -904,7 +922,8 @@ resource "elasticstack_fleet_output" "output" {
 - Initial set of docs
 - CI integration
 
-[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.15.1...HEAD
+[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.15.2...HEAD
+[0.15.2]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.15.1...v0.15.2
 [0.15.1]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.15.0...v0.15.1
 [0.15.0]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.14.5...v0.15.0
 [0.14.5]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.14.4...v0.14.5

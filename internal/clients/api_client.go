@@ -27,11 +27,8 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/go-version"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 type CompositeID struct {
@@ -44,13 +41,15 @@ const ServerlessFlavor = "serverless"
 // CompositeIDFromStr parses an ID as <cluster_uuid>/<resource_identifier> using the historical
 // rule: the id must split into exactly two path segments (no additional unescaped slashes in the
 // overall id). This is used for Kibana and other call sites that must preserve legacy behavior.
-func CompositeIDFromStr(id string) (*CompositeID, diag.Diagnostics) {
+func CompositeIDFromStr(id string) (*CompositeID, fwdiags.Diagnostics) {
 	idParts := strings.Split(id, "/")
 	if len(idParts) != 2 {
-		return nil, diagutil.SDKErrorDiag(
-			"Wrong resource ID.",
-			"Resource ID must have following format: <cluster_uuid>/<resource identifier>",
-		)
+		return nil, fwdiags.Diagnostics{
+			fwdiags.NewErrorDiagnostic(
+				"Wrong resource ID.",
+				"Resource ID must have following format: <cluster_uuid>/<resource identifier>",
+			),
+		}
 	}
 	return &CompositeID{
 		ClusterID:  idParts[0],
@@ -66,13 +65,15 @@ func CompositeIDFromStr(id string) (*CompositeID, diag.Diagnostics) {
 // For backward compatibility, an ID with an empty cluster segment and a non-empty resource
 // segment (for example "/<synthetics_monitor_id>" from legacy [CompositeID.String] formatting) is
 // accepted; an empty resource segment (including a trailing slash after the cluster) is rejected.
-func CompositeIDFromStrForElasticsearch(id string) (*CompositeID, diag.Diagnostics) {
+func CompositeIDFromStrForElasticsearch(id string) (*CompositeID, fwdiags.Diagnostics) {
 	parts := strings.SplitN(id, "/", 2)
 	if len(parts) != 2 || parts[1] == "" {
-		return nil, diagutil.SDKErrorDiag(
-			"Wrong resource ID.",
-			"Resource ID must have following format: <cluster_uuid>/<resource identifier>",
-		)
+		return nil, fwdiags.Diagnostics{
+			fwdiags.NewErrorDiagnostic(
+				"Wrong resource ID.",
+				"Resource ID must have following format: <cluster_uuid>/<resource identifier>",
+			),
+		}
 	}
 	if parts[0] == "" {
 		return &CompositeID{
@@ -84,24 +85,6 @@ func CompositeIDFromStrForElasticsearch(id string) (*CompositeID, diag.Diagnosti
 		ClusterID:  parts[0],
 		ResourceID: parts[1],
 	}, nil
-}
-
-func CompositeIDFromStrFw(id string) (*CompositeID, fwdiags.Diagnostics) {
-	composite, diags := CompositeIDFromStr(id)
-	return composite, diagutil.FrameworkDiagsFromSDK(diags)
-}
-
-func CompositeIDFromStrForElasticsearchFw(id string) (*CompositeID, fwdiags.Diagnostics) {
-	composite, diags := CompositeIDFromStrForElasticsearch(id)
-	return composite, diagutil.FrameworkDiagsFromSDK(diags)
-}
-
-func ResourceIDFromStr(id string) (string, diag.Diagnostics) {
-	compID, diags := CompositeIDFromStr(id)
-	if diags.HasError() {
-		return "", diags
-	}
-	return compID.ResourceID, nil
 }
 
 func (c *CompositeID) String() string {
@@ -137,16 +120,6 @@ type apiClient struct {
 	fleetEndpoint string
 }
 
-func NewAPIClientFuncFromSDK(version string) func(context.Context, *schema.ResourceData) (any, diag.Diagnostics) {
-	return func(_ context.Context, d *schema.ResourceData) (any, diag.Diagnostics) {
-		client, diags := newAPIClientFromSDK(d, version)
-		if diags.HasError() {
-			return nil, diags
-		}
-		return NewProviderClientFactory(client), diags
-	}
-}
-
 func newAcceptanceTestingClient() (*apiClient, error) {
 	version := "tf-acceptance-testing"
 	cfg := config.NewFromEnv(version)
@@ -170,7 +143,7 @@ func newAPIClientFromFramework(ctx context.Context, cfg config.ProviderConfigura
 }
 
 type MinVersionEnforceable interface {
-	EnforceMinVersion(ctx context.Context, minVersion *version.Version) (bool, diag.Diagnostics)
+	EnforceMinVersion(ctx context.Context, minVersion *version.Version) (bool, fwdiags.Diagnostics)
 }
 
 func buildEsClient(cfg config.Client) (*elasticsearch.TypedClient, error) {
@@ -199,20 +172,6 @@ func buildFleetClient(cfg config.Client) (*fleet.Client, error) {
 	client, err := fleet.NewClient(*cfg.Fleet)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create Fleet client: %w", err)
-	}
-
-	return client, nil
-}
-
-func newAPIClientFromSDK(d *schema.ResourceData, version string) (*apiClient, diag.Diagnostics) {
-	cfg, diags := config.NewFromSDK(d, version)
-	if diags.HasError() {
-		return nil, diags
-	}
-
-	client, err := newAPIClientFromConfig(cfg, version)
-	if err != nil {
-		return nil, diag.FromErr(err)
 	}
 
 	return client, nil

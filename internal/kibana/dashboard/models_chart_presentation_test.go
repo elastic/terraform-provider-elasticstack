@@ -95,7 +95,7 @@ func Test_lensDrilldownItemToRawJSON_url_includes_trigger(t *testing.T) {
 func Test_lensDrilldownItemFromAPIJSON_dispatch_and_trigger_defaults(t *testing.T) {
 	t.Run("dashboard trigger omitted defaults", func(t *testing.T) {
 		raw := []byte(`{"type":"dashboard_drilldown","dashboard_id":"d1","label":"L"}`)
-		item, diags := lensDrilldownItemFromAPIJSON(raw, 0)
+		item, diags := lensDrilldownItemFromAPIJSON(raw)
 		require.False(t, diags.HasError())
 		require.NotNil(t, item.DashboardDrilldown)
 		assert.Nil(t, item.DiscoverDrilldown)
@@ -107,7 +107,7 @@ func Test_lensDrilldownItemFromAPIJSON_dispatch_and_trigger_defaults(t *testing.
 
 	t.Run("discover trigger omitted defaults", func(t *testing.T) {
 		raw := []byte(`{"type":"discover_drilldown","label":"D"}`)
-		item, diags := lensDrilldownItemFromAPIJSON(raw, 0)
+		item, diags := lensDrilldownItemFromAPIJSON(raw)
 		require.False(t, diags.HasError())
 		require.NotNil(t, item.DiscoverDrilldown)
 		assert.Equal(t, "D", item.DiscoverDrilldown.Label.ValueString())
@@ -116,7 +116,7 @@ func Test_lensDrilldownItemFromAPIJSON_dispatch_and_trigger_defaults(t *testing.
 
 	t.Run("url requires explicit trigger in payload", func(t *testing.T) {
 		raw := []byte(`{"type":"url_drilldown","url":"https://x","label":"U","trigger":"on_open_panel_menu"}`)
-		item, diags := lensDrilldownItemFromAPIJSON(raw, 0)
+		item, diags := lensDrilldownItemFromAPIJSON(raw)
 		require.False(t, diags.HasError())
 		require.NotNil(t, item.URLDrilldown)
 		assert.Equal(t, "https://x", item.URLDrilldown.URL.ValueString())
@@ -162,7 +162,7 @@ func Test_lensDrilldownItem_wireRoundTrip_matchesTFModel(t *testing.T) {
 	raw, diags := lensDrilldownItemToRawJSON(orig, 0)
 	require.False(t, diags.HasError())
 
-	got, diags := lensDrilldownItemFromAPIJSON(raw, 0)
+	got, diags := lensDrilldownItemFromAPIJSON(raw)
 	require.False(t, diags.HasError())
 
 	require.NotNil(t, got.DashboardDrilldown)

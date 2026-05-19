@@ -20,19 +20,19 @@ resource "elasticstack_kibana_data_view" "example" {
     id              = <optional, computed, string> # saved object id; RequiresReplace; UseStateForUnknown
     time_field_name = <optional, computed, string> # UseStateForUnknown
 
-    source_filters = <optional, list(string)>
+    source_filters = <optional, computed, list(string)>
 
     field_attrs = <optional, map(object({
       custom_label = <optional, string>
       count        = <optional, int64>
-    }))> # RequiresReplace
+    }))> # custom MapTypable with MapSemanticEquals (REQ-015); applied via UpdateFieldMetadata (REQ-016)
 
-    runtime_field_map = <optional, map(object({
+    runtime_field_map = <optional, computed, map(object({
       type          = <required, string>
       script_source = <required, string>
     }))>
 
-    field_formats = <optional, map(object({
+    field_formats = <optional, computed, map(object({
       id     = <required, string>
       params = <optional, computed, object({
         pattern                    = <optional, string>
@@ -74,9 +74,7 @@ Notes:
 
 - The resource uses provider-level Kibana OpenAPI client configuration only; there is no resource-level Kibana connection override block.
 - This resource does not declare a schema version, custom state upgrader, custom config validator, or custom plan modifier beyond the schema-level defaults and plan modifiers listed above.
-
 ## Requirements
-
 ### Requirement: Kibana Data Views and Spaces APIs (REQ-001)
 
 The resource SHALL manage data views through Kibana's Data Views HTTP APIs for create, get, update, and delete, and SHALL use Kibana's Spaces object-sharing API when reconciling `data_view.namespaces`.
@@ -157,13 +155,20 @@ The resource SHALL use the provider's configured Kibana OpenAPI client by defaul
 
 ### Requirement: Lifecycle replacement fields (REQ-006)
 
-Changes to `space_id`, `data_view.id`, `data_view.field_attrs`, or `data_view.allow_no_index` SHALL require resource replacement rather than an in-place update.
+Changes to `space_id`, `data_view.id`, or `data_view.allow_no_index` SHALL require resource replacement rather than an in-place update. Changes to `data_view.field_attrs` SHALL NOT trigger resource replacement; they are applied in place via the `UpdateFieldMetadata` API call (see REQ-016).
 
 #### Scenario: Replace on immutable data view id
 
 - GIVEN an existing managed data view
 - WHEN `data_view.id` changes in configuration
 - THEN Terraform SHALL plan replacement for the resource
+
+#### Scenario: No replacement on field_attrs change
+
+- GIVEN an existing managed data view with a known internal Kibana ID
+- WHEN `data_view.field_attrs` changes in configuration (entries added, removed, or modified)
+- THEN Terraform SHALL plan an in-place update rather than resource replacement
+- AND the data view SHALL retain its internal Kibana ID after the update
 
 ### Requirement: Defaults, validators, and unknown preservation (REQ-007)
 
@@ -187,7 +192,7 @@ On create, the resource SHALL build a create request from Terraform state and se
 
 ### Requirement: Update request mapping and namespace reconciliation (REQ-009)
 
-On update, the resource SHALL build a Data Views update request from Terraform state using `title`, `name`, `time_field_name`, `source_filters`, `runtime_field_map`, `field_formats`, and `allow_no_index` when those values are set. The Data Views update request SHALL NOT send `override`, `data_view.id`, `data_view.field_attrs`, or `data_view.namespaces`. After a successful Data Views update, the provider SHALL compare prior and planned `data_view.namespaces`; when membership changed, it SHALL call Kibana's Spaces object-sharing API with the computed `spaces_to_add` and `spaces_to_remove` sets for the managed data view id before writing final state.
+On update, the resource SHALL build a Data Views update request from Terraform state using `title`, `name`, `time_field_name`, `source_filters`, `runtime_field_map`, `field_formats`, and `allow_no_index` when those values are set. The Data Views update request SHALL NOT send `override`, `data_view.id`, `data_view.field_attrs`, or `data_view.namespaces`. The Data Views update request SHALL always send `source_filters`, `field_formats`, and `runtime_field_map` — defaulting null planned values to an empty collection — so Kibana clears any previously-stored values when the user removes them from configuration. After a successful Data Views update, the provider SHALL compare prior and planned `data_view.namespaces`; when membership changed, it SHALL call Kibana's Spaces object-sharing API with the computed `spaces_to_add` and `spaces_to_remove` sets for the managed data view id before writing final state. When either prior or planned `data_view.namespaces` is null or empty, the provider SHALL substitute the resource's own `space_id` for that side of the diff so removing an explicit namespaces list keeps the data view in its own space rather than detaching it from every space. After the namespace reconciliation step, the provider SHALL apply any `field_attrs` delta via a separate `UpdateFieldMetadata` call (see REQ-016).
 
 #### Scenario: Override is create-only
 
@@ -202,6 +207,28 @@ On update, the resource SHALL build a Data Views update request from Terraform s
 - THEN the provider SHALL keep the same resource identity
 - AND SHALL reconcile namespace additions and removals through the Spaces API instead of replacing the resource
 
+#### Scenario: field_attrs update uses separate API call
+
+- GIVEN a managed data view and a plan that changes one or more `field_attrs` entries
+- WHEN update runs
+- THEN the provider SHALL NOT include `field_attrs` in the main data view update body
+- AND SHALL call the `UpdateFieldMetadata` endpoint with a delta payload covering changed and removed fields
+
+#### Scenario: Removed collection fields are cleared in place
+
+- GIVEN a managed data view with stored `source_filters`, `field_formats`, or `runtime_field_map`
+- WHEN the plan removes those attributes (planned value becomes null)
+- THEN the update request SHALL send each removed collection as an explicit empty value so Kibana clears the prior server-side data
+- AND the resulting state SHALL match the planned null value without triggering a "Provider produced inconsistent result after apply" error
+
+#### Scenario: Namespaces removed from configuration retains current space
+
+- GIVEN an existing managed data view shared into multiple namespaces and a plan that removes `data_view.namespaces` (planned value becomes null)
+- WHEN update runs
+- THEN the provider SHALL substitute `[space_id]` for the planned namespaces when computing the spaces diff
+- AND SHALL only remove the data view from namespaces other than its own `space_id`
+- AND the data view SHALL remain accessible in its own space after the update completes
+
 ### Requirement: Read behavior and missing resource handling (REQ-010)
 
 When refreshing state, the resource SHALL determine the target data view id and space by parsing the composite `id` when present; if `id` is not a valid composite id, it SHALL fall back to the bare `id` value plus `space_id` from state. If the get request returns not found, the resource SHALL remove itself from Terraform state. Otherwise it SHALL repopulate state from the API response.
@@ -214,13 +241,18 @@ When refreshing state, the resource SHALL determine the target data view id and 
 
 ### Requirement: State mapping for empty collections (REQ-011)
 
-When mapping API responses back to Terraform state, empty `source_filters`, `field_attrs`, `runtime_field_map`, and `field_formats` returned by Kibana SHALL preserve a prior null value instead of forcing an empty list or map into state. If a field format entry has no `params`, the resource SHALL store `params` as a null object in state.
+When mapping API responses back to Terraform state, empty `source_filters`, `field_attrs`, `runtime_field_map`, and `field_formats` returned by Kibana SHALL preserve a prior null value instead of forcing an empty list or map into state. If a field format entry has no `params`, the resource SHALL store `params` as a null object in state. `runtime_field_map` SHALL be marked `Optional` and `Computed` so that it remains user-settable while Terraform also accepts a persisted non-empty value when the attribute is omitted from configuration.
 
 #### Scenario: Empty API collection preserves null
-
 - GIVEN prior state where `data_view.source_filters` is null
 - WHEN Kibana returns an empty `source_filters` collection
 - THEN the provider SHALL keep `data_view.source_filters` null in state
+
+#### Scenario: Omitted runtime_field_map with persisted API value
+- GIVEN prior state where `data_view.runtime_field_map` contains entries
+- WHEN the configuration removes `data_view.runtime_field_map` and update runs
+- AND Kibana preserves the existing runtime fields in its response
+- THEN the provider SHALL accept the persisted `runtime_field_map` into state without raising a consistency error
 
 ### Requirement: Namespace state normalization (REQ-012)
 
@@ -278,6 +310,77 @@ When a create request supplies an explicit `data_view.id`, the provider SHALL tr
 - THEN the provider SHALL NOT attempt heuristic reconciliation by title or other mutable fields under REQ-014
 - AND SHALL surface the create failure as an error diagnostic
 
+### Requirement: field_attrs semantic equality via custom type (REQ-015)
+
+The `field_attrs` attribute SHALL use a custom map type (`FieldAttrsType` / `FieldAttrsValue`) that implements `MapSemanticEquals`. The semantic equality check SHALL suppress the following categories of plan-time drift without requiring user intervention:
+
+1. **Count-only server entries absent from config**: when the user's `field_attrs` is null or omits a field name entirely, Kibana may auto-populate `count` entries for that field. Such entries — identified by having a null `custom_label` and no user-configured counterpart — SHALL be considered semantically equal to the absent (null) state.
+2. **Count growth for user-declared fields**: when a user declares a `field_attrs` entry with `custom_label` set but `count` null, subsequent growth of the server-side `count` for that field SHALL be considered semantically equal.
+
+The custom type SHALL compare `custom_label` values strictly: any change to `custom_label` (addition, removal, or modification) is a real change and SHALL NOT be suppressed.
+
+The `count` attribute SHALL remain `Optional` (not `Computed`). The provider SHALL persist `count` in state only when the user explicitly sets it in configuration.
+
+#### Scenario: Server-generated count entries do not produce a diff
+
+- GIVEN a `elasticstack_kibana_data_view` resource with no `field_attrs` in configuration
+- AND Kibana has auto-populated `field_attrs` with `{ "host.hostname": { "count": 5 } }`
+- WHEN `terraform plan` runs after apply
+- THEN the plan SHALL show no changes
+
+#### Scenario: Configured custom_label is compared strictly
+
+- GIVEN a resource with `field_attrs = { "host.hostname" = { custom_label = "Host" } }` in configuration
+- AND the prior state has `field_attrs = { "host.hostname" = { custom_label = "Host", count = 12 } }`
+- WHEN `terraform plan` runs
+- THEN the plan SHALL show no changes (count growth suppressed because count is null in config)
+
+#### Scenario: custom_label removal is detected
+
+- GIVEN a resource with prior state containing `field_attrs = { "host.hostname" = { custom_label = "Host" } }`
+- AND the user removes `host.hostname` from `field_attrs` in configuration
+- WHEN `terraform plan` runs
+- THEN the plan SHALL show an update (the entry is managed and was removed from config)
+
+#### Scenario: count-only entry in prior state with no custom_label is suppressed
+
+- GIVEN a resource with prior state containing `field_attrs = { "host.hostname" = { count = 5 } }` (server-generated, no custom_label)
+- AND the user's configuration has no `field_attrs` (or omits `host.hostname`)
+- WHEN `terraform plan` runs
+- THEN the plan SHALL show no changes
+
+### Requirement: field_attrs write path via UpdateFieldMetadata (REQ-016)
+
+When `field_attrs` changes between prior state and plan, the provider SHALL apply those changes by calling the Kibana `POST /api/data_views/data_view/{viewId}/fields` endpoint (`UpdateFieldMetadata` wrapper). This call SHALL be made after the main data view update and after namespace reconciliation, within the same Update operation.
+
+The provider SHALL build the delta payload as follows:
+- For each field present in the planned `field_attrs` that differs from the prior state: include its full `fieldAttrModel` values in the payload.
+- For each field present in the prior state `field_attrs` that is absent from the planned `field_attrs`: include an entry in the payload to clear that field (exact clearing payload shape is an implementation detail).
+
+The `UpdateFieldMetadata` API call SHALL use `kibanautil.SpaceAwarePathRequestEditor` to construct the space-aware URL path, ensuring correct routing for non-default Kibana spaces.
+
+If `UpdateFieldMetadata` returns a transport error or unexpected HTTP status, the provider SHALL surface an error diagnostic and SHALL NOT write final state.
+
+#### Scenario: field_attrs are written via UpdateFieldMetadata on update
+
+- GIVEN a managed data view in space `observability` with a planned `field_attrs` change
+- WHEN update runs
+- THEN the provider SHALL call `UpdateFieldMetadata` with the space ID `observability` and the delta payload
+- AND the main data view update body SHALL NOT contain `field_attrs`
+
+#### Scenario: No UpdateFieldMetadata call when field_attrs unchanged
+
+- GIVEN a managed data view with no `field_attrs` change between state and plan
+- WHEN update runs
+- THEN the provider SHALL NOT call `UpdateFieldMetadata`
+
+#### Scenario: UpdateFieldMetadata error surfaces as diagnostic
+
+- GIVEN a planned update that includes `field_attrs` changes
+- WHEN `UpdateFieldMetadata` returns an error
+- THEN the provider SHALL return an error diagnostic
+- AND SHALL NOT write updated state
+
 ## Traceability
 
 | Area | Primary files |
@@ -286,5 +389,6 @@ When a create request supplies an explicit `data_view.id`, the provider SHALL tr
 | Metadata / Configure / Import | `internal/kibana/dataview/resource.go` |
 | CRUD orchestration | `internal/kibana/dataview/create.go`, `internal/kibana/dataview/read.go`, `internal/kibana/dataview/update.go`, `internal/kibana/dataview/delete.go` |
 | Model mapping / id parsing / namespace normalization | `internal/kibana/dataview/models.go` |
+| `field_attrs` custom type and semantic equality | `internal/kibana/dataview/field_attrs_type.go`, `internal/kibana/dataview/field_attrs_value.go` |
 | API status handling | `internal/clients/kibanaoapi/data_views.go`, `internal/clients/kibanaoapi/data_views_spaces.go` |
 | Composite id parsing | `internal/clients/api_client.go` |

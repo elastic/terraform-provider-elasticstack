@@ -42,17 +42,15 @@ type calendarEventResource struct {
 // fit the generic envelope write path. Do not replace phCreate with a real createFunc without
 // migrating that logic.
 func newCalendarEventResource() *calendarEventResource {
-	phCreate, _ := entitycore.PlaceholderElasticsearchWriteCallbacks[CalendarEventTFModel]()
+	placeholder := entitycore.PlaceholderElasticsearchWriteCallback[CalendarEventTFModel]()
 	return &calendarEventResource{
-		ElasticsearchResource: entitycore.NewElasticsearchResource(
-			entitycore.ComponentElasticsearch,
-			"ml_calendar_event",
-			getSchema,
-			readCalendarEvent,
-			deleteCalendarEvent,
-			phCreate,
-			updateCalendarEventNoOp,
-		),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[CalendarEventTFModel]("ml_calendar_event", entitycore.ElasticsearchResourceOptions[CalendarEventTFModel]{
+			Schema: getSchema,
+			Read:   readCalendarEvent,
+			Delete: deleteCalendarEvent,
+			Create: placeholder,
+			Update: updateCalendarEventNoOp,
+		}),
 	}
 }
 

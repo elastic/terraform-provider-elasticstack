@@ -44,7 +44,7 @@ func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, r
 		return
 	}
 
-	compID, diags := clients.CompositeIDFromStrFw(state.ID.ValueString())
+	compID, diags := clients.CompositeIDFromStr(state.ID.ValueString())
 	response.Diagnostics.Append(diags...)
 	if response.Diagnostics.HasError() {
 		return

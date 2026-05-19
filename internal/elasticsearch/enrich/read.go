@@ -23,7 +23,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
@@ -31,8 +30,8 @@ import (
 func readEnrichPolicy(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state PolicyDataWithExecute) (PolicyDataWithExecute, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	policy, sdkDiags := elasticsearch.GetEnrichPolicy(ctx, client, resourceID)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	policy, policyDiags := elasticsearch.GetEnrichPolicy(ctx, client, resourceID)
+	diags.Append(policyDiags...)
 	if diags.HasError() {
 		return state, false, diags
 	}

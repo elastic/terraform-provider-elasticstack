@@ -50,6 +50,11 @@ func TestCanonicalIndexSettingsJSON(t *testing.T) {
 			in:   `{}`,
 			want: `{}`,
 		},
+		{
+			name: "null value stringified as null",
+			in:   `{"key": null}`,
+			want: `{"index":{"key":"null"}}`,
+		},
 	}
 
 	for _, tc := range tests {
@@ -177,6 +182,20 @@ func TestIndexSettingsValue_StringSemanticEquals(t *testing.T) {
 			newVal: NewIndexSettingsUnknown(),
 			equal:  false,
 		},
+		{
+			// JSON null in practitioner config must equal Elasticsearch echoing it as the string "null".
+			name:   "json null value equals ES echo as string null",
+			old:    NewIndexSettingsValue(`{"key": null}`),
+			newVal: NewIndexSettingsValue(`{"key": "null"}`),
+			equal:  true,
+		},
+		{
+			// JSON null must not compare equal to a genuinely different value.
+			name:   "json null value not equal to other string",
+			old:    NewIndexSettingsValue(`{"key": null}`),
+			newVal: NewIndexSettingsValue(`{"key": "other"}`),
+			equal:  false,
+		},
 	}
 
 	for _, tc := range tests {
@@ -187,6 +206,23 @@ func TestIndexSettingsValue_StringSemanticEquals(t *testing.T) {
 			require.Equal(t, tc.equal, eq)
 		})
 	}
+}
+
+// TestNewIndexSettingsValue_normalizesStringifiedScalars verifies that
+// string-encoded booleans ("true", "false") and null ("null") echoed by
+// Elasticsearch are converted back to their native JSON types during
+// construction. This ensures ImportStateVerify sees the same stored value as
+// the initial apply (e.g. _tier_preference: null vs _tier_preference: "null").
+func TestNewIndexSettingsValue_normalizesStringifiedScalars(t *testing.T) {
+	t.Parallel()
+
+	// Elasticsearch echoes _tier_preference: null as the JSON string "null".
+	input := `{"index":{"number_of_shards":"1","routing":{"allocation":{"include":{"_tier_preference":"null"}}}}}`
+	v := NewIndexSettingsValue(input)
+
+	// The stored value should have native null, not the string "null".
+	require.Contains(t, v.ValueString(), `"_tier_preference":null`, `"null" string should be normalized to JSON null`)
+	require.NotContains(t, v.ValueString(), `"_tier_preference":"null"`, `string "null" should not appear after normalization`)
 }
 
 func TestIndexSettingsValue_StringSemanticEquals_wrongValuableType(t *testing.T) {

@@ -38,15 +38,13 @@ type calendarResource struct {
 
 func newCalendarResource() *calendarResource {
 	return &calendarResource{
-		ElasticsearchResource: entitycore.NewElasticsearchResource(
-			entitycore.ComponentElasticsearch,
-			"ml_calendar",
-			getSchema,
-			readCalendar,
-			deleteCalendar,
-			createCalendar,
-			updateCalendar,
-		),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[TFModel]("ml_calendar", entitycore.ElasticsearchResourceOptions[TFModel]{
+			Schema: getSchema,
+			Read:   readCalendar,
+			Delete: deleteCalendar,
+			Create: createCalendar,
+			Update: updateCalendar,
+		}),
 	}
 }
 

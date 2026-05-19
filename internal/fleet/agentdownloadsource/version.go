@@ -22,7 +22,6 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
@@ -32,7 +31,7 @@ var MinVersionFleetAgentDownloadSource = version.Must(version.NewVersion("8.13.0
 func (r *Resource) assertVersionSupported(ctx context.Context, client clients.MinVersionEnforceable) diag.Diagnostics {
 	supported, versionDiags := client.EnforceMinVersion(ctx, MinVersionFleetAgentDownloadSource)
 	if versionDiags.HasError() {
-		return diagutil.FrameworkDiagsFromSDK(versionDiags)
+		return versionDiags
 	}
 	if supported {
 		return nil

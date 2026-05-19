@@ -24,6 +24,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/iface"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -60,7 +61,7 @@ func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item k
 
 	pm.Grid = panelkit.GridFromAPI(apiPanel.Grid.X, apiPanel.Grid.Y, apiPanel.Grid.W, apiPanel.Grid.H)
 	pm.ID = panelkit.IDFromAPI(apiPanel.Id)
-	pm.ConfigJSON = panelConfigJSONNull()
+	pm.ConfigJSON = panelkit.PanelConfigJSONNull()
 	diags := PopulateFromAPI(pm, prior, apiPanel.Config)
 	_ = ctx
 	return diags
@@ -69,6 +70,20 @@ func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item k
 // ToAPI serializes Terraform panel state into a kbapi union item.
 func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	_ = dashboard
+	if typeutils.IsKnown(pm.ConfigJSON) && !pm.ConfigJSON.IsNull() {
+		var diags diag.Diagnostics
+		diags.AddError(
+			"Unsupported panel type for config_json",
+			"Panel-level `config_json` is not supported for `slo_burn_rate` panels. Use `slo_burn_rate_config` instead.",
+		)
+		return kbapi.DashboardPanelItem{}, diags
+	}
+	if pm.SloBurnRateConfig == nil {
+		var diags diag.Diagnostics
+		diags.AddError("Missing SLO burn rate panel configuration", "SLO burn rate panels require `slo_burn_rate_config`.")
+		return kbapi.DashboardPanelItem{}, diags
+	}
+
 	grid := panelkit.GridToAPI(pm.Grid)
 	id := panelkit.IDToAPI(pm.ID)
 	panel := kbapi.KbnDashboardPanelTypeSloBurnRate{

@@ -50,15 +50,13 @@ type enrichPolicyResource struct {
 
 func newEnrichPolicyResource() *enrichPolicyResource {
 	return &enrichPolicyResource{
-		ElasticsearchResource: entitycore.NewElasticsearchResource[PolicyDataWithExecute](
-			entitycore.ComponentElasticsearch,
-			"enrich_policy",
-			getSchemaFactory,
-			readEnrichPolicy,
-			deleteEnrichPolicy,
-			upsertEnrichPolicy,
-			upsertEnrichPolicy,
-		),
+		ElasticsearchResource: entitycore.NewElasticsearchResource[PolicyDataWithExecute]("enrich_policy", entitycore.ElasticsearchResourceOptions[PolicyDataWithExecute]{
+			Schema: getSchemaFactory,
+			Read:   readEnrichPolicy,
+			Delete: deleteEnrichPolicy,
+			Create: upsertEnrichPolicy,
+			Update: upsertEnrichPolicy,
+		}),
 	}
 }
 

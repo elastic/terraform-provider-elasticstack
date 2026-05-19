@@ -19,7 +19,6 @@ package kibanaoapi
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -90,14 +89,8 @@ func GetList(ctx context.Context, client *Client, spaceID string, params *kbapi.
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return diagutil.UnwrapJSON200(resp.JSON200, "list")
-	case http.StatusNotFound:
-		return nil, nil
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return HandleGetTypedResponse(resp.StatusCode(), resp.Body,
+		func() *kbapi.SecurityListsAPIList { return resp.JSON200 })
 }
 
 // CreateList creates a new security list.
@@ -107,12 +100,8 @@ func CreateList(ctx context.Context, client *Client, spaceID string, body kbapi.
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return diagutil.UnwrapJSON200(resp.JSON200, "list")
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
+		func() *kbapi.SecurityListsAPIList { return resp.JSON200 })
 }
 
 // UpdateList updates an existing security list.
@@ -122,12 +111,8 @@ func UpdateList(ctx context.Context, client *Client, spaceID string, body kbapi.
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return diagutil.UnwrapJSON200(resp.JSON200, "list")
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
+		func() *kbapi.SecurityListsAPIList { return resp.JSON200 })
 }
 
 // DeleteList deletes an existing security list.
@@ -149,21 +134,7 @@ func GetListItem(ctx context.Context, client *Client, spaceID string, params *kb
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		var listItem kbapi.SecurityListsAPIListItem
-		if err := json.Unmarshal(resp.Body, &listItem); err != nil {
-			return nil, diag.Diagnostics{
-				diag.NewErrorDiagnostic("Failed to parse list item response", err.Error()),
-			}
-		}
-
-		return &listItem, nil
-	case http.StatusNotFound:
-		return nil, nil
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return handleGetResponse[kbapi.SecurityListsAPIListItem](resp.StatusCode(), resp.Body)
 }
 
 // CreateListItem creates a new security list item.
@@ -173,12 +144,8 @@ func CreateListItem(ctx context.Context, client *Client, spaceID string, body kb
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return diagutil.UnwrapJSON200(resp.JSON200, "list item")
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
+		func() *kbapi.SecurityListsAPIListItem { return resp.JSON200 })
 }
 
 // UpdateListItem updates an existing security list item.
@@ -188,12 +155,8 @@ func UpdateListItem(ctx context.Context, client *Client, spaceID string, body kb
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return diagutil.UnwrapJSON200(resp.JSON200, "list item")
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
+		func() *kbapi.SecurityListsAPIListItem { return resp.JSON200 })
 }
 
 // DeleteListItem deletes an existing security list item.

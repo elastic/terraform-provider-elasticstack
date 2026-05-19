@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
@@ -28,6 +29,10 @@ import (
 // update API (attribute changes use RequiresReplace), but the Elasticsearch envelope still
 // invokes Update when only nested blocks such as elasticsearch_connection change. Returning
 // the plan unchanged lets read refresh state without failing the apply.
-func updateCalendarEventNoOp(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, plan CalendarEventTFModel) (CalendarEventTFModel, diag.Diagnostics) {
-	return plan, nil
+func updateCalendarEventNoOp(
+	_ context.Context,
+	_ *clients.ElasticsearchScopedClient,
+	req entitycore.WriteRequest[CalendarEventTFModel],
+) (entitycore.WriteResult[CalendarEventTFModel], diag.Diagnostics) {
+	return entitycore.WriteResult[CalendarEventTFModel]{Model: req.Plan}, nil
 }

@@ -171,7 +171,7 @@ func (r *KibanaResource[T]) Schema(ctx context.Context, _ resource.SchemaRequest
 // composite ID; on failure (nil result) it falls back to GetResourceID() and
 // GetSpaceID(). Any diagnostics from the composite parse are discarded.
 func (r *KibanaResource[T]) resolveResourceIdentity(model T) (resourceID string, spaceID string) {
-	compID, _ := clients.CompositeIDFromStrFw(model.GetID().ValueString())
+	compID, _ := clients.CompositeIDFromStr(model.GetID().ValueString())
 	if compID != nil {
 		return compID.ResourceID, compID.ClusterID
 	}
@@ -196,7 +196,18 @@ func (r *KibanaResource[T]) Create(ctx context.Context, req resource.CreateReque
 	}
 
 	spaceID := plan.GetSpaceID()
-	if !typeutils.IsKnown(spaceID) || spaceID.ValueString() == "" {
+	if !typeutils.IsKnown(spaceID) {
+		resp.Diagnostics.AddError(
+			"Invalid space identifier",
+			"The space identifier from configuration is unknown; cannot create.",
+		)
+		return
+	}
+	unscoped := false
+	if u, ok := any(plan).(KibanaUnscopedSpace); ok && u.IsUnscopedSpace() {
+		unscoped = true
+	}
+	if !unscoped && spaceID.ValueString() == "" {
 		resp.Diagnostics.AddError(
 			"Invalid space identifier",
 			"The space identifier from configuration is unknown or empty; cannot create.",
@@ -210,7 +221,7 @@ func (r *KibanaResource[T]) Create(ctx context.Context, req resource.CreateReque
 		return
 	}
 
-	if vDiags := enforceVersionRequirements(ctx, client, &plan); vDiags.HasError() {
+	if vDiags := EnforceVersionRequirements(ctx, client, &plan); vDiags.HasError() {
 		resp.Diagnostics.Append(vDiags...)
 		return
 	}
@@ -259,7 +270,7 @@ func (r *KibanaResource[T]) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 
-	if vDiags := enforceVersionRequirements(ctx, client, &model); vDiags.HasError() {
+	if vDiags := EnforceVersionRequirements(ctx, client, &model); vDiags.HasError() {
 		resp.Diagnostics.Append(vDiags...)
 		return
 	}
@@ -316,7 +327,7 @@ func (r *KibanaResource[T]) Update(ctx context.Context, req resource.UpdateReque
 		return
 	}
 
-	if vDiags := enforceVersionRequirements(ctx, client, &plan); vDiags.HasError() {
+	if vDiags := EnforceVersionRequirements(ctx, client, &plan); vDiags.HasError() {
 		resp.Diagnostics.Append(vDiags...)
 		return
 	}

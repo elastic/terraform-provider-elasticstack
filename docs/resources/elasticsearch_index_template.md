@@ -55,6 +55,7 @@ resource "elasticstack_elasticsearch_index_template" "my_data_stream" {
 
 ### Optional
 
+- `allow_auto_create` (Boolean) If true, index auto-creation is allowed for matching indices. If false, auto-creation is disabled for matching indices. When unset, the cluster-level `action.auto_create_index` setting applies.
 - `composed_of` (List of String) An ordered list of component template names.
 - `data_stream` (Block, Optional) If this object is included, the template is used to create data streams and their backing indices. Supports an empty object. (see [below for nested schema](#nestedblock--data_stream))
 - `elasticsearch_connection` (Block List) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))

@@ -1131,7 +1131,7 @@ func checkResourceExceptionItemDestroy(s *terraform.State) error {
 			continue
 		}
 
-		compID, compDiags := clients.CompositeIDFromStrFw(rs.Primary.ID)
+		compID, compDiags := clients.CompositeIDFromStr(rs.Primary.ID)
 		if compDiags.HasError() {
 			return diagutil.FwDiagsAsError(compDiags)
 		}

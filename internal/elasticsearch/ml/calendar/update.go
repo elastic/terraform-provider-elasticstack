@@ -21,13 +21,14 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func updateCalendar(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, plan TFModel) (TFModel, fwdiags.Diagnostics) {
+func updateCalendar(_ context.Context, _ *clients.ElasticsearchScopedClient, req entitycore.WriteRequest[TFModel]) (entitycore.WriteResult[TFModel], fwdiags.Diagnostics) {
 	// Calendar definition changes (notably `description`) use RequiresReplace on the schema so
 	// Terraform runs delete+create. ML put calendar is create-only on Elasticsearch 8.0.x, so an
 	// in-place PUT would return "calendar already exists". Job associations live on
 	// `elasticstack_elasticsearch_ml_calendar_job`.
-	return plan, nil
+	return entitycore.WriteResult[TFModel]{Model: req.Plan}, nil
 }
