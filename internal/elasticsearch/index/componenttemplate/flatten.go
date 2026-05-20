@@ -21,8 +21,8 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
@@ -184,21 +184,12 @@ func flattenAliasElement(name string, a models.IndexAlias, preservedRouting map[
 		"is_write_index": types.BoolValue(a.IsWriteIndex),
 	}
 
-	if len(a.Filter) > 0 {
-		filterMap := a.Filter
-		normalized := elasticsearch.NormalizeQueryFilter(filterMap)
-		if nm, ok := normalized.(map[string]any); ok {
-			filterMap = nm
-		}
-		normalizedBytes, err := json.Marshal(filterMap)
-		if err != nil {
-			diags.AddError("Failed to marshal alias filter", err.Error())
-			return nil, diags
-		}
-		attrs["filter"] = jsontypes.NewNormalizedValue(string(normalizedBytes))
-	} else {
-		attrs["filter"] = jsontypes.NewNormalizedNull()
+	filter, d := aliasutil.NormalizeAliasFilterMap(a.Filter)
+	diags.Append(d...)
+	if diags.HasError() {
+		return nil, diags
 	}
+	attrs["filter"] = filter
 
 	obj, d := types.ObjectValue(aliasAttrTypes(), attrs)
 	diags.Append(d...)
