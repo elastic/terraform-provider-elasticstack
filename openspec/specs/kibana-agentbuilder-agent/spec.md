@@ -18,6 +18,7 @@ resource "elasticstack_kibana_agentbuilder_agent" "example" {
   avatar_symbol = <optional, computed, string>  # symbol/initials (e.g. "SA"); set "" to clear
   labels        = <optional, set(string)>
   tools         = <optional, set(string)>       # tool IDs the agent can use
+  skill_ids     = <optional, set(string)>       # skill IDs assigned to the agent; requires Elastic Stack 9.4.0+
   instructions  = <optional, string>            # system instructions
 
   space_id = <optional, computed, string>       # immutable; defaults to "default"; forces replacement on change
@@ -167,7 +168,23 @@ The resource SHALL accept `tools` as a set of tool ID strings. On create and upd
 - WHEN the resource is created or updated
 - THEN the API request SHALL contain those tool IDs in the agent configuration's tools array
 
-### Requirement: Version compatibility (REQ-016)
+### Requirement: Skill IDs mapping (REQ-016)
+
+The resource SHALL accept `skill_ids` as an optional set of skill ID strings. On create, when `skill_ids` is non-empty, the resource SHALL include it in the `configuration.skill_ids` field of the POST request body; when empty or null it SHALL be omitted. On update, when `skill_ids` is non-empty the resource SHALL include it in `configuration.skill_ids`; when empty or null, the resource SHALL omit it from the update body, leaving the server value unchanged. On read, the resource SHALL populate `skill_ids` from `configuration.skill_ids` in the API response; when absent or empty, `skill_ids` SHALL be stored as null in state. `skill_ids` requires Elastic Stack 9.4.0 or later; when the stack is below that version, the field should be left unset.
+
+#### Scenario: skill_ids on create
+
+- GIVEN `skill_ids = ["my-skill"]` is configured
+- WHEN the resource is created
+- THEN the POST request SHALL include `configuration.skill_ids: ["my-skill"]`
+
+#### Scenario: skill_ids cleared in state when absent from API response
+
+- GIVEN the API response omits `configuration.skill_ids` or returns an empty array
+- WHEN the provider writes Terraform state
+- THEN `skill_ids` SHALL be null
+
+### Requirement: Version compatibility (REQ-017)
 
 The resource SHALL verify the Kibana server version is at least 9.3.0 before performing any API operation. If the server version is below 9.3.0, the resource SHALL fail with an "Unsupported server version" error.
 
@@ -177,7 +194,7 @@ The resource SHALL verify the Kibana server version is at least 9.3.0 before per
 - WHEN any CRUD operation runs
 - THEN the provider SHALL return an "Unsupported server version" error diagnostic
 
-### Requirement: Resource-level Kibana connection override (REQ-017)
+### Requirement: Resource-level Kibana connection override (REQ-018)
 
 The resource SHALL support a `kibana_connection` block that overrides the provider's default Kibana client for that resource instance. When the block is present, the resource SHALL use the configured connection for all API calls.
 

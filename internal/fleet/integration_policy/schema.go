@@ -20,8 +20,8 @@ package integrationpolicy
 import (
 	"context"
 	_ "embed"
-	"os"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/debugutils"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -40,7 +40,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
 )
 
 //go:embed resource-description.md
@@ -51,7 +50,7 @@ func (r *integrationPolicyResource) Schema(_ context.Context, _ resource.SchemaR
 }
 
 func getSchemaV3() schema.Schema {
-	varsAreSensitive := !logging.IsDebugOrHigher() && os.Getenv("TF_ACC") != "1"
+	varsAreSensitive := debugutils.IsSensitiveInSchema()
 	return schema.Schema{
 		Version:     3,
 		Description: integrationPolicyDescription,

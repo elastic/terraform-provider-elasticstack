@@ -27,7 +27,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/debugutils"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
 )
 
 // Config is the configuration for the Kibana client.
@@ -50,6 +49,14 @@ type Client struct {
 
 // NewClient creates a new Elastic Kibana API client.
 func NewClient(cfg Config) (*Client, error) {
+	return NewClientWithLabel(cfg, "Kibana")
+}
+
+// NewClientWithLabel creates a new API client using cfg, labelling debug
+// transport log lines with debugLabel. This allows callers (e.g. the Fleet
+// client) to share the same factory implementation while keeping meaningful
+// labels in debug output.
+func NewClientWithLabel(cfg Config, debugLabel string) (*Client, error) {
 	var caCertPool *x509.CertPool
 	if len(cfg.CACerts) > 0 {
 		caCertPool = x509.NewCertPool()
@@ -70,8 +77,8 @@ func NewClient(cfg Config) (*Client, error) {
 		},
 	}
 
-	if logging.IsDebugOrHigher() {
-		roundTripper = debugutils.NewDebugTransport("Kibana", roundTripper)
+	if debugutils.IsDebugOrHigher() {
+		roundTripper = debugutils.NewDebugTransport(debugLabel, roundTripper)
 	}
 
 	httpClient := &http.Client{
@@ -86,15 +93,15 @@ func NewClient(cfg Config) (*Client, error) {
 		endpoint += "/"
 	}
 
-	kibanaAPIClient, err := kbapi.NewClientWithResponses(endpoint, kbapi.WithHTTPClient(httpClient))
+	apiClient, err := kbapi.NewClientWithResponses(endpoint, kbapi.WithHTTPClient(httpClient))
 	if err != nil {
-		return nil, fmt.Errorf("unable to create Kibana API client: %w", err)
+		return nil, fmt.Errorf("unable to create %s API client: %w", debugLabel, err)
 	}
 
 	return &Client{
 		URL:  cfg.URL,
 		HTTP: httpClient,
-		API:  kibanaAPIClient,
+		API:  apiClient,
 	}, nil
 }
 

@@ -22,10 +22,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 
-	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
@@ -45,19 +46,38 @@ func PutIngestPipeline(ctx context.Context, apiClient *clients.ElasticsearchScop
 	return nil
 }
 
-func GetIngestPipeline(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string) (*types.IngestPipeline, fwdiag.Diagnostics) {
+func GetIngestPipeline(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string) (*models.IngestPipeline, fwdiag.Diagnostics) {
 	typedClient, err := apiClient.GetESClient()
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
-	res, err := typedClient.Ingest.GetPipeline().Id(name).Do(ctx)
+
+	// We use .Perform() instead of .Do() because the typed client decodes the
+	// response through []ProcessorContainer, silently dropping any processor
+	// field not modeled by the go-elasticsearch typed structs (e.g. Override on
+	// RenameProcessor). Decoding into models.IngestPipeline preserves all fields
+	// the API returns. See issue #3002.
+	res, err := typedClient.Ingest.GetPipeline().Id(name).Perform(ctx)
 	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return nil, nil
-		}
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
-	if pipeline, ok := res[name]; ok {
+	defer res.Body.Close()
+
+	if res.StatusCode == http.StatusNotFound {
+		return nil, nil
+	}
+
+	if d := diagutil.CheckHTTPErrorFromFW(res, "Unable to find ingest pipeline on cluster"); d.HasError() {
+		return nil, d
+	}
+
+	pipelines := make(map[string]models.IngestPipeline)
+	if err := json.NewDecoder(res.Body).Decode(&pipelines); err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+
+	if pipeline, ok := pipelines[name]; ok {
+		pipeline.Name = name
 		return &pipeline, nil
 	}
 	return nil, fwdiag.Diagnostics{

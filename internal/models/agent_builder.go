@@ -30,6 +30,7 @@ type Agent struct {
 type AgentConfiguration struct {
 	Instructions *string            `json:"instructions,omitempty"`
 	Tools        []AgentToolsConfig `json:"tools,omitempty"`
+	SkillIDs     []string           `json:"skill_ids,omitempty"`
 }
 
 type AgentToolsConfig struct {
@@ -52,4 +53,19 @@ type Workflow struct {
 	Description *string `json:"description,omitempty"`
 	Enabled     bool    `json:"enabled"`
 	Valid       bool    `json:"valid"`
+}
+
+type Skill struct {
+	ID                string                   `json:"id"`
+	Name              string                   `json:"name"`
+	Description       string                   `json:"description"`
+	Content           string                   `json:"content"`
+	ToolIDs           []string                 `json:"tool_ids,omitempty"`
+	ReferencedContent []SkillReferencedContent `json:"referenced_content,omitempty"`
+}
+
+type SkillReferencedContent struct {
+	Name         string `json:"name"`
+	RelativePath string `json:"relativePath"`
+	Content      string `json:"content"`
 }

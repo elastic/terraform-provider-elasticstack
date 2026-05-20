@@ -154,8 +154,3 @@ func getSchemaFactory(_ context.Context) schema.Schema {
 		},
 	}
 }
-
-// GetResourceSchema is kept for backward compatibility.
-func GetResourceSchema() schema.Schema {
-	return getSchemaFactory(context.Background())
-}

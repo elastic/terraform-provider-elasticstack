@@ -358,13 +358,38 @@ func unflattenDottedMap(flat map[string]any) map[string]any {
 }
 
 // normalizeSettingsScalars recursively walks decoded settings JSON and converts
-// string-encoded JSON booleans and null back to their native types. Elasticsearch
-// echoes some settings values (e.g. _tier_preference: null) as JSON strings
-// ("null") instead of the native JSON literal null. Normalizing here ensures
-// the stored value after import matches the value stored after the initial apply,
-// so ImportStateVerify does not fail due to "null" (string) vs null (JSON null).
+// string-encoded JSON null ("null") back to the native JSON literal null.
+// Elasticsearch echoes some settings values (e.g. _tier_preference: null) as JSON
+// strings ("null") instead of the native JSON literal null. Normalizing here
+// ensures the stored value after import matches the value stored after the
+// initial apply, so ImportStateVerify does not fail due to "null" (string) vs
+// null (JSON null).
+//
+// String-encoded booleans ("true", "false") are intentionally *not* converted
+// so that settings values retain the exact JSON type returned by Elasticsearch
+// (see issue #3124).
 func normalizeSettingsScalars(v any) any {
-	return typeutils.NormalizeJSONScalar(v)
+	switch val := v.(type) {
+	case map[string]any:
+		out := make(map[string]any, len(val))
+		for k, vv := range val {
+			out[k] = normalizeSettingsScalars(vv)
+		}
+		return out
+	case []any:
+		out := make([]any, len(val))
+		for i, vv := range val {
+			out[i] = normalizeSettingsScalars(vv)
+		}
+		return out
+	case string:
+		if val == "null" {
+			return nil
+		}
+		return val
+	default:
+		return v
+	}
 }
 
 // NewIndexSettingsNull creates an IndexSettingsValue with a null value.

@@ -20,13 +20,17 @@ package securitydetectionrule
 import (
 	"context"
 	"regexp"
+	"sync"
 
+	kibanavalidators "github.com/elastic/terraform-provider-elasticstack/internal/kibana/validators"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -48,7 +52,7 @@ func (r *securityDetectionRuleResource) Schema(_ context.Context, _ resource.Sch
 
 func GetSchema() schema.Schema {
 	return schema.Schema{
-		Version:             1,
+		Version:             2,
 		MarkdownDescription: securityDetectionRuleMarkdownDescription,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -400,10 +404,65 @@ func GetSchema() schema.Schema {
 							Optional:            true,
 							Computed:            true,
 						},
-						"alerts_filter": schema.MapAttribute{
-							ElementType:         types.StringType,
-							MarkdownDescription: "Object containing an action's conditional filters.",
+						"alerts_filter": schema.SingleNestedAttribute{
+							MarkdownDescription: alertsFilterMarkdownDescription,
 							Optional:            true,
+							Attributes: map[string]schema.Attribute{
+								"query": schema.SingleNestedAttribute{
+									MarkdownDescription: "KQL query and Kibana filter DSL conditions that determine whether the action runs.",
+									Optional:            true,
+									Attributes: map[string]schema.Attribute{
+										"kql": schema.StringAttribute{
+											MarkdownDescription: "Defines a KQL query filter that determines whether the action runs. Written in Kibana Query Language (KQL).",
+											Optional:            true,
+										},
+										"filters_json": schema.StringAttribute{
+											CustomType:          jsontypes.NormalizedType{},
+											MarkdownDescription: "JSON-encoded array of Kibana filter DSL objects. Use `jsonencode([])` for an empty filter list.",
+											Optional:            true,
+											Computed:            true,
+										},
+									},
+								},
+								"timeframe": schema.SingleNestedAttribute{
+									MarkdownDescription: "Defines a period that limits whether the action runs.",
+									Optional:            true,
+									Validators: []validator.Object{
+										objectvalidator.AlsoRequires(path.MatchRelative().AtName("days")),
+										objectvalidator.AlsoRequires(path.MatchRelative().AtName("timezone")),
+										objectvalidator.AlsoRequires(path.MatchRelative().AtName("hours_start")),
+										objectvalidator.AlsoRequires(path.MatchRelative().AtName("hours_end")),
+									},
+									Attributes: map[string]schema.Attribute{
+										"days": schema.ListAttribute{
+											MarkdownDescription: alertsFilterTimeframeDaysMarkdownDescription,
+											Optional:            true,
+											ElementType:         types.Int64Type,
+											Validators: []validator.List{
+												listvalidator.ValueInt64sAre(int64validator.Between(1, 7)),
+											},
+										},
+										"timezone": schema.StringAttribute{
+											MarkdownDescription: "The ISO time zone for the hours values. Values such as UTC and UTC+1 also work but lack built-in daylight savings time support and are not recommended.",
+											Optional:            true,
+										},
+										"hours_start": schema.StringAttribute{
+											MarkdownDescription: "The start of the time frame in 24-hour notation (hh:mm).",
+											Optional:            true,
+											Validators: []validator.String{
+												kibanavalidators.StringIsHours,
+											},
+										},
+										"hours_end": schema.StringAttribute{
+											MarkdownDescription: "The end of the time frame in 24-hour notation (hh:mm).",
+											Optional:            true,
+											Validators: []validator.String{
+												kibanavalidators.StringIsHours,
+											},
+										},
+									},
+								},
+							},
 						},
 						"frequency": schema.SingleNestedAttribute{
 							MarkdownDescription: "The action frequency defines when the action runs.",
@@ -868,6 +927,48 @@ func GetSchema() schema.Schema {
 		}}
 }
 
+var (
+	attrTypesOnce                    sync.Once
+	cachedActionFrequencyTypes       map[string]attr.Type
+	cachedAlertsFilterTypes          map[string]attr.Type
+	cachedAlertsFilterQueryTypes     map[string]attr.Type
+	cachedAlertsFilterTimeframeTypes map[string]attr.Type
+)
+
+func initActionAttrTypes() {
+	s := GetSchema()
+
+	actionsAttr := s.Attributes["actions"].(schema.ListNestedAttribute)
+	actionAttrs := actionsAttr.NestedObject.Attributes
+
+	freqAttr := actionAttrs["frequency"].(schema.SingleNestedAttribute)
+	cachedActionFrequencyTypes = freqAttr.GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+
+	filterAttr := actionAttrs["alerts_filter"].(schema.SingleNestedAttribute)
+	cachedAlertsFilterTypes = filterAttr.GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+
+	queryAttr := filterAttr.Attributes["query"].(schema.SingleNestedAttribute)
+	cachedAlertsFilterQueryTypes = queryAttr.GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+
+	tfAttr := filterAttr.Attributes["timeframe"].(schema.SingleNestedAttribute)
+	cachedAlertsFilterTimeframeTypes = tfAttr.GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+}
+
+func getAlertsFilterAttrTypes() map[string]attr.Type {
+	attrTypesOnce.Do(initActionAttrTypes)
+	return cachedAlertsFilterTypes
+}
+
+func getAlertsFilterQueryAttrTypes() map[string]attr.Type {
+	attrTypesOnce.Do(initActionAttrTypes)
+	return cachedAlertsFilterQueryTypes
+}
+
+func getAlertsFilterTimeframeAttrTypes() map[string]attr.Type {
+	attrTypesOnce.Do(initActionAttrTypes)
+	return cachedAlertsFilterTimeframeTypes
+}
+
 // func getCardinalityType() map[string]attr.Type {
 func getCardinalityType() attr.Type {
 	return GetSchema().Attributes["threshold"].(schema.SingleNestedAttribute).Attributes["cardinality"].GetType().(attr.TypeWithElementType).ElementType()
@@ -923,8 +1024,8 @@ func getActionElementType() attr.Type {
 }
 
 func getActionFrequencyType() map[string]attr.Type {
-	actionType := GetSchema().Attributes["actions"].GetType().(attr.TypeWithElementType).ElementType().(attr.TypeWithAttributeTypes)
-	return actionType.AttributeTypes()["frequency"].(attr.TypeWithAttributeTypes).AttributeTypes()
+	attrTypesOnce.Do(initActionAttrTypes)
+	return cachedActionFrequencyTypes
 }
 
 func getExceptionsListElementType() attr.Type {

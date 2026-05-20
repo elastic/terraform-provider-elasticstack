@@ -31,6 +31,17 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
+// ConnectorResponse mirrors the fields we need from the Kibana connector API responses.
+type ConnectorResponse struct {
+	Config           *map[string]*any
+	ConnectorTypeID  string
+	ID               string
+	IsDeprecated     bool
+	IsMissingSecrets *bool
+	IsPreconfigured  bool
+	Name             string
+}
+
 func CreateConnector(ctx context.Context, client *Client, connector models.KibanaActionConnector) (string, fwdiag.Diagnostics) {
 	body, err := createConnectorRequestBody(connector)
 	if err != nil {
@@ -89,7 +100,16 @@ func GetConnector(ctx context.Context, client *Client, connectorID, spaceID stri
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		return ConnectorResponseToModel(spaceID, resp.JSON200)
+		cr := ConnectorResponse{
+			Config:           resp.JSON200.Config,
+			ConnectorTypeID:  resp.JSON200.ConnectorTypeId,
+			ID:               resp.JSON200.Id,
+			IsDeprecated:     resp.JSON200.IsDeprecated,
+			IsMissingSecrets: resp.JSON200.IsMissingSecrets,
+			IsPreconfigured:  resp.JSON200.IsPreconfigured,
+			Name:             resp.JSON200.Name,
+		}
+		return ConnectorResponseToModel(spaceID, &cr)
 	case http.StatusNotFound:
 		return nil, nil
 	default:
@@ -119,7 +139,16 @@ func SearchConnectors(ctx context.Context, client *Client, connectorName, spaceI
 			continue
 		}
 
-		c, fwDiags := ConnectorResponseToModel(spaceID, &connector)
+		cr := ConnectorResponse{
+			Config:           connector.Config,
+			ConnectorTypeID:  connector.ConnectorTypeId,
+			ID:               connector.Id,
+			IsDeprecated:     connector.IsDeprecated,
+			IsMissingSecrets: connector.IsMissingSecrets,
+			IsPreconfigured:  connector.IsPreconfigured,
+			Name:             connector.Name,
+		}
+		c, fwDiags := ConnectorResponseToModel(spaceID, &cr)
 		if fwDiags.HasError() {
 			return nil, fwDiags
 		}
@@ -133,7 +162,7 @@ func SearchConnectors(ctx context.Context, client *Client, connectorName, spaceI
 	return foundConnectors, nil
 }
 
-func ConnectorResponseToModel(spaceID string, connector *kbapi.ConnectorResponse) (*models.KibanaActionConnector, fwdiag.Diagnostics) {
+func ConnectorResponseToModel(spaceID string, connector *ConnectorResponse) (*models.KibanaActionConnector, fwdiag.Diagnostics) {
 	if connector == nil {
 		return nil, fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Invalid connector response", "connector response is nil")}
 	}
@@ -155,7 +184,7 @@ func ConnectorResponseToModel(spaceID string, connector *kbapi.ConnectorResponse
 
 		// If we have a specific config type, marshal into and out of that to
 		// remove any extra fields Kibana may have returned.
-		handler, ok := connectorConfigHandlers[connector.ConnectorTypeId]
+		handler, ok := connectorConfigHandlers[connector.ConnectorTypeID]
 		if ok {
 			configJSONString, err := handler.remarshalConfig(string(configJSON))
 			if err != nil {
@@ -167,11 +196,11 @@ func ConnectorResponseToModel(spaceID string, connector *kbapi.ConnectorResponse
 	}
 
 	model := &models.KibanaActionConnector{
-		ConnectorID:     connector.Id,
+		ConnectorID:     connector.ID,
 		SpaceID:         spaceID,
 		Name:            connector.Name,
 		ConfigJSON:      string(configJSON),
-		ConnectorTypeID: connector.ConnectorTypeId,
+		ConnectorTypeID: connector.ConnectorTypeID,
 		IsDeprecated:    connector.IsDeprecated,
 		IsPreconfigured: connector.IsPreconfigured,
 	}
@@ -214,8 +243,8 @@ func createConnectorRequestBody(connector models.KibanaActionConnector) (kbapi.P
 	req := kbapi.PostActionsConnectorIdJSONRequestBody{
 		ConnectorTypeId: connector.ConnectorTypeID,
 		Name:            connector.Name,
-		Config:          &kbapi.CreateConnectorConfig{},
-		Secrets:         &kbapi.CreateConnectorSecrets{},
+		Config:          &kbapi.PostActionsConnectorIdJSONBody_Config{},
+		Secrets:         &kbapi.PostActionsConnectorIdJSONBody_Secrets{},
 	}
 
 	if err := unmarshalConnectorFields(connector.ConfigJSON, connector.SecretsJSON, &req.Config.AdditionalProperties, &req.Secrets.AdditionalProperties); err != nil {
@@ -228,8 +257,8 @@ func createConnectorRequestBody(connector models.KibanaActionConnector) (kbapi.P
 func updateConnectorRequestBody(connector models.KibanaActionConnector) (kbapi.PutActionsConnectorIdJSONRequestBody, error) {
 	req := kbapi.PutActionsConnectorIdJSONRequestBody{
 		Name:    connector.Name,
-		Config:  &kbapi.UpdateConnectorConfig{},
-		Secrets: &kbapi.UpdateConnectorSecrets{},
+		Config:  &kbapi.PutActionsConnectorIdJSONBody_Config{},
+		Secrets: &kbapi.PutActionsConnectorIdJSONBody_Secrets{},
 	}
 
 	if err := unmarshalConnectorFields(connector.ConfigJSON, connector.SecretsJSON, &req.Config.AdditionalProperties, &req.Secrets.AdditionalProperties); err != nil {

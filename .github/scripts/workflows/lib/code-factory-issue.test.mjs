@@ -10,11 +10,9 @@ const __dirname = path.dirname(__filename);
 const require = createRequire(import.meta.url);
 const {
   qualifyTriggerEvent,
-  checkActorTrust,
   checkDuplicatePR,
   computeGateReason,
   issueBranchName,
-  actorTrustWhenSenderMissing,
   parseOptionalTriStateFromEnv,
   parseFinalizeGateEnv,
 } = require('./code-factory-issue.js');
@@ -106,67 +104,6 @@ test('qualifyTriggerEvent rejects unsupported issues actions such as closed', ()
 
   assert.equal(result.event_eligible, false);
   assert.match(result.event_eligible_reason, /not eligible/);
-});
-
-test('checkActorTrust trusts github-actions[bot] without collaborator permission', () => {
-  const result = checkActorTrust({ sender: 'github-actions[bot]', permission: null });
-
-  assert.equal(result.actor_trusted, true);
-  assert.match(result.actor_trusted_reason, /github-actions\[bot\]/);
-});
-
-test('checkActorTrust still trusts github-actions[bot] when a permission value is present', () => {
-  const result = checkActorTrust({ sender: 'github-actions[bot]', permission: 'read' });
-
-  assert.equal(result.actor_trusted, true);
-  assert.match(result.actor_trusted_reason, /github-actions\[bot\]/);
-});
-
-test('checkActorTrust trusts human senders with write permission', () => {
-  const result = checkActorTrust({ sender: 'alice', permission: 'write' });
-
-  assert.equal(result.actor_trusted, true);
-  assert.match(result.actor_trusted_reason, /permission 'write'/);
-});
-
-test('checkActorTrust trusts human senders with maintain permission', () => {
-  const result = checkActorTrust({ sender: 'alice', permission: 'maintain' });
-
-  assert.equal(result.actor_trusted, true);
-  assert.match(result.actor_trusted_reason, /permission 'maintain'/);
-});
-
-test('checkActorTrust trusts human senders with admin permission', () => {
-  const result = checkActorTrust({ sender: 'alice', permission: 'admin' });
-
-  assert.equal(result.actor_trusted, true);
-  assert.match(result.actor_trusted_reason, /permission 'admin'/);
-});
-
-test('checkActorTrust rejects human senders with read permission', () => {
-  const result = checkActorTrust({ sender: 'alice', permission: 'read' });
-
-  assert.equal(result.actor_trusted, false);
-  assert.match(result.actor_trusted_reason, /does not meet the required write\/maintain\/admin policy/);
-});
-
-test('checkActorTrust rejects human senders with none permission', () => {
-  const result = checkActorTrust({ sender: 'alice', permission: 'none' });
-
-  assert.equal(result.actor_trusted, false);
-  assert.match(result.actor_trusted_reason, /permission 'none'/);
-});
-
-test('checkActorTrust rejects human senders with null permission', () => {
-  const result = checkActorTrust({ sender: 'alice', permission: null });
-
-  assert.equal(result.actor_trusted, false);
-  assert.match(result.actor_trusted_reason, /permission '\(none\)'/);
-});
-
-test('actorTrustWhenSenderMissing matches shared helper', () => {
-  const { factoryActorTrustWhenSenderMissing } = require('./factory-issue-shared.js');
-  assert.deepEqual(actorTrustWhenSenderMissing(), factoryActorTrustWhenSenderMissing());
 });
 
 test('code-factory parseFinalizeGateEnv and tri-state parser match shared implementation', () => {
@@ -424,10 +361,6 @@ test('code-factory-issue exports align with shared createFactoryIssueModule bind
   const params = { eventName: 'issues', eventAction: 'labeled', labelName: 'code-factory', issueLabels: [] };
   assert.deepEqual(qualifyTriggerEvent(params), bound.qualifyTriggerEvent(params));
   assert.deepEqual(
-    checkActorTrust({ sender: 'alice', permission: 'write' }),
-    bound.checkActorTrust({ sender: 'alice', permission: 'write' }),
-  );
-  assert.deepEqual(
     checkDuplicatePR({ issueNumber: 7, pullRequests: [] }),
     bound.checkDuplicatePR({ issueNumber: 7, pullRequests: [] }),
   );
@@ -532,11 +465,6 @@ test('code-factory finalize-gate.js uses shared parseFinalizeGateEnv path', () =
   const source = readFileSync(path.join(factoryRunnersDir, 'finalize-gate.js'), 'utf8');
   assert.match(source, /parseFinalizeGateEnv\(process\.env\)/);
   assert.match(source, /computeGateReason\(/);
-});
-
-test('code-factory check-actor-trust.js uses actorTrustWhenSenderMissing', () => {
-  const source = readFileSync(path.join(factoryRunnersDir, 'check-actor-trust.js'), 'utf8');
-  assert.match(source, /actorTrustWhenSenderMissing\(\)/);
 });
 
 test('code-factory-issue workflow source orders remove-trigger-label before phase-label set module', () => {
