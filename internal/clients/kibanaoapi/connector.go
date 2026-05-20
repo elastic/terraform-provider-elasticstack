@@ -33,9 +33,9 @@ import (
 
 // ConnectorResponse mirrors the fields we need from the Kibana connector API responses.
 type ConnectorResponse struct {
-	Config           *map[string]*interface{}
-	ConnectorTypeId  string
-	Id               string
+	Config           *map[string]*any
+	ConnectorTypeID  string
+	ID               string
 	IsDeprecated     bool
 	IsMissingSecrets *bool
 	IsPreconfigured  bool
@@ -102,8 +102,8 @@ func GetConnector(ctx context.Context, client *Client, connectorID, spaceID stri
 	case http.StatusOK:
 		cr := ConnectorResponse{
 			Config:           resp.JSON200.Config,
-			ConnectorTypeId:  resp.JSON200.ConnectorTypeId,
-			Id:               resp.JSON200.Id,
+			ConnectorTypeID:  resp.JSON200.ConnectorTypeId,
+			ID:               resp.JSON200.Id,
 			IsDeprecated:     resp.JSON200.IsDeprecated,
 			IsMissingSecrets: resp.JSON200.IsMissingSecrets,
 			IsPreconfigured:  resp.JSON200.IsPreconfigured,
@@ -141,8 +141,8 @@ func SearchConnectors(ctx context.Context, client *Client, connectorName, spaceI
 
 		cr := ConnectorResponse{
 			Config:           connector.Config,
-			ConnectorTypeId:  connector.ConnectorTypeId,
-			Id:               connector.Id,
+			ConnectorTypeID:  connector.ConnectorTypeId,
+			ID:               connector.Id,
 			IsDeprecated:     connector.IsDeprecated,
 			IsMissingSecrets: connector.IsMissingSecrets,
 			IsPreconfigured:  connector.IsPreconfigured,
@@ -184,7 +184,7 @@ func ConnectorResponseToModel(spaceID string, connector *ConnectorResponse) (*mo
 
 		// If we have a specific config type, marshal into and out of that to
 		// remove any extra fields Kibana may have returned.
-		handler, ok := connectorConfigHandlers[connector.ConnectorTypeId]
+		handler, ok := connectorConfigHandlers[connector.ConnectorTypeID]
 		if ok {
 			configJSONString, err := handler.remarshalConfig(string(configJSON))
 			if err != nil {
@@ -196,11 +196,11 @@ func ConnectorResponseToModel(spaceID string, connector *ConnectorResponse) (*mo
 	}
 
 	model := &models.KibanaActionConnector{
-		ConnectorID:     connector.Id,
+		ConnectorID:     connector.ID,
 		SpaceID:         spaceID,
 		Name:            connector.Name,
 		ConfigJSON:      string(configJSON),
-		ConnectorTypeID: connector.ConnectorTypeId,
+		ConnectorTypeID: connector.ConnectorTypeID,
 		IsDeprecated:    connector.IsDeprecated,
 		IsPreconfigured: connector.IsPreconfigured,
 	}

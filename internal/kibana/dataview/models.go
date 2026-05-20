@@ -490,11 +490,13 @@ func (model dataViewModel) getViewIDAndSpaceID() (viewID string, spaceID string)
 }
 
 // Type aliases for formerly-named structs that were inlined in the generated Kibana client.
+//
+//nolint:revive // field names must match generated client exactly
 type dataViewsDataViewResponseObjectInner = struct {
 	AllowNoIndex    *kbapi.DataViewsAllownoindex               `json:"allowNoIndex,omitempty"`
 	FieldAttrs      *map[string]kbapi.DataViewsFieldattrs      `json:"fieldAttrs,omitempty"`
 	FieldFormats    *kbapi.DataViewsFieldformats               `json:"fieldFormats,omitempty"`
-	Fields          *map[string]interface{}                    `json:"fields,omitempty"`
+	Fields          *map[string]any                            `json:"fields,omitempty"`
 	Id              *string                                    `json:"id,omitempty"`
 	Name            *string                                    `json:"name,omitempty"`
 	Namespaces      *kbapi.DataViewsNamespaces                 `json:"namespaces,omitempty"`

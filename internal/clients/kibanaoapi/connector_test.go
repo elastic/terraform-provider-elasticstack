@@ -51,8 +51,8 @@ func Test_connectorResponseToModel(t *testing.T) {
 			name:    "should map valid connector response to model",
 			spaceID: "default",
 			response: &kibanaoapi.ConnectorResponse{
-				Id:               "test-id",
-				ConnectorTypeId:  ".slack",
+				ID:               "test-id",
+				ConnectorTypeID:  ".slack",
 				Name:             "test-connector",
 				IsPreconfigured:  false,
 				IsDeprecated:     false,
@@ -79,8 +79,8 @@ func Test_connectorResponseToModel(t *testing.T) {
 			name:    "should handle empty config",
 			spaceID: "default",
 			response: &kibanaoapi.ConnectorResponse{
-				Id:               "empty-id",
-				ConnectorTypeId:  ".webhook",
+				ID:               "empty-id",
+				ConnectorTypeID:  ".webhook",
 				Name:             "empty-connector",
 				IsPreconfigured:  false,
 				IsDeprecated:     false,
@@ -103,8 +103,8 @@ func Test_connectorResponseToModel(t *testing.T) {
 			name:    "should handle missing optional fields",
 			spaceID: "default",
 			response: &kibanaoapi.ConnectorResponse{
-				Id:              "missing-fields",
-				ConnectorTypeId: ".webhook",
+				ID:              "missing-fields",
+				ConnectorTypeID: ".webhook",
 				Name:            "missing-connector",
 			},
 			expectedModel: &models.KibanaActionConnector{
@@ -123,8 +123,8 @@ func Test_connectorResponseToModel(t *testing.T) {
 			name:    "should handle non-default spaceId",
 			spaceID: "custom-space",
 			response: &kibanaoapi.ConnectorResponse{
-				Id:               "custom-id",
-				ConnectorTypeId:  ".webhook",
+				ID:               "custom-id",
+				ConnectorTypeID:  ".webhook",
 				Name:             "custom-connector",
 				IsPreconfigured:  true,
 				IsDeprecated:     true,
