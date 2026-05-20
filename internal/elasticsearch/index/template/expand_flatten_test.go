@@ -170,11 +170,11 @@ func TestFlattenIndexTemplate_preservesUnmodeledSettings(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected index.search.slowlog.include to survive flatten, got settings=%q", got)
 	}
-	if include["user"] != "true" && include["user"] != true {
-		t.Fatalf("expected include.user to survive flatten, got %#v in settings=%q", include["user"], got)
+	if include["user"] != "true" {
+		t.Fatalf("expected include.user to survive flatten as string \"true\", got %#v in settings=%q", include["user"], got)
 	}
 	lc, _ := idx["lifecycle"].(map[string]any)
-	if lc == nil || (lc["parse_origination_date"] != "true" && lc["parse_origination_date"] != true) {
+	if lc == nil || lc["parse_origination_date"] != "true" {
 		t.Fatalf("expected lifecycle.parse_origination_date to survive flatten, got %#v in settings=%q", lc, got)
 	}
 }
@@ -300,7 +300,7 @@ func TestFlattenAliasElement_emptyFilterMapIsNull(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	av, diags := flattenAliasElement("a", models.IndexAlias{
-		Filter:        nil,
+		Filter:        map[string]any{},
 		IndexRouting:  "ir",
 		Routing:       "r",
 		SearchRouting: "sr",

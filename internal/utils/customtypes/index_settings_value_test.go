@@ -209,10 +209,12 @@ func TestIndexSettingsValue_StringSemanticEquals(t *testing.T) {
 }
 
 // TestNewIndexSettingsValue_normalizesStringifiedScalars verifies that
-// string-encoded booleans ("true", "false") and null ("null") echoed by
-// Elasticsearch are converted back to their native JSON types during
-// construction. This ensures ImportStateVerify sees the same stored value as
-// the initial apply (e.g. _tier_preference: null vs _tier_preference: "null").
+// string-encoded null ("null") echoed by Elasticsearch is converted back to
+// the native JSON null during construction. This ensures ImportStateVerify
+// sees the same stored value as the initial apply (e.g. _tier_preference: null
+// vs _tier_preference: "null"). String-encoded booleans ("true", "false") are
+// intentionally preserved as strings to avoid type coercion regressions
+// (see issue #3124).
 func TestNewIndexSettingsValue_normalizesStringifiedScalars(t *testing.T) {
 	t.Parallel()
 
