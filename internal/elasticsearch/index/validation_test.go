@@ -25,7 +25,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-
 func Test_validateDataStreamOptionsVersion(t *testing.T) {
 	dso := &models.Template{
 		DataStreamOptions: &models.DataStreamOptions{
