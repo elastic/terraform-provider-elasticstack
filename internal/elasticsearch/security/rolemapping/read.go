@@ -58,9 +58,9 @@ func readRoleMapping(ctx context.Context, stateData Data, roleMappingName string
 	data.Name = types.StringValue(roleMappingName)
 	data.Enabled = types.BoolValue(roleMapping.Enabled)
 
-	// Handle rules — store the typed client's JSON as-is (array form for
-	// single-element field values). StringSemanticEquals on NormalizedRulesValue
-	// treats array and string forms as equal during plan comparison.
+	// Handle rules — store the typed client's JSON as-is (Elasticsearch may
+	// return single-element field values as strings or arrays). StringSemanticEquals
+	// on NormalizedRulesValue treats both forms as equal during plan comparison.
 	rulesJSON, err := json.Marshal(roleMapping.Rules)
 	if err != nil {
 		diags.AddAttributeError(path.Root("rules"), "Failed to marshal rules", err.Error())
