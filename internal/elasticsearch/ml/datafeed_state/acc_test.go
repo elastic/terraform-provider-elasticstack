@@ -27,6 +27,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
@@ -109,6 +110,91 @@ func TestAccResourceMLDatafeedState_import(t *testing.T) {
 					"job_id":      config.StringVariable(jobID),
 					"datafeed_id": config.StringVariable(datafeedID),
 					"index_name":  config.StringVariable(indexName),
+				},
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"job_id":      config.StringVariable(jobID),
+					"datafeed_id": config.StringVariable(datafeedID),
+					"index_name":  config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(mlDatafeedStateResourceName, "state", "started"),
+					resource.TestCheckNoResourceAttr(mlDatafeedStateResourceName, "start"),
+					resource.TestCheckResourceAttrSet(mlDatafeedStateResourceName, "effective_search_start"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceMLDatafeedState_explicitStartRoundTrip(t *testing.T) {
+	jobID := fmt.Sprintf("test-job-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	datafeedID := fmt.Sprintf("test-datafeed-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	indexName := fmt.Sprintf("test-datafeed-index-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	configVars := config.Variables{
+		"job_id":      config.StringVariable(jobID),
+		"datafeed_id": config.StringVariable(datafeedID),
+		"index_name":  config.StringVariable(indexName),
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("explicit_start"),
+				ConfigVariables:          configVars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(mlDatafeedStateResourceName, "start", "2024-01-01T00:00:00Z"),
+					resource.TestCheckResourceAttrSet(mlDatafeedStateResourceName, "effective_search_start"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("explicit_start"),
+				ConfigVariables:          configVars,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
+			},
+		},
+	})
+}
+
+func TestAccResourceMLDatafeedState_explicitEndRoundTrip(t *testing.T) {
+	jobID := fmt.Sprintf("test-job-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	datafeedID := fmt.Sprintf("test-datafeed-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	indexName := fmt.Sprintf("test-datafeed-index-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	configVars := config.Variables{
+		"job_id":      config.StringVariable(jobID),
+		"datafeed_id": config.StringVariable(datafeedID),
+		"index_name":  config.StringVariable(indexName),
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_times"),
+				ConfigVariables:          configVars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(mlDatafeedStateResourceName, "end", "2024-01-02T00:00:00Z"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_times"),
+				ConfigVariables:          configVars,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
 				},
 			},
 		},

@@ -17,14 +17,12 @@
 
 package datafeedstate_test
 
-// TestAccReproduceIssue2353 reproduces the "Provider produced inconsistent
-// result after apply" error when an explicit start timestamp is provided to
-// elasticstack_elasticsearch_ml_datafeed_state.
+// TestAccResourceMLDatafeedState_explicitStartPreserved verifies that an
+// explicit start timestamp is preserved in state while Elasticsearch's
+// effective search start is reported separately.
 //
 // When the datafeed runs it sets SearchInterval.StartMs to the timestamp of
 // the first data record it finds (which is later than the requested start).
-// The provider reads this back and overwrites d.Start with the new value,
-// producing a mismatch against the planned start value.
 //
 // Related: https://github.com/elastic/terraform-provider-elasticstack/issues/2353
 
@@ -32,7 +30,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"regexp"
 	"strings"
 	"testing"
 
@@ -50,9 +47,7 @@ import (
 // not reliably available and the test fails for unrelated reasons.
 var minVersionIssue2353 = version.Must(version.NewVersion("8.1.0"))
 
-func TestAccReproduceIssue2353(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minVersionIssue2353, versionutils.FlavorAny)
-
+func TestAccResourceMLDatafeedState_explicitStartPreserved(t *testing.T) {
 	jobID := fmt.Sprintf("test-job-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	datafeedID := fmt.Sprintf("datafeed-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	indexName := fmt.Sprintf("test-index-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
@@ -78,7 +73,10 @@ func TestAccReproduceIssue2353(t *testing.T) {
 	}
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() { acctest.PreCheck(t) },
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			versionutils.SkipIfUnsupported(t, minVersionIssue2353, versionutils.FlavorAny)
+		},
 		Steps: []resource.TestStep{
 			{
 				// Step 1: create prerequisite resources (index, job, job state,
@@ -93,15 +91,15 @@ func TestAccReproduceIssue2353(t *testing.T) {
 				),
 			},
 			{
-				// Step 2: add the datafeed_state resource with an explicit
-				// start that precedes the indexed document. The datafeed finds
-				// the document and reports SearchInterval.StartMs = docTimestamp,
-				// which differs from plannedStart. The framework detects the
-				// plan/state mismatch and produces the inconsistency error.
+				// Step 2: explicit start is preserved; effective_search_start
+				// reports SearchInterval.StartMs = docTimestamp.
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("full"),
 				ConfigVariables:          fullConfigVars,
-				ExpectError:              regexp.MustCompile(`Provider produced inconsistent result after apply`),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed_state.test", "start", plannedStart),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed_state.test", "effective_search_start", docTimestamp),
+				),
 			},
 		},
 	})
