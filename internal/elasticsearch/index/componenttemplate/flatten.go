@@ -21,22 +21,26 @@ import (
 	"context"
 	"encoding/json"
 
-	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
+	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// flattenToData maps an API ClusterComponentTemplate response into a Data value.
+// flattenToData maps a component template API response into a Data value.
 // The prior Data is used to carry over the ID, ElasticsearchConnection, and
 // alias routing values that the API omits on round-trip.
-func flattenToData(ctx context.Context, tpl *estypes.ClusterComponentTemplate, prior Data) (Data, diag.Diagnostics) {
+//
+// The input is the locally-defined models.ComponentTemplateResponse populated
+// by the raw GET response decoder, not the typed go-elasticsearch struct: see
+// GetComponentTemplate and issue #3124 for why typed decoding is unsafe for
+// free-form settings.
+func flattenToData(ctx context.Context, tpl *models.ComponentTemplateResponse, prior Data) (Data, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	out := Data{
@@ -45,9 +49,8 @@ func flattenToData(ctx context.Context, tpl *estypes.ClusterComponentTemplate, p
 		Name:                    types.StringValue(tpl.Name),
 	}
 
-	// Metadata
-	if tpl.ComponentTemplate.Meta_ != nil {
-		b, err := json.Marshal(tpl.ComponentTemplate.Meta_)
+	if tpl.ComponentTemplate.Meta != nil {
+		b, err := json.Marshal(tpl.ComponentTemplate.Meta)
 		if err != nil {
 			diags.AddError("Failed to marshal metadata", err.Error())
 			return out, diags
@@ -57,16 +60,14 @@ func flattenToData(ctx context.Context, tpl *estypes.ClusterComponentTemplate, p
 		out.Metadata = jsontypes.NewNormalizedNull()
 	}
 
-	// Version (ComponentTemplateNode.Version is *int64)
 	if tpl.ComponentTemplate.Version != nil {
 		out.Version = types.Int64Value(*tpl.ComponentTemplate.Version)
 	} else {
 		out.Version = types.Int64Null()
 	}
 
-	// Template block
 	preservedRouting := extractAliasRoutingFromData(prior)
-	templateObj, d := flattenTemplateBlock(ctx, tpl, preservedRouting)
+	templateObj, d := flattenTemplateBlock(ctx, tpl.ComponentTemplate.Template, preservedRouting)
 	diags.Append(d...)
 	if diags.HasError() {
 		return out, diags
@@ -77,12 +78,13 @@ func flattenToData(ctx context.Context, tpl *estypes.ClusterComponentTemplate, p
 }
 
 // flattenTemplateBlock maps the component template's template block into a types.Object.
-func flattenTemplateBlock(ctx context.Context, tpl *estypes.ClusterComponentTemplate, preservedRouting map[string]string) (types.Object, diag.Diagnostics) {
+func flattenTemplateBlock(ctx context.Context, t *models.Template, preservedRouting map[string]string) (types.Object, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	t := tpl.ComponentTemplate.Template
+	if t == nil {
+		return types.ObjectNull(templateAttrTypes()), diags
+	}
 
-	// Mappings
 	var mappings esindex.MappingsValue
 	if t.Mappings != nil {
 		b, err := json.Marshal(t.Mappings)
@@ -95,7 +97,6 @@ func flattenTemplateBlock(ctx context.Context, tpl *estypes.ClusterComponentTemp
 		mappings = esindex.NewMappingsNull()
 	}
 
-	// Settings
 	var settings customtypes.IndexSettingsValue
 	if t.Settings != nil {
 		b, err := json.Marshal(t.Settings)
@@ -108,18 +109,16 @@ func flattenTemplateBlock(ctx context.Context, tpl *estypes.ClusterComponentTemp
 		settings = customtypes.NewIndexSettingsNull()
 	}
 
-	// Aliases
 	aliasSet, d := flattenAliasSet(ctx, t.Aliases, preservedRouting)
 	diags.Append(d...)
 	if diags.HasError() {
 		return types.ObjectNull(templateAttrTypes()), diags
 	}
 
-	// Data stream options
 	var dsoObj types.Object
 	if t.DataStreamOptions != nil && t.DataStreamOptions.FailureStore != nil {
 		var dsoDiags diag.Diagnostics
-		dsoObj, dsoDiags = datastreamoptions.Flatten(t.DataStreamOptions)
+		dsoObj, dsoDiags = datastreamoptions.FlattenLocal(t.DataStreamOptions)
 		diags.Append(dsoDiags...)
 		if diags.HasError() {
 			return types.ObjectNull(templateAttrTypes()), diags
@@ -142,7 +141,7 @@ func flattenTemplateBlock(ctx context.Context, tpl *estypes.ClusterComponentTemp
 
 // flattenAliasSet maps Elasticsearch alias API responses into a types.Set.
 // preservedRouting carries user-configured routing values to restore when the API omits them.
-func flattenAliasSet(ctx context.Context, aliases map[string]estypes.AliasDefinition, preservedRouting map[string]string) (types.Set, diag.Diagnostics) {
+func flattenAliasSet(ctx context.Context, aliases map[string]models.IndexAlias, preservedRouting map[string]string) (types.Set, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	aliasElemType := types.ObjectType{AttrTypes: aliasAttrTypes()}
 
@@ -166,11 +165,10 @@ func flattenAliasSet(ctx context.Context, aliases map[string]estypes.AliasDefini
 }
 
 // flattenAliasElement maps a single Elasticsearch alias API response to a types.Object.
-func flattenAliasElement(name string, a estypes.AliasDefinition, preservedRouting map[string]string) (attr.Value, diag.Diagnostics) {
+func flattenAliasElement(name string, a models.IndexAlias, preservedRouting map[string]string) (attr.Value, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	routing := typeutils.Deref(a.Routing)
-	// Preserve routing from prior state when the API omits it
+	routing := a.Routing
 	if routing == "" {
 		if pr, ok := preservedRouting[name]; ok {
 			routing = pr
@@ -179,29 +177,24 @@ func flattenAliasElement(name string, a estypes.AliasDefinition, preservedRoutin
 
 	attrs := map[string]attr.Value{
 		"name":           types.StringValue(name),
-		"index_routing":  types.StringValue(typeutils.Deref(a.IndexRouting)),
+		"index_routing":  types.StringValue(a.IndexRouting),
 		"routing":        types.StringValue(routing),
-		"search_routing": types.StringValue(typeutils.Deref(a.SearchRouting)),
-		"is_hidden":      types.BoolValue(typeutils.Deref(a.IsHidden)),
-		"is_write_index": types.BoolValue(typeutils.Deref(a.IsWriteIndex)),
+		"search_routing": types.StringValue(a.SearchRouting),
+		"is_hidden":      types.BoolValue(a.IsHidden),
+		"is_write_index": types.BoolValue(a.IsWriteIndex),
 	}
 
-	if a.Filter != nil {
-		b, err := json.Marshal(a.Filter)
-		if err != nil {
-			diags.AddError("Failed to marshal alias filter", err.Error())
-			return nil, diags
-		}
-		var filterMap map[string]any
-		if err := json.Unmarshal(b, &filterMap); err != nil {
-			diags.AddError("Failed to unmarshal alias filter", err.Error())
-			return nil, diags
-		}
+	if len(a.Filter) > 0 {
+		filterMap := a.Filter
 		normalized := elasticsearch.NormalizeQueryFilter(filterMap)
 		if nm, ok := normalized.(map[string]any); ok {
 			filterMap = nm
 		}
-		normalizedBytes, _ := json.Marshal(filterMap)
+		normalizedBytes, err := json.Marshal(filterMap)
+		if err != nil {
+			diags.AddError("Failed to marshal alias filter", err.Error())
+			return nil, diags
+		}
 		attrs["filter"] = jsontypes.NewNormalizedValue(string(normalizedBytes))
 	} else {
 		attrs["filter"] = jsontypes.NewNormalizedNull()

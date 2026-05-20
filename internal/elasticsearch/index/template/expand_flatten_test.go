@@ -22,10 +22,10 @@ import (
 	"encoding/json"
 	"testing"
 
-	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
+	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -69,16 +69,13 @@ func TestExpandTemplate_minimal(t *testing.T) {
 func TestFlattenIndexTemplate_minimalRoundTrip(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	pr := 42
-	ver := 7
-	pr64 := int64(pr)
-	ver64 := int64(ver)
-	metaVal, _ := json.Marshal("v")
-	tpl := &estypes.IndexTemplate{
+	pr64 := int64(42)
+	ver64 := int64(7)
+	tpl := &models.IndexTemplate{
 		ComposedOf:                      []string{"a"},
 		IgnoreMissingComponentTemplates: []string{"missing"},
 		IndexPatterns:                   []string{"ix-*"},
-		Meta_:                           estypes.Metadata{"k": metaVal},
+		Meta:                            map[string]any{"k": "v"},
 		Priority:                        &pr64,
 		Version:                         &ver64,
 	}
@@ -114,6 +111,71 @@ func TestFlattenIndexTemplate_minimalRoundTrip(t *testing.T) {
 	}
 	if api.Version == nil || *api.Version != 7 {
 		t.Fatalf("version %#v", api.Version)
+	}
+}
+
+// TestFlattenIndexTemplate_preservesUnmodeledSettings is a regression test for
+// https://github.com/elastic/terraform-provider-elasticstack/issues/3124. The
+// raw decoder must preserve every settings sub-key the API returns, even when
+// the typed go-elasticsearch SlowlogSettings struct lacks the corresponding
+// field (e.g. include.user).
+func TestFlattenIndexTemplate_preservesUnmodeledSettings(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	tpl := &models.IndexTemplate{
+		IndexPatterns: []string{"ix-*"},
+		Template: &models.Template{
+			Settings: map[string]any{
+				"index": map[string]any{
+					"number_of_shards":   "1",
+					"number_of_replicas": "0",
+					"search": map[string]any{
+						"slowlog": map[string]any{
+							"include": map[string]any{
+								"user": "true",
+							},
+						},
+					},
+					"lifecycle": map[string]any{
+						"parse_origination_date": "true",
+					},
+				},
+			},
+		},
+	}
+	var m Model
+	diags := m.fromAPIModel(ctx, "tname", tpl)
+	if diags.HasError() {
+		t.Fatal(diags)
+	}
+	if m.Template.IsNull() || m.Template.IsUnknown() {
+		t.Fatalf("expected template object, got %#v", m.Template)
+	}
+	settingsAttr := m.Template.Attributes()["settings"]
+	settings, ok := settingsAttr.(customtypes.IndexSettingsValue)
+	if !ok {
+		t.Fatalf("expected IndexSettingsValue, got %T", settingsAttr)
+	}
+	got := settings.ValueString()
+
+	// Round-trip the JSON to a generic map so key order does not matter.
+	var gotMap map[string]any
+	if err := json.Unmarshal([]byte(got), &gotMap); err != nil {
+		t.Fatalf("settings is not valid JSON: %v (raw=%q)", err, got)
+	}
+	idx, _ := gotMap["index"].(map[string]any)
+	search, _ := idx["search"].(map[string]any)
+	slowlog, _ := search["slowlog"].(map[string]any)
+	include, ok := slowlog["include"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected index.search.slowlog.include to survive flatten, got settings=%q", got)
+	}
+	if include["user"] != "true" {
+		t.Fatalf("expected include.user to survive flatten as string \"true\", got %#v in settings=%q", include["user"], got)
+	}
+	lc, _ := idx["lifecycle"].(map[string]any)
+	if lc == nil || lc["parse_origination_date"] != "true" {
+		t.Fatalf("expected lifecycle.parse_origination_date to survive flatten, got %#v in settings=%q", lc, got)
 	}
 }
 
@@ -237,14 +299,11 @@ func TestModel_GetVersionRequirements_dataStreamOptions(t *testing.T) {
 func TestFlattenAliasElement_emptyFilterMapIsNull(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	ir := "ir"
-	r := "r"
-	sr := "sr"
-	av, diags := flattenAliasElement("a", estypes.Alias{
-		Filter:        nil,
-		IndexRouting:  &ir,
-		Routing:       &r,
-		SearchRouting: &sr,
+	av, diags := flattenAliasElement("a", models.IndexAlias{
+		Filter:        map[string]any{},
+		IndexRouting:  "ir",
+		Routing:       "r",
+		SearchRouting: "sr",
 	})
 	if diags.HasError() {
 		t.Fatal(diags)

@@ -338,22 +338,26 @@ func checkPreservesTemplateDestroy(s *terraform.State) error {
 		if tpl == nil {
 			return fmt.Errorf("expected component template %s to still exist after destroy (only ILM should be removed)", name)
 		}
-		if len(tpl.ComponentTemplate.Template.Settings) == 0 && tpl.ComponentTemplate.Template.Mappings == nil && len(tpl.ComponentTemplate.Template.Aliases) == 0 {
+		if tpl.ComponentTemplate.Template == nil ||
+			(len(tpl.ComponentTemplate.Template.Settings) == 0 && tpl.ComponentTemplate.Template.Mappings == nil && len(tpl.ComponentTemplate.Template.Aliases) == 0) {
 			return fmt.Errorf("expected component template %s to still have a template section after destroy", name)
 		}
-		indexSettings, hasIndex := tpl.ComponentTemplate.Template.Settings["index"]
-		if !hasIndex {
+		indexSettings, _ := tpl.ComponentTemplate.Template.Settings["index"].(map[string]any)
+		if indexSettings == nil {
 			return fmt.Errorf("expected component template %s to still have settings after destroy (other settings should be preserved)", name)
 		}
-		if indexSettings.Lifecycle != nil && indexSettings.Lifecycle.Name != nil && *indexSettings.Lifecycle.Name != "" {
-			return fmt.Errorf("ILM setting still exists in component template %s", name)
+		if lc, _ := indexSettings["lifecycle"].(map[string]any); lc != nil {
+			if ilm, _ := lc["name"].(string); ilm != "" {
+				return fmt.Errorf("ILM setting still exists in component template %s", name)
+			}
 		}
 		// Verify the setting we created in PreCheck was preserved (only ILM should be removed)
-		if indexSettings.NumberOfShards == nil {
+		shards, ok := indexSettings["number_of_shards"]
+		if !ok {
 			return fmt.Errorf("expected index.number_of_shards to be preserved after destroy, got nil")
 		}
-		if *indexSettings.NumberOfShards != "1" {
-			return fmt.Errorf("expected index.number_of_shards to be preserved as \"1\" after destroy, got %q", *indexSettings.NumberOfShards)
+		if shards != "1" {
+			return fmt.Errorf("expected index.number_of_shards to be preserved as \"1\" after destroy, got %q", shards)
 		}
 
 		// Cleanup: remove the fixture template created in PreCheck
@@ -387,10 +391,13 @@ func checkResourceDestroy(s *terraform.State) error {
 		}
 
 		// If the template still exists, check if ILM setting is removed
-		if tpl != nil {
-			indexSettings, hasIndex := tpl.ComponentTemplate.Template.Settings["index"]
-			if hasIndex && indexSettings.Lifecycle != nil && indexSettings.Lifecycle.Name != nil && *indexSettings.Lifecycle.Name != "" {
-				return fmt.Errorf("ILM setting still exists in component template %s", compID.ResourceID)
+		if tpl != nil && tpl.ComponentTemplate.Template != nil {
+			if indexSettings, ok := tpl.ComponentTemplate.Template.Settings["index"].(map[string]any); ok {
+				if lc, _ := indexSettings["lifecycle"].(map[string]any); lc != nil {
+					if ilm, _ := lc["name"].(string); ilm != "" {
+						return fmt.Errorf("ILM setting still exists in component template %s", compID.ResourceID)
+					}
+				}
 			}
 		}
 	}
@@ -414,12 +421,21 @@ func checkComponentTemplateHasILM(name string, expectedPolicy string) resource.T
 			return fmt.Errorf("component template %s does not exist", name)
 		}
 
-		indexSettings, hasIndex := tpl.ComponentTemplate.Template.Settings["index"]
-		if !hasIndex || indexSettings.Lifecycle == nil || indexSettings.Lifecycle.Name == nil {
+		if tpl.ComponentTemplate.Template == nil {
+			return fmt.Errorf("component template %s has no template body", name)
+		}
+		indexSettings, _ := tpl.ComponentTemplate.Template.Settings["index"].(map[string]any)
+		if indexSettings == nil {
 			return fmt.Errorf("component template %s has no index.lifecycle.name setting", name)
 		}
-
-		actualPolicy := *indexSettings.Lifecycle.Name
+		lifecycle, _ := indexSettings["lifecycle"].(map[string]any)
+		if lifecycle == nil {
+			return fmt.Errorf("component template %s has no index.lifecycle.name setting", name)
+		}
+		actualPolicy, _ := lifecycle["name"].(string)
+		if actualPolicy == "" {
+			return fmt.Errorf("component template %s has no index.lifecycle.name setting", name)
+		}
 		if actualPolicy != expectedPolicy {
 			return fmt.Errorf("expected ILM policy %s, got %s", expectedPolicy, actualPolicy)
 		}

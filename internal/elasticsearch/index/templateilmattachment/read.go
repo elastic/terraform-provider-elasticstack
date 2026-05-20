@@ -46,12 +46,11 @@ func readILMAttachment(ctx context.Context, client *clients.ElasticsearchScopedC
 		return state, false, diags
 	}
 
-	modelTpl := toModelComponentTemplateResponse(tpl)
-	if modelTpl == nil {
+	if tpl == nil {
 		return state, false, nil
 	}
 
-	lifecycleName := extractILMSetting(modelTpl.ComponentTemplate.Template)
+	lifecycleName := extractILMSetting(tpl.ComponentTemplate.Template)
 	if lifecycleName == "" {
 		return state, false, nil
 	}
