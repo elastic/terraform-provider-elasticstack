@@ -19,8 +19,8 @@ package integrationpolicy
 
 import (
 	"context"
-	"os"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/debugutils"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -36,7 +36,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
 )
 
 // integrationPolicyModelV2 is a snapshot of the V2 model. It is retained so the
@@ -66,7 +65,7 @@ type integrationPolicyModelV2 struct {
 // `Version: 2` marker. This schema is used as `PriorSchema` for the V2→V3 state
 // upgrader; it is NOT returned by the resource's live `Schema` method.
 func getSchemaV2() schema.Schema {
-	varsAreSensitive := !logging.IsDebugOrHigher() && os.Getenv("TF_ACC") != "1"
+	varsAreSensitive := debugutils.IsSensitiveInSchema()
 	return schema.Schema{
 		Version: 2,
 		Attributes: map[string]schema.Attribute{

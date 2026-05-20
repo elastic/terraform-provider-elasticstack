@@ -25,8 +25,20 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/google/go-github/v86/github"
+	"github.com/google/go-github/v87/github"
 )
+
+type rewriteTransport struct {
+	base *url.URL
+	rt   http.RoundTripper
+}
+
+func (t *rewriteTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	req = req.Clone(req.Context())
+	req.URL.Scheme = t.base.Scheme
+	req.URL.Host = t.base.Host
+	return t.rt.RoundTrip(req)
+}
 
 type staticSHAGit struct{}
 
@@ -71,8 +83,10 @@ func Test_gitMergedPRGatherer_dedupesByPRNumberAcrossCommits(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	client := github.NewClient(srv.Client())
-	client.BaseURL = apiURL
+	client, err := github.NewClient(github.WithTransport(&rewriteTransport{base: apiURL, rt: http.DefaultTransport}))
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	ctx := context.Background()
 	g := &gitMergedPRGatherer{client: client, execer: staticSHAGit{}}

@@ -82,26 +82,12 @@ on:
         script: |
           const fn = require('${{ github.workspace }}/.github/scripts/workflows/lib/factory-runners/fetch-live-issue.js');
           await fn({ github, context, core });
-    - name: Check actor trust
-      id: check_actor_trust
-      if: >-
-        steps.determine_intake_mode.outputs.intake_mode == 'issue-event' &&
-        steps.qualify_trigger.outputs.event_eligible == 'true'
-      uses: actions/github-script@v9
-      env:
-        FACTORY_NAME: research-factory
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        script: |
-          const fn = require('${{ github.workspace }}/.github/scripts/workflows/lib/factory-runners/check-actor-trust.js');
-          await fn({ github, context, core });
     - name: Fetch issue comments
       id: fetch_issue_comments
       if: >-
         (
           steps.determine_intake_mode.outputs.intake_mode == 'issue-event' &&
-          steps.qualify_trigger.outputs.event_eligible == 'true' &&
-          steps.check_actor_trust.outputs.actor_trusted == 'true'
+          steps.qualify_trigger.outputs.event_eligible == 'true'
         ) || (
           steps.determine_intake_mode.outputs.intake_mode == 'dispatch' &&
           steps.validate_dispatch_inputs.outputs.event_eligible == 'true'
@@ -122,8 +108,7 @@ on:
       if: >-
         (
           steps.determine_intake_mode.outputs.intake_mode == 'issue-event' &&
-          steps.qualify_trigger.outputs.event_eligible == 'true' &&
-          steps.check_actor_trust.outputs.actor_trusted == 'true'
+          steps.qualify_trigger.outputs.event_eligible == 'true'
         ) || (
           steps.determine_intake_mode.outputs.intake_mode == 'dispatch' &&
           steps.validate_dispatch_inputs.outputs.event_eligible == 'true'
@@ -143,8 +128,7 @@ on:
       id: remove_trigger_label
       if: >-
         steps.determine_intake_mode.outputs.intake_mode == 'issue-event' &&
-        steps.qualify_trigger.outputs.event_eligible == 'true' &&
-        steps.check_actor_trust.outputs.actor_trusted == 'true'
+        steps.qualify_trigger.outputs.event_eligible == 'true'
       uses: actions/github-script@v9
       env:
         FACTORY_NAME: research-factory
@@ -158,8 +142,7 @@ on:
       if: >-
         (
           steps.determine_intake_mode.outputs.intake_mode == 'issue-event' &&
-          steps.qualify_trigger.outputs.event_eligible == 'true' &&
-          steps.check_actor_trust.outputs.actor_trusted == 'true'
+          steps.qualify_trigger.outputs.event_eligible == 'true'
         ) || (
           steps.determine_intake_mode.outputs.intake_mode == 'dispatch' &&
           steps.validate_dispatch_inputs.outputs.event_eligible == 'true'
@@ -186,8 +169,6 @@ on:
         ISSUE_BODY_EVENT: ${{ steps.capture_issue_context.outputs.issue_body }}
         EVENT_ELIGIBLE_EVENT: ${{ steps.qualify_trigger.outputs.event_eligible }}
         EVENT_ELIGIBLE_REASON_EVENT: ${{ steps.qualify_trigger.outputs.event_eligible_reason }}
-        ACTOR_TRUSTED_EVENT: ${{ steps.check_actor_trust.outputs.actor_trusted }}
-        ACTOR_TRUSTED_REASON_EVENT: ${{ steps.check_actor_trust.outputs.actor_trusted_reason }}
         TRIGGER_LABEL_REMOVED_EVENT: ${{ steps.remove_trigger_label.outputs.trigger_label_removed }}
         TRIGGER_LABEL_REMOVED_REASON_EVENT: ${{ steps.remove_trigger_label.outputs.trigger_label_removed_reason }}
         ISSUE_NUMBER_DISPATCH: ${{ steps.fetch_live_issue.outputs.issue_number }}
@@ -212,8 +193,8 @@ on:
           } >> "$GITHUB_OUTPUT"
           echo "event_eligible=${EVENT_ELIGIBLE_EVENT}" >> "$GITHUB_OUTPUT"
           echo "event_eligible_reason=${EVENT_ELIGIBLE_REASON_EVENT}" >> "$GITHUB_OUTPUT"
-          echo "actor_trusted=${ACTOR_TRUSTED_EVENT}" >> "$GITHUB_OUTPUT"
-          echo "actor_trusted_reason=${ACTOR_TRUSTED_REASON_EVENT}" >> "$GITHUB_OUTPUT"
+          echo "actor_trusted=true" >> "$GITHUB_OUTPUT"
+          echo "actor_trusted_reason=Role-based gate guarantees trust for issue events." >> "$GITHUB_OUTPUT"
           echo "trigger_label_removed=${TRIGGER_LABEL_REMOVED_EVENT}" >> "$GITHUB_OUTPUT"
           echo "trigger_label_removed_reason=${TRIGGER_LABEL_REMOVED_REASON_EVENT}" >> "$GITHUB_OUTPUT"
         else

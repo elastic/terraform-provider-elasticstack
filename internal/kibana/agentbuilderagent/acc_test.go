@@ -344,6 +344,90 @@ func TestAccResourceAgentBuilderAgentKibanaConnection(t *testing.T) {
 	})
 }
 
+func TestAccResourceAgentBuilderAgentSkillIds(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderWorkflowAPIVersion, versionutils.FlavorAny)
+
+	agentID := "test-agent-skills-" + uuid.New().String()[:8]
+	skillID := "test-skill-" + uuid.New().String()[:8]
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheckWithWorkflowsEnabled(t, minKibanaAgentBuilderWorkflowAPIVersion) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"agent_id": config.StringVariable(agentID),
+					"skill_id": config.StringVariable(skillID),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(testResourceID, "agent_id", agentID),
+					resource.TestCheckResourceAttr(testResourceID, "name", "Test Agent With Skills"),
+					resource.TestCheckResourceAttr(testResourceID, "skill_ids.#", "1"),
+					resource.TestCheckTypeSetElemAttr(testResourceID, "skill_ids.*", skillID),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"agent_id": config.StringVariable(agentID),
+					"skill_id": config.StringVariable(skillID),
+				},
+				ResourceName: testResourceID,
+				ImportState:  true,
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					return s.RootModule().Resources[testResourceID].Primary.ID, nil
+				},
+				ImportStateVerify: true,
+			},
+			{
+				// Update clears skill_ids to verify the field can be removed.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"agent_id": config.StringVariable(agentID),
+					"skill_id": config.StringVariable(skillID),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(testResourceID, "agent_id", agentID),
+					resource.TestCheckResourceAttr(testResourceID, "name", "Test Agent With Skills Updated"),
+					resource.TestCheckNoResourceAttr(testResourceID, "skill_ids"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceKibanaAgentBuilderAgentSkillIds(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderWorkflowAPIVersion, versionutils.FlavorAny)
+
+	agentID := "test-agent-skills-ds-" + uuid.New().String()[:8]
+	skillID := "test-skill-" + uuid.New().String()[:8]
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheckWithWorkflowsEnabled(t, minKibanaAgentBuilderWorkflowAPIVersion) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables: config.Variables{
+					"agent_id": config.StringVariable(agentID),
+					"skill_id": config.StringVariable(skillID),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrPair(dataSourceID, "id", testResourceID, "id"),
+					resource.TestCheckResourceAttr(dataSourceID, "agent_id", agentID),
+					resource.TestCheckResourceAttr(dataSourceID, "space_id", "default"),
+					resource.TestCheckResourceAttr(dataSourceID, "name", "Test Agent With Skills"),
+					resource.TestCheckResourceAttr(dataSourceID, "skill_ids.#", "1"),
+					resource.TestCheckTypeSetElemAttr(dataSourceID, "skill_ids.*", skillID),
+				),
+			},
+		},
+	})
+}
+
 func TestAccDataSourceKibanaAgentBuilderAgentWorkflowTool(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderAPIVersion, versionutils.FlavorAny)
 

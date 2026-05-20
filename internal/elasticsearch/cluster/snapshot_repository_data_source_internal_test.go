@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	snapshotrepo "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/snapshot_repository"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -272,56 +273,56 @@ func TestFlattenHdfsSettings_Nulls(t *testing.T) {
 }
 
 func TestStringSetting(t *testing.T) {
-	assert.Equal(t, types.StringValue("hello"), stringSetting(map[string]any{"k": "hello"}, "k"))
-	assert.Equal(t, types.StringValue("42"), stringSetting(map[string]any{"k": 42}, "k"))
-	assert.True(t, stringSetting(map[string]any{}, "k").IsNull())
-	assert.True(t, stringSetting(map[string]any{"k": nil}, "k").IsNull())
+	assert.Equal(t, types.StringValue("hello"), snapshotrepo.StrSettingNull(map[string]any{"k": "hello"}, "k"))
+	assert.Equal(t, types.StringValue("42"), snapshotrepo.StrSettingNull(map[string]any{"k": 42}, "k"))
+	assert.True(t, snapshotrepo.StrSettingNull(map[string]any{}, "k").IsNull())
+	assert.True(t, snapshotrepo.StrSettingNull(map[string]any{"k": nil}, "k").IsNull())
 }
 
 func TestBoolSetting(t *testing.T) {
-	b, err := boolSetting(map[string]any{"k": true}, "k")
+	b, err := snapshotrepo.BoolSettingNull(map[string]any{"k": true}, "k")
 	require.NoError(t, err)
 	assert.Equal(t, types.BoolValue(true), b)
 
-	b, err = boolSetting(map[string]any{"k": "false"}, "k")
+	b, err = snapshotrepo.BoolSettingNull(map[string]any{"k": "false"}, "k")
 	require.NoError(t, err)
 	assert.Equal(t, types.BoolValue(false), b)
 
-	b, err = boolSetting(map[string]any{"k": "1"}, "k")
+	b, err = snapshotrepo.BoolSettingNull(map[string]any{"k": "1"}, "k")
 	require.NoError(t, err)
 	assert.Equal(t, types.BoolValue(true), b)
 
-	b, err = boolSetting(map[string]any{"k": "nope"}, "k")
+	b, err = snapshotrepo.BoolSettingNull(map[string]any{"k": "nope"}, "k")
 	require.Error(t, err)
 	assert.True(t, b.IsNull())
 
-	b, err = boolSetting(map[string]any{}, "k")
+	b, err = snapshotrepo.BoolSettingNull(map[string]any{}, "k")
 	require.NoError(t, err)
 	assert.True(t, b.IsNull())
 }
 
 func TestInt64Setting(t *testing.T) {
-	i, err := int64Setting(map[string]any{"k": 42}, "k")
+	i, err := snapshotrepo.Int64SettingNull(map[string]any{"k": 42}, "k")
 	require.NoError(t, err)
 	assert.Equal(t, types.Int64Value(42), i)
 
-	i, err = int64Setting(map[string]any{"k": int64(42)}, "k")
+	i, err = snapshotrepo.Int64SettingNull(map[string]any{"k": int64(42)}, "k")
 	require.NoError(t, err)
 	assert.Equal(t, types.Int64Value(42), i)
 
-	i, err = int64Setting(map[string]any{"k": float64(42)}, "k")
+	i, err = snapshotrepo.Int64SettingNull(map[string]any{"k": float64(42)}, "k")
 	require.NoError(t, err)
 	assert.Equal(t, types.Int64Value(42), i)
 
-	i, err = int64Setting(map[string]any{"k": "42"}, "k")
+	i, err = snapshotrepo.Int64SettingNull(map[string]any{"k": "42"}, "k")
 	require.NoError(t, err)
 	assert.Equal(t, types.Int64Value(42), i)
 
-	i, err = int64Setting(map[string]any{"k": "not-a-number"}, "k")
+	i, err = snapshotrepo.Int64SettingNull(map[string]any{"k": "not-a-number"}, "k")
 	require.Error(t, err)
 	assert.True(t, i.IsNull())
 
-	i, err = int64Setting(map[string]any{}, "k")
+	i, err = snapshotrepo.Int64SettingNull(map[string]any{}, "k")
 	require.NoError(t, err)
 	assert.True(t, i.IsNull())
 }

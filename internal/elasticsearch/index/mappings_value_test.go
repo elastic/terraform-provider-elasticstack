@@ -265,3 +265,96 @@ func TestIndexMappingsValue_SemanticEquals(t *testing.T) {
 	require.False(t, diags.HasError())
 	assert.True(t, eq)
 }
+
+// TestFieldSemanticallyEqual_scriptObjectToObject verifies script object comparison
+// by meaningful keys (source, lang, params, options) while allowing extra API keys.
+func TestFieldSemanticallyEqual_scriptObjectToObject(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name      string
+		userField map[string]any
+		apiField  map[string]any
+		want      bool
+	}{
+		{
+			name: "identical source and matching lang",
+			userField: map[string]any{
+				"type": "keyword",
+				"script": map[string]any{
+					"source": "emit(1)",
+					"lang":   "painless",
+				},
+			},
+			apiField: map[string]any{
+				"type": "keyword",
+				"script": map[string]any{
+					"source": "emit(1)",
+					"lang":   "painless",
+				},
+			},
+			want: true,
+		},
+		{
+			name: "API side has extra keys",
+			userField: map[string]any{
+				"type": "keyword",
+				"script": map[string]any{
+					"source": "emit(1)",
+					"lang":   "painless",
+				},
+			},
+			apiField: map[string]any{
+				"type": "keyword",
+				"script": map[string]any{
+					"source": "emit(1)",
+					"lang":   "painless",
+					"id":     "stored-script-id",
+				},
+			},
+			want: true,
+		},
+		{
+			name: "source differs",
+			userField: map[string]any{
+				"type": "keyword",
+				"script": map[string]any{
+					"source": "emit(1)",
+				},
+			},
+			apiField: map[string]any{
+				"type": "keyword",
+				"script": map[string]any{
+					"source": "emit(2)",
+				},
+			},
+			want: false,
+		},
+		{
+			name: "lang differs when both present",
+			userField: map[string]any{
+				"type": "keyword",
+				"script": map[string]any{
+					"source": "emit(1)",
+					"lang":   "painless",
+				},
+			},
+			apiField: map[string]any{
+				"type": "keyword",
+				"script": map[string]any{
+					"source": "emit(1)",
+					"lang":   "expression",
+				},
+			},
+			want: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			got := index.FieldSemanticallyEqual(tc.userField, tc.apiField)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}

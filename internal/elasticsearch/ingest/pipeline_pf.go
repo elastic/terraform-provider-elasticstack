@@ -164,8 +164,8 @@ func readIngestPipeline(ctx context.Context, client *clients.ElasticsearchScoped
 	}
 	data.OnFailure = onFailureList
 
-	if pipeline.Meta_ != nil {
-		b, err := json.Marshal(pipeline.Meta_)
+	if pipeline.Metadata != nil {
+		b, err := json.Marshal(pipeline.Metadata)
 		if err != nil {
 			diags.AddError("Failed to serialize metadata", err.Error())
 			return state, false, diags

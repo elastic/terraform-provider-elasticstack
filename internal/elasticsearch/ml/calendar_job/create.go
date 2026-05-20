@@ -51,7 +51,7 @@ func createCalendarJob(ctx context.Context, client *clients.ElasticsearchScopedC
 		return entitycore.WriteResult[TFModel]{Model: plan}, diags
 	}
 
-	compID, idDiags := client.ID(ctx, calendarID+"|"+jobID)
+	compID, idDiags := client.ID(ctx, calendarID+"/"+jobID)
 	diags.Append(idDiags...)
 	if diags.HasError() {
 		return entitycore.WriteResult[TFModel]{Model: plan}, diags

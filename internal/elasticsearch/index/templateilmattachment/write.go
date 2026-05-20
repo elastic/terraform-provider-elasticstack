@@ -41,12 +41,10 @@ func writeILMAttachment(ctx context.Context, client *clients.ElasticsearchScoped
 
 	var diags diag.Diagnostics
 
-	existingRaw, getTplDiags := elasticsearch.GetComponentTemplate(ctx, client, componentTemplateName)
+	existing, getTplDiags := elasticsearch.GetComponentTemplate(ctx, client, componentTemplateName)
 	if getTplDiags.HasError() {
 		return entitycore.WriteResult[tfModel]{Model: plan}, getTplDiags
 	}
-
-	existing := toModelComponentTemplateResponse(existingRaw)
 
 	var componentTemplate models.ComponentTemplate
 	if existing != nil {

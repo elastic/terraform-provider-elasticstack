@@ -521,11 +521,41 @@ func (d Data) responseActionsToAPI(ctx context.Context, client clients.MinVersio
 }
 
 // Helper function to process actions configuration for all rule types
-func (d Data) actionsToAPI(ctx context.Context) ([]kbapi.SecurityDetectionsAPIRuleAction, diag.Diagnostics) {
+func (d Data) actionsToAPI(ctx context.Context, client clients.MinVersionEnforceable) ([]kbapi.SecurityDetectionsAPIRuleAction, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	if !typeutils.IsKnown(d.Actions) || len(d.Actions.Elements()) == 0 {
 		return nil, diags
+	}
+
+	if client != nil {
+		var actions []ActionModel
+		diags.Append(d.Actions.ElementsAs(ctx, &actions, false)...)
+		if diags.HasError() {
+			return nil, diags
+		}
+		firstFilterIdx := -1
+		for i, action := range actions {
+			if typeutils.IsKnown(action.AlertsFilter) {
+				firstFilterIdx = i
+				break
+			}
+		}
+		if firstFilterIdx >= 0 {
+			supported, versionDiags := client.EnforceMinVersion(ctx, MinVersionAlertsFilter)
+			diags.Append(versionDiags...)
+			if diags.HasError() {
+				return nil, diags
+			}
+			if !supported {
+				diags.AddAttributeError(
+					path.Root("actions").AtListIndex(firstFilterIdx).AtName("alerts_filter"),
+					"actions.alerts_filter is only supported for Kibana v8.9 or higher",
+					"actions.alerts_filter is only supported for Kibana v8.9 or higher",
+				)
+				return nil, diags
+			}
+		}
 	}
 
 	apiActions := typeutils.ListTypeToSlice(ctx, d.Actions, path.Root("actions"), &diags,
@@ -556,19 +586,7 @@ func (d Data) actionsToAPI(ctx context.Context) ([]kbapi.SecurityDetectionsAPIRu
 				apiAction.Uuid = &uuidStr
 			}
 
-			if typeutils.IsKnown(action.AlertsFilter) {
-				alertsFilterStringMap := make(map[string]string)
-				alertsFilterDiags := action.AlertsFilter.ElementsAs(ctx, &alertsFilterStringMap, false)
-				if !alertsFilterDiags.HasError() {
-					alertsFilterMap := make(map[string]any)
-					for k, v := range alertsFilterStringMap {
-						alertsFilterMap[k] = v
-					}
-					apiAlertsFilter := kbapi.SecurityDetectionsAPIRuleActionAlertsFilter(alertsFilterMap)
-					apiAction.AlertsFilter = &apiAlertsFilter
-				}
-				meta.Diags.Append(alertsFilterDiags...)
-			}
+			apiAction.AlertsFilter = expandActionAlertsFilter(ctx, action.AlertsFilter, meta.Diags)
 
 			// Handle frequency using ObjectTypeToStruct
 			if typeutils.IsKnown(action.Frequency) {

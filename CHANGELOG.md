@@ -1,9 +1,22 @@
 ## [Unreleased]
 
+### Breaking changes
+
+`elasticstack_kibana_security_detection_rule` `actions.alerts_filter` is now a structured nested attribute with `query` (`kql`, `filters_json`) and optional `timeframe` (`days`, `timezone`, `hours_start`, `hours_end`), replacing the broken `map(string)` shape.
+
 ### Added
 
+- Add `elasticstack_elasticsearch_ml_calendar` and `elasticstack_elasticsearch_ml_calendar_event` resources for ML calendars and scheduled calendar events ([#1969](https://github.com/elastic/terraform-provider-elasticstack/pull/1969))
+  - `CompositeIDFromStr` splits only on the first `/`, so the resource segment may contain further slashes (for example ML calendar event ids `<calendar_id>/<event_id>`). Legacy ids with an empty cluster segment (for example `/<resource_id>`) remain accepted.
 - Add `elasticstack_elasticsearch_ml_calendar_job` resource to assign an anomaly detection job or job group to an ML calendar (`PUT _ml/calendars/{calendar_id}/jobs/{job_id}`) ([#2933](https://github.com/elastic/terraform-provider-elasticstack/pull/2933))
   - Derive `ElasticsearchConnectionNullList` / `KibanaConnectionNullList` from Plugin Framework connection block schemas so import state matches resource types.
+
+### Changes
+
+- Fix `elasticstack_kibana_security_detection_rule` `actions.alerts_filter` with structured nested blocks; migrate `actions` and `frequency` to block syntax. ([#3123](https://github.com/elastic/terraform-provider-elasticstack/pull/3123))
+- Add support for configuring Agent Builder skills ([#3006](https://github.com/elastic/terraform-provider-elasticstack/pull/3006))
+- Add `elasticstack_elasticsearch_index_mappings` resource for managing a subset of mappings on an existing index ([#3121](https://github.com/elastic/terraform-provider-elasticstack/pull/3121))
+- Fix drift in elasticstack_elasticsearch_ingest_pipeline when a processor contains fields not modeled by the go-elasticsearch typed client (e.g. override on rename processor) ([#3122](https://github.com/elastic/terraform-provider-elasticstack/pull/3122))
 
 ## [0.15.2] - 2026-05-18
 

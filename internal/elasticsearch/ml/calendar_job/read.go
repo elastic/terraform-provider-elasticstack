@@ -31,9 +31,9 @@ import (
 )
 
 func splitCalendarJobResourcePath(resourcePath string) (calendarID, jobID string, diags fwdiags.Diagnostics) {
-	parts := strings.SplitN(resourcePath, "|", 2)
+	parts := strings.SplitN(resourcePath, "/", 2)
 	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
-		diags.AddError("Invalid ID format", "Expected resource segment format: <calendar_id>|<job_id>")
+		diags.AddError("Invalid ID format", "Expected resource segment format: <calendar_id>/<job_id>")
 		return "", "", diags
 	}
 	return parts[0], parts[1], diags
@@ -77,7 +77,7 @@ func readCalendarJob(ctx context.Context, client *clients.ElasticsearchScopedCli
 		return state, false, nil
 	}
 
-	compID, idDiags := client.ID(ctx, calendarID+"|"+jobID)
+	compID, idDiags := client.ID(ctx, calendarID+"/"+jobID)
 	diags.Append(idDiags...)
 	if diags.HasError() {
 		return state, false, diags

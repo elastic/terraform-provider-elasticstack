@@ -825,10 +825,7 @@ func TestActionsToAPI(t *testing.T) {
 				Params:       jsontypes.NewNormalizedValue(`{"message":"Alert triggered","channel":"#security"}`),
 				Group:        types.StringValue("default"),
 				UUID:         types.StringNull(),
-				AlertsFilter: typeutils.MapValueFrom(ctx, map[string]attr.Value{
-					"status":   types.StringValue("open"),
-					"severity": types.StringValue("high"),
-				}, types.StringType, path.Root("actions").AtListIndex(0).AtName("alerts_filter"), &diags),
+				AlertsFilter: types.ObjectNull(getAlertsFilterAttrTypes()),
 				Frequency: typeutils.ObjectValueFrom(ctx, &ActionFrequencyModel{
 					NotifyWhen: types.StringValue("onActionGroupChange"),
 					Summary:    types.BoolValue(false),
@@ -840,7 +837,7 @@ func TestActionsToAPI(t *testing.T) {
 
 	require.Empty(t, diags)
 
-	actions, actionsDiags := data.actionsToAPI(ctx)
+	actions, actionsDiags := data.actionsToAPI(ctx, NewMockAPIClient())
 	require.Empty(t, actionsDiags)
 	require.Len(t, actions, 1)
 
@@ -908,6 +905,90 @@ func TestConvertActionsToModel(t *testing.T) {
 	require.JSONEq(t, `{"to":["admin@example.com"],"subject":"Security Alert","message":"Alert details here"}`, action.Params.ValueString())
 }
 
+func TestActionAlertsFilterRoundTrip(t *testing.T) {
+	ctx := context.Background()
+	var diags diag.Diagnostics
+
+	apiFilter := kbapi.SecurityDetectionsAPIRuleActionAlertsFilter{
+		"query": map[string]any{
+			"kql":     `event.action : "test"`,
+			"filters": []any{},
+		},
+		"timeframe": map[string]any{
+			"days":     []any{float64(1), float64(2), float64(3)},
+			"timezone": "UTC",
+			"hours": map[string]any{
+				"start": "08:00",
+				"end":   "17:00",
+			},
+		},
+	}
+
+	flat := flattenActionAlertsFilter(ctx, &apiFilter, &diags)
+	require.Empty(t, diags)
+
+	expanded := expandActionAlertsFilter(ctx, flat, &diags)
+	require.Empty(t, diags)
+	require.NotNil(t, expanded)
+
+	query, ok := (*expanded)["query"].(map[string]any)
+	require.True(t, ok)
+	require.Equal(t, `event.action : "test"`, query["kql"])
+	require.Equal(t, []any{}, query["filters"])
+
+	timeframe, ok := (*expanded)["timeframe"].(map[string]any)
+	require.True(t, ok)
+	require.Equal(t, "UTC", timeframe["timezone"])
+	hours, ok := timeframe["hours"].(map[string]any)
+	require.True(t, ok)
+	require.Equal(t, "08:00", hours["start"])
+	require.Equal(t, "17:00", hours["end"])
+}
+
+func TestFlattenActionAlertsFilterDefaultFiltersJSON(t *testing.T) {
+	ctx := context.Background()
+	var diags diag.Diagnostics
+
+	apiFilter := kbapi.SecurityDetectionsAPIRuleActionAlertsFilter{
+		"query": map[string]any{
+			"kql": `event.action : "test"`,
+		},
+	}
+
+	flat := flattenActionAlertsFilter(ctx, &apiFilter, &diags)
+	require.Empty(t, diags)
+
+	var filter ActionAlertsFilterModel
+	require.Empty(t, flat.As(ctx, &filter, basetypes.ObjectAsOptions{}))
+
+	var query ActionAlertsFilterQueryModel
+	require.Empty(t, filter.Query.As(ctx, &query, basetypes.ObjectAsOptions{}))
+	require.Equal(t, "[]", query.FiltersJSON.ValueString())
+}
+
+func TestActionAlertsFilterRoundTripKqlOnly(t *testing.T) {
+	ctx := context.Background()
+	var diags diag.Diagnostics
+
+	apiFilter := kbapi.SecurityDetectionsAPIRuleActionAlertsFilter{
+		"query": map[string]any{
+			"kql": `event.action : "test"`,
+		},
+	}
+
+	flat := flattenActionAlertsFilter(ctx, &apiFilter, &diags)
+	require.Empty(t, diags)
+
+	expanded := expandActionAlertsFilter(ctx, flat, &diags)
+	require.Empty(t, diags)
+	require.NotNil(t, expanded)
+
+	query, ok := (*expanded)["query"].(map[string]any)
+	require.True(t, ok)
+	require.Equal(t, `event.action : "test"`, query["kql"])
+	require.Equal(t, []any{}, query["filters"])
+}
+
 // TestSlackSubActionParamsRoundTrip verifies that nested objects in action params
 // (e.g. Slack's subActionParams) survive the API→TF→API round-trip via JSON encoding.
 func TestSlackSubActionParamsRoundTrip(t *testing.T) {
@@ -953,14 +1034,14 @@ func TestSlackSubActionParamsRoundTrip(t *testing.T) {
 					`{"subAction":"postMessage","subActionParams":{"channelIds":["C123456"],"text":"Security alert fired"}}`,
 				),
 				UUID:         types.StringNull(),
-				AlertsFilter: types.MapNull(types.StringType),
+				AlertsFilter: types.ObjectNull(getAlertsFilterAttrTypes()),
 				Frequency:    types.ObjectNull(getActionFrequencyType()),
 			},
 		}, getActionElementType(), path.Root("actions"), &diags),
 	}
 	require.Empty(t, diags)
 
-	apiResult, actionsDiags := data.actionsToAPI(ctx)
+	apiResult, actionsDiags := data.actionsToAPI(ctx, NewMockAPIClient())
 	require.Empty(t, actionsDiags)
 	require.Len(t, apiResult, 1)
 

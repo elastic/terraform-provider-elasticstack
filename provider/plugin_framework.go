@@ -38,6 +38,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamlifecycle"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/ilm"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/index"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/indexmappings"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/indices"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/template"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/templateilmattachment"
@@ -45,6 +46,8 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ingest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/logstash"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/anomalydetectionjob"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/calendar"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/calendar_event"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/calendar_job"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed"
 	datafeedstate "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed_state"
@@ -71,6 +74,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/proxy"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/serverhost"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilderagent"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilderskill"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuildertool"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilderworkflow"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/alertingrule"
@@ -204,6 +208,7 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		connectors.NewResource,
 		agentpolicy.NewResource,
 		agentbuilderagent.NewResource,
+		agentbuilderskill.NewResource,
 		agentbuildertool.NewResource,
 		agentbuilderworkflow.NewResource,
 		integration.NewResource,
@@ -227,9 +232,12 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		ingest.NewIngestPipelineResource,
 		rolemapping.NewRoleMappingResource,
 		alias.NewAliasResource,
+		indexmappings.NewIndexMappingsResource,
 		templateilmattachment.NewResource,
 		datafeed.NewDatafeedResource,
 		anomalydetectionjob.NewAnomalyDetectionJobResource,
+		calendar.NewCalendarResource,
+		calendar_event.NewCalendarEventResource,
 		calendar_job.NewCalendarJobResource,
 		filter.NewFilterResource,
 		security_detection_rule.NewSecurityDetectionRuleResource,
@@ -267,6 +275,7 @@ func (p *Provider) dataSources(_ context.Context) []func() datasource.DataSource
 		security_role.NewDataSource,
 		connectors.NewDataSource,
 		agentbuilderagent.NewDataSource,
+		agentbuilderskill.NewDataSource,
 		agentbuildertool.NewDataSource,
 		agentbuilderworkflow.NewDataSource,
 		exportsavedobjects.NewDataSource,

@@ -5,7 +5,7 @@ go 1.26.1
 require (
 	github.com/elastic/elastic-transport-go/v8 v8.11.0
 	github.com/elastic/go-elasticsearch/v8 v8.19.6
-	github.com/google/go-github/v86 v86.0.0
+	github.com/google/go-github/v87 v87.0.0
 	github.com/google/gofuzz v1.2.0
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-uuid v1.0.3
@@ -17,19 +17,20 @@ require (
 	github.com/hashicorp/terraform-plugin-framework-validators v0.19.0
 	github.com/hashicorp/terraform-plugin-go v0.31.0
 	github.com/hashicorp/terraform-plugin-log v0.10.0
-	github.com/hashicorp/terraform-plugin-sdk/v2 v2.40.1
 	github.com/hashicorp/terraform-plugin-testing v1.16.0
-	github.com/oapi-codegen/runtime v1.4.0
+	github.com/oapi-codegen/runtime v1.4.1
 	github.com/stretchr/testify v1.11.1
-	golang.org/x/oauth2 v0.36.0
 	golang.org/x/tools v0.45.0
 )
 
 require (
 	github.com/google/go-github/v84 v84.0.0 // indirect
 	github.com/hashicorp/go-cty v1.5.0 // indirect
+	github.com/hashicorp/terraform-plugin-sdk/v2 v2.40.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.1-0.20231216201459-8508981c8b6c // indirect
 	github.com/oklog/ulid/v2 v2.1.1 // indirect
+	github.com/speakeasy-api/openapi v1.19.2 // indirect
+	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/telemetry v0.0.0-20260508192327-42602be52be6 // indirect
 )
 
@@ -179,7 +180,7 @@ require (
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.13 // indirect
-	github.com/getkin/kin-openapi v0.133.0 // indirect
+	github.com/getkin/kin-openapi v0.135.0 // indirect
 	github.com/github/smimesign v0.2.0 // indirect
 	github.com/go-fed/httpsig v1.1.0 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
@@ -282,7 +283,7 @@ require (
 	github.com/klauspost/pgzip v1.2.6 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.3.0 // indirect
-	github.com/mailru/easyjson v0.9.0 // indirect
+	github.com/mailru/easyjson v0.9.1 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-mastodon v0.0.11 // indirect
@@ -308,9 +309,9 @@ require (
 	github.com/multiformats/go-multibase v0.2.0 // indirect
 	github.com/multiformats/go-multihash v0.2.3 // indirect
 	github.com/multiformats/go-varint v0.0.7 // indirect
-	github.com/oapi-codegen/oapi-codegen/v2 v2.6.0 // indirect
-	github.com/oasdiff/yaml v0.0.0-20250309154309-f31be36b4037 // indirect
-	github.com/oasdiff/yaml3 v0.0.0-20250309153720-d2182401db90 // indirect
+	github.com/oapi-codegen/oapi-codegen/v2 v2.7.0 // indirect
+	github.com/oasdiff/yaml v0.0.9 // indirect
+	github.com/oasdiff/yaml3 v0.0.9 // indirect
 	github.com/oklog/run v1.2.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
@@ -346,8 +347,7 @@ require (
 	github.com/skeema/knownhosts v1.3.1 // indirect
 	github.com/slack-go/slack v0.19.0 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
-	github.com/speakeasy-api/jsonpath v0.6.0 // indirect
-	github.com/speakeasy-api/openapi-overlay v0.10.2 // indirect
+	github.com/speakeasy-api/jsonpath v0.6.3 // indirect
 	github.com/spf13/afero v1.15.0 // indirect
 	github.com/spf13/cast v1.10.0 // indirect
 	github.com/spf13/cobra v1.10.2 // indirect
@@ -369,7 +369,7 @@ require (
 	github.com/wagoodman/go-progress v0.0.0-20230925121702-07e42b3cdba0 // indirect
 	github.com/whyrusleeping/cbor-gen v0.1.3-0.20240731173018-74d74643234c // indirect
 	github.com/wk8/go-ordered-map/v2 v2.1.8 // indirect
-	github.com/woodsbury/decimal128 v1.3.0 // indirect
+	github.com/woodsbury/decimal128 v1.4.0 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	github.com/yuin/goldmark v1.7.7 // indirect

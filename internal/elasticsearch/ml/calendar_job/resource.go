@@ -31,7 +31,6 @@ var (
 	_ resource.Resource                = (*calendarJobResource)(nil)
 	_ resource.ResourceWithConfigure   = (*calendarJobResource)(nil)
 	_ resource.ResourceWithImportState = (*calendarJobResource)(nil)
-	_ resource.ResourceWithModifyPlan  = (*calendarJobResource)(nil)
 )
 
 type calendarJobResource struct {
@@ -79,7 +78,7 @@ func (r *calendarJobResource) ImportState(ctx context.Context, req resource.Impo
 		return
 	}
 
-	normalized, idDiags := client.ID(ctx, calendarID+"|"+jobID)
+	normalized, idDiags := client.ID(ctx, calendarID+"/"+jobID)
 	resp.Diagnostics.Append(idDiags...)
 	if resp.Diagnostics.HasError() {
 		return

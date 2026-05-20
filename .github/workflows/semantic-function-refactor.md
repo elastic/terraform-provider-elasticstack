@@ -114,7 +114,7 @@ mcp-servers:
     mounts:
     - ${{ github.workspace }}:${{ github.workspace }}:rw
 name: Semantic Function Refactor
-timeout-minutes: 15
+timeout-minutes: 35
 tools:
   bash:
   - find . -name "*.go" ! -name "*_test.go" -type f
@@ -135,6 +135,8 @@ tools:
 # Semantic Function Refactor
 
 Analyze Go source organization to identify actionable semantic refactoring opportunities: misplaced functions, duplicate or near-duplicate functions, scattered helpers, and extraction opportunities.
+
+Upstream baseline: `https://github.com/github/gh-aw/blob/main/.github/workflows/semantic-function-refactor.md`
 
 ## Pre-activation context
 

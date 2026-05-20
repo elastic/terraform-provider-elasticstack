@@ -45,7 +45,14 @@ func (r *AgentResource) Update(ctx context.Context, req resource.UpdateRequest, 
 		return
 	}
 
+	supportsSkillIDs, verDiags := client.EnforceMinVersion(ctx, minVersionAdvancedAgentConfig)
+	resp.Diagnostics.Append(verDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	compID, idDiags := clients.CompositeIDFromStr(planModel.ID.ValueString())
+
 	resp.Diagnostics.Append(idDiags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -57,7 +64,7 @@ func (r *AgentResource) Update(ctx context.Context, req resource.UpdateRequest, 
 		return
 	}
 
-	body, diags := planModel.toAPIUpdateModel(ctx)
+	body, diags := planModel.toAPIUpdateModel(ctx, supportsSkillIDs)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

@@ -81,41 +81,6 @@ function factoryQualifyTriggerEvent({
 }
 
 /**
- * @param {{ sender: string, permission: string | null }} params
- * @returns {{ actor_trusted: boolean, actor_trusted_reason: string }}
- */
-function factoryCheckActorTrust({ sender, permission }) {
-  if (sender === 'github-actions[bot]') {
-    return {
-      actor_trusted: true,
-      actor_trusted_reason: 'Trigger actor github-actions[bot] is trusted without collaborator permission lookup.',
-    };
-  }
-
-  if (['write', 'maintain', 'admin'].includes(permission)) {
-    return {
-      actor_trusted: true,
-      actor_trusted_reason: `Trigger actor '${sender || '(empty)'}' is trusted with repository permission '${permission}'.`,
-    };
-  }
-
-  return {
-    actor_trusted: false,
-    actor_trusted_reason: `Trigger actor '${sender || '(empty)'}' is not trusted; repository permission '${permission || '(none)'}' does not meet the required write/maintain/admin policy.`,
-  };
-}
-
-/**
- * @returns {{ actor_trusted: boolean, actor_trusted_reason: string }}
- */
-function factoryActorTrustWhenSenderMissing() {
-  return {
-    actor_trusted: false,
-    actor_trusted_reason: 'Trigger actor could not be identified; sender login is missing from the event payload.',
-  };
-}
-
-/**
  * @param {{ issueNumber: number, pullRequests: Array<{ number: number, state: string, head_branch: string, labels: string[], body: string, html_url: string }>, branchPrefix: string, prLabel: string, duplicateLinkageMode: 'closes-literal' | 'related-literal' | 'github-keywords' }} params
  * @returns {{ duplicate_pr_found: boolean, duplicate_pr_url: string | null, gate_reason: string }}
  */
@@ -295,7 +260,6 @@ function createFactoryIssueIntake(config) {
   return {
     issueBranchName,
     qualifyTriggerEvent,
-    checkActorTrust: factoryCheckActorTrust,
     checkDuplicatePR,
     computeGateReason,
   };
@@ -315,7 +279,6 @@ function createFactoryIssueModule(config) {
   const issueBranchNameAliases = config.issueBranchNameAliases || [];
   const factoryIssueModule = {
     ...intake,
-    actorTrustWhenSenderMissing: factoryActorTrustWhenSenderMissing,
     parseOptionalTriStateFromEnv: factoryParseOptionalTriStateFromEnv,
     parseFinalizeGateEnv: factoryParseFinalizeGateEnv,
   };
@@ -331,8 +294,6 @@ if (typeof module !== 'undefined') {
   module.exports = {
     issueClosingReferencePattern,
     factoryQualifyTriggerEvent,
-    factoryCheckActorTrust,
-    factoryActorTrustWhenSenderMissing,
     factoryCheckDuplicatePR,
     factoryComputeGateReason,
     factoryParseOptionalTriStateFromEnv,

@@ -191,19 +191,7 @@ func convertActionsToModel(ctx context.Context, apiActions []kbapi.SecurityDetec
 			action.UUID = types.StringNull()
 		}
 
-		if apiAction.AlertsFilter != nil {
-			alertsFilterMap := make(map[string]attr.Value)
-			for k, v := range *apiAction.AlertsFilter {
-				if v != nil {
-					alertsFilterMap[k] = types.StringValue(fmt.Sprintf("%v", v))
-				}
-			}
-			alertsFilterValue, alertsFilterDiags := types.MapValue(types.StringType, alertsFilterMap)
-			diags.Append(alertsFilterDiags...)
-			action.AlertsFilter = alertsFilterValue
-		} else {
-			action.AlertsFilter = types.MapNull(types.StringType)
-		}
+		action.AlertsFilter = flattenActionAlertsFilter(ctx, apiAction.AlertsFilter, &diags)
 
 		// Convert frequency
 		if apiAction.Frequency != nil {
@@ -855,7 +843,11 @@ func (d *Data) updateActionsFromAPI(ctx context.Context, actions []kbapi.Securit
 			d.Actions = actionsListValue
 		}
 	} else {
-		d.Actions = types.ListNull(getActionElementType())
+		actionsListValue, actionDiags := convertActionsToModel(ctx, []kbapi.SecurityDetectionsAPIRuleAction{})
+		diags.Append(actionDiags...)
+		if !actionDiags.HasError() {
+			d.Actions = actionsListValue
+		}
 	}
 
 	return diags

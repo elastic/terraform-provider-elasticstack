@@ -67,7 +67,7 @@ func setupAccMLCalendar(t *testing.T, calendarID string) {
 }
 
 func testAccMLCalendarJobCompositeIDRegexp(calendarID, jobID string) *regexp.Regexp {
-	return regexp.MustCompile(`^[^/]+/` + regexp.QuoteMeta(calendarID+"|"+jobID) + `$`)
+	return regexp.MustCompile(`^[^/]+/` + regexp.QuoteMeta(calendarID+"/"+jobID) + `$`)
 }
 
 func testAccMLCalendarJobESEndpoints() []string {

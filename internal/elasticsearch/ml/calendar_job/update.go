@@ -28,7 +28,13 @@ import (
 func updateCalendarJobNoOp(
 	_ context.Context,
 	_ *clients.ElasticsearchScopedClient,
-	req entitycore.WriteRequest[TFModel],
+	_ entitycore.WriteRequest[TFModel],
 ) (entitycore.WriteResult[TFModel], diag.Diagnostics) {
-	return entitycore.WriteResult[TFModel]{Model: req.Plan}, nil
+	return entitycore.WriteResult[TFModel]{}, diag.Diagnostics{
+		diag.NewErrorDiagnostic(
+			"Update not supported",
+			"The elasticstack_elasticsearch_ml_calendar_job resource does not support in-place updates. "+
+				"Change calendar_id or job_id to replace the resource, or update elasticsearch_connection (which forces replacement).",
+		),
+	}
 }

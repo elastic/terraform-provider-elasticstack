@@ -97,6 +97,11 @@ func getSchema() schema.Schema {
 				Optional:            true,
 				MarkdownDescription: "Set of tool IDs that the agent can use.",
 			},
+			"skill_ids": schema.SetAttribute{
+				ElementType:         types.StringType,
+				Optional:            true,
+				MarkdownDescription: "Set of skill IDs to assign to the agent. Requires Elastic Stack 9.4.0 or later.",
+			},
 			"instructions": schema.StringAttribute{
 				Optional:            true,
 				MarkdownDescription: "Optional system instructions that define the agent behavior.",

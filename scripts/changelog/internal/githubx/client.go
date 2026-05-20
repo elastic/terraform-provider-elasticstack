@@ -22,18 +22,15 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/google/go-github/v86/github"
-	"golang.org/x/oauth2"
+	"github.com/google/go-github/v87/github"
 )
 
 // NewGitHubClient returns a GitHub API client authenticated with token,
 // mirroring scripts/auto-approve/main.go.
-func NewGitHubClient(ctx context.Context, token string) (*github.Client, error) {
+func NewGitHubClient(_ context.Context, token string) (*github.Client, error) {
 	token = strings.TrimSpace(token)
 	if token == "" {
 		return nil, errors.New("missing GITHUB_TOKEN")
 	}
-	tokenSource := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
-	httpClient := oauth2.NewClient(ctx, tokenSource)
-	return github.NewClient(httpClient), nil
+	return github.NewClient(github.WithAuthToken(token))
 }
