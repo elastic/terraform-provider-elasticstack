@@ -29,18 +29,6 @@ Alternatives considered:
 - Run `make fmt` before `make build`: rejected because a formatter pass on broken code is wasted work and could obscure build error context.
 - Run `make fmt` as part of pre-activation: rejected because pre-activation is deterministic and should not modify repository files.
 
-### 2. Treat `make fmt` failure as a non-zero exit code that blocks the PR
-
-If `make fmt` exits non-zero, the agent SHALL record the attempt with reason `fmt_failed` and call `noop` without opening a PR.
-
-Why:
-- A formatting failure indicates an unexpected toolchain problem. Opening a PR in that state could introduce malformed code.
-- Consistent with the existing policy of blocking the PR on any verification failure.
-
-Alternatives considered:
-- Open the PR even if `make fmt` fails: rejected because this defeats the purpose of the step.
-- Silently ignore a non-zero exit: rejected because it hides toolchain issues.
-
 ## Risks / Trade-offs
 
 - [`make fmt` targets may differ across Go/tool versions] — the workflow already pins Go via `actions/setup-go`; `make fmt` uses the same pinned toolchain, so drift is unlikely.

@@ -5,7 +5,6 @@ The dead-code removal rotation workflow removes symbols and occasionally their c
 ## What Changes
 
 - Insert a `make fmt` step in the dead-code removal agent task, immediately after verification (build + unit tests) passes and before the `create-pull-request` safe output is called.
-- If `make fmt` reports a non-zero exit code, record the attempt with reason `fmt_failed` and call `noop` rather than opening a PR with known formatting issues.
 
 ## Capabilities
 
