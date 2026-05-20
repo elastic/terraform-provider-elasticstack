@@ -106,7 +106,7 @@ func expandTemplateBlock(ctx context.Context, obj types.Object) (*models.Templat
 	}
 
 	if !tm.Alias.IsNull() && !tm.Alias.IsUnknown() {
-		aliases, d2 := expandAliasSet(ctx, tm.Alias)
+		aliases, d2 := aliasutil.ExpandAliasSet(ctx, tm.Alias)
 		diags.Append(d2...)
 		if diags.HasError() {
 			return nil, diags
@@ -124,28 +124,4 @@ func expandTemplateBlock(ctx context.Context, obj types.Object) (*models.Templat
 	}
 
 	return t, diags
-}
-
-// expandAliasSet expands a set of alias objects to map[string]models.IndexAlias.
-func expandAliasSet(ctx context.Context, set types.Set) (map[string]models.IndexAlias, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	if set.IsNull() || set.IsUnknown() {
-		return nil, diags
-	}
-
-	var elems []aliasutil.AliasModel
-	diags.Append(set.ElementsAs(ctx, &elems, false)...)
-	if diags.HasError() {
-		return nil, diags
-	}
-
-	aliases := make(map[string]models.IndexAlias, len(elems))
-	for _, am := range elems {
-		ia, d := aliasutil.ExpandAliasElement(am)
-		if d.HasError() {
-			return nil, d
-		}
-		aliases[am.Name.ValueString()] = ia
-	}
-	return aliases, diags
 }
