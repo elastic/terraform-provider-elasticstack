@@ -1,6 +1,6 @@
 ## 1. Harden flattenTemplateBlock
 
-- [ ] 1.1 In `internal/elasticsearch/index/componenttemplate/flatten.go`, function `flattenTemplateBlock`:
+- [x] 1.1 In `internal/elasticsearch/index/componenttemplate/flatten.go`, function `flattenTemplateBlock`:
   - Change the `t.Mappings != nil` guard to `len(t.Mappings) > 0` so a non-nil empty map produces
     `MappingsNull()` instead of `MappingsValue("{}")`.
   - Change the `t.Settings != nil` guard to `len(t.Settings) > 0` so a non-nil empty map produces
@@ -9,7 +9,7 @@
 
 ## 2. Add test config for issue-609 scenario
 
-- [ ] 2.1 Create
+- [x] 2.1 Create
   `internal/elasticsearch/index/componenttemplate/testdata/TestAccResourceComponentTemplateIssue609NoDrift/apply/main.tf`
   with the exact reporter configuration:
   - Resource `elasticstack_elasticsearch_component_template.test`
@@ -19,7 +19,7 @@
 
 ## 3. Add regression acceptance tests
 
-- [ ] 3.1 In `internal/elasticsearch/index/componenttemplate/acc_test.go`, add a second step to
+- [x] 3.1 In `internal/elasticsearch/index/componenttemplate/acc_test.go`, add a second step to
   `TestAccResourceComponentTemplate` immediately after the existing create step:
   ```go
   {
@@ -30,7 +30,7 @@
       ExpectNonEmptyPlan:       false,
   },
   ```
-- [ ] 3.2 Add a new test function `TestAccResourceComponentTemplateIssue609NoDrift`:
+- [x] 3.2 Add a new test function `TestAccResourceComponentTemplateIssue609NoDrift`:
   ```go
   func TestAccResourceComponentTemplateIssue609NoDrift(t *testing.T) {
       templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)

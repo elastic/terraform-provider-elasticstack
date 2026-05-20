@@ -86,7 +86,7 @@ func flattenTemplateBlock(ctx context.Context, t *models.Template, preservedRout
 	}
 
 	var mappings esindex.MappingsValue
-	if t.Mappings != nil {
+	if len(t.Mappings) > 0 {
 		b, err := json.Marshal(t.Mappings)
 		if err != nil {
 			diags.AddError("Failed to marshal template.mappings", err.Error())
@@ -98,7 +98,7 @@ func flattenTemplateBlock(ctx context.Context, t *models.Template, preservedRout
 	}
 
 	var settings customtypes.IndexSettingsValue
-	if t.Settings != nil {
+	if len(t.Settings) > 0 {
 		b, err := json.Marshal(t.Settings)
 		if err != nil {
 			diags.AddError("Failed to marshal template.settings", err.Error())

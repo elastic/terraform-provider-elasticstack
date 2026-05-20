@@ -51,6 +51,39 @@ func TestAccResourceComponentTemplate(t *testing.T) {
 					testAccCheckResourceAttrIndexSettingsSemantic("elasticstack_elasticsearch_component_template.test", `{"index":{"number_of_shards":"3"}}`),
 				),
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(templateName)},
+				PlanOnly:                 true,
+				ExpectNonEmptyPlan:       false,
+			},
+		},
+	})
+}
+
+func TestAccResourceComponentTemplateIssue609NoDrift(t *testing.T) {
+	templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceComponentTemplateDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("apply"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(templateName)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "name", templateName),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("apply"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(templateName)},
+				PlanOnly:                 true,
+				ExpectNonEmptyPlan:       false,
+			},
 		},
 	})
 }
