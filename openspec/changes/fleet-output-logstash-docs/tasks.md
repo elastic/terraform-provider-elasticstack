@@ -8,4 +8,4 @@
 
 ## 3. Verification
 
-- [ ] 3.1 Run `make docs` (or equivalent `terraform-plugin-docs` generation) and confirm that `docs/resources/fleet_output.md` now contains the logstash example section
+- [x] 3.1 Run `make docs` (or equivalent `terraform-plugin-docs` generation) and confirm that `docs/resources/fleet_output.md` now contains the logstash example section
