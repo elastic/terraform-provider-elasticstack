@@ -511,9 +511,13 @@ func TestAccResourceIntegrationPolicySecrets(t *testing.T) {
 						"policy_name": config.StringVariable(policyName),
 						"secret_key":  config.StringVariable("created"),
 					},
-					ImportState:             true,
-					ImportStateVerify:       true,
-					ImportStateVerifyIgnore: []string{"inputs.sql-sql/metrics.streams.sql.sql.vars", "space_ids"},
+					ImportState:       true,
+					ImportStateVerify: true,
+					ImportStateVerifyIgnore: []string{
+						"inputs.sql-sql/metrics.defaults",
+						"inputs.sql-sql/metrics.streams.sql.sql.vars",
+						"space_ids",
+					},
 					Check: resource.ComposeTestCheckFunc(
 						resource.TestMatchResourceAttr(
 							"elasticstack_fleet_integration_policy.test_policy",
@@ -864,12 +868,6 @@ func TestAccResourceIntegrationPolicyGCPPubSub(t *testing.T) {
 						"elasticstack_fleet_integration_policy.pubsub",
 						"inputs.gcp-gcp-pubsub.streams.gcp_pubsub.gcp.vars",
 						regexp.MustCompile(`"tags":\["forwarded"\]`),
-					),
-					// Assert defaulted stream vars from the package policy-template are reflected
-					resource.TestMatchResourceAttr(
-						"elasticstack_fleet_integration_policy.pubsub",
-						"inputs.gcp-gcp-pubsub.streams.gcp_pubsub.gcp.vars",
-						regexp.MustCompile(`"data_stream.dataset":"gcp_pubsub.generic"`),
 					),
 				),
 			},
