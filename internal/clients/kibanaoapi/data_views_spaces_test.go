@@ -132,11 +132,11 @@ func TestUpdateDataViewNamespaces(t *testing.T) {
 			t.Parallel()
 
 			var requestCount atomic.Int32
-			var gotPath string
+			var gotPath atomic.Value
 
 			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				requestCount.Add(1)
-				gotPath = r.URL.Path
+				gotPath.Store(r.URL.Path)
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusOK)
 				_, _ = io.WriteString(w, tt.responseBody)
@@ -160,7 +160,7 @@ func TestUpdateDataViewNamespaces(t *testing.T) {
 			}
 
 			require.Equal(t, int32(1), requestCount.Load(), "expected exactly one HTTP request")
-			assert.Equal(t, tt.wantPath, gotPath)
+			assert.Equal(t, tt.wantPath, gotPath.Load().(string))
 
 			if tt.wantError {
 				require.True(t, diags.HasError())
