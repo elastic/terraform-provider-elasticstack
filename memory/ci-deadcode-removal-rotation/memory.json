@@ -88,6 +88,16 @@
       "package": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/enrich",
       "attemptedAt": "2026-05-19T04:38:18.639320871Z",
       "reason": "pr_created"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index.stringIsJSONObject",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index",
+      "attemptedAt": "2026-05-20T04:39:45.158418154Z",
+      "reason": "pr_created",
+      "context": {
+        "referenceFileCount": 1,
+        "testCleanupEligible": true
+      }
     }
   ]
 }
