@@ -28,7 +28,7 @@ resource "elasticstack_fleet_agent_policy" "example" {
 
 resource "elasticstack_fleet_integration_policy" "pubsub" {
   name                = var.policy_name
-  namespace           = ""
+  namespace           = "default"
   integration_name    = elasticstack_fleet_integration.pubsub.name
   integration_version = elasticstack_fleet_integration.pubsub.version
   agent_policy_id     = elasticstack_fleet_agent_policy.example.policy_id

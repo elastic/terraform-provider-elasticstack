@@ -46,6 +46,7 @@ var (
 	minVersionSQLIntegration       = version.Must(version.NewVersion("9.1.0"))
 	minVersionGCPVertexAI          = version.Must(version.NewVersion("8.17.0"))
 	minVersionSpaceIDs             = version.Must(version.NewVersion("9.1.0"))
+	minVersionGCPPubSub            = version.Must(version.NewVersion("8.13.0"))
 )
 
 const (
@@ -819,7 +820,7 @@ func TestAccResourceIntegrationPolicyGCPVertexAI(t *testing.T) {
 }
 
 func TestAccResourceIntegrationPolicyGCPPubSub(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minVersionIntegrationPolicy, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, minVersionGCPPubSub, versionutils.FlavorAny)
 
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
@@ -835,7 +836,7 @@ func TestAccResourceIntegrationPolicyGCPPubSub(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.pubsub", "name", policyName),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.pubsub", "namespace", ""),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.pubsub", "namespace", "default"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.pubsub", "integration_name", "gcp_pubsub"),
 					resource.TestCheckResourceAttrPair(
 						"elasticstack_fleet_integration_policy.pubsub", "integration_version",
