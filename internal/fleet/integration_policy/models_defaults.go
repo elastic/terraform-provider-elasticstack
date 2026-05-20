@@ -56,6 +56,18 @@ type apiPolicyTemplateInput struct {
 	Vars apiVars `json:"vars"`
 }
 
+// inputID builds the identifier Kibana uses for an input:
+// "<policyTemplate.Name>-<inputType>".
+func inputID(templateName, inputType string) string {
+	return fmt.Sprintf("%s-%s", templateName, inputType)
+}
+
+// streamID builds the identifier Kibana uses for an input-type stream:
+// "<pkgName>.<templateName>".
+func streamID(pkgName, templateName string) string {
+	return fmt.Sprintf("%s.%s", pkgName, templateName)
+}
+
 func (policyTemplates apiPolicyTemplates) defaults() (map[string]jsontypes.Normalized, diag.Diagnostics) {
 	defaults := map[string]jsontypes.Normalized{}
 
@@ -65,7 +77,7 @@ func (policyTemplates apiPolicyTemplates) defaults() (map[string]jsontypes.Norma
 
 	for _, policyTemplate := range policyTemplates {
 		for _, inputTemplate := range policyTemplate.Inputs {
-			name := fmt.Sprintf("%s-%s", policyTemplate.Name, inputTemplate.Type)
+			name := inputID(policyTemplate.Name, inputTemplate.Type)
 			varDefaults, diags := inputTemplate.Vars.defaults()
 			if diags.HasError() {
 				return nil, diags
@@ -176,7 +188,7 @@ func packageInfoToDefaults(pkg *kbapi.PackageInfo) (map[string]inputDefaultsMode
 
 	for inputIDSuffix, streams := range defaultStreamsByInput {
 		for _, policyTemplate := range policyTemplates {
-			inputID := fmt.Sprintf("%s-%s", policyTemplate.Name, inputIDSuffix)
+			inputID := inputID(policyTemplate.Name, inputIDSuffix)
 			inputDefaults, ok := defaults[inputID]
 			if !ok {
 				inputDefaults.Vars = jsontypes.NewNormalizedNull()
@@ -187,9 +199,6 @@ func packageInfoToDefaults(pkg *kbapi.PackageInfo) (map[string]inputDefaultsMode
 		}
 	}
 
-	// For input-type packages, vars are declared on the policy template itself
-	// and Kibana exposes them on an implicit stream named "<package>.<template>"
-	// attached to an input keyed "<template>-<input>".
 	inputPackageDefaults, inputPkgDiags := inputPackagePolicyTemplatesToDefaults(pkg, policyTemplates)
 	diags.Append(inputPkgDiags...)
 	if diags.HasError() {
@@ -253,8 +262,8 @@ func inputPackagePolicyTemplatesToDefaults(pkg *kbapi.PackageInfo, policyTemplat
 			return nil, diags
 		}
 
-		inputID := fmt.Sprintf("%s-%s", policyTemplate.Name, policyTemplate.Input)
-		streamID := fmt.Sprintf("%s.%s", pkg.Name, policyTemplate.Name)
+		inputID := inputID(policyTemplate.Name, policyTemplate.Input)
+		streamID := streamID(pkg.Name, policyTemplate.Name)
 
 		existing, ok := defaults[inputID]
 		if !ok {

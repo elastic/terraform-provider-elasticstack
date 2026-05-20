@@ -35,6 +35,12 @@ var kafkaIntegrationJSON []byte
 //go:embed testdata/integration_gcp_vertexai.json
 var gcpVertexAIIntegrationJSON []byte
 
+//go:embed testdata/integration_gcp_pubsub.json
+var gcpPubSubIntegrationJSON []byte
+
+//go:embed testdata/integration_gcp_pubsub_with_datastreams.json
+var gcpPubSubWithDataStreamsIntegrationJSON []byte
+
 func TestApiVarsDefaults(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -838,30 +844,9 @@ func TestPolicyTemplateAndDataStreamsFromPackageInfo_GCP_VertexAI(t *testing.T) 
 }
 
 func TestPackageInfoToDefaults_InputPackage(t *testing.T) {
-	// Input-type packages (e.g. gcp_pubsub) declare a single `input` and a
-	// flat `vars` list on each policy template. Kibana materialises these as
-	// a stream named "<package>.<template>" under an input keyed
-	// "<template>-<input>". Verify defaults extraction surfaces those stream
-	// vars (including server-injected ones like data_stream.dataset) so that
-	// semantic equality can reconcile planned vs applied state.
-	pkgJSON := `{
-		"name": "gcp_pubsub",
-		"version": "2.31.1",
-		"policy_templates": [
-			{
-				"name": "gcp",
-				"input": "gcp-pubsub",
-				"vars": [
-					{"name": "data_stream.dataset", "type": "text", "default": "gcp_pubsub.generic"},
-					{"name": "project_id", "type": "text"},
-					{"name": "tags", "type": "text", "multi": true, "default": ["forwarded"]}
-				]
-			}
-		]
-	}`
-
+	// Verify that policy-template vars become stream defaults for input-type packages.
 	var pkg kbapi.PackageInfo
-	require.NoError(t, json.Unmarshal([]byte(pkgJSON), &pkg))
+	require.NoError(t, json.Unmarshal(gcpPubSubIntegrationJSON, &pkg))
 
 	result, diags := packageInfoToDefaults(&pkg)
 	require.False(t, diags.HasError(), "Expected no error but got: %v", diags)
@@ -883,43 +868,9 @@ func TestPackageInfoToDefaults_InputPackage(t *testing.T) {
 }
 
 func TestPackageInfoToDefaults_InputPackage_WithDataStreams(t *testing.T) {
-	// When both policy_templates and data_streams exist for an input-type
-	// package, the stream defaults from the policy-template must be merged
-	// with the data_stream defaults, filling in missing vars while preserving
-	// existing datastream values.
-	pkgJSON := `{
-		"name": "gcp_pubsub",
-		"version": "2.31.1",
-		"policy_templates": [
-			{
-				"name": "gcp",
-				"input": "gcp-pubsub",
-				"vars": [
-					{"name": "data_stream.dataset", "type": "text", "default": "gcp_pubsub.generic"},
-					{"name": "project_id", "type": "text"},
-					{"name": "tags", "type": "text", "multi": true, "default": ["forwarded"]}
-				]
-			}
-		],
-		"data_streams": [
-			{
-				"type": "logs",
-				"dataset": "gcp_pubsub.gcp",
-				"streams": [
-					{
-						"input": "gcp-pubsub",
-						"enabled": true,
-						"vars": [
-							{"name": "pipeline", "type": "text", "default": "default_pipeline"}
-						]
-					}
-				]
-			}
-		]
-	}`
-
+	// Verify merging of policy-template stream defaults with existing data_stream defaults.
 	var pkg kbapi.PackageInfo
-	require.NoError(t, json.Unmarshal([]byte(pkgJSON), &pkg))
+	require.NoError(t, json.Unmarshal(gcpPubSubWithDataStreamsIntegrationJSON, &pkg))
 
 	result, diags := packageInfoToDefaults(&pkg)
 	require.False(t, diags.HasError(), "Expected no error but got: %v", diags)

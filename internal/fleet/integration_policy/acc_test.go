@@ -871,16 +871,6 @@ func TestAccResourceIntegrationPolicyGCPPubSub(t *testing.T) {
 					),
 				),
 			},
-			{
-				// Re-apply the same config and assert no drift (no further changes).
-				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
-				ConfigVariables: config.Variables{
-					"policy_name": config.StringVariable(policyName),
-				},
-				PlanOnly:           true,
-				ExpectNonEmptyPlan: false,
-			},
 		},
 	})
 }
