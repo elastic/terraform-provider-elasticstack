@@ -121,6 +121,10 @@ For `template.mappings`, the resource SHALL treat Elasticsearch stringified scal
 
 For `template.settings`, the resource SHALL treat Elasticsearch stringified scalar echoes as semantically equal to practitioner-authored scalar JSON values when the effective setting value is otherwise unchanged. This equivalence SHALL include JSON `null`, so a practitioner-authored `null` setting value SHALL compare equal to an Elasticsearch `"null"` string echo.
 
+The provider SHALL treat an empty `"mappings": {}` or `"settings": {}` object returned by Elasticsearch as semantically equivalent to an absent value (`null`).
+
+- **Flatten-layer normalisation**: `flattenTemplateBlock` SHALL use `len(t.Mappings) > 0` (instead of `t.Mappings != nil`) and `len(t.Settings) > 0` (instead of `t.Settings != nil`) guards so that both nil and empty-map API responses produce `null` Terraform state values.
+
 #### Scenario: Routing preserved on refresh
 
 - GIVEN user-configured alias `routing` and API omits routing fields
@@ -142,6 +146,33 @@ For `template.settings`, the resource SHALL treat Elasticsearch stringified scal
 - WHEN apply completes or a later refresh runs
 - THEN the provider SHALL treat the settings values as semantically equal
 - AND Terraform SHALL NOT report a provider inconsistent-result error or follow-up drift for that difference alone
+
+#### Scenario: Empty-object mappings response is null in state
+
+- GIVEN a component template was created without a `template.mappings` block
+- AND Elasticsearch returns `"mappings": {}` in the GET response
+- WHEN read runs
+- THEN `template.mappings` SHALL be `null` in state
+- AND Terraform SHALL NOT report a provider inconsistent-result error or drift
+
+#### Scenario: Empty-object settings response is null in state
+
+- GIVEN a component template was created without a `template.settings` block
+- AND Elasticsearch returns `"settings": {}` in the GET response
+- WHEN read runs
+- THEN `template.settings` SHALL be `null` in state
+- AND Terraform SHALL NOT report a provider inconsistent-result error or drift
+
+#### Scenario: No drift after create with alias and short-form settings (issue-609 regression)
+
+- GIVEN a component template configured with:
+  - an alias block (`name = "my_template_test"`)
+  - `settings = jsonencode({ number_of_shards = "3" })` (short-form, keys not nested under `index`)
+  - no `mappings` block
+- WHEN `terraform apply` creates the resource
+- AND a subsequent `terraform plan` runs
+- THEN the plan SHALL be empty (no changes detected)
+- AND Terraform SHALL NOT report a provider inconsistent-result error
 
 ### Requirement: Data stream options support (REQ-027–REQ-031)
 

@@ -5,7 +5,7 @@ Base spec: `openspec/specs/elasticsearch-index-component-template/spec.md`
 
 ## MODIFIED Requirements
 
-### Requirement: Empty-object normalisation for mappings and settings on read (REQ-022)
+### Requirement: Read state mapping (REQ-022–REQ-026)
 
 The provider SHALL treat an empty `"mappings": {}` or `"settings": {}` object returned by Elasticsearch as semantically equivalent to an absent value (`null`).
 
