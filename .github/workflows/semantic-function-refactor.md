@@ -83,7 +83,7 @@ engine:
     ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_LITELLM_PROXY_API_KEY }}
     ANTHROPIC_BASE_URL: https://elastic.litellm-prod.ai/
   id: claude
-  model: llm-gateway/claude-sonnet-4-6
+  model: llm-gateway/Kimi-K2.6
 jobs:
   pre-activation:
     outputs:
@@ -114,7 +114,7 @@ mcp-servers:
     mounts:
     - ${{ github.workspace }}:${{ github.workspace }}:rw
 name: Semantic Function Refactor
-timeout-minutes: 15
+timeout-minutes: 35
 tools:
   bash:
   - find . -name "*.go" ! -name "*_test.go" -type f
