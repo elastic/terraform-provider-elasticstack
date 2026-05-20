@@ -22,6 +22,7 @@ data "elasticstack_kibana_agentbuilder_agent" "example" {
   avatar_color   = <computed, string>
   avatar_symbol  = <computed, string>
   labels         = <computed, set(string)>
+  skill_ids      = <computed, set(string)>    # skill IDs assigned to the agent; populated on 9.4.0+
   instructions   = <computed, string>
   tools          = <computed, list(object)>   # see Tool attributes below
 }
@@ -152,7 +153,23 @@ When reading from the API, the data source SHALL preserve empty strings for `ava
 - WHEN the data source populates state
 - THEN `avatar_color` SHALL be `""` and `avatar_symbol` SHALL be null
 
-### Requirement: Version compatibility (REQ-011)
+### Requirement: Skill IDs mapping (REQ-011)
+
+The data source SHALL populate `skill_ids` from `configuration.skill_ids` in the API response. When the field is absent or empty, the data source SHALL store `skill_ids` as null in state. `skill_ids` is only populated by Kibana on stacks running 9.4.0 or later; on earlier stacks the field will be absent and stored as null.
+
+#### Scenario: skill_ids populated from response
+
+- GIVEN the API response includes `configuration.skill_ids: ["my-skill"]`
+- WHEN the data source populates state
+- THEN `skill_ids` SHALL be `["my-skill"]`
+
+#### Scenario: skill_ids absent from response
+
+- GIVEN the API response omits `configuration.skill_ids` or returns an empty array
+- WHEN the data source populates state
+- THEN `skill_ids` SHALL be null
+
+### Requirement: Version compatibility (REQ-012)
 
 The data source SHALL verify the Kibana server version is at least 9.3.0 before performing the API call. If the server version is below 9.3.0, the data source SHALL fail with an error.
 
@@ -162,7 +179,7 @@ The data source SHALL verify the Kibana server version is at least 9.3.0 before 
 - WHEN the data source is evaluated
 - THEN the provider SHALL return a version error diagnostic
 
-### Requirement: Workflow dependency version check (REQ-012)
+### Requirement: Workflow dependency version check (REQ-013)
 
 When `include_dependencies` is `true` and the agent has workflow-type tools, the data source SHALL verify the Kibana server version is at least 9.4.0-SNAPSHOT. If the server is below that version, the data source SHALL fail with an "Unsupported server version" error because the workflow API is required to export workflow YAML.
 
@@ -172,7 +189,7 @@ When `include_dependencies` is `true` and the agent has workflow-type tools, the
 - WHEN the server version is below 9.4.0-SNAPSHOT
 - THEN the provider SHALL return an "Unsupported server version" error
 
-### Requirement: Data source-level Kibana connection override (REQ-013)
+### Requirement: Data source-level Kibana connection override (REQ-014)
 
 The data source SHALL support a `kibana_connection` block that overrides the provider's default Kibana client for that data source instance. When the block is present, the data source SHALL use the configured connection for all API calls.
 

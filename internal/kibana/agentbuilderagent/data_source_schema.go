@@ -75,6 +75,11 @@ func getDataSourceSchema(_ context.Context) dsschema.Schema {
 				Computed:            true,
 				MarkdownDescription: "Optional system instructions that define the agent behavior.",
 			},
+			"skill_ids": dsschema.SetAttribute{
+				ElementType:         types.StringType,
+				Computed:            true,
+				MarkdownDescription: "Set of skill IDs assigned to the agent. Requires Elastic Stack 9.4.0 or later.",
+			},
 			"tools": dsschema.ListNestedAttribute{
 				Description: "Tools attached to the agent. When include_dependencies is true, each entry includes full tool data and workflow YAML for workflow-type tools. " +
 					"When false, only id (composite space/tool), space_id, and tool_id are set.",

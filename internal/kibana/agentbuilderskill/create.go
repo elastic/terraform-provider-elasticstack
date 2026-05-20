@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package agentbuilderagent
+package agentbuilderskill
 
 import (
 	"context"
@@ -25,8 +25,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
-func (r *AgentResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var planModel agentModel
+func (r *SkillResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var planModel skillModel
 
 	diags := req.Plan.Get(ctx, &planModel)
 	resp.Diagnostics.Append(diags...)
@@ -40,17 +40,11 @@ func (r *AgentResource) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
-	if !agentbuilder.EnforceVersion(ctx, client, minKibanaAgentBuilderAPIVersion, "agents", &resp.Diagnostics) {
+	if !agentbuilder.EnforceVersion(ctx, client, minKibanaAgentBuilderSkillsAPIVersion, "skills", &resp.Diagnostics) {
 		return
 	}
 
-	supportsSkillIDs, verDiags := client.EnforceMinVersion(ctx, minVersionAdvancedAgentConfig)
-	resp.Diagnostics.Append(verDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	body, diags := planModel.toAPICreateModel(ctx, supportsSkillIDs)
+	body, diags := planModel.toAPICreateModel(ctx)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -64,19 +58,19 @@ func (r *AgentResource) Create(ctx context.Context, req resource.CreateRequest, 
 
 	spaceID := planModel.SpaceID.ValueString()
 
-	created, diags := kibanaoapi.CreateAgent(ctx, oapiClient, spaceID, body)
+	created, diags := kibanaoapi.CreateSkill(ctx, oapiClient, spaceID, body)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	agent, diags := kibanaoapi.GetAgent(ctx, oapiClient, spaceID, created.ID)
+	skill, diags := kibanaoapi.GetSkill(ctx, oapiClient, spaceID, created.ID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	diags = planModel.populateFromAPI(ctx, spaceID, agent)
+	diags = planModel.populateFromAPI(ctx, spaceID, skill)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

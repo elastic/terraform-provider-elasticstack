@@ -71,6 +71,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/proxy"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/serverhost"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilderagent"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilderskill"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuildertool"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilderworkflow"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/alertingrule"
@@ -204,6 +205,7 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		connectors.NewResource,
 		agentpolicy.NewResource,
 		agentbuilderagent.NewResource,
+		agentbuilderskill.NewResource,
 		agentbuildertool.NewResource,
 		agentbuilderworkflow.NewResource,
 		integration.NewResource,
@@ -267,6 +269,7 @@ func (p *Provider) dataSources(_ context.Context) []func() datasource.DataSource
 		security_role.NewDataSource,
 		connectors.NewDataSource,
 		agentbuilderagent.NewDataSource,
+		agentbuilderskill.NewDataSource,
 		agentbuildertool.NewDataSource,
 		agentbuilderworkflow.NewDataSource,
 		exportsavedobjects.NewDataSource,

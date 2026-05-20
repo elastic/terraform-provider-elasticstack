@@ -15,18 +15,20 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package agentbuilderagent
+package agentbuilderskill
 
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *AgentResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var planModel agentModel
+func (r *SkillResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var planModel skillModel
 
 	diags := req.Plan.Get(ctx, &planModel)
 	resp.Diagnostics.Append(diags...)
@@ -40,21 +42,18 @@ func (r *AgentResource) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
-	if !agentbuilder.EnforceVersion(ctx, client, minKibanaAgentBuilderAPIVersion, "agents", &resp.Diagnostics) {
+	if !agentbuilder.EnforceVersion(ctx, client, minKibanaAgentBuilderSkillsAPIVersion, "skills", &resp.Diagnostics) {
 		return
 	}
 
-	supportsSkillIDs, verDiags := client.EnforceMinVersion(ctx, minVersionAdvancedAgentConfig)
-	resp.Diagnostics.Append(verDiags...)
+	compID, idDiags := clients.CompositeIDFromStr(planModel.ID.ValueString())
+	resp.Diagnostics.Append(idDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	body, diags := planModel.toAPICreateModel(ctx, supportsSkillIDs)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	// Restore space_id from the composite ID so populateFromAPI can use it.
+	planModel.SpaceID = types.StringValue(compID.ClusterID)
 
 	oapiClient, err := client.GetKibanaOapiClient()
 	if err != nil {
@@ -62,21 +61,25 @@ func (r *AgentResource) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
-	spaceID := planModel.SpaceID.ValueString()
-
-	created, diags := kibanaoapi.CreateAgent(ctx, oapiClient, spaceID, body)
+	body, diags := planModel.toAPIUpdateModel(ctx)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	agent, diags := kibanaoapi.GetAgent(ctx, oapiClient, spaceID, created.ID)
+	_, diags = kibanaoapi.UpdateSkill(ctx, oapiClient, compID.ClusterID, compID.ResourceID, body)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	diags = planModel.populateFromAPI(ctx, spaceID, agent)
+	skill, diags := kibanaoapi.GetSkill(ctx, oapiClient, compID.ClusterID, compID.ResourceID)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	diags = planModel.populateFromAPI(ctx, compID.ClusterID, skill)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
