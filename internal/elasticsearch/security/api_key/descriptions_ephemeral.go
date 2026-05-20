@@ -19,5 +19,5 @@ package apikey
 
 import _ "embed"
 
-//go:embed descriptions/resource.md
-var resourceDescription string
+//go:embed descriptions/ephemeral_resource.md
+var ephemeralResourceDescription string
