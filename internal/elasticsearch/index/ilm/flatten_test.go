@@ -54,5 +54,5 @@ func TestFlattenPhaseAllocateOmitsAbsentReplicaShardFields(t *testing.T) {
 
 	requireVal, ok := allocateAttrs["require"].(jsontypes.Normalized)
 	require.True(t, ok)
-	assert.Equal(t, `{"zone":"zone-1"}`, requireVal.ValueString())
+	assert.JSONEq(t, `{"zone":"zone-1"}`, requireVal.ValueString())
 }
