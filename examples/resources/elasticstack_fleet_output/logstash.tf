@@ -5,7 +5,7 @@ provider "elasticstack" {
 
 # Placeholder PEM material for illustration only — replace with real certificates in production.
 locals {
-  example_ca = <<-EOT
+  example_ca          = <<-EOT
     -----BEGIN CERTIFICATE-----
     MIIBkTCB+wIJAKHHCgV4Jh0FMA0GCSqGGSIb3DQEBCwUAMBExCzAJBgNVBAYTAlVT
     -----END CERTIFICATE-----
@@ -15,7 +15,7 @@ locals {
     MIIBkTCB+wIJAKHHCgV4Jh0FMA0GCSqGGSIb3DQEBCwUAMBExCzAJBgNVBAYTAlVT
     -----END CERTIFICATE-----
   EOT
-  example_client_key = <<-EOT
+  example_client_key  = <<-EOT
     -----BEGIN RSA PRIVATE KEY-----
     MIIEpAIBAAKCAQEA0
     -----END RSA PRIVATE KEY-----
