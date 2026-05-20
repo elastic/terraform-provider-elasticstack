@@ -39,6 +39,7 @@ const (
 	ReasonAgentAbort            AttemptReason = "agent_abort"
 	ReasonNoCandidate           AttemptReason = "no_candidate_available"
 	ReasonPreActivationBlocked  AttemptReason = "preactivation_blocked"
+	ReasonFmtFailed             AttemptReason = "fmt_failed"
 )
 
 var validReasons = map[AttemptReason]struct{}{
@@ -51,6 +52,7 @@ var validReasons = map[AttemptReason]struct{}{
 	ReasonAgentAbort:            {},
 	ReasonNoCandidate:           {},
 	ReasonPreActivationBlocked:  {},
+	ReasonFmtFailed:             {},
 }
 
 type AttemptContext struct {

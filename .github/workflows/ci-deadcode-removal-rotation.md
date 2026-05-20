@@ -240,7 +240,7 @@ After recording the filtered candidates, proceed with the main task below.
          --reason fmt_failed
        ```
      - Stop without creating a PR.
-6. **Open a cleanup PR** using the `create-pull-request` safe output **only** if verification succeeds.
+6. **Open a cleanup PR** using the `create-pull-request` safe output **only** if verification and formatting succeed.
    - Title format: `[deadcode] Remove ${{ needs.pre_activation.outputs.symbol }}`
    - Body must include:
      - A short description of the removed symbol.

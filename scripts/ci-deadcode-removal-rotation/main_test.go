@@ -238,6 +238,26 @@ func TestCmdRecordAndLoad(t *testing.T) {
 	assert.Equal(t, 1, mem.Attempts[0].Context.ReferenceFileCount)
 }
 
+func TestCmdRecordFmtFailed(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	memPath := filepath.Join(dir, "memory.json")
+	var stderr bytes.Buffer
+	err := cmdRecord([]string{
+		"--memory", memPath,
+		"--symbol", "pkg.A",
+		"--package", "pkg",
+		"--reason", "fmt_failed",
+	}, &stderr)
+	require.NoError(t, err)
+
+	mem, err := loadMemory(memPath)
+	require.NoError(t, err)
+	require.Len(t, mem.Attempts, 1)
+	assert.Equal(t, "pkg.A", mem.Attempts[0].Symbol)
+	assert.Equal(t, ReasonFmtFailed, mem.Attempts[0].Reason)
+}
+
 func TestCmdRecordInvalidReason(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
