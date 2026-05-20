@@ -60,12 +60,12 @@
 
 ## 4. Build and validate
 
-- [ ] 4.1 Run `make build` to confirm the change compiles.
-- [ ] 4.2 Run `go vet ./internal/elasticsearch/index/componenttemplate/...` to confirm no vet errors.
-- [ ] 4.3 Run acceptance tests (requires `TF_ACC=1` and a running Elasticsearch):
+- [x] 4.1 Run `make build` to confirm the change compiles.
+- [x] 4.2 Run `go vet ./internal/elasticsearch/index/componenttemplate/...` to confirm no vet errors.
+- [x] 4.3 Run acceptance tests (requires `TF_ACC=1` and a running Elasticsearch):
   `go test ./internal/elasticsearch/index/componenttemplate/... -run TestAccResourceComponentTemplate -v`
   `go test ./internal/elasticsearch/index/componenttemplate/... -run TestAccResourceComponentTemplateIssue609NoDrift -v`
 
 ## 5. Spec sync
 
-- [ ] 5.1 Run `make check-openspec`.
+- [x] 5.1 Run `make check-openspec`.

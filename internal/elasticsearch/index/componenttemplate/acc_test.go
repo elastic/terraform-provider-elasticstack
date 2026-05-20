@@ -75,6 +75,7 @@ func TestAccResourceComponentTemplateIssue609NoDrift(t *testing.T) {
 				ConfigVariables:          config.Variables{"name": config.StringVariable(templateName)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "name", templateName),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_component_template.test", "template.mappings"),
 				),
 			},
 			{
@@ -121,6 +122,8 @@ func TestAccResourceComponentTemplateAliasDetails(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "name", templateName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "template.alias.#", "1"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_component_template.test", "template.mappings"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_component_template.test", "template.settings"),
 					resource.TestCheckTypeSetElemNestedAttrs(
 						"elasticstack_elasticsearch_component_template.test",
 						"template.alias.*",
@@ -134,6 +137,13 @@ func TestAccResourceComponentTemplateAliasDetails(t *testing.T) {
 						},
 					),
 				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(templateName)},
+				PlanOnly:                 true,
+				ExpectNonEmptyPlan:       false,
 			},
 		},
 	})
