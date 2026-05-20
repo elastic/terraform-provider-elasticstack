@@ -266,7 +266,7 @@ func TestAccResourceAgentBuilderToolIndexSearch(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceID, "type", "index_search"),
 					resource.TestCheckResourceAttrSet(resourceID, "configuration"),
 					resource.TestMatchResourceAttr(resourceID, "configuration",
-						regexp.MustCompile(`logs-test`)),
+						regexp.MustCompile(`agentbuilder-test`)),
 				),
 			},
 			{
