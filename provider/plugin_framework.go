@@ -117,8 +117,8 @@ const (
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
-	_ fwprovider.Provider                      = &Provider{}
-	_ fwprovider.ProviderWithEphemeralResources  = &Provider{}
+	_ fwprovider.Provider                       = &Provider{}
+	_ fwprovider.ProviderWithEphemeralResources = &Provider{}
 )
 
 type Provider struct {

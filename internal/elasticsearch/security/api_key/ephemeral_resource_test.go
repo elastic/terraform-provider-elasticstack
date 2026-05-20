@@ -22,7 +22,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/schema"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/ephemeral"
 	eschema "github.com/hashicorp/terraform-plugin-framework/ephemeral/schema"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -191,6 +194,63 @@ func TestEphemeralSchemaRequiresTypeValidation(t *testing.T) {
 	}
 }
 
+func TestEphemeralSchemaAccessRequiresTypeValidation(t *testing.T) {
+	t.Parallel()
+
+	accessValue := types.ObjectValueMust(map[string]attr.Type{}, map[string]attr.Value{})
+
+	testCases := []struct {
+		name        string
+		typeValue   *string
+		expectError bool
+	}{
+		{name: "access with rest", typeValue: new("rest"), expectError: true},
+		{name: "access with unset type", typeValue: nil, expectError: true},
+		{name: "access with cross_cluster", typeValue: new("cross_cluster"), expectError: false},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			configValues := map[string]tftypes.Value{
+				"access": tftypes.NewValue(tftypes.Object{AttributeTypes: map[string]tftypes.Type{}}, map[string]tftypes.Value{}),
+			}
+			attrTypes := map[string]tftypes.Type{
+				"access": tftypes.Object{AttributeTypes: map[string]tftypes.Type{}},
+			}
+			if testCase.typeValue != nil {
+				configValues["type"] = tftypes.NewValue(tftypes.String, *testCase.typeValue)
+				attrTypes["type"] = tftypes.String
+			}
+
+			config := tfsdk.Config{
+				Raw: tftypes.NewValue(tftypes.Object{AttributeTypes: attrTypes}, configValues),
+				Schema: eschema.Schema{
+					Attributes: map[string]eschema.Attribute{
+						"type":   eschema.StringAttribute{Optional: true},
+						"access": eschema.SingleNestedAttribute{},
+					},
+				},
+			}
+
+			request := validator.ObjectRequest{
+				Path:        path.Root("access"),
+				ConfigValue: accessValue,
+				Config:      config,
+			}
+			response := &validator.ObjectResponse{}
+			requiresType(crossClusterAPIKeyType).ValidateObject(context.Background(), request, response)
+
+			if testCase.expectError {
+				require.True(t, response.Diagnostics.HasError())
+				return
+			}
+			require.False(t, response.Diagnostics.HasError())
+		})
+	}
+}
+
 func TestCloseAPIKeyIfRequested(t *testing.T) {
 	t.Parallel()
 
@@ -207,6 +267,35 @@ func TestCloseAPIKeyIfRequested(t *testing.T) {
 		diags := closeAPIKeyIfRequested(context.Background(), nil, schema.ElasticsearchConnectionNullList(), true, "")
 		require.False(t, diags.HasError())
 	})
+
+	t.Run("calls delete when invalidate_on_close is true", func(t *testing.T) {
+		t.Parallel()
+
+		originalDelete := deleteAPIKeyFn
+		t.Cleanup(func() { deleteAPIKeyFn = originalDelete })
+
+		var (
+			deleteCalled bool
+			deleteKeyID  string
+		)
+		deleteAPIKeyFn = func(_ context.Context, _ *clients.ElasticsearchScopedClient, keyID string) diag.Diagnostics {
+			deleteCalled = true
+			deleteKeyID = keyID
+			return nil
+		}
+
+		factory := stubElasticsearchClientResolver{}
+		diags := closeAPIKeyIfRequested(context.Background(), factory, schema.ElasticsearchConnectionNullList(), true, "key-to-delete")
+		require.False(t, diags.HasError())
+		require.True(t, deleteCalled)
+		require.Equal(t, "key-to-delete", deleteKeyID)
+	})
+}
+
+type stubElasticsearchClientResolver struct{}
+
+func (stubElasticsearchClientResolver) GetElasticsearchClient(_ context.Context, _ types.List) (*clients.ElasticsearchScopedClient, diag.Diagnostics) {
+	return &clients.ElasticsearchScopedClient{}, nil
 }
 
 func TestInvalidateOnCloseValue(t *testing.T) {
