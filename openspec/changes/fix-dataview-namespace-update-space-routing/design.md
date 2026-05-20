@@ -100,7 +100,7 @@ Because the existing test already creates `space1`, `space2`, `space3` as separa
 ## Risks / Trade-offs
 
 - **Signature change is internal**: `UpdateDataViewNamespaces` is not exported outside the provider; the single call site is `update.go`. No external callers affected.
-- **Per-object error structure**: the implementer must verify the exact generated Go type for the JSON200 response body. If `kbapi.SpacesUpdateObjectsSpacesResponse` uses a different field name for the per-object error, the implementation should adapt accordingly. The issue body shows the raw JSON shape, which is the authoritative contract.
+- **Per-object error structure**: the generated client currently does not appear to model a typed JSON200 response body for this endpoint, so the implementer should plan to unmarshal `resp.Body` into a local struct (or update the generator/spec to emit a typed response) and verify the parsed field names against Kibana's raw API contract. The issue body shows the raw JSON shape, which is the authoritative contract.
 - **`SpaceAwarePathRequestEditor` for spaces endpoint**: the endpoint path is `/api/spaces/_update_objects_spaces`. `BuildSpaceAwarePath` searches for `/api/` and prepends `/s/{spaceID}`, producing `/s/{spaceID}/api/spaces/_update_objects_spaces`. This is the correct Kibana URL per the issue's `curl` reproduction.
 - **Acceptance test environment**: tests that create non-default spaces require the test Kibana user to have the `manage_spaces` privilege. Existing namespace tests already create spaces, so this prerequisite is met.
 
