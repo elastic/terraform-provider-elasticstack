@@ -51,17 +51,17 @@ func createCalendarEvent(ctx context.Context, client *clients.ElasticsearchScope
 	}
 
 	if postCalendarEventWireNeedsRawPOSTBody(planWire) {
-		sv, vdiags := client.ServerVersion(ctx)
+		supported, vdiags := client.EnforceMinVersion(ctx, mlCalendarEventOptionalAPIFieldsMinElasticsearch)
 		diags.Append(vdiags...)
 		if diags.HasError() {
 			return plan, diags
 		}
-		if sv.LessThan(mlCalendarEventOptionalAPIFieldsMinElasticsearch) {
+		if !supported {
 			diags.AddError(
 				"ML calendar event optional scheduling fields not supported",
-				fmt.Sprintf("skip_result, skip_model_update, and force_time_shift require Elasticsearch %s or newer; "+
-					"this cluster is %s. Omit these arguments or upgrade Elasticsearch.",
-					mlCalendarEventOptionalAPIFieldsMinElasticsearch.String(), sv.String()),
+				fmt.Sprintf("skip_result, skip_model_update, and force_time_shift require Elasticsearch %s or newer "+
+					"(or Elasticsearch Serverless). Omit these arguments or upgrade Elasticsearch.",
+					mlCalendarEventOptionalAPIFieldsMinElasticsearch.String()),
 			)
 			return plan, diags
 		}
@@ -164,8 +164,17 @@ func createCalendarEvent(ctx context.Context, client *clients.ElasticsearchScope
 	}
 
 	if eventID == "" {
+		windowStart, windowEnd, haveWindow := calendarEventWireWindowRFC3339(planWire)
+		if !haveWindow {
+			diags.AddError(
+				"Failed to identify created event",
+				"Could not derive start_time and end_time for listing calendar events after create.",
+			)
+			return plan, diags
+		}
+
 		var matches []calendarEventWire
-		diags.Append(walkMLCalendarEventPages(ctx, typedClient, calendarID, func(events []calendarEventWire) bool {
+		diags.Append(walkMLCalendarEventPagesWithWindow(ctx, typedClient, calendarID, windowStart, windowEnd, func(events []calendarEventWire) bool {
 			for _, event := range events {
 				id := calendarEventWireEventID(&event)
 				if id == "" {

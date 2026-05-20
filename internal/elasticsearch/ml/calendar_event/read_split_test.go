@@ -18,6 +18,7 @@
 package calendar_event
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -107,4 +108,17 @@ func TestCalendarEventReadWindowRFC3339(t *testing.T) {
 		assert.Equal(t, start.UTC().Format(time.RFC3339), ws)
 		assert.Equal(t, end.UTC().Format(time.RFC3339), we)
 	})
+}
+
+func TestCalendarEventWireWindowRFC3339(t *testing.T) {
+	start := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
+	end := time.Date(2026, 6, 1, 6, 0, 0, 0, time.UTC)
+	w := calendarEventWire{
+		StartTime: []byte(fmt.Sprintf("%d", start.UnixMilli())),
+		EndTime:   []byte(fmt.Sprintf("%d", end.UnixMilli())),
+	}
+	ws, we, ok := calendarEventWireWindowRFC3339(w)
+	require.True(t, ok)
+	assert.Equal(t, start.Format(time.RFC3339), ws)
+	assert.Equal(t, end.Format(time.RFC3339), we)
 }

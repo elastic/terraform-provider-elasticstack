@@ -102,7 +102,12 @@ func (r *calendarEventResource) Create(ctx context.Context, req resource.CreateR
 }
 
 func (r *calendarEventResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	compID, diags := clients.CompositeIDFromStrForElasticsearch(req.ID)
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	compID, diags := clients.CompositeIDFromStr(req.ID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -114,7 +119,6 @@ func (r *calendarEventResource) ImportState(ctx context.Context, req resource.Im
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("calendar_id"), calendarID)...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("event_id"), eventID)...)
 }

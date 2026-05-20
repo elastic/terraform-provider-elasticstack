@@ -46,6 +46,23 @@ func parseCalendarEventFullCompositeID(id string) (calendarID, eventID string, d
 	return splitCalendarEventResourcePath(parts[1])
 }
 
+func calendarEventWireWindowRFC3339(w calendarEventWire) (start string, end string, ok bool) {
+	startAny, err := rawJSONToAny(w.StartTime)
+	if err != nil {
+		return "", "", false
+	}
+	endAny, err := rawJSONToAny(w.EndTime)
+	if err != nil {
+		return "", "", false
+	}
+	startMillis, ok1 := calendarEventAnyTimeToUnixMilli(startAny)
+	endMillis, ok2 := calendarEventAnyTimeToUnixMilli(endAny)
+	if !ok1 || !ok2 {
+		return "", "", false
+	}
+	return time.UnixMilli(startMillis).UTC().Format(time.RFC3339), time.UnixMilli(endMillis).UTC().Format(time.RFC3339), true
+}
+
 func calendarEventReadWindowRFC3339(state CalendarEventTFModel) (start string, end string, ok bool) {
 	if state.StartTime.IsNull() || state.StartTime.IsUnknown() || state.EndTime.IsNull() || state.EndTime.IsUnknown() {
 		return "", "", false

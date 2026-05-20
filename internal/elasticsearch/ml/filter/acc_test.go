@@ -311,9 +311,9 @@ func TestAccResourceMLFilterImportFailures(t *testing.T) {
 				ImportState:              true,
 				ImportStateKind:          resource.ImportBlockWithID,
 				ImportStateVerify:        false,
-				// Three path segments: invalid for clients.CompositeIDFromStr used by ImportState.
+				// Resource segment contains a slash; filter ids do not, so import fails when reading the filter.
 				ImportStateId: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/extra/bad",
-				ExpectError:   regexp.MustCompile(`Wrong resource ID`),
+				ExpectError:   regexp.MustCompile(`Failed to get ML filter|Unable to get ML filter|Cannot import non-existent`),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
