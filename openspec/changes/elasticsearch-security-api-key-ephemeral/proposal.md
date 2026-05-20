@@ -1,8 +1,8 @@
 ## Why
 
-The `elasticstack_elasticsearch_security_api_key` managed resource stores the generated `api_key` (raw secret) and `encoded` (Base64 `id:api_key`) values as sensitive attributes in Terraform state. Any operator with read access to the state file can extract these credentials. This violates the principle of least privilege for teams that only need the key during an apply run or want to store it in an external secret store (Vault, AWS SSM) without it ever touching Terraform state.
+The `elasticstack_elasticsearch_security_api_key` managed resource stores the generated `api_key` (raw secret) and `encoded` (Base64 `id:api_key`) values as sensitive attributes in Terraform state. Any operator with read access to the state file can extract these credentials. This violates the principle of least privilege for teams that only need the key during a Terraform run or want to store it in an external secret store (Vault, AWS SSM) without it ever touching Terraform state.
 
-Terraform 1.10 introduced the **ephemeral resource** primitive, which holds values only in memory during an apply — credentials are never written to the state file. This proposal adds an ephemeral resource variant of `elasticstack_elasticsearch_security_api_key` so teams can adopt either a "persist externally" or "in-run only" pattern without storing credentials in state.
+Terraform 1.10 introduced the **ephemeral resource** primitive, which holds values only in memory during `plan`/`apply` — credentials are never written to the state file. This proposal adds an ephemeral resource variant of `elasticstack_elasticsearch_security_api_key` so teams can adopt either a "persist externally" or "in-run only" pattern without storing credentials in state.
 
 A separate comment from `@tobio` (2026-05-17) explicitly requested an `invalidate_on_close` attribute on the ephemeral resource to support in-run API keys that are automatically revoked after the Terraform run completes.
 

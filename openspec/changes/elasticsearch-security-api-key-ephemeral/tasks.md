@@ -16,7 +16,7 @@
 - [ ] 2.3 Define the ephemeral resource schema in `ephemeral_resource.go` (or a separate schema file if preferred):
   - Input attributes: `name` (required), `type` (optional, default `"rest"`), `role_descriptors` (optional, JSON, REST only), `expiration` (optional), `metadata` (optional, JSON), `access` (optional, cross-cluster only), `invalidate_on_close` (optional, bool, default `false`).
   - Result attributes (computed): `key_id` (string), `api_key` (string, sensitive), `encoded` (string, sensitive), `expiration_timestamp` (int64).
-  - Validators: `name` length 1–1024, Basic Latin printable characters, no leading/trailing whitespace; `type` one-of `rest`/`cross_cluster`; `role_descriptors` only with `type = "rest"`; `access` only with `type = "cross_cluster"`.
+  - Validators: `name` length 1–1024, Basic Latin printable characters, matching the managed resource's current validator behavior (which currently allows leading/trailing whitespace); `type` one-of `rest`/`cross_cluster`; `role_descriptors` only with `type = "rest"`; `access` only with `type = "cross_cluster"`.
   - Do NOT include plan modifiers that apply to managed resources (`RequiresReplace`, `UseStateForUnknown`) — they are not applicable to ephemeral resources.
 - [ ] 2.4 Add version-gating for `type = "cross_cluster"` in `Open()`: check Elasticsearch version >= `8.10.0` before calling `CreateCrossClusterAPIKey`; return a clear error diagnostic if the version requirement is not met (mirrors `resource.go` logic).
 - [ ] 2.5 Add `elasticsearch_connection` block support to the ephemeral resource schema so the resource can be used with a non-default Elasticsearch connection (consistent with the managed resource).
