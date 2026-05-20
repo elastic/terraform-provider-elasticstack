@@ -882,6 +882,70 @@ func TestPackageInfoToDefaults_InputPackage(t *testing.T) {
 	assert.False(t, hasProjectID, "vars without defaults should be omitted")
 }
 
+func TestPackageInfoToDefaults_InputPackage_WithDataStreams(t *testing.T) {
+	// When both policy_templates and data_streams exist for an input-type
+	// package, the stream defaults from the policy-template must be merged
+	// with the data_stream defaults, filling in missing vars while preserving
+	// existing datastream values.
+	pkgJSON := `{
+		"name": "gcp_pubsub",
+		"version": "2.31.1",
+		"policy_templates": [
+			{
+				"name": "gcp",
+				"input": "gcp-pubsub",
+				"vars": [
+					{"name": "data_stream.dataset", "type": "text", "default": "gcp_pubsub.generic"},
+					{"name": "project_id", "type": "text"},
+					{"name": "tags", "type": "text", "multi": true, "default": ["forwarded"]}
+				]
+			}
+		],
+		"data_streams": [
+			{
+				"type": "logs",
+				"dataset": "gcp_pubsub.gcp",
+				"streams": [
+					{
+						"input": "gcp-pubsub",
+						"enabled": true,
+						"vars": [
+							{"name": "pipeline", "type": "text", "default": "default_pipeline"}
+						]
+					}
+				]
+			}
+		]
+	}`
+
+	var pkg kbapi.PackageInfo
+	require.NoError(t, json.Unmarshal([]byte(pkgJSON), &pkg))
+
+	result, diags := packageInfoToDefaults(&pkg)
+	require.False(t, diags.HasError(), "Expected no error but got: %v", diags)
+
+	inputDefaults, ok := result["gcp-gcp-pubsub"]
+	require.True(t, ok, "Expected input id 'gcp-gcp-pubsub' in defaults, got: %v", result)
+
+	streamDefaults, ok := inputDefaults.Streams["gcp_pubsub.gcp"]
+	require.True(t, ok, "Expected stream id 'gcp_pubsub.gcp' for input")
+	assert.Equal(t, types.BoolValue(true), streamDefaults.Enabled)
+
+	var streamVars map[string]any
+	require.NoError(t, json.Unmarshal([]byte(streamDefaults.Vars.ValueString()), &streamVars))
+
+	// Datastream default.
+	assert.Equal(t, "default_pipeline", streamVars["pipeline"])
+
+	// Policy-template defaults (merged into existing stream).
+	assert.Equal(t, "gcp_pubsub.generic", streamVars["data_stream.dataset"])
+	assert.Equal(t, []any{"forwarded"}, streamVars["tags"])
+
+	// project_id has no default; it should not appear in defaults.
+	_, hasProjectID := streamVars["project_id"]
+	assert.False(t, hasProjectID, "vars without defaults should be omitted")
+}
+
 func TestInputDefaultsModel_Integration(t *testing.T) {
 	// This test ensures that the defaults model structure correctly represents
 	// the data needed for integration policies

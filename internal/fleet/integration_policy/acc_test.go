@@ -865,7 +865,23 @@ func TestAccResourceIntegrationPolicyGCPPubSub(t *testing.T) {
 						"inputs.gcp-gcp-pubsub.streams.gcp_pubsub.gcp.vars",
 						regexp.MustCompile(`"tags":\["forwarded"\]`),
 					),
+					// Assert defaulted stream vars from the package policy-template are reflected
+					resource.TestMatchResourceAttr(
+						"elasticstack_fleet_integration_policy.pubsub",
+						"inputs.gcp-gcp-pubsub.streams.gcp_pubsub.gcp.vars",
+						regexp.MustCompile(`"data_stream.dataset":"gcp_pubsub.generic"`),
+					),
 				),
+			},
+			{
+				// Re-apply the same config and assert no drift (no further changes).
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
 			},
 		},
 	})

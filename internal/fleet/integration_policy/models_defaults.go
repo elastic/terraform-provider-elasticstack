@@ -208,8 +208,20 @@ func packageInfoToDefaults(pkg *kbapi.PackageInfo) (map[string]inputDefaultsMode
 		if existing.Streams != nil {
 			merged := make(map[string]inputDefaultsStreamModel, len(existing.Streams)+len(inputDefaults.Streams))
 			maps.Copy(merged, existing.Streams)
+			// Merge input-type stream defaults with existing datastream defaults.
+			// Existing entries take precedence, but missing vars are filled in
+			// from the policy-template level defaults so that semantic equality
+			// can reconcile Kibana's applied state.
 			for k, v := range inputDefaults.Streams {
-				if _, present := merged[k]; !present {
+				if existingStream, present := merged[k]; present {
+					varsWithDefaults, streamVarDiags := applyDefaultsToVars(existingStream.Vars, v.Vars)
+					diags.Append(streamVarDiags...)
+					if diags.HasError() {
+						return nil, diags
+					}
+					existingStream.Vars = varsWithDefaults
+					merged[k] = existingStream
+				} else {
 					merged[k] = v
 				}
 			}
@@ -244,21 +256,17 @@ func inputPackagePolicyTemplatesToDefaults(pkg *kbapi.PackageInfo, policyTemplat
 		inputID := fmt.Sprintf("%s-%s", policyTemplate.Name, policyTemplate.Input)
 		streamID := fmt.Sprintf("%s.%s", pkg.Name, policyTemplate.Name)
 
-		streams, ok := defaults[inputID].Streams, true
-		if streams == nil {
-			streams = map[string]inputDefaultsStreamModel{}
-			ok = false
+		existing, ok := defaults[inputID]
+		if !ok {
+			existing.Vars = jsontypes.NewNormalizedNull()
+			existing.Streams = map[string]inputDefaultsStreamModel{}
+		} else if existing.Streams == nil {
+			existing.Streams = map[string]inputDefaultsStreamModel{}
 		}
-		streams[streamID] = inputDefaultsStreamModel{
+		existing.Streams[streamID] = inputDefaultsStreamModel{
 			Enabled: types.BoolValue(true),
 			Vars:    varDefaults,
 		}
-
-		existing := defaults[inputID]
-		if !ok {
-			existing.Vars = jsontypes.NewNormalizedNull()
-		}
-		existing.Streams = streams
 		defaults[inputID] = existing
 	}
 
