@@ -135,4 +135,3 @@ func extractILMSetting(template *models.Template) string {
 	}
 	return ""
 }
-
