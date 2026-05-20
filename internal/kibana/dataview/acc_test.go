@@ -362,6 +362,13 @@ func TestAccResourceDataViewNamespaces(t *testing.T) {
 					checkIDUnchanged,
 				),
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("add_remove_space"),
+				ConfigVariables:          vars,
+				PlanOnly:                 true,
+				ExpectNonEmptyPlan:       false,
+			},
 		},
 	})
 }
