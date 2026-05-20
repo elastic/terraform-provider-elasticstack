@@ -98,6 +98,16 @@
         "referenceFileCount": 1,
         "testCleanupEligible": true
       }
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index.validateDataStreamOptionsVersion",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index",
+      "attemptedAt": "2026-05-20T12:43:30.169450548Z",
+      "reason": "pr_created",
+      "context": {
+        "referenceFileCount": 1,
+        "testCleanupEligible": true
+      }
     }
   ]
 }
