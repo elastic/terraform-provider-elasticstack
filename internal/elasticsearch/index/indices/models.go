@@ -177,16 +177,6 @@ type indexTfModel struct {
 	Alias                              types.Set            `tfsdk:"alias"`
 }
 
-type aliasTfModel struct {
-	Name          types.String         `tfsdk:"name"`
-	Filter        jsontypes.Normalized `tfsdk:"filter"`
-	IndexRouting  types.String         `tfsdk:"index_routing"`
-	IsHidden      types.Bool           `tfsdk:"is_hidden"`
-	IsWriteIndex  types.Bool           `tfsdk:"is_write_index"`
-	Routing       types.String         `tfsdk:"routing"`
-	SearchRouting types.String         `tfsdk:"search_routing"`
-}
-
 func (model *indexTfModel) populateFromAPI(ctx context.Context, indexName string, apiModel estypes.IndexState) diag.Diagnostics {
 	model.Name = types.StringValue(indexName)
 	model.SortField = types.SetValueMust(types.StringType, []attr.Value{})
@@ -229,9 +219,9 @@ func mappingsFromAPI(apiModel estypes.IndexState) (jsontypes.Normalized, diag.Di
 }
 
 func aliasesFromAPI(ctx context.Context, apiModel estypes.IndexState) (basetypes.SetValue, diag.Diagnostics) {
-	aliases := []aliasTfModel{}
+	aliases := []aliasutil.AliasModel{}
 	for name, alias := range apiModel.Aliases {
-		tfAlias, diags := newAliasModelFromAPI(name, alias)
+		tfAlias, diags := aliasutil.NewAliasModelFromAPI(name, alias)
 		if diags.HasError() {
 			return basetypes.SetValue{}, diags
 		}
@@ -245,25 +235,6 @@ func aliasesFromAPI(ctx context.Context, apiModel estypes.IndexState) (basetypes
 	}
 
 	return modelAliases, nil
-}
-
-func newAliasModelFromAPI(name string, apiModel estypes.Alias) (aliasTfModel, diag.Diagnostics) {
-	tfAlias := aliasTfModel{
-		Name:          types.StringValue(name),
-		IndexRouting:  types.StringValue(typeutils.Deref(apiModel.IndexRouting)),
-		IsHidden:      types.BoolValue(typeutils.Deref(apiModel.IsHidden)),
-		IsWriteIndex:  types.BoolValue(typeutils.Deref(apiModel.IsWriteIndex)),
-		Routing:       types.StringValue(typeutils.Deref(apiModel.Routing)),
-		SearchRouting: types.StringValue(typeutils.Deref(apiModel.SearchRouting)),
-	}
-
-	filter, diags := aliasutil.NormalizeAliasFilterFromAny(apiModel.Filter)
-	if diags.HasError() {
-		return aliasTfModel{}, diags
-	}
-	tfAlias.Filter = filter
-
-	return tfAlias, nil
 }
 
 func setSettingsFromAPI(ctx context.Context, model *indexTfModel, apiModel estypes.IndexState) diag.Diagnostics {

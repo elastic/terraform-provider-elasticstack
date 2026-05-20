@@ -20,9 +20,12 @@ package aliasutil
 import (
 	"encoding/json"
 
+	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // NormalizeAliasFilterMap applies NormalizeQueryFilter to an already-decoded map
@@ -79,4 +82,24 @@ func NormalizeAliasFilterFromAny(v any) (jsontypes.Normalized, diag.Diagnostics)
 		return jsontypes.NewNormalizedNull(), diags
 	}
 	return NormalizeAliasFilterMap(filterMap)
+}
+
+// NewAliasModelFromAPI constructs an AliasModel from an API Alias response.
+func NewAliasModelFromAPI(name string, apiModel estypes.Alias) (AliasModel, diag.Diagnostics) {
+	tfAlias := AliasModel{
+		Name:          types.StringValue(name),
+		IndexRouting:  types.StringValue(typeutils.Deref(apiModel.IndexRouting)),
+		IsHidden:      types.BoolValue(typeutils.Deref(apiModel.IsHidden)),
+		IsWriteIndex:  types.BoolValue(typeutils.Deref(apiModel.IsWriteIndex)),
+		Routing:       types.StringValue(typeutils.Deref(apiModel.Routing)),
+		SearchRouting: types.StringValue(typeutils.Deref(apiModel.SearchRouting)),
+	}
+
+	filter, diags := NormalizeAliasFilterFromAny(apiModel.Filter)
+	if diags.HasError() {
+		return AliasModel{}, diags
+	}
+	tfAlias.Filter = filter
+
+	return tfAlias, nil
 }
